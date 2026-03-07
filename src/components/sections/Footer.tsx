@@ -21,7 +21,7 @@ export function Footer() {
             {/* Brand */}
             <div className="flex flex-col gap-4">
               <Link href="/">
-                <Image src="/images/logo2.png" alt="Trailhead Lawn & Irrigation" width={180} height={54} className="h-14 w-auto brightness-200" />
+                <Image src="/images/logo.jpg" alt="Trailhead Lawn & Irrigation" width={180} height={54} className="h-14 w-auto rounded" />
               </Link>
               <p className="text-sm text-white/70">
                 Northern Colorado&apos;s trusted irrigation experts. Locally owned &amp; operated in Erie, CO.
