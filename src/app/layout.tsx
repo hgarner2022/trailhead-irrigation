@@ -4,6 +4,7 @@ import "./globals.css"
 import { Header } from "@/components/sections/Header"
 import { Footer } from "@/components/sections/Footer"
 import { localBusinessJsonLd, siteConfig } from "@/lib/seo"
+import { Analytics } from "@vercel/analytics/react"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -60,6 +61,7 @@ export default function RootLayout({
         <Header />
         {children}
         <Footer />
+        <Analytics />
       </body>
     </html>
   )
