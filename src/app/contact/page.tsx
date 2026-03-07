@@ -183,12 +183,12 @@ export default function ContactPage() {
       </section>
 
       {/* Erie accent image */}
-      <section className="relative h-64 md:h-80">
+      <section className="relative h-72 md:h-96">
         <Image
           src="/images/erie.jpg"
           alt="Erie, Colorado"
           fill
-          className="object-cover"
+          className="object-cover object-[center_70%]"
         />
         <div className="absolute inset-0 bg-navy/40" />
       </section>
