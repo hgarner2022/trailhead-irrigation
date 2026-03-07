@@ -22,19 +22,6 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-border">
-      {/* Top bar */}
-      <div className="bg-navy text-white text-sm">
-        <div className="container-padding-x mx-auto max-w-7xl flex justify-end items-center gap-4 py-1.5">
-          <a href="mailto:rpgarner22@gmail.com" className="hover:text-primary-light transition-colors hidden sm:inline">
-            rpgarner22@gmail.com
-          </a>
-          <a href="tel:9706927270" className="flex items-center gap-1.5 hover:text-primary-light transition-colors font-medium">
-            <Phone className="h-3.5 w-3.5" />
-            (970) 692-7270
-          </a>
-        </div>
-      </div>
-
       {/* Main nav */}
       <div className="container-padding-x mx-auto max-w-7xl">
         <div className="flex items-center justify-between h-16">
