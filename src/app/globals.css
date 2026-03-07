@@ -1,0 +1,58 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-primary: #D97706;
+  --color-primary-dark: #B45309;
+  --color-primary-light: #F59E0B;
+  --color-navy: #2B3544;
+  --color-navy-light: #3D4F63;
+  --color-charcoal: #1E293B;
+  --color-cream: #FAFAF8;
+  --color-stone: #F5F5F4;
+  --color-border: #E7E5E4;
+  --color-muted: #78716C;
+  --color-success: #16A34A;
+
+  --color-background: #FFFFFF;
+  --color-foreground: #1E293B;
+  --color-muted-foreground: #78716C;
+  --color-card: #FFFFFF;
+  --color-card-foreground: #1E293B;
+}
+
+/* Section spacing utilities matching pro-blocks patterns */
+.section-padding-y {
+  padding-top: 4rem;
+  padding-bottom: 4rem;
+}
+
+@media (min-width: 768px) {
+  .section-padding-y {
+    padding-top: 6rem;
+    padding-bottom: 6rem;
+  }
+}
+
+.container-padding-x {
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+@media (min-width: 640px) {
+  .container-padding-x {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .container-padding-x {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+}
+
+body {
+  background: var(--color-background);
+  color: var(--color-foreground);
+}
