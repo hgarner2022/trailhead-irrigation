@@ -11,8 +11,8 @@ out/
 .env*.local
 
 # reference libraries (read-only, not part of the project)
-pro-blocks/
-ui/
+/pro-blocks/
+/ui/
 
 # misc
 .DS_Store
