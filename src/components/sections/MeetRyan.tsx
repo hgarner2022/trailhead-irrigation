@@ -1,21 +1,43 @@
+"use client"
+
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselPrevious,
+  CarouselNext,
+} from "@/components/ui/carousel"
 import Image from "next/image"
 import Link from "next/link"
+
+const IMAGES = [
+  { src: "/images/ryan.jpg", alt: "Ryan — owner of Trailhead Lawn & Irrigation" },
+  { src: "/images/ryan-family.jpeg", alt: "Ryan and his family" },
+  { src: "/images/ryan-family-2.jpg", alt: "Ryan and his family outdoors" },
+]
 
 export function MeetRyan() {
   return (
     <section className="bg-background section-padding-y">
       <div className="container-padding-x mx-auto max-w-7xl">
         <div className="flex flex-col items-center gap-12 lg:flex-row lg:gap-16">
-          {/* Images */}
-          <div className="flex flex-col gap-4 w-full flex-1">
-            <div className="relative aspect-[4/3] rounded-xl overflow-hidden">
-              <Image src="/images/ryan.jpg" alt="Ryan — owner of Trailhead Lawn & Irrigation" fill className="object-cover" />
-            </div>
-            <div className="relative aspect-[4/3] rounded-xl overflow-hidden">
-              <Image src="/images/ryan-family.jpeg" alt="Ryan and his family" fill className="object-cover" />
-            </div>
+          {/* Image Carousel */}
+          <div className="w-full flex-1">
+            <Carousel opts={{ loop: true }} className="w-full">
+              <CarouselContent>
+                {IMAGES.map((img) => (
+                  <CarouselItem key={img.src}>
+                    <div className="relative aspect-[4/3] rounded-xl overflow-hidden">
+                      <Image src={img.src} alt={img.alt} fill className="object-cover" />
+                    </div>
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+              <CarouselPrevious className="bg-white/80 hover:bg-white border-0 shadow-md" />
+              <CarouselNext className="bg-white/80 hover:bg-white border-0 shadow-md" />
+            </Carousel>
           </div>
 
           {/* Content */}
