@@ -3,7 +3,7 @@ import { Inter } from "next/font/google"
 import "./globals.css"
 import { Header } from "@/components/sections/Header"
 import { Footer } from "@/components/sections/Footer"
-import { localBusinessJsonLd, siteConfig } from "@/lib/seo"
+import { localBusinessJsonLd, organizationJsonLd, siteConfig } from "@/lib/seo"
 import { Analytics } from "@vercel/analytics/react"
 
 const inter = Inter({ subsets: ["latin"] })
@@ -55,6 +55,10 @@ export default function RootLayout({
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessJsonLd()) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd()) }}
         />
       </head>
       <body className={`${inter.className} antialiased bg-background text-foreground`}>

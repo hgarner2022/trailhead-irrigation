@@ -60,6 +60,25 @@ export function localBusinessJsonLd() {
   }
 }
 
+export function organizationJsonLd() {
+  return {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "@id": `${SITE_URL}/#organization`,
+    name: siteConfig.name,
+    url: SITE_URL,
+    logo: {
+      "@type": "ImageObject",
+      url: `${SITE_URL}/images/logo.jpg`,
+      width: 800,
+      height: 600,
+    },
+    image: `${SITE_URL}/images/logo.jpg`,
+    telephone: siteConfig.phone,
+    email: siteConfig.email,
+  }
+}
+
 export function serviceJsonLd() {
   return {
     "@context": "https://schema.org",
