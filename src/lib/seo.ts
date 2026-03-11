@@ -4,16 +4,16 @@ export const siteConfig = {
   url: SITE_URL,
   name: "Trailhead Lawn & Irrigation LLC",
   description:
-    "Professional irrigation services in Weld County, Erie & Longmont, Colorado. Installation, repair, maintenance, winterization & spring startup.",
+    "Professional irrigation services in Weld County, Erie, Longmont, Louisville & Lafayette, Colorado. Installation, repair, maintenance, winterization & spring startup.",
   phone: "(970) 692-7270",
   phoneTel: "9706927270",
-  email: "rpgarner22@gmail.com",
+  email: "ryan@trailheadirrigation.com",
   address: {
     locality: "Erie",
     region: "CO",
     country: "US",
   },
-  serviceArea: ["Weld County", "Erie", "Longmont", "Northern Colorado"],
+  serviceArea: ["Weld County", "Erie", "Longmont", "Louisville", "Lafayette", "Northern Colorado"],
 }
 
 export function localBusinessJsonLd() {
@@ -46,6 +46,8 @@ export function localBusinessJsonLd() {
       },
       { "@type": "City", name: "Erie", containedInPlace: { "@type": "State", name: "Colorado" } },
       { "@type": "City", name: "Longmont", containedInPlace: { "@type": "State", name: "Colorado" } },
+      { "@type": "City", name: "Louisville", containedInPlace: { "@type": "State", name: "Colorado" } },
+      { "@type": "City", name: "Lafayette", containedInPlace: { "@type": "State", name: "Colorado" } },
     ],
     priceRange: "$$",
     openingHoursSpecification: {
@@ -64,7 +66,7 @@ export function serviceJsonLd() {
     "@type": "Service",
     serviceType: "Irrigation Services",
     provider: { "@id": `${SITE_URL}/#business` },
-    areaServed: ["Erie, CO", "Longmont, CO", "Weld County, CO"],
+    areaServed: ["Erie, CO", "Longmont, CO", "Louisville, CO", "Lafayette, CO", "Weld County, CO"],
     hasOfferCatalog: {
       "@type": "OfferCatalog",
       name: "Irrigation Services",

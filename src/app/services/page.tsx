@@ -9,9 +9,9 @@ import { Check } from "lucide-react"
 import { serviceJsonLd, faqJsonLd, breadcrumbJsonLd, siteConfig } from "@/lib/seo"
 
 export const metadata: Metadata = {
-  title: "Irrigation Services in Erie, Longmont & Weld County",
+  title: "Irrigation Services in Erie, Longmont, Louisville, Lafayette & Weld County",
   description:
-    "Professional sprinkler installation, repair, winterization and spring startup serving Erie, Longmont & Weld County, CO. Locally owned and operated.",
+    "Professional sprinkler installation, repair, winterization and spring startup serving Erie, Longmont, Louisville, Lafayette & Weld County, CO. Locally owned and operated.",
   alternates: { canonical: `${siteConfig.url}/services` },
 }
 
@@ -19,12 +19,12 @@ const SERVICES_FAQS = [
   {
     question: "What irrigation services do you offer in Erie, CO?",
     answer:
-      "We offer complete irrigation services including sprinkler system installation, repair and maintenance, winterization (blowout), and spring activation. We also install Wi-Fi controllers, rebuild manifolds, and repair backflow preventers.",
+      "We offer complete irrigation services including sprinkler system installation, repair and optimizations, winterization (blowout), and spring activation. We also install Wi-Fi controllers, rebuild manifolds, and repair backflow preventers.",
   },
   {
     question: "Do you service sprinkler systems in Longmont and Weld County?",
     answer:
-      "Yes. We serve Erie, Longmont, and the greater Weld County area in Northern Colorado. We are locally owned and operated out of Erie.",
+      "Yes. We serve Erie, Longmont, Louisville, Lafayette, and the greater Weld County area in Northern Colorado. We are locally owned and operated out of Erie.",
   },
   {
     question: "How do I know if my sprinkler system needs repair?",
@@ -59,9 +59,9 @@ const SERVICES = [
     imagePosition: "right" as const,
   },
   {
-    title: "Repair & Maintenance",
+    title: "Repair & Optimizations",
     description:
-      "Broken heads, leaking valves, controller malfunctions — we diagnose and fix irrigation problems fast so your lawn stays green.",
+      "We diagnose and fix irrigation problems fast, keeping your lawn healthy and efficient. In addition to repairs, we handle system upgrades, optimizations, and seasonal maintenance.",
     image: "/images/lawn.jpg",
     features: [
       "Sprinkler head replacement",
@@ -69,20 +69,28 @@ const SERVICES = [
       "Leak detection and pipe repair",
       "Controller troubleshooting and programming",
       "Backflow testing and repair",
+      "Manifold replacement",
+      "Sprinkler layout adjustments / Zone additions",
+      "Adding garden zones",
+      "System upgrades (clocks, rain sensors, water-efficient heads)",
+      "Root problem solutions",
+      "Full system checks",
+      "Seasonal adjustments and optimizations",
     ],
     imagePosition: "left" as const,
   },
   {
     title: "Winterization & Spring Startup",
     description:
-      "Colorado winters can destroy unprotected irrigation systems. We professionally blow out your lines in fall and activate everything in spring.",
+      "Colorado winters can destroy unprotected irrigation systems. We professionally blow out your lines in the fall and activate everything in the spring, including minor repairs as needed.",
     image: "/images/boulder.jpg",
     features: [
-      "Complete system blowout with commercial compressor",
+      "Complete system blowout",
       "Zone-by-zone air purge",
-      "Controller shutdown and settings backup",
-      "Spring activation and leak check",
       "Head adjustment and coverage check",
+      "Full system check",
+      "Spring activation includes minor repairs (e.g., declogging heads, nozzle replacements)",
+      "Typical service time: 1/2 \u2013 1 hour",
     ],
     imagePosition: "right" as const,
   },

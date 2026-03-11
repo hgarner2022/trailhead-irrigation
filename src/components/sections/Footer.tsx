@@ -52,13 +52,13 @@ export function Footer() {
                   <Phone className="h-4 w-4 shrink-0" />
                   (970) 692-7270
                 </a>
-                <a href="mailto:rpgarner22@gmail.com" className="flex items-center gap-2 text-sm text-white/70 hover:text-primary-light transition-colors">
+                <a href="mailto:ryan@trailheadirrigation.com" className="flex items-center gap-2 text-sm text-white/70 hover:text-primary-light transition-colors">
                   <Mail className="h-4 w-4 shrink-0" />
-                  rpgarner22@gmail.com
+                  ryan@trailheadirrigation.com
                 </a>
                 <div className="flex items-start gap-2 text-sm text-white/70">
                   <MapPin className="h-4 w-4 shrink-0 mt-0.5" />
-                  Proudly serving Weld County, Erie &amp; Longmont, CO
+                  Proudly serving Weld County, Erie, Longmont, Louisville &amp; Lafayette, CO
                 </div>
               </div>
             </div>

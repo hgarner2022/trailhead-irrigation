@@ -12,7 +12,7 @@ const SERVICES = [
     image: "/images/sprinkler-head.jpg",
   },
   {
-    title: "Repair & Maintenance",
+    title: "Repair & Optimizations",
     description: "Fast, reliable diagnosis and repair of broken sprinkler heads, leaking valves, controller issues, and more.",
     icon: Wrench,
     image: "/images/lawn.jpg",
@@ -41,31 +41,35 @@ export function ServicesOverview() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
             {SERVICES.map((service) => (
-              <Card key={service.title} className="overflow-hidden hover:shadow-md transition-shadow">
-                <div className="relative h-48">
-                  <Image
-                    src={service.image}
-                    alt={service.title}
-                    fill
-                    className="object-cover"
-                  />
-                </div>
-                <CardHeader>
-                  <div className="flex items-center gap-2">
-                    <service.icon className="h-5 w-5 text-primary" />
-                    <CardTitle>{service.title}</CardTitle>
+              <Link key={service.title} href="/services" className="block">
+                <Card className="overflow-hidden hover:shadow-md transition-shadow h-full">
+                  <div className="relative h-48">
+                    <Image
+                      src={service.image}
+                      alt={service.title}
+                      fill
+                      className="object-cover"
+                    />
                   </div>
-                </CardHeader>
-                <CardContent>
-                  <CardDescription className="text-base">{service.description}</CardDescription>
-                </CardContent>
-              </Card>
+                  <CardHeader>
+                    <div className="flex items-center gap-2">
+                      <service.icon className="h-5 w-5 text-primary" />
+                      <CardTitle>{service.title}</CardTitle>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <CardDescription className="text-base">{service.description}</CardDescription>
+                  </CardContent>
+                </Card>
+              </Link>
             ))}
           </div>
 
-          <Button variant="secondary" size="lg">
-            <Link href="/services">View All Services</Link>
-          </Button>
+          <Link href="/services">
+            <Button variant="secondary" size="lg">
+              View All Services
+            </Button>
+          </Link>
         </div>
       </div>
     </section>

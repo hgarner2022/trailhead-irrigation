@@ -94,6 +94,11 @@ export default function ContactPage() {
                     placeholder="you@example.com"
                     required
                   />
+                  <Input
+                    name="address"
+                    label="Address"
+                    placeholder="Service location address"
+                  />
                   <div className="flex flex-col gap-1.5">
                     <label
                       htmlFor="service"
@@ -108,12 +113,12 @@ export default function ContactPage() {
                       required
                     >
                       <option value="">Select a service...</option>
-                      <option value="Irrigation System Installation">
-                        Irrigation System Installation
+                      <option value="Full Irrigation Installs">
+                        Full Irrigation Installs
                       </option>
-                      <option value="Repair & Maintenance">Repair & Maintenance</option>
+                      <option value="Repair">Repair</option>
                       <option value="Winterization">Winterization</option>
-                      <option value="Spring Activation">Spring Activation</option>
+                      <option value="Spring Activation and System Check">Spring Activation and System Check</option>
                       <option value="Other">Other</option>
                     </select>
                   </div>
@@ -150,12 +155,12 @@ export default function ContactPage() {
                   <ContactItem
                     icon={Mail}
                     label="Email"
-                    href="mailto:rpgarner22@gmail.com"
+                    href="mailto:ryan@trailheadirrigation.com"
                   >
-                    rpgarner22@gmail.com
+                    ryan@trailheadirrigation.com
                   </ContactItem>
                   <ContactItem icon={MapPin} label="Service Area">
-                    Weld County, Erie & Longmont, CO
+                    Weld County, Erie, Longmont, Louisville &amp; Lafayette, CO
                   </ContactItem>
                   <ContactItem icon={Clock} label="Hours">
                     Mon&ndash;Fri: 7:00 AM &ndash; 6:00 PM
