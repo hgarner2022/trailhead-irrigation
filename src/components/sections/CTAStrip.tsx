@@ -14,7 +14,7 @@ export function CTAStrip() {
           </p>
           <div className="flex flex-col sm:flex-row items-center gap-3">
             <Button size="lg">
-              <Link href="/contact">Get a Free Quote</Link>
+              <Link href="/contact">Contact Us</Link>
             </Button>
             <Button variant="outline" size="lg" className="border-white bg-transparent text-white hover:bg-white/10 hover:text-white">
               <a href="tel:9706927270">Call (970) 692-7270</a>

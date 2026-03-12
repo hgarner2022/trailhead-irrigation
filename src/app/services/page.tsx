@@ -160,7 +160,7 @@ export default function ServicesPage() {
                   ))}
                 </ul>
                 <Button size="lg" className="w-fit mt-2">
-                  <Link href="/contact">Get a Free Quote</Link>
+                  <Link href="/contact">Contact Us</Link>
                 </Button>
               </div>
 
