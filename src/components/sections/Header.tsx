@@ -26,7 +26,7 @@ export function Header() {
       <div className="container-padding-x mx-auto max-w-7xl">
         <div className="flex items-center justify-between h-16">
           <Link href="/" className="shrink-0">
-            <Image src="/images/logo-new.png" alt="Trailhead Lawn & Irrigation" width={200} height={60} className="h-16 w-auto" priority />
+            <Image src="/images/logo-horizontal.png" alt="Trailhead Lawn & Irrigation" width={240} height={60} className="h-14 w-auto" priority />
           </Link>
 
           {/* Desktop nav */}
