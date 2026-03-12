@@ -31,13 +31,13 @@ export const metadata: Metadata = {
     siteName: siteConfig.name,
     title: "Trailhead Lawn & Irrigation | Erie, CO",
     description: siteConfig.description,
-    images: [{ url: "/images/logo.jpg", width: 800, height: 600, alt: siteConfig.name }],
+    images: [{ url: "/images/logo-new.png", width: 800, height: 600, alt: siteConfig.name }],
   },
   twitter: {
     card: "summary_large_image",
     title: "Trailhead Lawn & Irrigation | Erie, CO",
     description: siteConfig.description,
-    images: ["/images/logo.jpg"],
+    images: ["/images/logo-new.png"],
   },
   alternates: {
     canonical: siteConfig.url,

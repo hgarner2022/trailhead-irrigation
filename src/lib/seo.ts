@@ -26,7 +26,7 @@ export function localBusinessJsonLd() {
     url: SITE_URL,
     telephone: siteConfig.phone,
     email: siteConfig.email,
-    image: `${SITE_URL}/images/logo.jpg`,
+    image: `${SITE_URL}/images/logo-new.png`,
     address: {
       "@type": "PostalAddress",
       addressLocality: "Erie",
@@ -69,11 +69,11 @@ export function organizationJsonLd() {
     url: SITE_URL,
     logo: {
       "@type": "ImageObject",
-      url: `${SITE_URL}/images/logo.jpg`,
+      url: `${SITE_URL}/images/logo-new.png`,
       width: 800,
       height: 600,
     },
-    image: `${SITE_URL}/images/logo.jpg`,
+    image: `${SITE_URL}/images/logo-new.png`,
     telephone: siteConfig.phone,
     email: siteConfig.email,
   }
@@ -184,7 +184,7 @@ export function blogPostJsonLd(post: {
       name: siteConfig.name,
       logo: {
         "@type": "ImageObject",
-        url: `${SITE_URL}/images/logo.jpg`,
+        url: `${SITE_URL}/images/logo-new.png`,
       },
     },
     url: `${SITE_URL}/blog/${post.slug}`,
