@@ -17,7 +17,7 @@ const PRICING_FAQS = [
   {
     question: "How much does sprinkler repair cost in Erie, CO?",
     answer:
-      "Sprinkler repair starts at $120 for the first half hour, then $130/hour after that, plus parts. We have a half hour minimum for all repair visits.",
+      "Sprinkler repair starts at $110 for the first half hour, then $130/hour after that, plus parts. We have a half hour minimum for all repair visits.",
   },
   {
     question: "How much does sprinkler winterization cost in Northern Colorado?",
@@ -32,12 +32,12 @@ const PRICING_FAQS = [
   {
     question: "Do you charge a trip fee or service call fee?",
     answer:
-      "No hidden fees. Our repair pricing starts at $120 for the first half hour, which includes the trip to your property. You only pay for the time and parts needed.",
+      "No hidden fees. Our repair pricing starts at $110 for the first half hour, which includes the trip to your property. You only pay for the time and parts needed.",
   },
   {
     question: "How much does spring sprinkler activation cost?",
     answer:
-      "Spring activation starts at $120 with a minimum half hour charge, then $130/hour after. This includes turning on your system, checking for leaks, adjusting sprinkler heads, and minor repairs as needed.",
+      "Spring activation starts at $110 with a minimum half hour charge, then $130/hour after. This includes turning on your system, checking for leaks, adjusting sprinkler heads, and minor repairs as needed.",
   },
 ]
 
@@ -75,7 +75,7 @@ export default function PricingPage() {
                 Repair Service Pricing
               </h2>
               <div className="flex flex-col gap-3">
-                <PriceLine label="First 1/2 hour" price="$120" />
+                <PriceLine label="First 1/2 hour" price="$110" />
                 <PriceLine label="Per hour after" price="$130/hour" />
                 <p className="text-muted-foreground">
                   Half hour minimum. Plus parts.
@@ -156,7 +156,7 @@ export default function PricingPage() {
             <PricingCard
               title="Spring Activation"
               items={[
-                { label: "Minimum half hour charge", price: "$120" },
+                { label: "Minimum half hour charge", price: "$110" },
                 { label: "Per hour after", price: "$130/hour" },
               ]}
               note="Plus parts. Includes minor repairs as needed (declogging heads, nozzle replacements). Typical service: 1/2 – 1 hour."
