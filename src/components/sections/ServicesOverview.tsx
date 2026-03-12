@@ -9,19 +9,19 @@ const SERVICES = [
     title: "Irrigation System Installation",
     description: "Complete sprinkler system design and installation for residential and commercial properties. Built to last with quality parts.",
     icon: Droplets,
-    image: "/images/sprinkler-head.jpg",
+    image: "/images/sprinkler-installation.jpg",
   },
   {
     title: "Repair & Optimizations",
     description: "Fast, reliable diagnosis and repair of broken sprinkler heads, leaking valves, controller issues, and more.",
     icon: Wrench,
-    image: "/images/lawn.jpg",
+    image: "/images/sprinkler-repair.jpg",
   },
   {
     title: "Winterization & Spring Startup",
     description: "Protect your investment with professional blowouts in fall and full system activation in spring.",
     icon: Snowflake,
-    image: "/images/boulder.jpg",
+    image: "/images/sprinkler-spring.jpg",
   },
 ]
 

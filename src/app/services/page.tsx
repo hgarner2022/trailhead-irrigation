@@ -48,7 +48,7 @@ const SERVICES = [
     title: "Irrigation System Installation",
     description:
       "We design and install complete sprinkler systems tailored to your property. From planning zone coverage to trenching and wiring — we handle every step.",
-    image: "/images/sprinkler-head.jpg",
+    image: "/images/sprinkler-installation.jpg",
     features: [
       "Custom system design for your property",
       "High-efficiency sprinkler heads and rotors",
@@ -62,7 +62,7 @@ const SERVICES = [
     title: "Repair & Optimizations",
     description:
       "We diagnose and fix irrigation problems fast, keeping your lawn healthy and efficient. In addition to repairs, we handle system upgrades, optimizations, and seasonal maintenance.",
-    image: "/images/lawn.jpg",
+    image: "/images/sprinkler-repair.jpg",
     features: [
       "Sprinkler head replacement",
       "Valve and solenoid repair",
@@ -83,7 +83,7 @@ const SERVICES = [
     title: "Winterization & Spring Startup",
     description:
       "Colorado winters can destroy unprotected irrigation systems. We professionally blow out your lines in the fall and activate everything in the spring, including minor repairs as needed.",
-    image: "/images/boulder.jpg",
+    image: "/images/sprinkler-spring.jpg",
     features: [
       "Complete system blowout",
       "Zone-by-zone air purge",
@@ -125,7 +125,7 @@ export default function ServicesPage() {
       <PageBanner
         title="Our Irrigation Services"
         description="Professional sprinkler installation, repair, and seasonal maintenance for Northern Colorado."
-        backgroundImage="/images/sprinkler-head.jpg"
+        backgroundImage="/images/sprinkler-installation.jpg"
       />
 
       {SERVICES.map((service, index) => (
