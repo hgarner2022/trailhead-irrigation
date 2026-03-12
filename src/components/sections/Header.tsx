@@ -24,9 +24,9 @@ export function Header() {
     <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-border">
       {/* Main nav */}
       <div className="container-padding-x mx-auto max-w-7xl">
-        <div className="flex items-center justify-between h-24">
+        <div className="flex items-center justify-between h-28">
           <Link href="/" className="shrink-0">
-            <Image src="/images/logo-horizontal.png" alt="Trailhead Lawn & Irrigation" width={320} height={80} className="h-20 w-auto" priority />
+            <Image src="/images/logo-horizontal.png" alt="Trailhead Lawn & Irrigation" width={360} height={90} className="h-24 w-auto" priority />
           </Link>
 
           {/* Desktop nav */}
