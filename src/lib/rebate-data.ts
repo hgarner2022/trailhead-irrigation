@@ -1,4 +1,4 @@
-import { DollarSign, Droplets, Leaf, Wifi, CloudRain, Timer, Flower2 } from "lucide-react"
+import { Droplets, Leaf, Wifi, CloudRain, Timer } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
 
 export type Rebate = {
@@ -38,7 +38,7 @@ export const CITIES: CityRebateData[] = [
     name: "Erie",
     state: "CO",
     tagline: "Rebates available for Town of Erie utility customers — while funds last.",
-    badgeText: "Up to $200 in rebates",
+    badgeText: "Up to $100 in rebates",
     highlights: [
       "Smart controllers: $100 rebate",
       "High-efficiency nozzles: $3 each",
@@ -78,36 +78,6 @@ export const CITIES: CityRebateData[] = [
           "Rebate will not exceed purchase price",
         ],
       },
-      {
-        name: "Rain Barrels",
-        amount: "Up to $50 per barrel",
-        icon: CloudRain,
-        details: [
-          "Up to 2 barrels per household",
-          "Must be 55 gallons each",
-          "Rebate will not exceed purchase price",
-        ],
-      },
-      {
-        name: "High-Efficiency Toilets",
-        amount: "$100 per toilet (max $200)",
-        icon: DollarSign,
-        details: [
-          "Must be WaterSense-labeled",
-          "1.28 gallons per flush or less",
-          "Limit 2 per household",
-          "Old toilet must be recycled with proof",
-        ],
-      },
-      {
-        name: "Turf Replacement Program",
-        amount: "Up to $2,000",
-        icon: Flower2,
-        details: [
-          "Separate program for lawn-to-xeriscape conversion",
-          "Contact Erie for full details",
-        ],
-      },
     ],
     howToApply: {
       steps: [
@@ -120,13 +90,6 @@ export const CITIES: CityRebateData[] = [
     },
     slowTheFlowRequired: false,
     slowTheFlowNote: "Erie offers free Slow the Flow sprinkler consultations through Resource Central. While not required for rebates, it is a great way to identify where efficient upgrades will save the most water.",
-    additionalPrograms: [
-      {
-        name: "Turf Replacement Program",
-        description: "Up to $2,000 per household for replacing lawn with water-wise landscaping.",
-        url: "https://www.erieco.gov/574/Water-Efficiency-Rebates",
-      },
-    ],
     faqs: [
       {
         question: "Who is eligible for Erie water rebates?",
@@ -266,28 +229,6 @@ export const CITIES: CityRebateData[] = [
           "Available June through August",
         ],
       },
-      {
-        name: "Lawn Replacement Program",
-        amount: "$750 credit",
-        icon: Flower2,
-        details: [
-          "Through Resource Central partnership",
-          "Professional removal or DIY with free Garden In A Box kits",
-          "Minimum 200 sq ft of lawn replacement",
-          "At least 50% water-wise plants required",
-        ],
-      },
-      {
-        name: "Garden In A Box",
-        amount: "$25 off per kit",
-        icon: Leaf,
-        details: [
-          "Professionally designed, water-wise garden kits",
-          "Colorado-adapted perennial plants",
-          "Pre-orders: March for spring, June for late summer",
-          "Discount applied automatically at checkout",
-        ],
-      },
     ],
     howToApply: {
       steps: [
@@ -295,7 +236,6 @@ export const CITIES: CityRebateData[] = [
         "Receive a confirmation email with a link to the eligibility application.",
         "Complete the eligibility form for the program(s) you want.",
         "Resource Central reviews applications and schedules appointments (starting mid-June).",
-        "For lawn replacement, apply at resourcecentral.org/lawn/apply.",
       ],
       purchaseWindow: undefined,
       submissionDeadline: undefined,
@@ -317,10 +257,6 @@ export const CITIES: CityRebateData[] = [
       {
         question: "What does a Slow the Flow evaluation include in Louisville?",
         answer: "A trained technician visits your home for 60-90 minutes. They inspect all irrigation zones, run efficiency tests with catch cups, create a custom watering schedule for your property, and provide a detailed report with recommendations. The service is completely free for Louisville water customers.",
-      },
-      {
-        question: "What is the Louisville lawn replacement program?",
-        answer: "Louisville partners with Resource Central to offer a $750 credit toward professional lawn removal, or free Garden In A Box kits if you do it yourself. You must replace at least 200 square feet and use at least 50% water-wise plants. Apply at resourcecentral.org/lawn/apply.",
       },
     ],
   },
@@ -419,18 +355,6 @@ export const CITIES: CityRebateData[] = [
     },
     slowTheFlowRequired: false,
     slowTheFlowNote: "Longmont offers free Slow the Flow evaluations through Resource Central. After completing an evaluation, you may qualify for a $50 bonus rebate on a Wi-Fi irrigation controller (in addition to the standard rebate).",
-    additionalPrograms: [
-      {
-        name: "Lawn Replacement Program",
-        description: "$750 credit via Resource Central for professional lawn removal, or free Garden In A Box kits for DIY. Minimum 200 sq ft.",
-        url: "https://resourcecentral.org/lawn/apply",
-      },
-      {
-        name: "Coloradoscape Design Templates",
-        description: "Free downloadable landscape design templates from the City of Longmont. Designs save 10,000-40,000 gallons per year.",
-        url: "https://longmontcolorado.gov/water/water-conservation/",
-      },
-    ],
     faqs: [
       {
         question: "How long do I have to submit a Longmont rebate application?",
