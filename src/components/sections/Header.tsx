@@ -12,6 +12,7 @@ const NAV_LINKS = [
   { label: "Home", href: "/" },
   { label: "Services", href: "/services" },
   { label: "Pricing", href: "/pricing" },
+  { label: "Water Rebates", href: "/water-rebates" },
   { label: "Blog", href: "/blog" },
   { label: "Contact", href: "/contact" },
 ]
@@ -37,7 +38,7 @@ export function Header() {
                 href={link.href}
                 className={cn(
                   "px-3 py-2 text-sm font-medium transition-colors rounded-lg",
-                  pathname === link.href
+                  (pathname === link.href || (link.href !== "/" && pathname.startsWith(link.href)))
                     ? "text-primary bg-primary/5"
                     : "text-foreground hover:text-primary hover:bg-stone"
                 )}
@@ -79,7 +80,7 @@ export function Header() {
                 onClick={() => setMobileMenuOpen(false)}
                 className={cn(
                   "px-3 py-2.5 text-base font-medium rounded-lg transition-colors",
-                  pathname === link.href
+                  (pathname === link.href || (link.href !== "/" && pathname.startsWith(link.href)))
                     ? "text-primary bg-primary/5"
                     : "text-foreground hover:text-primary hover:bg-stone"
                 )}

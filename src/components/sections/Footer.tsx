@@ -7,6 +7,7 @@ const NAV_LINKS = [
   { label: "Home", href: "/" },
   { label: "Services", href: "/services" },
   { label: "Pricing", href: "/pricing" },
+  { label: "Water Rebates", href: "/water-rebates" },
   { label: "Blog", href: "/blog" },
   { label: "Contact", href: "/contact" },
 ]
