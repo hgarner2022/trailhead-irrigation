@@ -14,8 +14,9 @@ export function generateStaticParams() {
   return CITIES.map((city) => ({ slug: city.slug }))
 }
 
-export function generateMetadata({ params }: { params: { slug: string } }): Metadata {
-  const city = CITIES.find((c) => c.slug === params.slug)
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params
+  const city = CITIES.find((c) => c.slug === slug)
   if (!city) return {}
   return {
     title: `${city.name} Water Efficiency Rebates`,
@@ -24,8 +25,9 @@ export function generateMetadata({ params }: { params: { slug: string } }): Meta
   }
 }
 
-export default function CityRebatePage({ params }: { params: { slug: string } }) {
-  const city = CITIES.find((c) => c.slug === params.slug)
+export default async function CityRebatePage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params
+  const city = CITIES.find((c) => c.slug === slug)
   if (!city) notFound()
 
   return (
