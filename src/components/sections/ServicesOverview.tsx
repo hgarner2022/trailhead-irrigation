@@ -1,5 +1,5 @@
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
+import { buttonVariants } from "@/components/ui/button"
 import Image from "next/image"
 import Link from "next/link"
 import { Wrench, Droplets, Snowflake } from "lucide-react"
@@ -65,10 +65,11 @@ export function ServicesOverview() {
             ))}
           </div>
 
-          <Link href="/services">
-            <Button variant="secondary" size="lg">
-              View All Services
-            </Button>
+          <Link
+            href="/services"
+            className={buttonVariants({ variant: "secondary", size: "lg" })}
+          >
+            View All Services
           </Link>
         </div>
       </div>

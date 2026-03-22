@@ -1,4 +1,5 @@
-import { Button } from "@/components/ui/button"
+import { buttonVariants } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 import Link from "next/link"
 
 export function Hero() {
@@ -22,12 +23,21 @@ export function Hero() {
             Professional sprinkler installation, repair, and seasonal maintenance serving Weld County, Erie, Longmont, Louisville &amp; Lafayette.
           </p>
           <div className="flex flex-col sm:flex-row items-center gap-3 mt-2">
-            <Button size="lg">
-              <Link href="/contact">Contact Us</Link>
-            </Button>
-            <Button variant="outline" size="lg" className="border-white bg-transparent text-white hover:bg-white/10 hover:text-white">
-              <a href="tel:9706927270">Call (970) 692-7270</a>
-            </Button>
+            <Link
+              href="/contact"
+              className={buttonVariants({ size: "lg" })}
+            >
+              Contact Us
+            </Link>
+            <a
+              href="tel:9706927270"
+              className={cn(
+                buttonVariants({ variant: "outline", size: "lg" }),
+                "border-white bg-transparent text-white hover:bg-white/10 hover:text-white"
+              )}
+            >
+              Call (970) 692-7270
+            </a>
           </div>
         </div>
       </div>

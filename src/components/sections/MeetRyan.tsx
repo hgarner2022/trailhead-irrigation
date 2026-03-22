@@ -1,7 +1,8 @@
 "use client"
 
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { buttonVariants } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 import {
   Carousel,
   CarouselContent,
@@ -57,9 +58,12 @@ export function MeetRyan() {
                 Whether it&apos;s a full irrigation install or a quick sprinkler repair, I treat every yard like it&apos;s my own.
               </p>
             </div>
-            <Button size="lg" className="w-fit mt-2">
-              <Link href="/contact">Let&apos;s Talk About Your Irrigation System</Link>
-            </Button>
+            <Link
+              href="/contact"
+              className={cn(buttonVariants({ size: "lg" }), "w-fit mt-2")}
+            >
+              Let&apos;s Talk About Your Irrigation System
+            </Link>
           </div>
         </div>
       </div>

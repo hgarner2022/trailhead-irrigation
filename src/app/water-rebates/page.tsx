@@ -3,7 +3,7 @@ import { PageBanner } from "@/components/sections/PageBanner"
 import { CTAStrip } from "@/components/sections/CTAStrip"
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { buttonVariants } from "@/components/ui/button"
 import Link from "next/link"
 import { Wrench, Receipt, ClipboardCheck, Droplets, ExternalLink, Check } from "lucide-react"
 import { breadcrumbJsonLd, siteConfig } from "@/lib/seo"
@@ -98,9 +98,9 @@ export default function WaterRebatesPage() {
                     </ul>
                   </CardContent>
                   <CardFooter>
-                    <Button variant="default" size="sm">
+                    <span className={buttonVariants({ variant: "default", size: "sm" })}>
                       View {city.name} Rebates
-                    </Button>
+                    </span>
                   </CardFooter>
                 </Card>
               </Link>
@@ -141,17 +141,23 @@ export default function WaterRebatesPage() {
               </p>
             </CardContent>
             <CardFooter className="gap-3 flex-wrap">
-              <a href={SLOW_THE_FLOW.signupUrl} target="_blank" rel="noopener noreferrer">
-                <Button size="sm">
-                  Sign Up for 2026
-                  <ExternalLink className="h-4 w-4 ml-1" />
-                </Button>
+              <a
+                href={SLOW_THE_FLOW.signupUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={buttonVariants({ size: "sm" })}
+              >
+                Sign Up for 2026
+                <ExternalLink className="h-4 w-4 ml-1" />
               </a>
-              <a href={SLOW_THE_FLOW.url} target="_blank" rel="noopener noreferrer">
-                <Button variant="outline" size="sm">
-                  Learn More
-                  <ExternalLink className="h-4 w-4 ml-1" />
-                </Button>
+              <a
+                href={SLOW_THE_FLOW.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={buttonVariants({ variant: "outline", size: "sm" })}
+              >
+                Learn More
+                <ExternalLink className="h-4 w-4 ml-1" />
               </a>
             </CardFooter>
           </Card>

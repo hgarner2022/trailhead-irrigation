@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { BLOG_POSTS, getBlogPost } from "@/lib/blog"
-import { Button } from "@/components/ui/button"
+import { buttonVariants } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
@@ -139,12 +139,18 @@ export default async function BlogPostPage({
             Weld County, Erie & Longmont.
           </p>
           <div className="flex gap-3">
-            <Button>
-              <Link href="/contact">Contact Us</Link>
-            </Button>
-            <Button variant="outline">
-              <a href="tel:9706927270">Call (970) 692-7270</a>
-            </Button>
+            <Link
+              href="/contact"
+              className={buttonVariants()}
+            >
+              Contact Us
+            </Link>
+            <a
+              href="tel:9706927270"
+              className={buttonVariants({ variant: "outline" })}
+            >
+              Call (970) 692-7270
+            </a>
           </div>
         </div>
       </div>

@@ -4,7 +4,7 @@ import { CTAStrip } from "@/components/sections/CTAStrip"
 import { WaterSavingsCalculator } from "@/components/sections/WaterSavingsCalculator"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
 import Link from "next/link"
 import Image from "next/image"
 import {
@@ -33,12 +33,12 @@ const WATER_EFFICIENCY_FAQS = [
   {
     question: "What are MPR nozzles and why are they more efficient?",
     answer:
-      'MPR (Matched Precipitation Rate) nozzles are rotary multi-stream nozzles that apply water at about 1/4 the rate of standard spray nozzles  — roughly 0.4 inches per hour. This slower application gives water time to soak in instead of running off, and the matched precipitation ensures every part of the zone gets the same amount of water regardless of the arc or radius.',
+      'MPR (Matched Precipitation Rate) nozzles are rotary multi-stream nozzles that apply water at about 1/4 the rate of standard spray nozzles — roughly 0.4 inches per hour. This slower application gives water time to soak in instead of running off, and the matched precipitation ensures every part of the zone gets the same amount of water regardless of the arc or radius.',
   },
   {
     question: "How long does a Rachio installation take?",
     answer:
-      "A typical Rachio smart controller installation takes about 30 minutes if your existing wiring is in good condition. We handle everything  — mounting, wiring, Wi-Fi setup, and programming your zones.",
+      "A typical Rachio smart controller installation takes about 30 minutes if your existing wiring is in good condition. We handle everything — mounting, wiring, Wi-Fi setup, and programming your zones.",
   },
   {
     question: "Do I need a system inspection before getting upgrades?",
@@ -162,21 +162,21 @@ export default function WaterEfficiencyPage() {
                 Includes controller and professional installation
               </p>
               <div className="flex flex-col sm:flex-row items-start gap-3">
-                <Link href="/contact">
-                  <Button size="lg">
-                    Book Installation
-                    <ArrowRight className="w-4 h-4" />
-                  </Button>
+                <Link
+                  href="/contact"
+                  className={buttonVariants({ size: "lg" })}
+                >
+                  Book Installation
+                  <ArrowRight className="w-4 h-4" />
                 </Link>
-                <Button variant="link" size="lg" asChild>
-                  <a
-                    href="https://www.rachio.com/rebates/"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    Check Rachio Rebates &rarr;
-                  </a>
-                </Button>
+                <a
+                  href="https://www.rachio.com/rebates/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={buttonVariants({ variant: "link", size: "lg" })}
+                >
+                  Check Rachio Rebates &rarr;
+                </a>
               </div>
             </div>
           </div>
@@ -235,11 +235,12 @@ export default function WaterEfficiencyPage() {
               <p className="text-sm text-muted-foreground mb-6">
                 Materials not included. Final price based on system inspection.
               </p>
-              <Link href="/contact">
-                <Button size="lg">
-                  Request Estimate
-                  <ArrowRight className="w-4 h-4" />
-                </Button>
+              <Link
+                href="/contact"
+                className={buttonVariants({ size: "lg" })}
+              >
+                Request Estimate
+                <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
           </div>
@@ -384,18 +385,20 @@ export default function WaterEfficiencyPage() {
               $50 off any water efficiency install
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-              <Link href="/contact">
-                <Button size="lg">
-                  Schedule an Inspection
-                  <ArrowRight className="w-4 h-4" />
-                </Button>
+              <Link
+                href="/contact"
+                className={buttonVariants({ size: "lg" })}
+              >
+                Schedule an Inspection
+                <ArrowRight className="w-4 h-4" />
               </Link>
-              <Button variant="outline" size="lg" asChild>
-                <a href="tel:9706927270">
-                  <Phone className="w-4 h-4" />
-                  Call (970) 692-7270
-                </a>
-              </Button>
+              <a
+                href="tel:9706927270"
+                className={buttonVariants({ variant: "outline", size: "lg" })}
+              >
+                <Phone className="w-4 h-4" />
+                Call (970) 692-7270
+              </a>
             </div>
           </div>
         </div>

@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
 import {
@@ -128,10 +128,11 @@ export function MaintenancePlans() {
                 </div>
               </div>
 
-              <Link href="/contact" className="mt-auto">
-                <Button variant="secondary" size="lg" className="w-full">
-                  Get Started
-                </Button>
+              <Link
+                href="/contact"
+                className={cn(buttonVariants({ variant: "secondary", size: "lg" }), "mt-auto w-full")}
+              >
+                Get Started
               </Link>
             </CardContent>
           </Card>
@@ -188,11 +189,12 @@ export function MaintenancePlans() {
                 </div>
               </div>
 
-              <Link href="/contact" className="mt-auto">
-                <Button size="lg" className="w-full">
-                  Get Started
-                  <ArrowRight className="w-4 h-4" />
-                </Button>
+              <Link
+                href="/contact"
+                className={cn(buttonVariants({ size: "lg" }), "mt-auto w-full")}
+              >
+                Get Started
+                <ArrowRight className="w-4 h-4" />
               </Link>
             </CardContent>
           </Card>

@@ -4,7 +4,7 @@ import { CTAStrip } from "@/components/sections/CTAStrip"
 import { MaintenancePlans } from "@/components/sections/MaintenancePlans"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
 import Link from "next/link"
 import {
   Sun,
@@ -330,18 +330,20 @@ export default function PricingPage() {
               for smart controllers, MPR nozzles, and more.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-              <Link href="/contact">
-                <Button size="lg">
-                  Request a Free Quote
-                  <ArrowRight className="w-4 h-4" />
-                </Button>
+              <Link
+                href="/contact"
+                className={buttonVariants({ size: "lg" })}
+              >
+                Request a Free Quote
+                <ArrowRight className="w-4 h-4" />
               </Link>
-              <Button variant="outline" size="lg" asChild>
-                <a href="tel:9706927270">
-                  <Phone className="w-4 h-4" />
-                  (970) 692-7270
-                </a>
-              </Button>
+              <a
+                href="tel:9706927270"
+                className={buttonVariants({ variant: "outline", size: "lg" })}
+              >
+                <Phone className="w-4 h-4" />
+                (970) 692-7270
+              </a>
             </div>
           </div>
         </div>
@@ -406,8 +408,6 @@ export default function PricingPage() {
 }
 
 /* ─── Helper Components ─── */
-
-import { cn } from "@/lib/utils"
 
 function ServiceItem({ children }: { children: React.ReactNode }) {
   return (

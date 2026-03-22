@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 import { PageBanner } from "@/components/sections/PageBanner"
 import { CTAStrip } from "@/components/sections/CTAStrip"
-import { Button } from "@/components/ui/button"
+import { buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import Image from "next/image"
 import Link from "next/link"
@@ -159,9 +159,12 @@ export default function ServicesPage() {
                     </li>
                   ))}
                 </ul>
-                <Button size="lg" className="w-fit mt-2">
-                  <Link href="/contact">Contact Us</Link>
-                </Button>
+                <Link
+                  href="/contact"
+                  className={cn(buttonVariants({ size: "lg" }), "w-fit mt-2")}
+                >
+                  Contact Us
+                </Link>
               </div>
 
               {/* Image */}

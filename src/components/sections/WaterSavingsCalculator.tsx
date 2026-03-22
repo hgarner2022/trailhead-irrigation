@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
 import {
@@ -274,11 +274,12 @@ export function WaterSavingsCalculator() {
                     )}
                   </div>
 
-                  <Link href="/contact" className="mt-2">
-                    <Button size="lg" className="w-full">
-                      Get a System Inspection
-                      <ArrowRight className="w-4 h-4" />
-                    </Button>
+                  <Link
+                    href="/contact"
+                    className={cn(buttonVariants({ size: "lg" }), "mt-2 w-full")}
+                  >
+                    Get a System Inspection
+                    <ArrowRight className="w-4 h-4" />
                   </Link>
                 </>
               ) : (
@@ -294,11 +295,12 @@ export function WaterSavingsCalculator() {
                     job! Consider a drip zone conversion or yard layout evaluation
                     for additional savings.
                   </p>
-                  <Link href="/contact" className="mt-2">
-                    <Button>
-                      Schedule an Evaluation
-                      <ArrowRight className="w-4 h-4" />
-                    </Button>
+                  <Link
+                    href="/contact"
+                    className={cn(buttonVariants(), "mt-2")}
+                  >
+                    Schedule an Evaluation
+                    <ArrowRight className="w-4 h-4" />
                   </Link>
                 </div>
               )}

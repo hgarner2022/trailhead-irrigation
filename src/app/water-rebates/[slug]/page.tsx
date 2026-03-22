@@ -4,7 +4,7 @@ import { PageBanner } from "@/components/sections/PageBanner"
 import { CTAStrip } from "@/components/sections/CTAStrip"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { buttonVariants } from "@/components/ui/button"
 import Link from "next/link"
 import { ExternalLink, AlertTriangle, Check } from "lucide-react"
 import { breadcrumbJsonLd, faqJsonLd, siteConfig } from "@/lib/seo"
@@ -152,11 +152,14 @@ export default async function CityRebatePage({ params }: { params: Promise<{ slu
             ))}
           </ol>
           <div className="flex justify-center mt-8">
-            <a href={city.applicationUrl} target="_blank" rel="noopener noreferrer">
-              <Button size="lg">
-                {city.applicationLabel}
-                <ExternalLink className="h-4 w-4 ml-2" />
-              </Button>
+            <a
+              href={city.applicationUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={buttonVariants({ size: "lg" })}
+            >
+              {city.applicationLabel}
+              <ExternalLink className="h-4 w-4 ml-2" />
             </a>
           </div>
         </div>
@@ -181,11 +184,14 @@ export default async function CityRebatePage({ params }: { params: Promise<{ slu
               <p className="text-muted-foreground leading-relaxed mb-3">
                 {city.slowTheFlowNote}
               </p>
-              <a href={SLOW_THE_FLOW.signupUrl} target="_blank" rel="noopener noreferrer">
-                <Button variant="outline" size="sm">
-                  Sign Up at Resource Central
-                  <ExternalLink className="h-4 w-4 ml-1" />
-                </Button>
+              <a
+                href={SLOW_THE_FLOW.signupUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={buttonVariants({ variant: "outline", size: "sm" })}
+              >
+                Sign Up at Resource Central
+                <ExternalLink className="h-4 w-4 ml-1" />
               </a>
             </CardContent>
           </Card>
@@ -201,11 +207,14 @@ export default async function CityRebatePage({ params }: { params: Promise<{ slu
                   {program.description}
                 </p>
                 {program.url && (
-                  <a href={program.url} target="_blank" rel="noopener noreferrer">
-                    <Button variant="outline" size="sm">
-                      Learn More
-                      <ExternalLink className="h-4 w-4 ml-1" />
-                    </Button>
+                  <a
+                    href={program.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={buttonVariants({ variant: "outline", size: "sm" })}
+                  >
+                    Learn More
+                    <ExternalLink className="h-4 w-4 ml-1" />
                   </a>
                 )}
               </CardContent>
