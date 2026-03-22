@@ -6,14 +6,13 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
+import Image from "next/image"
 import {
   CheckCircle2,
   ArrowRight,
   Phone,
   Droplets,
   LayoutGrid,
-  Wifi,
-  Cpu,
 } from "lucide-react"
 import { faqJsonLd, breadcrumbJsonLd, siteConfig } from "@/lib/seo"
 
@@ -84,37 +83,23 @@ export default function WaterEfficiencyPage() {
 
       <PageBanner
         title="Water Efficiency Upgrades"
-        description="Save water, save money \u2014 upgrade your irrigation system with proven technology."
+        description="Northern Colorado's tiered water rates mean every wasted gallon costs more than the last. The right upgrades pay for themselves through lower water bills — and a healthier lawn that uses only what it needs."
       />
 
-      {/* ════════════════════════════════════════════
-          INTRO + INSPECTION CALLOUT
-          ════════════════════════════════════════════ */}
-      <section className="bg-background section-padding-y">
-        <div className="container-padding-x mx-auto max-w-7xl">
-          <div className="max-w-3xl mx-auto text-center">
-            <p className="text-lg text-muted-foreground leading-relaxed mb-8">
-              Northern Colorado&apos;s tiered water rates mean every wasted gallon
-              costs more than the last. The right upgrades pay for themselves
-              through lower water bills &mdash; and a healthier lawn that uses
-              only what it needs.
-            </p>
-            <div className="inline-flex flex-col sm:flex-row items-center gap-4 bg-primary/5 border border-primary/20 rounded-xl px-6 py-4">
-              <div className="text-center sm:text-left">
-                <p className="font-semibold text-foreground">
-                  Start with a System Inspection &mdash;{" "}
-                  <span className="text-primary">$110</span>
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Free with spring turn-on &bull; Earns{" "}
-                  <strong className="text-foreground">$50 off</strong> any water
-                  efficiency install
-                </p>
-              </div>
-            </div>
-          </div>
+      {/* Inspection callout bar — sits right below the banner */}
+      <div className="bg-navy border-b border-white/10">
+        <div className="container-padding-x mx-auto max-w-7xl py-4 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-6 text-center">
+          <p className="text-white font-medium text-sm sm:text-base">
+            Start with a System Inspection — <span className="text-primary-light">$110</span>
+            <span className="text-white/60 mx-2">|</span>
+            <span className="text-success font-semibold">Free</span> with spring turn-on
+          </p>
+          <span className="hidden sm:inline text-white/30">•</span>
+          <p className="text-white/70 text-sm">
+            Earns <strong className="text-white">$50 off</strong> any water efficiency install
+          </p>
         </div>
-      </section>
+      </div>
 
       {/* ════════════════════════════════════════════
           UPGRADE 1: RACHIO 3 SMART CONTROLLER
@@ -122,30 +107,38 @@ export default function WaterEfficiencyPage() {
       <section className="bg-cream section-padding-y">
         <div className="container-padding-x mx-auto max-w-7xl">
           <div className="flex flex-col md:flex-row items-center gap-8 md:gap-16">
-            {/* Image placeholder */}
+            {/* Image */}
             <div className="flex-1 w-full">
-              <div className="relative aspect-[4/3] rounded-xl overflow-hidden bg-gradient-to-br from-navy/10 to-primary/10 flex items-center justify-center">
-                <Wifi className="w-16 h-16 text-primary/30" />
+              <div className="relative aspect-[4/3] rounded-xl overflow-hidden">
+                <Image
+                  src="/images/healthy-lawn-closeup.jpg"
+                  alt="Healthy green lawn maintained with smart irrigation"
+                  fill
+                  className="object-cover"
+                />
               </div>
             </div>
 
             {/* Content */}
             <div className="flex-1">
               <Badge variant="green" className="mb-3">
-                Save up to 30%
+                Reduce irrigation water use by up to 30%
               </Badge>
-              <h3 className="text-2xl md:text-3xl font-bold text-foreground mb-4">
+              <h3 className="text-2xl md:text-3xl font-bold text-foreground mb-3">
                 Rachio 3 Smart Controller
               </h3>
+              <p className="text-muted-foreground mb-5">
+                Replaces your traditional timer with a Wi-Fi controller that automatically adjusts watering based on real-time weather, soil type, and plant needs. EPA WaterSense data shows an average <strong className="text-foreground">32% reduction in outdoor water use</strong> &mdash; saving a typical Colorado home 8,000&ndash;15,000 gallons per year.
+              </p>
               <ul className="flex flex-col gap-2.5 mb-6">
                 <FeatureItem>
-                  Weather Intelligence (rain/wind/freeze skip)
+                  Weather Intelligence &mdash; skips watering before rain, wind, or freeze
                 </FeatureItem>
-                <FeatureItem>Seasonal auto-adjust</FeatureItem>
-                <FeatureItem>App control from anywhere</FeatureItem>
+                <FeatureItem>Automatically adjusts run times each season</FeatureItem>
+                <FeatureItem>Control and monitor your system from your phone</FeatureItem>
                 <FeatureItem>EPA WaterSense certified</FeatureItem>
                 <FeatureItem>Works with Alexa &amp; Google Home</FeatureItem>
-                <FeatureItem>No monthly fees</FeatureItem>
+                <FeatureItem>No monthly subscription fees</FeatureItem>
               </ul>
               <div className="mb-2">
                 <div className="flex items-baseline gap-2">
@@ -196,30 +189,38 @@ export default function WaterEfficiencyPage() {
       <section className="bg-background section-padding-y">
         <div className="container-padding-x mx-auto max-w-7xl">
           <div className="flex flex-col md:flex-row-reverse items-center gap-8 md:gap-16">
-            {/* Image placeholder */}
+            {/* Image */}
             <div className="flex-1 w-full">
-              <div className="relative aspect-[4/3] rounded-xl overflow-hidden bg-gradient-to-br from-navy/10 to-primary/10 flex items-center justify-center">
-                <Droplets className="w-16 h-16 text-primary/30" />
+              <div className="relative aspect-[4/3] rounded-xl overflow-hidden">
+                <Image
+                  src="/images/lawn-sprinkler-water.jpg"
+                  alt="Sprinkler watering a well-maintained lawn"
+                  fill
+                  className="object-cover"
+                />
               </div>
             </div>
 
             {/* Content */}
             <div className="flex-1">
               <Badge variant="green" className="mb-3">
-                30&ndash;50% More Efficient
+                Use 30&ndash;50% less water per zone
               </Badge>
-              <h3 className="text-2xl md:text-3xl font-bold text-foreground mb-4">
+              <h3 className="text-2xl md:text-3xl font-bold text-foreground mb-3">
                 MPR Nozzle Retrofit
               </h3>
+              <p className="text-muted-foreground mb-5">
+                MPR (Matched Precipitation Rate) nozzles replace your standard spray heads with rotary multi-stream nozzles that apply water at roughly <strong className="text-foreground">1/4 the rate</strong> &mdash; about 0.4 inches per hour instead of 1.5+. Water soaks in instead of running off, and every part of the zone gets the same amount regardless of arc or distance.
+              </p>
               <ul className="flex flex-col gap-2.5 mb-6">
                 <FeatureItem>
-                  Matched precipitation across all arcs
+                  Even coverage across all arcs and radii &mdash; no dry spots or puddles
                 </FeatureItem>
                 <FeatureItem>
-                  Slower application prevents runoff
+                  Slower application rate lets water absorb, not run off
                 </FeatureItem>
-                <FeatureItem>Works with existing spray bodies</FeatureItem>
-                <FeatureItem>Ideal for slopes and clay soil</FeatureItem>
+                <FeatureItem>Swap onto your existing spray bodies &mdash; no trenching needed</FeatureItem>
+                <FeatureItem>Especially effective on slopes and clay soil</FeatureItem>
               </ul>
               <div className="mb-2">
                 <div className="flex items-baseline gap-2">
@@ -263,20 +264,23 @@ export default function WaterEfficiencyPage() {
                   </h3>
                 </div>
                 <Badge variant="green" className="w-fit">
-                  Up to 70% Savings
+                  Up to 70% less water than spray heads
                 </Badge>
+                <p className="text-sm text-muted-foreground">
+                  Delivers water directly to each plant&apos;s root zone through low-pressure tubing. Drip systems are roughly 90% efficient compared to 60&ndash;75% for traditional spray heads.
+                </p>
                 <ul className="flex flex-col gap-2.5">
                   <FeatureItem>
-                    Pressure reducer for precise delivery
+                    Pressure reducer ensures consistent, low-flow delivery
                   </FeatureItem>
                   <FeatureItem>
-                    1/4&quot; drip tubing direct to each plant
+                    1/4&quot; drip tubing runs directly to each plant
                   </FeatureItem>
                   <FeatureItem>
-                    Eliminates overspray and evaporation
+                    Eliminates overspray, wind drift, and evaporation
                   </FeatureItem>
                   <FeatureItem>
-                    ~90% efficiency vs 60&ndash;75% for spray
+                    Ideal for flower beds, shrubs, trees, and garden areas
                   </FeatureItem>
                 </ul>
                 <div className="mt-auto pt-2">
