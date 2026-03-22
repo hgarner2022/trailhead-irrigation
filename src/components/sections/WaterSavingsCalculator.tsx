@@ -221,7 +221,7 @@ export function WaterSavingsCalculator() {
               {results.needsUpgrades ? (
                 <>
                   <h3 className="text-lg font-semibold text-foreground">
-                    Your Estimated Savings
+                    Your Estimated Savings*
                   </h3>
 
                   <div className="grid grid-cols-2 gap-4">
@@ -278,7 +278,7 @@ export function WaterSavingsCalculator() {
                     href="/contact"
                     className={cn(buttonVariants({ size: "lg" }), "mt-2 w-full")}
                   >
-                    Get a System Inspection
+                    Get a Free Estimate
                     <ArrowRight className="w-4 h-4" />
                   </Link>
                 </>
@@ -307,6 +307,17 @@ export function WaterSavingsCalculator() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Disclaimer */}
+        <p className="text-center text-white/40 text-xs mt-6 max-w-2xl mx-auto">
+          * These numbers are estimates based on typical usage and your city&apos;s
+          published water rates. Actual savings depend on your property, soil
+          type, sun exposure, and watering habits.{" "}
+          <Link href="/contact" className="text-white/60 underline underline-offset-2 hover:text-white/80 transition-colors">
+            Contact us
+          </Link>{" "}
+          for a personalized evaluation.
+        </p>
       </div>
     </section>
   )
