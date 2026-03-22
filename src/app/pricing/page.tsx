@@ -15,7 +15,6 @@ import {
   ArrowRight,
   Phone,
   Clock,
-  ClipboardCheck,
   Droplets,
 } from "lucide-react"
 import { faqJsonLd, breadcrumbJsonLd, siteConfig } from "@/lib/seo"
@@ -46,7 +45,7 @@ const PRICING_FAQS = [
   {
     question: "What's included in the maintenance plans?",
     answer:
-      "The Basic Plan includes spring turn-on, winterization, priority scheduling, 7% off all services, and 10% off system inspections. The Pro Plan adds a mid-season inspection and upgrades the discounts to 12% off all services and 15% off system inspections. Both plans save you money compared to booking services individually.",
+      "The Basic Plan includes spring turn-on, winterization, priority scheduling, and 7% off all services. The Pro Plan adds a mid-season inspection and upgrades the discount to 12% off all services. Both plans save you money compared to booking services individually.",
   },
   {
     question: "Do you install new irrigation systems?",
@@ -203,43 +202,6 @@ export default function PricingPage() {
                 </ul>
               </CardContent>
             </Card>
-          </div>
-        </div>
-      </section>
-
-      {/* ════════════════════════════════════════════
-          SYSTEM INSPECTION CALLOUT
-          ════════════════════════════════════════════ */}
-      <section className="bg-cream section-padding-y">
-        <div className="container-padding-x mx-auto max-w-4xl">
-          <div className="bg-background rounded-2xl border border-border p-8 md:p-10 flex flex-col md:flex-row items-start gap-6 md:gap-10">
-            <div className="flex items-center justify-center w-14 h-14 rounded-xl bg-primary/10 shrink-0">
-              <ClipboardCheck className="w-7 h-7 text-primary" />
-            </div>
-            <div className="flex-1">
-              <h3 className="text-xl md:text-2xl font-bold text-foreground mb-2">
-                System Inspection &amp; Efficiency Evaluation
-              </h3>
-              <div className="flex items-baseline gap-2 mb-3">
-                <span className="text-3xl font-bold text-foreground">$110</span>
-              </div>
-              <ul className="flex flex-col gap-2 text-sm text-muted-foreground mb-4">
-                <ServiceItem>Comprehensive inspection of all zones and components</ServiceItem>
-                <ServiceItem>Water efficiency analysis and recommendations</ServiceItem>
-                <li className="flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-primary shrink-0 mt-0.5" />
-                  <span className="font-medium text-primary">Free with spring turn-on</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-primary shrink-0 mt-0.5" />
-                  <span className="font-medium text-primary">Earns $50 off any water efficiency install</span>
-                </li>
-              </ul>
-              <Link href="/water-efficiency" className="inline-flex items-center gap-2 text-sm font-semibold text-primary hover:text-primary-dark transition-colors">
-                Learn about Water Efficiency Upgrades
-                <ArrowRight className="w-4 h-4" />
-              </Link>
-            </div>
           </div>
         </div>
       </section>
