@@ -17,10 +17,10 @@ import {
 } from "lucide-react"
 
 const ZONE_TIERS = [
-  { value: "1-7", label: "1–7 zones", basic: 203, pro: 293 },
-  { value: "8-10", label: "8–10 zones", basic: 230, pro: 330 },
-  { value: "11-13", label: "11–13 zones", basic: 255, pro: 365 },
-  { value: "14-16", label: "14–16 zones", basic: 280, pro: 400 },
+  { value: "1-7", label: "1–7 zones", basic: 214, pro: 311 },
+  { value: "8-10", label: "8–10 zones", basic: 271, pro: 397 },
+  { value: "11-13", label: "11–13 zones", basic: 328, pro: 483 },
+  { value: "14-16", label: "14–16 zones", basic: 385, pro: 570 },
 ]
 
 export function MaintenancePlans() {

@@ -4,7 +4,7 @@ import { CTAStrip } from "@/components/sections/CTAStrip"
 import { MaintenancePlans } from "@/components/sections/MaintenancePlans"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Button, buttonVariants } from "@/components/ui/button"
+import { buttonVariants } from "@/components/ui/button"
 import Link from "next/link"
 import {
   Sun,
@@ -38,9 +38,9 @@ const PRICING_FAQS = [
       "Winterization (sprinkler blowout) costs $95 for up to 7 zones, plus $8 for each additional zone. We recommend scheduling between mid-October and early November.",
   },
   {
-    question: "What does your repair rate include?",
+    question: "How do I get a repair quote?",
     answer:
-      "Repairs are $130/hour plus materials. This covers troubleshooting, repairs, and system adjustments. No hidden fees — you only pay for the time and materials needed.",
+      "Contact us to describe the issue and we will provide a quote. Repair pricing depends on the scope of work and materials needed. No hidden fees.",
   },
   {
     question: "What's included in the maintenance plans?",
@@ -55,7 +55,7 @@ const PRICING_FAQS = [
   {
     question: "Do you charge a trip fee or service call fee?",
     answer:
-      "No hidden fees. Our repair pricing is $130/hour plus materials, which includes the trip to your property.",
+      "No hidden fees. Contact us for a repair quote — the trip to your property is included.",
   },
   {
     question: "What areas do you serve?",
@@ -217,62 +217,53 @@ export default function PricingPage() {
                 Repairs &amp; Service
               </Badge>
               <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-                Expert Repairs, Simple Pricing
+                Expert Repairs
               </h2>
               <p className="text-muted-foreground mb-6">
-                Troubleshooting, repairs, and system adjustments — no diagnostic fees, no hidden charges.
+                Troubleshooting, repairs, and system adjustments. Contact us for a quote tailored to your situation.
               </p>
-              <div className="flex items-baseline gap-2 mb-2">
-                <span className="text-4xl font-bold text-foreground">$130</span>
-                <span className="text-muted-foreground text-lg">/hour</span>
-              </div>
-              <p className="text-sm text-muted-foreground mb-6">Plus materials at cost</p>
-              <ul className="flex flex-col gap-3">
+              <ul className="flex flex-col gap-3 mb-8">
                 <RepairFeature icon={<Wrench className="w-4 h-4" />}>
-                  Troubleshooting &amp; diagnostics included
-                </RepairFeature>
-                <RepairFeature icon={<Clock className="w-4 h-4" />}>
-                  No trip fee — hourly rate covers everything
+                  Troubleshooting &amp; diagnostics
                 </RepairFeature>
                 <RepairFeature icon={<CheckCircle2 className="w-4 h-4" />}>
                   Heads, valves, lines, controllers &amp; wiring
                 </RepairFeature>
+                <RepairFeature icon={<Clock className="w-4 h-4" />}>
+                  No hidden fees
+                </RepairFeature>
               </ul>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Link
+                  href="/contact"
+                  className={buttonVariants({ size: "lg" })}
+                >
+                  Request a Quote
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+                <a
+                  href="tel:9706927270"
+                  className={buttonVariants({ variant: "outline", size: "lg" })}
+                >
+                  <Phone className="w-4 h-4" />
+                  (970) 692-7270
+                </a>
+              </div>
             </div>
             <div className="flex-1 w-full">
               <div className="bg-cream rounded-xl border border-border p-6 md:p-8">
                 <h3 className="font-semibold text-foreground mb-4">Common Repairs</h3>
                 <div className="flex flex-col gap-3">
-                  <RepairLine label="Sprinkler head replacement" note="Typically 15–30 min + part" />
-                  <RepairLine label="Valve repair or replacement" note="Typically 30–60 min + part" />
-                  <RepairLine label="Line break / pipe repair" note="Varies by depth &amp; access" />
-                  <RepairLine label="Controller troubleshooting" note="Typically 15–45 min" />
-                  <RepairLine label="Wiring repair" note="Typically 30–60 min + materials" />
+                  <RepairLine label="Sprinkler head replacement" />
+                  <RepairLine label="Valve repair or replacement" />
+                  <RepairLine label="Line break / pipe repair" />
+                  <RepairLine label="Controller troubleshooting" />
+                  <RepairLine label="Wiring repair" />
                 </div>
                 <div className="mt-5 pt-4 border-t border-border">
                   <p className="text-xs text-muted-foreground">
-                    <strong className="text-foreground">Heavy root areas:</strong> Work in areas with heavy roots may incur an increased rate of $150/hour.
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-2">
                     <strong className="text-foreground">Note:</strong> We do not service sprinkler systems with PVC pipes going to the spray heads. Please verify your piping type before requesting service.
                   </p>
-                  <p className="text-xs text-muted-foreground mt-2">Materials not included if repairs are needed.</p>
-                </div>
-                <div className="mt-5 flex flex-col sm:flex-row gap-3">
-                  <Link
-                    href="/contact"
-                    className={buttonVariants({ size: "lg" })}
-                  >
-                    Request a Quote
-                    <ArrowRight className="w-4 h-4" />
-                  </Link>
-                  <a
-                    href="tel:9706927270"
-                    className={buttonVariants({ variant: "outline", size: "lg" })}
-                  >
-                    <Phone className="w-4 h-4" />
-                    (970) 692-7270
-                  </a>
                 </div>
               </div>
             </div>
@@ -411,11 +402,11 @@ function RepairFeature({
   )
 }
 
-function RepairLine({ label, note }: { label: string; note: string }) {
+function RepairLine({ label }: { label: string }) {
   return (
-    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-2 border-b border-border last:border-0 gap-1">
+    <div className="flex items-center gap-2 py-2 border-b border-border last:border-0">
+      <CheckCircle2 className="w-4 h-4 text-success shrink-0" />
       <span className="text-foreground font-medium text-sm">{label}</span>
-      <span className="text-xs text-muted-foreground">{note}</span>
     </div>
   )
 }

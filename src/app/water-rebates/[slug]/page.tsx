@@ -6,7 +6,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { buttonVariants } from "@/components/ui/button"
 import Link from "next/link"
-import { ExternalLink, AlertTriangle, Check } from "lucide-react"
+import { ExternalLink, Check } from "lucide-react"
 import { breadcrumbJsonLd, faqJsonLd, siteConfig } from "@/lib/seo"
 import { CITIES, SLOW_THE_FLOW } from "@/lib/rebate-data"
 
@@ -66,22 +66,6 @@ export default async function CityRebatePage({ params }: { params: Promise<{ slu
           <span className="text-foreground font-medium">{city.name}</span>
         </nav>
       </div>
-
-      {/* Disclaimer */}
-      <section className="bg-background">
-        <div className="container-padding-x mx-auto max-w-7xl pt-8">
-          <div className="flex items-start gap-3 rounded-lg bg-primary/5 border border-primary/20 p-4">
-            <AlertTriangle className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-            <p className="text-sm text-muted-foreground">
-              All rebate programs are first come, first served and subject to available funding. Program details, amounts, and eligibility can change at any time. Information shown here was last reviewed March 2026. Please verify current details directly with your city before making purchasing decisions.{" "}
-              <a href={city.officialUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">
-                Visit {city.officialLabel} for the latest information
-                <ExternalLink className="h-3 w-3 inline ml-1" />
-              </a>
-            </p>
-          </div>
-        </div>
-      </section>
 
       {/* Rebate Cards */}
       <section className="bg-background section-padding-y">
