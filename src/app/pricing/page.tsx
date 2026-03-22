@@ -45,7 +45,7 @@ const PRICING_FAQS = [
   {
     question: "What's included in the maintenance plans?",
     answer:
-      "The Basic Plan includes spring turn-on, winterization, priority scheduling, and 7% off all services. The Pro Plan adds a mid-season inspection and upgrades the discount to 12% off all services. Both plans save you money compared to booking services individually.",
+      "The Basic Plan includes spring turn-on, winterization, priority scheduling, and 7% off all services. The Pro Plan adds a sprinkler inspection & tune-up and upgrades the discount to 12% off all services. Both plans save you money compared to booking services individually.",
   },
   {
     question: "Do you install new irrigation systems?",
@@ -144,14 +144,14 @@ export default function PricingPage() {
               </CardContent>
             </Card>
 
-            {/* Mid-Season Inspection */}
+            {/* Sprinkler Inspection & Tune-Up */}
             <Card className="relative overflow-hidden border-border hover:border-primary/30 transition-colors">
               <CardHeader className="pb-3">
                 <div className="flex items-center gap-3 mb-2">
                   <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10">
                     <Search className="w-5 h-5 text-primary" />
                   </div>
-                  <CardTitle className="text-lg">Mid-Season Inspection</CardTitle>
+                  <CardTitle className="text-lg">Sprinkler Inspection & Tune-Up</CardTitle>
                 </div>
               </CardHeader>
               <CardContent className="flex flex-col gap-4">

@@ -172,7 +172,7 @@ export function MaintenancePlans() {
                   Everything in Basic, plus:
                 </p>
                 <div className="flex flex-col gap-2.5">
-                  <PlanFeature highlight>Mid-season inspection</PlanFeature>
+                  <PlanFeature highlight>Sprinkler inspection & tune-up</PlanFeature>
                   <PlanFeature icon={<CalendarCheck className="w-4 h-4 text-success" />}>
                     Priority scheduling
                   </PlanFeature>
