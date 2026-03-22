@@ -119,7 +119,7 @@ export function MaintenancePlans() {
                     Priority scheduling
                   </PlanFeature>
                   <PlanFeature icon={<Percent className="w-4 h-4 text-success" />}>
-                    7% off all services
+                    5% off all services
                   </PlanFeature>
                 </div>
               </div>
@@ -177,7 +177,7 @@ export function MaintenancePlans() {
                     Priority scheduling
                   </PlanFeature>
                   <PlanFeature icon={<Percent className="w-4 h-4 text-success" />}>
-                    12% off all services
+                    10% off all services
                   </PlanFeature>
                 </div>
               </div>
@@ -194,10 +194,15 @@ export function MaintenancePlans() {
         </div>
 
         {/* Note */}
-        <div className="text-center mt-8">
+        <div className="text-center mt-8 max-w-2xl mx-auto">
           <p className="text-white/50 text-sm">
             All plans are annual. No contracts — cancel anytime. Priority
             scheduling means guaranteed service windows during peak season.
+          </p>
+          <p className="text-white/40 text-xs mt-3">
+            Plans cover only the services listed above. Cost of materials is not
+            included. Any additional repairs or work beyond what is listed will
+            be invoiced separately.
           </p>
         </div>
       </div>

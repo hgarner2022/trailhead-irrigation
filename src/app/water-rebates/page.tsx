@@ -65,6 +65,9 @@ export default function WaterRebatesPage() {
           <p className="text-lg text-foreground font-medium mt-4">
             Trailhead does the irrigation work and provides your receipts. You apply for the rebate through your city.
           </p>
+          <p className="text-sm text-muted-foreground mt-4 max-w-2xl mx-auto">
+            <strong>Please note:</strong> All rebate programs are first come, first served and subject to available funding. Program details, amounts, and eligibility requirements are set by each city and can change at any time. We encourage you to verify current information directly with your city before making purchasing decisions.
+          </p>
         </div>
       </section>
 

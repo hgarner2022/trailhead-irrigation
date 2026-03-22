@@ -110,9 +110,9 @@ export const CITIES: CityRebateData[] = [
     name: "Lafayette",
     state: "CO",
     tagline: "Rebates available for City of Lafayette residents — while funds last.",
-    badgeText: "Up to $100 + free installs",
+    badgeText: "Rebates + free installs",
     highlights: [
-      "Smart controller rebate: up to $100",
+      "Smart controller rebate available",
       "Free Rachio + rain sensor install (limited)",
       "Nozzle rebates: $3 each",
     ],
@@ -123,13 +123,14 @@ export const CITIES: CityRebateData[] = [
     rebates: [
       {
         name: "WaterSense Smart Controller",
-        amount: "Up to $100",
+        amount: "Rebate available",
         icon: Wifi,
         details: [
           "Must be WaterSense certified",
           "Purchase and install, then submit receipt for rebate",
-          "Up to $100 per unit credited to utility bill",
+          "Credit applied to utility bill",
           "Separate from the free Rachio install program below",
+          "Contact the City of Lafayette for current rebate amounts",
         ],
       },
       {

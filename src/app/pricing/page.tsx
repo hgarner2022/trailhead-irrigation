@@ -45,7 +45,7 @@ const PRICING_FAQS = [
   {
     question: "What's included in the maintenance plans?",
     answer:
-      "The Basic Plan includes spring turn-on, winterization, priority scheduling, and 7% off all services. The Pro Plan adds a sprinkler inspection & tune-up and upgrades the discount to 12% off all services. Both plans save you money compared to booking services individually.",
+      "The Basic Plan includes spring turn-on, winterization, priority scheduling, and 5% off all services. The Pro Plan adds a sprinkler inspection & tune-up and upgrades the discount to 10% off all services. Plans cover only the services listed — materials and any additional repair work are invoiced separately. Both plans save you money compared to booking services individually.",
   },
   {
     question: "Do you install new irrigation systems?",
@@ -257,6 +257,22 @@ export default function PricingPage() {
                     <strong className="text-foreground">Note:</strong> We do not service sprinkler systems with PVC pipes going to the spray heads. Please verify your piping type before requesting service.
                   </p>
                   <p className="text-xs text-muted-foreground mt-2">Materials not included if repairs are needed.</p>
+                </div>
+                <div className="mt-5 flex flex-col sm:flex-row gap-3">
+                  <Link
+                    href="/contact"
+                    className={buttonVariants({ size: "lg" })}
+                  >
+                    Request a Quote
+                    <ArrowRight className="w-4 h-4" />
+                  </Link>
+                  <a
+                    href="tel:9706927270"
+                    className={buttonVariants({ variant: "outline", size: "lg" })}
+                  >
+                    <Phone className="w-4 h-4" />
+                    (970) 692-7270
+                  </a>
                 </div>
               </div>
             </div>

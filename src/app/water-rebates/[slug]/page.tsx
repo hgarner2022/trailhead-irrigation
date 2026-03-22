@@ -73,7 +73,7 @@ export default async function CityRebatePage({ params }: { params: Promise<{ slu
           <div className="flex items-start gap-3 rounded-lg bg-primary/5 border border-primary/20 p-4">
             <AlertTriangle className="h-5 w-5 text-primary shrink-0 mt-0.5" />
             <p className="text-sm text-muted-foreground">
-              Rebate amounts and availability are subject to change. Information last updated March 2026. Programs are first-come, first-served while funds are available.{" "}
+              All rebate programs are first come, first served and subject to available funding. Program details, amounts, and eligibility can change at any time. Information shown here was last reviewed March 2026. Please verify current details directly with your city before making purchasing decisions.{" "}
               <a href={city.officialUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">
                 Visit {city.officialLabel} for the latest information
                 <ExternalLink className="h-3 w-3 inline ml-1" />
