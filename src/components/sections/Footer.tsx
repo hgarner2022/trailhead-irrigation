@@ -8,6 +8,7 @@ const NAV_LINKS = [
   { label: "Services", href: "/services" },
   { label: "Pricing", href: "/pricing" },
   { label: "Water Rebates", href: "/water-rebates" },
+  { label: "Water Efficiency", href: "/water-efficiency" },
   { label: "Blog", href: "/blog" },
   { label: "Contact", href: "/contact" },
 ]

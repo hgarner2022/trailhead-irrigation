@@ -14,6 +14,7 @@ import {
   Percent,
   ArrowRight,
   ChevronDown,
+  Search,
 } from "lucide-react"
 
 const ZONE_TIERS = [
@@ -119,7 +120,10 @@ export function MaintenancePlans() {
                     Priority scheduling
                   </PlanFeature>
                   <PlanFeature icon={<Percent className="w-4 h-4 text-success" />}>
-                    10% off all services
+                    7% off all services
+                  </PlanFeature>
+                  <PlanFeature icon={<Search className="w-4 h-4 text-success" />}>
+                    10% off system inspections
                   </PlanFeature>
                 </div>
               </div>
@@ -176,7 +180,10 @@ export function MaintenancePlans() {
                     Priority scheduling
                   </PlanFeature>
                   <PlanFeature icon={<Percent className="w-4 h-4 text-success" />}>
-                    15% off all services
+                    12% off all services
+                  </PlanFeature>
+                  <PlanFeature icon={<Search className="w-4 h-4 text-success" />}>
+                    15% off system inspections
                   </PlanFeature>
                 </div>
               </div>

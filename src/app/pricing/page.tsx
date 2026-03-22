@@ -15,6 +15,8 @@ import {
   ArrowRight,
   Phone,
   Clock,
+  ClipboardCheck,
+  Droplets,
 } from "lucide-react"
 import { faqJsonLd, breadcrumbJsonLd, siteConfig } from "@/lib/seo"
 
@@ -44,7 +46,7 @@ const PRICING_FAQS = [
   {
     question: "What's included in the maintenance plans?",
     answer:
-      "The Basic Plan includes spring turn-on, winterization, priority scheduling, and 10% off services. The Pro Plan adds a mid-season inspection and upgrades the discount to 15% off services. Both plans save you money compared to booking services individually.",
+      "The Basic Plan includes spring turn-on, winterization, priority scheduling, 7% off all services, and 10% off system inspections. The Pro Plan adds a mid-season inspection and upgrades the discounts to 12% off all services and 15% off system inspections. Both plans save you money compared to booking services individually.",
   },
   {
     question: "Do you install new irrigation systems?",
@@ -60,6 +62,12 @@ const PRICING_FAQS = [
     question: "What areas do you serve?",
     answer:
       "We serve Erie, Longmont, Louisville, Lafayette, and surrounding communities in Northern Colorado and Weld County.",
+  },
+  {
+    question: "Are there rebates available for irrigation upgrades?",
+    answer:
+      "Yes! Many local water utilities offer rebates for WaterSense-certified smart controllers. Check the Rachio rebates page at rachio.com/rebates to search by your zip code. Visit our Water Rebates page for additional programs in Erie, Longmont, Louisville, and Lafayette.",
+    hasLink: true,
   },
 ]
 
@@ -133,6 +141,7 @@ export default function PricingPage() {
                   <ServiceItem>Controller programming</ServiceItem>
                   <ServiceItem>Water efficiency check</ServiceItem>
                 </ul>
+                <p className="text-xs text-muted-foreground mt-2">Materials not included if repairs are needed.</p>
               </CardContent>
             </Card>
 
@@ -162,6 +171,7 @@ export default function PricingPage() {
                   <ServiceItem>Water efficiency check</ServiceItem>
                   <ServiceItem>Recommendations report</ServiceItem>
                 </ul>
+                <p className="text-xs text-muted-foreground mt-2">Materials not included if repairs are needed.</p>
               </CardContent>
             </Card>
 
@@ -198,9 +208,46 @@ export default function PricingPage() {
       </section>
 
       {/* ════════════════════════════════════════════
-          REPAIRS & SERVICE
+          SYSTEM INSPECTION CALLOUT
           ════════════════════════════════════════════ */}
       <section className="bg-cream section-padding-y">
+        <div className="container-padding-x mx-auto max-w-4xl">
+          <div className="bg-background rounded-2xl border border-border p-8 md:p-10 flex flex-col md:flex-row items-start gap-6 md:gap-10">
+            <div className="flex items-center justify-center w-14 h-14 rounded-xl bg-primary/10 shrink-0">
+              <ClipboardCheck className="w-7 h-7 text-primary" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-xl md:text-2xl font-bold text-foreground mb-2">
+                System Inspection &amp; Efficiency Evaluation
+              </h3>
+              <div className="flex items-baseline gap-2 mb-3">
+                <span className="text-3xl font-bold text-foreground">$110</span>
+              </div>
+              <ul className="flex flex-col gap-2 text-sm text-muted-foreground mb-4">
+                <ServiceItem>Comprehensive inspection of all zones and components</ServiceItem>
+                <ServiceItem>Water efficiency analysis and recommendations</ServiceItem>
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                  <span className="font-medium text-primary">Free with spring turn-on</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                  <span className="font-medium text-primary">Earns $50 off any water efficiency install</span>
+                </li>
+              </ul>
+              <Link href="/water-efficiency" className="inline-flex items-center gap-2 text-sm font-semibold text-primary hover:text-primary-dark transition-colors">
+                Learn about Water Efficiency Upgrades
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ════════════════════════════════════════════
+          REPAIRS & SERVICE
+          ════════════════════════════════════════════ */}
+      <section className="bg-background section-padding-y">
         <div className="container-padding-x mx-auto max-w-7xl">
           <div className="flex flex-col md:flex-row items-center gap-8 md:gap-16">
             <div className="flex-1">
@@ -231,7 +278,7 @@ export default function PricingPage() {
               </ul>
             </div>
             <div className="flex-1 w-full">
-              <div className="bg-background rounded-xl border border-border p-6 md:p-8">
+              <div className="bg-cream rounded-xl border border-border p-6 md:p-8">
                 <h3 className="font-semibold text-foreground mb-4">Common Repairs</h3>
                 <div className="flex flex-col gap-3">
                   <RepairLine label="Sprinkler head replacement" note="Typically 15–30 min + part" />
@@ -247,6 +294,7 @@ export default function PricingPage() {
                   <p className="text-xs text-muted-foreground mt-2">
                     <strong className="text-foreground">Note:</strong> We do not service sprinkler systems with PVC pipes going to the spray heads. Please verify your piping type before requesting service.
                   </p>
+                  <p className="text-xs text-muted-foreground mt-2">Materials not included if repairs are needed.</p>
                 </div>
               </div>
             </div>
@@ -273,6 +321,13 @@ export default function PricingPage() {
             </h2>
             <p className="text-muted-foreground max-w-lg mx-auto mb-6">
               Every property is different. New irrigation installs are custom-quoted based on your lot size, soil conditions, zones needed, and water source. Contact us for a free consultation.
+            </p>
+            <p className="text-sm text-muted-foreground max-w-lg mx-auto mb-6">
+              Looking to improve your system&apos;s efficiency?{" "}
+              <Link href="/water-efficiency" className="text-primary font-semibold hover:text-primary-dark transition-colors">
+                Check out our Water Efficiency Upgrades
+              </Link>{" "}
+              for smart controllers, MPR nozzles, and more.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
               <Link href="/contact">
@@ -318,6 +373,26 @@ export default function PricingPage() {
                   <p className="text-muted-foreground leading-relaxed">
                     {faq.answer}
                   </p>
+                  {"hasLink" in faq && faq.hasLink && (
+                    <div className="mt-3 flex flex-col sm:flex-row gap-3">
+                      <a
+                        href="https://www.rachio.com/rebates"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm font-semibold text-primary hover:text-primary-dark transition-colors inline-flex items-center gap-1"
+                      >
+                        Rachio Rebates
+                        <ArrowRight className="w-3 h-3" />
+                      </a>
+                      <Link
+                        href="/water-rebates"
+                        className="text-sm font-semibold text-primary hover:text-primary-dark transition-colors inline-flex items-center gap-1"
+                      >
+                        Water Rebates
+                        <ArrowRight className="w-3 h-3" />
+                      </Link>
+                    </div>
+                  )}
                 </div>
               </details>
             ))}
