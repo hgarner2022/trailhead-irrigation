@@ -1,4 +1,4 @@
-import { Droplets, Leaf, Wifi, CloudRain, Timer } from "lucide-react"
+import { Droplets, Leaf, Wifi, CloudRain, Timer, Flower2, ScanSearch } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
 
 export type Rebate = {
@@ -110,11 +110,11 @@ export const CITIES: CityRebateData[] = [
     name: "Lafayette",
     state: "CO",
     tagline: "Rebates available for City of Lafayette residents — while funds last.",
-    badgeText: "Free smart controller installs",
+    badgeText: "Up to $100 + free installs",
     highlights: [
-      "Free Rachio smart controller install (limited)",
+      "Smart controller rebate: up to $100",
+      "Free Rachio + rain sensor install (limited)",
       "Nozzle rebates: $3 each",
-      "Drip equipment: up to $50",
     ],
     officialUrl: "https://www.lafayetteco.gov/3849/Outdoor-Water-Efficiency-Rebates",
     officialLabel: "City of Lafayette Water Efficiency Rebates",
@@ -122,14 +122,36 @@ export const CITIES: CityRebateData[] = [
     applicationLabel: "Lafayette Rebate Application",
     rebates: [
       {
-        name: "Smart Controller (Rachio)",
+        name: "WaterSense Smart Controller",
+        amount: "Up to $100",
+        icon: Wifi,
+        details: [
+          "Must be WaterSense certified",
+          "Purchase and install, then submit receipt for rebate",
+          "Up to $100 per unit credited to utility bill",
+          "Separate from the free Rachio install program below",
+        ],
+      },
+      {
+        name: "Free Rachio Smart Controller",
         amount: "Free installation",
         icon: Wifi,
         details: [
           "Limited number available per season",
-          "Installation begins mid-June",
-          "Must book evaluation via Resource Central first",
-          "Program reviews applications and schedules appointments",
+          "2026 applications open now, installs begin mid-June",
+          "Must complete Slow the Flow evaluation first",
+          "Applied through Resource Central",
+        ],
+      },
+      {
+        name: "Free Rain Bird Rain Sensor",
+        amount: "Free installation",
+        icon: CloudRain,
+        details: [
+          "Wireless rain sensor installed at no cost",
+          "Limited sensors available per season",
+          "2026 applications open now, installs begin mid-June",
+          "Applied through Resource Central",
         ],
       },
       {
@@ -166,14 +188,30 @@ export const CITIES: CityRebateData[] = [
     },
     slowTheFlowRequired: true,
     slowTheFlowNote: "Lafayette requires proof of a completed Slow the Flow sprinkler evaluation from Resource Central before you can apply for any outdoor water rebates. Sign up at resourcecentral.org/sprinklers/residential/.",
+    additionalPrograms: [
+      {
+        name: "Lawn Replacement Program",
+        description: "Up to $750 in discounts for replacing lawn with low-water landscaping. Includes professional removal service or DIY removal with up to 4 free Garden In A Box kits. Eligible properties need at least 200 sq ft of healthy lawn.",
+        url: "https://www.lafayetteco.gov/1419/Water-Efficiency",
+      },
+      {
+        name: "Garden In A Box",
+        description: "Discounted low-water garden kits with city discounts applied at checkout. Income-qualified residents receive additional discounts. Designed for Colorado's climate with native and xeric plants.",
+        url: "https://www.lafayetteco.gov/1419/Water-Efficiency",
+      },
+    ],
     faqs: [
       {
         question: "Do I need a Slow the Flow evaluation for Lafayette rebates?",
         answer: "Yes. Lafayette requires proof of a completed Slow the Flow sprinkler evaluation from Resource Central before you can apply for any outdoor water efficiency rebate. This is a free service for Lafayette residents.",
       },
       {
-        question: "How do I get a free smart controller in Lafayette?",
-        answer: "Book a Slow the Flow evaluation through Resource Central (303-999-3824 or water@resourcecentral.org). After the evaluation, you will receive a link to the smart controller eligibility application. A limited number of free Rachio controllers are available each season, installed starting mid-June.",
+        question: "What's the difference between the free Rachio install and the $100 controller rebate?",
+        answer: "Lafayette offers two paths to a smart controller. The free Rachio install is a limited program through Resource Central where they install a Rachio controller at no cost (slots fill up fast). The $100 rebate lets you buy any WaterSense-certified controller yourself and get up to $100 credited to your utility bill. If the free installs are full, the rebate is a great alternative.",
+      },
+      {
+        question: "How do I get a free smart controller or rain sensor in Lafayette?",
+        answer: "Book a Slow the Flow evaluation through Resource Central (303-999-3824 or water@resourcecentral.org). 2026 applications are open now. After the evaluation, you will receive a link to the eligibility application. A limited number of free Rachio controllers and Rain Bird rain sensors are available each season, with installations starting mid-June.",
       },
       {
         question: "What is the Affidavit of Lawful Presence?",
@@ -226,7 +264,7 @@ export const CITIES: CityRebateData[] = [
           "60-90 minute on-site sprinkler evaluation",
           "Custom watering schedule for your property",
           "Efficiency testing and recommendations",
-          "Available June through August",
+          "Available during irrigation season (starting mid-June)",
         ],
       },
     ],
