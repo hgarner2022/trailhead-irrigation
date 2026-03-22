@@ -33,12 +33,12 @@ const WATER_EFFICIENCY_FAQS = [
   {
     question: "What are MPR nozzles and why are they more efficient?",
     answer:
-      'MPR (Matched Precipitation Rate) nozzles are rotary multi-stream nozzles that apply water at about 1/4 the rate of standard spray nozzles \u2014 roughly 0.4 inches per hour. This slower application gives water time to soak in instead of running off, and the matched precipitation ensures every part of the zone gets the same amount of water regardless of the arc or radius.',
+      'MPR (Matched Precipitation Rate) nozzles are rotary multi-stream nozzles that apply water at about 1/4 the rate of standard spray nozzles  — roughly 0.4 inches per hour. This slower application gives water time to soak in instead of running off, and the matched precipitation ensures every part of the zone gets the same amount of water regardless of the arc or radius.',
   },
   {
     question: "How long does a Rachio installation take?",
     answer:
-      "A typical Rachio smart controller installation takes about 30 minutes if your existing wiring is in good condition. We handle everything \u2014 mounting, wiring, Wi-Fi setup, and programming your zones.",
+      "A typical Rachio smart controller installation takes about 30 minutes if your existing wiring is in good condition. We handle everything  — mounting, wiring, Wi-Fi setup, and programming your zones.",
   },
   {
     question: "Do I need a system inspection before getting upgrades?",
@@ -83,7 +83,7 @@ export default function WaterEfficiencyPage() {
 
       <PageBanner
         title="Water Efficiency Upgrades"
-        description="Northern Colorado's tiered water rates mean every wasted gallon costs more than the last. The right upgrades pay for themselves through lower water bills — and a healthier lawn that uses only what it needs."
+        description="Reduce your water bill with smart irrigation technology. We install, you save."
       />
 
       {/* Inspection callout bar — sits right below the banner */}
@@ -314,8 +314,11 @@ export default function WaterEfficiencyPage() {
                 <Badge variant="outline" className="w-fit">
                   Optimize Your System
                 </Badge>
+                <p className="text-sm text-muted-foreground">
+                  We evaluate your entire sprinkler layout to find wasted water from poor head spacing, overlapping zones, or coverage gaps. This is the starting point for all efficiency upgrades.
+                </p>
                 <ul className="flex flex-col gap-2.5">
-                  <FeatureItem>Zone coverage analysis</FeatureItem>
+                  <FeatureItem>Zone-by-zone coverage analysis</FeatureItem>
                   <FeatureItem>
                     Head spacing and arc adjustments
                   </FeatureItem>
