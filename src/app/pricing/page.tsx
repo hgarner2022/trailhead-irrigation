@@ -30,12 +30,12 @@ const PRICING_FAQS = [
   {
     question: "How much does a spring sprinkler turn-on cost?",
     answer:
-      "Spring turn-on and system check starts at $130 for up to 7 zones, plus $12 per additional zone. This includes turn-on, full system check, adjustments, leak check, controller programming, and a water efficiency check.",
+      "Spring turn-on and system check starts at $130 for up to 8 zones, plus $10 per additional zone. This includes turn-on, full system check, adjustments, leak check, controller programming, and a water efficiency check.",
   },
   {
     question: "How much does sprinkler winterization cost in Northern Colorado?",
     answer:
-      "Winterization (sprinkler blowout) costs $95 for up to 7 zones, plus $8 for each additional zone. We recommend scheduling between mid-October and early November.",
+      "Winterization (sprinkler blowout) costs $95 for up to 8 zones, plus $7 for each additional zone. We recommend scheduling between mid-October and early November.",
   },
   {
     question: "How do I get a repair quote?",
@@ -45,7 +45,7 @@ const PRICING_FAQS = [
   {
     question: "What's included in the maintenance plans?",
     answer:
-      "The Basic Plan includes spring turn-on, winterization, priority scheduling, and 5% off all services. The Pro Plan adds a sprinkler inspection & tune-up and upgrades the discount to 10% off all services. Plans cover only the services listed — materials and any additional repair work are invoiced separately. Both plans save you money compared to booking services individually.",
+      "The Essential Plan (5% off) includes spring turn-on, winterization, priority scheduling, and 5% off all services — starting at $215 for up to 8 zones. The Complete Plan (10% off) adds a sprinkler inspection & tune-up and upgrades the discount to 10% off all services — starting at $310 for up to 8 zones. Plans cover only the services listed — materials and any additional repair work are invoiced separately.",
   },
   {
     question: "Do you install new irrigation systems?",
@@ -128,10 +128,10 @@ export default function PricingPage() {
                 <div>
                   <div className="flex items-baseline gap-1">
                     <span className="text-3xl font-bold text-foreground">$130</span>
-                    <span className="text-muted-foreground text-sm">up to 7 zones</span>
+                    <span className="text-muted-foreground text-sm">up to 8 zones</span>
                   </div>
                   <p className="text-sm text-primary font-medium mt-1">
-                    +$12 per additional zone
+                    +$10 per additional zone
                   </p>
                 </div>
                 <ul className="flex flex-col gap-2 text-sm text-muted-foreground">
@@ -158,10 +158,10 @@ export default function PricingPage() {
                 <div>
                   <div className="flex items-baseline gap-1">
                     <span className="text-3xl font-bold text-foreground">$120</span>
-                    <span className="text-muted-foreground text-sm">up to 7 zones</span>
+                    <span className="text-muted-foreground text-sm">up to 8 zones</span>
                   </div>
                   <p className="text-sm text-primary font-medium mt-1">
-                    +$12 per additional zone
+                    +$10 per additional zone
                   </p>
                 </div>
                 <ul className="flex flex-col gap-2 text-sm text-muted-foreground">
@@ -188,10 +188,10 @@ export default function PricingPage() {
                 <div>
                   <div className="flex items-baseline gap-1">
                     <span className="text-3xl font-bold text-foreground">$95</span>
-                    <span className="text-muted-foreground text-sm">up to 7 zones</span>
+                    <span className="text-muted-foreground text-sm">up to 8 zones</span>
                   </div>
                   <p className="text-sm text-primary font-medium mt-1">
-                    +$8 per additional zone
+                    +$7 per additional zone
                   </p>
                 </div>
                 <ul className="flex flex-col gap-2 text-sm text-muted-foreground">

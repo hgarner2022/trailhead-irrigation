@@ -16,16 +16,22 @@ import {
   ChevronDown,
 } from "lucide-react"
 
-const ZONE_TIERS = [
-  { value: "1-7", label: "1–7 zones", basic: 214, pro: 311 },
-  { value: "8-10", label: "8–10 zones", basic: 271, pro: 397 },
-  { value: "11-13", label: "11–13 zones", basic: 328, pro: 483 },
-  { value: "14-16", label: "14–16 zones", basic: 385, pro: 570 },
-]
+const BASE_ZONES = 8
+const ESSENTIAL_BASE = 215
+const ESSENTIAL_PER_ZONE = 17
+const COMPLETE_BASE = 310
+const COMPLETE_PER_ZONE = 25
+
+const ZONE_OPTIONS = Array.from({ length: 9 }, (_, i) => i + 8) // 8–16 zones
+
+function calcPrice(base: number, perZone: number, zones: number) {
+  return zones <= BASE_ZONES ? base : base + (zones - BASE_ZONES) * perZone
+}
 
 export function MaintenancePlans() {
-  const [selectedTier, setSelectedTier] = useState(ZONE_TIERS[0].value)
-  const tier = ZONE_TIERS.find((t) => t.value === selectedTier) ?? ZONE_TIERS[0]
+  const [zones, setZones] = useState(BASE_ZONES)
+  const essentialPrice = calcPrice(ESSENTIAL_BASE, ESSENTIAL_PER_ZONE, zones)
+  const completePrice = calcPrice(COMPLETE_BASE, COMPLETE_PER_ZONE, zones)
 
   return (
     <section className="relative bg-navy section-padding-y overflow-hidden">
@@ -60,13 +66,13 @@ export function MaintenancePlans() {
             </span>
             <div className="relative">
               <select
-                value={selectedTier}
-                onChange={(e) => setSelectedTier(e.target.value)}
+                value={zones}
+                onChange={(e) => setZones(Number(e.target.value))}
                 className="appearance-none bg-white text-foreground font-semibold text-sm rounded-full pl-4 pr-9 py-2 cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/50 transition-shadow"
               >
-                {ZONE_TIERS.map((t) => (
-                  <option key={t.value} value={t.value}>
-                    {t.label}
+                {ZONE_OPTIONS.map((z) => (
+                  <option key={z} value={z}>
+                    {z} zones
                   </option>
                 ))}
               </select>
@@ -77,7 +83,7 @@ export function MaintenancePlans() {
 
         {/* Plan cards */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 max-w-4xl mx-auto">
-          {/* BASIC PLAN */}
+          {/* ESSENTIAL PLAN */}
           <Card className="rounded-2xl overflow-hidden border-0 shadow-lg">
             <CardContent className="flex flex-col gap-6 p-6 md:p-8">
               <div className="flex items-center gap-3">
@@ -86,7 +92,8 @@ export function MaintenancePlans() {
                 </div>
                 <div>
                   <h3 className="text-xl font-bold text-foreground">
-                    Basic Plan
+                    Essential Plan{" "}
+                    <span className="text-sm font-semibold text-success">(5% off)</span>
                   </h3>
                   <p className="text-sm text-muted-foreground">
                     Essential seasonal coverage
@@ -97,14 +104,19 @@ export function MaintenancePlans() {
               <div>
                 <div className="flex items-end gap-1">
                   <span className="text-5xl font-bold tracking-tight text-foreground transition-all duration-300">
-                    ${tier.basic}
+                    ${essentialPrice}
                   </span>
                   <span className="text-muted-foreground text-base mb-1">
                     /year
                   </span>
                 </div>
                 <p className="text-sm text-muted-foreground mt-1">
-                  For {tier.label}
+                  {zones <= BASE_ZONES
+                    ? `Up to ${BASE_ZONES} zones`
+                    : `For ${zones} zones`}
+                </p>
+                <p className="text-sm text-primary font-medium mt-1">
+                  +${ESSENTIAL_PER_ZONE} per zone after {BASE_ZONES}
                 </p>
               </div>
 
@@ -133,7 +145,7 @@ export function MaintenancePlans() {
             </CardContent>
           </Card>
 
-          {/* PRO PLAN */}
+          {/* COMPLETE PLAN */}
           <Card className="rounded-2xl overflow-hidden border-0 shadow-lg ring-2 ring-primary">
             <div className="bg-primary text-white text-center py-2.5 text-sm font-semibold tracking-wide">
               Most Popular — Best Value
@@ -145,7 +157,8 @@ export function MaintenancePlans() {
                 </div>
                 <div>
                   <h3 className="text-xl font-bold text-foreground">
-                    Pro Plan
+                    Complete Plan{" "}
+                    <span className="text-sm font-semibold text-success">(10% off)</span>
                   </h3>
                   <p className="text-sm text-muted-foreground">
                     Complete season coverage
@@ -156,20 +169,25 @@ export function MaintenancePlans() {
               <div>
                 <div className="flex items-end gap-1">
                   <span className="text-5xl font-bold tracking-tight text-foreground transition-all duration-300">
-                    ${tier.pro}
+                    ${completePrice}
                   </span>
                   <span className="text-muted-foreground text-base mb-1">
                     /year
                   </span>
                 </div>
                 <p className="text-sm text-muted-foreground mt-1">
-                  For {tier.label}
+                  {zones <= BASE_ZONES
+                    ? `Up to ${BASE_ZONES} zones`
+                    : `For ${zones} zones`}
+                </p>
+                <p className="text-sm text-primary font-medium mt-1">
+                  +${COMPLETE_PER_ZONE} per zone after {BASE_ZONES}
                 </p>
               </div>
 
               <div className="flex flex-col gap-3">
                 <p className="text-sm font-medium text-foreground">
-                  Everything in Basic, plus:
+                  Everything in Essential, plus:
                 </p>
                 <div className="flex flex-col gap-2.5">
                   <PlanFeature highlight>Sprinkler inspection & tune-up</PlanFeature>
