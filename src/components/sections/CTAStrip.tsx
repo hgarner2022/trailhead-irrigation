@@ -15,10 +15,10 @@ export function CTAStrip() {
           </p>
           <div className="flex flex-col sm:flex-row items-center gap-3">
             <Link
-              href="/contact"
+              href="/book"
               className={buttonVariants({ size: "lg" })}
             >
-              Contact Us
+              Book a Service
             </Link>
             <a
               href="tel:9706927270"

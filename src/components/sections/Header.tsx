@@ -15,6 +15,7 @@ const NAV_LINKS = [
   { label: "Water Rebates", href: "/water-rebates" },
   { label: "Water Efficiency", href: "/water-efficiency" },
   { label: "Blog", href: "/blog" },
+  { label: "Book Online", href: "/book" },
   { label: "Contact", href: "/contact" },
 ]
 

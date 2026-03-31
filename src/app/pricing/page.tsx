@@ -5,6 +5,7 @@ import { MaintenancePlans } from "@/components/sections/MaintenancePlans"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { buttonVariants } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 import Link from "next/link"
 import {
   Sun,
@@ -141,6 +142,9 @@ export default function PricingPage() {
                   <ServiceItem>Water efficiency check</ServiceItem>
                 </ul>
                 <p className="text-xs text-muted-foreground mt-2">Materials not included if repairs are needed.</p>
+                <Link href="/book" className={cn(buttonVariants({ size: "sm" }), "w-full mt-2")}>
+                  Book Online
+                </Link>
               </CardContent>
             </Card>
 
@@ -171,6 +175,9 @@ export default function PricingPage() {
                   <ServiceItem>Recommendations report</ServiceItem>
                 </ul>
                 <p className="text-xs text-muted-foreground mt-2">Materials not included if repairs are needed.</p>
+                <Link href="/book" className={cn(buttonVariants({ size: "sm" }), "w-full mt-2")}>
+                  Book Online
+                </Link>
               </CardContent>
             </Card>
 
@@ -200,6 +207,9 @@ export default function PricingPage() {
                   <ServiceItem>Backflow protection</ServiceItem>
                   <ServiceItem>Winter-ready verification</ServiceItem>
                 </ul>
+                <Link href="/book" className={cn(buttonVariants({ size: "sm" }), "w-full mt-2")}>
+                  Book Online
+                </Link>
               </CardContent>
             </Card>
           </div>

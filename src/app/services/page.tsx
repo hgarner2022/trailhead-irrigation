@@ -57,6 +57,7 @@ const SERVICES = [
       "Full system walkthrough after install",
     ],
     imagePosition: "right" as const,
+    cta: { label: "Request a Quote", href: "/contact" },
   },
   {
     title: "Repair & Optimizations",
@@ -78,6 +79,7 @@ const SERVICES = [
       "Seasonal adjustments and optimizations",
     ],
     imagePosition: "left" as const,
+    cta: { label: "Request a Quote", href: "/contact" },
   },
   {
     title: "Winterization & Spring Startup",
@@ -93,6 +95,7 @@ const SERVICES = [
       "Typical service time: 1/2 \u2013 1 hour",
     ],
     imagePosition: "right" as const,
+    cta: { label: "Book Online", href: "/book" },
   },
 ]
 
@@ -160,10 +163,10 @@ export default function ServicesPage() {
                   ))}
                 </ul>
                 <Link
-                  href="/contact"
+                  href={service.cta.href}
                   className={cn(buttonVariants({ size: "lg" }), "w-fit mt-2")}
                 >
-                  Contact Us
+                  {service.cta.label}
                 </Link>
               </div>
 
