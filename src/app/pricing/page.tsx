@@ -21,9 +21,9 @@ import {
 import { faqJsonLd, breadcrumbJsonLd, siteConfig } from "@/lib/seo"
 
 export const metadata: Metadata = {
-  title: "Sprinkler & Irrigation Pricing | Transparent, Upfront Costs",
+  title: "Sprinkler Service Pricing | Erie's Local Sprinkler Company",
   description:
-    "Transparent pricing for spring turn-on, mid-season inspections, winterization, repairs, and annual maintenance plans. Serving Erie, Longmont, Louisville & Lafayette, CO.",
+    "How much does a sprinkler company charge? See transparent pricing for spring turn-on, sprinkler blowout, sprinkler repair, and maintenance plans in Erie, Longmont & Weld County, CO.",
   alternates: { canonical: `${siteConfig.url}/pricing` },
 }
 

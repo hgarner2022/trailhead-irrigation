@@ -827,7 +827,7 @@ I get it. You want a green lawn. But a few weeks of patience in April saves you 
     excerpt: "Front Range water bills can hit $300/month in summer. Here are five upgrades that actually pay for themselves.",
     category: "Seasonal Maintenance",
     relatedSlugs: ["smart-irrigation-controllers-worth-it", "colorado-water-restrictions-2026", "summer-watering-tips-colorado-drought"],
-    content: `Water in Northern Colorado isn't cheap. If you're in Erie or Longmont, you already know that summer bills can jump to $200-$300 a month once the sprinklers kick on. The good news? Most yards are overwatering by 30-50%, which means there's real money sitting on the table.
+    content: `Is your water bill too high? If you're in Erie or Longmont, you already know that summer water bills can jump to $200-$300 a month once the lawn sprinklers kick on. The good news? Most yards are overwatering by 30-50%, which means there's real money sitting on the table.
 
 Here are five upgrades we install all the time that pay for themselves, usually within one season.
 
@@ -945,7 +945,7 @@ The whole thing takes 30-45 minutes for a typical home. We'll also flag anything
     excerpt: "Brown patches, high water bills, and heads stuck down are all telling you something. Here are seven signs your system needs attention.",
     category: "Repair & Troubleshooting",
     relatedSlugs: ["how-to-adjust-sprinkler-heads", "backflow-preventer-testing-colorado", "how-much-does-sprinkler-system-cost-colorado"],
-    content: `Your sprinkler system talks to you. Not with words, but with soggy spots, dry patches, and water bills that keep climbing. Most homeowners ignore these signs until the lawn looks terrible or the water bill hits $400. Here's what to watch for and what each problem actually costs to fix.
+    content: `Is your sprinkler not working right? Brown spots on your lawn, a water bill that's too high, or heads that won't pop up are all signs you need sprinkler repair. Most homeowners ignore these until the lawn looks terrible or the water bill hits $400. Here's what to watch for and what each problem costs to fix.
 
 ## 1. Brown or Dry Patches in an Otherwise Green Lawn
 
@@ -1031,12 +1031,12 @@ Old PVC pipes get brittle. Valves wear out. Wire connections corrode. At some po
   },
   {
     slug: "why-hire-local-irrigation-company",
-    title: "Why Hiring a Local Irrigation Company in Erie Beats a Big Chain",
+    title: "Why Hiring a Local Sprinkler Company in Erie Beats a Big Chain",
     date: "2026-01-20",
-    excerpt: "A national chain doesn't know Erie's clay soil, Longmont's water pressure, or your neighborhood's watering schedule. A local company does.",
+    excerpt: "A national chain doesn't know Erie's clay soil, Longmont's water pressure, or your neighborhood's watering schedule. A local sprinkler company does.",
     category: "Installation & Upgrades",
     relatedSlugs: ["what-to-expect-sprinkler-installation", "how-much-does-sprinkler-system-cost-colorado", "spring-sprinkler-startup-colorado"],
-    content: `When your sprinkler system needs work, you've got two choices: call a big national outfit or hire a local company. I'm obviously biased here, but let me explain why local matters more for irrigation than almost any other home service.
+    content: `Looking for the best sprinkler company in Erie? When your sprinkler system needs work, you've got two choices: call a big national outfit or hire a local sprinkler contractor. I'm obviously biased, but let me explain why a local sprinkler service matters more for irrigation than almost any other home service.
 
 ## Northern Colorado Isn't Like Anywhere Else
 

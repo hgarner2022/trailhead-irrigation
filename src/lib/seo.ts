@@ -4,7 +4,7 @@ export const siteConfig = {
   url: SITE_URL,
   name: "Trailhead Lawn & Irrigation LLC",
   description:
-    "Professional irrigation services in Weld County, Erie, Longmont, Louisville & Lafayette, Colorado. Installation, repair, maintenance, winterization & spring startup.",
+    "Erie's trusted sprinkler company. Sprinkler installation, repair, winterization & spring turn-on in Erie, Longmont, Louisville, Lafayette & Weld County, Colorado.",
   phone: "(970) 692-7270",
   phoneTel: "9706927270",
   email: "ryan@trailheadirrigation.com",
@@ -83,47 +83,47 @@ export function serviceJsonLd() {
   return {
     "@context": "https://schema.org",
     "@type": "Service",
-    serviceType: "Irrigation Services",
+    serviceType: "Sprinkler Company",
     provider: { "@id": `${SITE_URL}/#business` },
     areaServed: ["Erie, CO", "Longmont, CO", "Louisville, CO", "Lafayette, CO", "Weld County, CO"],
     hasOfferCatalog: {
       "@type": "OfferCatalog",
-      name: "Irrigation Services",
+      name: "Sprinkler Services",
       itemListElement: [
         {
           "@type": "Offer",
           itemOffered: {
             "@type": "Service",
-            name: "Sprinkler System Installation",
+            name: "Lawn Sprinkler Installation",
             description:
-              "Custom irrigation system design and installation for residential properties in Northern Colorado.",
+              "Custom residential sprinkler system design and installation in Erie, Longmont, and Northern Colorado.",
           },
         },
         {
           "@type": "Offer",
           itemOffered: {
             "@type": "Service",
-            name: "Irrigation Repair",
+            name: "Sprinkler Repair",
             description:
-              "Sprinkler head replacement, valve repair, leak detection, and controller troubleshooting.",
+              "Fix broken sprinkler heads, sprinkler leaks, valve repair, pipe repair, and controller troubleshooting.",
           },
         },
         {
           "@type": "Offer",
           itemOffered: {
             "@type": "Service",
-            name: "Winterization",
+            name: "Sprinkler Winterization (Blowout)",
             description:
-              "Professional sprinkler blowout to protect your system from Colorado's freeze-thaw cycles.",
+              "Professional sprinkler blowout to winterize your sprinklers before Colorado's freeze season.",
           },
         },
         {
           "@type": "Offer",
           itemOffered: {
             "@type": "Service",
-            name: "Spring Activation",
+            name: "Spring Sprinkler Turn-On",
             description:
-              "System startup, leak checks, and head adjustments to get your irrigation running for the season.",
+              "Spring sprinkler startup with leak checks, head adjustments, and controller programming.",
           },
         },
       ],

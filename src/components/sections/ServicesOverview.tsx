@@ -6,20 +6,20 @@ import { Wrench, Droplets, Snowflake } from "lucide-react"
 
 const SERVICES = [
   {
-    title: "Irrigation System Installation",
-    description: "Complete sprinkler system design and installation for residential and commercial properties. Built to last with quality parts.",
+    title: "Sprinkler Installation",
+    description: "Complete residential sprinkler system design and installation. Custom zone layout, efficient heads, and smart controllers for your yard.",
     icon: Droplets,
     image: "/images/sprinkler-installation.jpg",
   },
   {
-    title: "Repair & Optimizations",
-    description: "Fast, reliable diagnosis and repair of broken sprinkler heads, leaking valves, controller issues, and more.",
+    title: "Sprinkler Repair",
+    description: "Broken sprinkler? Sprinkler leak? Water bill too high? We fix sprinkler problems fast — heads, valves, pipes, and controllers.",
     icon: Wrench,
     image: "/images/sprinkler-repair.jpg",
   },
   {
-    title: "Winterization & Spring Startup",
-    description: "Protect your investment with professional blowouts in fall and full system activation in spring.",
+    title: "Winterization & Spring Turn-On",
+    description: "Winterize your sprinklers with a professional blowout in fall, and get your spring sprinkler turn-on with a full system check.",
     icon: Snowflake,
     image: "/images/sprinkler-spring.jpg",
   },
@@ -32,7 +32,7 @@ export function ServicesOverview() {
         <div className="flex flex-col items-center gap-12">
           <div className="text-center flex flex-col gap-3">
             <h2 id="services-heading" className="text-3xl md:text-4xl font-bold text-foreground">
-              Our Irrigation Services
+              Our Sprinkler Services
             </h2>
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
               From new installations to seasonal maintenance, we keep your lawn healthy year-round.

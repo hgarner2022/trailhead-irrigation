@@ -9,45 +9,45 @@ import { Check } from "lucide-react"
 import { serviceJsonLd, faqJsonLd, breadcrumbJsonLd, siteConfig } from "@/lib/seo"
 
 export const metadata: Metadata = {
-  title: "Irrigation Services in Erie, Longmont, Louisville, Lafayette & Weld County",
+  title: "Sprinkler Services | Erie's Local Sprinkler Company",
   description:
-    "Professional sprinkler installation, repair, winterization and spring startup serving Erie, Longmont, Louisville, Lafayette & Weld County, CO. Locally owned and operated.",
+    "Trusted sprinkler company in Erie, CO. Lawn sprinkler installation, sprinkler repair, winterization blowout & spring turn-on serving Erie, Longmont, Louisville, Lafayette & Weld County.",
   alternates: { canonical: `${siteConfig.url}/services` },
 }
 
 const SERVICES_FAQS = [
   {
-    question: "What irrigation services do you offer in Erie, CO?",
+    question: "What does your sprinkler company do?",
     answer:
-      "We offer complete irrigation services including sprinkler system installation, repair and optimizations, winterization (blowout), and spring activation. We also install Wi-Fi controllers, rebuild manifolds, and repair backflow preventers.",
+      "We're a full-service sprinkler company in Erie, CO. We handle lawn sprinkler installation, sprinkler repair, sprinkler blowout (winterization), and spring sprinkler turn-on. We also install smart controllers, fix sprinkler leaks, replace broken sprinkler heads, and do backflow testing.",
   },
   {
-    question: "Do you service sprinkler systems in Longmont and Weld County?",
+    question: "Do you fix sprinklers in Longmont and Weld County?",
     answer:
-      "Yes. We serve Erie, Longmont, Louisville, Lafayette, and the greater Weld County area in Northern Colorado. We are locally owned and operated out of Erie.",
+      "Yes. We're a local sprinkler service covering Erie, Longmont, Louisville, Lafayette, and the greater Weld County area. We're locally owned and operated out of Erie, CO.",
   },
   {
     question: "How do I know if my sprinkler system needs repair?",
     answer:
-      "Common signs include brown or dry patches in your lawn, puddles or soggy areas near sprinkler heads, unusually high water bills, sputtering or uneven spray patterns, and zones that won't turn on or off properly.",
+      "Common signs your sprinkler is not working properly include brown spots on your lawn, puddles or soggy areas near heads, a water bill that's too high, sputtering or uneven spray, and zones that won't turn on or off. If you notice any of these, call a sprinkler contractor to take a look.",
   },
   {
     question: "When should I winterize my sprinklers in Colorado?",
     answer:
-      "In Northern Colorado, you should winterize your sprinkler system between mid-October and early November, before the first hard freeze when temperatures drop below 28 degrees F for several hours.",
+      "In Northern Colorado, you should winterize your sprinklers between mid-October and early November, before the first hard freeze. A professional sprinkler blowout clears water from all lines and prevents cracked pipes and broken valves.",
   },
   {
     question: "Do you offer free estimates for sprinkler installation?",
     answer:
-      "Yes. Contact us for a free quote on irrigation system installation. We will assess your property and design a custom system tailored to your lawn and landscape.",
+      "Yes. Contact us for a free quote on residential sprinkler installation. Our sprinkler contractor will visit your property, assess your yard, and design a custom system tailored to your lawn and landscape.",
   },
 ]
 
 const SERVICES = [
   {
-    title: "Irrigation System Installation",
+    title: "Sprinkler System Installation",
     description:
-      "We design and install complete sprinkler systems tailored to your property. From planning zone coverage to trenching and wiring — we handle every step.",
+      "Looking for a sprinkler contractor in Erie or Longmont? We design and install complete lawn sprinkler systems tailored to your yard. From planning zone coverage to trenching and wiring — we handle every step.",
     image: "/images/sprinkler-installation.jpg",
     features: [
       "Custom system design for your property",
@@ -60,9 +60,9 @@ const SERVICES = [
     cta: { label: "Request a Quote", href: "/contact" },
   },
   {
-    title: "Repair & Optimizations",
+    title: "Sprinkler Repair & Optimizations",
     description:
-      "We diagnose and fix irrigation problems fast, keeping your lawn healthy and efficient. In addition to repairs, we handle system upgrades, optimizations, and seasonal maintenance.",
+      "Sprinkler not working? Sprinkler leak? Brown spots on your lawn? We fix sprinkler problems fast — from broken sprinkler heads to valve issues and high water bills. We also handle system upgrades, optimizations, and seasonal maintenance.",
     image: "/images/sprinkler-repair.jpg",
     features: [
       "Sprinkler head replacement",
@@ -82,9 +82,9 @@ const SERVICES = [
     cta: { label: "Request a Quote", href: "/contact" },
   },
   {
-    title: "Winterization & Spring Startup",
+    title: "Winterization & Spring Sprinkler Turn-On",
     description:
-      "Colorado winters can destroy unprotected irrigation systems. We professionally blow out your lines in the fall and activate everything in the spring, including minor repairs as needed.",
+      "Need to winterize your sprinklers before the freeze? Or turn on your sprinklers this spring? We do professional sprinkler blowouts in the fall and spring sprinkler startups, including minor repairs as needed.",
     image: "/images/sprinkler-spring.jpg",
     features: [
       "Complete system blowout",
@@ -127,7 +127,7 @@ export default function ServicesPage() {
       />
       <PageBanner
         title="Our Irrigation Services"
-        description="Professional sprinkler installation, repair, and seasonal maintenance for Northern Colorado."
+        description="Your local sprinkler company for installation, repair, and seasonal maintenance in Erie, Longmont & Northern Colorado."
         backgroundImage="/images/sprinkler-installation.jpg"
       />
 

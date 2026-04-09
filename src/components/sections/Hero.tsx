@@ -25,7 +25,7 @@ export function Hero() {
             Trailhead Lawn &amp; Irrigation LLC
           </h1>
           <p className="text-lg md:text-xl text-white/90 text-pretty max-w-2xl">
-            Professional sprinkler installation, repair, and seasonal maintenance serving Weld County, Erie, Longmont, Louisville &amp; Lafayette.
+            Erie&apos;s trusted sprinkler company. Lawn sprinkler installation, repair, winterization &amp; spring turn-on serving Erie, Longmont, Louisville, Lafayette &amp; Weld County.
           </p>
           <div className="flex flex-col sm:flex-row items-center gap-3 mt-2">
             <Link
