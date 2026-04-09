@@ -1,16 +1,21 @@
 import { buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import Image from "next/image"
 import Link from "next/link"
 
 export function Hero() {
   return (
     <section className="relative min-h-[600px] flex items-center" aria-labelledby="hero-heading">
-      <div
-        className="absolute inset-0 bg-cover bg-center"
-        style={{ backgroundImage: "url('/images/boulder-colorado.jpg')" }}
-      >
-        <div className="absolute inset-0 bg-navy/70" />
-      </div>
+      <Image
+        src="/images/boulder-colorado.jpg"
+        alt="Colorado Front Range landscape"
+        fill
+        priority
+        className="object-cover object-center"
+        sizes="100vw"
+        quality={75}
+      />
+      <div className="absolute inset-0 bg-navy/70" />
       <div className="relative container-padding-x mx-auto max-w-7xl py-24 md:py-32">
         <div className="flex flex-col items-center text-center gap-6 max-w-3xl mx-auto">
           <h1
