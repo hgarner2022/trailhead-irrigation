@@ -129,7 +129,7 @@ export default async function BlogPostPage({
             {post.title}
           </h1>
           <p className="text-sm text-muted-foreground">
-            By Ryan Garner, Licensed Irrigation Contractor &middot; Erie, CO
+            By Ryan Garner, Founder &middot; Trailhead Lawn &amp; Irrigation
           </p>
         </header>
 

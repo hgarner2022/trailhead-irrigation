@@ -184,7 +184,7 @@ export function blogPostJsonLd(post: {
     author: {
       "@type": "Person",
       name: "Ryan Garner",
-      jobTitle: "Licensed Irrigation Contractor",
+      jobTitle: "Founder",
       worksFor: {
         "@type": "Organization",
         name: siteConfig.name,
