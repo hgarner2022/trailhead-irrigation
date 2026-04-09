@@ -10,7 +10,16 @@ const NAV_LINKS = [
   { label: "Water Rebates", href: "/water-rebates" },
   { label: "Water Efficiency", href: "/water-efficiency" },
   { label: "Blog", href: "/blog" },
+  { label: "Book Online", href: "/book" },
   { label: "Contact", href: "/contact" },
+]
+
+const CITY_LINKS = [
+  { label: "Erie", href: "/services/erie" },
+  { label: "Longmont", href: "/services/longmont" },
+  { label: "Louisville", href: "/services/louisville" },
+  { label: "Lafayette", href: "/services/lafayette" },
+  { label: "Firestone", href: "/services/firestone" },
 ]
 
 export function Footer() {
@@ -19,14 +28,14 @@ export function Footer() {
       <div className="container-padding-x mx-auto max-w-7xl section-padding-y">
         <div className="flex flex-col gap-12">
           {/* Top: Logo + Nav + Contact */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-10">
             {/* Brand */}
             <div className="flex flex-col gap-4">
               <Link href="/">
                 <Image src="/images/logo-badge.png" alt="Trailhead Lawn & Irrigation" width={200} height={150} className="h-24 w-auto" />
               </Link>
               <p className="text-sm text-white/70">
-                Northern Colorado&apos;s trusted irrigation experts. Locally owned &amp; operated in Erie, CO.
+                Northern Colorado&apos;s trusted sprinkler company. Locally owned &amp; operated in Erie, CO.
               </p>
             </div>
 
@@ -46,6 +55,22 @@ export function Footer() {
               </nav>
             </div>
 
+            {/* Service Areas */}
+            <div className="flex flex-col gap-3">
+              <h3 className="font-semibold text-sm uppercase tracking-wider text-white/50">Service Areas</h3>
+              <nav className="flex flex-col gap-2" aria-label="Service areas">
+                {CITY_LINKS.map((link) => (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className="text-sm text-white/70 hover:text-primary-light transition-colors w-fit"
+                  >
+                    {link.label}, CO
+                  </Link>
+                ))}
+              </nav>
+            </div>
+
             {/* Contact Info */}
             <div className="flex flex-col gap-3">
               <h3 className="font-semibold text-sm uppercase tracking-wider text-white/50">Contact</h3>
@@ -60,7 +85,7 @@ export function Footer() {
                 </a>
                 <div className="flex items-start gap-2 text-sm text-white/70">
                   <MapPin className="h-4 w-4 shrink-0 mt-0.5" />
-                  Proudly serving Weld County, Erie, Longmont, Louisville &amp; Lafayette, CO
+                  Proudly serving Erie, Longmont, Louisville, Lafayette, Firestone &amp; Weld County
                 </div>
               </div>
             </div>
