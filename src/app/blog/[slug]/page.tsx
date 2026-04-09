@@ -129,7 +129,7 @@ export default async function BlogPostPage({
             {post.title}
           </h1>
           <p className="text-sm text-muted-foreground">
-            By Ryan Garner
+            By Ryan Garner, Licensed Irrigation Contractor &middot; Erie, CO
           </p>
         </header>
 

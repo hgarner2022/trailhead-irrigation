@@ -177,12 +177,19 @@ export function blogPostJsonLd(post: {
     headline: post.title,
     description: post.excerpt,
     datePublished: post.date,
+    dateModified: post.date,
     ...(post.content && { wordCount: post.content.split(/\s+/).length }),
     ...(post.category && { articleSection: post.category }),
     image: `${SITE_URL}/images/logo-new.png`,
     author: {
       "@type": "Person",
       name: "Ryan Garner",
+      jobTitle: "Licensed Irrigation Contractor",
+      worksFor: {
+        "@type": "Organization",
+        name: siteConfig.name,
+      },
+      url: SITE_URL,
     },
     publisher: {
       "@type": "Organization",

@@ -21,7 +21,7 @@ export const BLOG_POSTS: BlogPost[] = [
     excerpt: "Wondering what a sprinkler installation actually looks like? Here's the full process from design to final walkthrough, including how long it takes and what your yard looks like afterward.",
     category: "Installation & Upgrades",
     relatedSlugs: ["how-much-does-sprinkler-system-cost-colorado", "drip-irrigation-vs-spray-heads", "why-hire-local-irrigation-company"],
-    content: `If you've never had a sprinkler system installed, you probably have questions. How long does it take? Will my yard be destroyed? What actually happens?
+    content: `A typical residential sprinkler system installation in Northern Colorado takes 1-3 days from first trench to final walkthrough. The process includes a site visit and design, utility locating, trenching, pipe and head installation, controller wiring, and a zone-by-zone test. Your yard will have trenching lines visible for a few weeks, but they fill in fast.
 
 Here's the full process, step by step, so there are no surprises.
 
@@ -305,7 +305,7 @@ DIY adjustments handle about 80% of sprinkler head issues. But some problems go 
     excerpt: "That metal device near your garage keeps irrigation water out of your drinking supply. Colorado requires annual testing, and skipping it can mean fines. Here's what you need to know.",
     category: "Repair & Troubleshooting",
     relatedSlugs: ["signs-irrigation-system-needs-repair", "spring-sprinkler-startup-colorado", "when-to-winterize-sprinklers-colorado"],
-    content: `You've probably noticed that metal device sticking up near your garage or on the side of your house with a couple of test ports on it. That's your backflow preventer, and Colorado requires you to get it tested every single year.
+    content: `A backflow preventer is a valve on your irrigation system that stops sprinkler water from flowing backward into your drinking water supply. Colorado state law and most Front Range municipalities, including Erie, Longmont, Louisville, and Lafayette, require annual backflow testing by a certified tester. Testing typically costs $50-$75 and takes about 15 minutes.
 
 ## What a Backflow Preventer Does
 
@@ -757,9 +757,9 @@ If we move into full drought emergency, watering could drop to once a week or ge
     excerpt: "It's warm out and your lawn looks thirsty. But turning on your sprinklers too early in Colorado can cause expensive damage.",
     category: "Seasonal Maintenance",
     relatedSlugs: ["when-to-winterize-sprinklers-colorado", "signs-irrigation-system-needs-repair", "how-to-adjust-sprinkler-heads"],
-    content: `It's April. The sun's been out for three straight days and your lawn is starting to look rough. You're itching to flip the sprinklers on. But in Northern Colorado, early spring is a trap.
+    content: `In Northern Colorado, the safest time to turn on your sprinkler system is late April to early May, after nighttime temperatures stay consistently above 32 degrees for at least a week. Turning on too early risks freeze damage to pipes and backflow preventers, which can cost $500-$1,500 to repair.
 
-Turning your system on too early is one of the most common mistakes we see every year. Here's when to actually do it and what to check before you let it rip.
+Here's when to actually do it and what to check before you let it rip.
 
 ## When to Turn On: Late April to Mid-May
 
@@ -878,9 +878,9 @@ Stack a couple of these together and a $250/month summer water bill can drop to 
     excerpt: "Freeze damage can cost $500-$1,500 to fix. Here's when to blow out your system and why a shop compressor won't cut it.",
     category: "Seasonal Maintenance",
     relatedSlugs: ["spring-sprinkler-startup-colorado", "signs-irrigation-system-needs-repair", "water-optimization-tips-colorado"],
-    content: `Every fall, we get calls from homeowners who thought they had more time. A hard freeze hits in mid-October, and suddenly they've got cracked pipes, split backflow preventers, and busted valves. The repair bill? Usually **$500-$1,500** depending on what broke and how many zones got hit.
+    content: `In Northern Colorado, you should winterize your sprinkler system between late September and mid-October, before the first hard freeze. Winterization means blowing compressed air through every zone to clear water from pipes, valves, and backflow preventers. Skipping it risks cracked pipes and split valves, with repair bills typically running **$500-$1,500**.
 
-Winterizing your sprinkler system is the single most important maintenance task of the year. Get it right and your system wakes up fine in spring. Skip it and you're writing a big check.
+Winterizing is the single most important maintenance task of the year. Get it right and your system wakes up fine in spring. Skip it and you're writing a big check.
 
 ## When to Schedule Your Blowout
 
