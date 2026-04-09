@@ -7,6 +7,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { Check } from "lucide-react"
 import { serviceJsonLd, faqJsonLd, breadcrumbJsonLd, siteConfig } from "@/lib/seo"
+import { CITY_DATA } from "@/lib/city-data"
 
 export const metadata: Metadata = {
   title: "Sprinkler Services | Erie's Local Sprinkler Company",
@@ -185,6 +186,29 @@ export default function ServicesPage() {
           </div>
         </section>
       ))}
+
+      {/* Service Areas */}
+      <section className="bg-background section-padding-y">
+        <div className="container-padding-x mx-auto max-w-3xl text-center">
+          <h2 className="text-3xl font-bold text-foreground mb-4">
+            Areas We Serve
+          </h2>
+          <p className="text-muted-foreground mb-8">
+            We&apos;re based in Erie and serve the entire Northern Colorado Front Range. Click your city for local water info, restrictions, and FAQs.
+          </p>
+          <div className="flex flex-wrap justify-center gap-4">
+            {CITY_DATA.map((city) => (
+              <Link
+                key={city.slug}
+                href={`/services/${city.slug}`}
+                className={cn(buttonVariants({ variant: "outline", size: "lg" }))}
+              >
+                {city.name}, CO
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
 
       {/* FAQ Section for AEO */}
       <section className="bg-cream section-padding-y">

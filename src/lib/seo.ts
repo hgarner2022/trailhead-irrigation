@@ -13,7 +13,7 @@ export const siteConfig = {
     region: "CO",
     country: "US",
   },
-  serviceArea: ["Weld County", "Erie", "Longmont", "Louisville", "Lafayette", "Northern Colorado"],
+  serviceArea: ["Weld County", "Erie", "Longmont", "Louisville", "Lafayette", "Firestone", "Northern Colorado"],
 }
 
 export function localBusinessJsonLd() {
@@ -48,6 +48,7 @@ export function localBusinessJsonLd() {
       { "@type": "City", name: "Longmont", containedInPlace: { "@type": "State", name: "Colorado" } },
       { "@type": "City", name: "Louisville", containedInPlace: { "@type": "State", name: "Colorado" } },
       { "@type": "City", name: "Lafayette", containedInPlace: { "@type": "State", name: "Colorado" } },
+      { "@type": "City", name: "Firestone", containedInPlace: { "@type": "State", name: "Colorado" } },
     ],
     priceRange: "$$",
     openingHoursSpecification: {
@@ -85,7 +86,7 @@ export function serviceJsonLd() {
     "@type": "Service",
     serviceType: "Sprinkler Company",
     provider: { "@id": `${SITE_URL}/#business` },
-    areaServed: ["Erie, CO", "Longmont, CO", "Louisville, CO", "Lafayette, CO", "Weld County, CO"],
+    areaServed: ["Erie, CO", "Longmont, CO", "Louisville, CO", "Lafayette, CO", "Firestone, CO", "Weld County, CO"],
     hasOfferCatalog: {
       "@type": "OfferCatalog",
       name: "Sprinkler Services",
