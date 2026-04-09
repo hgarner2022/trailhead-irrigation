@@ -23,6 +23,11 @@ export const metadata: Metadata = {
     "lawn irrigation Erie",
     "spring startup sprinklers",
     "backflow repair Colorado",
+    "smart sprinkler controller",
+    "drip irrigation Colorado",
+    "xeriscaping Colorado",
+    "backflow testing",
+    "sprinkler system cost Colorado",
   ],
   openGraph: {
     type: "website",

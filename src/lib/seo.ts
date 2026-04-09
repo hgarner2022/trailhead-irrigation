@@ -168,6 +168,8 @@ export function blogPostJsonLd(post: {
   excerpt: string
   date: string
   slug: string
+  content?: string
+  category?: string
 }) {
   return {
     "@context": "https://schema.org",
@@ -175,6 +177,9 @@ export function blogPostJsonLd(post: {
     headline: post.title,
     description: post.excerpt,
     datePublished: post.date,
+    ...(post.content && { wordCount: post.content.split(/\s+/).length }),
+    ...(post.category && { articleSection: post.category }),
+    image: `${SITE_URL}/images/logo-new.png`,
     author: {
       "@type": "Person",
       name: "Ryan Garner",
