@@ -11,7 +11,7 @@ const inter = Inter({ subsets: ["latin"] })
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),
   title: {
-    default: "Trailhead Lawn & Irrigation | Erie, CO",
+    default: "Sprinkler Repair & Installation Erie, CO | Trailhead Lawn & Irrigation",
     template: "%s | Trailhead Lawn & Irrigation",
   },
   description: siteConfig.description,
@@ -41,13 +41,13 @@ export const metadata: Metadata = {
     locale: "en_US",
     url: siteConfig.url,
     siteName: siteConfig.name,
-    title: "Trailhead Lawn & Irrigation | Erie, CO",
+    title: "Sprinkler Repair & Installation Erie, CO | Trailhead Lawn & Irrigation",
     description: siteConfig.description,
     images: [{ url: "/images/logo-new.png", width: 800, height: 600, alt: siteConfig.name }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Trailhead Lawn & Irrigation | Erie, CO",
+    title: "Sprinkler Repair & Installation Erie, CO | Trailhead Lawn & Irrigation",
     description: siteConfig.description,
     images: ["/images/logo-new.png"],
   },

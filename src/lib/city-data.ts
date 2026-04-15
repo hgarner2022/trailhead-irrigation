@@ -120,7 +120,7 @@ export const CITY_DATA: CityData[] = [
     soilType: "Clay-loam soil at the base of the foothills. Terrain is slightly more varied than the plains cities, with some hillier lots near Coal Creek and the western edges of town. Slopes may need different head types and zone configurations.",
     housingAge: "Median home built around 1991. Mix of 1970s-1990s neighborhoods with some newer development. The Marshall Fire (December 2021) destroyed 1,000+ homes in the Louisville/Superior area. Rebuilt homes present opportunities for modern irrigation systems.",
     cityNote: "Louisville has the highest median home value in the area at ~$835,000. Homeowners here invest in their properties. The Marshall Fire rebuilds mean many homes now have brand new irrigation systems with smart controllers.",
-    introText: "Need a sprinkler company in Louisville? Trailhead serves Louisville from our base in Erie. We handle lawn sprinkler installation, repair, winterization, and spring turn-ons throughout Louisville. Whether your home is an established 1990s property or a Marshall Fire rebuild, we've got you covered.",
+    introText: "Need a sprinkler company in Louisville? Trailhead serves Louisville from our base in Erie. We handle lawn sprinkler installation, repair, winterization, and spring turn-ons throughout Louisville. We work on everything from established 1990s properties to Marshall Fire rebuilds.",
     whyLocal: "Louisville homeowners care about their properties. With median home values over $800K, a well-maintained sprinkler system protects a serious investment. We understand Louisville's hillier terrain near the foothills and adjust zone layouts accordingly.",
     faqs: [
       {

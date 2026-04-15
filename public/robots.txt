@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://trailheadirrigation.com/sitemap.xml

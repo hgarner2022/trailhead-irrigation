@@ -52,10 +52,10 @@ export function MeetRyan() {
                 I&apos;m Ryan — Erie local, dad of three boys (ages 1, 4, and 7), and married for 13 years.
               </p>
               <p>
-                I started Trailhead because I believe your neighbors should be the ones taking care of your lawn. When you call Trailhead, you get me — not a call center, not a stranger. Just a local guy who takes pride in doing the job right.
+                I started Trailhead because I believe your neighbors should be the ones taking care of your lawn. When you call Trailhead, you get me. Not a call center, not a stranger. Just a local guy who takes pride in doing the job right.
               </p>
               <p>
-                Whether it&apos;s a full irrigation install or a quick sprinkler repair, I treat every yard like it&apos;s my own.
+                From a full irrigation install to a quick sprinkler repair, I treat every yard like it&apos;s my own.
               </p>
             </div>
             <Link

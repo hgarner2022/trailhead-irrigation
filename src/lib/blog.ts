@@ -16,7 +16,7 @@ export function getReadingTime(content: string): number {
 export const BLOG_POSTS: BlogPost[] = [
   {
     slug: "what-to-expect-sprinkler-installation",
-    title: "What to Expect During a Sprinkler System Installation (Start to Finish)",
+    title: "What to Expect During a Sprinkler System Installation in Erie, CO",
     date: "2026-04-07",
     excerpt: "Wondering what a sprinkler installation actually looks like? Here's the full process from design to final walkthrough, including how long it takes and what your yard looks like afterward.",
     category: "Installation & Upgrades",
@@ -752,7 +752,7 @@ If we move into full drought emergency, watering could drop to once a week or ge
   },
   {
     slug: "spring-sprinkler-startup-colorado",
-    title: "Spring Sprinkler Startup in Colorado: When to Turn On and What to Check",
+    title: "Spring Sprinkler Startup in Erie, CO: When to Turn On and What to Check",
     date: "2026-01-27",
     excerpt: "It's warm out and your lawn looks thirsty. But turning on your sprinklers too early in Colorado can cause expensive damage.",
     category: "Seasonal Maintenance",
@@ -873,7 +873,7 @@ Stack a couple of these together and a $250/month summer water bill can drop to 
   },
   {
     slug: "when-to-winterize-sprinklers-colorado",
-    title: "When to Winterize Your Sprinklers in Northern Colorado (And What Happens If You Wait)",
+    title: "When to Winterize Your Sprinklers in Erie, CO (And What Happens If You Wait)",
     date: "2026-01-06",
     excerpt: "Freeze damage can cost $500-$1,500 to fix. Here's when to blow out your system and why a shop compressor won't cut it.",
     category: "Seasonal Maintenance",

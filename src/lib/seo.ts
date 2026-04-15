@@ -9,8 +9,10 @@ export const siteConfig = {
   phoneTel: "9706927270",
   email: "ryan@trailheadirrigation.com",
   address: {
+    street: "137 Morgan Circle North",
     locality: "Erie",
     region: "CO",
+    postalCode: "80516",
     country: "US",
   },
   serviceArea: ["Weld County", "Erie", "Longmont", "Louisville", "Lafayette", "Firestone", "Northern Colorado"],
@@ -29,8 +31,10 @@ export function localBusinessJsonLd() {
     image: `${SITE_URL}/images/logo-new.png`,
     address: {
       "@type": "PostalAddress",
+      streetAddress: "137 Morgan Circle North",
       addressLocality: "Erie",
       addressRegion: "CO",
+      postalCode: "80516",
       addressCountry: "US",
     },
     geo: {

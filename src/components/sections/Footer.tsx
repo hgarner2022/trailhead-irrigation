@@ -85,8 +85,11 @@ export function Footer() {
                 </a>
                 <div className="flex items-start gap-2 text-sm text-white/70">
                   <MapPin className="h-4 w-4 shrink-0 mt-0.5" />
-                  Proudly serving Erie, Longmont, Louisville, Lafayette, Firestone &amp; Weld County
+                  137 Morgan Circle North, Erie, CO 80516
                 </div>
+                <p className="text-sm text-white/50 mt-1 pl-6">
+                  Serving Erie, Longmont, Louisville, Lafayette, Firestone &amp; Weld County
+                </p>
               </div>
             </div>
           </div>

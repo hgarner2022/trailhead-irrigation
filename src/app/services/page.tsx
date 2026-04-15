@@ -10,7 +10,7 @@ import { serviceJsonLd, faqJsonLd, breadcrumbJsonLd, siteConfig } from "@/lib/se
 import { CITY_DATA } from "@/lib/city-data"
 
 export const metadata: Metadata = {
-  title: "Sprinkler Services | Erie's Local Sprinkler Company",
+  title: "Sprinkler Services in Erie, CO | Trailhead Irrigation",
   description:
     "Trusted sprinkler company in Erie, CO. Lawn sprinkler installation, sprinkler repair, winterization blowout & spring turn-on serving Erie, Longmont, Louisville, Lafayette & Weld County.",
   alternates: { canonical: `${siteConfig.url}/services` },
@@ -48,7 +48,7 @@ const SERVICES = [
   {
     title: "Sprinkler System Installation",
     description:
-      "Looking for a sprinkler contractor in Erie or Longmont? We design and install complete lawn sprinkler systems tailored to your yard. From planning zone coverage to trenching and wiring — we handle every step.",
+      "Looking for a sprinkler contractor in Erie or Longmont? We design and install complete lawn sprinkler systems tailored to your yard. From planning zone coverage to trenching and wiring, we handle every step.",
     image: "/images/sprinkler-installation.jpg",
     features: [
       "Custom system design for your property",
@@ -61,9 +61,9 @@ const SERVICES = [
     cta: { label: "Request a Quote", href: "/contact" },
   },
   {
-    title: "Sprinkler Repair & Optimizations",
+    title: "Sprinkler Repair & Tune-Ups",
     description:
-      "Sprinkler not working? Sprinkler leak? Brown spots on your lawn? We fix sprinkler problems fast — from broken sprinkler heads to valve issues and high water bills. We also handle system upgrades, optimizations, and seasonal maintenance.",
+      "Sprinkler not working? Sprinkler leak? Brown spots on your lawn? We fix sprinkler problems fast. Broken sprinkler heads, valve issues, high water bills, system upgrades, and seasonal tune-ups.",
     image: "/images/sprinkler-repair.jpg",
     features: [
       "Sprinkler head replacement",
@@ -77,7 +77,7 @@ const SERVICES = [
       "System upgrades (clocks, rain sensors, water-efficient heads)",
       "Root problem solutions",
       "Full system checks",
-      "Seasonal adjustments and optimizations",
+      "Seasonal adjustments and tune-ups",
     ],
     imagePosition: "left" as const,
     cta: { label: "Request a Quote", href: "/contact" },
