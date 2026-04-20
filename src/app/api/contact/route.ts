@@ -11,6 +11,7 @@ export async function POST(request: Request) {
     const name = formData.get("name") as string
     const email = formData.get("email") as string
     const phone = formData.get("phone") as string
+    const address = formData.get("address") as string
     const service = formData.get("service") as string
     const message = formData.get("message") as string
 
@@ -30,6 +31,7 @@ export async function POST(request: Request) {
         `Name: ${name}`,
         `Phone: ${phone}`,
         `Email: ${email}`,
+        `Address: ${address || "(Not provided)"}`,
         `Service: ${service}`,
         ``,
         `Message:`,
