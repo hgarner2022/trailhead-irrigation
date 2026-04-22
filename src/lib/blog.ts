@@ -15,6 +15,77 @@ export function getReadingTime(content: string): number {
 
 export const BLOG_POSTS: BlogPost[] = [
   {
+    slug: 'erie-march-2026-water-restriction',
+    title: 'Erie March 2026 Water Restriction: What Homeowners Need to Know for Irrigation',
+    date: '2026-04-22',
+    excerpt: 'In March 2026, the Town of Erie declared a water supply emergency and ordered all residents, HOAs, and businesses to immediately shut off their irrigation systems — threatening to cut water service to anyone who didn\'t comply. Here\'s what happened, what it means for your sprinkler system, and how to protect your lawn and landscape as we head into a drought-strained summer.',
+    category: 'Seasonal Maintenance',
+    relatedSlugs: ['colorado-water-restrictions-2026', 'water-optimization-tips-colorado', 'smart-irrigation-controllers-worth-it'],
+    content: `## What Happened in Erie in March 2026
+
+I've been running irrigation systems in Erie and across northern Colorado for years, and I've never seen anything quite like what happened on March 20, 2026.
+
+The Town of Erie issued an emergency directive — not a suggestion, not a gentle reminder — telling every resident, HOA, and business on town water to shut off their sprinkler systems immediately. Not just "please consider waiting." They said if you kept watering, they would physically turn off your water at the tap.
+
+For most individual homes on town water, that meant no water to your entire house — no showers, no sink, nothing — until you complied.
+
+Here's the situation that triggered it: Erie's water system runs on a winter supply capacity of about 3.5 million gallons per day. In normal conditions, winter demand hovers around 2 million gallons per day. But after an unusually warm and dry March — with temperatures that felt more like late May than early spring — residents started firing up their irrigation systems weeks ahead of schedule.
+
+By March 19, usage had crept to 2.9 million gallons per day, increasing by 200,000 to 300,000 gallons every single day as more and more sprinkler systems came online. Town officials said they were days away from running completely out of water. Schools, hospitals, fire hydrants — all of it would have been affected.
+
+The town escalated Erie's drought status from "normal" to **emergency** — the highest level possible — with a target to reduce usage by over 45%. That's how serious it was.
+
+## Why Erie Is Especially Vulnerable
+
+This isn't just an Erie quirk — it's a structural issue that every homeowner in town should understand, especially if you're newer to the area.
+
+Erie and nearby Superior are among the only municipalities in Boulder County that rely almost entirely on **Colorado River water**. That's different from cities like Boulder and Lafayette, which hold senior water rights tied to local sources like Boulder Creek and St. Vrain Creek. Erie gets its summer water from the Carter Lake canal system, which doesn't open until April 1. That's the hard stop — no matter what's happening with the weather, the pipes simply aren't flowing yet.
+
+The Chimney Hollow Reservoir project — a major regional water storage solution that Erie helped fund — was supposed to start storing water in late 2025. But construction delays pushed that timeline back, and releases won't happen in 2026. That safety net isn't there yet.
+
+Add in a winter with record-low snowpack across the Front Range, persistent warm temperatures through March, and Erie's rapid population growth over the past several years — thousands of new homes, new HOAs, new landscapes all needing water — and you have the conditions for exactly what we saw.
+
+## What the Restriction Actually Required
+
+To be clear about the rules as they stood:
+
+- **All sprinkler and irrigation system use was banned** from March 20 through the end of the month — no exceptions for HOAs, businesses, or individual homeowners on town water.
+- **Hand-watering** of trees and gardens was still permitted. Sprinkler systems specifically were the problem because of the volume they put on the system.
+- The town had staff physically driving around in the mornings looking for running sprinklers. First you'd get a door hanger. Then a face-to-face conversation. Third strike, they turned off your tap.
+- **Even-numbered addresses** could resume irrigation no earlier than April 4. **Odd-numbered addresses** no earlier than April 6.
+
+The emergency was officially lifted on April 4, once summer water supply levels came online and usage dropped back to manageable levels. But the town immediately moved into **Stage 1 drought**, asking residents to voluntarily limit outdoor watering to two days per week (with a potential third day during especially hot or dry conditions — you can sign up for text alerts at erieco.gov/drought).
+
+## What This Means for Your Irrigation System
+
+Here's where I want to give you some practical advice as someone who works on these systems every day.
+
+**If you have a smart controller, use it properly.** This is exactly the situation smart irrigation controllers were designed for. Devices like Rachio or Hunter Hydrawise can be scheduled to comply with odd/even restrictions and can factor in ET (evapotranspiration) data so your system only runs when your lawn actually needs water. If you have a smart controller but you're still programming it the same way you did in 2015, call me — you're leaving a lot of efficiency on the table.
+
+**Don't just flip a switch and walk away.** When restrictions lift and you're ready to start irrigating again, don't just turn on last year's program and assume it's fine. Heads shift over winter. Pressure changes. A zone that was fine in October might be spraying your driveway now. Do a quick walk-through when each zone runs and check for obvious waste before you run your full season schedule.
+
+**Check your rain and soil sensors.** If you have sensors, make sure they're calibrated and functioning before the season starts. A malfunctioning rain sensor that tells your system it's always wet — or always dry — will either waste thousands of gallons or stress your lawn all summer.
+
+**Pay attention to drought stage communications.** This won't be the last time Erie enters a drought stage this year. The town has been clear that additional restrictions are possible as we head into summer. Sign up for text alerts (erieco.gov/drought) so you're not caught off guard.
+
+**HOAs: get proactive now.** If you're managing an HOA's irrigation system, the time to audit your contract with your irrigation provider is now — not when restrictions hit. Know which zones draw from potable vs. non-potable water (Erie parks use non-potable reclaimed water; your neighborhood likely does not). Document what's in your system and have a plan for compliance before the next emergency, not during it.
+
+## The Bigger Picture for Erie Homeowners
+
+Erie has grown enormously over the past decade. The Arapahoe Ridge, Rex Ranch, and Colliers Hill neighborhoods alone have added thousands of new homes, most of them with irrigation systems designed to maintain Kentucky bluegrass lawns through Colorado summers. Those systems were installed when water was more available and restrictions weren't part of the conversation.
+
+We're in a different era now. The smart approach — both for your water bill and for staying ahead of restrictions — is to rethink what your landscape actually needs. Bluegrass lawns are water-intensive. There are native and adaptive alternatives that look great, handle Colorado's dry summers far better, and won't leave you scrambling every time the town declares a drought emergency.
+
+I'm not saying you need to rip out your lawn. I'm saying this is a good moment to have an honest conversation about your system — how much you're running it, when you're running it, and whether the timing and duration actually matches what your plants need.
+
+## Ready to Get Your System Dialed In?
+
+If your irrigation system came with your new construction or hasn't been professionally audited in a few years, now is the right time. I do seasonal startup inspections across Erie, Longmont, Firestone, Frederick, and surrounding areas — and I can build you a schedule that keeps your landscape healthy while staying ahead of any future restrictions.
+
+[Contact Trailhead Irrigation](https://trailheadirrigation.com/contact) to schedule a spring startup or system audit. Let's make sure you're set up for whatever this summer throws at us.
+`,
+  },
+  {
     slug: "what-to-expect-sprinkler-installation",
     title: "What to Expect During a Sprinkler System Installation in Erie, CO",
     date: "2026-04-07",
