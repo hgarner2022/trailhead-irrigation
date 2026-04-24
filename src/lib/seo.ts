@@ -1,4 +1,4 @@
-const SITE_URL = "https://trailheadirrigation.com"
+const SITE_URL = "https://www.trailheadirrigation.com"
 
 export const siteConfig = {
   url: SITE_URL,
