@@ -4,7 +4,7 @@ const SITE_URL = "https://trailheadirrigation.com"
 // TODO: Add Facebook, Instagram, Nextdoor, Yelp, Angi, BBB URLs as they're created.
 const SAME_AS_PROFILES = [
   // Google Business Profile (Trailhead Lawn & Irrigation LLC, Erie, CO)
-  "https://www.google.com/maps/place/Trailhead+Lawn+%26+Irrigation+LLC",
+  "https://share.google/TylDvEow1tcqEBYHY",
 ]
 
 export const siteConfig = {
