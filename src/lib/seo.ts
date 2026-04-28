@@ -95,6 +95,14 @@ export function organizationJsonLd() {
     image: `${SITE_URL}/images/logo-new.png`,
     telephone: siteConfig.phone,
     email: siteConfig.email,
+    address: {
+      "@type": "PostalAddress",
+      streetAddress: siteConfig.address.street,
+      addressLocality: siteConfig.address.locality,
+      addressRegion: siteConfig.address.region,
+      postalCode: siteConfig.address.postalCode,
+      addressCountry: siteConfig.address.country,
+    },
     sameAs: SAME_AS_PROFILES,
   }
 }
