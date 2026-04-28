@@ -1,4 +1,11 @@
-const SITE_URL = "https://www.trailheadirrigation.com"
+const SITE_URL = "https://trailheadirrigation.com"
+
+// Public profiles used as `sameAs` authority signals for SEO + AI citation.
+// TODO: Add Facebook, Instagram, Nextdoor, Yelp, Angi, BBB URLs as they're created.
+const SAME_AS_PROFILES = [
+  // Google Business Profile (Trailhead Lawn & Irrigation LLC, Erie, CO)
+  "https://www.google.com/maps/place/Trailhead+Lawn+%26+Irrigation+LLC",
+]
 
 export const siteConfig = {
   url: SITE_URL,
@@ -61,7 +68,14 @@ export function localBusinessJsonLd() {
       opens: "08:00",
       closes: "18:00",
     },
-    sameAs: [],
+    aggregateRating: {
+      "@type": "AggregateRating",
+      ratingValue: "5.0",
+      reviewCount: "3",
+      bestRating: "5",
+      worstRating: "1",
+    },
+    sameAs: SAME_AS_PROFILES,
   }
 }
 
@@ -81,59 +95,210 @@ export function organizationJsonLd() {
     image: `${SITE_URL}/images/logo-new.png`,
     telephone: siteConfig.phone,
     email: siteConfig.email,
+    sameAs: SAME_AS_PROFILES,
   }
 }
 
-export function serviceJsonLd() {
+// ───────────────────────────────────────────────────────────────────────────
+// Service schemas — split into individual Service entities so each can rank
+// and be cited independently in AI overviews.
+// ───────────────────────────────────────────────────────────────────────────
+
+const SERVICE_AREAS = [
+  "Erie, CO",
+  "Longmont, CO",
+  "Louisville, CO",
+  "Lafayette, CO",
+  "Firestone, CO",
+  "Weld County, CO",
+]
+
+type ServiceDef = {
+  id: string
+  name: string
+  description: string
+  serviceType: string
+  url?: string
+  priceSpecification?: {
+    price: string
+    priceCurrency: string
+    description: string
+  }
+}
+
+const SERVICES: ServiceDef[] = [
+  {
+    id: "sprinkler-installation",
+    name: "Lawn Sprinkler Installation",
+    description:
+      "Custom residential sprinkler system design and installation in Erie, Longmont, and Northern Colorado. Includes zone layout, head placement, trenching, controller setup, and final walkthrough.",
+    serviceType: "Sprinkler System Installation",
+    url: `${SITE_URL}/services`,
+    priceSpecification: {
+      price: "3000",
+      priceCurrency: "USD",
+      description: "Typical residential install range $3,000–$6,000 depending on lot size and zones",
+    },
+  },
+  {
+    id: "sprinkler-repair",
+    name: "Sprinkler Repair",
+    description:
+      "Sprinkler head replacement, valve repair, leak detection, broken pipe repair, controller troubleshooting, and wiring repair. No trip fee.",
+    serviceType: "Sprinkler Repair",
+    url: `${SITE_URL}/services`,
+  },
+  {
+    id: "sprinkler-winterization",
+    name: "Sprinkler Winterization (Blowout)",
+    description:
+      "Professional compressed-air sprinkler blowout to protect your irrigation system from Colorado's freeze-thaw cycle. Recommended between mid-October and early November.",
+    serviceType: "Sprinkler Winterization",
+    url: `${SITE_URL}/pricing`,
+    priceSpecification: {
+      price: "95",
+      priceCurrency: "USD",
+      description: "$95 for up to 8 zones, +$7 per additional zone",
+    },
+  },
+  {
+    id: "spring-turn-on",
+    name: "Spring Sprinkler Turn-On",
+    description:
+      "Spring sprinkler startup with full system check, leak checks, head adjustments, controller programming, and a water efficiency check. Available late April through May.",
+    serviceType: "Spring Sprinkler Activation",
+    url: `${SITE_URL}/pricing`,
+    priceSpecification: {
+      price: "130",
+      priceCurrency: "USD",
+      description: "$130 for up to 8 zones, +$10 per additional zone",
+    },
+  },
+]
+
+function buildService(s: ServiceDef) {
   return {
     "@context": "https://schema.org",
     "@type": "Service",
-    serviceType: "Sprinkler Company",
+    "@id": `${SITE_URL}/#service-${s.id}`,
+    name: s.name,
+    description: s.description,
+    serviceType: s.serviceType,
     provider: { "@id": `${SITE_URL}/#business` },
-    areaServed: ["Erie, CO", "Longmont, CO", "Louisville, CO", "Lafayette, CO", "Firestone, CO", "Weld County, CO"],
-    hasOfferCatalog: {
-      "@type": "OfferCatalog",
-      name: "Sprinkler Services",
-      itemListElement: [
-        {
-          "@type": "Offer",
-          itemOffered: {
-            "@type": "Service",
-            name: "Lawn Sprinkler Installation",
-            description:
-              "Custom residential sprinkler system design and installation in Erie, Longmont, and Northern Colorado.",
-          },
+    areaServed: SERVICE_AREAS,
+    ...(s.url && { url: s.url }),
+    ...(s.priceSpecification && {
+      offers: {
+        "@type": "Offer",
+        priceSpecification: {
+          "@type": "PriceSpecification",
+          price: s.priceSpecification.price,
+          priceCurrency: s.priceSpecification.priceCurrency,
+          description: s.priceSpecification.description,
         },
-        {
-          "@type": "Offer",
-          itemOffered: {
-            "@type": "Service",
-            name: "Sprinkler Repair",
-            description:
-              "Fix broken sprinkler heads, sprinkler leaks, valve repair, pipe repair, and controller troubleshooting.",
-          },
-        },
-        {
-          "@type": "Offer",
-          itemOffered: {
-            "@type": "Service",
-            name: "Sprinkler Winterization (Blowout)",
-            description:
-              "Professional sprinkler blowout to winterize your sprinklers before Colorado's freeze season.",
-          },
-        },
-        {
-          "@type": "Offer",
-          itemOffered: {
-            "@type": "Service",
-            name: "Spring Sprinkler Turn-On",
-            description:
-              "Spring sprinkler startup with leak checks, head adjustments, and controller programming.",
-          },
-        },
-      ],
-    },
+        availability: "https://schema.org/InStock",
+        seller: { "@id": `${SITE_URL}/#business` },
+      },
+    }),
   }
+}
+
+/**
+ * Returns an array of individual Service JSON-LD objects (one per offering).
+ * Wrap each in its own <script> tag, OR pass the array as a single
+ * @graph payload — both are valid for Google.
+ */
+export function serviceJsonLd() {
+  return SERVICES.map(buildService)
+}
+
+/** Individual service lookup — useful for service-specific landing pages. */
+export function singleServiceJsonLd(id: string) {
+  const svc = SERVICES.find((s) => s.id === id)
+  return svc ? buildService(svc) : null
+}
+
+// ───────────────────────────────────────────────────────────────────────────
+// Person schema — Ryan Garner. Major E-E-A-T signal for AI citation.
+// ───────────────────────────────────────────────────────────────────────────
+
+export function personJsonLd() {
+  return {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    "@id": `${SITE_URL}/#ryan`,
+    name: "Ryan Garner",
+    givenName: "Ryan",
+    familyName: "Garner",
+    jobTitle: "Founder & Lead Sprinkler Contractor",
+    description:
+      "Ryan Garner is the founder of Trailhead Lawn & Irrigation LLC, a residential sprinkler company serving Erie, Longmont, Louisville, Lafayette, and Weld County, Colorado. Ryan personally handles installations, repairs, blowouts, and spring turn-ons across the Northern Colorado Front Range.",
+    url: `${SITE_URL}/about`,
+    image: `${SITE_URL}/images/ryan.jpg`,
+    knowsAbout: [
+      "Sprinkler system installation",
+      "Irrigation repair",
+      "Sprinkler winterization (blowout)",
+      "Spring sprinkler turn-on",
+      "Backflow preventer testing",
+      "Smart irrigation controllers (Rachio, Hunter Hydrawise, Rain Bird)",
+      "Drip irrigation",
+      "Water efficiency and conservation",
+      "Colorado water restrictions",
+      "Front Range soil and climate",
+    ],
+    worksFor: { "@id": `${SITE_URL}/#business` },
+    workLocation: {
+      "@type": "Place",
+      name: "Erie, Colorado",
+      address: {
+        "@type": "PostalAddress",
+        addressLocality: "Erie",
+        addressRegion: "CO",
+        addressCountry: "US",
+      },
+    },
+    sameAs: SAME_AS_PROFILES,
+  }
+}
+
+// ───────────────────────────────────────────────────────────────────────────
+// Review schema scaffold — populate with REAL reviews only.
+// Google penalizes fake/synthetic Review markup. Pull text from genuine
+// Google Business Profile reviews into `src/lib/reviews.ts` before wiring in.
+// ───────────────────────────────────────────────────────────────────────────
+
+export type ReviewItem = {
+  author: string
+  rating: number
+  date: string // ISO YYYY-MM-DD
+  body: string
+  source?: string // e.g. "Google"
+}
+
+export function reviewJsonLd(review: ReviewItem) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "Review",
+    itemReviewed: { "@id": `${SITE_URL}/#business` },
+    author: { "@type": "Person", name: review.author },
+    reviewRating: {
+      "@type": "Rating",
+      ratingValue: String(review.rating),
+      bestRating: "5",
+      worstRating: "1",
+    },
+    datePublished: review.date,
+    reviewBody: review.body,
+    ...(review.source && {
+      publisher: { "@type": "Organization", name: review.source },
+    }),
+  }
+}
+
+/** Build an array of Review schema entries from a list of real reviews. */
+export function reviewsJsonLd(reviews: ReviewItem[]) {
+  return reviews.map(reviewJsonLd)
 }
 
 export function faqJsonLd(

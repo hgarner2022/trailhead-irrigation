@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils"
 import Image from "next/image"
 import Link from "next/link"
 import { Phone, MapPin, Droplets, Wrench, Shield, Users } from "lucide-react"
-import { siteConfig, breadcrumbJsonLd } from "@/lib/seo"
+import { siteConfig, breadcrumbJsonLd, personJsonLd } from "@/lib/seo"
 
 export const metadata: Metadata = {
   title: "About Ryan Garner | Erie Sprinkler Contractor",
@@ -65,27 +65,7 @@ export default function AboutPage() {
       />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "Person",
-            name: "Ryan Garner",
-            jobTitle: "Founder",
-            worksFor: {
-              "@type": "LocalBusiness",
-              name: siteConfig.name,
-              url: siteConfig.url,
-            },
-            address: {
-              "@type": "PostalAddress",
-              addressLocality: "Erie",
-              addressRegion: "CO",
-              postalCode: "80516",
-              addressCountry: "US",
-            },
-            url: `${siteConfig.url}/about`,
-          }),
-        }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(personJsonLd()) }}
       />
 
       <PageBanner

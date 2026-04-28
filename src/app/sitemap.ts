@@ -3,7 +3,7 @@ import { BLOG_POSTS } from "@/lib/blog"
 import { CITY_DATA } from "@/lib/city-data"
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = "https://www.trailheadirrigation.com"
+  const baseUrl = "https://trailheadirrigation.com"
 
   const staticPages = [
     { url: baseUrl, lastModified: new Date(), changeFrequency: "monthly" as const, priority: 1 },
