@@ -5,18 +5,9 @@ const nextConfig: NextConfig = {
     formats: ["image/avif", "image/webp"],
   },
 
-  // Force apex (non-www) as the canonical host. Google has indexed the apex,
-  // and our metadata/sitemap/robots all point there. Redirect www -> apex.
-  async redirects() {
-    return [
-      {
-        source: "/:path*",
-        has: [{ type: "host", value: "www.trailheadirrigation.com" }],
-        destination: "https://trailheadirrigation.com/:path*",
-        permanent: true,
-      },
-    ]
-  },
+  // NOTE: www → apex redirect is handled by Vercel at the edge (Domain
+  // Settings in the Vercel dashboard). Do NOT add a Next.js redirect for the
+  // host here — it caused a redirect loop with Vercel's edge routing.
 
   async headers() {
     const securityHeaders = [
