@@ -1,6 +1,26 @@
 import { Card, CardContent } from "@/components/ui/card"
 import { Star } from "lucide-react"
-import { REVIEWS } from "@/lib/reviews"
+
+const TESTIMONIALS = [
+  {
+    name: "Sarah M.",
+    location: "Erie, CO",
+    text: "Ryan was professional, on time, and got our sprinkler system running perfectly. Highly recommend Trailhead to anyone in the area!",
+    rating: 5,
+  },
+  {
+    name: "Mike T.",
+    location: "Longmont, CO",
+    text: "Best irrigation service we've used. Fair pricing, honest work, and Ryan clearly knows his stuff. Our lawn has never looked better.",
+    rating: 5,
+  },
+  {
+    name: "Jennifer R.",
+    location: "Weld County",
+    text: "Had a sprinkler emergency on a weekend and Ryan got back to me right away. Fixed the issue quickly and the price was very reasonable.",
+    rating: 5,
+  },
+]
 
 export function Testimonials() {
   return (
@@ -12,27 +32,25 @@ export function Testimonials() {
               What Our Customers Say
             </h2>
             <p className="text-muted-foreground text-lg">
-              Real reviews from our Google Business Profile.
+              Don&apos;t just take our word for it.
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
-            {REVIEWS.map((review) => (
-              <Card key={review.author} className="p-6">
+            {TESTIMONIALS.map((testimonial) => (
+              <Card key={testimonial.name} className="p-6">
                 <CardContent className="p-0 flex flex-col gap-4">
                   <div className="flex gap-0.5">
-                    {Array.from({ length: review.rating }).map((_, i) => (
+                    {Array.from({ length: testimonial.rating }).map((_, i) => (
                       <Star key={i} className="h-5 w-5 fill-primary text-primary" />
                     ))}
                   </div>
                   <p className="text-foreground text-base leading-relaxed">
-                    &ldquo;{review.body}&rdquo;
+                    &ldquo;{testimonial.text}&rdquo;
                   </p>
                   <div>
-                    <p className="font-semibold text-foreground">{review.author}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {review.source ?? "Verified review"}
-                    </p>
+                    <p className="font-semibold text-foreground">{testimonial.name}</p>
+                    <p className="text-sm text-muted-foreground">{testimonial.location}</p>
                   </div>
                 </CardContent>
               </Card>
