@@ -61,6 +61,15 @@ export default async function CityPage({
 
   const otherCities = CITY_DATA.filter((c) => c.slug !== data.slug)
 
+  // Build a stable "last updated" timestamp at build time. Surfaced visibly
+  // and in the JSON-LD `dateModified` so AI engines treat the page as fresh.
+  const lastUpdatedISO = new Date().toISOString()
+  const lastUpdatedLabel = new Date().toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  })
+
   return (
     <>
       <script
@@ -95,6 +104,7 @@ export default async function CityPage({
               containedInPlace: { "@type": "State", name: "Colorado" },
             },
             description: `Sprinkler installation, repair, winterization and spring turn-on in ${data.name}, CO.`,
+            dateModified: lastUpdatedISO,
           }),
         }}
       />
@@ -124,6 +134,11 @@ export default async function CityPage({
               Elevation: {data.elevation}
             </span>
           </div>
+          <p className="mt-4 text-xs text-muted-foreground">
+            <time dateTime={lastUpdatedISO}>
+              Last updated {lastUpdatedLabel}
+            </time>
+          </p>
         </div>
       </section>
 

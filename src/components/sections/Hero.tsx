@@ -18,14 +18,17 @@ export function Hero() {
       <div className="absolute inset-0 bg-navy/70" />
       <div className="relative container-padding-x mx-auto max-w-7xl py-24 md:py-32">
         <div className="flex flex-col items-center text-center gap-6 max-w-3xl mx-auto">
+          <p className="text-sm md:text-base font-semibold uppercase tracking-widest text-primary-light">
+            Erie&apos;s Local Sprinkler Company
+          </p>
           <h1
             id="hero-heading"
             className="text-4xl md:text-5xl lg:text-6xl font-bold text-white tracking-tight"
           >
-            Erie&apos;s Local Sprinkler Company
+            Sprinkler Repair &amp; Installation in Erie, CO
           </h1>
           <p className="text-lg md:text-xl text-white/90 text-pretty max-w-2xl">
-            Erie&apos;s trusted sprinkler company. Lawn sprinkler installation, repair, winterization &amp; spring turn-on serving Erie, Longmont, Louisville, Lafayette &amp; Weld County.
+            Locally owned. Lawn sprinkler installation, repair, winterization &amp; spring turn-on serving Erie, Longmont, Louisville, Lafayette &amp; Weld County, Colorado.
           </p>
           <div className="flex flex-col sm:flex-row items-center gap-3 mt-2">
             <Link

@@ -287,6 +287,108 @@ export default function PricingPage() {
       <MaintenancePlans />
 
       {/* ════════════════════════════════════════════
+          PLAN COMPARISON TABLE — for AI / SEO extraction
+          ════════════════════════════════════════════ */}
+      <section className="bg-background section-padding-y">
+        <div className="container-padding-x mx-auto max-w-5xl">
+          <div className="text-center mb-10">
+            <Badge variant="outline" className="mb-4">
+              At a glance
+            </Badge>
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground">
+              Maintenance Plan Comparison
+            </h2>
+            <p className="mt-3 text-muted-foreground max-w-2xl mx-auto">
+              Side-by-side comparison of every Trailhead plan and individual service.
+            </p>
+          </div>
+
+          <div className="overflow-x-auto rounded-xl border border-border">
+            <table className="w-full text-left text-sm md:text-base">
+              <thead className="bg-cream">
+                <tr>
+                  <th scope="col" className="p-4 font-semibold text-foreground">
+                    Feature
+                  </th>
+                  <th scope="col" className="p-4 font-semibold text-foreground">
+                    À la carte
+                  </th>
+                  <th scope="col" className="p-4 font-semibold text-foreground">
+                    Essential Plan
+                  </th>
+                  <th scope="col" className="p-4 font-semibold text-primary">
+                    Complete Plan
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                <tr>
+                  <th scope="row" className="p-4 font-medium text-foreground">
+                    Starting price (up to 8 zones)
+                  </th>
+                  <td className="p-4 text-muted-foreground">Pay per service</td>
+                  <td className="p-4 text-muted-foreground">$215</td>
+                  <td className="p-4 text-foreground font-semibold">$310</td>
+                </tr>
+                <tr>
+                  <th scope="row" className="p-4 font-medium text-foreground">
+                    Spring turn-on + system check
+                  </th>
+                  <td className="p-4 text-muted-foreground">$130</td>
+                  <td className="p-4 text-foreground">Included</td>
+                  <td className="p-4 text-foreground">Included</td>
+                </tr>
+                <tr>
+                  <th scope="row" className="p-4 font-medium text-foreground">
+                    Sprinkler winterization (blowout)
+                  </th>
+                  <td className="p-4 text-muted-foreground">$95</td>
+                  <td className="p-4 text-foreground">Included</td>
+                  <td className="p-4 text-foreground">Included</td>
+                </tr>
+                <tr>
+                  <th scope="row" className="p-4 font-medium text-foreground">
+                    Mid-season inspection &amp; tune-up
+                  </th>
+                  <td className="p-4 text-muted-foreground">$120</td>
+                  <td className="p-4 text-muted-foreground">—</td>
+                  <td className="p-4 text-foreground">Included</td>
+                </tr>
+                <tr>
+                  <th scope="row" className="p-4 font-medium text-foreground">
+                    Discount on all repairs &amp; services
+                  </th>
+                  <td className="p-4 text-muted-foreground">—</td>
+                  <td className="p-4 text-foreground">5% off</td>
+                  <td className="p-4 text-foreground font-semibold">10% off</td>
+                </tr>
+                <tr>
+                  <th scope="row" className="p-4 font-medium text-foreground">
+                    Priority scheduling
+                  </th>
+                  <td className="p-4 text-muted-foreground">—</td>
+                  <td className="p-4 text-foreground">Yes</td>
+                  <td className="p-4 text-foreground">Yes</td>
+                </tr>
+                <tr>
+                  <th scope="row" className="p-4 font-medium text-foreground">
+                    Per additional zone (above 8)
+                  </th>
+                  <td className="p-4 text-muted-foreground">+$7–$10 / zone</td>
+                  <td className="p-4 text-muted-foreground">+$17 / zone</td>
+                  <td className="p-4 text-muted-foreground">+$27 / zone</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <p className="mt-4 text-xs text-muted-foreground text-center">
+            Materials and any additional repair work are invoiced separately on every plan.
+          </p>
+        </div>
+      </section>
+
+      {/* ════════════════════════════════════════════
           IRRIGATION INSTALLS
           ════════════════════════════════════════════ */}
       <section className="bg-cream section-padding-y">

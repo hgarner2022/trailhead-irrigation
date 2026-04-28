@@ -106,7 +106,10 @@ export default function ServicesPage() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify(serviceJsonLd()),
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@graph": serviceJsonLd(),
+          }),
         }}
       />
       <script
@@ -131,6 +134,108 @@ export default function ServicesPage() {
         description="Your local sprinkler company for installation, repair, and seasonal maintenance in Erie, Longmont & Northern Colorado."
         backgroundImage="/images/sprinkler-installation.jpg"
       />
+
+      {/* Definition blocks — short 40–60 word answers AI engines can extract
+          and cite directly. Mirrors common "what is …" search queries. */}
+      <section
+        className="bg-background section-padding-y"
+        aria-labelledby="definitions-heading"
+      >
+        <div className="container-padding-x mx-auto max-w-5xl">
+          <div className="text-center mb-10">
+            <h2
+              id="definitions-heading"
+              className="text-3xl md:text-4xl font-bold text-foreground"
+            >
+              Sprinkler Services Explained
+            </h2>
+            <p className="mt-3 text-muted-foreground max-w-2xl mx-auto">
+              Quick definitions of every service we offer in Erie and Northern Colorado.
+            </p>
+          </div>
+
+          <dl className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="bg-cream border border-border rounded-lg p-6">
+              <dt className="font-semibold text-foreground mb-2">
+                What is a sprinkler blowout?
+              </dt>
+              <dd className="text-muted-foreground leading-relaxed">
+                A sprinkler blowout is a winterization service that uses a
+                high-volume air compressor to push every drop of water out of
+                an irrigation system before winter. In Northern Colorado,
+                blowouts run from mid-October through early November and protect
+                pipes, valves, and backflow assemblies from freeze-thaw damage.
+              </dd>
+            </div>
+
+            <div className="bg-cream border border-border rounded-lg p-6">
+              <dt className="font-semibold text-foreground mb-2">
+                What is a spring sprinkler turn-on?
+              </dt>
+              <dd className="text-muted-foreground leading-relaxed">
+                A spring turn-on is the seasonal service that activates an
+                irrigation system after winter. It includes pressurizing the
+                main line, checking every zone for leaks, adjusting heads,
+                programming the controller for spring conditions, and verifying
+                water-efficient operation before the watering season begins.
+              </dd>
+            </div>
+
+            <div className="bg-cream border border-border rounded-lg p-6">
+              <dt className="font-semibold text-foreground mb-2">
+                What is a backflow preventer?
+              </dt>
+              <dd className="text-muted-foreground leading-relaxed">
+                A backflow preventer is a code-required valve assembly that
+                stops irrigation water from siphoning back into the home&apos;s
+                drinking-water supply. Most Colorado municipalities require
+                annual testing by a certified backflow tester. The two common
+                residential types are PVB (pressure vacuum breaker) and RPZ
+                (reduced-pressure zone) assemblies.
+              </dd>
+            </div>
+
+            <div className="bg-cream border border-border rounded-lg p-6">
+              <dt className="font-semibold text-foreground mb-2">
+                What is a smart sprinkler controller?
+              </dt>
+              <dd className="text-muted-foreground leading-relaxed">
+                A smart sprinkler controller is a Wi-Fi-enabled timer that
+                adjusts watering automatically using local weather, soil-moisture
+                data, and evapotranspiration rates. WaterSense-certified models
+                like Rachio, Hunter Hydrawise, and Rain Bird ESP-Me3 can cut
+                outdoor water use by 20–50% and qualify for utility rebates.
+              </dd>
+            </div>
+
+            <div className="bg-cream border border-border rounded-lg p-6">
+              <dt className="font-semibold text-foreground mb-2">
+                What is drip irrigation?
+              </dt>
+              <dd className="text-muted-foreground leading-relaxed">
+                Drip irrigation delivers water slowly through low-pressure
+                tubing and emitters placed at the base of each plant. It uses
+                30–50% less water than spray heads, eliminates runoff and
+                evaporation, and is ideal for flower beds, vegetable gardens,
+                tree wells, and xeriscape areas in Colorado&apos;s dry climate.
+              </dd>
+            </div>
+
+            <div className="bg-cream border border-border rounded-lg p-6">
+              <dt className="font-semibold text-foreground mb-2">
+                What does a sprinkler repair include?
+              </dt>
+              <dd className="text-muted-foreground leading-relaxed">
+                A sprinkler repair covers diagnosing and fixing any
+                malfunctioning component of an irrigation system: broken or
+                clogged heads, leaking valves, cracked pipes, faulty wiring,
+                and controller programming issues. Trailhead does not service
+                systems with PVC piping running directly to spray heads.
+              </dd>
+            </div>
+          </dl>
+        </div>
+      </section>
 
       {SERVICES.map((service, index) => (
         <section
