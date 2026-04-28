@@ -46,7 +46,7 @@ const PRICING_FAQS = [
   {
     question: "What's included in the maintenance plans?",
     answer:
-      "The Essential Plan (5% off) includes spring turn-on, winterization, priority scheduling, and 5% off all services — starting at $215 for up to 8 zones. The Complete Plan (10% off) adds a sprinkler inspection & tune-up and upgrades the discount to 10% off all services — starting at $310 for up to 8 zones. Plans cover only the services listed — materials and any additional repair work are invoiced separately.",
+      "The Essential Plan (5% off) includes spring turn-on, winterization, priority scheduling, and 5% off all services — starting at $215 for up to 8 zones. The Complete Plan (10% off) adds a sprinkler inspection & tune-up and upgrades the discount to 10% off all services — starting at $320 for up to 8 zones. Plans cover only the services listed — materials and any additional repair work are invoiced separately.",
   },
   {
     question: "Do you install new irrigation systems?",
@@ -161,9 +161,12 @@ export default function PricingPage() {
               <CardContent className="flex flex-1 flex-col gap-4">
                 <div>
                   <div className="flex items-baseline gap-1">
-                    <span className="text-muted-foreground text-sm">Starting at</span>
                     <span className="text-3xl font-bold text-foreground">$130</span>
+                    <span className="text-muted-foreground text-sm">up to 8 zones</span>
                   </div>
+                  <p className="text-sm text-primary font-medium mt-1">
+                    +$10 per additional zone
+                  </p>
                 </div>
                 <ul className="flex flex-col gap-2 text-sm text-muted-foreground">
                   <ServiceItem>Full system check &amp; adjustments</ServiceItem>
@@ -325,7 +328,7 @@ export default function PricingPage() {
                   </th>
                   <td className="p-4 text-muted-foreground">Pay per service</td>
                   <td className="p-4 text-muted-foreground">$215</td>
-                  <td className="p-4 text-foreground font-semibold">$310</td>
+                  <td className="p-4 text-foreground font-semibold">$320</td>
                 </tr>
                 <tr>
                   <th scope="row" className="p-4 font-medium text-foreground">
@@ -347,7 +350,7 @@ export default function PricingPage() {
                   <th scope="row" className="p-4 font-medium text-foreground">
                     Mid-season inspection &amp; tune-up
                   </th>
-                  <td className="p-4 text-muted-foreground">From $130</td>
+                  <td className="p-4 text-muted-foreground">$130</td>
                   <td className="p-4 text-muted-foreground">—</td>
                   <td className="p-4 text-foreground">Included</td>
                 </tr>

@@ -19,7 +19,7 @@ import {
 const BASE_ZONES = 8
 const ESSENTIAL_BASE = 215
 const ESSENTIAL_PER_ZONE = 17
-const COMPLETE_BASE = 310
+const COMPLETE_BASE = 320
 const COMPLETE_PER_ZONE = 25
 
 const ZONE_OPTIONS = Array.from({ length: 9 }, (_, i) => i + 8) // 8–16 zones
