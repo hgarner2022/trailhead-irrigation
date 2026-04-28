@@ -135,6 +135,84 @@ export default function ServicesPage() {
         backgroundImage="/images/sprinkler-installation.jpg"
       />
 
+      {SERVICES.map((service, index) => (
+        <section
+          key={service.title}
+          className={cn(
+            index % 2 === 0 ? "bg-background" : "bg-cream",
+            "section-padding-y"
+          )}
+        >
+          <div className="container-padding-x mx-auto max-w-7xl">
+            <div
+              className={cn(
+                "flex flex-col items-center gap-12 lg:flex-row lg:gap-16",
+                service.imagePosition === "left" && "lg:flex-row-reverse"
+              )}
+            >
+              {/* Content */}
+              <div className="flex flex-1 flex-col gap-6">
+                <h2 className="text-3xl md:text-4xl font-bold text-foreground">
+                  {service.title}
+                </h2>
+                <p className="text-muted-foreground text-lg leading-relaxed">
+                  {service.description}
+                </p>
+                <ul className="flex flex-col gap-3">
+                  {service.features.map((feature) => (
+                    <li key={feature} className="flex items-start gap-3">
+                      <Check className="h-5 w-5 text-success shrink-0 mt-0.5" />
+                      <span className="text-foreground">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+                <Link
+                  href={service.cta.href}
+                  className={cn(buttonVariants({ size: "lg" }), "w-fit mt-2")}
+                >
+                  {service.cta.label}
+                </Link>
+              </div>
+
+              {/* Image */}
+              <div className="w-full flex-1">
+                <div className="relative aspect-[4/3] rounded-xl overflow-hidden">
+                  <Image
+                    src={service.image}
+                    alt={service.title}
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      ))}
+
+      {/* Service Areas */}
+      <section className="bg-background section-padding-y">
+        <div className="container-padding-x mx-auto max-w-3xl text-center">
+          <h2 className="text-3xl font-bold text-foreground mb-4">
+            Areas We Serve
+          </h2>
+          <p className="text-muted-foreground mb-8">
+            We&apos;re based in Erie and serve the entire Northern Colorado Front Range. Click your city for local water info, restrictions, and FAQs.
+          </p>
+          <div className="flex flex-wrap justify-center gap-4">
+            {CITY_DATA.map((city) => (
+              <Link
+                key={city.slug}
+                href={`/services/${city.slug}`}
+                className={cn(buttonVariants({ variant: "outline", size: "lg" }))}
+              >
+                {city.name}, CO
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Definition blocks — short 40–60 word answers AI engines can extract
           and cite directly. Mirrors common "what is …" search queries. */}
       <section
@@ -234,84 +312,6 @@ export default function ServicesPage() {
               </dd>
             </div>
           </dl>
-        </div>
-      </section>
-
-      {SERVICES.map((service, index) => (
-        <section
-          key={service.title}
-          className={cn(
-            index % 2 === 0 ? "bg-background" : "bg-cream",
-            "section-padding-y"
-          )}
-        >
-          <div className="container-padding-x mx-auto max-w-7xl">
-            <div
-              className={cn(
-                "flex flex-col items-center gap-12 lg:flex-row lg:gap-16",
-                service.imagePosition === "left" && "lg:flex-row-reverse"
-              )}
-            >
-              {/* Content */}
-              <div className="flex flex-1 flex-col gap-6">
-                <h2 className="text-3xl md:text-4xl font-bold text-foreground">
-                  {service.title}
-                </h2>
-                <p className="text-muted-foreground text-lg leading-relaxed">
-                  {service.description}
-                </p>
-                <ul className="flex flex-col gap-3">
-                  {service.features.map((feature) => (
-                    <li key={feature} className="flex items-start gap-3">
-                      <Check className="h-5 w-5 text-success shrink-0 mt-0.5" />
-                      <span className="text-foreground">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-                <Link
-                  href={service.cta.href}
-                  className={cn(buttonVariants({ size: "lg" }), "w-fit mt-2")}
-                >
-                  {service.cta.label}
-                </Link>
-              </div>
-
-              {/* Image */}
-              <div className="w-full flex-1">
-                <div className="relative aspect-[4/3] rounded-xl overflow-hidden">
-                  <Image
-                    src={service.image}
-                    alt={service.title}
-                    fill
-                    className="object-cover"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-      ))}
-
-      {/* Service Areas */}
-      <section className="bg-background section-padding-y">
-        <div className="container-padding-x mx-auto max-w-3xl text-center">
-          <h2 className="text-3xl font-bold text-foreground mb-4">
-            Areas We Serve
-          </h2>
-          <p className="text-muted-foreground mb-8">
-            We&apos;re based in Erie and serve the entire Northern Colorado Front Range. Click your city for local water info, restrictions, and FAQs.
-          </p>
-          <div className="flex flex-wrap justify-center gap-4">
-            {CITY_DATA.map((city) => (
-              <Link
-                key={city.slug}
-                href={`/services/${city.slug}`}
-                className={cn(buttonVariants({ variant: "outline", size: "lg" }))}
-              >
-                {city.name}, CO
-              </Link>
-            ))}
-          </div>
         </div>
       </section>
 
