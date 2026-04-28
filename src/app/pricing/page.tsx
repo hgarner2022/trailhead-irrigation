@@ -116,7 +116,7 @@ export default function PricingPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Spring Turn-On */}
-            <Card className="relative overflow-hidden border-border hover:border-primary/30 transition-colors">
+            <Card className="relative overflow-hidden border-border hover:border-primary/30 transition-colors flex flex-col">
               <CardHeader className="pb-3">
                 <div className="flex items-center gap-3 mb-2">
                   <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10">
@@ -125,7 +125,7 @@ export default function PricingPage() {
                   <CardTitle className="text-lg">Spring Turn-On + System Check</CardTitle>
                 </div>
               </CardHeader>
-              <CardContent className="flex flex-col gap-4">
+              <CardContent className="flex flex-1 flex-col gap-4">
                 <div>
                   <div className="flex items-baseline gap-1">
                     <span className="text-3xl font-bold text-foreground">$130</span>
@@ -142,14 +142,14 @@ export default function PricingPage() {
                   <ServiceItem>Water efficiency check</ServiceItem>
                 </ul>
                 <p className="text-xs text-muted-foreground mt-2">Materials not included if repairs are needed.</p>
-                <Link href="/book" className={cn(buttonVariants({ size: "sm" }), "w-full mt-2")}>
+                <Link href="/book" className={cn(buttonVariants({ size: "sm" }), "w-full mt-auto")}>
                   Book Online
                 </Link>
               </CardContent>
             </Card>
 
             {/* Sprinkler Inspection & Tune-Up */}
-            <Card className="relative overflow-hidden border-border hover:border-primary/30 transition-colors">
+            <Card className="relative overflow-hidden border-border hover:border-primary/30 transition-colors flex flex-col">
               <CardHeader className="pb-3">
                 <div className="flex items-center gap-3 mb-2">
                   <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10">
@@ -158,15 +158,12 @@ export default function PricingPage() {
                   <CardTitle className="text-lg">Sprinkler Inspection & Tune-Up</CardTitle>
                 </div>
               </CardHeader>
-              <CardContent className="flex flex-col gap-4">
+              <CardContent className="flex flex-1 flex-col gap-4">
                 <div>
                   <div className="flex items-baseline gap-1">
-                    <span className="text-3xl font-bold text-foreground">$120</span>
-                    <span className="text-muted-foreground text-sm">up to 8 zones</span>
+                    <span className="text-muted-foreground text-sm">Starting at</span>
+                    <span className="text-3xl font-bold text-foreground">$130</span>
                   </div>
-                  <p className="text-sm text-primary font-medium mt-1">
-                    +$10 per additional zone
-                  </p>
                 </div>
                 <ul className="flex flex-col gap-2 text-sm text-muted-foreground">
                   <ServiceItem>Full system check &amp; adjustments</ServiceItem>
@@ -175,14 +172,14 @@ export default function PricingPage() {
                   <ServiceItem>Recommendations report</ServiceItem>
                 </ul>
                 <p className="text-xs text-muted-foreground mt-2">Materials not included if repairs are needed.</p>
-                <Link href="/book" className={cn(buttonVariants({ size: "sm" }), "w-full mt-2")}>
+                <Link href="/book" className={cn(buttonVariants({ size: "sm" }), "w-full mt-auto")}>
                   Book Online
                 </Link>
               </CardContent>
             </Card>
 
             {/* Winterization */}
-            <Card className="relative overflow-hidden border-border hover:border-primary/30 transition-colors">
+            <Card className="relative overflow-hidden border-border hover:border-primary/30 transition-colors flex flex-col">
               <CardHeader className="pb-3">
                 <div className="flex items-center gap-3 mb-2">
                   <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-blue-500/10">
@@ -191,7 +188,7 @@ export default function PricingPage() {
                   <CardTitle className="text-lg">Winterization (Blowout)</CardTitle>
                 </div>
               </CardHeader>
-              <CardContent className="flex flex-col gap-4">
+              <CardContent className="flex flex-1 flex-col gap-4">
                 <div>
                   <div className="flex items-baseline gap-1">
                     <span className="text-3xl font-bold text-foreground">$95</span>
@@ -207,7 +204,7 @@ export default function PricingPage() {
                   <ServiceItem>Backflow protection</ServiceItem>
                   <ServiceItem>Winter-ready verification</ServiceItem>
                 </ul>
-                <Link href="/book" className={cn(buttonVariants({ size: "sm" }), "w-full mt-2")}>
+                <Link href="/book" className={cn(buttonVariants({ size: "sm" }), "w-full mt-auto")}>
                   Book Online
                 </Link>
               </CardContent>
@@ -350,7 +347,7 @@ export default function PricingPage() {
                   <th scope="row" className="p-4 font-medium text-foreground">
                     Mid-season inspection &amp; tune-up
                   </th>
-                  <td className="p-4 text-muted-foreground">$120</td>
+                  <td className="p-4 text-muted-foreground">From $130</td>
                   <td className="p-4 text-muted-foreground">—</td>
                   <td className="p-4 text-foreground">Included</td>
                 </tr>
