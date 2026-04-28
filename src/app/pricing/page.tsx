@@ -31,7 +31,7 @@ const PRICING_FAQS = [
   {
     question: "How much does a spring sprinkler turn-on cost?",
     answer:
-      "Spring turn-on and system check starts at $130 for up to 8 zones, plus $10 per additional zone. This includes turn-on, full system check, adjustments, leak check, controller programming, and a water efficiency check.",
+      "Spring turn-on and system check starts at $135 for up to 8 zones, plus $10 per additional zone. This includes turn-on, full system check, adjustments, leak check, controller programming, and a water efficiency check.",
   },
   {
     question: "How much does sprinkler winterization cost in Northern Colorado?",
@@ -128,7 +128,7 @@ export default function PricingPage() {
               <CardContent className="flex flex-1 flex-col gap-4">
                 <div>
                   <div className="flex items-baseline gap-1">
-                    <span className="text-3xl font-bold text-foreground">$130</span>
+                    <span className="text-3xl font-bold text-foreground">$135</span>
                     <span className="text-muted-foreground text-sm">up to 8 zones</span>
                   </div>
                   <p className="text-sm text-primary font-medium mt-1">
@@ -161,7 +161,7 @@ export default function PricingPage() {
               <CardContent className="flex flex-1 flex-col gap-4">
                 <div>
                   <div className="flex items-baseline gap-1">
-                    <span className="text-3xl font-bold text-foreground">$130</span>
+                    <span className="text-3xl font-bold text-foreground">$135</span>
                     <span className="text-muted-foreground text-sm">up to 8 zones</span>
                   </div>
                   <p className="text-sm text-primary font-medium mt-1">
@@ -334,7 +334,7 @@ export default function PricingPage() {
                   <th scope="row" className="p-4 font-medium text-foreground">
                     Spring turn-on + system check
                   </th>
-                  <td className="p-4 text-muted-foreground">$130</td>
+                  <td className="p-4 text-muted-foreground">$135</td>
                   <td className="p-4 text-foreground">Included</td>
                   <td className="p-4 text-foreground">Included</td>
                 </tr>
@@ -350,7 +350,7 @@ export default function PricingPage() {
                   <th scope="row" className="p-4 font-medium text-foreground">
                     Mid-season inspection &amp; tune-up
                   </th>
-                  <td className="p-4 text-muted-foreground">$130</td>
+                  <td className="p-4 text-muted-foreground">$135</td>
                   <td className="p-4 text-muted-foreground">—</td>
                   <td className="p-4 text-foreground">Included</td>
                 </tr>

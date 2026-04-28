@@ -17,7 +17,7 @@ export const HOME_FAQS: { question: string; answer: string }[] = [
   {
     question: "What does spring sprinkler turn-on include?",
     answer:
-      "Spring turn-on starts at $130 for up to 8 zones and includes activating the system, full system check, head adjustments, leak check, controller programming, and a water-efficiency check. Materials are not included if a repair is needed during the visit. We schedule turn-ons late April through May across Erie, Longmont, Louisville, and Lafayette.",
+      "Spring turn-on starts at $135 for up to 8 zones and includes activating the system, full system check, head adjustments, leak check, controller programming, and a water-efficiency check. Materials are not included if a repair is needed during the visit. We schedule turn-ons late April through May across Erie, Longmont, Louisville, and Lafayette.",
   },
   {
     question: "Do you serve cities outside of Erie?",
