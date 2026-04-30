@@ -7,12 +7,22 @@ import { buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { ArrowRight, Sparkles, Droplets, DollarSign, AlertTriangle, Layers } from "lucide-react"
 
-// Constants — sourced from EPA WaterSense + Rachio published data + 2026
-// Northern Colorado residential water rate averages.
+// Calculator constants — all are general industry averages, not values
+// pulled from Rachio's own published data.
+//   * 0.62 gal/sq ft/week is the cool-season turf irrigation average used
+//     by EPA WaterSense and most state Cooperative Extension programs for
+//     semi-arid climates like the Front Range.
+//   * 26 weeks is a typical Northern Colorado watering season (mid-April
+//     through mid-October).
+//   * 0.20 (20%) is the lower end of EPA WaterSense's published efficiency
+//     range for smart/weather-based controllers. Used as a conservative
+//     midpoint so the savings estimate stays defensible.
+//   * 0.008 / gal is a rough mid-tier residential rate observed across
+//     Front Range municipalities in 2026; actual rates vary widely.
 const GALLONS_PER_SQFT_PER_WEEK = 0.62
-const WATERING_WEEKS_PER_YEAR = 26 // mid-April to mid-October on the Front Range
-const RACHIO_REDUCTION = 0.25 // midpoint of Rachio's 20–30% range
-const WATER_RATE_PER_GALLON = 0.008 // ~$8 per 1,000 gal — mid-tier 2026 Front Range avg
+const WATERING_WEEKS_PER_YEAR = 26
+const SMART_CONTROLLER_REDUCTION = 0.2
+const WATER_RATE_PER_GALLON = 0.008
 
 const LAWN_PRESETS = [
   { label: "Small (≈1,500 sq ft)", value: 1500 },
@@ -26,7 +36,7 @@ export function CalculatorClient() {
 
   const result = useMemo(() => {
     const annualGallons = sqft * GALLONS_PER_SQFT_PER_WEEK * WATERING_WEEKS_PER_YEAR
-    const gallonsSaved = Math.round(annualGallons * RACHIO_REDUCTION)
+    const gallonsSaved = Math.round(annualGallons * SMART_CONTROLLER_REDUCTION)
     const dollarsSaved = Math.round(gallonsSaved * WATER_RATE_PER_GALLON)
     const installCost = sqft <= 5000 ? 350 : 420
     const paybackYears = dollarsSaved > 0 ? installCost / dollarsSaved : 0
@@ -179,8 +189,7 @@ export function CalculatorClient() {
         <div className="mt-6 rounded-lg border border-amber-300 bg-amber-50 p-5 flex gap-3 text-sm text-amber-900 leading-relaxed">
           <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
           <div>
-            <strong>Estimate only.</strong> Actual savings vary based on lawn size, soil type, slope, sun exposure, plant types, your current watering schedule, and your specific water utility&apos;s pricing tiers.
-            The numbers above use industry averages from EPA WaterSense and Rachio&apos;s published efficiency data — they&apos;re a directional estimate, not a guarantee.
+            <strong>Estimate only — not a guarantee.</strong> Calculations use general industry averages: EPA WaterSense outdoor water-use figures for cool-season turf, the lower end of WaterSense&apos;s published smart-controller efficiency range (20%), and a mid-tier Front Range municipal water rate. These are not numbers pulled from Rachio&apos;s own published data. Actual savings depend on your lawn size, soil type, slope, sun exposure, current watering schedule, and your utility&apos;s pricing tiers.
           </div>
         </div>
       </div>

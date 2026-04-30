@@ -7,7 +7,7 @@ import { CalculatorClient } from "./calculator-client"
 export const metadata: Metadata = {
   title: "Rachio Water Savings Calculator — Gallons & Dollars Saved Per Year",
   description:
-    "Estimate how much water and money a Rachio 3 smart controller will save on your specific lawn. Based on EPA WaterSense and Rachio's published 20–30% reduction averages.",
+    "Estimate how much water and money a Rachio 3 smart controller could save on your specific lawn. Uses EPA WaterSense averages and conservative smart-controller efficiency assumptions — directional estimate, not a guarantee.",
   alternates: {
     canonical: `${siteConfig.url}/smart-controllers/water-savings-calculator`,
   },
@@ -17,22 +17,27 @@ const CALCULATOR_FAQS = [
   {
     question: "How does the water savings calculator work?",
     answer:
-      "The calculator uses EPA WaterSense's published average outdoor water use for residential lawns (about 0.62 gallons per square foot per week during the watering season) and applies Rachio's documented 20–30% reduction range to estimate how much you'd save with a smart controller. Multiplying by an average Northern Colorado water rate gives a dollar estimate.",
+      "It multiplies your lawn size by an industry-average gallons-per-square-foot-per-week figure (about 0.62 gal/sq ft/week for cool-season turf in semi-arid climates per EPA WaterSense) by a typical 26-week Northern Colorado watering season, then applies a conservative 20% efficiency reduction (the lower end of EPA WaterSense's published range for smart controllers). The dollar estimate uses a mid-tier Front Range municipal water rate.",
   },
   {
-    question: "How accurate are these savings estimates?",
+    question: "Are these Rachio's published numbers?",
     answer:
-      "Estimates are based on industry averages, not your specific home. Actual savings depend on lawn size, soil type, slope, plant types, sun exposure, your current irrigation schedule, and your water utility's pricing tiers. Treat the result as a directional estimate, not a guaranteed savings amount.",
+      "No. The percentages and gallon figures used here are general industry averages from EPA WaterSense and Cooperative Extension data — they're not pulled from Rachio's own marketing materials. The Rachio 3 is WaterSense-certified, so it falls within this efficiency range, but Trailhead is not citing Rachio-specific savings claims.",
   },
   {
-    question: "Where do these numbers come from?",
+    question: "How accurate is this for my specific home?",
     answer:
-      "EPA WaterSense publishes that an average American family's outdoor water use is about 30% of total water consumption — and that WaterSense-certified controllers reduce outdoor use by 15% on average, with smart controllers like the Rachio 3 typically delivering 20–30% reductions. Northern Colorado water rates average roughly $0.005–$0.010 per gallon depending on city and tier.",
+      "Treat it as a directional estimate, not a quote. Actual savings depend on your lawn size, soil type, slope, sun exposure, plant mix, current irrigation schedule, your utility's specific pricing tiers, and how aggressively your previous controller was watering. Two homes with identical lawns can see very different savings.",
+  },
+  {
+    question: "Where do the water rate numbers come from?",
+    answer:
+      "The calculator uses approximately $0.008 per gallon, which is a rough mid-tier residential rate observed across Northern Colorado municipalities in 2026. Actual rates vary by city, tier, season, and whether you're inside an HOA-billed boundary. Check your last summer water bill for your real per-gallon rate to refine the estimate.",
   },
   {
     question: "Will I really pay back the install cost?",
     answer:
-      "On a typical Front Range home with a moderate-to-large lawn, water bill savings often cover the installed cost of a Rachio 3 within 2–4 watering seasons. Adding a city utility rebate (Erie, Longmont, Lafayette) shortens the payback further. Confirm rebate eligibility directly with your city before counting on those numbers.",
+      "On a typical Front Range home with a moderate-to-large lawn, water-bill savings can often cover the installed cost of a Rachio 3 within a few watering seasons. Adding a city utility rebate (Erie, Longmont, Lafayette) shortens the payback. Confirm rebate eligibility directly with your city — Trailhead does not administer rebates.",
   },
 ]
 
@@ -63,7 +68,7 @@ export default function WaterSavingsCalculatorPage() {
 
       <PageBanner
         title="Rachio Water Savings Calculator"
-        description="Estimate the gallons and dollars a Rachio 3 saves on your specific lawn — based on EPA WaterSense and Rachio's published averages."
+        description="Estimate gallons and dollars a smart controller could save on your lawn. Uses EPA WaterSense industry averages — directional estimate, not a guarantee."
       />
 
       <CalculatorClient />
@@ -84,16 +89,16 @@ export default function WaterSavingsCalculatorPage() {
               Northern Colorado&apos;s irrigation season runs roughly mid-April through mid-October — about 26 weeks.
             </li>
             <li>
-              <strong className="text-foreground">3. Rachio reduction → savings.</strong>{" "}
-              Rachio publishes a 20–30% reduction in outdoor water use for the Rachio 3. The calculator uses 25% as the midpoint.
+              <strong className="text-foreground">3. Smart-controller reduction → savings.</strong>{" "}
+              EPA WaterSense&apos;s published range for smart/weather-based controllers is roughly 15–30%. The calculator applies <strong>20%</strong> — the conservative end of that range — to keep the estimate defensible. Note: this is a general WaterSense figure, not a number Rachio publishes specifically.
             </li>
             <li>
               <strong className="text-foreground">4. Local water rate → dollars.</strong>{" "}
-              We apply an estimated $0.008/gallon, which is mid-range for Front Range residential water tiers in 2026.
+              We apply ~$0.008 per gallon, which is a rough mid-tier residential rate observed across Front Range municipalities in 2026. Your actual rate may differ.
             </li>
           </ol>
           <p className="mt-6 text-xs text-muted-foreground italic">
-            Sources: EPA WaterSense Outdoor Water Use Statistics, Rachio published efficiency data, and average 2026 Northern Colorado residential water rates.
+            Sources: EPA WaterSense Outdoor Water Use Statistics &amp; smart-controller efficiency range, average 2026 Northern Colorado residential water rates. Not pulled from Rachio&apos;s own marketing data.
           </p>
         </div>
       </section>
