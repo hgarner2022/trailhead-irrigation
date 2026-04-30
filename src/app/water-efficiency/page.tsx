@@ -111,7 +111,7 @@ export default function WaterEfficiencyPage() {
                   <span className="text-muted-foreground text-sm">installed (8-zone)</span>
                 </div>
                 <div className="flex items-baseline gap-2 mt-1">
-                  <span className="text-3xl font-bold text-foreground">$400</span>
+                  <span className="text-3xl font-bold text-foreground">$420</span>
                   <span className="text-muted-foreground text-sm">installed (16-zone)</span>
                 </div>
               </div>
@@ -120,7 +120,7 @@ export default function WaterEfficiencyPage() {
               </p>
               <div className="flex flex-col sm:flex-row items-start gap-3">
                 <Link
-                  href="/contact"
+                  href="/book"
                   className={buttonVariants({ size: "lg" })}
                 >
                   Book Installation
