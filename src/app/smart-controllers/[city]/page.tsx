@@ -69,8 +69,10 @@ export default async function SmartControllerCityPage({
     {
       question: `How much does a Rachio cost in ${program.name}, CO after rebates?`,
       answer: est8.isFree
-        ? `${program.name} water customers can get a Rachio 3 installed free through Resource Central's Slow the Flow program. ${program.freeInstallNote ?? ""} If a paid install fits your timeline better, Trailhead's price is $${RACHIO_PRICING.controller8Zone} for 8-zone or $${RACHIO_PRICING.controller16Zone} for 16-zone, including the controller and professional installation.`
-        : `Trailhead's installed price is $${RACHIO_PRICING.controller8Zone} for an 8-zone Rachio 3. After ${program.name}'s utility rebate ${program.cashRebate ? `($${program.cashRebate})` : ""}${program.bonusRebate ? ` and Slow the Flow bonus ($${program.bonusRebate})` : ""}, plus Rachio's manufacturer rebate ($${RACHIO_PRICING.manufacturerRebate}), your net cost is approximately $${est8.net}. For a 16-zone system, the net is around $${est16.net}.`,
+        ? `${program.name} water customers may qualify for a free Rachio 3 install through Resource Central's Slow the Flow program. ${program.freeInstallNote ?? ""} If a paid install fits your timeline better, Trailhead's price is $${RACHIO_PRICING.controller8Zone} for 8-zone or $${RACHIO_PRICING.controller16Zone} for 16-zone, including the controller and professional installation.`
+        : est8.isUnknown
+        ? `Trailhead's installed price is $${RACHIO_PRICING.controller8Zone} for an 8-zone Rachio 3 or $${RACHIO_PRICING.controller16Zone} for 16-zone. ${program.name} runs a smart-controller rebate program, but the city does not publish a current dollar amount. Contact ${program.name} to confirm the active rebate amount before booking — your net cost is the install price minus whatever rebate the city is currently offering.`
+        : `Trailhead's installed price is $${RACHIO_PRICING.controller8Zone} for an 8-zone Rachio 3. With ${program.name}'s utility rebate ${program.cashRebate ? `of $${program.cashRebate}` : ""}${program.bonusRebate ? ` plus a $${program.bonusRebate} Slow the Flow bonus` : ""}, your estimated net is approximately $${est8.net}. For 16-zone, net is approximately $${est16.net}. The homeowner applies for the rebate directly with the city — Trailhead provides the itemized receipts.`,
     },
     {
       question: `What rebate does ${program.name} offer for a smart sprinkler controller?`,
@@ -139,8 +141,10 @@ export default async function SmartControllerCityPage({
               price: String(est8.net),
               priceCurrency: "USD",
               description: est8.isFree
-                ? `Free install available via Resource Central in ${program.name}`
-                : `Net cost ~$${est8.net} after ${program.name} utility rebates and Rachio manufacturer rebate`,
+                ? `Free install path available via Resource Central in ${program.name}`
+                : est8.isUnknown
+                ? `Trailhead installed price $${RACHIO_PRICING.controller8Zone} (8-zone). ${program.name} rebate amount varies — contact city to confirm.`
+                : `Estimated net ~$${est8.net} after ${program.name} utility rebate. Rebate processed by the city, not Trailhead.`,
             },
           }),
         }}
@@ -193,19 +197,35 @@ export default async function SmartControllerCityPage({
               </CardHeader>
               <CardContent className="flex flex-1 flex-col gap-4">
                 <div>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-muted-foreground text-sm line-through">
-                      ${RACHIO_PRICING.controller8Zone}
-                    </span>
-                    <span className="text-4xl font-bold text-foreground">
-                      {est8.isFree ? "Free" : `$${est8.net}`}
-                    </span>
-                  </div>
-                  <p className="text-sm text-success font-medium mt-1">
-                    {est8.isFree
-                      ? "via Resource Central program"
-                      : `After $${est8.rebates} in rebates`}
-                  </p>
+                  {est8.isFree ? (
+                    <>
+                      <span className="text-4xl font-bold text-foreground">Free path</span>
+                      <p className="text-sm text-success font-medium mt-1">
+                        via Resource Central program (limited slots)
+                      </p>
+                    </>
+                  ) : est8.isUnknown ? (
+                    <>
+                      <span className="text-4xl font-bold text-foreground">${est8.gross}</span>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Trailhead installed price · {program.name} rebate amount varies
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-muted-foreground text-sm line-through">
+                          ${est8.gross}
+                        </span>
+                        <span className="text-4xl font-bold text-foreground">
+                          ${est8.net}
+                        </span>
+                      </div>
+                      <p className="text-sm text-success font-medium mt-1">
+                        Estimated after ${est8.rebates} {program.name} rebate
+                      </p>
+                    </>
+                  )}
                 </div>
                 <Link
                   href="/book"
@@ -229,19 +249,35 @@ export default async function SmartControllerCityPage({
               </CardHeader>
               <CardContent className="flex flex-1 flex-col gap-4">
                 <div>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-muted-foreground text-sm line-through">
-                      ${RACHIO_PRICING.controller16Zone}
-                    </span>
-                    <span className="text-4xl font-bold text-foreground">
-                      {est16.isFree ? "Free" : `$${est16.net}`}
-                    </span>
-                  </div>
-                  <p className="text-sm text-success font-medium mt-1">
-                    {est16.isFree
-                      ? "via Resource Central program"
-                      : `After $${est16.rebates} in rebates`}
-                  </p>
+                  {est16.isFree ? (
+                    <>
+                      <span className="text-4xl font-bold text-foreground">Free path</span>
+                      <p className="text-sm text-success font-medium mt-1">
+                        via Resource Central program (limited slots)
+                      </p>
+                    </>
+                  ) : est16.isUnknown ? (
+                    <>
+                      <span className="text-4xl font-bold text-foreground">${est16.gross}</span>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Trailhead installed price · {program.name} rebate amount varies
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-muted-foreground text-sm line-through">
+                          ${est16.gross}
+                        </span>
+                        <span className="text-4xl font-bold text-foreground">
+                          ${est16.net}
+                        </span>
+                      </div>
+                      <p className="text-sm text-success font-medium mt-1">
+                        Estimated after ${est16.rebates} {program.name} rebate
+                      </p>
+                    </>
+                  )}
                 </div>
                 <Link
                   href="/book"
@@ -259,12 +295,34 @@ export default async function SmartControllerCityPage({
 
           <div className="mt-8 text-center">
             <Link
-              href="/smart-controllers/rachio-rebate-calculator"
+              href="/smart-controllers/water-savings-calculator"
               className={buttonVariants({ variant: "outline" })}
             >
               <Calculator className="w-4 h-4" />
-              Run a custom calculation for your zone count
+              Estimate your water savings
             </Link>
+          </div>
+
+          {/* Bulletproof rebate disclaimer */}
+          <div className="mt-8 max-w-3xl mx-auto rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 leading-relaxed">
+            <strong>Estimate only.</strong> Trailhead does not administer, approve, submit, or guarantee any rebate.
+            All rebate programs are run by your city or utility and are{" "}
+            <strong>first-come, first-served while funds last</strong>.
+            Eligibility requirements, dollar amounts, and program availability can change at any time without notice.
+            Always confirm current details with{" "}
+            {program.utilityRebateUrl ? (
+              <a
+                href={program.utilityRebateUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline hover:text-amber-950"
+              >
+                the {program.name} water rebate program
+              </a>
+            ) : (
+              `the ${program.name} water department`
+            )}{" "}
+            before booking an install.
           </div>
         </div>
       </section>
@@ -310,10 +368,10 @@ export default async function SmartControllerCityPage({
             <Card>
               <CardContent className="p-6 flex flex-col gap-3 text-muted-foreground">
                 <p>
-                  {program.name} doesn&apos;t currently offer a smart-controller rebate. The savings come from reduced outdoor water use — typically 20–30% per year on a Front Range home.
+                  {program.name} doesn&apos;t currently run a smart-controller rebate program. The savings come from reduced outdoor water use — typically 20–30% per year on a Front Range home (about 8,000–15,000 gallons saved annually).
                 </p>
                 <p>
-                  Even without a utility rebate, Rachio&apos;s $50 manufacturer rebate (apply at rachio.com/rebates) reduces your net cost. And many neighbors in nearby Erie, Longmont, and Lafayette qualify for additional programs — if you have a second property in one of those cities, that one may be eligible.
+                  If you have a property in nearby Erie, Longmont, Louisville, or Lafayette, those cities do run rebate programs you may be eligible for at that address.
                 </p>
               </CardContent>
             </Card>
@@ -321,17 +379,17 @@ export default async function SmartControllerCityPage({
             <ol className="flex flex-col gap-4 text-muted-foreground leading-relaxed">
               <li>
                 <strong className="text-foreground">1. Book your install.</strong>{" "}
-                Trailhead schedules the Rachio installation at your {program.name} address.
+                Trailhead schedules and performs the Rachio installation at your {program.name} address.
               </li>
               <li>
                 <strong className="text-foreground">2. We provide itemized receipts.</strong>{" "}
                 Make, model, serial number, install date, and total — everything {program.name}&apos;s rebate program requires.
               </li>
               <li>
-                <strong className="text-foreground">3. You apply for the rebate.</strong>{" "}
+                <strong className="text-foreground">3. You apply for the rebate directly with the city.</strong>{" "}
                 {program.utilityRebateUrl ? (
                   <>
-                    Submit your receipts via{" "}
+                    Submit your application and receipts through{" "}
                     <a
                       href={program.utilityRebateUrl}
                       target="_blank"
@@ -343,22 +401,9 @@ export default async function SmartControllerCityPage({
                     .
                   </>
                 ) : (
-                  `Submit your receipts to the ${program.name} water rebate program.`
+                  `Submit your application and receipts to the ${program.name} water rebate program.`
                 )}{" "}
-                Most cities credit the rebate to your water bill within one billing cycle.
-              </li>
-              <li>
-                <strong className="text-foreground">4. Apply Rachio&apos;s manufacturer rebate.</strong>{" "}
-                Visit{" "}
-                <a
-                  href="https://www.rachio.com/rebates/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-primary hover:underline"
-                >
-                  rachio.com/rebates
-                </a>{" "}
-                to claim the additional ~${RACHIO_PRICING.manufacturerRebate} rebate that stacks on top.
+                Trailhead does not submit, process, or guarantee rebates — the city handles approval and payment.
               </li>
             </ol>
           )}

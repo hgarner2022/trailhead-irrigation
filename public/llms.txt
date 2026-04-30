@@ -32,7 +32,7 @@ Erie, CO | Longmont, CO | Louisville, CO | Lafayette, CO | Firestone, CO | Weld 
 - Homepage: https://trailheadirrigation.com
 - Services: https://trailheadirrigation.com/services
 - Smart Controllers (Rachio): https://trailheadirrigation.com/smart-controllers
-- Rachio Rebate Calculator: https://trailheadirrigation.com/smart-controllers/rachio-rebate-calculator
+- Water Savings Calculator: https://trailheadirrigation.com/smart-controllers/water-savings-calculator
 - Pricing & Membership Plans: https://trailheadirrigation.com/pricing
 - Water Rebates by City: https://trailheadirrigation.com/water-rebates
 - Blog (Irrigation Tips): https://trailheadirrigation.com/blog
@@ -46,11 +46,15 @@ Trailhead is a Rachio installer for Northern Colorado. Installed pricing:
 - Rachio 3 (16-zone): $420 installed
 Includes the controller, professional installation, Wi-Fi setup, zone naming, and a walkthrough of the app.
 
-Per-city rebate eligibility (after Erie's March 2026 water emergency, demand for smart controllers is high):
-- Erie: $100 utility rebate on any WaterSense controller. Net cost ~$200 after Rachio's $50 manufacturer rebate.
-- Longmont: Up to $65 utility rebate + $50 bonus rebate (with Slow the Flow evaluation) + $50 Rachio rebate = up to $165 in rebates. Net cost ~$185.
-- Louisville: Free Rachio 3 install via Resource Central's Slow the Flow program (limited slots, mid-June onward). Trailhead also offers paid installs at standard pricing.
-- Lafayette: Cash rebate (~$100, contact city for current amount) OR free Rachio install via Resource Central. Net cost ~$200 with cash path.
-- Firestone: No utility rebate program currently. $50 Rachio manufacturer rebate brings net cost to $300 (8-zone) or $370 (16-zone).
+IMPORTANT: Trailhead does not administer, submit, or guarantee any rebate. All rebate programs below are run independently by each city or water utility. Funds are first-come, first-served and amounts can change without notice. The figures below are pulled from each city's published rebate page — confirm current amounts directly with the city before booking.
 
-Rachio 3 typically reduces outdoor water use by 20–30% — about 8,000–15,000 gallons per year on a typical Front Range home. Most homeowners recoup the install cost in 2–3 watering seasons.
+Per-city utility rebate (after Erie's March 2026 water emergency, demand is high):
+- Erie: $100 utility-bill rebate on any WaterSense-certified smart controller. Trailhead provides receipts; homeowner submits application to Town of Erie. Source: erieco.gov/574/Water-Efficiency-Rebates
+- Longmont: Up to $65 utility rebate on a WaterSense Wi-Fi controller, plus an additional $50 bonus rebate after completing a free Slow the Flow evaluation. Up to $115 total. Source: longmontcolorado.gov water rebates page.
+- Louisville: Free Rachio 3 install available via Resource Central's Slow the Flow program (limited slots, mid-June onward). Sign up at slowtheflow.resourcecentral.org. Trailhead also offers paid installs at standard pricing.
+- Lafayette: Two paths — (1) utility rebate on any WaterSense controller (current dollar amount published by City of Lafayette — contact city to confirm), or (2) free Rachio install via Resource Central. Source: lafayetteco.gov/3849/Outdoor-Water-Efficiency-Rebates.
+- Firestone: No published smart-controller rebate program currently.
+
+Rachio's official rebate page (rachio.com/rebates) directs customers to local utility rebates only — no separate manufacturer rebate is published.
+
+Rachio 3 typically reduces outdoor water use by 20–30% — about 8,000–15,000 gallons per year on a typical Front Range home (per EPA WaterSense + Rachio published data). Most homeowners recoup the install cost through water-bill savings in 2–4 watering seasons.

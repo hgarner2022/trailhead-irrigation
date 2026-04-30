@@ -1,20 +1,22 @@
-// Trailhead Rachio install pricing + per-city rebate amounts.
+// Trailhead Rachio install pricing + per-city utility rebate amounts.
 // Update RACHIO_PRICING and CITY_RACHIO when prices/rebates change.
+//
+// Source of truth for utility rebate amounts: src/lib/rebate-data.ts
+// (which mirrors the official municipal program pages).
 
 export const RACHIO_PRICING = {
   controller8Zone: 350,
   controller16Zone: 420,
-  // Rachio's manufacturer rebate that stacks on top of utility rebates.
-  // Amount varies — using a conservative typical figure.
-  manufacturerRebate: 50,
 } as const
 
 export type RachioCityProgram = {
   slug: string
   name: string
   rebateType: "cash" | "free-install" | "cash-or-free" | "none"
-  /** Cash rebate dollar amount (utility credit). Undefined when none / TBD. */
+  /** Cash utility rebate dollar amount. Undefined when amount is unpublished. */
   cashRebate?: number
+  /** Whether the published cash rebate amount is unknown / TBD. */
+  cashRebateUnknown?: boolean
   /** Bonus available with extra steps (e.g. Slow the Flow evaluation). */
   bonusRebate?: number
   bonusCondition?: string
@@ -67,9 +69,9 @@ export const CITY_RACHIO: RachioCityProgram[] = [
     slug: "lafayette",
     name: "Lafayette",
     rebateType: "cash-or-free",
-    cashRebate: 100,
+    cashRebateUnknown: true,
     shortNote:
-      "Lafayette offers two paths: a utility rebate (up to ~$100, contact the city for current amount) on any WaterSense controller, OR a free Rachio install through Resource Central — pick whichever opens up first.",
+      "Lafayette offers two paths: a utility rebate on any WaterSense controller (current amount is published by the city — contact them to confirm before booking), OR a free Rachio install through Resource Central — pick whichever opens up first.",
     freeInstallProgram: true,
     freeInstallNote:
       "The free install requires a Slow the Flow evaluation first. Slots fill quickly, so the cash-rebate path is often a better bet.",
@@ -90,29 +92,34 @@ export function getCityRachio(slug: string): RachioCityProgram | undefined {
   return CITY_RACHIO.find((c) => c.slug === slug)
 }
 
-/** Total potential rebate (utility cash + Rachio mfg rebate) for a city. */
-export function maxRebate(city: RachioCityProgram): number {
-  if (city.rebateType === "free-install") return RACHIO_PRICING.controller16Zone // free
-  const cash = city.cashRebate ?? 0
-  const bonus = city.bonusRebate ?? 0
-  return cash + bonus + RACHIO_PRICING.manufacturerRebate
+export type NetCostResult = {
+  gross: number
+  rebates: number
+  net: number
+  isFree: boolean
+  /** True when we can't quote a net price because the rebate amount isn't published. */
+  isUnknown: boolean
 }
 
 /** Estimated net cost after rebates for a given city + zone count. */
 export function estimateNetCost(
   city: RachioCityProgram,
   zones: number
-): { gross: number; rebates: number; net: number; isFree: boolean } {
+): NetCostResult {
   const gross =
     zones <= 8 ? RACHIO_PRICING.controller8Zone : RACHIO_PRICING.controller16Zone
 
-  if (city.rebateType === "free-install") {
-    return { gross, rebates: gross, net: 0, isFree: true }
+  if (city.rebateType === "free-install" && !city.cashRebate) {
+    return { gross, rebates: gross, net: 0, isFree: true, isUnknown: false }
+  }
+
+  if (city.cashRebateUnknown) {
+    return { gross, rebates: 0, net: gross, isFree: false, isUnknown: true }
   }
 
   const cash = city.cashRebate ?? 0
   const bonus = city.bonusRebate ?? 0
-  const rebates = cash + bonus + RACHIO_PRICING.manufacturerRebate
+  const rebates = cash + bonus
   const net = Math.max(0, gross - rebates)
-  return { gross, rebates, net, isFree: false }
+  return { gross, rebates, net, isFree: false, isUnknown: false }
 }

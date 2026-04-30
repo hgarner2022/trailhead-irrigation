@@ -15,7 +15,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${baseUrl}/blog`, lastModified: new Date(), changeFrequency: "weekly" as const, priority: 0.7 },
     { url: `${baseUrl}/book`, lastModified: new Date(), changeFrequency: "monthly" as const, priority: 0.8 },
     { url: `${baseUrl}/smart-controllers`, lastModified: new Date(), changeFrequency: "monthly" as const, priority: 0.9 },
-    { url: `${baseUrl}/smart-controllers/rachio-rebate-calculator`, lastModified: new Date(), changeFrequency: "monthly" as const, priority: 0.85 },
+    { url: `${baseUrl}/smart-controllers/water-savings-calculator`, lastModified: new Date(), changeFrequency: "monthly" as const, priority: 0.85 },
   ]
 
   const cityPages = CITY_DATA.map((city) => ({

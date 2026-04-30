@@ -13,7 +13,7 @@ import { CITY_RACHIO, RACHIO_PRICING, estimateNetCost } from "@/lib/rachio-data"
 export const metadata: Metadata = {
   title: "Rachio Smart Sprinkler Controller Installation in Erie, CO",
   description:
-    "Professional Rachio 3 smart controller installation in Erie, Longmont, Louisville, Lafayette & Weld County. Save 20–30% on outdoor water use. Net cost as low as $170 after Northern Colorado utility rebates.",
+    "Professional Rachio 3 smart controller installation in Erie, Longmont, Louisville, Lafayette & Weld County. Save 20–30% on outdoor water use. Trailhead handles the install — you claim your city's utility rebate.",
   alternates: { canonical: `${siteConfig.url}/smart-controllers` },
 }
 
@@ -21,17 +21,17 @@ const SMART_CONTROLLER_FAQS = [
   {
     question: "How much does a Rachio installation cost in Erie, CO?",
     answer:
-      "Trailhead's installed Rachio 3 price is $350 for an 8-zone controller and $420 for a 16-zone controller. After utility rebates and Rachio's manufacturer rebate, your net cost typically lands between $170 and $250 — and Louisville residents can often get the install free through Resource Central.",
+      "Trailhead's installed Rachio 3 price is $350 for an 8-zone controller and $420 for a 16-zone controller. Erie offers a $100 utility-bill rebate on any WaterSense-certified smart controller, applied for separately by the homeowner. Louisville residents may also qualify for a free Rachio install through Resource Central's Slow the Flow program (limited slots).",
   },
   {
     question: "Is the Rachio 3 worth it in Northern Colorado?",
     answer:
-      "Yes. Smart controllers like the Rachio 3 cut outdoor water use by 20–30% on typical Front Range homes — about 8,000–15,000 gallons saved per year. After Erie's March 2026 water emergency, that efficiency is more valuable than ever. Most homeowners recoup the install cost in 2–3 watering seasons.",
+      "Yes. Smart controllers like the Rachio 3 cut outdoor water use by 20–30% on typical Front Range homes — about 8,000–15,000 gallons saved per year. After Erie's March 2026 water emergency, that efficiency is more valuable than ever. Most homeowners recoup the install cost in 2–3 watering seasons through reduced water bills alone.",
   },
   {
     question: "What rebates are available for a Rachio in my city?",
     answer:
-      "Erie offers $100, Longmont up to $115 (with Slow the Flow), Louisville offers free installs via Resource Central, and Lafayette offers either a cash rebate or a free install path. Use our Rachio Rebate Calculator to see your exact net price by city and zone count.",
+      "Erie offers $100, Longmont offers up to $65 plus a $50 bonus (with a free Slow the Flow evaluation), Louisville offers free installs via Resource Central, and Lafayette offers either a utility rebate or a free install path. Programs are first-come, first-served and amounts can change. Visit your city's water rebate page to confirm current amounts before booking.",
   },
   {
     question: "Do I need to buy the Rachio before you install it?",
@@ -198,21 +198,21 @@ export default function SmartControllersPage() {
         </div>
       </section>
 
-      {/* CALCULATOR CTA */}
+      {/* WATER SAVINGS CALCULATOR CTA */}
       <section className="bg-navy section-padding-y">
         <div className="container-padding-x mx-auto max-w-4xl text-center">
           <Calculator className="h-12 w-12 text-primary-light mx-auto mb-4" />
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-3">
-            What Will Your Rachio Cost After Rebates?
+            How Much Water Will You Save?
           </h2>
           <p className="text-lg text-white/80 mb-6 max-w-2xl mx-auto">
-            Pick your city and zone count to see your real net price after every rebate that applies in your town.
+            Estimate the gallons and dollars a Rachio 3 saves on your specific lawn — based on EPA WaterSense averages.
           </p>
           <Link
-            href="/smart-controllers/rachio-rebate-calculator"
+            href="/smart-controllers/water-savings-calculator"
             className={buttonVariants({ size: "lg" })}
           >
-            Open the Rebate Calculator
+            Open the Water Savings Calculator
             <ArrowRight className="w-4 h-4" />
           </Link>
         </div>

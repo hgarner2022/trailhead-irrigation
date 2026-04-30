@@ -127,10 +127,10 @@ export default function WaterEfficiencyPage() {
                   <ArrowRight className="w-4 h-4" />
                 </Link>
                 <Link
-                  href="/smart-controllers/rachio-rebate-calculator"
+                  href="/smart-controllers/water-savings-calculator"
                   className={buttonVariants({ variant: "outline", size: "lg" })}
                 >
-                  Calculate your net cost
+                  Estimate your water savings
                 </Link>
                 <Link
                   href="/smart-controllers"
