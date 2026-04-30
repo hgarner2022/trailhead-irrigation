@@ -118,7 +118,7 @@ export default function WaterEfficiencyPage() {
               <p className="text-sm text-muted-foreground mb-6">
                 Includes controller and professional installation
               </p>
-              <div className="flex flex-col sm:flex-row items-start gap-3">
+              <div className="flex flex-col sm:flex-row items-start gap-3 flex-wrap">
                 <Link
                   href="/book"
                   className={buttonVariants({ size: "lg" })}
@@ -126,14 +126,18 @@ export default function WaterEfficiencyPage() {
                   Book Installation
                   <ArrowRight className="w-4 h-4" />
                 </Link>
-                <a
-                  href="https://www.rachio.com/rebates/"
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <Link
+                  href="/smart-controllers/rachio-rebate-calculator"
+                  className={buttonVariants({ variant: "outline", size: "lg" })}
+                >
+                  Calculate your net cost
+                </Link>
+                <Link
+                  href="/smart-controllers"
                   className={buttonVariants({ variant: "link", size: "lg" })}
                 >
-                  Check Rachio Rebates &rarr;
-                </a>
+                  Compare smart controllers &rarr;
+                </Link>
               </div>
             </div>
           </div>

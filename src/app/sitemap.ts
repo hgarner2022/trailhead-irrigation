@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next"
 import { BLOG_POSTS } from "@/lib/blog"
 import { CITY_DATA } from "@/lib/city-data"
+import { CITY_RACHIO } from "@/lib/rachio-data"
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = "https://trailheadirrigation.com"
@@ -13,10 +14,19 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${baseUrl}/about`, lastModified: new Date(), changeFrequency: "monthly" as const, priority: 0.8 },
     { url: `${baseUrl}/blog`, lastModified: new Date(), changeFrequency: "weekly" as const, priority: 0.7 },
     { url: `${baseUrl}/book`, lastModified: new Date(), changeFrequency: "monthly" as const, priority: 0.8 },
+    { url: `${baseUrl}/smart-controllers`, lastModified: new Date(), changeFrequency: "monthly" as const, priority: 0.9 },
+    { url: `${baseUrl}/smart-controllers/rachio-rebate-calculator`, lastModified: new Date(), changeFrequency: "monthly" as const, priority: 0.85 },
   ]
 
   const cityPages = CITY_DATA.map((city) => ({
     url: `${baseUrl}/services/${city.slug}`,
+    lastModified: new Date(),
+    changeFrequency: "monthly" as const,
+    priority: 0.85,
+  }))
+
+  const smartControllerCityPages = CITY_RACHIO.map((city) => ({
+    url: `${baseUrl}/smart-controllers/${city.slug}`,
     lastModified: new Date(),
     changeFrequency: "monthly" as const,
     priority: 0.85,
@@ -29,5 +39,5 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.7,
   }))
 
-  return [...staticPages, ...cityPages, ...blogPages]
+  return [...staticPages, ...cityPages, ...smartControllerCityPages, ...blogPages]
 }

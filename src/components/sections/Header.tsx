@@ -11,6 +11,7 @@ import { Menu, X, Phone } from "lucide-react"
 const NAV_LINKS = [
   { label: "Home", href: "/" },
   { label: "Services", href: "/services" },
+  { label: "Smart Controllers", href: "/smart-controllers" },
   { label: "Pricing", href: "/pricing" },
   { label: "Blog", href: "/blog" },
   { label: "About", href: "/about" },
