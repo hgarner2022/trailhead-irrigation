@@ -7,7 +7,7 @@ import { Footer } from "@/components/sections/Footer"
 import { localBusinessJsonLd, organizationJsonLd, siteConfig } from "@/lib/seo"
 import { Analytics } from "@vercel/analytics/react"
 
-const GA_MEASUREMENT_ID = "G-85QVT00Q8G"
+const GA_MEASUREMENT_ID = "G-QZJP9M6LNQ"
 
 const inter = Inter({ subsets: ["latin"] })
 
