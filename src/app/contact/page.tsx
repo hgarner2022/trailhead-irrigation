@@ -69,6 +69,18 @@ export default function ContactPage() {
                       })
                       if (res.ok) {
                         setSubmitted(true)
+                        // GA4 conversion event
+                        if (
+                          typeof window !== "undefined" &&
+                          // @ts-expect-error gtag injected globally
+                          typeof window.gtag === "function"
+                        ) {
+                          // @ts-expect-error gtag injected globally
+                          window.gtag("event", "contact_form_submit", {
+                            service_requested: data.get("service") ?? "",
+                            page_path: window.location.pathname,
+                          })
+                        }
                       } else {
                         setError("Something went wrong. Please try calling us instead.")
                       }

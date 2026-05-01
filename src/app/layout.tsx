@@ -4,6 +4,7 @@ import Script from "next/script"
 import "./globals.css"
 import { Header } from "@/components/sections/Header"
 import { Footer } from "@/components/sections/Footer"
+import { ConversionTracking } from "@/components/ConversionTracking"
 import { localBusinessJsonLd, organizationJsonLd, siteConfig } from "@/lib/seo"
 import { Analytics } from "@vercel/analytics/react"
 
@@ -85,6 +86,7 @@ export default function RootLayout({
         {children}
         <Footer />
         <Analytics />
+        <ConversionTracking />
 
         {/* Google Analytics 4 — gtag.js */}
         <Script
