@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import { Star, MapPin, Phone, Wrench } from "lucide-react"
+import { Star, MapPin, Award, Wrench } from "lucide-react"
 
 // Quick credibility numbers for the homepage. Numbers count up from zero
 // when the strip first enters the viewport — industry-standard polish that
@@ -42,10 +42,10 @@ const STATS: Stat[] = [
     label: "Northern Colorado cities served",
   },
   {
-    icon: Phone,
-    target: null,
-    headline: "Same-day",
-    label: "Callbacks, every time",
+    icon: Award,
+    target: 10,
+    suffix: "+",
+    label: "Years of experience",
   },
 ]
 
