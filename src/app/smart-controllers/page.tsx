@@ -9,7 +9,6 @@ import { cn } from "@/lib/utils"
 import { Wifi, Droplets, CloudRain, Calculator, ArrowRight } from "lucide-react"
 import { siteConfig, faqJsonLd, breadcrumbJsonLd } from "@/lib/seo"
 import { CITY_RACHIO, RACHIO_PRICING, estimateNetCost } from "@/lib/rachio-data"
-import { CompatibleBrands } from "@/components/sections/CompatibleBrands"
 import { FaqList } from "@/components/sections/FaqList"
 
 export const metadata: Metadata = {
@@ -395,8 +394,6 @@ export default function SmartControllersPage() {
           </p>
         </div>
       </section>
-
-      <CompatibleBrands />
 
       {/* DEFINITIONS */}
       <section className="bg-cream section-padding-y" aria-labelledby="rachio-definitions">
