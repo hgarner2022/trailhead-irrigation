@@ -1,4 +1,5 @@
 import { Hero } from "@/components/sections/Hero"
+import { StatsStrip } from "@/components/sections/StatsStrip"
 import { ServicesOverview } from "@/components/sections/ServicesOverview"
 import { MeetRyan } from "@/components/sections/MeetRyan"
 import { Testimonials } from "@/components/sections/Testimonials"
@@ -35,6 +36,7 @@ export default function HomePage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(graph) }}
       />
       <Hero />
+      <StatsStrip />
       <ServicesOverview />
       <MeetRyan />
       <Testimonials />

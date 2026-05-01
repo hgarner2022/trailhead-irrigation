@@ -13,20 +13,56 @@ Marketing website for Trailhead Lawn & Irrigation LLC — a professional lawn ca
 ## File Structure
 ```
 src/
-  app/            # Next.js App Router pages
-    layout.tsx    # Root layout with fonts, metadata
-    page.tsx      # Homepage
-    globals.css   # Tailwind base + custom properties
-  components/     # Reusable components
-    ui/           # Small primitives (Button, Card, etc.)
-    sections/     # Page sections (Hero, Services, Contact, etc.)
-  lib/            # Utilities (cn(), etc.)
-  assets/         # Static images, logo files
+  app/                          # Next.js App Router pages
+    layout.tsx                  # Root layout (metadata, schema, GA4, conversion tracking)
+    page.tsx                    # Homepage
+    sitemap.ts                  # Dynamic sitemap (static pages + cities + blog + smart-controllers)
+    globals.css                 # Tailwind base + custom properties
+    services/                   # /services + /services/[city] (5 cities)
+    pricing/                    # /pricing
+    smart-controllers/          # Rachio funnel: hub + /[city] + /water-savings-calculator
+    water-rebates/              # Per-city utility rebate pages
+    water-efficiency/           # Water efficiency upgrades
+    blog/                       # 15 blog posts
+    about/, contact/, book/     # Standard
+    api/contact/                # Contact form POST handler
+  components/
+    ui/                         # Small primitives — usually re-exported from /ui library
+    sections/                   # Page sections (Hero, ServicesOverview, StatsStrip, …)
+    ConversionTracking.tsx      # GA4 click delegation for tel: + /book + form events
+  lib/
+    seo.ts                      # JSON-LD helpers + siteConfig + sameAs profiles
+    blog.ts                     # BLOG_POSTS data
+    city-data.ts                # CITY_DATA for /services/[city]
+    rachio-data.ts              # CITY_RACHIO + RACHIO_PRICING + estimateNetCost
+    rebate-data.ts              # CITIES rebate program data
+    reviews.ts                  # REVIEWS — real Google reviews used in schema + Testimonials
+    seo.ts                      # All schema generators
 
 # REFERENCE LIBRARIES (read-only, copy patterns from these):
-ui/               # 72+ UI primitives — shadcn/Radix based
-pro-blocks/       # Pre-built landing page sections
+ui/                             # 72+ UI primitives — shadcn/Radix based
+pro-blocks/                     # Pre-built landing page sections (FROM Appy.AI — adapt, don't copy verbatim)
+
+public/
+  llms.txt                      # AI agent-parseable site overview
+  pricing.md                    # AI agent-parseable pricing
+  robots.txt                    # Explicit AI bot allow list
+  images/                       # Site images
 ```
+
+---
+
+## ⚡ Library-First Rule (READ THIS FIRST)
+
+**Before creating ANY new component or page section, you MUST:**
+
+1. **Search `ui/` first** for the primitive (Button, Card, Badge, Input, Accordion, Carousel, etc.). 72+ primitives exist. Use them, don't reinvent them.
+2. **Search `pro-blocks/landing-page/` second** for the section pattern (hero, feature, faq, footer, pricing). 70+ section variants exist.
+3. **Only build custom if neither exists** — and even then, follow the same patterns (`cn()`, semantic tokens, Radix-based, CVA variants).
+
+**Why:** consistency, maintainability, faster shipping, and these libraries already encode accessibility + responsive patterns we'd otherwise miss.
+
+**Exception:** `pro-blocks/` was built for Appy.AI and uses different design tokens (OKLCH brick theme, `@/app/components/...` imports). Don't copy `pro-blocks/` files verbatim — **read the variant for the pattern, then build a Trailhead-native version** using our semantic tokens (navy / primary orange / cream).
 
 ---
 
@@ -204,8 +240,66 @@ Provides 14 composable skills for structured software development:
 
 ---
 
-## Pages (Planned)
-1. **Home** — Hero, services overview, trust signals, CTA
-2. **Services** — Detailed service offerings
-3. **About** — Company story, team
-4. **Contact** — Form + phone/email/location info
+## Pages (Live)
+
+| Route | Purpose |
+|---|---|
+| `/` | Homepage — Hero → StatsStrip → ServicesOverview → MeetRyan → Testimonials → HomeFAQ → CTAStrip |
+| `/services` | Service overview + HowItWorks process + service detail blocks + city links + FAQ |
+| `/services/[city]` | 5 city pages (erie, longmont, louisville, lafayette, firestone) — local water info + restrictions + FAQ |
+| `/pricing` | Service pricing cards + comparison table + maintenance plans + FAQ |
+| `/smart-controllers` | Rachio sales funnel hub — value prop → comparison vs Hunter/Rain Bird → per-city rebate snapshot → CompatibleBrands → definitions → FAQ |
+| `/smart-controllers/[city]` | 5 Rachio city pages with city-specific rebate context + price card variants (none / cash / unknown / free-install) |
+| `/smart-controllers/water-savings-calculator` | Interactive lawn-size → gallons-saved + dollars-saved calculator (EPA WaterSense averages) |
+| `/water-rebates` + `/water-rebates/[slug]` | Per-city utility rebate landing pages (drives the rebate funnel) |
+| `/water-efficiency` | Water-efficient upgrade services |
+| `/blog` + `/blog/[slug]` | 15 long-form blog posts |
+| `/about`, `/contact`, `/book` | Standard pages |
+
+## SEO + Analytics Infrastructure
+
+**Schema (`src/lib/seo.ts`):**
+- `LocalBusiness` (with `aggregateRating` + `sameAs` to GBP / Yelp / Nextdoor)
+- `Organization` (with full PostalAddress + `sameAs`)
+- 4 individual `Service` entities (installation / repair / blowout / spring turn-on) with offers
+- `Person` (Ryan) with `knowsAbout`, `workLocation`, credentials
+- `Review` (real Google reviews from `src/lib/reviews.ts`)
+- `FAQPage`, `BreadcrumbList`, `BlogPosting`
+
+**Conversion tracking (`src/components/ConversionTracking.tsx`):**
+- `phone_click` — any `tel:` link, anywhere
+- `book_click` — any link to `/book` or `/book/...`
+- `contact_form_submit` — fired from contact form's onSubmit (captures requested service)
+- Mark these as conversions in GA4 → Admin → Events
+
+**AI / agent visibility:**
+- `public/llms.txt` — full site overview, services, per-city rebate summary
+- `public/pricing.md` — AI agent-parseable pricing
+- `public/robots.txt` — explicit allow list for 17 AI crawlers (GPTBot, ClaudeBot, PerplexityBot, etc.)
+
+**Verification:**
+- Google Search Console verified via `verification.google` in `src/app/layout.tsx`
+- GA4 measurement ID `G-QZJP9M6LNQ` loaded via `next/script` afterInteractive
+- Vercel handles www → apex redirect at the edge — DO NOT add a `next.config.ts` redirect (caused a loop on first try)
+
+## Adding a new section — checklist
+
+1. **Library check**: Did you search `ui/` for primitives? Did you search `pro-blocks/landing-page/` for the section pattern?
+2. **Tokens**: All colors via semantic tokens (`bg-cream`, `text-navy`, `bg-primary/10`). NEVER hardcode hex.
+3. **Spacing**: Use `section-padding-y` and `container-padding-x` for consistent rhythm.
+4. **Background rhythm**: Alternate `bg-background` ↔ `bg-cream` between sections; `bg-navy` for high-impact breaks. Never two same-bg sections back-to-back.
+5. **Accessibility**: `aria-labelledby` linking to the heading id; semantic HTML.
+6. **Conversion**: If adding CTAs, use `/book` or `tel:9706927270` — they get auto-tracked by ConversionTracking.
+
+## Known cleanup opportunities (audit findings)
+
+These don't break anything but should be addressed in a future refactor pass:
+
+- **9 pages use native `<details>` for FAQs** instead of the `ui/accordion.tsx` primitive. Native `<details>` is zero-JS and accessible by default, so this is partially intentional, but the markup is duplicated 9 times — could be extracted into a shared `<FaqList faqs={...}/>` section component for consistency.
+- **`<dl>` / `<dt>` / `<dd>` pattern** in `/services` "Sprinkler Services Explained" is hand-rolled. If we add more definition lists, lift it into a `<DefinitionList>` section component.
+- **Three near-identical price card patterns** in `/pricing` (Spring Turn-On / Inspection / Winterization) — already use `Card`, but the inner structure could be a `<ServicePriceCard>` to make adding a 4th service trivial.
+- **No shared `<SectionHeader>` component** — the "tagline → title → description" stacked block appears in 6+ places with copy-pasted markup. Lift into `pro-blocks/landing-page/header-sections/HeaderSectionBlock` style.
+
+## Adding a new city to the Rachio funnel
+
+Edit `src/lib/rachio-data.ts` → `CITY_RACHIO` array → add a new entry. The city page generates statically; sitemap auto-includes it. Verify the rebate amount is sourced from the city's published page before shipping (no fabrication — see `/smart-controllers/[city]` disclaimer).
