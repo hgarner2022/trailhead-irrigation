@@ -1,6 +1,8 @@
 import type { Metadata } from "next"
 import { PageBanner } from "@/components/sections/PageBanner"
 import { HowItWorks } from "@/components/sections/HowItWorks"
+import { FaqList } from "@/components/sections/FaqList"
+import { DefinitionList } from "@/components/sections/DefinitionList"
 import { CTAStrip } from "@/components/sections/CTAStrip"
 import { buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -235,86 +237,40 @@ export default function ServicesPage() {
             </p>
           </div>
 
-          <dl className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-cream border border-border rounded-lg p-6">
-              <dt className="font-semibold text-foreground mb-2">
-                What is a sprinkler blowout?
-              </dt>
-              <dd className="text-muted-foreground leading-relaxed">
-                A sprinkler blowout is a winterization service that uses a
-                high-volume air compressor to push every drop of water out of
-                an irrigation system before winter. In Northern Colorado,
-                blowouts run from mid-October through early November and protect
-                pipes, valves, and backflow assemblies from freeze-thaw damage.
-              </dd>
-            </div>
-
-            <div className="bg-cream border border-border rounded-lg p-6">
-              <dt className="font-semibold text-foreground mb-2">
-                What is a spring sprinkler turn-on?
-              </dt>
-              <dd className="text-muted-foreground leading-relaxed">
-                A spring turn-on is the seasonal service that activates an
-                irrigation system after winter. It includes pressurizing the
-                main line, checking every zone for leaks, adjusting heads,
-                programming the controller for spring conditions, and verifying
-                water-efficient operation before the watering season begins.
-              </dd>
-            </div>
-
-            <div className="bg-cream border border-border rounded-lg p-6">
-              <dt className="font-semibold text-foreground mb-2">
-                What is a backflow preventer?
-              </dt>
-              <dd className="text-muted-foreground leading-relaxed">
-                A backflow preventer is a code-required valve assembly that
-                stops irrigation water from siphoning back into the home&apos;s
-                drinking-water supply. Most Colorado municipalities require
-                annual testing by a certified backflow tester. The two common
-                residential types are PVB (pressure vacuum breaker) and RPZ
-                (reduced-pressure zone) assemblies.
-              </dd>
-            </div>
-
-            <div className="bg-cream border border-border rounded-lg p-6">
-              <dt className="font-semibold text-foreground mb-2">
-                What is a smart sprinkler controller?
-              </dt>
-              <dd className="text-muted-foreground leading-relaxed">
-                A smart sprinkler controller is a Wi-Fi-enabled timer that
-                adjusts watering automatically using local weather, soil-moisture
-                data, and evapotranspiration rates. WaterSense-certified models
-                like Rachio, Hunter Hydrawise, and Rain Bird ESP-Me3 can cut
-                outdoor water use by 20–50% and qualify for utility rebates.
-              </dd>
-            </div>
-
-            <div className="bg-cream border border-border rounded-lg p-6">
-              <dt className="font-semibold text-foreground mb-2">
-                What is drip irrigation?
-              </dt>
-              <dd className="text-muted-foreground leading-relaxed">
-                Drip irrigation delivers water slowly through low-pressure
-                tubing and emitters placed at the base of each plant. It uses
-                30–50% less water than spray heads, eliminates runoff and
-                evaporation, and is ideal for flower beds, vegetable gardens,
-                tree wells, and xeriscape areas in Colorado&apos;s dry climate.
-              </dd>
-            </div>
-
-            <div className="bg-cream border border-border rounded-lg p-6">
-              <dt className="font-semibold text-foreground mb-2">
-                What does a sprinkler repair include?
-              </dt>
-              <dd className="text-muted-foreground leading-relaxed">
-                A sprinkler repair covers diagnosing and fixing any
-                malfunctioning component of an irrigation system: broken or
-                clogged heads, leaking valves, cracked pipes, faulty wiring,
-                and controller programming issues. Trailhead does not service
-                systems with PVC piping running directly to spray heads.
-              </dd>
-            </div>
-          </dl>
+          <DefinitionList
+            items={[
+              {
+                term: "What is a sprinkler blowout?",
+                definition:
+                  "A sprinkler blowout is a winterization service that uses a high-volume air compressor to push every drop of water out of an irrigation system before winter. In Northern Colorado, blowouts run from mid-October through early November and protect pipes, valves, and backflow assemblies from freeze-thaw damage.",
+              },
+              {
+                term: "What is a spring sprinkler turn-on?",
+                definition:
+                  "A spring turn-on is the seasonal service that activates an irrigation system after winter. It includes pressurizing the main line, checking every zone for leaks, adjusting heads, programming the controller for spring conditions, and verifying water-efficient operation before the watering season begins.",
+              },
+              {
+                term: "What is a backflow preventer?",
+                definition:
+                  "A backflow preventer is a code-required valve assembly that stops irrigation water from siphoning back into the home's drinking-water supply. Most Colorado municipalities require annual testing by a certified backflow tester. The two common residential types are PVB (pressure vacuum breaker) and RPZ (reduced-pressure zone) assemblies.",
+              },
+              {
+                term: "What is a smart sprinkler controller?",
+                definition:
+                  "A smart sprinkler controller is a Wi-Fi-enabled timer that adjusts watering automatically using local weather, soil-moisture data, and evapotranspiration rates. WaterSense-certified models like Rachio, Hunter Hydrawise, and Rain Bird ESP-Me3 can cut outdoor water use by 20–50% and qualify for utility rebates.",
+              },
+              {
+                term: "What is drip irrigation?",
+                definition:
+                  "Drip irrigation delivers water slowly through low-pressure tubing and emitters placed at the base of each plant. It uses 30–50% less water than spray heads, eliminates runoff and evaporation, and is ideal for flower beds, vegetable gardens, tree wells, and xeriscape areas in Colorado's dry climate.",
+              },
+              {
+                term: "What does a sprinkler repair include?",
+                definition:
+                  "A sprinkler repair covers diagnosing and fixing any malfunctioning component of an irrigation system: broken or clogged heads, leaking valves, cracked pipes, faulty wiring, and controller programming issues. Trailhead does not service systems with PVC piping running directly to spray heads.",
+              },
+            ]}
+          />
         </div>
       </section>
 
@@ -324,26 +280,7 @@ export default function ServicesPage() {
           <h2 className="text-3xl font-bold text-foreground mb-10 text-center">
             Frequently Asked Questions
           </h2>
-          <div className="flex flex-col gap-4">
-            {SERVICES_FAQS.map((faq) => (
-              <details
-                key={faq.question}
-                className="group border border-border rounded-lg"
-              >
-                <summary className="flex cursor-pointer items-center justify-between p-5 font-medium text-foreground">
-                  {faq.question}
-                  <span className="ml-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180">
-                    &#9662;
-                  </span>
-                </summary>
-                <div className="px-5 pb-5">
-                  <p className="text-muted-foreground leading-relaxed">
-                    {faq.answer}
-                  </p>
-                </div>
-              </details>
-            ))}
-          </div>
+          <FaqList faqs={SERVICES_FAQS} itemBg="background" />
         </div>
       </section>
 

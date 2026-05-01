@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import { PageBanner } from "@/components/sections/PageBanner"
 import { CTAStrip } from "@/components/sections/CTAStrip"
 import { WaterSavingsCalculator } from "@/components/sections/WaterSavingsCalculator"
+import { FaqList } from "@/components/sections/FaqList"
 import { Badge } from "@/components/ui/badge"
 import { buttonVariants } from "@/components/ui/button"
 import Link from "next/link"
@@ -331,26 +332,7 @@ export default function WaterEfficiencyPage() {
               Frequently Asked Questions
             </h2>
           </div>
-          <div className="flex flex-col gap-3">
-            {WATER_EFFICIENCY_FAQS.map((faq) => (
-              <details
-                key={faq.question}
-                className="group border border-border rounded-lg hover:border-primary/20 transition-colors"
-              >
-                <summary className="flex cursor-pointer items-center justify-between p-5 font-medium text-foreground">
-                  {faq.question}
-                  <span className="ml-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180">
-                    &#9662;
-                  </span>
-                </summary>
-                <div className="px-5 pb-5">
-                  <p className="text-muted-foreground leading-relaxed">
-                    {faq.answer}
-                  </p>
-                </div>
-              </details>
-            ))}
-          </div>
+          <FaqList faqs={WATER_EFFICIENCY_FAQS} itemBg="background" />
         </div>
       </section>
 

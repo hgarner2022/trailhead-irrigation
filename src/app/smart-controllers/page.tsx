@@ -10,6 +10,7 @@ import { Wifi, Droplets, CloudRain, Calculator, ArrowRight } from "lucide-react"
 import { siteConfig, faqJsonLd, breadcrumbJsonLd } from "@/lib/seo"
 import { CITY_RACHIO, RACHIO_PRICING, estimateNetCost } from "@/lib/rachio-data"
 import { CompatibleBrands } from "@/components/sections/CompatibleBrands"
+import { FaqList } from "@/components/sections/FaqList"
 
 export const metadata: Metadata = {
   title: "Rachio Smart Sprinkler Controller Installation in Erie, CO",
@@ -443,24 +444,7 @@ export default function SmartControllersPage() {
               Frequently Asked Questions
             </h2>
           </div>
-          <div className="flex flex-col gap-4">
-            {SMART_CONTROLLER_FAQS.map((faq) => (
-              <details
-                key={faq.question}
-                className="group border border-border rounded-lg bg-cream"
-              >
-                <summary className="flex cursor-pointer items-center justify-between p-5 font-medium text-foreground">
-                  {faq.question}
-                  <span className="ml-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180">
-                    &#9662;
-                  </span>
-                </summary>
-                <div className="px-5 pb-5">
-                  <p className="text-muted-foreground leading-relaxed">{faq.answer}</p>
-                </div>
-              </details>
-            ))}
-          </div>
+          <FaqList faqs={SMART_CONTROLLER_FAQS} itemBg="cream" />
         </div>
       </section>
 

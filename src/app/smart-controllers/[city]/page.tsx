@@ -16,6 +16,7 @@ import {
   getCityRachio,
 } from "@/lib/rachio-data"
 import { getCityData } from "@/lib/city-data"
+import { FaqList } from "@/components/sections/FaqList"
 
 export function generateStaticParams() {
   return CITY_RACHIO.map((c) => ({ city: c.slug }))
@@ -516,24 +517,7 @@ export default async function SmartControllerCityPage({
           <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-8 text-center">
             Frequently Asked Questions — {program.name}
           </h2>
-          <div className="flex flex-col gap-4">
-            {cityFaqs.map((faq) => (
-              <details
-                key={faq.question}
-                className="group border border-border rounded-lg bg-background"
-              >
-                <summary className="flex cursor-pointer items-center justify-between p-5 font-medium text-foreground">
-                  {faq.question}
-                  <span className="ml-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180">
-                    &#9662;
-                  </span>
-                </summary>
-                <div className="px-5 pb-5">
-                  <p className="text-muted-foreground leading-relaxed">{faq.answer}</p>
-                </div>
-              </details>
-            ))}
-          </div>
+          <FaqList faqs={cityFaqs} itemBg="background" />
         </div>
       </section>
 

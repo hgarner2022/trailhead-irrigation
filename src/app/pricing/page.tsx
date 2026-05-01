@@ -2,7 +2,8 @@ import type { Metadata } from "next"
 import { PageBanner } from "@/components/sections/PageBanner"
 import { CTAStrip } from "@/components/sections/CTAStrip"
 import { MaintenancePlans } from "@/components/sections/MaintenancePlans"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { ServicePriceCard } from "@/components/sections/ServicePriceCard"
+import { FaqList } from "@/components/sections/FaqList"
 import { Badge } from "@/components/ui/badge"
 import { buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -16,7 +17,6 @@ import {
   ArrowRight,
   Phone,
   Clock,
-  Droplets,
 } from "lucide-react"
 import { faqJsonLd, breadcrumbJsonLd, siteConfig } from "@/lib/seo"
 
@@ -115,103 +115,49 @@ export default function PricingPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Spring Turn-On */}
-            <Card className="relative overflow-hidden border-border hover:border-primary/30 transition-colors flex flex-col">
-              <CardHeader className="pb-3">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10">
-                    <Sun className="w-5 h-5 text-primary" />
-                  </div>
-                  <CardTitle className="text-lg">Spring Turn-On + System Check</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent className="flex flex-1 flex-col gap-4">
-                <div>
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-3xl font-bold text-foreground">$135</span>
-                    <span className="text-muted-foreground text-sm">up to 8 zones</span>
-                  </div>
-                  <p className="text-sm text-primary font-medium mt-1">
-                    +$10 per additional zone
-                  </p>
-                </div>
-                <ul className="flex flex-col gap-2 text-sm text-muted-foreground">
-                  <ServiceItem>Turn-on &amp; full system check</ServiceItem>
-                  <ServiceItem>Head adjustments &amp; leak check</ServiceItem>
-                  <ServiceItem>Controller programming</ServiceItem>
-                  <ServiceItem>Water efficiency check</ServiceItem>
-                </ul>
-                <p className="text-xs text-muted-foreground mt-2">Materials not included if repairs are needed.</p>
-                <Link href="/book" className={cn(buttonVariants({ size: "sm" }), "w-full mt-auto")}>
-                  Book Online
-                </Link>
-              </CardContent>
-            </Card>
-
-            {/* Sprinkler Inspection & Tune-Up */}
-            <Card className="relative overflow-hidden border-border hover:border-primary/30 transition-colors flex flex-col">
-              <CardHeader className="pb-3">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10">
-                    <Search className="w-5 h-5 text-primary" />
-                  </div>
-                  <CardTitle className="text-lg">Sprinkler Inspection & Tune-Up</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent className="flex flex-1 flex-col gap-4">
-                <div>
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-3xl font-bold text-foreground">$135</span>
-                    <span className="text-muted-foreground text-sm">up to 8 zones</span>
-                  </div>
-                  <p className="text-sm text-primary font-medium mt-1">
-                    +$10 per additional zone
-                  </p>
-                </div>
-                <ul className="flex flex-col gap-2 text-sm text-muted-foreground">
-                  <ServiceItem>Full system check &amp; adjustments</ServiceItem>
-                  <ServiceItem>Issue detection &amp; diagnostics</ServiceItem>
-                  <ServiceItem>Water efficiency check</ServiceItem>
-                  <ServiceItem>Recommendations report</ServiceItem>
-                </ul>
-                <p className="text-xs text-muted-foreground mt-2">Materials not included if repairs are needed.</p>
-                <Link href="/book" className={cn(buttonVariants({ size: "sm" }), "w-full mt-auto")}>
-                  Book Online
-                </Link>
-              </CardContent>
-            </Card>
-
-            {/* Winterization */}
-            <Card className="relative overflow-hidden border-border hover:border-primary/30 transition-colors flex flex-col">
-              <CardHeader className="pb-3">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-blue-500/10">
-                    <Snowflake className="w-5 h-5 text-blue-500" />
-                  </div>
-                  <CardTitle className="text-lg">Winterization (Blowout)</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent className="flex flex-1 flex-col gap-4">
-                <div>
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-3xl font-bold text-foreground">$95</span>
-                    <span className="text-muted-foreground text-sm">up to 8 zones</span>
-                  </div>
-                  <p className="text-sm text-primary font-medium mt-1">
-                    +$7 per additional zone
-                  </p>
-                </div>
-                <ul className="flex flex-col gap-2 text-sm text-muted-foreground">
-                  <ServiceItem>Complete system blowout</ServiceItem>
-                  <ServiceItem>All zones cleared</ServiceItem>
-                  <ServiceItem>Backflow protection</ServiceItem>
-                  <ServiceItem>Winter-ready verification</ServiceItem>
-                </ul>
-                <Link href="/book" className={cn(buttonVariants({ size: "sm" }), "w-full mt-auto")}>
-                  Book Online
-                </Link>
-              </CardContent>
-            </Card>
+            <ServicePriceCard
+              title="Spring Turn-On + System Check"
+              icon={Sun}
+              price="$135"
+              priceUnit="up to 8 zones"
+              perZoneNote="+$10 per additional zone"
+              features={[
+                "Turn-on & full system check",
+                "Head adjustments & leak check",
+                "Controller programming",
+                "Water efficiency check",
+              ]}
+              footnote="Materials not included if repairs are needed."
+            />
+            <ServicePriceCard
+              title="Sprinkler Inspection & Tune-Up"
+              icon={Search}
+              price="$135"
+              priceUnit="up to 8 zones"
+              perZoneNote="+$10 per additional zone"
+              features={[
+                "Full system check & adjustments",
+                "Issue detection & diagnostics",
+                "Water efficiency check",
+                "Recommendations report",
+              ]}
+              footnote="Materials not included if repairs are needed."
+            />
+            <ServicePriceCard
+              title="Winterization (Blowout)"
+              icon={Snowflake}
+              iconBgClass="bg-blue-500/10"
+              iconColorClass="text-blue-500"
+              price="$95"
+              priceUnit="up to 8 zones"
+              perZoneNote="+$7 per additional zone"
+              features={[
+                "Complete system blowout",
+                "All zones cleared",
+                "Backflow protection",
+                "Winter-ready verification",
+              ]}
+            />
           </div>
         </div>
       </section>
@@ -489,15 +435,6 @@ export default function PricingPage() {
 }
 
 /* ─── Helper Components ─── */
-
-function ServiceItem({ children }: { children: React.ReactNode }) {
-  return (
-    <li className="flex items-start gap-2">
-      <CheckCircle2 className="w-4 h-4 text-success shrink-0 mt-0.5" />
-      <span>{children}</span>
-    </li>
-  )
-}
 
 function RepairFeature({
   children,

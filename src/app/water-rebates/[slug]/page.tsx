@@ -8,6 +8,7 @@ import { buttonVariants } from "@/components/ui/button"
 import Link from "next/link"
 import { ExternalLink, Check } from "lucide-react"
 import { breadcrumbJsonLd, faqJsonLd, siteConfig } from "@/lib/seo"
+import { FaqList } from "@/components/sections/FaqList"
 import { CITIES, SLOW_THE_FLOW } from "@/lib/rebate-data"
 
 export function generateStaticParams() {
@@ -221,26 +222,7 @@ export default async function CityRebatePage({ params }: { params: Promise<{ slu
           <h2 className="text-3xl font-bold text-foreground mb-10 text-center">
             Frequently Asked Questions
           </h2>
-          <div className="flex flex-col gap-4">
-            {city.faqs.map((faq) => (
-              <details
-                key={faq.question}
-                className="group border border-border rounded-lg"
-              >
-                <summary className="flex cursor-pointer items-center justify-between p-5 font-medium text-foreground">
-                  {faq.question}
-                  <span className="ml-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180">
-                    &#9662;
-                  </span>
-                </summary>
-                <div className="px-5 pb-5">
-                  <p className="text-muted-foreground leading-relaxed">
-                    {faq.answer}
-                  </p>
-                </div>
-              </details>
-            ))}
-          </div>
+          <FaqList faqs={city.faqs} itemBg="background" />
         </div>
       </section>
 

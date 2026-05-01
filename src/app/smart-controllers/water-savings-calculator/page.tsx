@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import { PageBanner } from "@/components/sections/PageBanner"
 import { CTAStrip } from "@/components/sections/CTAStrip"
 import { siteConfig, breadcrumbJsonLd, faqJsonLd } from "@/lib/seo"
+import { FaqList } from "@/components/sections/FaqList"
 import { CalculatorClient } from "./calculator-client"
 
 export const metadata: Metadata = {
@@ -109,24 +110,7 @@ export default function WaterSavingsCalculatorPage() {
           <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-8 text-center">
             Calculator FAQs
           </h2>
-          <div className="flex flex-col gap-4">
-            {CALCULATOR_FAQS.map((faq) => (
-              <details
-                key={faq.question}
-                className="group border border-border rounded-lg bg-cream"
-              >
-                <summary className="flex cursor-pointer items-center justify-between p-5 font-medium text-foreground">
-                  {faq.question}
-                  <span className="ml-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180">
-                    &#9662;
-                  </span>
-                </summary>
-                <div className="px-5 pb-5">
-                  <p className="text-muted-foreground leading-relaxed">{faq.answer}</p>
-                </div>
-              </details>
-            ))}
-          </div>
+          <FaqList faqs={CALCULATOR_FAQS} itemBg="cream" />
         </div>
       </section>
 

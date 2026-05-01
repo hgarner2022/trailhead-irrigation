@@ -1,9 +1,11 @@
+import { FaqList, type FaqItem } from "@/components/sections/FaqList"
+
 // Homepage FAQ — high-intent questions a homeowner in Erie/Longmont/Weld
 // County would type into Google or ask an AI. Answers are kept to 40–80 words
 // each to maximize the chance of being extracted by AI Overviews + ChatGPT
 // Search. Pairs with FAQPage JSON-LD emitted from src/app/page.tsx.
 
-export const HOME_FAQS: { question: string; answer: string }[] = [
+export const HOME_FAQS: FaqItem[] = [
   {
     question: "How much does sprinkler repair cost in Erie, CO?",
     answer:
@@ -55,26 +57,7 @@ export function HomeFAQ() {
           </p>
         </div>
 
-        <div className="flex flex-col gap-4">
-          {HOME_FAQS.map((faq) => (
-            <details
-              key={faq.question}
-              className="group border border-border rounded-lg bg-background"
-            >
-              <summary className="flex cursor-pointer items-center justify-between p-5 font-medium text-foreground">
-                {faq.question}
-                <span className="ml-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180">
-                  &#9662;
-                </span>
-              </summary>
-              <div className="px-5 pb-5">
-                <p className="text-muted-foreground leading-relaxed">
-                  {faq.answer}
-                </p>
-              </div>
-            </details>
-          ))}
-        </div>
+        <FaqList faqs={HOME_FAQS} itemBg="background" />
       </div>
     </section>
   )
