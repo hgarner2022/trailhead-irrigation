@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils"
 import Link from "next/link"
 import { Check, Droplets, Wrench, Snowflake, MapPin, Phone, AlertTriangle } from "lucide-react"
 import { breadcrumbJsonLd, faqJsonLd, siteConfig } from "@/lib/seo"
+import { FaqList } from "@/components/sections/FaqList"
 import { CITY_DATA, getCityData } from "@/lib/city-data"
 
 export function generateStaticParams() {
@@ -306,26 +307,7 @@ export default async function CityPage({
           <h2 className="text-2xl font-bold text-foreground mb-8">
             Frequently Asked Questions — {data.name}
           </h2>
-          <div className="flex flex-col gap-4">
-            {data.faqs.map((faq) => (
-              <details
-                key={faq.question}
-                className="group border border-border rounded-lg"
-              >
-                <summary className="flex cursor-pointer items-center justify-between p-5 font-medium text-foreground">
-                  {faq.question}
-                  <span className="ml-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180">
-                    &#9662;
-                  </span>
-                </summary>
-                <div className="px-5 pb-5">
-                  <p className="text-muted-foreground leading-relaxed">
-                    {faq.answer}
-                  </p>
-                </div>
-              </details>
-            ))}
-          </div>
+          <FaqList faqs={data.faqs} itemBg="background" />
         </div>
       </section>
 
