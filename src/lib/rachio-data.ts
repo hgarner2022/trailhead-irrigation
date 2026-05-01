@@ -56,14 +56,10 @@ export const CITY_RACHIO: RachioCityProgram[] = [
   {
     slug: "louisville",
     name: "Louisville",
-    rebateType: "free-install",
+    rebateType: "none",
     shortNote:
-      "Louisville water customers can get a Rachio 3 controller installed for free through Resource Central's Slow the Flow program — a limited number of slots open every season starting mid-June.",
-    freeInstallProgram: true,
-    freeInstallNote:
-      "Sign up at slowtheflow.resourcecentral.org for the 2026 interest list. While you wait for your spot, Trailhead can also do a paid install if you don't want to wait.",
-    utilityRebateUrl:
-      "https://www.louisvilleco.gov/living-in-louisville/residents/sustainability/water",
+      "Louisville water customers don't have a city smart-controller rebate program, but the long-term water savings are significant — typically 8,000–15,000 gallons per year on a Front Range home, which usually pays back the install cost through reduced water bills within a few watering seasons.",
+    freeInstallProgram: false,
   },
   {
     slug: "lafayette",
