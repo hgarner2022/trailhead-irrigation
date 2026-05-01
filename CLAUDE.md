@@ -56,13 +56,76 @@ public/
 
 **Before creating ANY new component or page section, you MUST:**
 
-1. **Search `ui/` first** for the primitive (Button, Card, Badge, Input, Accordion, Carousel, etc.). 72+ primitives exist. Use them, don't reinvent them.
-2. **Search `pro-blocks/landing-page/` second** for the section pattern (hero, feature, faq, footer, pricing). 70+ section variants exist.
-3. **Only build custom if neither exists** — and even then, follow the same patterns (`cn()`, semantic tokens, Radix-based, CVA variants).
+1. **Search `src/components/sections/` first** — Trailhead's own shared sections (StatsStrip, FaqList, DefinitionList, ServicePriceCard, SectionHeader, HowItWorks, CompatibleBrands, etc.). Use these directly.
+2. **Search `src/components/ui/` second** — Trailhead's primitive layer. Re-exports of shadcn-style primitives that match Trailhead's tokens.
+3. **For a NEW primitive that's not in `src/components/ui/`** — choose one:
+   - **Preferred: `npx shadcn@latest add <name>`** — generates a fresh primitive that uses `@/lib/utils` and Tailwind tokens out of the box. Minimal adapt work.
+   - **Alternative: copy from `ui/` and adapt.** See the workflow below. Use only when you need the Appy.AI-specific variants (e.g. compound loading states, card-aware buttons).
+4. **For a NEW section** — search `pro-blocks/landing-page/` for a similar pattern, then build a Trailhead-native version using our tokens. **Don't import or copy `pro-blocks/` files verbatim** — they use Appy.AI's design tokens and import paths.
+5. **Only build truly from scratch when nothing exists** — and follow the existing patterns (`cn()`, semantic tokens, native HTML or Radix, CVA variants when needed).
 
-**Why:** consistency, maintainability, faster shipping, and these libraries already encode accessibility + responsive patterns we'd otherwise miss.
+**Why:** consistency, maintainability, faster shipping, accessibility encoded by default.
 
-**Exception:** `pro-blocks/` was built for Appy.AI and uses different design tokens (OKLCH brick theme, `@/app/components/...` imports). Don't copy `pro-blocks/` files verbatim — **read the variant for the pattern, then build a Trailhead-native version** using our semantic tokens (navy / primary orange / cream).
+### Important: `ui/` and `pro-blocks/` are NOT importable
+
+Both directories are **excluded from TypeScript** (see `tsconfig.json`'s `exclude` array) and import from `@/app/lib/utils` (Appy.AI's path) — they will not compile if imported directly. They exist as **reference libraries**: open them, read the pattern, then either:
+- Run `npx shadcn add <name>` and get the same primitive cleanly, OR
+- Copy the file into `src/components/ui/`, replace `@/app/lib/utils` → `@/lib/utils`, follow the transitive deps, and adapt styling to Trailhead's tokens.
+
+### What's available in `ui/` (the source library)
+
+If you need a primitive that's not yet in `src/components/ui/`, look first to see if `ui/` has it (most do). High-likelihood future needs for Trailhead, mapped to whether they're already adopted:
+
+**Already in `src/components/ui/`** — import these directly:
+`badge` · `button` · `card` · `carousel` · `input` · `separator` · `textarea`
+
+**Likely-useful future additions (in `ui/` waiting):**
+- **Forms**: `select` · `checkbox` · `radio-group` · `field` · `label` · `switch` · `slider` · `combobox` · `country-select` · `native-select` · `input-group` · `input-otp` · `datePicker` · `calendar`
+- **Feedback / state**: `alert` (8 variants) · `alert-dialog` · `progress` · `skeleton` · `spinner` · `toggle` · `toggle-group` · `loading` · `animated-ellipsis`
+- **Layout / navigation**: `accordion` · `collapsible` · `breadcrumb` · `pagination` · `tabs` · `navigation-menu` · `sidebar` · `sheet` · `drawer` · `dialog` · `popover` · `hover-card` · `tooltip` · `dropdownMenu` · `context-menu` · `menubar` · `command` · `kbd`
+- **Display / data**: `avatar` · `aspect-ratio` · `table` · `dataTable` · `chart` · `scrollArea` · `resizable` · `responsive` · `segmented-control` · `relativeTime`
+- **Utility**: `icons` · `empty` · `field` · `grid` · `common` (Row / Column primitives) · `portalContainer` · `sonner` (toasts)
+
+**App-specific — skip these (not relevant to a marketing site):**
+`MicrophoneVoiceToTextInput` · `chat-ask-survey` · `browserPreview` · `documentPreviewModal` · `imageModal` · `lockedByPlanBadge` · `ace` · `textEditor` · `video-player` · `typewriterTitle`
+
+### Workflow: adopting a new primitive
+
+**Option A — `npx shadcn add` (preferred, 30 seconds):**
+```bash
+npx shadcn@latest add accordion
+# auto-installs to src/components/ui/accordion.tsx with @/lib/utils import
+```
+Then `import { Accordion } from "@/components/ui/accordion"` and use.
+
+**Option B — Adapt from `ui/`** (use only when shadcn's version is missing the variant you need):
+1. Copy the file: `cp ui/<name>.tsx src/components/ui/<name>.tsx`
+2. Replace `from "@/app/lib/utils"` → `from "@/lib/utils"` (and any other `@/app/...` paths)
+3. Check internal imports — many ui/ files depend on `./skeleton`, `./tooltip`, `./icons`, etc. Copy each transitive dep with the same fix.
+4. Verify it uses Trailhead's semantic tokens (`bg-primary`, `text-foreground`, `border-border`). The `ui/` library uses similar tokens but occasionally references Appy.AI-specific ones — replace those with Trailhead equivalents (see Design Tokens section).
+5. `npx tsc --noEmit` to confirm it compiles.
+
+### Workflow: adopting a section pattern from `pro-blocks/`
+
+**Always Option B** (pro-blocks isn't on shadcn). 70+ landing-page section variants exist:
+
+| Variants | Path | Count |
+|---|---|---|
+| Hero sections | `pro-blocks/landing-page/hero-sections/` | 22 |
+| Feature sections | `pro-blocks/landing-page/feature-sections/` | 20 |
+| Header sections | `pro-blocks/landing-page/header-sections/` | 20 |
+| FAQ sections | `pro-blocks/landing-page/faq-sections/` | 5 |
+| Pricing sections | `pro-blocks/landing-page/pricing-sections/` | 5 |
+| Footers | `pro-blocks/landing-page/footers/` | 9 |
+
+When you need a new section pattern:
+1. Browse the relevant directory; pick the variant that's closest visually
+2. Open that variant + `*.stories.tsx` for context
+3. Build the Trailhead-native version in `src/components/sections/<NewSection>.tsx`:
+   - Use Trailhead semantic tokens (navy / primary orange / cream)
+   - Import primitives from `@/components/ui/...`
+   - Match the Trailhead section pattern (`bg-cream section-padding-y` wrapper, etc.)
+   - Use `SectionHeader` for the tagline → title → description block
 
 ---
 
@@ -284,12 +347,33 @@ Provides 14 composable skills for structured software development:
 
 ## Adding a new section — checklist
 
-1. **Library check**: Did you search `ui/` for primitives? Did you search `pro-blocks/landing-page/` for the section pattern?
-2. **Tokens**: All colors via semantic tokens (`bg-cream`, `text-navy`, `bg-primary/10`). NEVER hardcode hex.
+1. **Library check (REQUIRED)**:
+   - Search `src/components/sections/` — does FaqList / DefinitionList / ServicePriceCard / SectionHeader / StatsStrip / HowItWorks / CompatibleBrands cover this?
+   - Search `src/components/ui/` for the primitive (Card / Badge / Button / Input / Separator / etc.)
+   - For new primitives: `npx shadcn@latest add <name>` first; copy from `ui/` only as a fallback
+   - For new section patterns: browse `pro-blocks/landing-page/` for the closest variant and adapt
+2. **Tokens**: All colors via semantic tokens (`bg-cream`, `text-navy`, `bg-primary/10`, `text-foreground`). NEVER hardcode hex.
 3. **Spacing**: Use `section-padding-y` and `container-padding-x` for consistent rhythm.
 4. **Background rhythm**: Alternate `bg-background` ↔ `bg-cream` between sections; `bg-navy` for high-impact breaks. Never two same-bg sections back-to-back.
 5. **Accessibility**: `aria-labelledby` linking to the heading id; semantic HTML.
 6. **Conversion**: If adding CTAs, use `/book` or `tel:9706927270` — they get auto-tracked by ConversionTracking.
+
+## Trailhead's own shared sections (`src/components/sections/`)
+
+Always use these instead of building from scratch:
+
+| Component | Use for |
+|---|---|
+| `<SectionHeader tagline title description />` | Tagline → title → description block at the top of any section |
+| `<FaqList faqs={...} itemBg="cream" />` | Any FAQ accordion. Native `<details>`, zero JS. |
+| `<DefinitionList items={...} columns={2} />` | Semantic `<dl>`/`<dt>`/`<dd>` "What is X?" blocks (highly extractable by AI Overviews) |
+| `<ServicePriceCard title icon price priceUnit perZoneNote features footnote />` | Service tier card with price, features, CTA |
+| `<StatsStrip />` | The credibility-stats row (homepage only) |
+| `<HowItWorks />` | "What to expect" 4-step process (services page) |
+| `<CompatibleBrands />` | "Compatible with: brand · brand · brand" strip |
+| `<PageBanner title description backgroundImage />` | Top banner on every interior page |
+| `<CTAStrip />` | Bottom CTA on every page |
+| `<MeetRyan />` · `<Testimonials />` · `<HomeFAQ />` · `<Hero />` · `<ServicesOverview />` | Homepage-specific sections |
 
 ## Known cleanup opportunities (audit findings)
 
