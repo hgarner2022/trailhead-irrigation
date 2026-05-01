@@ -1,6 +1,5 @@
 import type { Metadata } from "next"
 import { PageBanner } from "@/components/sections/PageBanner"
-import { HowItWorks } from "@/components/sections/HowItWorks"
 import { FaqList } from "@/components/sections/FaqList"
 import { DefinitionList } from "@/components/sections/DefinitionList"
 import { CTAStrip } from "@/components/sections/CTAStrip"
@@ -137,8 +136,6 @@ export default function ServicesPage() {
         description="Your local sprinkler company for installation, repair, and seasonal maintenance in Erie, Longmont & Northern Colorado."
         backgroundImage="/images/sprinkler-installation.jpg"
       />
-
-      <HowItWorks />
 
       {SERVICES.map((service, index) => (
         <section
