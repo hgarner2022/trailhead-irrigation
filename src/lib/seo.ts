@@ -1,4 +1,4 @@
-const SITE_URL = "https://trailheadirrigation.com"
+const SITE_URL = "https://www.trailheadirrigation.com"
 
 // Public profiles used as `sameAs` authority signals for SEO + AI citation.
 // TODO: Add Facebook, Instagram, Angi, BBB URLs as they're created.
@@ -75,7 +75,7 @@ export function localBusinessJsonLd() {
     aggregateRating: {
       "@type": "AggregateRating",
       ratingValue: "5.0",
-      reviewCount: "3",
+      reviewCount: "7",
       bestRating: "5",
       worstRating: "1",
     },

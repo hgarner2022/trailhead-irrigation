@@ -6,7 +6,7 @@
 **Provider:** Trailhead Lawn & Irrigation LLC
 **Service area:** Erie, CO and the Northern Colorado Front Range
 **Contact:** (970) 692-7270 · ryan@trailheadirrigation.com
-**Book online:** https://trailheadirrigation.com/book
+**Book online:** https://www.trailheadirrigation.com/book
 
 ---
 
@@ -87,7 +87,7 @@ We serve **Erie, Longmont, Louisville, Lafayette, Firestone, and surrounding com
 
 ### Are there rebates available for irrigation upgrades?
 
-Yes. Many local water utilities offer rebates for WaterSense-certified smart controllers. See https://trailheadirrigation.com/water-rebates for programs in Erie, Longmont, Louisville, and Lafayette.
+Yes. Many local water utilities offer rebates for WaterSense-certified smart controllers. See https://www.trailheadirrigation.com/water-rebates for programs in Erie, Longmont, Louisville, and Lafayette.
 
 ---
 
@@ -97,5 +97,5 @@ Yes. Many local water utilities offer rebates for WaterSense-certified smart con
 - **Email:** ryan@trailheadirrigation.com
 - **Address:** 137 Morgan Cir N, Erie, CO 80516
 - **Hours:** Monday–Friday, 8:00 AM – 6:00 PM
-- **Website:** https://trailheadirrigation.com
-- **Book online:** https://trailheadirrigation.com/book
+- **Website:** https://www.trailheadirrigation.com
+- **Book online:** https://www.trailheadirrigation.com/book

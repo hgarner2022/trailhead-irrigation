@@ -23,6 +23,13 @@ import type { ReviewItem } from "./seo"
  */
 export const REVIEWS: ReviewItem[] = [
   {
+    author: "Brian Taylor",
+    rating: 5,
+    date: "2026-05-01",
+    body: "Great service from the Trailhead team. They turned my system on and installed a Rachio wireless controller. The handoff to my account was seamless and they were really knowledgeable about the app. Highly recommend!",
+    source: "Google",
+  },
+  {
     author: "Lauren Shields",
     rating: 5,
     date: "2026-04-27",

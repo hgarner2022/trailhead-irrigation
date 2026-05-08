@@ -29,15 +29,15 @@ Erie, CO | Longmont, CO | Louisville, CO | Lafayette, CO | Firestone, CO | Weld 
 
 ## Key Pages
 
-- Homepage: https://trailheadirrigation.com
-- Services: https://trailheadirrigation.com/services
-- Smart Controllers (Rachio): https://trailheadirrigation.com/smart-controllers
-- Water Savings Calculator: https://trailheadirrigation.com/smart-controllers/water-savings-calculator
-- Pricing & Membership Plans: https://trailheadirrigation.com/pricing
-- Water Rebates by City: https://trailheadirrigation.com/water-rebates
-- Blog (Irrigation Tips): https://trailheadirrigation.com/blog
-- Contact: https://trailheadirrigation.com/contact
-- Book a Service: https://trailheadirrigation.com/book
+- Homepage: https://www.trailheadirrigation.com
+- Services: https://www.trailheadirrigation.com/services
+- Smart Controllers (Rachio): https://www.trailheadirrigation.com/smart-controllers
+- Water Savings Calculator: https://www.trailheadirrigation.com/smart-controllers/water-savings-calculator
+- Pricing & Membership Plans: https://www.trailheadirrigation.com/pricing
+- Water Rebates by City: https://www.trailheadirrigation.com/water-rebates
+- Blog (Irrigation Tips): https://www.trailheadirrigation.com/blog
+- Contact: https://www.trailheadirrigation.com/contact
+- Book a Service: https://www.trailheadirrigation.com/book
 
 ## Rachio Smart Controller Installation
 

@@ -1,5 +1,5 @@
 # Trailhead Lawn & Irrigation — robots.txt
-# Canonical host: https://trailheadirrigation.com (apex)
+# Canonical host: https://www.trailheadirrigation.com (www)
 
 User-agent: *
 Allow: /
@@ -53,4 +53,4 @@ Allow: /
 User-agent: Amazonbot
 Allow: /
 
-Sitemap: https://trailheadirrigation.com/sitemap.xml
+Sitemap: https://www.trailheadirrigation.com/sitemap.xml

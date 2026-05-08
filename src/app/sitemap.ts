@@ -4,7 +4,7 @@ import { CITY_DATA } from "@/lib/city-data"
 import { CITY_RACHIO } from "@/lib/rachio-data"
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = "https://trailheadirrigation.com"
+  const baseUrl = "https://www.trailheadirrigation.com"
 
   const staticPages = [
     { url: baseUrl, lastModified: new Date(), changeFrequency: "monthly" as const, priority: 1 },
