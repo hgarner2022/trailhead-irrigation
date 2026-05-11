@@ -1,7 +1,7 @@
 const SITE_URL = "https://www.trailheadirrigation.com"
 
 // Public profiles used as `sameAs` authority signals for SEO + AI citation.
-// TODO: Add Facebook, Instagram, Angi, BBB URLs as they're created.
+// TODO: Add Instagram, Angi, BBB URLs as they're created.
 const SAME_AS_PROFILES = [
   // Google Business Profile (Trailhead Lawn & Irrigation LLC, Erie, CO)
   "https://share.google/TylDvEow1tcqEBYHY",
@@ -9,6 +9,8 @@ const SAME_AS_PROFILES = [
   "https://www.yelp.com/biz/trailhead-lawn-and-irrigation-erie",
   // Nextdoor Business Page
   "https://nextdoor.com/page/trailhead-irrigation-erie-co",
+  // Facebook Page
+  "https://www.facebook.com/profile.php?id=61589563052470",
 ]
 
 export const siteConfig = {
