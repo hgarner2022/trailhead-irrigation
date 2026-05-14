@@ -42,13 +42,40 @@ function slugify(text: string): string {
 }
 
 function renderInlineFormatting(text: string) {
-  const parts = text.split(/(\*\*.*?\*\*)/g)
+  const parts = text.split(/(\*\*.*?\*\*|\[[^\]]+\]\([^)]+\))/g)
   return parts.map((part, i) => {
     if (part.startsWith("**") && part.endsWith("**")) {
       return (
         <strong key={i} className="text-foreground font-semibold">
           {part.slice(2, -2)}
         </strong>
+      )
+    }
+    const linkMatch = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/)
+    if (linkMatch) {
+      const [, label, href] = linkMatch
+      const isExternal = /^https?:\/\//.test(href)
+      if (isExternal) {
+        return (
+          <a
+            key={i}
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary hover:underline font-medium"
+          >
+            {label}
+          </a>
+        )
+      }
+      return (
+        <Link
+          key={i}
+          href={href}
+          className="text-primary hover:underline font-medium"
+        >
+          {label}
+        </Link>
       )
     }
     return part

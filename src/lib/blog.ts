@@ -15,6 +15,115 @@ export function getReadingTime(content: string): number {
 
 export const BLOG_POSTS: BlogPost[] = [
   {
+    slug: 'new-to-erie-2026-lawn-irrigation-guide',
+    title: "New to Erie? Here's What Your Builder Didn't Tell You About Your Lawn and Sprinkler System",
+    date: '2026-05-11',
+    excerpt: "Erie added thousands of new homes in the last few years, and most arrived with a builder-installed sprinkler system that wasn't designed for what just happened this spring. After Colorado's first Level 4 water emergency of 2026, here's what every new Erie homeowner should know about their yard, their water, and the rules nobody handed you at closing.",
+    category: 'Local Resources',
+    relatedSlugs: ['erie-march-2026-water-restriction', 'smart-irrigation-controllers-worth-it', 'spring-sprinkler-startup-colorado'],
+    content: `## Welcome to Erie. Now Here Is What Just Happened.
+
+If you closed on a new home in Erie in the last year or two, you bought into a town that just made statewide news for the wrong reason. On March 20, 2026, Erie became the first Front Range town to escalate to a Level 4 water emergency, which is the most severe stage in the town's framework. Every sprinkler in town was ordered off, with town staff driving around handing out door hangers and threatening to shut off water service to anyone who kept running their system.
+
+I [wrote about that emergency in detail here](/blog/erie-march-2026-water-restriction) if you want the full story. The short version: a warm dry March, an early sprinkler turn-on by thousands of homeowners, and a water system that was running out of capacity within days. The emergency was lifted on April 4, but the town moved straight into Stage 1 drought and asked residents to keep voluntary watering down to two days a week.
+
+If you are a new Erie homeowner, you probably did not see any of this coming when you signed your closing papers. The builder showed you the sod, walked you through the controller in the garage, and that was the end of the irrigation conversation. So let's catch up on what actually matters.
+
+## Why Erie's Water Situation Is Different (and Probably Permanent)
+
+Most Front Range cities sit on senior water rights tied to local sources. Boulder pulls from Boulder Creek. Lafayette has rights on Coal Creek. Longmont taps the St. Vrain. Those cities have a cushion when snowpack is bad.
+
+Erie does not have that cushion. The town gets most of its summer water through the Colorado-Big Thompson Project, which moves water from the Colorado River basin over the Continental Divide and into the Carter Lake canal system. That canal does not open until April 1. Before that date, Erie runs on a winter supply capacity of about 3.5 million gallons per day. Normal winter demand is around 2 million gallons. The moment a few thousand homeowners flip their sprinklers on early, the system runs out of headroom in days.
+
+That structural reality is not going away. Chimney Hollow Reservoir, the regional storage project Erie helped fund, was supposed to start storing water in late 2025, but construction delays pushed releases past 2026. South Platte snowpack this year landed at 54 percent of normal, which is the worst on record. Erie is going to keep hitting drought stages, and a lot of those stages are going to land before your lawn actually needs the water.
+
+You can [sign up for drought alerts on the town site](https://www.erieco.gov/1813/Outdoor-Irrigation). That is the single most useful thing a new Erie homeowner can do today.
+
+## What Builder-Installed Sprinkler Systems Almost Always Get Wrong
+
+I have walked dozens of new-construction systems in Erie over the years. The patterns are consistent enough that I can usually predict the problems before I plug into your controller. A few of the common ones:
+
+- **Heads spaced too far apart.** Production builders price systems by the zone, so the cheapest way to cover a yard is to use fewer heads with more aggressive spray patterns. You end up with dry rings in the lawn where coverage overlaps thinly, and oversprayed driveways and fences where it overlaps too much.
+- **Rotors and spray heads mixed in the same zone.** A rotor needs to run roughly three times longer than a spray head to put down the same amount of water. If your zone has both, half of the area is getting flooded while the other half stays thirsty. [I broke this down in a separate post](/blog/how-to-adjust-sprinkler-heads).
+- **No rain sensor, or one that has never been calibrated.** Code requires rain sensors on new installations. About half the ones I see were never wired in correctly, or they were set to "ignore" inside the controller program.
+- **A default schedule that ignores Colorado clay.** Almost every builder controller ships set to a single long run time per zone. Erie's soil is heavy clay that only absorbs around 0.2 inches of water per hour before the rest runs off into the storm drain. A 20 minute run on bluegrass on clay is mostly waste.
+- **The wrong head right next to your foundation.** Builders install whatever heads are on the truck that day. I have lost count of how many homes I find with a high-flow rotor pointed at the side of a house, drowning the foundation and watering the siding.
+
+None of this is a knock on your builder. It is the economics of high-volume new construction. The systems work well enough to look healthy through your first summer, which is all anyone really inspects. The problems show up in year two or three when your bill creeps up, brown spots appear, and you start wondering why your grass looks worse than your neighbor's.
+
+A spring audit fixes most of it in a couple of hours. I [walk through a startup the same way every time](/blog/spring-sprinkler-startup-colorado), and if you want me to do it for your new place, [book a slot here](/book).
+
+## How to Actually Water on a Two-Day Schedule
+
+Erie's voluntary schedule asks residents to water twice a week. The instinct is to make those two days count by running every zone longer. That is the wrong move.
+
+Long runs on clay soil pool on the surface, hit field capacity in the top inch or two, and then run off. The grass roots stay shallow because the water never reaches them. Then the first hot week of July arrives, and your shallow-rooted lawn cooks.
+
+The fix is the cycle and soak method. Instead of one 20 minute run, you split the same total time into three 7 minute runs spaced an hour apart. Each cycle puts down a small amount of water, gives it time to absorb, and then comes back for more. The water actually reaches the root zone. The roots grow deeper. Your lawn gets tougher.
+
+A few rules of thumb that work for Erie:
+
+- Water before 8 a.m. or after 7 p.m. Watering midday in Colorado loses 30 to 50 percent of your output to evaporation before it ever hits the soil.
+- For Kentucky bluegrass on clay, aim for about 1 inch of water per week in May and June, and closer to 1.5 inches per week in July and August. A tuna can set on the lawn is the easiest way to measure.
+- Skip a day if you got real rain. Not a drizzle, real rain. If you cannot remember whether you got real rain, you did not.
+- Run drip zones longer and less often than spray zones. Drip emitters put out about half a gallon an hour, so shrubs and trees want a deep soak once or twice a week, not the same schedule as your turf.
+
+Most builder controllers can be reprogrammed to do all of this manually. It takes about 20 minutes if you know where to click. If yours is a Rachio or Hunter Hydrawise, the smart features handle most of it on their own. There are [more bill-saving tips in this post](/blog/water-optimization-tips-colorado) if you want to dig further.
+
+## Smart Controllers Are the Easiest Upgrade for an Erie Yard
+
+I am not a salesperson for any specific brand, but I install enough Rachio controllers in Erie to have an opinion. A smart controller pulls local weather data and evapotranspiration rates, then adjusts your watering schedule on its own. On a cool wet week it skips runs entirely. On a hot dry stretch it ramps up. You stop overwatering on autopilot.
+
+For an Erie homeowner, the math is direct. The average yard in town runs about 80,000 to 120,000 gallons through the sprinkler each summer. A smart controller cuts that by 30 to 50 percent in my own customer data, which is real money on your water bill before you even count rebates.
+
+I gave a fuller take on whether smart controllers are worth it in [this post](/blog/smart-irrigation-controllers-worth-it). For the Erie-specific rebate math, here is the city page: [Smart Controllers in Erie, CO](/smart-controllers/erie). Northern Water and several Front Range utilities stack rebates on top of each other, and on the cheapest Rachio model the rebates can cover most of the controller cost.
+
+## Your HOA Does Not Get to Fine You for Doing the Right Thing
+
+This is the part new Erie homeowners get wrong most often. There is a strong assumption that the HOA can demand a green Kentucky bluegrass lawn, fine you for letting it go dormant, and reject any plan to put in drought-tolerant landscaping.
+
+That has not been true in Colorado since 2019, and it is even less true now. Three laws stack on top of each other:
+
+- **HB 19-1289** prohibits HOAs from banning xeriscape or drought-tolerant vegetation.
+- **HB 21-1229** prohibits fines or penalties for dormant or dead lawn that resulted from compliance with mandatory water restrictions.
+- **SB 23-178** prohibits HOAs from requiring water-intensive turf as ground cover and requires them to allow a landscaping option that is at least 80 percent drought-tolerant plantings. The [full bill text is here](https://leg.colorado.gov/bills/sb23-178).
+
+The Town of Erie posts [this FAQ](https://www.erieco.gov/FAQ.aspx?QID=383) confirming that HOAs cannot stop you from xeriscaping. If your HOA tells you otherwise, the state law is on your side. I have walked customers through this conversation with their boards more than once.
+
+If you want a less aggressive option than a full xeriscape conversion, there is a middle path. Reduce the turf area, add drought-tolerant shrubs and ornamental grasses around the edges, and switch a few zones from spray to drip. You keep some lawn for the kids and the dog, and you cut your summer water use by about a third. That is the [water-efficiency upgrade work I do most often in Erie](/water-efficiency), and there is a longer breakdown of the tradeoffs in [this xeriscape vs lawn post](/blog/xeriscaping-vs-traditional-lawn-colorado).
+
+## The Rebates Worth Actually Chasing
+
+Most rebate programs that apply to Erie homeowners are not advertised loudly because they are managed by Northern Water and the regional providers, not by the town directly. Two are worth knowing about:
+
+- **Smart controller rebates.** Multiple programs stack. I keep the current Erie numbers on [this rebate page](/water-rebates/erie).
+- **Turf replacement rebates.** Some programs pay per square foot of high-water turf you remove and replace with drought-tolerant landscaping. The dollar amounts shift year to year, but on a 1,500 square foot conversion the rebates can cover a meaningful chunk of the project.
+
+These are not glamorous, but they are real money. If you are planning a project, run the rebates first and then design around what is available. A few hours of paperwork can change the budget for the whole job.
+
+## A Spring Checklist for New Erie Homeowners
+
+If you are reading this in May or June and you just bought, here is the order I would run things in:
+
+1. Check the Town of Erie's [outdoor irrigation page](https://www.erieco.gov/1813/Outdoor-Irrigation) and sign up for any alerts they offer today.
+2. Walk every zone and watch the heads run. Note any spraying on the house, the fence, the driveway, or the sidewalk.
+3. Reprogram the controller to cycle and soak. Three short runs beat one long run on clay.
+4. Check the rain sensor. If it is unplugged or set to ignore, fix it.
+5. Look at your last water bill. If you are above 15,000 gallons in a non-irrigation month, you have a leak somewhere.
+6. Book a professional audit if any of the above turned up something you cannot fix yourself. I run audits across [Erie and the surrounding towns](/services/erie), and you can [book one here](/book) or [look at pricing here](/pricing).
+
+That gets you through this summer in decent shape. Anything bigger, like a controller upgrade or a turf-to-drip conversion, you have all winter to plan.
+
+## The Honest Bottom Line
+
+Buying a new home in Erie is a great move. The schools are good, the town is growing into something interesting, and Town Center construction starts this year. The lawn that came with the house is not the move. It was put in for the closing photos, not for a Colorado drought.
+
+The fix is not dramatic. A spring audit, a cycle and soak program, and a smart controller will put you ahead of most of the homes in your neighborhood. If you are ready to do something bigger, the law and the rebates are on your side.
+
+[Reach out](/contact) when you are ready, or [book a startup](/book) and we will walk your system together.
+`,
+  },
+  {
     slug: 'erie-march-2026-water-restriction',
     title: 'Erie March 2026 Water Restriction: What Homeowners Need to Know for Irrigation',
     date: '2026-04-22',

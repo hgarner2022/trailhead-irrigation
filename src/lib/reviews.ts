@@ -23,6 +23,13 @@ import type { ReviewItem } from "./seo"
  */
 export const REVIEWS: ReviewItem[] = [
   {
+    author: "Joe “Tr3m3ndous” Louis",
+    rating: 5,
+    date: "2026-05-10",
+    body: "Excellent service from start to finish! He was prompt, professional, and extremely knowledgeable about our sprinkler system. Not only did he fix the issues, but he also took the time to educate us on how the system works and what to watch for moving forward. It’s rare to find someone so honest and helpful these days. We will definitely use him again for any future sprinkler needs and highly recommend his services to anyone looking for reliable and quality work!",
+    source: "Google",
+  },
+  {
     author: "Brian Taylor",
     rating: 5,
     date: "2026-05-01",

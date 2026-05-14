@@ -17,7 +17,7 @@ export const siteConfig = {
   url: SITE_URL,
   name: "Trailhead Lawn & Irrigation LLC",
   description:
-    "Local 5★ sprinkler pros in Erie, CO. Repair, installation, winterization & spring turn-on. Owner-operated by Ryan — serving Erie, Longmont, Louisville & Lafayette.",
+    "Erie's trusted sprinkler company. Sprinkler installation, repair, winterization & spring turn-on in Erie, Longmont, Louisville, Lafayette & Weld County, Colorado.",
   phone: "(970) 692-7270",
   phoneTel: "9706927270",
   email: "ryan@trailheadirrigation.com",
@@ -77,7 +77,7 @@ export function localBusinessJsonLd() {
     aggregateRating: {
       "@type": "AggregateRating",
       ratingValue: "5.0",
-      reviewCount: "8",
+      reviewCount: "10",
       bestRating: "5",
       worstRating: "1",
     },
