@@ -15,6 +15,183 @@ export function getReadingTime(content: string): number {
 
 export const BLOG_POSTS: BlogPost[] = [
   {
+    slug: 'erie-lawn-irrigation-month-by-month-guide',
+    title: "The Erie Lawn & Irrigation Playbook: A Month-by-Month Guide for Front Range Homeowners",
+    date: '2026-05-19',
+    excerpt: "What your lawn and sprinkler system actually need, month by month, in Erie and the surrounding Front Range towns. Built around Colorado's drought reality, clay soil, and the cool-season grass cycle, with specific actions for each month and the common mistakes I see homeowners make.",
+    category: 'Seasonal Maintenance',
+    relatedSlugs: ['new-to-erie-2026-lawn-irrigation-guide', 'spring-sprinkler-startup-colorado', 'when-to-winterize-sprinklers-colorado'],
+    content: `## Why a Month-by-Month Guide
+
+Most lawn and sprinkler advice is written for a generic American climate that does not exist. Erie sits at about 5,000 feet, on heavy clay soil, in a town that runs out of water if everyone turns on their sprinklers a week early. The cool-season grasses that fill our yards have a different growth curve than warm-season grasses, and the calendar of what to do with your system here looks nothing like what a national lawn-care blog will tell you.
+
+This is the playbook I run for my own customers, broken down month by month. Some months you do almost nothing. A few months you do almost everything. Knowing which is which is most of the battle.
+
+## January: The Quiet Month
+
+Your lawn is fully dormant. Brown is the correct color. Snow cover is good for the grass, even better for soil moisture, and you should not be raking it off or knocking it down. The system is winterized and the controller should be off or unplugged.
+
+What you do this month: nothing to the lawn. Plenty for the plan. January is when I tell customers to look at last summer's water bill against the year before. If your July bill jumped 30 percent over the prior year and you did not add any new plantings, you probably had a leak somewhere. That is the kind of pattern you can spot in January when you are not in a hurry, then book a system audit for early spring before the calendar fills up.
+
+If you are thinking about a smart controller, January is the right time to research. I broke down the math in [this post on whether smart controllers are worth it](/blog/smart-irrigation-controllers-worth-it). The short version: most of the time, yes.
+
+Common mistake: worrying about your brown lawn. It is brown because it is supposed to be.
+
+## February: Audit Month
+
+The snow melts in cycles now. Day-night temperature swings start cracking soil and shifting heads. The grass is still dormant.
+
+What to do this month:
+
+- Look at your controller. If it is 10 or more years old, this is the year to replace it. The newest generation of smart controllers does work the old ones cannot.
+- Schedule your spring turn-on with a local irrigation company. Good ones book up by mid-March in Erie. [I take bookings here](/book).
+- If you had a zone that did not work right last summer, write it down now. By July you will not remember.
+
+Common mistake: assuming the system will start up the same way it shut down. Heads shift over winter. Pressure changes. One frozen-shut valve can flood a zone the moment you turn the water back on.
+
+## March: The Dangerous Month in Erie
+
+This is the month that nearly broke Erie's water system in 2026. Carter Lake, where Erie gets its summer water through the Colorado-Big Thompson Project, does not open until April 1. Before that date, the town is running on a winter supply capacity that gets overwhelmed the moment a few thousand homeowners flip their sprinklers on early. [The full story is in this post](/blog/erie-march-2026-water-restriction).
+
+What to do this month: do not turn the system on. I do not care how warm March feels. Your lawn does not need water. The crown is starting to wake up but the roots are doing the work, and they have all the soil moisture they need from snowmelt.
+
+Sign up for [drought alerts from the Town of Erie](https://www.erieco.gov/1813/Outdoor-Irrigation). Pay attention. The drought stage as of late March is the single most important number that shapes your watering options for the rest of the year.
+
+If your HOA is hounding you about a brown lawn, the state law protects you. New Erie homeowners get tripped up by this. [I covered the HOA rules in this post](/blog/new-to-erie-2026-lawn-irrigation-guide).
+
+Common mistake: turning on the system because the weather feels right. The weather is not the trigger. The water supply is.
+
+## April: Careful Turn-On
+
+The earliest reasonable turn-on date for Erie is mid-to-late April, and even that is on the aggressive side. Carter Lake opens April 1, but the canal needs to fill before your tap pressure stabilizes.
+
+What to do this month:
+
+- Walk every zone before you set a schedule. Run each one and watch the heads. Note anything spraying the sidewalk, the fence, the house, or the neighbor's yard.
+- Check the rain sensor. If it is unplugged or set to ignore, fix it.
+- Start with reduced run times. Lawn is not at peak demand yet, and the soil is still holding spring moisture.
+
+[I walk through a full spring startup in this post](/blog/spring-sprinkler-startup-colorado). The shape of it is the same every year. The details are where it goes wrong.
+
+Common mistake: turning everything on at last year's schedule. Last year's schedule was for last year's lawn under last year's weather. Build it fresh.
+
+## May: Calibration
+
+The grass is awake. Root growth is what matters now, more than top growth. The goal in May is to push the roots down so the lawn has somewhere to pull from in July.
+
+Watering target for Erie in May: about 0.8 to 1 inch of water per week, split across two waterings. Use the tuna can test if you are unsure how much your system puts down in a given run. Set a clean tuna can on the lawn during a cycle and measure what is in there at the end.
+
+This is the month where cycle-and-soak earns its keep. Clay soil on the Front Range absorbs about 0.2 inches of water per hour before it starts running off. A 20-minute run on a typical spray zone puts down more water than the soil can take. Split it into three shorter runs spaced an hour apart and the same total water actually reaches the root zone.
+
+Common mistake: heavy fertilizer in May. The grass does not need it yet, and you will spend the next six weeks mowing constantly.
+
+## June: Demand Rises
+
+Days are long, nights are still cool. The grass is in its happy season. This is when you build the buffer that gets you through July.
+
+What to do this month:
+
+- 1 inch of water per week, ideally still on a two-day-per-week voluntary schedule. Many Erie homeowners get a third day during sustained hot weather.
+- Water in the early morning. Before 8 a.m. is ideal. Evening watering invites fungal disease on the leaf blade.
+- Mowing height up to 3.5 inches. Taller grass shades its own roots and holds soil moisture better.
+
+If you are noticing zones that struggle, this is the month I get the most calls about coverage problems. Heads that worked in May start showing dry rings in June because demand is higher. Either the head spacing is wrong, the pressure is off, or you have a head that needs adjusting. [The basics of head adjustment are in this post](/blog/how-to-adjust-sprinkler-heads).
+
+Common mistake: shortening the mowing height. A scalped lawn in Colorado in June is a brown lawn in Colorado in July.
+
+## July: Survival Mode
+
+Hottest month of the year. Bluegrass on the Front Range goes off-color in July even when it is watered correctly. That is a survival strategy, not a system failure. The grass is fine.
+
+Watering target: 1.25 to 1.5 inches per week. Still split across two or three sessions, still cycle and soak.
+
+What to do:
+
+- Walk the lawn early in the morning. If you see footprints in the grass that do not bounce back, the lawn is starting to stress. Bump up the next run by a few minutes.
+- Watch for drought stage escalations. July and August are the months when Erie is most likely to move to Stage 2 or higher.
+- Mid-summer system check. By now half of the heads have shifted at least a little. A 15-minute walk-through saves you 200 gallons a week.
+
+[More tips on summer watering during a drought year are in this post](/blog/summer-watering-tips-colorado-drought).
+
+Common mistake: panic watering. A lawn that looks rough in July does not need to be drowned. It needs to be watered correctly and given time.
+
+## August: Late-Summer Drought Risk
+
+If a drought stage is going to escalate, late July through August is when it happens. Reservoir levels drop, river flows fall, and the town pulls whatever lever it has.
+
+Watering target: stay at 1.25 to 1.5 inches per week unless restrictions change it for you.
+
+What to do:
+
+- Check your water bill against July. If August is significantly higher, you likely have a leak in a zone or a valve that is not closing all the way. Run each zone and watch for water that keeps trickling after the run ends.
+- The late-summer aeration window opens at the end of the month. If you missed the spring aeration window, this one is just as good.
+- If you are seeing irrigation costs you are unhappy with, [a smart controller cuts the average Erie yard's summer water use by 30 to 50 percent](/smart-controllers/erie). Rebate programs stack on top of that, [outlined here](/water-rebates/erie).
+
+Common mistake: ignoring drought stage announcements because the lawn looks fine. By the time the lawn shows damage, the restrictions are already costing you.
+
+## September: Cool Down
+
+Mornings get crisp. Nights drop into the 40s. The grass perks up.
+
+Watering target: drop to about 1 inch per week.
+
+What to do:
+
+- Aerate. Pull plugs, leave them on the lawn, water in lightly. This is the single best thing you can do for your lawn all year.
+- Overseed if you have thin spots. Mid-September is the prime overseeding window for Kentucky bluegrass and tall fescue in Erie.
+- Fall fertilizer goes on at the end of the month. This is the feeding that matters most. It builds root reserves that carry the lawn through next summer.
+
+If your smart controller is doing its job, you will see runs getting shorter without you touching anything. That is the system reacting to ET data. Trust it.
+
+Common mistake: stopping the watering too early because the air feels cool. Soil temperatures are still high in September and the grass is actively growing.
+
+## October: Wind Down
+
+Daylight hours drop. Grass growth slows. The first frosts hit in mid-to-late October.
+
+What to do:
+
+- Reduce watering frequency before stopping. One deep watering per week in early October. Skip altogether by the third week if the rain shows up.
+- Schedule winterization now. Good companies fill up the November calendar by mid-October. [Mine fills up too](/book).
+- Last fertilization if you missed the September window. Earlier is better. Late October is borderline.
+- Hand water trees and shrubs into the dry stretch. Trees are the most expensive things in the yard to lose, and they go on autopilot once the sprinkler shuts off.
+
+Common mistake: getting cocky about a warm October and leaving water in the lines. The first hard freeze can hit in any week of November. If your blowout has not happened, you are gambling.
+
+## November: Winterization Month
+
+This is the most important system task of the year. Do not skip it. Frozen pipes and cracked valves cost $500 to $1,500 to repair, and the repairs sit in line behind every other broken system in town next spring.
+
+What to do:
+
+- Get the blowout done before the first hard freeze. Mid-November is the typical Erie window.
+- Drain the backflow preventer. A frozen backflow is a $300 part minimum, more if you need a recertification.
+- Shut off the irrigation water supply at the main valve.
+- Power down the controller.
+
+[The full reasoning behind winterization timing is in this post](/blog/when-to-winterize-sprinklers-colorado). The short version: do not push it.
+
+Common mistake: skipping the blowout because the system seemed fine last winter. Last winter is not predictive. One bad freeze on full lines wipes out a system.
+
+## December: Quiet Season
+
+Nothing to do with the system. Holiday season, snow shovels, fire pits.
+
+What to do:
+
+- Plan landscape changes for next spring. Want to convert a turf area to drip? December is the right time to design the project so you can book it in February.
+- Watch for snow mold under wet, heavy snow that does not melt. Rare on the Front Range because the snow rarely sits long enough, but if you see grey patches in February, this is when it set up.
+
+Common mistake: turning the water back on during a warm December week to check something. Once the system is winterized, leave it alone.
+
+## The One Thing That Matters Most
+
+If you take one thing from this guide, it is this: the calendar matters more than the weather. The town's water supply, your soil's absorption rate, and your grass's biological clock do not care that it feels like July in March. The months are the rhythm. Hit each one for what it actually is, and you will run a yard that looks better than your neighbor's on half the water.
+
+If you want help dialing it in, I run audits and full system service across [Erie](/services/erie) and the surrounding towns. [Pricing is here](/pricing). [Book a slot here](/book).
+`,
+  },
+  {
     slug: 'new-to-erie-2026-lawn-irrigation-guide',
     title: "New to Erie? Here's What Your Builder Didn't Tell You About Your Lawn and Sprinkler System",
     date: '2026-05-11',
