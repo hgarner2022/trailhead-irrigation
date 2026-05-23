@@ -9,6 +9,26 @@ const nextConfig: NextConfig = {
   // Settings in the Vercel dashboard). Do NOT add a Next.js redirect for the
   // host here — it caused a redirect loop with Vercel's edge routing.
 
+  async redirects() {
+    return [
+      // The Rachio Rebate Calculator was renamed to the Water Savings
+      // Calculator. Google still indexes the old URL (with and without
+      // trailing slash) and is throwing 404s. Permanent redirect preserves
+      // any link equity and stops the 404s for real users coming in from
+      // stale SERP entries.
+      {
+        source: "/smart-controllers/rachio-rebate-calculator",
+        destination: "/smart-controllers/water-savings-calculator",
+        permanent: true,
+      },
+      {
+        source: "/smart-controllers/rachio-rebate-calculator/",
+        destination: "/smart-controllers/water-savings-calculator",
+        permanent: true,
+      },
+    ]
+  },
+
   async headers() {
     const securityHeaders = [
       {
