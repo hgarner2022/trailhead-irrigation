@@ -6,13 +6,13 @@ import { buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import Image from "next/image"
 import Link from "next/link"
-import { Phone, MapPin, Droplets, Wrench, Shield, Users } from "lucide-react"
+import { MapPin, Droplets, Wrench, Shield, Users, Award } from "lucide-react"
 import { siteConfig, breadcrumbJsonLd, personJsonLd } from "@/lib/seo"
 
 export const metadata: Metadata = {
   title: "About Ryan Garner | Erie Sprinkler Contractor",
   description:
-    "Meet Ryan Garner, founder of Trailhead Lawn & Irrigation in Erie, CO. Licensed sprinkler contractor serving Erie, Longmont, Louisville, Lafayette and Weld County. Local, reliable, and personally on every job.",
+    "Meet Ryan Garner, founder of Trailhead Lawn & Irrigation in Erie, CO. Licensed sprinkler contractor with over a decade of Front Range experience, serving Erie, Longmont, Louisville, Lafayette, and Weld County.",
   alternates: { canonical: `${siteConfig.url}/about` },
 }
 
@@ -24,8 +24,8 @@ const CREDENTIALS = [
   },
   {
     icon: MapPin,
-    title: "Erie Local",
-    text: "Born, raised, and still living right here in Erie. This is home.",
+    title: "Based in Erie",
+    text: "Working the same Front Range neighborhoods year after year. We know the soil, the water systems, and the HOA quirks.",
   },
   {
     icon: Droplets,
@@ -34,8 +34,8 @@ const CREDENTIALS = [
   },
   {
     icon: Users,
-    title: "One-Man Operation",
-    text: "When you call Trailhead, you get Ryan. Not a dispatcher, not a random tech. The same person every time.",
+    title: "Trusted Locally",
+    text: "Five-star reviews from homeowners across Erie, Longmont, Lafayette, and Louisville. Your neighbors trust Trailhead.",
   },
   {
     icon: Shield,
@@ -43,9 +43,9 @@ const CREDENTIALS = [
     text: "General liability coverage on every job. Your property is protected.",
   },
   {
-    icon: Phone,
-    title: "Same-Day Callbacks",
-    text: "If I miss your call, I call back the same day. That's a promise.",
+    icon: Award,
+    title: "Decade of Experience",
+    text: "Over a decade of irrigation work on the Front Range. The kind of pattern recognition you only get from hundreds of yards.",
   },
 ]
 
@@ -70,7 +70,7 @@ export default function AboutPage() {
 
       <PageBanner
         title="About Trailhead Lawn & Irrigation"
-        description="Erie's locally owned sprinkler company. One contractor. One phone call. Every job done right."
+        description="Erie's locally owned sprinkler company. Licensed, insured, and trusted across the Front Range."
       />
 
       {/* Ryan's Story */}
@@ -96,21 +96,24 @@ export default function AboutPage() {
               </h2>
               <div className="flex flex-col gap-4 text-muted-foreground text-lg leading-relaxed">
                 <p>
-                  I started Trailhead because I got tired of watching big companies send a different
-                  technician to the same house every time. The homeowner has to re-explain the problem.
-                  The tech doesn't know the system. Nobody follows up.
+                  I started Trailhead because I got tired of watching big irrigation companies churn
+                  through technicians. Homeowners end up re-explaining the same system to a different
+                  person every season, and nobody really knows the property. Trailhead is built on the
+                  opposite: continuity, accountability, and the kind of local knowledge that comes from
+                  working the same neighborhoods for years.
                 </p>
                 <p>
-                  I wanted to build something different. When you call Trailhead, you get me. I know
-                  your system because I'm the one who installed it, repaired it, or winterized it last
-                  year. I remember the zone that runs hot in July and the head that keeps getting clipped
-                  by the mower.
+                  When you call Trailhead, you get a contractor who actually knows your system. The zone
+                  that runs hot in July. The head that keeps getting clipped by the mower. That kind of
+                  memory matters more than most homeowners realize. It's the difference between a 20-minute
+                  fix and an hour of diagnostics on the clock.
                 </p>
                 <p>
-                  I live in Erie with my wife and three boys (ages 1, 4, and 7). I've been doing
-                  irrigation work on the Front Range for years, and Trailhead is how I've turned that
-                  into a real local business. Your neighbors are my neighbors. I take care of their
-                  yards the same way I take care of mine.
+                  I live in Erie with my wife and three boys. I've been doing irrigation work on the Front
+                  Range for over a decade, and Trailhead is built on that experience. Hundreds of yards
+                  through freeze-thaw cycles, drought stages, and the heavy clay that defines watering in
+                  this part of Colorado. Your neighbors are my neighbors. I take care of their yards the
+                  same way I take care of mine.
                 </p>
               </div>
             </div>
@@ -126,8 +129,8 @@ export default function AboutPage() {
               Why Homeowners Choose Trailhead
             </h2>
             <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
-              No call centers. No subcontractors. Just a licensed, local sprinkler contractor who
-              shows up on time and does the work himself.
+              No call centers. No subcontractors. A licensed Erie sprinkler contractor with the
+              experience to get it right the first time, and the local roots to stand behind it.
             </p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -175,8 +178,9 @@ export default function AboutPage() {
                   Louisville, Lafayette, Firestone, and across Weld County.
                 </p>
                 <p>
-                  If your sprinkler system needs attention, give me a call. I'll pick up, or I'll
-                  call you back the same day.
+                  If your sprinkler system needs attention, reach out. Trailhead has been serving Erie
+                  and the surrounding Front Range for years, and we have the experience to set your
+                  system up right.
                 </p>
               </div>
               <div className="flex flex-col sm:flex-row gap-3 mt-2">

@@ -10,7 +10,7 @@ import { Star, MapPin, Award, Wrench } from "lucide-react"
 
 type Stat = {
   icon: typeof Star
-  /** Numeric target. null = render `headline` as static text (e.g. "Same-day"). */
+  /** Numeric target. null = render `headline` as static text. */
   target: number | null
   /** Decimal places when animating (e.g. 1 for "5.0"). */
   decimals?: number
@@ -27,13 +27,13 @@ const STATS: Stat[] = [
     target: 5.0,
     decimals: 1,
     suffix: " ★",
-    label: "Google reviews",
+    label: "Google rating",
   },
   {
     icon: Wrench,
     target: 100,
     suffix: "%",
-    label: "Jobs done by Ryan personally",
+    label: "Licensed & insured",
   },
   {
     icon: MapPin,
