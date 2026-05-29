@@ -12,9 +12,9 @@ import { CITY_RACHIO, RACHIO_PRICING, estimateNetCost } from "@/lib/rachio-data"
 import { FaqList } from "@/components/sections/FaqList"
 
 export const metadata: Metadata = {
-  title: "Rachio Smart Sprinkler Controller Installation in Erie, CO",
+  title: "Rachio Smart Controllers in Erie, CO",
   description:
-    "Professional Rachio 3 smart controller installation in Erie, Longmont, Louisville, Lafayette & Weld County. Save 20–30% on outdoor water use. Trailhead handles the install — you claim your city's utility rebate.",
+    "Rachio 3 smart controller installation in Erie, Longmont, Louisville & Lafayette. Save 20-30% on outdoor water use. We install, you claim the rebate.",
   alternates: { canonical: `${siteConfig.url}/smart-controllers` },
 }
 

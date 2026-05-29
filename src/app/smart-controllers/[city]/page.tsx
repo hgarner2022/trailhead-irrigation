@@ -34,15 +34,15 @@ export async function generateMetadata({
   const eight = estimateNetCost(data, 8)
   const isNone = data.rebateType === "none"
   const desc = isNone
-    ? `Professional Rachio 3 smart sprinkler controller installation in ${data.name}, Colorado. Trailhead's installed price is $${eight.gross} — saves a typical home 8,000–15,000 gallons per year and pays back in a few watering seasons. Book online today.`
+    ? `Rachio 3 installation in ${data.name}, CO. Installed price $${eight.gross}. Saves 8,000-15,000 gallons a year and pays back in a few seasons.`
     : eight.isFree
-    ? `Professional Rachio 3 smart sprinkler controller installation in ${data.name}, Colorado, plus a free-install path via Resource Central. Trailhead handles the install, you claim the rebate. Book online today.`
+    ? `Rachio 3 installation in ${data.name}, CO with a free-install path via Resource Central. We install, you claim the rebate.`
     : eight.isUnknown
-    ? `Professional Rachio 3 installation in ${data.name}, Colorado. Trailhead's installed price is $${eight.gross}; ${data.name} runs a smart-controller rebate program — confirm the current amount with the city before booking.`
-    : `Professional Rachio 3 installation in ${data.name}, Colorado — estimated net cost $${eight.net} after the city utility rebate. Trailhead handles the install, you claim the rebate directly with the city.`
+    ? `Rachio 3 installation in ${data.name}, CO. Installed price $${eight.gross}; the city runs a rebate program. Confirm the amount before booking.`
+    : `Rachio 3 installation in ${data.name}, CO. Net cost about $${eight.net} after the city utility rebate. We install, you claim the rebate.`
 
   return {
-    title: `Rachio Smart Controller Installation in ${data.name}, CO`,
+    title: `Rachio Smart Controllers in ${data.name}, CO`,
     description: desc,
     alternates: {
       canonical: `${siteConfig.url}/smart-controllers/${data.slug}`,

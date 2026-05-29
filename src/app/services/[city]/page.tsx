@@ -24,8 +24,8 @@ export async function generateMetadata({
   const data = getCityData(city)
   if (!data) return { title: "Not Found" }
   return {
-    title: `Sprinkler Company in ${data.name}, CO | Installation, Repair & Maintenance`,
-    description: `${data.name}'s trusted local sprinkler company. Lawn sprinkler installation, sprinkler repair, winterization blowout & spring turn-on in ${data.name}, Colorado. Serving ${data.county}.`,
+    title: `${data.name}, CO Sprinkler Company`,
+    description: `Sprinkler installation, repair, winterization & spring turn-on in ${data.name}, Colorado. Serving ${data.county}.`,
     alternates: { canonical: `${siteConfig.url}/services/${data.slug}` },
   }
 }

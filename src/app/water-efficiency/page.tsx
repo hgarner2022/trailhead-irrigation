@@ -11,10 +11,9 @@ import { CheckCircle2, ArrowRight } from "lucide-react"
 import { faqJsonLd, breadcrumbJsonLd, siteConfig } from "@/lib/seo"
 
 export const metadata: Metadata = {
-  title:
-    "Water Efficiency Upgrades | Smart Irrigation for Erie, Longmont, Louisville & Lafayette",
+  title: "Water Efficiency Upgrades in Erie, CO",
   description:
-    "Save water and money with smart controllers, MPR nozzles, drip irrigation, and system optimization. Serving Erie, Longmont, Louisville & Lafayette, CO.",
+    "Save water with smart controllers, MPR nozzles, drip irrigation, and system optimization. Serving Erie, Longmont, Louisville & Lafayette, CO.",
   alternates: { canonical: `${siteConfig.url}/water-efficiency` },
 }
 

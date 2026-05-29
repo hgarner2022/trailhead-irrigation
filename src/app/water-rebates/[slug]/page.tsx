@@ -21,7 +21,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   if (!city) return {}
   return {
     title: `${city.name} Water Efficiency Rebates`,
-    description: `Water efficiency rebates available for ${city.name}, ${city.state} residents. Smart controllers, efficient nozzles, drip conversions, and more. See amounts, eligibility, and how to apply.`,
+    description: `Water efficiency rebates for ${city.name}, ${city.state}. Smart controllers, nozzles, drip conversions. See amounts, eligibility, and how to apply.`,
     alternates: { canonical: `${siteConfig.url}/water-rebates/${city.slug}` },
   }
 }

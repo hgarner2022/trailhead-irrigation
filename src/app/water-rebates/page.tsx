@@ -10,9 +10,9 @@ import { breadcrumbJsonLd, siteConfig } from "@/lib/seo"
 import { CITIES, SLOW_THE_FLOW } from "@/lib/rebate-data"
 
 export const metadata: Metadata = {
-  title: "Water Efficiency Rebates | Erie, Longmont, Louisville & Lafayette",
+  title: "Water Efficiency Rebates",
   description:
-    "Discover water efficiency rebates available in Erie, Longmont, Louisville, and Lafayette, CO. Smart controllers, efficient nozzles, drip conversions, and more. Trailhead Lawn & Irrigation provides the work and receipts — you apply for the rebate.",
+    "Water efficiency rebates for Erie, Longmont, Louisville, and Lafayette homeowners. Smart controllers, efficient nozzles, drip conversions, and more.",
   alternates: { canonical: `${siteConfig.url}/water-rebates` },
 }
 

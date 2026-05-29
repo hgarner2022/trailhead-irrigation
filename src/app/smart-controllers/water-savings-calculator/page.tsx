@@ -6,9 +6,9 @@ import { FaqList } from "@/components/sections/FaqList"
 import { CalculatorClient } from "./calculator-client"
 
 export const metadata: Metadata = {
-  title: "Rachio Water Savings Calculator — Gallons & Dollars Saved Per Year",
+  title: "Rachio Water Savings Calculator",
   description:
-    "Estimate how much water and money a Rachio 3 smart controller could save on your specific lawn. Uses EPA WaterSense averages and conservative smart-controller efficiency assumptions — directional estimate, not a guarantee.",
+    "Estimate how much water and money a Rachio 3 smart controller could save on your lawn each year. Based on EPA WaterSense averages.",
   alternates: {
     canonical: `${siteConfig.url}/smart-controllers/water-savings-calculator`,
   },
