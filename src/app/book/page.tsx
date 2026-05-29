@@ -7,7 +7,9 @@ import { ArrowRight, Phone } from "lucide-react"
 import { breadcrumbJsonLd, siteConfig } from "@/lib/seo"
 
 export const metadata: Metadata = {
-  title: "Book a Service | Trailhead Lawn & Irrigation",
+  // Plain title (no brand). Root layout's title.template appends
+  // "| Trailhead Lawn & Irrigation" once.
+  title: "Book a Service",
   description:
     "Book sprinkler turn-on, system inspection, or winterization online. Serving Erie, Longmont, Louisville, Lafayette & Weld County, CO.",
   alternates: { canonical: `${siteConfig.url}/book` },

@@ -12,7 +12,7 @@ import { siteConfig, breadcrumbJsonLd, personJsonLd } from "@/lib/seo"
 export const metadata: Metadata = {
   title: "About Ryan Garner | Erie Sprinkler Contractor",
   description:
-    "Meet Ryan Garner, founder of Trailhead Lawn & Irrigation in Erie, CO. Licensed sprinkler contractor with over a decade of Front Range experience, serving Erie, Longmont, Louisville, Lafayette, and Weld County.",
+    "Meet Ryan Garner of Trailhead Lawn & Irrigation. Licensed sprinkler contractor with a decade of Front Range experience, serving Erie and nearby.",
   alternates: { canonical: `${siteConfig.url}/about` },
 }
 

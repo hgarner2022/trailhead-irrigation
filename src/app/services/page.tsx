@@ -12,9 +12,12 @@ import { serviceJsonLd, faqJsonLd, breadcrumbJsonLd, siteConfig } from "@/lib/se
 import { CITY_DATA } from "@/lib/city-data"
 
 export const metadata: Metadata = {
-  title: "Sprinkler Services in Erie, CO | Trailhead Irrigation",
+  // Plain title (no brand). Root layout's title.template appends
+  // "| Trailhead Lawn & Irrigation" once, so the final SERP title is
+  // "Sprinkler Services in Erie, CO | Trailhead Lawn & Irrigation" (60 chars).
+  title: "Sprinkler Services in Erie, CO",
   description:
-    "Trusted sprinkler company in Erie, CO. Lawn sprinkler installation, sprinkler repair, winterization blowout & spring turn-on serving Erie, Longmont, Louisville, Lafayette & Weld County.",
+    "Lawn sprinkler installation, repair, winterization & spring turn-on serving Erie, Longmont, Louisville, Lafayette & Weld County, CO.",
   alternates: { canonical: `${siteConfig.url}/services` },
 }
 
