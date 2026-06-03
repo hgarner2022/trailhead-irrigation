@@ -1,8 +1,11 @@
+import Link from "next/link"
 import { cn } from "@/lib/utils"
 
 export type FaqItem = {
   question: string
   answer: string
+  /** Optional "Learn more" link rendered below the answer. */
+  relatedLink?: { href: string; label: string }
 }
 
 // Shared FAQ accordion using native <details> (zero JS, accessible by
@@ -34,10 +37,18 @@ export function FaqList({ faqs, itemBg = "cream", className }: FaqListProps) {
               &#9662;
             </span>
           </summary>
-          <div className="px-5 pb-5">
+          <div className="px-5 pb-5 flex flex-col gap-3">
             <p className="text-muted-foreground leading-relaxed">
               {faq.answer}
             </p>
+            {faq.relatedLink && (
+              <Link
+                href={faq.relatedLink.href}
+                className="text-sm text-primary hover:underline font-medium w-fit"
+              >
+                {faq.relatedLink.label} &rarr;
+              </Link>
+            )}
           </div>
         </details>
       ))}

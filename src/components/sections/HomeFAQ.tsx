@@ -15,6 +15,10 @@ export const HOME_FAQS: FaqItem[] = [
     question: "When should I winterize my sprinklers in Northern Colorado?",
     answer:
       "Schedule your sprinkler blowout between mid-October and early November, before the first hard freeze. Colorado's freeze-thaw cycle can crack pipes, fittings, and valves in any system that still has water in it. A professional compressed-air blowout clears every zone and protects your backflow assembly through winter.",
+    relatedLink: {
+      href: "/blog/when-to-winterize-sprinklers-colorado",
+      label: "Read the full winterization timing guide",
+    },
   },
   {
     question: "What does spring sprinkler turn-on include?",
@@ -29,7 +33,7 @@ export const HOME_FAQS: FaqItem[] = [
   {
     question: "Is Trailhead a licensed and insured sprinkler contractor?",
     answer:
-      "Yes. Ryan Garner, the founder, is a licensed and insured sprinkler contractor in Colorado. Trailhead is a one-person operation — when you book a service, Ryan does the work himself, every time. That means no rotating technicians and no re-explaining your system on every visit.",
+      "Yes. Ryan Garner, the founder, is a licensed and insured sprinkler contractor in Colorado with over a decade of Front Range irrigation experience. Trailhead is owner-led, so the same person who installs or repairs your system is the one who knows it the next time you call. No rotating technicians, no re-explaining your system on every visit.",
   },
   {
     question: "Are there rebates available for smart irrigation upgrades?",

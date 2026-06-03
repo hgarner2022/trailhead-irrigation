@@ -26,6 +26,8 @@ type ServicePriceCardProps = {
   bookHref?: string
   /** CTA button text. Defaults to "Book Online". */
   ctaLabel?: string
+  /** Optional "Learn more" secondary link rendered above the booking CTA. */
+  learnMoreLink?: { href: string; label: string }
   className?: string
 }
 
@@ -44,6 +46,7 @@ export function ServicePriceCard({
   footnote,
   bookHref = "/book",
   ctaLabel = "Book Online",
+  learnMoreLink,
   className,
 }: ServicePriceCardProps) {
   return (
@@ -91,9 +94,21 @@ export function ServicePriceCard({
         {footnote && (
           <p className="text-xs text-muted-foreground mt-2">{footnote}</p>
         )}
+        {learnMoreLink && (
+          <Link
+            href={learnMoreLink.href}
+            className="text-sm text-primary hover:underline font-medium mt-auto"
+          >
+            {learnMoreLink.label} &rarr;
+          </Link>
+        )}
         <Link
           href={bookHref}
-          className={cn(buttonVariants({ size: "sm" }), "w-full mt-auto")}
+          className={cn(
+            buttonVariants({ size: "sm" }),
+            "w-full",
+            !learnMoreLink && "mt-auto"
+          )}
         >
           {ctaLabel}
         </Link>

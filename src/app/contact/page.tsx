@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import Image from "next/image"
 import { Phone, Mail, MapPin, Clock } from "lucide-react"
 import { useState } from "react"
+import { breadcrumbJsonLd, siteConfig } from "@/lib/seo"
 
 export default function ContactPage() {
   const [submitted, setSubmitted] = useState(false)
@@ -15,6 +16,17 @@ export default function ContactPage() {
 
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(
+            breadcrumbJsonLd([
+              { name: "Home", url: siteConfig.url },
+              { name: "Contact", url: `${siteConfig.url}/contact` },
+            ])
+          ),
+        }}
+      />
       <PageBanner
         title="Contact Us"
         description="Get a free quote or schedule service. We'd love to hear from you."

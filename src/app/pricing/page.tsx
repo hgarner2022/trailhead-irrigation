@@ -37,6 +37,10 @@ const PRICING_FAQS = [
     question: "How much does sprinkler winterization cost in Northern Colorado?",
     answer:
       "Winterization (sprinkler blowout) costs $95 for up to 8 zones, plus $7 for each additional zone. We recommend scheduling between mid-October and early November.",
+    relatedLink: {
+      href: "/blog/when-to-winterize-sprinklers-colorado",
+      label: "Read the full winterization timing guide",
+    },
   },
   {
     question: "How do I get a repair quote?",
@@ -157,6 +161,10 @@ export default function PricingPage() {
                 "Backflow protection",
                 "Winter-ready verification",
               ]}
+              learnMoreLink={{
+                href: "/blog/when-to-winterize-sprinklers-colorado",
+                label: "When to book your blowout",
+              }}
             />
           </div>
         </div>
@@ -402,6 +410,15 @@ export default function PricingPage() {
                   <p className="text-muted-foreground leading-relaxed">
                     {faq.answer}
                   </p>
+                  {"relatedLink" in faq && faq.relatedLink && (
+                    <Link
+                      href={faq.relatedLink.href}
+                      className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-primary hover:text-primary-dark transition-colors"
+                    >
+                      {faq.relatedLink.label}
+                      <ArrowRight className="w-3 h-3" />
+                    </Link>
+                  )}
                   {"hasLink" in faq && faq.hasLink && (
                     <div className="mt-3 flex flex-col sm:flex-row gap-3">
                       <a
