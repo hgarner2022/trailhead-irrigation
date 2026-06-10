@@ -37,17 +37,6 @@ Repair pricing depends on the scope of work and materials needed. Contact us for
 
 ---
 
-## Maintenance Plans
-
-Save on every service with a maintenance plan. Plans cover only the services listed below — materials and any additional repair work are invoiced separately.
-
-| Plan | Starting Price | Discount | Includes |
-|---|---|---|---|
-| **Essential Plan** | $215 (up to 8 zones) | 5% off all services | Spring turn-on, winterization, priority scheduling |
-| **Complete Plan** | $320 (up to 8 zones) | 10% off all services | Everything in Essential, plus a sprinkler inspection & tune-up |
-
----
-
 ## New Irrigation Installation
 
 New irrigation system installations are **custom-quoted** based on:

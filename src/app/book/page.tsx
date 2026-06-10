@@ -44,10 +44,10 @@ export default function BookPage() {
       <section className="bg-cream section-padding-y">
         <div className="container-padding-x mx-auto max-w-2xl text-center">
           <h2 className="text-2xl font-bold text-foreground mb-3">
-            Need an Installation, Repair, or Custom Project?
+            Need a Sprinkler Installation or Custom Project?
           </h2>
           <p className="text-muted-foreground mb-6">
-            Some services require a conversation first. Reach out and we&apos;ll
+            New installations need a conversation first. Reach out and we&apos;ll
             get you a quote.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">

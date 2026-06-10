@@ -300,10 +300,10 @@ export default async function BlogPostPage({
           </p>
           <div className="flex gap-3">
             <Link
-              href="/contact"
+              href="/book"
               className={buttonVariants()}
             >
-              Contact Us
+              Book a Service
             </Link>
             <a
               href="tel:9706927270"

@@ -1,7 +1,6 @@
 import type { Metadata } from "next"
 import { PageBanner } from "@/components/sections/PageBanner"
 import { CTAStrip } from "@/components/sections/CTAStrip"
-import { MaintenancePlans } from "@/components/sections/MaintenancePlans"
 import { ServicePriceCard } from "@/components/sections/ServicePriceCard"
 import { FaqList } from "@/components/sections/FaqList"
 import { Badge } from "@/components/ui/badge"
@@ -23,7 +22,7 @@ import { faqJsonLd, breadcrumbJsonLd, siteConfig } from "@/lib/seo"
 export const metadata: Metadata = {
   title: "Sprinkler Pricing in Erie, CO",
   description:
-    "Transparent pricing for sprinkler turn-on, blowout, repair, and maintenance plans across Erie, Longmont, Lafayette, Louisville & Weld County, CO.",
+    "Transparent pricing for sprinkler turn-on, blowout, repair, and seasonal services across Erie, Longmont, Lafayette, Louisville & Weld County, CO.",
   alternates: { canonical: `${siteConfig.url}/pricing` },
 }
 
@@ -46,11 +45,6 @@ const PRICING_FAQS = [
     question: "How do I get a repair quote?",
     answer:
       "Contact us to describe the issue and we will provide a quote. Repair pricing depends on the scope of work and materials needed. No hidden fees.",
-  },
-  {
-    question: "What's included in the maintenance plans?",
-    answer:
-      "The Essential Plan (5% off) includes spring turn-on, winterization, priority scheduling, and 5% off all services — starting at $215 for up to 8 zones. The Complete Plan (10% off) adds a sprinkler inspection & tune-up and upgrades the discount to 10% off all services — starting at $320 for up to 8 zones. Plans cover only the services listed — materials and any additional repair work are invoiced separately.",
   },
   {
     question: "Do you install new irrigation systems?",
@@ -114,7 +108,7 @@ export default function PricingPage() {
               Individual Services
             </h2>
             <p className="mt-3 text-muted-foreground max-w-xl mx-auto">
-              Book any service on its own, or save with a maintenance plan below.
+              Book any seasonal service à la carte. No hidden fees, no trip charges.
             </p>
           </div>
 
@@ -184,7 +178,7 @@ export default function PricingPage() {
                 Expert Repairs
               </h2>
               <p className="text-muted-foreground mb-6">
-                Troubleshooting, repairs, and system adjustments. Contact us for a quote tailored to your situation.
+                Troubleshooting, repairs, and system adjustments. Book a service and we'll diagnose and price the work on-site.
               </p>
               <ul className="flex flex-col gap-3 mb-8">
                 <RepairFeature icon={<Wrench className="w-4 h-4" />}>
@@ -199,10 +193,10 @@ export default function PricingPage() {
               </ul>
               <div className="flex flex-col sm:flex-row gap-3">
                 <Link
-                  href="/contact"
+                  href="/book"
                   className={buttonVariants({ size: "lg" })}
                 >
-                  Request a Quote
+                  Book a Service
                   <ArrowRight className="w-4 h-4" />
                 </Link>
                 <a
@@ -232,113 +226,6 @@ export default function PricingPage() {
               </div>
             </div>
           </div>
-        </div>
-      </section>
-
-      {/* ════════════════════════════════════════════
-          MAINTENANCE PLANS — INTERACTIVE
-          ════════════════════════════════════════════ */}
-      <MaintenancePlans />
-
-      {/* ════════════════════════════════════════════
-          PLAN COMPARISON TABLE — for AI / SEO extraction
-          ════════════════════════════════════════════ */}
-      <section className="bg-background section-padding-y">
-        <div className="container-padding-x mx-auto max-w-5xl">
-          <div className="text-center mb-10">
-            <Badge variant="outline" className="mb-4">
-              At a glance
-            </Badge>
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground">
-              Maintenance Plan Comparison
-            </h2>
-            <p className="mt-3 text-muted-foreground max-w-2xl mx-auto">
-              Side-by-side comparison of every Trailhead plan and individual service.
-            </p>
-          </div>
-
-          <div className="overflow-x-auto rounded-xl border border-border">
-            <table className="w-full text-left text-sm md:text-base">
-              <thead className="bg-cream">
-                <tr>
-                  <th scope="col" className="p-4 font-semibold text-foreground">
-                    Feature
-                  </th>
-                  <th scope="col" className="p-4 font-semibold text-foreground">
-                    À la carte
-                  </th>
-                  <th scope="col" className="p-4 font-semibold text-foreground">
-                    Essential Plan
-                  </th>
-                  <th scope="col" className="p-4 font-semibold text-primary">
-                    Complete Plan
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                <tr>
-                  <th scope="row" className="p-4 font-medium text-foreground">
-                    Starting price (up to 8 zones)
-                  </th>
-                  <td className="p-4 text-muted-foreground">Pay per service</td>
-                  <td className="p-4 text-muted-foreground">$215</td>
-                  <td className="p-4 text-foreground font-semibold">$320</td>
-                </tr>
-                <tr>
-                  <th scope="row" className="p-4 font-medium text-foreground">
-                    Spring turn-on + system check
-                  </th>
-                  <td className="p-4 text-muted-foreground">$145</td>
-                  <td className="p-4 text-foreground">Included</td>
-                  <td className="p-4 text-foreground">Included</td>
-                </tr>
-                <tr>
-                  <th scope="row" className="p-4 font-medium text-foreground">
-                    Sprinkler winterization (blowout)
-                  </th>
-                  <td className="p-4 text-muted-foreground">$95</td>
-                  <td className="p-4 text-foreground">Included</td>
-                  <td className="p-4 text-foreground">Included</td>
-                </tr>
-                <tr>
-                  <th scope="row" className="p-4 font-medium text-foreground">
-                    Mid-season inspection &amp; tune-up
-                  </th>
-                  <td className="p-4 text-muted-foreground">$145</td>
-                  <td className="p-4 text-muted-foreground">—</td>
-                  <td className="p-4 text-foreground">Included</td>
-                </tr>
-                <tr>
-                  <th scope="row" className="p-4 font-medium text-foreground">
-                    Discount on all repairs &amp; services
-                  </th>
-                  <td className="p-4 text-muted-foreground">—</td>
-                  <td className="p-4 text-foreground">5% off</td>
-                  <td className="p-4 text-foreground font-semibold">10% off</td>
-                </tr>
-                <tr>
-                  <th scope="row" className="p-4 font-medium text-foreground">
-                    Priority scheduling
-                  </th>
-                  <td className="p-4 text-muted-foreground">—</td>
-                  <td className="p-4 text-foreground">Yes</td>
-                  <td className="p-4 text-foreground">Yes</td>
-                </tr>
-                <tr>
-                  <th scope="row" className="p-4 font-medium text-foreground">
-                    Per additional zone (above 8)
-                  </th>
-                  <td className="p-4 text-muted-foreground">+$7–$10 / zone</td>
-                  <td className="p-4 text-muted-foreground">+$17 / zone</td>
-                  <td className="p-4 text-muted-foreground">+$27 / zone</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          <p className="mt-4 text-xs text-muted-foreground text-center">
-            Materials and any additional repair work are invoiced separately on every plan.
-          </p>
         </div>
       </section>
 

@@ -275,10 +275,10 @@ export function WaterSavingsCalculator() {
                   </div>
 
                   <Link
-                    href="/contact"
+                    href="/book"
                     className={cn(buttonVariants({ size: "lg" }), "mt-2 w-full")}
                   >
-                    Get an Estimate
+                    Book a Service
                     <ArrowRight className="w-4 h-4" />
                   </Link>
                 </>
@@ -296,10 +296,10 @@ export function WaterSavingsCalculator() {
                     for additional savings.
                   </p>
                   <Link
-                    href="/contact"
+                    href="/book"
                     className={cn(buttonVariants(), "mt-2")}
                   >
-                    Schedule an Evaluation
+                    Book a Service
                     <ArrowRight className="w-4 h-4" />
                   </Link>
                 </div>

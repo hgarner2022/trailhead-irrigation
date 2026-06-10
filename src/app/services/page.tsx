@@ -85,7 +85,7 @@ const SERVICES = [
       "Seasonal adjustments and tune-ups",
     ],
     imagePosition: "left" as const,
-    cta: { label: "Request a Quote", href: "/contact" },
+    cta: { label: "Book a Service", href: "/book" },
   },
   {
     title: "Winterization & Spring Sprinkler Turn-On",

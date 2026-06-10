@@ -176,10 +176,10 @@ export default function WaterEfficiencyPage() {
                 <FeatureItem>Great for clay soil and sloped yards</FeatureItem>
               </ul>
               <Link
-                href="/contact"
+                href="/book"
                 className={buttonVariants({ size: "lg" })}
               >
-                Request an Estimate
+                Book a Service
                 <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
@@ -219,10 +219,10 @@ export default function WaterEfficiencyPage() {
                 <FeatureItem>Ideal for flower beds, shrubs, and gardens</FeatureItem>
               </ul>
               <Link
-                href="/contact"
+                href="/book"
                 className={buttonVariants({ size: "lg" })}
               >
-                Request an Estimate
+                Book a Service
                 <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
@@ -262,10 +262,10 @@ export default function WaterEfficiencyPage() {
                 <FeatureItem>Written recommendations for improvements</FeatureItem>
               </ul>
               <Link
-                href="/contact"
+                href="/book"
                 className={buttonVariants({ size: "lg" })}
               >
-                Request an Estimate
+                Book a Service
                 <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
@@ -305,10 +305,10 @@ export default function WaterEfficiencyPage() {
                 <FeatureItem>Identify underground leaks before they cause damage</FeatureItem>
               </ul>
               <Link
-                href="/contact"
+                href="/book"
                 className={buttonVariants({ size: "lg" })}
               >
-                Request an Estimate
+                Book a Service
                 <ArrowRight className="w-4 h-4" />
               </Link>
             </div>

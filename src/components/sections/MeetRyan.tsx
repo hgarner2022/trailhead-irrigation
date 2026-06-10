@@ -59,10 +59,10 @@ export function MeetRyan() {
               </p>
             </div>
             <Link
-              href="/contact"
+              href="/book"
               className={cn(buttonVariants({ size: "lg" }), "w-fit mt-2")}
             >
-              Let&apos;s Talk About Your Irrigation System
+              Book a Service
             </Link>
           </div>
         </div>
