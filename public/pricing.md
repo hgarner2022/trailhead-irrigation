@@ -14,8 +14,8 @@
 
 | Service | Starting Price | Zone Pricing | What's Included |
 |---|---|---|---|
-| Spring Turn-On + System Check | **$135** (up to 8 zones) | +$10 per additional zone | Turn-on, full system check, head adjustments, leak check, controller programming, water efficiency check |
-| Sprinkler Inspection & Tune-Up | **$135** (up to 8 zones) | +$10 per additional zone | Full system check, adjustments, issue detection, diagnostics, water efficiency check, recommendations report |
+| Spring Turn-On + System Check | **$145** (up to 8 zones) | +$10 per additional zone | Turn-on, full system check, head adjustments, leak check, controller programming, water efficiency check |
+| Mid-Season Sprinkler Inspection & Tune-Up | **starting at $145** (up to 8 zones) | +$10 per additional zone | Full system check, adjustments, issue detection, diagnostics, water efficiency check, recommendations report |
 | Winterization (Sprinkler Blowout) | **$95** (up to 8 zones) | +$7 per additional zone | Compressed-air blowout of all zones, backflow protection, winter-ready verification |
 
 Materials are not included if repairs are needed during a seasonal service.
@@ -67,7 +67,7 @@ Contact us for a free consultation and custom quote.
 
 ### How much does a spring sprinkler turn-on cost in Erie, CO?
 
-Spring turn-on and system check starts at **$135 for up to 8 zones**, plus $10 per additional zone. This includes turn-on, full system check, adjustments, leak check, controller programming, and a water efficiency check.
+Spring turn-on and system check is **$145 for up to 8 zones**, plus $10 per additional zone. This includes turn-on, full system check, adjustments, leak check, controller programming, and a water efficiency check.
 
 ### How much does sprinkler winterization cost in Northern Colorado?
 
@@ -77,9 +77,9 @@ Sprinkler winterization (blowout) costs **$95 for up to 8 zones**, plus $7 for e
 
 We provide a quote based on the scope of work and the materials needed. There is **no trip fee or service-call fee** — the visit to your property is included in the repair cost.
 
-### Do you offer free estimates for new sprinkler installation?
+### How do I get a quote for a new sprinkler installation?
 
-Yes. Contact us for a free quote on residential sprinkler installation. We'll visit your property, assess your yard, and design a custom system for your lawn and landscape.
+Contact us for a quote on residential sprinkler installation. We'll visit your property, assess your yard, and design a custom system for your lawn and landscape.
 
 ### What areas do you serve?
 

@@ -43,9 +43,9 @@ const SERVICES_FAQS = [
       "In Northern Colorado, you should winterize your sprinklers between mid-October and early November, before the first hard freeze. A professional sprinkler blowout clears water from all lines and prevents cracked pipes and broken valves.",
   },
   {
-    question: "Do you offer free estimates for sprinkler installation?",
+    question: "How do I get a quote for a sprinkler installation?",
     answer:
-      "Yes. Contact us for a free quote on residential sprinkler installation. Our sprinkler contractor will visit your property, assess your yard, and design a custom system tailored to your lawn and landscape.",
+      "Contact us for a quote on residential sprinkler installation. Our sprinkler contractor will visit your property, assess your yard, and design a custom system tailored to your lawn and landscape.",
   },
 ]
 

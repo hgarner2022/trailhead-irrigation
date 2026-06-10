@@ -278,7 +278,7 @@ export function WaterSavingsCalculator() {
                     href="/contact"
                     className={cn(buttonVariants({ size: "lg" }), "mt-2 w-full")}
                   >
-                    Get a Free Estimate
+                    Get an Estimate
                     <ArrowRight className="w-4 h-4" />
                   </Link>
                 </>

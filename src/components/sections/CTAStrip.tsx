@@ -11,7 +11,7 @@ export function CTAStrip() {
             Ready to Get Started?
           </h2>
           <p className="text-white/80 text-lg max-w-xl">
-            Get a free quote on irrigation installation, repair, or seasonal service. Call today or send us a message.
+            Get a quote on irrigation installation, repair, or seasonal service. Call today or send us a message.
           </p>
           <div className="flex flex-col sm:flex-row items-center gap-3">
             <Link

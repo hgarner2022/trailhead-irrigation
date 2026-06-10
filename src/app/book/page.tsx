@@ -48,7 +48,7 @@ export default function BookPage() {
           </h2>
           <p className="text-muted-foreground mb-6">
             Some services require a conversation first. Reach out and we&apos;ll
-            get you a free quote.
+            get you a quote.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <Link

@@ -2,9 +2,9 @@ import type { Metadata } from "next"
 import { siteConfig } from "@/lib/seo"
 
 export const metadata: Metadata = {
-  title: "Contact Us for a Free Quote",
+  title: "Contact Us for a Quote",
   description:
-    "Contact Trailhead Lawn & Irrigation for a free quote on sprinkler installation, repair, winterization, or spring activation. Serving Erie, Longmont & Weld County, CO.",
+    "Contact Trailhead Lawn & Irrigation for a quote on sprinkler installation, repair, winterization, or spring activation. Serving Erie, Longmont & Weld County, CO.",
   alternates: { canonical: `${siteConfig.url}/contact` },
 }
 

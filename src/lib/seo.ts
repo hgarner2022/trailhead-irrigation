@@ -183,9 +183,9 @@ const SERVICES: ServiceDef[] = [
     serviceType: "Spring Sprinkler Activation",
     url: `${SITE_URL}/pricing`,
     priceSpecification: {
-      price: "135",
+      price: "145",
       priceCurrency: "USD",
-      description: "$135 for up to 8 zones, +$10 per additional zone",
+      description: "$145 for up to 8 zones, +$10 per additional zone",
     },
   },
 ]

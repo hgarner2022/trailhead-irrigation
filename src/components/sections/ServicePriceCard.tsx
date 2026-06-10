@@ -12,7 +12,7 @@ type ServicePriceCardProps = {
   iconBgClass?: string
   /** Tailwind class for the icon color (e.g. "text-primary"). */
   iconColorClass?: string
-  /** Big price (e.g. "$135"). */
+  /** Big price (e.g. "$145"). */
   price: string
   /** Small qualifier next to the price (e.g. "up to 8 zones"). */
   priceUnit?: string

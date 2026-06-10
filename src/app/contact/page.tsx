@@ -29,7 +29,7 @@ export default function ContactPage() {
       />
       <PageBanner
         title="Contact Us"
-        description="Get a free quote or schedule service. We'd love to hear from you."
+        description="Get a quote or schedule service. We'd love to hear from you."
       />
 
       <section className="bg-background section-padding-y">

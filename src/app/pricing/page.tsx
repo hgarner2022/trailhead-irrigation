@@ -31,7 +31,7 @@ const PRICING_FAQS = [
   {
     question: "How much does a spring sprinkler turn-on cost?",
     answer:
-      "Spring turn-on and system check starts at $135 for up to 8 zones, plus $10 per additional zone. This includes turn-on, full system check, adjustments, leak check, controller programming, and a water efficiency check.",
+      "Spring turn-on and system check is $145 for up to 8 zones, plus $10 per additional zone. This includes turn-on, full system check, adjustments, leak check, controller programming, and a water efficiency check.",
   },
   {
     question: "How much does sprinkler winterization cost in Northern Colorado?",
@@ -122,7 +122,7 @@ export default function PricingPage() {
             <ServicePriceCard
               title="Spring Turn-On + System Check"
               icon={Sun}
-              price="$135"
+              price="$145"
               priceUnit="up to 8 zones"
               perZoneNote="+$10 per additional zone"
               features={[
@@ -134,9 +134,9 @@ export default function PricingPage() {
               footnote="Materials not included if repairs are needed."
             />
             <ServicePriceCard
-              title="Sprinkler Inspection & Tune-Up"
+              title="Mid-Season Sprinkler Inspection & Tune-Up"
               icon={Search}
-              price="$135"
+              price="starting at $145"
               priceUnit="up to 8 zones"
               perZoneNote="+$10 per additional zone"
               features={[
@@ -288,7 +288,7 @@ export default function PricingPage() {
                   <th scope="row" className="p-4 font-medium text-foreground">
                     Spring turn-on + system check
                   </th>
-                  <td className="p-4 text-muted-foreground">$135</td>
+                  <td className="p-4 text-muted-foreground">$145</td>
                   <td className="p-4 text-foreground">Included</td>
                   <td className="p-4 text-foreground">Included</td>
                 </tr>
@@ -304,7 +304,7 @@ export default function PricingPage() {
                   <th scope="row" className="p-4 font-medium text-foreground">
                     Mid-season inspection &amp; tune-up
                   </th>
-                  <td className="p-4 text-muted-foreground">$135</td>
+                  <td className="p-4 text-muted-foreground">$145</td>
                   <td className="p-4 text-muted-foreground">—</td>
                   <td className="p-4 text-foreground">Included</td>
                 </tr>
@@ -369,7 +369,7 @@ export default function PricingPage() {
                 href="/contact"
                 className={buttonVariants({ size: "lg" })}
               >
-                Request a Free Quote
+                Request a Quote
                 <ArrowRight className="w-4 h-4" />
               </Link>
               <a

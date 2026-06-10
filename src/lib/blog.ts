@@ -476,7 +476,7 @@ A few things that help the recovery:
 
 ## Ready to Get Started?
 
-**Trailhead Lawn & Irrigation installs sprinkler systems across Erie, Longmont, Louisville, Lafayette, Frederick, Firestone, and Weld County.** We'll design a system specific to your property, walk you through every step, and make sure it's running perfectly before we leave. Free estimates. Give us a call.`,
+**Trailhead Lawn & Irrigation installs sprinkler systems across Erie, Longmont, Louisville, Lafayette, Frederick, Firestone, and Weld County.** We'll design a system specific to your property, walk you through every step, and make sure it's running perfectly before we leave. Give us a call.`,
   },
   {
     slug: "xeriscaping-vs-traditional-lawn-colorado",
@@ -567,7 +567,7 @@ Ask yourself these questions:
 
 There's no wrong answer. A well-maintained traditional lawn is great. A thoughtful xeriscape is great. A mix of both is usually the best fit for most families along the Front Range.
 
-**Trailhead Lawn & Irrigation designs and installs irrigation systems for both traditional lawns and xeriscape conversions across Erie, Longmont, Louisville, Lafayette, and Weld County.** If you're thinking about making changes, we can walk your property and help you figure out the right balance. Free estimates, no pressure.`,
+**Trailhead Lawn & Irrigation designs and installs irrigation systems for both traditional lawns and xeriscape conversions across Erie, Longmont, Louisville, Lafayette, and Weld County.** If you're thinking about making changes, we can walk your property and help you figure out the right balance. No pressure, no upsell.`,
   },
   {
     slug: "how-to-adjust-sprinkler-heads",
@@ -911,7 +911,7 @@ Fixing a badly installed system usually costs $1,500-$3,000. You don't save mone
 
 ## Get an Honest Quote
 
-Every yard is different, so the only way to get a real number is to have someone walk your property. We provide free estimates for homeowners in Erie, Longmont, Louisville, Lafayette, Frederick, Firestone, and surrounding areas. No pressure, no gimmicks. Just a straight answer on what it'll cost and why.
+Every yard is different, so the only way to get a real number is to have someone walk your property. We provide on-site quotes for homeowners in Erie, Longmont, Louisville, Lafayette, Frederick, Firestone, and surrounding areas. No pressure, no gimmicks. Just a straight answer on what it'll cost and why.
 
 **Give Trailhead Lawn & Irrigation a call** and we'll come take a look.`,
   },
