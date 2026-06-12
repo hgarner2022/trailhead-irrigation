@@ -96,10 +96,21 @@ export function Footer() {
 
           <Separator className="bg-white/10" />
 
-          {/* Copyright */}
-          <p className="text-center text-sm text-white/50">
-            &copy; {new Date().getFullYear()} Trailhead Lawn & Irrigation LLC. All rights reserved.
-          </p>
+          {/* Copyright + Legal */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-white/50">
+            <p>
+              &copy; {new Date().getFullYear()} Trailhead Lawn & Irrigation LLC. All rights reserved.
+            </p>
+            <nav aria-label="Legal" className="flex items-center gap-4">
+              <Link href="/privacy" className="hover:text-primary-light transition-colors">
+                Privacy Policy
+              </Link>
+              <span aria-hidden="true">·</span>
+              <Link href="/terms" className="hover:text-primary-light transition-colors">
+                Terms & Conditions
+              </Link>
+            </nav>
+          </div>
         </div>
       </div>
     </footer>

@@ -31,6 +31,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${baseUrl}/book`, lastModified: new Date(STATIC_PAGES_UPDATED), changeFrequency: "monthly" as const, priority: 0.8 },
     { url: `${baseUrl}/smart-controllers`, lastModified: new Date(CITY_PAGES_UPDATED), changeFrequency: "monthly" as const, priority: 0.9 },
     { url: `${baseUrl}/smart-controllers/water-savings-calculator`, lastModified: new Date(CALCULATOR_UPDATED), changeFrequency: "monthly" as const, priority: 0.85 },
+    { url: `${baseUrl}/privacy`, lastModified: new Date(STATIC_PAGES_UPDATED), changeFrequency: "yearly" as const, priority: 0.3 },
+    { url: `${baseUrl}/terms`, lastModified: new Date(STATIC_PAGES_UPDATED), changeFrequency: "yearly" as const, priority: 0.3 },
   ]
 
   const cityPages = CITY_DATA.map((city) => ({
