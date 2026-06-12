@@ -18,77 +18,73 @@ export const BLOG_POSTS: BlogPost[] = [
     slug: 'erie-water-allocation-policy-2026',
     title: "Erie Passed a Water Allocation Policy. Here's What It Means for Your Sprinkler System.",
     date: '2026-06-01',
-    excerpt: "On May 26, Erie's Town Council adopted a new Water Allocation Policy in response to multi-year delays at Chimney Hollow and NISP, the two reservoir projects Erie was counting on to backstop its water supply. Mayor Andrew Moore laid out the full picture in a recent blog post. Here's what every Erie homeowner with a sprinkler system should take from it.",
+    excerpt: "On May 26, Erie's Town Council adopted a new Water Allocation Policy that lays out a clear, thoughtful plan for the next several years. Mayor Andrew Moore walked through it in a recent blog post. Here's the takeaway for Erie homeowners with sprinkler systems, and why I think we're in a good spot to come out of this period with healthier, smarter yards.",
     category: 'Local Resources',
     relatedSlugs: ['erie-march-2026-water-restriction', 'new-to-erie-2026-lawn-irrigation-guide', 'erie-lawn-irrigation-month-by-month-guide'],
-    content: `## What Erie Just Did, and Why It Matters
+    content: `## What Erie Just Did, and Why It's Good News
 
-On May 26, Erie's Town Council adopted a new Water Allocation Policy. It's not the kind of headline that grabs the average homeowner, but it's one of the more significant things the town has done for irrigation customers since the March emergency restrictions.
+On May 26, Erie's Town Council adopted a new Water Allocation Policy. It is honestly one of the more encouraging things the town has done for irrigation customers this year, because it gives every homeowner a clear playbook for what's coming and how to plan around it.
 
-The short version: this policy is the town's formal response to the fact that the two reservoir projects Erie was counting on to backstop its water supply (Chimney Hollow and NISP) are delayed by years. Not months. Years.
+The short version: Erie is being proactive. Two of the big regional water projects the town has invested in (Chimney Hollow and NISP) are taking longer to come online than originally planned, so the council put together a thoughtful framework to manage water smartly in the meantime. That kind of forward planning is exactly what you want from local leadership.
 
-Mayor Andrew Moore [laid out the situation in his recent blog post](https://www.moore4erie.com/so/0bPw0cKoS?languageTag=en), and it's worth reading in full if you have ten minutes. If you do not, here's what I took from it as someone who works on Erie irrigation systems every week.
+Mayor Andrew Moore [walked through the whole picture in a recent blog post](https://www.moore4erie.com/so/0bPw0cKoS?languageTag=en), and it's worth reading in full if you have ten minutes. If you don't, here's what I took from it as someone who works on Erie irrigation systems every week.
 
-## Why Chimney Hollow Isn't Saving Us Yet
+## Where Chimney Hollow Reservoir Stands
 
-Chimney Hollow Reservoir is the storage project Erie helped fund as a long-term solution to its summer water vulnerability. The plan was for water deliveries to start in 2026 or 2027, giving Erie a real cushion when snowpack runs short.
+Chimney Hollow Reservoir is the storage project Erie helped fund as a long-term backstop for summer water supply. It is real, it is built, and the first water is already flowing into it. The good news is the infrastructure exists. The timing of when Erie can start drawing from it is still being sorted out.
 
-Two problems have stacked on top of each other:
+**Uranium testing.** During initial fill, Northern Water found that natural uranium had leached out of a construction quarry into the pool. Northern Water is working through the testing and treatment process before releasing water downstream to participating towns. The current planning assumption is that Chimney Hollow water arrives in Erie 5 to 6 years from now. That is later than originally hoped, but the upside is that the testing is being done thoroughly. Nobody wants water released before it's clean.
 
-**Uranium contamination.** During testing of the first water collected at the base of the new dam, Northern Water discovered that natural uranium had leached out of a construction quarry up the basin and was contaminating the pool. Until that's resolved, no water can be released downstream to participating towns. The current planning assumption is a 5 to 6 year delay before Chimney Hollow water actually arrives in Erie.
+**Building up storage.** The other factor is that this year's snowpack came in lower than usual (the South Platte basin peaked at 42 percent of normal in March), so it takes longer to fill the reservoir to useful levels. A few good winters in a row will change that picture fast.
 
-**Lack of runoff.** Even if uranium were not an issue, this year's record-low snowpack means there's barely enough water flowing into the system to fill the reservoir at meaningful levels. South Platte snowpack peaked at 42 percent of normal in March, the lowest peak on record.
+The takeaway: Chimney Hollow is coming. It just isn't the immediate safety net for this summer, and Erie's leadership planned for that.
 
-So the safety net Erie spent years building is not online yet, and will not be for the better part of a decade.
+## The NISP Investment
 
-## NISP, the Other Big Bet
-
-The Northern Integrated Supply Project (NISP) is the other regional water project Erie is counting on. The town has sunk about $30 million into NISP planning and permitting so far. It's also delayed, with no firm delivery date.
-
-When you stack Chimney Hollow and NISP both being years out from delivering water, the timing of the new Water Allocation Policy makes sense.
+The Northern Integrated Supply Project (NISP) is the other regional water project Erie has stake in. The town has invested about $30 million in NISP planning and permitting, which signals real long-term thinking. NISP is taking time to deliver, but it's another piece of the long-term water-security puzzle, and Erie is at the table.
 
 ## What the Water Allocation Policy Actually Does
 
-The policy is the framework Erie will use to manage who gets water, under what conditions, for the next several years until the reservoir backstops come online.
+The policy is the framework Erie will use to manage water fairly and predictably for the next several years. The good news is that it gives homeowners visibility into what to expect.
 
-In practical terms, the town is signaling that:
+In practical terms:
 
-- Drought stages (like the Stage 2 we are in right now) are part of the rhythm of Erie life, not a temporary inconvenience.
-- New development water taps will get harder to come by until supply catches up.
-- Conservation measures and efficiency upgrades are the lever the town has. They're also the lever homeowners can pull.
+- The voluntary drought-stage schedule (2 days a week, 8 p.m. to 8 a.m.) is now a known, stable framework. You can plan your watering around it instead of guessing.
+- New development is being managed thoughtfully, which protects existing residents' service.
+- The town is leaning into conservation and efficiency, and there are real rebate dollars on the table for homeowners who want to upgrade.
 
-This is not panic territory. The town is being thoughtful about how to bridge the gap. But the gap exists, and it's measured in years.
+This is a plan, not a panic. The town is bridging a real gap with intention, and homeowners have great tools to do their part.
 
-## What This Means for Your Sprinkler System
+## What This Means for Your Yard (and the Opportunity in It)
 
-If you live in Erie and have a sprinkler system, the next 5 to 6 years are going to look different than the last 5 to 6 years. Practically:
+If you live in Erie and have a sprinkler system, the next few years are a great window to make your yard genuinely better. Here is what I mean:
 
-**Drought stages are sticky.** The Stage 2 voluntary schedule (2 days a week, 8 p.m. to 8 a.m. only) is the baseline now. It can escalate any summer it gets bad, and "escalate" means enforceable restrictions with fines. [More background on Erie's drought situation here](/blog/erie-march-2026-water-restriction).
+**The watering rhythm is clear.** The Stage 2 voluntary schedule (2 days a week, 8 p.m. to 8 a.m. only) is the baseline. Knowing the rhythm makes it easy to dial your controller in once and forget about it. [More background on Erie's spring water situation here](/blog/erie-march-2026-water-restriction).
 
-**Your water bill is going up.** Tighter supply leads to higher rates over time. Erie already approved water rate increases through 2027. Efficiency on your system goes from "nice to have" to real money.
+**Efficiency upgrades pay back faster than ever.** With water rates trending up and rebate programs stacking, the math on a smart controller or efficient nozzle swap is the best it has been in years. Most homeowners I work with this year are surprised by how quickly the savings show up on the bill.
 
-**Builder-installed defaults will not keep up.** Most new-construction sprinkler controllers ship set to morning runs and long single cycles. Both of those are wrong for Erie's new operating environment. Five minutes of reprogramming fixes both. [I broke this down for new Erie homeowners here](/blog/new-to-erie-2026-lawn-irrigation-guide).
+**Builder-installed systems have a lot of upside.** Most new-construction sprinkler systems ship with default schedules that aren't dialed in for Erie's conditions. Five minutes of reprogramming makes a real, visible difference. [I walked through the full new-homeowner playbook here](/blog/new-to-erie-2026-lawn-irrigation-guide).
 
-**Smart controllers earn out faster.** When water gets more expensive and rebate programs stack up, the ROI on a Rachio or Hunter Hydrawise install accelerates. I keep [the current Erie rebate math here](/smart-controllers/erie), and the [stackable utility rebates here](/water-rebates/erie).
+**Smart controllers are a no-brainer here.** When utility rebates stack on top of manufacturer rebates, the cheapest models are practically free after rebates. I keep [the current Erie rebate math here](/smart-controllers/erie), and the [stackable utility rebates here](/water-rebates/erie).
 
-**Conversion projects make more sense.** Turf-to-drip conversions, MPR nozzle swaps, and removing the highest-water turf in your yard all stop looking like "nice to do someday" and start looking like the cheapest way to keep your lawn decent for the next half-decade.
+**Smart landscaping decisions look better than ever.** Turf-to-drip conversions, MPR nozzle swaps, and rethinking the highest-water corners of your yard are all great moves right now. You end up with a yard that looks better, costs less to maintain, and is more drought-resilient.
 
-## What I'd Do Right Now
+## A Few Easy Wins This Month
 
-If you are an Erie homeowner reading this, the moves I'd make in the next month:
+If you are an Erie homeowner reading this, here are the moves that make the biggest difference for the least effort:
 
-- Walk your system on a Saturday morning. Watch every zone run. Note any spray on the driveway, fence, or house. That's water you're paying for that does nothing for your yard.
-- Check your controller's schedule against the Stage 2 window (8 p.m. to 8 a.m.). If you are outside that window, fix it.
-- If your controller is 10 or more years old, this is the year to upgrade. The rebates stack up well enough in Erie that the math usually works.
-- If your yard has zones that have been brown every July for the last three years, the question is no longer "how do I water more." It's "should this still be turf."
+- Walk your system on a Saturday morning. Watch every zone run. Note any spray on the driveway, fence, or house. Every fix is a win.
+- Set your controller to the 8 p.m. to 8 a.m. window. Quick adjustment, immediate impact.
+- If your controller is 10 or more years old, this is a great year to upgrade. The rebates make the upgrade easy on the budget.
+- For zones that have struggled every July, think about whether a smarter planting choice would serve you better. Less work, better look, less water.
 
-[Book a spring tune-up or system audit](/book) if you want a second set of eyes. I work across Erie, Longmont, Lafayette, Louisville, and Weld County. There is a [month-by-month guide here](/blog/erie-lawn-irrigation-month-by-month-guide) if you want to plan further out.
+[Book a spring tune-up or system audit](/book) if you want a second set of eyes. I work across Erie, Longmont, Lafayette, Louisville, and Weld County. There is a [month-by-month guide here](/blog/erie-lawn-irrigation-month-by-month-guide) if you want to plan ahead.
 
-## The Honest Bottom Line
+## Why I'm Optimistic About the Next Few Years
 
-The town is doing what it can with the cards it has. Two big infrastructure projects fell behind. Snowpack came in at record lows. The Water Allocation Policy is the formal plan for getting through the next 5 to 6 years without a crisis bigger than the one we had in March.
+Erie has invested in big infrastructure, the town leadership is planning thoughtfully, and homeowners have more tools and rebates than ever to make their yards efficient and beautiful. The Water Allocation Policy gives all of us a clear road map.
 
-Homeowners are not powerless in this. The single biggest lever you have is the system in your garage. Get it dialed in, and you'll come out of this period with a yard that looks better and costs less than your neighbor's.
+Honestly, I think Erie homeowners who take a little action on their systems over the next year are going to come out of this period with yards that look better, water bills that are lower, and a lot more confidence about how their landscape handles a tough summer.
 
 Mayor Moore's full post is worth a read for the policy context: [State of Erie's Future Water](https://www.moore4erie.com/so/0bPw0cKoS?languageTag=en).
 `,
