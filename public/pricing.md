@@ -15,7 +15,7 @@
 | Service | Starting Price | Zone Pricing | What's Included |
 |---|---|---|---|
 | Spring Turn-On + System Check | **$145** (up to 8 zones) | +$10 per additional zone | Turn-on, full system check, head adjustments, leak check, controller programming, water efficiency check |
-| Mid-Season Sprinkler Inspection & Tune-Up | **starting at $145** (up to 8 zones) | +$10 per additional zone | Full system check, adjustments, issue detection, diagnostics, water efficiency check, recommendations report |
+| Mid-Season Sprinkler Inspection & Tune-Up | **$145** (up to 8 zones) | +$10 per additional zone | Full system check, adjustments, issue detection, diagnostics, water efficiency check, recommendations report |
 | Winterization (Sprinkler Blowout) | **$95** (up to 8 zones) | +$7 per additional zone | Compressed-air blowout of all zones, backflow protection, winter-ready verification |
 
 Materials are not included if repairs are needed during a seasonal service.

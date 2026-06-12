@@ -130,7 +130,7 @@ export default function PricingPage() {
             <ServicePriceCard
               title="Mid-Season Sprinkler Inspection & Tune-Up"
               icon={Search}
-              price="starting at $145"
+              price="$145"
               priceUnit="up to 8 zones"
               perZoneNote="+$10 per additional zone"
               features={[
