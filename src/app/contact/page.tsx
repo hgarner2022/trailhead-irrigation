@@ -155,6 +155,20 @@ export default function ContactPage() {
                   {error && (
                     <p className="text-sm text-red-600">{error}</p>
                   )}
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    By submitting this form, you agree to our{" "}
+                    <a href="/privacy" className="text-primary hover:underline">
+                      Privacy Policy
+                    </a>{" "}
+                    and{" "}
+                    <a href="/terms" className="text-primary hover:underline">
+                      Terms &amp; Conditions
+                    </a>
+                    , and consent to receive scheduling and service-related
+                    text messages and emails from Trailhead Lawn &amp;
+                    Irrigation about your inquiry. Message and data rates may
+                    apply. Reply STOP at any time to opt out.
+                  </p>
                   <Button type="submit" size="lg">
                     Send Message
                   </Button>

@@ -36,8 +36,21 @@ export default function BookPage() {
       />
 
       <section className="bg-background section-padding-y">
-        <div className="container-padding-x mx-auto max-w-3xl">
+        <div className="container-padding-x mx-auto max-w-3xl flex flex-col gap-6">
           <JobberEmbed />
+          <p className="text-xs text-muted-foreground leading-relaxed text-center">
+            By booking, you agree to our{" "}
+            <Link href="/privacy" className="text-primary hover:underline">
+              Privacy Policy
+            </Link>{" "}
+            and{" "}
+            <Link href="/terms" className="text-primary hover:underline">
+              Terms &amp; Conditions
+            </Link>
+            , including the cancellation policy, and consent to receive
+            scheduling and service-related text messages and emails about your
+            appointment. Msg &amp; data rates may apply. Reply STOP to opt out.
+          </p>
         </div>
       </section>
 
