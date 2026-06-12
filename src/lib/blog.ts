@@ -90,7 +90,7 @@ The town is doing what it can with the cards it has. Two big infrastructure proj
 
 Homeowners are not powerless in this. The single biggest lever you have is the system in your garage. Get it dialed in, and you'll come out of this period with a yard that looks better and costs less than your neighbor's.
 
-Mayor Moore's full post is worth a read for the policy context: **[State of Erie's Future Water](https://www.moore4erie.com/so/0bPw0cKoS?languageTag=en)**.
+Mayor Moore's full post is worth a read for the policy context: [State of Erie's Future Water](https://www.moore4erie.com/so/0bPw0cKoS?languageTag=en).
 `,
   },
   {
