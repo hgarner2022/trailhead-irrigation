@@ -5,6 +5,7 @@ import { buttonVariants } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { Card, CardContent } from "@/components/ui/card"
 import Link from "next/link"
+import Image from "next/image"
 import { ArrowLeft } from "lucide-react"
 import { blogPostJsonLd, breadcrumbJsonLd, siteConfig } from "@/lib/seo"
 
@@ -152,12 +153,28 @@ export default async function BlogPostPage({
             <span aria-hidden="true">&middot;</span>
             <span>{readingTime} min read</span>
           </div>
-          <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">
+          <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
             {post.title}
           </h1>
-          <p className="text-sm text-muted-foreground">
-            By <Link href="/about" className="text-primary hover:underline font-medium">Ryan Garner</Link>, Founder &middot; Trailhead Lawn &amp; Irrigation
-          </p>
+          <div className="flex items-center gap-3">
+            <Link href="/about" className="relative h-11 w-11 rounded-full overflow-hidden shrink-0 ring-2 ring-border hover:ring-primary/50 transition-shadow">
+              <Image
+                src="/images/ryan-avatar.jpg"
+                alt="Ryan Garner"
+                fill
+                sizes="44px"
+                className="object-cover"
+              />
+            </Link>
+            <div className="flex flex-col leading-tight">
+              <Link href="/about" className="text-sm font-semibold text-foreground hover:text-primary transition-colors">
+                Ryan Garner
+              </Link>
+              <span className="text-xs text-muted-foreground">
+                Founder &middot; Trailhead Lawn &amp; Irrigation
+              </span>
+            </div>
+          </div>
         </header>
 
         {/* Table of contents */}
