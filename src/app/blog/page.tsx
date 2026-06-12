@@ -155,10 +155,6 @@ export default function BlogPage() {
 
       <section className="bg-background section-padding-y">
         <div className="container-padding-x mx-auto max-w-6xl">
-          <p className="text-muted-foreground mb-10 max-w-3xl">
-            Practical irrigation advice from a Northern Colorado contractor. Tips on watering schedules, sprinkler repair, winterization, and saving water in Erie, Longmont, and Weld County.
-          </p>
-
           <div className="flex flex-col gap-8">
             {featured && <FeaturedCard post={featured} />}
 
