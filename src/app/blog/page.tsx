@@ -150,7 +150,7 @@ export default function BlogPage() {
       />
       <PageBanner
         title="Blog"
-        description="Tips, advice, and insights on irrigation and lawn care in Northern Colorado."
+        description="Practical irrigation advice from a Northern Colorado contractor. Tips on watering schedules, sprinkler repair, winterization, and saving water in Erie, Longmont, and Weld County."
       />
 
       <section className="bg-background section-padding-y">
