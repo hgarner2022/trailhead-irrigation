@@ -125,7 +125,7 @@ export default function PricingPage() {
                 "Controller programming",
                 "Water efficiency check",
               ]}
-              footnote="Materials not included if repairs are needed."
+              footnote="Repairs not included."
             />
             <ServicePriceCard
               title="Mid-Season Sprinkler Inspection & Tune-Up"
@@ -139,7 +139,7 @@ export default function PricingPage() {
                 "Water efficiency check",
                 "Recommendations report",
               ]}
-              footnote="Materials not included if repairs are needed."
+              footnote="Repairs not included."
             />
             <ServicePriceCard
               title="Winterization (Blowout)"
