@@ -362,6 +362,32 @@ Provides 14 composable skills for structured software development:
 5. **Accessibility**: `aria-labelledby` linking to the heading id; semantic HTML.
 6. **Conversion**: If adding CTAs, use `/book` or `tel:9706927270` — they get auto-tracked by ConversionTracking.
 
+## After publishing anything — REQUIRED
+
+Hannah is not going to remember this, so **Claude must do it without being
+asked.** Any time a page or blog post is added or its content meaningfully
+changes, after the push to `main`:
+
+```bash
+npm run indexnow -- https://www.trailheadirrigation.com/<the-changed-path>
+# or, after a batch of changes:
+npm run indexnow -- --all
+```
+
+Wait for Vercel to finish deploying first. The script fetches the live sitemap
+and verifies the key file is reachable, and it will exit with a clear error if
+the deploy hasn't landed yet.
+
+**Why:** IndexNow pushes URLs straight to Bing instead of waiting to be
+crawled, and Bing's index is what ChatGPT search draws from. Bing indexed
+`/sprinkler-blowout` the same day it shipped while Google still hadn't crawled
+it, so Bing is the fast channel for this site. Google does NOT participate in
+IndexNow, so this never helps Google indexing — request that manually in
+Search Console instead.
+
+Key file lives at `public/05d949ddf67b40018751a4ab76c96010.txt` and must stay
+publicly fetchable. It is domain-ownership proof, not a secret.
+
 ## Trailhead's own shared sections (`src/components/sections/`)
 
 Always use these instead of building from scratch:
