@@ -16,6 +16,12 @@ export interface CityData {
   soilType: string
   housingAge: string
   cityNote: string
+  /**
+   * City-specific winterization context, surfaced in the blowout section on
+   * /services/[city]. Written per city rather than templated so the section
+   * isn't near-duplicate copy across pages.
+   */
+  winterNote?: string
   introText: string
   whyLocal: string
   faqs: { question: string; answer: string }[]
@@ -40,6 +46,8 @@ export const CITY_DATA: CityData[] = [
     soilType: "Heavy clay-loam soil that expands when wet and contracts when dry. Cycle-and-soak irrigation is essential to prevent runoff. Annual aeration can reduce watering needs by up to 25%.",
     housingAge: "Predominantly newer construction (post-2000). Major communities include Erie Highlands, Collier's Hill, Flatiron Meadows, Compass, and Brennan.",
     cityNote: "Erie experienced a severe water supply emergency in early 2026. Water efficiency and smart irrigation are bigger priorities here than anywhere else on the Front Range right now.",
+    winterNote:
+      "Erie is home base, so this is the town we blow out the most systems in every October. Two things stand out here. The heavy clay holds water against the pipe, so a system that wasn't fully cleared has more standing water to freeze than a sandier lot would. And most of Erie's newer subdivisions — Erie Highlands, Collier's Hill, Flatiron Meadows — were built with the backflow assembly above ground in an exposed spot, which is exactly the part that cracks first in a hard freeze.",
     introText: "Trailhead Lawn & Irrigation is based right here in Erie. We're the local sprinkler company your neighbors call for installations, repairs, winterization, and spring turn-ons. We know Erie's heavy clay soil, the Town's watering schedule, and which neighborhoods need extra attention.",
     whyLocal: "We're based in Erie. When you call us, we're already close. We know the soil, the water restrictions, and the neighborhoods. We've worked in Erie Highlands, Collier's Hill, Flatiron Meadows, and most of the newer developments in town.",
     faqs: [
@@ -80,6 +88,8 @@ export const CITY_DATA: CityData[] = [
     soilType: "Heavy clay-loam soil consistent with the Northern Front Range. Alkaline pH with poor natural drainage. Cycle-and-soak irrigation recommended to prevent runoff on clay.",
     housingAge: "Most homes built in the 1970s-1980s. Many irrigation systems are aging and may need updates, repairs, or full replacements. Newer developments on the south and east edges include Somerset Meadows and Idaho Creek.",
     cityNote: "Longmont's senior water rights mean residents are less likely to face severe mandatory restrictions compared to other Front Range cities. The city's backflow program is well-established and actively enforced.",
+    winterNote:
+      "Longmont has a lot of established housing with irrigation that predates current standards — older brass valves, galvanized sections, and drain configurations that don't fully clear by gravity. Those systems benefit most from a proper compressed-air blowout rather than opening a drain valve and hoping. Longmont's backflow program is also actively enforced, so we note the assembly's condition at winterization and tell you if it's likely to fail next year's test.",
     introText: "Looking for a sprinkler company in Longmont? Trailhead serves Longmont from our base in Erie, just 15 minutes away. We handle sprinkler installation, repair, blowouts, and spring turn-ons throughout Longmont. Many homes here have aging systems from the 1970s-80s that need repair or upgrades.",
     whyLocal: "We're 15 minutes from Longmont and service the entire city regularly. Many Longmont homes have 30-40 year old sprinkler systems that need modernizing. We know which neighborhoods have low water pressure, aging valves, and outdated controllers.",
     faqs: [
@@ -120,6 +130,8 @@ export const CITY_DATA: CityData[] = [
     soilType: "Clay-loam soil at the base of the foothills. Terrain is slightly more varied than the plains cities, with some hillier lots near Coal Creek and the western edges of town. Slopes may need different head types and zone configurations.",
     housingAge: "Median home built around 1991. Mix of 1970s-1990s neighborhoods with some newer development. The Marshall Fire (December 2021) destroyed 1,000+ homes in the Louisville/Superior area. Rebuilt homes present opportunities for modern irrigation systems.",
     cityNote: "Louisville has the highest median home value in the area at ~$835,000. Homeowners here invest in their properties. The Marshall Fire rebuilds mean many homes now have brand new irrigation systems with smart controllers.",
+    winterNote:
+      "Louisville has an unusual split. The Marshall Fire rebuilds have brand new systems with smart controllers, and those need the controller properly wintered as well as the lines cleared — putting a smart controller in standby is not the same as switching a mechanical timer off. The rest of Louisville's housing stock is well-established, with mature trees whose roots sit right alongside irrigation lines, so a freeze crack there is a harder repair to reach.",
     introText: "Need a sprinkler company in Louisville? Trailhead serves Louisville from our base in Erie. We handle lawn sprinkler installation, repair, winterization, and spring turn-ons throughout Louisville. We work on everything from established 1990s properties to Marshall Fire rebuilds.",
     whyLocal: "Louisville homeowners care about their properties. With median home values over $800K, a well-maintained sprinkler system protects a serious investment. We understand Louisville's hillier terrain near the foothills and adjust zone layouts accordingly.",
     faqs: [
@@ -159,6 +171,8 @@ export const CITY_DATA: CityData[] = [
     soilType: "Clay-loam soil consistent with the Northern Front Range. Western portions closer to the foothills may have rockier, thinner soil that drains faster and needs different irrigation approaches.",
     housingAge: "Mix of older and newer neighborhoods. Popular areas include Indian Peaks, Waneka Lake, White Hawk Ranch, Spring Creek, and Blue Heron.",
     cityNote: "Lafayette is the only city in this area with permanent, year-round watering restrictions. This makes efficient irrigation system design especially important. Smart controllers that comply with the 3-day, no-midday-watering rules are a smart investment here.",
+    winterNote:
+      "Because Lafayette's watering restrictions are permanent rather than seasonal, a lot of homeowners here run smart controllers on tight schedules. That matters at winterization: the controller needs to be taken out of its watering program properly, not just left to run a schedule against a drained system. We also see more drip and low-flow zones in Lafayette than elsewhere, and those need air at reduced pressure so the emitters don't blow off the tubing.",
     introText: "Looking for a sprinkler company in Lafayette? Trailhead serves Lafayette from our Erie base. Lafayette is unique because it has permanent year-round watering restrictions, not just drought rules. We design and maintain sprinkler systems that work within Lafayette's 3-day-per-week, no-midday-watering rules.",
     whyLocal: "Lafayette's permanent restrictions mean your sprinkler system needs to be efficient from day one. We program controllers to comply with the 3-day limit and 10 AM-6 PM blackout window, and recommend smart controllers that auto-adjust for weather.",
     faqs: [
@@ -198,6 +212,8 @@ export const CITY_DATA: CityData[] = [
     soilType: "Clay to sandy-loam mix. Firestone sits on the eastern plains side of I-25, where soils trend slightly sandier than foothills communities. Expansive clay is still present in many areas.",
     housingAge: "Almost entirely newer construction (post-2000). Firestone grew from under 2,000 residents in 2000 to over 20,000 today. Most homes are in planned subdivisions with HOA-managed common areas.",
     cityNote: "Firestone's water supply is in transition. The Central Weld County Water District contract ends in August 2028, and the Town is actively securing alternative sources. Water efficiency will become increasingly important as this plays out.",
+    winterNote:
+      "Firestone is almost entirely post-2000 construction, so most systems here are young enough that homeowners assume they can skip a blowout. Age isn't the protection — a two-year-old backflow assembly full of water cracks the same as a twenty-year-old one. Firestone also sits out on the plains side of I-25 with more wind exposure, which drives ground temperature down faster on the first hard freeze night.",
     introText: "Need a sprinkler company in Firestone? Trailhead serves Firestone from our base in Erie, just a short drive up I-25. Almost every home in Firestone was built after 2000, so most systems are relatively new. We handle repairs, maintenance, winterization, and spring turn-ons throughout Firestone's growing neighborhoods.",
     whyLocal: "Firestone is one of the fastest-growing towns in Colorado. Nearly every home here is newer construction with modern irrigation systems, but even new systems need regular maintenance, seasonal blowouts, and the occasional repair. We're just a few minutes away in Erie.",
     faqs: [
@@ -219,6 +235,71 @@ export const CITY_DATA: CityData[] = [
       },
     ],
     relatedBlogSlugs: ["when-to-winterize-sprinklers-colorado", "signs-irrigation-system-needs-repair", "how-to-adjust-sprinkler-heads"],
+  },
+  {
+    // Sources (verified 2026-08-17):
+    //   broomfield.org/4491/Drought-Levels-and-Status  — Drought Watch declared Feb 9 2026
+    //   broomfield.org/4490/Water-Use-Ordinance        — even/odd days, 6pm-10am window
+    //   broomfield.org/4249/Water-Use-and-Drought-Levels — 3 days normal / 2 requested
+    // Broomfield is a consolidated city-county, so there is no separate county.
+    slug: "broomfield",
+    name: "Broomfield",
+    county: "City and County of Broomfield",
+    population: "80,200+",
+    elevation: "5,344 ft",
+    waterProvider: "City and County of Broomfield (Public Works)",
+    waterProviderPhone: "303-469-3301",
+    restrictionLevel: "voluntary",
+    restrictionSummary:
+      "Broomfield has been under a Drought Watch since February 9, 2026. The City asks residents to voluntarily cut back to two watering days per week instead of the three the ordinance normally allows. Broomfield staff have signaled that if reuse water demand doesn't drop, they may ask City Council to adopt a mandatory Drought I declaration — a decision expected at the August 25, 2026 council meeting.",
+    wateringDays:
+      "Under the standing ordinance, addresses ending in an even number may water Monday, Wednesday, and Friday. Odd-numbered addresses may water Tuesday, Thursday, and Sunday. Under the current Drought Watch, the City asks you to use no more than two of your allowed days.",
+    wateringTimeRestriction:
+      "Watering is only permitted between 6 p.m. and 10 a.m. The 10 a.m. to 6 p.m. blackout is part of Broomfield's permanent water use ordinance, not a temporary drought measure. Leaking sprinkler systems must be repaired within 10 days of notice.",
+    backflowDeadline:
+      "Colorado state law requires annual backflow testing on any irrigation system connected to municipal water. Broomfield administers its cross-connection control program through Public Works — contact them at 303-469-3301 for your compliance deadline.",
+    backflowDevice:
+      "PVB or RPZ assemblies per Colorado state requirements. Contact Broomfield Public Works to confirm what's approved for your connection.",
+    soilType:
+      "Expansive clay that varies noticeably between neighborhoods, sometimes within a few blocks. It swells when wet and shrinks when dry — the same movement that stresses foundations here also shifts sprinkler heads and pipe over time. Cycle-and-soak watering is essential; long single runs mostly become runoff.",
+    housingAge:
+      "A wide mix. Original Broomfield dates to the 1950s and 60s, while Anthem, Anthem Ranch, Anthem Highlands, The Broadlands, and Wildgrass are largely post-2000. Baseline, the former North Park development in northeast Broomfield, is still building out toward roughly 9,000 homes.",
+    cityNote:
+      "Broomfield's watering window is tighter than most of our service area. The 10 a.m. to 6 p.m. blackout is permanent, and the Drought Watch asks for two days a week rather than three. That combination means your system has to deliver a full week of water in a narrow overnight window, which makes zone timing and head efficiency matter more here than almost anywhere else nearby.",
+    winterNote:
+      "Broomfield's older neighborhoods on the south and west sides have some of the oldest irrigation in our service area — 1950s and 60s homes where the backflow assembly and valves have been through decades of freeze-thaw. Those are the systems where a skipped blowout most often turns into a cracked backflow in spring. Newer Anthem, Broadlands, and Baseline systems are more forgiving, but the above-ground backflow still freezes first regardless of the build year.",
+    introText:
+      "Looking for a sprinkler company in Broomfield? Trailhead serves Broomfield from our base in Erie, just up the road. Broomfield runs a tighter watering schedule than most Front Range cities — a permanent 10 a.m. to 6 p.m. blackout plus a Drought Watch asking for two days a week — so getting your zones and run times right matters. We handle repairs, winterization blowouts, spring turn-ons, backflow testing, and new installations across Broomfield.",
+    whyLocal:
+      "Broomfield is a short drive from our shop in Erie, and we work in it regularly. We know the even/odd schedule, the overnight-only watering window, and how much the clay varies between Original Broomfield and the newer Anthem and Baseline neighborhoods. That matters when you're setting run times or diagnosing why one zone floods while another stays dry.",
+    faqs: [
+      {
+        question: "What days can I water my lawn in Broomfield?",
+        answer:
+          "Even-numbered addresses may water Monday, Wednesday, and Friday. Odd-numbered addresses may water Tuesday, Thursday, and Sunday. Broomfield has been under a Drought Watch since February 2026 and asks residents to voluntarily use no more than two of those days. Watering is only allowed between 6 p.m. and 10 a.m.",
+      },
+      {
+        question: "Are Broomfield's watering restrictions mandatory?",
+        answer:
+          "The two-day-per-week reduction is voluntary under the current Drought Watch. The 10 a.m. to 6 p.m. watering blackout is mandatory year-round under Broomfield's permanent water use ordinance. Staff have indicated Council may consider a mandatory Drought I declaration at the August 25, 2026 meeting if reuse water demand doesn't fall. Check broomfield.org for the current status.",
+      },
+      {
+        question: "How much is a sprinkler blowout in Broomfield?",
+        answer:
+          "Winterization (sprinkler blowout) costs $95 for up to 8 zones, plus $7 for each additional zone. Book between mid-September and mid-October to get a date before the first hard freeze — the last two weeks of October fill up fast.",
+      },
+      {
+        question: "Do you service older sprinkler systems in Original Broomfield?",
+        answer:
+          "Yes, and they're often the ones that need the most attention. Homes from the 1950s and 60s frequently have aging valves, brittle pipe, and backflow assemblies that have been through decades of Colorado freeze-thaw. We repair, replace, and winterize them, and we'll tell you honestly when a component is worth replacing rather than patching.",
+      },
+      {
+        question: "Does Broomfield require annual backflow testing?",
+        answer:
+          "Yes. Colorado state law requires annual testing on any irrigation system tied to municipal water, and Broomfield runs its cross-connection control program through Public Works. Contact them at 303-469-3301 for your specific deadline. We're certified to test and can handle it with your spring turn-on.",
+      },
+    ],
+    relatedBlogSlugs: ["when-to-winterize-sprinklers-colorado", "water-optimization-tips-colorado", "smart-irrigation-controllers-worth-it"],
   },
 ]
 

@@ -11,6 +11,7 @@ import { Menu, X, Phone } from "lucide-react"
 const NAV_LINKS = [
   { label: "Home", href: "/" },
   { label: "Services", href: "/services" },
+  { label: "Blowouts", href: "/sprinkler-blowout" },
   { label: "Smart Controllers", href: "/smart-controllers" },
   { label: "Pricing", href: "/pricing" },
   { label: "Blog", href: "/blog" },
@@ -32,8 +33,12 @@ export function Header() {
             <Image src="/images/logo-horizontal.png" alt="Trailhead Lawn & Irrigation" width={360} height={90} className="h-24 w-auto" priority />
           </Link>
 
-          {/* Desktop nav */}
-          <nav className="hidden md:flex items-center gap-1" aria-label="Main navigation">
+          {/* Desktop nav.
+              Breakpoint is lg, not md: the full link row is ~740px wide and
+              overflowed the viewport between 768px and 1023px, which pushed
+              the whole page into horizontal scroll. Tablets get the mobile
+              menu instead. */}
+          <nav className="hidden lg:flex items-center gap-1" aria-label="Main navigation">
             {NAV_LINKS.map((link) => (
               <Link
                 key={link.href}
@@ -54,7 +59,7 @@ export function Header() {
           </nav>
 
           {/* Mobile menu button */}
-          <div className="flex items-center gap-2 md:hidden">
+          <div className="flex items-center gap-2 lg:hidden">
             <a
               href="tel:9706927270"
               className="inline-flex items-center justify-center h-10 w-10 rounded-lg bg-primary text-white"
@@ -74,7 +79,7 @@ export function Header() {
 
         {/* Mobile nav */}
         {mobileMenuOpen && (
-          <nav className="md:hidden border-t border-border py-4 flex flex-col gap-1" aria-label="Mobile navigation">
+          <nav className="lg:hidden border-t border-border py-4 flex flex-col gap-1" aria-label="Mobile navigation">
             {NAV_LINKS.map((link) => (
               <Link
                 key={link.href}

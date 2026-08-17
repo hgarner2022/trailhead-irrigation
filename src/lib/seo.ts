@@ -28,7 +28,7 @@ export const siteConfig = {
     postalCode: "80516",
     country: "US",
   },
-  serviceArea: ["Weld County", "Erie", "Longmont", "Louisville", "Lafayette", "Firestone", "Northern Colorado"],
+  serviceArea: ["Weld County", "Erie", "Longmont", "Louisville", "Lafayette", "Firestone", "Broomfield", "Northern Colorado"],
 }
 
 export function localBusinessJsonLd() {
@@ -66,6 +66,7 @@ export function localBusinessJsonLd() {
       { "@type": "City", name: "Louisville", containedInPlace: { "@type": "State", name: "Colorado" } },
       { "@type": "City", name: "Lafayette", containedInPlace: { "@type": "State", name: "Colorado" } },
       { "@type": "City", name: "Firestone", containedInPlace: { "@type": "State", name: "Colorado" } },
+      { "@type": "City", name: "Broomfield", containedInPlace: { "@type": "State", name: "Colorado" } },
     ],
     priceRange: "$$",
     openingHoursSpecification: {
@@ -124,6 +125,7 @@ const SERVICE_AREAS = [
   "Louisville, CO",
   "Lafayette, CO",
   "Firestone, CO",
+  "Broomfield, CO",
   "Weld County, CO",
 ]
 

@@ -301,6 +301,60 @@ export default async function CityPage({
         </div>
       </section>
 
+      {/* Winterization / blowout — seasonal conversion block.
+          Uses the city's own winterNote so this reads differently per city
+          rather than being duplicate copy across six pages. */}
+      <section
+        aria-labelledby={`blowout-${data.slug}`}
+        className="bg-navy section-padding-y"
+      >
+        <div className="container-padding-x mx-auto max-w-4xl">
+          <div className="flex items-center gap-2 mb-3">
+            <Snowflake className="h-5 w-5 text-primary" />
+            <span className="text-sm font-semibold uppercase tracking-wide text-primary">
+              Winterization season
+            </span>
+          </div>
+          <h2
+            id={`blowout-${data.slug}`}
+            className="text-2xl md:text-3xl font-bold text-white mb-4"
+          >
+            Sprinkler Blowout in {data.name}, CO
+          </h2>
+          <p className="text-white/80 leading-relaxed mb-4">
+            A sprinkler blowout costs{" "}
+            <strong className="text-white font-semibold">
+              $95 for up to 8 zones
+            </strong>{" "}
+            (+$7 per additional zone) and takes 20 to 40 minutes. For{" "}
+            {data.name} and the rest of the Front Range, the window is
+            mid-October through early November — before the first hard freeze.
+          </p>
+          {data.winterNote && (
+            <p className="text-white/80 leading-relaxed mb-6">
+              {data.winterNote}
+            </p>
+          )}
+          <div className="flex flex-col sm:flex-row items-start gap-3">
+            <Link
+              href="/book?service=winterization"
+              className={buttonVariants({ size: "lg" })}
+            >
+              Book Your {data.name} Blowout
+            </Link>
+            <Link
+              href="/sprinkler-blowout"
+              className={cn(
+                buttonVariants({ variant: "outline", size: "lg" }),
+                "border-white bg-transparent text-white hover:bg-white/10 hover:text-white"
+              )}
+            >
+              What a blowout includes
+            </Link>
+          </div>
+        </div>
+      </section>
+
       {/* FAQ */}
       <section className="bg-background section-padding-y">
         <div className="container-padding-x mx-auto max-w-4xl">
