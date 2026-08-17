@@ -1,6 +1,6 @@
 # Trailhead Lawn & Irrigation LLC
 
-> Erie's trusted sprinkler company serving Erie, Longmont, Louisville, Lafayette, and Weld County, Colorado.
+> Erie's trusted sprinkler company serving Erie, Longmont, Louisville, Lafayette, Firestone, Broomfield, and Weld County, Colorado.
 
 ## About
 
@@ -10,7 +10,7 @@ Trailhead Lawn & Irrigation is a locally owned sprinkler company serving Norther
 
 - Sprinkler System Installation: Custom irrigation system design and installation for residential properties. Includes zone layout, head placement, trenching, controller setup, and final walkthrough. Typical cost: $3,000-$6,000 for a standard yard.
 - Irrigation Repair: Sprinkler head replacement, valve repair, leak detection, broken pipe repair, and controller troubleshooting.
-- Winterization (Blowout): Compressed-air blowout to protect sprinkler systems from Colorado's freeze-thaw cycles. Recommended before mid-October.
+- Winterization (Blowout): Compressed-air blowout to protect sprinkler systems from Colorado's freeze-thaw cycles. $95 for up to 8 zones, +$7 per additional zone. Takes 20-40 minutes. Schedule mid-October through early November, before the first hard freeze.
 - Spring Startup (Activation): System turn-on, leak checks, head adjustments, and controller programming for the watering season. Available late April through May.
 - Backflow Preventer Testing: Annual testing required by most Colorado municipalities. Certified testing and repair.
 - Smart Controller Installation: WiFi-enabled controllers (Rachio, Hunter Hydrawise, Rain Bird ESP-Me3) that adjust watering based on weather.
@@ -18,7 +18,7 @@ Trailhead Lawn & Irrigation is a locally owned sprinkler company serving Norther
 
 ## Service Area
 
-Erie, CO | Longmont, CO | Louisville, CO | Lafayette, CO | Firestone, CO | Weld County, CO | Northern Colorado Front Range
+Erie, CO | Longmont, CO | Louisville, CO | Lafayette, CO | Firestone, CO | Broomfield, CO | Weld County, CO | Northern Colorado Front Range
 
 ## Contact
 
@@ -31,9 +31,11 @@ Erie, CO | Longmont, CO | Louisville, CO | Lafayette, CO | Firestone, CO | Weld 
 
 - Homepage: https://www.trailheadirrigation.com
 - Services: https://www.trailheadirrigation.com/services
+- Sprinkler Blowout / Winterization: https://www.trailheadirrigation.com/sprinkler-blowout
+- Sprinkler Installation: https://www.trailheadirrigation.com/sprinkler-installation
 - Smart Controllers (Rachio): https://www.trailheadirrigation.com/smart-controllers
 - Water Savings Calculator: https://www.trailheadirrigation.com/smart-controllers/water-savings-calculator
-- Pricing & Membership Plans: https://www.trailheadirrigation.com/pricing
+- Pricing: https://www.trailheadirrigation.com/pricing
 - Water Rebates by City: https://www.trailheadirrigation.com/water-rebates
 - Blog (Irrigation Tips): https://www.trailheadirrigation.com/blog
 - Contact: https://www.trailheadirrigation.com/contact

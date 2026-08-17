@@ -1,6 +1,6 @@
 # Trailhead Lawn & Irrigation — Pricing
 
-> Transparent, upfront pricing for sprinkler services in Erie, Longmont, Louisville, Lafayette, and Weld County, Colorado. No hidden fees, no surprise charges, no trip fees.
+> Transparent, upfront pricing for sprinkler services in Erie, Longmont, Louisville, Lafayette, Firestone, Broomfield, and Weld County, Colorado. No hidden fees, no surprise charges, no trip fees.
 
 **Last updated:** 2026
 **Provider:** Trailhead Lawn & Irrigation LLC
@@ -72,7 +72,7 @@ Contact us for a quote on residential sprinkler installation. We'll visit your p
 
 ### What areas do you serve?
 
-We serve **Erie, Longmont, Louisville, Lafayette, Firestone, and surrounding communities** in Northern Colorado and Weld County.
+We serve **Erie, Longmont, Louisville, Lafayette, Firestone, Broomfield, and surrounding communities** in Northern Colorado and Weld County.
 
 ### Are there rebates available for irrigation upgrades?
 

@@ -18,7 +18,9 @@ src/
     page.tsx                    # Homepage
     sitemap.ts                  # Dynamic sitemap (static pages + cities + blog + smart-controllers)
     globals.css                 # Tailwind base + custom properties
-    services/                   # /services + /services/[city] (5 cities)
+    services/                   # /services + /services/[city] (6 cities)
+    sprinkler-installation/     # Installation landing page (highest-ticket service)
+    sprinkler-blowout/          # Winterization landing page (seasonal, peaks October)
     pricing/                    # /pricing
     smart-controllers/          # Rachio funnel: hub + /[city] + /water-savings-calculator
     water-rebates/              # Per-city utility rebate pages
@@ -309,14 +311,16 @@ Provides 14 composable skills for structured software development:
 |---|---|
 | `/` | Homepage — Hero → StatsStrip → ServicesOverview → MeetRyan → Testimonials → HomeFAQ → CTAStrip |
 | `/services` | Service overview + HowItWorks process + service detail blocks + city links + FAQ |
-| `/services/[city]` | 5 city pages (erie, longmont, louisville, lafayette, firestone) — local water info + restrictions + FAQ |
-| `/pricing` | Service pricing cards + comparison table + maintenance plans + FAQ |
+| `/services/[city]` | 6 city pages (erie, longmont, louisville, lafayette, firestone, broomfield) — local water info + restrictions + per-city blowout block (`winterNote`) + FAQ |
+| `/sprinkler-installation` | Installation landing page — cost/timeline answer-first, 6-step process, included vs not-included, clay-soil + restriction design notes, glossary, FAQ. Built to fill the gaps local competitors leave (no pricing, timeline, or permit detail published anywhere) |
+| `/sprinkler-blowout` | Winterization landing page — $95/8 zones, freeze-damage cost, 5-step process, city links, FAQ. Primary CTA books online since Jobber accepts winterization |
+| `/pricing` | Service pricing cards + comparison table + FAQ (à-la-carte only — maintenance plans were removed in `f9823c1`) |
 | `/smart-controllers` | Rachio sales funnel hub — value prop → comparison vs Hunter/Rain Bird → per-city rebate snapshot → CompatibleBrands → definitions → FAQ |
 | `/smart-controllers/[city]` | 5 Rachio city pages with city-specific rebate context + price card variants (none / cash / unknown / free-install) |
 | `/smart-controllers/water-savings-calculator` | Interactive lawn-size → gallons-saved + dollars-saved calculator (EPA WaterSense averages) |
 | `/water-rebates` + `/water-rebates/[slug]` | Per-city utility rebate landing pages (drives the rebate funnel) |
 | `/water-efficiency` | Water-efficient upgrade services |
-| `/blog` + `/blog/[slug]` | 15 long-form blog posts |
+| `/blog` + `/blog/[slug]` | 18 long-form blog posts |
 | `/about`, `/contact`, `/book` | Standard pages |
 
 ## SEO + Analytics Infrastructure

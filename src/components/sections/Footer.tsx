@@ -2,25 +2,28 @@ import { Separator } from "@/components/ui/separator"
 import Image from "next/image"
 import Link from "next/link"
 import { Phone, Mail, MapPin } from "lucide-react"
+import { CITY_DATA } from "@/lib/city-data"
 
 const NAV_LINKS = [
   { label: "Home", href: "/" },
   { label: "Services", href: "/services" },
+  { label: "Sprinkler Blowout", href: "/sprinkler-blowout" },
+  { label: "Sprinkler Installation", href: "/sprinkler-installation" },
   { label: "Pricing", href: "/pricing" },
   { label: "Water Rebates", href: "/water-rebates" },
   { label: "Water Efficiency", href: "/water-efficiency" },
+  { label: "Smart Controllers", href: "/smart-controllers" },
   { label: "Blog", href: "/blog" },
   { label: "Book Online", href: "/book" },
   { label: "Contact", href: "/contact" },
 ]
 
-const CITY_LINKS = [
-  { label: "Erie", href: "/services/erie" },
-  { label: "Longmont", href: "/services/longmont" },
-  { label: "Louisville", href: "/services/louisville" },
-  { label: "Lafayette", href: "/services/lafayette" },
-  { label: "Firestone", href: "/services/firestone" },
-]
+// Derived from CITY_DATA so adding a city registers here automatically
+// instead of needing a second hardcoded list kept in sync by hand.
+const CITY_LINKS = CITY_DATA.map((city) => ({
+  label: city.name,
+  href: `/services/${city.slug}`,
+}))
 
 export function Footer() {
   return (
