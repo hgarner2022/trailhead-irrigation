@@ -46,6 +46,10 @@ const SERVICES_FAQS = [
     question: "How do I get a quote for a sprinkler installation?",
     answer:
       "Contact us for a quote on residential sprinkler installation. Our sprinkler contractor will visit your property, assess your yard, and design a custom system tailored to your lawn and landscape.",
+    relatedLink: {
+      href: "/sprinkler-installation",
+      label: "See installation costs, timeline, and process",
+    },
   },
 ]
 

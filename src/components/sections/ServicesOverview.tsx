@@ -4,24 +4,30 @@ import Image from "next/image"
 import Link from "next/link"
 import { Wrench, Droplets, Snowflake } from "lucide-react"
 
+// Each card links to its own service page rather than all three pointing at
+// /services. The homepage carries the overwhelming majority of this site's
+// search authority, so these are the most valuable internal links available.
 const SERVICES = [
   {
     title: "Sprinkler Installation",
     description: "Complete residential sprinkler system design and installation. Custom zone layout, efficient heads, and smart controllers for your yard.",
     icon: Droplets,
     image: "/images/sprinkler-installation.jpg",
+    href: "/sprinkler-installation",
   },
   {
     title: "Sprinkler Repair",
     description: "Broken sprinkler? Sprinkler leak? Water bill too high? We fix sprinkler problems fast — heads, valves, pipes, and controllers.",
     icon: Wrench,
     image: "/images/sprinkler-repair.jpg",
+    href: "/services",
   },
   {
-    title: "Winterization & Spring Turn-On",
-    description: "Winterize your sprinklers with a professional blowout in fall, and get your spring sprinkler turn-on with a full system check.",
+    title: "Sprinkler Blowout & Winterization",
+    description: "Protect your system before the first hard freeze with a professional compressed-air blowout. $95 up to 8 zones.",
     icon: Snowflake,
     image: "/images/sprinkler-spring.jpg",
+    href: "/sprinkler-blowout",
   },
 ]
 
@@ -41,7 +47,7 @@ export function ServicesOverview() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
             {SERVICES.map((service) => (
-              <Link key={service.title} href="/services" className="block">
+              <Link key={service.title} href={service.href} className="block">
                 <Card className="overflow-hidden hover:shadow-md transition-shadow h-full">
                   <div className="relative h-48">
                     <Image

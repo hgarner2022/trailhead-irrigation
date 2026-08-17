@@ -156,8 +156,8 @@ export default function PricingPage() {
                 "Winter-ready verification",
               ]}
               learnMoreLink={{
-                href: "/blog/when-to-winterize-sprinklers-colorado",
-                label: "When to book your blowout",
+                href: "/sprinkler-blowout",
+                label: "How a blowout works & when to book",
               }}
             />
           </div>
