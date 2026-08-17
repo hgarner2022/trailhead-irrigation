@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next"
 import { BLOG_POSTS } from "@/lib/blog"
 import { CITY_DATA } from "@/lib/city-data"
 import { CITY_RACHIO } from "@/lib/rachio-data"
+import { CITIES as REBATE_CITIES } from "@/lib/rebate-data"
 
 // Stable lastModified dates per content category.
 //
@@ -17,6 +18,7 @@ const STATIC_PAGES_UPDATED = "2026-05-15" // last meaningful homepage/meta rewri
 const CITY_PAGES_UPDATED = "2026-05-01" // last meaningful city-page revision
 const CALCULATOR_UPDATED = "2026-04-15" // water savings calculator rebate data
 const BLOG_INDEX_UPDATED = "2026-05-19" // most recent blog post date
+const REBATE_PAGES_UPDATED = "2026-08-17" // added to sitemap; rebate amounts last verified
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = "https://www.trailheadirrigation.com"
@@ -31,6 +33,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${baseUrl}/book`, lastModified: new Date(STATIC_PAGES_UPDATED), changeFrequency: "monthly" as const, priority: 0.8 },
     { url: `${baseUrl}/smart-controllers`, lastModified: new Date(CITY_PAGES_UPDATED), changeFrequency: "monthly" as const, priority: 0.9 },
     { url: `${baseUrl}/smart-controllers/water-savings-calculator`, lastModified: new Date(CALCULATOR_UPDATED), changeFrequency: "monthly" as const, priority: 0.85 },
+    { url: `${baseUrl}/water-rebates`, lastModified: new Date(REBATE_PAGES_UPDATED), changeFrequency: "monthly" as const, priority: 0.9 },
+    { url: `${baseUrl}/water-efficiency`, lastModified: new Date(REBATE_PAGES_UPDATED), changeFrequency: "monthly" as const, priority: 0.85 },
     { url: `${baseUrl}/privacy`, lastModified: new Date(STATIC_PAGES_UPDATED), changeFrequency: "yearly" as const, priority: 0.3 },
     { url: `${baseUrl}/terms`, lastModified: new Date(STATIC_PAGES_UPDATED), changeFrequency: "yearly" as const, priority: 0.3 },
   ]
@@ -49,6 +53,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.85,
   }))
 
+  const rebateCityPages = REBATE_CITIES.map((city) => ({
+    url: `${baseUrl}/water-rebates/${city.slug}`,
+    lastModified: new Date(REBATE_PAGES_UPDATED),
+    changeFrequency: "monthly" as const,
+    priority: 0.85,
+  }))
+
   const blogPages = BLOG_POSTS.map((post) => ({
     url: `${baseUrl}/blog/${post.slug}`,
     lastModified: new Date(post.date),
@@ -56,5 +67,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.7,
   }))
 
-  return [...staticPages, ...cityPages, ...smartControllerCityPages, ...blogPages]
+  return [
+    ...staticPages,
+    ...cityPages,
+    ...smartControllerCityPages,
+    ...rebateCityPages,
+    ...blogPages,
+  ]
 }

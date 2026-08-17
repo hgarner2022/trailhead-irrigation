@@ -77,7 +77,7 @@ export function localBusinessJsonLd() {
     aggregateRating: {
       "@type": "AggregateRating",
       ratingValue: "5.0",
-      reviewCount: "14",
+      reviewCount: "26",
       bestRating: "5",
       worstRating: "1",
     },
