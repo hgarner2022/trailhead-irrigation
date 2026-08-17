@@ -69,12 +69,24 @@ export function localBusinessJsonLd() {
       { "@type": "City", name: "Broomfield", containedInPlace: { "@type": "State", name: "Colorado" } },
     ],
     priceRange: "$$",
-    openingHoursSpecification: {
-      "@type": "OpeningHoursSpecification",
-      dayOfWeek: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
-      opens: "08:00",
-      closes: "18:00",
-    },
+    // Must match the Google Business Profile exactly. Mismatched hours across
+    // listings is a local-trust negative, and "open at search time" is a
+    // top-five local pack ranking factor, so these are worth keeping accurate.
+    // Updated 2026-08-17 when weekend hours were added to the GBP.
+    openingHoursSpecification: [
+      {
+        "@type": "OpeningHoursSpecification",
+        dayOfWeek: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+        opens: "08:00",
+        closes: "17:00",
+      },
+      {
+        "@type": "OpeningHoursSpecification",
+        dayOfWeek: ["Saturday", "Sunday"],
+        opens: "09:00",
+        closes: "17:00",
+      },
+    ],
     aggregateRating: {
       "@type": "AggregateRating",
       ratingValue: "5.0",
