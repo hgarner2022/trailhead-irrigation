@@ -47,7 +47,7 @@ export const CITY_DATA: CityData[] = [
     housingAge: "Predominantly newer construction (post-2000). Major communities include Erie Highlands, Collier's Hill, Flatiron Meadows, Compass, and Brennan.",
     cityNote: "Erie experienced a severe water supply emergency in early 2026. Water efficiency and smart irrigation are bigger priorities here than anywhere else on the Front Range right now.",
     winterNote:
-      "Erie is home base, so this is the town we blow out the most systems in every October. Two things stand out here. The heavy clay holds water against the pipe, so a system that wasn't fully cleared has more standing water to freeze than a sandier lot would. And most of Erie's newer subdivisions — Erie Highlands, Collier's Hill, Flatiron Meadows — were built with the backflow assembly above ground in an exposed spot, which is exactly the part that cracks first in a hard freeze.",
+      "Erie is home base, so this is the town we blow out the most systems in every October. The heavy clay holds water against the pipe, so a system that wasn't fully cleared has more standing water sitting in it than a sandier lot would. Most of Erie's newer subdivisions, including Erie Highlands, Collier's Hill and Flatiron Meadows, were also built with the backflow assembly above ground in an exposed spot. That is the part that cracks first in a hard freeze.",
     introText: "Trailhead Lawn & Irrigation is based right here in Erie. We're the local sprinkler company your neighbors call for installations, repairs, winterization, and spring turn-ons. We know Erie's heavy clay soil, the Town's watering schedule, and which neighborhoods need extra attention.",
     whyLocal: "We're based in Erie. When you call us, we're already close. We know the soil, the water restrictions, and the neighborhoods. We've worked in Erie Highlands, Collier's Hill, Flatiron Meadows, and most of the newer developments in town.",
     faqs: [
@@ -57,7 +57,7 @@ export const CITY_DATA: CityData[] = [
       },
       {
         question: "How much does sprinkler installation cost in Erie?",
-        answer: "Most residential sprinkler installations in Erie cost between $3,000 and $6,000 depending on yard size, number of zones, and controller type. We offer free on-site estimates.",
+        answer: "Most residential sprinkler installations in Erie cost between $3,000 and $6,000 depending on yard size, number of zones, and controller type. We quote on-site after walking the property.",
       },
       {
         question: "When should I turn on my sprinklers in Erie?",
@@ -89,7 +89,7 @@ export const CITY_DATA: CityData[] = [
     housingAge: "Most homes built in the 1970s-1980s. Many irrigation systems are aging and may need updates, repairs, or full replacements. Newer developments on the south and east edges include Somerset Meadows and Idaho Creek.",
     cityNote: "Longmont's senior water rights mean residents are less likely to face severe mandatory restrictions compared to other Front Range cities. The city's backflow program is well-established and actively enforced.",
     winterNote:
-      "Longmont has a lot of established housing with irrigation that predates current standards — older brass valves, galvanized sections, and drain configurations that don't fully clear by gravity. Those systems benefit most from a proper compressed-air blowout rather than opening a drain valve and hoping. Longmont's backflow program is also actively enforced, so we note the assembly's condition at winterization and tell you if it's likely to fail next year's test.",
+      "Longmont has a lot of established housing with irrigation that predates current standards. Older brass valves, galvanized sections and drain layouts that never fully clear by gravity are common here. Those are the systems where a compressed-air blowout matters most, rather than opening a drain valve and hoping. Longmont also enforces its backflow program actively, so we note the condition of your assembly at winterization and tell you if it looks likely to fail next year's test.",
     introText: "Looking for a sprinkler company in Longmont? Trailhead serves Longmont from our base in Erie, just 15 minutes away. We handle sprinkler installation, repair, blowouts, and spring turn-ons throughout Longmont. Many homes here have aging systems from the 1970s-80s that need repair or upgrades.",
     whyLocal: "We're 15 minutes from Longmont and service the entire city regularly. Many Longmont homes have 30-40 year old sprinkler systems that need modernizing. We know which neighborhoods have low water pressure, aging valves, and outdated controllers.",
     faqs: [
@@ -131,7 +131,7 @@ export const CITY_DATA: CityData[] = [
     housingAge: "Median home built around 1991. Mix of 1970s-1990s neighborhoods with some newer development. The Marshall Fire (December 2021) destroyed 1,000+ homes in the Louisville/Superior area. Rebuilt homes present opportunities for modern irrigation systems.",
     cityNote: "Louisville has the highest median home value in the area at ~$835,000. Homeowners here invest in their properties. The Marshall Fire rebuilds mean many homes now have brand new irrigation systems with smart controllers.",
     winterNote:
-      "Louisville has an unusual split. The Marshall Fire rebuilds have brand new systems with smart controllers, and those need the controller properly wintered as well as the lines cleared — putting a smart controller in standby is not the same as switching a mechanical timer off. The rest of Louisville's housing stock is well-established, with mature trees whose roots sit right alongside irrigation lines, so a freeze crack there is a harder repair to reach.",
+      "Louisville splits into two very different jobs. The Marshall Fire rebuilds have new systems on smart controllers, and those need the controller wintered properly along with the lines cleared. Putting a smart controller into standby is not the same as switching a mechanical timer off. The rest of Louisville is long-established, with mature trees whose roots run alongside the irrigation lines, so a freeze crack there is a harder repair to dig out.",
     introText: "Need a sprinkler company in Louisville? Trailhead serves Louisville from our base in Erie. We handle lawn sprinkler installation, repair, winterization, and spring turn-ons throughout Louisville. We work on everything from established 1990s properties to Marshall Fire rebuilds.",
     whyLocal: "Louisville homeowners care about their properties. With median home values over $800K, a well-maintained sprinkler system protects a serious investment. We understand Louisville's hillier terrain near the foothills and adjust zone layouts accordingly.",
     faqs: [
@@ -149,7 +149,7 @@ export const CITY_DATA: CityData[] = [
       },
       {
         question: "How do I winterize my sprinklers in Louisville?",
-        answer: "Schedule a professional sprinkler blowout between mid-October and early November, before the first hard freeze. Louisville sits at 5,335 ft, so freezes can come earlier than lower-elevation cities. Our winterization service costs $95 for up to 8 zones.",
+        answer: "Schedule a professional sprinkler blowout between late September and October, before the first hard freeze. Louisville sits at 5,335 ft, so freezes can come earlier than lower-elevation cities. Our winterization service costs $95 for up to 8 zones.",
       },
     ],
     relatedBlogSlugs: ["when-to-winterize-sprinklers-colorado", "what-to-expect-sprinkler-installation", "smart-irrigation-controllers-worth-it"],
@@ -172,7 +172,7 @@ export const CITY_DATA: CityData[] = [
     housingAge: "Mix of older and newer neighborhoods. Popular areas include Indian Peaks, Waneka Lake, White Hawk Ranch, Spring Creek, and Blue Heron.",
     cityNote: "Lafayette is the only city in this area with permanent, year-round watering restrictions. This makes efficient irrigation system design especially important. Smart controllers that comply with the 3-day, no-midday-watering rules are a smart investment here.",
     winterNote:
-      "Because Lafayette's watering restrictions are permanent rather than seasonal, a lot of homeowners here run smart controllers on tight schedules. That matters at winterization: the controller needs to be taken out of its watering program properly, not just left to run a schedule against a drained system. We also see more drip and low-flow zones in Lafayette than elsewhere, and those need air at reduced pressure so the emitters don't blow off the tubing.",
+      "Lafayette's watering restrictions are permanent rather than seasonal, so more homeowners here run smart controllers on tight schedules. At winterization that controller needs to come out of its watering program properly instead of being left to run against a drained system. We also see more drip and low-flow zones in Lafayette than elsewhere, and those get cleared carefully so the emitters stay on the tubing.",
     introText: "Looking for a sprinkler company in Lafayette? Trailhead serves Lafayette from our Erie base. Lafayette is unique because it has permanent year-round watering restrictions, not just drought rules. We design and maintain sprinkler systems that work within Lafayette's 3-day-per-week, no-midday-watering rules.",
     whyLocal: "Lafayette's permanent restrictions mean your sprinkler system needs to be efficient from day one. We program controllers to comply with the 3-day limit and 10 AM-6 PM blackout window, and recommend smart controllers that auto-adjust for weather.",
     faqs: [
@@ -213,7 +213,7 @@ export const CITY_DATA: CityData[] = [
     housingAge: "Almost entirely newer construction (post-2000). Firestone grew from under 2,000 residents in 2000 to over 20,000 today. Most homes are in planned subdivisions with HOA-managed common areas.",
     cityNote: "Firestone's water supply is in transition. The Central Weld County Water District contract ends in August 2028, and the Town is actively securing alternative sources. Water efficiency will become increasingly important as this plays out.",
     winterNote:
-      "Firestone is almost entirely post-2000 construction, so most systems here are young enough that homeowners assume they can skip a blowout. Age isn't the protection — a two-year-old backflow assembly full of water cracks the same as a twenty-year-old one. Firestone also sits out on the plains side of I-25 with more wind exposure, which drives ground temperature down faster on the first hard freeze night.",
+      "Firestone is almost entirely post-2000 construction, so the systems here are new enough that homeowners often assume a blowout can wait. Age is not the protection. A two-year-old backflow assembly full of water cracks the same as a twenty-year-old one. Firestone also sits on the plains side of I-25 with more wind exposure, which pulls ground temperature down faster on the first hard freeze night.",
     introText: "Need a sprinkler company in Firestone? Trailhead serves Firestone from our base in Erie, just a short drive up I-25. Almost every home in Firestone was built after 2000, so most systems are relatively new. We handle repairs, maintenance, winterization, and spring turn-ons throughout Firestone's growing neighborhoods.",
     whyLocal: "Firestone is one of the fastest-growing towns in Colorado. Nearly every home here is newer construction with modern irrigation systems, but even new systems need regular maintenance, seasonal blowouts, and the occasional repair. We're just a few minutes away in Erie.",
     faqs: [
@@ -231,7 +231,7 @@ export const CITY_DATA: CityData[] = [
       },
       {
         question: "How much is a sprinkler blowout in Firestone?",
-        answer: "Winterization (sprinkler blowout) costs $95 for up to 8 zones, plus $7 for each additional zone. Book between mid-September and mid-October to get on the schedule before the first freeze.",
+        answer: "Winterization (sprinkler blowout) costs $95 for up to 8 zones, plus $7 for each additional zone. Book between late September and October to get on the schedule before the first freeze.",
       },
     ],
     relatedBlogSlugs: ["when-to-winterize-sprinklers-colorado", "signs-irrigation-system-needs-repair", "how-to-adjust-sprinkler-heads"],
@@ -267,7 +267,7 @@ export const CITY_DATA: CityData[] = [
     cityNote:
       "Broomfield's watering window is tighter than most of our service area. The 10 a.m. to 6 p.m. blackout is permanent, and the Drought Watch asks for two days a week rather than three. That combination means your system has to deliver a full week of water in a narrow overnight window, which makes zone timing and head efficiency matter more here than almost anywhere else nearby.",
     winterNote:
-      "Broomfield's older neighborhoods on the south and west sides have some of the oldest irrigation in our service area — 1950s and 60s homes where the backflow assembly and valves have been through decades of freeze-thaw. Those are the systems where a skipped blowout most often turns into a cracked backflow in spring. Newer Anthem, Broadlands, and Baseline systems are more forgiving, but the above-ground backflow still freezes first regardless of the build year.",
+      "Broomfield's south and west sides hold some of the oldest irrigation in our service area. These are 1950s and 60s homes where the valves and backflow assembly have already been through decades of freeze-thaw. Those are the systems where a skipped blowout most often turns into a cracked backflow come spring. The newer Anthem, Broadlands and Baseline systems are more forgiving, but the above-ground backflow still freezes first no matter the build year.",
     introText:
       "Looking for a sprinkler company in Broomfield? Trailhead serves Broomfield from our base in Erie, just up the road. Broomfield runs a tighter watering schedule than most Front Range cities — a permanent 10 a.m. to 6 p.m. blackout plus a Drought Watch asking for two days a week — so getting your zones and run times right matters. We handle repairs, winterization blowouts, spring turn-ons, backflow testing, and new installations across Broomfield.",
     whyLocal:
@@ -286,7 +286,7 @@ export const CITY_DATA: CityData[] = [
       {
         question: "How much is a sprinkler blowout in Broomfield?",
         answer:
-          "Winterization (sprinkler blowout) costs $95 for up to 8 zones, plus $7 for each additional zone. Book between mid-September and mid-October to get a date before the first hard freeze — the last two weeks of October fill up fast.",
+          "Winterization (sprinkler blowout) costs $95 for up to 8 zones, plus $7 for each additional zone. Book between late September and October to get a date before the first hard freeze — the last two weeks of October fill up fast.",
       },
       {
         question: "Do you service older sprinkler systems in Original Broomfield?",

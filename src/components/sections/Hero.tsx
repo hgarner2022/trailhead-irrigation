@@ -1,5 +1,4 @@
 import { buttonVariants } from "@/components/ui/button"
-import { cn } from "@/lib/utils"
 import Image from "next/image"
 import Link from "next/link"
 
@@ -19,33 +18,22 @@ export function Hero() {
       <div className="relative container-padding-x mx-auto max-w-7xl py-24 md:py-32">
         <div className="flex flex-col items-center text-center gap-6 max-w-3xl mx-auto">
           <p className="text-sm md:text-base font-semibold uppercase tracking-widest text-primary-light">
-            Erie&apos;s Local Sprinkler Company
+            Local Sprinkler Company
           </p>
           <h1
             id="hero-heading"
             className="text-4xl md:text-5xl lg:text-6xl font-bold text-white tracking-tight"
           >
-            Sprinkler Repair &amp; Installation in Erie, CO
+            Sprinkler Repairs and Installations
           </h1>
           <p className="text-lg md:text-xl text-white/90 text-pretty max-w-2xl">
-            Locally owned. Lawn sprinkler installation, repair, winterization &amp; spring turn-on serving Erie, Longmont, Louisville, Lafayette &amp; Weld County, Colorado.
+            Locally owned and operated. Installation, repair, winterization, and
+            spring turn-on across the Northern Colorado Front Range.
           </p>
-          <div className="flex flex-col sm:flex-row items-center gap-3 mt-2">
-            <Link
-              href="/book"
-              className={buttonVariants({ size: "lg" })}
-            >
-              Book a Service
+          <div className="mt-2">
+            <Link href="/book" className={buttonVariants({ size: "lg" })}>
+              Book Now
             </Link>
-            <a
-              href="tel:9706927270"
-              className={cn(
-                buttonVariants({ variant: "outline", size: "lg" }),
-                "border-white bg-transparent text-white hover:bg-white/10 hover:text-white"
-              )}
-            >
-              Call (970) 692-7270
-            </a>
           </div>
         </div>
       </div>

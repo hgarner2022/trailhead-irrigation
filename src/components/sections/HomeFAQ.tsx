@@ -14,7 +14,7 @@ export const HOME_FAQS: FaqItem[] = [
   {
     question: "When should I winterize my sprinklers in Northern Colorado?",
     answer:
-      "Schedule your sprinkler blowout between mid-October and early November, before the first hard freeze. Colorado's freeze-thaw cycle can crack pipes, fittings, and valves in any system that still has water in it. A professional compressed-air blowout clears every zone and protects your backflow assembly through winter.",
+      "Schedule your sprinkler blowout between late September and October, before the first hard freeze. Colorado's freeze-thaw cycle can crack pipes, fittings, and valves in any system that still has water in it. A professional compressed-air blowout clears every zone and protects your backflow assembly through winter.",
     relatedLink: {
       href: "/blog/when-to-winterize-sprinklers-colorado",
       label: "Read the full winterization timing guide",

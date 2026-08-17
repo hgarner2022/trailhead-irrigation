@@ -40,7 +40,7 @@ const SERVICES_FAQS = [
   {
     question: "When should I winterize my sprinklers in Colorado?",
     answer:
-      "In Northern Colorado, you should winterize your sprinklers between mid-October and early November, before the first hard freeze. A professional sprinkler blowout clears water from all lines and prevents cracked pipes and broken valves.",
+      "In Northern Colorado, you should winterize your sprinklers between late September and October, before the first hard freeze. A professional sprinkler blowout clears water from all lines and prevents cracked pipes and broken valves.",
   },
   {
     question: "How do I get a quote for a sprinkler installation?",
@@ -48,7 +48,7 @@ const SERVICES_FAQS = [
       "Contact us for a quote on residential sprinkler installation. Our sprinkler contractor will visit your property, assess your yard, and design a custom system tailored to your lawn and landscape.",
     relatedLink: {
       href: "/sprinkler-installation",
-      label: "See installation costs, timeline, and process",
+      label: "See installation costs and how systems are designed",
     },
   },
 ]
@@ -246,7 +246,7 @@ export default function ServicesPage() {
               {
                 term: "What is a sprinkler blowout?",
                 definition:
-                  "A sprinkler blowout is a winterization service that uses a high-volume air compressor to push every drop of water out of an irrigation system before winter. In Northern Colorado, blowouts run from mid-October through early November and protect pipes, valves, and backflow assemblies from freeze-thaw damage.",
+                  "A sprinkler blowout is a winterization service that uses a high-volume air compressor to push every drop of water out of an irrigation system before winter. In Northern Colorado, blowouts run from late September through October and protect pipes, valves, and backflow assemblies from freeze-thaw damage.",
               },
               {
                 term: "What is a spring sprinkler turn-on?",

@@ -10,7 +10,7 @@ Trailhead Lawn & Irrigation is a locally owned sprinkler company serving Norther
 
 - Sprinkler System Installation: Custom irrigation system design and installation for residential properties. Includes zone layout, head placement, trenching, controller setup, and final walkthrough. Typical cost: $3,000-$6,000 for a standard yard.
 - Irrigation Repair: Sprinkler head replacement, valve repair, leak detection, broken pipe repair, and controller troubleshooting.
-- Winterization (Blowout): Compressed-air blowout to protect sprinkler systems from Colorado's freeze-thaw cycles. $95 for up to 8 zones, +$7 per additional zone. Takes 20-40 minutes. Schedule mid-October through early November, before the first hard freeze.
+- Winterization (Blowout): Compressed-air blowout to protect sprinkler systems from Colorado's freeze-thaw cycles. $95 for up to 8 zones, +$7 per additional zone. Typical service time 30 to 60 minutes. Schedule late September through October, before the first hard freeze.
 - Spring Startup (Activation): System turn-on, leak checks, head adjustments, and controller programming for the watering season. Available late April through May.
 - Backflow Preventer Testing: Annual testing required by most Colorado municipalities. Certified testing and repair.
 - Smart Controller Installation: WiFi-enabled controllers (Rachio, Hunter Hydrawise, Rain Bird ESP-Me3) that adjust watering based on weather.

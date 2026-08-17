@@ -168,7 +168,7 @@ const SERVICES: ServiceDef[] = [
     id: "sprinkler-winterization",
     name: "Sprinkler Winterization (Blowout)",
     description:
-      "Professional compressed-air sprinkler blowout to protect your irrigation system from Colorado's freeze-thaw cycle. Recommended between mid-October and early November.",
+      "Professional compressed-air sprinkler blowout to protect your irrigation system from Colorado's freeze-thaw cycle. Recommended between late September and October, before the first hard freeze.",
     serviceType: "Sprinkler Winterization",
     url: `${SITE_URL}/pricing`,
     priceSpecification: {

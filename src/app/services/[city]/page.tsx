@@ -35,7 +35,7 @@ const SERVICES = [
     title: "Sprinkler Installation",
     description: "Custom residential sprinkler system design and installation. Zone layout, efficient heads, smart controllers, and a full walkthrough when we're done.",
     icon: Droplets,
-    href: "/services",
+    href: "/sprinkler-installation",
   },
   {
     title: "Sprinkler Repair",
@@ -47,7 +47,7 @@ const SERVICES = [
     title: "Winterization & Spring Turn-On",
     description: "Professional sprinkler blowout in the fall to prevent freeze damage. Spring startup with leak checks, head adjustments, and controller programming.",
     icon: Snowflake,
-    href: "/book",
+    href: "/sprinkler-blowout",
   },
 ]
 
@@ -151,17 +151,19 @@ export default async function CityPage({
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {SERVICES.map((service) => (
-              <Card key={service.title} className="h-full">
-                <CardHeader>
-                  <div className="flex items-center gap-2">
-                    <service.icon className="h-5 w-5 text-primary" />
-                    <CardTitle className="text-lg">{service.title}</CardTitle>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground text-sm">{service.description}</p>
-                </CardContent>
-              </Card>
+              <Link key={service.title} href={service.href} className="block">
+                <Card className="h-full hover:shadow-md transition-shadow">
+                  <CardHeader>
+                    <div className="flex items-center gap-2">
+                      <service.icon className="h-5 w-5 text-primary" />
+                      <CardTitle className="text-lg">{service.title}</CardTitle>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-muted-foreground text-sm">{service.description}</p>
+                  </CardContent>
+                </Card>
+              </Link>
             ))}
           </div>
         </div>
@@ -326,9 +328,9 @@ export default async function CityPage({
             <strong className="text-white font-semibold">
               $95 for up to 8 zones
             </strong>{" "}
-            (+$7 per additional zone) and takes 20 to 40 minutes. For{" "}
+            (+$7 per additional zone). For{" "}
             {data.name} and the rest of the Front Range, the window is
-            mid-October through early November — before the first hard freeze.
+            late September through October, before the first hard freeze.
           </p>
           {data.winterNote && (
             <p className="text-white/80 leading-relaxed mb-6">
