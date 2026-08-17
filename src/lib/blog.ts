@@ -15,6 +15,79 @@ export function getReadingTime(content: string): number {
 
 export const BLOG_POSTS: BlogPost[] = [
   {
+    slug: 'too-late-to-blow-out-sprinklers',
+    title: "Is It Too Late to Blow Out Your Sprinklers? What to Do If You Missed the Window",
+    date: '2026-08-17',
+    excerpt: "If a freeze already hit and your sprinklers still have water in them, a blowout may still help or it may be too late to matter. Here's how to tell which situation you're in, what to do tonight if a freeze is coming, and how to check for damage you can't see yet.",
+    category: 'Seasonal Maintenance',
+    relatedSlugs: ['when-to-winterize-sprinklers-colorado', 'signs-irrigation-system-needs-repair', 'spring-sprinkler-startup-colorado'],
+    content: `**Short answer: if the ground isn't frozen and you haven't had a hard freeze yet, you're not too late. Get it done this week.** If you've already been through several nights below 28 degrees, a blowout is still worth doing, but the question shifts from prevention to finding out what already broke.
+
+Most winterization advice tells you the ideal window and stops there. That's useless if it's already November and you're reading this because you just remembered. So let's deal with where you actually are.
+
+## First, Figure Out Which Situation You're In
+
+There are three, and they call for different things.
+
+**You haven't had a hard freeze yet.** A hard freeze means below 28 degrees for several hours, not a light frost that burns your tomatoes. If overnight lows have only dipped to the low 30s, your system is almost certainly fine. You are late, not too late. Book a blowout.
+
+**You've had one or two hard freezes.** Damage is possible but not certain. Shallow lateral lines and the backflow assembly are the vulnerable parts. A blowout still makes sense, because there's a whole winter of freeze-thaw ahead and any water still sitting in there will keep expanding and contracting until spring.
+
+**The ground is frozen and it's been cold for weeks.** At this point a blowout is unlikely to prevent anything, because whatever was going to crack has already cracked. It can still be worth clearing the system so the damage doesn't get worse over the rest of winter, but be realistic that you're now planning for repairs at spring turn-on.
+
+## What to Do Tonight If a Freeze Is Coming
+
+If there's a hard freeze in tonight's forecast and you can't get a professional out in time, this won't replace a blowout but it reduces your risk:
+
+1. **Shut off the irrigation water supply.** Find your main irrigation valve and close it. This stops new water from feeding the system.
+2. **Set the controller to off.** Not "rain delay." Off. You don't want it trying to run a zone in freezing weather.
+3. **Drain what you can.** If your system has manual drain valves, open them. Gravity will pull out some of the water sitting in the lines.
+4. **Insulate the backflow assembly.** This is the single most valuable thing on this list. The backflow sits above ground, holds water, and freezes before anything buried does. Wrap it with insulation, a towel and a bucket, foam pipe wrap, whatever you have. Do not seal it airtight against the ground moisture, just get it covered.
+
+That buys you time. It does not clear the water sitting in low spots, in the heads, and inside the valve bodies, which is why a blowout exists.
+
+## Why Draining Isn't the Same as a Blowout
+
+Sprinkler laterals are laid flat or with slight rises. Gravity gets the water out of the sections that happen to slope the right way and leaves the rest sitting exactly where it will do damage. Water also stays inside the sprinkler heads themselves and inside the valve bodies, and no amount of opening a drain valve reaches those.
+
+Compressed air does. That's the whole reason the service exists. And to be clear about the DIY version: a typical shop compressor builds pressure but doesn't move enough air volume to push water through a residential system. It will make noise and clear almost nothing.
+
+## How to Tell If You Already Have Damage
+
+Here's the frustrating part. **You mostly can't tell until spring.** A cracked lateral three inches under your lawn gives no sign in December. But a few things are visible now:
+
+- **Look at the backflow assembly.** Cracks in the brass body, a bulging or split test cock, water weeping from a seam. This is the most common freeze casualty and the easiest to spot.
+- **Check the valve box.** Lift the lid. Standing ice or a cracked valve body is a bad sign.
+- **Watch your water bill.** A leak on the house side of the irrigation shutoff will show up as usage you can't account for. A leak downstream of a closed shutoff valve won't, which is why closing that valve matters.
+
+If you find a cracked backflow, don't wait for spring. That component is code-required and it will need to be replaced before your system can legally run again.
+
+## What This Costs Either Way
+
+A blowout is **$95 for up to 8 zones**, plus $7 for each additional zone.
+
+Freeze repairs typically run **$500 to $1,500** depending on what broke and how much digging it takes to reach it. Backflow replacement sits at the higher end because the part itself isn't cheap. And repairs in our clay soil are slower than the original install was, because saturated clay is miserable to dig.
+
+So the math on getting it done late is still overwhelmingly in favor of getting it done.
+
+## The Honest Timeline for Next Year
+
+The window on the Front Range is **late September through October**. I start booking winterizations in September, and October fills up fast. By mid-October I'm usually booked solid.
+
+The first hard freeze can arrive any time from mid-October on. Erie's first hard freeze in 2024 landed on October 18. Some years it holds off until November. You can't predict it, which is the entire argument for booking early instead of waiting for a forecast.
+
+If you're reading this in August or September, you are in the best possible position. [Book your blowout now](/sprinkler-blowout) and pick your date instead of taking whatever's left.
+
+## The Short Version
+
+- No hard freeze yet? You're fine. Book it this week.
+- One or two freezes in? Still worth doing, and check the backflow.
+- Frozen solid for weeks? Clear it anyway to limit further damage, and plan on repairs at [spring turn-on](/blog/spring-sprinkler-startup-colorado).
+- Freeze tonight and no help available? Shut off the water, controller off, drain what you can, and insulate the backflow.
+
+Not sure which situation you're in? [Give me a call](/contact) and describe what your overnight lows have been. It's a two minute conversation and I'll tell you straight whether it's worth coming out.`,
+  },
+  {
     slug: 'erie-water-allocation-policy-2026',
     title: "Erie Passed a Water Allocation Policy. Here's What It Means for Your Sprinkler System.",
     date: '2026-06-01',
