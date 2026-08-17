@@ -26,6 +26,16 @@ const nextConfig: NextConfig = {
         destination: "/smart-controllers/water-savings-calculator",
         permanent: true,
       },
+      // A separate "is it too late to blow out your sprinklers" post was
+      // published and pulled the same day: it competed with the
+      // when-to-winterize post for the same query. That material now lives as
+      // a section inside when-to-winterize instead. The URL was live long
+      // enough to reach the sitemap, so redirect rather than 404 it.
+      {
+        source: "/blog/too-late-to-blow-out-sprinklers",
+        destination: "/blog/when-to-winterize-sprinklers-colorado",
+        permanent: true,
+      },
     ]
   },
 
