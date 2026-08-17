@@ -22,7 +22,13 @@ export async function generateMetadata({
   const post = getBlogPost(slug)
   if (!post) return { title: "Post Not Found" }
   return {
-    title: post.title,
+    // Absolute, so layout.tsx's "%s | Trailhead Lawn & Irrigation" template
+    // doesn't append 30 characters that never render. Post titles are already
+    // long enough that Google truncates around 60 chars, so the brand suffix
+    // was always cut off. Keeping it only pushed the tag over length, which
+    // Bing reports as an error and which invites Google to rewrite the title
+    // rather than use it as written.
+    title: { absolute: post.title },
     description: post.excerpt,
     alternates: { canonical: `${siteConfig.url}/blog/${post.slug}` },
     openGraph: {
