@@ -23,6 +23,20 @@ import type { ReviewItem } from "./seo"
  */
 export const REVIEWS: ReviewItem[] = [
   {
+    author: "Coreen Larson",
+    rating: 5,
+    date: "2026-08-16",
+    body: "Ryan is just great! Knows his stuff and always has a great attitude and a pleasure to work with. Highly recommend!",
+    source: "Google",
+  },
+  {
+    author: "Brian Salts-Halcomb",
+    rating: 5,
+    date: "2026-08-16",
+    body: "Trailhead is knowledgeable, professional, timely. Ryan came out for a couple jobs that have been nagging us for years and he talked through options and got us on track - highly recommend!",
+    source: "Google",
+  },
+  {
     author: "Joe “Tr3m3ndous” Louis",
     rating: 5,
     date: "2026-05-10",

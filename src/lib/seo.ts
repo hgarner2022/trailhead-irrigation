@@ -90,7 +90,7 @@ export function localBusinessJsonLd() {
     aggregateRating: {
       "@type": "AggregateRating",
       ratingValue: "5.0",
-      reviewCount: "26",
+      reviewCount: "28",
       bestRating: "5",
       worstRating: "1",
     },
