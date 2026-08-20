@@ -84,6 +84,15 @@ const COMPETITORS = [
   },
 ]
 
+const SERVICE_AREA_CITIES = [
+  "Erie, CO",
+  "Longmont, CO",
+  "Louisville, CO",
+  "Lafayette, CO",
+  "Firestone, CO",
+  "Broomfield, CO",
+]
+
 export default function SmartControllersPage() {
   return (
     <>
@@ -104,36 +113,46 @@ export default function SmartControllersPage() {
           ),
         }}
       />
-      {/* Product schema — Rachio 3 with offer + provider */}
+      {/* Service schema for the Rachio install.
+          Deliberately Service rather than Product: Trailhead sells the
+          installation, not a boxed retail item. Product markup put this page
+          into Google's Merchant listings pipeline, which reported a "Missing
+          field image" issue on 2026-08-20 and would keep demanding
+          retail-only fields (shipping, returns) that don't apply to a local
+          contractor. Both priced offers are preserved. */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
           __html: JSON.stringify({
             "@context": "https://schema.org",
-            "@type": "Product",
-            name: "Rachio 3 Smart Sprinkler Controller (Installed by Trailhead)",
+            "@type": "Service",
+            "@id": `${siteConfig.url}/#service-rachio-install`,
+            name: "Rachio 3 Smart Sprinkler Controller Installation",
             description:
-              "WaterSense-certified Wi-Fi smart sprinkler controller, professionally installed by a licensed Erie sprinkler contractor. Cuts outdoor water use by 20–30% on a typical Northern Colorado home.",
+              "Professional installation of the WaterSense-certified Rachio 3 Wi-Fi smart sprinkler controller by a licensed Erie sprinkler contractor. Includes the controller, mounting, wiring, Wi-Fi setup, zone programming, and an app walkthrough. Cuts outdoor water use by 20-30% on a typical Northern Colorado home.",
+            serviceType: "Smart Sprinkler Controller Installation",
             brand: { "@type": "Brand", name: "Rachio" },
-            category: "Smart Sprinkler Controller",
+            provider: { "@id": `${siteConfig.url}/#business` },
+            areaServed: SERVICE_AREA_CITIES,
+            url: `${siteConfig.url}/smart-controllers`,
             offers: [
               {
                 "@type": "Offer",
-                name: "Rachio 3 — 8 Zone, Installed",
+                name: "Rachio 3, 8 Zone, Installed",
                 price: String(RACHIO_PRICING.controller8Zone),
                 priceCurrency: "USD",
                 availability: "https://schema.org/InStock",
                 seller: { "@id": `${siteConfig.url}/#business` },
-                areaServed: ["Erie, CO", "Longmont, CO", "Louisville, CO", "Lafayette, CO", "Firestone, CO"],
+                areaServed: SERVICE_AREA_CITIES,
               },
               {
                 "@type": "Offer",
-                name: "Rachio 3 — 16 Zone, Installed",
+                name: "Rachio 3, 16 Zone, Installed",
                 price: String(RACHIO_PRICING.controller16Zone),
                 priceCurrency: "USD",
                 availability: "https://schema.org/InStock",
                 seller: { "@id": `${siteConfig.url}/#business` },
-                areaServed: ["Erie, CO", "Longmont, CO", "Louisville, CO", "Lafayette, CO", "Firestone, CO"],
+                areaServed: SERVICE_AREA_CITIES,
               },
             ],
           }),
