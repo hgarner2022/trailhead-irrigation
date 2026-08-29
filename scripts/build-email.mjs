@@ -62,6 +62,37 @@ function render(slug, c) {
           </tr>`
     : ""
 
+
+  // Video: a linked thumbnail, never an embedded player. Only Samsung Mail and
+  // Thunderbird support HTML5 video in 2026, Apple Mail dropped it in 2025, and
+  // 85%+ of opens happen in clients where a <video> tag renders nothing. A
+  // linked poster frame works in 100% of clients.
+  //
+  // The play button is a separate centered row rather than a CSS overlay,
+  // because absolute positioning over an image does not survive Outlook's Word
+  // rendering engine.
+  const videoBlock = c.video
+    ? `
+          <tr>
+            <td class="px" style="padding:4px 36px 26px 36px;">
+              <a href="${c.video.href}" style="text-decoration:none;">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid ${C.border};border-radius:8px;overflow:hidden;">
+                  <tr>
+                    <td style="font-size:0;line-height:0;">
+                      <img src="${c.video.thumbnail}" width="528" alt="${c.video.alt}" style="width:100%;max-width:528px;height:auto;display:block;" />
+                    </td>
+                  </tr>
+                  <tr>
+                    <td align="center" bgcolor="${C.navy}" style="padding:14px 20px;">
+                      <span style="font-family:${FONT};font-size:15px;line-height:20px;color:${C.white};font-weight:bold;">&#9654;&nbsp;&nbsp;${c.video.label}</span>
+                    </td>
+                  </tr>
+                </table>
+              </a>
+            </td>
+          </tr>`
+    : ""
+
   const tipBlock = c.tip
     ? `
           <tr>
@@ -163,6 +194,7 @@ ${c.paragraphs.map((p) => `              <p class="t-dark" style="margin:0 0 16p
             </td>
           </tr>
 ${priceBlock}
+${videoBlock}
           <tr>
             <td align="center" class="px" style="padding:26px 36px 10px 36px;">
               <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" class="btn">

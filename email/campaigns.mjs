@@ -24,6 +24,17 @@ export const CAMPAIGNS = {
       "But October is the month everybody remembers at once, and I would rather bug you in August than tell you in October that I am full. Pick a day that works and I will take it from there.",
     ],
     price: { amount: "$95", note: "up to 8 zones &middot; $7 for each zone after that" },
+    // Linked poster frame, not an embedded player. See build-email.mjs.
+    // thumbnail: for a YouTube upload use
+    //   https://img.youtube.com/vi/<VIDEO_ID>/maxresdefault.jpg
+    // href: point at the page on our own site that holds the video, so the
+    // click lands somewhere with a Book button rather than on YouTube.
+    video: {
+      thumbnail: "https://www.trailheadirrigation.com/images/video-blowout-poster.jpg",
+      href: "https://www.trailheadirrigation.com/sprinkler-blowout",
+      alt: "Ryan explains why your sprinklers need a blowout",
+      label: "Watch: 15 seconds on why this matters",
+    },
     cta: { label: "Book Your Blowout", url: "https://www.trailheadirrigation.com/book?service=winterization" },
     ctaNote: "October books up quick every year. The earlier you grab a spot, the more say you have in the day.",
     tip: {
