@@ -22,17 +22,14 @@
  */
 
 import { readFileSync, existsSync } from "node:fs"
+import { execFileSync } from "node:child_process"
+import { CAMPAIGNS } from "../email/campaigns.mjs"
 
 const API = "https://api.brevo.com/v3"
 
-const DEFAULTS = {
-  html: "email/blowout-existing-customers.html",
-  name: "Blowout 2026 - existing customers",
-  subject: "Sorry to bring this up while it's 90 out",
-  preheader: "October fills up fast. Pick your date while it is still open.",
-  senderName: "Ryan at Trailhead",
-  senderEmail: "ryan@trailheadirrigation.com",
-  replyTo: "ryan@trailheadirrigation.com",
+const SENDER = {
+  name: "Ryan at Trailhead",
+  email: "ryan@trailheadirrigation.com",
 }
 
 /** Reads KEY=value pairs out of .env.local without adding a dependency. */
@@ -100,19 +97,14 @@ async function showLists() {
 }
 
 async function createDraft(args) {
-  const htmlPath = args.html || DEFAULTS.html
-  if (!existsSync(htmlPath)) {
-    console.error(`HTML file not found: ${htmlPath}`)
+  const slug = args.campaign
+  const c = CAMPAIGNS[slug]
+  if (!c) {
+    console.error(
+      `Missing or unknown --campaign.\nAvailable: ${Object.keys(CAMPAIGNS).join(", ")}`
+    )
     process.exit(1)
   }
-
-  // The source HTML uses neutral {{first_name}} so it stays portable across
-  // platforms. Brevo wants its own contact-attribute syntax, so swap on the
-  // way out rather than locking the file to one vendor.
-  let html = readFileSync(htmlPath, "utf8").replaceAll(
-    "{{first_name}}",
-    "{{ contact.FIRSTNAME }}"
-  )
 
   const listId = Number(args.list)
   if (!Number.isInteger(listId)) {
@@ -120,29 +112,45 @@ async function createDraft(args) {
     process.exit(1)
   }
 
+  // Always rebuild from campaigns.mjs so the uploaded HTML cannot drift from
+  // the config that is under version control.
+  execFileSync("node", ["scripts/build-email.mjs", `--campaign=${slug}`], { stdio: "inherit" })
+
+  const htmlPath = `email/out/${slug}.html`
+  if (!existsSync(htmlPath)) {
+    console.error(`Build did not produce ${htmlPath}`)
+    process.exit(1)
+  }
+
+  // The generated HTML uses neutral {{first_name}} so it stays portable.
+  // Brevo wants its own contact-attribute syntax, so swap on the way out.
+  const html = readFileSync(htmlPath, "utf8").replaceAll(
+    "{{first_name}}",
+    "{{ contact.FIRSTNAME }}"
+  )
+
   const payload = {
-    name: args.name || DEFAULTS.name,
-    subject: args.subject || DEFAULTS.subject,
-    previewText: DEFAULTS.preheader,
-    sender: { name: DEFAULTS.senderName, email: DEFAULTS.senderEmail },
-    replyTo: DEFAULTS.replyTo,
+    name: c.name,
+    subject: args.subject || c.subject,
+    previewText: c.preheader,
+    sender: SENDER,
+    replyTo: SENDER.email,
     htmlContent: html,
     recipients: { listIds: [listId] },
     inlineImageActivation: false,
     // scheduledAt is intentionally never set. Omitting it is what keeps this
-    // a draft. Do not add it here; schedule or send from the dashboard so a
-    // human always makes that call.
+    // a draft. Do not add it here. Scheduling and sending stay a human
+    // decision made in the Brevo dashboard.
   }
 
-  console.log(`Creating DRAFT campaign from ${htmlPath} (${(html.length / 1024).toFixed(1)}KB)...`)
+  console.log(`\nCreating DRAFT "${slug}" (${(html.length / 1024).toFixed(1)}KB) for list ${listId}...`)
   const out = await call("/emailCampaigns", { method: "POST", body: JSON.stringify(payload) })
 
   console.log(`\nDraft created. Campaign id ${out.id}\n`)
   console.log(`  Subject : ${payload.subject}`)
-  console.log(`  From    : ${payload.sender.name} <${payload.sender.email}>`)
-  console.log(`  List    : ${listId}`)
-  console.log(`\nIt is a DRAFT and has not been sent.`)
-  console.log(`Review it here, send a test to yourself, then send:`)
+  console.log(`  From    : ${SENDER.name} <${SENDER.email}>`)
+  console.log(`\nThis is a DRAFT. Nothing has been sent.`)
+  console.log(`Review, send yourself a test, then send from:`)
   console.log(`  https://app.brevo.com/camp/message/${out.id}`)
 }
 
