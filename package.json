@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "indexnow": "node scripts/indexnow.mjs"
+    "indexnow": "node scripts/indexnow.mjs",
+    "brevo:lists": "node scripts/brevo-campaign.mjs --lists",
+    "brevo:draft": "node scripts/brevo-campaign.mjs"
   },
   "dependencies": {
     "@vercel/analytics": "^1.6.1",
