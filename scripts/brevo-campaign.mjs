@@ -21,7 +21,7 @@
  * Docs: https://developers.brevo.com/reference/create-email-campaign
  */
 
-import { readFileSync, existsSync } from "node:fs"
+import { readFileSync, existsSync, appendFileSync } from "node:fs"
 import { execFileSync } from "node:child_process"
 import { CAMPAIGNS } from "../email/campaigns.mjs"
 
@@ -43,27 +43,65 @@ function loadEnvLocal() {
   }
 }
 
-function key() {
-  loadEnvLocal()
-  const k = process.env.BREVO_API_KEY
+/**
+ * Prompts for the API key with the terminal echo off, so it never appears on
+ * screen or in shell history. Offers to persist it to .env.local (gitignored)
+ * so this is a one-time step.
+ */
+async function promptForKey() {
+  const readline = await import("node:readline")
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout, terminal: true })
+
+  const hidden = (q) =>
+    new Promise((resolve) => {
+      process.stdout.write(q)
+      const onData = (ch) => {
+        if (ch.toString() === "\r" || ch.toString() === "\n") return
+        readline.moveCursor(process.stdout, -1, 0)
+        process.stdout.write("*")
+      }
+      process.stdin.on("data", onData)
+      rl.question("", (ans) => {
+        process.stdin.off("data", onData)
+        process.stdout.write("\n")
+        resolve(ans.trim())
+      })
+    })
+
+  console.log("\nPaste your Brevo API key. It will not be displayed.")
+  console.log("Find it at Brevo > top-right menu > SMTP & API > API Keys.\n")
+  const k = await hidden("  BREVO_API_KEY: ")
   if (!k) {
-    console.error(
-      "BREVO_API_KEY is not set.\n\n" +
-        "Add it to .env.local in the project root:\n" +
-        "  BREVO_API_KEY=xkeysib-your-key-here\n\n" +
-        "Get one at Brevo > top-right menu > SMTP & API > API Keys.\n" +
-        ".env.local is gitignored, so the key stays off GitHub."
-    )
+    console.error("\nNo key entered.")
     process.exit(1)
   }
+
+  const save = await new Promise((r) =>
+    rl.question("\n  Save to .env.local so you only do this once? [Y/n] ", (a) => r(a.trim().toLowerCase()))
+  )
+  rl.close()
+
+  if (save !== "n") {
+    appendFileSync(".env.local", `\nBREVO_API_KEY=${k}\n`)
+    console.log("  Saved to .env.local (gitignored).\n")
+  }
+  process.env.BREVO_API_KEY = k
   return k
+}
+
+let CACHED = null
+async function key() {
+  if (CACHED) return CACHED
+  loadEnvLocal()
+  CACHED = process.env.BREVO_API_KEY || (await promptForKey())
+  return CACHED
 }
 
 async function call(path, opts = {}) {
   const res = await fetch(API + path, {
     ...opts,
     headers: {
-      "api-key": key(),
+      "api-key": await key(),
       accept: "application/json",
       "content-type": "application/json",
       ...(opts.headers || {}),
