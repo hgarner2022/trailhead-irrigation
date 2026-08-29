@@ -15,15 +15,14 @@
 export const CAMPAIGNS = {
   blowout: {
     name: "Blowout 2026 - existing customers",
-    subject: "Sorry to bring this up while it's 90 out",
-    preheader: "October fills up fast. Pick your date while it is still open.",
+    subject: "You do not have to be the guy with the shop compressor",
+    preheader: "Twenty minutes of my time, and you get the whole Saturday back.",
     eyebrow: "Yes, already",
-    headline: "It is 90 degrees and I want to talk about frozen pipes",
+    headline: "You do not have to be the guy with the shop compressor",
     paragraphs: [
-      "I know. It is going to hit the low 90s this week and here I am talking about freezing.",
-      "But October is the month everybody remembers at once, and I would rather bug you in August than tell you in October that I am full. Pick a day that works and I will take it from there.",
+      "I know it is 90 out and frozen pipes are nowhere near your mind. But October is the month everyone remembers at once, and whoever calls me on the first cold morning is waiting three weeks.",
+      "So here is the trade. You hand me the sprinklers, I hand you back the Saturday.",
     ],
-    price: { amount: "$95", note: "up to 8 zones &middot; $7 for each zone after that" },
     // Linked poster frame, not an embedded player. See build-email.mjs.
     // thumbnail: for a YouTube upload use
     //   https://img.youtube.com/vi/<VIDEO_ID>/maxresdefault.jpg
@@ -32,14 +31,15 @@ export const CAMPAIGNS = {
     video: {
       thumbnail: "https://www.trailheadirrigation.com/images/video-blowout-poster.jpg",
       href: "https://www.trailheadirrigation.com/sprinkler-blowout",
-      alt: "Ryan explains why your sprinklers need a blowout",
-      label: "Watch: 15 seconds on why this matters",
+      alt: "A dad wrestling with a shop compressor before Ryan takes over",
+      label: "Watch: 15 seconds, one dad, one shop compressor",
     },
+    price: { amount: "$95", note: "up to 8 zones &middot; $7 for each zone after that" },
     cta: { label: "Book Your Blowout", url: "https://www.trailheadirrigation.com/book?service=winterization" },
     ctaNote: "October books up quick every year. The earlier you grab a spot, the more say you have in the day.",
     tip: {
-      title: "While I have you: do not cut your watering back yet.",
-      body: "September air feels cool but the soil is still warm and the grass is still growing. Most of the sad brown lawns I get called about in October were shut off a month too early. Stay near an inch a week through September, then taper.",
+      title: "Why the garage compressor does not cut it.",
+      body: "A shop compressor moves 2 to 5 CFM. Clearing a residential system takes 80 or more. So an afternoon of your weekend mostly pushes water around and still leaves enough in the lines to crack a valve. Mine is truck mounted at 185 CFM and every zone clears in a minute or two.",
     },
     ps: {
       eyebrow: "One more thing",
