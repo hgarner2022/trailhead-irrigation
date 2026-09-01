@@ -29,7 +29,9 @@ export const CAMPAIGNS = {
     // href: point at the page on our own site that holds the video, so the
     // click lands somewhere with a Book button rather than on YouTube.
     video: {
-      thumbnail: "https://www.trailheadirrigation.com/images/video-blowout-poster.jpg",
+      // Add a poster frame here once one exists in public/images/. Until then
+      // the block renders as the play bar alone rather than a broken image.
+      // thumbnail: "https://www.trailheadirrigation.com/images/video-blowout-poster.jpg",
       href: "https://www.trailheadirrigation.com/sprinkler-blowout",
       alt: "A dad wrestling with a shop compressor before Ryan takes over",
       label: "Watch: 15 seconds, one dad, one shop compressor",
@@ -41,11 +43,20 @@ export const CAMPAIGNS = {
       title: "Why the garage compressor does not cut it.",
       body: "A shop compressor moves 2 to 5 CFM. Clearing a residential system takes 80 or more. So an afternoon of your weekend mostly pushes water around and still leaves enough in the lines to crack a valve. Mine is truck mounted at 185 CFM and every zone clears in a minute or two.",
     },
-    ps: {
-      eyebrow: "One more thing",
-      title: "We are doing Christmas lights this year.",
-      body: "You will be able to book it right on the site, and we handle the ladders and the roofline so you do not have to. Reply if you want me to hold you a spot.",
-    },
+    servicesLabel: "Also this fall",
+    services: [
+      {
+        name: "Core Aeration",
+        price: "$135",
+        body:
+          "We pull small plugs of soil out across the lawn so water, air, and fertilizer can reach the roots instead of sitting on top of them. On Front Range clay that is most of the battle. Fall is the best window of the year for it, and it pairs well with overseeding thin spots.",
+      },
+      {
+        name: "Christmas Lights",
+        body:
+          "You will be able to book it right on the site, and we handle the ladders and the roofline so you do not have to. Reply if you want me to hold you a spot.",
+      },
+    ],
   },
 
   "spring-turn-on": {

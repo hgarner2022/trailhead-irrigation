@@ -44,7 +44,7 @@ const body = (t, extra = "") =>
   `font-family:${FONT};font-size:16px;line-height:26px;color:${C.navy};${extra}`
 
 function section(inner) {
-  return `        <tr><td class="px" style="padding:0 36px;">${inner}</td></tr>`
+  return `        <tr><td class="px" style="padding:0 40px;">${inner}</td></tr>`
 }
 
 function render(slug, c) {
@@ -71,19 +71,20 @@ function render(slug, c) {
   // The play button is a separate centered row rather than a CSS overlay,
   // because absolute positioning over an image does not survive Outlook's Word
   // rendering engine.
+  // Linked poster frame, never an embedded player. Only Samsung Mail and
+  // Thunderbird support HTML5 video in 2026; Apple Mail dropped it in 2025.
+  //
+  // The thumbnail is optional on purpose. A missing poster file renders as a
+  // broken-image icon, which looks worse than shipping the play bar alone.
   const videoBlock = c.video
     ? `
           <tr>
-            <td class="px" style="padding:4px 36px 26px 36px;">
+            <td class="px" style="padding:6px 40px 30px 40px;">
               <a href="${c.video.href}" style="text-decoration:none;">
-                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid ${C.border};border-radius:8px;overflow:hidden;">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border:1px solid ${C.border};border-radius:6px;overflow:hidden;">
+                  ${c.video.thumbnail ? `<tr><td style="font-size:0;line-height:0;"><img src="${c.video.thumbnail}" width="520" alt="${c.video.alt}" style="width:100%;max-width:520px;height:auto;display:block;" /></td></tr>` : ""}
                   <tr>
-                    <td style="font-size:0;line-height:0;">
-                      <img src="${c.video.thumbnail}" width="528" alt="${c.video.alt}" style="width:100%;max-width:528px;height:auto;display:block;" />
-                    </td>
-                  </tr>
-                  <tr>
-                    <td align="center" bgcolor="${C.navy}" style="padding:14px 20px;">
+                    <td align="center" bgcolor="${C.navy}" style="padding:15px 20px;">
                       <span style="font-family:${FONT};font-size:15px;line-height:20px;color:${C.white};font-weight:bold;">&#9654;&nbsp;&nbsp;${c.video.label}</span>
                     </td>
                   </tr>
@@ -96,27 +97,60 @@ function render(slug, c) {
   const tipBlock = c.tip
     ? `
           <tr>
-            <td class="px" style="padding:2px 36px 24px 36px;">
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:${C.cream};border-left:3px solid ${C.success};border-radius:4px;">
-                <tr><td style="padding:16px 20px;">
-                  <p class="t-dark" style="margin:0 0 6px 0;font-family:${FONT};font-size:15px;line-height:22px;color:${C.navy};font-weight:bold;">${c.tip.title}</p>
-                  <p class="t-muted" style="margin:0;font-family:${FONT};font-size:15px;line-height:23px;color:${C.muted};">${c.tip.body}</p>
+            <td class="px" style="padding:4px 40px 30px 40px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:${C.cream};border:1px solid ${C.border};border-radius:6px;">
+                <tr><td style="padding:20px 24px;">
+                  <p class="t-dark" style="margin:0 0 7px 0;font-family:${FONT};font-size:15px;line-height:22px;color:${C.navy};font-weight:bold;">${c.tip.title}</p>
+                  <p class="t-muted" style="margin:0;font-family:${FONT};font-size:14px;line-height:23px;color:${C.muted};">${c.tip.body}</p>
                 </td></tr>
               </table>
             </td>
           </tr>`
     : ""
 
+  // "Also this fall" list. Hairline-separated rows, price right-aligned, so
+  // additional services read as a tidy menu instead of stacked callouts.
+  const servicesBlock = c.services?.length
+    ? `
+          <tr>
+            <td class="px" style="padding:0 40px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td class="rule" style="border-top:1px solid ${C.border};font-size:0;line-height:0;">&nbsp;</td></tr></table>
+            </td>
+          </tr>
+          <tr>
+            <td class="px" style="padding:28px 40px 6px 40px;">
+              <p style="margin:0;font-family:${FONT};font-size:11px;line-height:16px;letter-spacing:1.6px;text-transform:uppercase;color:${C.faint};font-weight:bold;">${c.servicesLabel || "Also this fall"}</p>
+            </td>
+          </tr>
+          ${c.services
+            .map(
+              (sv, i) => `
+          <tr>
+            <td class="px" style="padding:${i === 0 ? "14" : "20"}px 40px 0 40px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td align="left" style="font-family:${FONT};font-size:17px;line-height:24px;color:${C.navy};font-weight:bold;" class="t-dark">${sv.name}</td>
+                  ${sv.price ? `<td align="right" style="font-family:${FONT};font-size:17px;line-height:24px;color:${C.primary};font-weight:bold;white-space:nowrap;">${sv.price}</td>` : ""}
+                </tr>
+              </table>
+              <p class="t-muted" style="margin:6px 0 0 0;font-family:${FONT};font-size:14px;line-height:23px;color:${C.muted};">${sv.body}</p>
+            </td>
+          </tr>`
+            )
+            .join("")}
+          <tr><td style="padding:0 0 6px 0;">&nbsp;</td></tr>`
+    : ""
+
   const psBlock = c.ps
     ? `
           <tr>
-            <td class="px" style="padding:0 36px;">
+            <td class="px" style="padding:0 40px;">
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td class="rule" style="border-top:1px solid ${C.border};font-size:0;line-height:0;">&nbsp;</td></tr></table>
             </td>
           </tr>
           <tr>
             <td class="px" style="padding:26px 36px 32px 36px;">
-              <p style="margin:0 0 6px 0;font-family:${FONT};font-size:12px;line-height:16px;letter-spacing:1.5px;text-transform:uppercase;color:${C.success};font-weight:bold;">${c.ps.eyebrow}</p>
+              <p style="margin:0 0 6px 0;font-family:${FONT};font-size:12px;line-height:16px;letter-spacing:1.6px;text-transform:uppercase;color:${C.faint};font-weight:bold;">${c.ps.eyebrow}</p>
               <p class="t-dark" style="margin:0 0 10px 0;font-family:${FONT};font-size:18px;line-height:24px;color:${C.navy};font-weight:bold;">${c.ps.title}</p>
               <p class="t-muted" style="margin:0;font-family:${FONT};font-size:15px;line-height:24px;color:${C.muted};">${c.ps.body}</p>
             </td>
@@ -179,7 +213,7 @@ function render(slug, c) {
 
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
           <tr>
-            <td class="px" align="left" style="background-color:${C.navy};border-radius:10px 10px 0 0;padding:30px 36px;">
+            <td class="px" align="left" style="background-color:${C.navy};border-radius:10px 10px 0 0;padding:34px 40px;">
               <p style="margin:0 0 8px 0;font-family:${FONT};font-size:12px;line-height:16px;letter-spacing:1.5px;text-transform:uppercase;color:${C.primaryLight};font-weight:bold;">${c.eyebrow}</p>
               <h1 class="h1" style="margin:0;font-family:${FONT};font-size:30px;line-height:36px;color:${C.white};font-weight:bold;">${c.headline}</h1>
             </td>
@@ -188,13 +222,13 @@ function render(slug, c) {
 
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
           <tr>
-            <td class="px" style="padding:32px 36px 8px 36px;">
+            <td class="px" style="padding:36px 40px 10px 40px;">
               <p class="t-dark" style="margin:0 0 16px 0;${body()}">Hi {{first_name}},</p>
 ${c.paragraphs.map((p) => `              <p class="t-dark" style="margin:0 0 16px 0;${body()}">${p}</p>`).join("\n")}
             </td>
           </tr>
-${priceBlock}
 ${videoBlock}
+${priceBlock}
           <tr>
             <td align="center" class="px" style="padding:26px 36px 10px 36px;">
               <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" class="btn">
@@ -219,6 +253,7 @@ ${videoBlock}
             </td>
           </tr>
 ${tipBlock}
+${servicesBlock}
           <tr>
             <td class="px" style="padding:0 36px 26px 36px;">
               <p class="t-dark" style="margin:0;${body()}">Thanks,<br /><strong style="font-weight:bold;">Ryan</strong><br /><span class="t-muted" style="color:${C.muted};font-size:14px;">Trailhead Lawn &amp; Irrigation</span></p>
@@ -244,8 +279,7 @@ ${psBlock}
     <tr>
       <td class="px" align="center" style="padding:10px 36px 20px 36px;">
         <p class="t-muted" style="margin:0;font-family:${FONT};font-size:12px;line-height:20px;color:${C.faint};">
-          You are getting this because we have worked on your system before.<br />
-          Not interested in these? Just reply and I will take you off the list.
+
         </p>
       </td>
     </tr>
