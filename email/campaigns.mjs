@@ -23,31 +23,24 @@ export const CAMPAIGNS = {
       "I know it is 90 out and frozen pipes are nowhere near your mind. But October is the month everyone remembers at once, and whoever calls me on the first cold morning is waiting three weeks.",
       "So here is the trade. You hand me the sprinklers, I hand you back the Saturday.",
     ],
-    // Linked poster frame, not an embedded player. See build-email.mjs.
-    // thumbnail: for a YouTube upload use
-    //   https://img.youtube.com/vi/<VIDEO_ID>/maxresdefault.jpg
-    // href: point at the page on our own site that holds the video, so the
-    // click lands somewhere with a Book button rather than on YouTube.
-    video: {
-      // Add a poster frame here once one exists in public/images/. Until then
-      // the block renders as the play bar alone rather than a broken image.
-      // thumbnail: "https://www.trailheadirrigation.com/images/video-blowout-poster.jpg",
-      href: "https://www.trailheadirrigation.com/sprinkler-blowout",
-      alt: "A dad wrestling with a shop compressor before Ryan takes over",
-      label: "Watch: 15 seconds, one dad, one shop compressor",
-    },
     price: { amount: "$95", note: "up to 8 zones &middot; $10 for each zone after that" },
     cta: { label: "Book Your Blowout", url: "https://www.trailheadirrigation.com/book?service=winterization" },
     ctaNote: "October books up quick every year. The earlier you grab a spot, the more say you have in the day.",
+    // A tip that helps them, not one that justifies the invoice. Sourced from
+    // the October section of the month-by-month blog post: trees are the most
+    // expensive thing in the yard to lose and they go on autopilot the moment
+    // the sprinklers shut off.
     tip: {
-      title: "Why the garage compressor does not cut it.",
-      body: "A shop compressor moves 2 to 5 CFM. Clearing a residential system takes 80 or more. So an afternoon of your weekend mostly pushes water around and still leaves enough in the lines to crack a valve. Mine is truck mounted at 185 CFM and every zone clears in a minute or two.",
+      title: "One thing people forget after a blowout.",
+      body:
+        "The day your system goes off, your trees and shrubs stop getting water entirely, and Front Range winters are dry. They are the most expensive thing in the yard to lose. On a warm afternoon, a slow hose left at the base of the younger trees for a while goes a long way.",
     },
     servicesLabel: "Also this fall",
     services: [
       {
         name: "Core Aeration",
-        price: "$135",
+        // Flat rate, not zone or size based. Do not add an "up to" qualifier.
+        price: "$135 flat",
         body:
           "We pull small plugs of soil out across the lawn so water, air, and fertilizer can reach the roots instead of sitting on top of them. On Front Range clay that is most of the battle. Fall is the best window of the year for it, and it pairs well with overseeding thin spots.",
       },

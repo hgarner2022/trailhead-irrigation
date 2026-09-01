@@ -51,26 +51,13 @@ function render(slug, c) {
   const priceBlock = c.price
     ? `
           <tr>
-            <td class="px" style="padding:8px 36px 4px 36px;">
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:${C.cream};border:1px solid ${C.border};border-radius:8px;">
-                <tr><td align="center" style="padding:18px 20px;">
-                  <p style="margin:0;font-family:${FONT};font-size:28px;line-height:32px;color:${C.primary};font-weight:bold;">${c.price.amount}</p>
-                  <p class="t-muted" style="margin:4px 0 0 0;font-family:${FONT};font-size:14px;line-height:20px;color:${C.muted};">${c.price.note}</p>
-                </td></tr>
-              </table>
+            <td align="center" class="px" style="padding:10px 40px 0 40px;">
+              <p style="margin:0;font-family:${FONT};font-size:34px;line-height:38px;color:${C.primary};font-weight:bold;">${c.price.amount}</p>
+              <p class="t-muted" style="margin:6px 0 0 0;font-family:${FONT};font-size:14px;line-height:21px;color:${C.muted};">${c.price.note}</p>
             </td>
           </tr>`
     : ""
 
-
-  // Video: a linked thumbnail, never an embedded player. Only Samsung Mail and
-  // Thunderbird support HTML5 video in 2026, Apple Mail dropped it in 2025, and
-  // 85%+ of opens happen in clients where a <video> tag renders nothing. A
-  // linked poster frame works in 100% of clients.
-  //
-  // The play button is a separate centered row rather than a CSS overlay,
-  // because absolute positioning over an image does not survive Outlook's Word
-  // rendering engine.
   // Linked poster frame, never an embedded player. Only Samsung Mail and
   // Thunderbird support HTML5 video in 2026; Apple Mail dropped it in 2025.
   //
@@ -94,22 +81,24 @@ function render(slug, c) {
           </tr>`
     : ""
 
+  // Hairline and type only. A filled, bordered box sitting inside the outer
+  // card was the "too many boxes" problem; this keeps the emphasis without
+  // adding another container.
   const tipBlock = c.tip
     ? `
           <tr>
-            <td class="px" style="padding:4px 40px 30px 40px;">
-              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:${C.cream};border:1px solid ${C.border};border-radius:6px;">
-                <tr><td style="padding:20px 24px;">
-                  <p class="t-dark" style="margin:0 0 7px 0;font-family:${FONT};font-size:15px;line-height:22px;color:${C.navy};font-weight:bold;">${c.tip.title}</p>
-                  <p class="t-muted" style="margin:0;font-family:${FONT};font-size:14px;line-height:23px;color:${C.muted};">${c.tip.body}</p>
-                </td></tr>
-              </table>
+            <td class="px" style="padding:4px 40px 0 40px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td class="rule" style="border-top:1px solid ${C.border};font-size:0;line-height:0;">&nbsp;</td></tr></table>
+            </td>
+          </tr>
+          <tr>
+            <td class="px" style="padding:26px 40px 30px 40px;">
+              <p class="t-dark" style="margin:0 0 8px 0;font-family:${FONT};font-size:15px;line-height:22px;color:${C.navy};font-weight:bold;">${c.tip.title}</p>
+              <p class="t-muted" style="margin:0;font-family:${FONT};font-size:14px;line-height:23px;color:${C.muted};">${c.tip.body}</p>
             </td>
           </tr>`
     : ""
 
-  // "Also this fall" list. Hairline-separated rows, price right-aligned, so
-  // additional services read as a tidy menu instead of stacked callouts.
   const servicesBlock = c.services?.length
     ? `
           <tr>
