@@ -9,7 +9,7 @@ export const HOME_FAQS: FaqItem[] = [
   {
     question: "How much does sprinkler repair cost in Erie, CO?",
     answer:
-      "Most residential sprinkler repairs in Erie and Northern Colorado fall between $90 and $350 depending on the issue — replacing a head is on the lower end, while valve work, leak repair, or controller troubleshooting trends higher. Trailhead doesn't charge a trip fee or service-call fee, so the visit to your property is included in the repair quote. See our pricing page for seasonal services.",
+      "Most residential sprinkler repairs in Erie and Northern Colorado fall between $90 and $350 depending on the issue — replacing a head is on the lower end, while valve work, leak repair, or controller troubleshooting trends higher. See our pricing page for seasonal services.",
   },
   {
     question: "When should I winterize my sprinklers in Northern Colorado?",

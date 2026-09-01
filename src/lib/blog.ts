@@ -1338,7 +1338,7 @@ We use truck-mounted compressors rated at 185 CFM. Each zone gets hit with enoug
 
 ## What a Professional Blowout Costs
 
-Our blowout is **$95 for up to 6 zones**, plus $10 for each additional zone. No trip fee. Most systems in Erie and Longmont have 5-8 zones and take about 30-45 minutes.
+Our blowout is **$95 for up to 6 zones**, plus $10 for each additional zone. Most systems in Erie and Longmont have 5-8 zones and take about 30-45 minutes.
 
 Compare that to $500-$1,500 in freeze damage repairs. It's the best $95 you'll spend all year.
 

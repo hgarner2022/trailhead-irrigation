@@ -1,6 +1,6 @@
 # Trailhead Lawn & Irrigation — Pricing
 
-> Transparent, upfront pricing for sprinkler services in Erie, Longmont, Louisville, Lafayette, Firestone, Broomfield, and Weld County, Colorado. No hidden fees, no surprise charges, no trip fees.
+> Transparent, upfront pricing for sprinkler services in Erie, Longmont, Louisville, Lafayette, Firestone, Broomfield, and Weld County, Colorado. No hidden fees and no surprise charges.
 
 **Last updated:** 2026
 **Provider:** Trailhead Lawn & Irrigation LLC
@@ -24,7 +24,7 @@ Materials are not included if repairs are needed during a seasonal service.
 
 ## Sprinkler Repairs
 
-Repair pricing depends on the scope of work and materials needed. Contact us for a quote — the trip to your property is included.
+Repair pricing depends on the scope of work and materials needed. Contact us for a quote.
 
 **Common repairs we handle:**
 - Sprinkler head replacement
@@ -64,7 +64,7 @@ Sprinkler winterization (blowout) costs **$95 for up to 6 zones**, plus $10 for 
 
 ### How do you charge for sprinkler repairs?
 
-We provide a quote based on the scope of work and the materials needed. There is **no trip fee or service-call fee** — the visit to your property is included in the repair cost.
+We provide a quote based on the scope of work and the materials needed before any work begins.
 
 ### How do I get a quote for a new sprinkler installation?
 

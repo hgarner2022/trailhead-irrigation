@@ -52,11 +52,6 @@ const PRICING_FAQS = [
       "Yes! New irrigation installations are quoted on a per-project basis since every property is different. Contact us for a free consultation and custom quote.",
   },
   {
-    question: "Do you charge a trip fee or service call fee?",
-    answer:
-      "No hidden fees. Contact us for a repair quote — the trip to your property is included.",
-  },
-  {
     question: "What areas do you serve?",
     answer:
       "We serve Erie, Longmont, Louisville, Lafayette, and surrounding communities in Northern Colorado and Weld County.",
