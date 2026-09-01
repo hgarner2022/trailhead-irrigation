@@ -26,14 +26,14 @@ export const CAMPAIGNS = {
     price: { amount: "$95", note: "up to 8 zones &middot; $10 for each zone after that" },
     cta: { label: "Book Your Blowout", url: "https://www.trailheadirrigation.com/book?service=winterization" },
     ctaNote: "October books up quick every year. The earlier you grab a spot, the more say you have in the day.",
-    // A tip that helps them, not one that justifies the invoice. Sourced from
-    // the October section of the month-by-month blog post: trees are the most
-    // expensive thing in the yard to lose and they go on autopilot the moment
-    // the sprinklers shut off.
+    // Timely, actionable, and about the stretch between this email and the
+    // blowout rather than after it. Numbers from the September and October
+    // sections of the month-by-month blog post: about an inch a week through
+    // September, one deep watering per week in early October.
     tip: {
-      title: "One thing people forget after a blowout.",
+      title: "Until then, do not cut the water back.",
       body:
-        "The day your system goes off, your trees and shrubs stop getting water entirely, and Front Range winters are dry. They are the most expensive thing in the yard to lose. On a warm afternoon, a slow hose left at the base of the younger trees for a while goes a long way.",
+        "The air cools off in September but the soil stays warm and the grass is still growing. Backing off too early is the most common reason a lawn goes into winter stressed. Stay around an inch a week through September, drop to one deep watering a week in early October, then stop when a freeze gets close.",
     },
     servicesLabel: "Also this fall",
     services: [
