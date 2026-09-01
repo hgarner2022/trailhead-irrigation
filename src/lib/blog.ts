@@ -1338,7 +1338,7 @@ We use truck-mounted compressors rated at 185 CFM. Each zone gets hit with enoug
 
 ## What a Professional Blowout Costs
 
-Our blowout is **$95 for up to 8 zones**, plus $10 for each additional zone. No trip fee. Most systems in Erie and Longmont have 5-8 zones and take about 30-45 minutes.
+Our blowout is **$95 for up to 6 zones**, plus $10 for each additional zone. No trip fee. Most systems in Erie and Longmont have 5-8 zones and take about 30-45 minutes.
 
 Compare that to $500-$1,500 in freeze damage repairs. It's the best $95 you'll spend all year.
 
@@ -1383,7 +1383,7 @@ If you're finding this in November and your system still has water in it, the an
 
 - Book your blowout in **September or early October**
 - Don't try it with a shop compressor. You need 80+ CFM.
-- Professional blowouts cost **$95** for up to 8 zones. Freeze damage costs **$500-$1,500**.
+- Professional blowouts cost **$95** for up to 6 zones. Freeze damage costs **$500-$1,500**.
 - Once it's blown out, leave it off. Even if November feels like summer.
 
 **Trailhead Lawn & Irrigation handles winterizations across Erie, Longmont, Louisville, Lafayette, Firestone, and Broomfield.** We book up fast, so don't wait.

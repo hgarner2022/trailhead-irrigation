@@ -149,7 +149,7 @@ export const CITY_DATA: CityData[] = [
       },
       {
         question: "How do I winterize my sprinklers in Louisville?",
-        answer: "Schedule a professional sprinkler blowout between late September and October, before the first hard freeze. Louisville sits at 5,335 ft, so freezes can come earlier than lower-elevation cities. Our winterization service costs $95 for up to 8 zones.",
+        answer: "Schedule a professional sprinkler blowout between late September and October, before the first hard freeze. Louisville sits at 5,335 ft, so freezes can come earlier than lower-elevation cities. Our winterization service costs $95 for up to 6 zones.",
       },
     ],
     relatedBlogSlugs: ["when-to-winterize-sprinklers-colorado", "what-to-expect-sprinkler-installation", "smart-irrigation-controllers-worth-it"],
@@ -231,7 +231,7 @@ export const CITY_DATA: CityData[] = [
       },
       {
         question: "How much is a sprinkler blowout in Firestone?",
-        answer: "Winterization (sprinkler blowout) costs $95 for up to 8 zones, plus $10 for each additional zone. Book between late September and October to get on the schedule before the first freeze.",
+        answer: "Winterization (sprinkler blowout) costs $95 for up to 6 zones, plus $10 for each additional zone. Book between late September and October to get on the schedule before the first freeze.",
       },
     ],
     relatedBlogSlugs: ["when-to-winterize-sprinklers-colorado", "signs-irrigation-system-needs-repair", "how-to-adjust-sprinkler-heads"],
@@ -286,7 +286,7 @@ export const CITY_DATA: CityData[] = [
       {
         question: "How much is a sprinkler blowout in Broomfield?",
         answer:
-          "Winterization (sprinkler blowout) costs $95 for up to 8 zones, plus $10 for each additional zone. Book between late September and October to get a date before the first hard freeze — the last two weeks of October fill up fast.",
+          "Winterization (sprinkler blowout) costs $95 for up to 6 zones, plus $10 for each additional zone. Book between late September and October to get a date before the first hard freeze — the last two weeks of October fill up fast.",
       },
       {
         question: "Do you service older sprinkler systems in Original Broomfield?",

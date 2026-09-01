@@ -186,7 +186,7 @@ const SERVICES: ServiceDef[] = [
     priceSpecification: {
       price: "95",
       priceCurrency: "USD",
-      description: "$95 for up to 8 zones, +$10 per additional zone",
+      description: "$95 for up to 6 zones, +$10 per additional zone",
     },
   },
   {

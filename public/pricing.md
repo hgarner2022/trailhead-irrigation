@@ -16,7 +16,7 @@
 |---|---|---|---|
 | Spring Turn-On + System Check | **$145** (up to 8 zones) | +$10 per additional zone | Turn-on, full system check, head adjustments, leak check, controller programming, water efficiency check |
 | Mid-Season Sprinkler Inspection & Tune-Up | **$145** (up to 8 zones) | +$10 per additional zone | Full system check, adjustments, issue detection, diagnostics, water efficiency check, recommendations report |
-| Winterization (Sprinkler Blowout) | **$95** (up to 8 zones) | +$10 per additional zone | Compressed-air blowout of all zones, backflow protection, winter-ready verification |
+| Winterization (Sprinkler Blowout) | **$95** (up to 6 zones) | +$10 per additional zone | Compressed-air blowout of all zones, backflow protection, winter-ready verification |
 
 Materials are not included if repairs are needed during a seasonal service.
 
@@ -60,7 +60,7 @@ Spring turn-on and system check is **$145 for up to 8 zones**, plus $10 per addi
 
 ### How much does sprinkler winterization cost in Northern Colorado?
 
-Sprinkler winterization (blowout) costs **$95 for up to 8 zones**, plus $10 for each additional zone. Schedule between late September and October, before the first hard freeze.
+Sprinkler winterization (blowout) costs **$95 for up to 6 zones**, plus $10 for each additional zone. Schedule between late September and October, before the first hard freeze.
 
 ### How do you charge for sprinkler repairs?
 

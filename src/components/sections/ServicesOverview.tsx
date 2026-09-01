@@ -24,7 +24,7 @@ const SERVICES = [
   },
   {
     title: "Sprinkler Blowout & Winterization",
-    description: "Protect your system before the first hard freeze with a professional compressed-air blowout. $95 up to 8 zones.",
+    description: "Protect your system before the first hard freeze with a professional compressed-air blowout. $95 up to 6 zones.",
     icon: Snowflake,
     image: "/images/sprinkler-spring.jpg",
     href: "/sprinkler-blowout",

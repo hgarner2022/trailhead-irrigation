@@ -14,7 +14,7 @@ import { faqJsonLd, breadcrumbJsonLd, siteConfig } from "@/lib/seo"
 export const metadata: Metadata = {
   title: "Sprinkler Blowout & Winterization",
   description:
-    "Sprinkler blowout $95 up to 8 zones. Compressed-air winterization across Northern Colorado. Book for October, before the first hard freeze.",
+    "Sprinkler blowout $95 up to 6 zones. Compressed-air winterization across Northern Colorado. Book for October, before the first hard freeze.",
   alternates: { canonical: `${siteConfig.url}/sprinkler-blowout` },
 }
 
@@ -39,7 +39,7 @@ const BLOWOUT_FAQS = [
   {
     question: "How much does a sprinkler blowout cost?",
     answer:
-      "A sprinkler blowout costs $95 for up to 8 zones, plus $10 for each additional zone. There is no trip fee.",
+      "A sprinkler blowout costs $95 for up to 6 zones, plus $10 for each additional zone. There is no trip fee.",
   },
   {
     question: "When should I winterize my sprinklers in Northern Colorado?",
@@ -127,7 +127,7 @@ export default function SprinklerBlowoutPage() {
 
       <PageBanner
         title="Sprinkler Blowout & Winterization"
-        description="Compressed-air winterization before the first hard freeze. $95 up to 8 zones."
+        description="Compressed-air winterization before the first hard freeze. $95 up to 6 zones."
         backgroundImage="/images/sprinkler-spring.jpg"
       />
 
@@ -149,7 +149,7 @@ export default function SprinklerBlowoutPage() {
               <p className="text-muted-foreground mt-5 mb-4">
                 A sprinkler blowout costs{" "}
                 <strong className="text-foreground font-semibold">
-                  $95 for up to 8 zones
+                  $95 for up to 6 zones
                 </strong>
                 , plus $10 per additional zone. In Northern Colorado the window
                 is{" "}
@@ -180,7 +180,7 @@ export default function SprinklerBlowoutPage() {
                       $95
                     </span>
                     <span className="text-sm text-muted-foreground">
-                      up to 8 zones
+                      up to 6 zones
                     </span>
                   </div>
                   <p className="text-sm text-muted-foreground mt-1.5">

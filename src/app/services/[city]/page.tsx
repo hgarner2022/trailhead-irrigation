@@ -326,7 +326,7 @@ export default async function CityPage({
           <p className="text-white/80 leading-relaxed mb-4">
             A sprinkler blowout costs{" "}
             <strong className="text-white font-semibold">
-              $95 for up to 8 zones
+              $95 for up to 6 zones
             </strong>{" "}
             (+$10 per additional zone). For{" "}
             {data.name} and the rest of the Front Range, the window is

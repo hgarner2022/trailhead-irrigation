@@ -23,7 +23,7 @@ export const CAMPAIGNS = {
       "I know it is 90 out and frozen pipes are nowhere near your mind. But October is the month everyone remembers at once, and whoever calls me on the first cold morning is waiting three weeks.",
       "So here is the trade. You hand me the sprinklers, I hand you back the Saturday.",
     ],
-    price: { amount: "$95", note: "up to 8 zones &middot; $10 for each zone after that" },
+    price: { amount: "$95", note: "up to 6 zones &middot; $10 for each zone after that" },
     cta: { label: "Book Your Blowout", url: "https://www.trailheadirrigation.com/book?service=winterization" },
     ctaNote: "October books up quick every year. The earlier you grab a spot, the more say you have in the day.",
     // Timely, actionable, and about the stretch between this email and the
