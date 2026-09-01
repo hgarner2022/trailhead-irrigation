@@ -34,7 +34,7 @@ export const CAMPAIGNS = {
       alt: "A dad wrestling with a shop compressor before Ryan takes over",
       label: "Watch: 15 seconds, one dad, one shop compressor",
     },
-    price: { amount: "$95", note: "up to 8 zones &middot; $7 for each zone after that" },
+    price: { amount: "$95", note: "up to 8 zones &middot; $10 for each zone after that" },
     cta: { label: "Book Your Blowout", url: "https://www.trailheadirrigation.com/book?service=winterization" },
     ctaNote: "October books up quick every year. The earlier you grab a spot, the more say you have in the day.",
     tip: {

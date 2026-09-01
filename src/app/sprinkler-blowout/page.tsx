@@ -39,7 +39,7 @@ const BLOWOUT_FAQS = [
   {
     question: "How much does a sprinkler blowout cost?",
     answer:
-      "A sprinkler blowout costs $95 for up to 8 zones, plus $7 for each additional zone. There is no trip fee.",
+      "A sprinkler blowout costs $95 for up to 8 zones, plus $10 for each additional zone. There is no trip fee.",
   },
   {
     question: "When should I winterize my sprinklers in Northern Colorado?",
@@ -151,7 +151,7 @@ export default function SprinklerBlowoutPage() {
                 <strong className="text-foreground font-semibold">
                   $95 for up to 8 zones
                 </strong>
-                , plus $7 per additional zone. In Northern Colorado the window
+                , plus $10 per additional zone. In Northern Colorado the window
                 is{" "}
                 <strong className="text-foreground font-semibold">
                   late September through October
@@ -184,7 +184,7 @@ export default function SprinklerBlowoutPage() {
                     </span>
                   </div>
                   <p className="text-sm text-muted-foreground mt-1.5">
-                    +$7 per additional zone. No trip fee.
+                    +$10 per additional zone. No trip fee.
                   </p>
                   <div className="mt-5 pt-5 border-t border-border">
                     <p className="text-sm font-semibold text-foreground mb-1.5">

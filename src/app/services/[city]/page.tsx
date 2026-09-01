@@ -328,7 +328,7 @@ export default async function CityPage({
             <strong className="text-white font-semibold">
               $95 for up to 8 zones
             </strong>{" "}
-            (+$7 per additional zone). For{" "}
+            (+$10 per additional zone). For{" "}
             {data.name} and the rest of the Front Range, the window is
             late September through October, before the first hard freeze.
           </p>
