@@ -22,7 +22,7 @@ export const CAMPAIGNS = {
     paragraphs: [
       "I know it is 90 out and frozen pipes are the last thing on your mind. Mine too, honestly.",
       "I am putting the fall schedule together though, and I wanted to reach out to you first so you get the pick of the dates before October fills in.",
-      "If you would rather not spend part of a Saturday on it, I am glad to take care of it for you. It is usually about half an hour and you will not have to think about it again until spring.",
+      "Really though, thank you for trusting us with your sprinklers this year. It means a lot, and I would be glad to keep looking after the system for you.",
     ],
     price: { amount: "$95", note: "up to 6 zones &middot; $10 for each zone after that" },
     cta: { label: "Book Your Blowout", url: "https://www.trailheadirrigation.com/book?service=winterization" },
