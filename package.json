@@ -10,7 +10,8 @@
     "indexnow": "node scripts/indexnow.mjs",
     "brevo:lists": "node scripts/brevo-campaign.mjs --lists",
     "brevo:draft": "node scripts/brevo-campaign.mjs",
-    "email:build": "node scripts/build-email.mjs"
+    "email:build": "node scripts/build-email.mjs",
+    "brevo:import": "node scripts/brevo-import.mjs"
   },
   "dependencies": {
     "@vercel/analytics": "^1.6.1",
