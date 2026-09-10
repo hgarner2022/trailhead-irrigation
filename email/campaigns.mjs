@@ -41,7 +41,7 @@ export const CAMPAIGNS = {
       {
         name: "Core Aeration",
         body:
-          "We pull small plugs of soil out across the lawn so water, air, and fertilizer can reach the roots instead of sitting on top of them. On Front Range clay that is most of the battle. Fall is the best window of the year for it, and it pairs well with overseeding thin spots.",
+          "We pull small plugs of soil out across the lawn so water, air, and fertilizer can reach the roots instead of sitting on top of them. On Front Range clay that is most of the battle. Fall is the best window of the year for it.",
       },
       {
         name: "Christmas Lights",

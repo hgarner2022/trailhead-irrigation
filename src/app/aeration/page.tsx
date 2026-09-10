@@ -7,10 +7,10 @@ import { SectionHeader } from "@/components/sections/SectionHeader"
 import { JobberEmbed } from "@/components/sections/JobberEmbed"
 import { JOBBER_FORMS } from "@/lib/jobber"
 import { Badge } from "@/components/ui/badge"
+import { Card, CardContent } from "@/components/ui/card"
 import { buttonVariants } from "@/components/ui/button"
 import Link from "next/link"
 import Image from "next/image"
-import { CheckCircle2 } from "lucide-react"
 import { faqJsonLd, breadcrumbJsonLd, siteConfig } from "@/lib/seo"
 
 export const metadata: Metadata = {
@@ -27,9 +27,14 @@ export const metadata: Metadata = {
  *   - "Annual aeration can reduce watering needs by up to 25%" comes from the
  *     Erie soilType entry in city-data.ts
  *   - "the single best thing you can do for your lawn all year", the plugs
- *     guidance, the late-August window opening, and mid-September as the prime
- *     overseeding window for Kentucky bluegrass and tall fescue in Erie all
- *     come from /blog/erie-lawn-irrigation-month-by-month-guide
+ *     guidance and the late-August window opening come from
+ *     /blog/erie-lawn-irrigation-month-by-month-guide
+ *   - Trailhead does NOT offer overseeding. Do not reintroduce it here even
+ *     though the blog post discusses it as lawn-care advice.
+ *   - There is deliberately no "what's included" list. An earlier version
+ *     invented one (grid pattern, heads located and avoided, plugs left in
+ *     place). None of that came from Ryan. If a list is wanted it has to come
+ *     from him.
  *   - Pricing per Ryan: $125 up to ~5,000 sq ft, $160 for ~5,001-10,000
  *     sq ft. Online booking is capped at 1/4 acre (~10,890 sq ft); anything
  *     larger routes to /contact for a quote. Keep the Jobber form's own
@@ -62,11 +67,6 @@ const AERATION_FAQS = [
     question: "What do I do with the plugs left on the lawn?",
     answer:
       "Leave them. They break down on their own within a couple of weeks and return soil and organic matter to the surface. Raking them up removes the benefit and makes extra work for no reason.",
-  },
-  {
-    question: "Should I overseed at the same time?",
-    answer:
-      "It is the best time to do it. The holes give seed direct contact with soil instead of sitting on top of thatch. Mid-September is the prime overseeding window for Kentucky bluegrass and tall fescue in Erie, which lines up with aeration season.",
   },
   {
     question: "Will aeration damage my sprinkler system?",
@@ -113,12 +113,6 @@ const TIERS = [
   { price: "$160", size: "Lawns approximately 5,001 to 10,000 sq. ft." },
 ]
 
-const INCLUDED = [
-  "Full-lawn core aeration on a proper grid, not a quick pass",
-  "Plugs left in place to break down and topdress the lawn",
-  "Sprinkler heads located and worked around",
-  "Priced by lawn size, quoted before any work starts",
-]
 
 export default function AerationPage() {
   return (
@@ -148,37 +142,84 @@ export default function AerationPage() {
       />
 
       {/* Answer-first intro + price */}
+      {/* Intro and pricing side by side. Centering multi-line body copy left
+          an orphaned word in the heading and ragged paragraphs, so this uses
+          the two-column pattern from /sprinkler-blowout instead, with pricing
+          pulled up out of the old lopsided lower section. */}
       <section
         aria-labelledby="aeration-overview"
         className="bg-background section-padding-y"
       >
-        <div className="container-padding-x mx-auto max-w-3xl text-center">
-          <SectionHeader
-            tagline="Fall aeration season"
-            taglineAsEyebrow
-            title="What aeration is and why it matters here"
-            titleId="aeration-overview"
-          />
-          <p className="text-muted-foreground mt-5 mb-4">
-            Core aeration helps reduce soil compaction and allows water, air,
-            and nutrients to better reach your lawn&apos;s roots, promoting
-            healthier and stronger grass.
-          </p>
-          <p className="text-muted-foreground mb-7">
-            On the clay-loam across Erie and Weld County this is most of the
-            battle. Compacted clay sheds water rather than absorbing it, so a
-            lawn can be watered on schedule and still never get a proper drink.
-          </p>
-          <Link
-            href="#book-aeration"
-            className={buttonVariants({ size: "lg" })}
-          >
-            Book Aeration
-          </Link>
+        <div className="container-padding-x mx-auto max-w-7xl">
+          <div className="flex flex-col lg:flex-row gap-10 lg:gap-16 items-start">
+            <div className="flex-1">
+              <SectionHeader
+                tagline="Fall aeration season"
+                taglineAsEyebrow
+                title="Why aeration matters on Front Range clay"
+                titleId="aeration-overview"
+                align="left"
+              />
+              <p className="text-muted-foreground mt-5 mb-4">
+                Core aeration helps reduce soil compaction and allows water,
+                air, and nutrients to better reach your lawn&apos;s roots,
+                promoting healthier and stronger grass.
+              </p>
+              <p className="text-muted-foreground mb-4">
+                Compacted clay sheds water rather than absorbing it, so a lawn
+                can be watered right on schedule and still never get a proper
+                drink. Opening the soil up is most of the battle here.
+              </p>
+              <p className="text-muted-foreground mb-7">
+                The window runs from the end of August through September.
+                Cooler soil means the lawn recovers faster than it would from a
+                mid-summer pass.
+              </p>
+              <Link
+                href="#book-aeration"
+                className={buttonVariants({ size: "lg" })}
+              >
+                Book Aeration
+              </Link>
+            </div>
+
+            <div className="w-full lg:w-[360px] shrink-0">
+              <Card className="bg-cream">
+                <CardContent className="p-6">
+                  <p className="text-sm font-semibold text-foreground mb-4">
+                    Pricing
+                  </p>
+                  <dl className="flex flex-col gap-3">
+                    {TIERS.map((tier) => (
+                      <div key={tier.price}>
+                        <dt className="text-2xl font-bold text-primary leading-tight">
+                          {tier.price}
+                        </dt>
+                        <dd className="text-sm text-muted-foreground mt-0.5">
+                          {tier.size}
+                        </dd>
+                      </div>
+                    ))}
+                  </dl>
+                  <p className="text-sm text-muted-foreground mt-5 pt-5 border-t border-border">
+                    Online booking covers properties up to a quarter acre,
+                    roughly 10,890 sq. ft. For anything larger,{" "}
+                    <Link
+                      href="/contact"
+                      className="text-primary hover:underline font-medium"
+                    >
+                      get in touch
+                    </Link>{" "}
+                    and we will quote it.
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* Why it works, alternating image/text per the /water-efficiency pattern */}
+      {/* What opening the soil changes */}
       <section
         aria-labelledby="aeration-why"
         className="bg-cream section-padding-y"
@@ -189,7 +230,7 @@ export default function AerationPage() {
               <div className="relative aspect-[4/3] rounded-xl overflow-hidden">
                 <Image
                   src="/images/lawn.jpg"
-                  alt="Established Front Range lawn after aeration"
+                  alt="Established Front Range lawn"
                   fill
                   className="object-cover"
                 />
@@ -228,92 +269,14 @@ export default function AerationPage() {
                 </li>
                 <li>
                   <p className="font-semibold text-foreground text-sm mb-1">
-                    Fertilizer and seed reach soil
+                    Fertilizer actually gets down there
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    Anything you put down lands in an open hole rather than on
-                    a mat of thatch. This is why aeration and overseeding belong
-                    in the same visit.
+                    Feed lands in an open hole rather than sitting on a mat of
+                    thatch where it does very little. Fall fertilizer is the
+                    one that matters most, so it is worth it reaching the roots.
                   </p>
                 </li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Timing + what's included */}
-      <section
-        aria-labelledby="aeration-timing"
-        className="bg-background section-padding-y"
-      >
-        <div className="container-padding-x mx-auto max-w-5xl">
-          <SectionHeader
-            title="When to do it, and what you get"
-            titleId="aeration-timing"
-            className="mb-10"
-          />
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div>
-              <p className="font-semibold text-foreground mb-3">
-                Fall is the window
-              </p>
-              <p className="text-sm text-muted-foreground mb-4">
-                The late-summer window opens at the end of August and runs
-                through September. Cooler soil means faster recovery, and it
-                lines up with mid-September being the prime overseeding window
-                for Kentucky bluegrass and tall fescue in Erie.
-              </p>
-              <p className="text-sm text-muted-foreground">
-                If you missed spring, the fall pass is just as good. Most people
-                pair it with a{" "}
-                <Link
-                  href="/sprinkler-blowout"
-                  className="text-primary hover:underline font-medium"
-                >
-                  blowout
-                </Link>
-                : we clear the system first, flag the areas that need attention
-                while we are walking the lawn, then come back and aerate those.
-                Nothing needs to be bundled though. Either service on its own is
-                completely fine.
-              </p>
-            </div>
-            <div>
-              <p className="font-semibold text-foreground mb-3">
-                What it costs
-              </p>
-              <table className="w-full mb-5 text-sm">
-                <tbody>
-                  {TIERS.map((tier) => (
-                    <tr key={tier.price} className="border-b border-border last:border-0">
-                      <td className="py-2.5 pr-4 font-bold text-primary whitespace-nowrap align-top">
-                        {tier.price}
-                      </td>
-                      <td className="py-2.5 text-muted-foreground">{tier.size}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              <p className="text-sm text-muted-foreground mb-5">
-                Online booking is available for properties up to a quarter acre,
-                which is roughly 10,890 sq. ft. For anything larger,{" "}
-                <Link href="/contact" className="text-primary hover:underline font-medium">
-                  get in touch
-                </Link>{" "}
-                and we will quote it.
-              </p>
-              <p className="font-semibold text-foreground mb-3">Included</p>
-              <ul className="flex flex-col gap-2.5">
-                {INCLUDED.map((item) => (
-                  <li
-                    key={item}
-                    className="flex items-start gap-2 text-sm text-muted-foreground"
-                  >
-                    <CheckCircle2 className="w-4 h-4 text-success shrink-0 mt-0.5" />
-                    <span>{item}</span>
-                  </li>
-                ))}
               </ul>
             </div>
           </div>
