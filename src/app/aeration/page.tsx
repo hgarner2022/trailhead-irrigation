@@ -148,7 +148,7 @@ export default function AerationPage() {
       <section
         id="book-aeration"
         aria-labelledby="aeration-book"
-        className="bg-background section-padding-y scroll-mt-24"
+        className="bg-background pt-16 md:pt-24 pb-12 md:pb-16 scroll-mt-24"
       >
         <div className="container-padding-x mx-auto max-w-2xl">
           <SectionHeader
@@ -187,9 +187,12 @@ export default function AerationPage() {
             </p>
           </div>
 
-          <div className="mt-8">
-            <JobberEmbed formId={JOBBER_FORMS.aeration} />
-          </div>
+          {/* No top margin here. JobberEmbed already clips 64px of Jobber's
+              own internal top padding, leaving ~32px above their heading.
+              Adding spacing on top of that reproduces the dead gap. Section
+              bottom padding is trimmed for the same reason: Jobber reports an
+              iframe height with slack below their form. */}
+          <JobberEmbed formId={JOBBER_FORMS.aeration} />
         </div>
       </section>
 
