@@ -7,7 +7,6 @@ import { SectionHeader } from "@/components/sections/SectionHeader"
 import { JobberEmbed } from "@/components/sections/JobberEmbed"
 import { JOBBER_FORMS } from "@/lib/jobber"
 import { Badge } from "@/components/ui/badge"
-import { Card, CardContent } from "@/components/ui/card"
 import { buttonVariants } from "@/components/ui/button"
 import Link from "next/link"
 import Image from "next/image"
@@ -138,65 +137,58 @@ export default function AerationPage() {
       <PageBanner
         title="Core Aeration"
         description="Reduce compaction so water, air, and nutrients reach the roots. From $125."
-        backgroundImage="/images/healthy-lawn-closeup.jpg"
+        backgroundImage="/images/aeration.jpg"
       />
 
       {/* Answer-first intro + price */}
-      {/* Booking first. Pricing sits alongside the form so nobody has to
-          scroll to find out what it costs before committing. The "why" moves
-          below for anyone who still needs convincing. */}
+      {/* Booking first, stacked rather than side by side. The Jobber embed
+          brings its own narrow, self-styled form, so putting it in a flex-1
+          column left it floating in dead space next to a tall pricing card.
+          Price above, form below, both on the same measure. */}
       <section
         id="book-aeration"
         aria-labelledby="aeration-book"
         className="bg-background section-padding-y scroll-mt-24"
       >
-        <div className="container-padding-x mx-auto max-w-7xl">
-          <div className="flex flex-col lg:flex-row gap-10 lg:gap-16 items-start">
-            <div className="flex-1 w-full">
-              <SectionHeader
-                tagline="Fall aeration season"
-                taglineAsEyebrow
-                title="Book your aeration"
-                titleId="aeration-book"
-                description="Pick a date that works and we will take it from there."
-                align="left"
-                className="mb-8"
-              />
-              <JobberEmbed formId={JOBBER_FORMS.aeration} />
-            </div>
+        <div className="container-padding-x mx-auto max-w-2xl">
+          <SectionHeader
+            tagline="Fall aeration season"
+            taglineAsEyebrow
+            title="Book your aeration"
+            titleId="aeration-book"
+            align="left"
+          />
 
-            <div className="w-full lg:w-[340px] shrink-0">
-              <Card className="bg-cream">
-                <CardContent className="p-6">
-                  <p className="text-sm font-semibold text-foreground mb-4">
-                    Pricing
-                  </p>
-                  <dl className="flex flex-col gap-3">
-                    {TIERS.map((tier) => (
-                      <div key={tier.price}>
-                        <dt className="text-2xl font-bold text-primary leading-tight">
-                          {tier.price}
-                        </dt>
-                        <dd className="text-sm text-muted-foreground mt-0.5">
-                          {tier.size}
-                        </dd>
-                      </div>
-                    ))}
-                  </dl>
-                  <p className="text-sm text-muted-foreground mt-5 pt-5 border-t border-border">
-                    Online booking covers properties up to a quarter acre,
-                    roughly 10,890 sq. ft. For anything larger,{" "}
-                    <Link
-                      href="/contact"
-                      className="text-primary hover:underline font-medium"
-                    >
-                      get in touch
-                    </Link>{" "}
-                    and we will quote it.
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
+          {/* Pricing as a compact row so it reads before the form without
+              towering beside it. */}
+          <div className="mt-6 rounded-lg border border-border bg-cream p-5">
+            <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {TIERS.map((tier) => (
+                <div key={tier.price}>
+                  <dt className="text-2xl font-bold text-primary leading-tight">
+                    {tier.price}
+                  </dt>
+                  <dd className="text-sm text-muted-foreground mt-0.5">
+                    {tier.size}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+            <p className="text-sm text-muted-foreground mt-4 pt-4 border-t border-border">
+              Online booking covers properties up to a quarter acre, roughly
+              10,890 sq. ft. For anything larger,{" "}
+              <Link
+                href="/contact"
+                className="text-primary hover:underline font-medium"
+              >
+                get in touch
+              </Link>{" "}
+              and we will quote it.
+            </p>
+          </div>
+
+          <div className="mt-8">
+            <JobberEmbed formId={JOBBER_FORMS.aeration} />
           </div>
         </div>
       </section>
@@ -213,8 +205,8 @@ export default function AerationPage() {
             <div className="flex-1 w-full">
               <div className="relative aspect-[4/3] rounded-xl overflow-hidden">
                 <Image
-                  src="/images/lawn.jpg"
-                  alt="Established Front Range lawn"
+                  src="/images/aeration.jpg"
+                  alt="Core aerator pulling plugs of soil out of a lawn"
                   fill
                   className="object-cover"
                 />
