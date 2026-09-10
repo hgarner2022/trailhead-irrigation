@@ -45,7 +45,12 @@ export function JobberEmbed({ formId = JOBBER_FORMS.seasonal }: JobberEmbedProps
         clipping AND establishes a block formatting context, which is what
         stops the negative margin collapsing out of the wrapper instead.
       */}
-      <div className="overflow-hidden">
+      {/* min-h reserves the form's space until Jobber's resize message
+          arrives. Without it the clip box measures 0 while their iframe is
+          still at its initial 40px, so the form area collapses and then
+          jumps open. 240px sits just under the 247px the shortest step
+          settles at, so it never adds space of its own. */}
+      <div className="overflow-hidden min-h-[240px]">
         <div className="-mt-16">
           <div id={clientHubId} />
         </div>
