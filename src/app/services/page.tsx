@@ -55,20 +55,6 @@ const SERVICES_FAQS = [
 
 const SERVICES = [
   {
-    title: "Core Aeration",
-    description:
-      "Core aeration helps reduce soil compaction and allows water, air, and nutrients to better reach your lawn's roots, promoting healthier and stronger grass. On Front Range clay that is most of the battle, and fall is the best window of the year for it.",
-    image: "/images/healthy-lawn-closeup.jpg",
-    features: [
-      "$125 up to ~5,000 sq ft, $160 up to ~10,000 sq ft",
-      "Plugs left to break down and topdress the lawn",
-      "Sprinkler heads located and worked around",
-      "Annual aeration can cut watering needs by up to 25%",
-    ],
-    imagePosition: "right" as const,
-    cta: { label: "Book Aeration", href: "/aeration" },
-  },
-  {
     title: "Sprinkler System Installation",
     description:
       "Looking for a sprinkler contractor in Erie or Longmont? We design and install complete lawn sprinkler systems tailored to your yard. From planning zone coverage to trenching and wiring, we handle every step.",
@@ -80,7 +66,7 @@ const SERVICES = [
       "Proper zone coverage for even watering",
       "Full system walkthrough after install",
     ],
-    imagePosition: "left" as const,
+    imagePosition: "right" as const,
     cta: { label: "Request a Quote", href: "/contact" },
   },
   {
@@ -120,6 +106,20 @@ const SERVICES = [
     ],
     imagePosition: "right" as const,
     cta: { label: "Book Online", href: "/book" },
+  },
+  {
+    title: "Core Aeration",
+    description:
+      "Core aeration helps reduce soil compaction and allows water, air, and nutrients to better reach your lawn's roots, promoting healthier and stronger grass. On Front Range clay that is most of the battle, and fall is the best window of the year for it.",
+    image: "/images/healthy-lawn-closeup.jpg",
+    features: [
+      "$125 up to ~5,000 sq ft, $160 up to ~10,000 sq ft",
+      "Plugs left to break down and topdress the lawn",
+      "Sprinkler heads located and worked around",
+      "Annual aeration can cut watering needs by up to 25%",
+    ],
+    imagePosition: "left" as const,
+    cta: { label: "Book Aeration", href: "/aeration" },
   },
 ]
 

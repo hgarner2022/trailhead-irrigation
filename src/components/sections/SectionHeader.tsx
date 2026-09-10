@@ -66,7 +66,14 @@ export function SectionHeader({
         </h2>
       )}
       {description && (
-        <p className="text-muted-foreground max-w-2xl mx-auto">
+        // mx-auto only when centered. Hardcoding it left the description
+        // centered under a left-aligned title on every align="left" usage.
+        <p
+          className={cn(
+            "text-muted-foreground max-w-2xl",
+            align === "center" && "mx-auto"
+          )}
+        >
           {description}
         </p>
       )}

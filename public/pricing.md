@@ -61,7 +61,7 @@ Spring turn-on and system check is **$145 for up to 8 zones**, plus $10 per addi
 
 ### How much does core aeration cost?
 
-Core aeration is **$125** for lawns up to approximately 5,000 sq. ft., and **$160** for lawns of roughly 5,001 to 10,000 sq. ft. Online booking is available for properties up to a quarter acre; larger properties are quoted. Best scheduled late August through September.
+Core aeration is **$125** for lawns up to approximately 5,000 sq. ft., and **$160** for lawns of roughly 5,001 to 10,000 sq. ft. Online booking is available for properties up to a quarter acre; larger properties are quoted. Best scheduled late August through October.
 
 ### How much does sprinkler winterization cost in Northern Colorado?
 

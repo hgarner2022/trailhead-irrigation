@@ -56,7 +56,7 @@ const AERATION_FAQS = [
   {
     question: "When is the best time to aerate a lawn in Colorado?",
     answer:
-      "Fall is the best window of the year on the Front Range. The late-summer window opens at the end of August and runs through September. If you missed the spring window, the fall one is just as good, and the cooler soil means the lawn recovers faster.",
+      "Fall is the best window of the year on the Front Range. It opens at the end of August and runs through October. If you missed the spring window, the fall one is just as good, and the cooler soil means the lawn recovers faster.",
   },
   {
     question: "Why does aeration matter so much on Front Range clay?",
@@ -142,48 +142,30 @@ export default function AerationPage() {
       />
 
       {/* Answer-first intro + price */}
-      {/* Intro and pricing side by side. Centering multi-line body copy left
-          an orphaned word in the heading and ragged paragraphs, so this uses
-          the two-column pattern from /sprinkler-blowout instead, with pricing
-          pulled up out of the old lopsided lower section. */}
+      {/* Booking first. Pricing sits alongside the form so nobody has to
+          scroll to find out what it costs before committing. The "why" moves
+          below for anyone who still needs convincing. */}
       <section
-        aria-labelledby="aeration-overview"
-        className="bg-background section-padding-y"
+        id="book-aeration"
+        aria-labelledby="aeration-book"
+        className="bg-background section-padding-y scroll-mt-24"
       >
         <div className="container-padding-x mx-auto max-w-7xl">
           <div className="flex flex-col lg:flex-row gap-10 lg:gap-16 items-start">
-            <div className="flex-1">
+            <div className="flex-1 w-full">
               <SectionHeader
                 tagline="Fall aeration season"
                 taglineAsEyebrow
-                title="Why aeration matters on Front Range clay"
-                titleId="aeration-overview"
+                title="Book your aeration"
+                titleId="aeration-book"
+                description="Pick a date that works and we will take it from there."
                 align="left"
+                className="mb-8"
               />
-              <p className="text-muted-foreground mt-5 mb-4">
-                Core aeration helps reduce soil compaction and allows water,
-                air, and nutrients to better reach your lawn&apos;s roots,
-                promoting healthier and stronger grass.
-              </p>
-              <p className="text-muted-foreground mb-4">
-                Compacted clay sheds water rather than absorbing it, so a lawn
-                can be watered right on schedule and still never get a proper
-                drink. Opening the soil up is most of the battle here.
-              </p>
-              <p className="text-muted-foreground mb-7">
-                The window runs from the end of August through September.
-                Cooler soil means the lawn recovers faster than it would from a
-                mid-summer pass.
-              </p>
-              <Link
-                href="#book-aeration"
-                className={buttonVariants({ size: "lg" })}
-              >
-                Book Aeration
-              </Link>
+              <JobberEmbed formId={JOBBER_FORMS.aeration} />
             </div>
 
-            <div className="w-full lg:w-[360px] shrink-0">
+            <div className="w-full lg:w-[340px] shrink-0">
               <Card className="bg-cream">
                 <CardContent className="p-6">
                   <p className="text-sm font-semibold text-foreground mb-4">
@@ -219,7 +201,9 @@ export default function AerationPage() {
         </div>
       </section>
 
-      {/* What opening the soil changes */}
+      {/* Why it matters, image alongside. Merged the old separate intro in
+          here rather than keeping two sections that both argued the same
+          point. */}
       <section
         aria-labelledby="aeration-why"
         className="bg-cream section-padding-y"
@@ -244,8 +228,19 @@ export default function AerationPage() {
                 id="aeration-why"
                 className="text-2xl md:text-3xl font-bold text-foreground mb-4"
               >
-                What opening up the soil changes
+                Why aeration matters on Front Range clay
               </h2>
+              <p className="text-muted-foreground mb-4">
+                Core aeration helps reduce soil compaction and allows water,
+                air, and nutrients to better reach your lawn&apos;s roots,
+                promoting healthier and stronger grass.
+              </p>
+              <p className="text-muted-foreground mb-5">
+                Compacted clay sheds water rather than absorbing it, so a lawn
+                can be watered right on schedule and still never get a proper
+                drink. The window runs from the end of August through
+                October, when cooler soil means faster recovery.
+              </p>
               <ul className="flex flex-col gap-4">
                 <li>
                   <p className="font-semibold text-foreground text-sm mb-1">
@@ -280,23 +275,6 @@ export default function AerationPage() {
               </ul>
             </div>
           </div>
-        </div>
-      </section>
-
-      {/* Booking form. Aeration has its own Jobber form, separate from /book. */}
-      <section
-        id="book-aeration"
-        aria-labelledby="aeration-book"
-        className="bg-cream section-padding-y scroll-mt-24"
-      >
-        <div className="container-padding-x mx-auto max-w-3xl">
-          <SectionHeader
-            title="Book your aeration"
-            titleId="aeration-book"
-            description="Pick a date that works and we will take it from there."
-            className="mb-10"
-          />
-          <JobberEmbed formId={JOBBER_FORMS.aeration} />
         </div>
       </section>
 
