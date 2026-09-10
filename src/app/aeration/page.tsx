@@ -16,7 +16,7 @@ import { faqJsonLd, breadcrumbJsonLd, siteConfig } from "@/lib/seo"
 export const metadata: Metadata = {
   title: "Core Aeration in Erie, CO",
   description:
-    "Core aeration for Front Range clay soil. $135 flat rate. Relieves compaction so water and nutrients reach the roots. Fall is the best window of the year.",
+    "Core aeration for Front Range clay soil. $125 for lawns up to 5,000 sq ft. Relieves compaction so water and nutrients reach the roots. Fall is the best window.",
   alternates: { canonical: `${siteConfig.url}/aeration` },
 }
 
@@ -30,7 +30,9 @@ export const metadata: Metadata = {
  *     guidance, the late-August window opening, and mid-September as the prime
  *     overseeding window for Kentucky bluegrass and tall fescue in Erie all
  *     come from /blog/erie-lawn-irrigation-month-by-month-guide
- *   - $135 flat rate confirmed by Ryan (not zone or size based)
+ *   - $125 for lawns up to 5,000 sq ft, per Ryan. The price for larger
+ *     lawns is NOT yet confirmed, so the copy says larger lawns are quoted
+ *     rather than naming a figure. Fill that in once Ryan confirms it.
  *
  * Aeration has its own Jobber form (5164288), separate from the seasonal form
  * on /book, so the booking embed lives on this page directly.
@@ -43,7 +45,7 @@ const AERATION_FAQS = [
   {
     question: "How much does core aeration cost?",
     answer:
-      "Core aeration is a flat $135. It is not priced by zone or lawn size, so there is nothing to measure and no surprise on the invoice.",
+      "Core aeration is $125 for lawns up to 5,000 square feet, which covers most yards in the area. Larger lawns are quoted before any work starts, so you will know the number in advance either way.",
   },
   {
     question: "When is the best time to aerate a lawn in Colorado?",
@@ -109,7 +111,7 @@ const INCLUDED = [
   "Full-lawn core aeration on a proper grid, not a quick pass",
   "Plugs left in place to break down and topdress the lawn",
   "Sprinkler heads located and worked around",
-  "Flat $135 regardless of lawn size",
+  "$125 for lawns up to 5,000 sq ft",
 ]
 
 export default function AerationPage() {
@@ -135,7 +137,7 @@ export default function AerationPage() {
 
       <PageBanner
         title="Core Aeration"
-        description="The single best thing you can do for a Front Range lawn all year. Flat $135."
+        description="The single best thing you can do for a Front Range lawn all year. $125."
         backgroundImage="/images/healthy-lawn-closeup.jpg"
       />
 
@@ -156,7 +158,7 @@ export default function AerationPage() {
             air, and fertilizer can actually reach the roots instead of sitting
             on top of compacted ground. It is a{" "}
             <strong className="text-foreground font-semibold">
-              flat $135
+              $125
             </strong>
             , whatever the size of the lawn.
           </p>
@@ -275,7 +277,7 @@ export default function AerationPage() {
             </div>
             <div>
               <p className="font-semibold text-foreground mb-3">
-                What the $135 covers
+                What the $125 covers
               </p>
               <ul className="flex flex-col gap-2.5">
                 {INCLUDED.map((item) => (

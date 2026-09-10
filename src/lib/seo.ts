@@ -197,9 +197,9 @@ const SERVICES: ServiceDef[] = [
     serviceType: "Lawn Aeration",
     url: `${SITE_URL}/aeration`,
     priceSpecification: {
-      price: "135",
+      price: "125",
       priceCurrency: "USD",
-      description: "$135 flat rate, not priced by lawn size or zone count",
+      description: "$125 for lawns up to 5,000 sq ft, larger lawns quoted",
     },
   },
   {

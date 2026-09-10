@@ -16,7 +16,7 @@
 |---|---|---|---|
 | Spring Turn-On + System Check | **$145** (up to 8 zones) | +$10 per additional zone | Turn-on, full system check, head adjustments, leak check, controller programming, water efficiency check |
 | Mid-Season Sprinkler Inspection & Tune-Up | **$145** (up to 8 zones) | +$10 per additional zone | Full system check, adjustments, issue detection, diagnostics, water efficiency check, recommendations report |
-| Core Aeration | **$135** (flat rate) | Not priced by zone or lawn size | Full-lawn core aeration, plugs left to break down, sprinkler heads located and avoided |
+| Core Aeration | **$125** (up to 5,000 sq ft) | Larger lawns quoted | Full-lawn core aeration, plugs left to break down, sprinkler heads located and avoided |
 | Winterization (Sprinkler Blowout) | **$95** (up to 6 zones) | +$10 per additional zone | Compressed-air blowout of all zones, backflow protection, winter-ready verification |
 
 Materials are not included if repairs are needed during a seasonal service.
@@ -61,7 +61,7 @@ Spring turn-on and system check is **$145 for up to 8 zones**, plus $10 per addi
 
 ### How much does core aeration cost?
 
-Core aeration is a flat **$135**, regardless of lawn size or zone count. Best scheduled late August through September, and it pairs well with overseeding.
+Core aeration is **$125 for lawns up to 5,000 sq ft**, which covers most yards in the area. Larger lawns are quoted before work starts. Best scheduled late August through September, and it pairs well with overseeding.
 
 ### How much does sprinkler winterization cost in Northern Colorado?
 
