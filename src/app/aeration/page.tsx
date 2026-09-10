@@ -16,7 +16,7 @@ import { faqJsonLd, breadcrumbJsonLd, siteConfig } from "@/lib/seo"
 export const metadata: Metadata = {
   title: "Core Aeration in Erie, CO",
   description:
-    "Core aeration for Front Range clay soil. $125 for lawns up to 5,000 sq ft. Relieves compaction so water and nutrients reach the roots. Fall is the best window.",
+    "Core aeration for Front Range clay soil. $125 up to 5,000 sq ft, $160 up to 10,000. Reduces compaction so water, air, and nutrients reach the roots.",
   alternates: { canonical: `${siteConfig.url}/aeration` },
 }
 
@@ -30,9 +30,10 @@ export const metadata: Metadata = {
  *     guidance, the late-August window opening, and mid-September as the prime
  *     overseeding window for Kentucky bluegrass and tall fescue in Erie all
  *     come from /blog/erie-lawn-irrigation-month-by-month-guide
- *   - $125 for lawns up to 5,000 sq ft, per Ryan. The price for larger
- *     lawns is NOT yet confirmed, so the copy says larger lawns are quoted
- *     rather than naming a figure. Fill that in once Ryan confirms it.
+ *   - Pricing per Ryan: $125 up to ~5,000 sq ft, $160 for ~5,001-10,000
+ *     sq ft. Online booking is capped at 1/4 acre (~10,890 sq ft); anything
+ *     larger routes to /contact for a quote. Keep the Jobber form's own
+ *     limits in step with this if they change.
  *
  * Aeration has its own Jobber form (5164288), separate from the seasonal form
  * on /book, so the booking embed lives on this page directly.
@@ -45,7 +46,7 @@ const AERATION_FAQS = [
   {
     question: "How much does core aeration cost?",
     answer:
-      "Core aeration is $125 for lawns up to 5,000 square feet, which covers most yards in the area. Larger lawns are quoted before any work starts, so you will know the number in advance either way.",
+      "Core aeration is $125 for lawns up to approximately 5,000 square feet, and $160 for lawns of roughly 5,001 to 10,000 square feet. Online booking is available for properties up to a quarter acre. If your property is larger than that, get in touch and we will quote it.",
   },
   {
     question: "When is the best time to aerate a lawn in Colorado?",
@@ -78,9 +79,9 @@ const AERATION_FAQS = [
       "Once a year is right for most Front Range lawns. Heavy clay, heavy foot traffic, or a lawn that has never been aerated can benefit from twice in a season, spring and fall.",
   },
   {
-    question: "Can I aerate and get my sprinklers winterized in the same visit?",
+    question: "Should I get aeration and a blowout together?",
     answer:
-      "Yes, and the ordering works out well. Aeration happens while the system is still running so the lawn can be watered in afterward, then the blowout comes later in October once you are done watering for the year.",
+      "You do not have to. Plenty of people book one or the other and that is completely fine. The way it tends to work best is the blowout first: while I am clearing every zone I am walking the whole lawn anyway, so I can flag the spots that are compacted or thin, then come back and aerate those. That way the aeration is aimed at something rather than guessed at.",
   },
 ]
 
@@ -107,11 +108,16 @@ const DEFINITIONS = [
   },
 ]
 
+const TIERS = [
+  { price: "$125", size: "Lawns up to approximately 5,000 sq. ft." },
+  { price: "$160", size: "Lawns approximately 5,001 to 10,000 sq. ft." },
+]
+
 const INCLUDED = [
   "Full-lawn core aeration on a proper grid, not a quick pass",
   "Plugs left in place to break down and topdress the lawn",
   "Sprinkler heads located and worked around",
-  "$125 for lawns up to 5,000 sq ft",
+  "Priced by lawn size, quoted before any work starts",
 ]
 
 export default function AerationPage() {
@@ -137,7 +143,7 @@ export default function AerationPage() {
 
       <PageBanner
         title="Core Aeration"
-        description="The single best thing you can do for a Front Range lawn all year. $125."
+        description="Reduce compaction so water, air, and nutrients reach the roots. From $125."
         backgroundImage="/images/healthy-lawn-closeup.jpg"
       />
 
@@ -154,13 +160,9 @@ export default function AerationPage() {
             titleId="aeration-overview"
           />
           <p className="text-muted-foreground mt-5 mb-4">
-            Core aeration pulls small plugs of soil out of your lawn so water,
-            air, and fertilizer can actually reach the roots instead of sitting
-            on top of compacted ground. It is a{" "}
-            <strong className="text-foreground font-semibold">
-              $125
-            </strong>
-            , whatever the size of the lawn.
+            Core aeration helps reduce soil compaction and allows water, air,
+            and nutrients to better reach your lawn&apos;s roots, promoting
+            healthier and stronger grass.
           </p>
           <p className="text-muted-foreground mb-7">
             On the clay-loam across Erie and Weld County this is most of the
@@ -263,22 +265,45 @@ export default function AerationPage() {
                 for Kentucky bluegrass and tall fescue in Erie.
               </p>
               <p className="text-sm text-muted-foreground">
-                If you missed spring, the fall pass is just as good. Aerate
-                while the system is still running so the lawn can be watered in
-                afterward, then book the{" "}
+                If you missed spring, the fall pass is just as good. Most people
+                pair it with a{" "}
                 <Link
                   href="/sprinkler-blowout"
                   className="text-primary hover:underline font-medium"
                 >
                   blowout
-                </Link>{" "}
-                for later in October.
+                </Link>
+                : we clear the system first, flag the areas that need attention
+                while we are walking the lawn, then come back and aerate those.
+                Nothing needs to be bundled though. Either service on its own is
+                completely fine.
               </p>
             </div>
             <div>
               <p className="font-semibold text-foreground mb-3">
-                What the $125 covers
+                What it costs
               </p>
+              <table className="w-full mb-5 text-sm">
+                <tbody>
+                  {TIERS.map((tier) => (
+                    <tr key={tier.price} className="border-b border-border last:border-0">
+                      <td className="py-2.5 pr-4 font-bold text-primary whitespace-nowrap align-top">
+                        {tier.price}
+                      </td>
+                      <td className="py-2.5 text-muted-foreground">{tier.size}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <p className="text-sm text-muted-foreground mb-5">
+                Online booking is available for properties up to a quarter acre,
+                which is roughly 10,890 sq. ft. For anything larger,{" "}
+                <Link href="/contact" className="text-primary hover:underline font-medium">
+                  get in touch
+                </Link>{" "}
+                and we will quote it.
+              </p>
+              <p className="font-semibold text-foreground mb-3">Included</p>
               <ul className="flex flex-col gap-2.5">
                 {INCLUDED.map((item) => (
                   <li

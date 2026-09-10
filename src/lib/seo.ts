@@ -199,7 +199,7 @@ const SERVICES: ServiceDef[] = [
     priceSpecification: {
       price: "125",
       priceCurrency: "USD",
-      description: "$125 for lawns up to 5,000 sq ft, larger lawns quoted",
+      description: "$125 for lawns up to approx 5,000 sq ft, $160 for approx 5,001-10,000 sq ft; properties over 1/4 acre quoted",
     },
   },
   {
