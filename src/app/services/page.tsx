@@ -107,6 +107,21 @@ const SERVICES = [
     imagePosition: "right" as const,
     cta: { label: "Book Online", href: "/book" },
   },
+  {
+    title: "Core Aeration",
+    description:
+      "On Front Range clay, compaction is most of the battle. Core aeration pulls small plugs of soil out of the lawn so water, air, and fertilizer reach the roots instead of running off the surface. Fall is the best window of the year for it.",
+    image: "/images/healthy-lawn-closeup.jpg",
+    features: [
+      "Flat $135 regardless of lawn size",
+      "Plugs left to break down and topdress the lawn",
+      "Sprinkler heads located and worked around",
+      "Pairs with overseeding in mid-September",
+      "Annual aeration can cut watering needs by up to 25%",
+    ],
+    imagePosition: "left" as const,
+    cta: { label: "Book Aeration", href: "/aeration" },
+  },
 ]
 
 export default function ServicesPage() {

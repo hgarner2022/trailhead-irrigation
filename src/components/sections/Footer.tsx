@@ -9,6 +9,7 @@ const NAV_LINKS = [
   { label: "Services", href: "/services" },
   { label: "Sprinkler Blowout", href: "/sprinkler-blowout" },
   { label: "Sprinkler Installation", href: "/sprinkler-installation" },
+  { label: "Core Aeration", href: "/aeration" },
   { label: "Pricing", href: "/pricing" },
   { label: "Water Rebates", href: "/water-rebates" },
   { label: "Water Efficiency", href: "/water-efficiency" },

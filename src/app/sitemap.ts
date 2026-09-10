@@ -19,7 +19,7 @@ const CITY_PAGES_UPDATED = "2026-05-01" // last meaningful city-page revision
 const CALCULATOR_UPDATED = "2026-04-15" // water savings calculator rebate data
 const BLOG_INDEX_UPDATED = "2026-05-19" // most recent blog post date
 const REBATE_PAGES_UPDATED = "2026-08-17" // added to sitemap; rebate amounts last verified
-const SERVICE_PAGES_UPDATED = "2026-08-17" // installation + blowout landing pages published
+const SERVICE_PAGES_UPDATED = "2026-09-10" // installation + blowout landing pages published
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = "https://www.trailheadirrigation.com"
@@ -35,6 +35,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${baseUrl}/smart-controllers`, lastModified: new Date(CITY_PAGES_UPDATED), changeFrequency: "monthly" as const, priority: 0.9 },
     { url: `${baseUrl}/smart-controllers/water-savings-calculator`, lastModified: new Date(CALCULATOR_UPDATED), changeFrequency: "monthly" as const, priority: 0.85 },
     { url: `${baseUrl}/sprinkler-installation`, lastModified: new Date(SERVICE_PAGES_UPDATED), changeFrequency: "monthly" as const, priority: 0.95 },
+    { url: `${baseUrl}/aeration`, lastModified: new Date(SERVICE_PAGES_UPDATED), changeFrequency: "monthly" as const, priority: 0.9 },
     { url: `${baseUrl}/sprinkler-blowout`, lastModified: new Date(SERVICE_PAGES_UPDATED), changeFrequency: "weekly" as const, priority: 0.95 },
     { url: `${baseUrl}/water-rebates`, lastModified: new Date(REBATE_PAGES_UPDATED), changeFrequency: "monthly" as const, priority: 0.9 },
     { url: `${baseUrl}/water-efficiency`, lastModified: new Date(REBATE_PAGES_UPDATED), changeFrequency: "monthly" as const, priority: 0.85 },

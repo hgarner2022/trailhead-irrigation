@@ -11,6 +11,7 @@ Trailhead Lawn & Irrigation is a locally owned sprinkler company serving Norther
 - Sprinkler System Installation: Custom irrigation system design and installation for residential properties. Includes zone layout, head placement, trenching, controller setup, and final walkthrough. Typical cost: $3,000-$6,000 for a standard yard.
 - Irrigation Repair: Sprinkler head replacement, valve repair, leak detection, broken pipe repair, and controller troubleshooting.
 - Winterization (Blowout): Compressed-air blowout to protect sprinkler systems from Colorado's freeze-thaw cycles. $95 for up to 6 zones, +$10 per additional zone. Typical service time 30 to 60 minutes. Schedule late September through October, before the first hard freeze.
+- Core Aeration: Pulls plugs of soil to relieve compaction on Front Range clay so water, air, and fertilizer reach the root zone. $135 flat rate, not priced by lawn size. Best late August through September, and pairs with overseeding. Annual aeration can reduce watering needs by up to 25%.
 - Spring Startup (Activation): System turn-on, leak checks, head adjustments, and controller programming for the watering season. Available late April through May.
 - Backflow Preventer Testing: Annual testing required by most Colorado municipalities. Certified testing and repair.
 - Smart Controller Installation: WiFi-enabled controllers (Rachio, Hunter Hydrawise, Rain Bird ESP-Me3) that adjust watering based on weather.
@@ -32,6 +33,7 @@ Erie, CO | Longmont, CO | Louisville, CO | Lafayette, CO | Firestone, CO | Broom
 - Homepage: https://www.trailheadirrigation.com
 - Services: https://www.trailheadirrigation.com/services
 - Sprinkler Blowout / Winterization: https://www.trailheadirrigation.com/sprinkler-blowout
+- Core Aeration: https://www.trailheadirrigation.com/aeration
 - Sprinkler Installation: https://www.trailheadirrigation.com/sprinkler-installation
 - Smart Controllers (Rachio): https://www.trailheadirrigation.com/smart-controllers
 - Water Savings Calculator: https://www.trailheadirrigation.com/smart-controllers/water-savings-calculator

@@ -190,6 +190,19 @@ const SERVICES: ServiceDef[] = [
     },
   },
   {
+    id: "core-aeration",
+    name: "Core Aeration",
+    description:
+      "Core lawn aeration that pulls plugs of soil to relieve compaction on Front Range clay, so water, air, and fertilizer reach the root zone. Best performed late August through September, and pairs with overseeding.",
+    serviceType: "Lawn Aeration",
+    url: `${SITE_URL}/aeration`,
+    priceSpecification: {
+      price: "135",
+      priceCurrency: "USD",
+      description: "$135 flat rate, not priced by lawn size or zone count",
+    },
+  },
+  {
     id: "spring-turn-on",
     name: "Spring Sprinkler Turn-On",
     description:
