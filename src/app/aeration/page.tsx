@@ -7,8 +7,6 @@ import { SectionHeader } from "@/components/sections/SectionHeader"
 import { JobberEmbed } from "@/components/sections/JobberEmbed"
 import { JOBBER_FORMS } from "@/lib/jobber"
 import { Badge } from "@/components/ui/badge"
-import { buttonVariants } from "@/components/ui/button"
-import Link from "next/link"
 import Image from "next/image"
 import { faqJsonLd, breadcrumbJsonLd, siteConfig } from "@/lib/seo"
 
@@ -107,11 +105,6 @@ const DEFINITIONS = [
   },
 ]
 
-const TIERS = [
-  { price: "$125", size: "Lawns up to approximately 5,000 sq. ft." },
-  { price: "$160", size: "Lawns approximately 5,001 to 10,000 sq. ft." },
-]
-
 
 export default function AerationPage() {
   return (
@@ -140,15 +133,18 @@ export default function AerationPage() {
         backgroundImage="/images/aeration.jpg"
       />
 
-      {/* Answer-first intro + price */}
-      {/* Booking first, stacked rather than side by side. The Jobber embed
-          brings its own narrow, self-styled form, so putting it in a flex-1
-          column left it floating in dead space next to a tall pricing card.
-          Price above, form below, both on the same measure. */}
+      {/* Booking first. No pricing card here: prices are in the page banner
+          and the FAQs, and the card only pushed the form further down.
+
+          Do NOT try to clip Jobber's iframe padding with a negative margin.
+          That shipped on 2026-09-10 and took the whole form off the page:
+          the iframe starts at 40px and only grows when Jobber posts a resize
+          message, so a 64px clip swallowed it entirely whenever that message
+          was slow or never arrived. Their padding stays. */}
       <section
         id="book-aeration"
         aria-labelledby="aeration-book"
-        className="bg-background pt-16 md:pt-24 pb-12 md:pb-16 scroll-mt-24"
+        className="bg-background section-padding-y scroll-mt-24"
       >
         <div className="container-padding-x mx-auto max-w-2xl">
           <SectionHeader
@@ -159,40 +155,9 @@ export default function AerationPage() {
             align="left"
           />
 
-          {/* Pricing as a compact row so it reads before the form without
-              towering beside it. */}
-          <div className="mt-6 rounded-lg border border-border bg-cream p-5">
-            <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {TIERS.map((tier) => (
-                <div key={tier.price}>
-                  <dt className="text-2xl font-bold text-primary leading-tight">
-                    {tier.price}
-                  </dt>
-                  <dd className="text-sm text-muted-foreground mt-0.5">
-                    {tier.size}
-                  </dd>
-                </div>
-              ))}
-            </dl>
-            <p className="text-sm text-muted-foreground mt-4 pt-4 border-t border-border">
-              Online booking covers properties up to a quarter acre, roughly
-              10,890 sq. ft. For anything larger,{" "}
-              <Link
-                href="/contact"
-                className="text-primary hover:underline font-medium"
-              >
-                get in touch
-              </Link>{" "}
-              and we will quote it.
-            </p>
+          <div className="mt-6">
+            <JobberEmbed formId={JOBBER_FORMS.aeration} />
           </div>
-
-          {/* No top margin here. JobberEmbed already clips 64px of Jobber's
-              own internal top padding, leaving ~32px above their heading.
-              Adding spacing on top of that reproduces the dead gap. Section
-              bottom padding is trimmed for the same reason: Jobber reports an
-              iframe height with slack below their form. */}
-          <JobberEmbed formId={JOBBER_FORMS.aeration} />
         </div>
       </section>
 
