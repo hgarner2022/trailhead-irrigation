@@ -222,7 +222,10 @@ function render(slug, c) {
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
           <tr>
             <td class="px" style="padding:36px 40px 10px 40px;">
-              <p class="t-dark" style="margin:0 0 16px 0;${body()}">Hi {{first_name}},</p>
+              <!-- Brevo merge tag. Must be contact.FIRSTNAME: that is the attribute
+                   scripts/brevo-import.mjs creates. A bare {{first_name}} does not
+                   resolve in Brevo and sends literally. default handles blanks. -->
+              <p class="t-dark" style="margin:0 0 16px 0;${body()}">Hi {{ contact.FIRSTNAME | default : "there" }},</p>
 ${c.paragraphs.map((p) => `              <p class="t-dark" style="margin:0 0 16px 0;${body()}">${p}</p>`).join("\n")}
             </td>
           </tr>
