@@ -99,6 +99,11 @@ function render(slug, c) {
           </tr>`
     : ""
 
+  // Bare "&" in an href is literal in practice but is not valid HTML, and
+  // some of the stricter email pipelines rewrite or truncate it. Escaping
+  // keeps the utm params intact wherever the mail ends up.
+  const attrUrl = (u) => String(u).replace(/&(?!(?:amp|lt|gt|quot|#\d+);)/g, "&amp;")
+
   const servicesBlock = c.services?.length
     ? `
           <tr>
@@ -123,6 +128,11 @@ function render(slug, c) {
                 </tr>
               </table>
               <p class="t-muted" style="margin:6px 0 0 0;font-family:${FONT};font-size:14px;line-height:23px;color:${C.muted};">${sv.body}</p>
+              ${
+                sv.link
+                  ? `<p style="margin:10px 0 0 0;font-family:${FONT};font-size:14px;line-height:22px;font-weight:bold;"><a href="${attrUrl(sv.link.url)}" style="color:${C.primary};text-decoration:none;">${sv.link.label} &rarr;</a></p>`
+                  : ""
+              }
             </td>
           </tr>`
             )
@@ -223,13 +233,13 @@ ${priceBlock}
               <table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" class="btn">
                 <tr><td align="center" bgcolor="${C.primary}" style="border-radius:6px;">
                   <!--[if mso]>
-                  <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${c.cta.url}" style="height:52px;v-text-anchor:middle;width:280px;" arcsize="12%" stroke="f" fillcolor="${C.primary}">
+                  <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${attrUrl(c.cta.url)}" style="height:52px;v-text-anchor:middle;width:280px;" arcsize="12%" stroke="f" fillcolor="${C.primary}">
                     <w:anchorlock/>
                     <center style="color:#ffffff;font-family:Arial,sans-serif;font-size:17px;font-weight:bold;">${c.cta.label}</center>
                   </v:roundrect>
                   <![endif]-->
                   <!--[if !mso]><!-- -->
-                  <a href="${c.cta.url}" style="display:inline-block;padding:16px 40px;font-family:${FONT};font-size:17px;line-height:20px;font-weight:bold;color:${C.white};text-decoration:none;border-radius:6px;background-color:${C.primary};">${c.cta.label}</a>
+                  <a href="${attrUrl(c.cta.url)}" style="display:inline-block;padding:16px 40px;font-family:${FONT};font-size:17px;line-height:20px;font-weight:bold;color:${C.white};text-decoration:none;border-radius:6px;background-color:${C.primary};">${c.cta.label}</a>
                   <!--<![endif]-->
                 </td></tr>
               </table>

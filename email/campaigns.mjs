@@ -25,7 +25,14 @@ export const CAMPAIGNS = {
       "Really though, thank you for trusting us with your sprinklers this year. It means a lot, and I would be glad to keep looking after the system for you.",
     ],
     price: { amount: "$95", note: "up to 6 zones &middot; $10 for each zone after that" },
-    cta: { label: "Book Your Blowout", url: "https://www.trailheadirrigation.com/book?service=winterization" },
+    // utm params are worth carrying: Jobber's embed snippet reads utm_source,
+    // utm_medium and utm_campaign off the page URL and forwards them into the
+    // work request, so a booking that started here is attributable in Jobber
+    // as well as GA4.
+    cta: {
+      label: "Book Your Blowout",
+      url: "https://www.trailheadirrigation.com/book?service=winterization&utm_source=email&utm_medium=email&utm_campaign=blowout-2026",
+    },
     ctaNote: "October books up quick every year. The earlier you grab a spot, the more say you have in the day.",
     // Timely, actionable, and about the stretch between this email and the
     // blowout rather than after it. Numbers from the September and October
@@ -39,9 +46,17 @@ export const CAMPAIGNS = {
     servicesLabel: "Also this fall",
     services: [
       {
+        // Aeration now has its own page and its own Jobber form, so this is a
+        // real second booking path rather than a teaser. The window is open
+        // right now: end of August through October. Price stays off per
+        // Hannah; the page carries it.
         name: "Core Aeration",
         body:
-          "We pull small plugs of soil out across the lawn so water, air, and fertilizer can reach the roots instead of sitting on top of them. On Front Range clay that is most of the battle. Fall is the best window of the year for it.",
+          "The window is open right now and runs through October. We pull small plugs of soil out across the lawn so water, air, and fertilizer can reach the roots instead of sitting on top of them. On Front Range clay that is most of the battle. It books on its own form, and you do not have to do both.",
+        link: {
+          label: "Book core aeration",
+          url: "https://www.trailheadirrigation.com/aeration?utm_source=email&utm_medium=email&utm_campaign=blowout-2026",
+        },
       },
       {
         name: "Christmas Lights",
