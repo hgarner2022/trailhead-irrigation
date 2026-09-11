@@ -10,6 +10,16 @@ const STYLESHEET =
 const ASSETS_ORIGIN = "https://d3ey4dbjkt2f6s.cloudfront.net"
 const FORM_ORIGIN = "https://clienthub.getjobber.com"
 
+/** Below this width we treat it as a phone. Matches Tailwind's md breakpoint. */
+const MOBILE_MAX_WIDTH = 767
+/** Breathing room under the sticky header so the form top is not tight to it. */
+const HEADER_GAP = 12
+/**
+ * A step change resizes the form substantially. Smaller changes are things
+ * like a validation message appearing, which should not move the page.
+ */
+const STEP_CHANGE_THRESHOLD_PX = 40
+
 interface JobberEmbedProps {
   /** Jobber form id. Defaults to the seasonal form used on /book. */
   formId?: string
@@ -48,6 +58,98 @@ interface JobberEmbedProps {
 export function JobberEmbed({ formId = JOBBER_FORMS.seasonal }: JobberEmbedProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const clientHubId = `${HUB_ID}-${formId}`
+
+  /**
+   * Keep the form in view when a step advances on a phone.
+   *
+   * Jobber posts "scrolltop" to the parent window when the form moves to the
+   * next step. Their own handler responds to it with
+   * `document.querySelector(".jobber-dialog-overlay").scrollTo(0, 0)`, but
+   * `.jobber-dialog-overlay` only exists in their modal embed. On an inline
+   * embed that selector returns null, the line throws, and nothing scrolls.
+   * The iframe meanwhile resizes under a focused field, which on iOS Safari
+   * and Android Chrome drops the reader near the bottom of the page with the
+   * form somewhere above them.
+   *
+   * So: listen for their signal ourselves. Height messages are a fallback for
+   * the case where "scrolltop" does not arrive, since every step change also
+   * changes the iframe height.
+   *
+   * Registered in its own effect, declared before the one that injects the
+   * script, so the listener is live before Jobber's iframe can post anything.
+   */
+  useEffect(() => {
+    const container = containerRef.current
+    if (!container) return
+
+    let lastHeight: number | null = null
+    let pending: ReturnType<typeof setTimeout> | null = null
+
+    const scrollFormIntoView = () => {
+      // Desktop shows the whole form at once and has no jump to correct.
+      if (window.innerWidth > MOBILE_MAX_WIDTH) return
+
+      const header = document.querySelector("header")
+      const headerHeight = header ? header.getBoundingClientRect().height : 0
+      const top =
+        container.getBoundingClientRect().top +
+        window.scrollY -
+        headerHeight -
+        HEADER_GAP
+
+      // Only pull back when the page has actually run past the form. Without
+      // this, any resize would yank someone who was reading further up.
+      if (window.scrollY <= top + 1) return
+
+      const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+      window.scrollTo({
+        top: Math.max(top, 0),
+        behavior: reduced ? "auto" : "smooth",
+      })
+    }
+
+    // Let the iframe finish resizing, and let the browser's own scrolling
+    // settle, before correcting it. Otherwise we scroll and it jumps after us.
+    const queueScroll = () => {
+      if (pending) clearTimeout(pending)
+      pending = setTimeout(scrollFormIntoView, 80)
+    }
+
+    const onMessage = (event: MessageEvent) => {
+      if (event.origin !== FORM_ORIGIN) return
+
+      // Make sure this came from our iframe and not some other embed. Reading
+      // contentWindow is a reference comparison, allowed cross-origin.
+      const iframe = container.querySelector<HTMLIFrameElement>(
+        "iframe.jobber-work-request"
+      )
+      if (!iframe || event.source !== iframe.contentWindow) return
+
+      if (event.data === "scrolltop") {
+        queueScroll()
+        return
+      }
+
+      // Everything else worth reading is a height string like "311px".
+      // "close" and "recaptcha-setup" fall out here as NaN.
+      if (typeof event.data !== "string") return
+      const height = Number.parseInt(event.data, 10)
+      if (!Number.isFinite(height)) return
+
+      const previous = lastHeight
+      lastHeight = height
+      // The first height is the form rendering, not a step change.
+      if (previous === null) return
+      if (Math.abs(height - previous) < STEP_CHANGE_THRESHOLD_PX) return
+      queueScroll()
+    }
+
+    window.addEventListener("message", onMessage)
+    return () => {
+      window.removeEventListener("message", onMessage)
+      if (pending) clearTimeout(pending)
+    }
+  }, [])
 
   useEffect(() => {
     if (!containerRef.current) return
