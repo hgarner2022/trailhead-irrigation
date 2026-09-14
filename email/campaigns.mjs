@@ -13,72 +13,21 @@
  */
 
 export const CAMPAIGNS = {
-  /**
-   * Aeration is the one service with its own Jobber form, so this campaign
-   * points at /aeration rather than /book. Facts here are Trailhead's own:
-   * the compaction line is Ryan's wording from /aeration and /services, the
-   * 25% figure is the Erie soilType entry in city-data.ts, the plug guidance
-   * is from the aeration FAQs, and the window runs end of August through
-   * October. Trailhead does not offer overseeding, so it is not mentioned.
-   */
-  aeration: {
-    name: "Aeration 2026 - existing customers",
-    subject: "Thank you for a great season",
-    preheader: "And if you do one more thing for the lawn this fall, make it this.",
-    eyebrow: "Thank you",
-    headline: "That is another watering season in the books",
-    paragraphs: [
-      "Before anything else, thank you. It has been a good season, and that is down to the people who keep calling us back. I do not take it for granted.",
-      "There is one more thing worth doing before the year closes out, and on our soil it might be the highest value thing on the list. Core aeration.",
-      "It reduces soil compaction so water, air, and nutrients can reach your lawn's roots instead of sitting on top of them. Front Range clay packs down hard over a summer, which is why a lawn can be watered right on schedule and still never seem to get a proper drink. Opening it back up is most of the battle, and a lawn that gets aerated every year can need up to 25 percent less water.",
-      "The window is open now and runs through October. Cooler soil means the lawn bounces back faster than it would in the heat.",
-    ],
-    price: {
-      amount: "$125",
-      note: "lawns up to about 5,000 sq. ft. &middot; $160 up to about 10,000 sq. ft.",
-    },
-    cta: {
-      label: "Book Core Aeration",
-      url: "https://www.trailheadirrigation.com/aeration?utm_source=email&utm_medium=email&utm_campaign=aeration-2026",
-    },
-    ctaNote:
-      "Aeration books on its own form, separate from the blowout. You are welcome to do one or the other, you do not have to do both.",
-    tip: {
-      title: "Leave the plugs where they land.",
-      body:
-        "They look untidy for a week or two and then they are gone. They break down on their own and put soil and organic matter back on the surface, which is a good part of the benefit. Raking them up is extra work that throws it away.",
-    },
-    servicesLabel: "Also this fall",
-    services: [
-      {
-        name: "Sprinkler Blowout",
-        price: "$95",
-        body:
-          "Up to 6 zones, then $10 for each zone after that. I am filling in the fall schedule now and October goes quickly, so the earlier you pick a day the more say you have in it.",
-        link: {
-          label: "Book your blowout",
-          url: "https://www.trailheadirrigation.com/book?service=winterization&utm_source=email&utm_medium=email&utm_campaign=aeration-2026",
-        },
-      },
-      {
-        name: "Christmas Lights",
-        body:
-          "We handle the ladders and the roofline so you do not have to. Reply if you want me to hold you a spot.",
-      },
-    ],
-    ps: null,
-  },
-
   blowout: {
     name: "Blowout 2026 - existing customers",
-    subject: "Sorry to bring this up while it's 90 out",
-    preheader: "Putting the fall schedule together and wanted to give you first pick.",
-    eyebrow: "Yes, already",
-    headline: "It is 90 degrees and I want to talk about frozen pipes",
+    subject: "Thank you, and one last job before the freeze",
+    preheader: "Putting the fall blowout schedule together and wanted to give you first pick.",
+    eyebrow: "Thank you",
+    headline: "That is nearly a wrap on the season",
+    // The old headline was "It is 90 degrees and I want to talk about frozen
+    // pipes". True when it was written in August. Retired on 2026-09-14: Erie
+    // was 89 that day but 76 the next, then 83, 79, 84, with lows in the
+    // fifties. Check the forecast before writing any temperature into a
+    // subject or headline again.
     paragraphs: [
-      "I know it is 90 out and frozen pipes are the last thing on your mind. Mine too, honestly.",
-      "I am putting the fall schedule together though, and I wanted to reach out to you first so you get the pick of the dates before October fills in.",
-      "Really though, thank you for trusting us with your sprinklers this year. It means a lot, and I would be glad to keep looking after the system for you.",
+      "Before anything else, thank you. It has been a good season, and that is down to the people who keep calling us back. I do not take it for granted.",
+      "The nights are dropping into the fifties now, so I am putting the fall schedule together and I wanted to come to you first, before October fills in.",
+      "If a system does not get cleared, the water just sits in it all winter. It corrodes the metal parts from the inside out, and when it freezes it expands and splits pipes and valves. The backflow assembly sits above ground, so it holds water and goes first. You usually do not find out about any of it until spring, and by then the repair runs $500 to $1,500.",
     ],
     price: { amount: "$95", note: "up to 6 zones &middot; $10 for each zone after that" },
     // utm params are worth carrying: Jobber's embed snippet reads utm_source,
@@ -102,13 +51,13 @@ export const CAMPAIGNS = {
     servicesLabel: "Also this fall",
     services: [
       {
-        // Aeration now has its own page and its own Jobber form, so this is a
+        // Aeration has its own page and its own Jobber form, so this is a
         // real second booking path rather than a teaser. The window is open
         // right now: end of August through October. Price stays off per
         // Hannah; the page carries it.
         name: "Core Aeration",
         body:
-          "The window is open right now and runs through October. We pull small plugs of soil out across the lawn so water, air, and fertilizer can reach the roots instead of sitting on top of them. On Front Range clay that is most of the battle. It books on its own form, and you do not have to do both.",
+          "The window is open right now and runs through October. We pull small plugs of soil out across the lawn so water, air, and fertilizer can reach the roots instead of sitting on top of them. On Front Range clay that is most of the battle, and a lawn that gets aerated every year can need up to 25 percent less water. It books on its own form, and you do not have to do both.",
         link: {
           label: "Book core aeration",
           url: "https://www.trailheadirrigation.com/aeration?utm_source=email&utm_medium=email&utm_campaign=blowout-2026",
