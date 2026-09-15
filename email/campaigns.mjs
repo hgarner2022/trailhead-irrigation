@@ -29,12 +29,12 @@ export const CAMPAIGNS = {
   blowout: {
     name: "Blowout 2026 - existing customers",
     subject: "Sorry to bring this up while it's still nice out",
-    preheader: "Putting the fall schedule together and wanted to give you first pick.",
+    preheader: "Putting the blowout schedule together and wanted to give you first pick.",
     eyebrow: "Yes, already",
     headline: "It is still warm out and I want to talk about frozen pipes",
     paragraphs: [
       "I know it is still warm out and frozen pipes are the last thing on your mind. Mine too, honestly.",
-      "I am putting the fall schedule together though, and I wanted to reach out to you first so you get the pick of the dates before October fills in.",
+      "I am putting the blowout schedule together though, and I wanted to reach out to you first so you get the pick of the dates before October fills in.",
       "Really though, thank you for trusting us with your sprinklers this year. It means a lot, and I would be glad to keep looking after the system for you.",
     ],
     price: { amount: "$95", note: "up to 6 zones &middot; $10 for each zone after that" },
