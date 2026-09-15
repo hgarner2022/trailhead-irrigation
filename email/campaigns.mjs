@@ -18,19 +18,24 @@
  * (2334a1b, and again on 2026-09-15). Additions go in as new paragraphs or
  * new fields. If a line genuinely needs to change, raise it and let her call
  * it rather than editing it and explaining afterwards.
+ *
+ * The blowout headline used to name a temperature ("It is 90 degrees and I
+ * want to talk about frozen pipes"). True in August, wrong by mid September:
+ * Erie topped out at 75F on 2026-09-15. It now says "still warm out", which
+ * holds for the whole shoulder season. Do not put a specific temperature back
+ * in unless the send goes out the same week it is checked.
  */
 export const CAMPAIGNS = {
   blowout: {
     name: "Blowout 2026 - existing customers",
-    subject: "Sorry to bring this up while it's 90 out",
+    subject: "Sorry to bring this up while it's still nice out",
     preheader: "Putting the fall schedule together and wanted to give you first pick.",
     eyebrow: "Yes, already",
-    headline: "It is 90 degrees and I want to talk about frozen pipes",
+    headline: "It is still warm out and I want to talk about frozen pipes",
     paragraphs: [
-      "I know it is 90 out and frozen pipes are the last thing on your mind. Mine too, honestly.",
-      "But your sprinklers need blowing out before the first hard freeze. Water left sitting in them corrodes the lines all winter, and when it freezes it splits pipes and valves. It runs $500 to $1,500 to put right and you do not find out until spring.",
-      "I am putting the fall schedule together now and wanted to give you first pick of the dates before October fills in.",
-      "It has been a great season. Thank you for trusting us with your sprinklers this year.",
+      "I know it is still warm out and frozen pipes are the last thing on your mind. Mine too, honestly.",
+      "I am putting the fall schedule together though, and I wanted to reach out to you first so you get the pick of the dates before October fills in.",
+      "Really though, thank you for trusting us with your sprinklers this year. It means a lot, and I would be glad to keep looking after the system for you.",
     ],
     price: { amount: "$95", note: "up to 6 zones &middot; $10 for each zone after that" },
     // utm params are worth carrying: Jobber's embed snippet reads utm_source,
