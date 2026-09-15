@@ -104,6 +104,14 @@ function render(slug, c) {
   // keeps the utm params intact wherever the mail ends up.
   const attrUrl = (u) => String(u).replace(/&(?!(?:amp|lt|gt|quot|#\d+);)/g, "&amp;")
 
+  // ctaNote reads as a run-on if it sits under the button as one grey block.
+  // Split it at the first sentence: the lead goes bold in navy, the rest stays
+  // muted underneath. Falls back to the whole string as the lead if there is
+  // no sentence break.
+  const ctaNoteMatch = (c.ctaNote || "").match(/^(.*?[.!?])\s+(.*)$/s)
+  const ctaNoteLead = ctaNoteMatch ? ctaNoteMatch[1] : c.ctaNote || ""
+  const ctaNoteRest = ctaNoteMatch ? ctaNoteMatch[2] : ""
+
   const servicesBlock = c.services?.length
     ? `
           <tr>
@@ -250,8 +258,9 @@ ${priceBlock}
           </tr>
 
           <tr>
-            <td class="px" style="padding:6px 36px 26px 36px;">
-              <p class="t-muted" style="margin:0;font-family:${FONT};font-size:14px;line-height:22px;color:${C.muted};text-align:center;">${c.ctaNote}</p>
+            <td class="px" style="padding:18px 64px 30px 64px;">
+              <p style="margin:0 0 ${ctaNoteRest ? "4" : "0"}px 0;font-family:${FONT};font-size:14px;line-height:21px;color:${C.navy};font-weight:bold;text-align:center;" class="t-dark">${ctaNoteLead}</p>
+              ${ctaNoteRest ? `<p class="t-muted" style="margin:0;font-family:${FONT};font-size:14px;line-height:21px;color:${C.muted};text-align:center;">${ctaNoteRest}</p>` : ""}
             </td>
           </tr>
 ${tipBlock}
