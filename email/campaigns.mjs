@@ -28,9 +28,9 @@ export const CAMPAIGNS = {
     headline: "It is 90 degrees and I want to talk about frozen pipes",
     paragraphs: [
       "I know it is 90 out and frozen pipes are the last thing on your mind. Mine too, honestly.",
-      "I am putting the fall schedule together though, and I wanted to reach out to you first so you get the pick of the dates before October fills in.",
-      "The reason I push on it: water left in the lines corrodes everything metal from the inside out all winter, and when it freezes it expands and splits pipes and valves. The backflow sits above ground holding water, so that one goes first. You do not find out until spring, and by then it is a $500 to $1,500 repair.",
-      "Really though, it has been a great season, and thank you for trusting us with your sprinklers this year. It means a lot, and I would be glad to keep looking after the system for you.",
+      "But your sprinklers need blowing out before the first hard freeze. Water left sitting in them corrodes the lines all winter, and when it freezes it splits pipes and valves. It runs $500 to $1,500 to put right and you do not find out until spring.",
+      "I am putting the fall schedule together now and wanted to give you first pick of the dates before October fills in.",
+      "It has been a great season. Thank you for trusting us with your sprinklers this year.",
     ],
     price: { amount: "$95", note: "up to 6 zones &middot; $10 for each zone after that" },
     // utm params are worth carrying: Jobber's embed snippet reads utm_source,
