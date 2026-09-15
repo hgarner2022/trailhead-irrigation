@@ -12,23 +12,25 @@
  * one CTA per email, and every price must match /pricing and pricing.md.
  */
 
+/**
+ * DO NOT rewrite approved copy. The blowout subject, headline, eyebrow and
+ * paragraphs below are Hannah's, and she has had to restore them twice now
+ * (2334a1b, and again on 2026-09-15). Additions go in as new paragraphs or
+ * new fields. If a line genuinely needs to change, raise it and let her call
+ * it rather than editing it and explaining afterwards.
+ */
 export const CAMPAIGNS = {
   blowout: {
     name: "Blowout 2026 - existing customers",
-    subject: "Book your blowout before the first hard freeze",
-    preheader: "In 2024 Erie's landed on October 18. Some years it holds off. Not worth guessing at.",
-    eyebrow: "Fall schedule",
-    headline: "Let's get the water out before it freezes",
-    // The old headline was "It is 90 degrees and I want to talk about frozen
-    // pipes". True when it was written in August. Retired on 2026-09-14: Erie
-    // was 89 that day but 76 the next, then 83, 79, 84, with lows in the
-    // fifties. Check the forecast before writing any temperature into a
-    // subject or headline again.
+    subject: "Sorry to bring this up while it's 90 out",
+    preheader: "Putting the fall schedule together and wanted to give you first pick.",
+    eyebrow: "Yes, already",
+    headline: "It is 90 degrees and I want to talk about frozen pipes",
     paragraphs: [
-      "First, thank you. It has been a good season, and that is down to the people who keep calling us back. I do not take it for granted.",
-      "Now the one job that has to happen before winter. The nights are already dropping into the fifties, so I am filling in the blowout schedule and I wanted to come to you first, before October goes. In 2024 Erie's first hard freeze landed on October 18. Some years it holds off until November. It is not something worth guessing at.",
-      "If the system does not get cleared, the water sits in it all winter. It corrodes the metal parts from the inside out, and when it freezes it expands and splits pipes and valves. Your backflow assembly sits above ground holding water, so it goes first, and it is one of the more expensive things to put right. You will not find out about any of it until spring, and by then the repair runs $500 to $1,500.",
-      "The blowout itself takes 30 to 60 minutes. Every zone gets purged with compressed air, the backflow assembly gets cleared and protected, and you are done until spring.",
+      "I know it is 90 out and frozen pipes are the last thing on your mind. Mine too, honestly.",
+      "I am putting the fall schedule together though, and I wanted to reach out to you first so you get the pick of the dates before October fills in.",
+      "The reason I push on it: water left in the lines corrodes everything metal from the inside out all winter, and when it freezes it expands and splits pipes and valves. The backflow sits above ground holding water, so that one goes first. You do not find out until spring, and by then it is a $500 to $1,500 repair.",
+      "Really though, it has been a great season, and thank you for trusting us with your sprinklers this year. It means a lot, and I would be glad to keep looking after the system for you.",
     ],
     price: { amount: "$95", note: "up to 6 zones &middot; $10 for each zone after that" },
     // utm params are worth carrying: Jobber's embed snippet reads utm_source,
@@ -39,7 +41,7 @@ export const CAMPAIGNS = {
       label: "Book Your Blowout",
       url: "https://www.trailheadirrigation.com/book?service=winterization&utm_source=email&utm_medium=email&utm_campaign=blowout-2026",
     },
-    ctaNote: "We start booking in September and October fills fast. By mid October we are usually solid, so the earlier you grab a spot, the more say you have in the day.",
+    ctaNote: "October books up quick every year. The earlier you grab a spot, the more say you have in the day.",
     // Timely, actionable, and about the stretch between this email and the
     // blowout rather than after it. Numbers from the September and October
     // sections of the month-by-month blog post: about an inch a week through
@@ -52,13 +54,13 @@ export const CAMPAIGNS = {
     servicesLabel: "Also this fall",
     services: [
       {
-        // Deliberately two short lines. This email exists to sell blowouts,
-        // and an aeration blurb with its own booking link competes with that
-        // CTA the longer it runs. Hannah asked for the link, so it stays, but
-        // it stays subordinate. Price is off per Hannah; the page carries it.
+        // Aeration now has its own page and its own Jobber form, so this is a
+        // real second booking path rather than a teaser. The window is open
+        // right now: end of August through October. Price stays off per
+        // Hannah; the page carries it.
         name: "Core Aeration",
         body:
-          "Opens up compacted clay so water and fertilizer reach the roots. Runs through October, and it books on its own form.",
+          "The window is open right now and runs through October. We pull small plugs of soil out across the lawn so water, air, and fertilizer can reach the roots instead of sitting on top of them. On Front Range clay that is most of the battle. It books on its own form, and you do not have to do both.",
         link: {
           label: "Book core aeration",
           url: "https://www.trailheadirrigation.com/aeration?utm_source=email&utm_medium=email&utm_campaign=blowout-2026",
