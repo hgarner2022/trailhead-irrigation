@@ -107,19 +107,6 @@ const SERVICES = [
     imagePosition: "right" as const,
     cta: { label: "Book Online", href: "/book" },
   },
-  {
-    title: "Core Aeration",
-    description:
-      "Core aeration helps reduce soil compaction and allows water, air, and nutrients to better reach your lawn's roots, promoting healthier and stronger grass. On Front Range clay that is most of the battle, and fall is the best window of the year for it.",
-    image: "/images/aeration.jpg",
-    features: [
-      "Plugs left to break down and topdress the lawn",
-      "Sprinkler heads located and worked around",
-      "Annual aeration can cut watering needs by up to 25%",
-    ],
-    imagePosition: "left" as const,
-    cta: { label: "About Core Aeration", href: "/aeration" },
-  },
 ]
 
 export default function ServicesPage() {
@@ -212,8 +199,10 @@ export default function ServicesPage() {
         </section>
       ))}
 
-      {/* Service Areas */}
-      <section className="bg-background section-padding-y">
+      {/* Service Areas. bg-cream keeps the alternation working: with three
+          services the last one lands on bg-background, so this has to break
+          before the definitions section, which is bg-background too. */}
+      <section className="bg-cream section-padding-y">
         <div className="container-padding-x mx-auto max-w-3xl text-center">
           <h2 className="text-3xl font-bold text-foreground mb-4">
             Areas We Serve
