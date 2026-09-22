@@ -5,8 +5,9 @@ import { FaqList } from "@/components/sections/FaqList"
 import { DefinitionList } from "@/components/sections/DefinitionList"
 import { SectionHeader } from "@/components/sections/SectionHeader"
 import { JobberEmbed } from "@/components/sections/JobberEmbed"
-import { JOBBER_FORMS } from "@/lib/jobber"
+import { JOBBER_FORMS, AERATION_BOOKING_OPEN } from "@/lib/jobber"
 import { Badge } from "@/components/ui/badge"
+import Link from "next/link"
 import Image from "next/image"
 import { faqJsonLd, breadcrumbJsonLd, siteConfig } from "@/lib/seo"
 
@@ -155,9 +156,30 @@ export default function AerationPage() {
             align="left"
           />
 
-          <div className="mt-6">
-            <JobberEmbed formId={JOBBER_FORMS.aeration} />
-          </div>
+          {AERATION_BOOKING_OPEN ? (
+            <div className="mt-6">
+              <JobberEmbed formId={JOBBER_FORMS.aeration} />
+            </div>
+          ) : (
+            <div className="mt-6 rounded-lg border border-border bg-cream p-6">
+              <p className="text-foreground font-semibold mb-2">
+                We are not taking aeration bookings this season.
+              </p>
+              <p className="text-muted-foreground text-sm leading-relaxed">
+                Everything below still applies if you are deciding whether your
+                lawn needs it. For sprinkler winterization, which we are
+                booking now,{" "}
+                <Link href="/sprinkler-blowout" className="text-primary hover:underline font-medium">
+                  see blowouts
+                </Link>
+                . For anything else,{" "}
+                <Link href="/contact" className="text-primary hover:underline font-medium">
+                  get in touch
+                </Link>
+                .
+              </p>
+            </div>
+          )}
         </div>
       </section>
 

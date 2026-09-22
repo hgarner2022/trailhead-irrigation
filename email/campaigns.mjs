@@ -56,21 +56,11 @@ export const CAMPAIGNS = {
       body:
         "The air cools off in September but the soil stays warm and the grass is still growing. Backing off too early is the most common reason a lawn goes into winter stressed. Stay around an inch a week through September, drop to one deep watering a week in early October, then stop when a freeze gets close.",
     },
+    // Core Aeration sat here with its own booking link. Pulled 2026-09-22:
+    // Hannah is not running aeration this season, so the email must not offer
+    // to book it. Restore it alongside AERATION_BOOKING_OPEN in lib/jobber.ts.
     servicesLabel: "Also this fall",
     services: [
-      {
-        // Aeration now has its own page and its own Jobber form, so this is a
-        // real second booking path rather than a teaser. The window is open
-        // right now: end of August through October. Price stays off per
-        // Hannah; the page carries it.
-        name: "Core Aeration",
-        body:
-          "The window is open right now and runs through October. We pull small plugs of soil out across the lawn so water, air, and fertilizer can reach the roots instead of sitting on top of them. On Front Range clay that is most of the battle. It books on its own form, and you do not have to do both.",
-        link: {
-          label: "Book core aeration",
-          url: "https://www.trailheadirrigation.com/aeration?utm_source=email&utm_medium=email&utm_campaign=blowout-2026",
-        },
-      },
       {
         name: "Christmas Lights",
         body:

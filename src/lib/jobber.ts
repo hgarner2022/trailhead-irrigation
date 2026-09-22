@@ -17,3 +17,17 @@ export const JOBBER_FORMS = {
   /** Core aeration. Used on /aeration. */
   aeration: "5164288",
 } as const
+
+/**
+ * Whether Trailhead is taking core aeration bookings.
+ *
+ * Off for the 2026 season per Hannah (2026-09-22). While this is false the
+ * /aeration page keeps its explainer but shows no booking form, the cross
+ * sell on /book is hidden, and /services links to the page rather than
+ * offering to book it.
+ *
+ * Turning this back to true restores every booking path. It does NOT
+ * reactivate the form inside Jobber. Form 5164288 has to be switched back on
+ * there too, or the embed renders an inactive form.
+ */
+export const AERATION_BOOKING_OPEN = false

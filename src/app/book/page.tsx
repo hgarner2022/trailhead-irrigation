@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import { PageBanner } from "@/components/sections/PageBanner"
 import { JobberEmbed } from "@/components/sections/JobberEmbed"
+import { AERATION_BOOKING_OPEN } from "@/lib/jobber"
 import Link from "next/link"
 import Image from "next/image"
 import { Badge } from "@/components/ui/badge"
@@ -63,6 +64,7 @@ export default function BookPage() {
           who came to /book for aeration hits a form that does not offer it.
           Facts are the ones Ryan gave: $125 up to ~5,000 sq ft, window from
           the end of August through October. No process detail, no overseeding. */}
+      {AERATION_BOOKING_OPEN && (
       <section
         aria-labelledby="book-aeration-cross"
         className="bg-cream section-padding-y"
@@ -105,6 +107,7 @@ export default function BookPage() {
           </div>
         </div>
       </section>
+      )}
 
       <section className="bg-background section-padding-y">
         <div className="container-padding-x mx-auto max-w-2xl text-center">
