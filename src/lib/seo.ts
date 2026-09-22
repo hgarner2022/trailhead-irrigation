@@ -190,20 +190,6 @@ const SERVICES: ServiceDef[] = [
     },
   },
   {
-    id: "core-aeration",
-    name: "Core Aeration",
-    description:
-      "Core lawn aeration that pulls plugs of soil to relieve compaction on Front Range clay, so water, air, and fertilizer reach the root zone. Best performed late August through October.",
-    serviceType: "Lawn Aeration",
-    url: `${SITE_URL}/aeration`,
-    // No priceSpecification while aeration bookings are closed for the season
-    // (AERATION_BOOKING_OPEN in lib/jobber.ts). The entity stays so the page
-    // keeps its meaning and its history, but quoting a price in schema would
-    // advertise something we are not selling. Restore this block alongside
-    // the switch: $125 up to ~5,000 sq ft, $160 up to ~10,000, over 1/4 acre
-    // quoted.
-  },
-  {
     id: "spring-turn-on",
     name: "Spring Sprinkler Turn-On",
     description:
