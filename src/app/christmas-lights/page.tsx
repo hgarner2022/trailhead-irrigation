@@ -18,6 +18,11 @@ export const metadata: Metadata = {
 /**
  * Christmas light installation landing page.
  *
+ * Copy angle is the holidays with your family, not the chore of the ladder.
+ * The first version led on "you have never once enjoyed the ladder part",
+ * which Hannah rightly called weird: it tells the reader how they feel and
+ * opens on a negative. Lead on what they get, not what they avoid.
+ *
  * Design direction is "dusk": the moment the lights come on. The page opens
  * on a full-bleed photograph at blue hour, whose sky sits almost exactly on
  * the brand navy, and runs warm amber against that cold ground the whole way
@@ -62,29 +67,30 @@ export const metadata: Metadata = {
 const INCLUDED = [
   {
     title: "C9 bulbs, cut to your roofline",
-    body: "Individual C9 bulbs on socket wire, cut to length for every run. Not fixed-length retail strings, so there is no doubled-up excess and no dark gap where the string ran out.",
+    body: "Individual bulbs on socket wire, measured and cut for every run of your house. Retail strings come in fixed lengths, so they either fall short and leave a dark gap or overshoot and get doubled back on themselves. Ours follow the line of the roof.",
+  },
+  {
+    title: "We supply everything",
+    body: "You buy nothing. Come February there's nothing in your garage either.",
   },
   {
     title: "Rooflines and peaks",
-    body: "The part people hire out, because it is the part that puts you on a ladder in the cold on the steepest section of the house.",
+    body: "The high, steep, awkward parts. This is the bit people hire out, and fair enough.",
   },
   {
     title: "Trees and bushes",
-    body: "Trunks wrapped, shrubs and beds lit, so the yard reads as finished instead of just the roof being done.",
+    body: "Trunks wrapped, shrubs and beds lit. It's what stops a house looking like only the roof got done.",
   },
   {
     title: "Walkways and railings",
-    body: "Paths, porch rails and columns. The part guests actually walk through on the way to your door.",
-  },
-  {
-    title: "Wreaths and garland",
-    body: "Doors, windows and garage surrounds.",
+    body: "Paths, porch rails, columns. The part people actually walk through on the way to your door.",
   },
   {
     title: "Takedown in January",
-    body: "Included. We come back, take it all down, and the lights leave with us. Not a second call and a second bill in the new year.",
+    body: "Included. We come back, take it all down, and it leaves with us. No second call, no second bill in the new year.",
   },
 ]
+
 
 const FAQS = [
   {
@@ -199,11 +205,11 @@ export default function ChristmasLightsPage() {
               id="xmas-hero"
               className="text-4xl md:text-6xl font-bold text-white leading-[1.05] mb-5"
             >
-              You have never once enjoyed the ladder part
+              Spend the holidays with your family, not on a ladder
             </h1>
             <p className="text-lg md:text-xl text-white/80 leading-relaxed mb-8 max-w-xl">
-              So do not do it. We bring the lights, put them up, and come back
-              in January to take them down.
+              We bring the lights, put them up, and come back in January to
+              take them down. All you have to do is look at them.
             </p>
             <a
               href="tel:9706927270"
@@ -233,15 +239,18 @@ export default function ChristmasLightsPage() {
             id="xmas-pitch"
             className="text-2xl md:text-3xl font-bold text-foreground leading-snug mb-5"
           >
-            Every year the same evening gets set aside for it, and every year it
-            takes longer than planned.
+            Pull into the driveway in December and it&apos;s already glowing.
           </h2>
+          <p className="text-muted-foreground text-lg leading-relaxed mb-4">
+            That&apos;s the whole point of them. It&apos;s also the part that
+            tends to get lost somewhere around the second trip up the ladder,
+            when it&apos;s getting dark and you&apos;ve found the dead strand.
+          </p>
           <p className="text-muted-foreground text-lg leading-relaxed">
-            Half a strand is dead. The steep bit over the garage ends up
-            skipped. Then it all has to come down again in January, usually in
-            worse weather than it went up in. We do the whole thing instead, and
-            you get the house you had in mind without spending a weekend on a
-            ladder.
+            So let us do it. We measure the house, cut the wire to fit it, and
+            put it up. In January we come back and all of it disappears, lights
+            and clips and everything else, and your garage stays empty. You get
+            the house you had in mind and you don&apos;t lose a weekend to it.
           </p>
         </div>
       </section>

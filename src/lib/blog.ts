@@ -15,72 +15,89 @@ export function getReadingTime(content: string): number {
 
 export const BLOG_POSTS: BlogPost[] = [
   {
-    // Written 2026-10-09. The angle is the one thing an irrigation company can
-    // say about Christmas lights that a lighting company cannot, and it is
-    // true rather than invented: Trailhead winterizes these same systems, so
-    // they know where heads and lines sit.
+    // Written 2026-10-09, rewritten the same day. The first pass was correct
+    // but read as generic advice. Two things fixed it: the December wind,
+    // which is genuinely a Front Range problem and which no national
+    // Christmas-lights post covers, and dropping the tidy three-beat rhythm.
     //
-    // Deliberately no burial-depth figure. Nothing on the site states one and
-    // nobody has confirmed it, so the post describes the risk without faking
-    // precision. Do not add inches here without asking Ryan.
+    // Wind sourcing: NWS Boulder has said December and January are Colorado's
+    // two peak months for downslope windstorms. Boulder County has recorded
+    // gusts over 100 mph in December events. The Marshall Fire windstorm is
+    // deliberately NOT referenced: two people died, Louisville and Superior
+    // are in the service area, and invoking it to sell Christmas lights would
+    // be grotesque. Wind as a practical hazard only.
+    //
+    // Still no burial-depth figure. Nothing on the site sources one and the
+    // research did not turn up a reliable Front Range number for irrigation
+    // laterals, as opposed to footings. Do not add inches without asking Ryan.
     slug: "christmas-lights-without-damaging-sprinklers",
-    title: "How to Hang Christmas Lights Without Wrecking Your Sprinkler System",
+    title: "Hanging Christmas Lights in Colorado Without Wrecking Your Sprinklers",
     date: "2026-10-09",
     category: "Seasonal Maintenance",
     excerpt:
-      "Every stake you drive into the lawn in December is going into ground that has irrigation running through it. The damage does not show up until spring turn-on, which is why most people never connect the two. Here is where it is safe to put stakes and ladders, and where it is not.",
+      "Every stake you push into the lawn in December goes into ground with irrigation running through it. Nothing leaks, because the system is already dry. You find out in April. Here's where it's safe to put stakes and ladders, and what December wind does to a roofline job.",
     relatedSlugs: [
       "when-to-winterize-sprinklers-colorado",
       "spring-sprinkler-startup-colorado",
       "signs-irrigation-system-needs-repair",
     ],
-    content: `## The short version
+    content: `## Short version
 
-Keep stakes and ladder feet away from sprinkler heads and away from the straight runs between them. That line between two heads is where the pipe is. Anything you push into the ground there has a real chance of finding it.
+Keep stakes and ladder feet off your sprinkler heads, and off the straight runs between them. That line between two heads is where the pipe is.
 
-The reason almost nobody worries about this is timing. You put the lights up in late November, you take them down in January, and the system is dry and depressurized the whole time. Nothing leaks, nothing sprays, nothing tells you anything happened. Then in late April we turn the system on, the lines fill with water under pressure, and a spot in the lawn turns into a puddle.
+Here's why nobody worries about it. Lights go up in late November and come down in January, and the whole time the system is dry and depressurized because it was blown out in October. Push a stake through a lateral line and nothing happens. No leak, no spray, no hiss. Nothing tells you anything at all.
 
-By then the Christmas lights have been down for three months and nobody connects the two.
+Then in late April we turn the system on, the lines fill under pressure, and a patch of lawn turns into a puddle. By then the lights have been down for three months and nobody connects the two.
 
-## What actually gets hit
+## What gets hit
 
-**Lateral lines.** These are the pipes that feed each head. They run in fairly direct lines from head to head, close enough to the surface that an ordinary garden stake can reach them. Driving a stake straight down between two heads is the single most common way a homeowner puts a hole in their own system.
+**Lateral lines.** The pipes feeding each head run in fairly direct lines from one to the next, close enough to the surface that an ordinary garden stake reaches them. Driving a stake straight down between two heads is the most common way a homeowner puts a hole in their own system.
 
-**Heads themselves.** A pop-up head sits flush with the grass, which makes it a flat, firm, invisible place to stand a ladder foot. A ladder with a person on it is a lot of weight on one small point. You can crack the body, push the whole head out of level, or snap it off the riser.
+**The heads.** A pop-up sits flush with the grass, which makes it a flat, firm, invisible place to stand a ladder foot. Put a person on that ladder and it's a lot of weight on one small point. You can crack the body, push the head out of level, or snap it off the riser.
 
-**Drip zones.** If you have drip in the beds, it is often not buried at all, just run under the mulch. Beds are also exactly where people like to put stakes for pathway lights and yard displays. Drip tubing punctures easily.
+**Drip in the beds.** Often not buried at all, just run under the mulch. Beds are also where people like to put pathway lights. Drip tubing punctures if you look at it wrong.
 
-**Valve boxes.** The green lids in the lawn. They take weight badly and the lids crack, which then fills the box with soil over the winter.
+**Valve boxes.** Those green lids take weight badly. A cracked lid fills with soil over the winter and you find that in spring too.
 
-## What to do instead
+## Before you start
 
-**Find your heads before you start, not after.** Walk the lawn in daylight before the first strand comes out of the box. Heads are easier to see in late fall than people expect, because the grass has stopped growing over them. Mark them with a golf tee or a flag if you are going to be working in the dark.
+Walk the lawn in daylight. Heads are easier to spot in late fall than people expect, because the grass has stopped growing over them. Mark them with a golf tee if you'll be working after dark, which in December you will be, because it's dark here by about half four.
 
-**Assume the pipe runs between them.** Picture a line from each head to the next one. Keep stakes a comfortable distance off that line rather than straddling it.
+Then picture a line from each head to the next and keep your stakes well off it.
 
-**Put ladder feet on hard surfaces where you can.** Driveway, path, patio. Where you cannot, use a board under the feet to spread the load, and look down before you set it.
+Push stakes in, don't hammer them. If a stake stops dead against something a few inches down, that's information. Move it. Hammering through resistance is exactly how a stake goes through a pipe.
 
-**Push stakes, do not hammer them.** If a stake stops against something solid a few inches down, that is information. Move it. Hammering through resistance is how a stake goes through a pipe.
+For ladders, use the driveway or the path where you can. Where you can't, put a board under the feet to spread the load, and look down before you set it.
 
-**Take a photo during your blowout.** When we are clearing the system in October, every head is being worked on and they are all easy to see. A couple of phone photos then is the best zone map you will ever have, and it costs you nothing.
+The best thing you can do takes thirty seconds and costs nothing: during your blowout, when every head is being worked on and all of them are easy to see, take a couple of photos on your phone. That's the best zone map you'll ever have.
 
-## If you do hit something
+## The other Colorado problem: December wind
 
-You will probably not know at the time. That is the awkward part. If you suspect you caught a line, note where it was and tell us at spring turn-on. Knowing roughly where to look turns a long diagnostic into a short one, and a known lateral repair is a much smaller job than chasing a mystery wet spot across a lawn.
+This one catches people out who've moved here from somewhere flatter.
 
-If you hit a head and you know it, that is easier. A head is a straightforward replacement and it can wait until spring.
+The National Weather Service office in Boulder has put it plainly: December and January are the two peak months for the strongest downslope winds in Colorado. Not an occasional thing. The peak. Boulder County has recorded gusts over 100 mph in December windstorms, with tens of thousands of customers losing power.
 
-## The order these should happen in
+So a roofline covered in fixed-length retail string lights, held on with whatever was in the drawer, is being asked to survive something most of the country never deals with. When those runs let go they take gutter clips, sometimes gutter, and they end up in the lawn, where you then walk around on frozen grass pulling at them. That's a second way to find your sprinkler heads.
 
-Winterization first, lights second. The system needs to be cleared before the first hard freeze regardless, and once that is done you are working on a dry system, which means a stake through a lateral is a repair rather than a repair plus a soaked lawn.
+If you're doing it yourself, over-clip rather than under-clip, and give the runs no slack to flap. Slack is what turns a gust into leverage.
 
-If your sprinklers have not been blown out yet this season, that is the more urgent of the two jobs. [See sprinkler blowouts](/sprinkler-blowout).
+## If you think you hit something
 
-## Or skip the ladder entirely
+You probably won't know at the time, which is the awkward part. Note where it was and tell us at spring turn-on. Knowing roughly where to look turns a long diagnostic into a short one, and a known lateral repair is a much smaller job than chasing a mystery wet spot across a lawn.
 
-We hang Christmas lights now, for the straightforward reason that we are already on these properties and already know where everything is buried. We supply the lights, put them up, and come back in January to take them down. C9 bulbs on socket wire cut to length for each run, so it follows the line of the roof instead of falling short or doubling back the way a fixed-length retail string does. Rooflines, trees and bushes, walkways and railings, wreaths and garland.
+A head is easier. That's a straightforward swap and it can wait until spring.
 
-[See Christmas light installation](/christmas-lights), or call (970) 692-7270 and we will come look at the house.
+## Order of operations
+
+Winterization first, lights second. The system has to be cleared before the first hard freeze anyway, and once it's done you're at least working on a dry system, so a stake through a lateral is a repair rather than a repair plus a flooded lawn.
+
+If your sprinklers haven't been blown out yet this season, that's the more urgent of the two. [See sprinkler blowouts](/sprinkler-blowout).
+
+## Or let us do it
+
+We hang Christmas lights now, mostly because we're already on these properties and already know what's buried where. We supply the lights, put them up, and come back in January to take them down. C9 bulbs on socket wire, cut to length for each run, so it follows the roof instead of falling short or doubling back.
+
+Rooflines, trees and bushes, walkways and railings, wreaths and garland. [See Christmas light installation](/christmas-lights), or call (970) 692-7270 and we'll come look at the house.
 `,
   },
   {
