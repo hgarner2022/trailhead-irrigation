@@ -190,6 +190,17 @@ const SERVICES: ServiceDef[] = [
     },
   },
   {
+    // Quoted per property, so no priceSpecification. Hannah: "Remove price
+    // and dates." Confirmed 2026-10-09: Trailhead supplies the lights and
+    // January takedown is included.
+    id: "christmas-lights",
+    name: "Christmas Light Installation",
+    description:
+      "Residential Christmas light installation. Trailhead supplies the lights and installs them on rooflines and peaks, trees and bushes, walkways and railings, and wreaths and garland, then returns in January to take them down, which is included.",
+    serviceType: "Holiday Lighting Installation",
+    url: `${SITE_URL}/christmas-lights`,
+  },
+  {
     id: "spring-turn-on",
     name: "Spring Sprinkler Turn-On",
     description:

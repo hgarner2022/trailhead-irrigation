@@ -35,6 +35,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${baseUrl}/smart-controllers`, lastModified: new Date(CITY_PAGES_UPDATED), changeFrequency: "monthly" as const, priority: 0.9 },
     { url: `${baseUrl}/smart-controllers/water-savings-calculator`, lastModified: new Date(CALCULATOR_UPDATED), changeFrequency: "monthly" as const, priority: 0.85 },
     { url: `${baseUrl}/sprinkler-installation`, lastModified: new Date(SERVICE_PAGES_UPDATED), changeFrequency: "monthly" as const, priority: 0.95 },
+    { url: `${baseUrl}/christmas-lights`, lastModified: new Date(SERVICE_PAGES_UPDATED), changeFrequency: "monthly" as const, priority: 0.9 },
     { url: `${baseUrl}/aeration`, lastModified: new Date(SERVICE_PAGES_UPDATED), changeFrequency: "monthly" as const, priority: 0.9 },
     { url: `${baseUrl}/sprinkler-blowout`, lastModified: new Date(SERVICE_PAGES_UPDATED), changeFrequency: "weekly" as const, priority: 0.95 },
     { url: `${baseUrl}/water-rebates`, lastModified: new Date(REBATE_PAGES_UPDATED), changeFrequency: "monthly" as const, priority: 0.9 },
