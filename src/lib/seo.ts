@@ -196,7 +196,7 @@ const SERVICES: ServiceDef[] = [
     id: "christmas-lights",
     name: "Christmas Light Installation",
     description:
-      "Residential Christmas light installation. Trailhead supplies the lights and installs them on rooflines and peaks, trees and bushes, walkways and railings, and wreaths and garland, then returns in January to take them down, which is included.",
+      "Residential Christmas light installation. Trailhead supplies the lights, C9 bulbs on socket wire cut to length for each run, and installs them on rooflines and peaks, trees and bushes, walkways and railings, and wreaths and garland, then returns in January to take them down, which is included.",
     serviceType: "Holiday Lighting Installation",
     url: `${SITE_URL}/christmas-lights`,
   },

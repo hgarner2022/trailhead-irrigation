@@ -78,7 +78,7 @@ If your sprinklers have not been blown out yet this season, that is the more urg
 
 ## Or skip the ladder entirely
 
-We hang Christmas lights now, for the straightforward reason that we are already on these properties and already know where everything is buried. We supply the lights, put them up, and come back in January to take them down. Rooflines, trees and bushes, walkways and railings, wreaths and garland.
+We hang Christmas lights now, for the straightforward reason that we are already on these properties and already know where everything is buried. We supply the lights, put them up, and come back in January to take them down. C9 bulbs on socket wire cut to length for each run, so it follows the line of the roof instead of falling short or doubling back the way a fixed-length retail string does. Rooflines, trees and bushes, walkways and railings, wreaths and garland.
 
 [See Christmas light installation](/christmas-lights), or call (970) 692-7270 and we will come look at the house.
 `,

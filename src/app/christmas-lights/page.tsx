@@ -1,91 +1,101 @@
 import type { Metadata } from "next"
-import { PageBanner } from "@/components/sections/PageBanner"
 import { CTAStrip } from "@/components/sections/CTAStrip"
 import { FaqList } from "@/components/sections/FaqList"
-import { SectionHeader } from "@/components/sections/SectionHeader"
 import { buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import Image from "next/image"
 import Link from "next/link"
-import { Phone, Mail, Check } from "lucide-react"
+import { Phone, Check } from "lucide-react"
 import { faqJsonLd, breadcrumbJsonLd, siteConfig } from "@/lib/seo"
 
 export const metadata: Metadata = {
   title: "Christmas Light Installation in Erie, CO",
   description:
-    "Christmas light installation in Erie, Longmont, Louisville, Lafayette, Firestone & Broomfield. We supply the lights, hang them, and take them down in January.",
+    "Residential Christmas light installation in Erie, Longmont, Louisville, Lafayette, Firestone & Broomfield. We supply the lights, hang them, and take them down in January.",
   alternates: { canonical: `${siteConfig.url}/christmas-lights` },
 }
 
 /**
  * Christmas light installation landing page.
  *
- * Everything on this page came from Hannah on 2026-10-09. Do not add to it
- * without asking her first. What she confirmed:
+ * Design direction is "dusk": the moment the lights come on. The page opens
+ * on a full-bleed photograph at blue hour, whose sky sits almost exactly on
+ * the brand navy, and runs warm amber against that cold ground the whole way
+ * down. It deliberately does not use the PageBanner + alternating-section
+ * pattern every other interior page uses, because that pattern had nothing to
+ * say here and Hannah called the first attempt crappy, correctly.
  *
- *   - Trailhead supplies the lights. Customers are not buying or storing them.
- *   - Takedown in January is included in the price.
+ * Type stays on the site's stack rather than introducing a display face. A
+ * seasonal page that reads as a different company is worse than one that
+ * earns its distinction from composition, imagery and hierarchy.
+ *
+ * FACTS. All confirmed by Hannah 2026-10-09. Do not add to these.
+ *   - Trailhead supplies the lights. Customers buy and store nothing.
+ *   - January takedown is included in the price.
  *   - Scope: rooflines and peaks, trees and bushes, walkways and railings,
  *     wreaths and garland.
- *   - Contact is phone and email only. No booking form exists for this service
- *     and there is no Jobber form id for it.
+ *   - Residential only. No commercial work.
+ *   - Phone only. Hannah removed the email CTA. There is no booking form and
+ *     no Jobber form id for this service.
+ *   - C9 bulbs on socket wire, cut to length for each run. Confirmed by
+ *     Hannah 2026-10-09. This is the real differentiator against retail
+ *     string lights, which come in fixed lengths. Lights come from Heritage
+ *     Plus, a trade holiday-lighting supplier. Still NOT confirmed and still
+ *     not claimed: LED vs incandescent, wattage, bulb colours available.
  *
- * Deliberately NOT on this page, because nobody has confirmed any of it:
- *   - Any price or starting price. Hannah: "Remove price and dates."
- *   - Install or takedown dates, or a booking deadline. Same instruction.
- *   - Bulb type, commercial-grade claims, timers, warranties, insurance,
- *     mid-season repair visits, or how the lights are stored off season.
- *   - Commercial work. The confirmed scope is residential.
+ * Deliberately absent, because nobody has confirmed it: price, install or
+ * takedown dates, timers, warranties, insurance, mid-season repair visits,
+ * and off-season storage.
  *
- * The irrigation angle is the one genuinely differentiated thing here and it
- * is true: Trailhead already services these customers' sprinkler systems, so
- * they know where heads and lines sit before anyone puts a ladder or a stake
- * in the yard. That is sourced from the business doing both, not invented.
+ * "Get a Free Quote" is used at Hannah's explicit request. 3cca994 stripped
+ * that phrasing sitewide as house style, so this page is a deliberate
+ * exception rather than a regression.
  *
- * "Get a Free Quote" is used here at Hannah's explicit request (2026-10-09).
- * Note that 3cca994 stripped "free quote" language from every other surface as
- * house style, so this page is a deliberate exception rather than a regression.
- *
- * Lights are sourced from Heritage Plus, a trade holiday-lighting supplier
- * (heritageplus.com/holiday-lighting), per Hannah 2026-10-09. That supports
- * calling the product professional rather than retail. It does NOT support
- * naming a bulb type, LED vs incandescent, or claiming custom-cut C9 socket
- * wire, none of which anyone has confirmed. Ask before adding any of that.
+ * Photography is Unsplash (licensed for commercial use). The hero is cropped
+ * above a restaurant sign that was visible on the porch of the original, so
+ * the page shows only residential-looking work. Swap both for photos of
+ * Ryan's own jobs as soon as there are any.
  *
  * House style: no em dashes (18c9a89).
  */
 
 const INCLUDED = [
   {
-    title: "We supply the lights",
-    body: "Professional holiday lighting product, not big-box retail strings. You are not buying anything, measuring anything, or finding somewhere to keep it all in February. The lights are ours and they leave with us.",
+    title: "C9 bulbs, cut to your roofline",
+    body: "Individual C9 bulbs on socket wire, cut to length for every run. Not fixed-length retail strings, so there is no doubled-up excess and no dark gap where the string ran out.",
   },
   {
     title: "Rooflines and peaks",
-    body: "The part most people hire out, because it is the part that involves a ladder in the cold on the steepest section of the house.",
+    body: "The part people hire out, because it is the part that puts you on a ladder in the cold on the steepest section of the house.",
   },
   {
     title: "Trees and bushes",
-    body: "Wrapping trunks and lighting the shrubs and beds, so the yard reads as finished rather than just the roof being lit.",
+    body: "Trunks wrapped, shrubs and beds lit, so the yard reads as finished instead of just the roof being done.",
   },
   {
     title: "Walkways and railings",
-    body: "Paths, porch rails, and columns, which is what people actually see as they walk up to the door.",
+    body: "Paths, porch rails and columns. The part guests actually walk through on the way to your door.",
   },
   {
     title: "Wreaths and garland",
-    body: "Doors, windows, and garage surrounds.",
+    body: "Doors, windows and garage surrounds.",
   },
   {
-    title: "Takedown in January is included",
-    body: "We come back and take it all down. It is part of the price, not a second call and a second bill in the new year.",
+    title: "Takedown in January",
+    body: "Included. We come back, take it all down, and the lights leave with us. Not a second call and a second bill in the new year.",
   },
 ]
 
 const FAQS = [
   {
+    question: "What kind of lights do you use?",
+    answer:
+      "C9 bulbs on socket wire, cut to length for each run of your house. That is the difference between a professional install and a retail string. Store-bought lights come in fixed lengths, so a run either falls short and leaves a dark gap or overshoots and gets doubled back on itself. Cut-to-length wire follows the line of the roof exactly.",
+  },
+  {
     question: "Do I need to buy the lights?",
     answer:
-      "No. We supply them, and they are professional holiday lighting product rather than the strings you would pick up at a big-box store. There is nothing for you to buy, nothing to replace when a strand fails, and nothing sitting in a box in your garage for eleven months of the year.",
+      "No. We supply them. Nothing for you to buy, nothing to replace when a bulb fails, and nothing sitting in a box in your garage for eleven months of the year.",
   },
   {
     question: "Does taking them down cost extra?",
@@ -95,27 +105,32 @@ const FAQS = [
   {
     question: "What will you put lights on?",
     answer:
-      "Rooflines and peaks, trees and bushes, walkways and railings, and wreaths and garland on doors, windows, and garage surrounds. Tell us what you have in mind and we will quote it.",
+      "Rooflines and peaks, trees and bushes, walkways and railings, and wreaths and garland on doors, windows and garage surrounds. Tell us what you have in mind and we will quote it.",
   },
   {
     question: "How much does Christmas light installation cost?",
     answer:
-      "It depends on the house, how much of it you want lit, and what you want included. Give us a call or send an email and we will come out, look at it, and quote it.",
+      "It depends on the house, how much of it you want lit, and what you want included. Call and we will come out, look at it, and give you a number.",
+  },
+  {
+    question: "Do you do commercial buildings?",
+    answer:
+      "No. This is residential only, for houses in our service area.",
   },
   {
     question: "Why hire an irrigation company to hang Christmas lights?",
     answer:
-      "Because we already know your yard. If we winterized your sprinklers we know where your heads, valve boxes, and lateral lines sit, which matters the moment anyone starts putting ladder feet and light stakes into a lawn. It is the same crew you already deal with, on a ladder instead of in your valve box.",
+      "Because we already know your yard. If we winterized your sprinklers we know where your heads, valve boxes and lateral lines sit, which matters the moment anyone starts putting ladder feet and light stakes into a lawn. It is the same crew you already deal with, on a ladder instead of in your valve box.",
   },
   {
     question: "What areas do you cover?",
     answer:
-      "The same area we cover for irrigation work: Erie, Longmont, Louisville, Lafayette, Firestone, Broomfield, and the surrounding Weld County communities.",
+      "The same area we cover for irrigation work: Erie, Longmont, Louisville, Lafayette, Firestone, Broomfield and the surrounding Weld County communities.",
   },
   {
-    question: "Can you hang lights if you have never worked on my property?",
+    question: "Do I have to be an existing customer?",
     answer:
-      "Yes. You do not need to be an existing customer. Get in touch and we will come take a look.",
+      "No. Give us a call and we will come take a look at the house.",
   },
 ]
 
@@ -141,148 +156,215 @@ export default function ChristmasLightsPage() {
         }}
       />
 
-      <PageBanner
-        title="Christmas Light Installation"
-        description="We supply the lights, hang them, and come back in January to take them down."
-      />
-
-      {/* Answer first, then the one ask. Phone and email only: there is no
-          booking form for this service. */}
+      {/* Hero. Full bleed photograph at blue hour. The gradient is weighted to
+          the bottom left so the type sits on the darkest part of the frame
+          rather than over the lit gables. */}
       <section
-        aria-labelledby="christmas-intro"
-        className="bg-background section-padding-y"
+        aria-labelledby="xmas-hero"
+        className="relative isolate min-h-[560px] md:min-h-[680px] flex items-end overflow-hidden"
       >
-        <div className="container-padding-x mx-auto max-w-3xl">
-          <h2
-            id="christmas-intro"
-            className="text-3xl md:text-4xl font-bold text-foreground mb-5"
-          >
-            Nobody actually enjoys the ladder part
-          </h2>
-          <p className="text-muted-foreground text-lg leading-relaxed mb-4">
-            Every year the same evening gets set aside for it, and every year it
-            takes longer than planned, half a strand is dead, and the steep bit
-            over the garage ends up skipped. Then it all has to come down again
-            in January, usually in worse weather than it went up in.
-          </p>
-          <p className="text-muted-foreground text-lg leading-relaxed mb-8">
-            We do the whole thing instead. We bring the lights, we put them up,
-            and we come back after the holidays and take them down. You get the
-            house you had in mind without spending a weekend on a ladder.
-          </p>
+        <Image
+          src="/images/christmas-lights-hero.jpg"
+          alt="Warm white bulbs outlining the rooflines, gables and bay windows of a house at dusk"
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover object-center"
+        />
+        {/* Two layered washes: a vertical lift for legibility, then a warm
+            pool bottom-left so the frame feels lit rather than dimmed. */}
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 bg-gradient-to-t from-charcoal via-charcoal/55 to-charcoal/5"
+        />
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 bg-gradient-to-r from-charcoal/85 via-charcoal/25 to-transparent"
+        />
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 opacity-50"
+          style={{
+            background:
+              "radial-gradient(60% 55% at 12% 100%, rgba(217,119,6,0.45) 0%, rgba(217,119,6,0) 70%)",
+          }}
+        />
 
-          <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative container-padding-x mx-auto max-w-7xl w-full pb-14 md:pb-20 pt-32">
+          <div className="max-w-3xl">
+            <p className="text-xs md:text-sm font-semibold uppercase tracking-[0.2em] text-primary-light mb-4">
+              Residential Christmas lights
+            </p>
+            <h1
+              id="xmas-hero"
+              className="text-4xl md:text-6xl font-bold text-white leading-[1.05] mb-5"
+            >
+              You have never once enjoyed the ladder part
+            </h1>
+            <p className="text-lg md:text-xl text-white/80 leading-relaxed mb-8 max-w-xl">
+              So do not do it. We bring the lights, put them up, and come back
+              in January to take them down.
+            </p>
             <a
               href="tel:9706927270"
-              className={cn(buttonVariants({ size: "lg" }), "w-full sm:w-auto")}
+              className={cn(
+                buttonVariants({ size: "lg" }),
+                "text-base shadow-lg shadow-primary/30"
+              )}
             >
               <Phone className="w-4 h-4" />
               Get a Free Quote
             </a>
-            <a
-              href="mailto:ryan@trailheadirrigation.com?subject=Christmas%20lights%20quote"
-              className={cn(
-                buttonVariants({ variant: "outline", size: "lg" }),
-                "w-full sm:w-auto"
-              )}
-            >
-              <Mail className="w-4 h-4" />
-              Email Ryan
-            </a>
+            <p className="text-sm text-white/60 mt-4">
+              Call (970) 692-7270 and we will come look at the house.
+            </p>
           </div>
-          <p className="text-sm text-muted-foreground mt-4">
-            Call (970) 692-7270 or email and we will come out, look at the
-            house, and give you a number.
+        </div>
+      </section>
+
+      {/* The pitch. Deliberately short and wide-measure, sitting on cream so
+          it reads as a breath after the dark hero. */}
+      <section
+        aria-labelledby="xmas-pitch"
+        className="bg-cream section-padding-y"
+      >
+        <div className="container-padding-x mx-auto max-w-3xl">
+          <h2
+            id="xmas-pitch"
+            className="text-2xl md:text-3xl font-bold text-foreground leading-snug mb-5"
+          >
+            Every year the same evening gets set aside for it, and every year it
+            takes longer than planned.
+          </h2>
+          <p className="text-muted-foreground text-lg leading-relaxed">
+            Half a strand is dead. The steep bit over the garage ends up
+            skipped. Then it all has to come down again in January, usually in
+            worse weather than it went up in. We do the whole thing instead, and
+            you get the house you had in mind without spending a weekend on a
+            ladder.
           </p>
         </div>
       </section>
 
-      {/* What you get */}
+      {/* What is included. Numbered rather than bulleted: it reads as a list
+          of things being handled for you, which is the actual proposition. */}
       <section
-        aria-labelledby="christmas-included"
-        className="bg-cream section-padding-y"
+        aria-labelledby="xmas-included"
+        className="bg-background section-padding-y"
       >
-        <div className="container-padding-x mx-auto max-w-5xl">
-          <SectionHeader
-            tagline="What is included"
-            taglineAsEyebrow
-            title="Lights up, lights down, nothing left to you"
-            titleId="christmas-included"
-            align="left"
-            className="mb-10"
-          />
-          <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-7">
+        <div className="container-padding-x mx-auto max-w-6xl">
+          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-12">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary mb-3">
+                What is included
+              </p>
+              <h2
+                id="xmas-included"
+                className="text-3xl md:text-4xl font-bold text-foreground leading-tight"
+              >
+                Lights up, lights down,
+                <br className="hidden md:block" /> nothing left to you
+              </h2>
+            </div>
+          </div>
+
+          <ul className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-border rounded-xl overflow-hidden border border-border">
             {INCLUDED.map((item) => (
-              <li key={item.title} className="flex items-start gap-3">
-                <Check className="h-5 w-5 text-success shrink-0 mt-1" />
-                <div>
-                  <p className="font-semibold text-foreground mb-1">
-                    {item.title}
-                  </p>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    {item.body}
-                  </p>
-                </div>
+              <li
+                key={item.title}
+                className="bg-background p-7 flex flex-col gap-2"
+              >
+                <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 mb-1">
+                  <Check className="h-4 w-4 text-primary" />
+                </span>
+                <p className="font-bold text-foreground">{item.title}</p>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  {item.body}
+                </p>
               </li>
             ))}
           </ul>
         </div>
       </section>
 
-      {/* The differentiator. True because the same business does both. */}
+      {/* The differentiator, on navy with the roofline photograph bled to the
+          edge. This is the one claim no lighting company can make, so it gets
+          the heaviest treatment on the page. */}
       <section
-        aria-labelledby="christmas-why"
-        className="bg-background section-padding-y"
+        aria-labelledby="xmas-why"
+        className="bg-navy relative overflow-hidden"
       >
-        <div className="container-padding-x mx-auto max-w-3xl">
-          <h2
-            id="christmas-why"
-            className="text-2xl md:text-3xl font-bold text-foreground mb-5"
-          >
-            We already know what is under your lawn
-          </h2>
-          <p className="text-muted-foreground leading-relaxed mb-4">
-            This is the part most light companies cannot offer. A sprinkler
-            system is a few inches under the grass, and December is exactly when
-            people start driving stakes into a lawn for light runs and yard
-            displays, and setting heavy ladder feet down wherever is convenient.
-            A stake through a lateral line does not announce itself in winter.
-            It waits until spring turn-on, when the system is pressurized again
-            and a patch of lawn turns into a puddle.
-          </p>
-          <p className="text-muted-foreground leading-relaxed mb-6">
-            If we winterized your system we already know where the heads, the
-            valve boxes, and the lines run, because we were the ones clearing
-            them in October. So we work around them. It is the same crew you
-            already deal with, on a ladder instead of in your valve box.
-          </p>
-          <div className="rounded-lg border border-border bg-cream p-5">
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              Not had your sprinklers winterized yet this year? That comes
-              first, and the window is closing.{" "}
-              <Link
-                href="/sprinkler-blowout"
-                className="text-primary hover:underline font-medium"
+        <div className="grid grid-cols-1 lg:grid-cols-2">
+          <div className="relative min-h-[320px] lg:min-h-[560px] order-1 lg:order-none">
+            <Image
+              src="/images/christmas-lights-roofline.jpg"
+              alt="Coloured bulbs clipped along the fascia of a house roofline against a dusk sky"
+              fill
+              sizes="(min-width: 1024px) 50vw, 100vw"
+              className="object-cover"
+            />
+            <div
+              aria-hidden="true"
+              className="absolute inset-0 bg-navy/20 lg:bg-gradient-to-r lg:from-navy/60 lg:to-transparent"
+            />
+          </div>
+
+          <div className="flex items-center">
+            <div className="container-padding-x mx-auto max-w-xl py-16 md:py-24 lg:py-28">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary-light mb-4">
+                The part nobody else thinks about
+              </p>
+              <h2
+                id="xmas-why"
+                className="text-3xl md:text-4xl font-bold text-white leading-tight mb-6"
               >
-                See sprinkler blowouts
-              </Link>
-              .
-            </p>
+                We already know what is under your lawn
+              </h2>
+              <p className="text-white/75 leading-relaxed mb-4">
+                Your sprinkler system sits a few inches under the grass, and
+                December is exactly when people start driving stakes into a lawn
+                for light runs and setting heavy ladder feet down wherever is
+                convenient. A stake through a lateral line does not announce
+                itself in winter. It waits until spring turn-on, when the system
+                is pressurized again and a patch of lawn turns into a puddle.
+              </p>
+              <p className="text-white/75 leading-relaxed mb-8">
+                If we winterized your system we already know where the heads,
+                the valve boxes and the lines run, because we were the ones
+                clearing them in October. So we work around them. Same crew you
+                already deal with, on a ladder instead of in your valve box.
+              </p>
+              <div className="flex flex-wrap gap-x-6 gap-y-3 text-sm">
+                <Link
+                  href="/blog/christmas-lights-without-damaging-sprinklers"
+                  className="text-primary-light hover:text-white transition-colors font-semibold"
+                >
+                  How to hang lights without hitting a line
+                </Link>
+                <Link
+                  href="/sprinkler-blowout"
+                  className="text-white/60 hover:text-white transition-colors font-semibold"
+                >
+                  Sprinkler blowouts
+                </Link>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
       {/* FAQs */}
       <section
-        aria-labelledby="christmas-faq"
+        aria-labelledby="xmas-faq"
         className="bg-cream section-padding-y"
       >
         <div className="container-padding-x mx-auto max-w-3xl">
-          <SectionHeader
-            title="Christmas Light FAQs"
-            titleId="christmas-faq"
-            className="mb-10"
-          />
+          <h2
+            id="xmas-faq"
+            className="text-3xl md:text-4xl font-bold text-foreground mb-10 text-center"
+          >
+            Christmas Light FAQs
+          </h2>
           <FaqList faqs={FAQS} itemBg="background" />
         </div>
       </section>
