@@ -57,7 +57,10 @@ export default function HomePage() {
       <StatsStrip />
       <ServicesOverview />
       <MeetRyan />
-      <Testimonials reviews={HOME_REVIEWS} />
+      <Testimonials
+        reviews={HOME_REVIEWS}
+        heading="What Erie Homeowners Say"
+      />
       <HomeFAQ />
       <CTAStrip />
     </main>

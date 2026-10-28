@@ -18,13 +18,13 @@ export function Hero() {
       <div className="relative container-padding-x mx-auto max-w-7xl py-24 md:py-32">
         <div className="flex flex-col items-center text-center gap-6 max-w-3xl mx-auto">
           <p className="text-sm md:text-base font-semibold uppercase tracking-widest text-primary-light">
-            Local Sprinkler Company
+            Local Sprinkler &amp; Irrigation Company
           </p>
           <h1
             id="hero-heading"
             className="text-4xl md:text-5xl lg:text-6xl font-bold text-white tracking-tight"
           >
-            Sprinkler Repairs and Installations
+            Sprinkler & Irrigation Installation and Repair in Erie, CO
           </h1>
           <p className="text-lg md:text-xl text-white/90 text-pretty max-w-2xl">
             Locally owned and operated. Installation, repair, winterization, and

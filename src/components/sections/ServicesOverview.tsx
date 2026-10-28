@@ -38,7 +38,7 @@ export function ServicesOverview() {
         <div className="flex flex-col items-center gap-12">
           <div className="text-center flex flex-col gap-3">
             <h2 id="services-heading" className="text-3xl md:text-4xl font-bold text-foreground">
-              Our Sprinkler Services
+              Sprinkler &amp; Irrigation Services in Erie &amp; the Front Range
             </h2>
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
               From new installations to seasonal maintenance, we keep your lawn healthy year-round.

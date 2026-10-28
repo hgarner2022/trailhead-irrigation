@@ -54,7 +54,7 @@ export function HomeFAQ() {
             id="home-faq-heading"
             className="text-3xl md:text-4xl font-bold text-foreground"
           >
-            Frequently Asked Questions
+            Sprinkler &amp; Irrigation Questions, Answered
           </h2>
           <p className="mt-3 text-muted-foreground">
             Quick answers from a local Erie sprinkler contractor.

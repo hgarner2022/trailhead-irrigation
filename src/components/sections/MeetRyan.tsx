@@ -45,7 +45,7 @@ export function MeetRyan() {
           <div className="flex flex-1 flex-col gap-6">
             <Badge variant="green" className="w-fit">Locally Owned &amp; Operated</Badge>
             <h2 className="text-3xl md:text-4xl font-bold text-foreground">
-              Meet Ryan
+              Meet Ryan, Your Local Irrigation Contractor
             </h2>
             <div className="flex flex-col gap-4 text-muted-foreground text-lg">
               <p>
