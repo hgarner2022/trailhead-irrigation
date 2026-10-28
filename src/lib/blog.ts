@@ -1,8 +1,24 @@
 export interface BlogPost {
   slug: string
+  /** Headline used for the on-page <h1>, related-post cards and breadcrumbs. */
   title: string
+  /**
+   * Shorter headline for the <title> tag, when `title` runs past the ~60
+   * characters Google shows and would be truncated in results. The on-page
+   * <h1> keeps the full `title`. Omit when `title` is already short enough.
+   */
+  metaTitle?: string
   date: string
+  /** On-page summary, shown on /blog. Written as prose, often over 160 chars. */
   excerpt: string
+  /**
+   * 150-160 character meta description. Search engines truncate around 160,
+   * so most excerpts are too long to use directly. Falls back to a truncated
+   * `excerpt` when omitted.
+   */
+  metaDescription?: string
+  /** Path under /public, used for og:image and twitter:image. */
+  image: string
   content: string
   category?: string
   relatedSlugs?: string[]
@@ -32,10 +48,14 @@ export const BLOG_POSTS: BlogPost[] = [
     // laterals, as opposed to footings. Do not add inches without asking Ryan.
     slug: "christmas-lights-without-damaging-sprinklers",
     title: "Hanging Christmas Lights in Colorado Without Wrecking Your Sprinklers",
+    metaTitle: "Christmas Lights in Colorado: Don't Wreck Your Sprinklers",
     date: "2026-10-09",
     category: "Seasonal Maintenance",
     excerpt:
       "Every stake you push into the lawn in December goes into ground with irrigation running through it. Nothing leaks, because the system is already dry. You find out in April. Here's where it's safe to put stakes and ladders, and what December wind does to a roofline job.",
+    metaDescription:
+      "Your sprinklers sit dry under the lawn in December, so a stake through a line only shows up in April. Where to put stakes and ladders, and what wind does.",
+    image: "/images/christmas-lights-hero.jpg",
     relatedSlugs: [
       "when-to-winterize-sprinklers-colorado",
       "spring-sprinkler-startup-colorado",
@@ -103,8 +123,12 @@ Rooflines, trees and bushes, walkways and railings, wreaths and garland. [See Ch
   {
     slug: 'erie-water-allocation-policy-2026',
     title: "Erie Passed a Water Allocation Policy. Here's What It Means for Your Sprinkler System.",
+    metaTitle: "Erie Water Allocation Policy: What It Means for Sprinklers",
     date: '2026-06-01',
     excerpt: "On May 26, Erie's Town Council adopted a new Water Allocation Policy that lays out a clear, thoughtful plan for the next several years. Mayor Andrew Moore walked through it in a recent blog post. Here's the takeaway for Erie homeowners with sprinkler systems, and why I think we're in a good spot to come out of this period with healthier, smarter yards.",
+    metaDescription:
+      "Erie's Town Council adopted a Water Allocation Policy in May. What it means for homeowners with sprinkler systems, and why it is good news longer term.",
+    image: "/images/boulder.jpg",
     category: 'Local Resources',
     relatedSlugs: ['erie-march-2026-water-restriction', 'new-to-erie-2026-lawn-irrigation-guide', 'erie-lawn-irrigation-month-by-month-guide'],
     content: `## What Erie Just Did, and Why It's Good News
@@ -178,8 +202,12 @@ Mayor Moore's full post is worth a read for the policy context: [State of Erie's
   {
     slug: 'erie-lawn-irrigation-month-by-month-guide',
     title: "The Erie Lawn & Irrigation Playbook: A Month-by-Month Guide for Front Range Homeowners",
+    metaTitle: "Erie Lawn & Irrigation: A Month-by-Month Guide",
     date: '2026-05-19',
     excerpt: "What your lawn and sprinkler system actually need, month by month, in Erie and the surrounding Front Range towns. Built around Colorado's drought reality, clay soil, and the cool-season grass cycle, with specific actions for each month and the common mistakes I see homeowners make.",
+    metaDescription:
+      "What your lawn and sprinkler system need each month in Erie and the Front Range, built around clay soil, drought rules and the cool-season grass cycle.",
+    image: "/images/healthy-lawn-closeup.jpg",
     category: 'Seasonal Maintenance',
     relatedSlugs: ['new-to-erie-2026-lawn-irrigation-guide', 'spring-sprinkler-startup-colorado', 'when-to-winterize-sprinklers-colorado'],
     content: `## Why a Month-by-Month Guide
@@ -355,8 +383,12 @@ If you want help dialing it in, I run audits and full system service across [Eri
   {
     slug: 'new-to-erie-2026-lawn-irrigation-guide',
     title: "New to Erie? Here's What Your Builder Didn't Tell You About Your Lawn and Sprinkler System",
+    metaTitle: "New to Erie? Your Lawn and Sprinkler System, Explained",
     date: '2026-05-11',
     excerpt: "Erie added thousands of new homes in the last few years, and most arrived with a builder-installed sprinkler system that wasn't designed for what just happened this spring. After Colorado's first Level 4 water emergency of 2026, here's what every new Erie homeowner should know about their yard, their water, and the rules nobody handed you at closing.",
+    metaDescription:
+      "Builder-installed sprinkler systems were not designed for Erie's water rules. What every new homeowner should know about the yard nobody explained at closing.",
+    image: "/images/boulder-road.jpg",
     category: 'Local Resources',
     relatedSlugs: ['erie-march-2026-water-restriction', 'smart-irrigation-controllers-worth-it', 'spring-sprinkler-startup-colorado'],
     content: `## Welcome to Erie. Now Here Is What Just Happened.
@@ -464,8 +496,12 @@ The fix is not dramatic. A spring audit, a cycle and soak program, and a smart c
   {
     slug: 'erie-march-2026-water-restriction',
     title: 'Erie March 2026 Water Restriction: What Homeowners Need to Know for Irrigation',
+    metaTitle: "Erie's March 2026 Water Restriction: What to Know",
     date: '2026-04-22',
     excerpt: 'In March 2026, the Town of Erie declared a water supply emergency and ordered all residents, HOAs, and businesses to immediately shut off their irrigation systems — threatening to cut water service to anyone who didn\'t comply. Here\'s what happened, what it means for your sprinkler system, and how to protect your lawn and landscape as we head into a drought-strained summer.',
+    metaDescription:
+      "Erie declared a water supply emergency in March 2026 and ordered irrigation shut off. What happened, and how to protect your lawn through a dry summer.",
+    image: "/images/boulder.jpg",
     category: 'Seasonal Maintenance',
     relatedSlugs: ['colorado-water-restrictions-2026', 'water-optimization-tips-colorado', 'smart-irrigation-controllers-worth-it'],
     content: `## What Happened in Erie in March 2026
@@ -535,8 +571,12 @@ If your irrigation system came with your new construction or hasn't been profess
   {
     slug: "what-to-expect-sprinkler-installation",
     title: "What to Expect During a Sprinkler System Installation in Erie, CO",
+    metaTitle: "What to Expect During a Sprinkler Install in Erie, CO",
     date: "2026-04-07",
     excerpt: "Wondering what a sprinkler installation actually looks like? Here's the full process from design to final walkthrough, including how long it takes and what your yard looks like afterward.",
+    metaDescription:
+      "What a sprinkler installation actually looks like, from design to final walkthrough, including how long it takes and what your yard looks like afterward.",
+    image: "/images/sprinkler-installation.jpg",
     category: "Installation & Upgrades",
     relatedSlugs: ["how-much-does-sprinkler-system-cost-colorado", "drip-irrigation-vs-spray-heads", "why-hire-local-irrigation-company"],
     content: `A typical residential sprinkler system installation in Northern Colorado takes 1-3 days from first trench to final walkthrough. The process includes a site visit and design, utility locating, trenching, pipe and head installation, controller wiring, and a zone-by-zone test. Your yard will have trenching lines visible for a few weeks, but they fill in fast.
@@ -642,8 +682,12 @@ A few things that help the recovery:
   {
     slug: "xeriscaping-vs-traditional-lawn-colorado",
     title: "Xeriscaping vs a Traditional Lawn in Colorado: Pros, Cons, and Real Costs",
+    metaTitle: "Xeriscaping vs a Traditional Lawn in Colorado: Costs",
     date: "2026-03-31",
     excerpt: "Thinking about replacing your lawn with xeriscaping? Here's a real cost comparison, the pros and cons, and why the best answer for most Colorado homeowners is somewhere in the middle.",
+    metaDescription:
+      "A real cost comparison of xeriscaping and a traditional lawn in Colorado, the pros and cons of each, and why most homeowners land somewhere in the middle.",
+    image: "/images/boulder-colorado.jpg",
     category: "Installation & Upgrades",
     relatedSlugs: ["drip-irrigation-vs-spray-heads", "colorado-water-restrictions-2026", "water-optimization-tips-colorado"],
     content: `Water gets more expensive every year along the Front Range, and drought restrictions are getting tighter. So more homeowners in Erie, Longmont, and the surrounding area are asking: should I rip out my lawn and xeriscape?
@@ -735,6 +779,7 @@ There's no wrong answer. A well-maintained traditional lawn is great. A thoughtf
     title: "How to Adjust Sprinkler Heads (And When to Call a Pro)",
     date: "2026-03-24",
     excerpt: "A few simple adjustments can fix dry spots and stop watering the sidewalk. Here's how to do it yourself, plus the signs that something bigger is going on.",
+    image: "/images/sprinkler-repair.jpg",
     category: "Repair & Troubleshooting",
     relatedSlugs: ["signs-irrigation-system-needs-repair", "water-optimization-tips-colorado", "drip-irrigation-vs-spray-heads"],
     content: `A sprinkler head spraying the sidewalk or missing half the yard is annoying and wasteful. The good news: most adjustments take five minutes and no special skills. Here's how to do it.
@@ -819,8 +864,12 @@ DIY adjustments handle about 80% of sprinkler head issues. But some problems go 
   {
     slug: "backflow-preventer-testing-colorado",
     title: "Backflow Preventer Testing in Colorado: What It Is and Why Your Town Requires It",
+    metaTitle: "Backflow Preventer Testing in Colorado: What to Know",
     date: "2026-03-17",
     excerpt: "That metal device near your garage keeps irrigation water out of your drinking supply. Colorado requires annual testing, and skipping it can mean fines. Here's what you need to know.",
+    metaDescription:
+      "The backflow preventer near your garage keeps irrigation water out of your drinking supply. Colorado requires annual testing, and skipping it means fines.",
+    image: "/images/sprinkler-repair.jpg",
     category: "Repair & Troubleshooting",
     relatedSlugs: ["signs-irrigation-system-needs-repair", "spring-sprinkler-startup-colorado", "when-to-winterize-sprinklers-colorado"],
     content: `A backflow preventer is a valve on your irrigation system that stops sprinkler water from flowing backward into your drinking water supply. Colorado state law and most Front Range municipalities, including Erie, Longmont, Louisville, and Lafayette, require annual backflow testing by a certified tester. Testing typically costs $50-$75 and takes about 15 minutes.
@@ -884,8 +933,12 @@ Most people scramble to get their test done right before the town's deadline, an
   {
     slug: "summer-watering-tips-colorado-drought",
     title: "Summer Watering During a Colorado Drought: How to Keep Your Lawn Alive Without Wasting Water",
+    metaTitle: "Summer Watering in a Colorado Drought: What Works",
     date: "2026-03-10",
     excerpt: "Colorado summers are brutal on lawns. Here's how much water your grass actually needs, the best schedule for hot weeks, and when it's okay to let things go brown.",
+    metaDescription:
+      "How much water your grass actually needs in a Colorado summer, the best schedule for a run of hot weeks, and when it is genuinely fine to let it go brown.",
+    image: "/images/boulder.jpg",
     category: "Seasonal Maintenance",
     relatedSlugs: ["colorado-water-restrictions-2026", "water-optimization-tips-colorado", "how-to-adjust-sprinkler-heads"],
     content: `Colorado summers test every lawn. Triple-digit temps, single-digit humidity, weeks without rain. Here's how to keep your grass alive without running up a $300 water bill or violating watering restrictions.
@@ -946,8 +999,12 @@ Sometimes the problem isn't scheduling. If your system has bad coverage, leaking
   {
     slug: "smart-irrigation-controllers-worth-it",
     title: "Are Smart Sprinkler Controllers Worth It? A Colorado Contractor's Honest Take",
+    metaTitle: "Are Smart Sprinkler Controllers Worth It in Colorado?",
     date: "2026-03-03",
     excerpt: "Smart controllers can cut your water bill by 20-40%, but they're not magic. Here's what they actually do, which ones we recommend, and whether you should upgrade.",
+    metaDescription:
+      "Smart controllers can cut outdoor water use by 20-40%, but they are not magic. What they actually do, which ones we install, and when to skip the upgrade.",
+    image: "/images/healthy-lawn-closeup.jpg",
     category: "Installation & Upgrades",
     relatedSlugs: ["water-optimization-tips-colorado", "colorado-water-restrictions-2026", "how-much-does-sprinkler-system-cost-colorado"],
     content: `A smart sprinkler controller can save you real money on water. But it's not the right move for everyone. Here's the honest version from someone who installs these things every week.
@@ -1011,8 +1068,12 @@ For most homeowners in our area, a smart controller is one of the best investmen
   {
     slug: "how-much-does-sprinkler-system-cost-colorado",
     title: "How Much Does a Sprinkler System Cost in Colorado? (2026 Pricing)",
+    metaTitle: "How Much Does a Sprinkler System Cost in Colorado?",
     date: "2026-02-24",
     excerpt: "A straight breakdown of what a sprinkler system costs along the Front Range in 2026, what drives the price up or down, and how to avoid paying twice for a bad install.",
+    metaDescription:
+      "A straight breakdown of what a sprinkler system costs on the Front Range in 2026, what moves the price up or down, and how to avoid paying for a bad install.",
+    image: "/images/sprinkler-installation.jpg",
     category: "Installation & Upgrades",
     relatedSlugs: ["what-to-expect-sprinkler-installation", "drip-irrigation-vs-spray-heads", "smart-irrigation-controllers-worth-it"],
     content: `Most homeowners along the Front Range pay between **$3,000 and $6,000** for a full residential sprinkler system installation. That's a wide range, so let me break down what actually moves the number.
@@ -1079,8 +1140,12 @@ Every yard is different, so the only way to get a real number is to have someone
   {
     slug: "drip-irrigation-vs-spray-heads",
     title: "Drip Irrigation vs Spray Heads: Which Is Right for Your Colorado Yard?",
+    metaTitle: "Drip Irrigation vs Spray Heads: Which Does Your Yard Need?",
     date: "2026-02-10",
     excerpt: "Spray heads for the lawn, drip for the flower beds? It's not always that simple. Here's how to pick the right setup for Northern Colorado.",
+    metaDescription:
+      "Spray heads for the lawn and drip for the beds is not always the right split. How to pick the setup that fits your Northern Colorado yard, zone by zone.",
+    image: "/images/sprinkler-spring.jpg",
     category: "Installation & Upgrades",
     relatedSlugs: ["how-much-does-sprinkler-system-cost-colorado", "water-optimization-tips-colorado", "xeriscaping-vs-traditional-lawn-colorado"],
     content: `Most yards in Erie and Longmont need both spray heads and drip irrigation. But knowing where to use each one makes the difference between a system that wastes water and one that puts every drop where it belongs.
@@ -1169,8 +1234,10 @@ You don't have to choose one or the other. The best irrigation systems use spray
   {
     slug: "colorado-water-restrictions-2026",
     title: "Colorado Water Restrictions 2026: What Erie and Longmont Homeowners Need to Know",
+    metaTitle: "Colorado Water Restrictions 2026: Erie & Longmont Rules",
     date: "2026-02-03",
     excerpt: "2026 is shaping up to be a historic drought year on the Front Range. Here's what watering rules are in effect and how to keep your lawn alive within them.",
+    image: "/images/boulder.jpg",
     category: "Seasonal Maintenance",
     relatedSlugs: ["water-optimization-tips-colorado", "summer-watering-tips-colorado-drought", "smart-irrigation-controllers-worth-it"],
     content: `2026 is a rough water year. Snowpack on the Front Range hit record lows this winter, and every water district from Fort Collins to Denver is tightening things up. If you've got a lawn and garden in Erie, Longmont, Louisville, or Lafayette, you need to know the rules before you turn on your sprinklers.
@@ -1271,8 +1338,12 @@ If we move into full drought emergency, watering could drop to once a week or ge
   {
     slug: "spring-sprinkler-startup-colorado",
     title: "Spring Sprinkler Startup in Erie, CO: When to Turn On and What to Check",
+    metaTitle: "Spring Sprinkler Startup in Erie, CO: When to Turn On",
     date: "2026-01-27",
     excerpt: "It's warm out and your lawn looks thirsty. But turning on your sprinklers too early in Colorado can cause expensive damage.",
+    metaDescription:
+      "It is warm and the lawn looks thirsty, but starting sprinklers too early in Colorado causes expensive damage. When to turn on, and what to check first.",
+    image: "/images/sprinkler-spring.jpg",
     category: "Seasonal Maintenance",
     relatedSlugs: ["when-to-winterize-sprinklers-colorado", "signs-irrigation-system-needs-repair", "how-to-adjust-sprinkler-heads"],
     content: `In Northern Colorado, the safest time to turn on your sprinkler system is late April to early May, after nighttime temperatures stay consistently above 32 degrees for at least a week. Turning on too early risks freeze damage to pipes and backflow preventers, which can cost $500-$1,500 to repair.
@@ -1341,8 +1412,12 @@ I get it. You want a green lawn. But a few weeks of patience in April saves you 
   {
     slug: "water-optimization-tips-colorado",
     title: "5 Ways to Cut Your Water Bill With a Smarter Sprinkler System",
+    metaTitle: "5 Ways to Cut Your Water Bill With Smarter Sprinklers",
     date: "2026-01-13",
     excerpt: "Front Range water bills can hit $300/month in summer. Here are five upgrades that actually pay for themselves.",
+    metaDescription:
+      "Front Range water bills can hit $300 a month in summer. Five sprinkler upgrades that actually pay for themselves, and roughly what each one saves you.",
+    image: "/images/healthy-lawn-closeup.jpg",
     category: "Seasonal Maintenance",
     relatedSlugs: ["smart-irrigation-controllers-worth-it", "colorado-water-restrictions-2026", "summer-watering-tips-colorado-drought"],
     content: `Is your water bill too high? If you're in Erie or Longmont, you already know that summer water bills can jump to $200-$300 a month once the lawn sprinklers kick on. The good news? Most yards are overwatering by 30-50%, which means there's real money sitting on the table.
@@ -1394,6 +1469,9 @@ Stack a couple of these together and a $250/month summer water bill can drop to 
     title: "When Should I Winterize My Sprinklers? (Erie, CO)",
     date: "2026-08-17",
     excerpt: "Book your blowout between late September and October, before the first hard freeze. Here's how to pick your date, why a shop compressor won't cut it, and what to do if you've already missed the window.",
+    metaDescription:
+      "Book your blowout between late September and October, before the first hard freeze. How to pick your date, and what to do if you have already missed it.",
+    image: "/images/lawn.jpg",
     category: "Seasonal Maintenance",
     relatedSlugs: ["spring-sprinkler-startup-colorado", "signs-irrigation-system-needs-repair", "water-optimization-tips-colorado"],
     content: `**In Northern Colorado, winterize your sprinkler system between late September and October, before the first hard freeze.** Winterization means blowing compressed air through every zone to clear water from pipes, valves, and backflow preventers. Skipping it risks cracked pipes and split valves, with repair bills typically running **$500-$1,500**.
@@ -1481,6 +1559,9 @@ If you're finding this in November and your system still has water in it, the an
     title: "7 Signs Your Sprinkler System Needs Repair (Don't Ignore #3)",
     date: "2026-01-02",
     excerpt: "Brown patches, high water bills, and heads stuck down are all telling you something. Here are seven signs your system needs attention.",
+    metaDescription:
+      "Brown patches, a jump in the water bill and heads that will not pop up are all telling you something. Seven signs your sprinkler system needs attention.",
+    image: "/images/lawn.jpg",
     category: "Repair & Troubleshooting",
     relatedSlugs: ["how-to-adjust-sprinkler-heads", "backflow-preventer-testing-colorado", "how-much-does-sprinkler-system-cost-colorado"],
     content: `Is your sprinkler not working right? Brown spots on your lawn, a water bill that's too high, or heads that won't pop up are all signs you need sprinkler repair. Most homeowners ignore these until the lawn looks terrible or the water bill hits $400. Here's what to watch for and what each problem costs to fix.
@@ -1570,8 +1651,12 @@ Old PVC pipes get brittle. Valves wear out. Wire connections corrode. At some po
   {
     slug: "why-hire-local-irrigation-company",
     title: "Why Hiring a Local Sprinkler Company in Erie Beats a Big Chain",
+    metaTitle: "Why a Local Sprinkler Company Beats a Big Chain in Erie",
     date: "2026-01-20",
     excerpt: "A national chain doesn't know Erie's clay soil, Longmont's water pressure, or your neighborhood's watering schedule. A local sprinkler company does.",
+    metaDescription:
+      "A national chain does not know Erie's clay soil, Longmont's water pressure or your street's watering schedule. What a local sprinkler company brings instead.",
+    image: "/images/ryan.jpg",
     category: "Installation & Upgrades",
     relatedSlugs: ["what-to-expect-sprinkler-installation", "how-much-does-sprinkler-system-cost-colorado", "spring-sprinkler-startup-colorado"],
     content: `Looking for the best sprinkler company in Erie? When your sprinkler system needs work, you've got two choices: call a big national outfit or hire a local sprinkler contractor. I'm obviously biased, but let me explain why a local sprinkler service matters more for irrigation than almost any other home service.

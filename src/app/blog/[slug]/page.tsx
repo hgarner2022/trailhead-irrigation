@@ -21,6 +21,16 @@ export async function generateMetadata({
   const { slug } = await params
   const post = getBlogPost(slug)
   if (!post) return { title: "Post Not Found" }
+
+  // metaTitle is the search-results headline, set only on posts whose on-page
+  // <h1> runs past the ~60 chars Google shows. The <h1> keeps the full title.
+  const title = post.metaTitle ?? post.title
+  // Excerpts are written as on-page prose and most run well over 160 chars,
+  // which search engines cut mid-sentence. metaDescription is the version
+  // written to fit; the truncation is only a guard for posts missing one.
+  const description = post.metaDescription ?? truncate(post.excerpt, 157)
+  const image = `${siteConfig.url}${post.image}`
+
   return {
     // Absolute, so layout.tsx's "%s | Trailhead Lawn & Irrigation" template
     // doesn't append 30 characters that never render. Post titles are already
@@ -28,17 +38,35 @@ export async function generateMetadata({
     // was always cut off. Keeping it only pushed the tag over length, which
     // Bing reports as an error and which invites Google to rewrite the title
     // rather than use it as written.
-    title: { absolute: post.title },
-    description: post.excerpt,
+    title: { absolute: title },
+    description,
     alternates: { canonical: `${siteConfig.url}/blog/${post.slug}` },
     openGraph: {
-      title: post.title,
-      description: post.excerpt,
+      title,
+      description,
+      url: `${siteConfig.url}/blog/${post.slug}`,
       type: "article",
       publishedTime: post.date,
       authors: ["Ryan Garner"],
+      // Without this, Next drops the site-wide openGraph.images from
+      // layout.tsx as soon as a page defines its own openGraph object, which
+      // is why every post was shipping with no og:image at all.
+      images: [{ url: image, alt: post.title }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [image],
     },
   }
+}
+
+/** Cut to a whole word, so a fallback description never ends mid-word. */
+function truncate(text: string, max: number): string {
+  if (text.length <= max) return text
+  const cut = text.slice(0, max)
+  return cut.slice(0, cut.lastIndexOf(" ")).replace(/[,;:.\s]+$/, "") + "…"
 }
 
 function slugify(text: string): string {
