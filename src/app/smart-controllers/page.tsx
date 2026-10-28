@@ -7,7 +7,9 @@ import { Badge } from "@/components/ui/badge"
 import { buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { Wifi, Droplets, CloudRain, Calculator, ArrowRight } from "lucide-react"
-import { siteConfig, faqJsonLd, breadcrumbJsonLd } from "@/lib/seo"
+import { siteConfig, faqJsonLd, reviewsJsonLd, breadcrumbJsonLd } from "@/lib/seo"
+import { Testimonials } from "@/components/sections/Testimonials"
+import { pickReviews } from "@/lib/reviews"
 import { CITY_RACHIO, RACHIO_PRICING, estimateNetCost } from "@/lib/rachio-data"
 import { FaqList } from "@/components/sections/FaqList"
 
@@ -92,6 +94,10 @@ const SERVICE_AREA_CITIES = [
   "Firestone, CO",
   "Broomfield, CO",
 ]
+
+// Proof on the page that sells the service: only reviews whose own
+// text is about smart-controller, with schema matching what is displayed.
+const CONTROLLER_REVIEWS = pickReviews("Brian Taylor", "Jeremy Hampton")
 
 export default function SmartControllersPage() {
   return (
@@ -463,6 +469,24 @@ export default function SmartControllersPage() {
           <FaqList faqs={SMART_CONTROLLER_FAQS} itemBg="cream" />
         </div>
       </section>
+
+      {CONTROLLER_REVIEWS.length > 0 && (
+        <>
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{
+              __html: JSON.stringify(reviewsJsonLd(CONTROLLER_REVIEWS)),
+            }}
+          />
+          <Testimonials
+            reviews={CONTROLLER_REVIEWS}
+            heading="What Smart Controller Customers Say"
+            description="Google reviews from homeowners running a controller we installed."
+            bg="cream"
+            headingId="controller-reviews"
+          />
+        </>
+      )}
 
       <CTAStrip />
     </>

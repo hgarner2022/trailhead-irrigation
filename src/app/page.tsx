@@ -11,20 +11,38 @@ import {
   reviewsJsonLd,
   faqJsonLd,
 } from "@/lib/seo"
-import { REVIEWS } from "@/lib/reviews"
+import { pickReviews } from "@/lib/reviews"
+
+// Chosen by hand, not by date. Sorting by recency put three one-line
+// reviews on the homepage next to detailed ones, which read badly and
+// left the cards uneven. These nine all say something specific, cover
+// different services, and sit in a similar length range so the row is
+// even. Schema is emitted for exactly these nine, because Google expects
+// review markup to match what a visitor can actually see.
+const HOME_REVIEWS = pickReviews(
+  "Daniel Cooperider", // blowout, names the first freeze
+  "Kirby Moughon", // booked online, new homeowner
+  "Aaron Connors", // detailed repair + coverage + efficiency advice
+  "Lori Ginn", // repairs, new trees, and the price
+  "Joanna Toy", // new system installed, fairly priced
+  "Brian Taylor", // Rachio handoff
+  "Josh Drake", // efficiency and coverage
+  "Reesa Rennecker", // responsive, on time, thorough
+  "Nangchen", // took the time to teach them the system
+)
 
 export default function HomePage() {
   // Single JSON-LD @graph payload combining:
   //  - 4 individual Service entities (installation / repair / blowout / turn-on)
   //  - Person schema for Ryan (E-E-A-T)
-  //  - Review schema for each real Google review
+  //  - Review schema for the reviews actually shown on this page
   //  - FAQ schema for the homepage FAQ
   const graph = {
     "@context": "https://schema.org",
     "@graph": [
       ...serviceJsonLd(),
       personJsonLd(),
-      ...reviewsJsonLd(REVIEWS),
+      ...reviewsJsonLd(HOME_REVIEWS),
       faqJsonLd(HOME_FAQS),
     ],
   }
@@ -39,7 +57,7 @@ export default function HomePage() {
       <StatsStrip />
       <ServicesOverview />
       <MeetRyan />
-      <Testimonials />
+      <Testimonials reviews={HOME_REVIEWS} />
       <HomeFAQ />
       <CTAStrip />
     </main>

@@ -9,7 +9,9 @@ import { buttonVariants } from "@/components/ui/button"
 import Link from "next/link"
 import Image from "next/image"
 import { CheckCircle2 } from "lucide-react"
-import { faqJsonLd, breadcrumbJsonLd, siteConfig } from "@/lib/seo"
+import { faqJsonLd, reviewsJsonLd, breadcrumbJsonLd, siteConfig } from "@/lib/seo"
+import { Testimonials } from "@/components/sections/Testimonials"
+import { pickReviews } from "@/lib/reviews"
 
 export const metadata: Metadata = {
   title: "Sprinkler Installation Services",
@@ -95,6 +97,10 @@ const DEFINITIONS = [
       "How fast a sprinkler applies water, measured in inches per hour. Matching the precipitation rate to what your soil can absorb is what keeps water in the root zone instead of running down the gutter.",
   },
 ]
+
+// Proof on the page that sells the service: only reviews whose own
+// text is about installation, with schema matching what is displayed.
+const INSTALL_REVIEWS = pickReviews("Jeremy Hampton", "Joanna Toy")
 
 export default function SprinklerInstallationPage() {
   return (
@@ -313,6 +319,24 @@ export default function SprinklerInstallationPage() {
           <FaqList faqs={INSTALL_FAQS} itemBg="cream" />
         </div>
       </section>
+
+      {INSTALL_REVIEWS.length > 0 && (
+        <>
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{
+              __html: JSON.stringify(reviewsJsonLd(INSTALL_REVIEWS)),
+            }}
+          />
+          <Testimonials
+            reviews={INSTALL_REVIEWS}
+            heading="What Installation Customers Say"
+            description="Google reviews from homeowners we designed and installed systems for."
+            bg="cream"
+            headingId="installation-reviews"
+          />
+        </>
+      )}
 
       <CTAStrip />
     </>

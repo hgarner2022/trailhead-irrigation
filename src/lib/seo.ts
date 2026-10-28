@@ -90,7 +90,10 @@ export function localBusinessJsonLd() {
     aggregateRating: {
       "@type": "AggregateRating",
       ratingValue: "5.0",
-      reviewCount: "29",
+      // Verified against the public Google Business Profile on 2026-10-28.
+      // Re-check this whenever reviews are added; a count that drifts from
+      // Google's real total is a structured-data mismatch.
+      reviewCount: "39",
       bestRating: "5",
       worstRating: "1",
     },
@@ -313,7 +316,20 @@ export type ReviewItem = {
   date: string // ISO YYYY-MM-DD
   body: string
   source?: string // e.g. "Google"
+  /**
+   * Topics this review actually speaks to, used to surface it on the page
+   * that sells that service. Only tag a review when its own text supports
+   * the tag -- a review that never mentions price is not a `value` review.
+   */
+  tags?: ReviewTopic[]
 }
+
+export type ReviewTopic =
+  | "blowout"
+  | "installation"
+  | "repair"
+  | "smart-controller"
+  | "value"
 
 export function reviewJsonLd(review: ReviewItem) {
   return {

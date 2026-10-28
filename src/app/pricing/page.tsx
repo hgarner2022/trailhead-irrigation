@@ -17,7 +17,9 @@ import {
   Phone,
   Clock,
 } from "lucide-react"
-import { faqJsonLd, breadcrumbJsonLd, siteConfig } from "@/lib/seo"
+import { faqJsonLd, reviewsJsonLd, breadcrumbJsonLd, siteConfig } from "@/lib/seo"
+import { Testimonials } from "@/components/sections/Testimonials"
+import { pickReviews } from "@/lib/reviews"
 
 export const metadata: Metadata = {
   title: "Sprinkler Pricing in Erie, CO",
@@ -63,6 +65,10 @@ const PRICING_FAQS = [
     hasLink: true,
   },
 ]
+
+// Proof on the page that sells the service: only reviews whose own
+// text is about value, with schema matching what is displayed.
+const VALUE_REVIEWS = pickReviews("Lori Ginn", "Lauren Shields", "Nicole Duke")
 
 export default function PricingPage() {
   return (
@@ -327,6 +333,24 @@ export default function PricingPage() {
           </div>
         </div>
       </section>
+
+      {VALUE_REVIEWS.length > 0 && (
+        <>
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{
+              __html: JSON.stringify(reviewsJsonLd(VALUE_REVIEWS)),
+            }}
+          />
+          <Testimonials
+            reviews={VALUE_REVIEWS}
+            heading="What Customers Say About Our Pricing"
+            description="Google reviews from homeowners on what the work actually cost them."
+            bg="cream"
+            headingId="pricing-reviews"
+          />
+        </>
+      )}
 
       <CTAStrip />
     </>

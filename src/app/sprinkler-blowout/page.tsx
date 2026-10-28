@@ -9,7 +9,9 @@ import { buttonVariants } from "@/components/ui/button"
 import { CITY_DATA } from "@/lib/city-data"
 import Link from "next/link"
 import Image from "next/image"
-import { faqJsonLd, breadcrumbJsonLd, siteConfig } from "@/lib/seo"
+import { faqJsonLd, reviewsJsonLd, breadcrumbJsonLd, siteConfig } from "@/lib/seo"
+import { Testimonials } from "@/components/sections/Testimonials"
+import { pickReviews } from "@/lib/reviews"
 
 export const metadata: Metadata = {
   title: "Sprinkler Blowout & Winterization",
@@ -100,6 +102,10 @@ const DEFINITIONS = [
       "Colorado swings above and below freezing repeatedly through winter rather than staying cold. Water left in a line freezes, expands, thaws, and does it again, so a system that wasn't cleared takes that stress all season instead of once.",
   },
 ]
+
+// Proof on the page that sells the service: only reviews whose own
+// text is about blowout, with schema matching what is displayed.
+const BLOWOUT_REVIEWS = pickReviews("Daniel Cooperider", "Jen Wilbers", "Paul Griffin")
 
 export default function SprinklerBlowoutPage() {
   return (
@@ -335,6 +341,24 @@ export default function SprinklerBlowoutPage() {
           </p>
         </div>
       </section>
+
+      {BLOWOUT_REVIEWS.length > 0 && (
+        <>
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{
+              __html: JSON.stringify(reviewsJsonLd(BLOWOUT_REVIEWS)),
+            }}
+          />
+          <Testimonials
+            reviews={BLOWOUT_REVIEWS}
+            heading="What Customers Say About Winterization"
+            description="Google reviews from homeowners whose systems we blew out."
+            bg="cream"
+            headingId="blowout-reviews"
+          />
+        </>
+      )}
 
       <CTAStrip />
     </>
