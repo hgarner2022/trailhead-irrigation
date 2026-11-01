@@ -82,7 +82,7 @@ export default async function SmartControllerCityPage({
     },
     {
       question: `Why is a smart controller worth it without a rebate?`,
-      answer: `Smart controllers like the Rachio 3 prevent the most common waste pattern in irrigation: running the same fixed schedule from May through September. The Rachio uses live local weather to skip watering before rain and freezes, and adjusts run times each season automatically. On a typical lawn that translates to thousands of gallons saved every year — and your lawn looks healthier because you're watering when it actually needs water.`,
+      answer: `Smart controllers like the Rachio 3 prevent the most common waste pattern in irrigation: running the same fixed schedule from May through September. The Rachio uses live local weather to skip watering before rain and freezes, and adjusts run times each season automatically. That is thousands of gallons a year on a typical lawn, and the grass does better because it gets water when the weather says it needs it.`,
     },
     {
       question: `Can Trailhead install a Rachio at my ${program.name} address?`,
@@ -107,7 +107,7 @@ export default async function SmartControllerCityPage({
         program.rebateType === "free-install"
           ? `Yes. ${program.name}'s free Rachio install is run through Resource Central's Slow the Flow program. You'll need to sign up for the 2026 interest list at slowtheflow.resourcecentral.org and complete the eligibility application. Slots fill quickly each season.`
           : program.rebateType === "cash-or-free"
-          ? `${program.name} offers two paths. The cash rebate path: buy and install a WaterSense controller, then submit receipts for credit. The free-install path: complete a Slow the Flow evaluation and join the queue for Resource Central's free Rachio install. Most homeowners take whichever opens up first.`
+          ? `${program.name} offers two paths. The cash rebate path: buy and install a WaterSense controller, then submit receipts for credit. The free-install path: complete a Slow the Flow evaluation and join the queue for Resource Central's free Rachio install. Take whichever opens up first.`
           : `Yes. Buy and install a WaterSense-certified controller (Rachio 3 qualifies), then submit your application to ${program.name} with the receipt and model number. Trailhead provides itemized receipts at every install. Most rebates are credited to your water bill within one billing cycle.`,
     },
     {
@@ -173,13 +173,13 @@ export default async function SmartControllerCityPage({
 
       <PageBanner
         title={`Rachio Smart Controllers in ${program.name}, CO`}
-        description={`Professional Rachio 3 install for ${program.name} water customers. ${
+        description={`Rachio 3 installed for ${program.name} water customers. ${
           program.rebateType === "none"
-            ? `Trailhead's installed price is $${est8.gross} (8 zones) — saves a typical home thousands of gallons per year.`
+            ? `$${est8.gross} for 8 zones, with your watering schedule set up before we leave. A typical home saves thousands of gallons a year.`
             : est8.isFree
             ? "Free install path available."
             : est8.isUnknown
-            ? `Trailhead's installed price is $${est8.gross} (8 zones); ${program.name} rebate amount varies — confirm with the city.`
+            ? `$${est8.gross} for 8 zones. ${program.name} publishes its own rebate amount; confirm it with the city.`
             : `Estimated net cost as low as $${est8.net} after the city utility rebate.`
         }`}
         backgroundImage="/images/rachio-3-controller.jpg"
@@ -202,7 +202,7 @@ export default async function SmartControllerCityPage({
                 : "Long-term water savings"}
             </Badge>
             <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              What a Rachio Costs in {program.name}
+              Rachio 3, installed in {program.name}
             </h2>
             <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
               {program.shortNote}
@@ -218,7 +218,7 @@ export default async function SmartControllerCityPage({
                 <Badge variant="outline" className="w-fit mb-2">
                   8 zones or fewer
                 </Badge>
-                <CardTitle className="text-2xl">Rachio 3 — 8 Zone</CardTitle>
+                <CardTitle className="text-2xl">Rachio 3, 8 zones</CardTitle>
               </CardHeader>
               <CardContent className="flex flex-1 flex-col gap-4">
                 <div>
@@ -280,7 +280,7 @@ export default async function SmartControllerCityPage({
                 <Badge variant="green" className="w-fit mb-2">
                   9–16 zones
                 </Badge>
-                <CardTitle className="text-2xl">Rachio 3 — 16 Zone</CardTitle>
+                <CardTitle className="text-2xl">Rachio 3, 16 zones</CardTitle>
               </CardHeader>
               <CardContent className="flex flex-1 flex-col gap-4">
                 <div>
@@ -442,17 +442,17 @@ export default async function SmartControllerCityPage({
               <Card>
                 <CardContent className="p-6 flex flex-col gap-3 text-muted-foreground leading-relaxed">
                   <p>
-                    {program.name} doesn&apos;t currently run a city smart-controller rebate program — but a Rachio still pays for itself through reduced summer water bills, and protects your lawn from the wasteful old-timer mistake of running the same schedule in May that you run in July.
+                    {program.name} doesn&apos;t run a smart-controller rebate. A Rachio still earns its price back on summer water bills, and it ends the fixed-timer habit of running July&apos;s schedule in May.
                   </p>
                   <p>
-                    Front Range water rates have climbed steadily over the past decade and are forecast to keep rising as Colorado faces tighter water supplies. A Rachio that cuts your outdoor use by 20–30% earns more dollars back every year you own it.
+                    A Rachio that cuts outdoor use by 20 to 30% saves more every year water rates go up.
                   </p>
                   <p className="pt-2">
                     <Link
                       href="/smart-controllers/water-savings-calculator"
                       className="text-primary font-semibold hover:underline"
                     >
-                      Estimate your specific savings →
+                      Estimate your savings
                     </Link>
                   </p>
                 </CardContent>
@@ -470,7 +470,7 @@ export default async function SmartControllerCityPage({
                 </li>
                 <li>
                   <strong className="text-foreground">2. We provide itemized receipts.</strong>{" "}
-                  Make, model, serial number, install date, and total — everything {program.name}&apos;s rebate program requires.
+                  Make, model, serial number, install date and total, which is what {program.name}&apos;s rebate program asks for.
                 </li>
                 <li>
                   <strong className="text-foreground">3. You apply for the rebate directly with the city.</strong>{" "}
@@ -490,7 +490,7 @@ export default async function SmartControllerCityPage({
                   ) : (
                     `Submit your application and receipts to the ${program.name} water rebate program.`
                   )}{" "}
-                  Trailhead does not submit, process, or guarantee rebates — the city handles approval and payment.
+                  The city approves and pays the rebate. Trailhead doesn&apos;t submit or guarantee it.
                 </li>
               </ol>
 
@@ -498,7 +498,7 @@ export default async function SmartControllerCityPage({
                 <Card className="mt-6 border-primary/30 bg-primary/5">
                   <CardContent className="p-6">
                     <p className="text-foreground font-medium mb-2">
-                      💡 Bonus rebate available
+                      Bonus rebate available
                     </p>
                     <p className="text-muted-foreground leading-relaxed">
                       {program.bonusCondition}
@@ -515,7 +515,7 @@ export default async function SmartControllerCityPage({
       <section className="bg-cream section-padding-y">
         <div className="container-padding-x mx-auto max-w-3xl">
           <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-8 text-center">
-            Frequently Asked Questions — {program.name}
+            Rachio questions for {program.name}
           </h2>
           <FaqList faqs={cityFaqs} itemBg="background" />
         </div>

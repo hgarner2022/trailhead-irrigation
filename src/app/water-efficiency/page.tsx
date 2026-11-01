@@ -41,7 +41,7 @@ const WATER_EFFICIENCY_FAQS = [
   {
     question: "Are there rebates available for smart controllers?",
     answer:
-      "Yes! Many local water utilities offer rebates for WaterSense-certified controllers like the Rachio 3. Check our Water Rebates page for programs in Erie, Longmont, Louisville, and Lafayette.",
+      "Yes. Erie, Longmont and Lafayette pay rebates on WaterSense controllers like the Rachio 3. Our Water Rebates page has the amounts and the forms for each city.",
   },
 ]
 
@@ -71,7 +71,7 @@ export default function WaterEfficiencyPage() {
 
       <PageBanner
         title="Water Efficiency Upgrades"
-        description="Save water, save money — we'll show you how."
+        description="Smart controllers, rotary nozzles and drip conversions that cut outdoor water use on Front Range clay."
         backgroundImage="/images/raised-bed-garden.jpg"
       />
 
@@ -169,10 +169,10 @@ export default function WaterEfficiencyPage() {
                 MPR Nozzle Retrofit
               </h3>
               <p className="text-muted-foreground mb-5">
-                Rotary nozzles that apply water at 1/4 the rate of standard spray heads. Water soaks in instead of running off — especially effective on slopes and clay soil.
+                Rotary nozzles that apply water at 1/4 the rate of standard spray heads. Water soaks in instead of running off, which matters most on slopes and clay.
               </p>
               <ul className="flex flex-col gap-2.5 mb-6">
-                <FeatureItem>Even coverage — no dry spots or puddles</FeatureItem>
+                <FeatureItem>Even coverage across the whole zone</FeatureItem>
                 <FeatureItem>Swap onto existing spray bodies, no trenching</FeatureItem>
                 <FeatureItem>Great for clay soil and sloped yards</FeatureItem>
               </ul>
@@ -212,7 +212,7 @@ export default function WaterEfficiencyPage() {
                 Drip Zone Conversion
               </h3>
               <p className="text-muted-foreground mb-5">
-                Delivers water directly to each plant&apos;s root zone through low-pressure tubing. Drip systems are about 90% efficient vs. 60-75% for spray heads — no overspray, no evaporation.
+                Delivers water directly to each plant&apos;s root zone through low-pressure tubing. Drip runs about 90% efficient against 60 to 75% for spray heads, because nothing is thrown into the air to drift or evaporate.
               </p>
               <ul className="flex flex-col gap-2.5 mb-6">
                 <FeatureItem>Low-pressure tubing runs directly to each plant</FeatureItem>

@@ -41,7 +41,7 @@ const SERVICES = [
     title: "Sprinkler Repair",
     description: "Broken heads, sprinkler leaks, valve problems, pipe breaks, and controller issues. We diagnose and fix sprinkler problems fast.",
     icon: Wrench,
-    href: "/services",
+    href: "/sprinkler-repair",
   },
   {
     title: "Winterization & Spring Turn-On",
@@ -111,7 +111,7 @@ export default async function CityPage({
 
       <PageBanner
         title={`Sprinkler Services in ${data.name}, Colorado`}
-        description={`Your local sprinkler company serving ${data.name} and ${data.county}.`}
+        description={`Sprinkler installation, repair, blowouts and spring turn-ons for ${data.name} and ${data.county}, from our shop in Erie.`}
       />
 
       {/* Intro */}
@@ -278,7 +278,7 @@ export default async function CityPage({
       <section className="bg-cream section-padding-y">
         <div className="container-padding-x mx-auto max-w-4xl">
           <h2 className="text-2xl font-bold text-foreground mb-4">
-            Why Choose a Local Sprinkler Company for {data.name}?
+            Based in Erie, working in {data.name}
           </h2>
           <p className="text-muted-foreground leading-relaxed mb-6">{data.whyLocal}</p>
           <ul className="flex flex-col gap-3">
@@ -288,7 +288,7 @@ export default async function CityPage({
             </li>
             <li className="flex items-start gap-3">
               <Check className="h-5 w-5 text-success shrink-0 mt-0.5" />
-              <span className="text-foreground">Based in Erie — fast response times to {data.name}</span>
+              <span className="text-foreground">Based in Erie, a short drive from {data.name}</span>
             </li>
             <li className="flex items-start gap-3">
               <Check className="h-5 w-5 text-success shrink-0 mt-0.5" />
@@ -296,7 +296,7 @@ export default async function CityPage({
             </li>
             <li className="flex items-start gap-3">
               <Check className="h-5 w-5 text-success shrink-0 mt-0.5" />
-              <span className="text-foreground">Transparent pricing — no hidden fees or surprise charges</span>
+              <span className="text-foreground">Prices are published on our pricing page before you book</span>
             </li>
           </ul>
         </div>
@@ -346,7 +346,7 @@ export default async function CityPage({
       <section className="bg-background section-padding-y">
         <div className="container-padding-x mx-auto max-w-4xl">
           <h2 className="text-2xl font-bold text-foreground mb-8">
-            Frequently Asked Questions — {data.name}
+            {data.name} sprinkler questions
           </h2>
           <FaqList faqs={data.faqs} itemBg="background" />
         </div>

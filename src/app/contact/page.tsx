@@ -29,7 +29,7 @@ export default function ContactPage() {
       />
       <PageBanner
         title="Contact Us"
-        description="Get a quote or schedule service. We'd love to hear from you."
+        description="Tell us what the yard needs. Call (970) 692-7270 or use the form."
       />
 
       <section className="bg-background section-padding-y">
@@ -59,10 +59,10 @@ export default function ContactPage() {
                       </svg>
                     </div>
                     <p className="text-lg font-semibold text-foreground">
-                      Message Sent!
+                      Message sent.
                     </p>
                     <p className="text-muted-foreground">
-                      We&apos;ll get back to you as soon as possible.
+                      We&apos;ll call or email you back. If it&apos;s urgent, call (970) 692-7270.
                     </p>
                   </CardContent>
                 </Card>
@@ -199,7 +199,7 @@ export default function ContactPage() {
                     ryan@trailheadirrigation.com
                   </ContactItem>
                   <ContactItem icon={MapPin} label="Service Area">
-                    Weld County, Erie, Longmont, Louisville &amp; Lafayette, CO
+                    Erie, Longmont, Louisville, Lafayette, Firestone, Broomfield &amp; Weld County, CO
                   </ContactItem>
                   <ContactItem icon={Clock} label="Hours">
                     Mon&ndash;Fri: 7:00 AM &ndash; 6:00 PM

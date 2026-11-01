@@ -53,14 +53,14 @@ export default function WaterRebatesPage() {
       />
       <PageBanner
         title="Water Efficiency Rebates"
-        description="Save money on irrigation upgrades — see what rebates are available in your area."
+        description="What Erie, Longmont, Louisville and Lafayette give back on smart controllers, nozzles and drip."
       />
 
       {/* Intro */}
       <section className="bg-background section-padding-y">
         <div className="container-padding-x mx-auto max-w-3xl text-center">
           <p className="text-lg text-muted-foreground leading-relaxed">
-            Many communities in Northern Colorado offer rebates on water-efficient irrigation equipment — including smart controllers, high-efficiency nozzles, drip conversions, and more. Programs are funded on a first-come, first-served basis while funds are available.
+            Erie, Longmont and Lafayette pay rebates on smart controllers, high-efficiency nozzles and drip conversions, and Resource Central runs a free sprinkler evaluation program across the area. Every program is first-come, first-served while the money lasts.
           </p>
           <p className="text-lg text-foreground font-medium mt-4">
             Trailhead does the irrigation work and provides your receipts. You apply for the rebate through your city.
@@ -119,7 +119,7 @@ export default function WaterRebatesPage() {
                   <Droplets className="h-5 w-5 text-primary" />
                 </div>
                 <div>
-                  <CardTitle className="text-xl">Slow the Flow — Free Sprinkler Evaluation</CardTitle>
+                  <CardTitle className="text-xl">Slow the Flow: free sprinkler evaluation</CardTitle>
                   <p className="text-sm text-muted-foreground mt-1">A free community resource from Resource Central</p>
                 </div>
               </div>

@@ -90,8 +90,8 @@ export const CITY_DATA: CityData[] = [
     cityNote: "Longmont's senior water rights mean residents are less likely to face severe mandatory restrictions compared to other Front Range cities. The city's backflow program is well-established and actively enforced.",
     winterNote:
       "Longmont has a lot of established housing with irrigation that predates current standards. Older brass valves, galvanized sections and drain layouts that never fully clear by gravity are common here. Those are the systems where a compressed-air blowout matters most, rather than opening a drain valve and hoping. Longmont also enforces its backflow program actively, so we note the condition of your assembly at winterization and tell you if it looks likely to fail next year's test.",
-    introText: "Looking for a sprinkler company in Longmont? Trailhead serves Longmont from our base in Erie, just 15 minutes away. We handle sprinkler installation, repair, blowouts, and spring turn-ons throughout Longmont. Many homes here have aging systems from the 1970s-80s that need repair or upgrades.",
-    whyLocal: "We're 15 minutes from Longmont and service the entire city regularly. Many Longmont homes have 30-40 year old sprinkler systems that need modernizing. We know which neighborhoods have low water pressure, aging valves, and outdated controllers.",
+    introText: "Trailhead serves Longmont from our shop in Erie, 15 minutes away. We install, repair, blow out and turn on sprinkler systems across the city. A lot of the homes here have systems from the 1970s and 80s that need repair or upgrading.",
+    whyLocal: "We're 15 minutes from Longmont. A lot of the systems here are 30 to 40 years old, and the usual problems are low pressure, worn valves and controllers that predate the current backflow rules. We repair those, and we'll tell you when replacing makes more sense than patching.",
     faqs: [
       {
         question: "Does Longmont have watering restrictions in 2026?",
@@ -99,7 +99,7 @@ export const CITY_DATA: CityData[] = [
       },
       {
         question: "How much does sprinkler repair cost in Longmont?",
-        answer: "Sprinkler repair costs vary by the issue. A broken head replacement runs $50-$100 per head. Valve repairs are $100-$250. Leak detection and pipe repair depends on severity. Contact us for a free repair quote.",
+        answer: "A repair visit is $145 and covers the diagnosis and small fixes on the spot. A broken head runs $50 to $150, a stuck valve $100 to $200, and anything bigger is priced before we start.",
       },
       {
         question: "Does Longmont require backflow testing?",
@@ -107,7 +107,7 @@ export const CITY_DATA: CityData[] = [
       },
       {
         question: "My sprinkler system in Longmont is old. Should I replace it?",
-        answer: "If your system is 25+ years old and you're dealing with frequent repairs, low water pressure, or uneven coverage, a full replacement usually makes more financial sense than patching an aging system. We offer free consultations.",
+        answer: "If your system is 25+ years old and you're dealing with frequent repairs, low water pressure, or uneven coverage, a full replacement usually makes more financial sense than patching an aging system. Get in touch and we'll come look at it and tell you which way makes sense.",
       },
     ],
     relatedBlogSlugs: ["signs-irrigation-system-needs-repair", "smart-irrigation-controllers-worth-it", "how-much-does-sprinkler-system-cost-colorado"],
@@ -132,8 +132,8 @@ export const CITY_DATA: CityData[] = [
     cityNote: "Louisville has the highest median home value in the area at ~$835,000. Homeowners here invest in their properties. The Marshall Fire rebuilds mean many homes now have brand new irrigation systems with smart controllers.",
     winterNote:
       "Louisville splits into two very different jobs. The Marshall Fire rebuilds have new systems on smart controllers, and those need the controller wintered properly along with the lines cleared. Putting a smart controller into standby is not the same as switching a mechanical timer off. The rest of Louisville is long-established, with mature trees whose roots run alongside the irrigation lines, so a freeze crack there is a harder repair to dig out.",
-    introText: "Need a sprinkler company in Louisville? Trailhead serves Louisville from our base in Erie. We handle lawn sprinkler installation, repair, winterization, and spring turn-ons throughout Louisville. We work on everything from established 1990s properties to Marshall Fire rebuilds.",
-    whyLocal: "Louisville homeowners care about their properties. With median home values over $800K, a well-maintained sprinkler system protects a serious investment. We understand Louisville's hillier terrain near the foothills and adjust zone layouts accordingly.",
+    introText: "Trailhead serves Louisville from our shop in Erie. We install, repair, winterize and turn on sprinkler systems across the city, on the 1990s properties and on the Marshall Fire rebuilds.",
+    whyLocal: "Louisville's lots near Coal Creek and on the west side of town are hillier than the plains cities, so a head layout that works in Erie doesn't always work here. We lay out zones and pick heads for the slope.",
     faqs: [
       {
         question: "Does Louisville have watering restrictions?",
@@ -173,7 +173,7 @@ export const CITY_DATA: CityData[] = [
     cityNote: "Lafayette is the only city in this area with permanent, year-round watering restrictions. This makes efficient irrigation system design especially important. Smart controllers that comply with the 3-day, no-midday-watering rules are a smart investment here.",
     winterNote:
       "Lafayette's watering restrictions are permanent rather than seasonal, so more homeowners here run smart controllers on tight schedules. At winterization that controller needs to come out of its watering program properly instead of being left to run against a drained system. We also see more drip and low-flow zones in Lafayette than elsewhere, and those get cleared carefully so the emitters stay on the tubing.",
-    introText: "Looking for a sprinkler company in Lafayette? Trailhead serves Lafayette from our Erie base. Lafayette is unique because it has permanent year-round watering restrictions, not just drought rules. We design and maintain sprinkler systems that work within Lafayette's 3-day-per-week, no-midday-watering rules.",
+    introText: "Trailhead serves Lafayette from our shop in Erie. Lafayette's watering restrictions are permanent, three days a week and nothing between 10 AM and 6 PM, so we design and program systems to work inside those rules year-round.",
     whyLocal: "Lafayette's permanent restrictions mean your sprinkler system needs to be efficient from day one. We program controllers to comply with the 3-day limit and 10 AM-6 PM blackout window, and recommend smart controllers that auto-adjust for weather.",
     faqs: [
       {
@@ -214,8 +214,8 @@ export const CITY_DATA: CityData[] = [
     cityNote: "Firestone's water supply is in transition. The Central Weld County Water District contract ends in August 2028, and the Town is actively securing alternative sources. Water efficiency will become increasingly important as this plays out.",
     winterNote:
       "Firestone is almost entirely post-2000 construction, so the systems here are new enough that homeowners often assume a blowout can wait. Age is not the protection. A two-year-old backflow assembly full of water cracks the same as a twenty-year-old one. Firestone also sits on the plains side of I-25 with more wind exposure, which pulls ground temperature down faster on the first hard freeze night.",
-    introText: "Need a sprinkler company in Firestone? Trailhead serves Firestone from our base in Erie, just a short drive up I-25. Almost every home in Firestone was built after 2000, so most systems are relatively new. We handle repairs, maintenance, winterization, and spring turn-ons throughout Firestone's growing neighborhoods.",
-    whyLocal: "Firestone is one of the fastest-growing towns in Colorado. Nearly every home here is newer construction with modern irrigation systems, but even new systems need regular maintenance, seasonal blowouts, and the occasional repair. We're just a few minutes away in Erie.",
+    introText: "Trailhead serves Firestone from our shop in Erie, a short drive up I-25. Almost every home here was built after 2000, so most systems are fairly new. We handle repairs, blowouts and spring turn-ons across Firestone.",
+    whyLocal: "Nearly every system in Firestone is newer construction. New systems still need a blowout each fall, a turn-on each spring, and a head replaced now and then after the mower finds it. We're a few minutes away in Erie.",
     faqs: [
       {
         question: "Does Firestone have watering restrictions?",
@@ -251,17 +251,17 @@ export const CITY_DATA: CityData[] = [
     waterProviderPhone: "303-469-3301",
     restrictionLevel: "voluntary",
     restrictionSummary:
-      "Broomfield has been under a Drought Watch since February 9, 2026. The City asks residents to voluntarily cut back to two watering days per week instead of the three the ordinance normally allows. Broomfield staff have signaled that if reuse water demand doesn't drop, they may ask City Council to adopt a mandatory Drought I declaration — a decision expected at the August 25, 2026 council meeting.",
+      "Broomfield has been under a Drought Watch since February 9, 2026. The City asks residents to voluntarily cut back to two watering days per week instead of the three the ordinance normally allows. Broomfield staff have signaled that if reuse water demand doesn't drop, they may ask City Council to adopt a mandatory Drought I declaration, a decision that was expected at the August 25, 2026 council meeting.",
     wateringDays:
       "Under the standing ordinance, addresses ending in an even number may water Monday, Wednesday, and Friday. Odd-numbered addresses may water Tuesday, Thursday, and Sunday. Under the current Drought Watch, the City asks you to use no more than two of your allowed days.",
     wateringTimeRestriction:
       "Watering is only permitted between 6 p.m. and 10 a.m. The 10 a.m. to 6 p.m. blackout is part of Broomfield's permanent water use ordinance, not a temporary drought measure. Leaking sprinkler systems must be repaired within 10 days of notice.",
     backflowDeadline:
-      "Colorado state law requires annual backflow testing on any irrigation system connected to municipal water. Broomfield administers its cross-connection control program through Public Works — contact them at 303-469-3301 for your compliance deadline.",
+      "Colorado state law requires annual backflow testing on any irrigation system connected to municipal water. Broomfield administers its cross-connection control program through Public Works. Contact them at 303-469-3301 for your compliance deadline.",
     backflowDevice:
       "PVB or RPZ assemblies per Colorado state requirements. Contact Broomfield Public Works to confirm what's approved for your connection.",
     soilType:
-      "Expansive clay that varies noticeably between neighborhoods, sometimes within a few blocks. It swells when wet and shrinks when dry — the same movement that stresses foundations here also shifts sprinkler heads and pipe over time. Cycle-and-soak watering is essential; long single runs mostly become runoff.",
+      "Expansive clay that varies noticeably between neighborhoods, sometimes within a few blocks. It swells when wet and shrinks when dry, the same movement that stresses foundations here also shifts sprinkler heads and pipe over time. Cycle-and-soak watering is essential; long single runs mostly become runoff.",
     housingAge:
       "A wide mix. Original Broomfield dates to the 1950s and 60s, while Anthem, Anthem Ranch, Anthem Highlands, The Broadlands, and Wildgrass are largely post-2000. Baseline, the former North Park development in northeast Broomfield, is still building out toward roughly 9,000 homes.",
     cityNote:
@@ -269,7 +269,7 @@ export const CITY_DATA: CityData[] = [
     winterNote:
       "Broomfield's south and west sides hold some of the oldest irrigation in our service area. These are 1950s and 60s homes where the valves and backflow assembly have already been through decades of freeze-thaw. Those are the systems where a skipped blowout most often turns into a cracked backflow come spring. The newer Anthem, Broadlands and Baseline systems are more forgiving, but the above-ground backflow still freezes first no matter the build year.",
     introText:
-      "Looking for a sprinkler company in Broomfield? Trailhead serves Broomfield from our base in Erie, just up the road. Broomfield runs a tighter watering schedule than most Front Range cities — a permanent 10 a.m. to 6 p.m. blackout plus a Drought Watch asking for two days a week — so getting your zones and run times right matters. We handle repairs, winterization blowouts, spring turn-ons, backflow testing, and new installations across Broomfield.",
+      "Trailhead serves Broomfield from our shop in Erie, just up the road. Broomfield has a permanent 10 a.m. to 6 p.m. watering blackout and a Drought Watch asking for two days a week, a tighter window than most Front Range cities, so zone layout and run times matter more here. We handle repairs, blowouts, spring turn-ons, backflow testing and new installations across Broomfield.",
     whyLocal:
       "Broomfield is a short drive from our shop in Erie, and we work in it regularly. We know the even/odd schedule, the overnight-only watering window, and how much the clay varies between Original Broomfield and the newer Anthem and Baseline neighborhoods. That matters when you're setting run times or diagnosing why one zone floods while another stays dry.",
     faqs: [
@@ -286,7 +286,7 @@ export const CITY_DATA: CityData[] = [
       {
         question: "How much is a sprinkler blowout in Broomfield?",
         answer:
-          "Winterization (sprinkler blowout) costs $95 for up to 6 zones, plus $10 for each additional zone. Book between late September and October to get a date before the first hard freeze — the last two weeks of October fill up fast.",
+          "Winterization (sprinkler blowout) costs $95 for up to 6 zones, plus $10 for each additional zone. Book between late September and October to get a date before the first hard freeze. the last two weeks of October fill up fast.",
       },
       {
         question: "Do you service older sprinkler systems in Original Broomfield?",

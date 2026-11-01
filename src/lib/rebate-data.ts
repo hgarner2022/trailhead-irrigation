@@ -37,7 +37,7 @@ export const CITIES: CityRebateData[] = [
     slug: "erie",
     name: "Erie",
     state: "CO",
-    tagline: "Rebates available for Town of Erie utility customers — while funds last.",
+    tagline: "Town of Erie utility customers can claim these while funds last.",
     badgeText: "Up to $100 in rebates",
     highlights: [
       "Smart controllers: $100 rebate",
@@ -89,7 +89,7 @@ export const CITIES: CityRebateData[] = [
       submissionDeadline: undefined,
     },
     slowTheFlowRequired: false,
-    slowTheFlowNote: "Erie offers free Slow the Flow sprinkler consultations through Resource Central. While not required for rebates, it is a great way to identify where efficient upgrades will save the most water.",
+    slowTheFlowNote: "Erie offers free Slow the Flow sprinkler consultations through Resource Central. It is not required for the rebate, but the report shows which zones waste the most water, which is where an upgrade pays back first.",
     faqs: [
       {
         question: "Who is eligible for Erie water rebates?",
@@ -109,7 +109,7 @@ export const CITIES: CityRebateData[] = [
     slug: "lafayette",
     name: "Lafayette",
     state: "CO",
-    tagline: "Rebates available for City of Lafayette residents — while funds last.",
+    tagline: "City of Lafayette residents can claim these while funds last.",
     badgeText: "Rebates + free installs",
     highlights: [
       "Smart controller rebate available",
@@ -303,7 +303,7 @@ export const CITIES: CityRebateData[] = [
     slug: "longmont",
     name: "Longmont",
     state: "CO",
-    tagline: "Rebates available for City of Longmont residential water customers — while funds last.",
+    tagline: "City of Longmont residential water customers can claim these while funds last.",
     badgeText: "Up to $130 per rebate",
     highlights: [
       "Drip conversion: up to $130",
@@ -409,7 +409,7 @@ export const CITIES: CityRebateData[] = [
       },
       {
         question: "Is Longmont currently in a drought?",
-        answer: "As of 2026, Longmont is at a Sustainable Conservation Level — Drought Watch. While no mandatory restrictions are in place, the city strongly encourages voluntary water reduction. This makes irrigation efficiency rebates especially timely.",
+        answer: "As of 2026, Longmont is at a Sustainable Conservation Level, which the city calls Drought Watch. No mandatory restrictions are in place, but the city is asking for voluntary cuts.",
       },
     ],
   },
@@ -431,5 +431,5 @@ export const SLOW_THE_FLOW = {
   phone: "303-999-3824",
   email: "water@resourcecentral.org",
   season: "June through August (sign up for 2026 interest list now)",
-  note: "This is a free community resource — not a Trailhead service. Some cities (like Lafayette) require a Slow the Flow evaluation before you can apply for rebates.",
+  note: "Resource Central runs this program, not Trailhead. Lafayette requires a Slow the Flow evaluation before you can apply for rebates.",
 }

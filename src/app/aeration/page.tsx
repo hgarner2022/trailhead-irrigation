@@ -79,7 +79,7 @@ const AERATION_FAQS = [
   {
     question: "Should I get aeration and a blowout together?",
     answer:
-      "You do not have to. Plenty of people book one or the other and that is completely fine. The way it tends to work best is the blowout first: while I am clearing every zone I am walking the whole lawn anyway, so I can flag the spots that are compacted or thin, then come back and aerate those. That way the aeration is aimed at something rather than guessed at.",
+      "You do not have to. Plenty of people book one or the other and that is completely fine. The way it tends to work best is the blowout first. While we're clearing the zones we're walking the whole lawn anyway, so we can flag the spots that are compacted or thin, then come back and aerate those. That way the aeration is aimed at something rather than guessed at.",
   },
 ]
 
@@ -213,9 +213,8 @@ export default function AerationPage() {
                 Why aeration matters on Front Range clay
               </h2>
               <p className="text-muted-foreground mb-4">
-                Core aeration helps reduce soil compaction and allows water,
-                air, and nutrients to better reach your lawn&apos;s roots,
-                promoting healthier and stronger grass.
+                Core aeration pulls plugs out of compacted clay so water, air
+                and fertilizer can get down to the roots.
               </p>
               <p className="text-muted-foreground mb-5">
                 Compacted clay sheds water rather than absorbing it, so a lawn

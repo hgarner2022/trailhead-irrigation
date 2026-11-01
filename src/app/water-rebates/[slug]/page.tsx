@@ -160,7 +160,7 @@ export default async function CityRebatePage({ params }: { params: Promise<{ slu
           {/* Slow the Flow */}
           <Card className="mb-6">
             <CardHeader>
-              <CardTitle>Slow the Flow — Free Sprinkler Evaluation</CardTitle>
+              <CardTitle>Slow the Flow: free sprinkler evaluation</CardTitle>
               {city.slowTheFlowRequired && (
                 <Badge variant="default" className="w-fit">Required for {city.name} rebates</Badge>
               )}

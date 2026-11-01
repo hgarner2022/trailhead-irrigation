@@ -71,7 +71,7 @@ const INCLUDED = [
   },
   {
     title: "We supply everything",
-    body: "You buy nothing. Come February there's nothing in your garage either.",
+    body: "We bring the bulbs, wire and clips, and they leave with us in January.",
   },
   {
     title: "Rooflines and peaks",
@@ -87,7 +87,7 @@ const INCLUDED = [
   },
   {
     title: "Takedown in January",
-    body: "Included. We come back, take it all down, and it leaves with us. No second call, no second bill in the new year.",
+    body: "Included. We come back in January, take it all down, and it leaves with us. The takedown is part of the price you were quoted.",
   },
 ]
 
@@ -101,7 +101,7 @@ const FAQS = [
   {
     question: "Do I need to buy the lights?",
     answer:
-      "No. We supply them. Nothing for you to buy, nothing to replace when a bulb fails, and nothing sitting in a box in your garage for eleven months of the year.",
+      "No. We supply them and take them away in January, so there is nothing to buy and nothing stored in your garage.",
   },
   {
     question: "Does taking them down cost extra?",
@@ -271,8 +271,8 @@ export default function ChristmasLightsPage() {
                 id="xmas-included"
                 className="text-3xl md:text-4xl font-bold text-foreground leading-tight"
               >
-                Lights up, lights down,
-                <br className="hidden md:block" /> nothing left to you
+                From measuring the house
+                <br className="hidden md:block" /> to the January takedown
               </h2>
             </div>
           </div>
@@ -321,7 +321,7 @@ export default function ChristmasLightsPage() {
           <div className="flex items-center">
             <div className="container-padding-x mx-auto max-w-xl py-16 md:py-24 lg:py-28">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary-light mb-4">
-                The part nobody else thinks about
+                Why an irrigation company
               </p>
               <h2
                 id="xmas-why"

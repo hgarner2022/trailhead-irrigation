@@ -112,11 +112,11 @@ export default function BookPage() {
       <section className="bg-background section-padding-y">
         <div className="container-padding-x mx-auto max-w-2xl text-center">
           <h2 className="text-2xl font-bold text-foreground mb-3">
-            Need a Sprinkler Installation or Custom Project?
+            Need a new sprinkler system?
           </h2>
           <p className="text-muted-foreground mb-6">
-            New installations need a conversation first. Reach out and we&apos;ll
-            get you a quote.
+            New installations start with a yard visit. Call or send us the address
+            and we&apos;ll come quote it.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <Link

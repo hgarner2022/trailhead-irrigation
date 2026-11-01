@@ -35,7 +35,7 @@ export const CITY_RACHIO: RachioCityProgram[] = [
     rebateType: "cash",
     cashRebate: 100,
     shortNote:
-      "Town of Erie offers a $100 utility-bill rebate on any WaterSense-certified smart controller (including the Rachio 3). After Erie's March 2026 water emergency, the town has aggressively pushed efficient irrigation upgrades.",
+      "Town of Erie offers a $100 utility-bill rebate on any WaterSense-certified smart controller (including the Rachio 3). The rebate followed Erie's early-2026 water supply emergency.",
     freeInstallProgram: false,
     utilityRebateUrl: "https://www.erieco.gov/574/Water-Efficiency-Rebates",
   },
@@ -48,7 +48,7 @@ export const CITY_RACHIO: RachioCityProgram[] = [
     bonusCondition:
       "Complete a free Slow the Flow evaluation to qualify for the additional $50 bonus rebate.",
     shortNote:
-      "Longmont offers up to $65 on a Wi-Fi irrigation controller, plus a $50 bonus rebate when you complete a free Slow the Flow evaluation — a total of up to $115.",
+      "Longmont offers up to $65 on a Wi-Fi irrigation controller, plus a $50 bonus rebate when you complete a free Slow the Flow evaluation, for a total of up to $115.",
     freeInstallProgram: false,
     utilityRebateUrl:
       "https://longmontcolorado.gov/water/rates-and-fees-water-storm-sewer/assistance-rebates-water/",
@@ -58,7 +58,7 @@ export const CITY_RACHIO: RachioCityProgram[] = [
     name: "Louisville",
     rebateType: "none",
     shortNote:
-      "Louisville water customers don't have a city smart-controller rebate program, but the long-term water savings are significant — typically 8,000–15,000 gallons per year on a Front Range home, which usually pays back the install cost through reduced water bills within a few watering seasons.",
+      "Louisville doesn't run a city smart-controller rebate. A Rachio still saves a Front Range home 8,000 to 15,000 gallons a year, which pays the install back on water bills within a few seasons.",
     freeInstallProgram: false,
   },
   {
@@ -67,7 +67,7 @@ export const CITY_RACHIO: RachioCityProgram[] = [
     rebateType: "cash-or-free",
     cashRebateUnknown: true,
     shortNote:
-      "Lafayette offers two paths: a utility rebate on any WaterSense controller (current amount is published by the city — contact them to confirm before booking), OR a free Rachio install through Resource Central — pick whichever opens up first.",
+      "Lafayette offers two paths. The city pays a utility rebate on any WaterSense controller (confirm the current amount with the city before booking), and Resource Central runs a free Rachio install program. Take whichever opens up first.",
     freeInstallProgram: true,
     freeInstallNote:
       "The free install requires a Slow the Flow evaluation first. Slots fill quickly, so the cash-rebate path is often a better bet.",
