@@ -20,7 +20,7 @@ export const siteConfig = {
   url: SITE_URL,
   name: "Trailhead Lawn & Irrigation LLC",
   description:
-    "Erie's sprinkler and irrigation specialists. System installation, repair, winterization and spring turn-on in Erie, Longmont, Louisville and Lafayette, CO.",
+    "Owner-run sprinkler company in Erie, CO. Repairs $145 a visit, fall blowouts $95, new systems $3,000 to $6,000 with the price before anyone digs. Book online in two minutes.",
   phone: "(970) 692-7270",
   phoneTel: "9706927270",
   email: "ryan@trailheadirrigation.com",
@@ -71,7 +71,7 @@ export function localBusinessJsonLd() {
       { "@type": "City", name: "Firestone", containedInPlace: { "@type": "State", name: "Colorado" } },
       { "@type": "City", name: "Broomfield", containedInPlace: { "@type": "State", name: "Colorado" } },
     ],
-    priceRange: "$$",
+    priceRange: "$95 - $6,000",
     // Must match the Google Business Profile exactly. Mismatched hours across
     // listings is a local-trust negative, and "open at search time" is a
     // top-five local pack ranking factor, so these are worth keeping accurate.
@@ -167,7 +167,7 @@ const SERVICES: ServiceDef[] = [
     description:
       "Custom residential sprinkler system design and installation in Erie, Longmont, and Northern Colorado. Includes zone layout, head placement, trenching, controller setup, and final walkthrough.",
     serviceType: "Sprinkler System Installation",
-    url: `${SITE_URL}/services`,
+    url: `${SITE_URL}/sprinkler-installation`,
     priceSpecification: {
       price: "3000",
       priceCurrency: "USD",
@@ -188,7 +188,7 @@ const SERVICES: ServiceDef[] = [
     description:
       "Professional compressed-air sprinkler blowout to protect your irrigation system from Colorado's freeze-thaw cycle. Recommended between late September and October, before the first hard freeze.",
     serviceType: "Sprinkler Winterization",
-    url: `${SITE_URL}/pricing`,
+    url: `${SITE_URL}/sprinkler-blowout`,
     priceSpecification: {
       price: "95",
       priceCurrency: "USD",
@@ -212,7 +212,7 @@ const SERVICES: ServiceDef[] = [
     description:
       "Spring sprinkler startup with full system check, leak checks, head adjustments, controller programming, and a water efficiency check. Available late April through May.",
     serviceType: "Spring Sprinkler Activation",
-    url: `${SITE_URL}/pricing`,
+    url: `${SITE_URL}/spring-turn-on`,
     priceSpecification: {
       price: "145",
       priceCurrency: "USD",

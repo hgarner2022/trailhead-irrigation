@@ -13,8 +13,52 @@ import { faqJsonLd, reviewsJsonLd, breadcrumbJsonLd, siteConfig } from "@/lib/se
 import { Testimonials } from "@/components/sections/Testimonials"
 import { pickReviews } from "@/lib/reviews"
 
+// The page re-renders once a day so the season copy below tracks the calendar.
+export const revalidate = 86400
+
+/**
+ * Which part of the blowout season it is. The page used to say "Book your
+ * blowout for October" and "booked solid by mid-October" all year, which told
+ * a November visitor they had missed it while Search Console showed them still
+ * searching. Copy now follows the month.
+ */
+function blowoutPhase(date: Date): "early" | "peak" | "late" | "off" {
+  const m = date.getMonth() // 0 = January
+  if (m === 7 || m === 8) return "early" // Aug, Sep
+  if (m === 9) return "peak" // Oct
+  if (m === 10 || m === 11) return "late" // Nov, Dec
+  return "off"
+}
+
+const SEASON_COPY = {
+  early: {
+    title: "Book your blowout for October",
+    cardHeading: "October books out",
+    cardBody: "We start booking in September and are usually booked solid by mid-October. Booking now gets you the date you want.",
+    banner: "Compressed-air winterization before the first hard freeze. $95 up to 6 zones.",
+  },
+  peak: {
+    title: "October is here. Get on the schedule.",
+    cardHeading: "The freeze can come any day now",
+    cardBody: "Erie's first hard freeze in 2024 landed on October 18. We are clearing systems every day this month.",
+    banner: "Compressed-air winterization before the first hard freeze. $95 up to 6 zones.",
+  },
+  late: {
+    title: "Haven't had your blowout yet? We're still clearing systems.",
+    cardHeading: "Late is better than never",
+    cardBody: "A line that held water through one freeze is not always cracked yet, but every freeze after that is another chance. We blow out systems on any day above freezing.",
+    banner: "Still clearing systems on days above freezing. $95 up to 6 zones.",
+  },
+  off: {
+    title: "Blowouts start in late September",
+    cardHeading: "Reserve your fall date now",
+    cardBody: "Book ahead and we put you on the calendar before the October rush. Nothing is charged until the visit is done.",
+    banner: "Compressed-air winterization every fall, late September through October. $95 up to 6 zones.",
+  },
+} as const
+
 export const metadata: Metadata = {
-  title: "Sprinkler Blowout & Winterization",
+  title: "Sprinkler Blowout Cost: $95 for 6 Zones in Erie, CO",
   description:
     "Sprinkler blowout $95 up to 6 zones. Compressed-air winterization across Northern Colorado. Book for October, before the first hard freeze.",
   alternates: { canonical: `${siteConfig.url}/sprinkler-blowout` },
@@ -57,6 +101,11 @@ const BLOWOUT_FAQS = [
     question: "Can I blow out the system myself with a shop compressor?",
     answer:
       "A typical shop compressor doesn't move enough air volume to clear a residential irrigation system. It builds pressure but not the sustained flow needed to push water out of every lateral and head, so water gets left behind in the places that matter.",
+  },
+  {
+    question: "I haven't done my blowout yet and it has already frozen. Is it too late?",
+    answer:
+      "Book it anyway. One freeze does not always crack a line, but each one after that is another chance, and the damage usually shows up at spring turn-on. We clear systems on any day above freezing through December.",
   },
   {
     question: "How early should I book?",
@@ -108,6 +157,7 @@ const DEFINITIONS = [
 const BLOWOUT_REVIEWS = pickReviews("Daniel Cooperider", "Jen Wilbers", "Paul Griffin")
 
 export default function SprinklerBlowoutPage() {
+  const season = SEASON_COPY[blowoutPhase(new Date())]
   return (
     <>
       <script
@@ -133,7 +183,7 @@ export default function SprinklerBlowoutPage() {
 
       <PageBanner
         title="Sprinkler Blowout & Winterization"
-        description="Compressed-air winterization before the first hard freeze. $95 up to 6 zones."
+        description={season.banner}
         backgroundImage="/images/sprinkler-blowout-erie-co.jpg"
       />
 
@@ -148,7 +198,7 @@ export default function SprinklerBlowoutPage() {
               <SectionHeader
                 tagline="Winterization season"
                 taglineAsEyebrow
-                title="Book your blowout for October"
+                title={season.title}
                 titleId="blowout-overview"
                 align="left"
               />
@@ -194,12 +244,9 @@ export default function SprinklerBlowoutPage() {
                   </p>
                   <div className="mt-5 pt-5 border-t border-border">
                     <p className="text-sm font-semibold text-foreground mb-1.5">
-                      October books out
+                      {season.cardHeading}
                     </p>
-                    <p className="text-sm text-muted-foreground">
-                      We start booking in September and are usually booked solid
-                      by mid-October.
-                    </p>
+                    <p className="text-sm text-muted-foreground">{season.cardBody}</p>
                   </div>
                 </CardContent>
               </Card>
@@ -335,7 +382,7 @@ export default function SprinklerBlowoutPage() {
               href="/blog/when-to-winterize-sprinklers-colorado"
               className="text-primary hover:underline font-medium"
             >
-              winterization timing guide
+              when to blow out sprinklers in Colorado
             </Link>
             .
           </p>

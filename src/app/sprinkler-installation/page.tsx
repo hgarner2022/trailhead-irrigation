@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import { PHONE_DISPLAY, PHONE_TEL } from "@/lib/nav"
 import { PageBanner } from "@/components/sections/PageBanner"
 import { CTAStrip } from "@/components/sections/CTAStrip"
 import { FaqList } from "@/components/sections/FaqList"
@@ -14,9 +15,9 @@ import { Testimonials } from "@/components/sections/Testimonials"
 import { pickReviews } from "@/lib/reviews"
 
 export const metadata: Metadata = {
-  title: "Sprinkler Installation Services",
+  title: "Irrigation System Installation in Erie, CO: $3,000 to $6,000",
   description:
-    "New sprinkler system installation across Northern Colorado. Custom zone design for clay soil and local watering rules. Typical cost $3,000 to $6,000.",
+    "New sprinkler systems for Front Range clay soil and watering rules, $3,000 to $6,000, with the zone layout and price before anyone digs. Owner-installed in Erie, Longmont, Louisville, Lafayette, Firestone and Broomfield.",
   alternates: { canonical: `${siteConfig.url}/sprinkler-installation` },
 }
 
@@ -127,8 +128,8 @@ export default function SprinklerInstallationPage() {
       />
 
       <PageBanner
-        title="Sprinkler Installation Services"
-        description="New irrigation systems designed around your yard, your soil, and your city's watering rules."
+        title="Sprinkler & Irrigation System Installation in Erie, CO"
+        description="$3,000 to $6,000 for a typical yard. Zone layout and price before anyone digs. Erie, Longmont, Louisville, Lafayette, Firestone and Broomfield."
         backgroundImage="/images/home-lawn-spring.jpg"
       />
 
@@ -141,7 +142,7 @@ export default function SprinklerInstallationPage() {
           <SectionHeader
             tagline="New system installation"
             taglineAsEyebrow
-            title="What a new sprinkler system costs"
+            title="How much does sprinkler installation cost in Erie, CO?"
             titleId="install-overview"
           />
           <p className="text-muted-foreground mt-5 mb-4">
@@ -156,12 +157,14 @@ export default function SprinklerInstallationPage() {
             Ryan walks the property, designs the zone layout, and does the
             install himself. You get the layout and a price before anyone digs.
           </p>
-          <Link
-            href="/contact"
-            className={buttonVariants({ size: "lg" })}
-          >
-            Get a Quote
-          </Link>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <a href={PHONE_TEL} className={buttonVariants({ size: "lg" })}>
+              Call or text {PHONE_DISPLAY}
+            </a>
+            <Link href="/contact" className={buttonVariants({ variant: "outline", size: "lg" })}>
+              Send us the address
+            </Link>
+          </div>
         </div>
       </section>
 

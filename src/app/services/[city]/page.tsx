@@ -25,7 +25,7 @@ export async function generateMetadata({
   if (!data) return { title: "Not Found" }
   return {
     title: `${data.name}, CO Sprinkler Company`,
-    description: `Sprinkler installation, repair, winterization & spring turn-on in ${data.name}, Colorado. Serving ${data.county}.`,
+    description: `Owner-run sprinkler company based in Erie, serving ${data.name}. Repairs $145 a visit, blowouts $95, installs $3,000 to $6,000. ${data.name} watering rules, backflow deadlines and rebates on one page.`,
     alternates: { canonical: `${siteConfig.url}/services/${data.slug}` },
   }
 }
@@ -44,7 +44,13 @@ const SERVICES = [
     href: "/sprinkler-repair",
   },
   {
-    title: "Winterization & Spring Turn-On",
+    title: "Spring Turn-On & Tune-Up",
+    description: "We pressurize the system, run every zone, adjust the heads and program the controller. $145 up to 8 zones.",
+    icon: Droplets,
+    href: "/spring-turn-on",
+  },
+  {
+    title: "Fall Blowout & Winterization",
     description: "Professional sprinkler blowout in the fall to prevent freeze damage. Spring startup with leak checks, head adjustments, and controller programming.",
     icon: Snowflake,
     href: "/sprinkler-blowout",
@@ -127,11 +133,11 @@ export default async function CityPage({
             </span>
             <span className="flex items-center gap-1.5">
               <Droplets className="h-4 w-4 text-primary" />
-              Pop. {data.population}
+              Repair $145 &middot; Turn-on $145 &middot; Blowout $95
             </span>
             <span className="flex items-center gap-1.5">
               <Snowflake className="h-4 w-4 text-primary" />
-              Elevation: {data.elevation}
+              Same prices in every city we serve
             </span>
           </div>
           <p className="mt-4 text-xs text-muted-foreground">
@@ -148,7 +154,7 @@ export default async function CityPage({
           <h2 className="text-2xl font-bold text-foreground mb-8">
             What We Do in {data.name}
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {SERVICES.map((service) => (
               <Link key={service.title} href={service.href} className="block">
                 <Card className="h-full hover:shadow-md transition-shadow">
@@ -288,7 +294,7 @@ export default async function CityPage({
             </li>
             <li className="flex items-start gap-3">
               <Check className="h-5 w-5 text-success shrink-0 mt-0.5" />
-              <span className="text-foreground">Based in Erie, a short drive from {data.name}</span>
+              <span className="text-foreground">{data.slug === "erie" ? "Based right here in Erie" : `Based in Erie, a short drive from ${data.name}`}</span>
             </li>
             <li className="flex items-start gap-3">
               <Check className="h-5 w-5 text-success shrink-0 mt-0.5" />

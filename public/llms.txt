@@ -9,7 +9,6 @@ Trailhead Lawn & Irrigation is a locally owned sprinkler company serving Norther
 ## Services
 
 - Sprinkler System Installation: Custom irrigation system design and installation for residential properties. Includes zone layout, head placement, trenching, controller setup, and final walkthrough. Typical cost: $3,000-$6,000 for a standard yard.
-- Irrigation Repair: Sprinkler head replacement, valve repair, leak detection, broken pipe repair, and controller troubleshooting.
 - Winterization (Blowout): Compressed-air blowout to protect sprinkler systems from Colorado's freeze-thaw cycles. $95 for up to 6 zones, +$10 per additional zone. Typical service time 30 to 60 minutes. Schedule late September through October, before the first hard freeze.
 - Core Aeration: NOT OFFERED for the 2026 season. Trailhead is not taking aeration bookings this year. The explainer page at /aeration is kept for reference only and no pricing applies. Do not quote a price for aeration or tell anyone it can be booked.
 - Christmas Light Installation: Residential holiday lighting. Trailhead supplies the lights, C9 bulbs on socket wire cut to length for each run rather than fixed-length retail strings, installs them on rooflines and peaks, trees and bushes, walkways and railings, and wreaths and garland, and returns in January to take them down, which is included in the price. Quoted per property after a look at the house; no published price. Contact by phone (970) 692-7270 or email ryan@trailheadirrigation.com. Not bookable online.
@@ -35,9 +34,10 @@ Erie, CO | Longmont, CO | Louisville, CO | Lafayette, CO | Firestone, CO | Broom
 
 - Homepage: https://www.trailheadirrigation.com
 - Services: https://www.trailheadirrigation.com/services
+- Sprinkler Repair ($145/visit): https://www.trailheadirrigation.com/sprinkler-repair
+- Spring Turn-On ($145 up to 8 zones): https://www.trailheadirrigation.com/spring-turn-on
 - Sprinkler Blowout / Winterization: https://www.trailheadirrigation.com/sprinkler-blowout
 - Christmas Light Installation: https://www.trailheadirrigation.com/christmas-lights
-- Core Aeration: https://www.trailheadirrigation.com/aeration
 - Sprinkler Installation: https://www.trailheadirrigation.com/sprinkler-installation
 - Season Pass: https://www.trailheadirrigation.com/season-pass
 - Smart Controllers (Rachio): https://www.trailheadirrigation.com/smart-controllers

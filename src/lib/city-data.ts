@@ -43,9 +43,9 @@ export const CITY_DATA: CityData[] = [
     wateringTimeRestriction: "The Town recommends watering during cool morning hours to reduce evaporation. No formal time-of-day ban published.",
     backflowDeadline: "Colorado state law requires annual testing. Contact the Town of Erie at 303-926-2870 for the local compliance deadline.",
     backflowDevice: "PVB or RPZ assemblies accepted per Colorado state requirements.",
-    soilType: "Heavy clay-loam soil that expands when wet and contracts when dry. Cycle-and-soak irrigation is essential to prevent runoff. Annual aeration can reduce watering needs by up to 25%.",
+    soilType: "Heavy clay-loam soil that expands when wet and contracts when dry. Cycle-and-soak irrigation is essential to prevent runoff.",
     housingAge: "Predominantly newer construction (post-2000). Major communities include Erie Highlands, Collier's Hill, Flatiron Meadows, Compass, and Brennan.",
-    cityNote: "Erie experienced a severe water supply emergency in early 2026. Water efficiency and smart irrigation are bigger priorities here than anywhere else on the Front Range right now.",
+    cityNote: "Erie went through a water supply emergency in early 2026 that banned residential sprinkler use through March. The town now asks for two watering days a week.",
     winterNote:
       "Erie is home base, so this is the town we blow out the most systems in every October. The heavy clay holds water against the pipe, so a system that wasn't fully cleared has more standing water sitting in it than a sandier lot would. Most of Erie's newer subdivisions, including Erie Highlands, Collier's Hill and Flatiron Meadows, were also built with the backflow assembly above ground in an exposed spot. That is the part that cracks first in a hard freeze.",
     introText: "Trailhead Lawn & Irrigation is based right here in Erie. We're the local sprinkler company your neighbors call for installations, repairs, winterization, and spring turn-ons. We know Erie's heavy clay soil, the Town's watering schedule, and which neighborhoods need extra attention.",

@@ -91,7 +91,7 @@ const REPAIR_FAQS = [
   {
     question: "Do you work on all sprinkler brands?",
     answer:
-      "Yes. Hunter, Rain Bird, Toro, Orbit and the rest. Parts for the common heads and valves are on the truck. One exception: we don't service systems with PVC pipe run straight to the spray heads.",
+      "Yes. Hunter, Rain Bird, Toro, Orbit and the rest. Parts for the common heads and valves are on the truck. If you don't know what pipe you have, book anyway and we'll sort it out on the phone. The one setup we don't work on is PVC pipe run straight to the spray heads, and we can usually tell from a photo.",
   },
   {
     question: "Do you fix controllers and wiring?",
@@ -129,7 +129,7 @@ export default function SprinklerRepairPage() {
       />
 
       <PageBanner
-        title="Sprinkler Repair"
+        title="Sprinkler Repair in Erie, CO & the Front Range"
         description="$145 a visit, small fixes included. Most repairs are done the same day."
         backgroundImage="/images/sprinkler-repair.jpg"
       />
@@ -150,7 +150,7 @@ export default function SprinklerRepairPage() {
                 A repair visit is{" "}
                 <strong className="text-foreground font-semibold">$145</strong>. That covers running every
                 zone, finding the problem, and the small fixes we can do on the spot, like a head, a nozzle
-                or an adjustment. If it needs more than that, you get a price before we start, at $150 an
+                or an adjustment. If it needs more than that, you get a price before we start, at $145 an
                 hour plus parts.
               </p>
               <p className="text-muted-foreground mb-7">

@@ -117,7 +117,7 @@ export default function SeasonPassPage() {
                 Spring sprinkler turn-on, a July check-up and the October blowout for Erie and Front Range homes, on one schedule we keep for you.
               </h1>
               <p className="text-base text-white/80 max-w-xl">
-                Your October blowout date goes on our calendar in July, before the freeze rush. You pay after each visit, nothing up front.
+                About 150 blowouts land in the four weeks before the first freeze. Pass customers get their October date in July, before that rush. You pay after each visit, nothing up front.
               </p>
             </div>
             <SeasonPassCalculator ctaHref="/contact" ctaLabel="Reserve my season" />

@@ -10,12 +10,12 @@ import { ArrowRight } from "lucide-react"
 // every city as equal: a Lafayette install is worth as much as an Erie one.
 
 const CITY_NOTES: Record<string, string> = {
-  erie: "Home base",
-  longmont: "Rebates available",
-  louisville: "Rebates available",
-  lafayette: "Rebates available",
-  firestone: "Weld County",
-  broomfield: "Smart controller rebate",
+  erie: "Sprinkler service, home base",
+  longmont: "Sprinkler repair & rebates",
+  louisville: "Sprinkler repair & rebates",
+  lafayette: "Sprinkler repair & rebates",
+  firestone: "Sprinkler service, Weld County",
+  broomfield: "Sprinkler service & controller rebate",
 }
 
 export function ServiceAreaSection() {

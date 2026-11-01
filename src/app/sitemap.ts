@@ -14,7 +14,7 @@ import { CITIES as REBATE_CITIES } from "@/lib/rebate-data"
 //
 // Bump the date on a category only when content in that category actually
 // changes in a way Google should re-crawl for.
-const STATIC_PAGES_UPDATED = "2026-05-15" // last meaningful homepage/meta rewrite
+const STATIC_PAGES_UPDATED = "2026-11-01" // homepage redesign + copy pass
 const CITY_PAGES_UPDATED = "2026-05-01" // last meaningful city-page revision
 const CALCULATOR_UPDATED = "2026-04-15" // water savings calculator rebate data
 const BLOG_INDEX_UPDATED = "2026-05-19" // most recent blog post date
@@ -37,8 +37,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${baseUrl}/smart-controllers`, lastModified: new Date(CITY_PAGES_UPDATED), changeFrequency: "monthly" as const, priority: 0.9 },
     { url: `${baseUrl}/smart-controllers/water-savings-calculator`, lastModified: new Date(CALCULATOR_UPDATED), changeFrequency: "monthly" as const, priority: 0.85 },
     { url: `${baseUrl}/sprinkler-installation`, lastModified: new Date(SERVICE_PAGES_UPDATED), changeFrequency: "monthly" as const, priority: 0.95 },
-    { url: `${baseUrl}/christmas-lights`, lastModified: new Date(SERVICE_PAGES_UPDATED), changeFrequency: "monthly" as const, priority: 0.9 },
-    { url: `${baseUrl}/aeration`, lastModified: new Date(SERVICE_PAGES_UPDATED), changeFrequency: "monthly" as const, priority: 0.9 },
+    { url: `${baseUrl}/christmas-lights`, lastModified: new Date(SERVICE_PAGES_UPDATED), changeFrequency: "monthly" as const, priority: 0.7 },
+    { url: `${baseUrl}/aeration`, lastModified: new Date(SERVICE_PAGES_UPDATED), changeFrequency: "monthly" as const, priority: 0.4 },
     { url: `${baseUrl}/sprinkler-blowout`, lastModified: new Date(SERVICE_PAGES_UPDATED), changeFrequency: "weekly" as const, priority: 0.95 },
     { url: `${baseUrl}/spring-turn-on`, lastModified: new Date(TURN_ON_UPDATED), changeFrequency: "monthly" as const, priority: 0.95 },
     { url: `${baseUrl}/sprinkler-repair`, lastModified: new Date(TURN_ON_UPDATED), changeFrequency: "monthly" as const, priority: 0.95 },

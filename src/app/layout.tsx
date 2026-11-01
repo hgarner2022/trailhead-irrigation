@@ -29,7 +29,7 @@ const body = Source_Sans_3({
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),
   title: {
-    default: "Sprinkler & Irrigation Installation and Repair | Erie, CO",
+    default: "Sprinkler Repair & Irrigation Installation in Erie, CO",
     template: "%s | Trailhead Lawn & Irrigation",
   },
   description: siteConfig.description,

@@ -51,17 +51,18 @@ export function Hero() {
             Spend Saturdays above treeline, not in the yard.
             <span className="hidden md:inline"> Repairs, new systems, spring turn-ons and fall blowouts, booked online in two minutes.</span>
           </p>
-          {/* On a phone the sticky bar already carries Book Online and Call,
-              so the hero shows one button, the installation door. */}
+          {/* On a phone the hero shows one button, and it is the one most
+              visitors came for: repair and blowout traffic outnumbers install
+              traffic about 20 to 1 in Search Console. Desktop shows both. */}
           <div className="flex flex-col sm:flex-row gap-3 mt-1">
-            <Link href="/book" className={cn(buttonVariants({ size: "lg" }), "hidden md:inline-flex")}>
+            <Link href="/book" className={buttonVariants({ size: "lg" })}>
               Book Online
             </Link>
             <Link
               href="/sprinkler-installation"
               className={cn(
                 buttonVariants({ variant: "outline", size: "lg" }),
-                "border-white bg-transparent text-white hover:bg-white/10 hover:text-white"
+                "hidden md:inline-flex border-white bg-transparent text-white hover:bg-white/10 hover:text-white"
               )}
             >
               Get an installation quote

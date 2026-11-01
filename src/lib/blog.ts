@@ -1467,6 +1467,7 @@ Stack a couple of these together and a $250/month summer water bill can drop to 
   {
     slug: "when-to-winterize-sprinklers-colorado",
     title: "When Should I Winterize My Sprinklers? (Erie, CO)",
+    metaTitle: "When to Blow Out Sprinklers in Colorado (and When It's Too Late)",
     date: "2026-08-17",
     excerpt: "Book your blowout between late September and October, before the first hard freeze. Here's how to pick your date, why a shop compressor won't cut it, and what to do if you've already missed the window.",
     metaDescription:

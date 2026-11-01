@@ -231,7 +231,7 @@ export default function PricingPage() {
                 </div>
                 <div className="mt-5 pt-4 border-t border-border">
                   <p className="text-xs text-muted-foreground">
-                    <strong className="text-foreground">Note:</strong> We do not service sprinkler systems with PVC pipes going to the spray heads. Please verify your piping type before requesting service.
+                    <strong className="text-foreground">Note:</strong> The one setup we don&apos;t work on is PVC pipe run straight to the spray heads. If you don&apos;t know what pipe you have, book anyway and we&apos;ll sort it out on the phone.
                   </p>
                 </div>
               </div>
