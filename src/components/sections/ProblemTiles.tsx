@@ -57,11 +57,11 @@ export function ProblemTiles() {
     <section className="bg-background section-padding-y" aria-labelledby="problems-heading">
       <div className="container-padding-x mx-auto max-w-7xl flex flex-col gap-10">
         <SectionHeader
-          tagline="Sprinkler & irrigation services"
+          tagline="Services"
           taglineAsEyebrow
-          title="What's going on with your sprinklers?"
+          title="Sprinkler services and prices"
           titleId="problems-heading"
-          description="Pick yours. These are the prices we charge."
+          description="Every service has a published price. Open one to see what the visit includes."
           align="left"
         />
         <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
