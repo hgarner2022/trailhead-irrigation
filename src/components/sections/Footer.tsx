@@ -2,7 +2,7 @@ import { Separator } from "@/components/ui/separator"
 import Image from "next/image"
 import Link from "next/link"
 import { Phone, Mail, MapPin } from "lucide-react"
-import { CITY_LINKS, PRIMARY_LINKS, SERVICE_GROUPS, PHONE_DISPLAY, PHONE_TEL } from "@/lib/nav"
+import { CITY_LINKS, PRIMARY_LINKS, SERVICES, PHONE_DISPLAY, PHONE_TEL } from "@/lib/nav"
 
 // Every link the header keeps inside a dropdown is rendered here as plain
 // HTML. This is the crawlable copy of the navigation; see src/lib/nav.ts.
@@ -37,7 +37,7 @@ export function Footer() {
     <footer className="bg-charcoal text-white" role="contentinfo" aria-label="Site footer">
       <div className="container-padding-x mx-auto max-w-7xl section-padding-y">
         <div className="flex flex-col gap-12">
-          <div className="grid grid-cols-2 gap-10 md:grid-cols-3 lg:grid-cols-7">
+          <div className="grid grid-cols-2 gap-10 md:grid-cols-3 lg:grid-cols-5">
             {/* Brand */}
             <div className="col-span-2 md:col-span-3 lg:col-span-2 flex flex-col gap-4">
               <Link href="/" aria-label="Trailhead Lawn & Irrigation, home">
@@ -63,9 +63,7 @@ export function Footer() {
               </div>
             </div>
 
-            {SERVICE_GROUPS.map((group) => (
-              <FooterLinks key={group.heading} heading={group.heading} links={group.links} />
-            ))}
+            <FooterLinks heading="Services" links={SERVICES} />
             <FooterLinks heading="Service areas" links={CITY_LINKS} />
             <FooterLinks heading="Company" links={COMPANY_LINKS} />
           </div>

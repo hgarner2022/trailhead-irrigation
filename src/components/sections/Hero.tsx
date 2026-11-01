@@ -2,6 +2,7 @@ import { buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import Image from "next/image"
 import Link from "next/link"
+import { SeasonalPill } from "@/components/sections/SeasonalPill"
 
 // The tagline is display text; the H1 is still the keyword sentence. Google
 // reads tags, not font sizes, so search gets its sentence and people get a
@@ -10,22 +11,26 @@ import Link from "next/link"
 
 export function Hero() {
   return (
-    <section className="relative flex items-end min-h-[520px] md:min-h-[600px]" aria-labelledby="hero-heading">
+    <section className="relative flex items-end min-h-[560px] md:min-h-[640px] lg:min-h-[720px]" aria-labelledby="hero-heading">
+      {/* Positioned toward the top of the frame so the valley and the town
+          below the foothills stay in view; the fence is foreground, not the
+          subject. */}
       <Image
         src="/images/boulder-foothills-fence.jpg"
-        alt="Split-rail fence on a foothills meadow above Boulder, Colorado"
+        alt="Foothills meadow above Boulder, Colorado, with the town in the valley below"
         fill
         priority
-        className="object-cover object-[center_60%]"
+        className="object-cover object-[center_22%]"
         sizes="100vw"
-        quality={78}
+        quality={80}
       />
       <div
-        className="absolute inset-0 bg-gradient-to-r from-charcoal/85 via-charcoal/55 to-charcoal/15"
+        className="absolute inset-0 bg-gradient-to-t from-charcoal/80 via-charcoal/35 to-charcoal/10"
         aria-hidden="true"
       />
       <div className="relative container-padding-x mx-auto max-w-7xl w-full pt-24 pb-12 md:pt-32 md:pb-16">
         <div className="flex flex-col gap-5 max-w-2xl">
+          <SeasonalPill onDark className="w-fit" />
           <p className="font-display text-6xl sm:text-7xl md:text-8xl font-bold text-white leading-[0.95]">
             Go find your trail.
           </p>

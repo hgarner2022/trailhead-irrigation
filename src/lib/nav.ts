@@ -5,7 +5,7 @@ import { CITY_DATA } from "@/lib/city-data"
 //
 // Why the footer matters: the header's dropdown panels are hidden until
 // opened, so the footer is where every service and city link is guaranteed
-// to be plain, visible HTML for crawlers. Never remove a group from the
+// to be plain, visible HTML for crawlers. Never remove links from the
 // footer to "clean it up".
 
 export type NavLink = {
@@ -15,38 +15,21 @@ export type NavLink = {
   note?: string
 }
 
-export type NavGroup = {
-  heading: string
-  links: NavLink[]
-}
-
-export const SERVICE_GROUPS: NavGroup[] = [
-  {
-    heading: "Repair & maintain",
-    links: [
-      { label: "Sprinkler Repair", href: "/services", note: "$145 visit" },
-      { label: "Spring Turn-On & System Check", href: "/pricing", note: "$145" },
-      { label: "Mid-Season Inspection & Tune-Up", href: "/pricing", note: "$145" },
-      { label: "Sprinkler Blowout & Winterization", href: "/sprinkler-blowout", note: "from $95" },
-      { label: "Lawn Aeration", href: "/aeration" },
-    ],
-  },
-  {
-    heading: "Install & upgrade",
-    links: [
-      { label: "New Sprinkler System Installation", href: "/sprinkler-installation", note: "from $3,000" },
-      { label: "Smart Controllers (Rachio)", href: "/smart-controllers", note: "from $350" },
-      { label: "Drip & Water-Efficient Upgrades", href: "/water-efficiency" },
-      { label: "Christmas Light Installation", href: "/christmas-lights", note: "Nov to Jan" },
-    ],
-  },
-  {
-    heading: "Save water",
-    links: [
-      { label: "Water Rebates by City", href: "/water-rebates" },
-      { label: "Water Savings Calculator", href: "/smart-controllers/water-savings-calculator" },
-    ],
-  },
+/**
+ * Services, one plain list in the order of the year. No category headings:
+ * customers know the service names, not our groupings.
+ */
+export const SERVICES: NavLink[] = [
+  { label: "Sprinkler Repair", href: "/services", note: "$145 visit" },
+  { label: "Spring Turn-On & Tune-Up", href: "/pricing", note: "$145" },
+  { label: "Sprinkler Installation", href: "/sprinkler-installation", note: "from $3,000" },
+  { label: "Smart Controllers (Rachio)", href: "/smart-controllers", note: "from $350" },
+  { label: "Drip & Water Efficiency", href: "/water-efficiency" },
+  { label: "Water Rebates", href: "/water-rebates" },
+  { label: "Lawn Aeration", href: "/aeration" },
+  { label: "Fall Blowout", href: "/sprinkler-blowout", note: "from $95" },
+  { label: "Season Pass", href: "/season-pass", note: "3 visits, from $385" },
+  { label: "Christmas Lights", href: "/christmas-lights", note: "Nov to Jan" },
 ]
 
 export const CITY_LINKS: NavLink[] = CITY_DATA.map((city) => ({
@@ -57,7 +40,6 @@ export const CITY_LINKS: NavLink[] = CITY_DATA.map((city) => ({
 /** Top-level links that are plain pages (no dropdown). */
 export const PRIMARY_LINKS: NavLink[] = [
   { label: "Pricing", href: "/pricing" },
-  { label: "Season Pass", href: "/season-pass" },
   { label: "About", href: "/about" },
   { label: "Blog", href: "/blog" },
 ]
@@ -66,8 +48,8 @@ export const PHONE_DISPLAY = "(970) 692-7270"
 export const PHONE_TEL = "tel:9706927270"
 
 /**
- * The one rotating "seasonal" slot in the header. Replaces having Blowouts
- * and Christmas Lights as permanent top-level links all year.
+ * The one rotating "seasonal" promo. Shown as a small chip in the hero and
+ * at the top of the mobile menu, not in the header bar.
  */
 export function getSeasonalPromo(date: Date): NavLink {
   const m = date.getMonth() // 0 = January

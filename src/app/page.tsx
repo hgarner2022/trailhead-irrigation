@@ -3,11 +3,9 @@ import { TrustStrip } from "@/components/sections/TrustStrip"
 import { ProblemTiles } from "@/components/sections/ProblemTiles"
 import { InstallationBand } from "@/components/sections/InstallationBand"
 import { SeasonPassSection } from "@/components/sections/SeasonPassSection"
-import { HomeHowItWorks } from "@/components/sections/HomeHowItWorks"
 import { OwnerSection } from "@/components/sections/OwnerSection"
 import { Testimonials } from "@/components/sections/Testimonials"
 import { ServiceAreaSection } from "@/components/sections/ServiceAreaSection"
-import { WateringExplained } from "@/components/sections/WateringExplained"
 import { HomeFAQ, HOME_FAQS } from "@/components/sections/HomeFAQ"
 import { CTAStrip } from "@/components/sections/CTAStrip"
 import {
@@ -43,9 +41,17 @@ export default function HomePage() {
     ],
   }
 
-  // Page order follows how a buyer thinks: the problem, the price, the
-  // biggest-ticket decision, the plan, how it works, who we are, proof,
-  // where we work, why it works here, questions, book.
+  // Every section has one job the others don't:
+  //   Hero          the promise, and two doors (book / installation quote)
+  //   TrustStrip    the four things a stranger checks before calling
+  //   ProblemTiles  find your service, with its price; the site's map
+  //   Installation  the highest-ticket service and the biggest search gap
+  //   SeasonPass    the recurring product
+  //   Owner         who is accountable
+  //   Testimonials  proof, one review per core service
+  //   ServiceArea   the six city pages, linked from the page with authority
+  //   FAQ           the questions Google already shows under our result
+  //   CTAStrip      book
   return (
     <main>
       <script
@@ -57,7 +63,6 @@ export default function HomePage() {
       <ProblemTiles />
       <InstallationBand />
       <SeasonPassSection />
-      <HomeHowItWorks />
       <OwnerSection />
       <Testimonials
         reviews={HOME_REVIEWS}
@@ -65,7 +70,6 @@ export default function HomePage() {
         description="5.0 on Google. Every review is public on our Google Business Profile."
         bg="background"
       />
-      <WateringExplained />
       <ServiceAreaSection />
       <HomeFAQ />
       <CTAStrip />

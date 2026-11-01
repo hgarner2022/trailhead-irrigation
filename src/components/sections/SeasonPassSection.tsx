@@ -1,4 +1,3 @@
-import Link from "next/link"
 import { SectionHeader } from "@/components/sections/SectionHeader"
 import { SeasonPassCalculator } from "@/components/sections/SeasonPassCalculator"
 import { CalendarCheck, Snowflake, CreditCard } from "lucide-react"
@@ -21,6 +20,8 @@ const POINTS = [
   },
 ]
 
+// The card is the only action in this section; it leads to the Season Pass
+// page, which has the full table and the reserve button.
 export function SeasonPassSection() {
   return (
     <section className="bg-cream section-padding-y" aria-labelledby="season-pass-heading">
@@ -48,11 +49,8 @@ export function SeasonPassSection() {
                 </li>
               ))}
             </ul>
-            <Link href="/season-pass" className="text-sm font-semibold text-primary hover:underline w-fit">
-              Full price table and details &rarr;
-            </Link>
           </div>
-          <SeasonPassCalculator />
+          <SeasonPassCalculator ctaHref="/season-pass" ctaLabel="See details and reserve" />
         </div>
       </div>
     </section>

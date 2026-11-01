@@ -311,7 +311,7 @@ Provides 14 composable skills for structured software development:
 
 | Route | Purpose |
 |---|---|
-| `/` | Homepage (Nov 2026 redesign) — Hero (tagline + keyword H1, two doors) → TrustStrip → ProblemTiles (6 priced tiles) → InstallationBand (navy) → SeasonPassSection → HomeHowItWorks → OwnerSection → Testimonials (3) → WateringExplained → ServiceAreaSection → HomeFAQ → CTAStrip |
+| `/` | Homepage (Nov 2026 redesign) — Hero (tagline + keyword H1, two doors) → TrustStrip → ProblemTiles (6 clickable priced cards, no button text) → InstallationBand (navy) → SeasonPassSection → OwnerSection → Testimonials (3) → ServiceAreaSection → HomeFAQ → CTAStrip. Every section has one job the others don't (see the comment in `page.tsx`); don't add one without a reason |
 | `/services` | Service overview + HowItWorks process + service detail blocks + city links + FAQ |
 | `/services/[city]` | 6 city pages (erie, longmont, louisville, lafayette, firestone, broomfield) — local water info + restrictions + per-city blowout block (`winterNote`) + FAQ |
 | `/sprinkler-installation` | Installation landing page — cost/timeline answer-first, 6-step process, included vs not-included, clay-soil + restriction design notes, glossary, FAQ. Built to fill the gaps local competitors leave (no pricing, timeline, or permit detail published anywhere) |
@@ -355,11 +355,12 @@ Provides 14 composable skills for structured software development:
 
 ## Navigation, type and the sticky bar (Nov 2026 redesign)
 
-- **Nav data lives in `src/lib/nav.ts`.** The header renders it as two dropdowns (Services: Repair & maintain / Install & upgrade / Save water; Service Areas: six cities) plus Pricing · Season Pass · About · Blog, one rotating seasonal pill (`getSeasonalPromo`, resolved on the client), the phone number as an outline button and ONE filled button: Book Online. The footer renders every one of those links flat, which is the crawlable copy — never trim the footer to "clean it up".
+- **Nav data lives in `src/lib/nav.ts`.** Keep it simple: the header is Services ▾ (one plain list of ~10 services in season order, no category headings, Season Pass included) · Service Areas ▾ (six cities) · Pricing · About · Blog, then the phone number as plain text and ONE filled button: Book Online. Nothing else goes in the bar; the seasonal promo lives in the hero chip. The footer renders every link flat, which is the crawlable copy — never trim the footer to "clean it up".
 - **Dropdowns are hand-rolled** (hover + click open, Escape / focus-out / mouse-leave close) so the panel markup is always in the server HTML. Don't swap in Radix NavigationMenu without keeping the footer links.
 - **Mobile:** logo + hamburger only; a full-screen sheet with the same groups; `StickyBar` carries Call + Book Online and is hidden on `/book`, `/contact`, `/aeration`.
 - **Type:** Barlow Condensed (headings, via `font-display` / global `h1,h2,h3` rule) + Source Sans 3 (body), both self-hosted through `next/font` in `layout.tsx`. Opt a heading out with `font-sans` (the hero's keyword H1 does).
-- **Hero rule:** "Go find your trail." is display text (a `<p>`), the H1 stays the keyword sentence. Nobody searches the tagline.
+- **Hero rule:** "Go find your trail." is display text (a `<p>`), the H1 stays the keyword sentence. Nobody searches the tagline. Hero photo is positioned near the top (`object-[center_22%]`) so the valley and town show, not just the fence.
+- **One action per section.** No little "details →" text links scattered under sections; a section's card or one button is its action. Service cards are whole-card links with a corner arrow, no button text, each pointing at the page that explains the service (never straight at a form).
 - **Review count:** never hard-code it in copy (it changes weekly). "5.0 on Google" only. The `aggregateRating.reviewCount` in `seo.ts` is the one place it lives, and must be re-verified against GBP when touched.
 - **Photos:** `boulder-foothills-fence.jpg` (hero), `welcome-to-colorado-sign.jpg` (service area), `sprinkler-spray-head-lawn.jpg`, `sprinkler-golden-hour.jpg`, `micro-spray-garden-bed.jpg`, `new-lawn-home.jpg`, `rachio-app-usage.png` (Rachio press kit; confirm dealer usage rights), `mp-rotator-nozzle.jpg`. Still wanted: a real blowout photo, the dusk-rotors shot (WateringExplained), and Ryan with the boys on the park lawn (OwnerSection / hero candidate).
 
@@ -417,7 +418,8 @@ Always use these instead of building from scratch:
 | `<CompatibleBrands />` | "Compatible with: brand · brand · brand" strip |
 | `<PageBanner title description backgroundImage />` | Top banner on every interior page |
 | `<CTAStrip />` | Bottom CTA on every page |
-| `<Hero />` · `<TrustStrip />` · `<ProblemTiles />` · `<InstallationBand />` · `<SeasonPassSection />` · `<HomeHowItWorks />` · `<OwnerSection />` · `<WateringExplained />` · `<ServiceAreaSection />` · `<HomeFAQ />` · `<Testimonials />` | Homepage-specific sections (Nov 2026 redesign) |
+| `<Hero />` · `<TrustStrip />` · `<ProblemTiles />` · `<InstallationBand />` · `<SeasonPassSection />` · `<OwnerSection />` · `<ServiceAreaSection />` · `<HomeFAQ />` · `<Testimonials />` | Homepage-specific sections (Nov 2026 redesign) |
+| `<SeasonalPill />` | Client chip resolving the month's promo (`getSeasonalPromo`); used in the hero and the mobile menu, never in the header bar |
 | `<SeasonPassCalculator />` | Client card with the zone-count selector; used on `/` and `/season-pass` |
 | `<StickyBar />` | Phone-only fixed Call + Book Online bar, rendered in the root layout; hidden on `/book`, `/contact`, `/aeration` so it never covers a form |
 

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import Link from "next/link"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { buttonVariants } from "@/components/ui/button"
@@ -19,12 +20,20 @@ import {
 
 const ZONE_OPTIONS = Array.from({ length: MAX_ZONES - MIN_ZONES + 1 }, (_, i) => MIN_ZONES + i)
 
-export function SeasonPassCalculator({ className }: { className?: string }) {
+export function SeasonPassCalculator({
+  className,
+  ctaHref = "/contact",
+  ctaLabel = "Reserve my season",
+}: {
+  className?: string
+  ctaHref?: string
+  ctaLabel?: string
+}) {
   const [zones, setZones] = useState(MIN_ZONES)
   const total = seasonPassPrice(zones)
 
   return (
-    <Card className={cn("relative border-2 border-primary rounded-lg flex flex-col", className)}>
+    <Card className={cn("relative border-2 border-primary rounded-lg flex flex-col shadow-lg", className)}>
       <CardHeader className="pb-3">
         <Badge className="w-fit mb-3">Three visits, one schedule</Badge>
         <CardTitle className="font-display text-3xl font-semibold text-navy">Season Pass</CardTitle>
@@ -55,14 +64,13 @@ export function SeasonPassCalculator({ className }: { className?: string }) {
               <CheckCircle2 className="h-5 w-5 text-success shrink-0 mt-0.5" aria-hidden="true" />
               <span>
                 <span className="font-medium text-foreground">{v.name}</span>
-                <span className="text-muted-foreground"> ({v.when})</span>
                 <span className="text-muted-foreground tabular-nums"> &middot; ${visitPrice(v, zones)}</span>
               </span>
             </li>
           ))}
           <li className="flex items-start gap-2.5 text-sm">
             <CheckCircle2 className="h-5 w-5 text-success shrink-0 mt-0.5" aria-hidden="true" />
-            <span className="text-foreground">Priority scheduling all season, blowout date reserved in July</span>
+            <span className="text-foreground">Blowout date reserved in July, before the freeze rush</span>
           </li>
           <li className="flex items-start gap-2.5 text-sm">
             <CheckCircle2 className="h-5 w-5 text-success shrink-0 mt-0.5" aria-hidden="true" />
@@ -70,11 +78,11 @@ export function SeasonPassCalculator({ className }: { className?: string }) {
           </li>
         </ul>
         <p className="text-xs text-muted-foreground leading-relaxed">
-          Same published price as booking the three visits separately. Repairs found on a visit are quoted before any work starts.
+          Same published price as booking the three visits separately. No discount, no catch.
         </p>
-        <a href="/contact" className={cn(buttonVariants({ size: "lg" }), "mt-auto w-full")}>
-          Reserve my season
-        </a>
+        <Link href={ctaHref} className={cn(buttonVariants({ size: "lg" }), "mt-auto w-full")}>
+          {ctaLabel}
+        </Link>
       </CardContent>
     </Card>
   )

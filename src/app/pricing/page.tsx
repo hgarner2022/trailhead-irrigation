@@ -18,6 +18,7 @@ import {
   Clock,
 } from "lucide-react"
 import { faqJsonLd, reviewsJsonLd, breadcrumbJsonLd, siteConfig } from "@/lib/seo"
+import { SEASON_PASS_FROM } from "@/lib/season-pass"
 import { Testimonials } from "@/components/sections/Testimonials"
 import { pickReviews } from "@/lib/reviews"
 
@@ -162,6 +163,26 @@ export default function PricingPage() {
               }}
             />
           </div>
+
+          {/* All three seasonal visits on one schedule. Same per-zone prices
+              as the cards above, added up; the page has the table by zone. */}
+          <Link
+            href="/season-pass"
+            className="group mt-6 flex flex-col gap-4 rounded-lg border-2 border-primary bg-cream p-6 md:flex-row md:items-center md:justify-between transition-colors hover:bg-primary/5"
+          >
+            <div className="flex flex-col gap-1">
+              <p className="text-xs font-semibold uppercase tracking-widest text-primary">Season Pass</p>
+              <p className="font-display text-2xl md:text-3xl font-semibold text-navy">
+                All three visits, one schedule, blowout date reserved in July
+              </p>
+              <p className="text-sm text-muted-foreground">
+                From ${SEASON_PASS_FROM} for up to 6 zones. The three prices above added up, no discount, one card on file charged after each visit.
+              </p>
+            </div>
+            <span className={cn(buttonVariants({ size: "lg" }), "shrink-0 w-fit")}>
+              See zone prices and reserve
+            </span>
+          </Link>
         </div>
       </section>
 

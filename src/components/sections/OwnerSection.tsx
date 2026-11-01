@@ -39,8 +39,8 @@ export function OwnerSection() {
               <Link href="/book" className={cn(buttonVariants({ variant: "secondary", size: "lg" }), "w-fit")}>
                 Book a service
               </Link>
-              <Link href="/about" className="inline-flex items-center text-sm font-semibold text-primary hover:underline">
-                More about Trailhead &rarr;
+              <Link href="/about" className={cn(buttonVariants({ variant: "outline", size: "lg" }), "w-fit")}>
+                About Trailhead
               </Link>
             </div>
           </div>
