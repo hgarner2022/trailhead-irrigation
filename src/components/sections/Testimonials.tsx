@@ -11,6 +11,7 @@ import {
 import { Star } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { recentReviews } from "@/lib/reviews"
+import { GOOGLE_PROFILE_URL } from "@/lib/seo"
 import type { ReviewItem } from "@/lib/seo"
 
 type TestimonialsProps = {
@@ -63,6 +64,15 @@ export function Testimonials({
               {heading}
             </h2>
             <p className="text-muted-foreground text-lg">{description}</p>
+            {/* Live link so the reviews can be checked at the source. */}
+            <a
+              href={GOOGLE_PROFILE_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm font-semibold text-primary underline underline-offset-4 decoration-primary/40 hover:decoration-primary w-fit mx-auto"
+            >
+              Read all of our reviews on Google
+            </a>
           </div>
 
           <Carousel opts={{ align: "start", loop: false }} className="w-full">

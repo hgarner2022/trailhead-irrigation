@@ -13,6 +13,9 @@ const SAME_AS_PROFILES = [
   "https://www.facebook.com/profile.php?id=61589563052470",
 ]
 
+/** The public Google Business Profile, linked wherever reviews are shown so a visitor can verify them. */
+export const GOOGLE_PROFILE_URL = SAME_AS_PROFILES[0]
+
 export const siteConfig = {
   url: SITE_URL,
   name: "Trailhead Lawn & Irrigation LLC",

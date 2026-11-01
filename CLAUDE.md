@@ -367,6 +367,10 @@ Provides 14 composable skills for structured software development:
 - **Review count:** never hard-code it in copy (it changes weekly). "5.0 on Google" only. The `aggregateRating.reviewCount` in `seo.ts` is the one place it lives, and must be re-verified against GBP when touched.
 - **Photos:** `trail-mountain-meadow.jpg` (hero), `rachio-3-controller.jpg` + `rachio-3-studio.jpg` (Rachio press kit product shots), `boulder-foothills-fence.jpg`, `welcome-to-colorado-sign.jpg` (service area), `sprinkler-spray-head-lawn.jpg`, `sprinkler-golden-hour.jpg`, `micro-spray-garden-bed.jpg`, `new-lawn-home.jpg`, `rachio-app-usage.png` (Rachio press kit; confirm dealer usage rights), `mp-rotator-nozzle.jpg`. Still wanted: a real blowout photo, the dusk-rotors shot (WateringExplained), and Ryan with the boys on the park lawn (OwnerSection / hero candidate).
 
+## Research notes
+
+`.local-data/research/2026-11-01-trust-and-copy-best-practices.md` — what competitor sites and best-practice sources agree makes a home-service site trustworthy, what has been applied, and the facts still needed from Hannah/Ryan (year founded, written guarantee, response time, license number, brands, real job photos). Check copy decisions against it.
+
 ## Adding a new section — checklist
 
 1. **Library check (REQUIRED)**:

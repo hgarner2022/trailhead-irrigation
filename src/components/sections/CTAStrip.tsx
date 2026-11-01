@@ -1,6 +1,7 @@
 import { buttonVariants } from "@/components/ui/button"
 import Link from "next/link"
 import { PHONE_DISPLAY, PHONE_TEL } from "@/lib/nav"
+import { siteConfig } from "@/lib/seo"
 
 // One primary action, one quiet secondary. The phone number is a text link
 // rather than a second button so the block never reads as a choice.
@@ -27,6 +28,9 @@ export function CTAStrip() {
               or call {PHONE_DISPLAY}
             </a>
           </div>
+          <p className="text-xs text-white/60">
+            Licensed and insured &middot; {siteConfig.address.street}, {siteConfig.address.locality}, CO {siteConfig.address.postalCode}
+          </p>
         </div>
       </div>
     </section>
