@@ -25,7 +25,7 @@ export function OwnerSection() {
           <div className="flex flex-col gap-6">
             <Badge variant="green" className="w-fit">Owner-operated</Badge>
             <h2 id="owner-heading" className="font-display text-4xl md:text-5xl font-bold text-navy">
-              Owner-operated, based in Erie
+              An owner-operated sprinkler company, based in Erie
             </h2>
             <div className="flex flex-col gap-4 text-muted-foreground text-lg">
               <p>

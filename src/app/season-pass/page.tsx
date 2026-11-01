@@ -15,8 +15,8 @@ import {
 } from "@/lib/season-pass"
 
 export const metadata: Metadata = {
-  title: "Season Pass: Sprinkler Turn-On, Mid-Season Check & Blowout",
-  description: `Three sprinkler visits a year in Erie, CO and the Front Range: spring turn-on, mid-season inspection, fall blowout with the date reserved in July. From $${SEASON_PASS_FROM} for up to 6 zones, billed per visit, nothing up front.`,
+  title: "Sprinkler Season Pass: 3 Visits, Erie CO",
+  description: `Spring turn-on, mid-season check and fall blowout on one schedule, from $${SEASON_PASS_FROM} for up to 6 zones. Blowout date reserved in July. Billed per visit, nothing up front.`,
   alternates: { canonical: `${siteConfig.url}/season-pass` },
 }
 
@@ -119,13 +119,13 @@ export default function SeasonPassPage() {
         <div className="relative container-padding-x mx-auto max-w-7xl pt-20 pb-14 md:pt-28 md:pb-20">
           <div className="grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-10 lg:gap-16 items-center">
             <div className="flex flex-col gap-5 text-white">
-              <p className="text-xs font-semibold uppercase tracking-widest text-primary-light">Season Pass</p>
-              <p className="font-display text-5xl sm:text-6xl md:text-7xl font-bold leading-[0.95]">
+              <p className="order-first text-xs font-semibold uppercase tracking-widest text-primary-light">Season Pass</p>
+              <h1 className="font-sans text-lg md:text-xl font-semibold text-white/95 leading-snug max-w-xl" style={{ letterSpacing: 0 }}>
+                Sprinkler Season Pass in Erie, CO: spring turn-on, mid-season check and fall blowout on one schedule we keep for you.
+              </h1>
+              <p className="order-first font-display text-5xl sm:text-6xl md:text-7xl font-bold leading-[0.95]">
                 Less time in the yard.<br />More time on the trail.
               </p>
-              <h1 className="font-sans text-lg md:text-xl font-semibold text-white/95 leading-snug max-w-xl" style={{ letterSpacing: 0 }}>
-                Spring sprinkler turn-on, a July check-up and the October blowout for Erie and Front Range homes, on one schedule we keep for you.
-              </h1>
               <p className="text-base text-white/80 max-w-xl">
                 About 150 blowouts land in the four weeks before the first freeze. Pass customers get their October date in July, before that rush. You pay after each visit, nothing up front.
               </p>

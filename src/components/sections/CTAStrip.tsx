@@ -11,12 +11,12 @@ export function CTAStrip() {
     <section className="bg-navy section-padding-y" aria-labelledby="cta-heading">
       <div className="container-padding-x mx-auto max-w-7xl text-center">
         <div className="flex flex-col items-center gap-6">
-          <h2 id="cta-heading" className="font-display text-5xl md:text-6xl font-bold text-white">
+          <p className="font-display text-5xl md:text-6xl font-bold text-white">
             Go find your trail.
-          </h2>
-          <p className="text-white/80 text-lg max-w-xl">
-            Repairs, turn-ons and blowouts book online in two minutes. New systems start with a quick yard visit.
           </p>
+          <h2 id="cta-heading" className="text-white/80 text-lg font-normal max-w-xl" style={{ letterSpacing: 0, fontFamily: "inherit" }}>
+            Book sprinkler service in Erie and the Front Range. Repairs, turn-ons and blowouts book online in two minutes. New systems start with a quick yard visit.
+          </h2>
           <div className="flex flex-col items-center gap-4">
             <Link href="/book" className={buttonVariants({ size: "lg" })}>
               Book Online

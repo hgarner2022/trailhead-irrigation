@@ -58,7 +58,7 @@ const SEASON_COPY = {
 } as const
 
 export const metadata: Metadata = {
-  title: "Sprinkler Blowout Cost: $95 for 6 Zones in Erie, CO",
+  title: "Sprinkler Blowout Cost: $95, Erie CO",
   description:
     "Sprinkler blowout $95 up to 6 zones. Compressed-air winterization across Northern Colorado. Book for October, before the first hard freeze.",
   alternates: { canonical: `${siteConfig.url}/sprinkler-blowout` },

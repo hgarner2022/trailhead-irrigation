@@ -10,7 +10,7 @@ import { MapPin, Droplets, Wrench, Shield, Users, Award } from "lucide-react"
 import { siteConfig, breadcrumbJsonLd, personJsonLd } from "@/lib/seo"
 
 export const metadata: Metadata = {
-  title: "About Trailhead Lawn & Irrigation | Erie Sprinkler Contractor",
+  title: "About Ryan Garner | Erie Sprinkler Contractor",
   description:
     "Trailhead Lawn & Irrigation is an owner-operated sprinkler company in Erie, CO. Licensed and insured, with over ten years of Front Range irrigation work.",
   alternates: { canonical: `${siteConfig.url}/about` },

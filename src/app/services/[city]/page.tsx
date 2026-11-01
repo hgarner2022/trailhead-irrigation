@@ -25,7 +25,7 @@ export async function generateMetadata({
   if (!data) return { title: "Not Found" }
   return {
     title: `${data.name}, CO Sprinkler Company`,
-    description: `Owner-run sprinkler company based in Erie, serving ${data.name}. Repairs $145 a visit, blowouts $95, installs $3,000 to $6,000. ${data.name} watering rules, backflow deadlines and rebates on one page.`,
+    description: data.slug === "erie" ? `Owner-run sprinkler company based right here in Erie. Repairs $145 a visit, blowouts $95, installs $3,000 to $6,000. Erie watering rules, backflow deadlines and rebates.` : `Owner-run sprinkler company based in Erie, serving ${data.name}. Repairs $145 a visit, blowouts $95, installs $3,000 to $6,000. ${data.name} watering rules and rebates.`,
     alternates: { canonical: `${siteConfig.url}/services/${data.slug}` },
   }
 }
@@ -284,7 +284,7 @@ export default async function CityPage({
       <section className="bg-cream section-padding-y">
         <div className="container-padding-x mx-auto max-w-4xl">
           <h2 className="text-2xl font-bold text-foreground mb-4">
-            Based in Erie, working in {data.name}
+            {data.slug === "erie" ? "Based right here in Erie" : `Based in Erie, working in ${data.name}`}
           </h2>
           <p className="text-muted-foreground leading-relaxed mb-6">{data.whyLocal}</p>
           <ul className="flex flex-col gap-3">
@@ -355,6 +355,22 @@ export default async function CityPage({
             {data.name} sprinkler questions
           </h2>
           <FaqList faqs={data.faqs} itemBg="background" />
+        </div>
+      </section>
+
+      {/* Cross-city links in the body, not only the header and footer. */}
+      <section className="bg-cream section-padding-y" aria-labelledby={`also-${data.slug}`}>
+        <div className="container-padding-x mx-auto max-w-5xl text-center">
+          <h2 id={`also-${data.slug}`} className="text-2xl md:text-3xl font-bold text-foreground mb-6">
+            Sprinkler service in the cities next door
+          </h2>
+          <div className="flex flex-wrap justify-center gap-3">
+            {CITY_DATA.filter((c) => c.slug !== data.slug).map((c) => (
+              <Link key={c.slug} href={`/services/${c.slug}`} className={buttonVariants({ variant: "outline" })}>
+                Sprinkler service in {c.name}
+              </Link>
+            ))}
+          </div>
         </div>
       </section>
 

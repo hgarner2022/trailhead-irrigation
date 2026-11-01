@@ -13,9 +13,9 @@ import { faqJsonLd, reviewsJsonLd, breadcrumbJsonLd, siteConfig } from "@/lib/se
 import { reviewsFor } from "@/lib/reviews"
 
 export const metadata: Metadata = {
-  title: "Sprinkler Repair in Erie, CO & the Front Range",
+  title: "Sprinkler Repair in Erie, CO: $145 a Visit",
   description:
-    "Sprinkler repair for $145 a visit, small fixes included. Broken heads, stuck valves, leaks and dead zones diagnosed on the first visit. Erie, Longmont, Louisville, Lafayette, Firestone and Broomfield.",
+    "Sprinkler repair for $145 a visit, small fixes included. Broken heads, stuck valves, leaks and dead zones found on the first visit. Erie and the Front Range.",
   alternates: { canonical: `${siteConfig.url}/sprinkler-repair` },
 }
 

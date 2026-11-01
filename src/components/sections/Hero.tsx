@@ -36,17 +36,19 @@ export function Hero() {
         <div className="flex flex-col gap-5 max-w-2xl">
           {/* The chip is desktop-only; on a phone it is the first line of the
               mobile menu, and the hero has to stay short. */}
-          <SeasonalPill onDark className="hidden md:flex w-fit" />
-          <p className="font-display text-5xl sm:text-6xl md:text-7xl font-bold text-white leading-[0.98] max-w-3xl">
-            Less time in the yard. More time on the trail.
-          </p>
+          <SeasonalPill onDark className="order-first hidden md:flex w-fit" />
+          {/* The H1 comes first in the DOM so search engines read it before the
+              tagline; `order-first` on the tagline keeps it visually on top. */}
           <h1
             id="hero-heading"
             className="font-sans text-lg md:text-xl font-semibold text-white leading-snug max-w-xl"
             style={{ letterSpacing: 0 }}
           >
-            Sprinkler repair, installation and fall blowouts in Erie, CO, serving the Northern Colorado Front Range.
+            Sprinkler repair and irrigation system installation in Erie, CO, serving the Northern Colorado Front Range.
           </h1>
+          <p className="order-first font-display text-5xl sm:text-6xl md:text-7xl font-bold text-white leading-[0.98] max-w-3xl">
+            Less time in the yard. More time on the trail.
+          </p>
           {/* Below lg the StickyBar carries Call + Book Online on every page,
               so the hero carries no buttons there: one Book Online on screen,
               not two. Desktop has no sticky bar, so it gets both buttons. */}

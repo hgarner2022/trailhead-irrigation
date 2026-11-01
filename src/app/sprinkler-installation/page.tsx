@@ -15,9 +15,9 @@ import { Testimonials } from "@/components/sections/Testimonials"
 import { pickReviews } from "@/lib/reviews"
 
 export const metadata: Metadata = {
-  title: "Irrigation System Installation in Erie, CO: $3,000 to $6,000",
+  title: "Irrigation System Installation in Erie, CO",
   description:
-    "New sprinkler systems for Front Range clay soil and watering rules, $3,000 to $6,000, with the zone layout and price before anyone digs. Owner-installed in Erie, Longmont, Louisville, Lafayette, Firestone and Broomfield.",
+    "New sprinkler systems in Erie, CO for $3,000 to $6,000, designed for clay soil and local watering rules. Layout and price before anyone digs. Owner-installed.",
   alternates: { canonical: `${siteConfig.url}/sprinkler-installation` },
 }
 
