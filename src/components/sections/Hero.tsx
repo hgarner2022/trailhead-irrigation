@@ -46,7 +46,7 @@ export function Hero() {
             Sprinkler repair, installation and fall blowouts in Erie, CO and across the Front Range.
           </h1>
           <p className="text-base text-white/85 max-w-xl">
-            Our prices are on this site before you call, and most repairs are done in one visit.
+            Book online in two minutes, get a text before we show up, and go spend Saturday somewhere better than the yard.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 mt-1">
             <Link href="/book" className={buttonVariants({ size: "lg" })}>
