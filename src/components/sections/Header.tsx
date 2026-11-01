@@ -108,14 +108,14 @@ export function Header() {
     <>
       <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-border">
         <div className="container-padding-x mx-auto max-w-7xl">
-          <div className="flex items-center justify-between gap-4 h-20 md:h-24">
+          <div className="flex items-center justify-between gap-4 h-16 md:h-20">
             <Link href="/" className="shrink-0" aria-label="Trailhead Lawn & Irrigation, home">
               <Image
                 src="/images/logo-horizontal-trim.png"
                 alt="Trailhead Lawn & Irrigation"
                 width={360}
                 height={90}
-                className="h-14 md:h-[72px] w-auto"
+                className="h-10 md:h-12 w-auto"
                 priority
               />
             </Link>
@@ -193,8 +193,8 @@ export function Header() {
         aria-label="Site menu"
         className={cn("lg:hidden fixed inset-0 z-[60] bg-background overflow-y-auto", mobileOpen ? "block" : "hidden")}
       >
-        <div className="container-padding-x flex items-center justify-between h-20 border-b border-border">
-          <Image src="/images/logo-horizontal-trim.png" alt="Trailhead Lawn & Irrigation" width={360} height={90} className="h-12 w-auto" />
+        <div className="container-padding-x flex items-center justify-between h-16 border-b border-border">
+          <Image src="/images/logo-horizontal-trim.png" alt="Trailhead Lawn & Irrigation" width={360} height={90} className="h-10 w-auto" />
           <button
             type="button"
             onClick={() => setMobileOpen(false)}
