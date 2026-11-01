@@ -15,7 +15,7 @@ import { reviewsFor } from "@/lib/reviews"
 export const metadata: Metadata = {
   title: "Sprinkler Repair in Erie, CO: $145 a Visit",
   description:
-    "Sprinkler repair for $145 a visit, small fixes included. Broken heads, stuck valves, leaks and dead zones found on the first visit. Erie and the Front Range.",
+    "Sprinkler repair for $145 a visit, small fixes included. Heads, valves, leaks and zones that won't come on, sorted on the first visit. Erie and the Front Range.",
   alternates: { canonical: `${siteConfig.url}/sprinkler-repair` },
 }
 
@@ -36,18 +36,18 @@ export const metadata: Metadata = {
 
 const PROBLEMS = [
   {
-    title: "A leak at the backflow, manifold or a valve",
-    body: "The most common call we get. The backflow sits above ground and takes the worst of winter, and the valves and manifold below it are next in line.",
+    title: "Leaks at the backflow, manifold or a valve",
+    body: "The most common call we get, and usually a same-visit fix. The backflow sits above ground and gets the most weather, so it is the first place we look.",
     cost: "Backflow poppet and bonnet $60, bleeder valve $45, shutoff valve $170, full backflow replacement about $500, manifold rebuild from $500",
   },
   {
-    title: "A zone with no pressure, or one that won't come on",
-    body: "A valve stuck open or shut, low voltage at the solenoid, or a broken line somewhere on that zone. We run it, trace it and fix it.",
+    title: "Getting a zone running again",
+    body: "Low pressure or a zone that stays quiet usually comes down to a valve, a solenoid or a line. We run it, trace it and fix it.",
     cost: "Valve work $100 to $200, a broken line $200 to $400",
   },
   {
-    title: "Heads that are broken, buried or in the wrong place",
-    body: "Mower and plow damage, heads sunk below grade, heads a tree root has pushed, heads where the trampoline or the new garden bed needs to go. We replace, cap or relocate them.",
+    title: "Heads replaced, raised or moved",
+    body: "Heads the mower or plow caught, heads that sank below grade, heads a tree root nudged, and heads that need to move for the trampoline or the new garden bed. We replace, cap or relocate them.",
     cost: "$50 to $150 per head replaced, more to relocate",
   },
   {
@@ -56,13 +56,13 @@ const PROBLEMS = [
     cost: "Most drip repairs finish inside the $145 visit, a pressure reducer adds about $40",
   },
   {
-    title: "Dry spots and spray on the sidewalk",
-    body: "Coverage problems. Heads aimed wrong, the wrong nozzles for the space, or rotors and sprays mixed on one zone. We adjust every zone, not just the one you noticed.",
+    title: "Even coverage across the whole yard",
+    body: "Dry spots and spray on the sidewalk come from heads aimed off, nozzles that throw too far, or rotors and sprays mixed on one zone. We adjust every zone, not just the one you noticed.",
     cost: "$50 to $100 to dial in the whole yard, a few dollars a head for the right nozzles",
   },
   {
-    title: "A water bill that jumped, or a spot that never dries",
-    body: "Usually an underground leak or a valve running a zone all night. We have had these flood a basement. The sooner it is found, the less it costs in water.",
+    title: "Finding the leak behind a high water bill",
+    body: "A soggy spot or a bill that jumped usually means an underground leak or a valve running overnight. Finding it early keeps the water bill where it belongs.",
     cost: "$200 to $500 to find and repair an underground leak",
   },
 ]
@@ -142,7 +142,7 @@ export default function SprinklerRepairPage() {
               <SectionHeader
                 tagline="Sprinkler repair"
                 taglineAsEyebrow
-                title="Tell us what the yard is doing. We'll find out why."
+                title="Tell us what the yard is doing. We'll get it running right."
                 titleId="repair-overview"
                 align="left"
               />
@@ -190,7 +190,7 @@ export default function SprinklerRepairPage() {
           <SectionHeader
             tagline="Common repairs"
             taglineAsEyebrow
-            title="What we get called out for most"
+            title="What we fix most"
             titleId="repair-problems"
             description="If one of these sounds like your yard, book a visit. We find it on the first trip."
             align="left"

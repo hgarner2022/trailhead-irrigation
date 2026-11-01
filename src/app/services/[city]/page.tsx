@@ -39,7 +39,7 @@ const SERVICES = [
   },
   {
     title: "Sprinkler Repair",
-    description: "Broken heads, sprinkler leaks, valve problems, pipe breaks, and controller issues. We diagnose and fix sprinkler problems fast.",
+    description: "$145 a visit, small fixes included. Heads, valves, leaks and controllers, usually fixed the same visit.",
     icon: Wrench,
     href: "/sprinkler-repair",
   },

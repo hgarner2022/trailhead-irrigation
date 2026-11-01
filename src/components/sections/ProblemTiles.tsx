@@ -11,7 +11,7 @@ const TILES = [
   {
     title: "Sprinkler repair",
     price: "$145 visit, small fixes included",
-    body: "A broken head, a stuck valve, a leak you can't find, a zone that won't come on. We find it on the first visit and usually fix it the same day.",
+    body: "Heads, valves, leaks and zones that won't come on. We find it on the first visit and usually fix it the same day.",
     href: "/sprinkler-repair",
     image: { src: "/images/sprinkler-spray-head-lawn.jpg", alt: "Pop-up spray head watering a green lawn" },
   },

@@ -35,7 +35,7 @@ export const metadata: Metadata = {
 const STEPS = [
   {
     title: "Inspect the backflow preventer",
-    body: "It sits above ground and takes the worst of winter. We look for cracks, loose fittings and blown seals before any water goes through it.",
+    body: "It sits above ground all winter, so we check it first. Fittings, seals and test cocks, before any water goes through it.",
   },
   {
     title: "Pressurize the system slowly",
@@ -72,7 +72,7 @@ const TURN_ON_FAQS = [
       "Backflow inspection, slow pressurization, a manual run of every zone with head adjustments, a leak check at every visible connection, controller programming and a water efficiency check. Small fixes such as a nozzle or a head adjustment happen during the visit.",
   },
   {
-    question: "What if you find something broken?",
+    question: "What if something needs a repair?",
     answer:
       "You get a price before we leave, at our standard repair rates, with no separate trip fee. Most spring repairs are a cracked fitting, a head a snowplow clipped, or a valve that stuck over the winter, and most are done the same visit if you say yes.",
   },
@@ -149,7 +149,7 @@ export default function SpringTurnOnPage() {
               <SectionHeader
                 tagline="Late April through May"
                 taglineAsEyebrow
-                title="A 45-minute visit that finds what winter broke"
+                title="A 45-minute visit that gets your system ready for the season"
                 titleId="turn-on-overview"
                 align="left"
               />
@@ -160,10 +160,9 @@ export default function SpringTurnOnPage() {
                 for leaks and program the controller. The visit takes about 45 minutes to an hour.
               </p>
               <p className="text-muted-foreground mb-7">
-                Winter is hard on a sprinkler system. Snowplows clip heads along the driveway, controllers
-                lose their schedule when the power flickers, and a line that held a little water in a low
-                spot shows its crack the first time it sees pressure. A turn-on finds all of that in one
-                visit instead of letting it leak until June.
+                A turn-on gets everything running right from the first week. Heads straightened after a
+                winter of snowplows, the controller set for spring, and every zone checked so the lawn gets
+                what it needs from day one.
               </p>
               <Link href="/book" className={buttonVariants({ size: "lg" })}>
                 Book Online

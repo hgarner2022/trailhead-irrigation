@@ -61,7 +61,7 @@ export const PHONE_TEL = "tel:9706927270"
  */
 export function getSeasonalPromo(date: Date): NavLink {
   const m = date.getMonth() // 0 = January
-  if (m === 10) return { label: "Missed your blowout? We're still clearing systems", href: "/sprinkler-blowout" }
+  if (m === 10) return { label: "Still time for your blowout. Book this week.", href: "/sprinkler-blowout" }
   if (m === 11 || m === 0) return { label: "Now booking: Christmas lights", href: "/christmas-lights" }
   if (m <= 2) return { label: "Reserve your 2027 Season Pass", href: "/season-pass" }
   if (m <= 4) return { label: "Now booking: spring turn-ons", href: "/book" }

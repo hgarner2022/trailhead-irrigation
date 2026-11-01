@@ -39,15 +39,15 @@ const SEASON_COPY = {
   },
   peak: {
     title: "October is here. Get on the schedule.",
-    cardHeading: "The freeze can come any day now",
+    cardHeading: "Prime time for blowouts",
     cardBody: "Erie's first hard freeze in 2024 landed on October 18. We are clearing systems every day this month.",
     banner: "Compressed-air winterization before the first hard freeze. $95 up to 6 zones.",
   },
   late: {
-    title: "Haven't had your blowout yet? We're still clearing systems.",
-    cardHeading: "Late is better than never",
-    cardBody: "A line that held water through one freeze is not always cracked yet, but every freeze after that is another chance. We blow out systems on any day above freezing.",
-    banner: "Still clearing systems on days above freezing. $95 up to 6 zones.",
+    title: "Still time for your blowout. We're clearing systems every day above freezing.",
+    cardHeading: "There is still time",
+    cardBody: "Most systems come through the first freeze fine. Book the next open day and we'll have yours cleared before the next one.",
+    banner: "Still time. We clear systems on any day above freezing. $95 up to 6 zones.",
   },
   off: {
     title: "Blowouts start in late September",
@@ -103,9 +103,9 @@ const BLOWOUT_FAQS = [
       "A typical shop compressor doesn't move enough air volume to clear a residential irrigation system. It builds pressure but not the sustained flow needed to push water out of every lateral and head, so water gets left behind in the places that matter.",
   },
   {
-    question: "I haven't done my blowout yet and it has already frozen. Is it too late?",
+    question: "It already froze and I haven't had my blowout. Can you still come?",
     answer:
-      "Book it anyway. One freeze does not always crack a line, but each one after that is another chance, and the damage usually shows up at spring turn-on. We clear systems on any day above freezing through December.",
+      "Yes. Most systems come through the first freeze fine, and clearing it now protects it for the rest of the winter. We clear systems on any day above freezing through December.",
   },
   {
     question: "How late can I book?",
@@ -275,7 +275,7 @@ export default function SprinklerBlowoutPage() {
               <SectionHeader
                 tagline="Why it matters"
                 taglineAsEyebrow
-                title="What freeze damage costs"
+                title="What the $95 protects"
                 titleId="blowout-risk"
                 align="left"
               />
