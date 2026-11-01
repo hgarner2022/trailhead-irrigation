@@ -43,8 +43,8 @@ export function InstallationBand() {
           </div>
           <div className="relative aspect-[3/2] rounded-lg overflow-hidden">
             <Image
-              src="/images/new-lawn-home.jpg"
-              alt="Home with a freshly installed lawn and paver walkway"
+              src="/images/new-system-sprinklers-running.jpg"
+              alt="New sprinkler system running across a lawn in evening light"
               fill
               sizes="(min-width: 1024px) 50vw, 100vw"
               className="object-cover"

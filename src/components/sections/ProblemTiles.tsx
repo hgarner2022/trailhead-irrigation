@@ -20,7 +20,7 @@ const TILES = [
     price: "$3,000 to $6,000 typical",
     body: "We design the system for your yard's clay soil and your city's watering rules, and you get the layout and the price before anyone digs.",
     href: "/sprinkler-installation",
-    image: { src: "/images/sprinkler-golden-hour.jpg", alt: "Sprinkler head spraying at sunset beside a boardwalk" },
+    image: { src: "/images/new-system-sprinklers-running.jpg", alt: "New sprinkler system running across a lawn in evening light" },
   },
   {
     title: "Spring turn-on & tune-up",
