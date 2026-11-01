@@ -30,7 +30,7 @@ const SERVICES_FAQS = [
   {
     question: "Do you fix sprinklers in Longmont and Weld County?",
     answer:
-      "Yes. We're a local sprinkler service covering Erie, Longmont, Louisville, Lafayette, and the greater Weld County area. We're locally owned and operated out of Erie, CO.",
+      "Yes. Erie, Longmont, Louisville, Lafayette, Firestone and Broomfield, plus the rest of Weld County, at the same prices. We're based in Erie.",
   },
   {
     question: "How do I know if my sprinkler system needs repair?",
@@ -45,7 +45,7 @@ const SERVICES_FAQS = [
   {
     question: "How do I get a quote for a sprinkler installation?",
     answer:
-      "Contact us for a quote on residential sprinkler installation. Our sprinkler contractor will visit your property, assess your yard, and design a custom system tailored to your lawn and landscape.",
+      "Most installs run $3,000 to $6,000. Ryan walks the yard, designs the zone layout and gives you the layout and the price before anyone digs.",
     relatedLink: {
       href: "/sprinkler-installation",
       label: "See installation costs and how systems are designed",
@@ -57,7 +57,7 @@ const SERVICES = [
   {
     title: "Sprinkler System Installation",
     description:
-      "Looking for a sprinkler contractor in Erie or Longmont? We design and install complete lawn sprinkler systems tailored to your yard. From planning zone coverage to trenching and wiring, we handle every step.",
+      "We plan the zone layout from your yard's water pressure and flow, do the trenching and wiring, and walk you through the system when it's done. Most installs run $3,000 to $6,000, and you get the layout and the price before anyone digs.",
     image: "/images/sprinkler-installation.jpg",
     features: [
       "Custom system design for your property",
@@ -67,12 +67,12 @@ const SERVICES = [
       "Full system walkthrough after install",
     ],
     imagePosition: "right" as const,
-    cta: { label: "Get an installation quote", href: "/contact" },
+    cta: { label: "Get an installation quote", href: "/sprinkler-installation" },
   },
   {
     title: "Sprinkler Repair & Tune-Ups",
     description:
-      "Sprinkler not working? Sprinkler leak? Brown spots on your lawn? We fix sprinkler problems fast. Broken sprinkler heads, valve issues, high water bills, system upgrades, and seasonal tune-ups.",
+      "A repair visit is $145 and covers the diagnosis and the small fixes we can do on the spot. Bigger repairs are priced before we start, and most are finished in one visit.",
     image: "/images/sprinkler-repair.jpg",
     features: [
       "Sprinkler head replacement",
@@ -89,12 +89,12 @@ const SERVICES = [
       "Seasonal adjustments and tune-ups",
     ],
     imagePosition: "left" as const,
-    cta: { label: "Book Online", href: "/book" },
+    cta: { label: "See repair pricing and what we fix", href: "/sprinkler-repair" },
   },
   {
     title: "Winterization & Spring Sprinkler Turn-On",
     description:
-      "Need to winterize your sprinklers before the freeze? Or turn on your sprinklers this spring? We do professional sprinkler blowouts in the fall and spring sprinkler startups, including minor repairs as needed.",
+      "A fall blowout is $95 for up to 6 zones and happens late September through October, before the first hard freeze. A spring turn-on is $145 for up to 8 zones, late April into May, and includes the small fixes we find while running each zone.",
     image: "/images/sprinkler-spring.jpg",
     features: [
       "Complete system blowout",
@@ -140,7 +140,7 @@ export default function ServicesPage() {
       />
       <PageBanner
         title="Our Irrigation Services"
-        description="Your local sprinkler company for installation, repair, and seasonal maintenance in Erie, Longmont & Northern Colorado."
+        description="Installation, repair, spring turn-ons and fall blowouts across the Northern Colorado Front Range."
         backgroundImage="/images/sprinkler-installation.jpg"
       />
 

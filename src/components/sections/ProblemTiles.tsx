@@ -12,7 +12,7 @@ const TILES = [
     title: "Sprinkler repair",
     price: "$145 visit, small fixes included",
     body: "A broken head, a stuck valve, a leak you can't find, a zone that won't come on. We find it on the first visit and usually fix it the same day.",
-    href: "/services",
+    href: "/sprinkler-repair",
     image: { src: "/images/sprinkler-spray-head-lawn.jpg", alt: "Pop-up spray head watering a green lawn" },
   },
   {
@@ -59,9 +59,8 @@ export function ProblemTiles() {
         <SectionHeader
           tagline="Services"
           taglineAsEyebrow
-          title="Sprinkler services and prices"
+          title="What's going on with your system?"
           titleId="problems-heading"
-          description="Every service has a published price. Open one to see what the visit includes."
           align="left"
         />
         <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">

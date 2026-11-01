@@ -177,7 +177,7 @@ const SERVICES: ServiceDef[] = [
     description:
       "Sprinkler head replacement, valve repair, leak detection, broken pipe repair, controller troubleshooting, and wiring repair.",
     serviceType: "Sprinkler Repair",
-    url: `${SITE_URL}/services`,
+    url: `${SITE_URL}/sprinkler-repair`,
   },
   {
     id: "sprinkler-winterization",

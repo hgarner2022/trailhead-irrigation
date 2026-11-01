@@ -9,6 +9,7 @@ import { CITY_LINKS, PRIMARY_LINKS, RESOURCE_LINKS, SERVICES, PHONE_DISPLAY, PHO
 
 const COMPANY_LINKS = [
   ...PRIMARY_LINKS,
+  { label: "All Services", href: "/services" },
   ...RESOURCE_LINKS,
   { label: "Book Online", href: "/book" },
   { label: "Contact", href: "/contact" },

@@ -315,6 +315,7 @@ Provides 14 composable skills for structured software development:
 | `/services` | Service overview + HowItWorks process + service detail blocks + city links + FAQ |
 | `/services/[city]` | 6 city pages (erie, longmont, louisville, lafayette, firestone, broomfield) — local water info + restrictions + per-city blowout block (`winterNote`) + FAQ |
 | `/sprinkler-installation` | Installation landing page — cost/timeline answer-first, 6-step process, included vs not-included, clay-soil + restriction design notes, glossary, FAQ. Built to fill the gaps local competitors leave (no pricing, timeline, or permit detail published anywhere) |
+| `/sprinkler-repair` | Repair landing page — $145 visit (diagnosis + small fixes), $150/hr for bigger work, six common problems with cost ranges from the repair-signs blog post, visit steps, FAQ, repair-tagged reviews. The Services dropdown's "Sprinkler Repair" points here; `/services` is the overview, reachable from the footer |
 | `/spring-turn-on` | Spring turn-on landing page — $145/8 zones, when to turn on (nights above 32° for a week), five-step visit, definitions, FAQ. Facts sourced from the spring-startup blog post |
 | `/sprinkler-blowout` | Winterization landing page — $95/8 zones, freeze-damage cost, 5-step process, city links, FAQ. Primary CTA books online since Jobber accepts winterization |
 | `/pricing` | Service pricing cards + comparison table + FAQ (à-la-carte; the Season Pass bundle lives at `/season-pass`) |

@@ -19,7 +19,7 @@ export type NavLink = {
  * page. Nothing else goes in this list.
  */
 export const SERVICES: NavLink[] = [
-  { label: "Sprinkler Repair", href: "/services" },
+  { label: "Sprinkler Repair", href: "/sprinkler-repair" },
   { label: "Spring Turn-On & Tune-Up", href: "/spring-turn-on" },
   { label: "Sprinkler Installation", href: "/sprinkler-installation" },
   { label: "Fall Blowout", href: "/sprinkler-blowout" },
