@@ -43,10 +43,10 @@ export function Hero() {
             className="font-sans text-lg md:text-xl font-semibold text-white leading-snug max-w-xl"
             style={{ letterSpacing: 0 }}
           >
-            Sprinkler repair, installation and fall blowouts in Erie, CO and across the Front Range.
+            Trailhead is an owner-run sprinkler and irrigation company in Erie, CO, serving the Northern Colorado Front Range.
           </h1>
           <p className="text-base text-white/85 max-w-xl">
-            Spend Saturday above treeline. Book online in two minutes, we text before we show up, and the yard is handled while you&apos;re gone.
+            Repairs, new systems, spring turn-ons and fall blowouts, booked online in two minutes. Spend Saturday above treeline and we&apos;ll keep the sprinklers running.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 mt-1">
             <Link href="/book" className={buttonVariants({ size: "lg" })}>
