@@ -215,7 +215,7 @@ export default function SpringTurnOnPage() {
                 titleId="turn-on-steps"
                 align="left"
               />
-              <ol className="mt-6 flex flex-col gap-4">
+              <ol className="mt-6 flex flex-col gap-4 list-none">
                 {STEPS.map((step, i) => (
                   <li key={step.title} className="flex gap-4">
                     <span className="font-display text-2xl font-bold text-primary leading-none mt-0.5 w-6 shrink-0">

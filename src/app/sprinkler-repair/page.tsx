@@ -71,7 +71,7 @@ const REPAIR_FAQS = [
   {
     question: "How much does sprinkler repair cost?",
     answer:
-      "A repair visit is $145. That covers the diagnosis and small fixes done on the spot, like a head, a nozzle or an adjustment. Anything bigger is priced before we start, at $145 an hour plus parts. Most repairs are finished in one visit.",
+      "A repair visit is $145 and takes about 45 minutes to an hour. That covers the diagnosis and small fixes done on the spot, like a head, a nozzle or an adjustment. Anything bigger is priced before we start, at $145 an hour plus parts. Most repairs are finished in one visit.",
   },
   {
     question: "What happens on a repair visit?",
@@ -154,8 +154,9 @@ export default function SprinklerRepairPage() {
                 hour plus parts.
               </p>
               <p className="text-muted-foreground mb-7">
-                Most repairs are finished in that first visit. Parts for the common heads and valves are on
-                the truck, and we work on every residential brand.
+                The visit takes about 45 minutes to an hour, and most of that is finding the problem. Most
+                repairs are finished in that first visit. Parts for the common heads and valves are on the
+                truck, and we work on every residential brand.
               </p>
               <Link href="/book" className={buttonVariants({ size: "lg" })}>
                 Book Online
@@ -229,7 +230,7 @@ export default function SprinklerRepairPage() {
                 titleId="repair-visit"
                 align="left"
               />
-              <ol className="mt-6 flex flex-col gap-4">
+              <ol className="mt-6 flex flex-col gap-4 list-none">
                 {[
                   ["We run every zone", "Not just the one you called about. A second problem on the same visit costs you nothing extra to find."],
                   ["We fix what we can on the spot", "Heads, nozzles, adjustments and small leaks at visible fittings are part of the $145."],
