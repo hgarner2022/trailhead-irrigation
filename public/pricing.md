@@ -39,7 +39,7 @@ Three visits on one schedule Trailhead keeps for the customer. The fall blowout 
 
 ## Sprinkler Repairs
 
-Repair visit: $145, which covers the diagnosis and small fixes on the spot. Larger repairs are quoted before work starts, with labor at $150 per hour plus parts. Most repairs are finished in one visit.
+Repair visit: $145, which covers the diagnosis and small fixes on the spot. Larger repairs are quoted before work starts, with labor at $145 per hour plus parts. Most repairs are finished in one visit.
 
 **Common repairs we handle:**
 - Sprinkler head replacement

@@ -11,7 +11,7 @@ export const HOME_FAQS: FaqItem[] = [
   {
     question: "What does sprinkler repair cost in Northern Colorado?",
     answer:
-      "A sprinkler repair visit is $145 anywhere we serve, which covers the diagnosis and small fixes on the spot. Larger repairs are quoted before any work starts, with labor at $150 per hour plus parts. Most repairs finish in one visit.",
+      "A sprinkler repair visit is $145 anywhere we serve, which covers the diagnosis and small fixes on the spot. Larger repairs are quoted before any work starts, with labor at $145 per hour plus parts. Most repairs finish in one visit.",
   },
   {
     question: "Who do I call to fix sprinklers on the Front Range?",

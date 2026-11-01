@@ -71,7 +71,7 @@ const REPAIR_FAQS = [
   {
     question: "How much does sprinkler repair cost?",
     answer:
-      "A repair visit is $145. That covers the diagnosis and small fixes done on the spot, like a head, a nozzle or an adjustment. Anything bigger is priced before we start, at $150 an hour plus parts. Most repairs are finished in one visit.",
+      "A repair visit is $145. That covers the diagnosis and small fixes done on the spot, like a head, a nozzle or an adjustment. Anything bigger is priced before we start, at $145 an hour plus parts. Most repairs are finished in one visit.",
   },
   {
     question: "What happens on a repair visit?",
@@ -168,7 +168,7 @@ export default function SprinklerRepairPage() {
                   <div className="mt-5 pt-5 border-t border-border">
                     <p className="text-sm font-semibold text-foreground mb-1.5">Bigger repairs</p>
                     <p className="text-sm text-muted-foreground">
-                      Priced before we start. $150 an hour plus parts, no separate trip charge.
+                      Priced before we start. $145 an hour plus parts, no separate trip charge.
                     </p>
                   </div>
                 </CardContent>
