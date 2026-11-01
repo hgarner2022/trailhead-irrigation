@@ -35,30 +35,30 @@ const SEASON_COPY = {
     title: "Book your blowout for October",
     cardHeading: "October books out",
     cardBody: "We start booking in September and are usually booked solid by mid-October. Booking now gets you the date you want.",
-    banner: "Compressed-air winterization before the first hard freeze. $95 up to 6 zones.",
+    banner: "Compressed-air winterization before the first hard freeze.",
   },
   peak: {
     title: "October is here. Get on the schedule.",
     cardHeading: "Prime time for blowouts",
     cardBody: "Erie's first hard freeze in 2024 landed on October 18. We are clearing systems every day this month.",
-    banner: "Compressed-air winterization before the first hard freeze. $95 up to 6 zones.",
+    banner: "Compressed-air winterization before the first hard freeze.",
   },
   late: {
     title: "Still time for your blowout. We're clearing systems every day above freezing.",
     cardHeading: "There is still time",
     cardBody: "Most systems come through the first freeze fine. Book the next open day and we'll have yours cleared before the next one.",
-    banner: "Still time. We clear systems on any day above freezing. $95 up to 6 zones.",
+    banner: "Still time. We clear systems on any day above freezing.",
   },
   off: {
     title: "Blowouts start in late September",
     cardHeading: "Reserve your fall date now",
     cardBody: "Book ahead and we put you on the calendar before the October rush. Nothing is charged until the visit is done.",
-    banner: "Compressed-air winterization every fall, late September through October. $95 up to 6 zones.",
+    banner: "Compressed-air winterization every fall, late September through October.",
   },
 } as const
 
 export const metadata: Metadata = {
-  title: "Sprinkler Blowout Cost: $95, Erie CO",
+  title: "Sprinkler Blowout & Winterization in Erie, CO",
   description:
     "Sprinkler blowout $95 up to 6 zones. Compressed-air winterization across Northern Colorado. Book for October, before the first hard freeze.",
   alternates: { canonical: `${siteConfig.url}/sprinkler-blowout` },

@@ -12,7 +12,7 @@ import { CITY_DATA } from "@/lib/city-data"
 import { faqJsonLd, breadcrumbJsonLd, siteConfig } from "@/lib/seo"
 
 export const metadata: Metadata = {
-  title: "Spring Sprinkler Turn-On, Erie CO: $145",
+  title: "Spring Sprinkler Turn-On in Erie, CO",
   description:
     "Spring sprinkler turn-on in Erie, CO: $145 up to 8 zones. We run every zone, adjust heads, check for leaks and program the controller. Late April through May.",
   alternates: { canonical: `${siteConfig.url}/spring-turn-on` },
@@ -137,7 +137,7 @@ export default function SpringTurnOnPage() {
 
       <PageBanner
         title="Spring Sprinkler Turn-On & Tune-Up in Erie, CO"
-        description="We run every zone, check every head and set the controller for spring. $145 up to 8 zones."
+        description="We run every zone, check every head and set the controller for spring."
         backgroundImage="/images/sprinkler-spring.jpg"
       />
 

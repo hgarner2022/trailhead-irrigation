@@ -39,19 +39,19 @@ const SERVICES = [
   },
   {
     title: "Sprinkler Repair",
-    description: "$145 a visit, small fixes included. Heads, valves, leaks and controllers, usually fixed the same visit.",
+    description: "Heads, valves, leaks and controllers, usually fixed the same visit. Small fixes included.",
     icon: Wrench,
     href: "/sprinkler-repair",
   },
   {
     title: "Spring Turn-On & Tune-Up",
-    description: "We pressurize the system, run every zone, adjust the heads and program the controller. $145 up to 8 zones.",
+    description: "We pressurize the system, run every zone, adjust the heads and program the controller.",
     icon: Droplets,
     href: "/spring-turn-on",
   },
   {
     title: "Fall Blowout & Winterization",
-    description: "$95 up to 6 zones. Every zone blown clear with compressed air before the first hard freeze, drip zones included.",
+    description: "Every zone blown clear with compressed air before the first hard freeze, drip zones included.",
     icon: Snowflake,
     href: "/sprinkler-blowout",
   },
@@ -133,7 +133,7 @@ export default async function CityPage({
             </span>
             <span className="flex items-center gap-1.5">
               <Droplets className="h-4 w-4 text-primary" />
-              Repair $145 &middot; Turn-on $145 &middot; Blowout $95
+              Repairs, turn-ons, blowouts and new systems
             </span>
             <span className="flex items-center gap-1.5">
               <Snowflake className="h-4 w-4 text-primary" />

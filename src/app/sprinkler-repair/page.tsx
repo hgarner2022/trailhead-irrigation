@@ -13,7 +13,7 @@ import { faqJsonLd, reviewsJsonLd, breadcrumbJsonLd, siteConfig } from "@/lib/se
 import { reviewsFor } from "@/lib/reviews"
 
 export const metadata: Metadata = {
-  title: "Sprinkler Repair in Erie, CO: $145 a Visit",
+  title: "Sprinkler Repair in Erie, CO",
   description:
     "Sprinkler repair for $145 a visit, small fixes included. Heads, valves, leaks and zones that won't come on, sorted on the first visit. Erie and the Front Range.",
   alternates: { canonical: `${siteConfig.url}/sprinkler-repair` },
@@ -38,32 +38,26 @@ const PROBLEMS = [
   {
     title: "Leaks at the backflow, manifold or a valve",
     body: "The most common call we get, and usually a same-visit fix. The backflow sits above ground and gets the most weather, so it is the first place we look.",
-    cost: "Backflow poppet and bonnet $60, bleeder valve $45, shutoff valve $170, full backflow replacement about $500, manifold rebuild from $500",
   },
   {
     title: "Getting a zone running again",
     body: "Low pressure or a zone that stays quiet usually comes down to a valve, a solenoid or a line. We run it, trace it and fix it.",
-    cost: "Valve work $100 to $200, a broken line $200 to $400",
   },
   {
     title: "Heads replaced, raised or moved",
     body: "Heads the mower or plow caught, heads that sank below grade, heads a tree root nudged, and heads that need to move for the trampoline or the new garden bed. We replace, cap or relocate them.",
-    cost: "$50 to $150 per head replaced, more to relocate",
   },
   {
     title: "Drip line repairs and garden zones",
     body: "Chewed or split drip line, emitters that stopped, a garden running at too much pressure. We repair the line, add a pressure reducer where it needs one, or convert a spray zone to drip.",
-    cost: "Most drip repairs finish inside the $145 visit, a pressure reducer adds about $40",
   },
   {
     title: "Even coverage across the whole yard",
     body: "Dry spots and spray on the sidewalk come from heads aimed off, nozzles that throw too far, or rotors and sprays mixed on one zone. We adjust every zone, not just the one you noticed.",
-    cost: "$50 to $100 to dial in the whole yard, a few dollars a head for the right nozzles",
   },
   {
     title: "Finding the leak behind a high water bill",
     body: "A soggy spot or a bill that jumped usually means an underground leak or a valve running overnight. Finding it early keeps the water bill where it belongs.",
-    cost: "$200 to $500 to find and repair an underground leak",
   },
 ]
 
@@ -81,7 +75,7 @@ const REPAIR_FAQS = [
   {
     question: "Can you find an underground leak?",
     answer:
-      "Yes. A soggy spot that never dries, a zone with weak pressure at the far end, or a water bill that jumped are the usual signs. Finding and repairing an underground leak typically runs $200 to $500.",
+      "Yes. A soggy spot that never dries, a zone with weak pressure at the far end, or a water bill that jumped are the usual signs. We trace it and price the repair before we start.",
   },
   {
     question: "We just moved in and don't know the system. Where do we start?",
@@ -130,7 +124,7 @@ export default function SprinklerRepairPage() {
 
       <PageBanner
         title="Sprinkler Repair in Erie, CO & the Front Range"
-        description="$145 a visit, small fixes included. Most repairs are done the same day."
+        description="Small fixes included in the visit. Most repairs are done the same day."
         backgroundImage="/images/sprinkler-repair.jpg"
       />
 
@@ -200,7 +194,6 @@ export default function SprinklerRepairPage() {
               <li key={p.title} className="flex flex-col gap-3 rounded-lg border border-border bg-background p-6">
                 <h3 className="font-display text-2xl font-semibold text-navy">{p.title}</h3>
                 <p className="text-sm text-muted-foreground leading-relaxed">{p.body}</p>
-                <p className="mt-auto text-sm font-semibold text-primary-dark">{p.cost}</p>
               </li>
             ))}
           </ul>

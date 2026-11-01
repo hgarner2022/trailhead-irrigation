@@ -128,7 +128,7 @@ export default function SprinklerInstallationPage() {
 
       <PageBanner
         title="Sprinkler & Irrigation System Installation in Erie, CO"
-        description="$3,000 to $6,000 for a typical yard. Zone layout and price before anyone digs. Erie, Longmont, Louisville, Lafayette, Firestone and Broomfield."
+        description="Zone layout and price before anyone digs. Erie, Longmont, Louisville, Lafayette, Firestone and Broomfield."
         backgroundImage="/images/home-lawn-spring.jpg"
       />
 
