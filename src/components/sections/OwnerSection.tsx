@@ -29,7 +29,7 @@ export function OwnerSection() {
             </h2>
             <div className="flex flex-col gap-4 text-muted-foreground text-lg">
               <p>
-                Trailhead Lawn &amp; Irrigation is owned and run by Ryan Garner, an Erie local with a decade of irrigation work on the Front Range.
+                Trailhead Lawn &amp; Irrigation is owned and run by Ryan Garner, an Erie local with over ten years of irrigation work on the Front Range.
               </p>
               <p>
                 Licensed and insured. We live here too, and run into our customers at the grocery store.

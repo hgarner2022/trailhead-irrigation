@@ -12,7 +12,7 @@ import { siteConfig, breadcrumbJsonLd, personJsonLd } from "@/lib/seo"
 export const metadata: Metadata = {
   title: "About Trailhead Lawn & Irrigation | Erie Sprinkler Contractor",
   description:
-    "Trailhead Lawn & Irrigation is an owner-operated sprinkler company in Erie, CO. Licensed and insured, with a decade of Front Range irrigation work.",
+    "Trailhead Lawn & Irrigation is an owner-operated sprinkler company in Erie, CO. Licensed and insured, with over ten years of Front Range irrigation work.",
   alternates: { canonical: `${siteConfig.url}/about` },
 }
 
@@ -38,7 +38,7 @@ export default function AboutPage() {
 
       <PageBanner
         title="About Trailhead Lawn & Irrigation"
-        description="An owner-operated sprinkler company in Erie, CO. Licensed and insured, 5.0 on Google."
+        description="An owner-operated sprinkler company in Erie, CO. Over ten years on the Front Range, licensed and insured, 5.0 on Google."
       />
 
       {/* Ryan's Story */}
@@ -76,7 +76,7 @@ export default function AboutPage() {
                 </p>
                 <p>
                   I live in Erie with my wife and three boys. I&apos;ve worked on hundreds of Front Range
-                  yards over the last decade, through freeze-thaw winters, drought stages and heavy clay.
+                  yards over more than ten years, through freeze-thaw winters, drought stages and heavy clay.
                   My customers are my neighbors.
                 </p>
               </div>
