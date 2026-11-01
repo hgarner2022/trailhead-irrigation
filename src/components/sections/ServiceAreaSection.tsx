@@ -36,9 +36,9 @@ export function ServiceAreaSection() {
             <SectionHeader
               tagline="Service area"
               taglineAsEyebrow
-              title="Six cities, the same prices in every one."
+              title="Serving six Front Range cities"
               titleId="areas-heading"
-              description="Based in Erie and within 20 minutes of every address we serve. Each city has its own watering rules and rebates, so each has its own page."
+              description="Same prices in every city. Each one has its own watering rules and rebates, so each has its own page."
               align="left"
             />
             <ul className="grid grid-cols-2 sm:grid-cols-3 gap-3">

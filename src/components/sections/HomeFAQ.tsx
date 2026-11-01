@@ -61,9 +61,9 @@ export function HomeFAQ() {
     <section className="bg-cream section-padding-y" aria-labelledby="home-faq-heading">
       <div className="container-padding-x mx-auto max-w-3xl flex flex-col gap-10">
         <SectionHeader
-          title="Sprinkler questions, answered"
+          title="Common questions"
           titleId="home-faq-heading"
-          description="Short answers from a Northern Colorado sprinkler contractor."
+          description="What homeowners ask us most, with the short answer first."
         />
         <FaqList faqs={HOME_FAQS} itemBg="background" />
       </div>
