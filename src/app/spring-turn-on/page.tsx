@@ -43,7 +43,7 @@ const STEPS = [
   },
   {
     title: "Run every zone and walk the yard",
-    body: "We look for heads that don't pop up or rotate, water bubbling out of the ground, dry spots and spray on the sidewalk, and adjust what we can on the spot.",
+    body: "We look for heads that don't pop up or rotate, water bubbling out of the ground, dry spots and spray on the sidewalk, and adjust what we can during the visit.",
   },
   {
     title: "Program the controller",

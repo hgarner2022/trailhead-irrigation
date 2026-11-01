@@ -15,7 +15,7 @@ import { reviewsFor } from "@/lib/reviews"
 export const metadata: Metadata = {
   title: "Sprinkler Repair in Erie, CO",
   description:
-    "Sprinkler repair for $145 a visit, small fixes included. Heads, valves, leaks and zones that won't come on, sorted on the first visit. Erie and the Front Range.",
+    "Sprinkler repair for $145 a visit. We come out, diagnose the problem and take care of small fixes where we can. Heads, valves, leaks and controllers. Erie and the Front Range.",
   alternates: { canonical: `${siteConfig.url}/sprinkler-repair` },
 }
 
@@ -37,11 +37,11 @@ export const metadata: Metadata = {
 const PROBLEMS = [
   {
     title: "Leaks at the backflow, manifold or a valve",
-    body: "The most common call we get, and usually a same-visit fix. The backflow sits above ground and gets the most weather, so it is the first place we look.",
+    body: "The most common call we get. The backflow sits above ground and gets the most weather, so it is the first place we look.",
   },
   {
     title: "Getting a zone running again",
-    body: "Low pressure or a zone that stays quiet usually comes down to a valve, a solenoid or a line. We run it, trace it and fix it.",
+    body: "Low pressure or a zone that stays quiet usually comes down to a valve, a solenoid or a line. We run it and trace it to the cause.",
   },
   {
     title: "Heads replaced, raised or moved",
@@ -65,12 +65,12 @@ const REPAIR_FAQS = [
   {
     question: "How much does sprinkler repair cost?",
     answer:
-      "A repair visit is $145 and takes about 45 minutes to an hour. That covers the diagnosis and small fixes done on the spot, like a head, a nozzle or an adjustment. Anything bigger is priced before we start, at $145 an hour plus parts. Most repairs are finished in one visit.",
+      "A repair visit is $145 and takes about 45 minutes to an hour. That covers the diagnosis, and we take care of small fixes where we can, like a head, a nozzle or an adjustment. Anything bigger is priced before we start, at $145 an hour plus parts.",
   },
   {
     question: "What happens on a repair visit?",
     answer:
-      "We run every zone, find the problem and fix what can be fixed in the visit. If a repair needs parts we don't carry or more time, you get a price before any of that work starts. You decide.",
+      "We run every zone and find the problem. Small fixes get done in the visit where we can. If a repair needs parts we don't carry or more time, you get a price before any of that work starts. You decide.",
   },
   {
     question: "Can you find an underground leak?",
@@ -95,7 +95,7 @@ const REPAIR_FAQS = [
   {
     question: "Is there a trip fee or a separate diagnostic fee?",
     answer:
-      "No. The $145 visit is the diagnosis, and small fixes during it are included. There is no separate trip charge.",
+      "No. The $145 visit is the diagnosis, and small fixes we can do during it are included. There is no separate trip charge.",
   },
   {
     question: "Which cities do you serve for sprinkler repair?",
@@ -124,7 +124,7 @@ export default function SprinklerRepairPage() {
 
       <PageBanner
         title="Sprinkler Repair in Erie, CO & the Front Range"
-        description="Small fixes included in the visit. Most repairs are done the same day."
+        description="We come out, diagnose the problem and take care of small fixes where we can."
         backgroundImage="/images/sprinkler-repair.jpg"
       />
 
@@ -142,15 +142,14 @@ export default function SprinklerRepairPage() {
               />
               <p className="text-muted-foreground mt-5 mb-4">
                 A repair visit is{" "}
-                <strong className="text-foreground font-semibold">$145</strong>. That covers running every
-                zone, finding the problem, and the small fixes we can do on the spot, like a head, a nozzle
-                or an adjustment. If it needs more than that, you get a price before we start, at $145 an
-                hour plus parts.
+                <strong className="text-foreground font-semibold">$145</strong>. We run every zone and find
+                the problem, and we take care of small fixes where we can, like a head, a nozzle or an
+                adjustment. If it needs more than that, you get a price before we start, at $145 an hour
+                plus parts.
               </p>
               <p className="text-muted-foreground mb-7">
-                The visit takes about 45 minutes to an hour, and most of that is finding the problem. Most
-                repairs are finished in that first visit. Parts for the common heads and valves are on the
-                truck, and we work on every residential brand.
+                The visit takes about 45 minutes to an hour, and most of that is finding the problem. Parts
+                for the common heads and valves are on the truck, and we work on every residential brand.
               </p>
               <Link href="/book" className={buttonVariants({ size: "lg" })}>
                 Book Online
@@ -186,7 +185,7 @@ export default function SprinklerRepairPage() {
             taglineAsEyebrow
             title="What we fix most"
             titleId="repair-problems"
-            description="If one of these sounds like your yard, book a visit. We find it on the first trip."
+            description="If one of these sounds like your yard, book a visit and we will come take a look."
             align="left"
           />
           <ul className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -225,8 +224,8 @@ export default function SprinklerRepairPage() {
               />
               <ol className="mt-6 flex flex-col gap-4 list-none">
                 {[
-                  ["We run every zone", "Not just the one you called about. A second problem on the same visit costs you nothing extra to find."],
-                  ["We fix what we can on the spot", "Heads, nozzles, adjustments and small leaks at visible fittings are part of the $145."],
+                  ["We run every zone", "Not just the one you called about, so you know the state of the whole system."],
+                  ["We take care of small fixes where we can", "A head, a nozzle, an adjustment or a small leak at a visible fitting is part of the $145 when it can be done in the visit."],
                   ["Anything bigger gets a price first", "A valve rebuild, a line repair or a controller swap is quoted before we start. If you say no, you've paid for the visit and nothing else."],
                   ["We show you what we did", "Which zone, which head, what to watch. If something we fixed gives you trouble, call us."],
                 ].map(([title, body], i) => (

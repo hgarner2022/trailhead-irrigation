@@ -99,7 +99,7 @@ export const CITY_DATA: CityData[] = [
       },
       {
         question: "How much does sprinkler repair cost in Longmont?",
-        answer: "A repair visit is $145 and covers the diagnosis and small fixes on the spot. A broken head runs $50 to $150, a stuck valve $100 to $200, and anything bigger is priced before we start.",
+        answer: "A repair visit is $145 and covers the diagnosis, and we take care of small fixes where we can. Anything bigger is priced before we start.",
       },
       {
         question: "Does Longmont require backflow testing?",

@@ -46,7 +46,7 @@ const PRICING_FAQS = [
   {
     question: "How do I get a repair quote?",
     answer:
-      "Book a $145 repair visit. It covers the diagnosis and small fixes on the spot. Anything bigger is priced before we start, at $145 an hour plus parts.",
+      "Book a $145 repair visit. It covers the diagnosis, and we take care of small fixes where we can. Anything bigger is priced before we start, at $145 an hour plus parts.",
   },
   {
     question: "Do you install new irrigation systems?",
@@ -202,7 +202,7 @@ export default function PricingPage() {
                 Sprinkler repair, $145 a visit
               </h2>
               <p className="text-muted-foreground mb-6">
-                The visit covers the diagnosis and small fixes on the spot. Bigger repairs are quoted before we start, at $145 an hour plus parts. Most are done in one visit.
+                The visit covers the diagnosis, and we take care of small fixes where we can. Bigger repairs are quoted before we start, at $145 an hour plus parts.
               </p>
               <ul className="flex flex-col gap-3 mb-8">
                 <RepairFeature icon={<Wrench className="w-4 h-4" />}>
@@ -212,7 +212,7 @@ export default function PricingPage() {
                   Heads, valves, lines, controllers &amp; wiring
                 </RepairFeature>
                 <RepairFeature icon={<Clock className="w-4 h-4" />}>
-                  Most repairs done in one visit
+                  A price before any bigger work starts
                 </RepairFeature>
               </ul>
               <Link href="/book" className={cn(buttonVariants({ size: "lg" }), "w-fit")}>

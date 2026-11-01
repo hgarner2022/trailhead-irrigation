@@ -39,7 +39,7 @@ const SERVICES = [
   },
   {
     title: "Sprinkler Repair",
-    description: "Heads, valves, leaks and controllers, usually fixed the same visit. Small fixes included.",
+    description: "Heads, valves, leaks and controllers. We come out, diagnose the problem and take care of small fixes where we can.",
     icon: Wrench,
     href: "/sprinkler-repair",
   },

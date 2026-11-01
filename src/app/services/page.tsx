@@ -72,7 +72,7 @@ const SERVICES = [
   {
     title: "Sprinkler Repair & Tune-Ups",
     description:
-      "A repair visit is $145 and covers the diagnosis and the small fixes we can do on the spot. Bigger repairs are priced before we start, and most are finished in one visit.",
+      "A repair visit is $145 and covers the diagnosis, and we take care of small fixes where we can. Bigger repairs are priced before we start.",
     image: "/images/sprinkler-repair.jpg",
     features: [
       "Sprinkler head replacement",
