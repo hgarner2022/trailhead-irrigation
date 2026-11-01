@@ -46,7 +46,7 @@ export function Hero() {
             Sprinkler repair, installation and fall blowouts in Erie, CO and across the Front Range.
           </h1>
           <p className="text-base text-white/85 max-w-xl">
-            Book online in two minutes, get a text before we show up, and go spend Saturday somewhere better than the yard.
+            Spend Saturday above treeline. Book online in two minutes, we text before we show up, and the yard is handled while you&apos;re gone.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 mt-1">
             <Link href="/book" className={buttonVariants({ size: "lg" })}>
