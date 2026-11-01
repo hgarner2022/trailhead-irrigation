@@ -176,7 +176,7 @@ export default function SprinklerInstallationPage() {
               <div className="relative aspect-[4/3] rounded-xl overflow-hidden">
                 <Image
                   src="/images/new-system-sprinklers-running.jpg"
-                  alt="Finished home lawn with a paver walkway and even green coverage"
+                  alt="New sprinkler system running across a lawn in evening light"
                   fill
                   className="object-cover"
                 />
