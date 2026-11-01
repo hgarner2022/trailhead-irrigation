@@ -5,9 +5,9 @@ import { Star, MapPin, ShieldCheck, Map } from "lucide-react"
 // it changes constantly and a stale number is a trust negative.
 
 const ITEMS = [
-  { icon: Star, value: "5.0 on Google", label: "Every review public" },
-  { icon: MapPin, value: "Erie, CO", label: "Locally owned and owner-operated" },
-  { icon: ShieldCheck, value: "Licensed & insured", label: "Up-front pricing, no trip-fee surprises" },
+  { icon: Star, value: "5.0 on Google", label: "Read them on Google" },
+  { icon: MapPin, value: "Erie, CO", label: "Owner-operated" },
+  { icon: ShieldCheck, value: "Licensed & insured", label: "Colorado sprinkler contractor" },
   { icon: Map, value: "Six cities", label: "Erie to Broomfield, within 20 minutes" },
 ]
 

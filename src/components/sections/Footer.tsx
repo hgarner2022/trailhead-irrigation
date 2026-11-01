@@ -2,13 +2,14 @@ import { Separator } from "@/components/ui/separator"
 import Image from "next/image"
 import Link from "next/link"
 import { Phone, Mail, MapPin } from "lucide-react"
-import { CITY_LINKS, PRIMARY_LINKS, SERVICES, PHONE_DISPLAY, PHONE_TEL } from "@/lib/nav"
+import { CITY_LINKS, PRIMARY_LINKS, RESOURCE_LINKS, SERVICES, PHONE_DISPLAY, PHONE_TEL } from "@/lib/nav"
 
 // Every link the header keeps inside a dropdown is rendered here as plain
 // HTML. This is the crawlable copy of the navigation; see src/lib/nav.ts.
 
 const COMPANY_LINKS = [
   ...PRIMARY_LINKS,
+  ...RESOURCE_LINKS,
   { label: "Book Online", href: "/book" },
   { label: "Contact", href: "/contact" },
 ]

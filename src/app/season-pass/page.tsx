@@ -16,31 +16,31 @@ import {
 
 export const metadata: Metadata = {
   title: "Season Pass: Sprinkler Turn-On, Mid-Season Check & Blowout",
-  description: `Three sprinkler visits a year in Erie, CO and the Front Range: spring turn-on, mid-season inspection, fall blowout with the date reserved. From $${SEASON_PASS_FROM} for up to 6 zones, no discount, no up-front payment.`,
+  description: `Three sprinkler visits a year in Erie, CO and the Front Range: spring turn-on, mid-season inspection, fall blowout with the date reserved in July. From $${SEASON_PASS_FROM} for up to 6 zones, billed per visit, nothing up front.`,
   alternates: { canonical: `${siteConfig.url}/season-pass` },
 }
 
 const VISIT_ICONS = [Sun, Search, Snowflake]
 const VISIT_DETAILS = [
   "Pressurize the system, run every zone, adjust heads, fix small leaks, program the controller for spring.",
-  "Catch what summer did: coverage gaps, clogged nozzles, a zone running long. Adjust and report.",
+  "We look for coverage gaps, clogged nozzles and zones running long, fix what we can and tell you the rest.",
   "Compressed-air blowout of every zone before the first hard freeze. Your date is set in July.",
 ]
 
 const FAQS: FaqItem[] = [
   {
     question: "How much is the Trailhead Season Pass?",
-    answer: `From $${SEASON_PASS_FROM} per season for up to 6 zones, which is the published price of the three visits added together: spring turn-on ($145), mid-season inspection ($145) and fall blowout ($95). Each zone beyond the included count adds $${EXTRA_ZONE_PRICE} per visit.`,
+    answer: `From $${SEASON_PASS_FROM} per season for up to 6 zones. The spring turn-on is $145, the mid-season inspection is $145 and the fall blowout is $95, each billed after the visit. Each zone beyond the included count adds $${EXTRA_ZONE_PRICE} per visit.`,
   },
   {
-    question: "Is there a discount for buying all three visits?",
+    question: "What do I get that I wouldn't get booking each visit on its own?",
     answer:
-      "No. The pass costs the same as booking the three visits separately. What it adds is a reserved October blowout date, a schedule we keep for you, and one card on file instead of three invoices.",
+      "Your blowout date reserved in July, a spot at the front of the line for repairs during the season, a text before each visit, and one card on file instead of three invoices.",
   },
   {
     question: "When do I pay?",
     answer:
-      "After each visit. A card is kept on file through our scheduling system and charged when the visit is complete, so nothing is paid up front and nothing is paid for a visit that has not happened.",
+      "After each visit. We keep a card on file and charge it once the visit is done. Nothing is paid up front.",
   },
   {
     question: "What if a repair is needed during a visit?",
@@ -114,10 +114,10 @@ export default function SeasonPassPage() {
                 Less time in the yard.<br />More time on the trail.
               </p>
               <h1 className="font-sans text-lg md:text-xl font-semibold text-white/95 leading-snug max-w-xl" style={{ letterSpacing: 0 }}>
-                Sprinkler turn-on, mid-season check and fall blowout in Erie, CO and the Front Range, on one schedule we keep for you.
+                Spring sprinkler turn-on, a July check-up and the October blowout for Erie and Front Range homes, on one schedule we keep for you.
               </h1>
               <p className="text-base text-white/80 max-w-xl">
-                Same published price as booking each visit on its own. Your October blowout date is reserved in July, before the freeze rush.
+                Your October blowout date goes on our calendar in July, before the freeze rush. You get a text before every visit and pay after each one.
               </p>
             </div>
             <SeasonPassCalculator ctaHref="/contact" ctaLabel="Reserve my season" />
@@ -168,10 +168,10 @@ export default function SeasonPassPage() {
             <div className="flex flex-col gap-5">
               <p className="text-xs font-semibold uppercase tracking-widest text-primary-light">Price by zone count</p>
               <h2 id="table-heading" className="font-display text-4xl md:text-5xl font-bold text-white">
-                No discount, no markup. Just the three prices added up.
+                What it costs, by zone count
               </h2>
               <p className="text-white/80 max-w-md">
-                Pick your zone count in the card above to see the exact figure. Not sure how many zones you have? Count the stations on your controller, or we confirm it on the first visit.
+                Each visit is charged after it&apos;s done, at the price in this table. Pick your zone count in the card above for your exact total. Not sure how many zones you have? Count the stations on your controller, or we&apos;ll count them on the first visit.
               </p>
               <Link href="/pricing" className="inline-flex items-center gap-1 text-sm font-semibold text-primary-light hover:text-white transition-colors w-fit">
                 All service pricing <ArrowRight className="h-4 w-4" aria-hidden="true" />

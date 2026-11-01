@@ -46,22 +46,22 @@ const PRICING_FAQS = [
   {
     question: "How do I get a repair quote?",
     answer:
-      "Contact us to describe the issue and we will provide a quote. Repair pricing depends on the scope of work and materials needed. No hidden fees.",
+      "Book a $145 repair visit. It covers the diagnosis and small fixes on the spot. Anything bigger is priced before we start, at $150 an hour plus parts.",
   },
   {
     question: "Do you install new irrigation systems?",
     answer:
-      "Yes! New irrigation installations are quoted on a per-project basis since every property is different. Contact us for a free consultation and custom quote.",
+      "Yes. Most installs run $3,000 to $6,000. We walk the yard, then give you a layout and a price before anyone digs.",
   },
   {
     question: "What areas do you serve?",
     answer:
-      "We serve Erie, Longmont, Louisville, Lafayette, and surrounding communities in Northern Colorado and Weld County.",
+      "Erie, Longmont, Louisville, Lafayette, Firestone and Broomfield, at the same prices, plus the rest of Weld County.",
   },
   {
     question: "Are there rebates available for irrigation upgrades?",
     answer:
-      "Yes! Many local water utilities offer rebates for WaterSense-certified smart controllers. Check the Rachio rebates page at rachio.com/rebates to search by your zip code. Visit our Water Rebates page for additional programs in Erie, Longmont, Louisville, and Lafayette.",
+      "Yes. Erie, Longmont, Louisville and Lafayette offer rebates on WaterSense smart controllers such as the Rachio 3. Search your zip code at rachio.com/rebates, or see our Water Rebates page for each city's program.",
     hasLink: true,
   },
 ]
@@ -93,7 +93,7 @@ export default function PricingPage() {
 
       <PageBanner
         title="Pricing"
-        description="Transparent, upfront pricing — no hidden fees, no surprises."
+        description="What we charge for turn-ons, blowouts, repairs and installs. Same prices in all six cities."
       />
 
       {/* ════════════════════════════════════════════
@@ -109,7 +109,7 @@ export default function PricingPage() {
               Individual Services
             </h2>
             <p className="mt-3 text-muted-foreground max-w-xl mx-auto">
-              Book any seasonal service à la carte. No hidden fees, no trip charges.
+              Book one visit at a time. The price on the card is what you pay, and there is no trip charge.
             </p>
           </div>
 
@@ -127,6 +127,10 @@ export default function PricingPage() {
                 "Water efficiency check",
               ]}
               footnote="Repairs not included."
+              learnMoreLink={{
+                href: "/spring-turn-on",
+                label: "What a turn-on covers & when to book",
+              }}
             />
             <ServicePriceCard
               title="Mid-Season Sprinkler Inspection & Tune-Up"
@@ -136,9 +140,9 @@ export default function PricingPage() {
               perZoneNote="+$10 per additional zone"
               features={[
                 "Full system check & adjustments",
-                "Issue detection & diagnostics",
+                "Coverage gaps, clogged nozzles, zones running long",
                 "Water efficiency check",
-                "Recommendations report",
+                "A list of anything that needs fixing, priced",
               ]}
               footnote="Repairs not included."
             />
@@ -151,10 +155,9 @@ export default function PricingPage() {
               priceUnit="up to 6 zones"
               perZoneNote="+$10 per additional zone"
               features={[
-                "Complete system blowout",
-                "All zones cleared",
-                "Backflow protection",
-                "Winter-ready verification",
+                "Every zone blown clear with compressed air",
+                "Drip zones and filters included",
+                "Backflow assembly cleared and protected",
               ]}
               learnMoreLink={{
                 href: "/sprinkler-blowout",
@@ -175,7 +178,7 @@ export default function PricingPage() {
                 All three visits, one schedule, blowout date reserved in July
               </p>
               <p className="text-sm text-muted-foreground">
-                From ${SEASON_PASS_FROM} for up to 6 zones. The three prices above added up, no discount, one card on file charged after each visit.
+                From ${SEASON_PASS_FROM} for up to 6 zones, charged per visit at the prices above. Nothing up front.
               </p>
             </div>
             <span className={cn(buttonVariants({ size: "lg" }), "shrink-0 w-fit")}>
@@ -188,7 +191,7 @@ export default function PricingPage() {
       {/* ════════════════════════════════════════════
           REPAIRS & SERVICE
           ════════════════════════════════════════════ */}
-      <section className="bg-background section-padding-y">
+      <section className="bg-cream section-padding-y">
         <div className="container-padding-x mx-auto max-w-7xl">
           <div className="flex flex-col md:flex-row items-center gap-8 md:gap-16">
             <div className="flex-1">
@@ -196,10 +199,10 @@ export default function PricingPage() {
                 Repairs &amp; Service
               </Badge>
               <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-                Expert Repairs
+                Sprinkler repair, $145 a visit
               </h2>
               <p className="text-muted-foreground mb-6">
-                Troubleshooting, repairs, and system adjustments. Book a service and we'll diagnose and price the work on-site.
+                The visit covers the diagnosis and small fixes on the spot. Bigger repairs are quoted before we start, at $150 an hour plus parts. Most are done in one visit.
               </p>
               <ul className="flex flex-col gap-3 mb-8">
                 <RepairFeature icon={<Wrench className="w-4 h-4" />}>
@@ -209,7 +212,7 @@ export default function PricingPage() {
                   Heads, valves, lines, controllers &amp; wiring
                 </RepairFeature>
                 <RepairFeature icon={<Clock className="w-4 h-4" />}>
-                  No hidden fees
+                  Most repairs done in one visit
                 </RepairFeature>
               </ul>
               <Link href="/book" className={cn(buttonVariants({ size: "lg" }), "w-fit")}>
@@ -250,7 +253,7 @@ export default function PricingPage() {
               Irrigation System Installation
             </h2>
             <p className="text-muted-foreground max-w-lg mx-auto mb-6">
-              Every property is different. New irrigation installs are custom-quoted based on your lot size, soil conditions, zones needed, and water source. Contact us for a free consultation.
+              Most installs run $3,000 to $6,000, depending on lot size, soil, zones and water source. We walk the yard and give you a layout and a price before anyone digs.
             </p>
             <Link href="/contact" className={buttonVariants({ size: "lg" })}>
               Get an installation quote

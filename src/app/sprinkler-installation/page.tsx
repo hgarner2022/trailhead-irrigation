@@ -56,7 +56,7 @@ const INSTALL_FAQS = [
   {
     question: "Can you design a system that works with my city's watering restrictions?",
     answer:
-      "That's part of the design. Erie, Longmont, Louisville, Lafayette, Firestone, and Broomfield each set their own watering days and hours, and several have been under drought restrictions. When a city allows watering two or three days a week, the system has to deliver a full week of water inside those windows, which affects zone sizing and head selection rather than just the controller schedule.",
+      "That's part of the design. Erie, Longmont, Louisville, Lafayette, Firestone, and Broomfield each set their own watering days and hours, and several have been under drought restrictions. When a city allows watering two or three days a week, the system has to deliver a full week of water inside those windows, which changes zone sizing and head selection as well as the controller schedule.",
   },
   {
     question: "Why does clay soil change how a system is designed?",
@@ -190,12 +190,11 @@ export default function SprinklerInstallationPage() {
                 id="install-design"
                 className="text-2xl md:text-3xl font-bold text-foreground mb-3"
               >
-                Custom zone design, not a template
+                Zones laid out from your yard&apos;s water pressure and flow
               </h2>
               <p className="text-muted-foreground mb-5">
-                We design and install complete lawn sprinkler systems tailored
-                to your yard, from planning zone coverage through trenching and
-                wiring.
+                We plan the zone coverage, do the trenching and wiring, and
+                walk you through the system when it&apos;s done.
               </p>
               <ul className="flex flex-col gap-2.5">
                 <FeatureItem>
@@ -265,8 +264,8 @@ export default function SprinklerInstallationPage() {
                   <p className="text-sm text-muted-foreground">
                     When a city allows watering two or three days a week, the
                     system has to deliver a full week of water inside those
-                    windows without flooding. That affects zone sizing and head
-                    selection, not just the controller schedule.
+                    windows without flooding. That changes zone sizing and head
+                    selection as well as the controller schedule.
                   </p>
                 </li>
               </ul>

@@ -10,9 +10,9 @@ import { MapPin, Droplets, Wrench, Shield, Users, Award } from "lucide-react"
 import { siteConfig, breadcrumbJsonLd, personJsonLd } from "@/lib/seo"
 
 export const metadata: Metadata = {
-  title: "About Ryan Garner | Erie Sprinkler Contractor",
+  title: "About Trailhead Lawn & Irrigation | Erie Sprinkler Contractor",
   description:
-    "Meet Ryan Garner of Trailhead Lawn & Irrigation. Licensed sprinkler contractor with a decade of Front Range experience, serving Erie and nearby.",
+    "Trailhead Lawn & Irrigation is an owner-operated sprinkler company in Erie, CO. Licensed and insured, with a decade of Front Range irrigation work.",
   alternates: { canonical: `${siteConfig.url}/about` },
 }
 
@@ -38,7 +38,7 @@ export default function AboutPage() {
 
       <PageBanner
         title="About Trailhead Lawn & Irrigation"
-        description="Erie's locally owned sprinkler company. Licensed, insured, and trusted across the Front Range."
+        description="An owner-operated sprinkler company in Erie, CO. Licensed and insured, 5.0 on Google."
       />
 
       {/* Ryan's Story */}
@@ -66,22 +66,18 @@ export default function AboutPage() {
                 <p>
                   I started Trailhead because I got tired of watching big irrigation companies churn
                   through technicians. Homeowners end up re-explaining the same system to a different
-                  person every season, and nobody really knows the property. Trailhead is built on the
-                  opposite: continuity, accountability, and the kind of local knowledge that comes from
-                  working the same neighborhoods for years.
+                  person every season, and nobody really knows the property. At Trailhead the same person
+                  comes back every season and already knows your yard.
                 </p>
                 <p>
-                  When you call Trailhead, you get a contractor who actually knows your system. The zone
-                  that runs hot in July. The head that keeps getting clipped by the mower. That kind of
-                  memory matters more than most homeowners realize. It's the difference between a 20-minute
-                  fix and an hour of diagnostics on the clock.
+                  When you call, you get someone who already knows your system, like which zone runs
+                  hot in July and which head the mower keeps clipping. That turns an hour of diagnostics
+                  on the clock into a 20-minute fix.
                 </p>
                 <p>
-                  I live in Erie with my wife and three boys. I've been doing irrigation work on the Front
-                  Range for over a decade, and Trailhead is built on that experience. Hundreds of yards
-                  through freeze-thaw cycles, drought stages, and the heavy clay that defines watering in
-                  this part of Colorado. Your neighbors are my neighbors. I take care of their yards the
-                  same way I take care of mine.
+                  I live in Erie with my wife and three boys. I&apos;ve worked on hundreds of Front Range
+                  yards over the last decade, through freeze-thaw winters, drought stages and heavy clay.
+                  My customers are my neighbors.
                 </p>
               </div>
             </div>
@@ -106,7 +102,7 @@ export default function AboutPage() {
 
             <div className="flex flex-1 flex-col gap-6">
               <h2 className="text-3xl md:text-4xl font-bold text-foreground">
-                Local Roots, Local Service
+                Based in Erie, serving six cities
               </h2>
               <div className="flex flex-col gap-4 text-muted-foreground text-lg leading-relaxed">
                 <p>
@@ -116,15 +112,13 @@ export default function AboutPage() {
                   never operated before.
                 </p>
                 <p>
-                  That's where I come in. I know Erie's clay soil, the water pressure differences
-                  between older and newer developments, and what the Town of Erie's watering
-                  restrictions mean for your schedule. I also serve homeowners in Longmont,
-                  Louisville, Lafayette, Firestone, and across Weld County.
+                  We know Erie&apos;s clay soil, the water pressure differences between older and
+                  newer developments, and what the Town of Erie&apos;s watering restrictions mean for
+                  your schedule. We also serve Longmont, Louisville, Lafayette, Firestone, Broomfield
+                  and Weld County.
                 </p>
                 <p>
-                  If your sprinkler system needs attention, reach out. Trailhead has been serving Erie
-                  and the surrounding Front Range for years, and we have the experience to set your
-                  system up right.
+                  Repairs, turn-ons and blowouts book online. New systems start with a yard visit.
                 </p>
               </div>
               <Link href="/book" className={cn(buttonVariants({ size: "lg" }), "w-fit mt-2")}>

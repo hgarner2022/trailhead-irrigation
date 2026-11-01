@@ -182,7 +182,7 @@ export default async function SmartControllerCityPage({
             ? `Trailhead's installed price is $${est8.gross} (8 zones); ${program.name} rebate amount varies — confirm with the city.`
             : `Estimated net cost as low as $${est8.net} after the city utility rebate.`
         }`}
-        backgroundImage="/images/lawn-sprinkler-water.jpg"
+        backgroundImage="/images/rachio-3-controller.jpg"
       />
 
       {/* HERO COST SUMMARY */}

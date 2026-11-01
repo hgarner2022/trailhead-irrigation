@@ -16,7 +16,7 @@ import {
   PHONE_TEL,
 } from "@/lib/nav"
 
-// Header: logo · Services ▾ · Service Areas ▾ · Pricing · Season Pass · About ·
+// Header: logo · Services ▾ · Service Areas ▾ · Pricing · About ·
 // Blog · phone (plain text) · [Book Online]. One button, nothing else boxed.
 //
 // Dropdowns are hand-rolled rather than a Radix NavigationMenu so the panel

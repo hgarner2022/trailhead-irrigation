@@ -14,16 +14,12 @@ import {
   reviewsJsonLd,
   faqJsonLd,
 } from "@/lib/seo"
-import { pickReviews } from "@/lib/reviews"
+import { recentReviews } from "@/lib/reviews"
 
-// Three reviews, one per core service, similar length. Schema is emitted for
-// exactly these three because Google expects review markup to match what a
-// visitor can actually see.
-const HOME_REVIEWS = pickReviews(
-  "Daniel Cooperider", // blowout, names the first freeze
-  "Reesa Rennecker", // repair: responsive, on time, explained every step
-  "Joanna Toy", // new system installed, fairly priced
-)
+// The nine most recent reviews in a carousel, three to a row on desktop.
+// Schema is emitted for exactly these nine because Google expects review
+// markup to match what a visitor can see on the page.
+const HOME_REVIEWS = recentReviews(9)
 
 export default function HomePage() {
   // Single JSON-LD @graph payload combining:
@@ -66,9 +62,9 @@ export default function HomePage() {
       <OwnerSection />
       <Testimonials
         reviews={HOME_REVIEWS}
-        heading="What Erie homeowners say"
+        heading="What Northern Colorado homeowners say"
         description="5.0 on Google. Every review is public on our Google Business Profile."
-        bg="background"
+        bg="cream"
       />
       <ServiceAreaSection />
       <HomeFAQ />

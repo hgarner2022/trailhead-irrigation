@@ -31,7 +31,7 @@ Materials are not included if repairs are needed during a seasonal service.
 | 12 | $185 | $185 | $155 | **$525** |
 | Each additional zone | +$10 | +$10 | +$10 | **+$30** |
 
-The Season Pass is the published price of the three visits added together. There is no discount and no markup. What it adds: the fall blowout date is reserved in July (before the freeze rush), Trailhead keeps the schedule and texts before each visit, and one card on file is charged after each visit, nothing up front. Repairs found on a visit are quoted before any work starts. Reserve at https://www.trailheadirrigation.com/season-pass or by phone.
+Three visits on one schedule Trailhead keeps for the customer. The fall blowout date is reserved in July, before the freeze rush; Trailhead texts before each visit; pass customers go to the front of the repair line during the season; and one card on file is charged after each visit, nothing up front. Visits are billed at the standard per-zone rates in the table. Reserve at https://www.trailheadirrigation.com/season-pass or by phone.
 
 
 
@@ -39,7 +39,7 @@ The Season Pass is the published price of the three visits added together. There
 
 ## Sprinkler Repairs
 
-Repair pricing depends on the scope of work and materials needed. Contact us for a quote.
+Repair visit: $145, which covers the diagnosis and small fixes on the spot. Larger repairs are quoted before work starts, with labor at $150 per hour plus parts. Most repairs are finished in one visit.
 
 **Common repairs we handle:**
 - Sprinkler head replacement

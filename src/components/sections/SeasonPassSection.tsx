@@ -5,18 +5,18 @@ import { CalendarCheck, Snowflake, CreditCard } from "lucide-react"
 const POINTS = [
   {
     icon: Snowflake,
-    title: "Your October date is reserved in July",
-    body: "About 150 blowouts happen in the four weeks before the first freeze. Pass customers are scheduled first.",
+    title: "Your October blowout is booked in July",
+    body: "About 150 blowouts land in the four weeks before the first freeze. Pass customers get their date first.",
   },
   {
     icon: CalendarCheck,
-    title: "We keep the calendar, not you",
-    body: "Turn-on in spring, a mid-summer check, a fall blowout. You get a text before each visit.",
+    title: "We keep the calendar",
+    body: "You get a text the day before each visit. If something breaks between visits, you go to the front of the repair line.",
   },
   {
     icon: CreditCard,
-    title: "No discount, no catch",
-    body: "The pass is the published per-zone price of the three visits, added up. One card on file instead of three invoices.",
+    title: "Nothing up front",
+    body: "Your card is charged after each visit, at the same price as booking it on its own. One card on file instead of three invoices.",
   },
 ]
 
@@ -33,7 +33,7 @@ export function SeasonPassSection() {
               taglineAsEyebrow
               title="Less time in the yard. More time on the trail."
               titleId="season-pass-heading"
-              description="Three visits a year on a schedule we keep for you: spring turn-on, mid-summer check, and a fall blowout with the date reserved before the freeze rush."
+              description="We turn your system on in spring, check it in July and blow it out in October, and you never have to remember to call."
               align="left"
             />
             <ul className="flex flex-col gap-5">

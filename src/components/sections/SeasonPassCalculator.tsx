@@ -77,9 +77,6 @@ export function SeasonPassCalculator({
             <span className="text-foreground">One card on file, charged after each visit. Nothing up front.</span>
           </li>
         </ul>
-        <p className="text-xs text-muted-foreground leading-relaxed">
-          Same published price as booking the three visits separately. No discount, no catch.
-        </p>
         <Link href={ctaHref} className={cn(buttonVariants({ size: "lg" }), "mt-auto w-full")}>
           {ctaLabel}
         </Link>

@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 import Link from "next/link"
+import Image from "next/image"
 import { PageBanner } from "@/components/sections/PageBanner"
 import { CTAStrip } from "@/components/sections/CTAStrip"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -29,7 +30,7 @@ const SMART_CONTROLLER_FAQS = [
   {
     question: "Is the Rachio 3 worth it in Northern Colorado?",
     answer:
-      "Yes. Smart controllers like the Rachio 3 cut outdoor water use by 20–30% on typical Front Range homes — about 8,000–15,000 gallons saved per year. After Erie's March 2026 water emergency, that efficiency is more valuable than ever. Most homeowners recoup the install cost in 2–3 watering seasons through reduced water bills alone.",
+      "Yes. Smart controllers like the Rachio 3 cut outdoor water use by 20–30% on typical Front Range homes — about 8,000–15,000 gallons saved per year. Most homeowners recoup the install cost in 2–3 watering seasons through reduced water bills alone.",
   },
   {
     question: "What rebates are available for a Rachio in my city?",
@@ -49,7 +50,7 @@ const SMART_CONTROLLER_FAQS = [
   {
     question: "Will Rachio work with my existing sprinkler valves?",
     answer:
-      "Yes. Rachio is compatible with virtually all standard 24V residential sprinkler valves (Hunter, Rain Bird, Toro, Irritrol, etc.). If your system uses an unusual valve type, we'll spot it during the consultation and recommend a path forward.",
+      "Yes. Rachio is compatible with virtually all standard 24V residential sprinkler valves (Hunter, Rain Bird, Toro, Irritrol, etc.). If your system uses an unusual valve type, we'll spot it when we look at your system and tell you what will work.",
   },
 ]
 
@@ -60,7 +61,7 @@ const COMPETITORS = [
     setup: "10–15 min app-driven setup",
     zones: "8 / 16 zone models",
     weatherIntel: "Hyperlocal weather + EPA WaterSense",
-    rebates: "Eligible for every Front Range program",
+    rebates: "Erie, Longmont, Louisville, Lafayette rebates",
     installPrice: "$350 / $420 installed",
     bestFor: "Most homeowners. Best app, simplest install, broadest rebate eligibility.",
   },
@@ -173,17 +174,28 @@ export default function SmartControllersPage() {
 
       {/* HERO VALUE PROP */}
       <section className="bg-background section-padding-y">
-        <div className="container-padding-x mx-auto max-w-5xl">
-          <div className="text-center mb-10">
-            <Badge variant="green" className="mb-4">
-              Save 20–30% on outdoor water use
-            </Badge>
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              The Smartest Upgrade for a Colorado Sprinkler System
-            </h2>
-            <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
-              After Erie&apos;s March 2026 water emergency, every Front Range homeowner is rethinking their irrigation system. A Rachio 3 smart controller is the single highest-ROI fix: it adjusts your watering automatically using local weather, soil, and plant needs — and most Northern Colorado utilities cover most of the cost.
-            </p>
+        <div className="container-padding-x mx-auto max-w-7xl">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center mb-14">
+            <div className="flex flex-col gap-4">
+              <Badge variant="green" className="w-fit">
+                Save 20–30% on outdoor water use
+              </Badge>
+              <h2 className="text-3xl md:text-4xl font-bold text-foreground">
+                Rachio 3 installed for $350. Your city pays part of it back.
+              </h2>
+              <p className="text-lg text-muted-foreground">
+                Since Erie&apos;s March 2026 water emergency a lot of homeowners here are looking hard at their watering. A Rachio 3 skips watering before rain or a freeze and adjusts run times by season, and Erie, Longmont, Louisville and Lafayette each offer a rebate on it.
+              </p>
+            </div>
+            <div className="relative aspect-[4/3] rounded-xl overflow-hidden">
+              <Image
+                src="/images/rachio-3-studio.jpg"
+                alt="Rachio 3 smart sprinkler controller"
+                fill
+                sizes="(min-width: 1024px) 50vw, 100vw"
+                className="object-cover"
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -205,7 +217,7 @@ export default function SmartControllersPage() {
               </CardHeader>
               <CardContent>
                 <p className="text-muted-foreground text-sm">
-                  Eligible for every Northern Colorado utility rebate program. No subscription fees, ever.
+                  Qualifies for the Erie, Longmont, Louisville and Lafayette rebates. No subscription fee.
                 </p>
               </CardContent>
             </Card>
@@ -216,7 +228,7 @@ export default function SmartControllersPage() {
               </CardHeader>
               <CardContent>
                 <p className="text-muted-foreground text-sm">
-                  Easy compliance with odd/even watering days and emergency restrictions — set it once, forget it.
+                  Set your city&apos;s watering days once and it keeps to them, including emergency restrictions.
                 </p>
               </CardContent>
             </Card>
@@ -232,7 +244,7 @@ export default function SmartControllersPage() {
             How Much Water Will You Save?
           </h2>
           <p className="text-lg text-white/80 mb-6 max-w-2xl mx-auto">
-            Estimate the gallons and dollars a Rachio 3 saves on your specific lawn — based on EPA WaterSense averages.
+            Enter your lawn size and get the gallons and dollars a Rachio 3 saves, using EPA WaterSense averages.
           </p>
           <Link
             href="/smart-controllers/water-savings-calculator"
@@ -250,7 +262,7 @@ export default function SmartControllersPage() {
           <div className="text-center mb-10">
             <Badge variant="outline" className="mb-4">Transparent pricing</Badge>
             <h2 className="text-3xl md:text-4xl font-bold text-foreground">
-              Rachio 3 Installed — Pricing
+              Rachio 3, installed
             </h2>
             <p className="mt-3 text-muted-foreground">
               Includes the controller, professional installation, Wi-Fi setup, zone naming, and a walkthrough of the app.
@@ -261,7 +273,7 @@ export default function SmartControllersPage() {
             <Card className="flex flex-col">
               <CardHeader>
                 <Badge variant="outline" className="w-fit mb-2">8-Zone</Badge>
-                <CardTitle className="text-2xl">Rachio 3 — 8 Zone</CardTitle>
+                <CardTitle className="text-2xl">Rachio 3, 8 zone</CardTitle>
               </CardHeader>
               <CardContent className="flex flex-1 flex-col gap-4">
                 <div className="flex items-baseline gap-2">
@@ -280,7 +292,7 @@ export default function SmartControllersPage() {
             <Card className="flex flex-col border-primary/30">
               <CardHeader>
                 <Badge variant="green" className="w-fit mb-2">16-Zone</Badge>
-                <CardTitle className="text-2xl">Rachio 3 — 16 Zone</CardTitle>
+                <CardTitle className="text-2xl">Rachio 3, 16 zone</CardTitle>
               </CardHeader>
               <CardContent className="flex flex-1 flex-col gap-4">
                 <div className="flex items-baseline gap-2">
@@ -363,7 +375,7 @@ export default function SmartControllersPage() {
               Rachio 3 vs Hunter Hydrawise vs Rain Bird ESP-Me3
             </h2>
             <p className="mt-3 text-muted-foreground max-w-2xl mx-auto">
-              All three are WaterSense certified and qualify for Northern Colorado rebates. Here&apos;s how they actually differ.
+              All three are WaterSense certified and qualify for Northern Colorado rebates. The differences are the app, the setup and the price.
             </p>
           </div>
 
@@ -415,7 +427,7 @@ export default function SmartControllersPage() {
           </div>
 
           <p className="mt-6 text-sm text-muted-foreground text-center max-w-2xl mx-auto">
-            Trailhead is brand-agnostic — we&apos;ll install whichever controller fits your system. We recommend Rachio 3 to most Erie homeowners because it has the simplest app, the broadest rebate eligibility, and the most reliable Wi-Fi pairing.
+            We install Hunter and Rain Bird too. We recommend the Rachio 3 to most Erie homeowners for the simplest app, the broadest rebate eligibility and the most reliable Wi-Fi pairing.
           </p>
         </div>
       </section>
@@ -445,13 +457,13 @@ export default function SmartControllersPage() {
             <div className="bg-background border border-border rounded-lg p-6">
               <dt className="font-semibold text-foreground mb-2">What is Slow the Flow?</dt>
               <dd className="text-muted-foreground leading-relaxed">
-                Slow the Flow is a free sprinkler-evaluation program run by Resource Central for Front Range water customers. In some cities (Louisville, Lafayette) it&apos;s also the gateway to a free Rachio install. Trailhead is not affiliated with Resource Central — it&apos;s a community resource.
+                Slow the Flow is a free sprinkler-evaluation program run by Resource Central for Front Range water customers. In some cities (Louisville, Lafayette) it&apos;s also the gateway to a free Rachio install. Trailhead is not affiliated with Resource Central; it&apos;s a community program.
               </dd>
             </div>
             <div className="bg-background border border-border rounded-lg p-6">
               <dt className="font-semibold text-foreground mb-2">What is evapotranspiration (ET)?</dt>
               <dd className="text-muted-foreground leading-relaxed">
-                ET is the rate at which water evaporates from soil and transpires from plants. Smart controllers use ET data — combined with local weather — to calculate exactly how much water each zone of your lawn actually needs that day, instead of running the same schedule year-round.
+                ET is the rate at which water evaporates from soil and transpires from plants. Smart controllers combine ET with local weather to work out how much water each zone needs that day, instead of running the same schedule all year.
               </dd>
             </div>
           </dl>

@@ -8,9 +8,9 @@ import Link from "next/link"
 
 const FACTS = [
   { value: "$3k to $6k", label: "typical residential yard" },
-  { value: "2 days", label: "most installs" },
-  { value: "6 steps", label: "design to handoff" },
+  { value: "Price first", label: "layout and number before anyone digs" },
   { value: "Clay-soil design", label: "built for Front Range yards" },
+  { value: "Owner-installed", label: "Ryan designs and installs it himself" },
 ]
 
 export function InstallationBand() {
@@ -21,10 +21,10 @@ export function InstallationBand() {
           <div className="flex flex-col gap-6">
             <p className="text-xs font-semibold uppercase tracking-widest text-primary-light">New sprinkler systems</p>
             <h2 id="install-heading" className="font-display text-4xl md:text-5xl font-bold text-white">
-              What a new sprinkler system actually costs in Erie
+              What a new sprinkler system costs in Northern Colorado
             </h2>
             <p className="text-white/80 text-lg max-w-xl">
-              Nobody else in the area publishes a price, a timeline, or what is included. We do, and it is the reason to pick us before the first phone call.
+              Most installers won&apos;t give you a number until they&apos;ve been to your house. Ours is right here, and the installation page explains how we price it.
             </p>
             <dl className="grid grid-cols-2 gap-5">
               {FACTS.map((f) => (
@@ -37,7 +37,7 @@ export function InstallationBand() {
             </dl>
             <div>
               <Link href="/sprinkler-installation" className={buttonVariants({ size: "lg" })}>
-                See the full cost breakdown
+                See installation pricing
               </Link>
             </div>
           </div>

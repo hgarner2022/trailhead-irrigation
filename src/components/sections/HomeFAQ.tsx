@@ -9,12 +9,12 @@ import { SEASON_PASS_FROM } from "@/lib/season-pass"
 
 export const HOME_FAQS: FaqItem[] = [
   {
-    question: "What is the hourly rate for sprinkler repair in Erie, CO?",
+    question: "What does sprinkler repair cost in Northern Colorado?",
     answer:
-      "A sprinkler repair visit in Erie is $145, which covers the diagnosis and small fixes on the spot. Larger repairs are quoted before any work starts, with labor at $130 per hour plus parts. Most repairs finish in one visit.",
+      "A sprinkler repair visit is $145 anywhere we serve, which covers the diagnosis and small fixes on the spot. Larger repairs are quoted before any work starts, with labor at $150 per hour plus parts. Most repairs finish in one visit.",
   },
   {
-    question: "Who do I call to fix sprinklers in Erie?",
+    question: "Who do I call to fix sprinklers on the Front Range?",
     answer:
       "Trailhead Lawn & Irrigation at (970) 692-7270, a licensed and insured, owner-operated sprinkler company based in Erie, CO. Repairs, spring turn-ons and fall blowouts can be booked online; new system installs start with a quick yard visit.",
   },
@@ -30,12 +30,12 @@ export const HOME_FAQS: FaqItem[] = [
   {
     question: "How much does a sprinkler system cost in Colorado?",
     answer:
-      "A new residential sprinkler system in the Erie area typically costs $3,000 to $6,000 installed, depending on lot size, number of zones and water source, and most installs take about two days. The installation page lists what is included and what is not.",
+      "A new residential sprinkler system on the Northern Colorado Front Range typically costs $3,000 to $6,000 installed, depending on lot size, number of zones and water source. You get the zone layout and the price before anyone digs.",
     relatedLink: { href: "/sprinkler-installation", label: "See the installation cost breakdown" },
   },
   {
     question: "What does the Season Pass include?",
-    answer: `The Season Pass is three visits a year, spring turn-on, mid-summer inspection and fall blowout, at the published per-zone price of each visit, from $${SEASON_PASS_FROM} for up to 6 zones. The blowout date is reserved in July and one card on file is charged after each visit.`,
+    answer: `Three visits a year on a schedule we keep for you: spring turn-on, mid-summer inspection and fall blowout, from $${SEASON_PASS_FROM} for up to 6 zones. Your October blowout date is reserved in July, you get a text before each visit, and a card on file is charged after each one.`,
     relatedLink: { href: "/season-pass", label: "Season Pass prices by zone count" },
   },
   {
@@ -58,14 +58,14 @@ export const HOME_FAQS: FaqItem[] = [
 
 export function HomeFAQ() {
   return (
-    <section className="bg-background section-padding-y" aria-labelledby="home-faq-heading">
+    <section className="bg-cream section-padding-y" aria-labelledby="home-faq-heading">
       <div className="container-padding-x mx-auto max-w-3xl flex flex-col gap-10">
         <SectionHeader
           title="Sprinkler questions, answered"
           titleId="home-faq-heading"
-          description="Short answers from a local Erie sprinkler contractor."
+          description="Short answers from a Northern Colorado sprinkler contractor."
         />
-        <FaqList faqs={HOME_FAQS} itemBg="cream" />
+        <FaqList faqs={HOME_FAQS} itemBg="background" />
       </div>
     </section>
   )

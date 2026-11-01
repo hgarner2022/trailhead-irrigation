@@ -14,20 +14,30 @@ export type NavLink = {
 }
 
 /**
- * Services, one plain list in the order of the year. No category headings:
- * customers know the service names, not our groupings.
+ * Services, one plain list in the order of the year. Every entry is a
+ * service a customer can book, and every entry links to that service's own
+ * page. Nothing else goes in this list.
  */
 export const SERVICES: NavLink[] = [
   { label: "Sprinkler Repair", href: "/services" },
-  { label: "Spring Turn-On & Tune-Up", href: "/pricing" },
+  { label: "Spring Turn-On & Tune-Up", href: "/spring-turn-on" },
   { label: "Sprinkler Installation", href: "/sprinkler-installation" },
+  { label: "Fall Blowout", href: "/sprinkler-blowout" },
   { label: "Smart Controllers (Rachio)", href: "/smart-controllers" },
   { label: "Drip & Water Efficiency", href: "/water-efficiency" },
-  { label: "Water Rebates", href: "/water-rebates" },
   { label: "Lawn Aeration", href: "/aeration" },
-  { label: "Fall Blowout", href: "/sprinkler-blowout" },
-  { label: "Season Pass", href: "/season-pass" },
   { label: "Christmas Lights", href: "/christmas-lights" },
+]
+
+/**
+ * Things that are not services: reference pages and the bundle. They are
+ * not in the Services dropdown. Water Rebates is linked from the footer and
+ * from the smart-controller and water-efficiency pages; the Season Pass is
+ * sold from /pricing and the homepage.
+ */
+export const RESOURCE_LINKS: NavLink[] = [
+  { label: "Water Rebates", href: "/water-rebates" },
+  { label: "Season Pass", href: "/season-pass" },
 ]
 
 export const CITY_LINKS: NavLink[] = CITY_DATA.map((city) => ({

@@ -12,15 +12,15 @@ import { SeasonalPill } from "@/components/sections/SeasonalPill"
 export function Hero() {
   return (
     <section className="relative flex items-end min-h-[560px] md:min-h-[640px] lg:min-h-[720px]" aria-labelledby="hero-heading">
-      {/* A finished yard in fall light: bright, and it is the thing we sell.
-          The gradient darkens the left third for the text and leaves the
-          house and lawn clear on the right. */}
+      {/* The trail. This is the promise behind "Go find your trail": the
+          customer is up here, not in the yard. The gradient darkens the
+          left third for the text and leaves the peak clear on the right. */}
       <Image
-        src="/images/home-lawn-fall.jpg"
-        alt="Home with a green lawn and paver walkway under yellow fall leaves"
+        src="/images/trail-mountain-meadow.jpg"
+        alt="Two-track trail through a mountain meadow at sunrise in the Colorado Rockies"
         fill
         priority
-        className="object-cover object-[65%_center]"
+        className="object-cover object-[60%_center]"
         sizes="100vw"
         quality={82}
       />
@@ -43,10 +43,10 @@ export function Hero() {
             className="font-sans text-lg md:text-xl font-semibold text-white leading-snug max-w-xl"
             style={{ letterSpacing: 0 }}
           >
-            Sprinkler installation, repair, and winterization in Erie, CO and the Northern Colorado Front Range.
+            Sprinkler repair, installation and fall blowouts in Erie, CO and across the Front Range.
           </h1>
           <p className="text-base text-white/85 max-w-xl">
-            On time. Explained before the work starts. Fixed in one visit. Owner-operated, licensed and insured.
+            Our prices are on this site before you call, and most repairs are done in one visit.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 mt-1">
             <Link href="/book" className={buttonVariants({ size: "lg" })}>

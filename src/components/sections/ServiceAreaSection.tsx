@@ -36,7 +36,7 @@ export function ServiceAreaSection() {
             <SectionHeader
               tagline="Service area"
               taglineAsEyebrow
-              title="Six cities. Same crew, same price, same standard."
+              title="Six cities, the same prices in every one."
               titleId="areas-heading"
               description="Based in Erie and within 20 minutes of every address we serve. Each city has its own watering rules and rebates, so each has its own page."
               align="left"
