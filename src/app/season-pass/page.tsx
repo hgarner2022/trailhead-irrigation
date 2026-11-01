@@ -48,6 +48,16 @@ const FAQS: FaqItem[] = [
       "Small fixes such as a head adjustment or nozzle are handled on the spot. Anything larger is quoted before work starts, at the same repair rates as any other customer, and there is no separate trip fee for a repair found on a pass visit.",
   },
   {
+    question: "Can I cancel?",
+    answer:
+      "Yes, any time. Nothing is charged until a visit is done, so cancelling just means no more visits go on the calendar.",
+  },
+  {
+    question: "Can I buy just the turn-on and the blowout?",
+    answer:
+      "Yes. Book either one on its own at the same price. The pass is for people who want the July check too and don't want to think about scheduling. If you'd skip July anyway, book the two visits separately.",
+  },
+  {
     question: "Which cities can get the Season Pass?",
     answer:
       "Erie, Longmont, Louisville, Lafayette, Firestone and Broomfield, at the same price. Reserve by contacting us; we confirm your zone count on the first visit and set the three dates from there.",
