@@ -46,7 +46,7 @@ export function Hero() {
             Trailhead is an owner-run sprinkler and irrigation company in Erie, CO, serving the Northern Colorado Front Range.
           </h1>
           <p className="text-base text-white/85 max-w-xl">
-            Repairs, new systems, spring turn-ons and fall blowouts, booked online in two minutes. Spend Saturday above treeline and we&apos;ll keep the sprinklers running.
+            Spend Saturdays above treeline, not in the yard. Repairs, new systems, spring turn-ons and fall blowouts, booked online in two minutes.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 mt-1">
             <Link href="/book" className={buttonVariants({ size: "lg" })}>
