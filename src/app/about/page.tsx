@@ -85,6 +85,34 @@ export default function AboutPage() {
         </div>
       </section>
 
+      {/* The two trust lines homeowners quoted back in review. Kept to two
+          on purpose: a grid of six read as filler. */}
+      <section className="bg-cream section-padding-y" aria-labelledby="about-trust">
+        <div className="container-padding-x mx-auto max-w-5xl">
+          <h2 id="about-trust" className="sr-only">Why homeowners choose Trailhead</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="flex gap-4 rounded-lg border border-border bg-background p-6">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-primary text-primary">
+                <Droplets className="h-5 w-5" aria-hidden="true" />
+              </span>
+              <div>
+                <h3 className="font-display text-2xl font-semibold text-navy">Irrigation specialist</h3>
+                <p className="mt-1 text-muted-foreground">Focused 100% on sprinkler systems. Not a general handyman or landscaper who does irrigation on the side.</p>
+              </div>
+            </div>
+            <div className="flex gap-4 rounded-lg border border-border bg-background p-6">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-primary text-primary">
+                <Shield className="h-5 w-5" aria-hidden="true" />
+              </span>
+              <div>
+                <h3 className="font-display text-2xl font-semibold text-navy">Fully insured</h3>
+                <p className="mt-1 text-muted-foreground">General liability coverage on every job. Your property is protected.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Family Photo + Local Roots */}
       <section className="bg-background section-padding-y">
         <div className="container-padding-x mx-auto max-w-7xl">

@@ -29,10 +29,10 @@ export function OwnerSection() {
             </h2>
             <div className="flex flex-col gap-4 text-muted-foreground text-lg">
               <p>
-                Trailhead Lawn &amp; Irrigation is owned and run by Ryan Garner, an Erie local with over ten years of irrigation work on the Front Range.
+                I&apos;m Ryan. I started Trailhead here in Erie, and I&apos;ve been doing irrigation work on the Front Range for over ten years.
               </p>
               <p>
-                Licensed and insured. We live here too, and run into our customers at the grocery store.
+                Licensed and insured. I live here too, and I run into my customers at the grocery store.
               </p>
             </div>
             <div className="flex flex-col sm:flex-row gap-3">
