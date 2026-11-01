@@ -25,8 +25,8 @@ export function ServiceAreaSection() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
           <div className="relative aspect-[3/2] rounded-lg overflow-hidden order-last lg:order-first">
             <Image
-              src="/images/boulder-foothills-fence.jpg"
-              alt="Foothills meadow above Boulder, Colorado, with the town in the valley below"
+              src="/images/welcome-to-colorado-sign.jpg"
+              alt="Welcome to Colorful Colorado roadside sign"
               fill
               sizes="(min-width: 1024px) 50vw, 100vw"
               className="object-cover"

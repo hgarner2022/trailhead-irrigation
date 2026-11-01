@@ -14,7 +14,6 @@ import {
   Wrench,
   CheckCircle2,
   ArrowRight,
-  Phone,
   Clock,
 } from "lucide-react"
 import { faqJsonLd, reviewsJsonLd, breadcrumbJsonLd, siteConfig } from "@/lib/seo"
@@ -213,22 +212,9 @@ export default function PricingPage() {
                   No hidden fees
                 </RepairFeature>
               </ul>
-              <div className="flex flex-col sm:flex-row gap-3">
-                <Link
-                  href="/book"
-                  className={buttonVariants({ size: "lg" })}
-                >
-                  Book a Service
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
-                <a
-                  href="tel:9706927270"
-                  className={buttonVariants({ variant: "outline", size: "lg" })}
-                >
-                  <Phone className="w-4 h-4" />
-                  (970) 692-7270
-                </a>
-              </div>
+              <Link href="/book" className={cn(buttonVariants({ size: "lg" }), "w-fit")}>
+                Book Online
+              </Link>
             </div>
             <div className="flex-1 w-full">
               <div className="bg-cream rounded-xl border border-border p-6 md:p-8">
@@ -266,29 +252,9 @@ export default function PricingPage() {
             <p className="text-muted-foreground max-w-lg mx-auto mb-6">
               Every property is different. New irrigation installs are custom-quoted based on your lot size, soil conditions, zones needed, and water source. Contact us for a free consultation.
             </p>
-            <p className="text-sm text-muted-foreground max-w-lg mx-auto mb-6">
-              Looking to improve your system&apos;s efficiency?{" "}
-              <Link href="/water-efficiency" className="text-primary font-semibold hover:text-primary-dark transition-colors">
-                Check out our Water Efficiency Upgrades
-              </Link>{" "}
-              for smart controllers, MPR nozzles, and more.
-            </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-              <Link
-                href="/contact"
-                className={buttonVariants({ size: "lg" })}
-              >
-                Request a Quote
-                <ArrowRight className="w-4 h-4" />
-              </Link>
-              <a
-                href="tel:9706927270"
-                className={buttonVariants({ variant: "outline", size: "lg" })}
-              >
-                <Phone className="w-4 h-4" />
-                (970) 692-7270
-              </a>
-            </div>
+            <Link href="/contact" className={buttonVariants({ size: "lg" })}>
+              Get an installation quote
+            </Link>
           </div>
         </div>
       </section>

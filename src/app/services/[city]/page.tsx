@@ -60,7 +60,6 @@ export default async function CityPage({
   const data = getCityData(city)
   if (!data) notFound()
 
-  const otherCities = CITY_DATA.filter((c) => c.slug !== data.slug)
 
   // Build a stable "last updated" timestamp at build time. Surfaced visibly
   // and in the JSON-LD `dateModified` so AI engines treat the page as fresh.
@@ -337,23 +336,9 @@ export default async function CityPage({
               {data.winterNote}
             </p>
           )}
-          <div className="flex flex-col sm:flex-row items-start gap-3">
-            <Link
-              href="/book?service=winterization"
-              className={buttonVariants({ size: "lg" })}
-            >
-              Book Your {data.name} Blowout
-            </Link>
-            <Link
-              href="/sprinkler-blowout"
-              className={cn(
-                buttonVariants({ variant: "outline", size: "lg" }),
-                "border-white bg-transparent text-white hover:bg-white/10 hover:text-white"
-              )}
-            >
-              What a blowout includes
-            </Link>
-          </div>
+          <Link href="/book?service=winterization" className={buttonVariants({ size: "lg" })}>
+            Book Online
+          </Link>
         </div>
       </section>
 
@@ -364,26 +349,6 @@ export default async function CityPage({
             Frequently Asked Questions — {data.name}
           </h2>
           <FaqList faqs={data.faqs} itemBg="background" />
-        </div>
-      </section>
-
-      {/* Other cities */}
-      <section className="bg-cream section-padding-y">
-        <div className="container-padding-x mx-auto max-w-4xl">
-          <h2 className="text-2xl font-bold text-foreground mb-6">
-            We Also Serve
-          </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            {otherCities.map((c) => (
-              <Link
-                key={c.slug}
-                href={`/services/${c.slug}`}
-                className={cn(buttonVariants({ variant: "outline" }), "justify-center")}
-              >
-                {c.name}, CO
-              </Link>
-            ))}
-          </div>
         </div>
       </section>
 

@@ -16,38 +16,6 @@ export const metadata: Metadata = {
   alternates: { canonical: `${siteConfig.url}/about` },
 }
 
-const CREDENTIALS = [
-  {
-    icon: Wrench,
-    title: "Licensed Contractor",
-    text: "Licensed and insured sprinkler contractor in the state of Colorado.",
-  },
-  {
-    icon: MapPin,
-    title: "Based in Erie",
-    text: "Working the same Front Range neighborhoods year after year. We know the soil, the water systems, and the HOA quirks.",
-  },
-  {
-    icon: Droplets,
-    title: "Irrigation Specialist",
-    text: "Focused 100% on sprinkler systems. Not a general handyman or landscaper who does irrigation on the side.",
-  },
-  {
-    icon: Users,
-    title: "Trusted Locally",
-    text: "Five-star reviews from homeowners across Erie, Longmont, Lafayette, and Louisville. Your neighbors trust Trailhead.",
-  },
-  {
-    icon: Shield,
-    title: "Fully Insured",
-    text: "General liability coverage on every job. Your property is protected.",
-  },
-  {
-    icon: Award,
-    title: "Decade of Experience",
-    text: "Over a decade of irrigation work on the Front Range. The kind of pattern recognition you only get from hundreds of yards.",
-  },
-]
 
 export default function AboutPage() {
   return (
@@ -121,30 +89,6 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* Why Ryan */}
-      <section className="bg-cream section-padding-y">
-        <div className="container-padding-x mx-auto max-w-7xl">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground">
-              Why Homeowners Choose Trailhead
-            </h2>
-            <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
-              No call centers. No subcontractors. A licensed Erie sprinkler contractor with the
-              experience to get it right the first time, and the local roots to stand behind it.
-            </p>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            {CREDENTIALS.map((cred) => (
-              <div key={cred.title} className="flex flex-col gap-3 p-6 bg-white rounded-xl border border-border">
-                <cred.icon className="h-8 w-8 text-primary" />
-                <h3 className="text-lg font-semibold text-foreground">{cred.title}</h3>
-                <p className="text-muted-foreground leading-relaxed">{cred.text}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* Family Photo + Local Roots */}
       <section className="bg-background section-padding-y">
         <div className="container-padding-x mx-auto max-w-7xl">
@@ -183,20 +127,9 @@ export default function AboutPage() {
                   system up right.
                 </p>
               </div>
-              <div className="flex flex-col sm:flex-row gap-3 mt-2">
-                <Link
-                  href="/book"
-                  className={cn(buttonVariants({ size: "lg" }), "w-fit")}
-                >
-                  Book a Service
-                </Link>
-                <a
-                  href="tel:9706927270"
-                  className={cn(buttonVariants({ variant: "outline", size: "lg" }), "w-fit")}
-                >
-                  Call (970) 692-7270
-                </a>
-              </div>
+              <Link href="/book" className={cn(buttonVariants({ size: "lg" }), "w-fit mt-2")}>
+                Book Online
+              </Link>
             </div>
           </div>
         </div>

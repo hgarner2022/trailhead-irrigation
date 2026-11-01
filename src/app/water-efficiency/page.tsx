@@ -124,7 +124,7 @@ export default function WaterEfficiencyPage() {
                   href="/book"
                   className={buttonVariants({ size: "lg" })}
                 >
-                  Book Installation
+                  Book Online
                   <ArrowRight className="w-4 h-4" />
                 </Link>
                 <Link
@@ -180,7 +180,7 @@ export default function WaterEfficiencyPage() {
                 href="/book"
                 className={buttonVariants({ size: "lg" })}
               >
-                Book a Service
+                Book Online
                 <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
@@ -223,7 +223,7 @@ export default function WaterEfficiencyPage() {
                 href="/book"
                 className={buttonVariants({ size: "lg" })}
               >
-                Book a Service
+                Book Online
                 <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
@@ -266,7 +266,7 @@ export default function WaterEfficiencyPage() {
                 href="/book"
                 className={buttonVariants({ size: "lg" })}
               >
-                Book a Service
+                Book Online
                 <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
@@ -309,7 +309,7 @@ export default function WaterEfficiencyPage() {
                 href="/book"
                 className={buttonVariants({ size: "lg" })}
               >
-                Book a Service
+                Book Online
                 <ArrowRight className="w-4 h-4" />
               </Link>
             </div>

@@ -354,7 +354,7 @@ export default async function BlogPostPage({
               href="/book"
               className={buttonVariants()}
             >
-              Book a Service
+              Book Online
             </Link>
             <a
               href="tel:9706927270"

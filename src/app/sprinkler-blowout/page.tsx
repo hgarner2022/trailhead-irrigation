@@ -174,7 +174,7 @@ export default function SprinklerBlowoutPage() {
                 href="/book?service=winterization"
                 className={buttonVariants({ size: "lg" })}
               >
-                Book Now
+                Book Online
               </Link>
             </div>
 

@@ -129,7 +129,7 @@ export default function SprinklerInstallationPage() {
       <PageBanner
         title="Sprinkler Installation Services"
         description="New irrigation systems designed around your yard, your soil, and your city's watering rules."
-        backgroundImage="/images/sprinkler-installation.jpg"
+        backgroundImage="/images/home-lawn-spring.jpg"
       />
 
       {/* Answer-first intro + single CTA */}
@@ -175,8 +175,8 @@ export default function SprinklerInstallationPage() {
             <div className="flex-1 w-full">
               <div className="relative aspect-[4/3] rounded-xl overflow-hidden">
                 <Image
-                  src="/images/sprinkler-head.jpg"
-                  alt="Sprinkler head set at lawn level for even coverage"
+                  src="/images/new-lawn-home.jpg"
+                  alt="Finished home lawn with a paver walkway and even green coverage"
                   fill
                   className="object-cover"
                 />
@@ -225,8 +225,8 @@ export default function SprinklerInstallationPage() {
             <div className="flex-1 w-full">
               <div className="relative aspect-[4/3] rounded-xl overflow-hidden">
                 <Image
-                  src="/images/healthy-lawn-closeup.jpg"
-                  alt="Healthy lawn on Colorado clay soil"
+                  src="/images/sprinkler-golden-hour.jpg"
+                  alt="Sprinkler head running at sunset beside a walkway"
                   fill
                   className="object-cover"
                 />
@@ -276,12 +276,6 @@ export default function SprinklerInstallationPage() {
                   className={buttonVariants({ variant: "outline" })}
                 >
                   Check local rebates
-                </Link>
-                <Link
-                  href="/services"
-                  className={buttonVariants({ variant: "link" })}
-                >
-                  See all services &rarr;
                 </Link>
               </div>
             </div>

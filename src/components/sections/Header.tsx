@@ -75,14 +75,13 @@ function Dropdown({
   )
 }
 
-function DropdownLink({ link }: { link: { label: string; href: string; note?: string } }) {
+function DropdownLink({ link }: { link: { label: string; href: string } }) {
   return (
     <Link
       href={link.href}
-      className="flex items-baseline justify-between gap-3 rounded-md px-2 py-1.5 text-sm font-medium text-navy hover:bg-stone hover:text-primary transition-colors"
+      className="block rounded-md px-2 py-1.5 text-sm font-medium text-navy hover:bg-stone hover:text-primary transition-colors"
     >
       {link.label}
-      {link.note && <span className="text-xs font-normal text-muted-foreground whitespace-nowrap">{link.note}</span>}
     </Link>
   )
 }
@@ -109,14 +108,14 @@ export function Header() {
     <>
       <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-border">
         <div className="container-padding-x mx-auto max-w-7xl">
-          <div className="flex items-center justify-between gap-4 h-16 md:h-[72px]">
+          <div className="flex items-center justify-between gap-4 h-16 md:h-20">
             <Link href="/" className="shrink-0" aria-label="Trailhead Lawn & Irrigation, home">
               <Image
                 src="/images/logo-horizontal.png"
                 alt="Trailhead Lawn & Irrigation"
                 width={360}
                 height={90}
-                className="h-10 md:h-11 w-auto"
+                className="h-12 md:h-16 w-auto"
                 priority
               />
             </Link>
@@ -124,7 +123,7 @@ export function Header() {
             {/* Desktop */}
             <nav className="hidden lg:flex items-center" aria-label="Main navigation">
               <ul className="flex items-center gap-1">
-                <Dropdown label="Services" active={servicesActive} width="w-[560px]">
+                <Dropdown label="Services" active={servicesActive} width="w-[480px]">
                   <ul className="grid grid-cols-2 gap-x-4 gap-y-0.5">
                     {SERVICES.map((link) => (
                       <li key={link.label}>
@@ -132,11 +131,6 @@ export function Header() {
                       </li>
                     ))}
                   </ul>
-                  <div className="mt-3 pt-3 border-t border-border px-2">
-                    <Link href="/services" className="text-sm font-semibold text-primary hover:underline">
-                      All services &rarr;
-                    </Link>
-                  </div>
                 </Dropdown>
 
                 <Dropdown label="Service Areas" active={areasActive} width="w-[320px]">
@@ -223,9 +217,8 @@ export function Header() {
             <ul className="flex flex-col">
               {SERVICES.map((link) => (
                 <li key={link.label}>
-                  <Link href={link.href} className="flex items-baseline justify-between gap-3 py-2.5 text-base font-medium text-foreground">
+                  <Link href={link.href} className="block py-2.5 text-base font-medium text-foreground">
                     {link.label}
-                    {link.note && <span className="text-sm text-muted-foreground">{link.note}</span>}
                   </Link>
                 </li>
               ))}

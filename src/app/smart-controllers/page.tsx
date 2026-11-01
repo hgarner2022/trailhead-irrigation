@@ -272,7 +272,7 @@ export default function SmartControllersPage() {
                   Best for most residential systems with 8 or fewer zones.
                 </p>
                 <Link href="/book" className={cn(buttonVariants({ size: "lg" }), "w-full mt-auto")}>
-                  Book Installation
+                  Book Online
                 </Link>
               </CardContent>
             </Card>
@@ -291,7 +291,7 @@ export default function SmartControllersPage() {
                   For larger lots or homes with separate front/back/drip zone systems.
                 </p>
                 <Link href="/book" className={cn(buttonVariants({ size: "lg" }), "w-full mt-auto")}>
-                  Book Installation
+                  Book Online
                 </Link>
               </CardContent>
             </Card>

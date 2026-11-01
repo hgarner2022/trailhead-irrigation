@@ -67,7 +67,7 @@ const SERVICES = [
       "Full system walkthrough after install",
     ],
     imagePosition: "right" as const,
-    cta: { label: "Request a Quote", href: "/contact" },
+    cta: { label: "Get an installation quote", href: "/contact" },
   },
   {
     title: "Sprinkler Repair & Tune-Ups",
@@ -89,7 +89,7 @@ const SERVICES = [
       "Seasonal adjustments and tune-ups",
     ],
     imagePosition: "left" as const,
-    cta: { label: "Book a Service", href: "/book" },
+    cta: { label: "Book Online", href: "/book" },
   },
   {
     title: "Winterization & Spring Sprinkler Turn-On",

@@ -11,8 +11,6 @@ import { CITY_DATA } from "@/lib/city-data"
 export type NavLink = {
   label: string
   href: string
-  /** Quiet secondary text shown in the dropdown (a price, a season). */
-  note?: string
 }
 
 /**
@@ -20,16 +18,16 @@ export type NavLink = {
  * customers know the service names, not our groupings.
  */
 export const SERVICES: NavLink[] = [
-  { label: "Sprinkler Repair", href: "/services", note: "$145 visit" },
-  { label: "Spring Turn-On & Tune-Up", href: "/pricing", note: "$145" },
-  { label: "Sprinkler Installation", href: "/sprinkler-installation", note: "from $3,000" },
-  { label: "Smart Controllers (Rachio)", href: "/smart-controllers", note: "from $350" },
+  { label: "Sprinkler Repair", href: "/services" },
+  { label: "Spring Turn-On & Tune-Up", href: "/pricing" },
+  { label: "Sprinkler Installation", href: "/sprinkler-installation" },
+  { label: "Smart Controllers (Rachio)", href: "/smart-controllers" },
   { label: "Drip & Water Efficiency", href: "/water-efficiency" },
   { label: "Water Rebates", href: "/water-rebates" },
   { label: "Lawn Aeration", href: "/aeration" },
-  { label: "Fall Blowout", href: "/sprinkler-blowout", note: "from $95" },
-  { label: "Season Pass", href: "/season-pass", note: "3 visits, from $385" },
-  { label: "Christmas Lights", href: "/christmas-lights", note: "Nov to Jan" },
+  { label: "Fall Blowout", href: "/sprinkler-blowout" },
+  { label: "Season Pass", href: "/season-pass" },
+  { label: "Christmas Lights", href: "/christmas-lights" },
 ]
 
 export const CITY_LINKS: NavLink[] = CITY_DATA.map((city) => ({
