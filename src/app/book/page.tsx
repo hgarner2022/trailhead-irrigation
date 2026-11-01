@@ -36,7 +36,7 @@ export default function BookPage() {
 
       <PageBanner
         title="Book Your Service"
-        description="Select your service and pick a time that works for you."
+        description="Repair visit $145, blowout $95, turn-on $145. Pick the service, then a time."
       />
 
       <section className="bg-background section-padding-y">

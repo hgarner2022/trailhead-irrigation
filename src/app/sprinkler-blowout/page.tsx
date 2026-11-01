@@ -108,9 +108,9 @@ const BLOWOUT_FAQS = [
       "Book it anyway. One freeze does not always crack a line, but each one after that is another chance, and the damage usually shows up at spring turn-on. We clear systems on any day above freezing through December.",
   },
   {
-    question: "How early should I book?",
+    question: "How late can I book?",
     answer:
-      "We start booking winterizations in September, and October fills up fast. By mid-October we're usually booked solid. Booking early gets you the date you want instead of whatever is left once a freeze shows up in the forecast.",
+      "Through December, on any day above freezing. September and October fill fast, so book early then. After that, take the next open day and we'll come out.",
   },
   {
     question: "What about my backflow preventer?",
@@ -207,12 +207,11 @@ export default function SprinklerBlowoutPage() {
                 <strong className="text-foreground font-semibold">
                   $95 for up to 6 zones
                 </strong>
-                , plus $10 per additional zone. In Northern Colorado the window
-                is{" "}
+                , plus $10 per additional zone. The best time in Northern Colorado is{" "}
                 <strong className="text-foreground font-semibold">
                   late September through October
                 </strong>
-                , before the first hard freeze.
+                . If that has passed, book the next open day. We clear systems on any day above freezing.
               </p>
               <p className="text-muted-foreground mb-7">
                 Water left in the lines expands when it freezes, which cracks

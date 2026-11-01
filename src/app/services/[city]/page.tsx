@@ -51,7 +51,7 @@ const SERVICES = [
   },
   {
     title: "Fall Blowout & Winterization",
-    description: "Professional sprinkler blowout in the fall to prevent freeze damage. Spring startup with leak checks, head adjustments, and controller programming.",
+    description: "$95 up to 6 zones. Every zone blown clear with compressed air before the first hard freeze, drip zones included.",
     icon: Snowflake,
     href: "/sprinkler-blowout",
   },
@@ -335,7 +335,7 @@ export default async function CityPage({
             </strong>{" "}
             (+$10 per additional zone). For{" "}
             {data.name} and the rest of the Front Range, the window is
-            late September through October, before the first hard freeze.
+            late September through October. If that has passed, book the next open day; we clear systems on any day above freezing.
           </p>
           {data.winterNote && (
             <p className="text-white/80 leading-relaxed mb-6">

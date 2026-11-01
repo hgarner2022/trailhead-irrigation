@@ -14,12 +14,24 @@ import {
   reviewsJsonLd,
   faqJsonLd,
 } from "@/lib/seo"
-import { recentReviews } from "@/lib/reviews"
+import { pickReviews } from "@/lib/reviews"
 
-// The nine most recent reviews in a carousel, three to a row on desktop.
-// Schema is emitted for exactly these nine because Google expects review
-// markup to match what a visitor can see on the page.
-const HOME_REVIEWS = recentReviews(9)
+// Nine reviews in a carousel, three to a row on desktop, ordered so the first
+// row answers what a first-time caller worries about: is it safe to have him
+// in the yard, does he actually fix it, is the price fair. One-liners are
+// left out. Schema is emitted for exactly these nine because Google expects
+// review markup to match what a visitor can see on the page.
+const HOME_REVIEWS = pickReviews(
+  "Alexandra Nicole",
+  "Aaron Connors",
+  "Lori Ginn",
+  "Daniel Cooperider",
+  "Joanna Toy",
+  "Reesa Rennecker",
+  "Jeremy Hampton",
+  "Karthik Ramadas",
+  "Ed K",
+)
 
 export default function HomePage() {
   // Single JSON-LD @graph payload combining:
