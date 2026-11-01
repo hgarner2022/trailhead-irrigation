@@ -37,19 +37,19 @@ export function Hero() {
           {/* The chip is desktop-only; on a phone it is the first line of the
               mobile menu, and the hero has to stay short. */}
           <SeasonalPill onDark className="hidden md:flex w-fit" />
-          <p className="font-display text-6xl sm:text-7xl md:text-8xl font-bold text-white leading-[0.95]">
-            Go find your trail.
+          <p className="font-display text-5xl sm:text-6xl md:text-7xl font-bold text-white leading-[0.98] max-w-3xl">
+            Less time in the yard. More time on the trail.
           </p>
           <h1
             id="hero-heading"
             className="font-sans text-lg md:text-xl font-semibold text-white leading-snug max-w-xl"
             style={{ letterSpacing: 0 }}
           >
-            Trailhead is an owner-run sprinkler and irrigation company in Erie, CO, serving the Northern Colorado Front Range.
+            Sprinkler repair, installation and fall blowouts in Erie, CO, serving the Northern Colorado Front Range.
           </h1>
           <p className="text-base text-white/85 max-w-xl">
-            Spend Saturdays above treeline, not in the yard.
-            <span className="hidden md:inline"> Repairs, new systems, spring turn-ons and fall blowouts, booked online in two minutes.</span>
+            Owner-run, licensed and insured.
+            <span className="hidden md:inline"> Book online in two minutes.</span>
           </p>
           {/* On a phone the hero shows one button, and it is the one most
               visitors came for: repair and blowout traffic outnumbers install

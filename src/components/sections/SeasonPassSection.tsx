@@ -31,7 +31,7 @@ export function SeasonPassSection() {
             <SectionHeader
               tagline="Season Pass"
               taglineAsEyebrow
-              title="Less time in the yard. More time on the trail."
+              title="Three visits a year, on a schedule we keep for you"
               titleId="season-pass-heading"
               description="We turn your system on in spring, check it in July and blow it out in October, and you never have to remember to call."
               align="left"

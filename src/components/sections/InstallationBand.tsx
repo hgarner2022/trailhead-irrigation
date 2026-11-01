@@ -24,7 +24,7 @@ export function InstallationBand() {
               What a new sprinkler system costs in Northern Colorado
             </h2>
             <p className="text-white/80 text-lg max-w-xl">
-              Most installers won&apos;t give you a number until they&apos;ve been to your house. Ours is right here, and the installation page explains how we price it.
+              A typical yard runs $3,000 to $6,000. Ryan walks the property, lays out the zones and gives you the price before anyone digs.
             </p>
             <dl className="grid grid-cols-2 gap-5">
               {FACTS.map((f) => (
