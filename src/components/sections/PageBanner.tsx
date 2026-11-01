@@ -14,7 +14,9 @@ export function PageBanner({
           className="absolute inset-0 bg-cover bg-center"
           style={{ backgroundImage: `url('${backgroundImage}')` }}
         >
-          <div className="absolute inset-0 bg-navy/75" />
+          {/* Same treatment as the homepage hero: dark enough for white text,
+              light enough that the photo still reads as a photo. */}
+          <div className="absolute inset-0 bg-gradient-to-r from-charcoal/85 via-charcoal/60 to-charcoal/35" />
         </div>
       ) : (
         <div className="absolute inset-0 bg-navy" />

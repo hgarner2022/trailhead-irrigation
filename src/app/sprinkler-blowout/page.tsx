@@ -134,7 +134,7 @@ export default function SprinklerBlowoutPage() {
       <PageBanner
         title="Sprinkler Blowout & Winterization"
         description="Compressed-air winterization before the first hard freeze. $95 up to 6 zones."
-        backgroundImage="/images/sprinkler-spring.jpg"
+        backgroundImage="/images/sprinkler-blowout-erie-co.jpg"
       />
 
       {/* Answer-first intro, price, single Book Now CTA */}

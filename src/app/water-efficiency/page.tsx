@@ -72,6 +72,7 @@ export default function WaterEfficiencyPage() {
       <PageBanner
         title="Water Efficiency Upgrades"
         description="Save water, save money — we'll show you how."
+        backgroundImage="/images/raised-bed-garden.jpg"
       />
 
       {/* ════════════════════════════════════════════

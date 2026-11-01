@@ -34,7 +34,7 @@ const TILES = [
     price: "$95 up to 6 zones",
     body: "Compressed-air blowout before the first hard freeze. Book online in two minutes.",
     href: "/sprinkler-blowout",
-    image: { src: "/images/lawn-sprinkler-water.jpg", alt: "Fine mist over a lawn and stepping stones" },
+    image: { src: "/images/sprinkler-blowout-erie-co.jpg", alt: "Sprinkler head blowing out compressed air over a leaf-covered lawn in fall" },
   },
   {
     title: "Smart controllers",
@@ -48,7 +48,7 @@ const TILES = [
     price: "Nozzle upgrade $400, drip quoted",
     body: "Rotator nozzles that cut water use about 30%, drip for beds and gardens, and the rebates that pay for part of it.",
     href: "/water-efficiency",
-    image: { src: "/images/micro-spray-garden-bed.jpg", alt: "Micro-spray irrigation watering a garden bed" },
+    image: { src: "/images/garden-drip-rows.jpg", alt: "Vegetable garden rows with irrigation risers between the beds" },
   },
 ]
 

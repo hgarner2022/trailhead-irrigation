@@ -12,20 +12,24 @@ import { SeasonalPill } from "@/components/sections/SeasonalPill"
 export function Hero() {
   return (
     <section className="relative flex items-end min-h-[560px] md:min-h-[640px] lg:min-h-[720px]" aria-labelledby="hero-heading">
-      {/* Positioned toward the top of the frame so the valley and the town
-          below the foothills stay in view; the fence is foreground, not the
-          subject. */}
+      {/* A finished yard in fall light: bright, and it is the thing we sell.
+          The gradient darkens the left third for the text and leaves the
+          house and lawn clear on the right. */}
       <Image
-        src="/images/boulder-foothills-fence.jpg"
-        alt="Foothills meadow above Boulder, Colorado, with the town in the valley below"
+        src="/images/home-lawn-fall.jpg"
+        alt="Home with a green lawn and paver walkway under yellow fall leaves"
         fill
         priority
-        className="object-cover object-[center_22%]"
+        className="object-cover object-[65%_center]"
         sizes="100vw"
-        quality={80}
+        quality={82}
       />
       <div
-        className="absolute inset-0 bg-gradient-to-t from-charcoal/80 via-charcoal/35 to-charcoal/10"
+        className="absolute inset-0 bg-gradient-to-r from-charcoal/85 via-charcoal/45 to-charcoal/5"
+        aria-hidden="true"
+      />
+      <div
+        className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-charcoal/60 to-transparent"
         aria-hidden="true"
       />
       <div className="relative container-padding-x mx-auto max-w-7xl w-full pt-24 pb-12 md:pt-32 md:pb-16">
