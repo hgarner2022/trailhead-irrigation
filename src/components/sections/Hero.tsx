@@ -47,10 +47,10 @@ export function Hero() {
           >
             Sprinkler repair, installation and fall blowouts in Erie, CO, serving the Northern Colorado Front Range.
           </h1>
-          {/* On a phone the hero shows one button, and it is the one most
-              visitors came for: repair and blowout traffic outnumbers install
-              traffic about 20 to 1 in Search Console. Desktop shows both. */}
-          <div className="flex flex-col sm:flex-row gap-3 mt-1">
+          {/* Below lg the StickyBar carries Call + Book Online on every page,
+              so the hero carries no buttons there: one Book Online on screen,
+              not two. Desktop has no sticky bar, so it gets both buttons. */}
+          <div className="hidden lg:flex flex-row gap-3 mt-1">
             <Link href="/book" className={buttonVariants({ size: "lg" })}>
               Book Online
             </Link>
@@ -58,7 +58,7 @@ export function Hero() {
               href="/sprinkler-installation"
               className={cn(
                 buttonVariants({ variant: "outline", size: "lg" }),
-                "hidden md:inline-flex border-white bg-transparent text-white hover:bg-white/10 hover:text-white"
+                "border-white bg-transparent text-white hover:bg-white/10 hover:text-white"
               )}
             >
               Get an installation quote
