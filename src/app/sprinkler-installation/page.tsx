@@ -1,5 +1,4 @@
 import type { Metadata } from "next"
-import { PHONE_DISPLAY, PHONE_TEL } from "@/lib/nav"
 import { PageBanner } from "@/components/sections/PageBanner"
 import { CTAStrip } from "@/components/sections/CTAStrip"
 import { FaqList } from "@/components/sections/FaqList"
@@ -157,14 +156,9 @@ export default function SprinklerInstallationPage() {
             Ryan walks the property, designs the zone layout, and does the
             install himself. You get the layout and a price before anyone digs.
           </p>
-          <div className="flex flex-col sm:flex-row gap-3">
-            <a href={PHONE_TEL} className={buttonVariants({ size: "lg" })}>
-              Call or text {PHONE_DISPLAY}
-            </a>
-            <Link href="/contact" className={buttonVariants({ variant: "outline", size: "lg" })}>
-              Send us the address
-            </Link>
-          </div>
+          <Link href="/contact" className={buttonVariants({ size: "lg" })}>
+            Get an installation quote
+          </Link>
         </div>
       </section>
 
