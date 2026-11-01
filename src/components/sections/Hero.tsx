@@ -34,7 +34,9 @@ export function Hero() {
       />
       <div className="relative container-padding-x mx-auto max-w-7xl w-full pt-24 pb-12 md:pt-32 md:pb-16">
         <div className="flex flex-col gap-5 max-w-2xl">
-          <SeasonalPill onDark className="w-fit" />
+          {/* The chip is desktop-only; on a phone it is the first line of the
+              mobile menu, and the hero has to stay short. */}
+          <SeasonalPill onDark className="hidden md:flex w-fit" />
           <p className="font-display text-6xl sm:text-7xl md:text-8xl font-bold text-white leading-[0.95]">
             Go find your trail.
           </p>
@@ -46,11 +48,14 @@ export function Hero() {
             Trailhead is an owner-run sprinkler and irrigation company in Erie, CO, serving the Northern Colorado Front Range.
           </h1>
           <p className="text-base text-white/85 max-w-xl">
-            Spend Saturdays above treeline, not in the yard. Repairs, new systems, spring turn-ons and fall blowouts, booked online in two minutes.
+            Spend Saturdays above treeline, not in the yard.
+            <span className="hidden md:inline"> Repairs, new systems, spring turn-ons and fall blowouts, booked online in two minutes.</span>
           </p>
+          {/* On a phone the sticky bar already carries Book Online and Call,
+              so the hero shows one button, the installation door. */}
           <div className="flex flex-col sm:flex-row gap-3 mt-1">
-            <Link href="/book" className={buttonVariants({ size: "lg" })}>
-              Book a service
+            <Link href="/book" className={cn(buttonVariants({ size: "lg" }), "hidden md:inline-flex")}>
+              Book Online
             </Link>
             <Link
               href="/sprinkler-installation"

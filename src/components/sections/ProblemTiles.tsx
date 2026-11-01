@@ -48,7 +48,7 @@ const TILES = [
     price: "Nozzle upgrade $400, drip quoted",
     body: "Rotator nozzles cut water use by about 30 percent, drip lines feed your beds and garden, and local rebates pay for part of it.",
     href: "/water-efficiency",
-    image: { src: "/images/garden-drip-rows.jpg", alt: "Vegetable garden rows with irrigation risers between the beds" },
+    image: { src: "/images/garden-lettuce-bed.jpg", alt: "Lettuce growing in a raised garden bed with log edging" },
   },
 ]
 
