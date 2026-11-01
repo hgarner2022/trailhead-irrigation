@@ -1,67 +1,71 @@
 import { FaqList, type FaqItem } from "@/components/sections/FaqList"
+import { SectionHeader } from "@/components/sections/SectionHeader"
+import { SEASON_PASS_FROM } from "@/lib/season-pass"
 
-// Homepage FAQ — high-intent questions a homeowner in Erie/Longmont/Weld
-// County would type into Google or ask an AI. Answers are kept to 40–80 words
-// each to maximize the chance of being extracted by AI Overviews + ChatGPT
-// Search. Pairs with FAQPage JSON-LD emitted from src/app/page.tsx.
+// Homepage FAQ. The first three are worded the way Google's "People also ask"
+// box words them under our own result, because that is what AI answers lift.
+// Each answer gives the fact in the first sentence, detail second, and stays
+// in the 40 to 80 word range. Pairs with FAQPage JSON-LD in src/app/page.tsx.
 
 export const HOME_FAQS: FaqItem[] = [
   {
-    question: "How much does sprinkler repair cost in Erie, CO?",
+    question: "What is the hourly rate for sprinkler repair in Erie, CO?",
     answer:
-      "Most residential sprinkler repairs in Erie and Northern Colorado fall between $90 and $350 depending on the issue — replacing a head is on the lower end, while valve work, leak repair, or controller troubleshooting trends higher. See our pricing page for seasonal services.",
+      "A sprinkler repair visit in Erie is $145, which covers the diagnosis and small fixes on the spot. Larger repairs are quoted before any work starts, with labor at $130 per hour plus parts. Most repairs finish in one visit.",
   },
   {
-    question: "When should I winterize my sprinklers in Northern Colorado?",
+    question: "Who do I call to fix sprinklers in Erie?",
     answer:
-      "Schedule your sprinkler blowout between late September and October, before the first hard freeze. Colorado's freeze-thaw cycle can crack pipes, fittings, and valves in any system that still has water in it. A professional compressed-air blowout clears every zone and protects your backflow assembly through winter.",
+      "Trailhead Lawn & Irrigation at (970) 692-7270, a licensed and insured, owner-operated sprinkler company based in Erie, CO. Repairs, spring turn-ons and fall blowouts can be booked online; new system installs start with a quick yard visit.",
+  },
+  {
+    question: "When should sprinklers be turned off in Colorado?",
+    answer:
+      "Before the first hard freeze, which on the Front Range is usually mid-October. Shut the water off at the backflow and have every zone blown out with compressed air so no water is left in the lines. A blowout is $95 for up to 6 zones.",
     relatedLink: {
       href: "/blog/when-to-winterize-sprinklers-colorado",
       label: "Read the full winterization timing guide",
     },
   },
   {
-    question: "What does spring sprinkler turn-on include?",
+    question: "How much does a sprinkler system cost in Colorado?",
     answer:
-      "Spring turn-on is $145 for up to 8 zones and includes activating the system, full system check, head adjustments, leak check, controller programming, and a water-efficiency check. Materials are not included if a repair is needed during the visit. We schedule turn-ons late April through May across Erie, Longmont, Louisville, and Lafayette.",
+      "A new residential sprinkler system in the Erie area typically costs $3,000 to $6,000 installed, depending on lot size, number of zones and water source, and most installs take about two days. The installation page lists what is included and what is not.",
+    relatedLink: { href: "/sprinkler-installation", label: "See the installation cost breakdown" },
   },
   {
-    question: "Do you serve cities outside of Erie?",
+    question: "What does the Season Pass include?",
+    answer: `The Season Pass is three visits a year, spring turn-on, mid-summer inspection and fall blowout, at the published per-zone price of each visit, from $${SEASON_PASS_FROM} for up to 6 zones. The blowout date is reserved in July and one card on file is charged after each visit.`,
+    relatedLink: { href: "/season-pass", label: "Season Pass prices by zone count" },
+  },
+  {
+    question: "Do you serve Longmont, Lafayette, Louisville, Broomfield and Firestone?",
     answer:
-      "Yes. Trailhead is based in Erie and regularly serves Longmont, Louisville, Lafayette, Firestone, and the rest of Weld County and the Northern Colorado Front Range. Each city has its own watering rules and water provider — see our city service pages for local restrictions, backflow rules, and FAQs.",
+      "Yes. Trailhead is based in Erie and serves Longmont, Louisville, Lafayette, Firestone, Broomfield and the rest of Weld County at the same prices. Each city has its own watering rules and water provider, so each has its own service page with local restrictions and rebates.",
   },
   {
     question: "Is Trailhead a licensed and insured sprinkler contractor?",
     answer:
-      "Yes. Ryan Garner, the founder, is a licensed and insured sprinkler contractor in Colorado with over a decade of Front Range irrigation experience. Trailhead is owner-led, so the same person who installs or repairs your system is the one who knows it the next time you call. No rotating technicians, no re-explaining your system on every visit.",
+      "Yes. Trailhead Lawn & Irrigation is a licensed and insured Colorado sprinkler contractor, owned and run by Ryan Garner with over a decade of Front Range irrigation experience. Every job is done or checked by the owner.",
   },
   {
     question: "Are there rebates available for smart irrigation upgrades?",
     answer:
-      "Yes. Many Northern Colorado water utilities offer rebates for WaterSense-certified smart controllers (Rachio, Hunter Hydrawise, Rain Bird ESP-Me3) and high-efficiency rotary nozzles. Trailhead's Water Rebates page lists current programs in Erie, Longmont, Louisville, and Lafayette so you can stack manufacturer + utility savings.",
+      "Yes. Erie, Longmont, Louisville and Lafayette offer rebates for WaterSense-certified smart controllers such as the Rachio 3 and for high-efficiency rotary nozzles. The Water Rebates page lists each program, and a Rachio install is $350 before rebates.",
+    relatedLink: { href: "/water-rebates", label: "Rebates by city" },
   },
 ]
 
 export function HomeFAQ() {
   return (
-    <section
-      className="bg-cream section-padding-y"
-      aria-labelledby="home-faq-heading"
-    >
-      <div className="container-padding-x mx-auto max-w-3xl">
-        <div className="text-center mb-10">
-          <h2
-            id="home-faq-heading"
-            className="text-3xl md:text-4xl font-bold text-foreground"
-          >
-            Sprinkler &amp; Irrigation Questions, Answered
-          </h2>
-          <p className="mt-3 text-muted-foreground">
-            Quick answers from a local Erie sprinkler contractor.
-          </p>
-        </div>
-
-        <FaqList faqs={HOME_FAQS} itemBg="background" />
+    <section className="bg-background section-padding-y" aria-labelledby="home-faq-heading">
+      <div className="container-padding-x mx-auto max-w-3xl flex flex-col gap-10">
+        <SectionHeader
+          title="Sprinkler questions, answered"
+          titleId="home-faq-heading"
+          description="Short answers from a local Erie sprinkler contractor."
+        />
+        <FaqList faqs={HOME_FAQS} itemBg="cream" />
       </div>
     </section>
   )

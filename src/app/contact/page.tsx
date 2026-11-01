@@ -140,6 +140,7 @@ export default function ContactPage() {
                       <option value="Full Irrigation Installs">
                         Full Irrigation Installs
                       </option>
+                      <option value="Season Pass (3 visits)">Season Pass (3 visits)</option>
                       <option value="Repair">Repair</option>
                       <option value="Winterization">Winterization</option>
                       <option value="Spring Activation and System Check">Spring Activation and System Check</option>

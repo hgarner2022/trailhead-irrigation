@@ -1,8 +1,13 @@
 import { Hero } from "@/components/sections/Hero"
-import { StatsStrip } from "@/components/sections/StatsStrip"
-import { ServicesOverview } from "@/components/sections/ServicesOverview"
-import { MeetRyan } from "@/components/sections/MeetRyan"
+import { TrustStrip } from "@/components/sections/TrustStrip"
+import { ProblemTiles } from "@/components/sections/ProblemTiles"
+import { InstallationBand } from "@/components/sections/InstallationBand"
+import { SeasonPassSection } from "@/components/sections/SeasonPassSection"
+import { HomeHowItWorks } from "@/components/sections/HomeHowItWorks"
+import { OwnerSection } from "@/components/sections/OwnerSection"
 import { Testimonials } from "@/components/sections/Testimonials"
+import { ServiceAreaSection } from "@/components/sections/ServiceAreaSection"
+import { WateringExplained } from "@/components/sections/WateringExplained"
 import { HomeFAQ, HOME_FAQS } from "@/components/sections/HomeFAQ"
 import { CTAStrip } from "@/components/sections/CTAStrip"
 import {
@@ -13,22 +18,13 @@ import {
 } from "@/lib/seo"
 import { pickReviews } from "@/lib/reviews"
 
-// Chosen by hand, not by date. Sorting by recency put three one-line
-// reviews on the homepage next to detailed ones, which read badly and
-// left the cards uneven. These nine all say something specific, cover
-// different services, and sit in a similar length range so the row is
-// even. Schema is emitted for exactly these nine, because Google expects
-// review markup to match what a visitor can actually see.
+// Three reviews, one per core service, similar length. Schema is emitted for
+// exactly these three because Google expects review markup to match what a
+// visitor can actually see.
 const HOME_REVIEWS = pickReviews(
   "Daniel Cooperider", // blowout, names the first freeze
-  "Kirby Moughon", // booked online, new homeowner
-  "Aaron Connors", // detailed repair + coverage + efficiency advice
-  "Lori Ginn", // repairs, new trees, and the price
+  "Reesa Rennecker", // repair: responsive, on time, explained every step
   "Joanna Toy", // new system installed, fairly priced
-  "Brian Taylor", // Rachio handoff
-  "Josh Drake", // efficiency and coverage
-  "Reesa Rennecker", // responsive, on time, thorough
-  "Nangchen", // took the time to teach them the system
 )
 
 export default function HomePage() {
@@ -47,6 +43,9 @@ export default function HomePage() {
     ],
   }
 
+  // Page order follows how a buyer thinks: the problem, the price, the
+  // biggest-ticket decision, the plan, how it works, who we are, proof,
+  // where we work, why it works here, questions, book.
   return (
     <main>
       <script
@@ -54,13 +53,20 @@ export default function HomePage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(graph) }}
       />
       <Hero />
-      <StatsStrip />
-      <ServicesOverview />
-      <MeetRyan />
+      <TrustStrip />
+      <ProblemTiles />
+      <InstallationBand />
+      <SeasonPassSection />
+      <HomeHowItWorks />
+      <OwnerSection />
       <Testimonials
         reviews={HOME_REVIEWS}
-        heading="What Erie Homeowners Say"
+        heading="What Erie homeowners say"
+        description="5.0 on Google. Every review is public on our Google Business Profile."
+        bg="background"
       />
+      <WateringExplained />
+      <ServiceAreaSection />
       <HomeFAQ />
       <CTAStrip />
     </main>

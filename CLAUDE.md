@@ -28,6 +28,8 @@ src/
     blog/                       # 15 blog posts
     about/, contact/, book/     # Standard
     api/contact/                # Contact form POST handler
+  lib/nav.ts                    # ONE source of truth for navigation: SERVICE_GROUPS, CITY_LINKS, PRIMARY_LINKS, getSeasonalPromo()
+  lib/season-pass.ts            # Season Pass per-zone pricing (must match /pricing + public/pricing.md)
   components/
     ui/                         # Small primitives — usually re-exported from /ui library
     sections/                   # Page sections (Hero, ServicesOverview, StatsStrip, …)
@@ -309,12 +311,13 @@ Provides 14 composable skills for structured software development:
 
 | Route | Purpose |
 |---|---|
-| `/` | Homepage — Hero → StatsStrip → ServicesOverview → MeetRyan → Testimonials → HomeFAQ → CTAStrip |
+| `/` | Homepage (Nov 2026 redesign) — Hero (tagline + keyword H1, two doors) → TrustStrip → ProblemTiles (6 priced tiles) → InstallationBand (navy) → SeasonPassSection → HomeHowItWorks → OwnerSection → Testimonials (3) → WateringExplained → ServiceAreaSection → HomeFAQ → CTAStrip |
 | `/services` | Service overview + HowItWorks process + service detail blocks + city links + FAQ |
 | `/services/[city]` | 6 city pages (erie, longmont, louisville, lafayette, firestone, broomfield) — local water info + restrictions + per-city blowout block (`winterNote`) + FAQ |
 | `/sprinkler-installation` | Installation landing page — cost/timeline answer-first, 6-step process, included vs not-included, clay-soil + restriction design notes, glossary, FAQ. Built to fill the gaps local competitors leave (no pricing, timeline, or permit detail published anywhere) |
 | `/sprinkler-blowout` | Winterization landing page — $95/8 zones, freeze-damage cost, 5-step process, city links, FAQ. Primary CTA books online since Jobber accepts winterization |
-| `/pricing` | Service pricing cards + comparison table + FAQ (à-la-carte only — maintenance plans were removed in `f9823c1`) |
+| `/pricing` | Service pricing cards + comparison table + FAQ (à-la-carte; the Season Pass bundle lives at `/season-pass`) |
+| `/season-pass` | Season Pass — three seasonal visits (turn-on, mid-season, blowout) at the published per-zone price added up, NO discount. Zone selector (`SeasonPassCalculator`), static price table, Service+Offer schema, FAQ. Prices come from `src/lib/season-pass.ts`; CTA goes to `/contact` until Jobber has a bookable Season Pass service |
 | `/smart-controllers` | Rachio sales funnel hub — value prop → comparison vs Hunter/Rain Bird → per-city rebate snapshot → CompatibleBrands → definitions → FAQ |
 | `/smart-controllers/[city]` | 5 Rachio city pages with city-specific rebate context + price card variants (none / cash / unknown / free-install) |
 | `/smart-controllers/water-savings-calculator` | Interactive lawn-size → gallons-saved + dollars-saved calculator (EPA WaterSense averages) |
@@ -348,6 +351,17 @@ Provides 14 composable skills for structured software development:
 - Google Search Console verified via `verification.google` in `src/app/layout.tsx`
 - GA4 measurement ID `G-QZJP9M6LNQ` loaded via `next/script` afterInteractive
 - Vercel handles www → apex redirect at the edge — DO NOT add a `next.config.ts` redirect (caused a loop on first try)
+
+
+## Navigation, type and the sticky bar (Nov 2026 redesign)
+
+- **Nav data lives in `src/lib/nav.ts`.** The header renders it as two dropdowns (Services: Repair & maintain / Install & upgrade / Save water; Service Areas: six cities) plus Pricing · Season Pass · About · Blog, one rotating seasonal pill (`getSeasonalPromo`, resolved on the client), the phone number as an outline button and ONE filled button: Book Online. The footer renders every one of those links flat, which is the crawlable copy — never trim the footer to "clean it up".
+- **Dropdowns are hand-rolled** (hover + click open, Escape / focus-out / mouse-leave close) so the panel markup is always in the server HTML. Don't swap in Radix NavigationMenu without keeping the footer links.
+- **Mobile:** logo + hamburger only; a full-screen sheet with the same groups; `StickyBar` carries Call + Book Online and is hidden on `/book`, `/contact`, `/aeration`.
+- **Type:** Barlow Condensed (headings, via `font-display` / global `h1,h2,h3` rule) + Source Sans 3 (body), both self-hosted through `next/font` in `layout.tsx`. Opt a heading out with `font-sans` (the hero's keyword H1 does).
+- **Hero rule:** "Go find your trail." is display text (a `<p>`), the H1 stays the keyword sentence. Nobody searches the tagline.
+- **Review count:** never hard-code it in copy (it changes weekly). "5.0 on Google" only. The `aggregateRating.reviewCount` in `seo.ts` is the one place it lives, and must be re-verified against GBP when touched.
+- **Photos:** `boulder-foothills-fence.jpg` (hero), `welcome-to-colorado-sign.jpg` (service area), `sprinkler-spray-head-lawn.jpg`, `sprinkler-golden-hour.jpg`, `micro-spray-garden-bed.jpg`, `new-lawn-home.jpg`, `rachio-app-usage.png` (Rachio press kit; confirm dealer usage rights), `mp-rotator-nozzle.jpg`. Still wanted: a real blowout photo, the dusk-rotors shot (WateringExplained), and Ryan with the boys on the park lawn (OwnerSection / hero candidate).
 
 ## Adding a new section — checklist
 
@@ -403,7 +417,9 @@ Always use these instead of building from scratch:
 | `<CompatibleBrands />` | "Compatible with: brand · brand · brand" strip |
 | `<PageBanner title description backgroundImage />` | Top banner on every interior page |
 | `<CTAStrip />` | Bottom CTA on every page |
-| `<MeetRyan />` · `<Testimonials />` · `<HomeFAQ />` · `<Hero />` · `<ServicesOverview />` | Homepage-specific sections |
+| `<Hero />` · `<TrustStrip />` · `<ProblemTiles />` · `<InstallationBand />` · `<SeasonPassSection />` · `<HomeHowItWorks />` · `<OwnerSection />` · `<WateringExplained />` · `<ServiceAreaSection />` · `<HomeFAQ />` · `<Testimonials />` | Homepage-specific sections (Nov 2026 redesign) |
+| `<SeasonPassCalculator />` | Client card with the zone-count selector; used on `/` and `/season-pass` |
+| `<StickyBar />` | Phone-only fixed Call + Book Online bar, rendered in the root layout; hidden on `/book`, `/contact`, `/aeration` so it never covers a form |
 
 ## Known cleanup opportunities (audit findings)
 

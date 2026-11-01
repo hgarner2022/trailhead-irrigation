@@ -18,6 +18,11 @@
   --color-muted-foreground: #78716C;
   --color-card: #FFFFFF;
   --color-card-foreground: #1E293B;
+
+  /* Type: condensed display face for headings, humanist sans for body.
+     The *-src variables are set by next/font in src/app/layout.tsx. */
+  --font-sans: var(--font-body-src), "Segoe UI", Helvetica, Arial, sans-serif;
+  --font-display: var(--font-display-src), "Arial Narrow", Impact, sans-serif;
 }
 
 /* Section spacing utilities matching pro-blocks patterns */
@@ -55,4 +60,14 @@
 body {
   background: var(--color-background);
   color: var(--color-foreground);
+  font-family: var(--font-sans);
+}
+
+/* Headings site-wide take the display face. Individual components can opt
+   out with `font-sans` (the hero's keyword H1 does). */
+h1, h2, h3 {
+  font-family: var(--font-display);
+  letter-spacing: 0.01em;
+  line-height: 1.05;
+  text-wrap: balance;
 }

@@ -2,7 +2,7 @@
 
 > Transparent, upfront pricing for sprinkler services in Erie, Longmont, Louisville, Lafayette, Firestone, Broomfield, and Weld County, Colorado. No hidden fees and no surprise charges.
 
-**Last updated:** 2026
+**Last updated:** November 2026
 **Provider:** Trailhead Lawn & Irrigation LLC
 **Service area:** Erie, CO and the Northern Colorado Front Range
 **Contact:** (970) 692-7270 · ryan@trailheadirrigation.com
@@ -20,6 +20,20 @@
 | Winterization (Sprinkler Blowout) | **$95** (up to 6 zones) | +$10 per additional zone | Compressed-air blowout of all zones, backflow protection, winter-ready verification |
 
 Materials are not included if repairs are needed during a seasonal service.
+
+## Season Pass (three seasonal visits, one schedule)
+
+| Zones | Spring Turn-On | Mid-Season Inspection | Fall Blowout | Season Pass total |
+|---|---|---|---|---|
+| Up to 6 | $145 | $145 | $95 | **$385** |
+| 8 | $145 | $145 | $115 | **$405** |
+| 10 | $165 | $165 | $135 | **$465** |
+| 12 | $185 | $185 | $155 | **$525** |
+| Each additional zone | +$10 | +$10 | +$10 | **+$30** |
+
+The Season Pass is the published price of the three visits added together. There is no discount and no markup. What it adds: the fall blowout date is reserved in July (before the freeze rush), Trailhead keeps the schedule and texts before each visit, and one card on file is charged after each visit, nothing up front. Repairs found on a visit are quoted before any work starts. Reserve at https://www.trailheadirrigation.com/season-pass or by phone.
+
+
 
 ---
 

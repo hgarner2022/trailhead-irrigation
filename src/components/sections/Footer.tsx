@@ -2,86 +2,55 @@ import { Separator } from "@/components/ui/separator"
 import Image from "next/image"
 import Link from "next/link"
 import { Phone, Mail, MapPin } from "lucide-react"
-import { CITY_DATA } from "@/lib/city-data"
+import { CITY_LINKS, PRIMARY_LINKS, SERVICE_GROUPS, PHONE_DISPLAY, PHONE_TEL } from "@/lib/nav"
 
-const NAV_LINKS = [
-  { label: "Home", href: "/" },
-  { label: "Services", href: "/services" },
-  { label: "Sprinkler Blowout", href: "/sprinkler-blowout" },
-  { label: "Sprinkler Installation", href: "/sprinkler-installation" },
-  { label: "Christmas Lights", href: "/christmas-lights" },
-  { label: "Pricing", href: "/pricing" },
-  { label: "Water Rebates", href: "/water-rebates" },
-  { label: "Water Efficiency", href: "/water-efficiency" },
-  { label: "Smart Controllers", href: "/smart-controllers" },
-  { label: "Blog", href: "/blog" },
+// Every link the header keeps inside a dropdown is rendered here as plain
+// HTML. This is the crawlable copy of the navigation; see src/lib/nav.ts.
+
+const COMPANY_LINKS = [
+  ...PRIMARY_LINKS,
   { label: "Book Online", href: "/book" },
   { label: "Contact", href: "/contact" },
 ]
 
-// Derived from CITY_DATA so adding a city registers here automatically
-// instead of needing a second hardcoded list kept in sync by hand.
-const CITY_LINKS = CITY_DATA.map((city) => ({
-  label: city.name,
-  href: `/services/${city.slug}`,
-}))
+function FooterLinks({ heading, links }: { heading: string; links: { label: string; href: string }[] }) {
+  return (
+    <div className="flex flex-col gap-3">
+      <h3 className="font-semibold text-sm uppercase tracking-wider text-white/50">{heading}</h3>
+      <nav className="flex flex-col gap-2" aria-label={heading}>
+        {links.map((link) => (
+          <Link
+            key={`${heading}-${link.label}`}
+            href={link.href}
+            className="text-sm text-white/70 hover:text-primary-light transition-colors w-fit"
+          >
+            {link.label}
+          </Link>
+        ))}
+      </nav>
+    </div>
+  )
+}
 
 export function Footer() {
   return (
     <footer className="bg-charcoal text-white" role="contentinfo" aria-label="Site footer">
       <div className="container-padding-x mx-auto max-w-7xl section-padding-y">
         <div className="flex flex-col gap-12">
-          {/* Top: Logo + Nav + Contact */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-10">
+          <div className="grid grid-cols-2 gap-10 md:grid-cols-3 lg:grid-cols-7">
             {/* Brand */}
-            <div className="flex flex-col gap-4">
-              <Link href="/">
+            <div className="col-span-2 md:col-span-3 lg:col-span-2 flex flex-col gap-4">
+              <Link href="/" aria-label="Trailhead Lawn & Irrigation, home">
                 <Image src="/images/logo-badge.png" alt="Trailhead Lawn & Irrigation" width={200} height={150} className="h-24 w-auto" />
               </Link>
-              <p className="text-sm text-white/70">
-                Northern Colorado&apos;s trusted sprinkler company. Locally owned &amp; operated in Erie, CO.
+              <p className="font-display text-2xl text-white">Go find your trail.</p>
+              <p className="text-sm text-white/70 max-w-xs">
+                Sprinkler installation, repair and winterization. Locally owned and owner-operated in Erie, CO.
               </p>
-            </div>
-
-            {/* Quick Links */}
-            <div className="flex flex-col gap-3">
-              <h3 className="font-semibold text-sm uppercase tracking-wider text-white/50">Quick Links</h3>
-              <nav className="flex flex-col gap-2" aria-label="Footer navigation">
-                {NAV_LINKS.map((link) => (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    className="text-sm text-white/70 hover:text-primary-light transition-colors w-fit"
-                  >
-                    {link.label}
-                  </Link>
-                ))}
-              </nav>
-            </div>
-
-            {/* Service Areas */}
-            <div className="flex flex-col gap-3">
-              <h3 className="font-semibold text-sm uppercase tracking-wider text-white/50">Service Areas</h3>
-              <nav className="flex flex-col gap-2" aria-label="Service areas">
-                {CITY_LINKS.map((link) => (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    className="text-sm text-white/70 hover:text-primary-light transition-colors w-fit"
-                  >
-                    {link.label}, CO
-                  </Link>
-                ))}
-              </nav>
-            </div>
-
-            {/* Contact Info */}
-            <div className="flex flex-col gap-3">
-              <h3 className="font-semibold text-sm uppercase tracking-wider text-white/50">Contact</h3>
-              <div className="flex flex-col gap-2.5">
-                <a href="tel:9706927270" className="flex items-center gap-2 text-sm text-white/70 hover:text-primary-light transition-colors">
+              <div className="flex flex-col gap-2.5 mt-2">
+                <a href={PHONE_TEL} className="flex items-center gap-2 text-sm text-white/70 hover:text-primary-light transition-colors">
                   <Phone className="h-4 w-4 shrink-0" />
-                  (970) 692-7270
+                  {PHONE_DISPLAY}
                 </a>
                 <a href="mailto:ryan@trailheadirrigation.com" className="flex items-center gap-2 text-sm text-white/70 hover:text-primary-light transition-colors">
                   <Mail className="h-4 w-4 shrink-0" />
@@ -91,16 +60,18 @@ export function Footer() {
                   <MapPin className="h-4 w-4 shrink-0 mt-0.5" />
                   137 Morgan Circle North, Erie, CO 80516
                 </div>
-                <p className="text-sm text-white/50 mt-1 pl-6">
-                  Serving Erie, Longmont, Louisville, Lafayette, Firestone &amp; Weld County
-                </p>
               </div>
             </div>
+
+            {SERVICE_GROUPS.map((group) => (
+              <FooterLinks key={group.heading} heading={group.heading} links={group.links} />
+            ))}
+            <FooterLinks heading="Service areas" links={CITY_LINKS} />
+            <FooterLinks heading="Company" links={COMPANY_LINKS} />
           </div>
 
           <Separator className="bg-white/10" />
 
-          {/* Copyright + Legal */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-white/50">
             <p>
               &copy; {new Date().getFullYear()} Trailhead Lawn & Irrigation LLC. All rights reserved.
@@ -109,7 +80,7 @@ export function Footer() {
               <Link href="/privacy" className="hover:text-primary-light transition-colors">
                 Privacy Policy
               </Link>
-              <span aria-hidden="true">·</span>
+              <span aria-hidden="true">&middot;</span>
               <Link href="/terms" className="hover:text-primary-light transition-colors">
                 Terms & Conditions
               </Link>

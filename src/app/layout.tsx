@@ -1,16 +1,30 @@
 import type { Metadata } from "next"
-import { Inter } from "next/font/google"
+import { Barlow_Condensed, Source_Sans_3 } from "next/font/google"
 import Script from "next/script"
 import "./globals.css"
 import { Header } from "@/components/sections/Header"
 import { Footer } from "@/components/sections/Footer"
+import { StickyBar } from "@/components/sections/StickyBar"
 import { ConversionTracking } from "@/components/ConversionTracking"
 import { localBusinessJsonLd, organizationJsonLd, siteConfig } from "@/lib/seo"
 import { Analytics } from "@vercel/analytics/react"
 
 const GA_MEASUREMENT_ID = "G-QZJP9M6LNQ"
 
-const inter = Inter({ subsets: ["latin"] })
+// Type pairing: a condensed display face for headings (trail-signage feel)
+// over a plain humanist sans for everything else. Both self-hosted by
+// next/font, so no third-party request and no layout shift.
+const display = Barlow_Condensed({
+  subsets: ["latin"],
+  weight: ["600", "700"],
+  variable: "--font-display-src",
+  display: "swap",
+})
+const body = Source_Sans_3({
+  subsets: ["latin"],
+  variable: "--font-body-src",
+  display: "swap",
+})
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),
@@ -70,7 +84,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className={`${display.variable} ${body.variable}`}>
       <head>
         <script
           type="application/ld+json"
@@ -81,9 +95,10 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd()) }}
         />
       </head>
-      <body className={`${inter.className} antialiased bg-background text-foreground`}>
+      <body className="font-sans antialiased bg-background text-foreground">
         <Header />
         {children}
+        <StickyBar />
         <Footer />
         <Analytics />
         <ConversionTracking />

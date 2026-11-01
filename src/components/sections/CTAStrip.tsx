@@ -1,33 +1,30 @@
 import { buttonVariants } from "@/components/ui/button"
 import Link from "next/link"
-import { cn } from "@/lib/utils"
+import { PHONE_DISPLAY, PHONE_TEL } from "@/lib/nav"
+
+// One primary action, one quiet secondary. The phone number is a text link
+// rather than a second button so the block never reads as a choice.
 
 export function CTAStrip() {
   return (
-    <section className="bg-navy section-padding-y">
+    <section className="bg-navy section-padding-y" aria-labelledby="cta-heading">
       <div className="container-padding-x mx-auto max-w-7xl text-center">
         <div className="flex flex-col items-center gap-6">
-          <h2 className="text-3xl md:text-4xl font-bold text-white">
-            Ready to Get Started?
+          <h2 id="cta-heading" className="font-display text-5xl md:text-6xl font-bold text-white">
+            Go find your trail.
           </h2>
           <p className="text-white/80 text-lg max-w-xl">
-            Get a quote on irrigation installation, repair, or seasonal service. Call today or send us a message.
+            Repairs, turn-ons and blowouts book online in two minutes. New systems start with a quick yard visit.
           </p>
-          <div className="flex flex-col sm:flex-row items-center gap-3">
-            <Link
-              href="/book"
-              className={buttonVariants({ size: "lg" })}
-            >
-              Book a Service
+          <div className="flex flex-col items-center gap-4">
+            <Link href="/book" className={buttonVariants({ size: "lg" })}>
+              Book Online
             </Link>
             <a
-              href="tel:9706927270"
-              className={cn(
-                buttonVariants({ variant: "outline", size: "lg" }),
-                "border-white bg-transparent text-white hover:bg-white/10 hover:text-white"
-              )}
+              href={PHONE_TEL}
+              className="text-sm font-semibold text-white underline underline-offset-4 decoration-white/50 hover:decoration-white"
             >
-              Call (970) 692-7270
+              or call {PHONE_DISPLAY}
             </a>
           </div>
         </div>
