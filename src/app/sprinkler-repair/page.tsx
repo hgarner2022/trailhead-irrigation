@@ -36,34 +36,34 @@ export const metadata: Metadata = {
 
 const PROBLEMS = [
   {
-    title: "Brown patches in a green lawn",
-    body: "Usually a clogged nozzle, a head that sank below grade, or a head knocked off aim. Sometimes a cracked lateral losing pressure before the last heads on the zone.",
-    cost: "$50 to $150 for a head or nozzle, $200 to $400 if a line is cracked underground",
+    title: "A leak at the backflow, manifold or a valve",
+    body: "The most common call we get. The backflow sits above ground and takes the worst of winter, and the valves and manifold below it are next in line.",
+    cost: "Backflow poppet and bonnet $60, bleeder valve $45, shutoff valve $170, full backflow replacement about $500, manifold rebuild from $500",
   },
   {
-    title: "A head that won't pop up",
-    body: "Dirt in the riser or a worn spring. On older systems, a failing valve diaphragm that kills pressure to the whole zone.",
-    cost: "$15 to $30 per head, $100 to $200 if the valve needs rebuilding",
+    title: "A zone with no pressure, or one that won't come on",
+    body: "A valve stuck open or shut, low voltage at the solenoid, or a broken line somewhere on that zone. We run it, trace it and fix it.",
+    cost: "Valve work $100 to $200, a broken line $200 to $400",
   },
   {
-    title: "A water bill that jumped",
-    body: "The one people ignore longest. An underground leak or a stuck valve running a zone all night wastes thousands of gallons before anyone notices.",
-    cost: "$100 to $200 for a stuck valve, $200 to $500 to find and fix an underground leak",
+    title: "Heads that are broken, buried or in the wrong place",
+    body: "Mower and plow damage, heads sunk below grade, heads a tree root has pushed, heads where the trampoline or the new garden bed needs to go. We replace, cap or relocate them.",
+    cost: "$50 to $150 per head replaced, more to relocate",
   },
   {
-    title: "Puddles that never dry out",
-    body: "A cracked pipe, a leaking valve, or a head that doesn't seal when the zone shuts off.",
-    cost: "$100 to $300 depending on what's leaking",
+    title: "Drip line repairs and garden zones",
+    body: "Chewed or split drip line, emitters that stopped, a garden running at too much pressure. We repair the line, add a pressure reducer where it needs one, or convert a spray zone to drip.",
+    cost: "Most drip repairs finish inside the $145 visit, a pressure reducer adds about $40",
   },
   {
-    title: "Sputtering or uneven spray",
-    body: "Debris in the nozzle or filter screen. Sometimes a partly closed valve, or rotors and sprays mixed on one zone.",
-    cost: "Often under $50, $75 to $150 if a pressure regulator is needed",
+    title: "Dry spots and spray on the sidewalk",
+    body: "Coverage problems. Heads aimed wrong, the wrong nozzles for the space, or rotors and sprays mixed on one zone. We adjust every zone, not just the one you noticed.",
+    cost: "$50 to $100 to dial in the whole yard, a few dollars a head for the right nozzles",
   },
   {
-    title: "Heads spraying the sidewalk",
-    body: "Bumped by the mower, the plow, or foot traffic. Or the original install used heads that throw too far for the space.",
-    cost: "$50 to $100 to dial everything in, a few dollars a head for the right nozzles",
+    title: "A water bill that jumped, or a spot that never dries",
+    body: "Usually an underground leak or a valve running a zone all night. We have had these flood a basement. The sooner it is found, the less it costs in water.",
+    cost: "$200 to $500 to find and repair an underground leak",
   },
 ]
 
@@ -82,6 +82,11 @@ const REPAIR_FAQS = [
     question: "Can you find an underground leak?",
     answer:
       "Yes. A soggy spot that never dries, a zone with weak pressure at the far end, or a water bill that jumped are the usual signs. Finding and repairing an underground leak typically runs $200 to $500.",
+  },
+  {
+    question: "We just moved in and don't know the system. Where do we start?",
+    answer:
+      "Book a repair visit. We run every zone, find the shut-off and the backflow, check the controller, and give you a list of anything that needs fixing with a price on each item. Most of the small things get fixed during the visit.",
   },
   {
     question: "Do you work on all sprinkler brands?",
@@ -182,9 +187,9 @@ export default function SprinklerRepairPage() {
       <section aria-labelledby="repair-problems" className="bg-cream section-padding-y">
         <div className="container-padding-x mx-auto max-w-7xl flex flex-col gap-10">
           <SectionHeader
-            tagline="What we see most"
+            tagline="Common repairs"
             taglineAsEyebrow
-            title="The six problems we see most"
+            title="What we get called out for most"
             titleId="repair-problems"
             description="If one of these sounds like your yard, book a visit. We find it on the first trip."
             align="left"
