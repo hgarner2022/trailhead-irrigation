@@ -47,10 +47,6 @@ export function Hero() {
           >
             Sprinkler repair, installation and fall blowouts in Erie, CO, serving the Northern Colorado Front Range.
           </h1>
-          <p className="text-base text-white/85 max-w-xl">
-            Owner-run, licensed and insured.
-            <span className="hidden md:inline"> Book online in two minutes.</span>
-          </p>
           {/* On a phone the hero shows one button, and it is the one most
               visitors came for: repair and blowout traffic outnumbers install
               traffic about 20 to 1 in Search Console. Desktop shows both. */}
