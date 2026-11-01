@@ -31,7 +31,7 @@ Materials are not included if repairs are needed during a seasonal service.
 | 12 | $185 | $185 | $155 | **$525** |
 | Each additional zone | +$10 | +$10 | +$10 | **+$30** |
 
-Three visits on one schedule Trailhead keeps for the customer. The fall blowout date is reserved in July, before the freeze rush; Trailhead texts before each visit; pass customers go to the front of the repair line during the season; and one card on file is charged after each visit, nothing up front. Visits are billed at the standard per-zone rates in the table. Reserve at https://www.trailheadirrigation.com/season-pass or by phone.
+Three visits on one schedule Trailhead keeps for the customer. The fall blowout date is reserved in July, before the freeze rush; one card on file is charged after each visit, nothing up front. Visits are billed at the standard per-zone rates in the table. Reserve at https://www.trailheadirrigation.com/season-pass or by phone.
 
 
 

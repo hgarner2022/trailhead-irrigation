@@ -62,7 +62,7 @@ export default function HomePage() {
       <OwnerSection />
       <Testimonials
         reviews={HOME_REVIEWS}
-        heading="What Northern Colorado homeowners say"
+        heading="What homeowners say"
         description="5.0 on Google. Every review is public on our Google Business Profile."
         bg="cream"
       />

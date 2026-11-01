@@ -10,7 +10,7 @@ const FACTS = [
   { value: "$3k to $6k", label: "typical residential yard" },
   { value: "Price first", label: "layout and number before anyone digs" },
   { value: "Clay-soil design", label: "built for Front Range yards" },
-  { value: "Owner-installed", label: "Ryan designs and installs it himself" },
+  { value: "Licensed & insured", label: "Colorado sprinkler contractor" },
 ]
 
 export function InstallationBand() {

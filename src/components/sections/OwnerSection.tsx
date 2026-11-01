@@ -25,14 +25,14 @@ export function OwnerSection() {
           <div className="flex flex-col gap-6">
             <Badge variant="green" className="w-fit">Owner-operated</Badge>
             <h2 id="owner-heading" className="font-display text-4xl md:text-5xl font-bold text-navy">
-              Every job done or checked by the owner
+              Owner-operated, based in Erie
             </h2>
             <div className="flex flex-col gap-4 text-muted-foreground text-lg">
               <p>
                 Trailhead Lawn &amp; Irrigation is owned and run by Ryan Garner, an Erie local with a decade of irrigation work on the Front Range.
               </p>
               <p>
-                Ryan does or checks every job himself, so a $95 blowout gets the same care as a $6,000 install. Licensed and insured. We live here too, and run into our customers at the grocery store.
+                Licensed and insured. We live here too, and run into our customers at the grocery store.
               </p>
             </div>
             <div className="flex flex-col sm:flex-row gap-3">

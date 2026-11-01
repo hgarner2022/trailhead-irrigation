@@ -35,7 +35,7 @@ export const HOME_FAQS: FaqItem[] = [
   },
   {
     question: "What does the Season Pass include?",
-    answer: `Three visits a year on a schedule we keep for you: spring turn-on, mid-summer inspection and fall blowout, from $${SEASON_PASS_FROM} for up to 6 zones. Your October blowout date is reserved in July, you get a text before each visit, and a card on file is charged after each one.`,
+    answer: `Three visits a year on a schedule we keep for you: spring turn-on, mid-summer inspection and fall blowout, from $${SEASON_PASS_FROM} for up to 6 zones. Your October blowout date is reserved in July, and a card on file is charged after each visit.`,
     relatedLink: { href: "/season-pass", label: "Season Pass prices by zone count" },
   },
   {
@@ -46,7 +46,7 @@ export const HOME_FAQS: FaqItem[] = [
   {
     question: "Is Trailhead a licensed and insured sprinkler contractor?",
     answer:
-      "Yes. Trailhead Lawn & Irrigation is a licensed and insured Colorado sprinkler contractor, owned and run by Ryan Garner with over a decade of Front Range irrigation experience. Every job is done or checked by the owner.",
+      "Yes. Trailhead Lawn & Irrigation is a licensed and insured Colorado sprinkler contractor, owned and run by Ryan Garner with over a decade of Front Range irrigation experience.",
   },
   {
     question: "Are there rebates available for smart irrigation upgrades?",

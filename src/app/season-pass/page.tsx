@@ -35,7 +35,7 @@ const FAQS: FaqItem[] = [
   {
     question: "What do I get that I wouldn't get booking each visit on its own?",
     answer:
-      "Your blowout date reserved in July, a spot at the front of the line for repairs during the season, a text before each visit, and one card on file instead of three invoices.",
+      "Your blowout date reserved in July, three visits booked without you having to call, and one card on file instead of three invoices.",
   },
   {
     question: "When do I pay?",
@@ -117,7 +117,7 @@ export default function SeasonPassPage() {
                 Spring sprinkler turn-on, a July check-up and the October blowout for Erie and Front Range homes, on one schedule we keep for you.
               </h1>
               <p className="text-base text-white/80 max-w-xl">
-                Your October blowout date goes on our calendar in July, before the freeze rush. You get a text before every visit and pay after each one.
+                Your October blowout date goes on our calendar in July, before the freeze rush. You pay after each visit, nothing up front.
               </p>
             </div>
             <SeasonPassCalculator ctaHref="/contact" ctaLabel="Reserve my season" />

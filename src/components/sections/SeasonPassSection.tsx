@@ -11,7 +11,7 @@ const POINTS = [
   {
     icon: CalendarCheck,
     title: "We keep the calendar",
-    body: "You get a text the day before each visit. If something breaks between visits, you go to the front of the repair line.",
+    body: "Turn-on in spring, a check in July, a blowout in October. We book the dates, you don't have to remember to call.",
   },
   {
     icon: CreditCard,

@@ -1,6 +1,6 @@
 // Season Pass pricing. Each visit is billed at its standard per-zone rate,
 // after the visit. What the customer buys is the reserved blowout date, the
-// schedule kept for them, priority for repairs, and one card on file.
+// schedule kept for them, and one card on file.
 //
 // Per-visit prices must match /pricing and public/pricing.md. If a price
 // changes there, change it here.
