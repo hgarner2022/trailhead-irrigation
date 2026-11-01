@@ -175,8 +175,8 @@ export default function SprinklerInstallationPage() {
             <div className="flex-1 w-full">
               <div className="relative aspect-[4/3] rounded-xl overflow-hidden">
                 <Image
-                  src="/images/new-system-sprinklers-running.jpg"
-                  alt="New sprinkler system running across a lawn in evening light"
+                  src="/images/new-lawn-home.jpg"
+                  alt="Home with a freshly installed lawn and paver walkway"
                   fill
                   className="object-cover"
                 />
@@ -224,8 +224,8 @@ export default function SprinklerInstallationPage() {
             <div className="flex-1 w-full">
               <div className="relative aspect-[4/3] rounded-xl overflow-hidden">
                 <Image
-                  src="/images/sprinkler-golden-hour.jpg"
-                  alt="Sprinkler head running at sunset beside a walkway"
+                  src="/images/new-system-sprinklers-running.jpg"
+                  alt="New sprinkler system running across a lawn in evening light"
                   fill
                   className="object-cover"
                 />
