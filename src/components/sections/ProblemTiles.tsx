@@ -20,7 +20,8 @@ const TILES = [
     price: "$3,000 to $6,000 typical",
     body: "We design the system for your yard's clay soil and your city's watering rules, and you get the layout and the price before anyone digs.",
     href: "/sprinkler-installation",
-    image: { src: "/images/sprinklers-curved-lawn-edge.jpg", alt: "Spray heads watering a curved lawn edged with river rock" },
+    // Portrait photo in a wide tile: anchor the crop low so the front spray head stays in frame.
+    image: { src: "/images/sprinklers-curved-lawn-edge.jpg", alt: "Spray heads watering a curved lawn edged with river rock", position: "center 78%" },
   },
   {
     title: "Spring turn-on & tune-up",
@@ -78,6 +79,7 @@ export function ProblemTiles() {
                     fill
                     sizes="(min-width: 1024px) 400px, (min-width: 640px) 50vw, 100vw"
                     className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+                    style={{ objectPosition: tile.image.position ?? "center" }}
                   />
                 </div>
                 <div className="flex flex-1 flex-col gap-2 p-5">
