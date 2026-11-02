@@ -31,6 +31,96 @@ export function getReadingTime(content: string): number {
 
 export const BLOG_POSTS: BlogPost[] = [
   {
+    // Written 2026-11-02 after Hannah asked for a how-to for customers whose
+    // blowout is booked but a cold snap lands first. Steps follow the Colorado
+    // Backflow Prevention Association homeowner pamphlet (shut the sprinkler
+    // supply, open the interior drain, open test cocks, ball valves and test
+    // cocks at 45 degrees) and the Salt Lake City utilities guide, which
+    // agree on the 45 degree position. Warm voice, no fear framing; the
+    // responsibility line is plain words, not legalese.
+    slug: "drain-backflow-preventer-before-freeze",
+    title: "Cold Snap Before Your Blowout? How to Drain Your Backflow Preventer in Ten Minutes",
+    metaTitle: "How to Drain a Backflow Preventer Before a Freeze",
+    date: "2026-11-02",
+    category: "Seasonal Maintenance",
+    excerpt:
+      "If cold nights are in the forecast and your blowout is already on the calendar, you can drain the backflow preventer yourself in about ten minutes. Shut the sprinkler supply inside, open the small drain beside it, open the test cocks outside and set the handles to 45 degrees. We handle the rest when we arrive.",
+    metaDescription:
+      "Blowout booked but a freeze is coming first? Drain your backflow preventer in ten minutes: shut the supply, open the drain and test cocks, handles at 45 degrees.",
+    image: "/images/sprinkler-blowout-erie-co.jpg",
+    relatedSlugs: [
+      "when-to-winterize-sprinklers-colorado",
+      "backflow-preventer-testing-colorado",
+      "spring-sprinkler-startup-colorado",
+    ],
+    content: `**If cold nights are in the forecast and your blowout is already on the calendar, you can drain the backflow preventer yourself in about ten minutes.** Shut the sprinkler supply valve inside the house, open the small drain beside it, then open the test cocks on the backflow outside and set its handles to 45 degrees. That empties the one part of your system that sits above ground. When we arrive for the [blowout](/sprinkler-blowout), we clear everything underground and leave the whole system set for winter.
+
+This is a good thing to do the evening before a forecast freeze. It takes a bucket, a flashlight and maybe a flathead screwdriver. There is nothing to buy.
+
+## Why the backflow preventer comes first
+
+Your sprinkler pipes run underground, where the soil gives them a little cushion against a cold night. The backflow preventer is the brass assembly standing on a pipe outside the house, usually near the foundation. It holds water in a metal body with nothing around it, so it feels a cold night before anything else in the system does.
+
+Draining it is the most useful ten minutes you can spend before your visit. The water underground can wait for the compressor. The water in the brass can't.
+
+## Step 1: Shut off the sprinkler supply inside the house
+
+Head to the basement or crawlspace and follow the water line that comes into the house. Somewhere near it there is a separate pipe that heads out through the wall toward the backflow preventer. On that pipe you will find a shutoff, usually a ball valve with a lever handle, often with a small drain spout right beside it.
+
+Turn that handle so it sits across the pipe instead of along it. That closes it.
+
+Leave the main house shutoff alone. The one you want feeds the sprinklers only, so the kitchen tap keeps running.
+
+## Step 2: Open the little drain beside it
+
+Put the bucket under the small spout next to the valve you just closed and open it. Some are a little brass cap with a hose thread, which you turn with your fingers. Some are a small valve with a screw slot. Water comes out, sometimes a surprising amount, because this empties the pipe between the house and the backflow.
+
+Leave this drain open for the winter. The Colorado Backflow Prevention Association's homeowner guide says the same, and it means any water that finds its way back in has somewhere to go.
+
+Some homes have the drain outside instead, on the pipe just before the backflow preventer at ground level. If that is what you have, open that one.
+
+## Step 3: Open the test cocks on the backflow
+
+Now go outside to the brass assembly. On a pressure vacuum breaker, the type on most homes around Erie, there are two small test cocks on the body. They look like tiny valves with a screw slot or a little handle. Turn each one a quarter turn so the slot or handle sits at 45 degrees to the pipe. Water drips out. Let it.
+
+If your assembly has four test cocks and two big dome caps, you have a reduced pressure assembly. Same idea, all four get the quarter turn.
+
+## Step 4: Set both ball valves to 45 degrees
+
+There is a lever handle on each side of the backflow body. Those are ball valves, and they hold a pocket of water inside the ball whenever they sit fully open or fully closed. Half open lets that pocket drain.
+
+Move each handle so it sits at 45 degrees, halfway between along the pipe and across it. Do it slowly. If there is a small plastic cap on a fitting downstream of the assembly, pop it off while things drain, then put it back on.
+
+That is the whole backflow. Water out, handles at 45, test cocks at 45. It can sit like that until spring.
+
+## Step 5: Set the controller to Off and relieve the manifolds
+
+Turn the controller to Off rather than rain delay, so it has no reason to open a valve.
+
+Then find the green valve box lids in the lawn. Inside each is a manifold, the row of zone valves. Two things help here:
+
+- **If there is a manual drain in the box**, a small valve at the low end of the manifold, open it and let the water run out.
+- **Loosen the bleed screw** on top of each zone valve a quarter turn, or turn the solenoid (the black cylinder with wires) a quarter turn counterclockwise. That releases the pressure sitting in the manifold.
+
+If you open a lid and nothing looks like either of those, close it and leave it. The blowout clears the manifolds along with everything else.
+
+## Step 6: Wrap the backflow
+
+An old towel wrapped around the assembly and a plastic bag or bucket over the top, reaching down to the ground, gives it one more layer against a cold night. Insulated pouches made for this are sold at hardware stores for about the price of lunch, and they are worth keeping for next year.
+
+## What happens when we arrive
+
+Tell us what you did and we pick up from there. We connect the compressor downstream of the backflow, run air through every zone until the heads blow clear, drain the low spots and valve bodies that gravity leaves behind, and set every handle and test cock to its winter position before we leave. The steps above get the above-ground water out; the blowout gets the rest. [Book your blowout](/book?service=winterization) if it is not on the calendar yet, and we will see you on the next open day.
+
+## If something doesn't match
+
+Every system is a little different, and these are general steps. If a valve looks different from what is described here or a handle will not move, leave it and send a photo to [ryan@trailheadirrigation.com](mailto:ryan@trailheadirrigation.com) or text (970) 692-7270. You are working on your own system, so take it slow and skip anything that feels stuck. Trailhead can't take responsibility for parts we haven't worked on, and we would much rather talk you through it than have you force something.
+
+Then go inside and enjoy the cold night. Your backflow is ready for it.
+
+**Trailhead Lawn & Irrigation blows out sprinkler systems across Erie, Longmont, Louisville, Lafayette, Firestone and Broomfield.** [Book online](/book?service=winterization) or call (970) 692-7270.`,
+  },
+  {
     // Written 2026-10-09, rewritten the same day. The first pass was correct
     // but read as generic advice. Two things fixed it: the December wind,
     // which is genuinely a Front Range problem and which no national

@@ -325,7 +325,7 @@ Provides 14 composable skills for structured software development:
 | `/smart-controllers/water-savings-calculator` | Interactive lawn-size → gallons-saved + dollars-saved calculator (EPA WaterSense averages) |
 | `/water-rebates` + `/water-rebates/[slug]` | Per-city utility rebate landing pages (drives the rebate funnel) |
 | `/water-efficiency` | Water-efficient upgrade services |
-| `/blog` + `/blog/[slug]` | 18 long-form blog posts |
+| `/blog` + `/blog/[slug]` | 19 long-form blog posts |
 | `/about`, `/contact`, `/book` | Standard pages |
 
 ## SEO + Analytics Infrastructure
