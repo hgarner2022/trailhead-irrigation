@@ -335,7 +335,7 @@ export default async function CityPage({
             </strong>{" "}
             (+$10 per additional zone). For{" "}
             {data.name} and the rest of the Front Range, the window is
-            late September through October. If that has passed, book the next open day; we clear systems on any day above freezing.
+            late September through October. If that has passed, book the next open day. We keep doing blowouts through December.
           </p>
           {data.winterNote && (
             <p className="text-white/80 leading-relaxed mb-6">

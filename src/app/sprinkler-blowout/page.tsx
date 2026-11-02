@@ -44,10 +44,10 @@ const SEASON_COPY = {
     banner: "Compressed-air winterization before the first hard freeze.",
   },
   late: {
-    title: "Still time for your blowout. We're clearing systems every day above freezing.",
+    title: "There is still time to get your sprinklers blown out this fall.",
     cardHeading: "There is still time",
-    cardBody: "Most systems come through the first freeze fine. Book the next open day and we'll have yours cleared before the next one.",
-    banner: "Still time. We clear systems on any day above freezing.",
+    cardBody: "We keep doing blowouts all through November and into December. Book the next open day and we will take care of it.",
+    banner: "Still time for a blowout. We keep going through November and December.",
   },
   off: {
     title: "Blowouts start in late September",
@@ -105,12 +105,12 @@ const BLOWOUT_FAQS = [
   {
     question: "It already froze and I haven't had my blowout. Can you still come?",
     answer:
-      "Yes. Most systems come through the first freeze fine, and clearing it now protects it for the rest of the winter. We clear systems on any day above freezing through December.",
+      "Yes. Most systems come through the first freeze fine, and clearing it now protects it for the rest of the winter. We keep doing blowouts through December.",
   },
   {
     question: "How late can I book?",
     answer:
-      "Through December, on any day above freezing. September and October fill fast, so book early then. After that, take the next open day and we'll come out.",
+      "Through December. September and October fill fast, so book early then. After that, take the next open day and we will come out.",
   },
   {
     question: "What about my backflow preventer?",
@@ -211,7 +211,7 @@ export default function SprinklerBlowoutPage() {
                 <strong className="text-foreground font-semibold">
                   late September through October
                 </strong>
-                . If that has passed, book the next open day. We clear systems on any day above freezing.
+                . If that has passed, book the next open day. We keep going through December.
               </p>
               <p className="text-muted-foreground mb-7">
                 Water left in the lines expands when it freezes, which cracks
