@@ -25,7 +25,7 @@ export async function generateMetadata({
   if (!data) return { title: "Not Found" }
   return {
     title: `${data.name}, CO Sprinkler Company`,
-    description: data.slug === "erie" ? `Owner-run sprinkler company based right here in Erie. Repairs $145 a visit, blowouts $95, installs $3,000 to $6,000. Erie watering rules, backflow deadlines and rebates.` : `Owner-run sprinkler company based in Erie, serving ${data.name}. Repairs $145 a visit, blowouts $95, installs $3,000 to $6,000. ${data.name} watering rules and rebates.`,
+    description: data.slug === "erie" ? `Owner-run sprinkler company based right here in Erie, with ten years of Front Range experience. Repairs, turn-ons, blowouts and new systems, plus Erie watering rules, backflow deadlines and rebates.` : `Owner-run sprinkler company based in Erie, serving ${data.name}, with ten years of Front Range experience. Repairs, turn-ons, blowouts and new systems, plus ${data.name} watering rules and rebates.`,
     alternates: { canonical: `${siteConfig.url}/services/${data.slug}` },
   }
 }

@@ -60,7 +60,7 @@ const SEASON_COPY = {
 export const metadata: Metadata = {
   title: "Sprinkler Blowout & Winterization in Erie, CO",
   description:
-    "Sprinkler blowout $95 up to 6 zones. Compressed-air winterization across Northern Colorado. Book for October, before the first hard freeze.",
+    "Sprinkler blowout and winterization in Erie, CO and across the Northern Colorado Front Range. Every zone cleared with compressed air. Book online.",
   alternates: { canonical: `${siteConfig.url}/sprinkler-blowout` },
 }
 

@@ -24,7 +24,7 @@ import { pickReviews } from "@/lib/reviews"
 export const metadata: Metadata = {
   title: "Sprinkler Pricing in Erie, CO",
   description:
-    "Transparent pricing for sprinkler turn-on, blowout, repair, and seasonal services across Erie, Longmont, Lafayette, Louisville & Weld County, CO.",
+    "Sprinkler pricing for repairs, spring turn-ons, fall blowouts and new systems in Erie, Longmont, Louisville, Lafayette, Firestone and Broomfield, CO.",
   alternates: { canonical: `${siteConfig.url}/pricing` },
 }
 

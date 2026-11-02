@@ -20,7 +20,7 @@ export const siteConfig = {
   url: SITE_URL,
   name: "Trailhead Lawn & Irrigation LLC",
   description:
-    "Owner-run sprinkler company in Erie, CO. Repairs $145 a visit, blowouts $95, new systems $3,000 to $6,000, price before anyone digs. Book online in two minutes.",
+    "Owner-run sprinkler company in Erie, CO with ten years of Front Range irrigation experience. Repairs, spring turn-ons, fall blowouts and new systems. Book online in two minutes.",
   phone: "(970) 692-7270",
   phoneTel: "9706927270",
   email: "ryan@trailheadirrigation.com",

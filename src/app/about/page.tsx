@@ -106,7 +106,7 @@ export default function AboutPage() {
               </span>
               <div>
                 <h3 className="font-display text-2xl font-semibold text-navy">Fully insured</h3>
-                <p className="mt-1 text-muted-foreground">General liability coverage on every job. Your property is protected.</p>
+                <p className="mt-1 text-muted-foreground">General liability coverage on every job. Certificate of insurance available on request.</p>
               </div>
             </div>
           </div>

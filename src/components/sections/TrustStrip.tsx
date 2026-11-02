@@ -6,8 +6,8 @@ import { Star, MapPin, ShieldCheck, Map } from "lucide-react"
 
 const ITEMS = [
   { icon: Star, value: "5.0 on Google", label: "Read them on Google" },
-  { icon: MapPin, value: "10+ years", label: "Owner-operated, based in Erie, CO" },
-  { icon: ShieldCheck, value: "Licensed & insured", label: "Colorado sprinkler contractor" },
+  { icon: MapPin, value: "10+ years", label: "Ryan's irrigation experience on the Front Range" },
+  { icon: ShieldCheck, value: "Licensed & insured", label: "Certificate of insurance on request" },
   { icon: Map, value: "Six cities", label: "Erie to Broomfield, within 20 minutes" },
 ]
 

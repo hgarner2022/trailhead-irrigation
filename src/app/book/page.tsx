@@ -15,7 +15,7 @@ export const metadata: Metadata = {
   // "| Trailhead Lawn & Irrigation" once.
   title: "Book a Service",
   description:
-    "Book sprinkler turn-on, system inspection, or winterization online. Serving Erie, Longmont, Louisville, Lafayette & Weld County, CO.",
+    "Book a sprinkler repair, spring turn-on or fall blowout online in about two minutes. Pick the service and a day that works. Erie, Longmont, Louisville, Lafayette, Firestone and Broomfield.",
   alternates: { canonical: `${siteConfig.url}/book` },
 }
 
