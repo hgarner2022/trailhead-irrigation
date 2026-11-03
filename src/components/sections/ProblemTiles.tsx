@@ -3,21 +3,19 @@ import Image from "next/image"
 import Link from "next/link"
 import { ArrowUpRight } from "lucide-react"
 
-// Six problems, a real price on each. The whole card is the link: no button
+// Six services, no prices (prices live on /pricing). The whole card is the link: no button
 // text, a corner arrow and a lift on hover make that obvious. Each card goes
 // to the page that explains that service, never straight to a form.
 
 const TILES = [
   {
     title: "Sprinkler repair",
-    price: "$145 visit, small fixes included",
     body: "Heads, valves, leaks and zones that won't come on. We come out, diagnose the problem and take care of small fixes where we can.",
     href: "/sprinkler-repair",
     image: { src: "/images/sprinkler-spray-head-lawn.jpg", alt: "Pop-up spray head watering a green lawn" },
   },
   {
     title: "New system installation",
-    price: "$3,000 to $6,000 typical",
     body: "We design the system for your yard's clay soil and your city's watering rules, and you get the layout and the price before anyone digs.",
     href: "/sprinkler-installation",
     // Portrait photo in a wide tile: anchor the crop low so the front spray head stays in frame.
@@ -25,28 +23,24 @@ const TILES = [
   },
   {
     title: "Spring turn-on & tune-up",
-    price: "$145 up to 8 zones",
     body: "We pressurize the system, run every zone, adjust the heads and program the controller. A mid-summer tune-up costs the same.",
     href: "/spring-turn-on",
     image: { src: "/images/home-lawn-spring.jpg", alt: "Home with a green spring lawn and flower beds" },
   },
   {
     title: "Fall blowout & winterization",
-    price: "$95 up to 6 zones",
     body: "We blow every zone clear with compressed air before the first hard freeze. Booking takes two minutes online.",
     href: "/sprinkler-blowout",
     image: { src: "/images/sprinkler-blowout-erie-co.jpg", alt: "Sprinkler head blowing out compressed air over a leaf-covered lawn in fall" },
   },
   {
     title: "Smart controllers",
-    price: "Rachio install $350, rebates up to $150",
     body: "We install a Rachio 3, program it and hand it off. It skips watering when rain is coming and shows you the hours it saved.",
     href: "/smart-controllers",
     image: { src: "/images/rachio-3-controller.jpg", alt: "Rachio 3 smart sprinkler controller mounted on a wall" },
   },
   {
     title: "Water efficiency & drip",
-    price: "Nozzle upgrade $400, drip quoted",
     body: "Rotator nozzles cut water use by about 30 percent, drip lines feed your beds and garden, and local rebates pay for part of it.",
     href: "/water-efficiency",
     image: { src: "/images/garden-lettuce-bed.jpg", alt: "Lettuce growing in a raised garden bed with log edging" },
@@ -69,7 +63,6 @@ export function ProblemTiles() {
             <li key={tile.title}>
               <Link
                 href={tile.href}
-                aria-label={`${tile.title}: ${tile.price}`}
                 className="group flex h-full flex-col overflow-hidden rounded-lg border border-border bg-card transition-all hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
               >
                 <div className="relative aspect-[16/9]">
@@ -91,7 +84,6 @@ export function ProblemTiles() {
                       <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
                     </span>
                   </div>
-                  <p className="text-sm font-semibold text-primary-dark">{tile.price}</p>
                   <p className="text-sm text-muted-foreground leading-relaxed">{tile.body}</p>
                 </div>
               </Link>

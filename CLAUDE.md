@@ -311,7 +311,7 @@ Provides 14 composable skills for structured software development:
 
 | Route | Purpose |
 |---|---|
-| `/` | Homepage (Nov 2026 redesign) — Hero (tagline + keyword H1, two doors) → TrustStrip → ProblemTiles (6 clickable priced cards, no button text) → InstallationBand (navy) → SeasonPassSection → OwnerSection → Testimonials (9, carousel) → ServiceAreaSection → HomeFAQ → CTAStrip. Every section has one job the others don't (see the comment in `page.tsx`); don't add one without a reason |
+| `/` | Homepage (Nov 2026 redesign) — Hero (tagline + keyword H1, two doors) → TrustStrip → ProblemTiles (6 clickable cards, no prices, no button text) → InstallationBand (navy) → SeasonPassSection → OwnerSection → Testimonials (9, carousel) → ServiceAreaSection → HomeFAQ → CTAStrip. Every section has one job the others don't (see the comment in `page.tsx`); don't add one without a reason |
 | `/services` | Service overview + HowItWorks process + service detail blocks + city links + FAQ |
 | `/services/[city]` | 6 city pages (erie, longmont, louisville, lafayette, firestone, broomfield) — local water info + restrictions + per-city blowout block (`winterNote`) + FAQ |
 | `/sprinkler-installation` | Installation landing page — cost/timeline answer-first, 6-step process, included vs not-included, clay-soil + restriction design notes, glossary, FAQ. Built to fill the gaps local competitors leave (no pricing, timeline, or permit detail published anywhere) |
