@@ -32,10 +32,10 @@ export async function generateMetadata({
 
 const SERVICES = [
   {
-    title: "Sprinkler Installation",
-    description: "Custom residential sprinkler system design and installation. Zone layout, efficient heads, smart controllers, and a full walkthrough when we're done.",
+    title: "Spring: Turn On and Tune Up",
+    description: "We pressurize the system, run every zone, adjust the heads and program the controller.",
     icon: Droplets,
-    href: "/sprinkler-installation",
+    href: "/spring-turn-on",
   },
   {
     title: "Sprinkler Repair",
@@ -44,16 +44,16 @@ const SERVICES = [
     href: "/sprinkler-repair",
   },
   {
-    title: "Spring Turn-On & Tune-Up",
-    description: "We pressurize the system, run every zone, adjust the heads and program the controller.",
-    icon: Droplets,
-    href: "/spring-turn-on",
-  },
-  {
-    title: "Fall Blowout & Winterization",
+    title: "Fall: Blowout and Winterization",
     description: "Every zone blown clear with compressed air before the first hard freeze, drip zones included.",
     icon: Snowflake,
     href: "/sprinkler-blowout",
+  },
+  {
+    title: "New System Installation",
+    description: "Custom residential sprinkler system design and installation. Zone layout, efficient heads, smart controllers, and a full walkthrough when we're done.",
+    icon: Droplets,
+    href: "/sprinkler-installation",
   },
 ]
 

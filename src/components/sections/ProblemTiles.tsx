@@ -9,41 +9,35 @@ import { ArrowUpRight } from "lucide-react"
 
 const TILES = [
   {
-    title: "Sprinkler repair",
+    title: "Spring: Turn On and Tune Up",
+    body: "We pressurize the system, run every zone, adjust the heads and program the controller. A mid-summer tune-up is the same visit.",
+    href: "/spring-turn-on",
+    image: { src: "/images/home-lawn-spring.jpg", alt: "Home with a green spring lawn and flower beds" },
+  },
+  {
+    title: "Sprinkler Repair",
     body: "Heads, valves, leaks and zones that won't come on. We come out, diagnose the problem and take care of small fixes where we can.",
     href: "/sprinkler-repair",
     image: { src: "/images/sprinkler-spray-head-lawn.jpg", alt: "Pop-up spray head watering a green lawn" },
   },
   {
-    title: "New system installation",
+    title: "Fall: Blowout and Winterization",
+    body: "We blow every zone clear with compressed air before the first hard freeze. Booking takes two minutes online.",
+    href: "/sprinkler-blowout",
+    image: { src: "/images/sprinkler-blowout-erie-co.jpg", alt: "Sprinkler head blowing out compressed air over a leaf-covered lawn in fall" },
+  },
+  {
+    title: "New System Installation",
     body: "We design the system for your yard's clay soil and your city's watering rules, and you get the layout and the price before anyone digs.",
     href: "/sprinkler-installation",
     // Portrait photo in a wide tile: anchor the crop low so the front spray head stays in frame.
     image: { src: "/images/sprinklers-curved-lawn-edge.jpg", alt: "Spray heads watering a curved lawn edged with river rock", position: "center 78%" },
   },
   {
-    title: "Spring turn-on & tune-up",
-    body: "We pressurize the system, run every zone, adjust the heads and program the controller. A mid-summer tune-up costs the same.",
-    href: "/spring-turn-on",
-    image: { src: "/images/home-lawn-spring.jpg", alt: "Home with a green spring lawn and flower beds" },
-  },
-  {
-    title: "Fall blowout & winterization",
-    body: "We blow every zone clear with compressed air before the first hard freeze. Booking takes two minutes online.",
-    href: "/sprinkler-blowout",
-    image: { src: "/images/sprinkler-blowout-erie-co.jpg", alt: "Sprinkler head blowing out compressed air over a leaf-covered lawn in fall" },
-  },
-  {
-    title: "Smart controllers",
-    body: "We install a Rachio 3, program it and hand it off. It skips watering when rain is coming and shows you the hours it saved.",
+    title: "Smart Controllers and Water Efficiency",
+    body: "A Rachio 3 that skips watering when rain is coming, rotator nozzles that cut water use by about 30 percent, and drip for your beds and garden. Local rebates pay for part of it.",
     href: "/smart-controllers",
     image: { src: "/images/rachio-3-controller.jpg", alt: "Rachio 3 smart sprinkler controller mounted on a wall" },
-  },
-  {
-    title: "Water efficiency & drip",
-    body: "Rotator nozzles cut water use by about 30 percent, drip lines feed your beds and garden, and local rebates pay for part of it.",
-    href: "/water-efficiency",
-    image: { src: "/images/garden-lettuce-bed.jpg", alt: "Lettuce growing in a raised garden bed with log edging" },
   },
 ]
 

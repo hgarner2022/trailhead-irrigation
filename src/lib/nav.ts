@@ -19,12 +19,11 @@ export type NavLink = {
  * page. Nothing else goes in this list.
  */
 export const SERVICES: NavLink[] = [
+  { label: "Spring: Turn On and Tune Up", href: "/spring-turn-on" },
   { label: "Sprinkler Repair", href: "/sprinkler-repair" },
-  { label: "Spring Turn-On & Tune-Up", href: "/spring-turn-on" },
-  { label: "Sprinkler Installation", href: "/sprinkler-installation" },
-  { label: "Fall Blowout", href: "/sprinkler-blowout" },
-  { label: "Smart Controllers (Rachio)", href: "/smart-controllers" },
-  { label: "Drip & Water Efficiency", href: "/water-efficiency" },
+  { label: "Fall: Blowout and Winterization", href: "/sprinkler-blowout" },
+  { label: "New System Installation", href: "/sprinkler-installation" },
+  { label: "Smart Controllers and Water Efficiency", href: "/smart-controllers" },
   { label: "Lawn Aeration", href: "/aeration" },
   { label: "Christmas Lights", href: "/christmas-lights" },
 ]
@@ -36,6 +35,7 @@ export const SERVICES: NavLink[] = [
  * sold from /pricing and the homepage.
  */
 export const RESOURCE_LINKS: NavLink[] = [
+  { label: "Drip & Water Efficiency", href: "/water-efficiency" },
   { label: "Water Rebates", href: "/water-rebates" },
   { label: "Season Pass", href: "/season-pass" },
 ]
