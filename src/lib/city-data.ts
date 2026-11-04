@@ -68,7 +68,7 @@ export const CITY_DATA: CityData[] = [
     waterProvider: "Town of Erie Water Department",
     waterProviderPhone: "303-926-2870",
     restrictionLevel: "voluntary",
-    restrictionSummary: "Erie is currently under a voluntary 2-day-per-week watering schedule after lifting a Water Supply Shortage emergency that banned all residential sprinkler use through March 2026.",
+    restrictionSummary: "Erie is on a voluntary two-day-a-week schedule right now, and the Town can add a third day during hot stretches.",
     wateringDays: "Even addresses: Monday & Thursday. Odd addresses: Tuesday & Friday. During extreme heat, the Town may authorize a third day (Even adds Saturday, Odd adds Sunday).",
     wateringTimeRestriction: "The Town recommends watering during cool morning hours to reduce evaporation. No formal time-of-day ban published.",
     backflowDeadline: "Colorado state law requires annual testing. Contact the Town of Erie at 303-926-2870 for the local compliance deadline.",

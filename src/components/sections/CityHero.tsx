@@ -22,13 +22,13 @@ export function CityHero({
   return (
     <section className="relative py-20 md:py-28 flex items-center" aria-labelledby="city-heading">
       <Image src={image} alt={alt} fill priority sizes="100vw" quality={82} className="object-cover" style={{ objectPosition: position }} />
-      <div className="absolute inset-0 bg-gradient-to-r from-charcoal/85 via-charcoal/60 to-charcoal/35" aria-hidden="true" />
+      <div className="absolute inset-0 bg-gradient-to-t from-charcoal/80 via-charcoal/45 to-charcoal/25" aria-hidden="true" />
       <div className="relative container-padding-x mx-auto max-w-7xl text-center flex flex-col items-center gap-4">
         <h1 id="city-heading" className="font-sans text-lg md:text-xl font-semibold text-white/90 max-w-2xl" style={{ letterSpacing: 0 }}>
           Sprinkler repair, installation and seasonal service in {name}, CO.
         </h1>
         <p className="order-first text-xs font-semibold uppercase tracking-widest text-primary-light">
-          Service area &middot; {county}
+          Serving {name} &middot; {county}
         </p>
         <p className="order-first font-display text-5xl md:text-6xl font-bold text-white leading-[0.98]">
           Sprinklers in {name}, handled.

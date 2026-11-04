@@ -1,15 +1,12 @@
 import Link from "next/link"
-import { Droplets, Clock, ShieldCheck, Phone, BadgeDollarSign, CalendarCheck } from "lucide-react"
+import { Droplets, Clock, ShieldCheck, Phone, BadgeDollarSign } from "lucide-react"
 import type { CityData } from "@/lib/city-data"
-import { seasonNote } from "@/components/sections/Hero"
 
-// The local sign: the one block a competitor cannot copy. Set like a
-// trailhead sign, big numbers on the left, the rules on the right, and the
-// date they were last checked. Everything here comes from city-data.ts.
+// The watering rules for this town: big numbers on the left, the rules on
+// the right, and the date they were last checked. All from city-data.ts.
 
 export function CityLocalSign({ data }: { data: CityData }) {
   const g = data.guide
-  const now = seasonNote(new Date())
   const rows: { icon: typeof Droplets; label: string; value: string }[] = [
     { icon: Droplets, label: "Watering days", value: data.wateringDays },
     { icon: Clock, label: "Time of day", value: data.wateringTimeRestriction },
@@ -28,23 +25,16 @@ export function CityLocalSign({ data }: { data: CityData }) {
                 {data.name}&apos;s watering rules
               </h2>
             </div>
-            <div className="flex items-start gap-4 rounded-lg bg-navy text-white p-6">
-              <CalendarCheck className="h-6 w-6 text-primary-light shrink-0 mt-0.5" aria-hidden="true" />
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-widest text-primary-light">Booking now</p>
-                <p className="text-lg mt-1">{now}</p>
-              </div>
-            </div>
             <dl className="grid grid-cols-2 gap-6 min-w-0">
               {g?.wateringDaysPerWeek && (
                 <div className="border-l-2 border-primary pl-4 min-w-0">
                   <dd className="font-display text-4xl sm:text-5xl font-bold text-navy leading-none">{g.wateringDaysPerWeek}</dd>
-                  <dt className="text-sm text-muted-foreground mt-2">watering days a week, {data.restrictionLevel === "mandatory" ? "required" : "asked for"}</dt>
+                  <dt className="text-sm text-muted-foreground mt-2">{data.restrictionLevel === "mandatory" ? "watering days a week, max" : "watering days a week"}</dt>
                 </div>
               )}
               <div className="border-l-2 border-primary pl-4 min-w-0">
                 <dd className="font-display text-3xl sm:text-5xl font-bold text-navy leading-none capitalize break-words">{data.restrictionLevel === "none" ? "Open" : data.restrictionLevel}</dd>
-                <dt className="text-sm text-muted-foreground mt-2">watering rules right now</dt>
+                <dt className="text-sm text-muted-foreground mt-2">current watering rules</dt>
               </div>
             </dl>
             <p className="text-muted-foreground">{data.restrictionSummary}</p>

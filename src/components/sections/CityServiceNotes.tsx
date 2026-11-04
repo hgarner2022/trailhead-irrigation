@@ -14,7 +14,7 @@ export function CityServiceNotes({ name, notes }: { name: string; notes: Record<
     <section className="bg-cream section-padding-y" aria-labelledby="local-notes-heading">
       <div className="container-padding-x mx-auto max-w-7xl">
         <div className="grid grid-cols-1 lg:grid-cols-[0.8fr_1.2fr] gap-10 lg:gap-16">
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-3 lg:sticky lg:top-28 self-start">
             <p className="text-xs font-semibold uppercase tracking-widest text-primary">Services</p>
             <h2 id="local-notes-heading" className="font-display text-4xl md:text-5xl font-bold text-navy">
               Sprinkler services in {name}

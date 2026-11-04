@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { CityHero } from "@/components/sections/CityHero"
+import { CitySeasonStrip } from "@/components/sections/CitySeasonStrip"
 import { CityLocalSign } from "@/components/sections/CityLocalSign"
 import { CityNeighborhoods } from "@/components/sections/CityNeighborhoods"
 import { CityServiceNotes } from "@/components/sections/CityServiceNotes"
@@ -91,24 +92,16 @@ export default async function CityPage({
         }}
       />
 
-      {g?.heroImage ? (
-        <CityHero
-          name={data.name}
-          county={data.county}
-          image={g.heroImage}
-          alt={g.heroAlt ?? `${data.name}, Colorado`}
-          position={g.heroPosition}
-        />
-      ) : (
-        <CityHero
-          name={data.name}
-          county={data.county}
-          image="/images/trail-mountain-meadow.jpg"
-          alt="Two-track trail through a mountain meadow at sunrise in the Colorado Rockies"
-          position="60% center"
-        />
-      )}
-      {/* The local sign: watering rules, backflow, provider, rebate, and what is booking now */}
+      <CityHero
+        name={data.name}
+        county={data.county}
+        image={g?.heroImage ?? "/images/trail-mountain-meadow.jpg"}
+        alt={g?.heroImage ? (g.heroAlt ?? `${data.name}, Colorado`) : "Two-track trail through a mountain meadow at sunrise in the Colorado Rockies"}
+        position={g?.heroImage ? g.heroPosition : "60% center"}
+      />
+      <CitySeasonStrip />
+
+      {/* Watering rules, backflow, provider, rebate */}
       <CityLocalSign data={data} />
 
       {/* One local line per service, linking to the service page */}
