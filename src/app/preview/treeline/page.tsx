@@ -54,11 +54,10 @@ export default function TreelinePreviewPage() {
       <TreelineEdge from="cream" to="charcoal" size="sm" />
       <section className="bg-charcoal py-10" />
 
-      <Label>6. On the closing strip, where every page ends (edge sized to the section padding)</Label>
+      <Label>6. The closing strip, as wired on every page (edge sized to the section padding)</Label>
       <section className="bg-cream section-padding-y">
         <p className="container-padding-x mx-auto max-w-7xl text-center text-muted">Last line of the section above. The trees stay in the padding below this line.</p>
       </section>
-      <TreelineEdge to="navy" sun="right" />
       <CTAStrip />
     </main>
   )
