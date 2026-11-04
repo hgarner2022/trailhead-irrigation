@@ -429,6 +429,9 @@ export const CITY_DATA: CityData[] = [
     ],
     relatedBlogSlugs: ["when-to-winterize-sprinklers-colorado", "water-optimization-tips-colorado", "smart-irrigation-controllers-worth-it"],
     guide: {
+      heroImage: "/images/broomfield-town.jpg",
+      heroAlt: "Broomfield, Colorado with the Flatirons and the snowy Front Range behind it",
+      heroPosition: "center 55%",
       wateringDaysPerWeek: "2",
       rulesCheckedOn: "November 1, 2026",
       neighborhoods: ["Original Broomfield", "Anthem", "Anthem Ranch", "The Broadlands", "Wildgrass", "Baseline"],
