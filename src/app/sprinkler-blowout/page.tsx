@@ -1,12 +1,12 @@
 import type { Metadata } from "next"
 import { PageBanner } from "@/components/sections/PageBanner"
+import { ServiceAreaMap } from "@/components/sections/ServiceAreaMap"
 import { CTAStrip } from "@/components/sections/CTAStrip"
 import { FaqList } from "@/components/sections/FaqList"
 import { DefinitionList } from "@/components/sections/DefinitionList"
 import { SectionHeader } from "@/components/sections/SectionHeader"
 import { Card, CardContent } from "@/components/ui/card"
 import { buttonVariants } from "@/components/ui/button"
-import { CITY_DATA } from "@/lib/city-data"
 import Link from "next/link"
 import Image from "next/image"
 import { faqJsonLd, reviewsJsonLd, breadcrumbJsonLd, siteConfig } from "@/lib/seo"
@@ -33,26 +33,22 @@ function blowoutPhase(date: Date): "early" | "peak" | "late" | "off" {
 const SEASON_COPY = {
   early: {
     title: "Book your blowout for October",
-    cardHeading: "October books out",
-    cardBody: "We start booking in September and are usually booked solid by mid-October. Booking now gets you the date you want.",
+    now: "We start booking in September and are usually booked solid by mid-October. Booking now gets you the date you want.",
     banner: "Compressed-air winterization before the first hard freeze.",
   },
   peak: {
     title: "October is here. Get on the schedule.",
-    cardHeading: "Prime time for blowouts",
-    cardBody: "Erie's first hard freeze in 2024 landed on October 18. We are clearing systems every day this month.",
+    now: "Erie's first hard freeze in 2024 landed on October 18. We are clearing systems every day this month.",
     banner: "Compressed-air winterization before the first hard freeze.",
   },
   late: {
     title: "There is still time to get your sprinklers blown out this fall.",
-    cardHeading: "There is still time",
-    cardBody: "We keep doing blowouts all through November. Book the next open day and we will take care of it.",
+    now: "We keep doing blowouts all through November. Book the next open day and we will take care of it.",
     banner: "Still time for a blowout. We keep going through November.",
   },
   off: {
     title: "Blowouts start in late September",
-    cardHeading: "Reserve your fall date now",
-    cardBody: "Book ahead and we put you on the calendar before the October rush. Nothing is charged until the visit is done.",
+    now: "Book ahead and we put you on the calendar before the October rush. Nothing is charged until the visit is done.",
     banner: "Compressed-air winterization every fall, late September through October.",
   },
 } as const
@@ -65,27 +61,39 @@ export const metadata: Metadata = {
 }
 
 /**
- * Blowout / winterization landing page.
+ * Blowout / winterization landing page, on the service page template
+ * (docs/SERVICE_PAGE_TEMPLATE.md).
  *
- * Every fact here is sourced from Trailhead's own published content, not
- * inferred: the late-September-through-October window, the "booked solid by
- * mid-October" note, the below-28-degrees hard freeze threshold, and the
- * $500-$1,500 freeze repair range all come from
+ * Every fact here is sourced from Trailhead's own published content: the
+ * late-September-through-October window, the "booked solid by mid-October"
+ * note and the below-28-degrees hard freeze threshold come from
  * /blog/when-to-winterize-sprinklers-colorado. Pricing matches the
  * winterization card on /pricing and the Service schema in seo.ts.
  *
- * Deliberately does NOT describe Ryan's on-site procedure step by step. An
- * earlier version invented that sequence. If a process section is wanted
- * later, it needs to come from Ryan.
- *
- * House style for new content: no em dashes (see commit 18c9a89).
+ * Deliberately does NOT describe Ryan's on-site procedure step by step. If a
+ * process section is wanted, it needs to come from Ryan. House style: warm,
+ * plain, no em dashes, no fear framing in headings.
  */
+
+const WHY = [
+  {
+    title: "The backflow assembly goes first",
+    body: "It sits above ground and holds water, so it freezes before anything buried. Clearing and protecting it is part of every blowout.",
+  },
+  {
+    title: "Cracks stay hidden until spring",
+    body: "A split lateral underground gives no warning. You find it when you pressurize in April and part of the yard turns into a puddle, or when a quiet leak shows up on a water bill.",
+  },
+  {
+    title: "A blowout costs far less than a repair",
+    body: "A freeze repair means digging a split line out of saturated clay in spring, which takes longer than the original install did. The blowout is $95.",
+  },
+]
 
 const BLOWOUT_FAQS = [
   {
     question: "How much does a sprinkler blowout cost?",
-    answer:
-      "A sprinkler blowout costs $95 for up to 6 zones, plus $10 for each additional zone.",
+    answer: "A sprinkler blowout costs $95 for up to 6 zones, plus $10 for each additional zone.",
   },
   {
     question: "When should I winterize my sprinklers in Northern Colorado?",
@@ -95,7 +103,7 @@ const BLOWOUT_FAQS = [
   {
     question: "What happens if I skip winterization?",
     answer:
-      "Water left in the lines expands when it freezes, which cracks pipes and splits valves. Repair bills typically run $500 to $1,500, and you usually don't find out until spring turn-on.",
+      "Water left in the lines expands when it freezes, which can crack pipes and split valves, and you usually don't find out until spring turn-on. Clearing the lines each fall is the simplest way to keep the system healthy for years.",
   },
   {
     question: "Can I blow out the system myself with a shop compressor?",
@@ -115,7 +123,7 @@ const BLOWOUT_FAQS = [
   {
     question: "What about my backflow preventer?",
     answer:
-      "It sits above ground and holds water, so it's the first part of the system to freeze. Clearing and protecting the backflow assembly is part of winterization, and a cracked assembly is one of the more expensive freeze repairs to fix in spring.",
+      "It sits above ground and holds water, so it's the first part of the system to freeze. Clearing and protecting the backflow assembly is part of winterization, and it is one of the parts most worth protecting.",
   },
   {
     question: "Do you winterize drip zones as well as spray zones?",
@@ -125,7 +133,7 @@ const BLOWOUT_FAQS = [
   {
     question: "Which cities do you serve for winterization?",
     answer:
-      "Erie, Longmont, Louisville, Lafayette, Firestone, and Broomfield, plus surrounding Weld County and Front Range communities. We're based in Erie.",
+      "Erie, Longmont, Louisville, Lafayette, Firestone, and Broomfield, plus surrounding Weld County and Front Range communities.",
   },
 ]
 
@@ -160,221 +168,128 @@ export default function SprinklerBlowoutPage() {
   const season = SEASON_COPY[blowoutPhase(new Date())]
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(faqJsonLd(BLOWOUT_FAQS)),
-        }}
-      />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd(BLOWOUT_FAQS)) }} />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
           __html: JSON.stringify(
             breadcrumbJsonLd([
               { name: "Home", url: siteConfig.url },
-              {
-                name: "Sprinkler Blowout",
-                url: `${siteConfig.url}/sprinkler-blowout`,
-              },
+              { name: "Sprinkler Blowout", url: `${siteConfig.url}/sprinkler-blowout` },
             ])
           ),
         }}
       />
 
       <PageBanner
-        title="Sprinkler Blowout & Winterization"
+        title="Sprinkler blowout and winterization in Erie, Colorado"
         description={season.banner}
         backgroundImage="/images/fall-blowout-yard-erie.jpg"
       />
 
-      {/* Answer-first intro, price, single Book Now CTA */}
-      <section
-        aria-labelledby="blowout-overview"
-        className="bg-background section-padding-y"
-      >
+      {/* Answer first: what the visit does on the left; the at-a-glance panel with price, season and the one Book Online on the right */}
+      <section aria-labelledby="blowout-overview" className="bg-background section-padding-y">
         <div className="container-padding-x mx-auto max-w-7xl">
-          <div className="flex flex-col lg:flex-row gap-10 lg:gap-16 items-start">
-            <div className="flex-1">
-              <SectionHeader
-                tagline="Winterization season"
-                taglineAsEyebrow
-                title={season.title}
-                titleId="blowout-overview"
-                align="left"
-              />
+          <div className="grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-10 lg:gap-16 items-stretch">
+            <div className="max-w-[60ch] flex flex-col justify-center">
+              <SectionHeader tagline="Winterization season" taglineAsEyebrow title={season.title} titleId="blowout-overview" align="left" />
               <p className="text-muted-foreground mt-5 mb-4">
-                A sprinkler blowout costs{" "}
-                <strong className="text-foreground font-semibold">
-                  $95 for up to 6 zones
-                </strong>
-                , plus $10 per additional zone. The best time in Northern Colorado is{" "}
-                <strong className="text-foreground font-semibold">
-                  late September through October
-                </strong>
-                . If that has passed, book the next open day. We keep going through November.
+                We blow every zone clear with compressed air before the first hard freeze, including the backflow
+                assembly and any drip zones, so the system sits dry all winter and comes up clean in spring.
               </p>
-              <p className="text-muted-foreground mb-7">
-                Water left in the lines expands when it freezes, which cracks
-                pipes and splits valves. Those repairs typically run $500 to
-                $1,500, and most homeowners don&apos;t find out until they
-                pressurize the system in spring.
+              <p className="text-muted-foreground">
+                The best time in Northern Colorado is late September through October. If that has passed, book the
+                next open day. We keep going through November.
               </p>
-              <Link
-                href="/book?service=winterization"
-                className={buttonVariants({ size: "lg" })}
-              >
-                Book Online
-              </Link>
             </div>
 
-            <div className="w-full lg:w-[360px] shrink-0">
-              <Card className="bg-cream">
-                <CardContent className="p-6">
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-4xl font-bold text-foreground">
-                      $95
-                    </span>
-                    <span className="text-sm text-muted-foreground">
-                      up to 6 zones
-                    </span>
-                  </div>
-                  <p className="text-sm text-muted-foreground mt-1.5">
-                    +$10 per additional zone.
-                  </p>
-                  <div className="mt-5 pt-5 border-t border-border">
-                    <p className="text-sm font-semibold text-foreground mb-1.5">
-                      {season.cardHeading}
-                    </p>
-                    <p className="text-sm text-muted-foreground">{season.cardBody}</p>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+            <Card className="bg-cream h-full">
+              <CardContent className="p-8 flex flex-col h-full">
+                <p className="text-xs font-semibold uppercase tracking-widest text-primary">At a glance</p>
+                <p className="mt-3 flex items-baseline gap-2">
+                  <span className="font-display text-6xl font-bold text-navy leading-none">$95</span>
+                  <span className="text-muted-foreground">for up to 6 zones</span>
+                </p>
+                <dl className="mt-6 divide-y divide-border border-y border-border">
+                  {[
+                    ["Each additional zone", "$10"],
+                    ["When", "Late September through October"],
+                    ["How late", "Through the end of November"],
+                    ["Drip and backflow", "Cleared on every visit"],
+                  ].map(([k, v]) => (
+                    <div key={k} className="flex justify-between gap-6 py-3">
+                      <dt className="text-sm text-muted-foreground shrink-0">{k}</dt>
+                      <dd className="text-sm font-semibold text-foreground text-right">{v}</dd>
+                    </div>
+                  ))}
+                </dl>
+                <p className="mt-4 text-sm text-muted-foreground">{season.now}</p>
+                <div className="mt-auto pt-6 hidden lg:block">
+                  <Link href="/book?service=winterization" className={buttonVariants({ size: "lg", className: "w-full" })}>
+                    Book Online
+                  </Link>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </section>
 
       {/* Why it matters */}
-      <section
-        aria-labelledby="blowout-risk"
-        className="bg-cream section-padding-y"
-      >
+      <section aria-labelledby="blowout-risk" className="bg-cream section-padding-y">
         <div className="container-padding-x mx-auto max-w-7xl">
-          <div className="flex flex-col md:flex-row items-center gap-8 md:gap-16">
-            <div className="flex-1 w-full">
-              <div className="relative aspect-[4/3] rounded-xl overflow-hidden">
-                <Image
-                  src="/images/sprinkler-repair.jpg"
-                  alt="Irrigation valve and pipe repair after freeze damage"
-                  fill
-                  className="object-cover"
-                />
-              </div>
-            </div>
-            <div className="flex-1">
-              <SectionHeader
-                tagline="Why it matters"
-                taglineAsEyebrow
-                title="What the $95 protects"
-                titleId="blowout-risk"
-                align="left"
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
+            <div className="relative aspect-[4/3] rounded-lg overflow-hidden">
+              <Image
+                src="/images/sprinkler-repair.jpg"
+                alt="Irrigation valve and pipe being repaired"
+                fill
+                sizes="(min-width: 1024px) 50vw, 100vw"
+                className="object-cover"
               />
-              <p className="text-muted-foreground mt-5 mb-5">
-                Colorado&apos;s freeze-thaw cycle is harder on irrigation than a
-                steady cold winter. Temperatures climb above freezing and drop
-                back down repeatedly, so water left in a line takes that stress
-                all season rather than once.
+            </div>
+            <div>
+              <SectionHeader tagline="Why it matters" taglineAsEyebrow title="What the $95 protects" titleId="blowout-risk" align="left" />
+              <p className="text-muted-foreground mt-5 max-w-[60ch]">
+                Colorado&apos;s freeze-thaw cycle is harder on irrigation than a steady cold winter. Temperatures
+                climb above freezing and drop back down repeatedly, so water left in a line takes that stress all
+                season rather than once.
               </p>
-              <ul className="flex flex-col gap-4">
-                <li>
-                  <p className="font-semibold text-foreground text-sm mb-1">
-                    The backflow assembly goes first
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    It sits above ground and holds water, so it freezes before
-                    anything buried. It&apos;s also one of the more expensive
-                    parts to replace.
-                  </p>
-                </li>
-                <li>
-                  <p className="font-semibold text-foreground text-sm mb-1">
-                    Cracks stay hidden until spring
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    A split lateral underground gives no warning. You find it
-                    when you pressurize in April and part of the yard turns into
-                    a puddle, or when a quiet leak shows up on a water bill.
-                  </p>
-                </li>
-                <li>
-                  <p className="font-semibold text-foreground text-sm mb-1">
-                    Repairs run $500 to $1,500
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    Against a $95 blowout. Digging a repair out of saturated
-                    clay also takes longer than the original install did.
-                  </p>
-                </li>
+              <ul className="mt-8 flex flex-col gap-6 list-none">
+                {WHY.map((item, i) => (
+                  <li key={item.title} className="flex gap-5">
+                    <span className="font-display text-3xl font-bold text-primary leading-none w-8 shrink-0">{i + 1}</span>
+                    <div className="max-w-[60ch]">
+                      <p className="font-semibold text-foreground mb-1">{item.title}</p>
+                      <p className="text-muted-foreground">{item.body}</p>
+                    </div>
+                  </li>
+                ))}
               </ul>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Definitions */}
-      <section
-        aria-labelledby="blowout-terms"
-        className="bg-background section-padding-y"
-      >
-        <div className="container-padding-x mx-auto max-w-5xl">
-          <SectionHeader
-            title="Winterization terms, explained"
-            titleId="blowout-terms"
-            align="left"
-            className="mb-10"
-          />
-          <DefinitionList items={DEFINITIONS} columns={2} />
+      {/* Terms, as plain text */}
+      <section aria-labelledby="blowout-terms" className="bg-background section-padding-y">
+        <div className="container-padding-x mx-auto max-w-7xl flex flex-col gap-10">
+          <SectionHeader tagline="Good to know" taglineAsEyebrow title="Winterization terms, explained" titleId="blowout-terms" align="left" />
+          <DefinitionList items={DEFINITIONS} variant="plain" columns={2} />
         </div>
       </section>
 
-      {/* City links */}
-      <section
-        aria-labelledby="blowout-cities"
-        className="bg-cream section-padding-y"
-      >
-        <div className="container-padding-x mx-auto max-w-5xl">
-          <SectionHeader
-            title="Where we winterize"
-            titleId="blowout-cities"
-            description="Based in Erie, covering the surrounding Front Range and Weld County."
-            className="mb-8"
-          />
-          <div className="flex flex-wrap justify-center gap-3">
-            {CITY_DATA.map((city) => (
-              <Link
-                key={city.slug}
-                href={`/services/${city.slug}`}
-                className={buttonVariants({ variant: "outline" })}
-              >
-                Sprinkler blowout in {city.name}
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
+      {/* Service area map */}
+      <ServiceAreaMap title="Where we winterize" bg="cream" />
 
+      {/* Reviews from blowout visits */}
       {BLOWOUT_REVIEWS.length > 0 && (
         <>
-          <script
-            type="application/ld+json"
-            dangerouslySetInnerHTML={{
-              __html: JSON.stringify(reviewsJsonLd(BLOWOUT_REVIEWS)),
-            }}
-          />
+          <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(reviewsJsonLd(BLOWOUT_REVIEWS)) }} />
           <Testimonials
             reviews={BLOWOUT_REVIEWS}
-            heading="What Customers Say About Winterization"
-            description="Google reviews from homeowners whose systems we blew out."
+            heading="What homeowners say about their blowout"
+            description="Google reviews from winterization visits."
             bg="background"
             headingId="blowout-reviews"
           />
@@ -382,24 +297,14 @@ export default function SprinklerBlowoutPage() {
       )}
 
       {/* FAQs */}
-      <section
-        aria-labelledby="blowout-faq"
-        className="bg-cream section-padding-y"
-      >
+      <section aria-labelledby="blowout-faq" className="bg-cream section-padding-y">
         <div className="container-padding-x mx-auto max-w-3xl">
-          <SectionHeader
-            title="Sprinkler Blowout FAQs"
-            titleId="blowout-faq"
-            className="mb-10"
-          />
+          <SectionHeader title="Sprinkler blowout questions" titleId="blowout-faq" className="mb-10" />
           <FaqList faqs={BLOWOUT_FAQS} itemBg="background" />
           <p className="text-sm text-muted-foreground text-center mt-8">
             For the full timing breakdown, read our{" "}
-            <Link
-              href="/blog/when-to-winterize-sprinklers-colorado"
-              className="text-primary hover:underline font-medium"
-            >
-              when to blow out sprinklers in Colorado
+            <Link href="/blog/when-to-winterize-sprinklers-colorado" className="text-primary hover:underline font-medium">
+              winterization guide
             </Link>
             .
           </p>

@@ -1,10 +1,11 @@
 import type { Metadata } from "next"
 import { PageBanner } from "@/components/sections/PageBanner"
+import { ServiceAreaMap } from "@/components/sections/ServiceAreaMap"
 import { CTAStrip } from "@/components/sections/CTAStrip"
 import { FaqList } from "@/components/sections/FaqList"
 import { DefinitionList } from "@/components/sections/DefinitionList"
 import { SectionHeader } from "@/components/sections/SectionHeader"
-import { Badge } from "@/components/ui/badge"
+import { Card, CardContent } from "@/components/ui/card"
 import { buttonVariants } from "@/components/ui/button"
 import Link from "next/link"
 import Image from "next/image"
@@ -21,21 +22,39 @@ export const metadata: Metadata = {
 }
 
 /**
- * Installation landing page.
- *
- * Follows the alternating image/text section pattern established by
- * /water-efficiency rather than inventing a new layout.
+ * Installation landing page, on the service page template
+ * (docs/SERVICE_PAGE_TEMPLATE.md). Installation is quoted, not booked
+ * online, so the panel's action is "Get an installation quote" to /contact.
  *
  * Content is grounded in Trailhead's existing published copy: the
  * $3,000-$6,000 range comes from city-data.ts and the Service schema in
  * seo.ts, and the capability list comes from the installation block on
  * /services. It deliberately does NOT state an install duration, permit
- * fees, or a step-by-step site procedure. An earlier version invented those.
- * If they're wanted, they need to come from Ryan.
- *
- * No "free quote" or "free estimate" language anywhere, per 3cca994.
- * House style for new content: no em dashes (18c9a89).
+ * fees, or a step-by-step site procedure. If they're wanted, they need to
+ * come from Ryan. No "free quote" language anywhere. House style: warm,
+ * plain, no em dashes.
  */
+
+const INCLUDED = [
+  "Zone layout based on your actual water pressure and flow",
+  "High-efficiency sprinkler heads and rotors, matched per zone",
+  "Head-to-head coverage so there are no dry rings between heads",
+  "Smart Wi-Fi controller options",
+  "Full system walkthrough after install",
+]
+
+const LOCAL = [
+  {
+    term: "Heavy clay soil",
+    definition:
+      "Clay-loam absorbs water slowly and moves as it wets and dries. That points toward lower precipitation-rate nozzles and cycle-and-soak run times, because long single runs mostly become runoff.",
+  },
+  {
+    term: "Restricted watering windows",
+    definition:
+      "When a city allows watering two or three days a week, the system has to deliver a full week of water inside those windows without flooding. That changes zone sizing and head selection as well as the controller schedule.",
+  },
+]
 
 const INSTALL_FAQS = [
   {
@@ -105,241 +124,171 @@ const INSTALL_REVIEWS = pickReviews("Jeremy Hampton", "Joanna Toy")
 export default function SprinklerInstallationPage() {
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(faqJsonLd(INSTALL_FAQS)),
-        }}
-      />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd(INSTALL_FAQS)) }} />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
           __html: JSON.stringify(
             breadcrumbJsonLd([
               { name: "Home", url: siteConfig.url },
-              {
-                name: "Sprinkler Installation",
-                url: `${siteConfig.url}/sprinkler-installation`,
-              },
+              { name: "Sprinkler Installation", url: `${siteConfig.url}/sprinkler-installation` },
             ])
           ),
         }}
       />
 
       <PageBanner
-        title="Sprinkler & Irrigation System Installation in Erie, CO"
-        description="Zone layout and price before anyone digs. Erie, Longmont, Louisville, Lafayette, Firestone and Broomfield."
+        title="Sprinkler and irrigation installation in Erie, Colorado"
+        description="Zone layout and price before anyone digs, designed for clay soil and Front Range watering rules."
         backgroundImage="/images/home-lawn-spring.jpg"
       />
 
-      {/* Answer-first intro + single CTA */}
-      <section
-        aria-labelledby="install-overview"
-        className="bg-background section-padding-y"
-      >
-        <div className="container-padding-x mx-auto max-w-3xl text-center">
+      {/* Answer first: what you get on the left; the at-a-glance panel with the price range, season and the quote action on the right */}
+      <section aria-labelledby="install-overview" className="bg-background section-padding-y">
+        <div className="container-padding-x mx-auto max-w-7xl">
+          <div className="grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-10 lg:gap-16 items-stretch">
+            <div className="max-w-[60ch] flex flex-col justify-center">
+              <SectionHeader
+                tagline="New system installation"
+                taglineAsEyebrow
+                title="How much does sprinkler installation cost in Erie, CO?"
+                titleId="install-overview"
+                align="left"
+              />
+              <p className="text-muted-foreground mt-5 mb-4">
+                Most residential sprinkler installations run{" "}
+                <strong className="text-foreground font-semibold">$3,000 to $6,000</strong>. The number moves with
+                yard size, how many zones your water pressure will support, and the controller you choose.
+              </p>
+              <p className="text-muted-foreground">
+                Ryan walks the property, designs the zone layout, and does the install himself. You get the layout
+                and a price before anyone digs.
+              </p>
+            </div>
+
+            <Card className="bg-cream h-full">
+              <CardContent className="p-8 flex flex-col h-full">
+                <p className="text-xs font-semibold uppercase tracking-widest text-primary">At a glance</p>
+                <p className="mt-3 flex flex-wrap items-baseline gap-x-2">
+                  <span className="font-display text-5xl font-bold text-navy leading-none">$3,000 to $6,000</span>
+                  <span className="text-muted-foreground">for most yards</span>
+                </p>
+                <dl className="mt-6 divide-y divide-border border-y border-border">
+                  {[
+                    ["What moves the price", "Yard size, zone count, controller"],
+                    ["Season", "April through October"],
+                    ["Who does the work", "Ryan designs and installs it"],
+                    ["Before anyone digs", "Layout and price in writing"],
+                  ].map(([k, v]) => (
+                    <div key={k} className="flex justify-between gap-6 py-3">
+                      <dt className="text-sm text-muted-foreground shrink-0">{k}</dt>
+                      <dd className="text-sm font-semibold text-foreground text-right">{v}</dd>
+                    </div>
+                  ))}
+                </dl>
+                <div className="mt-auto pt-6">
+                  <Link href="/contact" className={buttonVariants({ size: "lg", className: "w-full" })}>
+                    Get an installation quote
+                  </Link>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* Designed for your yard */}
+      <section aria-labelledby="install-design" className="bg-cream section-padding-y">
+        <div className="container-padding-x mx-auto max-w-7xl">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
+            <div className="relative aspect-[4/3] rounded-lg overflow-hidden">
+              <Image
+                src="/images/new-lawn-home.jpg"
+                alt="Home with a freshly installed lawn and paver walkway"
+                fill
+                sizes="(min-width: 1024px) 50vw, 100vw"
+                className="object-cover"
+              />
+            </div>
+            <div>
+              <SectionHeader
+                tagline="Designed for your yard"
+                taglineAsEyebrow
+                title="Zones laid out from your yard's water pressure and flow"
+                titleId="install-design"
+                align="left"
+              />
+              <p className="text-muted-foreground mt-5 max-w-[60ch]">
+                We plan the zone coverage, do the trenching and wiring, and walk you through the system when
+                it&apos;s done.
+              </p>
+              <ul className="mt-6 flex flex-col gap-3">
+                {INCLUDED.map((item) => (
+                  <li key={item} className="flex items-start gap-3 text-foreground">
+                    <CheckCircle2 className="h-5 w-5 text-success shrink-0 mt-0.5" aria-hidden="true" />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Local conditions, as plain text */}
+      <section aria-labelledby="install-local" className="bg-background section-padding-y">
+        <div className="container-padding-x mx-auto max-w-7xl flex flex-col gap-10">
           <SectionHeader
-            tagline="New system installation"
+            tagline="Why local design matters"
             taglineAsEyebrow
-            title="How much does sprinkler installation cost in Erie, CO?"
-            titleId="install-overview"
-          />
-          <p className="text-muted-foreground mt-5 mb-4">
-            Most residential sprinkler installations run{" "}
-            <strong className="text-foreground font-semibold">
-              $3,000 to $6,000
-            </strong>
-            . The number moves with yard size, how many zones your water
-            pressure will support, and the controller you choose.
-          </p>
-          <p className="text-muted-foreground mb-7">
-            Ryan walks the property, designs the zone layout, and does the
-            install himself. You get the layout and a price before anyone digs.
-          </p>
-          <Link href="/contact" className={buttonVariants({ size: "lg" })}>
-            Get an installation quote
-          </Link>
-        </div>
-      </section>
-
-      {/* Custom design */}
-      <section
-        aria-labelledby="install-design"
-        className="bg-cream section-padding-y"
-      >
-        <div className="container-padding-x mx-auto max-w-7xl">
-          <div className="flex flex-col md:flex-row items-center gap-8 md:gap-16">
-            <div className="flex-1 w-full">
-              <div className="relative aspect-[4/3] rounded-xl overflow-hidden">
-                <Image
-                  src="/images/new-lawn-home.jpg"
-                  alt="Home with a freshly installed lawn and paver walkway"
-                  fill
-                  className="object-cover"
-                />
-              </div>
-            </div>
-            <div className="flex-1">
-              <Badge variant="outline" className="mb-3">
-                Designed for your yard
-              </Badge>
-              <h2
-                id="install-design"
-                className="text-2xl md:text-3xl font-bold text-foreground mb-3"
-              >
-                Zones laid out from your yard&apos;s water pressure and flow
-              </h2>
-              <p className="text-muted-foreground mb-5">
-                We plan the zone coverage, do the trenching and wiring, and
-                walk you through the system when it&apos;s done.
-              </p>
-              <ul className="flex flex-col gap-2.5">
-                <FeatureItem>
-                  Zone layout based on your actual water pressure and flow
-                </FeatureItem>
-                <FeatureItem>
-                  High-efficiency sprinkler heads and rotors, matched per zone
-                </FeatureItem>
-                <FeatureItem>
-                  Head-to-head coverage so there are no dry rings between heads
-                </FeatureItem>
-                <FeatureItem>Smart Wi-Fi controller options</FeatureItem>
-                <FeatureItem>Full system walkthrough after install</FeatureItem>
-              </ul>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Local conditions */}
-      <section
-        aria-labelledby="install-local"
-        className="bg-background section-padding-y"
-      >
-        <div className="container-padding-x mx-auto max-w-7xl">
-          <div className="flex flex-col md:flex-row-reverse items-center gap-8 md:gap-16">
-            <div className="flex-1 w-full">
-              <div className="relative aspect-[4/3] rounded-xl overflow-hidden">
-                <Image
-                  src="/images/new-system-sprinklers-running.jpg"
-                  alt="New sprinkler system running across a lawn in evening light"
-                  fill
-                  className="object-cover"
-                />
-              </div>
-            </div>
-            <div className="flex-1">
-              <Badge variant="outline" className="mb-3">
-                Why local design matters
-              </Badge>
-              <h2
-                id="install-local"
-                className="text-2xl md:text-3xl font-bold text-foreground mb-3"
-              >
-                Built for clay soil and Front Range water rules
-              </h2>
-              <p className="text-muted-foreground mb-5">
-                A system designed for sandy soil and unlimited watering days
-                will not perform here. Two local conditions shape every layout:
-              </p>
-              <ul className="flex flex-col gap-4 mb-6">
-                <li>
-                  <p className="font-semibold text-foreground text-sm mb-1">
-                    Heavy clay soil
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    Clay-loam absorbs water slowly and moves as it wets and
-                    dries. That points toward lower precipitation-rate nozzles
-                    and cycle-and-soak run times, because long single runs
-                    mostly become runoff.
-                  </p>
-                </li>
-                <li>
-                  <p className="font-semibold text-foreground text-sm mb-1">
-                    Restricted watering windows
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    When a city allows watering two or three days a week, the
-                    system has to deliver a full week of water inside those
-                    windows without flooding. That changes zone sizing and head
-                    selection as well as the controller schedule.
-                  </p>
-                </li>
-              </ul>
-              <div className="flex flex-wrap gap-3">
-                <Link
-                  href="/water-rebates"
-                  className={buttonVariants({ variant: "outline" })}
-                >
-                  Check local rebates
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Definitions */}
-      <section
-        aria-labelledby="install-terms"
-        className="bg-cream section-padding-y"
-      >
-        <div className="container-padding-x mx-auto max-w-5xl">
-          <SectionHeader
-            title="Terms you'll see on a sprinkler bid"
-            titleId="install-terms"
+            title="Built for clay soil and Front Range water rules"
+            titleId="install-local"
+            description="A system designed for sandy soil and unlimited watering days will not perform here. Two local conditions shape every layout."
             align="left"
-            className="mb-10"
           />
-          <DefinitionList items={DEFINITIONS} columns={2} itemBg="background" />
+          <DefinitionList items={LOCAL} variant="plain" columns={2} />
+          <div>
+            <Link href="/water-rebates" className={buttonVariants({ variant: "outline" })}>
+              Check local rebates
+            </Link>
+          </div>
         </div>
       </section>
 
+      {/* Terms, as plain text */}
+      <section aria-labelledby="install-terms" className="bg-cream section-padding-y">
+        <div className="container-padding-x mx-auto max-w-7xl flex flex-col gap-10">
+          <SectionHeader tagline="Good to know" taglineAsEyebrow title="Terms you'll see on a sprinkler bid" titleId="install-terms" align="left" />
+          <DefinitionList items={DEFINITIONS} variant="plain" columns={2} />
+        </div>
+      </section>
+
+      {/* Service area map */}
+      <ServiceAreaMap title="Where we install systems" bg="background" />
+
+      {/* Reviews from installations */}
       {INSTALL_REVIEWS.length > 0 && (
         <>
-          <script
-            type="application/ld+json"
-            dangerouslySetInnerHTML={{
-              __html: JSON.stringify(reviewsJsonLd(INSTALL_REVIEWS)),
-            }}
-          />
+          <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(reviewsJsonLd(INSTALL_REVIEWS)) }} />
           <Testimonials
             reviews={INSTALL_REVIEWS}
-            heading="What Installation Customers Say"
-            description="Google reviews from homeowners we designed and installed systems for."
-            bg="background"
-            headingId="installation-reviews"
+            heading="What homeowners say about their new system"
+            description="Google reviews from installations."
+            bg="cream"
+            headingId="install-reviews"
           />
         </>
       )}
 
       {/* FAQs */}
-      <section
-        aria-labelledby="install-faq"
-        className="bg-cream section-padding-y"
-      >
+      <section aria-labelledby="install-faq" className="bg-background section-padding-y">
         <div className="container-padding-x mx-auto max-w-3xl">
-          <SectionHeader
-            title="Sprinkler Installation FAQs"
-            titleId="install-faq"
-            className="mb-10"
-          />
-          <FaqList faqs={INSTALL_FAQS} itemBg="background" />
+          <SectionHeader title="Sprinkler installation questions" titleId="install-faq" className="mb-10" />
+          <FaqList faqs={INSTALL_FAQS} itemBg="cream" />
         </div>
       </section>
 
       <CTAStrip />
     </>
-  )
-}
-
-/* ─── Helper Components ─── */
-
-function FeatureItem({ children }: { children: React.ReactNode }) {
-  return (
-    <li className="flex items-start gap-2 text-sm text-muted-foreground">
-      <CheckCircle2 className="w-4 h-4 text-success shrink-0 mt-0.5" />
-      <span>{children}</span>
-    </li>
   )
 }
