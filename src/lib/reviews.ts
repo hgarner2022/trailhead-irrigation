@@ -248,7 +248,7 @@ export const REVIEWS: ReviewItem[] = [
     date: "2026-05-13",
     body: "Ryan at Trailhead Irrigation was awesome! He was prompt, reliable, down to earth, and reasonably priced. He helped fix some sprinkler heads and modify some drip lines on my backyard irrigation system, and the work was done really well. What stood out most was how responsive and thorough he was. He triple checked everything and even came back out when we thought there might be a leak just to make sure everything was working properly. As a female homeowner, I also really appreciated that he wasn’t condescending, trying to mansplain things, or upsell unnecessary work. He genuinely wanted to help fix the problem and make sure it was done right. I originally called him just to help turn my sprinkler system on for the season, but ended up hiring him for the additional work because I was so happy with the experience. Strongly recommend Ryan and Trailhead Irrigation.",
     source: "Google",
-    tags: ["repair", "value", "turn-on"],
+    tags: ["repair", "value"],
   },
   {
     author: "Joe “Tr3m3ndous” Louis",
@@ -264,7 +264,7 @@ export const REVIEWS: ReviewItem[] = [
     date: "2026-05-01",
     body: "Great service from the Trailhead team. They turned my system on and installed a Rachio wireless controller. The handoff to my account was seamless and they were really knowledgeable about the app. Highly recommend!",
     source: "Google",
-    tags: ["smart-controller", "turn-on"],
+    tags: ["smart-controller"],
   },
   {
     author: "Chris Nomad",
@@ -295,7 +295,7 @@ export const REVIEWS: ReviewItem[] = [
     date: "2026-04-27",
     body: "Highly recommend! I found a leak in my system this spring and they diagnosed the problem and fixed it right away. Very good pricing compared to other companies in town!",
     source: "Google",
-    tags: ["repair", "value", "turn-on"],
+    tags: ["repair", "value"],
   },
   {
     author: "Adam Shearer",
