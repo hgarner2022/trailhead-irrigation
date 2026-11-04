@@ -33,6 +33,9 @@ const HOME_REVIEWS = pickReviews(
   "Ed K",
 )
 
+// Re-rendered once a day so the seasonal hero reads the calendar.
+export const revalidate = 86400
+
 export default function HomePage() {
   // Single JSON-LD @graph payload combining:
   //  - 4 individual Service entities (installation / repair / blowout / turn-on)

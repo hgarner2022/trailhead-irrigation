@@ -9,18 +9,60 @@ import { SeasonalPill } from "@/components/sections/SeasonalPill"
 // reason to stay. Two doors: repair/seasonal people book, installation
 // people want a number and a conversation first.
 
+/**
+ * The hero follows the season. Only the H1 and the photo change; the title
+ * tag and meta description stay fixed year-round (search sees a stable page
+ * with a seasonal headline). Every H1 keeps "sprinkler", "Erie, CO" and the
+ * Front Range. The homepage revalidates daily (see src/app/page.tsx) so the
+ * month is read from the calendar, not from the last deploy.
+ */
+export function heroSeason(date: Date) {
+  const m = date.getMonth() // 0 = January
+  if (m === 2 || m === 3 || m === 4) {
+    return {
+      h1: "Spring sprinkler turn-ons and tune-ups in Erie, CO, serving the Northern Colorado Front Range. Booking now for April and May.",
+      src: "/images/trail-mountain-meadow.jpg",
+      alt: "Two-track trail through a mountain meadow at sunrise in the Colorado Rockies",
+      position: "object-[60%_center]",
+    }
+  }
+  if (m === 8 || m === 9) {
+    return {
+      h1: "Fall sprinkler blowouts in Erie, CO, serving the Northern Colorado Front Range. Booking now for October.",
+      src: "/images/fall-blowout-yard-erie.jpg",
+      alt: "Sprinkler head blowing out mist on a leaf-covered lawn in front of an Erie home, Front Range peaks behind",
+      position: "object-[70%_center]",
+    }
+  }
+  if (m === 10) {
+    return {
+      h1: "Fall sprinkler blowouts in Erie, CO, serving the Northern Colorado Front Range. Booking all through November and into December.",
+      src: "/images/fall-blowout-yard-erie.jpg",
+      alt: "Sprinkler head blowing out mist on a leaf-covered lawn in front of an Erie home, Front Range peaks behind",
+      position: "object-[70%_center]",
+    }
+  }
+  return {
+    h1: "Sprinkler repair and irrigation system installation in Erie, CO, serving the Northern Colorado Front Range.",
+    src: "/images/trail-mountain-meadow.jpg",
+    alt: "Two-track trail through a mountain meadow at sunrise in the Colorado Rockies",
+    position: "object-[60%_center]",
+  }
+}
+
 export function Hero() {
+  const season = heroSeason(new Date())
   return (
     <section className="relative flex items-end min-h-[560px] md:min-h-[640px] lg:min-h-[720px]" aria-labelledby="hero-heading">
       {/* The trail. This is the promise behind "Go find your trail": the
           customer is up here, not in the yard. The gradient darkens the
           left third for the text and leaves the peak clear on the right. */}
       <Image
-        src="/images/trail-mountain-meadow.jpg"
-        alt="Two-track trail through a mountain meadow at sunrise in the Colorado Rockies"
+        src={season.src}
+        alt={season.alt}
         fill
         priority
-        className="object-cover object-[60%_center]"
+        className={cn("object-cover", season.position)}
         sizes="100vw"
         quality={82}
       />
@@ -44,7 +86,7 @@ export function Hero() {
             className="font-sans text-lg md:text-xl font-semibold text-white leading-snug max-w-xl"
             style={{ letterSpacing: 0 }}
           >
-            Sprinkler repair and irrigation system installation in Erie, CO, serving the Northern Colorado Front Range.
+            {season.h1}
           </h1>
           <p className="order-first font-display text-5xl sm:text-6xl md:text-7xl font-bold text-white leading-[0.98] max-w-3xl">
             Less time in the yard. More time on the trail.
