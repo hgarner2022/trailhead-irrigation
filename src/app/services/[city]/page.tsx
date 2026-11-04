@@ -92,8 +92,8 @@ export default async function CityPage({
       />
 
       <PageBanner
-        title={`Sprinkler Repair & Service in ${data.name}, CO`}
-        description={`Repairs, spring turn-ons, fall blowouts and new systems for ${data.name} yards, with the local watering rules and rebates below.`}
+        title={`Sprinkler service in ${data.name}, Colorado`}
+        description={`Repairs, spring turn-ons, fall blowouts and new systems for ${data.name} yards.`}
       />
       {/* Watering rules, backflow, provider, rebate */}
       <CityLocalSign data={data} />
