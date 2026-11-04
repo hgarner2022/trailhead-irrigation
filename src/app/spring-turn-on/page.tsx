@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import Image from "next/image"
 import Link from "next/link"
 import { buttonVariants } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
 import { CTAStrip } from "@/components/sections/CTAStrip"
 import { FaqList } from "@/components/sections/FaqList"
 import { DefinitionList } from "@/components/sections/DefinitionList"
@@ -137,31 +138,51 @@ export default function SpringTurnOnPage() {
         backgroundImage="/images/sprinkler-spring.jpg"
       />
 
-      {/* Answer first: what the visit does, the price, when, how long, one Book Online */}
+      {/* Answer first: what the visit does, the price, when, how long, one Book Online, the price card beside it */}
       <section aria-labelledby="turn-on-overview" className="bg-background section-padding-y">
         <div className="container-padding-x mx-auto max-w-7xl">
-          <div className="max-w-[60ch]">
-            <SectionHeader
-              tagline="Late April through May"
-              taglineAsEyebrow
-              title="Your system, ready for the season in one visit"
-              titleId="turn-on-overview"
-              align="left"
-            />
-            <p className="text-muted-foreground mt-5 mb-4">
-              A spring turn-on is{" "}
-              <strong className="text-foreground font-semibold">$145 for up to 8 zones</strong>, plus $10 for each
-              zone after that. We pressurize the system slowly, run every zone, adjust the heads, check for leaks and
-              program the controller. Plan on about 45 minutes to an hour.
-            </p>
-            <p className="text-muted-foreground mb-7">
-              Everything runs right from the first week: heads straightened after a winter of snowplows, the
-              controller set for spring, and every zone checked so the lawn gets what it needs from day one. We
-              start booking in early April, once nights have stayed above freezing for about a week.
-            </p>
-            <Link href="/book" className={buttonVariants({ size: "lg" })}>
-              Book Online
-            </Link>
+          <div className="flex flex-col lg:flex-row gap-10 lg:gap-16 items-start">
+            <div className="flex-1 max-w-[60ch]">
+              <SectionHeader
+                tagline="Late April through May"
+                taglineAsEyebrow
+                title="Your system, ready for the season in one visit"
+                titleId="turn-on-overview"
+                align="left"
+              />
+              <p className="text-muted-foreground mt-5 mb-4">
+                A spring turn-on is{" "}
+                <strong className="text-foreground font-semibold">$145 for up to 8 zones</strong>, plus $10 for each
+                zone after that. We pressurize the system slowly, run every zone, adjust the heads, check for leaks and
+                program the controller. Plan on about 45 minutes to an hour.
+              </p>
+              <p className="text-muted-foreground mb-7">
+                Everything runs right from the first week: heads straightened after a winter of snowplows, the
+                controller set for spring, and every zone checked so the lawn gets what it needs from day one.
+              </p>
+              <Link href="/book" className={buttonVariants({ size: "lg" })}>
+                Book Online
+              </Link>
+            </div>
+
+            <div className="w-full lg:w-[360px] shrink-0">
+              <Card className="bg-cream">
+                <CardContent className="p-6">
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-4xl font-bold text-foreground">$145</span>
+                    <span className="text-sm text-muted-foreground">up to 8 zones</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-1.5">+$10 per additional zone.</p>
+                  <div className="mt-5 pt-5 border-t border-border">
+                    <p className="text-sm font-semibold text-foreground mb-1.5">Wait for warm nights</p>
+                    <p className="text-sm text-muted-foreground">
+                      We turn systems on once nights have stayed above 32 degrees for a week, usually late April.
+                      Booking opens in early April.
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </div>
       </section>

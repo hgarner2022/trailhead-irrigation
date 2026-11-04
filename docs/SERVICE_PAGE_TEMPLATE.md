@@ -21,7 +21,7 @@ The exemplar is `/spring-turn-on` (redesigned Nov 4, 2026, approved by Hannah). 
 | # | Section | Component | Background | What it needs |
 |---|---|---|---|---|
 | 1 | Banner | `PageBanner` with `backgroundImage` | photo + overlay | H1 in sentence case ("Spring sprinkler turn-on in Erie, Colorado"); one line on what the visit does; a real photo with open space where the text sits. Service pages KEEP the photo banner |
-| 2 | Answer first | `SectionHeader` + two paragraphs + Book Online, text only, `max-w-[60ch]` | white | Eyebrow (the window), H2 on what the visit does for the yard, price bold in the first sentence, duration, when booking opens, one Book Online. No photo and no price card beside it (Hannah, Nov 4 2026) |
+| 2 | Answer first | `SectionHeader` (left) + `Card` price card (right, 360px) | white | Eyebrow (the window), H2 on what the visit does for the yard, price bold in the first sentence, duration, one Book Online. Beside it the cream price card: price, per-zone note, one "when" fact. A photo there was tried and rejected (Hannah, Nov 4 2026) |
 | 3 | What happens on the visit | `Image` (left) + `SectionHeader` + numbered `<ol>` (right) | cream | 4 to 6 steps in the order they happen; the second photo |
 | 4 | Reviews | `Testimonials` with `reviewsFor("<topic>", 3)` | white | Reviews tagged for this service in `src/lib/reviews.ts` (add the topic to `ReviewTopic` in `seo.ts`), with `reviewsJsonLd` |
 | 5 | Good to know | `SectionHeader` + `DefinitionList variant="plain" columns={2}` | cream | 3 to 4 terms as plain text, no boxes, 40 to 60 words each |
@@ -29,7 +29,7 @@ The exemplar is `/spring-turn-on` (redesigned Nov 4, 2026, approved by Hannah). 
 | 7 | FAQs | `SectionHeader` + `FaqList itemBg="background"` | cream | 5 to 7 questions worded the way people search, with `faqJsonLd`; one link to the related blog post under it |
 | 8 | Closing strip | `CTAStrip` | navy | shared |
 
-What is deliberately NOT on the page: a navy banner (Hannah: "I liked the image"), a price card (the opening paragraph carries the price), a row of city buttons (the map replaces it), bordered term cards, an "included" checklist (the FAQ covers it).
+What is deliberately NOT on the page: a navy banner (Hannah: "I liked the image"),  a row of city buttons (the map replaces it), bordered term cards, an "included" checklist (the FAQ covers it).
 
 Backgrounds alternate white and cream; the banner photo and the closing strip are the only dark bands. Headings and intro on the left with content beside them; the steps section puts the photo on the left. Body copy stays inside `max-w-[60ch]`.
 

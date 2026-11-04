@@ -22,6 +22,7 @@ const page = `import type { Metadata } from "next"
 import Image from "next/image"
 import Link from "next/link"
 import { buttonVariants } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
 import { CTAStrip } from "@/components/sections/CTAStrip"
 import { FaqList } from "@/components/sections/FaqList"
 import { DefinitionList } from "@/components/sections/DefinitionList"
@@ -97,13 +98,30 @@ export default function ${id.charAt(0).toUpperCase() + id.slice(1)}Page() {
       {/* Answer first: price, window, one Book Online */}
       <section aria-labelledby="${slug}-overview" className="bg-background section-padding-y">
         <div className="container-padding-x mx-auto max-w-7xl">
-          <div className="max-w-[60ch]">
-            <SectionHeader tagline="TODO the season or window" taglineAsEyebrow title="TODO what the visit does for the yard" titleId="${slug}-overview" align="left" />
-            <p className="text-muted-foreground mt-5 mb-4">TODO first sentence with the price in bold, then what the visit covers and how long it takes.</p>
-            <p className="text-muted-foreground mb-7">TODO one warm paragraph on the result and when booking opens.</p>
-            <Link href="/book" className={buttonVariants({ size: "lg" })}>
-              Book Online
-            </Link>
+          <div className="flex flex-col lg:flex-row gap-10 lg:gap-16 items-start">
+            <div className="flex-1 max-w-[60ch]">
+              <SectionHeader tagline="TODO the season or window" taglineAsEyebrow title="TODO what the visit does for the yard" titleId="${slug}-overview" align="left" />
+              <p className="text-muted-foreground mt-5 mb-4">TODO first sentence with the price in bold, then what the visit covers and how long it takes.</p>
+              <p className="text-muted-foreground mb-7">TODO one warm paragraph on the result.</p>
+              <Link href="/book" className={buttonVariants({ size: "lg" })}>
+                Book Online
+              </Link>
+            </div>
+            <div className="w-full lg:w-[360px] shrink-0">
+              <Card className="bg-cream">
+                <CardContent className="p-6">
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-4xl font-bold text-foreground">$TODO</span>
+                    <span className="text-sm text-muted-foreground">TODO what that covers</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-1.5">TODO per-zone or hourly note.</p>
+                  <div className="mt-5 pt-5 border-t border-border">
+                    <p className="text-sm font-semibold text-foreground mb-1.5">TODO one "when" fact</p>
+                    <p className="text-sm text-muted-foreground">TODO a sentence on timing.</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </div>
       </section>
