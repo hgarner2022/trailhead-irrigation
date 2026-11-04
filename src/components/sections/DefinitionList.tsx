@@ -43,7 +43,7 @@ export function DefinitionList({
         {items.map((item) => (
           <div key={item.term} className="flex gap-4">
             {item.icon && (
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-cream text-primary" aria-hidden="true">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary" aria-hidden="true">
                 <item.icon className="h-5 w-5" />
               </span>
             )}

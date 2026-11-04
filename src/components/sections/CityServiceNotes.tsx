@@ -1,20 +1,13 @@
 import Link from "next/link"
-import { ArrowUpRight, Sun, Wrench, Snowflake, Shovel, Smartphone, Droplet, type LucideIcon } from "lucide-react"
+import { ArrowUpRight } from "lucide-react"
 import { SERVICES } from "@/lib/nav"
 
 // Six services as a list (six near-identical items compare better as rows
-// than as cards): a line icon in a tinted circle, the service name, one
-// local line, an arrow. Each row links to the service page. Only services
+// than as cards): the service name with a small inline arrow and one local
+// line. No icons, no dividers; the gap does the work.
+// Each row links to the service page. Only services
 // with a local note appear, so a half-filled city never shows empty rows.
 
-const ICONS: Record<string, LucideIcon> = {
-  "/spring-turn-on": Sun,
-  "/sprinkler-repair": Wrench,
-  "/sprinkler-blowout": Snowflake,
-  "/sprinkler-installation": Shovel,
-  "/smart-controllers": Smartphone,
-  "/water-efficiency": Droplet,
-}
 
 export function CityServiceNotes({ name, notes }: { name: string; notes: Record<string, string> }) {
   const items = SERVICES.filter((s) => notes[s.href])
@@ -32,22 +25,18 @@ export function CityServiceNotes({ name, notes }: { name: string; notes: Record<
               Here&apos;s what we do in {name}, and what&apos;s worth knowing about each one here.
             </p>
           </div>
-          <ul className="divide-y divide-border">
+          <ul className="flex flex-col gap-9">
             {items.map((s) => {
-              const Icon = ICONS[s.href]
               return (
                 <li key={s.href}>
-                  <Link href={s.href} className="group flex items-start gap-4 py-6 first:pt-0 last:pb-0">
-                    {Icon && (
-                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-cream text-primary" aria-hidden="true">
-                        <Icon className="h-5 w-5" />
-                      </span>
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <p className="font-display text-xl font-semibold text-navy group-hover:text-primary transition-colors">{s.label}</p>
-                      <p className="text-muted-foreground mt-1 max-w-[70ch]">{notes[s.href]}</p>
+                  <Link href={s.href} className="group block max-w-[60ch]">
+                    <div className="min-w-0">
+                      <p className="font-display text-2xl font-semibold text-navy group-hover:text-primary transition-colors inline-flex items-center gap-2">
+                        {s.label}
+                        <ArrowUpRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" aria-hidden="true" />
+                      </p>
+                      <p className="text-muted-foreground leading-relaxed mt-1">{notes[s.href]}</p>
                     </div>
-                    <ArrowUpRight className="h-5 w-5 shrink-0 mt-1 text-muted-foreground group-hover:text-primary transition-colors" aria-hidden="true" />
                   </Link>
                 </li>
               )
