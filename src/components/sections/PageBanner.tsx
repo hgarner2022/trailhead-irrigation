@@ -1,11 +1,15 @@
+import type React from "react"
 export function PageBanner({
   title,
   description,
   backgroundImage,
+  children,
 }: {
   title: string
   description?: string
   backgroundImage?: string
+  /** Optional small element under the description, e.g. the seasonal chip. */
+  children?: React.ReactNode
 }) {
   return (
     <section className="relative py-20 md:py-28 flex items-center">
@@ -26,6 +30,7 @@ export function PageBanner({
         {description && (
           <p className="mt-4 text-lg text-white/80 max-w-2xl mx-auto">{description}</p>
         )}
+        {children && <div className="mt-6 flex justify-center">{children}</div>}
       </div>
     </section>
   )

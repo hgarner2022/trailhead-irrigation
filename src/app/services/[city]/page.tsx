@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { PageBanner } from "@/components/sections/PageBanner"
+import { SeasonalPill } from "@/components/sections/SeasonalPill"
 import { CityLocalSign } from "@/components/sections/CityLocalSign"
 import { CityNeighborhoods } from "@/components/sections/CityNeighborhoods"
 import { CityServiceNotes } from "@/components/sections/CityServiceNotes"
@@ -94,7 +95,9 @@ export default async function CityPage({
       <PageBanner
         title={`Sprinkler service in ${data.name}, Colorado`}
         description={`Repairs, spring turn-ons, fall blowouts and new systems for ${data.name} yards.`}
-      />
+      >
+        <SeasonalPill onDark />
+      </PageBanner>
       {/* Watering rules, backflow, provider, rebate */}
       <CityLocalSign data={data} />
 
