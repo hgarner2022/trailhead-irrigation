@@ -444,6 +444,10 @@ These don't break anything but should be addressed in a future refactor pass:
 - **Three near-identical price card patterns** in `/pricing` (Spring Turn-On / Inspection / Winterization) — already use `Card`, but the inner structure could be a `<ServicePriceCard>` to make adding a 4th service trivial.
 - **No shared `<SectionHeader>` component** — the "tagline → title → description" stacked block appears in 6+ places with copy-pasted markup. Lift into `pro-blocks/landing-page/header-sections/HeaderSectionBlock` style.
 
+## Adding a new city page
+
+`npm run new-city -- <slug> "<Name>" "<County>"` writes a draft `CITY_DATA` entry with every field marked TODO to `.local-data/city-drafts/`. `docs/CITY_PAGE_TEMPLATE.md` is the spec: what each section reads, what to collect, the copy rules, and the after-ship steps. Never ship a city half-filled.
+
 ## Adding a new city to the Rachio funnel
 
 Edit `src/lib/rachio-data.ts` → `CITY_RACHIO` array → add a new entry. The city page generates statically; sitemap auto-includes it. Verify the rebate amount is sourced from the city's published page before shipping (no fabrication — see `/smart-controllers/[city]` disclaimer).
