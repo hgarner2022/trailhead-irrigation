@@ -21,8 +21,7 @@ export const metadata: Metadata = {
 
 /**
  * Spring turn-on landing page, the exemplar for the service page template
- * (docs/SERVICE_PAGE_TEMPLATE.md). Three photos (banner, beside the opening,
- * beside the steps), the price, window and duration answered first with one
+ * (docs/SERVICE_PAGE_TEMPLATE.md). Two photos (banner, beside the steps), the price, window and duration answered first with one
  * Book Online, five steps, reviews from customers who booked a turn-on,
  * terms as plain text, the service-area map, FAQs, the closing strip. No
  * cards outside the FAQ. Every fact comes from /pricing, the spring startup
@@ -138,42 +137,31 @@ export default function SpringTurnOnPage() {
         backgroundImage="/images/sprinkler-spring.jpg"
       />
 
-      {/* Answer first: what the visit does, the price, when, how long, one Book Online, a photo beside it */}
+      {/* Answer first: what the visit does, the price, when, how long, one Book Online */}
       <section aria-labelledby="turn-on-overview" className="bg-background section-padding-y">
         <div className="container-padding-x mx-auto max-w-7xl">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
-            <div className="max-w-[60ch]">
-              <SectionHeader
-                tagline="Late April through May"
-                taglineAsEyebrow
-                title="Your system, ready for the season in one visit"
-                titleId="turn-on-overview"
-                align="left"
-              />
-              <p className="text-muted-foreground mt-5 mb-4">
-                A spring turn-on is{" "}
-                <strong className="text-foreground font-semibold">$145 for up to 8 zones</strong>, plus $10 for each
-                zone after that. We pressurize the system slowly, run every zone, adjust the heads, check for leaks and
-                program the controller. Plan on about 45 minutes to an hour.
-              </p>
-              <p className="text-muted-foreground mb-7">
-                Everything runs right from the first week: heads straightened after a winter of snowplows, the
-                controller set for spring, and every zone checked so the lawn gets what it needs from day one. We
-                start booking in early April, once nights have stayed above freezing for about a week.
-              </p>
-              <Link href="/book" className={buttonVariants({ size: "lg" })}>
-                Book Online
-              </Link>
-            </div>
-            <div className="relative aspect-[4/3] rounded-lg overflow-hidden">
-              <Image
-                src="/images/home-lawn-spring.jpg"
-                alt="Front lawn and flower beds of a home in spring"
-                fill
-                sizes="(min-width: 1024px) 50vw, 100vw"
-                className="object-cover"
-              />
-            </div>
+          <div className="max-w-[60ch]">
+            <SectionHeader
+              tagline="Late April through May"
+              taglineAsEyebrow
+              title="Your system, ready for the season in one visit"
+              titleId="turn-on-overview"
+              align="left"
+            />
+            <p className="text-muted-foreground mt-5 mb-4">
+              A spring turn-on is{" "}
+              <strong className="text-foreground font-semibold">$145 for up to 8 zones</strong>, plus $10 for each
+              zone after that. We pressurize the system slowly, run every zone, adjust the heads, check for leaks and
+              program the controller. Plan on about 45 minutes to an hour.
+            </p>
+            <p className="text-muted-foreground mb-7">
+              Everything runs right from the first week: heads straightened after a winter of snowplows, the
+              controller set for spring, and every zone checked so the lawn gets what it needs from day one. We
+              start booking in early April, once nights have stayed above freezing for about a week.
+            </p>
+            <Link href="/book" className={buttonVariants({ size: "lg" })}>
+              Book Online
+            </Link>
           </div>
         </div>
       </section>

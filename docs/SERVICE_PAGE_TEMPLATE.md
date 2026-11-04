@@ -16,13 +16,13 @@ npm run indexnow -- https://www.trailheadirrigation.com/lawn-aeration
 
 ## The page, top to bottom
 
-The exemplar is `/spring-turn-on` (redesigned Nov 4, 2026, approved by Hannah). Match it. Three photos, no cards outside the FAQ.
+The exemplar is `/spring-turn-on` (redesigned Nov 4, 2026, approved by Hannah). Match it. Two photos (banner and steps), no cards outside the FAQ.
 
 | # | Section | Component | Background | What it needs |
 |---|---|---|---|---|
 | 1 | Banner | `PageBanner` with `backgroundImage` | photo + overlay | H1 in sentence case ("Spring sprinkler turn-on in Erie, Colorado"); one line on what the visit does; a real photo with open space where the text sits. Service pages KEEP the photo banner |
-| 2 | Answer first | `SectionHeader` (left) + `Image` (right) | white | Eyebrow (the window), H2 on what the visit does for the yard, price bold in the first sentence, duration, when booking opens, one Book Online. A second photo beside it, not a price card |
-| 3 | What happens on the visit | `Image` (left) + `SectionHeader` + numbered `<ol>` (right) | cream | 4 to 6 steps in the order they happen; a third photo |
+| 2 | Answer first | `SectionHeader` + two paragraphs + Book Online, text only, `max-w-[60ch]` | white | Eyebrow (the window), H2 on what the visit does for the yard, price bold in the first sentence, duration, when booking opens, one Book Online. No photo and no price card beside it (Hannah, Nov 4 2026) |
+| 3 | What happens on the visit | `Image` (left) + `SectionHeader` + numbered `<ol>` (right) | cream | 4 to 6 steps in the order they happen; the second photo |
 | 4 | Reviews | `Testimonials` with `reviewsFor("<topic>", 3)` | white | Reviews tagged for this service in `src/lib/reviews.ts` (add the topic to `ReviewTopic` in `seo.ts`), with `reviewsJsonLd` |
 | 5 | Good to know | `SectionHeader` + `DefinitionList variant="plain" columns={2}` | cream | 3 to 4 terms as plain text, no boxes, 40 to 60 words each |
 | 6 | Where we do it | `ServiceAreaMap title bg="background"` | white | Nothing to write; the drawn six-town map, every dot a link |
