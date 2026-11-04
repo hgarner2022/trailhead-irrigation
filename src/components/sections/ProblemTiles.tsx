@@ -34,10 +34,16 @@ const TILES = [
     image: { src: "/images/sprinklers-curved-lawn-edge.jpg", alt: "Spray heads watering a curved lawn edged with river rock", position: "center 78%" },
   },
   {
-    title: "Smart Controllers and Water Efficiency",
-    body: "A Rachio 3 that skips watering when rain is coming, rotator nozzles that cut water use by about 30 percent, and drip for your beds and garden. Local rebates pay for part of it.",
+    title: "Smart Controllers",
+    body: "We install a Rachio 3, program it and hand it off. It skips watering when rain is coming and shows you the hours it saved.",
     href: "/smart-controllers",
     image: { src: "/images/rachio-3-controller.jpg", alt: "Rachio 3 smart sprinkler controller mounted on a wall" },
+  },
+  {
+    title: "Water Efficiency and Drip",
+    body: "Rotator nozzles cut water use by about 30 percent, drip lines feed your beds and garden, and local rebates pay for part of it.",
+    href: "/water-efficiency",
+    image: { src: "/images/garden-lettuce-bed.jpg", alt: "Lettuce growing in a raised garden bed with log edging" },
   },
 ]
 
