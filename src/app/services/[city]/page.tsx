@@ -91,13 +91,7 @@ export default async function CityPage({
         }}
       />
 
-      <CityHero
-        name={data.name}
-        county={data.county}
-        image={g?.heroImage ?? "/images/trail-mountain-meadow.jpg"}
-        alt={g?.heroImage ? (g.heroAlt ?? `${data.name}, Colorado`) : "Two-track trail through a mountain meadow at sunrise in the Colorado Rockies"}
-        position={g?.heroImage ? g.heroPosition : "60% center"}
-      />
+      <CityHero name={data.name} county={data.county} />
       {/* Watering rules, backflow, provider, rebate */}
       <CityLocalSign data={data} />
 

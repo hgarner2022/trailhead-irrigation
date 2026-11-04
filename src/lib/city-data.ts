@@ -35,12 +35,7 @@ export interface CityData {
 }
 
 export interface CityGuide {
-  /** Wide photo of the place itself, 2000px+ (the hero). */
-  heroImage?: string
-  heroAlt?: string
-  /** CSS object-position for the hero crop, e.g. "center 40%". */
-  heroPosition?: string
-  /** A second photo for the neighborhoods block. */
+  /** A photo of the town for the "Ryan on {City}" block. */
   placeImage?: string
   placeAlt?: string
   /** Big number on the local sign, e.g. "2". */
@@ -100,9 +95,6 @@ export const CITY_DATA: CityData[] = [
     ],
     relatedBlogSlugs: ["spring-sprinkler-startup-colorado", "water-optimization-tips-colorado", "colorado-water-restrictions-2026"],
     guide: {
-      heroImage: "/images/erie-aerial-fall-front-range.jpg",
-      heroAlt: "Erie, Colorado from the air in fall, with the Front Range on the horizon",
-      heroPosition: "center 55%",
       placeImage: "/images/erie-old-town-briggs-street.jpg",
       placeAlt: "Looking down Briggs Street in Old Town Erie, Colorado",
       wateringDaysPerWeek: "2",
@@ -164,9 +156,8 @@ export const CITY_DATA: CityData[] = [
     ],
     relatedBlogSlugs: ["signs-irrigation-system-needs-repair", "smart-irrigation-controllers-worth-it", "how-much-does-sprinkler-system-cost-colorado"],
     guide: {
-      heroImage: "/images/longmont-main-street-aerial.jpg",
-      heroAlt: "Main Street in Longmont, Colorado from the air on a summer evening",
-      heroPosition: "center 60%",
+      placeImage: "/images/longmont-main-street-aerial.jpg",
+      placeAlt: "Main Street in Longmont, Colorado from the air on a summer evening",
       wateringDaysPerWeek: "2",
       rebate: { label: "Longmont rebates on Wi-Fi controllers, nozzles and drip", href: "/water-rebates/longmont" },
       rulesCheckedOn: "November 1, 2026",
@@ -226,9 +217,8 @@ export const CITY_DATA: CityData[] = [
     ],
     relatedBlogSlugs: ["when-to-winterize-sprinklers-colorado", "what-to-expect-sprinkler-installation", "smart-irrigation-controllers-worth-it"],
     guide: {
-      heroImage: "/images/louisville-flatirons-fall.jpg",
-      heroAlt: "Fall color and the Flatirons, looking west from Louisville, Colorado",
-      heroPosition: "center 45%",
+      placeImage: "/images/louisville-flatirons-fall.jpg",
+      placeAlt: "Fall color and the Flatirons, looking west from Louisville, Colorado",
       wateringDaysPerWeek: "2",
       rebate: { label: "Free smart controllers and Slow the Flow evaluations through Resource Central", href: "/water-rebates/louisville" },
       rulesCheckedOn: "November 1, 2026",
@@ -286,9 +276,8 @@ export const CITY_DATA: CityData[] = [
     ],
     relatedBlogSlugs: ["smart-irrigation-controllers-worth-it", "colorado-water-restrictions-2026", "drip-irrigation-vs-spray-heads"],
     guide: {
-      heroImage: "/images/lafayette-town.jpg",
-      heroAlt: "Waneka Lake in Lafayette, Colorado in fall, with snow on the peaks behind it",
-      heroPosition: "center 45%",
+      placeImage: "/images/lafayette-town.jpg",
+      placeAlt: "Waneka Lake in Lafayette, Colorado in fall, with snow on the peaks behind it",
       wateringDaysPerWeek: "3",
       rebate: { label: "City of Lafayette smart controller rebate and free Rachio installs", href: "/water-rebates/lafayette" },
       rulesCheckedOn: "November 1, 2026",
@@ -348,9 +337,8 @@ export const CITY_DATA: CityData[] = [
     ],
     relatedBlogSlugs: ["when-to-winterize-sprinklers-colorado", "signs-irrigation-system-needs-repair", "how-to-adjust-sprinkler-heads"],
     guide: {
-      heroImage: "/images/firestone-fall-pond.jpg",
-      heroAlt: "Fall cottonwoods reflected in a pond in Firestone, Colorado",
-      heroPosition: "center",
+      placeImage: "/images/firestone-fall-pond.jpg",
+      placeAlt: "Fall cottonwoods reflected in a pond in Firestone, Colorado",
       rulesCheckedOn: "November 1, 2026",
       neighborhoods: ["Saddleback", "Saint Vrain Ranch", "Booth Farms", "Stoneridge", "Barefoot Lakes", "Historic Firestone"],
       ryanNote:
@@ -430,9 +418,8 @@ export const CITY_DATA: CityData[] = [
     ],
     relatedBlogSlugs: ["when-to-winterize-sprinklers-colorado", "water-optimization-tips-colorado", "smart-irrigation-controllers-worth-it"],
     guide: {
-      heroImage: "/images/broomfield-town.jpg",
-      heroAlt: "Broomfield, Colorado with the Flatirons and the snowy Front Range behind it",
-      heroPosition: "center 55%",
+      placeImage: "/images/broomfield-town.jpg",
+      placeAlt: "Broomfield, Colorado with the Flatirons and the snowy Front Range behind it",
       wateringDaysPerWeek: "2",
       rulesCheckedOn: "November 1, 2026",
       neighborhoods: ["Original Broomfield", "Anthem", "Anthem Ranch", "The Broadlands", "Wildgrass", "Baseline"],
