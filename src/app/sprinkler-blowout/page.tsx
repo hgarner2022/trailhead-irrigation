@@ -184,7 +184,7 @@ export default function SprinklerBlowoutPage() {
       <PageBanner
         title="Sprinkler Blowout & Winterization"
         description={season.banner}
-        backgroundImage="/images/sprinkler-blowout-erie-co.jpg"
+        backgroundImage="/images/fall-blowout-yard-erie.jpg"
       />
 
       {/* Answer-first intro, price, single Book Now CTA */}
