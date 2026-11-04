@@ -1,9 +1,14 @@
 import Image from "next/image"
+import Link from "next/link"
+import { buttonVariants } from "@/components/ui/button"
+import { SeasonalPill } from "@/components/sections/SeasonalPill"
 
 // The city page banner. Same frame as every other interior page (centered,
-// charcoal gradient) but taller, because the town photo is the point here. The H1 is first in the DOM so search engines read
-// it before the display line; `order-first` keeps the display line on top.
-// No buttons: the header and the phone sticky bar carry Book Online.
+// bottom-weighted charcoal scrim) but taller, because the town photo is the
+// point here. The H1 is first in the DOM so search engines read it before
+// the display line; `order-first` keeps the display line on top. The
+// seasonal chip and the one Book Online show from md / lg up, the same rule
+// as the homepage hero: below lg the sticky bar carries the button.
 
 export function CityHero({
   name,
@@ -32,6 +37,12 @@ export function CityHero({
         <p className="order-first font-display text-5xl md:text-6xl font-bold text-white leading-[0.98]">
           Sprinklers in {name}, handled.
         </p>
+        <SeasonalPill onDark className="hidden md:inline-flex" />
+        <div className="hidden lg:block mt-2">
+          <Link href="/book" className={buttonVariants({ size: "lg" })}>
+            Book Online
+          </Link>
+        </div>
       </div>
     </section>
   )

@@ -313,7 +313,7 @@ Provides 14 composable skills for structured software development:
 |---|---|
 | `/` | Homepage (Nov 2026 redesign) — Hero (tagline + keyword H1, two doors) → TrustStrip → ProblemTiles (6 clickable cards in Hannah's order, no prices, no button text) → InstallationBand (navy) → SeasonPassSection → OwnerSection → Testimonials (9, carousel) → ServiceAreaSection → HomeFAQ → CTAStrip. Every section has one job the others don't (see the comment in `page.tsx`); don't add one without a reason |
 | `/services` | Service overview + HowItWorks process + service detail blocks + city links + FAQ |
-| `/services/[city]` | Six city pages (erie, longmont, louisville, lafayette, firestone, broomfield), ONE template, every city fully filled: `CityHero` (taller than the other interior banners so the town photo reads, under a light bottom-up gradient so the photo reads, "Sprinklers in {City}, handled.", search-phrase H1, no buttons, no distance line) → `CitySeasonStrip` (navy band: `seasonNote()` + the page's one top Book Online, desktop only; the phone has the sticky bar) → `CityLocalSign` (watering rules only: big numbers, the rules list, rebate link, checked-on date; the booking line does NOT live here) → `CityServiceNotes` ("Sprinkler services in {City}": the six services, one local line each, every line links to the service page) → `CityNeighborhoods` ("Ryan on {City}", first person, neighborhood chips, town photo optional) → Testimonials (reviewers matched to Jobber job addresses in that town; general repair reviews when none) → FAQ → CTAStrip. All content comes from `guide` in `src/lib/city-data.ts`; a new city gets the whole template by filling that object. Never write "our shop is here" / "a short drive from our shop": customers do not care where the shop is (Hannah, Nov 4 2026) |
+| `/services/[city]` | Six city pages (erie, longmont, louisville, lafayette, firestone, broomfield), ONE template, every city fully filled, laid out on the Nov 4 2026 research pass (NN/g: one text axis, lists not cards for six like items, one navy band per page, stats only for counted numbers): `CityHero` (tall town-photo banner, bottom-up scrim, "Sprinklers in {City}, handled.", search-phrase H1, `SeasonalPill` from md and ONE Book Online from lg, nothing below lg because the sticky bar has it) → `CityLocalSign` (white; heading, summary, provider and checked-on date LEFT, the rules as `DefinitionList variant="plain"` with icons RIGHT, no card chrome, no big-number block) → `CityNeighborhoods` (cream; "Ryan on {City}" text LEFT, town photo RIGHT, neighborhood chips) → `CityServiceNotes` (white; heading LEFT, six services as a borderless icon LIST right, one local line each, every row links to the service page) → Testimonials (cream; reviewers matched to Jobber job addresses in that town, general repair reviews when none) → FAQ (white) → CTAStrip (the page's only navy band). All content comes from `guide` in `src/lib/city-data.ts`; a new city gets the whole template by filling that object. Never write "our shop is here" / "a short drive from our shop": customers do not care where the shop is (Hannah, Nov 4 2026). Headings and intro always on the left, content on the right; never flip the axis |
 | `/sprinkler-installation` | Installation landing page — cost/timeline answer-first, 6-step process, included vs not-included, clay-soil + restriction design notes, glossary, FAQ. Built to fill the gaps local competitors leave (no pricing, timeline, or permit detail published anywhere) |
 | `/sprinkler-repair` | Repair landing page — $145 visit (diagnosis + small fixes), $145/hr for bigger work, six common problems with cost ranges from the repair-signs blog post, visit steps, FAQ, repair-tagged reviews. The Services dropdown's "Sprinkler Repair" points here; `/services` is the overview, reachable from the footer |
 | `/spring-turn-on` | Spring turn-on landing page — $145/8 zones, when to turn on (nights above 32° for a week), five-step visit, definitions, FAQ. Facts sourced from the spring-startup blog post |
@@ -370,6 +370,8 @@ Provides 14 composable skills for structured software development:
 
 ## Research notes
 
+`.local-data/research/2026-11-04-layout-ux-brief.md` — the layout research the city template is built on (NN/g, Baymard, Refactoring UI): one text axis, lists over cards for like items, one navy band per page, icons only when nameable in five seconds, stats only for counted numbers, 50–75 characters per line.
+
 `.local-data/research/2026-11-01-trust-and-copy-best-practices.md` — what competitor sites and best-practice sources agree makes a home-service site trustworthy, what has been applied, and the facts still needed from Hannah/Ryan (year founded, written guarantee, response time, license number, brands, real job photos). Check copy decisions against it.
 
 ## Adding a new section — checklist
@@ -419,14 +421,14 @@ Always use these instead of building from scratch:
 |---|---|
 | `<SectionHeader tagline title description />` | Tagline → title → description block at the top of any section |
 | `<FaqList faqs={...} itemBg="cream" />` | Any FAQ accordion. Native `<details>`, zero JS. |
-| `<DefinitionList items={...} columns={2} />` | Semantic `<dl>`/`<dt>`/`<dd>` "What is X?" blocks (highly extractable by AI Overviews) |
+| `<DefinitionList items={...} columns={2} variant="card"\|"plain" />` | Semantic `<dl>`/`<dt>`/`<dd>` "What is X?" blocks (highly extractable by AI Overviews). `plain` drops the card chrome and shows an optional `icon` per item in a cream circle (city watering rules use it) |
 | `<ServicePriceCard title icon price priceUnit perZoneNote features footnote />` | Service tier card with price, features, CTA |
 | `<StatsStrip />` | The credibility-stats row (homepage only) |
 | `<HowItWorks />` | "What to expect" 4-step process (services page) |
 | `<CompatibleBrands />` | "Compatible with: brand · brand · brand" strip |
 | `<PageBanner title description backgroundImage />` | Top banner on every interior page |
 | `<CTAStrip />` | Bottom CTA on every page |
-| `<CityHero />` · `<CitySeasonStrip />` · `<CityLocalSign />` · `<CityServiceNotes />` · `<CityNeighborhoods />` | City page sections (Nov 2026 field-guide template), driven by `CityData.guide` |
+| `<CityHero />` · `<CityLocalSign />` · `<CityServiceNotes />` · `<CityNeighborhoods />` | City page sections (Nov 2026 field-guide template), driven by `CityData.guide` |
 | `<Hero />` · `<TrustStrip />` · `<ProblemTiles />` · `<InstallationBand />` · `<SeasonPassSection />` · `<OwnerSection />` · `<ServiceAreaSection />` · `<HomeFAQ />` · `<Testimonials />` | Homepage-specific sections (Nov 2026 redesign) |
 | `<SeasonalPill />` | Client chip resolving the month's promo (`getSeasonalPromo`); used in the hero and the mobile menu, never in the header bar |
 | `<SeasonPassCalculator />` | Client card with the zone-count selector; used on `/` and `/season-pass` |

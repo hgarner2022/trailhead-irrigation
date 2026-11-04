@@ -1,7 +1,6 @@
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { CityHero } from "@/components/sections/CityHero"
-import { CitySeasonStrip } from "@/components/sections/CitySeasonStrip"
 import { CityLocalSign } from "@/components/sections/CityLocalSign"
 import { CityNeighborhoods } from "@/components/sections/CityNeighborhoods"
 import { CityServiceNotes } from "@/components/sections/CityServiceNotes"
@@ -99,10 +98,18 @@ export default async function CityPage({
         alt={g?.heroImage ? (g.heroAlt ?? `${data.name}, Colorado`) : "Two-track trail through a mountain meadow at sunrise in the Colorado Rockies"}
         position={g?.heroImage ? g.heroPosition : "60% center"}
       />
-      <CitySeasonStrip />
-
       {/* Watering rules, backflow, provider, rebate */}
       <CityLocalSign data={data} />
+
+      {g?.ryanNote && g.neighborhoods && (
+        <CityNeighborhoods
+          name={data.name}
+          note={g.ryanNote}
+          neighborhoods={g.neighborhoods}
+          image={g.placeImage}
+          alt={g.placeAlt ?? `${data.name}, Colorado`}
+        />
+      )}
 
       {/* One local line per service, linking to the service page */}
       <CityServiceNotes
@@ -114,15 +121,6 @@ export default async function CityPage({
       />
 
       {/* Where we work here: Ryan, the neighborhoods, a photo from the town */}
-      {g?.ryanNote && g.neighborhoods && (
-        <CityNeighborhoods
-          name={data.name}
-          note={g.ryanNote}
-          neighborhoods={g.neighborhoods}
-          image={g.placeImage}
-          alt={g.placeAlt ?? `${data.name}, Colorado`}
-        />
-      )}
 
       {/* Reviews from customers in this town */}
       {cityReviews.length > 0 && (

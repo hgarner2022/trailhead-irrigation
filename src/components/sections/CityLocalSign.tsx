@@ -1,87 +1,60 @@
 import Link from "next/link"
-import { Droplets, Clock, ShieldCheck, Phone, BadgeDollarSign } from "lucide-react"
+import { Droplets, Clock, ShieldCheck, BadgeDollarSign } from "lucide-react"
 import type { CityData } from "@/lib/city-data"
+import { DefinitionList, type DefinitionItem } from "@/components/sections/DefinitionList"
 
-// The watering rules for this town: big numbers on the left, the rules on
-// the right, and the date they were last checked. All from city-data.ts.
+// The town's watering rules. Heading, summary, provider and the checked-on
+// date on the left (so the heading column carries real information); the
+// rules as a plain icon definition list on the right. No card chrome: the
+// section background does the grouping. Everything comes from city-data.ts.
 
 export function CityLocalSign({ data }: { data: CityData }) {
   const g = data.guide
-  const rows: { icon: typeof Droplets; label: string; value: string }[] = [
-    { icon: Droplets, label: "Watering days", value: data.wateringDays },
-    { icon: Clock, label: "Time of day", value: data.wateringTimeRestriction },
-    { icon: ShieldCheck, label: "Backflow testing", value: data.backflowDeadline },
+  const items: DefinitionItem[] = [
+    { term: "Watering days", definition: data.wateringDays, icon: Droplets },
+    { term: "Time of day", definition: data.wateringTimeRestriction, icon: Clock },
+    { term: "Backflow testing", definition: data.backflowDeadline, icon: ShieldCheck },
   ]
+  if (g?.rebate) {
+    items.push({
+      term: "Rebates",
+      icon: BadgeDollarSign,
+      definition: (
+        <Link href={g.rebate.href} className="underline underline-offset-4 decoration-primary/40 hover:decoration-primary text-foreground">
+          {g.rebate.label}
+        </Link>
+      ),
+    })
+  }
 
   return (
     <section className="bg-background section-padding-y" aria-labelledby="sign-heading">
       <div className="container-padding-x mx-auto max-w-7xl">
-        <div className="grid grid-cols-1 lg:grid-cols-[0.9fr_1.1fr] gap-10 lg:gap-16">
-          {/* Left: what matters right now, with the big numbers */}
-          <div className="flex flex-col gap-8">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-widest text-primary">Watering in {data.name}</p>
-              <h2 id="sign-heading" className="font-display text-4xl md:text-5xl font-bold text-navy mt-2">
-                {data.name}&apos;s watering rules
-              </h2>
-            </div>
-            <dl className="grid grid-cols-2 gap-6 min-w-0">
-              {g?.wateringDaysPerWeek && (
-                <div className="border-l-2 border-primary pl-4 min-w-0">
-                  <dd className="font-display text-4xl sm:text-5xl font-bold text-navy leading-none">{g.wateringDaysPerWeek}</dd>
-                  <dt className="text-sm text-muted-foreground mt-2">{data.restrictionLevel === "mandatory" ? "watering days a week, max" : "watering days a week"}</dt>
-                </div>
+        <div className="grid grid-cols-1 lg:grid-cols-[0.8fr_1.2fr] gap-10 lg:gap-16">
+          <div className="flex flex-col gap-4 max-w-[60ch]">
+            <p className="text-xs font-semibold uppercase tracking-widest text-primary">Watering in {data.name}</p>
+            <h2 id="sign-heading" className="font-display text-4xl md:text-5xl font-bold text-navy">
+              {data.name}&apos;s watering rules
+            </h2>
+            <p className="text-lg text-muted-foreground">{data.restrictionSummary}</p>
+            <p className="text-muted-foreground">
+              Water provider: {data.waterProvider}
+              {data.waterProviderPhone && (
+                <>
+                  {" "}&middot;{" "}
+                  <a href={`tel:${data.waterProviderPhone.replace(/[^0-9]/g, "")}`} className="text-primary hover:underline">
+                    {data.waterProviderPhone}
+                  </a>
+                </>
               )}
-              <div className="border-l-2 border-primary pl-4 min-w-0">
-                <dd className="font-display text-3xl sm:text-5xl font-bold text-navy leading-none capitalize break-words">{data.restrictionLevel === "none" ? "Open" : data.restrictionLevel}</dd>
-                <dt className="text-sm text-muted-foreground mt-2">current watering rules</dt>
-              </div>
-            </dl>
-            <p className="text-muted-foreground">{data.restrictionSummary}</p>
-          </div>
-
-          {/* Right: the rules, one row each */}
-          <div className="rounded-lg border border-border bg-cream">
-            <ul className="divide-y divide-border">
-              {rows.map((r) => (
-                <li key={r.label} className="flex gap-4 p-5">
-                  <r.icon className="h-5 w-5 text-primary shrink-0 mt-0.5" aria-hidden="true" />
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{r.label}</p>
-                    <p className="text-foreground mt-1">{r.value}</p>
-                  </div>
-                </li>
-              ))}
-              <li className="flex gap-4 p-5">
-                <Phone className="h-5 w-5 text-primary shrink-0 mt-0.5" aria-hidden="true" />
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Water provider</p>
-                  <p className="text-foreground mt-1">{data.waterProvider}</p>
-                  {data.waterProviderPhone && (
-                    <a href={`tel:${data.waterProviderPhone.replace(/[^0-9]/g, "")}`} className="text-primary hover:underline">
-                      {data.waterProviderPhone}
-                    </a>
-                  )}
-                </div>
-              </li>
-              {g?.rebate && (
-                <li className="flex gap-4 p-5">
-                  <BadgeDollarSign className="h-5 w-5 text-primary shrink-0 mt-0.5" aria-hidden="true" />
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Rebates</p>
-                    <Link href={g.rebate.href} className="text-foreground mt-1 inline-block underline underline-offset-4 decoration-primary/40 hover:decoration-primary">
-                      {g.rebate.label}
-                    </Link>
-                  </div>
-                </li>
-              )}
-            </ul>
+            </p>
             {g?.rulesCheckedOn && (
-              <p className="px-5 py-3 text-xs text-muted-foreground border-t border-border">
-                Checked {g.rulesCheckedOn} against the {data.waterProvider}. Their current rules always apply.
+              <p className="text-sm text-muted-foreground">
+                Checked {g.rulesCheckedOn}. Their current rules always apply.
               </p>
             )}
           </div>
+          <DefinitionList items={items} variant="plain" columns={2} />
         </div>
       </div>
     </section>
