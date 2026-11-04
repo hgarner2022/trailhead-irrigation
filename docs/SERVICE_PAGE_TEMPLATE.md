@@ -8,7 +8,7 @@ Quick start:
 npm run new-service -- lawn-aeration "Lawn Aeration"
 ```
 
-That writes a draft `page.tsx` to `.local-data/service-drafts/lawn-aeration/` built from the shared components with every piece of copy marked TODO. Fill it in, move it to `src/app/lawn-aeration/page.tsx`, register it (below), run `npx tsc --noEmit`, commit, push, then after the deploy:
+That writes a draft `page.tsx` to `.local-data/service-drafts/lawn-aeration/` built from the shared components, in the exact shape of `/spring-turn-on`, with every piece of copy marked TODO. Fill it in, move it to `src/app/lawn-aeration/page.tsx`, register it (below), run `npx tsc --noEmit`, commit, push, then after the deploy:
 
 ```bash
 npm run indexnow -- https://www.trailheadirrigation.com/lawn-aeration
@@ -16,20 +16,21 @@ npm run indexnow -- https://www.trailheadirrigation.com/lawn-aeration
 
 ## The page, top to bottom
 
+The exemplar is `/spring-turn-on` (rebuilt Nov 4, 2026). Match it.
+
 | # | Section | Component | Background | What it needs |
 |---|---|---|---|---|
-| 1 | Banner | `PageBanner` | photo + overlay (or navy) | H1 with the service and "Erie, CO"; one line on what the visit does; a real photo |
-| 2 | Overview, answer first | `SectionHeader` (left) + `Card` side card | white | Eyebrow (the season or window), H2 that says what the visit does for the yard, the price in the first sentence, one Book Online. Side card: price, per-zone note, one "when" fact |
-| 3 | What happens on the visit | `SectionHeader` + numbered `<ol>` beside an `Image` | cream | 4 to 6 steps in the order they happen; a real photo of the work |
-| 4 | Terms, explained | `DefinitionList columns={2}` | white | 4 to 6 terms a homeowner hears (backflow, zone, cycle-and-soak); 40 to 60 words each, highly extractable |
-| 5 | Where we do it | `SectionHeader` + outline buttons to `/services/{city}` | cream | Nothing to write; it maps `CITY_DATA` |
-| 6 | FAQs | `SectionHeader` + `FaqList itemBg="cream"` | white | 5 to 7 questions worded the way people search, with `faqJsonLd` |
-| 7 | Reviews | `Testimonials` with `reviewsFor("<topic>", 3)` | cream | Reviews tagged for this service in `src/lib/reviews.ts`, with `reviewsJsonLd` |
-| 8 | Closing strip | `CTAStrip` | navy | shared |
+| 1 | Banner | `PageBanner` (navy) + `SeasonalPill` | navy | H1 in sentence case ("Spring sprinkler turn-on in Erie, Colorado"); one line on what the visit does; the seasonal chip. No photo, no button |
+| 2 | Answer first | `SectionHeader` (left) + `DefinitionList variant="plain" columns={1}` (right) | white | Eyebrow (the window), H2 that says what the visit does for the yard, the price bold in the first sentence, duration, one Book Online. Right: three facts with icons, Price / When / The visit |
+| 3 | What happens on the visit | `Image` (left) + `SectionHeader` + numbered `<ol>` (right) | cream | 4 to 6 steps in the order they happen; a real photo of the work or a yard |
+| 4 | Good to know | `SectionHeader` (left) + `DefinitionList columns={2}` | white | 3 to 4 terms a homeowner hears, 40 to 60 words each, highly extractable |
+| 5 | Reviews | `Testimonials` with `reviewsFor("<topic>", 3)` | cream | Reviews tagged for this service in `src/lib/reviews.ts` (add the topic to `ReviewTopic` in `seo.ts`), with `reviewsJsonLd` |
+| 6 | FAQs | `SectionHeader` + `FaqList itemBg="cream"` | white | 5 to 7 questions worded the way people search, with `faqJsonLd`; one link to the related blog post under it |
+| 7 | Closing strip | `CTAStrip` | navy | shared |
 
-Optional, between 2 and 3: a "What we fix most" / "What's included" grid of `Card`s (the repair page's six problems). Only if the service has real variety to show.
+What is deliberately NOT on the page: a photo banner (homepage only), a price card (the facts list replaces it), a "where we do it" button cloud (the nav and footer carry the city links), an "included" checklist (the FAQ covers it).
 
-Backgrounds alternate white and cream; the banner and the closing strip are the only dark bands. Headings and intro on the left with content beside them; the steps section puts the photo on the left.
+Backgrounds alternate white and cream; the banner and the closing strip are the only dark bands. Headings and intro on the left with content beside them; the steps section puts the photo on the left. Body copy stays inside `max-w-[60ch]`.
 
 ## Facts before copy
 

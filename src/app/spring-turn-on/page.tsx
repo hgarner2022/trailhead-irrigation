@@ -1,15 +1,17 @@
 import type { Metadata } from "next"
-import Link from "next/link"
 import Image from "next/image"
-import { PageBanner } from "@/components/sections/PageBanner"
+import Link from "next/link"
+import { BadgeDollarSign, CalendarDays, Clock } from "lucide-react"
+import { buttonVariants } from "@/components/ui/button"
 import { CTAStrip } from "@/components/sections/CTAStrip"
 import { FaqList } from "@/components/sections/FaqList"
 import { DefinitionList } from "@/components/sections/DefinitionList"
 import { SectionHeader } from "@/components/sections/SectionHeader"
-import { Card, CardContent } from "@/components/ui/card"
-import { buttonVariants } from "@/components/ui/button"
-import { CITY_DATA } from "@/lib/city-data"
-import { faqJsonLd, breadcrumbJsonLd, siteConfig } from "@/lib/seo"
+import { PageBanner } from "@/components/sections/PageBanner"
+import { SeasonalPill } from "@/components/sections/SeasonalPill"
+import { Testimonials } from "@/components/sections/Testimonials"
+import { faqJsonLd, reviewsJsonLd, breadcrumbJsonLd, siteConfig } from "@/lib/seo"
+import { reviewsFor } from "@/lib/reviews"
 
 export const metadata: Metadata = {
   title: "Spring Sprinkler Turn-On in Erie, CO",
@@ -19,18 +21,24 @@ export const metadata: Metadata = {
 }
 
 /**
- * Spring turn-on landing page. The service the Services dropdown used to
- * send to /pricing, which is a price list, not a page about the service.
- *
- * Every fact comes from Trailhead's own published content: the late-April-
- * to-early-May window, the "nights above 32 degrees for a week" rule, the
- * $500 to $1,500 freeze repair range, the 45-minute-to-an-hour visit, and
- * the common spring findings all come from
- * /blog/spring-sprinkler-startup-colorado. Pricing matches the turn-on card
- * on /pricing and the Service schema in seo.ts.
- *
- * House style: no em dashes.
+ * Spring turn-on landing page, the exemplar for the service page template
+ * (docs/SERVICE_PAGE_TEMPLATE.md). Navy banner like every interior page,
+ * the price, window and duration answered first with one Book Online, the
+ * visit as five steps beside a photo, four terms, reviews from customers
+ * who booked a turn-on, FAQs, the closing strip. Every fact comes from
+ * /pricing, the spring startup blog post and Ryan. House style: warm,
+ * plain, sentence case, no em dashes, no numbers that are not published.
  */
+
+const FACTS = [
+  { term: "Price", definition: "$145 for up to 8 zones, plus $10 for each zone after that.", icon: BadgeDollarSign },
+  {
+    term: "When",
+    definition: "Late April to early May, once nights have stayed above freezing for about a week. Booking opens in early April.",
+    icon: CalendarDays,
+  },
+  { term: "The visit", definition: "About 45 minutes to an hour. A mid-summer tune-up is the same visit at the same price.", icon: Clock },
+]
 
 const STEPS = [
   {
@@ -51,7 +59,30 @@ const STEPS = [
   },
   {
     title: "Tell you what we found",
-    body: "Anything we can't fix in the visit gets a price before we leave, at our standard repair rates. You decide what to do with it.",
+    body: "Anything we can't take care of in the visit gets a price before we leave, at our standard repair rates. You decide what to do with it.",
+  },
+]
+
+const DEFINITIONS = [
+  {
+    term: "What is a sprinkler turn-on?",
+    definition:
+      "A spring sprinkler turn-on is the first pressurization of an irrigation system after winter, with a check of every zone. In Northern Colorado it happens late April to early May, after the last overnight freezes, and it is the first look at how the system came through the winter.",
+  },
+  {
+    term: "What is water hammer?",
+    definition:
+      "The bang in the pipes when water hits a closed valve or a dead end at speed. Opening the main valve all at once at turn-on sends a slug of water through empty lines, which can crack fittings and blow valve seals. Opening it slowly avoids all of that.",
+  },
+  {
+    term: "Why does the backflow preventer matter in spring?",
+    definition:
+      "It is the one part of the system that sits above ground, so it is the part that feels winter first. We inspect it before any water goes through. Most Front Range towns also require a certified backflow test every year.",
+  },
+  {
+    term: "What is a seasonal adjustment?",
+    definition:
+      "A percentage setting on the controller that scales every zone's run time up or down. Spring runs at a lower percentage than July. Smart controllers such as the Rachio 3 adjust it from the weather.",
   },
 ]
 
@@ -59,12 +90,12 @@ const TURN_ON_FAQS = [
   {
     question: "How much does a spring sprinkler turn-on cost?",
     answer:
-      "A spring turn-on and system check costs $145 for up to 8 zones, plus $10 for each additional zone. The visit takes about 45 minutes to an hour. Repairs are not included and are quoted before any work starts.",
+      "A spring turn-on and system check costs $145 for up to 8 zones, plus $10 for each additional zone. The visit takes about 45 minutes to an hour. Repairs are quoted before any work starts.",
   },
   {
     question: "When should I turn on my sprinklers in Colorado?",
     answer:
-      "Late April to early May, once nighttime temperatures have stayed above 32 degrees for at least a week. The Front Range gets overnight freezes through mid-April and snow some years in May. A system turned on too early can freeze and crack, and those repairs run $500 to $1,500.",
+      "Late April to early May, once nighttime temperatures have stayed above 32 degrees for at least a week. The Front Range gets overnight freezes through mid-April and snow some years in May, so a little patience protects the pipes.",
   },
   {
     question: "What does the turn-on include?",
@@ -74,7 +105,7 @@ const TURN_ON_FAQS = [
   {
     question: "What if something needs a repair?",
     answer:
-      "You get a price before we leave, at our standard repair rates, with no separate trip fee. Most spring repairs are a cracked fitting, a head a snowplow clipped, or a valve that stuck over the winter, and most are done the same visit if you say yes.",
+      "You get a price before we leave, at our standard repair rates. Most spring repairs are a cracked fitting, a head a snowplow clipped, or a valve that stuck over the winter, and we take care of the small ones during the visit where we can.",
   },
   {
     question: "Is a mid-summer tune-up the same thing?",
@@ -84,45 +115,21 @@ const TURN_ON_FAQS = [
   {
     question: "How early should I book?",
     answer:
-      "We start booking turn-ons in early April and the schedule fills fast. Booking in April gets you a late-April or early-May date instead of waiting until the lawn is already stressed.",
+      "We start booking turn-ons in early April and the schedule fills fast. Booking in April gets you a late-April or early-May date, right when the lawn starts asking for water.",
   },
   {
     question: "Which cities do you serve for spring turn-ons?",
     answer:
-      "Erie, Longmont, Louisville, Lafayette, Firestone and Broomfield, plus surrounding Weld County and Front Range communities. We're based in Erie.",
+      "Erie, Longmont, Louisville, Lafayette, Firestone and Broomfield, plus surrounding Weld County and Front Range communities.",
   },
 ]
 
-const DEFINITIONS = [
-  {
-    term: "What is a sprinkler turn-on?",
-    definition:
-      "A spring sprinkler turn-on is the first pressurization of an irrigation system after winter, with a check of every zone. In Northern Colorado it happens late April to early May, after the last overnight freezes, and it is when freeze damage from the winter shows up.",
-  },
-  {
-    term: "What is water hammer?",
-    definition:
-      "The bang in the pipes when water hits a closed valve or a dead end at speed. Opening the main valve all at once at turn-on sends a slug of water through empty lines, which can crack fittings and blow valve seals.",
-  },
-  {
-    term: "Why does the backflow preventer matter in spring?",
-    definition:
-      "It is the one part of the system that sits above ground, so it freezes first and cracks most often. Most Front Range towns also require a certified backflow test every year.",
-  },
-  {
-    term: "What is a seasonal adjustment?",
-    definition:
-      "A percentage setting on the controller that scales every zone's run time up or down. Spring runs at a lower percentage than July. Smart controllers such as the Rachio 3 adjust it from the weather.",
-  },
-]
+const TURN_ON_REVIEWS = reviewsFor("turn-on", 3)
 
 export default function SpringTurnOnPage() {
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd(TURN_ON_FAQS)) }}
-      />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd(TURN_ON_FAQS)) }} />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
@@ -136,57 +143,39 @@ export default function SpringTurnOnPage() {
       />
 
       <PageBanner
-        title="Spring Sprinkler Turn-On & Tune-Up in Erie, CO"
-        description="We run every zone, check every head and set the controller for spring."
-        backgroundImage="/images/sprinkler-spring.jpg"
-      />
+        title="Spring sprinkler turn-on in Erie, Colorado"
+        description="We bring the system up slowly, run every zone, set the heads and program the controller for spring."
+      >
+        <SeasonalPill onDark />
+      </PageBanner>
 
-      {/* Answer first: price, window, one Book Online button */}
+      {/* Answer first: what the visit does, the price, when, how long, one Book Online */}
       <section aria-labelledby="turn-on-overview" className="bg-background section-padding-y">
         <div className="container-padding-x mx-auto max-w-7xl">
-          <div className="flex flex-col lg:flex-row gap-10 lg:gap-16 items-start">
-            <div className="flex-1">
+          <div className="grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-10 lg:gap-16 items-start">
+            <div className="max-w-[60ch]">
               <SectionHeader
                 tagline="Late April through May"
                 taglineAsEyebrow
-                title="A 45-minute visit that gets your system ready for the season"
+                title="Your system, ready for the season in one visit"
                 titleId="turn-on-overview"
                 align="left"
               />
               <p className="text-muted-foreground mt-5 mb-4">
-                A spring turn-on costs{" "}
-                <strong className="text-foreground font-semibold">$145 for up to 8 zones</strong>, plus $10
-                per additional zone. We pressurize the system slowly, run every zone, adjust the heads, check
-                for leaks and program the controller. The visit takes about 45 minutes to an hour.
+                A spring turn-on is{" "}
+                <strong className="text-foreground font-semibold">$145 for up to 8 zones</strong>, plus $10 for each
+                zone after that. We pressurize the system slowly, run every zone, adjust the heads, check for leaks and
+                program the controller. Plan on about 45 minutes to an hour.
               </p>
               <p className="text-muted-foreground mb-7">
-                A turn-on gets everything running right from the first week. Heads straightened after a
-                winter of snowplows, the controller set for spring, and every zone checked so the lawn gets
-                what it needs from day one.
+                Everything runs right from the first week: heads straightened after a winter of snowplows, the
+                controller set for spring, and every zone checked so the lawn gets what it needs from day one.
               </p>
               <Link href="/book" className={buttonVariants({ size: "lg" })}>
                 Book Online
               </Link>
             </div>
-
-            <div className="w-full lg:w-[360px] shrink-0">
-              <Card className="bg-cream">
-                <CardContent className="p-6">
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-4xl font-bold text-foreground">$145</span>
-                    <span className="text-sm text-muted-foreground">up to 8 zones</span>
-                  </div>
-                  <p className="text-sm text-muted-foreground mt-1.5">+$10 per additional zone.</p>
-                  <div className="mt-5 pt-5 border-t border-border">
-                    <p className="text-sm font-semibold text-foreground mb-1.5">Wait for warm nights</p>
-                    <p className="text-sm text-muted-foreground">
-                      We turn systems on once nights have stayed above 32 degrees for a week, usually late
-                      April. Booking opens in early April.
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+            <DefinitionList items={FACTS} variant="plain" columns={1} className="lg:pt-2" />
           </div>
         </div>
       </section>
@@ -194,19 +183,17 @@ export default function SpringTurnOnPage() {
       {/* What happens on the visit */}
       <section aria-labelledby="turn-on-steps" className="bg-cream section-padding-y">
         <div className="container-padding-x mx-auto max-w-7xl">
-          <div className="flex flex-col md:flex-row items-center gap-8 md:gap-16">
-            <div className="flex-1 w-full">
-              <div className="relative aspect-[4/3] rounded-xl overflow-hidden">
-                <Image
-                  src="/images/sprinkler-spray-head-lawn.jpg"
-                  alt="Pop-up sprinkler head spraying across a green lawn"
-                  fill
-                  sizes="(min-width: 768px) 50vw, 100vw"
-                  className="object-cover"
-                />
-              </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
+            <div className="relative aspect-[4/3] rounded-lg overflow-hidden">
+              <Image
+                src="/images/home-lawn-spring.jpg"
+                alt="Front lawn and flower beds of a home in spring"
+                fill
+                sizes="(min-width: 1024px) 50vw, 100vw"
+                className="object-cover"
+              />
             </div>
-            <div className="flex-1">
+            <div>
               <SectionHeader
                 tagline="What happens on the visit"
                 taglineAsEyebrow
@@ -214,15 +201,13 @@ export default function SpringTurnOnPage() {
                 titleId="turn-on-steps"
                 align="left"
               />
-              <ol className="mt-6 flex flex-col gap-4 list-none">
+              <ol className="mt-8 flex flex-col gap-6 list-none">
                 {STEPS.map((step, i) => (
-                  <li key={step.title} className="flex gap-4">
-                    <span className="font-display text-2xl font-bold text-primary leading-none mt-0.5 w-6 shrink-0">
-                      {i + 1}
-                    </span>
-                    <div>
-                      <p className="font-semibold text-foreground text-sm mb-1">{step.title}</p>
-                      <p className="text-sm text-muted-foreground">{step.body}</p>
+                  <li key={step.title} className="flex gap-5">
+                    <span className="font-display text-3xl font-bold text-primary leading-none w-8 shrink-0">{i + 1}</span>
+                    <div className="max-w-[60ch]">
+                      <p className="font-semibold text-foreground mb-1">{step.title}</p>
+                      <p className="text-muted-foreground">{step.body}</p>
                     </div>
                   </li>
                 ))}
@@ -232,37 +217,32 @@ export default function SpringTurnOnPage() {
         </div>
       </section>
 
-      {/* Definitions */}
+      {/* Terms */}
       <section aria-labelledby="turn-on-terms" className="bg-background section-padding-y">
-        <div className="container-padding-x mx-auto max-w-5xl">
-          <SectionHeader title="Spring startup terms, explained" titleId="turn-on-terms" align="left" className="mb-10" />
+        <div className="container-padding-x mx-auto max-w-7xl flex flex-col gap-10">
+          <SectionHeader tagline="Good to know" taglineAsEyebrow title="Spring startup terms, explained" titleId="turn-on-terms" align="left" />
           <DefinitionList items={DEFINITIONS} columns={2} />
         </div>
       </section>
 
-      {/* City links */}
-      <section aria-labelledby="turn-on-cities" className="bg-cream section-padding-y">
-        <div className="container-padding-x mx-auto max-w-5xl">
-          <SectionHeader
-            title="Where we do spring turn-ons"
-            titleId="turn-on-cities"
-            description="Based in Erie, covering the surrounding Front Range and Weld County."
-            className="mb-8"
+      {/* Reviews from customers who booked a turn-on */}
+      {TURN_ON_REVIEWS.length > 0 && (
+        <>
+          <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(reviewsJsonLd(TURN_ON_REVIEWS)) }} />
+          <Testimonials
+            reviews={TURN_ON_REVIEWS}
+            heading="What homeowners say about spring visits"
+            description="Google reviews from customers who booked a turn-on."
+            bg="cream"
+            headingId="turn-on-reviews"
           />
-          <div className="flex flex-wrap justify-center gap-3">
-            {CITY_DATA.map((city) => (
-              <Link key={city.slug} href={`/services/${city.slug}`} className={buttonVariants({ variant: "outline" })}>
-                Sprinkler turn-on in {city.name}
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
+        </>
+      )}
 
       {/* FAQs */}
       <section aria-labelledby="turn-on-faq" className="bg-background section-padding-y">
         <div className="container-padding-x mx-auto max-w-3xl">
-          <SectionHeader title="Spring Turn-On FAQs" titleId="turn-on-faq" className="mb-10" />
+          <SectionHeader title="Spring turn-on questions" titleId="turn-on-faq" className="mb-10" />
           <FaqList faqs={TURN_ON_FAQS} itemBg="cream" />
           <p className="text-sm text-muted-foreground text-center mt-8">
             For the full timing breakdown, read our{" "}
