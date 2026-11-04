@@ -1,6 +1,6 @@
 import { buttonVariants } from "@/components/ui/button"
 import Link from "next/link"
-import { TreelineEdge } from "@/components/sections/TreelineEdge"
+import { RidgeEdge } from "@/components/sections/RidgeEdge"
 import { PHONE_DISPLAY, PHONE_TEL } from "@/lib/nav"
 import { siteConfig } from "@/lib/seo"
 
@@ -11,14 +11,13 @@ import { siteConfig } from "@/lib/seo"
 export function CTAStrip() {
   return (
     <>
-      {/* The page ends at a treeline with the badge's sun behind it. The edge
-          overlaps only the previous section's bottom padding (see
-          TreelineEdge), so it never covers copy. It is a sibling of the
-          section, not its first child: inside, its negative margin would
-          collapse through the section's top and the navy would paint over
-          the trees. */}
-      <TreelineEdge to="navy" sun="right" />
-      <section className="bg-navy pt-10 md:pt-12 pb-16 md:pb-24" aria-labelledby="cta-heading">
+      {/* The page ends at a low mountain ridge with a small sun behind it.
+          The edge overlaps only the previous section's bottom padding, so it
+          never covers copy. It is a sibling of the section, not its first
+          child: inside, its negative margin would collapse through the
+          section's top and the navy would paint over the ridge. */}
+      <RidgeEdge to="navy" />
+      <section className="bg-navy pt-14 md:pt-20 pb-16 md:pb-24" aria-labelledby="cta-heading">
         <div className="container-padding-x mx-auto max-w-7xl text-center">
           <div className="flex flex-col items-center gap-6">
             <h2 id="cta-heading" className="font-display text-5xl md:text-6xl font-bold text-white">
