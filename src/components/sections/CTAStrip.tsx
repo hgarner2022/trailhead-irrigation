@@ -11,9 +11,8 @@ import { siteConfig } from "@/lib/seo"
 export function CTAStrip() {
   return (
     <>
-      {/* The page ends at a low mountain ridge with a small sun behind it.
-          The edge overlaps only the previous section's bottom padding, so it
-          never covers copy. It is a sibling of the section, not its first
+      {/* The page ends at the Front Range skyline. The edge overlaps only
+          the previous section's bottom padding, so it never covers copy. It is a sibling of the section, not its first
           child: inside, its negative margin would collapse through the
           section's top and the navy would paint over the ridge. */}
       <RidgeEdge to="navy" />
