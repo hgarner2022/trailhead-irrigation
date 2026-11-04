@@ -29,7 +29,7 @@ export function CityNeighborhoods({
             <div>
               <p className="text-xs font-semibold uppercase tracking-widest text-primary">Where we work</p>
               <h2 id="neighborhoods-heading" className="font-display text-4xl md:text-5xl font-bold text-navy mt-2">
-                {name}, from Ryan
+                Ryan on {name}
               </h2>
             </div>
             <p className="text-lg text-muted-foreground leading-relaxed">{note}</p>

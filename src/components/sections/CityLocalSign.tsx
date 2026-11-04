@@ -23,9 +23,9 @@ export function CityLocalSign({ data }: { data: CityData }) {
           {/* Left: what matters right now, with the big numbers */}
           <div className="flex flex-col gap-8">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-widest text-primary">The local sign</p>
+              <p className="text-xs font-semibold uppercase tracking-widest text-primary">Watering in {data.name}</p>
               <h2 id="sign-heading" className="font-display text-4xl md:text-5xl font-bold text-navy mt-2">
-                Watering in {data.name}, this month
+                {data.name}&apos;s watering rules
               </h2>
             </div>
             <div className="flex items-start gap-4 rounded-lg bg-navy text-white p-6">
@@ -88,7 +88,7 @@ export function CityLocalSign({ data }: { data: CityData }) {
             </ul>
             {g?.rulesCheckedOn && (
               <p className="px-5 py-3 text-xs text-muted-foreground border-t border-border">
-                Rules checked {g.rulesCheckedOn}. The {data.waterProvider} has the final word.
+                Checked {g.rulesCheckedOn} against the {data.waterProvider}. If they change the rules, they win.
               </p>
             )}
           </div>

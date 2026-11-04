@@ -21,12 +21,12 @@ export function ServiceAreaMap({ current }: { current: string }) {
       <div className="container-padding-x mx-auto max-w-7xl">
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.2fr] gap-10 lg:gap-16 items-center">
           <div className="flex flex-col gap-5">
-            <p className="text-xs font-semibold uppercase tracking-widest text-primary">Next door</p>
+            <p className="text-xs font-semibold uppercase tracking-widest text-primary">Service area</p>
             <h2 id="map-heading" className="font-display text-4xl md:text-5xl font-bold text-navy">
-              Same prices in every town we serve
+              The towns next door
             </h2>
             <p className="text-lg text-muted-foreground">
-              Based in Erie, within 20 minutes of every address on the map. Each town has its own watering rules and rebates, so each has its own page.
+              We&apos;re based in Erie and work in all six. Each town has its own watering rules, so each one has its own page.
             </p>
             <ul className="flex flex-wrap gap-2">
               {CITY_DATA.filter((c) => c.slug !== current).map((c) => (

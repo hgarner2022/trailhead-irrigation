@@ -4,8 +4,7 @@ import { CityHero } from "@/components/sections/CityHero"
 import { CityLocalSign } from "@/components/sections/CityLocalSign"
 import { CityNeighborhoods } from "@/components/sections/CityNeighborhoods"
 import { ServiceAreaMap } from "@/components/sections/ServiceAreaMap"
-import { ProblemTiles } from "@/components/sections/ProblemTiles"
-import { TrustStrip } from "@/components/sections/TrustStrip"
+import { CityServiceNotes } from "@/components/sections/CityServiceNotes"
 import { Testimonials } from "@/components/sections/Testimonials"
 import { SectionHeader } from "@/components/sections/SectionHeader"
 import { pickReviews } from "@/lib/reviews"
@@ -108,17 +107,13 @@ export default async function CityPage({
           position="60% center"
         />
       )}
-      <TrustStrip />
-
       {/* The local sign: watering rules, backflow, provider, rebate, and what is booking now */}
       <CityLocalSign data={data} />
 
-      {/* The six services, each with one line about this town */}
-      <ProblemTiles
-        bg="cream"
-        tagline={`Services in ${data.name}`}
-        title="What's going on with your system?"
-        localNotes={{
+      {/* One local line per service, linking to the service page */}
+      <CityServiceNotes
+        name={data.name}
+        notes={{
           ...(data.winterNote ? { "/sprinkler-blowout": data.winterNote } : {}),
           ...(g?.serviceNotes ?? {}),
         }}
