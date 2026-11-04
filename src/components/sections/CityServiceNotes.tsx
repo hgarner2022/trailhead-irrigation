@@ -2,10 +2,10 @@ import Link from "next/link"
 import { ArrowUpRight } from "lucide-react"
 import { SERVICES } from "@/lib/nav"
 
-// Six services as a list (six near-identical items compare better as rows
-// than as cards): the service name with a small inline arrow and one local
-// line. No icons, no dividers; the gap does the work.
-// Each row links to the service page. Only services
+// Six services as cards, the same whole-card-link pattern as the homepage
+// tiles (border, lift on hover, corner arrow) so it is obvious each one is
+// clickable. No photos, no icons: the service name and one local line.
+// Each card links to the service page. Only services
 // with a local note appear, so a half-filled city never shows empty rows.
 
 
@@ -25,22 +25,23 @@ export function CityServiceNotes({ name, notes }: { name: string; notes: Record<
               Here&apos;s what we do in {name}, and what&apos;s worth knowing about each one here.
             </p>
           </div>
-          <ul className="flex flex-col gap-9">
-            {items.map((s) => {
-              return (
-                <li key={s.href}>
-                  <Link href={s.href} className="group block max-w-[60ch]">
-                    <div className="min-w-0">
-                      <p className="font-display text-2xl font-semibold text-navy group-hover:text-primary transition-colors inline-flex items-center gap-2">
-                        {s.label}
-                        <ArrowUpRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" aria-hidden="true" />
-                      </p>
-                      <p className="text-muted-foreground leading-relaxed mt-1">{notes[s.href]}</p>
-                    </div>
-                  </Link>
-                </li>
-              )
-            })}
+          <ul className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            {items.map((s) => (
+              <li key={s.href}>
+                <Link
+                  href={s.href}
+                  className="group flex h-full flex-col gap-2 rounded-lg border border-border bg-background p-6 transition-all hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <h3 className="font-display text-2xl font-semibold text-navy group-hover:text-primary transition-colors">{s.label}</h3>
+                    <span className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border text-muted-foreground transition-colors group-hover:border-primary group-hover:bg-primary group-hover:text-white">
+                      <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
+                    </span>
+                  </div>
+                  <p className="text-muted-foreground leading-relaxed">{notes[s.href]}</p>
+                </Link>
+              </li>
+            ))}
           </ul>
         </div>
       </div>
