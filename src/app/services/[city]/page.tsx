@@ -3,7 +3,6 @@ import { notFound } from "next/navigation"
 import { CityHero } from "@/components/sections/CityHero"
 import { CityLocalSign } from "@/components/sections/CityLocalSign"
 import { CityNeighborhoods } from "@/components/sections/CityNeighborhoods"
-import { ServiceAreaMap } from "@/components/sections/ServiceAreaMap"
 import { CityServiceNotes } from "@/components/sections/CityServiceNotes"
 import { Testimonials } from "@/components/sections/Testimonials"
 import { SectionHeader } from "@/components/sections/SectionHeader"
@@ -151,9 +150,6 @@ export default async function CityPage({
           <FaqList faqs={data.faqs} itemBg="cream" />
         </div>
       </section>
-
-      {/* The map of the six towns, this one marked */}
-      <ServiceAreaMap current={data.slug} />
 
       <CTAStrip />
     </>
