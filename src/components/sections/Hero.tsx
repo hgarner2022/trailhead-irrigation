@@ -36,7 +36,7 @@ export function heroSeason(date: Date) {
   }
   if (m === 10) {
     return {
-      h1: "Fall sprinkler blowouts in Erie, CO, serving the Northern Colorado Front Range. Booking all through November and into December.",
+      h1: "Fall sprinkler blowouts in Erie, CO, serving the Northern Colorado Front Range. Booking through November.",
       src: "/images/fall-blowout-yard-erie.jpg",
       alt: "Sprinkler head blowing out mist on a leaf-covered lawn in front of an Erie home, Front Range peaks behind",
       position: "object-[70%_center]",

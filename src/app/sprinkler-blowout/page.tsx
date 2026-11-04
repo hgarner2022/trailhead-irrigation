@@ -26,7 +26,7 @@ function blowoutPhase(date: Date): "early" | "peak" | "late" | "off" {
   const m = date.getMonth() // 0 = January
   if (m === 7 || m === 8) return "early" // Aug, Sep
   if (m === 9) return "peak" // Oct
-  if (m === 10 || m === 11) return "late" // Nov, Dec
+  if (m === 10) return "late" // Nov; December is off season, nothing is booked
   return "off"
 }
 
@@ -46,8 +46,8 @@ const SEASON_COPY = {
   late: {
     title: "There is still time to get your sprinklers blown out this fall.",
     cardHeading: "There is still time",
-    cardBody: "We keep doing blowouts all through November and into December. Book the next open day and we will take care of it.",
-    banner: "Still time for a blowout. We keep going through November and December.",
+    cardBody: "We keep doing blowouts all through November. Book the next open day and we will take care of it.",
+    banner: "Still time for a blowout. We keep going through November.",
   },
   off: {
     title: "Blowouts start in late September",
@@ -105,12 +105,12 @@ const BLOWOUT_FAQS = [
   {
     question: "It already froze and I haven't had my blowout. Can you still come?",
     answer:
-      "Yes. Most systems come through the first freeze fine, and clearing it now protects it for the rest of the winter. We keep doing blowouts through December.",
+      "Yes. Most systems come through the first freeze fine, and clearing it now protects it for the rest of the winter. We keep doing blowouts through November.",
   },
   {
     question: "How late can I book?",
     answer:
-      "Through December. September and October fill fast, so book early then. After that, take the next open day and we will come out.",
+      "Through the end of November. September and October fill fast, so book early then. After that, take the next open day and we will come out.",
   },
   {
     question: "What about my backflow preventer?",
@@ -211,7 +211,7 @@ export default function SprinklerBlowoutPage() {
                 <strong className="text-foreground font-semibold">
                   late September through October
                 </strong>
-                . If that has passed, book the next open day. We keep going through December.
+                . If that has passed, book the next open day. We keep going through November.
               </p>
               <p className="text-muted-foreground mb-7">
                 Water left in the lines expands when it freezes, which cracks
