@@ -43,8 +43,6 @@ export interface CityGuide {
   /** A second photo for the neighborhoods block. */
   placeImage?: string
   placeAlt?: string
-  /** "Our shop is here" or "15 minutes from our shop in Erie". */
-  distance: string
   /** Big number on the local sign, e.g. "2". */
   wateringDaysPerWeek?: string
   /** One line on the rebate, with the page it links to. */
@@ -102,12 +100,11 @@ export const CITY_DATA: CityData[] = [
     ],
     relatedBlogSlugs: ["spring-sprinkler-startup-colorado", "water-optimization-tips-colorado", "colorado-water-restrictions-2026"],
     guide: {
-      heroImage: "/images/erie-old-town-briggs-street.jpg",
-      heroAlt: "Looking down Briggs Street in Old Town Erie, Colorado, with the foothills on the horizon",
-      heroPosition: "center 60%",
-      placeImage: "/images/fall-blowout-yard-erie.jpg",
-      placeAlt: "Front lawn of an Erie home in fall with a sprinkler head running",
-      distance: "Our shop is here",
+      heroImage: "/images/erie-aerial-fall-front-range.jpg",
+      heroAlt: "Erie, Colorado from the air in fall, with the Front Range on the horizon",
+      heroPosition: "center 55%",
+      placeImage: "/images/erie-old-town-briggs-street.jpg",
+      placeAlt: "Looking down Briggs Street in Old Town Erie, Colorado",
       wateringDaysPerWeek: "2",
       rebate: { label: "Town of Erie rebate on WaterSense smart controllers", href: "/water-rebates/erie" },
       rulesCheckedOn: "November 1, 2026",
@@ -145,7 +142,7 @@ export const CITY_DATA: CityData[] = [
     cityNote: "Longmont's senior water rights mean residents are less likely to face severe mandatory restrictions compared to other Front Range cities. The city's backflow program is well-established and actively enforced.",
     winterNote:
       "Longmont has a lot of established housing with irrigation that predates current standards. Older brass valves, galvanized sections and drain layouts that never fully clear by gravity are common here. Those are the systems where a compressed-air blowout matters most, rather than opening a drain valve and hoping. Longmont also enforces its backflow program actively, so we note the condition of your assembly at winterization and tell you if it looks likely to fail next year's test.",
-    introText: "Trailhead serves Longmont from our shop in Erie, 15 minutes away. We install, repair, blow out and turn on sprinkler systems across the city. A lot of the homes here have systems from the 1970s and 80s that need repair or upgrading.",
+    introText: "Trailhead serves Longmont. We install, repair, blow out and turn on sprinkler systems across the city. A lot of the homes here have systems from the 1970s and 80s that need repair or upgrading.",
     whyLocal: "We're 15 minutes from Longmont. A lot of the systems here are 30 to 40 years old, and the usual problems are low pressure, worn valves and controllers that predate the current backflow rules. We repair those, and we'll tell you when replacing makes more sense than patching.",
     faqs: [
       {
@@ -166,6 +163,26 @@ export const CITY_DATA: CityData[] = [
       },
     ],
     relatedBlogSlugs: ["signs-irrigation-system-needs-repair", "smart-irrigation-controllers-worth-it", "how-much-does-sprinkler-system-cost-colorado"],
+    guide: {
+      heroImage: "/images/longmont-main-street-aerial.jpg",
+      heroAlt: "Main Street in Longmont, Colorado from the air on a summer evening",
+      heroPosition: "center 60%",
+      wateringDaysPerWeek: "2",
+      rebate: { label: "Longmont rebates on Wi-Fi controllers, nozzles and drip", href: "/water-rebates/longmont" },
+      rulesCheckedOn: "November 1, 2026",
+      neighborhoods: ["Old Town", "Prospect", "Southmoor Park", "Somerset Meadows", "Idaho Creek", "Ute Creek"],
+      ryanNote:
+        "Longmont has the most established yards in our service area. A lot of the houses went up in the 70s and 80s and the sprinklers went in with them, so I see older brass valves and lines that were never meant to drain. I work all over town, from Old Town out to the newer streets on the south and east side.",
+      serviceNotes: {
+        "/spring-turn-on": "Longmont asks you to hold off on automatic sprinklers until May, so we schedule turn-ons here a little later than in Erie.",
+        "/sprinkler-repair": "Many Longmont systems date to the 70s and 80s. We work on the older brass and galvanized parts as well as new PVC.",
+        "/sprinkler-blowout": "Older Longmont drain layouts never fully clear on their own, so we blow every zone out with compressed air.",
+        "/sprinkler-installation": "Longmont requires an RPZ backflow on new irrigation connections, and we install to that standard.",
+        "/smart-controllers": "Longmont pays a rebate on Wi-Fi controllers, with a bonus after a free Slow the Flow evaluation.",
+        "/water-efficiency": "Longmont also rebates rotary nozzles, drip conversion and rain sensors, so efficiency upgrades here cost less.",
+      },
+      reviewAuthors: ["Scott Przygocki", "Brian Salts-Halcomb", "Lori Larrabee"],
+    },
   },
   {
     slug: "louisville",
@@ -187,7 +204,7 @@ export const CITY_DATA: CityData[] = [
     cityNote: "Louisville has the highest median home value in the area at ~$835,000. Homeowners here invest in their properties. The Marshall Fire rebuilds mean many homes now have brand new irrigation systems with smart controllers.",
     winterNote:
       "Louisville splits into two very different jobs. The Marshall Fire rebuilds have new systems on smart controllers, and those need the controller wintered properly along with the lines cleared. Putting a smart controller into standby is not the same as switching a mechanical timer off. The rest of Louisville is long-established, with mature trees whose roots run alongside the irrigation lines, so a freeze crack there is a harder repair to dig out.",
-    introText: "Trailhead serves Louisville from our shop in Erie. We install, repair, winterize and turn on sprinkler systems across the city, on the 1990s properties and on the Marshall Fire rebuilds.",
+    introText: "Trailhead serves Louisville. We install, repair, winterize and turn on sprinkler systems across the city, on the 1990s properties and on the Marshall Fire rebuilds.",
     whyLocal: "Louisville's lots near Coal Creek and on the west side of town are hillier than the plains cities, so a head layout that works in Erie doesn't always work here. We lay out zones and pick heads for the slope.",
     faqs: [
       {
@@ -208,6 +225,25 @@ export const CITY_DATA: CityData[] = [
       },
     ],
     relatedBlogSlugs: ["when-to-winterize-sprinklers-colorado", "what-to-expect-sprinkler-installation", "smart-irrigation-controllers-worth-it"],
+    guide: {
+      heroImage: "/images/louisville-flatirons-fall.jpg",
+      heroAlt: "Fall color and the Flatirons, looking west from Louisville, Colorado",
+      heroPosition: "center 45%",
+      wateringDaysPerWeek: "2",
+      rebate: { label: "Free smart controllers and Slow the Flow evaluations through Resource Central", href: "/water-rebates/louisville" },
+      rulesCheckedOn: "November 1, 2026",
+      neighborhoods: ["Old Town", "Coal Creek Ranch", "Harper Lake", "Centennial Valley", "Steel Ranch", "North End"],
+      ryanNote:
+        "Louisville is two kinds of work. The homes rebuilt after the Marshall Fire have brand-new systems on smart controllers, and the older streets have mature trees with roots running right along the lines. I work both, from Old Town out to Coal Creek Ranch.",
+      serviceNotes: {
+        "/spring-turn-on": "Louisville's lots get hillier near Coal Creek, so at turn-on we check the slope zones and the heads at the bottom of them.",
+        "/sprinkler-repair": "Mature trees on Louisville's older streets send roots along the lines, and those are the leaks we trace most here.",
+        "/sprinkler-blowout": "Smart controllers on the rebuilt homes get put into standby properly along with clearing the lines.",
+        "/sprinkler-installation": "Louisville's terrain varies more than the plains towns, so we lay out zones and head types by slope.",
+        "/smart-controllers": "Resource Central installs a limited number of free smart controllers in Louisville. We set up and tune any controller you already have.",
+        "/water-efficiency": "Free Slow the Flow evaluations are open to Louisville residents, and we handle the nozzle and drip upgrades they recommend.",
+      },
+    },
   },
   {
     slug: "lafayette",
@@ -228,7 +264,7 @@ export const CITY_DATA: CityData[] = [
     cityNote: "Lafayette is the only city in this area with permanent, year-round watering restrictions. This makes efficient irrigation system design especially important. Smart controllers that comply with the 3-day, no-midday-watering rules are a smart investment here.",
     winterNote:
       "Lafayette's watering restrictions are permanent rather than seasonal, so more homeowners here run smart controllers on tight schedules. At winterization that controller needs to come out of its watering program properly instead of being left to run against a drained system. We also see more drip and low-flow zones in Lafayette than elsewhere, and those get cleared carefully so the emitters stay on the tubing.",
-    introText: "Trailhead serves Lafayette from our shop in Erie. Lafayette's watering restrictions are permanent, three days a week and nothing between 10 AM and 6 PM, so we design and program systems to work inside those rules year-round.",
+    introText: "Trailhead serves Lafayette. Lafayette's watering restrictions are permanent, three days a week and nothing between 10 AM and 6 PM, so we design and program systems to work inside those rules year-round.",
     whyLocal: "Lafayette's permanent restrictions mean your sprinkler system needs to be efficient from day one. We program controllers to comply with the 3-day limit and 10 AM-6 PM blackout window, and recommend smart controllers that auto-adjust for weather.",
     faqs: [
       {
@@ -249,6 +285,26 @@ export const CITY_DATA: CityData[] = [
       },
     ],
     relatedBlogSlugs: ["smart-irrigation-controllers-worth-it", "colorado-water-restrictions-2026", "drip-irrigation-vs-spray-heads"],
+    guide: {
+      heroImage: "/images/lafayette-town.jpg",
+      heroAlt: "Waneka Lake in Lafayette, Colorado in fall, with snow on the peaks behind it",
+      heroPosition: "center 45%",
+      wateringDaysPerWeek: "3",
+      rebate: { label: "City of Lafayette smart controller rebate and free Rachio installs", href: "/water-rebates/lafayette" },
+      rulesCheckedOn: "November 1, 2026",
+      neighborhoods: ["Old Town", "Indian Peaks", "Waneka Lake", "White Hawk Ranch", "Spring Creek", "Blue Heron"],
+      ryanNote:
+        "Lafayette is right next door, so I'm there most weeks. The three-day watering limit is permanent here, which means more homes run smart controllers on tight schedules, and more drip. I work in Indian Peaks, Waneka Lake, Old Town and the newer neighborhoods on the east side.",
+      serviceNotes: {
+        "/spring-turn-on": "Lafayette limits watering to three days a week year-round, so at turn-on we set the controller to fit that schedule.",
+        "/sprinkler-repair": "Lafayette mixes 70s neighborhoods with new builds, and we work on the old brass and the new PVC alike.",
+        "/sprinkler-blowout": "Lafayette runs more drip and low-flow zones than most towns, and we clear those carefully so the emitters come through fine.",
+        "/sprinkler-installation": "Lots on Lafayette's west side can be rockier and drain faster, so we design zones for the soil we actually find.",
+        "/smart-controllers": "Lafayette pays a rebate on WaterSense controllers, and Resource Central runs a free Rachio install program.",
+        "/water-efficiency": "Drip is exempt from Lafayette's three-day limit, so converting beds to drip gives you more room to water.",
+      },
+      reviewAuthors: ["Lori Ginn", "Daniel Cooperider", "Nicole Duke", "Todd Camnitz"],
+    },
   },
   {
     slug: "firestone",
@@ -269,7 +325,7 @@ export const CITY_DATA: CityData[] = [
     cityNote: "Firestone's water supply is in transition. The Central Weld County Water District contract ends in August 2028, and the Town is actively securing alternative sources. Water efficiency will become increasingly important as this plays out.",
     winterNote:
       "Firestone is almost entirely post-2000 construction, so the systems here are new enough that homeowners often assume a blowout can wait. Age is not the protection. A two-year-old backflow assembly full of water cracks the same as a twenty-year-old one. Firestone also sits on the plains side of I-25 with more wind exposure, which pulls ground temperature down faster on the first hard freeze night.",
-    introText: "Trailhead serves Firestone from our shop in Erie, a short drive up I-25. Almost every home here was built after 2000, so most systems are fairly new. We handle repairs, blowouts and spring turn-ons across Firestone.",
+    introText: "Trailhead serves Firestone. Almost every home here was built after 2000, so most systems are fairly new. We handle repairs, blowouts and spring turn-ons across Firestone.",
     whyLocal: "Nearly every system in Firestone is newer construction. New systems still need a blowout each fall, a turn-on each spring, and a head replaced now and then after the mower finds it. We're a few minutes away in Erie.",
     faqs: [
       {
@@ -290,6 +346,23 @@ export const CITY_DATA: CityData[] = [
       },
     ],
     relatedBlogSlugs: ["when-to-winterize-sprinklers-colorado", "signs-irrigation-system-needs-repair", "how-to-adjust-sprinkler-heads"],
+    guide: {
+      heroImage: "/images/firestone-fall-pond.jpg",
+      heroAlt: "Fall cottonwoods reflected in a pond in Firestone, Colorado",
+      heroPosition: "center",
+      rulesCheckedOn: "November 1, 2026",
+      neighborhoods: ["Saddleback", "Saint Vrain Ranch", "Booth Farms", "Stoneridge", "Barefoot Lakes", "Historic Firestone"],
+      ryanNote:
+        "Firestone is almost all newer construction, so the systems are young, but age isn't protection out here. It sits on the open plains side of I-25 with more wind, and the first hard freeze comes fast. I work in Saddleback, Saint Vrain Ranch and most of the newer subdivisions in town.",
+      serviceNotes: {
+        "/spring-turn-on": "Firestone has no mandatory watering schedule, so at turn-on we set run times for the sandier soil on this side of I-25.",
+        "/sprinkler-repair": "Most Firestone systems went in with the house after 2000, and we work on all the builder-installed parts.",
+        "/sprinkler-blowout": "Firestone's wind drops ground temperatures fast on the first hard freeze, so blowouts here go early in the season.",
+        "/sprinkler-installation": "Firestone's soil runs sandier than the foothills towns, with pockets of expansive clay, so we check the soil before we lay out zones.",
+        "/smart-controllers": "Firestone doesn't run a controller rebate, so a smart controller here pays for itself through the water bill.",
+        "/water-efficiency": "Firestone's newer lots are big and open, and rotary nozzles cut wind drift on the wide zones.",
+      },
+    },
   },
   {
     // Sources (verified 2026-08-17):
@@ -324,9 +397,9 @@ export const CITY_DATA: CityData[] = [
     winterNote:
       "Broomfield's south and west sides hold some of the oldest irrigation in our service area. These are 1950s and 60s homes where the valves and backflow assembly have already been through decades of freeze-thaw. Those are the systems where a skipped blowout most often turns into a cracked backflow come spring. The newer Anthem, Broadlands and Baseline systems are more forgiving, but the above-ground backflow still freezes first no matter the build year.",
     introText:
-      "Trailhead serves Broomfield from our shop in Erie, just up the road. Broomfield has a permanent 10 a.m. to 6 p.m. watering blackout and a Drought Watch asking for two days a week, a tighter window than most Front Range cities, so zone layout and run times matter more here. We handle repairs, blowouts, spring turn-ons, backflow testing and new installations across Broomfield.",
+      "Trailhead serves Broomfield. Broomfield has a permanent 10 a.m. to 6 p.m. watering blackout and a Drought Watch asking for two days a week, a tighter window than most Front Range cities, so zone layout and run times matter more here. We handle repairs, blowouts, spring turn-ons, backflow testing and new installations across Broomfield.",
     whyLocal:
-      "Broomfield is a short drive from our shop in Erie, and we work in it regularly. We know the even/odd schedule, the overnight-only watering window, and how much the clay varies between Original Broomfield and the newer Anthem and Baseline neighborhoods. That matters when you're setting run times or diagnosing why one zone floods while another stays dry.",
+      "We work in Broomfield regularly. We know the even/odd schedule, the overnight-only watering window, and how much the clay varies between Original Broomfield and the newer Anthem and Baseline neighborhoods. That matters when you're setting run times or diagnosing why one zone floods while another stays dry.",
     faqs: [
       {
         question: "What days can I water my lawn in Broomfield?",
@@ -355,6 +428,22 @@ export const CITY_DATA: CityData[] = [
       },
     ],
     relatedBlogSlugs: ["when-to-winterize-sprinklers-colorado", "water-optimization-tips-colorado", "smart-irrigation-controllers-worth-it"],
+    guide: {
+      wateringDaysPerWeek: "2",
+      rulesCheckedOn: "November 1, 2026",
+      neighborhoods: ["Original Broomfield", "Anthem", "Anthem Ranch", "The Broadlands", "Wildgrass", "Baseline"],
+      ryanNote:
+        "Broomfield has the tightest watering window in our service area, with no daytime watering, so zone timing matters more here. I work from Original Broomfield up to Anthem, the Broadlands and Baseline, and the clay changes block to block.",
+      serviceNotes: {
+        "/spring-turn-on": "Broomfield only allows watering between 6 p.m. and 10 a.m., so at turn-on we set the controller to finish inside that window.",
+        "/sprinkler-repair": "Broomfield asks that leaks be repaired within 10 days of notice, and we schedule repairs here with that in mind.",
+        "/sprinkler-blowout": "Original Broomfield's 1950s and 60s systems have been through decades of freezes, and we take extra care with the older valves and backflows.",
+        "/sprinkler-installation": "Broomfield's clay changes noticeably between neighborhoods, so we design zones for the soil on your lot.",
+        "/smart-controllers": "A smart controller fits a full week of water into Broomfield's overnight window better than a mechanical timer.",
+        "/water-efficiency": "With two watering days under the Drought Watch, efficient nozzles and drip get more out of each day in Broomfield.",
+      },
+      reviewAuthors: ["Reesa Rennecker", "Pate Katechis", "Jooseok Lee"],
+    },
   },
 ]
 

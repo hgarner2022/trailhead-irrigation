@@ -6,7 +6,7 @@ import { CityNeighborhoods } from "@/components/sections/CityNeighborhoods"
 import { CityServiceNotes } from "@/components/sections/CityServiceNotes"
 import { Testimonials } from "@/components/sections/Testimonials"
 import { SectionHeader } from "@/components/sections/SectionHeader"
-import { pickReviews } from "@/lib/reviews"
+import { pickReviews, reviewsFor } from "@/lib/reviews"
 import { CTAStrip } from "@/components/sections/CTAStrip"
 import { breadcrumbJsonLd, faqJsonLd, reviewsJsonLd, siteConfig } from "@/lib/seo"
 import { FaqList } from "@/components/sections/FaqList"
@@ -41,7 +41,11 @@ export default async function CityPage({
   const data = getCityData(city)
   if (!data) notFound()
   const g = data.guide
-  const cityReviews = g?.reviewAuthors?.length ? pickReviews(...g.reviewAuthors) : []
+  // Reviews from customers in this town when we have them (matched to Jobber
+  // job addresses), otherwise recent repair reviews from across the area.
+  const localReviews = g?.reviewAuthors?.length ? pickReviews(...g.reviewAuthors) : []
+  const cityReviews = localReviews.length > 0 ? localReviews : reviewsFor("repair", 3)
+  const reviewsAreLocal = localReviews.length > 0
 
 
   // Build a stable "last updated" timestamp at build time. Surfaced visibly
@@ -91,7 +95,6 @@ export default async function CityPage({
         <CityHero
           name={data.name}
           county={data.county}
-          distance={g.distance}
           image={g.heroImage}
           alt={g.heroAlt ?? `${data.name}, Colorado`}
           position={g.heroPosition}
@@ -100,7 +103,6 @@ export default async function CityPage({
         <CityHero
           name={data.name}
           county={data.county}
-          distance={g?.distance ?? "A short drive from our shop in Erie"}
           image="/images/trail-mountain-meadow.jpg"
           alt="Two-track trail through a mountain meadow at sunrise in the Colorado Rockies"
           position="60% center"
@@ -119,7 +121,7 @@ export default async function CityPage({
       />
 
       {/* Where we work here: Ryan, the neighborhoods, a photo from the town */}
-      {g?.ryanNote && g.neighborhoods && g.placeImage && (
+      {g?.ryanNote && g.neighborhoods && (
         <CityNeighborhoods
           name={data.name}
           note={g.ryanNote}
@@ -135,8 +137,8 @@ export default async function CityPage({
           <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(reviewsJsonLd(cityReviews)) }} />
           <Testimonials
             reviews={cityReviews}
-            heading={`What ${data.name} homeowners say`}
-            description="Google reviews from customers in this town."
+            heading={reviewsAreLocal ? `What ${data.name} homeowners say` : "What homeowners say"}
+            description={reviewsAreLocal ? "Google reviews from customers in this town." : "Google reviews from customers across the Front Range."}
             bg="cream"
             headingId="city-reviews"
           />

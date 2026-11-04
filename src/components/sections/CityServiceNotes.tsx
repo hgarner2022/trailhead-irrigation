@@ -15,12 +15,12 @@ export function CityServiceNotes({ name, notes }: { name: string; notes: Record<
       <div className="container-padding-x mx-auto max-w-7xl">
         <div className="grid grid-cols-1 lg:grid-cols-[0.8fr_1.2fr] gap-10 lg:gap-16">
           <div className="flex flex-col gap-3">
-            <p className="text-xs font-semibold uppercase tracking-widest text-primary">The work here</p>
+            <p className="text-xs font-semibold uppercase tracking-widest text-primary">Services</p>
             <h2 id="local-notes-heading" className="font-display text-4xl md:text-5xl font-bold text-navy">
-              What we do differently in {name}
+              Sprinkler services in {name}
             </h2>
             <p className="text-lg text-muted-foreground">
-              Every town has its own soil, water rules and houses. Here is what that means for the work in {name}.
+              Tap any service for the full details. The notes are what is specific to {name}.
             </p>
           </div>
           <ul className="divide-y divide-border rounded-lg border border-border bg-background">
