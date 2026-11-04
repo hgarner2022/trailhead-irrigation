@@ -2,13 +2,13 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import Image from "next/image"
 import { PageBanner } from "@/components/sections/PageBanner"
+import { ServiceAreaMap } from "@/components/sections/ServiceAreaMap"
 import { CTAStrip } from "@/components/sections/CTAStrip"
 import { FaqList } from "@/components/sections/FaqList"
 import { DefinitionList } from "@/components/sections/DefinitionList"
 import { SectionHeader } from "@/components/sections/SectionHeader"
 import { Card, CardContent } from "@/components/ui/card"
 import { buttonVariants } from "@/components/ui/button"
-import { CITY_DATA } from "@/lib/city-data"
 import { faqJsonLd, breadcrumbJsonLd, siteConfig } from "@/lib/seo"
 
 export const metadata: Metadata = {
@@ -240,24 +240,8 @@ export default function SpringTurnOnPage() {
         </div>
       </section>
 
-      {/* City links */}
-      <section aria-labelledby="turn-on-cities" className="bg-cream section-padding-y">
-        <div className="container-padding-x mx-auto max-w-5xl">
-          <SectionHeader
-            title="Where we do spring turn-ons"
-            titleId="turn-on-cities"
-            description="Based in Erie, covering the surrounding Front Range and Weld County."
-            className="mb-8"
-          />
-          <div className="flex flex-wrap justify-center gap-3">
-            {CITY_DATA.map((city) => (
-              <Link key={city.slug} href={`/services/${city.slug}`} className={buttonVariants({ variant: "outline" })}>
-                Sprinkler turn-on in {city.name}
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
+      {/* Service area map */}
+      <ServiceAreaMap title="Where we do spring turn-ons" />
 
       {/* FAQs */}
       <section aria-labelledby="turn-on-faq" className="bg-background section-padding-y">
