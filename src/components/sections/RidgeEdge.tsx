@@ -21,17 +21,23 @@ const W = 2560
 const H = 120
 
 const SKYLINE: [number, number][] = [
-  [0, 100], [80, 94], [160, 96], [240, 88], [320, 92], [400, 80], [460, 86], [520, 76], [580, 82],
-  // foothills into the Flatirons
-  [640, 70], [700, 60], [730, 66], [760, 52], [780, 64], [810, 50], [830, 62], [860, 46], [880, 60], [910, 54], [950, 72],
+  // plains and low foothills
+  [0, 96], [100, 90], [200, 94], [300, 84], [380, 90], [440, 78], [520, 70], [580, 62],
+  // the Flatirons: five slabs leaning north, a long slope up and a sharp drop
+  [600, 66], [640, 44], [650, 70],
+  [660, 66], [700, 36], [712, 68],
+  [722, 64], [765, 28], [778, 66],
+  [790, 62], [840, 20], [855, 64],
+  [868, 60], [905, 34], [918, 68],
+  // Bear Peak behind them
+  [960, 56], [1000, 48], [1040, 58], [1090, 66],
   // Indian Peaks
-  [1000, 64], [1040, 56], [1080, 62], [1120, 50], [1160, 58], [1200, 46], [1240, 54],
-  // Longs Peak and Mount Meeker
-  [1280, 44], [1310, 36], [1340, 28], [1365, 30], [1385, 40], [1400, 38], [1420, 50], [1450, 58], [1480, 52], [1510, 66],
+  [1140, 54], [1180, 60], [1220, 44], [1260, 52], [1300, 38], [1340, 48], [1380, 56],
+  // Longs Peak, flat summit, then the notch and Mount Meeker's point
+  [1430, 46], [1470, 34], [1500, 22], [1520, 12], [1550, 10], [1575, 14], [1595, 30], [1615, 22], [1640, 36], [1680, 50], [1720, 58],
   // north, tapering
-  [1560, 60], [1600, 70], [1640, 64], [1680, 74], [1720, 68], [1760, 78], [1800, 72], [1840, 66], [1880, 72], [1920, 60],
-  [1960, 66], [2000, 56], [2040, 64], [2080, 70], [2120, 78], [2160, 74], [2200, 84], [2240, 80], [2280, 88], [2320, 84],
-  [2360, 92], [2400, 90], [2460, 96], [2520, 98], [2560, 100],
+  [1780, 64], [1820, 56], [1860, 66], [1920, 60], [1960, 70], [2020, 62], [2080, 74], [2140, 68], [2200, 80], [2260, 76],
+  [2320, 86], [2380, 82], [2440, 90], [2500, 94], [2560, 96],
 ]
 
 const SVG =
@@ -41,14 +47,17 @@ const SVG =
 
 const MASK = `url("data:image/svg+xml,${encodeURIComponent(SVG)}")`
 
-// Five short rays over the top half of the sun.
-const RAYS = [-150, -120, -90, -60, -30].map((deg) => {
+// The sun: a disc whose centre sits on the bottom edge of its own viewBox,
+// so the SVG clips it to the top half and nothing can poke out below the
+// ridge. Seven rays over the top.
+const SUN_R = 30
+const RAYS = [-165, -140, -115, -90, -65, -40, -15].map((deg) => {
   const a = (deg * Math.PI) / 180
   return {
-    x1: (50 + 36 * Math.cos(a)).toFixed(1),
-    y1: (62 + 36 * Math.sin(a)).toFixed(1),
-    x2: (50 + 46 * Math.cos(a)).toFixed(1),
-    y2: (62 + 46 * Math.sin(a)).toFixed(1),
+    x1: (50 + (SUN_R + 8) * Math.cos(a)).toFixed(1),
+    y1: (60 + (SUN_R + 8) * Math.sin(a)).toFixed(1),
+    x2: (50 + (SUN_R + 20) * Math.cos(a)).toFixed(1),
+    y2: (60 + (SUN_R + 20) * Math.sin(a)).toFixed(1),
   }
 })
 
@@ -66,12 +75,12 @@ export function RidgeEdge({ to, className }: { to: keyof typeof FILLS; className
       className={cn("relative z-10 w-full h-14 md:h-24 -mt-14 md:-mt-24 pointer-events-none select-none", className)}
     >
       <svg
-        viewBox="0 0 100 100"
-        className="absolute right-[8%] bottom-[35%] md:bottom-[25%] h-10 md:h-14 w-auto text-primary"
+        viewBox="0 0 100 60"
+        className="absolute right-[8%] bottom-[64%] md:bottom-[43%] h-[75%] w-auto text-primary"
         fill="none"
       >
-        <circle cx="50" cy="62" r="28" fill="currentColor" />
-        <g stroke="currentColor" strokeWidth="4" strokeLinecap="round">
+        <circle cx="50" cy="60" r={SUN_R} fill="currentColor" />
+        <g stroke="currentColor" strokeWidth="5" strokeLinecap="round">
           {RAYS.map((r) => (
             <line key={r.x1} {...r} />
           ))}
