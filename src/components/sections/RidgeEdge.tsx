@@ -1,9 +1,9 @@
 import { cn } from "@/lib/utils"
 
 // Mountains along the top of the closing strip, with the sun setting into a
-// short flat horizon. One navy silhouette, four broad peaks across a laptop
-// screen, long slopes, a dominant summit off centre, snow on the two main
-// summits, and the badge's sun. Kept calm on purpose: a
+// short flat horizon. One navy silhouette, four peaks across a laptop
+// screen with pointed summits and steep faces, two of them tall, and the
+// badge's sun. No snow, no second ridge (Hannah, Nov 4 2026). Kept calm on purpose: a
 // busier ridge made Hannah dizzy (Nov 4 2026).
 //
 // The ridge is a repeating tile used as a CSS mask over a block of the
@@ -25,15 +25,11 @@ const TILE_H = 120
 // First and last share a height so the tile repeats seamlessly. The
 // short, nearly flat horizon around x=1300 holds the sun.
 const RIDGE: [number, number][] = [
-  [0, 84], [200, 62], [320, 70], [480, 40], [560, 50], [640, 46], [820, 78],
-  [1000, 34], [1060, 42], [1120, 38], [1230, 72], [1370, 74], [1420, 60], [1520, 66], [1600, 84],
-]
-
-// Snow on the two main summits: the summit, the two slope points a little
-// way down, and a jagged lower edge inside the mountain.
-const SNOW: [number, number][][] = [
-  [[416, 52], [480, 40], [560, 50], [540, 56], [520, 50], [500, 58], [480, 52], [460, 60], [440, 54]],
-  [[951, 46], [1000, 34], [1060, 42], [1040, 50], [1020, 44], [1000, 52], [980, 46], [960, 54]],
+  // each peak: a gentle foot, a steep upper face, a sharp summit
+  [0, 88], [120, 80], [200, 68], [260, 54], [300, 64], [400, 76],
+  [470, 62], [530, 34], [560, 20], [590, 40], [640, 32], [680, 52], [760, 80],
+  [850, 60], [920, 38], [960, 26], [985, 42], [1000, 38], [1060, 58], [1120, 70],
+  [1230, 84], [1370, 86], [1420, 70], [1440, 66], [1470, 74], [1500, 72], [1600, 88],
 ]
 
 function mask(paths: string[]) {
@@ -46,7 +42,6 @@ function mask(paths: string[]) {
 const poly = (points: [number, number][]) => "M" + points.map(([x, y]) => `${x},${y}`).join("L") + "Z"
 
 const RIDGE_MASK = mask([poly([...RIDGE, [TILE_W, TILE_H], [0, TILE_H]])])
-const SNOW_MASK = mask(SNOW.map(poly))
 
 function maskStyle(image: string): React.CSSProperties {
   return {
@@ -65,7 +60,8 @@ function maskStyle(image: string): React.CSSProperties {
 // rays (two flat, two diagonal, one straight up). Drawn in a 200x100 box
 // with the dome's flat base on the bottom edge. Centred on tile x=1300,
 // 500 units right of the tile centre, i.e. 500/120 block heights, with the
-// base tucked just under the horizon so only the dome and rays show.
+// base tucked just under the horizon (y 84-86, i.e. 28-30% up) so only
+// the dome and rays show.
 const SUN_LEFT = `calc(var(--ridge-x) + ${500 / TILE_H} * var(--ridge-h))`
 const RAYS = [
   { x1: 48, y1: 92, x2: 24, y2: 92 },
@@ -94,7 +90,7 @@ export function RidgeEdge({ to, className }: { to: keyof typeof FILLS; className
       <div className="absolute inset-0 overflow-hidden">
         <svg
           viewBox="0 0 200 100"
-          className="absolute bottom-[34%] h-[90%] w-auto -translate-x-1/2 text-primary"
+          className="absolute bottom-[26%] h-[90%] w-auto -translate-x-1/2 text-primary"
           style={{ left: SUN_LEFT }}
           fill="none"
         >
@@ -107,7 +103,6 @@ export function RidgeEdge({ to, className }: { to: keyof typeof FILLS; className
         </svg>
       </div>
       <div className={cn("absolute inset-0", FILLS[to])} style={maskStyle(RIDGE_MASK)} />
-      <div className="absolute inset-0 bg-white/85" style={maskStyle(SNOW_MASK)} />
     </div>
   )
 }
