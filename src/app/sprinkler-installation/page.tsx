@@ -295,21 +295,6 @@ export default function SprinklerInstallationPage() {
         </div>
       </section>
 
-      {/* FAQs */}
-      <section
-        aria-labelledby="install-faq"
-        className="bg-background section-padding-y"
-      >
-        <div className="container-padding-x mx-auto max-w-3xl">
-          <SectionHeader
-            title="Sprinkler Installation FAQs"
-            titleId="install-faq"
-            className="mb-10"
-          />
-          <FaqList faqs={INSTALL_FAQS} itemBg="cream" />
-        </div>
-      </section>
-
       {INSTALL_REVIEWS.length > 0 && (
         <>
           <script
@@ -322,11 +307,26 @@ export default function SprinklerInstallationPage() {
             reviews={INSTALL_REVIEWS}
             heading="What Installation Customers Say"
             description="Google reviews from homeowners we designed and installed systems for."
-            bg="cream"
+            bg="background"
             headingId="installation-reviews"
           />
         </>
       )}
+
+      {/* FAQs */}
+      <section
+        aria-labelledby="install-faq"
+        className="bg-cream section-padding-y"
+      >
+        <div className="container-padding-x mx-auto max-w-3xl">
+          <SectionHeader
+            title="Sprinkler Installation FAQs"
+            titleId="install-faq"
+            className="mb-10"
+          />
+          <FaqList faqs={INSTALL_FAQS} itemBg="background" />
+        </div>
+      </section>
 
       <CTAStrip />
     </>

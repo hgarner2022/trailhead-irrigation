@@ -470,18 +470,6 @@ export default function SmartControllersPage() {
         </div>
       </section>
 
-      {/* FAQ */}
-      <section className="bg-background section-padding-y">
-        <div className="container-padding-x mx-auto max-w-3xl">
-          <div className="text-center mb-10">
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground">
-              Frequently Asked Questions
-            </h2>
-          </div>
-          <FaqList faqs={SMART_CONTROLLER_FAQS} itemBg="cream" />
-        </div>
-      </section>
-
       {CONTROLLER_REVIEWS.length > 0 && (
         <>
           <script
@@ -494,11 +482,23 @@ export default function SmartControllersPage() {
             reviews={CONTROLLER_REVIEWS}
             heading="What Smart Controller Customers Say"
             description="Google reviews from homeowners running a controller we installed."
-            bg="cream"
+            bg="background"
             headingId="controller-reviews"
           />
         </>
       )}
+
+      {/* FAQ */}
+      <section className="bg-cream section-padding-y">
+        <div className="container-padding-x mx-auto max-w-3xl">
+          <div className="text-center mb-10">
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground">
+              Frequently Asked Questions
+            </h2>
+          </div>
+          <FaqList faqs={SMART_CONTROLLER_FAQS} itemBg="background" />
+        </div>
+      </section>
 
       <CTAStrip />
     </>

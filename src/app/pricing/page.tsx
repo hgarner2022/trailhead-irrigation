@@ -262,10 +262,28 @@ export default function PricingPage() {
         </div>
       </section>
 
+      {VALUE_REVIEWS.length > 0 && (
+        <>
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{
+              __html: JSON.stringify(reviewsJsonLd(VALUE_REVIEWS)),
+            }}
+          />
+          <Testimonials
+            reviews={VALUE_REVIEWS}
+            heading="What Customers Say About Our Pricing"
+            description="Google reviews from homeowners on what the work actually cost them."
+            bg="background"
+            headingId="pricing-reviews"
+          />
+        </>
+      )}
+
       {/* ════════════════════════════════════════════
           FAQs
           ════════════════════════════════════════════ */}
-      <section className="bg-background section-padding-y">
+      <section className="bg-cream section-padding-y">
         <div className="container-padding-x mx-auto max-w-3xl">
           <div className="text-center mb-10">
             <h2 className="text-3xl font-bold text-foreground">
@@ -276,7 +294,7 @@ export default function PricingPage() {
             {PRICING_FAQS.map((faq) => (
               <details
                 key={faq.question}
-                className="group border border-border rounded-lg hover:border-primary/20 transition-colors"
+                className="group border border-border rounded-lg bg-background hover:border-primary/20 transition-colors"
               >
                 <summary className="flex cursor-pointer items-center justify-between p-5 font-medium text-foreground">
                   {faq.question}
@@ -323,24 +341,6 @@ export default function PricingPage() {
           </div>
         </div>
       </section>
-
-      {VALUE_REVIEWS.length > 0 && (
-        <>
-          <script
-            type="application/ld+json"
-            dangerouslySetInnerHTML={{
-              __html: JSON.stringify(reviewsJsonLd(VALUE_REVIEWS)),
-            }}
-          />
-          <Testimonials
-            reviews={VALUE_REVIEWS}
-            heading="What Customers Say About Our Pricing"
-            description="Google reviews from homeowners on what the work actually cost them."
-            bg="cream"
-            headingId="pricing-reviews"
-          />
-        </>
-      )}
 
       <CTAStrip />
     </>

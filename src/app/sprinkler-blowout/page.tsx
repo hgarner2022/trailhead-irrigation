@@ -363,31 +363,6 @@ export default function SprinklerBlowoutPage() {
         </div>
       </section>
 
-      {/* FAQs */}
-      <section
-        aria-labelledby="blowout-faq"
-        className="bg-background section-padding-y"
-      >
-        <div className="container-padding-x mx-auto max-w-3xl">
-          <SectionHeader
-            title="Sprinkler Blowout FAQs"
-            titleId="blowout-faq"
-            className="mb-10"
-          />
-          <FaqList faqs={BLOWOUT_FAQS} itemBg="cream" />
-          <p className="text-sm text-muted-foreground text-center mt-8">
-            For the full timing breakdown, read our{" "}
-            <Link
-              href="/blog/when-to-winterize-sprinklers-colorado"
-              className="text-primary hover:underline font-medium"
-            >
-              when to blow out sprinklers in Colorado
-            </Link>
-            .
-          </p>
-        </div>
-      </section>
-
       {BLOWOUT_REVIEWS.length > 0 && (
         <>
           <script
@@ -400,11 +375,36 @@ export default function SprinklerBlowoutPage() {
             reviews={BLOWOUT_REVIEWS}
             heading="What Customers Say About Winterization"
             description="Google reviews from homeowners whose systems we blew out."
-            bg="cream"
+            bg="background"
             headingId="blowout-reviews"
           />
         </>
       )}
+
+      {/* FAQs */}
+      <section
+        aria-labelledby="blowout-faq"
+        className="bg-cream section-padding-y"
+      >
+        <div className="container-padding-x mx-auto max-w-3xl">
+          <SectionHeader
+            title="Sprinkler Blowout FAQs"
+            titleId="blowout-faq"
+            className="mb-10"
+          />
+          <FaqList faqs={BLOWOUT_FAQS} itemBg="background" />
+          <p className="text-sm text-muted-foreground text-center mt-8">
+            For the full timing breakdown, read our{" "}
+            <Link
+              href="/blog/when-to-winterize-sprinklers-colorado"
+              className="text-primary hover:underline font-medium"
+            >
+              when to blow out sprinklers in Colorado
+            </Link>
+            .
+          </p>
+        </div>
+      </section>
 
       <CTAStrip />
     </>

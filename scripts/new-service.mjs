@@ -151,14 +151,6 @@ export default function ${id.charAt(0).toUpperCase() + id.slice(1)}Page() {
         </div>
       </section>
 
-      {/* Reviews from customers who booked this service */}
-      {${CONST}_REVIEWS.length > 0 && (
-        <>
-          <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(reviewsJsonLd(${CONST}_REVIEWS)) }} />
-          <Testimonials reviews={${CONST}_REVIEWS} heading="What homeowners say about ${name.toLowerCase()}" description="Google reviews from customers who booked it." bg="background" headingId="${slug}-reviews" />
-        </>
-      )}
-
       {/* Terms, as plain text */}
       <section aria-labelledby="${slug}-terms" className="bg-cream section-padding-y">
         <div className="container-padding-x mx-auto max-w-7xl flex flex-col gap-10">
@@ -170,11 +162,19 @@ export default function ${id.charAt(0).toUpperCase() + id.slice(1)}Page() {
       {/* Service area map */}
       <ServiceAreaMap title="Where we do ${name.toLowerCase()}" bg="background" />
 
+      {/* Reviews from customers who booked this service */}
+      {${CONST}_REVIEWS.length > 0 && (
+        <>
+          <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(reviewsJsonLd(${CONST}_REVIEWS)) }} />
+          <Testimonials reviews={${CONST}_REVIEWS} heading="What homeowners say about ${name.toLowerCase()}" description="Google reviews from customers who booked it." bg="cream" headingId="${slug}-reviews" />
+        </>
+      )}
+
       {/* FAQs */}
-      <section aria-labelledby="${slug}-faq" className="bg-cream section-padding-y">
+      <section aria-labelledby="${slug}-faq" className="bg-background section-padding-y">
         <div className="container-padding-x mx-auto max-w-3xl">
           <SectionHeader title="${name} questions" titleId="${slug}-faq" className="mb-10" />
-          <FaqList faqs={${CONST}_FAQS} itemBg="background" />
+          <FaqList faqs={${CONST}_FAQS} itemBg="cream" />
         </div>
       </section>
 

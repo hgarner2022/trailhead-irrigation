@@ -224,20 +224,6 @@ export default function SpringTurnOnPage() {
         </div>
       </section>
 
-      {/* Reviews from customers who booked a turn-on */}
-      {TURN_ON_REVIEWS.length > 0 && (
-        <>
-          <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(reviewsJsonLd(TURN_ON_REVIEWS)) }} />
-          <Testimonials
-            reviews={TURN_ON_REVIEWS}
-            heading="What homeowners say about spring visits"
-            description="Google reviews from customers who booked a turn-on."
-            bg="background"
-            headingId="turn-on-reviews"
-          />
-        </>
-      )}
-
       {/* Terms, as plain text */}
       <section aria-labelledby="turn-on-terms" className="bg-cream section-padding-y">
         <div className="container-padding-x mx-auto max-w-7xl flex flex-col gap-10">
@@ -249,11 +235,25 @@ export default function SpringTurnOnPage() {
       {/* Service area map */}
       <ServiceAreaMap title="Where we do spring turn-ons" bg="background" />
 
+      {/* Reviews from customers who booked a turn-on */}
+      {TURN_ON_REVIEWS.length > 0 && (
+        <>
+          <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(reviewsJsonLd(TURN_ON_REVIEWS)) }} />
+          <Testimonials
+            reviews={TURN_ON_REVIEWS}
+            heading="What homeowners say about spring visits"
+            description="Google reviews from customers who booked a turn-on."
+            bg="cream"
+            headingId="turn-on-reviews"
+          />
+        </>
+      )}
+
       {/* FAQs */}
-      <section aria-labelledby="turn-on-faq" className="bg-cream section-padding-y">
+      <section aria-labelledby="turn-on-faq" className="bg-background section-padding-y">
         <div className="container-padding-x mx-auto max-w-3xl">
           <SectionHeader title="Spring turn-on questions" titleId="turn-on-faq" className="mb-10" />
-          <FaqList faqs={TURN_ON_FAQS} itemBg="background" />
+          <FaqList faqs={TURN_ON_FAQS} itemBg="cream" />
           <p className="text-sm text-muted-foreground text-center mt-8">
             For the full timing breakdown, read our{" "}
             <Link href="/blog/spring-sprinkler-startup-colorado" className="text-primary hover:underline font-medium">

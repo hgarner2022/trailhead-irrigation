@@ -262,11 +262,24 @@ export default function SprinklerRepairPage() {
         </div>
       </section>
 
+      {REPAIR_REVIEWS.length > 0 && (
+        <>
+          <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(reviewsJsonLd(REPAIR_REVIEWS)) }} />
+          <Testimonials
+            reviews={REPAIR_REVIEWS}
+            heading="What homeowners say about our repairs"
+            description="Google reviews from repair visits."
+            bg="background"
+            headingId="repair-reviews"
+          />
+        </>
+      )}
+
       {/* FAQs */}
-      <section aria-labelledby="repair-faq" className="bg-background section-padding-y">
+      <section aria-labelledby="repair-faq" className="bg-cream section-padding-y">
         <div className="container-padding-x mx-auto max-w-3xl">
           <SectionHeader title="Sprinkler Repair FAQs" titleId="repair-faq" className="mb-10" />
-          <FaqList faqs={REPAIR_FAQS} itemBg="cream" />
+          <FaqList faqs={REPAIR_FAQS} itemBg="background" />
           <p className="text-sm text-muted-foreground text-center mt-8">
             Not sure it needs a repair yet? Read{" "}
             <Link href="/blog/signs-irrigation-system-needs-repair" className="text-primary hover:underline font-medium">
@@ -276,19 +289,6 @@ export default function SprinklerRepairPage() {
           </p>
         </div>
       </section>
-
-      {REPAIR_REVIEWS.length > 0 && (
-        <>
-          <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(reviewsJsonLd(REPAIR_REVIEWS)) }} />
-          <Testimonials
-            reviews={REPAIR_REVIEWS}
-            heading="What homeowners say about our repairs"
-            description="Google reviews from repair visits."
-            bg="cream"
-            headingId="repair-reviews"
-          />
-        </>
-      )}
 
       <CTAStrip />
     </>
