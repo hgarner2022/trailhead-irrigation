@@ -26,8 +26,8 @@ export async function generateMetadata({
   const data = getCityData(city)
   if (!data) return { title: "Not Found" }
   return {
-    title: `${data.name}, CO Sprinkler Company`,
-    description: data.slug === "erie" ? `Owner-run sprinkler company based right here in Erie, with ten years of Front Range experience. Repairs, turn-ons, blowouts and new systems, plus Erie watering rules, backflow deadlines and rebates.` : `Owner-run sprinkler company based in Erie, serving ${data.name}, with ten years of Front Range experience. Repairs, turn-ons, blowouts and new systems, plus ${data.name} watering rules and rebates.`,
+    title: `Sprinkler Repair & Service in ${data.name}, CO`,
+    description: `Sprinkler repair, spring turn-ons, fall blowouts and new systems in ${data.name}, CO. ${data.name}'s watering days, backflow deadline and rebates in one place, plus reviews from local homeowners. Book online or call Ryan.`,
     alternates: { canonical: `${siteConfig.url}/services/${data.slug}` },
   }
 }

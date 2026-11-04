@@ -78,7 +78,7 @@ export function CityLocalSign({ data }: { data: CityData }) {
             </ul>
             {g?.rulesCheckedOn && (
               <p className="px-5 py-3 text-xs text-muted-foreground border-t border-border">
-                Checked {g.rulesCheckedOn} against the {data.waterProvider}. If they change the rules, they win.
+                Checked {g.rulesCheckedOn} against the {data.waterProvider}. Their current rules always apply.
               </p>
             )}
           </div>

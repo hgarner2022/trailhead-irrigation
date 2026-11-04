@@ -91,7 +91,7 @@ export const CITY_DATA: CityData[] = [
       },
       {
         question: "When should I turn on my sprinklers in Erie?",
-        answer: "Wait until late April to early May, after nighttime temperatures stay consistently above 32 degrees for at least a week. Turning on too early risks freeze damage that can cost $500-$1,500 to repair.",
+        answer: "Late April to early May, once nights stay above freezing for about a week. We run every zone, check every head and set the controller for Erie's schedule while we're there.",
       },
       {
         question: "Does Erie require annual backflow testing?",
@@ -147,7 +147,7 @@ export const CITY_DATA: CityData[] = [
     faqs: [
       {
         question: "Does Longmont have watering restrictions in 2026?",
-        answer: "Longmont is at a Drought Watch level with voluntary guidelines: water no more than twice per week, before 10 AM or after 6 PM. Longmont has strong water rights, so mandatory restrictions are less likely than in neighboring cities.",
+        answer: "Longmont is at a Drought Watch level with voluntary guidelines: water no more than twice a week, before 10 AM or after 6 PM.",
       },
       {
         question: "How much does sprinkler repair cost in Longmont?",
@@ -159,7 +159,7 @@ export const CITY_DATA: CityData[] = [
       },
       {
         question: "My sprinkler system in Longmont is old. Should I replace it?",
-        answer: "If your system is 25+ years old and you're dealing with frequent repairs, low water pressure, or uneven coverage, a full replacement usually makes more financial sense than patching an aging system. Get in touch and we'll come look at it and tell you which way makes sense.",
+        answer: "If you're dealing with frequent repairs, low pressure or uneven coverage, a new system can make more sense than patching the old one. We'll come look and tell you honestly which way is right for your yard.",
       },
     ],
     relatedBlogSlugs: ["signs-irrigation-system-needs-repair", "smart-irrigation-controllers-worth-it", "how-much-does-sprinkler-system-cost-colorado"],
@@ -273,7 +273,7 @@ export const CITY_DATA: CityData[] = [
       },
       {
         question: "When is the backflow testing deadline in Lafayette?",
-        answer: "Lafayette's backflow testing cycle runs January through August, administered through BSI Online. Non-compliance can result in fees and water service interruptions. Call 888-966-6050 with questions.",
+        answer: "Lafayette's backflow testing cycle runs January through August, administered through BSI Online. Call 888-966-6050 with questions.",
       },
       {
         question: "Do I need a smart controller in Lafayette?",
@@ -281,7 +281,7 @@ export const CITY_DATA: CityData[] = [
       },
       {
         question: "How much does a sprinkler system cost in Lafayette?",
-        answer: "Residential sprinkler installation in Lafayette typically runs $3,000-$6,000 depending on yard size and zone count. We include smart controller setup and program it to comply with Lafayette's permanent watering restrictions.",
+        answer: "Residential sprinkler installation in Lafayette typically runs $3,000-$6,000 depending on yard size and zone count. We can set up a smart controller and program it for Lafayette's three-day schedule.",
       },
     ],
     relatedBlogSlugs: ["smart-irrigation-controllers-worth-it", "colorado-water-restrictions-2026", "drip-irrigation-vs-spray-heads"],
@@ -315,7 +315,8 @@ export const CITY_DATA: CityData[] = [
     waterProvider: "Town of Firestone (water supplied by Central Weld County Water District)",
     waterProviderPhone: "303-833-3291",
     restrictionLevel: "none",
-    restrictionSummary: "Firestone currently has no mandatory outdoor watering restrictions. The Town requests voluntary water conservation. However, Firestone's water supply situation is changing: Central Weld County Water District has canceled its contract with the Town, with service ending August 2028.",
+    restrictionSummary:
+      "Firestone has no mandatory watering schedule right now. The Town asks for sensible conservation, and we set run times to match.",
     wateringDays: "No mandatory schedule published. The Town requests voluntary conservation: water during cool morning hours and avoid overwatering.",
     wateringTimeRestriction: "No formal time-of-day ban. The Town recommends watering during cool morning hours to reduce evaporation.",
     backflowDeadline: "Colorado state law requires annual backflow testing. Contact the Town of Firestone Water Department at 303-833-3291 for local requirements.",
@@ -330,15 +331,15 @@ export const CITY_DATA: CityData[] = [
     faqs: [
       {
         question: "Does Firestone have watering restrictions?",
-        answer: "Firestone currently has no mandatory watering restrictions, only voluntary conservation guidelines. However, the Town's water supply situation is changing as the Central Weld County Water District contract ends in 2028. Monitor firestoneco.gov for updates.",
+        answer: "Firestone has no mandatory watering schedule right now, only voluntary conservation guidelines. We set your run times for the soil and the weather here.",
       },
       {
         question: "Do you service sprinkler systems in Firestone?",
-        answer: "Yes. We serve all of Firestone from our Erie base. We handle sprinkler repair, winterization blowouts, spring turn-ons, backflow testing, and new installations throughout the Town.",
+        answer: "Yes. We do sprinkler repair, fall blowouts, spring turn-ons, backflow testing and new installations throughout Firestone.",
       },
       {
         question: "My Firestone home is newer. Does the sprinkler system still need maintenance?",
-        answer: "Yes. Even newer systems need annual winterization (blowout) and spring startup. Heads get damaged by mowers, valves wear out, and controllers need seasonal reprogramming. Regular maintenance prevents expensive repairs down the road.",
+        answer: "Yes. A newer system still wants a fall blowout and a spring turn-on every year. Heads get clipped by mowers, controllers need a seasonal reset, and a quick check each spring keeps everything running well for years.",
       },
       {
         question: "How much is a sprinkler blowout in Firestone?",
@@ -379,7 +380,7 @@ export const CITY_DATA: CityData[] = [
     waterProviderPhone: "303-469-3301",
     restrictionLevel: "voluntary",
     restrictionSummary:
-      "Broomfield has been under a Drought Watch since February 9, 2026. The City asks residents to voluntarily cut back to two watering days per week instead of the three the ordinance normally allows. Broomfield staff have signaled that if reuse water demand doesn't drop, they may ask City Council to adopt a mandatory Drought I declaration, a decision that was expected at the August 25, 2026 council meeting.",
+      "Broomfield has been under a Drought Watch since February 2026. The City asks residents to water two days a week instead of the three the ordinance normally allows, and only between 6 p.m. and 10 a.m.",
     wateringDays:
       "Under the standing ordinance, addresses ending in an even number may water Monday, Wednesday, and Friday. Odd-numbered addresses may water Tuesday, Thursday, and Sunday. Under the current Drought Watch, the City asks you to use no more than two of your allowed days.",
     wateringTimeRestriction:
@@ -409,22 +410,22 @@ export const CITY_DATA: CityData[] = [
       {
         question: "Are Broomfield's watering restrictions mandatory?",
         answer:
-          "The two-day-per-week reduction is voluntary under the current Drought Watch. The 10 a.m. to 6 p.m. watering blackout is mandatory year-round under Broomfield's permanent water use ordinance. Staff have indicated Council may consider a mandatory Drought I declaration at the August 25, 2026 meeting if reuse water demand doesn't fall. Check broomfield.org for the current status.",
+          "The two-day-a-week reduction is voluntary under the current Drought Watch. The 10 a.m. to 6 p.m. watering blackout is mandatory year-round under Broomfield's permanent water use ordinance. Check broomfield.org for the current status.",
       },
       {
         question: "How much is a sprinkler blowout in Broomfield?",
         answer:
-          "Winterization (sprinkler blowout) costs $95 for up to 6 zones, plus $10 for each additional zone. Book between late September and October to get a date before the first hard freeze. the last two weeks of October fill up fast.",
+          "Winterization (sprinkler blowout) costs $95 for up to 6 zones, plus $10 for each additional zone. Book in September or October to get a date before the first hard freeze.",
       },
       {
         question: "Do you service older sprinkler systems in Original Broomfield?",
         answer:
-          "Yes, and they're often the ones that need the most attention. Homes from the 1950s and 60s frequently have aging valves, brittle pipe, and backflow assemblies that have been through decades of Colorado freeze-thaw. We repair, replace, and winterize them, and we'll tell you honestly when a component is worth replacing rather than patching.",
+          "Yes, happily. The original neighborhoods have systems that have seen a lot of winters, and we keep them running well. We repair, replace and winterize them, and we'll tell you honestly when a part is worth replacing rather than patching.",
       },
       {
         question: "Does Broomfield require annual backflow testing?",
         answer:
-          "Yes. Colorado state law requires annual testing on any irrigation system tied to municipal water, and Broomfield runs its cross-connection control program through Public Works. Contact them at 303-469-3301 for your specific deadline. We're certified to test and can handle it with your spring turn-on.",
+          "Yes. Colorado state law requires annual testing on any irrigation system tied to municipal water, and Broomfield runs its program through Public Works. Contact them at 303-469-3301 for your deadline.",
       },
     ],
     relatedBlogSlugs: ["when-to-winterize-sprinklers-colorado", "water-optimization-tips-colorado", "smart-irrigation-controllers-worth-it"],
