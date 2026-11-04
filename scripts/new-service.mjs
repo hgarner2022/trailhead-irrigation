@@ -22,14 +22,13 @@ const page = `import type { Metadata } from "next"
 import Image from "next/image"
 import Link from "next/link"
 import { buttonVariants } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
 import { CTAStrip } from "@/components/sections/CTAStrip"
 import { FaqList } from "@/components/sections/FaqList"
 import { DefinitionList } from "@/components/sections/DefinitionList"
 import { SectionHeader } from "@/components/sections/SectionHeader"
 import { PageBanner } from "@/components/sections/PageBanner"
+import { ServiceAreaMap } from "@/components/sections/ServiceAreaMap"
 import { Testimonials } from "@/components/sections/Testimonials"
-import { CITY_DATA } from "@/lib/city-data"
 import { faqJsonLd, reviewsJsonLd, breadcrumbJsonLd, siteConfig } from "@/lib/seo"
 import { reviewsFor } from "@/lib/reviews"
 
@@ -90,45 +89,25 @@ export default function ${id.charAt(0).toUpperCase() + id.slice(1)}Page() {
       />
 
       <PageBanner
-        title="${name} in Erie, CO"
+        title="${name} in Erie, Colorado"
         description="TODO one line on what the visit does for the yard."
-        backgroundImage="/images/TODO.jpg"
+        backgroundImage="/images/TODO-banner.jpg"
       />
 
       {/* Answer first: price, window, one Book Online */}
       <section aria-labelledby="${slug}-overview" className="bg-background section-padding-y">
         <div className="container-padding-x mx-auto max-w-7xl">
-          <div className="flex flex-col lg:flex-row gap-10 lg:gap-16 items-start">
-            <div className="flex-1">
-              <SectionHeader
-                tagline="TODO the season or window"
-                taglineAsEyebrow
-                title="TODO what the visit does for the yard"
-                titleId="${slug}-overview"
-                align="left"
-              />
-              <p className="text-muted-foreground mt-5 mb-4">
-                TODO first sentence with the price in bold, then what the visit covers and how long it takes.
-              </p>
-              <p className="text-muted-foreground mb-7">TODO one warm paragraph on the result.</p>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
+            <div className="max-w-[60ch]">
+              <SectionHeader tagline="TODO the season or window" taglineAsEyebrow title="TODO what the visit does for the yard" titleId="${slug}-overview" align="left" />
+              <p className="text-muted-foreground mt-5 mb-4">TODO first sentence with the price in bold, then what the visit covers and how long it takes.</p>
+              <p className="text-muted-foreground mb-7">TODO one warm paragraph on the result and when booking opens.</p>
               <Link href="/book" className={buttonVariants({ size: "lg" })}>
                 Book Online
               </Link>
             </div>
-            <div className="w-full lg:w-[360px] shrink-0">
-              <Card className="bg-cream">
-                <CardContent className="p-6">
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-4xl font-bold text-foreground">$TODO</span>
-                    <span className="text-sm text-muted-foreground">TODO what that covers</span>
-                  </div>
-                  <p className="text-sm text-muted-foreground mt-1.5">TODO per-zone or hourly note.</p>
-                  <div className="mt-5 pt-5 border-t border-border">
-                    <p className="text-sm font-semibold text-foreground mb-1.5">TODO one "when" fact</p>
-                    <p className="text-sm text-muted-foreground">TODO a sentence on timing.</p>
-                  </div>
-                </CardContent>
-              </Card>
+            <div className="relative aspect-[4/3] rounded-lg overflow-hidden">
+              <Image src="/images/TODO-side.jpg" alt="TODO what the photo shows" fill sizes="(min-width: 1024px) 50vw, 100vw" className="object-cover" />
             </div>
           </div>
         </div>
@@ -137,21 +116,19 @@ export default function ${id.charAt(0).toUpperCase() + id.slice(1)}Page() {
       {/* What happens on the visit */}
       <section aria-labelledby="${slug}-steps" className="bg-cream section-padding-y">
         <div className="container-padding-x mx-auto max-w-7xl">
-          <div className="flex flex-col md:flex-row items-center gap-8 md:gap-16">
-            <div className="flex-1 w-full">
-              <div className="relative aspect-[4/3] rounded-xl overflow-hidden">
-                <Image src="/images/TODO.jpg" alt="TODO what the photo shows" fill sizes="(min-width: 768px) 50vw, 100vw" className="object-cover" />
-              </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
+            <div className="relative aspect-[4/3] rounded-lg overflow-hidden">
+              <Image src="/images/TODO-steps.jpg" alt="TODO what the photo shows" fill sizes="(min-width: 1024px) 50vw, 100vw" className="object-cover" />
             </div>
-            <div className="flex-1">
+            <div>
               <SectionHeader tagline="What happens on the visit" taglineAsEyebrow title="TODO the steps, in the order they happen" titleId="${slug}-steps" align="left" />
-              <ol className="mt-6 flex flex-col gap-4 list-none">
+              <ol className="mt-8 flex flex-col gap-6 list-none">
                 {STEPS.map((step, i) => (
-                  <li key={step.title} className="flex gap-4">
-                    <span className="font-display text-2xl font-bold text-primary leading-none mt-0.5 w-6 shrink-0">{i + 1}</span>
-                    <div>
-                      <p className="font-semibold text-foreground text-sm mb-1">{step.title}</p>
-                      <p className="text-sm text-muted-foreground">{step.body}</p>
+                  <li key={step.title} className="flex gap-5">
+                    <span className="font-display text-3xl font-bold text-primary leading-none w-8 shrink-0">{i + 1}</span>
+                    <div className="max-w-[60ch]">
+                      <p className="font-semibold text-foreground mb-1">{step.title}</p>
+                      <p className="text-muted-foreground">{step.body}</p>
                     </div>
                   </li>
                 ))}
@@ -161,43 +138,32 @@ export default function ${id.charAt(0).toUpperCase() + id.slice(1)}Page() {
         </div>
       </section>
 
-      {/* Terms */}
-      <section aria-labelledby="${slug}-terms" className="bg-background section-padding-y">
-        <div className="container-padding-x mx-auto max-w-5xl">
-          <SectionHeader title="TODO terms, explained" titleId="${slug}-terms" align="left" className="mb-10" />
-          <DefinitionList items={DEFINITIONS} columns={2} />
-        </div>
-      </section>
-
-      {/* City links */}
-      <section aria-labelledby="${slug}-cities" className="bg-cream section-padding-y">
-        <div className="container-padding-x mx-auto max-w-5xl">
-          <SectionHeader title="Where we do it" titleId="${slug}-cities" description="Erie and the surrounding Front Range." className="mb-8" />
-          <div className="flex flex-wrap justify-center gap-3">
-            {CITY_DATA.map((city) => (
-              <Link key={city.slug} href={\`/services/\${city.slug}\`} className={buttonVariants({ variant: "outline" })}>
-                ${name} in {city.name}
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* FAQs */}
-      <section aria-labelledby="${slug}-faq" className="bg-background section-padding-y">
-        <div className="container-padding-x mx-auto max-w-3xl">
-          <SectionHeader title="${name} FAQs" titleId="${slug}-faq" className="mb-10" />
-          <FaqList faqs={${CONST}_FAQS} itemBg="cream" />
-        </div>
-      </section>
-
-      {/* Reviews */}
+      {/* Reviews from customers who booked this service */}
       {${CONST}_REVIEWS.length > 0 && (
         <>
           <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(reviewsJsonLd(${CONST}_REVIEWS)) }} />
-          <Testimonials reviews={${CONST}_REVIEWS} heading="What homeowners say" description="Google reviews from customers." bg="cream" headingId="${slug}-reviews" />
+          <Testimonials reviews={${CONST}_REVIEWS} heading="What homeowners say about ${name.toLowerCase()}" description="Google reviews from customers who booked it." bg="background" headingId="${slug}-reviews" />
         </>
       )}
+
+      {/* Terms, as plain text */}
+      <section aria-labelledby="${slug}-terms" className="bg-cream section-padding-y">
+        <div className="container-padding-x mx-auto max-w-7xl flex flex-col gap-10">
+          <SectionHeader tagline="Good to know" taglineAsEyebrow title="TODO terms, explained" titleId="${slug}-terms" align="left" />
+          <DefinitionList items={DEFINITIONS} variant="plain" columns={2} />
+        </div>
+      </section>
+
+      {/* Service area map */}
+      <ServiceAreaMap title="Where we do ${name.toLowerCase()}" bg="background" />
+
+      {/* FAQs */}
+      <section aria-labelledby="${slug}-faq" className="bg-cream section-padding-y">
+        <div className="container-padding-x mx-auto max-w-3xl">
+          <SectionHeader title="${name} questions" titleId="${slug}-faq" className="mb-10" />
+          <FaqList faqs={${CONST}_FAQS} itemBg="background" />
+        </div>
+      </section>
 
       <CTAStrip />
     </>

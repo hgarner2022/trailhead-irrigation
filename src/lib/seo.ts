@@ -329,6 +329,7 @@ export type ReviewItem = {
 
 export type ReviewTopic =
   | "blowout"
+  | "turn-on"
   | "installation"
   | "repair"
   | "smart-controller"
