@@ -446,7 +446,7 @@ These don't break anything but should be addressed in a future refactor pass:
 
 ## Adding a new service page
 
-`npm run new-service -- <slug> "<Service name>"` writes a draft `page.tsx` built from the shared components (PageBanner → answer-first overview with side card → steps beside a photo → DefinitionList → city links → FaqList → Testimonials → CTAStrip) with every line marked TODO. `docs/SERVICE_PAGE_TEMPLATE.md` is the spec: the sections, the facts to collect first, the copy rules, and where to register the page. Existing service pages are NOT reworked onto it yet (Hannah, Nov 4 2026).
+`npm run new-service -- <slug> "<Service name>"` writes a draft `page.tsx` built from the shared components (PageBanner → answer-first overview with side card → steps beside a photo → DefinitionList → city links → FaqList → Testimonials → CTAStrip) with every line marked TODO. `docs/SERVICE_PAGE_TEMPLATE.md` is the spec: the sections, the facts to collect first, the copy rules, and where to register the page. Existing service pages are NOT reworked onto it yet, and service pages KEEP their photo banner: Hannah reverted a navy-banner redesign of /spring-turn-on on Nov 4 2026 ("I liked the image"). Show her a preview before redesigning any service page.
 
 ## Adding a new city page
 
