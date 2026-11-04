@@ -110,7 +110,7 @@ export const CITY_DATA: CityData[] = [
       rulesCheckedOn: "November 1, 2026",
       neighborhoods: ["Erie Highlands", "Collier's Hill", "Flatiron Meadows", "Compass", "Brennan", "Old Town"],
       ryanNote:
-        "I'm based in Erie, so when you call I'm already close. I know the clay, the Town's watering schedule, and the neighborhoods. I've worked in Erie Highlands, Collier's Hill, Flatiron Meadows, Compass and most of the newer developments in town, and in Old Town too.",
+        "Erie is home. I know the clay, the Town's watering schedule and just about every neighborhood here. I've worked in Erie Highlands, Collier's Hill, Flatiron Meadows, Compass and most of the newer developments, and in Old Town too.",
       serviceNotes: {
         "/spring-turn-on": "Erie asks for two watering days a week, so at turn-on we set the controller to the Town's schedule.",
         "/sprinkler-repair": "Most Erie homes were built after 2000 with the original builder system, and we work on all of them.",
@@ -172,11 +172,11 @@ export const CITY_DATA: CityData[] = [
       rulesCheckedOn: "November 1, 2026",
       neighborhoods: ["Old Town", "Prospect", "Southmoor Park", "Somerset Meadows", "Idaho Creek", "Ute Creek"],
       ryanNote:
-        "Longmont has the most established yards in our service area. A lot of the houses went up in the 70s and 80s and the sprinklers went in with them, so I see older brass valves and lines that were never meant to drain. I work all over town, from Old Town out to the newer streets on the south and east side.",
+        "Longmont has some of the most established yards around, with big trees and lawns that have been cared for over decades. I enjoy working on those older systems and keeping them running well. I work all over town, from Old Town out to the newer streets on the south and east side.",
       serviceNotes: {
         "/spring-turn-on": "Longmont asks you to hold off on automatic sprinklers until May, so we schedule turn-ons here a little later than in Erie.",
         "/sprinkler-repair": "Many Longmont systems date to the 70s and 80s. We work on the older brass and galvanized parts as well as new PVC.",
-        "/sprinkler-blowout": "Older Longmont drain layouts never fully clear on their own, so we blow every zone out with compressed air.",
+        "/sprinkler-blowout": "A lot of Longmont systems were built to drain on their own, and a compressed-air blowout clears what gravity leaves behind.",
         "/sprinkler-installation": "Longmont requires an RPZ backflow on new irrigation connections, and we install to that standard.",
         "/smart-controllers": "Longmont pays a rebate on Wi-Fi controllers, with a bonus after a free Slow the Flow evaluation.",
         "/water-efficiency": "Longmont also pays rebates on rotary nozzles, drip conversion and rain sensors, so these upgrades cost less here.",
@@ -204,7 +204,7 @@ export const CITY_DATA: CityData[] = [
     cityNote: "Louisville has the highest median home value in the area at ~$835,000. Homeowners here invest in their properties. The Marshall Fire rebuilds mean many homes now have brand new irrigation systems with smart controllers.",
     winterNote:
       "Louisville splits into two very different jobs. The Marshall Fire rebuilds have new systems on smart controllers, and those need the controller wintered properly along with the lines cleared. Putting a smart controller into standby is not the same as switching a mechanical timer off. The rest of Louisville is long-established, with mature trees whose roots run alongside the irrigation lines, so a freeze crack there is a harder repair to dig out.",
-    introText: "Trailhead serves Louisville. We install, repair, winterize and turn on sprinkler systems across the city, on the 1990s properties and on the Marshall Fire rebuilds.",
+    introText: "Trailhead serves Louisville. We install, repair, winterize and turn on sprinkler systems across the city, on established yards and brand-new ones.",
     whyLocal: "Louisville's lots near Coal Creek and on the west side of town are hillier than the plains cities, so a head layout that works in Erie doesn't always work here. We lay out zones and pick heads for the slope.",
     faqs: [
       {
@@ -216,7 +216,7 @@ export const CITY_DATA: CityData[] = [
         answer: "September 30 each year. Results must be submitted through BSI Online. Contact backflow@LouisvilleCO.gov or 303-335-4785 with questions.",
       },
       {
-        question: "Do you work on Marshall Fire rebuild homes in Louisville?",
+        question: "Do you install sprinkler systems for rebuilt homes in Louisville?",
         answer: "Yes. We install new sprinkler systems for rebuilt homes and can design a modern system with smart controllers, efficient rotary nozzles, and drip irrigation for flower beds.",
       },
       {
@@ -234,11 +234,11 @@ export const CITY_DATA: CityData[] = [
       rulesCheckedOn: "November 1, 2026",
       neighborhoods: ["Old Town", "Coal Creek Ranch", "Harper Lake", "Centennial Valley", "Steel Ranch", "North End"],
       ryanNote:
-        "Louisville is two kinds of work. The homes rebuilt after the Marshall Fire have brand-new systems on smart controllers, and the older streets have mature trees with roots running right along the lines. I work both, from Old Town out to Coal Creek Ranch.",
+        "Louisville has some of the prettiest streets around, with mature trees and yards people really care about. I work all over town, from Old Town out to Coal Creek Ranch and Harper Lake, on brand-new systems and on ones that have been there for decades.",
       serviceNotes: {
         "/spring-turn-on": "Louisville's lots get hillier near Coal Creek, so at turn-on we check the slope zones and the heads at the bottom of them.",
-        "/sprinkler-repair": "Mature trees on Louisville's older streets send roots along the lines, and those are the leaks we trace most here.",
-        "/sprinkler-blowout": "On the rebuilt homes we put the smart controller into standby for winter along with clearing the lines.",
+        "/sprinkler-repair": "Louisville's older streets have beautiful mature trees, and we're used to working around their roots when we repair a line.",
+        "/sprinkler-blowout": "Plenty of Louisville homes run smart controllers, and we put the controller into its winter setting along with clearing the lines.",
         "/sprinkler-installation": "Louisville's terrain varies more than the plains towns, so we lay out zones and head types by slope.",
         "/smart-controllers": "Resource Central installs a limited number of free smart controllers in Louisville. If you already have one, we can set it up and dial it in.",
         "/water-efficiency": "Louisville residents can get a free Slow the Flow evaluation, and we can do the nozzle and drip upgrades it recommends.",
@@ -294,7 +294,7 @@ export const CITY_DATA: CityData[] = [
       rulesCheckedOn: "November 1, 2026",
       neighborhoods: ["Old Town", "Indian Peaks", "Waneka Lake", "White Hawk Ranch", "Spring Creek", "Blue Heron"],
       ryanNote:
-        "Lafayette is right next door, so I'm there most weeks. The three-day watering limit is permanent here, which means more homes run smart controllers on tight schedules, and more drip. I work in Indian Peaks, Waneka Lake, Old Town and the newer neighborhoods on the east side.",
+        "I'm in Lafayette most weeks. There's a nice mix here, from the older streets around Old Town to Indian Peaks and Waneka Lake, and a lot of homeowners who take real pride in their gardens and drip beds.",
       serviceNotes: {
         "/spring-turn-on": "Lafayette limits watering to three days a week year-round, so at turn-on we set the controller to fit that schedule.",
         "/sprinkler-repair": "Lafayette mixes 70s neighborhoods with new builds, and we work on the old brass and the new PVC alike.",
@@ -353,11 +353,11 @@ export const CITY_DATA: CityData[] = [
       rulesCheckedOn: "November 1, 2026",
       neighborhoods: ["Saddleback", "Saint Vrain Ranch", "Booth Farms", "Stoneridge", "Barefoot Lakes", "Historic Firestone"],
       ryanNote:
-        "Firestone is almost all newer construction, so the systems are young, but age isn't protection out here. It sits on the open plains side of I-25 with more wind, and the first hard freeze comes fast. I work in Saddleback, Saint Vrain Ranch and most of the newer subdivisions in town.",
+        "Firestone is growing fast, and most of the yards here are newer, which makes for clean systems that are a pleasure to keep running right. I work in Saddleback, Saint Vrain Ranch and most of the newer subdivisions in town.",
       serviceNotes: {
         "/spring-turn-on": "Firestone has no mandatory watering schedule, so at turn-on we set run times for the sandier soil on this side of I-25.",
         "/sprinkler-repair": "Most Firestone systems went in with the house after 2000, and we know the parts the builders used.",
-        "/sprinkler-blowout": "Firestone's wind drops ground temperatures fast on the first hard freeze, so blowouts here go early in the season.",
+        "/sprinkler-blowout": "Firestone is open and breezy, so we like to get blowouts here done early in the season while the weather is still nice.",
         "/sprinkler-installation": "Firestone's soil runs sandier than the foothills towns, with pockets of expansive clay, so we check the soil before we lay out zones.",
         "/smart-controllers": "Firestone doesn't run a controller rebate, so a smart controller here pays for itself through the water bill.",
         "/water-efficiency": "Firestone's newer lots are big and open, and rotary nozzles cut wind drift on the wide zones.",
@@ -436,11 +436,11 @@ export const CITY_DATA: CityData[] = [
       rulesCheckedOn: "November 1, 2026",
       neighborhoods: ["Original Broomfield", "Anthem", "Anthem Ranch", "The Broadlands", "Wildgrass", "Baseline"],
       ryanNote:
-        "Broomfield has the tightest watering window in our service area, with no daytime watering, so zone timing matters more here. I work from Original Broomfield up to Anthem, the Broadlands and Baseline, and the clay changes block to block.",
+        "Broomfield has a bit of everything, from the original neighborhoods with their big trees to Anthem, the Broadlands and Baseline. I like the variety. I work all over the city and know how the soil and the watering window change from one part of town to the next.",
       serviceNotes: {
         "/spring-turn-on": "Broomfield only allows watering between 6 p.m. and 10 a.m., so at turn-on we set the controller to finish inside that window.",
-        "/sprinkler-repair": "Broomfield asks that leaks be repaired within 10 days of notice, and we schedule repairs here with that in mind.",
-        "/sprinkler-blowout": "Original Broomfield's 1950s and 60s systems have been through decades of freezes, and we take extra care with the older valves and backflows.",
+        "/sprinkler-repair": "Broomfield asks homeowners to fix leaks within 10 days of notice, and we keep that in mind when we schedule repairs here.",
+        "/sprinkler-blowout": "Original Broomfield's systems have seen a lot of winters, and we give the valves and backflows there the extra care they deserve.",
         "/sprinkler-installation": "Broomfield's clay changes noticeably between neighborhoods, so we design zones for the soil on your lot.",
         "/smart-controllers": "A smart controller fits a full week of water into Broomfield's overnight window better than a mechanical timer.",
         "/water-efficiency": "With two watering days under the Drought Watch, efficient nozzles and drip get more out of each day in Broomfield.",
