@@ -20,7 +20,7 @@ export function CityServiceNotes({ name, notes }: { name: string; notes: Record<
               Sprinkler services in {name}
             </h2>
             <p className="text-lg text-muted-foreground">
-              Tap any service for the full details. The notes are what is specific to {name}.
+              Here&apos;s what we do in {name}, and what&apos;s worth knowing about each one here.
             </p>
           </div>
           <ul className="divide-y divide-border rounded-lg border border-border bg-background">
