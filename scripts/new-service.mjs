@@ -98,30 +98,39 @@ export default function ${id.charAt(0).toUpperCase() + id.slice(1)}Page() {
       {/* Answer first: price, window, one Book Online */}
       <section aria-labelledby="${slug}-overview" className="bg-background section-padding-y">
         <div className="container-padding-x mx-auto max-w-7xl">
-          <div className="flex flex-col lg:flex-row gap-10 lg:gap-16 items-start">
-            <div className="flex-1 max-w-[60ch]">
+          <div className="grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-10 lg:gap-16 items-stretch">
+            <div className="max-w-[60ch] flex flex-col justify-center">
               <SectionHeader tagline="TODO the season or window" taglineAsEyebrow title="TODO what the visit does for the yard" titleId="${slug}-overview" align="left" />
-              <p className="text-muted-foreground mt-5 mb-4">TODO first sentence with the price in bold, then what the visit covers and how long it takes.</p>
-              <p className="text-muted-foreground mb-7">TODO one warm paragraph on the result.</p>
-              <Link href="/book" className={buttonVariants({ size: "lg" })}>
-                Book Online
-              </Link>
+              <p className="text-muted-foreground mt-5 mb-4">TODO what the visit covers and what the yard gets out of it.</p>
+              <p className="text-muted-foreground">TODO what happens if something needs more than the visit covers.</p>
             </div>
-            <div className="w-full lg:w-[360px] shrink-0">
-              <Card className="bg-cream">
-                <CardContent className="p-6">
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-4xl font-bold text-foreground">$TODO</span>
-                    <span className="text-sm text-muted-foreground">TODO what that covers</span>
-                  </div>
-                  <p className="text-sm text-muted-foreground mt-1.5">TODO per-zone or hourly note.</p>
-                  <div className="mt-5 pt-5 border-t border-border">
-                    <p className="text-sm font-semibold text-foreground mb-1.5">TODO one "when" fact</p>
-                    <p className="text-sm text-muted-foreground">TODO a sentence on timing.</p>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+            <Card className="bg-cream h-full">
+              <CardContent className="p-8 flex flex-col h-full">
+                <p className="text-xs font-semibold uppercase tracking-widest text-primary">At a glance</p>
+                <p className="mt-3 flex items-baseline gap-2">
+                  <span className="font-display text-6xl font-bold text-navy leading-none">$TODO</span>
+                  <span className="text-muted-foreground">TODO what that covers</span>
+                </p>
+                <dl className="mt-6 divide-y divide-border border-y border-border">
+                  {[
+                    ["TODO per-zone or hourly", "TODO"],
+                    ["The visit", "TODO how long"],
+                    ["When", "TODO the window and the trigger"],
+                    ["Booking opens", "TODO"],
+                  ].map(([k, v]) => (
+                    <div key={k} className="flex justify-between gap-6 py-3">
+                      <dt className="text-sm text-muted-foreground shrink-0">{k}</dt>
+                      <dd className="text-sm font-semibold text-foreground text-right">{v}</dd>
+                    </div>
+                  ))}
+                </dl>
+                <div className="mt-auto pt-6 hidden lg:block">
+                  <Link href="/book" className={buttonVariants({ size: "lg", className: "w-full" })}>
+                    Book Online
+                  </Link>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </section>

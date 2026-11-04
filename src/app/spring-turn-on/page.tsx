@@ -138,11 +138,11 @@ export default function SpringTurnOnPage() {
         backgroundImage="/images/sprinkler-spring.jpg"
       />
 
-      {/* Answer first: what the visit does, the price, when, how long, one Book Online, the price card beside it */}
+      {/* Answer first: what the visit does on the left; an at-a-glance panel with price, visit, season and the one Book Online on the right */}
       <section aria-labelledby="turn-on-overview" className="bg-background section-padding-y">
         <div className="container-padding-x mx-auto max-w-7xl">
-          <div className="flex flex-col lg:flex-row gap-10 lg:gap-16 items-start">
-            <div className="flex-1 max-w-[60ch]">
+          <div className="grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-10 lg:gap-16 items-stretch">
+            <div className="max-w-[60ch] flex flex-col justify-center">
               <SectionHeader
                 tagline="Late April through May"
                 taglineAsEyebrow
@@ -151,38 +151,44 @@ export default function SpringTurnOnPage() {
                 align="left"
               />
               <p className="text-muted-foreground mt-5 mb-4">
-                A spring turn-on is{" "}
-                <strong className="text-foreground font-semibold">$145 for up to 8 zones</strong>, plus $10 for each
-                zone after that. We pressurize the system slowly, run every zone, adjust the heads, check for leaks and
-                program the controller. Plan on about 45 minutes to an hour.
+                We pressurize the system slowly, run every zone, adjust the heads, check for leaks and program the
+                controller. Everything runs right from the first week: heads straightened after a winter of
+                snowplows, the controller set for spring, and every zone checked so the lawn gets what it needs from
+                day one.
               </p>
-              <p className="text-muted-foreground mb-7">
-                Everything runs right from the first week: heads straightened after a winter of snowplows, the
-                controller set for spring, and every zone checked so the lawn gets what it needs from day one.
+              <p className="text-muted-foreground">
+                Anything we can&apos;t take care of in the visit gets a price before we leave, at our standard repair
+                rates. You decide what to do with it.
               </p>
-              <Link href="/book" className={buttonVariants({ size: "lg" })}>
-                Book Online
-              </Link>
             </div>
 
-            <div className="w-full lg:w-[360px] shrink-0">
-              <Card className="bg-cream">
-                <CardContent className="p-6">
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-4xl font-bold text-foreground">$145</span>
-                    <span className="text-sm text-muted-foreground">up to 8 zones</span>
-                  </div>
-                  <p className="text-sm text-muted-foreground mt-1.5">+$10 per additional zone.</p>
-                  <div className="mt-5 pt-5 border-t border-border">
-                    <p className="text-sm font-semibold text-foreground mb-1.5">Wait for warm nights</p>
-                    <p className="text-sm text-muted-foreground">
-                      We turn systems on once nights have stayed above 32 degrees for a week, usually late April.
-                      Booking opens in early April.
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+            <Card className="bg-cream h-full">
+              <CardContent className="p-8 flex flex-col h-full">
+                <p className="text-xs font-semibold uppercase tracking-widest text-primary">At a glance</p>
+                <p className="mt-3 flex items-baseline gap-2">
+                  <span className="font-display text-6xl font-bold text-navy leading-none">$145</span>
+                  <span className="text-muted-foreground">for up to 8 zones</span>
+                </p>
+                <dl className="mt-6 divide-y divide-border border-y border-border">
+                  {[
+                    ["Each additional zone", "$10"],
+                    ["The visit", "About 45 minutes to an hour"],
+                    ["When", "Late April to early May, once nights stay above freezing for a week"],
+                    ["Booking opens", "Early April"],
+                  ].map(([k, v]) => (
+                    <div key={k} className="flex justify-between gap-6 py-3">
+                      <dt className="text-sm text-muted-foreground shrink-0">{k}</dt>
+                      <dd className="text-sm font-semibold text-foreground text-right">{v}</dd>
+                    </div>
+                  ))}
+                </dl>
+                <div className="mt-auto pt-6 hidden lg:block">
+                  <Link href="/book" className={buttonVariants({ size: "lg", className: "w-full" })}>
+                    Book Online
+                  </Link>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </section>
