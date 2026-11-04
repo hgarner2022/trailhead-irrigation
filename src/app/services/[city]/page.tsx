@@ -1,13 +1,16 @@
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
-import { PageBanner } from "@/components/sections/PageBanner"
+import { CityHero } from "@/components/sections/CityHero"
+import { CityLocalSign } from "@/components/sections/CityLocalSign"
+import { CityNeighborhoods } from "@/components/sections/CityNeighborhoods"
+import { ServiceAreaMap } from "@/components/sections/ServiceAreaMap"
+import { ProblemTiles } from "@/components/sections/ProblemTiles"
+import { TrustStrip } from "@/components/sections/TrustStrip"
+import { Testimonials } from "@/components/sections/Testimonials"
+import { SectionHeader } from "@/components/sections/SectionHeader"
+import { pickReviews } from "@/lib/reviews"
 import { CTAStrip } from "@/components/sections/CTAStrip"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { buttonVariants } from "@/components/ui/button"
-import { cn } from "@/lib/utils"
-import Link from "next/link"
-import { Check, Droplets, Wrench, Snowflake, MapPin, Phone, AlertTriangle } from "lucide-react"
-import { breadcrumbJsonLd, faqJsonLd, siteConfig } from "@/lib/seo"
+import { breadcrumbJsonLd, faqJsonLd, reviewsJsonLd, siteConfig } from "@/lib/seo"
 import { FaqList } from "@/components/sections/FaqList"
 import { CITY_DATA, getCityData } from "@/lib/city-data"
 
@@ -30,32 +33,6 @@ export async function generateMetadata({
   }
 }
 
-const SERVICES = [
-  {
-    title: "Spring: Turn On and Tune Up",
-    description: "We pressurize the system, run every zone, adjust the heads and program the controller.",
-    icon: Droplets,
-    href: "/spring-turn-on",
-  },
-  {
-    title: "Sprinkler Repair",
-    description: "Heads, valves, leaks and controllers. We come out, diagnose the problem and take care of small fixes where we can.",
-    icon: Wrench,
-    href: "/sprinkler-repair",
-  },
-  {
-    title: "Fall: Blowout and Winterization",
-    description: "Every zone blown clear with compressed air before the first hard freeze, drip zones included.",
-    icon: Snowflake,
-    href: "/sprinkler-blowout",
-  },
-  {
-    title: "New System Installation",
-    description: "Custom residential sprinkler system design and installation. Zone layout, efficient heads, smart controllers, and a full walkthrough when we're done.",
-    icon: Droplets,
-    href: "/sprinkler-installation",
-  },
-]
 
 export default async function CityPage({
   params,
@@ -65,16 +42,13 @@ export default async function CityPage({
   const { city } = await params
   const data = getCityData(city)
   if (!data) notFound()
+  const g = data.guide
+  const cityReviews = g?.reviewAuthors?.length ? pickReviews(...g.reviewAuthors) : []
 
 
   // Build a stable "last updated" timestamp at build time. Surfaced visibly
   // and in the JSON-LD `dateModified` so AI engines treat the page as fresh.
   const lastUpdatedISO = new Date().toISOString()
-  const lastUpdatedLabel = new Date().toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  })
 
   return (
     <>
@@ -115,264 +89,76 @@ export default async function CityPage({
         }}
       />
 
-      <PageBanner
-        title={`Sprinkler Services in ${data.name}, Colorado`}
-        description={`Sprinkler installation, repair, blowouts and spring turn-ons for ${data.name} and ${data.county}, from our shop in Erie.`}
+      {g?.heroImage ? (
+        <CityHero
+          name={data.name}
+          county={data.county}
+          distance={g.distance}
+          image={g.heroImage}
+          alt={g.heroAlt ?? `${data.name}, Colorado`}
+          position={g.heroPosition}
+        />
+      ) : (
+        <CityHero
+          name={data.name}
+          county={data.county}
+          distance={g?.distance ?? "A short drive from our shop in Erie"}
+          image="/images/trail-mountain-meadow.jpg"
+          alt="Two-track trail through a mountain meadow at sunrise in the Colorado Rockies"
+          position="60% center"
+        />
+      )}
+      <TrustStrip />
+
+      {/* The local sign: watering rules, backflow, provider, rebate, and what is booking now */}
+      <CityLocalSign data={data} />
+
+      {/* The six services, each with one line about this town */}
+      <ProblemTiles
+        bg="cream"
+        tagline={`Services in ${data.name}`}
+        title="What's going on with your system?"
+        localNotes={{
+          ...(data.winterNote ? { "/sprinkler-blowout": data.winterNote } : {}),
+          ...(g?.serviceNotes ?? {}),
+        }}
       />
 
-      {/* Intro */}
-      <section className="bg-background section-padding-y">
-        <div className="container-padding-x mx-auto max-w-4xl">
-          <p className="text-lg text-muted-foreground leading-relaxed mb-6">
-            {data.introText}
-          </p>
-          <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-            <span className="flex items-center gap-1.5">
-              <MapPin className="h-4 w-4 text-primary" />
-              {data.name}, {data.county}
-            </span>
-            <span className="flex items-center gap-1.5">
-              <Droplets className="h-4 w-4 text-primary" />
-              Repairs, turn-ons, blowouts and new systems
-            </span>
-            <span className="flex items-center gap-1.5">
-              <Snowflake className="h-4 w-4 text-primary" />
-              Same prices in every city we serve
-            </span>
-          </div>
-          <p className="mt-4 text-xs text-muted-foreground">
-            <time dateTime={lastUpdatedISO}>
-              Last updated {lastUpdatedLabel}
-            </time>
-          </p>
+      {/* Where we work here: Ryan, the neighborhoods, a photo from the town */}
+      {g?.ryanNote && g.neighborhoods && g.placeImage && (
+        <CityNeighborhoods
+          name={data.name}
+          note={g.ryanNote}
+          neighborhoods={g.neighborhoods}
+          image={g.placeImage}
+          alt={g.placeAlt ?? `${data.name}, Colorado`}
+        />
+      )}
+
+      {/* Reviews from customers in this town */}
+      {cityReviews.length > 0 && (
+        <>
+          <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(reviewsJsonLd(cityReviews)) }} />
+          <Testimonials
+            reviews={cityReviews}
+            heading={`What ${data.name} homeowners say`}
+            description="Google reviews from customers in this town."
+            bg="cream"
+            headingId="city-reviews"
+          />
+        </>
+      )}
+
+      {/* FAQ, worded the way people here search */}
+      <section className="bg-background section-padding-y" aria-labelledby={`faq-${data.slug}`}>
+        <div className="container-padding-x mx-auto max-w-3xl flex flex-col gap-10">
+          <SectionHeader title={`${data.name} sprinkler questions`} titleId={`faq-${data.slug}`} />
+          <FaqList faqs={data.faqs} itemBg="cream" />
         </div>
       </section>
 
-      {/* Services */}
-      <section className="bg-cream section-padding-y">
-        <div className="container-padding-x mx-auto max-w-4xl">
-          <h2 className="text-2xl font-bold text-foreground mb-8">
-            What We Do in {data.name}
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {SERVICES.map((service) => (
-              <Link key={service.title} href={service.href} className="block">
-                <Card className="h-full hover:shadow-md transition-shadow">
-                  <CardHeader>
-                    <div className="flex items-center gap-2">
-                      <service.icon className="h-5 w-5 text-primary" />
-                      <CardTitle className="text-lg">{service.title}</CardTitle>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-muted-foreground text-sm">{service.description}</p>
-                  </CardContent>
-                </Card>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Local Water Info */}
-      <section className="bg-background section-padding-y">
-        <div className="container-padding-x mx-auto max-w-4xl">
-          <h2 className="text-2xl font-bold text-foreground mb-8">
-            {data.name} Water & Irrigation Info
-          </h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Watering Restrictions */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Droplets className="h-5 w-5 text-primary" />
-                  Watering Restrictions
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="flex flex-col gap-3">
-                {data.restrictionLevel === "mandatory" && (
-                  <div className="flex items-start gap-2 p-3 bg-primary/10 rounded-lg text-sm">
-                    <AlertTriangle className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                    <span className="text-foreground font-medium">Mandatory year-round restrictions</span>
-                  </div>
-                )}
-                <p className="text-sm text-muted-foreground">{data.restrictionSummary}</p>
-                <div className="text-sm">
-                  <p className="font-medium text-foreground mb-1">Watering schedule:</p>
-                  <p className="text-muted-foreground">{data.wateringDays}</p>
-                </div>
-                <div className="text-sm">
-                  <p className="font-medium text-foreground mb-1">Time restrictions:</p>
-                  <p className="text-muted-foreground">{data.wateringTimeRestriction}</p>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Backflow Testing */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Wrench className="h-5 w-5 text-primary" />
-                  Backflow Testing
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="flex flex-col gap-3">
-                <div className="text-sm">
-                  <p className="font-medium text-foreground mb-1">Deadline:</p>
-                  <p className="text-muted-foreground">{data.backflowDeadline}</p>
-                </div>
-                <div className="text-sm">
-                  <p className="font-medium text-foreground mb-1">Required device:</p>
-                  <p className="text-muted-foreground">{data.backflowDevice}</p>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  We offer certified backflow testing as a standalone service or bundled with your spring turn-on.
-                </p>
-              </CardContent>
-            </Card>
-
-            {/* Soil & Terrain */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <MapPin className="h-5 w-5 text-primary" />
-                  Soil & Terrain
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">{data.soilType}</p>
-              </CardContent>
-            </Card>
-
-            {/* Water Provider */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Phone className="h-5 w-5 text-primary" />
-                  Water Provider
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="flex flex-col gap-2">
-                <p className="text-sm font-medium text-foreground">{data.waterProvider}</p>
-                {data.waterProviderPhone && (
-                  <a href={`tel:${data.waterProviderPhone.replace(/[^0-9]/g, "")}`} className="text-sm text-primary hover:underline">
-                    {data.waterProviderPhone}
-                  </a>
-                )}
-                {data.waterProviderEmail && (
-                  <a href={`mailto:${data.waterProviderEmail}`} className="text-sm text-primary hover:underline">
-                    {data.waterProviderEmail}
-                  </a>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* City-specific note */}
-          {data.cityNote && (
-            <div className="mt-8 p-5 bg-stone rounded-lg border border-border">
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                <strong className="text-foreground">Good to know:</strong> {data.cityNote}
-              </p>
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* Why Local */}
-      <section className="bg-cream section-padding-y">
-        <div className="container-padding-x mx-auto max-w-4xl">
-          <h2 className="text-2xl font-bold text-foreground mb-4">
-            {data.slug === "erie" ? "Based right here in Erie" : `Based in Erie, working in ${data.name}`}
-          </h2>
-          <p className="text-muted-foreground leading-relaxed mb-6">{data.whyLocal}</p>
-          <ul className="flex flex-col gap-3">
-            <li className="flex items-start gap-3">
-              <Check className="h-5 w-5 text-success shrink-0 mt-0.5" />
-              <span className="text-foreground">We know {data.name}&apos;s soil, water restrictions, and local rules</span>
-            </li>
-            <li className="flex items-start gap-3">
-              <Check className="h-5 w-5 text-success shrink-0 mt-0.5" />
-              <span className="text-foreground">{data.slug === "erie" ? "Based right here in Erie" : `Based in Erie, a short drive from ${data.name}`}</span>
-            </li>
-            <li className="flex items-start gap-3">
-              <Check className="h-5 w-5 text-success shrink-0 mt-0.5" />
-              <span className="text-foreground">Licensed, insured, and certified for backflow testing</span>
-            </li>
-            <li className="flex items-start gap-3">
-              <Check className="h-5 w-5 text-success shrink-0 mt-0.5" />
-              <span className="text-foreground">Prices are published on our pricing page before you book</span>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      {/* Winterization / blowout — seasonal conversion block.
-          Uses the city's own winterNote so this reads differently per city
-          rather than being duplicate copy across six pages. */}
-      <section
-        aria-labelledby={`blowout-${data.slug}`}
-        className="bg-navy section-padding-y"
-      >
-        <div className="container-padding-x mx-auto max-w-4xl">
-          <div className="flex items-center gap-2 mb-3">
-            <Snowflake className="h-5 w-5 text-primary" />
-            <span className="text-sm font-semibold uppercase tracking-wide text-primary">
-              Winterization season
-            </span>
-          </div>
-          <h2
-            id={`blowout-${data.slug}`}
-            className="text-2xl md:text-3xl font-bold text-white mb-4"
-          >
-            Sprinkler Blowout in {data.name}, CO
-          </h2>
-          <p className="text-white/80 leading-relaxed mb-4">
-            A sprinkler blowout costs{" "}
-            <strong className="text-white font-semibold">
-              $95 for up to 6 zones
-            </strong>{" "}
-            (+$10 per additional zone). For{" "}
-            {data.name} and the rest of the Front Range, the window is
-            late September through October. If that has passed, book the next open day. We keep doing blowouts through December.
-          </p>
-          {data.winterNote && (
-            <p className="text-white/80 leading-relaxed mb-6">
-              {data.winterNote}
-            </p>
-          )}
-          <Link href="/book?service=winterization" className={buttonVariants({ size: "lg" })}>
-            Book Online
-          </Link>
-        </div>
-      </section>
-
-      {/* FAQ */}
-      <section className="bg-background section-padding-y">
-        <div className="container-padding-x mx-auto max-w-4xl">
-          <h2 className="text-2xl font-bold text-foreground mb-8">
-            {data.name} sprinkler questions
-          </h2>
-          <FaqList faqs={data.faqs} itemBg="background" />
-        </div>
-      </section>
-
-      {/* Cross-city links in the body, not only the header and footer. */}
-      <section className="bg-cream section-padding-y" aria-labelledby={`also-${data.slug}`}>
-        <div className="container-padding-x mx-auto max-w-5xl text-center">
-          <h2 id={`also-${data.slug}`} className="text-2xl md:text-3xl font-bold text-foreground mb-6">
-            Sprinkler service in the cities next door
-          </h2>
-          <div className="flex flex-wrap justify-center gap-3">
-            {CITY_DATA.filter((c) => c.slug !== data.slug).map((c) => (
-              <Link key={c.slug} href={`/services/${c.slug}`} className={buttonVariants({ variant: "outline" })}>
-                Sprinkler service in {c.name}
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
+      {/* The map of the six towns, this one marked */}
+      <ServiceAreaMap current={data.slug} />
 
       <CTAStrip />
     </>

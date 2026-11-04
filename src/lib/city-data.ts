@@ -26,6 +26,38 @@ export interface CityData {
   whyLocal: string
   faqs: { question: string; answer: string }[]
   relatedBlogSlugs: string[]
+  /**
+   * Field-guide content for the Nov 2026 city page template. Optional so a
+   * city can ship with the data above and pick these up as photos and
+   * Ryan's notes arrive. Sections that need a missing field are skipped.
+   */
+  guide?: CityGuide
+}
+
+export interface CityGuide {
+  /** Wide photo of the place itself, 2000px+ (the hero). */
+  heroImage?: string
+  heroAlt?: string
+  /** CSS object-position for the hero crop, e.g. "center 40%". */
+  heroPosition?: string
+  /** A second photo for the neighborhoods block. */
+  placeImage?: string
+  placeAlt?: string
+  /** "Our shop is here" or "15 minutes from our shop in Erie". */
+  distance: string
+  /** Big number on the local sign, e.g. "2". */
+  wateringDaysPerWeek?: string
+  /** One line on the rebate, with the page it links to. */
+  rebate?: { label: string; href: string }
+  /** When the watering and backflow rules were last checked. */
+  rulesCheckedOn: string
+  neighborhoods?: string[]
+  /** Ryan, first person, about where he works in this town. */
+  ryanNote?: string
+  /** One local sentence per service tile, keyed by the tile href. */
+  serviceNotes?: Record<string, string>
+  /** Authors of Google reviews from customers in this city (see reviews.ts). */
+  reviewAuthors?: string[]
 }
 
 export const CITY_DATA: CityData[] = [
@@ -69,6 +101,29 @@ export const CITY_DATA: CityData[] = [
       },
     ],
     relatedBlogSlugs: ["spring-sprinkler-startup-colorado", "water-optimization-tips-colorado", "colorado-water-restrictions-2026"],
+    guide: {
+      heroImage: "/images/erie-old-town-briggs-street.jpg",
+      heroAlt: "Looking down Briggs Street in Old Town Erie, Colorado, with the foothills on the horizon",
+      heroPosition: "center 60%",
+      placeImage: "/images/fall-blowout-yard-erie.jpg",
+      placeAlt: "Front lawn of an Erie home in fall with a sprinkler head running",
+      distance: "Our shop is here",
+      wateringDaysPerWeek: "2",
+      rebate: { label: "Town of Erie rebate on WaterSense smart controllers", href: "/water-rebates/erie" },
+      rulesCheckedOn: "November 1, 2026",
+      neighborhoods: ["Erie Highlands", "Collier's Hill", "Flatiron Meadows", "Compass", "Brennan", "Old Town"],
+      ryanNote:
+        "I'm based in Erie, so when you call I'm already close. I know the clay, the Town's watering schedule, and the neighborhoods. I've worked in Erie Highlands, Collier's Hill, Flatiron Meadows, Compass and most of the newer developments in town, and in Old Town too.",
+      serviceNotes: {
+        "/spring-turn-on": "Erie asks for two watering days a week, so at turn-on we set the controller to the Town's schedule.",
+        "/sprinkler-repair": "Most Erie homes were built after 2000 with the original builder system, and we work on all of them.",
+        "/sprinkler-blowout": "Many Erie subdivisions have the backflow above ground in an exposed spot, so it is the first thing we clear.",
+        "/sprinkler-installation": "Erie's clay-loam swells when wet and shrinks when dry, so we design for cycle-and-soak watering from the start.",
+        "/smart-controllers": "The Town of Erie offers a rebate on WaterSense controllers like the Rachio 3.",
+        "/water-efficiency": "Rotator nozzles and drip lines stretch Erie's two-day watering schedule further.",
+      },
+      reviewAuthors: ["Joanna Toy", "Jeremy Hampton", "Brent Bell", "Alyson Tobyne"],
+    },
   },
   {
     slug: "longmont",

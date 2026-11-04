@@ -1,4 +1,5 @@
 import { SectionHeader } from "@/components/sections/SectionHeader"
+import { cn } from "@/lib/utils"
 import Image from "next/image"
 import Link from "next/link"
 import { ArrowUpRight } from "lucide-react"
@@ -47,14 +48,25 @@ const TILES = [
   },
 ]
 
-export function ProblemTiles() {
+export function ProblemTiles({
+  title = "What's going on with your system?",
+  tagline = "Services",
+  bg = "background",
+  localNotes,
+}: {
+  title?: string
+  tagline?: string
+  bg?: "background" | "cream"
+  /** One local sentence per tile, keyed by href. Shown under the body on city pages. */
+  localNotes?: Record<string, string>
+} = {}) {
   return (
-    <section className="bg-background section-padding-y" aria-labelledby="problems-heading">
+    <section className={cn("section-padding-y", bg === "cream" ? "bg-cream" : "bg-background")} aria-labelledby="problems-heading">
       <div className="container-padding-x mx-auto max-w-7xl flex flex-col gap-10">
         <SectionHeader
-          tagline="Services"
+          tagline={tagline}
           taglineAsEyebrow
-          title="What's going on with your system?"
+          title={title}
           titleId="problems-heading"
           align="left"
         />
@@ -63,7 +75,7 @@ export function ProblemTiles() {
             <li key={tile.title}>
               <Link
                 href={tile.href}
-                className="group flex h-full flex-col overflow-hidden rounded-lg border border-border bg-card transition-all hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+                className="group flex h-full flex-col overflow-hidden rounded-lg border border-border bg-background transition-all hover:-translate-y-0.5 hover:border-primary/50 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
               >
                 <div className="relative aspect-[16/9]">
                   <Image
@@ -85,6 +97,9 @@ export function ProblemTiles() {
                     </span>
                   </div>
                   <p className="text-sm text-muted-foreground leading-relaxed">{tile.body}</p>
+                  {localNotes?.[tile.href] && (
+                    <p className="text-sm text-foreground leading-relaxed border-l-2 border-primary pl-3 mt-1">{localNotes[tile.href]}</p>
+                  )}
                 </div>
               </Link>
             </li>

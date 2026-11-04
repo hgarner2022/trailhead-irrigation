@@ -16,6 +16,15 @@ import { SeasonalPill } from "@/components/sections/SeasonalPill"
  * Front Range. The homepage revalidates daily (see src/app/page.tsx) so the
  * month is read from the calendar, not from the last deploy.
  */
+/** One sentence on what is booking now, for the city pages' local sign. */
+export function seasonNote(date: Date) {
+  const m = date.getMonth()
+  if (m === 2 || m === 3 || m === 4) return "Spring turn-ons and tune-ups are booking now for April and May."
+  if (m === 8 || m === 9) return "Fall blowouts are booking now for October."
+  if (m === 10) return "Fall blowouts are booking through November."
+  return "Repairs and new system quotes are booking now."
+}
+
 export function heroSeason(date: Date) {
   const m = date.getMonth() // 0 = January
   if (m === 2 || m === 3 || m === 4) {
