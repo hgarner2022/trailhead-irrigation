@@ -1,8 +1,9 @@
 import { cn } from "@/lib/utils"
 
 // Mountains along the top of the closing strip, with the sun setting into a
-// saddle. One navy silhouette, four broad peaks across a laptop screen,
-// long slopes, a dominant summit off centre. Kept calm on purpose: a
+// short flat horizon. One navy silhouette, four broad peaks across a laptop
+// screen, long slopes, a dominant summit off centre, snow on the two main
+// summits, and the badge's sun. Kept calm on purpose: a
 // busier ridge made Hannah dizzy (Nov 4 2026).
 //
 // The ridge is a repeating tile used as a CSS mask over a block of the
@@ -22,21 +23,30 @@ const TILE_W = 1600
 const TILE_H = 120
 
 // First and last share a height so the tile repeats seamlessly. The
-// shallow saddle at x=1300 holds the sun.
+// short, nearly flat horizon around x=1300 holds the sun.
 const RIDGE: [number, number][] = [
   [0, 84], [200, 62], [320, 70], [480, 40], [560, 50], [640, 46], [820, 78],
-  [1000, 34], [1060, 42], [1120, 38], [1300, 74], [1420, 60], [1520, 66], [1600, 84],
+  [1000, 34], [1060, 42], [1120, 38], [1230, 72], [1370, 74], [1420, 60], [1520, 66], [1600, 84],
 ]
 
-function mask(points: [number, number][]) {
+// Snow on the two main summits: the summit, the two slope points a little
+// way down, and a jagged lower edge inside the mountain.
+const SNOW: [number, number][][] = [
+  [[416, 52], [480, 40], [560, 50], [540, 56], [520, 50], [500, 58], [480, 52], [460, 60], [440, 54]],
+  [[951, 46], [1000, 34], [1060, 42], [1040, 50], [1020, 44], [1000, 52], [980, 46], [960, 54]],
+]
+
+function mask(paths: string[]) {
   const svg =
     `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 ${TILE_W} ${TILE_H}'>` +
-    `<path d='M${points.map(([x, y]) => `${x},${y}`).join("L")}L${TILE_W},${TILE_H}L0,${TILE_H}Z'/>` +
+    paths.map((d) => `<path d='${d}'/>`).join("") +
     `</svg>`
   return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`
 }
+const poly = (points: [number, number][]) => "M" + points.map(([x, y]) => `${x},${y}`).join("L") + "Z"
 
-const RIDGE_MASK = mask(RIDGE)
+const RIDGE_MASK = mask([poly([...RIDGE, [TILE_W, TILE_H], [0, TILE_H]])])
+const SNOW_MASK = mask(SNOW.map(poly))
 
 function maskStyle(image: string): React.CSSProperties {
   return {
@@ -51,20 +61,19 @@ function maskStyle(image: string): React.CSSProperties {
   }
 }
 
-// The sun: centre at tile x=1300, which is 500 units right of the tile
-// centre, i.e. 500/120 block heights. Its centre sits 48% up the block, so
-// the saddle's slopes hide the lower part.
+// The sun from the badge: a half dome on the horizon and five long, thick
+// rays (two flat, two diagonal, one straight up). Drawn in a 200x100 box
+// with the dome's flat base on the bottom edge. Centred on tile x=1300,
+// 500 units right of the tile centre, i.e. 500/120 block heights, with the
+// base tucked just under the horizon so only the dome and rays show.
 const SUN_LEFT = `calc(var(--ridge-x) + ${500 / TILE_H} * var(--ridge-h))`
-const SUN_R = 38
-const RAYS = [-165, -140, -115, -90, -65, -40, -15].map((deg) => {
-  const a = (deg * Math.PI) / 180
-  return {
-    x1: (60 + (SUN_R + 7) * Math.cos(a)).toFixed(1),
-    y1: (60 + (SUN_R + 7) * Math.sin(a)).toFixed(1),
-    x2: (60 + (SUN_R + 19) * Math.cos(a)).toFixed(1),
-    y2: (60 + (SUN_R + 19) * Math.sin(a)).toFixed(1),
-  }
-})
+const RAYS = [
+  { x1: 48, y1: 92, x2: 24, y2: 92 },
+  { x1: 152, y1: 92, x2: 176, y2: 92 },
+  { x1: 63.2, y1: 63.2, x2: 46.3, y2: 46.3 },
+  { x1: 136.8, y1: 63.2, x2: 153.7, y2: 46.3 },
+  { x1: 100, y1: 48, x2: 100, y2: 24 },
+]
 
 const FILLS = {
   navy: "bg-navy",
@@ -84,13 +93,13 @@ export function RidgeEdge({ to, className }: { to: keyof typeof FILLS; className
     >
       <div className="absolute inset-0 overflow-hidden">
         <svg
-          viewBox="0 0 120 120"
-          className="absolute bottom-[48%] h-full w-auto -translate-x-1/2 translate-y-1/2 text-primary"
+          viewBox="0 0 200 100"
+          className="absolute bottom-[34%] h-[90%] w-auto -translate-x-1/2 text-primary"
           style={{ left: SUN_LEFT }}
           fill="none"
         >
-          <circle cx="60" cy="60" r={SUN_R} fill="currentColor" />
-          <g stroke="currentColor" strokeWidth="5" strokeLinecap="round">
+          <path d="M60,100A40,40 0 0 1 140,100Z" fill="currentColor" />
+          <g stroke="currentColor" strokeWidth="9" strokeLinecap="round">
             {RAYS.map((r) => (
               <line key={r.x1} {...r} />
             ))}
@@ -98,6 +107,7 @@ export function RidgeEdge({ to, className }: { to: keyof typeof FILLS; className
         </svg>
       </div>
       <div className={cn("absolute inset-0", FILLS[to])} style={maskStyle(RIDGE_MASK)} />
+      <div className="absolute inset-0 bg-white/85" style={maskStyle(SNOW_MASK)} />
     </div>
   )
 }

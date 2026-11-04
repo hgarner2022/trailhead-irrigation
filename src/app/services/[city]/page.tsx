@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
-import { CityHero } from "@/components/sections/CityHero"
+import { PageBanner } from "@/components/sections/PageBanner"
 import { CityLocalSign } from "@/components/sections/CityLocalSign"
 import { CityNeighborhoods } from "@/components/sections/CityNeighborhoods"
 import { CityServiceNotes } from "@/components/sections/CityServiceNotes"
@@ -91,7 +91,10 @@ export default async function CityPage({
         }}
       />
 
-      <CityHero name={data.name} county={data.county} />
+      <PageBanner
+        title={`Sprinkler Repair & Service in ${data.name}, CO`}
+        description={`Repairs, spring turn-ons, fall blowouts and new systems for ${data.name} yards, with the local watering rules and rebates below.`}
+      />
       {/* Watering rules, backflow, provider, rebate */}
       <CityLocalSign data={data} />
 
