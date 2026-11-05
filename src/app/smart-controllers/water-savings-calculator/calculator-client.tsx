@@ -111,7 +111,7 @@ export function CalculatorClient() {
             </div>
 
             {/* Result */}
-            <div className="rounded-xl bg-gradient-to-br from-cream to-stone p-6 md:p-8 border border-border">
+            <div className="rounded-lg bg-gradient-to-br from-cream to-stone p-6 md:p-8 border border-border">
               <div className="flex items-center gap-3 mb-6">
                 <div className="rounded-full bg-primary/10 p-2">
                   <Sparkles className="h-5 w-5 text-primary" />
@@ -169,7 +169,7 @@ export function CalculatorClient() {
                 href="/book"
                 className={cn(buttonVariants({ size: "lg" }), "flex-1")}
               >
-                Book My Rachio Install
+                Book Online
                 <ArrowRight className="w-4 h-4" />
               </Link>
               <Link

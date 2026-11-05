@@ -12,6 +12,7 @@ import Link from "next/link"
 import { faqJsonLd, reviewsJsonLd, breadcrumbJsonLd, siteConfig } from "@/lib/seo"
 import { Testimonials } from "@/components/sections/Testimonials"
 import { pickReviews } from "@/lib/reviews"
+import { StepList } from "@/components/sections/StepList"
 
 // The page re-renders once a day so the season copy below tracks the calendar.
 export const revalidate = 86400
@@ -246,17 +247,7 @@ export default function SprinklerBlowoutPage() {
                 climb above freezing and drop back down repeatedly, so water left in a line takes that stress all
                 season rather than once.
               </p>
-              <ul className="mt-8 flex flex-col gap-6 list-none">
-                {WHY.map((item, i) => (
-                  <li key={item.title} className="flex gap-5">
-                    <span className="font-display text-3xl font-bold text-primary leading-none w-8 shrink-0">{i + 1}</span>
-                    <div className="max-w-[60ch]">
-                      <p className="font-semibold text-foreground mb-1">{item.title}</p>
-                      <p className="text-muted-foreground">{item.body}</p>
-                    </div>
-                  </li>
-                ))}
-              </ul>
+              <StepList steps={WHY} className="mt-8" />
             </div>
           </SplitSection>
         </div>

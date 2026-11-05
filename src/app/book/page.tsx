@@ -9,6 +9,8 @@ import { buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { ArrowRight, Phone } from "lucide-react"
 import { breadcrumbJsonLd, siteConfig } from "@/lib/seo"
+import { SectionHeader } from "@/components/sections/SectionHeader"
+import { PHONE_TEL } from "@/lib/nav"
 
 export const metadata: Metadata = {
   // Plain title (no brand). Root layout's title.template appends
@@ -70,7 +72,7 @@ export default function BookPage() {
         className="bg-cream section-padding-y"
       >
         <div className="container-padding-x mx-auto max-w-3xl">
-          <div className="overflow-hidden rounded-xl border border-border bg-background">
+          <div className="overflow-hidden rounded-lg border border-border bg-background">
             <div className="flex flex-col sm:flex-row">
               <div className="relative h-44 sm:h-auto sm:w-2/5 shrink-0">
                 <Image
@@ -109,15 +111,14 @@ export default function BookPage() {
       </section>
       )}
 
-      <section className="bg-background section-padding-y">
+      {/* Alternates with the aeration card above it when that is open. */}
+      <section className={cn(AERATION_BOOKING_OPEN ? "bg-background" : "bg-cream", "section-padding-y")}>
         <div className="container-padding-x mx-auto max-w-2xl text-center">
-          <h2 className="text-2xl font-bold text-foreground mb-3">
-            Need a new sprinkler system?
-          </h2>
-          <p className="text-muted-foreground mb-6">
-            New installations start with a yard visit. Call or send us the address
-            and we&apos;ll come quote it.
-          </p>
+          <SectionHeader
+            title="Need a new sprinkler system?"
+            description="New installations start with a yard visit. Call or send us the address and we'll come quote it."
+            className="mb-6"
+          />
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <Link
               href="/contact"
@@ -127,7 +128,7 @@ export default function BookPage() {
               <ArrowRight className="w-4 h-4" />
             </Link>
             <a
-              href="tel:9706927270"
+              href={PHONE_TEL}
               className={buttonVariants({ variant: "outline", size: "lg" })}
             >
               <Phone className="w-4 h-4" />

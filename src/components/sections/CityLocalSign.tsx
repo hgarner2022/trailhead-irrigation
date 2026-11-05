@@ -1,3 +1,4 @@
+import { SectionHeader } from "@/components/sections/SectionHeader"
 import Link from "next/link"
 import { Droplets, Clock, ShieldCheck, BadgeDollarSign } from "lucide-react"
 import type { CityData } from "@/lib/city-data"
@@ -32,11 +33,14 @@ export function CityLocalSign({ data }: { data: CityData }) {
       <div className="container-padding-x mx-auto max-w-7xl">
         <div className="grid grid-cols-1 lg:grid-cols-[0.8fr_1.2fr] gap-10 lg:gap-16">
           <div className="flex flex-col gap-4 max-w-[60ch]">
-            <p className="text-xs font-semibold uppercase tracking-widest text-primary">Watering in {data.name}</p>
-            <h2 id="sign-heading" className="font-display text-4xl md:text-5xl font-bold text-navy">
-              {data.name}&apos;s watering rules
-            </h2>
-            <p className="text-lg text-muted-foreground">{data.restrictionSummary}</p>
+            <SectionHeader
+              tagline={`Watering in ${data.name}`}
+              taglineAsEyebrow
+              title={`${data.name}'s watering rules`}
+              titleId="sign-heading"
+              description={data.restrictionSummary}
+              align="left"
+            />
             <p className="text-muted-foreground">
               Water provider: {data.waterProvider}
               {data.waterProviderPhone && (

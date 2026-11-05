@@ -6,7 +6,9 @@ import { SectionHeader } from "@/components/sections/SectionHeader"
 import { SeasonPassCalculator } from "@/components/sections/SeasonPassCalculator"
 import { FaqList, type FaqItem } from "@/components/sections/FaqList"
 import { CTAStrip } from "@/components/sections/CTAStrip"
-import { breadcrumbJsonLd, faqJsonLd, siteConfig } from "@/lib/seo"
+import { breadcrumbJsonLd, faqJsonLd, siteConfig, reviewsJsonLd } from "@/lib/seo"
+import { Testimonials } from "@/components/sections/Testimonials"
+import { reviewsFor } from "@/lib/reviews"
 import {
   EXTRA_ZONE_PRICE,
   SEASON_PASS_FROM,
@@ -63,6 +65,8 @@ const FAQS: FaqItem[] = [
       "Erie, Longmont, Louisville, Lafayette, Firestone and Broomfield, at the same price. Reserve by contacting us; we confirm your zone count on the first visit and set the three dates from there.",
   },
 ]
+
+const PASS_REVIEWS = reviewsFor("value", 3)
 
 export default function SeasonPassPage() {
   const schema = {
@@ -176,13 +180,15 @@ export default function SeasonPassPage() {
         <div className="container-padding-x mx-auto max-w-7xl">
           <div className="grid grid-cols-1 lg:grid-cols-[0.8fr_1.2fr] gap-10 lg:gap-16 items-start">
             <div className="flex flex-col gap-5">
-              <p className="text-xs font-semibold uppercase tracking-widest text-primary-light">Price by zone count</p>
-              <h2 id="table-heading" className="font-display text-4xl md:text-5xl font-bold text-white">
-                What it costs, by zone count
-              </h2>
-              <p className="text-white/80 max-w-md">
-                Each visit is charged after it&apos;s done, at the price in this table. Pick your zone count in the card above for your exact total. Not sure how many zones you have? Count the stations on your controller, or we&apos;ll count them on the first visit.
-              </p>
+              <SectionHeader
+                tagline="Price by zone count"
+                taglineAsEyebrow
+                title="What it costs, by zone count"
+                titleId="table-heading"
+                description="Each visit is charged after it's done, at the price in this table. Pick your zone count in the card above for your exact total. Not sure how many zones you have? Count the stations on your controller, or we'll count them on the first visit."
+                align="left"
+                tone="dark"
+              />
               <Link href="/pricing" className="inline-flex items-center gap-1 text-sm font-semibold text-primary-light hover:text-white transition-colors w-fit">
                 All service pricing <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </Link>
@@ -216,6 +222,16 @@ export default function SeasonPassPage() {
           </div>
         </div>
       </section>
+
+      {/* Reviews sit directly above the FAQ on every interior page. */}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(reviewsJsonLd(PASS_REVIEWS)) }} />
+      <Testimonials
+        reviews={PASS_REVIEWS}
+        heading="What homeowners say about our seasonal visits"
+        description="Google reviews from turn-on and blowout customers."
+        bg="cream"
+        headingId="pass-reviews"
+      />
 
       <section className="bg-background section-padding-y" aria-labelledby="pass-faq-heading">
         <div className="container-padding-x mx-auto max-w-3xl flex flex-col gap-10">

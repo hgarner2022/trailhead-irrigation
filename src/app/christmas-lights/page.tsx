@@ -6,7 +6,11 @@ import { cn } from "@/lib/utils"
 import Image from "next/image"
 import Link from "next/link"
 import { Phone, Check } from "lucide-react"
-import { faqJsonLd, breadcrumbJsonLd, siteConfig } from "@/lib/seo"
+import { faqJsonLd, breadcrumbJsonLd, siteConfig, reviewsJsonLd } from "@/lib/seo"
+import { SectionHeader } from "@/components/sections/SectionHeader"
+import { PHONE_TEL } from "@/lib/nav"
+import { Testimonials } from "@/components/sections/Testimonials"
+import { reviewsFor } from "@/lib/reviews"
 
 export const metadata: Metadata = {
   title: "Christmas Light Installation in Erie, CO",
@@ -140,6 +144,8 @@ const FAQS = [
   },
 ]
 
+const XMAS_REVIEWS = reviewsFor("repair", 3)
+
 export default function ChristmasLightsPage() {
   return (
     <>
@@ -212,7 +218,7 @@ export default function ChristmasLightsPage() {
               take them down. All you have to do is look at them.
             </p>
             <a
-              href="tel:9706927270"
+              href={PHONE_TEL}
               className={cn(
                 buttonVariants({ size: "lg" }),
                 "text-base shadow-lg shadow-primary/30"
@@ -255,29 +261,18 @@ export default function ChristmasLightsPage() {
         </div>
       </section>
 
-      {/* What is included. Numbered rather than bulleted: it reads as a list
-          of things being handled for you, which is the actual proposition. */}
+      {/* What is included: a checked grid of the things being handled for you,
+          which is the actual proposition. */}
       <section
         aria-labelledby="xmas-included"
         className="bg-background section-padding-y"
       >
         <div className="container-padding-x mx-auto max-w-6xl">
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-12">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary mb-3">
-                What is included
-              </p>
-              <h2
-                id="xmas-included"
-                className="text-3xl md:text-4xl font-bold text-foreground leading-tight"
-              >
-                From measuring the house
-                <br className="hidden md:block" /> to the January takedown
-              </h2>
-            </div>
+            <SectionHeader tagline="What is included" taglineAsEyebrow title="From measuring the house to the January takedown" titleId="xmas-included" align="left" />
           </div>
 
-          <ul className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-border rounded-xl overflow-hidden border border-border">
+          <ul className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-border rounded-lg overflow-hidden border border-border">
             {INCLUDED.map((item) => (
               <li
                 key={item.title}
@@ -320,15 +315,7 @@ export default function ChristmasLightsPage() {
 
           <div className="flex items-center">
             <div className="container-padding-x mx-auto max-w-xl py-16 md:py-24 lg:py-28">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary-light mb-4">
-                Why an irrigation company
-              </p>
-              <h2
-                id="xmas-why"
-                className="text-3xl md:text-4xl font-bold text-white leading-tight mb-6"
-              >
-                We already know what is under your lawn
-              </h2>
+              <SectionHeader tagline="Why an irrigation company" taglineAsEyebrow title="We already know what is under your lawn" titleId="xmas-why" align="left" tone="dark" className="mb-6" />
               <p className="text-white/75 leading-relaxed mb-4">
                 Your sprinkler system sits a few inches under the grass, and
                 December is exactly when people start driving stakes into a lawn
@@ -362,18 +349,23 @@ export default function ChristmasLightsPage() {
         </div>
       </section>
 
+      {/* Reviews sit directly above the FAQ on every interior page. */}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(reviewsJsonLd(XMAS_REVIEWS)) }} />
+      <Testimonials
+        reviews={XMAS_REVIEWS}
+        heading="What homeowners say about working with us"
+        description="Google reviews from customers across the Front Range."
+        bg="background"
+        headingId="xmas-reviews"
+      />
+
       {/* FAQs */}
       <section
         aria-labelledby="xmas-faq"
         className="bg-cream section-padding-y"
       >
         <div className="container-padding-x mx-auto max-w-3xl">
-          <h2
-            id="xmas-faq"
-            className="text-3xl md:text-4xl font-bold text-foreground mb-10 text-center"
-          >
-            Christmas Light FAQs
-          </h2>
+          <SectionHeader title="Christmas light questions" titleId="xmas-faq" className="mb-10" />
           <FaqList faqs={FAQS} itemBg="background" />
         </div>
       </section>

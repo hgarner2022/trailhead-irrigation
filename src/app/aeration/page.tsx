@@ -6,10 +6,11 @@ import { DefinitionList } from "@/components/sections/DefinitionList"
 import { SectionHeader } from "@/components/sections/SectionHeader"
 import { JobberEmbed } from "@/components/sections/JobberEmbed"
 import { JOBBER_FORMS, AERATION_BOOKING_OPEN } from "@/lib/jobber"
-import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
-import Image from "next/image"
-import { faqJsonLd, breadcrumbJsonLd, siteConfig } from "@/lib/seo"
+import { faqJsonLd, breadcrumbJsonLd, siteConfig, reviewsJsonLd } from "@/lib/seo"
+import { SplitSection } from "@/components/sections/SplitSection"
+import { Testimonials } from "@/components/sections/Testimonials"
+import { reviewsFor } from "@/lib/reviews"
 
 export const metadata: Metadata = {
   title: "Core Aeration in Erie, CO",
@@ -107,6 +108,8 @@ const DEFINITIONS = [
 ]
 
 
+const AERATION_REVIEWS = reviewsFor("repair", 3)
+
 export default function AerationPage() {
   return (
     <>
@@ -191,31 +194,17 @@ export default function AerationPage() {
         className="bg-cream section-padding-y"
       >
         <div className="container-padding-x mx-auto max-w-7xl">
-          <div className="flex flex-col md:flex-row items-center gap-8 md:gap-16">
-            <div className="flex-1 w-full">
-              <div className="relative aspect-[4/3] rounded-xl overflow-hidden">
-                <Image
-                  src="/images/aeration.jpg"
-                  alt="Core aerator pulling plugs of soil out of a lawn"
-                  fill
-                  className="object-cover"
-                />
-              </div>
-            </div>
-            <div className="flex-1">
-              <Badge variant="green" className="mb-3">
-                Up to 25% less watering needed
-              </Badge>
-              <h2
-                id="aeration-why"
-                className="text-2xl md:text-3xl font-bold text-foreground mb-4"
-              >
-                Why aeration matters on Front Range clay
-              </h2>
-              <p className="text-muted-foreground mb-4">
-                Core aeration pulls plugs out of compacted clay so water, air
-                and fertilizer can get down to the roots.
-              </p>
+          <SplitSection image={{ src: "/images/aeration.jpg", alt: "Core aerator pulling plugs of soil out of a lawn" }} imageSide="left">
+            <div>
+              <SectionHeader
+                tagline="Up to 25% less watering needed"
+                taglineAsEyebrow
+                title="Why aeration matters on Front Range clay"
+                titleId="aeration-why"
+                description="Core aeration pulls plugs out of compacted clay so water, air and fertilizer can get down to the roots."
+                align="left"
+                className="mb-4"
+              />
               <p className="text-muted-foreground mb-5">
                 Compacted clay sheds water rather than absorbing it, so a lawn
                 can be watered right on schedule and still never get a proper
@@ -255,7 +244,7 @@ export default function AerationPage() {
                 </li>
               </ul>
             </div>
-          </div>
+          </SplitSection>
         </div>
       </section>
 
@@ -275,10 +264,20 @@ export default function AerationPage() {
         </div>
       </section>
 
+      {/* Reviews sit directly above the FAQ on every interior page. */}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(reviewsJsonLd(AERATION_REVIEWS)) }} />
+      <Testimonials
+        reviews={AERATION_REVIEWS}
+        heading="What homeowners say about working with us"
+        description="Google reviews from customers across the Front Range."
+        bg="cream"
+        headingId="aeration-reviews"
+      />
+
       {/* FAQs */}
       <section
         aria-labelledby="aeration-faq"
-        className="bg-cream section-padding-y"
+        className="bg-background section-padding-y"
       >
         <div className="container-padding-x mx-auto max-w-3xl">
           <SectionHeader
@@ -286,7 +285,7 @@ export default function AerationPage() {
             titleId="aeration-faq"
             className="mb-10"
           />
-          <FaqList faqs={AERATION_FAQS} itemBg="background" />
+          <FaqList faqs={AERATION_FAQS} itemBg="cream" />
         </div>
       </section>
 

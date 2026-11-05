@@ -3,12 +3,15 @@ import { PageBanner } from "@/components/sections/PageBanner"
 import { CTAStrip } from "@/components/sections/CTAStrip"
 import { WaterSavingsCalculator } from "@/components/sections/WaterSavingsCalculator"
 import { FaqList } from "@/components/sections/FaqList"
-import { Badge } from "@/components/ui/badge"
 import { buttonVariants } from "@/components/ui/button"
 import Link from "next/link"
-import Image from "next/image"
-import { CheckCircle2, ArrowRight } from "lucide-react"
-import { faqJsonLd, breadcrumbJsonLd, siteConfig } from "@/lib/seo"
+import { ArrowRight } from "lucide-react"
+import { faqJsonLd, breadcrumbJsonLd, siteConfig, reviewsJsonLd } from "@/lib/seo"
+import { SectionHeader } from "@/components/sections/SectionHeader"
+import { SplitSection } from "@/components/sections/SplitSection"
+import { CheckList } from "@/components/sections/CheckList"
+import { Testimonials } from "@/components/sections/Testimonials"
+import { reviewsFor } from "@/lib/reviews"
 
 export const metadata: Metadata = {
   title: "Water Efficiency Upgrades in Erie, CO",
@@ -45,6 +48,8 @@ const WATER_EFFICIENCY_FAQS = [
   },
 ]
 
+const EFFICIENCY_REVIEWS = reviewsFor("smart-controller", 3)
+
 export default function WaterEfficiencyPage() {
   return (
     <>
@@ -80,32 +85,10 @@ export default function WaterEfficiencyPage() {
           ════════════════════════════════════════════ */}
       <section className="bg-cream section-padding-y">
         <div className="container-padding-x mx-auto max-w-7xl">
-          <div className="flex flex-col md:flex-row items-center gap-8 md:gap-16">
-            <div className="flex-1 w-full">
-              <div className="relative aspect-[4/3] rounded-xl overflow-hidden">
-                <Image
-                  src="/images/healthy-lawn-closeup.jpg"
-                  alt="Healthy green lawn maintained with smart irrigation"
-                  fill
-                  className="object-cover"
-                />
-              </div>
-            </div>
-            <div className="flex-1">
-              <Badge variant="green" className="mb-3">
-                Save up to 30% on water use
-              </Badge>
-              <h3 className="text-2xl md:text-3xl font-bold text-foreground mb-3">
-                Rachio 3 Smart Controller
-              </h3>
-              <p className="text-muted-foreground mb-5">
-                Replaces your timer with a Wi-Fi controller that adjusts watering based on weather, soil, and plant needs. Control everything from your phone.
-              </p>
-              <ul className="flex flex-col gap-2.5 mb-6">
-                <FeatureItem>Skips watering before rain, wind, or freeze</FeatureItem>
-                <FeatureItem>Adjusts run times automatically each season</FeatureItem>
-                <FeatureItem>EPA WaterSense certified, no subscription fees</FeatureItem>
-              </ul>
+          <SplitSection image={{ src: "/images/healthy-lawn-closeup.jpg", alt: "Healthy green lawn maintained with smart irrigation" }} imageSide="left">
+            <div>
+              <SectionHeader tagline="Save up to 30% on water use" taglineAsEyebrow title="Rachio 3 Smart Controller" description="Replaces your timer with a Wi-Fi controller that adjusts watering based on weather, soil, and plant needs. Control everything from your phone." align="left" className="mb-5" />
+              <CheckList size="sm" className="mb-6" items={["Skips watering before rain, wind, or freeze", "Adjusts run times automatically each season", "EPA WaterSense certified, no subscription fees"]} />
               <div className="mb-2">
                 <div className="flex items-baseline gap-2">
                   <span className="text-3xl font-bold text-foreground">$350</span>
@@ -141,7 +124,7 @@ export default function WaterEfficiencyPage() {
                 </Link>
               </div>
             </div>
-          </div>
+          </SplitSection>
         </div>
       </section>
 
@@ -150,32 +133,10 @@ export default function WaterEfficiencyPage() {
           ════════════════════════════════════════════ */}
       <section className="bg-background section-padding-y">
         <div className="container-padding-x mx-auto max-w-7xl">
-          <div className="flex flex-col md:flex-row-reverse items-center gap-8 md:gap-16">
-            <div className="flex-1 w-full">
-              <div className="relative aspect-[4/3] rounded-xl overflow-hidden">
-                <Image
-                  src="/images/lawn-sprinkler-water.jpg"
-                  alt="Sprinkler watering a well-maintained lawn"
-                  fill
-                  className="object-cover"
-                />
-              </div>
-            </div>
-            <div className="flex-1">
-              <Badge variant="green" className="mb-3">
-                30&ndash;50% less water per zone
-              </Badge>
-              <h3 className="text-2xl md:text-3xl font-bold text-foreground mb-3">
-                MPR Nozzle Retrofit
-              </h3>
-              <p className="text-muted-foreground mb-5">
-                Rotary nozzles that apply water at 1/4 the rate of standard spray heads. Water soaks in instead of running off, which matters most on slopes and clay.
-              </p>
-              <ul className="flex flex-col gap-2.5 mb-6">
-                <FeatureItem>Even coverage across the whole zone</FeatureItem>
-                <FeatureItem>Swap onto existing spray bodies, no trenching</FeatureItem>
-                <FeatureItem>Great for clay soil and sloped yards</FeatureItem>
-              </ul>
+          <SplitSection image={{ src: "/images/lawn-sprinkler-water.jpg", alt: "Sprinkler watering a well-maintained lawn" }} imageSide="right">
+            <div>
+              <SectionHeader tagline="30 to 50% less water per zone" taglineAsEyebrow title="MPR Nozzle Retrofit" description="Rotary nozzles that apply water at 1/4 the rate of standard spray heads. Water soaks in instead of running off, which matters most on slopes and clay." align="left" className="mb-5" />
+              <CheckList size="sm" className="mb-6" items={["Even coverage across the whole zone", "Swap onto existing spray bodies, no trenching", "Great for clay soil and sloped yards"]} />
               <Link
                 href="/book"
                 className={buttonVariants({ size: "lg" })}
@@ -184,7 +145,7 @@ export default function WaterEfficiencyPage() {
                 <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
-          </div>
+          </SplitSection>
         </div>
       </section>
 
@@ -193,32 +154,10 @@ export default function WaterEfficiencyPage() {
           ════════════════════════════════════════════ */}
       <section className="bg-cream section-padding-y">
         <div className="container-padding-x mx-auto max-w-7xl">
-          <div className="flex flex-col md:flex-row items-center gap-8 md:gap-16">
-            <div className="flex-1 w-full">
-              <div className="relative aspect-[4/3] rounded-xl overflow-hidden">
-                <Image
-                  src="/images/sprinkler-installation.jpg"
-                  alt="Drip irrigation system installation"
-                  fill
-                  className="object-cover"
-                />
-              </div>
-            </div>
-            <div className="flex-1">
-              <Badge variant="green" className="mb-3">
-                Up to 70% less water than spray heads
-              </Badge>
-              <h3 className="text-2xl md:text-3xl font-bold text-foreground mb-3">
-                Drip Zone Conversion
-              </h3>
-              <p className="text-muted-foreground mb-5">
-                Delivers water directly to each plant&apos;s root zone through low-pressure tubing. Drip runs about 90% efficient against 60 to 75% for spray heads, because nothing is thrown into the air to drift or evaporate.
-              </p>
-              <ul className="flex flex-col gap-2.5 mb-6">
-                <FeatureItem>Low-pressure tubing runs directly to each plant</FeatureItem>
-                <FeatureItem>Eliminates overspray, wind drift, and runoff</FeatureItem>
-                <FeatureItem>Ideal for flower beds, shrubs, and gardens</FeatureItem>
-              </ul>
+          <SplitSection image={{ src: "/images/sprinkler-installation.jpg", alt: "Drip irrigation system installation" }} imageSide="left">
+            <div>
+              <SectionHeader tagline="Up to 70% less water than spray heads" taglineAsEyebrow title="Drip Zone Conversion" description="Delivers water directly to each plant's root zone through low-pressure tubing. Drip runs about 90% efficient against 60 to 75% for spray heads, because nothing is thrown into the air to drift or evaporate." align="left" className="mb-5" />
+              <CheckList size="sm" className="mb-6" items={["Low-pressure tubing runs directly to each plant", "Eliminates overspray, wind drift, and runoff", "Ideal for flower beds, shrubs, and gardens"]} />
               <Link
                 href="/book"
                 className={buttonVariants({ size: "lg" })}
@@ -227,7 +166,7 @@ export default function WaterEfficiencyPage() {
                 <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
-          </div>
+          </SplitSection>
         </div>
       </section>
 
@@ -236,32 +175,10 @@ export default function WaterEfficiencyPage() {
           ════════════════════════════════════════════ */}
       <section className="bg-background section-padding-y">
         <div className="container-padding-x mx-auto max-w-7xl">
-          <div className="flex flex-col md:flex-row-reverse items-center gap-8 md:gap-16">
-            <div className="flex-1 w-full">
-              <div className="relative aspect-[4/3] rounded-xl overflow-hidden">
-                <Image
-                  src="/images/sprinkler-spring.jpg"
-                  alt="Sprinkler system being evaluated"
-                  fill
-                  className="object-cover"
-                />
-              </div>
-            </div>
-            <div className="flex-1">
-              <Badge variant="outline" className="mb-3">
-                Find where your system wastes water
-              </Badge>
-              <h3 className="text-2xl md:text-3xl font-bold text-foreground mb-3">
-                Yard Layout Evaluation
-              </h3>
-              <p className="text-muted-foreground mb-5">
-                We walk your entire sprinkler system zone by zone to find wasted water — poor head spacing, overlapping zones, coverage gaps, and inefficient run times.
-              </p>
-              <ul className="flex flex-col gap-2.5 mb-6">
-                <FeatureItem>Zone-by-zone coverage analysis</FeatureItem>
-                <FeatureItem>Head spacing and arc adjustments</FeatureItem>
-                <FeatureItem>Written recommendations for improvements</FeatureItem>
-              </ul>
+          <SplitSection image={{ src: "/images/sprinkler-spring.jpg", alt: "Sprinkler system being evaluated" }} imageSide="right">
+            <div>
+              <SectionHeader tagline="Find where your system wastes water" taglineAsEyebrow title="Yard Layout Evaluation" description="We walk your entire sprinkler system zone by zone to find wasted water — poor head spacing, overlapping zones, coverage gaps, and inefficient run times." align="left" className="mb-5" />
+              <CheckList size="sm" className="mb-6" items={["Zone-by-zone coverage analysis", "Head spacing and arc adjustments", "Written recommendations for improvements"]} />
               <Link
                 href="/book"
                 className={buttonVariants({ size: "lg" })}
@@ -270,7 +187,7 @@ export default function WaterEfficiencyPage() {
                 <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
-          </div>
+          </SplitSection>
         </div>
       </section>
 
@@ -279,32 +196,10 @@ export default function WaterEfficiencyPage() {
           ════════════════════════════════════════════ */}
       <section className="bg-cream section-padding-y">
         <div className="container-padding-x mx-auto max-w-7xl">
-          <div className="flex flex-col md:flex-row items-center gap-8 md:gap-16">
-            <div className="flex-1 w-full">
-              <div className="relative aspect-[4/3] rounded-xl overflow-hidden">
-                <Image
-                  src="/images/sprinkler-repair.jpg"
-                  alt="Irrigation system leak inspection"
-                  fill
-                  className="object-cover"
-                />
-              </div>
-            </div>
-            <div className="flex-1">
-              <Badge variant="outline" className="mb-3">
-                Stop wasting water you can&apos;t see
-              </Badge>
-              <h3 className="text-2xl md:text-3xl font-bold text-foreground mb-3">
-                Check for Leaks
-              </h3>
-              <p className="text-muted-foreground mb-5">
-                Hidden leaks in your irrigation lines, valves, and connections waste water and can damage your property. We find and fix them before they become expensive problems.
-              </p>
-              <ul className="flex flex-col gap-2.5 mb-6">
-                <FeatureItem>Full system pressure test</FeatureItem>
-                <FeatureItem>Check all valves, lines, and connections</FeatureItem>
-                <FeatureItem>Identify underground leaks before they cause damage</FeatureItem>
-              </ul>
+          <SplitSection image={{ src: "/images/sprinkler-repair.jpg", alt: "Irrigation system leak inspection" }} imageSide="left">
+            <div>
+              <SectionHeader tagline="Stop wasting water you can&apos;t see" taglineAsEyebrow title="Check for Leaks" description="Hidden leaks in your irrigation lines, valves, and connections waste water and can damage your property. We find and fix them before they become expensive problems." align="left" className="mb-5" />
+              <CheckList size="sm" className="mb-6" items={["Full system pressure test", "Check all valves, lines, and connections", "Identify underground leaks before they cause damage"]} />
               <Link
                 href="/book"
                 className={buttonVariants({ size: "lg" })}
@@ -313,7 +208,7 @@ export default function WaterEfficiencyPage() {
                 <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
-          </div>
+          </SplitSection>
         </div>
       </section>
 
@@ -322,17 +217,23 @@ export default function WaterEfficiencyPage() {
           ════════════════════════════════════════════ */}
       <WaterSavingsCalculator />
 
+      {/* Reviews sit directly above the FAQ on every interior page. */}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(reviewsJsonLd(EFFICIENCY_REVIEWS)) }} />
+      <Testimonials
+        reviews={EFFICIENCY_REVIEWS}
+        heading="What homeowners say about their upgrades"
+        description="Google reviews from smart controller and efficiency customers."
+        bg="cream"
+        headingId="efficiency-reviews"
+      />
+
       {/* ════════════════════════════════════════════
           FAQs
           ════════════════════════════════════════════ */}
       <section className="bg-background section-padding-y">
         <div className="container-padding-x mx-auto max-w-3xl">
-          <div className="text-center mb-10">
-            <h2 className="text-3xl font-bold text-foreground">
-              Frequently Asked Questions
-            </h2>
-          </div>
-          <FaqList faqs={WATER_EFFICIENCY_FAQS} itemBg="background" />
+          <SectionHeader title="Water efficiency questions" titleId="water-efficiency-faq" className="mb-10" />
+          <FaqList faqs={WATER_EFFICIENCY_FAQS} itemBg="cream" />
         </div>
       </section>
 
@@ -341,13 +242,3 @@ export default function WaterEfficiencyPage() {
   )
 }
 
-/* ─── Helper Components ─── */
-
-function FeatureItem({ children }: { children: React.ReactNode }) {
-  return (
-    <li className="flex items-start gap-2 text-sm text-muted-foreground">
-      <CheckCircle2 className="w-4 h-4 text-success shrink-0 mt-0.5" />
-      <span>{children}</span>
-    </li>
-  )
-}

@@ -7,9 +7,12 @@ import { Badge } from "@/components/ui/badge"
 import { buttonVariants } from "@/components/ui/button"
 import Link from "next/link"
 import { ExternalLink, Check } from "lucide-react"
-import { breadcrumbJsonLd, faqJsonLd, siteConfig } from "@/lib/seo"
+import { breadcrumbJsonLd, faqJsonLd, siteConfig, reviewsJsonLd } from "@/lib/seo"
 import { FaqList } from "@/components/sections/FaqList"
 import { CITIES, SLOW_THE_FLOW } from "@/lib/rebate-data"
+import { SectionHeader } from "@/components/sections/SectionHeader"
+import { Testimonials } from "@/components/sections/Testimonials"
+import { reviewsFor } from "@/lib/reviews"
 
 export function generateStaticParams() {
   return CITIES.map((city) => ({ slug: city.slug }))
@@ -25,6 +28,8 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     alternates: { canonical: `${siteConfig.url}/water-rebates/${city.slug}` },
   }
 }
+
+const REBATE_REVIEWS = reviewsFor("smart-controller", 3)
 
 export default async function CityRebatePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
@@ -71,16 +76,14 @@ export default async function CityRebatePage({ params }: { params: Promise<{ slu
       {/* Rebate Cards */}
       <section className="bg-background section-padding-y">
         <div className="container-padding-x mx-auto max-w-7xl">
-          <h2 className="text-3xl font-bold text-foreground mb-8">
-            Available Rebates
-          </h2>
+          <SectionHeader title="Available rebates" align="left" className="mb-8" />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {city.rebates.map((rebate) => (
               <Card key={rebate.name} className="hover:shadow-md transition-shadow">
                 <CardHeader>
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3">
-                      <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-navy/10">
+                      <div className="flex items-center justify-center h-10 w-10 rounded-full bg-navy/10">
                         <rebate.icon className="h-5 w-5 text-navy" />
                       </div>
                       <CardTitle>{rebate.name}</CardTitle>
@@ -115,9 +118,7 @@ export default async function CityRebatePage({ params }: { params: Promise<{ slu
       {/* How to Apply */}
       <section className="bg-cream section-padding-y">
         <div className="container-padding-x mx-auto max-w-3xl">
-          <h2 className="text-3xl font-bold text-foreground mb-8 text-center">
-            How to Apply
-          </h2>
+          <SectionHeader title="How to apply" className="mb-8" />
           {city.howToApply.purchaseWindow && (
             <p className="text-center text-muted-foreground mb-6">
               <strong>Purchase window:</strong> {city.howToApply.purchaseWindow}
@@ -153,9 +154,7 @@ export default async function CityRebatePage({ params }: { params: Promise<{ slu
       {/* Additional Resources */}
       <section className="bg-background section-padding-y">
         <div className="container-padding-x mx-auto max-w-3xl">
-          <h2 className="text-3xl font-bold text-foreground mb-8 text-center">
-            Additional Resources
-          </h2>
+          <SectionHeader title="Additional resources" className="mb-8" />
 
           {/* Slow the Flow */}
           <Card className="mb-6">
@@ -216,13 +215,21 @@ export default async function CityRebatePage({ params }: { params: Promise<{ slu
         </div>
       </section>
 
+      {/* Reviews sit directly above the FAQ on every interior page. */}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(reviewsJsonLd(REBATE_REVIEWS)) }} />
+      <Testimonials
+        reviews={REBATE_REVIEWS}
+        heading="What smart controller customers say"
+        description="Google reviews from homeowners running a controller we installed."
+        bg="cream"
+        headingId="rebate-reviews"
+      />
+
       {/* FAQ */}
-      <section className="bg-cream section-padding-y">
+      <section className="bg-background section-padding-y">
         <div className="container-padding-x mx-auto max-w-3xl">
-          <h2 className="text-3xl font-bold text-foreground mb-10 text-center">
-            Frequently Asked Questions
-          </h2>
-          <FaqList faqs={city.faqs} itemBg="background" />
+          <SectionHeader title={`Rebate questions for ${city.name}`} titleId="rebate-faq" className="mb-10" />
+          <FaqList faqs={city.faqs} itemBg="cream" />
         </div>
       </section>
 

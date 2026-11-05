@@ -1,18 +1,20 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { PageBanner } from "@/components/sections/PageBanner"
+import { SectionHeader } from "@/components/sections/SectionHeader"
 import { SplitSection } from "@/components/sections/SplitSection"
 import { CTAStrip } from "@/components/sections/CTAStrip"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { Wifi, Droplets, CloudRain, Calculator, ArrowRight } from "lucide-react"
+import { Wifi, Droplets, CloudRain, ArrowRight } from "lucide-react"
 import { siteConfig, faqJsonLd, reviewsJsonLd, breadcrumbJsonLd } from "@/lib/seo"
 import { Testimonials } from "@/components/sections/Testimonials"
 import { pickReviews } from "@/lib/reviews"
 import { CITY_RACHIO, RACHIO_PRICING, estimateNetCost } from "@/lib/rachio-data"
 import { FaqList } from "@/components/sections/FaqList"
+import { DefinitionList, type DefinitionItem } from "@/components/sections/DefinitionList"
 
 export const metadata: Metadata = {
   title: "Rachio Smart Controllers in Erie, CO",
@@ -20,6 +22,29 @@ export const metadata: Metadata = {
     "Rachio 3 smart controller installation in Erie, Longmont, Louisville & Lafayette. Save 20-30% on outdoor water use. We install, you claim the rebate.",
   alternates: { canonical: `${siteConfig.url}/smart-controllers` },
 }
+
+const RACHIO_DEFINITIONS: DefinitionItem[] = [
+  {
+    term: "What is a Rachio?",
+    definition:
+      "Rachio is a Wi-Fi-enabled smart sprinkler controller that replaces a traditional irrigation timer. The Rachio 3, the current flagship, uses hyperlocal weather data and an EPA WaterSense-certified algorithm to skip watering before rain or freeze and adjust run times across the season.",
+  },
+  {
+    term: "What is WaterSense certification?",
+    definition:
+      "WaterSense is the EPA's certification program for water-efficient products. WaterSense-certified controllers are the only ones eligible for utility rebates in Erie, Longmont, Louisville, and Lafayette. Rachio 3, Hunter Hydrawise, and Rain Bird ESP-Me3 all qualify.",
+  },
+  {
+    term: "What is Slow the Flow?",
+    definition:
+      "Slow the Flow is a free sprinkler-evaluation program run by Resource Central for Front Range water customers. In some cities (Louisville, Lafayette) it's also the gateway to a free Rachio install. Trailhead is not affiliated with Resource Central; it's a community program.",
+  },
+  {
+    term: "What is evapotranspiration (ET)?",
+    definition:
+      "ET is the rate at which water evaporates from soil and transpires from plants. Smart controllers combine ET with local weather to work out how much water each zone needs that day, instead of running the same schedule all year.",
+  },
+]
 
 const SMART_CONTROLLER_FAQS = [
   {
@@ -179,15 +204,13 @@ export default function SmartControllersPage() {
             image={{ src: "/images/rachio-3-studio.jpg", alt: "Rachio 3 smart sprinkler controller" }}
             className="mb-14"
           >
-              <Badge variant="green" className="w-fit">
-                Save 20–30% on outdoor water use
-              </Badge>
-              <h2 className="text-3xl md:text-4xl font-bold text-foreground">
-                Rachio 3 installed for $350. Your city pays part of it back.
-              </h2>
-              <p className="text-lg text-muted-foreground">
-                Since Erie&apos;s March 2026 water emergency a lot of homeowners here are looking hard at their watering. A Rachio 3 skips watering before rain or a freeze and adjusts run times by season, and Erie, Longmont, Louisville and Lafayette each offer a rebate on it.
-              </p>
+              <SectionHeader
+                tagline="Save 20 to 30% on outdoor water use"
+                taglineAsEyebrow
+                title="Rachio 3 installed for $350. Your city pays part of it back."
+                description="Since Erie's March 2026 water emergency a lot of homeowners here are looking hard at their watering. A Rachio 3 skips watering before rain or a freeze and adjusts run times by season, and Erie, Longmont, Louisville and Lafayette each offer a rebate on it."
+                align="left"
+              />
           </SplitSection>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -231,13 +254,14 @@ export default function SmartControllersPage() {
       {/* WATER SAVINGS CALCULATOR CTA */}
       <section className="bg-navy section-padding-y">
         <div className="container-padding-x mx-auto max-w-4xl text-center">
-          <Calculator className="h-12 w-12 text-primary-light mx-auto mb-4" />
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-3">
-            How Much Water Will You Save?
-          </h2>
-          <p className="text-lg text-white/80 mb-6 max-w-2xl mx-auto">
-            Enter your lawn size and get the gallons and dollars a Rachio 3 saves, using EPA WaterSense averages.
-          </p>
+          <SectionHeader
+            tagline="Water savings calculator"
+            taglineAsEyebrow
+            title="How much water will you save?"
+            description="Enter your lawn size and get the gallons and dollars a Rachio 3 saves, using EPA WaterSense averages."
+            tone="dark"
+            className="mb-6"
+          />
           <Link
             href="/smart-controllers/water-savings-calculator"
             className={buttonVariants({ size: "lg" })}
@@ -251,15 +275,13 @@ export default function SmartControllersPage() {
       {/* PRICING TABLE */}
       <section className="bg-background section-padding-y">
         <div className="container-padding-x mx-auto max-w-5xl">
-          <div className="text-center mb-10">
-            <Badge variant="outline" className="mb-4">Transparent pricing</Badge>
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground">
-              Rachio 3, installed
-            </h2>
-            <p className="mt-3 text-muted-foreground">
-              Includes the controller, professional installation, Wi-Fi setup, zone naming, and a walkthrough of the app.
-            </p>
-          </div>
+          <SectionHeader
+            tagline="Transparent pricing"
+            taglineAsEyebrow
+            title="Rachio 3, installed"
+            description="Includes the controller, professional installation, Wi-Fi setup, zone naming, and a walkthrough of the app."
+            className="mb-10"
+          />
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
             <Card className="flex flex-col">
@@ -306,14 +328,11 @@ export default function SmartControllersPage() {
       {/* PER-CITY REBATE SNAPSHOT */}
       <section className="bg-cream section-padding-y">
         <div className="container-padding-x mx-auto max-w-5xl">
-          <div className="text-center mb-10">
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground">
-              Rachio Rebates by City
-            </h2>
-            <p className="mt-3 text-muted-foreground max-w-2xl mx-auto">
-              Every Northern Colorado city runs its own program. Click your city for full details on rebate amounts, eligibility, and your expected net cost.
-            </p>
-          </div>
+          <SectionHeader
+            title="Rachio rebates by city"
+            description="Every Northern Colorado city runs its own program. Click your city for full details on rebate amounts, eligibility, and your expected net cost."
+            className="mb-10"
+          />
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {CITY_RACHIO.map((city) => {
@@ -361,17 +380,15 @@ export default function SmartControllersPage() {
       {/* COMPARISON */}
       <section className="bg-background section-padding-y">
         <div className="container-padding-x mx-auto max-w-5xl">
-          <div className="text-center mb-10">
-            <Badge variant="outline" className="mb-4">Comparison</Badge>
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground">
-              Rachio 3 vs Hunter Hydrawise vs Rain Bird ESP-Me3
-            </h2>
-            <p className="mt-3 text-muted-foreground max-w-2xl mx-auto">
-              All three are WaterSense certified and qualify for Northern Colorado rebates. The differences are the app, the setup and the price.
-            </p>
-          </div>
+          <SectionHeader
+            tagline="Comparison"
+            taglineAsEyebrow
+            title="Rachio 3 vs Hunter Hydrawise vs Rain Bird ESP-Me3"
+            description="All three are WaterSense certified and qualify for Northern Colorado rebates. The differences are the app, the setup and the price."
+            className="mb-10"
+          />
 
-          <div className="overflow-x-auto rounded-xl border border-border">
+          <div className="overflow-x-auto rounded-lg border border-border">
             <table className="w-full text-left text-sm md:text-base">
               <thead className="bg-cream">
                 <tr>
@@ -427,38 +444,9 @@ export default function SmartControllersPage() {
       {/* DEFINITIONS */}
       <section className="bg-cream section-padding-y" aria-labelledby="rachio-definitions">
         <div className="container-padding-x mx-auto max-w-5xl">
-          <div className="text-center mb-10">
-            <h2 id="rachio-definitions" className="text-3xl md:text-4xl font-bold text-foreground">
-              Smart Controller Terms, Explained
-            </h2>
-          </div>
+          <SectionHeader title="Smart controller terms, explained" titleId="rachio-definitions" className="mb-10" />
 
-          <dl className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-background border border-border rounded-lg p-6">
-              <dt className="font-semibold text-foreground mb-2">What is a Rachio?</dt>
-              <dd className="text-muted-foreground leading-relaxed">
-                Rachio is a Wi-Fi-enabled smart sprinkler controller that replaces a traditional irrigation timer. The Rachio 3, the current flagship, uses hyperlocal weather data and an EPA WaterSense-certified algorithm to skip watering before rain or freeze and adjust run times across the season.
-              </dd>
-            </div>
-            <div className="bg-background border border-border rounded-lg p-6">
-              <dt className="font-semibold text-foreground mb-2">What is WaterSense certification?</dt>
-              <dd className="text-muted-foreground leading-relaxed">
-                WaterSense is the EPA&apos;s certification program for water-efficient products. WaterSense-certified controllers are the only ones eligible for utility rebates in Erie, Longmont, Louisville, and Lafayette. Rachio 3, Hunter Hydrawise, and Rain Bird ESP-Me3 all qualify.
-              </dd>
-            </div>
-            <div className="bg-background border border-border rounded-lg p-6">
-              <dt className="font-semibold text-foreground mb-2">What is Slow the Flow?</dt>
-              <dd className="text-muted-foreground leading-relaxed">
-                Slow the Flow is a free sprinkler-evaluation program run by Resource Central for Front Range water customers. In some cities (Louisville, Lafayette) it&apos;s also the gateway to a free Rachio install. Trailhead is not affiliated with Resource Central; it&apos;s a community program.
-              </dd>
-            </div>
-            <div className="bg-background border border-border rounded-lg p-6">
-              <dt className="font-semibold text-foreground mb-2">What is evapotranspiration (ET)?</dt>
-              <dd className="text-muted-foreground leading-relaxed">
-                ET is the rate at which water evaporates from soil and transpires from plants. Smart controllers combine ET with local weather to work out how much water each zone needs that day, instead of running the same schedule all year.
-              </dd>
-            </div>
-          </dl>
+          <DefinitionList items={RACHIO_DEFINITIONS} variant="card" itemBg="background" columns={2} />
         </div>
       </section>
 
@@ -483,11 +471,7 @@ export default function SmartControllersPage() {
       {/* FAQ */}
       <section className="bg-cream section-padding-y">
         <div className="container-padding-x mx-auto max-w-3xl">
-          <div className="text-center mb-10">
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground">
-              Frequently Asked Questions
-            </h2>
-          </div>
+          <SectionHeader title="Smart controller questions" titleId="rachio-faq" className="mb-10" />
           <FaqList faqs={SMART_CONTROLLER_FAQS} itemBg="background" />
         </div>
       </section>

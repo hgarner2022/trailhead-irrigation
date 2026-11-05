@@ -1,4 +1,5 @@
 import { Badge } from "@/components/ui/badge"
+import { SectionHeader } from "@/components/sections/SectionHeader"
 import { SplitSection } from "@/components/sections/SplitSection"
 
 // Where we work in this town: the town photo on the left, Ryan in first
@@ -40,12 +41,7 @@ export function CityNeighborhoods({
 function Body({ name, note, neighborhoods }: { name: string; note: string; neighborhoods: string[] }) {
   return (
     <>
-      <div>
-        <p className="text-xs font-semibold uppercase tracking-widest text-primary">Where we work</p>
-        <h2 id="neighborhoods-heading" className="font-display text-4xl md:text-5xl font-bold text-navy mt-2">
-          Ryan on {name}
-        </h2>
-      </div>
+      <SectionHeader tagline="Where we work" taglineAsEyebrow title={`Ryan on ${name}`} titleId="neighborhoods-heading" align="left" />
       <p className="text-lg text-muted-foreground leading-relaxed">{note}</p>
       <ul className="flex flex-wrap gap-2" aria-label={`Neighborhoods in ${name}`}>
         {neighborhoods.map((n) => (

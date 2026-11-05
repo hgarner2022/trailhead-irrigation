@@ -9,10 +9,10 @@ import { SplitSection } from "@/components/sections/SplitSection"
 import { Card, CardContent } from "@/components/ui/card"
 import { buttonVariants } from "@/components/ui/button"
 import Link from "next/link"
-import { CheckCircle2 } from "lucide-react"
 import { faqJsonLd, reviewsJsonLd, breadcrumbJsonLd, siteConfig } from "@/lib/seo"
 import { Testimonials } from "@/components/sections/Testimonials"
 import { pickReviews } from "@/lib/reviews"
+import { CheckList } from "@/components/sections/CheckList"
 
 export const metadata: Metadata = {
   title: "Irrigation System Installation in Erie, CO",
@@ -213,14 +213,7 @@ export default function SprinklerInstallationPage() {
                 We plan the zone coverage, do the trenching and wiring, and walk you through the system when
                 it&apos;s done.
               </p>
-              <ul className="mt-6 flex flex-col gap-3">
-                {INCLUDED.map((item) => (
-                  <li key={item} className="flex items-start gap-3 text-foreground">
-                    <CheckCircle2 className="h-5 w-5 text-success shrink-0 mt-0.5" aria-hidden="true" />
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
+              <CheckList items={INCLUDED} className="mt-6" />
             </div>
           </SplitSection>
         </div>

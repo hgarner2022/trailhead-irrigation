@@ -1,9 +1,12 @@
 import type { Metadata } from "next"
 import { PageBanner } from "@/components/sections/PageBanner"
 import { CTAStrip } from "@/components/sections/CTAStrip"
-import { siteConfig, breadcrumbJsonLd, faqJsonLd } from "@/lib/seo"
+import { siteConfig, breadcrumbJsonLd, faqJsonLd, reviewsJsonLd } from "@/lib/seo"
 import { FaqList } from "@/components/sections/FaqList"
 import { CalculatorClient } from "./calculator-client"
+import { SectionHeader } from "@/components/sections/SectionHeader"
+import { Testimonials } from "@/components/sections/Testimonials"
+import { reviewsFor } from "@/lib/reviews"
 
 export const metadata: Metadata = {
   title: "Rachio Water Savings Calculator",
@@ -42,6 +45,8 @@ const CALCULATOR_FAQS = [
   },
 ]
 
+const CONTROLLER_REVIEWS = reviewsFor("smart-controller", 3)
+
 export default function WaterSavingsCalculatorPage() {
   return (
     <>
@@ -77,9 +82,7 @@ export default function WaterSavingsCalculatorPage() {
       {/* HOW IT WORKS */}
       <section className="bg-cream section-padding-y">
         <div className="container-padding-x mx-auto max-w-3xl">
-          <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-6 text-center">
-            What this calculator estimates
-          </h2>
+          <SectionHeader title="What this calculator estimates" className="mb-6" />
           <ol className="flex flex-col gap-4 text-muted-foreground leading-relaxed">
             <li>
               <strong className="text-foreground">1. Lawn size → baseline water use.</strong>{" "}
@@ -104,13 +107,21 @@ export default function WaterSavingsCalculatorPage() {
         </div>
       </section>
 
+      {/* Reviews sit directly above the FAQ on every interior page. */}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(reviewsJsonLd(CONTROLLER_REVIEWS)) }} />
+      <Testimonials
+        reviews={CONTROLLER_REVIEWS}
+        heading="What smart controller customers say"
+        description="Google reviews from homeowners running a controller we installed."
+        bg="background"
+        headingId="controller-reviews"
+      />
+
       {/* FAQ */}
-      <section className="bg-background section-padding-y">
+      <section className="bg-cream section-padding-y">
         <div className="container-padding-x mx-auto max-w-3xl">
-          <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-8 text-center">
-            Calculator FAQs
-          </h2>
-          <FaqList faqs={CALCULATOR_FAQS} itemBg="cream" />
+          <SectionHeader title="Calculator questions" titleId="calculator-faq" className="mb-10" />
+          <FaqList faqs={CALCULATOR_FAQS} itemBg="background" />
         </div>
       </section>
 

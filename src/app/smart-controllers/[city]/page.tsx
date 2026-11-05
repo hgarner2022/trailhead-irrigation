@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { ArrowRight, MapPin, Calculator } from "lucide-react"
-import { siteConfig, breadcrumbJsonLd, faqJsonLd } from "@/lib/seo"
+import { siteConfig, breadcrumbJsonLd, faqJsonLd, reviewsJsonLd } from "@/lib/seo"
 import {
   CITY_RACHIO,
   RACHIO_PRICING,
@@ -17,6 +17,9 @@ import {
 } from "@/lib/rachio-data"
 import { getCityData } from "@/lib/city-data"
 import { FaqList } from "@/components/sections/FaqList"
+import { SectionHeader } from "@/components/sections/SectionHeader"
+import { Testimonials } from "@/components/sections/Testimonials"
+import { reviewsFor } from "@/lib/reviews"
 
 export function generateStaticParams() {
   return CITY_RACHIO.map((c) => ({ city: c.slug }))
@@ -49,6 +52,8 @@ export async function generateMetadata({
     },
   }
 }
+
+const CONTROLLER_REVIEWS = reviewsFor("smart-controller", 3)
 
 export default async function SmartControllerCityPage({
   params,
@@ -189,24 +194,19 @@ export default async function SmartControllerCityPage({
       <section className="bg-background section-padding-y">
         <div className="container-padding-x mx-auto max-w-5xl">
           <div className="text-center mb-10">
-            <Badge
-              variant={program.rebateType === "none" ? "outline" : "green"}
-              className="mb-4"
-            >
-              {program.rebateType === "free-install"
+            <SectionHeader
+              taglineAsEyebrow
+              tagline={program.rebateType === "free-install"
                 ? "Free install available"
                 : program.rebateType === "cash-or-free"
                 ? "Cash rebate or free install"
                 : program.rebateType === "cash"
                 ? `Up to $${(program.cashRebate ?? 0) + (program.bonusRebate ?? 0)} in rebates`
                 : "Long-term water savings"}
-            </Badge>
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-              Rachio 3, installed in {program.name}
-            </h2>
-            <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
-              {program.shortNote}
-            </p>
+              title={`Rachio 3, installed in ${program.name}`}
+              titleId="rachio-city-heading"
+              description={program.shortNote}
+            />
             <p className="mt-4 text-xs text-muted-foreground">
               <time dateTime={lastUpdatedISO}>Last updated {lastUpdatedLabel}</time>
             </p>
@@ -269,7 +269,7 @@ export default async function SmartControllerCityPage({
                     "w-full mt-auto"
                   )}
                 >
-                  Book Installation
+                  Book Online
                   <ArrowRight className="w-4 h-4" />
                 </Link>
               </CardContent>
@@ -331,7 +331,7 @@ export default async function SmartControllerCityPage({
                     "w-full mt-auto"
                   )}
                 >
-                  Book Installation
+                  Book Online
                   <ArrowRight className="w-4 h-4" />
                 </Link>
               </CardContent>
@@ -378,10 +378,8 @@ export default async function SmartControllerCityPage({
       {/* WHY RACHIO IN YOUR CITY */}
       <section className="bg-cream section-padding-y">
         <div className="container-padding-x mx-auto max-w-4xl">
-          <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-6">
-            Why a Rachio Makes Sense in {program.name}
-          </h2>
-          <div className="prose prose-lg max-w-none text-muted-foreground leading-relaxed flex flex-col gap-4">
+          <SectionHeader title={`Why a Rachio makes sense in ${program.name}`} align="left" className="mb-6" />
+          <div className="max-w-none text-muted-foreground leading-relaxed flex flex-col gap-4">
             <p>
               <strong className="text-foreground">{program.name} water context.</strong>{" "}
               {cityMeta?.cityNote ??
@@ -410,9 +408,7 @@ export default async function SmartControllerCityPage({
         <div className="container-padding-x mx-auto max-w-4xl">
           {program.rebateType === "none" ? (
             <>
-              <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-6">
-                Why a Rachio Is Worth It in {program.name}
-              </h2>
+              <SectionHeader title={`Why a Rachio is worth it in ${program.name}`} align="left" className="mb-6" />
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                 <Card>
                   <CardContent className="p-5">
@@ -460,9 +456,7 @@ export default async function SmartControllerCityPage({
             </>
           ) : (
             <>
-              <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-6">
-                How to Claim Your {program.name} Rebate
-              </h2>
+              <SectionHeader title={`How to claim your ${program.name} rebate`} align="left" className="mb-6" />
               <ol className="flex flex-col gap-4 text-muted-foreground leading-relaxed">
                 <li>
                   <strong className="text-foreground">1. Book your install.</strong>{" "}
@@ -511,22 +505,20 @@ export default async function SmartControllerCityPage({
         </div>
       </section>
 
-      {/* FAQ */}
-      <section className="bg-cream section-padding-y">
-        <div className="container-padding-x mx-auto max-w-3xl">
-          <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-8 text-center">
-            Rachio questions for {program.name}
-          </h2>
-          <FaqList faqs={cityFaqs} itemBg="background" />
-        </div>
-      </section>
+      {/* Reviews sit directly above the FAQ on every interior page. */}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(reviewsJsonLd(CONTROLLER_REVIEWS)) }} />
+      <Testimonials
+        reviews={CONTROLLER_REVIEWS}
+        heading="What smart controller customers say"
+        description="Google reviews from homeowners running a controller we installed."
+        bg="cream"
+        headingId="controller-reviews"
+      />
 
       {/* OTHER CITIES */}
       <section className="bg-background section-padding-y">
         <div className="container-padding-x mx-auto max-w-4xl">
-          <h2 className="text-xl md:text-2xl font-bold text-foreground mb-6 text-center">
-            Rachio install in another city?
-          </h2>
+          <SectionHeader title="Rachio install in another city?" className="mb-6" />
           <div className="flex flex-wrap justify-center gap-3">
             {CITY_RACHIO.filter((c) => c.slug !== program.slug).map((c) => (
               <Link
@@ -541,6 +533,15 @@ export default async function SmartControllerCityPage({
           </div>
         </div>
       </section>
+
+      {/* FAQ */}
+      <section className="bg-cream section-padding-y">
+        <div className="container-padding-x mx-auto max-w-3xl">
+          <SectionHeader title={`Rachio questions for ${program.name}`} titleId="rachio-city-faq" className="mb-10" />
+          <FaqList faqs={cityFaqs} itemBg="background" />
+        </div>
+      </section>
+
 
       <CTAStrip />
     </>

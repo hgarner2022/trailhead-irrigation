@@ -1,5 +1,6 @@
 import { buttonVariants } from "@/components/ui/button"
 import Link from "next/link"
+import { SectionHeader } from "@/components/sections/SectionHeader"
 import { SplitSection } from "@/components/sections/SplitSection"
 
 // The one navy break in the page, at the most profitable message. Search
@@ -21,13 +22,15 @@ export function InstallationBand() {
           image={{ src: "/images/new-lawn-home.jpg", alt: "Home with a freshly installed lawn and paver walkway" }}
           aspect="3/2"
         >
-            <p className="text-xs font-semibold uppercase tracking-widest text-primary-light">New sprinkler systems</p>
-            <h2 id="install-heading" className="font-display text-4xl md:text-5xl font-bold text-white">
-              What a new sprinkler system costs in Northern Colorado
-            </h2>
-            <p className="text-white/80 text-lg max-w-xl">
-              A typical yard runs $3,000 to $6,000. Ryan walks the property, lays out the zones and gives you the price before anyone digs.
-            </p>
+            <SectionHeader
+              tagline="New sprinkler systems"
+              taglineAsEyebrow
+              title="What a new sprinkler system costs in Northern Colorado"
+              titleId="install-heading"
+              description="A typical yard runs $3,000 to $6,000. Ryan walks the property, lays out the zones and gives you the price before anyone digs."
+              align="left"
+              tone="dark"
+            />
             <dl className="grid grid-cols-2 gap-5">
               {FACTS.map((f) => (
                 <div key={f.label} className="border-l-2 border-primary pl-3">

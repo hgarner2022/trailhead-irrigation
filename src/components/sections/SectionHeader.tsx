@@ -1,8 +1,12 @@
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 
-// Standard "tagline → title → description" stacked block used at the top
-// of most page sections. Replaces 6+ copy-pasted variants across the site.
+// THE section heading. Every section h2 on the site goes through this
+// (Hannah, Nov 5 2026: consistency), so the size, colour and eyebrow are
+// the same everywhere: eyebrow (text-xs uppercase, orange) → h2 (3xl/4xl,
+// display face via the global h2 rule) → description. `tone="dark"` is the
+// navy-section version. The only h2s that bypass it are the two display
+// moments: the hero tagline and "Go find your trail." on the closing strip.
 //
 // Props are deliberately permissive so it can render any combination:
 //   - tagline only
@@ -24,6 +28,8 @@ type SectionHeaderProps = {
   description?: string
   /** Center-align (default) or left-align. */
   align?: "center" | "left"
+  /** `dark` for navy sections: white heading, light-orange eyebrow, white/80 description. */
+  tone?: "light" | "dark"
   /** className passthrough on the wrapper. */
   className?: string
 }
@@ -35,8 +41,10 @@ export function SectionHeader({
   titleId,
   description,
   align = "center",
+  tone = "light",
   className,
 }: SectionHeaderProps) {
+  const dark = tone === "dark"
   const alignClass = align === "center" ? "text-center" : "text-left"
   return (
     <div
@@ -48,7 +56,7 @@ export function SectionHeader({
       )}
     >
       {tagline && taglineAsEyebrow && (
-        <p className="text-xs font-semibold uppercase tracking-widest text-primary">
+        <p className={cn("text-xs font-semibold uppercase tracking-widest", dark ? "text-primary-light" : "text-primary")}>
           {tagline}
         </p>
       )}
@@ -60,7 +68,7 @@ export function SectionHeader({
       {title && (
         <h2
           id={titleId}
-          className="text-3xl md:text-4xl font-bold text-foreground"
+          className={cn("text-3xl md:text-4xl font-bold", dark ? "text-white" : "text-foreground")}
         >
           {title}
         </h2>
@@ -70,7 +78,8 @@ export function SectionHeader({
         // centered under a left-aligned title on every align="left" usage.
         <p
           className={cn(
-            "text-muted-foreground max-w-2xl",
+            "max-w-2xl",
+            dark ? "text-white/80" : "text-muted-foreground",
             align === "center" && "mx-auto"
           )}
         >

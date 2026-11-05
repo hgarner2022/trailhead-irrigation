@@ -9,6 +9,8 @@ import Image from "next/image"
 import { Phone, Mail, MapPin, Clock } from "lucide-react"
 import { useState } from "react"
 import { breadcrumbJsonLd, siteConfig } from "@/lib/seo"
+import { SectionHeader } from "@/components/sections/SectionHeader"
+import { PHONE_TEL } from "@/lib/nav"
 
 export default function ContactPage() {
   const [submitted, setSubmitted] = useState(false)
@@ -37,9 +39,7 @@ export default function ContactPage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16">
             {/* Contact Form */}
             <div>
-              <h2 className="text-2xl font-bold text-foreground mb-6">
-                Send Us a Message
-              </h2>
+              <SectionHeader title="Send us a message" align="left" className="mb-6" />
               {submitted ? (
                 <Card className="p-8">
                   <CardContent className="p-0 text-center flex flex-col gap-4 items-center">
@@ -180,14 +180,12 @@ export default function ContactPage() {
             {/* Contact Info */}
             <div className="flex flex-col gap-8">
               <div className="flex flex-col gap-6">
-                <h2 className="text-2xl font-bold text-foreground">
-                  Get In Touch
-                </h2>
+                <SectionHeader title="Get in touch" align="left" />
                 <div className="flex flex-col gap-4">
                   <ContactItem
                     icon={Phone}
                     label="Phone"
-                    href="tel:9706927270"
+                    href={PHONE_TEL}
                   >
                     (970) 692-7270
                   </ContactItem>
@@ -212,7 +210,7 @@ export default function ContactPage() {
                 <h3 className="text-lg font-semibold text-foreground">
                   Service Area
                 </h3>
-                <div className="relative aspect-square rounded-xl overflow-hidden border border-border">
+                <div className="relative aspect-square rounded-lg overflow-hidden border border-border">
                   <Image
                     src="/images/service-area.png"
                     alt="Service area map"

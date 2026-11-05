@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { SectionHeader } from "@/components/sections/SectionHeader"
 import { CITY_DATA } from "@/lib/city-data"
 
 // A drawn map of the six towns, every dot a link to that town's page.
@@ -48,11 +49,7 @@ export function ServiceAreaMap({
       <div className="container-padding-x mx-auto max-w-7xl">
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.2fr] gap-10 lg:gap-16 items-center">
           <div className="flex flex-col gap-5 max-w-[60ch]">
-            <p className="text-xs font-semibold uppercase tracking-widest text-primary">Service area</p>
-            <h2 id="map-heading" className="font-display text-4xl md:text-5xl font-bold text-navy">
-              {title}
-            </h2>
-            <p className="text-lg text-muted-foreground">{description}</p>
+            <SectionHeader tagline="Service area" taglineAsEyebrow title={title} titleId="map-heading" description={description} align="left" />
             <ul className="flex flex-wrap gap-x-4 gap-y-2">
               {CITY_DATA.filter((c) => c.slug !== current).map((c) => (
                 <li key={c.slug}>

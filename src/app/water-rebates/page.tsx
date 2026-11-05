@@ -8,6 +8,7 @@ import Link from "next/link"
 import { Wrench, Receipt, ClipboardCheck, Droplets, ExternalLink, Check } from "lucide-react"
 import { breadcrumbJsonLd, siteConfig } from "@/lib/seo"
 import { CITIES, SLOW_THE_FLOW } from "@/lib/rebate-data"
+import { SectionHeader } from "@/components/sections/SectionHeader"
 
 export const metadata: Metadata = {
   title: "Water Efficiency Rebates",
@@ -71,12 +72,11 @@ export default function WaterRebatesPage() {
       {/* City Selector Grid */}
       <section className="bg-cream section-padding-y">
         <div className="container-padding-x mx-auto max-w-7xl">
-          <h2 className="text-3xl md:text-4xl font-bold text-foreground text-center mb-4">
-            Find Rebates in Your City
-          </h2>
-          <p className="text-muted-foreground text-lg text-center mb-10 max-w-2xl mx-auto">
-            Select your city to see available rebates, eligibility requirements, and how to apply.
-          </p>
+          <SectionHeader
+            title="Find rebates in your city"
+            description="Select your city to see available rebates, eligibility requirements, and how to apply."
+            className="mb-10"
+          />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {CITIES.map((city) => (
               <Link key={city.slug} href={`/water-rebates/${city.slug}`} className="block">
@@ -115,7 +115,7 @@ export default function WaterRebatesPage() {
           <Card className="border-2 border-primary/20">
             <CardHeader>
               <div className="flex items-center gap-3">
-                <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-primary/10">
+                <div className="flex items-center justify-center h-10 w-10 rounded-full bg-primary/10">
                   <Droplets className="h-5 w-5 text-primary" />
                 </div>
                 <div>
@@ -167,9 +167,7 @@ export default function WaterRebatesPage() {
       {/* How It Works */}
       <section className="bg-cream section-padding-y">
         <div className="container-padding-x mx-auto max-w-7xl">
-          <h2 className="text-3xl md:text-4xl font-bold text-foreground text-center mb-10">
-            How It Works
-          </h2>
+          <SectionHeader title="How it works" className="mb-10" />
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {HOW_IT_WORKS.map((item) => (
               <div key={item.step} className="flex flex-col items-center text-center gap-4">

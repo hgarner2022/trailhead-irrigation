@@ -12,6 +12,7 @@ import { ServiceAreaMap } from "@/components/sections/ServiceAreaMap"
 import { Testimonials } from "@/components/sections/Testimonials"
 import { faqJsonLd, reviewsJsonLd, breadcrumbJsonLd, siteConfig } from "@/lib/seo"
 import { reviewsFor } from "@/lib/reviews"
+import { StepList } from "@/components/sections/StepList"
 
 export const metadata: Metadata = {
   title: "Spring Sprinkler Turn-On in Erie, CO",
@@ -205,24 +206,14 @@ export default function SpringTurnOnPage() {
                 titleId="turn-on-steps"
                 align="left"
               />
-              <ol className="mt-8 flex flex-col gap-6 list-none">
-                {STEPS.map((step, i) => (
-                  <li key={step.title} className="flex gap-5">
-                    <span className="font-display text-3xl font-bold text-primary leading-none w-8 shrink-0">{i + 1}</span>
-                    <div className="max-w-[60ch]">
-                      <p className="font-semibold text-foreground mb-1">{step.title}</p>
-                      <p className="text-muted-foreground">{step.body}</p>
-                    </div>
-                  </li>
-                ))}
-              </ol>
+              <StepList steps={STEPS} className="mt-8" />
             </div>
           </SplitSection>
         </div>
       </section>
 
       {/* Terms, as plain text */}
-      <section aria-labelledby="turn-on-terms" className="bg-cream section-padding-y">
+      <section aria-labelledby="turn-on-terms" className="bg-background section-padding-y">
         <div className="container-padding-x mx-auto max-w-7xl flex flex-col gap-10">
           <SectionHeader tagline="Good to know" taglineAsEyebrow title="Spring startup terms, explained" titleId="turn-on-terms" align="left" />
           <DefinitionList items={DEFINITIONS} variant="plain" columns={2} />
@@ -230,7 +221,7 @@ export default function SpringTurnOnPage() {
       </section>
 
       {/* Service area map */}
-      <ServiceAreaMap title="Where we do spring turn-ons" bg="background" />
+      <ServiceAreaMap title="Where we do spring turn-ons" bg="cream" />
 
       {/* Reviews from customers who booked a turn-on */}
       {TURN_ON_REVIEWS.length > 0 && (
@@ -240,17 +231,17 @@ export default function SpringTurnOnPage() {
             reviews={TURN_ON_REVIEWS}
             heading="What homeowners say about spring visits"
             description="Google reviews from customers who booked a turn-on."
-            bg="cream"
+            bg="background"
             headingId="turn-on-reviews"
           />
         </>
       )}
 
       {/* FAQs */}
-      <section aria-labelledby="turn-on-faq" className="bg-background section-padding-y">
+      <section aria-labelledby="turn-on-faq" className="bg-cream section-padding-y">
         <div className="container-padding-x mx-auto max-w-3xl">
           <SectionHeader title="Spring turn-on questions" titleId="turn-on-faq" className="mb-10" />
-          <FaqList faqs={TURN_ON_FAQS} itemBg="cream" />
+          <FaqList faqs={TURN_ON_FAQS} itemBg="background" />
           <p className="text-sm text-muted-foreground text-center mt-8">
             For the full timing breakdown, read our{" "}
             <Link href="/blog/spring-sprinkler-startup-colorado" className="text-primary hover:underline font-medium">

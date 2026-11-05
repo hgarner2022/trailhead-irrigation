@@ -1,21 +1,13 @@
 import type { Metadata } from "next"
 import { PageBanner } from "@/components/sections/PageBanner"
+import { SectionHeader } from "@/components/sections/SectionHeader"
 import { CTAStrip } from "@/components/sections/CTAStrip"
 import { ServicePriceCard } from "@/components/sections/ServicePriceCard"
 import { FaqList } from "@/components/sections/FaqList"
-import { Badge } from "@/components/ui/badge"
 import { buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
-import {
-  Sun,
-  Search,
-  Snowflake,
-  Wrench,
-  CheckCircle2,
-  ArrowRight,
-  Clock,
-} from "lucide-react"
+import { Sun, Search, Snowflake, Wrench, CheckCircle2, Clock } from "lucide-react"
 import { faqJsonLd, reviewsJsonLd, breadcrumbJsonLd, siteConfig } from "@/lib/seo"
 import { SEASON_PASS_FROM } from "@/lib/season-pass"
 import { Testimonials } from "@/components/sections/Testimonials"
@@ -62,7 +54,7 @@ const PRICING_FAQS = [
     question: "Are there rebates available for irrigation upgrades?",
     answer:
       "Yes. Erie, Longmont, Louisville and Lafayette offer rebates on WaterSense smart controllers such as the Rachio 3. Search your zip code at rachio.com/rebates, or see our Water Rebates page for each city's program.",
-    hasLink: true,
+    relatedLink: { href: "/water-rebates", label: "Water rebates by city" },
   },
 ]
 
@@ -101,17 +93,13 @@ export default function PricingPage() {
           ════════════════════════════════════════════ */}
       <section className="bg-background section-padding-y">
         <div className="container-padding-x mx-auto max-w-7xl">
-          <div className="text-center mb-12">
-            <Badge variant="outline" className="mb-4">
-              Seasonal Services
-            </Badge>
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground">
-              Individual Services
-            </h2>
-            <p className="mt-3 text-muted-foreground max-w-xl mx-auto">
-              Book one visit at a time. The price on the card is what you pay, and there is no trip charge.
-            </p>
-          </div>
+          <SectionHeader
+            tagline="Seasonal services"
+            taglineAsEyebrow
+            title="Individual services"
+            description="Book one visit at a time. The price on the card is what you pay, and there is no trip charge."
+            className="mb-12"
+          />
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <ServicePriceCard
@@ -195,15 +183,14 @@ export default function PricingPage() {
         <div className="container-padding-x mx-auto max-w-7xl">
           <div className="flex flex-col md:flex-row items-center gap-8 md:gap-16">
             <div className="flex-1">
-              <Badge variant="outline" className="mb-4">
-                Repairs &amp; Service
-              </Badge>
-              <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-                Sprinkler repair, $145 a visit
-              </h2>
-              <p className="text-muted-foreground mb-6">
-                The visit covers the diagnosis, and we take care of small fixes where we can. Bigger repairs are quoted before we start, at $145 an hour plus parts.
-              </p>
+              <SectionHeader
+                tagline="Repairs and service"
+                taglineAsEyebrow
+                title="Sprinkler repair, $145 a visit"
+                description="The visit covers the diagnosis, and we take care of small fixes where we can. Bigger repairs are quoted before we start, at $145 an hour plus parts."
+                align="left"
+                className="mb-6"
+              />
               <ul className="flex flex-col gap-3 mb-8">
                 <RepairFeature icon={<Wrench className="w-4 h-4" />}>
                   Troubleshooting &amp; diagnostics
@@ -220,8 +207,8 @@ export default function PricingPage() {
               </Link>
             </div>
             <div className="flex-1 w-full">
-              <div className="bg-cream rounded-xl border border-border p-6 md:p-8">
-                <h3 className="font-semibold text-foreground mb-4">Common Repairs</h3>
+              <div className="bg-background rounded-lg border border-border p-6 md:p-8">
+                <h3 className="font-semibold text-foreground mb-4">Common repairs</h3>
                 <div className="flex flex-col gap-3">
                   <RepairLine label="Sprinkler head replacement" />
                   <RepairLine label="Valve repair or replacement" />
@@ -243,18 +230,16 @@ export default function PricingPage() {
       {/* ════════════════════════════════════════════
           IRRIGATION INSTALLS
           ════════════════════════════════════════════ */}
-      <section className="bg-cream section-padding-y">
+      <section className="bg-background section-padding-y">
         <div className="container-padding-x mx-auto max-w-4xl text-center">
-          <div className="bg-background rounded-2xl border border-border p-8 md:p-12">
-            <Badge variant="outline" className="mb-4">
-              New Installations
-            </Badge>
-            <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-3">
-              Irrigation System Installation
-            </h2>
-            <p className="text-muted-foreground max-w-lg mx-auto mb-6">
-              Most installs run $3,000 to $6,000, depending on lot size, soil, zones and water source. We walk the yard and give you a layout and a price before anyone digs.
-            </p>
+          <div className="bg-cream rounded-lg border border-border p-8 md:p-12">
+            <SectionHeader
+              tagline="New installations"
+              taglineAsEyebrow
+              title="Irrigation system installation"
+              description="Most installs run $3,000 to $6,000, depending on lot size, soil, zones and water source. We walk the yard and give you a layout and a price before anyone digs."
+              className="mb-6"
+            />
             <Link href="/contact" className={buttonVariants({ size: "lg" })}>
               Get an installation quote
             </Link>
@@ -285,60 +270,8 @@ export default function PricingPage() {
           ════════════════════════════════════════════ */}
       <section className="bg-cream section-padding-y">
         <div className="container-padding-x mx-auto max-w-3xl">
-          <div className="text-center mb-10">
-            <h2 className="text-3xl font-bold text-foreground">
-              Frequently Asked Questions
-            </h2>
-          </div>
-          <div className="flex flex-col gap-3">
-            {PRICING_FAQS.map((faq) => (
-              <details
-                key={faq.question}
-                className="group border border-border rounded-lg bg-background hover:border-primary/20 transition-colors"
-              >
-                <summary className="flex cursor-pointer items-center justify-between p-5 font-medium text-foreground">
-                  {faq.question}
-                  <span className="ml-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180">
-                    &#9662;
-                  </span>
-                </summary>
-                <div className="px-5 pb-5">
-                  <p className="text-muted-foreground leading-relaxed">
-                    {faq.answer}
-                  </p>
-                  {"relatedLink" in faq && faq.relatedLink && (
-                    <Link
-                      href={faq.relatedLink.href}
-                      className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-primary hover:text-primary-dark transition-colors"
-                    >
-                      {faq.relatedLink.label}
-                      <ArrowRight className="w-3 h-3" />
-                    </Link>
-                  )}
-                  {"hasLink" in faq && faq.hasLink && (
-                    <div className="mt-3 flex flex-col sm:flex-row gap-3">
-                      <a
-                        href="https://www.rachio.com/rebates"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-sm font-semibold text-primary hover:text-primary-dark transition-colors inline-flex items-center gap-1"
-                      >
-                        Rachio Rebates
-                        <ArrowRight className="w-3 h-3" />
-                      </a>
-                      <Link
-                        href="/water-rebates"
-                        className="text-sm font-semibold text-primary hover:text-primary-dark transition-colors inline-flex items-center gap-1"
-                      >
-                        Water Rebates
-                        <ArrowRight className="w-3 h-3" />
-                      </Link>
-                    </div>
-                  )}
-                </div>
-              </details>
-            ))}
-          </div>
+          <SectionHeader title="Pricing questions" titleId="pricing-faq" className="mb-10" />
+          <FaqList faqs={PRICING_FAQS} itemBg="background" />
         </div>
       </section>
 

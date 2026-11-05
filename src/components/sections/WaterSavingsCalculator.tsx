@@ -216,7 +216,7 @@ export function WaterSavingsCalculator() {
           </div>
 
           {/* ─── Results ─── */}
-          <Card className="rounded-2xl border-0 shadow-lg">
+          <Card className="rounded-lg border-0 shadow-lg">
             <CardContent className="p-6 md:p-8 flex flex-col gap-5">
               {results.needsUpgrades ? (
                 <>
@@ -278,7 +278,7 @@ export function WaterSavingsCalculator() {
                     href="/book"
                     className={cn(buttonVariants({ size: "lg" }), "mt-2 w-full")}
                   >
-                    Book a Service
+                    Book Online
                     <ArrowRight className="w-4 h-4" />
                   </Link>
                 </>
@@ -299,7 +299,7 @@ export function WaterSavingsCalculator() {
                     href="/book"
                     className={cn(buttonVariants(), "mt-2")}
                   >
-                    Book a Service
+                    Book Online
                     <ArrowRight className="w-4 h-4" />
                   </Link>
                 </div>

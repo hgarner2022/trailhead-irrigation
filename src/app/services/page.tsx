@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 import { PageBanner } from "@/components/sections/PageBanner"
+import { SectionHeader } from "@/components/sections/SectionHeader"
 import { SplitSection } from "@/components/sections/SplitSection"
 import { FaqList } from "@/components/sections/FaqList"
 import { DefinitionList } from "@/components/sections/DefinitionList"
@@ -7,9 +8,12 @@ import { CTAStrip } from "@/components/sections/CTAStrip"
 import { buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
-import { Check } from "lucide-react"
-import { serviceJsonLd, faqJsonLd, breadcrumbJsonLd, siteConfig } from "@/lib/seo"
+
+import { serviceJsonLd, faqJsonLd, breadcrumbJsonLd, siteConfig, reviewsJsonLd } from "@/lib/seo"
 import { CITY_DATA } from "@/lib/city-data"
+import { CheckList } from "@/components/sections/CheckList"
+import { Testimonials } from "@/components/sections/Testimonials"
+import { recentReviews } from "@/lib/reviews"
 
 export const metadata: Metadata = {
   // Plain title (no brand). Root layout's title.template appends
@@ -109,6 +113,8 @@ const SERVICES = [
   },
 ]
 
+const SERVICE_REVIEWS = recentReviews(6)
+
 export default function ServicesPage() {
   return (
     <>
@@ -157,20 +163,8 @@ export default function ServicesPage() {
               image={{ src: service.image, alt: service.title }}
               imageSide={service.imagePosition === "left" ? "left" : "right"}
             >
-                <h2 className="text-3xl md:text-4xl font-bold text-foreground">
-                  {service.title}
-                </h2>
-                <p className="text-muted-foreground text-lg leading-relaxed">
-                  {service.description}
-                </p>
-                <ul className="flex flex-col gap-3">
-                  {service.features.map((feature) => (
-                    <li key={feature} className="flex items-start gap-3">
-                      <Check className="h-5 w-5 text-success shrink-0 mt-0.5" />
-                      <span className="text-foreground">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
+                <SectionHeader title={service.title} description={service.description} align="left" />
+                <CheckList items={service.features} />
                 <Link
                   href={service.cta.href}
                   className={cn(buttonVariants({ size: "lg" }), "w-fit mt-2")}
@@ -187,12 +181,11 @@ export default function ServicesPage() {
           before the definitions section, which is bg-background too. */}
       <section className="bg-cream section-padding-y">
         <div className="container-padding-x mx-auto max-w-3xl text-center">
-          <h2 className="text-3xl font-bold text-foreground mb-4">
-            Areas We Serve
-          </h2>
-          <p className="text-muted-foreground mb-8">
-            We&apos;re based in Erie and serve the entire Northern Colorado Front Range. Click your city for local water info, restrictions, and FAQs.
-          </p>
+          <SectionHeader
+            title="Areas we serve"
+            description="We're based in Erie and serve the entire Northern Colorado Front Range. Click your city for local water info, restrictions, and FAQs."
+            className="mb-8"
+          />
           <div className="flex flex-wrap justify-center gap-4">
             {CITY_DATA.map((city) => (
               <Link
@@ -214,17 +207,12 @@ export default function ServicesPage() {
         aria-labelledby="definitions-heading"
       >
         <div className="container-padding-x mx-auto max-w-5xl">
-          <div className="text-center mb-10">
-            <h2
-              id="definitions-heading"
-              className="text-3xl md:text-4xl font-bold text-foreground"
-            >
-              Sprinkler Services Explained
-            </h2>
-            <p className="mt-3 text-muted-foreground max-w-2xl mx-auto">
-              Quick definitions of every service we offer in Erie and Northern Colorado.
-            </p>
-          </div>
+          <SectionHeader
+            title="Sprinkler services explained"
+            titleId="definitions-heading"
+            description="Quick definitions of every service we offer in Erie and Northern Colorado."
+            className="mb-10"
+          />
 
           <DefinitionList
             items={[
@@ -263,13 +251,21 @@ export default function ServicesPage() {
         </div>
       </section>
 
+      {/* Reviews sit directly above the FAQ on every interior page. */}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(reviewsJsonLd(SERVICE_REVIEWS)) }} />
+      <Testimonials
+        reviews={SERVICE_REVIEWS}
+        heading="What homeowners say"
+        description="Google reviews from across the Front Range."
+        bg="cream"
+        headingId="services-reviews"
+      />
+
       {/* FAQ Section for AEO */}
-      <section className="bg-cream section-padding-y">
+      <section className="bg-background section-padding-y">
         <div className="container-padding-x mx-auto max-w-3xl">
-          <h2 className="text-3xl font-bold text-foreground mb-10 text-center">
-            Frequently Asked Questions
-          </h2>
-          <FaqList faqs={SERVICES_FAQS} itemBg="background" />
+          <SectionHeader title="Sprinkler service questions" titleId="services-faq" className="mb-10" />
+          <FaqList faqs={SERVICES_FAQS} itemBg="cream" />
         </div>
       </section>
 

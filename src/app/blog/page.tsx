@@ -66,7 +66,7 @@ function FeaturedCard({ post }: { post: BlogPost }) {
   return (
     <Link
       href={`/blog/${post.slug}`}
-      className="group relative block overflow-hidden rounded-2xl bg-gradient-to-br from-primary-light via-primary to-primary-dark shadow-lg hover:shadow-xl transition-shadow"
+      className="group relative block overflow-hidden rounded-lg bg-gradient-to-br from-primary-light via-primary to-primary-dark shadow-lg hover:shadow-xl transition-shadow"
     >
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.18),transparent_60%)]" />
 
@@ -98,7 +98,7 @@ function StandardCard({ post }: { post: BlogPost }) {
   return (
     <Link
       href={`/blog/${post.slug}`}
-      className="group flex flex-col rounded-2xl border border-border bg-background p-5 hover:border-primary/40 hover:shadow-md transition-all"
+      className="group flex flex-col rounded-lg border border-border bg-background p-5 hover:border-primary/40 hover:shadow-md transition-all"
     >
       <div className="flex flex-col gap-3 grow">
         <time

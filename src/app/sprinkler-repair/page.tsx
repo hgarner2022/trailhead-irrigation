@@ -12,6 +12,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { buttonVariants } from "@/components/ui/button"
 import { faqJsonLd, reviewsJsonLd, breadcrumbJsonLd, siteConfig } from "@/lib/seo"
 import { reviewsFor } from "@/lib/reviews"
+import { StepList } from "@/components/sections/StepList"
 
 export const metadata: Metadata = {
   title: "Sprinkler Repair in Erie, CO",
@@ -215,17 +216,7 @@ export default function SprinklerRepairPage() {
           <SplitSection image={{ src: "/images/sprinkler-head.jpg", alt: "Pop-up sprinkler head being adjusted in a lawn" }} imageSide="left">
             <div>
               <SectionHeader tagline="The visit" taglineAsEyebrow title="What happens when we come out" titleId="repair-visit" align="left" />
-              <ol className="mt-8 flex flex-col gap-6 list-none">
-                {STEPS.map((step, i) => (
-                  <li key={step.title} className="flex gap-5">
-                    <span className="font-display text-3xl font-bold text-primary leading-none w-8 shrink-0">{i + 1}</span>
-                    <div className="max-w-[60ch]">
-                      <p className="font-semibold text-foreground mb-1">{step.title}</p>
-                      <p className="text-muted-foreground">{step.body}</p>
-                    </div>
-                  </li>
-                ))}
-              </ol>
+              <StepList steps={STEPS} className="mt-8" />
             </div>
           </SplitSection>
         </div>

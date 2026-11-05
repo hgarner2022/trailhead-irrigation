@@ -1,4 +1,4 @@
-import { Badge } from "@/components/ui/badge"
+import { SectionHeader } from "@/components/sections/SectionHeader"
 import { buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
@@ -19,10 +19,13 @@ export function OwnerSection() {
           }}
           imageSide="left"
         >
-            <Badge variant="green" className="w-fit">Owner-operated</Badge>
-            <h2 id="owner-heading" className="font-display text-4xl md:text-5xl font-bold text-navy">
-              An owner-operated sprinkler company, based in Erie
-            </h2>
+            <SectionHeader
+              tagline="Owner-operated"
+              taglineAsEyebrow
+              title="An owner-operated sprinkler company, based in Erie"
+              titleId="owner-heading"
+              align="left"
+            />
             <div className="flex flex-col gap-4 text-muted-foreground text-lg">
               <p>
                 I&apos;m Ryan. I started Trailhead here in Erie, and I&apos;ve been doing irrigation work on the Front Range for over ten years.
@@ -33,7 +36,7 @@ export function OwnerSection() {
             </div>
             <div className="flex flex-col sm:flex-row gap-3">
               <Link href="/book" className={cn(buttonVariants({ variant: "secondary", size: "lg" }), "w-fit")}>
-                Book a service
+                Book Online
               </Link>
               <Link href="/about" className={cn(buttonVariants({ variant: "outline", size: "lg" }), "w-fit")}>
                 About Trailhead
