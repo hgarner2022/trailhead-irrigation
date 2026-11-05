@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import Image from "next/image"
 import { PageBanner } from "@/components/sections/PageBanner"
+import { SplitSection } from "@/components/sections/SplitSection"
 import { CTAStrip } from "@/components/sections/CTAStrip"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -175,8 +175,10 @@ export default function SmartControllersPage() {
       {/* HERO VALUE PROP */}
       <section className="bg-background section-padding-y">
         <div className="container-padding-x mx-auto max-w-7xl">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center mb-14">
-            <div className="flex flex-col gap-4">
+          <SplitSection
+            image={{ src: "/images/rachio-3-studio.jpg", alt: "Rachio 3 smart sprinkler controller" }}
+            className="mb-14"
+          >
               <Badge variant="green" className="w-fit">
                 Save 20–30% on outdoor water use
               </Badge>
@@ -186,17 +188,7 @@ export default function SmartControllersPage() {
               <p className="text-lg text-muted-foreground">
                 Since Erie&apos;s March 2026 water emergency a lot of homeowners here are looking hard at their watering. A Rachio 3 skips watering before rain or a freeze and adjusts run times by season, and Erie, Longmont, Louisville and Lafayette each offer a rebate on it.
               </p>
-            </div>
-            <div className="relative aspect-[4/3] rounded-xl overflow-hidden">
-              <Image
-                src="/images/rachio-3-studio.jpg"
-                alt="Rachio 3 smart sprinkler controller"
-                fill
-                sizes="(min-width: 1024px) 50vw, 100vw"
-                className="object-cover"
-              />
-            </div>
-          </div>
+          </SplitSection>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <Card>

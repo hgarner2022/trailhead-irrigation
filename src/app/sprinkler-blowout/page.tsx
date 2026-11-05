@@ -5,10 +5,10 @@ import { CTAStrip } from "@/components/sections/CTAStrip"
 import { FaqList } from "@/components/sections/FaqList"
 import { DefinitionList } from "@/components/sections/DefinitionList"
 import { SectionHeader } from "@/components/sections/SectionHeader"
+import { SplitSection } from "@/components/sections/SplitSection"
 import { Card, CardContent } from "@/components/ui/card"
 import { buttonVariants } from "@/components/ui/button"
 import Link from "next/link"
-import Image from "next/image"
 import { faqJsonLd, reviewsJsonLd, breadcrumbJsonLd, siteConfig } from "@/lib/seo"
 import { Testimonials } from "@/components/sections/Testimonials"
 import { pickReviews } from "@/lib/reviews"
@@ -238,16 +238,7 @@ export default function SprinklerBlowoutPage() {
       {/* Why it matters */}
       <section aria-labelledby="blowout-risk" className="bg-cream section-padding-y">
         <div className="container-padding-x mx-auto max-w-7xl">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
-            <div className="relative aspect-[4/3] rounded-lg overflow-hidden">
-              <Image
-                src="/images/sprinkler-repair.jpg"
-                alt="Irrigation valve and pipe being repaired"
-                fill
-                sizes="(min-width: 1024px) 50vw, 100vw"
-                className="object-cover"
-              />
-            </div>
+          <SplitSection image={{ src: "/images/sprinkler-repair.jpg", alt: "Irrigation valve and pipe being repaired" }} imageSide="left">
             <div>
               <SectionHeader tagline="Why it matters" taglineAsEyebrow title="What the $95 protects" titleId="blowout-risk" align="left" />
               <p className="text-muted-foreground mt-5 max-w-[60ch]">
@@ -267,7 +258,7 @@ export default function SprinklerBlowoutPage() {
                 ))}
               </ul>
             </div>
-          </div>
+          </SplitSection>
         </div>
       </section>
 

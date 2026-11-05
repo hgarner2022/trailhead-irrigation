@@ -5,10 +5,10 @@ import { CTAStrip } from "@/components/sections/CTAStrip"
 import { FaqList } from "@/components/sections/FaqList"
 import { DefinitionList } from "@/components/sections/DefinitionList"
 import { SectionHeader } from "@/components/sections/SectionHeader"
+import { SplitSection } from "@/components/sections/SplitSection"
 import { Card, CardContent } from "@/components/ui/card"
 import { buttonVariants } from "@/components/ui/button"
 import Link from "next/link"
-import Image from "next/image"
 import { CheckCircle2 } from "lucide-react"
 import { faqJsonLd, reviewsJsonLd, breadcrumbJsonLd, siteConfig } from "@/lib/seo"
 import { Testimonials } from "@/components/sections/Testimonials"
@@ -200,16 +200,7 @@ export default function SprinklerInstallationPage() {
       {/* Designed for your yard */}
       <section aria-labelledby="install-design" className="bg-cream section-padding-y">
         <div className="container-padding-x mx-auto max-w-7xl">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
-            <div className="relative aspect-[4/3] rounded-lg overflow-hidden">
-              <Image
-                src="/images/new-lawn-home.jpg"
-                alt="Home with a freshly installed lawn and paver walkway"
-                fill
-                sizes="(min-width: 1024px) 50vw, 100vw"
-                className="object-cover"
-              />
-            </div>
+          <SplitSection image={{ src: "/images/new-lawn-home.jpg", alt: "Home with a freshly installed lawn and paver walkway" }} imageSide="left">
             <div>
               <SectionHeader
                 tagline="Designed for your yard"
@@ -231,7 +222,7 @@ export default function SprinklerInstallationPage() {
                 ))}
               </ul>
             </div>
-          </div>
+          </SplitSection>
         </div>
       </section>
 

@@ -1,6 +1,6 @@
 import { buttonVariants } from "@/components/ui/button"
-import Image from "next/image"
 import Link from "next/link"
+import { SplitSection } from "@/components/sections/SplitSection"
 
 // The one navy break in the page, at the most profitable message. Search
 // Console shows installation searches rank 4 to 6 and almost never click,
@@ -17,8 +17,10 @@ export function InstallationBand() {
   return (
     <section className="bg-navy text-white section-padding-y" aria-labelledby="install-heading">
       <div className="container-padding-x mx-auto max-w-7xl">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
-          <div className="flex flex-col gap-6">
+        <SplitSection
+          image={{ src: "/images/new-lawn-home.jpg", alt: "Home with a freshly installed lawn and paver walkway" }}
+          aspect="3/2"
+        >
             <p className="text-xs font-semibold uppercase tracking-widest text-primary-light">New sprinkler systems</p>
             <h2 id="install-heading" className="font-display text-4xl md:text-5xl font-bold text-white">
               What a new sprinkler system costs in Northern Colorado
@@ -40,17 +42,7 @@ export function InstallationBand() {
                 See installation pricing
               </Link>
             </div>
-          </div>
-          <div className="relative aspect-[3/2] rounded-lg overflow-hidden">
-            <Image
-              src="/images/new-lawn-home.jpg"
-              alt="Home with a freshly installed lawn and paver walkway"
-              fill
-              sizes="(min-width: 1024px) 50vw, 100vw"
-              className="object-cover"
-            />
-          </div>
-        </div>
+        </SplitSection>
       </div>
     </section>
   )

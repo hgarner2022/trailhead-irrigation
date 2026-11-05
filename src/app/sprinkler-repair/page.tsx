@@ -1,12 +1,12 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import Image from "next/image"
 import { PageBanner } from "@/components/sections/PageBanner"
 import { ServiceAreaMap } from "@/components/sections/ServiceAreaMap"
 import { CTAStrip } from "@/components/sections/CTAStrip"
 import { FaqList } from "@/components/sections/FaqList"
 import { DefinitionList } from "@/components/sections/DefinitionList"
 import { SectionHeader } from "@/components/sections/SectionHeader"
+import { SplitSection } from "@/components/sections/SplitSection"
 import { Testimonials } from "@/components/sections/Testimonials"
 import { Card, CardContent } from "@/components/ui/card"
 import { buttonVariants } from "@/components/ui/button"
@@ -212,16 +212,7 @@ export default function SprinklerRepairPage() {
       {/* What happens on the visit */}
       <section aria-labelledby="repair-visit" className="bg-background section-padding-y">
         <div className="container-padding-x mx-auto max-w-7xl">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
-            <div className="relative aspect-[4/3] rounded-lg overflow-hidden">
-              <Image
-                src="/images/sprinkler-head.jpg"
-                alt="Pop-up sprinkler head being adjusted in a lawn"
-                fill
-                sizes="(min-width: 1024px) 50vw, 100vw"
-                className="object-cover"
-              />
-            </div>
+          <SplitSection image={{ src: "/images/sprinkler-head.jpg", alt: "Pop-up sprinkler head being adjusted in a lawn" }} imageSide="left">
             <div>
               <SectionHeader tagline="The visit" taglineAsEyebrow title="What happens when we come out" titleId="repair-visit" align="left" />
               <ol className="mt-8 flex flex-col gap-6 list-none">
@@ -236,7 +227,7 @@ export default function SprinklerRepairPage() {
                 ))}
               </ol>
             </div>
-          </div>
+          </SplitSection>
         </div>
       </section>
 

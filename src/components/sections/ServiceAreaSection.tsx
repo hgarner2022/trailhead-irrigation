@@ -1,6 +1,6 @@
-import Image from "next/image"
 import Link from "next/link"
 import { SectionHeader } from "@/components/sections/SectionHeader"
+import { SplitSection } from "@/components/sections/SplitSection"
 import { CITY_DATA } from "@/lib/city-data"
 import { ArrowRight } from "lucide-react"
 
@@ -22,17 +22,11 @@ export function ServiceAreaSection() {
   return (
     <section className="bg-background section-padding-y" aria-labelledby="areas-heading">
       <div className="container-padding-x mx-auto max-w-7xl">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
-          <div className="relative aspect-[3/2] rounded-lg overflow-hidden order-last lg:order-first">
-            <Image
-              src="/images/welcome-to-colorado-sign.jpg"
-              alt="Welcome to Colorful Colorado roadside sign"
-              fill
-              sizes="(min-width: 1024px) 50vw, 100vw"
-              className="object-cover"
-            />
-          </div>
-          <div className="flex flex-col gap-8">
+        <SplitSection
+          image={{ src: "/images/welcome-to-colorado-sign.jpg", alt: "Welcome to Colorful Colorado roadside sign" }}
+          imageSide="left"
+          aspect="3/2"
+        >
             <SectionHeader
               tagline="Service area"
               taglineAsEyebrow
@@ -57,8 +51,7 @@ export function ServiceAreaSection() {
                 </li>
               ))}
             </ul>
-          </div>
-        </div>
+        </SplitSection>
       </div>
     </section>
   )

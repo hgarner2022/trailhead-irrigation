@@ -1,11 +1,11 @@
 import type { Metadata } from "next"
 import { PageBanner } from "@/components/sections/PageBanner"
+import { SplitSection } from "@/components/sections/SplitSection"
 import { FaqList } from "@/components/sections/FaqList"
 import { DefinitionList } from "@/components/sections/DefinitionList"
 import { CTAStrip } from "@/components/sections/CTAStrip"
 import { buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import Image from "next/image"
 import Link from "next/link"
 import { Check } from "lucide-react"
 import { serviceJsonLd, faqJsonLd, breadcrumbJsonLd, siteConfig } from "@/lib/seo"
@@ -153,14 +153,10 @@ export default function ServicesPage() {
           )}
         >
           <div className="container-padding-x mx-auto max-w-7xl">
-            <div
-              className={cn(
-                "flex flex-col items-center gap-12 lg:flex-row lg:gap-16",
-                service.imagePosition === "left" && "lg:flex-row-reverse"
-              )}
+            <SplitSection
+              image={{ src: service.image, alt: service.title }}
+              imageSide={service.imagePosition === "left" ? "left" : "right"}
             >
-              {/* Content */}
-              <div className="flex flex-1 flex-col gap-6">
                 <h2 className="text-3xl md:text-4xl font-bold text-foreground">
                   {service.title}
                 </h2>
@@ -181,20 +177,7 @@ export default function ServicesPage() {
                 >
                   {service.cta.label}
                 </Link>
-              </div>
-
-              {/* Image */}
-              <div className="w-full flex-1">
-                <div className="relative aspect-[4/3] rounded-xl overflow-hidden">
-                  <Image
-                    src={service.image}
-                    alt={service.title}
-                    fill
-                    className="object-cover"
-                  />
-                </div>
-              </div>
-            </div>
+            </SplitSection>
           </div>
         </section>
       ))}

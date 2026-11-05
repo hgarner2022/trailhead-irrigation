@@ -1,8 +1,8 @@
 import { Badge } from "@/components/ui/badge"
 import { buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import Image from "next/image"
 import Link from "next/link"
+import { SplitSection } from "@/components/sections/SplitSection"
 
 // About the company, with the owner as the reason the quality holds.
 // "Owner-operated" is the phrase homeowners trust in a contractor.
@@ -12,17 +12,13 @@ export function OwnerSection() {
   return (
     <section className="bg-background section-padding-y" aria-labelledby="owner-heading">
       <div className="container-padding-x mx-auto max-w-7xl">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
-          <div className="relative aspect-[4/3] rounded-lg overflow-hidden">
-            <Image
-              src="/images/ryan-family-2.jpg"
-              alt="Ryan, owner of Trailhead Lawn & Irrigation, outdoors with his family in Colorado"
-              fill
-              sizes="(min-width: 1024px) 50vw, 100vw"
-              className="object-cover"
-            />
-          </div>
-          <div className="flex flex-col gap-6">
+        <SplitSection
+          image={{
+            src: "/images/ryan-family-2.jpg",
+            alt: "Ryan, owner of Trailhead Lawn & Irrigation, outdoors with his family in Colorado",
+          }}
+          imageSide="left"
+        >
             <Badge variant="green" className="w-fit">Owner-operated</Badge>
             <h2 id="owner-heading" className="font-display text-4xl md:text-5xl font-bold text-navy">
               An owner-operated sprinkler company, based in Erie
@@ -43,8 +39,7 @@ export function OwnerSection() {
                 About Trailhead
               </Link>
             </div>
-          </div>
-        </div>
+        </SplitSection>
       </div>
     </section>
   )

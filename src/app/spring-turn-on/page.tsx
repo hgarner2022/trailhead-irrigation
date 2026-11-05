@@ -1,5 +1,4 @@
 import type { Metadata } from "next"
-import Image from "next/image"
 import Link from "next/link"
 import { buttonVariants } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -7,6 +6,7 @@ import { CTAStrip } from "@/components/sections/CTAStrip"
 import { FaqList } from "@/components/sections/FaqList"
 import { DefinitionList } from "@/components/sections/DefinitionList"
 import { SectionHeader } from "@/components/sections/SectionHeader"
+import { SplitSection } from "@/components/sections/SplitSection"
 import { PageBanner } from "@/components/sections/PageBanner"
 import { ServiceAreaMap } from "@/components/sections/ServiceAreaMap"
 import { Testimonials } from "@/components/sections/Testimonials"
@@ -196,16 +196,7 @@ export default function SpringTurnOnPage() {
       {/* What happens on the visit */}
       <section aria-labelledby="turn-on-steps" className="bg-cream section-padding-y">
         <div className="container-padding-x mx-auto max-w-7xl">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
-            <div className="relative aspect-[4/3] rounded-lg overflow-hidden">
-              <Image
-                src="/images/sprinkler-spray-head-lawn.jpg"
-                alt="Pop-up sprinkler head spraying across a green lawn"
-                fill
-                sizes="(min-width: 1024px) 50vw, 100vw"
-                className="object-cover"
-              />
-            </div>
+          <SplitSection image={{ src: "/images/sprinkler-spray-head-lawn.jpg", alt: "Pop-up sprinkler head spraying across a green lawn" }} imageSide="left">
             <div>
               <SectionHeader
                 tagline="What happens on the visit"
@@ -226,7 +217,7 @@ export default function SpringTurnOnPage() {
                 ))}
               </ol>
             </div>
-          </div>
+          </SplitSection>
         </div>
       </section>
 

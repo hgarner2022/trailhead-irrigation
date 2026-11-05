@@ -97,8 +97,13 @@ export function Hero() {
           >
             {season.h1}
           </h1>
-          <p className="order-first font-display text-5xl sm:text-6xl md:text-7xl font-bold text-white leading-[0.98] max-w-3xl">
-            Less time in the yard. More time on the trail.
+          {/* Two lines, always broken the same way, the second in the brand
+              orange (Hannah, Nov 5 2026). Below `sm` the size follows the
+              viewport (9.5vw) so "More time on the trail." stays on one line
+              on every phone width; it meets text-6xl at 640px. */}
+          <p className="order-first font-display text-[9.5vw] sm:text-6xl md:text-7xl font-bold text-white leading-[0.98] max-w-3xl">
+            <span className="block">Less time in the yard.</span>
+            <span className="block text-primary-light">More time on the trail.</span>
           </p>
           {/* Below lg the StickyBar carries Call + Book Online on every page,
               so the hero carries no buttons there: one Book Online on screen,

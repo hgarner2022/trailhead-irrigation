@@ -1,10 +1,10 @@
 import type { Metadata } from "next"
 import { PageBanner } from "@/components/sections/PageBanner"
+import { SplitSection } from "@/components/sections/SplitSection"
 import { CTAStrip } from "@/components/sections/CTAStrip"
 import { Badge } from "@/components/ui/badge"
 import { buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import Image from "next/image"
 import Link from "next/link"
 import { MapPin, Droplets, Wrench, Shield, Users, Award } from "lucide-react"
 import { siteConfig, breadcrumbJsonLd, personJsonLd } from "@/lib/seo"
@@ -44,20 +44,10 @@ export default function AboutPage() {
       {/* Ryan's Story */}
       <section className="bg-background section-padding-y">
         <div className="container-padding-x mx-auto max-w-7xl">
-          <div className="flex flex-col items-center gap-12 lg:flex-row lg:gap-16">
-            <div className="w-full flex-1">
-              <div className="relative aspect-[4/3] rounded-xl overflow-hidden">
-                <Image
-                  src="/images/ryan.jpg"
-                  alt="Ryan Garner, founder of Trailhead Lawn & Irrigation"
-                  fill
-                  className="object-cover"
-                  priority
-                />
-              </div>
-            </div>
-
-            <div className="flex flex-1 flex-col gap-6">
+          <SplitSection
+            image={{ src: "/images/ryan.jpg", alt: "Ryan Garner, founder of Trailhead Lawn & Irrigation", priority: true }}
+            imageSide="left"
+          >
               <Badge variant="green" className="w-fit">Locally Owned &amp; Operated</Badge>
               <h2 className="text-3xl md:text-4xl font-bold text-foreground">
                 Meet Ryan Garner
@@ -80,8 +70,7 @@ export default function AboutPage() {
                   My customers are my neighbors.
                 </p>
               </div>
-            </div>
-          </div>
+          </SplitSection>
         </div>
       </section>
 
@@ -116,19 +105,7 @@ export default function AboutPage() {
       {/* Family Photo + Local Roots */}
       <section className="bg-background section-padding-y">
         <div className="container-padding-x mx-auto max-w-7xl">
-          <div className="flex flex-col items-center gap-12 lg:flex-row-reverse lg:gap-16">
-            <div className="w-full flex-1">
-              <div className="relative aspect-[4/3] rounded-xl overflow-hidden">
-                <Image
-                  src="/images/ryan-family.jpeg"
-                  alt="Ryan Garner and his family"
-                  fill
-                  className="object-cover"
-                />
-              </div>
-            </div>
-
-            <div className="flex flex-1 flex-col gap-6">
+          <SplitSection image={{ src: "/images/ryan-family.jpeg", alt: "Ryan Garner and his family" }}>
               <h2 className="text-3xl md:text-4xl font-bold text-foreground">
                 Based in Erie, serving six cities
               </h2>
@@ -152,8 +129,7 @@ export default function AboutPage() {
               <Link href="/book" className={cn(buttonVariants({ size: "lg" }), "w-fit mt-2")}>
                 Book Online
               </Link>
-            </div>
-          </div>
+          </SplitSection>
         </div>
       </section>
 
