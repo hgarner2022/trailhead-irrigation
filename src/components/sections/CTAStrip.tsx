@@ -19,7 +19,8 @@ export function CTAStrip() {
       <section className="bg-navy pt-14 md:pt-20 pb-16 md:pb-24" aria-labelledby="cta-heading">
         <div className="container-padding-x mx-auto max-w-7xl text-center">
           <div className="flex flex-col items-center gap-6">
-            <h2 id="cta-heading" className="font-display text-5xl md:text-6xl font-bold text-white">
+            {/* Page-title size (same as PageBanner's h1), not bigger: Hannah picked this over the larger display size, Nov 5 2026. */}
+            <h2 id="cta-heading" className="font-display text-4xl md:text-5xl font-bold text-white">
               Go find your trail.
             </h2>
             <p className="text-white/80 text-lg max-w-xl">

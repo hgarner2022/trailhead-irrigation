@@ -237,7 +237,7 @@ When you need a new section pattern:
 - Base spacing: Tailwind defaults (4px grid)
 - Max content width: `max-w-7xl` (1280px)
 - Section padding: `py-16 md:py-24` (consistent vertical rhythm)
-- Border radius: `rounded-lg` (8px) for cards, `rounded-full` for pills/buttons
+- Border radius: `rounded-lg` (8px) for cards, photos AND buttons (Hannah chose slightly rounded corners over pills, Nov 5 2026); `rounded-full` only for icon circles and chips like `SeasonalPill`
 
 ### Logo Files
 - `Assets/Logo.jpg` — Full badge logo on white (primary use)
@@ -423,7 +423,7 @@ Always use these instead of building from scratch:
 
 | Component | Use for |
 |---|---|
-| `<SectionHeader tagline taglineAsEyebrow title description align tone />` | THE section heading, on every section h2 site-wide (Nov 5 2026 consistency pass): eyebrow → h2 (3xl/4xl) → description. `tone="dark"` on navy. The only h2s that bypass it are the hero tagline and "Go find your trail." |
+| `<SectionHeader tagline taglineAsEyebrow title description align tone />` | THE section heading, on every section h2 site-wide (Nov 5 2026 consistency pass): eyebrow → h2 (3xl/4xl) → description. `tone="dark"` on navy. The only h2s that bypass it are the hero tagline and "Go find your trail." (which sits at page-title size, 4xl/5xl, Hannah's pick Nov 5 2026) |
 | `<FaqList faqs={...} itemBg="cream" />` | Any FAQ accordion. Native `<details>`, zero JS. |
 | `<DefinitionList items={...} columns={2} variant="card"\|"plain" />` | Semantic `<dl>`/`<dt>`/`<dd>` "What is X?" blocks (highly extractable by AI Overviews). `plain` drops the card chrome and shows an optional `icon` per item in a cream circle (city watering rules use it) |
 | `<ServicePriceCard title icon price priceUnit perZoneNote features footnote />` | Service tier card with price, features, CTA |
