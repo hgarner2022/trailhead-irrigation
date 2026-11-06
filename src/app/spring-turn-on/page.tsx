@@ -183,6 +183,7 @@ export default function SpringTurnOnPage() {
                     </div>
                   ))}
                 </dl>
+                <p className="mt-4 text-xs text-muted-foreground">Prices and details checked November 6, 2026.</p>
                 <div className="mt-auto pt-6 hidden lg:block">
                   <Link href="/book" className={buttonVariants({ size: "lg", className: "w-full" })}>
                     Book Online

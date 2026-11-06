@@ -325,6 +325,7 @@ Provides 14 composable skills for structured software development:
 | `/smart-controllers/water-savings-calculator` | Interactive lawn-size → gallons-saved + dollars-saved calculator (EPA WaterSense averages) |
 | `/water-rebates` + `/water-rebates/[slug]` | Per-city utility rebate landing pages (drives the rebate funnel) |
 | `/water-efficiency` | Water-efficient upgrade services |
+| `/first-freeze-dates` | Resource page (footer only, Hannah Nov 6 2026): first frost and first hard freeze by year at the four NOAA stations nearest the six towns, computed from `src/lib/freeze-data.ts`, which `npm run freeze-dates` regenerates from NOAA GHCN-Daily. Nothing on the page is typed by hand; the medians, earliest, latest and the current partial year are all derived. Erie has no reporting station and is read as the Longmont/Boulder/Northglenn range. Run the script once a year after the first hard freeze. Linked from the blowout page, each city's rules block and llms.txt. Dataset + FAQ schema |
 | `/blog` + `/blog/[slug]` | 19 long-form blog posts |
 | `/about`, `/contact`, `/book` | Standard pages |
 

@@ -1,6 +1,6 @@
 import { SectionHeader } from "@/components/sections/SectionHeader"
 import Link from "next/link"
-import { Droplets, Clock, ShieldCheck, BadgeDollarSign } from "lucide-react"
+import { Droplets, Clock, ShieldCheck, BadgeDollarSign, Snowflake } from "lucide-react"
 import type { CityData } from "@/lib/city-data"
 import { DefinitionList, type DefinitionItem } from "@/components/sections/DefinitionList"
 
@@ -15,6 +15,19 @@ export function CityLocalSign({ data }: { data: CityData }) {
     { term: "Watering days", definition: data.wateringDays, icon: Droplets },
     { term: "Time of day", definition: data.wateringTimeRestriction, icon: Clock },
     { term: "Backflow testing", definition: data.backflowDeadline, icon: ShieldCheck },
+    {
+      term: "First hard freeze",
+      icon: Snowflake,
+      definition: (
+        <>
+          Usually the second half of October at the nearest NOAA station.{" "}
+          <Link href="/first-freeze-dates" className="underline underline-offset-4 decoration-primary/40 hover:decoration-primary text-foreground">
+            First freeze dates by year
+          </Link>
+          .
+        </>
+      ),
+    },
   ]
   if (g?.rebate) {
     items.push({

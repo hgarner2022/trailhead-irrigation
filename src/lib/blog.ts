@@ -1575,7 +1575,7 @@ If you're reading this in late summer, you're in the best possible position. [Bo
 
 The window on the Front Range is **late September through October**. We start booking winterizations in September and October fills up fast. By mid-October, we're usually booked solid.
 
-The first hard freeze (below 28 degrees for several hours) can happen anytime from mid-October on. In 2024, Erie saw its first hard freeze on October 18th. Some years it holds off until November. You can't predict it, so don't gamble.
+The first hard freeze (below 28 degrees for several hours) can happen anytime from mid-October on. In 2024 the first hard freeze near Erie came on October 31 at the Boulder and Northglenn NOAA stations, and November 5 in Longmont. Some years it holds off until November. You can't predict it, so don't gamble.
 
 **Our advice: get on the schedule in September and have the work done in October.** If you wait until the forecast shows a freeze coming, every irrigation company in Weld County is already slammed.
 

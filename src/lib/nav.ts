@@ -38,6 +38,7 @@ export const SERVICES: NavLink[] = [
 export const RESOURCE_LINKS: NavLink[] = [
   { label: "Water Rebates", href: "/water-rebates" },
   { label: "Season Pass", href: "/season-pass" },
+  { label: "First Freeze Dates", href: "/first-freeze-dates" },
 ]
 
 export const CITY_LINKS: NavLink[] = CITY_DATA.map((city) => ({

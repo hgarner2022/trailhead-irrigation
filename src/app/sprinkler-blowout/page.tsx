@@ -39,7 +39,7 @@ const SEASON_COPY = {
   },
   peak: {
     title: "October is here. Get on the schedule.",
-    now: "Erie's first hard freeze in 2024 landed on October 18. We are clearing systems every day this month.",
+    now: "The first hard freeze near Erie usually lands in the second half of October. We are clearing systems every day this month.",
     banner: "Compressed-air winterization before the first hard freeze.",
   },
   late: {
@@ -99,7 +99,7 @@ const BLOWOUT_FAQS = [
   {
     question: "When should I winterize my sprinklers in Northern Colorado?",
     answer:
-      "Late September through October. The first hard freeze, meaning below 28 degrees for several hours, can arrive any time from mid-October on. Erie's first hard freeze in 2024 landed on October 18. Some years it holds off until November, so it isn't worth waiting on the forecast.",
+      "Late September through October. The first hard freeze, meaning below 28 degrees for several hours, can arrive any time from mid-October on. At the NOAA stations nearest Erie, the first hard freeze has come as early as October 10 and as late as mid-November, and it usually lands in the second half of October. Some years it holds off until November, so it isn't worth waiting on the forecast. See our first freeze dates by year.",
   },
   {
     question: "What happens if I skip winterization?",
@@ -225,6 +225,7 @@ export default function SprinklerBlowoutPage() {
                   ))}
                 </dl>
                 <p className="mt-4 text-sm text-muted-foreground">{season.now}</p>
+                <p className="mt-4 text-xs text-muted-foreground">Prices and details checked November 6, 2026.</p>
                 <div className="mt-auto pt-6 hidden lg:block">
                   <Link href="/book?service=winterization" className={buttonVariants({ size: "lg", className: "w-full" })}>
                     Book Online
@@ -284,7 +285,11 @@ export default function SprinklerBlowoutPage() {
           <SectionHeader title="Sprinkler blowout questions" titleId="blowout-faq" className="mb-10" />
           <FaqList faqs={BLOWOUT_FAQS} itemBg="background" />
           <p className="text-sm text-muted-foreground text-center mt-8">
-            For the full timing breakdown, read our{" "}
+            See{" "}
+            <Link href="/first-freeze-dates" className="text-primary hover:underline font-medium">
+              first freeze dates by year
+            </Link>{" "}
+            for the six towns, or read our{" "}
             <Link href="/blog/when-to-winterize-sprinklers-colorado" className="text-primary hover:underline font-medium">
               winterization guide
             </Link>

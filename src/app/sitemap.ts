@@ -44,6 +44,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${baseUrl}/sprinkler-repair`, lastModified: new Date(TURN_ON_UPDATED), changeFrequency: "monthly" as const, priority: 0.95 },
     { url: `${baseUrl}/season-pass`, lastModified: new Date(SEASON_PASS_UPDATED), changeFrequency: "monthly" as const, priority: 0.9 },
     { url: `${baseUrl}/water-rebates`, lastModified: new Date(REBATE_PAGES_UPDATED), changeFrequency: "monthly" as const, priority: 0.9 },
+    { url: `${baseUrl}/first-freeze-dates`, lastModified: new Date("2026-11-06"), changeFrequency: "yearly" as const, priority: 0.8 },
     { url: `${baseUrl}/water-efficiency`, lastModified: new Date(REBATE_PAGES_UPDATED), changeFrequency: "monthly" as const, priority: 0.85 },
     { url: `${baseUrl}/privacy`, lastModified: new Date(STATIC_PAGES_UPDATED), changeFrequency: "yearly" as const, priority: 0.3 },
     { url: `${baseUrl}/terms`, lastModified: new Date(STATIC_PAGES_UPDATED), changeFrequency: "yearly" as const, priority: 0.3 },

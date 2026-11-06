@@ -186,6 +186,7 @@ export default function SprinklerInstallationPage() {
                     </div>
                   ))}
                 </dl>
+                <p className="mt-4 text-xs text-muted-foreground">Prices and details checked November 6, 2026.</p>
                 <div className="mt-auto pt-6">
                   <Link href="/contact" className={buttonVariants({ size: "lg", className: "w-full" })}>
                     Get an installation quote

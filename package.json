@@ -13,7 +13,8 @@
     "email:build": "node scripts/build-email.mjs",
     "brevo:import": "node scripts/brevo-import.mjs",
     "new-city": "node scripts/new-city.mjs",
-    "new-service": "node scripts/new-service.mjs"
+    "new-service": "node scripts/new-service.mjs",
+    "freeze-dates": "node scripts/freeze-dates.mjs"
   },
   "dependencies": {
     "@vercel/analytics": "^1.6.1",
