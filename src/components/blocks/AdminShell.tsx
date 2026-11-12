@@ -4,7 +4,6 @@ import { useState, useSyncExternalStore, type ReactNode } from "react"
 import Image from "next/image"
 import { CalendarRange, LayoutDashboard, LogOut, Ticket, TrendingUp, Users, type LucideIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { useIsMobile } from "@/hooks/use-mobile"
 import {
   Sidebar,
   SidebarContent,
@@ -23,9 +22,14 @@ import {
 // The frame every admin screen sits in (docs/DESIGN.md, Spacing): the navy
 // rail on a laptop, collapsed to icons under 1024px, and a bottom tab bar
 // instead of the rail under 768px. The screen itself is the children, in one
-// cream column of at most 1280px. The links are plain anchors; the prototype
-// has no router yet. The switcher slot above the items stays empty until a
-// second branch exists.
+// cream column of at most 1280px. One tree serves every width: the rail and
+// the tab bar come and go with the breakpoint but the inset around the
+// children stays mounted, so a resize never resets the screen. The links are
+// plain anchors; the prototype has no router yet. The switcher slot above
+// the items stays empty until a second branch exists. Sign out is a no-op in
+// the prototype. The tab bar pads for `env(safe-area-inset-bottom)`, which
+// only takes effect once the root layout sets `viewport.viewportFit = "cover"`
+// at wiring time.
 
 export type AdminSection = "home" | "revenue" | "passes" | "october" | "customers"
 
@@ -47,23 +51,28 @@ const NAV: { id: AdminSection; label: string; href: string; icon: LucideIcon }[]
   { id: "customers", label: "Customers", href: "/admin/customers", icon: Users },
 ]
 
-const LG_QUERY = "(min-width: 1024px)"
 const CONTENT = "mx-auto w-full max-w-7xl container-padding-x"
+// The badge is 813 by 573; the width props keep its shape so next/image never squashes it.
+const LOGO = "/images/logo-badge.png"
 
-const subscribeLg = (onChange: () => void) => {
-  const mql = window.matchMedia(LG_QUERY)
-  mql.addEventListener("change", onChange)
-  return () => mql.removeEventListener("change", onChange)
+// One subscribe function per query, so useSyncExternalStore keeps its listener across renders.
+const subscribers = new Map<string, (onChange: () => void) => () => void>()
+const subscribeTo = (query: string) => {
+  let subscribe = subscribers.get(query)
+  if (!subscribe) {
+    subscribe = (onChange) => {
+      const mql = window.matchMedia(query)
+      mql.addEventListener("change", onChange)
+      return () => mql.removeEventListener("change", onChange)
+    }
+    subscribers.set(query, subscribe)
+  }
+  return subscribe
 }
-const belowLgNow = () => !window.matchMedia(LG_QUERY).matches
 
-/** True under 1024px, where the rail rests on its icons; false on the server. */
-function useBelowLg(): boolean {
-  return useSyncExternalStore(subscribeLg, belowLgNow, () => false)
-}
-
-function Logo({ size }: { size: 36 | 40 }) {
-  return <Image src="/images/logo-badge.png" alt="Trailhead" width={size} height={size} className={cn("shrink-0", size === 40 ? "size-10" : "size-9")} />
+/** A media query as a store: current on the client, `false` on the server. The Sidebar primitive keeps its own `useIsMobile` for its sheet. */
+function useMedia(query: string): boolean {
+  return useSyncExternalStore(subscribeTo(query), () => window.matchMedia(query).matches, () => false)
 }
 
 function Rail({ current, user, switcher }: Pick<AdminShellProps, "current" | "user" | "switcher">) {
@@ -71,7 +80,7 @@ function Rail({ current, user, switcher }: Pick<AdminShellProps, "current" | "us
     <Sidebar collapsible="icon" className="motion-reduce:transition-none">
       <SidebarHeader>
         <div className="flex h-10 items-center gap-2 px-1 group-data-[collapsible=icon]:px-0">
-          <Logo size={40} />
+          <Image src={LOGO} alt="Trailhead" width={57} height={40} className="h-10 w-auto shrink-0 group-data-[collapsible=icon]:h-7" />
           <span className="truncate font-display text-lg text-sidebar-foreground group-data-[collapsible=icon]:hidden">Trailhead</span>
         </div>
         {switcher !== undefined && (
@@ -120,7 +129,7 @@ function TabBar({ current }: Pick<AdminShellProps, "current">) {
     <nav
       aria-label="Main"
       data-slot="admin-tabbar"
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-sidebar-border bg-sidebar pb-[env(safe-area-inset-bottom)] text-sidebar-foreground"
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-sidebar-border bg-sidebar pb-[env(safe-area-inset-bottom)] text-sidebar-foreground md:hidden"
     >
       <ul className="grid grid-cols-5">
         {NAV.map(({ id, label, href, icon: Icon }) => {
@@ -131,7 +140,7 @@ function TabBar({ current }: Pick<AdminShellProps, "current">) {
                 href={href}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "flex flex-col items-center gap-0.5 pb-1.5 pt-1.5 text-[11px] font-medium leading-tight outline-hidden focus-visible:ring-2 focus-visible:ring-sidebar-ring",
+                  "flex flex-col items-center gap-0.5 pb-1.5 pt-1.5 text-xs font-medium leading-tight outline-hidden focus-visible:ring-2 focus-visible:ring-sidebar-ring",
                   active ? "text-sidebar-primary-foreground" : "text-sidebar-foreground/80",
                 )}
               >
@@ -148,38 +157,29 @@ function TabBar({ current }: Pick<AdminShellProps, "current">) {
   )
 }
 
-function DesktopShell({ current, user, switcher, defaultOpen = true, children }: AdminShellProps) {
-  const belowLg = useBelowLg()
+export function AdminShell({ current, user, switcher, defaultOpen = true, children }: AdminShellProps) {
+  const phone = useMedia("(max-width: 767px)")
+  const belowLg = useMedia("(max-width: 1023px)")
   // Until the trigger is used the rail follows the width: icons under 1024px, the default above. A toggle is kept across resizes.
   const [choice, setChoice] = useState<boolean | null>(null)
   const open = choice ?? (belowLg ? false : defaultOpen)
   return (
-    <SidebarProvider data-slot="admin-shell" open={open} onOpenChange={setChoice}>
-      <Rail current={current} user={user} switcher={switcher} />
+    <SidebarProvider data-slot="admin-shell" data-phone={phone || undefined} open={open} onOpenChange={setChoice}>
+      {phone ? null : <Rail current={current} user={user} switcher={switcher} />}
       <SidebarInset className="min-h-svh bg-cream">
-        <div className={cn(CONTENT, "flex h-14 shrink-0 items-center")}>
-          <SidebarTrigger className="-ml-1.5 text-navy" />
+        <div className={cn(CONTENT, "flex h-14 shrink-0 items-center justify-between")}>
+          {phone ? (
+            <>
+              <Image src={LOGO} alt="Trailhead" width={51} height={36} className="h-9 w-auto shrink-0" />
+              {switcher !== undefined && <div data-slot="admin-switcher">{switcher}</div>}
+            </>
+          ) : (
+            <SidebarTrigger className="-ml-1.5 text-navy" />
+          )}
         </div>
-        <div className={cn(CONTENT, "pb-8 pt-2 lg:pt-4")}>{children}</div>
+        <div className={cn(CONTENT, "pt-2 lg:pt-4", phone ? "pb-[calc(5rem+env(safe-area-inset-bottom))]" : "pb-8")}>{children}</div>
       </SidebarInset>
+      {phone && <TabBar current={current} />}
     </SidebarProvider>
   )
-}
-
-function PhoneShell({ current, switcher, children }: AdminShellProps) {
-  return (
-    <div data-slot="admin-shell" data-phone="" className="min-h-svh bg-cream">
-      <header className="flex h-14 items-center justify-between px-4">
-        <Logo size={36} />
-        {switcher !== undefined && <div data-slot="admin-switcher">{switcher}</div>}
-      </header>
-      <main className={cn(CONTENT, "pb-20 pt-2")}>{children}</main>
-      <TabBar current={current} />
-    </div>
-  )
-}
-
-export function AdminShell(props: AdminShellProps) {
-  const isMobile = useIsMobile()
-  return isMobile ? <PhoneShell {...props} /> : <DesktopShell {...props} />
 }

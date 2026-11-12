@@ -2,19 +2,21 @@ import { afterEach, describe, expect, it, vi } from "vitest"
 import { render, screen, within } from "@testing-library/react"
 import { AdminShell } from "./AdminShell"
 
-const LG = "(min-width: 1024px)"
-
-/** jsdom has no matchMedia; the rail reads `innerWidth` for the phone switch and the lg query for the icon collapse. */
+/** jsdom has no matchMedia; answer `(max-width: Npx)` and `(min-width: Npx)` queries for the given width. `innerWidth` is set for the Sidebar primitive's own hook. */
 function stubViewport(width: number) {
   Object.defineProperty(window, "innerWidth", { value: width, configurable: true, writable: true })
   vi.stubGlobal(
     "matchMedia",
-    vi.fn((query: string) => ({
-      matches: query === LG && width >= 1024,
-      media: query,
-      addEventListener: vi.fn(),
-      removeEventListener: vi.fn(),
-    })),
+    vi.fn((query: string) => {
+      const max = /max-width:\s*(\d+)px/.exec(query)
+      const min = /min-width:\s*(\d+)px/.exec(query)
+      return {
+        matches: max ? width <= Number(max[1]) : min ? width >= Number(min[1]) : false,
+        media: query,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      }
+    }),
   )
 }
 
