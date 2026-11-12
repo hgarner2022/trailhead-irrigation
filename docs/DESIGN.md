@@ -14,11 +14,11 @@ Phase 1 is light mode only. Whitespace is generous; density comes from the data 
 
 ### Spacing
 
-Spacing uses Tailwind's default 4px grid and nothing outside it. The main column is `max-w-7xl` with `container-padding-x` for its side gutters, the same utilities the marketing site uses, so the app and the site share one rhythm. Stat tiles sit four across on a laptop and two across on a phone, and the two column layouts on Home stack on a phone. The sidebar collapses to icons at 1024px and becomes a bottom tab bar at 768px and below.
+Spacing uses Tailwind's default 4px grid and nothing outside it. The main column is `max-w-7xl` with `container-padding-x` for its side gutters, the same utilities the marketing site uses, so the app and the site share one rhythm. Stat tiles sit four across on a laptop and two across on a phone, and the two column layouts on Home stack on a phone. The sidebar collapses to icons at 1024px and becomes a bottom tab bar below 768px (767 and under, the same point where Tailwind's `md:` flips). `useIsMobile` switches the sidebar to its sheet; the bottom tab bar and the 1024px icon collapse are separate pieces built in AdminShell.
 
 ## Tokens
 
-Every colour the app uses is a token in `src/app/globals.css`, inside the `@theme inline` block. The brand tokens came first and belong to the marketing site as well. The app tokens are mapped onto them; no new hue was invented. In Tailwind they are used as `bg-sidebar`, `text-positive`, `border-input`, `fill-chart-1` and so on. `@theme inline` emits a token only where a utility class uses it, so `var(--color-x)` in an inline style or chart config is undefined unless some class also uses that token; charts and inline styles use classes or read the hex from one shared constants module that mirrors globals.css.
+Every colour the app uses is a token in `src/app/globals.css`, inside the `@theme inline` block. The brand tokens came first and belong to the marketing site as well. The app tokens are mapped onto them; no new hue was invented. In Tailwind they are used as `bg-sidebar`, `text-positive`, `border-input`, `fill-chart-1` and so on. `@theme inline` inlines token values into the utilities that use them and only emits the `--color-x` custom property on `:root` when some generated CSS references it with `var()`. So `var(--color-chart-1)` in a chart config or inline style is undefined unless a class such as `fill-(--color-chart-1)` or `stroke-(--color-chart-1)` is also present; charts anchor their series that way.
 
 ### Brand tokens
 
@@ -38,7 +38,7 @@ Every colour the app uses is a token in `src/app/globals.css`, inside the `@them
 | `--color-success` | `#16A34A` | Green | Check marks, healthy lawn, good outcomes |
 | `--color-background` | `#FFFFFF` | White | Page background on the marketing site, cards in the app |
 | `--color-foreground` | `#1E293B` | Charcoal | Default text |
-| `--color-muted-foreground` | `#78716C` | Mid grey | Labels, captions, helper text |
+| `--color-muted-foreground` | `#756E69` | Mid grey, a shade darker than `--color-muted` | Labels, captions, helper text; 4.59:1 on stone, 4.8 on cream, 5.0 on white |
 | `--color-card` | `#FFFFFF` | White | Card surface |
 | `--color-card-foreground` | `#1E293B` | Charcoal | Text on a card |
 

@@ -18,7 +18,7 @@
 
   --color-background: #FFFFFF;
   --color-foreground: #1E293B;
-  --color-muted-foreground: #78716C;
+  --color-muted-foreground: #756E69;     /* labels and helper text; 4.59:1 on stone, 4.8 on cream, 5.0 on white */
   --color-card: #FFFFFF;
   --color-card-foreground: #1E293B;
 

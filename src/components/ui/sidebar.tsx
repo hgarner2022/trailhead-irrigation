@@ -606,11 +606,11 @@ function SidebarMenuSkeleton({
 }: React.ComponentProps<"div"> & {
   showIcon?: boolean
 }) {
-  // Random width between 50 to 90%.
-  const width = React.useMemo(() => {
-    // eslint-disable-next-line react-hooks/purity -- shadcn picks the width once per mount on purpose
-    return `${Math.floor(Math.random() * 40) + 50}%`
-  }, [])
+  // A stable width between 50 and 90%, derived from the id so the server and
+  // the client agree (shadcn's Math.random() here is a hydration mismatch).
+  const id = React.useId()
+  const n = [...id].reduce((a, c) => a + c.charCodeAt(0), 0)
+  const width = `${50 + (n % 40)}%`
 
   return (
     <div
