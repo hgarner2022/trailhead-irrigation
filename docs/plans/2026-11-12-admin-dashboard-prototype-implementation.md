@@ -462,7 +462,7 @@ Commit: `Add SeasonLine, the season arc for the business and for one customer`
 
 **Files:**
 - Create: `src/components/blocks/PassCard.tsx`, `PassCard.stories.tsx`, `PassCard.test.tsx`
-- Create: `public/images/pass-card-art.png` (placeholder export of the logo badge on a cream-to-amber gradient until Hannah's generated artwork lands; 1600 by 1000)
+- Use: `public/images/pass-card-art.webp` (Hannah's chosen artwork, 2000 by 1250, committed 2026-11-12; `pass-card-art-alt.webp` is the alternate)
 
 **Props:** `{ pass: Pass; size?: "full" | "thumb"; interactive?: boolean; className?: string }`
 
