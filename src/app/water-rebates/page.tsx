@@ -171,7 +171,7 @@ export default function WaterRebatesPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {HOW_IT_WORKS.map((item) => (
               <div key={item.step} className="flex flex-col items-center text-center gap-4">
-                <div className="flex items-center justify-center h-14 w-14 rounded-full bg-primary text-white text-xl font-bold">
+                <div className="flex items-center justify-center h-14 w-14 rounded-full bg-primary-dark text-white text-xl font-bold">
                   {item.step}
                 </div>
                 <item.icon className="h-8 w-8 text-navy" />

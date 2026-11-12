@@ -82,7 +82,7 @@ export function CalculatorClient() {
                     className={cn(
                       "px-3 py-1.5 rounded-full text-sm border transition-colors",
                       sqft === p.value
-                        ? "border-primary bg-primary text-white"
+                        ? "border-primary-dark bg-primary-dark text-white"
                         : "border-border bg-background text-foreground hover:border-primary/50"
                     )}
                   >

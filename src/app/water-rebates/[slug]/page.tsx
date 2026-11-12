@@ -130,7 +130,7 @@ export default async function CityRebatePage({ params }: { params: Promise<{ slu
           <ol className="flex flex-col gap-4">
             {city.howToApply.steps.map((step, index) => (
               <li key={index} className="flex items-start gap-4">
-                <span className="flex items-center justify-center h-8 w-8 rounded-full bg-primary text-white text-sm font-bold shrink-0">
+                <span className="flex items-center justify-center h-8 w-8 rounded-full bg-primary-dark text-white text-sm font-bold shrink-0">
                   {index + 1}
                 </span>
                 <p className="text-foreground leading-relaxed pt-1">{step}</p>

@@ -215,7 +215,8 @@ When you need a new section pattern:
 | Token | Hex | Usage |
 |-------|-----|-------|
 | `--primary` | `#D97706` | Orange — CTAs, accents, highlights (from logo sun/subtext) |
-| `--primary-dark` | `#B45309` | Hover states for primary |
+| `--primary-dark` | `#B45309` | Resting background of the primary button (Nov 12 2026, WCAG AA); hover for other orange elements |
+| `--primary-deep` | `#92400E` | Hover for buttons resting on primary-dark |
 | `--primary-light` | `#F59E0B` | Light accent variant |
 | `--navy` | `#2B3544` | Dark navy — headers, hero backgrounds (from logo badge) |
 | `--navy-light` | `#3D4F63` | Lighter navy for secondary text |

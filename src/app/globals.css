@@ -3,6 +3,7 @@
 @theme inline {
   --color-primary: #D97706;
   --color-primary-dark: #B45309;
+  --color-primary-deep: #92400E;         /* hover for buttons that rest on primary-dark */
   --color-primary-light: #F59E0B;
   --color-navy: #2B3544;
   --color-navy-light: #3D4F63;

@@ -23,7 +23,8 @@ Every colour the app uses is a token in `src/app/globals.css`, inside the `@them
 | Token | Value | Meaning | Where it is used |
 |---|---|---|---|
 | `--color-primary` | `#D97706` | Orange, from the logo sun | Primary buttons, links, highlights, the active nav item |
-| `--color-primary-dark` | `#B45309` | Darker orange | Hover state for primary |
+| `--color-primary-dark` | `#B45309` | Darker orange | Resting background of the primary button (about 5.0:1 with white text); hover for other orange elements |
+| `--color-primary-deep` | `#92400E` | Deepest orange | Hover state for buttons that rest on primary-dark |
 | `--color-primary-light` | `#F59E0B` | Lighter orange | Accents on navy, the second line of the hero tagline |
 | `--color-navy` | `#2B3544` | Dark navy, from the logo badge | Headers, the navy band on each page, the sidebar rail |
 | `--color-navy-light` | `#3D4F63` | Lighter navy | Secondary text on navy, sidebar hover and border |
@@ -147,4 +148,4 @@ The app follows the same copy rules as the site. Headings are sentence case. Sen
 
 2026-11-12. SeasonLine and PassCard are built first, because nothing like them exists to copy and they decide whether the direction lands.
 
-2026-11-12. Open: the primary button, white on `#D97706`, measures 3.18:1 contrast, below WCAG AA's 4.5:1 for normal text. The Button story carries a scoped `color-contrast` exception. The options are `--primary-dark` `#B45309` as the resting background (about 5.0:1) or navy text on orange. Hannah decides, and the exception comes out when the button changes.
+2026-11-12: the primary button rests on primary-dark (#B45309, about 5.0:1 with white text) and hovers to primary-deep (#92400E), chosen by Hannah over navy text on orange. The logo orange (--primary) stays for accents, chips, tints and text on navy. The Button story's contrast exception is gone.
