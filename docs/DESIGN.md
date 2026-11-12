@@ -18,7 +18,7 @@ Spacing uses Tailwind's default 4px grid and nothing outside it. The main column
 
 ## Tokens
 
-Every colour the app uses is a token in `src/app/globals.css`, inside the `@theme inline` block. The brand tokens came first and belong to the marketing site as well. The app tokens are mapped onto them; no new hue was invented. In Tailwind they are used as `bg-sidebar`, `text-positive`, `border-input`, `fill-chart-1` and so on.
+Every colour the app uses is a token in `src/app/globals.css`, inside the `@theme inline` block. The brand tokens came first and belong to the marketing site as well. The app tokens are mapped onto them; no new hue was invented. In Tailwind they are used as `bg-sidebar`, `text-positive`, `border-input`, `fill-chart-1` and so on. `@theme inline` emits a token only where a utility class uses it, so `var(--color-x)` in an inline style or chart config is undefined unless some class also uses that token; charts and inline styles use classes or read the hex from one shared constants module that mirrors globals.css.
 
 ### Brand tokens
 
@@ -55,7 +55,7 @@ Every colour the app uses is a token in `src/app/globals.css`, inside the `@them
 | `--color-destructive` | `#B91C1C` | Red | Cancel and delete actions, error text, the failed status |
 | `--color-destructive-foreground` | `#FFFFFF` | White | Text on a destructive button |
 | `--color-warning` | `#B45309` | Primary dark | Past due, needs attention, a delta that is bad for the business |
-| `--color-positive` | `#15803D` | Readable green, about 5:1 on white | Paid, confirmed, a delta that is good for the business; it is used as text, which is why it is darker than `--color-success` |
+| `--color-positive` | `#15803D` | Readable green, about 5:1 on white | Paid, confirmed, a delta that is good for the business; it is used as text, which is why it is darker than `--color-success`. 4.8:1 on cream, so it is for text on white or cream only. |
 | `--color-input` | `#E7E5E4` | Border | Input and select borders |
 | `--color-ring` | `#D97706` | Primary | Focus ring on new primitives (`ring-ring`); the existing primitives use `ring-primary/50` and may stay that way until touched |
 | `--color-sidebar` | `#2B3544` | Navy | The sidebar rail background |

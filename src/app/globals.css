@@ -1,4 +1,5 @@
 @import "tailwindcss";
+/* docs mention class names in prose; keep them out of the scan */
 @source not "../../docs";
 
 @theme inline {
