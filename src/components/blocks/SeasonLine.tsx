@@ -1,13 +1,12 @@
 import { Check } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { PassVisit } from "@/lib/admin/types"
-import { formatMoney } from "@/lib/admin/metrics"
+import { formatMoney, visitMonth } from "@/lib/admin/metrics"
 import {
   SEASON_MONTHS,
   listJoin,
   markerAlign,
   monthName,
-  monthOf,
   monthShort,
   reservedWeek,
   seasonPhase,
@@ -20,7 +19,8 @@ import {
 // money filling it from the bottom in orange; in customer mode one pass's
 // three visits sit on the line as dots. The track and the month row are the
 // same in both modes, so the two read as one thing. Pure render, no hooks;
-// nothing moves, the sheen belongs to PassCard.
+// nothing moves, the sheen belongs to PassCard. `today` and the stored dates
+// are read as UTC date prefixes until the wiring phase converts to Mountain time.
 
 export interface SeasonBar {
   month: number
@@ -33,9 +33,9 @@ export interface SeasonLineProps {
   /** ISO date; defaults to now */
   today?: string
   mode: "business" | "customer"
-  /** business mode: one entry per month that has committed money */
+  /** business mode: one entry per month, as `committedByMonth` builds it; a second entry for the same month is ignored */
   bars?: SeasonBar[]
-  /** customer mode: the pass's three visits */
+  /** customer mode: the pass's three visits; two in the same month share that column */
   visits?: PassVisit[]
   /** one line under the track, read into the description as well */
   caption?: string
@@ -92,19 +92,20 @@ function BarCell({ bar, max }: { bar?: SeasonBar; max: number }) {
   )
 }
 
-function DotCell({ visit }: { visit?: PassVisit }) {
-  if (!visit) return <div />
+function Dot({ visit, crowded }: { visit: PassVisit; crowded: boolean }) {
   const state = visitState(visit)
   const reserved = isReserved(visit)
   const blowout = visit.kind === "blowout"
+  const name = VISIT_NAMES[visit.kind]
   return (
-    <div className="relative flex flex-col items-center justify-end pb-5 text-center">
-      <span className="text-xs leading-tight text-foreground">{VISIT_NAMES[visit.kind]}</span>
+    <div className="relative flex flex-col items-center pb-5 text-center">
+      <span className={cn("text-xs leading-tight text-foreground", crowded && "@max-[400px]:hidden")}>{name}</span>
+      {crowded && <span className="hidden text-xs leading-tight text-foreground @max-[400px]:inline">{name[0]}</span>}
       {reserved && <span className="text-xs font-medium leading-tight text-primary-dark">Reserved</span>}
       <span
         data-slot="season-dot"
         data-state={state}
-        data-month={monthOf(visit) ?? undefined}
+        data-month={visitMonth(visit) ?? undefined}
         data-reserved={reserved || undefined}
         className={cn(
           "absolute bottom-0 left-1/2 flex -translate-x-1/2 translate-y-[calc(50%+1px)] items-center justify-center rounded-full",
@@ -121,11 +122,25 @@ function DotCell({ visit }: { visit?: PassVisit }) {
   )
 }
 
+// Two visits in one month sit side by side in that column, each with its own label.
+function DotCell({ visits }: { visits: PassVisit[] }) {
+  if (!visits.length) return <div />
+  return (
+    <div className="flex items-end justify-center gap-4">
+      {visits.map((v, i) => (
+        <Dot key={`${v.kind}-${i}`} visit={v} crowded={visits.length > 1} />
+      ))}
+    </div>
+  )
+}
+
 export function SeasonLine(props: SeasonLineProps) {
   const { season, mode, caption, className } = props
   const today = props.today ?? new Date().toISOString().slice(0, 10)
-  const bars = (props.bars ?? []).filter((b) => SEASON_MONTHS.includes(b.month))
-  const visits = (props.visits ?? []).filter((v) => SEASON_MONTHS.includes(monthOf(v) ?? 0))
+  const bars = SEASON_MONTHS.flatMap((m) => (props.bars ?? []).filter((b) => b.month === m).slice(0, 1))
+  // Visits grouped by column, in month order; the picture and the description both read this list.
+  const byMonth = SEASON_MONTHS.map((m) => (props.visits ?? []).filter((v) => visitMonth(v) === m))
+  const visits = byMonth.flat()
   const max = Math.max(1, ...bars.map((b) => b.committed))
 
   const phase = seasonPhase(today, season)
@@ -148,16 +163,16 @@ export function SeasonLine(props: SeasonLineProps) {
             {todayLabel}
           </span>
         </div>
-        <div className={cn("grid grid-cols-8 border-b-2 border-border", mode === "business" ? "h-24" : "h-14")}>
-          {SEASON_MONTHS.map((month) =>
+        <div className={cn("relative z-10 grid grid-cols-8 border-b-2 border-border", mode === "business" ? "h-24" : "h-14")}>
+          {SEASON_MONTHS.map((month, i) =>
             mode === "business" ? (
               <BarCell key={month} bar={bars.find((b) => b.month === month)} max={max} />
             ) : (
-              <DotCell key={month} visit={visits.find((v) => monthOf(v) === month)} />
+              <DotCell key={month} visits={byMonth[i]} />
             ),
           )}
         </div>
-        <span aria-hidden className={cn("absolute top-5 -bottom-1 w-px bg-primary", align === "end" && "-translate-x-px")} style={markerStyle} />
+        <span aria-hidden className={cn("absolute top-5 -bottom-1 z-0 w-px bg-primary", align === "end" && "-translate-x-px")} style={markerStyle} />
       </div>
       <div className="grid grid-cols-8 pt-1.5">
         {SEASON_MONTHS.map((month, i) => (

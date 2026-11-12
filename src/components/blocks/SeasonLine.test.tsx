@@ -95,6 +95,31 @@ describe("SeasonLine in customer mode", () => {
     expect(screen.queryByText("Reserved")).not.toBeInTheDocument()
   })
 
+  it("reads windows the same way the money metrics do", () => {
+    const loose: PassVisit[] = [
+      { kind: "turn-on", window: "early April", amount: 145 },
+      { kind: "inspection", window: "Late April to May", amount: 145 },
+      { kind: "blowout", window: "Oct 13", amount: 95 },
+    ]
+    const { container } = render(<SeasonLine season={2027} mode="customer" visits={loose} today="2027-06-15" />)
+    expect(slots(container, "season-dot").map((d) => d.dataset.month)).toEqual(["4", "4", "10"])
+  })
+
+  it("shows two visits that share a month side by side and names both", () => {
+    const twoInJuly: PassVisit[] = [
+      visits[0],
+      { kind: "inspection", window: "July", amount: 145, scheduledAt: "2027-07-14T15:00:00Z" },
+      { kind: "blowout", window: "July 28", amount: 95 },
+    ]
+    const { container } = render(<SeasonLine season={2027} mode="customer" visits={twoInJuly} today="2027-06-15" />)
+    const july = slots(container, "season-dot").filter((d) => d.dataset.month === "7")
+    expect(july).toHaveLength(2)
+    expect(july[0].parentElement?.parentElement).toBe(july[1].parentElement?.parentElement)
+    const label = screen.getByRole("img").getAttribute("aria-label") ?? ""
+    expect(label).toContain("inspection scheduled for July 14")
+    expect(label).toContain("blowout in July 28")
+  })
+
   it("describes the customer's season in one sentence", () => {
     render(<SeasonLine season={2027} mode="customer" visits={visits} today="2027-06-15" />)
     const label = screen.getByRole("img").getAttribute("aria-label") ?? ""

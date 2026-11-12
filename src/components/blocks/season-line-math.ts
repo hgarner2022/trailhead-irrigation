@@ -1,9 +1,13 @@
 /**
- * The month and position maths behind SeasonLine, kept out of the component so
+ * The position and label maths behind SeasonLine, kept out of the component so
  * the render stays readable. The season runs April (4) to November (11), drawn
  * as eight equal columns; a position is a fraction of the track from 0 to 1.
+ * Which month a visit or window lands in is `visitMonth` / `monthInWindow` in
+ * `@/lib/admin/metrics`, the one rule shared with the money metrics; this file
+ * only keeps the display names. Dates are read as their UTC date prefix until
+ * the wiring phase converts stored times to Mountain time.
  */
-import type { PassVisit } from "@/lib/admin/types"
+import { monthInWindow } from "@/lib/admin/metrics"
 
 export const SEASON_START = 4
 export const SEASON_END = 11
@@ -16,19 +20,6 @@ export const MONTH_NAMES = [
 
 export const monthName = (month: number) => MONTH_NAMES[month - 1]
 export const monthShort = (month: number) => monthName(month).slice(0, 3)
-
-/** The first month named in a window such as "April to May" or "October, week of the 11th"; null when none. */
-export function monthFromWindow(window: string): number | null {
-  const first = window.toLowerCase().match(/[a-z]+/)?.[0]
-  const index = first ? MONTH_NAMES.findIndex((m) => m.toLowerCase() === first) : -1
-  return index === -1 ? null : index + 1
-}
-
-/** The month a pass visit lands in: its scheduled date if set, else its window. Same rule as `committedByMonth`. */
-export function monthOf(visit: PassVisit): number | null {
-  if (visit.scheduledAt) return Number(visit.scheduledAt.slice(5, 7))
-  return monthFromWindow(visit.window)
-}
 
 const daysIn = (year: number, month: number) => new Date(Date.UTC(year, month, 0)).getUTCDate()
 
@@ -69,9 +60,9 @@ export function markerAlign(position: number): "start" | "center" | "end" {
   return "center"
 }
 
-/** "October 11" from "October, week of the 11th"; null when the window names no week. */
+/** "October 11" from "October, week of the 11th" or "Oct, week of the 11th"; null when the window names no week. */
 export function reservedWeek(window: string): string | null {
-  const month = monthFromWindow(window)
+  const month = monthInWindow(window)
   const day = window.match(/week of the (\d{1,2})/i)?.[1]
   return month && day ? `${monthName(month)} ${Number(day)}` : null
 }

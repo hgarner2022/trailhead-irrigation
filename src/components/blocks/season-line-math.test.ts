@@ -1,31 +1,27 @@
 import { describe, it, expect } from "vitest"
+import { monthInWindow, visitMonth } from "@/lib/admin/metrics"
 import {
   listJoin,
   markerAlign,
-  monthFromWindow,
-  monthOf,
   reservedWeek,
   seasonPhase,
   seasonPosition,
   writtenDate,
 } from "./season-line-math"
 
-describe("monthFromWindow", () => {
-  it("reads the first month named in a window", () => {
-    expect(monthFromWindow("April to May")).toBe(4)
-    expect(monthFromWindow("July")).toBe(7)
-    expect(monthFromWindow("October, week of the 11th")).toBe(10)
+describe("the shared month rule", () => {
+  it("reads the first month named anywhere in a window, in full or abbreviated", () => {
+    expect(monthInWindow("April to May")).toBe(4)
+    expect(monthInWindow("July")).toBe(7)
+    expect(monthInWindow("October, week of the 11th")).toBe(10)
+    expect(monthInWindow("early April")).toBe(4)
+    expect(monthInWindow("Oct 13")).toBe(10)
+    expect(monthInWindow("Late April to May")).toBe(4)
+    expect(monthInWindow("whenever")).toBeNull()
   })
-  it("is null when no month is named", () => {
-    expect(monthFromWindow("whenever")).toBeNull()
-    expect(monthFromWindow("")).toBeNull()
-  })
-})
-
-describe("monthOf", () => {
   it("prefers the scheduled date over the window", () => {
-    expect(monthOf({ kind: "turn-on", window: "April to May", amount: 145, scheduledAt: "2027-05-03T16:00:00Z" })).toBe(5)
-    expect(monthOf({ kind: "inspection", window: "July", amount: 145 })).toBe(7)
+    expect(visitMonth({ kind: "turn-on", window: "April to May", amount: 145, scheduledAt: "2027-05-03T16:00:00Z" })).toBe(5)
+    expect(visitMonth({ kind: "inspection", window: "July", amount: 145 })).toBe(7)
   })
 })
 
@@ -64,6 +60,7 @@ describe("labels", () => {
   it("reads the reserved week from a blowout window", () => {
     expect(reservedWeek("October, week of the 11th")).toBe("October 11")
     expect(reservedWeek("October, week of the 4th")).toBe("October 4")
+    expect(reservedWeek("Oct, week of the 11th")).toBe("October 11")
     expect(reservedWeek("October")).toBeNull()
   })
   it("writes a date out in full", () => {

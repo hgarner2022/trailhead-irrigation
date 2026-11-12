@@ -112,7 +112,7 @@ The reference libraries `ui/` and `pro-blocks/` at the repo root are read only a
 
 Storybook is the catalog and the approval surface. Hannah approves a screen in Storybook, and only then is it wired to data.
 
-Every file in `src/components/ui/` and `src/components/blocks/` has a sibling `*.stories.tsx`. Every block has `Default`, `Empty`, `Loading` (a skeleton) and `Error` (one line that says what to do) stories, plus `Phone` where the block changes shape on a phone. Every screen has `Default`, `NoDataYet`, `Phone` and `Tablet`. Fixtures come from the anonymised Jobber snapshot so every story shows real shaped data.
+Every file in `src/components/ui/` and `src/components/blocks/` has a sibling `*.stories.tsx`. Every block has `Default`, `Empty` and `Phone` stories; `Loading` (a skeleton) and `Error` (one line that says what to do) where the block owns async state. A pure presentational block that renders from props the screen already has needs no skeleton; the screen's `loading.tsx` or Suspense boundary covers it. Every screen has `Default`, `NoDataYet`, `Phone` and `Tablet`. Fixtures come from the anonymised Jobber snapshot so every story shows real shaped data.
 
 `npm run storybook` opens the catalog on port 6006. `npm test` runs the unit project only; the story project needs a browser and runs separately through `npm run test:stories`.
 
@@ -155,5 +155,7 @@ The app follows the same copy rules as the site. Headings are sentence case. Sen
 2026-11-12. Storybook is the catalog and the approval surface. Nothing is wired to data until its screen story is approved.
 
 2026-11-12. SeasonLine and PassCard are built first, because nothing like them exists to copy and they decide whether the direction lands.
+
+2026-11-12. SeasonLine has no Loading or Error story: it is pure props.
 
 2026-11-12. The primary button rests on primary-dark (#B45309, about 5.0:1 with white text) and hovers to primary-deep (#92400E), chosen by Hannah over navy text on orange. The logo orange (--primary) stays for accents, chips, tints and text on navy. The Button story's contrast exception is gone.

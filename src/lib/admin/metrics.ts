@@ -15,14 +15,19 @@ const counts = (p: Pass) => p.status === "active"
 const day = (iso: string) => iso.slice(0, 10)
 const byIso = <T>(key: (x: T) => string) => (a: T, b: T) => (key(a) < key(b) ? -1 : key(a) > key(b) ? 1 : 0)
 
-/** The month a pass visit lands in: its scheduled date if set, else the first month named anywhere in its window. */
-function visitMonth(visit: PassVisit): number | null {
-  if (visit.scheduledAt) return Number(visit.scheduledAt.slice(5, 7))
-  for (const word of visit.window.toLowerCase().match(/[a-z]+/g) ?? []) {
+/** The first month named anywhere in a window ("early April", "Oct 13", "Late April to May"), by full name or three-letter abbreviation; null when none. */
+export function monthInWindow(window: string): number | null {
+  for (const word of window.toLowerCase().match(/[a-z]+/g) ?? []) {
     const month = MONTH_BY_NAME.get(word)
     if (month) return month
   }
   return null
+}
+
+/** The month a pass visit lands in: its scheduled date if set, else the first month named in its window. The one rule; SeasonLine draws from it too. */
+export function visitMonth(visit: PassVisit): number | null {
+  if (visit.scheduledAt) return Number(visit.scheduledAt.slice(5, 7))
+  return monthInWindow(visit.window)
 }
 
 /** Every visit amount on every active pass. */

@@ -21,6 +21,12 @@ it("defaults to fixtures when ADMIN_DATA_SOURCE is unset", async () => {
   expect(d.organizationId).toBe("org_trailhead")
 })
 
+it("treats an empty ADMIN_DATA_SOURCE as unset", async () => {
+  vi.stubEnv("ADMIN_DATA_SOURCE", "")
+  const d = await getAdminData()
+  expect(d.organizationId).toBe("org_trailhead")
+})
+
 it("reads ADMIN_DATA_SOURCE when no argument is given", async () => {
   vi.stubEnv("ADMIN_DATA_SOURCE", "live")
   await expect(getAdminData()).rejects.toThrow(/not wired yet/)
