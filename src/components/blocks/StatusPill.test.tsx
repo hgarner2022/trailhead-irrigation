@@ -28,13 +28,13 @@ describe("StatusPill", () => {
   })
 
   it.each<[PillStatus, string]>([
-    ["active", "text-positive"],
-    ["paid", "text-positive"],
-    ["completed", "text-positive"],
-    ["scheduled", "text-primary-dark"],
+    ["active", "text-positive-deep"],
+    ["paid", "text-positive-deep"],
+    ["completed", "text-positive-deep"],
+    ["scheduled", "text-primary-deep"],
     ["unpaid", "text-foreground"],
     ["unscheduled", "text-foreground"],
-    ["overdue", "text-warning"],
+    ["overdue", "text-destructive"],
     ["cancelled", "text-muted-foreground"],
     ["lapsed", "text-muted-foreground"],
   ])("colours %s by meaning with %s", (status, cls) => {
@@ -42,13 +42,13 @@ describe("StatusPill", () => {
     expect(pill()).toHaveClass(cls)
   })
 
-  it.each<[PillStatus, string]>([
-    ["paid", "border-positive/30"],
-    ["overdue", "border-warning/30"],
-    ["scheduled", "border-primary/30"],
-  ])("fills the coloured %s pill white so the ink keeps its contrast on any canvas", (status, border) => {
+  it.each<[PillStatus, string, string]>([
+    ["paid", "bg-positive/10", "border-positive/30"],
+    ["scheduled", "bg-primary/10", "border-primary/30"],
+    ["overdue", "bg-destructive/10", "border-destructive/30"],
+  ])("tints the coloured %s pill with its border", (status, tint, border) => {
     render(<StatusPill status={status} />)
-    expect(pill()).toHaveClass("bg-background", border)
+    expect(pill()).toHaveClass(tint, border)
   })
 
   it("keeps the caller's class", () => {

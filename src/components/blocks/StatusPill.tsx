@@ -4,13 +4,15 @@ import type { Invoice, PassStatus, VisitStatus } from "@/lib/admin/types"
 
 // One chip for every status word in the app, coloured by what the status
 // means for the business (docs/DESIGN.md, Copy): good outcomes green, a
-// booked visit orange, past due warning, and the quiet states grey. The
-// label is the plain word in sentence case. Pure render, server component.
+// booked visit orange, past due red, and the quiet states grey. The label is
+// the plain word in sentence case. Pure render, server component.
 //
-// The coloured pills sit on an opaque white fill, not a tint: at 12px the
-// positive and warning inks reach 5.0:1 on white but only 4.2 to 4.4 on a 10%
-// tint over cream or white, under the 4.5 axe demands. A tint needs darker
-// ink tokens first.
+// The coloured pills sit on a 10% tint with an ink dark enough for 12px text
+// (4.5:1 or better). Measured over white and over cream: positive-deep
+// #166534 on bg-positive/10 is 6.23 and 5.99; primary-deep #92400E on
+// bg-primary/10 is 6.36 and 6.13; destructive #B91C1C on bg-destructive/10
+// is 5.45 and 5.25 (5.02 on stone). The lighter positive and warning inks
+// only reach 4.2 to 4.4 on their tints, which is why they are not used here.
 
 export type PillStatus = PassStatus | VisitStatus | Invoice["status"]
 
@@ -26,10 +28,10 @@ const LABELS: Record<PillStatus, string> = {
   lapsed: "Lapsed",
 }
 
-const GOOD = "bg-background text-positive border-positive/30"
-const BOOKED = "bg-background text-primary-dark border-primary/30"
+const GOOD = "bg-positive/10 text-positive-deep border-positive/30"
+const BOOKED = "bg-primary/10 text-primary-deep border-primary/30"
 const WAITING = "bg-stone text-foreground border-border"
-const BAD = "bg-background text-warning border-warning/30"
+const BAD = "bg-destructive/10 text-destructive border-destructive/30"
 const OVER = "bg-stone text-muted-foreground border-border"
 
 const TONES: Record<PillStatus, string> = {

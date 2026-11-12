@@ -56,6 +56,7 @@ Every colour the app uses is a token in `src/app/globals.css`, inside the `@them
 | `--color-destructive-foreground` | `#FFFFFF` | White | Text on a destructive button |
 | `--color-warning` | `#B45309` | Primary dark | Past due, needs attention, a delta that is bad for the business |
 | `--color-positive` | `#15803D` | Readable green, about 5:1 on white | Paid, confirmed, a delta that is good for the business; it is used as text, which is why it is darker than `--color-success`. 4.8:1 on cream, so it is for text on white or cream only. |
+| `--color-positive-deep` | `#166534` | Darker green | Ink for 12px text on the positive tint, as in the active, paid and completed status pills: 6.2:1 on `bg-positive/10` over white, 6.0 over cream |
 | `--color-input` | `#E7E5E4` | Border | Input and select borders |
 | `--color-ring` | `#D97706` | Primary | Focus ring on new primitives (`ring-ring`); the existing primitives use `ring-primary/50` and may stay that way until touched |
 | `--color-sidebar` | `#2B3544` | Navy | The sidebar rail background |

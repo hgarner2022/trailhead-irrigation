@@ -38,6 +38,7 @@
   --color-destructive-foreground: #FFFFFF;
   --color-warning: #B45309;              /* = primary-dark */
   --color-positive: #15803D;             /* readable green, about 5:1 on white; used as text */
+  --color-positive-deep: #166534;        /* ink for text on the positive tint; 6.2:1 on bg-positive/10 */
   --color-input: #E7E5E4;                /* = border */
   --color-ring: #D97706;                 /* = primary */
 
