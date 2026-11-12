@@ -37,7 +37,7 @@ const meta = {
   title: "Screens/Checkout",
   component: CheckoutFlow,
   parameters: { layout: "fullscreen" },
-  args: { weeks, season: 2027, onComplete: fn(), onDone: fn() },
+  args: { weeks, season: 2027 },
 } satisfies Meta<typeof CheckoutFlow>
 export default meta
 type Story = StoryObj<typeof meta>
@@ -74,6 +74,7 @@ export const Done: Story = {
 
 /** Every question answered from the first screen through to the pass card. */
 export const Walkthrough: Story = {
+  args: { onComplete: fn() },
   globals: { viewport: { value: "wide", isRotated: false } },
   play: async ({ canvas, userEvent, args }) => {
     await userEvent.type(await canvas.findByLabelText("Street address"), "123 Trailhead Way")

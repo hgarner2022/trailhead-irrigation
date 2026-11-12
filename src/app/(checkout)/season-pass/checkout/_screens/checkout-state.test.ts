@@ -67,6 +67,12 @@ describe("step order", () => {
     expect(reducer({ ...filled, step: 1 }, { type: "back" }).step).toBe(1)
   })
 
+  it("never leaves Done: the season is reserved and the card step is not repeated", () => {
+    const done = { ...filled, step: 6, cardSaved: true }
+    expect(reducer(done, { type: "back" }).step).toBe(6)
+    expect(reducer(done, { type: "goTo", step: 5 }).step).toBe(6)
+  })
+
   it("jumps to a step inside the range", () => {
     expect(reducer(filled, { type: "goTo", step: 4 }).step).toBe(4)
     expect(reducer(filled, { type: "goTo", step: 9 }).step).toBe(6)
@@ -109,8 +115,10 @@ describe("canContinue", () => {
     expect(canContinue({ ...filled, step: 4 }, weeks)).toBe(true)
   })
 
-  it("card: always continues; done: never", () => {
+  it("card: continues while the chosen week still has a spot; done: never", () => {
     expect(canContinue({ ...filled, step: 5 }, weeks)).toBe(true)
+    expect(canContinue({ ...filled, step: 5, weekStart: "2027-10-11" }, weeks)).toBe(false)
+    expect(canContinue({ ...filled, step: 5, weekStart: null }, weeks)).toBe(false)
     expect(canContinue({ ...filled, step: 6 }, weeks)).toBe(false)
   })
 })

@@ -99,11 +99,14 @@ export function canContinue(state: CheckoutState, weeks: BlowoutWeek[]): boolean
     case "contact":
       return (["firstName", "email", "phone"] as const).every((f) => contactProblem(f, state[f]) === null)
     case "card":
-      return true
+      // The week can fill while the card form is open; the reservation must still hold when the card is saved.
+      return weekOpen(state.weekStart, weeks)
     default:
       return false
   }
 }
+
+const isDone = (state: CheckoutState) => STEPS[state.step - 1]?.key === "done"
 
 export function reducer(state: CheckoutState, action: CheckoutAction): CheckoutState {
   switch (action.type) {
@@ -114,10 +117,11 @@ export function reducer(state: CheckoutState, action: CheckoutAction): CheckoutS
       const saved = STEPS[state.step - 1].key === "card" ? true : state.cardSaved
       return { ...state, step: clampStep(state.step + 1), cardSaved: saved }
     }
+    // Done is terminal: the season is reserved, so there is no way back to the card step.
     case "back":
-      return { ...state, step: clampStep(state.step - 1) }
+      return isDone(state) ? state : { ...state, step: clampStep(state.step - 1) }
     case "goTo":
-      return { ...state, step: clampStep(action.step) }
+      return isDone(state) ? state : { ...state, step: clampStep(action.step) }
   }
 }
 

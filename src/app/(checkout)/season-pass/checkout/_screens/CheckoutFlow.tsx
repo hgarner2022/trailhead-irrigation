@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from "react"
+import { useEffect, useRef, useState, type KeyboardEvent } from "react"
 import Image from "next/image"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -24,7 +24,7 @@ export interface CheckoutFlowProps {
   /** open on this step; stories use it with `prefill` */
   initialStep?: number
   prefill?: Partial<CheckoutFields>
-  /** called once, when the card step is passed */
+  /** called once, when the card step is passed; Done is terminal, so the card step is never passed twice */
   onComplete?: (pass: Pass) => void
   onSaveImage?: (pass: Pass) => void
   onDone?: () => void
@@ -33,6 +33,8 @@ export interface CheckoutFlowProps {
 const BACKDROP = "/images/trail-mountain-meadow.jpg"
 const LOGO = "/images/logo-badge.png"
 const COLUMN = "mx-auto w-full max-w-2xl container-padding-x"
+/** The reserved moment gets the long rise; a step change gets a short one; the first question opens still. */
+const REVEAL_MS = { step: 300, done: 600 }
 
 /** Elements that use Enter and the arrow keys themselves. */
 function ownsKeys(target: HTMLElement): boolean {
@@ -40,8 +42,8 @@ function ownsKeys(target: HTMLElement): boolean {
   return target.tagName === "SELECT" || target.tagName === "TEXTAREA" || role === "combobox" || role === "listbox" || role === "option" || !!target.closest('[data-slot="select-content"]')
 }
 
-function StepBody({ children }: { children: React.ReactNode }) {
-  const ref = useReveal<HTMLDivElement>(300)
+function StepBody({ duration, enabled, children }: { duration: number; enabled: boolean; children: React.ReactNode }) {
+  const ref = useReveal<HTMLDivElement>(duration, enabled)
   return <div ref={ref}>{children}</div>
 }
 
@@ -50,13 +52,13 @@ export function CheckoutFlow({ weeks, season, initialZones, initialStep, prefill
   // The step on which Enter was pressed too early, so the contact step shows what is missing.
   const [attemptedStep, setAttemptedStep] = useState<number | null>(null)
   const section = useRef<HTMLElement>(null)
-  const questionId = useId()
+  // Set on the first move, so opening the page does not animate; Done always rises.
+  const [moved, setMoved] = useState(false)
   const { step } = state
   const current = STEPS[step - 1]
   const done = current.key === "done"
   const valid = canContinue(state, weeks)
   const attempted = attemptedStep === step
-  const pass = useMemo(() => toPass(state, season, weeks), [state, season, weeks])
 
   const set = <K extends keyof CheckoutFields>(field: K, value: CheckoutFields[K]) => dispatch({ type: "set", field, value })
   const next = () => {
@@ -66,8 +68,12 @@ export function CheckoutFlow({ weeks, season, initialZones, initialStep, prefill
     }
     if (current.key === "card") onComplete?.(toPass({ ...state, cardSaved: true }, season, weeks))
     dispatch({ type: "next", weeks })
+    setMoved(true)
   }
-  const back = () => dispatch({ type: "back" })
+  const back = () => {
+    dispatch({ type: "back" })
+    setMoved(true)
+  }
 
   // Each step opens with its input focused, or the section itself where there is none to type in.
   useEffect(() => {
@@ -78,17 +84,18 @@ export function CheckoutFlow({ weeks, season, initialZones, initialStep, prefill
 
   const onKeyDown = (event: KeyboardEvent<HTMLElement>) => {
     const target = event.target as HTMLElement
-    if (ownsKeys(target) || event.altKey || event.metaKey || event.ctrlKey) return
+    if (done || event.nativeEvent.isComposing || ownsKeys(target) || event.altKey || event.metaKey || event.ctrlKey) return
     const nav = target.closest("[data-nav]")
+    const typing = target.tagName === "INPUT"
     if (event.key === "Enter") {
       // A button answers Enter itself; a pressed pill or week card already holds its answer, so Enter moves on.
       if (nav || (target.tagName === "BUTTON" && target.getAttribute("aria-pressed") !== "true")) return
       event.preventDefault()
-      if (!done) next()
-    } else if (event.key === "ArrowDown") {
+      next()
+    } else if (event.key === "ArrowDown" && !typing) {
       event.preventDefault()
-      if (!done && valid) next()
-    } else if (event.key === "ArrowUp") {
+      if (valid) next()
+    } else if (event.key === "ArrowUp" && !typing) {
       event.preventDefault()
       if (step > 1) back()
     }
@@ -111,14 +118,16 @@ export function CheckoutFlow({ weeks, season, initialZones, initialStep, prefill
     case "card":
       body = <CardStep />
       break
-    default:
+    default: {
+      const pass = toPass(state, season, weeks)
       body = <DoneStep pass={pass} email={state.email} onSaveImage={() => onSaveImage?.(pass)} onDone={onDone} />
+    }
   }
 
   return (
     <div data-slot="checkout-flow" data-step={current.key} className="relative isolate min-h-svh bg-cream text-foreground">
       <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
-        <Image src={BACKDROP} alt="" fill sizes="100vw" className="object-cover opacity-[0.07]" />
+        <Image src={BACKDROP} alt="" fill sizes="100vw" quality={40} className="object-cover opacity-[0.07]" />
       </div>
 
       <div
@@ -133,16 +142,19 @@ export function CheckoutFlow({ weeks, season, initialZones, initialStep, prefill
         <div data-slot="checkout-progress" className="h-full bg-primary transition-[width] duration-300 ease-out motion-reduce:transition-none" style={{ width: `${(step / STEP_COUNT) * 100}%` }} />
       </div>
       <header className="fixed inset-x-0 top-1 z-10 flex items-center justify-between container-padding-x py-3">
-        <Image src={LOGO} alt="Trailhead Lawn & Irrigation" width={51} height={36} className="h-9 w-auto" />
-        <span data-slot="checkout-counter" className="text-xs text-muted-foreground tabular-nums">{`${step} of ${STEP_COUNT}`}</span>
+        <Image src={LOGO} alt="Trailhead Lawn & Irrigation" width={51} height={36} priority className="h-9 w-auto" />
+        {/* A small "2 of 6", not a numbered stepper (the PRD's rule); hidden from
+            readers because the progress bar's valuetext already says it. A point
+            for Hannah: keep it, or let the orange line stand alone. */}
+        <span data-slot="checkout-counter" aria-hidden="true" className="text-xs text-muted-foreground tabular-nums">{`${step} of ${STEP_COUNT}`}</span>
       </header>
+      {/* The one announcement per step. The section is not named, so focusing it stays quiet. */}
       <p aria-live="polite" className="sr-only">{`Step ${step} of ${STEP_COUNT}, ${current.question}`}</p>
 
-      <section key={step} ref={section} tabIndex={-1} aria-labelledby={questionId} onKeyDown={onKeyDown} className="flex min-h-svh flex-col outline-none">
+      <section key={step} ref={section} tabIndex={-1} onKeyDown={onKeyDown} className="flex min-h-svh flex-col outline-none">
         <div className={cn(COLUMN, "flex flex-1 flex-col justify-center pt-20 pb-8", current.key === "week" && "lg:max-w-4xl")}>
-          <StepBody>
+          <StepBody duration={done ? REVEAL_MS.done : REVEAL_MS.step} enabled={done || moved}>
             <h1
-              id={questionId}
               className={cn(
                 done
                   ? "text-xs font-semibold uppercase tracking-wide text-primary-dark"

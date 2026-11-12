@@ -29,22 +29,22 @@ const FIELD = "h-14 rounded-lg bg-background px-4 text-lg shadow-sm"
 const VISIT_SHORT = ["Turn-on", "Inspection", "Blowout"]
 const ZONE_OPTIONS = Array.from({ length: MAX_ZONES - MIN_ZONES + 1 }, (_, i) => MIN_ZONES + i)
 
-/** Fades and rises the element once when it mounts; still under reduced motion and in jsdom. */
-export function useReveal<T extends HTMLElement>(duration: number) {
+/** Fades and rises the element once when it mounts, when `enabled`; still under reduced motion and in jsdom. */
+export function useReveal<T extends HTMLElement>(duration: number, enabled = true) {
   const ref = useRef<T>(null)
   useLayoutEffect(() => {
     const el = ref.current
-    if (!el || typeof el.animate !== "function") return
+    if (!enabled || !el || typeof el.animate !== "function") return
     if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return
     const animation = el.animate(
       [
         { opacity: 0, transform: "translateY(16px)" },
         { opacity: 1, transform: "none" },
       ],
-      { duration, easing: "cubic-bezier(0.2, 0.7, 0.2, 1)", fill: "both" },
+      { duration, easing: "cubic-bezier(0.2, 0.7, 0.2, 1)", fill: "backwards" },
     )
     return () => animation.cancel()
-  }, [duration])
+  }, [duration, enabled])
   return ref
 }
 
@@ -214,9 +214,8 @@ export function CardStep() {
 }
 
 export function DoneStep({ pass, email, onSaveImage, onDone }: { pass: Pass; email: string; onSaveImage?: () => void; onDone?: () => void }) {
-  const ref = useReveal<HTMLDivElement>(600)
   return (
-    <div ref={ref}>
+    <div>
       <PassCard pass={pass} art="flat" priority />
       <p className="mt-8 text-lg text-foreground">
         {`Turn-on in April to May, inspection in July, blowout the week of ${writtenDate(pass.blowoutWeek)}. We'll email the details to ${email}.`}

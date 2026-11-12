@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeAll } from "vitest"
+import { describe, it, expect, vi, beforeAll, afterEach } from "vitest"
 import { render, screen, fireEvent, act } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
@@ -26,16 +26,24 @@ const answers: Partial<CheckoutFields> = {
 }
 
 const continueButton = () => screen.getByRole("button", { name: "Continue" })
-const progress = () => screen.getByRole("progressbar", { name: "Checkout progress" })
+const progress = () => document.querySelector('[role="progressbar"]') as HTMLElement
 const live = () => document.querySelector('[aria-live="polite"]') as HTMLElement
 const section = () => document.querySelector("section") as HTMLElement
+
+/** Stubs matchMedia so the reduced-motion query answers `reduce`. */
+function stubMotion(reduce: boolean) {
+  vi.stubGlobal(
+    "matchMedia",
+    vi.fn((query: string) => ({ matches: reduce && query.includes("reduce"), media: query, addEventListener: vi.fn(), removeEventListener: vi.fn() })),
+  )
+}
 
 describe("CheckoutFlow", () => {
   it("opens on the address question with Continue disabled", () => {
     render(<CheckoutFlow weeks={weeks} season={2027} />)
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Where is the yard?")
     expect(continueButton()).toBeDisabled()
-    expect(progress()).toHaveAttribute("aria-valuenow", "1")
+    expect(screen.getByRole("progressbar", { name: "Checkout progress" })).toHaveAttribute("aria-valuenow", "1")
     expect(live()).toHaveTextContent("Step 1 of 6, Where is the yard?")
     expect(screen.queryByRole("button", { name: "Back" })).not.toBeInTheDocument()
     expect(screen.getByLabelText("Street address")).toHaveFocus()
@@ -77,6 +85,25 @@ describe("CheckoutFlow", () => {
     expect(screen.getAllByRole("progressbar")[1]).toHaveAttribute("aria-valuenow", "3")
     fireEvent.keyDown(screen.getAllByRole("heading", { level: 1 })[1], { key: "ArrowUp" })
     expect(screen.getAllByRole("progressbar")[1]).toHaveAttribute("aria-valuenow", "2")
+  })
+
+  it("leaves the arrow keys to a text input and Enter to the town select and an unpressed pill", () => {
+    render(<CheckoutFlow weeks={weeks} season={2027} prefill={answers} />)
+    const address = screen.getByLabelText("Street address")
+    fireEvent.keyDown(address, { key: "ArrowDown" })
+    expect(progress()).toHaveAttribute("aria-valuenow", "1")
+    const town = screen.getByRole("combobox", { name: "Town" })
+    fireEvent.keyDown(town, { key: "Enter" })
+    expect(progress()).toHaveAttribute("aria-valuenow", "1")
+    fireEvent.keyDown(town, { key: "Escape" })
+    fireEvent.keyDown(address, { key: "Enter", isComposing: true })
+    expect(progress()).toHaveAttribute("aria-valuenow", "1")
+    fireEvent.keyDown(address, { key: "Enter" })
+    expect(progress()).toHaveAttribute("aria-valuenow", "2")
+    fireEvent.keyDown(screen.getByRole("button", { name: "12 zones", pressed: false }), { key: "Enter" })
+    expect(progress()).toHaveAttribute("aria-valuenow", "2")
+    fireEvent.keyDown(screen.getByRole("button", { name: "8 zones", pressed: true }), { key: "Enter" })
+    expect(progress()).toHaveAttribute("aria-valuenow", "3")
   })
 
   it("shows the live price for the chosen zones", () => {
@@ -128,5 +155,50 @@ describe("CheckoutFlow", () => {
     expect(screen.getByRole("button", { name: "Done" })).toBeInTheDocument()
     expect(screen.queryByRole("button", { name: "Continue" })).not.toBeInTheDocument()
     expect(progress()).toHaveAttribute("aria-valuenow", "6")
+  })
+
+  it("treats Done as the end: no Back, no arrow up, so the card is saved once", () => {
+    const onComplete = vi.fn()
+    render(<CheckoutFlow weeks={weeks} season={2027} prefill={answers} initialStep={5} onComplete={onComplete} />)
+    fireEvent.keyDown(screen.getByRole("button", { name: "Save card and reserve" }), { key: "ArrowDown" })
+    expect(progress()).toHaveAttribute("aria-valuenow", "6")
+    expect(screen.queryByRole("button", { name: "Back" })).not.toBeInTheDocument()
+    fireEvent.keyDown(section(), { key: "ArrowUp" })
+    fireEvent.keyDown(section(), { key: "Enter" })
+    expect(progress()).toHaveAttribute("aria-valuenow", "6")
+    expect(onComplete).toHaveBeenCalledTimes(1)
+    expect(screen.getByText("6 of 6")).toHaveAttribute("aria-hidden", "true")
+  })
+
+  describe("reveal", () => {
+    afterEach(() => {
+      vi.unstubAllGlobals()
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      delete (HTMLElement.prototype as any).animate
+    })
+
+    it("rises the pass card into view on Done, and holds still under reduced motion", () => {
+      const animate = vi.fn<(frames: Keyframe[], options: KeyframeAnimationOptions) => { cancel: () => void }>(() => ({ cancel: vi.fn() }))
+      HTMLElement.prototype.animate = animate as unknown as typeof HTMLElement.prototype.animate
+      stubMotion(false)
+      const { unmount } = render(<CheckoutFlow weeks={weeks} season={2027} prefill={answers} initialStep={6} />)
+      expect(animate).toHaveBeenCalledTimes(1)
+      expect(animate.mock.calls[0][1]).toMatchObject({ duration: 600, fill: "backwards" })
+      unmount()
+      stubMotion(true)
+      render(<CheckoutFlow weeks={weeks} season={2027} prefill={answers} initialStep={6} />)
+      expect(animate).toHaveBeenCalledTimes(1)
+    })
+
+    it("does not animate the first question on open, only the move to the next one", () => {
+      const animate = vi.fn<(frames: Keyframe[], options: KeyframeAnimationOptions) => { cancel: () => void }>(() => ({ cancel: vi.fn() }))
+      HTMLElement.prototype.animate = animate as unknown as typeof HTMLElement.prototype.animate
+      stubMotion(false)
+      render(<CheckoutFlow weeks={weeks} season={2027} prefill={answers} />)
+      expect(animate).not.toHaveBeenCalled()
+      fireEvent.keyDown(screen.getByLabelText("Street address"), { key: "Enter" })
+      expect(animate).toHaveBeenCalledTimes(1)
+      expect(animate.mock.calls[0][1]).toMatchObject({ duration: 300 })
+    })
   })
 })
