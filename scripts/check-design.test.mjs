@@ -4,25 +4,32 @@
 import { test } from "node:test"
 import assert from "node:assert/strict"
 import { spawnSync } from "node:child_process"
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs"
+import { mkdtempSync, mkdirSync, writeFileSync, symlinkSync, chmodSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 
 const SCRIPT = join(dirname(fileURLToPath(import.meta.url)), "check-design.mjs")
 
-// files: { "components/blocks/Good.tsx": "...", ... } relative to src/
+// files: { "components/blocks/Good.tsx": "...", ... } relative to src/. A value
+// may also be { symlink: target } or { body, mode } for a file with a chmod.
 function run(files) {
   const root = mkdtempSync(join(tmpdir(), "check-design-"))
   try {
     for (const [rel, body] of Object.entries(files)) {
       const file = join(root, "src", rel)
       mkdirSync(dirname(file), { recursive: true })
-      writeFileSync(file, body)
+      if (typeof body === "string") writeFileSync(file, body)
+      else if (body.symlink) symlinkSync(body.symlink, file)
+      else {
+        writeFileSync(file, body.body)
+        chmodSync(file, body.mode)
+      }
     }
     const r = spawnSync(process.execPath, [SCRIPT, "--dir", join(root, "src")], { cwd: root, encoding: "utf8" })
     return { status: r.status, out: r.stdout + r.stderr }
   } finally {
+    chmodSync(root, 0o700)
     rmSync(root, { recursive: true, force: true })
   }
 }
@@ -70,6 +77,7 @@ test("tokens only, with a story that uses hex for its background, passes", () =>
   })
   assert.equal(r.status, 0, r.out)
   assert.match(r.out, /design gates: ok/)
+  assert.doesNotMatch(r.out, /raw colour|palette colour/)
 })
 
 test("a block importing a marketing section fails", () => {
@@ -111,4 +119,70 @@ test("marketing code outside the checked folders is not checked", () => {
   })
   assert.equal(r.status, 0, r.out)
   assert.match(r.out, /design gates: ok/)
+})
+
+test("a dangling symlink is skipped and the script exits cleanly", () => {
+  const r = run({
+    "components/blocks/dead.tsx": { symlink: "missing.tsx" },
+    "components/blocks/Good.tsx": `export const Good = () => <div className="bg-primary" />\n`,
+    "components/blocks/Good.stories.tsx": STORY,
+  })
+  assert.equal(r.status, 0, r.out)
+  assert.doesNotMatch(r.out, /ENOENT|at .*check-design\.mjs/)
+  assert.match(r.out, /design gates: ok/)
+})
+
+test("an unreadable file is reported as a problem, not a crash", { skip: process.getuid?.() === 0 }, () => {
+  const r = run({
+    "components/blocks/Locked.tsx": { body: `export const L = () => null\n`, mode: 0o000 },
+    "components/blocks/Locked.stories.tsx": STORY,
+  })
+  assert.equal(r.status, 1)
+  assert.match(r.out, /components\/blocks\/Locked\.tsx: cannot read/)
+  assert.doesNotMatch(r.out, /EACCES|at .*check-design\.mjs/)
+})
+
+test("a hex in an svg colour attribute fails", () => {
+  const r = run({
+    "components/blocks/Icon.tsx": `export const Icon = () => <svg><path stroke="#abc" d="M0 0" /></svg>\n`,
+    "components/blocks/Icon.stories.tsx": STORY,
+  })
+  assert.equal(r.status, 1)
+  assert.match(r.out, /components\/blocks\/Icon\.tsx: .*raw colour/)
+})
+
+test("a bracket in a comment does not hold the colour context open", () => {
+  const r = run({
+    "components/blocks/Probe.tsx": `export const P = () => <p className="a" // note (\n>Issue #1234</p>\n`,
+    "components/blocks/Probe.stories.tsx": STORY,
+  })
+  assert.equal(r.status, 0, r.out)
+  assert.match(r.out, /design gates: ok/)
+})
+
+test("a hex on the third line of a cn() call still fails", () => {
+  const r = run({
+    "components/blocks/Multi.tsx": `export const M = () => <div className={cn(\n  "p-4",\n  "bg-[#D97706]",\n)} />\n`,
+    "components/blocks/Multi.stories.tsx": STORY,
+  })
+  assert.equal(r.status, 1)
+  assert.match(r.out, /components\/blocks\/Multi\.tsx: line 3: raw colour/)
+})
+
+test("a hex-looking href beside a className is not a colour", () => {
+  const r = run({
+    "components/blocks/Add.tsx": `export const A = () => <a className="p" href="#add" id="#bad" aria-describedby="#fee">Add</a>\n`,
+    "components/blocks/Add.stories.tsx": STORY,
+  })
+  assert.equal(r.status, 0, r.out)
+  assert.match(r.out, /design gates: ok/)
+})
+
+test("a hex-looking value in an arbitrary utility is a colour", () => {
+  const r = run({
+    "components/blocks/Tint.tsx": `export const T = () => <div className="bg-[#add]" />\n`,
+    "components/blocks/Tint.stories.tsx": STORY,
+  })
+  assert.equal(r.status, 1)
+  assert.match(r.out, /components\/blocks\/Tint\.tsx: .*raw colour/)
 })

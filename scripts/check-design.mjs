@@ -23,11 +23,17 @@ const PREFIX = "bg|text|border|ring|fill|stroke|from|via|to|divide|outline|shado
 const PALETTE =
   "red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose|slate|gray|zinc|neutral|stone"
 const paletteRe = new RegExp(`\\b(?:${PREFIX})-(?:${PALETTE})-(?:50|[1-9]00|950)\\b`, "g")
+// A hex only counts where a colour value sits: after a quote, space, "[" or ":".
 const rawRe = new RegExp(
-  `#[0-9a-fA-F]{3,8}\\b|\\b(?:rgba?|hsla?)\\(|\\b(?:${PREFIX})-\\[(?:#|rgba?\\(|hsla?\\(|color:|var\\(--color)[^\\]]*\\]`,
+  `(?<=["'\\s\\[:])#[0-9a-fA-F]{3,8}\\b|\\b(?:rgba?|hsla?)\\(|\\b(?:${PREFIX})-\\[(?:#|rgba?\\(|hsla?\\(|color:|var\\(--color)[^\\]]*\\]`,
   "g",
 )
-const contextRe = /className=|\bclass=|\bstyle=|\bcn\(|\bcva\(/
+const contextRe = /className=|\bclass=|\bstyle=|\bfill=|\bstroke=|\bstopColor=|\bcolor=|\bcn\(|\bcva\(/
+// Attributes whose values look like hex but never are colours (href="#add").
+const anchorAttrRe = /\b(?:href|id|htmlFor|aria-[\w-]+)=(?:"[^"]*"|'[^']*'|\{[^}]*\})/g
+// Strings, block comments and line comments, removed before counting brackets.
+const bare = (line) =>
+  line.replace(/(["'`])(?:\\.|(?!\1).)*\1/g, "$1$1").replace(/\/\*.*?\*\//g, "").replace(/\/\/.*$/, "")
 const importRe = /\bfrom\s+["']([^"']+)["']|\bimport\(\s*["']([^"']+)["']/g
 
 const problems = []
@@ -37,30 +43,31 @@ function walk(dir, out = []) {
   if (!existsSync(dir)) return out
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
     const file = join(dir, entry.name)
+    if (entry.isSymbolicLink()) continue
     if (entry.isDirectory()) walk(file, out)
     else if (/\.tsx?$/.test(entry.name)) out.push(file)
   }
   return out
 }
 
-// Lines that sit inside a className= / class= / style= / cn( / cva( context,
+// Lines that sit inside a className= / style= / fill= / cn( / cva( context,
 // tracked across lines by bracket depth so multi-line cn() calls are covered.
+// Brackets are counted on the bare line (no strings or comments), and a line
+// that opens a new className= with balanced quotes resets the depth.
 function colourContextLines(text) {
   const lines = []
   let depth = 0
   text.split("\n").forEach((line, i) => {
-    let from = 0
-    if (depth === 0) {
-      const m = contextRe.exec(line)
-      if (!m) return
-      from = m.index
-    }
-    const part = line.slice(from)
-    for (const ch of part) {
+    const code = bare(line)
+    const m = contextRe.exec(code)
+    if (m && /className=/.test(code) && (code.match(/["'`]/g) || []).length % 2 === 0) depth = 0
+    if (depth === 0 && !m) return
+    const fresh = depth === 0 // this line opens the context, so scan from the opener
+    for (const ch of code.slice(fresh ? m.index : 0)) {
       if (ch === "(" || ch === "{") depth++
       else if (ch === ")" || ch === "}") depth = Math.max(0, depth - 1)
     }
-    lines.push([i + 1, part])
+    lines.push([i + 1, fresh ? line.slice(contextRe.exec(line)?.index ?? 0) : line])
   })
   return lines
 }
@@ -68,7 +75,7 @@ function colourContextLines(text) {
 function checkColours(file, text, legacy) {
   const found = []
   for (const [n, part] of colourContextLines(text)) {
-    for (const m of part.matchAll(rawRe)) found.push(`line ${n}: raw colour "${m[0]}"`)
+    for (const m of part.replace(anchorAttrRe, "").matchAll(rawRe)) found.push(`line ${n}: raw colour "${m[0]}"`)
   }
   text.split("\n").forEach((line, i) => {
     for (const m of line.matchAll(paletteRe)) found.push(`line ${i + 1}: palette colour "${m[0]}"`)
@@ -99,7 +106,13 @@ for (const abs of walk(root)) {
   const file = relative(process.cwd(), abs)
   const name = basename(abs)
   const fixture = /\.(stories|test)\.tsx?$/.test(name)
-  const text = readFileSync(abs, "utf8")
+  let text
+  try {
+    text = readFileSync(abs, "utf8")
+  } catch {
+    problems.push(`${file}: cannot read`)
+    continue
+  }
   if (zone !== "marketing" && !fixture) checkColours(file, text, zone === "ui" && LEGACY.has(name))
   if (zone !== "ui") checkImports(file, text, zone)
   const needsStory = (dirs.includes("blocks") || zone === "ui") && name.endsWith(".tsx") && !fixture
