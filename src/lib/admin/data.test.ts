@@ -25,3 +25,8 @@ it("reads ADMIN_DATA_SOURCE when no argument is given", async () => {
   vi.stubEnv("ADMIN_DATA_SOURCE", "live")
   await expect(getAdminData()).rejects.toThrow(/not wired yet/)
 })
+
+it("rejects an ADMIN_DATA_SOURCE it does not know", async () => {
+  vi.stubEnv("ADMIN_DATA_SOURCE", "jobber")
+  await expect(getAdminData()).rejects.toThrow('unknown ADMIN_DATA_SOURCE "jobber"')
+})
