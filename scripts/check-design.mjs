@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Design gate. Enforces "The rule" in docs/DESIGN.md for the app surfaces. Each
 // rule lives in scripts/design-gate/ (its header says what it checks):
-//   colours.mjs        tokens only in blocks/, (admin)/ and ui/
+//   colours.mjs        tokens only in blocks/, the app route groups and ui/
 //   stories.mjs        a story per ui/ and blocks/ component
 //   imports.mjs        no admin and marketing cross-imports
 //   marketing-css.mjs  marketing CSS scans exactly the ui/ primitives marketing uses

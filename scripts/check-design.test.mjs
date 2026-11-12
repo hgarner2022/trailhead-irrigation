@@ -113,6 +113,47 @@ test("an inline style hex in the admin tree fails", () => {
   assert.match(r.out, /app\/\(admin\)\/admin\/page\.tsx: .*raw colour/)
 })
 
+test("a Tailwind palette colour in the checkout group fails", () => {
+  const r = run({
+    "app/(checkout)/season-pass/checkout/_screens/Flow.tsx": `export const Flow = () => <p className="text-red-500">x</p>\n`,
+  })
+  assert.equal(r.status, 1)
+  assert.match(r.out, /app\/\(checkout\)\/season-pass\/checkout\/_screens\/Flow\.tsx: .*palette colour/)
+})
+
+test("an inline style hex in the account group fails", () => {
+  const r = run({
+    "app/(account)/account/pass/_screens/Page.tsx": `export const Page = () => <div style={{ color: "#2B3544" }} />\n`,
+  })
+  assert.equal(r.status, 1)
+  assert.match(r.out, /app\/\(account\)\/account\/pass\/_screens\/Page\.tsx: .*raw colour/)
+})
+
+test("a checkout screen importing a marketing section fails", () => {
+  const r = run({
+    "app/(checkout)/season-pass/checkout/_screens/Leak.tsx": `import { SeasonPassCalculator } from "@/components/sections/SeasonPassCalculator"\nexport const L = () => <SeasonPassCalculator />\n`,
+  })
+  assert.equal(r.status, 1)
+  assert.match(r.out, /app\/\(checkout\)\/season-pass\/checkout\/_screens\/Leak\.tsx: imports a marketing section/)
+})
+
+test("a marketing section importing from the account group fails", () => {
+  const r = run({
+    "components/sections/Leak.tsx": `import { PassPageScreen } from "@/app/(account)/account/pass/_screens/PassPageScreen"\nexport const L = () => <PassPageScreen />\n`,
+  })
+  assert.equal(r.status, 1)
+  assert.match(r.out, /components\/sections\/Leak\.tsx: marketing code imports admin code/)
+})
+
+test("clean checkout and account screens pass", () => {
+  const r = run({
+    "app/(checkout)/season-pass/checkout/_screens/Flow.tsx": `import { Button } from "@/components/ui/button"\nexport const Flow = () => <Button className="bg-primary" />\n`,
+    "app/(account)/account/pass/_screens/Page.tsx": `import { PassCard } from "@/components/blocks/PassCard"\nexport const Page = () => <PassCard className="text-navy" />\n`,
+  })
+  assert.equal(r.status, 0, r.out)
+  assert.match(r.out, /design gates: ok/)
+})
+
 test("marketing code outside the checked folders is not checked", () => {
   const r = run({
     "app/blog/page.tsx": `export default function Page() { return <div className="bg-[#D97706] text-red-500" /> }\n`,
