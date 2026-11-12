@@ -31,6 +31,8 @@ export interface GridBulkAction<T> {
 
 interface ToolbarProps<T extends RowData> {
   table: GridTable<T>
+  /** The record name column: never hidden, never moved */
+  nameId: string
   search?: GridSearch
   filters: GridFilter[]
   exportName?: string
@@ -118,11 +120,13 @@ function FilterChip<T extends RowData>({ table, filter, disabled }: { table: Gri
   )
 }
 
-function ColumnsMenu<T extends RowData>({ table, disabled }: Pick<ToolbarProps<T>, "table" | "disabled">) {
-  const columns = table.getAllLeafColumns().filter((c) => c.id !== SELECT_COLUMN)
+function ColumnsMenu<T extends RowData>({ table, nameId, disabled }: Pick<ToolbarProps<T>, "table" | "nameId" | "disabled">) {
+  const leaves = table.getAllLeafColumns()
+  const pinned = leaves.filter((c) => c.id === SELECT_COLUMN || c.id === nameId)
+  const columns = leaves.filter((c) => !pinned.includes(c))
   const visible = columns.filter((c) => c.getIsVisible())
   const label = (c: (typeof columns)[number]) => headerText(c.columnDef, c.id)
-  // Moves past hidden columns, so a move always changes what is on screen.
+  // The pinned columns stay in front; a move skips hidden columns so it always changes what is on screen.
   const move = (id: string, step: -1 | 1) => {
     const order = columns.map((c) => c.id)
     const from = order.indexOf(id)
@@ -131,7 +135,7 @@ function ColumnsMenu<T extends RowData>({ table, disabled }: Pick<ToolbarProps<T
     if (to < 0 || to >= order.length) return
     order.splice(from, 1)
     order.splice(to, 0, id)
-    table.setColumnOrder([SELECT_COLUMN, ...order])
+    table.setColumnOrder([...pinned.map((c) => c.id), ...order])
   }
   return (
     <DropdownMenu modal={false}>
@@ -172,22 +176,29 @@ function ColumnsMenu<T extends RowData>({ table, disabled }: Pick<ToolbarProps<T
   )
 }
 
+// Every row that matches the search and filters, in the current sort, across
+// all pages, with the visible columns. A column with `meta.csv` exports its
+// written form instead of its sort value.
 function ExportButton<T extends RowData>({ table, exportName, disabled }: Pick<ToolbarProps<T>, "table" | "exportName" | "disabled">) {
+  const rows = table.getPrePaginatedRowModel().rows
   if (!exportName) return null
   const save = () => {
-    const columns = table.getVisibleLeafColumns().filter((c) => c.id !== SELECT_COLUMN).map((c) => ({ id: c.id, header: headerText(c.columnDef, c.id) }))
-    const rows = table.getPrePaginatedRowModel().rows.map((row) => Object.fromEntries(columns.map((c) => [c.id, row.getValue(c.id)])))
-    downloadCsv(exportName, rowsToCsv(columns, rows))
+    const columns = table.getVisibleLeafColumns().filter((c) => c.id !== SELECT_COLUMN)
+    const header = columns.map((c) => ({ id: c.id, header: headerText(c.columnDef, c.id) }))
+    const records = rows.map((row) =>
+      Object.fromEntries(columns.map((c) => [c.id, c.columnDef.meta?.csv ? c.columnDef.meta.csv(row.original as object) : row.getValue(c.id)])),
+    )
+    downloadCsv(exportName, rowsToCsv(header, records))
   }
   return (
     <Button variant="outline" size="sm" disabled={disabled} onClick={save}>
       <Download className="size-3.5" aria-hidden />
-      Export CSV
+      Export {rows.length} {rows.length === 1 ? "row" : "rows"}
     </Button>
   )
 }
 
-export function DataGridToolbar<T extends RowData>({ table, search, filters, exportName, disabled }: ToolbarProps<T>) {
+export function DataGridToolbar<T extends RowData>({ table, nameId, search, filters, exportName, disabled }: ToolbarProps<T>) {
   const chipIds = filters.map((f) => f.column)
   const anyActive = table.state.columnFilters.some((f) => chipIds.includes(f.id))
   const clear = () => table.setColumnFilters((current) => current.filter((f) => !chipIds.includes(f.id)))
@@ -203,27 +214,39 @@ export function DataGridToolbar<T extends RowData>({ table, search, filters, exp
         </Button>
       )}
       <div className="ml-auto flex items-center gap-2">
-        <ColumnsMenu table={table} disabled={disabled} />
+        <ColumnsMenu table={table} nameId={nameId} disabled={disabled} />
         <ExportButton table={table} exportName={exportName} disabled={disabled} />
       </div>
     </div>
   )
 }
 
+// Counts and acts only on selected rows the filters still show; a selection
+// made before a filter is reported as hidden, never silently acted on. The
+// live region is always mounted so the count is announced as it changes.
 export function DataGridBulkBar<T extends RowData>({ table, actions }: { table: GridTable<T>; actions: GridBulkAction<T>[] }) {
-  const rows = table.getSelectedRowModel().rows
-  if (rows.length === 0) return null
+  const selected = table.getSelectedRowIds().length
+  const present = table.getFilteredRowModel().rows.filter((row) => row.getIsSelected())
+  const hidden = selected - present.length
+  const text = selected === 0 ? "" : hidden > 0 ? `${present.length} selected, ${hidden} hidden by filters` : `${present.length} selected`
   return (
-    <div data-slot="data-grid-bulk" className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-stone px-4 py-2 text-sm">
-      <span className="font-medium">{rows.length} selected</span>
-      {actions.map((action) => (
-        <Button key={action.label} size="sm" variant="outline" onClick={() => action.onClick(rows.map((r) => r.original))}>
-          {action.label}
-        </Button>
-      ))}
-      <Button size="sm" variant="ghost" className="ml-auto" onClick={() => table.resetRowSelection(true)}>
-        Clear
-      </Button>
-    </div>
+    <>
+      <div data-slot="data-grid-live" aria-live="polite" className="sr-only">
+        {text}
+      </div>
+      {selected > 0 && (
+        <div data-slot="data-grid-bulk" className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-stone px-4 py-2 text-sm">
+          <span className="font-medium">{text}</span>
+          {actions.map((action) => (
+            <Button key={action.label} size="sm" variant="outline" disabled={present.length === 0} onClick={() => action.onClick(present.map((r) => r.original))}>
+              {action.label}
+            </Button>
+          ))}
+          <Button size="sm" variant="ghost" className="ml-auto" onClick={() => table.resetRowSelection(true)}>
+            Clear
+          </Button>
+        </div>
+      )}
+    </>
   )
 }

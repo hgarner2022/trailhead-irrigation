@@ -9,22 +9,24 @@ import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { DataGridBulkBar, DataGridToolbar, type GridBulkAction, type GridFilter, type GridSearch } from "./data-grid-toolbar"
-import { SELECT_COLUMN, gridFeatures, useScrollCue, withFilterFns, type GridColumnDef } from "./data-grid-table"
+import { SELECT_COLUMN, columnId, gridFeatures, useScrollCue, withFilterFns, type GridColumnDef } from "./data-grid-table"
 
 // The one table of the app (docs/DESIGN.md, Tables): shadcn's TanStack data
 // table recipe on TanStack Table v9, with filter chips, a Columns menu that
 // hides and reorders, selection with a bulk bar, and CSV export. The first
-// column is the record's name and the only thing on the row that opens it; the
-// checkbox selects; nothing else on the row is a target. The header is sticky
-// inside the grid's own scroller, the checkbox and name columns stay frozen on
-// the left, and the right edge fades while there is more table to the right.
-// On a phone it is the same table, never a stack of cards.
+// column is the record's name and the only thing on the row that opens it; it
+// cannot be hidden or moved. The checkbox selects; nothing else on the row is
+// a target. The header is sticky inside the grid's own scroller, the checkbox
+// and name columns stay frozen on the left, and the right edge fades while
+// there is more table to the right. On a phone it is the same table, never a
+// stack of cards.
 
 export type { GridColumnDef } from "./data-grid-table"
 
 export interface DataGridProps<T extends RowData> {
-  /** TanStack column defs; the first one is the record name and renders as the link that opens it */
+  /** TanStack column defs; the first one is the record name and renders as the link that opens it. Must be referentially stable (a module constant or memoised), or the table rebuilds its models every render. */
   columns: GridColumnDef<T>[]
+  /** Must be referentially stable, like `columns`. */
   data: T[]
   getRowId: (row: T) => string
   /** Text filter on one column */
@@ -33,8 +35,9 @@ export interface DataGridProps<T extends RowData> {
   filters?: GridFilter[]
   /** Fired from the link in the first column, never from a row click */
   onOpen?: (row: T) => void
+  /** Actions on the selected rows; the checkbox column is only there when this is non-empty */
   bulkActions?: GridBulkAction<T>[]
-  /** Enables Export CSV of the visible rows and columns as `<exportName>.csv` */
+  /** Enables export as `<exportName>.csv` of every row that matches the current search and filters, in the current sort, with the visible columns */
   exportName?: string
   /** Rows per page; default 25 */
   pageSize?: number
@@ -42,19 +45,22 @@ export interface DataGridProps<T extends RowData> {
   emptyLine?: string
   /** Skeleton rows under the real header; the toolbar is disabled */
   loading?: boolean
-  /** Row ids selected on first render */
-  initialSelected?: string[]
+  /** Row ids selected on first render; read once, later changes are ignored */
+  defaultSelectedIds?: string[]
   className?: string
 }
 
 const SKELETON_ROWS = 8
-// The checkbox and name columns stay put while the rest scrolls. The name
-// column's offset is the checkbox column's min-content width (8px of padding
-// and the 16px box), which is what that column collapses to whenever the
-// table overflows, the only time sticky bites. The divider after the name
-// shows only while the table can scroll sideways.
-const FROZEN = ["sticky left-0 z-10 bg-inherit", "sticky left-6 z-10 bg-inherit group-data-[scrollable=true]:border-r group-data-[scrollable=true]:border-border"]
-const frozen = (index: number) => FROZEN[index]
+const SELECT_WIDTH = "w-10 min-w-10 max-w-10"
+// The checkbox and name columns stay put while the rest scrolls. The checkbox
+// column is a fixed 40px, so the name sits 40px in when it is there and at the
+// edge when it is not. The divider after the name shows only while the table
+// can scroll sideways.
+function frozen(id: string, nameId: string, hasSelect: boolean): string | undefined {
+  if (id === SELECT_COLUMN) return cn("sticky left-0 z-10 bg-inherit", SELECT_WIDTH)
+  if (id === nameId) return cn("sticky z-10 bg-inherit group-data-[scrollable=true]:border-r group-data-[scrollable=true]:border-border", hasSelect ? "left-10" : "left-0")
+  return undefined
+}
 
 function selectColumn<T extends RowData>(): GridColumnDef<T> {
   return {
@@ -92,17 +98,21 @@ export function DataGrid<T extends RowData>({
   emptyTitle = "Nothing here yet",
   emptyLine = "Rows appear as data arrives.",
   loading = false,
-  initialSelected,
+  defaultSelectedIds,
   className,
 }: DataGridProps<T>) {
   const searchColumn = search?.column
   const chipKey = filters.map((f) => f.column).join(",")
-  const allColumns = useMemo(
-    () => [selectColumn<T>(), ...withFilterFns(columns, searchColumn, chipKey ? chipKey.split(",") : [])],
-    [columns, searchColumn, chipKey],
-  )
+  const hasSelect = bulkActions.length > 0
+  const nameId = columns.length ? columnId(columns[0]) : ""
+  const allColumns = useMemo(() => {
+    const prepared = withFilterFns(columns, searchColumn, chipKey ? chipKey.split(",") : []).map((def) =>
+      columnId(def) === nameId ? { ...def, enableHiding: false } : def,
+    )
+    return hasSelect ? [selectColumn<T>(), ...prepared] : prepared
+  }, [columns, searchColumn, chipKey, hasSelect, nameId])
   const [initialState] = useMemo(
-    () => [{ pagination: { pageIndex: 0, pageSize }, rowSelection: Object.fromEntries((initialSelected ?? []).map((id) => [id, true as const])) }],
+    () => [{ pagination: { pageIndex: 0, pageSize }, rowSelection: Object.fromEntries((defaultSelectedIds ?? []).map((id) => [id, true as const])) }],
     // Read once: TanStack resolves initial state at construction.
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
@@ -111,25 +121,26 @@ export function DataGrid<T extends RowData>({
 
   const wrap = useRef<HTMLDivElement>(null)
   const { scrollable, more } = useScrollCue(wrap)
-  const nameId = columns.length ? (allColumns[1].id ?? "") : ""
   const rows = table.getRowModel().rows
   const visibleCount = table.getVisibleLeafColumns().length
   const total = table.getRowCount()
   const { pageIndex, pageSize: size } = table.state.pagination
   const from = total === 0 ? 0 : pageIndex * size + 1
   const to = Math.min(total, (pageIndex + 1) * size)
+  const freeze = (id: string) => frozen(id, nameId, hasSelect)
 
   return (
     <div data-slot="data-grid" className={cn("flex flex-col gap-3", className)}>
-      <DataGridToolbar table={table} search={search} filters={filters} exportName={exportName} disabled={loading} />
-      {!loading && <DataGridBulkBar table={table} actions={bulkActions} />}
+      <DataGridToolbar table={table} nameId={nameId} search={search} filters={filters} exportName={exportName} disabled={loading} />
+      {!loading && hasSelect && <DataGridBulkBar table={table} actions={bulkActions} />}
       <div
         ref={wrap}
+        tabIndex={-1}
         data-slot="data-grid-table"
         data-scrollable={scrollable}
         data-more={more}
         className={cn(
-          "group relative overflow-hidden rounded-lg border border-border bg-background",
+          "group relative overflow-hidden rounded-lg border border-border bg-background outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
           "after:pointer-events-none after:absolute after:inset-y-0 after:right-0 after:z-30 after:w-10 after:bg-linear-to-r after:from-transparent after:to-background after:opacity-0 after:transition-opacity after:content-[''] data-[more=true]:after:opacity-100",
           "[&>[data-slot=table-container]]:max-h-[70vh] [&>[data-slot=table-container]]:overflow-auto",
         )}
@@ -138,7 +149,7 @@ export function DataGrid<T extends RowData>({
           <TableHeader className="sticky top-0 z-20 bg-background">
             {table.getHeaderGroups().map((group) => (
               <TableRow key={group.id} className="bg-background hover:bg-background">
-                {group.headers.map((header, i) => {
+                {group.headers.map((header) => {
                   const column = header.column
                   const sorted = column.getIsSorted()
                   const right = column.columnDef.meta?.align === "right"
@@ -146,7 +157,7 @@ export function DataGrid<T extends RowData>({
                     <TableHead
                       key={header.id}
                       aria-sort={column.getCanSort() ? (sorted === "asc" ? "ascending" : sorted === "desc" ? "descending" : "none") : undefined}
-                      className={cn(frozen(i), right && "text-right")}
+                      className={cn(freeze(column.id), right && "text-right")}
                     >
                       {header.isPlaceholder ? null : column.getCanSort() ? (
                         <button
@@ -155,6 +166,7 @@ export function DataGrid<T extends RowData>({
                           className="inline-flex cursor-pointer items-center gap-1 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
                         >
                           <table.FlexRender header={header} />
+                          {sorted && <span className="sr-only">, sorted {sorted === "asc" ? "ascending" : "descending"}</span>}
                           <SortIcon sorted={sorted} />
                         </button>
                       ) : (
@@ -170,9 +182,9 @@ export function DataGrid<T extends RowData>({
             {loading ? (
               Array.from({ length: SKELETON_ROWS }, (_, r) => (
                 <TableRow key={r} className="bg-background">
-                  {table.getVisibleLeafColumns().map((column, i) => (
-                    <TableCell key={column.id} className={frozen(i)}>
-                      <Skeleton className={i === 0 ? "size-4" : "h-4 w-24"} />
+                  {table.getVisibleLeafColumns().map((column) => (
+                    <TableCell key={column.id} className={freeze(column.id)}>
+                      <Skeleton className={column.id === SELECT_COLUMN ? "size-4" : "h-4 w-24"} />
                     </TableCell>
                   ))}
                 </TableRow>
@@ -187,12 +199,12 @@ export function DataGrid<T extends RowData>({
             ) : (
               rows.map((row) => (
                 <TableRow key={row.id} data-state={row.getIsSelected() ? "selected" : undefined} className="bg-background">
-                  {row.getVisibleCells().map((cell, i) => {
+                  {row.getVisibleCells().map((cell) => {
                     const { column } = cell
                     const right = column.columnDef.meta?.align === "right"
                     const href = column.id === nameId ? column.columnDef.meta?.href?.(row.original as object) : undefined
                     return (
-                      <TableCell key={cell.id} className={cn(frozen(i), right && "text-right tabular-nums")}>
+                      <TableCell key={cell.id} className={cn(freeze(column.id), right && "text-right tabular-nums")}>
                         {column.id !== nameId ? (
                           <table.FlexRender cell={cell} />
                         ) : href ? (

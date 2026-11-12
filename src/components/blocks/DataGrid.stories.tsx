@@ -3,16 +3,18 @@ import { fn } from "storybook/test"
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import type { Client, Pass } from "@/lib/admin/types"
 import { DataGrid, type GridColumnDef } from "./DataGrid"
-import { passColumns, shortDate } from "./data-grid-columns"
+import { STATUS_LABEL, passColumns, shortDate } from "./data-grid-columns"
 
-// Twelve passes for the Passes grid; the 375 clients prove paging and the sticky header.
+// Twelve passes for the Passes grid; the 375 clients prove paging and the
+// sticky header. Columns and data are module constants, so they are stable
+// across renders, which the grid needs.
 const passes = snapshot.passes as Pass[]
 const clients = snapshot.clients as Client[]
 
 const option = (value: string, label = value) => ({ value, label })
 const FILTERS = [
   { column: "town", label: "Town", options: ["Erie", "Longmont", "Louisville", "Lafayette", "Firestone", "Broomfield"].map((t) => option(t)) },
-  { column: "status", label: "Status", options: ["active", "cancelled", "lapsed"].map((s) => option(s)) },
+  { column: "status", label: "Status", options: (["active", "cancelled", "lapsed"] as const).map((s) => option(s, STATUS_LABEL[s])) },
   { column: "blowoutWeek", label: "Blowout week", options: [...new Set(passes.map((p) => p.blowoutWeek))].sort().map((w) => option(w, `Week of ${shortDate(w)}`)) },
 ]
 
@@ -47,7 +49,7 @@ type Story = StoryObj<typeof meta>
 export const Passes: Story = {}
 
 export const WithSelection: Story = {
-  args: { initialSelected: ["p1", "p2"] },
+  args: { defaultSelectedIds: ["p1", "p2"] },
 }
 
 export const Empty: Story = {

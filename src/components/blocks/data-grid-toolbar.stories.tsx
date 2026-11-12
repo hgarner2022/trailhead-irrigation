@@ -5,7 +5,7 @@ import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import type { Pass } from "@/lib/admin/types"
 import { DataGridBulkBar, DataGridToolbar, type GridFilter } from "./data-grid-toolbar"
 import { gridFeatures, withFilterFns } from "./data-grid-table"
-import { passColumns } from "./data-grid-columns"
+import { STATUS_LABEL, passColumns } from "./data-grid-columns"
 
 // The toolbar and the bulk bar on their own, with table state fixed so each
 // state can be looked at without clicking into it. The whole grid is in
@@ -14,7 +14,7 @@ const passes = snapshot.passes as Pass[]
 const SEARCH = { column: "firstName", placeholder: "Search by name" }
 const FILTERS: GridFilter[] = [
   { column: "town", label: "Town", options: ["Erie", "Longmont", "Louisville", "Lafayette", "Firestone", "Broomfield"].map((t) => ({ value: t, label: t })) },
-  { column: "status", label: "Status", options: ["active", "cancelled", "lapsed"].map((s) => ({ value: s, label: s })) },
+  { column: "status", label: "Status", options: (["active", "cancelled", "lapsed"] as const).map((s) => ({ value: s, label: STATUS_LABEL[s] })) },
 ]
 const columns = withFilterFns(passColumns, SEARCH.column, ["town", "status"])
 
@@ -34,7 +34,7 @@ function Toolbar({ disabled, columnFilters = [], selected = [] }: ToolbarStoryPr
   })
   return (
     <div className="flex flex-col gap-3">
-      <DataGridToolbar table={table} search={SEARCH} filters={FILTERS} exportName="passes" disabled={disabled} />
+      <DataGridToolbar table={table} nameId="firstName" search={SEARCH} filters={FILTERS} exportName="passes" disabled={disabled} />
       <DataGridBulkBar table={table} actions={[{ label: "Send card update link", onClick: fn() }, { label: "Resend confirmation", onClick: fn() }]} />
     </div>
   )

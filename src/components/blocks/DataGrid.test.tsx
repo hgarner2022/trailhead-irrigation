@@ -23,6 +23,9 @@ const bodyRows = () => screen.getAllByRole("row").slice(1)
 const firstName = () => within(bodyRows()[0]).getByRole("button", { name: /^[A-Z]/ }).textContent
 const toolbar = () => within(document.querySelector<HTMLElement>('[data-slot="data-grid-toolbar"]') as HTMLElement)
 const headerButton = (name: string) => within(screen.getByRole("columnheader", { name })).getByRole("button")
+const bulkBar = () => document.querySelector<HTMLElement>('[data-slot="data-grid-bulk"]')
+const liveRegion = () => document.querySelector<HTMLElement>('[data-slot="data-grid-live"]') as HTMLElement
+const BULK = [{ label: "Send card update link", onClick: () => {} }]
 
 const FILTERS = [
   { column: "town", label: "Town", options: ["Erie", "Broomfield", "Lafayette", "Firestone", "Longmont"].map((t) => ({ value: t, label: t })) },
@@ -37,6 +40,7 @@ function renderPasses(extra: Partial<React.ComponentProps<typeof DataGrid<Pass>>
       getRowId={(p) => p.id}
       search={{ column: "firstName", placeholder: "Search by name" }}
       filters={FILTERS}
+      bulkActions={BULK}
       {...extra}
     />,
   )
@@ -51,9 +55,23 @@ describe("DataGrid sorting", () => {
     await user.click(town)
     expect(firstName()).toBe("Abby")
     expect(town.closest("th")).toHaveAttribute("aria-sort", "ascending")
+    expect(town).toHaveTextContent("Town, sorted ascending")
     await user.click(town)
     expect(firstName()).toBe("Katie")
     expect(town.closest("th")).toHaveAttribute("aria-sort", "descending")
+    expect(town).toHaveTextContent("Town, sorted descending")
+  })
+
+  it("sorts next visit by its date and puts finished passes last", async () => {
+    const user = userEvent.setup()
+    const done: Pass = { ...passes[2], id: "done", firstName: "Zed", visits: passes[2].visits.map((v) => ({ ...v, chargedAt: "2027-10-12T16:00:00Z" })) }
+    renderPasses({ data: [done, ...passes] })
+    await user.click(headerButton("Next visit"))
+    expect(firstName()).not.toBe("Zed")
+    const names = bodyRows().map((r) => within(r).getByRole("button", { name: /^[A-Z]/ }).textContent)
+    expect(names.at(-1)).toBe("Zed")
+    expect(names.slice(0, 10)).not.toContain("Andrea")
+    expect(within(bodyRows()[0]).getByText("April to May")).toBeInTheDocument()
   })
 })
 
@@ -105,23 +123,65 @@ describe("DataGrid selection and bulk actions", () => {
     const user = userEvent.setup()
     const resend = vi.fn()
     renderPasses({ bulkActions: [{ label: "Resend confirmation", onClick: resend }] })
-    expect(screen.queryByText(/selected$/)).not.toBeInTheDocument()
+    expect(bulkBar()).toBeNull()
+    expect(liveRegion()).toHaveAttribute("aria-live", "polite")
+    expect(liveRegion()).toHaveTextContent("")
     const boxes = screen.getAllByRole("checkbox", { name: "Select row" })
     await user.click(boxes[0])
     await user.click(boxes[1])
-    expect(screen.getByText("2 selected")).toBeInTheDocument()
+    expect(bulkBar()).toHaveTextContent("2 selected")
+    expect(liveRegion()).toHaveTextContent("2 selected")
     expect(bodyRows()[0]).toHaveAttribute("data-state", "selected")
     await user.click(screen.getByRole("button", { name: "Resend confirmation" }))
     expect(resend).toHaveBeenCalledWith([passes[0], passes[1]])
     await user.click(screen.getByRole("button", { name: "Clear" }))
-    expect(screen.queryByText("2 selected")).not.toBeInTheDocument()
+    expect(bulkBar()).toBeNull()
+    expect(liveRegion()).toHaveTextContent("")
+  })
+
+  it("counts and acts on the selected rows a filter still shows, and says how many it hides", async () => {
+    const user = userEvent.setup()
+    const resend = vi.fn()
+    renderPasses({ bulkActions: [{ label: "Resend confirmation", onClick: resend }] })
+    const boxes = screen.getAllByRole("checkbox", { name: "Select row" })
+    await user.click(boxes[0]) // Andrea, Erie
+    await user.click(boxes[1]) // Reese, Firestone
+    await user.click(toolbar().getByRole("button", { name: "Town" }))
+    await user.click(await screen.findByRole("menuitemcheckbox", { name: "Erie" }))
+    expect(bulkBar()).toHaveTextContent("1 selected, 1 hidden by filters")
+    expect(liveRegion()).toHaveTextContent("1 selected, 1 hidden by filters")
+    await user.click(screen.getByRole("button", { name: "Resend confirmation" }))
+    expect(resend).toHaveBeenCalledWith([passes[0]])
   })
 
   it("selects every row on the page from the header checkbox", async () => {
     const user = userEvent.setup()
     renderPasses()
     await user.click(screen.getByRole("checkbox", { name: "Select all" }))
-    expect(screen.getByText("12 selected")).toBeInTheDocument()
+    expect(bulkBar()).toHaveTextContent("12 selected")
+  })
+
+  it("starts with the given rows selected", () => {
+    renderPasses({ defaultSelectedIds: ["p1", "p3"] })
+    expect(bulkBar()).toHaveTextContent("2 selected")
+    expect(bodyRows()[2]).toHaveAttribute("data-state", "selected")
+  })
+
+  it("has no checkbox column without bulk actions", () => {
+    renderPasses({ bulkActions: [] })
+    expect(screen.queryByRole("checkbox")).not.toBeInTheDocument()
+    expect(screen.getAllByRole("columnheader")[0]).toHaveTextContent("Name")
+    expect(screen.getAllByRole("columnheader")[0]).toHaveClass("sticky", "left-0")
+  })
+
+  it("gives the checkbox column a fixed width and freezes the name beside it", () => {
+    renderPasses()
+    const [select, name] = screen.getAllByRole("columnheader")
+    expect(select).toHaveClass("w-10", "min-w-10", "max-w-10", "sticky", "left-0")
+    expect(name).toHaveClass("sticky", "left-10")
+    const cells = within(bodyRows()[0]).getAllByRole("cell")
+    expect(cells[0]).toHaveClass("w-10", "min-w-10", "max-w-10", "sticky", "left-0")
+    expect(cells[1]).toHaveClass("sticky", "left-10")
   })
 })
 
@@ -136,6 +196,12 @@ describe("DataGrid opening a record", () => {
     await user.click(screen.getByRole("button", { name: "Andrea" }))
     expect(onOpen).toHaveBeenCalledTimes(1)
     expect(onOpen).toHaveBeenCalledWith(passes[0])
+  })
+
+  it("writes the status in sentence case", () => {
+    renderPasses()
+    expect(within(bodyRows()[0]).getByText("Active")).toBeInTheDocument()
+    expect(within(bodyRows()[8]).getByText("Cancelled")).toBeInTheDocument()
   })
 
   it("renders the name as a link when the column gives it a URL", () => {
@@ -153,16 +219,31 @@ describe("DataGrid columns menu", () => {
     await user.click(screen.getByRole("button", { name: "Columns" }))
     await user.click(await screen.findByRole("menuitemcheckbox", { name: "Town" }))
     expect(screen.queryByRole("columnheader", { name: /Town/ })).not.toBeInTheDocument()
-    // The menu stays open, and a move skips the hidden Town so Zones lands beside Name.
-    expect(screen.getByRole("menuitem", { name: "Move Name up" })).toHaveAttribute("aria-disabled", "true")
-    await user.click(screen.getByRole("menuitem", { name: "Move Zones up" }))
+    // The menu stays open; Zones cannot pass the pinned name, and a move skips the hidden Town.
+    expect(screen.getByRole("menuitem", { name: "Move Zones up" })).toHaveAttribute("aria-disabled", "true")
+    await user.click(screen.getByRole("menuitem", { name: "Move Blowout week up" }))
     const headers = screen.getAllByRole("columnheader").map((h) => h.textContent?.trim())
-    expect(headers.slice(1, 3)).toEqual(["Zones", "Name"])
+    expect(headers.slice(1, 4)).toEqual(["Name", "Blowout week", "Zones"])
+  })
+
+  it("never offers to hide or move the name column, and keeps it frozen and linked when others move", async () => {
+    const user = userEvent.setup()
+    renderPasses({ onOpen: vi.fn() })
+    await user.click(screen.getByRole("button", { name: "Columns" }))
+    expect(screen.queryByRole("menuitemcheckbox", { name: "Name" })).not.toBeInTheDocument()
+    expect(screen.queryByRole("menuitem", { name: /Move Name/ })).not.toBeInTheDocument()
+    expect(screen.getByRole("menuitem", { name: "Move Town up" })).toHaveAttribute("aria-disabled", "true")
+    await user.click(screen.getByRole("menuitem", { name: "Move Town down" }))
+    const headers = screen.getAllByRole("columnheader")
+    expect(headers.slice(1, 4).map((h) => h.textContent?.trim())).toEqual(["Name", "Zones", "Town"])
+    expect(headers[1]).toHaveClass("sticky", "left-10")
+    expect(within(bodyRows()[0]).getAllByRole("cell")[1]).toHaveClass("sticky", "left-10")
+    expect(within(bodyRows()[0]).getByRole("button", { name: "Andrea" })).toBeInTheDocument()
   })
 })
 
 describe("DataGrid export", () => {
-  it("downloads a CSV of the visible rows with the visible columns", async () => {
+  it("downloads every row that matches the search and filters, in the current sort, with the visible columns", async () => {
     const user = userEvent.setup()
     let blob: Blob | undefined
     vi.spyOn(URL, "createObjectURL").mockImplementation((b) => {
@@ -175,14 +256,17 @@ describe("DataGrid export", () => {
     await user.click(screen.getByRole("button", { name: "Columns" }))
     await user.click(await screen.findByRole("menuitemcheckbox", { name: "Town" }))
     await user.keyboard("{Escape}")
+    expect(screen.getByRole("button", { name: "Export 12 rows" })).toBeInTheDocument()
     await user.type(screen.getByRole("searchbox"), "ree")
-    await user.click(screen.getByRole("button", { name: "Export CSV" }))
+    await user.click(headerButton("Zones"))
+    await user.click(screen.getByRole("button", { name: "Export 2 rows" }))
     expect(click).toHaveBeenCalledTimes(1)
     const anchor = click.mock.instances[0] as HTMLAnchorElement
     expect(anchor.download).toBe("passes.csv")
     expect(blob).toBeDefined()
-    const text = await blob!.text()
-    expect(text).toBe("Name,Zones,Blowout week,Status,Charged so far,Next visit\r\nReese,8,2027-10-11,active,145,July\r\nReesa,8,2027-10-18,active,0,April to May\r\n")
+    const bytes = new Uint8Array(await blob!.arrayBuffer())
+    expect([...bytes.slice(0, 3)]).toEqual([0xef, 0xbb, 0xbf])
+    expect(new TextDecoder().decode(bytes)).toBe("Name,Zones,Blowout week,Status,Charged so far,Next visit\r\nReese,8,2027-10-11,active,145,July\r\nReesa,8,2027-10-18,active,0,April to May\r\n")
   })
 })
 
@@ -193,7 +277,7 @@ describe("DataGrid loading and pages", () => {
     expect(bodyRows()).toHaveLength(8)
     expect(container.querySelectorAll('[data-slot="skeleton"]').length).toBeGreaterThanOrEqual(8)
     expect(screen.getByRole("searchbox")).toBeDisabled()
-    expect(screen.getByRole("button", { name: "Export CSV" })).toBeDisabled()
+    expect(screen.getByRole("button", { name: "Export 12 rows" })).toBeDisabled()
     expect(screen.queryByRole("button", { name: "Andrea" })).not.toBeInTheDocument()
   })
 

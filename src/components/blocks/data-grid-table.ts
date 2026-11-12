@@ -26,10 +26,15 @@ import {
   type RowData,
 } from "@tanstack/react-table"
 
-/** Per-column hints the grid reads: `align: "right"` for numbers, `href` to render the record name as a real link. */
+/**
+ * Per-column hints the grid reads: `align: "right"` for numbers, `href` to
+ * render the record name as a real link, `csv` for the written form of a
+ * column whose value is only there to sort by.
+ */
 export interface GridColumnMeta {
   align?: "right"
   href?(row: object): string
+  csv?(row: object): string
 }
 
 /** A chip filter: the row passes when its value is one of the chosen values. */
@@ -59,11 +64,13 @@ export type GridTable<T extends RowData> = ReactTable<GridFeatures, T>
 
 export const SELECT_COLUMN = "select"
 
-/** The id TanStack gives a column def: its `id`, else its `accessorKey`, else its header text. */
+/** The id TanStack gives a column def: its `id`, else its `accessorKey`, else its header text. Throws in development when none of those is there. */
 export function columnId<T extends RowData>(def: GridColumnDef<T>): string {
   if (def.id) return def.id
   if ("accessorKey" in def && def.accessorKey) return String(def.accessorKey).replace(".", "_")
-  return typeof def.header === "string" ? def.header : ""
+  if (typeof def.header === "string") return def.header
+  if (process.env.NODE_ENV !== "production") throw new Error("DataGrid column needs an id, an accessorKey or a string header")
+  return ""
 }
 
 /** The header as plain text for menus and the CSV. */

@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest"
-import { rowsToCsv } from "./data-grid-csv"
+import { describe, it, expect, vi, afterEach } from "vitest"
+import { downloadCsv, rowsToCsv } from "./data-grid-csv"
 
 const columns = [
   { id: "firstName", header: "Name" },
@@ -35,5 +35,57 @@ describe("rowsToCsv", () => {
 
   it("writes just the header when there are no rows", () => {
     expect(rowsToCsv(columns, [])).toBe("Name,Town,Zones\r\n")
+  })
+})
+
+describe("rowsToCsv against formula injection", () => {
+  it("prefixes a text cell that starts like a formula with a quote", () => {
+    const rows = [
+      { firstName: "=SUM(A1:A9)", town: "+Erie", zones: "-7" },
+      { firstName: "@import", town: "Erie", zones: 6 },
+    ]
+    expect(rowsToCsv(columns, rows)).toBe("Name,Town,Zones\r\n'=SUM(A1:A9),'+Erie,'-7\r\n'@import,Erie,6\r\n")
+  })
+
+  it("leaves a negative number alone", () => {
+    expect(rowsToCsv([{ id: "delta", header: "Delta" }], [{ delta: -50 }])).toBe("Delta\r\n-50\r\n")
+  })
+
+  it("still quotes a prefixed cell that needs quoting", () => {
+    expect(rowsToCsv([{ id: "note", header: "Note" }], [{ note: "=1,2" }])).toBe('Note\r\n"\'=1,2"\r\n')
+  })
+})
+
+describe("downloadCsv", () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+    vi.useRealTimers()
+  })
+
+  it("saves a UTF-8 file with a byte order mark, through an anchor that is in the document while it is clicked", async () => {
+    vi.useFakeTimers()
+    let blob: Blob | undefined
+    vi.spyOn(URL, "createObjectURL").mockImplementation((b) => {
+      blob = b as Blob
+      return "blob:passes"
+    })
+    const revoke = vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => {})
+    let attachedWhenClicked = false
+    const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function (this: HTMLAnchorElement) {
+      attachedWhenClicked = document.body.contains(this)
+    })
+    downloadCsv("passes", "Name\r\nAndrea\r\n")
+    expect(click).toHaveBeenCalledTimes(1)
+    expect(attachedWhenClicked).toBe(true)
+    expect(document.querySelector("a[download]")).toBeNull()
+    expect((click.mock.instances[0] as HTMLAnchorElement).download).toBe("passes.csv")
+    expect(revoke).not.toHaveBeenCalled()
+    vi.runAllTimers()
+    expect(revoke).toHaveBeenCalledWith("blob:passes")
+    vi.useRealTimers()
+    // TextDecoder strips a leading BOM, so read the bytes.
+    const bytes = new Uint8Array(await blob!.arrayBuffer())
+    expect([...bytes.slice(0, 3)]).toEqual([0xef, 0xbb, 0xbf])
+    expect(new TextDecoder().decode(bytes)).toBe("Name\r\nAndrea\r\n")
   })
 })

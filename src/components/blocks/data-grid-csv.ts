@@ -8,8 +8,13 @@ export interface CsvColumn {
   header: string
 }
 
+// A spreadsheet runs a cell that starts like a formula. A leading quote keeps
+// it text; numbers are left alone so a negative amount stays a number.
+const FORMULA = /^[=+\-@]/
+
 function quote(value: unknown): string {
-  const text = value === null || value === undefined ? "" : String(value)
+  let text = value === null || value === undefined ? "" : String(value)
+  if (typeof value !== "number" && FORMULA.test(text)) text = `'${text}`
   return /[",\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text
 }
 
@@ -18,12 +23,15 @@ export function rowsToCsv(columns: CsvColumn[], rows: Record<string, unknown>[])
   return lines.map((cells) => cells.join(",")).join("\r\n") + "\r\n"
 }
 
-/** Hands the browser `<name>.csv` to save. */
+/** Hands the browser `<name>.csv` to save, with a byte order mark so Excel reads it as UTF-8. */
 export function downloadCsv(name: string, csv: string): void {
-  const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }))
+  const url = URL.createObjectURL(new Blob(["\ufeff", csv], { type: "text/csv;charset=utf-8" }))
   const link = document.createElement("a")
   link.href = url
   link.download = `${name}.csv`
+  document.body.appendChild(link)
   link.click()
-  URL.revokeObjectURL(url)
+  link.remove()
+  // Revoked after the browser has started the download, not before.
+  setTimeout(() => URL.revokeObjectURL(url), 1000)
 }

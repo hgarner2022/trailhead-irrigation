@@ -1,6 +1,6 @@
 import { Badge } from "@/components/ui/badge"
 import type { Pass, PassStatus } from "@/lib/admin/types"
-import { formatMoney } from "@/lib/admin/metrics"
+import { formatMoney, visitMonth } from "@/lib/admin/metrics"
 import { monthShort } from "./season-line-math"
 import type { GridColumnDef } from "./data-grid-table"
 
@@ -22,6 +22,17 @@ export function nextVisit(pass: Pass): string {
   return visit.scheduledAt ? shortDate(visit.scheduledAt) : visit.window
 }
 
+/** The pass's next visit as a sortable day: the booked date, else the first day of the window's month; nothing once every visit is charged. */
+export function nextVisitSortKey(pass: Pass): string | undefined {
+  const visit = pass.visits.find((v) => !v.chargedAt)
+  if (!visit) return undefined
+  if (visit.scheduledAt) return visit.scheduledAt.slice(0, 10)
+  const month = visitMonth(visit)
+  return month ? `${pass.season}-${String(month).padStart(2, "0")}-01` : undefined
+}
+
+/** Sentence case for the cells and the filter chips. The StatusPill block takes this over in the screens phase. */
+export const STATUS_LABEL: Record<PassStatus, string> = { active: "Active", cancelled: "Cancelled", lapsed: "Lapsed" }
 const STATUS_VARIANT: Record<PassStatus, "default" | "outline" | "secondary"> = { active: "default", cancelled: "outline", lapsed: "secondary" }
 
 export const passColumns: GridColumnDef<Pass>[] = [
@@ -37,11 +48,11 @@ export const passColumns: GridColumnDef<Pass>[] = [
       const status = getValue() as PassStatus
       return (
         <Badge variant={STATUS_VARIANT[status]} className={status === "cancelled" ? "text-muted-foreground" : undefined}>
-          {status}
+          {STATUS_LABEL[status]}
         </Badge>
       )
     },
   },
   { id: "charged", accessorFn: chargedTotal, header: "Charged so far", meta: { align: "right" }, cell: ({ getValue }) => formatMoney(Number(getValue())) },
-  { id: "nextVisit", accessorFn: nextVisit, header: "Next visit" },
+  { id: "nextVisit", accessorFn: nextVisitSortKey, header: "Next visit", sortUndefined: "last", cell: ({ row }) => nextVisit(row.original), meta: { csv: nextVisit } },
 ]
