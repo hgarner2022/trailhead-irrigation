@@ -23,6 +23,42 @@
      The *-src variables are set by next/font in src/app/layout.tsx. */
   --font-sans: var(--font-body-src), "Segoe UI", Helvetica, Arial, sans-serif;
   --font-display: var(--font-display-src), "Arial Narrow", Impact, sans-serif;
+
+  /* App tokens (admin dashboard, checkout, pass page). Mapped onto the brand
+     palette above; shadcn primitives reference these names. Documented in
+     docs/DESIGN.md. */
+  --color-secondary: #F5F5F4;            /* = stone */
+  --color-secondary-foreground: #1E293B;
+  --color-accent: #F5F5F4;
+  --color-accent-foreground: #1E293B;
+  --color-popover: #FFFFFF;
+  --color-popover-foreground: #1E293B;
+  --color-destructive: #B91C1C;
+  --color-destructive-foreground: #FFFFFF;
+  --color-warning: #B45309;              /* = primary-dark */
+  --color-positive: #16A34A;             /* = success */
+  --color-input: #E7E5E4;                /* = border */
+  --color-ring: #D97706;                 /* = primary */
+
+  --color-sidebar: #2B3544;              /* navy rail */
+  --color-sidebar-foreground: #FAFAF8;
+  --color-sidebar-primary: #D97706;
+  --color-sidebar-primary-foreground: #FFFFFF;
+  --color-sidebar-accent: #3D4F63;       /* = navy-light */
+  --color-sidebar-accent-foreground: #FFFFFF;
+  --color-sidebar-border: #3D4F63;
+  --color-sidebar-ring: #F59E0B;
+
+  --color-chart-1: #D97706;              /* this year */
+  --color-chart-2: #2B3544;              /* last year */
+  --color-chart-3: #16A34A;
+  --color-chart-4: #78716C;
+  --color-chart-5: #F59E0B;
+
+  --color-row-hover: #FAFAF8;            /* = cream */
+  --color-row-selected: #FEF3C7;         /* primary at 15 percent on white */
+
+  --radius: 0.5rem;                      /* rounded-lg everywhere */
 }
 
 /* Section spacing utilities matching pro-blocks patterns */

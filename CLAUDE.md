@@ -227,6 +227,8 @@ When you need a new section pattern:
 | `--muted` | `#78716C` | Secondary/muted text |
 | `--success` | `#16A34A` | Green accents (lawn health, check marks) |
 
+App surfaces (admin dashboard, Season Pass checkout, customer pass page) follow `docs/DESIGN.md`; app tokens live in the same `@theme` block in `globals.css`.
+
 ### Typography
 - **Headings**: System sans-serif stack or Inter — bold, clean
 - **Body**: Same family, regular weight
