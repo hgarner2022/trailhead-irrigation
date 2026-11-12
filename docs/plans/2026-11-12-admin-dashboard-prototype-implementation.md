@@ -222,64 +222,32 @@ Expected: the button renders orange, `rounded-lg`, in Source Sans 3. If the font
 
 **Files:**
 - Create: `scripts/check-design.mjs`
-- Modify: `package.json` (`"check:design": "node scripts/check-design.mjs"`, and `"lint": "eslint && node scripts/check-design.mjs"`)
+- Create: `scripts/check-design.test.mjs` (plain `node:test`, runs against a temp folder)
+- Modify: `package.json` (`"check:design": "node scripts/check-design.mjs"`, `"test:gate": "node --test scripts/check-design.test.mjs"`, and `"lint": "eslint && node scripts/check-design.mjs"`)
+- Modify: `src/app/blog/page.tsx` (the "Latest post" gradient, see Step 0)
+- Modify: `docs/DESIGN.md` (three small notes, see Step 0)
+- Create: one Default story for each existing `src/components/ui/*.tsx` that has none (badge, card, carousel, input, separator, textarea)
 
-**Step 1: Write the test first** as a fixture run: create `scripts/check-design.test.mjs` is overkill; instead the script takes `--dir` so it can be pointed at a temp folder. Create a temp folder with one `bad.tsx` containing `className="bg-[#D97706]"` and one `orphan.tsx` with no story, run the script against it, expect exit code 1 with both messages.
+**Step 0: Two carry-overs from the button review.** (a) `src/app/blog/page.tsx` lines ~69-85: the "Latest post" card puts small white text on `from-primary-light via-primary to-primary-dark`; change the gradient to `from-primary-dark via-primary-deep to-primary-deep` so white text is at least 5:1 at every stop (Hannah's darker-orange decision, applied to the one other white-on-orange text surface). (b) `docs/DESIGN.md`: in the Tokens section add "`@theme inline` emits a token only where a utility class uses it, so `var(--color-x)` in an inline style or chart config is undefined unless some class also uses that token; charts and inline styles use classes or read the hex from one shared constants module that mirrors globals.css." Add to the `--color-positive` row: "4.8:1 on cream, so it is for text on white or cream only." Add a one-line comment above `@source not` in globals.css saying why (docs mention class names in prose).
 
-**Step 2: Script**
+**The rule the script enforces is exactly the one in `docs/DESIGN.md`:**
+- In `src/components/blocks/` and `src/app/(admin)/`: no hex, no `rgb(`/`rgba(`/`hsl(`, no arbitrary-value colour utilities (`bg-[#…]`, `text-[rgb…]`), and no Tailwind palette colours (`red-500`, `amber-100`, `slate-900`, …) on any colour-bearing prefix (`bg|text|border|ring|fill|stroke|from|via|to|divide|outline|shadow|decoration|accent|caret|placeholder`). `white`, `black`, `transparent`, `current`, `inherit` are allowed.
+- In `src/components/ui/`: the same, except a legacy allowlist (`input.tsx`, `textarea.tsx`, which use `red-500` for error states) that the script prints as "legacy, migrate when touched" and does not fail on. Remove a file from the allowlist when it is migrated.
+- `*.stories.tsx` and `*.test.tsx` are exempt from the colour rule (story backgrounds and test fixtures may use hex).
+- Hex is only flagged inside `className=`, `class=`, `style=`, `cn(`, `cva(` contexts or a template literal on the same line as one of those, so `href="#top"` and ids never match.
+- Every `src/components/ui/*.tsx` and `src/components/blocks/*.tsx` (not stories or tests) has a sibling `*.stories.tsx`.
+- No file under `src/components/blocks/` or `src/app/(admin)/` imports from `components/sections`; no file under `src/components/sections/` imports from `components/blocks` or `(admin)`.
+- Marketing code outside those folders is not checked.
 
-```js
-// scripts/check-design.mjs
-// Three gates from docs/DESIGN.md:
-//  1. no raw colours in components (hex, rgb(), or Tailwind arbitrary colour)
-//  2. every file in ui/ and blocks/ has a sibling *.stories.tsx
-//  3. no imports across the admin / marketing boundary
-import { readdirSync, readFileSync, statSync, existsSync } from "node:fs"
-import { join, relative } from "node:path"
+**Step 1: Test first.** `scripts/check-design.test.mjs` builds a temp folder (`fs.mkdtempSync`) with a fake `src/` tree and runs the script with `--dir <temp>/src` via `child_process.spawnSync`. Cases: a `blocks/Bad.tsx` with `className="bg-[#D97706]"` fails with "raw colour"; a `blocks/Palette.tsx` with `text-red-500` fails with "palette colour"; a `blocks/Orphan.tsx` with no story fails with "no story"; `ui/input.tsx` with `border-red-500` passes with a "legacy" line; a `blocks/Good.tsx` with `bg-primary text-white` and a `Good.stories.tsx` containing `#FAFAF8` passes; a `blocks/Leak.tsx` importing `@/components/sections/Hero` fails with "imports a marketing section"; a `sections/Leak.tsx` importing `@/components/blocks/StatTile` fails with "marketing code imports admin code"; a `blocks/Anchor.tsx` with `href="#top"` and a story passes. Run: `npm run test:gate`. Expected: all cases pass.
 
-const root = process.argv.includes("--dir") ? process.argv[process.argv.indexOf("--dir") + 1] : "src"
-const problems = []
+**Step 2: Script.** Write `scripts/check-design.mjs` to make the test pass. Keep it under 120 lines, no dependencies, exit 1 with one line per problem, exit 0 with `design gates: ok` (plus any legacy lines). `--dir` defaults to `src`.
 
-function walk(dir) {
-  for (const name of readdirSync(dir)) {
-    const p = join(dir, name)
-    if (statSync(p).isDirectory()) walk(p)
-    else if (/\.(ts|tsx)$/.test(name) && !/\.(test|stories)\.tsx?$/.test(name)) check(p)
-  }
-}
+**Step 3: Make `main`'s own tree pass.** Write the six missing ui stories (one Default story each, ten lines, matching `button.stories.tsx`'s shape; the carousel story needs three slides). Run `npm run check:design`: expected `design gates: ok` with two legacy lines for input and textarea. Run `npm run test:stories` and confirm the new stories pass the a11y check; if one fails on contrast, fix the story's example content (not the component) and say so.
 
-const RAW_COLOUR = /(#[0-9a-fA-F]{3,8}\b|rgba?\(|\b(bg|text|border|ring|fill|stroke)-\[#)/
-const ADMIN = /src\/app\/\(admin\)|src\/components\/blocks/
-const MARKETING = /src\/components\/sections/
+**Step 4: Verify** `npm run lint` (now includes the gate), `npm test`, `npm run test:gate`, `npm run test:stories`, `npx tsc --noEmit`, `npm run build`.
 
-function check(file) {
-  const src = readFileSync(file, "utf8")
-  const rel = relative(process.cwd(), file)
-  if (/src\/components\/(ui|blocks)|src\/app\/\(admin\)/.test(rel) && RAW_COLOUR.test(src)) {
-    problems.push(`${rel}: raw colour; use a token from src/app/globals.css`)
-  }
-  if (/src\/components\/(ui|blocks)\/[^/]+\.tsx$/.test(rel) && !existsSync(file.replace(/\.tsx$/, ".stories.tsx"))) {
-    problems.push(`${rel}: no story; every ui/ and blocks/ component needs one`)
-  }
-  const imports = [...src.matchAll(/from\s+"([^"]+)"/g)].map((m) => m[1])
-  if (ADMIN.test(rel) && imports.some((i) => i.includes("components/sections"))) {
-    problems.push(`${rel}: admin code imports a marketing section`)
-  }
-  if (MARKETING.test(rel) && imports.some((i) => i.includes("(admin)") || i.includes("components/blocks"))) {
-    problems.push(`${rel}: marketing code imports admin code`)
-  }
-}
-
-walk(root)
-if (problems.length) { console.error(problems.join("\n")); process.exit(1) }
-console.log("design gates: ok")
-```
-
-Exempt the existing `src/components/ui/*.tsx` that have no story yet by writing their stories in this task (badge, card, carousel, input, separator, textarea: one Default story each, ten lines each). The gate must pass on `main` before the task is committed.
-
-**Step 3: Run** `npm run check:design`. Expected: `design gates: ok`.
-
-**Step 4: Commit** `Add the design gate: tokens only, a story per component, no admin and marketing cross-imports`
+**Step 5: Commit** `Add the design gate: tokens only, a story per component, no admin and marketing cross-imports`
 
 ### Task 0.5: shadcn primitives
 
