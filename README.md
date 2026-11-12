@@ -29,6 +29,12 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
+## Testing
+
+- `npm test` runs the unit tests (Vitest, jsdom).
+- `npm run test:stories` renders every Storybook story in headless Chromium and fails on accessibility violations. It needs the browser once: `npx playwright install chromium`.
+- `npm run test:all` runs both.
+
 ## Environment Variables
 
 Create a `.env.local` file:

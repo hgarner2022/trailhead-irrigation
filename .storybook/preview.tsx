@@ -21,6 +21,8 @@ const preview: Preview = {
       },
     },
     layout: "fullscreen",
+    // Accessibility violations fail story tests (npm run test:stories).
+    a11y: { test: "error" },
   },
   tags: ["autodocs"],
 }
