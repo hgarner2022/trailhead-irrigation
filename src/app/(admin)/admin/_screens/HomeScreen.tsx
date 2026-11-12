@@ -7,7 +7,7 @@ import { StatTile } from "@/components/blocks/StatTile"
 import { StatusPill } from "@/components/blocks/StatusPill"
 import type { AdminData, Visit } from "@/lib/admin/types"
 import { committedByMonth, visitsOn } from "@/lib/admin/metrics"
-import { SEASON, clockTime, dayHeading, greeting, pageContext, seasonDescription, tileModels, tomorrowOf } from "./home-model"
+import { SEASON, TIME_ZONE, clockTime, dayHeading, greeting, pageContext, seasonDescription, tileModels, tomorrowOf } from "./home-model"
 
 // What Hannah opens to in the morning: a greeting, the four numbers that
 // matter today, the season line, the next two days of visits and the short
@@ -92,8 +92,8 @@ export function HomeScreen({ data, today }: HomeScreenProps) {
             <Title>Today and tomorrow</Title>
           </CardHeader>
           <CardContent className="space-y-5">
-            <Day id="home-today" heading={dayHeading("Today", today)} visits={visitsOn(data.visits, today)} />
-            <Day id="home-tomorrow" heading={dayHeading("Tomorrow", tomorrow)} visits={visitsOn(data.visits, tomorrow)} />
+            <Day id="home-today" heading={dayHeading("Today", today)} visits={visitsOn(data.visits, today, TIME_ZONE)} />
+            <Day id="home-tomorrow" heading={dayHeading("Tomorrow", tomorrow)} visits={visitsOn(data.visits, tomorrow, TIME_ZONE)} />
           </CardContent>
         </Card>
         <Card className="lg:col-span-2">

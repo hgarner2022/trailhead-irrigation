@@ -197,6 +197,11 @@ describe("upcomingCharges", () => {
   it("caps at the limit", () => {
     expect(upcomingCharges([p], "2027-01-01", 1)).toHaveLength(1)
   })
+  it("reads the from day in a time zone when one is given", () => {
+    // 2027-07-15T03:00Z is 9 pm on July 14 in Denver, so the inspection on the 14th is still from that day.
+    expect(upcomingCharges([p], "2027-07-15T03:00:00Z").map((c) => c.kind)).toEqual(["blowout"])
+    expect(upcomingCharges([p], "2027-07-15T03:00:00Z", 10, "America/Denver").map((c) => c.kind)).toEqual(["inspection", "blowout"])
+  })
   it("sorts across passes", () => {
     const later = pass({ id: "p12", visits: [{ ...blowout, scheduledAt: "2027-10-01T16:00:00Z" }] })
     expect(upcomingCharges([p, later], "2027-08-01").map((c) => c.passId)).toEqual(["p12", "p10"])
@@ -228,6 +233,11 @@ describe("invoicesOverdue", () => {
   it("accepts a full timestamp for today", () => {
     expect(invoicesOverdue(list, "2026-11-12T18:30:00Z")).toEqual({ count: 2, total: 150 })
   })
+  it("reads the boundary day in a time zone when one is given", () => {
+    // 2026-11-13T02:00Z is still Thursday the 12th in Denver, so the invoice due on the 12th is not yet overdue there.
+    expect(invoicesOverdue(list, "2026-11-13T02:00:00Z")).toEqual({ count: 3, total: 1149 })
+    expect(invoicesOverdue(list, "2026-11-13T02:00:00Z", "America/Denver")).toEqual({ count: 2, total: 150 })
+  })
 })
 
 describe("visitsOn", () => {
@@ -241,6 +251,13 @@ describe("visitsOn", () => {
   it("leaves cancelled visits off the day", () => {
     const list = [visit("kept", "2026-11-12T15:00:00Z"), visit("gone", "2026-11-12T16:00:00Z", "cancelled")]
     expect(visitsOn(list, "2026-11-12").map((v) => v.id)).toEqual(["kept"])
+  })
+  it("groups by the calendar day of a time zone when one is given", () => {
+    // 5:30 pm Thursday in Denver is 00:30Z Friday; 7 pm Thursday in Denver is 02:00Z Friday.
+    const list = [visit("noon", "2026-11-12T19:00:00Z"), visit("evening", "2026-11-13T00:30:00Z"), visit("friday", "2026-11-13T19:00:00Z")]
+    expect(visitsOn(list, "2026-11-13T02:00:00Z").map((v) => v.id)).toEqual(["evening", "friday"])
+    expect(visitsOn(list, "2026-11-13T02:00:00Z", "America/Denver").map((v) => v.id)).toEqual(["noon", "evening"])
+    expect(visitsOn(list, "2026-11-13T19:00:00Z", "America/Denver").map((v) => v.id)).toEqual(["friday"])
   })
 })
 

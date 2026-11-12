@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest"
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import type { AdminData } from "@/lib/admin/types"
-import { clockTime, dayHeading, greeting, longDate, monthOf, pageContext, seasonDescription, sparklineOf, tileModels, tomorrowOf, updatedAgo } from "./home-model"
+import { visitsOn } from "@/lib/admin/metrics"
+import { TIME_ZONE, clockTime, dayHeading, greeting, longDate, monthOf, pageContext, seasonDescription, sparklineOf, tileModels, tomorrowOf, updatedAgo } from "./home-model"
 
 const data = snapshot as AdminData
 // 12:56 pm in Denver, four minutes after the snapshot's sync.
@@ -41,9 +42,26 @@ describe("dates", () => {
     expect(clockTime("2026-11-12T19:05:00Z")).toBe("12:05 pm")
   })
 
-  it("steps tomorrow one day on from today", () => {
-    expect(tomorrowOf(TODAY)).toBe("2026-11-13T19:56:30.000Z")
-    expect(tomorrowOf("2026-12-31T20:00:00Z")).toBe("2027-01-01T20:00:00.000Z")
+  it("formats a summer time in Mountain daylight time", () => {
+    expect(clockTime("2026-07-10T14:00:00Z")).toBe("8:00 am")
+  })
+
+  it("names tomorrow from the Denver calendar day, whatever the hour", () => {
+    expect(tomorrowOf(TODAY)).toBe("2026-11-13T19:00:00.000Z")
+    expect(tomorrowOf("2026-12-31T20:00:00Z")).toBe("2027-01-01T19:00:00.000Z")
+    // 7 pm Thursday in Denver is already Friday in UTC; tomorrow is still Friday, not Saturday.
+    expect(dayHeading("Tomorrow", tomorrowOf("2026-11-13T02:00:00Z"))).toBe("Tomorrow, Friday 13")
+    expect(dayHeading("Today", "2026-11-13T02:00:00Z")).toBe("Today, Thursday 12")
+  })
+
+  it("lists the Denver day's visits under its heading after 5 pm", () => {
+    const evening = "2026-11-13T02:00:00Z"
+    const names = (iso: string) => visitsOn(data.visits, iso, TIME_ZONE).map((v) => v.clientName)
+    expect(names(evening)).toEqual(["Percy", "Alicia", "Ethan", "Matthew"])
+    expect(names(tomorrowOf(evening))).toEqual(["David", "Ricky", "Joel", "Brian"])
+    const late = { ...data.visits[0], id: "late", clientName: "Late", startAt: "2026-11-13T00:30:00Z", status: "scheduled" as const }
+    expect(visitsOn([...data.visits, late], evening, TIME_ZONE).map((v) => v.clientName)).toContain("Late")
+    expect(visitsOn([late], tomorrowOf(evening), TIME_ZONE)).toEqual([])
   })
 
   it("reads the month of today", () => {
@@ -57,11 +75,14 @@ describe("updatedAgo", () => {
 
   it("says just now under a minute, minutes to ninety, then hours", () => {
     expect(updatedAgo(at(30), TODAY)).toBe("just now")
+    expect(updatedAgo(at(59), TODAY)).toBe("just now")
     expect(updatedAgo(at(60), TODAY)).toBe("1 minute ago")
     expect(updatedAgo(at(4 * 60), TODAY)).toBe("4 minutes ago")
     expect(updatedAgo(at(89 * 60), TODAY)).toBe("89 minutes ago")
     expect(updatedAgo(at(90 * 60), TODAY)).toBe("1 hour ago")
     expect(updatedAgo(at(3 * 3600), TODAY)).toBe("3 hours ago")
+    expect(updatedAgo(at(23 * 3600), TODAY)).toBe("23 hours ago")
+    expect(updatedAgo(at(24 * 3600), TODAY)).toBe("1 day ago")
     expect(updatedAgo(at(26 * 3600), TODAY)).toBe("1 day ago")
   })
 

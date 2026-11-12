@@ -3,11 +3,10 @@
  * "updated N minutes ago" wording and the season line's description and the four tile models. Kept out of the
  * screen so they can be unit tested with a fixed `today`.
  *
- * Anything shown as a clock or calendar word (the greeting hour, the long
- * date, "8:00 am") is formatted in Mountain time, because that is where the
- * reader is. Which visits belong to a day still comes from `visitsOn`, which
- * reads the stored ISO date prefix as-is like the rest of `lib/admin`; the
- * wiring phase converts those to Mountain time too.
+ * There is one definition of "day" on Home, the calendar day in Mountain
+ * time (`TIME_ZONE`): the greeting hour, the long date, "8:00 am", tomorrow
+ * and the month all come from it, and the screen passes the same zone to
+ * `visitsOn` and `invoicesOverdue`, so a 7 pm visit stays on its Thursday.
  */
 import type { StatTileProps } from "@/components/blocks/StatTile"
 import type { AdminData, MonthTotal } from "@/lib/admin/types"
@@ -69,9 +68,12 @@ export function monthOf(iso: string): { year: number; month: number; name: strin
   return { year: Number(year), month: Number(formatter.format(new Date(iso))), name: month }
 }
 
-/** The same clock time one day on. */
+/** Noon in Mountain time on the next Denver calendar day, so it names the right day whatever the hour. */
 export function tomorrowOf(iso: string): string {
-  return new Date(Date.parse(iso) + DAY).toISOString()
+  const { year, month } = monthOf(iso)
+  const { day } = partsOf(iso)
+  // 19:00Z is noon MST and 1 pm MDT, both well inside the same Denver day.
+  return new Date(Date.UTC(year, month - 1, Number(day) + 1, 19)).toISOString()
 }
 
 const plural = (n: number, unit: string) => `${n} ${unit}${n === 1 ? "" : "s"} ago`
@@ -113,7 +115,7 @@ export function tileModels(data: AdminData, today: string): StatTileProps[] {
   const revenue = monthComparison(data.monthTotals, year, month)
   const active = data.passes.filter((p) => p.status === "active").length
   const quotes = quotesAwaiting(data.quotes)
-  const overdue = invoicesOverdue(data.invoices, today)
+  const overdue = invoicesOverdue(data.invoices, today, TIME_ZONE)
   return [
     {
       label: "Revenue this month",

@@ -1,8 +1,11 @@
 /**
  * Pure metrics over the screen-facing admin types. Screens and blocks call
  * these and `getAdminData()`; nothing here knows where the data came from.
- * Month and day are read from the stored ISO string's date prefix as-is;
- * converting to Mountain time is the wiring phase's job, not this module's.
+ * Month and day are read from the stored ISO string's date prefix as-is
+ * unless a `timeZone` is given, in which case the calendar day in that zone
+ * is used (Home passes "America/Denver" so that a 7 pm visit stays on its
+ * Mountain day). Months in `visitMonth` and `committedByMonth` still read
+ * the prefix; the wiring phase converts stored times to Mountain time.
  */
 import type { BlowoutWeek, Invoice, MonthTotal, Pass, PassVisit, Quote, Visit } from "./types"
 
@@ -12,7 +15,20 @@ const MONTH_BY_NAME = new Map(MONTHS.flatMap((name, i) => [[name, i + 1], [name.
 /** A lapsed or cancelled pass is no longer a commitment, so it counts nowhere; money collected on a pass that later lapsed will be its own metric if Hannah wants it. */
 const counts = (p: Pass) => p.status === "active"
 
-const day = (iso: string) => iso.slice(0, 10)
+const dayFormatters = new Map<string, Intl.DateTimeFormat>()
+const dayFormatter = (timeZone: string) => {
+  let f = dayFormatters.get(timeZone)
+  if (!f) {
+    // en-CA writes YYYY-MM-DD, the same shape as the ISO prefix.
+    f = new Intl.DateTimeFormat("en-CA", { timeZone, year: "numeric", month: "2-digit", day: "2-digit" })
+    dayFormatters.set(timeZone, f)
+  }
+  return f
+}
+
+/** The calendar day as YYYY-MM-DD: the ISO prefix, or, for a timestamp with a `timeZone`, the day in that zone. A date-only string is already a calendar day and is never shifted. */
+const day = (iso: string, timeZone?: string) =>
+  timeZone && iso.length > 10 ? dayFormatter(timeZone).format(new Date(iso)) : iso.slice(0, 10)
 const byIso = <T>(key: (x: T) => string) => (a: T, b: T) => (key(a) < key(b) ? -1 : key(a) > key(b) ? 1 : 0)
 
 /** The first month named anywhere in a window ("early April", "Oct 13", "Late April to May"), by full name or three-letter abbreviation; null when none. */
@@ -83,12 +99,13 @@ export interface UpcomingCharge {
   scheduledAt: string
 }
 
-/** Scheduled, not yet charged visits on active passes from the `from` day onward, soonest first. */
-export function upcomingCharges(passes: Pass[], from: string, limit = 10): UpcomingCharge[] {
+/** Scheduled, not yet charged visits on active passes from the `from` day onward, soonest first. `timeZone` sets which calendar day `from` and the visits fall on. */
+export function upcomingCharges(passes: Pass[], from: string, limit = 10, timeZone?: string): UpcomingCharge[] {
   const charges: UpcomingCharge[] = []
+  const fromDay = day(from, timeZone)
   for (const pass of passes.filter(counts)) {
     for (const visit of pass.visits) {
-      if (!visit.scheduledAt || visit.chargedAt || day(visit.scheduledAt) < day(from)) continue
+      if (!visit.scheduledAt || visit.chargedAt || day(visit.scheduledAt, timeZone) < fromDay) continue
       const { firstName, town } = pass
       charges.push({ passId: pass.id, firstName, town, kind: visit.kind, amount: visit.amount, scheduledAt: visit.scheduledAt })
     }
@@ -102,15 +119,17 @@ export function quotesAwaiting(quotes: Quote[]): { count: number; total: number 
   return countAndTotal(quotes.filter((q) => q.status === "awaiting"))
 }
 
-/** Unpaid invoices whose due day is before `today`. */
-export function invoicesOverdue(invoices: Invoice[], today: string): { count: number; total: number } {
-  return countAndTotal(invoices.filter((i) => i.status !== "paid" && day(i.dueAt) < day(today)))
+/** Unpaid invoices whose due day is before `today`. `timeZone` sets which calendar day `today` and the due dates fall on. */
+export function invoicesOverdue(invoices: Invoice[], today: string, timeZone?: string): { count: number; total: number } {
+  const todayDay = day(today, timeZone)
+  return countAndTotal(invoices.filter((i) => i.status !== "paid" && day(i.dueAt, timeZone) < todayDay))
 }
 
-/** Visits that are still on for that calendar day, earliest first. */
-export function visitsOn(visits: Visit[], dayIso: string): Visit[] {
+/** Visits that are still on for that calendar day, earliest first. `timeZone` sets which calendar day a visit falls on. */
+export function visitsOn(visits: Visit[], dayIso: string, timeZone?: string): Visit[] {
+  const target = day(dayIso, timeZone)
   const onDay = (v: Visit): v is Visit & { startAt: string } =>
-    v.status !== "cancelled" && v.startAt !== undefined && day(v.startAt) === day(dayIso)
+    v.status !== "cancelled" && v.startAt !== undefined && day(v.startAt, timeZone) === target
   return visits.filter(onDay).sort(byIso((v) => v.startAt))
 }
 
