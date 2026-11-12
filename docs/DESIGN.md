@@ -4,6 +4,8 @@
 
 These are the rules for every screen in `/admin`, the Season Pass checkout and the customer pass page. They are written for humans and for agents, so that a screen built in March looks like one built in November. The marketing site keeps its own rules in `CLAUDE.md`; this document only covers the app surfaces. A new block needs a story in Storybook and an entry here before it is used on a screen.
 
+Status: as of 2026-11-12 the rails exist (tokens, Storybook, this document). Blocks, screens, `getAdminData()` and the gate script are described here ahead of being built; the prototype plan in `docs/plans` says what exists.
+
 ## Aesthetic direction
 
 The feel is Stripe's dashboard: calm, light and numbers first, in Trailhead's palette. The canvas is cream, the sidebar is navy, and orange appears only on actions and highlights, never as decoration. Titles and big numbers are set in Barlow Condensed (`font-display`); everything else is Source Sans 3 (`font-sans`). Cards, buttons, panels and photos are `rounded-lg`. Circles are reserved for icon badges and chips.
@@ -22,7 +24,7 @@ Every colour the app uses is a token in `src/app/globals.css`, inside the `@them
 
 | Token | Value | Meaning | Where it is used |
 |---|---|---|---|
-| `--color-primary` | `#D97706` | Orange, from the logo sun | Primary buttons, links, highlights, the active nav item |
+| `--color-primary` | `#D97706` | Orange, from the logo sun | Accents, chips, tints, links, text on navy |
 | `--color-primary-dark` | `#B45309` | Darker orange | Resting background of the primary button (about 5.0:1 with white text); hover for other orange elements |
 | `--color-primary-deep` | `#92400E` | Deepest orange | Hover state for buttons that rest on primary-dark |
 | `--color-primary-light` | `#F59E0B` | Lighter orange | Accents on navy, the second line of the hero tagline |
@@ -53,12 +55,12 @@ Every colour the app uses is a token in `src/app/globals.css`, inside the `@them
 | `--color-destructive` | `#B91C1C` | Red | Cancel and delete actions, error text, the failed status |
 | `--color-destructive-foreground` | `#FFFFFF` | White | Text on a destructive button |
 | `--color-warning` | `#B45309` | Primary dark | Past due, needs attention, a delta that is bad for the business |
-| `--color-positive` | `#16A34A` | Success | Paid, confirmed, a delta that is good for the business |
+| `--color-positive` | `#15803D` | Readable green, about 5:1 on white | Paid, confirmed, a delta that is good for the business; it is used as text, which is why it is darker than `--color-success` |
 | `--color-input` | `#E7E5E4` | Border | Input and select borders |
-| `--color-ring` | `#D97706` | Primary | Focus ring on every interactive element |
+| `--color-ring` | `#D97706` | Primary | Focus ring on new primitives (`ring-ring`); the existing primitives use `ring-primary/50` and may stay that way until touched |
 | `--color-sidebar` | `#2B3544` | Navy | The sidebar rail background |
 | `--color-sidebar-foreground` | `#FAFAF8` | Cream | Text and icons in the rail |
-| `--color-sidebar-primary` | `#D97706` | Primary | The active nav item |
+| `--color-sidebar-primary` | `#B45309` | Primary dark | The active nav item background; white text on it passes AA |
 | `--color-sidebar-primary-foreground` | `#FFFFFF` | White | Text on the active nav item |
 | `--color-sidebar-accent` | `#3D4F63` | Navy light | Hover background on a nav item |
 | `--color-sidebar-accent-foreground` | `#FFFFFF` | White | Text on a hovered nav item |
@@ -70,7 +72,7 @@ Every colour the app uses is a token in `src/app/globals.css`, inside the `@them
 | `--color-chart-4` | `#78716C` | Muted | Reference lines and targets |
 | `--color-chart-5` | `#F59E0B` | Primary light | A highlighted bar or point |
 | `--color-row-hover` | `#FAFAF8` | Cream | Hovered row in a data grid |
-| `--color-row-selected` | `#FEF3C7` | Primary at 15 percent on white | Selected row in a data grid |
+| `--color-row-selected` | `#FEF3C7` | Pale amber tint | Selected row in a data grid |
 
 ### Type and radius
 
@@ -80,11 +82,13 @@ Every colour the app uses is a token in `src/app/globals.css`, inside the `@them
 | `--font-display` | Barlow Condensed, then Arial Narrow, Impact | Page titles, section titles, big numbers in stat tiles and the pass card |
 | `--radius` | `0.5rem` | The one corner radius, the same as Tailwind's `rounded-lg` |
 
-Both faces are self hosted through `next/font` in `src/app/layout.tsx`, which sets `--font-body-src` and `--font-display-src`. Storybook imports `globals.css` so stories render in the brand faces. There is no radius scale; `rounded-lg` is the radius for everything except circles.
+Both faces are self hosted through `next/font` in `src/app/layout.tsx`, which sets `--font-body-src` and `--font-display-src`. Storybook imports `globals.css` so stories render in the brand faces. There is no radius scale; `rounded-lg` is the radius for everything except circles. `--radius` is informational; `rounded-lg` resolves to Tailwind's own `--radius-lg`, which is the same 0.5rem. Never paste shadcn's base layer (`* { @apply border-border outline-ring/50 }`) into globals.css; it would change every bare border on the marketing site. Add primitives with `npx shadcn@latest add` only.
 
 ### The rule
 
-No raw colours in `src/components` or `src/app/(admin)`. That means no hex, no `rgb()` and no arbitrary Tailwind colour such as `bg-[#D97706]`. If a colour is missing, add a token to `globals.css` and a row to the table above. `scripts/check-design.mjs` fails the build when it finds a raw colour, a component without a story, or an import across the admin and marketing boundary.
+In `src/components/blocks/` and `src/app/(admin)/`: only semantic tokens; no hex, no `rgb()`, no arbitrary-value colours, and no Tailwind palette colours (`red-500`, `amber-100`, and so on). `white` and `black` are allowed. In `src/components/ui/`: the same, except that files that predate this document may keep their palette colours until they are next touched. Marketing sections in `src/components/sections/` follow `CLAUDE.md`, not this rule.
+
+If a colour is missing, add a token to `globals.css` and a row to the table above. `scripts/check-design.mjs` will fail the build once it lands (Task 0.4 of the prototype plan) when it finds a raw colour, a component without a story, or an import across the admin and marketing boundary.
 
 ## Three tiers
 
@@ -148,4 +152,4 @@ The app follows the same copy rules as the site. Headings are sentence case. Sen
 
 2026-11-12. SeasonLine and PassCard are built first, because nothing like them exists to copy and they decide whether the direction lands.
 
-2026-11-12: the primary button rests on primary-dark (#B45309, about 5.0:1 with white text) and hovers to primary-deep (#92400E), chosen by Hannah over navy text on orange. The logo orange (--primary) stays for accents, chips, tints and text on navy. The Button story's contrast exception is gone.
+2026-11-12. The primary button rests on primary-dark (#B45309, about 5.0:1 with white text) and hovers to primary-deep (#92400E), chosen by Hannah over navy text on orange. The logo orange (--primary) stays for accents, chips, tints and text on navy. The Button story's contrast exception is gone.

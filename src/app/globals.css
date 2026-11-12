@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@source not "../../docs";
 
 @theme inline {
   --color-primary: #D97706;
@@ -37,13 +38,13 @@
   --color-destructive: #B91C1C;
   --color-destructive-foreground: #FFFFFF;
   --color-warning: #B45309;              /* = primary-dark */
-  --color-positive: #16A34A;             /* = success */
+  --color-positive: #15803D;             /* readable green, about 5:1 on white; used as text */
   --color-input: #E7E5E4;                /* = border */
   --color-ring: #D97706;                 /* = primary */
 
   --color-sidebar: #2B3544;              /* navy rail */
   --color-sidebar-foreground: #FAFAF8;
-  --color-sidebar-primary: #D97706;
+  --color-sidebar-primary: #B45309;      /* = primary-dark; white text on it passes AA */
   --color-sidebar-primary-foreground: #FFFFFF;
   --color-sidebar-accent: #3D4F63;       /* = navy-light */
   --color-sidebar-accent-foreground: #FFFFFF;
@@ -57,7 +58,7 @@
   --color-chart-5: #F59E0B;
 
   --color-row-hover: #FAFAF8;            /* = cream */
-  --color-row-selected: #FEF3C7;         /* primary at 15 percent on white */
+  --color-row-selected: #FEF3C7;         /* pale amber tint */
 
   --radius: 0.5rem;                      /* rounded-lg everywhere */
 }
