@@ -6,16 +6,17 @@ import type { Pass, PassVisit } from "@/lib/admin/types"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { DataGrid } from "./DataGrid"
-import { passColumns, shortDate } from "./data-grid-columns"
+import { STATUS_LABEL, passColumns, shortDate } from "./data-grid-columns"
 import { SidePanel, SidePanelLayout } from "./SidePanel"
 
 // The real use: the Passes grid as the page, the pass opening beside it from
-// its name. Open by default so the panel is on screen without a click.
+// its name. Open by default so the panel is on screen without a click. The
+// grid's columns and data are module constants, so they are stable.
 const passes = snapshot.passes as Pass[]
-const option = (value: string) => ({ value, label: value })
+const option = (value: string, label = value) => ({ value, label })
 const FILTERS = [
-  { column: "town", label: "Town", options: ["Erie", "Longmont", "Louisville", "Lafayette", "Firestone", "Broomfield"].map(option) },
-  { column: "status", label: "Status", options: ["active", "cancelled", "lapsed"].map(option) },
+  { column: "town", label: "Town", options: ["Erie", "Longmont", "Louisville", "Lafayette", "Firestone", "Broomfield"].map((t) => option(t)) },
+  { column: "status", label: "Status", options: (["active", "cancelled", "lapsed"] as const).map((s) => option(s, STATUS_LABEL[s])) },
 ]
 const VISIT_NAMES: Record<PassVisit["kind"], string> = { "turn-on": "Turn-on", inspection: "Inspection", blowout: "Blowout" }
 
@@ -27,7 +28,7 @@ function PassDetail({ pass }: { pass: Pass }) {
     ["Town", pass.town],
     ["Zones", pass.zones],
     ["Blowout week", `Week of ${shortDate(pass.blowoutWeek)}`],
-    ["Status", <Badge key="status" variant={pass.status === "active" ? "default" : "outline"}>{pass.status}</Badge>],
+    ["Status", <Badge key="status" variant={pass.status === "active" ? "default" : "outline"}>{STATUS_LABEL[pass.status]}</Badge>],
   ]
   return (
     <div className="flex flex-col gap-6">

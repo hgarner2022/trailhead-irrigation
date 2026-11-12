@@ -28,7 +28,7 @@ export interface SidePanelProps {
 
 const LG = "(min-width: 1024px)"
 const DEFAULT_WIDTH = 480
-// The body scrolls on its own, so it is in the tab order for keyboard scrolling.
+// The body scrolls on its own, so it is a named region in the tab order for keyboard scrolling.
 const BODY = "flex-1 overflow-y-auto p-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/50"
 
 const subscribe = (onChange: () => void) => {
@@ -51,7 +51,7 @@ export function SidePanelLayout({ panel, children, className }: { panel: ReactNo
   const report = useCallback<Report>((open, width) => setState((s) => (s.open === open && s.width === width ? s : { open, width })), [])
   return (
     <LayoutContext.Provider value={report}>
-      <div data-slot="side-panel-layout" className={cn("relative", className)}>
+      <div data-slot="side-panel-layout" tabIndex={-1} className={cn("relative outline-none", className)}>
         <div
           data-slot="side-panel-page"
           style={{ "--panel-w": `${state.width}px` } as CSSProperties}
@@ -79,18 +79,24 @@ function Column({ open, onOpenChange, title, description, width = DEFAULT_WIDTH,
   useEffect(() => {
     latest.current = onOpenChange
   })
-  // Focus lands on the panel on open and goes back to where it was on close.
+  // Focus lands on the panel on open and goes back to where it was on close,
+  // or to the grid or the layout when that element is gone. Escape closes
+  // unless a menu inside the panel is open or something already handled it.
   useEffect(() => {
     if (!open) return
-    const before = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    const active = document.activeElement
+    const before = active instanceof HTMLElement && active !== document.body ? active : null
     ref.current?.focus()
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") latest.current(false)
+      if (event.key !== "Escape" || event.defaultPrevented) return
+      if (event.target instanceof Element && event.target.closest('[role="menu"]')) return
+      latest.current(false)
     }
     document.addEventListener("keydown", onKey)
     return () => {
       document.removeEventListener("keydown", onKey)
-      before?.focus()
+      const fallback = () => document.querySelector<HTMLElement>('[data-slot="data-grid-table"]') ?? document.querySelector<HTMLElement>('[data-slot="side-panel-layout"]')
+      ;(before?.isConnected ? before : fallback())?.focus()
     }
   }, [open])
   if (!open) return null
@@ -112,7 +118,7 @@ function Column({ open, onOpenChange, title, description, width = DEFAULT_WIDTH,
         </div>
         <CloseButton onClick={() => onOpenChange(false)} />
       </div>
-      <div tabIndex={0} className={BODY}>
+      <div role="region" aria-label={title} tabIndex={0} className={BODY}>
         {children}
       </div>
       {footer && <div className="flex flex-wrap items-center gap-2 border-t border-border p-4">{footer}</div>}
@@ -148,7 +154,7 @@ function PhoneSheet({ open, onOpenChange, title, description, children, footer, 
             <CloseButton />
           </SheetClose>
         </SheetHeader>
-        <div tabIndex={0} className={BODY}>
+        <div role="region" aria-label={title} tabIndex={0} className={BODY}>
           {children}
         </div>
         {footer && <SheetFooter className="flex-row flex-wrap items-center border-t border-border">{footer}</SheetFooter>}

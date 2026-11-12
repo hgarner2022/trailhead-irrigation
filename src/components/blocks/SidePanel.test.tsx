@@ -1,6 +1,15 @@
-import { describe, it, expect, vi, afterEach } from "vitest"
+import { describe, it, expect, vi, afterEach, beforeAll } from "vitest"
 import { render, screen, fireEvent, act } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { SidePanel, SidePanelLayout } from "./SidePanel"
+
+// jsdom has none of these; Radix menus read them.
+beforeAll(() => {
+  Element.prototype.hasPointerCapture = () => false
+  Element.prototype.releasePointerCapture = () => {}
+  Element.prototype.scrollIntoView = () => {}
+})
 
 // Tailwind's lg breakpoint, the point where the panel stops covering the page and pushes it instead.
 const LG = "(min-width: 1024px)"
@@ -97,6 +106,82 @@ describe("SidePanel on a laptop", () => {
     expect(onOpenChange).toHaveBeenCalledWith(false)
     fireEvent.keyDown(document, { key: "Escape" })
     expect(onOpenChange).toHaveBeenCalledTimes(2)
+  })
+
+  it("leaves Escape to a menu open inside it, then closes on the next one", async () => {
+    stubViewport(true)
+    const user = userEvent.setup()
+    const onOpenChange = vi.fn()
+    render(
+      <SidePanel open onOpenChange={onOpenChange} title="Andrea">
+        <DropdownMenu modal={false}>
+          <DropdownMenuTrigger asChild>
+            <button type="button">Actions</button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent>
+            <DropdownMenuItem>Email customer</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </SidePanel>,
+    )
+    await user.click(screen.getByRole("button", { name: "Actions" }))
+    expect(await screen.findByRole("menu")).toBeInTheDocument()
+    await user.keyboard("{Escape}")
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument()
+    expect(onOpenChange).not.toHaveBeenCalled()
+    await user.keyboard("{Escape}")
+    expect(onOpenChange).toHaveBeenCalledWith(false)
+  })
+
+  it("ignores an Escape something else already handled", () => {
+    stubViewport(true)
+    const onOpenChange = vi.fn()
+    render(<Panel onOpenChange={onOpenChange} />)
+    const event = new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true })
+    event.preventDefault()
+    document.dispatchEvent(event)
+    expect(onOpenChange).not.toHaveBeenCalled()
+  })
+
+  it("names the scrolling body as a region", () => {
+    stubViewport(true)
+    render(<Panel />)
+    expect(screen.getByRole("region", { name: "Andrea" })).toHaveTextContent("Erie, 6 zones")
+  })
+
+  it("falls back to the grid, then the layout, when the opener is gone on close", () => {
+    stubViewport(true)
+    const opener = document.createElement("button")
+    document.body.appendChild(opener)
+    opener.focus()
+    const { rerender } = render(
+      <SidePanelLayout panel={<Panel open />}>
+        <div data-slot="data-grid-table" tabIndex={-1}>
+          The grid
+        </div>
+      </SidePanelLayout>,
+    )
+    expect(document.activeElement).toBe(screen.getByRole("complementary"))
+    opener.remove()
+    rerender(
+      <SidePanelLayout panel={<Panel open={false} />}>
+        <div data-slot="data-grid-table" tabIndex={-1}>
+          The grid
+        </div>
+      </SidePanelLayout>,
+    )
+    expect(document.activeElement).toBe(screen.getByText("The grid"))
+    rerender(
+      <SidePanelLayout panel={<Panel open />}>
+        <p>No grid</p>
+      </SidePanelLayout>,
+    )
+    rerender(
+      <SidePanelLayout panel={<Panel open={false} />}>
+        <p>No grid</p>
+      </SidePanelLayout>,
+    )
+    expect(document.activeElement).toBe(document.querySelector('[data-slot="side-panel-layout"]'))
   })
 
   it("honours a custom width", () => {
