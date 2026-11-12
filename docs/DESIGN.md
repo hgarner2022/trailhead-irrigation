@@ -104,6 +104,8 @@ Marketing sections stay in `src/components/sections/`. Nothing in the admin tree
 
 Marketing CSS scans only the marketing folders and the seven primitives marketing uses (badge, button, card, carousel, input, separator, textarea). Tailwind cannot re-include one file under an excluded folder, so `globals.css` lists the admin-only primitives one by one as `@source not` lines instead; a primitive with no such line is in the marketing scan. A marketing file that imports one of the excluded primitives must remove its `@source not` line, and the gate fails the build until it does. Admin, checkout and account screens get their own stylesheet entry in the wiring phase.
 
+Files in blocks, ui and the app route groups stay under 300 lines; the gate fails above that. shadcn's sidebar and chart are allowlisted.
+
 The reference libraries `ui/` and `pro-blocks/` at the repo root are read only and excluded from TypeScript. They are patterns to read and copy from, never imported.
 
 ## Storybook

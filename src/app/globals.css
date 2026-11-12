@@ -1,15 +1,17 @@
 @import "tailwindcss";
 @import "./tokens.css";
 @import "./base.css";
-/* docs mention class names in prose; keep them out of the scan */
+/* docs and the gate tests mention class names; keep them out of the scan */
 @source not "../../docs";
+@source not "../../scripts";
 
 /* Admin-only sources stay out of the marketing CSS. The admin route group gets
    its own stylesheet entry when it is wired (see the wiring plan). Tailwind
    4.2 cannot re-include one file under an excluded folder, so the admin-only
    ui/ primitives are excluded one by one; the ones not listed (badge, button,
    card, carousel, input, separator, textarea) are what marketing imports. The
-   gate checks that no marketing file imports a primitive excluded here. */
+   gate fails when marketing imports a primitive listed here and when a
+   primitive is neither used by marketing nor listed (npm run check:design). */
 @source not "../components/blocks";
 @source not "../components/**/*.stories.tsx";
 @source not "../components/**/*.test.tsx";

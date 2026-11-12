@@ -233,3 +233,87 @@ test("the marketing CSS rule is skipped when globals.css is absent", () => {
   assert.equal(r.status, 0, r.out)
   assert.match(r.out, /design gates: ok/)
 })
+
+// Marketing CSS leak: every ui/ primitive is either used by marketing (directly
+// or through another primitive) or excluded by an @source not line.
+const UI = (body = `export const X = () => <div className="bg-primary" />\n`) => body
+
+test("a ui primitive neither used by marketing nor excluded fails", () => {
+  const r = run({
+    "app/globals.css": GLOBALS_BUTTON_ONLY,
+    "components/sections/Foo.tsx": `import { Button } from "@/components/ui/button"\nexport const Foo = () => <Button />\n`,
+    "components/ui/button.tsx": UI(),
+    "components/ui/button.stories.tsx": STORY,
+    "components/ui/foo.tsx": UI(),
+    "components/ui/foo.stories.tsx": STORY,
+  })
+  assert.equal(r.status, 1)
+  assert.match(r.out, /ui\/foo is neither used by marketing nor excluded from the marketing CSS \(add an @source not line in src\/app\/globals\.css\)/)
+})
+
+test("a ui primitive used only through another primitive passes", () => {
+  const r = run({
+    "app/globals.css": GLOBALS_BUTTON_ONLY,
+    "components/sections/Foo.tsx": `import { Carousel } from "@/components/ui/carousel"\nexport const Foo = () => <Carousel />\n`,
+    "components/ui/carousel.tsx": `import { Button } from "./button"\nexport const Carousel = () => <Button className="bg-primary" />\n`,
+    "components/ui/carousel.stories.tsx": STORY,
+    "components/ui/button.tsx": UI(),
+    "components/ui/button.stories.tsx": STORY,
+    "components/ui/tabs.tsx": UI(),
+    "components/ui/tabs.stories.tsx": STORY,
+  })
+  assert.equal(r.status, 0, r.out)
+  assert.match(r.out, /design gates: ok/)
+})
+
+test("a scanned ui primitive importing an excluded one fails", () => {
+  const r = run({
+    "app/globals.css": GLOBALS_BUTTON_ONLY,
+    "components/sections/Foo.tsx": `import { Carousel } from "@/components/ui/carousel"\nexport const Foo = () => <Carousel />\n`,
+    "components/ui/carousel.tsx": `import { Tabs } from "./tabs"\nexport const Carousel = () => <Tabs className="bg-primary" />\n`,
+    "components/ui/carousel.stories.tsx": STORY,
+    "components/ui/tabs.tsx": UI(),
+    "components/ui/tabs.stories.tsx": STORY,
+  })
+  assert.equal(r.status, 1)
+  assert.match(r.out, /ui\/carousel imports \.\/tabs, which src\/app\/globals\.css excludes from the marketing CSS/)
+})
+
+test("a malformed @source not line under components/ui fails", () => {
+  const r = run({
+    "app/globals.css": `@import "tailwindcss";\n@source not "../components/ui/*";\n`,
+    "components/sections/Foo.tsx": `export const Foo = () => <div />\n`,
+  })
+  assert.equal(r.status, 1)
+  assert.match(r.out, /src\/app\/globals\.css: @source not "\.\.\/components\/ui\/\*" is not of the form "\.\.\/components\/ui\/<name>\.tsx"/)
+})
+
+// File cap: blocks/, ui/ and the app route groups stay at or under 300 lines.
+const LINES = (n) => Array.from({ length: n }, (_, i) => `// line ${i + 1}`).join("\n") + "\n"
+
+test("a 300-line block passes the file cap", () => {
+  const r = run({
+    "components/blocks/Long.tsx": LINES(299) + `export const Long = () => <div className="bg-primary" />\n`,
+    "components/blocks/Long.stories.tsx": STORY,
+  })
+  assert.equal(r.status, 0, r.out)
+  assert.match(r.out, /design gates: ok/)
+})
+
+test("a 301-line admin screen fails the file cap", () => {
+  const r = run({
+    "app/(admin)/admin/_screens/Long.tsx": LINES(300) + `export const Long = () => <div className="bg-primary" />\n`,
+  })
+  assert.equal(r.status, 1)
+  assert.match(r.out, /app\/\(admin\)\/admin\/_screens\/Long\.tsx: 301 lines \(limit 300\); split it or add it to FILE_CAP_ALLOWLIST/)
+})
+
+test("an allowlisted shadcn file over the cap passes with a note", () => {
+  const r = run({
+    "components/ui/sidebar.tsx": LINES(400) + `export const Sidebar = () => <div className="bg-sidebar" />\n`,
+    "components/ui/sidebar.stories.tsx": STORY,
+  })
+  assert.equal(r.status, 0, r.out)
+  assert.match(r.out, /components\/ui\/sidebar\.tsx: 401 lines, allowlisted/)
+  assert.match(r.out, /design gates: ok/)
+})
