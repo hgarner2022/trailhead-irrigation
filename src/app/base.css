@@ -1,0 +1,48 @@
+/* Global rules shared by the site (globals.css) and Storybook
+   (.storybook/storybook.css), so the two never drift. */
+/* Section spacing utilities matching pro-blocks patterns */
+.section-padding-y {
+  padding-top: 4rem;
+  padding-bottom: 4rem;
+}
+
+@media (min-width: 768px) {
+  .section-padding-y {
+    padding-top: 6rem;
+    padding-bottom: 6rem;
+  }
+}
+
+.container-padding-x {
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+@media (min-width: 640px) {
+  .container-padding-x {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .container-padding-x {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+}
+
+body {
+  background: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans);
+}
+
+/* Headings site-wide take the display face. Individual components can opt
+   out with `font-sans` (the hero's keyword H1 does). */
+h1, h2, h3 {
+  font-family: var(--font-display);
+  letter-spacing: 0.01em;
+  line-height: 1.05;
+  text-wrap: balance;
+}

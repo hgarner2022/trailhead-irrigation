@@ -1,52 +1,8 @@
 /* Storybook's stylesheet. globals.css keeps the admin-only sources out of the
    marketing CSS, which would starve the admin stories, so stories scan all of
-   src/ here and share the token block through src/app/tokens.css. The few
-   global rules below mirror globals.css. */
+   src/ here and share the tokens and base rules with the site. */
 @import "tailwindcss";
 @import "../src/app/tokens.css";
+@import "../src/app/base.css";
 @source "../src";
 @source not "../docs";
-
-.section-padding-y {
-  padding-top: 4rem;
-  padding-bottom: 4rem;
-}
-
-@media (min-width: 768px) {
-  .section-padding-y {
-    padding-top: 6rem;
-    padding-bottom: 6rem;
-  }
-}
-
-.container-padding-x {
-  padding-left: 1rem;
-  padding-right: 1rem;
-}
-
-@media (min-width: 640px) {
-  .container-padding-x {
-    padding-left: 1.5rem;
-    padding-right: 1.5rem;
-  }
-}
-
-@media (min-width: 1024px) {
-  .container-padding-x {
-    padding-left: 2rem;
-    padding-right: 2rem;
-  }
-}
-
-body {
-  background: var(--color-background);
-  color: var(--color-foreground);
-  font-family: var(--font-sans);
-}
-
-h1, h2, h3 {
-  font-family: var(--font-display);
-  letter-spacing: 0.01em;
-  line-height: 1.05;
-  text-wrap: balance;
-}
