@@ -1,8 +1,7 @@
 "use client"
 
 import { useMemo, useState, type ReactNode } from "react"
-import { cn } from "@/lib/utils"
-import { Button, buttonVariants } from "@/components/ui/button"
+import { Button } from "@/components/ui/button"
 import { DataGrid } from "@/components/blocks/DataGrid"
 import { passColumns } from "@/components/blocks/data-grid-columns"
 import { PageHeader } from "@/components/blocks/PageHeader"
@@ -37,9 +36,6 @@ const BULK_ACTIONS = [
   { label: "Send card update link", onClick: log("send card update link") },
   { label: "Resend confirmation", onClick: log("resend confirmation") },
 ]
-
-// Button is always a <button>, so the outbound links wear its outline styling on a plain anchor.
-const LINK_BUTTON = cn(buttonVariants({ variant: "outline", size: "sm" }), "no-underline")
 
 function Subtitle({ id, children }: { id: string; children: string }) {
   return (
@@ -103,12 +99,18 @@ function PassDetail({ pass, today }: { pass: Pass; today: string }) {
         <Charges pass={pass} />
       </section>
       <div className="flex flex-wrap gap-2">
-        <a href={pass.jobberUrl} target="_blank" rel="noreferrer" className={LINK_BUTTON}>
-          Open in Jobber
-        </a>
-        <a href={pass.stripeUrl} target="_blank" rel="noreferrer" className={LINK_BUTTON}>
-          Open in Stripe
-        </a>
+        <Button asChild variant="outline" size="sm">
+          <a href={pass.jobberUrl} target="_blank" rel="noreferrer">
+            Open in Jobber
+            <span className="sr-only"> (opens in a new tab)</span>
+          </a>
+        </Button>
+        <Button asChild variant="outline" size="sm">
+          <a href={pass.stripeUrl} target="_blank" rel="noreferrer">
+            Open in Stripe
+            <span className="sr-only"> (opens in a new tab)</span>
+          </a>
+        </Button>
       </div>
     </div>
   )
