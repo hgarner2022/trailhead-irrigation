@@ -158,4 +158,6 @@ The app follows the same copy rules as the site. Headings are sentence case. Sen
 
 2026-11-12. SeasonLine has no Loading or Error story: it is pure props.
 
+2026-11-12. PassCard uses the flat artwork with the moving sheen for the interactive card (checkout end, pass page, admin thumbnail), chosen by Hannah in Storybook over the baked-in holographic art. The holographic art stays for the email and the saved image, where nothing can move.
+
 2026-11-12. The primary button rests on primary-dark (#B45309, about 5.0:1 with white text) and hovers to primary-deep (#92400E), chosen by Hannah over navy text on orange. The logo orange (--primary) stays for accents, chips, tints and text on navy. The Button story's contrast exception is gone.
