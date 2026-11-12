@@ -12,6 +12,11 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Read-only reference libraries and generated output.
+    "ui/**",
+    "pro-blocks/**",
+    ".claude/**",
+    "storybook-static/**",
   ]),
 ]);
 

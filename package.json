@@ -16,7 +16,9 @@
     "brevo:import": "node scripts/brevo-import.mjs",
     "new-city": "node scripts/new-city.mjs",
     "new-service": "node scripts/new-service.mjs",
-    "freeze-dates": "node scripts/freeze-dates.mjs"
+    "freeze-dates": "node scripts/freeze-dates.mjs",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build"
   },
   "dependencies": {
     "@vercel/analytics": "^1.6.1",
@@ -31,6 +33,10 @@
     "tailwind-merge": "^3.5.0"
   },
   "devDependencies": {
+    "@storybook/addon-a11y": "^10.6.7",
+    "@storybook/addon-docs": "^10.6.7",
+    "@storybook/addon-vitest": "^10.6.7",
+    "@storybook/nextjs-vite": "^10.6.7",
     "@tailwindcss/postcss": "^4",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
@@ -38,11 +44,15 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^6.3.0",
+    "@vitest/browser-playwright": "4.1.12",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "jsdom": "^29.1.1",
+    "playwright": "^1.65.0",
+    "storybook": "^10.6.7",
     "tailwindcss": "^4",
     "typescript": "^5",
+    "vite": "^8.3.8",
     "vitest": "^4.1.12"
   }
 }
