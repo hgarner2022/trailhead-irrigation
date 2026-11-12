@@ -2,11 +2,11 @@
  * The pure derivations behind PassesScreen: the header's context line, the
  * week label the filter chips and the panel share, and the charge rows the
  * panel lists for one pass. Kept out of the screen so they can be unit
- * tested. Dates are read from the ISO string's date prefix as-is, like the
- * rest of `lib/admin`; the wiring phase converts stored times to Mountain time.
+ * tested. Timestamps are read as their calendar day in Mountain time
+ * (`TIME_ZONE`); date-only strings, like the week's Monday, never shift.
  */
 import type { Pass, PassStatus, PassVisit } from "@/lib/admin/types"
-import { shortDate } from "@/lib/admin/format"
+import { TIME_ZONE, shortDate } from "@/lib/admin/format"
 import { statusLabel } from "@/components/blocks/StatusPill"
 
 const STATUS_ORDER: PassStatus[] = ["active", "cancelled", "lapsed"]
@@ -53,8 +53,8 @@ export function chargeRows(pass: Pass): ChargeRow[] {
   return pass.visits.map((visit) => ({
     kind: visit.kind,
     name: VISIT_NAMES[visit.kind],
-    when: visit.scheduledAt ? shortDate(visit.scheduledAt) : visit.window,
+    when: visit.scheduledAt ? shortDate(visit.scheduledAt, TIME_ZONE) : visit.window,
     amount: visit.amount,
-    charged: visit.chargedAt ? `Charged ${shortDate(visit.chargedAt)}` : "Not yet",
+    charged: visit.chargedAt ? `Charged ${shortDate(visit.chargedAt, TIME_ZONE)}` : "Not yet",
   }))
 }

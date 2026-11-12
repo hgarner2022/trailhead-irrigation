@@ -14,11 +14,14 @@ import { spotsLeft } from "@/lib/admin/metrics"
 // the spots still open as the big number, how many are taken, and the towns
 // booked so far as chips. A full week turns the number warning and adds a
 // Full chip; it stays pressable, and the checkout screen decides whether to
-// disable it. With `onSelect` the whole card is a pressed button (the
-// checkout's week picker), so its children are spans only; with `editable`
-// the taken line becomes a capacity input. The two do not combine, since an
-// input cannot live inside a button, and the types say so. Client because
-// of the input and the click.
+// disable it. A week with more taken than its capacity (the planner lowered
+// it) turns the number destructive and says Over capacity instead. With
+// `onSelect` the whole card is a pressed button (the checkout's week picker),
+// so its children are spans only; with `editable` the taken line becomes a
+// capacity input. The two do not combine, since an input cannot live inside
+// a button, and the types say so. The plain and editable cards still take
+// `selected`, which only draws the ring, so the October planner keeps its
+// selected week visible while editing. Client because of the input and the click.
 
 interface WeekCardBase {
   week: BlowoutWeek
@@ -27,13 +30,15 @@ interface WeekCardBase {
 export interface PlainWeekCardProps extends WeekCardBase {
   editable?: false
   onCapacityChange?: never
-  selected?: never
+  /** draws the ring only; the card is not pressable */
+  selected?: boolean
   onSelect?: never
 }
 export interface EditableWeekCardProps extends WeekCardBase {
   editable: true
   onCapacityChange?: (capacity: number) => void
-  selected?: never
+  /** draws the ring only; the card is not pressable */
+  selected?: boolean
   onSelect?: never
 }
 export interface SelectableWeekCardProps extends WeekCardBase {
@@ -50,9 +55,10 @@ export function WeekCard(props: WeekCardProps) {
   const { week, className } = props
   const inputId = useId()
   const left = spotsLeft(week)
-  const full = left === 0
+  const over = week.taken > week.capacity
+  const full = left === 0 && !over
   const selectable = "onSelect" in props && !!props.onSelect
-  const selected = selectable ? !!props.selected : false
+  const selected = !!props.selected
   // Inside a button only phrasing content is valid, so the pieces are spans
   // there and paragraphs and a list in the plain card.
   const Block = selectable ? "span" : "p"
@@ -67,12 +73,20 @@ export function WeekCard(props: WeekCardProps) {
       </span>
       <span className="block">
         <span className="flex items-center gap-2">
-          <Block data-slot="week-spots" className={cn("font-display text-4xl font-semibold leading-none tabular-nums", full ? "text-warning" : "text-navy")}>
+          <Block
+            data-slot="week-spots"
+            className={cn("font-display text-4xl font-semibold leading-none tabular-nums", over ? "text-destructive" : full ? "text-warning" : "text-navy")}
+          >
             {left}
           </Block>
           {full && (
             <Badge variant="outline" className="border-warning/30 bg-background text-warning">
               Full
+            </Badge>
+          )}
+          {over && (
+            <Badge data-slot="week-over" variant="outline" className="border-destructive/30 bg-destructive/10 text-destructive">
+              Over capacity
             </Badge>
           )}
         </span>
@@ -116,6 +130,7 @@ export function WeekCard(props: WeekCardProps) {
         data-slot="week-card"
         data-selected={selected}
         data-full={full || undefined}
+        data-over={over || undefined}
         aria-pressed={selected}
         aria-disabled={false}
         onClick={props.onSelect}
@@ -131,7 +146,13 @@ export function WeekCard(props: WeekCardProps) {
     )
   }
   return (
-    <Card data-slot="week-card" data-selected={false} data-full={full || undefined} className={cn(SURFACE, className)}>
+    <Card
+      data-slot="week-card"
+      data-selected={selected}
+      data-full={full || undefined}
+      data-over={over || undefined}
+      className={cn(SURFACE, selected && "ring-2 ring-primary", className)}
+    >
       {body}
     </Card>
   )

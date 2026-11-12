@@ -2,6 +2,7 @@
 
 import { useMemo, useState, type ReactNode } from "react"
 import { Button } from "@/components/ui/button"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { DataGrid } from "@/components/blocks/DataGrid"
 import { passColumns } from "@/components/blocks/data-grid-columns"
 import { PageHeader } from "@/components/blocks/PageHeader"
@@ -15,9 +16,13 @@ import { chargeRows, passesContext, weekLabel, weekOptions } from "./passes-mode
 
 // Every Season Pass sold, as the one data grid, with the pass opening beside
 // it from its name. On a laptop the panel pushes the grid narrower; on a
-// phone it covers it as a sheet. Client because the selected pass is state;
-// the route's page.tsx supplies `data` and `today`. The bulk actions and
-// the panel's buttons only log in the prototype.
+// phone it covers it as a sheet. Client because the selected pass is state
+// (its id; the pass itself is read from `data.passes`, so a refreshed `data`
+// shows in the open panel); the route's page.tsx supplies `data` and
+// `today`. The bulk actions and the panel's buttons only log in the
+// prototype. Wiring-phase gap: the panel links to the client in Jobber, since
+// `Pass` carries one `jobberUrl` today; the three visits' own Jobber job
+// links arrive once the pass holds a job id per visit.
 
 export interface PassesScreenProps {
   data: AdminData
@@ -83,6 +88,29 @@ function Charges({ pass }: { pass: Pass }) {
   )
 }
 
+function CancelDialog({ pass, open, onOpenChange }: { pass: Pass; open: boolean; onOpenChange: (open: boolean) => void }) {
+  const cancel = () => {
+    console.info("cancel pass", [pass.number])
+    onOpenChange(false)
+  }
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent showCloseButton={false} className="sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle className="font-display text-2xl font-semibold text-navy">Cancel this pass?</DialogTitle>
+          <DialogDescription>Nothing further is charged and the blowout week is released.</DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Keep pass
+          </Button>
+          <Button onClick={cancel}>Cancel pass</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 function PassDetail({ pass, today }: { pass: Pass; today: string }) {
   return (
     <div className="flex flex-col gap-6">
@@ -118,10 +146,12 @@ function PassDetail({ pass, today }: { pass: Pass; today: string }) {
 
 export function PassesScreen({ data, today, defaultSelectedId }: PassesScreenProps) {
   const passes = data.passes
-  // The pass stays in state while the panel closes, so the sheet can slide
-  // out with its content still there.
-  const [pass, setPass] = useState<Pass | undefined>(() => passes.find((p) => p.id === defaultSelectedId))
-  const [open, setOpen] = useState(pass !== undefined)
+  // Only the id is state; the pass is read from `data` each render. The id is
+  // kept while the panel closes, so the sheet slides out with its content.
+  const [selectedId, setSelectedId] = useState<string | undefined>(defaultSelectedId)
+  const [open, setOpen] = useState(() => passes.some((p) => p.id === defaultSelectedId))
+  const [cancelling, setCancelling] = useState(false)
+  const pass = passes.find((p) => p.id === selectedId)
   const filters = useMemo(
     () => [
       { column: "town", label: "Town", options: TOWNS.map((t) => option(t)) },
@@ -131,7 +161,7 @@ export function PassesScreen({ data, today, defaultSelectedId }: PassesScreenPro
     [passes],
   )
   const show = (next: Pass) => {
-    setPass(next)
+    setSelectedId(next.id)
     setOpen(true)
   }
 
@@ -148,10 +178,14 @@ export function PassesScreen({ data, today, defaultSelectedId }: PassesScreenPro
               description={`Season Pass ${pass.season}, ${pass.number}`}
               footer={
                 <>
-                  <Button variant="outline" onClick={() => setOpen(false)}>
-                    Close
+                  <Button variant="outline" onClick={() => console.info("resend confirmation", [pass.number])}>
+                    Resend confirmation
                   </Button>
                   <Button onClick={() => console.info("send card update link", [pass.number])}>Send card update link</Button>
+                  <Button variant="ghost" className="ml-auto text-destructive hover:text-destructive" onClick={() => setCancelling(true)}>
+                    Cancel pass
+                  </Button>
+                  <CancelDialog pass={pass} open={cancelling} onOpenChange={setCancelling} />
                 </>
               }
             >

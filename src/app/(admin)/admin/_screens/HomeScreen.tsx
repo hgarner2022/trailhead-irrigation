@@ -1,13 +1,15 @@
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card"
+import { CardTitleHeading } from "@/components/blocks/CardTitleHeading"
 import { NeedsAttention } from "@/components/blocks/NeedsAttention"
 import { PageHeader } from "@/components/blocks/PageHeader"
 import { SeasonLine } from "@/components/blocks/SeasonLine"
 import { StatTile } from "@/components/blocks/StatTile"
 import { StatusPill } from "@/components/blocks/StatusPill"
 import type { AdminData, Visit } from "@/lib/admin/types"
+import { TIME_ZONE } from "@/lib/admin/format"
 import { committedByMonth, visitsOn } from "@/lib/admin/metrics"
-import { SEASON, TIME_ZONE, clockTime, dayHeading, greeting, pageContext, seasonDescription, tileModels, tomorrowOf } from "./home-model"
+import { SEASON, clockTime, dayHeading, greeting, pageContext, seasonDescription, tileModels, tomorrowOf } from "./home-model"
 
 // What Hannah opens to in the morning: a greeting, the four numbers that
 // matter today, the season line, the next two days of visits and the short
@@ -18,10 +20,6 @@ export interface HomeScreenProps {
   data: AdminData
   /** ISO datetime the greeting, the date, "updated" and the day lists are read from */
   today: string
-}
-
-function Title({ children }: { children: string }) {
-  return <h2 className="font-display text-2xl font-semibold leading-none text-navy">{children}</h2>
 }
 
 function VisitRow({ visit }: { visit: Visit }) {
@@ -72,7 +70,7 @@ export function HomeScreen({ data, today }: HomeScreenProps) {
 
       <Card>
         <CardHeader>
-          <Title>{`Season ${SEASON}`}</Title>
+          <CardTitleHeading>{`Season ${SEASON}`}</CardTitleHeading>
           <CardDescription>{seasonDescription(data)}</CardDescription>
         </CardHeader>
         <CardContent>
@@ -89,7 +87,7 @@ export function HomeScreen({ data, today }: HomeScreenProps) {
       <div className="grid gap-6 lg:grid-cols-5">
         <Card className="lg:col-span-3">
           <CardHeader>
-            <Title>Today and tomorrow</Title>
+            <CardTitleHeading>Today and tomorrow</CardTitleHeading>
           </CardHeader>
           <CardContent className="space-y-5">
             <Day id="home-today" heading={dayHeading("Today", today)} visits={visitsOn(data.visits, today, TIME_ZONE)} />
@@ -98,7 +96,7 @@ export function HomeScreen({ data, today }: HomeScreenProps) {
         </Card>
         <Card className="lg:col-span-2">
           <CardHeader>
-            <Title>Needs attention</Title>
+            <CardTitleHeading>Needs attention</CardTitleHeading>
           </CardHeader>
           <CardContent>
             <NeedsAttention items={data.attention} now={today} />

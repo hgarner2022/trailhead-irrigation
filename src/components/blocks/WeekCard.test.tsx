@@ -85,6 +85,28 @@ describe("WeekCard", () => {
     expect(onSelect).toHaveBeenCalledTimes(1)
   })
 
+  it("says a week is over capacity when more is taken than it has room for", () => {
+    render(<WeekCard week={{ ...week, taken: 3, capacity: 1 }} />)
+    expect(number()).toHaveTextContent("0")
+    expect(number()).toHaveClass("text-destructive")
+    expect(screen.getByText("Over capacity")).toBeInTheDocument()
+    expect(screen.queryByText("Full")).not.toBeInTheDocument()
+    expect(card()).toHaveAttribute("data-over", "true")
+    expect(card()).not.toHaveAttribute("data-full")
+  })
+
+  it("draws the ring on a plain or editable card when selected, without making it pressable", () => {
+    const { unmount } = render(<WeekCard week={week} editable selected />)
+    expect(card()).toHaveClass("ring-2", "ring-primary")
+    expect(card()).toHaveAttribute("data-selected", "true")
+    expect(card()).not.toHaveAttribute("aria-pressed")
+    expect(card().tagName).toBe("DIV")
+    unmount()
+    render(<WeekCard week={week} selected={false} />)
+    expect(card()).not.toHaveClass("ring-2")
+    expect(card()).toHaveAttribute("data-selected", "false")
+  })
+
   it("keeps the list semantics in the plain card", () => {
     render(<WeekCard week={week} />)
     expect(card().querySelector("ul")).not.toBeNull()

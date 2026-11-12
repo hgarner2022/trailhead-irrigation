@@ -10,9 +10,9 @@
  */
 import type { StatTileProps } from "@/components/blocks/StatTile"
 import type { AdminData, MonthTotal } from "@/lib/admin/types"
+import { TIME_ZONE } from "@/lib/admin/format"
 import { chargedSoFar, committedRevenue, formatMoney, invoicesOverdue, monthComparison, quotesAwaiting } from "@/lib/admin/metrics"
 
-export const TIME_ZONE = "America/Denver"
 /** The season the Home line shows. The snapshot's passes are all 2027; the wiring phase derives this from the passes on hand. */
 export const SEASON = 2027
 

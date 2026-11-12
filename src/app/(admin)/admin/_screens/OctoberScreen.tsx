@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
+import { CardTitleHeading } from "@/components/blocks/CardTitleHeading"
 import { DataGrid, type GridColumnDef } from "@/components/blocks/DataGrid"
 import { EmptyState } from "@/components/blocks/EmptyState"
 import { PageHeader } from "@/components/blocks/PageHeader"
@@ -10,21 +11,19 @@ import { StatusPill } from "@/components/blocks/StatusPill"
 import { WeekCard } from "@/components/blocks/WeekCard"
 import type { AdminData, BlowoutWeek, Pass, PassStatus } from "@/lib/admin/types"
 import { shortDate } from "@/lib/admin/format"
-import { firstWeek, octoberContext, passesInWeek } from "./october-model"
+import { clampCapacity, firstWeek, octoberContext, passesInWeek } from "./october-model"
 
 // The blowout week planner: the season's weeks as cards, one selected, and
 // the passes reserved for that week under them. "Edit capacity" turns the
-// cards into their editable form; the change only logs in the prototype.
-// Ryan places each blowout on a day in Jobber, so this page sets only how
-// many pass blowouts fit in a week. Client because the selected week and
-// the edit toggle are state; the route's page.tsx supplies `data`.
+// cards into their editable form; a typed capacity is clamped to a whole
+// number no lower than zero, a week lowered under what is already reserved
+// reads over capacity, and the change only logs in the prototype. Ryan
+// places each blowout on a day in Jobber, so this page sets only how many
+// pass blowouts fit in a week. Client because the selected week and the
+// edit toggle are state; the route's page.tsx supplies `data`.
 
 export interface OctoberScreenProps {
   data: AdminData
-}
-
-function Title({ children }: { children: string }) {
-  return <h2 className="font-display text-2xl font-semibold leading-none text-navy">{children}</h2>
 }
 
 // The small grid under the week: name, town, zones, status. No bulk actions and no export.
@@ -37,8 +36,12 @@ const weekColumns: GridColumnDef<Pass>[] = [
 
 const openPass = (pass: Pass) => console.info("open pass", pass.number)
 
-// On a phone the cards are a horizontal snap row; from sm they are a grid, two across, then four.
-const ROW = "flex snap-x gap-4 overflow-x-auto pb-2 sm:grid sm:grid-cols-2 sm:overflow-visible sm:pb-0 lg:grid-cols-4"
+// On a phone the cards are a horizontal snap row; from sm they are a grid, two
+// across, then four. On the phone the 4px of padding, taken back with the
+// negative margins on the sides and top, keeps the selected card's ring from
+// being clipped by the scroller; the bottom margin is left to the page's
+// space-y, so the gap to the card below stays.
+const ROW = "-mx-1 -mt-1 flex snap-x gap-4 overflow-x-auto px-1 pt-1 pb-2 sm:mx-0 sm:mt-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:p-0 lg:grid-cols-4"
 const CARD = "min-w-[220px] snap-start sm:min-w-0"
 
 export function OctoberScreen({ data }: OctoberScreenProps) {
@@ -46,12 +49,13 @@ export function OctoberScreen({ data }: OctoberScreenProps) {
   const [selected, setSelected] = useState<string | undefined>(() => firstWeek(data.blowoutWeeks))
   const [editing, setEditing] = useState(false)
   const week = weeks.find((w) => w.weekStart === selected)
-  // Memoised because the grid rebuilds its models when its data changes identity.
-  const inWeek = useMemo(() => (week ? passesInWeek(data.passes, week.weekStart) : []), [data.passes, week])
+  // Memoised on the selected Monday, not the week object, so a capacity edit does not rebuild the grid.
+  const inWeek = useMemo(() => (selected ? passesInWeek(data.passes, selected) : []), [data.passes, selected])
 
-  const setCapacity = (weekStart: string, capacity: number) => {
-    console.info("set capacity", weekStart, capacity)
-    setWeeks((current) => current.map((w) => (w.weekStart === weekStart ? { ...w, capacity } : w)))
+  const setCapacity = (target: string, typed: number) => {
+    const capacity = clampCapacity(typed)
+    console.info("set capacity", target, capacity)
+    setWeeks((current) => current.map((w) => (w.weekStart === target ? { ...w, capacity } : w)))
   }
 
   return (
@@ -78,7 +82,7 @@ export function OctoberScreen({ data }: OctoberScreenProps) {
         <div data-slot="week-row" className={ROW}>
           {weeks.map((w) =>
             editing ? (
-              <WeekCard key={w.weekStart} week={w} editable onCapacityChange={(capacity) => setCapacity(w.weekStart, capacity)} className={CARD} />
+              <WeekCard key={w.weekStart} week={w} editable selected={w.weekStart === selected} onCapacityChange={(capacity) => setCapacity(w.weekStart, capacity)} className={CARD} />
             ) : (
               <WeekCard key={w.weekStart} week={w} selected={w.weekStart === selected} onSelect={() => setSelected(w.weekStart)} className={CARD} />
             ),
@@ -89,7 +93,7 @@ export function OctoberScreen({ data }: OctoberScreenProps) {
       {week && (
         <Card>
           <CardHeader>
-            <Title>{`Week of ${shortDate(week.weekStart)}`}</Title>
+            <CardTitleHeading>{`Week of ${shortDate(week.weekStart)}`}</CardTitleHeading>
           </CardHeader>
           <CardContent className="space-y-4">
             <DataGrid

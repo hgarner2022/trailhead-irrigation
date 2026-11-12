@@ -29,6 +29,12 @@ export const Full: Story = {
   render: (args) => narrow(<WeekCard {...args} />),
 }
 
+/** The capacity was lowered under what is already reserved: the number turns destructive and the chip says so. */
+export const OverCapacity: Story = {
+  args: { week: { ...weeks[1], taken: 3, capacity: 1 } },
+  render: (args) => narrow(<WeekCard {...args} />),
+}
+
 /** Capacity edits live in the card so the planner can see the spots change. */
 function EditableDemo({ week }: { week: BlowoutWeek }) {
   const [capacity, setCapacity] = useState(week.capacity)

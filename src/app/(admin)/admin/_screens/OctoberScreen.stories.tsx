@@ -5,7 +5,8 @@ import { AdminShell } from "@/components/blocks/AdminShell"
 import { OctoberScreen } from "./OctoberScreen"
 
 // The four October weeks of 2027 from the snapshot, 20 spots each. FullWeek
-// fills the second week so the Full chip and the warning number show.
+// fills the second week so the Full chip and the warning number show;
+// OverCapacity lowers the second week's capacity under its three reservations.
 const data = snapshot as AdminData
 
 const nothingYet: AdminData = {
@@ -24,6 +25,11 @@ const nothingYet: AdminData = {
 const oneFull: AdminData = {
   ...data,
   blowoutWeeks: data.blowoutWeeks.map((w, i) => (i === 1 ? { ...w, taken: w.capacity } : w)),
+}
+
+const overCapacity: AdminData = {
+  ...data,
+  blowoutWeeks: data.blowoutWeeks.map((w, i) => (i === 1 ? { ...w, capacity: 1 } : w)),
 }
 
 const meta = {
@@ -54,6 +60,11 @@ export const Editing: Story = {
 
 export const FullWeek: Story = {
   args: { data: oneFull },
+  globals: { viewport: { value: "wide", isRotated: false } },
+}
+
+export const OverCapacity: Story = {
+  args: { data: overCapacity },
   globals: { viewport: { value: "wide", isRotated: false } },
 }
 
