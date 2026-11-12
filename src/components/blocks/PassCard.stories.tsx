@@ -79,6 +79,10 @@ export const Thumb: Story = {
   args: { size: "thumb" },
 }
 
+export const ThumbCancelled: Story = {
+  args: { size: "thumb", pass: cancelled },
+}
+
 export const Static: Story = {
   args: { interactive: false },
 }

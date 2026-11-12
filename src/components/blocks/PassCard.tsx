@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import type { Pass, PassVisit } from "@/lib/admin/types"
 import { monthShort, writtenDate } from "./season-line-math"
-import { SHEEN_REST, attachPointer, attachTilt, canRequestTilt, reducedMotion, requestTilt } from "./pass-card-sheen"
+import { SHEEN_REST, attachPointer, attachTilt, canRequestTilt, frameWriter, reducedMotion, requestTilt } from "./pass-card-sheen"
 
 // A wallet card at credit card proportions: the reserved moment at the end of
 // the Season Pass checkout, the top of the customer's pass page, and a thumbnail
@@ -19,12 +19,18 @@ import { SHEEN_REST, attachPointer, attachTilt, canRequestTilt, reducedMotion, r
 
 export interface PassCardProps {
   pass: Pass
-  /** thumb: 160px wide, first name and season only, static sheen */
+  /**
+   * full: 640px wide by default with `max-w-full`, so the parent controls the
+   * width by constraining it. thumb: 160px wide, first name and season only,
+   * static sheen.
+   */
   size?: "full" | "thumb"
   /** holo: the artwork with the baked-in rainbow; the live sheen is halved */
   art?: "flat" | "holo"
   /** false: static sheen, no listeners */
   interactive?: boolean
+  /** Passed to `next/image`: true where the card is the hero image, as at the end of checkout and on the pass page */
+  priority?: boolean
   className?: string
 }
 
@@ -95,7 +101,7 @@ function Sheen({ art, live }: { art: "flat" | "holo"; live: boolean }) {
   )
 }
 
-export function PassCard({ pass, size = "full", art = "flat", interactive = true, className }: PassCardProps) {
+export function PassCard({ pass, size = "full", art = "flat", interactive = true, priority = false, className }: PassCardProps) {
   const ref = useRef<HTMLElement>(null)
   // iOS gates the tilt sensor behind a tap; null means not asked yet.
   const gated = useSyncExternalStore(never, canRequestTilt, () => false)
@@ -106,11 +112,13 @@ export function PassCard({ pass, size = "full", art = "flat", interactive = true
   useEffect(() => {
     const el = ref.current
     if (!el || !live || reducedMotion()) return
-    const stopPointer = attachPointer(el)
-    const stopTilt = gated && !granted ? never() : attachTilt(el)
+    const writer = frameWriter(el)
+    const stopPointer = attachPointer(el, writer)
+    const stopTilt = gated && !granted ? never() : attachTilt(el, writer)
     return () => {
       stopPointer()
       stopTilt()
+      writer.cancel()
     }
   }, [live, gated, granted])
 
@@ -135,6 +143,7 @@ export function PassCard({ pass, size = "full", art = "flat", interactive = true
         src={ART[art]}
         alt=""
         fill
+        priority={priority}
         sizes={size === "thumb" ? "160px" : "(max-width: 768px) 100vw, 640px"}
         className={cn("object-cover", cancelled && "grayscale")}
       />
@@ -142,14 +151,21 @@ export function PassCard({ pass, size = "full", art = "flat", interactive = true
       <div aria-hidden className="absolute inset-0 bg-radial-[at_top_left] from-background/80 from-0% via-background/35 via-35% to-transparent to-65%" />
 
       {size === "thumb" ? (
-        <div className="absolute left-2.5 top-2.5">
-          <p className="font-display text-lg font-semibold leading-none text-navy">{pass.firstName}</p>
-          <p className="mt-0.5 font-display text-xs text-navy/80">{pass.season}</p>
-        </div>
+        <>
+          <div className="absolute left-2.5 top-2.5">
+            <p className="font-display text-lg font-semibold leading-none text-navy">{pass.firstName}</p>
+            <p className="mt-0.5 font-display text-xs text-navy/80">{pass.season}</p>
+          </div>
+          {cancelled && (
+            <span className="absolute bottom-2.5 left-2.5 rounded-full bg-navy/85 px-2 py-0.5 text-[10px] uppercase leading-tight tracking-wide text-white">
+              Cancelled
+            </span>
+          )}
+        </>
       ) : (
         <>
           <div data-slot="pass-card-name" className="absolute left-5 top-5 max-w-[45%] @max-[440px]:left-4 @max-[440px]:top-4">
-            <p className="whitespace-nowrap text-[11px] font-semibold uppercase leading-tight tracking-[0.16em] text-navy @max-[440px]:text-[10px]">
+            <p className="text-[11px] font-semibold uppercase leading-tight tracking-[0.16em] text-navy @max-[440px]:text-[10px] @max-[440px]:tracking-[0.12em]">
               Trailhead Lawn &amp; Irrigation
             </p>
             <p className="mt-2 font-display text-4xl font-semibold leading-none text-navy @max-[440px]:mt-1.5 @max-[440px]:text-3xl">{pass.firstName}</p>
@@ -159,7 +175,13 @@ export function PassCard({ pass, size = "full", art = "flat", interactive = true
             </p>
           </div>
           {live && gated && granted === null && (
-            <Button size="sm" variant="ghost" onClick={askTilt} className="absolute right-3 top-3 h-7 rounded-lg bg-background/70 px-2.5 text-xs text-navy">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={askTilt}
+              aria-label="Turn on the tilt shine"
+              className="absolute right-3 top-3 h-7 rounded-lg bg-background/70 px-2.5 text-xs text-navy before:absolute before:-inset-2 before:content-['']"
+            >
               Tilt
             </Button>
           )}
