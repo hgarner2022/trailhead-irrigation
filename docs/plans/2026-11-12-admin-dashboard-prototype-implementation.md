@@ -462,7 +462,8 @@ Commit: `Add SeasonLine, the season arc for the business and for one customer`
 
 **Files:**
 - Create: `src/components/blocks/PassCard.tsx`, `PassCard.stories.tsx`, `PassCard.test.tsx`
-- Use: `public/images/pass-card-art.webp` (Hannah's chosen artwork, 2000 by 1250, committed 2026-11-12; `pass-card-art-alt.webp` is the alternate)
+- Use: `public/images/pass-card-art.webp` (Hannah's chosen flat artwork, 2000 by 1250, committed 2026-11-12; `pass-card-art-alt.webp` is the alternate)
+- Use: `public/images/pass-card-art-holo.webp` (the baked-in holographic version Hannah liked; `pass-card-art-holo-alt.webp` is the alternate). Add an `art?: "flat" | "holo"` prop, default `flat`. `InEmail` and the reduced-motion static state use `holo`. Add a story `Compare` that shows flat + moving sheen beside holo + a lighter sheen (sheen opacity halved) so Hannah picks the interactive treatment in Storybook.
 
 **Props:** `{ pass: Pass; size?: "full" | "thumb"; interactive?: boolean; className?: string }`
 
