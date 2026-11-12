@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { SEASON_MONTHS, describeBars, monthRows, yearKey } from "./chart-data"
+import { SEASON_MONTHS, byYearDesc, describeBars, monthRows, yearKey } from "./chart-data"
 
 const y2026 = [
   { year: 2026, month: 4, revenue: 3331, visits: 14 },
@@ -44,5 +44,13 @@ describe("describeBars", () => {
   it("names the years and the month span", () => {
     expect(describeBars([2026, 2025])).toBe("Revenue by month, 2026 against 2025, April to November")
     expect(describeBars([2026], [9, 10])).toBe("Revenue by month, 2026, September to October")
+  })
+})
+
+describe("byYearDesc", () => {
+  it("puts the newest year first in a legend or tooltip", () => {
+    const items = [{ dataKey: "y2025" }, { dataKey: "y2026" }, { dataKey: "y2024" }]
+    const sorted = [...items].sort((a, b) => byYearDesc(a) - byYearDesc(b))
+    expect(sorted.map((i) => i.dataKey)).toEqual(["y2026", "y2025", "y2024"])
   })
 })

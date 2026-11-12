@@ -1,14 +1,16 @@
+import { useId } from "react"
 import Link from "next/link"
 import { ArrowUpRight } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Card } from "@/components/ui/card"
 import { formatDelta } from "@/lib/admin/metrics"
-import { pointsFor, sparkMax } from "./stat-tile-math"
+import { pointsFor, sparkMax, sparkSpan } from "./stat-tile-math"
 
 // One number with its name, its movement against a named baseline and, when
 // there is history, a sparkline. The delta is coloured by whether the movement
 // is good for the business (DESIGN.md, Charts), never by its direction: more
-// past due invoices is up and bad, fewer is down and good. Pure render, no hooks.
+// past due invoices is up and bad, fewer is down and good. Pure render; the
+// only hook is useId, which works in server components, for the label id.
 
 export interface StatDelta {
   /** percent change; null when there is nothing to compare against */
@@ -42,21 +44,25 @@ function deltaText(delta: StatDelta): string {
 
 function Sparkline({ current, previous }: NonNullable<StatTileProps["sparkline"]>) {
   const max = sparkMax(current, previous)
+  const span = sparkSpan(current, previous)
   const line = { fill: "none", strokeWidth: 1.5, strokeLinecap: "round", strokeLinejoin: "round", vectorEffect: "non-scaling-stroke" } as const
   return (
     <svg data-slot="stat-sparkline" viewBox="0 0 100 24" preserveAspectRatio="none" aria-hidden className="mt-3 h-6 w-full">
-      {previous && previous.length > 0 && <polyline points={pointsFor(previous, max)} strokeDasharray="2 2" className="stroke-chart-2" {...line} />}
-      {current.length > 0 && <polyline points={pointsFor(current, max)} className="stroke-chart-1" {...line} />}
+      {previous && previous.length > 0 && <polyline points={pointsFor(previous, max, span)} strokeDasharray="2 2" className="stroke-chart-2" {...line} />}
+      {current.length > 0 && <polyline points={pointsFor(current, max, span)} className="stroke-chart-1" {...line} />}
     </svg>
   )
 }
 
 export function StatTile({ label, value, delta, sparkline, href, className }: StatTileProps) {
+  const labelId = useId()
   const sentence = [`${label}: ${value}`, delta && deltaText(delta)].filter(Boolean).join(", ")
   const body = (
     <>
       <div className="flex items-start justify-between gap-2">
-        <p className="text-sm text-muted-foreground">{label}</p>
+        <p id={labelId} className="text-sm text-muted-foreground">
+          {label}
+        </p>
         {href && <ArrowUpRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />}
       </div>
       <p data-slot="stat-value" className="mt-1 font-display text-4xl font-semibold leading-none tabular-nums text-navy @max-[220px]:text-3xl">
@@ -85,7 +91,7 @@ export function StatTile({ label, value, delta, sparkline, href, className }: St
     )
   }
   return (
-    <Card data-slot="stat-tile" role="group" aria-label={sentence} className={cn(surface, className)}>
+    <Card data-slot="stat-tile" role="group" aria-labelledby={labelId} className={cn(surface, className)}>
       {body}
     </Card>
   )

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { pointsFor, sparkMax } from "./stat-tile-math"
+import { pointsFor, sparkMax, sparkSpan } from "./stat-tile-math"
 
 describe("pointsFor", () => {
   it("returns no points for an empty array", () => {
@@ -28,6 +28,19 @@ describe("pointsFor", () => {
     const pairs = pointsFor([0, 0], 0).split(" ").map((p) => p.split(",").map(Number))
     expect(pairs.map((p) => p[1])).toEqual([23, 23])
     expect(pointsFor([0, 0], 0)).not.toContain("NaN")
+  })
+
+  it("steps a shorter series by the longer one so shared indexes share an x", () => {
+    const current = [3, 5, 6, 8, 7, 9, 11, 10]
+    const previous = [2, 4, 5, 6, 6, 8, 9, 9, 7, 8, 6, 5]
+    const span = sparkSpan(current, previous)
+    expect(span).toBe(12)
+    const cur = pointsFor(current, 11, span).split(" ").map((p) => p.split(",").map(Number))
+    const prev = pointsFor(previous, 11, span).split(" ").map((p) => p.split(",").map(Number))
+    expect(cur).toHaveLength(8)
+    expect(cur[7][0]).toBe(prev[7][0])
+    expect(cur[7][0]).toBeLessThan(100)
+    expect(prev[11][0]).toBe(100)
   })
 
   it("keeps only the last 24 points", () => {

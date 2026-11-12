@@ -69,8 +69,10 @@ describe("StatTile", () => {
     expect(link).toHaveAttribute("data-slot", "stat-tile")
   })
 
-  it("names a plain tile the same way", () => {
+  it("names a plain tile by its label element", () => {
     render(<StatTile label="Passes sold" value="12" />)
-    expect(screen.getByRole("group", { name: "Passes sold: 12" })).toBeInTheDocument()
+    const group = screen.getByRole("group", { name: "Passes sold" })
+    expect(group).not.toHaveAttribute("aria-label")
+    expect(document.getElementById(group.getAttribute("aria-labelledby") ?? "")).toHaveTextContent("Passes sold")
   })
 })

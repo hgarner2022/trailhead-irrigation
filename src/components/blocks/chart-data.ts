@@ -19,6 +19,9 @@ export type MonthRow = { month: string } & Record<string, number | string>
 export const yearKey = (year: number) => `y${year}`
 export const monthShort = (month: number) => SHORT[month - 1]
 
+/** Sorts legend and tooltip items by year, newest first, so this year leads wherever the series came in. */
+export const byYearDesc = (item: { dataKey?: unknown }) => -Number(String(item.dataKey).slice(1))
+
 const byCalendar = (months: number[]) => [...months].sort((a, b) => a - b)
 
 /** One row per month in calendar order, every series present as a number. */
