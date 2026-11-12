@@ -25,6 +25,12 @@ describe("NeedsAttention", () => {
     expect(screen.getByText("10 hours ago")).toBeInTheDocument()
   })
 
+  it("names the kind for a screen reader before the message", () => {
+    render(<NeedsAttention items={items} now={now} />)
+    const hidden = rows().map((r) => r.querySelector(".sr-only")?.textContent)
+    expect(hidden).toEqual(["Charge failed: ", "Jobs not created: ", "Week full: ", "Card expiring: "])
+  })
+
   it("colours the icon circle by kind", () => {
     render(<NeedsAttention items={items} now={now} />)
     const [charge, jobs, week, card] = rows().map(iconOf)
@@ -46,7 +52,7 @@ describe("NeedsAttention", () => {
   it("shows the empty state when nothing needs attention", () => {
     render(<NeedsAttention items={[]} now={now} />)
     expect(rows()).toHaveLength(0)
-    expect(screen.getByRole("status")).toHaveTextContent("Nothing needs you right now")
+    expect(document.querySelector('[data-slot="empty-state"]')).toHaveTextContent("Nothing needs you right now")
     expect(screen.getByText("Failed charges, missing jobs and expiring cards show up here.")).toBeInTheDocument()
   })
 })

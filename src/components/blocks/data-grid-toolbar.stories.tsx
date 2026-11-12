@@ -5,7 +5,8 @@ import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import type { Pass } from "@/lib/admin/types"
 import { DataGridBulkBar, DataGridToolbar, type GridFilter } from "./data-grid-toolbar"
 import { gridFeatures, withFilterFns } from "./data-grid-table"
-import { STATUS_LABEL, passColumns } from "./data-grid-columns"
+import { passColumns } from "./data-grid-columns"
+import { statusLabel } from "./StatusPill"
 
 // The toolbar and the bulk bar on their own, with table state fixed so each
 // state can be looked at without clicking into it. The whole grid is in
@@ -14,7 +15,7 @@ const passes = snapshot.passes as Pass[]
 const SEARCH = { column: "firstName", placeholder: "Search by name" }
 const FILTERS: GridFilter[] = [
   { column: "town", label: "Town", options: ["Erie", "Longmont", "Louisville", "Lafayette", "Firestone", "Broomfield"].map((t) => ({ value: t, label: t })) },
-  { column: "status", label: "Status", options: (["active", "cancelled", "lapsed"] as const).map((s) => ({ value: s, label: STATUS_LABEL[s] })) },
+  { column: "status", label: "Status", options: (["active", "cancelled", "lapsed"] as const).map((s) => ({ value: s, label: statusLabel(s) })) },
 ]
 const columns = withFilterFns(passColumns, SEARCH.column, ["town", "status"])
 

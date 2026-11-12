@@ -3,10 +3,11 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite"
 import { fn } from "storybook/test"
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import type { Pass, PassVisit } from "@/lib/admin/types"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { DataGrid } from "./DataGrid"
-import { STATUS_LABEL, passColumns, shortDate } from "./data-grid-columns"
+import { shortDate } from "@/lib/admin/format"
+import { passColumns } from "./data-grid-columns"
+import { StatusPill, statusLabel } from "./StatusPill"
 import { SidePanel, SidePanelLayout } from "./SidePanel"
 
 // The real use: the Passes grid as the page, the pass opening beside it from
@@ -16,7 +17,7 @@ const passes = snapshot.passes as Pass[]
 const option = (value: string, label = value) => ({ value, label })
 const FILTERS = [
   { column: "town", label: "Town", options: ["Erie", "Longmont", "Louisville", "Lafayette", "Firestone", "Broomfield"].map((t) => option(t)) },
-  { column: "status", label: "Status", options: (["active", "cancelled", "lapsed"] as const).map((s) => option(s, STATUS_LABEL[s])) },
+  { column: "status", label: "Status", options: (["active", "cancelled", "lapsed"] as const).map((s) => option(s, statusLabel(s))) },
 ]
 const VISIT_NAMES: Record<PassVisit["kind"], string> = { "turn-on": "Turn-on", inspection: "Inspection", blowout: "Blowout" }
 
@@ -28,7 +29,7 @@ function PassDetail({ pass }: { pass: Pass }) {
     ["Town", pass.town],
     ["Zones", pass.zones],
     ["Blowout week", `Week of ${shortDate(pass.blowoutWeek)}`],
-    ["Status", <Badge key="status" variant={pass.status === "active" ? "default" : "outline"}>{STATUS_LABEL[pass.status]}</Badge>],
+    ["Status", <StatusPill key="status" status={pass.status} />],
   ]
   return (
     <div className="flex flex-col gap-6">

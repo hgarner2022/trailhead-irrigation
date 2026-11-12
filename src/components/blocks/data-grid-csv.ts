@@ -8,9 +8,11 @@ export interface CsvColumn {
   header: string
 }
 
-// A spreadsheet runs a cell that starts like a formula. A leading quote keeps
-// it text; numbers are left alone so a negative amount stays a number.
-const FORMULA = /^[=+\-@]/
+// A spreadsheet runs a cell that starts like a formula, and a leading tab or
+// carriage return can smuggle one in. A leading quote keeps it text; numbers
+// are left alone so a negative amount stays a number. Excel shows the quote
+// literally for values like phone numbers, which is the accepted cost.
+const FORMULA = /^[=+\-@\t\r]/
 
 function quote(value: unknown): string {
   let text = value === null || value === undefined ? "" : String(value)

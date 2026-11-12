@@ -3,23 +3,16 @@
  * the render stays readable. The season runs April (4) to November (11), drawn
  * as eight equal columns; a position is a fraction of the track from 0 to 1.
  * Which month a visit or window lands in is `visitMonth` / `monthInWindow` in
- * `@/lib/admin/metrics`, the one rule shared with the money metrics; this file
- * only keeps the display names. Dates are read as their UTC date prefix until
- * the wiring phase converts stored times to Mountain time.
+ * `@/lib/admin/metrics`, the one rule shared with the money metrics; month
+ * and date names come from `@/lib/admin/format`. Dates are read as their UTC
+ * date prefix until the wiring phase converts stored times to Mountain time.
  */
+import { monthName } from "@/lib/admin/format"
 import { monthInWindow } from "@/lib/admin/metrics"
 
 export const SEASON_START = 4
 export const SEASON_END = 11
 export const SEASON_MONTHS = [4, 5, 6, 7, 8, 9, 10, 11]
-
-export const MONTH_NAMES = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
-]
-
-export const monthName = (month: number) => MONTH_NAMES[month - 1]
-export const monthShort = (month: number) => monthName(month).slice(0, 3)
 
 const daysIn = (year: number, month: number) => new Date(Date.UTC(year, month, 0)).getUTCDate()
 
@@ -65,11 +58,6 @@ export function reservedWeek(window: string): string | null {
   const month = monthInWindow(window)
   const day = window.match(/week of the (\d{1,2})/i)?.[1]
   return month && day ? `${monthName(month)} ${Number(day)}` : null
-}
-
-/** "April 20" from an ISO date or datetime. */
-export function writtenDate(iso: string): string {
-  return `${monthName(Number(iso.slice(5, 7)))} ${Number(iso.slice(8, 10))}`
 }
 
 /** "April, July and October". */

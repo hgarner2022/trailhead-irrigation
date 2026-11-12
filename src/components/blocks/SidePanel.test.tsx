@@ -146,7 +146,7 @@ describe("SidePanel on a laptop", () => {
   it("names the scrolling body as a region", () => {
     stubViewport(true)
     render(<Panel />)
-    expect(screen.getByRole("region", { name: "Andrea" })).toHaveTextContent("Erie, 6 zones")
+    expect(screen.getByRole("region", { name: "Andrea details" })).toHaveTextContent("Erie, 6 zones")
   })
 
   it("falls back to the grid, then the layout, when the opener is gone on close", () => {

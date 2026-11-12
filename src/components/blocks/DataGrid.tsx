@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useRef } from "react"
+import { useMemo, useRef, useState } from "react"
 import { useTable, type RowData } from "@tanstack/react-table"
 import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -111,12 +111,11 @@ export function DataGrid<T extends RowData>({
     )
     return hasSelect ? [selectColumn<T>(), ...prepared] : prepared
   }, [columns, searchColumn, chipKey, hasSelect, nameId])
-  const [initialState] = useMemo(
-    () => [{ pagination: { pageIndex: 0, pageSize }, rowSelection: Object.fromEntries((defaultSelectedIds ?? []).map((id) => [id, true as const])) }],
-    // Read once: TanStack resolves initial state at construction.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
-  )
+  // Read once: TanStack resolves initial state at construction.
+  const [initialState] = useState(() => ({
+    pagination: { pageIndex: 0, pageSize },
+    rowSelection: Object.fromEntries((defaultSelectedIds ?? []).map((id) => [id, true as const])),
+  }))
   const table = useTable({ features: gridFeatures, columns: allColumns, data, getRowId, initialState })
 
   const wrap = useRef<HTMLDivElement>(null)

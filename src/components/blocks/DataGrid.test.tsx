@@ -198,10 +198,10 @@ describe("DataGrid opening a record", () => {
     expect(onOpen).toHaveBeenCalledWith(passes[0])
   })
 
-  it("writes the status in sentence case", () => {
+  it("writes the status in sentence case as a StatusPill", () => {
     renderPasses()
-    expect(within(bodyRows()[0]).getByText("Active")).toBeInTheDocument()
-    expect(within(bodyRows()[8]).getByText("Cancelled")).toBeInTheDocument()
+    expect(within(bodyRows()[0]).getByText("Active")).toHaveAttribute("data-slot", "status-pill")
+    expect(within(bodyRows()[8]).getByText("Cancelled")).toHaveAttribute("data-status", "cancelled")
   })
 
   it("renders the name as a link when the column gives it a URL", () => {
@@ -266,7 +266,7 @@ describe("DataGrid export", () => {
     expect(blob).toBeDefined()
     const bytes = new Uint8Array(await blob!.arrayBuffer())
     expect([...bytes.slice(0, 3)]).toEqual([0xef, 0xbb, 0xbf])
-    expect(new TextDecoder().decode(bytes)).toBe("Name,Zones,Blowout week,Status,Charged so far,Next visit\r\nReese,8,2027-10-11,active,145,July\r\nReesa,8,2027-10-18,active,0,April to May\r\n")
+    expect(new TextDecoder().decode(bytes)).toBe("Name,Zones,Blowout week,Status,Charged so far,Next visit\r\nReese,8,2027-10-11,Active,145,July\r\nReesa,8,2027-10-18,Active,0,April to May\r\n")
   })
 })
 

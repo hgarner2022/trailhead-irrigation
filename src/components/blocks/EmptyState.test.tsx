@@ -6,9 +6,9 @@ import { EmptyState } from "./EmptyState"
 const block = () => document.querySelector<HTMLElement>('[data-slot="empty-state"]') as HTMLElement
 
 describe("EmptyState", () => {
-  it("renders the title and the line as a status region", () => {
+  it("renders the title and the line as a plain block, not a live region", () => {
     render(<EmptyState title="No passes sold yet" line="Passes appear here as customers reserve their season." />)
-    expect(screen.getByRole("status")).toBe(block())
+    expect(block()).not.toHaveAttribute("role")
     expect(screen.getByText("No passes sold yet")).toBeInTheDocument()
     expect(screen.getByText("Passes appear here as customers reserve their season.")).toBeInTheDocument()
   })

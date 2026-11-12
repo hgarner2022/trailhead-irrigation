@@ -66,4 +66,28 @@ describe("WeekCard", () => {
     render(<WeekCard week={week} onSelect={onSelect} />)
     expect(screen.getByRole("button", { pressed: false })).not.toHaveClass("ring-2")
   })
+
+  it("holds only phrasing content inside the button", () => {
+    render(<WeekCard week={full} onSelect={() => {}} />)
+    const button = screen.getByRole("button")
+    expect(button.querySelector("p, div, ul, li, h1, h2, h3")).toBeNull()
+    expect(screen.getByText("Full")).toBeInTheDocument()
+    expect(button.querySelectorAll('[data-slot="week-town"]')).toHaveLength(2)
+  })
+
+  it("keeps a full week pressable and says so", () => {
+    const onSelect = vi.fn()
+    render(<WeekCard week={full} onSelect={onSelect} />)
+    const button = screen.getByRole("button")
+    expect(button).toHaveAttribute("aria-disabled", "false")
+    expect(button).not.toBeDisabled()
+    fireEvent.click(button)
+    expect(onSelect).toHaveBeenCalledTimes(1)
+  })
+
+  it("keeps the list semantics in the plain card", () => {
+    render(<WeekCard week={week} />)
+    expect(card().querySelector("ul")).not.toBeNull()
+    expect(card().querySelectorAll("li")).toHaveLength(2)
+  })
 })

@@ -1,3 +1,4 @@
+import { monthName, monthShort } from "@/lib/admin/format"
 import type { MonthTotal } from "@/lib/admin/types"
 
 // Data shaping for the Chart block. Recharts wants one row per x value with a
@@ -6,8 +7,6 @@ import type { MonthTotal } from "@/lib/admin/types"
 // the chart draws a zero height bar there instead of a gap.
 
 export const SEASON_MONTHS = [4, 5, 6, 7, 8, 9, 10, 11]
-const SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-const LONG = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
 
 export interface YearSeries {
   year: number
@@ -17,7 +16,6 @@ export interface YearSeries {
 export type MonthRow = { month: string } & Record<string, number | string>
 
 export const yearKey = (year: number) => `y${year}`
-export const monthShort = (month: number) => SHORT[month - 1]
 
 /** Sorts legend and tooltip items by year, newest first, so this year leads wherever the series came in. */
 export const byYearDesc = (item: { dataKey?: unknown }) => -Number(String(item.dataKey).slice(1))
@@ -38,6 +36,6 @@ export function monthRows(series: YearSeries[], months: number[] = SEASON_MONTHS
 /** "Revenue by month, 2026 against 2025, April to November" */
 export function describeBars(years: number[], months: number[] = SEASON_MONTHS): string {
   const sorted = byCalendar(months)
-  const span = sorted.length ? `${LONG[sorted[0] - 1]} to ${LONG[sorted[sorted.length - 1] - 1]}` : "no months"
+  const span = sorted.length ? `${monthName(sorted[0])} to ${monthName(sorted[sorted.length - 1])}` : "no months"
   return `Revenue by month, ${years.join(" against ")}, ${span}`
 }

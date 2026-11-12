@@ -47,6 +47,10 @@ describe("rowsToCsv against formula injection", () => {
     expect(rowsToCsv(columns, rows)).toBe("Name,Town,Zones\r\n'=SUM(A1:A9),'+Erie,'-7\r\n'@import,Erie,6\r\n")
   })
 
+  it("prefixes a cell that starts with a tab or a carriage return", () => {
+    expect(rowsToCsv([{ id: "note", header: "Note" }], [{ note: "\t=1" }, { note: "\r=2" }])).toBe("Note\r\n'\t=1\r\n\"'\r=2\"\r\n")
+  })
+
   it("leaves a negative number alone", () => {
     expect(rowsToCsv([{ id: "delta", header: "Delta" }], [{ delta: -50 }])).toBe("Delta\r\n-50\r\n")
   })

@@ -81,7 +81,8 @@ function Column({ open, onOpenChange, title, description, width = DEFAULT_WIDTH,
   })
   // Focus lands on the panel on open and goes back to where it was on close,
   // or to the grid or the layout when that element is gone. Escape closes
-  // unless a menu inside the panel is open or something already handled it.
+  // unless a menu, listbox or dialog inside the panel is open or something
+  // already handled it.
   useEffect(() => {
     if (!open) return
     const active = document.activeElement
@@ -89,7 +90,7 @@ function Column({ open, onOpenChange, title, description, width = DEFAULT_WIDTH,
     ref.current?.focus()
     const onKey = (event: KeyboardEvent) => {
       if (event.key !== "Escape" || event.defaultPrevented) return
-      if (event.target instanceof Element && event.target.closest('[role="menu"]')) return
+      if (event.target instanceof Element && event.target.closest('[role="menu"], [role="listbox"], [role="dialog"]')) return
       latest.current(false)
     }
     document.addEventListener("keydown", onKey)
@@ -118,7 +119,7 @@ function Column({ open, onOpenChange, title, description, width = DEFAULT_WIDTH,
         </div>
         <CloseButton onClick={() => onOpenChange(false)} />
       </div>
-      <div role="region" aria-label={title} tabIndex={0} className={BODY}>
+      <div role="region" aria-label={`${title} details`} tabIndex={0} className={BODY}>
         {children}
       </div>
       {footer && <div className="flex flex-wrap items-center gap-2 border-t border-border p-4">{footer}</div>}
@@ -154,7 +155,7 @@ function PhoneSheet({ open, onOpenChange, title, description, children, footer, 
             <CloseButton />
           </SheetClose>
         </SheetHeader>
-        <div role="region" aria-label={title} tabIndex={0} className={BODY}>
+        <div role="region" aria-label={`${title} details`} tabIndex={0} className={BODY}>
           {children}
         </div>
         {footer && <SheetFooter className="flex-row flex-wrap items-center border-t border-border">{footer}</SheetFooter>}

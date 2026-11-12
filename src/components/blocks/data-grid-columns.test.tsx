@@ -1,18 +1,11 @@
 import { describe, it, expect } from "vitest"
+import { render, screen } from "@testing-library/react"
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import type { Pass } from "@/lib/admin/types"
-import { STATUS_LABEL, chargedTotal, nextVisit, nextVisitSortKey, passColumns, shortDate } from "./data-grid-columns"
+import { chargedTotal, nextVisit, nextVisitSortKey, passColumns } from "./data-grid-columns"
 
 // passes[0] is Andrea in Erie: turn-on charged, inspection in July, blowout the week of October 4.
 const andrea = snapshot.passes[0] as Pass
-
-describe("shortDate", () => {
-  it("reads a date or a datetime as the short table form", () => {
-    expect(shortDate("2027-10-04")).toBe("Oct 4")
-    expect(shortDate("2027-04-20T16:00:00Z")).toBe("Apr 20")
-    expect(shortDate("2027-11-30")).toBe("Nov 30")
-  })
-})
 
 describe("chargedTotal", () => {
   it("sums the amounts of the charged visits only", () => {
@@ -46,9 +39,13 @@ describe("nextVisitSortKey", () => {
   })
 })
 
-describe("STATUS_LABEL", () => {
-  it("writes every status in sentence case", () => {
-    expect(STATUS_LABEL).toEqual({ active: "Active", cancelled: "Cancelled", lapsed: "Lapsed" })
+describe("status column", () => {
+  it("renders the status as a StatusPill and exports its label", () => {
+    const column = passColumns.find((c) => c.id === "status")
+    const cell = column?.cell as unknown as (ctx: { getValue: () => unknown }) => React.ReactNode
+    render(<>{cell({ getValue: () => "active" })}</>)
+    expect(screen.getByText("Active")).toHaveAttribute("data-slot", "status-pill")
+    expect(column?.meta?.csv?.(andrea)).toBe("Active")
   })
 })
 

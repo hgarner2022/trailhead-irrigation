@@ -6,7 +6,7 @@ import { Check } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import type { Pass, PassVisit } from "@/lib/admin/types"
-import { monthShort, writtenDate } from "./season-line-math"
+import { shortDate, writtenDate } from "@/lib/admin/format"
 import { SHEEN_REST, attachPointer, attachTilt, canRequestTilt, frameWriter, reducedMotion, requestTilt } from "./pass-card-sheen"
 
 // A wallet card at credit card proportions: the reserved moment at the end of
@@ -38,9 +38,6 @@ const ART = { flat: "/images/pass-card-art.webp", holo: "/images/pass-card-art-h
 const VISIT_NAMES: Record<PassVisit["kind"], string> = { "turn-on": "Turn-on", inspection: "Inspection", blowout: "Blowout" }
 const REST_STYLE = { "--sheen-x": SHEEN_REST.x, "--sheen-y": SHEEN_REST.y } as CSSProperties
 const never = () => () => {}
-
-/** "Oct 4" from an ISO date or datetime. */
-const shortDate = (iso: string) => `${monthShort(Number(iso.slice(5, 7)))} ${Number(iso.slice(8, 10))}`
 
 function describe(pass: Pass): string {
   const head = `Season Pass ${pass.season} for ${pass.firstName}, ${pass.town}`

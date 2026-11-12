@@ -1,18 +1,9 @@
 import { Check } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { PassVisit } from "@/lib/admin/types"
+import { monthName, monthShort, writtenDate } from "@/lib/admin/format"
 import { formatMoney, visitMonth } from "@/lib/admin/metrics"
-import {
-  SEASON_MONTHS,
-  listJoin,
-  markerAlign,
-  monthName,
-  monthShort,
-  reservedWeek,
-  seasonPhase,
-  seasonPosition,
-  writtenDate,
-} from "./season-line-math"
+import { SEASON_MONTHS, listJoin, markerAlign, reservedWeek, seasonPhase, seasonPosition } from "./season-line-math"
 
 // The April to November arc as one horizontal line. In business mode the
 // committed Season Pass revenue stands above each month as a column, charged

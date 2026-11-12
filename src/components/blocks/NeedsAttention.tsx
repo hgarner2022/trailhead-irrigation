@@ -13,10 +13,12 @@ import { relativeTime } from "./needs-attention-time"
 
 export interface NeedsAttentionProps {
   items: Attention[]
-  /** ISO datetime the relative times are measured from; defaults to now */
+  /**
+   * ISO datetime the relative times are measured from. Screens must pass it
+   * (the sync time, or the request time) so the server and the client render
+   * the same words; the fallback to now is only for ad hoc use.
+   */
   now?: string
-  /** Reserved for the wired version; the prototype links rows to `#pass-{id}` instead */
-  onOpenPass?: never
   className?: string
 }
 
@@ -35,7 +37,10 @@ function Row({ item, now }: { item: Attention; now: string }) {
         <Icon className="size-4" aria-hidden />
       </span>
       <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <span className="text-sm text-foreground">{item.message}</span>
+        <span className="text-sm text-foreground">
+          <span className="sr-only">{`${name}: `}</span>
+          {item.message}
+        </span>
         <time dateTime={item.since} className="text-xs text-muted-foreground">
           {relativeTime(item.since, now)}
         </time>

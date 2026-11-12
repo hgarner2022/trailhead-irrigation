@@ -6,7 +6,6 @@ import {
   reservedWeek,
   seasonPhase,
   seasonPosition,
-  writtenDate,
 } from "./season-line-math"
 
 describe("the shared month rule", () => {
@@ -62,9 +61,6 @@ describe("labels", () => {
     expect(reservedWeek("October, week of the 4th")).toBe("October 4")
     expect(reservedWeek("Oct, week of the 11th")).toBe("October 11")
     expect(reservedWeek("October")).toBeNull()
-  })
-  it("writes a date out in full", () => {
-    expect(writtenDate("2027-04-20T16:00:00Z")).toBe("April 20")
   })
   it("joins a list the way a sentence does", () => {
     expect(listJoin(["April"])).toBe("April")
