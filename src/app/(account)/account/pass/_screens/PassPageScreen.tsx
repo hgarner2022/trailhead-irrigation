@@ -1,24 +1,28 @@
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
-import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { PassCard } from "@/components/blocks/PassCard"
 import { SeasonLine } from "@/components/blocks/SeasonLine"
 import { StatusPill } from "@/components/blocks/StatusPill"
 import type { Pass } from "@/lib/admin/types"
+import { CancelPassDialog } from "./CancelPassDialog"
 import { cardLine, seasonCaption, visitRows } from "./pass-page-model"
 
 // The customer's pass page: a season card, not a dashboard. The pass card at
 // the top, the season line with the three visits and their state, the card
 // on file with one update button, and one cancel link that asks before it
-// does anything. A cancelled pass shows the grey card and one line. Pure
+// does anything (CancelPassDialog). The visit states use the customer's words,
+// Done, Booked and Reserved, in the StatusPill colours; a customer never reads
+// "Not scheduled". A cancelled pass shows the grey card and one line. Pure
 // composition over `pass` and `today`; the route's page.tsx supplies both.
-// Server component; the dialog primitive carries its own client boundary.
+// Server component; the dialog carries its own client boundary.
 
 export interface PassPageScreenProps {
   pass: Pass
   /** ISO date the season line's marker is read from */
   today: string
+  /** called when the customer confirms the cancel dialog */
+  onCancel?: () => void
 }
 
 const LOGO = "/images/logo-badge.png"
@@ -27,33 +31,7 @@ function Title({ children }: { children: string }) {
   return <h2 className="font-display text-2xl font-semibold leading-none text-navy">{children}</h2>
 }
 
-function CancelDialog() {
-  return (
-    <Dialog>
-      <DialogTrigger asChild>
-        <Button variant="link" className="h-auto p-0 text-destructive">
-          Cancel my pass
-        </Button>
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle className="font-display text-2xl text-navy">Cancel your Season Pass?</DialogTitle>
-          <DialogDescription className="text-base">Nothing further is charged. Your reserved blowout week is released.</DialogDescription>
-        </DialogHeader>
-        <DialogFooter>
-          <DialogClose asChild>
-            <Button variant="outline">Keep my pass</Button>
-          </DialogClose>
-          <DialogClose asChild>
-            <Button>Cancel the pass</Button>
-          </DialogClose>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  )
-}
-
-export function PassPageScreen({ pass, today }: PassPageScreenProps) {
+export function PassPageScreen({ pass, today, onCancel }: PassPageScreenProps) {
   const cancelled = pass.status === "cancelled"
   return (
     <div data-slot="pass-page" data-status={pass.status} className="min-h-svh bg-cream text-foreground">
@@ -84,7 +62,7 @@ export function PassPageScreen({ pass, today }: PassPageScreenProps) {
                         <span className="block text-base font-semibold text-foreground">{row.name}</span>
                         <span className="block text-sm text-muted-foreground">{row.when}</span>
                       </span>
-                      <StatusPill status={row.status} />
+                      <StatusPill status={row.status} label={row.label} />
                     </li>
                   ))}
                 </ul>
@@ -106,8 +84,8 @@ export function PassPageScreen({ pass, today }: PassPageScreenProps) {
                 <Title>Need to change something?</Title>
               </CardHeader>
               <CardContent className="space-y-3">
-                <p className="text-base text-muted-foreground">Reply to any of our emails or call and we will move a visit or update the address. You can also end the pass here.</p>
-                <CancelDialog />
+                <p className="text-base text-muted-foreground">Reply to any of our emails or call and we&apos;ll move a visit or update the address. You can also end the pass here.</p>
+                <CancelPassDialog onConfirm={onCancel} />
               </CardContent>
             </Card>
           </>

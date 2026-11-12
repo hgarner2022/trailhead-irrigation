@@ -27,6 +27,13 @@ describe("StatusPill", () => {
     expect(pill()).toHaveAttribute("data-status", "overdue")
   })
 
+  it("takes another word for the same status, keeping its colour", () => {
+    render(<StatusPill status="unscheduled" label="Reserved" />)
+    expect(pill()).toHaveTextContent("Reserved")
+    expect(pill()).toHaveAttribute("data-status", "unscheduled")
+    expect(pill()).toHaveClass("bg-stone")
+  })
+
   it.each<[PillStatus, string]>([
     ["active", "text-positive-deep"],
     ["paid", "text-positive-deep"],

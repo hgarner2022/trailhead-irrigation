@@ -15,14 +15,23 @@ describe("visit rows", () => {
   it("names each visit and reads its state from the dates", () => {
     expect(pass.visits.map(visitStatus)).toEqual(["completed", "unscheduled", "unscheduled"])
     expect(visitRows(pass)).toEqual([
-      { kind: "turn-on", name: "Spring turn-on", when: "April 20", status: "completed" },
-      { kind: "inspection", name: "Mid-season inspection", when: "July", status: "unscheduled" },
-      { kind: "blowout", name: "Fall blowout", when: "Week of October 4", status: "unscheduled" },
+      { kind: "turn-on", name: "Spring turn-on", when: "April 20", status: "completed", label: "Done" },
+      { kind: "inspection", name: "Mid-season inspection", when: "July", status: "unscheduled", label: "July" },
+      { kind: "blowout", name: "Fall blowout", when: "Week of October 4", status: "unscheduled", label: "Reserved" },
     ])
   })
 
   it("shows the date once a visit is booked", () => {
-    expect(visitRows(scheduled)[1]).toEqual({ kind: "inspection", name: "Mid-season inspection", when: "July 13", status: "scheduled" })
+    expect(visitRows(scheduled)[1]).toEqual({ kind: "inspection", name: "Mid-season inspection", when: "July 13", status: "scheduled", label: "Booked" })
+  })
+
+  it("speaks to the customer: never the admin words", () => {
+    const words = [...visitRows(pass), ...visitRows(scheduled), ...visitRows(allDone)].map((r) => r.label)
+    expect(words).not.toContain("Not scheduled")
+    expect(words).not.toContain("Scheduled")
+    expect(words).not.toContain("Completed")
+    expect(visitRows({ ...pass, visits: pass.visits.map((v) => ({ ...v, completedAt: undefined, scheduledAt: undefined })) })[0].label).toBe("April to May")
+    expect(visitRows(allDone).map((r) => r.label)).toEqual(["Done", "Done", "Done"])
   })
 })
 

@@ -16,6 +16,8 @@ export interface VisitRow {
   /** the date once there is one, else the reserved week, else the window */
   when: string
   status: RowStatus
+  /** the customer's word for the state: Done, Booked, Reserved, or the window while a visit waits for its day */
+  label: string
 }
 
 export const visitStatus = (visit: PassVisit): RowStatus => (visit.completedAt ? "completed" : visit.scheduledAt ? "scheduled" : "unscheduled")
@@ -29,7 +31,8 @@ export function visitRow(visit: PassVisit, pass: Pass): VisitRow {
       : visit.kind === "blowout"
         ? `Week of ${writtenDate(pass.blowoutWeek)}`
         : visit.window
-  return { kind: visit.kind, name: VISIT_NAMES[visit.kind], when, status }
+  const label = status === "completed" ? "Done" : status === "scheduled" ? "Booked" : visit.kind === "blowout" ? "Reserved" : visit.window
+  return { kind: visit.kind, name: VISIT_NAMES[visit.kind], when, status, label }
 }
 
 export const visitRows = (pass: Pass): VisitRow[] => pass.visits.map((v) => visitRow(v, pass))

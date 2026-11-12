@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite"
+import { expect, fn, screen } from "storybook/test"
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import type { Pass } from "@/lib/admin/types"
 import { PassPageScreen } from "./PassPageScreen"
@@ -23,7 +24,7 @@ const meta = {
   title: "Screens/PassPage",
   component: PassPageScreen,
   parameters: { layout: "fullscreen" },
-  args: { pass: active, today: "2026-11-12" },
+  args: { pass: active, today: "2026-11-12", onCancel: fn() },
 } satisfies Meta<typeof PassPageScreen>
 export default meta
 type Story = StoryObj<typeof meta>
@@ -40,6 +41,17 @@ export const AllDone: Story = {
 export const Cancelled: Story = {
   args: { pass: cancelled },
   globals: { viewport: { value: "wide", isRotated: false } },
+}
+
+/** The cancel dialog, confirmed: the words swap so the customer sees it happened. */
+export const Cancelling: Story = {
+  globals: { viewport: { value: "wide", isRotated: false } },
+  play: async ({ canvas, userEvent, args }) => {
+    await userEvent.click(await canvas.findByRole("button", { name: "Cancel my pass" }))
+    await userEvent.click(await screen.findByRole("button", { name: "Cancel the pass" }))
+    await expect(await screen.findByRole("dialog", { name: "Your pass is cancelled." })).toBeInTheDocument()
+    await expect(args.onCancel).toHaveBeenCalledTimes(1)
+  },
 }
 
 export const Phone: Story = {

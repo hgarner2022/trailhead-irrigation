@@ -15,6 +15,18 @@ type Story = StoryObj<typeof meta>
 
 export const Default: Story = {}
 
+/** The customer's words on the pass page, in the status colours: a reserved blowout is still unscheduled underneath. */
+export const CustomerWords: Story = {
+  render: () => (
+    <ul className="flex flex-wrap gap-6">
+      <li><StatusPill status="completed" label="Done" /></li>
+      <li><StatusPill status="scheduled" label="Booked" /></li>
+      <li><StatusPill status="unscheduled" label="Reserved" /></li>
+      <li><StatusPill status="unscheduled" label="July" /></li>
+    </ul>
+  ),
+}
+
 /** Every status the app knows, with the word it shows under each. */
 export const All: Story = {
   render: () => (

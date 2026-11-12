@@ -51,13 +51,15 @@ export const statusLabel = (status: PillStatus): string => LABELS[status]
 
 export interface StatusPillProps {
   status: PillStatus
+  /** Another word for the same status, in the status's colour: the customer's pass page says "Reserved" and "Booked" where the admin says "Not scheduled" and "Scheduled". */
+  label?: string
   className?: string
 }
 
-export function StatusPill({ status, className }: StatusPillProps) {
+export function StatusPill({ status, label, className }: StatusPillProps) {
   return (
     <Badge data-slot="status-pill" data-status={status} variant="outline" className={cn("whitespace-nowrap", TONES[status], className)}>
-      {statusLabel(status)}
+      {label ?? statusLabel(status)}
     </Badge>
   )
 }
