@@ -669,7 +669,7 @@ If your irrigation system came with your new construction or hasn't been profess
     image: "/images/sprinkler-installation.jpg",
     category: "Installation & Upgrades",
     relatedSlugs: ["how-much-does-sprinkler-system-cost-colorado", "drip-irrigation-vs-spray-heads", "why-hire-local-irrigation-company"],
-    content: `A typical residential sprinkler system installation in Northern Colorado takes 1-3 days from first trench to final walkthrough. The process includes a site visit and design, utility locating, trenching, pipe and head installation, controller wiring, and a zone-by-zone test. Your yard will have trenching lines visible for a few weeks, but they fill in fast.
+    content: `A typical residential [sprinkler system installation](/sprinkler-installation) in Northern Colorado takes 1-3 days from first trench to final walkthrough. The process includes a site visit and design, utility locating, trenching, pipe and head installation, controller wiring, and a zone-by-zone test. Your yard will have trenching lines visible for a few weeks, but they fill in fast.
 
 Here's the full process, step by step, so there are no surprises.
 
@@ -767,7 +767,7 @@ A few things that help the recovery:
 
 ## Ready to Get Started?
 
-**Trailhead Lawn & Irrigation installs sprinkler systems across Erie, Longmont, Louisville, Lafayette, Frederick, Firestone, and Weld County.** We'll design a system specific to your property, walk you through every step, and make sure it's running perfectly before we leave. Give us a call.`,
+**Trailhead Lawn & Irrigation installs sprinkler systems across Erie, Longmont, Louisville, Lafayette, Frederick, Firestone, and Weld County.** We'll design a system specific to your property, walk you through every step, and make sure it's running perfectly before we leave. See [irrigation system installation in Erie](/sprinkler-installation) for pricing, or give us a call.`,
   },
   {
     slug: "xeriscaping-vs-traditional-lawn-colorado",
@@ -1166,7 +1166,7 @@ For most homeowners in our area, a smart controller is one of the best investmen
     image: "/images/sprinkler-installation.jpg",
     category: "Installation & Upgrades",
     relatedSlugs: ["what-to-expect-sprinkler-installation", "drip-irrigation-vs-spray-heads", "smart-irrigation-controllers-worth-it"],
-    content: `Most homeowners along the Front Range pay between **$3,000 and $6,000** for a full residential sprinkler system installation. That's a wide range, so let me break down what actually moves the number.
+    content: `Most homeowners along the Front Range pay between **$3,000 and $6,000** for a full residential [sprinkler system installation](/sprinkler-installation). That's a wide range, so let me break down what actually moves the number.
 
 I've installed systems in Erie, Longmont, Louisville, and Lafayette that landed all over that spectrum. A small townhome lot with four zones might come in around $3,000. A half-acre property with 8-10 zones, drip irrigation for flower beds, and a smart controller can push past $6,000. Most homes in our area fall somewhere in the $4,000-$5,500 range.
 
@@ -1225,7 +1225,7 @@ Fixing a badly installed system usually costs $1,500-$3,000. You don't save mone
 
 Every yard is different, so the only way to get a real number is to have someone walk your property. We provide on-site quotes for homeowners in Erie, Longmont, Louisville, Lafayette, Frederick, Firestone, and surrounding areas. No pressure, no gimmicks. Just a straight answer on what it'll cost and why.
 
-**Give Trailhead Lawn & Irrigation a call** and we'll come take a look.`,
+[Request an installation quote](/sprinkler-installation) or give Trailhead Lawn & Irrigation a call and we'll come take a look.`,
   },
   {
     slug: "drip-irrigation-vs-spray-heads",
@@ -1319,7 +1319,7 @@ The water savings from drip pay for the installation quickly. A drip zone in you
 
 You don't have to choose one or the other. The best irrigation systems use spray where it makes sense (lawns) and drip where it makes sense (everything else). With Colorado's clay soil, drought restrictions, and expensive water, getting this mix right saves real money every season.
 
-**Trailhead Lawn & Irrigation designs and installs mixed spray-and-drip systems across Erie, Longmont, Louisville, Lafayette, and surrounding areas.** If you're not sure what's right for your yard, we'll walk it with you and give you a recommendation. No charge for the conversation. Give us a call.`,
+**Trailhead Lawn & Irrigation designs and installs mixed spray-and-drip systems across Erie, Longmont, Louisville, Lafayette, and surrounding areas.** If you're not sure what's right for your yard, we'll walk it with you and give you a recommendation. No charge for the conversation. See [new system installation](/sprinkler-installation) for what a full system costs, or give us a call.`,
   },
   {
     slug: "colorado-water-restrictions-2026",

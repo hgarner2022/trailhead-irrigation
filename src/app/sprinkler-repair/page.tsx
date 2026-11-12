@@ -160,7 +160,11 @@ export default function SprinklerRepairPage() {
               </p>
               <p className="text-muted-foreground">
                 If it needs more than the visit covers, you get a price before we start, at $145 an hour plus parts.
-                You decide what to do with it.
+                You decide what to do with it. If the system is past patching, we say so, and a{" "}
+                <Link href="/sprinkler-installation" className="text-primary hover:underline font-medium">
+                  new system
+                </Link>{" "}
+                is quoted the same way, with the layout and price before anyone digs.
               </p>
             </div>
 

@@ -163,7 +163,7 @@ type ServiceDef = {
 const SERVICES: ServiceDef[] = [
   {
     id: "sprinkler-installation",
-    name: "Lawn Sprinkler Installation",
+    name: "Irrigation System Installation",
     description:
       "Custom residential sprinkler system design and installation in Erie, Longmont, and Northern Colorado. Includes zone layout, head placement, trenching, controller setup, and final walkthrough.",
     serviceType: "Sprinkler System Installation",

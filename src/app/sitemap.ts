@@ -20,6 +20,7 @@ const CALCULATOR_UPDATED = "2026-04-15" // water savings calculator rebate data
 const BLOG_INDEX_UPDATED = "2026-05-19" // most recent blog post date
 const REBATE_PAGES_UPDATED = "2026-08-17" // added to sitemap; rebate amounts last verified
 const SERVICE_PAGES_UPDATED = "2026-09-10" // installation + blowout landing pages published
+const INSTALL_UPDATED = "2026-11-12" // installation page: banner, FAQ and inbound links for the Erie install queries
 const SEASON_PASS_UPDATED = "2026-11-01" // Season Pass page published with the homepage redesign
 const TURN_ON_UPDATED = "2026-11-01" // Spring turn-on + sprinkler repair landing pages published
 
@@ -36,7 +37,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${baseUrl}/book`, lastModified: new Date(STATIC_PAGES_UPDATED), changeFrequency: "monthly" as const, priority: 0.8 },
     { url: `${baseUrl}/smart-controllers`, lastModified: new Date(CITY_PAGES_UPDATED), changeFrequency: "monthly" as const, priority: 0.9 },
     { url: `${baseUrl}/smart-controllers/water-savings-calculator`, lastModified: new Date(CALCULATOR_UPDATED), changeFrequency: "monthly" as const, priority: 0.85 },
-    { url: `${baseUrl}/sprinkler-installation`, lastModified: new Date(SERVICE_PAGES_UPDATED), changeFrequency: "monthly" as const, priority: 0.95 },
+    { url: `${baseUrl}/sprinkler-installation`, lastModified: new Date(INSTALL_UPDATED), changeFrequency: "monthly" as const, priority: 0.95 },
     { url: `${baseUrl}/christmas-lights`, lastModified: new Date(SERVICE_PAGES_UPDATED), changeFrequency: "monthly" as const, priority: 0.7 },
     { url: `${baseUrl}/aeration`, lastModified: new Date(SERVICE_PAGES_UPDATED), changeFrequency: "monthly" as const, priority: 0.4 },
     { url: `${baseUrl}/sprinkler-blowout`, lastModified: new Date(SERVICE_PAGES_UPDATED), changeFrequency: "weekly" as const, priority: 0.95 },

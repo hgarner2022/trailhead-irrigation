@@ -17,7 +17,7 @@ import { CheckList } from "@/components/sections/CheckList"
 export const metadata: Metadata = {
   title: "Irrigation System Installation in Erie, CO",
   description:
-    "New sprinkler systems in Erie, CO for $3,000 to $6,000, designed for clay soil and local watering rules. Layout and price before anyone digs. Owner-installed.",
+    "Irrigation system installation in Erie, CO and the towns around it. New sprinkler systems run $3,000 to $6,000, designed for clay soil, with the layout and price in writing before anyone digs.",
   alternates: { canonical: `${siteConfig.url}/sprinkler-installation` },
 }
 
@@ -90,7 +90,22 @@ const INSTALL_FAQS = [
   {
     question: "What time of year can a sprinkler system be installed?",
     answer:
-      "Once the ground has thawed and before it freezes, so roughly April through October on the Front Range. Spring and early summer are the busiest stretch. Installing later in the season means the system is ready to go the following spring.",
+      "Once the ground has thawed and before it freezes, so roughly April through October on the Front Range. Quote requests start in March and the spring calendar fills first, so reach out early if you want the system running for summer. Installing in late summer or fall means the system is ready to go the following spring.",
+  },
+  {
+    question: "Do you install irrigation systems outside Erie?",
+    answer:
+      "Yes. We install sprinkler systems in Erie, Longmont, Louisville, Lafayette, Firestone and Broomfield, and in the surrounding parts of Weld and Boulder counties. Each town has its own backflow and watering rules, and the design follows the rules where the house is.",
+  },
+  {
+    question: "How do I get a sprinkler installation quote?",
+    answer:
+      "Send a request through the contact page or call. Ryan walks the property, checks your water pressure and flow, and sends a zone layout with a written price. Nothing is dug until you have both.",
+  },
+  {
+    question: "What should be in a sprinkler installation bid?",
+    answer:
+      "A zone map, the head and nozzle types for each zone, the controller, the backflow assembly, and one written price for the whole job. A bid that does not list zones and head types cannot be compared with one that does.",
   },
 ]
 
@@ -138,8 +153,8 @@ export default function SprinklerInstallationPage() {
       />
 
       <PageBanner
-        title="Sprinkler and irrigation installation in Erie, Colorado"
-        description="Zone layout and price before anyone digs, designed for clay soil and Front Range watering rules."
+        title="Sprinkler and irrigation system installation in Erie, Colorado"
+        description="New sprinkler systems for Erie and the towns around it, designed for clay soil and Front Range watering rules, with the zone layout and price in writing before anyone digs."
         backgroundImage="/images/home-lawn-spring.jpg"
       />
 
