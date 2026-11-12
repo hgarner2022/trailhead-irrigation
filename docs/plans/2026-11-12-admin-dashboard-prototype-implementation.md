@@ -285,6 +285,47 @@ If it asks to overwrite `button.tsx` or `card.tsx`, answer no; ours are the adap
 
 **Step 6: Commit** `Adopt the shadcn primitives the admin screens need, adapted to Trailhead tokens`
 
+### Task 0.6: Keep admin CSS out of the marketing bundle
+
+Tailwind v4 scans every file under `src/`, so the sixteen new primitives added about 5.7 KB gzip of unused, render-blocking CSS to every marketing page (10.5 KB to 16.2 KB). The proper fix is a separate stylesheet entry for the `(admin)` root layout, which belongs to the wiring plan because that layout does not exist yet. For the prototype, exclude the admin-only sources from the marketing scan and make the gate guard the list.
+
+**Files:**
+- Modify: `src/app/globals.css` (`@source` lines)
+- Modify: `scripts/check-design.mjs` and `scripts/check-design.test.mjs` (one new rule)
+- Modify: `docs/DESIGN.md` (one paragraph under Three tiers)
+
+**Step 1: Exclusions.** After the existing `@source not "../../docs";` add:
+
+```css
+/* Admin-only sources stay out of the marketing CSS. The admin route group gets
+   its own stylesheet entry when it is wired (see the wiring plan). The gate
+   checks that every ui/ primitive a marketing file imports is listed below. */
+@source not "../components/blocks";
+@source not "../components/**/*.stories.tsx";
+@source not "../components/**/*.test.tsx";
+@source not "./(admin)";
+@source not "./(checkout)";
+@source not "./(account)";
+@source not "../components/ui";
+@source "../components/ui/badge.tsx";
+@source "../components/ui/button.tsx";
+@source "../components/ui/card.tsx";
+@source "../components/ui/carousel.tsx";
+@source "../components/ui/input.tsx";
+@source "../components/ui/separator.tsx";
+@source "../components/ui/textarea.tsx";
+```
+
+Confirm with `npm run build` that the marketing CSS is back near its pre-0.5 size (report raw and gzip bytes before and after), that the marketing pages still contain their classes (grep the built CSS for `.bg-primary-dark`, `.rounded-lg`, a carousel class), and that nothing visibly changes on `/`, `/pricing`, `/season-pass` by opening them in the browser pane at desktop and phone width and comparing against `main` (screenshots to `.local-data/admin/css-split/`).
+
+**Step 2: Gate rule, test first.** New check in `scripts/check-design.mjs`: read `src/app/globals.css`, collect the `@source "../components/ui/<name>.tsx"` includes, then for every non-story, non-test file under `src/app` (excluding `(admin)`, `(checkout)`, `(account)`) and `src/components/sections`, every import from `@/components/ui/<name>` must be in that include list; otherwise `path: imports ui/<name> which is not in the marketing @source list in src/app/globals.css`. Tests: a `sections/Foo.tsx` importing `@/components/ui/tabs` with a globals.css that lists only button fails; the same with tabs listed passes; an `(admin)` file importing tabs passes regardless. The test helper needs to write a fake `app/globals.css` into the temp tree; read it from `<dir>/app/globals.css`.
+
+**Step 3: DESIGN.md.** Under Three tiers add: "Marketing CSS scans only the marketing folders and the seven primitives marketing uses, listed as `@source` lines in `globals.css`. A marketing file that imports another primitive must add it there, and the gate fails the build until it does. Admin, checkout and account screens get their own stylesheet entry in the wiring phase."
+
+**Step 4: Verify** `npm run test:gate`, `npm run check:design`, `npm run lint`, `npm run test:stories` (Storybook imports `globals.css` too, so confirm the stories still render with their classes; if the `@source not` lines starve Storybook of the admin utilities, give `.storybook/preview.tsx` its own `storybook.css` that imports `tailwindcss` and `tokens` with `@source` for all of `src`, and say so), `npm test`, `npx tsc --noEmit`, `npm run build`.
+
+**Step 5: Commit** `Keep admin-only sources out of the marketing CSS, with the gate guarding the include list`
+
 ---
 
 ## Phase 1: Data
