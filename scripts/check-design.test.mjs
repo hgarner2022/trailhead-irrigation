@@ -186,3 +186,50 @@ test("a hex-looking value in an arbitrary utility is a colour", () => {
   assert.equal(r.status, 1)
   assert.match(r.out, /components\/blocks\/Tint\.tsx: .*raw colour/)
 })
+
+const GLOBALS_BUTTON_ONLY = `@import "tailwindcss";\n@source not "../components/ui/tabs.tsx";\n@source not "../components/ui/sheet.tsx";\n`
+const GLOBALS_TABS_ALLOWED = `@import "tailwindcss";\n@source not "../components/ui/sheet.tsx";\n`
+
+test("a marketing section importing a ui primitive the marketing CSS excludes fails", () => {
+  const r = run({
+    "app/globals.css": GLOBALS_BUTTON_ONLY,
+    "components/sections/Foo.tsx": `import { Tabs } from "@/components/ui/tabs"\nexport const Foo = () => <Tabs />\n`,
+  })
+  assert.equal(r.status, 1)
+  assert.match(r.out, /components\/sections\/Foo\.tsx: imports ui\/tabs, which src\/app\/globals\.css excludes from the marketing CSS/)
+})
+
+test("a marketing page importing an excluded ui primitive fails too", () => {
+  const r = run({
+    "app/globals.css": GLOBALS_BUTTON_ONLY,
+    "app/pricing/page.tsx": `import { Tabs } from "@/components/ui/tabs"\nexport default function Page() { return <Tabs /> }\n`,
+  })
+  assert.equal(r.status, 1)
+  assert.match(r.out, /app\/pricing\/page\.tsx: imports ui\/tabs, which src\/app\/globals\.css excludes/)
+})
+
+test("a marketing section importing a ui primitive the marketing CSS scans passes", () => {
+  const r = run({
+    "app/globals.css": GLOBALS_TABS_ALLOWED,
+    "components/sections/Foo.tsx": `import { Tabs } from "@/components/ui/tabs"\nexport const Foo = () => <Tabs />\n`,
+  })
+  assert.equal(r.status, 0, r.out)
+  assert.match(r.out, /design gates: ok/)
+})
+
+test("an admin page importing an excluded ui primitive passes regardless", () => {
+  const r = run({
+    "app/globals.css": GLOBALS_BUTTON_ONLY,
+    "app/(admin)/x/page.tsx": `import { Tabs } from "@/components/ui/tabs"\nexport default function Page() { return <Tabs className="bg-primary" /> }\n`,
+  })
+  assert.equal(r.status, 0, r.out)
+  assert.match(r.out, /design gates: ok/)
+})
+
+test("the marketing CSS rule is skipped when globals.css is absent", () => {
+  const r = run({
+    "components/sections/Foo.tsx": `import { Tabs } from "@/components/ui/tabs"\nexport const Foo = () => <Tabs />\n`,
+  })
+  assert.equal(r.status, 0, r.out)
+  assert.match(r.out, /design gates: ok/)
+})

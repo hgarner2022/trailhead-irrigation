@@ -6,8 +6,12 @@
 //   - every ui/ and blocks/ component has a sibling *.stories.tsx
 //   - blocks/ and (admin)/ never import marketing sections; sections/ never
 //     imports blocks/ or (admin)/
-// Marketing code outside those folders is not checked. Folders match by path
-// segment, so "(admin)" and "blocks" only match as directory names.
+//   - marketing files (app/ outside the (admin), (checkout) and (account)
+//     groups, and sections/) only import ui/ primitives the marketing CSS
+//     scans, i.e. ones without an `@source not` line in app/globals.css;
+//     skipped when that file is absent
+// Other marketing checks are not run. Folders match by path segment, so
+// "(admin)" and "blocks" only match as directory names.
 // Usage: node scripts/check-design.mjs [--dir src]
 import { existsSync, readdirSync, readFileSync } from "node:fs"
 import { basename, dirname, join, relative, sep } from "node:path"
@@ -35,6 +39,13 @@ const anchorAttrRe = /\b(?:href|id|htmlFor|aria-[\w-]+)=(?:"[^"]*"|'[^']*'|\{[^}
 const bare = (line) =>
   line.replace(/(["'`])(?:\\.|(?!\1).)*\1/g, "$1$1").replace(/\/\*.*?\*\//g, "").replace(/\/\/.*$/, "")
 const importRe = /\bfrom\s+["']([^"']+)["']|\bimport\(\s*["']([^"']+)["']/g
+const appGroupRe = /^\((?:admin|checkout|account)\)$/
+// ui/ primitives app/globals.css keeps out of the marketing CSS.
+const excludedUiRe = /@source\s+not\s+["']\.\.\/components\/ui\/([\w-]+)\.tsx["']/g
+const globals = join(root, "app", "globals.css")
+const excludedUi = existsSync(globals)
+  ? new Set([...readFileSync(globals, "utf8").matchAll(excludedUiRe)].map((m) => m[1]))
+  : null
 
 const problems = []
 const notes = []
@@ -96,16 +107,26 @@ function checkImports(file, text, zone) {
   }
 }
 
+function checkMarketingCss(file, text) {
+  for (const m of text.matchAll(importRe)) {
+    const name = /^@\/components\/ui\/([\w-]+)$/.exec(m[1] ?? m[2])?.[1]
+    if (name && excludedUi.has(name))
+      problems.push(`${file}: imports ui/${name}, which src/app/globals.css excludes from the marketing CSS (@source not)`)
+  }
+}
+
 for (const abs of walk(root)) {
   const dirs = relative(root, dirname(abs)).split(sep)
   const zone = dirs.includes("blocks") || dirs.includes("(admin)") ? "app"
     : dirs.includes("ui") ? "ui"
     : dirs.includes("sections") ? "marketing"
     : null
-  if (!zone) continue
-  const file = relative(process.cwd(), abs)
   const name = basename(abs)
   const fixture = /\.(stories|test)\.tsx?$/.test(name)
+  const marketingTsx = excludedUi && !fixture && name.endsWith(".tsx") &&
+    (zone === "marketing" || (dirs[0] === "app" && !dirs.some((d) => appGroupRe.test(d))))
+  if (!zone && !marketingTsx) continue
+  const file = relative(process.cwd(), abs)
   let text
   try {
     text = readFileSync(abs, "utf8")
@@ -113,6 +134,8 @@ for (const abs of walk(root)) {
     problems.push(`${file}: cannot read`)
     continue
   }
+  if (marketingTsx) checkMarketingCss(file, text)
+  if (!zone) continue
   if (zone !== "marketing" && !fixture) checkColours(file, text, zone === "ui" && LEGACY.has(name))
   if (zone !== "ui") checkImports(file, text, zone)
   const needsStory = (dirs.includes("blocks") || zone === "ui") && name.endsWith(".tsx") && !fixture

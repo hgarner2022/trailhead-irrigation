@@ -1,68 +1,36 @@
 @import "tailwindcss";
+@import "./tokens.css";
 /* docs mention class names in prose; keep them out of the scan */
 @source not "../../docs";
 
-@theme inline {
-  --color-primary: #D97706;
-  --color-primary-dark: #B45309;
-  --color-primary-deep: #92400E;         /* hover for buttons that rest on primary-dark */
-  --color-primary-light: #F59E0B;
-  --color-navy: #2B3544;
-  --color-navy-light: #3D4F63;
-  --color-charcoal: #1E293B;
-  --color-cream: #FAFAF8;
-  --color-stone: #F5F5F4;
-  --color-border: #E7E5E4;
-  --color-muted: #78716C;
-  --color-success: #16A34A;
-
-  --color-background: #FFFFFF;
-  --color-foreground: #1E293B;
-  --color-muted-foreground: #756E69;     /* labels and helper text; 4.59:1 on stone, 4.8 on cream, 5.0 on white */
-  --color-card: #FFFFFF;
-  --color-card-foreground: #1E293B;
-
-  /* Type: condensed display face for headings, humanist sans for body.
-     The *-src variables are set by next/font in src/app/layout.tsx. */
-  --font-sans: var(--font-body-src), "Segoe UI", Helvetica, Arial, sans-serif;
-  --font-display: var(--font-display-src), "Arial Narrow", Impact, sans-serif;
-
-  /* App tokens (admin dashboard, checkout, pass page). Mapped onto the brand
-     palette above; shadcn primitives reference these names. Documented in
-     docs/DESIGN.md. */
-  --color-secondary: #F5F5F4;            /* = stone */
-  --color-secondary-foreground: #1E293B;
-  --color-accent: #F5F5F4;
-  --color-accent-foreground: #1E293B;
-  --color-popover: #FFFFFF;
-  --color-popover-foreground: #1E293B;
-  --color-destructive: #B91C1C;
-  --color-destructive-foreground: #FFFFFF;
-  --color-warning: #B45309;              /* = primary-dark */
-  --color-positive: #15803D;             /* readable green, about 5:1 on white; used as text */
-  --color-input: #E7E5E4;                /* = border */
-  --color-ring: #D97706;                 /* = primary */
-
-  --color-sidebar: #2B3544;              /* navy rail */
-  --color-sidebar-foreground: #FAFAF8;
-  --color-sidebar-primary: #B45309;      /* = primary-dark; white text on it passes AA */
-  --color-sidebar-primary-foreground: #FFFFFF;
-  --color-sidebar-accent: #3D4F63;       /* = navy-light */
-  --color-sidebar-accent-foreground: #FFFFFF;
-  --color-sidebar-border: #3D4F63;
-  --color-sidebar-ring: #F59E0B;
-
-  --color-chart-1: #D97706;              /* this year */
-  --color-chart-2: #2B3544;              /* last year */
-  --color-chart-3: #16A34A;
-  --color-chart-4: #78716C;
-  --color-chart-5: #F59E0B;
-
-  --color-row-hover: #FAFAF8;            /* = cream */
-  --color-row-selected: #FEF3C7;         /* pale amber tint */
-
-  --radius: 0.5rem;                      /* rounded-lg everywhere */
-}
+/* Admin-only sources stay out of the marketing CSS. The admin route group gets
+   its own stylesheet entry when it is wired (see the wiring plan). Tailwind
+   4.2 cannot re-include one file under an excluded folder, so the admin-only
+   ui/ primitives are excluded one by one; the ones not listed (badge, button,
+   card, carousel, input, separator, textarea) are what marketing imports. The
+   gate checks that no marketing file imports a primitive excluded here. */
+@source not "../components/blocks";
+@source not "../components/**/*.stories.tsx";
+@source not "../components/**/*.test.tsx";
+@source not "./(admin)";
+@source not "./(checkout)";
+@source not "./(account)";
+@source not "../components/ui/avatar.tsx";
+@source not "../components/ui/chart.tsx";
+@source not "../components/ui/checkbox.tsx";
+@source not "../components/ui/command.tsx";
+@source not "../components/ui/dialog.tsx";
+@source not "../components/ui/dropdown-menu.tsx";
+@source not "../components/ui/label.tsx";
+@source not "../components/ui/popover.tsx";
+@source not "../components/ui/scroll-area.tsx";
+@source not "../components/ui/select.tsx";
+@source not "../components/ui/sheet.tsx";
+@source not "../components/ui/sidebar.tsx";
+@source not "../components/ui/skeleton.tsx";
+@source not "../components/ui/table.tsx";
+@source not "../components/ui/tabs.tsx";
+@source not "../components/ui/tooltip.tsx";
 
 /* Section spacing utilities matching pro-blocks patterns */
 .section-padding-y {
