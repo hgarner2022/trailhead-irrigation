@@ -47,7 +47,7 @@ export const visitsGet = defineHandler({
   method: "GET",
   path: "/visits/{id}",
   scope: "read",
-  summary: "One visit.",
+  summary: "One visit, with its truck, day and the customer's first name.",
   input: idInput,
   output: VisitOut,
   async run(ctx, input) {
