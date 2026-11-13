@@ -14,10 +14,13 @@ import { RACHIO_PRICING } from "@/lib/rachio-data"
  * length changes with the band (audit medians: 60 minutes up to 8 zones, 90
  * to 12, 120 above). The cost of any zone count is `serviceCost`.
  */
+/** Every kind a service can be: the screens' visit kinds plus the ones only booking and the catalogue use (the `visit_kind` enum). */
+export type ServiceKind = VisitKind | "consult" | "rachio-install" | "aeration" | "lights"
+
 export interface ServiceDef {
   key: string
   name: string
-  kind: VisitKind
+  kind: ServiceKind
   bookable: boolean
   minZones?: number
   maxZones?: number
@@ -119,7 +122,7 @@ export function serviceCost(service: Pick<ServiceDef, "price" | "includedZones" 
 }
 
 /** The bookable service for a kind and zone count (the band that fits). */
-export function serviceFor(kind: VisitKind, zones: number): ServiceDef | undefined {
+export function serviceFor(kind: ServiceKind, zones: number): ServiceDef | undefined {
   return LIST.find(
     (s) => s.kind === kind && s.bookable && (s.minZones === undefined || zones >= s.minZones) && (s.maxZones === undefined || zones <= s.maxZones),
   )
