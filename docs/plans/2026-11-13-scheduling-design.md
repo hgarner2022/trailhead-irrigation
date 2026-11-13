@@ -174,6 +174,17 @@ screens read it, nothing is derived twice.
 | Renewal made | `pass.renewed_from` (new) | the January run | pass panel, Passes table filter |
 | Status | `pass.status`: pending, active, cancelled, done | checkout, activation, cancel, season end | Passes table: pending is never shown as Active; pending older than an hour is expired by the cron |
 
+**Visits are jobs (Hannah, 14 Nov: "think about Season Pass as jobs with
+a status and all that; we can start with the Season Pass, but that is the
+direction").** The `visit` row is the job. One vocabulary everywhere: Needs
+a day, Scheduled, Routed (window set), Done, Charged, Charge failed,
+Cancelled; "not closed" is a flag on a Scheduled job whose day has passed.
+A one-off booking creates a job row of its own kind rather than living in
+its own table with its own lifecycle. Nothing pass-specific goes on the job
+itself, so repairs, installs and the rest join the same list later; job
+number, notes, photos, parts line items, quotes and invoices are added in
+that order with the day view and field payments.
+
 Admin changes that follow:
 
 - Passes table: Turn-on and Blowout show the day ("Apr 26") and, once
@@ -193,7 +204,8 @@ the admin and the routine never disagree.
 
 ## Build order, one PR each, the live checklist after each
 
-0. The data: the new columns above (`time_preference`, `start_time`,
+0. The data: jobs as the one vocabulary (the seven states, the booking
+   creating a job row), the new columns above (`time_preference`, `start_time`,
    `window_minutes`, `renewed_from`, the waitlist table), the Pending
    status shown as pending, the Passes table and panel reading the visit
    row and nothing else, no Jobber words or buttons anywhere in the admin.
