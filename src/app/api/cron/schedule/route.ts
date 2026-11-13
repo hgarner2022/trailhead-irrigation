@@ -18,8 +18,9 @@ function authorised(request: Request): boolean {
 
 /**
  * The daily scheduling run: flag unclosed visits, queue tomorrow's day-before texts, a Schedule run for any window now inside
- * its lead weeks, and the crew note; then drain the queue so the run happens now. Vercel Hobby allows one run a day per cron,
- * so `vercel.json` sets 11:00 UTC (5 am in Colorado); the route can also be hit by hand with the secret.
+ * its lead weeks, and the crew note; then drain the queue so the run happens now. Vercel Hobby allows two cron jobs, once a day
+ * each, so `vercel.json` schedules only `/api/cron/daily`, which runs this at 11:00 UTC (5 am in Colorado); this route
+ * can also be hit by hand with the secret.
  */
 export async function GET(request: Request) {
   if (!authorised(request)) return Response.json({ error: "unauthorized" }, { status: 401 })
