@@ -11,6 +11,8 @@ export interface Handler<I extends z.ZodObject = z.ZodObject, O extends z.ZodTyp
   scope: Scope
   /** a signed-in customer may also call it; the handler must then check the record is theirs */
   customerSelf?: boolean
+  /** the output carries a secret shown once: an Idempotency-Key replay is refused instead of storing it */
+  returnsSecret?: boolean
   /** the HTTP status of a success (201 for creates) */
   status?: 200 | 201
   /** one object: path parameters, query and body are merged into it */

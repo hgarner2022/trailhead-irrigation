@@ -55,7 +55,7 @@ export async function callApi<I extends z.ZodObject, O extends z.ZodType>(
     await checkRate(ctx)
     const run = async () => handler.output.parse(await handler.run(ctx, parsed.data)) as z.infer<O>
     if (ctx.idempotencyKey && WRITES.has(handler.method))
-      return await withIdempotency(ctx.db, ctx.organizationId, ctx.principal.id, ctx.idempotencyKey, hashRequest(handler.name, parsed.data), run)
+      return await withIdempotency(ctx.db, ctx.organizationId, ctx.principal.id, ctx.idempotencyKey, hashRequest(handler.name, parsed.data), run, handler.returnsSecret)
     return await run()
   } catch (error) {
     status = error instanceof ApiError ? error.status : 500

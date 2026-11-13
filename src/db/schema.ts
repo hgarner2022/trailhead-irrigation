@@ -370,6 +370,25 @@ export const charge = pgTable(
   (t) => [unique("charge_visit_attempt_unique").on(t.visitId, t.attempt)],
 )
 
+/** A change the customer or an admin made to a pass or one of its visits: a preference, a skip, a cancel, an added inspection, a move request. */
+export const passChange = pgTable(
+  "pass_change",
+  {
+    id: id(),
+    organizationId: orgId(),
+    customerId: text("customer_id").notNull().references(() => customer.id),
+    passId: text("pass_id").references(() => seasonPass.id),
+    visitId: text("visit_id").references(() => visit.id),
+    kind: text("kind").notNull(),
+    detail: jsonb("detail").$type<Record<string, unknown>>().notNull().default(sql`'{}'::jsonb`),
+    byPrincipal: text("by_principal").notNull(),
+    at: ts("at").notNull().defaultNow(),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [index("pass_change_pass_idx").on(t.passId, t.at)],
+)
+
 export const scheduleRun = pgTable(
   "schedule_run",
   {
