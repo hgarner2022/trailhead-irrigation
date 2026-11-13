@@ -166,10 +166,14 @@ must be easy for agents to use.
 ## Build order and what each step retires
 
 1. Pass checkout, pass page, admin Home, Passes, Revenue, Settings, Schedule
-   (wiring plan). Retires: phone calls to buy the pass, chasing pass
-   payments, Jobber's reminders for pass customers.
-2. Booking with real open slots, and the Requests inbox for quoted work.
-   Retires: Jobber online booking and its request form.
+   with the map, messaging, and booking at `/book` with real open slots
+   pushed into Jobber (all in the wiring plan; Hannah, 2026-11-12: "I don't
+   want to use Jobber where we can", so the app's form replaces Jobber's
+   booking and request forms in this first build). Retires: phone calls to
+   buy the pass, chasing pass payments, Jobber's reminders for pass
+   customers, Jobber online booking and its request form.
+2. The Requests inbox for quoted work (installs, large repairs) and the
+   January pre-sell on Customers.
 3. Day view with checklists. Retires: Jobber's field app.
 4. Quotes and invoices for non-pass work. Retires: Jobber's office side.
 5. Payments for that work through Stripe. Retires: Jobber Payments, then
