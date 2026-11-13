@@ -6,7 +6,7 @@ needed, roughly how long it takes, and which phase waits on it.
 
 ## Accounts to create (each is a sign-up, not code)
 
-1. **DONE 2026-11-12 (saved as a draft app named Trailhead Lawn & Irrigation; Hannah added JOBBER_CLIENT_ID and JOBBER_CLIENT_SECRET to Vercel for all environments the same night). Jobber developer app.** At developer.getjobber.com, sign in with the
+1. **NO LONGER NEEDED (2026-11-13: no Jobber connection). DONE 2026-11-12 (saved as a draft app named Trailhead Lawn & Irrigation; Hannah added JOBBER_CLIENT_ID and JOBBER_CLIENT_SECRET to Vercel for all environments the same night). Jobber developer app.** At developer.getjobber.com, sign in with the
    Trailhead Jobber login and create an app. It gives a client id and secret
    that let our app read and write Jobber (create jobs, see completions).
    About 20 minutes. Needed by Phase 0, the very first wiring phase, which
@@ -25,6 +25,16 @@ needed, roughly how long it takes, and which phase waits on it.
    separate marketing campaign only if you want it). A few dollars, and
    carrier approval takes days to two weeks, so start it early. Without it
    the texts are blocked. Needed by Phase 12.
+
+## A decision Jobber forced (found 2026-11-13, 1 am)
+
+Jobber refuses to let any outside app connect to an account below the
+Connect plan: the authorization page for our app says "A Jobber Connect or
+higher plan is required to connect this app." Two roads: upgrade Jobber to
+Connect for the transition (check the price on getjobber.com/pricing), or
+skip the Jobber connection and build the crew's day view sooner so Jobber
+is never the field display. The six unconfirmed API facts can still be
+answered on a free developer test account either way.
 
 ## Words to write
 

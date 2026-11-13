@@ -175,6 +175,8 @@ The app follows the same copy rules as the site. Headings are sentence case. Sen
 
 2026-11-12 (late) and 2026-11-13. Messages are one-way, one per event, one channel each (Hannah: "start with one-way communication", "this needs to be simpler"): text for timing (date set, moved, the day-before reminder), email for money and records (confirmation, receipt, card failed, cancelled, renewal). The customer panel shows the sent history; there is no reply box and no "customer replied" row. Every message links to the pass page, where the customer acts. Ryan texts "on my way" from his phone; the app never does.
 
+2026-11-13. No Jobber connection (Hannah: no plan upgrade, which Jobber requires for any outside app). The app is the calendar for pass visits and the crew's day view on the phone is the field display from the first season; Jobber keeps the non-pass work. The Jobber links and the jobs-failed and pass-cancelled rows leave the admin as the day view lands.
+
 2026-11-12 (night). The purchase confirmation email carries the pass card as an image (the holographic art, since nothing can move in an email), generated server-side at purchase; wiring plan, Phase 12.
 
 ## Approvals

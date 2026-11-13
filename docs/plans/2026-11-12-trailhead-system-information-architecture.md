@@ -27,10 +27,10 @@ Jobber shows the field what to do until the field app replaces it.
 | Organization, users, roles, settings | App | App | Trailhead is organization one; every row below carries its id |
 | Customer who holds a pass | App | App | Mirrored to Jobber as a client while Jobber is the field display |
 | Customer with no pass | Jobber | App | Read for dashboard totals until the booking form and Requests inbox land |
-| Season Pass, its visits, preferences, dates, charges | App | App | Jobber gets a copy of each visit on the truck's calendar |
+| Season Pass, its visits, preferences, dates, charges | App | App | Nothing goes to Jobber (2026-11-13: no upgrade, no connection); the crew's day view in the app is the field display from the first season |
 | Booking (a one-off visit the customer schedules) | Jobber online booking | App | Real open slots from trucks and capacity; books on the spot |
 | Request (work that needs a quote) | Jobber form | App | Requests inbox in the admin |
-| Schedule (truck, day, visit) | App places, Ryan moves | App | Jobber reflects it; a move in Jobber is logged as an exception |
+| Schedule (truck, day, visit) | App places, Ryan moves | App | The app's own calendar; Jobber reflects it; a move in Jobber is logged as an exception |
 | Trucks, areas, capacity, windows | App (Settings) | App | Unbounded rows, not a count |
 | Messages and templates | App | App | Every customer email and text, in Trailhead's voice |
 | Checklists per visit type | App (Settings) | App | Done on the phone day view; completion triggers the charge |
