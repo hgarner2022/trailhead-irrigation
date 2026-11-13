@@ -3,9 +3,9 @@
  * screen and what the customer has answered so far. The reducer is pure and
  * `canContinue` holds every step's rule, so the flow can be tested without
  * rendering; `toPass` turns the answers into the `Pass` the last screen
- * shows. `useCheckoutState` is the thin hook the screen calls.
+ * shows. It imports no React, so the server runs the same `canContinue` over what the browser sent (src/lib/pass/server/create.ts);
+ * `useCheckoutState`, the thin hook the screen calls, lives in use-checkout-state.ts.
  */
-import { useReducer } from "react"
 import type { Consent, Pass, PassVisit, TimingPreference, Town } from "@/lib/admin/types"
 import { preferencePhrase } from "@/lib/admin/format"
 import { emailProblem } from "@/lib/email-check"
@@ -193,10 +193,6 @@ export function reducer(state: CheckoutState, action: CheckoutAction): CheckoutS
     case "failed":
       return { ...state, failure: action.message }
   }
-}
-
-export function useCheckoutState(prefill?: Partial<CheckoutState>) {
-  return useReducer(reducer, prefill, initialState)
 }
 
 /** The sentence under the pass card on Done. */

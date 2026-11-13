@@ -9,6 +9,7 @@ import { CTAStrip } from "@/components/sections/CTAStrip"
 import { breadcrumbJsonLd, faqJsonLd, siteConfig, reviewsJsonLd } from "@/lib/seo"
 import { Testimonials } from "@/components/sections/Testimonials"
 import { reviewsFor } from "@/lib/reviews"
+import { checkoutEnabled } from "@/lib/flags"
 import {
   EXTRA_ZONE_PRICE,
   INSPECTION_FROM,
@@ -136,7 +137,7 @@ export default function SeasonPassPage() {
                 About 150 blowouts land in the four weeks before the first freeze. Pass customers get their October date in July, before that rush. You pay after each visit, nothing up front.
               </p>
             </div>
-            <SeasonPassCalculator ctaHref="/contact" ctaLabel="Reserve my season" />
+            <SeasonPassCalculator ctaHref={checkoutEnabled() ? "/season-pass/checkout" : "/contact"} carryZones={checkoutEnabled()} ctaLabel="Reserve my season" />
           </div>
         </div>
       </section>
