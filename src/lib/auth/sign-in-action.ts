@@ -7,8 +7,11 @@ export type SignInFn = (provider: "resend", options: { email: string; redirect: 
 /** Only a path inside the area the person is signing in to; anything else is dropped. */
 export function safeNext(base: SignInBase, next: string | null | undefined): string {
   if (next && (next === base || next.startsWith(`${base}/`)) && !next.includes("//") && !next.includes("\\")) return next
-  return base
+  return HOME[base]
 }
+
+/** Where a sign-in lands with no `next`: the admin's Home, the customer's pass page (`/account` itself has no page). */
+const HOME: Record<SignInBase, string> = { "/admin": "/admin", "/account": "/account/pass" }
 
 function query(params: Record<string, string>) {
   return new URLSearchParams(params).toString()

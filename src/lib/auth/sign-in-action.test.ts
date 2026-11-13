@@ -35,6 +35,6 @@ describe("safeNext", () => {
     expect(safeNext("/admin", "/account/pass")).toBe("/admin")
     expect(safeNext("/admin", "//evil.com")).toBe("/admin")
     expect(safeNext("/admin", "/admin//evil.com")).toBe("/admin")
-    expect(safeNext("/account", undefined)).toBe("/account")
+    expect(safeNext("/account", undefined)).toBe("/account/pass")
   })
 })
