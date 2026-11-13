@@ -83,11 +83,11 @@ the stops, or clear the block. Nothing moves silently. Ryan is asked to
 block personal days in Jobber as soon as he knows them, because offered
 days shrink the same day he does.
 
-**7. What if my street's day is full?** It is not offered. If no day in the
-window has room, the checkout says so before the card step and takes your
-email for the waiting list; Ryan sees the list on Home and decides whether
-to open a Saturday or send the second truck. Nothing is sold that cannot be
-placed.
+**7. What if my street's day is full?** It is not offered; the checkout
+offers the next days with room. No "window is full" stop and no waiting
+list (Hannah, 14 Nov: "Don't worry about it. Window is full right now."):
+if a whole window ever fills, Ryan adds capacity in Settings, a Saturday or
+the second truck.
 
 **8. What if I buy in July?** Only the visits still ahead are sold, priced
 for those visits; the days step offers days only in the windows that
@@ -169,7 +169,6 @@ screens read it, nothing is derived twice.
 | Moves | `pass_change` kind `moved` with from/to and who | customer, Ryan, weather pull | pass panel history, Home count |
 | Weather pull | `schedule_run` kind `pull` with the day and count | Ryan on the Schedule | Home, the texts |
 | Jobber conflict | `admin_alert` kind `conflict` with the block and the stops | the daily feed read | Home row with Move or Clear |
-| Waiting list | `waitlist` (new: email, town, kind, season) | the checkout when nothing fits | Home row, Customers |
 | Renewal consent | `consent` row kind `renewal` with the wording version | the checkout box | pass panel "Renews" line, the December email |
 | Renewal made | `pass.renewed_from` (new) | the January run | pass panel, Passes table filter |
 | Status | `pass.status`: pending, active, cancelled, done | checkout, activation, cancel, season end | Passes table: pending is never shown as Active; pending older than an hour is expired by the cron |
@@ -194,8 +193,8 @@ Admin changes that follow:
   "Renews next season: yes/no", Jobber link only when linked.
 - Schedule: stops carry the preference and the window; a day shows
   "ordered" or "not yet"; the pull action; the conflict row.
-- Home: counts for conflicts, waiting list, moves this week, days not yet
-  ordered inside 14 days.
+- Home: counts for conflicts, moves this week, days not yet ordered
+  inside 14 days.
 - Settings: route days per town per window, working days, capacity, feed
   link, slack weeks, all "not confirmed" until saved.
 
@@ -206,7 +205,7 @@ the admin and the routine never disagree.
 
 0. The data: jobs as the one vocabulary (the seven states, the booking
    creating a job row), the new columns above (`time_preference`, `start_time`,
-   `window_minutes`, `renewed_from`, the waitlist table), the Pending
+   `window_minutes`, `renewed_from`), the Pending
    status shown as pending, the Passes table and panel reading the visit
    row and nothing else, no Jobber words or buttons anywhere in the admin.
 1. Fix the offers: all six sources honoured (window, route days, working
@@ -221,8 +220,7 @@ the admin and the routine never disagree.
 3. Move it: the pass page and the texts' link, 48 hours, two moves.
 4. The fall pull: drag a truck-day earlier, one text per stop, the terms
    line at purchase.
-5. The conflict row and the waiting list on Home; the "window is full"
-   stop before the card.
+5. The conflict row on Home.
 6. Auto-renew: the box, the December email, the January pass, the lawyer's
    read.
 7. Settings: route days per town per window, working days per truck,
