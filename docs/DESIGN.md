@@ -4,7 +4,7 @@
 
 These are the rules for every screen in `/admin`, the Season Pass checkout and the customer pass page. They are written for humans and for agents, so that a screen built in March looks like one built in November. The marketing site keeps its own rules in `CLAUDE.md`; this document only covers the app surfaces. A new block needs a story in Storybook and an entry here before it is used on a screen.
 
-Status: as of 2026-11-12 the rails exist (tokens, Storybook, this document). Blocks, screens, `getAdminData()` and the gate script are described here ahead of being built; the prototype plan in `docs/plans` says what exists.
+Status: as of 2026-11-12 the rails, eleven blocks, the five admin screens, the six-step checkout and the customer pass page exist as Storybook stories on fixtures. Nothing is wired. Approval status per screen is in the Approvals section.
 
 ## Aesthetic direction
 
@@ -162,3 +162,17 @@ The app follows the same copy rules as the site. Headings are sentence case. Sen
 2026-11-12. PassCard uses the flat artwork with the moving sheen for the interactive card (checkout end, pass page, admin thumbnail), chosen by Hannah in Storybook over the baked-in holographic art. The holographic art stays for the email and the saved image, where nothing can move.
 
 2026-11-12. The primary button rests on primary-dark (#B45309, about 5.0:1 with white text) and hovers to primary-deep (#92400E), chosen by Hannah over navy text on orange. The logo orange (--primary) stays for accents, chips, tints and text on navy. The Button story's contrast exception is gone.
+
+## Approvals
+
+Hannah approves each screen in Storybook (Task 5.2 of the prototype plan). A change request becomes a new task on that plan, and nothing is wired until the screen's row reads approved. The screenshots are from the review pass of 2026-11-12, full page at 1440 and 375, under `.local-data/admin/screens/final/` (local, not tracked); `shoot-final.mjs` beside them reshoots any story against a Storybook on 6009.
+
+| Screen | Story | Screenshot | Status | Notes |
+|---|---|---|---|---|
+| Home | `screens-home--default` | `.local-data/admin/screens/final/screens-home--default-1440.png` and `-375.png` | Awaiting Hannah | The Season card's description carries the committed sentence ("$4,695 on 11 passes, $290 charged so far") under the title; keep it there, or let the bars say it alone. |
+| Passes | `screens-passes--default`, `--panel-open`, `--phone-panel` | `.local-data/admin/screens/final/screens-passes--default-1440.png`, `-375.png`, `screens-passes--panel-open-1440.png`, `screens-passes--phone-panel-375.png` | Awaiting Hannah | The panel's buttons only log, and Open in Jobber opens the client, not a visit's job, until the pass holds a job id per visit. |
+| October | `screens-october--default` | `.local-data/admin/screens/final/screens-october--default-1440.png` and `-375.png` | Awaiting Hannah | Capacity edits only log; the week's grid has no bulk actions or export by design. |
+| Revenue | `screens-revenue--default` | `.local-data/admin/screens/final/screens-revenue--default-1440.png` and `-375.png` | Awaiting Hannah | Only the 2026 bars show until 2025 invoices exist in Jobber; the Renewals card appears once a pass from an earlier season exists. |
+| Customers | `screens-customers--default` | `.local-data/admin/screens/final/screens-customers--default-1440.png` and `-375.png` | Awaiting Hannah | A placeholder: the page arrives after the first passes are sold. |
+| Checkout | `screens-checkout--address`, `--zones`, `--blowout-week`, `--contact`, `--card`, `--done` | `.local-data/admin/screens/final/screens-checkout--<step>-1440.png` and `-375.png` for each of the six steps | Awaiting Hannah | The small "2 of 6" counter at the top right: keep it, or let the orange progress line stand alone. |
+| Pass page | `screens-passpage--active`, `--cancelled` | `.local-data/admin/screens/final/screens-passpage--active-1440.png`, `-375.png`, `screens-passpage--cancelled-1440.png`, `-375.png` | Awaiting Hannah | The inspection row reads "July" twice while the visit waits for its day, once as the when line and once as the pill. |

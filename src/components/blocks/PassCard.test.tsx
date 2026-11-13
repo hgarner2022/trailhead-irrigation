@@ -70,6 +70,12 @@ describe("PassCard at full size", () => {
     expect(screen.getByText("Blowout")).toBeInTheDocument()
   })
 
+  it("keeps the brand line on one line inside the capped name block", () => {
+    // The name block is capped at 45% of the card so the name stays off the sun; on a 343px card that is narrower than the brand line.
+    render(<PassCard pass={pass} />)
+    expect(screen.getByText("Trailhead Lawn & Irrigation")).toHaveClass("whitespace-nowrap")
+  })
+
   it("shows the reserved blowout week in the blowout cell", () => {
     render(<PassCard pass={pass} />)
     const blowout = card().querySelector('[data-slot="pass-visit"][data-kind="blowout"]')

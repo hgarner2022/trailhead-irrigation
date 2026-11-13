@@ -162,7 +162,7 @@ export function PassCard({ pass, size = "full", art = "flat", interactive = true
       ) : (
         <>
           <div data-slot="pass-card-name" className="absolute left-5 top-5 max-w-[45%] @max-[440px]:left-4 @max-[440px]:top-4">
-            <p className="text-[11px] font-semibold uppercase leading-tight tracking-[0.16em] text-navy @max-[440px]:text-[10px] @max-[440px]:tracking-[0.12em]">
+            <p className="whitespace-nowrap text-[11px] font-semibold uppercase leading-tight tracking-[0.16em] text-navy @max-[440px]:text-[10px] @max-[440px]:tracking-[0.12em]">
               Trailhead Lawn &amp; Irrigation
             </p>
             <p className="mt-2 font-display text-4xl font-semibold leading-none text-navy @max-[440px]:mt-1.5 @max-[440px]:text-3xl">{pass.firstName}</p>

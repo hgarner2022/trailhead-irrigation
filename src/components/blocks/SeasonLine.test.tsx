@@ -87,6 +87,12 @@ describe("SeasonLine in customer mode", () => {
     expect(screen.getByText("Blowout")).toBeInTheDocument()
   })
 
+  it("keeps a visit name on one line in a narrow column", () => {
+    // On a phone the month column is about 37px; "Turn-on" would otherwise break at its hyphen into "Turn-" and "on".
+    render(<SeasonLine season={2027} mode="customer" visits={visits} today="2027-06-15" />)
+    expect(screen.getByText("Turn-on")).toHaveClass("whitespace-nowrap")
+  })
+
   it("does not call a finished blowout reserved", () => {
     const done = visits.map((v) => ({ ...v, completedAt: "2027-10-12T16:00:00Z", chargedAt: "2027-10-12T16:30:00Z" }))
     const { container } = render(<SeasonLine season={2027} mode="customer" visits={done} today="2027-11-01" />)

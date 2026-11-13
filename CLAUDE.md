@@ -28,12 +28,16 @@ src/
     blog/                       # 15 blog posts
     about/, contact/, book/     # Standard
     api/contact/                # Contact form POST handler
+    (admin)/admin/_screens/     # Admin dashboard screens (Home, Passes, October, Revenue, Customers) as Storybook stories; no routes yet
+    (checkout)/season-pass/checkout/_screens/  # Six-step Season Pass checkout prototype (CheckoutFlow)
+    (account)/account/pass/_screens/           # Customer pass page prototype (PassPageScreen)
   lib/nav.ts                    # ONE source of truth for navigation: SERVICE_GROUPS, CITY_LINKS, PRIMARY_LINKS, getSeasonalPromo()
   lib/season-pass.ts            # Season Pass per-zone pricing (must match /pricing + public/pricing.md)
   components/
     ui/                         # Small primitives — usually re-exported from /ui library
     sections/                   # Page sections (Hero, ServicesOverview, StatsStrip, …)
     ConversionTracking.tsx      # GA4 click delegation for tel: + /book + form events
+    blocks/                     # Composed app pieces (StatTile, SeasonLine, PassCard, DataGrid, SidePanel, AdminShell, …), each with a story; never imported by marketing
   lib/
     seo.ts                      # JSON-LD helpers + siteConfig + sameAs profiles
     blog.ts                     # BLOG_POSTS data
@@ -42,10 +46,14 @@ src/
     rebate-data.ts              # CITIES rebate program data
     reviews.ts                  # REVIEWS — real Google reviews used in schema + Testimonials
     seo.ts                      # All schema generators
+    admin/                      # App data layer: screen-facing types, Jobber-shaped fixtures, getAdminData(), metrics, format helpers
 
 # REFERENCE LIBRARIES (read-only, copy patterns from these):
 ui/                             # 72+ UI primitives — shadcn/Radix based
 pro-blocks/                     # Pre-built landing page sections (FROM Appy.AI — adapt, don't copy verbatim)
+
+scripts/design-gate/            # The design gate's rules (colours, stories, imports, marketing CSS, file size); run by npm run check:design
+.storybook/                     # Storybook (nextjs-vite): brand fonts, the four viewports, axe violations as errors
 
 public/
   llms.txt                      # AI agent-parseable site overview
@@ -307,6 +315,14 @@ Provides 14 composable skills for structured software development:
 **When to use**: Any non-trivial development task. Superpowers enforces a "think before you code" workflow — brainstorm, plan, then execute with TDD and code review.
 
 **RULE**: For features that touch multiple files or involve new page builds, use the superpowers planning + execution flow rather than ad-hoc coding.
+
+---
+
+## Admin prototype (Nov 2026)
+
+- `docs/DESIGN.md` is the design contract for the app surfaces (`/admin`, the Season Pass checkout, the customer pass page): tokens, the three component tiers, tables, charts, copy, the decisions and the per-screen approvals table.
+- Plans: `docs/plans/2026-11-12-admin-dashboard-design-system-design.md` (the design) and `docs/plans/2026-11-12-admin-dashboard-prototype-implementation.md` (the tasks with their commits, the status and the known gaps for the wiring plan); the requirements are in `docs/plans/2026-11-12-season-pass-checkout-prd.md`.
+- Scripts: `npm run storybook` (the catalog and approval surface), `npm test` (unit), `npm run test:stories` (every story in headless Chromium with axe), `npm run test:gate` (the gate's own tests), `npm run check:design` (the design gate; also runs inside `npm run lint`).
 
 ---
 

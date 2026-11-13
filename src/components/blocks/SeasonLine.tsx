@@ -90,7 +90,7 @@ function Dot({ visit, crowded }: { visit: PassVisit; crowded: boolean }) {
   const name = VISIT_NAMES[visit.kind]
   return (
     <div className="relative flex flex-col items-center pb-5 text-center">
-      <span className={cn("text-xs leading-tight text-foreground", crowded && "@max-[400px]:hidden")}>{name}</span>
+      <span className={cn("whitespace-nowrap text-xs leading-tight text-foreground", crowded && "@max-[400px]:hidden")}>{name}</span>
       {crowded && <span className="hidden text-xs leading-tight text-foreground @max-[400px]:inline">{name[0]}</span>}
       {reserved && <span className="text-xs font-medium leading-tight text-primary-dark">Reserved</span>}
       <span

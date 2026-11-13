@@ -1,5 +1,55 @@
 # Admin Dashboard Prototype Implementation Plan
 
+## Status, 2026-11-12
+
+Every task from 0.1 to 4.8 is done and committed on `admin-prototype` (`git log --oneline main..HEAD`). Task 5.1 is done. Task 5.2 awaits Hannah; the per-screen table is in `docs/DESIGN.md` under Approvals. Task 5.3 is not started.
+
+| Task | Commits |
+|---|---|
+| 0.1 Vitest | `3690f94` |
+| 0.2 Storybook | `685b892`, `5e74d44` |
+| 0.3 App tokens and DESIGN.md | `fb292bd`, `ffe3f1f`, `059430e` |
+| 0.4 Design gate | `d801b5e`, `9d12d29`, `530edc2` |
+| 0.5 shadcn primitives | `18d7b5e` |
+| 0.6 Admin CSS out of the marketing bundle | `62dae04`, `81ae189`, `884240b` |
+| 1.1 Screen-facing types | `76d5318` |
+| 1.2 Jobber snapshot into fixtures | `12fb498` |
+| 1.3 `getAdminData()` with fixtures | `8cfe699` |
+| 1.4 Metrics | `6793302`, `e9d41f1` |
+| 2.1 SeasonLine | `a6af76b`, `9ecc9f4` |
+| 2.2 PassCard | `0957b96`, `2310c36`, `0883406` |
+| 3.1 StatTile | `13c60c4` |
+| 3.2 Chart | `38f9b17`, `81343b8` |
+| 3.3 DataGrid | `961d5cb`, `6619eb4` |
+| 3.4 SidePanel | `34d3ab3`, `894a9c2` |
+| 3.5 PageHeader, StatusPill, EmptyState, NeedsAttention, WeekCard | `eaaa913`, `aed2e85`, `8d10f2e`, `a57ce44`, `982049a`, `16b0f08`, `40f4a81` |
+| 4.1 AdminShell | `bd6feb2`, `ddcfb13` |
+| 4.2 HomeScreen | `6a761bd`, `b7fa657` |
+| 4.3 PassesScreen | `5b588ec` |
+| 4.4 OctoberScreen | `05c90c7` |
+| 4.5 RevenueScreen | `b7b0ff6` |
+| 4.6 CustomersScreen | `4fc20fa`, `bcc13e3`, `f154b5a` (review fixes across the admin screens) |
+| 4.7 Checkout screens | `df5e0b8`, `769b9ba` |
+| 4.8 PassPageScreen | `17cb69b`, `8de1f41`, `24fea8f` |
+| 5.1 Review pass | the commit that adds this section: gate green, every screen checked and screenshotted, two phone wraps fixed |
+| 5.2 Hannah approves in Storybook | awaiting Hannah |
+| 5.3 Next plan | not started |
+
+The pass card artwork landed before Task 0.1 (`de114cb`, `1292de7`, `6e79516`).
+
+### Known gaps for the wiring plan
+
+- Three Jobber job links per pass: `Pass` carries one `jobberUrl` (the client), so the panel cannot link each visit's own job until the pass holds a job id per visit.
+- `Sign out` and every action (resend confirmation, send card update link, cancel pass, set capacity, update card, save image) are no-ops that log to the console.
+- `getAdminData` needs `server-only` and a vitest mock once the `live` source exists.
+- The `(admin)` route group needs its own stylesheet entry and `viewportFit: "cover"`.
+- Lapsed passes have no state on the customer pass page; it knows active and cancelled.
+- The card brand on the pass page is hard-coded to Visa until Stripe supplies it.
+- The `env(safe-area-inset-bottom)` padding under the phone tab bar is unverified on a device.
+- The `(checkout)` and `(account)` groups need an app CSS source when they get routes; today they render only in Storybook.
+- The shadcn sidebar's sheet still reads `useIsMobile`; AdminShell never renders the rail on a phone, so the sheet never shows, but it is a second breakpoint source.
+- Mountain-time conversion is display-only today (the format helpers); SeasonLine reads stored dates as UTC date prefixes.
+
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
 **Goal:** Stand up the design-system rails, the blocks and every admin, checkout and pass screen as approved stories in Storybook, fed by Jobber-shaped fixtures, with nothing wired to a database, Stripe or Jobber yet.
