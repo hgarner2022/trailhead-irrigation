@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import Image from "next/image"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -21,6 +22,7 @@ export default async function ConfirmSignInPage({ searchParams }: { searchParams
     <main className="flex min-h-svh items-center justify-center p-6">
       <Card data-slot="sign-in-confirm" className="w-full max-w-sm">
         <CardContent className="flex flex-col gap-6 p-6 sm:p-8">
+          <Image src="/images/logo-badge.png" alt="Trailhead Lawn & Irrigation" width={114} height={80} className="h-20 w-auto self-start" />
           <h1 className="font-display text-3xl text-navy">{form ? "Finish signing in" : "This link is not valid"}</h1>
           {form ? (
             <>

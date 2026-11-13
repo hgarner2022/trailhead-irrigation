@@ -50,7 +50,7 @@ export function SignInCard({ audience, state = "form", email = "", action, retry
     <main className={cn("flex min-h-dvh items-center justify-center px-4 py-10", className)}>
       <Card data-slot="sign-in-card" data-audience={audience} data-state={state} className="w-full max-w-sm">
         <CardContent className="flex flex-col gap-6 p-6 sm:p-8">
-          <Image src="/images/logo-badge.png" alt="Trailhead Lawn & Irrigation" width={57} height={40} className="h-12 w-auto self-start" />
+          <Image src="/images/logo-badge.png" alt="Trailhead Lawn & Irrigation" width={114} height={80} className="h-20 w-auto self-start" />
           {sent ? (
             <div className="flex flex-col gap-3" role="status">
               <h1 className="font-display text-3xl font-semibold text-navy">Check your email</h1>
