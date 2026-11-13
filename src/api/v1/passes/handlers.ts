@@ -27,6 +27,7 @@ import { ApiError, notImplemented } from "../../core/errors"
 import { defineHandler } from "../../core/handler"
 import { afterTimeCursor, cursorPage, page, pageInput, timeCursor } from "../../core/pagination"
 import { addDays, Id, idInput, OK, okOutput, PassStatus, Preference, Town, today } from "../shared"
+import { renewPass } from "./renew"
 import { PassDetail, PassOut, passActivateInput, passConsentInput, passCreateInput } from "./schemas"
 import { loadPass, passDetail, passesQuery, passOut, recordChange } from "./queries"
 
@@ -97,10 +98,11 @@ export const passesCreate = defineHandler({
   scope: "write",
   checkout: true,
   status: 201,
-  summary: "Create the checkout's pending pass: the customer, the property and one visit for each visit still on sale this season. Given the `passId` of a pending pass for the same email it updates that pass instead. The anonymous checkout is also held to the checkout's own step rules, an email whose domain has a mail server and three new passes per email per hour.",
+  summary: "Create the checkout's pending pass: the customer, the property and one visit for each visit still on sale this season. Given the `passId` of a pending pass for the same email it updates that pass instead. Given `renewOf` (the customer's last pass, with the write scope or a checked renewal link) it makes the next season's pass active on the card already on file, schedules the days picked and queues the confirmation; there is no card step. The anonymous checkout is also held to the checkout's own step rules, an email whose domain has a mail server and three new passes per email per hour.",
   input: passCreateInput,
   output: PassDetail,
   async run(ctx, input) {
+    if (input.renewOf) return renewPass(ctx, input)
     const day = today(ctx)
     const onSale = visitsOnSale(input.inspection, day)
     if (onSale.length === 0) throw new ApiError("unprocessable", "No visits are on sale this season any more")

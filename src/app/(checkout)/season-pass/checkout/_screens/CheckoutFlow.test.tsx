@@ -5,7 +5,7 @@ import { FIXTURE_HOME } from "@/lib/places/fixture"
 import { choicesAfterOffer, fixtureOffers } from "./checkout-days"
 import { CheckoutFlow } from "./CheckoutFlow"
 import type { Pass } from "@/lib/admin/types"
-import type { BeginResult, FinishResult } from "./checkout-submit"
+import type { BeginResult, FinishResult, RenewalPrefill } from "./checkout-submit"
 import type { CheckoutFields } from "./checkout-state"
 
 // Stripe.js never loads in a test: the card form is a button that says the card was saved.
@@ -400,5 +400,72 @@ describe("CheckoutFlow wired to the server actions", () => {
     fireEvent.click(screen.getByRole("button", { name: "Stripe card saved" }))
     expect(await screen.findByRole("alert")).toHaveTextContent("couldn't reach the card form")
     expect(screen.queryByRole("heading", { name: "Your season is reserved" })).not.toBeInTheDocument()
+  })
+})
+
+describe("a renewal on the card on file", () => {
+  const renewal: RenewalPrefill = {
+    passId: "p-last",
+    season: 2028,
+    token: "tok",
+    firstName: "Andrea",
+    email: "andrea@example.com",
+    phone: "(970) 555-0123",
+    place: { id: "property-1", label: "5 Pine St, Erie, CO", line1: "5 Pine St", town: "Erie", state: "CO", zip: "" },
+    zones: 10,
+    inspection: true,
+    needsCustomerHome: false,
+    accessNote: "Gate 12",
+    card: { last4: "4242", expires: "2029-08" },
+  }
+  const reservedPass = { id: "p-new", number: "TH-2028-0001", season: 2028, clientId: "c1", firstName: "Andrea", town: "Erie", zones: 10, turnOnPreference: "recommended", blowoutPreference: "recommended", status: "active", visits: [{ kind: "turn-on", window: "May", amount: 185 }], stripeUrl: "", jobberUrl: "", cardLast4: "4242" } as Pass
+
+  it("is filled in from the last pass and counts five steps", () => {
+    render(<CheckoutFlow season={2028} today="2027-11-02" renewal={renewal} />)
+    expect(screen.getByRole("combobox", { name: "Street address" })).toHaveValue("5 Pine St, Erie, CO")
+    expect(progress()).toHaveAttribute("aria-valuemax", "5")
+    fireEvent.click(continueButton())
+    expect(screen.getByRole("button", { name: "10 zones", pressed: true })).toBeInTheDocument()
+    fireEvent.click(continueButton())
+    expect(screen.getByRole("button", { name: /Yes, add July/ })).toBeInTheDocument()
+  })
+
+  it("goes from the days straight to Done: the card on file with a way to change it, the terms, and Reserve 2028", async () => {
+    const onRenew = vi.fn().mockResolvedValue({ ok: true, pass: reservedPass })
+    render(<CheckoutFlow season={2028} today="2027-11-02" renewal={renewal} onRenew={onRenew} initialStep={4} />)
+    await screen.findAllByRole("radio")
+    expect(screen.getByText(/Card ending 4242 on file,/)).toHaveTextContent("Card ending 4242 on file, change it")
+    expect(screen.getByRole("link", { name: /change it/ })).toHaveAttribute("href", "/account/pass")
+    const reserve = screen.getByRole("button", { name: "Reserve 2028" })
+    fireEvent.click(reserve)
+    expect(onRenew).not.toHaveBeenCalled()
+    expect(screen.getByText(/accept the terms to continue/i)).toBeInTheDocument()
+    fireEvent.click(screen.getByRole("checkbox", { name: /I accept the Season Pass terms/ }))
+    await act(async () => {
+      fireEvent.click(reserve)
+    })
+    expect(onRenew).toHaveBeenCalledTimes(1)
+    const [who, submission] = onRenew.mock.calls[0]!
+    expect(who).toEqual({ passId: "p-last", token: "tok" })
+    expect(submission).toMatchObject({ zones: 10, inspection: true, email: "andrea@example.com", town: "Erie" })
+    expect(submission.days.map((d: { kind: string }) => d.kind)).toEqual(["turn-on", "inspection", "blowout"])
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Your season is reserved")
+    expect(progress()).toHaveAttribute("aria-valuenow", "5")
+  })
+
+  it("says what went wrong and stays on the days when the server will not reserve", async () => {
+    const onRenew = vi.fn().mockResolvedValue({ ok: false, problem: "invalid", message: "Your 2028 season is already reserved." })
+    render(<CheckoutFlow season={2028} today="2027-11-02" renewal={renewal} onRenew={onRenew} initialStep={4} prefill={{ termsAccepted: true }} />)
+    await screen.findAllByRole("radio")
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Reserve 2028" }))
+    })
+    expect(screen.getByRole("alert")).toHaveTextContent("Your 2028 season is already reserved.")
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Pick your days.")
+  })
+
+  it("keeps the card step when there is no card on file", () => {
+    render(<CheckoutFlow season={2028} today="2027-11-02" renewal={{ ...renewal, card: null }} />)
+    expect(progress()).toHaveAttribute("aria-valuemax", "7")
   })
 })

@@ -115,8 +115,8 @@ export const CardFailed: Story = {
   globals: { viewport: { value: "wide", isRotated: false } },
 }
 
-/** Every visit done and the next season on sale: renew. */
-export const Renew: Story = {
+/** Every visit done and the next season on sale: Reserve next season. */
+export const ReserveNext: Story = {
   args: { pass: allDone, today: "2027-11-02" },
   globals: { viewport: { value: "wide", isRotated: false } },
 }

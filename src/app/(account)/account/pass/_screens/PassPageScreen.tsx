@@ -13,7 +13,7 @@ import { PassActions } from "@/components/blocks/PassActions"
 import { PreferenceDialog } from "@/components/blocks/PreferenceDialog"
 import { AddToCalendar } from "./AddToCalendar"
 import { PickDayButtons } from "./PickDayButtons"
-import { bookedWhen, canChange, cardLine, earlierSeasons, passHeadline, pickDayOptions, seasonCaption, visitRows } from "./pass-page-model"
+import { bookedWhen, canChange, canReserveNext, reserveNextHref, cardLine, earlierSeasons, passHeadline, pickDayOptions, seasonCaption, visitRows } from "./pass-page-model"
 
 // The customer's pass page: a season card, not a dashboard. The pass card at
 // the top, the season line with the visits and their state, the card
@@ -96,8 +96,10 @@ export function PassPageScreen({ pass, passes = [pass], today, onCancel, onChang
             </div>
           )}
           {headline.action === "update-card" && <UpdateCardButton onUpdateCard={onUpdateCard} className="mt-5" />}
-          {headline.action === "renew" && (
-            <Button className="mt-5">{`Reserve ${pass.season + 1}`}</Button>
+          {headline.action === "reserve-next" && (
+            <Button asChild className="mt-5">
+              <a href={reserveNextHref(pass)}>Reserve next season</a>
+            </Button>
           )}
           {headline.action === "book" && (
             <Button asChild variant="outline" className="mt-5">
@@ -137,6 +139,20 @@ export function PassPageScreen({ pass, passes = [pass], today, onCancel, onChang
                 </ul>
               </CardContent>
             </Card>
+
+            {canReserveNext(pass, passes, today) && headline.action !== "reserve-next" && (
+              <Card data-slot="reserve-next">
+                <CardHeader>
+                  <Title>Next season</Title>
+                </CardHeader>
+                <CardContent className="flex flex-wrap items-center justify-between gap-4">
+                  <p className="text-base text-foreground">{`Reserve ${pass.season + 1} now. We fill in your address, zones and card, and you pick your days.`}</p>
+                  <Button asChild variant="outline">
+                    <a href={reserveNextHref(pass)}>Reserve next season</a>
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
 
             <Card>
               <CardHeader>

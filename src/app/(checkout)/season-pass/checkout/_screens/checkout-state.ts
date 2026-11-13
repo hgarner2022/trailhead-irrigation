@@ -92,6 +92,8 @@ export interface CheckoutState extends CheckoutFields {
   sessionAt?: number
   /** the days the server offered per visit for this address and zone count; null while they load */
   offers: Offers | null
+  /** a renewal on the card already on file: no contact or card step, and the terms are accepted on the days step */
+  skipCard?: boolean
   /** a line that is not an error, such as "your saved checkout timed out"; cleared when the customer moves on */
   notice?: string
 }
@@ -174,6 +176,8 @@ export function stepProblems(state: CheckoutState): string[] {
       return [...(addressProblem(state, true) ? ["Address"] : []), ...(state.place && state.access === null ? ["Access"] : [])]
     case "contact":
       return [...(["firstName", "email", "phone"] as const).filter((f) => contactProblem(f, state[f]) !== null).map((f) => label[f]), ...(state.termsAccepted ? [] : ["Terms"])]
+    case "days":
+      return state.skipCard && !state.termsAccepted ? ["Terms"] : []
     default:
       return []
   }
@@ -191,7 +195,7 @@ export function canContinue(state: CheckoutState): boolean {
       return true
     // Every visit with days on offer holds one (the first is preselected); with none on offer Ryan sets that day.
     case "days":
-      return daysComplete(state.offers, state.days)
+      return daysComplete(state.offers, state.days) && (!state.skipCard || state.termsAccepted)
     // The terms are accepted here, so Continue on the contact step is the moment of acceptance.
     case "contact":
       return state.termsAccepted && (["firstName", "email", "phone"] as const).every((f) => contactProblem(f, state[f]) === null)

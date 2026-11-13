@@ -12,17 +12,18 @@ import { CONSENT_PROBLEM_ID } from "./checkout-consent"
 import { DoneStep } from "./checkout-done"
 import { ContactStep, ZonesStep, useReveal } from "./checkout-steps"
 import { useCheckoutState } from "./use-checkout-state"
+import { renewalAnswers } from "./checkout-renewal"
 import { useCheckoutServer } from "./use-checkout-server"
 import { useCheckoutStorage } from "./use-checkout-storage"
 import { CardStep } from "./checkout-card"
 import { ErrorSummary } from "./checkout-errors"
-import type { BeginCheckout, FinishCheckout, OfferQuery } from "./checkout-submit"
+import { toSubmission, type BeginCheckout, type FinishCheckout, type OfferQuery, type RenewCheckout, type RenewalPrefill } from "./checkout-submit"
 import { savePassImage } from "@/lib/pass-card-image"
 import { InspectionStep } from "./checkout-inspection"
 import { DaysStep } from "./checkout-days-step"
-import { fixtureOffers, type DayKind, type Offers } from "./checkout-days"
+import type { Offers } from "./checkout-days"
+import { useCheckoutOffers } from "./use-checkout-offers"
 import { ownsKeys } from "./checkout-keys"
-import { visitsOnSale } from "@/lib/season-pass"
 
 // The Season Pass checkout as seven full-screen questions, one input each , the way Typeform paces a form: a thin orange line across the top for progress,
 // the question in the display face, the trail photo faint behind the cream
@@ -49,6 +50,10 @@ export interface CheckoutFlowProps {
   today?: string
   /** finds the days to offer for each visit; the fixture days until the server is wired */
   onOffer?: (query: OfferQuery) => Promise<Offers>
+  /** a renewal: the checkout opens filled in from the last pass (address, zones, add-on, contact) */
+  renewal?: RenewalPrefill
+  /** reserves the next season on the card on file; without it the prototype just moves to Done */
+  onRenew?: RenewCheckout
   /** called once, when the card step is passed; Done is terminal, so the card step is never passed twice */
   onComplete?: (pass: Pass) => void
   /** saves the pass card as an image; defaults to rendering the card on screen to a PNG download */
@@ -73,8 +78,8 @@ function StepBody({ duration, enabled, children }: { duration: number; enabled: 
   return <div ref={ref}>{children}</div>
 }
 
-export function CheckoutFlow({ season, initialZones, initialStep, prefill, places, today, onOffer, onComplete, onSaveImage, onDone, stripeKey, onBegin, onFinish }: CheckoutFlowProps) {
-  const [state, dispatch] = useCheckoutState({ ...(initialZones ? { zones: initialZones } : {}), ...(today ? { today } : {}), ...prefill, ...(initialStep ? { step: initialStep } : {}) })
+export function CheckoutFlow({ season, initialZones, initialStep, prefill, places, today, onOffer, renewal, onRenew, onComplete, onSaveImage, onDone, stripeKey, onBegin, onFinish }: CheckoutFlowProps) {
+  const [state, dispatch] = useCheckoutState({ ...(initialZones ? { zones: initialZones } : {}), ...(today ? { today } : {}), ...(renewal ? renewalAnswers(renewal) : {}), ...prefill, ...(initialStep ? { step: initialStep } : {}) })
   // The step on which Continue (or Enter) was pressed too early, so it shows every field's problem; `n` counts the presses so each one moves focus again.
   const [attempt, setAttempt] = useState<{ step: number; n: number } | null>(null)
   const section = useRef<HTMLElement>(null)
@@ -85,28 +90,18 @@ export function CheckoutFlow({ season, initialZones, initialStep, prefill, place
   const current = STEPS[step - 1]
   const done = current.key === "done"
   const valid = canContinue(state)
+  // A renewal has no contact or card step: five steps, and Done is the fifth.
+  const total = state.skipCard ? STEP_COUNT - 2 : STEP_COUNT
+  const shown = state.skipCard && done ? total : step
   const attempted = attempt?.step === step
   const wired = Boolean(stripeKey && onBegin && onFinish)
   const markMoved = useCallback(() => setMoved(true), [])
-  const { busy, begin, finishCard, retry } = useCheckoutServer({ state, dispatch, onBegin, onFinish, onComplete, moved: markMoved })
-  useCheckoutStorage(state, dispatch, wired)
+  const { busy, begin, finishCard, retry, reserve } = useCheckoutServer({ state, dispatch, onBegin, onFinish, onComplete, onRenew, renewal, season, moved: markMoved })
+  useCheckoutStorage(state, dispatch, wired && !renewal)
 
-  // Reaching the days step asks the server for the open days at this address and zone count, every time: they change as trucks fill.
   const onDays = current.key === "days"
   const offersLoading = state.offers === null
-  const { town, zones, inspection } = state
-  useEffect(() => {
-    if (!onDays || !town) return
-    let live = true
-    const kinds = visitsOnSale(inspection, state.today).map((v) => v.key as DayKind)
-    const load = onOffer ? onOffer({ town, zones, inspection, season, today: state.today }) : Promise.resolve(fixtureOffers(season, kinds))
-    load.then((offers) => live && dispatch({ type: "offered", offers })).catch(() => live && dispatch({ type: "offered", offers: {} }))
-    return () => {
-      live = false
-    }
-    // state.today is fixed for the page's life
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [onDays, town, zones, inspection, season, onOffer])
+  useCheckoutOffers(state, dispatch, onDays, season, onOffer)
 
   const set = <K extends keyof CheckoutFields>(field: K, value: CheckoutFields[K]) => dispatch({ type: "set", field, value })
   const next = async () => {
@@ -118,6 +113,11 @@ export function CheckoutFlow({ season, initialZones, initialStep, prefill, place
     }
     if (wired && current.key === "contact") {
       await begin()
+      return
+    }
+    // A renewal has its card: the last question reserves the season, with no contact or card step after it.
+    if (state.skipCard && current.key === "days") {
+      await reserve()
       return
     }
     if (current.key === "card") onComplete?.(toPass({ ...state, cardSaved: true }, season))
@@ -183,7 +183,7 @@ export function CheckoutFlow({ season, initialZones, initialStep, prefill, place
       body = <InspectionStep state={state} set={set} />
       break
     case "days":
-      body = <DaysStep state={state} offers={state.offers} set={set} />
+      body = <DaysStep state={state} offers={state.offers} set={set} renewal={state.skipCard ? renewal : undefined} attempted={attempted} />
       break
     case "contact":
       body = <ContactStep state={state} set={set} attempted={attempted} />
@@ -207,22 +207,22 @@ export function CheckoutFlow({ season, initialZones, initialStep, prefill, place
         role="progressbar"
         aria-label="Checkout progress"
         aria-valuemin={1}
-        aria-valuemax={STEP_COUNT}
-        aria-valuenow={step}
-        aria-valuetext={`Step ${step} of ${STEP_COUNT}`}
+        aria-valuemax={total}
+        aria-valuenow={shown}
+        aria-valuetext={`Step ${shown} of ${total}`}
         className="fixed inset-x-0 top-0 z-20 h-1 bg-border/60"
       >
-        <div data-slot="checkout-progress" className="h-full bg-primary transition-[width] duration-300 ease-out motion-reduce:transition-none" style={{ width: `${(step / STEP_COUNT) * 100}%` }} />
+        <div data-slot="checkout-progress" className="h-full bg-primary transition-[width] duration-300 ease-out motion-reduce:transition-none" style={{ width: `${(shown / total) * 100}%` }} />
       </div>
       <header className="fixed inset-x-0 top-1 z-10 flex items-center justify-between container-padding-x py-3">
         <Image src={LOGO} alt="Trailhead Lawn & Irrigation" width={51} height={36} priority className="h-9 w-auto" />
         {/* A small "2 of 6", not a numbered stepper (the PRD's rule); hidden from
             readers because the progress bar's valuetext already says it. A point
             for Hannah: keep it, or let the orange line stand alone. */}
-        <span data-slot="checkout-counter" aria-hidden="true" className="text-xs text-muted-foreground tabular-nums">{`${step} of ${STEP_COUNT}`}</span>
+        <span data-slot="checkout-counter" aria-hidden="true" className="text-xs text-muted-foreground tabular-nums">{`${shown} of ${total}`}</span>
       </header>
       {/* The one announcement per step. The section is not named, so focusing it stays quiet. */}
-      <p aria-live="polite" className="sr-only">{`Step ${step} of ${STEP_COUNT}, ${current.question}`}</p>
+      <p aria-live="polite" className="sr-only">{`Step ${shown} of ${total}, ${current.question}`}</p>
 
       <section key={step} ref={section} tabIndex={-1} onKeyDown={onKeyDown} className="flex min-h-svh flex-col outline-none">
         <div className={cn(COLUMN, "flex flex-1 flex-col justify-center pt-20 pb-8", current.key === "days" && "lg:max-w-3xl")}>
@@ -269,7 +269,7 @@ export function CheckoutFlow({ season, initialZones, initialStep, prefill, place
               )}
               {!(wired && current.key === "card") && (
                 <Button size="lg" data-nav disabled={busy} aria-busy={busy || undefined} aria-describedby={current.key === "contact" && attempted && !state.termsAccepted ? CONSENT_PROBLEM_ID : undefined} onClick={next}>
-                  {busy ? "One moment" : current.action}
+                  {busy ? "One moment" : state.skipCard && onDays ? `Reserve ${season}` : current.action}
                 </Button>
               )}
             </div>

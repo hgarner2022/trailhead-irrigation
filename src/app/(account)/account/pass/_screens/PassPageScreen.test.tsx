@@ -71,4 +71,25 @@ describe("PassPageScreen", () => {
     expect(screen.queryByText("Card on file")).not.toBeInTheDocument()
     expect(screen.queryByRole("button", { name: "Cancel my pass" })).not.toBeInTheDocument()
   })
+
+  it("from November 1 offers Reserve next season, which opens the checkout filled in from this pass", () => {
+    const done: Pass = { ...pass, visits: pass.visits.map((v) => ({ ...v, completedAt: v.completedAt ?? "2027-10-05T16:40:00Z" })) }
+    render(<PassPageScreen pass={done} today="2027-11-02" />)
+    expect(screen.getByRole("link", { name: "Reserve next season" })).toHaveAttribute("href", `/season-pass/checkout?renew=${pass.id}`)
+    expect(document.body.textContent).not.toMatch(/renew/i)
+  })
+
+  it("shows it beside the season when visits are still ahead, and not before November 1", () => {
+    render(<PassPageScreen pass={pass} today="2027-11-02" />)
+    expect(screen.getByRole("link", { name: "Reserve next season" })).toBeInTheDocument()
+    document.body.innerHTML = ""
+    render(<PassPageScreen pass={pass} today="2027-10-20" />)
+    expect(screen.queryByRole("link", { name: "Reserve next season" })).not.toBeInTheDocument()
+  })
+
+  it("does not offer it when the next season is already held", () => {
+    const next: Pass = { ...pass, id: "p-next", season: 2028 }
+    render(<PassPageScreen pass={pass} passes={[next, pass]} today="2027-11-02" />)
+    expect(screen.queryByRole("link", { name: "Reserve next season" })).not.toBeInTheDocument()
+  })
 })

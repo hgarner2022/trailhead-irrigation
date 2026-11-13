@@ -2,7 +2,7 @@ import "server-only"
 import { createHmac, timingSafeEqual } from "node:crypto"
 import { readEnv } from "@/lib/env"
 
-type Purpose = "pass-image" | "visit-calendar"
+type Purpose = "pass-image" | "visit-calendar" | "renew-pass"
 
 /**
  * The signed token on a link in a message: an HMAC of the purpose and the row id with `API_KEY_PEPPER`, so a pass image or a
@@ -23,3 +23,6 @@ export function verifyToken(purpose: Purpose, id: string, token: string | null):
 
 export const passImageUrl = (origin: string, passId: string) => `${origin}/api/pass-image/${passId}?token=${signToken("pass-image", passId)}`
 export const visitCalendarUrl = (origin: string, visitId: string) => `${origin}/api/visits/${visitId}/calendar.ics?token=${signToken("visit-calendar", visitId)}`
+
+/** The link that opens the checkout already filled in for a renewal, with the token that stands in for signing in. It opens the checkout for that one pass and nothing else. */
+export const renewUrl = (origin: string, passId: string) => `${origin}/season-pass/checkout?renew=${passId}&token=${signToken("renew-pass", passId)}`

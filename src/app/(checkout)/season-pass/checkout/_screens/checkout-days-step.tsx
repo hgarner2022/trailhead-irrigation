@@ -4,6 +4,8 @@ import { useId } from "react"
 import { cn } from "@/lib/utils"
 import { visitsOnSale } from "@/lib/season-pass"
 import { DAY_HEADINGS, dayWords, windowWords, withChoice, type DayKind, type Offers } from "./checkout-days"
+import { RenewalExtras } from "./checkout-renewal"
+import type { RenewalPrefill } from "./checkout-submit"
 import type { StepProps } from "./checkout-steps"
 
 // The "Your days" step: for each visit the pass holds, a short heading and three day cards (the day big, the two-hour window
@@ -12,7 +14,7 @@ import type { StepProps } from "./checkout-steps"
 
 const CARD = "flex min-h-20 cursor-pointer flex-col justify-center rounded-lg border px-4 py-3 text-left transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-primary/50 peer-focus-visible:ring-offset-2"
 
-export function DaysStep({ state, offers: loaded, set }: StepProps & { offers: Offers | null }) {
+export function DaysStep({ state, offers: loaded, set, renewal, attempted = false }: StepProps & { offers: Offers | null; renewal?: RenewalPrefill; attempted?: boolean }) {
   const id = useId()
   const kinds = visitsOnSale(state.inspection, state.today).map((v) => v.key as DayKind)
   if (loaded === null)
@@ -60,6 +62,7 @@ export function DaysStep({ state, offers: loaded, set }: StepProps & { offers: O
         )
       })}
       <p className="text-base text-muted-foreground">Change it later from your pass page.</p>
+      {renewal && <RenewalExtras state={state} set={set} renewal={renewal} attempted={attempted} />}
     </div>
   )
 }

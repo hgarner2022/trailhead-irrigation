@@ -80,6 +80,21 @@ export const Days: Story = {
   },
 }
 
+/** A renewal: filled in from the last pass, no contact or card step, the card on file named under the days and the terms ticked there. */
+export const Renewal: Story = {
+  args: {
+    season: 2028,
+    today: "2027-11-02",
+    initialStep: 4,
+    renewal: { passId: "p-last", season: 2028, firstName: "Andrea", email: "andrea@example.com", phone: "(970) 555-0123", place: { id: "property-1", label: "123 Trailhead Way, Erie, CO", line1: "123 Trailhead Way", town: "Erie", state: "CO", zip: "80516" }, zones: 8, inspection: false, needsCustomerHome: false, accessNote: "", card: { last4: "4242", expires: "2029-08" } },
+  },
+  globals: { viewport: { value: "wide", isRotated: false } },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText(/Card ending 4242 on file,/)).toBeInTheDocument()
+    await expect(canvas.getByRole("button", { name: "Reserve 2028" })).toBeInTheDocument()
+  },
+}
+
 export const Contact: Story = {
   args: { initialStep: 5, prefill: { ...answers, firstName: "", email: "", phone: "" } },
   globals: { viewport: { value: "wide", isRotated: false } },

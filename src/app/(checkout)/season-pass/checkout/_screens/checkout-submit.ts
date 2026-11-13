@@ -65,3 +65,26 @@ export function toSubmission(f: CheckoutFields): CheckoutSubmission | null {
 
 /** The query the "Your days" step makes: the days to offer for this address and what the pass holds. */
 export type OfferQuery = { town: string; zones: number; inspection: boolean; season: number; today: string }
+
+/** A signed-in or linked customer's last pass, as the checkout fills itself in for a renewal. Only the pass's own customer is ever given this. */
+export interface RenewalPrefill {
+  /** the pass being renewed */
+  passId: string
+  /** the season being reserved */
+  season: number
+  /** the signed link's token, when the customer arrived by the email; sent back so the server can check it again */
+  token?: string
+  firstName: string
+  email: string
+  phone: string
+  place: { id: string; label: string; line1: string; town: string; state: string; zip: string }
+  zones: number
+  inspection: boolean
+  needsCustomerHome: boolean
+  accessNote: string
+  /** the card already on file; with it the card step is skipped */
+  card: { last4: string; expires: string | null } | null
+}
+
+/** Reserves the next season on the card on file: the pass, its days and the confirmation, in one call. */
+export type RenewCheckout = (renewal: Pick<RenewalPrefill, "passId" | "token">, submission: CheckoutSubmission) => Promise<FinishResult>
