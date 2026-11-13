@@ -424,3 +424,4 @@ work, so the flow is approved before it is wired.
 - **Pass page.** The customer signs in by a link in any Trailhead email (no password). They see each visit's date once set, and can change the turn-on or blowout preference with a Change link until the day is set.
 - **Customers (admin).** Every customer shows what is next and whether it is booked or still to schedule, with filters, so Hannah can see who needs a day.
 - **Confirmation email.** Carries the pass card image (holographic art) with the dates and preferences.
+- **Texting is two-way.** Customers can reply to any text; STOP is handled by the app, every other reply shows on Home with a Reply button and in the customer's thread, and the answer goes out from the same number. Requires the one-time carrier registration (A2P 10DLC) through Twilio.

@@ -100,10 +100,27 @@ first for a crew login.
   in Trailhead's voice. Per-service questions, the checkout's pacing. A
   Requests inbox exists only for work that needs a quote (installs, large
   repairs).
-- **Messages** (wiring plan): confirmation at purchase, date set or moved,
-  day-before reminder, on-my-way when the crew taps it, after-visit receipt
-  naming the next visit, failed card, January renewal; texts opt-in with
-  STOP handled.
+- **Messages** (wiring plan): confirmation at purchase (with the pass card
+  image), date set or moved, day-before reminder, on-my-way when the crew
+  taps it, after-visit receipt naming the next visit, failed card,
+  cancelled, January renewal.
+- **Texting is two-way** (Hannah, 2026-11-12 night: "make sure the message
+  is clear"). The app sends every text from one Trailhead number. When a
+  customer texts back, the reply lands in the app on that customer: STOP
+  and the carrier keywords are recorded as an opt-out and answered by the
+  app on its own; any other reply ("can you come after 10?") is saved on
+  the customer, shown at the top of Home as "Andrea replied: …" with a
+  Reply button, and shown in the customer's panel as one thread. Hannah or
+  Ryan answer from either place and the answer goes out from the same
+  number, so the customer sees one ordinary conversation on their phone.
+  The thread on the customer also holds every email and text the app sent,
+  with its state (sent, delivered, failed, bounced). Email replies go to
+  Ryan's real inbox in the first build. The day-before reminder asks for one
+  letter: C confirms the visit (a check on the Schedule), R asks for a
+  different day (a row on Home, and the app texts back the sign-in link to
+  the pass page so the customer can pick). Before any of this can send, the
+  business must be registered with the carriers through Twilio (A2P 10DLC),
+  a one-time setup that takes days to two weeks.
 
 ## Consent, recorded in the CRM
 

@@ -22,6 +22,7 @@ const empty: AdminData = {
   attention: [],
   settings: EMPTY_SETTINGS,
   settingsChanges: [],
+  messages: [],
 }
 
 describe("greeting", () => {

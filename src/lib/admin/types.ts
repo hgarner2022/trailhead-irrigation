@@ -191,6 +191,36 @@ export interface MessageTemplate {
   enabled: boolean
 }
 
+export type MessageKind =
+  | "purchase-confirmation"
+  | "date-set"
+  | "date-moved"
+  | "day-before"
+  | "on-my-way"
+  | "receipt"
+  | "card-failed"
+  | "cancelled"
+  | "renewal"
+  | "reply"
+
+/**
+ * One email or text between Trailhead and a customer, either direction.
+ * Outbound rows are what the app sent and how it went; inbound rows are the
+ * customer's replies (texting is two-way), `handled` once someone answered.
+ */
+export interface Message {
+  id: string
+  clientId: string
+  passId?: string
+  channel: "email" | "sms"
+  direction: "out" | "in"
+  kind: MessageKind
+  /** the subject for an email, the text itself for an SMS */
+  body: string
+  at: string
+  status: "queued" | "sent" | "delivered" | "failed" | "bounced" | "received" | "handled"
+}
+
 /** Everything the Settings page edits; the scheduler reads it on its next run. */
 export interface OrganizationSettings {
   trucks: Truck[]
@@ -220,7 +250,7 @@ export interface SettingsChange {
 }
 
 export interface Attention {
-  kind: "charge-failed" | "jobs-failed" | "card-expiring" | "not-closed" | "pass-cancelled"
+  kind: "charge-failed" | "jobs-failed" | "card-expiring" | "not-closed" | "pass-cancelled" | "customer-replied"
   passId?: string
   message: string
   since: string
@@ -239,4 +269,6 @@ export interface AdminData {
   attention: Attention[]
   settings: OrganizationSettings
   settingsChanges: SettingsChange[]
+  /** every message to or from a customer, newest last */
+  messages: Message[]
 }

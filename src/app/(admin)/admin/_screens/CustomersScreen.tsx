@@ -4,6 +4,7 @@ import { useMemo, useState, type ReactNode } from "react"
 import { Button } from "@/components/ui/button"
 import { DataGrid } from "@/components/blocks/DataGrid"
 import { PageHeader } from "@/components/blocks/PageHeader"
+import { MessageThread } from "@/components/blocks/MessageThread"
 import { SidePanel, SidePanelLayout } from "@/components/blocks/SidePanel"
 import { StatusPill, statusLabel } from "@/components/blocks/StatusPill"
 import type { AdminData, Visit } from "@/lib/admin/types"
@@ -18,7 +19,10 @@ import { MARKETING_WORDS, NEXT_WORDS, customerRows, customersContext, type Custo
 // beside it from their name with their visits and the consent on record.
 // Client because the selected customer is state; the route's page.tsx
 // supplies `data` and `today`. The bulk action and the panel's buttons only
-// log in the prototype; "Send pass offer" is the January pre-sell.
+// log in the prototype; "Send pass offer" is the January pre-sell. The
+// Messages section is the two-way thread: every email and text the app sent
+// with its state, the customer's replies, and a reply box (Hannah,
+// 2026-11-12 night).
 
 export interface CustomersScreenProps {
   data: AdminData
@@ -131,6 +135,15 @@ export function CustomersScreen({ data, today, defaultSelectedId }: CustomersScr
                 <section aria-labelledby="customer-visits">
                   <Subtitle id="customer-visits">Visits</Subtitle>
                   <Visits visits={data.visits.filter((v) => v.clientId === row.id)} />
+                </section>
+                <section aria-labelledby="customer-messages">
+                  <Subtitle id="customer-messages">Messages</Subtitle>
+                  <MessageThread
+                    messages={data.messages.filter((m) => m.clientId === row.id)}
+                    canText={row.marketing !== "no"}
+                    onReply={(body) => console.info("reply", [row.firstName, body])}
+                    className="mt-3"
+                  />
                 </section>
               </div>
             </SidePanel>

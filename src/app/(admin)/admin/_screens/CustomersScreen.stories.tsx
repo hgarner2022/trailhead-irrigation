@@ -12,7 +12,7 @@ import { CustomersScreen } from "./CustomersScreen"
 const TODAY = "2026-11-12T19:56:30Z"
 const data = snapshot as AdminData
 
-const nothingYet: AdminData = { ...data, syncedAt: TODAY, clients: [], visits: [], quotes: [], invoices: [], passes: [], monthTotals: [], attention: [], settings: EMPTY_SETTINGS, settingsChanges: [] }
+const nothingYet: AdminData = { ...data, syncedAt: TODAY, clients: [], visits: [], quotes: [], invoices: [], passes: [], monthTotals: [], attention: [], settings: EMPTY_SETTINGS, settingsChanges: [], messages: [] }
 
 const meta = {
   title: "Screens/Customers",

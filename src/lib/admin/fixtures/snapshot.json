@@ -14534,6 +14534,12 @@
   ],
   "attention": [
     {
+      "kind": "customer-replied",
+      "passId": "p5",
+      "message": "Katie replied by text: \"Do you do backflow tests too?\"",
+      "since": "2026-11-12T15:40:00Z"
+    },
+    {
       "kind": "charge-failed",
       "passId": "p3",
       "message": "Card declined for the spring turn-on; customer emailed an update link",
@@ -14740,6 +14746,151 @@
       "field": "Day-before text",
       "from": "Off",
       "to": "On"
+    }
+  ],
+  "messages": [
+    {
+      "id": "m1",
+      "clientId": "c100",
+      "passId": "p1",
+      "channel": "email",
+      "direction": "out",
+      "kind": "purchase-confirmation",
+      "body": "Your 2027 Season Pass is reserved",
+      "at": "2026-11-02T16:10:00Z",
+      "status": "delivered"
+    },
+    {
+      "id": "m2",
+      "clientId": "c100",
+      "passId": "p1",
+      "channel": "sms",
+      "direction": "out",
+      "kind": "purchase-confirmation",
+      "body": "Trailhead: your 2027 Season Pass is reserved. Turn-on preferred mid May, blowout mid October. Reply STOP to opt out.",
+      "at": "2026-11-02T16:10:05Z",
+      "status": "delivered"
+    },
+    {
+      "id": "m3",
+      "clientId": "c100",
+      "passId": "p1",
+      "channel": "email",
+      "direction": "out",
+      "kind": "date-set",
+      "body": "Your spring turn-on is set for Monday, May 3",
+      "at": "2027-04-19T15:00:00Z",
+      "status": "delivered"
+    },
+    {
+      "id": "m4",
+      "clientId": "c100",
+      "passId": "p1",
+      "channel": "sms",
+      "direction": "out",
+      "kind": "day-before",
+      "body": "Trailhead: Ryan is coming tomorrow, Mon May 3, between 9 and 11 for your turn-on. Reply if that no longer works.",
+      "at": "2027-05-02T23:00:00Z",
+      "status": "delivered"
+    },
+    {
+      "id": "m5",
+      "clientId": "c100",
+      "passId": "p1",
+      "channel": "sms",
+      "direction": "in",
+      "kind": "reply",
+      "body": "Can you come after 10? School drop-off.",
+      "at": "2027-05-02T23:12:00Z",
+      "status": "handled"
+    },
+    {
+      "id": "m6",
+      "clientId": "c100",
+      "passId": "p1",
+      "channel": "sms",
+      "direction": "out",
+      "kind": "reply",
+      "body": "No problem, Ryan will be there between 10 and 11.",
+      "at": "2027-05-02T23:20:00Z",
+      "status": "delivered"
+    },
+    {
+      "id": "m7",
+      "clientId": "c100",
+      "passId": "p1",
+      "channel": "sms",
+      "direction": "out",
+      "kind": "on-my-way",
+      "body": "Trailhead: Ryan is on his way, about 20 minutes out.",
+      "at": "2027-05-03T16:05:00Z",
+      "status": "delivered"
+    },
+    {
+      "id": "m8",
+      "clientId": "c100",
+      "passId": "p1",
+      "channel": "email",
+      "direction": "out",
+      "kind": "receipt",
+      "body": "Your turn-on is done: $145 charged to Visa 4242. Next up: inspection in July",
+      "at": "2027-05-03T17:12:00Z",
+      "status": "delivered"
+    },
+    {
+      "id": "m9",
+      "clientId": "c140",
+      "passId": "p3",
+      "channel": "email",
+      "direction": "out",
+      "kind": "purchase-confirmation",
+      "body": "Your 2027 Season Pass is reserved",
+      "at": "2026-11-09T20:30:00Z",
+      "status": "bounced"
+    },
+    {
+      "id": "m10",
+      "clientId": "c140",
+      "passId": "p3",
+      "channel": "sms",
+      "direction": "out",
+      "kind": "purchase-confirmation",
+      "body": "Trailhead: your 2027 Season Pass is reserved. Reply STOP to opt out.",
+      "at": "2026-11-09T20:30:05Z",
+      "status": "delivered"
+    },
+    {
+      "id": "m11",
+      "clientId": "c197",
+      "passId": "p5",
+      "channel": "email",
+      "direction": "out",
+      "kind": "purchase-confirmation",
+      "body": "Your 2027 Season Pass is reserved",
+      "at": "2026-11-11T18:00:00Z",
+      "status": "delivered"
+    },
+    {
+      "id": "m12",
+      "clientId": "c197",
+      "passId": "p5",
+      "channel": "sms",
+      "direction": "out",
+      "kind": "purchase-confirmation",
+      "body": "Trailhead: your 2027 Season Pass is reserved. Reply STOP to opt out.",
+      "at": "2026-11-11T18:00:05Z",
+      "status": "delivered"
+    },
+    {
+      "id": "m13",
+      "clientId": "c197",
+      "passId": "p5",
+      "channel": "sms",
+      "direction": "in",
+      "kind": "reply",
+      "body": "Do you do backflow tests too?",
+      "at": "2026-11-12T15:40:00Z",
+      "status": "received"
     }
   ]
 }
