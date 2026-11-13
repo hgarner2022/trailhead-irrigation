@@ -10,7 +10,6 @@ export const EMPTY_SETTINGS: OrganizationSettings = {
   bufferPercentLate: 0,
   fallTownOrder: [],
   springTownOrder: [],
-  firmDaysAhead: 0,
   messages: [],
 }
 

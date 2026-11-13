@@ -14,6 +14,9 @@ const answers: Partial<CheckoutFields> = {
   address: FIXTURE_HOME.label,
   place: FIXTURE_HOME,
   town: "Erie",
+  access: "yes",
+  accessNote: "Gate code 4471, controller in the garage.",
+  today: "2026-11-12",
   zones: 8,
   inspection: false,
   turnOnPreference: "earlier",
@@ -45,6 +48,12 @@ type Story = StoryObj<typeof meta>
 
 /** One box; type "123" to see the fixture's matches. */
 export const Address: Story = {
+  globals: { viewport: { value: "wide", isRotated: false } },
+}
+
+/** Bought in August: the turn-on has passed, the pass is the blowout, and the zones step says so. */
+export const MidSeason: Story = {
+  args: { initialStep: 2, prefill: answers, today: "2027-08-10" },
   globals: { viewport: { value: "wide", isRotated: false } },
 }
 
@@ -110,6 +119,7 @@ export const Walkthrough: Story = {
   play: async ({ canvas, userEvent, args }) => {
     await userEvent.type(await canvas.findByRole("combobox", { name: "Street address" }), "123 Tr")
     await userEvent.click(await canvas.findByRole("option", { name: /123 Trailhead Way/ }))
+    await userEvent.click(await canvas.findByRole("button", { name: /^Yes/ }))
     await userEvent.click(canvas.getByRole("button", { name: "Continue" }))
 
     await userEvent.click(await canvas.findByRole("button", { name: "8 zones" }))

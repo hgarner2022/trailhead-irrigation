@@ -16,6 +16,9 @@ const answers: Partial<CheckoutFields> = {
   address: FIXTURE_HOME.label,
   place: FIXTURE_HOME,
   town: "Erie",
+  access: "yes",
+  accessNote: "Gate code 4471, controller in the garage.",
+  today: "2026-11-12",
   zones: 8,
   turnOnPreference: "earlier",
   blowoutPreference: "recommended",
@@ -58,6 +61,9 @@ describe("CheckoutFlow", () => {
     expect(continueButton()).toBeDisabled()
     await user.click(await screen.findByRole("option", { name: /123 Trailhead Way/ }))
     expect(box).toHaveValue("123 Trailhead Way, Erie, CO 80516")
+    expect(continueButton()).toBeDisabled()
+    await user.click(screen.getByRole("button", { name: /^Yes/ }))
+    expect(screen.getByLabelText("How we get in")).toBeInTheDocument()
     expect(continueButton()).toBeEnabled()
     await user.click(continueButton())
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("How many zones does your system have?")

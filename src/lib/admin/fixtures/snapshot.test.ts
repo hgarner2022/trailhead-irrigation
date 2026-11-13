@@ -74,7 +74,6 @@ it("settings carry two trucks, three areas, three 2027 windows, the orders, the 
   ])
   expect(s.bufferPercentEarly).toBe(20)
   expect(s.bufferPercentLate).toBe(12)
-  expect(s.firmDaysAhead).toBe(7)
   expect(s.fallTownOrder).toEqual(["Firestone", "Erie", "Longmont", "Broomfield", "Louisville", "Lafayette"])
   expect(s.springTownOrder).toEqual([...s.fallTownOrder].reverse())
   expect(s.messages.map((m) => m.key)).toEqual(["purchase-confirmation", "date-set", "day-before", "on-the-way", "receipt", "renewal"])
@@ -122,16 +121,15 @@ it("every dated 2026 visit rides a truck with a stop order and a point near its 
   expect(d.visits.filter((v) => !v.startAt?.startsWith("2026")).every((v) => v.truckId === undefined)).toBe(true)
 })
 
-it("eight November visits are proposed and two carry a Jobber exception", () => {
+it("two November visits carry a Jobber exception and nothing waits for approval", () => {
   const d = snapshot as AdminData
-  const proposed = d.visits.filter((v) => v.proposed)
-  expect(proposed).toHaveLength(8)
-  expect(proposed.every((v) => v.status === "scheduled" && denverDay(v.startAt!).startsWith("2026-11"))).toBe(true)
+  expect(d.visits.some((v) => "proposed" in v || "firm" in v)).toBe(false)
   const exceptions = d.visits.filter((v) => v.exception)
   expect(exceptions).toHaveLength(2)
   for (const v of exceptions) {
     expect(v.exception?.kind).toBe("moved-in-jobber")
     expect(v.exception?.note).toBeTruthy()
-    expect(v.proposed).toBeFalsy()
+    expect(denverDay(v.startAt!).startsWith("2026-11")).toBe(true)
   }
+  expect(d.passes.filter((p) => p.needsCustomerHome)).toHaveLength(2)
 })

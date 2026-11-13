@@ -15,7 +15,6 @@ export const ACTION_LABELS: Record<Attention["kind"], string> = {
   "card-expiring": "Send card link",
   "not-closed": "Review visits",
   "pass-cancelled": "Open in Jobber",
-  "customer-replied": "Reply",
 }
 
 export function AttentionAction({ item, onAction }: { item: Attention; onAction?: (item: Attention) => void }) {
@@ -23,7 +22,7 @@ export function AttentionAction({ item, onAction }: { item: Attention; onAction?
   return (
     <Button
       size="sm"
-      variant={item.kind === "customer-replied" ? "default" : "outline"}
+      variant="outline"
       data-slot="attention-action"
       className="shrink-0"
       aria-label={`${label}: ${item.message}`}

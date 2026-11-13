@@ -10,7 +10,7 @@ import type { Consent, Pass, PassVisit, TimingPreference, Town } from "@/lib/adm
 import { preferencePhrase } from "@/lib/admin/format"
 import { emailProblem } from "@/lib/email-check"
 import { outOfAreaMessage, serviceability, type PlaceSuggestion } from "@/lib/places"
-import { MAX_ZONES, MIN_ZONES, TERMS_VERSION, passVisits, visitPrice } from "@/lib/season-pass"
+import { MAX_ZONES, MIN_ZONES, TERMS_VERSION, visitPrice, visitsOnSale } from "@/lib/season-pass"
 
 export type StepKey = "address" | "zones" | "inspection" | "timing" | "contact" | "card" | "done"
 
@@ -45,6 +45,12 @@ export interface CheckoutFields {
   place: PlaceSuggestion | null
   /** read from the picked address; null until one in the six towns is picked */
   town: Town | null
+  /** whether we can reach the controller and the shut-off without the customer; null until answered */
+  access: "yes" | "no" | null
+  /** gate code, dog, where the controller is */
+  accessNote: string
+  /** YYYY-MM-DD in Mountain time; decides which visits are still on sale this season */
+  today: string
   zones: number
   /** the July inspection, an add-on; off unless the customer adds it */
   inspection: boolean
@@ -84,6 +90,9 @@ export function initialState(prefill: Partial<CheckoutState> = {}): CheckoutStat
     address: "",
     place: null,
     town: null,
+    access: null,
+    accessNote: "",
+    today: new Date().toISOString().slice(0, 10),
     zones: MIN_ZONES,
     inspection: false,
     turnOnPreference: "recommended",
@@ -124,7 +133,7 @@ export function addressProblem(state: Pick<CheckoutFields, "place">, attempted: 
 export function canContinue(state: CheckoutState): boolean {
   switch (STEPS[state.step - 1]?.key) {
     case "address":
-      return state.place !== null && serviceability(state.place).ok
+      return state.place !== null && serviceability(state.place).ok && state.access !== null
     case "zones":
       return Number.isInteger(state.zones) && state.zones >= MIN_ZONES && state.zones <= MAX_ZONES
     // The add-on starts answered (off), and both preferences start on the recommendation.
@@ -171,11 +180,14 @@ export function useCheckoutState(prefill?: Partial<CheckoutState>) {
 }
 
 /** The sentence under the pass card on Done. */
-export function doneSentence(state: Pick<CheckoutFields, "turnOnPreference" | "blowoutPreference" | "inspection" | "email">): string {
-  const turnOn = preferencePhrase("turn-on", state.turnOnPreference)
-  const blowout = preferencePhrase("blowout", state.blowoutPreference)
-  const july = state.inspection ? "inspection in July, " : ""
-  return `Turn-on preferred ${turnOn}, ${july}blowout preferred ${blowout}. We'll email the details to ${state.email}.`
+export function doneSentence(state: Pick<CheckoutFields, "turnOnPreference" | "blowoutPreference" | "inspection" | "email" | "today">): string {
+  const onSale = visitsOnSale(state.inspection, state.today).map((v) => v.key)
+  const parts: string[] = []
+  if (onSale.includes("turn-on")) parts.push(`Turn-on preferred ${preferencePhrase("turn-on", state.turnOnPreference)}`)
+  if (onSale.includes("inspection")) parts.push("inspection in July")
+  if (onSale.includes("blowout")) parts.push(`blowout preferred ${preferencePhrase("blowout", state.blowoutPreference)}`)
+  const sentence = parts.join(", ")
+  return `${sentence.charAt(0).toUpperCase()}${sentence.slice(1)}. We'll email the details to ${state.email}.`
 }
 
 /** The consent the purchase records: the terms as accepted now, and the marketing channels whose boxes were ticked. */
@@ -193,7 +205,7 @@ export function toConsent(state: Pick<CheckoutFields, "marketingEmail" | "market
 
 /** The pass the last screen shows, built from the answers. Ids and links are placeholders until the wiring phase; `at` is when the terms were accepted. */
 export function toPass(state: CheckoutState, season: number, at = new Date().toISOString()): Pass {
-  const visits: PassVisit[] = passVisits(state.inspection).map((v) => ({
+  const visits: PassVisit[] = visitsOnSale(state.inspection, state.today).map((v) => ({
     kind: v.key,
     window: VISIT_WINDOWS[v.key],
     amount: visitPrice(v, state.zones),
@@ -214,5 +226,7 @@ export function toPass(state: CheckoutState, season: number, at = new Date().toI
     jobberUrl: "https://secure.getjobber.com/clients/new",
     cardLast4: state.cardSaved ? "4242" : undefined,
     consent: toConsent(state, at),
+    needsCustomerHome: state.access === "no" || undefined,
+    accessNote: state.access === "yes" && state.accessNote.trim() ? state.accessNote.trim() : undefined,
   }
 }

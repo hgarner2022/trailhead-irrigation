@@ -13,13 +13,13 @@ describe("HomeScreen season prompt", () => {
     expect(document.querySelector('[data-slot="season-prompt"]')).toBeNull()
   })
 
-  it("names the window, links to Settings and proposes", async () => {
+  it("names the window, links to Settings and schedules the season", async () => {
     const info = vi.spyOn(console, "info").mockImplementation(() => undefined)
     render(<HomeScreen data={data} today="2027-09-17T18:00:00Z" />)
     expect(screen.getByRole("heading", { name: "Fall blowouts open Oct 1" })).toBeInTheDocument()
     expect(screen.getByRole("link", { name: "Open settings" })).toHaveAttribute("href", "/admin/settings")
-    await userEvent.click(screen.getByRole("button", { name: "Propose schedule" }))
-    expect(info).toHaveBeenCalledWith("propose schedule", "blowout", "2027-10-01")
+    await userEvent.click(screen.getByRole("button", { name: "Schedule the fall" }))
+    expect(info).toHaveBeenCalledWith("schedule season", "blowout", "2027-10-01")
   })
 
   it("adds a not-closed row for visits from the last two weeks only", () => {

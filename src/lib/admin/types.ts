@@ -83,10 +83,8 @@ export interface Visit {
   jobberUrl: string
   /** the truck the visit rides on; absent until the schedule places it */
   truckId?: string
-  /** placed by the scheduler and waiting for Ryan to approve the batch */
-  proposed?: boolean
-  /** a day promised to the customer; false while it is only planned beyond the fall firm horizon (the review, 2026-11-12) */
-  firm?: boolean
+  /** the customer must be there and has not yet picked a day; the visit waits in the tray for them (scheduling flow, 2026-11-12) */
+  awaitingPick?: boolean
   /** 1-based position in the truck's day; from Jobber's route tool while Jobber is the field display */
   stopOrder?: number
   /** the property's point, geocoded once when the customer is created */
@@ -143,6 +141,10 @@ export interface Pass {
   cardExpires?: string
   /** the consent recorded with the purchase */
   consent?: Consent
+  /** the customer must be there for a visit; the app offers area days to pick instead of placing one */
+  needsCustomerHome?: boolean
+  /** gate code, dog, where the controller is */
+  accessNote?: string
 }
 
 export interface MonthTotal {
@@ -203,24 +205,23 @@ export type MessageKind =
   | "card-failed"
   | "cancelled"
   | "renewal"
-  | "reply"
 
 /**
- * One email or text between Trailhead and a customer, either direction.
- * Outbound rows are what the app sent and how it went; inbound rows are the
- * customer's replies (texting is two-way), `handled` once someone answered.
+ * One email or text the app sent a customer and how it went. Messages are
+ * one-way (Hannah, 2026-11-12 late: transactional only, Ryan texts "on my
+ * way" from his own phone); any change the customer wants goes through the
+ * link in the message to their pass page.
  */
 export interface Message {
   id: string
   clientId: string
   passId?: string
   channel: "email" | "sms"
-  direction: "out" | "in"
   kind: MessageKind
   /** the subject for an email, the text itself for an SMS */
   body: string
   at: string
-  status: "queued" | "sent" | "delivered" | "failed" | "bounced" | "received" | "handled"
+  status: "queued" | "sent" | "delivered" | "failed" | "bounced"
 }
 
 /** Everything the Settings page edits; the scheduler reads it on its next run. */
@@ -236,8 +237,6 @@ export interface OrganizationSettings {
   fallTownOrder: Town[]
   /** spring runs the other way */
   springTownOrder: Town[]
-  /** fall commits firm dates this many days ahead; later days stay planned */
-  firmDaysAhead: number
   messages: MessageTemplate[]
 }
 
@@ -252,7 +251,7 @@ export interface SettingsChange {
 }
 
 export interface Attention {
-  kind: "charge-failed" | "jobs-failed" | "card-expiring" | "not-closed" | "pass-cancelled" | "customer-replied"
+  kind: "charge-failed" | "jobs-failed" | "card-expiring" | "not-closed" | "pass-cancelled"
   passId?: string
   message: string
   since: string

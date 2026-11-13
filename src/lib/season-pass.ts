@@ -60,6 +60,27 @@ export function seasonPassPrice(zones: number, inspection = false): number {
   return passVisits(inspection).reduce((sum, v) => sum + visitPrice(v, zones), 0)
 }
 
+/** The day each visit's window closes for the season (MM-DD); after November 1 the next season is on sale (wiring plan, decision 15). */
+export const WINDOW_CLOSES: Record<SeasonPassVisit["key"], string> = { "turn-on": "05-31", inspection: "07-31", blowout: "11-15" }
+const SEASON_ROLLS = "11-01"
+
+/**
+ * The visits a pass bought today still has ahead: all of them from November
+ * to May, the blowout alone (with July while July is open) once the turn-on
+ * window has closed. `today` is YYYY-MM-DD in Mountain time. (The scheduling
+ * flow, 2026-11-12: a pass bought mid-season sells only what is ahead.)
+ */
+export function visitsOnSale(inspection: boolean, today: string): readonly SeasonPassVisit[] {
+  const monthDay = today.slice(5, 10)
+  if (monthDay >= SEASON_ROLLS) return passVisits(inspection)
+  return passVisits(inspection).filter((v) => monthDay <= WINDOW_CLOSES[v.key])
+}
+
+/** The price of what is on sale today. */
+export function priceOnSale(zones: number, inspection: boolean, today: string): number {
+  return visitsOnSale(inspection, today).reduce((sum, v) => sum + visitPrice(v, zones), 0)
+}
+
 /** Rows for the static price table (also what AI answers can quote): the pass, and the pass with the July inspection. */
 export const SEASON_PASS_TABLE = [6, 8, 10, 12, 14, 16].map((zones) => ({
   zones,

@@ -12,16 +12,16 @@ import type { AdminData, Visit } from "@/lib/admin/types"
 import { TIME_ZONE } from "@/lib/admin/format"
 import { committedByMonth, visitsOn } from "@/lib/admin/metrics"
 import { SEASON, clockTime, dayHeading, greeting, notClosedAttention, pageContext, seasonDescription, tileModels, tomorrowOf, upcomingWindow, windowTitle } from "./home-model"
-import { ProposeButton } from "./ProposeButton"
+import { ScheduleSeasonButton } from "./ScheduleSeasonButton"
 
 // What Hannah opens to in the morning: a greeting, the four numbers that
 // matter today, the season line, the next two days of visits and the short
 // list of what needs a person. Pure composition over `data` and a fixed
 // `today`; the route's page.tsx supplies both. Server component.
 // When a season window opens within its lead weeks plus two, a prompt above
-// the tiles sends the owner to Settings and to Propose; visits from the last
+// the tiles sends the owner to Settings and to Schedule; visits from the last
 // two weeks nobody marked done add a row to Needs attention. Server component;
-// only the Propose button is client code.
+// only the Schedule button is client code.
 
 export interface HomeScreenProps {
   data: AdminData
@@ -76,13 +76,13 @@ export function HomeScreen({ data, today }: HomeScreenProps) {
         <Card data-slot="season-prompt" className="border-primary/30 bg-primary/10">
           <CardHeader>
             <CardTitleHeading>{windowTitle(upcoming)}</CardTitleHeading>
-            <p className="text-sm text-foreground">Check the trucks, capacity and areas, then propose the schedule.</p>
+            <p className="text-sm text-foreground">Check the trucks, capacity and areas, then schedule the season: every pass visit gets its day and the customers get their dates.</p>
           </CardHeader>
           <CardContent className="flex flex-wrap gap-2">
             <Button variant="outline" asChild>
               <Link href="/admin/settings">Open settings</Link>
             </Button>
-            <ProposeButton season={upcoming} />
+            <ScheduleSeasonButton season={upcoming} />
           </CardContent>
         </Card>
       )}

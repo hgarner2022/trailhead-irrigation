@@ -2,13 +2,12 @@
 
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { CardTitleHeading } from "@/components/blocks/CardTitleHeading"
-import { WINDOW_KINDS, WINDOW_NAMES, setBuffer, setFirmDays, setWindow, type SettingsState } from "../settings-model"
+import { WINDOW_KINDS, WINDOW_NAMES, setBuffer, setWindow, type SettingsState } from "../settings-model"
 import { CommitInput, type Apply } from "./fields"
 
 // The scheduling rules that are numbers and dates: how much of a truck-day
-// is held back, when each season's visits may land, and how far ahead fall
-// commits a firm day. The line under each field is the rule from the
-// system plan, in words.
+// is held back and when each season's visits may land. The line under each
+// field is the rule from the system plan, in words.
 
 function Field({ id, label, hint, children }: { id: string; label: string; hint: string; children: (describedBy: string) => React.ReactNode }) {
   return (
@@ -23,7 +22,7 @@ function Field({ id, label, hint, children }: { id: string; label: string; hint:
 }
 
 export function Capacity({ state, apply }: { state: SettingsState; apply: Apply }) {
-  const { bufferPercentEarly, bufferPercentLate, windows, firmDaysAhead } = state.settings
+  const { bufferPercentEarly, bufferPercentLate, windows } = state.settings
   return (
     <div className="grid gap-6 lg:grid-cols-2">
       <Card>
@@ -36,16 +35,6 @@ export function Capacity({ state, apply }: { state: SettingsState; apply: Apply 
           </Field>
           <Field id="buffer-late" label="Held back after the first two weeks (percent)" hint="The same hold-back once the season settles. The plan uses 10 to 15.">
             {(d) => <CommitInput type="number" min={0} max={100} label="Buffer, after the first two weeks, percent" describedBy={d} value={bufferPercentLate} onCommit={(v) => apply((s, a) => setBuffer(s, "late", Number(v), a))} />}
-          </Field>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader>
-          <CardTitleHeading>Firm dates</CardTitleHeading>
-        </CardHeader>
-        <CardContent>
-          <Field id="firm-days" label="Firm days ahead" hint="Fall commits firm dates this many days ahead, usually 5 to 7. Later days stay planned until the forecast settles.">
-            {(d) => <CommitInput type="number" min={0} label="Firm days ahead" describedBy={d} value={firmDaysAhead} onCommit={(v) => apply((s, a) => setFirmDays(s, Number(v), a))} />}
           </Field>
         </CardContent>
       </Card>

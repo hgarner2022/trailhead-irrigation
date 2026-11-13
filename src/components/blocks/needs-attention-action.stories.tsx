@@ -8,12 +8,12 @@ const meta = {
   title: "Blocks/AttentionAction",
   component: AttentionAction,
   parameters: { layout: "padded" },
-  args: { item: { kind: "customer-replied", passId: "p9", message: 'Katie replied by text: "Do you do backflow tests too?"', since: "2026-11-12T15:40:00Z" }, onAction: fn() },
+  args: { item: { kind: "pass-cancelled", passId: "p9", message: "Christian cancelled TH-2027-0009; the two Jobber jobs still open, remove them", since: "2026-11-12T14:30:00Z" }, onAction: fn() },
 } satisfies Meta<typeof AttentionAction>
 export default meta
 type Story = StoryObj<typeof meta>
 
-export const Reply: Story = {}
+export const OpenInJobber: Story = {}
 
 export const Retry: Story = {
   args: { item: { kind: "jobs-failed", passId: "p7", message: "Jobber jobs for pass TH-2027-0007 were not created; retrying", since: "2026-11-11T22:41:00Z" } },

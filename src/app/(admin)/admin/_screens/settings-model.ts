@@ -204,11 +204,6 @@ export function setWindow(state: SettingsState, kind: SeasonWindow["kind"], fiel
   return record(state, actor, `${WINDOW_NAMES[kind]} ${words}`, String(season[field]), String(value), { ...state.settings, windows })
 }
 
-export function setFirmDays(state: SettingsState, days: number, actor: Actor): SettingsState {
-  if (!Number.isInteger(days) || days < 0 || days > MAX_FIRM_DAYS) return state
-  return record(state, actor, "Firm days ahead", String(state.settings.firmDaysAhead), String(days), { ...state.settings, firmDaysAhead: days })
-}
-
 export function setMessage(state: SettingsState, key: string, field: "subject" | "body" | "enabled", value: string | boolean, actor: Actor): SettingsState {
   const message = state.settings.messages.find((m) => m.key === key)
   if (!message) return state

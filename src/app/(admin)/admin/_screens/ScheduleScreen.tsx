@@ -18,22 +18,20 @@ import { KIND_WORDS, TIME_ZONE, shortDate, writtenDate } from "@/lib/admin/forma
 import { cn } from "@/lib/utils"
 import { clockTime } from "./home-model"
 import { addDays, dayOf, dayVisits, weekOf, weekVisits } from "@/lib/admin/calendar"
-import { upcomingWindow } from "./home-model"
 import { ScheduleMoveTo } from "./ScheduleMoveTo"
-import { approveVisits, confirmVisits, exceptionCount, firstWorkingDay, moveOutcome, placeVisit, plannedCount, proposedCount, trayItems, weekContext, type TrayItem } from "./schedule-model"
+import { exceptionCount, firstWorkingDay, moveOutcome, placeVisit, scheduleItems, trayItems, weekContext, type TrayItem } from "./schedule-model"
 
-// Where the scheduler's output lands and where Ryan lives in season: the
-// week by truck, with the proposed visits hatched until he approves the
-// batch, and a day map beside the day's stops in order. Selecting a stop in
-// the grid, the list or the map highlights the same visit. Client because
-// the week, the day, the tab, the selection and the moves are state; the
-// moves and the approval only update local state and log in the prototype,
-// and `Propose` is enabled only while a season window is within its lead period
-// (the same rule as Home's prompt). The route's page.tsx
-// supplies `data` and `today`. The "To schedule" tray beside the week lists
-// every visit with no day; Place puts one on the first working day of the
-// visible week as a proposed visit, to be moved or approved; "Confirm next
-// week" promises the planned days to their customers.
+// Where Ryan lives in season (the scheduling flow, 2026-11-12: one state,
+// no approvals): the week by truck, a day map beside the day's stops in
+// order, and the "To schedule" tray beside the week with every visit that
+// has no day yet. Schedule puts the whole tray on the week (the customers
+// who must be there pick their own day and stay in the tray until they do);
+// Place puts one; drag moves one. Placed is scheduled: in the wiring phase
+// the visit goes to Jobber and the customer gets the date. Selecting a stop
+// in the grid, the list or the map highlights the same visit. Client because
+// the week, the day, the tab, the selection and the moves are state; every
+// action only updates local state and logs in the prototype. The route's
+// page.tsx supplies `data` and `today`.
 
 export interface ScheduleScreenProps {
   data: AdminData
@@ -129,14 +127,16 @@ export function ScheduleScreen({ data, today, defaultTab = "week" }: ScheduleScr
   const [announcement, setAnnouncement] = useState("")
   const week = weekVisits(visits, weekStart, TIME_ZONE)
   const selected = week.find((v) => v.id === selectedId && v.startAt)
-  const proposeOpen = upcomingWindow(data.settings, today) !== null
   const stops = dayVisits(visits, day, undefined, TIME_ZONE)
   const tray = trayItems({ visits, passes: data.passes })
+  const placeable = tray.filter((i) => !i.awaitingPick).length
 
-  const approve = () => {
-    const ids = new Set(week.filter((v) => v.proposed).map((v) => v.id))
-    console.info("approve week", weekStart, [...ids])
-    setVisits((v) => approveVisits(v, ids))
+  const scheduleAll = () => {
+    console.info("schedule", weekStart, tray.filter((i) => !i.awaitingPick).map((i) => i.id))
+    const outcome = scheduleItems(visits, tray, trucks, weekStart, TIME_ZONE)
+    setVisits(outcome.visits)
+    const waiting = outcome.waiting ? ` ${outcome.waiting} ${outcome.waiting === 1 ? "customer picks their own day and stays" : "customers pick their own days and stay"} in the list.` : ""
+    setAnnouncement(`${outcome.placed} ${outcome.placed === 1 ? "visit" : "visits"} scheduled on the week of ${writtenDate(weekStart)}; the customers get their dates.${waiting}`)
   }
   const move = (visitId: string, truckId: string, dayIso: string) => {
     console.info("move visit", visitId, truckId, dayIso)
@@ -151,13 +151,7 @@ export function ScheduleScreen({ data, today, defaultTab = "week" }: ScheduleScr
     console.info("place visit", item.id, truck.id, dayIso)
     setVisits((v) => placeVisit(v, item, truck.id, dayIso, TIME_ZONE))
     setSelectedId(item.id)
-    setAnnouncement(`${item.clientName} placed on ${truck.name}, ${writtenDate(dayIso)}, as a proposed visit. Move it or approve the week.`)
-  }
-  const confirm = () => {
-    const ids = new Set(week.filter((v) => v.firm === false && !v.proposed).map((v) => v.id))
-    console.info("confirm week", weekStart, [...ids])
-    setVisits((v) => confirmVisits(v, ids))
-    setAnnouncement(`${ids.size} planned ${ids.size === 1 ? "day" : "days"} confirmed; the customers get their dates.`)
+    setAnnouncement(`${item.clientName} scheduled on ${truck.name}, ${writtenDate(dayIso)}; they get the date. Drag it if another day is better.`)
   }
   const changeDay = (next: string) => {
     setDay(next)
@@ -171,30 +165,18 @@ export function ScheduleScreen({ data, today, defaultTab = "week" }: ScheduleScr
           title="Schedule"
           context={weekContext(weekStart, week)}
           actions={
-            <>
-              {proposeOpen ? (
-                <Button variant="outline" onClick={() => console.info("propose schedule", weekStart)}>
-                  Propose
-                </Button>
-              ) : (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span tabIndex={0} className="inline-flex rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50">
-                      <Button variant="outline" disabled>
-                        Propose
-                      </Button>
-                    </span>
-                  </TooltipTrigger>
-                  <TooltipContent>Runs when the next window opens</TooltipContent>
-                </Tooltip>
-              )}
-              {plannedCount(week) > 0 && (
-                <Button variant="outline" onClick={confirm}>
-                  Confirm week
-                </Button>
-              )}
-              {proposedCount(week) > 0 && <Button onClick={approve}>Approve week</Button>}
-            </>
+            placeable > 0 ? (
+              <Button onClick={scheduleAll}>{`Schedule ${placeable} ${placeable === 1 ? "visit" : "visits"}`}</Button>
+            ) : (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span tabIndex={0} className="inline-flex rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50">
+                    <Button disabled>Schedule</Button>
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>Nothing is waiting for a day</TooltipContent>
+              </Tooltip>
+            )
           }
         />
         {selected && <ScheduleMoveTo key={`${selected.id}-${selected.truckId}-${selected.startAt}`} visit={selected} trucks={trucks} weekStart={weekStart} timeZone={TIME_ZONE} onMove={move} />}

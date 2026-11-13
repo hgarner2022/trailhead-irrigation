@@ -1,4 +1,4 @@
-import { Ban, CalendarX, CircleDashed, Clock, CreditCard, MessageSquare, type LucideIcon } from "lucide-react"
+import { Ban, CalendarX, CircleDashed, Clock, CreditCard, type LucideIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { Attention } from "@/lib/admin/types"
 import { EmptyState } from "./EmptyState"
@@ -30,7 +30,6 @@ const KINDS: Record<Attention["kind"], { icon: LucideIcon; tone: string; name: s
   "card-expiring": { icon: Clock, tone: "bg-stone text-muted-foreground", name: "Card expiring" },
   "not-closed": { icon: CircleDashed, tone: "bg-stone text-muted-foreground", name: "Visits not closed" },
   "pass-cancelled": { icon: Ban, tone: "bg-warning/10 text-warning", name: "Pass cancelled" },
-  "customer-replied": { icon: MessageSquare, tone: "bg-primary/10 text-primary-deep", name: "Customer replied" },
 }
 
 function Row({ item, now }: { item: Attention; now: string }) {

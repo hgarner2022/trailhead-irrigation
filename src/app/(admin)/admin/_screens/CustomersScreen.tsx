@@ -20,9 +20,8 @@ import { MARKETING_WORDS, NEXT_WORDS, customerRows, customersContext, type Custo
 // Client because the selected customer is state; the route's page.tsx
 // supplies `data` and `today`. The bulk action and the panel's buttons only
 // log in the prototype; "Send pass offer" is the January pre-sell. The
-// Messages section is the two-way thread: every email and text the app sent
-// with its state, the customer's replies, and a reply box (Hannah,
-// 2026-11-12 night).
+// Messages section lists every email and text the app sent the customer
+// with its state (one-way; Hannah, 2026-11-12 late).
 
 export interface CustomersScreenProps {
   data: AdminData
@@ -138,12 +137,7 @@ export function CustomersScreen({ data, today, defaultSelectedId }: CustomersScr
                 </section>
                 <section aria-labelledby="customer-messages">
                   <Subtitle id="customer-messages">Messages</Subtitle>
-                  <MessageThread
-                    messages={data.messages.filter((m) => m.clientId === row.id)}
-                    canText={row.marketing !== "no"}
-                    onReply={(body) => console.info("reply", [row.firstName, body])}
-                    className="mt-3"
-                  />
+                  <MessageThread messages={data.messages.filter((m) => m.clientId === row.id)} className="mt-3" />
                 </section>
               </div>
             </SidePanel>

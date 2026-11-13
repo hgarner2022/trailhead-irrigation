@@ -12,21 +12,14 @@ import { dayOf, dayVisits, sameClockOnDay, weekDays, weekdayName, worksOn } from
 
 const onCalendar = (v: Visit): v is Visit & { startAt: string } => v.status !== "cancelled" && v.startAt !== undefined
 
-export const proposedCount = (visits: Visit[]): number => visits.filter((v) => v.proposed).length
 export const exceptionCount = (visits: Visit[]): number => visits.filter((v) => v.exception).length
-/** Scheduled and approved, but only planned: the day is not yet promised to the customer. */
-export const plannedCount = (visits: Visit[]): number => visits.filter((v) => v.firm === false && !v.proposed && v.status === "scheduled").length
 
-/** "Week of Nov 9. 8 proposed, 2 moved in Jobber." Only the counts that are not zero are named; "Nothing on the calendar." with no visits. */
+/** "Week of Nov 9. 12 visits, 2 moved in Jobber." or "Week of Nov 9. 25 visits."; "Nothing on the calendar." with no visits. */
 export function weekContext(weekStart: string, visits: Visit[]): string {
-  const counts: [number, string][] = [
-    [proposedCount(visits), "proposed"],
-    [plannedCount(visits), "planned, not yet confirmed"],
-    [exceptionCount(visits), "moved in Jobber"],
-  ]
-  const parts = counts.filter(([n]) => n > 0).map(([n, word]) => `${n} ${word}`)
-  const tail = visits.length === 0 ? "Nothing on the calendar." : parts.length ? `${parts.join(", ")}.` : `${visits.length} visit${visits.length === 1 ? "" : "s"}.`
-  return `Week of ${shortDate(weekStart)}. ${tail}`
+  if (visits.length === 0) return `Week of ${shortDate(weekStart)}. Nothing on the calendar.`
+  const count = `${visits.length} visit${visits.length === 1 ? "" : "s"}`
+  const moved = exceptionCount(visits)
+  return `Week of ${shortDate(weekStart)}. ${count}${moved ? `, ${moved} moved in Jobber` : ""}.`
 }
 
 
@@ -75,17 +68,6 @@ export function moveOutcome(visits: Visit[], visitId: string, truckId: string, d
   return { visits: next, moved: true, message: `Moved ${name} to ${truck.name} on ${sentenceDay(dayIso)}.` }
 }
 
-/** Every proposed visit in the list approved: the flag comes off and nothing else changes. */
-export function approveVisits(visits: Visit[], ids: Set<string>): Visit[] {
-  return visits.map((v) => (v.proposed && ids.has(v.id) ? { ...v, proposed: undefined } : v))
-}
-
-
-/** Every planned visit in the list confirmed: the day is now promised, and the date-set message goes out in the wiring phase. */
-export function confirmVisits(visits: Visit[], ids: Set<string>): Visit[] {
-  return visits.map((v) => (v.firm === false && ids.has(v.id) ? { ...v, firm: true } : v))
-}
-
 /** A visit with no day yet: an unscheduled Jobber job, or a pass visit waiting inside its window. */
 export interface TrayItem {
   id: string
@@ -97,6 +79,8 @@ export interface TrayItem {
   window: string
   preference?: TimingPreference
   passId?: string
+  /** the customer must be there and picks the day themselves; Schedule leaves it in the tray */
+  awaitingPick?: boolean
   /** sortable: the first day of the window's month in the pass's season */
   sortKey: string
 }
@@ -115,6 +99,7 @@ function passItem(pass: Pass, visit: PassVisit): TrayItem {
     window: visit.window,
     preference: visit.kind === "inspection" ? undefined : preference,
     passId: pass.id,
+    awaitingPick: pass.needsCustomerHome || undefined,
     sortKey: `${pass.season}-${String(month ?? 12).padStart(2, "0")}-01`,
   }
 }
@@ -142,9 +127,10 @@ export function firstWorkingDay(truck: Truck, weekStart: string): string {
 }
 
 /**
- * A tray item placed on a truck-day as a proposed visit at nine in the
- * morning (Mountain), last in that day's order; Ryan moves or approves it
- * from there. An item already on the calendar is left alone.
+ * A tray item placed on a truck-day at nine in the morning (Mountain), last
+ * in that day's order. Placed is scheduled: in the wiring phase the visit
+ * goes to Jobber and the customer gets the date. An item already on the
+ * calendar is left alone.
  */
 export function placeVisit(visits: Visit[], item: TrayItem, truckId: string, dayIso: string, timeZone: string): Visit[] {
   const existing = visits.find((v) => v.id === item.id)
@@ -152,7 +138,7 @@ export function placeVisit(visits: Visit[], item: TrayItem, truckId: string, day
   const startAt = sameClockOnDay("2027-05-03T15:00:00Z", dayIso, timeZone)
   const stopOrder = dayVisits(visits, dayIso, truckId, timeZone).length + 1
   // An open Jobber job is the existing row given a day; a pass visit becomes a new row.
-  if (existing) return visits.map((v) => (v.id === item.id ? { ...v, status: "scheduled", startAt, truckId, proposed: true, firm: false, stopOrder } : v))
+  if (existing) return visits.map((v) => (v.id === item.id ? { ...v, status: "scheduled", startAt, truckId, stopOrder, awaitingPick: undefined } : v))
   const visit: Visit = {
     id: item.id,
     clientId: item.clientId,
@@ -164,9 +150,32 @@ export function placeVisit(visits: Visit[], item: TrayItem, truckId: string, day
     isPass: item.passId !== undefined,
     jobberUrl: "",
     truckId,
-    proposed: true,
-    firm: false,
     stopOrder,
   }
   return [...visits, visit]
 }
+
+/**
+ * The Schedule button: every tray item that is not waiting for its customer
+ * goes onto the visible week, round-robin across the trucks and the days
+ * they work, in tray order. The real scheduler (wiring plan, Phase 10) adds
+ * areas, capacity and the customer's preference; this is the prototype's
+ * stand-in so the week fills with one press.
+ */
+export function scheduleItems(visits: Visit[], items: TrayItem[], trucks: Truck[], weekStart: string, timeZone: string): { visits: Visit[]; placed: number; waiting: number } {
+  const slots = trucks.flatMap((truck) => weekDays(weekStart).filter((day) => worksOn(truck, day)).map((day) => ({ truck, day })))
+  const waiting = items.filter((i) => i.awaitingPick).length
+  if (slots.length === 0) return { visits, placed: 0, waiting }
+  let next = visits
+  let placed = 0
+  items
+    .filter((i) => !i.awaitingPick)
+    .forEach((item, i) => {
+      const slot = slots[i % slots.length]
+      const before = next
+      next = placeVisit(next, item, slot.truck.id, slot.day, timeZone)
+      if (next !== before) placed += 1
+    })
+  return { visits: next, placed, waiting }
+}
+

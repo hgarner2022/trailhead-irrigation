@@ -56,12 +56,15 @@ describe("ScheduleScreen move control", () => {
   })
 })
 
-describe("ScheduleScreen Propose", () => {
-  it("is disabled outside a lead period and enabled inside one", () => {
-    const { unmount } = render(<ScheduleScreen data={data} today={TODAY} />)
-    expect(screen.getByRole("button", { name: "Propose" })).toBeDisabled()
-    unmount()
-    render(<ScheduleScreen data={data} today="2027-09-17T18:00:00Z" />)
-    expect(screen.getByRole("button", { name: "Propose" })).toBeEnabled()
+describe("ScheduleScreen Schedule", () => {
+  it("schedules every tray visit that is not waiting for its customer, and says so", async () => {
+    const info = vi.spyOn(console, "info").mockImplementation(() => undefined)
+    render(<ScheduleScreen data={data} today={TODAY} />)
+    const button = screen.getByRole("button", { name: /^Schedule \d+ visits$/ })
+    expect(button).toBeEnabled()
+    await userEvent.click(button)
+    expect(info).toHaveBeenCalledWith("schedule", "2026-11-09", expect.any(Array))
+    expect(screen.getByRole("status")).toHaveTextContent(/visits scheduled on the week of November 9; the customers get their dates\. \d+ customers pick their own days and stay in the list\./)
+    expect(screen.getByRole("button", { name: "Schedule" })).toBeDisabled()
   })
 })

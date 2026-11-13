@@ -16,10 +16,14 @@ export const metadata: Metadata = { title: "Season Pass checkout" }
  * decision 15). The month is read in Mountain time, not the server's zone, so
  * the season turns over at midnight in Colorado on 1 November.
  */
+function denverDay(today: Date): string {
+  const parts = new Intl.DateTimeFormat("en-US", { timeZone: "America/Denver", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(today)
+  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? ""
+  return `${get("year")}-${get("month")}-${get("day")}`
+}
+
 function seasonFor(today: Date): number {
-  const parts = new Intl.DateTimeFormat("en-US", { timeZone: "America/Denver", year: "numeric", month: "numeric" }).formatToParts(today)
-  const year = Number(parts.find((p) => p.type === "year")?.value)
-  const month = Number(parts.find((p) => p.type === "month")?.value)
+  const [year, month] = denverDay(today).split("-").map(Number)
   return month >= 11 ? year + 1 : year
 }
 
@@ -28,5 +32,6 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Pro
   const { zones } = await searchParams
   const parsed = Number(zones)
   const initialZones = Number.isInteger(parsed) && parsed >= MIN_ZONES && parsed <= MAX_ZONES ? parsed : undefined
-  return <CheckoutFlow season={seasonFor(new Date())} initialZones={initialZones} />
+  const now = new Date()
+  return <CheckoutFlow season={seasonFor(now)} today={denverDay(now)} initialZones={initialZones} />
 }

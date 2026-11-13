@@ -30,7 +30,7 @@ Jobber shows the field what to do until the field app replaces it.
 | Season Pass, its visits, preferences, dates, charges | App | App | Jobber gets a copy of each visit on the truck's calendar |
 | Booking (a one-off visit the customer schedules) | Jobber online booking | App | Real open slots from trucks and capacity; books on the spot |
 | Request (work that needs a quote) | Jobber form | App | Requests inbox in the admin |
-| Schedule (truck, day, visit) | App proposes, Ryan approves | App | Jobber reflects it; a move in Jobber is logged as an exception |
+| Schedule (truck, day, visit) | App places, Ryan moves | App | Jobber reflects it; a move in Jobber is logged as an exception |
 | Trucks, areas, capacity, windows | App (Settings) | App | Unbounded rows, not a count |
 | Messages and templates | App | App | Every customer email and text, in Trailhead's voice |
 | Checklists per visit type | App (Settings) | App | Done on the phone day view; completion triggers the charge |
@@ -48,7 +48,7 @@ owner's copy wins and the other is a display.
    invoices past due), the season line, and the "Set up spring / fall"
    prompt when a window is four to six weeks out.
 2. **Schedule.** The week by truck, and a day map beside it. Proposed
-   visits hatched until approved, drag to move between days or trucks,
+   visits placed by one Schedule button (no approval step; the scheduling flow, 2026-11-12 late), the "To schedule" tray beside it, drag to move between days or trucks,
    exceptions marked, day view on the phone. The map (Hannah, 2026-11-12:
    "we need a map to make sure we're routing this appropriately, do not go
    backwards"): real geography on open tiles, every visit for the chosen
@@ -104,8 +104,14 @@ first for a crew login.
   image), date set or moved, day-before reminder, on-my-way when the crew
   taps it, after-visit receipt naming the next visit, failed card,
   cancelled, January renewal.
-- **Texting is two-way** (Hannah, 2026-11-12 night: "make sure the message
-  is clear"). The app sends every text from one Trailhead number. When a
+- **Messages are one-way for now** (Hannah, 2026-11-12 late: "start with
+  one-way, transactional text messages first to simplify"; Ryan texts "on
+  my way" from his own phone). Every message carries a link to the pass
+  page, and that link is how a customer changes anything: pick a day,
+  change a preference, skip, cancel, update the card. STOP is handled by
+  Twilio's own opt-out, not by our code. The two-way design below is kept
+  for later, not built in the first season.
+- **Two-way texting, later** (the earlier plan, 2026-11-12 night). The app sends every text from one Trailhead number. When a
   customer texts back, the reply lands in the app on that customer: STOP
   and the carrier keywords are recorded as an opt-out and answered by the
   app on its own; any other reply ("can you come after 10?") is saved on
@@ -153,7 +159,7 @@ and may opt in to marketing, and both are recorded on the customer.
   capacity.
 - Fall commits firm dates 5 to 7 days ahead; later days are "planned" until
   the forecast settles.
-- First season: the app proposes, Ryan approves the batch. Later: it applies
+- No approval step (2026-11-12 late): Schedule places the visits due, pushes them to Jobber and sends the dates in one run; Ryan moves what he wants. Customers who must be there pick their own day from the pass page. Fall commits two weeks at a time by its lead time, not by a second state. (Earlier text, superseded: first season the app proposes, Ryan approves the batch. Later: it applies
   and sends a summary.
 - A move Ryan makes in Jobber is accepted and logged as an exception, not
   treated as the truth.

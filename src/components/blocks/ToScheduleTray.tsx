@@ -7,9 +7,10 @@ import { EmptyState } from "./EmptyState"
 // The tray beside the week: every visit that has no day yet (an open Jobber
 // job, a pass visit waiting inside its window), earliest window first, so
 // the job of scheduling is done on the Schedule and not found on Customers
-// (the review, 2026-11-12). Place puts the item on the week as a proposed
-// visit; Propose fills the whole tray at once. Pure render; the screen
-// owns the state.
+// (the review, 2026-11-12). Place puts the item on the week; Schedule fills
+// the whole tray at once. A customer who must be there picks their own day
+// (the scheduling flow), so their row says so instead of offering Place.
+// Pure render; the screen owns the state.
 
 export interface ToScheduleTrayProps {
   items: TrayItem[]
@@ -35,9 +36,13 @@ export function ToScheduleTray({ items, onPlace, className }: ToScheduleTrayProp
             <span className="block truncate font-medium text-foreground">{`${item.clientName} · ${item.town}`}</span>
             <span className="block text-muted-foreground">{trayLine(item)}</span>
           </span>
-          <Button size="sm" variant="outline" aria-label={`Place ${item.clientName}, ${trayLine(item).toLowerCase()}`} onClick={() => onPlace?.(item)}>
-            Place
-          </Button>
+          {item.awaitingPick ? (
+            <span data-slot="tray-waiting" className="shrink-0 text-xs font-medium text-primary-deep">Customer picks the day</span>
+          ) : (
+            <Button size="sm" variant="outline" aria-label={`Place ${item.clientName}, ${trayLine(item).toLowerCase()}`} onClick={() => onPlace?.(item)}>
+              Place
+            </Button>
+          )}
         </li>
       ))}
     </ol>
