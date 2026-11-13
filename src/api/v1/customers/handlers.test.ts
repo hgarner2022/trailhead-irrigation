@@ -62,7 +62,8 @@ describe("customers", () => {
   })
   it("updates one field and keeps the rest", async () => {
     const out = await callApi(ctxFor(db, writeKey), customersUpdate, { id, phone: "720-555-0100" })
-    expect(out).toMatchObject({ firstName: "Maya", phone: "720-555-0100" })
+    // stored in one standard form, whatever was typed
+    expect(out).toMatchObject({ firstName: "Maya", phone: "+17205550100" })
     await expect(callApi(ctxFor(db, writeKey), customersUpdate, { id: "nope", phone: "720-555-0100" })).rejects.toMatchObject({ code: "not_found" })
   })
   it("honours an Idempotency-Key on create", async () => {

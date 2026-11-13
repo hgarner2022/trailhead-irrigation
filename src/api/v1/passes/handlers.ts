@@ -9,7 +9,8 @@ import { SEASON_PASS_ADD_ON, visitPrice, visitsOnSale } from "@/lib/season-pass"
 import { hasScope } from "@/lib/auth/principal"
 import { readAppUrl } from "@/lib/env"
 import { activatePass } from "@/lib/pass/server/activate"
-import { emailDomainReachable, failedCheckoutStep, MAX_PENDING_PER_HOUR, pendingPassesLastHour } from "@/lib/pass/server/create"
+import { emailDomainReachable, failedCheckoutStep, MAX_PENDING_PER_HOUR, newestPendingPass, pendingPassesLastHour } from "@/lib/pass/server/create"
+import { cleanEmail, cleanName, cleanText, normalizePhone } from "@/lib/format/contact"
 import { recordPurchase } from "@/lib/pass/server/purchase"
 import { outOfAreaMessage } from "@/lib/places"
 import { queueCardUpdateLink } from "@/lib/pass/server/card-link"
@@ -102,7 +103,10 @@ export const passesCreate = defineHandler({
     if (onSale.length === 0) throw new ApiError("unprocessable", "No visits are on sale this season any more")
     const season = currentSeason(day)
     const org = ctx.organizationId
-    const email = input.customer.email.toLowerCase()
+    const email = cleanEmail(input.customer.email)
+    // Stored the way they print: "hannah garner" as Hannah Garner, the phone in one standard form, notes without stray spaces.
+    const contact = { firstName: cleanName(input.customer.firstName), email, phone: normalizePhone(input.customer.phone) ?? input.customer.phone ?? null }
+    const accessNote = input.accessNote ? cleanText(input.accessNote) : null
     const visitor = ctx.principal.kind === "public"
     if (visitor) {
       const step = failedCheckoutStep({ property: input.property, zones: input.zones, needsCustomerHome: input.needsCustomerHome, customer: { ...input.customer, email }, today: day })
@@ -112,13 +116,17 @@ export const passesCreate = defineHandler({
     }
     const [known] = await ctx.db.select().from(s.customer).where(and(eq(s.customer.organizationId, org), sql`lower(${s.customer.email}) = ${email}`)).limit(1)
     const [held] = input.passId ? await ctx.db.select().from(s.seasonPass).where(and(eq(s.seasonPass.id, input.passId), eq(s.seasonPass.organizationId, org))) : []
-    const reused = held && held.status === "pending" && known && held.customerId === known.id ? held : undefined
+    // A customer who reloads or comes back later picks up their own pending pass (the newest one this hour) rather than
+    // starting another: there is no cart to lose, and the hourly limit is then only ever reached by something odd.
+    const [resumed] = visitor && known && !held ? await newestPendingPass(ctx.db, org, known.id, ctx.now) : []
+    const candidate = held ?? resumed
+    const reused = candidate && candidate.status === "pending" && known && candidate.customerId === known.id ? candidate : undefined
     if (visitor && !reused && known && (await pendingPassesLastHour(ctx.db, org, known.id, ctx.now)) >= MAX_PENDING_PER_HOUR)
       throw new ApiError("rate_limited", "Too many passes started for this email in the last hour. Try again later or call us.", [{ path: "reason", message: "too-many" }])
     const customerRow =
       known ??
-      (await ctx.db.insert(s.customer).values({ organizationId: org, ...input.customer, email, leadSource: input.customer.leadSource ?? "season-pass" }).returning())[0]!
-    const { state: _state, zip: _zip, ...address } = input.property
+      (await ctx.db.insert(s.customer).values({ organizationId: org, ...input.customer, ...contact, leadSource: input.customer.leadSource ?? "season-pass" }).returning())[0]!
+    const { state: _state, zip: _zip, ...address } = { ...input.property, address: cleanText(input.property.address) }
     void _state
     void _zip
     const [knownProperty] = await ctx.db
@@ -137,13 +145,13 @@ export const passesCreate = defineHandler({
       turnOnPreference: input.turnOnPreference,
       blowoutPreference: input.blowoutPreference,
       needsCustomerHome: input.needsCustomerHome,
-      accessNote: input.accessNote ?? null,
+      accessNote,
     }
     let pass: typeof s.seasonPass.$inferSelect | undefined = reused
     if (reused) {
       // A customer who went back changes the answers on the pass they hold; its visits are rebuilt, none has a day yet.
       await ctx.db.update(s.seasonPass).set({ ...fields, season, updatedAt: ctx.now }).where(eq(s.seasonPass.id, reused.id))
-      await ctx.db.update(s.customer).set({ firstName: input.customer.firstName, phone: input.customer.phone ?? customerRow.phone, updatedAt: ctx.now }).where(eq(s.customer.id, customerRow.id))
+      await ctx.db.update(s.customer).set({ firstName: contact.firstName, phone: contact.phone ?? customerRow.phone, updatedAt: ctx.now }).where(eq(s.customer.id, customerRow.id))
       await ctx.db.delete(s.visit).where(eq(s.visit.passId, reused.id))
     }
     for (let attempt = 0; attempt < 3 && !pass; attempt++) {

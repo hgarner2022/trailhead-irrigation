@@ -1,6 +1,6 @@
 import "server-only"
 import { resolveMx } from "node:dns/promises"
-import { and, eq, gt, inArray, lt, sql } from "drizzle-orm"
+import { and, desc, eq, gt, inArray, lt, sql } from "drizzle-orm"
 import * as s from "@/db/schema"
 import type { Database } from "@/db/types"
 import { canContinue, initialState, STEPS, type CheckoutState } from "@/app/(checkout)/season-pass/checkout/_screens/checkout-state"
@@ -68,6 +68,17 @@ export async function pendingPassesLastHour(db: Database, organizationId: string
     .from(s.seasonPass)
     .where(and(eq(s.seasonPass.organizationId, organizationId), eq(s.seasonPass.customerId, customerId), eq(s.seasonPass.status, "pending"), gt(s.seasonPass.createdAt, since)))
   return row?.n ?? 0
+}
+
+/** The customer's newest pending pass from the last hour, if any: the one a reload or a return visit resumes. */
+export async function newestPendingPass(db: Database, organizationId: string, customerId: string, now: Date) {
+  const since = new Date(now.getTime() - 60 * 60 * 1000)
+  return db
+    .select()
+    .from(s.seasonPass)
+    .where(and(eq(s.seasonPass.organizationId, organizationId), eq(s.seasonPass.customerId, customerId), eq(s.seasonPass.status, "pending"), gt(s.seasonPass.createdAt, since)))
+    .orderBy(desc(s.seasonPass.createdAt))
+    .limit(1)
 }
 
 /** Removes the pending passes (and their visits) nobody paid for within the hour. Returns how many. Customers and properties stay. */

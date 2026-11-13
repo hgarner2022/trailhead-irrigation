@@ -13,9 +13,12 @@ import type { Pass, Town } from "@/lib/admin/types"
 import { createSetupSession } from "@/lib/stripe/checkout"
 
 /** The Stripe session lasts 30 minutes; the pending pass is swept after 60. */
-// Stripe refuses a session that expires sooner than 30 minutes after IT receives the request, so the expiry is set a
-// little past that, from the clock at the moment the session is made rather than the request's start.
-const SESSION_MINUTES = 35
+// Stripe refuses a session that expires sooner than 30 minutes after IT receives the request. The expiry and the
+// idempotency key are both taken from the same ten-minute bucket of the clock, so a customer who presses Continue three
+// times inside that bucket sends Stripe the identical request three times and gets the one session back each time
+// (Stripe requires identical parameters under one key), and the expiry is never under 35 minutes out.
+const BUCKET_MS = 10 * 60 * 1000
+const SESSION_MINUTES = 45
 
 export interface CheckoutDeps {
   /** a context for the public checkout principal; `passId` is the pass `passes.activate` may touch */
@@ -71,12 +74,14 @@ export async function beginCheckoutWith(deps: CheckoutDeps, f: CheckoutSubmissio
     const ctx = await deps.ctx()
     const pass = await callApi(ctx, passesCreate, createInput(f, passId))
     const [customer] = await ctx.db.select({ stripeCustomerId: s.customer.stripeCustomerId }).from(s.customer).where(eq(s.customer.id, pass.customerId))
+    const bucket = Math.floor(Date.now() / BUCKET_MS) * BUCKET_MS
     const session = await createSetupSession(deps.stripe(), {
       passId: pass.id,
       customerId: customer?.stripeCustomerId,
       email: f.email,
       name: f.firstName,
-      expiresAt: Math.floor(Date.now() / 1000) + SESSION_MINUTES * 60,
+      expiresAt: Math.floor(bucket / 1000) + SESSION_MINUTES * 60,
+      idempotencyKey: `setup-${pass.id}-${bucket}`,
     })
     return { ok: true, passId: pass.id, sessionId: session.id, clientSecret: session.clientSecret }
   } catch (error) {
