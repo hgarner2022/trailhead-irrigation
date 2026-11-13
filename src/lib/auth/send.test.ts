@@ -8,7 +8,9 @@ describe("sendVerificationRequest", () => {
     expect(send).toHaveBeenCalledOnce()
     const message = send.mock.calls[0]![0]
     expect(message.to).toBe("a@b.com")
-    expect(message.text).toContain("https://www.example.com/cb?token=x")
+    // the link in the email is the confirm page carrying the callback, never the callback itself
+    expect(message.text).toContain("https://www.example.com/sign-in/confirm?to=%2Fcb%3Ftoken%3Dx")
+    expect(message.text).not.toContain("https://www.example.com/cb?token=x")
     expect(message.text).toContain("The link works one time and expires in 10 minutes.")
   })
 })
