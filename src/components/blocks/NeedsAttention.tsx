@@ -24,6 +24,8 @@ export interface NeedsAttentionProps {
   now?: string
   /** runs a row's one action (a server action in the app); without it the button only logs, as in the catalog */
   onAction?: (item: Attention) => Promise<ActionResult | void>
+  /** a tech reads the list; the rows keep their links and lose their buttons */
+  readOnly?: boolean
   className?: string
 }
 
@@ -46,7 +48,7 @@ export function attentionHref(item: Attention): string | undefined {
   return undefined
 }
 
-function Row({ item, now, onAction }: { item: Attention; now: string; onAction?: NeedsAttentionProps["onAction"] }) {
+function Row({ item, now, onAction, readOnly }: { item: Attention; now: string; onAction?: NeedsAttentionProps["onAction"]; readOnly?: boolean }) {
   const { icon: Icon, tone, name } = KINDS[item.kind]
   const body = (
     <>
@@ -78,12 +80,12 @@ function Row({ item, now, onAction }: { item: Attention; now: string; onAction?:
       ) : (
         <div className={layout}>{body}</div>
       )}
-      <AttentionAction item={item} onAction={onAction} />
+      {!readOnly && <AttentionAction item={item} onAction={onAction} />}
     </li>
   )
 }
 
-export function NeedsAttention({ items, now, onAction, className }: NeedsAttentionProps) {
+export function NeedsAttention({ items, now, onAction, readOnly, className }: NeedsAttentionProps) {
   if (items.length === 0) {
     return <EmptyState className={className} title="Nothing needs you right now" line="Failed charges, missing jobs and expiring cards show up here." />
   }
@@ -91,7 +93,7 @@ export function NeedsAttention({ items, now, onAction, className }: NeedsAttenti
   return (
     <ul data-slot="needs-attention" className={cn("divide-y divide-border", className)}>
       {items.map((item, i) => (
-        <Row key={`${item.kind}-${item.passId ?? i}`} item={item} now={at} onAction={onAction} />
+        <Row key={`${item.kind}-${item.passId ?? i}`} item={item} now={at} onAction={onAction} readOnly={readOnly} />
       ))}
     </ul>
   )

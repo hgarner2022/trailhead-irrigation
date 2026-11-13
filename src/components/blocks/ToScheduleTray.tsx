@@ -15,6 +15,8 @@ import { EmptyState } from "./EmptyState"
 export interface ToScheduleTrayProps {
   items: TrayItem[]
   onPlace?: (item: TrayItem) => void
+  /** hides Place for a person who reads the schedule and does not change it */
+  readOnly?: boolean
   className?: string
 }
 
@@ -26,7 +28,7 @@ export function trayLine(item: TrayItem): string {
   return `${capital(KIND_WORDS[item.kind])}, ${when}`
 }
 
-export function ToScheduleTray({ items, onPlace, className }: ToScheduleTrayProps) {
+export function ToScheduleTray({ items, onPlace, readOnly, className }: ToScheduleTrayProps) {
   if (items.length === 0) return <EmptyState className={className} title="Nothing to schedule" line="Pass visits and open jobs waiting for a day show here." />
   return (
     <ol data-slot="to-schedule-tray" className={cn("divide-y divide-border", className)}>
@@ -38,7 +40,7 @@ export function ToScheduleTray({ items, onPlace, className }: ToScheduleTrayProp
           </span>
           {item.awaitingPick ? (
             <span data-slot="tray-waiting" className="shrink-0 text-xs font-medium text-primary-deep">Customer picks the day</span>
-          ) : (
+          ) : readOnly ? null : (
             <Button size="sm" variant="outline" aria-label={`Place ${item.clientName}, ${trayLine(item).toLowerCase()}`} onClick={() => onPlace?.(item)}>
               Place
             </Button>

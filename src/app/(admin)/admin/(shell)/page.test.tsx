@@ -3,6 +3,8 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest"
 import { renderToStaticMarkup } from "react-dom/server"
 import type { ReactElement } from "react"
 import type { TestDb } from "@/db/test-db"
+import { callApi } from "@/api/core/call"
+import { apiKeysCreate } from "@/api/v1/apikeys/handlers"
 import { apiDb, ctxFor, owner, tech } from "@/api/test-helpers"
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import type { AdminData } from "@/lib/admin/types"
@@ -22,6 +24,7 @@ import PassesPage from "./passes/page"
 import RevenuePage from "./revenue/page"
 import CustomersPage from "./customers/page"
 import SettingsPage from "./settings/page"
+import { loadKeys } from "./settings-keys"
 
 const fixture = snapshot as AdminData
 let db: TestDb
@@ -69,10 +72,23 @@ describe("the admin pages", () => {
     expect(settings).toContain("Truck 1")
   })
 
-  it("renders for a tech too, who reads the same data", async () => {
+  it("lists the live API keys on Settings in the tab's words", async () => {
+    await callApi(ctxFor(db, owner), apiKeysCreate, { name: "Day view on the phones", scopes: ["read", "write"] })
+    // The keys tab is not drawn until it is opened, so read what the page hands the screen.
+    const keys = await loadKeys(owner)
+    expect(keys).toEqual([expect.objectContaining({ name: "Day view on the phones", scopes: ["read", "write-passes", "write-schedule", "send-messages"] })])
+    expect(await loadKeys(tech)).toEqual([])
+  })
+
+  it("renders for a tech too, who reads the same data and sees no buttons", async () => {
     state.principal = tech
     try {
       expect(html(await PassesPage(search({})))).toContain('data-slot="passes-screen"')
+      const settings = html(await SettingsPage())
+      expect(settings).toContain("You can read the settings; a manager changes them.")
+      expect(settings).not.toContain(">Save<")
+      expect(html(await HomePage())).not.toContain('data-slot="attention-action"')
+      expect(html(await SchedulePage(search({})))).not.toContain("Schedule 1 visit")
     } finally {
       state.principal = owner
     }

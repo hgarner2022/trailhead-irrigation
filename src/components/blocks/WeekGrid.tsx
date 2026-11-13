@@ -32,7 +32,8 @@ export interface WeekGridProps {
   timeZone: string
   selectedId?: string
   onSelect: (visitId: string | undefined) => void
-  onMove: (visitId: string, truckId: string, dayIso: string) => void
+  /** a drop on a cell; without it the visits are not draggable (a tech reads the week) */
+  onMove?: (visitId: string, truckId: string, dayIso: string) => void
   onWeekChange: (weekStart: string) => void
   className?: string
 }
@@ -85,7 +86,7 @@ function Cell({ truck, day, visits, areas, selectedId, onSelect, onMove }: { tru
   const onDrop = (event: DragEvent<HTMLTableCellElement>) => {
     event.preventDefault()
     const id = event.dataTransfer.getData("text/plain")
-    if (id) onMove(id, truck.id, day)
+    if (id) onMove?.(id, truck.id, day)
   }
   return (
     <td
@@ -93,12 +94,12 @@ function Cell({ truck, day, visits, areas, selectedId, onSelect, onMove }: { tru
       data-day={day}
       data-truck={truck.id}
       onDragOver={working ? (event) => event.preventDefault() : undefined}
-      onDrop={working ? onDrop : undefined}
+      onDrop={working && onMove ? onDrop : undefined}
       className={cn("h-24 min-w-32 space-y-1 border-l border-border p-1.5 align-top", !working && "bg-stone")}
     >
       {!working && visits.length === 0 && <span className="sr-only">Not a working day</span>}
       {visits.map((visit) => (
-        <VisitBlock key={visit.id} visit={visit} areas={areas} selected={visit.id === selectedId} onSelect={onSelect} draggable />
+        <VisitBlock key={visit.id} visit={visit} areas={areas} selected={visit.id === selectedId} onSelect={onSelect} draggable={Boolean(onMove)} />
       ))}
     </td>
   )

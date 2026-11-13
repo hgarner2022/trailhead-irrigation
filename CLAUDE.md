@@ -30,7 +30,7 @@ src/
     blog/                       # 15 blog posts
     about/, contact/, book/     # Standard
     api/contact/                # Contact form POST handler
-    (admin)/admin/_screens/     # Admin dashboard screens (Home, Passes, October, Revenue, Customers) as Storybook stories; no routes yet
+    (admin)/admin/_screens/     # Admin dashboard screens (Home, Schedule, Passes, Revenue, Customers, Settings) as Storybook stories; served live by the pages in (admin)/admin/(shell)/ (page per section, layout = AdminShell, actions.ts = every manager action through callApi; a tech gets readOnly)
     (checkout)/season-pass/checkout/_screens/  # Seven-step Season Pass checkout prototype (CheckoutFlow): address type-ahead, zones, July add-on, timing, contact, card, done
     (account)/account/pass/                    # Customer pass page: page.tsx (guarded, reads through the API), actions.ts, pass-from-api.ts; _screens/ holds PassPageScreen
   lib/nav.ts                    # ONE source of truth for navigation: SERVICE_GROUPS, CITY_LINKS, PRIMARY_LINKS, getSeasonalPromo()

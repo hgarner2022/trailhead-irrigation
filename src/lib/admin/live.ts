@@ -80,7 +80,7 @@ export async function getLiveAdminData(ctx: Ctx): Promise<AdminData> {
     visits,
     passes,
     messages,
-    trucks: trucks.data.map((t): Truck => ({ id: t.id, name: t.name, ...(t.jobberUserId ? { jobberUserId: t.jobberUserId } : {}), workingDays: t.workingDays, capacityByKind: t.capacityByKind })),
+    trucks: trucks.data.filter((t) => t.active).map((t): Truck => ({ id: t.id, name: t.name, ...(t.jobberUserId ? { jobberUserId: t.jobberUserId } : {}), workingDays: t.workingDays, capacityByKind: t.capacityByKind })),
     areas: areas.data.map((a) => ({ id: a.id, name: a.name, towns: a.towns as Town[] })),
     settings: rest as never,
     settingsChanges: changes,

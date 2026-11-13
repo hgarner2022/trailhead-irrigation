@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card"
 import { CardTitleHeading } from "@/components/blocks/CardTitleHeading"
-import { NeedsAttention } from "@/components/blocks/NeedsAttention"
+import { NeedsAttention, type NeedsAttentionProps } from "@/components/blocks/NeedsAttention"
 import { PageHeader } from "@/components/blocks/PageHeader"
 import { SeasonLine } from "@/components/blocks/SeasonLine"
 import { StatTile } from "@/components/blocks/StatTile"
@@ -12,6 +12,7 @@ import type { AdminData, Visit } from "@/lib/admin/types"
 import { TIME_ZONE } from "@/lib/admin/format"
 import { committedByMonth, visitsOn } from "@/lib/admin/metrics"
 import { SEASON, clockTime, dayHeading, greeting, notClosedAttention, pageContext, seasonDescription, tileModels, tomorrowOf, upcomingWindow, windowTitle } from "./home-model"
+import type { Outcome } from "./action-types"
 import { ScheduleSeasonButton } from "./ScheduleSeasonButton"
 
 // What Hannah opens to in the morning: a greeting, the four numbers that
@@ -27,6 +28,12 @@ export interface HomeScreenProps {
   data: AdminData
   /** ISO datetime the greeting, the date, "updated" and the day lists are read from */
   today: string
+  /** a tech sees the day and changes nothing: no Schedule button, no row actions */
+  readOnly?: boolean
+  /** the season prompt's Schedule button; a server action in the app */
+  onSchedule?: (window: "turn-on" | "inspection" | "blowout") => Promise<Outcome<{ placed: number; unplaced: number }>>
+  /** a Needs attention row's button; a server action in the app */
+  onAttentionAction?: NeedsAttentionProps["onAction"]
 }
 
 function VisitRow({ visit }: { visit: Visit }) {
@@ -62,7 +69,7 @@ function Day({ id, heading, visits }: { id: string; heading: string; visits: Vis
   )
 }
 
-export function HomeScreen({ data, today }: HomeScreenProps) {
+export function HomeScreen({ data, today, readOnly = false, onSchedule, onAttentionAction }: HomeScreenProps) {
   const tomorrow = tomorrowOf(today)
   const bars = committedByMonth(data.passes, SEASON)
   const upcoming = upcomingWindow(data.settings, today)
@@ -82,7 +89,7 @@ export function HomeScreen({ data, today }: HomeScreenProps) {
             <Button variant="outline" asChild>
               <Link href="/admin/settings">Open settings</Link>
             </Button>
-            <ScheduleSeasonButton season={upcoming} />
+            {!readOnly && <ScheduleSeasonButton season={upcoming} onSchedule={onSchedule} />}
           </CardContent>
         </Card>
       )}
@@ -124,7 +131,7 @@ export function HomeScreen({ data, today }: HomeScreenProps) {
             <CardTitleHeading>Needs attention</CardTitleHeading>
           </CardHeader>
           <CardContent>
-            <NeedsAttention items={attention} now={today} />
+            <NeedsAttention items={attention} now={today} onAction={readOnly ? undefined : onAttentionAction} readOnly={readOnly} />
           </CardContent>
         </Card>
       </div>

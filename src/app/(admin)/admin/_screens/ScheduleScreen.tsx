@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useTransition } from "react"
 import { ChevronLeft, ChevronRight, TriangleAlert } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
@@ -17,6 +17,7 @@ import { KIND_WORDS, TIME_ZONE, shortDate, writtenDate } from "@/lib/admin/forma
 import { cn } from "@/lib/utils"
 import { clockTime } from "./home-model"
 import { addDays, dayOf, dayVisits, weekOf, weekVisits } from "@/lib/admin/calendar"
+import type { Outcome } from "./action-types"
 import { ScheduleDayMap } from "./ScheduleDayMap"
 import { ScheduleMoveTo } from "./ScheduleMoveTo"
 import { exceptionCount, firstWorkingDay, moveOutcome, placeVisit, scheduleItems, trayItems, weekContext, type TrayItem } from "./schedule-model"
@@ -45,7 +46,15 @@ export interface ScheduleScreenProps {
   defaultWeek?: string
   /** the visit selected on first render, from `?visit=` */
   defaultSelectedId?: string
+  /** a tech reads the week and changes nothing: no Schedule, Place, Move or drag */
+  readOnly?: boolean
+  /** Schedule: runs the scheduler for one window; without it the button only moves blocks locally, as in the catalog */
+  onSchedule?: (window: "turn-on" | "inspection" | "blowout") => Promise<Outcome<{ placed: number; unplaced: number }>>
+  /** Place and drag: put a visit on a truck and a day; a refusal's words show and the block snaps back */
+  onMove?: (visitId: string, truckId: string, dayIso: string) => Promise<Outcome>
 }
+
+const WINDOWS = ["turn-on", "inspection", "blowout"] as const
 
 function DayStepper({ day, today, onChange }: { day: string; today: string; onChange: (day: string) => void }) {
   return (
@@ -123,10 +132,17 @@ function Exceptions({ visits }: { visits: Visit[] }) {
   )
 }
 
-export function ScheduleScreen({ data, today, defaultTab = "week", defaultDay, defaultWeek, defaultSelectedId }: ScheduleScreenProps) {
+export function ScheduleScreen({ data, today, defaultTab = "week", defaultDay, defaultWeek, defaultSelectedId, readOnly = false, onSchedule, onMove }: ScheduleScreenProps) {
   const todayDay = dayOf(today, TIME_ZONE)
   const { trucks, areas } = data.settings
   const [visits, setVisits] = useState(data.visits)
+  const [seen, setSeen] = useState(data.visits)
+  const [pending, startTransition] = useTransition()
+  // A refreshed `data` (after an action) replaces what the screen holds.
+  if (data.visits !== seen) {
+    setSeen(data.visits)
+    setVisits(data.visits)
+  }
   const [weekStart, setWeekStart] = useState(() => weekOf(defaultDay ?? defaultWeek ?? today, TIME_ZONE))
   const [day, setDay] = useState(defaultDay ?? todayDay)
   const [selectedId, setSelectedId] = useState<string | undefined>(defaultSelectedId)
@@ -138,26 +154,55 @@ export function ScheduleScreen({ data, today, defaultTab = "week", defaultDay, d
   const placeable = tray.filter((i) => !i.awaitingPick).length
 
   const scheduleAll = () => {
+    if (onSchedule) {
+      // The scheduler works one window at a time; a tray can hold more than one, and open jobs are not its to place.
+      const windows = [...new Set(tray.filter((i) => !i.awaitingPick && WINDOWS.includes(i.kind as never)).map((i) => i.kind as (typeof WINDOWS)[number]))]
+      startTransition(async () => {
+        let placed = 0
+        let unplaced = 0
+        for (const window of windows) {
+          const out = await onSchedule(window)
+          if (!out.ok) return setAnnouncement(out.message)
+          placed += out.data.placed
+          unplaced += out.data.unplaced
+        }
+        const left = unplaced ? ` ${unplaced} could not be placed; Home lists them.` : ""
+        setAnnouncement(`${placed} ${placed === 1 ? "visit" : "visits"} scheduled; the customers get their dates.${left}`)
+      })
+      return
+    }
     console.info("schedule", weekStart, tray.filter((i) => !i.awaitingPick).map((i) => i.id))
     const outcome = scheduleItems(visits, tray, trucks, weekStart, TIME_ZONE)
     setVisits(outcome.visits)
     const waiting = outcome.waiting ? ` ${outcome.waiting} ${outcome.waiting === 1 ? "customer picks their own day and stays" : "customers pick their own days and stay"} in the list.` : ""
     setAnnouncement(`${outcome.placed} ${outcome.placed === 1 ? "visit" : "visits"} scheduled on the week of ${writtenDate(weekStart)}; the customers get their dates.${waiting}`)
   }
+  /** Sends the move to the API; the block shows where it is going at once and goes back with the API's words if it is refused. */
+  const send = (visitId: string, truckId: string, dayIso: string, before: typeof visits, done: string) =>
+    startTransition(async () => {
+      const out = await onMove!(visitId, truckId, dayIso)
+      if (out.ok) return setAnnouncement(done)
+      setVisits(before)
+      setAnnouncement(out.message)
+    })
   const move = (visitId: string, truckId: string, dayIso: string) => {
-    console.info("move visit", visitId, truckId, dayIso)
+    if (!onMove) console.info("move visit", visitId, truckId, dayIso)
     const outcome = moveOutcome(visits, visitId, truckId, dayIso, trucks, TIME_ZONE)
     if (outcome.moved) setVisits(outcome.visits)
+    if (onMove) return send(visitId, truckId, dayIso, visits, outcome.moved ? outcome.message : "Moved.")
     setAnnouncement(outcome.message)
   }
   const place = (item: TrayItem) => {
     const truck = trucks[0]
     if (!truck) return
     const dayIso = firstWorkingDay(truck, weekStart)
-    console.info("place visit", item.id, truck.id, dayIso)
+    if (!onMove) console.info("place visit", item.id, truck.id, dayIso)
+    const before = visits
     setVisits((v) => placeVisit(v, item, truck.id, dayIso, TIME_ZONE))
     setSelectedId(item.id)
-    setAnnouncement(`${item.clientName} scheduled on ${truck.name}, ${writtenDate(dayIso)}; they get the date. Drag it if another day is better.`)
+    const done = `${item.clientName} scheduled on ${truck.name}, ${writtenDate(dayIso)}; they get the date. Drag it if another day is better.`
+    if (onMove) return send(item.id, truck.id, dayIso, before, done)
+    setAnnouncement(done)
   }
   const changeDay = (next: string) => {
     setDay(next)
@@ -171,8 +216,8 @@ export function ScheduleScreen({ data, today, defaultTab = "week", defaultDay, d
           title="Schedule"
           context={weekContext(weekStart, week)}
           actions={
-            placeable > 0 ? (
-              <Button onClick={scheduleAll}>{`Schedule ${placeable} ${placeable === 1 ? "visit" : "visits"}`}</Button>
+            readOnly ? undefined : placeable > 0 ? (
+              <Button onClick={scheduleAll} disabled={pending}>{`Schedule ${placeable} ${placeable === 1 ? "visit" : "visits"}`}</Button>
             ) : (
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -185,7 +230,7 @@ export function ScheduleScreen({ data, today, defaultTab = "week", defaultDay, d
             )
           }
         />
-        {selected && <ScheduleMoveTo key={`${selected.id}-${selected.truckId}-${selected.startAt}`} visit={selected} trucks={trucks} weekStart={weekStart} timeZone={TIME_ZONE} onMove={move} />}
+        {selected && !readOnly && <ScheduleMoveTo key={`${selected.id}-${selected.truckId}-${selected.startAt}`} visit={selected} trucks={trucks} weekStart={weekStart} timeZone={TIME_ZONE} onMove={move} />}
         <p role="status" className="text-sm text-muted-foreground empty:sr-only">
           {announcement}
         </p>
@@ -206,7 +251,7 @@ export function ScheduleScreen({ data, today, defaultTab = "week", defaultDay, d
                 timeZone={TIME_ZONE}
                 selectedId={selectedId}
                 onSelect={setSelectedId}
-                onMove={move}
+                onMove={readOnly ? undefined : move}
                 onWeekChange={setWeekStart}
               />
               <Card className="min-w-0 self-start">
@@ -214,7 +259,7 @@ export function ScheduleScreen({ data, today, defaultTab = "week", defaultDay, d
                   <CardTitleHeading>{`To schedule${tray.length ? ` (${tray.length})` : ""}`}</CardTitleHeading>
                 </CardHeader>
                 <CardContent>
-                  <ToScheduleTray items={tray} onPlace={place} />
+                  <ToScheduleTray items={tray} onPlace={place} readOnly={readOnly} />
                 </CardContent>
               </Card>
             </div>
