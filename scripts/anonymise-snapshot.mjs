@@ -12,7 +12,13 @@
 // into the six we serve, no emails, phones, street addresses or last names.
 // Passes are invented: Jobber has no Season Pass product yet. Each carries a
 // timing preference for the turn-on and the blowout (earlier, recommended,
-// later; no capacity anywhere) and the consent recorded at checkout.
+// later; no capacity anywhere) and the consent recorded at checkout. The
+// organization settings (trucks, areas, windows, messages) and the schedule
+// fields on visits (truck, stop order, point, proposed, exception) are
+// invented too: Jobber has no trucks, no routing order and no geocodes in the
+// pull, so the trucks follow the audit (one all year, a second from late
+// September) and every dated 2026 visit gets a deterministic point near its
+// town's centre.
 
 import { readFileSync, writeFileSync, statSync } from "node:fs"
 import { resolve, dirname } from "node:path"
@@ -318,6 +324,148 @@ const attention = [
   { kind: "card-expiring", passId: "p5", message: "Card on file expires before the October blowout", since: "2026-11-12T08:00:00Z" },
 ]
 
+// Settings (invented) -------------------------------------------------------
+// The audit: one person all year, a second from Sep 21 through the blowouts;
+// about nine visits a day per truck in October, two to five otherwise; blowouts
+// at 30 minutes, turn-ons at 60 to 120, inspections at 90, repairs at 120.
+const TRUCKS = [
+  {
+    id: "truck-1",
+    name: "Truck 1",
+    jobberUserId: "jobber-user-1",
+    workingDays: ["mon", "tue", "wed", "thu", "fri"],
+    capacityByKind: { "turn-on": 6, inspection: 5, blowout: 10, repair: 4, other: 2 },
+  },
+  {
+    // Runs in blowout season only (late September through October), six days a week.
+    id: "truck-2",
+    name: "Truck 2",
+    jobberUserId: "jobber-user-2",
+    workingDays: ["mon", "tue", "wed", "thu", "fri", "sat"],
+    capacityByKind: { "turn-on": 6, inspection: 5, blowout: 10, repair: 3, other: 2 },
+  },
+]
+const AREAS = [
+  { id: "area-north", name: "Erie and Firestone", towns: ["Erie", "Firestone"] },
+  { id: "area-longmont", name: "Longmont", towns: ["Longmont"] },
+  { id: "area-south", name: "Louisville, Lafayette and Broomfield", towns: ["Louisville", "Lafayette", "Broomfield"] },
+]
+const WINDOWS = [
+  { kind: "turn-on", opensOn: "2027-04-26", closesOn: "2027-05-31", leadWeeks: 4 },
+  { kind: "inspection", opensOn: "2027-07-01", closesOn: "2027-07-31", leadWeeks: 4 },
+  { kind: "blowout", opensOn: "2027-10-01", closesOn: "2027-10-31", leadWeeks: 4 },
+]
+// Fall runs north and high first, where the first hard freeze lands; spring the other way.
+const FALL_TOWN_ORDER = ["Firestone", "Erie", "Longmont", "Broomfield", "Louisville", "Lafayette"]
+const MESSAGES = [
+  {
+    key: "purchase-confirmation",
+    channel: "email",
+    subject: "Your Season Pass is set",
+    body: "Hi {firstName}, thanks for reserving your season with Trailhead. Your turn-on, mid-season check and blowout are on our list, and we will send the day for each one as the season comes around. Your pass and the dates live at your pass page any time you want a look.",
+    enabled: true,
+  },
+  {
+    key: "date-set",
+    channel: "email",
+    subject: "Your {visit} is booked for {date}",
+    body: "Hi {firstName}, your {visit} is booked for {date}. Your street is on our {truck} day, so we can give the yard proper time. If that day does not work, reply to this email and we will find another.",
+    enabled: true,
+  },
+  {
+    key: "day-before",
+    channel: "sms",
+    body: "Trailhead here. Your {visit} is tomorrow, {date}. Please leave the gate unlatched and the controller reachable. Reply STOP to stop texts.",
+    enabled: true,
+  },
+  {
+    key: "on-the-way",
+    channel: "sms",
+    body: "Trailhead is on the way for your {visit}. We will be there within the hour.",
+    enabled: true,
+  },
+  {
+    key: "receipt",
+    channel: "email",
+    subject: "Your {visit} is done",
+    body: "Hi {firstName}, your {visit} is done and the receipt is attached. The next visit on your pass is the {nextVisit}, and we will send the day when it is set. Thank you for trusting us with the yard.",
+    enabled: true,
+  },
+  {
+    key: "renewal",
+    channel: "email",
+    subject: "Keep your spot for next season",
+    body: "Hi {firstName}, your season is wrapped up and next season's passes are open. Renew now and your blowout date and your repair priority carry over. The price stays the same per visit.",
+    enabled: false,
+  },
+]
+const settings = {
+  trucks: TRUCKS,
+  areas: AREAS,
+  windows: WINDOWS,
+  bufferPercentEarly: 20,
+  bufferPercentLate: 12,
+  fallTownOrder: FALL_TOWN_ORDER,
+  springTownOrder: [...FALL_TOWN_ORDER].reverse(),
+  firmDaysAhead: 7,
+  messages: MESSAGES,
+}
+const settingsChanges = [
+  { id: "sc1", at: "2026-11-05T16:20:00Z", who: "Hannah", field: "Truck 2 working days", from: "Mon to Fri", to: "Mon to Sat" },
+  { id: "sc2", at: "2026-11-06T22:05:00Z", who: "Ryan", field: "Buffer, first two weeks", from: "25%", to: "20%" },
+  { id: "sc3", at: "2026-11-09T15:48:00Z", who: "Hannah", field: "Blowout window opens", from: "October 5", to: "October 1" },
+  { id: "sc4", at: "2026-11-11T20:30:00Z", who: "Hannah", field: "Day-before text", from: "Off", to: "On" },
+]
+
+// Schedule fields on visits (invented) -------------------------------------
+// Every dated 2026 visit rides Truck 1, except in October, where the two
+// trucks alternate. Stop order counts up through each truck's Mountain day.
+// The point is the town centre plus a deterministic jitter of up to about
+// 1.5 km, from the visit's number, so the map has something to draw.
+const TOWN_CENTRES = {
+  Erie: [40.05, -105.05],
+  Longmont: [40.167, -105.102],
+  Louisville: [39.978, -105.132],
+  Lafayette: [39.994, -105.09],
+  Firestone: [40.113, -104.936],
+  Broomfield: [39.92, -105.087],
+}
+const denverDay = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Denver", year: "numeric", month: "2-digit", day: "2-digit" })
+const jitter = (n, salt) => ((((n * 7919 + salt * 104729) % 41) - 20) / 20) * 0.015
+const stopsPerTruckDay = new Map()
+for (const v of visits) {
+  if (!v.startAt?.startsWith("2026") || v.status === "cancelled") continue
+  const n = Number(v.id.slice(1))
+  const day = denverDay.format(new Date(v.startAt))
+  const october = day.startsWith("2026-10")
+  v.truckId = october && n % 2 === 0 ? "truck-2" : "truck-1"
+  const key = `${v.truckId}|${day}`
+  const stop = (stopsPerTruckDay.get(key) ?? 0) + 1
+  stopsPerTruckDay.set(key, stop)
+  v.stopOrder = stop
+  const [lat, lng] = TOWN_CENTRES[v.town]
+  v.lat = Number((lat + jitter(n, 1)).toFixed(5))
+  v.lng = Number((lng + jitter(n, 2)).toFixed(5))
+}
+// The scheduler's first batch: the eight scheduled visits on Nov 12 and 13,
+// waiting for Ryan. Two earlier visits were moved in Jobber and are logged.
+const proposedDays = new Set(["2026-11-12", "2026-11-13"])
+const exceptionDays = ["2026-11-10", "2026-11-11"]
+let proposedCount = 0
+const exceptionsGiven = new Set()
+for (const v of visits) {
+  if (!v.startAt?.startsWith("2026-11") || v.status === "cancelled") continue
+  const day = denverDay.format(new Date(v.startAt))
+  if (v.status === "scheduled" && proposedDays.has(day) && proposedCount < 8) {
+    v.proposed = true
+    proposedCount++
+  } else if (exceptionDays.includes(day) && !exceptionsGiven.has(day)) {
+    exceptionsGiven.add(day)
+    v.exception = { kind: "moved-in-jobber", at: `${day}T13:30:00Z`, note: `Ryan moved it from the day before in Jobber` }
+  }
+}
+if (proposedCount !== 8 || exceptionsGiven.size !== 2) throw new Error(`proposed ${proposedCount}, exceptions ${exceptionsGiven.size}`)
+
 // Write ---------------------------------------------------------------------
 const data = {
   organizationId: "org_trailhead",
@@ -329,6 +477,8 @@ const data = {
   passes,
   monthTotals,
   attention,
+  settings,
+  settingsChanges,
 }
 writeFileSync(OUT, JSON.stringify(data, null, 2) + "\n")
 

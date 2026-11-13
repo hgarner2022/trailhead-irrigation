@@ -61,6 +61,16 @@ export interface Client {
   consent?: Consent
 }
 
+/**
+ * A move Ryan made in Jobber after the app placed the visit. The app accepts
+ * it and logs it here instead of treating its own choice as the truth.
+ */
+export interface VisitException {
+  kind: "moved-in-jobber"
+  at: string
+  note: string
+}
+
 export interface Visit {
   id: string
   clientId: string
@@ -71,6 +81,16 @@ export interface Visit {
   startAt?: string
   isPass: boolean
   jobberUrl: string
+  /** the truck the visit rides on; absent until the schedule places it */
+  truckId?: string
+  /** placed by the scheduler and waiting for Ryan to approve the batch */
+  proposed?: boolean
+  /** 1-based position in the truck's day; from Jobber's route tool in the transition */
+  stopOrder?: number
+  /** the property's point, geocoded once when the customer is created */
+  lat?: number
+  lng?: number
+  exception?: VisitException
 }
 
 export interface Quote {
@@ -131,6 +151,74 @@ export interface MonthTotal {
   visits: number
 }
 
+export type Weekday = "mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun"
+
+/** The visit kinds a truck's capacity is counted in; install rides under "other". */
+export type CapacityKind = "turn-on" | "inspection" | "blowout" | "repair" | "other"
+
+/** A truck is a row, not a count: its working days and how many visits of each kind fit in its day. */
+export interface Truck {
+  id: string
+  name: string
+  /** the Jobber user the truck's visits are assigned to while Jobber is the field display */
+  jobberUserId?: string
+  workingDays: Weekday[]
+  capacityByKind: Record<CapacityKind, number>
+}
+
+/** The towns a truck works on one day: one town or two or three that sit together. */
+export interface AreaGroup {
+  id: string
+  name: string
+  towns: Town[]
+}
+
+/** When a season's pass visits may land, and how many weeks ahead the scheduler opens it. */
+export interface SeasonWindow {
+  kind: "turn-on" | "inspection" | "blowout"
+  /** ISO dates */
+  opensOn: string
+  closesOn: string
+  leadWeeks: number
+}
+
+/** One customer message the app sends, in Trailhead's voice. The body may carry {firstName}, {visit}, {date} and {truck}. */
+export interface MessageTemplate {
+  key: string
+  channel: "email" | "sms"
+  subject?: string
+  body: string
+  enabled: boolean
+}
+
+/** Everything the Settings page edits; the scheduler reads it on its next run. */
+export interface OrganizationSettings {
+  trucks: Truck[]
+  areas: AreaGroup[]
+  windows: SeasonWindow[]
+  /** percent of a truck-day held back for repairs and weather in a season's first two weeks */
+  bufferPercentEarly: number
+  /** the same after the first two weeks */
+  bufferPercentLate: number
+  /** fall runs north and high first, where the first hard freeze lands */
+  fallTownOrder: Town[]
+  /** spring runs the other way */
+  springTownOrder: Town[]
+  /** fall commits firm dates this many days ahead; later days stay planned */
+  firmDaysAhead: number
+  messages: MessageTemplate[]
+}
+
+/** One edit to the settings: who, when, which field, and the value before and after, as words. */
+export interface SettingsChange {
+  id: string
+  at: string
+  who: string
+  field: string
+  from: string
+  to: string
+}
+
 export interface Attention {
   kind: "charge-failed" | "jobs-failed" | "card-expiring"
   passId?: string
@@ -149,4 +237,6 @@ export interface AdminData {
   passes: Pass[]
   monthTotals: MonthTotal[]
   attention: Attention[]
+  settings: OrganizationSettings
+  settingsChanges: SettingsChange[]
 }

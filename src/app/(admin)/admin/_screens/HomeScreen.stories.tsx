@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite"
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import type { AdminData } from "@/lib/admin/types"
+import { EMPTY_SETTINGS } from "@/lib/admin/data"
 import { AdminShell } from "@/components/blocks/AdminShell"
 import { HomeScreen } from "./HomeScreen"
 
@@ -20,6 +21,8 @@ const nothingYet: AdminData = {
   passes: [],
   monthTotals: [],
   attention: [],
+  settings: EMPTY_SETTINGS,
+  settingsChanges: [],
 }
 
 const meta = {

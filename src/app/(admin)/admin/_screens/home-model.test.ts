@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import type { AdminData } from "@/lib/admin/types"
+import { EMPTY_SETTINGS } from "@/lib/admin/data"
 import { TIME_ZONE } from "@/lib/admin/format"
 import { visitsOn } from "@/lib/admin/metrics"
 import { clockTime, dayHeading, greeting, longDate, monthOf, pageContext, seasonDescription, sparklineOf, tileModels, tomorrowOf, updatedAgo } from "./home-model"
@@ -19,6 +20,8 @@ const empty: AdminData = {
   passes: [],
   monthTotals: [],
   attention: [],
+  settings: EMPTY_SETTINGS,
+  settingsChanges: [],
 }
 
 describe("greeting", () => {

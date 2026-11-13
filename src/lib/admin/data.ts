@@ -1,5 +1,18 @@
-import type { AdminData } from "./types"
+import type { AdminData, OrganizationSettings } from "./types"
 import snapshot from "./fixtures/snapshot.json"
+
+/** What an organization has before anyone opens Settings: no trucks, no areas, no windows, no messages. */
+export const EMPTY_SETTINGS: OrganizationSettings = {
+  trucks: [],
+  areas: [],
+  windows: [],
+  bufferPercentEarly: 0,
+  bufferPercentLate: 0,
+  fallTownOrder: [],
+  springTownOrder: [],
+  firmDaysAhead: 0,
+  messages: [],
+}
 
 export type AdminDataSource = "fixtures" | "live"
 
