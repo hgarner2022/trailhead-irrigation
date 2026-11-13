@@ -204,6 +204,7 @@ export type MessageKind =
   | "day-before"
   | "receipt"
   | "card-failed"
+  | "card-expiring"
   | "cancelled"
   | "renewal"
 

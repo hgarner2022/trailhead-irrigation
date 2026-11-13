@@ -7,10 +7,14 @@ import { currentSeason } from "@/lib/pass/season"
 import { nextPassNumber } from "@/lib/pass/number"
 import { SEASON_PASS_ADD_ON, visitPrice, visitsOnSale } from "@/lib/season-pass"
 import { hasScope } from "@/lib/auth/principal"
+import { readAppUrl } from "@/lib/env"
+import { activatePass } from "@/lib/pass/server/activate"
+import { queueCardUpdateLink } from "@/lib/pass/server/card-link"
+import { getStripe } from "@/lib/stripe/client"
 import { ApiError, notImplemented } from "../../core/errors"
 import { defineHandler } from "../../core/handler"
 import { afterTimeCursor, cursorPage, page, pageInput, timeCursor } from "../../core/pagination"
-import { addDays, Id, idInput, okOutput, PassStatus, Preference, Town, today } from "../shared"
+import { addDays, Id, idInput, OK, okOutput, PassStatus, Preference, Town, today } from "../shared"
 import { PassDetail, PassOut, passCreateInput } from "./schemas"
 import { loadPass, passDetail, passesQuery, passOut, recordChange } from "./queries"
 
@@ -153,11 +157,13 @@ export const passesActivate = defineHandler({
   method: "POST",
   path: "/passes/{id}/activate",
   scope: "write",
-  summary: "Activate a pending pass once its card is saved. Needs Stripe (Phase 8); not implemented yet.",
+  summary: "Activate a pending pass once its card is saved: stores the card from the finished setup session and makes the pass active. Safe to call twice for one session.",
   input: z.object({ id: Id, setupSessionId: z.string().min(1).describe("The Stripe Checkout Session in setup mode that saved the card.") }),
   output: PassDetail,
-  async run() {
-    throw notImplemented("passes.activate")
+  async run(ctx, input) {
+    const row = await loadPass(ctx, input.id)
+    await activatePass(ctx.db, getStripe(), row.pass.id, input.setupSessionId, ctx.now)
+    return passDetail(ctx, await loadPass(ctx, input.id))
   },
 })
 
@@ -202,11 +208,13 @@ export const passesSendCardUpdateLink = defineHandler({
   method: "POST",
   path: "/passes/{id}/send-card-update-link",
   scope: "write",
-  summary: "Email the customer a link to update their card. Needs Stripe and messaging (Phases 8 and 12); not implemented yet.",
+  summary: "Queue an email with a fresh link for the customer to update their card. The link is good for 24 hours; the messaging layer (Phase 12) sends the email.",
   input: idInput,
   output: okOutput,
-  async run() {
-    throw notImplemented("passes.sendCardUpdateLink")
+  async run(ctx, input) {
+    const row = await loadPass(ctx, input.id)
+    await queueCardUpdateLink(ctx.db, getStripe(), ctx.organizationId, row.pass.id, readAppUrl())
+    return OK
   },
 })
 

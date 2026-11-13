@@ -22,6 +22,7 @@ export const KIND_NAMES: Record<MessageKind, string> = {
   "day-before": "Reminder",
   receipt: "Receipt",
   "card-failed": "Card failed",
+  "card-expiring": "Card expiring",
   cancelled: "Cancelled",
   renewal: "Renewal",
 }
