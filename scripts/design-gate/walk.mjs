@@ -18,7 +18,8 @@ export const appGroupRe = /^\((?:admin|checkout|account|booking)\)$/
 
 // Folders match by path segment, so "(admin)" and "blocks" only match as
 // directory names. zone: "app" (blocks/ and the (admin), (checkout), (account)
-// and (booking) route groups), "ui", "marketing" (sections/) or null. marketing: a page or section .tsx the marketing CSS is
+// and (booking) route groups), "ui", "marketing" (sections/), "emails" (src/emails and src/sms: colours only, with
+// the one hex block in emails/layout.ts) or null. marketing: a page or section .tsx the marketing CSS is
 // built from. gated: inside a folder the file cap applies to.
 export function describe(root, abs) {
   const dirs = relative(root, dirname(abs)).split(sep)
@@ -27,6 +28,7 @@ export function describe(root, abs) {
   const zone = dirs.includes("blocks") || dirs.some((d) => appGroupRe.test(d)) ? "app"
     : dirs.includes("ui") ? "ui"
     : dirs.includes("sections") ? "marketing"
+    : dirs[0] === "emails" || dirs[0] === "sms" ? "emails"
     : null
   const marketing = !fixture && name.endsWith(".tsx") &&
     (zone === "marketing" || (dirs[0] === "app" && !dirs.some((d) => appGroupRe.test(d))))

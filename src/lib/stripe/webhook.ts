@@ -6,7 +6,8 @@ import { passesActivate } from "@/api/v1/passes/handlers"
 import * as s from "@/db/schema"
 import type { Database } from "@/db/types"
 import { ctxForJob } from "@/lib/admin/api-ctx"
-import { dollars, queueEmail } from "@/lib/pass/server/messages"
+import { baseData } from "@/lib/messaging/data"
+import { queueMessage } from "@/lib/messaging/queue"
 import { enqueue } from "@/lib/queue"
 import { applyCardUpdate, createCardUpdateSession } from "./card-update"
 
@@ -92,14 +93,9 @@ export async function handleStripeEvent(db: Database, stripe: Stripe, organizati
         const link = row.customer.stripeCustomerId ? (await createCardUpdateSession(stripe, { passId: row.pass.id, customerId: row.customer.stripeCustomerId, origin })).url : null
         const owed = await db.select({ amount: s.visit.amount, status: s.visit.status }).from(s.visit).where(eq(s.visit.passId, row.pass.id))
         const left = owed.filter((v) => !["completed", "cancelled", "skipped"].includes(v.status)).reduce((sum, v) => sum + v.amount, 0)
-        await queueEmail(db, {
-          organizationId,
-          customerId: row.customer.id,
-          kind: "card-expiring",
-          key: `pm-${method.id}`,
-          to: row.customer.email,
-          subject: "Add a card to your Season Pass",
-          body: `Hi ${row.customer.firstName}, the card on Season Pass ${row.pass.number} was removed or has expired${left ? `, and ${dollars(left)} of visits are still to come` : ""}. ${link ? `Add a new one here: ${link}` : "Reply to this email and we will help you add a new one."}`,
+        await queueMessage(db, {
+          organizationId, customerId: row.customer.id, kind: "card-expiring", key: `pm-${method.id}`,
+          data: { ...baseData(origin, row.customer), passNumber: row.pass.number, cardState: "was removed or has expired", left, updateUrl: link },
         })
       }
       return

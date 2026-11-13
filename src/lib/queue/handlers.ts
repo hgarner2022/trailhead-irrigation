@@ -5,6 +5,7 @@ import { readAppUrl } from "@/lib/env"
 import { cancelPassTask } from "@/lib/pass/server/cancel"
 import { onboardPass } from "@/lib/pass/server/onboard"
 import { chargeVisit } from "@/lib/pass/server/charge-visit"
+import { sendMessageRow, sendStaffMessage, MAX_ATTEMPTS } from "@/lib/messaging/send"
 import { getStripe } from "@/lib/stripe/client"
 import { handleStripeEvent } from "@/lib/stripe/webhook"
 import { geocodeProperty } from "@/lib/geocode"
@@ -57,4 +58,14 @@ export const scheduleRun: QueueHandler = async (db, item) => {
   await runSchedule(db, { organizationId: item.organizationId, window, season, today: mountainDay(new Date()), by })
 }
 
-export const handlers: Partial<Record<QueueKind, QueueHandler>> = { "jobber-feed-sync": jobberFeedSync, geocode, "pass-charge": passCharge, "pass-onboard": passOnboard, "pass-cancel": passCancel, "stripe-webhook": stripeWebhook, "schedule-run": scheduleRun }
+/**
+ * `message`: payload `{ messageId }` sends that queued `message_log` row through Resend or Twilio (see `sendMessageRow`);
+ * payload `{ staff: true, kind, to, data }` sends a note to the office (see `queueStaffMessage`).
+ */
+export const message: QueueHandler = async (db, item) => {
+  const payload = item.payload as { messageId?: string; staff?: boolean; kind?: string; to?: string; data?: Record<string, unknown> }
+  if (payload.staff) return sendStaffMessage({ kind: payload.kind!, to: payload.to!, data: payload.data ?? {} })
+  await sendMessageRow(db, payload.messageId!, { final: item.attempts >= MAX_ATTEMPTS })
+}
+
+export const handlers: Partial<Record<QueueKind, QueueHandler>> = { "jobber-feed-sync": jobberFeedSync, geocode, "pass-charge": passCharge, "pass-onboard": passOnboard, "pass-cancel": passCancel, "stripe-webhook": stripeWebhook, "schedule-run": scheduleRun, message }

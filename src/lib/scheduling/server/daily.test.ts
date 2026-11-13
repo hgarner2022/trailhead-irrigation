@@ -40,16 +40,16 @@ describe("daily", () => {
     const rows = await messages("day-before")
     const four = rows.find((m) => m.visitId === "p4-turn-on")!
     expect(four).toMatchObject({ channel: "sms", to: "303-555-0104" })
-    expect(four.body).toContain("Thursday, May 6")
-    expect(four.body).toContain("between 8 to 10 am")
+    expect(four.body).toContain("Thu, May 6")
+    expect(four.body).toContain("8 to 10 am")
     expect(rows.find((m) => m.visitId === "p7-turn-on")).toMatchObject({ channel: "email", to: "b@example.com" })
     expect(rows.every((m) => m.visitId !== "p3-turn-on")).toBe(true)
   })
 
   it("queues the crew note for each admin, as the plan words it and with nothing about approvals", async () => {
-    const [item] = (await db.select().from(s.queueItem)).filter((q) => q.kind === "message" && q.key.startsWith("crew-summary:2027-05-06:"))
+    const [item] = (await db.select().from(s.queueItem)).filter((q) => q.kind === "message" && q.key.startsWith("admin-alert:crew-summary:2027-05-06:"))
     expect(item).toBeDefined()
-    const body = (item!.payload as { body: string }).body
+    const body = (item!.payload as { data: { detail: string } }).data.detail
     expect(body).toMatch(/^Tomorrow: 2 visits, Truck 1 in .+ \(1\), Truck 2 in .+ \(1\)\./)
     expect(body).toMatch(/2 visits from yesterday not marked done\.$/)
     expect(body).not.toMatch(/approv|propos/i)

@@ -6,7 +6,9 @@ import * as s from "@/db/schema"
 import type { Database } from "@/db/types"
 import { chargeOffSession } from "@/lib/stripe/charge"
 import { createCardUpdateSession } from "@/lib/stripe/card-update"
-import { dollars, kindName, nextVisitLine, queueEmail } from "./messages"
+import { baseData } from "@/lib/messaging/data"
+import { queueMessage, queueStaffMessage } from "@/lib/messaging/queue"
+import { dollars, kindName, nextVisitLine } from "./messages"
 
 export type ChargeVisitOutcome = "charged" | "already-charged" | "failed" | "waiting-for-card" | "cancelled-pass" | "not-a-pass-visit"
 
@@ -64,16 +66,10 @@ export async function chargeVisit(db: Database, stripe: Stripe, visitId: string,
     await db.update(s.seasonPass).set({ cardFailedAt: null, updatedAt: now }).where(eq(s.seasonPass.id, pass.id))
     if (to) {
       const visits = await db.select().from(s.visit).where(eq(s.visit.passId, pass.id))
-      const card = pass.cardBrand && pass.cardLast4 ? ` to your ${pass.cardBrand} card ending ${pass.cardLast4}` : ""
-      await queueEmail(db, {
-        organizationId: visit.organizationId,
-        customerId: customer.id,
-        visitId: visit.id,
-        kind: "receipt",
-        key: `visit-${visit.id}`,
-        to,
-        subject: `Receipt: ${dollars(visit.amount)} for your ${kindName(visit.kind)}`,
-        body: `Thank you, ${customer.firstName}. We charged ${dollars(visit.amount)}${card} for your ${kindName(visit.kind)} on Season Pass ${pass.number}. ${nextVisitLine(visits.filter((v) => v.id !== visit.id))}${result.receiptUrl ? ` Your Stripe receipt: ${result.receiptUrl}` : ""}`,
+      const card = pass.cardBrand && pass.cardLast4 ? `${pass.cardBrand} card ending ${pass.cardLast4}` : ""
+      await queueMessage(db, {
+        organizationId: visit.organizationId, customerId: customer.id, visitId: visit.id, kind: "receipt", key: `visit-${visit.id}`,
+        data: { ...baseData(opts.origin, customer), passNumber: pass.number, amount: visit.amount, visitName: kindName(visit.kind), card: card || null, nextLine: nextVisitLine(visits.filter((v) => v.id !== visit.id)), receiptUrl: result.receiptUrl ?? null },
       })
     }
     await emitEvent(db, visit.organizationId, "charge.succeeded", { visitId: visit.id, passId: pass.id, amount: visit.amount, attempt })
@@ -84,17 +80,12 @@ export async function chargeVisit(db: Database, stripe: Stripe, visitId: string,
   await db.update(s.seasonPass).set({ cardFailedAt: now, updatedAt: now }).where(eq(s.seasonPass.id, pass.id))
   if (to) {
     const link = customer.stripeCustomerId ? (await createCardUpdateSession(stripe, { passId: pass.id, customerId: customer.stripeCustomerId, origin: opts.origin })).url : null
-    await queueEmail(db, {
-      organizationId: visit.organizationId,
-      customerId: customer.id,
-      visitId: visit.id,
-      kind: "card-failed",
-      key: `visit-${visit.id}-${attempt}`,
-      to,
-      subject: `We could not charge your card for the ${kindName(visit.kind)}`,
-      body: `Hi ${customer.firstName}, your ${kindName(visit.kind)} on Season Pass ${pass.number} is done, but your card was declined for ${dollars(visit.amount)}. ${link ? `You can update your card here: ${link}` : "Reply to this email and we will help you update your card."} We will try the new card once, right after you save it.`,
+    await queueMessage(db, {
+      organizationId: visit.organizationId, customerId: customer.id, visitId: visit.id, kind: "card-failed", key: `visit-${visit.id}-${attempt}`,
+      data: { ...baseData(opts.origin, customer), passNumber: pass.number, amount: visit.amount, visitName: kindName(visit.kind), updateUrl: link },
     })
   }
+  await queueStaffMessage(db, visit.organizationId, "admin-alert", `card-failed:${visit.id}:${attempt}`, { origin: opts.origin, title: `Card declined for ${customer.firstName}`, detail: `${customer.firstName}'s card was declined for ${dollars(visit.amount)} after the ${kindName(visit.kind)} on Season Pass ${pass.number}.`, path: "/admin/passes" })
   await emitEvent(db, visit.organizationId, "charge.failed", { visitId: visit.id, passId: pass.id, amount: visit.amount, attempt, message: result.message })
   return "failed"
 }

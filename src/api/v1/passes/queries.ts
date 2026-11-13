@@ -1,3 +1,5 @@
+import { readAppUrl } from "@/lib/env"
+import { visitCalendarUrl } from "@/lib/messaging/tokens"
 import "server-only"
 import { and, asc, desc, eq, sql } from "drizzle-orm"
 import * as s from "@/db/schema"
@@ -60,6 +62,16 @@ export async function loadPass(ctx: Ctx, id: string): Promise<PassJoined> {
   return row
 }
 
+/** The signed .ics link for a visit with a day; null when it has none or the signing key or site address is not set (tests, Storybook). */
+function calendarLink(visit: { id: string; scheduledOn: string | null }): string | null {
+  if (!visit.scheduledOn) return null
+  try {
+    return visitCalendarUrl(readAppUrl(), visit.id)
+  } catch {
+    return null
+  }
+}
+
 export async function passDetail(ctx: Ctx, row: PassJoined) {
   const visits = await visitsQuery(ctx.db).where(eq(s.visit.passId, row.pass.id)).orderBy(sql`case ${s.visit.kind} when 'turn-on' then 1 when 'inspection' then 2 when 'blowout' then 3 else 4 end`, asc(s.visit.createdAt), asc(s.visit.id))
   const charges = await ctx.db.select().from(s.charge).where(eq(s.charge.passId, row.pass.id)).orderBy(desc(s.charge.createdAt))
@@ -67,7 +79,7 @@ export async function passDetail(ctx: Ctx, row: PassJoined) {
   const contact = canSeeContact(ctx)
   return {
     ...passOut(ctx, row),
-    visits: visits.map((v) => visitOut(ctx, v)),
+    visits: visits.map((v) => ({ ...visitOut(ctx, v), calendarUrl: calendarLink(v.visit) })),
     charges: charges.map((c) => ({ id: c.id, visitId: c.visitId, attempt: c.attempt, amount: c.amount, status: c.status, failureMessage: c.failureMessage, createdAt: c.createdAt.toISOString() })),
     consent: consent ? consentOut(consent) : null,
     price: visits.filter((v) => v.visit.status !== "cancelled").reduce((sum, v) => sum + v.visit.amount, 0),

@@ -1,7 +1,10 @@
 import "server-only"
 import { timingSafeEqual } from "node:crypto"
 import { db } from "@/db"
-import { readCronSecret } from "@/lib/env"
+import { readAppUrl, readCronSecret } from "@/lib/env"
+import { queueCardExpiryMessages } from "@/lib/pass/server/card-expiry"
+import { createCardUpdateSession } from "@/lib/stripe/card-update"
+import { getStripe } from "@/lib/stripe/client"
 import { trucksWithFeed } from "@/lib/jobber-feed"
 import { expirePendingPasses } from "@/lib/pass/server/create"
 import { drain, enqueue } from "@/lib/queue"
@@ -22,7 +25,7 @@ function authorised(request: Request): boolean {
  * The one scheduled job. Vercel's Hobby plan allows two cron jobs, each once a day, so this route does in order what
  * `/api/cron/feed`, `/api/cron/schedule` and `/api/cron/drain` do on their own: read every truck's Jobber calendar feed,
  * run the daily scheduling pass (unclosed visits, day-before texts, due Schedule runs, the crew note), expire unpaid
- * checkouts, then drain the queue so all of it happens now. The three routes stay for running one part by hand with the
+ * checkouts, queue the card-expiring emails (sixty days ahead), then drain the queue so all of it happens now. The three routes stay for running one part by hand with the
  * secret. `vercel.json` runs this at 11:00 UTC, 5 am in Colorado.
  */
 export async function GET(request: Request) {
@@ -34,6 +37,8 @@ export async function GET(request: Request) {
   const feed = await drain(database, handlers)
   const schedule = await daily(database)
   const expired = await expirePendingPasses(database, new Date())
+  const origin = readAppUrl()
+  const cardExpiring = await queueCardExpiryMessages(database, async ({ passId, stripeCustomerId }) => (await createCardUpdateSession(getStripe(), { passId, customerId: stripeCustomerId, origin })).url, origin)
   const drained = await drain(database, handlers)
-  return Response.json({ feedTrucks: trucks.length, feed, ...schedule, expired, ...drained })
+  return Response.json({ feedTrucks: trucks.length, feed, ...schedule, expired, cardExpiring, ...drained })
 }

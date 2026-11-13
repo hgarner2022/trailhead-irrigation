@@ -1,9 +1,13 @@
 import "server-only"
-import { and, asc, eq, gte } from "drizzle-orm"
+import { and, eq, gte } from "drizzle-orm"
 import * as s from "@/db/schema"
 import type { Database } from "@/db/types"
 import { enqueue } from "@/lib/queue"
-import { dollars, kindName, nextVisitLine, queueEmail } from "./messages"
+import { baseData, loadVisitFacts } from "@/lib/messaging/data"
+import { queueMessage, queueStaffMessage } from "@/lib/messaging/queue"
+import { passImageUrl } from "@/lib/messaging/tokens"
+import { preferencePhrase } from "@/lib/admin/format"
+import { kindName } from "./messages"
 
 export interface PurchaseConsent {
   marketingOptIn: boolean
@@ -50,22 +54,31 @@ export async function recordPurchase(db: Database, passId: string, consent: Purc
 
   await enqueue(db, org, "pass-onboard", pass.id, { passId: pass.id }, now)
 
-  if (customer.email) {
-    const visits = await db.select().from(s.visit).where(eq(s.visit.passId, pass.id)).orderBy(asc(s.visit.amount))
-    const list = ["turn-on", "inspection", "blowout"].flatMap((k) => visits.filter((v) => v.kind === k)).map((v) => `${kindName(v.kind)}, ${dollars(v.amount)}`).join("; ")
-    await queueEmail(db, {
-      organizationId: org,
-      customerId: customer.id,
-      kind: "purchase-confirmation",
-      key: pass.id,
-      to: customer.email,
-      subject: `Your Trailhead Season Pass ${pass.number}`,
-      body: [
-        `Hi ${customer.firstName}, your Season Pass ${pass.number} is reserved for ${row.town}. Nothing was charged today.`,
-        `Visits: ${list}. Each is charged to the saved card after the visit, at the price shown.`,
-        nextVisitLine(visits.map((v) => ({ kind: v.kind, status: v.status, scheduledOn: v.scheduledOn, preference: v.preference }))),
-        `Your pass, with a button to save it as an image: ${origin}/account/pass`,
-      ].join("\n\n"),
-    })
+  await queuePurchaseConfirmation(db, pass.id, origin, pass.id)
+  await queueStaffMessage(db, org, "admin-alert", `new-pass:${pass.id}`, { origin, title: `New Season Pass ${pass.number}`, detail: `${customer.firstName} in ${row.town} bought Season Pass ${pass.number}.`, path: "/admin/passes" })
+}
+
+/** The purchase confirmation for a pass, with whatever the pass holds today: each visit's day and calendar links, or its window wording. `key` makes it once per purchase; an admin's resend uses a new one. */
+export async function queuePurchaseConfirmation(db: Database, passId: string, origin: string, key: string): Promise<boolean> {
+  const [row] = await db
+    .select({ pass: s.seasonPass, customer: s.customer, town: s.property.town })
+    .from(s.seasonPass)
+    .innerJoin(s.customer, eq(s.customer.id, s.seasonPass.customerId))
+    .innerJoin(s.property, eq(s.property.id, s.seasonPass.propertyId))
+    .where(eq(s.seasonPass.id, passId))
+  if (!row) throw new Error(`Pass ${passId} not found`)
+  const { pass, customer } = row
+  const org = pass.organizationId
+  const visits = await db.select().from(s.visit).where(eq(s.visit.passId, pass.id))
+  const ordered = ["turn-on", "inspection", "blowout"].flatMap((k) => visits.filter((v) => v.kind === k))
+  const held = []
+  for (const v of ordered) {
+    const facts = v.scheduledOn ? await loadVisitFacts(db, v.id, origin) : null
+    const planned = v.preference && (v.kind === "turn-on" || v.kind === "blowout") ? `Planned for ${preferencePhrase(v.kind, v.preference)}. We will set the day and text you.` : "We will set the day and text you."
+    held.push({ name: kindName(v.kind), amount: v.amount, visit: facts, fallback: planned })
   }
+  return queueMessage(db, {
+    organizationId: org, customerId: customer.id, kind: "purchase-confirmation", key,
+    data: { ...baseData(origin, customer), passNumber: pass.number, season: pass.season, town: row.town, passImageUrl: passImageUrl(origin, pass.id), visits: held, cardLast4: pass.cardLast4 },
+  })
 }

@@ -55,3 +55,23 @@ export function checkColours(file, text, legacy, { problems, notes }) {
   if (legacy) notes.push(`${file}: legacy, migrate when touched (${found.join("; ")})`)
   else for (const f of found) problems.push(`${file}: ${f} (use a token from globals.css)`)
 }
+
+// Email cannot read CSS variables, so src/emails/layout.ts may hold the brand hex values in ONE block between these two
+// marker lines. The block is blanked before the colour scan; any other hex under src/emails or src/sms still fails.
+const EMAIL_BLOCK = /^[ \t]*\/\/ email-colors:start[ \t]*\n[\s\S]*?^[ \t]*\/\/ email-colors:end[ \t]*$/m
+
+export function allowEmailColourBlock(file, text, { problems }) {
+  if (!/(^|[\\/])emails[\\/]layout\.ts$/.test(file)) return text
+  const blocks = text.match(new RegExp(EMAIL_BLOCK.source, "gm")) ?? []
+  if (blocks.length > 1) problems.push(`${file}: more than one email-colors block (one is allowed)`)
+  return text.replace(EMAIL_BLOCK, (block) => block.replace(/[^\n]/g, " "))
+}
+
+// Email templates build HTML in strings, which the JSX-aware scan above cannot see into, so under src/emails and src/sms
+// every line is scanned: a hex (not an &#39; entity or an href fragment) or rgb()/hsl() anywhere fails.
+export function checkEmailColours(file, text, { problems }) {
+  text.split("\n").forEach((line, i) => {
+    const code = line.replace(/\/\/.*$/, "").replace(/&#\d+;/g, "").replace(/href=["'][^"']*["']/g, "")
+    for (const m of code.matchAll(/(?<![\w&])#[0-9a-fA-F]{3,8}\b|\b(?:rgba?|hsla?)\(/g)) problems.push(`${file}: line ${i + 1}: raw colour "${m[0]}" (use EMAIL_COLORS from layout.ts)`)
+  })
+}

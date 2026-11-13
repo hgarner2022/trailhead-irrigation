@@ -114,7 +114,7 @@ describe("passes.activate for the checkout", () => {
     const mail = await db.select().from(s.messageLog).where(eq(s.messageLog.customerId, pass.customerId))
     expect(mail).toHaveLength(1)
     expect(mail[0]).toMatchObject({ kind: "purchase-confirmation", status: "queued", to: "cora@example.com" })
-    expect(mail[0]!.body).toContain("https://site.test/account/pass")
+    expect(mail[0]!.body).toContain("https://site.test/account/sign-in?email=cora%40example.com")
   })
   it("drops the text channel when the customer has no phone", async () => {
     reachable.mockResolvedValue(true)

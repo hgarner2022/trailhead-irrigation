@@ -118,6 +118,12 @@ export interface PassVisit {
   /** the month the visit lands in: "May", "July", "October"; the preference on the pass carries the rest */
   window: string
   scheduledAt?: string
+  /** the Mountain day and start time behind `scheduledAt`, for the calendar links */
+  scheduledOn?: string
+  startTime?: string
+  /** the signed link to the visit's .ics file, from the API */
+  calendarUrl?: string
+  id?: string
   /** the truck's name once the visit has one, "Truck 1"; the pass page shows it beside the date */
   truckName?: string
   completedAt?: string
