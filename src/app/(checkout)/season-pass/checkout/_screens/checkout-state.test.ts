@@ -9,6 +9,9 @@ const filled: CheckoutState = {
   address: FIXTURE_HOME.label,
   place: FIXTURE_HOME,
   town: "Erie",
+  access: "yes",
+  accessNote: "Gate code 4471, controller in the garage.",
+  today: "2026-11-12",
   zones: 8,
   inspection: false,
   turnOnPreference: "earlier",
@@ -133,10 +136,27 @@ describe("contactProblem", () => {
 })
 
 describe("canContinue", () => {
-  it("address: needs a picked address inside the six towns", () => {
-    expect(canContinue({ ...initialState(), address: "123 Trailhead Way, Erie, CO 80516", place: null })).toBe(false)
-    expect(canContinue({ ...initialState(), address: boulder.label, place: boulder })).toBe(false)
-    expect(canContinue({ ...initialState(), address: FIXTURE_HOME.label, place: FIXTURE_HOME })).toBe(true)
+  it("address: needs a picked address inside the six towns and the access answer", () => {
+    expect(canContinue({ ...initialState(), address: "123 Trailhead Way, Erie, CO 80516", place: null, access: "yes" })).toBe(false)
+    expect(canContinue({ ...initialState(), address: boulder.label, place: boulder, access: "yes" })).toBe(false)
+    expect(canContinue({ ...initialState(), address: FIXTURE_HOME.label, place: FIXTURE_HOME })).toBe(false)
+    expect(canContinue({ ...initialState(), address: FIXTURE_HOME.label, place: FIXTURE_HOME, access: "no" })).toBe(true)
+    expect(canContinue({ ...initialState(), address: FIXTURE_HOME.label, place: FIXTURE_HOME, access: "yes" })).toBe(true)
+  })
+
+  it("sells only the visits still ahead when bought mid-season, and records who must be home", () => {
+    const june = toPass({ ...filled, today: "2027-06-10", inspection: true }, 2027)
+    expect(june.visits.map((v) => v.kind)).toEqual(["inspection", "blowout"])
+    const august = toPass({ ...filled, today: "2027-08-10", inspection: true }, 2027)
+    expect(august.visits.map((v) => v.kind)).toEqual(["blowout"])
+    expect(toPass({ ...filled, today: "2026-11-20" }, 2027).visits.map((v) => v.kind)).toEqual(["turn-on", "blowout"])
+    expect(doneSentence({ ...filled, today: "2027-08-10" })).toBe("Blowout preferred mid October. We'll email the details to andrea@example.com.")
+    const home = toPass({ ...filled, access: "no", accessNote: "" }, 2027)
+    expect(home.needsCustomerHome).toBe(true)
+    expect(home.accessNote).toBeUndefined()
+    const away = toPass(filled, 2027)
+    expect(away.needsCustomerHome).toBeUndefined()
+    expect(away.accessNote).toBe("Gate code 4471, controller in the garage.")
   })
 
   it("zones: needs a count between 6 and 16", () => {

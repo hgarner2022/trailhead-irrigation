@@ -10192,8 +10192,7 @@
       "truckId": "truck-1",
       "stopOrder": 1,
       "lat": 40.04025,
-      "lng": -105.0485,
-      "proposed": true
+      "lng": -105.0485
     },
     {
       "id": "v478",
@@ -10208,8 +10207,7 @@
       "truckId": "truck-1",
       "stopOrder": 2,
       "lat": 40.10775,
-      "lng": -104.93,
-      "proposed": true
+      "lng": -104.93
     },
     {
       "id": "v479",
@@ -10224,8 +10222,7 @@
       "truckId": "truck-1",
       "stopOrder": 3,
       "lat": 40.04925,
-      "lng": -105.0395,
-      "proposed": true
+      "lng": -105.0395
     },
     {
       "id": "v480",
@@ -10240,8 +10237,7 @@
       "truckId": "truck-1",
       "stopOrder": 4,
       "lat": 40.05375,
-      "lng": -105.035,
-      "proposed": true
+      "lng": -105.035
     },
     {
       "id": "v481",
@@ -10256,8 +10252,7 @@
       "truckId": "truck-1",
       "stopOrder": 1,
       "lat": 40.12125,
-      "lng": -104.94725,
-      "proposed": true
+      "lng": -104.94725
     },
     {
       "id": "v482",
@@ -10272,8 +10267,7 @@
       "truckId": "truck-1",
       "stopOrder": 2,
       "lat": 40.12575,
-      "lng": -104.94275,
-      "proposed": true
+      "lng": -104.94275
     },
     {
       "id": "v483",
@@ -10288,8 +10282,7 @@
       "truckId": "truck-1",
       "stopOrder": 3,
       "lat": 39.9805,
-      "lng": -105.09225,
-      "proposed": true
+      "lng": -105.09225
     },
     {
       "id": "v484",
@@ -10304,8 +10297,7 @@
       "truckId": "truck-1",
       "stopOrder": 4,
       "lat": 40.041,
-      "lng": -105.04775,
-      "proposed": true
+      "lng": -105.04775
     },
     {
       "id": "v485",
@@ -14041,7 +14033,8 @@
         ],
         "source": "checkout",
         "recordedAt": "2026-11-02T15:10:00Z"
-      }
+      },
+      "accessNote": "Gate code 4471, controller in the garage."
     },
     {
       "id": "p2",
@@ -14087,7 +14080,8 @@
         ],
         "source": "checkout",
         "recordedAt": "2026-11-03T16:13:00Z"
-      }
+      },
+      "accessNote": "Side gate unlocked, dog is friendly."
     },
     {
       "id": "p3",
@@ -14128,7 +14122,8 @@
         "marketingChannels": [],
         "source": "checkout",
         "recordedAt": "2026-11-04T17:16:00Z"
-      }
+      },
+      "accessNote": "Controller on the north wall of the garage."
     },
     {
       "id": "p4",
@@ -14167,7 +14162,8 @@
         ],
         "source": "checkout",
         "recordedAt": "2026-11-05T18:19:00Z"
-      }
+      },
+      "accessNote": "Shut-off in the basement; door code 2290."
     },
     {
       "id": "p5",
@@ -14206,7 +14202,8 @@
         ],
         "source": "checkout",
         "recordedAt": "2026-11-06T19:22:00Z"
-      }
+      },
+      "needsCustomerHome": true
     },
     {
       "id": "p6",
@@ -14404,7 +14401,8 @@
         ],
         "source": "checkout",
         "recordedAt": "2026-11-11T19:37:00Z"
-      }
+      },
+      "needsCustomerHome": true
     },
     {
       "id": "p11",
@@ -14533,12 +14531,6 @@
     }
   ],
   "attention": [
-    {
-      "kind": "customer-replied",
-      "passId": "p5",
-      "message": "Katie replied by text: \"Do you do backflow tests too?\"",
-      "since": "2026-11-12T15:40:00Z"
-    },
     {
       "kind": "charge-failed",
       "passId": "p3",
@@ -14670,7 +14662,6 @@
       "Erie",
       "Firestone"
     ],
-    "firmDaysAhead": 7,
     "messages": [
       {
         "key": "purchase-confirmation",
@@ -14754,7 +14745,6 @@
       "clientId": "c100",
       "passId": "p1",
       "channel": "email",
-      "direction": "out",
       "kind": "purchase-confirmation",
       "body": "Your 2027 Season Pass is reserved",
       "at": "2026-11-02T16:10:00Z",
@@ -14765,7 +14755,6 @@
       "clientId": "c100",
       "passId": "p1",
       "channel": "sms",
-      "direction": "out",
       "kind": "purchase-confirmation",
       "body": "Trailhead: your 2027 Season Pass is reserved. Turn-on preferred mid May, blowout mid October. Reply STOP to opt out.",
       "at": "2026-11-02T16:10:05Z",
@@ -14776,7 +14765,6 @@
       "clientId": "c100",
       "passId": "p1",
       "channel": "email",
-      "direction": "out",
       "kind": "date-set",
       "body": "Your spring turn-on is set for Monday, May 3",
       "at": "2027-04-19T15:00:00Z",
@@ -14787,32 +14775,9 @@
       "clientId": "c100",
       "passId": "p1",
       "channel": "sms",
-      "direction": "out",
       "kind": "day-before",
       "body": "Trailhead: Ryan is coming tomorrow, Mon May 3, between 9 and 11 for your turn-on. Reply if that no longer works.",
       "at": "2027-05-02T23:00:00Z",
-      "status": "delivered"
-    },
-    {
-      "id": "m5",
-      "clientId": "c100",
-      "passId": "p1",
-      "channel": "sms",
-      "direction": "in",
-      "kind": "reply",
-      "body": "Can you come after 10? School drop-off.",
-      "at": "2027-05-02T23:12:00Z",
-      "status": "handled"
-    },
-    {
-      "id": "m6",
-      "clientId": "c100",
-      "passId": "p1",
-      "channel": "sms",
-      "direction": "out",
-      "kind": "reply",
-      "body": "No problem, Ryan will be there between 10 and 11.",
-      "at": "2027-05-02T23:20:00Z",
       "status": "delivered"
     },
     {
@@ -14820,7 +14785,6 @@
       "clientId": "c100",
       "passId": "p1",
       "channel": "sms",
-      "direction": "out",
       "kind": "on-my-way",
       "body": "Trailhead: Ryan is on his way, about 20 minutes out.",
       "at": "2027-05-03T16:05:00Z",
@@ -14831,7 +14795,6 @@
       "clientId": "c100",
       "passId": "p1",
       "channel": "email",
-      "direction": "out",
       "kind": "receipt",
       "body": "Your turn-on is done: $145 charged to Visa 4242. Next up: inspection in July",
       "at": "2027-05-03T17:12:00Z",
@@ -14842,7 +14805,6 @@
       "clientId": "c140",
       "passId": "p3",
       "channel": "email",
-      "direction": "out",
       "kind": "purchase-confirmation",
       "body": "Your 2027 Season Pass is reserved",
       "at": "2026-11-09T20:30:00Z",
@@ -14853,7 +14815,6 @@
       "clientId": "c140",
       "passId": "p3",
       "channel": "sms",
-      "direction": "out",
       "kind": "purchase-confirmation",
       "body": "Trailhead: your 2027 Season Pass is reserved. Reply STOP to opt out.",
       "at": "2026-11-09T20:30:05Z",
@@ -14864,7 +14825,6 @@
       "clientId": "c197",
       "passId": "p5",
       "channel": "email",
-      "direction": "out",
       "kind": "purchase-confirmation",
       "body": "Your 2027 Season Pass is reserved",
       "at": "2026-11-11T18:00:00Z",
@@ -14875,22 +14835,10 @@
       "clientId": "c197",
       "passId": "p5",
       "channel": "sms",
-      "direction": "out",
       "kind": "purchase-confirmation",
       "body": "Trailhead: your 2027 Season Pass is reserved. Reply STOP to opt out.",
       "at": "2026-11-11T18:00:05Z",
       "status": "delivered"
-    },
-    {
-      "id": "m13",
-      "clientId": "c197",
-      "passId": "p5",
-      "channel": "sms",
-      "direction": "in",
-      "kind": "reply",
-      "body": "Do you do backflow tests too?",
-      "at": "2026-11-12T15:40:00Z",
-      "status": "received"
     }
   ]
 }

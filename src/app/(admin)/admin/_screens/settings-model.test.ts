@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest"
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import type { AdminData } from "@/lib/admin/types"
 import {
-  addArea, addTruck, createKey, removeTruck, revokeKey, secretFor, sampleFor, setJobberUser, SAMPLE_KEYS, channelWord, clip, daysWords, fillMessage, messageName, moveTownInOrder, setAreaName, setBuffer, setCapacity, setFirmDays,
+  addArea, addTruck, createKey, removeTruck, revokeKey, secretFor, sampleFor, setJobberUser, SAMPLE_KEYS, channelWord, clip, daysWords, fillMessage, messageName, moveTownInOrder, setAreaName, setBuffer, setCapacity,
   setMessage, setTruckName, setWindow, toggleAreaTown, toggleWorkingDay, type SettingsState,
 } from "./settings-model"
 
@@ -121,12 +121,6 @@ describe("capacity and windows", () => {
     expect(setWindow(state, "turn-on", "leadWeeks", 2.5, actor)).toBe(state)
   })
 
-  it("sets the firm days ahead", () => {
-    const next = setFirmDays(state, 5, actor)
-    expect(next.settings.firmDaysAhead).toBe(5)
-    expect(last(next)).toMatchObject({ field: "Firm days ahead", from: "7", to: "5" })
-    expect(setFirmDays(state, -1, actor)).toBe(state)
-  })
 })
 
 describe("messages", () => {
@@ -156,9 +150,9 @@ describe("messages", () => {
 describe("the log", () => {
   it("gives every change its own id and keeps the earlier ones", () => {
     let s = state
-    s = setFirmDays(s, 5, actor)
-    s = setFirmDays(s, 6, { who: "Ryan", at: "2026-11-12T20:00:00Z" })
-    expect(s.changes.map((c) => [c.who, c.from, c.to])).toEqual([["Hannah", "7", "5"], ["Ryan", "5", "6"]])
+    s = setBuffer(s, "early", 25, actor)
+    s = setBuffer(s, "early", 30, { who: "Ryan", at: "2026-11-12T20:00:00Z" })
+    expect(s.changes.map((c) => [c.who, c.from, c.to])).toEqual([["Hannah", "20%", "25%"], ["Ryan", "25%", "30%"]])
     expect(new Set(s.changes.map((c) => c.id)).size).toBe(2)
   })
 })
@@ -217,13 +211,11 @@ describe("validation", () => {
     expect(setWindow(state, "blowout", "closesOn", "2027-10-01", actor).settings.windows[2].closesOn).toBe("2027-10-01")
   })
 
-  it("caps lead weeks at 12, capacity at 50, firm days at 30", () => {
+  it("caps lead weeks at 12 and capacity at 50", () => {
     expect(setWindow(state, "turn-on", "leadWeeks", 13, actor)).toBe(state)
     expect(setWindow(state, "turn-on", "leadWeeks", 12, actor).settings.windows[0].leadWeeks).toBe(12)
     expect(setCapacity(state, "truck-1", "blowout", 51, actor)).toBe(state)
     expect(setCapacity(state, "truck-1", "blowout", 50, actor).settings.trucks[0].capacityByKind.blowout).toBe(50)
-    expect(setFirmDays(state, 31, actor)).toBe(state)
-    expect(setFirmDays(state, 30, actor).settings.firmDaysAhead).toBe(30)
     expect(setBuffer(state, "early", 100, actor).settings.bufferPercentEarly).toBe(100)
     expect(setBuffer(state, "early", -1, actor)).toBe(state)
   })

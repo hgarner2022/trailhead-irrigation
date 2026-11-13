@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest"
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import type { Pass } from "@/lib/admin/types"
-import { cardLine, expiry, seasonCaption, visitRows, visitStatus } from "./pass-page-model"
+import { cardLine, earlierSeasons, expiry, seasonCaption, seasonSummary, visitRows, visitStatus } from "./pass-page-model"
 
 // passes[0] is Andrea in Erie: turn-on done May 3, inspection in July, blowout preferred for mid October.
 // passes[2] has no visit yet, with the turn-on preferred earlier.
@@ -71,5 +71,17 @@ describe("season caption", () => {
 
   it("closes the season when every visit is done", () => {
     expect(seasonCaption(allDone)).toBe("Every visit is done. We'll email you in January about 2028.")
+  })
+})
+
+describe("earlier seasons", () => {
+  it("summarises a season by visits done and dollars paid, and lists earlier seasons newest first without the current one", () => {
+    const current = snapshot.passes[0] as Pass
+    const done2026: Pass = { ...current, id: "a", season: 2026, visits: current.visits.map((v) => ({ ...v, completedAt: "2026-05-03T17:00:00Z", chargedAt: "2026-05-03T17:02:00Z" })) }
+    const one2025: Pass = { ...current, id: "b", season: 2025, visits: current.visits.map((v, i) => (i === 0 ? { ...v, completedAt: "2025-05-03T17:00:00Z", chargedAt: "2025-05-03T17:02:00Z" } : { ...v, completedAt: undefined, chargedAt: undefined })) }
+    expect(seasonSummary(done2026)).toBe(`3 of 3 visits done, $${done2026.visits.reduce((sum, v) => sum + v.amount, 0)} paid`)
+    expect(seasonSummary(one2025)).toBe(`1 of 3 visits done, $${current.visits[0].amount} paid`)
+    expect(earlierSeasons([one2025, current, done2026], current).map((p) => p.season)).toEqual([2026, 2025])
+    expect(earlierSeasons([current], current)).toEqual([])
   })
 })

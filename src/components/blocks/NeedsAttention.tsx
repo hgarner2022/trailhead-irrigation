@@ -1,14 +1,17 @@
-import { Ban, CalendarX, CircleDashed, Clock, CreditCard, MessageSquare, type LucideIcon } from "lucide-react"
+import { Ban, CalendarX, CircleDashed, Clock, CreditCard, type LucideIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { Attention } from "@/lib/admin/types"
 import { EmptyState } from "./EmptyState"
+import { AttentionAction } from "./needs-attention-action"
 import { relativeTime } from "./needs-attention-time"
 
 // The short list on Home of what needs a person: a failed charge, Jobber
 // jobs that were not created, a card about to expire, visits from earlier days nobody has marked done, a pass cancelled whose Jobber jobs must go. One row per item with an icon coloured by how urgent the kind
-// is, the message, and how long it has been waiting. A row with a pass
-// links to that pass; the prototype has no handlers, so the link is a page
-// anchor. Pure render, server component.
+// is, the message, how long it has been waiting, and ONE action (Retry, Send
+// card link, Reply, ...) so the list can be cleared like an inbox (the
+// review, 2026-11-12). A row with a pass links to that pass; the prototype
+// has no handlers, so the link is a page anchor and the action logs. Server
+// component; the action button carries its own client boundary.
 
 export interface NeedsAttentionProps {
   items: Attention[]
@@ -27,7 +30,6 @@ const KINDS: Record<Attention["kind"], { icon: LucideIcon; tone: string; name: s
   "card-expiring": { icon: Clock, tone: "bg-stone text-muted-foreground", name: "Card expiring" },
   "not-closed": { icon: CircleDashed, tone: "bg-stone text-muted-foreground", name: "Visits not closed" },
   "pass-cancelled": { icon: Ban, tone: "bg-warning/10 text-warning", name: "Pass cancelled" },
-  "customer-replied": { icon: MessageSquare, tone: "bg-primary/10 text-primary-deep", name: "Customer replied" },
 }
 
 function Row({ item, now }: { item: Attention; now: string }) {
@@ -48,19 +50,20 @@ function Row({ item, now }: { item: Attention; now: string }) {
       </span>
     </>
   )
-  const layout = "flex items-start gap-3 py-3"
+  const layout = "flex min-w-0 flex-1 items-start gap-3"
   return (
-    <li data-kind={item.kind}>
+    <li data-kind={item.kind} className="flex items-center gap-3 py-3">
       {item.passId ? (
         <a
           href={`#pass-${item.passId}`}
-          className={cn(layout, "-mx-2 rounded-lg px-2 hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50")}
+          className={cn(layout, "-mx-2 rounded-lg px-2 py-1 hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50")}
         >
           {body}
         </a>
       ) : (
         <div className={layout}>{body}</div>
       )}
+      <AttentionAction item={item} />
     </li>
   )
 }

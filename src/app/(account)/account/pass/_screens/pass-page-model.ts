@@ -41,6 +41,17 @@ export const visitRows = (pass: Pass): VisitRow[] => pass.visits.map((v) => visi
 /** The turn-on and the blowout can be moved by the customer until a day is set; the inspection has no preference. */
 export const canChange = (visit: PassVisit): visit is PassVisit & { kind: "turn-on" | "blowout" } => visit.kind !== "inspection" && !visit.scheduledAt && !visit.completedAt
 
+/** "3 of 3 visits done, $385 paid" for an earlier season; a skipped or cancelled season says how many were done. */
+export function seasonSummary(pass: Pass): string {
+  const done = pass.visits.filter((v) => v.completedAt).length
+  const paid = pass.visits.filter((v) => v.chargedAt).reduce((sum, v) => sum + v.amount, 0)
+  const visits = `${done} of ${pass.visits.length} visit${pass.visits.length === 1 ? "" : "s"} done`
+  return paid > 0 ? `${visits}, $${paid.toLocaleString("en-US")} paid` : visits
+}
+
+/** Earlier seasons newest first, the current one left out. */
+export const earlierSeasons = (passes: Pass[], current: Pass): Pass[] => passes.filter((p) => p.id !== current.id && p.season < current.season).sort((a, b) => b.season - a.season)
+
 /** "08/28" from the stored "2028-08". */
 export const expiry = (yearMonth: string) => `${yearMonth.slice(5, 7)}/${yearMonth.slice(2, 4)}`
 

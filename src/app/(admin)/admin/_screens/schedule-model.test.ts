@@ -3,7 +3,7 @@ import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import type { AdminData, Visit } from "@/lib/admin/types"
 import { TIME_ZONE } from "@/lib/admin/format"
 import { dayVisits, weekDays, weekVisits } from "@/lib/admin/calendar"
-import { approveVisits, exceptionCount, moveOutcome, moveVisit, proposedCount, weekContext } from "./schedule-model"
+import { exceptionCount, moveOutcome, moveVisit, weekContext } from "./schedule-model"
 
 const data = snapshot as AdminData
 const { trucks } = data.settings
@@ -21,14 +21,13 @@ describe("the week's visits", () => {
     expect(dayVisits(week, "2026-11-10", "truck-2", TIME_ZONE)).toEqual([])
   })
 
-  it("counts the proposals and the Jobber exceptions and writes the context line", () => {
+  it("counts the Jobber exceptions and writes the context line", () => {
     const week = weekVisits(data.visits, WEEK, TIME_ZONE)
-    expect(proposedCount(week)).toBe(8)
     expect(exceptionCount(week)).toBe(2)
-    expect(weekContext(WEEK, week)).toBe("Week of Nov 9. 8 proposed, 2 moved in Jobber.")
+    expect(weekContext(WEEK, week)).toBe(`Week of Nov 9. ${week.length} visits, 2 moved in Jobber.`)
     expect(weekContext("2026-10-05", weekVisits(data.visits, "2026-10-05", TIME_ZONE))).toBe("Week of Oct 5. 25 visits.")
     expect(weekContext("2027-03-01", [])).toBe("Week of Mar 1. Nothing on the calendar.")
-    expect(weekContext(WEEK, week.filter((v) => !v.exception))).toBe("Week of Nov 9. 8 proposed.")
+    expect(weekContext(WEEK, week.filter((v) => !v.exception))).toBe(`Week of Nov 9. ${week.length - 2} visits.`)
   })
 })
 
@@ -63,18 +62,6 @@ describe("moveVisit", () => {
     const moved = move("v481", "truck-2", "2026-11-10")
     const others = (visits: Visit[]) => visits.filter((v) => v.id !== "v481" && !["v482", "v483", "v484"].includes(v.id))
     expect(others(moved)).toEqual(others(data.visits))
-  })
-})
-
-describe("approveVisits", () => {
-  it("clears the proposed flag on the given visits only", () => {
-    const week = weekVisits(data.visits, WEEK, TIME_ZONE)
-    const approved = approveVisits(data.visits, new Set(week.map((v) => v.id)))
-    expect(proposedCount(approved)).toBe(0)
-    expect(approved.filter((v) => v.proposed !== undefined)).toEqual([])
-    const some = approveVisits(data.visits, new Set(["v477"]))
-    expect(proposedCount(some)).toBe(7)
-    expect(approveVisits(data.visits, new Set()).filter((v) => v.proposed)).toHaveLength(8)
   })
 })
 
@@ -115,5 +102,50 @@ describe("moveOutcome", () => {
     const out = moveOutcome(data.visits, "v477", "truck-1", "2026-11-12", trucks, TIME_ZONE)
     expect(out.moved).toBe(false)
     expect(out.message).toBe(`${percy!.clientName} is already on Truck 1 on Thursday, November 12.`)
+  })
+})
+
+describe("to schedule tray, placing and scheduling", async () => {
+  const { trayItems, placeVisit, scheduleItems, firstWorkingDay } = await import("./schedule-model")
+  const snapshot = (await import("@/lib/admin/fixtures/snapshot.json")).default as import("@/lib/admin/types").AdminData
+  const tz = "America/Denver"
+
+  it("lists every active pass visit with no day, earliest window first, earlier preferences first", () => {
+    const items = trayItems(snapshot)
+    expect(items.length).toBeGreaterThan(10)
+    expect(items.every((i) => i.passId || i.window === "Open job")).toBe(true)
+    const keys = items.map((i) => i.sortKey)
+    expect([...keys].sort()).toEqual(keys)
+    const cancelled = snapshot.passes.find((p) => p.status === "cancelled")!
+    expect(items.some((i) => i.passId === cancelled.id)).toBe(false)
+    const done = snapshot.passes[0].visits.find((v) => v.completedAt)!
+    expect(items.some((i) => i.passId === snapshot.passes[0].id && i.kind === done.kind)).toBe(false)
+  })
+
+  it("places an item on a truck-day as a scheduled visit, last in the day, once", () => {
+    const truck = snapshot.settings.trucks[0]
+    const item = trayItems(snapshot)[0]
+    const day = firstWorkingDay(truck, "2027-05-03")
+    const placed = placeVisit(snapshot.visits, item, truck.id, day, tz)
+    const visit = placed.find((v) => v.id === item.id)!
+    expect(visit).toMatchObject({ status: "scheduled", truckId: truck.id, clientName: item.clientName, kind: item.kind })
+    expect("proposed" in visit || "firm" in visit).toBe(false)
+    expect(visit.startAt?.slice(0, 10)).toBe(day)
+    expect(placeVisit(placed, item, truck.id, day, tz)).toBe(placed)
+    expect(trayItems({ visits: placed, passes: snapshot.passes }).some((i) => i.id === item.id)).toBe(false)
+  })
+
+  it("schedules every tray item that is not waiting for its customer, round-robin over the trucks' working days", () => {
+    const items = trayItems(snapshot)
+    const waiting = items.filter((i) => i.awaitingPick)
+    expect(waiting.length).toBeGreaterThan(0)
+    const { visits, placed, waiting: left } = scheduleItems(snapshot.visits, items, snapshot.settings.trucks, "2027-05-03", tz)
+    expect(placed).toBe(items.length - waiting.length)
+    expect(left).toBe(waiting.length)
+    const after = trayItems({ visits, passes: snapshot.passes })
+    expect(after.map((i) => i.id)).toEqual(waiting.map((i) => i.id))
+    const days = new Set(visits.filter((v) => items.some((i) => i.id === v.id)).map((v) => `${v.truckId}:${v.startAt?.slice(0, 10)}`))
+    expect(days.size).toBeGreaterThan(1)
+    expect(scheduleItems(snapshot.visits, items, [], "2027-05-03", tz)).toEqual({ visits: snapshot.visits, placed: 0, waiting: waiting.length })
   })
 })

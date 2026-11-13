@@ -30,6 +30,8 @@ export interface CheckoutFlowProps {
   prefill?: Partial<CheckoutFields>
   /** finds addresses as the customer types; the fixture until Google Places is wired */
   places?: PlaceProvider
+  /** YYYY-MM-DD in Mountain time; which visits are still on sale this season. Defaults to the day the page opens. */
+  today?: string
   /** called once, when the card step is passed; Done is terminal, so the card step is never passed twice */
   onComplete?: (pass: Pass) => void
   onSaveImage?: (pass: Pass) => void
@@ -64,8 +66,8 @@ function StepBody({ duration, enabled, children }: { duration: number; enabled: 
   return <div ref={ref}>{children}</div>
 }
 
-export function CheckoutFlow({ season, initialZones, initialStep, prefill, places, onComplete, onSaveImage, onDone }: CheckoutFlowProps) {
-  const [state, dispatch] = useCheckoutState({ ...(initialZones ? { zones: initialZones } : {}), ...prefill, ...(initialStep ? { step: initialStep } : {}) })
+export function CheckoutFlow({ season, initialZones, initialStep, prefill, places, today, onComplete, onSaveImage, onDone }: CheckoutFlowProps) {
+  const [state, dispatch] = useCheckoutState({ ...(initialZones ? { zones: initialZones } : {}), ...(today ? { today } : {}), ...prefill, ...(initialStep ? { step: initialStep } : {}) })
   // The step on which Enter was pressed too early, so the address and contact steps show what is missing.
   const [attemptedStep, setAttemptedStep] = useState<number | null>(null)
   const section = useRef<HTMLElement>(null)
@@ -133,6 +135,7 @@ export function CheckoutFlow({ season, initialZones, initialStep, prefill, place
           places={places}
           onType={(text) => dispatch({ type: "typeAddress", text })}
           onPick={(place) => dispatch({ type: "pickPlace", place })}
+          set={set}
         />
       )
       break
@@ -153,7 +156,7 @@ export function CheckoutFlow({ season, initialZones, initialStep, prefill, place
       break
     default: {
       const pass = toPass(state, season)
-      body = <DoneStep pass={pass} email={state.email} onSaveImage={() => onSaveImage?.(pass)} onDone={onDone} />
+      body = <DoneStep pass={pass} email={state.email} today={state.today} onSaveImage={() => onSaveImage?.(pass)} onDone={onDone} />
     }
   }
 

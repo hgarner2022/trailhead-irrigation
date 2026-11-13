@@ -1,14 +1,13 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite"
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
-import type { AdminData, Visit } from "@/lib/admin/types"
+import type { AdminData } from "@/lib/admin/types"
 import { EMPTY_SETTINGS } from "@/lib/admin/data"
 import { AdminShell } from "@/components/blocks/AdminShell"
 import { ScheduleScreen } from "./ScheduleScreen"
 
 // `today` is pinned to 12:56 pm Mountain on Thursday, November 12, 2026, the
 // same moment as the Home story, so the week is Monday the 9th: Truck 1
-// carries every visit, eight of them proposed on Thursday and Friday, and
-// two earlier in the week were moved in Jobber. The map draws from
+// carries every visit and two earlier in the week were moved in Jobber. The map draws from
 // OpenFreeMap tiles; without WebGL it shows its fallback.
 const TODAY = "2026-11-12T19:56:30Z"
 const data = snapshot as AdminData
@@ -43,12 +42,6 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 export const Week: Story = {
-  globals: { viewport: { value: "wide", isRotated: false } },
-}
-
-/** The same week after Ryan pressed Approve week: no hatched blocks, no button. */
-export const WeekApproved: Story = {
-  args: { data: { ...data, visits: data.visits.map((v): Visit => ({ ...v, proposed: undefined })) } },
   globals: { viewport: { value: "wide", isRotated: false } },
 }
 
