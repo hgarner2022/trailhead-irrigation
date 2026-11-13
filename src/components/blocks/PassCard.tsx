@@ -12,7 +12,7 @@ import { SHEEN_REST, attachPointer, attachTilt, canRequestTilt, frameWriter, red
 // A wallet card at credit card proportions: the reserved moment at the end of
 // the Season Pass checkout, the top of the customer's pass page, and a thumbnail
 // in the admin side panel. The artwork fills the card; the name, pass number
-// and the three visits are live text over it: a date once a visit has one,
+// and the visits (two, or three with the July add-on) are live text over it: a date once a visit has one,
 // else the customer's timing preference (the blowout's with a Preferred chip). The sheen is a blended gradient
 // layer under the text that slides with the pointer on a laptop and with the
 // phone's tilt, and eases back to rest when the pointer leaves. It is the only
@@ -203,7 +203,7 @@ export function PassCard({ pass, size = "full", art = "flat", interactive = true
             {cancelled ? (
               <span className="text-sm font-medium">Cancelled</span>
             ) : (
-              <div className="grid min-w-0 flex-1 grid-cols-3 gap-3 @max-[440px]:gap-2">
+              <div className={cn("grid min-w-0 flex-1 gap-3 @max-[440px]:gap-2", pass.visits.length > 2 ? "grid-cols-3" : "grid-cols-2")}>
                 {pass.visits.map((visit) => (
                   <VisitCell key={visit.kind} visit={visit} pass={pass} />
                 ))}

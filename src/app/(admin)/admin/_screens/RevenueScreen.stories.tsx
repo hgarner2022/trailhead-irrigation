@@ -25,6 +25,7 @@ const nothingYet: AdminData = {
   attention: [],
   settings: EMPTY_SETTINGS,
   settingsChanges: [],
+  messages: [],
 }
 
 // Each 2025 month is about 80 percent of 2026, rounded to look like real totals.

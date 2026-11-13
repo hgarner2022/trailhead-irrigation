@@ -75,7 +75,7 @@ function FilterChip<T extends RowData>({ table, filter, disabled }: { table: Gri
       data-slot="data-grid-chip"
       className={cn(
         "inline-flex h-8 items-center rounded-lg border text-xs font-medium",
-        active ? "border-primary/40 bg-primary/10 text-primary-dark" : "border-border bg-background text-foreground",
+        active ? "border-primary/40 bg-primary/10 text-primary-deep" : "border-border bg-background text-foreground",
       )}
     >
       <DropdownMenu modal={false}>

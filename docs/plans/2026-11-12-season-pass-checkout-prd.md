@@ -414,3 +414,14 @@ zone count carried in. The pass page and the revenue page are the first
 app screens and set the pattern for `docs/DESIGN.md`. Next step: a Figma
 or in-browser prototype of the six screens at 375px before any backend
 work, so the flow is approved before it is wired.
+
+
+## Revisions from Hannah's evening review (2026-11-12)
+
+- **The pass is the spring turn-on and the fall blowout.** The July mid-season inspection is an add-on the customer chooses on its own checkout step (off by default, priced for their zones) or adds later by replying to an email. Every price, table and sentence that said "three visits" now says two, with the add-on named. `src/lib/season-pass.ts` is the one source.
+- **Address.** One box with type-ahead over a places provider; the town comes from the picked address and is never asked. An address outside Erie, Longmont, Louisville, Lafayette, Firestone and Broomfield shows "We don't serve {town} yet" and cannot continue.
+- **Email.** Shape checked as typed, a slip of a common domain offered ("Did you mean andrea@gmail.com?"), the mailbox checked server-side, and the confirmation email's sign-in link as the proof.
+- **Pass page.** The customer signs in by a link in any Trailhead email (no password). They see each visit's date once set, and can change the turn-on or blowout preference with a Change link until the day is set.
+- **Customers (admin).** Every customer shows what is next and whether it is booked or still to schedule, with filters, so Hannah can see who needs a day.
+- **Confirmation email.** Carries the pass card image (holographic art) with the dates and preferences.
+- **Texting is two-way.** Customers can reply to any text; STOP is handled by the app, every other reply shows on Home with a Reply button and in the customer's thread, and the answer goes out from the same number. Requires the one-time carrier registration (A2P 10DLC) through Twilio.

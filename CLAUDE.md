@@ -31,7 +31,7 @@ src/
     about/, contact/, book/     # Standard
     api/contact/                # Contact form POST handler
     (admin)/admin/_screens/     # Admin dashboard screens (Home, Passes, October, Revenue, Customers) as Storybook stories; no routes yet
-    (checkout)/season-pass/checkout/_screens/  # Six-step Season Pass checkout prototype (CheckoutFlow)
+    (checkout)/season-pass/checkout/_screens/  # Seven-step Season Pass checkout prototype (CheckoutFlow): address type-ahead, zones, July add-on, timing, contact, card, done
     (account)/account/pass/_screens/           # Customer pass page prototype (PassPageScreen)
   lib/nav.ts                    # ONE source of truth for navigation: SERVICE_GROUPS, CITY_LINKS, PRIMARY_LINKS, getSeasonalPromo()
   lib/season-pass.ts            # Season Pass per-zone pricing (must match /pricing + public/pricing.md)
@@ -39,7 +39,9 @@ src/
     ui/                         # Small primitives — usually re-exported from /ui library
     sections/                   # Page sections (Hero, ServicesOverview, StatsStrip, …)
     ConversionTracking.tsx      # GA4 click delegation for tel: + /book + form events
-    blocks/                     # Composed app pieces (StatTile, SeasonLine, PassCard, DataGrid, SidePanel, AdminShell, …), each with a story; never imported by marketing
+    blocks/                     # Composed app pieces (StatTile, SeasonLine, PassCard, DataGrid, SidePanel, AdminShell, AddressSearch, TimingChoice, …), each with a story; never imported by marketing
+  lib/places/                   # Address type-ahead: PlaceProvider, serviceability (six towns by name, then zip), the fixture provider; Google Places when wired
+  lib/email-check.ts            # Email shape check + the common-domain slip suggestion
   lib/
     seo.ts                      # JSON-LD helpers + siteConfig + sameAs profiles
     blog.ts                     # BLOG_POSTS data
@@ -340,7 +342,7 @@ Provides 14 composable skills for structured software development:
 | `/spring-turn-on` | Spring turn-on landing page on the SERVICE TEMPLATE (`docs/SERVICE_PAGE_TEMPLATE.md`, approved Nov 4 2026): photo banner → answer-first opening with the "At a glance" panel ($145, per-zone, visit length, when, booking opens, Book Online) → five steps beside a photo → terms as plain text → `ServiceAreaMap` → reviews tagged `turn-on` → FAQ → CTA. Facts from the spring-startup blog post and /pricing |
 | `/sprinkler-blowout` | Winterization landing page on the SERVICE TEMPLATE: photo banner (season-aware line) → answer-first opening ($95 up to 6 zones, +$10/zone; `blowoutPhase()` picks early Aug–Sep / peak Oct / late Nov / off wording for the H2 and the panel note, revalidates daily) with the "At a glance" panel → "What the $95 protects" beside a photo → terms → `ServiceAreaMap` → blowout reviews → FAQ → CTA. No freeze-repair dollar figures anywhere on the page (warm copy rule) |
 | `/pricing` | Service pricing cards + comparison table + FAQ (à-la-carte; the Season Pass bundle lives at `/season-pass`) |
-| `/season-pass` | Season Pass — three seasonal visits (turn-on, mid-season, blowout) billed per visit at standard per-zone rates (no discount as a business fact, but never lead copy with "no discount"; sell the reserved blowout date, kept schedule, repair priority). Reached from /pricing and the homepage, not the nav. Zone selector (`SeasonPassCalculator`), static price table, Service+Offer schema, FAQ. Prices come from `src/lib/season-pass.ts`; CTA goes to `/contact` until Jobber has a bookable Season Pass service |
+| `/season-pass` | Season Pass — the spring turn-on and the fall blowout (Hannah, Nov 12 2026: two visits by default; the July inspection is an ADD-ON chosen at checkout or later, never "three visits" in copy) billed per visit at standard per-zone rates (no discount as a business fact, but never lead copy with "no discount"; sell the reserved blowout date, kept schedule, repair priority). Reached from /pricing and the homepage, not the nav. Zone selector (`SeasonPassCalculator`), static price table, Service+Offer schema, FAQ. Prices come from `src/lib/season-pass.ts`; CTA goes to `/contact` until Jobber has a bookable Season Pass service |
 | `/smart-controllers` | Rachio sales funnel hub — value prop → comparison vs Hunter/Rain Bird → per-city rebate snapshot → CompatibleBrands → definitions → FAQ |
 | `/smart-controllers/[city]` | 5 Rachio city pages with city-specific rebate context + price card variants (none / cash / unknown / free-install) |
 | `/smart-controllers/water-savings-calculator` | Interactive lawn-size → gallons-saved + dollars-saved calculator (EPA WaterSense averages) |

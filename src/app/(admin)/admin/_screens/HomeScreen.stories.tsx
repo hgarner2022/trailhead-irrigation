@@ -23,6 +23,7 @@ const nothingYet: AdminData = {
   attention: [],
   settings: EMPTY_SETTINGS,
   settingsChanges: [],
+  messages: [],
 }
 
 const BEFORE_FALL = "2027-09-17T18:00:00Z"

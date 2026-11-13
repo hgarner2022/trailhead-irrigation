@@ -6,18 +6,18 @@ import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { PassCard } from "@/components/blocks/PassCard"
-import type { Pass, Town } from "@/lib/admin/types"
+import type { Pass } from "@/lib/admin/types"
 import { formatMoney } from "@/lib/admin/metrics"
-import { MAX_ZONES, MIN_ZONES, SEASON_PASS_VISITS, seasonPassPrice, visitPrice } from "@/lib/season-pass"
-import { TOWNS, contactProblem, doneSentence, type CheckoutFields } from "./checkout-state"
+import { MAX_ZONES, MIN_ZONES, passVisits, seasonPassPrice, visitPrice } from "@/lib/season-pass"
+import { emailSuggestion } from "@/lib/email-check"
+import { contactProblem, doneSentence, type CheckoutFields } from "./checkout-state"
 
 // The body of each checkout step: the one input under the question, and the
 // helper line under that. The shell (CheckoutFlow) owns the question, the
 // progress line, the buttons and the keys; these only read and set fields.
 // `data-autofocus` marks the element the shell focuses when the step opens.
-// The timing step lives in checkout-timing.tsx.
+// The address step lives in checkout-address.tsx, the add-on step in checkout-inspection.tsx and the timing step in checkout-timing.tsx.
 
 export interface StepProps {
   state: CheckoutFields
@@ -26,7 +26,7 @@ export interface StepProps {
 
 /** A tall input in the body size, so the one field on screen reads as the thing to do. */
 const FIELD = "h-14 rounded-lg bg-background px-4 text-lg shadow-sm"
-const VISIT_SHORT = ["Turn-on", "Inspection", "Blowout"]
+const VISIT_SHORT = { "turn-on": "Turn-on", inspection: "Inspection", blowout: "Blowout" } as const
 const ZONE_OPTIONS = Array.from({ length: MAX_ZONES - MIN_ZONES + 1 }, (_, i) => MIN_ZONES + i)
 
 /** Fades and rises the element once when it mounts, when `enabled`; still under reduced motion and in jsdom. */
@@ -50,37 +50,6 @@ export function useReveal<T extends HTMLElement>(duration: number, enabled = tru
 
 export function Helper({ children }: { children: ReactNode }) {
   return <p className="mt-6 text-base text-muted-foreground">{children}</p>
-}
-
-export function AddressStep({ state, set }: StepProps) {
-  return (
-    <>
-      <div className="grid gap-3 sm:grid-cols-[1fr_11rem]">
-        <Input
-          data-autofocus
-          aria-label="Street address"
-          autoComplete="street-address"
-          placeholder="123 Trailhead Way"
-          value={state.address}
-          onChange={(event) => set("address", event.target.value)}
-          className={FIELD}
-        />
-        <Select value={state.town ?? ""} onValueChange={(value) => set("town", value as Town)}>
-          <SelectTrigger aria-label="Town" className={cn(FIELD, "w-full data-[size=default]:h-14")}>
-            <SelectValue placeholder="Town" />
-          </SelectTrigger>
-          <SelectContent>
-            {TOWNS.map((town) => (
-              <SelectItem key={town} value={town}>
-                {town}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-      <Helper>We serve Erie, Longmont, Louisville, Lafayette, Firestone and Broomfield.</Helper>
-    </>
-  )
 }
 
 export function ZonesStep({ state, set }: StepProps) {
@@ -109,16 +78,18 @@ export function ZonesStep({ state, set }: StepProps) {
         })}
       </div>
       <p data-slot="checkout-price" className="mt-10 font-display text-5xl leading-none text-navy tabular-nums">
-        {formatMoney(seasonPassPrice(state.zones))}
+        {formatMoney(seasonPassPrice(state.zones, state.inspection))}
       </p>
       <p className="mt-2 text-base text-muted-foreground">per season, billed after each visit</p>
       <p className="mt-1 text-sm text-muted-foreground tabular-nums">
-        {SEASON_PASS_VISITS.map((visit, i) => `${VISIT_SHORT[i]} ${formatMoney(visitPrice(visit, state.zones))}`).join(" · ")}
+        {passVisits(state.inspection).map((visit) => `${VISIT_SHORT[visit.key]} ${formatMoney(visitPrice(visit, state.zones))}`).join(" · ")}
       </p>
       <Helper>Six zones or fewer is the starting price. Not sure? Count the stations on your controller, or we confirm it on the first visit.</Helper>
     </>
   )
 }
+
+const LINK = "font-medium text-primary-dark underline underline-offset-2 hover:text-primary-deep"
 
 const CONTACT = [
   { key: "firstName", label: "First name", type: "text", autoComplete: "given-name", inputMode: undefined },
@@ -135,6 +106,8 @@ export function ContactStep({ state, set, attempted }: StepProps & { attempted: 
         const problem = contactProblem(field.key, state[field.key])
         const shown = problem !== null && (attempted || touched.has(field.key))
         const inputId = `${id}-${field.key}`
+        // A slip of a common domain ("gmail.con") is offered under the box, never forced.
+        const slip = field.key === "email" && !shown ? emailSuggestion(state.email) : null
         return (
           <div key={field.key} className="grid gap-2">
             <Label htmlFor={inputId} className="text-sm text-muted-foreground">
@@ -158,14 +131,21 @@ export function ContactStep({ state, set, attempted }: StepProps & { attempted: 
                 {problem}
               </p>
             )}
+            {slip && (
+              <p data-slot="email-slip" className="text-sm text-muted-foreground">
+                Did you mean{" "}
+                <button type="button" onClick={() => set("email", slip)} className={LINK}>
+                  {slip}
+                </button>
+                ?
+              </p>
+            )}
           </div>
         )
       })}
     </div>
   )
 }
-
-const LINK = "font-medium text-primary-dark underline underline-offset-2 hover:text-primary-deep"
 
 function TermsLink({ href, children }: { href: string; children: string }) {
   return (
@@ -253,7 +233,7 @@ export function DoneStep({ pass, email, onSaveImage, onDone }: { pass: Pass; ema
   return (
     <div>
       <PassCard pass={pass} art="flat" priority />
-      <p className="mt-8 text-lg text-foreground">{doneSentence({ ...pass, email })}</p>
+      <p className="mt-8 text-lg text-foreground">{doneSentence({ ...pass, inspection: pass.visits.some((v) => v.kind === "inspection"), email })}</p>
       <div className="mt-8 flex flex-wrap gap-3">
         <Button size="lg" onClick={onSaveImage}>
           Save as image

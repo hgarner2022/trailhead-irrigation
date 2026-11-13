@@ -14,8 +14,10 @@ it("snapshot matches the AdminData shape and has data in every collection", () =
   expect(d.passes.every((p) => d.clients.some((c) => c.id === p.clientId && c.hasPass))).toBe(true)
   expect(d.clients.every((c) => TOWNS.includes(c.town))).toBe(true)
   expect(d.passes).toHaveLength(12)
-  expect(d.passes.every((p) => p.visits.length === 3)).toBe(true)
-  expect(d.passes.every((p) => p.visits.map((v) => v.window).join(",") === "May,July,October")).toBe(true)
+  // Five passes took the July add-on; seven bought the two visits.
+  expect(d.passes.filter((p) => p.visits.length === 3)).toHaveLength(5)
+  expect(d.passes.filter((p) => p.visits.length === 2)).toHaveLength(7)
+  expect(d.passes.every((p) => ["May,July,October", "May,October"].includes(p.visits.map((v) => v.window).join(",")))).toBe(true)
   expect("blowoutWeeks" in d).toBe(false)
   expect(d.passes.some((p) => "blowoutWeek" in p)).toBe(false)
 })

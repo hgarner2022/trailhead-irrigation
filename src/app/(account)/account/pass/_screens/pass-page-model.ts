@@ -38,6 +38,9 @@ export function visitRow(visit: PassVisit, pass: Pass): VisitRow {
 
 export const visitRows = (pass: Pass): VisitRow[] => pass.visits.map((v) => visitRow(v, pass))
 
+/** The turn-on and the blowout can be moved by the customer until a day is set; the inspection has no preference. */
+export const canChange = (visit: PassVisit): visit is PassVisit & { kind: "turn-on" | "blowout" } => visit.kind !== "inspection" && !visit.scheduledAt && !visit.completedAt
+
 /** "08/28" from the stored "2028-08". */
 export const expiry = (yearMonth: string) => `${yearMonth.slice(5, 7)}/${yearMonth.slice(2, 4)}`
 
@@ -51,7 +54,7 @@ export function cardLine(pass: Pass): string {
 /** One line under the season line: what is next, or that the season is done. */
 export function seasonCaption(pass: Pass): string {
   const next = pass.visits.find((v) => !v.completedAt)
-  if (!next) return `All three visits are done. We'll email you in January about ${pass.season + 1}.`
+  if (!next) return `Every visit is done. We'll email you in January about ${pass.season + 1}.`
   const row = visitRow(next, pass)
   if (next.scheduledAt) return `Next up: ${row.name.toLowerCase()} on ${row.when}.`
   if (next.kind === "blowout") return `Your blowout is preferred for ${preferencePhrase("blowout", pass.blowoutPreference)}. Ryan sets the day in September.`

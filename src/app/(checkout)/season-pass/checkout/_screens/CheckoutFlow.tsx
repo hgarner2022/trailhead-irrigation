@@ -6,10 +6,13 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import type { Pass } from "@/lib/admin/types"
 import { STEPS, STEP_COUNT, canContinue, toPass, useCheckoutState, type CheckoutFields } from "./checkout-state"
-import { AddressStep, CONSENT_PROBLEM_ID, CardStep, ContactStep, DoneStep, ZonesStep, useReveal } from "./checkout-steps"
+import type { PlaceProvider } from "@/lib/places"
+import { AddressStep } from "./checkout-address"
+import { CONSENT_PROBLEM_ID, CardStep, ContactStep, DoneStep, ZonesStep, useReveal } from "./checkout-steps"
+import { InspectionStep } from "./checkout-inspection"
 import { TimingStep } from "./checkout-timing"
 
-// The Season Pass checkout as six full-screen questions, one input each (the
+// The Season Pass checkout as seven full-screen questions, one input each (the
 // timing step asks its two together), the way Typeform paces a form: a thin orange line across the top for progress,
 // the question in the display face, the trail photo faint behind the cream
 // canvas, Enter to continue and the arrow keys to move. Only the current step
@@ -25,6 +28,8 @@ export interface CheckoutFlowProps {
   /** open on this step; stories use it with `prefill` */
   initialStep?: number
   prefill?: Partial<CheckoutFields>
+  /** finds addresses as the customer types; the fixture until Google Places is wired */
+  places?: PlaceProvider
   /** called once, when the card step is passed; Done is terminal, so the card step is never passed twice */
   onComplete?: (pass: Pass) => void
   onSaveImage?: (pass: Pass) => void
@@ -47,10 +52,11 @@ function timingNeighbour(target: HTMLElement, direction: "down" | "up"): HTMLEle
   return target.closest("section")?.querySelector<HTMLElement>(`${TIMING_CHOICE}[data-kind="${other}"][aria-pressed="true"]`) ?? null
 }
 
-/** Elements that use Enter and the arrow keys themselves. */
+/** Elements that use Enter and the arrow keys themselves; a combobox only while its list is open. */
 function ownsKeys(target: HTMLElement): boolean {
   const role = target.getAttribute("role")
-  return target.tagName === "SELECT" || target.tagName === "TEXTAREA" || role === "combobox" || role === "listbox" || role === "option" || !!target.closest('[data-slot="select-content"]')
+  if (role === "combobox") return target.getAttribute("aria-expanded") === "true"
+  return target.tagName === "SELECT" || target.tagName === "TEXTAREA" || role === "listbox" || role === "option" || !!target.closest('[data-slot="select-content"]')
 }
 
 function StepBody({ duration, enabled, children }: { duration: number; enabled: boolean; children: React.ReactNode }) {
@@ -58,9 +64,9 @@ function StepBody({ duration, enabled, children }: { duration: number; enabled: 
   return <div ref={ref}>{children}</div>
 }
 
-export function CheckoutFlow({ season, initialZones, initialStep, prefill, onComplete, onSaveImage, onDone }: CheckoutFlowProps) {
+export function CheckoutFlow({ season, initialZones, initialStep, prefill, places, onComplete, onSaveImage, onDone }: CheckoutFlowProps) {
   const [state, dispatch] = useCheckoutState({ ...(initialZones ? { zones: initialZones } : {}), ...prefill, ...(initialStep ? { step: initialStep } : {}) })
-  // The step on which Enter was pressed too early, so the contact step shows what is missing.
+  // The step on which Enter was pressed too early, so the address and contact steps show what is missing.
   const [attemptedStep, setAttemptedStep] = useState<number | null>(null)
   const section = useRef<HTMLElement>(null)
   const questionId = useId()
@@ -120,10 +126,21 @@ export function CheckoutFlow({ season, initialZones, initialStep, prefill, onCom
   let body: React.ReactNode
   switch (current.key) {
     case "address":
-      body = <AddressStep state={state} set={set} />
+      body = (
+        <AddressStep
+          state={state}
+          attempted={attempted}
+          places={places}
+          onType={(text) => dispatch({ type: "typeAddress", text })}
+          onPick={(place) => dispatch({ type: "pickPlace", place })}
+        />
+      )
       break
     case "zones":
       body = <ZonesStep state={state} set={set} />
+      break
+    case "inspection":
+      body = <InspectionStep state={state} set={set} />
       break
     case "timing":
       body = <TimingStep state={state} set={set} questionId={questionId} />

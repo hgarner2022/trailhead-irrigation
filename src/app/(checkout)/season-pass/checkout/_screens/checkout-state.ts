@@ -8,9 +8,11 @@
 import { useReducer } from "react"
 import type { Consent, Pass, PassVisit, TimingPreference, Town } from "@/lib/admin/types"
 import { preferencePhrase } from "@/lib/admin/format"
-import { MAX_ZONES, MIN_ZONES, SEASON_PASS_VISITS, TERMS_VERSION, visitPrice } from "@/lib/season-pass"
+import { emailProblem } from "@/lib/email-check"
+import { outOfAreaMessage, serviceability, type PlaceSuggestion } from "@/lib/places"
+import { MAX_ZONES, MIN_ZONES, TERMS_VERSION, passVisits, visitPrice } from "@/lib/season-pass"
 
-export type StepKey = "address" | "zones" | "timing" | "contact" | "card" | "done"
+export type StepKey = "address" | "zones" | "inspection" | "timing" | "contact" | "card" | "done"
 
 export interface Step {
   key: StepKey
@@ -23,6 +25,7 @@ export interface Step {
 export const STEPS: readonly Step[] = [
   { key: "address", question: "Where is the yard?", action: "Continue" },
   { key: "zones", question: "How many zones does your system have?", action: "Continue" },
+  { key: "inspection", question: "Add a mid-season inspection?", action: "Continue" },
   { key: "timing", question: "When should we turn your system on?", action: "Continue" },
   { key: "contact", question: "Who should we reach?", action: "Continue" },
   { key: "card", question: "Save a card for after each visit.", action: "Save card and reserve" },
@@ -32,13 +35,19 @@ export const STEP_COUNT = STEPS.length
 
 export const TOWNS: readonly Town[] = ["Erie", "Longmont", "Louisville", "Lafayette", "Firestone", "Broomfield"]
 
-/** The months each visit lands in, as the pass windows write them; the preference carries the rest. */
-export const VISIT_WINDOWS = ["May", "July", "October"] as const
+/** The month each visit lands in, as the pass windows write them; the preference carries the rest. */
+export const VISIT_WINDOWS = { "turn-on": "May", inspection: "July", blowout: "October" } as const
 
 export interface CheckoutFields {
+  /** what is in the address box */
   address: string
+  /** the address picked from the type-ahead list; null while the customer is still typing */
+  place: PlaceSuggestion | null
+  /** read from the picked address; null until one in the six towns is picked */
   town: Town | null
   zones: number
+  /** the July inspection, an add-on; off unless the customer adds it */
+  inspection: boolean
   /** when the customer would like the spring turn-on; the recommendation is preselected */
   turnOnPreference: TimingPreference
   /** when the customer would like the fall blowout; the recommendation is preselected */
@@ -61,6 +70,8 @@ export interface CheckoutState extends CheckoutFields {
 
 export type CheckoutAction =
   | { type: "set"; field: keyof CheckoutFields; value: CheckoutFields[keyof CheckoutFields] }
+  | { type: "typeAddress"; text: string }
+  | { type: "pickPlace"; place: PlaceSuggestion }
   | { type: "next" }
   | { type: "back" }
   | { type: "goTo"; step: number }
@@ -71,8 +82,10 @@ export function initialState(prefill: Partial<CheckoutState> = {}): CheckoutStat
   return {
     step: 1,
     address: "",
+    place: null,
     town: null,
     zones: MIN_ZONES,
+    inspection: false,
     turnOnPreference: "recommended",
     blowoutPreference: "recommended",
     firstName: "",
@@ -92,18 +105,30 @@ export const digits = (phone: string) => phone.replace(/\D/g, "")
 /** Why a contact field cannot pass yet, in the words the screen shows; null when it can. */
 export function contactProblem(field: "firstName" | "email" | "phone", value: string): string | null {
   if (field === "firstName") return value.trim() ? null : "We need a first name for the visit notes."
-  if (field === "email") return value.includes("@") ? null : "We need an email for the receipt."
+  if (field === "email") return emailProblem(value)
   return digits(value).length === 10 ? null : "We need a ten-digit phone number for the day-of text."
+}
+
+export const PICK_ADDRESS = "Pick your address from the list so we have it right."
+
+/** The line under the address box: outside the six towns, or nothing picked after Enter; null when the step can pass. */
+export function addressProblem(state: Pick<CheckoutFields, "place">, attempted: boolean): string | null {
+  if (state.place) {
+    const check = serviceability(state.place)
+    return check.ok ? null : outOfAreaMessage(check)
+  }
+  return attempted ? PICK_ADDRESS : null
 }
 
 /** Whether the step on screen has what it needs to move on. */
 export function canContinue(state: CheckoutState): boolean {
   switch (STEPS[state.step - 1]?.key) {
     case "address":
-      return state.address.trim().length > 0 && state.town !== null
+      return state.place !== null && serviceability(state.place).ok
     case "zones":
       return Number.isInteger(state.zones) && state.zones >= MIN_ZONES && state.zones <= MAX_ZONES
-    // Both preferences start on the recommendation, so the timing step always has an answer.
+    // The add-on starts answered (off), and both preferences start on the recommendation.
+    case "inspection":
     case "timing":
       return true
     case "contact":
@@ -121,6 +146,13 @@ export function reducer(state: CheckoutState, action: CheckoutAction): CheckoutS
   switch (action.type) {
     case "set":
       return { ...state, [action.field]: action.value }
+    // Typing again drops the pick and the town it gave; a pick fills all three at once.
+    case "typeAddress":
+      return { ...state, address: action.text, place: null, town: null }
+    case "pickPlace": {
+      const check = serviceability(action.place)
+      return { ...state, address: action.place.label, place: action.place, town: check.ok ? check.town : null }
+    }
     case "next": {
       if (!canContinue(state)) return state
       const saved = STEPS[state.step - 1].key === "card" ? true : state.cardSaved
@@ -139,10 +171,11 @@ export function useCheckoutState(prefill?: Partial<CheckoutState>) {
 }
 
 /** The sentence under the pass card on Done. */
-export function doneSentence(state: Pick<CheckoutFields, "turnOnPreference" | "blowoutPreference" | "email">): string {
+export function doneSentence(state: Pick<CheckoutFields, "turnOnPreference" | "blowoutPreference" | "inspection" | "email">): string {
   const turnOn = preferencePhrase("turn-on", state.turnOnPreference)
   const blowout = preferencePhrase("blowout", state.blowoutPreference)
-  return `Turn-on preferred ${turnOn}, inspection in July, blowout preferred ${blowout}. We'll email the details to ${state.email}.`
+  const july = state.inspection ? "inspection in July, " : ""
+  return `Turn-on preferred ${turnOn}, ${july}blowout preferred ${blowout}. We'll email the details to ${state.email}.`
 }
 
 /** The consent the purchase records: the terms as accepted now, and the marketing channels whose boxes were ticked. */
@@ -160,9 +193,9 @@ export function toConsent(state: Pick<CheckoutFields, "marketingEmail" | "market
 
 /** The pass the last screen shows, built from the answers. Ids and links are placeholders until the wiring phase; `at` is when the terms were accepted. */
 export function toPass(state: CheckoutState, season: number, at = new Date().toISOString()): Pass {
-  const visits: PassVisit[] = SEASON_PASS_VISITS.map((v, i) => ({
+  const visits: PassVisit[] = passVisits(state.inspection).map((v) => ({
     kind: v.key,
-    window: VISIT_WINDOWS[i],
+    window: VISIT_WINDOWS[v.key],
     amount: visitPrice(v, state.zones),
   }))
   return {

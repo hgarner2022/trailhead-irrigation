@@ -66,9 +66,10 @@ owner's copy wins and the other is a display.
    Schedule.
 5. **Revenue.** Committed against charged, by month, upcoming charges,
    renewals (renewed, lapsed, not yet asked).
-6. **Customers.** Everyone, with pass status layered on, and the January
-   pre-sell for the people who book a spring visit and a blowout at full
-   price.
+6. **Customers.** Everyone, with pass status layered on, what is next for
+   each and whether it is booked or still to schedule (Hannah, 2026-11-12
+   night), the consent on record, and the January pre-sell for the people
+   who book a spring visit and a blowout at full price.
 7. **Settings.** Trucks, Areas, Capacity and windows, Messages, Checklists,
    with a change log.
 
@@ -79,13 +80,18 @@ first for a crew login.
 
 - **Season Pass page** (marketing, exists): the offer, the price by zones,
   the button into the checkout.
-- **Checkout** (prototype exists): six screens, one question each: address,
-  zones, timing preferences for turn-on and blowout with the recommendation
-  preselected and the reason under it, contact, card, done with the pass
-  card.
-- **Pass page** (prototype exists): the pass card, the season line, the
-  visits in customer words (Done, Booked, Reserved), the card on file,
-  cancel.
+- **Checkout** (prototype exists): seven screens, one question each: the
+  address as one type-ahead box (the town comes from it; outside the six
+  towns is refused), zones, the July inspection as an add-on (the pass is
+  the turn-on and the blowout), timing preferences for turn-on and blowout
+  with the recommendation preselected and the reason under it, contact with
+  the email checks, card, done with the pass card. The confirmation email
+  carries the pass card image.
+- **Pass page** (prototype exists): reached by the sign-in link in any
+  Trailhead email (magic link, no password). The pass card, the season line,
+  the visits in customer words (Done, Booked, Preferred) with the date once
+  it is set, a Change link on the turn-on and blowout until their day is set
+  (Hannah, 2026-11-12 night), the card on file, cancel.
 - **Booking at `/book`** (later): today Jobber's online booking lets a
   customer pick a time and the visit lands on Ryan's calendar booked, with
   no one in the loop (Hannah's correction, 2026-11-12). The app's version
@@ -94,10 +100,27 @@ first for a crew login.
   in Trailhead's voice. Per-service questions, the checkout's pacing. A
   Requests inbox exists only for work that needs a quote (installs, large
   repairs).
-- **Messages** (wiring plan): confirmation at purchase, date set or moved,
-  day-before reminder, on-my-way when the crew taps it, after-visit receipt
-  naming the next visit, failed card, January renewal; texts opt-in with
-  STOP handled.
+- **Messages** (wiring plan): confirmation at purchase (with the pass card
+  image), date set or moved, day-before reminder, on-my-way when the crew
+  taps it, after-visit receipt naming the next visit, failed card,
+  cancelled, January renewal.
+- **Texting is two-way** (Hannah, 2026-11-12 night: "make sure the message
+  is clear"). The app sends every text from one Trailhead number. When a
+  customer texts back, the reply lands in the app on that customer: STOP
+  and the carrier keywords are recorded as an opt-out and answered by the
+  app on its own; any other reply ("can you come after 10?") is saved on
+  the customer, shown at the top of Home as "Andrea replied: …" with a
+  Reply button, and shown in the customer's panel as one thread. Hannah or
+  Ryan answer from either place and the answer goes out from the same
+  number, so the customer sees one ordinary conversation on their phone.
+  The thread on the customer also holds every email and text the app sent,
+  with its state (sent, delivered, failed, bounced). Email replies go to
+  Ryan's real inbox in the first build. The day-before reminder asks for one
+  letter: C confirms the visit (a check on the Schedule), R asks for a
+  different day (a row on Home, and the app texts back the sign-in link to
+  the pass page so the customer can pick). Before any of this can send, the
+  business must be registered with the carriers through Twilio (A2P 10DLC),
+  a one-time setup that takes days to two weeks.
 
 ## Consent, recorded in the CRM
 

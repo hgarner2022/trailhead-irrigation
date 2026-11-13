@@ -25,7 +25,7 @@ const meta = {
   title: "Screens/PassPage",
   component: PassPageScreen,
   parameters: { layout: "fullscreen" },
-  args: { pass: active, today: "2026-11-12", onCancel: fn() },
+  args: { pass: active, today: "2026-11-12", onCancel: fn(), onChangePreference: fn() },
 } satisfies Meta<typeof PassPageScreen>
 export default meta
 type Story = StoryObj<typeof meta>
@@ -58,6 +58,18 @@ export const Cancelling: Story = {
     await userEvent.click(await screen.findByRole("button", { name: "Cancel the pass" }))
     await expect(await screen.findByRole("dialog", { name: "Your pass is cancelled." })).toBeInTheDocument()
     await expect(args.onCancel).toHaveBeenCalledTimes(1)
+  },
+}
+
+/** The blowout's Change link: the three choices, Later picked and saved, the answer in the dialog. */
+export const ChangePreference: Story = {
+  globals: { viewport: { value: "wide", isRotated: false } },
+  play: async ({ canvas, userEvent, args }) => {
+    await userEvent.click(await canvas.findByRole("button", { name: /Change when we do your fall blowout/ }))
+    await userEvent.click(await screen.findByRole("button", { name: "Later Late October" }))
+    await userEvent.click(await screen.findByRole("button", { name: "Save" }))
+    await expect(await screen.findByRole("dialog", { name: "Your fall blowout is now preferred late October." })).toBeInTheDocument()
+    await expect(args.onChangePreference).toHaveBeenCalledWith("blowout", "later")
   },
 }
 

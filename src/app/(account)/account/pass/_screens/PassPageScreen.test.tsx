@@ -17,11 +17,24 @@ describe("PassPageScreen", () => {
     expect(rows().map((r) => r.textContent)).toEqual([
       "Spring turn-onMay 3Done",
       "Mid-season inspectionJulyJuly",
-      "Fall blowoutMid OctoberPreferred",
+      "Fall blowoutMid OctoberChangePreferred",
     ])
     expect(document.body.textContent).not.toMatch(/Not scheduled|Scheduled|Completed|Reserved|Week of/)
     expect(screen.getByText("Visa ending 4242, expires 08/28")).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Update card" })).toBeInTheDocument()
+  })
+
+  it("lets the customer change the blowout preference until its day is set, and not the done turn-on", () => {
+    const onChangePreference = vi.fn()
+    render(<PassPageScreen pass={pass} today="2026-11-12" onChangePreference={onChangePreference} />)
+    expect(screen.queryByRole("button", { name: /Change when we do your spring turn-on/ })).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole("button", { name: /Change when we do your fall blowout/ }))
+    expect(screen.getByRole("dialog", { name: "When should we blow out your system?" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Save" })).toBeDisabled()
+    fireEvent.click(screen.getByRole("button", { name: /^Earlier/ }))
+    fireEvent.click(screen.getByRole("button", { name: "Save" }))
+    expect(onChangePreference).toHaveBeenCalledWith("blowout", "earlier")
+    expect(screen.getByRole("dialog", { name: "Your fall blowout is now preferred early October." })).toBeInTheDocument()
   })
 
   it("asks before cancelling and says what cancelling does", () => {
