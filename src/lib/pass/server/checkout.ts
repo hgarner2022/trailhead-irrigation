@@ -39,6 +39,8 @@ export interface CheckoutDeps {
 /** The one line for the terms box, said wherever the terms are missing. */
 export const TERMS_MESSAGE = "Accept the terms to continue."
 
+const FINISH_UNAVAILABLE = "Your card was saved, but we couldn't finish setting up the pass. Nothing was charged. Press Try again, or call us and we'll finish it for you."
+
 const MESSAGE: Record<CheckoutProblem, string> = {
   "out-of-area": "We work in Erie, Longmont, Louisville, Lafayette, Firestone and Broomfield.",
   "email-unreachable": "We can't find that email's mail server. Check the spelling.",
@@ -159,7 +161,9 @@ export async function finishCheckoutWith(deps: CheckoutDeps, passId: string, ses
   } catch (error) {
     logCheckoutFailure("finishCheckout", "card", passId, error)
     if (await sessionExpired(deps, sessionId)) return { ok: false, problem: "expired", message: MESSAGE.expired }
-    return { ok: false, ...problemOf(error) }
+    const problem = problemOf(error)
+    // The card is already saved at this point, so the customer is told that, not "we couldn't reach the card form".
+    return { ok: false, ...problem, ...(problem.problem === "unavailable" ? { message: FINISH_UNAVAILABLE } : {}) }
   }
 }
 
