@@ -6,12 +6,44 @@
  * Also the words for weekdays and visit kinds, and the preview that fills a
  * message template.
  */
-import type { AreaGroup, CapacityKind, MessageTemplate, OrganizationSettings, SeasonWindow, SettingsChange, Town, Truck, Weekday } from "@/lib/admin/types"
+import type { AdminData, AreaGroup, CapacityKind, MessageTemplate, OrganizationSettings, SeasonWindow, SettingsChange, Town, Truck, Weekday } from "@/lib/admin/types"
 import { WEEKDAYS } from "@/components/blocks/week-grid-days"
+import { KIND_WORDS } from "@/components/blocks/day-map-helpers"
+import { TIME_ZONE, writtenDate } from "@/lib/admin/format"
+
+/** One API key as the list shows it; the secret is shown once at creation and never kept. */
+export interface ApiKey {
+  id: string
+  name: string
+  /** the first characters of the key, safe to show: "th_live_ab12…" */
+  prefix: string
+  scopes: ApiScope[]
+  /** ISO datetime, or null when never used */
+  lastUsedAt: string | null
+}
+
+/** The scopes from the IA doc's open API rule. */
+export type ApiScope = "read" | "write-passes" | "write-schedule" | "send-messages" | "admin"
+export const API_SCOPES: readonly ApiScope[] = ["read", "write-passes", "write-schedule", "send-messages", "admin"]
+export const SCOPE_WORDS: Record<ApiScope, string> = {
+  read: "Read",
+  "write-passes": "Write passes",
+  "write-schedule": "Write schedule",
+  "send-messages": "Send messages",
+  admin: "Admin",
+}
+
+/** The prototype's keys: one for an agent that reads, one for the day view. */
+export const SAMPLE_KEYS: ApiKey[] = [
+  { id: "key-1", name: "Appy agent", prefix: "th_live_ab12…", scopes: ["read", "write-schedule"], lastUsedAt: "2026-11-12T17:05:00Z" },
+  { id: "key-2", name: "Day view on the phones", prefix: "th_live_q7mk…", scopes: ["read", "write-passes"], lastUsedAt: "2026-11-10T14:20:00Z" },
+  { id: "key-3", name: "Reporting export", prefix: "th_live_x93d…", scopes: ["read"], lastUsedAt: null },
+]
 
 export interface SettingsState {
   settings: OrganizationSettings
   changes: SettingsChange[]
+  keys: ApiKey[]
 }
 
 /** Who made the change and when; the screen passes its user and `today`. */
@@ -47,7 +79,7 @@ export const clip = (s: string) => (s.length > CLIP ? `${s.slice(0, CLIP - 1).tr
 function record(state: SettingsState, actor: Actor, field: string, from: string, to: string, settings: OrganizationSettings): SettingsState {
   if (from === to) return state
   const change: SettingsChange = { id: `sc${state.changes.length + 1}-${actor.at}`, at: actor.at, who: actor.who, field, from: clip(from), to: clip(to) }
-  return { settings, changes: [...state.changes, change] }
+  return { ...state, settings, changes: [...state.changes, change] }
 }
 
 const replaceTruck = (s: OrganizationSettings, truck: Truck) => ({ ...s, trucks: s.trucks.map((t) => (t.id === truck.id ? truck : t)) })
@@ -71,6 +103,20 @@ export function setCapacity(state: SettingsState, truckId: string, kind: Capacit
   if (!truck || !Number.isInteger(n) || n < 0) return state
   const capacityByKind = { ...truck.capacityByKind, [kind]: n }
   return record(state, actor, `${truck.name} ${KIND_PLURALS[kind]} per day`, String(truck.capacityByKind[kind]), String(n), replaceTruck(state.settings, { ...truck, capacityByKind }))
+}
+
+export function setJobberUser(state: SettingsState, truckId: string, jobberUserId: string, actor: Actor): SettingsState {
+  const truck = truckOf(state, truckId)
+  if (!truck) return state
+  return record(state, actor, `${truck.name} Jobber user`, truck.jobberUserId || "None", jobberUserId || "None", replaceTruck(state.settings, { ...truck, jobberUserId }))
+}
+
+/** The truck leaves the list; its visits are not touched here, the next schedule run no longer plans onto it. */
+export function removeTruck(state: SettingsState, truckId: string, actor: Actor): SettingsState {
+  const truck = truckOf(state, truckId)
+  if (!truck) return state
+  const trucks = state.settings.trucks.filter((t) => t.id !== truckId)
+  return record(state, actor, "Trucks", `${state.settings.trucks.length} (${truck.name} included)`, `${trucks.length} (${truck.name} removed)`, { ...state.settings, trucks })
 }
 
 /** A new truck, named after its position, working Monday to Friday with nothing planned per day yet. */
@@ -150,6 +196,38 @@ export function setMessage(state: SettingsState, key: string, field: "subject" |
   return record(state, actor, name, words(message[field]), words(value), { ...state.settings, messages })
 }
 
+/** A new empty area group at the end of the list. */
+export function addArea(state: SettingsState, actor: Actor): SettingsState {
+  const n = state.settings.areas.length + 1
+  const area: AreaGroup = { id: `area-${n}-${actor.at}`, name: `Area ${n}`, towns: [] }
+  return record(state, actor, "Areas", String(n - 1), String(n), { ...state.settings, areas: [...state.settings.areas, area] })
+}
+
+/** A one-time secret: the same name and moment give the same key, so the reducer stays pure; the real API will draw from a secure source. */
+export function secretFor(name: string, at: string): string {
+  let h = 2166136261
+  for (const ch of `${name}|${at}`) h = Math.imul(h ^ ch.charCodeAt(0), 16777619) >>> 0
+  const body = Array.from({ length: 4 }, (_, i) => (Math.imul(h + i * 2654435761, 2246822519) >>> 0).toString(36).padStart(7, "0")).join("")
+  return `th_live_${body.slice(0, 28)}`
+}
+
+/** The new key joins the list with its prefix; the secret comes back once for the dialog to show and is not stored. A blank name or no scope changes nothing. */
+export function createKey(state: SettingsState, name: string, scopes: ApiScope[], actor: Actor): { state: SettingsState; secret: string } | null {
+  const trimmed = name.trim()
+  if (!trimmed || scopes.length === 0) return null
+  const secret = secretFor(trimmed, actor.at)
+  const key: ApiKey = { id: `key-${state.keys.length + 1}-${actor.at}`, name: trimmed, prefix: `${secret.slice(0, 12)}…`, scopes: API_SCOPES.filter((s) => scopes.includes(s)), lastUsedAt: null }
+  const next = record({ ...state, keys: [...state.keys, key] }, actor, "API keys", String(state.keys.length), `${state.keys.length + 1} (${trimmed} created)`, state.settings)
+  return { state: next, secret }
+}
+
+export function revokeKey(state: SettingsState, keyId: string, actor: Actor): SettingsState {
+  const key = state.keys.find((k) => k.id === keyId)
+  if (!key) return state
+  const keys = state.keys.filter((k) => k.id !== keyId)
+  return record({ ...state, keys }, actor, "API keys", `${state.keys.length} (${key.name} included)`, `${keys.length} (${key.name} revoked)`, state.settings)
+}
+
 /** What the preview fills the template's placeholders with. */
 export interface Sample {
   firstName: string
@@ -162,4 +240,18 @@ export interface Sample {
 /** The template with every {placeholder} filled from the sample; an unknown placeholder stays as written. */
 export function fillMessage(body: string, sample: Sample): string {
   return body.replace(/\{(\w+)\}/g, (match, key: string) => (key in sample ? sample[key as keyof Sample] : match))
+}
+
+/** The preview's sample: the first pass's first name, the first scheduled visit with a truck, and the pass's next visit; plain stand-ins when the data is empty. */
+export function sampleFor(data: AdminData): Sample {
+  const pass = data.passes[0]
+  const visit = data.visits.find((v) => v.startAt && v.truckId)
+  const truck = visit ? data.settings.trucks.find((t) => t.id === visit.truckId) : undefined
+  return {
+    firstName: pass?.firstName ?? "Alex",
+    visit: visit ? KIND_WORDS[visit.kind] : "visit",
+    date: visit?.startAt ? writtenDate(visit.startAt, TIME_ZONE) : "a day we will confirm",
+    truck: truck?.name ?? "Truck 1",
+    nextVisit: pass?.visits[1] ? KIND_WORDS[pass.visits[1].kind] : "next visit",
+  }
 }

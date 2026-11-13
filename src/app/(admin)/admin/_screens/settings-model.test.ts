@@ -2,12 +2,12 @@ import { describe, expect, it } from "vitest"
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import type { AdminData } from "@/lib/admin/types"
 import {
-  addTruck, channelWord, clip, daysWords, fillMessage, messageName, moveTownInOrder, setAreaName, setBuffer, setCapacity, setFirmDays,
+  addArea, addTruck, createKey, removeTruck, revokeKey, secretFor, sampleFor, setJobberUser, SAMPLE_KEYS, channelWord, clip, daysWords, fillMessage, messageName, moveTownInOrder, setAreaName, setBuffer, setCapacity, setFirmDays,
   setMessage, setTruckName, setWindow, toggleAreaTown, toggleWorkingDay, type SettingsState,
 } from "./settings-model"
 
 const data = snapshot as AdminData
-const state: SettingsState = { settings: data.settings, changes: [] }
+const state: SettingsState = { settings: data.settings, changes: [], keys: SAMPLE_KEYS }
 const actor = { who: "Hannah", at: "2026-11-12T19:56:30Z" }
 const last = (s: SettingsState) => s.changes[s.changes.length - 1]
 
@@ -160,5 +160,49 @@ describe("the log", () => {
     s = setFirmDays(s, 6, { who: "Ryan", at: "2026-11-12T20:00:00Z" })
     expect(s.changes.map((c) => [c.who, c.from, c.to])).toEqual([["Hannah", "7", "5"], ["Ryan", "5", "6"]])
     expect(new Set(s.changes.map((c) => c.id)).size).toBe(2)
+  })
+})
+
+describe("more trucks, areas and keys", () => {
+  it("sets the Jobber user and removes a truck, logging both", () => {
+    const user = setJobberUser(state, "truck-1", "jobber-user-9", actor)
+    expect(user.settings.trucks[0].jobberUserId).toBe("jobber-user-9")
+    expect(last(user)).toMatchObject({ field: "Truck 1 Jobber user", from: "jobber-user-1", to: "jobber-user-9" })
+    const gone = removeTruck(state, "truck-2", actor)
+    expect(gone.settings.trucks.map((t) => t.id)).toEqual(["truck-1"])
+    expect(last(gone).field).toBe("Trucks")
+    expect(removeTruck(state, "nope", actor)).toBe(state)
+  })
+
+  it("adds an empty area", () => {
+    const next = addArea(state, actor)
+    expect(next.settings.areas).toHaveLength(4)
+    expect(next.settings.areas[3]).toMatchObject({ name: "Area 4", towns: [] })
+  })
+
+  it("creates a key once and revokes it", () => {
+    const made = createKey(state, "  Billing agent ", ["write-passes", "read"], actor)!
+    expect(made.secret).toMatch(/^th_live_[a-z0-9]{28}$/)
+    expect(made.secret).toBe(secretFor("Billing agent", actor.at))
+    const key = made.state.keys[3]
+    expect(key).toMatchObject({ name: "Billing agent", scopes: ["read", "write-passes"], lastUsedAt: null })
+    expect(key.prefix).toBe(`${made.secret.slice(0, 12)}…`)
+    expect(JSON.stringify(made.state)).not.toContain(made.secret)
+    expect(last(made.state)).toMatchObject({ field: "API keys", to: "4 (Billing agent created)" })
+    expect(createKey(state, "  ", ["read"], actor)).toBeNull()
+    expect(createKey(state, "x", [], actor)).toBeNull()
+    const revoked = revokeKey(made.state, key.id, actor)
+    expect(revoked.keys).toHaveLength(3)
+    expect(last(revoked).to).toBe("3 (Billing agent revoked)")
+    expect(revokeKey(state, "nope", actor)).toBe(state)
+  })
+})
+
+describe("sampleFor", () => {
+  it("reads the first pass and the first scheduled visit", () => {
+    expect(sampleFor(data)).toEqual({ firstName: "Andrea", visit: "inspection", date: "April 8", truck: "Truck 1", nextVisit: "inspection" })
+  })
+  it("falls back when there is nothing", () => {
+    expect(sampleFor({ ...data, passes: [], visits: [] })).toMatchObject({ firstName: "Alex", visit: "visit", truck: "Truck 1" })
   })
 })
