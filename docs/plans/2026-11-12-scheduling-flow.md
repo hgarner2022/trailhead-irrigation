@@ -151,3 +151,36 @@ are the ones no scheduler prevents.
   closed; the confirmation email reads from the same rule.
 - Settings: `leadWeeks` per window (spring 4, July 4, fall 2); no
   `firmDaysAhead`.
+
+## 2026-11-13 (night): pick your days at checkout
+
+After the first live purchase Hannah asked whether a customer should pick
+days or be booked, and what a returning customer does. The research is in
+`2026-11-13-checkout-scheduling-research.md`; the rule it ends on replaces
+"the app places them later" for everyone who buys online. **The first
+purchase is model 1 with the best days already chosen.** The checkout's
+timing step (early, mid, late) is gone; "Your days" shows, for each visit the
+pass holds, the three best open days inside its window on the town's
+truck-day (`schedule.offerDays`: the earliest open day, one near the middle
+and the last, each with its two-hour arrival window from the slot grid), the
+first preselected. `passes.create` holds the chosen day and truck on each
+visit (still `unscheduled`, so the held day counts against its truck-day);
+`passes.activate` schedules them, orders the touched truck-days, and when a
+day filled up in between puts that visit on the next open day and says so on
+the done step and in the confirmation. `needsCustomerHome` stays on the pass
+as a note for Ryan and no longer holds anything back: the scheduler places
+every visit that has no day, and the pass page's pick-a-day state becomes
+"Change your day" with the same three-day choice for any customer. The
+daily Schedule run now places only visits with no day (admin-made passes,
+days Ryan took back). **Renewal is one tap, never automatic.** From November
+1 the pass page shows "Reserve next season", and the January email links to
+the same address with a signed token; the checkout opens filled in (address,
+zones, add-on, contact), skips contact and card when a card is on file, and
+goes address, zones, add-on, your days, done; `passes.create` with `renewOf`
+makes the next season's pass active on that card. The promises in every
+message and page are now one timeline: Ryan confirms by text two weeks before
+and reminds the customer the day before ("We confirm it by text two weeks
+before and remind you the day before. If it has to move, we tell you first
+and you can pick another day."). Nothing in the product sends the two-week
+text yet; the day-before text exists.
+
