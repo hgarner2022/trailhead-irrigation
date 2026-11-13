@@ -24,17 +24,17 @@ describe("queue", () => {
     expect(await claimNext(db, ["geocode"], new Date("2031-01-01T00:00:00Z"))).toMatchObject({ key: "p-later" })
   })
   it("retries a throwing handler with a delay and fails it after the last attempt", async () => {
-    await enqueue(db, ORG, "message", "m-1", {})
+    await enqueue(db, ORG, "message", "msg-1", {})
     let clock = new Date("2027-02-01T00:00:00Z")
     for (let i = 1; i <= MAX_ATTEMPTS; i++) {
       expect(await drain(db, { message: async () => { throw new Error("boom") } }, () => clock)).toEqual({ done: 0, failed: 1 })
       clock = new Date(clock.getTime() + 24 * 3600_000)
     }
-    expect(await item("m-1")).toMatchObject({ status: "failed", attempts: MAX_ATTEMPTS, lastError: "boom" })
+    expect(await item("msg-1")).toMatchObject({ status: "failed", attempts: MAX_ATTEMPTS, lastError: "boom" })
   })
   it("marks a successful item done", async () => {
-    await enqueue(db, ORG, "renewal-email", "r-1", {})
+    await enqueue(db, ORG, "renewal-email", "renew-1", {})
     expect(await drain(db, { "renewal-email": async () => {} })).toEqual({ done: 1, failed: 0 })
-    expect(await item("r-1")).toMatchObject({ status: "done" })
+    expect(await item("renew-1")).toMatchObject({ status: "done" })
   })
 })
