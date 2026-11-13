@@ -151,7 +151,9 @@ export const passesCreate = defineHandler({
     if (reused) {
       // A customer who went back changes the answers on the pass they hold; its visits are rebuilt, none has a day yet.
       await ctx.db.update(s.seasonPass).set({ ...fields, season, updatedAt: ctx.now }).where(eq(s.seasonPass.id, reused.id))
-      await ctx.db.update(s.customer).set({ firstName: contact.firstName, phone: contact.phone ?? customerRow.phone, updatedAt: ctx.now }).where(eq(s.customer.id, customerRow.id))
+      // Only the checkout that holds the pass id (the same browser going back) may change the customer's name and phone.
+      // A resume by email alone reuses the pass but never rewrites who the customer is: anyone can type an email.
+      if (held) await ctx.db.update(s.customer).set({ firstName: contact.firstName, phone: contact.phone ?? customerRow.phone, updatedAt: ctx.now }).where(eq(s.customer.id, customerRow.id))
       await ctx.db.delete(s.visit).where(eq(s.visit.passId, reused.id))
     }
     for (let attempt = 0; attempt < 3 && !pass; attempt++) {
