@@ -148,3 +148,18 @@ export const visitsRequestMove = defineHandler({
   },
 })
 
+
+export const visitsLinkRequest = defineHandler({
+  name: "visits.linkRequest",
+  method: "POST",
+  path: "/visits/{id}/jobber-request",
+  scope: "write",
+  summary: "Record the Jobber request created for a placed visit, so the Jobber routine does not create it twice. Visits with `jobberRequestUrl` null still need one.",
+  input: z.object({ id: Id, url: z.string().url().max(500).describe("The request's address in Jobber.") }),
+  output: VisitOut,
+  async run(ctx, input) {
+    const { visit } = await loadVisit(ctx, input.id)
+    await ctx.db.update(s.visit).set({ jobberJobUrl: input.url }).where(eq(s.visit.id, visit.id))
+    return visitOut(ctx, await loadVisit(ctx, visit.id))
+  },
+})

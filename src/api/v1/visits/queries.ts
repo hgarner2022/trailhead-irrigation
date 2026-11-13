@@ -46,6 +46,7 @@ export function visitOut(ctx: Ctx, row: VisitJoined): VisitOutType {
     completedOn: v.completedOn,
     chargedAt: v.chargedAt?.toISOString() ?? null,
     exception: v.exception ?? null,
+    jobberRequestUrl: v.jobberJobUrl,
     lat: row.lat,
     lng: row.lng,
     ...(canSeeContact(ctx) ? { address: row.address } : {}),
