@@ -3,7 +3,7 @@
 // rule lives in scripts/design-gate/ (its header says what it checks):
 //   colours.mjs        tokens only in blocks/, the app route groups and ui/
 //   stories.mjs        a story per ui/ and blocks/ component
-//   imports.mjs        no admin and marketing cross-imports
+//   imports.mjs        no admin and marketing cross-imports; no server libraries in marketing code
 //   marketing-css.mjs  marketing CSS scans exactly the ui/ primitives marketing uses
 //   file-size.mjs      300-line cap in blocks/, ui/ and the app route groups
 // Other marketing checks are not run.
@@ -11,7 +11,7 @@
 import { readFileSync } from "node:fs"
 import { walk, describe } from "./design-gate/walk.mjs"
 import { checkColours, LEGACY } from "./design-gate/colours.mjs"
-import { checkImports } from "./design-gate/imports.mjs"
+import { checkImports, checkServerImports } from "./design-gate/imports.mjs"
 import { checkStory } from "./design-gate/stories.mjs"
 import { loadExcludedUi, MarketingCss } from "./design-gate/marketing-css.mjs"
 import { checkFileSize } from "./design-gate/file-size.mjs"
@@ -26,7 +26,7 @@ const marketingCss = excludedUi && new MarketingCss(excludedUi)
 for (const abs of walk(root)) {
   const info = describe(root, abs)
   const { file, name, fixture, zone, marketing, gated } = info
-  if (!zone && !(marketingCss && marketing) && !gated) continue
+  if (!zone && !marketing && !gated) continue
   let text
   try {
     text = readFileSync(abs, "utf8")
@@ -35,6 +35,7 @@ for (const abs of walk(root)) {
     continue
   }
   checkFileSize(text, info, report)
+  if (marketing) checkServerImports(file, text, report)
   if (marketingCss && marketing) marketingCss.checkMarketingImports(file, text, report)
   if (marketingCss && zone === "ui" && !fixture && name.endsWith(".tsx")) marketingCss.recordUi(name.slice(0, -4), text)
   if (!zone) continue

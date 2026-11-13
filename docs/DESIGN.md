@@ -83,7 +83,7 @@ Every colour the app uses is a token in `src/app/globals.css`, inside the `@them
 | `--font-display` | Barlow Condensed, then Arial Narrow, Impact | Page titles, section titles, big numbers in stat tiles and the pass card |
 | `--radius` | `0.5rem` | The one corner radius, the same as Tailwind's `rounded-lg` |
 
-Both faces are self hosted through `next/font` in `src/app/layout.tsx`, which sets `--font-body-src` and `--font-display-src`. Storybook imports `globals.css` so stories render in the brand faces. There is no radius scale; `rounded-lg` is the radius for everything except circles. `--radius` is informational; `rounded-lg` resolves to Tailwind's own `--radius-lg`, which is the same 0.5rem. Never paste shadcn's base layer (`* { @apply border-border outline-ring/50 }`) into globals.css; it would change every bare border on the marketing site. Add primitives with `npx shadcn@latest add` only.
+Both faces are self hosted through `next/font` in `src/lib/fonts.ts`, which sets `--font-body-src` and `--font-display-src`. Storybook imports `globals.css` so stories render in the brand faces. There is no radius scale; `rounded-lg` is the radius for everything except circles. `--radius` is informational; `rounded-lg` resolves to Tailwind's own `--radius-lg`, which is the same 0.5rem. Never paste shadcn's base layer (`* { @apply border-border outline-ring/50 }`) into globals.css; it would change every bare border on the marketing site. Add primitives with `npx shadcn@latest add` only.
 
 ### The rule
 
@@ -103,7 +103,7 @@ Components live in one of three folders, and each folder has one job.
 
 Marketing sections stay in `src/components/sections/`. Nothing in the admin tree imports from marketing sections, and nothing in marketing imports from blocks or the admin tree. Admin code must never reach the marketing bundle.
 
-Marketing CSS scans only the marketing folders and the seven primitives marketing uses (badge, button, card, carousel, input, separator, textarea). Tailwind cannot re-include one file under an excluded folder, so `globals.css` lists the admin-only primitives one by one as `@source not` lines instead; a primitive with no such line is in the marketing scan. A marketing file that imports one of the excluded primitives must remove its `@source not` line, and the gate fails the build until it does. Admin, checkout and account screens get their own stylesheet entry in the wiring phase.
+Marketing CSS scans only the marketing folders and the seven primitives marketing uses (badge, button, card, carousel, input, separator, textarea). Tailwind cannot re-include one file under an excluded folder, so `globals.css` lists the admin-only primitives one by one as `@source not` lines instead; a primitive with no such line is in the marketing scan. A marketing file that imports one of the excluded primitives must remove its `@source not` line, and the gate fails the build until it does. Admin, checkout, account and booking screens are served by their own root layouts on `src/app/app.css`, which scans only the app folders; `globals.css` keeps its `@source not` lines so the two bundles never overlap. The gate also fails when marketing code (the `(site)` pages and `sections/`) imports a server library (`db`, `api`, `jobber-api`, `stripe`, `messaging`, `scheduling`, `geocode`, `pass/server`).
 
 Files in blocks, ui and the app route groups stay under 300 lines; the gate fails above that. shadcn's sidebar and chart are allowlisted.
 

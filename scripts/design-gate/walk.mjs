@@ -14,11 +14,11 @@ export function walk(dir, out = []) {
   return out
 }
 
-export const appGroupRe = /^\((?:admin|checkout|account)\)$/
+export const appGroupRe = /^\((?:admin|checkout|account|booking)\)$/
 
 // Folders match by path segment, so "(admin)" and "blocks" only match as
-// directory names. zone: "app" (blocks/ and the (admin), (checkout) and
-// (account) route groups), "ui", "marketing" (sections/) or null. marketing: a page or section .tsx the marketing CSS is
+// directory names. zone: "app" (blocks/ and the (admin), (checkout), (account)
+// and (booking) route groups), "ui", "marketing" (sections/) or null. marketing: a page or section .tsx the marketing CSS is
 // built from. gated: inside a folder the file cap applies to.
 export function describe(root, abs) {
   const dirs = relative(root, dirname(abs)).split(sep)

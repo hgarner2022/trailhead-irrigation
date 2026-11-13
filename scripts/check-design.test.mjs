@@ -358,3 +358,64 @@ test("an allowlisted shadcn file over the cap passes with a note", () => {
   assert.match(r.out, /components\/ui\/sidebar\.tsx: 401 lines, allowlisted/)
   assert.match(r.out, /design gates: ok/)
 })
+
+test("a marketing page importing the database fails", () => {
+  const r = run({
+    "app/(site)/pricing/page.tsx": `import { db } from "@/db"\nexport default function Page() { return <div>{String(db)}</div> }\n`,
+  })
+  assert.equal(r.status, 1)
+  assert.match(r.out, /app\/\(site\)\/pricing\/page\.tsx: marketing code imports a server library \(@\/db\)/)
+})
+
+test("a marketing section importing a Stripe module fails", () => {
+  const r = run({
+    "components/sections/Leak.tsx": `import { client } from "@/lib/stripe/client"\nexport const L = () => <div>{String(client)}</div>\n`,
+  })
+  assert.equal(r.status, 1)
+  assert.match(r.out, /components\/sections\/Leak\.tsx: marketing code imports a server library \(@\/lib\/stripe\/client\)/)
+})
+
+test("a marketing page importing pass/server fails", () => {
+  const r = run({
+    "app/(site)/season-pass/page.tsx": `import { load } from "@/lib/pass/server"\nexport default function Page() { return <div>{String(load)}</div> }\n`,
+  })
+  assert.equal(r.status, 1)
+  assert.match(r.out, /marketing code imports a server library \(@\/lib\/pass\/server\)/)
+})
+
+test("an admin page importing the database passes", () => {
+  const r = run({
+    "app/(admin)/admin/page.tsx": `import { db } from "@/db"\nexport default function Page() { return <div className="bg-cream">{String(db)}</div> }\n`,
+  })
+  assert.equal(r.status, 0, r.out)
+})
+
+test("a booking page importing the database passes and is not marketing", () => {
+  const r = run({
+    "app/(booking)/book/page.tsx": `import { db } from "@/db"\nexport default function Page() { return <div className="bg-cream">{String(db)}</div> }\n`,
+  })
+  assert.equal(r.status, 0, r.out)
+})
+
+test("a marketing page importing the shared season, flag and form-id modules passes", () => {
+  const r = run({
+    "app/(site)/season-pass/page.tsx": `import { PASS } from "@/lib/season-pass"\nimport { checkoutEnabled } from "@/lib/flags"\nimport { FORM } from "@/lib/jobber"\nexport default function Page() { return <div>{String(PASS)}{String(checkoutEnabled)}{String(FORM)}</div> }\n`,
+  })
+  assert.equal(r.status, 0, r.out)
+})
+
+test("a route group's not-found may import the marketing Header and Footer, nothing else from sections", () => {
+  const ok = run({
+    "app/(checkout)/not-found.tsx": `import { Header } from "@/components/sections/Header"\nimport { Footer } from "@/components/sections/Footer"\nexport default function N() { return <><Header /><Footer /></> }\n`,
+  })
+  assert.equal(ok.status, 0, ok.out)
+  const bad = run({
+    "app/(checkout)/not-found.tsx": `import { Hero } from "@/components/sections/Hero"\nexport default function N() { return <Hero /> }\n`,
+  })
+  assert.equal(bad.status, 1)
+  assert.match(bad.out, /imports a marketing section/)
+  const page = run({
+    "app/(checkout)/page.tsx": `import { Header } from "@/components/sections/Header"\nexport default function P() { return <Header /> }\n`,
+  })
+  assert.equal(page.status, 1)
+})

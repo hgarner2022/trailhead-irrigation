@@ -1,30 +1,13 @@
 import type { Metadata } from "next"
-import { Barlow_Condensed, Source_Sans_3 } from "next/font/google"
-import Script from "next/script"
-import "./globals.css"
+import "../globals.css"
 import { Header } from "@/components/sections/Header"
 import { Footer } from "@/components/sections/Footer"
 import { StickyBar } from "@/components/sections/StickyBar"
 import { ConversionTracking } from "@/components/ConversionTracking"
+import { GoogleAnalytics } from "@/components/GoogleAnalytics"
 import { localBusinessJsonLd, organizationJsonLd, siteConfig } from "@/lib/seo"
 import { Analytics } from "@vercel/analytics/react"
-
-const GA_MEASUREMENT_ID = "G-QZJP9M6LNQ"
-
-// Type pairing: a condensed display face for headings (trail-signage feel)
-// over a plain humanist sans for everything else. Both self-hosted by
-// next/font, so no third-party request and no layout shift.
-const display = Barlow_Condensed({
-  subsets: ["latin"],
-  weight: ["600", "700"],
-  variable: "--font-display-src",
-  display: "swap",
-})
-const body = Source_Sans_3({
-  subsets: ["latin"],
-  variable: "--font-body-src",
-  display: "swap",
-})
+import { fontClassName } from "@/lib/fonts"
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),
@@ -84,7 +67,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className={`${display.variable} ${body.variable}`}>
+    <html lang="en" className={fontClassName}>
       <head>
         <script
           type="application/ld+json"
@@ -102,20 +85,7 @@ export default function RootLayout({
         <Footer />
         <Analytics />
         <ConversionTracking />
-
-        {/* Google Analytics 4 — gtag.js */}
-        <Script
-          src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
-          strategy="afterInteractive"
-        />
-        <Script id="google-analytics" strategy="afterInteractive">
-          {`
-            window.dataLayer = window.dataLayer || [];
-            function gtag(){dataLayer.push(arguments);}
-            gtag('js', new Date());
-            gtag('config', '${GA_MEASUREMENT_ID}');
-          `}
-        </Script>
+        <GoogleAnalytics />
       </body>
     </html>
   )

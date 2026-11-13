@@ -13,9 +13,11 @@ Marketing website for Trailhead Lawn & Irrigation LLC — a professional lawn ca
 ## File Structure
 ```
 src/
-  app/                          # Next.js App Router pages
-    layout.tsx                  # Root layout (metadata, schema, GA4, conversion tracking)
-    page.tsx                    # Homepage
+  app/                          # Next.js App Router; shared files stay here, pages live in route groups
+    (site)/                     # The marketing site, every page below lives in here
+      layout.tsx                # Its root layout (metadata, schema, GA4, conversion tracking)
+      page.tsx                  # Homepage
+    (admin)/ (checkout)/ (account)/ (booking)/  # App route groups, each with its own root layout on app.css
     sitemap.ts                  # Dynamic sitemap (static pages + cities + blog + smart-controllers)
     globals.css                 # Tailwind base + custom properties
     services/                   # /services + /services/[city] (6 cities)
@@ -370,7 +372,7 @@ Provides 14 composable skills for structured software development:
 - `public/robots.txt` — explicit allow list for 17 AI crawlers (GPTBot, ClaudeBot, PerplexityBot, etc.)
 
 **Verification:**
-- Google Search Console verified via `verification.google` in `src/app/layout.tsx`
+- Google Search Console verified via `verification.google` in `src/app/(site)/layout.tsx`
 - GA4 measurement ID `G-QZJP9M6LNQ` loaded via `next/script` afterInteractive
 - Vercel handles www → apex redirect at the edge — DO NOT add a `next.config.ts` redirect (caused a loop on first try)
 
