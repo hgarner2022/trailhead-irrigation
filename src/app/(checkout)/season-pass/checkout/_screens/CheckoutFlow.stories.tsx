@@ -121,6 +121,41 @@ export const ContactRefused: Story = {
   },
 }
 
+/** The pass the customer is buying, above the card form: each visit with its price, the total, and "$0 today". */
+export const CardSummary: Story = {
+  args: { initialStep: 6, prefill: { ...answers, inspection: true } },
+  globals: { viewport: { value: "wide", isRotated: false } },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByText("$0 today. We charge the card after each visit.")).toBeInTheDocument()
+    await expect(canvas.getByText("Season total")).toBeInTheDocument()
+  },
+}
+
+/** Activation failed after the card was saved: the message, a Try again that re-runs it, and Back. */
+export const CardFailed: Story = {
+  args: {
+    initialStep: 6,
+    prefill: { ...answers, termsAccepted: false, passId: "p-story", sessionId: "cs_story", clientSecret: "cs_story_secret", failure: "We couldn't reach the card form just now. Nothing was charged. Please try again.", retry: "finish" },
+    stripeKey: "pk_test_story",
+    onBegin: fn(),
+    onFinish: fn(),
+  },
+  globals: { viewport: { value: "wide", isRotated: false } },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByRole("button", { name: "Try again" })).toBeInTheDocument()
+    await expect(canvas.getByRole("button", { name: "Back" })).toBeInTheDocument()
+  },
+}
+
+/** The browser kept a pass the server has since swept: the checkout restarts at contact with one line saying why. */
+export const RestoredExpired: Story = {
+  args: { initialStep: 5, prefill: { ...answers, passId: "p-new", notice: "Your saved checkout timed out, so we started it fresh. Check your details and continue." } },
+  globals: { viewport: { value: "wide", isRotated: false } },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText(/timed out, so we started it fresh/)).toBeInTheDocument()
+  },
+}
+
 export const Done: Story = {
   args: { initialStep: 7, prefill: { ...answers, termsAccepted: true, marketingEmail: true, marketingSms: true, cardSaved: true }, onSaveImage: savePassImage },
   globals: { viewport: { value: "wide", isRotated: false } },
@@ -169,6 +204,12 @@ export const Phone: Story = {
 
 export const PhoneTiming: Story = {
   args: { initialStep: 4, prefill: answers },
+  globals: { viewport: { value: "phone", isRotated: false } },
+}
+
+/** The card step at 375px: the summary, the boxes and Back with room for Stripe's form under them. */
+export const PhoneCard: Story = {
+  args: { initialStep: 6, prefill: { ...answers, inspection: true } },
   globals: { viewport: { value: "phone", isRotated: false } },
 }
 

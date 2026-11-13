@@ -1,7 +1,8 @@
 "use client"
 
-import { Helper, ConsentBoxes, type StepProps } from "./checkout-steps"
+import { ConsentBoxes, type StepProps } from "./checkout-steps"
 import { StripeCard } from "./StripeCard"
+import { OrderSummary } from "./checkout-summary"
 
 // The card step. Wired (a Stripe key, a session and the two server actions) it asks for the terms first, then opens Stripe's
 // embedded form under the boxes; unwired (stories, the prototype) it shows the placeholder and the flow's own button saves.
@@ -21,7 +22,7 @@ export function CardStep({ state, set, attempted, stripeKey, clientSecret, onCar
     <>
       {wired ? (
         <>
-          <Helper>We charge the card after each visit, at the price you just saw. Nothing is charged today.</Helper>
+          <OrderSummary state={state} />
           <ConsentBoxes state={state} set={set} attempted={attempted} locked={locked} />
           <div className="mt-8" aria-live="polite">
             {state.termsAccepted ? (
@@ -35,8 +36,8 @@ export function CardStep({ state, set, attempted, stripeKey, clientSecret, onCar
         </>
       ) : (
         <>
-          <div className="rounded-lg border border-dashed border-border bg-stone p-8 text-center text-muted-foreground">Stripe&apos;s card form mounts here. Nothing is charged today.</div>
-          <Helper>We charge the card after each visit, at the price you just saw.</Helper>
+          <OrderSummary state={state} />
+          <div className="mt-6 rounded-lg border border-dashed border-border bg-stone p-8 text-center text-muted-foreground">Stripe&apos;s card form mounts here.</div>
           <ConsentBoxes state={state} set={set} attempted={attempted} />
         </>
       )}
