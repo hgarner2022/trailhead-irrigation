@@ -1,4 +1,4 @@
-import { Ban, CalendarX, CircleDashed, Clock, CreditCard, type LucideIcon } from "lucide-react"
+import { BadgeCheck, Ban, CalendarX, CircleDashed, Clock, CreditCard, type LucideIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { Attention } from "@/lib/admin/types"
 import { EmptyState } from "./EmptyState"
@@ -25,6 +25,7 @@ export interface NeedsAttentionProps {
 }
 
 const KINDS: Record<Attention["kind"], { icon: LucideIcon; tone: string; name: string }> = {
+  "new-pass": { icon: BadgeCheck, tone: "bg-success/10 text-success", name: "New pass" },
   "charge-failed": { icon: CreditCard, tone: "bg-warning/10 text-warning", name: "Charge failed" },
   "jobs-failed": { icon: CalendarX, tone: "bg-warning/10 text-warning", name: "Jobs not created" },
   "card-expiring": { icon: Clock, tone: "bg-stone text-muted-foreground", name: "Card expiring" },

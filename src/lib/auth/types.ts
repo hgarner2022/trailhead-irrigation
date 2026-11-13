@@ -20,6 +20,19 @@ export interface ApiKeyPrincipal {
   scopes: string[]
 }
 
-export type Principal = PersonPrincipal | ApiKeyPrincipal
+/**
+ * The anonymous checkout visitor: no sign-in, the `checkout` scope only. It may call just the handlers marked
+ * `checkout` (passes.create, passes.activate for its own pass, schedule.slots, bookings.create) and nothing else.
+ */
+export interface PublicPrincipal {
+  kind: "public"
+  id: "checkout"
+  organizationId: string
+  scopes: ["checkout"]
+  /** the pass this visitor is buying; `passes.activate` is allowed only for it */
+  passId?: string
+}
+
+export type Principal = PersonPrincipal | ApiKeyPrincipal | PublicPrincipal
 
 export type Scope = "read" | "write" | "admin"

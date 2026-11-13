@@ -9,13 +9,16 @@ import { SEASON_PASS_ADD_ON, visitPrice, visitsOnSale } from "@/lib/season-pass"
 import { hasScope } from "@/lib/auth/principal"
 import { readAppUrl } from "@/lib/env"
 import { activatePass } from "@/lib/pass/server/activate"
+import { emailDomainReachable, failedCheckoutStep, MAX_PENDING_PER_HOUR, pendingPassesLastHour } from "@/lib/pass/server/create"
+import { recordPurchase } from "@/lib/pass/server/purchase"
+import { outOfAreaMessage } from "@/lib/places"
 import { queueCardUpdateLink } from "@/lib/pass/server/card-link"
 import { getStripe } from "@/lib/stripe/client"
 import { ApiError, notImplemented } from "../../core/errors"
 import { defineHandler } from "../../core/handler"
 import { afterTimeCursor, cursorPage, page, pageInput, timeCursor } from "../../core/pagination"
 import { addDays, Id, idInput, OK, okOutput, PassStatus, Preference, Town, today } from "../shared"
-import { PassDetail, PassOut, passCreateInput } from "./schemas"
+import { PassDetail, PassOut, passActivateInput, passCreateInput } from "./schemas"
 import { loadPass, passDetail, passesQuery, passOut, recordChange } from "./queries"
 
 const WINDOW_LABEL = { "turn-on": "May", inspection: "July", blowout: "October" } as const
@@ -74,8 +77,9 @@ export const passesCreate = defineHandler({
   method: "POST",
   path: "/passes",
   scope: "write",
+  checkout: true,
   status: 201,
-  summary: "Create the checkout's pending pass: the customer, the property, the consent and one visit for each visit still on sale this season.",
+  summary: "Create the checkout's pending pass: the customer, the property and one visit for each visit still on sale this season. Given the `passId` of a pending pass for the same email it updates that pass instead. The anonymous checkout is also held to the checkout's own step rules, an email whose domain has a mail server and three new passes per email per hour.",
   input: passCreateInput,
   output: PassDetail,
   async run(ctx, input) {
@@ -85,20 +89,49 @@ export const passesCreate = defineHandler({
     const season = currentSeason(day)
     const org = ctx.organizationId
     const email = input.customer.email.toLowerCase()
+    const visitor = ctx.principal.kind === "public"
+    if (visitor) {
+      const step = failedCheckoutStep({ property: input.property, zones: input.zones, needsCustomerHome: input.needsCustomerHome, customer: { ...input.customer, email }, today: day })
+      if (step === "address") throw new ApiError("unprocessable", outOfAreaMessage({ ok: false, place: input.property.town }), [{ path: "reason", message: "out-of-area" }])
+      if (step) throw new ApiError("invalid", `The ${step} step is not complete`, [{ path: "reason", message: step }])
+      if (!(await emailDomainReachable(email))) throw new ApiError("unprocessable", "We can't find that email's mail server. Check the spelling.", [{ path: "reason", message: "email-unreachable" }])
+    }
     const [known] = await ctx.db.select().from(s.customer).where(and(eq(s.customer.organizationId, org), sql`lower(${s.customer.email}) = ${email}`)).limit(1)
+    const [held] = input.passId ? await ctx.db.select().from(s.seasonPass).where(and(eq(s.seasonPass.id, input.passId), eq(s.seasonPass.organizationId, org))) : []
+    const reused = held && held.status === "pending" && known && held.customerId === known.id ? held : undefined
+    if (visitor && !reused && known && (await pendingPassesLastHour(ctx.db, org, known.id, ctx.now)) >= MAX_PENDING_PER_HOUR)
+      throw new ApiError("rate_limited", "Too many passes started for this email in the last hour. Try again later or call us.", [{ path: "reason", message: "too-many" }])
     const customerRow =
       known ??
       (await ctx.db.insert(s.customer).values({ organizationId: org, ...input.customer, email, leadSource: input.customer.leadSource ?? "season-pass" }).returning())[0]!
+    const { state: _state, zip: _zip, ...address } = input.property
+    void _state
+    void _zip
     const [knownProperty] = await ctx.db
       .select()
       .from(s.property)
-      .where(and(eq(s.property.customerId, customerRow.id), eq(s.property.address, input.property.address), eq(s.property.town, input.property.town)))
+      .where(and(eq(s.property.customerId, customerRow.id), eq(s.property.address, address.address), eq(s.property.town, address.town)))
       .limit(1)
-    const property = knownProperty ?? (await ctx.db.insert(s.property).values({ organizationId: org, customerId: customerRow.id, ...input.property }).returning())[0]!
+    const property = knownProperty ?? (await ctx.db.insert(s.property).values({ organizationId: org, customerId: customerRow.id, ...address }).returning())[0]!
     if (!knownProperty) await enqueueGeocode(ctx.db, org, property.id, ctx.now)
     const [terms] = await ctx.db.select({ v: s.organization.termsVersion }).from(s.organization).where(eq(s.organization.id, org))
 
-    let pass: typeof s.seasonPass.$inferSelect | undefined
+    const fields = {
+      propertyId: property.id,
+      zones: input.zones,
+      inspection: input.inspection,
+      turnOnPreference: input.turnOnPreference,
+      blowoutPreference: input.blowoutPreference,
+      needsCustomerHome: input.needsCustomerHome,
+      accessNote: input.accessNote ?? null,
+    }
+    let pass: typeof s.seasonPass.$inferSelect | undefined = reused
+    if (reused) {
+      // A customer who went back changes the answers on the pass they hold; its visits are rebuilt, none has a day yet.
+      await ctx.db.update(s.seasonPass).set({ ...fields, season, updatedAt: ctx.now }).where(eq(s.seasonPass.id, reused.id))
+      await ctx.db.update(s.customer).set({ firstName: input.customer.firstName, phone: input.customer.phone ?? customerRow.phone, updatedAt: ctx.now }).where(eq(s.customer.id, customerRow.id))
+      await ctx.db.delete(s.visit).where(eq(s.visit.passId, reused.id))
+    }
     for (let attempt = 0; attempt < 3 && !pass; attempt++) {
       const numbers = await ctx.db.select({ n: s.seasonPass.number }).from(s.seasonPass).where(and(eq(s.seasonPass.organizationId, org), eq(s.seasonPass.season, season)))
       try {
@@ -109,31 +142,27 @@ export const passesCreate = defineHandler({
             number: nextPassNumber(season, numbers.map((r) => r.n)),
             season,
             customerId: customerRow.id,
-            propertyId: property.id,
-            zones: input.zones,
-            inspection: input.inspection,
-            turnOnPreference: input.turnOnPreference,
-            blowoutPreference: input.blowoutPreference,
-            needsCustomerHome: input.needsCustomerHome,
-            accessNote: input.accessNote,
+            ...fields,
             status: "pending",
+            createdAt: ctx.now,
           })
           .returning()
       } catch (error) {
         if (attempt === 2) throw error
       }
     }
-    await ctx.db.insert(s.consent).values({
-      organizationId: org,
-      customerId: customerRow.id,
-      termsVersion: input.consent.termsVersion ?? terms?.v,
-      termsAcceptedAt: ctx.now,
-      marketingOptIn: input.consent.marketingOptIn,
-      marketingChannels: input.consent.marketingChannels,
-      source: input.consent.source,
-      recordedAt: ctx.now,
-      note: input.consent.note,
-    })
+    if (input.consent)
+      await ctx.db.insert(s.consent).values({
+        organizationId: org,
+        customerId: customerRow.id,
+        termsVersion: input.consent.termsVersion ?? terms?.v,
+        termsAcceptedAt: ctx.now,
+        marketingOptIn: input.consent.marketingOptIn,
+        marketingChannels: input.consent.marketingChannels,
+        source: input.consent.source,
+        recordedAt: ctx.now,
+        note: input.consent.note,
+      })
     await ctx.db.insert(s.visit).values(
       onSale.map((v) => ({
         organizationId: org,
@@ -157,12 +186,14 @@ export const passesActivate = defineHandler({
   method: "POST",
   path: "/passes/{id}/activate",
   scope: "write",
-  summary: "Activate a pending pass once its card is saved: stores the card from the finished setup session and makes the pass active. Safe to call twice for one session.",
-  input: z.object({ id: Id, setupSessionId: z.string().min(1).describe("The Stripe Checkout Session in setup mode that saved the card.") }),
+  checkout: "own-pass",
+  summary: "Activate a pending pass once its card is saved: stores the card from the finished setup session, makes the pass active, records the checkout's consent and queues the onboarding task and the purchase confirmation. Safe to call twice for one session.",
+  input: passActivateInput,
   output: PassDetail,
   async run(ctx, input) {
     const row = await loadPass(ctx, input.id)
     await activatePass(ctx.db, getStripe(), row.pass.id, input.setupSessionId, ctx.now)
+    await recordPurchase(ctx.db, row.pass.id, input.consent, readAppUrl(), ctx.now)
     return passDetail(ctx, await loadPass(ctx, input.id))
   },
 })

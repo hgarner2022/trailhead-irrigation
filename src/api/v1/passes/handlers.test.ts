@@ -177,6 +177,7 @@ describe("stubs", () => {
 describe("passes.activate and passes.sendCardUpdateLink (Stripe stubbed)", () => {
   const fresh = (email: string) => create({ customer: { firstName: "Stripe", email } })
   it("activates a pending pass from a finished setup session, once", async () => {
+    vi.stubEnv("APP_URL", "https://site.test")
     const pass = await fresh("activate@example.com")
     const stub = stubStripe({ sessions: { cs_a: completeSession("cs_a", { purpose: "pass-setup", passId: pass.id }, { last4: "4242", customer: "cus_act" }) } })
     getStripe.mockReturnValue(stub.stripe)

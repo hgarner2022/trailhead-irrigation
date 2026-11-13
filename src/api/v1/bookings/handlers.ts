@@ -15,6 +15,7 @@ export const bookingsCreate = defineHandler({
   method: "POST",
   path: "/bookings",
   scope: "write",
+  checkout: true,
   status: 201,
   summary: "Book a service into an open slot: the booking form's write. Needs the slot model and messaging (Phase 13); not implemented yet.",
   input: z.object({
