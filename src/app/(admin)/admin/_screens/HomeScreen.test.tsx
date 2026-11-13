@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest"
-import { render, screen } from "@testing-library/react"
+import { render, screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import type { AdminData } from "@/lib/admin/types"
@@ -24,6 +24,20 @@ describe("HomeScreen season prompt", () => {
 
   it("adds a not-closed row for visits from the last two weeks only", () => {
     render(<HomeScreen data={data} today="2026-11-12T19:56:30Z" />)
-    expect(screen.getByText(/visits from the last two weeks are not marked done yet/)).toBeInTheDocument()
+    expect(screen.getByText(/jobs from the last two weeks are not marked done yet/)).toBeInTheDocument()
+  })
+})
+
+describe("HomeScreen job counts", () => {
+  it("counts jobs needing a day, charges that did not go through, jobs not closed and pending passes", () => {
+    render(<HomeScreen data={data} today="2026-11-12T19:56:30Z" />)
+    const counts = within(document.querySelector<HTMLElement>('[data-slot="job-counts"]')!)
+    const value = (label: string) => counts.getByLabelText(new RegExp(`^${label}`)).textContent
+    expect(counts.getAllByRole("link")).toHaveLength(4)
+    // The one pending pass in the fixture; its jobs are in none of the other counts.
+    expect(value("Pending passes")).toContain("1")
+    expect(counts.getByText("Jobs needing a day")).toBeInTheDocument()
+    expect(counts.getByText("Jobs not closed")).toBeInTheDocument()
+    expect(counts.getByText("Charges that didn't go through")).toBeInTheDocument()
   })
 })

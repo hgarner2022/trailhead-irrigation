@@ -7,11 +7,13 @@ import { NeedsAttention, type NeedsAttentionProps } from "@/components/blocks/Ne
 import { PageHeader } from "@/components/blocks/PageHeader"
 import { SeasonLine } from "@/components/blocks/SeasonLine"
 import { StatTile } from "@/components/blocks/StatTile"
-import { StatusPill } from "@/components/blocks/StatusPill"
+import { JobPill } from "@/components/blocks/JobPill"
 import type { AdminData, Visit } from "@/lib/admin/types"
 import { TIME_ZONE } from "@/lib/admin/format"
+import { visitJob } from "@/lib/admin/jobs"
+import { dayOf } from "@/lib/admin/calendar"
 import { committedByMonth, visitsOn } from "@/lib/admin/metrics"
-import { SEASON, clockTime, dayHeading, greeting, notClosedAttention, pageContext, seasonDescription, tileModels, tomorrowOf, upcomingWindow, windowTitle } from "./home-model"
+import { SEASON, clockTime, dayHeading, greeting, jobTiles, notClosedAttention, pageContext, seasonDescription, tileModels, tomorrowOf, upcomingWindow, windowTitle } from "./home-model"
 import type { Outcome } from "./action-types"
 import { ScheduleSeasonButton } from "./ScheduleSeasonButton"
 
@@ -36,7 +38,7 @@ export interface HomeScreenProps {
   onAttentionAction?: NeedsAttentionProps["onAction"]
 }
 
-function VisitRow({ visit }: { visit: Visit }) {
+function VisitRow({ visit, today }: { visit: Visit; today: string }) {
   return (
     <li className="flex items-center gap-3 py-2.5">
       <span className="w-16 shrink-0 text-sm tabular-nums text-muted-foreground">{visit.startAt ? clockTime(visit.startAt) : ""}</span>
@@ -45,12 +47,12 @@ function VisitRow({ visit }: { visit: Visit }) {
         <span className="text-muted-foreground"> · {visit.town}</span>
       </span>
       {visit.isPass && <Badge variant="outline">Pass</Badge>}
-      <StatusPill status={visit.status} />
+      <JobPill job={visitJob(visit, dayOf(today, TIME_ZONE), TIME_ZONE)} />
     </li>
   )
 }
 
-function Day({ id, heading, visits }: { id: string; heading: string; visits: Visit[] }) {
+function Day({ id, heading, visits, today }: { id: string; heading: string; visits: Visit[]; today: string }) {
   return (
     <section aria-labelledby={id}>
       <h3 id={id} className="font-display text-sm uppercase tracking-wide text-muted-foreground">
@@ -61,7 +63,7 @@ function Day({ id, heading, visits }: { id: string; heading: string; visits: Vis
       ) : (
         <ul className="divide-y divide-border">
           {visits.map((visit) => (
-            <VisitRow key={visit.id} visit={visit} />
+            <VisitRow key={visit.id} visit={visit} today={today} />
           ))}
         </ul>
       )}
@@ -100,6 +102,12 @@ export function HomeScreen({ data, today, readOnly = false, onSchedule, onAttent
         ))}
       </div>
 
+      <div data-slot="job-counts" className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        {jobTiles(data, today).map((tile) => (
+          <StatTile key={tile.label} {...tile} />
+        ))}
+      </div>
+
       <Card>
         <CardHeader>
           <CardTitleHeading>{`Season ${SEASON}`}</CardTitleHeading>
@@ -122,8 +130,8 @@ export function HomeScreen({ data, today, readOnly = false, onSchedule, onAttent
             <CardTitleHeading>Today and tomorrow</CardTitleHeading>
           </CardHeader>
           <CardContent className="space-y-5">
-            <Day id="home-today" heading={dayHeading("Today", today)} visits={visitsOn(data.visits, today, TIME_ZONE)} />
-            <Day id="home-tomorrow" heading={dayHeading("Tomorrow", tomorrow)} visits={visitsOn(data.visits, tomorrow, TIME_ZONE)} />
+            <Day id="home-today" heading={dayHeading("Today", today)} visits={visitsOn(data.visits, today, TIME_ZONE)} today={today} />
+            <Day id="home-tomorrow" heading={dayHeading("Tomorrow", tomorrow)} visits={visitsOn(data.visits, tomorrow, TIME_ZONE)} today={today} />
           </CardContent>
         </Card>
         <Card className="lg:col-span-2">
