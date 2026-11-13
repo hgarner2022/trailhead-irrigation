@@ -15,6 +15,7 @@ import { TIME_ZONE } from "../types"
 
 export interface DailyResult {
   dayBefore: number
+  dateConfirm: number
   notClosed: number
   runsQueued: number
   summaries: number
@@ -43,6 +44,23 @@ export async function dayBeforeMessages(db: Database, organizationId: string, to
     const facts = await loadVisitFacts(db, visit.id, origin)
     if (!facts) continue
     if (await queueMessage(db, { organizationId, customerId: customer.id, visitId: visit.id, kind: "day-before", key: `${visit.id}-${tomorrow}`, data: { ...baseData(origin, customer), visit: facts } })) queued++
+  }
+  return queued
+}
+
+/** The two-weeks-before text (email with no mobile number) for every scheduled visit 14 days out, once per visit. */
+export async function dateConfirmMessages(db: Database, organizationId: string, inTwoWeeks: string): Promise<number> {
+  const rows = await db
+    .select({ visit: s.visit, customer: s.customer })
+    .from(s.visit)
+    .innerJoin(s.customer, eq(s.customer.id, s.visit.customerId))
+    .where(and(eq(s.visit.organizationId, organizationId), eq(s.visit.status, "scheduled"), eq(s.visit.scheduledOn, inTwoWeeks)))
+  let queued = 0
+  for (const { visit, customer } of rows) {
+    const origin = readAppUrl()
+    const facts = await loadVisitFacts(db, visit.id, origin)
+    if (!facts) continue
+    if (await queueMessage(db, { organizationId, customerId: customer.id, visitId: visit.id, kind: "date-confirm", key: `date-confirm:${visit.id}`, data: { ...baseData(origin, customer), visit: facts } })) queued++
   }
   return queued
 }
@@ -97,10 +115,11 @@ export async function crewSummaryEmails(db: Database, organizationId: string, to
 export async function daily(db: Database, now: Date = new Date()): Promise<DailyResult> {
   const today = mountainDay(now)
   const orgs = await db.select({ id: s.organization.id }).from(s.organization)
-  const total: DailyResult = { dayBefore: 0, notClosed: 0, runsQueued: 0, summaries: 0 }
+  const total: DailyResult = { dayBefore: 0, dateConfirm: 0, notClosed: 0, runsQueued: 0, summaries: 0 }
   for (const { id } of orgs) {
     total.notClosed += await notClosedCheck(db, id, today)
     total.dayBefore += await dayBeforeMessages(db, id, addDays(today, 1))
+    total.dateConfirm += await dateConfirmMessages(db, id, addDays(today, 14))
     total.runsQueued += await queueDueRuns(db, id, today)
     total.summaries += await crewSummaryEmails(db, id, today)
   }

@@ -1,5 +1,5 @@
 import { emailLayout, heading, plainText } from "./layout"
-import { longDay } from "./format"
+import { RYAN_DOES, longDay } from "./format"
 import { visitBody, visitLines } from "./visit-block"
 import type { RenderedEmail, VisitData } from "./types"
 
@@ -16,6 +16,11 @@ export const dateSetEmail = (d: VisitData): RenderedEmail =>
 
 export const dateMovedEmail = (d: VisitData): RenderedEmail =>
   build(d, `Your ${d.visit.name} moved to ${longDay(d.visit.day)}`, `Your ${d.visit.name} moved`, `Hi ${d.firstName}, your ${d.visit.name} moved to ${longDay(d.visit.day)}.`, `Your ${d.visit.name} moved to ${longDay(d.visit.day)}.`)
+
+const ryanDoes = (name: string) => (name.includes("inspection") ? RYAN_DOES.inspection : name.includes("blowout") ? RYAN_DOES.blowout : RYAN_DOES["turn-on"])
+
+export const dateConfirmEmail = (d: VisitData): RenderedEmail =>
+  build(d, `Your ${d.visit.name} is ${longDay(d.visit.day)}`, `Your ${d.visit.name} is in two weeks`, `Hi ${d.firstName}, we're confirming your ${d.visit.name}: ${longDay(d.visit.day)}. ${ryanDoes(d.visit.name)}`, `Your ${d.visit.name} is ${longDay(d.visit.day)}.`)
 
 export const dayBeforeEmail = (d: VisitData): RenderedEmail =>
   build(d, `Tomorrow: your ${d.visit.name}`, `We're coming tomorrow`, `Hi ${d.firstName}, a reminder that we're coming tomorrow, ${longDay(d.visit.day)}, for your ${d.visit.name}.`, `Tomorrow, ${longDay(d.visit.day)}: your ${d.visit.name}.`)

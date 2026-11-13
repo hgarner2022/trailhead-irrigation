@@ -2,7 +2,7 @@
 // can get is here; `renderEmail` is what the sender calls at send time, so nothing is rendered until it goes out.
 import { cancelledEmail, cardExpiringEmail, cardFailedEmail, receiptEmail, renewalEmail } from "./account-messages"
 import { adminAlertEmail, bookingConfirmationEmail, notClosedCrewEmail } from "./booking-and-staff"
-import { dateMovedEmail, dateSetEmail, dayBeforeEmail } from "./date-messages"
+import { dateConfirmEmail, dateMovedEmail, dateSetEmail, dayBeforeEmail } from "./date-messages"
 import { purchaseConfirmationEmail } from "./purchase-confirmation"
 import type { RenderedEmail } from "./types"
 
@@ -16,6 +16,7 @@ export const EMAIL_TEMPLATES = {
   "date-set": dateSetEmail,
   "date-moved": dateMovedEmail,
   "day-before": dayBeforeEmail,
+  "date-confirm": dateConfirmEmail,
   receipt: receiptEmail,
   "card-failed": cardFailedEmail,
   "card-expiring": cardExpiringEmail,

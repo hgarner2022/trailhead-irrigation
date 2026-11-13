@@ -210,6 +210,7 @@ export type MessageKind =
   | "date-set"
   | "date-moved"
   | "day-before"
+  | "date-confirm"
   | "receipt"
   | "card-failed"
   | "card-expiring"

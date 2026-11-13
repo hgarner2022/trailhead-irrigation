@@ -18,6 +18,7 @@ const DATA: Record<keyof typeof EMAIL_TEMPLATES, Record<string, unknown>> = {
   "date-set": { ...base, visit },
   "date-moved": { ...base, visit },
   "day-before": { ...base, visit },
+  "date-confirm": { ...base, visit },
   receipt: { ...base, passNumber: "TH-2027-0004", amount: 145, visitName: "spring turn-on", card: "Visa ending 4242", nextLine: "Your fall blowout is planned for early October.", receiptUrl: "https://pay.stripe.com/r/1" },
   "card-failed": { ...base, passNumber: "TH-2027-0004", amount: 145, visitName: "spring turn-on", updateUrl: "https://billing.stripe.com/s/1" },
   "card-expiring": { ...base, passNumber: "TH-2027-0004", cardState: "expires in July 2027", left: 190, updateUrl: "https://billing.stripe.com/s/2" },

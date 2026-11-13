@@ -11,7 +11,8 @@ const link = (d: VisitData) => d.passUrl
 
 export const dateSetText = (d: VisitData) => `Trailhead: your ${d.visit.name} is ${when(d)}. Calendar and changes: ${link(d)} ${OPT_OUT}`
 export const dateMovedText = (d: VisitData) => `Trailhead: your ${d.visit.name} moved to ${when(d)}. Calendar and changes: ${link(d)} ${OPT_OUT}`
+export const dateConfirmText = (d: VisitData) => `Trailhead: your ${d.visit.name} is ${when(d)}. Need a different day? ${link(d)} ${OPT_OUT}`
 export const dayBeforeText = (d: VisitData) => `Trailhead: we come tomorrow, ${when(d)}, for your ${d.visit.name}. Changes: ${link(d)} ${OPT_OUT}`
 
-export const SMS_TEMPLATES = { "date-set": dateSetText, "date-moved": dateMovedText, "day-before": dayBeforeText }
+export const SMS_TEMPLATES = { "date-set": dateSetText, "date-moved": dateMovedText, "day-before": dayBeforeText, "date-confirm": dateConfirmText }
 export type SmsKind = keyof typeof SMS_TEMPLATES

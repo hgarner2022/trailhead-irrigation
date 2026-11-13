@@ -72,3 +72,27 @@ describe("daily", () => {
     expect([(await db.select().from(s.messageLog)).length, (await db.select().from(s.queueItem)).length]).toEqual(before)
   })
 })
+
+describe("two weeks before", () => {
+  const setDay = (id: string, day: string) => db.update(s.visit).set({ status: "scheduled", scheduledOn: day, truckId: "truck-1", startTime: "08:00" }).where(eq(s.visit.id, id))
+  it("texts a visit 14 days out once, however often the daily run goes, and none at 13 or 15 days", async () => {
+    await db.delete(s.messageLog)
+    await setDay("p1-turn-on", "2027-05-19")
+    await setDay("p2-turn-on", "2027-05-18")
+    await setDay("p5-turn-on", "2027-05-20")
+    for (const id of ["p1-turn-on", "p2-turn-on", "p5-turn-on"]) {
+      const [v] = await db.select().from(s.visit).where(eq(s.visit.id, id))
+      await db.update(s.customer).set({ phone: `303-555-${id.slice(1, 2)}000`, email: `${id}@example.com` }).where(eq(s.customer.id, v!.customerId))
+    }
+    const first = await daily(db, NOW)
+    await daily(db, NOW)
+    const rows = await messages("date-confirm")
+    expect(first.dateConfirm).toBe(1)
+    expect(rows).toHaveLength(1)
+    expect(rows[0]).toMatchObject({ visitId: "p1-turn-on", channel: "sms", key: "date-confirm:p1-turn-on" })
+    expect(rows[0]!.body).toContain("Wed, May 19, 8 to 10 am")
+    expect(rows[0]!.body).toContain("Need a different day?")
+    expect(rows[0]!.body).toContain("Reply STOP to opt out.")
+  })
+})
+
