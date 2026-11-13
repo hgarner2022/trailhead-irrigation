@@ -1,5 +1,8 @@
 import { it, expect, vi, afterEach } from "vitest"
 import { getAdminData } from "./data"
+import { loadLiveAdminData } from "./live"
+
+vi.mock("./live", () => ({ loadLiveAdminData: vi.fn(async () => ({ organizationId: "org_live" })) }))
 
 afterEach(() => vi.unstubAllEnvs())
 
@@ -9,10 +12,9 @@ it("fixtures resolves to the anonymised snapshot", async () => {
   expect(d.passes).toHaveLength(12)
 })
 
-it("live rejects until the wiring plan lands", async () => {
-  await expect(getAdminData("live")).rejects.toThrow(
-    "live admin data is not wired yet; set ADMIN_DATA_SOURCE=fixtures",
-  )
+it("live reads the database through the live loader", async () => {
+  expect((await getAdminData("live")).organizationId).toBe("org_live")
+  expect(loadLiveAdminData).toHaveBeenCalled()
 })
 
 it("defaults to fixtures when ADMIN_DATA_SOURCE is unset", async () => {
@@ -29,7 +31,7 @@ it("treats an empty ADMIN_DATA_SOURCE as unset", async () => {
 
 it("reads ADMIN_DATA_SOURCE when no argument is given", async () => {
   vi.stubEnv("ADMIN_DATA_SOURCE", "live")
-  await expect(getAdminData()).rejects.toThrow(/not wired yet/)
+  expect((await getAdminData()).organizationId).toBe("org_live")
 })
 
 it("rejects an ADMIN_DATA_SOURCE it does not know", async () => {

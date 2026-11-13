@@ -5,7 +5,9 @@
  * in the given time zone, so a 7 pm Denver visit stays on its Mountain day.
  * Day keys are YYYY-MM-DD. Pure, so it runs in jsdom and on the server.
  */
-import type { AreaGroup, Town, Truck, Visit, Weekday } from "@/lib/admin/types"
+import type { AreaGroup, BusyBlock, Town, Truck, Visit, Weekday } from "@/lib/admin/types"
+
+export type { BusyBlock }
 
 export const WEEKDAYS: readonly Weekday[] = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
 const WEEKDAY_WORDS: Record<Weekday, string> = { mon: "Mon", tue: "Tue", wed: "Wed", thu: "Thu", fri: "Fri", sat: "Sat", sun: "Sun" }
@@ -122,14 +124,6 @@ export function zonedToUtc(y: number, mo: number, d: number, h: number, mi: numb
 /** A truck's working day, in the zone's wall clock: busy time inside it counts against capacity, an all-day event fills all of it. */
 export const WORKDAY = { startHour: 7, endHour: 17 } as const
 export const WORKDAY_MINUTES = (WORKDAY.endHour - WORKDAY.startHour) * 60
-
-/** Busy time on a truck from its Jobber calendar feed. */
-export interface BusyBlock {
-  truckId: string
-  startAt: string
-  endAt: string
-  title: string
-}
 
 /** The working day of `dayIso` as two UTC instants. */
 function workdayBounds(dayIso: string, timeZone: string): [number, number] {
