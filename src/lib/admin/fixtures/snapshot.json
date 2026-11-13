@@ -14540,6 +14540,12 @@
       "since": "2026-11-10T15:04:00Z"
     },
     {
+      "kind": "pass-cancelled",
+      "passId": "p9",
+      "message": "Christian cancelled TH-2027-0009; the two Jobber jobs still open, remove them",
+      "since": "2026-11-12T14:30:00Z"
+    },
+    {
       "kind": "jobs-failed",
       "passId": "p7",
       "message": "Jobber jobs for pass TH-2027-0007 were not created; retrying",

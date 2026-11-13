@@ -220,7 +220,7 @@ export interface SettingsChange {
 }
 
 export interface Attention {
-  kind: "charge-failed" | "jobs-failed" | "card-expiring" | "not-closed"
+  kind: "charge-failed" | "jobs-failed" | "card-expiring" | "not-closed" | "pass-cancelled"
   passId?: string
   message: string
   since: string

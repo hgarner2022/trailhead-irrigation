@@ -169,6 +169,8 @@ The app follows the same copy rules as the site. Headings are sentence case. Sen
 
 2026-11-12 (night). The customer can change a timing preference from the pass page until the day is set: a Change link on the turn-on and blowout rows opens `ChangePreferenceDialog` with the same `TimingChoice` block the checkout uses. Customers shows what is next for every customer and whether it is booked or still to schedule (`customers-model.ts`), with a filter for each.
 
+2026-11-12 (night). A cancelled pass raises a `pass-cancelled` row in Needs attention on Home until its Jobber jobs are gone (removed by the API when Jobber allows it, by Ryan's hand with a note on the job when it does not); the Passes grid and Customers read Cancelled.
+
 2026-11-12 (night). The purchase confirmation email carries the pass card as an image (the holographic art, since nothing can move in an email), generated server-side at purchase; wiring plan, Phase 12.
 
 ## Approvals

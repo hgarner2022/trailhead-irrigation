@@ -25,7 +25,7 @@ export const Default: Story = {
 
 /** The row Home adds at render time for visits from earlier days nobody has marked done. */
 export const WithNotClosed: Story = {
-  args: { items: [...items, { kind: "not-closed", message: "3 visits from before today are not marked done yet.", since: "2026-11-09T17:00:00Z" }] },
+  args: { items: [...items, { kind: "not-closed", message: "3 visits from before today are not marked done yet.", since: "2026-11-09T17:00:00Z" }, { kind: "pass-cancelled", passId: "p4", message: "A pass was cancelled and its Jobber jobs could not be cancelled by the API; remove them by hand", since: "2026-11-12T14:30:00Z" }] },
   render: (args) => narrow(<NeedsAttention {...args} />),
 }
 
