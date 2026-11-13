@@ -35,6 +35,7 @@ const answers: Partial<CheckoutFields> = {
   today: "2026-11-12",
   zones: 8,
   firstName: "Andrea",
+  lastName: "Anderson",
   email: "andrea@example.com",
   phone: "(970) 555-0123",
   termsAccepted: true,
@@ -362,7 +363,7 @@ describe("CheckoutFlow wired to the server actions", () => {
     fireEvent.click(continueButton())
     await screen.findByRole("heading", { name: /Save a card for after each visit/ })
     expect(onBegin).toHaveBeenCalledTimes(1)
-    expect(onBegin.mock.calls[0]).toEqual([expect.objectContaining({ firstName: "Andrea", email: "andrea@example.com", town: "Erie", zones: 8, needsCustomerHome: false, accessNote: "Gate code 4471, controller in the garage." }), undefined])
+    expect(onBegin.mock.calls[0]).toEqual([expect.objectContaining({ firstName: "Andrea", lastName: "Anderson", email: "andrea@example.com", town: "Erie", zones: 8, needsCustomerHome: false, accessNote: "Gate code 4471, controller in the garage." }), undefined])
   })
   it("keeps Continue on the contact step and says why when the server refuses", async () => {
     setup({ begin: { ok: false, problem: "email-unreachable", message: "We can't find that email's mail server. Check the spelling." } })

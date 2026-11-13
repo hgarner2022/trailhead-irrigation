@@ -23,7 +23,7 @@ describe("bookings", () => {
   it("is a stub for create, with the scope and the schema still enforced", async () => {
     const input = {
       serviceKey: "turn-on-8", day: "2027-05-05", truckId: "truck-1",
-      customer: { firstName: "A", email: "a@example.com" }, property: { address: "1 Main St", town: "Erie" },
+      customer: { firstName: "A", lastName: "Tester", email: "a@example.com" }, property: { address: "1 Main St", town: "Erie" },
       consent: { termsAccepted: true, source: "booking" },
     }
     await expect(callApi(ctxFor(db, writeKey), bookingsCreate, input)).rejects.toMatchObject({ code: "not_implemented" })

@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { StatusPill, statusLabel, type PillStatus } from "./StatusPill"
 
-const STATUSES: PillStatus[] = ["active", "paid", "completed", "scheduled", "unpaid", "unscheduled", "overdue", "cancelled", "lapsed"]
+const STATUSES: PillStatus[] = ["pending", "active", "paid", "needs-a-day", "scheduled", "routed", "done", "charged", "charge-failed", "cancelled", "skipped", "unpaid", "overdue", "lapsed"]
 
 const meta = {
   title: "Blocks/StatusPill",
@@ -15,14 +15,14 @@ type Story = StoryObj<typeof meta>
 
 export const Default: Story = {}
 
-/** The customer's words on the pass page, in the status colours: a reserved blowout is still unscheduled underneath. */
+/** The customer's words on the pass page, in the status colours: a reserved blowout still needs a day underneath. */
 export const CustomerWords: Story = {
   render: () => (
     <ul className="flex flex-wrap gap-6">
-      <li><StatusPill status="completed" label="Done" /></li>
+      <li><StatusPill status="done" label="Done" /></li>
       <li><StatusPill status="scheduled" label="Booked" /></li>
-      <li><StatusPill status="unscheduled" label="Reserved" /></li>
-      <li><StatusPill status="unscheduled" label="July" /></li>
+      <li><StatusPill status="needs-a-day" label="Reserved" /></li>
+      <li><StatusPill status="needs-a-day" label="July" /></li>
     </ul>
   ),
 }

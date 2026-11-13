@@ -28,7 +28,7 @@ let n = 0
 async function pendingPass() {
   n++
   const pass = await callApi(ctxFor(db, writeKey, "2026-12-01T17:00:00Z"), passesCreate, {
-    customer: { firstName: "Wes", email: `wes${n}@example.com` }, property: { address: `${n} Oak St`, town: "Erie" }, zones: 8, consent: { termsAccepted: true },
+    customer: { firstName: "Wes", lastName: "Tester", email: `wes${n}@example.com` }, property: { address: `${n} Oak St`, town: "Erie" }, zones: 8, consent: { termsAccepted: true },
   })
   return { passId: pass.id, customerId: pass.customer!.id }
 }

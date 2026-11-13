@@ -1,58 +1,73 @@
-import type { Pass, PassStatus, TimingPreference } from "@/lib/admin/types"
-import { TIMING_PREFERENCES, preferenceLabel, shortDate } from "@/lib/admin/format"
-import { formatMoney, visitMonth } from "@/lib/admin/metrics"
+import type { Pass, PassStatus, PassVisit } from "@/lib/admin/types"
+import { fullName, shortDate } from "@/lib/admin/format"
+import { dayWords } from "@/lib/admin/jobs"
+import { formatMoney } from "@/lib/admin/metrics"
 import { StatusPill, statusLabel } from "./StatusPill"
 import type { GridColumnDef } from "./data-grid-table"
 
-// The Passes grid's columns, in the order Hannah reads them: name first (the
-// link that opens the pass), then town, zones, the turn-on and blowout timing
-// preferences, status, charged so far and the next visit. The per-row
-// derivations are small pure functions so the tests can read them without a
-// table.
+// The Passes grid's columns, in the order Hannah reads them: the customer's
+// full name first (the link that opens the pass), then town, zones, the day
+// each visit has (Turn-on, Inspection, Blowout: "Apr 26", with its window
+// once one is set, "Needs a day" before; never a timing preference), status
+// (Pending for an unpaid attempt, never Active), charged so far and the next
+// visit. Every day is read off the visit row. The per-row derivations are
+// small pure functions so the tests can read them without a table.
 
-/** The filter chip options for a preference column, earlier to later, labelled in the customer's words. */
-export const preferenceOptions = (kind: "turn-on" | "blowout") => TIMING_PREFERENCES.map((value) => ({ value, label: preferenceLabel(kind, value) }))
+const NEEDS_DAY = "Needs a day"
 
-const rank = (value: unknown) => TIMING_PREFERENCES.indexOf(value as TimingPreference)
+/** The visit of a kind on the pass; undefined when the pass has none (no July inspection). */
+const visitOf = (pass: Pass, kind: PassVisit["kind"]): PassVisit | undefined => pass.visits.find((v) => v.kind === kind)
 
-/** A preference column: the raw value for the chip filter and the sort (earlier to later), the customer's words in the cell and the CSV. */
-function preferenceColumn(id: "turnOn" | "blowout", key: "turnOnPreference" | "blowoutPreference", kind: "turn-on" | "blowout", header: string): GridColumnDef<Pass> {
-  const label = (pass: Pass) => preferenceLabel(kind, pass[key])
+/** A visit column's text: its day and window, "Needs a day", or "None" for a visit the pass does not have. */
+export function visitDayText(pass: Pass, kind: PassVisit["kind"]): string {
+  const visit = visitOf(pass, kind)
+  return visit ? dayWords(visit) || NEEDS_DAY : "None"
+}
+
+/** The day a visit has as a sortable key; nothing before it has one. */
+function visitDayKey(pass: Pass, kind: PassVisit["kind"]): string | undefined {
+  const visit = visitOf(pass, kind)
+  return visit?.scheduledOn ?? visit?.scheduledAt?.slice(0, 10)
+}
+
+function visitColumn(kind: PassVisit["kind"], header: string): GridColumnDef<Pass> {
   return {
-    id,
-    accessorKey: key,
+    id: kind === "turn-on" ? "turnOn" : kind,
+    accessorFn: (pass) => visitDayKey(pass, kind),
     header,
-    sortFn: (a, b) => rank(a.getValue(id)) - rank(b.getValue(id)),
-    cell: ({ row }) => label(row.original),
-    meta: { csv: (pass) => label(pass as Pass) },
+    sortUndefined: "last",
+    cell: ({ row }) => visitDayText(row.original, kind),
+    meta: { csv: (pass) => visitDayText(pass as Pass, kind) },
   }
 }
 
 /** Sum of the visit amounts already charged on this pass. */
 export const chargedTotal = (pass: Pass) => pass.visits.filter((v) => v.chargedAt).reduce((sum, v) => sum + v.amount, 0)
 
-/** The first uncharged visit: its date when booked, else its window; "Done" when every visit is charged. */
+/** The first uncharged visit: its day when it has one, else "Needs a day"; "Done" when every visit is charged. */
 export function nextVisit(pass: Pass): string {
   const visit = pass.visits.find((v) => !v.chargedAt)
   if (!visit) return "Done"
-  return visit.scheduledAt ? shortDate(visit.scheduledAt) : visit.window
+  return dayWords(visit) ? shortDate(visit.scheduledOn ?? visit.scheduledAt!) : NEEDS_DAY
 }
 
-/** The pass's next visit as a sortable day: the booked date, else the first day of the window's month; nothing once every visit is charged. */
+/** Sorts after every real day: a next visit with no day comes after the ones that have one, and before a finished pass. */
+const NEEDS_DAY_KEY = "9999-99-99"
+
+/** The pass's next visit as a sortable day: its day, else a key after every day while it needs one; nothing once every visit is charged. */
 export function nextVisitSortKey(pass: Pass): string | undefined {
   const visit = pass.visits.find((v) => !v.chargedAt)
   if (!visit) return undefined
-  if (visit.scheduledAt) return visit.scheduledAt.slice(0, 10)
-  const month = visitMonth(visit)
-  return month ? `${pass.season}-${String(month).padStart(2, "0")}-01` : undefined
+  return visit.scheduledOn ?? visit.scheduledAt?.slice(0, 10) ?? NEEDS_DAY_KEY
 }
 
 export const passColumns: GridColumnDef<Pass>[] = [
-  { id: "firstName", accessorKey: "firstName", header: "Name" },
+  { id: "name", accessorFn: (pass) => fullName(pass.firstName, pass.lastName), header: "Name" },
   { id: "town", accessorKey: "town", header: "Town" },
   { id: "zones", accessorKey: "zones", header: "Zones", meta: { align: "right" } },
-  preferenceColumn("turnOn", "turnOnPreference", "turn-on", "Turn-on"),
-  preferenceColumn("blowout", "blowoutPreference", "blowout", "Blowout"),
+  visitColumn("turn-on", "Turn-on"),
+  visitColumn("inspection", "Inspection"),
+  visitColumn("blowout", "Blowout"),
   {
     id: "status",
     accessorKey: "status",

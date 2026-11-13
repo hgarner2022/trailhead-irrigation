@@ -11,25 +11,33 @@ beforeAll(() => {
 })
 beforeEach(() => sessionStorage.clear())
 
-const answers: Partial<CheckoutFields> = { address: FIXTURE_HOME.label, place: FIXTURE_HOME, town: "Erie", access: "yes", today: "2026-11-12", zones: 8, firstName: "Andrea", email: "andrea@example.com", phone: "(970) 555-0123", termsAccepted: true }
+const answers: Partial<CheckoutFields> = { address: FIXTURE_HOME.label, place: FIXTURE_HOME, town: "Erie", access: "yes", today: "2026-11-12", zones: 8, firstName: "Andrea", lastName: "Anderson", email: "andrea@example.com", phone: "(970) 555-0123", termsAccepted: true }
 const press = () => fireEvent.click(screen.getByRole("button", { name: "Continue" }))
 
 describe("validation that helps", () => {
   it("keeps Continue enabled, shows every contact problem at once and focuses the first one", () => {
-    render(<CheckoutFlow season={2027} initialStep={5} prefill={{ ...answers, firstName: "", email: "andrea.example.com", phone: "" }} />)
+    render(<CheckoutFlow season={2027} initialStep={5} prefill={{ ...answers, firstName: "", lastName: "", email: "andrea.example.com", phone: "" }} />)
     const button = screen.getByRole("button", { name: "Continue" })
     expect(button).toBeEnabled()
     press()
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Who should we reach?")
     const name = screen.getByLabelText("First name")
     expect(name).toHaveFocus()
-    for (const label of ["First name", "Email", "Phone"]) {
+    for (const label of ["First name", "Last name", "Email", "Phone"]) {
       const field = screen.getByLabelText(label)
       expect(field).toHaveAttribute("aria-invalid", "true")
       expect(field).toHaveAccessibleDescription(/\w/)
     }
     const summary = screen.getByRole("alert")
-    expect(summary).toHaveTextContent("Check these before you continue: First name, Email, Phone.")
+    expect(summary).toHaveTextContent("Check these before you continue: First name, Last name, Email, Phone.")
+  })
+  it("asks a last name beside the first, as its own required field", () => {
+    render(<CheckoutFlow season={2027} initialStep={5} prefill={{ ...answers, lastName: " " }} />)
+    expect(screen.getByLabelText("Last name")).toHaveAttribute("name", "lastName")
+    expect(screen.getByLabelText("Last name")).toHaveAttribute("autocomplete", "family-name")
+    press()
+    expect(screen.getByLabelText("Last name")).toHaveFocus()
+    expect(screen.getByLabelText("Last name")).toHaveAccessibleDescription("We need a last name so Ryan knows who to ask for.")
   })
   it("skips the summary for one problem and focuses that field", () => {
     render(<CheckoutFlow season={2027} initialStep={5} prefill={{ ...answers, phone: "12" }} />)

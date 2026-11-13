@@ -6,12 +6,17 @@ const pill = () => document.querySelector<HTMLElement>('[data-slot="status-pill"
 
 describe("statusLabel", () => {
   it.each<[PillStatus, string]>([
+    ["pending", "Pending"],
     ["active", "Active"],
     ["paid", "Paid"],
-    ["completed", "Completed"],
+    ["needs-a-day", "Needs a day"],
     ["scheduled", "Scheduled"],
+    ["routed", "Routed"],
+    ["done", "Done"],
+    ["charged", "Charged"],
+    ["charge-failed", "Charge failed"],
+    ["skipped", "Skipped"],
     ["unpaid", "Unpaid"],
-    ["unscheduled", "Not scheduled"],
     ["overdue", "Past due"],
     ["cancelled", "Cancelled"],
     ["lapsed", "Lapsed"],
@@ -28,19 +33,23 @@ describe("StatusPill", () => {
   })
 
   it("takes another word for the same status, keeping its colour", () => {
-    render(<StatusPill status="unscheduled" label="Reserved" />)
+    render(<StatusPill status="needs-a-day" label="Reserved" />)
     expect(pill()).toHaveTextContent("Reserved")
-    expect(pill()).toHaveAttribute("data-status", "unscheduled")
+    expect(pill()).toHaveAttribute("data-status", "needs-a-day")
     expect(pill()).toHaveClass("bg-stone")
   })
 
   it.each<[PillStatus, string]>([
     ["active", "text-positive-deep"],
     ["paid", "text-positive-deep"],
-    ["completed", "text-positive-deep"],
+    ["done", "text-positive-deep"],
+    ["charged", "text-positive-deep"],
     ["scheduled", "text-primary-deep"],
+    ["routed", "text-primary-deep"],
+    ["charge-failed", "text-destructive"],
+    ["pending", "text-foreground"],
     ["unpaid", "text-foreground"],
-    ["unscheduled", "text-foreground"],
+    ["needs-a-day", "text-foreground"],
     ["overdue", "text-destructive"],
     ["cancelled", "text-muted-foreground"],
     ["lapsed", "text-muted-foreground"],

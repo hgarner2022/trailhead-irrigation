@@ -11,12 +11,14 @@ it("snapshot matches the AdminData shape and has data in every collection", () =
     expect(d[key].length, key).toBeGreaterThan(0)
   }
   expect(d.visits.every((v) => d.clients.some((c) => c.id === v.clientId))).toBe(true)
-  expect(d.passes.every((p) => d.clients.some((c) => c.id === p.clientId && c.hasPass))).toBe(true)
+  // Twelve sold passes and one unpaid attempt (pending), whose customer has no pass yet.
+  expect(d.passes.every((p) => d.clients.some((c) => c.id === p.clientId && (c.hasPass || p.status === "pending")))).toBe(true)
+  expect(d.passes.filter((p) => p.status === "pending")).toHaveLength(1)
   expect(d.clients.every((c) => TOWNS.includes(c.town))).toBe(true)
-  expect(d.passes).toHaveLength(12)
-  // Five passes took the July add-on; seven bought the two visits.
+  expect(d.passes).toHaveLength(13)
+  // Five passes took the July add-on; seven bought the two visits, and the pending attempt holds two.
   expect(d.passes.filter((p) => p.visits.length === 3)).toHaveLength(5)
-  expect(d.passes.filter((p) => p.visits.length === 2)).toHaveLength(7)
+  expect(d.passes.filter((p) => p.visits.length === 2)).toHaveLength(8)
   expect(d.passes.every((p) => ["May,July,October", "May,October"].includes(p.visits.map((v) => v.window).join(",")))).toBe(true)
   expect("blowoutWeeks" in d).toBe(false)
   expect(d.passes.some((p) => "blowoutWeek" in p)).toBe(false)
@@ -32,7 +34,7 @@ it("every pass carries a timing preference for both visits, spread across the th
 
 it("every pass holder has a consent with the terms accepted, and marketing is split", () => {
   const d = snapshot as AdminData
-  for (const pass of d.passes) {
+  for (const pass of d.passes.filter((p) => p.status !== "pending")) {
     const client = d.clients.find((c) => c.id === pass.clientId)
     expect(pass.consent?.termsAcceptedAt, pass.id).toBeTruthy()
     expect(pass.consent?.termsVersion).toBe("2026-11")
@@ -40,6 +42,8 @@ it("every pass holder has a consent with the terms accepted, and marketing is sp
     expect(pass.consent?.marketingOptIn).toBe((pass.consent?.marketingChannels.length ?? 0) > 0)
     expect(client?.consent).toEqual(pass.consent)
   }
+  expect(d.passes.every((p) => p.lastName), "every pass names its customer in full").toBe(true)
+  expect(d.clients.every((c) => c.lastName), "every customer has a last name").toBe(true)
   expect(d.passes.some((p) => p.consent?.marketingOptIn)).toBe(true)
   expect(d.passes.some((p) => !p.consent?.marketingOptIn)).toBe(true)
   expect(JSON.stringify(d)).not.toMatch(/@|\(\d{3}\) ?\d{3}-\d{4}|\d{3}-\d{3}-\d{4}/)   // no emails, no phones

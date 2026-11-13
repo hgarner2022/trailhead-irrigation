@@ -9,7 +9,7 @@ import type { CheckoutFields } from "./checkout-state"
 export const STORAGE_KEY = "season-pass-checkout"
 
 /** The answers worth keeping; `today` is the page's, and the consent and card fields are asked fresh. */
-const KEPT = ["address", "place", "town", "access", "accessNote", "zones", "inspection", "days", "firstName", "email", "phone"] as const
+const KEPT = ["address", "place", "town", "access", "accessNote", "zones", "inspection", "days", "firstName", "lastName", "email", "phone"] as const
 
 export interface Saved {
   step: number

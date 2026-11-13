@@ -6,8 +6,8 @@ import { EmptyState } from "./EmptyState"
 import { AttentionAction, type ActionResult } from "./needs-attention-action"
 import { relativeTime } from "./needs-attention-time"
 
-// The short list on Home of what needs a person: a failed charge, Jobber
-// jobs that were not created, a card about to expire, visits from earlier days nobody has marked done, a pass cancelled whose Jobber jobs must go. One row per item with an icon coloured by how urgent the kind
+// The short list on Home of what needs a person: a failed charge, a task that
+// did not finish, a card about to expire, jobs from earlier days nobody has marked done, a pass cancelled. One row per item with an icon coloured by how urgent the kind
 // is, the message, how long it has been waiting, and ONE action (Retry, Send
 // card link, Reply, ...) so the list can be cleared like an inbox (the
 // review, 2026-11-12). A row with a pass links to that pass in Passes and a row with a
@@ -32,9 +32,9 @@ export interface NeedsAttentionProps {
 const KINDS: Record<Attention["kind"], { icon: LucideIcon; tone: string; name: string }> = {
   "new-pass": { icon: BadgeCheck, tone: "bg-success/10 text-success", name: "New pass" },
   "charge-failed": { icon: CreditCard, tone: "bg-warning/10 text-warning", name: "Charge failed" },
-  "jobs-failed": { icon: CalendarX, tone: "bg-warning/10 text-warning", name: "Visits missing a Jobber job" },
+  "jobs-failed": { icon: CalendarX, tone: "bg-warning/10 text-warning", name: "Task needs a retry" },
   "card-expiring": { icon: Clock, tone: "bg-stone text-muted-foreground", name: "Card expiring" },
-  "not-closed": { icon: CircleDashed, tone: "bg-stone text-muted-foreground", name: "Visits not marked done" },
+  "not-closed": { icon: CircleDashed, tone: "bg-stone text-muted-foreground", name: "Jobs not marked done" },
   "pass-cancelled": { icon: Ban, tone: "bg-warning/10 text-warning", name: "Pass cancelled" },
   scheduled: { icon: CalendarCheck, tone: "bg-success/10 text-success", name: "Schedule run" },
   unplaced: { icon: CalendarX, tone: "bg-warning/10 text-warning", name: "Needs a day" },
@@ -87,7 +87,7 @@ function Row({ item, now, onAction, readOnly }: { item: Attention; now: string; 
 
 export function NeedsAttention({ items, now, onAction, readOnly, className }: NeedsAttentionProps) {
   if (items.length === 0) {
-    return <EmptyState className={className} title="Nothing needs you right now" line="Failed charges, missing jobs and expiring cards show up here." />
+    return <EmptyState className={className} title="Nothing needs you right now" line="Failed charges, tasks that need a retry and expiring cards show up here." />
   }
   const at = now ?? new Date().toISOString()
   return (

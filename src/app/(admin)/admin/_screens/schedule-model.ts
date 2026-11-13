@@ -6,20 +6,21 @@
  * `src/lib/admin/calendar.ts`.
  */
 import type { AdminData, Pass, PassVisit, TimingPreference, Truck, Visit } from "@/lib/admin/types"
-import { TIMING_PREFERENCES, preferenceOf, shortDate, writtenDate } from "@/lib/admin/format"
+import { TIMING_PREFERENCES, TIME_ZONE, fullName, preferenceOf, shortDate, writtenDate } from "@/lib/admin/format"
+import { passVisitJob } from "@/lib/admin/jobs"
 import { visitMonth } from "@/lib/admin/metrics"
-import { dayOf, dayVisits, sameClockOnDay, weekDays, weekdayName, worksOn } from "@/lib/admin/calendar"
+import { addDays, dayOf, dayVisits, sameClockOnDay, weekDays, weekOf, weekdayName, worksOn } from "@/lib/admin/calendar"
 
 const onCalendar = (v: Visit): v is Visit & { startAt: string } => v.status !== "cancelled" && v.startAt !== undefined
 
 export const exceptionCount = (visits: Visit[]): number => visits.filter((v) => v.exception).length
 
-/** "Week of Nov 9. 12 visits, 2 moved in Jobber." or "Week of Nov 9. 25 visits."; "Nothing on the calendar." with no visits. */
+/** "Week of Nov 9. 12 visits, 2 moved." or "Week of Nov 9. 25 visits."; "Nothing on the calendar." with no visits. */
 export function weekContext(weekStart: string, visits: Visit[]): string {
   if (visits.length === 0) return `Week of ${shortDate(weekStart)}. Nothing on the calendar.`
   const count = `${visits.length} visit${visits.length === 1 ? "" : "s"}`
   const moved = exceptionCount(visits)
-  return `Week of ${shortDate(weekStart)}. ${count}${moved ? `, ${moved} moved in Jobber` : ""}.`
+  return `Week of ${shortDate(weekStart)}. ${count}${moved ? `, ${moved} moved` : ""}.`
 }
 
 
@@ -69,18 +70,18 @@ export function moveOutcome(visits: Visit[], visitId: string, truckId: string, d
   return { visits: next, moved: true, message: `Moved ${name} to ${truck.name} on ${sentenceDay(dayIso)}.` }
 }
 
-/** A visit with no day yet: an unscheduled Jobber job, or a pass visit waiting inside its window. */
+/** A job that needs a day: a visit of an active pass with no day. */
 export interface TrayItem {
   id: string
   clientId: string
   clientName: string
   town: Visit["town"]
   kind: Visit["kind"]
-  /** "May", "July", "October", or the job's own words */
+  /** "May", "July", "October" */
   window: string
   preference?: TimingPreference
   passId?: string
-  /** the customer must be there and picks the day themselves; Schedule leaves it in the tray */
+  /** the customer must be there and picks the day themselves; Schedule leaves it in the list. The tray no longer sets it (a job that needs a day is a job that needs a day), but a caller may. */
   awaitingPick?: boolean
   /** sortable: the first day of the window's month in the pass's season */
   sortKey: string
@@ -92,36 +93,50 @@ function passItem(pass: Pass, visit: PassVisit): TrayItem {
   const month = visitMonth(visit)
   const preference = preferenceOf(pass, visit.kind) ?? undefined
   return {
-    id: `tray-${pass.id}-${visit.kind}`,
+    // The visit's own id when the pass carries it, so Place moves the real visit; a stand-in only in the catalog's fixtures.
+    id: visit.id ?? `tray-${pass.id}-${visit.kind}`,
     clientId: pass.clientId,
-    clientName: pass.firstName,
+    clientName: fullName(pass.firstName, pass.lastName),
     town: pass.town,
     kind: visit.kind,
     window: visit.window,
+    // Used to put earlier customers first inside a window; never shown (the list says what each job needs, a day).
     preference: visit.kind === "inspection" ? undefined : preference,
     passId: pass.id,
-    awaitingPick: pass.needsCustomerHome || undefined,
     sortKey: `${pass.season}-${String(month ?? 12).padStart(2, "0")}-01`,
   }
 }
 
 /**
- * What the "To schedule" tray lists: every unscheduled Jobber visit and every
- * active pass visit with no day, earliest window first, earlier preferences
- * before later ones inside a window. Pass visits already placed (scheduled,
- * whoever placed them) are matched by pass and kind and left out.
+ * What the "Needs a day" list shows: the jobs that have no day, for ACTIVE
+ * passes only. A job with a day is never here (the state is read off the
+ * visit row by `passVisitJob`, the one derivation), a pending pass's jobs
+ * never are (an unpaid attempt is not a customer), and neither are open
+ * jobs from the calendar feed (the app cannot place them). Earliest window first, earlier
+ * preferences before later ones inside a window. A visit the screen has put
+ * on the calendar since the data was read is left out by its id.
  */
 export function trayItems(data: Pick<AdminData, "visits" | "passes">): TrayItem[] {
-  const dated = data.visits.filter((v) => v.startAt && v.status !== "cancelled")
-  const placed = new Set(dated.map((v) => `${v.clientId}:${v.kind}:${v.startAt?.slice(0, 4)}`))
-  const placedIds = new Set(dated.map((v) => v.id))
-  const fromJobs: TrayItem[] = data.visits
-    .filter((v) => v.status === "unscheduled" && !v.startAt)
-    .map((v) => ({ id: v.id, clientId: v.clientId, clientName: v.clientName, town: v.town, kind: v.kind, window: "Open job", sortKey: "0000-00-00" }))
-  const fromPasses: TrayItem[] = data.passes
+  const placedIds = new Set(data.visits.filter((v) => v.startAt && v.status !== "cancelled").map((v) => v.id))
+  return data.passes
     .filter((p) => p.status === "active")
-    .flatMap((p) => p.visits.filter((v) => !v.scheduledAt && !v.completedAt && !placed.has(`${p.clientId}:${v.kind}:${p.season}`) && !placedIds.has(`tray-${p.id}-${v.kind}`)).map((v) => passItem(p, v)))
-  return [...fromJobs, ...fromPasses].sort((a, b) => a.sortKey.localeCompare(b.sortKey) || rank(a.preference) - rank(b.preference) || a.clientName.localeCompare(b.clientName))
+    .flatMap((p) => p.visits.filter((v) => passVisitJob(p, v, "", TIME_ZONE).state === "needs-a-day").map((v) => passItem(p, v)))
+    .filter((item) => !placedIds.has(item.id))
+    .sort((a, b) => a.sortKey.localeCompare(b.sortKey) || rank(a.preference) - rank(b.preference) || a.clientName.localeCompare(b.clientName))
+}
+
+/** The Monday of the first week that has a job on or after this week; this week when none does. The Schedule opens here. */
+export function firstJobWeek(visits: Visit[], today: string, timeZone: string): string {
+  const thisWeek = weekOf(today, timeZone)
+  const days = visits.filter((v) => v.status !== "cancelled" && v.startAt).map((v) => dayOf(v.startAt!, timeZone)).filter((d) => d >= thisWeek)
+  return days.length ? weekOf(days.sort()[0], timeZone) : thisWeek
+}
+
+/** The Monday of the next week after `weekStart` that has a job, or undefined when no later week does. */
+export function nextJobsWeek(visits: Visit[], weekStart: string, timeZone: string): string | undefined {
+  const after = addDays(weekStart, 7)
+  const days = visits.filter((v) => v.status !== "cancelled" && v.startAt).map((v) => dayOf(v.startAt!, timeZone)).filter((d) => d >= after)
+  return days.length ? weekOf(days.sort()[0], timeZone) : undefined
 }
 
 /** The first day of the visible week the truck works, else the Monday. */
@@ -131,17 +146,16 @@ export function firstWorkingDay(truck: Truck, weekStart: string): string {
 
 /**
  * A tray item placed on a truck-day at nine in the morning (Mountain), last
- * in that day's order. Placed is scheduled: in the wiring phase the visit
- * goes to Jobber and the customer gets the date. An item already on the
- * calendar is left alone.
+ * in that day's order. Placed is scheduled, and the customer gets the date.
+ * An item already on the calendar is left alone.
  */
 export function placeVisit(visits: Visit[], item: TrayItem, truckId: string, dayIso: string, timeZone: string): Visit[] {
   const existing = visits.find((v) => v.id === item.id)
   if (existing?.startAt) return visits
   const startAt = sameClockOnDay("2027-05-03T15:00:00Z", dayIso, timeZone)
   const stopOrder = dayVisits(visits, dayIso, truckId, timeZone).length + 1
-  // An open Jobber job is the existing row given a day; a pass visit becomes a new row.
-  if (existing) return visits.map((v) => (v.id === item.id ? { ...v, status: "scheduled", startAt, truckId, stopOrder, awaitingPick: undefined } : v))
+  // A visit the data already holds is the existing row given a day; a fixture's pass visit becomes a new row.
+  if (existing) return visits.map((v) => (v.id === item.id ? { ...v, status: "scheduled", startAt, scheduledOn: dayIso, truckId, stopOrder, awaitingPick: undefined } : v))
   const visit: Visit = {
     id: item.id,
     clientId: item.clientId,
@@ -150,6 +164,7 @@ export function placeVisit(visits: Visit[], item: TrayItem, truckId: string, day
     kind: item.kind,
     status: "scheduled",
     startAt,
+    scheduledOn: dayIso,
     isPass: item.passId !== undefined,
     jobberUrl: "",
     truckId,

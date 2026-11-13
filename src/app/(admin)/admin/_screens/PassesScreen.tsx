@@ -1,32 +1,29 @@
 "use client"
 
-import { useMemo, useState, useTransition, type ReactNode } from "react"
+import { useMemo, useState, useTransition } from "react"
 import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { DataGrid } from "@/components/blocks/DataGrid"
-import { passColumns, preferenceOptions } from "@/components/blocks/data-grid-columns"
+import { passColumns } from "@/components/blocks/data-grid-columns"
 import { PageHeader } from "@/components/blocks/PageHeader"
-import { PassActions } from "@/components/blocks/PassActions"
-import { PassCard } from "@/components/blocks/PassCard"
-import { SeasonLine } from "@/components/blocks/SeasonLine"
 import { SidePanel, SidePanelLayout } from "@/components/blocks/SidePanel"
-import { StatusPill, statusLabel } from "@/components/blocks/StatusPill"
+import { statusLabel } from "@/components/blocks/StatusPill"
 import type { AdminData, Pass } from "@/lib/admin/types"
-import { preferenceLabel } from "@/lib/admin/format"
-import type { TimingPreference } from "@/lib/admin/types"
-import { formatMoney } from "@/lib/admin/metrics"
 import type { Outcome } from "./action-types"
-import { chargeRows, consentLine, passesContext } from "./passes-model"
+import type { PassesActions } from "./passes-actions"
+import { CancelDialog, PassDetail } from "./PassPanel"
+import { passName, passesContext } from "./passes-model"
 
-// Every Season Pass sold, as the one data grid, with the pass opening beside
-// it from its name. On a laptop the panel pushes the grid narrower; on a
-// phone it covers it as a sheet. Client because the selected pass is state
-// (its id; the pass itself is read from `data.passes`, so a refreshed `data`
-// shows in the open panel); the route's page.tsx supplies `data` and
-// `today`. The bulk actions and the panel's buttons only log in the
-// prototype. Wiring-phase gap: the panel links to the client in Jobber, since
-// `Pass` carries one `jobberUrl` today; the three visits' own Jobber job
-// links arrive once the pass holds a job id per visit.
+export type { PassesActions }
+
+// Every Season Pass started, as the one data grid, with the pass opening
+// beside it from its name. A pending pass is an unpaid attempt and says
+// Pending, never Active; the Pending filter finds them. Each visit column
+// and the panel's jobs, charges and season line read the same visit rows.
+// On a laptop the panel pushes the grid narrower; on a phone it covers it as
+// a sheet. Client because the selected pass is state (its id; the pass
+// itself is read from `data.passes`, so a refreshed `data` shows in the open
+// panel); the route's page.tsx supplies `data` and `today`. The bulk actions
+// and the panel's buttons only log in the catalog.
 
 export interface PassesScreenProps {
   data: AdminData
@@ -36,164 +33,14 @@ export interface PassesScreenProps {
   defaultSelectedId?: string
   /** a tech reads the passes and changes nothing: no buttons in the panel, no bulk actions */
   readOnly?: boolean
-  /** the panel's and the bulk buttons; server actions in the app. Without them the buttons only log, as in the catalog. */
   actions?: PassesActions
 }
 
-export interface PassesActions {
-  resendConfirmation: (passId: string) => Promise<Outcome>
-  sendCardUpdateLink: (passId: string) => Promise<Outcome>
-  cancel: (passId: string) => Promise<Outcome>
-  addInspection: (passId: string) => Promise<Outcome>
-  changePreference: (passId: string, kind: "turn-on" | "blowout", preference: TimingPreference) => Promise<Outcome>
-  skip: (passId: string, kind: "turn-on" | "inspection" | "blowout") => Promise<Outcome>
-}
-
 const TOWNS = ["Erie", "Longmont", "Louisville", "Lafayette", "Firestone", "Broomfield"]
-const STATUSES = ["active", "cancelled", "lapsed"] as const
+const STATUSES = ["pending", "active", "cancelled", "lapsed"] as const
 const option = (value: string, label = value) => ({ value, label })
 
 const log = (action: string) => (rows: Pass[]) => console.info(action, rows.map((p) => p.number))
-
-function Subtitle({ id, children }: { id: string; children: string }) {
-  return (
-    <h3 id={id} className="font-display text-lg leading-tight text-navy">
-      {children}
-    </h3>
-  )
-}
-
-function Facts({ pass }: { pass: Pass }) {
-  const facts: [string, ReactNode][] = [
-    ["Town", pass.town],
-    ["Zones", pass.zones],
-    ["Turn-on", preferenceLabel("turn-on", pass.turnOnPreference)],
-    ["Blowout", preferenceLabel("blowout", pass.blowoutPreference)],
-    ["Status", <StatusPill key="status" status={pass.status} />],
-  ]
-  return (
-    <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm">
-      {facts.map(([term, value]) => (
-        <div key={term} className="contents">
-          <dt className="text-muted-foreground">{term}</dt>
-          <dd className="font-medium">{value}</dd>
-        </div>
-      ))}
-    </dl>
-  )
-}
-
-function Charges({ pass }: { pass: Pass }) {
-  return (
-    <ul className="mt-2 divide-y divide-border text-sm">
-      {chargeRows(pass).map((row) => (
-        <li key={row.kind} className="flex items-center gap-4 py-2.5">
-          <span className="min-w-0 flex-1">
-            <span className="block font-medium">{row.name}</span>
-            <span className="block text-muted-foreground">{row.when}</span>
-          </span>
-          <span className="text-right">
-            <span className="block tabular-nums">{formatMoney(row.amount)}</span>
-            <span className="block text-muted-foreground">{row.charged}</span>
-          </span>
-        </li>
-      ))}
-    </ul>
-  )
-}
-
-function CancelDialog({ pass, open, onOpenChange, onCancel }: { pass: Pass; open: boolean; onOpenChange: (open: boolean) => void; onCancel?: (passId: string) => Promise<Outcome> }) {
-  const [pending, start] = useTransition()
-  const [problem, setProblem] = useState("")
-  const cancel = () => {
-    if (!onCancel) {
-      console.info("cancel pass", [pass.number])
-      return onOpenChange(false)
-    }
-    start(async () => {
-      const out = await onCancel(pass.id)
-      setProblem(out.ok ? "" : out.message)
-      if (out.ok) onOpenChange(false)
-    })
-  }
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent showCloseButton={false} className="sm:max-w-sm">
-        <DialogHeader>
-          <DialogTitle className="font-display text-2xl font-semibold text-navy">Cancel this pass?</DialogTitle>
-          <DialogDescription>Nothing further is charged and the remaining visits come off the schedule.</DialogDescription>
-        </DialogHeader>
-        <p role="alert" className="text-sm text-destructive empty:hidden">
-          {problem}
-        </p>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Keep pass
-          </Button>
-          <Button onClick={cancel} disabled={pending}>
-            Cancel pass
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  )
-}
-
-function PassDetail({ pass, today, readOnly, actions, run, notice }: { pass: Pass; today: string; readOnly: boolean; actions?: PassesActions; run: (call: () => Promise<Outcome>) => void; notice: string }) {
-  return (
-    <div className="flex flex-col gap-6">
-      <p role="status" className="text-sm text-muted-foreground empty:hidden">
-        {notice}
-      </p>
-      <div className="flex items-start gap-5">
-        <PassCard pass={pass} size="thumb" interactive={false} className="shrink-0" />
-        <Facts pass={pass} />
-      </div>
-      {/* On its own line, not in the facts grid: beside the thumbnail on a phone it would wrap four deep. */}
-      <p data-slot="pass-consent" className="text-sm">
-        <span className="text-muted-foreground">Consent </span>
-        <span className="font-medium">{consentLine(pass.consent)}</span>
-      </p>
-      <section aria-labelledby="pass-season">
-        <Subtitle id="pass-season">Season</Subtitle>
-        <SeasonLine mode="customer" season={pass.season} visits={pass.visits} preferences={pass} today={today} className="mt-3" />
-      </section>
-      <section aria-labelledby="pass-charges">
-        <Subtitle id="pass-charges">Charges</Subtitle>
-        <Charges pass={pass} />
-      </section>
-      <section aria-labelledby="pass-change">
-        <Subtitle id="pass-change">Change the pass</Subtitle>
-        {readOnly ? (
-          <p className="mt-3 text-sm text-muted-foreground">A manager changes the pass.</p>
-        ) : (
-          <PassActions
-            pass={pass}
-            voice="admin"
-            className="mt-3"
-            onAddInspection={(id) => (actions ? run(() => actions.addInspection(id)) : console.info("add inspection", [id]))}
-            onChangePreference={(kind, preference) => (actions ? run(() => actions.changePreference(pass.id, kind, preference)) : console.info("change preference", [pass.number, kind, preference]))}
-            onSkip={(id, kind) => (actions ? run(() => actions.skip(id, kind)) : console.info("skip visit", [id, kind]))}
-          />
-        )}
-      </section>
-      <div className="flex flex-wrap gap-2">
-        <Button asChild variant="outline" size="sm">
-          <a href={pass.jobberUrl} target="_blank" rel="noreferrer">
-            Open in Jobber
-            <span className="sr-only"> (opens in a new tab)</span>
-          </a>
-        </Button>
-        <Button asChild variant="outline" size="sm">
-          <a href={pass.stripeUrl} target="_blank" rel="noreferrer">
-            Open in Stripe
-            <span className="sr-only"> (opens in a new tab)</span>
-          </a>
-        </Button>
-      </div>
-    </div>
-  )
-}
 
 export function PassesScreen({ data, today, defaultSelectedId, readOnly = false, actions }: PassesScreenProps) {
   const passes = data.passes
@@ -215,7 +62,7 @@ export function PassesScreen({ data, today, defaultSelectedId, readOnly = false,
     start(async () => {
       for (const row of rows) {
         const out = await each(row.id)
-        if (!out.ok) return setNotice(`${name} stopped at ${row.firstName}: ${out.message}`)
+        if (!out.ok) return setNotice(`${name} stopped at ${passName(row)}: ${out.message}`)
       }
       setNotice(done)
     })
@@ -230,7 +77,6 @@ export function PassesScreen({ data, today, defaultSelectedId, readOnly = false,
     () => [
       { column: "town", label: "Town", options: TOWNS.map((t) => option(t)) },
       { column: "status", label: "Status", options: STATUSES.map((s) => option(s, statusLabel(s))) },
-      { column: "blowout", label: "Blowout", options: preferenceOptions("blowout") },
     ],
     [],
   )
@@ -238,6 +84,8 @@ export function PassesScreen({ data, today, defaultSelectedId, readOnly = false,
     setSelectedId(next.id)
     setOpen(true)
   }
+  // A pending pass is an unpaid attempt: a resend or a card link would go to someone who has not bought.
+  const canAct = !readOnly && pass?.status !== "pending"
 
   return (
     <div data-slot="passes-screen">
@@ -251,10 +99,10 @@ export function PassesScreen({ data, today, defaultSelectedId, readOnly = false,
             <SidePanel
               open={open}
               onOpenChange={setOpen}
-              title={pass.firstName}
+              title={passName(pass)}
               description={`Season Pass ${pass.season}, ${pass.number}`}
               footer={
-                readOnly ? undefined : (
+                canAct ? (
                   <>
                     <Button variant="outline" disabled={pending} onClick={() => (actions ? run(() => actions.resendConfirmation(pass.id), "Confirmation sent.") : console.info("resend confirmation", [pass.number]))}>
                       Resend confirmation
@@ -267,7 +115,7 @@ export function PassesScreen({ data, today, defaultSelectedId, readOnly = false,
                     </Button>
                     <CancelDialog pass={pass} open={cancelling} onOpenChange={setCancelling} onCancel={actions?.cancel} />
                   </>
-                )
+                ) : undefined
               }
             >
               <PassDetail pass={pass} today={today} readOnly={readOnly} actions={actions} run={run} notice={notice} />
@@ -279,7 +127,7 @@ export function PassesScreen({ data, today, defaultSelectedId, readOnly = false,
           columns={passColumns}
           data={passes}
           getRowId={(p) => p.id}
-          search={{ column: "firstName", placeholder: "Search by name" }}
+          search={{ column: "name", placeholder: "Search by name" }}
           filters={filters}
           onOpen={show}
           bulkActions={bulkActions}

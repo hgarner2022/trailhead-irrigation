@@ -1,6 +1,7 @@
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
-import type { Invoice, PassStatus, VisitStatus } from "@/lib/admin/types"
+import type { Invoice, PassStatus } from "@/lib/admin/types"
+import { JOB_WORDS, type JobState } from "@/lib/admin/jobs"
 
 // One chip for every status word in the app, coloured by what the status
 // means for the business (docs/DESIGN.md, Copy): good outcomes green, a
@@ -14,17 +15,15 @@ import type { Invoice, PassStatus, VisitStatus } from "@/lib/admin/types"
 // is 5.45 and 5.25 (5.02 on stone). The lighter positive and warning inks
 // only reach 4.2 to 4.4 on their tints, which is why they are not used here.
 
-export type PillStatus = PassStatus | VisitStatus | Invoice["status"]
+export type PillStatus = PassStatus | JobState | Invoice["status"]
 
 const LABELS: Record<PillStatus, string> = {
+  ...JOB_WORDS,
+  pending: "Pending",
   active: "Active",
   paid: "Paid",
-  completed: "Completed",
-  scheduled: "Scheduled",
   unpaid: "Unpaid",
-  unscheduled: "Not scheduled",
   overdue: "Past due",
-  cancelled: "Cancelled",
   lapsed: "Lapsed",
 }
 
@@ -35,18 +34,23 @@ const BAD = "bg-destructive/10 text-destructive border-destructive/30"
 const OVER = "bg-stone text-muted-foreground border-border"
 
 const TONES: Record<PillStatus, string> = {
+  "needs-a-day": WAITING,
+  scheduled: BOOKED,
+  routed: BOOKED,
+  done: GOOD,
+  charged: GOOD,
+  "charge-failed": BAD,
+  cancelled: OVER,
+  skipped: OVER,
+  pending: WAITING,
   active: GOOD,
   paid: GOOD,
-  completed: GOOD,
-  scheduled: BOOKED,
   unpaid: WAITING,
-  unscheduled: WAITING,
   overdue: BAD,
-  cancelled: OVER,
   lapsed: OVER,
 }
 
-/** The word shown for a status: "Past due" for overdue, "Not scheduled" for unscheduled, else the status in sentence case. */
+/** The word shown for a status: "Past due" for overdue, "Needs a day" for a job with no day, else the status in sentence case. */
 export const statusLabel = (status: PillStatus): string => LABELS[status]
 
 export interface StatusPillProps {

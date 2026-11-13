@@ -21,7 +21,7 @@ let n = 0
 async function activePass() {
   n++
   const pass = await callApi(ctxFor(db, writeKey, "2026-12-01T17:00:00Z"), passesCreate, {
-    customer: { firstName: "Maya", email: `maya${n}@example.com` }, property: { address: `${n} Elm St`, town: "Erie" }, zones: 8, consent: { termsAccepted: true },
+    customer: { firstName: "Maya", lastName: "Tester", email: `maya${n}@example.com` }, property: { address: `${n} Elm St`, town: "Erie" }, zones: 8, consent: { termsAccepted: true },
   })
   await db.update(s.seasonPass).set({ status: "active", stripePaymentMethodId: "pm_old", cardBrand: "visa", cardLast4: "4242", cardExpires: "2030-08" }).where(eq(s.seasonPass.id, pass.id))
   await db.update(s.customer).set({ stripeCustomerId: "cus_1" }).where(eq(s.customer.id, pass.customer!.id))

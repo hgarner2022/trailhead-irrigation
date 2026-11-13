@@ -34,7 +34,7 @@ export const CustomerOut = z.object({
   createdAt: Iso,
 })
 
-export const CustomerListItem = CustomerOut.extend({ town: Town.nullable(), hasPass: z.boolean(), next: NextOut })
+export const CustomerListItem = CustomerOut.extend({ town: Town.nullable(), address: z.string().nullable().optional().describe("The first property's street line. Only for callers with the write scope."), hasPass: z.boolean(), next: NextOut })
 export const CustomerDetail = CustomerOut.extend({ properties: z.array(PropertyOut), consent: ConsentOut.nullable(), preference: Preference.optional() }).omit({ preference: true })
 
 export const propertyInput = z.object({ address: z.string().min(3).max(200), town: Town })

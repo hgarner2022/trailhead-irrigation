@@ -9,7 +9,7 @@ afterEach(() => vi.unstubAllEnvs())
 it("fixtures resolves to the anonymised snapshot", async () => {
   const d = await getAdminData("fixtures")
   expect(d.organizationId).toBe("org_trailhead")
-  expect(d.passes).toHaveLength(12)
+  expect(d.passes).toHaveLength(13)
 })
 
 it("live reads the database through the live loader", async () => {

@@ -93,6 +93,7 @@ const LINK = "font-medium text-primary-dark underline underline-offset-2 hover:t
 
 const CONTACT = [
   { key: "firstName", label: "First name", type: "text", autoComplete: "given-name", inputMode: undefined },
+  { key: "lastName", label: "Last name", type: "text", autoComplete: "family-name", inputMode: undefined },
   { key: "email", label: "Email", type: "email", autoComplete: "email", inputMode: "email" },
   { key: "phone", label: "Phone", type: "tel", autoComplete: "tel", inputMode: "tel" },
 ] as const

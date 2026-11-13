@@ -52,3 +52,55 @@ describe("PassesScreen with actions", () => {
     expect(screen.getByText("A manager changes the pass.")).toBeInTheDocument()
   })
 })
+
+describe("PassesScreen reads the visit rows", () => {
+  const pending = data.passes.find((p) => p.status === "pending")!
+  const fullName = (p: typeof pending) => `${p.firstName} ${p.lastName}`
+
+  it("shows the full name, the day each visit has and never a timing preference", () => {
+    render(<PassesScreen data={data} today={TODAY} />)
+    const row = within(screen.getByRole("button", { name: fullName(open) }).closest("tr")!)
+    expect(row.getByText("May 3")).toBeInTheDocument()
+    expect(row.getAllByText("Needs a day").length).toBeGreaterThan(0)
+    expect(document.body).not.toHaveTextContent(/\b(Early|Mid|Late) (May|October)\b/)
+  })
+
+  it("says Pending for an unpaid attempt, never Active, and the Pending filter finds it", async () => {
+    render(<PassesScreen data={data} today={TODAY} />)
+    const row = within(screen.getByRole("button", { name: fullName(pending) }).closest("tr")!)
+    expect(row.getByText("Pending")).toHaveAttribute("data-status", "pending")
+    expect(row.queryByText("Active")).toBeNull()
+    await userEvent.click(within(document.querySelector<HTMLElement>('[data-slot="data-grid-toolbar"]')!).getByRole("button", { name: "Status" }))
+    await userEvent.click(await screen.findByRole("menuitemcheckbox", { name: "Pending" }))
+    await userEvent.keyboard("{Escape}")
+    expect(screen.getAllByRole("row").slice(1)).toHaveLength(1)
+    expect(screen.getByRole("button", { name: fullName(pending) })).toBeInTheDocument()
+  })
+
+  it("notes in the panel that a pending pass is an unpaid attempt, with no buttons to act on a customer who has not bought", () => {
+    render(<PassesScreen data={data} today={TODAY} defaultSelectedId={pending.id} actions={actions()} />)
+    const panel = within(screen.getByRole("complementary", { name: fullName(pending) }))
+    expect(panel.getByText("Unpaid attempt, expires after an hour.")).toBeInTheDocument()
+    expect(panel.getByText("Pending")).toBeInTheDocument()
+    expect(panel.queryByText("Active")).toBeNull()
+    expect(screen.queryByRole("button", { name: "Send card update link" })).toBeNull()
+    expect(screen.queryByRole("button", { name: "Cancel pass" })).toBeNull()
+  })
+
+  it("lists the jobs with their day and state, from the same rows as the charges and the season line", () => {
+    render(<PassesScreen data={data} today={TODAY} defaultSelectedId={open.id} />)
+    const jobs = within(document.querySelector<HTMLElement>('[data-slot="pass-jobs"]')!)
+    const items = jobs.getAllByRole("listitem")
+    expect(items[0]).toHaveTextContent("Turn-on")
+    expect(items[0]).toHaveTextContent("May 3")
+    expect(items[0]).toHaveTextContent("Charged")
+    expect(items[1]).toHaveTextContent("Needs a day")
+    expect(screen.getByRole("heading", { name: "Jobs" })).toBeInTheDocument()
+  })
+
+  it("says nothing of Jobber and has no Open in Jobber button", () => {
+    render(<PassesScreen data={data} today={TODAY} defaultSelectedId={open.id} actions={actions()} />)
+    expect(document.body).not.toHaveTextContent(/jobber/i)
+    expect(screen.queryByRole("link", { name: /Open in Jobber/ })).toBeNull()
+  })
+})

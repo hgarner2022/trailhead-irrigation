@@ -69,7 +69,7 @@ export function RevenueScreen({ data, today }: RevenueScreenProps) {
               ? "Paid invoices by issue month."
               : series[1]
                 ? `Paid invoices by issue month, ${seriesWords(series)}.`
-                : `Paid invoices by issue month. ${thisYear - 1} is not in Jobber yet, so only ${thisYear} shows.`}
+                : `Paid invoices by issue month. ${thisYear - 1} isn't loaded yet, so only ${thisYear} shows.`}
           </CardDescription>
         </CardHeader>
         <CardContent>

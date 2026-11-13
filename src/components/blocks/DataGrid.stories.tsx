@@ -4,7 +4,7 @@ import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import type { Client, Pass } from "@/lib/admin/types"
 import { DataGrid, type GridColumnDef } from "./DataGrid"
 import { shortDate } from "@/lib/admin/format"
-import { passColumns, preferenceOptions } from "./data-grid-columns"
+import { passColumns } from "./data-grid-columns"
 import { statusLabel } from "./StatusPill"
 
 // Twelve passes for the Passes grid; the 375 clients prove paging and the
@@ -16,8 +16,7 @@ const clients = snapshot.clients as Client[]
 const option = (value: string, label = value) => ({ value, label })
 const FILTERS = [
   { column: "town", label: "Town", options: ["Erie", "Longmont", "Louisville", "Lafayette", "Firestone", "Broomfield"].map((t) => option(t)) },
-  { column: "status", label: "Status", options: (["active", "cancelled", "lapsed"] as const).map((s) => option(s, statusLabel(s))) },
-  { column: "blowout", label: "Blowout", options: preferenceOptions("blowout") },
+  { column: "status", label: "Status", options: (["pending", "active", "cancelled", "lapsed"] as const).map((s) => option(s, statusLabel(s))) },
 ]
 
 const clientColumns: GridColumnDef<Client>[] = [
@@ -35,7 +34,7 @@ const meta = {
     columns: passColumns,
     data: passes,
     getRowId: (pass: Pass) => pass.id,
-    search: { column: "firstName", placeholder: "Search by name" },
+    search: { column: "name", placeholder: "Search by name" },
     filters: FILTERS,
     onOpen: fn(),
     bulkActions: [

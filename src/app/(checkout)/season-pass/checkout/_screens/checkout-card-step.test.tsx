@@ -20,7 +20,7 @@ beforeAll(() => {
 })
 beforeEach(() => sessionStorage.clear())
 
-const answers: Partial<CheckoutFields> = { termsAccepted: true, address: FIXTURE_HOME.label, place: FIXTURE_HOME, town: "Erie", access: "yes", today: "2026-11-12", zones: 8, firstName: "Andrea", email: "andrea@example.com", phone: "(970) 555-0123" }
+const answers: Partial<CheckoutFields> = { termsAccepted: true, address: FIXTURE_HOME.label, place: FIXTURE_HOME, town: "Erie", access: "yes", today: "2026-11-12", zones: 8, firstName: "Andrea", lastName: "Anderson", email: "andrea@example.com", phone: "(970) 555-0123" }
 const pass = { id: "p-1", number: "TH-2027-0042", season: 2027, clientId: "c1", firstName: "Andrea", town: "Erie", zones: 8, turnOnPreference: "recommended", blowoutPreference: "recommended", status: "active", visits: [{ kind: "turn-on", window: "May", amount: 145 }], stripeUrl: "", jobberUrl: "" } as Pass
 const begun = (n: number): BeginResult => ({ ok: true, passId: "p-1", sessionId: `cs_${n}`, clientSecret: `secret_${n}` })
 const failed = (problem: "unavailable" | "expired", message: string): FinishResult => ({ ok: false, problem, message })

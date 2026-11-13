@@ -4,7 +4,7 @@ import type { AdminData } from "@/lib/admin/types"
 import { EMPTY_SETTINGS } from "@/lib/admin/empty-settings"
 import { TIME_ZONE } from "@/lib/admin/format"
 import { visitsOn } from "@/lib/admin/metrics"
-import { clockTime, dayHeading, greeting, longDate, monthOf, NOT_CLOSED_LOOKBACK_DAYS, notClosedAttention, notClosedCount, pageContext, seasonDescription, sparklineOf, tileModels, tomorrowOf, upcomingWindow, updatedAgo, windowTitle } from "./home-model"
+import { clockTime, dayHeading, greeting, jobTiles, longDate, monthOf, NOT_CLOSED_LOOKBACK_DAYS, notClosedAttention, notClosedCount, pageContext, seasonDescription, sparklineOf, tileModels, tomorrowOf, upcomingWindow, updatedAgo, windowTitle } from "./home-model"
 
 const data = snapshot as AdminData
 // 12:56 pm in Denver, four minutes after the snapshot's sync.
@@ -171,6 +171,27 @@ describe("upcomingWindow", () => {
   })
 })
 
+describe("jobTiles", () => {
+  it("counts the four things from the same derivations the screens use", () => {
+    const [needsDay, chargeFailed, notClosed, pending] = jobTiles(data, TODAY)
+    expect([needsDay.label, chargeFailed.label, notClosed.label, pending.label]).toEqual(["Jobs needing a day", "Charges that didn't go through", "Jobs not closed", "Pending passes, expire after an hour"])
+    // Jobs of active passes with no day; the pending pass's jobs are not among them.
+    const active = data.passes.filter((p) => p.status === "active")
+    expect(needsDay.value).toBe(String(active.flatMap((p) => p.visits).filter((v) => !v.scheduledAt && !v.completedAt).length))
+    expect(chargeFailed.value).toBe("0")
+    expect(pending.value).toBe("1")
+  })
+
+  it("counts a done job whose pass card failed, and leaves a pending pass's jobs out", () => {
+    const pass = data.passes.find((p) => p.status === "active" && p.visits[0].completedAt)!
+    // Marked done and not charged, on a pass whose card failed.
+    const failed = { ...data, visits: [], passes: [{ ...pass, cardFailedAt: "2026-11-10T15:04:00Z", visits: pass.visits.map((v, i) => (i === 0 ? { ...v, chargedAt: undefined } : v)) }] }
+    expect(jobTiles(failed, TODAY)[1].value).toBe("1")
+    const pendingOnly = { ...data, visits: [], passes: [{ ...pass, status: "pending" as const }] }
+    expect(jobTiles(pendingOnly, TODAY).map((t) => t.value)).toEqual(["0", "0", "0", "1"])
+  })
+})
+
 describe("notClosedCount", () => {
   const visit = (id: string, startAt: string, status: "scheduled" | "completed" | "cancelled" | "unscheduled" = "scheduled") =>
     ({ id, clientId: "c", clientName: "A", town: "Erie", kind: "blowout", status, startAt, isPass: false, jobberUrl: "" }) as AdminData["visits"][number]
@@ -201,7 +222,7 @@ describe("notClosedCount", () => {
   it("makes an attention row waiting since the oldest, or none", () => {
     expect(notClosedAttention([], now, TIME_ZONE)).toBeNull()
     const row = notClosedAttention([visit("b", "2026-11-11T23:00:00Z"), visit("a", "2026-11-09T17:00:00Z")], now, TIME_ZONE)
-    expect(row).toEqual({ kind: "not-closed", message: "2 visits from the last two weeks are not marked done yet.", since: "2026-11-09T17:00:00Z" })
-    expect(notClosedAttention([visit("a", "2026-11-09T17:00:00Z")], now, TIME_ZONE)?.message).toBe("1 visit from the last two weeks is not marked done yet.")
+    expect(row).toEqual({ kind: "not-closed", message: "2 jobs from the last two weeks are not marked done yet.", since: "2026-11-09T17:00:00Z" })
+    expect(notClosedAttention([visit("a", "2026-11-09T17:00:00Z")], now, TIME_ZONE)?.message).toBe("1 job from the last two weeks is not marked done yet.")
   })
 })

@@ -14,7 +14,8 @@ import { today as todayOf } from "@/api/v1/shared"
 import * as s from "@/db/schema"
 import { loadBlocks } from "@/lib/jobber-feed"
 import { ctxFromSession } from "./api-ctx"
-import { shapeAdminData, type ApiCustomer, type ApiMessage, type ApiPass, type ApiVisit } from "./shape"
+import { canSeeContact } from "@/api/v1/shared"
+import { failedChargeVisits, shapeAdminData, type ApiCustomer, type ApiMessage, type ApiPass, type ApiVisit } from "./shape"
 import type { AdminData, Town, Truck } from "./types"
 
 const PAGE = 100
@@ -55,10 +56,11 @@ export async function getLiveAdminData(ctx: Ctx): Promise<AdminData> {
   void _terms
 
   const db = ctx.db
-  const [consents, links, mClients, mVisits, mJobs, mQuotes, mInvoices, problems, blocks, synced, alerts] = await Promise.all([
+  const contact = canSeeContact(ctx)
+  const [consents, links, mClients, mVisits, mJobs, mQuotes, mInvoices, problems, blocks, synced, alerts, charges] = await Promise.all([
     db.select({ customerId: s.consent.customerId, termsAcceptedAt: s.consent.termsAcceptedAt, termsVersion: s.consent.termsVersion, marketingOptIn: s.consent.marketingOptIn, marketingChannels: s.consent.marketingChannels, source: s.consent.source, recordedAt: s.consent.recordedAt }).from(s.consent).where(eq(s.consent.organizationId, org)),
     db.select({ id: s.customer.id, jobberClientId: s.customer.jobberClientId }).from(s.customer).where(and(eq(s.customer.organizationId, org), isNotNull(s.customer.jobberClientId))),
-    db.select({ id: s.jobberClient.id, firstName: s.jobberClient.firstName, town: s.jobberClient.town, jobberUrl: s.jobberClient.jobberUrl }).from(s.jobberClient).where(eq(s.jobberClient.organizationId, org)),
+    db.select({ id: s.jobberClient.id, firstName: s.jobberClient.firstName, lastName: s.jobberClient.lastName, email: s.jobberClient.email, phone: s.jobberClient.phone, town: s.jobberClient.town, jobberUrl: s.jobberClient.jobberUrl }).from(s.jobberClient).where(eq(s.jobberClient.organizationId, org)),
     db.select({ id: s.jobberVisit.id, clientId: s.jobberVisit.clientId, kind: s.jobberVisit.kind, town: s.jobberVisit.town, startAt: s.jobberVisit.startAt, completedAt: s.jobberVisit.completedAt, jobberUrl: s.jobberVisit.jobberUrl }).from(s.jobberVisit).where(and(eq(s.jobberVisit.organizationId, org), eq(s.jobberVisit.isBlock, false))),
     db.select({ id: s.jobberJob.id, clientId: s.jobberJob.clientId, jobberUrl: s.jobberJob.jobberUrl }).from(s.jobberJob).where(and(eq(s.jobberJob.organizationId, org), eq(s.jobberJob.hasVisit, false), eq(s.jobberJob.status, "open"))),
     db.select().from(s.jobberQuote).where(eq(s.jobberQuote.organizationId, org)),
@@ -67,6 +69,7 @@ export async function getLiveAdminData(ctx: Ctx): Promise<AdminData> {
     loadBlocks(db, org, new Date(ctx.now.getTime() - 7 * 86_400_000)),
     db.select({ at: sql<Date | null>`max(${s.jobberClient.syncedAt})` }).from(s.jobberClient).where(eq(s.jobberClient.organizationId, org)),
     db.select({ kind: s.adminAlert.kind, key: s.adminAlert.key, passId: s.adminAlert.passId, message: s.adminAlert.message, createdAt: s.adminAlert.createdAt }).from(s.adminAlert).where(and(eq(s.adminAlert.organizationId, org), isNull(s.adminAlert.resolvedAt))),
+    db.select({ visitId: s.charge.visitId, attempt: s.charge.attempt, status: s.charge.status }).from(s.charge).where(eq(s.charge.organizationId, org)),
   ])
 
   return shapeAdminData({
@@ -84,7 +87,8 @@ export async function getLiveAdminData(ctx: Ctx): Promise<AdminData> {
     areas: areas.data.map((a) => ({ id: a.id, name: a.name, towns: a.towns as Town[] })),
     settings: rest as never,
     settingsChanges: changes,
-    mirror: { clients: mClients, visits: mVisits, jobsWithoutVisit: mJobs, quotes: mQuotes, invoices: mInvoices },
+    failedChargeVisitIds: failedChargeVisits(charges),
+    mirror: { clients: contact ? mClients : mClients.map((c) => ({ id: c.id, firstName: c.firstName, lastName: c.lastName, town: c.town, jobberUrl: c.jobberUrl })), visits: mVisits, jobsWithoutVisit: mJobs, quotes: mQuotes, invoices: mInvoices },
     queueProblems: problems,
     alerts,
     blocks,
