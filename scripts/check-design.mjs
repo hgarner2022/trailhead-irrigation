@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Design gate. Enforces "The rule" in docs/DESIGN.md for the app surfaces. Each
 // rule lives in scripts/design-gate/ (its header says what it checks):
-//   colours.mjs        tokens only in blocks/, the app route groups and ui/
+//   colours.mjs        tokens only in blocks/, the app route groups and ui/; src/emails and src/sms too, except the one hex block in emails/layout.ts
 //   stories.mjs        a story per ui/ and blocks/ component
 //   imports.mjs        no admin and marketing cross-imports; no server libraries in marketing code
 //   marketing-css.mjs  marketing CSS scans exactly the ui/ primitives marketing uses
@@ -10,7 +10,7 @@
 // Usage: node scripts/check-design.mjs [--dir src]
 import { readFileSync } from "node:fs"
 import { walk, describe } from "./design-gate/walk.mjs"
-import { checkColours, LEGACY } from "./design-gate/colours.mjs"
+import { allowEmailColourBlock, checkColours, checkEmailColours, LEGACY } from "./design-gate/colours.mjs"
 import { checkImports, checkServerImports } from "./design-gate/imports.mjs"
 import { checkStory } from "./design-gate/stories.mjs"
 import { loadExcludedUi, MarketingCss } from "./design-gate/marketing-css.mjs"
@@ -39,7 +39,9 @@ for (const abs of walk(root)) {
   if (marketingCss && marketing) marketingCss.checkMarketingImports(file, text, report)
   if (marketingCss && zone === "ui" && !fixture && name.endsWith(".tsx")) marketingCss.recordUi(name.slice(0, -4), text)
   if (!zone) continue
-  if (zone !== "marketing" && !fixture) checkColours(file, text, zone === "ui" && LEGACY.has(name), report)
+  if (zone === "emails") text = allowEmailColourBlock(file, text, report)
+  if (zone === "emails" && !fixture) checkEmailColours(file, text, report)
+  else if (zone !== "marketing" && !fixture) checkColours(file, text, zone === "ui" && LEGACY.has(name), report)
   if (zone !== "ui") checkImports(file, text, zone, report)
   checkStory(abs, info, report)
 }

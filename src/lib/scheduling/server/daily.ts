@@ -1,12 +1,14 @@
 import "server-only"
-import { and, eq, lt } from "drizzle-orm"
+import { and, eq, inArray, lt } from "drizzle-orm"
 import * as s from "@/db/schema"
 import type { Database } from "@/db/types"
 import { mountainDay, addDays } from "@/api/v1/shared"
 import { weekOf } from "@/lib/admin/calendar"
 import { readAppUrl } from "@/lib/env"
 import { currentSeason } from "@/lib/pass/season"
-import { kindName, longDay, queueEmail, queueText } from "@/lib/pass/server/messages"
+import { kindName } from "@/lib/pass/server/messages"
+import { baseData, loadVisitFacts } from "@/lib/messaging/data"
+import { queueMessage, queueStaffMessage } from "@/lib/messaging/queue"
 import { enqueue } from "@/lib/queue"
 import { crewSummary, twoHourWindow } from "../summary"
 import { TIME_ZONE } from "../types"
@@ -37,11 +39,10 @@ export async function dayBeforeMessages(db: Database, organizationId: string, to
     .where(and(eq(s.visit.organizationId, organizationId), eq(s.visit.status, "scheduled"), eq(s.visit.scheduledOn, tomorrow)))
   let queued = 0
   for (const { visit, customer } of rows) {
-    const window = visit.startTime ? `, between ${twoHourWindow(visit.startTime)}` : ""
-    const body = `Trailhead: we are coming tomorrow, ${longDay(tomorrow)}${window}, for your ${kindName(visit.kind)}. Change your day or anything else: ${readAppUrl()}/account/pass`
-    const base = { organizationId, customerId: customer.id, visitId: visit.id, kind: "day-before" as const, key: `${visit.id}-${tomorrow}`, body }
-    if (customer.phone) { if (await queueText(db, { ...base, to: customer.phone })) queued++ }
-    else if (customer.email) { if (await queueEmail(db, { ...base, to: customer.email, subject: `Tomorrow: your ${kindName(visit.kind)}` })) queued++ }
+    const origin = readAppUrl()
+    const facts = await loadVisitFacts(db, visit.id, origin)
+    if (!facts) continue
+    if (await queueMessage(db, { organizationId, customerId: customer.id, visitId: visit.id, kind: "day-before", key: `${visit.id}-${tomorrow}`, data: { ...baseData(origin, customer), visit: facts } })) queued++
   }
   return queued
 }
@@ -77,11 +78,13 @@ export async function crewSummaryEmails(db: Database, organizationId: string, to
     movedInJobber: live.filter((r) => r.visit.exception && r.visit.scheduledOn && r.visit.scheduledOn >= weekStart && r.visit.scheduledOn <= addDays(weekStart, 6)).length,
     notMarkedDone: live.filter((r) => r.visit.status === "not-closed" && r.visit.scheduledOn === addDays(today, -1)).length,
   })
-  const admins = await db.select({ email: s.adminUser.email }).from(s.adminUser).where(eq(s.adminUser.organizationId, organizationId))
-  let queued = 0
-  for (const a of admins) {
-    const subject = going.length === 0 ? "Tomorrow: nothing on the calendar" : `Tomorrow: ${going.length} ${going.length === 1 ? "visit" : "visits"}`
-    if (await enqueue(db, organizationId, "message", `crew-summary:${tomorrow}:${a.email}`, { kind: "crew-summary", to: a.email, subject, body: text })) queued++
+  const origin = readAppUrl()
+  const title = going.length === 0 ? "Tomorrow: nothing on the calendar" : `Tomorrow: ${going.length} ${going.length === 1 ? "visit" : "visits"}`
+  let queued = await queueStaffMessage(db, organizationId, "admin-alert", `crew-summary:${tomorrow}`, { origin, title, detail: text, path: "/admin/schedule" })
+  const unclosed = live.filter((r) => r.visit.status === "not-closed" && r.visit.scheduledOn === addDays(today, -1))
+  if (unclosed.length > 0) {
+    const named = await db.select({ id: s.visit.id, kind: s.visit.kind, day: s.visit.scheduledOn, first: s.customer.firstName, last: s.customer.lastName, town: s.property.town }).from(s.visit).innerJoin(s.customer, eq(s.customer.id, s.visit.customerId)).innerJoin(s.property, eq(s.property.id, s.visit.propertyId)).where(inArray(s.visit.id, unclosed.map((r) => r.visit.id)))
+    queued += await queueStaffMessage(db, organizationId, "not-closed-crew", `not-closed:${today}`, { origin, visits: named.map((v) => ({ customer: [v.first, v.last].filter(Boolean).join(" "), name: kindName(v.kind), day: v.day!, town: v.town })) })
   }
   return queued
 }

@@ -419,3 +419,27 @@ test("a route group's not-found may import the marketing Header and Footer, noth
   })
   assert.equal(page.status, 1)
 })
+
+test("the hex block in emails/layout.ts is allowed", () => {
+  const r = run({ "emails/layout.ts": `// email-colors:start\nexport const C = { navy: "#2B3544" }\n// email-colors:end\nexport const x = 1\n` })
+  assert.equal(r.status, 0, r.out)
+})
+
+test("a hex outside the block in emails/layout.ts fails", () => {
+  const r = run({ "emails/layout.ts": `// email-colors:start\nexport const C = { navy: "#2B3544" }\n// email-colors:end\nexport const h = '<p style="color:#ffffff">'\n` })
+  assert.equal(r.status, 1)
+  assert.match(r.out, /emails\/layout\.ts: .*raw colour/)
+})
+
+test("a hex in another email file fails, even inside the marker comments", () => {
+  const r = run({ "emails/receipt.ts": `// email-colors:start\nexport const h = '<p style="color:#ffffff">'\n// email-colors:end\n` })
+  assert.equal(r.status, 1)
+  assert.match(r.out, /emails\/receipt\.ts: .*raw colour/)
+})
+
+test("a second block in emails/layout.ts fails", () => {
+  const block = `// email-colors:start\nexport const A = { a: "#2B3544" }\n// email-colors:end\n`
+  const r = run({ "emails/layout.ts": block + block })
+  assert.equal(r.status, 1)
+  assert.match(r.out, /more than one email-colors block/)
+})

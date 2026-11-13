@@ -168,9 +168,15 @@ describe("passes.skipVisit", () => {
   })
 })
 
-describe("stubs", () => {
-  it("answers not_implemented for the confirmation email, with the scope still enforced", async () => {
-    await expect(callApi(ctxFor(db, writeKey), passesResendConfirmation, { id: "p1" })).rejects.toMatchObject({ code: "not_implemented" })
+describe("passes.resendConfirmation", () => {
+  it("queues the purchase confirmation again, each call its own message, with the scope enforced", async () => {
+    vi.stubEnv("APP_URL", "https://www.example.com")
+    const [p1] = await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, "p1"))
+    await db.update(s.customer).set({ email: "resend@example.com" }).where(eq(s.customer.id, p1!.customerId))
+    const before = (await db.select().from(s.messageLog).where(eq(s.messageLog.kind, "purchase-confirmation"))).length
+    await callApi(ctxFor(db, writeKey), passesResendConfirmation, { id: "p1" })
+    await callApi(ctxFor(db, writeKey), passesResendConfirmation, { id: "p1" })
+    expect((await db.select().from(s.messageLog).where(eq(s.messageLog.kind, "purchase-confirmation"))).length).toBe(before + 2)
     await expect(callApi(ctxFor(db, readKey), passesResendConfirmation, { id: "p1" })).rejects.toMatchObject({ code: "forbidden" })
   })
 })

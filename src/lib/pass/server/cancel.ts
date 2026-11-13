@@ -2,7 +2,8 @@ import "server-only"
 import { eq } from "drizzle-orm"
 import * as s from "@/db/schema"
 import type { Database } from "@/db/types"
-import { queueEmail } from "./messages"
+import { baseData } from "@/lib/messaging/data"
+import { queueMessage } from "@/lib/messaging/queue"
 
 /** The Home line for a cancelled pass: "Season Pass TH-2027-0004 cancelled: Andrea, Erie". */
 export const cancelledMessage = (number: string, firstName: string, town: string) => `Season Pass ${number} cancelled: ${firstName}, ${town}`
@@ -38,13 +39,5 @@ export async function cancelPassTask(db: Database, passId: string): Promise<bool
 export async function queueCancelledEmail(db: Database, passId: string, origin: string): Promise<boolean> {
   const { pass, customer } = await loadPass(db, passId)
   if (!customer.email) return false
-  return queueEmail(db, {
-    organizationId: pass.organizationId,
-    customerId: customer.id,
-    kind: "cancelled",
-    key: passId,
-    to: customer.email,
-    subject: `Season Pass ${pass.number} is cancelled`,
-    body: `Hi ${customer.firstName}, Season Pass ${pass.number} is cancelled and the visits that had not happened are off the schedule. Nothing further will be charged. See your pass or book a visit any time: ${origin}/account/pass`,
-  })
+  return queueMessage(db, { organizationId: pass.organizationId, customerId: customer.id, kind: "cancelled", key: passId, data: { ...baseData(origin, customer), passNumber: pass.number } })
 }

@@ -11,7 +11,7 @@ import { readAppUrl } from "@/lib/env"
 import { activatePass } from "@/lib/pass/server/activate"
 import { emailDomainReachable, failedCheckoutStep, MAX_PENDING_PER_HOUR, newestPendingPass, pendingPassesLastHour } from "@/lib/pass/server/create"
 import { cleanEmail, cleanName, cleanText, normalizePhone } from "@/lib/format/contact"
-import { recordPurchase } from "@/lib/pass/server/purchase"
+import { queuePurchaseConfirmation, recordPurchase } from "@/lib/pass/server/purchase"
 import { CONSENT_SNAPSHOT, consentSnapshot } from "@/lib/pass/server/consent-snapshot"
 import { outOfAreaMessage } from "@/lib/places"
 import { queueCardUpdateLink } from "@/lib/pass/server/card-link"
@@ -21,6 +21,7 @@ import { enqueue } from "@/lib/queue"
 import { emitEvent } from "../webhooks/deliver"
 import { getStripe } from "@/lib/stripe/client"
 import type { Ctx } from "../../core/context"
+import { randomUUID } from "node:crypto"
 import { ApiError, notImplemented } from "../../core/errors"
 import { defineHandler } from "../../core/handler"
 import { afterTimeCursor, cursorPage, page, pageInput, timeCursor } from "../../core/pagination"
@@ -277,11 +278,14 @@ export const passesResendConfirmation = defineHandler({
   method: "POST",
   path: "/passes/{id}/resend-confirmation",
   scope: "write",
-  summary: "Send the purchase confirmation again. Needs the messaging layer (Phase 12); not implemented yet.",
+  summary: "Send the purchase confirmation again, through the same consent gate (a customer without an email address gets none). Each call is its own message.",
   input: idInput,
   output: okOutput,
-  async run() {
-    throw notImplemented("passes.resendConfirmation")
+  async run(ctx, input) {
+    const row = await loadPass(ctx, input.id)
+    if (row.pass.status === "pending") throw new ApiError("unprocessable", "This pass has not been bought yet")
+    if (!(await queuePurchaseConfirmation(ctx.db, row.pass.id, readAppUrl(), `resend-${randomUUID()}`))) throw new ApiError("unprocessable", "This customer has no email address to send it to")
+    return OK
   },
 })
 

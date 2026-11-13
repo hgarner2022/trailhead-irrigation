@@ -38,7 +38,7 @@ export const ChargeOut = z.object({
 })
 
 export const PassDetail = PassOut.extend({
-  visits: z.array(VisitOut),
+  visits: z.array(VisitOut.extend({ calendarUrl: z.string().nullable().describe("The signed link to this visit's .ics calendar file, once it has a day; null before, or where the server has no signing key.") })),
   charges: z.array(ChargeOut),
   consent: ConsentOut.nullable(),
   customer: z.object({ id: Id, firstName: z.string(), lastName: z.string().nullable(), email: z.string().nullable(), phone: z.string().nullable() }).optional().describe("Only for callers with the write scope."),

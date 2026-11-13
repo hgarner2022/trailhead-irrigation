@@ -77,4 +77,11 @@ export async function sendMessageRow(db: Database, messageId: string, opts: { de
   }
 }
 
+/** Sends a staff note (see `queueStaffMessage`): rendered from its kind and data, straight through the email sender. */
+export async function sendStaffMessage(payload: { kind: string; to: string; data: Record<string, unknown> }, deps: SendDeps = defaultDeps): Promise<void> {
+  const rendered = renderEmail(payload.kind, payload.data)
+  if (!rendered) throw new Error(`No email template for ${payload.kind}`)
+  await deps.email({ to: payload.to, subject: rendered.subject, text: rendered.text, html: rendered.html })
+}
+
 export { MAX_ATTEMPTS }
