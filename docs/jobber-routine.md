@@ -74,6 +74,10 @@ The app creates nothing in Jobber when a pass is bought: the `pass-onboard` task
 
 When a customer cancels on the pass page, or Hannah cancels in the admin, `passes.cancel` marks the pass and its unstarted visits `cancelled`, queues the `cancelled` email and the `pass-cancel` task. The task cancels nothing in Jobber (there is no Jobber API connection); it raises the Home row "Season Pass TH-2027-0004 cancelled: Andrea, Erie". The routine reads cancelled passes (`GET /passes?status=cancelled`, then `GET /visits?passId=<id>` for each pass's `jobberRequestUrl`) and cancels the Jobber requests and jobs it created for them, the ones whose notes carry "Trailhead visit <visit id>". It touches no other job. Ryan clears the Home row once the Jobber side is gone.
 
+## Scheduled visits (Phase 10)
+
+Schedule (the button and the daily run) writes each placed visit straight to `scheduled`, with its truck, day and stop order, and pushes nothing to Jobber; there is no Jobber connection and no second step. The routine reads the newly scheduled visits from `GET /visits?status=scheduled&from=<today>` (follow `next_cursor`), keeps the ones with a `scheduledOn` and a null `jobberRequestUrl`, creates one Jobber request per visit with the day, the truck's name and the stop's start time in the details and "Trailhead visit <visit id>" in the notes, and then calls `visits.linkRequest` with the request's address so the next run skips it. A visit Ryan moves in the app afterward keeps the request it has; the routine never edits it.
+
 ## What a missed run costs
 
 - The mirror is stale by the length of the gap; Home shows the sync time. Nothing breaks.
