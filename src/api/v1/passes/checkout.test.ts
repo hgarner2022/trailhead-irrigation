@@ -65,14 +65,21 @@ describe("passes.create for the checkout", () => {
     const rows = await db.select().from(s.visit).where(eq(s.visit.passId, first.id))
     expect(rows).toHaveLength(3)
   })
-  it("refuses a fourth new pass for one email inside an hour with too-many", async () => {
+  it("resumes the same pending pass when the customer comes back without its id, so submit, submit, submit makes one pass", async () => {
     reachable.mockResolvedValue(true)
     const body = { customer: { firstName: "Many", email: "many@example.com", phone: "3035550105" } }
-    for (let i = 0; i < 3; i++) await create({ ...body, property: { address: `${i} Spam Rd`, town: "Erie", state: "CO", zip: "80516" } })
-    await expect(create(body)).rejects.toMatchObject({ code: "rate_limited", issues: [{ path: "reason", message: "too-many" }] })
-    // an hour later it is open again
-    await db.update(s.seasonPass).set({ createdAt: new Date("2026-11-30T00:00:00Z") }).where(eq(s.seasonPass.customerId, (await db.select().from(s.customer).where(eq(s.customer.email, "many@example.com")))[0]!.id))
-    await expect(create(body)).resolves.toMatchObject({ status: "pending" })
+    const first = await create(body)
+    const second = await create({ ...body, zones: 10 })
+    const third = await create({ ...body, zones: 12 })
+    expect(second.id).toBe(first.id)
+    expect(third.id).toBe(first.id)
+    expect(third.zones).toBe(12)
+    const rows = await db.select().from(s.seasonPass).where(eq(s.seasonPass.customerId, (await db.select().from(s.customer).where(eq(s.customer.email, "many@example.com")))[0]!.id))
+    expect(rows).toHaveLength(1)
+    // an hour later the old one is not resumed and a fresh pending pass starts
+    await db.update(s.seasonPass).set({ createdAt: new Date("2026-11-30T00:00:00Z") }).where(eq(s.seasonPass.id, first.id))
+    const later = await create(body)
+    expect(later.id).not.toBe(first.id)
   })
   it("refuses an address outside the six towns, a missing phone and an unreachable email", async () => {
     reachable.mockResolvedValue(true)

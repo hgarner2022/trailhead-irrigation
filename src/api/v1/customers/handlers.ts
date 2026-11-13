@@ -10,9 +10,20 @@ import type { Ctx } from "../../core/context"
 import { afterTimeCursor, cursorPage, page, pageInput, timeCursor } from "../../core/pagination"
 import { canSeeContact, idInput, iso, today } from "../shared"
 import { ConsentOut, consentInput, CustomerDetail, CustomerListItem, CustomerOut, customerFields, propertyInput } from "./schemas"
+import { cleanEmail, cleanName, normalizePhone } from "@/lib/format/contact"
 
 type CustomerRow = typeof s.customer.$inferSelect
 type ConsentRow = typeof s.consent.$inferSelect
+
+
+/** The contact fields a caller sent, cleaned the way they are stored and print; fields not sent stay absent. */
+function cleanContact(f: { firstName?: string; email?: string; phone?: string | null }) {
+  return {
+    ...(f.firstName !== undefined ? { firstName: cleanName(f.firstName) } : {}),
+    ...(f.email !== undefined ? { email: cleanEmail(f.email) } : {}),
+    ...(f.phone !== undefined ? { phone: f.phone === null ? null : (normalizePhone(f.phone) ?? f.phone) } : {}),
+  }
+}
 
 export const customerOut = (ctx: Ctx, row: CustomerRow) => ({
   id: row.id,
@@ -155,7 +166,7 @@ export const customersCreate = defineHandler({
   output: CustomerDetail,
   async run(ctx, input) {
     const { property, ...fields } = input
-    const [row] = await ctx.db.insert(s.customer).values({ organizationId: ctx.organizationId, ...fields }).returning()
+    const [row] = await ctx.db.insert(s.customer).values({ organizationId: ctx.organizationId, ...fields, ...cleanContact(fields) }).returning()
     const props = property ? await ctx.db.insert(s.property).values({ organizationId: ctx.organizationId, customerId: row!.id, ...property }).returning() : []
     for (const p of props) await enqueueGeocode(ctx.db, ctx.organizationId, p.id, ctx.now)
     return {
@@ -176,7 +187,7 @@ export const customersUpdate = defineHandler({
   output: CustomerOut,
   async run(ctx, { id, ...changes }) {
     await getCustomerRow(ctx, id)
-    const defined = Object.fromEntries(Object.entries(changes).filter(([, v]) => v !== undefined))
+    const defined = Object.fromEntries(Object.entries({ ...changes, ...cleanContact(changes) }).filter(([, v]) => v !== undefined))
     const [row] = Object.keys(defined).length
       ? await ctx.db.update(s.customer).set(defined).where(and(eq(s.customer.id, id), eq(s.customer.organizationId, ctx.organizationId))).returning()
       : [await getCustomerRow(ctx, id)]

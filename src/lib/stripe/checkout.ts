@@ -9,6 +9,8 @@ export interface SetupSessionInput {
   name: string
   /** unix seconds; Stripe allows 30 minutes to 24 hours */
   expiresAt: number
+  /** the same key for the same pass and time bucket, so submit, submit, submit makes one session (Stripe replays the first answer) */
+  idempotencyKey?: string
 }
 
 /**
@@ -19,13 +21,15 @@ export interface SetupSessionInput {
 export async function createSetupSession(stripe: Stripe, input: SetupSessionInput): Promise<{ id: string; clientSecret: string }> {
   const session = await stripe.checkout.sessions.create({
     mode: "setup",
+    // Required by the 2026 API versions even in setup mode (the saved card is charged in dollars later).
+    currency: "usd",
     ui_mode: "embedded_page",
     redirect_on_completion: "never",
     expires_at: input.expiresAt,
     ...(input.customerId ? { customer: input.customerId } : { customer_email: input.email }),
     metadata: { purpose: "pass-setup", passId: input.passId, name: input.name },
     setup_intent_data: { metadata: { passId: input.passId } },
-  })
+  }, input.idempotencyKey ? { idempotencyKey: input.idempotencyKey } : undefined)
   if (!session.client_secret) throw new Error("Stripe returned no client secret for the setup session")
   return { id: session.id, clientSecret: session.client_secret }
 }
