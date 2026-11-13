@@ -35,43 +35,43 @@ describe("passes.create", () => {
   it("makes the two visits with the right amounts, the consent and the next pass number", async () => {
     const pass = await create()
     expect(pass).toMatchObject({ season: 2027, status: "pending", zones: 8, inspection: false, price: 145 + 95 + 20 })
-    expect(pass.number).toBe("TH-2027-0013")
+    expect(pass.number).toBe("TH-2027-0014")
     expect(pass.visits.map((v) => [v.kind, v.amount, v.window, v.status])).toEqual([["turn-on", 145, "May", "unscheduled"], ["blowout", 115, "October", "unscheduled"]])
     expect(pass.consent).toMatchObject({ termsVersion: "2026-11", marketingOptIn: false, source: "checkout" })
     expect(pass.customer?.email).toBe("maya@example.com")
   })
   it("makes three visits with the inspection add-on", async () => {
-    const pass = await create({ inspection: true, customer: { firstName: "Jo", email: "jo@example.com" }, zones: 6 })
+    const pass = await create({ inspection: true, customer: { firstName: "Jo", lastName: "Tester", email: "jo@example.com" }, zones: 6 })
     expect(pass.visits.map((v) => [v.kind, v.amount])).toEqual([["turn-on", 145], ["inspection", 145], ["blowout", 95]])
     expect(pass.price).toBe(385)
   })
   it("sells only the visits still on sale mid-season", async () => {
-    const pass = await create({ inspection: true, customer: { firstName: "Late", email: "late@example.com" } }, "2027-06-15T17:00:00Z")
+    const pass = await create({ inspection: true, customer: { firstName: "Late", lastName: "Tester", email: "late@example.com" } }, "2027-06-15T17:00:00Z")
     expect(pass.season).toBe(2027)
     expect(pass.visits.map((v) => v.kind)).toEqual(["inspection", "blowout"])
-    await expect(create({ customer: { firstName: "Gone", email: "gone@example.com" } }, "2027-11-10T17:00:00Z")).resolves.toMatchObject({ season: 2028 })
+    await expect(create({ customer: { firstName: "Gone", lastName: "Tester", email: "gone@example.com" } }, "2027-11-10T17:00:00Z")).resolves.toMatchObject({ season: 2028 })
   })
   it("refuses a blowout-less moment and bad input: out-of-area town, zones, missing terms", async () => {
     await expect(create({ property: { address: "1 Main St", town: "Denver" } })).rejects.toMatchObject({ code: "invalid" })
     await expect(create({ zones: 4 })).rejects.toMatchObject({ code: "invalid" })
     await expect(create({ zones: 20 })).rejects.toMatchObject({ code: "invalid" })
     await expect(create({ consent: { termsAccepted: false } })).rejects.toMatchObject({ code: "invalid" })
-    await expect(create({ customer: { firstName: "X", email: "bad" } })).rejects.toMatchObject({ code: "invalid" })
+    await expect(create({ customer: { firstName: "X", lastName: "Tester", email: "bad" } })).rejects.toMatchObject({ code: "invalid" })
   })
   it("records needs_customer_home and the access note as a note for Ryan, and holds no visit back", async () => {
-    const pass = await create({ needsCustomerHome: true, accessNote: "Gate code 4411", customer: { firstName: "Home", email: "home@example.com" } })
+    const pass = await create({ needsCustomerHome: true, accessNote: "Gate code 4411", customer: { firstName: "Home", lastName: "Tester", email: "home@example.com" } })
     expect(pass).toMatchObject({ needsCustomerHome: true, accessNote: "Gate code 4411" })
     expect(pass.visits.some((v) => v.awaitingPick)).toBe(false)
   })
   it("reuses a customer by email and keeps one property", async () => {
-    const again = await create({ customer: { firstName: "Maya", email: "MAYA@example.com" } })
-    const first = await create({ customer: { firstName: "Maya", email: "maya@example.com" } })
+    const again = await create({ customer: { firstName: "Maya", lastName: "Tester", email: "MAYA@example.com" } })
+    const first = await create({ customer: { firstName: "Maya", lastName: "Tester", email: "maya@example.com" } })
     expect(again.customerId).toBe(first.customerId)
     expect(again.propertyId).toBe(first.propertyId)
   })
   it("is idempotent on an Idempotency-Key and needs the write scope", async () => {
     const ctx = { ...ctxFor(db, writeKey, WINTER), idempotencyKey: "pass-1" }
-    const input = body({ customer: { firstName: "Key", email: "key@example.com" } })
+    const input = body({ customer: { firstName: "Key", lastName: "Tester", email: "key@example.com" } })
     const a = await callApi(ctx, passesCreate, input)
     const b = await callApi(ctx, passesCreate, input)
     expect(b.id).toBe(a.id)
@@ -81,7 +81,7 @@ describe("passes.create", () => {
 
 describe("passes.list and passes.get", () => {
   it("leaks no email, access note, address or Stripe id to a read key", async () => {
-    await create({ accessNote: "Gate code 9999", customer: { firstName: "Leak", email: "leak@example.com" } })
+    await create({ accessNote: "Gate code 9999", customer: { firstName: "Leak", lastName: "Tester", email: "leak@example.com" } })
     const list = JSON.stringify(await callApi(ctxFor(db, readKey), passesList, { limit: 100 }))
     for (const secret of ["leak@example.com", "Gate code 9999", "stripe", "Elm St", "email"]) expect(list.toLowerCase()).not.toContain(secret.toLowerCase())
     const [leak] = (await db.select().from(s.customer).where(eq(s.customer.email, "leak@example.com")))
@@ -182,7 +182,7 @@ describe("passes.resendConfirmation", () => {
 })
 
 describe("passes.activate and passes.sendCardUpdateLink (Stripe stubbed)", () => {
-  const fresh = (email: string) => create({ customer: { firstName: "Stripe", email } })
+  const fresh = (email: string) => create({ customer: { firstName: "Stripe", lastName: "Tester", email } })
   it("activates a pending pass from a finished setup session, once", async () => {
     vi.stubEnv("APP_URL", "https://site.test")
     const pass = await fresh("activate@example.com")

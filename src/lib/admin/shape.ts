@@ -4,6 +4,7 @@
  * database. Calendar days are Mountain time; instants are ISO strings.
  */
 import { zonedToUtc } from "./calendar"
+import { fullName } from "./format"
 import type {
   AdminData, Attention, BusyBlock, Client, Consent, Invoice, Message, MessageKind, MonthTotal, Pass, PassVisit, Quote, SettingsChange,
   Truck, AreaGroup, OrganizationSettings, Town, Visit, VisitKind, VisitStatus,
@@ -16,18 +17,18 @@ const DAY_MS = 86_400_000
 export interface ApiVisit {
   id: string; passId: string | null; bookingId: string | null; customerId: string; firstName: string; town: Town; kind: string; status: string
   window: string | null; amount: number; preference: string | null; awaitingPick: boolean; truckId: string | null; scheduledOn: string | null
-  startTime: string | null; truckName?: string | null; stopOrder: number | null; completedOn: string | null; chargedAt: string | null
+  startTime: string | null; durationMinutes?: number | null; truckName?: string | null; stopOrder: number | null; completedOn: string | null; chargedAt: string | null
   exception: { kind: "moved-in-jobber"; at: string; note: string } | null; lat: number | null; lng: number | null
 }
 export interface ApiPass {
   id: string; number: string; season: number; customerId: string; firstName: string; town: Town; zones: number; status: string
   turnOnPreference: Pass["turnOnPreference"]; blowoutPreference: Pass["blowoutPreference"]; needsCustomerHome: boolean
-  accessNote?: string | null; cardLast4: string | null; cardExpires: string | null; cardFailedAt: string | null; cancelledAt: string | null
+  accessNote?: string | null; cardLast4: string | null; cardExpires: string | null; cardFailedAt: string | null; cancelledAt: string | null; createdAt?: string
 }
-export interface ApiCustomer { id: string; firstName: string; town: Town | null; hasPass: boolean }
+export interface ApiCustomer { id: string; firstName: string; lastName?: string | null; email?: string | null; phone?: string | null; address?: string | null; town: Town | null; hasPass: boolean }
 export interface ApiMessage { id: string; customerId: string; visitId: string | null; channel: "email" | "sms"; kind: string; subject: string | null; body: string; status: Message["status"]; sentAt: string | null; createdAt: string }
 export interface ConsentRow { customerId: string; termsAcceptedAt: Date | null; termsVersion: string | null; marketingOptIn: boolean; marketingChannels: ("email" | "sms")[]; source: string; recordedAt: Date }
-export interface MirrorClient { id: string; firstName: string | null; town: Town | null; jobberUrl: string | null }
+export interface MirrorClient { id: string; firstName: string | null; lastName?: string | null; email?: string | null; phone?: string | null; town: Town | null; jobberUrl: string | null }
 export interface MirrorVisit { id: string; clientId: string | null; kind: string | null; town: Town | null; startAt: Date | null; completedAt: Date | null; jobberUrl: string | null }
 export interface MirrorJob { id: string; clientId: string | null; jobberUrl: string | null }
 export interface MirrorQuote { id: string; clientName: string | null; town: Town | null; total: number | null; sentAt: Date | null; status: Quote["status"] | null; jobberUrl: string | null }
@@ -55,12 +56,21 @@ export interface ShapeInput {
   settingsChanges: SettingsChange[]
   mirror: { clients: MirrorClient[]; visits: MirrorVisit[]; jobsWithoutVisit: MirrorJob[]; quotes: MirrorQuote[]; invoices: MirrorInvoice[] }
   queueProblems: QueueProblem[]
+  /** the visits whose newest charge attempt did not go through */
+  failedChargeVisitIds?: string[]
   /** unresolved free-form alerts (a new Season Pass); absent in the fixtures */
   alerts?: AlertRow[]
   blocks: BusyBlock[]
 }
 
 const toKind = (k: string): VisitKind => (k === "turn-on" || k === "inspection" || k === "blowout" || k === "repair" || k === "install" ? k : "other")
+/** The visits whose newest charge attempt failed: a retry that went through clears the earlier failure. */
+export function failedChargeVisits(rows: { visitId: string; attempt: number; status: string }[]): string[] {
+  const newest = new Map<string, { attempt: number; status: string }>()
+  for (const r of rows) if (r.attempt > (newest.get(r.visitId)?.attempt ?? 0)) newest.set(r.visitId, r)
+  return [...newest].filter(([, r]) => r.status === "failed").map(([id]) => id)
+}
+
 const toStatus = (s: string): VisitStatus => (s === "completed" ? "completed" : s === "cancelled" || s === "skipped" ? "cancelled" : s === "unscheduled" ? "unscheduled" : "scheduled")
 
 /** A Mountain day and clock time as a UTC ISO instant. */
@@ -93,14 +103,20 @@ export function shapeAdminData(i: ShapeInput): AdminData {
     const seen = newestConsent.get(c.customerId)
     if (!seen || c.recordedAt > seen.recordedAt) newestConsent.set(c.customerId, c)
   }
-  const passOf = new Map(i.passes.map((p) => [p.id, p]))
+  const customerOf = new Map(i.customers.map((c) => [c.id, c]))
+  const lastNameOf = (id: string) => customerOf.get(id)?.lastName ?? undefined
+  const failed = new Set(i.failedChargeVisitIds ?? [])
+  // A pending pass is an unpaid attempt: its visits are never a job anywhere on the Schedule or in the counts.
+  const pending = new Set(i.passes.filter((p) => p.status === "pending").map((p) => p.id))
 
-  // Visits the app owns (pass and booked), then the mirror's: Jobber visits, and open jobs with no visit.
-  const appVisits: Visit[] = i.visits.map((v) => {
+  // Visits the app owns (pass and booked), then the mirror's: the calendar feed's visits, and open jobs with no visit.
+  const appVisits: Visit[] = i.visits.filter((v) => !(v.passId && pending.has(v.passId))).map((v) => {
     const point = v.lat !== null && v.lng !== null ? { lat: v.lat, lng: v.lng } : {}
     return {
-      id: v.id, clientId: v.customerId, clientName: v.firstName, town: v.town, kind: toKind(v.kind), status: toStatus(v.status),
-      ...(v.scheduledOn ? { startAt: instantOf(v.scheduledOn, v.startTime) } : {}),
+      id: v.id, clientId: v.customerId, clientName: fullName(v.firstName, lastNameOf(v.customerId)), town: v.town, kind: toKind(v.kind), status: toStatus(v.status),
+      ...(v.scheduledOn ? { startAt: instantOf(v.scheduledOn, v.startTime), scheduledOn: v.scheduledOn } : {}),
+      ...(v.startTime ? { startTime: v.startTime } : {}), ...(v.completedOn ? { completedOn: v.completedOn } : {}), ...(v.chargedAt ? { chargedAt: v.chargedAt } : {}),
+      ...(failed.has(v.id) ? { chargeFailed: true } : {}), ...(v.status === "skipped" ? { skipped: true } : {}), ...(v.passId ? { passId: v.passId } : {}),
       isPass: v.passId !== null, jobberUrl: "",
       ...(v.truckId ? { truckId: v.truckId } : {}),
       ...(v.awaitingPick ? { awaitingPick: true } : {}),
@@ -113,14 +129,15 @@ export function shapeAdminData(i: ShapeInput): AdminData {
     const cid = clientId(v.clientId)
     const who = mirrorClient.get(v.clientId ?? "")
     return {
-      id: v.id, clientId: cid, clientName: who?.firstName ?? "", town: (v.town ?? who?.town ?? "Erie") as Town, kind: toKind(v.kind ?? "other"),
+      id: v.id, clientId: cid, clientName: fullName(who?.firstName ?? "", who?.lastName), town: (v.town ?? who?.town ?? "Erie") as Town, kind: toKind(v.kind ?? "other"),
       status: v.completedAt ? "completed" : v.startAt ? "scheduled" : "unscheduled",
-      ...(v.startAt ? { startAt: iso(v.startAt) } : {}), isPass: false, jobberUrl: v.jobberUrl ?? "",
+      ...(v.startAt ? { startAt: iso(v.startAt), scheduledOn: mountainDay(v.startAt) } : {}), ...(v.completedAt ? { completedOn: mountainDay(v.completedAt) } : {}),
+      isPass: false, jobberUrl: v.jobberUrl ?? "",
     }
   })
   const jobs: Visit[] = i.mirror.jobsWithoutVisit.map((j) => {
     const who = mirrorClient.get(j.clientId ?? "")
-    return { id: j.id, clientId: clientId(j.clientId), clientName: who?.firstName ?? "", town: (who?.town ?? "Erie") as Town, kind: "other", status: "unscheduled", isPass: false, jobberUrl: j.jobberUrl ?? "" }
+    return { id: j.id, clientId: clientId(j.clientId), clientName: fullName(who?.firstName ?? "", who?.lastName), town: (who?.town ?? "Erie") as Town, kind: "other", status: "unscheduled", isPass: false, jobberUrl: j.jobberUrl ?? "" }
   })
   const visits = [...appVisits, ...mirrorVisits, ...jobs]
 
@@ -128,17 +145,23 @@ export function shapeAdminData(i: ShapeInput): AdminData {
   const lastVisit = new Map<string, string>()
   for (const v of visits) if (v.status === "completed" && v.startAt && v.startAt > (lastVisit.get(v.clientId) ?? "")) lastVisit.set(v.clientId, v.startAt)
   const appIds = new Set(i.customers.map((c) => c.id))
+  const history = new Map<string, ConsentRow[]>()
+  for (const c of i.consents) history.set(c.customerId, [...(history.get(c.customerId) ?? []), c])
+  const present = <T extends string | null | undefined>(k: string, v: T) => (v ? { [k]: v } : {})
   const clients: Client[] = [
     ...i.customers.map((c): Client => {
       const consent = newestConsent.get(c.id)
       const jobberId = i.jobberClientOf.get(c.id)
+      const records = (history.get(c.id) ?? []).sort((a, b) => b.recordedAt.getTime() - a.recordedAt.getTime())
       return {
         id: c.id, firstName: c.firstName, town: (c.town ?? "Erie") as Town, jobberUrl: (jobberId && mirrorClient.get(jobberId)?.jobberUrl) || "", hasPass: c.hasPass,
-        ...(lastVisit.has(c.id) ? { lastVisitAt: lastVisit.get(c.id) } : {}), ...(consent ? { consent: consentOf(consent) } : {}),
+        ...present("lastName", c.lastName), ...present("email", c.email), ...present("phone", c.phone), ...present("address", c.address),
+        ...(lastVisit.has(c.id) ? { lastVisitAt: lastVisit.get(c.id) } : {}), ...(consent ? { consent: consentOf(consent), consentHistory: records.map(consentOf) } : {}),
       }
     }),
     ...i.mirror.clients.filter((c) => !customerOfJobber.has(c.id) && !appIds.has(c.id)).map((c): Client => ({
       id: c.id, firstName: c.firstName ?? "", town: (c.town ?? "Erie") as Town, jobberUrl: c.jobberUrl ?? "", hasPass: false,
+      ...present("lastName", c.lastName), ...present("email", c.email), ...present("phone", c.phone),
       ...(lastVisit.has(c.id) ? { lastVisitAt: lastVisit.get(c.id) } : {}),
     })),
   ]
@@ -150,8 +173,10 @@ export function shapeAdminData(i: ShapeInput): AdminData {
       .filter((v) => order.includes(v.kind))
       .sort((a, b) => order.indexOf(a.kind) - order.indexOf(b.kind))
       .map((v) => ({
-        kind: v.kind as PassVisit["kind"], window: v.window ?? WINDOWS[v.kind]!, amount: v.amount,
-        ...(v.scheduledOn ? { scheduledAt: instantOf(v.scheduledOn, v.startTime) } : {}),
+        kind: v.kind as PassVisit["kind"], window: v.window ?? WINDOWS[v.kind]!, amount: v.amount, id: v.id,
+        ...(v.scheduledOn ? { scheduledAt: instantOf(v.scheduledOn, v.startTime), scheduledOn: v.scheduledOn } : {}),
+        ...(v.startTime ? { startTime: v.startTime } : {}), ...(v.durationMinutes ? { windowMinutes: v.durationMinutes } : {}),
+        ...(failed.has(v.id) ? { chargeFailed: true } : {}),
         ...(v.truckName ? { truckName: v.truckName } : {}),
         ...(v.completedOn ? { completedAt: instantOf(v.completedOn, "12:00") } : {}),
         ...(v.chargedAt ? { chargedAt: v.chargedAt } : {}),
@@ -159,8 +184,8 @@ export function shapeAdminData(i: ShapeInput): AdminData {
     const consent = newestConsent.get(p.customerId)
     const jobberId = i.jobberClientOf.get(p.customerId)
     return {
-      id: p.id, number: p.number, season: p.season, clientId: p.customerId, firstName: p.firstName, town: p.town, zones: p.zones,
-      turnOnPreference: p.turnOnPreference, blowoutPreference: p.blowoutPreference, status: p.status === "cancelled" ? "cancelled" : p.status === "lapsed" ? "lapsed" : "active",
+      id: p.id, number: p.number, season: p.season, clientId: p.customerId, firstName: p.firstName, ...present("lastName", lastNameOf(p.customerId)), town: p.town, zones: p.zones, ...present("createdAt", p.createdAt),
+      turnOnPreference: p.turnOnPreference, blowoutPreference: p.blowoutPreference, status: p.status === "cancelled" ? "cancelled" : p.status === "lapsed" ? "lapsed" : p.status === "pending" ? "pending" : "active",
       visits: passVisits, stripeUrl: "", jobberUrl: (jobberId && mirrorClient.get(jobberId)?.jobberUrl) || "",
       ...(p.cardLast4 ? { cardLast4: p.cardLast4 } : {}), ...(p.cardExpires ? { cardExpires: p.cardExpires } : {}),
       ...(consent ? { consent: consentOf(consent) } : {}), ...(p.cardFailedAt ? { cardFailedAt: p.cardFailedAt } : {}),
@@ -205,18 +230,14 @@ export function monthTotals(i: Pick<ShapeInput, "visits" | "mirror">): MonthTota
 
 const FOURTEEN_DAYS = 14 * DAY_MS
 
-/** What Home asks Hannah to look at: failed charges, queue items with an error, visits not closed, cards that expire before the blowout, cancelled passes. */
+/** What Home asks Hannah to look at: failed charges, queue items with an error, cards that expire before the blowout, cancelled passes. Jobs not closed are counted by Home itself from `src/lib/admin/jobs.ts`. */
 export function attention(i: ShapeInput, passes: Pass[]): Attention[] {
   const out: Attention[] = []
   for (const p of passes) {
-    if (p.status !== "cancelled" && p.cardFailedAt) out.push({ kind: "charge-failed", passId: p.id, message: `The card on ${p.number} was declined; ${p.firstName} has the update link`, since: p.cardFailedAt })
+    if (p.status !== "cancelled" && p.cardFailedAt) out.push({ kind: "charge-failed", passId: p.id, message: `The card on ${p.number} didn't go through; ${p.firstName} has the update link`, since: p.cardFailedAt })
   }
   for (const a of i.alerts ?? []) out.push({ kind: a.kind === "new-pass" || a.kind === "pass-cancelled" || a.kind === "scheduled" || a.kind === "unplaced" ? a.kind : "jobs-failed", ...(a.passId ? { passId: a.passId } : {}), ...(a.kind === "unplaced" && a.key ? { visitId: a.key } : {}), message: a.message, since: iso(a.createdAt) })
   for (const q of i.queueProblems) out.push({ kind: "jobs-failed", message: `A ${q.kind} task ${q.status === "failed" ? "gave up" : "is retrying"}: ${q.lastError ?? "no error recorded"}`, since: iso(q.updatedAt) })
-  for (const v of i.visits) {
-    if ((v.status === "not-closed" || v.status === "scheduled") && v.scheduledOn && v.scheduledOn < i.today && !v.completedOn)
-      out.push({ kind: "not-closed", ...(v.passId ? { passId: v.passId } : {}), message: `${v.firstName}'s ${v.kind.replace("-", " ")} on ${v.scheduledOn} is not marked done yet`, since: instantOf(v.scheduledOn, "18:00") })
-  }
   for (const p of passes) {
     if (p.status === "active" && p.cardExpires && p.cardExpires < `${p.season}-10` && !p.cardFailedAt)
       out.push({ kind: "card-expiring", passId: p.id, message: `The card on ${p.number} expires before the October blowout`, since: iso(i.now) })
@@ -227,7 +248,7 @@ export function attention(i: ShapeInput, passes: Pass[]): Attention[] {
     // The `pass-cancel` task's own alert says it already; the computed row is the fallback until the queue has run.
     if ((i.alerts ?? []).some((a) => a.kind === "pass-cancelled" && a.passId === p.id)) continue
     if (p.status === "cancelled" && cancelledAt && i.now.getTime() - Date.parse(cancelledAt) < FOURTEEN_DAYS)
-      out.push({ kind: "pass-cancelled", passId: p.id, message: `${p.firstName} cancelled ${p.number}; remove any Jobber jobs still open`, since: cancelledAt })
+      out.push({ kind: "pass-cancelled", passId: p.id, message: `${p.firstName} cancelled ${p.number}`, since: cancelledAt })
   }
   return out.sort((a, b) => b.since.localeCompare(a.since))
 }

@@ -22,7 +22,8 @@ export type VisitKind =
 
 export type VisitStatus = "unscheduled" | "scheduled" | "completed" | "cancelled"
 
-export type PassStatus = "active" | "cancelled" | "lapsed"
+/** `pending` is an unpaid checkout attempt; it expires after an hour and is never a customer. */
+export type PassStatus = "pending" | "active" | "cancelled" | "lapsed"
 
 /**
  * When the customer would like a visit, against Trailhead's recommendation:
@@ -53,12 +54,21 @@ export interface Consent {
 export interface Client {
   id: string
   firstName: string
+  /** absent for customers the app has not asked a last name */
+  lastName?: string
+  /** contact details: the admin session sees them, read keys never do */
+  email?: string
+  phone?: string
+  /** the street line of the property */
+  address?: string
   town: Town
   jobberUrl: string
   hasPass: boolean
   lastVisitAt?: string
-  /** the current consent record; the history lives in the CRM */
+  /** the current consent record */
   consent?: Consent
+  /** every consent record, newest first; it is append-only, so this is the audit trail */
+  consentHistory?: Consent[]
 }
 
 /**
@@ -74,6 +84,7 @@ export interface VisitException {
 export interface Visit {
   id: string
   clientId: string
+  /** the customer's full name where the app has it */
   clientName: string
   town: Town
   kind: VisitKind
@@ -81,6 +92,15 @@ export interface Visit {
   startAt?: string
   isPass: boolean
   jobberUrl: string
+  /** the row behind the job's state (src/lib/admin/jobs.ts): the day, the window start, done, charged, a failed charge */
+  passId?: string
+  scheduledOn?: string
+  startTime?: string
+  completedOn?: string
+  chargedAt?: string
+  chargeFailed?: boolean
+  /** the visit was skipped (the admin shows Skipped; `status` stays cancelled for the calendar) */
+  skipped?: boolean
   /** the truck the visit rides on; absent until the schedule places it */
   truckId?: string
   /** the customer must be there and has not yet picked a day; the visit waits in the tray for them (scheduling flow, 2026-11-12) */
@@ -121,6 +141,10 @@ export interface PassVisit {
   /** the Mountain day and start time behind `scheduledAt`, for the calendar links */
   scheduledOn?: string
   startTime?: string
+  /** how long the window runs from `startTime`, in minutes; two hours when the row says nothing */
+  windowMinutes?: number
+  /** the newest charge attempt for this visit did not go through */
+  chargeFailed?: boolean
   /** the signed link to the visit's .ics file, from the API */
   calendarUrl?: string
   id?: string
@@ -137,6 +161,7 @@ export interface Pass {
   season: number
   clientId: string
   firstName: string
+  lastName?: string
   town: Town
   zones: number
   turnOnPreference: TimingPreference
@@ -144,6 +169,7 @@ export interface Pass {
   status: PassStatus
   visits: PassVisit[]
   stripeUrl: string
+  /** kept for the data's sake; no admin screen shows it any more */
   jobberUrl: string
   cardLast4?: string
   cardExpires?: string
@@ -155,6 +181,8 @@ export interface Pass {
   needsCustomerHome?: boolean
   /** gate code, dog, where the controller is */
   accessNote?: string
+  /** when the pass was started; a pending pass expires an hour after it */
+  createdAt?: string
 }
 
 export interface MonthTotal {
