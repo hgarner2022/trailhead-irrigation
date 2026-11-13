@@ -56,11 +56,11 @@ describe("status column", () => {
 
 describe("preference columns", () => {
   it("write the preference in the customer's words and export the same", () => {
-    expect(cellText("turnOn", andrea)).toBe("First half of May")
-    expect(cellText("blowout", andrea)).toBe("Second week of October")
+    expect(cellText("turnOn", andrea)).toBe("Mid May")
+    expect(cellText("blowout", andrea)).toBe("Mid October")
     expect(cellText("blowout", { ...andrea, blowoutPreference: "later" })).toBe("Late October")
     expect(passColumns.find((c) => c.id === "turnOn")?.meta?.csv?.({ ...andrea, turnOnPreference: "earlier" })).toBe("Early May")
-    expect(passColumns.find((c) => c.id === "blowout")?.meta?.csv?.(andrea)).toBe("Second week of October")
+    expect(passColumns.find((c) => c.id === "blowout")?.meta?.csv?.(andrea)).toBe("Mid October")
   })
 
   it("sort earlier before recommended before later, whatever the alphabet says", () => {
@@ -76,10 +76,10 @@ describe("preference columns", () => {
   it("offer the three answers as filter chips, earlier to later", () => {
     expect(preferenceOptions("blowout")).toEqual([
       { value: "earlier", label: "Early October" },
-      { value: "recommended", label: "Second week of October" },
+      { value: "recommended", label: "Mid October" },
       { value: "later", label: "Late October" },
     ])
-    expect(preferenceOptions("turn-on").map((o) => o.label)).toEqual(["Early May", "First half of May", "Late May"])
+    expect(preferenceOptions("turn-on").map((o) => o.label)).toEqual(["Early May", "Mid May", "Late May"])
   })
 })
 

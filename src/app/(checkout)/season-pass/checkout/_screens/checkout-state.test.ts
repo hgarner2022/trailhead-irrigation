@@ -12,7 +12,8 @@ const filled: CheckoutState = {
   email: "andrea@example.com",
   phone: "(970) 555-0123",
   termsAccepted: true,
-  marketing: false,
+  marketingEmail: false,
+  marketingSms: false,
   cardSaved: false,
 }
 
@@ -32,7 +33,8 @@ describe("step order", () => {
     expect(s.turnOnPreference).toBe("recommended")
     expect(s.blowoutPreference).toBe("recommended")
     expect(s.termsAccepted).toBe(false)
-    expect(s.marketing).toBe(false)
+    expect(s.marketingEmail).toBe(false)
+    expect(s.marketingSms).toBe(false)
   })
 
   it("takes the initial zones and prefilled fields", () => {
@@ -87,7 +89,8 @@ describe("step order", () => {
     expect(reducer(s, { type: "set", field: "town", value: "Longmont" }).town).toBe("Longmont")
     expect(reducer(s, { type: "set", field: "turnOnPreference", value: "later" }).turnOnPreference).toBe("later")
     expect(reducer(s, { type: "set", field: "termsAccepted", value: true }).termsAccepted).toBe(true)
-    expect(reducer(s, { type: "set", field: "marketing", value: true }).marketing).toBe(true)
+    expect(reducer(s, { type: "set", field: "marketingEmail", value: true }).marketingEmail).toBe(true)
+    expect(reducer(s, { type: "set", field: "marketingSms", value: true }).marketingSms).toBe(true)
   })
 })
 
@@ -118,27 +121,27 @@ describe("canContinue", () => {
     expect(canContinue({ ...filled, step: 4 })).toBe(true)
   })
 
-  it("card: needs the terms accepted, whatever the marketing box says; done: never", () => {
+  it("card: needs the terms accepted, whatever the marketing boxes say; done: never", () => {
     expect(canContinue({ ...filled, step: 5 })).toBe(true)
-    expect(canContinue({ ...filled, step: 5, marketing: true })).toBe(true)
+    expect(canContinue({ ...filled, step: 5, marketingEmail: true, marketingSms: true })).toBe(true)
     expect(canContinue({ ...filled, step: 5, termsAccepted: false })).toBe(false)
-    expect(canContinue({ ...filled, step: 5, termsAccepted: false, marketing: true })).toBe(false)
+    expect(canContinue({ ...filled, step: 5, termsAccepted: false, marketingEmail: true })).toBe(false)
     expect(canContinue({ ...filled, step: 6 })).toBe(false)
   })
 })
 
 describe("words", () => {
   it("writes the Done sentence from the two preferences and the email", () => {
-    expect(doneSentence(filled)).toBe("Turn-on preferred early May, inspection in July, blowout preferred the second week of October. We'll email the details to andrea@example.com.")
+    expect(doneSentence(filled)).toBe("Turn-on preferred early May, inspection in July, blowout preferred mid October. We'll email the details to andrea@example.com.")
     expect(doneSentence({ ...filled, turnOnPreference: "recommended", blowoutPreference: "later" })).toBe(
-      "Turn-on preferred the first half of May, inspection in July, blowout preferred late October. We'll email the details to andrea@example.com.",
+      "Turn-on preferred mid May, inspection in July, blowout preferred late October. We'll email the details to andrea@example.com.",
     )
   })
 })
 
 describe("toConsent", () => {
-  it("records the terms as accepted now, with marketing by email and text only when ticked", () => {
-    expect(toConsent({ marketing: false }, "2026-11-12T20:00:00Z")).toEqual({
+  it("records the terms as accepted now, with each marketing channel only when its box was ticked", () => {
+    expect(toConsent({ marketingEmail: false, marketingSms: false }, "2026-11-12T20:00:00Z")).toEqual({
       termsAcceptedAt: "2026-11-12T20:00:00Z",
       termsVersion: "2026-11",
       marketingOptIn: false,
@@ -146,13 +149,15 @@ describe("toConsent", () => {
       source: "checkout",
       recordedAt: "2026-11-12T20:00:00Z",
     })
-    expect(toConsent({ marketing: true }, "2026-11-12T20:00:00Z")).toMatchObject({ marketingOptIn: true, marketingChannels: ["email", "sms"] })
+    expect(toConsent({ marketingEmail: true, marketingSms: true }, "2026-11-12T20:00:00Z")).toMatchObject({ marketingOptIn: true, marketingChannels: ["email", "sms"] })
+    expect(toConsent({ marketingEmail: true, marketingSms: false }, "2026-11-12T20:00:00Z")).toMatchObject({ marketingOptIn: true, marketingChannels: ["email"] })
+    expect(toConsent({ marketingEmail: false, marketingSms: true }, "2026-11-12T20:00:00Z")).toMatchObject({ marketingOptIn: true, marketingChannels: ["sms"] })
   })
 })
 
 describe("toPass", () => {
   it("builds an active pass for 6 zones at the published prices, with the preferences and the consent", () => {
-    const pass = toPass({ ...filled, zones: 6, step: 6, cardSaved: true, marketing: true }, 2027, "2026-11-12T20:00:00Z")
+    const pass = toPass({ ...filled, zones: 6, step: 6, cardSaved: true, marketingEmail: true, marketingSms: true }, 2027, "2026-11-12T20:00:00Z")
     expect(pass.id).toBe("p-new")
     expect(pass.number).toBe("TH-2027-NEW")
     expect(pass.status).toBe("active")
@@ -164,7 +169,7 @@ describe("toPass", () => {
     expect(pass.visits.map((v) => v.kind)).toEqual(["turn-on", "inspection", "blowout"])
     expect(pass.visits.map((v) => v.amount)).toEqual([145, 145, 95])
     expect(pass.visits.map((v) => v.window)).toEqual(["May", "July", "October"])
-    expect(pass.consent).toEqual(toConsent({ marketing: true }, "2026-11-12T20:00:00Z"))
+    expect(pass.consent).toEqual(toConsent({ marketingEmail: true, marketingSms: true }, "2026-11-12T20:00:00Z"))
     expect(pass.cardLast4).toBe("4242")
     expect(pass.stripeUrl).toMatch(/^https:\/\//)
     expect(pass.jobberUrl).toMatch(/^https:\/\//)

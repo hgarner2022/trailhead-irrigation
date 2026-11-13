@@ -48,8 +48,9 @@ export interface CheckoutFields {
   phone: string
   /** the required box on the card step: the Season Pass terms and the terms of service */
   termsAccepted: boolean
-  /** the optional box on the card step: seasonal tips and offers by email and text */
-  marketing: boolean
+  /** the optional boxes on the card step: seasonal tips and offers by email, and by text */
+  marketingEmail: boolean
+  marketingSms: boolean
   cardSaved: boolean
 }
 
@@ -78,7 +79,8 @@ export function initialState(prefill: Partial<CheckoutState> = {}): CheckoutStat
     email: "",
     phone: "",
     termsAccepted: false,
-    marketing: false,
+    marketingEmail: false,
+    marketingSms: false,
     cardSaved: false,
     ...prefill,
     ...(prefill.step !== undefined ? { step: clampStep(prefill.step) } : {}),
@@ -143,13 +145,14 @@ export function doneSentence(state: Pick<CheckoutFields, "turnOnPreference" | "b
   return `Turn-on preferred ${turnOn}, inspection in July, blowout preferred ${blowout}. We'll email the details to ${state.email}.`
 }
 
-/** The consent the purchase records: the terms as accepted now, and marketing by email and text only when the box was ticked. */
-export function toConsent(state: Pick<CheckoutFields, "marketing">, at: string): Consent {
+/** The consent the purchase records: the terms as accepted now, and the marketing channels whose boxes were ticked. */
+export function toConsent(state: Pick<CheckoutFields, "marketingEmail" | "marketingSms">, at: string): Consent {
+  const marketingChannels: Consent["marketingChannels"] = [...(state.marketingEmail ? ["email" as const] : []), ...(state.marketingSms ? ["sms" as const] : [])]
   return {
     termsAcceptedAt: at,
     termsVersion: TERMS_VERSION,
-    marketingOptIn: state.marketing,
-    marketingChannels: state.marketing ? ["email", "sms"] : [],
+    marketingOptIn: marketingChannels.length > 0,
+    marketingChannels,
     source: "checkout",
     recordedAt: at,
   }

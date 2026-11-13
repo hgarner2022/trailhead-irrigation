@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { MONTH_NAMES, TIME_ZONE, monthDay, monthName, monthShort, preferenceLabel, preferencePhrase, preferenceReason, shortDate, writtenDate } from "./format"
+import { MONTH_NAMES, TIME_ZONE, monthDay, monthName, monthShort, preferenceLabel, preferenceOf, preferencePhrase, preferenceReason, shortDate, writtenDate } from "./format"
 
 describe("month names", () => {
   it("names the twelve months by number", () => {
@@ -47,26 +47,31 @@ describe("writtenDate", () => {
 })
 
 describe("timing preferences", () => {
-  it("writes each preference in the customer's words, with the recommendation as the window", () => {
+  it("writes each preference as Early, Mid or Late with the month", () => {
     expect(preferenceLabel("turn-on", "earlier")).toBe("Early May")
-    expect(preferenceLabel("turn-on", "recommended")).toBe("First half of May")
+    expect(preferenceLabel("turn-on", "recommended")).toBe("Mid May")
     expect(preferenceLabel("turn-on", "later")).toBe("Late May")
     expect(preferenceLabel("blowout", "earlier")).toBe("Early October")
-    expect(preferenceLabel("blowout", "recommended")).toBe("Second week of October")
+    expect(preferenceLabel("blowout", "recommended")).toBe("Mid October")
     expect(preferenceLabel("blowout", "later")).toBe("Late October")
   })
 
-  it("writes a preference inside a sentence, with 'the' only for the recommendation", () => {
+  it("writes a preference inside a sentence in lower case", () => {
     expect(preferencePhrase("turn-on", "earlier")).toBe("early May")
-    expect(preferencePhrase("turn-on", "recommended")).toBe("the first half of May")
-    expect(preferencePhrase("turn-on", "later")).toBe("late May")
-    expect(preferencePhrase("blowout", "earlier")).toBe("early October")
-    expect(preferencePhrase("blowout", "recommended")).toBe("the second week of October")
+    expect(preferencePhrase("turn-on", "recommended")).toBe("mid May")
+    expect(preferencePhrase("blowout", "recommended")).toBe("mid October")
     expect(preferencePhrase("blowout", "later")).toBe("late October")
   })
 
+  it("reads the pass's preference for a visit kind, and none for the inspection", () => {
+    const pass = { turnOnPreference: "earlier", blowoutPreference: "later" } as const
+    expect(preferenceOf(pass, "turn-on")).toBe("earlier")
+    expect(preferenceOf(pass, "blowout")).toBe("later")
+    expect(preferenceOf(pass, "inspection")).toBeNull()
+  })
+
   it("gives one plain reason for each recommendation", () => {
-    expect(preferenceReason("turn-on")).toBe("The last hard freeze on the Front Range is usually past by early May.")
-    expect(preferenceReason("blowout")).toBe("The first hard freeze usually arrives late in October.")
+    expect(preferenceReason("turn-on")).toBe("Front Range systems are usually safe to run by early May.")
+    expect(preferenceReason("blowout")).toBe("The first hard freeze usually arrives between mid and late October, so the second week leaves room.")
   })
 })

@@ -8,7 +8,7 @@
  * date-only string is already a calendar day and is never shifted.
  */
 
-import type { TimingPreference } from "./types"
+import type { Pass, PassVisit, TimingPreference } from "./types"
 
 /** Where the reader is: every clock and calendar word in the app is in Mountain time. */
 export const TIME_ZONE = "America/Denver"
@@ -17,35 +17,42 @@ export const TIME_ZONE = "America/Denver"
 export const TIMING_PREFERENCES: readonly TimingPreference[] = ["earlier", "recommended", "later"]
 
 /**
- * The customer's words for a timing preference. Trailhead's recommendation
- * is the first to second week of May for the turn-on and the second week of
- * October for the blowout; "earlier" and "later" sort within the window.
+ * The customer's words for a timing preference: one label set, Early, Mid
+ * and Late with the month, used the same way on the card, the line, the
+ * grid and the checkout. What "Mid" means in detail (the first and second
+ * week of May, the second week of October) is said once, in the timing
+ * step's helper text.
  */
 export function preferenceLabel(kind: "turn-on" | "blowout", preference: TimingPreference): string {
-  return PREFERENCE_LABELS[kind][preference]
+  return `${PREFERENCE_WORDS[preference]} ${kind === "turn-on" ? "May" : "October"}`
 }
 
-const PREFERENCE_LABELS: Record<"turn-on" | "blowout", Record<TimingPreference, string>> = {
-  "turn-on": { earlier: "Early May", recommended: "First half of May", later: "Late May" },
-  blowout: { earlier: "Early October", recommended: "Second week of October", later: "Late October" },
-}
+const PREFERENCE_WORDS: Record<TimingPreference, string> = { earlier: "Early", recommended: "Mid", later: "Late" }
 
-/** A preference inside a sentence: "early May", "the first half of May", "the second week of October". */
+/** A preference inside a sentence: "early May", "mid October". */
 export function preferencePhrase(kind: "turn-on" | "blowout", preference: TimingPreference): string {
   const label = preferenceLabel(kind, preference)
-  return `${preference === "recommended" ? "the " : ""}${label.charAt(0).toLowerCase()}${label.slice(1)}`
+  return `${label.charAt(0).toLowerCase()}${label.slice(1)}`
+}
+
+/** The pass's preference for a visit kind; null for the inspection, which asks none. */
+export function preferenceOf(pass: Pick<Pass, "turnOnPreference" | "blowoutPreference">, kind: PassVisit["kind"]): TimingPreference | null {
+  return kind === "turn-on" ? pass.turnOnPreference : kind === "blowout" ? pass.blowoutPreference : null
 }
 
 /**
- * The one-line reason under the recommendation. The dates come from the
- * NOAA stations on /first-freeze-dates (src/lib/freeze-data.ts): the first
- * hard freeze (28°F) lands between mid and late October in most years, and
- * the spring's last one is behind us by early May.
+ * The one-line reason under the recommendation.
+ * Fall: the median first hard freeze (28°F) at the NOAA stations behind
+ * /first-freeze-dates (src/lib/freeze-data.ts), 2015 to 2025, is Boulder
+ * Oct 20, Brighton Oct 19, Northglenn Oct 27 and Longmont Oct 28, so a
+ * second-week blowout sits a week or more ahead of it.
+ * Spring: freeze-data.ts holds fall data only; "safe by early May" is
+ * Ryan's rule of thumb and still needs his confirmation.
  */
 export function preferenceReason(kind: "turn-on" | "blowout"): string {
   return kind === "turn-on"
-    ? "The last hard freeze on the Front Range is usually past by early May."
-    : "The first hard freeze usually arrives late in October."
+    ? "Front Range systems are usually safe to run by early May."
+    : "The first hard freeze usually arrives between mid and late October, so the second week leaves room."
 }
 
 export const MONTH_NAMES = [

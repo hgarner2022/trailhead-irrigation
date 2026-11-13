@@ -4,7 +4,7 @@
  * screen so the wording can be unit tested.
  */
 import type { Pass, PassVisit, VisitStatus } from "@/lib/admin/types"
-import { preferenceLabel, preferencePhrase, writtenDate } from "@/lib/admin/format"
+import { preferenceLabel, preferenceOf, preferencePhrase, writtenDate } from "@/lib/admin/format"
 
 export const VISIT_NAMES: Record<PassVisit["kind"], string> = { "turn-on": "Spring turn-on", inspection: "Mid-season inspection", blowout: "Fall blowout" }
 
@@ -22,16 +22,15 @@ export interface VisitRow {
 
 export const visitStatus = (visit: PassVisit): RowStatus => (visit.completedAt ? "completed" : visit.scheduledAt ? "scheduled" : "unscheduled")
 
-/** The pass's preference for a visit; the inspection has none. */
-export function preferenceOf(visit: PassVisit, pass: Pass): string | null {
-  if (visit.kind === "turn-on") return preferenceLabel("turn-on", pass.turnOnPreference)
-  if (visit.kind === "blowout") return preferenceLabel("blowout", pass.blowoutPreference)
-  return null
+/** The pass's preference for a visit in the customer's words; the inspection has none. */
+function preferenceWords(visit: PassVisit, pass: Pass): string | null {
+  const preference = preferenceOf(pass, visit.kind)
+  return preference && visit.kind !== "inspection" ? preferenceLabel(visit.kind, preference) : null
 }
 
 export function visitRow(visit: PassVisit, pass: Pass): VisitRow {
   const status = visitStatus(visit)
-  const preference = preferenceOf(visit, pass)
+  const preference = preferenceWords(visit, pass)
   const when = visit.completedAt ? writtenDate(visit.completedAt) : visit.scheduledAt ? writtenDate(visit.scheduledAt) : (preference ?? visit.window)
   const label = status === "completed" ? "Done" : status === "scheduled" ? "Booked" : preference ? "Preferred" : visit.window
   return { kind: visit.kind, name: VISIT_NAMES[visit.kind], when, status, label }

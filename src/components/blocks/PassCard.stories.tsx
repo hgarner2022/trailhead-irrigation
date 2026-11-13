@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { PassCard } from "./PassCard"
 
 // passes[0] is Andrea in Erie with the turn-on done and the blowout preferred
-// for the second week of October; passes[1] is Reese in Firestone.
+// for mid October; passes[1] is Reese in Firestone.
 const passes = snapshot.passes as Pass[]
 const active = passes[0]
 const allDone: Pass = {

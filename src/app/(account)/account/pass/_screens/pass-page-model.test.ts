@@ -3,7 +3,7 @@ import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import type { Pass } from "@/lib/admin/types"
 import { cardLine, expiry, seasonCaption, visitRows, visitStatus } from "./pass-page-model"
 
-// passes[0] is Andrea in Erie: turn-on done May 3, inspection in July, blowout preferred for the second week of October.
+// passes[0] is Andrea in Erie: turn-on done May 3, inspection in July, blowout preferred for mid October.
 // passes[2] has no visit yet, with the turn-on preferred earlier.
 const pass = snapshot.passes[0] as Pass
 const fresh = snapshot.passes[2] as Pass
@@ -19,7 +19,7 @@ describe("visit rows", () => {
     expect(visitRows(pass)).toEqual([
       { kind: "turn-on", name: "Spring turn-on", when: "May 3", status: "completed", label: "Done" },
       { kind: "inspection", name: "Mid-season inspection", when: "July", status: "unscheduled", label: "July" },
-      { kind: "blowout", name: "Fall blowout", when: "Second week of October", status: "unscheduled", label: "Preferred" },
+      { kind: "blowout", name: "Fall blowout", when: "Mid October", status: "unscheduled", label: "Preferred" },
     ])
   })
 
@@ -65,7 +65,7 @@ describe("season caption", () => {
   it("names the preference when the turn-on or the blowout is next", () => {
     expect(seasonCaption(fresh)).toBe("Next up: spring turn-on, preferred early May.")
     const blowoutNext: Pass = { ...pass, visits: pass.visits.map((v, i) => (i < 2 ? { ...v, completedAt: "2027-07-13T16:05:00Z" } : v)) }
-    expect(seasonCaption(blowoutNext)).toBe("Your blowout is preferred for the second week of October. Ryan sets the day in September.")
+    expect(seasonCaption(blowoutNext)).toBe("Your blowout is preferred for mid October. Ryan sets the day in September.")
     expect(seasonCaption({ ...blowoutNext, blowoutPreference: "earlier" })).toBe("Your blowout is preferred for early October. Ryan sets the day in September.")
   })
 

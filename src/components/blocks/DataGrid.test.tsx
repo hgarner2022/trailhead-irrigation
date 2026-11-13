@@ -266,7 +266,7 @@ describe("DataGrid export", () => {
     expect(blob).toBeDefined()
     const bytes = new Uint8Array(await blob!.arrayBuffer())
     expect([...bytes.slice(0, 3)]).toEqual([0xef, 0xbb, 0xbf])
-    expect(new TextDecoder().decode(bytes)).toBe("Name,Zones,Turn-on,Blowout,Status,Charged so far,Next visit\r\nReese,8,First half of May,Early October,Active,145,July\r\nReesa,8,First half of May,Early October,Active,0,May\r\n")
+    expect(new TextDecoder().decode(bytes)).toBe("Name,Zones,Turn-on,Blowout,Status,Charged so far,Next visit\r\nReese,8,Mid May,Early October,Active,145,July\r\nReesa,8,Mid May,Early October,Active,0,May\r\n")
   })
 })
 

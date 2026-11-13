@@ -9,11 +9,13 @@ import type { StepProps } from "./checkout-steps"
 // The timing step: two questions on one screen, the spring turn-on under the
 // step's own question and the fall blowout under a second heading, each as
 // three large choice buttons with Trailhead's recommendation preselected and
-// the one-line reason for it under the group. There is no capacity behind
-// any choice; Ryan places the day inside the window the customer prefers.
-// The July inspection asks nothing.
+// the one-line reason for it under the group, with what "Mid" means. There is
+// no capacity behind any choice; Ryan places the day inside the window the
+// customer prefers. The July inspection asks nothing.
 
 const CHOICE_NAMES: Record<TimingPreference, string> = { earlier: "Earlier", recommended: "Recommended", later: "Later" }
+/** The only place the recommendation's detail is spelled out; everywhere else says Mid. */
+const MID_MEANS: Record<"turn-on" | "blowout", string> = { "turn-on": "Mid May is the first and second week.", blowout: "Mid October is the second week." }
 
 interface GroupProps {
   kind: "turn-on" | "blowout"
@@ -54,7 +56,7 @@ function PreferenceGroup({ kind, labelledBy, value, onChange, autofocus }: Group
         })}
       </div>
       <p id={`${id}-reason`} className="mt-3 text-base text-muted-foreground">
-        {preferenceReason(kind)}
+        {`${MID_MEANS[kind]} ${preferenceReason(kind)}`}
       </p>
     </div>
   )

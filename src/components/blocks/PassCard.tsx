@@ -5,8 +5,8 @@ import Image from "next/image"
 import { Check } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import type { Pass, PassVisit, TimingPreference } from "@/lib/admin/types"
-import { preferenceLabel, shortDate, writtenDate } from "@/lib/admin/format"
+import type { Pass, PassVisit } from "@/lib/admin/types"
+import { preferenceLabel, preferenceOf, shortDate, writtenDate } from "@/lib/admin/format"
 import { SHEEN_REST, attachPointer, attachTilt, canRequestTilt, frameWriter, reducedMotion, requestTilt } from "./pass-card-sheen"
 
 // A wallet card at credit card proportions: the reserved moment at the end of
@@ -37,21 +37,11 @@ export interface PassCardProps {
 
 const ART = { flat: "/images/pass-card-art.webp", holo: "/images/pass-card-art-holo.webp" }
 const VISIT_NAMES: Record<PassVisit["kind"], string> = { "turn-on": "Turn-on", inspection: "Inspection", blowout: "Blowout" }
-// The preference in the room a phone-width card has for it (about 70px a cell): the season line's word and the month.
-const SHORT_LABELS: Record<"turn-on" | "blowout", Record<TimingPreference, string>> = {
-  "turn-on": { earlier: "Early May", recommended: "Mid May", later: "Late May" },
-  blowout: { earlier: "Early Oct", recommended: "Mid Oct", later: "Late Oct" },
-}
 const REST_STYLE = { "--sheen-x": SHEEN_REST.x, "--sheen-y": SHEEN_REST.y } as CSSProperties
 const never = () => () => {}
 const lower = (s: string) => s.charAt(0).toLowerCase() + s.slice(1)
 
-/** The pass's preference for a visit, or null for the inspection, which asks none. */
-function preferenceOf(pass: Pass, kind: PassVisit["kind"]): TimingPreference | null {
-  return kind === "turn-on" ? pass.turnOnPreference : kind === "blowout" ? pass.blowoutPreference : null
-}
-
-/** "turn-on done on May 3", "blowout on October 12", "blowout preferred second week of October". */
+/** "turn-on done on May 3", "blowout on October 12", "blowout preferred mid October". */
 function describeVisit(visit: PassVisit, pass: Pass): string | null {
   const name = VISIT_NAMES[visit.kind].toLowerCase()
   if (visit.completedAt) return `${name} done on ${writtenDate(visit.completedAt)}`
@@ -88,10 +78,7 @@ function VisitCell({ visit, pass }: { visit: PassVisit; pass: Pass }) {
         {dated ? (
           <span className="truncate">{shortDate(dated)}</span>
         ) : preference && kind ? (
-          <>
-            <span className="truncate @max-[440px]:hidden">{preferenceLabel(kind, preference)}</span>
-            <span className="hidden truncate @max-[440px]:inline">{SHORT_LABELS[kind][preference]}</span>
-          </>
+          <span className="truncate">{preferenceLabel(kind, preference)}</span>
         ) : (
           <span className="truncate">{visit.window}</span>
         )}

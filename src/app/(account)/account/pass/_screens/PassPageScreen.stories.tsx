@@ -5,7 +5,7 @@ import type { Pass } from "@/lib/admin/types"
 import { PassPageScreen } from "./PassPageScreen"
 
 // passes[0] is Andrea in Erie with the turn-on done and the blowout preferred
-// for the second week of October; passes[2] has had no visit yet. `today` sits
+// for mid October; passes[2] has had no visit yet. `today` sits
 // before the 2027 season for Active and after it for AllDone.
 const passes = snapshot.passes as Pass[]
 const active = passes[0]

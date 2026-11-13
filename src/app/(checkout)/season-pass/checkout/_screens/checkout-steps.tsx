@@ -176,46 +176,75 @@ function TermsLink({ href, children }: { href: string; children: string }) {
   )
 }
 
-/** The two consent boxes above the button: the terms, required, and the marketing opt-in, off until ticked. */
-export function ConsentBoxes({ state, set }: StepProps) {
+/** The id of the line that says the terms are still unticked; the flow's button points at it with `aria-describedby`. */
+export const CONSENT_PROBLEM_ID = "checkout-consent-problem"
+export const CONSENT_PROBLEM = "Please accept the terms to continue"
+
+// Season Pass terms section to be written by Hannah; TERMS_VERSION then matches it. Until then both links go to /terms.
+const SEASON_PASS_TERMS_HREF = "/terms"
+
+const MARKETING = [
+  { key: "marketingEmail", label: "Seasonal tips and offers by email", note: "You can stop any time. Visit reminders and receipts are sent either way." },
+  { key: "marketingSms", label: "Seasonal tips and offers by text", note: "Message frequency varies. Msg and data rates may apply. Reply STOP to opt out. Consent is not a condition of purchase." },
+] as const
+
+/** The consent boxes above the button: the terms, required, then email and text marketing, each off until ticked. */
+export function ConsentBoxes({ state, set, attempted }: StepProps & { attempted: boolean }) {
   const id = useId()
+  const problem = attempted && !state.termsAccepted
   return (
     <div data-slot="checkout-consent" className="mt-8 grid gap-5">
-      <div className="flex items-start gap-3">
-        <Checkbox id={`${id}-terms`} checked={state.termsAccepted} onCheckedChange={(checked) => set("termsAccepted", checked === true)} className="mt-1 size-5" />
-        <Label htmlFor={`${id}-terms`} className="inline text-base font-normal leading-snug text-foreground">
-          I accept the <TermsLink href="/season-pass#terms">Season Pass terms</TermsLink> and the <TermsLink href="/terms">Trailhead terms of service</TermsLink>
-        </Label>
-      </div>
-      <div className="flex items-start gap-3">
-        <Checkbox
-          id={`${id}-marketing`}
-          checked={state.marketing}
-          onCheckedChange={(checked) => set("marketing", checked === true)}
-          aria-describedby={`${id}-marketing-note`}
-          className="mt-1 size-5"
-        />
-        <div>
-          <Label htmlFor={`${id}-marketing`} className="inline text-base font-normal leading-snug text-foreground">
-            Send me seasonal tips and offers by email and text
+      <div>
+        <div className="flex items-start gap-3">
+          <Checkbox
+            id={`${id}-terms`}
+            checked={state.termsAccepted}
+            onCheckedChange={(checked) => set("termsAccepted", checked === true)}
+            aria-invalid={problem || undefined}
+            aria-describedby={problem ? CONSENT_PROBLEM_ID : undefined}
+            className="mt-1 size-5"
+          />
+          <Label htmlFor={`${id}-terms`} className="inline text-base font-normal leading-snug text-foreground">
+            I accept the <TermsLink href={SEASON_PASS_TERMS_HREF}>Season Pass terms</TermsLink> and the <TermsLink href="/terms">Trailhead terms of service</TermsLink>
           </Label>
-          <p id={`${id}-marketing-note`} className="mt-1 text-sm text-muted-foreground">
-            You can stop any time. Visit reminders and receipts are sent either way.
-          </p>
         </div>
+        {problem && (
+          <p id={CONSENT_PROBLEM_ID} className="mt-2 pl-8 text-sm text-destructive">
+            {CONSENT_PROBLEM}
+          </p>
+        )}
       </div>
+      {MARKETING.map((box) => (
+        <div key={box.key} className="flex items-start gap-3">
+          <Checkbox
+            id={`${id}-${box.key}`}
+            checked={state[box.key]}
+            onCheckedChange={(checked) => set(box.key, checked === true)}
+            aria-describedby={`${id}-${box.key}-note`}
+            className="mt-1 size-5"
+          />
+          <div>
+            <Label htmlFor={`${id}-${box.key}`} className="inline text-base font-normal leading-snug text-foreground">
+              {box.label}
+            </Label>
+            <p id={`${id}-${box.key}-note`} className="mt-1 text-sm text-muted-foreground">
+              {box.note}
+            </p>
+          </div>
+        </div>
+      ))}
     </div>
   )
 }
 
-export function CardStep({ state, set }: StepProps) {
+export function CardStep({ state, set, attempted }: StepProps & { attempted: boolean }) {
   return (
     <>
       <div className="rounded-lg border border-dashed border-border bg-stone p-8 text-center text-muted-foreground">
         Stripe&apos;s card form mounts here. Nothing is charged today.
       </div>
       <Helper>We charge the card after each visit, at the price you just saw.</Helper>
-      <ConsentBoxes state={state} set={set} />
+      <ConsentBoxes state={state} set={set} attempted={attempted} />
     </>
   )
 }

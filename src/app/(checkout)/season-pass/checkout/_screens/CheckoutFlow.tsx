@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import type { Pass } from "@/lib/admin/types"
 import { STEPS, STEP_COUNT, canContinue, toPass, useCheckoutState, type CheckoutFields } from "./checkout-state"
-import { AddressStep, CardStep, ContactStep, DoneStep, ZonesStep, useReveal } from "./checkout-steps"
+import { AddressStep, CONSENT_PROBLEM_ID, CardStep, ContactStep, DoneStep, ZonesStep, useReveal } from "./checkout-steps"
 import { TimingStep } from "./checkout-timing"
 
 // The Season Pass checkout as six full-screen questions, one input each (the
@@ -36,6 +36,16 @@ const LOGO = "/images/logo-badge.png"
 const COLUMN = "mx-auto w-full max-w-2xl container-padding-x"
 /** The reserved moment gets the long rise; a step change gets a short one; the first question opens still. */
 const REVEAL_MS = { step: 300, done: 600 }
+
+const TIMING_CHOICE = '[data-slot="timing-choice"]'
+
+/** On the timing step the arrow keys walk the two groups before they move between steps: the pressed choice of the other group takes focus. */
+function timingNeighbour(target: HTMLElement, direction: "down" | "up"): HTMLElement | null {
+  const kind = target.closest<HTMLElement>(TIMING_CHOICE)?.dataset.kind
+  if (kind !== (direction === "down" ? "turn-on" : "blowout")) return null
+  const other = direction === "down" ? "blowout" : "turn-on"
+  return target.closest("section")?.querySelector<HTMLElement>(`${TIMING_CHOICE}[data-kind="${other}"][aria-pressed="true"]`) ?? null
+}
 
 /** Elements that use Enter and the arrow keys themselves. */
 function ownsKeys(target: HTMLElement): boolean {
@@ -96,10 +106,14 @@ export function CheckoutFlow({ season, initialZones, initialStep, prefill, onCom
       next()
     } else if (event.key === "ArrowDown" && !typing) {
       event.preventDefault()
-      if (valid) next()
+      const neighbour = timingNeighbour(target, "down")
+      if (neighbour) neighbour.focus()
+      else if (valid) next()
     } else if (event.key === "ArrowUp" && !typing) {
       event.preventDefault()
-      if (step > 1) back()
+      const neighbour = timingNeighbour(target, "up")
+      if (neighbour) neighbour.focus()
+      else if (step > 1) back()
     }
   }
 
@@ -118,7 +132,7 @@ export function CheckoutFlow({ season, initialZones, initialStep, prefill, onCom
       body = <ContactStep state={state} set={set} attempted={attempted} />
       break
     case "card":
-      body = <CardStep state={state} set={set} />
+      body = <CardStep state={state} set={set} attempted={attempted} />
       break
     default: {
       const pass = toPass(state, season)
@@ -178,7 +192,7 @@ export function CheckoutFlow({ season, initialZones, initialStep, prefill, onCom
             ) : (
               <span />
             )}
-            <Button size="lg" data-nav disabled={!valid} onClick={next}>
+            <Button size="lg" data-nav disabled={!valid} aria-describedby={current.key === "card" && attempted && !valid ? CONSENT_PROBLEM_ID : undefined} onClick={next}>
               {current.action}
             </Button>
           </div>

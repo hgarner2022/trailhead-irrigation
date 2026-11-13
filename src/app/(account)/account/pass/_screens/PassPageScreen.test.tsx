@@ -13,11 +13,11 @@ describe("PassPageScreen", () => {
     render(<PassPageScreen pass={pass} today="2026-11-12" />)
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Season Pass")
     expect(screen.getByRole("article", { name: /Season Pass 2027 for Andrea, Erie/ })).toBeInTheDocument()
-    expect(screen.getByRole("img", { name: /Your 2027 season: turn-on done on May 3, inspection in July, blowout preferred second week of October/ })).toBeInTheDocument()
+    expect(screen.getByRole("img", { name: /Your 2027 season: turn-on done on May 3, inspection in July, blowout preferred mid October/ })).toBeInTheDocument()
     expect(rows().map((r) => r.textContent)).toEqual([
       "Spring turn-onMay 3Done",
       "Mid-season inspectionJulyJuly",
-      "Fall blowoutSecond week of OctoberPreferred",
+      "Fall blowoutMid OctoberPreferred",
     ])
     expect(document.body.textContent).not.toMatch(/Not scheduled|Scheduled|Completed|Reserved|Week of/)
     expect(screen.getByText("Visa ending 4242, expires 08/28")).toBeInTheDocument()

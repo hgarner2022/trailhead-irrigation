@@ -1,7 +1,7 @@
 import { Check } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { Pass, PassVisit, TimingPreference } from "@/lib/admin/types"
-import { monthName, monthShort, preferenceLabel, writtenDate } from "@/lib/admin/format"
+import { monthName, monthShort, preferenceLabel, preferenceOf, writtenDate } from "@/lib/admin/format"
 import { formatMoney, visitMonth } from "@/lib/admin/metrics"
 import { SEASON_MONTHS, listJoin, markerAlign, preferenceWord, seasonPhase, seasonPosition } from "./season-line-math"
 
@@ -46,15 +46,15 @@ const visitState = (v: PassVisit) => (v.completedAt ? "completed" : v.scheduledA
 const lower = (s: string) => s.charAt(0).toLowerCase() + s.slice(1)
 
 /** The preference a visit still waits on: the turn-on's or the blowout's, while it has no day. */
-function preferenceOf(v: PassVisit, preferences: Preferences): TimingPreference | null {
+function waitingPreference(v: PassVisit, preferences: Preferences): TimingPreference | null {
   if (!preferences || v.scheduledAt || v.completedAt) return null
-  return v.kind === "turn-on" ? preferences.turnOnPreference : v.kind === "blowout" ? preferences.blowoutPreference : null
+  return preferenceOf(preferences, v.kind)
 }
 
 function describeVisit(v: PassVisit, preferences: Preferences): string {
   if (v.completedAt) return `${v.kind} done on ${writtenDate(v.completedAt)}`
   if (v.scheduledAt) return `${v.kind} scheduled for ${writtenDate(v.scheduledAt)}`
-  const preference = preferenceOf(v, preferences)
+  const preference = waitingPreference(v, preferences)
   if (preference && v.kind !== "inspection") return `${v.kind} preferred ${lower(preferenceLabel(v.kind, preference))}`
   return `${v.kind} in ${v.window}`
 }
@@ -98,7 +98,7 @@ function BarCell({ bar, max }: { bar?: SeasonBar; max: number }) {
 
 function Dot({ visit, crowded, preferences }: { visit: PassVisit; crowded: boolean; preferences: Preferences }) {
   const state = visitState(visit)
-  const preference = preferenceOf(visit, preferences)
+  const preference = waitingPreference(visit, preferences)
   const blowout = visit.kind === "blowout"
   const name = VISIT_NAMES[visit.kind]
   return (

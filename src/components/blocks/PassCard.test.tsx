@@ -82,8 +82,7 @@ describe("PassCard at full size", () => {
     render(<PassCard pass={pass} />)
     const blowout = card().querySelector('[data-slot="pass-visit"][data-kind="blowout"]')
     expect(blowout?.textContent).toContain("Preferred")
-    expect(blowout?.textContent).toContain("Second week of October")
-    expect(blowout?.textContent).toContain("Mid Oct")
+    expect(blowout?.textContent).toContain("Mid October")
     expect(screen.queryByText("Reserved")).not.toBeInTheDocument()
   })
 
@@ -113,10 +112,10 @@ describe("PassCard at full size", () => {
 
   it("describes the pass with the town and the two preferences", () => {
     const { unmount } = render(<PassCard pass={fresh} />)
-    expect(card().getAttribute("aria-label")).toBe("Season Pass 2027 for Abby, Broomfield, turn-on preferred early May, blowout preferred second week of October")
+    expect(card().getAttribute("aria-label")).toBe("Season Pass 2027 for Abby, Broomfield, turn-on preferred early May, blowout preferred mid October")
     unmount()
     render(<PassCard pass={pass} />)
-    expect(card().getAttribute("aria-label")).toBe("Season Pass 2027 for Andrea, Erie, turn-on done on May 3, blowout preferred second week of October")
+    expect(card().getAttribute("aria-label")).toBe("Season Pass 2027 for Andrea, Erie, turn-on done on May 3, blowout preferred mid October")
   })
 
   it("describes a finished season by its blowout date", () => {
@@ -221,7 +220,7 @@ describe("PassCard as a thumbnail", () => {
     expect(screen.queryByText("TH-2027-0001")).not.toBeInTheDocument()
     expect(screen.queryByText("Turn-on")).not.toBeInTheDocument()
     expect(screen.queryByText("Cancelled")).not.toBeInTheDocument()
-    expect(card().getAttribute("aria-label")).toContain("blowout preferred second week of October")
+    expect(card().getAttribute("aria-label")).toContain("blowout preferred mid October")
   })
 
   it("keeps the sheen but attaches no listeners", () => {

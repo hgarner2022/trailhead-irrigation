@@ -66,8 +66,19 @@ export const Card: Story = {
   globals: { viewport: { value: "wide", isRotated: false } },
 }
 
+/** Enter pressed with the terms still unticked: the line under the box says what is missing. */
+export const CardTermsMissing: Story = {
+  args: { initialStep: 5, prefill: answers },
+  globals: { viewport: { value: "wide", isRotated: false } },
+  play: async ({ canvas, userEvent }) => {
+    await canvas.findByRole("button", { name: "Save card and reserve" })
+    await userEvent.keyboard("{Enter}")
+    await expect(await canvas.findByText("Please accept the terms to continue")).toBeInTheDocument()
+  },
+}
+
 export const Done: Story = {
-  args: { initialStep: 6, prefill: { ...answers, termsAccepted: true, marketing: true, cardSaved: true }, onSaveImage: savePassImage },
+  args: { initialStep: 6, prefill: { ...answers, termsAccepted: true, marketingEmail: true, marketingSms: true, cardSaved: true }, onSaveImage: savePassImage },
   globals: { viewport: { value: "wide", isRotated: false } },
 }
 
@@ -85,7 +96,7 @@ export const Walkthrough: Story = {
     await expect(canvas.getByText("$405")).toBeInTheDocument()
     await userEvent.click(canvas.getByRole("button", { name: "Continue" }))
 
-    await expect(await canvas.findByRole("button", { name: "Recommended First half of May", pressed: true })).toBeInTheDocument()
+    await expect(await canvas.findByRole("button", { name: "Recommended Mid May", pressed: true })).toBeInTheDocument()
     await userEvent.click(canvas.getByRole("button", { name: "Later Late October" }))
     await userEvent.click(canvas.getByRole("button", { name: "Continue" }))
 
@@ -97,8 +108,9 @@ export const Walkthrough: Story = {
     const save = await canvas.findByRole("button", { name: "Save card and reserve" })
     await expect(save).toBeDisabled()
     await userEvent.click(canvas.getByRole("checkbox", { name: /I accept the Season Pass terms/ }))
+    await userEvent.click(canvas.getByRole("checkbox", { name: "Seasonal tips and offers by email" }))
     await userEvent.click(save)
-    await expect(await canvas.findByRole("article", { name: "Season Pass 2027 for Andrea, Erie, turn-on preferred first half of May, blowout preferred late October" })).toBeInTheDocument()
+    await expect(await canvas.findByRole("article", { name: "Season Pass 2027 for Andrea, Erie, turn-on preferred mid May, blowout preferred late October" })).toBeInTheDocument()
     await expect(args.onComplete).toHaveBeenCalledTimes(1)
   },
 }
