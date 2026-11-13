@@ -1,11 +1,11 @@
-import { CalendarX, Clock, CreditCard, type LucideIcon } from "lucide-react"
+import { CalendarX, CircleDashed, Clock, CreditCard, type LucideIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { Attention } from "@/lib/admin/types"
 import { EmptyState } from "./EmptyState"
 import { relativeTime } from "./needs-attention-time"
 
 // The short list on Home of what needs a person: a failed charge, Jobber
-// jobs that were not created, a card about to expire. One row per item with an icon coloured by how urgent the kind
+// jobs that were not created, a card about to expire, visits from earlier days nobody has marked done. One row per item with an icon coloured by how urgent the kind
 // is, the message, and how long it has been waiting. A row with a pass
 // links to that pass; the prototype has no handlers, so the link is a page
 // anchor. Pure render, server component.
@@ -25,6 +25,7 @@ const KINDS: Record<Attention["kind"], { icon: LucideIcon; tone: string; name: s
   "charge-failed": { icon: CreditCard, tone: "bg-warning/10 text-warning", name: "Charge failed" },
   "jobs-failed": { icon: CalendarX, tone: "bg-warning/10 text-warning", name: "Jobs not created" },
   "card-expiring": { icon: Clock, tone: "bg-stone text-muted-foreground", name: "Card expiring" },
+  "not-closed": { icon: CircleDashed, tone: "bg-stone text-muted-foreground", name: "Visits not closed" },
 }
 
 function Row({ item, now }: { item: Attention; now: string }) {

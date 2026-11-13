@@ -23,6 +23,12 @@ export const Default: Story = {
   render: (args) => narrow(<NeedsAttention {...args} />),
 }
 
+/** The row Home adds at render time for visits from earlier days nobody has marked done. */
+export const WithNotClosed: Story = {
+  args: { items: [...items, { kind: "not-closed", message: "3 visits from before today are not marked done yet.", since: "2026-11-09T17:00:00Z" }] },
+  render: (args) => narrow(<NeedsAttention {...args} />),
+}
+
 export const Empty: Story = {
   args: { items: [] },
   render: (args) => narrow(<NeedsAttention {...args} />),

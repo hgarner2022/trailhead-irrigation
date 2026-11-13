@@ -9,8 +9,9 @@
  * `visitsOn` and `invoicesOverdue`, so a 7 pm visit stays on its Thursday.
  */
 import type { StatTileProps } from "@/components/blocks/StatTile"
-import type { AdminData, MonthTotal } from "@/lib/admin/types"
-import { TIME_ZONE } from "@/lib/admin/format"
+import type { AdminData, Attention, MonthTotal, OrganizationSettings, SeasonWindow, Visit } from "@/lib/admin/types"
+import { TIME_ZONE, monthDay, monthShort } from "@/lib/admin/format"
+import { dayOf } from "@/components/blocks/week-grid-days"
 import { chargedSoFar, committedRevenue, formatMoney, invoicesOverdue, monthComparison, quotesAwaiting } from "@/lib/admin/metrics"
 
 /** The season the Home line shows. The snapshot's passes are all 2027; the wiring phase derives this from the passes on hand. */
@@ -138,4 +139,48 @@ export function tileModels(data: AdminData, today: string): StatTileProps[] {
       delta: { value: null, baseline: "last month", goodWhen: "down" },
     },
   ]
+}
+
+const dayNumber = (dayIso: string) => Date.UTC(Number(dayIso.slice(0, 4)), Number(dayIso.slice(5, 7)) - 1, Number(dayIso.slice(8, 10))) / DAY
+
+/**
+ * The next season window to set up: the earliest whose first day is today or
+ * later and no more than `leadWeeks + 2` weeks away (the boundary day counts),
+ * or null. A window that has already opened is past the prompt.
+ */
+export function upcomingWindow(settings: Pick<OrganizationSettings, "windows">, today: string): SeasonWindow | null {
+  const todayDay = dayNumber(dayOf(today, TIME_ZONE))
+  const soon = settings.windows
+    .filter((w) => {
+      const away = dayNumber(w.opensOn) - todayDay
+      return away >= 0 && away <= (w.leadWeeks + 2) * 7
+    })
+    .sort((a, b) => (a.opensOn < b.opensOn ? -1 : 1))
+  return soon[0] ?? null
+}
+
+const WINDOW_WORDS: Record<SeasonWindow["kind"], string> = { "turn-on": "Spring turn-ons", inspection: "Mid-season inspections", blowout: "Fall blowouts" }
+
+/** "Fall blowouts open Oct 1" */
+export function windowTitle(window: SeasonWindow): string {
+  const { month, day } = monthDay(window.opensOn)
+  return `${WINDOW_WORDS[window.kind]} open ${monthShort(month)} ${day}`
+}
+
+/** Scheduled visits whose Mountain-time day is before today's and that nobody has marked done, oldest first. */
+export function notClosedVisits(visits: Visit[], today: string, timeZone: string): Visit[] {
+  const todayDay = dayOf(today, timeZone)
+  return visits
+    .filter((v): v is Visit & { startAt: string } => v.status === "scheduled" && v.startAt !== undefined && dayOf(v.startAt, timeZone) < todayDay)
+    .sort((a, b) => (a.startAt < b.startAt ? -1 : 1))
+}
+
+export const notClosedCount = (visits: Visit[], today: string, timeZone: string) => notClosedVisits(visits, today, timeZone).length
+
+/** The Needs attention row for visits left open, or null when every earlier visit is closed. It waits since the oldest one. */
+export function notClosedAttention(visits: Visit[], today: string, timeZone: string): Attention | null {
+  const open = notClosedVisits(visits, today, timeZone)
+  if (open.length === 0) return null
+  const n = open.length
+  return { kind: "not-closed", message: `${n} ${n === 1 ? "visit" : "visits"} from before today ${n === 1 ? "is" : "are"} not marked done yet.`, since: open[0].startAt! }
 }

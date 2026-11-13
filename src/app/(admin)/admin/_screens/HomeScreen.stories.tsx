@@ -25,6 +25,15 @@ const nothingYet: AdminData = {
   settingsChanges: [],
 }
 
+// The fixture is a year of history, most of it still "scheduled" in the data.
+// For the prompt's story, all but the three latest earlier visits are marked
+// done, so the Needs attention row reads like a normal week.
+const BEFORE_FALL = "2027-09-17T18:00:00Z"
+function closeOldVisits(visits: AdminData["visits"], keepOpen: number): AdminData["visits"] {
+  const open = visits.filter((v) => v.status === "scheduled" && v.startAt && v.startAt < BEFORE_FALL).sort((a, b) => (a.startAt! < b.startAt! ? 1 : -1)).slice(0, keepOpen)
+  return visits.map((v) => (v.status === "scheduled" && v.startAt && v.startAt < BEFORE_FALL && !open.includes(v) ? { ...v, status: "completed" as const } : v))
+}
+
 const meta = {
   title: "Screens/Home",
   component: HomeScreen,
@@ -40,6 +49,12 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
+  globals: { viewport: { value: "wide", isRotated: false } },
+}
+
+/** Two weeks before the fixture's blowout window opens (October 1, 2027, four lead weeks): the season prompt shows above the tiles. */
+export const BeforeFall: Story = {
+  args: { today: BEFORE_FALL, data: { ...data, syncedAt: "2027-09-17T17:56:00Z", visits: closeOldVisits(data.visits, 3) } },
   globals: { viewport: { value: "wide", isRotated: false } },
 }
 

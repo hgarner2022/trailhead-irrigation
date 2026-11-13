@@ -54,4 +54,12 @@ describe("NeedsAttention", () => {
     expect(document.querySelector('[data-slot="empty-state"]')).toHaveTextContent("Nothing needs you right now")
     expect(screen.getByText("Failed charges, missing jobs and expiring cards show up here.")).toBeInTheDocument()
   })
+
+  it("shows visits not closed with the dashed circle, a muted icon and no link", () => {
+    render(<NeedsAttention items={[{ kind: "not-closed", message: "3 visits from before today are not marked done yet.", since: "2026-11-09T17:00:00Z" }]} now={now} />)
+    const [row] = rows()
+    expect(row.querySelector(".sr-only")?.textContent).toBe("Visits not closed: ")
+    expect(iconOf(row)).toHaveClass("bg-stone", "text-muted-foreground")
+    expect(row.querySelector("a")).toBeNull()
+  })
 })
