@@ -6,6 +6,7 @@ import * as s from "@/db/schema"
 
 export const EVENTS = [
   "pass.bought",
+  "pass.cancelled",
   "visit.scheduled",
   "visit.moved",
   "visit.done",

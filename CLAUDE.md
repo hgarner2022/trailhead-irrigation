@@ -32,7 +32,7 @@ src/
     api/contact/                # Contact form POST handler
     (admin)/admin/_screens/     # Admin dashboard screens (Home, Passes, October, Revenue, Customers) as Storybook stories; no routes yet
     (checkout)/season-pass/checkout/_screens/  # Seven-step Season Pass checkout prototype (CheckoutFlow): address type-ahead, zones, July add-on, timing, contact, card, done
-    (account)/account/pass/_screens/           # Customer pass page prototype (PassPageScreen)
+    (account)/account/pass/                    # Customer pass page: page.tsx (guarded, reads through the API), actions.ts, pass-from-api.ts; _screens/ holds PassPageScreen
   lib/nav.ts                    # ONE source of truth for navigation: SERVICE_GROUPS, CITY_LINKS, PRIMARY_LINKS, getSeasonalPromo()
   lib/season-pass.ts            # Season Pass per-zone pricing (must match /pricing + public/pricing.md)
   components/
@@ -490,3 +490,5 @@ These don't break anything but should be addressed in a future refactor pass:
 ## Adding a new city to the Rachio funnel
 
 Edit `src/lib/rachio-data.ts` → `CITY_RACHIO` array → add a new entry. The city page generates statically; sitemap auto-includes it. Verify the rebate amount is sourced from the city's published page before shipping (no fabrication — see `/smart-controllers/[city]` disclaimer).
+
+- **The customer pass page is wired (Phase 9, Nov 2026).** `/account/pass` (`page.tsx`, `force-dynamic`) needs a signed-in customer (`requireCustomer`; an admin sees the empty state, never everyone's passes) and reads through `callApi` with their own principal: `passes.list` (customer-scoped), `passes.get` per season, `visits.areaDays` for a customer who must be home (`src/lib/pass/server/pass-page.ts`, shaped by `pass-from-api.ts`). `actions.ts` server actions, each through `ctxFromSession`: `cancelPass` (`passes.cancel`: signed-in email must hold the pass unless admin; queues `pass-cancel`, the `cancelled` email, emits `pass.cancelled`), `startCardUpdate` (`passes.startCardUpdate`, redirect to Stripe), `changePreference`, `pickDay` (`visits.pick`: one of three area days from `area-days.ts`, text or email of the date), `addInspection`, `skipVisit`. `cancelPass` and `pickDay` answer `{ ok, message }` so the dialogs show a failure. The `pass-cancel` task raises the Home alert only; the routine removes the Jobber jobs (`docs/jobber-routine.md`). Visit rows read "Tuesday, May 5, Truck 1" once placed (`VisitOut.truckName`).

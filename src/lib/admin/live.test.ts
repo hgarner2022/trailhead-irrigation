@@ -21,6 +21,8 @@ beforeAll(async () => {
   await db.update(s.seasonPass).set({ cardFailedAt: new Date("2027-04-19T10:00:00Z") }).where(eq(s.seasonPass.id, "p3"))
   await callApi(ctxFor(db, owner), visitsMove, { id: "p4-turn-on", truckId: "truck-1", scheduledOn: "2027-05-05", startTime: "09:30" })
   await db.insert(s.queueItem).values({ organizationId: ORG, kind: "geocode", key: "bad", status: "failed", lastError: "Nominatim answered 429", attempts: 5 })
+  await db.update(s.seasonPass).set({ status: "cancelled", cancelledAt: new Date("2027-04-19T12:00:00Z") }).where(eq(s.seasonPass.id, "p5"))
+  await db.insert(s.adminAlert).values({ organizationId: ORG, kind: "pass-cancelled", key: "p5", passId: "p5", message: "Season Pass TH-2027-0005 cancelled: Sam, Erie" })
   data = await getLiveAdminData(ctxFor(db, owner))
 })
 afterAll(() => db.close())
@@ -62,6 +64,12 @@ describe("getLiveAdminData", () => {
     expect(data.settings.messages.length).toBe(fixture.settings.messages.length)
     expect(data.settingsChanges).toEqual([])
   })
+  it("shows the pass-cancel task's alert once as a pass-cancelled row, not also the computed one", () => {
+    const rows = data.attention.filter((a) => a.kind === "pass-cancelled" && a.passId === "p5")
+    expect(rows).toHaveLength(1)
+    expect(rows[0]!.message).toBe("Season Pass TH-2027-0005 cancelled: Sam, Erie")
+  })
+
   it("raises attention rows for a failed card and a failed queue item", () => {
     expect(data.attention).toEqual(expect.arrayContaining([
       expect.objectContaining({ kind: "charge-failed", passId: "p3" }),

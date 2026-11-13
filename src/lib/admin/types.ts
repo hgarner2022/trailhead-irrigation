@@ -118,6 +118,8 @@ export interface PassVisit {
   /** the month the visit lands in: "May", "July", "October"; the preference on the pass carries the rest */
   window: string
   scheduledAt?: string
+  /** the truck's name once the visit has one, "Truck 1"; the pass page shows it beside the date */
+  truckName?: string
   completedAt?: string
   amount: number
   chargedAt?: string
