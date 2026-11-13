@@ -2,7 +2,7 @@
 
 ## Status, 2026-11-12
 
-Every task from 0.1 to 4.8 is done and committed on `admin-prototype` (`git log --oneline main..HEAD`). Task 5.1 is done. Task 5.2 awaits Hannah; the per-screen table is in `docs/DESIGN.md` under Approvals. Task 5.3 is not started.
+Every task from 0.1 to 4.8 is done and committed on `admin-prototype` (`git log --oneline main..HEAD`). Task 5.1 is done. Task 5.2 is done: Hannah approved every screen on 2026-11-12 (table in `docs/DESIGN.md` under Approvals). Task 5.3, the wiring plan, is next.
 
 | Task | Commits |
 |---|---|
@@ -32,7 +32,7 @@ Every task from 0.1 to 4.8 is done and committed on `admin-prototype` (`git log 
 | 4.7 Checkout screens | `df5e0b8`, `769b9ba` |
 | 4.8 PassPageScreen | `17cb69b`, `8de1f41`, `24fea8f` |
 | 5.1 Review pass | the commit that adds this section: gate green, every screen checked and screenshotted, two phone wraps fixed |
-| 5.2 Hannah approves in Storybook | awaiting Hannah |
+| 5.2 Hannah approves in Storybook | done, Hannah approved every screen on 2026-11-12 with the four open points left as they are |
 | 5.3 Next plan | not started |
 
 The pass card artwork landed before Task 0.1 (`de114cb`, `1292de7`, `6e79516`).
