@@ -7,7 +7,6 @@
  * `useCheckoutState`, the thin hook the screen calls, lives in use-checkout-state.ts.
  */
 import type { Consent, Pass, PassVisit, TimingPreference, Town } from "@/lib/admin/types"
-import { preferencePhrase } from "@/lib/admin/format"
 import { emailProblem } from "@/lib/email-check"
 import { outOfAreaMessage, serviceability, type PlaceSuggestion } from "@/lib/places"
 import { MAX_ZONES, MIN_ZONES, TERMS_VERSION, visitPrice, visitsOnSale } from "@/lib/season-pass"
@@ -234,17 +233,6 @@ export function reducer(state: CheckoutState, action: CheckoutAction): CheckoutS
       }
     }
   }
-}
-
-/** The sentence under the pass card on Done. */
-export function doneSentence(state: Pick<CheckoutFields, "turnOnPreference" | "blowoutPreference" | "inspection" | "email" | "today">): string {
-  const onSale = visitsOnSale(state.inspection, state.today).map((v) => v.key)
-  const parts: string[] = []
-  if (onSale.includes("turn-on")) parts.push(`Turn-on preferred ${preferencePhrase("turn-on", state.turnOnPreference)}`)
-  if (onSale.includes("inspection")) parts.push("inspection in July")
-  if (onSale.includes("blowout")) parts.push(`blowout preferred ${preferencePhrase("blowout", state.blowoutPreference)}`)
-  const sentence = parts.join(", ")
-  return `${sentence.charAt(0).toUpperCase()}${sentence.slice(1)}. We'll email the details to ${state.email}.`
 }
 
 /** The consent the purchase records: the terms as accepted now, and the marketing channels whose boxes were ticked. */

@@ -9,7 +9,8 @@ import { STEPS, STEP_COUNT, canContinue, stepProblems, toPass, type CheckoutFiel
 import type { PlaceProvider } from "@/lib/places"
 import { AddressStep } from "./checkout-address"
 import { CONSENT_PROBLEM_ID } from "./checkout-consent"
-import { ContactStep, DoneStep, ZonesStep, useReveal } from "./checkout-steps"
+import { DoneStep } from "./checkout-done"
+import { ContactStep, ZonesStep, useReveal } from "./checkout-steps"
 import { useCheckoutState } from "./use-checkout-state"
 import { useCheckoutServer } from "./use-checkout-server"
 import { useCheckoutStorage } from "./use-checkout-storage"
@@ -175,7 +176,7 @@ export function CheckoutFlow({ season, initialZones, initialStep, prefill, place
       break
     default: {
       const pass = state.pass ?? toPass(state, season)
-      body = <DoneStep pass={pass} email={state.email} today={state.today} onSaveImage={() => (onSaveImage ?? savePassImage)(pass)} onDone={onDone} />
+      body = <DoneStep pass={pass} email={state.email} onSaveImage={() => (onSaveImage ?? savePassImage)(pass)} onDone={onDone} />
     }
   }
 

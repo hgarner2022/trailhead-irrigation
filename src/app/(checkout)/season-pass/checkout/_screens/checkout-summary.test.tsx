@@ -15,6 +15,13 @@ describe("OrderSummary", () => {
     expect(within(summary).getByText("Season total").parentElement).toHaveTextContent(formatMoney(priceOnSale(10, true, "2026-11-12")))
     expect(within(summary).getByText("$0 today. We charge the card after each visit.")).toBeInTheDocument()
   })
+  it("says the customer's own pick under the turn-on and the blowout, never a reserved date", () => {
+    render(<OrderSummary state={{ zones: 8, inspection: true, today: "2026-11-12", turnOnPreference: "earlier", blowoutPreference: "later" }} />)
+    expect(screen.getByText("Early May, your preference")).toBeInTheDocument()
+    expect(screen.getByText("Late October, your preference")).toBeInTheDocument()
+    expect(screen.getByText("July")).toBeInTheDocument()
+    expect(screen.queryByText(/reserved in July/)).not.toBeInTheDocument()
+  })
   it("leaves out a visit that is no longer on sale and the inspection when not added", () => {
     render(<OrderSummary state={{ zones: 6, inspection: false, today: "2027-06-15" }} />)
     expect(screen.queryByText(/Spring turn-on/)).not.toBeInTheDocument()

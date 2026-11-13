@@ -1,18 +1,14 @@
 "use client"
 
-import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from "react"
+import { useId, useLayoutEffect, useRef, useState, type ReactNode } from "react"
 import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { PassCard } from "@/components/blocks/PassCard"
-import type { Pass } from "@/lib/admin/types"
 import { formatMoney } from "@/lib/admin/metrics"
 import { MAX_ZONES, MIN_ZONES, priceOnSale, visitPrice, visitsOnSale } from "@/lib/season-pass"
-import { fireSeasonPassPurchase } from "@/lib/analytics"
 import { emailSuggestion } from "@/lib/email-check"
 import { ConsentBoxes } from "./checkout-consent"
-import { contactProblem, doneSentence, type CheckoutFields } from "./checkout-state"
+import { contactProblem, type CheckoutFields } from "./checkout-state"
 
 // The body of each checkout step: the one input under the question, and the
 // helper line under that. The shell (CheckoutFlow) owns the question, the
@@ -152,29 +148,5 @@ export function ContactStep({ state, set, attempted }: StepProps & { attempted: 
     </div>
     <ConsentBoxes state={state} set={set} attempted={attempted} />
     </>
-  )
-}
-
-export function DoneStep({ pass, email, today, onSaveImage, onDone }: { pass: Pass; email: string; today: string; onSaveImage?: () => void; onDone?: () => void }) {
-  // The purchase event fires once, when the season is reserved; Done is terminal, so this mounts once per purchase.
-  const fired = useRef(false)
-  useEffect(() => {
-    if (fired.current) return
-    fired.current = true
-    fireSeasonPassPurchase({ number: pass.number, zones: pass.zones, passTotal: pass.visits.reduce((sum, v) => sum + v.amount, 0), inspection: pass.visits.some((v) => v.kind === "inspection") })
-  }, [pass])
-  return (
-    <div>
-      <PassCard pass={pass} art="flat" priority />
-      <p className="mt-8 text-lg text-foreground">{doneSentence({ ...pass, inspection: pass.visits.some((v) => v.kind === "inspection"), email, today })}</p>
-      <div className="mt-8 flex flex-wrap gap-3">
-        <Button size="lg" onClick={onSaveImage}>
-          Save as image
-        </Button>
-        <Button size="lg" variant="outline" onClick={onDone}>
-          Done
-        </Button>
-      </div>
-    </div>
   )
 }
