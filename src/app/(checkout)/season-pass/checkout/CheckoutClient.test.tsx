@@ -18,7 +18,7 @@ describe("CheckoutClient", () => {
     vi.stubGlobal("location", { ...window.location, assign })
     saveCheckout({ step: 3, fields: { zones: 8 } })
     expect(sessionStorage.getItem(STORAGE_KEY)).not.toBeNull()
-    render(<CheckoutClient season={2027} initialStep={7} prefill={{ address: FIXTURE_HOME.label, place: FIXTURE_HOME, town: "Erie", access: "yes", today: "2026-11-12", firstName: "Andrea", email: "andrea@example.com", phone: "(970) 555-0123", cardSaved: true }} />)
+    render(<CheckoutClient season={2027} initialStep={7} prefill={{ address: FIXTURE_HOME.label, place: FIXTURE_HOME, town: "Erie", access: "yes", today: "2026-11-12", firstName: "Andrea", lastName: "Anderson", email: "andrea@example.com", phone: "(970) 555-0123", cardSaved: true }} />)
     fireEvent.click(screen.getByRole("button", { name: "Done" }))
     expect(sessionStorage.getItem(STORAGE_KEY)).toBeNull()
     expect(assign).toHaveBeenCalledWith(DONE_HREF)

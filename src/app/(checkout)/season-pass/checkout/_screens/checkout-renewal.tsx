@@ -16,6 +16,7 @@ export function renewalAnswers(r: RenewalPrefill): Partial<CheckoutState> {
     zones: r.zones,
     inspection: r.inspection,
     firstName: r.firstName,
+    lastName: r.lastName ?? "",
     email: r.email,
     phone: r.phone,
     skipCard: Boolean(r.card),

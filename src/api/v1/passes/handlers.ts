@@ -110,7 +110,12 @@ export const passesCreate = defineHandler({
     const org = ctx.organizationId
     const email = cleanEmail(input.customer.email)
     // Stored the way they print: "hannah garner" as Hannah Garner, the phone in one standard form, notes without stray spaces.
-    const contact = { firstName: cleanName(input.customer.firstName), email, phone: normalizePhone(input.customer.phone) ?? input.customer.phone ?? null }
+    const contact = {
+      firstName: cleanName(input.customer.firstName),
+      lastName: input.customer.lastName?.trim() ? cleanName(input.customer.lastName) : null,
+      email,
+      phone: normalizePhone(input.customer.phone) ?? input.customer.phone ?? null,
+    }
     const accessNote = input.accessNote ? cleanText(input.accessNote) : null
     const visitor = ctx.principal.kind === "public"
     if (visitor) {
@@ -158,7 +163,9 @@ export const passesCreate = defineHandler({
       await ctx.db.update(s.seasonPass).set({ ...fields, season, updatedAt: ctx.now }).where(eq(s.seasonPass.id, reused.id))
       // Only the checkout that holds the pass id (the same browser going back) may change the customer's name and phone.
       // A resume by email alone reuses the pass but never rewrites who the customer is: anyone can type an email.
-      if (held) await ctx.db.update(s.customer).set({ firstName: contact.firstName, phone: contact.phone ?? customerRow.phone, updatedAt: ctx.now }).where(eq(s.customer.id, customerRow.id))
+      if (held) await ctx.db.update(s.customer).set({ firstName: contact.firstName, lastName: contact.lastName ?? customerRow.lastName, phone: contact.phone ?? customerRow.phone, updatedAt: ctx.now }).where(eq(s.customer.id, customerRow.id))
+      // Filling a last name nobody has recorded yet is not rewriting who the customer is, so a resume by email may do it.
+      else if (!customerRow.lastName && contact.lastName) await ctx.db.update(s.customer).set({ lastName: contact.lastName, updatedAt: ctx.now }).where(eq(s.customer.id, customerRow.id))
       await ctx.db.delete(s.visit).where(eq(s.visit.passId, reused.id))
     }
     for (let attempt = 0; attempt < 3 && !pass; attempt++) {

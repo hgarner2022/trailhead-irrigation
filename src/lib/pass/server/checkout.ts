@@ -70,7 +70,7 @@ export function problemOf(error: unknown): { problem: CheckoutProblem; message: 
 function createInput(f: CheckoutSubmission, passId?: string) {
   return {
     ...(passId ? { passId } : {}),
-    customer: { firstName: f.firstName, email: f.email, phone: f.phone },
+    customer: { firstName: f.firstName, lastName: f.lastName, email: f.email, phone: f.phone },
     property: { address: f.address.line1, town: f.town as Town, state: f.address.state, zip: f.address.zip },
     zones: f.zones,
     inspection: f.inspection,
@@ -102,10 +102,10 @@ export async function beginCheckoutWith(deps: CheckoutDeps, f: CheckoutSubmissio
       passId: pass.id,
       customerId: customer?.stripeCustomerId,
       email: f.email,
-      name: f.firstName,
+      name: `${f.firstName} ${f.lastName}`.trim(),
       expiresAt: Math.floor(bucket / 1000) + SESSION_MINUTES * 60,
       // The key also carries the contact details, so a corrected email or name inside the bucket is a new request, not a 400.
-      idempotencyKey: `setup-${pass.id}-${bucket}-${fingerprint(`${f.email}|${f.firstName}`)}`,
+      idempotencyKey: `setup-${pass.id}-${bucket}-${fingerprint(`${f.email}|${f.firstName}|${f.lastName}`)}`,
     })
     return { ok: true, passId: pass.id, sessionId: session.id, clientSecret: session.clientSecret }
   } catch (error) {

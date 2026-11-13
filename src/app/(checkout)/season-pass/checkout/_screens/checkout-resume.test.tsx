@@ -14,7 +14,7 @@ beforeAll(() => {
 })
 beforeEach(() => sessionStorage.clear())
 
-const fields: Partial<CheckoutFields> = { address: FIXTURE_HOME.label, place: FIXTURE_HOME, town: "Erie", access: "yes", zones: 8, firstName: "Andrea", email: "andrea@example.com", phone: "(970) 555-0123", termsAccepted: true, marketingEmail: true }
+const fields: Partial<CheckoutFields> = { address: FIXTURE_HOME.label, place: FIXTURE_HOME, town: "Erie", access: "yes", zones: 8, firstName: "Andrea", lastName: "Anderson", email: "andrea@example.com", phone: "(970) 555-0123", termsAccepted: true, marketingEmail: true }
 const begun: BeginResult = { ok: true, passId: "p-1", sessionId: "cs_2", clientSecret: "secret_2" }
 
 describe("checkout storage", () => {
