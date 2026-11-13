@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "prebuild": "node scripts/db-migrate-on-build.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "eslint && node scripts/check-design.mjs",

@@ -4,6 +4,10 @@ Postgres on Neon, Drizzle ORM. The schema is `src/db/schema.ts`; migrations are 
 
 ## Apply the migrations (Neon)
 
+The deploy does it. `npm run build` runs `scripts/db-migrate-on-build.mjs` first, which applies `drizzle/*.sql` when `DATABASE_URL` is set (it is, on Vercel's production builds; it is empty on a laptop and on previews without a database, where the step skips). When `SEED_ADMINS` is also set in the project's production environment, the seed runs after the migrations; both are idempotent, so every deploy may run them. Neon's variables are marked Sensitive in Vercel, so `npx vercel env pull` writes them empty: that is why the build, not a laptop, applies migrations.
+
+### By hand, if ever needed
+
 Nothing in the repo runs migrations by itself, and tests never touch Neon (they use an in-memory PGlite from `testDb()` in `src/db/test-db.ts`).
 
 ```bash
