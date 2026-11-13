@@ -59,7 +59,7 @@ function SearchBox<T extends RowData>({ table, search, disabled }: Pick<ToolbarP
         disabled={disabled}
         value={String(column.getFilterValue() ?? "")}
         onChange={(event) => column.setFilterValue(event.target.value || undefined)}
-        className="h-8 w-56 max-w-full pl-9"
+        className="h-9 w-56 max-w-full pl-9"
       />
     </div>
   )
@@ -74,7 +74,7 @@ function FilterChip<T extends RowData>({ table, filter, disabled }: { table: Gri
     <span
       data-slot="data-grid-chip"
       className={cn(
-        "inline-flex h-8 items-center rounded-lg border text-xs font-medium",
+        "inline-flex h-9 items-center rounded-lg border text-sm font-medium",
         active ? "border-primary/40 bg-primary/10 text-primary-deep" : "border-border bg-background text-foreground",
       )}
     >
@@ -140,7 +140,7 @@ function ColumnsMenu<T extends RowData>({ table, nameId, disabled }: Pick<Toolba
   return (
     <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="sm" disabled={disabled}>
+        <Button variant="outline" size="sm" className="h-9 text-sm" disabled={disabled}>
           <SlidersHorizontal className="size-3.5" aria-hidden />
           Columns
         </Button>
@@ -191,7 +191,7 @@ function ExportButton<T extends RowData>({ table, exportName, disabled }: Pick<T
     downloadCsv(exportName, rowsToCsv(header, records))
   }
   return (
-    <Button variant="outline" size="sm" disabled={disabled} onClick={save}>
+    <Button variant="outline" size="sm" className="h-9 text-sm" disabled={disabled} onClick={save}>
       <Download className="size-3.5" aria-hidden />
       Export {rows.length} {rows.length === 1 ? "row" : "rows"}
     </Button>
@@ -209,7 +209,7 @@ export function DataGridToolbar<T extends RowData>({ table, nameId, search, filt
         <FilterChip key={filter.column} table={table} filter={filter} disabled={disabled} />
       ))}
       {anyActive && (
-        <Button variant="ghost" size="sm" onClick={clear} disabled={disabled}>
+        <Button variant="ghost" size="sm" className="h-9" onClick={clear} disabled={disabled}>
           Clear filters
         </Button>
       )}
