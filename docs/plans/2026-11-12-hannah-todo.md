@@ -14,7 +14,7 @@ needed, roughly how long it takes, and which phase waits on it.
 2. **DONE 2026-11-12. Neon database, through Vercel.** In the Vercel dashboard for the site,
    Storage, add Neon Postgres. It is the database every pass, visit, message
    and setting lives in. About 10 minutes, free tier. Needed by Phase 3.
-3. **Stripe test keys.** In the Stripe dashboard, Developers, API keys, copy
+3. **DONE 2026-11-12: NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY (Config) and STRIPE_SECRET_KEY (Secret) are in Vercel; the webhook secret comes with Phase 7. Stripe test keys.** In the Stripe dashboard, Developers, API keys, copy
    the test publishable and secret keys. Test mode lets us build and try the
    card step with fake cards; live keys come at launch. About 10 minutes.
    Needed by Phase 7.
@@ -28,7 +28,7 @@ needed, roughly how long it takes, and which phase waits on it.
 
 ## Words to write
 
-5. **DRAFTED 2026-11-12 as section 17 of /terms; edit any time. Season Pass terms.** The terms a customer accepts on the card step:
+5. **LIVE 2026-11-12 as section 17 of /terms (PR #4); edit any time. Season Pass terms.** The terms a customer accepts on the card step:
    what the pass is, when the card is charged, cancellation, the add-on,
    what happens if a visit cannot be done. One page. I can draft it from the
    PRD for you to edit. Needed before the first live charge (Phase 7 close).

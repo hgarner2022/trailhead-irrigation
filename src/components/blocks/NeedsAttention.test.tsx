@@ -48,6 +48,13 @@ describe("NeedsAttention", () => {
     expect(rows()[2].querySelector("a")).toBeNull()
   })
 
+  it("gives every row one action, labelled by its kind", () => {
+    render(<NeedsAttention items={items} now={now} />)
+    const actions = Array.from(document.querySelectorAll('[data-slot="attention-action"]')).map((b) => b.textContent)
+    expect(actions).toEqual(["Send card link", "Retry", "Send card link", "Send card link"])
+    expect(screen.getByRole("button", { name: /^Retry: Jobber jobs for pass TH-2027-0007/ })).toBeInTheDocument()
+  })
+
   it("shows the empty state when nothing needs attention", () => {
     render(<NeedsAttention items={[]} now={now} />)
     expect(rows()).toHaveLength(0)

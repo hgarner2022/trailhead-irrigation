@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { DataGrid } from "@/components/blocks/DataGrid"
 import { passColumns, preferenceOptions } from "@/components/blocks/data-grid-columns"
 import { PageHeader } from "@/components/blocks/PageHeader"
+import { PassActions } from "@/components/blocks/PassActions"
 import { PassCard } from "@/components/blocks/PassCard"
 import { SeasonLine } from "@/components/blocks/SeasonLine"
 import { SidePanel, SidePanelLayout } from "@/components/blocks/SidePanel"
@@ -132,6 +133,17 @@ function PassDetail({ pass, today }: { pass: Pass; today: string }) {
       <section aria-labelledby="pass-charges">
         <Subtitle id="pass-charges">Charges</Subtitle>
         <Charges pass={pass} />
+      </section>
+      <section aria-labelledby="pass-change">
+        <Subtitle id="pass-change">Change the pass</Subtitle>
+        <PassActions
+          pass={pass}
+          voice="admin"
+          className="mt-3"
+          onAddInspection={(id) => console.info("add inspection", [id])}
+          onChangePreference={(kind, preference) => console.info("change preference", [pass.number, kind, preference])}
+          onSkip={(id, kind) => console.info("skip visit", [id, kind])}
+        />
       </section>
       <div className="flex flex-wrap gap-2">
         <Button asChild variant="outline" size="sm">
