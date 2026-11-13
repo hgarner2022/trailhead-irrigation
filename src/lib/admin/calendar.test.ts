@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest"
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import type { AdminData, Visit } from "@/lib/admin/types"
 import { TIME_ZONE } from "@/lib/admin/format"
-import { addDays, areaOf, dayLabel, dayOf, dayVisits, weekDays, weekOf, weekVisits, weekdayOf, worksOn } from "./week-grid-days"
+import { addDays, areaOf, dayLabel, dayOf, dayVisits, weekDays, weekOf, weekVisits, weekdayOf, worksOn } from "./calendar"
 
 const data = snapshot as AdminData
 const { trucks, areas } = data.settings

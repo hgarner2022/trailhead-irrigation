@@ -61,7 +61,7 @@ export const TwoTrucks: Story = {
   globals: { viewport: { value: "wide", isRotated: false } },
 }
 
-/** The same week with the proposals approved: no dashed blocks. */
+/** The same week with the proposals approved: no hatched blocks. */
 export const Approved: Story = {
   args: { visits: data.visits.map((v): Visit => ({ ...v, proposed: undefined })) },
   globals: { viewport: { value: "wide", isRotated: false } },

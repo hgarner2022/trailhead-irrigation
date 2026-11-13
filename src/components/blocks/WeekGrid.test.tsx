@@ -49,15 +49,17 @@ describe("WeekGrid", () => {
     expect(blocksIn(cell("truck-2", "2026-11-13"))).toHaveLength(0)
   })
 
-  it("colours a block by its area, dashes a proposal and marks a Jobber move", () => {
+  it("colours a block by its area, hatches a proposal and marks a Jobber move", () => {
     render(<WeekGrid {...base} />)
     const [josh] = blocksIn(cell("truck-1", "2026-11-10")) // Broomfield, moved in Jobber
     expect(josh).toHaveClass("border-l-positive")
     expect(josh).not.toHaveClass("border-dashed")
+    expect(josh.querySelector(".hatch-proposed")).toBeNull()
     expect(josh).toHaveTextContent("moved in Jobber")
     expect(josh.querySelector("svg")).not.toBeNull()
     const [percy] = blocksIn(cell("truck-1", "2026-11-12")) // Erie, proposed
-    expect(percy).toHaveClass("border-l-primary", "border-dashed", "bg-stone")
+    expect(percy).toHaveClass("border-l-primary", "border-dashed", "border-muted-foreground")
+    expect(percy.querySelector(".hatch-proposed")).not.toBeNull()
     expect(percy).toHaveAttribute("data-proposed", "true")
     const [john] = blocksIn(cell("truck-1", "2026-11-09")) // Lafayette
     expect(john).toHaveClass("border-l-positive")

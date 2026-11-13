@@ -7,9 +7,8 @@
  * message template.
  */
 import type { AdminData, AreaGroup, CapacityKind, MessageTemplate, OrganizationSettings, SeasonWindow, SettingsChange, Town, Truck, Weekday } from "@/lib/admin/types"
-import { WEEKDAYS } from "@/components/blocks/week-grid-days"
-import { KIND_WORDS } from "@/components/blocks/day-map-helpers"
-import { TIME_ZONE, writtenDate } from "@/lib/admin/format"
+import { WEEKDAYS } from "@/lib/admin/calendar"
+import { KIND_WORDS, TIME_ZONE, writtenDate } from "@/lib/admin/format"
 
 /** One API key as the list shows it; the secret is shown once at creation and never kept. */
 export interface ApiKey {

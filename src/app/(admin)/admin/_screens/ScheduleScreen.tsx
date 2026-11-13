@@ -12,15 +12,17 @@ import { EmptyState } from "@/components/blocks/EmptyState"
 import { PageHeader } from "@/components/blocks/PageHeader"
 import { StatusPill } from "@/components/blocks/StatusPill"
 import { WeekGrid } from "@/components/blocks/WeekGrid"
-import { KIND_WORDS } from "@/components/blocks/day-map-helpers"
 import type { AdminData, Visit } from "@/lib/admin/types"
-import { TIME_ZONE, shortDate, writtenDate } from "@/lib/admin/format"
+import { KIND_WORDS, TIME_ZONE, shortDate, writtenDate } from "@/lib/admin/format"
 import { cn } from "@/lib/utils"
 import { clockTime } from "./home-model"
-import { addDays, approveVisits, dayOf, dayVisits, exceptionCount, moveVisit, proposedCount, weekContext, weekOf, weekVisits } from "./schedule-model"
+import { addDays, dayOf, dayVisits, weekOf, weekVisits } from "@/lib/admin/calendar"
+import { upcomingWindow } from "./home-model"
+import { ScheduleMoveTo } from "./ScheduleMoveTo"
+import { approveVisits, exceptionCount, moveOutcome, proposedCount, weekContext } from "./schedule-model"
 
 // Where the scheduler's output lands and where Ryan lives in season: the
-// week by truck, with the proposed visits dashed until he approves the
+// week by truck, with the proposed visits hatched until he approves the
 // batch, and a day map beside the day's stops in order. Selecting a stop in
 // the grid, the list or the map highlights the same visit. Client because
 // the week, the day, the tab, the selection and the moves are state; the
@@ -119,7 +121,10 @@ export function ScheduleScreen({ data, today, defaultTab = "week" }: ScheduleScr
   const [weekStart, setWeekStart] = useState(() => weekOf(today, TIME_ZONE))
   const [day, setDay] = useState(todayDay)
   const [selectedId, setSelectedId] = useState<string>()
+  const [announcement, setAnnouncement] = useState("")
   const week = weekVisits(visits, weekStart, TIME_ZONE)
+  const selected = week.find((v) => v.id === selectedId && v.startAt)
+  const proposeOpen = upcomingWindow(data.settings, today) !== null
   const stops = dayVisits(visits, day, undefined, TIME_ZONE)
 
   const approve = () => {
@@ -129,7 +134,9 @@ export function ScheduleScreen({ data, today, defaultTab = "week" }: ScheduleScr
   }
   const move = (visitId: string, truckId: string, dayIso: string) => {
     console.info("move visit", visitId, truckId, dayIso)
-    setVisits((v) => moveVisit(v, visitId, truckId, dayIso, trucks, TIME_ZONE))
+    const outcome = moveOutcome(visits, visitId, truckId, dayIso, trucks, TIME_ZONE)
+    if (outcome.moved) setVisits(outcome.visits)
+    setAnnouncement(outcome.message)
   }
   const changeDay = (next: string) => {
     setDay(next)
@@ -144,20 +151,30 @@ export function ScheduleScreen({ data, today, defaultTab = "week" }: ScheduleScr
           context={weekContext(weekStart, week)}
           actions={
             <>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span tabIndex={0} className="inline-flex rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50">
-                    <Button variant="outline" disabled>
-                      Propose
-                    </Button>
-                  </span>
-                </TooltipTrigger>
-                <TooltipContent>Runs when the next window opens</TooltipContent>
-              </Tooltip>
+              {proposeOpen ? (
+                <Button variant="outline" onClick={() => console.info("propose schedule", weekStart)}>
+                  Propose
+                </Button>
+              ) : (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span tabIndex={0} className="inline-flex rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50">
+                      <Button variant="outline" disabled>
+                        Propose
+                      </Button>
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent>Runs when the next window opens</TooltipContent>
+                </Tooltip>
+              )}
               {proposedCount(week) > 0 && <Button onClick={approve}>Approve week</Button>}
             </>
           }
         />
+        {selected && <ScheduleMoveTo key={`${selected.id}-${selected.truckId}-${selected.startAt}`} visit={selected} trucks={trucks} weekStart={weekStart} timeZone={TIME_ZONE} onMove={move} />}
+        <p role="status" className="min-h-5 text-sm text-muted-foreground">
+          {announcement}
+        </p>
         <Tabs defaultValue={defaultTab}>
           <TabsList aria-label="Schedule view">
             <TabsTrigger value="week">Week</TabsTrigger>

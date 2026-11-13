@@ -84,3 +84,29 @@ export function areaOf(town: Town, areas: AreaGroup[]): AreaGroup | undefined {
 export function worksOn(truck: Truck, dayIso: string): boolean {
   return truck.workingDays.includes(weekdayOf(dayIso))
 }
+
+const clockFormatters = new Map<string, Intl.DateTimeFormat>()
+/** The zone's offset from UTC in milliseconds at the instant `ms` (negative west of Greenwich). */
+function offsetAt(ms: number, timeZone: string): number {
+  let f = clockFormatters.get(timeZone)
+  if (!f) {
+    f = new Intl.DateTimeFormat("en-US", { timeZone, hourCycle: "h23", year: "numeric", month: "numeric", day: "numeric", hour: "numeric", minute: "numeric", second: "numeric" })
+    clockFormatters.set(timeZone, f)
+  }
+  const p = Object.fromEntries(f.formatToParts(new Date(ms)).map((x) => [x.type, Number(x.value)]))
+  return Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second) - Math.floor(ms / 1000) * 1000
+}
+
+/** The same wall-clock time (hour, minute, second) in `timeZone` as `fromIso`, on the calendar day `dayIso`, as a UTC instant ("...Z"). Across a clock change the time stays 9 am, not 9 am plus an hour. */
+export function sameClockOnDay(fromIso: string, dayIso: string, timeZone: string): string {
+  const local = new Date(Date.parse(fromIso) + offsetAt(Date.parse(fromIso), timeZone))
+  const wall = Date.UTC(Number(dayIso.slice(0, 4)), Number(dayIso.slice(5, 7)) - 1, Number(dayIso.slice(8, 10)), local.getUTCHours(), local.getUTCMinutes(), local.getUTCSeconds())
+  // The offset on the new day can differ; settle on the instant whose local reading is `wall`.
+  let ms = wall - offsetAt(wall, timeZone)
+  ms = wall - offsetAt(ms, timeZone)
+  return new Date(ms).toISOString().replace(".000Z", "Z")
+}
+
+const WEEKDAY_NAMES: Record<Weekday, string> = { mon: "Monday", tue: "Tuesday", wed: "Wednesday", thu: "Thursday", fri: "Friday", sat: "Saturday", sun: "Sunday" }
+/** "Thursday" for 2026-11-12. */
+export const weekdayName = (dayIso: string): string => WEEKDAY_NAMES[weekdayOf(dayIso)]

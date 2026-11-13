@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest"
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import type { AdminData, Visit } from "@/lib/admin/types"
 import { TIME_ZONE } from "@/lib/admin/format"
-import { approveVisits, dayVisits, exceptionCount, moveVisit, proposedCount, visitsByTruckAndDay, weekContext, weekDays, weekVisits } from "./schedule-model"
+import { dayVisits, weekDays, weekVisits } from "@/lib/admin/calendar"
+import { approveVisits, exceptionCount, moveOutcome, moveVisit, proposedCount, weekContext } from "./schedule-model"
 
 const data = snapshot as AdminData
 const { trucks } = data.settings
@@ -11,15 +12,13 @@ const TODAY = "2026-11-12T19:56:30Z"
 const WEEK = "2026-11-09"
 
 describe("the week's visits", () => {
-  it("groups them by truck and day in stop order, with empty days present", () => {
-    const grid = visitsByTruckAndDay(data.visits, WEEK, trucks, TIME_ZONE)
-    expect([...grid.keys()]).toEqual(["truck-1", "truck-2"])
-    const truck1 = grid.get("truck-1")!
-    expect([...truck1.keys()]).toEqual(weekDays(WEEK))
-    expect(truck1.get("2026-11-09")!.map((v) => v.stopOrder)).toEqual([1, 2, 3, 4, 5])
-    expect(truck1.get("2026-11-12")!.map((v) => v.clientName)).toEqual(["Percy", "Alicia", "Ethan", "Matthew"])
-    expect(truck1.get("2026-11-14")).toEqual([])
-    expect([...grid.get("truck-2")!.values()].every((l) => l.length === 0)).toBe(true)
+  it("lists a truck's day in stop order and an empty day as empty", () => {
+    expect(weekDays(WEEK)).toHaveLength(7)
+    const week = weekVisits(data.visits, WEEK, TIME_ZONE)
+    expect(dayVisits(week, "2026-11-09", "truck-1", TIME_ZONE).map((v) => v.stopOrder)).toEqual([1, 2, 3, 4, 5])
+    expect(dayVisits(week, "2026-11-12", "truck-1", TIME_ZONE).map((v) => v.clientName)).toEqual(["Percy", "Alicia", "Ethan", "Matthew"])
+    expect(dayVisits(week, "2026-11-14", "truck-1", TIME_ZONE)).toEqual([])
+    expect(dayVisits(week, "2026-11-10", "truck-2", TIME_ZONE)).toEqual([])
   })
 
   it("counts the proposals and the Jobber exceptions and writes the context line", () => {
@@ -76,5 +75,45 @@ describe("approveVisits", () => {
     const some = approveVisits(data.visits, new Set(["v477"]))
     expect(proposedCount(some)).toBe(7)
     expect(approveVisits(data.visits, new Set()).filter((v) => v.proposed)).toHaveLength(8)
+  })
+})
+
+describe("moveVisit keeps the Mountain wall-clock time across a clock change", () => {
+  const six = { ...trucks[0], workingDays: ["mon", "tue", "wed", "thu", "fri", "sat", "sun"] as typeof trucks[0]["workingDays"] }
+  const one = (startAt: string): Visit[] => [{ id: "m", clientId: "c", clientName: "A", town: "Erie", kind: "blowout", status: "scheduled", startAt, isPass: false, jobberUrl: "", truckId: "truck-1", stopOrder: 1 }]
+  const moved = (startAt: string, day: string) => moveVisit(one(startAt), "m", "truck-1", day, [six], TIME_ZONE)[0].startAt
+
+  it("moves 9 am MDT on Oct 30 to 9 am MST on Nov 2 (clocks fell back on Nov 1)", () => {
+    expect(moved("2026-10-30T15:00:00Z", "2026-11-02")).toBe("2026-11-02T16:00:00Z")
+  })
+  it("moves 9 am MST on Nov 2 back to 9 am MDT on Oct 30", () => {
+    expect(moved("2026-11-02T16:00:00Z", "2026-10-30")).toBe("2026-10-30T15:00:00Z")
+  })
+  it("moves 9 am MST on Mar 12 2027 to 9 am MDT on Mar 15 (clocks sprang forward on Mar 14)", () => {
+    expect(moved("2027-03-12T16:00:00Z", "2027-03-15")).toBe("2027-03-15T15:00:00Z")
+  })
+  it("keeps the same instant shift on an ordinary week", () => {
+    expect(moved("2026-11-09T17:00:00Z", "2026-11-10")).toBe("2026-11-10T17:00:00Z")
+  })
+})
+
+describe("moveOutcome", () => {
+  const percy = data.visits.find((v) => v.id === "v477") // Percy, Erie, Truck 1, Thursday Nov 12
+  it("moves and says where", () => {
+    const out = moveOutcome(data.visits, "v477", "truck-2", "2026-11-13", trucks, TIME_ZONE)
+    expect(out.moved).toBe(true)
+    expect(out.message).toBe(`Moved ${percy!.clientName} to Truck 2 on Friday, November 13.`)
+    expect(out.visits.find((v) => v.id === "v477")).toMatchObject({ truckId: "truck-2" })
+  })
+  it("refuses a day the truck does not work and says why, leaving the list as it was", () => {
+    const out = moveOutcome(data.visits, "v477", "truck-1", "2026-11-14", trucks, TIME_ZONE)
+    expect(out.moved).toBe(false)
+    expect(out.visits).toBe(data.visits)
+    expect(out.message).toBe(`Truck 1 does not work Saturday, so ${percy!.clientName} stays on Thursday, November 12.`)
+  })
+  it("says so when the visit is already there", () => {
+    const out = moveOutcome(data.visits, "v477", "truck-1", "2026-11-12", trucks, TIME_ZONE)
+    expect(out.moved).toBe(false)
+    expect(out.message).toBe(`${percy!.clientName} is already on Truck 1 on Thursday, November 12.`)
   })
 })

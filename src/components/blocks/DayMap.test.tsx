@@ -3,7 +3,7 @@ import { render, screen } from "@testing-library/react"
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import type { AdminData } from "@/lib/admin/types"
 import { TIME_ZONE } from "@/lib/admin/format"
-import { dayVisits } from "./week-grid-days"
+import { dayVisits } from "@/lib/admin/calendar"
 import { DayMap } from "./DayMap"
 
 // jsdom has no WebGL, so the block takes its fallback path here; the map

@@ -11,7 +11,7 @@
 import type { StatTileProps } from "@/components/blocks/StatTile"
 import type { AdminData, Attention, MonthTotal, OrganizationSettings, SeasonWindow, Visit } from "@/lib/admin/types"
 import { TIME_ZONE, monthDay, monthShort } from "@/lib/admin/format"
-import { dayOf } from "@/components/blocks/week-grid-days"
+import { dayOf } from "@/lib/admin/calendar"
 import { chargedSoFar, committedRevenue, formatMoney, invoicesOverdue, monthComparison, quotesAwaiting } from "@/lib/admin/metrics"
 
 /** The season the Home line shows. The snapshot's passes are all 2027; the wiring phase derives this from the passes on hand. */

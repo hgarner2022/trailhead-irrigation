@@ -62,3 +62,9 @@
 
   --radius: 0.5rem;                      /* rounded-lg everywhere */
 }
+
+/* A proposed visit's fill: thin navy diagonals at low strength, drawn on an
+   inner layer so the text above it stays solid. Tokens only. */
+@utility hatch-proposed {
+  background-image: repeating-linear-gradient(135deg, transparent 0 6px, color-mix(in srgb, var(--color-navy) 22%, transparent) 6px 7px);
+}

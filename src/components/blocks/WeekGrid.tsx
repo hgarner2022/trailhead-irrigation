@@ -6,12 +6,12 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import type { AreaGroup, Truck, Visit } from "@/lib/admin/types"
-import { addDays, areaOf, dayLabel, dayVisits, weekDays, weekOf, weekVisits, worksOn } from "./week-grid-days"
+import { addDays, areaOf, dayLabel, dayVisits, weekDays, weekOf, weekVisits, worksOn } from "@/lib/admin/calendar"
 import { EmptyState } from "./EmptyState"
-import { KIND_WORDS } from "./day-map-helpers"
+import { KIND_WORDS } from "@/lib/admin/format"
 
 // The week by truck: one row per truck, Monday to Sunday across, every visit
-// a block in its area's colour, dashed while it is only proposed and marked
+// a block in its area's colour, hatched with a dashed edge while it is only proposed and marked
 // when Ryan moved it in Jobber. A block is a button: click or Enter selects
 // it, and it can be dragged to another cell, which calls `onMove`; a cell on
 // a day the truck does not work refuses the drop. Under `md` the same data
@@ -62,21 +62,22 @@ function VisitBlock({ visit, areas, selected, onSelect, draggable }: { visit: Vi
       aria-pressed={selected}
       onClick={() => onSelect(selected ? undefined : visit.id)}
       className={cn(
-        "flex w-full items-start gap-1 rounded-lg border border-border border-l-4 bg-background px-2 py-1.5 text-left text-xs leading-tight transition-colors hover:bg-cream focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
+        "relative flex w-full items-start gap-1 overflow-hidden rounded-lg border border-border border-l-4 bg-background px-2 py-1.5 text-left text-xs leading-tight transition-colors hover:bg-cream focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
+        visit.proposed && "border-dashed border-muted-foreground bg-background hover:bg-background",
         index === -1 ? "border-l-muted" : AREA_BORDERS[index],
-        visit.proposed && "border-dashed bg-stone hover:bg-stone",
         selected && "ring-2 ring-primary/50",
         draggable && "cursor-grab",
       )}
     >
-      <span className="min-w-0 flex-1">
+      {visit.proposed && <span aria-hidden className="hatch-proposed absolute inset-0" />}
+      <span className="relative min-w-0 flex-1">
         <span className="block truncate font-medium text-foreground">{visit.clientName}</span>
         <span className="block truncate text-muted-foreground">{`${visit.town} · ${KIND_WORDS[visit.kind]}`}</span>
       </span>
       {visit.proposed && <span className="sr-only">, proposed</span>}
       {visit.exception && (
         <>
-          <TriangleAlert className="size-3.5 shrink-0 text-warning" aria-hidden />
+          <TriangleAlert className="relative size-3.5 shrink-0 text-warning" aria-hidden />
           <span className="sr-only">, moved in Jobber</span>
         </>
       )}
@@ -118,7 +119,7 @@ function Legend({ areas }: { areas: AreaGroup[] }) {
         </li>
       ))}
       <li className="flex items-center gap-1.5">
-        <span aria-hidden className="size-2.5 rounded-sm border border-dashed border-muted-foreground bg-stone" />
+        <span aria-hidden className="hatch-proposed relative size-2.5 overflow-hidden rounded-sm border border-dashed border-muted-foreground" />
         Proposed, waiting for approval
       </li>
       <li className="flex items-center gap-1.5">

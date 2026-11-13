@@ -54,15 +54,27 @@ function shadeFeatures(stops: Stop[], trucks: Truck[], container: HTMLElement): 
   return { type: "FeatureCollection", features }
 }
 
+interface Pin {
+  marker: Marker
+  el: HTMLDivElement
+  /** what the element was last drawn from, so an unchanged pin is left alone */
+  key: string
+}
+
+const SELECTED_PIN = "ring-4 ring-primary/50"
+
 export function DayMap({ stops, trucks, selectedId, onSelect, className }: DayMapProps) {
   const container = useRef<HTMLDivElement>(null)
   const mapRef = useRef<MapLibreMap | null>(null)
-  const markers = useRef<Marker[]>([])
+  const MarkerCtor = useRef<typeof Marker | null>(null)
+  const pins = useRef(new globalThis.Map<string, Pin>())
   const popup = useRef<Popup | null>(null)
   const select = useRef(onSelect)
+  const selected = useRef(selectedId)
   const [state, setState] = useState<"loading" | "ready" | "unsupported">("loading")
   useEffect(() => {
     select.current = onSelect
+    selected.current = selectedId
   })
 
   useEffect(() => {
@@ -73,21 +85,32 @@ export function DayMap({ stops, trucks, selectedId, onSelect, className }: DayMa
     }
     let cancelled = false
     let map: MapLibreMap | undefined
-    import("maplibre-gl").then(({ Map: MapLibre, Popup: MapPopup }) => {
+    const livePins = pins.current
+    // MapLibre is resolved once here; the effects below then run synchronously.
+    import("maplibre-gl").then(({ Map: MapLibre, Popup: MapPopup, Marker: MapMarker }) => {
       if (cancelled) return
       try {
         map = new MapLibre({ container: el, style: STYLE, attributionControl: { compact: true }, bounds: townBounds(), fitBoundsOptions: { padding: 40 } })
-      } catch {
+      } catch (error) {
+        console.error("day map: could not start", error)
         setState("unsupported")
         return
       }
       map.getCanvas().setAttribute("role", "img")
+      let ready = false
+      map.on("error", (event) => {
+        console.error("day map error", event.error)
+        // Before the style has loaded an error means there is no map to show; after, a missed tile is only logged.
+        if (!ready && !cancelled) setState("unsupported")
+      })
       map.on("load", () => {
         if (cancelled || !map) return
+        ready = true
         map.addSource(SHADES, { type: "geojson", data: { type: "FeatureCollection", features: [] } })
         map.addLayer({ id: `${SHADES}-fill`, type: "fill", source: SHADES, paint: { "fill-color": ["get", "colour"], "fill-opacity": 0.15 } })
         map.addLayer({ id: `${SHADES}-line`, type: "line", source: SHADES, paint: { "line-color": ["get", "colour"], "line-width": 1.5, "line-opacity": 0.6 } })
         popup.current = new MapPopup({ closeButton: false, closeOnClick: false, offset: 18 })
+        MarkerCtor.current = MapMarker
         mapRef.current = map
         setState("ready")
       })
@@ -96,45 +119,74 @@ export function DayMap({ stops, trucks, selectedId, onSelect, className }: DayMa
       cancelled = true
       mapRef.current = null
       popup.current = null
+      MarkerCtor.current = null
+      livePins.clear()
       map?.remove()
     }
   }, [])
 
-  // Pins, patches and the canvas name follow the stops; the popup follows the selection.
+  // Pins, patches, the canvas name and the view follow the stops. A pin is kept
+  // by visit id and only touched when its point, number or colour changed.
   useEffect(() => {
     const map = mapRef.current
     const el = container.current
-    if (state !== "ready" || !map || !el) return
+    const MarkerClass = MarkerCtor.current
+    if (state !== "ready" || !map || !el || !MarkerClass) return
     const placed = stops.filter(hasPoint)
     map.getCanvas().setAttribute("aria-label", stopsDescription(placed))
-    for (const m of markers.current) m.remove()
-    markers.current = []
-    import("maplibre-gl").then(({ Marker: MapMarker }) => {
-      if (mapRef.current !== map) return
-      markers.current = placed.map((stop, i) => {
-        const pin = document.createElement("div")
-        const index = Math.max(0, trucks.findIndex((t) => t.id === stop.truckId))
-        pin.className = cn(PIN, truckClass(index), stop.id === selectedId && "ring-4 ring-primary/50")
-        pin.dataset.visit = stop.id
-        pin.setAttribute("aria-hidden", "true")
-        pin.textContent = String(stop.stopOrder ?? i + 1)
-        pin.addEventListener("click", (event) => {
-          event.stopPropagation()
-          select.current(stop.id === selectedId ? undefined : stop.id)
-        })
-        return new MapMarker({ element: pin }).setLngLat([stop.lng, stop.lat]).addTo(map)
+    const keep = new Set(placed.map((s) => s.id))
+    for (const [id, pin] of pins.current) {
+      if (!keep.has(id)) {
+        pin.marker.remove()
+        pins.current.delete(id)
+      }
+    }
+    placed.forEach((stop, i) => {
+      const colour = truckClass(Math.max(0, trucks.findIndex((t) => t.id === stop.truckId)))
+      const label = String(stop.stopOrder ?? i + 1)
+      const key = `${stop.lng},${stop.lat},${colour},${label}`
+      const existing = pins.current.get(stop.id)
+      if (existing?.key === key) return
+      if (existing) {
+        existing.el.className = cn(PIN, colour, stop.id === selected.current && SELECTED_PIN)
+        existing.el.textContent = label
+        existing.marker.setLngLat([stop.lng, stop.lat])
+        existing.key = key
+        return
+      }
+      const pin = document.createElement("div")
+      pin.className = cn(PIN, colour, stop.id === selected.current && SELECTED_PIN)
+      pin.dataset.visit = stop.id
+      pin.setAttribute("aria-hidden", "true")
+      pin.textContent = label
+      pin.addEventListener("click", (event) => {
+        event.stopPropagation()
+        select.current(stop.id === selected.current ? undefined : stop.id)
       })
-      const source = map.getSource(SHADES)
-      if (source && "setData" in source) (source as { setData: (d: GeoJSON.FeatureCollection) => void }).setData(shadeFeatures(placed, trucks, el))
-      const selected = placed.find((s) => s.id === selectedId)
-      if (selected && popup.current) {
-        const line = document.createElement("p")
-        line.className = "text-sm text-foreground"
-        line.textContent = stopLine(selected)
-        popup.current.setLngLat([selected.lng, selected.lat]).setDOMContent(line).addTo(map)
-      } else popup.current?.remove()
+      pins.current.set(stop.id, { marker: new MarkerClass({ element: pin }).setLngLat([stop.lng, stop.lat]).addTo(map), el: pin, key })
     })
-  }, [state, stops, trucks, selectedId])
+    const source = map.getSource(SHADES)
+    if (source && "setData" in source) (source as { setData: (d: GeoJSON.FeatureCollection) => void }).setData(shadeFeatures(placed, trucks, el))
+    if (placed.length > 0) {
+      const lngs = placed.map((s) => s.lng)
+      const lats = placed.map((s) => s.lat)
+      map.fitBounds([[Math.min(...lngs), Math.min(...lats)], [Math.max(...lngs), Math.max(...lats)]], { padding: 60, maxZoom: 14, duration: 0 })
+    }
+  }, [state, stops, trucks])
+
+  // The selection only toggles a class on the pins that exist and moves the popup.
+  useEffect(() => {
+    const map = mapRef.current
+    if (state !== "ready" || !map) return
+    for (const [id, pin] of pins.current) pin.el.classList.toggle("ring-4", id === selectedId), pin.el.classList.toggle("ring-primary/50", id === selectedId)
+    const chosen = stops.filter(hasPoint).find((s) => s.id === selectedId)
+    if (chosen && popup.current) {
+      const line = document.createElement("p")
+      line.className = "text-sm text-foreground"
+      line.textContent = stopLine(chosen)
+      popup.current.setLngLat([chosen.lng, chosen.lat]).setDOMContent(line).addTo(map)
+    } else popup.current?.remove()
+  }, [state, stops, selectedId])
 
   if (state === "unsupported") {
     return (

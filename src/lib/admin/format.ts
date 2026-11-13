@@ -8,7 +8,7 @@
  * date-only string is already a calendar day and is never shifted.
  */
 
-import type { Pass, PassVisit, TimingPreference } from "./types"
+import type { Pass, PassVisit, TimingPreference, Visit } from "./types"
 
 /** Where the reader is: every clock and calendar word in the app is in Mountain time. */
 export const TIME_ZONE = "America/Denver"
@@ -92,4 +92,14 @@ export function shortDate(iso: string, timeZone?: string): string {
 export function writtenDate(iso: string, timeZone?: string): string {
   const { month, day } = monthDay(iso, timeZone)
   return `${monthName(month)} ${day}`
+}
+
+/** The word for each visit kind in a sentence; "other" reads as "visit". */
+export const KIND_WORDS: Record<Visit["kind"], string> = {
+  "turn-on": "turn-on",
+  inspection: "inspection",
+  blowout: "blowout",
+  repair: "repair",
+  install: "install",
+  other: "visit",
 }

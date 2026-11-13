@@ -5,6 +5,7 @@
  * map file so they run in jsdom, where the map itself cannot.
  */
 import type { Town, Visit } from "@/lib/admin/types"
+import { KIND_WORDS } from "@/lib/admin/format"
 
 export type Point = readonly [lng: number, lat: number]
 
@@ -68,15 +69,6 @@ export function shadeOf(stops: readonly Stop[]): Point[] {
   )
   const hull = hullOf(ringed)
   return [...hull, hull[0]]
-}
-
-export const KIND_WORDS: Record<Visit["kind"], string> = {
-  "turn-on": "turn-on",
-  inspection: "inspection",
-  blowout: "blowout",
-  repair: "repair",
-  install: "install",
-  other: "visit",
 }
 
 /** "Map of 4 stops: 1 Percy, Erie, blowout; 2 Alicia, Firestone, blowout." The map's accessible name. */

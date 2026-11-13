@@ -45,7 +45,7 @@ export const Week: Story = {
   globals: { viewport: { value: "wide", isRotated: false } },
 }
 
-/** The same week after Ryan pressed Approve week: no dashed blocks, no button. */
+/** The same week after Ryan pressed Approve week: no hatched blocks, no button. */
 export const WeekApproved: Story = {
   args: { data: { ...data, visits: data.visits.map((v): Visit => ({ ...v, proposed: undefined })) } },
   globals: { viewport: { value: "wide", isRotated: false } },
