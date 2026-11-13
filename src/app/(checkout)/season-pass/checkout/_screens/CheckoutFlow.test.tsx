@@ -230,7 +230,7 @@ describe("CheckoutFlow", () => {
     expect(email).toHaveAccessibleDescription("You can stop any time. Visit reminders and receipts are sent either way.")
     expect(sms).toHaveAccessibleDescription("Message frequency varies. Msg and data rates may apply. Reply STOP to opt out. Consent is not a condition of purchase.")
     const links = screen.getAllByRole("link", { name: /terms/ })
-    expect(links.map((l) => l.getAttribute("href"))).toEqual(["/terms", "/terms"])
+    expect(links.map((l) => l.getAttribute("href"))).toEqual(["/terms#season-pass", "/terms"])
     expect(links.every((l) => l.getAttribute("target") === "_blank")).toBe(true)
     const save = screen.getByRole("button", { name: "Save card and reserve" })
     expect(save).toBeDisabled()

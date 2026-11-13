@@ -34,7 +34,7 @@ export const SEASON_PASS_VISITS = [
 
 export const EXTRA_ZONE_PRICE = 10
 
-/** The version of the Season Pass terms a checkout records with its consent; bump it when /season-pass#terms or /terms change. */
+/** The version of the Season Pass terms a checkout records with its consent; bump it when the Season Pass section of /terms changes. */
 export const TERMS_VERSION = "2026-11"
 
 export const MIN_ZONES = 6
