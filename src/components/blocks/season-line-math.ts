@@ -7,8 +7,7 @@
  * and date names come from `@/lib/admin/format`. Dates are read as their UTC
  * date prefix until the wiring phase converts stored times to Mountain time.
  */
-import { monthName } from "@/lib/admin/format"
-import { monthInWindow } from "@/lib/admin/metrics"
+import type { TimingPreference } from "@/lib/admin/types"
 
 export const SEASON_START = 4
 export const SEASON_END = 11
@@ -53,11 +52,9 @@ export function markerAlign(position: number): "start" | "center" | "end" {
   return "center"
 }
 
-/** "October 11" from "October, week of the 11th" or "Oct, week of the 11th"; null when the window names no week. */
-export function reservedWeek(window: string): string | null {
-  const month = monthInWindow(window)
-  const day = window.match(/week of the (\d{1,2})/i)?.[1]
-  return month && day ? `${monthName(month)} ${Number(day)}` : null
+/** The one word under a preferred visit's dot: where in its month the customer would like it. */
+export function preferenceWord(preference: TimingPreference): "Early" | "Mid" | "Late" {
+  return preference === "earlier" ? "Early" : preference === "later" ? "Late" : "Mid"
 }
 
 /** "April, July and October". */

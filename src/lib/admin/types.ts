@@ -24,6 +24,32 @@ export type VisitStatus = "unscheduled" | "scheduled" | "completed" | "cancelled
 
 export type PassStatus = "active" | "cancelled" | "lapsed"
 
+/**
+ * When the customer would like a visit, against Trailhead's recommendation:
+ * the first to second week of May for the turn-on, the second week of
+ * October for the blowout. Ryan (or the scheduler, later) places the day;
+ * nothing has a capacity. The words for each value are in ./format.
+ */
+export type TimingPreference = "earlier" | "recommended" | "later"
+
+export type MarketingChannel = "email" | "sms"
+
+/**
+ * What the customer agreed to and where. Terms acceptance is required at
+ * checkout; marketing is a separate opt-in. A change appends a new record
+ * on the customer rather than editing this one, so the history is auditable.
+ */
+export interface Consent {
+  /** ISO datetime the terms were accepted; absent when only marketing was recorded */
+  termsAcceptedAt?: string
+  /** `TERMS_VERSION` in src/lib/season-pass.ts at the time, e.g. "2026-11" */
+  termsVersion?: string
+  marketingOptIn: boolean
+  marketingChannels: MarketingChannel[]
+  source: "checkout" | "form" | "admin"
+  recordedAt: string
+}
+
 export interface Client {
   id: string
   firstName: string
@@ -31,6 +57,8 @@ export interface Client {
   jobberUrl: string
   hasPass: boolean
   lastVisitAt?: string
+  /** the current consent record; the history lives in the CRM */
+  consent?: Consent
 }
 
 export interface Visit {
@@ -67,7 +95,7 @@ export interface Invoice {
 
 export interface PassVisit {
   kind: Exclude<VisitKind, "repair" | "install" | "other">
-  /** e.g. "April to May", "July", "October, week of the 13th" */
+  /** the month the visit lands in: "May", "July", "October"; the preference on the pass carries the rest */
   window: string
   scheduledAt?: string
   completedAt?: string
@@ -83,22 +111,16 @@ export interface Pass {
   firstName: string
   town: Town
   zones: number
-  /** ISO date of the Monday */
-  blowoutWeek: string
+  turnOnPreference: TimingPreference
+  blowoutPreference: TimingPreference
   status: PassStatus
   visits: PassVisit[]
   stripeUrl: string
   jobberUrl: string
   cardLast4?: string
   cardExpires?: string
-}
-
-export interface BlowoutWeek {
-  season: number
-  weekStart: string
-  capacity: number
-  taken: number
-  towns: Town[]
+  /** the consent recorded with the purchase */
+  consent?: Consent
 }
 
 export interface MonthTotal {
@@ -110,7 +132,7 @@ export interface MonthTotal {
 }
 
 export interface Attention {
-  kind: "charge-failed" | "jobs-failed" | "week-full" | "card-expiring"
+  kind: "charge-failed" | "jobs-failed" | "card-expiring"
   passId?: string
   message: string
   since: string
@@ -125,7 +147,6 @@ export interface AdminData {
   quotes: Quote[]
   invoices: Invoice[]
   passes: Pass[]
-  blowoutWeeks: BlowoutWeek[]
   monthTotals: MonthTotal[]
   attention: Attention[]
 }

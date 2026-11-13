@@ -10,7 +10,9 @@
 // identify a customer survives: first names only (pseudonymised when a first
 // name is also someone's last name or looks like an address), towns folded
 // into the six we serve, no emails, phones, street addresses or last names.
-// Passes are invented: Jobber has no Season Pass product yet.
+// Passes are invented: Jobber has no Season Pass product yet. Each carries a
+// timing preference for the turn-on and the blowout (earlier, recommended,
+// later; no capacity anywhere) and the consent recorded at checkout.
 
 import { readFileSync, writeFileSync, statSync } from "node:fs"
 import { resolve, dirname } from "node:path"
@@ -89,14 +91,18 @@ function titleCase(s) {
 // Season Pass pricing, mirrored from src/lib/season-pass.ts.
 // ---------------------------------------------------------------------------
 const PASS_VISITS = [
-  { kind: "turn-on", window: "April to May", base: 145, includedZones: 8 },
+  { kind: "turn-on", window: "May", base: 145, includedZones: 8 },
   { kind: "inspection", window: "July", base: 145, includedZones: 8 },
-  { kind: "blowout", window: null, base: 95, includedZones: 6 },
+  { kind: "blowout", window: "October", base: 95, includedZones: 6 },
 ]
 const EXTRA_ZONE_PRICE = 10
 const visitPrice = (v, zones) => v.base + Math.max(0, zones - v.includedZones) * EXTRA_ZONE_PRICE
-const BLOWOUT_MONDAYS = ["2027-10-04", "2027-10-11", "2027-10-18", "2027-10-25"]
-const ordinal = (n) => `${n}${[, "st", "nd", "rd"][(n % 100 >> 3) ^ 1 && n % 10] || "th"}`
+// Spread so each visit shows all three values across the twelve, and the two never move together.
+const PREFERENCES = ["earlier", "recommended", "later"]
+const TURN_ON_PREFERENCE = (n) => PREFERENCES[[1, 1, 0, 2, 1, 0, 1, 2, 1, 0, 2, 1][n]]
+const BLOWOUT_PREFERENCE = (n) => PREFERENCES[[1, 0, 1, 1, 2, 1, 0, 1, 2, 1, 1, 0][n]]
+// Mirrors TERMS_VERSION in src/lib/season-pass.ts.
+const TERMS_VERSION = "2026-11"
 
 // ---------------------------------------------------------------------------
 const raw = JSON.parse(readFileSync(RAW, "utf8"))
@@ -262,18 +268,29 @@ const CARDS = ["4242", "1881", "5556", "0005", "3222", "4444", "9424", "7107", "
 const passes = chosen.map((client, n) => {
   const i = n + 1
   const zones = ZONES[n]
-  const monday = BLOWOUT_MONDAYS[n % 4]
-  const day = Number(monday.slice(-2))
   client.hasPass = true
+  // Bought on consecutive days in early November 2026; every third buyer left the marketing box unticked, and one of the rest chose email only.
+  const boughtAt = `2026-11-${String(2 + n).padStart(2, "0")}T${String(15 + (n % 5)).padStart(2, "0")}:${String(10 + n * 3).padStart(2, "0")}:00Z`
+  const marketingChannels = n % 3 === 2 ? [] : n % 4 === 1 ? ["email"] : ["email", "sms"]
+  const consent = {
+    termsAcceptedAt: boughtAt,
+    termsVersion: TERMS_VERSION,
+    marketingOptIn: marketingChannels.length > 0,
+    marketingChannels,
+    source: "checkout",
+    recordedAt: boughtAt,
+  }
+  client.consent = consent
   const visitsForPass = PASS_VISITS.map((pv) => ({
     kind: pv.kind,
-    window: pv.window ?? `October, week of the ${ordinal(day)}`,
+    window: pv.window,
     amount: visitPrice(pv, zones),
   }))
+  // The first two turn-ons are done, on days inside their recommended window (the first half of May).
   if (n < 2) {
-    visitsForPass[0].scheduledAt = `2027-04-${20 + n}T16:00:00Z`
-    visitsForPass[0].completedAt = `2027-04-${20 + n}T17:10:00Z`
-    visitsForPass[0].chargedAt = `2027-04-${20 + n}T17:12:00Z`
+    visitsForPass[0].scheduledAt = `2027-05-0${3 + n}T16:00:00Z`
+    visitsForPass[0].completedAt = `2027-05-0${3 + n}T17:10:00Z`
+    visitsForPass[0].chargedAt = `2027-05-0${3 + n}T17:12:00Z`
   }
   return {
     id: `p${i}`,
@@ -283,24 +300,15 @@ const passes = chosen.map((client, n) => {
     firstName: client.firstName,
     town: client.town,
     zones,
-    blowoutWeek: monday,
+    turnOnPreference: TURN_ON_PREFERENCE(n),
+    blowoutPreference: BLOWOUT_PREFERENCE(n),
     status: i === 9 ? "cancelled" : "active",
     visits: visitsForPass,
     stripeUrl: `https://dashboard.stripe.com/customers/cus_test_${i}`,
     jobberUrl: client.jobberUrl,
     cardLast4: CARDS[n],
     cardExpires: i === 5 ? "2027-09" : "2028-08",
-  }
-})
-
-const blowoutWeeks = BLOWOUT_MONDAYS.map((weekStart) => {
-  const inWeek = passes.filter((p) => p.blowoutWeek === weekStart && p.status === "active")
-  return {
-    season: 2027,
-    weekStart,
-    capacity: 20,
-    taken: inWeek.length,
-    towns: [...new Set(inWeek.map((p) => p.town))],
+    consent,
   }
 })
 
@@ -319,7 +327,6 @@ const data = {
   quotes,
   invoices,
   passes,
-  blowoutWeeks,
   monthTotals,
   attention,
 }
@@ -332,5 +339,4 @@ console.log("visit kinds", kindCounts)
 console.log("visit statuses", statusCounts)
 console.log("pseudonyms used", pseudonymsUsed)
 console.log("month totals", monthTotals.map((m) => `${m.year}-${String(m.month).padStart(2, "0")}: $${m.revenue} / ${m.visits} visits`).join("\n  "))
-console.log("passes", passes.map((p) => `${p.number} ${p.town} ${p.blowoutWeek} ${p.status}`).join("\n  "))
-console.log("blowout weeks", blowoutWeeks.map((w) => `${w.weekStart}: ${w.taken}/${w.capacity} ${w.towns.join(", ")}`).join("\n  "))
+console.log("passes", passes.map((p) => `${p.number} ${p.town} turn-on ${p.turnOnPreference}, blowout ${p.blowoutPreference}, marketing ${p.consent.marketingChannels.join("+") || "no"} ${p.status}`).join("\n  "))

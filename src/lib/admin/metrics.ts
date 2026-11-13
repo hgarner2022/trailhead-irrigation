@@ -7,7 +7,7 @@
  * Mountain day). Months in `visitMonth` and `committedByMonth` still read
  * the prefix; the wiring phase converts stored times to Mountain time.
  */
-import type { BlowoutWeek, Invoice, MonthTotal, Pass, PassVisit, Quote, Visit } from "./types"
+import type { Invoice, MonthTotal, Pass, PassVisit, Quote, Visit } from "./types"
 
 const MONTHS = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"]
 const MONTH_BY_NAME = new Map(MONTHS.flatMap((name, i) => [[name, i + 1], [name.slice(0, 3), i + 1]]))
@@ -84,10 +84,6 @@ export function monthComparison(
   const raw = previous ? ((current - previous) / previous) * 100 : null
   const deltaPct = raw === null ? null : Math.sign(raw) * Math.round(Math.abs(raw)) || 0
   return { current, previous, deltaPct }
-}
-
-export function spotsLeft(week: BlowoutWeek): number {
-  return Math.max(0, week.capacity - week.taken)
 }
 
 export interface UpcomingCharge {

@@ -8,8 +8,36 @@
  * date-only string is already a calendar day and is never shifted.
  */
 
+import type { TimingPreference } from "./types"
+
 /** Where the reader is: every clock and calendar word in the app is in Mountain time. */
 export const TIME_ZONE = "America/Denver"
+
+/**
+ * The customer's words for a timing preference. Trailhead's recommendation
+ * is the first to second week of May for the turn-on and the second week of
+ * October for the blowout; "earlier" and "later" sort within the window.
+ */
+export function preferenceLabel(kind: "turn-on" | "blowout", preference: TimingPreference): string {
+  return PREFERENCE_LABELS[kind][preference]
+}
+
+const PREFERENCE_LABELS: Record<"turn-on" | "blowout", Record<TimingPreference, string>> = {
+  "turn-on": { earlier: "Early May", recommended: "First half of May", later: "Late May" },
+  blowout: { earlier: "Early October", recommended: "Second week of October", later: "Late October" },
+}
+
+/**
+ * The one-line reason under the recommendation. The dates come from the
+ * NOAA stations on /first-freeze-dates (src/lib/freeze-data.ts): the first
+ * hard freeze (28°F) lands between mid and late October in most years, and
+ * the spring's last one is behind us by early May.
+ */
+export function preferenceReason(kind: "turn-on" | "blowout"): string {
+  return kind === "turn-on"
+    ? "The last hard freeze on the Front Range is usually past by early May."
+    : "The first hard freeze usually arrives late in October."
+}
 
 export const MONTH_NAMES = [
   "January", "February", "March", "April", "May", "June",

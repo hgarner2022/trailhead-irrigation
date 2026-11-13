@@ -774,7 +774,18 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/135708902",
       "hasPass": true,
-      "lastVisitAt": "2026-10-12T18:00:00Z"
+      "lastVisitAt": "2026-10-12T18:00:00Z",
+      "consent": {
+        "termsAcceptedAt": "2026-11-02T15:10:00Z",
+        "termsVersion": "2026-11",
+        "marketingOptIn": true,
+        "marketingChannels": [
+          "email",
+          "sms"
+        ],
+        "source": "checkout",
+        "recordedAt": "2026-11-02T15:10:00Z"
+      }
     },
     {
       "id": "c101",
@@ -806,7 +817,15 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/136453499",
       "hasPass": true,
-      "lastVisitAt": "2026-10-16T17:00:00Z"
+      "lastVisitAt": "2026-10-16T17:00:00Z",
+      "consent": {
+        "termsAcceptedAt": "2026-11-07T15:25:00Z",
+        "termsVersion": "2026-11",
+        "marketingOptIn": false,
+        "marketingChannels": [],
+        "source": "checkout",
+        "recordedAt": "2026-11-07T15:25:00Z"
+      }
     },
     {
       "id": "c105",
@@ -867,7 +886,15 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/137168978",
       "hasPass": true,
-      "lastVisitAt": "2026-10-23T18:30:00Z"
+      "lastVisitAt": "2026-10-23T18:30:00Z",
+      "consent": {
+        "termsAcceptedAt": "2026-11-10T18:34:00Z",
+        "termsVersion": "2026-11",
+        "marketingOptIn": false,
+        "marketingChannels": [],
+        "source": "checkout",
+        "recordedAt": "2026-11-10T18:34:00Z"
+      }
     },
     {
       "id": "c113",
@@ -882,7 +909,18 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/137356489",
       "hasPass": true,
-      "lastVisitAt": "2026-05-20T20:30:00Z"
+      "lastVisitAt": "2026-05-20T20:30:00Z",
+      "consent": {
+        "termsAcceptedAt": "2026-11-12T15:40:00Z",
+        "termsVersion": "2026-11",
+        "marketingOptIn": true,
+        "marketingChannels": [
+          "email",
+          "sms"
+        ],
+        "source": "checkout",
+        "recordedAt": "2026-11-12T15:40:00Z"
+      }
     },
     {
       "id": "c115",
@@ -914,7 +952,15 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/137592089",
       "hasPass": true,
-      "lastVisitAt": "2026-10-28T21:00:00Z"
+      "lastVisitAt": "2026-10-28T21:00:00Z",
+      "consent": {
+        "termsAcceptedAt": "2026-11-13T16:43:00Z",
+        "termsVersion": "2026-11",
+        "marketingOptIn": false,
+        "marketingChannels": [],
+        "source": "checkout",
+        "recordedAt": "2026-11-13T16:43:00Z"
+      }
     },
     {
       "id": "c119",
@@ -938,7 +984,17 @@
       "town": "Firestone",
       "jobberUrl": "https://secure.getjobber.com/clients/137906977",
       "hasPass": true,
-      "lastVisitAt": "2026-10-05T20:00:00Z"
+      "lastVisitAt": "2026-10-05T20:00:00Z",
+      "consent": {
+        "termsAcceptedAt": "2026-11-03T16:13:00Z",
+        "termsVersion": "2026-11",
+        "marketingOptIn": true,
+        "marketingChannels": [
+          "email"
+        ],
+        "source": "checkout",
+        "recordedAt": "2026-11-03T16:13:00Z"
+      }
     },
     {
       "id": "c122",
@@ -1084,7 +1140,15 @@
       "town": "Broomfield",
       "jobberUrl": "https://secure.getjobber.com/clients/139588116",
       "hasPass": true,
-      "lastVisitAt": "2026-10-07T18:30:00Z"
+      "lastVisitAt": "2026-10-07T18:30:00Z",
+      "consent": {
+        "termsAcceptedAt": "2026-11-04T17:16:00Z",
+        "termsVersion": "2026-11",
+        "marketingOptIn": false,
+        "marketingChannels": [],
+        "source": "checkout",
+        "recordedAt": "2026-11-04T17:16:00Z"
+      }
     },
     {
       "id": "c141",
@@ -1287,7 +1351,18 @@
       "town": "Lafayette",
       "jobberUrl": "https://secure.getjobber.com/clients/141279453",
       "hasPass": true,
-      "lastVisitAt": "2026-10-22T20:00:00Z"
+      "lastVisitAt": "2026-10-22T20:00:00Z",
+      "consent": {
+        "termsAcceptedAt": "2026-11-05T18:19:00Z",
+        "termsVersion": "2026-11",
+        "marketingOptIn": true,
+        "marketingChannels": [
+          "email",
+          "sms"
+        ],
+        "source": "checkout",
+        "recordedAt": "2026-11-05T18:19:00Z"
+      }
     },
     {
       "id": "c168",
@@ -1459,7 +1534,18 @@
       "town": "Broomfield",
       "jobberUrl": "https://secure.getjobber.com/clients/142656509",
       "hasPass": true,
-      "lastVisitAt": "2026-10-20T21:30:00Z"
+      "lastVisitAt": "2026-10-20T21:30:00Z",
+      "consent": {
+        "termsAcceptedAt": "2026-11-08T16:28:00Z",
+        "termsVersion": "2026-11",
+        "marketingOptIn": true,
+        "marketingChannels": [
+          "email",
+          "sms"
+        ],
+        "source": "checkout",
+        "recordedAt": "2026-11-08T16:28:00Z"
+      }
     },
     {
       "id": "c190",
@@ -1483,7 +1569,17 @@
       "town": "Broomfield",
       "jobberUrl": "https://secure.getjobber.com/clients/142909212",
       "hasPass": true,
-      "lastVisitAt": "2026-10-12T23:00:00Z"
+      "lastVisitAt": "2026-10-12T23:00:00Z",
+      "consent": {
+        "termsAcceptedAt": "2026-11-11T19:37:00Z",
+        "termsVersion": "2026-11",
+        "marketingOptIn": true,
+        "marketingChannels": [
+          "email"
+        ],
+        "source": "checkout",
+        "recordedAt": "2026-11-11T19:37:00Z"
+      }
     },
     {
       "id": "c193",
@@ -1522,7 +1618,18 @@
       "town": "Longmont",
       "jobberUrl": "https://secure.getjobber.com/clients/143230661",
       "hasPass": true,
-      "lastVisitAt": "2026-10-27T20:00:00Z"
+      "lastVisitAt": "2026-10-27T20:00:00Z",
+      "consent": {
+        "termsAcceptedAt": "2026-11-06T19:22:00Z",
+        "termsVersion": "2026-11",
+        "marketingOptIn": true,
+        "marketingChannels": [
+          "email",
+          "sms"
+        ],
+        "source": "checkout",
+        "recordedAt": "2026-11-06T19:22:00Z"
+      }
     },
     {
       "id": "c198",
@@ -1600,7 +1707,18 @@
       "town": "Lafayette",
       "jobberUrl": "https://secure.getjobber.com/clients/143882408",
       "hasPass": true,
-      "lastVisitAt": "2026-11-06T23:00:00Z"
+      "lastVisitAt": "2026-11-06T23:00:00Z",
+      "consent": {
+        "termsAcceptedAt": "2026-11-09T17:31:00Z",
+        "termsVersion": "2026-11",
+        "marketingOptIn": true,
+        "marketingChannels": [
+          "email",
+          "sms"
+        ],
+        "source": "checkout",
+        "recordedAt": "2026-11-09T17:31:00Z"
+      }
     },
     {
       "id": "c208",
@@ -11924,16 +12042,17 @@
       "firstName": "Andrea",
       "town": "Erie",
       "zones": 6,
-      "blowoutWeek": "2027-10-04",
+      "turnOnPreference": "recommended",
+      "blowoutPreference": "recommended",
       "status": "active",
       "visits": [
         {
           "kind": "turn-on",
-          "window": "April to May",
+          "window": "May",
           "amount": 145,
-          "scheduledAt": "2027-04-20T16:00:00Z",
-          "completedAt": "2027-04-20T17:10:00Z",
-          "chargedAt": "2027-04-20T17:12:00Z"
+          "scheduledAt": "2027-05-03T16:00:00Z",
+          "completedAt": "2027-05-03T17:10:00Z",
+          "chargedAt": "2027-05-03T17:12:00Z"
         },
         {
           "kind": "inspection",
@@ -11942,14 +12061,25 @@
         },
         {
           "kind": "blowout",
-          "window": "October, week of the 4th",
+          "window": "October",
           "amount": 95
         }
       ],
       "stripeUrl": "https://dashboard.stripe.com/customers/cus_test_1",
       "jobberUrl": "https://secure.getjobber.com/clients/135708902",
       "cardLast4": "4242",
-      "cardExpires": "2028-08"
+      "cardExpires": "2028-08",
+      "consent": {
+        "termsAcceptedAt": "2026-11-02T15:10:00Z",
+        "termsVersion": "2026-11",
+        "marketingOptIn": true,
+        "marketingChannels": [
+          "email",
+          "sms"
+        ],
+        "source": "checkout",
+        "recordedAt": "2026-11-02T15:10:00Z"
+      }
     },
     {
       "id": "p2",
@@ -11959,16 +12089,17 @@
       "firstName": "Reese",
       "town": "Firestone",
       "zones": 8,
-      "blowoutWeek": "2027-10-11",
+      "turnOnPreference": "recommended",
+      "blowoutPreference": "earlier",
       "status": "active",
       "visits": [
         {
           "kind": "turn-on",
-          "window": "April to May",
+          "window": "May",
           "amount": 145,
-          "scheduledAt": "2027-04-21T16:00:00Z",
-          "completedAt": "2027-04-21T17:10:00Z",
-          "chargedAt": "2027-04-21T17:12:00Z"
+          "scheduledAt": "2027-05-04T16:00:00Z",
+          "completedAt": "2027-05-04T17:10:00Z",
+          "chargedAt": "2027-05-04T17:12:00Z"
         },
         {
           "kind": "inspection",
@@ -11977,14 +12108,24 @@
         },
         {
           "kind": "blowout",
-          "window": "October, week of the 11th",
+          "window": "October",
           "amount": 115
         }
       ],
       "stripeUrl": "https://dashboard.stripe.com/customers/cus_test_2",
       "jobberUrl": "https://secure.getjobber.com/clients/137906977",
       "cardLast4": "1881",
-      "cardExpires": "2028-08"
+      "cardExpires": "2028-08",
+      "consent": {
+        "termsAcceptedAt": "2026-11-03T16:13:00Z",
+        "termsVersion": "2026-11",
+        "marketingOptIn": true,
+        "marketingChannels": [
+          "email"
+        ],
+        "source": "checkout",
+        "recordedAt": "2026-11-03T16:13:00Z"
+      }
     },
     {
       "id": "p3",
@@ -11994,12 +12135,13 @@
       "firstName": "Abby",
       "town": "Broomfield",
       "zones": 7,
-      "blowoutWeek": "2027-10-18",
+      "turnOnPreference": "earlier",
+      "blowoutPreference": "recommended",
       "status": "active",
       "visits": [
         {
           "kind": "turn-on",
-          "window": "April to May",
+          "window": "May",
           "amount": 145
         },
         {
@@ -12009,14 +12151,22 @@
         },
         {
           "kind": "blowout",
-          "window": "October, week of the 18th",
+          "window": "October",
           "amount": 105
         }
       ],
       "stripeUrl": "https://dashboard.stripe.com/customers/cus_test_3",
       "jobberUrl": "https://secure.getjobber.com/clients/139588116",
       "cardLast4": "5556",
-      "cardExpires": "2028-08"
+      "cardExpires": "2028-08",
+      "consent": {
+        "termsAcceptedAt": "2026-11-04T17:16:00Z",
+        "termsVersion": "2026-11",
+        "marketingOptIn": false,
+        "marketingChannels": [],
+        "source": "checkout",
+        "recordedAt": "2026-11-04T17:16:00Z"
+      }
     },
     {
       "id": "p4",
@@ -12026,12 +12176,13 @@
       "firstName": "Audrey",
       "town": "Lafayette",
       "zones": 10,
-      "blowoutWeek": "2027-10-25",
+      "turnOnPreference": "later",
+      "blowoutPreference": "recommended",
       "status": "active",
       "visits": [
         {
           "kind": "turn-on",
-          "window": "April to May",
+          "window": "May",
           "amount": 165
         },
         {
@@ -12041,14 +12192,25 @@
         },
         {
           "kind": "blowout",
-          "window": "October, week of the 25th",
+          "window": "October",
           "amount": 135
         }
       ],
       "stripeUrl": "https://dashboard.stripe.com/customers/cus_test_4",
       "jobberUrl": "https://secure.getjobber.com/clients/141279453",
       "cardLast4": "0005",
-      "cardExpires": "2028-08"
+      "cardExpires": "2028-08",
+      "consent": {
+        "termsAcceptedAt": "2026-11-05T18:19:00Z",
+        "termsVersion": "2026-11",
+        "marketingOptIn": true,
+        "marketingChannels": [
+          "email",
+          "sms"
+        ],
+        "source": "checkout",
+        "recordedAt": "2026-11-05T18:19:00Z"
+      }
     },
     {
       "id": "p5",
@@ -12058,12 +12220,13 @@
       "firstName": "Katie",
       "town": "Longmont",
       "zones": 6,
-      "blowoutWeek": "2027-10-04",
+      "turnOnPreference": "recommended",
+      "blowoutPreference": "later",
       "status": "active",
       "visits": [
         {
           "kind": "turn-on",
-          "window": "April to May",
+          "window": "May",
           "amount": 145
         },
         {
@@ -12073,14 +12236,25 @@
         },
         {
           "kind": "blowout",
-          "window": "October, week of the 4th",
+          "window": "October",
           "amount": 95
         }
       ],
       "stripeUrl": "https://dashboard.stripe.com/customers/cus_test_5",
       "jobberUrl": "https://secure.getjobber.com/clients/143230661",
       "cardLast4": "3222",
-      "cardExpires": "2027-09"
+      "cardExpires": "2027-09",
+      "consent": {
+        "termsAcceptedAt": "2026-11-06T19:22:00Z",
+        "termsVersion": "2026-11",
+        "marketingOptIn": true,
+        "marketingChannels": [
+          "email",
+          "sms"
+        ],
+        "source": "checkout",
+        "recordedAt": "2026-11-06T19:22:00Z"
+      }
     },
     {
       "id": "p6",
@@ -12090,12 +12264,13 @@
       "firstName": "Alyson",
       "town": "Erie",
       "zones": 12,
-      "blowoutWeek": "2027-10-11",
+      "turnOnPreference": "earlier",
+      "blowoutPreference": "recommended",
       "status": "active",
       "visits": [
         {
           "kind": "turn-on",
-          "window": "April to May",
+          "window": "May",
           "amount": 185
         },
         {
@@ -12105,14 +12280,22 @@
         },
         {
           "kind": "blowout",
-          "window": "October, week of the 11th",
+          "window": "October",
           "amount": 155
         }
       ],
       "stripeUrl": "https://dashboard.stripe.com/customers/cus_test_6",
       "jobberUrl": "https://secure.getjobber.com/clients/136453499",
       "cardLast4": "4444",
-      "cardExpires": "2028-08"
+      "cardExpires": "2028-08",
+      "consent": {
+        "termsAcceptedAt": "2026-11-07T15:25:00Z",
+        "termsVersion": "2026-11",
+        "marketingOptIn": false,
+        "marketingChannels": [],
+        "source": "checkout",
+        "recordedAt": "2026-11-07T15:25:00Z"
+      }
     },
     {
       "id": "p7",
@@ -12122,12 +12305,13 @@
       "firstName": "Reesa",
       "town": "Broomfield",
       "zones": 8,
-      "blowoutWeek": "2027-10-18",
+      "turnOnPreference": "recommended",
+      "blowoutPreference": "earlier",
       "status": "active",
       "visits": [
         {
           "kind": "turn-on",
-          "window": "April to May",
+          "window": "May",
           "amount": 145
         },
         {
@@ -12137,14 +12321,25 @@
         },
         {
           "kind": "blowout",
-          "window": "October, week of the 18th",
+          "window": "October",
           "amount": 115
         }
       ],
       "stripeUrl": "https://dashboard.stripe.com/customers/cus_test_7",
       "jobberUrl": "https://secure.getjobber.com/clients/142656509",
       "cardLast4": "9424",
-      "cardExpires": "2028-08"
+      "cardExpires": "2028-08",
+      "consent": {
+        "termsAcceptedAt": "2026-11-08T16:28:00Z",
+        "termsVersion": "2026-11",
+        "marketingOptIn": true,
+        "marketingChannels": [
+          "email",
+          "sms"
+        ],
+        "source": "checkout",
+        "recordedAt": "2026-11-08T16:28:00Z"
+      }
     },
     {
       "id": "p8",
@@ -12154,12 +12349,13 @@
       "firstName": "Lori",
       "town": "Lafayette",
       "zones": 9,
-      "blowoutWeek": "2027-10-25",
+      "turnOnPreference": "later",
+      "blowoutPreference": "recommended",
       "status": "active",
       "visits": [
         {
           "kind": "turn-on",
-          "window": "April to May",
+          "window": "May",
           "amount": 155
         },
         {
@@ -12169,14 +12365,25 @@
         },
         {
           "kind": "blowout",
-          "window": "October, week of the 25th",
+          "window": "October",
           "amount": 125
         }
       ],
       "stripeUrl": "https://dashboard.stripe.com/customers/cus_test_8",
       "jobberUrl": "https://secure.getjobber.com/clients/143882408",
       "cardLast4": "7107",
-      "cardExpires": "2028-08"
+      "cardExpires": "2028-08",
+      "consent": {
+        "termsAcceptedAt": "2026-11-09T17:31:00Z",
+        "termsVersion": "2026-11",
+        "marketingOptIn": true,
+        "marketingChannels": [
+          "email",
+          "sms"
+        ],
+        "source": "checkout",
+        "recordedAt": "2026-11-09T17:31:00Z"
+      }
     },
     {
       "id": "p9",
@@ -12186,12 +12393,13 @@
       "firstName": "Christian",
       "town": "Erie",
       "zones": 6,
-      "blowoutWeek": "2027-10-04",
+      "turnOnPreference": "recommended",
+      "blowoutPreference": "later",
       "status": "cancelled",
       "visits": [
         {
           "kind": "turn-on",
-          "window": "April to May",
+          "window": "May",
           "amount": 145
         },
         {
@@ -12201,14 +12409,22 @@
         },
         {
           "kind": "blowout",
-          "window": "October, week of the 4th",
+          "window": "October",
           "amount": 95
         }
       ],
       "stripeUrl": "https://dashboard.stripe.com/customers/cus_test_9",
       "jobberUrl": "https://secure.getjobber.com/clients/137168978",
       "cardLast4": "0002",
-      "cardExpires": "2028-08"
+      "cardExpires": "2028-08",
+      "consent": {
+        "termsAcceptedAt": "2026-11-10T18:34:00Z",
+        "termsVersion": "2026-11",
+        "marketingOptIn": false,
+        "marketingChannels": [],
+        "source": "checkout",
+        "recordedAt": "2026-11-10T18:34:00Z"
+      }
     },
     {
       "id": "p10",
@@ -12218,12 +12434,13 @@
       "firstName": "Blake",
       "town": "Broomfield",
       "zones": 11,
-      "blowoutWeek": "2027-10-11",
+      "turnOnPreference": "earlier",
+      "blowoutPreference": "recommended",
       "status": "active",
       "visits": [
         {
           "kind": "turn-on",
-          "window": "April to May",
+          "window": "May",
           "amount": 175
         },
         {
@@ -12233,14 +12450,24 @@
         },
         {
           "kind": "blowout",
-          "window": "October, week of the 11th",
+          "window": "October",
           "amount": 145
         }
       ],
       "stripeUrl": "https://dashboard.stripe.com/customers/cus_test_10",
       "jobberUrl": "https://secure.getjobber.com/clients/142909212",
       "cardLast4": "6291",
-      "cardExpires": "2028-08"
+      "cardExpires": "2028-08",
+      "consent": {
+        "termsAcceptedAt": "2026-11-11T19:37:00Z",
+        "termsVersion": "2026-11",
+        "marketingOptIn": true,
+        "marketingChannels": [
+          "email"
+        ],
+        "source": "checkout",
+        "recordedAt": "2026-11-11T19:37:00Z"
+      }
     },
     {
       "id": "p11",
@@ -12250,12 +12477,13 @@
       "firstName": "Ben",
       "town": "Erie",
       "zones": 8,
-      "blowoutWeek": "2027-10-18",
+      "turnOnPreference": "later",
+      "blowoutPreference": "recommended",
       "status": "active",
       "visits": [
         {
           "kind": "turn-on",
-          "window": "April to May",
+          "window": "May",
           "amount": 145
         },
         {
@@ -12265,14 +12493,25 @@
         },
         {
           "kind": "blowout",
-          "window": "October, week of the 18th",
+          "window": "October",
           "amount": 115
         }
       ],
       "stripeUrl": "https://dashboard.stripe.com/customers/cus_test_11",
       "jobberUrl": "https://secure.getjobber.com/clients/137356489",
       "cardLast4": "8431",
-      "cardExpires": "2028-08"
+      "cardExpires": "2028-08",
+      "consent": {
+        "termsAcceptedAt": "2026-11-12T15:40:00Z",
+        "termsVersion": "2026-11",
+        "marketingOptIn": true,
+        "marketingChannels": [
+          "email",
+          "sms"
+        ],
+        "source": "checkout",
+        "recordedAt": "2026-11-12T15:40:00Z"
+      }
     },
     {
       "id": "p12",
@@ -12282,12 +12521,13 @@
       "firstName": "Sarah",
       "town": "Erie",
       "zones": 7,
-      "blowoutWeek": "2027-10-25",
+      "turnOnPreference": "recommended",
+      "blowoutPreference": "earlier",
       "status": "active",
       "visits": [
         {
           "kind": "turn-on",
-          "window": "April to May",
+          "window": "May",
           "amount": 145
         },
         {
@@ -12297,57 +12537,22 @@
         },
         {
           "kind": "blowout",
-          "window": "October, week of the 25th",
+          "window": "October",
           "amount": 105
         }
       ],
       "stripeUrl": "https://dashboard.stripe.com/customers/cus_test_12",
       "jobberUrl": "https://secure.getjobber.com/clients/137592089",
       "cardLast4": "2277",
-      "cardExpires": "2028-08"
-    }
-  ],
-  "blowoutWeeks": [
-    {
-      "season": 2027,
-      "weekStart": "2027-10-04",
-      "capacity": 20,
-      "taken": 2,
-      "towns": [
-        "Erie",
-        "Longmont"
-      ]
-    },
-    {
-      "season": 2027,
-      "weekStart": "2027-10-11",
-      "capacity": 20,
-      "taken": 3,
-      "towns": [
-        "Firestone",
-        "Erie",
-        "Broomfield"
-      ]
-    },
-    {
-      "season": 2027,
-      "weekStart": "2027-10-18",
-      "capacity": 20,
-      "taken": 3,
-      "towns": [
-        "Broomfield",
-        "Erie"
-      ]
-    },
-    {
-      "season": 2027,
-      "weekStart": "2027-10-25",
-      "capacity": 20,
-      "taken": 3,
-      "towns": [
-        "Lafayette",
-        "Erie"
-      ]
+      "cardExpires": "2028-08",
+      "consent": {
+        "termsAcceptedAt": "2026-11-13T16:43:00Z",
+        "termsVersion": "2026-11",
+        "marketingOptIn": false,
+        "marketingChannels": [],
+        "source": "checkout",
+        "recordedAt": "2026-11-13T16:43:00Z"
+      }
     }
   ],
   "monthTotals": [
