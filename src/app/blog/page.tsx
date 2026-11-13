@@ -66,7 +66,7 @@ function FeaturedCard({ post }: { post: BlogPost }) {
   return (
     <Link
       href={`/blog/${post.slug}`}
-      className="group relative block overflow-hidden rounded-lg bg-gradient-to-br from-primary-light via-primary to-primary-dark shadow-lg hover:shadow-xl transition-shadow"
+      className="group relative block overflow-hidden rounded-lg bg-gradient-to-br from-primary-dark via-primary-deep to-primary-deep shadow-lg hover:shadow-xl transition-shadow"
     >
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.18),transparent_60%)]" />
 

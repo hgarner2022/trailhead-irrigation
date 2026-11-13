@@ -1,0 +1,64 @@
+/* Design tokens (docs/DESIGN.md). Imported by globals.css for the site and by
+   .storybook/storybook.css for stories, so the block lives here once. */
+@theme inline {
+  --color-primary: #D97706;
+  --color-primary-dark: #B45309;
+  --color-primary-deep: #92400E;         /* hover for buttons that rest on primary-dark */
+  --color-primary-light: #F59E0B;
+  --color-navy: #2B3544;
+  --color-navy-light: #3D4F63;
+  --color-charcoal: #1E293B;
+  --color-cream: #FAFAF8;
+  --color-stone: #F5F5F4;
+  --color-border: #E7E5E4;
+  --color-muted: #78716C;
+  --color-success: #16A34A;
+
+  --color-background: #FFFFFF;
+  --color-foreground: #1E293B;
+  --color-muted-foreground: #756E69;     /* labels and helper text; 4.59:1 on stone, 4.8 on cream, 5.0 on white */
+  --color-card: #FFFFFF;
+  --color-card-foreground: #1E293B;
+
+  /* Type: condensed display face for headings, humanist sans for body.
+     The *-src variables are set by next/font in src/app/layout.tsx. */
+  --font-sans: var(--font-body-src), "Segoe UI", Helvetica, Arial, sans-serif;
+  --font-display: var(--font-display-src), "Arial Narrow", Impact, sans-serif;
+
+  /* App tokens (admin dashboard, checkout, pass page). Mapped onto the brand
+     palette above; shadcn primitives reference these names. Documented in
+     docs/DESIGN.md. */
+  --color-secondary: #F5F5F4;            /* = stone */
+  --color-secondary-foreground: #1E293B;
+  --color-accent: #F5F5F4;
+  --color-accent-foreground: #1E293B;
+  --color-popover: #FFFFFF;
+  --color-popover-foreground: #1E293B;
+  --color-destructive: #B91C1C;
+  --color-destructive-foreground: #FFFFFF;
+  --color-warning: #B45309;              /* = primary-dark */
+  --color-positive: #15803D;             /* readable green, about 5:1 on white; used as text */
+  --color-positive-deep: #166534;        /* ink for text on the positive tint; 6.2:1 on bg-positive/10 */
+  --color-input: #E7E5E4;                /* = border */
+  --color-ring: #D97706;                 /* = primary */
+
+  --color-sidebar: #2B3544;              /* navy rail */
+  --color-sidebar-foreground: #FAFAF8;
+  --color-sidebar-primary: #B45309;      /* = primary-dark; white text on it passes AA */
+  --color-sidebar-primary-foreground: #FFFFFF;
+  --color-sidebar-accent: #3D4F63;       /* = navy-light */
+  --color-sidebar-accent-foreground: #FFFFFF;
+  --color-sidebar-border: #3D4F63;
+  --color-sidebar-ring: #F59E0B;
+
+  --color-chart-1: #D97706;              /* this year */
+  --color-chart-2: #2B3544;              /* last year */
+  --color-chart-3: #16A34A;
+  --color-chart-4: #78716C;
+  --color-chart-5: #F59E0B;
+
+  --color-row-hover: #FAFAF8;            /* = cream */
+  --color-row-selected: #FEF3C7;         /* pale amber tint */
+
+  --radius: 0.5rem;                      /* rounded-lg everywhere */
+}

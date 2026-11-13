@@ -1,73 +1,36 @@
 @import "tailwindcss";
+@import "./tokens.css";
+@import "./base.css";
+/* docs and the gate tests mention class names; keep them out of the scan */
+@source not "../../docs";
+@source not "../../scripts";
 
-@theme inline {
-  --color-primary: #D97706;
-  --color-primary-dark: #B45309;
-  --color-primary-light: #F59E0B;
-  --color-navy: #2B3544;
-  --color-navy-light: #3D4F63;
-  --color-charcoal: #1E293B;
-  --color-cream: #FAFAF8;
-  --color-stone: #F5F5F4;
-  --color-border: #E7E5E4;
-  --color-muted: #78716C;
-  --color-success: #16A34A;
-
-  --color-background: #FFFFFF;
-  --color-foreground: #1E293B;
-  --color-muted-foreground: #78716C;
-  --color-card: #FFFFFF;
-  --color-card-foreground: #1E293B;
-
-  /* Type: condensed display face for headings, humanist sans for body.
-     The *-src variables are set by next/font in src/app/layout.tsx. */
-  --font-sans: var(--font-body-src), "Segoe UI", Helvetica, Arial, sans-serif;
-  --font-display: var(--font-display-src), "Arial Narrow", Impact, sans-serif;
-}
-
-/* Section spacing utilities matching pro-blocks patterns */
-.section-padding-y {
-  padding-top: 4rem;
-  padding-bottom: 4rem;
-}
-
-@media (min-width: 768px) {
-  .section-padding-y {
-    padding-top: 6rem;
-    padding-bottom: 6rem;
-  }
-}
-
-.container-padding-x {
-  padding-left: 1rem;
-  padding-right: 1rem;
-}
-
-@media (min-width: 640px) {
-  .container-padding-x {
-    padding-left: 1.5rem;
-    padding-right: 1.5rem;
-  }
-}
-
-@media (min-width: 1024px) {
-  .container-padding-x {
-    padding-left: 2rem;
-    padding-right: 2rem;
-  }
-}
-
-body {
-  background: var(--color-background);
-  color: var(--color-foreground);
-  font-family: var(--font-sans);
-}
-
-/* Headings site-wide take the display face. Individual components can opt
-   out with `font-sans` (the hero's keyword H1 does). */
-h1, h2, h3 {
-  font-family: var(--font-display);
-  letter-spacing: 0.01em;
-  line-height: 1.05;
-  text-wrap: balance;
-}
+/* Admin-only sources stay out of the marketing CSS. The admin route group gets
+   its own stylesheet entry when it is wired (see the wiring plan). Tailwind
+   4.2 cannot re-include one file under an excluded folder, so the admin-only
+   ui/ primitives are excluded one by one; the ones not listed (badge, button,
+   card, carousel, input, separator, textarea) are what marketing imports. The
+   gate fails when marketing imports a primitive listed here and when a
+   primitive is neither used by marketing nor listed (npm run check:design). */
+@source not "../components/blocks";
+@source not "../components/**/*.stories.tsx";
+@source not "../components/**/*.test.tsx";
+@source not "./(admin)";
+@source not "./(checkout)";
+@source not "./(account)";
+@source not "../components/ui/avatar.tsx";
+@source not "../components/ui/chart.tsx";
+@source not "../components/ui/checkbox.tsx";
+@source not "../components/ui/command.tsx";
+@source not "../components/ui/dialog.tsx";
+@source not "../components/ui/dropdown-menu.tsx";
+@source not "../components/ui/label.tsx";
+@source not "../components/ui/popover.tsx";
+@source not "../components/ui/scroll-area.tsx";
+@source not "../components/ui/select.tsx";
+@source not "../components/ui/sheet.tsx";
+@source not "../components/ui/sidebar.tsx";
+@source not "../components/ui/skeleton.tsx";
+@source not "../components/ui/table.tsx";
+@source not "../components/ui/tabs.tsx";
+@source not "../components/ui/tooltip.tsx";

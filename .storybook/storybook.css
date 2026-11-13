@@ -1,0 +1,8 @@
+/* Storybook's stylesheet. globals.css keeps the admin-only sources out of the
+   marketing CSS, which would starve the admin stories, so stories scan all of
+   src/ here and share the tokens and base rules with the site. */
+@import "tailwindcss";
+@import "../src/app/tokens.css";
+@import "../src/app/base.css";
+@source "../src";
+@source not "../docs";

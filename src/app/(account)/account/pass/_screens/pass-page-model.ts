@@ -1,0 +1,58 @@
+/**
+ * The pure derivations behind PassPageScreen: each visit's row (name, when,
+ * state), the card on file line and the season caption. Kept out of the
+ * screen so the wording can be unit tested.
+ */
+import type { Pass, PassVisit, VisitStatus } from "@/lib/admin/types"
+import { writtenDate } from "@/lib/admin/format"
+
+export const VISIT_NAMES: Record<PassVisit["kind"], string> = { "turn-on": "Spring turn-on", inspection: "Mid-season inspection", blowout: "Fall blowout" }
+
+export type RowStatus = Extract<VisitStatus, "completed" | "scheduled" | "unscheduled">
+
+export interface VisitRow {
+  kind: PassVisit["kind"]
+  name: string
+  /** the date once there is one, else the reserved week, else the window */
+  when: string
+  status: RowStatus
+  /** the customer's word for the state: Done, Booked, Reserved, or the window while a visit waits for its day */
+  label: string
+}
+
+export const visitStatus = (visit: PassVisit): RowStatus => (visit.completedAt ? "completed" : visit.scheduledAt ? "scheduled" : "unscheduled")
+
+export function visitRow(visit: PassVisit, pass: Pass): VisitRow {
+  const status = visitStatus(visit)
+  const when = visit.completedAt
+    ? writtenDate(visit.completedAt)
+    : visit.scheduledAt
+      ? writtenDate(visit.scheduledAt)
+      : visit.kind === "blowout"
+        ? `Week of ${writtenDate(pass.blowoutWeek)}`
+        : visit.window
+  const label = status === "completed" ? "Done" : status === "scheduled" ? "Booked" : visit.kind === "blowout" ? "Reserved" : visit.window
+  return { kind: visit.kind, name: VISIT_NAMES[visit.kind], when, status, label }
+}
+
+export const visitRows = (pass: Pass): VisitRow[] => pass.visits.map((v) => visitRow(v, pass))
+
+/** "08/28" from the stored "2028-08". */
+export const expiry = (yearMonth: string) => `${yearMonth.slice(5, 7)}/${yearMonth.slice(2, 4)}`
+
+/** "Visa ending 4242, expires 08/28"; the brand is Visa until Stripe tells us otherwise in the wiring phase. */
+export function cardLine(pass: Pass): string {
+  if (!pass.cardLast4) return "No card on file yet."
+  const ending = `Visa ending ${pass.cardLast4}`
+  return pass.cardExpires ? `${ending}, expires ${expiry(pass.cardExpires)}` : ending
+}
+
+/** One line under the season line: what is next, or that the season is done. */
+export function seasonCaption(pass: Pass): string {
+  const next = pass.visits.find((v) => !v.completedAt)
+  if (!next) return `All three visits are done. We'll email you in January about ${pass.season + 1}.`
+  const row = visitRow(next, pass)
+  if (next.scheduledAt) return `Next up: ${row.name.toLowerCase()} on ${row.when}.`
+  if (next.kind === "blowout") return `Your blowout is reserved for the week of ${writtenDate(pass.blowoutWeek)}. Ryan sets the day in September.`
+  return `Next up: ${row.name.toLowerCase()} in ${row.when}.`
+}
