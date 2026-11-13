@@ -11,7 +11,7 @@ beforeAll(() => {
 })
 beforeEach(() => sessionStorage.clear())
 
-const answers: Partial<CheckoutFields> = { address: FIXTURE_HOME.label, place: FIXTURE_HOME, town: "Erie", access: "yes", today: "2026-11-12", zones: 8, firstName: "Andrea", email: "andrea@example.com", phone: "(970) 555-0123" }
+const answers: Partial<CheckoutFields> = { address: FIXTURE_HOME.label, place: FIXTURE_HOME, town: "Erie", access: "yes", today: "2026-11-12", zones: 8, firstName: "Andrea", email: "andrea@example.com", phone: "(970) 555-0123", termsAccepted: true }
 const press = () => fireEvent.click(screen.getByRole("button", { name: "Continue" }))
 
 describe("validation that helps", () => {
@@ -37,6 +37,13 @@ describe("validation that helps", () => {
     expect(screen.getByLabelText("Phone")).toHaveFocus()
     expect(screen.queryByRole("alert")).not.toBeInTheDocument()
     expect(screen.getByLabelText("Phone")).toHaveAccessibleDescription("We need a ten-digit phone number for the day-of text.")
+  })
+  it("counts the terms box among the problems, names it in the summary and focuses it when it is the only one", () => {
+    render(<CheckoutFlow season={2027} initialStep={5} prefill={{ ...answers, termsAccepted: false }} />)
+    press()
+    expect(screen.getByRole("checkbox", { name: /I accept the Season Pass terms/ })).toHaveFocus()
+    expect(screen.getByText("Please accept the terms to continue")).toHaveClass("text-destructive")
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument()
   })
   it("tells the address step what is missing: the address, then the access answer", () => {
     render(<CheckoutFlow season={2027} />)

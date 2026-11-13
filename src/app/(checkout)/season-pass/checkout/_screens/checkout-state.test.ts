@@ -73,7 +73,7 @@ describe("step order", () => {
   it("stays put when the step is not valid", () => {
     const s = reducer(initialState(), { type: "next" })
     expect(s.step).toBe(1)
-    expect(reducer({ ...filled, step: 6, termsAccepted: false }, { type: "next" }).step).toBe(6)
+    expect(reducer({ ...filled, step: 5, termsAccepted: false }, { type: "next" }).step).toBe(5)
   })
 
   it("goes back, never below the first step", () => {
@@ -179,13 +179,14 @@ describe("canContinue", () => {
     expect(canContinue({ ...filled, step: 5, phone: "555-0123" })).toBe(false)
     expect(canContinue({ ...filled, step: 5, phone: "970 555 0123" })).toBe(true)
     expect(canContinue({ ...filled, step: 5 })).toBe(true)
+    expect(canContinue({ ...filled, step: 5, termsAccepted: false })).toBe(false)
+    expect(canContinue({ ...filled, step: 5, termsAccepted: false, marketingEmail: true, marketingSms: true })).toBe(false)
   })
 
   it("card: needs the terms accepted, whatever the marketing boxes say; done: never", () => {
     expect(canContinue({ ...filled, step: 6 })).toBe(true)
     expect(canContinue({ ...filled, step: 6, marketingEmail: true, marketingSms: true })).toBe(true)
-    expect(canContinue({ ...filled, step: 6, termsAccepted: false })).toBe(false)
-    expect(canContinue({ ...filled, step: 6, termsAccepted: false, marketingEmail: true })).toBe(false)
+    expect(canContinue({ ...filled, step: 6, termsAccepted: false })).toBe(true)
     expect(canContinue({ ...filled, step: 7 })).toBe(false)
   })
 })

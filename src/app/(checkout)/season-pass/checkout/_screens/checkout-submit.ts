@@ -18,9 +18,11 @@ export interface CheckoutSubmission {
   firstName: string
   email: string
   phone: string
+  /** the boxes ticked at the end of the contact step; the server records them on the pending pass */
+  consent: CheckoutConsent
 }
 
-/** The card step's three boxes: the required terms, and the two optional marketing ones. */
+/** The contact step's three boxes: the required terms, and the two optional marketing ones. */
 export interface CheckoutConsent {
   termsAccepted: boolean
   marketingEmail: boolean
@@ -54,5 +56,6 @@ export function toSubmission(f: CheckoutFields): CheckoutSubmission | null {
     firstName: f.firstName.trim(),
     email: f.email.trim(),
     phone: f.phone.trim(),
+    consent: { termsAccepted: f.termsAccepted, marketingEmail: f.marketingEmail, marketingSms: f.marketingSms },
   }
 }

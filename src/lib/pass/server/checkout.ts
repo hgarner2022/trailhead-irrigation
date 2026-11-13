@@ -79,9 +79,13 @@ function createInput(f: CheckoutSubmission, passId?: string) {
 export async function beginCheckoutWith(deps: CheckoutDeps, f: CheckoutSubmission, passId?: string): Promise<BeginResult> {
   let known = passId
   try {
+    // The terms were accepted at the end of the contact step; without them no pending pass is made.
+    if (!f.consent.termsAccepted) return { ok: false, problem: "invalid", message: "Please accept the terms to continue" }
     const ctx = await deps.ctx()
     const pass = await callApi(ctx, passesCreate, createInput(f, passId))
     known = pass.id
+    // The snapshot goes on the pending pass now, so an activation Stripe's webhook gets to first (the tab closed after the card was saved) records the same consent.
+    await recordConsentWith(deps, pass.id, f.consent)
     const [customer] = await ctx.db.select({ stripeCustomerId: s.customer.stripeCustomerId }).from(s.customer).where(eq(s.customer.id, pass.customerId))
     const bucket = Math.floor(Date.now() / BUCKET_MS) * BUCKET_MS
     const session = await createSetupSession(deps.stripe(), {
@@ -151,7 +155,7 @@ async function sessionExpired(deps: CheckoutDeps, sessionId: string): Promise<bo
 }
 
 /**
- * The card form opened: record the boxes as ticked on the pending pass, so an activation that Stripe's webhook gets to first
+ * Record the boxes as ticked on the pending pass (when the contact step passes), so an activation that Stripe's webhook gets to first
  * (the tab closed after the card was saved) records the same consent. Best effort; the finishing request carries the boxes too.
  */
 export async function recordConsentWith(deps: CheckoutDeps, passId: string, consent: CheckoutConsent): Promise<void> {

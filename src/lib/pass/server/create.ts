@@ -32,6 +32,8 @@ export function failedCheckoutStep(a: CheckoutAnswers): (typeof STEPS)[number]["
     firstName: a.customer.firstName,
     email: a.customer.email,
     phone: a.customer.phone ?? "",
+    // The terms box is the browser's; the server records the consent itself (`passes.consent`), so only the answers are held to the rule here.
+    termsAccepted: true,
   })
   for (let step = 1; step <= STEPS.findIndex((x) => x.key === "card"); step++) {
     const state: CheckoutState = { ...base, step }

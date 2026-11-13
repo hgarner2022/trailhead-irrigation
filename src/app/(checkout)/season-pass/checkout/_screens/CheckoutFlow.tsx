@@ -8,13 +8,14 @@ import type { Pass } from "@/lib/admin/types"
 import { STEPS, STEP_COUNT, canContinue, stepProblems, toPass, type CheckoutFields, type CheckoutState } from "./checkout-state"
 import type { PlaceProvider } from "@/lib/places"
 import { AddressStep } from "./checkout-address"
-import { CONSENT_PROBLEM_ID, ContactStep, DoneStep, ZonesStep, useReveal } from "./checkout-steps"
+import { CONSENT_PROBLEM_ID } from "./checkout-consent"
+import { ContactStep, DoneStep, ZonesStep, useReveal } from "./checkout-steps"
 import { useCheckoutState } from "./use-checkout-state"
 import { useCheckoutServer } from "./use-checkout-server"
 import { useCheckoutStorage } from "./use-checkout-storage"
 import { CardStep } from "./checkout-card"
 import { ErrorSummary } from "./checkout-errors"
-import type { BeginCheckout, FinishCheckout, RecordConsent } from "./checkout-submit"
+import type { BeginCheckout, FinishCheckout } from "./checkout-submit"
 import { savePassImage } from "@/lib/pass-card-image"
 import { InspectionStep } from "./checkout-inspection"
 import { TimingStep } from "./checkout-timing"
@@ -28,9 +29,9 @@ import { ownsKeys, timingNeighbour } from "./checkout-keys"
 // reducer in checkout-state.ts. Wired (a Stripe key plus onBegin and onFinish,
 // which the page passes from the server actions) the contact step makes the
 // pending pass and the card form's session, the card step mounts Stripe's
-// embedded form once the terms are accepted, and Stripe's completion activates
+// embedded form, and Stripe's completion activates
 // the pass; unwired (stories, the prototype) the card step is a placeholder and
-// nothing fetches. Either way the consent boxes are real and gate the card.
+// nothing fetches. Either way the terms box ends the contact step and gates Continue.
 // Client component.
 
 export interface CheckoutFlowProps {
@@ -55,8 +56,6 @@ export interface CheckoutFlowProps {
   onBegin?: BeginCheckout
   /** called when Stripe says the card is saved: activates the pass */
   onFinish?: FinishCheckout
-  /** called when the card form opens: records the ticked boxes on the pending pass */
-  onConsent?: RecordConsent
 }
 
 const BACKDROP = "/images/trail-mountain-meadow.jpg"
@@ -70,7 +69,7 @@ function StepBody({ duration, enabled, children }: { duration: number; enabled: 
   return <div ref={ref}>{children}</div>
 }
 
-export function CheckoutFlow({ season, initialZones, initialStep, prefill, places, today, onComplete, onSaveImage, onDone, stripeKey, onBegin, onFinish, onConsent }: CheckoutFlowProps) {
+export function CheckoutFlow({ season, initialZones, initialStep, prefill, places, today, onComplete, onSaveImage, onDone, stripeKey, onBegin, onFinish }: CheckoutFlowProps) {
   const [state, dispatch] = useCheckoutState({ ...(initialZones ? { zones: initialZones } : {}), ...(today ? { today } : {}), ...prefill, ...(initialStep ? { step: initialStep } : {}) })
   // The step on which Continue (or Enter) was pressed too early, so it shows every field's problem; `n` counts the presses so each one moves focus again.
   const [attempt, setAttempt] = useState<{ step: number; n: number } | null>(null)
@@ -85,7 +84,7 @@ export function CheckoutFlow({ season, initialZones, initialStep, prefill, place
   const attempted = attempt?.step === step
   const wired = Boolean(stripeKey && onBegin && onFinish)
   const markMoved = useCallback(() => setMoved(true), [])
-  const { busy, begin, finishCard, retry } = useCheckoutServer({ state, dispatch, onBegin, onFinish, onComplete, onConsent, moved: markMoved })
+  const { busy, begin, finishCard, retry } = useCheckoutServer({ state, dispatch, onBegin, onFinish, onComplete, moved: markMoved })
   useCheckoutStorage(state, dispatch, wired)
 
   const set = <K extends keyof CheckoutFields>(field: K, value: CheckoutFields[K]) => dispatch({ type: "set", field, value })
@@ -172,7 +171,7 @@ export function CheckoutFlow({ season, initialZones, initialStep, prefill, place
       body = <ContactStep state={state} set={set} attempted={attempted} />
       break
     case "card":
-      body = <CardStep state={state} set={set} attempted={attempted} stripeKey={wired ? stripeKey : undefined} clientSecret={state.clientSecret} onCardComplete={finishCard} />
+      body = <CardStep state={state} set={set} stripeKey={wired ? stripeKey : undefined} clientSecret={state.clientSecret} onCardComplete={finishCard} />
       break
     default: {
       const pass = state.pass ?? toPass(state, season)
@@ -251,7 +250,7 @@ export function CheckoutFlow({ season, initialZones, initialStep, prefill, place
                 <span />
               )}
               {!(wired && current.key === "card") && (
-                <Button size="lg" data-nav disabled={busy} aria-busy={busy || undefined} aria-describedby={current.key === "card" && attempted && !valid ? CONSENT_PROBLEM_ID : undefined} onClick={next}>
+                <Button size="lg" data-nav disabled={busy} aria-busy={busy || undefined} aria-describedby={current.key === "contact" && attempted && !state.termsAccepted ? CONSENT_PROBLEM_ID : undefined} onClick={next}>
                   {busy ? "One moment" : current.action}
                 </Button>
               )}

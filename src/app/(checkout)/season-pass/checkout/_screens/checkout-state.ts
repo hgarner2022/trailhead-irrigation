@@ -64,9 +64,9 @@ export interface CheckoutFields {
   firstName: string
   email: string
   phone: string
-  /** the required box on the card step: the Season Pass terms and the terms of service */
+  /** the required box that ends the contact step: the Season Pass terms and the terms of service */
   termsAccepted: boolean
-  /** the optional boxes on the card step: seasonal tips and offers by email, and by text */
+  /** the optional boxes under it: seasonal tips and offers by email, and by text */
   marketingEmail: boolean
   marketingSms: boolean
   cardSaved: boolean
@@ -90,8 +90,6 @@ export interface CheckoutState extends CheckoutFields {
   sessionAt?: number
   /** a line that is not an error, such as "your saved checkout timed out"; cleared when the customer moves on */
   notice?: string
-  /** set by a restore that was on the card step: the server is asked for a fresh card form before the step opens */
-  resuming?: boolean
 }
 
 export type CheckoutAction =
@@ -108,8 +106,9 @@ export type CheckoutAction =
   | { type: "failed"; message: string; retry?: "finish" | "begin" }
   /** the browser kept this checkout from before a reload: its answers, its pending pass and the step the customer was on */
   | { type: "restore"; step: number; passId?: string; fields: Partial<CheckoutFields> }
-  /** the pending pass kept in the browser is gone from the server: start at the contact step with the pass the server made instead */
-  | { type: "expired"; passId: string; message: string }
+
+/** Said once when a reload or a return visit lands on the contact step from the card step. */
+export const RESTORED_CARD_NOTICE = "Welcome back. Your details are here; accept the terms and continue to open the card form again."
 
 const clampStep = (step: number) => Math.min(STEP_COUNT, Math.max(1, Math.trunc(step)))
 
@@ -166,9 +165,7 @@ export function stepProblems(state: CheckoutState): string[] {
     case "address":
       return [...(addressProblem(state, true) ? ["Address"] : []), ...(state.place && state.access === null ? ["Access"] : [])]
     case "contact":
-      return (["firstName", "email", "phone"] as const).filter((f) => contactProblem(f, state[f]) !== null).map((f) => label[f])
-    case "card":
-      return state.termsAccepted ? [] : ["Terms"]
+      return [...(["firstName", "email", "phone"] as const).filter((f) => contactProblem(f, state[f]) !== null).map((f) => label[f]), ...(state.termsAccepted ? [] : ["Terms"])]
     default:
       return []
   }
@@ -185,10 +182,11 @@ export function canContinue(state: CheckoutState): boolean {
     case "inspection":
     case "timing":
       return true
+    // The terms are accepted here, so Continue on the contact step is the moment of acceptance.
     case "contact":
-      return (["firstName", "email", "phone"] as const).every((f) => contactProblem(f, state[f]) === null)
+      return state.termsAccepted && (["firstName", "email", "phone"] as const).every((f) => contactProblem(f, state[f]) === null)
     case "card":
-      return state.termsAccepted
+      return true
     default:
       return false
   }
@@ -219,12 +217,12 @@ export function reducer(state: CheckoutState, action: CheckoutAction): CheckoutS
       return isDone(state) ? state : { ...state, step: clampStep(action.step) }
     // The card form is open: always the card step, also when a fresh session replaces one that expired while the customer sat on it.
     case "begun":
-      return { ...state, passId: action.passId, sessionId: action.sessionId, clientSecret: action.clientSecret, sessionAt: action.at, failure: undefined, retry: undefined, notice: undefined, resuming: undefined, step: CARD_STEP }
+      return { ...state, passId: action.passId, sessionId: action.sessionId, clientSecret: action.clientSecret, sessionAt: action.at, failure: undefined, retry: undefined, notice: undefined, step: CARD_STEP }
     case "finished":
       return { ...state, pass: action.pass, cardSaved: true, failure: undefined, retry: undefined, step: STEP_COUNT }
     case "failed":
-      return { ...state, failure: action.message, retry: action.retry, resuming: false }
-    // A customer who was on the card step comes back to the contact step and the card form is asked for again; the rest open where they were.
+      return { ...state, failure: action.message, retry: action.retry }
+    // A customer who was on the card step comes back to the contact step, where the terms are accepted again (they are never kept) before a new card form opens; the rest open where they were.
     case "restore": {
       const onCard = action.step >= STEPS.findIndex((s) => s.key === "card") + 1
       return {
@@ -232,11 +230,9 @@ export function reducer(state: CheckoutState, action: CheckoutAction): CheckoutS
         ...action.fields,
         ...(action.passId ? { passId: action.passId } : {}),
         step: clampStep(onCard ? STEPS.findIndex((s) => s.key === "contact") + 1 : action.step),
-        resuming: onCard || undefined,
+        ...(onCard ? { notice: RESTORED_CARD_NOTICE } : {}),
       }
     }
-    case "expired":
-      return { ...state, passId: action.passId, clientSecret: undefined, sessionId: undefined, notice: action.message, failure: undefined, resuming: undefined, step: STEPS.findIndex((s) => s.key === "contact") + 1 }
   }
 }
 

@@ -81,7 +81,7 @@ export const Contact: Story = {
 
 /** Continue pressed with nothing typed: every problem beside its field, a summary naming them, and focus on the first. */
 export const ContactErrors: Story = {
-  args: { initialStep: 5, prefill: { ...answers, firstName: "", email: "", phone: "" } },
+  args: { initialStep: 5, prefill: { ...answers, firstName: "", email: "", phone: "", termsAccepted: true } },
   globals: { viewport: { value: "wide", isRotated: false } },
   play: async ({ canvas, userEvent }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Continue" }))
@@ -90,30 +90,35 @@ export const ContactErrors: Story = {
   },
 }
 
-/** The consent boxes under the card form: the terms unticked, so the button waits. */
+/** The card step opens straight into the order summary and the form (the terms were accepted on the contact step). */
 export const Card: Story = {
-  args: { initialStep: 6, prefill: answers },
+  args: { initialStep: 6, prefill: { ...answers, termsAccepted: true } },
   globals: { viewport: { value: "wide", isRotated: false } },
-}
-
-/** Enter pressed with the terms still unticked: the line under the box says what is missing. */
-export const CardTermsMissing: Story = {
-  args: { initialStep: 6, prefill: answers },
-  globals: { viewport: { value: "wide", isRotated: false } },
-  play: async ({ canvas, userEvent }) => {
-    await canvas.findByRole("button", { name: "Save card and reserve" })
-    await userEvent.keyboard("{Enter}")
-    await expect(await canvas.findByText("Please accept the terms to continue")).toBeInTheDocument()
+  play: async ({ canvas }) => {
+    await expect(canvas.getByText("Season total")).toBeInTheDocument()
+    await expect(canvas.queryByRole("checkbox")).toBeNull()
   },
 }
 
-/** Wired, before the terms: the card form waits behind the boxes (no key reaches Stripe.js, so nothing loads). */
-export const CardTermsFirst: Story = {
-  args: { initialStep: 6, prefill: { ...answers, termsAccepted: false, passId: "p-story", sessionId: "cs_story", clientSecret: "cs_story_secret" }, stripeKey: "pk_test_story", onBegin: fn(), onFinish: fn() },
+/** Wired: the card form mounts under the summary with no box and no locked line (no key reaches Stripe.js, so nothing loads). */
+export const CardWired: Story = {
+  args: { initialStep: 6, prefill: { ...answers, termsAccepted: true, passId: "p-story", sessionId: "cs_story", clientSecret: "cs_story_secret" }, stripeKey: "pk_test_story", onBegin: fn(), onFinish: fn() },
   globals: { viewport: { value: "wide", isRotated: false } },
   play: async ({ canvas }) => {
-    await expect(canvas.getByText(/Accept the terms above and the card form opens here/)).toBeInTheDocument()
+    await expect(canvas.queryByText(/Accept the terms/)).toBeNull()
+    await expect(canvas.queryByRole("checkbox")).toBeNull()
     await expect(canvas.queryByRole("button", { name: "Save card and reserve" })).toBeNull()
+  },
+}
+
+/** Continue with everything answered but the terms unticked: the line beside the box says what is missing and the box takes focus. */
+export const ContactTermsMissing: Story = {
+  args: { initialStep: 5, prefill: answers },
+  globals: { viewport: { value: "wide", isRotated: false } },
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(canvas.getByRole("button", { name: "Continue" }))
+    await expect(await canvas.findByText("Please accept the terms to continue")).toBeInTheDocument()
+    await expect(canvas.getByRole("checkbox", { name: /I accept the Season Pass terms/ })).toHaveFocus()
   },
 }
 
@@ -121,7 +126,7 @@ export const CardTermsFirst: Story = {
 export const ContactRefused: Story = {
   args: {
     initialStep: 5,
-    prefill: answers,
+    prefill: { ...answers, termsAccepted: true },
     stripeKey: "pk_test_story",
     onBegin: fn(async () => ({ ok: false as const, problem: "email-unreachable" as const, message: "We can't find that email's mail server. Check the spelling." })),
     onFinish: fn(),
@@ -147,7 +152,7 @@ export const CardSummary: Story = {
 export const CardFailed: Story = {
   args: {
     initialStep: 6,
-    prefill: { ...answers, termsAccepted: false, passId: "p-story", sessionId: "cs_story", clientSecret: "cs_story_secret", failure: "We couldn't reach the card form just now. Nothing was charged. Please try again.", retry: "finish" },
+    prefill: { ...answers, termsAccepted: true, passId: "p-story", sessionId: "cs_story", clientSecret: "cs_story_secret", failure: "We couldn't reach the card form just now. Nothing was charged. Please try again.", retry: "finish" },
     stripeKey: "pk_test_story",
     onBegin: fn(),
     onFinish: fn(),
@@ -197,13 +202,11 @@ export const Walkthrough: Story = {
     await userEvent.type(await canvas.findByLabelText("First name"), "Andrea")
     await userEvent.type(canvas.getByLabelText("Email"), "andrea@example.com")
     await userEvent.type(canvas.getByLabelText("Phone"), "9705550123")
-    await userEvent.click(canvas.getByRole("button", { name: "Continue" }))
-
-    const save = await canvas.findByRole("button", { name: "Save card and reserve" })
-    await expect(save).toBeEnabled()
     await userEvent.click(canvas.getByRole("checkbox", { name: /I accept the Season Pass terms/ }))
     await userEvent.click(canvas.getByRole("checkbox", { name: "Seasonal tips and offers by email" }))
-    await userEvent.click(save)
+    await userEvent.click(canvas.getByRole("button", { name: "Continue" }))
+
+    await userEvent.click(await canvas.findByRole("button", { name: "Save card and reserve" }))
     await expect(await canvas.findByRole("article", { name: "Season Pass 2027 for Andrea, Erie, turn-on preferred mid May, blowout preferred late October" })).toBeInTheDocument()
     await expect(args.onComplete).toHaveBeenCalledTimes(1)
   },
@@ -221,7 +224,7 @@ export const PhoneTiming: Story = {
 
 /** Contact with every error showing at 375px: the sticky bar keeps Continue on screen under the summary. */
 export const PhoneContactErrors: Story = {
-  args: { initialStep: 5, prefill: { ...answers, firstName: "", email: "", phone: "" } },
+  args: { initialStep: 5, prefill: { ...answers, firstName: "", email: "", phone: "", termsAccepted: true } },
   globals: { viewport: { value: "phone", isRotated: false } },
   play: async ({ canvas, userEvent }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Continue" }))
@@ -230,7 +233,7 @@ export const PhoneContactErrors: Story = {
   },
 }
 
-/** The card step at 375px: the summary, the boxes and Back with room for Stripe's form under them. */
+/** The card step at 375px: the summary and Back with room for Stripe's form under it. */
 export const PhoneCard: Story = {
   args: { initialStep: 6, prefill: { ...answers, inspection: true } },
   globals: { viewport: { value: "phone", isRotated: false } },
