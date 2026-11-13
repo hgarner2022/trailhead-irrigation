@@ -20,6 +20,14 @@ const allDone: Pass = {
   })),
 }
 const cancelled: Pass = { ...active, status: "cancelled" }
+/** Andrea's 2026 season, every visit done and paid, as the earlier season under her 2027 pass. */
+const lastYear: Pass = {
+  ...allDone,
+  id: "p-2026",
+  number: "TH-2026-0001",
+  season: 2026,
+  visits: allDone.visits.map((v) => ({ ...v, scheduledAt: v.scheduledAt?.replace("2027", "2026"), completedAt: v.completedAt?.replace("2027", "2026"), chargedAt: v.chargedAt?.replace("2027", "2026") })),
+}
 
 const meta = {
   title: "Screens/PassPage",
@@ -70,6 +78,16 @@ export const ChangePreference: Story = {
     await userEvent.click(await screen.findByRole("button", { name: "Save" }))
     await expect(await screen.findByRole("dialog", { name: "Your fall blowout is now preferred late October." })).toBeInTheDocument()
     await expect(args.onChangePreference).toHaveBeenCalledWith("blowout", "later")
+  },
+}
+
+/** A returning customer: the 2027 pass in full, the 2026 season as one line that opens to its visits. */
+export const Returning: Story = {
+  args: { passes: [active, lastYear] },
+  globals: { viewport: { value: "wide", isRotated: false } },
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(await canvas.findByText("2026 season"))
+    await expect((await canvas.findAllByText("Fall blowout")).length).toBeGreaterThan(1)
   },
 }
 

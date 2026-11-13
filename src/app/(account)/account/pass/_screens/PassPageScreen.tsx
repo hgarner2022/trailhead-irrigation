@@ -7,9 +7,10 @@ import { StatusPill } from "@/components/blocks/StatusPill"
 import type { Pass, TimingPreference } from "@/lib/admin/types"
 import { preferenceOf } from "@/lib/admin/format"
 import { CancelPassDialog } from "./CancelPassDialog"
+import { EarlierSeasons } from "./EarlierSeasons"
 import { PassActions } from "@/components/blocks/PassActions"
 import { PreferenceDialog } from "@/components/blocks/PreferenceDialog"
-import { canChange, cardLine, seasonCaption, visitRows } from "./pass-page-model"
+import { canChange, cardLine, earlierSeasons, seasonCaption, visitRows } from "./pass-page-model"
 
 // The customer's pass page: a season card, not a dashboard. The pass card at
 // the top, the season line with the visits and their state, the card
@@ -19,10 +20,15 @@ import { canChange, cardLine, seasonCaption, visitRows } from "./pass-page-model
 // Done, Booked and Preferred, in the StatusPill colours; a customer never reads
 // "Not scheduled". A cancelled pass shows the grey card and one line. Pure
 // composition over `pass` and `today`; the route's page.tsx supplies both.
-// Server component; the dialog carries its own client boundary.
+// A returning customer's earlier seasons sit under the card on file as a
+// compact list (EarlierSeasons). Server component; the dialogs carry their
+// own client boundaries.
 
 export interface PassPageScreenProps {
+  /** the current season's pass */
   pass: Pass
+  /** every pass this customer has held; the earlier seasons are listed under the current one */
+  passes?: Pass[]
   /** ISO date the season line's marker is read from */
   today: string
   /** called when the customer confirms the cancel dialog */
@@ -39,8 +45,9 @@ function Title({ children }: { children: string }) {
   return <h2 className="font-display text-2xl font-semibold leading-none text-navy">{children}</h2>
 }
 
-export function PassPageScreen({ pass, today, onCancel, onChangePreference, onAddInspection, onSkip }: PassPageScreenProps) {
+export function PassPageScreen({ pass, passes = [pass], today, onCancel, onChangePreference, onAddInspection, onSkip }: PassPageScreenProps) {
   const cancelled = pass.status === "cancelled"
+  const earlier = earlierSeasons(passes, pass)
   return (
     <div data-slot="pass-page" data-status={pass.status} className="min-h-svh bg-cream text-foreground">
       <div className="mx-auto max-w-3xl space-y-8 container-padding-x py-10">
@@ -52,9 +59,12 @@ export function PassPageScreen({ pass, today, onCancel, onChangePreference, onAd
         <PassCard pass={pass} priority className="w-full" />
 
         {cancelled ? (
-          <p data-slot="pass-cancelled" className="text-base text-muted-foreground">
-            This pass is cancelled. Nothing further is charged, and no more visits are placed. Book any visit online whenever you like.
-          </p>
+          <>
+            <p data-slot="pass-cancelled" className="text-base text-muted-foreground">
+              This pass is cancelled. Nothing further is charged, and no more visits are placed. Book any visit online whenever you like.
+            </p>
+            <EarlierSeasons passes={earlier} />
+          </>
         ) : (
           <>
             <Card>
@@ -91,6 +101,8 @@ export function PassPageScreen({ pass, today, onCancel, onChangePreference, onAd
                 <Button variant="outline">Update card</Button>
               </CardContent>
             </Card>
+
+            <EarlierSeasons passes={earlier} />
 
             <Card>
               <CardHeader>
