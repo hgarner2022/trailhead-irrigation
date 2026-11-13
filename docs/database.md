@@ -31,3 +31,7 @@ Edit `src/db/schema.ts`, run `npm run db:generate`, review and commit the new SQ
 ## Jobber read-only (Phase 6)
 
 Two ways in, neither writes to Jobber. Each truck's `calendar_feed_url` (its Jobber calendar subscription) is read every five minutes by `/api/cron/feed` (guarded by `CRON_SECRET`, scheduled in `vercel.json`) into busy blocks in `jobber_visit` (`is_block`, `truck_id`, id `feed:<truckId>:<uid>`), which `schedule.slots` subtracts from capacity. The rest of the mirror is filled by the scheduled Claude routine through `mirror.upsert`; see `docs/jobber-routine.md`. Geocoding is one Nominatim lookup per property, cached on the row (`GEOCODE_CONTACT`).
+
+## Stripe (Phase 7)
+
+Cents exist only inside `src/lib/stripe/`; the database holds whole dollars. `customer.stripe_customer_id` and the pass's `stripe_payment_method_id`, `card_*` columns hold the card; `charge` holds one row per attempt (`visit_id` + `attempt`, Stripe's idempotency key is `visit-<id>-<attempt>`). A failed charge sets `season_pass.card_failed_at`, which is what Home's `charge-failed` attention row reads; a new card clears it and queues one `pass-charge` retry per failed visit. Receipts, `card-failed` and `card-expiring` are `message_log` rows with status `queued`; the messaging layer (Phase 12) sends them. Webhook events enter the queue as `stripe-webhook` items keyed on the Stripe event id.
