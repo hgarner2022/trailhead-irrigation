@@ -42,3 +42,12 @@ describe("trucks", () => {
     expect((await callApi(ctx, trucksCreate, { name: "Once", workingDays: ["fri"], capacityByKind: capacity })).id).toBe(a.id)
   })
 })
+
+describe("calendar feed", () => {
+  it("takes a feed URL from an admin and reports only that there is one", async () => {
+    const made = await callApi(ctxFor(db, adminKey), trucksUpdate, { id: "truck-2", calendarFeedUrl: "webcal://calendar.example.com/t2.ics" })
+    expect(made.hasCalendarFeed).toBe(true)
+    expect(JSON.stringify(made)).not.toContain("calendar.example.com")
+    expect((await callApi(ctxFor(db, adminKey), trucksUpdate, { id: "truck-2", calendarFeedUrl: null })).hasCalendarFeed).toBe(false)
+  })
+})

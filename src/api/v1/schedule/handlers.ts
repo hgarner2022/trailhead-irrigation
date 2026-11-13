@@ -5,6 +5,8 @@ import * as s from "@/db/schema"
 import { ApiError, notFound, notImplemented } from "../../core/errors"
 import { defineHandler } from "../../core/handler"
 import { addDays, capacityKind, Day, Id, Town, today, VisitKind, weekdayOf } from "../shared"
+import { blockedMinutes, capacityAfterBlocks } from "@/lib/admin/calendar"
+import { loadBlocks } from "@/lib/jobber-feed"
 import { visitOut, visitsQuery } from "../visits/queries"
 import { VisitOut } from "../visits/schemas"
 
@@ -100,7 +102,7 @@ export const scheduleSlots = defineHandler({
   method: "GET",
   path: "/schedule/slots",
   scope: "read",
-  summary: "Open truck-days for a service, zone count and town, from tomorrow: the truck works the weekday, has room for the kind, and is not already in another area that day.",
+  summary: "Open truck-days for a service, zone count and town, from tomorrow: the truck works the weekday, has room for the kind after the busy time on its Jobber calendar, and is not already in another area that day.",
   input: z.object({ service: z.string().min(1).describe("A service key, e.g. `turn-on-8`."), zones: z.coerce.number().int().min(1).max(16).optional(), town: Town, from: Day.optional(), days: z.coerce.number().int().min(1).max(60).default(14) }),
   output: z.object({ data: z.array(z.object({ day: Day, truckId: Id, truckName: z.string(), remaining: z.number().int(), slotMinutes: z.number().int() })) }),
   async run(ctx, input) {
@@ -116,6 +118,8 @@ export const scheduleSlots = defineHandler({
     const last = addDays(first, input.days - 1)
     const booked = await visitsQuery(ctx.db).where(and(eq(s.visit.organizationId, ctx.organizationId), gte(s.visit.scheduledOn, first), lte(s.visit.scheduledOn, last), notInArray(s.visit.status, ["cancelled", "skipped"])))
     const kind = capacityKind(service.kind)
+    // Busy time from each truck's Jobber calendar feed shrinks the truck-day (all-day blocks close it).
+    const blocks = await loadBlocks(ctx.db, ctx.organizationId, new Date(`${first}T00:00:00Z`), new Date(`${addDays(last, 1)}T23:59:59Z`))
     const data: { day: string; truckId: string; truckName: string; remaining: number; slotMinutes: number }[] = []
     for (let i = 0; i < input.days; i++) {
       const day = addDays(first, i)
@@ -123,7 +127,8 @@ export const scheduleSlots = defineHandler({
         if (!truck.workingDays.includes(weekdayOf(day))) continue
         const mine = booked.filter((b) => b.visit.truckId === truck.id && b.visit.scheduledOn === day)
         if (mine.some((b) => areaOf(b.town) !== areaOf(input.town))) continue
-        const remaining = truck.capacityByKind[kind] - mine.filter((b) => capacityKind(b.visit.kind) === kind).length
+        const capacity = capacityAfterBlocks(truck.capacityByKind[kind], blockedMinutes(blocks, truck.id, day, "America/Denver"))
+        const remaining = capacity - mine.filter((b) => capacityKind(b.visit.kind) === kind).length
         if (remaining > 0) data.push({ day, truckId: truck.id, truckName: truck.name, remaining, slotMinutes: service.slotMinutes })
       }
     }

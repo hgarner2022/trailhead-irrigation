@@ -8,9 +8,9 @@ import { Id, idInput } from "../shared"
 
 const Weekday = z.enum(["mon", "tue", "wed", "thu", "fri", "sat", "sun"])
 const Capacity = z.object({ "turn-on": z.number().int().min(0).max(40), inspection: z.number().int().min(0).max(40), blowout: z.number().int().min(0).max(40), repair: z.number().int().min(0).max(40), other: z.number().int().min(0).max(40) })
-export const TruckOut = z.object({ id: Id, name: z.string(), jobberUserId: z.string().nullable(), workingDays: z.array(Weekday), capacityByKind: Capacity.describe("Visits of each kind that fit in the truck's day."), active: z.boolean() })
-const fields = { name: z.string().min(1).max(60), jobberUserId: z.string().max(80).optional(), workingDays: z.array(Weekday).min(1), capacityByKind: Capacity }
-const out = (r: typeof s.truck.$inferSelect) => ({ id: r.id, name: r.name, jobberUserId: r.jobberUserId, workingDays: r.workingDays, capacityByKind: r.capacityByKind, active: r.active })
+export const TruckOut = z.object({ id: Id, name: z.string(), jobberUserId: z.string().nullable(), hasCalendarFeed: z.boolean().describe("Whether the truck reads a Jobber calendar feed for busy time. The URL itself is private and never returned."), workingDays: z.array(Weekday), capacityByKind: Capacity.describe("Visits of each kind that fit in the truck's day."), active: z.boolean() })
+const fields = { name: z.string().min(1).max(60), jobberUserId: z.string().max(80).optional(), workingDays: z.array(Weekday).min(1), capacityByKind: Capacity, calendarFeedUrl: z.string().url().max(500).nullable().optional().describe("The truck's Jobber calendar subscription (iCal) URL; null clears it.") }
+const out = (r: typeof s.truck.$inferSelect) => ({ id: r.id, name: r.name, jobberUserId: r.jobberUserId, hasCalendarFeed: Boolean(r.calendarFeedUrl), workingDays: r.workingDays, capacityByKind: r.capacityByKind, active: r.active })
 
 async function load(ctx: { db: import("@/db/types").Database; organizationId: string }, id: string) {
   const [row] = await ctx.db.select().from(s.truck).where(and(eq(s.truck.id, id), eq(s.truck.organizationId, ctx.organizationId)))

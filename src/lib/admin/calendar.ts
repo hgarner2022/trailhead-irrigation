@@ -110,3 +110,57 @@ export function sameClockOnDay(fromIso: string, dayIso: string, timeZone: string
 const WEEKDAY_NAMES: Record<Weekday, string> = { mon: "Monday", tue: "Tuesday", wed: "Wednesday", thu: "Thursday", fri: "Friday", sat: "Saturday", sun: "Sunday" }
 /** "Thursday" for 2026-11-12. */
 export const weekdayName = (dayIso: string): string => WEEKDAY_NAMES[weekdayOf(dayIso)]
+
+/** The UTC instant whose wall-clock reading in `timeZone` is the given fields (month 1 to 12). */
+export function zonedToUtc(y: number, mo: number, d: number, h: number, mi: number, s: number, timeZone: string): Date {
+  const wall = Date.UTC(y, mo - 1, d, h, mi, s)
+  let ms = wall - offsetAt(wall, timeZone)
+  ms = wall - offsetAt(ms, timeZone)
+  return new Date(ms)
+}
+
+/** A truck's working day, in the zone's wall clock: busy time inside it counts against capacity, an all-day event fills all of it. */
+export const WORKDAY = { startHour: 7, endHour: 17 } as const
+export const WORKDAY_MINUTES = (WORKDAY.endHour - WORKDAY.startHour) * 60
+
+/** Busy time on a truck from its Jobber calendar feed. */
+export interface BusyBlock {
+  truckId: string
+  startAt: string
+  endAt: string
+  title: string
+}
+
+/** The working day of `dayIso` as two UTC instants. */
+function workdayBounds(dayIso: string, timeZone: string): [number, number] {
+  const [y, m, d] = [Number(dayIso.slice(0, 4)), Number(dayIso.slice(5, 7)), Number(dayIso.slice(8, 10))]
+  return [zonedToUtc(y, m, d, WORKDAY.startHour, 0, 0, timeZone).getTime(), zonedToUtc(y, m, d, WORKDAY.endHour, 0, 0, timeZone).getTime()]
+}
+
+/** The blocks of `truckId` that overlap the working day of `dayIso`. */
+export function blocksOn(blocks: BusyBlock[], truckId: string, dayIso: string, timeZone: string): BusyBlock[] {
+  const [open, close] = workdayBounds(dayIso, timeZone)
+  return blocks.filter((b) => b.truckId === truckId && Date.parse(b.startAt) < close && Date.parse(b.endAt) > open)
+}
+
+/** Minutes of the working day on `dayIso` that the truck's blocks cover (overlapping blocks counted once). */
+export function blockedMinutes(blocks: BusyBlock[], truckId: string, dayIso: string, timeZone: string): number {
+  const [open, close] = workdayBounds(dayIso, timeZone)
+  const spans = blocksOn(blocks, truckId, dayIso, timeZone)
+    .map((b) => [Math.max(open, Date.parse(b.startAt)), Math.min(close, Date.parse(b.endAt))] as const)
+    .sort((a, b) => a[0] - b[0])
+  let total = 0
+  let reach = open
+  for (const [from, to] of spans) {
+    const start = Math.max(from, reach)
+    if (to > start) { total += to - start; reach = to }
+  }
+  return Math.round(total / 60_000)
+}
+
+/** The capacity left on a truck-day after its busy time: all of it with no blocks, none when the day is covered, else scaled by the share of the working day still free (rounded down, so a half-booked day holds half the visits). */
+export function capacityAfterBlocks(remaining: number, blockedMin: number): number {
+  if (blockedMin <= 0) return remaining
+  if (blockedMin >= WORKDAY_MINUTES) return 0
+  return Math.floor(remaining * (1 - blockedMin / WORKDAY_MINUTES))
+}
