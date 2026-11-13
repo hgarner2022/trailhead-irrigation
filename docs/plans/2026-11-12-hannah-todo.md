@@ -26,6 +26,10 @@ needed, roughly how long it takes, and which phase waits on it.
    carrier approval takes days to two weeks, so start it early. Without it
    the texts are blocked. Needed by Phase 12.
 
+## Vercel settings (done)
+
+- **DONE 2026-11-13: CRON_SECRET (generated, sensitive) and GEOCODE_CONTACT (contact@trailheadirrigation.com) are in Vercel production.** They take effect on the next production deploy; the daily feed cron and geocoding read them.
+
 ## Words to write
 
 5. **LIVE 2026-11-12 as section 17 of /terms (PR #4); edit any time. Season Pass terms.** The terms a customer accepts on the card step:
