@@ -219,6 +219,17 @@ export const PhoneTiming: Story = {
   globals: { viewport: { value: "phone", isRotated: false } },
 }
 
+/** Contact with every error showing at 375px: the sticky bar keeps Continue on screen under the summary. */
+export const PhoneContactErrors: Story = {
+  args: { initialStep: 5, prefill: { ...answers, firstName: "", email: "", phone: "" } },
+  globals: { viewport: { value: "phone", isRotated: false } },
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(canvas.getByRole("button", { name: "Continue" }))
+    await expect(await canvas.findByRole("alert")).toBeInTheDocument()
+    await expect(canvas.getByRole("button", { name: "Continue" })).toBeVisible()
+  },
+}
+
 /** The card step at 375px: the summary, the boxes and Back with room for Stripe's form under them. */
 export const PhoneCard: Story = {
   args: { initialStep: 6, prefill: { ...answers, inspection: true } },

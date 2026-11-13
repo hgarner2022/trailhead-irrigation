@@ -240,19 +240,22 @@ export function CheckoutFlow({ season, initialZones, initialStep, prefill, place
           </StepBody>
         </div>
         {!done && (
-          <div className={cn(COLUMN, "flex items-center justify-between pb-8", current.key === "timing" && "lg:max-w-3xl")}>
-            {step > 1 ? (
-              <Button variant="ghost" data-nav onClick={back}>
-                Back
-              </Button>
-            ) : (
-              <span />
-            )}
-            {!(wired && current.key === "card") && (
-              <Button size="lg" data-nav disabled={busy} aria-busy={busy || undefined} aria-describedby={current.key === "card" && attempted && !valid ? CONSENT_PROBLEM_ID : undefined} onClick={next}>
-                {busy ? "One moment" : current.action}
-              </Button>
-            )}
+          // Sticky, so Continue is always on screen however tall the step is at 375px; the padding clears the phone's home indicator.
+          <div data-slot="checkout-actions" className="sticky bottom-0 z-10 max-sm:border-t max-sm:border-border/60 max-sm:bg-cream/95 max-sm:backdrop-blur-sm">
+            <div className={cn(COLUMN, "flex items-center justify-between pb-8 max-sm:pt-3 max-sm:pb-[max(1rem,env(safe-area-inset-bottom))]", current.key === "timing" && "lg:max-w-3xl")}>
+              {step > 1 ? (
+                <Button variant="ghost" data-nav onClick={back}>
+                  Back
+                </Button>
+              ) : (
+                <span />
+              )}
+              {!(wired && current.key === "card") && (
+                <Button size="lg" data-nav disabled={busy} aria-busy={busy || undefined} aria-describedby={current.key === "card" && attempted && !valid ? CONSENT_PROBLEM_ID : undefined} onClick={next}>
+                  {busy ? "One moment" : current.action}
+                </Button>
+              )}
+            </div>
           </div>
         )}
       </section>

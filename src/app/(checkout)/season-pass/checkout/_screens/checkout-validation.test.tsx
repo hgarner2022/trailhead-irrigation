@@ -57,4 +57,11 @@ describe("validation that helps", () => {
     expect(screen.getByLabelText("Email")).toHaveAttribute("name", "email")
     expect(screen.getByLabelText("Phone")).toHaveAttribute("name", "phone")
   })
+  it("keeps the action bar stuck to the bottom, padded for the phone's safe area, so Continue is always reachable", () => {
+    render(<CheckoutFlow season={2027} initialStep={5} prefill={answers} />)
+    const bar = document.querySelector('[data-slot="checkout-actions"]') as HTMLElement
+    expect(bar).toHaveClass("sticky", "bottom-0")
+    expect(bar.firstElementChild?.className).toContain("env(safe-area-inset-bottom)")
+    expect(bar).toContainElement(screen.getByRole("button", { name: "Continue" }))
+  })
 })
