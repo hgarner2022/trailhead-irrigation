@@ -9,7 +9,9 @@ export function checkImports(file, text, zone, { problems }) {
   for (const spec of importSpecs(text)) {
     if (!spec.startsWith(".") && !spec.startsWith("@/")) continue
     const segs = spec.split("/")
-    if (zone === "app" && segs.includes("sections")) problems.push(`${file}: imports a marketing section (${spec})`)
+    // A route group's not-found.tsx may wear the marketing Header and Footer so its 404 is branded.
+    const chrome = /\/sections\/(Header|Footer|PageBanner)$/.test(spec) && /(^|\/)\((?:admin|checkout|account|booking)\)\/not-found\.tsx$/.test(file.split("\\").join("/"))
+    if (zone === "app" && segs.includes("sections") && !chrome) problems.push(`${file}: imports a marketing section (${spec})`)
     if (zone === "marketing" && (segs.includes("blocks") || segs.some((s) => appGroupRe.test(s))))
       problems.push(`${file}: marketing code imports admin code (${spec})`)
   }

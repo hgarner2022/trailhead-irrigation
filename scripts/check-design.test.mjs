@@ -403,3 +403,19 @@ test("a marketing page importing the shared season, flag and form-id modules pas
   })
   assert.equal(r.status, 0, r.out)
 })
+
+test("a route group's not-found may import the marketing Header and Footer, nothing else from sections", () => {
+  const ok = run({
+    "app/(checkout)/not-found.tsx": `import { Header } from "@/components/sections/Header"\nimport { Footer } from "@/components/sections/Footer"\nexport default function N() { return <><Header /><Footer /></> }\n`,
+  })
+  assert.equal(ok.status, 0, ok.out)
+  const bad = run({
+    "app/(checkout)/not-found.tsx": `import { Hero } from "@/components/sections/Hero"\nexport default function N() { return <Hero /> }\n`,
+  })
+  assert.equal(bad.status, 1)
+  assert.match(bad.out, /imports a marketing section/)
+  const page = run({
+    "app/(checkout)/page.tsx": `import { Header } from "@/components/sections/Header"\nexport default function P() { return <Header /> }\n`,
+  })
+  assert.equal(page.status, 1)
+})

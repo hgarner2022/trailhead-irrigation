@@ -21,7 +21,7 @@
   --color-card-foreground: #1E293B;
 
   /* Type: condensed display face for headings, humanist sans for body.
-     The *-src variables are set by next/font in src/app/layout.tsx. */
+     The *-src variables are set by next/font in src/lib/fonts.ts. */
   --font-sans: var(--font-body-src), "Segoe UI", Helvetica, Arial, sans-serif;
   --font-display: var(--font-display-src), "Arial Narrow", Impact, sans-serif;
 

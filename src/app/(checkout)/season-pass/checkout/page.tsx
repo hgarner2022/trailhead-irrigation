@@ -11,9 +11,16 @@ export const dynamic = "force-dynamic"
 
 export const metadata: Metadata = { title: "Season Pass checkout" }
 
-/** The calendar year through October, the next year from November (wiring plan, decision 15). */
+/**
+ * The calendar year through October, the next year from November (wiring plan,
+ * decision 15). The month is read in Mountain time, not the server's zone, so
+ * the season turns over at midnight in Colorado on 1 November.
+ */
 function seasonFor(today: Date): number {
-  return today.getMonth() >= 10 ? today.getFullYear() + 1 : today.getFullYear()
+  const parts = new Intl.DateTimeFormat("en-US", { timeZone: "America/Denver", year: "numeric", month: "numeric" }).formatToParts(today)
+  const year = Number(parts.find((p) => p.type === "year")?.value)
+  const month = Number(parts.find((p) => p.type === "month")?.value)
+  return month >= 11 ? year + 1 : year
 }
 
 export default async function CheckoutPage({ searchParams }: { searchParams: Promise<{ zones?: string }> }) {

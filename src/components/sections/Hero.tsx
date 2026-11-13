@@ -13,7 +13,7 @@ import { SeasonalPill } from "@/components/sections/SeasonalPill"
  * The hero follows the season. Only the H1 and the photo change; the title
  * tag and meta description stay fixed year-round (search sees a stable page
  * with a seasonal headline). Every H1 keeps "sprinkler", "Erie, CO" and the
- * Front Range. The homepage revalidates daily (see src/app/page.tsx) so the
+ * Front Range. The homepage revalidates daily (see src/app/(site)/page.tsx) so the
  * month is read from the calendar, not from the last deploy.
  */
 /** One sentence on what is booking now, for the city pages' local sign. */

@@ -83,7 +83,7 @@ Every colour the app uses is a token in `src/app/globals.css`, inside the `@them
 | `--font-display` | Barlow Condensed, then Arial Narrow, Impact | Page titles, section titles, big numbers in stat tiles and the pass card |
 | `--radius` | `0.5rem` | The one corner radius, the same as Tailwind's `rounded-lg` |
 
-Both faces are self hosted through `next/font` in `src/app/layout.tsx`, which sets `--font-body-src` and `--font-display-src`. Storybook imports `globals.css` so stories render in the brand faces. There is no radius scale; `rounded-lg` is the radius for everything except circles. `--radius` is informational; `rounded-lg` resolves to Tailwind's own `--radius-lg`, which is the same 0.5rem. Never paste shadcn's base layer (`* { @apply border-border outline-ring/50 }`) into globals.css; it would change every bare border on the marketing site. Add primitives with `npx shadcn@latest add` only.
+Both faces are self hosted through `next/font` in `src/lib/fonts.ts`, which sets `--font-body-src` and `--font-display-src`. Storybook imports `globals.css` so stories render in the brand faces. There is no radius scale; `rounded-lg` is the radius for everything except circles. `--radius` is informational; `rounded-lg` resolves to Tailwind's own `--radius-lg`, which is the same 0.5rem. Never paste shadcn's base layer (`* { @apply border-border outline-ring/50 }`) into globals.css; it would change every bare border on the marketing site. Add primitives with `npx shadcn@latest add` only.
 
 ### The rule
 

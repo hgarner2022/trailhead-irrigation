@@ -22,11 +22,13 @@ describe("app.css", () => {
     },
   )
 
-  it("never scans the marketing tree", () => {
+  it("never scans the marketing tree, apart from the four files the branded 404 renders", () => {
+    const chrome = ["Header", "Footer", "SeasonalPill", "PageBanner"].map((n) => `../components/sections/${n}.tsx`)
     for (const s of sources) {
       expect(s).not.toContain("(site)")
-      expect(s).not.toContain("sections")
+      if (s.includes("sections")) expect(chrome).toContain(s)
     }
+    expect(sources.filter((s) => s.includes("sections"))).toHaveLength(chrome.length)
   })
 
   it("keeps stories and tests out of the scan", () => {

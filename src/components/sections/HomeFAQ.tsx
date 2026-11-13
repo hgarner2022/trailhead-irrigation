@@ -5,7 +5,7 @@ import { SEASON_PASS_FROM } from "@/lib/season-pass"
 // Homepage FAQ. The first three are worded the way Google's "People also ask"
 // box words them under our own result, because that is what AI answers lift.
 // Each answer gives the fact in the first sentence, detail second, and stays
-// in the 40 to 80 word range. Pairs with FAQPage JSON-LD in src/app/page.tsx.
+// in the 40 to 80 word range. Pairs with FAQPage JSON-LD in src/app/(site)/page.tsx.
 
 export const HOME_FAQS: FaqItem[] = [
   {
