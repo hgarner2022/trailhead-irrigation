@@ -2,10 +2,11 @@ import "server-only"
 import { and, asc, eq, gte, lte, notInArray } from "drizzle-orm"
 import { z } from "zod"
 import * as s from "@/db/schema"
-import { ApiError, notFound, notImplemented } from "../../core/errors"
+import { ApiError, notFound } from "../../core/errors"
 import { defineHandler } from "../../core/handler"
-import { addDays, capacityKind, Day, Id, Town, today, VisitKind, weekdayOf } from "../shared"
+import { addDays, byPrincipal, capacityKind, Day, Id, Town, today, VisitKind, weekdayOf } from "../shared"
 import { blockedMinutes, capacityAfterBlocks } from "@/lib/admin/calendar"
+import { runSchedule } from "@/lib/scheduling/server/run"
 import { loadBlocks } from "@/lib/jobber-feed"
 import { visitOut, visitsQuery } from "../visits/queries"
 import { VisitOut } from "../visits/schemas"
@@ -15,11 +16,12 @@ export const scheduleRun = defineHandler({
   method: "POST",
   path: "/schedule/run",
   scope: "admin",
-  summary: "Place the visits due within a window's lead time onto truck-days and send the date messages in the same run. Needs the scheduler (Phase 10); not implemented yet.",
+  summary: "Schedule: place every pass visit of the window that is due within its lead time onto a truck-day in one step. Each placed visit is scheduled, its stops ordered and its customer texted the date (emailed with no mobile number); a customer who must be home is left to pick their own day. Home gets a line for the run and a row for each visit that could not be placed. Running it again places nothing new.",
   input: z.object({ window: z.enum(["turn-on", "inspection", "blowout"]), season: z.number().int().optional() }),
   output: z.object({ placed: z.number().int(), unplaced: z.number().int() }),
-  async run() {
-    throw notImplemented("schedule.run")
+  async run(ctx, input) {
+    const out = await runSchedule(ctx.db, { organizationId: ctx.organizationId, window: input.window, season: input.season, today: today(ctx), now: ctx.now, by: byPrincipal(ctx) })
+    return { placed: out.placed, unplaced: out.unplaced }
   },
 })
 

@@ -22,7 +22,7 @@ import { ScheduleMoveTo } from "./ScheduleMoveTo"
 import { exceptionCount, firstWorkingDay, moveOutcome, placeVisit, scheduleItems, trayItems, weekContext, type TrayItem } from "./schedule-model"
 
 // Where Ryan lives in season (the scheduling flow, 2026-11-12: one state,
-// no approvals): the week by truck, a day map beside the day's stops in
+// no second step): the week by truck, a day map beside the day's stops in
 // order, and the "To schedule" tray beside the week with every visit that
 // has no day yet. Schedule puts the whole tray on the week (the customers
 // who must be there pick their own day and stay in the tray until they do);

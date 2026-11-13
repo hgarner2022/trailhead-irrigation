@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { afterAll, beforeAll, describe, expect, it } from "vitest"
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest"
 import { eq } from "drizzle-orm"
 import * as s from "@/db/schema"
 import type { TestDb } from "@/db/test-db"
@@ -15,6 +15,7 @@ let db: TestDb
 let data: AdminData
 
 beforeAll(async () => {
+  vi.stubEnv("APP_URL", "https://site.test")
   db = await apiDb()
   await db.update(s.truck).set({ calendarFeedUrl: "https://calendar.example.com/t1.ics" }).where(eq(s.truck.id, "truck-1"))
   await db.insert(s.jobberVisit).values({ id: "feed:truck-1:a", organizationId: ORG, truckId: "truck-1", title: "Day off", startAt: new Date("2027-05-06T13:00:00Z"), endAt: new Date("2027-05-06T23:00:00Z"), isBlock: true })

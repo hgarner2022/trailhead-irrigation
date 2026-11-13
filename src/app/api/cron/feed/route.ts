@@ -18,7 +18,8 @@ function authorised(request: Request): boolean {
 
 /**
  * Queue a `jobber-feed-sync` for each truck with a calendar URL (one per truck per five-minute slot) and drain.
- * Vercel's Hobby plan runs a cron once a day at most, so `vercel.json` schedules this at 12:00 UTC (early morning in
+ * Vercel's Hobby plan allows two cron jobs, once a day each, so `vercel.json` schedules only `/api/cron/daily`, which
+ * runs this first (early morning in
  * Colorado); on a Pro plan set it to every five minutes. The route can also be hit by hand with the secret.
  */
 export async function GET(request: Request) {

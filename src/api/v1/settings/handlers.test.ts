@@ -19,6 +19,18 @@ describe("settings", () => {
     expect(out.windows.find((w) => w.kind === "blowout")!.leadWeeks).toBe(2)
     expect(out).not.toHaveProperty("trucks")
   })
+  it("says the settings are not confirmed until one is saved, then logs one row per changed leaf", async () => {
+    const fresh = await apiDb()
+    expect((await callApi(ctxFor(fresh, readKey), settingsGet, {})).confirmed).toBe(false)
+    const windows = (await callApi(ctxFor(fresh, readKey), settingsGet, {})).windows.map((w) => (w.kind === "turn-on" ? { ...w, opensOn: "2027-05-03", leadWeeks: 3 } : w))
+    const out = await callApi(ctxFor(fresh, adminKey), settingsUpdate, { section: "windows", value: windows })
+    expect(out.confirmed).toBe(true)
+    const log = (await callApi(ctxFor(fresh, readKey), settingsChangesList, {})).data
+    expect(log.map((c) => c.field).sort()).toEqual(["windows.turn-on.leadWeeks", "windows.turn-on.opensOn"])
+    expect(log.find((c) => c.field === "windows.turn-on.leadWeeks")).toMatchObject({ to: "3 weeks ahead" })
+    expect((await callApi(ctxFor(fresh, readKey), settingsGet, {})).confirmed).toBe(true)
+    await fresh.close()
+  })
   it("updates one section and writes who changed it, from and to", async () => {
     const out = await callApi(ctxFor(db, owner), settingsUpdate, { section: "bufferPercentEarly", value: 25 })
     expect(out.bufferPercentEarly).toBe(25)

@@ -16,6 +16,8 @@ export const ACTION_LABELS: Record<Attention["kind"], string> = {
   "card-expiring": "Send card link",
   "not-closed": "Review visits",
   "pass-cancelled": "Open in Jobber",
+  scheduled: "Open Schedule",
+  unplaced: "Place by hand",
 }
 
 export function AttentionAction({ item, onAction }: { item: Attention; onAction?: (item: Attention) => void }) {

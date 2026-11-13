@@ -77,4 +77,17 @@ describe("visits.areaDays and visits.pick", () => {
     expect(mail).toHaveLength(1)
     expect(mail[0]).toMatchObject({ kind: "date-set", to: "p3@example.com" })
   })
+
+  it("leaves off a day both trucks' Jobber calendars block", async () => {
+    await db.update(s.visit).set({ status: "unscheduled", scheduledOn: null, truckId: null }).where(eq(s.visit.id, "p3-turn-on"))
+    const before = (await callApi(me(), visitsAreaDays, { id: "p3-turn-on" })).days
+    const day = before[0]!
+    const trucks = await db.select().from(s.truck)
+    const at = (d: string, h: number) => new Date(`${d}T${String(h).padStart(2, "0")}:00:00Z`)
+    for (const [i, truck] of trucks.entries())
+      await db.insert(s.jobberVisit).values({ id: `block-${i}`, organizationId: truck.organizationId, truckId: truck.id, isBlock: true, title: "Out", startAt: at(day, 6), endAt: new Date(at(day, 6).getTime() + 30 * 3_600_000) })
+    const after = (await callApi(me(), visitsAreaDays, { id: "p3-turn-on" })).days
+    expect(after).not.toContain(day)
+    expect(after.length).toBeGreaterThan(0)
+  })
 })

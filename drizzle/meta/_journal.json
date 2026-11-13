@@ -36,6 +36,20 @@
       "when": 1794586543429,
       "tag": "0004_narrow_colonel_america",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1794590355838,
+      "tag": "0005_hesitant_lorna_dane",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1794590359954,
+      "tag": "0006_powerful_dexter_bennett",
+      "breakpoints": true
     }
   ]
 }

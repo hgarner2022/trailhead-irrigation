@@ -1,8 +1,8 @@
 /**
  * The pure derivations behind ScheduleScreen: the week's visits by truck and
  * day, the counts the header reads and its context line, the move reducer
- * the grid's drag-and-drop calls and the approval that clears the proposed
- * flags. The calendar itself (`weekOf`, `dayVisits` and the rest) lives in
+ * the grid's drag-and-drop calls and the Schedule button that places the
+ * tray. The calendar itself (`weekOf`, `dayVisits` and the rest) lives in
  * `src/lib/admin/calendar.ts`.
  */
 import type { AdminData, Pass, PassVisit, TimingPreference, Truck, Visit } from "@/lib/admin/types"
@@ -107,8 +107,8 @@ function passItem(pass: Pass, visit: PassVisit): TrayItem {
 /**
  * What the "To schedule" tray lists: every unscheduled Jobber visit and every
  * active pass visit with no day, earliest window first, earlier preferences
- * before later ones inside a window. Pass visits already placed (proposed or
- * scheduled) are matched by pass and kind and left out.
+ * before later ones inside a window. Pass visits already placed (scheduled,
+ * whoever placed them) are matched by pass and kind and left out.
  */
 export function trayItems(data: Pick<AdminData, "visits" | "passes">): TrayItem[] {
   const dated = data.visits.filter((v) => v.startAt && v.status !== "cancelled")
