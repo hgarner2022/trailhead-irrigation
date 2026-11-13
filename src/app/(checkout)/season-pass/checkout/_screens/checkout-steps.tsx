@@ -160,8 +160,8 @@ function TermsLink({ href, children }: { href: string; children: string }) {
 export const CONSENT_PROBLEM_ID = "checkout-consent-problem"
 export const CONSENT_PROBLEM = "Please accept the terms to continue"
 
-// Season Pass terms section to be written by Hannah; TERMS_VERSION then matches it. Until then both links go to /terms.
-const SEASON_PASS_TERMS_HREF = "/terms"
+// The Season Pass section of the terms page (version 2026-11, TERMS_VERSION); the second link is the terms as a whole.
+const SEASON_PASS_TERMS_HREF = "/terms#season-pass"
 
 const MARKETING = [
   { key: "marketingEmail", label: "Seasonal tips and offers by email", note: "You can stop any time. Visit reminders and receipts are sent either way." },

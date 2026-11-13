@@ -44,6 +44,21 @@ For Hannah:
 11. The Season Pass terms block, the terms version, and the sales tax answer (the audit found tax at zero on every invoice; confirm that is intended). Needed before the first live charge.
 12. The `/season-pass` page still promises a "reserved" blowout week; Hannah rewords it. This plan changes marketing copy only in the FAQ answers (Task 15.1).
 
+### Answers, 2026-11-12 night (Hannah: "go look it up"; defaults until Ryan corrects them)
+
+1. Area groups: Erie + Firestone, Longmont, Louisville + Lafayette, Broomfield. The October 2026 calendar has Erie on nearly every day (about 60 percent of blowouts) paired with one other town, so Erie is the anchor and the second town rotates.
+2. Capacity per truck-day: blowout 14, turn-on 8, inspection 6, repair 4. October 2026 ran a median of 8 and a peak of 15 blowouts a day across two people; April to September ran 2 to 4 visits a day.
+3. Working days Monday to Friday; Saturdays on in October only (15 Saturdays with visits in 2026, 35 visits, nearly all blowouts).
+4. "Earlier" means the first area-day inside the window.
+5. Two trucks, both on the full season: Truck 1 (Ryan's Jobber user) and Truck 2 (the second user) run April 1 to November 15 (Hannah, 2026-11-12: "Truck 2 will run the full schedule, April to mid-November").
+6. Stop order from Jobber's route tool by hand until the day view ships; `JOBBER_FACTS.routeOrderByApi` decides whether it is read back.
+7. The 55 open jobs with no visit and the 101 unclosed past visits stay exactly as they are: the app never closes, edits or cancels a job it did not create (Hannah, 2026-11-12: "don't close out or do anything in Jobber"). Home shows the counts only.
+8. The 16 open quotes and 14 past-due invoices stay in Jobber untouched and show on Home; the app never writes to them.
+9. Jobber's own notifications: Jobber documents a per-client "Appointment Reminders" toggle (client profile, Edit) and no confirmed per-visit toggle. Decision: pass customers get Trailhead's reminders only; Task 0.1 checks whether `clientEdit` can switch the client's reminders off, else Task 8.3 lists the new client for Hannah to switch off by hand (one click per customer) and Home shows a row until it is done.
+10. SMS: on, two-way, from the first season (items 8 and 9 of the review changes).
+11. Sales tax: Colorado does not tax services; tangible parts sold are taxable, and labor is untaxed only when separately stated (Colorado DOR general guidance; Thornton's sprinkler-repair example taxes the parts line only; Aurora and Boulder say the same for their home-rule taxes). Pass visits are labor only, so no sales tax on any pass charge, and the zero on every Jobber invoice is right for service visits. Repairs with parts need tax on the parts line at the property's local rate (Erie, Longmont, Louisville, Lafayette and Broomfield are home-rule or have their own rates); those invoices stay in Jobber in this plan, and Hannah confirms the parts treatment with her accountant before step 4 of the retirement path. Stripe Tax stays off.
+12. The Season Pass terms are section 17 of /terms (version 2026-11), drafted 2026-11-12 night for Hannah to edit.
+
 ---
 
 ## Decisions this plan makes

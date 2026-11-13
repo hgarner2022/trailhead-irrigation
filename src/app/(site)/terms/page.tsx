@@ -156,7 +156,24 @@ export default function TermsPage() {
             If any provision of these Terms is found unenforceable, the remaining provisions will remain in full force and effect. These Terms, together with any written service agreement, invoice, or quote we provide and our <Link href="/privacy" className="text-primary hover:underline">Privacy Policy</Link>, form the complete agreement between you and Trailhead with respect to our services.
           </p>
 
-          <h2 className="text-2xl font-bold text-foreground mt-6">17. Contact</h2>
+          <h2 id="season-pass" className="text-2xl font-bold text-foreground mt-6">17. Season Pass</h2>
+          <p>
+            The Season Pass (&quot;Pass&quot;) is a reservation for seasonal sprinkler visits at one property for one calendar season. These terms apply to the Pass in addition to everything above. Pass terms version 2026-11.
+          </p>
+          <ul className="list-disc pl-6 flex flex-col gap-2">
+            <li><strong className="text-foreground">What it includes.</strong> A spring turn-on and system check, and a fall blowout and winterization, at the property given at checkout. A mid-season inspection and tune-up in July is an optional add-on, chosen at checkout or added later.</li>
+            <li><strong className="text-foreground">Price and payment.</strong> Each visit is priced at the published per-zone rate on our pricing page at the time of purchase, for the zone count given at checkout. Nothing is charged at purchase. The card saved at checkout is charged for each visit after that visit is completed, and a receipt is emailed. If the zone count we find on the first visit differs from the count given, the per-zone price for the actual count applies from that visit on, and we tell you before charging.</li>
+            <li><strong className="text-foreground">Scheduling.</strong> At checkout you give a timing preference for the turn-on and the blowout (earlier, recommended or later). We set each visit&apos;s day inside the window you prefer, tell you the day by email or text, and remind you the day before. You can change a preference from your pass page until the day is set. Days may move for weather, freeze risk or crew availability; we tell you when they do.</li>
+            <li><strong className="text-foreground">Access.</strong> Pass visits do not require you to be home. You agree to leave the water supply and the controller reachable on the scheduled day. A visit we cannot complete because the system or property is not accessible is rescheduled once at no charge; a second missed access may be billed as a completed visit under section 5.</li>
+            <li><strong className="text-foreground">Repairs and parts.</strong> A Pass visit is a service visit. Small adjustments are made during the visit. Repairs that need parts or more time are quoted before any work starts and billed at our standard repair rates and parts prices, not under the Pass.</li>
+            <li><strong className="text-foreground">Changing or cancelling.</strong> You may skip a single visit or cancel the Pass at any time from your pass page, by replying to any of our emails, or by phone. Cancelling stops all future visits and charges. A visit already completed is charged as normal. There is no cancellation fee for a Pass visit that has not yet been given a day.</li>
+            <li><strong className="text-foreground">Card on file.</strong> Your card details are held by Stripe, our payment processor, never by Trailhead. If a charge fails, we email you a secure link to update the card and may hold the next visit until it is updated.</li>
+            <li><strong className="text-foreground">Messages.</strong> We send Pass confirmations, dates, reminders and receipts by email, and by text when you gave a mobile number. Marketing messages are sent only if you opted in, and you can reply STOP to any text to end texts.</li>
+            <li><strong className="text-foreground">Renewal.</strong> The Pass covers one season and does not renew on its own. We email you before the next season with an offer to renew on the same card, which you accept by replying or clicking; nothing is charged until you do and a visit is completed.</li>
+            <li><strong className="text-foreground">Service area.</strong> The Pass is available at properties in Erie, Longmont, Louisville, Lafayette, Firestone and Broomfield, Colorado.</li>
+          </ul>
+
+          <h2 className="text-2xl font-bold text-foreground mt-6">18. Contact</h2>
           <p>
             Questions about these Terms? Contact us:
           </p>
