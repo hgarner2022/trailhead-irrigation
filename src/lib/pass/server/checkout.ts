@@ -7,9 +7,13 @@ import { callApi } from "@/api/core/call"
 import type { Ctx } from "@/api/core/context"
 import { ApiError } from "@/api/core/errors"
 import { passesActivate, passesConsent, passesCreate } from "@/api/v1/passes/handlers"
+import { scheduleOfferDays } from "@/api/v1/schedule/handlers"
+import { visitsOnSale } from "@/lib/season-pass"
 import type { PassDetail } from "@/api/v1/passes/schemas"
 import * as s from "@/db/schema"
-import type { BeginResult, CheckoutConsent, CheckoutProblem, CheckoutSubmission, FinishResult } from "@/app/(checkout)/season-pass/checkout/_screens/checkout-submit"
+import type { Offers } from "@/app/(checkout)/season-pass/checkout/_screens/checkout-days"
+import type { BeginResult, OfferQuery, CheckoutConsent, CheckoutProblem, CheckoutSubmission, FinishResult } from "@/app/(checkout)/season-pass/checkout/_screens/checkout-submit"
+import { instantOf } from "@/lib/admin/shape"
 import type { Pass, Town } from "@/lib/admin/types"
 import { createSetupSession } from "@/lib/stripe/checkout"
 
@@ -67,6 +71,7 @@ function createInput(f: CheckoutSubmission, passId?: string) {
     inspection: f.inspection,
     turnOnPreference: f.turnOnPreference,
     blowoutPreference: f.blowoutPreference,
+    days: f.days,
     needsCustomerHome: f.needsCustomerHome,
     ...(f.accessNote ? { accessNote: f.accessNote } : {}),
   }
@@ -117,7 +122,15 @@ export function passForDone(d: z.infer<typeof PassDetail>, firstName: string): P
     turnOnPreference: d.turnOnPreference,
     blowoutPreference: d.blowoutPreference,
     status: "active",
-    visits: d.visits.filter((v) => v.kind === "turn-on" || v.kind === "inspection" || v.kind === "blowout").map((v) => ({ kind: v.kind as "turn-on" | "inspection" | "blowout", window: v.window as "May" | "July" | "October", amount: v.amount })),
+    visits: d.visits.filter((v) => v.kind === "turn-on" || v.kind === "inspection" || v.kind === "blowout").map((v) => ({
+      kind: v.kind as "turn-on" | "inspection" | "blowout",
+      window: v.window as "May" | "July" | "October",
+      amount: v.amount,
+      id: v.id,
+      ...(v.scheduledOn ? { scheduledAt: instantOf(v.scheduledOn, v.startTime), scheduledOn: v.scheduledOn } : {}),
+      ...(v.startTime ? { startTime: v.startTime } : {}),
+      ...(v.calendarUrl ? { calendarUrl: v.calendarUrl } : {}),
+    })),
     stripeUrl: "",
     jobberUrl: "",
     ...(d.cardLast4 ? { cardLast4: d.cardLast4 } : {}),
@@ -167,4 +180,22 @@ export async function recordConsentWith(deps: CheckoutDeps, passId: string, cons
   } catch (error) {
     logCheckoutFailure("recordConsent", "card", passId, error)
   }
+}
+
+/**
+ * The days to offer on the "Your days" step: `schedule.offerDays` for each visit still on sale this season, in the checkout's own
+ * context. A visit whose lookup fails is left out (its day comes from Ryan) rather than stopping the checkout.
+ */
+export async function offerDaysWith(deps: CheckoutDeps, q: OfferQuery): Promise<Offers> {
+  const ctx = await deps.ctx()
+  const offers: Offers = {}
+  for (const v of visitsOnSale(q.inspection, q.today)) {
+    try {
+      const { days } = await callApi(ctx, scheduleOfferDays, { town: q.town as Town, kind: v.key, season: q.season, zones: q.zones })
+      offers[v.key] = days.map(({ day, truckId, start, window }) => ({ day, truckId, start, window }))
+    } catch (error) {
+      logCheckoutFailure("offerDays", "contact", undefined, error)
+    }
+  }
+  return offers
 }

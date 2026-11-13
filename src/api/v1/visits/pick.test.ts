@@ -53,13 +53,18 @@ describe("visits.areaDays and visits.pick", () => {
     expect((await db.select().from(s.passChange).where(eq(s.passChange.visitId, "p3-turn-on"))).map((c) => c.kind)).toContain("day-picked")
   })
 
-  it("refuses a day that was not offered, another customer's visit, and a pass that does not need the customer home", async () => {
+  it("refuses a day that was not offered, and another customer's visit", async () => {
     await expect(callApi(me(), visitsPick, { id: "p3-turn-on", day: "2027-05-02" })).rejects.toMatchObject({ code: "unprocessable" })
     await expect(callApi(me(), visitsPick, { id: "p3-turn-on", day: "2027-09-01" })).rejects.toMatchObject({ code: "unprocessable" })
     await expect(callApi(ctxFor(db, customerPerson("someone-else")), visitsAreaDays, { id: "p3-turn-on" })).rejects.toMatchObject({ code: "forbidden" })
+  })
+
+  it("offers the same choice whether or not the pass is marked as needing the customer home", async () => {
     await db.update(s.seasonPass).set({ needsCustomerHome: false }).where(eq(s.seasonPass.id, "p3"))
     const { days } = await callApi(me(), visitsAreaDays, { id: "p3-turn-on" })
-    await expect(callApi(me(), visitsPick, { id: "p3-turn-on", day: days[0]! })).rejects.toThrow(/placed for you/)
+    expect(days.length).toBeGreaterThan(0)
+    await expect(callApi(me(), visitsPick, { id: "p3-turn-on", day: days[0]! })).resolves.toMatchObject({ status: "scheduled", scheduledOn: days[0] })
+    await db.update(s.seasonPass).set({ needsCustomerHome: true }).where(eq(s.seasonPass.id, "p3"))
   })
 
   it("emails the date when the customer has no mobile number", async () => {

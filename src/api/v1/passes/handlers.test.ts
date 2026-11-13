@@ -58,10 +58,10 @@ describe("passes.create", () => {
     await expect(create({ consent: { termsAccepted: false } })).rejects.toMatchObject({ code: "invalid" })
     await expect(create({ customer: { firstName: "X", email: "bad" } })).rejects.toMatchObject({ code: "invalid" })
   })
-  it("records needs_customer_home and the access note, and marks the visits awaiting a pick", async () => {
+  it("records needs_customer_home and the access note as a note for Ryan, and holds no visit back", async () => {
     const pass = await create({ needsCustomerHome: true, accessNote: "Gate code 4411", customer: { firstName: "Home", email: "home@example.com" } })
     expect(pass).toMatchObject({ needsCustomerHome: true, accessNote: "Gate code 4411" })
-    expect(pass.visits.every((v) => v.awaitingPick)).toBe(true)
+    expect(pass.visits.some((v) => v.awaitingPick)).toBe(false)
   })
   it("reuses a customer by email and keeps one property", async () => {
     const again = await create({ customer: { firstName: "Maya", email: "MAYA@example.com" } })

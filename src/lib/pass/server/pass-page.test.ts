@@ -26,11 +26,11 @@ describe("loadPassPage", () => {
     expect(turnOn.scheduledAt).toMatch(/^2027-05-04T/)
     expect(turnOn.truckName).toMatch(/^Truck/)
     expect(data!.today).toBe("2027-04-20")
-    expect(data!.pickDays).toEqual({})
+    expect(Object.keys(data!.pickDays).sort()).toEqual(["blowout", "turn-on"])
   })
 
-  it("offers area days only to a customer who must be home", async () => {
-    await db.update(s.seasonPass).set({ needsCustomerHome: true }).where(eq(s.seasonPass.id, "p3"))
+  it("offers days to change to whether or not the customer is marked as needing to be home", async () => {
+    await db.update(s.seasonPass).set({ needsCustomerHome: false }).where(eq(s.seasonPass.id, "p3"))
     const data = await loadPassPage(ctxFor(db, customerPerson(customerId)))
     expect(data!.pickDays["blowout"]?.length).toBeGreaterThan(0)
     expect(data!.pickDays["turn-on"]?.length).toBeGreaterThan(0)

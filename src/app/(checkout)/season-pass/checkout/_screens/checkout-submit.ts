@@ -15,6 +15,8 @@ export interface CheckoutSubmission {
   inspection: boolean
   turnOnPreference: TimingPreference
   blowoutPreference: TimingPreference
+  /** the day held for each visit: the server keeps those still open and puts them on a truck when the card is saved */
+  days: { kind: "turn-on" | "inspection" | "blowout"; day: string; truckId: string; start: string }[]
   firstName: string
   email: string
   phone: string
@@ -53,9 +55,13 @@ export function toSubmission(f: CheckoutFields): CheckoutSubmission | null {
     inspection: f.inspection,
     turnOnPreference: f.turnOnPreference,
     blowoutPreference: f.blowoutPreference,
+    days: f.days.map(({ kind, day, truckId, start }) => ({ kind, day, truckId, start })),
     firstName: f.firstName.trim(),
     email: f.email.trim(),
     phone: f.phone.trim(),
     consent: { termsAccepted: f.termsAccepted, marketingEmail: f.marketingEmail, marketingSms: f.marketingSms },
   }
 }
+
+/** The query the "Your days" step makes: the days to offer for this address and what the pass holds. */
+export type OfferQuery = { town: string; zones: number; inspection: boolean; season: number; today: string }

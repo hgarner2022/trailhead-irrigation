@@ -40,7 +40,7 @@ export interface PassPageScreenProps {
   onChangePreference?: (kind: "turn-on" | "blowout", preference: TimingPreference) => void
   onAddInspection?: (passId: string) => void
   onSkip?: (passId: string, kind: Pass["visits"][number]["kind"]) => void
-  /** a customer who must be home picked one of the offered days */
+  /** the customer picked one of the offered days, to set a day or to change it */
   onPickDay?: (kind: "turn-on" | "blowout", dayIso: string) => ActionResult | Promise<ActionResult>
   /** the customer asked to update the card; the wiring sends them to Stripe's hosted page. Rendered as a form action. */
   onUpdateCard?: () => void | Promise<void>
@@ -66,7 +66,7 @@ function Title({ children }: { children: string }) {
 export function PassPageScreen({ pass, passes = [pass], today, onCancel, onChangePreference, onAddInspection, onSkip, onPickDay, onUpdateCard, pickDays }: PassPageScreenProps) {
   const cancelled = pass.status === "cancelled"
   const earlier = earlierSeasons(passes, pass)
-  const headline = passHeadline(pass, today)
+  const headline = passHeadline(pass, today, pickDays ? Object.keys(pickDays) : ["turn-on", "blowout"])
   return (
     <div data-slot="pass-page" data-status={pass.status} className="min-h-svh bg-cream text-foreground">
       <div className="mx-auto max-w-3xl space-y-8 container-padding-x py-10">
@@ -92,7 +92,7 @@ export function PassPageScreen({ pass, passes = [pass], today, onCancel, onChang
           )}
           {headline.action === "change-day" && headline.kind && headline.kind !== "inspection" && (
             <div className="mt-5">
-              <PickDayButtons kind={headline.kind} days={pickDays?.[headline.kind] ?? pickDayOptions(pass, headline.kind)} onPick={onPickDay} foldedLabel="Pick a different day" />
+              <PickDayButtons kind={headline.kind} days={pickDays?.[headline.kind] ?? pickDayOptions(pass, headline.kind)} onPick={onPickDay} foldedLabel="Change your day" />
             </div>
           )}
           {headline.action === "update-card" && <UpdateCardButton onUpdateCard={onUpdateCard} className="mt-5" />}

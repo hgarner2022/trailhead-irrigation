@@ -30,11 +30,11 @@ describe("runSummary", () => {
 
 describe("schedule.run", () => {
   let waitingId: string
-  it("schedules the visits due, in one step, and leaves the customer who must be home to pick", async () => {
-    const open = new Set((await db.select().from(s.seasonPass)).filter((p) => p.status === "active" && !p.needsCustomerHome).map((p) => p.id))
+  it("schedules the visits due, in one step, and leaves a visit waiting for its customer's pick", async () => {
+    const open = new Set((await db.select().from(s.seasonPass)).filter((p) => p.status === "active").map((p) => p.id))
     const [waiting] = (await unscheduledTurnOns()).filter((v) => open.has(v.passId!) && !v.awaitingPick)
     waitingId = waiting!.id
-    await db.update(s.seasonPass).set({ needsCustomerHome: true }).where(eq(s.seasonPass.id, waiting!.passId!))
+    await db.update(s.visit).set({ awaitingPick: true }).where(eq(s.visit.id, waiting!.id))
     const due = (await unscheduledTurnOns()).filter((v) => open.has(v.passId!) && !v.awaitingPick && v.passId !== waiting!.passId).length
     const out = await run()
     expect(out.placed).toBe(due)

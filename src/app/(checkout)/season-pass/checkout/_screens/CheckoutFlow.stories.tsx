@@ -7,7 +7,7 @@ import type { CheckoutFields } from "./checkout-state"
 
 // The step stories open on one step with the earlier answers prefilled;
 // Walkthrough answers every question from the first screen, including the
-// consent boxes, and lands on the pass card. The timing step opens with both
+// consent boxes, and lands on the pass card. The days step opens with three days for each visit and
 // recommendations preselected, so it needs nothing prefilled.
 const answers: Partial<CheckoutFields> = {
   address: FIXTURE_HOME.label,
@@ -68,10 +68,16 @@ export const Inspection: Story = {
   globals: { viewport: { value: "wide", isRotated: false } },
 }
 
-/** Both questions on one screen, the recommendation preselected for each. */
-export const Timing: Story = {
-  args: { initialStep: 4, prefill: { ...answers, turnOnPreference: "recommended" } },
+/** Three open days for each visit, the first preselected, one line under them about changing it later. */
+export const Days: Story = {
+  args: { initialStep: 4, prefill: answers },
   globals: { viewport: { value: "wide", isRotated: false } },
+  play: async ({ canvas }) => {
+    const radios = await canvas.findAllByRole("radio")
+    await expect(radios).toHaveLength(6)
+    await expect(radios[0]).toBeChecked()
+    await expect(canvas.getByText("Change it later from your pass page.")).toBeInTheDocument()
+  },
 }
 
 export const Contact: Story = {
@@ -184,8 +190,9 @@ export const Walkthrough: Story = {
     await userEvent.click(await canvas.findByRole("button", { name: /Yes, add July/ }))
     await userEvent.click(canvas.getByRole("button", { name: "Continue" }))
 
-    await expect(await canvas.findByRole("button", { name: "Recommended Mid May", pressed: true })).toBeInTheDocument()
-    await userEvent.click(canvas.getByRole("button", { name: "Later Late October" }))
+    const radios = await canvas.findAllByRole("radio")
+    await expect(radios[0]).toBeChecked()
+    await userEvent.click(radios[8]!)
     await userEvent.click(canvas.getByRole("button", { name: "Continue" }))
 
     await userEvent.type(await canvas.findByLabelText("First name"), "Andrea")
@@ -196,7 +203,7 @@ export const Walkthrough: Story = {
     await userEvent.click(canvas.getByRole("button", { name: "Continue" }))
 
     await userEvent.click(await canvas.findByRole("button", { name: "Save card and reserve" }))
-    await expect(await canvas.findByRole("article", { name: "Season Pass 2027 for Andrea, Erie, turn-on preferred mid May, blowout preferred late October" })).toBeInTheDocument()
+    await expect(await canvas.findByRole("article", { name: /Season Pass 2027 for Andrea, Erie/ })).toBeInTheDocument()
     await expect(args.onComplete).toHaveBeenCalledTimes(1)
   },
 }
@@ -206,7 +213,7 @@ export const Phone: Story = {
   globals: { viewport: { value: "phone", isRotated: false } },
 }
 
-export const PhoneTiming: Story = {
+export const PhoneDays: Story = {
   args: { initialStep: 4, prefill: answers },
   globals: { viewport: { value: "phone", isRotated: false } },
 }

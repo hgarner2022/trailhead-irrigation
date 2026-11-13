@@ -4,12 +4,13 @@ import { headers } from "next/headers"
 import { after } from "next/server"
 import { db } from "@/db"
 import { ctxForCheckout } from "@/lib/admin/api-ctx"
-import { beginCheckoutWith, finishCheckoutWith, type CheckoutDeps } from "@/lib/pass/server/checkout"
+import { beginCheckoutWith, finishCheckoutWith, offerDaysWith, type CheckoutDeps } from "@/lib/pass/server/checkout"
 import { drain } from "@/lib/queue"
 import { handlers } from "@/lib/queue/handlers"
 import { getStripe } from "@/lib/stripe/client"
 import { clientIpFrom } from "./client-ip"
-import type { BeginResult, CheckoutConsent, CheckoutSubmission, FinishResult } from "./_screens/checkout-submit"
+import type { Offers } from "./_screens/checkout-days"
+import type { BeginResult, OfferQuery, CheckoutConsent, CheckoutSubmission, FinishResult } from "./_screens/checkout-submit"
 
 // The checkout's two server actions. They run as the anonymous `public` principal, so they can only reach the four handlers
 // that principal is allowed (src/api/core/call.ts), and both return a problem for the screen instead of throwing. The
@@ -30,4 +31,9 @@ export async function finishCheckout(passId: string, sessionId: string, consent:
   const result = await finishCheckoutWith(await deps(), passId, sessionId, consent, firstName)
   if (result.ok) after(() => drain(db(), handlers))
   return result
+}
+
+/** The "Your days" step: the open days to offer for each visit at this address. An empty answer is a possible answer; the step says Ryan sets those days. */
+export async function offerDays(query: OfferQuery): Promise<Offers> {
+  return offerDaysWith(await deps(), query)
 }

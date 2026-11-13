@@ -16,14 +16,15 @@ import { useCheckoutServer } from "./use-checkout-server"
 import { useCheckoutStorage } from "./use-checkout-storage"
 import { CardStep } from "./checkout-card"
 import { ErrorSummary } from "./checkout-errors"
-import type { BeginCheckout, FinishCheckout } from "./checkout-submit"
+import type { BeginCheckout, FinishCheckout, OfferQuery } from "./checkout-submit"
 import { savePassImage } from "@/lib/pass-card-image"
 import { InspectionStep } from "./checkout-inspection"
-import { TimingStep } from "./checkout-timing"
-import { ownsKeys, timingNeighbour } from "./checkout-keys"
+import { DaysStep } from "./checkout-days-step"
+import { fixtureOffers, type DayKind, type Offers } from "./checkout-days"
+import { ownsKeys } from "./checkout-keys"
+import { visitsOnSale } from "@/lib/season-pass"
 
-// The Season Pass checkout as seven full-screen questions, one input each (the
-// timing step asks its two together), the way Typeform paces a form: a thin orange line across the top for progress,
+// The Season Pass checkout as seven full-screen questions, one input each , the way Typeform paces a form: a thin orange line across the top for progress,
 // the question in the display face, the trail photo faint behind the cream
 // canvas, Enter to continue and the arrow keys to move. Only the current step
 // is rendered, so there is no page to scroll between questions. State is the
@@ -46,6 +47,8 @@ export interface CheckoutFlowProps {
   places?: PlaceProvider
   /** YYYY-MM-DD in Mountain time; which visits are still on sale this season. Defaults to the day the page opens. */
   today?: string
+  /** finds the days to offer for each visit; the fixture days until the server is wired */
+  onOffer?: (query: OfferQuery) => Promise<Offers>
   /** called once, when the card step is passed; Done is terminal, so the card step is never passed twice */
   onComplete?: (pass: Pass) => void
   /** saves the pass card as an image; defaults to rendering the card on screen to a PNG download */
@@ -70,7 +73,7 @@ function StepBody({ duration, enabled, children }: { duration: number; enabled: 
   return <div ref={ref}>{children}</div>
 }
 
-export function CheckoutFlow({ season, initialZones, initialStep, prefill, places, today, onComplete, onSaveImage, onDone, stripeKey, onBegin, onFinish }: CheckoutFlowProps) {
+export function CheckoutFlow({ season, initialZones, initialStep, prefill, places, today, onOffer, onComplete, onSaveImage, onDone, stripeKey, onBegin, onFinish }: CheckoutFlowProps) {
   const [state, dispatch] = useCheckoutState({ ...(initialZones ? { zones: initialZones } : {}), ...(today ? { today } : {}), ...prefill, ...(initialStep ? { step: initialStep } : {}) })
   // The step on which Continue (or Enter) was pressed too early, so it shows every field's problem; `n` counts the presses so each one moves focus again.
   const [attempt, setAttempt] = useState<{ step: number; n: number } | null>(null)
@@ -87,6 +90,23 @@ export function CheckoutFlow({ season, initialZones, initialStep, prefill, place
   const markMoved = useCallback(() => setMoved(true), [])
   const { busy, begin, finishCard, retry } = useCheckoutServer({ state, dispatch, onBegin, onFinish, onComplete, moved: markMoved })
   useCheckoutStorage(state, dispatch, wired)
+
+  // Reaching the days step asks the server for the open days at this address and zone count, every time: they change as trucks fill.
+  const onDays = current.key === "days"
+  const offersLoading = state.offers === null
+  const { town, zones, inspection } = state
+  useEffect(() => {
+    if (!onDays || !town) return
+    let live = true
+    const kinds = visitsOnSale(inspection, state.today).map((v) => v.key as DayKind)
+    const load = onOffer ? onOffer({ town, zones, inspection, season, today: state.today }) : Promise.resolve(fixtureOffers(season, kinds))
+    load.then((offers) => live && dispatch({ type: "offered", offers })).catch(() => live && dispatch({ type: "offered", offers: {} }))
+    return () => {
+      live = false
+    }
+    // state.today is fixed for the page's life
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onDays, town, zones, inspection, season, onOffer])
 
   const set = <K extends keyof CheckoutFields>(field: K, value: CheckoutFields[K]) => dispatch({ type: "set", field, value })
   const next = async () => {
@@ -114,7 +134,8 @@ export function CheckoutFlow({ season, initialZones, initialStep, prefill, place
     const el = section.current
     const target = el?.querySelector<HTMLElement>("[data-autofocus]") ?? el
     target?.focus({ preventScroll: true })
-  }, [step])
+    // On the days step the radios arrive after the offers do, so the first one takes focus then.
+  }, [step, offersLoading])
 
   // A press that could not pass puts focus on the first field with a problem, once its message is on screen.
   useEffect(() => {
@@ -134,14 +155,10 @@ export function CheckoutFlow({ season, initialZones, initialStep, prefill, place
       next()
     } else if (event.key === "ArrowDown" && !typing) {
       event.preventDefault()
-      const neighbour = timingNeighbour(target, "down")
-      if (neighbour) neighbour.focus()
-      else if (valid) next()
+      if (valid) next()
     } else if (event.key === "ArrowUp" && !typing) {
       event.preventDefault()
-      const neighbour = timingNeighbour(target, "up")
-      if (neighbour) neighbour.focus()
-      else if (step > 1) back()
+      if (step > 1) back()
     }
   }
 
@@ -165,8 +182,8 @@ export function CheckoutFlow({ season, initialZones, initialStep, prefill, place
     case "inspection":
       body = <InspectionStep state={state} set={set} />
       break
-    case "timing":
-      body = <TimingStep state={state} set={set} questionId={questionId} />
+    case "days":
+      body = <DaysStep state={state} offers={state.offers} set={set} />
       break
     case "contact":
       body = <ContactStep state={state} set={set} attempted={attempted} />
@@ -176,7 +193,7 @@ export function CheckoutFlow({ season, initialZones, initialStep, prefill, place
       break
     default: {
       const pass = state.pass ?? toPass(state, season)
-      body = <DoneStep pass={pass} email={state.email} onSaveImage={() => (onSaveImage ?? savePassImage)(pass)} onDone={onDone} />
+      body = <DoneStep pass={pass} email={state.email} chosen={state.days} onSaveImage={() => (onSaveImage ?? savePassImage)(pass)} onDone={onDone} />
     }
   }
 
@@ -208,7 +225,7 @@ export function CheckoutFlow({ season, initialZones, initialStep, prefill, place
       <p aria-live="polite" className="sr-only">{`Step ${step} of ${STEP_COUNT}, ${current.question}`}</p>
 
       <section key={step} ref={section} tabIndex={-1} onKeyDown={onKeyDown} className="flex min-h-svh flex-col outline-none">
-        <div className={cn(COLUMN, "flex flex-1 flex-col justify-center pt-20 pb-8", current.key === "timing" && "lg:max-w-3xl")}>
+        <div className={cn(COLUMN, "flex flex-1 flex-col justify-center pt-20 pb-8", current.key === "days" && "lg:max-w-3xl")}>
           <StepBody duration={done ? REVEAL_MS.done : REVEAL_MS.step} enabled={done || moved}>
             <h1
               id={questionId}
@@ -242,7 +259,7 @@ export function CheckoutFlow({ season, initialZones, initialStep, prefill, place
         {!done && (
           // Sticky, so Continue is always on screen however tall the step is at 375px; the padding clears the phone's home indicator.
           <div data-slot="checkout-actions" className="sticky bottom-0 z-10 max-sm:border-t max-sm:border-border/60 max-sm:bg-cream/95 max-sm:backdrop-blur-sm">
-            <div className={cn(COLUMN, "flex items-center justify-between pb-8 max-sm:pt-3 max-sm:pb-[max(1rem,env(safe-area-inset-bottom))]", current.key === "timing" && "lg:max-w-3xl")}>
+            <div className={cn(COLUMN, "flex items-center justify-between pb-8 max-sm:pt-3 max-sm:pb-[max(1rem,env(safe-area-inset-bottom))]", current.key === "days" && "lg:max-w-3xl")}>
               {step > 1 ? (
                 <Button variant="ghost" data-nav onClick={back}>
                   Back

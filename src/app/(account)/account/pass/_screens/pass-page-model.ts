@@ -69,7 +69,7 @@ const upcoming = (pass: Pass) => pass.visits.find((v) => !v.completedAt)
  * visit, then a season that is done (with renewal once the next season is
  * on sale). Hannah, 2026-11-13: "think through the different states".
  */
-export function passHeadline(pass: Pass, today: string): Headline {
+export function passHeadline(pass: Pass, today: string, pickable: readonly string[] = []): Headline {
   if (pass.status === "cancelled") return { title: "This pass is cancelled.", line: "Nothing further is charged and no more visits are placed. Book any visit online whenever you like.", action: "book" }
   if (pass.cardFailedAt) return { title: "Your card didn't go through.", line: "Update it and we'll try again; your visits stay as they are until then.", action: "update-card" }
   const next = upcoming(pass)
@@ -81,7 +81,8 @@ export function passHeadline(pass: Pass, today: string): Headline {
   }
   const row = visitRow(next, pass)
   if (next.scheduledAt) return { title: `Next up: ${row.name.toLowerCase()}, ${writtenDate(next.scheduledAt)}.`, line: "We'll text you the day before, and when we're on our way.", action: "change-day", kind: next.kind }
-  if (pass.needsCustomerHome && next.kind !== "inspection") return { title: `Pick your ${row.name.toLowerCase()} day.`, line: "These are the days we're in your town. Pick the one that works and we'll see you then.", action: "pick-day", kind: next.kind }
+  // A visit with no day yet (an admin-made pass, or a day Ryan took back) offers the same three-day choice the checkout does.
+  if (pickable.includes(next.kind) && next.kind !== "inspection") return { title: `Pick your ${row.name.toLowerCase()} day.`, line: "These are the days we're in your town. Pick the one that works and we'll see you then.", action: "pick-day", kind: next.kind }
   const done = pass.visits.filter((v) => v.completedAt)
   const last = done[done.length - 1]
   const lastWords = last ? `${VISIT_NAMES[last.kind]} done ${writtenDate(last.completedAt!)}. ` : ""

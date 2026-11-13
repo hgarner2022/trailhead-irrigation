@@ -91,7 +91,7 @@ describe("passHeadline", () => {
   it("reads the state top to bottom: card failed, cancelled, pick a day, next visit, reserved, done", () => {
     expect(passHeadline({ ...pass, cardFailedAt: "2027-05-03T17:12:00Z" }, "2027-05-04")).toMatchObject({ action: "update-card", title: "Your card didn't go through." })
     expect(passHeadline({ ...pass, status: "cancelled", cardFailedAt: "2027-05-03T17:12:00Z" }, "2027-05-04").action).toBe("book")
-    expect(passHeadline({ ...fresh, needsCustomerHome: true }, "2027-04-20")).toMatchObject({ action: "pick-day", kind: "turn-on", title: "Pick your spring turn-on day." })
+    expect(passHeadline(fresh, "2027-04-20", ["turn-on", "blowout"])).toMatchObject({ action: "pick-day", kind: "turn-on", title: "Pick your spring turn-on day." })
     expect(passHeadline(fresh, "2026-11-12")).toMatchObject({ action: null, title: "Your 2027 season is reserved." })
     expect(passHeadline(pass, "2027-05-04")).toMatchObject({ action: null, title: "Spring turn-on done May 3. Next up: mid-season inspection, in July." })
     const booked: Pass = { ...fresh, visits: fresh.visits.map((v, i) => (i === 0 ? { ...v, scheduledAt: "2027-05-05T15:00:00Z" } : v)) }

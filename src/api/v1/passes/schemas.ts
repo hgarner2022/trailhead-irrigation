@@ -1,5 +1,5 @@
 import { z } from "zod"
-import { Id, Iso, PassStatus, Preference, Town } from "../shared"
+import { Day, Id, Iso, PassStatus, Preference, Town } from "../shared"
 import { ConsentOut, consentInput, customerFields, propertyInput } from "../customers/schemas"
 import { VisitOut } from "../visits/schemas"
 import { MAX_ZONES, MIN_ZONES } from "@/lib/season-pass"
@@ -46,6 +46,13 @@ export const PassDetail = PassOut.extend({
   price: z.number().int().describe("What the pass's visits cost in total, whole dollars."),
 })
 
+export const ChosenDay = z.object({
+  kind: z.enum(["turn-on", "inspection", "blowout"]),
+  day: Day,
+  truckId: Id,
+  start: z.string().regex(/^\d{2}:\d{2}$/).describe("HH:MM, the start of the two-hour window offered with the day."),
+})
+
 export const passCreateInput = z.object({
   passId: Id.optional().describe("The pending pass this checkout already holds; when it is still pending for the same email it is updated instead of a second one being made."),
   customer: z.object({ ...customerFields, email: z.email(), lastName: customerFields.lastName }),
@@ -54,7 +61,9 @@ export const passCreateInput = z.object({
   inspection: z.boolean().default(false),
   turnOnPreference: Preference.default("recommended"),
   blowoutPreference: Preference.default("recommended"),
-  needsCustomerHome: z.boolean().default(false).describe("The customer must be there; the visit waits for them to pick a day."),
+  needsCustomerHome: z.boolean().default(false).describe("A note for Ryan: the customer cannot be reached without being home. It no longer holds a visit back; every visit gets a day."),
+  days: z.array(ChosenDay).max(3).default([]).describe("The days the customer picked on the checkout's \"Your days\" step, one per visit at most. A day that is no longer open is dropped, and the visit is left for the scheduler. `passes.activate` puts each on its truck."),
+  renewOf: Id.optional().describe("The pass this one renews: its address, zones and add-on fill what the call leaves out, and its customer holds the new pass."),
   accessNote: z.string().max(500).optional(),
   consent: consentInput
     .extend({ termsAccepted: z.literal(true).describe("Required: the terms must be accepted to buy a pass."), source: z.enum(["checkout", "booking", "admin", "reply"]).default("checkout") })

@@ -7,7 +7,6 @@ import { ApiError, notFound } from "../../core/errors"
 import { defineHandler } from "../../core/handler"
 import { afterTimeCursor, cursorPage, page, pageInput, timeCursor } from "../../core/pagination"
 import { addDays, assertOwnsCustomer, capacityKind, Day, Id, idInput, okOutput, OK, today, VisitKind, VisitStatus, weekdayOf } from "../shared"
-import { hasScope } from "@/lib/auth/principal"
 import { queueDateMessage } from "@/lib/scheduling/server/notify"
 import { enqueue } from "@/lib/queue"
 import { orderDay } from "@/lib/scheduling/server/order-day"
@@ -206,8 +205,8 @@ export const visitsAreaDays = defineHandler({
   input: idInput,
   output: z.object({ days: z.array(Day) }),
   async run(ctx, input) {
-    const { row, visit } = await loadPickable(ctx, input.id)
-    return { days: offeredDays(await openSlots(ctx.db, { id: visit.id, organizationId: visit.organizationId, kind: visit.kind, town: row.town }, today(ctx))) }
+    const { row, visit, pass } = await loadPickable(ctx, input.id)
+    return { days: offeredDays(await openSlots(ctx.db, { id: visit.id, organizationId: visit.organizationId, kind: visit.kind, town: row.town }, today(ctx), pass.season)) }
   },
 })
 
@@ -217,13 +216,12 @@ export const visitsPick = defineHandler({
   path: "/visits/{id}/pick",
   scope: "write",
   customerSelf: true,
-  summary: "A customer who must be home picks one of the offered area days for their pass visit. The visit lands on that day on a truck that works the area, and the customer is texted the date (emailed when there is no mobile number). A day that was not offered is refused.",
+  summary: "A customer picks one of the offered days for their pass visit, to set it or to change it. The visit lands on that day on a truck that works the area, and the customer is texted the date (emailed when there is no mobile number). A day that was not offered is refused.",
   input: z.object({ id: Id, day: Day }),
   output: VisitOut,
   async run(ctx, input) {
     const { row, visit, pass } = await loadPickable(ctx, input.id)
-    if (!pass.needsCustomerHome && !hasScope(ctx.principal, "write")) throw new ApiError("unprocessable", "Your visits are placed for you; ask us if you need a different day")
-    const slots = await openSlots(ctx.db, { id: visit.id, organizationId: visit.organizationId, kind: visit.kind, town: row.town }, today(ctx))
+    const slots = await openSlots(ctx.db, { id: visit.id, organizationId: visit.organizationId, kind: visit.kind, town: row.town }, today(ctx), pass.season)
     const slot = offeredDays(slots).includes(input.day) ? truckFor(slots, input.day) : undefined
     if (!slot) throw new ApiError("unprocessable", "That day is not one of the days on offer; pick another")
     const moved = visit.status === "scheduled"
