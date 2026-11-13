@@ -57,18 +57,17 @@ describe("CheckoutFlow coming back", () => {
     fireEvent.click(screen.getByRole("button", { name: "10 zones" }))
     await waitFor(() => expect(loadCheckout()?.fields.zones).toBe(10))
   })
-  it("reopens the card step on a fresh card form for the same pass, with the boxes unticked", async () => {
+  it("brings a customer who was on the card step back to the contact step, terms unticked, and asks the server for nothing until they continue", async () => {
     saveCheckout({ step: 6, passId: "p-1", fields })
     const onBegin = wired()
-    await screen.findByRole("heading", { name: /Save a card for after each visit/ })
-    expect(onBegin).toHaveBeenCalledWith(expect.objectContaining({ email: "andrea@example.com" }), "p-1")
+    expect(await screen.findByRole("heading", { name: "Who should we reach?" })).toBeInTheDocument()
+    expect(screen.getByText(/Welcome back/)).toBeInTheDocument()
     expect(screen.getByRole("checkbox", { name: /I accept the Season Pass terms/ })).not.toBeChecked()
-  })
-  it("restarts at the contact step with a notice when the server no longer has the pass", async () => {
-    saveCheckout({ step: 6, passId: "p-old", fields })
-    wired()
-    expect(await screen.findByText(/timed out/)).toBeInTheDocument()
-    expect(screen.getByRole("heading", { name: "Who should we reach?" })).toBeInTheDocument()
+    expect(onBegin).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole("checkbox", { name: /I accept the Season Pass terms/ }))
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }))
+    await screen.findByRole("heading", { name: /Save a card for after each visit/ })
+    expect(onBegin).toHaveBeenCalledWith(expect.objectContaining({ email: "andrea@example.com", consent: { termsAccepted: true, marketingEmail: false, marketingSms: false } }), "p-1")
   })
   it("starts clean when nothing was kept", () => {
     wired()

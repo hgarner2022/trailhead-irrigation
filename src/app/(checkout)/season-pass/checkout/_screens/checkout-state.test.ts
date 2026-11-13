@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest"
 import { FIXTURE_HOME, FIXTURE_PLACES } from "@/lib/places/fixture"
-import { PICK_ADDRESS, STEPS, addressProblem, canContinue, contactProblem, doneSentence, initialState, reducer, toConsent, toPass, type CheckoutState } from "./checkout-state"
+import { PICK_ADDRESS, STEPS, addressProblem, canContinue, contactProblem, initialState, reducer, toConsent, toPass, type CheckoutState } from "./checkout-state"
 
 const boulder = FIXTURE_PLACES.find((p) => p.town === "Boulder")!
 
@@ -73,7 +73,7 @@ describe("step order", () => {
   it("stays put when the step is not valid", () => {
     const s = reducer(initialState(), { type: "next" })
     expect(s.step).toBe(1)
-    expect(reducer({ ...filled, step: 6, termsAccepted: false }, { type: "next" }).step).toBe(6)
+    expect(reducer({ ...filled, step: 5, termsAccepted: false }, { type: "next" }).step).toBe(5)
   })
 
   it("goes back, never below the first step", () => {
@@ -150,7 +150,6 @@ describe("canContinue", () => {
     const august = toPass({ ...filled, today: "2027-08-10", inspection: true }, 2027)
     expect(august.visits.map((v) => v.kind)).toEqual(["blowout"])
     expect(toPass({ ...filled, today: "2026-11-20" }, 2027).visits.map((v) => v.kind)).toEqual(["turn-on", "blowout"])
-    expect(doneSentence({ ...filled, today: "2027-08-10" })).toBe("Blowout preferred mid October. We'll email the details to andrea@example.com.")
     const home = toPass({ ...filled, access: "no", accessNote: "" }, 2027)
     expect(home.needsCustomerHome).toBe(true)
     expect(home.accessNote).toBeUndefined()
@@ -179,23 +178,15 @@ describe("canContinue", () => {
     expect(canContinue({ ...filled, step: 5, phone: "555-0123" })).toBe(false)
     expect(canContinue({ ...filled, step: 5, phone: "970 555 0123" })).toBe(true)
     expect(canContinue({ ...filled, step: 5 })).toBe(true)
+    expect(canContinue({ ...filled, step: 5, termsAccepted: false })).toBe(false)
+    expect(canContinue({ ...filled, step: 5, termsAccepted: false, marketingEmail: true, marketingSms: true })).toBe(false)
   })
 
   it("card: needs the terms accepted, whatever the marketing boxes say; done: never", () => {
     expect(canContinue({ ...filled, step: 6 })).toBe(true)
     expect(canContinue({ ...filled, step: 6, marketingEmail: true, marketingSms: true })).toBe(true)
-    expect(canContinue({ ...filled, step: 6, termsAccepted: false })).toBe(false)
-    expect(canContinue({ ...filled, step: 6, termsAccepted: false, marketingEmail: true })).toBe(false)
+    expect(canContinue({ ...filled, step: 6, termsAccepted: false })).toBe(true)
     expect(canContinue({ ...filled, step: 7 })).toBe(false)
-  })
-})
-
-describe("words", () => {
-  it("writes the Done sentence from the two preferences and the email, naming July only when the inspection was added", () => {
-    expect(doneSentence(filled)).toBe("Turn-on preferred early May, blowout preferred mid October. We'll email the details to andrea@example.com.")
-    expect(doneSentence({ ...filled, inspection: true, turnOnPreference: "recommended", blowoutPreference: "later" })).toBe(
-      "Turn-on preferred mid May, inspection in July, blowout preferred late October. We'll email the details to andrea@example.com.",
-    )
   })
 })
 

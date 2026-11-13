@@ -34,6 +34,7 @@ const submission = (over: Partial<CheckoutSubmission> = {}): CheckoutSubmission 
   firstName: "Eli",
   email: "eli@example.com",
   phone: "(303) 555-0111",
+  consent: { termsAccepted: true, marketingEmail: false, marketingSms: false },
   ...over,
 })
 const depsWith = (stripe: ReturnType<typeof stubStripe>["stripe"]): CheckoutDeps => ({
@@ -96,10 +97,9 @@ describe("finishCheckoutWith", () => {
 })
 
 describe("the consent snapshot and an expired session", () => {
-  it("records the boxes when the card form opens, and a webhook-first activation uses them", async () => {
-    const begun = await beginCheckoutWith(depsWith(stubStripe().stripe), submission({ email: "snap@example.com" }))
+  it("records the boxes when the contact step passes, and a webhook-first activation uses them", async () => {
+    const begun = await beginCheckoutWith(depsWith(stubStripe().stripe), submission({ email: "snap@example.com", consent: { termsAccepted: true, marketingEmail: true, marketingSms: true } }))
     if (!begun.ok) throw new Error("begin failed")
-    await recordConsentWith(depsWith(stubStripe().stripe), begun.passId, { termsAccepted: true, marketingEmail: true, marketingSms: true })
     const [change] = await db.select().from(s.passChange).where(eq(s.passChange.passId, begun.passId))
     expect(change).toMatchObject({ kind: "consent-snapshot", detail: { marketingChannels: ["email", "sms"] } })
     getStripe.mockReturnValue(stubStripe({ sessions: { cs_w: completeSession("cs_w", { purpose: "pass-setup", passId: begun.passId }) } }).stripe)
@@ -108,11 +108,15 @@ describe("the consent snapshot and an expired session", () => {
     const active = await callApi(await depsWith(stubStripe().stripe).ctx(begun.passId), passesActivate, { id: begun.passId, setupSessionId: "cs_w" })
     expect(active.consent).toMatchObject({ source: "checkout", marketingOptIn: true, marketingChannels: ["email", "sms"] })
   })
+  it("makes no pass when the terms are not accepted", async () => {
+    expect(await beginCheckoutWith(depsWith(stubStripe().stripe), submission({ email: "noterms@example.com", consent: { termsAccepted: false, marketingEmail: false, marketingSms: false } }))).toMatchObject({ ok: false, problem: "invalid" })
+  })
   it("records nothing without the terms and never throws", async () => {
     const begun = await beginCheckoutWith(depsWith(stubStripe().stripe), submission({ email: "snap2@example.com" }))
     if (!begun.ok) throw new Error("begin failed")
+    const before = await db.select().from(s.passChange).where(eq(s.passChange.passId, begun.passId))
     await expect(recordConsentWith(depsWith(stubStripe().stripe), begun.passId, { termsAccepted: false, marketingEmail: true, marketingSms: false })).resolves.toBeUndefined()
-    expect(await db.select().from(s.passChange).where(eq(s.passChange.passId, begun.passId))).toHaveLength(0)
+    expect(await db.select().from(s.passChange).where(eq(s.passChange.passId, begun.passId))).toHaveLength(before.length)
   })
   it("names an expired card form so the screen opens a new one", async () => {
     const begun = await beginCheckoutWith(depsWith(stubStripe().stripe), submission({ email: "exp@example.com" }))

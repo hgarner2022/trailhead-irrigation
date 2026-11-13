@@ -26,7 +26,7 @@ export const SEASON_PASS_VISITS = [
   {
     key: "blowout",
     name: "Fall blowout & winterization",
-    when: "October, date reserved in July",
+    when: "October",
     base: 95,
     includedZones: 6,
   },
