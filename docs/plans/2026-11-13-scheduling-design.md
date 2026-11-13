@@ -267,8 +267,7 @@ weeks instead of days.
 ## Answered so far (Hannah for Ryan, 14 Nov, 2am)
 
 - The working day is 8:00 to 5:00. The slot grid starts at 8:00, not 7:00.
-- A turn-on takes about 60 minutes; a blowout about 45. The inspection is
-  still open; assume 45 until Ryan says.
+- A turn-on takes about 60 minutes, an inspection 60, a blowout 45.
 - Capacity is derived, not guessed: a truck-day is 540 minutes; minus the
   buffer (25 percent to start) and about 15 minutes of driving per stop,
   that is roughly 5 turn-ons or 6 to 7 blowouts per truck-day. The old
@@ -281,7 +280,7 @@ weeks instead of days.
 ## Questions for Ryan before the route days are set
 
 1. Which weekday, per town, in April to May, in July, and in October?
-2. How long does an inspection take? (Turn-on 60 and blowout 45 are answered; the count per day is computed.)
+2. (Answered: turn-on 60, inspection 60, blowout 45; the count per day is computed.)
 3. Saturdays in October? The second truck on a freeze week?
 4. Roughly what share of customers need to be home, and which kinds?
 5. How many days' notice is realistic when you pull fall days earlier?
