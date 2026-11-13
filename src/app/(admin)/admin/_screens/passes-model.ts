@@ -1,11 +1,10 @@
 /**
  * The pure derivations behind PassesScreen: the header's context line, the
- * week label the filter chips and the panel share, and the charge rows the
- * panel lists for one pass. Kept out of the screen so they can be unit
- * tested. Timestamps are read as their calendar day in Mountain time
- * (`TIME_ZONE`); date-only strings, like the week's Monday, never shift.
+ * consent line in the panel, and the charge rows the panel lists for one
+ * pass. Kept out of the screen so they can be unit tested. Timestamps are
+ * read as their calendar day in Mountain time (`TIME_ZONE`).
  */
-import type { Pass, PassStatus, PassVisit } from "@/lib/admin/types"
+import type { Consent, Pass, PassStatus, PassVisit } from "@/lib/admin/types"
 import { TIME_ZONE, shortDate } from "@/lib/admin/format"
 import { statusLabel } from "@/components/blocks/StatusPill"
 
@@ -28,14 +27,18 @@ export function passesContext(passes: Pass[]): string {
   return `${counts.join(", ")}. ${season} season.`
 }
 
-/** "Week of Oct 4" from the week's Monday. */
-export function weekLabel(iso: string): string {
-  return `Week of ${shortDate(iso)}`
-}
+const CHANNEL_WORDS: Record<Consent["marketingChannels"][number], string> = { email: "email", sms: "text" }
 
-/** The blowout weeks the passes use, soonest first, as filter options labelled "Oct 4". */
-export function weekOptions(passes: Pass[]): { value: string; label: string }[] {
-  return [...new Set(passes.map((p) => p.blowoutWeek))].sort().map((week) => ({ value: week, label: shortDate(week) }))
+/**
+ * "Terms 2026-11 accepted Nov 12. Marketing: email and text." or
+ * "Marketing: no."; "No consent recorded." when the pass has none.
+ */
+export function consentLine(consent: Consent | undefined): string {
+  if (!consent) return "No consent recorded."
+  const terms = consent.termsAcceptedAt ? `Terms ${consent.termsVersion ?? ""} accepted ${shortDate(consent.termsAcceptedAt, TIME_ZONE)}. `.replace("  ", " ") : ""
+  const channels = consent.marketingChannels.map((c) => CHANNEL_WORDS[c])
+  const marketing = consent.marketingOptIn && channels.length ? channels.join(" and ") : "no"
+  return `${terms}Marketing: ${marketing}.`
 }
 
 export interface ChargeRow {

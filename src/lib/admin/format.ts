@@ -30,6 +30,12 @@ const PREFERENCE_LABELS: Record<"turn-on" | "blowout", Record<TimingPreference, 
   blowout: { earlier: "Early October", recommended: "Second week of October", later: "Late October" },
 }
 
+/** A preference inside a sentence: "early May", "the first half of May", "the second week of October". */
+export function preferencePhrase(kind: "turn-on" | "blowout", preference: TimingPreference): string {
+  const label = preferenceLabel(kind, preference)
+  return `${preference === "recommended" ? "the " : ""}${label.charAt(0).toLowerCase()}${label.slice(1)}`
+}
+
 /**
  * The one-line reason under the recommendation. The dates come from the
  * NOAA stations on /first-freeze-dates (src/lib/freeze-data.ts): the first

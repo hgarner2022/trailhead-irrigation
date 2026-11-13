@@ -7,7 +7,7 @@
  */
 import { useReducer } from "react"
 import type { Consent, Pass, PassVisit, TimingPreference, Town } from "@/lib/admin/types"
-import { preferenceLabel } from "@/lib/admin/format"
+import { preferencePhrase } from "@/lib/admin/format"
 import { MAX_ZONES, MIN_ZONES, SEASON_PASS_VISITS, TERMS_VERSION, visitPrice } from "@/lib/season-pass"
 
 export type StepKey = "address" | "zones" | "timing" | "contact" | "card" | "done"
@@ -134,13 +134,6 @@ export function reducer(state: CheckoutState, action: CheckoutAction): CheckoutS
 
 export function useCheckoutState(prefill?: Partial<CheckoutState>) {
   return useReducer(reducer, prefill, initialState)
-}
-
-const lower = (s: string) => s.charAt(0).toLowerCase() + s.slice(1)
-
-/** A preference inside a sentence: "early May", "the first half of May", "the second week of October". */
-export function preferencePhrase(kind: "turn-on" | "blowout", preference: TimingPreference): string {
-  return `${preference === "recommended" ? "the " : ""}${lower(preferenceLabel(kind, preference))}`
 }
 
 /** The sentence under the pass card on Done. */

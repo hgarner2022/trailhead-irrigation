@@ -13,13 +13,13 @@ describe("PassPageScreen", () => {
     render(<PassPageScreen pass={pass} today="2026-11-12" />)
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Season Pass")
     expect(screen.getByRole("article", { name: /Season Pass 2027 for Andrea, Erie/ })).toBeInTheDocument()
-    expect(screen.getByRole("img", { name: /Your 2027 season: turn-on done on April 20/ })).toBeInTheDocument()
+    expect(screen.getByRole("img", { name: /Your 2027 season: turn-on done on May 3, inspection in July, blowout preferred second week of October/ })).toBeInTheDocument()
     expect(rows().map((r) => r.textContent)).toEqual([
-      "Spring turn-onApril 20Done",
+      "Spring turn-onMay 3Done",
       "Mid-season inspectionJulyJuly",
-      "Fall blowoutWeek of October 4Reserved",
+      "Fall blowoutSecond week of OctoberPreferred",
     ])
-    expect(document.body.textContent).not.toMatch(/Not scheduled|Scheduled|Completed/)
+    expect(document.body.textContent).not.toMatch(/Not scheduled|Scheduled|Completed|Reserved|Week of/)
     expect(screen.getByText("Visa ending 4242, expires 08/28")).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Update card" })).toBeInTheDocument()
   })
@@ -30,7 +30,7 @@ describe("PassPageScreen", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument()
     fireEvent.click(screen.getByRole("button", { name: "Cancel my pass" }))
     const dialog = screen.getByRole("dialog", { name: "Cancel your Season Pass?" })
-    expect(dialog).toHaveTextContent("Nothing further is charged. Your reserved blowout week is released.")
+    expect(dialog).toHaveTextContent("Nothing further is charged. Your remaining visits come off the schedule.")
     expect(screen.getByRole("button", { name: "Cancel the pass" })).toBeInTheDocument()
     fireEvent.click(screen.getByRole("button", { name: "Keep my pass" }))
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument()

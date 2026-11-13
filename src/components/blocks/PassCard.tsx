@@ -37,10 +37,10 @@ export interface PassCardProps {
 
 const ART = { flat: "/images/pass-card-art.webp", holo: "/images/pass-card-art-holo.webp" }
 const VISIT_NAMES: Record<PassVisit["kind"], string> = { "turn-on": "Turn-on", inspection: "Inspection", blowout: "Blowout" }
-// The preference label in the room a phone-width card has for it.
+// The preference in the room a phone-width card has for it (about 70px a cell): the season line's word and the month.
 const SHORT_LABELS: Record<"turn-on" | "blowout", Record<TimingPreference, string>> = {
-  "turn-on": { earlier: "Early May", recommended: "1st half of May", later: "Late May" },
-  blowout: { earlier: "Early Oct", recommended: "2nd week of Oct", later: "Late Oct" },
+  "turn-on": { earlier: "Early May", recommended: "Mid May", later: "Late May" },
+  blowout: { earlier: "Early Oct", recommended: "Mid Oct", later: "Late Oct" },
 }
 const REST_STYLE = { "--sheen-x": SHEEN_REST.x, "--sheen-y": SHEEN_REST.y } as CSSProperties
 const never = () => () => {}

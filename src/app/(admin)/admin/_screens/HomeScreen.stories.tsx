@@ -18,7 +18,6 @@ const nothingYet: AdminData = {
   quotes: [],
   invoices: [],
   passes: [],
-  blowoutWeeks: [],
   monthTotals: [],
   attention: [],
 }

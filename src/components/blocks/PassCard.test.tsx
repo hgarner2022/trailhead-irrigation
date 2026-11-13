@@ -83,7 +83,7 @@ describe("PassCard at full size", () => {
     const blowout = card().querySelector('[data-slot="pass-visit"][data-kind="blowout"]')
     expect(blowout?.textContent).toContain("Preferred")
     expect(blowout?.textContent).toContain("Second week of October")
-    expect(blowout?.textContent).toContain("2nd week of Oct")
+    expect(blowout?.textContent).toContain("Mid Oct")
     expect(screen.queryByText("Reserved")).not.toBeInTheDocument()
   })
 

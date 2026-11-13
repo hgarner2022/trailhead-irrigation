@@ -2,7 +2,7 @@
 
 import { useState, useSyncExternalStore, type ReactNode } from "react"
 import Image from "next/image"
-import { CalendarRange, LayoutDashboard, LogOut, Ticket, TrendingUp, Users, type LucideIcon } from "lucide-react"
+import { CalendarDays, LayoutDashboard, LogOut, Settings2, Ticket, TrendingUp, Users, type LucideIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
   Sidebar,
@@ -31,7 +31,7 @@ import {
 // only takes effect once the root layout sets `viewport.viewportFit = "cover"`
 // at wiring time.
 
-export type AdminSection = "home" | "revenue" | "passes" | "october" | "customers"
+export type AdminSection = "home" | "schedule" | "passes" | "revenue" | "customers" | "settings"
 
 export interface AdminShellProps {
   current: AdminSection
@@ -43,12 +43,16 @@ export interface AdminShellProps {
   children: ReactNode
 }
 
+// The order of the information architecture plan: one job each. Schedule and
+// Settings arrive with the next task; their links are in place so the frame
+// never changes under Hannah.
 const NAV: { id: AdminSection; label: string; href: string; icon: LucideIcon }[] = [
   { id: "home", label: "Home", href: "/admin", icon: LayoutDashboard },
-  { id: "revenue", label: "Revenue", href: "/admin/revenue", icon: TrendingUp },
+  { id: "schedule", label: "Schedule", href: "/admin/schedule", icon: CalendarDays },
   { id: "passes", label: "Passes", href: "/admin/passes", icon: Ticket },
-  { id: "october", label: "October", href: "/admin/october", icon: CalendarRange },
+  { id: "revenue", label: "Revenue", href: "/admin/revenue", icon: TrendingUp },
   { id: "customers", label: "Customers", href: "/admin/customers", icon: Users },
+  { id: "settings", label: "Settings", href: "/admin/settings", icon: Settings2 },
 ]
 
 const CONTENT = "mx-auto w-full max-w-7xl container-padding-x"
@@ -131,7 +135,7 @@ function TabBar({ current }: Pick<AdminShellProps, "current">) {
       data-slot="admin-tabbar"
       className="fixed inset-x-0 bottom-0 z-40 border-t border-sidebar-border bg-sidebar pb-[env(safe-area-inset-bottom)] text-sidebar-foreground md:hidden"
     >
-      <ul className="grid grid-cols-5">
+      <ul className="grid grid-cols-6">
         {NAV.map(({ id, label, href, icon: Icon }) => {
           const active = id === current
           return (

@@ -12,7 +12,7 @@ import { cardLine, seasonCaption, visitRows } from "./pass-page-model"
 // the top, the season line with the three visits and their state, the card
 // on file with one update button, and one cancel link that asks before it
 // does anything (CancelPassDialog). The visit states use the customer's words,
-// Done, Booked and Reserved, in the StatusPill colours; a customer never reads
+// Done, Booked and Preferred, in the StatusPill colours; a customer never reads
 // "Not scheduled". A cancelled pass shows the grey card and one line. Pure
 // composition over `pass` and `today`; the route's page.tsx supplies both.
 // Server component; the dialog carries its own client boundary.
@@ -45,7 +45,7 @@ export function PassPageScreen({ pass, today, onCancel }: PassPageScreenProps) {
 
         {cancelled ? (
           <p data-slot="pass-cancelled" className="text-base text-muted-foreground">
-            This pass is cancelled. Nothing further is charged, and your blowout week is released. Book any visit online whenever you like.
+            This pass is cancelled. Nothing further is charged, and no more visits are placed. Book any visit online whenever you like.
           </p>
         ) : (
           <>
@@ -54,7 +54,7 @@ export function PassPageScreen({ pass, today, onCancel }: PassPageScreenProps) {
                 <Title>Your season</Title>
               </CardHeader>
               <CardContent className="space-y-6">
-                <SeasonLine mode="customer" season={pass.season} visits={pass.visits} today={today} caption={seasonCaption(pass)} />
+                <SeasonLine mode="customer" season={pass.season} visits={pass.visits} preferences={pass} today={today} caption={seasonCaption(pass)} />
                 <ul className="divide-y divide-border">
                   {visitRows(pass).map((row) => (
                     <li key={row.kind} data-slot="pass-visit-row" className="flex items-center gap-3 py-3">

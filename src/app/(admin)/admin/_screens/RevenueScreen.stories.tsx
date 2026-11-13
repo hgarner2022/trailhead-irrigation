@@ -20,7 +20,6 @@ const nothingYet: AdminData = {
   quotes: [],
   invoices: [],
   passes: [],
-  blowoutWeeks: [],
   monthTotals: [],
   attention: [],
 }
@@ -47,8 +46,8 @@ const withRenewals: AdminData = {
   ...data,
   passes: [
     ...data.passes,
-    old(data.passes[0], { id: "p2026-1", blowoutWeek: "2026-10-05" }),
-    old(data.passes[4], { id: "p2026-2", clientId: "c300", firstName: "Morgan", town: "Louisville", blowoutWeek: "2026-10-12" }),
+    old(data.passes[0], { id: "p2026-1" }),
+    old(data.passes[4], { id: "p2026-2", clientId: "c300", firstName: "Morgan", town: "Louisville" }),
   ],
 }
 

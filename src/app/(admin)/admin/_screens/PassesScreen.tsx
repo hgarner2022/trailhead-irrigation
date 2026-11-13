@@ -4,15 +4,16 @@ import { useMemo, useState, type ReactNode } from "react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { DataGrid } from "@/components/blocks/DataGrid"
-import { passColumns } from "@/components/blocks/data-grid-columns"
+import { passColumns, preferenceOptions } from "@/components/blocks/data-grid-columns"
 import { PageHeader } from "@/components/blocks/PageHeader"
 import { PassCard } from "@/components/blocks/PassCard"
 import { SeasonLine } from "@/components/blocks/SeasonLine"
 import { SidePanel, SidePanelLayout } from "@/components/blocks/SidePanel"
 import { StatusPill, statusLabel } from "@/components/blocks/StatusPill"
 import type { AdminData, Pass } from "@/lib/admin/types"
+import { preferenceLabel } from "@/lib/admin/format"
 import { formatMoney } from "@/lib/admin/metrics"
-import { chargeRows, passesContext, weekLabel, weekOptions } from "./passes-model"
+import { chargeRows, consentLine, passesContext } from "./passes-model"
 
 // Every Season Pass sold, as the one data grid, with the pass opening beside
 // it from its name. On a laptop the panel pushes the grid narrower; on a
@@ -54,7 +55,8 @@ function Facts({ pass }: { pass: Pass }) {
   const facts: [string, ReactNode][] = [
     ["Town", pass.town],
     ["Zones", pass.zones],
-    ["Blowout week", weekLabel(pass.blowoutWeek)],
+    ["Turn-on", preferenceLabel("turn-on", pass.turnOnPreference)],
+    ["Blowout", preferenceLabel("blowout", pass.blowoutPreference)],
     ["Status", <StatusPill key="status" status={pass.status} />],
   ]
   return (
@@ -98,7 +100,7 @@ function CancelDialog({ pass, open, onOpenChange }: { pass: Pass; open: boolean;
       <DialogContent showCloseButton={false} className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle className="font-display text-2xl font-semibold text-navy">Cancel this pass?</DialogTitle>
-          <DialogDescription>Nothing further is charged and the blowout week is released.</DialogDescription>
+          <DialogDescription>Nothing further is charged and the remaining visits come off the schedule.</DialogDescription>
         </DialogHeader>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
@@ -118,9 +120,14 @@ function PassDetail({ pass, today }: { pass: Pass; today: string }) {
         <PassCard pass={pass} size="thumb" interactive={false} className="shrink-0" />
         <Facts pass={pass} />
       </div>
+      {/* On its own line, not in the facts grid: beside the thumbnail on a phone it would wrap four deep. */}
+      <p data-slot="pass-consent" className="text-sm">
+        <span className="text-muted-foreground">Consent </span>
+        <span className="font-medium">{consentLine(pass.consent)}</span>
+      </p>
       <section aria-labelledby="pass-season">
         <Subtitle id="pass-season">Season</Subtitle>
-        <SeasonLine mode="customer" season={pass.season} visits={pass.visits} today={today} className="mt-3" />
+        <SeasonLine mode="customer" season={pass.season} visits={pass.visits} preferences={pass} today={today} className="mt-3" />
       </section>
       <section aria-labelledby="pass-charges">
         <Subtitle id="pass-charges">Charges</Subtitle>
@@ -156,9 +163,9 @@ export function PassesScreen({ data, today, defaultSelectedId }: PassesScreenPro
     () => [
       { column: "town", label: "Town", options: TOWNS.map((t) => option(t)) },
       { column: "status", label: "Status", options: STATUSES.map((s) => option(s, statusLabel(s))) },
-      { column: "blowoutWeek", label: "Blowout week", options: weekOptions(passes) },
+      { column: "blowout", label: "Blowout", options: preferenceOptions("blowout") },
     ],
-    [passes],
+    [],
   )
   const show = (next: Pass) => {
     setSelectedId(next.id)

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { STEPS, canContinue, doneSentence, initialState, preferencePhrase, reducer, toConsent, toPass, type CheckoutState } from "./checkout-state"
+import { STEPS, canContinue, doneSentence, initialState, reducer, toConsent, toPass, type CheckoutState } from "./checkout-state"
 
 const filled: CheckoutState = {
   step: 1,
@@ -128,15 +128,6 @@ describe("canContinue", () => {
 })
 
 describe("words", () => {
-  it("writes a preference inside a sentence, with 'the' only for the recommendation", () => {
-    expect(preferencePhrase("turn-on", "earlier")).toBe("early May")
-    expect(preferencePhrase("turn-on", "recommended")).toBe("the first half of May")
-    expect(preferencePhrase("turn-on", "later")).toBe("late May")
-    expect(preferencePhrase("blowout", "earlier")).toBe("early October")
-    expect(preferencePhrase("blowout", "recommended")).toBe("the second week of October")
-    expect(preferencePhrase("blowout", "later")).toBe("late October")
-  })
-
   it("writes the Done sentence from the two preferences and the email", () => {
     expect(doneSentence(filled)).toBe("Turn-on preferred early May, inspection in July, blowout preferred the second week of October. We'll email the details to andrea@example.com.")
     expect(doneSentence({ ...filled, turnOnPreference: "recommended", blowoutPreference: "later" })).toBe(

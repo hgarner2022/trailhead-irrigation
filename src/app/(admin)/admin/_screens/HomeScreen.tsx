@@ -15,6 +15,8 @@ import { SEASON, clockTime, dayHeading, greeting, pageContext, seasonDescription
 // matter today, the season line, the next two days of visits and the short
 // list of what needs a person. Pure composition over `data` and a fixed
 // `today`; the route's page.tsx supplies both. Server component.
+// TODO(schedule task): the "Set up spring" / "Set up fall" prompt, shown when
+// a season window is four to six weeks out, arrives with the Schedule page.
 
 export interface HomeScreenProps {
   data: AdminData

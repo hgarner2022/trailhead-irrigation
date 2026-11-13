@@ -9,7 +9,7 @@ describe("CancelPassDialog", () => {
     const link = screen.getByRole("button", { name: "Cancel my pass" })
     expect(link).toHaveClass("py-2")
     fireEvent.click(link)
-    expect(screen.getByRole("dialog", { name: "Cancel your Season Pass?" })).toHaveTextContent("Nothing further is charged. Your reserved blowout week is released.")
+    expect(screen.getByRole("dialog", { name: "Cancel your Season Pass?" })).toHaveTextContent("Nothing further is charged. Your remaining visits come off the schedule.")
     fireEvent.click(screen.getByRole("button", { name: "Keep my pass" }))
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument()
     expect(onConfirm).not.toHaveBeenCalled()

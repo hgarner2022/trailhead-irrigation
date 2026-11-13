@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { MONTH_NAMES, TIME_ZONE, monthDay, monthName, monthShort, preferenceLabel, preferenceReason, shortDate, writtenDate } from "./format"
+import { MONTH_NAMES, TIME_ZONE, monthDay, monthName, monthShort, preferenceLabel, preferencePhrase, preferenceReason, shortDate, writtenDate } from "./format"
 
 describe("month names", () => {
   it("names the twelve months by number", () => {
@@ -54,6 +54,15 @@ describe("timing preferences", () => {
     expect(preferenceLabel("blowout", "earlier")).toBe("Early October")
     expect(preferenceLabel("blowout", "recommended")).toBe("Second week of October")
     expect(preferenceLabel("blowout", "later")).toBe("Late October")
+  })
+
+  it("writes a preference inside a sentence, with 'the' only for the recommendation", () => {
+    expect(preferencePhrase("turn-on", "earlier")).toBe("early May")
+    expect(preferencePhrase("turn-on", "recommended")).toBe("the first half of May")
+    expect(preferencePhrase("turn-on", "later")).toBe("late May")
+    expect(preferencePhrase("blowout", "earlier")).toBe("early October")
+    expect(preferencePhrase("blowout", "recommended")).toBe("the second week of October")
+    expect(preferencePhrase("blowout", "later")).toBe("late October")
   })
 
   it("gives one plain reason for each recommendation", () => {
