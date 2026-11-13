@@ -30,8 +30,11 @@ the ten questions at the end go to Ryan before the route days are set.
 ## The decisions, by the question a customer or Ryan asks
 
 **1. What day are you coming?** You pick it at purchase: three open days on
-your town's route days inside the visit's window, earliest, middle, late,
-the first preselected. It is called "your day", not an appointment, and the
+your town's route days inside the visit's window, the first preselected.
+The preselected one is the earliest route day with room, so Ryan's days
+fill one after another; the other two are there for the few who care
+(most people cannot know their May in November, so the default is the
+product and the choice is the escape hatch). It is called "your day", not an appointment, and the
 confirmation says in one line what can move it (weather in the fall, a
 conflict on Ryan's side) and that you will be told first and can pick
 again. Why: a paid customer with no day was tonight's complaint; only route
@@ -49,7 +52,9 @@ days are offered, so density holds.
   comes from your place in the route.
 - Ryan's own "on my way" text from his phone stays his, not the app's.
 
-**3. What if I'm not home in the morning?** The purchase asks one question:
+**3. What if I'm not home in the morning?** (Asked at the one moment the
+customer cannot know; so the pass page lets them change the answer, and
+morning or afternoon, in one tap right up to the route build.) The purchase asks one question:
 "Does someone need to be home?" No is the default, with the access note
 (gate code, dog, where the controller is). Yes asks "morning or afternoon",
 and that choice is honoured when the route is built. Most visits are
@@ -65,8 +70,12 @@ costs Ryan nothing, and an approval step only makes admin.
 plain words that a fall day may be moved up to 14 days earlier with at
 least 48 hours' notice, free, and you may then pick another open day. Ryan
 pulls a whole truck-day earlier on the Schedule; every stop on it gets one
-text with a "pick another day" link. The last two weeks of the fall window
-are never sold at checkout: they are Ryan's slack for exactly this.
+text with a "pick another day" link. Slack lives where the weather hits,
+not at the end of the window: every truck-day is capped below its real
+capacity, Saturdays in October are kept unsold as pull targets, and days
+are sold earliest-first so late October stays thin until it is needed.
+(The first draft held back the last two weeks; that is backwards, since
+those are the days that get pulled, not the room they get pulled into.)
 
 **6. What if Ryan blocks that day in Jobber after I bought?** The daily
 read of his calendar flags the conflict on Home, one row, one action: move
@@ -107,6 +116,22 @@ and a swap pass, morning and afternoon preferences honoured), assigns the
 two-hour windows, sends the confirmation texts, and shows the day on the
 Schedule as ordered. Ryan can drag any stop before or after. The day-before
 run sends the reminders.
+
+**12a. How does Ryan run a day?** The scheduling exists for this and the
+first draft left it out. The crew day view, on his phone: today's stops in
+route order, each with the address, the access note, the zones, the
+customer's window if any, a map, and a Done tap that marks the visit
+complete, charges the card and sends the receipt. Until it exists, the
+Schedule's day column must at least read well on a phone. It is the next
+phase after scheduling, not a later one.
+
+**12b. The feed must not count the app's own visits.** The Claude routine
+posts pass visits into Jobber as requests; once Ryan accepts them they
+appear in his Jobber calendar, which the app reads as busy blocks. Without
+a rule, the app would subtract its own visits from capacity twice and
+halve Ryan's days silently. The feed reader recognises its own visits (by
+the request link stored on the visit, or the title it writes) and ignores
+them.
 
 **12. What does the admin do, and when?** Four things. Once a season: route
 days, working days, capacity, the calendar feed link. Weekly from
@@ -200,6 +225,15 @@ the admin and the routine never disagree.
 | October conflict rows swamp Ryan | One count on Home, one action each |
 | A renewal that picks days looks like a changed deal | The email lists the days with Change and Cancel |
 | No evidence chosen days are kept better than assigned ones | Measure moves and no-shows in the first season |
+
+## The alternative weighed and set aside
+
+"Pick your week, we name the day two weeks out." Simpler for Ryan, never
+breaks a promise, calendar entry as an all-day week. It gives the customer
+less than a day, and nothing in the evidence says it is better. If Ryan's
+answers below say his weeks are too unpredictable to promise a day, this
+is the fallback, and it is a one-line change in the same model: offer
+weeks instead of days.
 
 ## Questions for Ryan before the route days are set
 
