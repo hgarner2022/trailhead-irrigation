@@ -29,6 +29,7 @@ export interface CheckoutDeps {
 const MESSAGE: Record<CheckoutProblem, string> = {
   "out-of-area": "We work in Erie, Longmont, Louisville, Lafayette, Firestone and Broomfield.",
   "email-unreachable": "We can't find that email's mail server. Check the spelling.",
+  "slow-down": "That was a lot of requests at once. Wait a minute and try again.",
   "too-many": "That email has started a few passes in the last hour. Please try again in a bit, or call us.",
   invalid: "Something in the answers needs another look. Go back a step and check them.",
   unavailable: "We couldn't reach the card form just now. Nothing was charged. Please try again.",
@@ -46,6 +47,7 @@ export function problemOf(error: unknown): { problem: CheckoutProblem; message: 
   if (error instanceof ApiError) {
     const reason = error.issues?.find((i) => i.path === "reason")?.message
     if (reason === "out-of-area" || reason === "email-unreachable" || reason === "too-many") return { problem: reason, message: MESSAGE[reason] }
+    if (reason === "slow-down") return { problem: "slow-down", message: MESSAGE["slow-down"] }
     if (error.code === "invalid" || error.code === "unprocessable") return { problem: "invalid", message: error.code === "unprocessable" ? error.message : MESSAGE.invalid }
   }
   return { problem: "unavailable", message: MESSAGE.unavailable }

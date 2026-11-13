@@ -28,7 +28,7 @@ export interface CheckoutConsent {
 }
 
 /** Why the server stopped the checkout, as the screen needs to tell the customer. */
-export type CheckoutProblem = "out-of-area" | "email-unreachable" | "too-many" | "invalid" | "unavailable" | "expired"
+export type CheckoutProblem = "out-of-area" | "email-unreachable" | "too-many" | "slow-down" | "invalid" | "unavailable" | "expired"
 
 export type BeginResult = { ok: true; passId: string; sessionId: string; clientSecret: string } | { ok: false; problem: CheckoutProblem; message: string }
 export type FinishResult = { ok: true; pass: Pass } | { ok: false; problem: CheckoutProblem; message: string }

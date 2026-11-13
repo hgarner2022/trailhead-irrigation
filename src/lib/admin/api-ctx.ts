@@ -10,6 +10,8 @@ export interface CtxDeps {
   database?: () => Database
   getSession?: () => Promise<PersonPrincipal | null>
   now?: () => Date
+  /** the address the anonymous request came from, for the checkout's rate limit */
+  clientIp?: string
 }
 
 async function db(deps: CtxDeps): Promise<Database> {
@@ -46,5 +48,5 @@ export async function ctxForCheckout(passId?: string, deps: CtxDeps = {}): Promi
   const database = await db(deps)
   const [org] = await database.select({ id: s.organization.id }).from(s.organization).orderBy(asc(s.organization.createdAt)).limit(1)
   if (!org) throw new ApiError("unprocessable", "No organization is set up")
-  return makeCtx(database, { kind: "public", id: "checkout", organizationId: org.id, scopes: ["checkout"], ...(passId ? { passId } : {}) }, { now: deps.now?.() })
+  return makeCtx(database, { kind: "public", id: "checkout", organizationId: org.id, scopes: ["checkout"], ...(passId ? { passId } : {}) }, { now: deps.now?.(), clientIp: deps.clientIp })
 }

@@ -8,6 +8,7 @@ import { SYSTEM_ID } from "./context"
 import { ApiError } from "./errors"
 import type { Handler } from "./handler"
 import { hashRequest, withIdempotency } from "./idempotency"
+import { publicCallAllowed } from "./public-rate"
 
 export const RATE_LIMIT_PER_MINUTE = 120
 
@@ -20,8 +21,19 @@ function allowed(ctx: Ctx, handler: Handler): boolean {
   return Boolean(handler.customerSelf && p.kind === "person" && p.type === "customer" && p.customerId)
 }
 
-async function checkRate(ctx: Ctx) {
+/** The email a checkout call names, if any (`passes.create` carries it under `customer`). */
+function emailIn(input: unknown): string | undefined {
+  const email = (input as { customer?: { email?: unknown } } | null)?.customer?.email
+  return typeof email === "string" ? email : undefined
+}
+
+async function checkRate(ctx: Ctx, input: unknown) {
   const p = ctx.principal
+  // The anonymous checkout is limited per client address and per email, in memory (public-rate.ts).
+  if (p.kind === "public") {
+    if (!publicCallAllowed(ctx.clientIp, emailIn(input), ctx.now)) throw new ApiError("rate_limited", "Too many requests. Wait a minute and try again.", [{ path: "reason", message: "slow-down" }])
+    return
+  }
   if (p.kind !== "api-key" || p.id === SYSTEM_ID) return
   const since = new Date(Date.now() - 60_000)
   const [row] = await ctx.db
@@ -56,7 +68,7 @@ export async function callApi<I extends z.ZodObject, O extends z.ZodType>(
     const visitor = ctx.principal
     if (visitor.kind === "public" && handler.checkout === "own-pass" && (!visitor.passId || (parsed.data as { id?: string }).id !== visitor.passId))
       throw new ApiError("forbidden", "This call is only for the pass being bought")
-    await checkRate(ctx)
+    await checkRate(ctx, parsed.data)
     const run = async () => handler.output.parse(await handler.run(ctx, parsed.data)) as z.infer<O>
     if (ctx.idempotencyKey && WRITES.has(handler.method))
       return await withIdempotency(ctx.db, ctx.organizationId, ctx.principal.id, ctx.idempotencyKey, hashRequest(handler.name, parsed.data), run, handler.returnsSecret)
