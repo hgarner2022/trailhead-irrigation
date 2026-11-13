@@ -36,3 +36,10 @@ it("rejects an ADMIN_DATA_SOURCE it does not know", async () => {
   vi.stubEnv("ADMIN_DATA_SOURCE", "jobber")
   await expect(getAdminData()).rejects.toThrow('unknown ADMIN_DATA_SOURCE "jobber"')
 })
+
+it("is server-only, as is the live loader", async () => {
+  const { readFileSync } = await import("node:fs")
+  for (const file of ["data.ts", "live.ts"]) {
+    expect(readFileSync(new URL(file, import.meta.url), "utf8")).toMatch(/^import "server-only"/)
+  }
+})

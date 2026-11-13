@@ -1,17 +1,9 @@
-import type { AdminData, OrganizationSettings } from "./types"
+import "server-only"
+import type { AdminData } from "./types"
 import snapshot from "./fixtures/snapshot.json"
+import { loadLiveAdminData } from "./live"
 
-/** What an organization has before anyone opens Settings: no trucks, no areas, no windows, no messages. */
-export const EMPTY_SETTINGS: OrganizationSettings = {
-  trucks: [],
-  areas: [],
-  windows: [],
-  bufferPercentEarly: 0,
-  bufferPercentLate: 0,
-  fallTownOrder: [],
-  springTownOrder: [],
-  messages: [],
-}
+export { EMPTY_SETTINGS } from "./empty-settings"
 
 export type AdminDataSource = "fixtures" | "live"
 
@@ -25,6 +17,6 @@ function sourceFromEnv(): AdminDataSource {
 
 /** The one way screens read admin data. `live` arrives with the wiring plan. */
 export async function getAdminData(source: AdminDataSource = sourceFromEnv()): Promise<AdminData> {
-  if (source === "live") throw new Error("live admin data is not wired yet; set ADMIN_DATA_SOURCE=fixtures")
+  if (source === "live") return loadLiveAdminData()
   return snapshot as AdminData
 }

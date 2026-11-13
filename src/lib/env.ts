@@ -20,3 +20,9 @@ export function readOptionalEnv(name: string): string | undefined {
   const value = process.env[name]
   return value === undefined || value === "" ? undefined : value
 }
+
+/** Auth.js: the secret that signs the session cookie. The site origin (`AUTH_URL`) is optional, see `readAuthEnv`. */
+export function readAuthEnv(): { AUTH_SECRET: string; AUTH_URL: string | undefined } {
+  const { AUTH_SECRET } = readEnv(["AUTH_SECRET"])
+  return { AUTH_SECRET, AUTH_URL: readOptionalEnv("AUTH_URL") }
+}
