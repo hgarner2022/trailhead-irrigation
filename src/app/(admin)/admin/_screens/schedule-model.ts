@@ -111,13 +111,15 @@ function passItem(pass: Pass, visit: PassVisit): TrayItem {
  * scheduled) are matched by pass and kind and left out.
  */
 export function trayItems(data: Pick<AdminData, "visits" | "passes">): TrayItem[] {
-  const placed = new Set(data.visits.filter((v) => v.startAt && v.status !== "cancelled").map((v) => `${v.clientId}:${v.kind}:${v.startAt?.slice(0, 4)}`))
+  const dated = data.visits.filter((v) => v.startAt && v.status !== "cancelled")
+  const placed = new Set(dated.map((v) => `${v.clientId}:${v.kind}:${v.startAt?.slice(0, 4)}`))
+  const placedIds = new Set(dated.map((v) => v.id))
   const fromJobs: TrayItem[] = data.visits
     .filter((v) => v.status === "unscheduled" && !v.startAt)
     .map((v) => ({ id: v.id, clientId: v.clientId, clientName: v.clientName, town: v.town, kind: v.kind, window: "Open job", sortKey: "0000-00-00" }))
   const fromPasses: TrayItem[] = data.passes
     .filter((p) => p.status === "active")
-    .flatMap((p) => p.visits.filter((v) => !v.scheduledAt && !v.completedAt && !placed.has(`${p.clientId}:${v.kind}:${p.season}`)).map((v) => passItem(p, v)))
+    .flatMap((p) => p.visits.filter((v) => !v.scheduledAt && !v.completedAt && !placed.has(`${p.clientId}:${v.kind}:${p.season}`) && !placedIds.has(`tray-${p.id}-${v.kind}`)).map((v) => passItem(p, v)))
   return [...fromJobs, ...fromPasses].sort((a, b) => a.sortKey.localeCompare(b.sortKey) || rank(a.preference) - rank(b.preference) || a.clientName.localeCompare(b.clientName))
 }
 
