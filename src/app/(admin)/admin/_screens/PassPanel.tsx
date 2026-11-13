@@ -54,7 +54,8 @@ function Jobs({ pass, today }: { pass: Pass; today: string }) {
         <li key={row.kind} className="flex items-center gap-4 py-2.5">
           <span className="min-w-0 flex-1">
             <span className="block font-medium">{row.name}</span>
-            <span className="block text-muted-foreground">{row.when}</span>
+            {/* The state says Needs a day; the line under the name is for a day and window. */}
+            {row.job.state !== "needs-a-day" && <span className="block text-muted-foreground">{row.when}</span>}
           </span>
           <JobPill job={row.job} />
         </li>
