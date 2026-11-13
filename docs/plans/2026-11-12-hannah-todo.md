@@ -11,7 +11,7 @@ needed, roughly how long it takes, and which phase waits on it.
    that let our app read and write Jobber (create jobs, see completions).
    About 20 minutes. Needed by Phase 0, the very first wiring phase, which
    checks what Jobber's API can and cannot do before anything else is built.
-2. **DONE 2026-11-12. Neon database, through Vercel.** In the Vercel dashboard for the site,
+2. **DONE 2026-11-12; schema applied and seeded by the deploy on 2026-11-13 (two admins). Neon database, through Vercel.** In the Vercel dashboard for the site,
    Storage, add Neon Postgres. It is the database every pass, visit, message
    and setting lives in. About 10 minutes, free tier. Needed by Phase 3.
 3. **DONE 2026-11-12: NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY (Config) and STRIPE_SECRET_KEY (Secret) are in Vercel; the webhook secret comes with Phase 7. Stripe test keys.** In the Stripe dashboard, Developers, API keys, copy
@@ -25,6 +25,10 @@ needed, roughly how long it takes, and which phase waits on it.
    separate marketing campaign only if you want it). A few dollars, and
    carrier approval takes days to two weeks, so start it early. Without it
    the texts are blocked. Needed by Phase 12.
+
+## Vercel settings (done)
+
+- **DONE 2026-11-13: CRON_SECRET (generated, sensitive) and GEOCODE_CONTACT (contact@trailheadirrigation.com) are in Vercel production.** They take effect on the next production deploy; the daily feed cron and geocoding read them.
 
 ## Words to write
 

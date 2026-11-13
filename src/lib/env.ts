@@ -26,3 +26,13 @@ export function readAuthEnv(): { AUTH_SECRET: string; AUTH_URL: string | undefin
   const { AUTH_SECRET } = readEnv(["AUTH_SECRET"])
   return { AUTH_SECRET, AUTH_URL: readOptionalEnv("AUTH_URL") }
 }
+
+/** Vercel Cron sends this as `Authorization: Bearer <CRON_SECRET>`; every `/api/cron/*` route checks it. */
+export function readCronSecret(): string {
+  return readEnv(["CRON_SECRET"]).CRON_SECRET
+}
+
+/** The contact address named in the geocoder's `User-Agent` (Nominatim's usage policy asks for one). */
+export function readGeocodeContact(): string {
+  return readEnv(["GEOCODE_CONTACT"]).GEOCODE_CONTACT
+}

@@ -78,6 +78,7 @@ export const queueKindEnum = pgEnum("queue_kind", [
   "schedule-run",
   "outbound-webhook",
   "geocode",
+  "jobber-feed-sync",
 ])
 export const messageChannelEnum = pgEnum("message_channel", ["email", "sms"])
 export const messageStatusEnum = pgEnum("message_status", ["queued", "sent", "delivered", "failed", "bounced"])
@@ -132,6 +133,8 @@ export const truck = pgTable(
     organizationId: orgId(),
     name: text("name").notNull(),
     jobberUserId: text("jobber_user_id"),
+    /** The truck's Jobber calendar subscription (iCal) URL; a private link, never returned by the API. */
+    calendarFeedUrl: text("calendar_feed_url"),
     workingDays: jsonb("working_days").$type<Weekday[]>().notNull(),
     capacityByKind: jsonb("capacity_by_kind").$type<Record<CapacityKind, number>>().notNull(),
     active: boolean("active").notNull().default(true),
@@ -599,6 +602,8 @@ export const jobberVisit = pgTable(
     endAt: ts("end_at"),
     assignedUserId: text("assigned_user_id"),
     isBlock: boolean("is_block").notNull().default(false),
+    /** Set on rows the calendar feed wrote (busy time on that truck); their id is `feed:<truckId>:<uid>`. */
+    truckId: text("truck_id").references(() => truck.id, { onDelete: "cascade" }),
     completedAt: ts("completed_at"),
     jobberUrl: text("jobber_url"),
     syncedAt: ts("synced_at").notNull().defaultNow(),

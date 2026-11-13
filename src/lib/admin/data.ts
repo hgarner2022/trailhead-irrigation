@@ -15,7 +15,7 @@ function sourceFromEnv(): AdminDataSource {
   throw new Error(`unknown ADMIN_DATA_SOURCE "${value}"`)
 }
 
-/** The one way screens read admin data. `live` arrives with the wiring plan. */
+/** The one way screens read admin data. `live` reads the database (`live.ts`); fixtures serve Storybook and local work. */
 export async function getAdminData(source: AdminDataSource = sourceFromEnv()): Promise<AdminData> {
   if (source === "live") return loadLiveAdminData()
   return snapshot as AdminData

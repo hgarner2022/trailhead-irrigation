@@ -25,6 +25,7 @@ export const VisitOut = z.object({
   completedOn: Day.nullable(),
   chargedAt: Iso.nullable(),
   exception: ExceptionOut.nullable(),
+  jobberRequestUrl: z.string().nullable().describe("The Jobber request made for this visit by the routine; null until it has been."),
   lat: z.number().nullable(),
   lng: z.number().nullable(),
   address: z.string().optional().describe("Only for callers with the write scope."),

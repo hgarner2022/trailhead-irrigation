@@ -254,6 +254,15 @@ export interface SettingsChange {
   to: string
 }
 
+/** Busy time on a truck from its Jobber calendar feed; the scheduler and the pass page's day picker subtract it. */
+export interface BusyBlock {
+  truckId: string
+  /** ISO instants */
+  startAt: string
+  endAt: string
+  title: string
+}
+
 export interface Attention {
   kind: "charge-failed" | "jobs-failed" | "card-expiring" | "not-closed" | "pass-cancelled"
   passId?: string
@@ -276,4 +285,6 @@ export interface AdminData {
   settingsChanges: SettingsChange[]
   /** every message to or from a customer, newest last */
   messages: Message[]
+  /** busy time read from the trucks' Jobber calendar feeds; absent in the fixtures */
+  blocks?: BusyBlock[]
 }

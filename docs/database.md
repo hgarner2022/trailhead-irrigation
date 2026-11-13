@@ -27,3 +27,7 @@ Edit `src/db/schema.ts`, run `npm run db:generate`, review and commit the new SQ
 - Every table has `organization_id`; money is whole dollars; timestamps are `timestamptz`; `date` columns are Mountain-time calendar days (YYYY-MM-DD strings).
 - Jobber is read-only for the app: the `jobber_*` id columns on `customer`, `property`, `visit` and `service` are nullable and are filled by the read-only mirror or never. The `jobber_*` mirror tables are only ever written by the sync.
 - Services and prices come from `src/lib/services.ts`, which reads the site's own price modules. Aligning the Jobber catalogue to them is a write to Jobber and is left undone (no Jobber writes); Hannah or Ryan edits the catalogue by hand if wanted.
+
+## Jobber read-only (Phase 6)
+
+Two ways in, neither writes to Jobber. Each truck's `calendar_feed_url` (its Jobber calendar subscription) is read every five minutes by `/api/cron/feed` (guarded by `CRON_SECRET`, scheduled in `vercel.json`) into busy blocks in `jobber_visit` (`is_block`, `truck_id`, id `feed:<truckId>:<uid>`), which `schedule.slots` subtracts from capacity. The rest of the mirror is filled by the scheduled Claude routine through `mirror.upsert`; see `docs/jobber-routine.md`. Geocoding is one Nominatim lookup per property, cached on the row (`GEOCODE_CONTACT`).

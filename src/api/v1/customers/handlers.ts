@@ -3,6 +3,7 @@ import { and, asc, desc, eq, inArray, ne, or, sql } from "drizzle-orm"
 import { z } from "zod"
 import * as s from "@/db/schema"
 import type { Database } from "@/db/types"
+import { enqueueGeocode } from "@/lib/geocode"
 import { defineHandler } from "../../core/handler"
 import { notFound } from "../../core/errors"
 import type { Ctx } from "../../core/context"
@@ -156,6 +157,7 @@ export const customersCreate = defineHandler({
     const { property, ...fields } = input
     const [row] = await ctx.db.insert(s.customer).values({ organizationId: ctx.organizationId, ...fields }).returning()
     const props = property ? await ctx.db.insert(s.property).values({ organizationId: ctx.organizationId, customerId: row!.id, ...property }).returning() : []
+    for (const p of props) await enqueueGeocode(ctx.db, ctx.organizationId, p.id, ctx.now)
     return {
       ...customerOut(ctx, row!),
       properties: props.map((p) => ({ id: p.id, town: p.town, lat: p.lat, lng: p.lng, address: p.address })),
