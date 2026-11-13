@@ -148,6 +148,23 @@ the first piece of the Jobber replacement for non-pass work and comes
 right after the data step, before the route build, because Ryan needs it
 to put his existing spring work on the calendar.
 
+**12d. The admin's jobs to be done (Hannah, 14 Nov, on the live Passes
+panel: "I feel frustrated from an administration perspective. We probably
+need to reschedule things, go look at the job to be done").** From Ryan's
+and Hannah's chair: see what is coming (today, this week, by truck, stops
+in order); move a job to another day or time from wherever it is shown,
+with the customer told; mark a job done or not done and have the charge or
+the follow-up happen; add a job taken by phone; change a job's length,
+truck, notes or access note; reach the customer from the job (call, text,
+resend); see the money; cancel a job or a pass. Today only the Schedule
+drag, the Home not-closed row, the pass panel's cancel and card link, and
+Revenue exist, and none of the job actions is on the job itself. So:
+**the Jobs page and the job panel**: the nav becomes Home, Schedule, Jobs,
+Customers, Revenue, Settings; Jobs lists every job with the seven states
+and filters (kind, truck, pass or not); the job panel carries Move, Done or
+Not done, Edit, Contact, Cancel; New job sits on Jobs and on a customer;
+the pass is opened from a job or a customer and keeps its own panel.
+
 **12. What does the admin do, and when?** Four things. Once a season: route
 days, working days, capacity, the calendar feed link. Weekly from
 September: look at the freeze forecast and decide whether to pull a day.
@@ -222,6 +239,9 @@ the admin and the routine never disagree.
    `window_minutes`, `renewed_from`), the Pending
    status shown as pending, the Passes table and panel reading the visit
    row and nothing else, no Jobber words or buttons anywhere in the admin.
+0a. The Jobs page and the job panel (12d): the nav rename, the list with
+    the seven states and filters, Move / Done or Not done / Edit / Contact /
+    Cancel on the job, the pass opened from a job or a customer.
 0b. New job from the admin (12c): customer, property, kind, day, time or
     any time, minutes, truck, price, notes; the same job row as the
     checkout's.
