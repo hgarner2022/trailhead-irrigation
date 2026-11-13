@@ -1,4 +1,4 @@
-// Every .ts/.tsx under blocks/, ui/ and the (admin), (checkout) and (account)
+// Every .ts/.tsx under blocks/, ui/ and the (admin), (checkout), (account) and (booking)
 // route groups stays at or under FILE_CAP lines; stories and tests are exempt.
 export const FILE_CAP = 300
 

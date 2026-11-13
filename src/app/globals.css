@@ -18,6 +18,7 @@
 @source not "./(admin)";
 @source not "./(checkout)";
 @source not "./(account)";
+@source not "./(booking)";
 @source not "../components/ui/avatar.tsx";
 @source not "../components/ui/chart.tsx";
 @source not "../components/ui/checkbox.tsx";

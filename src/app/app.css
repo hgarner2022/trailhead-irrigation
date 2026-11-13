@@ -1,0 +1,20 @@
+/* The stylesheet for the app route groups: (admin), (checkout), (account) and
+   (booking). Each has its own root layout and imports this file. Automatic
+   source detection is off, so the bundle is built from the folders listed here
+   and never from the marketing pages or sections; globals.css keeps its
+   `@source not` lines for the same folders so the two bundles never overlap.
+   Tokens and base rules are shared with the site and Storybook. */
+@import "tailwindcss" source(none);
+@import "./tokens.css";
+@import "./base.css";
+
+@source "./(admin)";
+@source "./(checkout)";
+@source "./(account)";
+@source "./(booking)";
+@source "../components/blocks";
+@source "../components/ui";
+@source "../lib/admin";
+@source "../lib/pass";
+@source not "../components/**/*.stories.tsx";
+@source not "../components/**/*.test.tsx";

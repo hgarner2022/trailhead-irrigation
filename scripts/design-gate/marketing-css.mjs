@@ -1,7 +1,7 @@
 // The marketing CSS scans only the ui/ primitives marketing uses; the rest are
 // kept out by `@source not "../components/ui/<name>.tsx"` lines in
 // app/globals.css. Three checks, all skipped when that file is absent:
-//   - a marketing file (app/ outside the (admin), (checkout) and (account)
+//   - a marketing file (app/ outside the (admin), (checkout), (account) and (booking)
 //     groups, and sections/) never imports an excluded primitive
 //   - every ui/ primitive is either used by marketing, directly or through
 //     another primitive's `from "./<other>"` import, or excluded; and a used
