@@ -180,7 +180,7 @@ export function DataGrid<T extends RowData>({
           <TableBody>
             {loading ? (
               Array.from({ length: SKELETON_ROWS }, (_, r) => (
-                <TableRow key={r} className="bg-background">
+                <TableRow key={r} className="h-11 bg-background">
                   {table.getVisibleLeafColumns().map((column) => (
                     <TableCell key={column.id} className={freeze(column.id)}>
                       <Skeleton className={column.id === SELECT_COLUMN ? "size-4" : "h-4 w-24"} />
@@ -197,7 +197,7 @@ export function DataGrid<T extends RowData>({
               </TableRow>
             ) : (
               rows.map((row) => (
-                <TableRow key={row.id} data-state={row.getIsSelected() ? "selected" : undefined} className="bg-background">
+                <TableRow key={row.id} data-state={row.getIsSelected() ? "selected" : undefined} className="h-11 bg-background">
                   {row.getVisibleCells().map((cell) => {
                     const { column } = cell
                     const right = column.columnDef.meta?.align === "right"

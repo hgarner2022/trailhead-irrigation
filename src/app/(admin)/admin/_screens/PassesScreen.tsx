@@ -242,7 +242,7 @@ export function PassesScreen({ data, today, defaultSelectedId, readOnly = false,
   return (
     <div data-slot="passes-screen">
       <PageHeader title="Passes" context={passesContext(passes)} />
-      <p role="status" className="-mt-3 mb-4 text-sm text-muted-foreground empty:hidden">
+      <p role="status" className="mb-4 text-sm text-muted-foreground empty:hidden">
         {pass && open ? "" : notice}
       </p>
       <SidePanelLayout

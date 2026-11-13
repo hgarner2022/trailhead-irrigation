@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useSyncExternalStore, type ReactNode } from "react"
+import { useMemo, useState, useSyncExternalStore, type CSSProperties, type ReactNode } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { CalendarDays, LayoutDashboard, LogOut, Settings2, Ticket, TrendingUp, Users, type LucideIcon } from "lucide-react"
@@ -19,6 +19,7 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar"
+import { AdminBarContext } from "./admin-bar"
 
 // The frame every admin screen sits in (docs/DESIGN.md, Spacing): the navy
 // rail on a laptop, collapsed to icons under 1024px, and a bottom tab bar
@@ -57,7 +58,9 @@ const NAV: { id: AdminSection; label: string; href: string; icon: LucideIcon }[]
   { id: "settings", label: "Settings", href: "/admin/settings", icon: Settings2 },
 ]
 
-const CONTENT = "mx-auto w-full max-w-7xl container-padding-x"
+// 15rem rail (240px); the bar and the content share the 16px phone and 24px laptop gutters.
+const RAIL_WIDTH = { "--sidebar-width": "15rem" } as CSSProperties
+const GUTTER = "px-4 md:px-6"
 // The badge is 813 by 573; the width props keep its shape so next/image never squashes it.
 const LOGO = "/images/logo-badge.png"
 
@@ -169,21 +172,31 @@ export function AdminShell({ current, user, switcher, onSignOut, defaultOpen = t
   // Until the trigger is used the rail follows the width: icons under 1024px, the default above. A toggle is kept across resizes.
   const [choice, setChoice] = useState<boolean | null>(null)
   const open = choice ?? (belowLg ? false : defaultOpen)
+  // The bar's two slots, held in state so PageHeader renders into them once they mount.
+  const [titleSlot, setTitleSlot] = useState<HTMLElement | null>(null)
+  const [actionsSlot, setActionsSlot] = useState<HTMLElement | null>(null)
+  const bar = useMemo(() => ({ mode: phone ? ("inline" as const) : ("bar" as const), title: titleSlot, actions: actionsSlot }), [phone, titleSlot, actionsSlot])
   return (
-    <SidebarProvider data-slot="admin-shell" data-phone={phone || undefined} open={open} onOpenChange={setChoice}>
+    <SidebarProvider data-slot="admin-shell" data-phone={phone || undefined} open={open} onOpenChange={setChoice} style={RAIL_WIDTH}>
       {phone ? null : <Rail current={current} user={user} switcher={switcher} onSignOut={onSignOut} />}
-      <SidebarInset className="min-h-svh bg-cream">
-        <div className={cn(CONTENT, "flex h-14 shrink-0 items-center justify-between")}>
+      <SidebarInset className="min-h-svh min-w-0 bg-cream">
+        <div data-slot="admin-bar" className={cn(GUTTER, "sticky top-0 z-20 flex h-14 shrink-0 items-center gap-3 border-b border-border bg-cream")}>
           {phone ? (
             <>
               <Image src={LOGO} alt="Trailhead" width={51} height={36} className="h-9 w-auto shrink-0" />
               {switcher !== undefined && <div data-slot="admin-switcher">{switcher}</div>}
             </>
           ) : (
-            <SidebarTrigger className="-ml-1.5 text-navy" />
+            <>
+              <SidebarTrigger className="-ml-2 shrink-0 text-navy" />
+              <div ref={setTitleSlot} data-slot="admin-bar-title" className="flex min-w-0 flex-1 items-baseline gap-3" />
+              <div ref={setActionsSlot} data-slot="admin-bar-actions" className="flex shrink-0 items-center gap-2" />
+            </>
           )}
         </div>
-        <div className={cn(CONTENT, "pt-2 lg:pt-4", phone ? "pb-[calc(5rem+env(safe-area-inset-bottom))]" : "pb-8")}>{children}</div>
+        <div className={cn(GUTTER, "w-full max-w-7xl pt-4 md:pt-6", phone ? "pb-[calc(5rem+env(safe-area-inset-bottom))]" : "pb-8")}>
+          <AdminBarContext.Provider value={bar}>{children}</AdminBarContext.Provider>
+        </div>
       </SidebarInset>
       {phone && <TabBar current={current} />}
     </SidebarProvider>

@@ -15,7 +15,7 @@ const meta = {
     user: { initials: "HG", name: "Hannah" },
     children: (
       <>
-        <PageHeader title="Passes" context="Every Season Pass sold, with its three visits." />
+        <PageHeader title="Passes" context="Every Season Pass sold, with its visits." actions={<Button size="sm">Export</Button>} />
         <p className="max-w-prose text-sm text-muted-foreground">The screen goes here, in one cream column of at most 1280px.</p>
       </>
     ),
@@ -24,7 +24,13 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
+// 1280: 240px rail, 56px top bar with the trigger, the title and its context line, then a 24px gap to the content.
 export const Desktop: Story = {
+  globals: { viewport: { value: "laptop", isRotated: false } },
+}
+
+// 1440 is the widest approval size: the column stops at 1280px and stays left-aligned.
+export const Desktop1440: Story = {
   globals: { viewport: { value: "wide", isRotated: false } },
 }
 
