@@ -6,8 +6,10 @@
 //   node scripts/route-css-manifest.mjs --save      writes .local-data/wiring/manifest.json
 //   node scripts/route-css-manifest.mjs --compare   exits 1 when the build differs from it
 // A CSS file is keyed by its name with the content hash stripped; when the name
-// is only a hash, by the hash of its sorted selectors. A baseline file with no
-// match in the new build is "missing"; extra files (the app stylesheet) are fine.
+// is only a hash, by the hash of its sorted selectors. Each entry also keeps its
+// selector list. A baseline file with no match in the new build is "missing"
+// unless every one of its selectors is still in some file of the new build (Next
+// may split one stylesheet into chunks); extra files (the app stylesheet) are fine.
 import { createHash } from "node:crypto"
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
@@ -38,7 +40,7 @@ export function readManifest() {
     const text = stableFontClasses(readFileSync(join(dir, name), "utf8"))
     const selectors = createHash("sha256").update(selectorsOf(text).join("\n")).digest("hex").slice(0, 12)
     const stripped = name.replace(/\.?[a-f0-9]{8,}\.css$/, "")
-    css[stripped ? `${stripped}.css` : `${selectors}.css`] = { bytes: text.length, selectors }
+    css[stripped ? `${stripped}.css` : `${selectors}.css`] = { bytes: text.length, selectors, list: selectorsOf(text) }
   }
   return { routes, css }
 }
@@ -47,11 +49,13 @@ export function diffManifests(before, after) {
   const out = []
   for (const r of before.routes) if (!after.routes.includes(r)) out.push(`route missing: ${r}`)
   for (const r of after.routes) if (!before.routes.includes(r)) out.push(`route added: ${r}`)
+  const union = new Set(Object.values(after.css).flatMap((f) => f.list ?? []))
   for (const [name, b] of Object.entries(before.css)) {
     const a = after.css[name]
+    if (a && a.selectors === b.selectors && a.bytes === b.bytes) continue
+    if (b.list && b.list.every((x) => union.has(x))) continue
     if (!a) out.push(`css missing: ${name}`)
-    else if (a.selectors !== b.selectors || a.bytes !== b.bytes)
-      out.push(`css changed: ${name} (selectors ${b.selectors} -> ${a.selectors}, ${b.bytes} -> ${a.bytes} bytes)`)
+    else out.push(`css changed: ${name} (selectors ${b.selectors} -> ${a.selectors}, ${b.bytes} -> ${a.bytes} bytes)`)
   }
   return out
 }

@@ -16,3 +16,11 @@ test("diffManifests names routes that came or went and css whose selectors chang
     "css changed: a.css (selectors h1 -> h2, 10 -> 12 bytes)",
   ])
 })
+
+test("diffManifests accepts one stylesheet split into chunks when every selector is still present", () => {
+  const before = { routes: [], css: { "x.css": { bytes: 10, selectors: "h1", list: [".a", ".b"] } } }
+  const split = { routes: [], css: { "y.css": { bytes: 6, selectors: "h2", list: [".a"] }, "z.css": { bytes: 6, selectors: "h3", list: [".b", ".app"] } } }
+  assert.deepEqual(diffManifests(before, split), [])
+  const lost = { routes: [], css: { "y.css": { bytes: 6, selectors: "h2", list: [".a"] } } }
+  assert.deepEqual(diffManifests(before, lost), ["css missing: x.css"])
+})
