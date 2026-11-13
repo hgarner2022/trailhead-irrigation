@@ -10,6 +10,9 @@ import { paymentMethodFromSession } from "./checkout"
 export async function createCardUpdateSession(stripe: Stripe, input: { passId: string; customerId: string; origin: string }): Promise<{ id: string; url: string }> {
   const session = await stripe.checkout.sessions.create({
     mode: "setup",
+    // The 2026 API versions want a currency and a method type even in setup mode; only a card can be charged off-session later.
+    currency: "usd",
+    allowed_payment_method_types: ["card"],
     ui_mode: "hosted_page",
     customer: input.customerId,
     success_url: `${input.origin}/account/pass/card-updated`,

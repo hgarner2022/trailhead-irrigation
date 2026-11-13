@@ -8,7 +8,7 @@ import { ApiError } from "@/api/core/errors"
 import { apiDb, ORG } from "@/api/test-helpers"
 import type { CheckoutSubmission } from "@/app/(checkout)/season-pass/checkout/_screens/checkout-submit"
 import { completeSession, stubStripe } from "@/lib/stripe/test-stripe"
-import { beginCheckoutWith, finishCheckoutWith, problemOf, type CheckoutDeps } from "./checkout"
+import { beginCheckoutWith, finishCheckoutWith, logCheckoutFailure, problemOf, recordConsentWith, type CheckoutDeps } from "./checkout"
 
 const { getStripe } = vi.hoisted(() => ({ getStripe: vi.fn() }))
 vi.mock("@/lib/stripe/client", async (original) => ({ ...(await original<typeof import("@/lib/stripe/client")>()), getStripe }))
@@ -92,6 +92,48 @@ describe("finishCheckoutWith", () => {
     expect(await finishCheckoutWith(depsWith(stubStripe().stripe), a.passId, "cs_a", { termsAccepted: false, marketingEmail: false, marketingSms: false })).toMatchObject({ ok: false, problem: "invalid" })
     getStripe.mockReturnValue(stubStripe({ sessions: { cs_b: completeSession("cs_b", { purpose: "pass-setup", passId: b.passId }) } }).stripe)
     expect(await finishCheckoutWith(depsWith(stubStripe().stripe), a.passId, "cs_b", { termsAccepted: true, marketingEmail: false, marketingSms: false })).toMatchObject({ ok: false, problem: "unavailable" })
+  })
+})
+
+describe("the consent snapshot and an expired session", () => {
+  it("records the boxes when the card form opens, and a webhook-first activation uses them", async () => {
+    const begun = await beginCheckoutWith(depsWith(stubStripe().stripe), submission({ email: "snap@example.com" }))
+    if (!begun.ok) throw new Error("begin failed")
+    await recordConsentWith(depsWith(stubStripe().stripe), begun.passId, { termsAccepted: true, marketingEmail: true, marketingSms: true })
+    const [change] = await db.select().from(s.passChange).where(eq(s.passChange.passId, begun.passId))
+    expect(change).toMatchObject({ kind: "consent-snapshot", detail: { marketingChannels: ["email", "sms"] } })
+    getStripe.mockReturnValue(stubStripe({ sessions: { cs_w: completeSession("cs_w", { purpose: "pass-setup", passId: begun.passId }) } }).stripe)
+    const { callApi } = await import("@/api/core/call")
+    const { passesActivate } = await import("@/api/v1/passes/handlers")
+    const active = await callApi(await depsWith(stubStripe().stripe).ctx(begun.passId), passesActivate, { id: begun.passId, setupSessionId: "cs_w" })
+    expect(active.consent).toMatchObject({ source: "checkout", marketingOptIn: true, marketingChannels: ["email", "sms"] })
+  })
+  it("records nothing without the terms and never throws", async () => {
+    const begun = await beginCheckoutWith(depsWith(stubStripe().stripe), submission({ email: "snap2@example.com" }))
+    if (!begun.ok) throw new Error("begin failed")
+    await expect(recordConsentWith(depsWith(stubStripe().stripe), begun.passId, { termsAccepted: false, marketingEmail: true, marketingSms: false })).resolves.toBeUndefined()
+    expect(await db.select().from(s.passChange).where(eq(s.passChange.passId, begun.passId))).toHaveLength(0)
+  })
+  it("names an expired card form so the screen opens a new one", async () => {
+    const begun = await beginCheckoutWith(depsWith(stubStripe().stripe), submission({ email: "exp@example.com" }))
+    if (!begun.ok) throw new Error("begin failed")
+    getStripe.mockReturnValue(stubStripe().stripe)
+    const stripe = stubStripe({ sessions: { cs_x: { id: "cs_x", status: "expired" } } }).stripe
+    expect(await finishCheckoutWith(depsWith(stripe), begun.passId, "cs_x", { termsAccepted: true, marketingEmail: false, marketingSms: false })).toMatchObject({ ok: false, problem: "expired" })
+  })
+})
+
+describe("logCheckoutFailure", () => {
+  it("writes the action, the checkout step and the pass for a failure we caused, and nothing for one the customer caused", () => {
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {})
+    logCheckoutFailure("finishCheckout", "card", "pass_77", new Error("stripe down"))
+    expect(spy).toHaveBeenCalledWith("finishCheckout failed at the card step (pass pass_77):", "Error: stripe down")
+    logCheckoutFailure("beginCheckout", "contact", undefined, new Error("db down"))
+    expect(spy).toHaveBeenLastCalledWith("beginCheckout failed at the contact step (pass not made yet):", "Error: db down")
+    spy.mockClear()
+    logCheckoutFailure("beginCheckout", "contact", undefined, new ApiError("invalid", "x"))
+    expect(spy).not.toHaveBeenCalled()
+    spy.mockRestore()
   })
 })
 

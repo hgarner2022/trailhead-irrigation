@@ -12,6 +12,7 @@ import { activatePass } from "@/lib/pass/server/activate"
 import { emailDomainReachable, failedCheckoutStep, MAX_PENDING_PER_HOUR, newestPendingPass, pendingPassesLastHour } from "@/lib/pass/server/create"
 import { cleanEmail, cleanName, cleanText, normalizePhone } from "@/lib/format/contact"
 import { recordPurchase } from "@/lib/pass/server/purchase"
+import { CONSENT_SNAPSHOT, consentSnapshot } from "@/lib/pass/server/consent-snapshot"
 import { outOfAreaMessage } from "@/lib/places"
 import { queueCardUpdateLink } from "@/lib/pass/server/card-link"
 import { queueCancelledEmail } from "@/lib/pass/server/cancel"
@@ -24,7 +25,7 @@ import { ApiError, notImplemented } from "../../core/errors"
 import { defineHandler } from "../../core/handler"
 import { afterTimeCursor, cursorPage, page, pageInput, timeCursor } from "../../core/pagination"
 import { addDays, Id, idInput, OK, okOutput, PassStatus, Preference, Town, today } from "../shared"
-import { PassDetail, PassOut, passActivateInput, passCreateInput } from "./schemas"
+import { PassDetail, PassOut, passActivateInput, passConsentInput, passCreateInput } from "./schemas"
 import { loadPass, passDetail, passesQuery, passOut, recordChange } from "./queries"
 
 const WINDOW_LABEL = { "turn-on": "May", inspection: "July", blowout: "October" } as const
@@ -151,7 +152,9 @@ export const passesCreate = defineHandler({
     if (reused) {
       // A customer who went back changes the answers on the pass they hold; its visits are rebuilt, none has a day yet.
       await ctx.db.update(s.seasonPass).set({ ...fields, season, updatedAt: ctx.now }).where(eq(s.seasonPass.id, reused.id))
-      await ctx.db.update(s.customer).set({ firstName: contact.firstName, phone: contact.phone ?? customerRow.phone, updatedAt: ctx.now }).where(eq(s.customer.id, customerRow.id))
+      // Only the checkout that holds the pass id (the same browser going back) may change the customer's name and phone.
+      // A resume by email alone reuses the pass but never rewrites who the customer is: anyone can type an email.
+      if (held) await ctx.db.update(s.customer).set({ firstName: contact.firstName, phone: contact.phone ?? customerRow.phone, updatedAt: ctx.now }).where(eq(s.customer.id, customerRow.id))
       await ctx.db.delete(s.visit).where(eq(s.visit.passId, reused.id))
     }
     for (let attempt = 0; attempt < 3 && !pass; attempt++) {
@@ -215,8 +218,27 @@ export const passesActivate = defineHandler({
   async run(ctx, input) {
     const row = await loadPass(ctx, input.id)
     await activatePass(ctx.db, getStripe(), row.pass.id, input.setupSessionId, ctx.now)
-    await recordPurchase(ctx.db, row.pass.id, input.consent, readAppUrl(), ctx.now)
+    // The boxes in the request win; without them (the webhook activated first) the snapshot from when the card form opened stands in.
+    const consent = input.consent ?? (await consentSnapshot(ctx.db, row.pass.id))
+    await recordPurchase(ctx.db, row.pass.id, consent, readAppUrl(), ctx.now)
     return passDetail(ctx, await loadPass(ctx, input.id))
+  },
+})
+
+export const passesConsent = defineHandler({
+  name: "passes.consent",
+  method: "POST",
+  path: "/passes/{id}/consent",
+  scope: "write",
+  checkout: "own-pass",
+  summary: "Record the boxes ticked on the card step, on the pending pass, when the card form opens. Nothing is stored as consent yet; `passes.activate` records it when the card is saved, from its own request or, when Stripe's webhook gets there first because the tab was closed, from this snapshot.",
+  input: passConsentInput,
+  output: okOutput,
+  async run(ctx, input) {
+    const row = await loadPass(ctx, input.id)
+    if (row.pass.status !== "pending") return OK
+    await recordChange(ctx, { customerId: row.pass.customerId, passId: row.pass.id, kind: CONSENT_SNAPSHOT, detail: input.consent })
+    return OK
   },
 })
 

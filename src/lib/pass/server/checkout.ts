@@ -1,11 +1,12 @@
 import "server-only"
+import { createHash } from "node:crypto"
 import { eq } from "drizzle-orm"
 import type Stripe from "stripe"
 import type { z } from "zod"
 import { callApi } from "@/api/core/call"
 import type { Ctx } from "@/api/core/context"
 import { ApiError } from "@/api/core/errors"
-import { passesActivate, passesCreate } from "@/api/v1/passes/handlers"
+import { passesActivate, passesConsent, passesCreate } from "@/api/v1/passes/handlers"
 import type { PassDetail } from "@/api/v1/passes/schemas"
 import * as s from "@/db/schema"
 import type { BeginResult, CheckoutConsent, CheckoutProblem, CheckoutSubmission, FinishResult } from "@/app/(checkout)/season-pass/checkout/_screens/checkout-submit"
@@ -18,6 +19,9 @@ import { createSetupSession } from "@/lib/stripe/checkout"
 // times inside that bucket sends Stripe the identical request three times and gets the one session back each time
 // (Stripe requires identical parameters under one key), and the expiry is never under 35 minutes out.
 const BUCKET_MS = 10 * 60 * 1000
+
+/** A short stable digest of a string, for idempotency keys. */
+const fingerprint = (text: string) => createHash("sha256").update(text).digest("hex").slice(0, 12)
 const SESSION_MINUTES = 45
 
 export interface CheckoutDeps {
@@ -29,15 +33,17 @@ export interface CheckoutDeps {
 const MESSAGE: Record<CheckoutProblem, string> = {
   "out-of-area": "We work in Erie, Longmont, Louisville, Lafayette, Firestone and Broomfield.",
   "email-unreachable": "We can't find that email's mail server. Check the spelling.",
+  "slow-down": "That was a lot of requests at once. Wait a minute and try again.",
   "too-many": "That email has started a few passes in the last hour. Please try again in a bit, or call us.",
   invalid: "Something in the answers needs another look. Go back a step and check them.",
   unavailable: "We couldn't reach the card form just now. Nothing was charged. Please try again.",
+  expired: "That card form timed out. Nothing was charged. Press Try again for a fresh one.",
 }
 
-/** A refusal the customer caused needs no log; anything else (Stripe, the database) is written to the function log so the deploy's logs say why. */
-function logCheckoutFailure(step: string, error: unknown): void {
+/** A refusal the customer caused needs no log; anything else (Stripe, the database) is written to the function log with the checkout step and the pass, so the deploy's logs say where and for whom. */
+export function logCheckoutFailure(action: string, step: "contact" | "card", passId: string | undefined, error: unknown): void {
   if (error instanceof ApiError && (error.code === "invalid" || error.code === "unprocessable" || error.code === "rate_limited")) return
-  console.error(`${step} failed:`, error instanceof Error ? `${error.name}: ${error.message}` : String(error))
+  console.error(`${action} failed at the ${step} step (pass ${passId ?? "not made yet"}):`, error instanceof Error ? `${error.name}: ${error.message}` : String(error))
 }
 
 /** The reason an API refusal carries (`issues[0]` with path `reason`), as a problem the screen can word; anything else is `unavailable`. */
@@ -45,6 +51,7 @@ export function problemOf(error: unknown): { problem: CheckoutProblem; message: 
   if (error instanceof ApiError) {
     const reason = error.issues?.find((i) => i.path === "reason")?.message
     if (reason === "out-of-area" || reason === "email-unreachable" || reason === "too-many") return { problem: reason, message: MESSAGE[reason] }
+    if (reason === "slow-down") return { problem: "slow-down", message: MESSAGE["slow-down"] }
     if (error.code === "invalid" || error.code === "unprocessable") return { problem: "invalid", message: error.code === "unprocessable" ? error.message : MESSAGE.invalid }
   }
   return { problem: "unavailable", message: MESSAGE.unavailable }
@@ -70,9 +77,11 @@ function createInput(f: CheckoutSubmission, passId?: string) {
  * Stripe session in setup mode. Nothing is charged. A refusal comes back as a problem for the screen, never a throw.
  */
 export async function beginCheckoutWith(deps: CheckoutDeps, f: CheckoutSubmission, passId?: string): Promise<BeginResult> {
+  let known = passId
   try {
     const ctx = await deps.ctx()
     const pass = await callApi(ctx, passesCreate, createInput(f, passId))
+    known = pass.id
     const [customer] = await ctx.db.select({ stripeCustomerId: s.customer.stripeCustomerId }).from(s.customer).where(eq(s.customer.id, pass.customerId))
     const bucket = Math.floor(Date.now() / BUCKET_MS) * BUCKET_MS
     const session = await createSetupSession(deps.stripe(), {
@@ -81,11 +90,12 @@ export async function beginCheckoutWith(deps: CheckoutDeps, f: CheckoutSubmissio
       email: f.email,
       name: f.firstName,
       expiresAt: Math.floor(bucket / 1000) + SESSION_MINUTES * 60,
-      idempotencyKey: `setup-${pass.id}-${bucket}`,
+      // The key also carries the contact details, so a corrected email or name inside the bucket is a new request, not a 400.
+      idempotencyKey: `setup-${pass.id}-${bucket}-${fingerprint(`${f.email}|${f.firstName}`)}`,
     })
     return { ok: true, passId: pass.id, sessionId: session.id, clientSecret: session.clientSecret }
   } catch (error) {
-    logCheckoutFailure("beginCheckout", error)
+    logCheckoutFailure("beginCheckout", "contact", known, error)
     return { ok: false, ...problemOf(error) }
   }
 }
@@ -125,7 +135,32 @@ export async function finishCheckoutWith(deps: CheckoutDeps, passId: string, ses
     const detail = await callApi(ctx, passesActivate, { id: passId, setupSessionId: sessionId, consent: { termsAccepted: true as const, marketingOptIn: marketingChannels.length > 0, marketingChannels } })
     return { ok: true, pass: passForDone(detail, firstName) }
   } catch (error) {
-    logCheckoutFailure("finishCheckout", error)
+    logCheckoutFailure("finishCheckout", "card", passId, error)
+    if (await sessionExpired(deps, sessionId)) return { ok: false, problem: "expired", message: MESSAGE.expired }
     return { ok: false, ...problemOf(error) }
+  }
+}
+
+/** Whether Stripe has expired the card form's session, so the screen opens a new one instead of retrying the old. */
+async function sessionExpired(deps: CheckoutDeps, sessionId: string): Promise<boolean> {
+  try {
+    return (await deps.stripe().checkout.sessions.retrieve(sessionId)).status === "expired"
+  } catch {
+    return false
+  }
+}
+
+/**
+ * The card form opened: record the boxes as ticked on the pending pass, so an activation that Stripe's webhook gets to first
+ * (the tab closed after the card was saved) records the same consent. Best effort; the finishing request carries the boxes too.
+ */
+export async function recordConsentWith(deps: CheckoutDeps, passId: string, consent: CheckoutConsent): Promise<void> {
+  try {
+    if (!consent.termsAccepted) return
+    const ctx = await deps.ctx(passId)
+    const marketingChannels = [...(consent.marketingEmail ? ["email" as const] : []), ...(consent.marketingSms ? ["sms" as const] : [])]
+    await callApi(ctx, passesConsent, { id: passId, consent: { termsAccepted: true as const, marketingOptIn: marketingChannels.length > 0, marketingChannels } })
+  } catch (error) {
+    logCheckoutFailure("recordConsent", "card", passId, error)
   }
 }

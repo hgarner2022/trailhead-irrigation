@@ -74,6 +74,10 @@ describe("passes.create for the checkout", () => {
     expect(second.id).toBe(first.id)
     expect(third.id).toBe(first.id)
     expect(third.zones).toBe(12)
+    // a resume by email alone never rewrites the customer's name or phone
+    await create({ ...body, customer: { firstName: "Stranger", email: "many@example.com", phone: "3035559999" } })
+    const [who] = await db.select().from(s.customer).where(eq(s.customer.email, "many@example.com"))
+    expect(who).toMatchObject({ firstName: "Many", phone: "+13035550105" })
     const rows = await db.select().from(s.seasonPass).where(eq(s.seasonPass.customerId, (await db.select().from(s.customer).where(eq(s.customer.email, "many@example.com")))[0]!.id))
     expect(rows).toHaveLength(1)
     // an hour later the old one is not resumed and a fresh pending pass starts

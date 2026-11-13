@@ -45,14 +45,15 @@ export const MidSeason: Story = {
   globals: { viewport: { value: "wide", isRotated: false } },
 }
 
-/** A Boulder address picked: the out-of-area line and Continue off. */
+/** A Boulder address picked: the out-of-area line; Continue stays on the step. */
 export const AddressOutOfArea: Story = {
   globals: { viewport: { value: "wide", isRotated: false } },
   play: async ({ canvas, userEvent }) => {
     await userEvent.type(await canvas.findByRole("combobox", { name: "Street address" }), "1200 Pe")
     await userEvent.click(await canvas.findByRole("option", { name: /Boulder/ }))
     await expect(await canvas.findByText(/We don't serve Boulder yet/)).toBeInTheDocument()
-    await expect(canvas.getByRole("button", { name: "Continue" })).toBeDisabled()
+    await userEvent.click(canvas.getByRole("button", { name: "Continue" }))
+    await expect(canvas.getByRole("heading", { level: 1 })).toHaveTextContent("Where is the yard?")
   },
 }
 
@@ -76,6 +77,17 @@ export const Timing: Story = {
 export const Contact: Story = {
   args: { initialStep: 5, prefill: { ...answers, firstName: "", email: "", phone: "" } },
   globals: { viewport: { value: "wide", isRotated: false } },
+}
+
+/** Continue pressed with nothing typed: every problem beside its field, a summary naming them, and focus on the first. */
+export const ContactErrors: Story = {
+  args: { initialStep: 5, prefill: { ...answers, firstName: "", email: "", phone: "" } },
+  globals: { viewport: { value: "wide", isRotated: false } },
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(canvas.getByRole("button", { name: "Continue" }))
+    await expect(await canvas.findByRole("alert")).toHaveTextContent("3 things need another look: First name, Email, Phone")
+    await expect(canvas.getByLabelText("First name")).toHaveFocus()
+  },
 }
 
 /** The consent boxes under the card form: the terms unticked, so the button waits. */
@@ -121,6 +133,41 @@ export const ContactRefused: Story = {
   },
 }
 
+/** The pass the customer is buying, above the card form: each visit with its price, the total, and "$0 today". */
+export const CardSummary: Story = {
+  args: { initialStep: 6, prefill: { ...answers, inspection: true } },
+  globals: { viewport: { value: "wide", isRotated: false } },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByText("$0 today. We charge the card after each visit.")).toBeInTheDocument()
+    await expect(canvas.getByText("Season total")).toBeInTheDocument()
+  },
+}
+
+/** Activation failed after the card was saved: the message, a Try again that re-runs it, and Back. */
+export const CardFailed: Story = {
+  args: {
+    initialStep: 6,
+    prefill: { ...answers, termsAccepted: false, passId: "p-story", sessionId: "cs_story", clientSecret: "cs_story_secret", failure: "We couldn't reach the card form just now. Nothing was charged. Please try again.", retry: "finish" },
+    stripeKey: "pk_test_story",
+    onBegin: fn(),
+    onFinish: fn(),
+  },
+  globals: { viewport: { value: "wide", isRotated: false } },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByRole("button", { name: "Try again" })).toBeInTheDocument()
+    await expect(canvas.getByRole("button", { name: "Back" })).toBeInTheDocument()
+  },
+}
+
+/** The browser kept a pass the server has since swept: the checkout restarts at contact with one line saying why. */
+export const RestoredExpired: Story = {
+  args: { initialStep: 5, prefill: { ...answers, passId: "p-new", notice: "Your saved checkout timed out, so we started it fresh. Check your details and continue." } },
+  globals: { viewport: { value: "wide", isRotated: false } },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText(/timed out, so we started it fresh/)).toBeInTheDocument()
+  },
+}
+
 export const Done: Story = {
   args: { initialStep: 7, prefill: { ...answers, termsAccepted: true, marketingEmail: true, marketingSms: true, cardSaved: true }, onSaveImage: savePassImage },
   globals: { viewport: { value: "wide", isRotated: false } },
@@ -153,7 +200,7 @@ export const Walkthrough: Story = {
     await userEvent.click(canvas.getByRole("button", { name: "Continue" }))
 
     const save = await canvas.findByRole("button", { name: "Save card and reserve" })
-    await expect(save).toBeDisabled()
+    await expect(save).toBeEnabled()
     await userEvent.click(canvas.getByRole("checkbox", { name: /I accept the Season Pass terms/ }))
     await userEvent.click(canvas.getByRole("checkbox", { name: "Seasonal tips and offers by email" }))
     await userEvent.click(save)
@@ -169,6 +216,23 @@ export const Phone: Story = {
 
 export const PhoneTiming: Story = {
   args: { initialStep: 4, prefill: answers },
+  globals: { viewport: { value: "phone", isRotated: false } },
+}
+
+/** Contact with every error showing at 375px: the sticky bar keeps Continue on screen under the summary. */
+export const PhoneContactErrors: Story = {
+  args: { initialStep: 5, prefill: { ...answers, firstName: "", email: "", phone: "" } },
+  globals: { viewport: { value: "phone", isRotated: false } },
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(canvas.getByRole("button", { name: "Continue" }))
+    await expect(await canvas.findByRole("alert")).toBeInTheDocument()
+    await expect(canvas.getByRole("button", { name: "Continue" })).toBeVisible()
+  },
+}
+
+/** The card step at 375px: the summary, the boxes and Back with room for Stripe's form under them. */
+export const PhoneCard: Story = {
+  args: { initialStep: 6, prefill: { ...answers, inspection: true } },
   globals: { viewport: { value: "phone", isRotated: false } },
 }
 

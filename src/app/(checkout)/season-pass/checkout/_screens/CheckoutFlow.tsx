@@ -5,16 +5,20 @@ import Image from "next/image"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import type { Pass } from "@/lib/admin/types"
-import { STEPS, STEP_COUNT, canContinue, toPass, type CheckoutFields, type CheckoutState } from "./checkout-state"
+import { STEPS, STEP_COUNT, canContinue, stepProblems, toPass, type CheckoutFields, type CheckoutState } from "./checkout-state"
 import type { PlaceProvider } from "@/lib/places"
 import { AddressStep } from "./checkout-address"
 import { CONSENT_PROBLEM_ID, ContactStep, DoneStep, ZonesStep, useReveal } from "./checkout-steps"
 import { useCheckoutState } from "./use-checkout-state"
+import { useCheckoutServer } from "./use-checkout-server"
+import { useCheckoutStorage } from "./use-checkout-storage"
 import { CardStep } from "./checkout-card"
-import { toSubmission, type BeginCheckout, type FinishCheckout } from "./checkout-submit"
+import { ErrorSummary } from "./checkout-errors"
+import type { BeginCheckout, FinishCheckout, RecordConsent } from "./checkout-submit"
 import { savePassImage } from "@/lib/pass-card-image"
 import { InspectionStep } from "./checkout-inspection"
 import { TimingStep } from "./checkout-timing"
+import { ownsKeys, timingNeighbour } from "./checkout-keys"
 
 // The Season Pass checkout as seven full-screen questions, one input each (the
 // timing step asks its two together), the way Typeform paces a form: a thin orange line across the top for progress,
@@ -51,6 +55,8 @@ export interface CheckoutFlowProps {
   onBegin?: BeginCheckout
   /** called when Stripe says the card is saved: activates the pass */
   onFinish?: FinishCheckout
+  /** called when the card form opens: records the ticked boxes on the pending pass */
+  onConsent?: RecordConsent
 }
 
 const BACKDROP = "/images/trail-mountain-meadow.jpg"
@@ -59,32 +65,15 @@ const COLUMN = "mx-auto w-full max-w-2xl container-padding-x"
 /** The reserved moment gets the long rise; a step change gets a short one; the first question opens still. */
 const REVEAL_MS = { step: 300, done: 600 }
 
-const TIMING_CHOICE = '[data-slot="timing-choice"]'
-
-/** On the timing step the arrow keys walk the two groups before they move between steps: the pressed choice of the other group takes focus. */
-function timingNeighbour(target: HTMLElement, direction: "down" | "up"): HTMLElement | null {
-  const kind = target.closest<HTMLElement>(TIMING_CHOICE)?.dataset.kind
-  if (kind !== (direction === "down" ? "turn-on" : "blowout")) return null
-  const other = direction === "down" ? "blowout" : "turn-on"
-  return target.closest("section")?.querySelector<HTMLElement>(`${TIMING_CHOICE}[data-kind="${other}"][aria-pressed="true"]`) ?? null
-}
-
-/** Elements that use Enter and the arrow keys themselves; a combobox only while its list is open. */
-function ownsKeys(target: HTMLElement): boolean {
-  const role = target.getAttribute("role")
-  if (role === "combobox") return target.getAttribute("aria-expanded") === "true"
-  return target.tagName === "SELECT" || target.tagName === "TEXTAREA" || role === "listbox" || role === "option" || !!target.closest('[data-slot="select-content"]')
-}
-
 function StepBody({ duration, enabled, children }: { duration: number; enabled: boolean; children: React.ReactNode }) {
   const ref = useReveal<HTMLDivElement>(duration, enabled)
   return <div ref={ref}>{children}</div>
 }
 
-export function CheckoutFlow({ season, initialZones, initialStep, prefill, places, today, onComplete, onSaveImage, onDone, stripeKey, onBegin, onFinish }: CheckoutFlowProps) {
+export function CheckoutFlow({ season, initialZones, initialStep, prefill, places, today, onComplete, onSaveImage, onDone, stripeKey, onBegin, onFinish, onConsent }: CheckoutFlowProps) {
   const [state, dispatch] = useCheckoutState({ ...(initialZones ? { zones: initialZones } : {}), ...(today ? { today } : {}), ...prefill, ...(initialStep ? { step: initialStep } : {}) })
-  // The step on which Enter was pressed too early, so the address and contact steps show what is missing.
-  const [attemptedStep, setAttemptedStep] = useState<number | null>(null)
+  // The step on which Continue (or Enter) was pressed too early, so it shows every field's problem; `n` counts the presses so each one moves focus again.
+  const [attempt, setAttempt] = useState<{ step: number; n: number } | null>(null)
   const section = useRef<HTMLElement>(null)
   const questionId = useId()
   // Set on the first move, so opening the page does not animate; Done always rises.
@@ -93,46 +82,22 @@ export function CheckoutFlow({ season, initialZones, initialStep, prefill, place
   const current = STEPS[step - 1]
   const done = current.key === "done"
   const valid = canContinue(state)
-  const attempted = attemptedStep === step
+  const attempted = attempt?.step === step
   const wired = Boolean(stripeKey && onBegin && onFinish)
-  // The server round trip on leaving the contact step; the button waits for it.
-  const [busy, setBusy] = useState(false)
-  // Stripe's `onComplete` fires from inside its form, so it reads the answers through a ref.
-  const latest = useRef(state)
-  useEffect(() => {
-    latest.current = state
-  })
+  const markMoved = useCallback(() => setMoved(true), [])
+  const { busy, begin, finishCard, retry } = useCheckoutServer({ state, dispatch, onBegin, onFinish, onComplete, onConsent, moved: markMoved })
+  useCheckoutStorage(state, dispatch, wired)
 
   const set = <K extends keyof CheckoutFields>(field: K, value: CheckoutFields[K]) => dispatch({ type: "set", field, value })
-  const finishCard = useCallback(async () => {
-    const s = latest.current
-    if (!onFinish || !s.passId || !s.sessionId) return
-    setBusy(true)
-    const result = await onFinish(s.passId, s.sessionId, { termsAccepted: s.termsAccepted, marketingEmail: s.marketingEmail, marketingSms: s.marketingSms }, s.firstName.trim())
-    setBusy(false)
-    if (result.ok) {
-      onComplete?.(result.pass)
-      dispatch({ type: "finished", pass: result.pass })
-      setMoved(true)
-    } else dispatch({ type: "failed", message: result.message })
-  }, [onFinish, onComplete, dispatch])
   const next = async () => {
     // On the wired card step only Stripe's own form saves the card; Enter and the arrows must not skip it.
     if (busy || (wired && current.key === "card")) return
     if (!valid) {
-      setAttemptedStep(step)
+      setAttempt((prev) => ({ step, n: (prev?.n ?? 0) + 1 }))
       return
     }
     if (wired && current.key === "contact") {
-      const submission = toSubmission(state)
-      if (!submission || !onBegin) return
-      setBusy(true)
-      const result = await onBegin(submission, state.passId)
-      setBusy(false)
-      if (result.ok) {
-        dispatch({ type: "begun", passId: result.passId, sessionId: result.sessionId, clientSecret: result.clientSecret })
-        setMoved(true)
-      } else dispatch({ type: "failed", message: result.message })
+      await begin()
       return
     }
     if (current.key === "card") onComplete?.(toPass({ ...state, cardSaved: true }, season))
@@ -150,6 +115,12 @@ export function CheckoutFlow({ season, initialZones, initialStep, prefill, place
     const target = el?.querySelector<HTMLElement>("[data-autofocus]") ?? el
     target?.focus({ preventScroll: true })
   }, [step])
+
+  // A press that could not pass puts focus on the first field with a problem, once its message is on screen.
+  useEffect(() => {
+    if (!attempt) return
+    section.current?.querySelector<HTMLElement>('[aria-invalid="true"], [data-invalid="true"]')?.focus()
+  }, [attempt])
 
   const onKeyDown = (event: KeyboardEvent<HTMLElement>) => {
     const target = event.target as HTMLElement
@@ -250,25 +221,41 @@ export function CheckoutFlow({ season, initialZones, initialStep, prefill, place
               {current.question}
             </h1>
             <div className={done ? "mt-5" : "mt-8"}>{body}</div>
-            {state.failure && (
-              <p role="alert" data-slot="checkout-failure" className="mt-6 text-base text-destructive">
-                {state.failure}
+            {attempted && <ErrorSummary problems={stepProblems(state)} />}
+            {state.notice && (
+              <p role="status" data-slot="checkout-notice" className="mt-6 text-base text-muted-foreground">
+                {state.notice}
               </p>
+            )}
+            {state.failure && (
+              <div role="alert" data-slot="checkout-failure" className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-2 text-base text-destructive">
+                <p>{state.failure}</p>
+                {state.retry && (
+                  <Button variant="outline" size="sm" data-nav disabled={busy} onClick={retry}>
+                    Try again
+                  </Button>
+                )}
+              </div>
             )}
           </StepBody>
         </div>
-        {!done && !(wired && current.key === "card") && (
-          <div className={cn(COLUMN, "flex items-center justify-between pb-8", current.key === "timing" && "lg:max-w-3xl")}>
-            {step > 1 ? (
-              <Button variant="ghost" data-nav onClick={back}>
-                Back
-              </Button>
-            ) : (
-              <span />
-            )}
-            <Button size="lg" data-nav disabled={!valid || busy} aria-busy={busy || undefined} aria-describedby={current.key === "card" && attempted && !valid ? CONSENT_PROBLEM_ID : undefined} onClick={next}>
-              {busy ? "One moment" : current.action}
-            </Button>
+        {!done && (
+          // Sticky, so Continue is always on screen however tall the step is at 375px; the padding clears the phone's home indicator.
+          <div data-slot="checkout-actions" className="sticky bottom-0 z-10 max-sm:border-t max-sm:border-border/60 max-sm:bg-cream/95 max-sm:backdrop-blur-sm">
+            <div className={cn(COLUMN, "flex items-center justify-between pb-8 max-sm:pt-3 max-sm:pb-[max(1rem,env(safe-area-inset-bottom))]", current.key === "timing" && "lg:max-w-3xl")}>
+              {step > 1 ? (
+                <Button variant="ghost" data-nav onClick={back}>
+                  Back
+                </Button>
+              ) : (
+                <span />
+              )}
+              {!(wired && current.key === "card") && (
+                <Button size="lg" data-nav disabled={busy} aria-busy={busy || undefined} aria-describedby={current.key === "card" && attempted && !valid ? CONSENT_PROBLEM_ID : undefined} onClick={next}>
+                  {busy ? "One moment" : current.action}
+                </Button>
+              )}
+            </div>
           </div>
         )}
       </section>

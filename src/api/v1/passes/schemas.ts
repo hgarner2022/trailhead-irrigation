@@ -62,15 +62,19 @@ export const passCreateInput = z.object({
     .describe("Recorded now when given (an agent or the admin). The checkout leaves it out and sends the consent with `passes.activate`, when the card is saved."),
 })
 
+/** The card step's boxes as ticked when the card form opened; the terms are required, the rest default to off. */
+export const checkoutConsentInput = z.object({
+  termsAccepted: z.literal(true).describe("Required: the terms were accepted on the card step."),
+  marketingOptIn: z.boolean().default(false),
+  marketingChannels: z.array(z.enum(["email", "sms"])).default([]).describe("The ticked marketing boxes; `sms` is dropped when the customer has no phone."),
+})
+
+export const passConsentInput = z.object({ id: Id, consent: checkoutConsentInput })
+
 export const passActivateInput = z.object({
   id: Id,
   setupSessionId: z.string().min(1).describe("The Stripe Checkout Session in setup mode that saved the card."),
-  consent: z
-    .object({
-      termsAccepted: z.literal(true).describe("Required: the terms were accepted on the card step."),
-      marketingOptIn: z.boolean().default(false),
-      marketingChannels: z.array(z.enum(["email", "sms"])).default([]).describe("The ticked marketing boxes; `sms` is dropped when the customer has no phone."),
-    })
+  consent: checkoutConsentInput
     .optional()
-    .describe("The checkout's consent, appended once when the pass first turns active."),
+    .describe("The checkout's consent, appended once when the pass first turns active. When left out, the snapshot recorded by `passes.consent` is used."),
 })

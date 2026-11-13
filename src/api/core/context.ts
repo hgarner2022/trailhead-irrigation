@@ -10,9 +10,11 @@ export interface Ctx {
   requestId: string
   /** the `Idempotency-Key` of the request; honoured by `callApi` on writes */
   idempotencyKey?: string
+  /** the address the request came from, for the anonymous checkout's rate limit */
+  clientIp?: string
 }
 
-export function makeCtx(db: Database, principal: Principal, extra: Partial<Pick<Ctx, "now" | "requestId" | "idempotencyKey">> = {}): Ctx {
+export function makeCtx(db: Database, principal: Principal, extra: Partial<Pick<Ctx, "now" | "requestId" | "idempotencyKey" | "clientIp">> = {}): Ctx {
   return {
     db,
     organizationId: principal.organizationId,
@@ -20,6 +22,7 @@ export function makeCtx(db: Database, principal: Principal, extra: Partial<Pick<
     now: extra.now ?? new Date(),
     requestId: extra.requestId ?? crypto.randomUUID(),
     idempotencyKey: extra.idempotencyKey,
+    clientIp: extra.clientIp,
   }
 }
 

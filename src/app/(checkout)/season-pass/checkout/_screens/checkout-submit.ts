@@ -28,12 +28,14 @@ export interface CheckoutConsent {
 }
 
 /** Why the server stopped the checkout, as the screen needs to tell the customer. */
-export type CheckoutProblem = "out-of-area" | "email-unreachable" | "too-many" | "invalid" | "unavailable"
+export type CheckoutProblem = "out-of-area" | "email-unreachable" | "too-many" | "slow-down" | "invalid" | "unavailable" | "expired"
 
 export type BeginResult = { ok: true; passId: string; sessionId: string; clientSecret: string } | { ok: false; problem: CheckoutProblem; message: string }
 export type FinishResult = { ok: true; pass: Pass } | { ok: false; problem: CheckoutProblem; message: string }
 
 export type BeginCheckout = (submission: CheckoutSubmission, passId?: string) => Promise<BeginResult>
+/** Called when the card form opens: records the boxes as ticked on the pending pass. Best effort, never throws. */
+export type RecordConsent = (passId: string, consent: CheckoutConsent) => Promise<void>
 export type FinishCheckout = (passId: string, sessionId: string, consent: CheckoutConsent, firstName?: string) => Promise<FinishResult>
 
 /** The answers as the server takes them; null while the address is not picked in one of the six towns. */

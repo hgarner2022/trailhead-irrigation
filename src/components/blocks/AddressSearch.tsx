@@ -23,6 +23,8 @@ export interface AddressSearchProps {
   onPick: (place: PlaceSuggestion) => void
   /** the line under the box, in the destructive colour */
   problem?: string | null
+  /** the input's `name`, so autofill and form tooling can see it */
+  name?: string
   label?: string
   placeholder?: string
   /** marks the input for the shell that focuses `[data-autofocus]` when a step opens */
@@ -33,7 +35,7 @@ export interface AddressSearchProps {
 const DEBOUNCE_MS = 150
 const LOOKUP_FAILED = "We couldn't look that address up just now. Try again in a moment."
 
-export function AddressSearch({ value, picked, provider, onChange, onPick, problem, label = "Street address", placeholder = "Start typing your address", autoFocus, className }: AddressSearchProps) {
+export function AddressSearch({ value, picked, provider, onChange, onPick, problem, name, label = "Street address", placeholder = "Start typing your address", autoFocus, className }: AddressSearchProps) {
   const id = useId()
   const listId = `${id}-list`
   const noteId = `${id}-note`
@@ -105,6 +107,7 @@ export function AddressSearch({ value, picked, provider, onChange, onPick, probl
       <div className="relative">
         <Input
           role="combobox"
+          name={name}
           aria-label={label}
           aria-autocomplete="list"
           aria-expanded={expanded}

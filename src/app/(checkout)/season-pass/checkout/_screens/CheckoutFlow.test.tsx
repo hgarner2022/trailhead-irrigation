@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeAll, afterEach } from "vitest"
+import { describe, it, expect, vi, beforeAll, beforeEach, afterEach } from "vitest"
 import { render, screen, fireEvent, act, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { FIXTURE_HOME } from "@/lib/places/fixture"
@@ -22,6 +22,8 @@ beforeAll(() => {
   Element.prototype.releasePointerCapture = () => {}
   Element.prototype.scrollIntoView = () => {}
 })
+
+beforeEach(() => sessionStorage.clear())
 
 const answers: Partial<CheckoutFields> = {
   address: FIXTURE_HOME.label,
@@ -54,25 +56,25 @@ function stubMotion(reduce: boolean) {
 }
 
 describe("CheckoutFlow", () => {
-  it("opens on the address question with Continue disabled", () => {
+  it("opens on the address question with Continue enabled", () => {
     render(<CheckoutFlow season={2027} />)
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Where is the yard?")
-    expect(continueButton()).toBeDisabled()
+    expect(continueButton()).toBeEnabled()
     expect(screen.getByRole("progressbar", { name: "Checkout progress" })).toHaveAttribute("aria-valuenow", "1")
     expect(live()).toHaveTextContent("Step 1 of 7, Where is the yard?")
     expect(screen.queryByRole("button", { name: "Back" })).not.toBeInTheDocument()
     expect(screen.getByLabelText("Street address")).toHaveFocus()
   })
 
-  it("enables Continue once an address in the six towns is picked from the list", async () => {
+  it("moves on once an address in the six towns is picked from the list", async () => {
     const user = userEvent.setup()
     render(<CheckoutFlow season={2027} />)
     const box = screen.getByRole("combobox", { name: "Street address" })
     await user.type(box, "123 Tr")
-    expect(continueButton()).toBeDisabled()
+    expect(continueButton()).toBeEnabled()
     await user.click(await screen.findByRole("option", { name: /123 Trailhead Way/ }))
     expect(box).toHaveValue("123 Trailhead Way, Erie, CO 80516")
-    expect(continueButton()).toBeDisabled()
+    expect(continueButton()).toBeEnabled()
     await user.click(screen.getByRole("button", { name: /^Yes/ }))
     expect(screen.getByLabelText("How we get in")).toBeInTheDocument()
     expect(continueButton()).toBeEnabled()
@@ -88,7 +90,7 @@ describe("CheckoutFlow", () => {
     await user.click(await screen.findByRole("option", { name: /Boulder/ }))
     expect(screen.getByText(/We don't serve Boulder yet/)).toBeInTheDocument()
     expect(box).toHaveAttribute("aria-invalid", "true")
-    expect(continueButton()).toBeDisabled()
+    expect(continueButton()).toBeEnabled()
     fireEvent.keyDown(box, { key: "Enter" })
     expect(progress()).toHaveAttribute("aria-valuenow", "1")
   })
@@ -250,14 +252,14 @@ describe("CheckoutFlow", () => {
     expect(links.map((l) => l.getAttribute("href"))).toEqual(["/terms#season-pass", "/terms"])
     expect(links.every((l) => l.getAttribute("target") === "_blank")).toBe(true)
     const save = screen.getByRole("button", { name: "Save card and reserve" })
-    expect(save).toBeDisabled()
+    expect(save).toBeEnabled()
     expect(screen.queryByText("Please accept the terms to continue")).not.toBeInTheDocument()
     fireEvent.keyDown(section(), { key: "Enter" })
     expect(screen.getByText("Please accept the terms to continue")).toBeInTheDocument()
     expect(save).toHaveAccessibleDescription("Please accept the terms to continue")
     expect(terms).toHaveAttribute("aria-invalid", "true")
     fireEvent.click(sms)
-    expect(save).toBeDisabled()
+    expect(save).toBeEnabled()
     fireEvent.click(terms)
     expect(terms).toBeChecked()
     expect(save).toBeEnabled()
@@ -271,7 +273,7 @@ describe("CheckoutFlow", () => {
 
   it("asks kindly for the contact details it is missing", () => {
     render(<CheckoutFlow season={2027} prefill={{ ...answers, email: "andrea.example.com", phone: "" }} initialStep={5} />)
-    expect(continueButton()).toBeDisabled()
+    expect(continueButton()).toBeEnabled()
     expect(screen.queryByText("That email doesn't look complete.")).not.toBeInTheDocument()
     fireEvent.keyDown(screen.getByLabelText("First name"), { key: "Enter" })
     expect(screen.getByText("That email doesn't look complete.")).toBeInTheDocument()
