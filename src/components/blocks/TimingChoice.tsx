@@ -13,7 +13,7 @@ import { TIMING_PREFERENCES, preferenceLabel, preferenceReason } from "@/lib/adm
 
 const CHOICE_NAMES: Record<TimingPreference, string> = { earlier: "Earlier", recommended: "Recommended", later: "Later" }
 /** The only place the recommendation's detail is spelled out; everywhere else says Mid. */
-const MID_MEANS: Record<"turn-on" | "blowout", string> = { "turn-on": "Mid May is the first and second week.", blowout: "Mid October is the second week." }
+const MID_MEANS: Record<"turn-on" | "blowout", string> = { "turn-on": "Mid May means the first two weeks of May.", blowout: "Mid October means the second week of October." }
 
 export interface TimingChoiceProps {
   kind: "turn-on" | "blowout"

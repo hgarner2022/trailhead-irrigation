@@ -27,17 +27,17 @@ export interface SignInCardProps {
   className?: string
 }
 
-const FAILED = "We could not send the link. Try again in a minute."
+const FAILED = "We couldn't send the link. Try again in a minute."
 
 const COPY = {
   admin: {
-    title: "Admin sign in",
-    lead: "Enter your work email and we will send you a link.",
+    title: "Sign in to admin",
+    lead: "Enter your work email and we'll send you a link.",
     denied: "That email is not on the admin list. Ask Hannah or Ryan to add it.",
   },
   customer: {
     title: "Sign in to your pass",
-    lead: "Enter the email you bought your Season Pass with and we will send you a link.",
+    lead: "Enter the email you bought your Season Pass with and we'll send you a link.",
     denied: "We can't find a pass under that email. Try the one you bought it with, or call us.",
   },
 } as const
@@ -57,7 +57,7 @@ export function SignInCard({ audience, state = "form", email = "", action, retry
               <p className="text-sm text-foreground">
                 We sent a sign-in link to {email ? <strong className="break-all font-semibold">{email}</strong> : "your email"}.
               </p>
-              <p className="text-sm text-muted-foreground">It works once and for ten minutes.</p>
+              <p className="text-sm text-muted-foreground">The link works one time and expires in 10 minutes.</p>
               {retryHref && (
                 <a href={retryHref} className="text-sm font-medium text-primary-dark underline-offset-4 hover:underline">
                   Use a different email

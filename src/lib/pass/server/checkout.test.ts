@@ -27,6 +27,7 @@ const submission = (over: Partial<CheckoutSubmission> = {}): CheckoutSubmission 
   town: "Erie",
   needsCustomerHome: false,
   accessNote: "",
+  days: [],
   zones: 8,
   inspection: false,
   turnOnPreference: "earlier",

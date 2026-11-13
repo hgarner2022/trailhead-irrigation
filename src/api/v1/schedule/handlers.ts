@@ -8,6 +8,8 @@ import { addDays, byPrincipal, capacityKind, Day, Id, Town, today, VisitKind, we
 import { blockedMinutes, capacityAfterBlocks } from "@/lib/admin/calendar"
 import { runSchedule } from "@/lib/scheduling/server/run"
 import { loadBlocks } from "@/lib/jobber-feed"
+import { openSlots, spreadDays } from "@/lib/pass/server/area-days"
+import { windowText } from "@/emails/format"
 import { visitOut, visitsQuery } from "../visits/queries"
 import { VisitOut } from "../visits/schemas"
 
@@ -16,7 +18,7 @@ export const scheduleRun = defineHandler({
   method: "POST",
   path: "/schedule/run",
   scope: "admin",
-  summary: "Schedule: place every pass visit of the window that is due within its lead time onto a truck-day in one step. Each placed visit is scheduled, its stops ordered and its customer texted the date (emailed with no mobile number); a customer who must be home is left to pick their own day. Home gets a line for the run and a row for each visit that could not be placed. Running it again places nothing new.",
+  summary: "Schedule: place every pass visit of the window that is due within its lead time onto a truck-day in one step. Each placed visit is scheduled, its stops ordered and its customer texted the date (emailed with no mobile number); a visit waiting for its customer's pick is left alone. Home gets a line for the run and a row for each visit that could not be placed. Running it again places nothing new.",
   input: z.object({ window: z.enum(["turn-on", "inspection", "blowout"]), season: z.number().int().optional() }),
   output: z.object({ placed: z.number().int(), unplaced: z.number().int() }),
   async run(ctx, input) {
@@ -136,5 +138,24 @@ export const scheduleSlots = defineHandler({
       }
     }
     return { data }
+  },
+})
+
+const PassKind = z.enum(["turn-on", "inspection", "blowout"])
+
+export const scheduleOfferDays = defineHandler({
+  name: "schedule.offerDays",
+  method: "GET",
+  path: "/schedule/offer-days",
+  scope: "read",
+  checkout: true,
+  summary: "The three best open days for one pass visit that does not exist yet, for the checkout's \"Your days\" step: the town's truck-days inside the visit's window for that season, under capacity in visits and minutes after the busy time on the Jobber calendar, spread out as the earliest open day, one near the middle and the last. Each has the day, the truck and the two-hour arrival window from the slot grid. Fewer open days gives fewer days; none gives an empty list.",
+  input: z.object({ town: Town, kind: PassKind, season: z.coerce.number().int().min(2026).max(2100), zones: z.coerce.number().int().min(1).max(16) }),
+  output: z.object({ days: z.array(z.object({ day: Day, truckId: Id, truckName: z.string(), start: z.string().describe("HH:MM, Mountain."), window: z.string().describe("The two-hour window, \"8 to 10 am\".") })) }),
+  async run(ctx, input) {
+    const slots = await openSlots(ctx.db, { id: "", organizationId: ctx.organizationId, kind: input.kind, town: input.town }, today(ctx), input.season)
+    // Ordering a truck-day starts its first stop at FIRST_STOP (8:00), so no window opens earlier than that.
+    const opens = (start: string) => (start < "08:00" ? "08:00" : start)
+    return { days: spreadDays(slots).map((x) => ({ day: x.day, truckId: x.truckId, truckName: x.truckName, start: opens(x.start), window: windowText(opens(x.start)) })) }
   },
 })

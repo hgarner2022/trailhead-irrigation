@@ -20,6 +20,7 @@ export const KIND_NAMES: Record<MessageKind, string> = {
   "date-set": "Date set",
   "date-moved": "Date moved",
   "day-before": "Reminder",
+  "date-confirm": "Two-week confirmation",
   receipt: "Receipt",
   "card-failed": "Card failed",
   "card-expiring": "Card expiring",
@@ -32,7 +33,7 @@ const STATUS_WORDS: Record<Message["status"], string> = {
   sent: "Sent",
   delivered: "Delivered",
   failed: "Failed",
-  bounced: "Bounced",
+  bounced: "Not delivered",
 }
 
 const TROUBLE: Message["status"][] = ["failed", "bounced"]

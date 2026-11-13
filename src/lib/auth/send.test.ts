@@ -9,6 +9,6 @@ describe("sendVerificationRequest", () => {
     const message = send.mock.calls[0]![0]
     expect(message.to).toBe("a@b.com")
     expect(message.text).toContain("https://www.example.com/cb?token=x")
-    expect(message.text).toContain("It works once and for ten minutes.")
+    expect(message.text).toContain("The link works one time and expires in 10 minutes.")
   })
 })

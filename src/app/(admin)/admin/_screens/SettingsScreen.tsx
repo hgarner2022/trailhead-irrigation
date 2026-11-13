@@ -112,7 +112,7 @@ export function SettingsScreen({ data, today, defaultTab = "trucks", who = "Hann
     <div data-slot="settings-screen" className="space-y-6">
       <PageHeader
         title="Settings"
-        context={readOnly ? "You can read the settings; a manager changes them." : "Changes apply from the next schedule run."}
+        context={readOnly ? "You can read the settings. A manager changes them." : "Changes apply from the next schedule run."}
         actions={
           readOnly ? undefined : (
             <>

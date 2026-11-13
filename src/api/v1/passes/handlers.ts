@@ -9,6 +9,7 @@ import { SEASON_PASS_ADD_ON, visitPrice, visitsOnSale } from "@/lib/season-pass"
 import { hasScope } from "@/lib/auth/principal"
 import { readAppUrl } from "@/lib/env"
 import { activatePass } from "@/lib/pass/server/activate"
+import { holdChosenDays, scheduleChosenDays } from "@/lib/pass/server/chosen-days"
 import { emailDomainReachable, failedCheckoutStep, MAX_PENDING_PER_HOUR, newestPendingPass, pendingPassesLastHour } from "@/lib/pass/server/create"
 import { cleanEmail, cleanName, cleanText, normalizePhone } from "@/lib/format/contact"
 import { queuePurchaseConfirmation, recordPurchase } from "@/lib/pass/server/purchase"
@@ -26,6 +27,7 @@ import { ApiError, notImplemented } from "../../core/errors"
 import { defineHandler } from "../../core/handler"
 import { afterTimeCursor, cursorPage, page, pageInput, timeCursor } from "../../core/pagination"
 import { addDays, Id, idInput, OK, okOutput, PassStatus, Preference, Town, today } from "../shared"
+import { renewPass } from "./renew"
 import { PassDetail, PassOut, passActivateInput, passConsentInput, passCreateInput } from "./schemas"
 import { loadPass, passDetail, passesQuery, passOut, recordChange } from "./queries"
 
@@ -96,10 +98,11 @@ export const passesCreate = defineHandler({
   scope: "write",
   checkout: true,
   status: 201,
-  summary: "Create the checkout's pending pass: the customer, the property and one visit for each visit still on sale this season. Given the `passId` of a pending pass for the same email it updates that pass instead. The anonymous checkout is also held to the checkout's own step rules, an email whose domain has a mail server and three new passes per email per hour.",
+  summary: "Create the checkout's pending pass: the customer, the property and one visit for each visit still on sale this season. Given the `passId` of a pending pass for the same email it updates that pass instead. Given `renewOf` (the customer's last pass, with the write scope or a checked renewal link) it makes the next season's pass active on the card already on file, schedules the days picked and queues the confirmation; there is no card step. The anonymous checkout is also held to the checkout's own step rules, an email whose domain has a mail server and three new passes per email per hour.",
   input: passCreateInput,
   output: PassDetail,
   async run(ctx, input) {
+    if (input.renewOf) return renewPass(ctx, input)
     const day = today(ctx)
     const onSale = visitsOnSale(input.inspection, day)
     if (onSale.length === 0) throw new ApiError("unprocessable", "No visits are on sale this season any more")
@@ -200,9 +203,11 @@ export const passesCreate = defineHandler({
         amount: visitPrice(v, input.zones),
         status: "unscheduled" as const,
         preference: v.key === "turn-on" ? input.turnOnPreference : v.key === "blowout" ? input.blowoutPreference : undefined,
-        awaitingPick: input.needsCustomerHome,
+        // needsCustomerHome is a note for Ryan now; no visit waits for the customer to pick.
+        awaitingPick: false,
       })),
     )
+    await holdChosenDays(ctx.db, pass!.id, input.days, input.property.town, season, day)
     return passDetail(ctx, await loadPass(ctx, pass!.id))
   },
 })
@@ -213,12 +218,15 @@ export const passesActivate = defineHandler({
   path: "/passes/{id}/activate",
   scope: "write",
   checkout: "own-pass",
-  summary: "Activate a pending pass once its card is saved: stores the card from the finished setup session, makes the pass active, records the checkout's consent and queues the onboarding task and the purchase confirmation. Safe to call twice for one session.",
+  summary: "Activate a pending pass once its card is saved: stores the card from the finished setup session, makes the pass active, schedules the days the customer picked (a day that filled up since goes on the next open day), records the checkout's consent and queues the onboarding task and the purchase confirmation. Safe to call twice for one session.",
   input: passActivateInput,
   output: PassDetail,
   async run(ctx, input) {
     const row = await loadPass(ctx, input.id)
     await activatePass(ctx.db, getStripe(), row.pass.id, input.setupSessionId, ctx.now)
+    // The days picked at checkout become scheduled visits; a day that filled up since moves to the next open one and is recorded for the confirmation.
+    for (const moved of await scheduleChosenDays(ctx.db, row.pass.id, row.town, row.pass.season, today(ctx)))
+      await recordChange(ctx, { customerId: row.pass.customerId, passId: row.pass.id, visitId: moved.visitId, kind: "day-filled", detail: { visit: moved.kind, from: moved.from, to: moved.to } })
     // The boxes in the request win; without them (the webhook activated first) the snapshot from when the card form opened stands in.
     const consent = input.consent ?? (await consentSnapshot(ctx.db, row.pass.id))
     await recordPurchase(ctx.db, row.pass.id, consent, readAppUrl(), ctx.now)
@@ -374,7 +382,7 @@ export const passesAddInspection = defineHandler({
     await ctx.db.update(s.seasonPass).set({ inspection: true }).where(eq(s.seasonPass.id, row.pass.id))
     const [visit] = await ctx.db
       .insert(s.visit)
-      .values({ organizationId: ctx.organizationId, passId: row.pass.id, customerId: row.pass.customerId, propertyId: row.pass.propertyId, kind: "inspection", window: WINDOW_LABEL.inspection, amount, awaitingPick: row.pass.needsCustomerHome })
+      .values({ organizationId: ctx.organizationId, passId: row.pass.id, customerId: row.pass.customerId, propertyId: row.pass.propertyId, kind: "inspection", window: WINDOW_LABEL.inspection, amount })
       .returning({ id: s.visit.id })
     await recordChange(ctx, { customerId: row.pass.customerId, passId: row.pass.id, visitId: visit!.id, kind: "inspection-added", detail: { amount } })
     return { id: row.pass.id, inspection: true as const, visitId: visit!.id, amount }

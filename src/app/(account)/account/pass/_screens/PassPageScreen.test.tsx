@@ -34,7 +34,7 @@ describe("PassPageScreen", () => {
     fireEvent.click(screen.getByRole("button", { name: /^Earlier/ }))
     fireEvent.click(screen.getByRole("button", { name: "Save" }))
     expect(onChangePreference).toHaveBeenCalledWith("blowout", "earlier")
-    expect(screen.getByRole("dialog", { name: "Your fall blowout is now preferred early October." })).toBeInTheDocument()
+    expect(screen.getByRole("dialog", { name: "Got it. You asked for early October for your fall blowout." })).toBeInTheDocument()
   })
 
   it("asks before cancelling and says what cancelling does", () => {
@@ -44,7 +44,7 @@ describe("PassPageScreen", () => {
     fireEvent.click(screen.getByRole("button", { name: "Cancel my pass" }))
     const dialog = screen.getByRole("dialog", { name: "Cancel your Season Pass?" })
     expect(dialog).toHaveTextContent("Nothing further is charged. Your remaining visits come off the schedule.")
-    expect(screen.getByRole("button", { name: "Cancel the pass" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Cancel my pass" })).toBeInTheDocument()
     fireEvent.click(screen.getByRole("button", { name: "Keep my pass" }))
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument()
     expect(onCancel).not.toHaveBeenCalled()
@@ -54,11 +54,11 @@ describe("PassPageScreen", () => {
     const onCancel = vi.fn()
     render(<PassPageScreen pass={pass} today="2026-11-12" onCancel={onCancel} />)
     fireEvent.click(screen.getByRole("button", { name: "Cancel my pass" }))
-    fireEvent.click(screen.getByRole("button", { name: "Cancel the pass" }))
+    fireEvent.click(screen.getByRole("button", { name: "Cancel my pass" }))
     expect(onCancel).toHaveBeenCalledTimes(1)
     const dialog = screen.getByRole("dialog", { name: "Your pass is cancelled." })
     expect(dialog).toHaveTextContent("Nothing further is charged.")
-    expect(screen.queryByRole("button", { name: "Cancel the pass" })).not.toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Cancel my pass" })).not.toBeInTheDocument()
     fireEvent.click(screen.getByRole("button", { name: "Back to my pass" }))
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument()
   })
@@ -70,5 +70,26 @@ describe("PassPageScreen", () => {
     expect(rows()).toHaveLength(0)
     expect(screen.queryByText("Card on file")).not.toBeInTheDocument()
     expect(screen.queryByRole("button", { name: "Cancel my pass" })).not.toBeInTheDocument()
+  })
+
+  it("from November 1 offers Reserve next season, which opens the checkout filled in from this pass", () => {
+    const done: Pass = { ...pass, visits: pass.visits.map((v) => ({ ...v, completedAt: v.completedAt ?? "2027-10-05T16:40:00Z" })) }
+    render(<PassPageScreen pass={done} today="2027-11-02" />)
+    expect(screen.getByRole("link", { name: "Reserve next season" })).toHaveAttribute("href", `/season-pass/checkout?renew=${pass.id}`)
+    expect(document.body.textContent).not.toMatch(/renew/i)
+  })
+
+  it("shows it beside the season when visits are still ahead, and not before November 1", () => {
+    render(<PassPageScreen pass={pass} today="2027-11-02" />)
+    expect(screen.getByRole("link", { name: "Reserve next season" })).toBeInTheDocument()
+    document.body.innerHTML = ""
+    render(<PassPageScreen pass={pass} today="2027-10-20" />)
+    expect(screen.queryByRole("link", { name: "Reserve next season" })).not.toBeInTheDocument()
+  })
+
+  it("does not offer it when the next season is already held", () => {
+    const next: Pass = { ...pass, id: "p-next", season: 2028 }
+    render(<PassPageScreen pass={pass} passes={[next, pass]} today="2027-11-02" />)
+    expect(screen.queryByRole("link", { name: "Reserve next season" })).not.toBeInTheDocument()
   })
 })

@@ -31,6 +31,8 @@ export interface PublicPrincipal {
   scopes: ["checkout"]
   /** the pass this visitor is buying; `passes.activate` is allowed only for it */
   passId?: string
+  /** the pass this visitor may renew: set only by server code that checked the signed link or the signed-in customer, never from a request */
+  renewPassId?: string
 }
 
 export type Principal = PersonPrincipal | ApiKeyPrincipal | PublicPrincipal

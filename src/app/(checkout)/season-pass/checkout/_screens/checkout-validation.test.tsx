@@ -29,7 +29,7 @@ describe("validation that helps", () => {
       expect(field).toHaveAccessibleDescription(/\w/)
     }
     const summary = screen.getByRole("alert")
-    expect(summary).toHaveTextContent("3 things need another look: First name, Email, Phone")
+    expect(summary).toHaveTextContent("Check these before you continue: First name, Email, Phone.")
   })
   it("skips the summary for one problem and focuses that field", () => {
     render(<CheckoutFlow season={2027} initialStep={5} prefill={{ ...answers, phone: "12" }} />)
@@ -42,7 +42,7 @@ describe("validation that helps", () => {
     render(<CheckoutFlow season={2027} initialStep={5} prefill={{ ...answers, termsAccepted: false }} />)
     press()
     expect(screen.getByRole("checkbox", { name: /I accept the Season Pass terms/ })).toHaveFocus()
-    expect(screen.getByText("Please accept the terms to continue")).toHaveClass("text-destructive")
+    expect(screen.getByText("Accept the terms to continue.")).toHaveClass("text-destructive")
     expect(screen.queryByRole("alert")).not.toBeInTheDocument()
   })
   it("tells the address step what is missing: the address, then the access answer", () => {

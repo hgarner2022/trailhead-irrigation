@@ -7,9 +7,15 @@ import { callApi } from "@/api/core/call"
 import type { Ctx } from "@/api/core/context"
 import { ApiError } from "@/api/core/errors"
 import { passesActivate, passesConsent, passesCreate } from "@/api/v1/passes/handlers"
+import { scheduleOfferDays } from "@/api/v1/schedule/handlers"
+import { visitsOnSale } from "@/lib/season-pass"
 import type { PassDetail } from "@/api/v1/passes/schemas"
 import * as s from "@/db/schema"
-import type { BeginResult, CheckoutConsent, CheckoutProblem, CheckoutSubmission, FinishResult } from "@/app/(checkout)/season-pass/checkout/_screens/checkout-submit"
+import type { PersonPrincipal } from "@/lib/auth/types"
+import { mayRenew } from "./renewal"
+import type { Offers } from "@/app/(checkout)/season-pass/checkout/_screens/checkout-days"
+import type { BeginResult, OfferQuery, RenewalPrefill, CheckoutConsent, CheckoutProblem, CheckoutSubmission, FinishResult } from "@/app/(checkout)/season-pass/checkout/_screens/checkout-submit"
+import { instantOf } from "@/lib/admin/shape"
 import type { Pass, Town } from "@/lib/admin/types"
 import { createSetupSession } from "@/lib/stripe/checkout"
 
@@ -26,18 +32,21 @@ const SESSION_MINUTES = 45
 
 export interface CheckoutDeps {
   /** a context for the public checkout principal; `passId` is the pass `passes.activate` may touch */
-  ctx: (passId?: string) => Promise<Ctx>
+  ctx: (passId?: string, renewPassId?: string) => Promise<Ctx>
   stripe: () => Stripe
 }
+
+/** The one line for the terms box, said wherever the terms are missing. */
+export const TERMS_MESSAGE = "Accept the terms to continue."
 
 const MESSAGE: Record<CheckoutProblem, string> = {
   "out-of-area": "We work in Erie, Longmont, Louisville, Lafayette, Firestone and Broomfield.",
   "email-unreachable": "We can't find that email's mail server. Check the spelling.",
   "slow-down": "That was a lot of requests at once. Wait a minute and try again.",
-  "too-many": "That email has started a few passes in the last hour. Please try again in a bit, or call us.",
-  invalid: "Something in the answers needs another look. Go back a step and check them.",
-  unavailable: "We couldn't reach the card form just now. Nothing was charged. Please try again.",
-  expired: "That card form timed out. Nothing was charged. Press Try again for a fresh one.",
+  "too-many": "We've started a few passes for that email this hour. Try again in an hour, or call Ryan at (970) 692-7270.",
+  invalid: "One of your answers didn't save. Go back a step and check each one.",
+  unavailable: "We couldn't open the card form. We haven't charged you. Try again.",
+  expired: "That card form timed out. We haven't charged you. Press Try again for a fresh one.",
 }
 
 /** A refusal the customer caused needs no log; anything else (Stripe, the database) is written to the function log with the checkout step and the pass, so the deploy's logs say where and for whom. */
@@ -67,6 +76,7 @@ function createInput(f: CheckoutSubmission, passId?: string) {
     inspection: f.inspection,
     turnOnPreference: f.turnOnPreference,
     blowoutPreference: f.blowoutPreference,
+    days: f.days,
     needsCustomerHome: f.needsCustomerHome,
     ...(f.accessNote ? { accessNote: f.accessNote } : {}),
   }
@@ -80,7 +90,7 @@ export async function beginCheckoutWith(deps: CheckoutDeps, f: CheckoutSubmissio
   let known = passId
   try {
     // The terms were accepted at the end of the contact step; without them no pending pass is made.
-    if (!f.consent.termsAccepted) return { ok: false, problem: "invalid", message: "Please accept the terms to continue" }
+    if (!f.consent.termsAccepted) return { ok: false, problem: "invalid", message: TERMS_MESSAGE }
     const ctx = await deps.ctx()
     const pass = await callApi(ctx, passesCreate, createInput(f, passId))
     known = pass.id
@@ -117,7 +127,15 @@ export function passForDone(d: z.infer<typeof PassDetail>, firstName: string): P
     turnOnPreference: d.turnOnPreference,
     blowoutPreference: d.blowoutPreference,
     status: "active",
-    visits: d.visits.filter((v) => v.kind === "turn-on" || v.kind === "inspection" || v.kind === "blowout").map((v) => ({ kind: v.kind as "turn-on" | "inspection" | "blowout", window: v.window as "May" | "July" | "October", amount: v.amount })),
+    visits: d.visits.filter((v) => v.kind === "turn-on" || v.kind === "inspection" || v.kind === "blowout").map((v) => ({
+      kind: v.kind as "turn-on" | "inspection" | "blowout",
+      window: v.window as "May" | "July" | "October",
+      amount: v.amount,
+      id: v.id,
+      ...(v.scheduledOn ? { scheduledAt: instantOf(v.scheduledOn, v.startTime), scheduledOn: v.scheduledOn } : {}),
+      ...(v.startTime ? { startTime: v.startTime } : {}),
+      ...(v.calendarUrl ? { calendarUrl: v.calendarUrl } : {}),
+    })),
     stripeUrl: "",
     jobberUrl: "",
     ...(d.cardLast4 ? { cardLast4: d.cardLast4 } : {}),
@@ -133,7 +151,7 @@ export function passForDone(d: z.infer<typeof PassDetail>, firstName: string): P
  */
 export async function finishCheckoutWith(deps: CheckoutDeps, passId: string, sessionId: string, consent: CheckoutConsent, firstName = ""): Promise<FinishResult> {
   try {
-    if (!consent.termsAccepted) return { ok: false, problem: "invalid", message: "Please accept the terms to continue" }
+    if (!consent.termsAccepted) return { ok: false, problem: "invalid", message: TERMS_MESSAGE }
     const ctx = await deps.ctx(passId)
     const marketingChannels = [...(consent.marketingEmail ? ["email" as const] : []), ...(consent.marketingSms ? ["sms" as const] : [])]
     const detail = await callApi(ctx, passesActivate, { id: passId, setupSessionId: sessionId, consent: { termsAccepted: true as const, marketingOptIn: marketingChannels.length > 0, marketingChannels } })
@@ -166,5 +184,44 @@ export async function recordConsentWith(deps: CheckoutDeps, passId: string, cons
     await callApi(ctx, passesConsent, { id: passId, consent: { termsAccepted: true as const, marketingOptIn: marketingChannels.length > 0, marketingChannels } })
   } catch (error) {
     logCheckoutFailure("recordConsent", "card", passId, error)
+  }
+}
+
+/**
+ * The days to offer on the "Your days" step: `schedule.offerDays` for each visit still on sale this season, in the checkout's own
+ * context. A visit whose lookup fails is left out (its day comes from Ryan) rather than stopping the checkout.
+ */
+export async function offerDaysWith(deps: CheckoutDeps, q: OfferQuery): Promise<Offers> {
+  const ctx = await deps.ctx()
+  const offers: Offers = {}
+  for (const v of visitsOnSale(q.inspection, q.today)) {
+    try {
+      const { days } = await callApi(ctx, scheduleOfferDays, { town: q.town as Town, kind: v.key, season: q.season, zones: q.zones })
+      offers[v.key] = days.map(({ day, truckId, start, window }) => ({ day, truckId, start, window }))
+    } catch (error) {
+      logCheckoutFailure("offerDays", "contact", undefined, error)
+    }
+  }
+  return offers
+}
+
+/**
+ * Reserving the next season on the card already on file: the answers become `passes.create` with `renewOf`, which makes the pass
+ * active, schedules the days and queues the confirmation. The visitor must hold the signed link or be signed in as the pass's own
+ * customer; that is checked here, and only then does the call carry the right to renew that one pass.
+ */
+export async function renewCheckoutWith(deps: CheckoutDeps, renewal: Pick<RenewalPrefill, "passId" | "token">, f: CheckoutSubmission, principal: PersonPrincipal | null): Promise<FinishResult> {
+  try {
+    if (!f.consent.termsAccepted) return { ok: false, problem: "invalid", message: TERMS_MESSAGE }
+    const probe = await deps.ctx()
+    const [pass] = await probe.db.select({ id: s.seasonPass.id, customerId: s.seasonPass.customerId }).from(s.seasonPass).where(eq(s.seasonPass.id, renewal.passId))
+    if (!pass || !mayRenew(pass, { token: renewal.token, principal })) return { ok: false, problem: "invalid", message: "We couldn't match that link to your pass. Sign in to your pass page and reserve from there." }
+    const ctx = await deps.ctx(undefined, renewal.passId)
+    const channels = [...(f.consent.marketingEmail ? ["email" as const] : []), ...(f.consent.marketingSms ? ["sms" as const] : [])]
+    const detail = await callApi(ctx, passesCreate, { ...createInput(f), renewOf: renewal.passId, consent: { termsAccepted: true as const, marketingOptIn: channels.length > 0, marketingChannels: channels, source: "checkout" as const } })
+    return { ok: true, pass: passForDone(detail, f.firstName) }
+  } catch (error) {
+    logCheckoutFailure("renewCheckout", "card", renewal.passId, error)
+    return { ok: false, ...problemOf(error) }
   }
 }

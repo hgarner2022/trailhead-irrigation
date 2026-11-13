@@ -87,6 +87,6 @@ describe("SettingsScreen with actions", () => {
     render(<SettingsScreen data={data} today={TODAY} readOnly actions={{ save: vi.fn(), createKey: vi.fn(), revokeKey: vi.fn() }} />)
     expect(screen.queryByRole("button", { name: "Save" })).toBeNull()
     expect(screen.getByRole("textbox", { name: "Truck 2 name" })).toBeDisabled()
-    expect(screen.getByText("You can read the settings; a manager changes them.")).toBeInTheDocument()
+    expect(screen.getByText("You can read the settings. A manager changes them.")).toBeInTheDocument()
   })
 })

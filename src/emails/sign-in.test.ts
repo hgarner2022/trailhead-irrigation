@@ -4,9 +4,9 @@ import { signInEmail } from "./sign-in"
 const email = signInEmail({ url: "https://www.example.com/api/auth/callback/resend?token=a&b=c", host: "www.example.com" })
 
 describe("signInEmail", () => {
-  it("says it works once and for ten minutes", () => {
-    expect(email.text).toContain("It works once and for ten minutes.")
-    expect(email.html).toContain("It works once and for ten minutes.")
+  it("says the link works one time and expires in 10 minutes", () => {
+    expect(email.text).toContain("The link works one time and expires in 10 minutes.")
+    expect(email.html).toContain("The link works one time and expires in 10 minutes.")
   })
   it("carries the link in both parts, escaped in the HTML", () => {
     expect(email.text).toContain("token=a&b=c")

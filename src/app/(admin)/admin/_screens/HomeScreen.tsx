@@ -83,7 +83,7 @@ export function HomeScreen({ data, today, readOnly = false, onSchedule, onAttent
         <Card data-slot="season-prompt" className="border-primary/30 bg-primary/10">
           <CardHeader>
             <CardTitleHeading>{windowTitle(upcoming)}</CardTitleHeading>
-            <p className="text-sm text-foreground">Check the trucks, capacity and areas, then schedule the season: every pass visit gets its day and the customers get their dates.</p>
+            <p className="text-sm text-foreground">Check the trucks, capacity and areas, then schedule the season. Every pass visit gets a day and every customer gets a date.</p>
           </CardHeader>
           <CardContent className="flex flex-wrap gap-2">
             <Button variant="outline" asChild>

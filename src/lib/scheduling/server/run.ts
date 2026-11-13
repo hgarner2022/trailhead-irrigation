@@ -35,8 +35,8 @@ export function runSummary(window: RunWindow, placedDays: string[], placed: numb
 /**
  * Schedule: every "to schedule" pass visit of the window whose window opens within its lead weeks goes onto a truck-day, in one
  * step. The result is written as scheduled visits (day, truck, length), the day's stops are ordered, each customer is queued
- * their date, and Home gets one line for the run plus a row for each visit that could not be placed. A customer who must be home
- * is left for their own pick. Running it twice places nothing the second time.
+ * their date, and Home gets one line for the run plus a row for each visit that could not be placed. A visit marked as waiting for
+ * its customer's pick is left for it. Running it twice places nothing the second time.
  */
 export async function runSchedule(db: Database, input: { organizationId: string; window: RunWindow; season?: number; today: string; now?: Date; by?: string }): Promise<RunResult> {
   const { organizationId, window, today } = input
@@ -46,7 +46,7 @@ export async function runSchedule(db: Database, input: { organizationId: string;
   const closes = config?.closesOn.slice(0, 10) ?? today
 
   const rows = await db
-    .select({ visit: s.visit, firstName: s.customer.firstName, town: s.property.town, needsCustomerHome: s.seasonPass.needsCustomerHome })
+    .select({ visit: s.visit, firstName: s.customer.firstName, town: s.property.town })
     .from(s.visit)
     .innerJoin(s.seasonPass, eq(s.seasonPass.id, s.visit.passId))
     .innerJoin(s.customer, eq(s.customer.id, s.visit.customerId))
@@ -54,7 +54,7 @@ export async function runSchedule(db: Database, input: { organizationId: string;
     .where(and(eq(s.visit.organizationId, organizationId), eq(s.visit.kind, window), eq(s.visit.status, "unscheduled"), eq(s.seasonPass.status, "active"), eq(s.seasonPass.season, season)))
   const world = await loadWorld(db, organizationId, today, closes)
   const taken = await loadTaken(db, organizationId, today, closes)
-  const visits: SchedVisit[] = rows.map((r) => ({ id: r.visit.id, kind: r.visit.kind, town: r.town, preference: r.visit.preference, needsCustomerHome: r.needsCustomerHome || r.visit.awaitingPick, durationMinutes: r.visit.durationMinutes }))
+  const visits: SchedVisit[] = rows.map((r) => ({ id: r.visit.id, kind: r.visit.kind, town: r.town, preference: r.visit.preference, needsCustomerHome: r.visit.awaitingPick, durationMinutes: r.visit.durationMinutes }))
   const result = scheduleVisits({ visits, ...world, from: today, taken, blocks: world.blocks })
   const byId = new Map(rows.map((r) => [r.visit.id, r]))
 

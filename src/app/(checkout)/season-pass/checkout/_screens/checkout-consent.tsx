@@ -18,13 +18,13 @@ function TermsLink({ href, children }: { href: string; children: string }) {
 
 /** The id of the line that says the terms are still unticked; the flow's button points at it with `aria-describedby`. */
 export const CONSENT_PROBLEM_ID = "checkout-consent-problem"
-export const CONSENT_PROBLEM = "Please accept the terms to continue"
+export const CONSENT_PROBLEM = "Accept the terms to continue."
 
 // The Season Pass section of the terms page (version 2026-11, TERMS_VERSION); the second link is the terms as a whole.
 const SEASON_PASS_TERMS_HREF = "/terms#season-pass"
 
 const MARKETING = [
-  { key: "marketingEmail", label: "Seasonal tips and offers by email", note: "You can stop any time. Visit reminders and receipts are sent either way." },
+  { key: "marketingEmail", label: "Seasonal tips and offers by email", note: "You can stop any time. We send visit reminders and receipts either way." },
   { key: "marketingSms", label: "Seasonal tips and offers by text", note: "Message frequency varies. Msg and data rates may apply. Reply STOP to opt out. Consent is not a condition of purchase." },
 ] as const
 

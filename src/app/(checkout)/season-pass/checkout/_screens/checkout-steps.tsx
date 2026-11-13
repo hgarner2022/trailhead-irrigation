@@ -77,14 +77,14 @@ export function ZonesStep({ state, set }: StepProps) {
       <p data-slot="checkout-price" className="mt-10 font-display text-5xl leading-none text-navy tabular-nums">
         {formatMoney(priceOnSale(state.zones, state.inspection, state.today))}
       </p>
-      <p className="mt-2 text-base text-muted-foreground">per season, billed after each visit</p>
+      <p className="mt-2 text-base text-muted-foreground">per season, paid after each visit</p>
       <p className="mt-1 text-sm text-muted-foreground tabular-nums">
         {visitsOnSale(state.inspection, state.today).map((visit) => `${VISIT_SHORT[visit.key]} ${formatMoney(visitPrice(visit, state.zones))}`).join(" · ")}
       </p>
       {!visitsOnSale(state.inspection, state.today).some((v) => v.key === "turn-on") && (
-        <p data-slot="checkout-season-note" className="mt-3 text-sm text-muted-foreground">The spring turn-on has passed for this year, so your pass is what is still ahead.</p>
+        <p data-slot="checkout-season-note" className="mt-3 text-sm text-muted-foreground">The spring turn-on has passed for this year. Your pass covers the visits still ahead.</p>
       )}
-      <Helper>Six zones or fewer is the starting price. Not sure? Count the stations on your controller, or we confirm it on the first visit.</Helper>
+      <Helper>The price starts at six zones or fewer. Not sure how many you have? Count the stations on your controller, or we&apos;ll confirm on the first visit.</Helper>
     </>
   )
 }

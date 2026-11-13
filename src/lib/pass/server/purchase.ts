@@ -6,7 +6,7 @@ import { enqueue } from "@/lib/queue"
 import { baseData, loadVisitFacts } from "@/lib/messaging/data"
 import { queueMessage, queueStaffMessage } from "@/lib/messaging/queue"
 import { passImageUrl } from "@/lib/messaging/tokens"
-import { preferencePhrase } from "@/lib/admin/format"
+import { filledLine } from "@/emails/format"
 import { kindName } from "./messages"
 
 export interface PurchaseConsent {
@@ -70,12 +70,13 @@ export async function queuePurchaseConfirmation(db: Database, passId: string, or
   const { pass, customer } = row
   const org = pass.organizationId
   const visits = await db.select().from(s.visit).where(eq(s.visit.passId, pass.id))
-  const ordered = ["turn-on", "inspection", "blowout"].flatMap((k) => visits.filter((v) => v.kind === k))
+  const ordered = (["turn-on", "inspection", "blowout"] as const).flatMap((k) => visits.filter((v) => v.kind === k))
+  const filled = await db.select().from(s.passChange).where(and(eq(s.passChange.passId, pass.id), eq(s.passChange.kind, "day-filled")))
   const held = []
   for (const v of ordered) {
     const facts = v.scheduledOn ? await loadVisitFacts(db, v.id, origin) : null
-    const planned = v.preference && (v.kind === "turn-on" || v.kind === "blowout") ? `Planned for ${preferencePhrase(v.kind, v.preference)}. We will set the day and text you.` : "We will set the day and text you."
-    held.push({ name: kindName(v.kind), amount: v.amount, visit: facts, fallback: planned })
+    const moved = filled.find((c) => c.visitId === v.id)?.detail as { from?: string; to?: string } | undefined
+    held.push({ kind: v.kind, name: kindName(v.kind), amount: v.amount, visit: facts, fallback: "Ryan sets the day and we text it to you.", ...(moved?.from && v.scheduledOn ? { note: filledLine(moved.from, v.scheduledOn) } : {}) })
   }
   return queueMessage(db, {
     organizationId: org, customerId: customer.id, kind: "purchase-confirmation", key,

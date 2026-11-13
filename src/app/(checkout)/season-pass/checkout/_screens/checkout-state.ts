@@ -7,11 +7,13 @@
  * `useCheckoutState`, the thin hook the screen calls, lives in use-checkout-state.ts.
  */
 import type { Consent, Pass, PassVisit, TimingPreference, Town } from "@/lib/admin/types"
+import { instantOf } from "@/lib/admin/shape"
 import { emailProblem } from "@/lib/email-check"
 import { outOfAreaMessage, serviceability, type PlaceSuggestion } from "@/lib/places"
+import { daysComplete, choicesAfterOffer, type DayChoice, type Offers } from "./checkout-days"
 import { MAX_ZONES, MIN_ZONES, TERMS_VERSION, visitPrice, visitsOnSale } from "@/lib/season-pass"
 
-export type StepKey = "address" | "zones" | "inspection" | "timing" | "contact" | "card" | "done"
+export type StepKey = "address" | "zones" | "inspection" | "days" | "contact" | "card" | "done"
 
 export interface Step {
   key: StepKey
@@ -25,7 +27,7 @@ export const STEPS: readonly Step[] = [
   { key: "address", question: "Where is the yard?", action: "Continue" },
   { key: "zones", question: "How many zones does your system have?", action: "Continue" },
   { key: "inspection", question: "Add a mid-season inspection?", action: "Continue" },
-  { key: "timing", question: "When should we turn your system on?", action: "Continue" },
+  { key: "days", question: "Pick your days", action: "Continue" },
   { key: "contact", question: "Who should we reach?", action: "Continue" },
   { key: "card", question: "Save a card for after each visit.", action: "Save card and reserve" },
   { key: "done", question: "Your season is reserved" },
@@ -56,10 +58,11 @@ export interface CheckoutFields {
   zones: number
   /** the July inspection, an add-on; off unless the customer adds it */
   inspection: boolean
-  /** when the customer would like the spring turn-on; the recommendation is preselected */
+  /** kept at the recommendation: the checkout no longer asks for a timing, it offers days (`days`) */
   turnOnPreference: TimingPreference
-  /** when the customer would like the fall blowout; the recommendation is preselected */
   blowoutPreference: TimingPreference
+  /** the day held for each visit on the "Your days" step, the first offer unless the customer chose another */
+  days: DayChoice[]
   firstName: string
   email: string
   phone: string
@@ -87,6 +90,10 @@ export interface CheckoutState extends CheckoutFields {
   retry?: "finish" | "begin"
   /** when the card form's session was made (ms since the epoch); Stripe closes it after 45 minutes */
   sessionAt?: number
+  /** the days the server offered per visit for this address and zone count; null while they load */
+  offers: Offers | null
+  /** a renewal on the card already on file: no contact or card step, and the terms are accepted on the days step */
+  skipCard?: boolean
   /** a line that is not an error, such as "your saved checkout timed out"; cleared when the customer moves on */
   notice?: string
 }
@@ -95,6 +102,8 @@ export type CheckoutAction =
   | { type: "set"; field: keyof CheckoutFields; value: CheckoutFields[keyof CheckoutFields] }
   | { type: "typeAddress"; text: string }
   | { type: "pickPlace"; place: PlaceSuggestion }
+  /** the server's offered days arrived: keep a day still on offer, preselect the first otherwise */
+  | { type: "offered"; offers: Offers }
   | { type: "next" }
   | { type: "back" }
   | { type: "goTo"; step: number }
@@ -107,7 +116,7 @@ export type CheckoutAction =
   | { type: "restore"; step: number; passId?: string; fields: Partial<CheckoutFields> }
 
 /** Said once when a reload or a return visit lands on the contact step from the card step. */
-export const RESTORED_CARD_NOTICE = "Welcome back. Your details are here; accept the terms and continue to open the card form again."
+export const RESTORED_CARD_NOTICE = "Welcome back. Your details are saved. Accept the terms and continue to open the card form."
 
 const clampStep = (step: number) => Math.min(STEP_COUNT, Math.max(1, Math.trunc(step)))
 
@@ -124,6 +133,8 @@ export function initialState(prefill: Partial<CheckoutState> = {}): CheckoutStat
     inspection: false,
     turnOnPreference: "recommended",
     blowoutPreference: "recommended",
+    days: [],
+    offers: null,
     firstName: "",
     email: "",
     phone: "",
@@ -165,6 +176,8 @@ export function stepProblems(state: CheckoutState): string[] {
       return [...(addressProblem(state, true) ? ["Address"] : []), ...(state.place && state.access === null ? ["Access"] : [])]
     case "contact":
       return [...(["firstName", "email", "phone"] as const).filter((f) => contactProblem(f, state[f]) !== null).map((f) => label[f]), ...(state.termsAccepted ? [] : ["Terms"])]
+    case "days":
+      return state.skipCard && !state.termsAccepted ? ["Terms"] : []
     default:
       return []
   }
@@ -179,8 +192,10 @@ export function canContinue(state: CheckoutState): boolean {
       return Number.isInteger(state.zones) && state.zones >= MIN_ZONES && state.zones <= MAX_ZONES
     // The add-on starts answered (off), and both preferences start on the recommendation.
     case "inspection":
-    case "timing":
       return true
+    // Every visit with days on offer holds one (the first is preselected); with none on offer Ryan sets that day.
+    case "days":
+      return daysComplete(state.offers, state.days) && (!state.skipCard || state.termsAccepted)
     // The terms are accepted here, so Continue on the contact step is the moment of acceptance.
     case "contact":
       return state.termsAccepted && (["firstName", "email", "phone"] as const).every((f) => contactProblem(f, state[f]) === null)
@@ -196,14 +211,17 @@ const isDone = (state: CheckoutState) => STEPS[state.step - 1]?.key === "done"
 export function reducer(state: CheckoutState, action: CheckoutAction): CheckoutState {
   switch (action.type) {
     case "set":
-      return { ...state, [action.field]: action.value, failure: undefined, retry: undefined, notice: undefined }
+      // New zones or add-on mean new days on offer.
+      return { ...state, [action.field]: action.value, ...(action.field === "zones" || action.field === "inspection" ? { offers: null } : {}), failure: undefined, retry: undefined, notice: undefined }
     // Typing again drops the pick and the town it gave; a pick fills all three at once.
     case "typeAddress":
       return { ...state, address: action.text, place: null, town: null }
     case "pickPlace": {
       const check = serviceability(action.place)
-      return { ...state, address: action.place.label, place: action.place, town: check.ok ? check.town : null }
+      return { ...state, address: action.place.label, place: action.place, town: check.ok ? check.town : null, offers: null }
     }
+    case "offered":
+      return { ...state, offers: action.offers, days: choicesAfterOffer(action.offers, state.days) }
     case "next": {
       if (!canContinue(state)) return state
       const saved = STEPS[state.step - 1].key === "card" ? true : state.cardSaved
@@ -248,12 +266,15 @@ export function toConsent(state: Pick<CheckoutFields, "marketingEmail" | "market
   }
 }
 
+const dayFields = (d: DayChoice | undefined): Partial<PassVisit> => (d ? { scheduledAt: instantOf(d.day, d.start), scheduledOn: d.day, startTime: d.start } : {})
+
 /** The pass the last screen shows, built from the answers. Ids and links are placeholders until the wiring phase; `at` is when the terms were accepted. */
 export function toPass(state: CheckoutState, season: number, at = new Date().toISOString()): Pass {
   const visits: PassVisit[] = visitsOnSale(state.inspection, state.today).map((v) => ({
     kind: v.key,
     window: VISIT_WINDOWS[v.key],
     amount: visitPrice(v, state.zones),
+    ...dayFields(state.days.find((d) => d.kind === v.key)),
   }))
   return {
     id: "p-new",

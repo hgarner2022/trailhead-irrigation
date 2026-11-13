@@ -9,12 +9,16 @@ const origin = "https://www.trailheadirrigation.com"
 const base = { origin, firstName: "Andrea", passUrl: `${origin}/account/pass`, signInUrl: `${origin}/account/sign-in?email=andrea%40example.com` }
 const visit: VisitFacts = { id: "v1", name: "spring turn-on", day: "2027-05-05", startTime: "08:00", crew: "Ryan's truck", location: "412 Ash St, Erie", icsUrl: `${origin}/api/visits/v1/calendar.ics?token=abc` }
 
+const blowoutVisit: VisitFacts = { ...visit, id: "v2", name: "fall blowout", day: "2027-10-05", icsUrl: `${origin}/api/visits/v2/calendar.ics?token=def` }
+const TWO_DAYS = { ...base, passNumber: "TH-2027-0004", season: 2027, town: "Erie", passImageUrl: `${origin}/api/pass-image/p1?token=t`, cardLast4: "4242", visits: [{ kind: "turn-on", name: "spring turn-on", amount: 145, visit, fallback: "" }, { kind: "blowout", name: "fall blowout", amount: 95, visit: blowoutVisit, fallback: "", note: "Your first choice, Friday, October 1, filled up, so we put it on Tuesday, October 5." }] }
+
 const DATA: Record<keyof typeof EMAIL_TEMPLATES, Record<string, unknown>> = {
-  "purchase-confirmation": { ...base, passNumber: "TH-2027-0004", season: 2027, town: "Erie", passImageUrl: `${origin}/api/pass-image/p1?token=t`, cardLast4: "4242", visits: [{ name: "spring turn-on", amount: 145, visit, fallback: "" }, { name: "fall blowout", amount: 95, visit: null, fallback: "We'll set the day and text you." }] },
+  "purchase-confirmation": { ...base, passNumber: "TH-2027-0004", season: 2027, town: "Erie", passImageUrl: `${origin}/api/pass-image/p1?token=t`, cardLast4: "4242", visits: [{ kind: "turn-on", name: "spring turn-on", amount: 145, visit, fallback: "" }, { kind: "blowout", name: "fall blowout", amount: 95, visit: null, fallback: "Ryan sets the day and we text it to you." }] },
   "booking-confirmation": { ...base, serviceName: "sprinkler repair", visit },
   "date-set": { ...base, visit },
   "date-moved": { ...base, visit },
   "day-before": { ...base, visit },
+  "date-confirm": { ...base, visit },
   receipt: { ...base, passNumber: "TH-2027-0004", amount: 145, visitName: "spring turn-on", card: "Visa ending 4242", nextLine: "Your fall blowout is planned for early October.", receiptUrl: "https://pay.stripe.com/r/1" },
   "card-failed": { ...base, passNumber: "TH-2027-0004", amount: 145, visitName: "spring turn-on", updateUrl: "https://billing.stripe.com/s/1" },
   "card-expiring": { ...base, passNumber: "TH-2027-0004", cardState: "expires in July 2027", left: 190, updateUrl: "https://billing.stripe.com/s/2" },
@@ -54,16 +58,27 @@ describe("wording per kind", () => {
   const get = (k: keyof typeof DATA) => renderEmail(k, DATA[k])!
   it("purchase-confirmation puts the pass image first, then each visit's day with calendar links, the text promise, the money line and the button", () => {
     const { html, text, subject } = get("purchase-confirmation")
-    expect(subject).toBe("Your Trailhead Season Pass TH-2027-0004 is ready")
+    expect(subject).toBe("Your Season Pass is reserved")
     expect(html.indexOf("/api/pass-image/p1?token=t")).toBeLessThan(html.indexOf("Wednesday, May 5, between 8 and 10 am"))
     expect(html.indexOf("Add to Google Calendar")).toBeLessThan(html.indexOf("Open your pass page"))
     expect(html).toContain("Add to Apple or Outlook calendar")
     expect(html).toContain("/api/visits/v1/calendar.ics?token=abc")
     expect(text).toContain("Spring turn-on: Wednesday, May 5, between 8 and 10 am")
-    expect(text).toContain("Fall blowout: We'll set the day and text you.")
-    expect(text).toContain("We confirm it by text two weeks before. If it has to move, we tell you first and you can pick another day.")
-    expect(text).toContain("Nothing today. $145 after the spring turn-on, $95 after the fall blowout, to the card ending 4242.")
+    expect(text).toContain("Fall blowout: Ryan sets the day and we text it to you.")
+    expect(text).toContain("Ryan sets the days that are missing and we text them to you.")
+    expect(text).not.toMatch(/days are set|reserved in July|on our way/)
+    expect(text).toContain("We confirm it by text two weeks before and remind you the day before. If it has to move, we tell you first and you can pick another day.")
+    expect(text).toContain("You pay $0 today. We charge $145 after the spring turn-on and $95 after the fall blowout to the card ending 4242.")
     expect(html).toContain("/account/sign-in?email=andrea%40example.com")
+  })
+  it("purchase-confirmation with every visit dated says so, shows what Ryan does, and says when a day filled up", () => {
+    const { html, text } = renderEmail("purchase-confirmation", TWO_DAYS)!
+    expect(text).toContain("Here are your days.")
+    expect(text).toContain("Fall blowout: Tuesday, October 5, between 8 and 10 am")
+    expect(text).toContain("Your first choice, Friday, October 1, filled up, so we put it on Tuesday, October 5.")
+    expect(text).toContain("Ryan blows the water out of every line before the first hard freeze.")
+    expect(html.match(/Add to Google Calendar/g)).toHaveLength(2)
+    expect(html.match(/Add to Apple or Outlook calendar/g)).toHaveLength(2)
   })
   it.each(["date-set", "date-moved", "day-before", "booking-confirmation"] as const)("%s has the day, the two-hour window, who is coming and both calendar links", (kind) => {
     const { html, text } = get(kind)
@@ -95,20 +110,20 @@ describe("wording per kind", () => {
     expect(text).toContain("Your fall blowout is planned for early October.")
   })
   it("card-failed and card-expiring carry the update link and the amount", () => {
-    expect(get("card-failed").text).toContain("declined for $145")
+    expect(get("card-failed").text).toContain("didn't go through for $145")
     expect(get("card-failed").text).toContain("https://billing.stripe.com/s/1")
     expect(get("card-expiring").text).toContain("expires in July 2027, and $190 of visits are still to come")
     expect(get("card-expiring").subject).toBe("Add a card to your Season Pass")
   })
   it("cancelled says nothing further is charged", () => {
-    expect(get("cancelled").text).toContain("Nothing further will be charged.")
+    expect(get("cancelled").text).toContain("We won't charge you again.")
   })
   it("renewal names the season and offers the pass page, with a way to stop", () => {
     expect(get("renewal").subject).toBe("Season Pass 2028 is open")
     expect(get("renewal").html).toContain("Reply to stop these emails.")
   })
   it("the crew note counts the visits and the office alert opens the admin", () => {
-    expect(get("not-closed-crew").subject).toBe("2 visits are not closed yet")
+    expect(get("not-closed-crew").subject).toBe("2 visits still need to be marked done")
     expect(get("not-closed-crew").text).toContain("Ben, Lafayette: fall blowout on Monday, October 4")
     expect(get("admin-alert").html).toContain(`${origin}/admin/passes`)
   })
@@ -174,6 +189,7 @@ describe("a rendered file to look at", () => {
     mkdirSync(".local-data/wiring/messages", { recursive: true })
     const local = (html: string) => html.replace(`${origin}/api/pass-image/p1?token=t`, "pass-image.png").replace(`${origin}/images/`, "../../../public/images/")
     writeFileSync(".local-data/wiring/messages/purchase-confirmation.html", local(renderEmail("purchase-confirmation", DATA["purchase-confirmation"])!.html))
+    writeFileSync(".local-data/wiring/messages/purchase-confirmation-2.html", local(renderEmail("purchase-confirmation", TWO_DAYS)!.html))
     writeFileSync(".local-data/wiring/messages/date-set.html", local(renderEmail("date-set", DATA["date-set"])!.html))
   })
 })

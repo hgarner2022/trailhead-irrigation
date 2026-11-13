@@ -85,7 +85,7 @@ describe("the admin pages", () => {
     try {
       expect(html(await PassesPage(search({})))).toContain('data-slot="passes-screen"')
       const settings = html(await SettingsPage())
-      expect(settings).toContain("You can read the settings; a manager changes them.")
+      expect(settings).toContain("You can read the settings. A manager changes them.")
       expect(settings).not.toContain(">Save<")
       expect(html(await HomePage())).not.toContain('data-slot="attention-action"')
       expect(html(await SchedulePage(search({})))).not.toContain("Schedule 1 visit")

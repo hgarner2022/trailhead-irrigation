@@ -43,7 +43,7 @@ export function InspectionStep({ state, set }: StepProps) {
           )
         })}
       </div>
-      <Helper>In July we run every zone, look for coverage gaps, clogged nozzles and zones running long, and adjust what we find. Billed after the visit like the others, and you can add it later by replying to any of our emails.</Helper>
+      <Helper>In July we run every zone and look for coverage gaps, clogged nozzles and zones that run long. We adjust what we find. You pay after the visit, like the others, and you can add it later by replying to any of our emails.</Helper>
     </>
   )
 }

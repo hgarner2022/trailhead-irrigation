@@ -76,7 +76,7 @@ export function SeasonPassCalculator({
           ))}
           <li className="flex items-start gap-2.5 text-sm">
             <CheckCircle2 className="h-5 w-5 text-success shrink-0 mt-0.5" aria-hidden="true" />
-            <span className="text-foreground">Blowout date reserved in July, before the freeze rush</span>
+            <span className="text-foreground">Your blowout is scheduled before the freeze rush</span>
           </li>
           <li>
             <label className="flex items-start gap-2.5 text-sm">

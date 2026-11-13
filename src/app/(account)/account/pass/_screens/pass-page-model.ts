@@ -50,7 +50,7 @@ export const visitRows = (pass: Pass): VisitRow[] => pass.visits.map((v) => visi
 /** The turn-on and the blowout can be moved by the customer until a day is set; the inspection has no preference. */
 export const canChange = (visit: PassVisit): visit is PassVisit & { kind: "turn-on" | "blowout" } => visit.kind !== "inspection" && !visit.scheduledAt && !visit.completedAt
 
-export type HeadlineAction = "pick-day" | "change-day" | "update-card" | "renew" | "book" | null
+export type HeadlineAction = "pick-day" | "change-day" | "update-card" | "reserve-next" | "book" | null
 
 export interface Headline {
   title: string
@@ -66,26 +66,27 @@ const upcoming = (pass: Pass) => pass.visits.find((v) => !v.completedAt)
 /**
  * The one thing that matters to this customer right now, read top to bottom:
  * a failed card first, then cancelled, then a day to pick, then the next
- * visit, then a season that is done (with renewal once the next season is
+ * visit, then a season that is done (with "Reserve next season" once the next season is
  * on sale). Hannah, 2026-11-13: "think through the different states".
  */
-export function passHeadline(pass: Pass, today: string): Headline {
+export function passHeadline(pass: Pass, today: string, pickable: readonly string[] = []): Headline {
   if (pass.status === "cancelled") return { title: "This pass is cancelled.", line: "Nothing further is charged and no more visits are placed. Book any visit online whenever you like.", action: "book" }
-  if (pass.cardFailedAt) return { title: "Your card didn't go through.", line: "Update it and we'll try again; your visits stay as they are until then.", action: "update-card" }
+  if (pass.cardFailedAt) return { title: "Your card didn't go through.", line: "Update it and we'll try again. Your visits stay as they are until then.", action: "update-card" }
   const next = upcoming(pass)
   if (!next) {
     const renewalOpen = today >= `${pass.season}${SEASON_ROLLS}`
     return renewalOpen
-      ? { title: `Your ${pass.season} season is done.`, line: `Reserve ${pass.season + 1} on the same card; nothing is charged until a visit is done.`, action: "renew" }
+      ? { title: `Your ${pass.season} season is done.`, line: `Reserve ${pass.season + 1} on the same card. We charge it after each visit.`, action: "reserve-next" }
       : { title: `Your ${pass.season} season is done.`, line: `We'll email you in January about ${pass.season + 1}.`, action: null }
   }
   const row = visitRow(next, pass)
-  if (next.scheduledAt) return { title: `Next up: ${row.name.toLowerCase()}, ${writtenDate(next.scheduledAt)}.`, line: "We'll text you the day before, and when we're on our way.", action: "change-day", kind: next.kind }
-  if (pass.needsCustomerHome && next.kind !== "inspection") return { title: `Pick your ${row.name.toLowerCase()} day.`, line: "These are the days we're in your town. Pick the one that works and we'll see you then.", action: "pick-day", kind: next.kind }
+  if (next.scheduledAt) return { title: `Next up: ${row.name.toLowerCase()}, ${writtenDate(next.scheduledAt)}.`, line: "We confirm it by text two weeks before and remind you the day before.", action: "change-day", kind: next.kind }
+  // A visit with no day yet (an admin-made pass, or a day Ryan took back) offers the same three-day choice the checkout does.
+  if (pickable.includes(next.kind) && next.kind !== "inspection") return { title: `Pick your ${row.name.toLowerCase()} day.`, line: "These are the days we're in your town. Pick the one that works and we'll see you then.", action: "pick-day", kind: next.kind }
   const done = pass.visits.filter((v) => v.completedAt)
   const last = done[done.length - 1]
   const lastWords = last ? `${VISIT_NAMES[last.kind]} done ${writtenDate(last.completedAt!)}. ` : ""
-  const when = next.kind === "inspection" ? "in July" : `preferred ${preferencePhrase(next.kind, preferenceOf(pass, next.kind) ?? "recommended")}`
+  const when = next.kind === "inspection" ? "in July" : preferencePhrase(next.kind, preferenceOf(pass, next.kind) ?? "recommended")
   const tell = next.kind === "blowout" ? "We'll text your date in September." : next.kind === "inspection" ? "We'll text your date in June." : "We'll text your date in April."
   return { title: last ? `${lastWords}Next up: ${row.name.toLowerCase()}, ${when}.` : `Your ${pass.season} season is reserved.`, line: last ? tell : `${row.name} ${when}. ${tell}`, action: null, kind: next.kind }
 }
@@ -112,6 +113,13 @@ export function seasonSummary(pass: Pass): string {
   return paid > 0 ? `${visits}, $${paid.toLocaleString("en-US")} paid` : visits
 }
 
+/** The address of the checkout filled in from this pass: "Reserve next season" opens it. */
+export const reserveNextHref = (pass: Pass) => `/season-pass/checkout?renew=${pass.id}`
+
+/** From November 1 of the pass's season, while no later season is held: the customer can reserve the next one. */
+export const canReserveNext = (pass: Pass, passes: Pass[], today: string): boolean =>
+  pass.status === "active" && today >= `${pass.season}${SEASON_ROLLS}` && !passes.some((p) => p.season > pass.season && p.status === "active")
+
 /** Earlier seasons newest first, the current one left out. */
 export const earlierSeasons = (passes: Pass[], current: Pass): Pass[] => passes.filter((p) => p.id !== current.id && p.season < current.season).sort((a, b) => b.season - a.season)
 
@@ -131,7 +139,7 @@ export function seasonCaption(pass: Pass): string {
   if (!next) return `Every visit is done. We'll email you in January about ${pass.season + 1}.`
   const row = visitRow(next, pass)
   if (next.scheduledAt) return `Next up: ${row.name.toLowerCase()} on ${row.when}.`
-  if (next.kind === "blowout") return `Your blowout is preferred for ${preferencePhrase("blowout", pass.blowoutPreference)}. Ryan sets the day in September.`
-  if (next.kind === "turn-on") return `Next up: ${row.name.toLowerCase()}, preferred ${preferencePhrase("turn-on", pass.turnOnPreference)}.`
+  if (next.kind === "blowout") return `You asked for ${preferencePhrase("blowout", pass.blowoutPreference)} for your blowout. Ryan sets the day in September.`
+  if (next.kind === "turn-on") return `Next up: ${row.name.toLowerCase()}. You asked for ${preferencePhrase("turn-on", pass.turnOnPreference)}.`
   return `Next up: ${row.name.toLowerCase()} in ${row.when}.`
 }

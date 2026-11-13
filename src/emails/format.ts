@@ -60,3 +60,23 @@ export interface VisitFacts {
 }
 
 export const crewOf = (v: VisitFacts) => v.crew ?? "Ryan"
+
+/** What every dated message and the done step say about confirming a visit, so no screen promises a different timeline. */
+export const CONFIRM_LINE = "We confirm it by text two weeks before and remind you the day before. If it has to move, we tell you first and you can pick another day."
+
+/** What Ryan does at each visit, one plain line, as the done step and the confirmation say it. */
+export const RYAN_DOES = {
+  "turn-on": "Ryan turns the water on, runs every zone and checks the heads.",
+  inspection: "Ryan runs every zone and looks for coverage gaps, clogged nozzles and zones that run long, then adjusts what he finds.",
+  blowout: "Ryan blows the water out of every line before the first hard freeze.",
+} as const
+
+const andList = (items: string[]) => (items.length <= 2 ? items.join(" and ") : `${items.slice(0, -1).join(", ")}, and ${items.at(-1)}`)
+
+/** "You pay $0 today. We charge $145 after the spring turn-on and $95 after the fall blowout to the card ending 4242." */
+export function moneyLine(visits: { name: string; amount: number }[], cardLast4: string | null | undefined): string {
+  return `You pay $0 today. We charge ${andList(visits.map((v) => `${dollars(v.amount)} after the ${v.name}`))}${cardLast4 ? ` to the card ending ${cardLast4}` : ""}.`
+}
+
+/** The line for a visit whose chosen day filled up before the card was saved. */
+export const filledLine = (from: string, to: string) => `Your first choice, ${longDay(from)}, filled up, so we put it on ${longDay(to)}.`

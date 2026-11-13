@@ -6,6 +6,7 @@ import { randomUUID } from "node:crypto"
 import { readAppUrl } from "@/lib/env"
 import { baseData, loadVisitFacts } from "@/lib/messaging/data"
 import { queueMessage } from "@/lib/messaging/queue"
+import { renewUrl } from "@/lib/messaging/tokens"
 import { queuePurchaseConfirmation } from "@/lib/pass/server/purchase"
 import { ApiError } from "../../core/errors"
 import { defineHandler } from "../../core/handler"
@@ -70,7 +71,7 @@ export const messagesSend = defineHandler({
         else if (input.kind === "cancelled") queued = await queueMessage(ctx.db, { ...base, kind: "cancelled", data: { ...baseData(origin, customer), passNumber: pass.number } })
         else {
           const [prop] = await ctx.db.select({ town: s.property.town }).from(s.property).where(eq(s.property.id, pass.propertyId))
-          queued = await queueMessage(ctx.db, { ...base, kind: "renewal", data: { ...baseData(origin, customer), season: pass.season + 1, town: prop?.town ?? "your home", buyUrl: `${origin}/season-pass` } })
+          queued = await queueMessage(ctx.db, { ...base, kind: "renewal", data: { ...baseData(origin, customer), season: pass.season + 1, town: prop?.town ?? "your home", buyUrl: renewUrl(origin, pass.id) } })
         }
       } else throw new ApiError("unprocessable", "That message goes out on its own event: a receipt after a visit is charged, a card message when a card fails or is removed")
     }

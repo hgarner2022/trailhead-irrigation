@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest"
 import { FIXTURE_HOME, FIXTURE_PLACES } from "@/lib/places/fixture"
+import { fixtureOffers, withChoice } from "./checkout-days"
 import { PICK_ADDRESS, STEPS, addressProblem, canContinue, contactProblem, initialState, reducer, toConsent, toPass, type CheckoutState } from "./checkout-state"
 
 const boulder = FIXTURE_PLACES.find((p) => p.town === "Boulder")!
@@ -23,14 +24,16 @@ const filled: CheckoutState = {
   marketingEmail: false,
   marketingSms: false,
   cardSaved: false,
+  days: [],
+  offers: null,
 }
 
 describe("step order", () => {
-  it("has seven steps: address, zones, the July add-on, timing, contact, card and done", () => {
+  it("has seven steps: address, zones, the July add-on, your days, contact, card and done", () => {
     expect(STEPS).toHaveLength(7)
-    expect(STEPS.map((s) => s.key)).toEqual(["address", "zones", "inspection", "timing", "contact", "card", "done"])
+    expect(STEPS.map((s) => s.key)).toEqual(["address", "zones", "inspection", "days", "contact", "card", "done"])
     expect(STEPS[2]).toEqual({ key: "inspection", question: "Add a mid-season inspection?", action: "Continue" })
-    expect(STEPS[3]).toEqual({ key: "timing", question: "When should we turn your system on?", action: "Continue" })
+    expect(STEPS[3]).toEqual({ key: "days", question: "Pick your days", action: "Continue" })
   })
 
   it("starts on the address step with the minimum zones, both recommendations and no consent", () => {
@@ -60,6 +63,7 @@ describe("step order", () => {
     expect(s.step).toBe(3)
     s = reducer(s, { type: "next" })
     expect(s.step).toBe(4)
+    s = reducer(s, { type: "offered", offers: fixtureOffers(2027, ["turn-on", "blowout"]) })
     s = reducer(s, { type: "next" })
     expect(s.step).toBe(5)
     s = reducer(s, { type: "next" })
@@ -165,11 +169,40 @@ describe("canContinue", () => {
     expect(canContinue({ ...filled, step: 2, zones: 16 })).toBe(true)
   })
 
-  it("inspection and timing: always have an answer, the add-on off and the recommendation preselected", () => {
+  it("inspection: always has an answer, the add-on off", () => {
     expect(canContinue({ ...initialState(), step: 3 })).toBe(true)
     expect(canContinue({ ...filled, step: 3, inspection: true })).toBe(true)
-    expect(canContinue({ ...initialState(), step: 4 })).toBe(true)
-    expect(canContinue({ ...filled, step: 4, turnOnPreference: "later", blowoutPreference: "earlier" })).toBe(true)
+  })
+
+  it("days: waits for the offers, needs a day for each visit that has days on offer, and passes when none are on offer", () => {
+    const offers = fixtureOffers(2027, ["turn-on", "blowout"])
+    expect(canContinue({ ...filled, step: 4 })).toBe(false)
+    expect(canContinue({ ...filled, step: 4, offers })).toBe(false)
+    const loaded = reducer({ ...filled, step: 4 }, { type: "offered", offers })
+    expect(loaded.days.map((d) => [d.kind, d.day])).toEqual([["turn-on", offers["turn-on"]![0]!.day], ["blowout", offers.blowout![0]!.day]])
+    expect(canContinue(loaded)).toBe(true)
+    expect(canContinue({ ...filled, step: 4, offers: {} })).toBe(true)
+    expect(canContinue({ ...filled, step: 4, offers, days: [loaded.days[0]!] })).toBe(false)
+  })
+
+  it("days: a fresh set of offers keeps a day the customer chose that is still on offer, and drops one that is not", () => {
+    const offers = fixtureOffers(2027, ["turn-on"])
+    const first = reducer({ ...filled, step: 4 }, { type: "offered", offers })
+    const chosen = withChoice(first.days, offers["turn-on"]![2]!, "turn-on")
+    expect(reducer({ ...first, days: chosen }, { type: "offered", offers }).days[0]!.day).toBe(offers["turn-on"]![2]!.day)
+    expect(reducer({ ...first, days: chosen }, { type: "offered", offers: { "turn-on": offers["turn-on"]!.slice(0, 2) } }).days[0]!.day).toBe(offers["turn-on"]![0]!.day)
+  })
+
+  it("days: new zones or a new address clear the offers so the step asks again", () => {
+    const loaded = reducer({ ...filled, step: 4 }, { type: "offered", offers: fixtureOffers(2027, ["turn-on"]) })
+    expect(reducer(loaded, { type: "set", field: "zones", value: 10 }).offers).toBeNull()
+    expect(reducer(loaded, { type: "pickPlace", place: FIXTURE_HOME }).offers).toBeNull()
+  })
+
+  it("toPass carries each held day as the visit's day and window", () => {
+    const offers = fixtureOffers(2027, ["turn-on", "blowout"])
+    const state = reducer({ ...filled, step: 4 }, { type: "offered", offers })
+    expect(toPass(state, 2027).visits.map((v) => [v.kind, v.scheduledOn, v.startTime])).toEqual([["turn-on", offers["turn-on"]![0]!.day, "08:00"], ["blowout", offers.blowout![0]!.day, "08:00"]])
   })
 
   it("contact: needs a name, an email with an @ and a ten-digit phone", () => {

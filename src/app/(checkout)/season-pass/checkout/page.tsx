@@ -1,10 +1,13 @@
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
+import { auth } from "@/auth"
+import { db } from "@/db"
+import { loadRenewal } from "@/lib/pass/server/renewal"
 import { readOptionalEnv } from "@/lib/env"
 import { checkoutEnabled } from "@/lib/flags"
 import { MAX_ZONES, MIN_ZONES } from "@/lib/season-pass"
 import { CheckoutClient } from "./CheckoutClient"
-import { beginCheckout, finishCheckout } from "./actions"
+import { beginCheckout, finishCheckout, offerDays, renewCheckout } from "./actions"
 
 // The Season Pass checkout, served only while SEASON_PASS_CHECKOUT=on. With
 // NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY set it is wired to the server actions in
@@ -30,20 +33,23 @@ function seasonFor(today: Date): number {
   return month >= 11 ? year + 1 : year
 }
 
-export default async function CheckoutPage({ searchParams }: { searchParams: Promise<{ zones?: string }> }) {
+export default async function CheckoutPage({ searchParams }: { searchParams: Promise<{ zones?: string; renew?: string; token?: string }> }) {
   if (!checkoutEnabled()) notFound()
-  const { zones } = await searchParams
+  const { zones, renew, token } = await searchParams
   const parsed = Number(zones)
   const initialZones = Number.isInteger(parsed) && parsed >= MIN_ZONES && parsed <= MAX_ZONES ? parsed : undefined
   const now = new Date()
+  // "?renew=<pass id>": the checkout filled in from the customer's last pass, for the signed-in customer or a visitor with the email's signed link; anyone else gets the ordinary checkout.
+  const renewal = renew ? await loadRenewal(db(), { passId: renew, token, principal: (await auth())?.principal ?? null, today: denverDay(now) }) : null
   // With a publishable key the checkout is wired to the server actions and Stripe's card form; without one it is the prototype.
   const stripeKey = readOptionalEnv("NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY")
   return (
     <CheckoutClient
-      season={seasonFor(now)}
+      season={renewal?.season ?? seasonFor(now)}
       today={denverDay(now)}
       initialZones={initialZones}
-      {...(stripeKey ? { stripeKey, onBegin: beginCheckout, onFinish: finishCheckout } : {})}
+      renewal={renewal ?? undefined}
+      {...(stripeKey ? { stripeKey, onBegin: beginCheckout, onFinish: finishCheckout, onOffer: offerDays, onRenew: renewCheckout } : {})}
     />
   )
 }

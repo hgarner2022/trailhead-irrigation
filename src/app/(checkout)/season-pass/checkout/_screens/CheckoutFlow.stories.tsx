@@ -3,12 +3,14 @@ import { expect, fn } from "storybook/test"
 import { savePassImage } from "@/lib/pass-card-image"
 import { FIXTURE_HOME } from "@/lib/places/fixture"
 import { CheckoutFlow } from "./CheckoutFlow"
+import { choicesAfterOffer, fixtureOffers } from "./checkout-days"
 import type { CheckoutFields } from "./checkout-state"
 
 // The step stories open on one step with the earlier answers prefilled;
 // Walkthrough answers every question from the first screen, including the
-// consent boxes, and lands on the pass card. The timing step opens with both
+// consent boxes, and lands on the pass card. The days step opens with three days for each visit and
 // recommendations preselected, so it needs nothing prefilled.
+const DAYS = choicesAfterOffer(fixtureOffers(2027, ["turn-on", "blowout"]), [])
 const answers: Partial<CheckoutFields> = {
   address: FIXTURE_HOME.label,
   place: FIXTURE_HOME,
@@ -68,10 +70,31 @@ export const Inspection: Story = {
   globals: { viewport: { value: "wide", isRotated: false } },
 }
 
-/** Both questions on one screen, the recommendation preselected for each. */
-export const Timing: Story = {
-  args: { initialStep: 4, prefill: { ...answers, turnOnPreference: "recommended" } },
+/** Three open days for each visit, the first preselected, one line under them about changing it later. */
+export const Days: Story = {
+  args: { initialStep: 4, prefill: answers },
   globals: { viewport: { value: "wide", isRotated: false } },
+  play: async ({ canvas }) => {
+    const radios = await canvas.findAllByRole("radio")
+    await expect(radios).toHaveLength(6)
+    await expect(radios[0]).toBeChecked()
+    await expect(canvas.getByText("Change it later from your pass page.")).toBeInTheDocument()
+  },
+}
+
+/** A renewal: filled in from the last pass, no contact or card step, the card on file named under the days and the terms ticked there. */
+export const Renewal: Story = {
+  args: {
+    season: 2028,
+    today: "2027-11-02",
+    initialStep: 4,
+    renewal: { passId: "p-last", season: 2028, firstName: "Andrea", email: "andrea@example.com", phone: "(970) 555-0123", place: { id: "property-1", label: "123 Trailhead Way, Erie, CO", line1: "123 Trailhead Way", town: "Erie", state: "CO", zip: "80516" }, zones: 8, inspection: false, needsCustomerHome: false, accessNote: "", card: { last4: "4242", expires: "2029-08" } },
+  },
+  globals: { viewport: { value: "wide", isRotated: false } },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText(/Card ending 4242 on file,/)).toBeInTheDocument()
+    await expect(canvas.getByRole("button", { name: "Reserve 2028" })).toBeInTheDocument()
+  },
 }
 
 export const Contact: Story = {
@@ -85,7 +108,7 @@ export const ContactErrors: Story = {
   globals: { viewport: { value: "wide", isRotated: false } },
   play: async ({ canvas, userEvent }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Continue" }))
-    await expect(await canvas.findByRole("alert")).toHaveTextContent("3 things need another look: First name, Email, Phone")
+    await expect(await canvas.findByRole("alert")).toHaveTextContent("Check these before you continue: First name, Email, Phone.")
     await expect(canvas.getByLabelText("First name")).toHaveFocus()
   },
 }
@@ -106,7 +129,7 @@ export const ContactTermsMissing: Story = {
   globals: { viewport: { value: "wide", isRotated: false } },
   play: async ({ canvas, userEvent }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Continue" }))
-    await expect(await canvas.findByText("Please accept the terms to continue")).toBeInTheDocument()
+    await expect(await canvas.findByText("Accept the terms to continue.")).toBeInTheDocument()
     await expect(canvas.getByRole("checkbox", { name: /I accept the Season Pass terms/ })).toHaveFocus()
   },
 }
@@ -163,7 +186,7 @@ export const RestoredExpired: Story = {
 }
 
 export const Done: Story = {
-  args: { initialStep: 7, prefill: { ...answers, termsAccepted: true, marketingEmail: true, marketingSms: true, cardSaved: true }, onSaveImage: savePassImage },
+  args: { initialStep: 7, prefill: { ...answers, days: DAYS, termsAccepted: true, marketingEmail: true, marketingSms: true, cardSaved: true }, onSaveImage: savePassImage },
   globals: { viewport: { value: "wide", isRotated: false } },
 }
 
@@ -184,8 +207,9 @@ export const Walkthrough: Story = {
     await userEvent.click(await canvas.findByRole("button", { name: /Yes, add July/ }))
     await userEvent.click(canvas.getByRole("button", { name: "Continue" }))
 
-    await expect(await canvas.findByRole("button", { name: "Recommended Mid May", pressed: true })).toBeInTheDocument()
-    await userEvent.click(canvas.getByRole("button", { name: "Later Late October" }))
+    const radios = await canvas.findAllByRole("radio")
+    await expect(radios[0]).toBeChecked()
+    await userEvent.click(radios[8]!)
     await userEvent.click(canvas.getByRole("button", { name: "Continue" }))
 
     await userEvent.type(await canvas.findByLabelText("First name"), "Andrea")
@@ -196,7 +220,7 @@ export const Walkthrough: Story = {
     await userEvent.click(canvas.getByRole("button", { name: "Continue" }))
 
     await userEvent.click(await canvas.findByRole("button", { name: "Save card and reserve" }))
-    await expect(await canvas.findByRole("article", { name: "Season Pass 2027 for Andrea, Erie, turn-on preferred mid May, blowout preferred late October" })).toBeInTheDocument()
+    await expect(await canvas.findByRole("article", { name: /Season Pass 2027 for Andrea, Erie/ })).toBeInTheDocument()
     await expect(args.onComplete).toHaveBeenCalledTimes(1)
   },
 }
@@ -206,7 +230,7 @@ export const Phone: Story = {
   globals: { viewport: { value: "phone", isRotated: false } },
 }
 
-export const PhoneTiming: Story = {
+export const PhoneDays: Story = {
   args: { initialStep: 4, prefill: answers },
   globals: { viewport: { value: "phone", isRotated: false } },
 }
@@ -229,6 +253,6 @@ export const PhoneCard: Story = {
 }
 
 export const PhoneDone: Story = {
-  args: { initialStep: 7, prefill: { ...answers, termsAccepted: true, cardSaved: true }, onSaveImage: savePassImage },
+  args: { initialStep: 7, prefill: { ...answers, days: DAYS, termsAccepted: true, cardSaved: true }, onSaveImage: savePassImage },
   globals: { viewport: { value: "phone", isRotated: false } },
 }

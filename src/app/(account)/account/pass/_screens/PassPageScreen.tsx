@@ -13,7 +13,7 @@ import { PassActions } from "@/components/blocks/PassActions"
 import { PreferenceDialog } from "@/components/blocks/PreferenceDialog"
 import { AddToCalendar } from "./AddToCalendar"
 import { PickDayButtons } from "./PickDayButtons"
-import { bookedWhen, canChange, cardLine, earlierSeasons, passHeadline, pickDayOptions, seasonCaption, visitRows } from "./pass-page-model"
+import { bookedWhen, canChange, canReserveNext, reserveNextHref, cardLine, earlierSeasons, passHeadline, pickDayOptions, seasonCaption, visitRows } from "./pass-page-model"
 
 // The customer's pass page: a season card, not a dashboard. The pass card at
 // the top, the season line with the visits and their state, the card
@@ -40,7 +40,7 @@ export interface PassPageScreenProps {
   onChangePreference?: (kind: "turn-on" | "blowout", preference: TimingPreference) => void
   onAddInspection?: (passId: string) => void
   onSkip?: (passId: string, kind: Pass["visits"][number]["kind"]) => void
-  /** a customer who must be home picked one of the offered days */
+  /** the customer picked one of the offered days, to set a day or to change it */
   onPickDay?: (kind: "turn-on" | "blowout", dayIso: string) => ActionResult | Promise<ActionResult>
   /** the customer asked to update the card; the wiring sends them to Stripe's hosted page. Rendered as a form action. */
   onUpdateCard?: () => void | Promise<void>
@@ -66,7 +66,7 @@ function Title({ children }: { children: string }) {
 export function PassPageScreen({ pass, passes = [pass], today, onCancel, onChangePreference, onAddInspection, onSkip, onPickDay, onUpdateCard, pickDays }: PassPageScreenProps) {
   const cancelled = pass.status === "cancelled"
   const earlier = earlierSeasons(passes, pass)
-  const headline = passHeadline(pass, today)
+  const headline = passHeadline(pass, today, pickDays ? Object.keys(pickDays) : ["turn-on", "blowout"])
   return (
     <div data-slot="pass-page" data-status={pass.status} className="min-h-svh bg-cream text-foreground">
       <div className="mx-auto max-w-3xl space-y-8 container-padding-x py-10">
@@ -92,12 +92,14 @@ export function PassPageScreen({ pass, passes = [pass], today, onCancel, onChang
           )}
           {headline.action === "change-day" && headline.kind && headline.kind !== "inspection" && (
             <div className="mt-5">
-              <PickDayButtons kind={headline.kind} days={pickDays?.[headline.kind] ?? pickDayOptions(pass, headline.kind)} onPick={onPickDay} foldedLabel="Pick a different day" />
+              <PickDayButtons kind={headline.kind} days={pickDays?.[headline.kind] ?? pickDayOptions(pass, headline.kind)} onPick={onPickDay} foldedLabel="Change your day" />
             </div>
           )}
           {headline.action === "update-card" && <UpdateCardButton onUpdateCard={onUpdateCard} className="mt-5" />}
-          {headline.action === "renew" && (
-            <Button className="mt-5">{`Reserve ${pass.season + 1}`}</Button>
+          {headline.action === "reserve-next" && (
+            <Button asChild className="mt-5">
+              <a href={reserveNextHref(pass)}>Reserve next season</a>
+            </Button>
           )}
           {headline.action === "book" && (
             <Button asChild variant="outline" className="mt-5">
@@ -138,6 +140,20 @@ export function PassPageScreen({ pass, passes = [pass], today, onCancel, onChang
               </CardContent>
             </Card>
 
+            {canReserveNext(pass, passes, today) && headline.action !== "reserve-next" && (
+              <Card data-slot="reserve-next">
+                <CardHeader>
+                  <Title>Next season</Title>
+                </CardHeader>
+                <CardContent className="flex flex-wrap items-center justify-between gap-4">
+                  <p className="text-base text-foreground">{`Reserve ${pass.season + 1} now. We fill in your address, zones and card, and you pick your days.`}</p>
+                  <Button asChild variant="outline">
+                    <a href={reserveNextHref(pass)}>Reserve next season</a>
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+
             <Card>
               <CardHeader>
                 <Title>Card on file</Title>
@@ -155,7 +171,7 @@ export function PassPageScreen({ pass, passes = [pass], today, onCancel, onChang
                 <Title>Need to change something?</Title>
               </CardHeader>
               <CardContent className="space-y-3">
-                <p className="text-base text-muted-foreground">Change when we come with the link on a visit above, until its day is set. Skip one visit, or add the July inspection, here. Reply to any of our emails or call to update the address. You can also end the pass.</p>
+                <p className="text-base text-muted-foreground">Change a day from the link on a visit above. Skip a visit or add the July inspection here. To change your address, reply to any of our emails or call Ryan. You can end the pass here too.</p>
                 <PassActions pass={pass} include={["inspection", "skip"]} onAddInspection={onAddInspection} onSkip={onSkip} />
                 <CancelPassDialog onConfirm={onCancel} />
               </CardContent>

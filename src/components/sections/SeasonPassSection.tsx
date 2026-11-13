@@ -5,13 +5,13 @@ import { CalendarCheck, Snowflake, CreditCard } from "lucide-react"
 const POINTS = [
   {
     icon: Snowflake,
-    title: "Your October blowout is booked in July",
-    body: "About 150 blowouts land in the four weeks before the first freeze. Pass customers get their date first.",
+    title: "Your October blowout is in the book before the rush",
+    body: "Blowouts bunch up in the weeks before the first freeze. Pass customers pick their date first.",
   },
   {
     icon: CalendarCheck,
     title: "We keep the calendar",
-    body: "Turn-on in spring, a blowout in October, and a July check if you add it. We book the dates, you don't have to remember to call.",
+    body: "Turn-on in spring, a blowout in October, and a July check if you add it. Ryan books the dates, so you never have to remember to call.",
   },
   {
     icon: CreditCard,
