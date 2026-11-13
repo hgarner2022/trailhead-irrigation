@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState, type ReactNode } from "react"
+import { useMemo, useState, useTransition, type ReactNode } from "react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { DataGrid } from "@/components/blocks/DataGrid"
@@ -13,7 +13,9 @@ import { SidePanel, SidePanelLayout } from "@/components/blocks/SidePanel"
 import { StatusPill, statusLabel } from "@/components/blocks/StatusPill"
 import type { AdminData, Pass } from "@/lib/admin/types"
 import { preferenceLabel } from "@/lib/admin/format"
+import type { TimingPreference } from "@/lib/admin/types"
 import { formatMoney } from "@/lib/admin/metrics"
+import type { Outcome } from "./action-types"
 import { chargeRows, consentLine, passesContext } from "./passes-model"
 
 // Every Season Pass sold, as the one data grid, with the pass opening beside
@@ -32,6 +34,19 @@ export interface PassesScreenProps {
   today: string
   /** The pass open on first render; for the catalog, since the prototype has no URL state */
   defaultSelectedId?: string
+  /** a tech reads the passes and changes nothing: no buttons in the panel, no bulk actions */
+  readOnly?: boolean
+  /** the panel's and the bulk buttons; server actions in the app. Without them the buttons only log, as in the catalog. */
+  actions?: PassesActions
+}
+
+export interface PassesActions {
+  resendConfirmation: (passId: string) => Promise<Outcome>
+  sendCardUpdateLink: (passId: string) => Promise<Outcome>
+  cancel: (passId: string) => Promise<Outcome>
+  addInspection: (passId: string) => Promise<Outcome>
+  changePreference: (passId: string, kind: "turn-on" | "blowout", preference: TimingPreference) => Promise<Outcome>
+  skip: (passId: string, kind: "turn-on" | "inspection" | "blowout") => Promise<Outcome>
 }
 
 const TOWNS = ["Erie", "Longmont", "Louisville", "Lafayette", "Firestone", "Broomfield"]
@@ -39,10 +54,6 @@ const STATUSES = ["active", "cancelled", "lapsed"] as const
 const option = (value: string, label = value) => ({ value, label })
 
 const log = (action: string) => (rows: Pass[]) => console.info(action, rows.map((p) => p.number))
-const BULK_ACTIONS = [
-  { label: "Send card update link", onClick: log("send card update link") },
-  { label: "Resend confirmation", onClick: log("resend confirmation") },
-]
 
 function Subtitle({ id, children }: { id: string; children: string }) {
   return (
@@ -91,10 +102,19 @@ function Charges({ pass }: { pass: Pass }) {
   )
 }
 
-function CancelDialog({ pass, open, onOpenChange }: { pass: Pass; open: boolean; onOpenChange: (open: boolean) => void }) {
+function CancelDialog({ pass, open, onOpenChange, onCancel }: { pass: Pass; open: boolean; onOpenChange: (open: boolean) => void; onCancel?: (passId: string) => Promise<Outcome> }) {
+  const [pending, start] = useTransition()
+  const [problem, setProblem] = useState("")
   const cancel = () => {
-    console.info("cancel pass", [pass.number])
-    onOpenChange(false)
+    if (!onCancel) {
+      console.info("cancel pass", [pass.number])
+      return onOpenChange(false)
+    }
+    start(async () => {
+      const out = await onCancel(pass.id)
+      setProblem(out.ok ? "" : out.message)
+      if (out.ok) onOpenChange(false)
+    })
   }
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -103,20 +123,28 @@ function CancelDialog({ pass, open, onOpenChange }: { pass: Pass; open: boolean;
           <DialogTitle className="font-display text-2xl font-semibold text-navy">Cancel this pass?</DialogTitle>
           <DialogDescription>Nothing further is charged and the remaining visits come off the schedule.</DialogDescription>
         </DialogHeader>
+        <p role="alert" className="text-sm text-destructive empty:hidden">
+          {problem}
+        </p>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Keep pass
           </Button>
-          <Button onClick={cancel}>Cancel pass</Button>
+          <Button onClick={cancel} disabled={pending}>
+            Cancel pass
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   )
 }
 
-function PassDetail({ pass, today }: { pass: Pass; today: string }) {
+function PassDetail({ pass, today, readOnly, actions, run, notice }: { pass: Pass; today: string; readOnly: boolean; actions?: PassesActions; run: (call: () => Promise<Outcome>) => void; notice: string }) {
   return (
     <div className="flex flex-col gap-6">
+      <p role="status" className="text-sm text-muted-foreground empty:hidden">
+        {notice}
+      </p>
       <div className="flex items-start gap-5">
         <PassCard pass={pass} size="thumb" interactive={false} className="shrink-0" />
         <Facts pass={pass} />
@@ -136,14 +164,18 @@ function PassDetail({ pass, today }: { pass: Pass; today: string }) {
       </section>
       <section aria-labelledby="pass-change">
         <Subtitle id="pass-change">Change the pass</Subtitle>
-        <PassActions
-          pass={pass}
-          voice="admin"
-          className="mt-3"
-          onAddInspection={(id) => console.info("add inspection", [id])}
-          onChangePreference={(kind, preference) => console.info("change preference", [pass.number, kind, preference])}
-          onSkip={(id, kind) => console.info("skip visit", [id, kind])}
-        />
+        {readOnly ? (
+          <p className="mt-3 text-sm text-muted-foreground">A manager changes the pass.</p>
+        ) : (
+          <PassActions
+            pass={pass}
+            voice="admin"
+            className="mt-3"
+            onAddInspection={(id) => (actions ? run(() => actions.addInspection(id)) : console.info("add inspection", [id]))}
+            onChangePreference={(kind, preference) => (actions ? run(() => actions.changePreference(pass.id, kind, preference)) : console.info("change preference", [pass.number, kind, preference]))}
+            onSkip={(id, kind) => (actions ? run(() => actions.skip(id, kind)) : console.info("skip visit", [id, kind]))}
+          />
+        )}
       </section>
       <div className="flex flex-wrap gap-2">
         <Button asChild variant="outline" size="sm">
@@ -163,13 +195,36 @@ function PassDetail({ pass, today }: { pass: Pass; today: string }) {
   )
 }
 
-export function PassesScreen({ data, today, defaultSelectedId }: PassesScreenProps) {
+export function PassesScreen({ data, today, defaultSelectedId, readOnly = false, actions }: PassesScreenProps) {
   const passes = data.passes
   // Only the id is state; the pass is read from `data` each render. The id is
   // kept while the panel closes, so the sheet slides out with its content.
   const [selectedId, setSelectedId] = useState<string | undefined>(defaultSelectedId)
   const [open, setOpen] = useState(() => passes.some((p) => p.id === defaultSelectedId))
   const [cancelling, setCancelling] = useState(false)
+  const [pending, start] = useTransition()
+  const [notice, setNotice] = useState("")
+  /** Runs one action; its refusal is said under the page title, where a person looks after a click. */
+  const run = (call: () => Promise<Outcome>, done = "") =>
+    start(async () => {
+      const out = await call()
+      setNotice(out.ok ? done : out.message)
+    })
+  /** One action for every selected pass, stopping at the first refusal and saying whose it was. */
+  const bulk = (name: string, each: (passId: string) => Promise<Outcome>, done: string) => (rows: Pass[]) =>
+    start(async () => {
+      for (const row of rows) {
+        const out = await each(row.id)
+        if (!out.ok) return setNotice(`${name} stopped at ${row.firstName}: ${out.message}`)
+      }
+      setNotice(done)
+    })
+  const bulkActions = readOnly
+    ? undefined
+    : [
+        { label: "Send card update link", onClick: actions ? bulk("Sending", actions.sendCardUpdateLink, "Card update links sent.") : log("send card update link") },
+        { label: "Resend confirmation", onClick: actions ? bulk("Resending", actions.resendConfirmation, "Confirmations sent.") : log("resend confirmation") },
+      ]
   const pass = passes.find((p) => p.id === selectedId)
   const filters = useMemo(
     () => [
@@ -187,6 +242,9 @@ export function PassesScreen({ data, today, defaultSelectedId }: PassesScreenPro
   return (
     <div data-slot="passes-screen">
       <PageHeader title="Passes" context={passesContext(passes)} />
+      <p role="status" className="-mt-3 mb-4 text-sm text-muted-foreground empty:hidden">
+        {pass && open ? "" : notice}
+      </p>
       <SidePanelLayout
         panel={
           pass && (
@@ -196,19 +254,23 @@ export function PassesScreen({ data, today, defaultSelectedId }: PassesScreenPro
               title={pass.firstName}
               description={`Season Pass ${pass.season}, ${pass.number}`}
               footer={
-                <>
-                  <Button variant="outline" onClick={() => console.info("resend confirmation", [pass.number])}>
-                    Resend confirmation
-                  </Button>
-                  <Button onClick={() => console.info("send card update link", [pass.number])}>Send card update link</Button>
-                  <Button variant="ghost" className="ml-auto text-destructive hover:text-destructive" onClick={() => setCancelling(true)}>
-                    Cancel pass
-                  </Button>
-                  <CancelDialog pass={pass} open={cancelling} onOpenChange={setCancelling} />
-                </>
+                readOnly ? undefined : (
+                  <>
+                    <Button variant="outline" disabled={pending} onClick={() => (actions ? run(() => actions.resendConfirmation(pass.id), "Confirmation sent.") : console.info("resend confirmation", [pass.number]))}>
+                      Resend confirmation
+                    </Button>
+                    <Button disabled={pending} onClick={() => (actions ? run(() => actions.sendCardUpdateLink(pass.id), "Card update link sent.") : console.info("send card update link", [pass.number]))}>
+                      Send card update link
+                    </Button>
+                    <Button variant="ghost" className="ml-auto text-destructive hover:text-destructive" onClick={() => setCancelling(true)}>
+                      Cancel pass
+                    </Button>
+                    <CancelDialog pass={pass} open={cancelling} onOpenChange={setCancelling} onCancel={actions?.cancel} />
+                  </>
+                )
               }
             >
-              <PassDetail pass={pass} today={today} />
+              <PassDetail pass={pass} today={today} readOnly={readOnly} actions={actions} run={run} notice={notice} />
             </SidePanel>
           )
         }
@@ -220,7 +282,7 @@ export function PassesScreen({ data, today, defaultSelectedId }: PassesScreenPro
           search={{ column: "firstName", placeholder: "Search by name" }}
           filters={filters}
           onOpen={show}
-          bulkActions={BULK_ACTIONS}
+          bulkActions={bulkActions}
           exportName="passes"
           pageSize={25}
           emptyTitle="No passes yet"

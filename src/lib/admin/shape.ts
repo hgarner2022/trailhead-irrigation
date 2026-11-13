@@ -34,7 +34,8 @@ export interface MirrorQuote { id: string; clientName: string | null; town: Town
 export interface MirrorInvoice { id: string; clientName: string | null; total: number | null; issuedAt: Date | null; dueAt: Date | null; status: Invoice["status"] | null; jobberUrl: string | null }
 export interface QueueProblem { kind: string; lastError: string | null; updatedAt: Date; status: string }
 
-export interface AlertRow { kind: string; passId: string | null; message: string; createdAt: Date }
+/** `key` is what the alert is about: a visit's id for an unplaced visit. */
+export interface AlertRow { kind: string; key?: string; passId: string | null; message: string; createdAt: Date }
 
 export interface ShapeInput {
   organizationId: string
@@ -210,7 +211,7 @@ export function attention(i: ShapeInput, passes: Pass[]): Attention[] {
   for (const p of passes) {
     if (p.status !== "cancelled" && p.cardFailedAt) out.push({ kind: "charge-failed", passId: p.id, message: `The card on ${p.number} was declined; ${p.firstName} has the update link`, since: p.cardFailedAt })
   }
-  for (const a of i.alerts ?? []) out.push({ kind: a.kind === "new-pass" || a.kind === "pass-cancelled" || a.kind === "scheduled" || a.kind === "unplaced" ? a.kind : "jobs-failed", ...(a.passId ? { passId: a.passId } : {}), message: a.message, since: iso(a.createdAt) })
+  for (const a of i.alerts ?? []) out.push({ kind: a.kind === "new-pass" || a.kind === "pass-cancelled" || a.kind === "scheduled" || a.kind === "unplaced" ? a.kind : "jobs-failed", ...(a.passId ? { passId: a.passId } : {}), ...(a.kind === "unplaced" && a.key ? { visitId: a.key } : {}), message: a.message, since: iso(a.createdAt) })
   for (const q of i.queueProblems) out.push({ kind: "jobs-failed", message: `A ${q.kind} task ${q.status === "failed" ? "gave up" : "is retrying"}: ${q.lastError ?? "no error recorded"}`, since: iso(q.updatedAt) })
   for (const v of i.visits) {
     if ((v.status === "not-closed" || v.status === "scheduled") && v.scheduledOn && v.scheduledOn < i.today && !v.completedOn)

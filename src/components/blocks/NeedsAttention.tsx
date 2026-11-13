@@ -1,16 +1,17 @@
+import Link from "next/link"
 import { BadgeCheck, Ban, CalendarCheck, CalendarX, CircleDashed, Clock, CreditCard, type LucideIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { Attention } from "@/lib/admin/types"
 import { EmptyState } from "./EmptyState"
-import { AttentionAction } from "./needs-attention-action"
+import { AttentionAction, type ActionResult } from "./needs-attention-action"
 import { relativeTime } from "./needs-attention-time"
 
 // The short list on Home of what needs a person: a failed charge, Jobber
 // jobs that were not created, a card about to expire, visits from earlier days nobody has marked done, a pass cancelled whose Jobber jobs must go. One row per item with an icon coloured by how urgent the kind
 // is, the message, how long it has been waiting, and ONE action (Retry, Send
 // card link, Reply, ...) so the list can be cleared like an inbox (the
-// review, 2026-11-12). A row with a pass links to that pass; the prototype
-// has no handlers, so the link is a page anchor and the action logs. Server
+// review, 2026-11-12). A row with a pass links to that pass in Passes and a row with a
+// visit to that visit in Schedule; the action is `onAction`, a server action in the app, and logs in the catalog. Server
 // component; the action button carries its own client boundary.
 
 export interface NeedsAttentionProps {
@@ -21,6 +22,10 @@ export interface NeedsAttentionProps {
    * the same words; the fallback to now is only for ad hoc use.
    */
   now?: string
+  /** runs a row's one action (a server action in the app); without it the button only logs, as in the catalog */
+  onAction?: (item: Attention) => Promise<ActionResult | void>
+  /** a tech reads the list; the rows keep their links and lose their buttons */
+  readOnly?: boolean
   className?: string
 }
 
@@ -35,7 +40,15 @@ const KINDS: Record<Attention["kind"], { icon: LucideIcon; tone: string; name: s
   unplaced: { icon: CalendarX, tone: "bg-warning/10 text-warning", name: "Needs a day" },
 }
 
-function Row({ item, now }: { item: Attention; now: string }) {
+/** A pass opens in Passes, a visit or a schedule line in Schedule; the rest have no page of their own. */
+export function attentionHref(item: Attention): string | undefined {
+  if (item.passId) return `/admin/passes?pass=${encodeURIComponent(item.passId)}`
+  if (item.visitId) return `/admin/schedule?visit=${encodeURIComponent(item.visitId)}`
+  if (item.kind === "unplaced" || item.kind === "not-closed" || item.kind === "scheduled") return "/admin/schedule"
+  return undefined
+}
+
+function Row({ item, now, onAction, readOnly }: { item: Attention; now: string; onAction?: NeedsAttentionProps["onAction"]; readOnly?: boolean }) {
   const { icon: Icon, tone, name } = KINDS[item.kind]
   const body = (
     <>
@@ -53,25 +66,26 @@ function Row({ item, now }: { item: Attention; now: string }) {
       </span>
     </>
   )
+  const href = attentionHref(item)
   const layout = "flex min-w-0 flex-1 items-start gap-3"
   return (
     <li data-kind={item.kind} className="flex items-center gap-3 py-3">
-      {item.passId ? (
-        <a
-          href={`#pass-${item.passId}`}
+      {href ? (
+        <Link
+          href={href}
           className={cn(layout, "-mx-2 rounded-lg px-2 py-1 hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50")}
         >
           {body}
-        </a>
+        </Link>
       ) : (
         <div className={layout}>{body}</div>
       )}
-      <AttentionAction item={item} />
+      {!readOnly && <AttentionAction item={item} onAction={onAction} />}
     </li>
   )
 }
 
-export function NeedsAttention({ items, now, className }: NeedsAttentionProps) {
+export function NeedsAttention({ items, now, onAction, readOnly, className }: NeedsAttentionProps) {
   if (items.length === 0) {
     return <EmptyState className={className} title="Nothing needs you right now" line="Failed charges, missing jobs and expiring cards show up here." />
   }
@@ -79,7 +93,7 @@ export function NeedsAttention({ items, now, className }: NeedsAttentionProps) {
   return (
     <ul data-slot="needs-attention" className={cn("divide-y divide-border", className)}>
       {items.map((item, i) => (
-        <Row key={`${item.kind}-${item.passId ?? i}`} item={item} now={at} />
+        <Row key={`${item.kind}-${item.passId ?? i}`} item={item} now={at} onAction={onAction} readOnly={readOnly} />
       ))}
     </ul>
   )

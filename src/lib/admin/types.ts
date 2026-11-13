@@ -269,6 +269,8 @@ export interface BusyBlock {
 export interface Attention {
   kind: "new-pass" | "charge-failed" | "jobs-failed" | "card-expiring" | "not-closed" | "pass-cancelled" | "scheduled" | "unplaced"
   passId?: string
+  /** the visit an unplaced alert is about; Home links to it on the Schedule */
+  visitId?: string
   message: string
   since: string
 }

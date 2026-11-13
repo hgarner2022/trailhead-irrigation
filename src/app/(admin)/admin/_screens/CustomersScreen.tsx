@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState, type ReactNode } from "react"
+import { useMemo, useState, useTransition, type ReactNode } from "react"
 import { Button } from "@/components/ui/button"
 import { DataGrid } from "@/components/blocks/DataGrid"
 import { PageHeader } from "@/components/blocks/PageHeader"
@@ -9,6 +9,7 @@ import { SidePanel, SidePanelLayout } from "@/components/blocks/SidePanel"
 import { StatusPill, statusLabel } from "@/components/blocks/StatusPill"
 import type { AdminData, Visit } from "@/lib/admin/types"
 import { KIND_WORDS, TIME_ZONE, shortDate } from "@/lib/admin/format"
+import type { Outcome } from "./action-types"
 import { consentLine } from "./passes-model"
 import { customerColumns } from "./customers-columns"
 import { MARKETING_WORDS, NEXT_WORDS, customerRows, customersContext, type CustomerRow } from "./customers-model"
@@ -29,6 +30,15 @@ export interface CustomersScreenProps {
   today: string
   /** The customer open on first render; for the catalog, since the prototype has no URL state */
   defaultSelectedId?: string
+  /** a tech reads the customers and changes nothing */
+  readOnly?: boolean
+  /** the panel's actions; server actions in the app. Without them the catalog's pass-offer buttons only log. */
+  actions?: CustomersActions
+}
+
+export interface CustomersActions {
+  /** a customer who asked by phone not to get marketing: the newest consent record says so */
+  recordMarketingOptOut: (customerId: string) => Promise<Outcome>
 }
 
 const TOWNS = ["Erie", "Longmont", "Louisville", "Lafayette", "Firestone", "Broomfield"]
@@ -84,12 +94,21 @@ function Visits({ visits }: { visits: Visit[] }) {
   )
 }
 
-export function CustomersScreen({ data, today, defaultSelectedId }: CustomersScreenProps) {
+export function CustomersScreen({ data, today, defaultSelectedId, readOnly = false, actions }: CustomersScreenProps) {
   const rows = useMemo(() => customerRows(data, today), [data, today])
   const [selectedId, setSelectedId] = useState<string | undefined>(defaultSelectedId)
   const [open, setOpen] = useState(() => rows.some((r) => r.id === defaultSelectedId))
   const row = rows.find((r) => r.id === selectedId)
   const client = data.clients.find((c) => c.id === selectedId)
+  const [pending, start] = useTransition()
+  const [notice, setNotice] = useState("")
+  const optOut = (customerId: string) =>
+    start(async () => {
+      const out = await actions!.recordMarketingOptOut(customerId)
+      setNotice(out.ok ? "Marketing opt-out recorded." : out.message)
+    })
+  // "Send pass offer" is the January pre-sell and has no API behind it yet, so the live page leaves it out.
+  const offers = !actions && !readOnly
   const filters = useMemo(
     () => [
       { column: "town", label: "Town", options: TOWNS.map((t) => option(t)) },
@@ -117,9 +136,16 @@ export function CustomersScreen({ data, today, defaultSelectedId }: CustomersScr
               description={row.pass === "none" ? "Customer" : `Season Pass holder`}
               footer={
                 <>
-                  <Button variant="outline" onClick={() => console.info("send pass offer", [row.firstName])}>
-                    Send pass offer
-                  </Button>
+                  {offers && (
+                    <Button variant="outline" onClick={() => console.info("send pass offer", [row.firstName])}>
+                      Send pass offer
+                    </Button>
+                  )}
+                  {actions && !readOnly && client?.consent?.marketingOptIn && (
+                    <Button variant="outline" disabled={pending} onClick={() => optOut(row.id)}>
+                      Record phone opt-out
+                    </Button>
+                  )}
                   <Button asChild variant="outline">
                     <a href={row.jobberUrl} target="_blank" rel="noreferrer">
                       Open in Jobber
@@ -130,6 +156,9 @@ export function CustomersScreen({ data, today, defaultSelectedId }: CustomersScr
               }
             >
               <div className="flex flex-col gap-6">
+                <p role="status" className="text-sm text-muted-foreground empty:hidden">
+                  {notice}
+                </p>
                 <Facts row={row} consent={consentLine(client?.consent)} />
                 <section aria-labelledby="customer-visits">
                   <Subtitle id="customer-visits">Visits</Subtitle>
@@ -151,7 +180,7 @@ export function CustomersScreen({ data, today, defaultSelectedId }: CustomersScr
           search={{ column: "firstName", placeholder: "Search by name" }}
           filters={filters}
           onOpen={show}
-          bulkActions={BULK_ACTIONS}
+          bulkActions={offers ? BULK_ACTIONS : undefined}
           exportName="customers"
           pageSize={25}
           emptyTitle="No customers yet"

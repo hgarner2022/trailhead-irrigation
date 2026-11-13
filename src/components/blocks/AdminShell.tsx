@@ -2,6 +2,7 @@
 
 import { useState, useSyncExternalStore, type ReactNode } from "react"
 import Image from "next/image"
+import Link from "next/link"
 import { CalendarDays, LayoutDashboard, LogOut, Settings2, Ticket, TrendingUp, Users, type LucideIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
@@ -25,11 +26,10 @@ import {
 // cream column of at most 1280px. One tree serves every width: the rail and
 // the tab bar come and go with the breakpoint but the inset around the
 // children stays mounted, so a resize never resets the screen. The links are
-// plain anchors; the prototype has no router yet. The switcher slot above
-// the items stays empty until a second branch exists. Sign out is a no-op in
-// the prototype. The tab bar pads for `env(safe-area-inset-bottom)`, which
-// only takes effect once the root layout sets `viewport.viewportFit = "cover"`
-// at wiring time.
+// next/link (plain anchors in the catalog). The switcher slot above
+// the items stays empty until a second branch exists. Sign out calls `onSignOut`, a server action in the
+// layout, and does nothing in the catalog. The tab bar pads for `env(safe-area-inset-bottom)`, which
+// the admin root layout enables with `viewport.viewportFit = "cover"`.
 
 export type AdminSection = "home" | "schedule" | "passes" | "revenue" | "customers" | "settings"
 
@@ -38,6 +38,8 @@ export interface AdminShellProps {
   user: { initials: string; name: string }
   /** the organization switcher; nothing renders when undefined */
   switcher?: ReactNode
+  /** signs the person out; the sign-out button does nothing without it (the catalog) */
+  onSignOut?: () => void | Promise<void>
   /** whether the rail starts expanded on a laptop; under 1024px it starts collapsed either way */
   defaultOpen?: boolean
   children: ReactNode
@@ -79,7 +81,7 @@ function useMedia(query: string): boolean {
   return useSyncExternalStore(subscribeTo(query), () => window.matchMedia(query).matches, () => false)
 }
 
-function Rail({ current, user, switcher }: Pick<AdminShellProps, "current" | "user" | "switcher">) {
+function Rail({ current, user, switcher, onSignOut }: Pick<AdminShellProps, "current" | "user" | "switcher" | "onSignOut">) {
   return (
     <Sidebar collapsible="icon" className="motion-reduce:transition-none">
       <SidebarHeader>
@@ -100,10 +102,10 @@ function Rail({ current, user, switcher }: Pick<AdminShellProps, "current" | "us
               {NAV.map(({ id, label, href, icon: Icon }) => (
                 <SidebarMenuItem key={id}>
                   <SidebarMenuButton asChild isActive={id === current} tooltip={label}>
-                    <a href={href} aria-current={id === current ? "page" : undefined}>
+                    <Link href={href} aria-current={id === current ? "page" : undefined}>
                       <Icon />
                       <span>{label}</span>
-                    </a>
+                    </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
@@ -114,7 +116,7 @@ function Rail({ current, user, switcher }: Pick<AdminShellProps, "current" | "us
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton type="button" tooltip="Sign out" aria-label={`Sign out ${user.name}`}>
+            <SidebarMenuButton type="button" tooltip="Sign out" aria-label={`Sign out ${user.name}`} onClick={() => void onSignOut?.()}>
               <span aria-hidden className="flex size-4 shrink-0 items-center justify-center rounded-full bg-sidebar-accent text-[10px] font-semibold">
                 {user.initials}
               </span>
@@ -140,7 +142,7 @@ function TabBar({ current }: Pick<AdminShellProps, "current">) {
           const active = id === current
           return (
             <li key={id}>
-              <a
+              <Link
                 href={href}
                 aria-current={active ? "page" : undefined}
                 className={cn(
@@ -152,7 +154,7 @@ function TabBar({ current }: Pick<AdminShellProps, "current">) {
                   <Icon className="size-5" aria-hidden />
                 </span>
                 {label}
-              </a>
+              </Link>
             </li>
           )
         })}
@@ -161,7 +163,7 @@ function TabBar({ current }: Pick<AdminShellProps, "current">) {
   )
 }
 
-export function AdminShell({ current, user, switcher, defaultOpen = true, children }: AdminShellProps) {
+export function AdminShell({ current, user, switcher, onSignOut, defaultOpen = true, children }: AdminShellProps) {
   const phone = useMedia("(max-width: 767px)")
   const belowLg = useMedia("(max-width: 1023px)")
   // Until the trigger is used the rail follows the width: icons under 1024px, the default above. A toggle is kept across resizes.
@@ -169,7 +171,7 @@ export function AdminShell({ current, user, switcher, defaultOpen = true, childr
   const open = choice ?? (belowLg ? false : defaultOpen)
   return (
     <SidebarProvider data-slot="admin-shell" data-phone={phone || undefined} open={open} onOpenChange={setChoice}>
-      {phone ? null : <Rail current={current} user={user} switcher={switcher} />}
+      {phone ? null : <Rail current={current} user={user} switcher={switcher} onSignOut={onSignOut} />}
       <SidebarInset className="min-h-svh bg-cream">
         <div className={cn(CONTENT, "flex h-14 shrink-0 items-center justify-between")}>
           {phone ? (

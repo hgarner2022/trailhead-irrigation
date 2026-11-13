@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it, vi } from "vitest"
-import { render, screen, within } from "@testing-library/react"
+import { render, screen, waitFor, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import type { AdminData } from "@/lib/admin/types"
@@ -63,5 +63,30 @@ describe("SettingsScreen API keys", () => {
     expect(screen.queryByRole("dialog")).toBeNull()
     expect(screen.getByText("Billing agent")).toBeInTheDocument()
     expect(document.body.textContent).not.toContain(key)
+  })
+})
+
+describe("SettingsScreen with actions", () => {
+  it("saves the edited settings through the action and says so, or says why not", async () => {
+    const user = userEvent.setup()
+    const save = vi.fn().mockResolvedValueOnce({ ok: false, message: "Pick at least one town for Area 3 before saving." }).mockResolvedValueOnce({ ok: true, data: undefined })
+    const actions = { save, createKey: vi.fn(), revokeKey: vi.fn() }
+    render(<SettingsScreen data={data} today={TODAY} actions={actions} />)
+    const name = screen.getByRole("textbox", { name: "Truck 2 name" })
+    await user.clear(name)
+    await user.type(name, "Blowout truck{Enter}")
+    await user.click(screen.getByRole("button", { name: "Save" }))
+    expect(await screen.findByText("Pick at least one town for Area 3 before saving.", {}, { timeout: 5000 })).toBeInTheDocument()
+    expect(save.mock.calls[0]![0].trucks.map((t: { name: string }) => t.name)).toContain("Blowout truck")
+    await waitFor(() => expect(screen.getByRole("button", { name: "Save" })).toBeEnabled())
+    await user.click(screen.getByRole("button", { name: "Save" }))
+    expect(await screen.findByText("Saved just now", {}, { timeout: 5000 })).toBeInTheDocument()
+  })
+
+  it("disables every field and offers no Save to a tech", () => {
+    render(<SettingsScreen data={data} today={TODAY} readOnly actions={{ save: vi.fn(), createKey: vi.fn(), revokeKey: vi.fn() }} />)
+    expect(screen.queryByRole("button", { name: "Save" })).toBeNull()
+    expect(screen.getByRole("textbox", { name: "Truck 2 name" })).toBeDisabled()
+    expect(screen.getByText("You can read the settings; a manager changes them.")).toBeInTheDocument()
   })
 })

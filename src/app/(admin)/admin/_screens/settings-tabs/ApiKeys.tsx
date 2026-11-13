@@ -19,7 +19,7 @@ import { ConfirmButton, type Apply } from "./fields"
 // button; only its first characters are kept after that. Revoke asks first.
 
 /** Creates the key and returns its one-time secret, or null when the name or scopes were not enough. */
-export type OnCreateKey = (name: string, scopes: ApiScope[]) => string | null
+export type OnCreateKey = (name: string, scopes: ApiScope[]) => string | null | Promise<string | null>
 
 function CreateKey({ onCreate }: { onCreate: OnCreateKey }) {
   const [open, setOpen] = useState(false)
@@ -77,7 +77,7 @@ function CreateKey({ onCreate }: { onCreate: OnCreateKey }) {
               <DialogClose asChild>
                 <Button variant="outline">Cancel</Button>
               </DialogClose>
-              <Button disabled={!ready} onClick={() => setSecret(onCreate(name, scopes))}>
+              <Button disabled={!ready} onClick={() => void Promise.resolve(onCreate(name, scopes)).then(setSecret)}>
                 Create key
               </Button>
             </DialogFooter>
@@ -119,7 +119,7 @@ function CreateKey({ onCreate }: { onCreate: OnCreateKey }) {
   )
 }
 
-export function ApiKeys({ state, apply, onCreate }: { state: SettingsState; apply: Apply; onCreate: OnCreateKey }) {
+export function ApiKeys({ state, apply, onCreate, onRevoke }: { state: SettingsState; apply: Apply; onCreate: OnCreateKey; onRevoke?: (keyId: string) => void }) {
   return (
     <div className="space-y-4">
       {state.keys.length === 0 ? (
@@ -161,7 +161,10 @@ export function ApiKeys({ state, apply, onCreate }: { state: SettingsState; appl
                       title={`Revoke ${key.name}?`}
                       description="Anything using this key stops working right away. This cannot be undone; create a new key if you need one again."
                       confirm="Revoke key"
-                      onConfirm={() => apply((s, a) => revokeKey(s, key.id, a))}
+                      onConfirm={() => {
+                        apply((s, a) => revokeKey(s, key.id, a))
+                        onRevoke?.(key.id)
+                      }}
                     />
                   </TableCell>
                 </TableRow>
