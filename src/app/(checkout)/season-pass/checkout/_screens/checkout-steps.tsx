@@ -6,18 +6,18 @@ import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { PassCard } from "@/components/blocks/PassCard"
-import type { Pass, Town } from "@/lib/admin/types"
+import type { Pass } from "@/lib/admin/types"
 import { formatMoney } from "@/lib/admin/metrics"
 import { MAX_ZONES, MIN_ZONES, SEASON_PASS_VISITS, seasonPassPrice, visitPrice } from "@/lib/season-pass"
-import { TOWNS, contactProblem, doneSentence, type CheckoutFields } from "./checkout-state"
+import { emailSuggestion } from "@/lib/email-check"
+import { contactProblem, doneSentence, type CheckoutFields } from "./checkout-state"
 
 // The body of each checkout step: the one input under the question, and the
 // helper line under that. The shell (CheckoutFlow) owns the question, the
 // progress line, the buttons and the keys; these only read and set fields.
 // `data-autofocus` marks the element the shell focuses when the step opens.
-// The timing step lives in checkout-timing.tsx.
+// The address step lives in checkout-address.tsx and the timing step in checkout-timing.tsx.
 
 export interface StepProps {
   state: CheckoutFields
@@ -50,37 +50,6 @@ export function useReveal<T extends HTMLElement>(duration: number, enabled = tru
 
 export function Helper({ children }: { children: ReactNode }) {
   return <p className="mt-6 text-base text-muted-foreground">{children}</p>
-}
-
-export function AddressStep({ state, set }: StepProps) {
-  return (
-    <>
-      <div className="grid gap-3 sm:grid-cols-[1fr_11rem]">
-        <Input
-          data-autofocus
-          aria-label="Street address"
-          autoComplete="street-address"
-          placeholder="123 Trailhead Way"
-          value={state.address}
-          onChange={(event) => set("address", event.target.value)}
-          className={FIELD}
-        />
-        <Select value={state.town ?? ""} onValueChange={(value) => set("town", value as Town)}>
-          <SelectTrigger aria-label="Town" className={cn(FIELD, "w-full data-[size=default]:h-14")}>
-            <SelectValue placeholder="Town" />
-          </SelectTrigger>
-          <SelectContent>
-            {TOWNS.map((town) => (
-              <SelectItem key={town} value={town}>
-                {town}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-      <Helper>We serve Erie, Longmont, Louisville, Lafayette, Firestone and Broomfield.</Helper>
-    </>
-  )
 }
 
 export function ZonesStep({ state, set }: StepProps) {
@@ -120,6 +89,8 @@ export function ZonesStep({ state, set }: StepProps) {
   )
 }
 
+const LINK = "font-medium text-primary-dark underline underline-offset-2 hover:text-primary-deep"
+
 const CONTACT = [
   { key: "firstName", label: "First name", type: "text", autoComplete: "given-name", inputMode: undefined },
   { key: "email", label: "Email", type: "email", autoComplete: "email", inputMode: "email" },
@@ -135,6 +106,8 @@ export function ContactStep({ state, set, attempted }: StepProps & { attempted: 
         const problem = contactProblem(field.key, state[field.key])
         const shown = problem !== null && (attempted || touched.has(field.key))
         const inputId = `${id}-${field.key}`
+        // A slip of a common domain ("gmail.con") is offered under the box, never forced.
+        const slip = field.key === "email" && !shown ? emailSuggestion(state.email) : null
         return (
           <div key={field.key} className="grid gap-2">
             <Label htmlFor={inputId} className="text-sm text-muted-foreground">
@@ -158,14 +131,21 @@ export function ContactStep({ state, set, attempted }: StepProps & { attempted: 
                 {problem}
               </p>
             )}
+            {slip && (
+              <p data-slot="email-slip" className="text-sm text-muted-foreground">
+                Did you mean{" "}
+                <button type="button" onClick={() => set("email", slip)} className={LINK}>
+                  {slip}
+                </button>
+                ?
+              </p>
+            )}
           </div>
         )
       })}
     </div>
   )
 }
-
-const LINK = "font-medium text-primary-dark underline underline-offset-2 hover:text-primary-deep"
 
 function TermsLink({ href, children }: { href: string; children: string }) {
   return (

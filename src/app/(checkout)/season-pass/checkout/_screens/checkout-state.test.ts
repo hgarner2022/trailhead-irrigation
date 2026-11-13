@@ -1,9 +1,13 @@
 import { describe, it, expect } from "vitest"
-import { STEPS, canContinue, doneSentence, initialState, reducer, toConsent, toPass, type CheckoutState } from "./checkout-state"
+import { FIXTURE_HOME, FIXTURE_PLACES } from "@/lib/places/fixture"
+import { PICK_ADDRESS, STEPS, addressProblem, canContinue, contactProblem, doneSentence, initialState, reducer, toConsent, toPass, type CheckoutState } from "./checkout-state"
+
+const boulder = FIXTURE_PLACES.find((p) => p.town === "Boulder")!
 
 const filled: CheckoutState = {
   step: 1,
-  address: "123 Trailhead Way",
+  address: FIXTURE_HOME.label,
+  place: FIXTURE_HOME,
   town: "Erie",
   zones: 8,
   turnOnPreference: "earlier",
@@ -92,13 +96,44 @@ describe("step order", () => {
     expect(reducer(s, { type: "set", field: "marketingEmail", value: true }).marketingEmail).toBe(true)
     expect(reducer(s, { type: "set", field: "marketingSms", value: true }).marketingSms).toBe(true)
   })
+
+  it("picks a place, reading the town from it, and drops the pick when typing resumes", () => {
+    const picked = reducer(initialState(), { type: "pickPlace", place: FIXTURE_HOME })
+    expect(picked.address).toBe("123 Trailhead Way, Erie, CO 80516")
+    expect(picked.place).toBe(FIXTURE_HOME)
+    expect(picked.town).toBe("Erie")
+    const typed = reducer(picked, { type: "typeAddress", text: "123 Trailhead Wa" })
+    expect(typed.address).toBe("123 Trailhead Wa")
+    expect(typed.place).toBeNull()
+    expect(typed.town).toBeNull()
+    expect(reducer(initialState(), { type: "pickPlace", place: boulder }).town).toBeNull()
+  })
+})
+
+describe("addressProblem", () => {
+  it("says nothing while typing, asks for a pick after Enter, and names the town outside the area", () => {
+    expect(addressProblem({ place: null }, false)).toBeNull()
+    expect(addressProblem({ place: null }, true)).toBe(PICK_ADDRESS)
+    expect(addressProblem({ place: FIXTURE_HOME }, true)).toBeNull()
+    expect(addressProblem({ place: boulder }, false)).toBe("We don't serve Boulder yet. We work in Erie, Longmont, Louisville, Lafayette, Firestone and Broomfield.")
+  })
+})
+
+describe("contactProblem", () => {
+  it("needs a shaped email and a ten-digit phone", () => {
+    expect(contactProblem("email", "")).toBe("We need an email for the receipt.")
+    expect(contactProblem("email", "andrea@")).toBe("That email doesn't look complete.")
+    expect(contactProblem("email", "andrea@example.com")).toBeNull()
+    expect(contactProblem("phone", "970 555 012")).toBe("We need a ten-digit phone number for the day-of text.")
+    expect(contactProblem("phone", "(970) 555-0123")).toBeNull()
+  })
 })
 
 describe("canContinue", () => {
-  it("address: needs a street address and a town", () => {
-    expect(canContinue({ ...initialState(), address: "  ", town: "Erie" })).toBe(false)
-    expect(canContinue({ ...initialState(), address: "9 Elm St", town: null })).toBe(false)
-    expect(canContinue({ ...initialState(), address: "9 Elm St", town: "Erie" })).toBe(true)
+  it("address: needs a picked address inside the six towns", () => {
+    expect(canContinue({ ...initialState(), address: "123 Trailhead Way, Erie, CO 80516", place: null })).toBe(false)
+    expect(canContinue({ ...initialState(), address: boulder.label, place: boulder })).toBe(false)
+    expect(canContinue({ ...initialState(), address: FIXTURE_HOME.label, place: FIXTURE_HOME })).toBe(true)
   })
 
   it("zones: needs a count between 6 and 16", () => {

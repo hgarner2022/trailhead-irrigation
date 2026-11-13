@@ -8,6 +8,8 @@
 import { useReducer } from "react"
 import type { Consent, Pass, PassVisit, TimingPreference, Town } from "@/lib/admin/types"
 import { preferencePhrase } from "@/lib/admin/format"
+import { emailProblem } from "@/lib/email-check"
+import { outOfAreaMessage, serviceability, type PlaceSuggestion } from "@/lib/places"
 import { MAX_ZONES, MIN_ZONES, SEASON_PASS_VISITS, TERMS_VERSION, visitPrice } from "@/lib/season-pass"
 
 export type StepKey = "address" | "zones" | "timing" | "contact" | "card" | "done"
@@ -36,7 +38,11 @@ export const TOWNS: readonly Town[] = ["Erie", "Longmont", "Louisville", "Lafaye
 export const VISIT_WINDOWS = ["May", "July", "October"] as const
 
 export interface CheckoutFields {
+  /** what is in the address box */
   address: string
+  /** the address picked from the type-ahead list; null while the customer is still typing */
+  place: PlaceSuggestion | null
+  /** read from the picked address; null until one in the six towns is picked */
   town: Town | null
   zones: number
   /** when the customer would like the spring turn-on; the recommendation is preselected */
@@ -61,6 +67,8 @@ export interface CheckoutState extends CheckoutFields {
 
 export type CheckoutAction =
   | { type: "set"; field: keyof CheckoutFields; value: CheckoutFields[keyof CheckoutFields] }
+  | { type: "typeAddress"; text: string }
+  | { type: "pickPlace"; place: PlaceSuggestion }
   | { type: "next" }
   | { type: "back" }
   | { type: "goTo"; step: number }
@@ -71,6 +79,7 @@ export function initialState(prefill: Partial<CheckoutState> = {}): CheckoutStat
   return {
     step: 1,
     address: "",
+    place: null,
     town: null,
     zones: MIN_ZONES,
     turnOnPreference: "recommended",
@@ -92,15 +101,26 @@ export const digits = (phone: string) => phone.replace(/\D/g, "")
 /** Why a contact field cannot pass yet, in the words the screen shows; null when it can. */
 export function contactProblem(field: "firstName" | "email" | "phone", value: string): string | null {
   if (field === "firstName") return value.trim() ? null : "We need a first name for the visit notes."
-  if (field === "email") return value.includes("@") ? null : "We need an email for the receipt."
+  if (field === "email") return emailProblem(value)
   return digits(value).length === 10 ? null : "We need a ten-digit phone number for the day-of text."
+}
+
+export const PICK_ADDRESS = "Pick your address from the list so we have it right."
+
+/** The line under the address box: outside the six towns, or nothing picked after Enter; null when the step can pass. */
+export function addressProblem(state: Pick<CheckoutFields, "place">, attempted: boolean): string | null {
+  if (state.place) {
+    const check = serviceability(state.place)
+    return check.ok ? null : outOfAreaMessage(check)
+  }
+  return attempted ? PICK_ADDRESS : null
 }
 
 /** Whether the step on screen has what it needs to move on. */
 export function canContinue(state: CheckoutState): boolean {
   switch (STEPS[state.step - 1]?.key) {
     case "address":
-      return state.address.trim().length > 0 && state.town !== null
+      return state.place !== null && serviceability(state.place).ok
     case "zones":
       return Number.isInteger(state.zones) && state.zones >= MIN_ZONES && state.zones <= MAX_ZONES
     // Both preferences start on the recommendation, so the timing step always has an answer.
@@ -121,6 +141,13 @@ export function reducer(state: CheckoutState, action: CheckoutAction): CheckoutS
   switch (action.type) {
     case "set":
       return { ...state, [action.field]: action.value }
+    // Typing again drops the pick and the town it gave; a pick fills all three at once.
+    case "typeAddress":
+      return { ...state, address: action.text, place: null, town: null }
+    case "pickPlace": {
+      const check = serviceability(action.place)
+      return { ...state, address: action.place.label, place: action.place, town: check.ok ? check.town : null }
+    }
     case "next": {
       if (!canContinue(state)) return state
       const saved = STEPS[state.step - 1].key === "card" ? true : state.cardSaved

@@ -1,7 +1,8 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite"
-import { expect, fn, screen } from "storybook/test"
+import { expect, fn } from "storybook/test"
 import { toPng } from "html-to-image"
 import type { Pass } from "@/lib/admin/types"
+import { FIXTURE_HOME } from "@/lib/places/fixture"
 import { CheckoutFlow } from "./CheckoutFlow"
 import type { CheckoutFields } from "./checkout-state"
 
@@ -10,7 +11,8 @@ import type { CheckoutFields } from "./checkout-state"
 // consent boxes, and lands on the pass card. The timing step opens with both
 // recommendations preselected, so it needs nothing prefilled.
 const answers: Partial<CheckoutFields> = {
-  address: "123 Trailhead Way",
+  address: FIXTURE_HOME.label,
+  place: FIXTURE_HOME,
   town: "Erie",
   zones: 8,
   turnOnPreference: "earlier",
@@ -40,8 +42,20 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
+/** One box; type "123" to see the fixture's matches. */
 export const Address: Story = {
   globals: { viewport: { value: "wide", isRotated: false } },
+}
+
+/** A Boulder address picked: the out-of-area line and Continue off. */
+export const AddressOutOfArea: Story = {
+  globals: { viewport: { value: "wide", isRotated: false } },
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.type(await canvas.findByRole("combobox", { name: "Street address" }), "1200 Pe")
+    await userEvent.click(await canvas.findByRole("option", { name: /Boulder/ }))
+    await expect(await canvas.findByText(/We don't serve Boulder yet/)).toBeInTheDocument()
+    await expect(canvas.getByRole("button", { name: "Continue" })).toBeDisabled()
+  },
 }
 
 export const Zones: Story = {
@@ -87,9 +101,8 @@ export const Walkthrough: Story = {
   args: { onComplete: fn() },
   globals: { viewport: { value: "wide", isRotated: false } },
   play: async ({ canvas, userEvent, args }) => {
-    await userEvent.type(await canvas.findByLabelText("Street address"), "123 Trailhead Way")
-    await userEvent.click(canvas.getByRole("combobox", { name: "Town" }))
-    await userEvent.click(await screen.findByRole("option", { name: "Erie" }))
+    await userEvent.type(await canvas.findByRole("combobox", { name: "Street address" }), "123 Tr")
+    await userEvent.click(await canvas.findByRole("option", { name: /123 Trailhead Way/ }))
     await userEvent.click(canvas.getByRole("button", { name: "Continue" }))
 
     await userEvent.click(await canvas.findByRole("button", { name: "8 zones" }))

@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeAll, afterEach } from "vitest"
 import { render, screen, fireEvent, act, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
+import { FIXTURE_HOME } from "@/lib/places/fixture"
 import { CheckoutFlow } from "./CheckoutFlow"
 import type { CheckoutFields } from "./checkout-state"
 
@@ -12,7 +13,8 @@ beforeAll(() => {
 })
 
 const answers: Partial<CheckoutFields> = {
-  address: "123 Trailhead Way",
+  address: FIXTURE_HOME.label,
+  place: FIXTURE_HOME,
   town: "Erie",
   zones: 8,
   turnOnPreference: "earlier",
@@ -48,16 +50,51 @@ describe("CheckoutFlow", () => {
     expect(screen.getByLabelText("Street address")).toHaveFocus()
   })
 
-  it("enables Continue once the address and the town are set", async () => {
+  it("enables Continue once an address in the six towns is picked from the list", async () => {
     const user = userEvent.setup()
     render(<CheckoutFlow season={2027} />)
-    await user.type(screen.getByLabelText("Street address"), "123 Trailhead Way")
+    const box = screen.getByRole("combobox", { name: "Street address" })
+    await user.type(box, "123 Tr")
     expect(continueButton()).toBeDisabled()
-    await user.click(screen.getByRole("combobox", { name: "Town" }))
-    await user.click(await screen.findByRole("option", { name: "Longmont" }))
+    await user.click(await screen.findByRole("option", { name: /123 Trailhead Way/ }))
+    expect(box).toHaveValue("123 Trailhead Way, Erie, CO 80516")
     expect(continueButton()).toBeEnabled()
     await user.click(continueButton())
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("How many zones does your system have?")
+  })
+
+  it("refuses an address outside the six towns and says so", async () => {
+    const user = userEvent.setup()
+    render(<CheckoutFlow season={2027} />)
+    const box = screen.getByRole("combobox", { name: "Street address" })
+    await user.type(box, "1200 Pe")
+    await user.click(await screen.findByRole("option", { name: /Boulder/ }))
+    expect(screen.getByText(/We don't serve Boulder yet/)).toBeInTheDocument()
+    expect(box).toHaveAttribute("aria-invalid", "true")
+    expect(continueButton()).toBeDisabled()
+    fireEvent.keyDown(box, { key: "Enter" })
+    expect(progress()).toHaveAttribute("aria-valuenow", "1")
+  })
+
+  it("asks for a pick when Enter comes with only typing, and picks with the arrow keys and Enter while the list is open", async () => {
+    const user = userEvent.setup()
+    render(<CheckoutFlow season={2027} />)
+    const box = screen.getByRole("combobox", { name: "Street address" })
+    await user.type(box, "123 Trailhead Way")
+    await screen.findByRole("option", { name: /123 Trailhead Way/ })
+    fireEvent.keyDown(box, { key: "Escape" })
+    expect(box).toHaveAttribute("aria-expanded", "false")
+    fireEvent.keyDown(box, { key: "Enter" })
+    expect(screen.getByText("Pick your address from the list so we have it right.")).toBeInTheDocument()
+    expect(progress()).toHaveAttribute("aria-valuenow", "1")
+    await user.clear(box)
+    await user.type(box, "Lowell")
+    const options = await screen.findAllByRole("option")
+    expect(options).toHaveLength(2)
+    await user.keyboard("{ArrowDown}{Enter}")
+    expect(box).toHaveValue("7300 Lowell Blvd, Westminster, CO 80030")
+    expect(progress()).toHaveAttribute("aria-valuenow", "1")
+    expect(screen.getByText(/We don't serve Westminster yet/)).toBeInTheDocument()
   })
 
   it("advances on Enter when the step is valid and goes back on Back", () => {
@@ -86,15 +123,11 @@ describe("CheckoutFlow", () => {
     expect(screen.getAllByRole("progressbar")[1]).toHaveAttribute("aria-valuenow", "2")
   })
 
-  it("leaves the arrow keys to a text input and Enter to the town select and an unpressed pill", () => {
+  it("leaves the arrow keys to a text input and Enter to an unpressed pill", () => {
     render(<CheckoutFlow season={2027} prefill={answers} />)
     const address = screen.getByLabelText("Street address")
     fireEvent.keyDown(address, { key: "ArrowDown" })
     expect(progress()).toHaveAttribute("aria-valuenow", "1")
-    const town = screen.getByRole("combobox", { name: "Town" })
-    fireEvent.keyDown(town, { key: "Enter" })
-    expect(progress()).toHaveAttribute("aria-valuenow", "1")
-    fireEvent.keyDown(town, { key: "Escape" })
     fireEvent.keyDown(address, { key: "Enter", isComposing: true })
     expect(progress()).toHaveAttribute("aria-valuenow", "1")
     fireEvent.keyDown(address, { key: "Enter" })
@@ -103,6 +136,16 @@ describe("CheckoutFlow", () => {
     expect(progress()).toHaveAttribute("aria-valuenow", "2")
     fireEvent.keyDown(screen.getByRole("button", { name: "8 zones", pressed: true }), { key: "Enter" })
     expect(progress()).toHaveAttribute("aria-valuenow", "3")
+  })
+
+  it("offers the email on a common domain when the typed one is a slip, and takes it on a click", async () => {
+    const user = userEvent.setup()
+    render(<CheckoutFlow season={2027} prefill={{ ...answers, email: "" }} initialStep={4} />)
+    const email = screen.getByLabelText("Email")
+    await user.type(email, "andrea@gmail.con")
+    await user.click(screen.getByRole("button", { name: "andrea@gmail.com" }))
+    expect(email).toHaveValue("andrea@gmail.com")
+    expect(screen.queryByText(/Did you mean/)).not.toBeInTheDocument()
   })
 
   it("shows the live price for the chosen zones", () => {
@@ -199,9 +242,9 @@ describe("CheckoutFlow", () => {
   it("asks kindly for the contact details it is missing", () => {
     render(<CheckoutFlow season={2027} prefill={{ ...answers, email: "andrea.example.com", phone: "" }} initialStep={4} />)
     expect(continueButton()).toBeDisabled()
-    expect(screen.queryByText("We need an email for the receipt.")).not.toBeInTheDocument()
+    expect(screen.queryByText("That email doesn't look complete.")).not.toBeInTheDocument()
     fireEvent.keyDown(screen.getByLabelText("First name"), { key: "Enter" })
-    expect(screen.getByText("We need an email for the receipt.")).toBeInTheDocument()
+    expect(screen.getByText("That email doesn't look complete.")).toBeInTheDocument()
     expect(screen.getByLabelText("Email")).toHaveAttribute("aria-invalid", "true")
     expect(screen.getByText("We need a ten-digit phone number for the day-of text.")).toBeInTheDocument()
     fireEvent.change(screen.getByLabelText("Email"), { target: { value: "andrea@example.com" } })
