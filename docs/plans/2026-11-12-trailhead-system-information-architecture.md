@@ -47,9 +47,18 @@ owner's copy wins and the other is a display.
    waiting), four numbers (revenue this month, passes sold, quotes awaiting,
    invoices past due), the season line, and the "Set up spring / fall"
    prompt when a window is four to six weeks out.
-2. **Schedule.** The week by truck. Proposed visits hatched until approved,
-   drag to move, exceptions marked, day view on the phone. Where the
-   scheduler's output lands and where Ryan lives in season.
+2. **Schedule.** The week by truck, and a day map beside it. Proposed
+   visits hatched until approved, drag to move between days or trucks,
+   exceptions marked, day view on the phone. The map (Hannah, 2026-11-12:
+   "we need a map to make sure we're routing this appropriately, do not go
+   backwards"): real geography on open tiles, every visit for the chosen
+   day as a pin coloured by truck and numbered in stop order, each truck's
+   area shaded, pin and grid block are the same visit. Addresses are
+   geocoded once when a customer is created and the point stored on the
+   property. Stop order comes from Jobber's route optimiser during the
+   transition and from the app's own ordering (nearest neighbour plus a
+   tidy pass) when Jobber goes. Where the scheduler's output lands and
+   where Ryan lives in season.
 3. **Passes.** Every pass holder: grid, filters, export, side panel with the
    season line, charges, Jobber and Stripe links, and the three actions.
 4. **Requests** (after booking lands). Only the work that needs a quote;
