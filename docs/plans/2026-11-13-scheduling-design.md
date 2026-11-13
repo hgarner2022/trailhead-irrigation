@@ -247,10 +247,24 @@ answers below say his weeks are too unpredictable to promise a day, this
 is the fallback, and it is a one-line change in the same model: offer
 weeks instead of days.
 
+## Answered so far (Hannah for Ryan, 14 Nov, 2am)
+
+- The working day is 8:00 to 5:00. The slot grid starts at 8:00, not 7:00.
+- A turn-on takes about 60 minutes; a blowout about 45. The inspection is
+  still open; assume 45 until Ryan says.
+- Capacity is derived, not guessed: a truck-day is 540 minutes; minus the
+  buffer (25 percent to start) and about 15 minutes of driving per stop,
+  that is roughly 5 turn-ons or 6 to 7 blowouts per truck-day. The old
+  defaults (8 turn-ons, 14 blowouts) are wrong: 14 blowouts is 630 minutes
+  before any driving. Settings take the day's hours, each job's minutes,
+  the drive allowance and the buffer, and compute the number; Ryan may
+  override it. Check the Jobber snapshot's visit lengths before setting
+  the minutes in step 1.
+
 ## Questions for Ryan before the route days are set
 
 1. Which weekday, per town, in April to May, in July, and in October?
-2. How many stops fit a truck-day for a turn-on, an inspection, a blowout?
+2. How long does an inspection take? (Turn-on 60 and blowout 45 are answered; the count per day is computed.)
 3. Saturdays in October? The second truck on a freeze week?
 4. Roughly what share of customers need to be home, and which kinds?
 5. How many days' notice is realistic when you pull fall days earlier?
