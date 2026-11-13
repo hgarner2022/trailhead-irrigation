@@ -55,7 +55,9 @@ export async function paymentMethodFromSession(stripe: Stripe, sessionId: string
   const intent = session.setup_intent
   const method = typeof intent === "object" && intent ? intent.payment_method : null
   const customer = typeof session.customer === "string" ? session.customer : session.customer?.id
-  if (!method || typeof method === "string" || !method.card || !customer) throw new Error("The session saved no card")
+  if (!customer) throw new Error("The session has no Stripe customer to hold the card")
+  if (!method || typeof method === "string") throw new Error("The session saved no payment method")
+  if (!method.card) throw new Error(`The session saved a ${method.type}, not a card`)
   return {
     customerId: customer,
     paymentMethodId: method.id,
