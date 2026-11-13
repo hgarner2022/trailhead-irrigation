@@ -1,137 +1,170 @@
-# Scheduling, thought through once
+# Scheduling, decided against the evidence
 
-Written 2026-11-13, late, after four changes to the rule in one evening and
-Hannah's "It's a complex scheduling problem. You need to think about this a
-lot more deeply." This document states the whole problem, the forces that
-pull against each other, the model that resolves them, and every case a
-customer or Ryan can hit. Nothing more is built on scheduling until this is
-agreed.
+Second version, 2026-11-14 early, after the research in
+`2026-11-14-scheduling-research.md`. The first version (13 Nov, late) was
+written before the research; this one replaces it. Every decision below
+names the problem it solves and what the evidence or the trade-off says.
+Nothing on scheduling is built until Hannah agrees this is the model, and
+the ten questions at the end go to Ryan before the route days are set.
 
-## The problem in one paragraph
+## What the research settled
 
-A customer pays in November for two or three visits in May, July and
-October. They want to know, today, when Ryan is coming, in a form they can
-put on a calendar. Ryan wants each truck-day to stay in one town so he does
-twelve stops instead of six, wants to run blowouts before the first hard
-freeze whatever the calendar said in November, and has a Jobber calendar of
-repairs, installs and personal days that the pass calendar must fit around.
-The app has to give the customer certainty and give Ryan room, and never
-promise what it cannot keep.
+- Route businesses assign the day and give the time late. The irrigation
+  firms closest to us send a tentative date and a window two to three weeks
+  out (Hydroscapes), or the date with an approximate time (Everist), or
+  staff assign and remind a day or two ahead (Senske). None gives an hour
+  months ahead. [research 1, 2]
+- Contact beats window size. Being contacted before arrival moved
+  satisfaction more than narrowing a window from four hours to one. A
+  one-hour window still scores well above a four-hour one, so hours matter
+  where someone is waiting. [research 7, 8]
+- Density comes from route days per zone, not from an optimizer. With two
+  trucks and one town per day, nearest-neighbour plus a swap pass is the
+  whole computation; the hard part is the rules. [research 9, 10]
+- Choice works at the level of the day. Amazon Day lets you pick a weekday
+  and change it anytime; grocery slots show only days with room. [11, 12]
+- Nobody has done what we want: a day chosen at purchase, months ahead,
+  with the window issued from a route built two weeks out. We would be
+  first, and the risks of that are listed at the end.
 
-## The forces
+## The decisions, by the question a customer or Ryan asks
 
-| Force | Pulls toward |
+**1. What day are you coming?** You pick it at purchase: three open days on
+your town's route days inside the visit's window, earliest, middle, late,
+the first preselected. It is called "your day", not an appointment, and the
+confirmation says in one line what can move it (weather in the fall, a
+conflict on Ryan's side) and that you will be told first and can pick
+again. Why: a paid customer with no day was tonight's complaint; only route
+days are offered, so density holds.
+
+**2. What time?** Depends on whether anyone needs to be there.
+- You said you need not be home (the default): you get the day. Two weeks
+  before, a text confirms the day; the day before, a reminder. No hour is
+  promised, because nobody is waiting for it and a promised hour Ryan
+  misses is a broken promise nobody needed.
+- You said you need to be home: you chose morning or afternoon at
+  purchase. Two weeks before, when the route is built, you get a two-hour
+  window inside your half, and the calendar entry updates to it. The day
+  before, the reminder repeats it. Never 8 to 10 as a default; the window
+  comes from your place in the route.
+- Ryan's own "on my way" text from his phone stays his, not the app's.
+
+**3. What if I'm not home in the morning?** The purchase asks one question:
+"Does someone need to be home?" No is the default, with the access note
+(gate code, dog, where the controller is). Yes asks "morning or afternoon",
+and that choice is honoured when the route is built. Most visits are
+unattended (TruGreen, LawnStarter and the blowout FAQs all say so), so most
+customers answer No and never think about hours.
+
+**4. Can I change it?** Yes, yourself, from the pass page or the link in
+any text, to another open route day, free, up to 48 hours before. Two moves
+per visit, then it becomes a call. Why: moving into an already-offered day
+costs Ryan nothing, and an approval step only makes admin.
+
+**5. What if it freezes early?** The fall day is yours, and the terms say in
+plain words that a fall day may be moved up to 14 days earlier with at
+least 48 hours' notice, free, and you may then pick another open day. Ryan
+pulls a whole truck-day earlier on the Schedule; every stop on it gets one
+text with a "pick another day" link. The last two weeks of the fall window
+are never sold at checkout: they are Ryan's slack for exactly this.
+
+**6. What if Ryan blocks that day in Jobber after I bought?** The daily
+read of his calendar flags the conflict on Home, one row, one action: move
+the stops, or clear the block. Nothing moves silently. Ryan is asked to
+block personal days in Jobber as soon as he knows them, because offered
+days shrink the same day he does.
+
+**7. What if my street's day is full?** It is not offered. If no day in the
+window has room, the checkout says so before the card step and takes your
+email for the waiting list; Ryan sees the list on Home and decides whether
+to open a Saturday or send the second truck. Nothing is sold that cannot be
+placed.
+
+**8. What if I buy in July?** Only the visits still ahead are sold, priced
+for those visits; the days step offers days only in the windows that
+remain. From November 16 the checkout sells next season. (Already built.)
+
+**9. Does it renew?** Yes, if you say so. At purchase, a box next to the
+terms, unticked, reads: "Renew my Season Pass each season on this card. We
+email you 30 days before with your days and the price, and you can cancel
+in one click." Colorado and California both require the consent to be the
+customer's own act, so the box starts unticked and sits where it cannot be
+missed; the benefit line beside it ("keep your route day next year") is what
+earns the tick. In mid December the renewal email names the days chosen
+for you (the earliest open route day per visit), the price, Change and
+Cancel; the pass is created in mid January on the card on file; nothing is
+charged until each visit is done, as always. A card that expired gets the
+update link first. A lawyer reads the wording before the first renewal.
+
+**10. How does Ryan keep a truck-day in one town?** Route days per town per
+window, set once a season in Settings, and only those days are ever
+offered. Later, a thin-day rule: a day with fewer than N stops two weeks
+out is folded into the next route day, with one text per stop.
+
+**11. When does the route get built?** Fourteen days before each truck-day,
+the daily run orders the stops (fixed stops first, then nearest-neighbour
+and a swap pass, morning and afternoon preferences honoured), assigns the
+two-hour windows, sends the confirmation texts, and shows the day on the
+Schedule as ordered. Ryan can drag any stop before or after. The day-before
+run sends the reminders.
+
+**12. What does the admin do, and when?** Four things. Once a season: route
+days, working days, capacity, the calendar feed link. Weekly from
+September: look at the freeze forecast and decide whether to pull a day.
+Fourteen days before a truck-day: glance at the order, fix a stop by hand
+if needed. Daily: clear the Home rows. Everything else is automatic.
+
+## What the live run showed is broken today, and must be fixed first
+
+- The offers ignored the settings: Saturdays and April 26 were offered
+  against Monday-to-Friday working days and a May 1 opening. Every offer
+  rule gets its own test before anything else is built on it.
+- The offers do not see Ryan's real calendar because no feed link has been
+  pasted into Settings. Until it is, the app offers days from a template of
+  his week.
+- The default settings are a guess from the Jobber data. Ryan's answers
+  below replace them.
+
+## Build order, one PR each, the live checklist after each
+
+1. Fix the offers: all six sources honoured (window, route days, working
+   days, capacity, Ryan's calendar, placed visits), the last two fall weeks
+   held back, one test per rule. Add "Does someone need to be home?" with
+   morning/afternoon, replacing the access-only question.
+2. The route build fourteen days out: order, windows for attended stops,
+   the confirmation text (day for everyone, window for attended), the
+   calendar update. The day-before reminder already exists.
+3. Move it: the pass page and the texts' link, 48 hours, two moves.
+4. The fall pull: drag a truck-day earlier, one text per stop, the terms
+   line at purchase.
+5. The conflict row and the waiting list on Home; the "window is full"
+   stop before the card.
+6. Auto-renew: the box, the December email, the January pass, the lawyer's
+   read.
+7. Settings: route days per town per window, working days per truck,
+   capacity, the feed link, "not confirmed" until saved.
+8. The thin-day fold.
+
+## Risks of being first, and what covers each
+
+| Risk | Cover |
 |---|---|
-| Customer certainty | A day and a time at purchase |
-| Route density | Same town, same day; the order decided late |
-| Weather (fall) | Moving a whole day earlier on a week's notice |
-| Ryan's other work | Days blocked after the pass was sold |
-| Customers who must be home | A narrow window they can plan around |
-| Honesty | Promising only what the app controls |
+| A "firm" day moved by weather or a conflict | The terms line at purchase, a free move, one text, never silent |
+| Slack sold out before a freeze | The last two fall weeks never sold; capacity capped below real |
+| Days spread thin across a town | Only route days offered; the thin-day fold |
+| October conflict rows swamp Ryan | One count on Home, one action each |
+| A renewal that picks days looks like a changed deal | The email lists the days with Change and Cancel |
+| No evidence chosen days are kept better than assigned ones | Measure moves and no-shows in the first season |
 
-A fixed two-hour slot chosen in November for May satisfies the first force
-and fights the next four. A bare window ("sometime in May") satisfies the
-last five and fails the first, which is what the first live purchase showed.
+## Questions for Ryan before the route days are set
 
-## The model: the day is yours now, the window comes with the route
-
-**At purchase the customer picks a day.** Three offered days per visit, on
-their town's route days inside the window, under capacity, with Ryan's
-calendar subtracted; earliest, middle, late; the first preselected. They
-also say when in the day suits them: **morning, afternoon or either**,
-default either. The day is committed: it is on their calendar, in the
-email, on the pass page.
-
-**Two weeks before the day, the app builds the route** for that truck-day:
-stops ordered by distance, morning and afternoon preferences honoured, each
-stop given a two-hour arrival window from its place in the route. The
-customer gets the text: "Tuesday, May 5, 10 am to 12 pm." The calendar
-entry updates to the window. This is the promise the copy already makes
-("we confirm it by text two weeks before").
-
-**The day before, the reminder** with the same window.
-
-**A customer who must be home** picks morning or afternoon at purchase and
-gets a window inside it. If they need a tighter commitment than two hours
-or a specific hour, they call, and Ryan fixes the stop by hand on the
-Schedule, which the route is then built around.
-
-**Moves.** A customer moves their own day from the pass page, any time up
-to 48 hours before, to another offered day (same rules). Ryan moves days on
-the Schedule; every move sends the new day, and a new window if the route
-was already built. A weather move in the fall is Ryan dragging a whole
-truck-day earlier; every stop on it gets one text.
-
-Why this and not fixed slots at purchase: slots chosen months ahead by
-twenty customers in one town make a route that zigzags across Erie at the
-times they chose, and a frost forecast cannot shift it. Why this and not
-"we'll tell you in April": a paid customer with no day is the complaint we
-had tonight. The day is the thing the customer actually plans around; the
-hour within it is the thing Ryan has to control.
-
-## Where the days come from
-
-1. **Windows:** turn-on April 15 to May 31, inspection July 1 to 31,
-   blowout October 1 to November 15. One place in code, used by the
-   checkout, the offers, the scheduler and the copy.
-2. **Route days:** each town has route days per window, from Settings
-   (today's defaults are a guess from the Jobber data; Ryan sets them).
-   Erie might be Monday and Thursday in spring, every weekday in October.
-3. **Working days:** per truck, from Settings. Saturdays only if Ryan says
-   so, and he may say so for October only.
-4. **Capacity:** per truck-day per visit kind, minus a buffer, from
-   Settings.
-5. **Ryan's calendar:** the Jobber calendar feed, pasted once into Settings
-   per truck, read daily. A blocked morning removes that morning's
-   capacity; a blocked day removes the day.
-6. **Visits already placed:** counted against capacity.
-
-An offered day must pass all six. Tonight's live run offered Saturdays and
-April 26 against Monday to Friday and a May 1 opening, so the current
-`offerDays` does not; that is a bug to fix in the rebuild, with a test per
-rule.
-
-## Every case
-
-| Case | What happens |
-|---|---|
-| Buys in November for next year | Picks a day for each of the visits still ahead (all of them). Windows come two weeks before each. |
-| Buys in July | The turn-on has passed and is not sold; picks a day for the inspection (while July is open) and the blowout. Price is those visits. |
-| Buys after November 15 | The checkout sells next season. |
-| Buys a day that fills before activation | Takes the next open day; the confirmation says so in one line. |
-| Must be home | Picks morning or afternoon; gets a window inside it. Can call for an exact hour, which Ryan fixes. |
-| Wants to change the day | Pass page, "Move it", up to 48 hours before, same offered-day rules. |
-| Ryan moves a day (weather, a job ran long) | Drag on the Schedule; each customer on it gets the new day, and the new window if built. |
-| Ryan blocks a day in Jobber after it was sold | The daily read flags the conflict on Home; Ryan moves the stops or clears the block. Nothing is silently dropped. |
-| A town's route day is full | Not offered. The fall needs more days than the spring; Settings decide whether that is Saturdays or the second truck. |
-| Nothing fits in the window | The checkout says the window is full before the card step and offers the waiting list by email (call us). Never sells a visit it cannot place. |
-| Cancels | Visits freed, capacity returns, Jobber told by the routine. |
-| Renewal (auto, Hannah's decision) | A ticked box at purchase: "Renew my pass each season. We email you 30 days before with your days and the price. Cancel in one click." In January the app makes next season's pass on the card on file, picks the earliest open day per visit, emails Change and Cancel. Consent, the 30-day notice and the one-click cancel are what the auto-renewal laws require; a card that expired gets the update link first. |
-
-## What Ryan sees
-
-The Schedule shows each truck-day with its stops, unordered until two weeks
-out, ordered after. A truck-day over capacity, a Jobber conflict, a customer
-waiting for a day that filled: each is a row on Home with one action. The
-Schedule button places only what has no day (admin-created passes, moves).
-Settings hold route days, working days, capacity and the calendar feed, and
-say "not confirmed" until Ryan saves them once.
-
-## What changes in the build, in order
-
-1. Fix `offerDays` to honour all six sources, one test per rule, and add
-   the morning/afternoon/either choice to the days step and the pass.
-2. Build the route two weeks out: a daily step that orders each truck-day
-   fourteen days ahead, assigns the two-hour windows, and sends the
-   confirmation text and calendar update. (The two-week text exists; it
-   gains the window.)
-3. Honour preferences and hand-fixed stops in `orderDay`.
-4. "Move it" on the pass page with the 48-hour rule.
-5. The Jobber-conflict row on Home.
-6. The "window is full" refusal in the checkout, before the card.
-7. Auto-renew as described, replacing "Reserve next season" as the default.
-8. Settings: route days per town per window, working days per truck, the
-   calendar feed field, all marked unconfirmed until saved.
-
-Each is a PR with the live checklist run after it. None of them starts
-until Hannah says the model above is the one.
+1. Which weekday, per town, in April to May, in July, and in October?
+2. How many stops fit a truck-day for a turn-on, an inspection, a blowout?
+3. Saturdays in October? The second truck on a freeze week?
+4. Roughly what share of customers need to be home, and which kinds?
+5. How many days' notice is realistic when you pull fall days earlier?
+6. How much of late October do you want held back as slack?
+7. Will you block personal days in Jobber ahead, or find out the same week?
+8. Customers move themselves, or request a move?
+9. Lose density, or lose a customer who needs an exact hour?
+10. What do you do today when nobody answers at a stop?
