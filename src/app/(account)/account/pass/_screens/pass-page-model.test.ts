@@ -70,6 +70,6 @@ describe("season caption", () => {
   })
 
   it("closes the season when every visit is done", () => {
-    expect(seasonCaption(allDone)).toBe("All three visits are done. We'll email you in January about 2028.")
+    expect(seasonCaption(allDone)).toBe("Every visit is done. We'll email you in January about 2028.")
   })
 })

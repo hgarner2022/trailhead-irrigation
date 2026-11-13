@@ -4,14 +4,17 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { PassCard } from "@/components/blocks/PassCard"
 import { SeasonLine } from "@/components/blocks/SeasonLine"
 import { StatusPill } from "@/components/blocks/StatusPill"
-import type { Pass } from "@/lib/admin/types"
+import type { Pass, TimingPreference } from "@/lib/admin/types"
+import { preferenceOf } from "@/lib/admin/format"
 import { CancelPassDialog } from "./CancelPassDialog"
-import { cardLine, seasonCaption, visitRows } from "./pass-page-model"
+import { ChangePreferenceDialog } from "./ChangePreferenceDialog"
+import { canChange, cardLine, seasonCaption, visitRows } from "./pass-page-model"
 
 // The customer's pass page: a season card, not a dashboard. The pass card at
-// the top, the season line with the three visits and their state, the card
-// on file with one update button, and one cancel link that asks before it
-// does anything (CancelPassDialog). The visit states use the customer's words,
+// the top, the season line with the visits and their state, the card
+// on file with one update button, a Change link on the turn-on and blowout
+// rows until their day is set (ChangePreferenceDialog), and one cancel link
+// that asks before it does anything (CancelPassDialog). The visit states use the customer's words,
 // Done, Booked and Preferred, in the StatusPill colours; a customer never reads
 // "Not scheduled". A cancelled pass shows the grey card and one line. Pure
 // composition over `pass` and `today`; the route's page.tsx supplies both.
@@ -23,6 +26,8 @@ export interface PassPageScreenProps {
   today: string
   /** called when the customer confirms the cancel dialog */
   onCancel?: () => void
+  /** called when the customer saves a new timing preference for the turn-on or the blowout */
+  onChangePreference?: (kind: "turn-on" | "blowout", preference: TimingPreference) => void
 }
 
 const LOGO = "/images/logo-badge.png"
@@ -31,7 +36,7 @@ function Title({ children }: { children: string }) {
   return <h2 className="font-display text-2xl font-semibold leading-none text-navy">{children}</h2>
 }
 
-export function PassPageScreen({ pass, today, onCancel }: PassPageScreenProps) {
+export function PassPageScreen({ pass, today, onCancel, onChangePreference }: PassPageScreenProps) {
   const cancelled = pass.status === "cancelled"
   return (
     <div data-slot="pass-page" data-status={pass.status} className="min-h-svh bg-cream text-foreground">
@@ -56,15 +61,20 @@ export function PassPageScreen({ pass, today, onCancel }: PassPageScreenProps) {
               <CardContent className="space-y-6">
                 <SeasonLine mode="customer" season={pass.season} visits={pass.visits} preferences={pass} today={today} caption={seasonCaption(pass)} />
                 <ul className="divide-y divide-border">
-                  {visitRows(pass).map((row) => (
-                    <li key={row.kind} data-slot="pass-visit-row" className="flex items-center gap-3 py-3">
-                      <span className="min-w-0 flex-1">
-                        <span className="block text-base font-semibold text-foreground">{row.name}</span>
-                        <span className="block text-sm text-muted-foreground">{row.when}</span>
-                      </span>
-                      <StatusPill status={row.status} label={row.label} />
-                    </li>
-                  ))}
+                  {pass.visits.map((visit) => {
+                    const row = visitRows(pass).find((r) => r.kind === visit.kind)!
+                    const preference = canChange(visit) ? preferenceOf(pass, visit.kind) : null
+                    return (
+                      <li key={row.kind} data-slot="pass-visit-row" className="flex items-center gap-3 py-3">
+                        <span className="min-w-0 flex-1">
+                          <span className="block text-base font-semibold text-foreground">{row.name}</span>
+                          <span className="block text-sm text-muted-foreground">{row.when}</span>
+                        </span>
+                        {preference && canChange(visit) && <ChangePreferenceDialog kind={visit.kind} value={preference} onSave={onChangePreference} />}
+                        <StatusPill status={row.status} label={row.label} />
+                      </li>
+                    )
+                  })}
                 </ul>
               </CardContent>
             </Card>
@@ -84,7 +94,7 @@ export function PassPageScreen({ pass, today, onCancel }: PassPageScreenProps) {
                 <Title>Need to change something?</Title>
               </CardHeader>
               <CardContent className="space-y-3">
-                <p className="text-base text-muted-foreground">Reply to any of our emails or call and we&apos;ll move a visit or update the address. You can also end the pass here.</p>
+                <p className="text-base text-muted-foreground">Change when we come with the link on a visit above, until its day is set. Reply to any of our emails or call to update the address. You can also end the pass here.</p>
                 <CancelPassDialog onConfirm={onCancel} />
               </CardContent>
             </Card>
