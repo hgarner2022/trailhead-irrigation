@@ -32,9 +32,9 @@ export interface NeedsAttentionProps {
 const KINDS: Record<Attention["kind"], { icon: LucideIcon; tone: string; name: string }> = {
   "new-pass": { icon: BadgeCheck, tone: "bg-success/10 text-success", name: "New pass" },
   "charge-failed": { icon: CreditCard, tone: "bg-warning/10 text-warning", name: "Charge failed" },
-  "jobs-failed": { icon: CalendarX, tone: "bg-warning/10 text-warning", name: "Jobs not created" },
+  "jobs-failed": { icon: CalendarX, tone: "bg-warning/10 text-warning", name: "Visits missing a Jobber job" },
   "card-expiring": { icon: Clock, tone: "bg-stone text-muted-foreground", name: "Card expiring" },
-  "not-closed": { icon: CircleDashed, tone: "bg-stone text-muted-foreground", name: "Visits not closed" },
+  "not-closed": { icon: CircleDashed, tone: "bg-stone text-muted-foreground", name: "Visits not marked done" },
   "pass-cancelled": { icon: Ban, tone: "bg-warning/10 text-warning", name: "Pass cancelled" },
   scheduled: { icon: CalendarCheck, tone: "bg-success/10 text-success", name: "Schedule run" },
   unplaced: { icon: CalendarX, tone: "bg-warning/10 text-warning", name: "Needs a day" },

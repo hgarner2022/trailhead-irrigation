@@ -171,7 +171,7 @@ export function PassPageScreen({ pass, passes = [pass], today, onCancel, onChang
                 <Title>Need to change something?</Title>
               </CardHeader>
               <CardContent className="space-y-3">
-                <p className="text-base text-muted-foreground">Change when we come with the link on a visit above, until its day is set. Skip one visit, or add the July inspection, here. Reply to any of our emails or call to update the address. You can also end the pass.</p>
+                <p className="text-base text-muted-foreground">Change a day from the link on a visit above. Skip a visit or add the July inspection here. To change your address, reply to any of our emails or call Ryan. You can end the pass here too.</p>
                 <PassActions pass={pass} include={["inspection", "skip"]} onAddInspection={onAddInspection} onSkip={onSkip} />
                 <CancelPassDialog onConfirm={onCancel} />
               </CardContent>

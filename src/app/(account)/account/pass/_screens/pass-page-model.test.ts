@@ -63,10 +63,10 @@ describe("season caption", () => {
   })
 
   it("names the preference when the turn-on or the blowout is next", () => {
-    expect(seasonCaption(fresh)).toBe("Next up: spring turn-on, preferred early May.")
+    expect(seasonCaption(fresh)).toBe("Next up: spring turn-on. You asked for early May.")
     const blowoutNext: Pass = { ...pass, visits: pass.visits.map((v, i) => (i < 2 ? { ...v, completedAt: "2027-07-13T16:05:00Z" } : v)) }
-    expect(seasonCaption(blowoutNext)).toBe("Your blowout is preferred for mid October. Ryan sets the day in September.")
-    expect(seasonCaption({ ...blowoutNext, blowoutPreference: "earlier" })).toBe("Your blowout is preferred for early October. Ryan sets the day in September.")
+    expect(seasonCaption(blowoutNext)).toBe("You asked for mid October for your blowout. Ryan sets the day in September.")
+    expect(seasonCaption({ ...blowoutNext, blowoutPreference: "earlier" })).toBe("You asked for early October for your blowout. Ryan sets the day in September.")
   })
 
   it("closes the season when every visit is done", () => {

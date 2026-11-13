@@ -109,20 +109,20 @@ describe("wording per kind", () => {
     expect(text).toContain("Your fall blowout is planned for early October.")
   })
   it("card-failed and card-expiring carry the update link and the amount", () => {
-    expect(get("card-failed").text).toContain("declined for $145")
+    expect(get("card-failed").text).toContain("didn't go through for $145")
     expect(get("card-failed").text).toContain("https://billing.stripe.com/s/1")
     expect(get("card-expiring").text).toContain("expires in July 2027, and $190 of visits are still to come")
     expect(get("card-expiring").subject).toBe("Add a card to your Season Pass")
   })
   it("cancelled says nothing further is charged", () => {
-    expect(get("cancelled").text).toContain("Nothing further will be charged.")
+    expect(get("cancelled").text).toContain("We won't charge you again.")
   })
   it("renewal names the season and offers the pass page, with a way to stop", () => {
     expect(get("renewal").subject).toBe("Season Pass 2028 is open")
     expect(get("renewal").html).toContain("Reply to stop these emails.")
   })
   it("the crew note counts the visits and the office alert opens the admin", () => {
-    expect(get("not-closed-crew").subject).toBe("2 visits are not closed yet")
+    expect(get("not-closed-crew").subject).toBe("2 visits still need to be marked done")
     expect(get("not-closed-crew").text).toContain("Ben, Lafayette: fall blowout on Monday, October 4")
     expect(get("admin-alert").html).toContain(`${origin}/admin/passes`)
   })

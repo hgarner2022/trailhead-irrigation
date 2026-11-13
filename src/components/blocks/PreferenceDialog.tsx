@@ -50,8 +50,8 @@ export function PreferenceDialog({ kind, value, onSave, label = "Change", asButt
         {saved ? (
           <>
             <DialogHeader>
-              <DialogTitle className="font-display text-2xl text-navy">{`Your ${NAMES[kind]} is now preferred ${preferencePhrase(kind, chosen)}.`}</DialogTitle>
-              <DialogDescription className="text-base">We&apos;ll set the day inside it and email you the date.</DialogDescription>
+              <DialogTitle className="font-display text-2xl text-navy">{`Got it. You asked for ${preferencePhrase(kind, chosen)} for your ${NAMES[kind]}.`}</DialogTitle>
+              <DialogDescription className="text-base">We&apos;ll set the day in that window and email you the date.</DialogDescription>
             </DialogHeader>
             <DialogFooter>
               <DialogClose asChild>

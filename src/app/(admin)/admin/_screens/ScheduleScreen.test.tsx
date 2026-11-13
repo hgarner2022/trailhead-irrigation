@@ -64,7 +64,7 @@ describe("ScheduleScreen Schedule", () => {
     expect(button).toBeEnabled()
     await userEvent.click(button)
     expect(info).toHaveBeenCalledWith("schedule", "2026-11-09", expect.any(Array))
-    expect(screen.getByRole("status")).toHaveTextContent(/visits scheduled on the week of November 9; the customers get their dates\. \d+ customers pick their own days and stay in the list\./)
+    expect(screen.getByRole("status")).toHaveTextContent(/visits scheduled on the week of November 9\. The customers get their dates\. \d+ customers pick their own days and stay in the list\./)
     expect(screen.getByRole("button", { name: "Schedule" })).toBeDisabled()
   })
 })
@@ -102,7 +102,7 @@ describe("ScheduleScreen with actions", () => {
     const windows = onSchedule.mock.calls.map((c) => c[0])
     expect(new Set(windows).size).toBe(windows.length)
     expect(windows.every((w) => ["turn-on", "inspection", "blowout"].includes(w))).toBe(true)
-    expect(await screen.findByText(/visits? scheduled; the customers get their dates\. \d+ could not be placed; Home lists them\./, {}, { timeout: 5000 })).toBeInTheDocument()
+    expect(await screen.findByText(/visits? scheduled\. The customers get their dates\. \d+ couldn't be placed\. Home lists them\./, {}, { timeout: 5000 })).toBeInTheDocument()
   })
 
   it("shows a tech no Schedule, Place or Move controls", async () => {

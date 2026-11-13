@@ -4,7 +4,6 @@ import { headers } from "next/headers"
 import { after } from "next/server"
 import { db } from "@/db"
 import { ctxForCheckout } from "@/lib/admin/api-ctx"
-import { auth } from "@/auth"
 import { beginCheckoutWith, finishCheckoutWith, offerDaysWith, renewCheckoutWith, type CheckoutDeps } from "@/lib/pass/server/checkout"
 import { drain } from "@/lib/queue"
 import { handlers } from "@/lib/queue/handlers"
@@ -41,6 +40,8 @@ export async function offerDays(query: OfferQuery): Promise<Offers> {
 
 /** Reserving the next season on the card on file: the pass, its days and the confirmation. Queues the messages after the response. */
 export async function renewCheckout(renewal: Pick<RenewalPrefill, "passId" | "token">, submission: CheckoutSubmission): Promise<FinishResult> {
+  // Loaded when needed: the session library is only for the renewal's own-customer check.
+  const { auth } = await import("@/auth")
   const principal = (await auth())?.principal ?? null
   const result = await renewCheckoutWith(await deps(), renewal, submission, principal)
   if (result.ok) after(() => drain(db(), handlers))

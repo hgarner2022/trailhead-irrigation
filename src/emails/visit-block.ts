@@ -9,7 +9,7 @@ export function visitBody(d: Base, visit: VisitFacts, intro: string): string {
     paragraph(intro),
     facts([["Day", whenText(visit.day, visit.startTime)], ["Who is coming", `${crewOf(visit)}${visit.crew ? "" : " and the crew"}`], ["Where", visit.location]]),
     `<p style="margin:0 0 8px">${button(googleCalendarUrl(visit), "Add to Google Calendar", "quiet")}${button(visit.icsUrl, "Add to Apple or Outlook calendar", "quiet")}</p>`,
-    paragraph("Need a different day, or want to change anything else on your pass? Your pass page has it all."),
+    paragraph("Need a different day? Change it, or anything else on your pass, on your pass page."),
     button(d.signInUrl, "Open your pass page"),
   ].join("")
 }

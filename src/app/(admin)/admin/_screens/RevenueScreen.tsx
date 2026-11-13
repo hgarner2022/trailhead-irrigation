@@ -107,7 +107,7 @@ export function RevenueScreen({ data, today }: RevenueScreenProps) {
         <Card>
           <CardHeader>
             <CardTitleHeading>Renewals</CardTitleHeading>
-            <CardDescription>{`Where last season's passes stand for ${season}. The customers not yet asked are the ones to send the offer to.`}</CardDescription>
+            <CardDescription>{`Where last season's passes stand for ${season}. Send the offer to the customers you haven't asked yet.`}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-5">
             <div className="flex flex-wrap gap-x-12 gap-y-4">

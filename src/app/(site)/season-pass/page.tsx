@@ -22,7 +22,7 @@ import {
 
 export const metadata: Metadata = {
   title: "Sprinkler Season Pass: Turn-On and Blowout, Erie CO",
-  description: `Spring turn-on and fall blowout on one schedule, from $${SEASON_PASS_FROM} for up to 6 zones, with a July inspection if you want it. Blowout date reserved in July. Billed per visit, nothing up front.`,
+  description: `Spring turn-on and fall blowout on one schedule, from $${SEASON_PASS_FROM} for up to 6 zones, with a July inspection if you want it. You pick your days when you reserve. You pay after each visit.`,
   alternates: { canonical: `${siteConfig.url}/season-pass` },
 }
 
@@ -30,7 +30,7 @@ const VISIT_ICONS = [Sun, Search, Snowflake]
 const VISIT_DETAILS = [
   "Pressurize the system, run every zone, adjust heads, fix small leaks, program the controller for spring.",
   "We look for coverage gaps, clogged nozzles and zones running long, fix what we can and tell you the rest.",
-  "Compressed-air blowout of every zone before the first hard freeze. Your date is set in July.",
+  "Compressed-air blowout of every zone before the first hard freeze. You pick your date when you reserve.",
 ]
 
 const FAQS: FaqItem[] = [
@@ -41,7 +41,7 @@ const FAQS: FaqItem[] = [
   {
     question: "What do I get that I wouldn't get booking each visit on its own?",
     answer:
-      "Your blowout date reserved in July, both visits booked without you having to call, and one card on file instead of separate invoices.",
+      "You pick both days when you reserve, so you never have to call, and one card covers every visit.",
   },
   {
     question: "When do I pay?",
@@ -61,7 +61,7 @@ const FAQS: FaqItem[] = [
   {
     question: "What is the mid-season inspection, and do I need it?",
     answer:
-      "In July we run every zone, look for coverage gaps, clogged nozzles and zones running long, and adjust what we find. It is an add-on, not part of the pass: add it at checkout or later by replying to any of our emails, and it is billed after the visit like the others.",
+      "In July we run every zone and look for coverage gaps, clogged nozzles and zones that run long. We adjust what we find. The July inspection is an add-on. Add it at checkout, or later by replying to any of our emails. You pay after the visit, like the others.",
   },
   {
     question: "Which cities can get the Season Pass?",
@@ -136,7 +136,7 @@ export default function SeasonPassPage() {
                 Less time in the yard.<br />More time on the trail.
               </p>
               <p className="text-base text-white/80 max-w-xl">
-                About 150 blowouts land in the four weeks before the first freeze. Pass customers get their October date in July, before that rush. You pay after each visit, nothing up front.
+                Blowouts bunch up in the weeks before the first freeze. Pass customers pick their October date when they reserve, ahead of that rush. You pay after each visit.
               </p>
             </div>
             <SeasonPassCalculator ctaHref={checkoutEnabled() ? "/season-pass/checkout" : "/contact"} carryZones={checkoutEnabled()} ctaLabel="Reserve my season" />

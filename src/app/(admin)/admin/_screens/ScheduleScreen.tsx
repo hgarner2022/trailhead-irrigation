@@ -166,8 +166,8 @@ export function ScheduleScreen({ data, today, defaultTab = "week", defaultDay, d
           placed += out.data.placed
           unplaced += out.data.unplaced
         }
-        const left = unplaced ? ` ${unplaced} could not be placed; Home lists them.` : ""
-        setAnnouncement(`${placed} ${placed === 1 ? "visit" : "visits"} scheduled; the customers get their dates.${left}`)
+        const left = unplaced ? ` ${unplaced} couldn't be placed. Home lists them.` : ""
+        setAnnouncement(`${placed} ${placed === 1 ? "visit" : "visits"} scheduled. The customers get their dates.${left}`)
       })
       return
     }
@@ -175,7 +175,7 @@ export function ScheduleScreen({ data, today, defaultTab = "week", defaultDay, d
     const outcome = scheduleItems(visits, tray, trucks, weekStart, TIME_ZONE)
     setVisits(outcome.visits)
     const waiting = outcome.waiting ? ` ${outcome.waiting} ${outcome.waiting === 1 ? "customer picks their own day and stays" : "customers pick their own days and stay"} in the list.` : ""
-    setAnnouncement(`${outcome.placed} ${outcome.placed === 1 ? "visit" : "visits"} scheduled on the week of ${writtenDate(weekStart)}; the customers get their dates.${waiting}`)
+    setAnnouncement(`${outcome.placed} ${outcome.placed === 1 ? "visit" : "visits"} scheduled on the week of ${writtenDate(weekStart)}. The customers get their dates.${waiting}`)
   }
   /** Sends the move to the API; the block shows where it is going at once and goes back with the API's words if it is refused. */
   const send = (visitId: string, truckId: string, dayIso: string, before: typeof visits, done: string) =>
@@ -200,7 +200,7 @@ export function ScheduleScreen({ data, today, defaultTab = "week", defaultDay, d
     const before = visits
     setVisits((v) => placeVisit(v, item, truck.id, dayIso, TIME_ZONE))
     setSelectedId(item.id)
-    const done = `${item.clientName} scheduled on ${truck.name}, ${writtenDate(dayIso)}; they get the date. Drag it if another day is better.`
+    const done = `${item.clientName} is scheduled on ${truck.name} for ${writtenDate(dayIso)}, and we'll send the date. Drag it if another day is better.`
     if (onMove) return send(item.id, truck.id, dayIso, before, done)
     setAnnouncement(done)
   }

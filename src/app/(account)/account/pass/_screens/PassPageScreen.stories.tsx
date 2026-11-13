@@ -63,7 +63,7 @@ export const Cancelling: Story = {
   globals: { viewport: { value: "wide", isRotated: false } },
   play: async ({ canvas, userEvent, args }) => {
     await userEvent.click(await canvas.findByRole("button", { name: "Cancel my pass" }))
-    await userEvent.click(await screen.findByRole("button", { name: "Cancel the pass" }))
+    await userEvent.click(await screen.findByRole("button", { name: "Cancel my pass" }))
     await expect(await screen.findByRole("dialog", { name: "Your pass is cancelled." })).toBeInTheDocument()
     await expect(args.onCancel).toHaveBeenCalledTimes(1)
   },

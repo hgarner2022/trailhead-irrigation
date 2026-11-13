@@ -16,14 +16,16 @@ import type { TimingPreference } from "@/lib/admin/types"
 const PAGE = "/account/pass"
 type Result = { ok: true } | { ok: false; message: string }
 
-const failure = (error: unknown): Result => ({ ok: false, message: error instanceof ApiError && error.status < 500 ? error.message : "That did not go through. Please try again, or call us." })
+const failure = (error: unknown, fallback: string): Result => ({ ok: false, message: error instanceof ApiError && error.status < 500 ? error.message : fallback })
+const CANCEL_FAILED = "We couldn't cancel your pass. Try again, or call Ryan at (970) 692-7270."
+const DAY_FAILED = "We couldn't save that day. Try another, or call Ryan at (970) 692-7270."
 
 /** Ends the pass: unstarted visits come off the schedule, nothing further is charged, the customer is emailed. */
 export async function cancelPass(passId: string): Promise<Result> {
   try {
     await callApi(await ctxFromSession(), passesCancel, { id: passId })
   } catch (error) {
-    return failure(error)
+    return failure(error, CANCEL_FAILED)
   }
   revalidatePath(PAGE)
   return { ok: true }
@@ -41,16 +43,16 @@ export async function changePreference(passId: string, kind: "turn-on" | "blowou
   revalidatePath(PAGE)
 }
 
-/** A customer who must be home picks one of the offered area days; the visit is placed and the date is texted. */
+/** A customer picks one of the offered days, to set a day or to change it; the visit is placed and the date is texted. */
 export async function pickDay(passId: string, kind: "turn-on" | "blowout", day: string): Promise<Result> {
   try {
     const ctx = await ctxFromSession()
     const pass = await callApi(ctx, passesGet, { id: passId })
     const visit = pass.visits.find((v) => v.kind === kind)
-    if (!visit) return { ok: false, message: "We could not find that visit on your pass." }
+    if (!visit) return { ok: false, message: "We couldn't find that visit on your pass." }
     await callApi(ctx, visitsPick, { id: visit.id, day })
   } catch (error) {
-    return failure(error)
+    return failure(error, DAY_FAILED)
   }
   revalidatePath(PAGE)
   return { ok: true }

@@ -106,7 +106,7 @@ export const ContactErrors: Story = {
   globals: { viewport: { value: "wide", isRotated: false } },
   play: async ({ canvas, userEvent }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Continue" }))
-    await expect(await canvas.findByRole("alert")).toHaveTextContent("3 things need another look: First name, Email, Phone")
+    await expect(await canvas.findByRole("alert")).toHaveTextContent("Check these before you continue: First name, Email, Phone.")
     await expect(canvas.getByLabelText("First name")).toHaveFocus()
   },
 }
@@ -127,7 +127,7 @@ export const ContactTermsMissing: Story = {
   globals: { viewport: { value: "wide", isRotated: false } },
   play: async ({ canvas, userEvent }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Continue" }))
-    await expect(await canvas.findByText("Please accept the terms to continue")).toBeInTheDocument()
+    await expect(await canvas.findByText("Accept the terms to continue.")).toBeInTheDocument()
     await expect(canvas.getByRole("checkbox", { name: /I accept the Season Pass terms/ })).toHaveFocus()
   },
 }

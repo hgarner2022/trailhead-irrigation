@@ -54,7 +54,7 @@ function AddInspectionDialog({ pass, voice, onAdd }: { pass: Pass; voice: "custo
           <>
             <DialogHeader>
               <DialogTitle className="font-display text-2xl text-navy">The July inspection is on {who} pass.</DialogTitle>
-              <DialogDescription className="text-base">It is billed after the visit like the others, and the day comes by email.</DialogDescription>
+              <DialogDescription className="text-base">You pay after the visit, like the others. We email and text your day.</DialogDescription>
             </DialogHeader>
             <DialogFooter>
               <DialogClose asChild>
@@ -66,7 +66,7 @@ function AddInspectionDialog({ pass, voice, onAdd }: { pass: Pass; voice: "custo
           <>
             <DialogHeader>
               <DialogTitle className="font-display text-2xl text-navy">Add the mid-season inspection?</DialogTitle>
-              <DialogDescription className="text-base">In July we run every zone, look for coverage gaps, clogged nozzles and zones running long, and adjust what we find. Billed after the visit at the per-zone rate.</DialogDescription>
+              <DialogDescription className="text-base">In July we run every zone and look for coverage gaps, clogged nozzles and zones that run long. We adjust what we find. You pay after the visit, at the per-zone rate.</DialogDescription>
             </DialogHeader>
             <DialogFooter>
               <DialogClose asChild>

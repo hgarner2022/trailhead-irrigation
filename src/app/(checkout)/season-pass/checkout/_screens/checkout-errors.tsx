@@ -3,7 +3,7 @@ export function ErrorSummary({ problems }: { problems: string[] }) {
   if (problems.length < 2) return null
   return (
     <div role="alert" data-slot="checkout-error-summary" className="mt-6 rounded-lg border border-destructive/40 bg-background p-4 text-destructive">
-      <p className="text-base">{`${problems.length} things need another look: ${problems.join(", ")}`}</p>
+      <p className="text-base">{`Check these before you continue: ${problems.join(", ")}.`}</p>
     </div>
   )
 }

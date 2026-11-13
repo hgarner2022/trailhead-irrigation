@@ -215,7 +215,7 @@ export function attention(i: ShapeInput, passes: Pass[]): Attention[] {
   for (const q of i.queueProblems) out.push({ kind: "jobs-failed", message: `A ${q.kind} task ${q.status === "failed" ? "gave up" : "is retrying"}: ${q.lastError ?? "no error recorded"}`, since: iso(q.updatedAt) })
   for (const v of i.visits) {
     if ((v.status === "not-closed" || v.status === "scheduled") && v.scheduledOn && v.scheduledOn < i.today && !v.completedOn)
-      out.push({ kind: "not-closed", ...(v.passId ? { passId: v.passId } : {}), message: `${v.firstName}'s ${v.kind.replace("-", " ")} on ${v.scheduledOn} is not closed yet`, since: instantOf(v.scheduledOn, "18:00") })
+      out.push({ kind: "not-closed", ...(v.passId ? { passId: v.passId } : {}), message: `${v.firstName}'s ${v.kind.replace("-", " ")} on ${v.scheduledOn} is not marked done yet`, since: instantOf(v.scheduledOn, "18:00") })
   }
   for (const p of passes) {
     if (p.status === "active" && p.cardExpires && p.cardExpires < `${p.season}-10` && !p.cardFailedAt)

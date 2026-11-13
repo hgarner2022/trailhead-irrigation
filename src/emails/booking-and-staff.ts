@@ -17,10 +17,10 @@ export function bookingConfirmationEmail(d: BookingConfirmationData): RenderedEm
 /** The crew's morning note about visits nobody marked done; goes to the office, not a customer. */
 export function notClosedCrewEmail(d: NotClosedCrewData): RenderedEmail {
   const n = d.visits.length
-  const subject = n === 1 ? "1 visit is not closed yet" : `${n} visits are not closed yet`
+  const subject = n === 1 ? "1 visit still needs to be marked done" : `${n} visits still need to be marked done`
   const lines = d.visits.map((v) => `${v.customer}, ${v.town}: ${v.name} on ${longDay(v.day)}`)
   const intro = n === 1 ? "One visit had its day and was not marked done. Nothing charges until it is." : `${n} visits had their day and were not marked done. Nothing charges until they are.`
-  const html = emailLayout({ origin: d.origin, preheader: intro, body: heading("Not closed yet") + paragraph(intro) + facts(d.visits.map((v) => [`${v.customer}, ${v.town}`, `${v.name}, ${longDay(v.day)}`])) + button(`${d.origin}/admin`, "Open Home"), reason: "A note for the Trailhead crew." })
+  const html = emailLayout({ origin: d.origin, preheader: intro, body: heading("Not marked done") + paragraph(intro) + facts(d.visits.map((v) => [`${v.customer}, ${v.town}`, `${v.name}, ${longDay(v.day)}`])) + button(`${d.origin}/admin`, "Open Home"), reason: "A note for the Trailhead crew." })
   return { subject, text: plainText([intro, "", ...lines, "", `Home: ${d.origin}/admin`]), html }
 }
 

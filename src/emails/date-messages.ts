@@ -18,4 +18,4 @@ export const dateMovedEmail = (d: VisitData): RenderedEmail =>
   build(d, `Your ${d.visit.name} moved to ${longDay(d.visit.day)}`, `Your ${d.visit.name} moved`, `Hi ${d.firstName}, your ${d.visit.name} moved to ${longDay(d.visit.day)}.`, `Your ${d.visit.name} moved to ${longDay(d.visit.day)}.`)
 
 export const dayBeforeEmail = (d: VisitData): RenderedEmail =>
-  build(d, `Tomorrow: your ${d.visit.name}`, `We are coming tomorrow`, `Hi ${d.firstName}, a reminder that we are coming tomorrow, ${longDay(d.visit.day)}, for your ${d.visit.name}.`, `Tomorrow, ${longDay(d.visit.day)}: your ${d.visit.name}.`)
+  build(d, `Tomorrow: your ${d.visit.name}`, `We're coming tomorrow`, `Hi ${d.firstName}, a reminder that we're coming tomorrow, ${longDay(d.visit.day)}, for your ${d.visit.name}.`, `Tomorrow, ${longDay(d.visit.day)}: your ${d.visit.name}.`)

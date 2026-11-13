@@ -18,7 +18,7 @@ export const scheduleRun = defineHandler({
   method: "POST",
   path: "/schedule/run",
   scope: "admin",
-  summary: "Schedule: place every pass visit of the window that is due within its lead time onto a truck-day in one step. Each placed visit is scheduled, its stops ordered and its customer texted the date (emailed with no mobile number); a customer who must be home is left to pick their own day. Home gets a line for the run and a row for each visit that could not be placed. Running it again places nothing new.",
+  summary: "Schedule: place every pass visit of the window that is due within its lead time onto a truck-day in one step. Each placed visit is scheduled, its stops ordered and its customer texted the date (emailed with no mobile number); a visit waiting for its customer's pick is left alone. Home gets a line for the run and a row for each visit that could not be placed. Running it again places nothing new.",
   input: z.object({ window: z.enum(["turn-on", "inspection", "blowout"]), season: z.number().int().optional() }),
   output: z.object({ placed: z.number().int(), unplaced: z.number().int() }),
   async run(ctx, input) {

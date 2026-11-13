@@ -164,7 +164,7 @@ export default function PricingPage() {
             <div className="flex flex-col gap-1">
               <p className="text-xs font-semibold uppercase tracking-widest text-primary">Season Pass</p>
               <p className="font-display text-2xl md:text-3xl font-semibold text-navy">
-                Turn-on and blowout on one schedule, blowout date reserved in July
+                Turn-on and blowout on one schedule, with your days picked when you reserve
               </p>
               <p className="text-sm text-muted-foreground">
                 From ${SEASON_PASS_FROM} for up to 6 zones, charged per visit at the prices above. Nothing up front.

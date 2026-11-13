@@ -24,7 +24,7 @@ export function CardStep({ state, stripeKey, clientSecret, onCardComplete }: Ste
           <StripeCard key={clientSecret} publishableKey={stripeKey!} clientSecret={clientSecret!} onComplete={onCardComplete!} />
         </div>
       ) : (
-        <div className="mt-6 rounded-lg border border-dashed border-border bg-stone p-8 text-center text-muted-foreground">Stripe&apos;s card form mounts here.</div>
+        <div className="mt-6 rounded-lg border border-dashed border-border bg-stone p-8 text-center text-muted-foreground">Loading the card form.</div>
       )}
     </>
   )

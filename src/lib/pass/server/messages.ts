@@ -56,6 +56,6 @@ export function nextVisitLine(visits: NextVisit[]): string {
   if (!next) return "That was the last visit on your pass this season."
   const name = kindName(next.kind)
   if (next.scheduledOn) return `Your ${name} is ${longDay(next.scheduledOn)}.`
-  if (next.preference && (next.kind === "turn-on" || next.kind === "blowout")) return `Your ${name} is planned for ${preferencePhrase(next.kind, next.preference)}. We will send the day once it is set.`
-  return `We will send the day of your ${name} once it is set.`
+  if (next.preference && (next.kind === "turn-on" || next.kind === "blowout")) return `Your ${name} is planned for ${preferencePhrase(next.kind, next.preference)}. We'll send the day once it is set.`
+  return `We'll send the day of your ${name} once it is set.`
 }

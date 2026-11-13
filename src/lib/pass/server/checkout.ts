@@ -37,16 +37,16 @@ export interface CheckoutDeps {
 }
 
 /** The one line for the terms box, said wherever the terms are missing. */
-export const TERMS_MESSAGE = "Please accept the terms to continue"
+export const TERMS_MESSAGE = "Accept the terms to continue."
 
 const MESSAGE: Record<CheckoutProblem, string> = {
   "out-of-area": "We work in Erie, Longmont, Louisville, Lafayette, Firestone and Broomfield.",
   "email-unreachable": "We can't find that email's mail server. Check the spelling.",
   "slow-down": "That was a lot of requests at once. Wait a minute and try again.",
-  "too-many": "That email has started a few passes in the last hour. Please try again in a bit, or call us.",
-  invalid: "Something in the answers needs another look. Go back a step and check them.",
-  unavailable: "We couldn't reach the card form just now. Nothing was charged. Please try again.",
-  expired: "That card form timed out. Nothing was charged. Press Try again for a fresh one.",
+  "too-many": "We've started a few passes for that email this hour. Try again in an hour, or call Ryan at (970) 692-7270.",
+  invalid: "One of your answers didn't save. Go back a step and check each one.",
+  unavailable: "We couldn't open the card form. We haven't charged you. Try again.",
+  expired: "That card form timed out. We haven't charged you. Press Try again for a fresh one.",
 }
 
 /** A refusal the customer caused needs no log; anything else (Stripe, the database) is written to the function log with the checkout step and the pass, so the deploy's logs say where and for whom. */

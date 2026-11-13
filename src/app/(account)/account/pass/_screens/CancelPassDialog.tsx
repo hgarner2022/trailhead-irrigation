@@ -29,17 +29,17 @@ export function CancelPassDialog({ onConfirm }: CancelPassDialogProps) {
       try {
         const result = await run
         if (result && result.ok === false) {
-          setError(result.message ?? "That did not go through. Please try again, or call us.")
+          setError(result.message ?? "We couldn't cancel your pass. Try again, or call Ryan at (970) 692-7270.")
           return
         }
       } catch {
-        setError("That did not go through. Please try again, or call us.")
+        setError("We couldn't cancel your pass. Try again, or call Ryan at (970) 692-7270.")
         return
       } finally {
         setPending(false)
       }
     } else if (run && (run as { ok?: boolean }).ok === false) {
-      setError((run as { message?: string }).message ?? "That did not go through. Please try again, or call us.")
+      setError((run as { message?: string }).message ?? "We couldn't cancel your pass. Try again, or call Ryan at (970) 692-7270.")
       return
     }
     setConfirmed(true)
@@ -75,7 +75,7 @@ export function CancelPassDialog({ onConfirm }: CancelPassDialogProps) {
                 <Button variant="outline">Keep my pass</Button>
               </DialogClose>
               <Button onClick={confirm} disabled={pending}>
-                Cancel the pass
+                Cancel my pass
               </Button>
             </DialogFooter>
             {error && (

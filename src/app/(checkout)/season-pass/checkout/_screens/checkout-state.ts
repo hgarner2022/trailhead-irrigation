@@ -116,7 +116,7 @@ export type CheckoutAction =
   | { type: "restore"; step: number; passId?: string; fields: Partial<CheckoutFields> }
 
 /** Said once when a reload or a return visit lands on the contact step from the card step. */
-export const RESTORED_CARD_NOTICE = "Welcome back. Your details are here; accept the terms and continue to open the card form again."
+export const RESTORED_CARD_NOTICE = "Welcome back. Your details are saved. Accept the terms and continue to open the card form."
 
 const clampStep = (step: number) => Math.min(STEP_COUNT, Math.max(1, Math.trunc(step)))
 

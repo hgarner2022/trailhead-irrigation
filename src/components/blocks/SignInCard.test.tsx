@@ -5,7 +5,7 @@ import { SignInCard } from "./SignInCard"
 describe("SignInCard", () => {
   it("renders the admin form with one email field and one button", () => {
     render(<SignInCard audience="admin" />)
-    expect(screen.getByRole("heading", { level: 1, name: "Admin sign in" })).toBeInTheDocument()
+    expect(screen.getByRole("heading", { level: 1, name: "Sign in to admin" })).toBeInTheDocument()
     expect(screen.getByLabelText("Email")).toHaveAttribute("type", "email")
     expect(screen.getByRole("button", { name: "Email me a link" })).toBeInTheDocument()
     expect(screen.queryByRole("alert")).toBeNull()
@@ -23,7 +23,7 @@ describe("SignInCard", () => {
     render(<SignInCard audience="customer" state="sent" email="andrea@example.com" retryHref="/account/sign-in" />)
     expect(screen.getByRole("heading", { level: 1, name: "Check your email" })).toBeInTheDocument()
     expect(screen.getByText("andrea@example.com")).toBeInTheDocument()
-    expect(screen.getByText("It works once and for ten minutes.")).toBeInTheDocument()
+    expect(screen.getByText("The link works one time and expires in 10 minutes.")).toBeInTheDocument()
     expect(screen.queryByRole("button")).toBeNull()
     expect(screen.getByRole("link", { name: "Use a different email" })).toHaveAttribute("href", "/account/sign-in")
   })
@@ -31,5 +31,5 @@ describe("SignInCard", () => {
 
 it("says plainly when the link could not be sent", () => {
   render(<SignInCard audience="admin" state="failed" />)
-  expect(screen.getByRole("alert")).toHaveTextContent("We could not send the link")
+  expect(screen.getByRole("alert")).toHaveTextContent("We couldn't send the link")
 })

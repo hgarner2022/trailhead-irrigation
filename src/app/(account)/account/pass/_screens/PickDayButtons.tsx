@@ -6,8 +6,8 @@ import { cn } from "@/lib/utils"
 import { writtenDate } from "@/lib/admin/format"
 import type { ActionResult } from "./CancelPassDialog"
 
-// The days a customer who must be home picks from: three area days inside
-// their window, one tap each, then the answer in place. `onPick` is where
+// The days a customer picks from, to set a day or change one: three open
+// days inside their window, one tap each, then the answer in place. `onPick` is where
 // the wiring phase books the visit; the prototype only swaps the words.
 
 export interface PickDayButtonsProps {
@@ -27,7 +27,7 @@ export function PickDayButtons({ kind, days, onPick, foldedLabel }: PickDayButto
   const [busy, setBusy] = useState(false)
   const pick = async (day: string) => {
     setError(null)
-    const failed = (r: ActionResult) => (r && r.ok === false ? (r.message ?? "That day did not go through. Please try another, or call us.") : null)
+    const failed = (r: ActionResult) => (r && r.ok === false ? (r.message ?? "We couldn't save that day. Try another, or call Ryan at (970) 692-7270.") : null)
     const run = onPick?.(kind, day)
     if (run && typeof (run as Promise<ActionResult>).then === "function") {
       setBusy(true)
@@ -35,7 +35,7 @@ export function PickDayButtons({ kind, days, onPick, foldedLabel }: PickDayButto
         const message = failed(await run)
         if (message) return setError(message)
       } catch {
-        return setError("That day did not go through. Please try another, or call us.")
+        return setError("We couldn't save that day. Try another, or call Ryan at (970) 692-7270.")
       } finally {
         setBusy(false)
       }
@@ -55,7 +55,7 @@ export function PickDayButtons({ kind, days, onPick, foldedLabel }: PickDayButto
   if (picked) {
     return (
       <p data-slot="pick-day-done" className="text-base text-foreground">
-        {`${weekdayOf(picked)}, ${writtenDate(picked)} it is. We'll text you the window the day before.`}
+        {`You're set for ${weekdayOf(picked)}, ${writtenDate(picked)}. We'll text you the window the day before.`}
       </p>
     )
   }

@@ -58,7 +58,8 @@ const sentenceDay = (dayIso: string) => `${weekdayName(dayIso)}, ${writtenDate(d
 export function moveOutcome(visits: Visit[], visitId: string, truckId: string, dayIso: string, trucks: Truck[], timeZone: string): MoveOutcome {
   const visit = visits.find((v) => v.id === visitId)
   const truck = trucks.find((t) => t.id === truckId)
-  if (!visit || !onCalendar(visit) || !truck) return { visits, moved: false, message: "That visit cannot be moved." }
+  if (!visit || !truck) return { visits, moved: false, message: "We couldn't find that visit or truck." }
+  if (!onCalendar(visit)) return { visits, moved: false, message: "That visit has no day to move from." }
   const name = visit.clientName
   if (!worksOn(truck, dayIso)) {
     return { visits, moved: false, message: `${truck.name} does not work ${weekdayName(dayIso)}, so ${name} stays on ${sentenceDay(dayOf(visit.startAt, timeZone))}.` }

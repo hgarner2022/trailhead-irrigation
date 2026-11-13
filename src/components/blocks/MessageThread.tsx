@@ -32,7 +32,7 @@ const STATUS_WORDS: Record<Message["status"], string> = {
   sent: "Sent",
   delivered: "Delivered",
   failed: "Failed",
-  bounced: "Bounced",
+  bounced: "Not delivered",
 }
 
 const TROUBLE: Message["status"][] = ["failed", "bounced"]
