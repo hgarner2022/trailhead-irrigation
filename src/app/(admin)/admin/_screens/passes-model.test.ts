@@ -1,18 +1,19 @@
 import { describe, expect, it } from "vitest"
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import type { Pass } from "@/lib/admin/types"
-import { chargeRows, consentLine, passesContext, seasonOf } from "./passes-model"
+import { chargeRows, consentLine, jobRows, passName, passesContext, seasonOf, visitWhen } from "./passes-model"
 
 const passes = snapshot.passes as Pass[]
+const TODAY = "2026-11-12T19:56:30Z"
 
 describe("passesContext", () => {
   it("counts the statuses that occur and names the season", () => {
-    expect(passesContext(passes)).toBe("11 active, 1 cancelled. 2027 season.")
+    expect(passesContext(passes)).toBe("11 active, 1 pending, 1 cancelled. 2027 season.")
   })
 
   it("names every status present, in order, and only those", () => {
     const lapsed: Pass = { ...passes[0], id: "x", status: "lapsed" }
-    expect(passesContext([lapsed, ...passes])).toBe("11 active, 1 cancelled, 1 lapsed. 2027 season.")
+    expect(passesContext([lapsed, ...passes])).toBe("11 active, 1 pending, 1 cancelled, 1 lapsed. 2027 season.")
     expect(passesContext([passes[0]])).toBe("1 active. 2027 season.")
   })
 
@@ -47,11 +48,11 @@ describe("consentLine", () => {
 })
 
 describe("chargeRows", () => {
-  it("reads the booked date and the charge, else the window and Not yet", () => {
+  it("reads the booked day and the charge, else Needs a day and Not yet", () => {
     expect(chargeRows(passes[0])).toEqual([
       { kind: "turn-on", name: "Turn-on", when: "May 3", amount: 145, charged: "Charged May 3" },
-      { kind: "inspection", name: "Inspection", when: "July", amount: 145, charged: "Not yet" },
-      { kind: "blowout", name: "Blowout", when: "October", amount: 95, charged: "Not yet" },
+      { kind: "inspection", name: "Inspection", when: "Needs a day", amount: 145, charged: "Not yet" },
+      { kind: "blowout", name: "Blowout", when: "Needs a day", amount: 95, charged: "Not yet" },
     ])
   })
 
@@ -64,5 +65,59 @@ describe("chargeRows", () => {
   it("keeps a booked but uncharged visit on its date", () => {
     const pass: Pass = { ...passes[2], visits: [{ ...passes[2].visits[0], scheduledAt: "2027-04-23T15:00:00Z" }] }
     expect(chargeRows(pass)[0]).toEqual({ kind: "turn-on", name: "Turn-on", when: "Apr 23", amount: 145, charged: "Not yet" })
+  })
+})
+
+describe("one source: the day on the table, the panel's charges and its jobs", () => {
+  // Neil's turn-on has a day and a window; the table said "Mid May" while the panel's charges said "Apr 26".
+  const dated: Pass = { ...passes[2], visits: [{ ...passes[2].visits[0], scheduledOn: "2027-04-26", scheduledAt: "2027-04-26T14:00:00Z", startTime: "08:00" }, ...passes[2].visits.slice(1)] }
+
+  it("reads the day, and the window once a start time is set, from the visit row", () => {
+    expect(visitWhen(dated.visits[0])).toBe("Apr 26, 8 to 10 am")
+    expect(visitWhen({ ...dated.visits[0], startTime: undefined })).toBe("Apr 26")
+    expect(visitWhen(dated.visits[1])).toBe("Needs a day")
+    expect(visitWhen(undefined)).toBe("Needs a day")
+  })
+
+  it("shows the same words in the charges, the jobs and the table cell", () => {
+    expect(chargeRows(dated)[0].when).toBe(jobRows(dated, TODAY)[0].when)
+    expect(jobRows(dated, TODAY)[0].when).toBe("Apr 26, 8 to 10 am")
+  })
+
+  it("never shows a timing preference: a pass asking for early May still reads Needs a day", () => {
+    expect(passes[2].turnOnPreference).toBe("earlier")
+    expect(jobRows(passes[2], TODAY)[0].when).toBe("Needs a day")
+    expect(chargeRows(passes[2])[0].when).toBe("Needs a day")
+  })
+})
+
+describe("jobRows", () => {
+  it("reads each visit's state from the one derivation", () => {
+    expect(jobRows(passes[0], TODAY).map((r) => [r.name, r.job.state, r.job.notClosed])).toEqual([
+      ["Turn-on", "charged", false],
+      ["Inspection", "needs-a-day", false],
+      ["Blowout", "needs-a-day", false],
+    ])
+  })
+
+  it("flags a visit whose day has passed and was not marked done, and a done visit whose card failed", () => {
+    const late: Pass = { ...passes[2], cardFailedAt: "2026-11-10T15:00:00Z", visits: [{ ...passes[2].visits[0], scheduledOn: "2026-11-05", scheduledAt: "2026-11-05T16:00:00Z" }, { ...passes[2].visits[1], completedAt: "2026-11-06T17:00:00Z" }, passes[2].visits[2]] }
+    const [turnOn, inspection] = jobRows(late, TODAY)
+    expect(turnOn.job).toMatchObject({ state: "scheduled", notClosed: true })
+    expect(inspection.job).toMatchObject({ state: "charge-failed", notClosed: false })
+  })
+
+  it("names a pending pass's visits like any other, so the panel can say they are an unpaid attempt", () => {
+    const pending = passes.find((p) => p.status === "pending")!
+    expect(pending.status).toBe("pending")
+    expect(jobRows(pending, TODAY)).toHaveLength(2)
+  })
+})
+
+describe("passName", () => {
+  it("is the full name where a last name is on record, else the first name", () => {
+    expect(passName({ firstName: "Andrea", lastName: "Dalton" })).toBe("Andrea Dalton")
+    expect(passName({ firstName: "Andrea" })).toBe("Andrea")
+    expect(passName({ firstName: " Andrea ", lastName: " " })).toBe("Andrea")
   })
 })

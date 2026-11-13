@@ -6,8 +6,8 @@ import type { Client, Pass } from "@/lib/admin/types"
 import { DataGrid, type GridColumnDef } from "./DataGrid"
 import { passColumns } from "./data-grid-columns"
 
-// Twelve passes: five in Erie, three in Broomfield, two in Lafayette, one each in Firestone and Longmont.
-const passes = snapshot.passes as Pass[]
+// Twelve sold passes, by first name only so the name assertions read plainly: five in Erie, three in Broomfield, two in Lafayette, one each in Firestone and Longmont.
+const passes = (snapshot.passes as Pass[]).filter((p) => p.status !== "pending").map((p) => ({ ...p, lastName: undefined }))
 const clients = snapshot.clients as Client[]
 
 // jsdom has none of these; Radix menus and the scroll cue read them.
@@ -38,7 +38,7 @@ function renderPasses(extra: Partial<React.ComponentProps<typeof DataGrid<Pass>>
       columns={passColumns}
       data={passes}
       getRowId={(p) => p.id}
-      search={{ column: "firstName", placeholder: "Search by name" }}
+      search={{ column: "name", placeholder: "Search by name" }}
       filters={FILTERS}
       bulkActions={BULK}
       {...extra}
@@ -70,8 +70,9 @@ describe("DataGrid sorting", () => {
     expect(firstName()).not.toBe("Zed")
     const names = bodyRows().map((r) => within(r).getByRole("button", { name: /^[A-Z]/ }).textContent)
     expect(names.at(-1)).toBe("Zed")
-    expect(names.slice(0, 10)).not.toContain("Andrea")
-    expect(within(bodyRows()[0]).getByText("May")).toBeInTheDocument()
+    // Dated visits first, then those that need a day.
+    expect(within(bodyRows()[0]).getByText(/^[A-Z][a-z]{2} \d+$/, { selector: "td" })).toBeInTheDocument()
+    expect(within(bodyRows()[0]).queryAllByText("Needs a day")).not.toHaveLength(0)
   })
 })
 
@@ -266,7 +267,7 @@ describe("DataGrid export", () => {
     expect(blob).toBeDefined()
     const bytes = new Uint8Array(await blob!.arrayBuffer())
     expect([...bytes.slice(0, 3)]).toEqual([0xef, 0xbb, 0xbf])
-    expect(new TextDecoder().decode(bytes)).toBe("Name,Zones,Turn-on,Blowout,Status,Charged so far,Next visit\r\nReese,8,Mid May,Early October,Active,145,July\r\nReesa,8,Mid May,Early October,Active,0,May\r\n")
+    expect(new TextDecoder().decode(bytes)).toBe("Name,Zones,Turn-on,Inspection,Blowout,Status,Charged so far,Next visit\r\nReese,8,May 4,Needs a day,Needs a day,Active,145,Needs a day\r\nReesa,8,Needs a day,None,Needs a day,Active,0,Needs a day\r\n")
   })
 })
 

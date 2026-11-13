@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite"
+import { expect, screen } from "storybook/test"
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import type { AdminData } from "@/lib/admin/types"
 import { EMPTY_SETTINGS } from "@/lib/admin/empty-settings"
@@ -47,6 +48,28 @@ export const Default: Story = {
 export const PanelOpen: Story = {
   args: { defaultSelectedId: data.passes[0].id },
   globals: { viewport: { value: "wide", isRotated: false } },
+}
+
+/** The Pending filter: an unpaid attempt, shown as Pending and never as Active. */
+export const PendingFilter: Story = {
+  globals: { viewport: { value: "wide", isRotated: false } },
+  play: async ({ canvas, userEvent }) => {
+    // The filter chip lives in the toolbar; the column header of the same name sorts.
+    const chips = await canvas.findAllByRole("button", { name: "Status" })
+    await userEvent.click(chips.find((b) => b.closest('[data-slot="data-grid-toolbar"]'))!)
+    await userEvent.click(await screen.findByRole("menuitemcheckbox", { name: "Pending" }))
+    await userEvent.keyboard("{Escape}")
+    await expect((await canvas.findAllByText("Pending")).length).toBeGreaterThan(0)
+  },
+}
+
+/** A pending pass's panel: the one-line note that it is an unpaid attempt, and no buttons to act on. */
+export const PendingPanel: Story = {
+  args: { defaultSelectedId: data.passes.find((p) => p.status === "pending")!.id },
+  globals: { viewport: { value: "wide", isRotated: false } },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText("Unpaid attempt, expires after an hour.")).toBeInTheDocument()
+  },
 }
 
 export const NoDataYet: Story = {
