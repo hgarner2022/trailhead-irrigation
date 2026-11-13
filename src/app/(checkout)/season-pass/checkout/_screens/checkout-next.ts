@@ -40,7 +40,7 @@ export function nextLines(pass: Pass, chosen: readonly { kind: string; day: stri
   })
   if (visits.length > 0) {
     lines.push({ key: "confirm", lead: "Before each visit", text: CONFIRM_LINE })
-    lines.push({ key: "charge", lead: "After each visit", text: moneyLine(visits.map((v) => ({ name: NAME[v.kind], amount: v.amount })), pass.cardLast4) })
+    lines.push({ key: "charge", lead: "What you pay", text: moneyLine(visits.map((v) => ({ name: NAME[v.kind], amount: v.amount })), pass.cardLast4) })
   }
   return lines
 }

@@ -76,7 +76,7 @@ export const ChangePreference: Story = {
     await userEvent.click(await canvas.findByRole("button", { name: /Change when we do your fall blowout/ }))
     await userEvent.click(await screen.findByRole("button", { name: "Later Late October" }))
     await userEvent.click(await screen.findByRole("button", { name: "Save" }))
-    await expect(await screen.findByRole("dialog", { name: "Your fall blowout is now preferred late October." })).toBeInTheDocument()
+    await expect(await screen.findByRole("dialog", { name: "Got it. You asked for late October for your fall blowout." })).toBeInTheDocument()
     await expect(args.onChangePreference).toHaveBeenCalledWith("blowout", "later")
   },
 }
@@ -98,7 +98,7 @@ export const PickDay: Story = {
   play: async ({ canvas, userEvent, args }) => {
     const [first] = await canvas.findAllByRole("button", { name: /^(Tuesday|Thursday)/ })
     await userEvent.click(first)
-    await expect(await canvas.findByText(/it is\. We'll text you the window the day before\./)).toBeInTheDocument()
+    await expect(await canvas.findByText(/You're set for .*\. We'll text you the window the day before\./)).toBeInTheDocument()
     await expect(args.onPickDay).toHaveBeenCalledTimes(1)
   },
 }

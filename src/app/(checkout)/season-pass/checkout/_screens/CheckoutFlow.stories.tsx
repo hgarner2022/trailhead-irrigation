@@ -3,12 +3,14 @@ import { expect, fn } from "storybook/test"
 import { savePassImage } from "@/lib/pass-card-image"
 import { FIXTURE_HOME } from "@/lib/places/fixture"
 import { CheckoutFlow } from "./CheckoutFlow"
+import { choicesAfterOffer, fixtureOffers } from "./checkout-days"
 import type { CheckoutFields } from "./checkout-state"
 
 // The step stories open on one step with the earlier answers prefilled;
 // Walkthrough answers every question from the first screen, including the
 // consent boxes, and lands on the pass card. The days step opens with three days for each visit and
 // recommendations preselected, so it needs nothing prefilled.
+const DAYS = choicesAfterOffer(fixtureOffers(2027, ["turn-on", "blowout"]), [])
 const answers: Partial<CheckoutFields> = {
   address: FIXTURE_HOME.label,
   place: FIXTURE_HOME,
@@ -184,7 +186,7 @@ export const RestoredExpired: Story = {
 }
 
 export const Done: Story = {
-  args: { initialStep: 7, prefill: { ...answers, termsAccepted: true, marketingEmail: true, marketingSms: true, cardSaved: true }, onSaveImage: savePassImage },
+  args: { initialStep: 7, prefill: { ...answers, days: DAYS, termsAccepted: true, marketingEmail: true, marketingSms: true, cardSaved: true }, onSaveImage: savePassImage },
   globals: { viewport: { value: "wide", isRotated: false } },
 }
 
@@ -251,6 +253,6 @@ export const PhoneCard: Story = {
 }
 
 export const PhoneDone: Story = {
-  args: { initialStep: 7, prefill: { ...answers, termsAccepted: true, cardSaved: true }, onSaveImage: savePassImage },
+  args: { initialStep: 7, prefill: { ...answers, days: DAYS, termsAccepted: true, cardSaved: true }, onSaveImage: savePassImage },
   globals: { viewport: { value: "phone", isRotated: false } },
 }

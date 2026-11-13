@@ -292,7 +292,7 @@ describe("CheckoutFlow", () => {
     expect(onComplete.mock.calls[0][0].consent).toMatchObject({ marketingOptIn: false, marketingChannels: [] })
     expect(screen.getByRole("article", { name: /Season Pass 2027 for Andrea, Erie/ })).toBeInTheDocument()
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Your season is reserved")
-    expect(screen.getByRole("region", { name: "What happens next" })).toHaveTextContent(/Tuesday, May 4.*Tuesday, October 5.*Before each visit.*After each visit/)
+    expect(screen.getByRole("region", { name: "What happens next" })).toHaveTextContent(/Tuesday, May 4.*Tuesday, October 5.*Before each visit.*What you pay/)
     expect(screen.getByText(/We emailed your pass and a link to/)).toHaveTextContent("andrea@example.com")
     expect(screen.getByRole("button", { name: "Done" })).toBeInTheDocument()
     expect(screen.queryByRole("button", { name: "Continue" })).not.toBeInTheDocument()

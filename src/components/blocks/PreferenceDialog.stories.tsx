@@ -25,7 +25,7 @@ export const Saved: Story = {
     await userEvent.click(canvas.getByRole("button", { name: /Change when we do your fall blowout/ }))
     await userEvent.click(await screen.findByRole("button", { name: "Later Late October" }))
     await userEvent.click(await screen.findByRole("button", { name: "Save" }))
-    await expect(await screen.findByRole("dialog", { name: "Your fall blowout is now preferred late October." })).toBeInTheDocument()
+    await expect(await screen.findByRole("dialog", { name: "Got it. You asked for late October for your fall blowout." })).toBeInTheDocument()
     await expect(args.onSave).toHaveBeenCalledWith("blowout", "later")
   },
 }

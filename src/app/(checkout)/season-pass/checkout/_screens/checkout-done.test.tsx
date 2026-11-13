@@ -37,7 +37,7 @@ const dated = {
 describe("nextLines", () => {
   it("gives each visit its day, window and what Ryan does, then the confirmation timeline and the money line with the card", () => {
     const lines = nextLines(dated)
-    expect(lines.map((l) => [l.key, l.lead])).toEqual([["turn-on", "Tuesday, May 4"], ["blowout", "Tuesday, October 5"], ["confirm", "Before each visit"], ["charge", "After each visit"]])
+    expect(lines.map((l) => [l.key, l.lead])).toEqual([["turn-on", "Tuesday, May 4"], ["blowout", "Tuesday, October 5"], ["confirm", "Before each visit"], ["charge", "What you pay"]])
     expect(lines[0]!.text).toBe("Spring turn-on, between 8 and 10 am. Ryan turns the water on, runs every zone and checks the heads.")
     expect(lines[0]!.calendar?.google).toMatch(/^https:\/\/calendar\.google\.com\//)
     expect(lines[0]!.calendar?.ics).toBe("https://site.test/cal/1.ics")
@@ -58,7 +58,7 @@ describe("nextLines", () => {
   })
   it("adds July when the inspection is on the pass and drops a visit the pass does not hold", () => {
     const withJuly = { ...pass, visits: [pass.visits[0], { kind: "inspection", window: "July", amount: 145 }, pass.visits[1]] } as Pass
-    expect(nextLines(withJuly).map((l) => l.lead)).toEqual(["May", "July", "October", "Before each visit", "After each visit"])
+    expect(nextLines(withJuly).map((l) => l.lead)).toEqual(["May", "July", "October", "Before each visit", "What you pay"])
     const late = { ...pass, visits: [pass.visits[1]] } as Pass
     expect(nextLines(late).map((l) => l.key)).toEqual(["blowout", "confirm", "charge"])
     expect(nextLines(late)[2].text).toBe("You pay $0 today. We charge $95 after the fall blowout.")
