@@ -71,6 +71,19 @@ export const WINDOW_NAMES: Record<SeasonWindow["kind"], string> = { "turn-on": "
 export const messageName = (key: string) => key.charAt(0).toUpperCase() + key.slice(1).replace(/-/g, " ")
 export const channelWord = (channel: MessageTemplate["channel"]) => (channel === "sms" ? "Text" : "Email")
 
+/** The limits the reducers enforce; the number inputs read the same ones. */
+export const MAX_CAPACITY = 50
+export const MAX_LEAD_WEEKS = 12
+export const MAX_FIRM_DAYS = 30
+
+/** True for YYYY-MM-DD that is a real calendar day (not Feb 30, not month 13). */
+export function isRealDate(value: string): boolean {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value)
+  if (!m) return false
+  const d = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])))
+  return d.toISOString().slice(0, 10) === value
+}
+
 const CLIP = 60
 /** A value as it is logged: trimmed to sixty characters with an ellipsis. */
 export const clip = (s: string) => (s.length > CLIP ? `${s.slice(0, CLIP - 1).trimEnd()}…` : s)
@@ -84,9 +97,10 @@ function record(state: SettingsState, actor: Actor, field: string, from: string,
 const replaceTruck = (s: OrganizationSettings, truck: Truck) => ({ ...s, trucks: s.trucks.map((t) => (t.id === truck.id ? truck : t)) })
 const truckOf = (state: SettingsState, id: string) => state.settings.trucks.find((t) => t.id === id)
 
-export function setTruckName(state: SettingsState, truckId: string, name: string, actor: Actor): SettingsState {
+export function setTruckName(state: SettingsState, truckId: string, raw: string, actor: Actor): SettingsState {
   const truck = truckOf(state, truckId)
-  if (!truck) return state
+  const name = raw.trim()
+  if (!truck || !name) return state
   return record(state, actor, `${truck.name} name`, truck.name, name, replaceTruck(state.settings, { ...truck, name }))
 }
 
@@ -99,7 +113,7 @@ export function toggleWorkingDay(state: SettingsState, truckId: string, day: Wee
 
 export function setCapacity(state: SettingsState, truckId: string, kind: CapacityKind, n: number, actor: Actor): SettingsState {
   const truck = truckOf(state, truckId)
-  if (!truck || !Number.isInteger(n) || n < 0) return state
+  if (!truck || !Number.isInteger(n) || n < 0 || n > MAX_CAPACITY) return state
   const capacityByKind = { ...truck.capacityByKind, [kind]: n }
   return record(state, actor, `${truck.name} ${KIND_PLURALS[kind]} per day`, String(truck.capacityByKind[kind]), String(n), replaceTruck(state.settings, { ...truck, capacityByKind }))
 }
@@ -133,9 +147,10 @@ export function addTruck(state: SettingsState, actor: Actor): SettingsState {
 const areaOf = (state: SettingsState, id: string) => state.settings.areas.find((a) => a.id === id)
 const replaceArea = (s: OrganizationSettings, area: AreaGroup) => ({ ...s, areas: s.areas.map((a) => (a.id === area.id ? area : a)) })
 
-export function setAreaName(state: SettingsState, areaId: string, name: string, actor: Actor): SettingsState {
+export function setAreaName(state: SettingsState, areaId: string, raw: string, actor: Actor): SettingsState {
   const area = areaOf(state, areaId)
-  if (!area) return state
+  const name = raw.trim()
+  if (!area || !name) return state
   return record(state, actor, `${area.name} name`, area.name, name, replaceArea(state.settings, { ...area, name }))
 }
 
@@ -149,7 +164,9 @@ export function toggleAreaTown(state: SettingsState, areaId: string, town: Town,
     return a.towns.includes(town) ? { ...a, towns: a.towns.filter((t) => t !== town) } : a
   })
   const after = areas.find((a) => a.id === areaId)!
-  return record(state, actor, `${area.name} towns`, area.towns.join(", ") || "None", after.towns.join(", ") || "None", { ...state.settings, areas })
+  const from = had ? undefined : state.settings.areas.find((a) => a.id !== areaId && a.towns.includes(town))
+  const to = `${after.towns.join(", ") || "None"}${from ? ` (moved from ${from.name})` : ""}`
+  return record(state, actor, `${area.name} towns`, area.towns.join(", ") || "None", to, { ...state.settings, areas })
 }
 
 /** The town one step up or down the fall or spring order; at an end it stays and nothing is logged. */
@@ -172,17 +189,23 @@ export function setBuffer(state: SettingsState, which: "early" | "late", percent
 }
 
 export function setWindow(state: SettingsState, kind: SeasonWindow["kind"], field: "opensOn" | "closesOn" | "leadWeeks", value: string | number, actor: Actor): SettingsState {
-  const window = state.settings.windows.find((w) => w.kind === kind)
-  if (!window) return state
-  if (field === "leadWeeks" && (!Number.isInteger(value) || Number(value) < 0)) return state
-  if (field !== "leadWeeks" && !/^\d{4}-\d{2}-\d{2}$/.test(String(value))) return state
+  const season = state.settings.windows.find((w) => w.kind === kind)
+  if (!season) return state
+  if (field === "leadWeeks") {
+    if (!Number.isInteger(value) || Number(value) < 0 || Number(value) > MAX_LEAD_WEEKS) return state
+  } else {
+    if (!isRealDate(String(value))) return state
+    const opens = field === "opensOn" ? String(value) : season.opensOn
+    const closes = field === "closesOn" ? String(value) : season.closesOn
+    if (opens > closes) return state
+  }
   const words = { opensOn: "opens", closesOn: "closes", leadWeeks: "lead weeks" }[field]
   const windows = state.settings.windows.map((w) => (w.kind === kind ? { ...w, [field]: value } : w))
-  return record(state, actor, `${WINDOW_NAMES[kind]} ${words}`, String(window[field]), String(value), { ...state.settings, windows })
+  return record(state, actor, `${WINDOW_NAMES[kind]} ${words}`, String(season[field]), String(value), { ...state.settings, windows })
 }
 
 export function setFirmDays(state: SettingsState, days: number, actor: Actor): SettingsState {
-  if (!Number.isInteger(days) || days < 0) return state
+  if (!Number.isInteger(days) || days < 0 || days > MAX_FIRM_DAYS) return state
   return record(state, actor, "Firm days ahead", String(state.settings.firmDaysAhead), String(days), { ...state.settings, firmDaysAhead: days })
 }
 
@@ -202,7 +225,10 @@ export function addArea(state: SettingsState, actor: Actor): SettingsState {
   return record(state, actor, "Areas", String(n - 1), String(n), { ...state.settings, areas: [...state.settings.areas, area] })
 }
 
-/** A one-time secret: the same name and moment give the same key, so the reducer stays pure; the real API will draw from a secure source. */
+/**
+ * A one-time secret: the same name and moment give the same key, so the reducer stays pure.
+ * TODO(wiring): draw from a secure random source and keep only a hash of the key.
+ */
 export function secretFor(name: string, at: string): string {
   let h = 2166136261
   for (const ch of `${name}|${at}`) h = Math.imul(h ^ ch.charCodeAt(0), 16777619) >>> 0

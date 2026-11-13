@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
@@ -22,30 +23,42 @@ export interface CommitInputProps {
 /**
  * An input that changes the settings when the person leaves it or presses
  * Enter, not on every keystroke, so the change log gets one line per edit.
- * A blank text or a number outside min and max snaps back to what it was.
+ *
+ * Revert on invalid: a blank value, or a number that is not a whole number
+ * inside min and max, snaps back to what it was without calling `onCommit`.
+ * A value the reducer then refuses (a window that would close before it
+ * opens, say) comes back the same way: after every commit the draft is set
+ * back to the `value` prop, and when the prop did change the draft follows it
+ * in the same render. The field keeps focus throughout; it is never remounted.
  */
 export function CommitInput({ value, label, onCommit, type = "text", min, max, className, describedBy }: CommitInputProps) {
-  const commit = (el: HTMLInputElement) => {
-    const raw = el.value.trim()
+  const [draft, setDraft] = useState(String(value))
+  const [seen, setSeen] = useState(value)
+  if (value !== seen) {
+    setSeen(value)
+    setDraft(String(value))
+  }
+  const commit = () => {
+    const raw = draft.trim()
     const n = Number(raw)
     const bad = raw === "" || (type === "number" && (!Number.isInteger(n) || (min !== undefined && n < min) || (max !== undefined && n > max)))
-    if (bad) el.value = String(value)
-    else if (raw !== String(value)) onCommit(raw)
+    if (!bad && raw !== String(value)) onCommit(raw)
+    setDraft(String(value))
   }
   return (
     <Input
-      key={String(value)}
       aria-label={label}
       aria-describedby={describedBy}
       type={type}
       min={min}
       max={max}
       inputMode={type === "number" ? "numeric" : undefined}
-      defaultValue={value}
+      value={draft}
       className={className}
-      onBlur={(e) => commit(e.currentTarget)}
+      onChange={(e) => setDraft(e.target.value)}
+      onBlur={commit}
       onKeyDown={(e) => {
-        if (e.key === "Enter") commit(e.currentTarget)
+        if (e.key === "Enter") commit()
       }}
     />
   )

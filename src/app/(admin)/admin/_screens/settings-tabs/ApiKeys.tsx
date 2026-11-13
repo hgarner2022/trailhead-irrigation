@@ -45,7 +45,12 @@ function CreateKey({ onCreate }: { onCreate: OnCreateKey }) {
           Create key
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent
+        // Once the key is shown it is gone for good, so only Done closes the dialog.
+        showCloseButton={secret === null}
+        onEscapeKeyDown={(e) => secret !== null && e.preventDefault()}
+        onInteractOutside={(e) => secret !== null && e.preventDefault()}
+      >
         {secret === null ? (
           <>
             <DialogHeader>

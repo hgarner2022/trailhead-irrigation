@@ -4,7 +4,7 @@ import type { AdminData } from "@/lib/admin/types"
 import { EMPTY_SETTINGS } from "@/lib/admin/data"
 import { TIME_ZONE } from "@/lib/admin/format"
 import { visitsOn } from "@/lib/admin/metrics"
-import { clockTime, dayHeading, greeting, longDate, monthOf, notClosedAttention, notClosedCount, pageContext, seasonDescription, sparklineOf, tileModels, tomorrowOf, upcomingWindow, updatedAgo, windowTitle } from "./home-model"
+import { clockTime, dayHeading, greeting, longDate, monthOf, NOT_CLOSED_LOOKBACK_DAYS, notClosedAttention, notClosedCount, pageContext, seasonDescription, sparklineOf, tileModels, tomorrowOf, upcomingWindow, updatedAgo, windowTitle } from "./home-model"
 
 const data = snapshot as AdminData
 // 12:56 pm in Denver, four minutes after the snapshot's sync.
@@ -190,10 +190,17 @@ describe("notClosedCount", () => {
     expect(notClosedCount([visit("y", "2026-11-12T06:59:00Z")], now, TIME_ZONE)).toBe(1)
     expect(notClosedCount([visit("t", "2026-11-12T07:00:00Z")], now, TIME_ZONE)).toBe(0)
   })
+  it("looks back fourteen days: the fourteenth day before today counts, the fifteenth does not", () => {
+    expect(NOT_CLOSED_LOOKBACK_DAYS).toBe(14)
+    expect(notClosedCount([visit("edge", "2026-10-29T17:00:00Z")], now, TIME_ZONE)).toBe(1)
+    expect(notClosedCount([visit("old", "2026-10-28T17:00:00Z")], now, TIME_ZONE)).toBe(0)
+    // 11:30 pm on Oct 28 in Denver is Oct 29 in UTC; the Mountain day decides.
+    expect(notClosedCount([visit("late", "2026-10-29T05:30:00Z")], now, TIME_ZONE)).toBe(0)
+  })
   it("makes an attention row waiting since the oldest, or none", () => {
     expect(notClosedAttention([], now, TIME_ZONE)).toBeNull()
     const row = notClosedAttention([visit("b", "2026-11-11T23:00:00Z"), visit("a", "2026-11-09T17:00:00Z")], now, TIME_ZONE)
-    expect(row).toEqual({ kind: "not-closed", message: "2 visits from before today are not marked done yet.", since: "2026-11-09T17:00:00Z" })
-    expect(notClosedAttention([visit("a", "2026-11-09T17:00:00Z")], now, TIME_ZONE)?.message).toBe("1 visit from before today is not marked done yet.")
+    expect(row).toEqual({ kind: "not-closed", message: "2 visits from the last two weeks are not marked done yet.", since: "2026-11-09T17:00:00Z" })
+    expect(notClosedAttention([visit("a", "2026-11-09T17:00:00Z")], now, TIME_ZONE)?.message).toBe("1 visit from the last two weeks is not marked done yet.")
   })
 })

@@ -74,7 +74,7 @@ describe("areas", () => {
   it("moves a town into an area and out of the one that had it", () => {
     const next = toggleAreaTown(state, "area-longmont", "Firestone", actor)
     expect(next.settings.areas.map((a) => a.towns)).toEqual([["Erie"], ["Longmont", "Firestone"], ["Louisville", "Lafayette", "Broomfield"]])
-    expect(last(next)).toMatchObject({ field: "Longmont towns", from: "Longmont", to: "Longmont, Firestone" })
+    expect(last(next)).toMatchObject({ field: "Longmont towns", from: "Longmont", to: "Longmont, Firestone (moved from Erie and Firestone)" })
     const out = toggleAreaTown(next, "area-longmont", "Longmont", actor)
     expect(out.settings.areas[1].towns).toEqual(["Firestone"])
     const none = toggleAreaTown(out, "area-longmont", "Firestone", actor)
@@ -204,5 +204,41 @@ describe("sampleFor", () => {
   })
   it("falls back when there is nothing", () => {
     expect(sampleFor({ ...data, passes: [], visits: [] })).toMatchObject({ firstName: "Alex", visit: "visit", truck: "Truck 1" })
+  })
+})
+
+describe("validation", () => {
+  it("refuses a date that is not on the calendar and a window that closes before it opens", () => {
+    expect(setWindow(state, "blowout", "opensOn", "2027-02-30", actor)).toBe(state)
+    expect(setWindow(state, "blowout", "opensOn", "2027-13-01", actor)).toBe(state)
+    expect(setWindow(state, "blowout", "opensOn", "2027-11-01", actor)).toBe(state) // closes Oct 31
+    expect(setWindow(state, "blowout", "closesOn", "2027-09-30", actor)).toBe(state) // opens Oct 1
+    expect(setWindow(state, "blowout", "opensOn", "2027-10-31", actor).settings.windows[2].opensOn).toBe("2027-10-31")
+    expect(setWindow(state, "blowout", "closesOn", "2027-10-01", actor).settings.windows[2].closesOn).toBe("2027-10-01")
+  })
+
+  it("caps lead weeks at 12, capacity at 50, firm days at 30", () => {
+    expect(setWindow(state, "turn-on", "leadWeeks", 13, actor)).toBe(state)
+    expect(setWindow(state, "turn-on", "leadWeeks", 12, actor).settings.windows[0].leadWeeks).toBe(12)
+    expect(setCapacity(state, "truck-1", "blowout", 51, actor)).toBe(state)
+    expect(setCapacity(state, "truck-1", "blowout", 50, actor).settings.trucks[0].capacityByKind.blowout).toBe(50)
+    expect(setFirmDays(state, 31, actor)).toBe(state)
+    expect(setFirmDays(state, 30, actor).settings.firmDaysAhead).toBe(30)
+    expect(setBuffer(state, "early", 100, actor).settings.bufferPercentEarly).toBe(100)
+    expect(setBuffer(state, "early", -1, actor)).toBe(state)
+  })
+
+  it("trims names and refuses an empty one", () => {
+    expect(setTruckName(state, "truck-2", "  Blowout truck  ", actor).settings.trucks[1].name).toBe("Blowout truck")
+    expect(setTruckName(state, "truck-2", "   ", actor)).toBe(state)
+    expect(setAreaName(state, "area-north", "  North ", actor).settings.areas[0].name).toBe("North")
+    expect(setAreaName(state, "area-north", "", actor)).toBe(state)
+  })
+
+  it("says where a town came from when it moves between areas", () => {
+    const next = toggleAreaTown(state, "area-longmont", "Erie", actor)
+    expect(last(next).to).toBe("Longmont, Erie (moved from Erie and Firestone)")
+    const plain = toggleAreaTown(next, "area-longmont", "Erie", actor)
+    expect(last(plain).to).toBe("Longmont")
   })
 })

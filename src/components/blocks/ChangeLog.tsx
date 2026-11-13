@@ -20,7 +20,8 @@ export function ChangeLog({ changes, className }: ChangeLogProps) {
   if (changes.length === 0) {
     return <EmptyState className={className} icon={History} title="No changes yet" line="Every edit to the trucks, areas, windows and messages is listed here with who made it." />
   }
-  const newestFirst = [...changes].sort((a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : 0))
+  // Newest first; entries with the same time keep the order they were logged in, latest on top.
+  const newestFirst = changes.map((change, i) => ({ change, i })).sort((a, b) => (a.change.at < b.change.at ? 1 : a.change.at > b.change.at ? -1 : b.i - a.i)).map((x) => x.change)
   return (
     <ol data-slot="change-log" className={cn("divide-y divide-border", className)}>
       {newestFirst.map((change) => (

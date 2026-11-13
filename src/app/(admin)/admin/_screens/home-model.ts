@@ -11,7 +11,7 @@
 import type { StatTileProps } from "@/components/blocks/StatTile"
 import type { AdminData, Attention, MonthTotal, OrganizationSettings, SeasonWindow, Visit } from "@/lib/admin/types"
 import { TIME_ZONE, monthDay, monthShort } from "@/lib/admin/format"
-import { dayOf } from "@/lib/admin/calendar"
+import { addDays, dayOf } from "@/lib/admin/calendar"
 import { chargedSoFar, committedRevenue, formatMoney, invoicesOverdue, monthComparison, quotesAwaiting } from "@/lib/admin/metrics"
 
 /** The season the Home line shows. The snapshot's passes are all 2027; the wiring phase derives this from the passes on hand. */
@@ -162,16 +162,24 @@ export function upcomingWindow(settings: Pick<OrganizationSettings, "windows">, 
 const WINDOW_WORDS: Record<SeasonWindow["kind"], string> = { "turn-on": "Spring turn-ons", inspection: "Mid-season inspections", blowout: "Fall blowouts" }
 
 /** "Fall blowouts open Oct 1" */
-export function windowTitle(window: SeasonWindow): string {
-  const { month, day } = monthDay(window.opensOn)
-  return `${WINDOW_WORDS[window.kind]} open ${monthShort(month)} ${day}`
+export function windowTitle(season: SeasonWindow): string {
+  const { month, day } = monthDay(season.opensOn)
+  return `${WINDOW_WORDS[season.kind]} open ${monthShort(month)} ${day}`
 }
 
-/** Scheduled visits whose Mountain-time day is before today's and that nobody has marked done, oldest first. */
+/** How far back Home looks for visits nobody closed; older ones are a cleanup in Jobber, not a morning prompt. */
+export const NOT_CLOSED_LOOKBACK_DAYS = 14
+
+/** Scheduled visits from the last `NOT_CLOSED_LOOKBACK_DAYS` Mountain-time days before today (today excluded) that nobody has marked done, oldest first. */
 export function notClosedVisits(visits: Visit[], today: string, timeZone: string): Visit[] {
   const todayDay = dayOf(today, timeZone)
+  const earliest = addDays(todayDay, -NOT_CLOSED_LOOKBACK_DAYS)
   return visits
-    .filter((v): v is Visit & { startAt: string } => v.status === "scheduled" && v.startAt !== undefined && dayOf(v.startAt, timeZone) < todayDay)
+    .filter((v): v is Visit & { startAt: string } => {
+      if (v.status !== "scheduled" || v.startAt === undefined) return false
+      const day = dayOf(v.startAt, timeZone)
+      return day < todayDay && day >= earliest
+    })
     .sort((a, b) => (a.startAt < b.startAt ? -1 : 1))
 }
 
@@ -182,5 +190,5 @@ export function notClosedAttention(visits: Visit[], today: string, timeZone: str
   const open = notClosedVisits(visits, today, timeZone)
   if (open.length === 0) return null
   const n = open.length
-  return { kind: "not-closed", message: `${n} ${n === 1 ? "visit" : "visits"} from before today ${n === 1 ? "is" : "are"} not marked done yet.`, since: open[0].startAt! }
+  return { kind: "not-closed", message: `${n} ${n === 1 ? "visit" : "visits"} from the last two weeks ${n === 1 ? "is" : "are"} not marked done yet.`, since: open[0].startAt! }
 }

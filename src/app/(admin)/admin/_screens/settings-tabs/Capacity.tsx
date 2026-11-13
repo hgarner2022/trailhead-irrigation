@@ -56,19 +56,19 @@ export function Capacity({ state, apply }: { state: SettingsState; apply: Apply 
         </CardHeader>
         <CardContent className="space-y-6">
           {WINDOW_KINDS.map((kind) => {
-            const window = windows.find((w) => w.kind === kind)
-            if (!window) return null
+            const season = windows.find((w) => w.kind === kind)
+            if (!season) return null
             return (
               <fieldset key={kind} className="grid gap-4 sm:grid-cols-3">
                 <legend className="mb-3 font-display text-sm uppercase tracking-wide text-muted-foreground">{WINDOW_NAMES[kind]}</legend>
                 <Field id={`${kind}-opens`} label="Opens" hint="The first day a visit may land.">
-                  {(d) => <CommitInput type="date" label={`${WINDOW_NAMES[kind]} opens`} describedBy={d} value={window.opensOn} onCommit={(v) => apply((s, a) => setWindow(s, kind, "opensOn", v, a))} />}
+                  {(d) => <CommitInput type="date" label={`${WINDOW_NAMES[kind]} opens`} describedBy={d} value={season.opensOn} onCommit={(v) => apply((s, a) => setWindow(s, kind, "opensOn", v, a))} />}
                 </Field>
                 <Field id={`${kind}-closes`} label="Closes" hint="The last day a visit may land.">
-                  {(d) => <CommitInput type="date" label={`${WINDOW_NAMES[kind]} closes`} describedBy={d} value={window.closesOn} onCommit={(v) => apply((s, a) => setWindow(s, kind, "closesOn", v, a))} />}
+                  {(d) => <CommitInput type="date" label={`${WINDOW_NAMES[kind]} closes`} describedBy={d} value={season.closesOn} onCommit={(v) => apply((s, a) => setWindow(s, kind, "closesOn", v, a))} />}
                 </Field>
                 <Field id={`${kind}-lead`} label="Lead weeks" hint="Home prompts you to set the season up this many weeks ahead, plus two.">
-                  {(d) => <CommitInput type="number" min={0} label={`${WINDOW_NAMES[kind]} lead weeks`} describedBy={d} value={window.leadWeeks} onCommit={(v) => apply((s, a) => setWindow(s, kind, "leadWeeks", Number(v), a))} />}
+                  {(d) => <CommitInput type="number" min={0} label={`${WINDOW_NAMES[kind]} lead weeks`} describedBy={d} value={season.leadWeeks} onCommit={(v) => apply((s, a) => setWindow(s, kind, "leadWeeks", Number(v), a))} />}
                 </Field>
               </fieldset>
             )

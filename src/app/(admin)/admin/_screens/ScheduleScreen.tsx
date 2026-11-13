@@ -27,7 +27,8 @@ import { approveVisits, exceptionCount, moveOutcome, proposedCount, weekContext 
 // the grid, the list or the map highlights the same visit. Client because
 // the week, the day, the tab, the selection and the moves are state; the
 // moves and the approval only update local state and log in the prototype,
-// and `Propose` waits for the next window to open. The route's page.tsx
+// and `Propose` is enabled only while a season window is within its lead period
+// (the same rule as Home's prompt). The route's page.tsx
 // supplies `data` and `today`.
 
 export interface ScheduleScreenProps {
@@ -172,7 +173,7 @@ export function ScheduleScreen({ data, today, defaultTab = "week" }: ScheduleScr
           }
         />
         {selected && <ScheduleMoveTo key={`${selected.id}-${selected.truckId}-${selected.startAt}`} visit={selected} trucks={trucks} weekStart={weekStart} timeZone={TIME_ZONE} onMove={move} />}
-        <p role="status" className="min-h-5 text-sm text-muted-foreground">
+        <p role="status" className="text-sm text-muted-foreground empty:sr-only">
           {announcement}
         </p>
         <Tabs defaultValue={defaultTab}>

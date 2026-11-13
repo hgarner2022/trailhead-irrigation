@@ -28,4 +28,13 @@ describe("ChangeLog", () => {
     expect(rows()).toHaveLength(0)
     expect(document.querySelector('[data-slot="empty-state"]')).toHaveTextContent("No changes yet")
   })
+
+  it("puts the later entry first when two share a minute", () => {
+    const same: SettingsChange[] = [
+      { id: "a", at: "2026-11-12T19:56:30Z", who: "Hannah", field: "First", from: "1", to: "2" },
+      { id: "b", at: "2026-11-12T19:56:30Z", who: "Hannah", field: "Second", from: "2", to: "3" },
+    ]
+    render(<ChangeLog changes={same} />)
+    expect(rows().map((r) => r.querySelector(".font-medium")?.textContent)).toEqual(["Second", "First"])
+  })
 })
