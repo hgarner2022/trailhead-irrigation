@@ -30,6 +30,7 @@ export const SettingsOut = z.object({
   springTownOrder: z.array(Town),
   messages: z.array(Template),
   termsVersion: z.string(),
+  confirmed: z.boolean().describe("False while these are the plan's defaults: nobody has saved the settings once."),
 })
 
 async function load(ctx: { db: import("@/db/types").Database; organizationId: string }) {
@@ -37,25 +38,49 @@ async function load(ctx: { db: import("@/db/types").Database; organizationId: st
   if (!org) throw new ApiError("not_found", "Organization not found")
   return org
 }
-const settingsOut = (org: typeof s.organization.$inferSelect) => ({ ...org.settings, termsVersion: org.termsVersion })
+/** Saved once: the change log has a row for this organization. */
+async function isConfirmed(ctx: { db: import("@/db/types").Database; organizationId: string }) {
+  const [saved] = await ctx.db.select({ id: s.settingsChange.id }).from(s.settingsChange).where(eq(s.settingsChange.organizationId, ctx.organizationId)).limit(1)
+  return Boolean(saved)
+}
+const settingsOut = (org: typeof s.organization.$inferSelect, confirmed: boolean) => ({ ...org.settings, termsVersion: org.termsVersion, confirmed })
 
-/** A value as words for the change log. */
-function describe(section: Section, value: unknown): string {
-  const text = (() => {
-    switch (section) {
-      case "windows":
-        return (value as z.infer<typeof Window>[]).map((w) => `${w.kind} ${w.opensOn} to ${w.closesOn}, ${w.leadWeeks} weeks ahead`).join("; ")
-      case "bufferPercentEarly":
-      case "bufferPercentLate":
-        return `${value} percent`
-      case "fallTownOrder":
-      case "springTownOrder":
-        return (value as string[]).join(", ")
-      case "messages":
-        return (value as z.infer<typeof Template>[]).map((t) => `${t.key} ${t.enabled ? "on" : "off"}`).join(", ")
+interface Leaf { field: string; from: string; to: string }
+const clip = (text: string) => (text.length > 400 ? `${text.slice(0, 397)}...` : text)
+const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b)
+
+/** The changed leaves of one section, each as words for the change log: one row per leaf, never one per section. */
+export function changedLeaves(section: Section, before: unknown, after: unknown): Leaf[] {
+  if (same(before, after)) return []
+  if (section === "windows") {
+    const was = new Map((before as z.infer<typeof Window>[]).map((w) => [w.kind, w]))
+    const now = new Map((after as z.infer<typeof Window>[]).map((w) => [w.kind, w]))
+    const leaves: Leaf[] = []
+    for (const kind of new Set([...was.keys(), ...now.keys()])) {
+      const a = was.get(kind)
+      const b = now.get(kind)
+      if (!a || !b) { leaves.push({ field: `windows.${kind}`, from: a ? "on" : "off", to: b ? "on" : "off" }); continue }
+      if (a.opensOn !== b.opensOn) leaves.push({ field: `windows.${kind}.opensOn`, from: a.opensOn, to: b.opensOn })
+      if (a.closesOn !== b.closesOn) leaves.push({ field: `windows.${kind}.closesOn`, from: a.closesOn, to: b.closesOn })
+      if (a.leadWeeks !== b.leadWeeks) leaves.push({ field: `windows.${kind}.leadWeeks`, from: `${a.leadWeeks} weeks ahead`, to: `${b.leadWeeks} weeks ahead` })
     }
-  })()
-  return text.length > 400 ? `${text.slice(0, 397)}...` : text
+    return leaves
+  }
+  if (section === "messages") {
+    const was = new Map((before as z.infer<typeof Template>[]).map((m) => [m.key, m]))
+    const now = new Map((after as z.infer<typeof Template>[]).map((m) => [m.key, m]))
+    const leaves: Leaf[] = []
+    for (const key of new Set([...was.keys(), ...now.keys()])) {
+      const a = was.get(key)
+      const b = now.get(key)
+      if (!a || !b) { leaves.push({ field: `messages.${key}`, from: a ? "on file" : "none", to: b ? "on file" : "none" }); continue }
+      for (const prop of ["channel", "subject", "body", "enabled"] as const)
+        if (a[prop] !== b[prop]) leaves.push({ field: `messages.${key}.${prop}`, from: clip(prop === "enabled" ? (a[prop] ? "on" : "off") : String(a[prop] ?? "")), to: clip(prop === "enabled" ? (b[prop] ? "on" : "off") : String(b[prop] ?? "")) })
+    }
+    return leaves
+  }
+  const words = (value: unknown) => (Array.isArray(value) ? (value as string[]).join(", ") : `${value} percent`)
+  return [{ field: section, from: clip(words(before)), to: clip(words(after)) }]
 }
 
 export const settingsGet = defineHandler({
@@ -63,7 +88,7 @@ export const settingsGet = defineHandler({
   summary: "The scheduling windows, buffers, town orders and message templates. Trucks and areas have their own resources.",
   input: z.object({}), output: SettingsOut,
   async run(ctx) {
-    return settingsOut(await load(ctx))
+    return settingsOut(await load(ctx), await isConfirmed(ctx))
   },
 })
 
@@ -78,18 +103,12 @@ export const settingsUpdate = defineHandler({
       throw new ApiError("invalid", `The value does not fit ${input.section}`, parsed.error.issues.map((i) => ({ path: ["value", ...i.path].join("."), message: i.message })))
     const org = await load(ctx)
     const before = org.settings[input.section]
-    if (JSON.stringify(before) === JSON.stringify(parsed.data)) return settingsOut(org)
+    const leaves = changedLeaves(input.section, before, parsed.data)
+    if (leaves.length === 0) return settingsOut(org, await isConfirmed(ctx))
     const settings = { ...org.settings, [input.section]: parsed.data }
     await ctx.db.update(s.organization).set({ settings }).where(eq(s.organization.id, org.id))
-    await ctx.db.insert(s.settingsChange).values({
-      organizationId: org.id,
-      byEmail: byPrincipal(ctx),
-      field: input.section,
-      fromValue: describe(input.section, before),
-      toValue: describe(input.section, parsed.data),
-      at: ctx.now,
-    })
-    return settingsOut({ ...org, settings })
+    await ctx.db.insert(s.settingsChange).values(leaves.map((l) => ({ organizationId: org.id, byEmail: byPrincipal(ctx), field: l.field, fromValue: l.from, toValue: l.to, at: ctx.now })))
+    return settingsOut({ ...org, settings }, true)
   },
 })
 
