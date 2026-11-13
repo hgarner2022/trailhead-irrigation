@@ -68,3 +68,7 @@ Per-city utility rebate (after Erie's March 2026 water emergency, demand is high
 Rachio's official rebate page (rachio.com/rebates) directs customers to local utility rebates only — no separate manufacturer rebate is published.
 
 Rachio 3 typically reduces outdoor water use by 20–30% — about 8,000–15,000 gallons per year on a typical Front Range home (per EPA WaterSense + Rachio published data). Most homeowners recoup the install cost through water-bill savings in 2–4 watering seasons.
+
+## Trailhead API (for agents)
+- API reference: https://www.trailheadirrigation.com/developers (OpenAPI 3.1 at https://www.trailheadirrigation.com/api/v1/openapi.json)
+- MCP endpoint: https://www.trailheadirrigation.com/api/mcp. Connect with an API key from Settings (sent as a bearer token).

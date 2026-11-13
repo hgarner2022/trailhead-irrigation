@@ -21,6 +21,9 @@ export default defineConfig({
           environment: "jsdom",
           include: ["src/**/*.test.{ts,tsx}"],
           setupFiles: ["./vitest.setup.ts"],
+          // Each database test migrates a fresh in-memory Postgres; with the whole suite running at once that takes a while.
+          hookTimeout: 60_000,
+          testTimeout: 30_000,
         },
       },
       {
