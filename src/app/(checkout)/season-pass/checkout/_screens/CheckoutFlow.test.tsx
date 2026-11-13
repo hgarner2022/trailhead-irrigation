@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeAll, afterEach } from "vitest"
+import { describe, it, expect, vi, beforeAll, beforeEach, afterEach } from "vitest"
 import { render, screen, fireEvent, act, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { FIXTURE_HOME } from "@/lib/places/fixture"
@@ -22,6 +22,8 @@ beforeAll(() => {
   Element.prototype.releasePointerCapture = () => {}
   Element.prototype.scrollIntoView = () => {}
 })
+
+beforeEach(() => sessionStorage.clear())
 
 const answers: Partial<CheckoutFields> = {
   address: FIXTURE_HOME.label,

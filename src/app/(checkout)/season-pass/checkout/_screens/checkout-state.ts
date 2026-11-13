@@ -81,6 +81,10 @@ export interface CheckoutState extends CheckoutFields {
   pass?: Pass
   /** what the server or Stripe refused, in words for the screen; cleared by the next answer */
   failure?: string
+  /** a line that is not an error, such as "your saved checkout timed out"; cleared when the customer moves on */
+  notice?: string
+  /** set by a restore that was on the card step: the server is asked for a fresh card form before the step opens */
+  resuming?: boolean
 }
 
 export type CheckoutAction =
@@ -95,6 +99,10 @@ export type CheckoutAction =
   /** the card is saved and the pass is active: the season is reserved */
   | { type: "finished"; pass: Pass }
   | { type: "failed"; message: string }
+  /** the browser kept this checkout from before a reload: its answers, its pending pass and the step the customer was on */
+  | { type: "restore"; step: number; passId?: string; fields: Partial<CheckoutFields> }
+  /** the pending pass kept in the browser is gone from the server: start at the contact step with the pass the server made instead */
+  | { type: "expired"; passId: string; message: string }
 
 const clampStep = (step: number) => Math.min(STEP_COUNT, Math.max(1, Math.trunc(step)))
 
@@ -168,7 +176,7 @@ const isDone = (state: CheckoutState) => STEPS[state.step - 1]?.key === "done"
 export function reducer(state: CheckoutState, action: CheckoutAction): CheckoutState {
   switch (action.type) {
     case "set":
-      return { ...state, [action.field]: action.value, failure: undefined }
+      return { ...state, [action.field]: action.value, failure: undefined, notice: undefined }
     // Typing again drops the pick and the town it gave; a pick fills all three at once.
     case "typeAddress":
       return { ...state, address: action.text, place: null, town: null }
@@ -187,11 +195,24 @@ export function reducer(state: CheckoutState, action: CheckoutAction): CheckoutS
     case "goTo":
       return isDone(state) ? state : { ...state, step: clampStep(action.step) }
     case "begun":
-      return { ...state, passId: action.passId, sessionId: action.sessionId, clientSecret: action.clientSecret, failure: undefined, step: clampStep(state.step + 1) }
+      return { ...state, passId: action.passId, sessionId: action.sessionId, clientSecret: action.clientSecret, failure: undefined, notice: undefined, resuming: undefined, step: clampStep(state.step + 1) }
     case "finished":
       return { ...state, pass: action.pass, cardSaved: true, failure: undefined, step: STEP_COUNT }
     case "failed":
-      return { ...state, failure: action.message }
+      return { ...state, failure: action.message, resuming: false }
+    // A customer who was on the card step comes back to the contact step and the card form is asked for again; the rest open where they were.
+    case "restore": {
+      const onCard = action.step >= STEPS.findIndex((s) => s.key === "card") + 1
+      return {
+        ...state,
+        ...action.fields,
+        ...(action.passId ? { passId: action.passId } : {}),
+        step: clampStep(onCard ? STEPS.findIndex((s) => s.key === "contact") + 1 : action.step),
+        resuming: onCard || undefined,
+      }
+    }
+    case "expired":
+      return { ...state, passId: action.passId, clientSecret: undefined, sessionId: undefined, notice: action.message, failure: undefined, resuming: undefined, step: STEPS.findIndex((s) => s.key === "contact") + 1 }
   }
 }
 

@@ -10,11 +10,14 @@ import type { PlaceProvider } from "@/lib/places"
 import { AddressStep } from "./checkout-address"
 import { CONSENT_PROBLEM_ID, ContactStep, DoneStep, ZonesStep, useReveal } from "./checkout-steps"
 import { useCheckoutState } from "./use-checkout-state"
+import { useCheckoutServer } from "./use-checkout-server"
+import { useCheckoutStorage } from "./use-checkout-storage"
 import { CardStep } from "./checkout-card"
-import { toSubmission, type BeginCheckout, type FinishCheckout } from "./checkout-submit"
+import type { BeginCheckout, FinishCheckout } from "./checkout-submit"
 import { savePassImage } from "@/lib/pass-card-image"
 import { InspectionStep } from "./checkout-inspection"
 import { TimingStep } from "./checkout-timing"
+import { ownsKeys, timingNeighbour } from "./checkout-keys"
 
 // The Season Pass checkout as seven full-screen questions, one input each (the
 // timing step asks its two together), the way Typeform paces a form: a thin orange line across the top for progress,
@@ -59,23 +62,6 @@ const COLUMN = "mx-auto w-full max-w-2xl container-padding-x"
 /** The reserved moment gets the long rise; a step change gets a short one; the first question opens still. */
 const REVEAL_MS = { step: 300, done: 600 }
 
-const TIMING_CHOICE = '[data-slot="timing-choice"]'
-
-/** On the timing step the arrow keys walk the two groups before they move between steps: the pressed choice of the other group takes focus. */
-function timingNeighbour(target: HTMLElement, direction: "down" | "up"): HTMLElement | null {
-  const kind = target.closest<HTMLElement>(TIMING_CHOICE)?.dataset.kind
-  if (kind !== (direction === "down" ? "turn-on" : "blowout")) return null
-  const other = direction === "down" ? "blowout" : "turn-on"
-  return target.closest("section")?.querySelector<HTMLElement>(`${TIMING_CHOICE}[data-kind="${other}"][aria-pressed="true"]`) ?? null
-}
-
-/** Elements that use Enter and the arrow keys themselves; a combobox only while its list is open. */
-function ownsKeys(target: HTMLElement): boolean {
-  const role = target.getAttribute("role")
-  if (role === "combobox") return target.getAttribute("aria-expanded") === "true"
-  return target.tagName === "SELECT" || target.tagName === "TEXTAREA" || role === "listbox" || role === "option" || !!target.closest('[data-slot="select-content"]')
-}
-
 function StepBody({ duration, enabled, children }: { duration: number; enabled: boolean; children: React.ReactNode }) {
   const ref = useReveal<HTMLDivElement>(duration, enabled)
   return <div ref={ref}>{children}</div>
@@ -95,27 +81,11 @@ export function CheckoutFlow({ season, initialZones, initialStep, prefill, place
   const valid = canContinue(state)
   const attempted = attemptedStep === step
   const wired = Boolean(stripeKey && onBegin && onFinish)
-  // The server round trip on leaving the contact step; the button waits for it.
-  const [busy, setBusy] = useState(false)
-  // Stripe's `onComplete` fires from inside its form, so it reads the answers through a ref.
-  const latest = useRef(state)
-  useEffect(() => {
-    latest.current = state
-  })
+  const markMoved = useCallback(() => setMoved(true), [])
+  const { busy, begin, finishCard } = useCheckoutServer({ state, dispatch, onBegin, onFinish, onComplete, moved: markMoved })
+  useCheckoutStorage(state, dispatch, wired)
 
   const set = <K extends keyof CheckoutFields>(field: K, value: CheckoutFields[K]) => dispatch({ type: "set", field, value })
-  const finishCard = useCallback(async () => {
-    const s = latest.current
-    if (!onFinish || !s.passId || !s.sessionId) return
-    setBusy(true)
-    const result = await onFinish(s.passId, s.sessionId, { termsAccepted: s.termsAccepted, marketingEmail: s.marketingEmail, marketingSms: s.marketingSms }, s.firstName.trim())
-    setBusy(false)
-    if (result.ok) {
-      onComplete?.(result.pass)
-      dispatch({ type: "finished", pass: result.pass })
-      setMoved(true)
-    } else dispatch({ type: "failed", message: result.message })
-  }, [onFinish, onComplete, dispatch])
   const next = async () => {
     // On the wired card step only Stripe's own form saves the card; Enter and the arrows must not skip it.
     if (busy || (wired && current.key === "card")) return
@@ -124,15 +94,7 @@ export function CheckoutFlow({ season, initialZones, initialStep, prefill, place
       return
     }
     if (wired && current.key === "contact") {
-      const submission = toSubmission(state)
-      if (!submission || !onBegin) return
-      setBusy(true)
-      const result = await onBegin(submission, state.passId)
-      setBusy(false)
-      if (result.ok) {
-        dispatch({ type: "begun", passId: result.passId, sessionId: result.sessionId, clientSecret: result.clientSecret })
-        setMoved(true)
-      } else dispatch({ type: "failed", message: result.message })
+      await begin()
       return
     }
     if (current.key === "card") onComplete?.(toPass({ ...state, cardSaved: true }, season))
@@ -250,6 +212,11 @@ export function CheckoutFlow({ season, initialZones, initialStep, prefill, place
               {current.question}
             </h1>
             <div className={done ? "mt-5" : "mt-8"}>{body}</div>
+            {state.notice && (
+              <p role="status" data-slot="checkout-notice" className="mt-6 text-base text-muted-foreground">
+                {state.notice}
+              </p>
+            )}
             {state.failure && (
               <p role="alert" data-slot="checkout-failure" className="mt-6 text-base text-destructive">
                 {state.failure}
