@@ -23,10 +23,13 @@ export async function createSetupSession(stripe: Stripe, input: SetupSessionInpu
     mode: "setup",
     // Required by the 2026 API versions even in setup mode (the saved card is charged in dollars later).
     currency: "usd",
+    // Only a card: Link or a bank account would finish the form and then fail the off-session charge later.
+    allowed_payment_method_types: ["card"],
     ui_mode: "embedded_page",
     redirect_on_completion: "never",
     expires_at: input.expiresAt,
-    ...(input.customerId ? { customer: input.customerId } : { customer_email: input.email }),
+    // A known Stripe customer is reused; a new one is created now so the saved card has a customer to live on.
+    ...(input.customerId ? { customer: input.customerId } : { customer_email: input.email, customer_creation: "always" }),
     metadata: { purpose: "pass-setup", passId: input.passId, name: input.name },
     setup_intent_data: { metadata: { passId: input.passId } },
   }, input.idempotencyKey ? { idempotencyKey: input.idempotencyKey } : undefined)

@@ -1,4 +1,5 @@
 import "server-only"
+import { createHash } from "node:crypto"
 import { eq } from "drizzle-orm"
 import type Stripe from "stripe"
 import type { z } from "zod"
@@ -18,6 +19,9 @@ import { createSetupSession } from "@/lib/stripe/checkout"
 // times inside that bucket sends Stripe the identical request three times and gets the one session back each time
 // (Stripe requires identical parameters under one key), and the expiry is never under 35 minutes out.
 const BUCKET_MS = 10 * 60 * 1000
+
+/** A short stable digest of a string, for idempotency keys. */
+const fingerprint = (text: string) => createHash("sha256").update(text).digest("hex").slice(0, 12)
 const SESSION_MINUTES = 45
 
 export interface CheckoutDeps {
@@ -86,7 +90,8 @@ export async function beginCheckoutWith(deps: CheckoutDeps, f: CheckoutSubmissio
       email: f.email,
       name: f.firstName,
       expiresAt: Math.floor(bucket / 1000) + SESSION_MINUTES * 60,
-      idempotencyKey: `setup-${pass.id}-${bucket}`,
+      // The key also carries the contact details, so a corrected email or name inside the bucket is a new request, not a 400.
+      idempotencyKey: `setup-${pass.id}-${bucket}-${fingerprint(`${f.email}|${f.firstName}`)}`,
     })
     return { ok: true, passId: pass.id, sessionId: session.id, clientSecret: session.clientSecret }
   } catch (error) {
