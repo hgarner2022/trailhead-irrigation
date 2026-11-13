@@ -21,6 +21,8 @@ export interface Slot {
   truckId: string
   truckName: string
   day: string
+  /** "HH:MM", the first open start on the half-hour grid; the two-hour arrival window opens then */
+  start: string
   /** a truck already works this customer's area group that day */
   areaDay: boolean
 }
@@ -31,14 +33,19 @@ export interface Slot {
  * calendar, one area group a day). Area days that already have a neighbour come before empty truck-days, so what the
  * customer is offered keeps the route dense.
  */
-export async function openSlots(db: Database, visit: PickVisit, today: string): Promise<Slot[]> {
+export async function openSlots(db: Database, visit: PickVisit, today: string, season?: number): Promise<Slot[]> {
   const probe = await loadWorld(db, visit.organizationId, today, today)
-  const window = probe.settings.windows.find((w) => w.kind === visit.kind)
-  if (!window) return []
+  const found = probe.settings.windows.find((w) => w.kind === visit.kind)
+  if (!found) return []
+  // The settings hold one season's windows; another season is the same windows a whole number of years on.
+  const shift = season ? season - Number(found.opensOn.slice(0, 4)) : 0
+  const year = (iso: string) => `${Number(iso.slice(0, 4)) + shift}${iso.slice(4)}`
+  const window = { ...found, opensOn: year(found.opensOn), closesOn: year(found.closesOn) }
   const first = [window.opensOn.slice(0, 10), addDays(today, PICK_LEAD_DAYS)].sort().at(-1)!
   const last = window.closesOn.slice(0, 10)
   if (first > last) return []
-  const world = await loadWorld(db, visit.organizationId, first, last)
+  const loaded = await loadWorld(db, visit.organizationId, first, last)
+  const world = shift ? { ...loaded, settings: { ...loaded.settings, windows: loaded.settings.windows.map((w) => ({ ...w, opensOn: year(w.opensOn), closesOn: year(w.closesOn) })) } } : loaded
   const taken = await loadTaken(db, visit.organizationId, first, last, [visit.id])
   const slots = openTruckSlots({ service: { kind: visit.kind, slotMinutes: defaultMinutes(visit.kind) }, town: visit.town as Town, ...world, from: first, to: last, taken, window })
   const names = new Map(world.trucks.map((t) => [t.id, t.name]))
@@ -48,7 +55,7 @@ export async function openSlots(db: Database, visit: PickVisit, today: string): 
     const key = `${x.day}|${x.truckId}`
     if (seen.has(key)) continue
     seen.add(key)
-    out.push({ truckId: x.truckId, truckName: names.get(x.truckId) ?? "", day: x.day, areaDay: x.areaDay })
+    out.push({ truckId: x.truckId, truckName: names.get(x.truckId) ?? "", day: x.day, start: x.start, areaDay: x.areaDay })
   }
   return out
 }
@@ -62,3 +69,17 @@ export function offeredDays(slots: Slot[]): string[] {
 
 /** The truck for a picked day: one already working the area, else the first with room. */
 export const truckFor = (slots: Slot[], day: string): Slot | undefined => slots.find((x) => x.day === day && x.areaDay) ?? slots.find((x) => x.day === day)
+
+/**
+ * The days the checkout offers for one visit: the earliest open day, one near the middle of what is open and the last one,
+ * each on the truck `truckFor` would pick. Fewer open days than three returns the days there are; none returns none.
+ */
+export function spreadDays(slots: Slot[]): Slot[] {
+  const days = [...new Set(slots.map((x) => x.day))].sort()
+  const at = new Set([0, Math.round((days.length - 1) / 2), days.length - 1])
+  return [...at].filter((i) => i >= 0 && days[i]).map((i) => {
+    const mine = slots.filter((x) => x.day === days[i])
+    const pool = mine.some((x) => x.areaDay) ? mine.filter((x) => x.areaDay) : mine
+    return [...pool].sort((a, b) => a.start.localeCompare(b.start) || a.truckId.localeCompare(b.truckId))[0]!
+  })
+}
