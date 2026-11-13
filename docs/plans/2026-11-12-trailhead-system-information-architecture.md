@@ -1,0 +1,150 @@
+# Trailhead's own system: information architecture
+
+Written 2026-11-12 evening after Hannah's decisions. This is the map every
+later plan builds to. The prototype on `admin-prototype` covers the pass
+checkout, the pass page and the first admin pages; the wiring plan covers
+the data behind them; the retirement path covers the rest.
+
+## One sentence
+
+The app is where Trailhead's customers buy, where the schedule is decided,
+where every message to a customer comes from, and where the owner looks.
+Jobber shows the field what to do until the field app replaces it.
+
+## Who uses it
+
+| Person | Surface | What they need from it |
+|---|---|---|
+| Customer | Website, checkout, pass page, booking form, emails and texts | Buy or book in minutes, know when someone is coming, see what they paid for |
+| Hannah (owner) | Admin on a laptop | What is committed, booked, paid and broken, in one glance; change a setting without an engineer |
+| Ryan and the crews | Admin Schedule on a laptop, day view on a phone (Jobber until then) | Today's stops in order, the checklist for each, done in one tap |
+| A branch manager, later | The same admin scoped to their organization | Everything Hannah sees, for their branch only |
+
+## The entities and who owns them
+
+| Entity | Owner today | Owner at the end | Note |
+|---|---|---|---|
+| Organization, users, roles, settings | App | App | Trailhead is organization one; every row below carries its id |
+| Customer who holds a pass | App | App | Mirrored to Jobber as a client while Jobber is the field display |
+| Customer with no pass | Jobber | App | Read for dashboard totals until the booking form and Requests inbox land |
+| Season Pass, its visits, preferences, dates, charges | App | App | Jobber gets a copy of each visit on the truck's calendar |
+| Request (a booking or quote ask) | Jobber form | App | The `/book` form rebuilt in the app, Requests inbox in the admin |
+| Schedule (truck, day, visit) | App proposes, Ryan approves | App | Jobber reflects it; a move in Jobber is logged as an exception |
+| Trucks, areas, capacity, windows | App (Settings) | App | Unbounded rows, not a count |
+| Messages and templates | App | App | Every customer email and text, in Trailhead's voice |
+| Checklists per visit type | App (Settings) | App | Done on the phone day view; completion triggers the charge |
+| Card on file, charges, receipts | Stripe through the app | Stripe through the app | Jobber invoice marked paid while Jobber keeps non-pass books |
+| Quotes and invoices for non-pass work | Jobber | App, later | Third step of the retirement path |
+
+Rule: one owner per entity at any time. When two systems hold a copy, the
+owner's copy wins and the other is a display.
+
+## Admin navigation, in order, one job each
+
+1. **Home.** The morning view. Today and tomorrow by truck, what needs
+   attention (failed charges, Jobber exceptions, cards expiring, requests
+   waiting), four numbers (revenue this month, passes sold, quotes awaiting,
+   invoices past due), the season line, and the "Set up spring / fall"
+   prompt when a window is four to six weeks out.
+2. **Schedule.** The week by truck. Proposed visits hatched until approved,
+   drag to move, exceptions marked, day view on the phone. Where the
+   scheduler's output lands and where Ryan lives in season.
+3. **Passes.** Every pass holder: grid, filters, export, side panel with the
+   season line, charges, Jobber and Stripe links, and the three actions.
+4. **Requests** (after the booking form lands). The inbox for everything
+   that is not a pass; one click to a scheduled visit or a quote.
+5. **Revenue.** Committed against charged, by month, upcoming charges,
+   renewals (renewed, lapsed, not yet asked).
+6. **Customers.** Everyone, with pass status layered on, and the January
+   pre-sell for the people who book a spring visit and a blowout at full
+   price.
+7. **Settings.** Trucks, Areas, Capacity and windows, Messages, Checklists,
+   with a change log.
+
+The phone shows the same seven as a bottom tab bar with Schedule's day view
+first for a crew login.
+
+## Customer surfaces
+
+- **Season Pass page** (marketing, exists): the offer, the price by zones,
+  the button into the checkout.
+- **Checkout** (prototype exists): six screens, one question each: address,
+  zones, timing preferences for turn-on and blowout with the recommendation
+  preselected and the reason under it, contact, card, done with the pass
+  card.
+- **Pass page** (prototype exists): the pass card, the season line, the
+  visits in customer words (Done, Booked, Reserved), the card on file,
+  cancel.
+- **Booking form at `/book`** (later): the Jobber iframe replaced by the
+  app's own form, same pacing as the checkout, per-service questions,
+  instant confirmation.
+- **Messages** (wiring plan): confirmation at purchase, date set or moved,
+  day-before reminder, on-my-way when the crew taps it, after-visit receipt
+  naming the next visit, failed card, January renewal; texts opt-in with
+  STOP handled.
+
+## Scheduling, the rules
+
+- Trucks are rows with working days and visits per day by visit type.
+- Each truck-day gets an area group (one town or two adjacent towns). The
+  app picks truck, day and area; Jobber's route tool orders the stops until
+  the day view does.
+- Fall visits are sorted by freeze risk (north and high first), spring the
+  reverse; "earlier" and "later" preferences sort within the window.
+- Capacity per truck-day minus a buffer (20 to 25 percent in a season's
+  first two weeks, 10 to 15 after) left for repairs and weather.
+- A visit never leaves its window; never outside working days; never over
+  capacity.
+- Fall commits firm dates 5 to 7 days ahead; later days are "planned" until
+  the forecast settles.
+- First season: the app proposes, Ryan approves the batch. Later: it applies
+  and sends a summary.
+- A move Ryan makes in Jobber is accepted and logged as an exception, not
+  treated as the truth.
+
+## Open API, for agents as much as for screens
+
+Hannah's rule (2026-11-12): the system has an open, documented API, and it
+must be easy for agents to use.
+
+- **API first.** Every read and every action the admin, the checkout and
+  the day view perform goes through the same API (`/api/v1/...`). The
+  screens are one client of it; an agent is another. Nothing is reachable
+  from a screen that is not reachable from the API.
+- **Shape.** JSON over HTTPS, resource-oriented: organizations, customers,
+  passes, visits, requests, schedule (proposals, approvals, moves), trucks,
+  settings, messages, checklists, webhooks. Cursor pagination, idempotency
+  keys on writes, the same error shape everywhere.
+- **Described, not just built.** An OpenAPI document generated from the
+  route code and served at `/api/v1/openapi.json`, human docs at
+  `/developers`, and an MCP server (`/api/mcp`) exposing the same resources
+  as tools so Claude, Appy agents and anyone else can connect with a key
+  and no code. `public/llms.txt` points at both.
+- **Keys and scopes.** API keys per organization with scopes (read, write
+  passes, write schedule, send messages, admin), created and revoked in
+  Settings, every call logged with the key that made it. Roles apply to
+  keys exactly as to people.
+- **Outbound webhooks.** Subscribers get pass bought, visit scheduled,
+  visit done, charge succeeded or failed, request received, with the same
+  HMAC signing Jobber uses, so another agent or system can react.
+- **Rate limits and versioning** stated in the docs from day one; `v1`
+  stays stable, breaking changes get `v2`.
+
+## Build order and what each step retires
+
+1. Pass checkout, pass page, admin Home, Passes, Revenue, Settings, Schedule
+   (wiring plan). Retires: phone calls to buy the pass, chasing pass
+   payments, Jobber's reminders for pass customers.
+2. Booking form and Requests inbox. Retires: the Jobber request form.
+3. Day view with checklists. Retires: Jobber's field app.
+4. Quotes and invoices for non-pass work. Retires: Jobber's office side.
+5. Payments for that work through Stripe. Retires: Jobber Payments, then
+   Jobber.
+
+## Research behind it
+
+`.local-data/research/2026-11-12-pass-visit-scheduling-brief.md` (area days,
+capacity, freeze-line ordering, week-ahead fall commitments) and
+`.local-data/research/2026-11-12-booking-checklists-messages-brief.md`
+(short multi-step booking forms, instant confirmation, checklist and photo
+practice, message timing and consent).
