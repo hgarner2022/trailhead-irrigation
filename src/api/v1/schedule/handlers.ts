@@ -102,6 +102,7 @@ export const scheduleSlots = defineHandler({
   method: "GET",
   path: "/schedule/slots",
   scope: "read",
+  checkout: true,
   summary: "Open truck-days for a service, zone count and town, from tomorrow: the truck works the weekday, has room for the kind after the busy time on its Jobber calendar, and is not already in another area that day.",
   input: z.object({ service: z.string().min(1).describe("A service key, e.g. `turn-on-8`."), zones: z.coerce.number().int().min(1).max(16).optional(), town: Town, from: Day.optional(), days: z.coerce.number().int().min(1).max(60).default(14) }),
   output: z.object({ data: z.array(z.object({ day: Day, truckId: Id, truckName: z.string(), remaining: z.number().int(), slotMinutes: z.number().int() })) }),

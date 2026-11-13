@@ -83,7 +83,7 @@ export const queueKindEnum = pgEnum("queue_kind", [
 export const messageChannelEnum = pgEnum("message_channel", ["email", "sms"])
 export const messageStatusEnum = pgEnum("message_status", ["queued", "sent", "delivered", "failed", "bounced"])
 export const consentSourceEnum = pgEnum("consent_source", ["checkout", "booking", "admin", "reply"])
-export const principalKindEnum = pgEnum("principal_kind", ["person", "api-key"])
+export const principalKindEnum = pgEnum("principal_kind", ["person", "api-key", "public"])
 
 export type OrganizationSettingsRow = Omit<OrganizationSettings, "trucks" | "areas">
 
@@ -698,6 +698,23 @@ export const authVerificationToken = pgTable(
     updatedAt: updatedAt(),
   },
   (t) => [primaryKey({ columns: [t.identifier, t.token] })],
+)
+
+/** A free-form line for Home: something a person should look at once (a new Season Pass), unique on kind and key so a repeat adds nothing. `resolvedAt` takes it off Home. */
+export const adminAlert = pgTable(
+  "admin_alert",
+  {
+    id: id(),
+    organizationId: orgId(),
+    kind: text("kind").notNull(),
+    key: text("key").notNull(),
+    passId: text("pass_id").references(() => seasonPass.id),
+    message: text("message").notNull(),
+    resolvedAt: ts("resolved_at"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [unique("admin_alert_kind_key_unique").on(t.organizationId, t.kind, t.key)],
 )
 
 export type ConsentRow = typeof consent.$inferSelect

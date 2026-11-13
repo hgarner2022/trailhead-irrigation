@@ -3,9 +3,9 @@
  * screen and what the customer has answered so far. The reducer is pure and
  * `canContinue` holds every step's rule, so the flow can be tested without
  * rendering; `toPass` turns the answers into the `Pass` the last screen
- * shows. `useCheckoutState` is the thin hook the screen calls.
+ * shows. It imports no React, so the server runs the same `canContinue` over what the browser sent (src/lib/pass/server/create.ts);
+ * `useCheckoutState`, the thin hook the screen calls, lives in use-checkout-state.ts.
  */
-import { useReducer } from "react"
 import type { Consent, Pass, PassVisit, TimingPreference, Town } from "@/lib/admin/types"
 import { preferencePhrase } from "@/lib/admin/format"
 import { emailProblem } from "@/lib/email-check"
@@ -70,8 +70,17 @@ export interface CheckoutFields {
 }
 
 export interface CheckoutState extends CheckoutFields {
-  /** 1 to 6 */
+  /** 1 to 7 */
   step: number
+  /** the pending pass the server made when the contact step passed; sent back so going back and forward reuses it */
+  passId?: string
+  /** the Stripe session for the card form, and its client secret (never stored; it is only for the form) */
+  sessionId?: string
+  clientSecret?: string
+  /** the real pass from the server, once the card is saved; the Done step shows it in place of the prototype's */
+  pass?: Pass
+  /** what the server or Stripe refused, in words for the screen; cleared by the next answer */
+  failure?: string
 }
 
 export type CheckoutAction =
@@ -81,6 +90,11 @@ export type CheckoutAction =
   | { type: "next" }
   | { type: "back" }
   | { type: "goTo"; step: number }
+  /** the server made the pending pass and the card form's session: open the card step */
+  | { type: "begun"; passId: string; sessionId: string; clientSecret: string }
+  /** the card is saved and the pass is active: the season is reserved */
+  | { type: "finished"; pass: Pass }
+  | { type: "failed"; message: string }
 
 const clampStep = (step: number) => Math.min(STEP_COUNT, Math.max(1, Math.trunc(step)))
 
@@ -154,7 +168,7 @@ const isDone = (state: CheckoutState) => STEPS[state.step - 1]?.key === "done"
 export function reducer(state: CheckoutState, action: CheckoutAction): CheckoutState {
   switch (action.type) {
     case "set":
-      return { ...state, [action.field]: action.value }
+      return { ...state, [action.field]: action.value, failure: undefined }
     // Typing again drops the pick and the town it gave; a pick fills all three at once.
     case "typeAddress":
       return { ...state, address: action.text, place: null, town: null }
@@ -172,11 +186,13 @@ export function reducer(state: CheckoutState, action: CheckoutAction): CheckoutS
       return isDone(state) ? state : { ...state, step: clampStep(state.step - 1) }
     case "goTo":
       return isDone(state) ? state : { ...state, step: clampStep(action.step) }
+    case "begun":
+      return { ...state, passId: action.passId, sessionId: action.sessionId, clientSecret: action.clientSecret, failure: undefined, step: clampStep(state.step + 1) }
+    case "finished":
+      return { ...state, pass: action.pass, cardSaved: true, failure: undefined, step: STEP_COUNT }
+    case "failed":
+      return { ...state, failure: action.message }
   }
-}
-
-export function useCheckoutState(prefill?: Partial<CheckoutState>) {
-  return useReducer(reducer, prefill, initialState)
 }
 
 /** The sentence under the pass card on Done. */

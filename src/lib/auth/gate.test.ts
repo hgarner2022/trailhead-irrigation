@@ -25,6 +25,10 @@ describe("gateFor", () => {
     expect(gateFor("/account/pass", null)).toEqual(toSignIn("/account/sign-in"))
     expect(gateFor("/account/pass", key)).toEqual(toSignIn("/account/sign-in"))
   })
+  it("passes the card-updated page Stripe returns customers to, with no session", () => {
+    expect(gateFor("/account/pass/card-updated", null)).toEqual({ action: "next" })
+    expect(gateFor("/account/pass", null)).toEqual(toSignIn("/account/sign-in"))
+  })
   it("always passes the sign-in pages", () => {
     for (const p of ["/admin/sign-in", "/admin/sign-in/sent", "/account/sign-in", "/account/sign-in/sent"]) {
       expect(gateFor(p, null)).toEqual({ action: "next" })

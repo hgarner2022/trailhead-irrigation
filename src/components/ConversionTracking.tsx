@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect } from "react"
+import { fireEvent } from "@/lib/analytics"
 
 /**
  * Global conversion tracker.
@@ -13,6 +14,8 @@ import { useEffect } from "react"
  * Events fired:
  *   - phone_click  → user tapped/clicked any tel: link
  *   - book_click   → user clicked any link to /book or /book/...
+ *
+ * `season_pass_purchase` fires once from the checkout's done step (src/lib/analytics.ts).
  *
  * Form-submit conversions (e.g. the contact form) fire their own gtag()
  * call directly inside the form's onSubmit handler — this component does
@@ -58,13 +61,4 @@ export function ConversionTracking() {
   }, [])
 
   return null
-}
-
-/** Fires a GA4 event if gtag is available; otherwise no-ops. */
-function fireEvent(name: string, params: Record<string, unknown>) {
-  if (typeof window === "undefined") return
-  // @ts-expect-error gtag is injected globally by Google Analytics' loader script
-  if (typeof window.gtag !== "function") return
-  // @ts-expect-error gtag is injected globally
-  window.gtag("event", name, params)
 }

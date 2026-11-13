@@ -79,6 +79,6 @@ export async function passDetail(ctx: Ctx, row: PassJoined) {
 
 /** A row in `pass_change`: what changed, by whom. */
 export async function recordChange(ctx: Ctx, change: { customerId: string; passId?: string | null; visitId?: string; kind: string; detail?: Record<string, unknown> }) {
-  const by = ctx.principal.kind === "person" ? ctx.principal.email : `api-key:${ctx.principal.id}`
+  const by = ctx.principal.kind === "person" ? ctx.principal.email : `${ctx.principal.kind}:${ctx.principal.id}`
   await ctx.db.insert(s.passChange).values({ organizationId: ctx.organizationId, byPrincipal: by, at: ctx.now, detail: {}, ...change })
 }

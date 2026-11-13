@@ -11,6 +11,8 @@ export interface Handler<I extends z.ZodObject = z.ZodObject, O extends z.ZodTyp
   scope: Scope
   /** a signed-in customer may also call it; the handler must then check the record is theirs */
   customerSelf?: boolean
+  /** the anonymous checkout visitor (`public` principal) may call it; "own-pass" also needs `input.id` to be the pass the visitor is buying */
+  checkout?: true | "own-pass"
   /** the output carries a secret shown once: an Idempotency-Key replay is refused instead of storing it */
   returnsSecret?: boolean
   /** the HTTP status of a success (201 for creates) */

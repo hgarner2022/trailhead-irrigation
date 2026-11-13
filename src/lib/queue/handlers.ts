@@ -2,6 +2,7 @@ import "server-only"
 import { eq } from "drizzle-orm"
 import * as s from "@/db/schema"
 import { readAppUrl } from "@/lib/env"
+import { onboardPass } from "@/lib/pass/server/onboard"
 import { chargeVisit } from "@/lib/pass/server/charge-visit"
 import { getStripe } from "@/lib/stripe/client"
 import { handleStripeEvent } from "@/lib/stripe/webhook"
@@ -29,10 +30,16 @@ export const passCharge: QueueHandler = async (db, item) => {
   await chargeVisit(db, getStripe(), visitId, { origin: readAppUrl(), afterCardUpdate })
 }
 
+/** `pass-onboard`: key is the pass id, payload `{ passId }`; raises the Home alert for a new pass (no Jobber call; see `onboardPass`). */
+export const passOnboard: QueueHandler = async (db, item) => {
+  const { passId } = item.payload as { passId: string }
+  await onboardPass(db, passId)
+}
+
 /** `stripe-webhook`: key is the Stripe event id, payload `{ event }`, the verified event the route stored. */
 export const stripeWebhook: QueueHandler = async (db, item) => {
   const { event } = item.payload as { event: Stripe.Event }
   await handleStripeEvent(db, getStripe(), item.organizationId, event, readAppUrl())
 }
 
-export const handlers: Partial<Record<QueueKind, QueueHandler>> = { "jobber-feed-sync": jobberFeedSync, geocode, "pass-charge": passCharge, "stripe-webhook": stripeWebhook }
+export const handlers: Partial<Record<QueueKind, QueueHandler>> = { "jobber-feed-sync": jobberFeedSync, geocode, "pass-charge": passCharge, "pass-onboard": passOnboard, "stripe-webhook": stripeWebhook }

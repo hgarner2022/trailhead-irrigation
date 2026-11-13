@@ -47,13 +47,30 @@ export const PassDetail = PassOut.extend({
 })
 
 export const passCreateInput = z.object({
+  passId: Id.optional().describe("The pending pass this checkout already holds; when it is still pending for the same email it is updated instead of a second one being made."),
   customer: z.object({ ...customerFields, email: z.email(), lastName: customerFields.lastName }),
-  property: propertyInput,
+  property: propertyInput.extend({ state: z.string().length(2).optional().describe("Two letters, from the picked address."), zip: z.string().max(10).optional() }),
   zones: z.number().int().min(MIN_ZONES).max(MAX_ZONES),
   inspection: z.boolean().default(false),
   turnOnPreference: Preference.default("recommended"),
   blowoutPreference: Preference.default("recommended"),
   needsCustomerHome: z.boolean().default(false).describe("The customer must be there; the visit waits for them to pick a day."),
   accessNote: z.string().max(500).optional(),
-  consent: consentInput.extend({ termsAccepted: z.literal(true).describe("Required: the terms must be accepted to buy a pass."), source: z.enum(["checkout", "booking", "admin", "reply"]).default("checkout") }),
+  consent: consentInput
+    .extend({ termsAccepted: z.literal(true).describe("Required: the terms must be accepted to buy a pass."), source: z.enum(["checkout", "booking", "admin", "reply"]).default("checkout") })
+    .optional()
+    .describe("Recorded now when given (an agent or the admin). The checkout leaves it out and sends the consent with `passes.activate`, when the card is saved."),
+})
+
+export const passActivateInput = z.object({
+  id: Id,
+  setupSessionId: z.string().min(1).describe("The Stripe Checkout Session in setup mode that saved the card."),
+  consent: z
+    .object({
+      termsAccepted: z.literal(true).describe("Required: the terms were accepted on the card step."),
+      marketingOptIn: z.boolean().default(false),
+      marketingChannels: z.array(z.enum(["email", "sms"])).default([]).describe("The ticked marketing boxes; `sms` is dropped when the customer has no phone."),
+    })
+    .optional()
+    .describe("The checkout's consent, appended once when the pass first turns active."),
 })

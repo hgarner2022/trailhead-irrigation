@@ -39,12 +39,14 @@ export const capacityKind = (kind: (typeof s.visitKindEnum.enumValues)[number]):
 export const canSeeContact = (ctx: Ctx) => hasScope(ctx.principal, "write")
 
 /** Who made a change, for the change rows. */
-export const byPrincipal = (ctx: Ctx) => (ctx.principal.kind === "person" ? ctx.principal.email : `api-key:${ctx.principal.id}`)
+export const byPrincipal = (ctx: Ctx) => (ctx.principal.kind === "person" ? ctx.principal.email : `${ctx.principal.kind}:${ctx.principal.id}`)
 
 /** A customer may touch only their own records; anyone with a scope may read any record in the organization. */
 export function assertOwnsCustomer(ctx: Ctx, customerId: string) {
   if (hasScope(ctx.principal, "read")) return
   const p = ctx.principal
+  // The checkout visitor reaches only the checkout handlers, which check the pass themselves (`call.ts`, `passes.create`).
+  if (p.kind === "public") return
   if (!(p.kind === "person" && p.type === "customer" && p.customerId === customerId))
     throw new ApiError("forbidden", "That record belongs to another customer")
 }

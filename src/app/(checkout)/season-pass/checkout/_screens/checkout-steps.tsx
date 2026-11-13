@@ -1,6 +1,6 @@
 "use client"
 
-import { useId, useLayoutEffect, useRef, useState, type ReactNode } from "react"
+import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from "react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -10,6 +10,7 @@ import { PassCard } from "@/components/blocks/PassCard"
 import type { Pass } from "@/lib/admin/types"
 import { formatMoney } from "@/lib/admin/metrics"
 import { MAX_ZONES, MIN_ZONES, priceOnSale, visitPrice, visitsOnSale } from "@/lib/season-pass"
+import { fireSeasonPassPurchase } from "@/lib/analytics"
 import { emailSuggestion } from "@/lib/email-check"
 import { contactProblem, doneSentence, type CheckoutFields } from "./checkout-state"
 
@@ -220,19 +221,14 @@ export function ConsentBoxes({ state, set, attempted }: StepProps & { attempted:
   )
 }
 
-export function CardStep({ state, set, attempted }: StepProps & { attempted: boolean }) {
-  return (
-    <>
-      <div className="rounded-lg border border-dashed border-border bg-stone p-8 text-center text-muted-foreground">
-        Stripe&apos;s card form mounts here. Nothing is charged today.
-      </div>
-      <Helper>We charge the card after each visit, at the price you just saw.</Helper>
-      <ConsentBoxes state={state} set={set} attempted={attempted} />
-    </>
-  )
-}
-
 export function DoneStep({ pass, email, today, onSaveImage, onDone }: { pass: Pass; email: string; today: string; onSaveImage?: () => void; onDone?: () => void }) {
+  // The purchase event fires once, when the season is reserved; Done is terminal, so this mounts once per purchase.
+  const fired = useRef(false)
+  useEffect(() => {
+    if (fired.current) return
+    fired.current = true
+    fireSeasonPassPurchase({ number: pass.number, zones: pass.zones, value: pass.visits.reduce((sum, v) => sum + v.amount, 0), inspection: pass.visits.some((v) => v.kind === "inspection") })
+  }, [pass])
   return (
     <div>
       <PassCard pass={pass} art="flat" priority />

@@ -15,6 +15,7 @@ const ROLE_SCOPES: Record<string, readonly Scope[]> = {
 export function hasScope(principal: Principal | null | undefined, scope: Scope): boolean {
   if (!principal) return false
   if (principal.kind === "api-key") return principal.scopes.includes(scope)
+  if (principal.kind === "public") return false // its one scope, `checkout`, is not a `Scope`: only handlers marked `checkout` admit it
   if (principal.type !== "admin" || !principal.role) return false
   return ROLE_SCOPES[principal.role]?.includes(scope) ?? false
 }

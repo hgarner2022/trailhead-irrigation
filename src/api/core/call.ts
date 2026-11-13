@@ -14,6 +14,7 @@ export const RATE_LIMIT_PER_MINUTE = 120
 const WRITES = new Set(["POST", "PATCH", "DELETE"])
 
 function allowed(ctx: Ctx, handler: Handler): boolean {
+  if (ctx.principal.kind === "public") return Boolean(handler.checkout)
   if (hasScope(ctx.principal, handler.scope)) return true
   const p = ctx.principal
   return Boolean(handler.customerSelf && p.kind === "person" && p.type === "customer" && p.customerId)
@@ -52,6 +53,9 @@ export async function callApi<I extends z.ZodObject, O extends z.ZodType>(
         "The input did not match the schema",
         parsed.error.issues.map((i) => ({ path: i.path.join("."), message: i.message })),
       )
+    const visitor = ctx.principal
+    if (visitor.kind === "public" && handler.checkout === "own-pass" && (!visitor.passId || (parsed.data as { id?: string }).id !== visitor.passId))
+      throw new ApiError("forbidden", "This call is only for the pass being bought")
     await checkRate(ctx)
     const run = async () => handler.output.parse(await handler.run(ctx, parsed.data)) as z.infer<O>
     if (ctx.idempotencyKey && WRITES.has(handler.method))

@@ -26,10 +26,13 @@ export function SeasonPassCalculator({
   className,
   ctaHref = "/contact",
   ctaLabel = "Reserve my season",
+  carryZones = false,
 }: {
   className?: string
   ctaHref?: string
   ctaLabel?: string
+  /** add the chosen zone count to the link (`?zones=8`), for the checkout, which opens on it */
+  carryZones?: boolean
 }) {
   const [zones, setZones] = useState(MIN_ZONES)
   const [inspection, setInspection] = useState(false)
@@ -94,7 +97,7 @@ export function SeasonPassCalculator({
             <span className="text-foreground">One card on file, charged after each visit. Nothing up front.</span>
           </li>
         </ul>
-        <Link href={ctaHref} className={cn(buttonVariants({ size: "lg" }), "mt-auto w-full")}>
+        <Link href={carryZones ? `${ctaHref}?zones=${zones}` : ctaHref} className={cn(buttonVariants({ size: "lg" }), "mt-auto w-full")}>
           {ctaLabel}
         </Link>
       </CardContent>

@@ -1,5 +1,5 @@
 import "server-only"
-import { and, eq, isNotNull, or, sql } from "drizzle-orm"
+import { and, eq, isNotNull, isNull, or, sql } from "drizzle-orm"
 import { callApi } from "@/api/core/call"
 import type { Ctx } from "@/api/core/context"
 import type { Handler } from "@/api/core/handler"
@@ -55,7 +55,7 @@ export async function getLiveAdminData(ctx: Ctx): Promise<AdminData> {
   void _terms
 
   const db = ctx.db
-  const [consents, links, mClients, mVisits, mJobs, mQuotes, mInvoices, problems, blocks, synced] = await Promise.all([
+  const [consents, links, mClients, mVisits, mJobs, mQuotes, mInvoices, problems, blocks, synced, alerts] = await Promise.all([
     db.select({ customerId: s.consent.customerId, termsAcceptedAt: s.consent.termsAcceptedAt, termsVersion: s.consent.termsVersion, marketingOptIn: s.consent.marketingOptIn, marketingChannels: s.consent.marketingChannels, source: s.consent.source, recordedAt: s.consent.recordedAt }).from(s.consent).where(eq(s.consent.organizationId, org)),
     db.select({ id: s.customer.id, jobberClientId: s.customer.jobberClientId }).from(s.customer).where(and(eq(s.customer.organizationId, org), isNotNull(s.customer.jobberClientId))),
     db.select({ id: s.jobberClient.id, firstName: s.jobberClient.firstName, town: s.jobberClient.town, jobberUrl: s.jobberClient.jobberUrl }).from(s.jobberClient).where(eq(s.jobberClient.organizationId, org)),
@@ -66,6 +66,7 @@ export async function getLiveAdminData(ctx: Ctx): Promise<AdminData> {
     db.select({ kind: s.queueItem.kind, lastError: s.queueItem.lastError, updatedAt: s.queueItem.updatedAt, status: s.queueItem.status }).from(s.queueItem).where(and(eq(s.queueItem.organizationId, org), isNotNull(s.queueItem.lastError), or(eq(s.queueItem.status, "pending"), eq(s.queueItem.status, "failed")))),
     loadBlocks(db, org, new Date(ctx.now.getTime() - 7 * 86_400_000)),
     db.select({ at: sql<Date | null>`max(${s.jobberClient.syncedAt})` }).from(s.jobberClient).where(eq(s.jobberClient.organizationId, org)),
+    db.select({ kind: s.adminAlert.kind, passId: s.adminAlert.passId, message: s.adminAlert.message, createdAt: s.adminAlert.createdAt }).from(s.adminAlert).where(and(eq(s.adminAlert.organizationId, org), isNull(s.adminAlert.resolvedAt))),
   ])
 
   return shapeAdminData({
@@ -85,6 +86,7 @@ export async function getLiveAdminData(ctx: Ctx): Promise<AdminData> {
     settingsChanges: changes,
     mirror: { clients: mClients, visits: mVisits, jobsWithoutVisit: mJobs, quotes: mQuotes, invoices: mInvoices },
     queueProblems: problems,
+    alerts,
     blocks,
   })
 }

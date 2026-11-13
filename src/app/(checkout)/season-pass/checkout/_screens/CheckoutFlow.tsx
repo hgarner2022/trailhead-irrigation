@@ -1,14 +1,18 @@
 "use client"
 
-import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react"
+import { useCallback, useEffect, useId, useRef, useState, type KeyboardEvent } from "react"
 import Image from "next/image"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import type { Pass } from "@/lib/admin/types"
-import { STEPS, STEP_COUNT, canContinue, toPass, useCheckoutState, type CheckoutFields } from "./checkout-state"
+import { STEPS, STEP_COUNT, canContinue, toPass, type CheckoutFields, type CheckoutState } from "./checkout-state"
 import type { PlaceProvider } from "@/lib/places"
 import { AddressStep } from "./checkout-address"
-import { CONSENT_PROBLEM_ID, CardStep, ContactStep, DoneStep, ZonesStep, useReveal } from "./checkout-steps"
+import { CONSENT_PROBLEM_ID, ContactStep, DoneStep, ZonesStep, useReveal } from "./checkout-steps"
+import { useCheckoutState } from "./use-checkout-state"
+import { CardStep } from "./checkout-card"
+import { toSubmission, type BeginCheckout, type FinishCheckout } from "./checkout-submit"
+import { savePassImage } from "@/lib/pass-card-image"
 import { InspectionStep } from "./checkout-inspection"
 import { TimingStep } from "./checkout-timing"
 
@@ -17,9 +21,13 @@ import { TimingStep } from "./checkout-timing"
 // the question in the display face, the trail photo faint behind the cream
 // canvas, Enter to continue and the arrow keys to move. Only the current step
 // is rendered, so there is no page to scroll between questions. State is the
-// reducer in checkout-state.ts; nothing here fetches or charges. The card
-// step is a placeholder until Stripe is wired; the consent boxes under it are
-// real and gate the button. Client component.
+// reducer in checkout-state.ts. Wired (a Stripe key plus onBegin and onFinish,
+// which the page passes from the server actions) the contact step makes the
+// pending pass and the card form's session, the card step mounts Stripe's
+// embedded form once the terms are accepted, and Stripe's completion activates
+// the pass; unwired (stories, the prototype) the card step is a placeholder and
+// nothing fetches. Either way the consent boxes are real and gate the card.
+// Client component.
 
 export interface CheckoutFlowProps {
   season: number
@@ -27,15 +35,22 @@ export interface CheckoutFlowProps {
   initialZones?: number
   /** open on this step; stories use it with `prefill` */
   initialStep?: number
-  prefill?: Partial<CheckoutFields>
+  prefill?: Omit<Partial<CheckoutState>, "step">
   /** finds addresses as the customer types; the fixture until Google Places is wired */
   places?: PlaceProvider
   /** YYYY-MM-DD in Mountain time; which visits are still on sale this season. Defaults to the day the page opens. */
   today?: string
   /** called once, when the card step is passed; Done is terminal, so the card step is never passed twice */
   onComplete?: (pass: Pass) => void
+  /** saves the pass card as an image; defaults to rendering the card on screen to a PNG download */
   onSaveImage?: (pass: Pass) => void
   onDone?: () => void
+  /** the publishable key of Stripe's embedded card form; with the two actions below it wires the flow, without them the card step is the placeholder */
+  stripeKey?: string
+  /** called when the contact step passes: makes the pending pass and the card form's session */
+  onBegin?: BeginCheckout
+  /** called when Stripe says the card is saved: activates the pass */
+  onFinish?: FinishCheckout
 }
 
 const BACKDROP = "/images/trail-mountain-meadow.jpg"
@@ -66,7 +81,7 @@ function StepBody({ duration, enabled, children }: { duration: number; enabled: 
   return <div ref={ref}>{children}</div>
 }
 
-export function CheckoutFlow({ season, initialZones, initialStep, prefill, places, today, onComplete, onSaveImage, onDone }: CheckoutFlowProps) {
+export function CheckoutFlow({ season, initialZones, initialStep, prefill, places, today, onComplete, onSaveImage, onDone, stripeKey, onBegin, onFinish }: CheckoutFlowProps) {
   const [state, dispatch] = useCheckoutState({ ...(initialZones ? { zones: initialZones } : {}), ...(today ? { today } : {}), ...prefill, ...(initialStep ? { step: initialStep } : {}) })
   // The step on which Enter was pressed too early, so the address and contact steps show what is missing.
   const [attemptedStep, setAttemptedStep] = useState<number | null>(null)
@@ -79,11 +94,45 @@ export function CheckoutFlow({ season, initialZones, initialStep, prefill, place
   const done = current.key === "done"
   const valid = canContinue(state)
   const attempted = attemptedStep === step
+  const wired = Boolean(stripeKey && onBegin && onFinish)
+  // The server round trip on leaving the contact step; the button waits for it.
+  const [busy, setBusy] = useState(false)
+  // Stripe's `onComplete` fires from inside its form, so it reads the answers through a ref.
+  const latest = useRef(state)
+  useEffect(() => {
+    latest.current = state
+  })
 
   const set = <K extends keyof CheckoutFields>(field: K, value: CheckoutFields[K]) => dispatch({ type: "set", field, value })
-  const next = () => {
+  const finishCard = useCallback(async () => {
+    const s = latest.current
+    if (!onFinish || !s.passId || !s.sessionId) return
+    setBusy(true)
+    const result = await onFinish(s.passId, s.sessionId, { termsAccepted: s.termsAccepted, marketingEmail: s.marketingEmail, marketingSms: s.marketingSms }, s.firstName.trim())
+    setBusy(false)
+    if (result.ok) {
+      onComplete?.(result.pass)
+      dispatch({ type: "finished", pass: result.pass })
+      setMoved(true)
+    } else dispatch({ type: "failed", message: result.message })
+  }, [onFinish, onComplete, dispatch])
+  const next = async () => {
+    // On the wired card step only Stripe's own form saves the card; Enter and the arrows must not skip it.
+    if (busy || (wired && current.key === "card")) return
     if (!valid) {
       setAttemptedStep(step)
+      return
+    }
+    if (wired && current.key === "contact") {
+      const submission = toSubmission(state)
+      if (!submission || !onBegin) return
+      setBusy(true)
+      const result = await onBegin(submission, state.passId)
+      setBusy(false)
+      if (result.ok) {
+        dispatch({ type: "begun", passId: result.passId, sessionId: result.sessionId, clientSecret: result.clientSecret })
+        setMoved(true)
+      } else dispatch({ type: "failed", message: result.message })
       return
     }
     if (current.key === "card") onComplete?.(toPass({ ...state, cardSaved: true }, season))
@@ -152,11 +201,11 @@ export function CheckoutFlow({ season, initialZones, initialStep, prefill, place
       body = <ContactStep state={state} set={set} attempted={attempted} />
       break
     case "card":
-      body = <CardStep state={state} set={set} attempted={attempted} />
+      body = <CardStep state={state} set={set} attempted={attempted} stripeKey={wired ? stripeKey : undefined} clientSecret={state.clientSecret} onCardComplete={finishCard} />
       break
     default: {
-      const pass = toPass(state, season)
-      body = <DoneStep pass={pass} email={state.email} today={state.today} onSaveImage={() => onSaveImage?.(pass)} onDone={onDone} />
+      const pass = state.pass ?? toPass(state, season)
+      body = <DoneStep pass={pass} email={state.email} today={state.today} onSaveImage={() => (onSaveImage ?? savePassImage)(pass)} onDone={onDone} />
     }
   }
 
@@ -201,9 +250,14 @@ export function CheckoutFlow({ season, initialZones, initialStep, prefill, place
               {current.question}
             </h1>
             <div className={done ? "mt-5" : "mt-8"}>{body}</div>
+            {state.failure && (
+              <p role="alert" data-slot="checkout-failure" className="mt-6 text-base text-destructive">
+                {state.failure}
+              </p>
+            )}
           </StepBody>
         </div>
-        {!done && (
+        {!done && !(wired && current.key === "card") && (
           <div className={cn(COLUMN, "flex items-center justify-between pb-8", current.key === "timing" && "lg:max-w-3xl")}>
             {step > 1 ? (
               <Button variant="ghost" data-nav onClick={back}>
@@ -212,8 +266,8 @@ export function CheckoutFlow({ season, initialZones, initialStep, prefill, place
             ) : (
               <span />
             )}
-            <Button size="lg" data-nav disabled={!valid} aria-describedby={current.key === "card" && attempted && !valid ? CONSENT_PROBLEM_ID : undefined} onClick={next}>
-              {current.action}
+            <Button size="lg" data-nav disabled={!valid || busy} aria-busy={busy || undefined} aria-describedby={current.key === "card" && attempted && !valid ? CONSENT_PROBLEM_ID : undefined} onClick={next}>
+              {busy ? "One moment" : current.action}
             </Button>
           </div>
         )}

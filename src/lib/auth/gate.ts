@@ -2,8 +2,8 @@ import type { Principal } from "./types"
 
 export type Gate = { action: "next" } | { action: "redirect"; to: string }
 
-/** Pages that must stay open to someone who is not signed in yet. */
-const SIGN_IN_PAGES = ["/admin/sign-in", "/account/sign-in"]
+/** Pages that must stay open to someone who is not signed in yet. `/account/pass/card-updated` is where Stripe returns a customer after the card update, with no session. */
+const SIGN_IN_PAGES = ["/admin/sign-in", "/account/sign-in", "/account/pass/card-updated"]
 
 const isSignIn = (pathname: string) => SIGN_IN_PAGES.some((p) => pathname === p || pathname.startsWith(`${p}/`))
 const under = (pathname: string, root: string) => pathname === root || pathname.startsWith(`${root}/`)

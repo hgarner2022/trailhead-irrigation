@@ -66,6 +66,10 @@ END OF RUN
 Print one short summary: how many of each kind you mirrored, how many requests you created, and anything you skipped and why. If nothing changed, say "Nothing to do."
 ```
 
+## New Season Passes (Phase 8)
+
+The app creates nothing in Jobber when a pass is bought: the `pass-onboard` task only puts "New Season Pass: Andrea, Erie, 8 zones" on Home and leaves the pass's visits as "to schedule". The routine picks the pass up from there. It reads new active passes from `GET /passes?status=active` (follow `next_cursor`; a pass is new when its customer has no `jobberClientId` in `GET /customers/{customerId}`), creates the Jobber client with the customer's name, email, phone and the property address, then creates a Jobber request for each of the pass's visits with the timing preference in the title ("Season Pass turn-on, Andrea, Erie, early May"), and records each request's address on the visit with `visits.linkRequest`. Visits the scheduler has already placed get their day in the request's details, as in Job 2.
+
 ## What a missed run costs
 
 - The mirror is stale by the length of the gap; Home shows the sync time. Nothing breaks.

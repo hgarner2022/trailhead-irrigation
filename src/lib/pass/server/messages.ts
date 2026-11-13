@@ -13,7 +13,7 @@ export interface QueuedMessage {
   organizationId: string
   customerId: string
   visitId?: string | null
-  kind: "receipt" | "card-failed" | "card-expiring"
+  kind: "receipt" | "card-failed" | "card-expiring" | "purchase-confirmation"
   /** with `kind` and the customer, makes the row unique: a repeat of the same event adds nothing */
   key: string
   to: string
