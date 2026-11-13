@@ -51,7 +51,9 @@ describe("beginCheckoutWith", () => {
     expect(pass).toMatchObject({ status: "pending", zones: 8, turnOnPreference: "earlier" })
     const params = stub.calls.sessionCreate.mock.calls[0]![0]
     expect(params).toMatchObject({ mode: "setup", ui_mode: "embedded_page", redirect_on_completion: "never", customer_email: "eli@example.com", metadata: { purpose: "pass-setup", passId: pass!.id } })
-    expect(params.expires_at as number).toBe(Math.floor(NOW.getTime() / 1000) + 1800)
+    const expiresIn = (params.expires_at as number) - Math.floor(Date.now() / 1000)
+    expect(expiresIn).toBeGreaterThan(30 * 60)
+    expect(expiresIn).toBeLessThanOrEqual(35 * 60)
     expect(stub.calls.paymentIntentsCreate).not.toHaveBeenCalled()
   })
   it("going back reuses the same pending pass", async () => {

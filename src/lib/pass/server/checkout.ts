@@ -13,7 +13,9 @@ import type { Pass, Town } from "@/lib/admin/types"
 import { createSetupSession } from "@/lib/stripe/checkout"
 
 /** The Stripe session lasts 30 minutes; the pending pass is swept after 60. */
-const SESSION_MINUTES = 30
+// Stripe refuses a session that expires sooner than 30 minutes after IT receives the request, so the expiry is set a
+// little past that, from the clock at the moment the session is made rather than the request's start.
+const SESSION_MINUTES = 35
 
 export interface CheckoutDeps {
   /** a context for the public checkout principal; `passId` is the pass `passes.activate` may touch */
@@ -27,6 +29,12 @@ const MESSAGE: Record<CheckoutProblem, string> = {
   "too-many": "That email has started a few passes in the last hour. Please try again in a bit, or call us.",
   invalid: "Something in the answers needs another look. Go back a step and check them.",
   unavailable: "We couldn't reach the card form just now. Nothing was charged. Please try again.",
+}
+
+/** A refusal the customer caused needs no log; anything else (Stripe, the database) is written to the function log so the deploy's logs say why. */
+function logCheckoutFailure(step: string, error: unknown): void {
+  if (error instanceof ApiError && (error.code === "invalid" || error.code === "unprocessable" || error.code === "rate_limited")) return
+  console.error(`${step} failed:`, error instanceof Error ? `${error.name}: ${error.message}` : String(error))
 }
 
 /** The reason an API refusal carries (`issues[0]` with path `reason`), as a problem the screen can word; anything else is `unavailable`. */
@@ -68,10 +76,11 @@ export async function beginCheckoutWith(deps: CheckoutDeps, f: CheckoutSubmissio
       customerId: customer?.stripeCustomerId,
       email: f.email,
       name: f.firstName,
-      expiresAt: Math.floor(ctx.now.getTime() / 1000) + SESSION_MINUTES * 60,
+      expiresAt: Math.floor(Date.now() / 1000) + SESSION_MINUTES * 60,
     })
     return { ok: true, passId: pass.id, sessionId: session.id, clientSecret: session.clientSecret }
   } catch (error) {
+    logCheckoutFailure("beginCheckout", error)
     return { ok: false, ...problemOf(error) }
   }
 }
@@ -111,6 +120,7 @@ export async function finishCheckoutWith(deps: CheckoutDeps, passId: string, ses
     const detail = await callApi(ctx, passesActivate, { id: passId, setupSessionId: sessionId, consent: { termsAccepted: true as const, marketingOptIn: marketingChannels.length > 0, marketingChannels } })
     return { ok: true, pass: passForDone(detail, firstName) }
   } catch (error) {
+    logCheckoutFailure("finishCheckout", error)
     return { ok: false, ...problemOf(error) }
   }
 }
