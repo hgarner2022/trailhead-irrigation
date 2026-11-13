@@ -1,6 +1,10 @@
 import type { NextConfig } from "next"
 
 const nextConfig: NextConfig = {
+  // The site has several root layouts (route groups), so a URL that matches no
+  // route is rendered by src/app/global-not-found.tsx with the marketing chrome.
+  experimental: { globalNotFound: true },
+
   images: {
     formats: ["image/avif", "image/webp"],
   },

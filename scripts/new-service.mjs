@@ -202,6 +202,6 @@ writeFileSync(join(dir, "page.tsx"), page)
 console.log(`Draft written to ${join(dir, "page.tsx")}
 Next:
   1. Fill every TODO (docs/SERVICE_PAGE_TEMPLATE.md: facts first, then the copy rules).
-  2. mkdir -p src/app/${slug} && mv ${join(".local-data/service-drafts", slug, "page.tsx")} src/app/${slug}/page.tsx
+  2. mkdir -p "src/app/(site)/${slug}" && mv ${join(".local-data/service-drafts", slug, "page.tsx")} "src/app/(site)/${slug}/page.tsx"
   3. Register it: nav.ts SERVICES, sitemap.ts, seo.ts serviceJsonLd, llms.txt, pricing.md.
   4. npx tsc --noEmit, commit, push, then: npm run indexnow -- https://www.trailheadirrigation.com/${slug}`)

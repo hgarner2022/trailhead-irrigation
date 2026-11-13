@@ -21,6 +21,10 @@ export function selectorsOf(css) {
   return [...found].sort()
 }
 
+// next/font names its class after a hash of where the font is declared, so moving the
+// declaration renames `.<font>-module__<hash>__variable` without changing a single rule.
+const stableFontClasses = (css) => css.replace(/(_[a-f0-9]{8})?-module__[A-Za-z0-9]{6}__/g, "-module__")
+
 export function readManifest() {
   const paths = JSON.parse(readFileSync(".next/server/app-paths-manifest.json", "utf8"))
   const routes = Object.keys(paths)
@@ -31,7 +35,7 @@ export function readManifest() {
   const css = {}
   const dir = [".next/static/css", ".next/static/chunks"].find((d) => existsSync(d) && readdirSync(d).some((n) => n.endsWith(".css")))
   for (const name of dir ? readdirSync(dir).filter((n) => n.endsWith(".css")).sort() : []) {
-    const text = readFileSync(join(dir, name), "utf8")
+    const text = stableFontClasses(readFileSync(join(dir, name), "utf8"))
     const selectors = createHash("sha256").update(selectorsOf(text).join("\n")).digest("hex").slice(0, 12)
     const stripped = name.replace(/\.?[a-f0-9]{8,}\.css$/, "")
     css[stripped ? `${stripped}.css` : `${selectors}.css`] = { bytes: text.length, selectors }
