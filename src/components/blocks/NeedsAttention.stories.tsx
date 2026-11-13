@@ -4,10 +4,9 @@ import type { Attention } from "@/lib/admin/types"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { NeedsAttention } from "./NeedsAttention"
 
-// The three rows in the snapshot, with `now` fixed to the sync time so the
-// relative times never drift with the calendar.
+// The three rows in the snapshot, one of each kind, with `now` fixed to the
+// sync time so the relative times never drift with the calendar.
 const items = snapshot.attention as Attention[]
-const withFullWeek: Attention[] = [...items, { kind: "week-full", message: "The week of October 11 is full; the planner can add capacity", since: "2026-11-12T17:20:00Z" }]
 
 const meta = {
   title: "Blocks/NeedsAttention",
@@ -24,8 +23,9 @@ export const Default: Story = {
   render: (args) => narrow(<NeedsAttention {...args} />),
 }
 
-export const EveryKind: Story = {
-  args: { items: withFullWeek },
+/** The row Home adds at render time for visits from earlier days nobody has marked done. */
+export const WithNotClosed: Story = {
+  args: { items: [...items, { kind: "not-closed", message: "3 visits from before today are not marked done yet.", since: "2026-11-09T17:00:00Z" }] },
   render: (args) => narrow(<NeedsAttention {...args} />),
 }
 

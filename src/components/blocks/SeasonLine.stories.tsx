@@ -9,11 +9,13 @@ import { SeasonLine } from "./SeasonLine"
 const passes = snapshot.passes as Pass[]
 const bars = committedByMonth(passes, 2027)
 const active = passes[0]
+// passes[2] has had no visit yet, with the turn-on preferred earlier.
+const fresh = passes[2]
 const allDone: PassVisit[] = passes[1].visits.map((v, i) => ({
   ...v,
-  scheduledAt: v.scheduledAt ?? ["2027-04-21T16:00:00Z", "2027-07-13T15:00:00Z", "2027-10-12T16:00:00Z"][i],
-  completedAt: ["2027-04-21T17:10:00Z", "2027-07-13T16:05:00Z", "2027-10-12T16:40:00Z"][i],
-  chargedAt: ["2027-04-21T17:12:00Z", "2027-07-13T16:07:00Z", "2027-10-12T16:42:00Z"][i],
+  scheduledAt: v.scheduledAt ?? ["2027-05-04T16:00:00Z", "2027-07-13T15:00:00Z", "2027-10-12T16:00:00Z"][i],
+  completedAt: ["2027-05-04T17:10:00Z", "2027-07-13T16:05:00Z", "2027-10-12T16:40:00Z"][i],
+  chargedAt: ["2027-05-04T17:12:00Z", "2027-07-13T16:07:00Z", "2027-10-12T16:42:00Z"][i],
 }))
 
 const meta = {
@@ -34,7 +36,12 @@ export const BusinessEarlySeason: Story = {
 }
 
 export const Customer: Story = {
-  args: { mode: "customer", visits: active.visits },
+  args: { mode: "customer", visits: active.visits, preferences: active },
+}
+
+/** Before the season: both preferences still showing, the inspection with none. */
+export const CustomerBeforeSeason: Story = {
+  args: { mode: "customer", visits: fresh.visits, preferences: fresh, today: "2026-11-12" },
 }
 
 export const CustomerAllDone: Story = {
@@ -46,7 +53,7 @@ export const Empty: Story = {
 }
 
 export const Phone: Story = {
-  args: { mode: "customer", visits: active.visits },
+  args: { mode: "customer", visits: active.visits, preferences: active },
   globals: { viewport: { value: "phone", isRotated: false } },
   render: (args) => (
     <div className="max-w-[360px]">

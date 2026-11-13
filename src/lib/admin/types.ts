@@ -24,6 +24,32 @@ export type VisitStatus = "unscheduled" | "scheduled" | "completed" | "cancelled
 
 export type PassStatus = "active" | "cancelled" | "lapsed"
 
+/**
+ * When the customer would like a visit, against Trailhead's recommendation:
+ * the first to second week of May for the turn-on, the second week of
+ * October for the blowout. Ryan (or the scheduler, later) places the day;
+ * nothing has a capacity. The words for each value are in ./format.
+ */
+export type TimingPreference = "earlier" | "recommended" | "later"
+
+export type MarketingChannel = "email" | "sms"
+
+/**
+ * What the customer agreed to and where. Terms acceptance is required at
+ * checkout; marketing is a separate opt-in. A change appends a new record
+ * on the customer rather than editing this one, so the history is auditable.
+ */
+export interface Consent {
+  /** ISO datetime the terms were accepted; absent when only marketing was recorded */
+  termsAcceptedAt?: string
+  /** `TERMS_VERSION` in src/lib/season-pass.ts at the time, e.g. "2026-11" */
+  termsVersion?: string
+  marketingOptIn: boolean
+  marketingChannels: MarketingChannel[]
+  source: "checkout" | "form" | "admin"
+  recordedAt: string
+}
+
 export interface Client {
   id: string
   firstName: string
@@ -31,6 +57,18 @@ export interface Client {
   jobberUrl: string
   hasPass: boolean
   lastVisitAt?: string
+  /** the current consent record; the history lives in the CRM */
+  consent?: Consent
+}
+
+/**
+ * A move Ryan made in Jobber after the app placed the visit. The app accepts
+ * it and logs it here instead of treating its own choice as the truth.
+ */
+export interface VisitException {
+  kind: "moved-in-jobber"
+  at: string
+  note: string
 }
 
 export interface Visit {
@@ -43,6 +81,16 @@ export interface Visit {
   startAt?: string
   isPass: boolean
   jobberUrl: string
+  /** the truck the visit rides on; absent until the schedule places it */
+  truckId?: string
+  /** placed by the scheduler and waiting for Ryan to approve the batch */
+  proposed?: boolean
+  /** 1-based position in the truck's day; from Jobber's route tool while Jobber is the field display */
+  stopOrder?: number
+  /** the property's point, geocoded once when the customer is created */
+  lat?: number
+  lng?: number
+  exception?: VisitException
 }
 
 export interface Quote {
@@ -67,7 +115,7 @@ export interface Invoice {
 
 export interface PassVisit {
   kind: Exclude<VisitKind, "repair" | "install" | "other">
-  /** e.g. "April to May", "July", "October, week of the 13th" */
+  /** the month the visit lands in: "May", "July", "October"; the preference on the pass carries the rest */
   window: string
   scheduledAt?: string
   completedAt?: string
@@ -83,22 +131,16 @@ export interface Pass {
   firstName: string
   town: Town
   zones: number
-  /** ISO date of the Monday */
-  blowoutWeek: string
+  turnOnPreference: TimingPreference
+  blowoutPreference: TimingPreference
   status: PassStatus
   visits: PassVisit[]
   stripeUrl: string
   jobberUrl: string
   cardLast4?: string
   cardExpires?: string
-}
-
-export interface BlowoutWeek {
-  season: number
-  weekStart: string
-  capacity: number
-  taken: number
-  towns: Town[]
+  /** the consent recorded with the purchase */
+  consent?: Consent
 }
 
 export interface MonthTotal {
@@ -109,8 +151,76 @@ export interface MonthTotal {
   visits: number
 }
 
+export type Weekday = "mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun"
+
+/** The visit kinds a truck's capacity is counted in; install rides under "other". */
+export type CapacityKind = "turn-on" | "inspection" | "blowout" | "repair" | "other"
+
+/** A truck is a row, not a count: its working days and how many visits of each kind fit in its day. */
+export interface Truck {
+  id: string
+  name: string
+  /** the Jobber user the truck's visits are assigned to while Jobber is the field display */
+  jobberUserId?: string
+  workingDays: Weekday[]
+  capacityByKind: Record<CapacityKind, number>
+}
+
+/** The towns a truck works on one day: one town or two or three that sit together. */
+export interface AreaGroup {
+  id: string
+  name: string
+  towns: Town[]
+}
+
+/** When a season's pass visits may land, and how many weeks ahead the scheduler opens it. */
+export interface SeasonWindow {
+  kind: "turn-on" | "inspection" | "blowout"
+  /** ISO dates */
+  opensOn: string
+  closesOn: string
+  leadWeeks: number
+}
+
+/** One customer message the app sends, in Trailhead's voice. The body may carry {firstName}, {visit}, {date} and {truck}. */
+export interface MessageTemplate {
+  key: string
+  channel: "email" | "sms"
+  subject?: string
+  body: string
+  enabled: boolean
+}
+
+/** Everything the Settings page edits; the scheduler reads it on its next run. */
+export interface OrganizationSettings {
+  trucks: Truck[]
+  areas: AreaGroup[]
+  windows: SeasonWindow[]
+  /** percent of a truck-day held back for repairs and weather in a season's first two weeks */
+  bufferPercentEarly: number
+  /** the same after the first two weeks */
+  bufferPercentLate: number
+  /** fall runs north and high first, where the first hard freeze lands */
+  fallTownOrder: Town[]
+  /** spring runs the other way */
+  springTownOrder: Town[]
+  /** fall commits firm dates this many days ahead; later days stay planned */
+  firmDaysAhead: number
+  messages: MessageTemplate[]
+}
+
+/** One edit to the settings: who, when, which field, and the value before and after, as words. */
+export interface SettingsChange {
+  id: string
+  at: string
+  who: string
+  field: string
+  from: string
+  to: string
+}
+
 export interface Attention {
-  kind: "charge-failed" | "jobs-failed" | "week-full" | "card-expiring"
+  kind: "charge-failed" | "jobs-failed" | "card-expiring" | "not-closed"
   passId?: string
   message: string
   since: string
@@ -125,7 +235,8 @@ export interface AdminData {
   quotes: Quote[]
   invoices: Invoice[]
   passes: Pass[]
-  blowoutWeeks: BlowoutWeek[]
   monthTotals: MonthTotal[]
   attention: Attention[]
+  settings: OrganizationSettings
+  settingsChanges: SettingsChange[]
 }

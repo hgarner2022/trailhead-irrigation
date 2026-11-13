@@ -28,7 +28,8 @@ Jobber shows the field what to do until the field app replaces it.
 | Customer who holds a pass | App | App | Mirrored to Jobber as a client while Jobber is the field display |
 | Customer with no pass | Jobber | App | Read for dashboard totals until the booking form and Requests inbox land |
 | Season Pass, its visits, preferences, dates, charges | App | App | Jobber gets a copy of each visit on the truck's calendar |
-| Request (a booking or quote ask) | Jobber form | App | The `/book` form rebuilt in the app, Requests inbox in the admin |
+| Booking (a one-off visit the customer schedules) | Jobber online booking | App | Real open slots from trucks and capacity; books on the spot |
+| Request (work that needs a quote) | Jobber form | App | Requests inbox in the admin |
 | Schedule (truck, day, visit) | App proposes, Ryan approves | App | Jobber reflects it; a move in Jobber is logged as an exception |
 | Trucks, areas, capacity, windows | App (Settings) | App | Unbounded rows, not a count |
 | Messages and templates | App | App | Every customer email and text, in Trailhead's voice |
@@ -46,13 +47,23 @@ owner's copy wins and the other is a display.
    waiting), four numbers (revenue this month, passes sold, quotes awaiting,
    invoices past due), the season line, and the "Set up spring / fall"
    prompt when a window is four to six weeks out.
-2. **Schedule.** The week by truck. Proposed visits hatched until approved,
-   drag to move, exceptions marked, day view on the phone. Where the
-   scheduler's output lands and where Ryan lives in season.
+2. **Schedule.** The week by truck, and a day map beside it. Proposed
+   visits hatched until approved, drag to move between days or trucks,
+   exceptions marked, day view on the phone. The map (Hannah, 2026-11-12:
+   "we need a map to make sure we're routing this appropriately, do not go
+   backwards"): real geography on open tiles, every visit for the chosen
+   day as a pin coloured by truck and numbered in stop order, each truck's
+   area shaded, pin and grid block are the same visit. Addresses are
+   geocoded once when a customer is created and the point stored on the
+   property. Stop order comes from Jobber's route optimiser during the
+   transition and from the app's own ordering (nearest neighbour plus a
+   tidy pass) when Jobber goes. Where the scheduler's output lands and
+   where Ryan lives in season.
 3. **Passes.** Every pass holder: grid, filters, export, side panel with the
    season line, charges, Jobber and Stripe links, and the three actions.
-4. **Requests** (after the booking form lands). The inbox for everything
-   that is not a pass; one click to a scheduled visit or a quote.
+4. **Requests** (after booking lands). Only the work that needs a quote;
+   one click to a quote or a scheduled visit. Bookings go straight to the
+   Schedule.
 5. **Revenue.** Committed against charged, by month, upcoming charges,
    renewals (renewed, lapsed, not yet asked).
 6. **Customers.** Everyone, with pass status layered on, and the January
@@ -75,13 +86,35 @@ first for a crew login.
 - **Pass page** (prototype exists): the pass card, the season line, the
   visits in customer words (Done, Booked, Reserved), the card on file,
   cancel.
-- **Booking form at `/book`** (later): the Jobber iframe replaced by the
-  app's own form, same pacing as the checkout, per-service questions,
-  instant confirmation.
+- **Booking at `/book`** (later): today Jobber's online booking lets a
+  customer pick a time and the visit lands on Ryan's calendar booked, with
+  no one in the loop (Hannah's correction, 2026-11-12). The app's version
+  must do at least that: offer real open slots computed from the trucks,
+  their areas and their capacity, book the visit on the spot, and confirm
+  in Trailhead's voice. Per-service questions, the checkout's pacing. A
+  Requests inbox exists only for work that needs a quote (installs, large
+  repairs).
 - **Messages** (wiring plan): confirmation at purchase, date set or moved,
   day-before reminder, on-my-way when the crew taps it, after-visit receipt
   naming the next visit, failed card, January renewal; texts opt-in with
   STOP handled.
+
+## Consent, recorded in the CRM
+
+Hannah's rule (2026-11-12): at checkout the customer must accept the terms,
+and may opt in to marketing, and both are recorded on the customer.
+
+- Terms acceptance is required to continue past the card step; marketing is
+  a separate, unticked box covering email and text, with "you can stop any
+  time" beside it. Visit reminders and receipts are transactional and go
+  out either way.
+- Every consent is a record on the customer: what was accepted, the terms
+  version, when, from where (checkout, booking form, admin), and the
+  channels. Changes append, never overwrite, so the history is auditable.
+- The Customers page shows the current consent and its history; the
+  Messages settings respect it (no marketing message to anyone without the
+  opt-in; STOP and unsubscribe write a new consent record).
+- The booking form captures the same two boxes when it lands.
 
 ## Scheduling, the rules
 
@@ -133,9 +166,14 @@ must be easy for agents to use.
 ## Build order and what each step retires
 
 1. Pass checkout, pass page, admin Home, Passes, Revenue, Settings, Schedule
-   (wiring plan). Retires: phone calls to buy the pass, chasing pass
-   payments, Jobber's reminders for pass customers.
-2. Booking form and Requests inbox. Retires: the Jobber request form.
+   with the map, messaging, and booking at `/book` with real open slots
+   pushed into Jobber (all in the wiring plan; Hannah, 2026-11-12: "I don't
+   want to use Jobber where we can", so the app's form replaces Jobber's
+   booking and request forms in this first build). Retires: phone calls to
+   buy the pass, chasing pass payments, Jobber's reminders for pass
+   customers, Jobber online booking and its request form.
+2. The Requests inbox for quoted work (installs, large repairs) and the
+   January pre-sell on Customers.
 3. Day view with checklists. Retires: Jobber's field app.
 4. Quotes and invoices for non-pass work. Retires: Jobber's office side.
 5. Payments for that work through Stripe. Retires: Jobber Payments, then

@@ -8,8 +8,52 @@
  * date-only string is already a calendar day and is never shifted.
  */
 
+import type { Pass, PassVisit, TimingPreference, Visit } from "./types"
+
 /** Where the reader is: every clock and calendar word in the app is in Mountain time. */
 export const TIME_ZONE = "America/Denver"
+
+/** The three answers, in the order the checkout and the filters show them. */
+export const TIMING_PREFERENCES: readonly TimingPreference[] = ["earlier", "recommended", "later"]
+
+/**
+ * The customer's words for a timing preference: one label set, Early, Mid
+ * and Late with the month, used the same way on the card, the line, the
+ * grid and the checkout. What "Mid" means in detail (the first and second
+ * week of May, the second week of October) is said once, in the timing
+ * step's helper text.
+ */
+export function preferenceLabel(kind: "turn-on" | "blowout", preference: TimingPreference): string {
+  return `${PREFERENCE_WORDS[preference]} ${kind === "turn-on" ? "May" : "October"}`
+}
+
+const PREFERENCE_WORDS: Record<TimingPreference, string> = { earlier: "Early", recommended: "Mid", later: "Late" }
+
+/** A preference inside a sentence: "early May", "mid October". */
+export function preferencePhrase(kind: "turn-on" | "blowout", preference: TimingPreference): string {
+  const label = preferenceLabel(kind, preference)
+  return `${label.charAt(0).toLowerCase()}${label.slice(1)}`
+}
+
+/** The pass's preference for a visit kind; null for the inspection, which asks none. */
+export function preferenceOf(pass: Pick<Pass, "turnOnPreference" | "blowoutPreference">, kind: PassVisit["kind"]): TimingPreference | null {
+  return kind === "turn-on" ? pass.turnOnPreference : kind === "blowout" ? pass.blowoutPreference : null
+}
+
+/**
+ * The one-line reason under the recommendation.
+ * Fall: the median first hard freeze (28°F) at the NOAA stations behind
+ * /first-freeze-dates (src/lib/freeze-data.ts), 2015 to 2025, is Boulder
+ * Oct 20, Brighton Oct 19, Northglenn Oct 27 and Longmont Oct 28, so a
+ * second-week blowout sits a week or more ahead of it.
+ * Spring: freeze-data.ts holds fall data only; "safe by early May" is
+ * Ryan's rule of thumb and still needs his confirmation.
+ */
+export function preferenceReason(kind: "turn-on" | "blowout"): string {
+  return kind === "turn-on"
+    ? "Front Range systems are usually safe to run by early May."
+    : "The first hard freeze usually arrives between mid and late October, so the second week leaves room."
+}
 
 export const MONTH_NAMES = [
   "January", "February", "March", "April", "May", "June",
@@ -48,4 +92,14 @@ export function shortDate(iso: string, timeZone?: string): string {
 export function writtenDate(iso: string, timeZone?: string): string {
   const { month, day } = monthDay(iso, timeZone)
   return `${monthName(month)} ${day}`
+}
+
+/** The word for each visit kind in a sentence; "other" reads as "visit". */
+export const KIND_WORDS: Record<Visit["kind"], string> = {
+  "turn-on": "turn-on",
+  inspection: "inspection",
+  blowout: "blowout",
+  repair: "repair",
+  install: "install",
+  other: "visit",
 }

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import type { Pass } from "@/lib/admin/types"
-import { chargeRows, passesContext, seasonOf, weekLabel, weekOptions } from "./passes-model"
+import { chargeRows, consentLine, passesContext, seasonOf } from "./passes-model"
 
 const passes = snapshot.passes as Pass[]
 
@@ -27,29 +27,31 @@ describe("passesContext", () => {
   })
 })
 
-describe("weeks", () => {
-  it("labels a week by its Monday", () => {
-    expect(weekLabel("2027-10-04")).toBe("Week of Oct 4")
-    expect(weekLabel("2027-10-25")).toBe("Week of Oct 25")
+describe("consentLine", () => {
+  it("reads the terms version and day, then the marketing channels in plain words", () => {
+    expect(consentLine(passes[0].consent)).toBe("Terms 2026-11 accepted Nov 2. Marketing: email and text.")
+    expect(consentLine(passes[1].consent)).toBe("Terms 2026-11 accepted Nov 3. Marketing: email.")
+    expect(consentLine(passes[2].consent)).toBe("Terms 2026-11 accepted Nov 4. Marketing: no.")
   })
 
-  it("lists the weeks the passes use once each, soonest first, labelled short", () => {
-    expect(weekOptions(passes)).toEqual([
-      { value: "2027-10-04", label: "Oct 4" },
-      { value: "2027-10-11", label: "Oct 11" },
-      { value: "2027-10-18", label: "Oct 18" },
-      { value: "2027-10-25", label: "Oct 25" },
-    ])
-    expect(weekOptions([])).toEqual([])
+  it("reads a marketing-only record and a missing one", () => {
+    expect(consentLine({ marketingOptIn: true, marketingChannels: ["sms"], source: "form", recordedAt: "2026-11-12T20:00:00Z" })).toBe("Marketing: text.")
+    expect(consentLine({ marketingOptIn: false, marketingChannels: [], source: "admin", recordedAt: "2026-11-12T20:00:00Z" })).toBe("Marketing: no.")
+    expect(consentLine(undefined)).toBe("No consent recorded.")
+  })
+
+  it("reads a late-evening acceptance as its Denver day", () => {
+    // 03:00Z on November 13 is 8 pm on November 12 in Denver.
+    expect(consentLine({ ...passes[0].consent!, termsAcceptedAt: "2026-11-13T03:00:00Z" })).toBe("Terms 2026-11 accepted Nov 12. Marketing: email and text.")
   })
 })
 
 describe("chargeRows", () => {
   it("reads the booked date and the charge, else the window and Not yet", () => {
     expect(chargeRows(passes[0])).toEqual([
-      { kind: "turn-on", name: "Turn-on", when: "Apr 20", amount: 145, charged: "Charged Apr 20" },
+      { kind: "turn-on", name: "Turn-on", when: "May 3", amount: 145, charged: "Charged May 3" },
       { kind: "inspection", name: "Inspection", when: "July", amount: 145, charged: "Not yet" },
-      { kind: "blowout", name: "Blowout", when: "October, week of the 4th", amount: 95, charged: "Not yet" },
+      { kind: "blowout", name: "Blowout", when: "October", amount: 95, charged: "Not yet" },
     ])
   })
 

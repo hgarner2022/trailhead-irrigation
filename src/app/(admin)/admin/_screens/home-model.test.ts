@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest"
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import type { AdminData } from "@/lib/admin/types"
+import { EMPTY_SETTINGS } from "@/lib/admin/data"
 import { TIME_ZONE } from "@/lib/admin/format"
 import { visitsOn } from "@/lib/admin/metrics"
-import { clockTime, dayHeading, greeting, longDate, monthOf, pageContext, seasonDescription, sparklineOf, tileModels, tomorrowOf, updatedAgo } from "./home-model"
+import { clockTime, dayHeading, greeting, longDate, monthOf, NOT_CLOSED_LOOKBACK_DAYS, notClosedAttention, notClosedCount, pageContext, seasonDescription, sparklineOf, tileModels, tomorrowOf, upcomingWindow, updatedAgo, windowTitle } from "./home-model"
 
 const data = snapshot as AdminData
 // 12:56 pm in Denver, four minutes after the snapshot's sync.
@@ -17,9 +18,10 @@ const empty: AdminData = {
   quotes: [],
   invoices: [],
   passes: [],
-  blowoutWeeks: [],
   monthTotals: [],
   attention: [],
+  settings: EMPTY_SETTINGS,
+  settingsChanges: [],
 }
 
 describe("greeting", () => {
@@ -139,5 +141,66 @@ describe("tileModels", () => {
     const totals = Array.from({ length: 15 }, (_, i) => ({ year: 2025 + Math.floor(i / 12), month: (i % 12) + 1, revenue: i + 1, visits: 0 }))
     expect(sparklineOf([...totals].reverse())).toEqual({ current: [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15] })
     expect(sparklineOf([])).toBeUndefined()
+  })
+})
+
+describe("upcomingWindow", () => {
+  // Blowout opens 2027-10-01 with four lead weeks, so the prompt starts six weeks (42 days) out: 2027-08-20.
+  const blowout = data.settings.windows.find((w) => w.kind === "blowout")!
+  it("is null in the autumn before, and the first window to open when one is near", () => {
+    expect(upcomingWindow(data.settings, TODAY)).toBeNull()
+    expect(upcomingWindow(data.settings, "2027-09-17T18:00:00Z")).toEqual(blowout)
+  })
+  it("includes the boundary day and excludes the day before it", () => {
+    expect(upcomingWindow(data.settings, "2027-08-20T18:00:00Z")).toEqual(blowout)
+    expect(upcomingWindow(data.settings, "2027-08-19T18:00:00Z")).toBeNull()
+  })
+  it("counts the opening day itself and drops the window once it has opened", () => {
+    expect(upcomingWindow(data.settings, "2027-10-01T18:00:00Z")).toEqual(blowout)
+    expect(upcomingWindow(data.settings, "2027-10-02T18:00:00Z")).toBeNull()
+  })
+  it("reads today as a Mountain day, so 9 pm on Aug 19 is still Aug 19", () => {
+    expect(upcomingWindow(data.settings, "2027-08-20T03:00:00Z")).toBeNull()
+  })
+  it("picks the earliest of two and writes its title in words", () => {
+    const both = { windows: [{ ...blowout, opensOn: "2027-06-10" }, { ...blowout, kind: "inspection" as const, opensOn: "2027-06-01" }] }
+    expect(upcomingWindow(both, "2027-05-20T18:00:00Z")?.kind).toBe("inspection")
+    expect(windowTitle(blowout)).toBe("Fall blowouts open Oct 1")
+    expect(windowTitle(data.settings.windows[0])).toBe("Spring turn-ons open Apr 26")
+  })
+})
+
+describe("notClosedCount", () => {
+  const visit = (id: string, startAt: string, status: "scheduled" | "completed" | "cancelled" | "unscheduled" = "scheduled") =>
+    ({ id, clientId: "c", clientName: "A", town: "Erie", kind: "blowout", status, startAt, isPass: false, jobberUrl: "" }) as AdminData["visits"][number]
+  // Today is Thursday the 12th in Denver; 7 am Mountain is 14:00Z.
+  const now = "2026-11-12T14:00:00Z"
+  it("counts scheduled visits from earlier days and nothing else", () => {
+    const visits = [
+      visit("a", "2026-11-09T17:00:00Z"),
+      visit("b", "2026-11-11T23:00:00Z"),
+      visit("done", "2026-11-10T17:00:00Z", "completed"),
+      visit("gone", "2026-11-10T18:00:00Z", "cancelled"),
+      visit("later", "2026-11-12T20:00:00Z"),
+      visit("none", "2026-11-12T20:00:00Z", "unscheduled"),
+    ]
+    expect(notClosedCount(visits, now, TIME_ZONE)).toBe(2)
+  })
+  it("treats the start of today as the line: 11:59 pm yesterday counts, 12:00 am today does not", () => {
+    expect(notClosedCount([visit("y", "2026-11-12T06:59:00Z")], now, TIME_ZONE)).toBe(1)
+    expect(notClosedCount([visit("t", "2026-11-12T07:00:00Z")], now, TIME_ZONE)).toBe(0)
+  })
+  it("looks back fourteen days: the fourteenth day before today counts, the fifteenth does not", () => {
+    expect(NOT_CLOSED_LOOKBACK_DAYS).toBe(14)
+    expect(notClosedCount([visit("edge", "2026-10-29T17:00:00Z")], now, TIME_ZONE)).toBe(1)
+    expect(notClosedCount([visit("old", "2026-10-28T17:00:00Z")], now, TIME_ZONE)).toBe(0)
+    // 11:30 pm on Oct 28 in Denver is Oct 29 in UTC; the Mountain day decides.
+    expect(notClosedCount([visit("late", "2026-10-29T05:30:00Z")], now, TIME_ZONE)).toBe(0)
+  })
+  it("makes an attention row waiting since the oldest, or none", () => {
+    expect(notClosedAttention([], now, TIME_ZONE)).toBeNull()
+    const row = notClosedAttention([visit("b", "2026-11-11T23:00:00Z"), visit("a", "2026-11-09T17:00:00Z")], now, TIME_ZONE)
+    expect(row).toEqual({ kind: "not-closed", message: "2 visits from the last two weeks are not marked done yet.", since: "2026-11-09T17:00:00Z" })
+    expect(notClosedAttention([visit("a", "2026-11-09T17:00:00Z")], now, TIME_ZONE)?.message).toBe("1 visit from the last two weeks is not marked done yet.")
   })
 })

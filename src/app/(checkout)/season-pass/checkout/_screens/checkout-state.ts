@@ -6,11 +6,11 @@
  * shows. `useCheckoutState` is the thin hook the screen calls.
  */
 import { useReducer } from "react"
-import type { BlowoutWeek, Pass, PassVisit, Town } from "@/lib/admin/types"
-import { spotsLeft } from "@/lib/admin/metrics"
-import { MAX_ZONES, MIN_ZONES, SEASON_PASS_VISITS, visitPrice } from "@/lib/season-pass"
+import type { Consent, Pass, PassVisit, TimingPreference, Town } from "@/lib/admin/types"
+import { preferencePhrase } from "@/lib/admin/format"
+import { MAX_ZONES, MIN_ZONES, SEASON_PASS_VISITS, TERMS_VERSION, visitPrice } from "@/lib/season-pass"
 
-export type StepKey = "address" | "zones" | "week" | "contact" | "card" | "done"
+export type StepKey = "address" | "zones" | "timing" | "contact" | "card" | "done"
 
 export interface Step {
   key: StepKey
@@ -23,7 +23,7 @@ export interface Step {
 export const STEPS: readonly Step[] = [
   { key: "address", question: "Where is the yard?", action: "Continue" },
   { key: "zones", question: "How many zones does your system have?", action: "Continue" },
-  { key: "week", question: "Which week in October for your blowout?", action: "Continue" },
+  { key: "timing", question: "When should we turn your system on?", action: "Continue" },
   { key: "contact", question: "Who should we reach?", action: "Continue" },
   { key: "card", question: "Save a card for after each visit.", action: "Save card and reserve" },
   { key: "done", question: "Your season is reserved" },
@@ -32,15 +32,25 @@ export const STEP_COUNT = STEPS.length
 
 export const TOWNS: readonly Town[] = ["Erie", "Longmont", "Louisville", "Lafayette", "Firestone", "Broomfield"]
 
+/** The months each visit lands in, as the pass windows write them; the preference carries the rest. */
+export const VISIT_WINDOWS = ["May", "July", "October"] as const
+
 export interface CheckoutFields {
   address: string
   town: Town | null
   zones: number
-  /** ISO date of the chosen week's Monday */
-  weekStart: string | null
+  /** when the customer would like the spring turn-on; the recommendation is preselected */
+  turnOnPreference: TimingPreference
+  /** when the customer would like the fall blowout; the recommendation is preselected */
+  blowoutPreference: TimingPreference
   firstName: string
   email: string
   phone: string
+  /** the required box on the card step: the Season Pass terms and the terms of service */
+  termsAccepted: boolean
+  /** the optional boxes on the card step: seasonal tips and offers by email, and by text */
+  marketingEmail: boolean
+  marketingSms: boolean
   cardSaved: boolean
 }
 
@@ -51,7 +61,7 @@ export interface CheckoutState extends CheckoutFields {
 
 export type CheckoutAction =
   | { type: "set"; field: keyof CheckoutFields; value: CheckoutFields[keyof CheckoutFields] }
-  | { type: "next"; weeks: BlowoutWeek[] }
+  | { type: "next" }
   | { type: "back" }
   | { type: "goTo"; step: number }
 
@@ -63,10 +73,14 @@ export function initialState(prefill: Partial<CheckoutState> = {}): CheckoutStat
     address: "",
     town: null,
     zones: MIN_ZONES,
-    weekStart: null,
+    turnOnPreference: "recommended",
+    blowoutPreference: "recommended",
     firstName: "",
     email: "",
     phone: "",
+    termsAccepted: false,
+    marketingEmail: false,
+    marketingSms: false,
     cardSaved: false,
     ...prefill,
     ...(prefill.step !== undefined ? { step: clampStep(prefill.step) } : {}),
@@ -82,25 +96,20 @@ export function contactProblem(field: "firstName" | "email" | "phone", value: st
   return digits(value).length === 10 ? null : "We need a ten-digit phone number for the day-of text."
 }
 
-export function weekOpen(weekStart: string | null, weeks: BlowoutWeek[]): boolean {
-  const week = weeks.find((w) => w.weekStart === weekStart)
-  return !!week && spotsLeft(week) > 0
-}
-
 /** Whether the step on screen has what it needs to move on. */
-export function canContinue(state: CheckoutState, weeks: BlowoutWeek[]): boolean {
+export function canContinue(state: CheckoutState): boolean {
   switch (STEPS[state.step - 1]?.key) {
     case "address":
       return state.address.trim().length > 0 && state.town !== null
     case "zones":
       return Number.isInteger(state.zones) && state.zones >= MIN_ZONES && state.zones <= MAX_ZONES
-    case "week":
-      return weekOpen(state.weekStart, weeks)
+    // Both preferences start on the recommendation, so the timing step always has an answer.
+    case "timing":
+      return true
     case "contact":
       return (["firstName", "email", "phone"] as const).every((f) => contactProblem(f, state[f]) === null)
     case "card":
-      // The week can fill while the card form is open; the reservation must still hold when the card is saved.
-      return weekOpen(state.weekStart, weeks)
+      return state.termsAccepted
     default:
       return false
   }
@@ -113,7 +122,7 @@ export function reducer(state: CheckoutState, action: CheckoutAction): CheckoutS
     case "set":
       return { ...state, [action.field]: action.value }
     case "next": {
-      if (!canContinue(state, action.weeks)) return state
+      if (!canContinue(state)) return state
       const saved = STEPS[state.step - 1].key === "card" ? true : state.cardSaved
       return { ...state, step: clampStep(state.step + 1), cardSaved: saved }
     }
@@ -129,23 +138,31 @@ export function useCheckoutState(prefill?: Partial<CheckoutState>) {
   return useReducer(reducer, prefill, initialState)
 }
 
-/** "4th", "11th", "22nd": the day of the month as the pass windows write it. */
-export function ordinal(day: number): string {
-  const tens = day % 100
-  if (tens >= 11 && tens <= 13) return `${day}th`
-  const suffix = { 1: "st", 2: "nd", 3: "rd" }[day % 10] ?? "th"
-  return `${day}${suffix}`
+/** The sentence under the pass card on Done. */
+export function doneSentence(state: Pick<CheckoutFields, "turnOnPreference" | "blowoutPreference" | "email">): string {
+  const turnOn = preferencePhrase("turn-on", state.turnOnPreference)
+  const blowout = preferencePhrase("blowout", state.blowoutPreference)
+  return `Turn-on preferred ${turnOn}, inspection in July, blowout preferred ${blowout}. We'll email the details to ${state.email}.`
 }
 
-/** The pass the last screen shows, built from the answers. Ids and links are placeholders until the wiring phase. */
-export function toPass(state: CheckoutState, season: number, weeks: BlowoutWeek[]): Pass {
-  // The reducer never lets a full or missing week past step 3; the fallback only covers a story that skips it.
-  const weekStart = state.weekStart ?? weeks[0]?.weekStart ?? `${season}-10-04`
-  const day = Number(weekStart.slice(8, 10))
-  const windows = ["April to May", "July", `October, week of the ${ordinal(day)}`]
+/** The consent the purchase records: the terms as accepted now, and the marketing channels whose boxes were ticked. */
+export function toConsent(state: Pick<CheckoutFields, "marketingEmail" | "marketingSms">, at: string): Consent {
+  const marketingChannels: Consent["marketingChannels"] = [...(state.marketingEmail ? ["email" as const] : []), ...(state.marketingSms ? ["sms" as const] : [])]
+  return {
+    termsAcceptedAt: at,
+    termsVersion: TERMS_VERSION,
+    marketingOptIn: marketingChannels.length > 0,
+    marketingChannels,
+    source: "checkout",
+    recordedAt: at,
+  }
+}
+
+/** The pass the last screen shows, built from the answers. Ids and links are placeholders until the wiring phase; `at` is when the terms were accepted. */
+export function toPass(state: CheckoutState, season: number, at = new Date().toISOString()): Pass {
   const visits: PassVisit[] = SEASON_PASS_VISITS.map((v, i) => ({
     kind: v.key,
-    window: windows[i],
+    window: VISIT_WINDOWS[i],
     amount: visitPrice(v, state.zones),
   }))
   return {
@@ -156,11 +173,13 @@ export function toPass(state: CheckoutState, season: number, weeks: BlowoutWeek[
     firstName: state.firstName.trim(),
     town: state.town ?? "Erie",
     zones: state.zones,
-    blowoutWeek: weekStart,
+    turnOnPreference: state.turnOnPreference,
+    blowoutPreference: state.blowoutPreference,
     status: "active",
     visits,
     stripeUrl: "https://dashboard.stripe.com/customers/cus_new",
     jobberUrl: "https://secure.getjobber.com/clients/new",
     cardLast4: state.cardSaved ? "4242" : undefined,
+    consent: toConsent(state, at),
   }
 }

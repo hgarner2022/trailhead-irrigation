@@ -1,22 +1,20 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite"
 import { expect, fn, screen } from "storybook/test"
 import { toPng } from "html-to-image"
-import snapshot from "@/lib/admin/fixtures/snapshot.json"
-import type { BlowoutWeek as Week, Pass } from "@/lib/admin/types"
+import type { Pass } from "@/lib/admin/types"
 import { CheckoutFlow } from "./CheckoutFlow"
 import type { CheckoutFields } from "./checkout-state"
 
-// The four October weeks of 2027 from the snapshot, 20 spots each. The step
-// stories open on one step with the earlier answers prefilled; Walkthrough
-// answers every question from the first screen and lands on the pass card.
-const weeks = snapshot.blowoutWeeks as Week[]
-const oneFull = weeks.map((w, i) => (i === 1 ? { ...w, taken: w.capacity } : w))
-
+// The step stories open on one step with the earlier answers prefilled;
+// Walkthrough answers every question from the first screen, including the
+// consent boxes, and lands on the pass card. The timing step opens with both
+// recommendations preselected, so it needs nothing prefilled.
 const answers: Partial<CheckoutFields> = {
   address: "123 Trailhead Way",
   town: "Erie",
   zones: 8,
-  weekStart: "2027-10-11",
+  turnOnPreference: "earlier",
+  blowoutPreference: "recommended",
   firstName: "Andrea",
   email: "andrea@example.com",
   phone: "(970) 555-0123",
@@ -37,7 +35,7 @@ const meta = {
   title: "Screens/Checkout",
   component: CheckoutFlow,
   parameters: { layout: "fullscreen" },
-  args: { weeks, season: 2027 },
+  args: { season: 2027 },
 } satisfies Meta<typeof CheckoutFlow>
 export default meta
 type Story = StoryObj<typeof meta>
@@ -51,9 +49,9 @@ export const Zones: Story = {
   globals: { viewport: { value: "wide", isRotated: false } },
 }
 
-/** The second week is full, so it is greyed and cannot be chosen. */
-export const BlowoutWeek: Story = {
-  args: { initialStep: 3, prefill: { ...answers, weekStart: "2027-10-18" }, weeks: oneFull },
+/** Both questions on one screen, the recommendation preselected for each. */
+export const Timing: Story = {
+  args: { initialStep: 3, prefill: { ...answers, turnOnPreference: "recommended" } },
   globals: { viewport: { value: "wide", isRotated: false } },
 }
 
@@ -62,13 +60,25 @@ export const Contact: Story = {
   globals: { viewport: { value: "wide", isRotated: false } },
 }
 
+/** The consent boxes under the card form: the terms unticked, so the button waits. */
 export const Card: Story = {
   args: { initialStep: 5, prefill: answers },
   globals: { viewport: { value: "wide", isRotated: false } },
 }
 
+/** Enter pressed with the terms still unticked: the line under the box says what is missing. */
+export const CardTermsMissing: Story = {
+  args: { initialStep: 5, prefill: answers },
+  globals: { viewport: { value: "wide", isRotated: false } },
+  play: async ({ canvas, userEvent }) => {
+    await canvas.findByRole("button", { name: "Save card and reserve" })
+    await userEvent.keyboard("{Enter}")
+    await expect(await canvas.findByText("Please accept the terms to continue")).toBeInTheDocument()
+  },
+}
+
 export const Done: Story = {
-  args: { initialStep: 6, prefill: { ...answers, cardSaved: true }, onSaveImage: savePassImage },
+  args: { initialStep: 6, prefill: { ...answers, termsAccepted: true, marketingEmail: true, marketingSms: true, cardSaved: true }, onSaveImage: savePassImage },
   globals: { viewport: { value: "wide", isRotated: false } },
 }
 
@@ -86,7 +96,8 @@ export const Walkthrough: Story = {
     await expect(canvas.getByText("$405")).toBeInTheDocument()
     await userEvent.click(canvas.getByRole("button", { name: "Continue" }))
 
-    await userEvent.click(await canvas.findByRole("button", { name: /Week of Oct 11/ }))
+    await expect(await canvas.findByRole("button", { name: "Recommended Mid May", pressed: true })).toBeInTheDocument()
+    await userEvent.click(canvas.getByRole("button", { name: "Later Late October" }))
     await userEvent.click(canvas.getByRole("button", { name: "Continue" }))
 
     await userEvent.type(await canvas.findByLabelText("First name"), "Andrea")
@@ -94,8 +105,12 @@ export const Walkthrough: Story = {
     await userEvent.type(canvas.getByLabelText("Phone"), "9705550123")
     await userEvent.click(canvas.getByRole("button", { name: "Continue" }))
 
-    await userEvent.click(await canvas.findByRole("button", { name: "Save card and reserve" }))
-    await expect(await canvas.findByRole("article", { name: /Season Pass 2027 for Andrea, Erie/ })).toBeInTheDocument()
+    const save = await canvas.findByRole("button", { name: "Save card and reserve" })
+    await expect(save).toBeDisabled()
+    await userEvent.click(canvas.getByRole("checkbox", { name: /I accept the Season Pass terms/ }))
+    await userEvent.click(canvas.getByRole("checkbox", { name: "Seasonal tips and offers by email" }))
+    await userEvent.click(save)
+    await expect(await canvas.findByRole("article", { name: "Season Pass 2027 for Andrea, Erie, turn-on preferred mid May, blowout preferred late October" })).toBeInTheDocument()
     await expect(args.onComplete).toHaveBeenCalledTimes(1)
   },
 }
@@ -105,7 +120,12 @@ export const Phone: Story = {
   globals: { viewport: { value: "phone", isRotated: false } },
 }
 
+export const PhoneTiming: Story = {
+  args: { initialStep: 3, prefill: answers },
+  globals: { viewport: { value: "phone", isRotated: false } },
+}
+
 export const PhoneDone: Story = {
-  args: { initialStep: 6, prefill: { ...answers, cardSaved: true }, onSaveImage: savePassImage },
+  args: { initialStep: 6, prefill: { ...answers, termsAccepted: true, cardSaved: true }, onSaveImage: savePassImage },
   globals: { viewport: { value: "phone", isRotated: false } },
 }

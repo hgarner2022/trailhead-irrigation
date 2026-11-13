@@ -1,65 +1,69 @@
 import { describe, it, expect } from "vitest"
-import type { BlowoutWeek } from "@/lib/admin/types"
-import { STEPS, canContinue, initialState, reducer, toPass, type CheckoutState } from "./checkout-state"
-
-const weeks: BlowoutWeek[] = [
-  { season: 2027, weekStart: "2027-10-04", capacity: 20, taken: 2, towns: ["Erie"] },
-  { season: 2027, weekStart: "2027-10-11", capacity: 20, taken: 20, towns: ["Erie"] },
-  { season: 2027, weekStart: "2027-10-18", capacity: 20, taken: 3, towns: [] },
-]
+import { STEPS, canContinue, doneSentence, initialState, reducer, toConsent, toPass, type CheckoutState } from "./checkout-state"
 
 const filled: CheckoutState = {
   step: 1,
   address: "123 Trailhead Way",
   town: "Erie",
   zones: 8,
-  weekStart: "2027-10-18",
+  turnOnPreference: "earlier",
+  blowoutPreference: "recommended",
   firstName: "Andrea",
   email: "andrea@example.com",
   phone: "(970) 555-0123",
+  termsAccepted: true,
+  marketingEmail: false,
+  marketingSms: false,
   cardSaved: false,
 }
 
 describe("step order", () => {
-  it("has six steps, address first and done last", () => {
+  it("has six steps, address first, timing third and done last", () => {
     expect(STEPS).toHaveLength(6)
     expect(STEPS[0].key).toBe("address")
+    expect(STEPS[2]).toEqual({ key: "timing", question: "When should we turn your system on?", action: "Continue" })
     expect(STEPS[5].key).toBe("done")
   })
 
-  it("starts on the address step with the minimum zones", () => {
+  it("starts on the address step with the minimum zones, both recommendations and no consent", () => {
     const s = initialState()
     expect(s.step).toBe(1)
     expect(s.zones).toBe(6)
     expect(s.town).toBeNull()
-    expect(s.weekStart).toBeNull()
+    expect(s.turnOnPreference).toBe("recommended")
+    expect(s.blowoutPreference).toBe("recommended")
+    expect(s.termsAccepted).toBe(false)
+    expect(s.marketingEmail).toBe(false)
+    expect(s.marketingSms).toBe(false)
   })
 
   it("takes the initial zones and prefilled fields", () => {
-    const s = initialState({ zones: 10, step: 3, firstName: "Reese" })
+    const s = initialState({ zones: 10, step: 3, firstName: "Reese", blowoutPreference: "later" })
     expect(s.zones).toBe(10)
     expect(s.step).toBe(3)
     expect(s.firstName).toBe("Reese")
+    expect(s.blowoutPreference).toBe("later")
   })
 
   it("moves forward one step at a time when the step is valid", () => {
-    let s = reducer({ ...filled, step: 1 }, { type: "next", weeks })
+    let s = reducer({ ...filled, step: 1 }, { type: "next" })
     expect(s.step).toBe(2)
-    s = reducer(s, { type: "next", weeks })
+    s = reducer(s, { type: "next" })
     expect(s.step).toBe(3)
-    s = reducer(s, { type: "next", weeks })
+    s = reducer(s, { type: "next" })
     expect(s.step).toBe(4)
-    s = reducer(s, { type: "next", weeks })
+    s = reducer(s, { type: "next" })
     expect(s.step).toBe(5)
-    s = reducer(s, { type: "next", weeks })
+    s = reducer(s, { type: "next" })
     expect(s.step).toBe(6)
     expect(s.cardSaved).toBe(true)
-    expect(reducer(s, { type: "next", weeks }).step).toBe(6)
+    expect(reducer(s, { type: "next" }).step).toBe(6)
   })
 
   it("stays put when the step is not valid", () => {
-    const s = reducer(initialState(), { type: "next", weeks })
+    const s = reducer(initialState(), { type: "next" })
     expect(s.step).toBe(1)
+    expect(reducer({ ...filled, step: 5, termsAccepted: false }, { type: "next" }).step).toBe(5)
   })
 
   it("goes back, never below the first step", () => {
@@ -83,75 +87,107 @@ describe("step order", () => {
     const s = reducer(initialState(), { type: "set", field: "address", value: "9 Elm St" })
     expect(s.address).toBe("9 Elm St")
     expect(reducer(s, { type: "set", field: "town", value: "Longmont" }).town).toBe("Longmont")
+    expect(reducer(s, { type: "set", field: "turnOnPreference", value: "later" }).turnOnPreference).toBe("later")
+    expect(reducer(s, { type: "set", field: "termsAccepted", value: true }).termsAccepted).toBe(true)
+    expect(reducer(s, { type: "set", field: "marketingEmail", value: true }).marketingEmail).toBe(true)
+    expect(reducer(s, { type: "set", field: "marketingSms", value: true }).marketingSms).toBe(true)
   })
 })
 
 describe("canContinue", () => {
   it("address: needs a street address and a town", () => {
-    expect(canContinue({ ...initialState(), address: "  ", town: "Erie" }, weeks)).toBe(false)
-    expect(canContinue({ ...initialState(), address: "9 Elm St", town: null }, weeks)).toBe(false)
-    expect(canContinue({ ...initialState(), address: "9 Elm St", town: "Erie" }, weeks)).toBe(true)
+    expect(canContinue({ ...initialState(), address: "  ", town: "Erie" })).toBe(false)
+    expect(canContinue({ ...initialState(), address: "9 Elm St", town: null })).toBe(false)
+    expect(canContinue({ ...initialState(), address: "9 Elm St", town: "Erie" })).toBe(true)
   })
 
   it("zones: needs a count between 6 and 16", () => {
-    expect(canContinue({ ...filled, step: 2, zones: 5 }, weeks)).toBe(false)
-    expect(canContinue({ ...filled, step: 2, zones: 17 }, weeks)).toBe(false)
-    expect(canContinue({ ...filled, step: 2, zones: 6 }, weeks)).toBe(true)
-    expect(canContinue({ ...filled, step: 2, zones: 16 }, weeks)).toBe(true)
+    expect(canContinue({ ...filled, step: 2, zones: 5 })).toBe(false)
+    expect(canContinue({ ...filled, step: 2, zones: 17 })).toBe(false)
+    expect(canContinue({ ...filled, step: 2, zones: 6 })).toBe(true)
+    expect(canContinue({ ...filled, step: 2, zones: 16 })).toBe(true)
   })
 
-  it("week: needs a chosen week that still has a spot", () => {
-    expect(canContinue({ ...filled, step: 3, weekStart: null }, weeks)).toBe(false)
-    expect(canContinue({ ...filled, step: 3, weekStart: "2027-10-11" }, weeks)).toBe(false)
-    expect(canContinue({ ...filled, step: 3, weekStart: "2027-10-25" }, weeks)).toBe(false)
-    expect(canContinue({ ...filled, step: 3, weekStart: "2027-10-04" }, weeks)).toBe(true)
+  it("timing: always has an answer, since the recommendation is preselected", () => {
+    expect(canContinue({ ...initialState(), step: 3 })).toBe(true)
+    expect(canContinue({ ...filled, step: 3, turnOnPreference: "later", blowoutPreference: "earlier" })).toBe(true)
   })
 
   it("contact: needs a name, an email with an @ and a ten-digit phone", () => {
-    expect(canContinue({ ...filled, step: 4, firstName: " " }, weeks)).toBe(false)
-    expect(canContinue({ ...filled, step: 4, email: "andrea.example.com" }, weeks)).toBe(false)
-    expect(canContinue({ ...filled, step: 4, phone: "555-0123" }, weeks)).toBe(false)
-    expect(canContinue({ ...filled, step: 4, phone: "970 555 0123" }, weeks)).toBe(true)
-    expect(canContinue({ ...filled, step: 4 }, weeks)).toBe(true)
+    expect(canContinue({ ...filled, step: 4, firstName: " " })).toBe(false)
+    expect(canContinue({ ...filled, step: 4, email: "andrea.example.com" })).toBe(false)
+    expect(canContinue({ ...filled, step: 4, phone: "555-0123" })).toBe(false)
+    expect(canContinue({ ...filled, step: 4, phone: "970 555 0123" })).toBe(true)
+    expect(canContinue({ ...filled, step: 4 })).toBe(true)
   })
 
-  it("card: continues while the chosen week still has a spot; done: never", () => {
-    expect(canContinue({ ...filled, step: 5 }, weeks)).toBe(true)
-    expect(canContinue({ ...filled, step: 5, weekStart: "2027-10-11" }, weeks)).toBe(false)
-    expect(canContinue({ ...filled, step: 5, weekStart: null }, weeks)).toBe(false)
-    expect(canContinue({ ...filled, step: 6 }, weeks)).toBe(false)
+  it("card: needs the terms accepted, whatever the marketing boxes say; done: never", () => {
+    expect(canContinue({ ...filled, step: 5 })).toBe(true)
+    expect(canContinue({ ...filled, step: 5, marketingEmail: true, marketingSms: true })).toBe(true)
+    expect(canContinue({ ...filled, step: 5, termsAccepted: false })).toBe(false)
+    expect(canContinue({ ...filled, step: 5, termsAccepted: false, marketingEmail: true })).toBe(false)
+    expect(canContinue({ ...filled, step: 6 })).toBe(false)
+  })
+})
+
+describe("words", () => {
+  it("writes the Done sentence from the two preferences and the email", () => {
+    expect(doneSentence(filled)).toBe("Turn-on preferred early May, inspection in July, blowout preferred mid October. We'll email the details to andrea@example.com.")
+    expect(doneSentence({ ...filled, turnOnPreference: "recommended", blowoutPreference: "later" })).toBe(
+      "Turn-on preferred mid May, inspection in July, blowout preferred late October. We'll email the details to andrea@example.com.",
+    )
+  })
+})
+
+describe("toConsent", () => {
+  it("records the terms as accepted now, with each marketing channel only when its box was ticked", () => {
+    expect(toConsent({ marketingEmail: false, marketingSms: false }, "2026-11-12T20:00:00Z")).toEqual({
+      termsAcceptedAt: "2026-11-12T20:00:00Z",
+      termsVersion: "2026-11",
+      marketingOptIn: false,
+      marketingChannels: [],
+      source: "checkout",
+      recordedAt: "2026-11-12T20:00:00Z",
+    })
+    expect(toConsent({ marketingEmail: true, marketingSms: true }, "2026-11-12T20:00:00Z")).toMatchObject({ marketingOptIn: true, marketingChannels: ["email", "sms"] })
+    expect(toConsent({ marketingEmail: true, marketingSms: false }, "2026-11-12T20:00:00Z")).toMatchObject({ marketingOptIn: true, marketingChannels: ["email"] })
+    expect(toConsent({ marketingEmail: false, marketingSms: true }, "2026-11-12T20:00:00Z")).toMatchObject({ marketingOptIn: true, marketingChannels: ["sms"] })
   })
 })
 
 describe("toPass", () => {
-  it("builds an active pass for 6 zones at the published prices", () => {
-    const pass = toPass({ ...filled, zones: 6, weekStart: "2027-10-04", step: 6, cardSaved: true }, 2027, weeks)
+  it("builds an active pass for 6 zones at the published prices, with the preferences and the consent", () => {
+    const pass = toPass({ ...filled, zones: 6, step: 6, cardSaved: true, marketingEmail: true, marketingSms: true }, 2027, "2026-11-12T20:00:00Z")
     expect(pass.id).toBe("p-new")
     expect(pass.number).toBe("TH-2027-NEW")
     expect(pass.status).toBe("active")
     expect(pass.firstName).toBe("Andrea")
     expect(pass.town).toBe("Erie")
     expect(pass.zones).toBe(6)
-    expect(pass.blowoutWeek).toBe("2027-10-04")
+    expect(pass.turnOnPreference).toBe("earlier")
+    expect(pass.blowoutPreference).toBe("recommended")
     expect(pass.visits.map((v) => v.kind)).toEqual(["turn-on", "inspection", "blowout"])
     expect(pass.visits.map((v) => v.amount)).toEqual([145, 145, 95])
-    expect(pass.visits.map((v) => v.window)).toEqual(["April to May", "July", "October, week of the 4th"])
+    expect(pass.visits.map((v) => v.window)).toEqual(["May", "July", "October"])
+    expect(pass.consent).toEqual(toConsent({ marketingEmail: true, marketingSms: true }, "2026-11-12T20:00:00Z"))
+    expect(pass.cardLast4).toBe("4242")
     expect(pass.stripeUrl).toMatch(/^https:\/\//)
     expect(pass.jobberUrl).toMatch(/^https:\/\//)
+    expect("blowoutWeek" in pass).toBe(false)
   })
 
   it("adds the extra zones to each visit for 8 and 12 zones", () => {
-    const eight = toPass({ ...filled, zones: 8, weekStart: "2027-10-18" }, 2027, weeks)
+    const eight = toPass({ ...filled, zones: 8 }, 2027)
     expect(eight.visits.map((v) => v.amount)).toEqual([145, 145, 115])
-    expect(eight.visits[2].window).toBe("October, week of the 18th")
-    const twelve = toPass({ ...filled, zones: 12 }, 2027, weeks)
+    const twelve = toPass({ ...filled, zones: 12 }, 2027)
     expect(twelve.visits.map((v) => v.amount)).toEqual([185, 185, 155])
   })
 
-  it("writes the ordinal for every October Monday", () => {
-    for (const [day, word] of [["01", "1st"], ["02", "2nd"], ["03", "3rd"], ["11", "11th"], ["12", "12th"], ["13", "13th"], ["21", "21st"], ["22", "22nd"], ["23", "23rd"], ["31", "31st"]]) {
-      const pass = toPass({ ...filled, weekStart: `2027-10-${day}` }, 2027, weeks)
-      expect(pass.visits[2].window).toBe(`October, week of the ${word}`)
-    }
+  it("stamps the consent with the time it is given, and leaves the card off until it is saved", () => {
+    const before = Date.now()
+    const pass = toPass(filled, 2027)
+    expect(Date.parse(pass.consent?.termsAcceptedAt ?? "")).toBeGreaterThanOrEqual(before)
+    expect(pass.consent?.marketingOptIn).toBe(false)
+    expect(pass.cardLast4).toBeUndefined()
   })
 })

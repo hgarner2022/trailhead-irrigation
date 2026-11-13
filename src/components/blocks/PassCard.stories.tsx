@@ -6,17 +6,17 @@ import type { Pass } from "@/lib/admin/types"
 import { Button } from "@/components/ui/button"
 import { PassCard } from "./PassCard"
 
-// passes[0] is Andrea in Erie with the turn-on done and the blowout reserved
-// for the week of October 4; passes[1] is Reese in Firestone.
+// passes[0] is Andrea in Erie with the turn-on done and the blowout preferred
+// for mid October; passes[1] is Reese in Firestone.
 const passes = snapshot.passes as Pass[]
 const active = passes[0]
 const allDone: Pass = {
   ...passes[1],
   visits: passes[1].visits.map((v, i) => ({
     ...v,
-    scheduledAt: v.scheduledAt ?? ["2027-04-21T16:00:00Z", "2027-07-13T15:00:00Z", "2027-10-12T16:00:00Z"][i],
-    completedAt: ["2027-04-21T17:10:00Z", "2027-07-13T16:05:00Z", "2027-10-12T16:40:00Z"][i],
-    chargedAt: ["2027-04-21T17:12:00Z", "2027-07-13T16:07:00Z", "2027-10-12T16:42:00Z"][i],
+    scheduledAt: v.scheduledAt ?? ["2027-05-04T16:00:00Z", "2027-07-13T15:00:00Z", "2027-10-12T16:00:00Z"][i],
+    completedAt: ["2027-05-04T17:10:00Z", "2027-07-13T16:05:00Z", "2027-10-12T16:40:00Z"][i],
+    chargedAt: ["2027-05-04T17:12:00Z", "2027-07-13T16:07:00Z", "2027-10-12T16:42:00Z"][i],
   })),
 }
 const cancelled: Pass = { ...passes[1], status: "cancelled" }

@@ -6,8 +6,8 @@ import { DataGrid } from "./DataGrid"
 import { passColumns } from "./data-grid-columns"
 
 // The Passes grid's columns on a bare grid (no search, chips or export) so
-// the cells themselves can be checked: the short week, the status badges,
-// the right-aligned numbers. The full grid is in Blocks/DataGrid.
+// the cells themselves can be checked: the two preferences in the customer's
+// words, the status badges, the right-aligned numbers. The full grid is in Blocks/DataGrid.
 const passes = snapshot.passes as Pass[]
 const statuses: Pass[] = (["active", "cancelled", "lapsed"] as const).map((status, i) => ({ ...passes[i], status }))
 

@@ -1,23 +1,23 @@
 "use client"
 
-import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from "react"
+import { useId, useLayoutEffect, useRef, useState, type ReactNode } from "react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { PassCard } from "@/components/blocks/PassCard"
-import { WeekCard } from "@/components/blocks/WeekCard"
-import type { BlowoutWeek, Pass, Town } from "@/lib/admin/types"
-import { writtenDate } from "@/lib/admin/format"
-import { formatMoney, spotsLeft } from "@/lib/admin/metrics"
+import type { Pass, Town } from "@/lib/admin/types"
+import { formatMoney } from "@/lib/admin/metrics"
 import { MAX_ZONES, MIN_ZONES, SEASON_PASS_VISITS, seasonPassPrice, visitPrice } from "@/lib/season-pass"
-import { TOWNS, contactProblem, type CheckoutFields } from "./checkout-state"
+import { TOWNS, contactProblem, doneSentence, type CheckoutFields } from "./checkout-state"
 
 // The body of each checkout step: the one input under the question, and the
 // helper line under that. The shell (CheckoutFlow) owns the question, the
 // progress line, the buttons and the keys; these only read and set fields.
 // `data-autofocus` marks the element the shell focuses when the step opens.
+// The timing step lives in checkout-timing.tsx.
 
 export interface StepProps {
   state: CheckoutFields
@@ -120,43 +120,6 @@ export function ZonesStep({ state, set }: StepProps) {
   )
 }
 
-export function WeekStep({ state, set, weeks }: StepProps & { weeks: BlowoutWeek[] }) {
-  const row = useRef<HTMLDivElement>(null)
-  // On a phone the row scrolls; the chosen week slides to the middle.
-  useEffect(() => {
-    const el = row.current
-    if (!el || el.scrollWidth <= el.clientWidth) return
-    el.querySelector<HTMLElement>('[data-slot="week-card"][data-selected="true"]')?.scrollIntoView?.({ inline: "center", block: "nearest", behavior: "smooth" })
-  }, [state.weekStart])
-  return (
-    <>
-      <div ref={row} className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-4">
-        {weeks.map((week) =>
-          spotsLeft(week) === 0 ? (
-            <div
-              key={week.weekStart}
-              role="group"
-              aria-disabled="true"
-              aria-label={`Week of ${writtenDate(week.weekStart)}, full`}
-              data-slot="week-option"
-              data-full
-              className="min-w-60 shrink-0 snap-center opacity-60 sm:min-w-0"
-            >
-              <WeekCard week={week} />
-              <p className="mt-2 text-sm text-muted-foreground">That week is full</p>
-            </div>
-          ) : (
-            <div key={week.weekStart} data-slot="week-option" className="min-w-60 shrink-0 snap-center sm:min-w-0">
-              <WeekCard week={week} selected={state.weekStart === week.weekStart} onSelect={() => set("weekStart", week.weekStart)} />
-            </div>
-          ),
-        )}
-      </div>
-      <Helper>Your week is reserved now. Ryan sets the day in September.</Helper>
-    </>
-  )
-}
-
 const CONTACT = [
   { key: "firstName", label: "First name", type: "text", autoComplete: "given-name", inputMode: undefined },
   { key: "email", label: "Email", type: "email", autoComplete: "email", inputMode: "email" },
@@ -202,13 +165,86 @@ export function ContactStep({ state, set, attempted }: StepProps & { attempted: 
   )
 }
 
-export function CardStep() {
+const LINK = "font-medium text-primary-dark underline underline-offset-2 hover:text-primary-deep"
+
+function TermsLink({ href, children }: { href: string; children: string }) {
+  return (
+    <a href={href} target="_blank" rel="noreferrer" className={LINK}>
+      {children}
+      <span className="sr-only"> (opens in a new tab)</span>
+    </a>
+  )
+}
+
+/** The id of the line that says the terms are still unticked; the flow's button points at it with `aria-describedby`. */
+export const CONSENT_PROBLEM_ID = "checkout-consent-problem"
+export const CONSENT_PROBLEM = "Please accept the terms to continue"
+
+// Season Pass terms section to be written by Hannah; TERMS_VERSION then matches it. Until then both links go to /terms.
+const SEASON_PASS_TERMS_HREF = "/terms"
+
+const MARKETING = [
+  { key: "marketingEmail", label: "Seasonal tips and offers by email", note: "You can stop any time. Visit reminders and receipts are sent either way." },
+  { key: "marketingSms", label: "Seasonal tips and offers by text", note: "Message frequency varies. Msg and data rates may apply. Reply STOP to opt out. Consent is not a condition of purchase." },
+] as const
+
+/** The consent boxes above the button: the terms, required, then email and text marketing, each off until ticked. */
+export function ConsentBoxes({ state, set, attempted }: StepProps & { attempted: boolean }) {
+  const id = useId()
+  const problem = attempted && !state.termsAccepted
+  return (
+    <div data-slot="checkout-consent" className="mt-8 grid gap-5">
+      <div>
+        <div className="flex items-start gap-3">
+          <Checkbox
+            id={`${id}-terms`}
+            checked={state.termsAccepted}
+            onCheckedChange={(checked) => set("termsAccepted", checked === true)}
+            aria-invalid={problem || undefined}
+            aria-describedby={problem ? CONSENT_PROBLEM_ID : undefined}
+            className="mt-1 size-5"
+          />
+          <Label htmlFor={`${id}-terms`} className="inline text-base font-normal leading-snug text-foreground">
+            I accept the <TermsLink href={SEASON_PASS_TERMS_HREF}>Season Pass terms</TermsLink> and the <TermsLink href="/terms">Trailhead terms of service</TermsLink>
+          </Label>
+        </div>
+        {problem && (
+          <p id={CONSENT_PROBLEM_ID} className="mt-2 pl-8 text-sm text-destructive">
+            {CONSENT_PROBLEM}
+          </p>
+        )}
+      </div>
+      {MARKETING.map((box) => (
+        <div key={box.key} className="flex items-start gap-3">
+          <Checkbox
+            id={`${id}-${box.key}`}
+            checked={state[box.key]}
+            onCheckedChange={(checked) => set(box.key, checked === true)}
+            aria-describedby={`${id}-${box.key}-note`}
+            className="mt-1 size-5"
+          />
+          <div>
+            <Label htmlFor={`${id}-${box.key}`} className="inline text-base font-normal leading-snug text-foreground">
+              {box.label}
+            </Label>
+            <p id={`${id}-${box.key}-note`} className="mt-1 text-sm text-muted-foreground">
+              {box.note}
+            </p>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+export function CardStep({ state, set, attempted }: StepProps & { attempted: boolean }) {
   return (
     <>
       <div className="rounded-lg border border-dashed border-border bg-stone p-8 text-center text-muted-foreground">
         Stripe&apos;s card form mounts here. Nothing is charged today.
       </div>
       <Helper>We charge the card after each visit, at the price you just saw.</Helper>
+      <ConsentBoxes state={state} set={set} attempted={attempted} />
     </>
   )
 }
@@ -217,9 +253,7 @@ export function DoneStep({ pass, email, onSaveImage, onDone }: { pass: Pass; ema
   return (
     <div>
       <PassCard pass={pass} art="flat" priority />
-      <p className="mt-8 text-lg text-foreground">
-        {`Turn-on in April to May, inspection in July, blowout the week of ${writtenDate(pass.blowoutWeek)}. We'll email the details to ${email}.`}
-      </p>
+      <p className="mt-8 text-lg text-foreground">{doneSentence({ ...pass, email })}</p>
       <div className="mt-8 flex flex-wrap gap-3">
         <Button size="lg" onClick={onSaveImage}>
           Save as image

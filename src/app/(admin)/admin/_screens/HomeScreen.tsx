@@ -1,4 +1,6 @@
+import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card"
 import { CardTitleHeading } from "@/components/blocks/CardTitleHeading"
 import { NeedsAttention } from "@/components/blocks/NeedsAttention"
@@ -9,12 +11,17 @@ import { StatusPill } from "@/components/blocks/StatusPill"
 import type { AdminData, Visit } from "@/lib/admin/types"
 import { TIME_ZONE } from "@/lib/admin/format"
 import { committedByMonth, visitsOn } from "@/lib/admin/metrics"
-import { SEASON, clockTime, dayHeading, greeting, pageContext, seasonDescription, tileModels, tomorrowOf } from "./home-model"
+import { SEASON, clockTime, dayHeading, greeting, notClosedAttention, pageContext, seasonDescription, tileModels, tomorrowOf, upcomingWindow, windowTitle } from "./home-model"
+import { ProposeButton } from "./ProposeButton"
 
 // What Hannah opens to in the morning: a greeting, the four numbers that
 // matter today, the season line, the next two days of visits and the short
 // list of what needs a person. Pure composition over `data` and a fixed
 // `today`; the route's page.tsx supplies both. Server component.
+// When a season window opens within its lead weeks plus two, a prompt above
+// the tiles sends the owner to Settings and to Propose; visits from the last
+// two weeks nobody marked done add a row to Needs attention. Server component;
+// only the Propose button is client code.
 
 export interface HomeScreenProps {
   data: AdminData
@@ -58,9 +65,27 @@ function Day({ id, heading, visits }: { id: string; heading: string; visits: Vis
 export function HomeScreen({ data, today }: HomeScreenProps) {
   const tomorrow = tomorrowOf(today)
   const bars = committedByMonth(data.passes, SEASON)
+  const upcoming = upcomingWindow(data.settings, today)
+  const notClosed = notClosedAttention(data.visits, today, TIME_ZONE)
+  const attention = notClosed ? [...data.attention, notClosed] : data.attention
   return (
     <div data-slot="home-screen" className="space-y-6">
       <PageHeader title={greeting(today)} context={pageContext(data, today)} />
+
+      {upcoming && (
+        <Card data-slot="season-prompt" className="border-primary/30 bg-primary/10">
+          <CardHeader>
+            <CardTitleHeading>{windowTitle(upcoming)}</CardTitleHeading>
+            <p className="text-sm text-foreground">Check the trucks, capacity and areas, then propose the schedule.</p>
+          </CardHeader>
+          <CardContent className="flex flex-wrap gap-2">
+            <Button variant="outline" asChild>
+              <Link href="/admin/settings">Open settings</Link>
+            </Button>
+            <ProposeButton season={upcoming} />
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {tileModels(data, today).map((tile) => (
@@ -99,7 +124,7 @@ export function HomeScreen({ data, today }: HomeScreenProps) {
             <CardTitleHeading>Needs attention</CardTitleHeading>
           </CardHeader>
           <CardContent>
-            <NeedsAttention items={data.attention} now={today} />
+            <NeedsAttention items={attention} now={today} />
           </CardContent>
         </Card>
       </div>

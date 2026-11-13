@@ -3,23 +3,24 @@ import { monthInWindow, visitMonth } from "@/lib/admin/metrics"
 import {
   listJoin,
   markerAlign,
-  reservedWeek,
+  preferenceWord,
   seasonPhase,
   seasonPosition,
 } from "./season-line-math"
 
 describe("the shared month rule", () => {
   it("reads the first month named anywhere in a window, in full or abbreviated", () => {
-    expect(monthInWindow("April to May")).toBe(4)
+    expect(monthInWindow("May")).toBe(5)
     expect(monthInWindow("July")).toBe(7)
-    expect(monthInWindow("October, week of the 11th")).toBe(10)
+    expect(monthInWindow("October")).toBe(10)
+    expect(monthInWindow("April to May")).toBe(4)
     expect(monthInWindow("early April")).toBe(4)
     expect(monthInWindow("Oct 13")).toBe(10)
     expect(monthInWindow("Late April to May")).toBe(4)
     expect(monthInWindow("whenever")).toBeNull()
   })
   it("prefers the scheduled date over the window", () => {
-    expect(visitMonth({ kind: "turn-on", window: "April to May", amount: 145, scheduledAt: "2027-05-03T16:00:00Z" })).toBe(5)
+    expect(visitMonth({ kind: "turn-on", window: "May", amount: 145, scheduledAt: "2027-04-28T16:00:00Z" })).toBe(4)
     expect(visitMonth({ kind: "inspection", window: "July", amount: 145 })).toBe(7)
   })
 })
@@ -56,11 +57,10 @@ describe("seasonPhase", () => {
 })
 
 describe("labels", () => {
-  it("reads the reserved week from a blowout window", () => {
-    expect(reservedWeek("October, week of the 11th")).toBe("October 11")
-    expect(reservedWeek("October, week of the 4th")).toBe("October 4")
-    expect(reservedWeek("Oct, week of the 11th")).toBe("October 11")
-    expect(reservedWeek("October")).toBeNull()
+  it("names where in the month a preferred visit sits", () => {
+    expect(preferenceWord("earlier")).toBe("Early")
+    expect(preferenceWord("recommended")).toBe("Mid")
+    expect(preferenceWord("later")).toBe("Late")
   })
   it("joins a list the way a sentence does", () => {
     expect(listJoin(["April"])).toBe("April")

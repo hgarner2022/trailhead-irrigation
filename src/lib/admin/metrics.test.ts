@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import type { BlowoutWeek, Invoice, MonthTotal, Pass, PassVisit, Quote, Visit } from "./types"
+import type { Invoice, MonthTotal, Pass, PassVisit, Quote, Visit } from "./types"
 import {
   chargedSoFar,
   committedByMonth,
@@ -9,7 +9,6 @@ import {
   invoicesOverdue,
   monthComparison,
   quotesAwaiting,
-  spotsLeft,
   upcomingCharges,
   visitsOn,
 } from "./metrics"
@@ -23,7 +22,8 @@ function pass(over: Partial<Pass> & { visits: PassVisit[] }): Pass {
     firstName: "Andrea",
     town: "Erie",
     zones: 6,
-    blowoutWeek: "2027-10-04",
+    turnOnPreference: "recommended",
+    blowoutPreference: "recommended",
     status: "active",
     stripeUrl: "https://dashboard.stripe.com/customers/cus_1",
     jobberUrl: "https://secure.getjobber.com/clients/1",
@@ -31,9 +31,9 @@ function pass(over: Partial<Pass> & { visits: PassVisit[] }): Pass {
   }
 }
 
-const turnOn: PassVisit = { kind: "turn-on", window: "April to May", amount: 145 }
+const turnOn: PassVisit = { kind: "turn-on", window: "May", amount: 145 }
 const inspection: PassVisit = { kind: "inspection", window: "July", amount: 145 }
-const blowout: PassVisit = { kind: "blowout", window: "October, week of the 4th", amount: 95 }
+const blowout: PassVisit = { kind: "blowout", window: "October", amount: 95 }
 
 const active = pass({ id: "p1", visits: [turnOn, inspection, blowout] })
 const cancelled = pass({
@@ -96,14 +96,14 @@ describe("committedByMonth", () => {
       ],
     })
     expect(committedByMonth([p, cancelled], 2027)).toEqual([
-      { month: 4, committed: 145, charged: 145 },
+      { month: 5, committed: 145, charged: 145 },
       { month: 7, committed: 145, charged: 0 },
       { month: 10, committed: 95, charged: 0 },
     ])
   })
   it("uses scheduledAt over the window when both are set", () => {
-    const p = pass({ id: "p6", visits: [{ ...turnOn, scheduledAt: "2027-05-03T15:00:00Z" }] })
-    expect(committedByMonth([p], 2027)).toEqual([{ month: 5, committed: 145, charged: 0 }])
+    const p = pass({ id: "p6", visits: [{ ...turnOn, scheduledAt: "2027-04-28T15:00:00Z" }] })
+    expect(committedByMonth([p], 2027)).toEqual([{ month: 4, committed: 145, charged: 0 }])
   })
   it("reads the first month named anywhere in the window", () => {
     const months = (window: string) =>
@@ -154,16 +154,6 @@ describe("monthComparison", () => {
       { year: 2026, month: 4, revenue: 500, visits: 2 },
     ]
     expect(monthComparison(zero, 2026, 4)).toEqual({ current: 500, previous: 0, deltaPct: null })
-  })
-})
-
-describe("spotsLeft", () => {
-  const week = (taken: number): BlowoutWeek => ({ season: 2027, weekStart: "2027-10-04", capacity: 20, taken, towns: ["Erie"] })
-  it("is capacity minus taken", () => {
-    expect(spotsLeft(week(3))).toBe(17)
-  })
-  it("never goes below zero", () => {
-    expect(spotsLeft(week(25))).toBe(0)
   })
 })
 

@@ -44,7 +44,7 @@ export function CancelPassDialog({ onConfirm }: CancelPassDialogProps) {
           <>
             <DialogHeader>
               <DialogTitle className="font-display text-2xl text-navy">Cancel your Season Pass?</DialogTitle>
-              <DialogDescription className="text-base">Nothing further is charged. Your reserved blowout week is released.</DialogDescription>
+              <DialogDescription className="text-base">Nothing further is charged. Your remaining visits come off the schedule.</DialogDescription>
             </DialogHeader>
             <DialogFooter>
               <DialogClose asChild>

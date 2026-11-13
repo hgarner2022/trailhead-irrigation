@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite"
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import type { AdminData } from "@/lib/admin/types"
+import { EMPTY_SETTINGS } from "@/lib/admin/data"
 import { AdminShell } from "@/components/blocks/AdminShell"
 import { HomeScreen } from "./HomeScreen"
 
@@ -18,10 +19,13 @@ const nothingYet: AdminData = {
   quotes: [],
   invoices: [],
   passes: [],
-  blowoutWeeks: [],
   monthTotals: [],
   attention: [],
+  settings: EMPTY_SETTINGS,
+  settingsChanges: [],
 }
+
+const BEFORE_FALL = "2027-09-17T18:00:00Z"
 
 const meta = {
   title: "Screens/Home",
@@ -38,6 +42,12 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
+  globals: { viewport: { value: "wide", isRotated: false } },
+}
+
+/** Two weeks before the fixture's blowout window opens (October 1, 2027, four lead weeks): the season prompt shows above the tiles. */
+export const BeforeFall: Story = {
+  args: { today: BEFORE_FALL, data: { ...data, syncedAt: "2027-09-17T17:56:00Z" } },
   globals: { viewport: { value: "wide", isRotated: false } },
 }
 

@@ -3,22 +3,29 @@ import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import type { Pass } from "@/lib/admin/types"
 import { cardLine, expiry, seasonCaption, visitRows, visitStatus } from "./pass-page-model"
 
-// passes[0] is Andrea in Erie: turn-on done April 20, inspection in July, blowout reserved for the week of October 4.
+// passes[0] is Andrea in Erie: turn-on done May 3, inspection in July, blowout preferred for mid October.
+// passes[2] has no visit yet, with the turn-on preferred earlier.
 const pass = snapshot.passes[0] as Pass
+const fresh = snapshot.passes[2] as Pass
 const scheduled: Pass = { ...pass, visits: pass.visits.map((v) => (v.kind === "inspection" ? { ...v, scheduledAt: "2027-07-13T15:00:00Z" } : v)) }
 const allDone: Pass = {
   ...pass,
-  visits: pass.visits.map((v, i) => ({ ...v, completedAt: ["2027-04-20T17:10:00Z", "2027-07-13T16:05:00Z", "2027-10-05T16:40:00Z"][i] })),
+  visits: pass.visits.map((v, i) => ({ ...v, completedAt: ["2027-05-03T17:10:00Z", "2027-07-13T16:05:00Z", "2027-10-05T16:40:00Z"][i] })),
 }
 
 describe("visit rows", () => {
   it("names each visit and reads its state from the dates", () => {
     expect(pass.visits.map(visitStatus)).toEqual(["completed", "unscheduled", "unscheduled"])
     expect(visitRows(pass)).toEqual([
-      { kind: "turn-on", name: "Spring turn-on", when: "April 20", status: "completed", label: "Done" },
+      { kind: "turn-on", name: "Spring turn-on", when: "May 3", status: "completed", label: "Done" },
       { kind: "inspection", name: "Mid-season inspection", when: "July", status: "unscheduled", label: "July" },
-      { kind: "blowout", name: "Fall blowout", when: "Week of October 4", status: "unscheduled", label: "Reserved" },
+      { kind: "blowout", name: "Fall blowout", when: "Mid October", status: "unscheduled", label: "Preferred" },
     ])
+  })
+
+  it("shows the turn-on preference until it has a day", () => {
+    expect(visitRows(fresh)[0]).toEqual({ kind: "turn-on", name: "Spring turn-on", when: "Early May", status: "unscheduled", label: "Preferred" })
+    expect(visitRows({ ...fresh, blowoutPreference: "later" })[2]).toEqual({ kind: "blowout", name: "Fall blowout", when: "Late October", status: "unscheduled", label: "Preferred" })
   })
 
   it("shows the date once a visit is booked", () => {
@@ -30,7 +37,8 @@ describe("visit rows", () => {
     expect(words).not.toContain("Not scheduled")
     expect(words).not.toContain("Scheduled")
     expect(words).not.toContain("Completed")
-    expect(visitRows({ ...pass, visits: pass.visits.map((v) => ({ ...v, completedAt: undefined, scheduledAt: undefined })) })[0].label).toBe("April to May")
+    expect(words).not.toContain("Reserved")
+    expect(visitRows({ ...pass, visits: pass.visits.map((v) => ({ ...v, completedAt: undefined, scheduledAt: undefined })) })[0].label).toBe("Preferred")
     expect(visitRows(allDone).map((r) => r.label)).toEqual(["Done", "Done", "Done"])
   })
 })
@@ -54,9 +62,11 @@ describe("season caption", () => {
     expect(seasonCaption(scheduled)).toBe("Next up: mid-season inspection on July 13.")
   })
 
-  it("names the reserved week when the blowout is next", () => {
+  it("names the preference when the turn-on or the blowout is next", () => {
+    expect(seasonCaption(fresh)).toBe("Next up: spring turn-on, preferred early May.")
     const blowoutNext: Pass = { ...pass, visits: pass.visits.map((v, i) => (i < 2 ? { ...v, completedAt: "2027-07-13T16:05:00Z" } : v)) }
-    expect(seasonCaption(blowoutNext)).toBe("Your blowout is reserved for the week of October 4. Ryan sets the day in September.")
+    expect(seasonCaption(blowoutNext)).toBe("Your blowout is preferred for mid October. Ryan sets the day in September.")
+    expect(seasonCaption({ ...blowoutNext, blowoutPreference: "earlier" })).toBe("Your blowout is preferred for early October. Ryan sets the day in September.")
   })
 
   it("closes the season when every visit is done", () => {

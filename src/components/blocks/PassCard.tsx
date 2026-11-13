@@ -6,13 +6,14 @@ import { Check } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import type { Pass, PassVisit } from "@/lib/admin/types"
-import { shortDate, writtenDate } from "@/lib/admin/format"
+import { preferenceLabel, preferenceOf, shortDate, writtenDate } from "@/lib/admin/format"
 import { SHEEN_REST, attachPointer, attachTilt, canRequestTilt, frameWriter, reducedMotion, requestTilt } from "./pass-card-sheen"
 
 // A wallet card at credit card proportions: the reserved moment at the end of
 // the Season Pass checkout, the top of the customer's pass page, and a thumbnail
 // in the admin side panel. The artwork fills the card; the name, pass number
-// and the three visits are live text over it. The sheen is a blended gradient
+// and the three visits are live text over it: a date once a visit has one,
+// else the customer's timing preference (the blowout's with a Preferred chip). The sheen is a blended gradient
 // layer under the text that slides with the pointer on a laptop and with the
 // phone's tilt, and eases back to rest when the pointer leaves. It is the only
 // holographic effect on the site.
@@ -38,36 +39,49 @@ const ART = { flat: "/images/pass-card-art.webp", holo: "/images/pass-card-art-h
 const VISIT_NAMES: Record<PassVisit["kind"], string> = { "turn-on": "Turn-on", inspection: "Inspection", blowout: "Blowout" }
 const REST_STYLE = { "--sheen-x": SHEEN_REST.x, "--sheen-y": SHEEN_REST.y } as CSSProperties
 const never = () => () => {}
+const lower = (s: string) => s.charAt(0).toLowerCase() + s.slice(1)
+
+/** "turn-on done on May 3", "blowout on October 12", "blowout preferred mid October". */
+function describeVisit(visit: PassVisit, pass: Pass): string | null {
+  const name = VISIT_NAMES[visit.kind].toLowerCase()
+  if (visit.completedAt) return `${name} done on ${writtenDate(visit.completedAt)}`
+  if (visit.scheduledAt) return `${name} on ${writtenDate(visit.scheduledAt)}`
+  const preference = preferenceOf(pass, visit.kind)
+  return preference && visit.kind !== "inspection" ? `${name} preferred ${lower(preferenceLabel(visit.kind, preference))}` : null
+}
 
 function describe(pass: Pass): string {
   const head = `Season Pass ${pass.season} for ${pass.firstName}, ${pass.town}`
   if (pass.status === "cancelled") return `${head}, cancelled`
-  const blowout = pass.visits.find((v) => v.kind === "blowout")
-  if (blowout?.completedAt) return `${head}, blowout done on ${writtenDate(blowout.completedAt)}`
-  return `${head}, blowout reserved for the week of ${writtenDate(pass.blowoutWeek)}`
+  const visits = pass.visits.filter((v) => v.kind !== "inspection").map((v) => describeVisit(v, pass)).filter((s) => s !== null)
+  return [head, ...visits].join(", ")
 }
 
 function VisitCell({ visit, pass }: { visit: PassVisit; pass: Pass }) {
-  const reserved = visit.kind === "blowout" && !visit.completedAt
-  const value = visit.completedAt
-    ? shortDate(visit.completedAt)
-    : visit.scheduledAt
-      ? shortDate(visit.scheduledAt)
-      : reserved
-        ? `Week of ${shortDate(pass.blowoutWeek)}`
-        : visit.window
+  const dated = visit.completedAt ?? visit.scheduledAt
+  const preference = dated ? null : preferenceOf(pass, visit.kind)
+  // The blowout is what the pass is bought for, so its cell stays lit until the visit is done.
+  const lit = visit.kind === "blowout" && !visit.completedAt
+  const preferred = visit.kind === "blowout" && preference !== null
+  const kind = visit.kind === "inspection" ? null : visit.kind
   return (
     <div data-slot="pass-visit" data-kind={visit.kind} className="min-w-0">
       <div className="flex items-center gap-1.5 text-[11px] uppercase leading-tight tracking-wide text-white/70 @max-[440px]:text-[10px]">
-        <span className={cn(reserved && "@max-[440px]:hidden")}>{VISIT_NAMES[visit.kind]}</span>
-        {reserved && (
+        <span className={cn(preferred && "@max-[440px]:hidden")}>{VISIT_NAMES[visit.kind]}</span>
+        {preferred && (
           <span className="rounded-full bg-primary-light/20 px-1.5 py-px text-[9px] font-semibold tracking-wider text-primary-light @max-[440px]:bg-transparent @max-[440px]:px-0 @max-[440px]:text-[10px] @max-[440px]:font-normal @max-[440px]:tracking-wide">
-            Reserved
+            Preferred
           </span>
         )}
       </div>
-      <div className={cn("mt-0.5 flex items-center gap-1 text-sm font-medium leading-tight @max-[440px]:text-xs", reserved && "font-semibold text-primary-light")}>
-        <span className="truncate">{value}</span>
+      <div className={cn("mt-0.5 flex items-center gap-1 text-sm font-medium leading-tight @max-[440px]:text-xs", lit && "font-semibold text-primary-light")}>
+        {dated ? (
+          <span className="truncate">{shortDate(dated)}</span>
+        ) : preference && kind ? (
+          <span className="truncate">{preferenceLabel(kind, preference)}</span>
+        ) : (
+          <span className="truncate">{visit.window}</span>
+        )}
         {visit.completedAt && (
           <>
             <Check className="size-3.5 shrink-0 text-primary-light" strokeWidth={3} aria-hidden />

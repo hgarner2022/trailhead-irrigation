@@ -27,7 +27,7 @@ const rail = () => document.querySelector('[data-slot="sidebar"]')
 const tabbar = () => document.querySelector('[data-slot="admin-tabbar"]')
 
 describe("AdminShell", () => {
-  it("renders the five nav links with the current one marked, the user and the children", () => {
+  it("renders the six nav links in the plan's order with the current one marked, the user and the children", () => {
     stubViewport(1440)
     render(
       <AdminShell current="passes" user={user}>
@@ -36,8 +36,8 @@ describe("AdminShell", () => {
     )
     const nav = within(rail() as HTMLElement)
     const links = nav.getAllByRole("link")
-    expect(links.map((l) => l.textContent)).toEqual(["Home", "Revenue", "Passes", "October", "Customers"])
-    expect(links.map((l) => l.getAttribute("href"))).toEqual(["/admin", "/admin/revenue", "/admin/passes", "/admin/october", "/admin/customers"])
+    expect(links.map((l) => l.textContent)).toEqual(["Home", "Schedule", "Passes", "Revenue", "Customers", "Settings"])
+    expect(links.map((l) => l.getAttribute("href"))).toEqual(["/admin", "/admin/schedule", "/admin/passes", "/admin/revenue", "/admin/customers", "/admin/settings"])
     expect(nav.getByRole("link", { name: "Passes" })).toHaveAttribute("aria-current", "page")
     expect(nav.getByRole("link", { name: "Home" })).not.toHaveAttribute("aria-current")
     expect(screen.getByText("HG")).toBeInTheDocument()
@@ -70,7 +70,7 @@ describe("AdminShell", () => {
   it("renders the tab bar and not the rail on a phone", () => {
     stubViewport(375)
     render(
-      <AdminShell current="october" user={user}>
+      <AdminShell current="settings" user={user}>
         <p>Phone body</p>
       </AdminShell>,
     )
@@ -79,8 +79,8 @@ describe("AdminShell", () => {
     expect(bar).not.toBeNull()
     expect(screen.getByRole("navigation", { name: "Main" })).toBe(bar)
     const links = within(bar).getAllByRole("link")
-    expect(links.map((l) => l.textContent)).toEqual(["Home", "Revenue", "Passes", "October", "Customers"])
-    expect(within(bar).getByRole("link", { name: "October" })).toHaveAttribute("aria-current", "page")
+    expect(links.map((l) => l.textContent)).toEqual(["Home", "Schedule", "Passes", "Revenue", "Customers", "Settings"])
+    expect(within(bar).getByRole("link", { name: "Settings" })).toHaveAttribute("aria-current", "page")
     expect(screen.getByText("Phone body")).toBeInTheDocument()
     expect(screen.queryByRole("button", { name: /toggle sidebar/i })).toBeNull()
   })

@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite"
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import type { AdminData, MonthTotal, Pass } from "@/lib/admin/types"
+import { EMPTY_SETTINGS } from "@/lib/admin/data"
 import { AdminShell } from "@/components/blocks/AdminShell"
 import { RevenueScreen } from "./RevenueScreen"
 
@@ -20,9 +21,10 @@ const nothingYet: AdminData = {
   quotes: [],
   invoices: [],
   passes: [],
-  blowoutWeeks: [],
   monthTotals: [],
   attention: [],
+  settings: EMPTY_SETTINGS,
+  settingsChanges: [],
 }
 
 // Each 2025 month is about 80 percent of 2026, rounded to look like real totals.
@@ -47,8 +49,8 @@ const withRenewals: AdminData = {
   ...data,
   passes: [
     ...data.passes,
-    old(data.passes[0], { id: "p2026-1", blowoutWeek: "2026-10-05" }),
-    old(data.passes[4], { id: "p2026-2", clientId: "c300", firstName: "Morgan", town: "Louisville", blowoutWeek: "2026-10-12" }),
+    old(data.passes[0], { id: "p2026-1" }),
+    old(data.passes[4], { id: "p2026-2", clientId: "c300", firstName: "Morgan", town: "Louisville" }),
   ],
 }
 
