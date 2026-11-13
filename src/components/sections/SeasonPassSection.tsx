@@ -11,12 +11,12 @@ const POINTS = [
   {
     icon: CalendarCheck,
     title: "We keep the calendar",
-    body: "Turn-on in spring, a check in July, a blowout in October. We book the dates, you don't have to remember to call.",
+    body: "Turn-on in spring, a blowout in October, and a July check if you add it. We book the dates, you don't have to remember to call.",
   },
   {
     icon: CreditCard,
     title: "Nothing up front",
-    body: "Your card is charged after each visit, at the same price as booking it on its own. One card on file instead of three invoices.",
+    body: "Your card is charged after each visit, at the same price as booking it on its own. One card on file instead of separate invoices.",
   },
 ]
 
@@ -31,9 +31,9 @@ export function SeasonPassSection() {
             <SectionHeader
               tagline="Season Pass"
               taglineAsEyebrow
-              title="Three visits a year, on a schedule we keep for you"
+              title="Turn-on and blowout, on a schedule we keep for you"
               titleId="season-pass-heading"
-              description="We turn your system on in spring, check it in July and blow it out in October, and you never have to remember to call."
+              description="We turn your system on in spring and blow it out in October, and you never have to remember to call. Add a July inspection if you want a second look in the heat."
               align="left"
             />
             <ul className="flex flex-col gap-5">

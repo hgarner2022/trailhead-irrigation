@@ -45,7 +45,7 @@ describe("CheckoutFlow", () => {
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Where is the yard?")
     expect(continueButton()).toBeDisabled()
     expect(screen.getByRole("progressbar", { name: "Checkout progress" })).toHaveAttribute("aria-valuenow", "1")
-    expect(live()).toHaveTextContent("Step 1 of 6, Where is the yard?")
+    expect(live()).toHaveTextContent("Step 1 of 7, Where is the yard?")
     expect(screen.queryByRole("button", { name: "Back" })).not.toBeInTheDocument()
     expect(screen.getByLabelText("Street address")).toHaveFocus()
   })
@@ -101,12 +101,12 @@ describe("CheckoutFlow", () => {
     render(<CheckoutFlow season={2027} prefill={answers} />)
     fireEvent.keyDown(screen.getByLabelText("Street address"), { key: "Enter" })
     expect(progress()).toHaveAttribute("aria-valuenow", "2")
-    expect(live()).toHaveTextContent("Step 2 of 6, How many zones does your system have?")
-    expect(screen.getByText("2 of 6")).toBeInTheDocument()
+    expect(live()).toHaveTextContent("Step 2 of 7, How many zones does your system have?")
+    expect(screen.getByText("2 of 7")).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "8 zones", pressed: true })).toHaveFocus()
     fireEvent.click(screen.getByRole("button", { name: "Back" }))
     expect(progress()).toHaveAttribute("aria-valuenow", "1")
-    expect(live()).toHaveTextContent("Step 1 of 6")
+    expect(live()).toHaveTextContent("Step 1 of 7")
   })
 
   it("moves with the arrow keys and ignores Enter on an empty step", () => {
@@ -119,6 +119,7 @@ describe("CheckoutFlow", () => {
     const zones = screen.getByRole("button", { name: "8 zones", pressed: true })
     fireEvent.keyDown(zones, { key: "ArrowDown" })
     expect(screen.getAllByRole("progressbar")[1]).toHaveAttribute("aria-valuenow", "3")
+    expect(screen.getAllByRole("heading", { level: 1 })[1]).toHaveTextContent("Add a mid-season inspection?")
     fireEvent.keyDown(screen.getAllByRole("heading", { level: 1 })[1], { key: "ArrowUp" })
     expect(screen.getAllByRole("progressbar")[1]).toHaveAttribute("aria-valuenow", "2")
   })
@@ -140,7 +141,7 @@ describe("CheckoutFlow", () => {
 
   it("offers the email on a common domain when the typed one is a slip, and takes it on a click", async () => {
     const user = userEvent.setup()
-    render(<CheckoutFlow season={2027} prefill={{ ...answers, email: "" }} initialStep={4} />)
+    render(<CheckoutFlow season={2027} prefill={{ ...answers, email: "" }} initialStep={5} />)
     const email = screen.getByLabelText("Email")
     await user.type(email, "andrea@gmail.con")
     await user.click(screen.getByRole("button", { name: "andrea@gmail.com" }))
@@ -148,16 +149,28 @@ describe("CheckoutFlow", () => {
     expect(screen.queryByText(/Did you mean/)).not.toBeInTheDocument()
   })
 
+  it("offers the July inspection as an add-on, off by default, and prices it for the zones", () => {
+    render(<CheckoutFlow season={2027} prefill={answers} initialStep={3} />)
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Add a mid-season inspection?")
+    expect(screen.getByRole("button", { name: /No, just the two/, pressed: true })).toHaveFocus()
+    expect(continueButton()).toBeEnabled()
+    fireEvent.click(screen.getByRole("button", { name: /Yes, add July/ }))
+    expect(screen.getByRole("button", { name: /Yes, add July/ })).toHaveTextContent("$145 after the visit")
+    fireEvent.click(screen.getByRole("button", { name: "Back" }))
+    expect(screen.getByText("$405")).toBeInTheDocument()
+    expect(screen.getByText("Turn-on $145 · Inspection $145 · Blowout $115")).toBeInTheDocument()
+  })
+
   it("shows the live price for the chosen zones", () => {
     render(<CheckoutFlow season={2027} prefill={answers} initialStep={2} />)
-    expect(screen.getByText("$405")).toBeInTheDocument()
+    expect(screen.getByText("$260")).toBeInTheDocument()
     fireEvent.click(screen.getByRole("button", { name: "12 zones" }))
-    expect(screen.getByText("$525")).toBeInTheDocument()
-    expect(screen.getByText("Turn-on $185 · Inspection $185 · Blowout $155")).toBeInTheDocument()
+    expect(screen.getByText("$340")).toBeInTheDocument()
+    expect(screen.getByText("Turn-on $185 · Blowout $155")).toBeInTheDocument()
   })
 
   it("asks both timing questions on one screen with the recommendation preselected and the reason under each", () => {
-    render(<CheckoutFlow season={2027} initialStep={3} prefill={{ address: "9 Elm St", town: "Erie" }} />)
+    render(<CheckoutFlow season={2027} initialStep={4} prefill={{ address: "9 Elm St", town: "Erie" }} />)
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("When should we turn your system on?")
     expect(screen.getByRole("heading", { level: 2 })).toHaveTextContent("And your fall blowout?")
     const turnOn = screen.getByRole("group", { name: "When should we turn your system on?" })
@@ -175,7 +188,7 @@ describe("CheckoutFlow", () => {
 
   it("changes a preference on click and carries it to the pass", () => {
     const onComplete = vi.fn()
-    render(<CheckoutFlow season={2027} initialStep={3} prefill={answers} onComplete={onComplete} />)
+    render(<CheckoutFlow season={2027} initialStep={4} prefill={answers} onComplete={onComplete} />)
     expect(choice("turn-on", "earlier")).toHaveAttribute("aria-pressed", "true")
     fireEvent.click(choice("turn-on", "later"))
     fireEvent.click(choice("blowout", "earlier"))
@@ -184,30 +197,30 @@ describe("CheckoutFlow", () => {
     expect(choice("blowout", "earlier")).toHaveAttribute("aria-pressed", "true")
     expect(choice("blowout", "recommended")).toHaveAttribute("aria-pressed", "false")
     fireEvent.keyDown(choice("turn-on", "later"), { key: "Enter" })
-    expect(progress()).toHaveAttribute("aria-valuenow", "4")
+    expect(progress()).toHaveAttribute("aria-valuenow", "5")
     fireEvent.keyDown(screen.getByLabelText("First name"), { key: "Enter" })
     fireEvent.click(screen.getByRole("button", { name: "Save card and reserve" }))
     expect(onComplete.mock.calls[0][0]).toMatchObject({ turnOnPreference: "later", blowoutPreference: "earlier" })
   })
 
   it("walks the two timing groups with the arrow keys before leaving the step", () => {
-    render(<CheckoutFlow season={2027} initialStep={3} prefill={answers} />)
+    render(<CheckoutFlow season={2027} initialStep={4} prefill={answers} />)
     const turnOn = choice("turn-on", "earlier")
     const blowout = choice("blowout", "recommended")
     expect(turnOn).toHaveFocus()
     fireEvent.keyDown(turnOn, { key: "ArrowDown" })
     expect(blowout).toHaveFocus()
-    expect(progress()).toHaveAttribute("aria-valuenow", "3")
+    expect(progress()).toHaveAttribute("aria-valuenow", "4")
     fireEvent.keyDown(blowout, { key: "ArrowUp" })
     expect(turnOn).toHaveFocus()
-    expect(progress()).toHaveAttribute("aria-valuenow", "3")
-    fireEvent.keyDown(blowout, { key: "ArrowDown" })
     expect(progress()).toHaveAttribute("aria-valuenow", "4")
+    fireEvent.keyDown(blowout, { key: "ArrowDown" })
+    expect(progress()).toHaveAttribute("aria-valuenow", "5")
   })
 
   it("holds the card step until the terms are accepted, says so once tried, and records each marketing channel", () => {
     const onComplete = vi.fn()
-    render(<CheckoutFlow season={2027} initialStep={5} prefill={{ ...answers, termsAccepted: false }} onComplete={onComplete} />)
+    render(<CheckoutFlow season={2027} initialStep={6} prefill={{ ...answers, termsAccepted: false }} onComplete={onComplete} />)
     const terms = screen.getByRole("checkbox", { name: /I accept the Season Pass terms.* and the Trailhead terms of service/ })
     const email = screen.getByRole("checkbox", { name: "Seasonal tips and offers by email" })
     const sms = screen.getByRole("checkbox", { name: "Seasonal tips and offers by text" })
@@ -240,7 +253,7 @@ describe("CheckoutFlow", () => {
   })
 
   it("asks kindly for the contact details it is missing", () => {
-    render(<CheckoutFlow season={2027} prefill={{ ...answers, email: "andrea.example.com", phone: "" }} initialStep={4} />)
+    render(<CheckoutFlow season={2027} prefill={{ ...answers, email: "andrea.example.com", phone: "" }} initialStep={5} />)
     expect(continueButton()).toBeDisabled()
     expect(screen.queryByText("That email doesn't look complete.")).not.toBeInTheDocument()
     fireEvent.keyDown(screen.getByLabelText("First name"), { key: "Enter" })
@@ -254,7 +267,7 @@ describe("CheckoutFlow", () => {
 
   it("reaches Done and shows the pass card with the chosen name", () => {
     const onComplete = vi.fn()
-    render(<CheckoutFlow season={2027} prefill={answers} initialStep={5} onComplete={onComplete} />)
+    render(<CheckoutFlow season={2027} prefill={answers} initialStep={6} onComplete={onComplete} />)
     act(() => {
       fireEvent.click(screen.getByRole("button", { name: "Save card and reserve" }))
     })
@@ -263,23 +276,23 @@ describe("CheckoutFlow", () => {
     expect(onComplete.mock.calls[0][0].consent).toMatchObject({ marketingOptIn: false, marketingChannels: [] })
     expect(screen.getByRole("article", { name: "Season Pass 2027 for Andrea, Erie, turn-on preferred early May, blowout preferred mid October" })).toBeInTheDocument()
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Your season is reserved")
-    expect(screen.getByText("Turn-on preferred early May, inspection in July, blowout preferred mid October. We'll email the details to andrea@example.com.")).toBeInTheDocument()
+    expect(screen.getByText("Turn-on preferred early May, blowout preferred mid October. We'll email the details to andrea@example.com.")).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Done" })).toBeInTheDocument()
     expect(screen.queryByRole("button", { name: "Continue" })).not.toBeInTheDocument()
-    expect(progress()).toHaveAttribute("aria-valuenow", "6")
+    expect(progress()).toHaveAttribute("aria-valuenow", "7")
   })
 
   it("treats Done as the end: no Back, no arrow up, so the card is saved once", () => {
     const onComplete = vi.fn()
-    render(<CheckoutFlow season={2027} prefill={answers} initialStep={5} onComplete={onComplete} />)
+    render(<CheckoutFlow season={2027} prefill={answers} initialStep={6} onComplete={onComplete} />)
     fireEvent.keyDown(screen.getByRole("button", { name: "Save card and reserve" }), { key: "ArrowDown" })
-    expect(progress()).toHaveAttribute("aria-valuenow", "6")
+    expect(progress()).toHaveAttribute("aria-valuenow", "7")
     expect(screen.queryByRole("button", { name: "Back" })).not.toBeInTheDocument()
     fireEvent.keyDown(section(), { key: "ArrowUp" })
     fireEvent.keyDown(section(), { key: "Enter" })
-    expect(progress()).toHaveAttribute("aria-valuenow", "6")
+    expect(progress()).toHaveAttribute("aria-valuenow", "7")
     expect(onComplete).toHaveBeenCalledTimes(1)
-    expect(screen.getByText("6 of 6")).toHaveAttribute("aria-hidden", "true")
+    expect(screen.getByText("7 of 7")).toHaveAttribute("aria-hidden", "true")
   })
 
   describe("reveal", () => {
@@ -293,12 +306,12 @@ describe("CheckoutFlow", () => {
       const animate = vi.fn<(frames: Keyframe[], options: KeyframeAnimationOptions) => { cancel: () => void }>(() => ({ cancel: vi.fn() }))
       HTMLElement.prototype.animate = animate as unknown as typeof HTMLElement.prototype.animate
       stubMotion(false)
-      const { unmount } = render(<CheckoutFlow season={2027} prefill={answers} initialStep={6} />)
+      const { unmount } = render(<CheckoutFlow season={2027} prefill={answers} initialStep={7} />)
       expect(animate).toHaveBeenCalledTimes(1)
       expect(animate.mock.calls[0][1]).toMatchObject({ duration: 600, fill: "backwards" })
       unmount()
       stubMotion(true)
-      render(<CheckoutFlow season={2027} prefill={answers} initialStep={6} />)
+      render(<CheckoutFlow season={2027} prefill={answers} initialStep={7} />)
       expect(animate).toHaveBeenCalledTimes(1)
     })
 

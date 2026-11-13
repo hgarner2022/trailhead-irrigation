@@ -14148,11 +14148,6 @@
           "amount": 165
         },
         {
-          "kind": "inspection",
-          "window": "July",
-          "amount": 165
-        },
-        {
           "kind": "blowout",
           "window": "October",
           "amount": 135
@@ -14189,11 +14184,6 @@
         {
           "kind": "turn-on",
           "window": "May",
-          "amount": 145
-        },
-        {
-          "kind": "inspection",
-          "window": "July",
           "amount": 145
         },
         {
@@ -14236,11 +14226,6 @@
           "amount": 185
         },
         {
-          "kind": "inspection",
-          "window": "July",
-          "amount": 185
-        },
-        {
           "kind": "blowout",
           "window": "October",
           "amount": 155
@@ -14274,11 +14259,6 @@
         {
           "kind": "turn-on",
           "window": "May",
-          "amount": 145
-        },
-        {
-          "kind": "inspection",
-          "window": "July",
           "amount": 145
         },
         {
@@ -14365,11 +14345,6 @@
           "amount": 145
         },
         {
-          "kind": "inspection",
-          "window": "July",
-          "amount": 145
-        },
-        {
           "kind": "blowout",
           "window": "October",
           "amount": 95
@@ -14449,11 +14424,6 @@
           "amount": 145
         },
         {
-          "kind": "inspection",
-          "window": "July",
-          "amount": 145
-        },
-        {
           "kind": "blowout",
           "window": "October",
           "amount": 115
@@ -14490,11 +14460,6 @@
         {
           "kind": "turn-on",
           "window": "May",
-          "amount": 145
-        },
-        {
-          "kind": "inspection",
-          "window": "July",
           "amount": 145
         },
         {

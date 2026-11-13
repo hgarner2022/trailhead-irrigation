@@ -11,14 +11,16 @@ import { Testimonials } from "@/components/sections/Testimonials"
 import { reviewsFor } from "@/lib/reviews"
 import {
   EXTRA_ZONE_PRICE,
+  INSPECTION_FROM,
+  SEASON_PASS_ADD_ON,
   SEASON_PASS_FROM,
   SEASON_PASS_TABLE,
   SEASON_PASS_VISITS,
 } from "@/lib/season-pass"
 
 export const metadata: Metadata = {
-  title: "Sprinkler Season Pass: 3 Visits, Erie CO",
-  description: `Spring turn-on, mid-season check and fall blowout on one schedule, from $${SEASON_PASS_FROM} for up to 6 zones. Blowout date reserved in July. Billed per visit, nothing up front.`,
+  title: "Sprinkler Season Pass: Turn-On and Blowout, Erie CO",
+  description: `Spring turn-on and fall blowout on one schedule, from $${SEASON_PASS_FROM} for up to 6 zones, with a July inspection if you want it. Blowout date reserved in July. Billed per visit, nothing up front.`,
   alternates: { canonical: `${siteConfig.url}/season-pass` },
 }
 
@@ -32,12 +34,12 @@ const VISIT_DETAILS = [
 const FAQS: FaqItem[] = [
   {
     question: "How much is the Trailhead Season Pass?",
-    answer: `From $${SEASON_PASS_FROM} per season for up to 6 zones. The spring turn-on is $145, the mid-season inspection is $145 and the fall blowout is $95, each billed after the visit. Each zone beyond the included count adds $${EXTRA_ZONE_PRICE} per visit.`,
+    answer: `From $${SEASON_PASS_FROM} per season for up to 6 zones: the spring turn-on is $145 and the fall blowout is $95, each billed after the visit. A mid-season inspection in July can be added for $${INSPECTION_FROM}. Each zone beyond the included count adds $${EXTRA_ZONE_PRICE} per visit.`,
   },
   {
     question: "What do I get that I wouldn't get booking each visit on its own?",
     answer:
-      "Your blowout date reserved in July, three visits booked without you having to call, and one card on file instead of three invoices.",
+      "Your blowout date reserved in July, both visits booked without you having to call, and one card on file instead of separate invoices.",
   },
   {
     question: "When do I pay?",
@@ -55,14 +57,14 @@ const FAQS: FaqItem[] = [
       "Yes, any time. Nothing is charged until a visit is done, so cancelling just means no more visits go on the calendar.",
   },
   {
-    question: "Can I buy just the turn-on and the blowout?",
+    question: "What is the mid-season inspection, and do I need it?",
     answer:
-      "Yes. Book either one on its own at the same price. The pass is for people who want the July check too and don't want to think about scheduling. If you'd skip July anyway, book the two visits separately.",
+      "In July we run every zone, look for coverage gaps, clogged nozzles and zones running long, and adjust what we find. It is an add-on, not part of the pass: add it at checkout or later by replying to any of our emails, and it is billed after the visit like the others.",
   },
   {
     question: "Which cities can get the Season Pass?",
     answer:
-      "Erie, Longmont, Louisville, Lafayette, Firestone and Broomfield, at the same price. Reserve by contacting us; we confirm your zone count on the first visit and set the three dates from there.",
+      "Erie, Longmont, Louisville, Lafayette, Firestone and Broomfield, at the same price. Reserve by contacting us; we confirm your zone count on the first visit and set the dates from there.",
   },
 ]
 
@@ -82,7 +84,7 @@ export default function SeasonPassPage() {
         name: "Sprinkler Season Pass",
         serviceType: "Seasonal sprinkler maintenance plan",
         description:
-          "Three sprinkler visits a year: spring turn-on and system check, mid-season inspection and tune-up, fall blowout and winterization with a reserved date.",
+          "Two sprinkler visits a year on one schedule, the spring turn-on and system check and the fall blowout and winterization with a reserved date, with a mid-season inspection and tune-up as an optional add-on.",
         provider: { "@id": `${siteConfig.url}/#business` },
         areaServed: siteConfig.serviceArea.map((name) => ({ "@type": "Place", name })),
         offers: {
@@ -125,7 +127,7 @@ export default function SeasonPassPage() {
             <div className="flex flex-col gap-5 text-white">
               <p className="order-first text-xs font-semibold uppercase tracking-widest text-primary-light">Season Pass</p>
               <h1 className="font-sans text-lg md:text-xl font-semibold text-white/95 leading-snug max-w-xl" style={{ letterSpacing: 0 }}>
-                Sprinkler Season Pass in Erie, CO: spring turn-on, mid-season check and fall blowout on one schedule we keep for you.
+                Sprinkler Season Pass in Erie, CO: spring turn-on and fall blowout on one schedule we keep for you, with a July check if you want it.
               </h1>
               <p className="order-first font-display text-5xl sm:text-6xl md:text-7xl font-bold leading-[0.95]">
                 Less time in the yard.<br />More time on the trail.
@@ -139,13 +141,13 @@ export default function SeasonPassPage() {
         </div>
       </section>
 
-      {/* The three visits */}
+      {/* The two visits and the add-on */}
       <section className="bg-background section-padding-y" aria-labelledby="visits-heading">
         <div className="container-padding-x mx-auto max-w-7xl flex flex-col gap-10">
           <SectionHeader
             tagline="What's included"
             taglineAsEyebrow
-            title="Three visits, in the order the season needs them"
+            title="Two visits, and a July check if you want it"
             titleId="visits-heading"
             align="left"
           />
@@ -161,7 +163,7 @@ export default function SeasonPassPage() {
                     <span className="font-display text-4xl font-bold text-border">{i + 1}</span>
                   </div>
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{v.when}</p>
+                    <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{v.key === SEASON_PASS_ADD_ON.key ? `${v.when} · Optional add-on` : v.when}</p>
                     <h3 className="font-display text-2xl font-semibold text-navy mt-1">{v.name}</h3>
                   </div>
                   <p className="text-sm text-muted-foreground leading-relaxed">{VISIT_DETAILS[i]}</p>
@@ -199,9 +201,9 @@ export default function SeasonPassPage() {
                   <tr className="text-left text-xs uppercase tracking-wider text-muted-foreground bg-stone">
                     <th scope="col" className="px-4 py-3">Zones</th>
                     <th scope="col" className="px-4 py-3">Turn-on</th>
-                    <th scope="col" className="px-4 py-3">Mid-season</th>
                     <th scope="col" className="px-4 py-3">Blowout</th>
                     <th scope="col" className="px-4 py-3">Season Pass</th>
+                    <th scope="col" className="px-4 py-3">With July inspection</th>
                   </tr>
                 </thead>
                 <tbody className="tabular-nums">
@@ -211,9 +213,9 @@ export default function SeasonPassPage() {
                         {row.zones === 6 ? "Up to 6" : row.zones}
                       </th>
                       <td className="px-4 py-3">${row.turnOn}</td>
-                      <td className="px-4 py-3">${row.inspection}</td>
                       <td className="px-4 py-3">${row.blowout}</td>
                       <td className="px-4 py-3 font-display text-lg font-semibold text-navy">${row.total}</td>
+                      <td className="px-4 py-3">${row.totalWithInspection}</td>
                     </tr>
                   ))}
                 </tbody>

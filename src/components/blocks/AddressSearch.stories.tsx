@@ -46,12 +46,12 @@ type Story = StoryObj<typeof meta>
 /** Type "123" to see the list; the fixture knows fourteen addresses. */
 export const Default: Story = {}
 
-/** The list open on three matches, the first one active. */
+/** The list open on two matches, the first one active. */
 export const Open: Story = {
   play: async ({ canvas, userEvent }) => {
-    await userEvent.type(canvas.getByRole("combobox", { name: "Street address" }), "12")
+    await userEvent.type(canvas.getByRole("combobox", { name: "Street address" }), "Lowell")
     const options = await canvas.findAllByRole("option")
-    await expect(options.length).toBeGreaterThan(1)
+    await expect(options).toHaveLength(2)
     await expect(options[0]).toHaveAttribute("aria-selected", "true")
   },
 }

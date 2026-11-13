@@ -132,7 +132,7 @@ describe("tileModels", () => {
   })
 
   it("describes the season line with the committed and charged totals", () => {
-    expect(seasonDescription(data)).toBe("Committed Season Pass revenue by month. $4,695 on 11 passes, $290 charged so far.")
+    expect(seasonDescription(data)).toBe("Committed Season Pass revenue by month. $3,765 on 11 passes, $290 charged so far.")
     expect(seasonDescription(empty)).toBe("Committed Season Pass revenue by month, with what has been charged so far.")
     expect(seasonDescription({ passes: [data.passes.find((p) => p.status === "active")!] })).toMatch(/ on 1 pass, /)
   })

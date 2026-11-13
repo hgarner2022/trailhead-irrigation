@@ -66,9 +66,10 @@ owner's copy wins and the other is a display.
    Schedule.
 5. **Revenue.** Committed against charged, by month, upcoming charges,
    renewals (renewed, lapsed, not yet asked).
-6. **Customers.** Everyone, with pass status layered on, and the January
-   pre-sell for the people who book a spring visit and a blowout at full
-   price.
+6. **Customers.** Everyone, with pass status layered on, what is next for
+   each and whether it is booked or still to schedule (Hannah, 2026-11-12
+   night), the consent on record, and the January pre-sell for the people
+   who book a spring visit and a blowout at full price.
 7. **Settings.** Trucks, Areas, Capacity and windows, Messages, Checklists,
    with a change log.
 
@@ -79,13 +80,18 @@ first for a crew login.
 
 - **Season Pass page** (marketing, exists): the offer, the price by zones,
   the button into the checkout.
-- **Checkout** (prototype exists): six screens, one question each: address,
-  zones, timing preferences for turn-on and blowout with the recommendation
-  preselected and the reason under it, contact, card, done with the pass
-  card.
-- **Pass page** (prototype exists): the pass card, the season line, the
-  visits in customer words (Done, Booked, Reserved), the card on file,
-  cancel.
+- **Checkout** (prototype exists): seven screens, one question each: the
+  address as one type-ahead box (the town comes from it; outside the six
+  towns is refused), zones, the July inspection as an add-on (the pass is
+  the turn-on and the blowout), timing preferences for turn-on and blowout
+  with the recommendation preselected and the reason under it, contact with
+  the email checks, card, done with the pass card. The confirmation email
+  carries the pass card image.
+- **Pass page** (prototype exists): reached by the sign-in link in any
+  Trailhead email (magic link, no password). The pass card, the season line,
+  the visits in customer words (Done, Booked, Preferred) with the date once
+  it is set, a Change link on the turn-on and blowout until their day is set
+  (Hannah, 2026-11-12 night), the card on file, cancel.
 - **Booking at `/book`** (later): today Jobber's online booking lets a
   customer pick a time and the visit lands on Ryan's calendar booked, with
   no one in the loop (Hannah's correction, 2026-11-12). The app's version

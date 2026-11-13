@@ -36,7 +36,7 @@ export const HOME_FAQS: FaqItem[] = [
   },
   {
     question: "What does the Season Pass include?",
-    answer: `Three visits a year on a schedule we keep for you: spring turn-on, mid-summer inspection and fall blowout, from $${SEASON_PASS_FROM} for up to 6 zones. Your October blowout date is reserved in July, and a card on file is charged after each visit.`,
+    answer: `Your spring turn-on and fall blowout on a schedule we keep for you, from $${SEASON_PASS_FROM} for up to 6 zones, with a July inspection as an add-on if you want it. Your October blowout date is reserved in July, and a card on file is charged after each visit.`,
     relatedLink: { href: "/season-pass", label: "Season Pass prices by zone count" },
   },
   {

@@ -154,8 +154,9 @@ export default function PricingPage() {
             />
           </div>
 
-          {/* All three seasonal visits on one schedule. Same per-zone prices
-              as the cards above, added up; the page has the table by zone. */}
+          {/* The turn-on and the blowout on one schedule, the July inspection as
+              an add-on. Same per-zone prices as the cards above, added up; the
+              page has the table by zone. */}
           <Link
             href="/season-pass"
             className="group mt-6 flex flex-col gap-4 rounded-lg border-2 border-primary bg-cream p-6 md:flex-row md:items-center md:justify-between transition-colors hover:bg-primary/5"
@@ -163,7 +164,7 @@ export default function PricingPage() {
             <div className="flex flex-col gap-1">
               <p className="text-xs font-semibold uppercase tracking-widest text-primary">Season Pass</p>
               <p className="font-display text-2xl md:text-3xl font-semibold text-navy">
-                All three visits, one schedule, blowout date reserved in July
+                Turn-on and blowout on one schedule, blowout date reserved in July
               </p>
               <p className="text-sm text-muted-foreground">
                 From ${SEASON_PASS_FROM} for up to 6 zones, charged per visit at the prices above. Nothing up front.

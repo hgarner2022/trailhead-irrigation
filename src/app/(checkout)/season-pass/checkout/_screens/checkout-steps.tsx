@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label"
 import { PassCard } from "@/components/blocks/PassCard"
 import type { Pass } from "@/lib/admin/types"
 import { formatMoney } from "@/lib/admin/metrics"
-import { MAX_ZONES, MIN_ZONES, SEASON_PASS_VISITS, seasonPassPrice, visitPrice } from "@/lib/season-pass"
+import { MAX_ZONES, MIN_ZONES, passVisits, seasonPassPrice, visitPrice } from "@/lib/season-pass"
 import { emailSuggestion } from "@/lib/email-check"
 import { contactProblem, doneSentence, type CheckoutFields } from "./checkout-state"
 
@@ -17,7 +17,7 @@ import { contactProblem, doneSentence, type CheckoutFields } from "./checkout-st
 // helper line under that. The shell (CheckoutFlow) owns the question, the
 // progress line, the buttons and the keys; these only read and set fields.
 // `data-autofocus` marks the element the shell focuses when the step opens.
-// The address step lives in checkout-address.tsx and the timing step in checkout-timing.tsx.
+// The address step lives in checkout-address.tsx, the add-on step in checkout-inspection.tsx and the timing step in checkout-timing.tsx.
 
 export interface StepProps {
   state: CheckoutFields
@@ -26,7 +26,7 @@ export interface StepProps {
 
 /** A tall input in the body size, so the one field on screen reads as the thing to do. */
 const FIELD = "h-14 rounded-lg bg-background px-4 text-lg shadow-sm"
-const VISIT_SHORT = ["Turn-on", "Inspection", "Blowout"]
+const VISIT_SHORT = { "turn-on": "Turn-on", inspection: "Inspection", blowout: "Blowout" } as const
 const ZONE_OPTIONS = Array.from({ length: MAX_ZONES - MIN_ZONES + 1 }, (_, i) => MIN_ZONES + i)
 
 /** Fades and rises the element once when it mounts, when `enabled`; still under reduced motion and in jsdom. */
@@ -78,11 +78,11 @@ export function ZonesStep({ state, set }: StepProps) {
         })}
       </div>
       <p data-slot="checkout-price" className="mt-10 font-display text-5xl leading-none text-navy tabular-nums">
-        {formatMoney(seasonPassPrice(state.zones))}
+        {formatMoney(seasonPassPrice(state.zones, state.inspection))}
       </p>
       <p className="mt-2 text-base text-muted-foreground">per season, billed after each visit</p>
       <p className="mt-1 text-sm text-muted-foreground tabular-nums">
-        {SEASON_PASS_VISITS.map((visit, i) => `${VISIT_SHORT[i]} ${formatMoney(visitPrice(visit, state.zones))}`).join(" · ")}
+        {passVisits(state.inspection).map((visit) => `${VISIT_SHORT[visit.key]} ${formatMoney(visitPrice(visit, state.zones))}`).join(" · ")}
       </p>
       <Helper>Six zones or fewer is the starting price. Not sure? Count the stations on your controller, or we confirm it on the first visit.</Helper>
     </>
@@ -233,7 +233,7 @@ export function DoneStep({ pass, email, onSaveImage, onDone }: { pass: Pass; ema
   return (
     <div>
       <PassCard pass={pass} art="flat" priority />
-      <p className="mt-8 text-lg text-foreground">{doneSentence({ ...pass, email })}</p>
+      <p className="mt-8 text-lg text-foreground">{doneSentence({ ...pass, inspection: pass.visits.some((v) => v.kind === "inspection"), email })}</p>
       <div className="mt-8 flex flex-wrap gap-3">
         <Button size="lg" onClick={onSaveImage}>
           Save as image

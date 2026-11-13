@@ -9,9 +9,10 @@ import { STEPS, STEP_COUNT, canContinue, toPass, useCheckoutState, type Checkout
 import type { PlaceProvider } from "@/lib/places"
 import { AddressStep } from "./checkout-address"
 import { CONSENT_PROBLEM_ID, CardStep, ContactStep, DoneStep, ZonesStep, useReveal } from "./checkout-steps"
+import { InspectionStep } from "./checkout-inspection"
 import { TimingStep } from "./checkout-timing"
 
-// The Season Pass checkout as six full-screen questions, one input each (the
+// The Season Pass checkout as seven full-screen questions, one input each (the
 // timing step asks its two together), the way Typeform paces a form: a thin orange line across the top for progress,
 // the question in the display face, the trail photo faint behind the cream
 // canvas, Enter to continue and the arrow keys to move. Only the current step
@@ -137,6 +138,9 @@ export function CheckoutFlow({ season, initialZones, initialStep, prefill, place
       break
     case "zones":
       body = <ZonesStep state={state} set={set} />
+      break
+    case "inspection":
+      body = <InspectionStep state={state} set={set} />
       break
     case "timing":
       body = <TimingStep state={state} set={set} questionId={questionId} />

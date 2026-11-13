@@ -21,17 +21,17 @@
 
 Materials are not included if repairs are needed during a seasonal service.
 
-## Season Pass (three seasonal visits, one schedule)
+## Season Pass (spring turn-on and fall blowout on one schedule; July inspection as an add-on)
 
-| Zones | Spring Turn-On | Mid-Season Inspection | Fall Blowout | Season Pass total |
+| Zones | Spring Turn-On | Fall Blowout | Season Pass total | With the July inspection add-on |
 |---|---|---|---|---|
-| Up to 6 | $145 | $145 | $95 | **$385** |
-| 8 | $145 | $145 | $115 | **$405** |
-| 10 | $165 | $165 | $135 | **$465** |
-| 12 | $185 | $185 | $155 | **$525** |
-| Each additional zone | +$10 | +$10 | +$10 | **+$30** |
+| Up to 6 | $145 | $95 | **$240** | $385 |
+| 8 | $145 | $115 | **$260** | $405 |
+| 10 | $165 | $135 | **$300** | $465 |
+| 12 | $185 | $155 | **$340** | $525 |
+| Each additional zone | +$10 | +$10 | **+$20** | +$30 |
 
-Three visits on one schedule Trailhead keeps for the customer. The fall blowout date is reserved in July, before the freeze rush; one card on file is charged after each visit, nothing up front. Visits are billed at the standard per-zone rates in the table. Reserve at https://www.trailheadirrigation.com/season-pass or by phone.
+Two visits on one schedule Trailhead keeps for the customer: the spring turn-on and the fall blowout. The mid-season inspection and tune-up (July, $145 up to 8 zones) is an optional add-on, chosen at checkout or added later. The fall blowout date is reserved in July, before the freeze rush; one card on file is charged after each visit, nothing up front. Visits are billed at the standard per-zone rates in the table. Reserve at https://www.trailheadirrigation.com/season-pass or by phone.
 
 
 

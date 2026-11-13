@@ -15,6 +15,7 @@ const answers: Partial<CheckoutFields> = {
   place: FIXTURE_HOME,
   town: "Erie",
   zones: 8,
+  inspection: false,
   turnOnPreference: "earlier",
   blowoutPreference: "recommended",
   firstName: "Andrea",
@@ -63,26 +64,32 @@ export const Zones: Story = {
   globals: { viewport: { value: "wide", isRotated: false } },
 }
 
+/** The July add-on, off unless the customer adds it. */
+export const Inspection: Story = {
+  args: { initialStep: 3, prefill: answers },
+  globals: { viewport: { value: "wide", isRotated: false } },
+}
+
 /** Both questions on one screen, the recommendation preselected for each. */
 export const Timing: Story = {
-  args: { initialStep: 3, prefill: { ...answers, turnOnPreference: "recommended" } },
+  args: { initialStep: 4, prefill: { ...answers, turnOnPreference: "recommended" } },
   globals: { viewport: { value: "wide", isRotated: false } },
 }
 
 export const Contact: Story = {
-  args: { initialStep: 4, prefill: { ...answers, firstName: "", email: "", phone: "" } },
+  args: { initialStep: 5, prefill: { ...answers, firstName: "", email: "", phone: "" } },
   globals: { viewport: { value: "wide", isRotated: false } },
 }
 
 /** The consent boxes under the card form: the terms unticked, so the button waits. */
 export const Card: Story = {
-  args: { initialStep: 5, prefill: answers },
+  args: { initialStep: 6, prefill: answers },
   globals: { viewport: { value: "wide", isRotated: false } },
 }
 
 /** Enter pressed with the terms still unticked: the line under the box says what is missing. */
 export const CardTermsMissing: Story = {
-  args: { initialStep: 5, prefill: answers },
+  args: { initialStep: 6, prefill: answers },
   globals: { viewport: { value: "wide", isRotated: false } },
   play: async ({ canvas, userEvent }) => {
     await canvas.findByRole("button", { name: "Save card and reserve" })
@@ -92,7 +99,7 @@ export const CardTermsMissing: Story = {
 }
 
 export const Done: Story = {
-  args: { initialStep: 6, prefill: { ...answers, termsAccepted: true, marketingEmail: true, marketingSms: true, cardSaved: true }, onSaveImage: savePassImage },
+  args: { initialStep: 7, prefill: { ...answers, termsAccepted: true, marketingEmail: true, marketingSms: true, cardSaved: true }, onSaveImage: savePassImage },
   globals: { viewport: { value: "wide", isRotated: false } },
 }
 
@@ -106,7 +113,10 @@ export const Walkthrough: Story = {
     await userEvent.click(canvas.getByRole("button", { name: "Continue" }))
 
     await userEvent.click(await canvas.findByRole("button", { name: "8 zones" }))
-    await expect(canvas.getByText("$405")).toBeInTheDocument()
+    await expect(canvas.getByText("$260")).toBeInTheDocument()
+    await userEvent.click(canvas.getByRole("button", { name: "Continue" }))
+
+    await userEvent.click(await canvas.findByRole("button", { name: /Yes, add July/ }))
     await userEvent.click(canvas.getByRole("button", { name: "Continue" }))
 
     await expect(await canvas.findByRole("button", { name: "Recommended Mid May", pressed: true })).toBeInTheDocument()
@@ -134,11 +144,11 @@ export const Phone: Story = {
 }
 
 export const PhoneTiming: Story = {
-  args: { initialStep: 3, prefill: answers },
+  args: { initialStep: 4, prefill: answers },
   globals: { viewport: { value: "phone", isRotated: false } },
 }
 
 export const PhoneDone: Story = {
-  args: { initialStep: 6, prefill: { ...answers, termsAccepted: true, cardSaved: true }, onSaveImage: savePassImage },
+  args: { initialStep: 7, prefill: { ...answers, termsAccepted: true, cardSaved: true }, onSaveImage: savePassImage },
   globals: { viewport: { value: "phone", isRotated: false } },
 }
