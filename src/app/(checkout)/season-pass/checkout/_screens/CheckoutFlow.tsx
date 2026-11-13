@@ -1,23 +1,24 @@
 "use client"
 
-import { useEffect, useRef, useState, type KeyboardEvent } from "react"
+import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react"
 import Image from "next/image"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import type { BlowoutWeek, Pass } from "@/lib/admin/types"
+import type { Pass } from "@/lib/admin/types"
 import { STEPS, STEP_COUNT, canContinue, toPass, useCheckoutState, type CheckoutFields } from "./checkout-state"
-import { AddressStep, CardStep, ContactStep, DoneStep, WeekStep, ZonesStep, useReveal } from "./checkout-steps"
+import { AddressStep, CardStep, ContactStep, DoneStep, ZonesStep, useReveal } from "./checkout-steps"
+import { TimingStep } from "./checkout-timing"
 
-// The Season Pass checkout as six full-screen questions, one input each, the
-// way Typeform paces a form: a thin orange line across the top for progress,
+// The Season Pass checkout as six full-screen questions, one input each (the
+// timing step asks its two together), the way Typeform paces a form: a thin orange line across the top for progress,
 // the question in the display face, the trail photo faint behind the cream
 // canvas, Enter to continue and the arrow keys to move. Only the current step
 // is rendered, so there is no page to scroll between questions. State is the
 // reducer in checkout-state.ts; nothing here fetches or charges. The card
-// step is a placeholder until Stripe is wired. Client component.
+// step is a placeholder until Stripe is wired; the consent boxes under it are
+// real and gate the button. Client component.
 
 export interface CheckoutFlowProps {
-  weeks: BlowoutWeek[]
   season: number
   /** carried in from the Season Pass calculator */
   initialZones?: number
@@ -47,17 +48,18 @@ function StepBody({ duration, enabled, children }: { duration: number; enabled: 
   return <div ref={ref}>{children}</div>
 }
 
-export function CheckoutFlow({ weeks, season, initialZones, initialStep, prefill, onComplete, onSaveImage, onDone }: CheckoutFlowProps) {
+export function CheckoutFlow({ season, initialZones, initialStep, prefill, onComplete, onSaveImage, onDone }: CheckoutFlowProps) {
   const [state, dispatch] = useCheckoutState({ ...(initialZones ? { zones: initialZones } : {}), ...prefill, ...(initialStep ? { step: initialStep } : {}) })
   // The step on which Enter was pressed too early, so the contact step shows what is missing.
   const [attemptedStep, setAttemptedStep] = useState<number | null>(null)
   const section = useRef<HTMLElement>(null)
+  const questionId = useId()
   // Set on the first move, so opening the page does not animate; Done always rises.
   const [moved, setMoved] = useState(false)
   const { step } = state
   const current = STEPS[step - 1]
   const done = current.key === "done"
-  const valid = canContinue(state, weeks)
+  const valid = canContinue(state)
   const attempted = attemptedStep === step
 
   const set = <K extends keyof CheckoutFields>(field: K, value: CheckoutFields[K]) => dispatch({ type: "set", field, value })
@@ -66,8 +68,8 @@ export function CheckoutFlow({ weeks, season, initialZones, initialStep, prefill
       setAttemptedStep(step)
       return
     }
-    if (current.key === "card") onComplete?.(toPass({ ...state, cardSaved: true }, season, weeks))
-    dispatch({ type: "next", weeks })
+    if (current.key === "card") onComplete?.(toPass({ ...state, cardSaved: true }, season))
+    dispatch({ type: "next" })
     setMoved(true)
   }
   const back = () => {
@@ -88,7 +90,7 @@ export function CheckoutFlow({ weeks, season, initialZones, initialStep, prefill
     const nav = target.closest("[data-nav]")
     const typing = target.tagName === "INPUT"
     if (event.key === "Enter") {
-      // A button answers Enter itself; a pressed pill or week card already holds its answer, so Enter moves on.
+      // A button answers Enter itself; a pressed pill or timing choice already holds its answer, so Enter moves on.
       if (nav || (target.tagName === "BUTTON" && target.getAttribute("aria-pressed") !== "true")) return
       event.preventDefault()
       next()
@@ -109,17 +111,17 @@ export function CheckoutFlow({ weeks, season, initialZones, initialStep, prefill
     case "zones":
       body = <ZonesStep state={state} set={set} />
       break
-    case "week":
-      body = <WeekStep state={state} set={set} weeks={weeks} />
+    case "timing":
+      body = <TimingStep state={state} set={set} questionId={questionId} />
       break
     case "contact":
       body = <ContactStep state={state} set={set} attempted={attempted} />
       break
     case "card":
-      body = <CardStep />
+      body = <CardStep state={state} set={set} />
       break
     default: {
-      const pass = toPass(state, season, weeks)
+      const pass = toPass(state, season)
       body = <DoneStep pass={pass} email={state.email} onSaveImage={() => onSaveImage?.(pass)} onDone={onDone} />
     }
   }
@@ -152,9 +154,10 @@ export function CheckoutFlow({ weeks, season, initialZones, initialStep, prefill
       <p aria-live="polite" className="sr-only">{`Step ${step} of ${STEP_COUNT}, ${current.question}`}</p>
 
       <section key={step} ref={section} tabIndex={-1} onKeyDown={onKeyDown} className="flex min-h-svh flex-col outline-none">
-        <div className={cn(COLUMN, "flex flex-1 flex-col justify-center pt-20 pb-8", current.key === "week" && "lg:max-w-4xl")}>
+        <div className={cn(COLUMN, "flex flex-1 flex-col justify-center pt-20 pb-8", current.key === "timing" && "lg:max-w-3xl")}>
           <StepBody duration={done ? REVEAL_MS.done : REVEAL_MS.step} enabled={done || moved}>
             <h1
+              id={questionId}
               className={cn(
                 done
                   ? "text-xs font-semibold uppercase tracking-wide text-primary-dark"
@@ -167,7 +170,7 @@ export function CheckoutFlow({ weeks, season, initialZones, initialStep, prefill
           </StepBody>
         </div>
         {!done && (
-          <div className={cn(COLUMN, "flex items-center justify-between pb-8", current.key === "week" && "lg:max-w-4xl")}>
+          <div className={cn(COLUMN, "flex items-center justify-between pb-8", current.key === "timing" && "lg:max-w-3xl")}>
             {step > 1 ? (
               <Button variant="ghost" data-nav onClick={back}>
                 Back
