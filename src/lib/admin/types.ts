@@ -85,6 +85,8 @@ export interface Visit {
   truckId?: string
   /** placed by the scheduler and waiting for Ryan to approve the batch */
   proposed?: boolean
+  /** a day promised to the customer; false while it is only planned beyond the fall firm horizon (the review, 2026-11-12) */
+  firm?: boolean
   /** 1-based position in the truck's day; from Jobber's route tool while Jobber is the field display */
   stopOrder?: number
   /** the property's point, geocoded once when the customer is created */

@@ -117,3 +117,41 @@ describe("moveOutcome", () => {
     expect(out.message).toBe(`${percy!.clientName} is already on Truck 1 on Thursday, November 12.`)
   })
 })
+
+describe("to schedule tray, placing and confirming", async () => {
+  const { trayItems, placeVisit, confirmVisits, plannedCount, firstWorkingDay } = await import("./schedule-model")
+  const snapshot = (await import("@/lib/admin/fixtures/snapshot.json")).default as import("@/lib/admin/types").AdminData
+  const tz = "America/Denver"
+
+  it("lists every active pass visit with no day, earliest window first, earlier preferences first", () => {
+    const items = trayItems(snapshot)
+    expect(items.length).toBeGreaterThan(10)
+    expect(items.every((i) => i.passId || i.window === "Open job")).toBe(true)
+    const keys = items.map((i) => i.sortKey)
+    expect([...keys].sort()).toEqual(keys)
+    const cancelled = snapshot.passes.find((p) => p.status === "cancelled")!
+    expect(items.some((i) => i.passId === cancelled.id)).toBe(false)
+    const done = snapshot.passes[0].visits.find((v) => v.completedAt)!
+    expect(items.some((i) => i.passId === snapshot.passes[0].id && i.kind === done.kind)).toBe(false)
+  })
+
+  it("places an item on a truck-day as a proposed, planned visit, last in the day, once", () => {
+    const truck = snapshot.settings.trucks[0]
+    const item = trayItems(snapshot)[0]
+    const day = firstWorkingDay(truck, "2027-05-03")
+    const placed = placeVisit(snapshot.visits, item, truck.id, day, tz)
+    const visit = placed.find((v) => v.id === item.id)!
+    expect(visit).toMatchObject({ status: "scheduled", proposed: true, firm: false, truckId: truck.id, clientName: item.clientName, kind: item.kind })
+    expect(visit.startAt?.slice(0, 10)).toBe(day)
+    expect(placeVisit(placed, item, truck.id, day, tz)).toBe(placed)
+    expect(trayItems({ visits: placed, passes: snapshot.passes }).some((i) => i.id === item.id)).toBe(false)
+  })
+
+  it("confirms only the planned visits named, and counts them", () => {
+    const planned = snapshot.visits.filter((v) => v.firm === false)
+    expect(plannedCount(snapshot.visits)).toBe(planned.length)
+    const confirmed = confirmVisits(snapshot.visits, new Set(planned.map((v) => v.id)))
+    expect(plannedCount(confirmed)).toBe(0)
+    expect(confirmVisits(snapshot.visits, new Set())).toEqual(snapshot.visits)
+  })
+})

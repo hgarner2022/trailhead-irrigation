@@ -10361,7 +10361,8 @@
       "status": "scheduled",
       "startAt": "2027-05-05T16:00:00Z",
       "isPass": false,
-      "jobberUrl": "https://secure.getjobber.com/work_orders/161739376"
+      "jobberUrl": "https://secure.getjobber.com/work_orders/161739376",
+      "firm": false
     }
   ],
   "quotes": [

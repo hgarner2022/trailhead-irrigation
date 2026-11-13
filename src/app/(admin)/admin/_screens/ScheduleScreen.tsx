@@ -11,6 +11,7 @@ import { DayMap } from "@/components/blocks/DayMap"
 import { EmptyState } from "@/components/blocks/EmptyState"
 import { PageHeader } from "@/components/blocks/PageHeader"
 import { StatusPill } from "@/components/blocks/StatusPill"
+import { ToScheduleTray } from "@/components/blocks/ToScheduleTray"
 import { WeekGrid } from "@/components/blocks/WeekGrid"
 import type { AdminData, Visit } from "@/lib/admin/types"
 import { KIND_WORDS, TIME_ZONE, shortDate, writtenDate } from "@/lib/admin/format"
@@ -19,7 +20,7 @@ import { clockTime } from "./home-model"
 import { addDays, dayOf, dayVisits, weekOf, weekVisits } from "@/lib/admin/calendar"
 import { upcomingWindow } from "./home-model"
 import { ScheduleMoveTo } from "./ScheduleMoveTo"
-import { approveVisits, exceptionCount, moveOutcome, proposedCount, weekContext } from "./schedule-model"
+import { approveVisits, confirmVisits, exceptionCount, firstWorkingDay, moveOutcome, placeVisit, plannedCount, proposedCount, trayItems, weekContext, type TrayItem } from "./schedule-model"
 
 // Where the scheduler's output lands and where Ryan lives in season: the
 // week by truck, with the proposed visits hatched until he approves the
@@ -29,7 +30,10 @@ import { approveVisits, exceptionCount, moveOutcome, proposedCount, weekContext 
 // moves and the approval only update local state and log in the prototype,
 // and `Propose` is enabled only while a season window is within its lead period
 // (the same rule as Home's prompt). The route's page.tsx
-// supplies `data` and `today`.
+// supplies `data` and `today`. The "To schedule" tray beside the week lists
+// every visit with no day; Place puts one on the first working day of the
+// visible week as a proposed visit, to be moved or approved; "Confirm next
+// week" promises the planned days to their customers.
 
 export interface ScheduleScreenProps {
   data: AdminData
@@ -127,6 +131,7 @@ export function ScheduleScreen({ data, today, defaultTab = "week" }: ScheduleScr
   const selected = week.find((v) => v.id === selectedId && v.startAt)
   const proposeOpen = upcomingWindow(data.settings, today) !== null
   const stops = dayVisits(visits, day, undefined, TIME_ZONE)
+  const tray = trayItems({ visits, passes: data.passes })
 
   const approve = () => {
     const ids = new Set(week.filter((v) => v.proposed).map((v) => v.id))
@@ -138,6 +143,21 @@ export function ScheduleScreen({ data, today, defaultTab = "week" }: ScheduleScr
     const outcome = moveOutcome(visits, visitId, truckId, dayIso, trucks, TIME_ZONE)
     if (outcome.moved) setVisits(outcome.visits)
     setAnnouncement(outcome.message)
+  }
+  const place = (item: TrayItem) => {
+    const truck = trucks[0]
+    if (!truck) return
+    const dayIso = firstWorkingDay(truck, weekStart)
+    console.info("place visit", item.id, truck.id, dayIso)
+    setVisits((v) => placeVisit(v, item, truck.id, dayIso, TIME_ZONE))
+    setSelectedId(item.id)
+    setAnnouncement(`${item.clientName} placed on ${truck.name}, ${writtenDate(dayIso)}, as a proposed visit. Move it or approve the week.`)
+  }
+  const confirm = () => {
+    const ids = new Set(week.filter((v) => v.firm === false && !v.proposed).map((v) => v.id))
+    console.info("confirm week", weekStart, [...ids])
+    setVisits((v) => confirmVisits(v, ids))
+    setAnnouncement(`${ids.size} planned ${ids.size === 1 ? "day" : "days"} confirmed; the customers get their dates.`)
   }
   const changeDay = (next: string) => {
     setDay(next)
@@ -168,6 +188,11 @@ export function ScheduleScreen({ data, today, defaultTab = "week" }: ScheduleScr
                   <TooltipContent>Runs when the next window opens</TooltipContent>
                 </Tooltip>
               )}
+              {plannedCount(week) > 0 && (
+                <Button variant="outline" onClick={confirm}>
+                  Confirm week
+                </Button>
+              )}
               {proposedCount(week) > 0 && <Button onClick={approve}>Approve week</Button>}
             </>
           }
@@ -182,18 +207,29 @@ export function ScheduleScreen({ data, today, defaultTab = "week" }: ScheduleScr
             <TabsTrigger value="day">Day</TabsTrigger>
           </TabsList>
           <TabsContent value="week" className="space-y-6">
-            <WeekGrid
-              trucks={trucks}
-              areas={areas}
-              visits={visits}
-              weekStart={weekStart}
-              today={todayDay}
-              timeZone={TIME_ZONE}
-              selectedId={selectedId}
-              onSelect={setSelectedId}
-              onMove={move}
-              onWeekChange={setWeekStart}
-            />
+            <div className="grid gap-6 xl:grid-cols-[1fr_20rem]">
+              <WeekGrid
+                className="min-w-0"
+                trucks={trucks}
+                areas={areas}
+                visits={visits}
+                weekStart={weekStart}
+                today={todayDay}
+                timeZone={TIME_ZONE}
+                selectedId={selectedId}
+                onSelect={setSelectedId}
+                onMove={move}
+                onWeekChange={setWeekStart}
+              />
+              <Card className="min-w-0 self-start">
+                <CardHeader>
+                  <CardTitleHeading>{`To schedule${tray.length ? ` (${tray.length})` : ""}`}</CardTitleHeading>
+                </CardHeader>
+                <CardContent>
+                  <ToScheduleTray items={tray} onPlace={place} />
+                </CardContent>
+              </Card>
+            </div>
             {exceptionCount(week) > 0 && <Exceptions visits={week} />}
           </TabsContent>
           <TabsContent value="day" className="space-y-4">
