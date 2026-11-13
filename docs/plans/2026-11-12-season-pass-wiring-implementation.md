@@ -1345,10 +1345,12 @@ The scheduler (5 days with auto-apply) and messaging (2 days) are the two phases
 
 ## Jobber retirement path
 
-Not in this plan, in this order, each its own later plan (PRD, revised system of record):
+Not in this plan, in this order after the pass checkout and admin, each its own later plan with its own tasks (PRD, revised system of record; the first three added by Hannah):
 
-1. The tech's day view on the phone, from the app's schedule, replaces Jobber's field app for pass visits: the day's stops, notes, photos, mark complete. The `pass_visit` rows, the trucks and the Schedule page already hold what it needs; the "visit completed" signal then comes from the app's own button instead of Jobber's webhook.
-2. Quotes and invoices for non-pass work move to the app; the mirror tables become the migration source and the sync is turned off.
-3. Payments for that work move to Stripe; the Jobber OAuth connection is retired.
+1. **The booking form at `/book`, in the app.** The Jobber iframe is replaced at the same URL by a Typeform-paced form like the checkout, with per-service questions, that writes a `request` row, pushes a Jobber request through the API during the transition, sends an instant confirmation, and feeds a Requests inbox page in the admin where one click turns a request into a scheduled visit or a quote. Rough size: five to six days (the form, the request table and push, the inbox screen in Storybook, the two actions).
+2. **The tech's day view on the phone.** From the app's schedule, the day's stops for a truck, each with a per-visit-type checklist edited in Settings (turn-on, inspection, blowout, repair; an optional photo per step), where a completed checklist is what triggers the pass charge and the receipt, so the "visit completed" signal comes from the app's own button instead of Jobber's webhook. Rough size: six to eight days (the checklist settings, the day screen in Storybook, photo upload, the completion path replacing the signal).
+3. **Message templates in Settings.** Every email and text the app sends becomes editable in the Messages section with fillable fields and a preview, and a new message is a template plus a trigger, replacing the fixed functions in `src/emails/` and `src/sms/`. Rough size: four to five days (a template table and renderer, the editor and preview, the trigger list).
+4. **Quotes and invoices for non-pass work** move to the app; the mirror tables become the migration source and the sync is turned off. Rough size: two weeks.
+5. **Payments for that work** move to Stripe and the Jobber OAuth connection is retired. Rough size: one week.
 
-What this plan leaves in place so none of the three has to undo it: every pass fact lives in the app's tables, never only in Jobber; the push adapter is the single seam to Jobber's write side and the signals handler the single seam to its read side; the queue, the message log and the settings are Jobber-free already.
+What this plan leaves in place so none of the five has to undo it: every pass fact lives in the app's tables, never only in Jobber; the push adapter is the single seam to Jobber's write side and the signals handler the single seam to its read side; the queue, the message log, the settings and the checklist-free `pass_visit` completion path are the pieces each later plan extends.
