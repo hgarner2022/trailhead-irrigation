@@ -231,6 +231,22 @@ checkout page.
   direction set before code: grounded, outdoor, calm, Typeform's pacing
   with Trailhead's palette.
 
+## Scheduling preference (Hannah, 2026-11-12 evening; replaces the blowout-week capacity idea)
+
+There are no capacity limits per week or per month. Ryan places every pass visit on a day in Jobber himself, as he does for every job today. What the customer gives at checkout is a preference for the two visits whose timing they care about, each with Trailhead's recommendation preselected:
+
+- Spring turn-on: recommended the first or second week of May. Choices: Earlier, Recommended (first to second week of May), Later.
+- Fall blowout: recommended the second week of October. Choices: Earlier, Recommended (second week of October), Later.
+- July inspection: no preference asked; Ryan picks the day.
+
+The preference is stored on the pass, shown on the pass card and the pass page in words ("Turn-on: early May, Blowout: second week of October"), carried into the Jobber job title so Ryan sees it when he places the day, and shown in the admin Passes grid and side panel. The checkout's blowout-week picker and the admin October page from the first draft are withdrawn. If limits are ever needed they apply to all three season windows as one feature, never to October alone.
+
+## System of record (revised by Hannah, 2026-11-12 evening; this supersedes the table below)
+
+The app is the system of record for everything pass-related: customers who hold a pass, their visits and dates, trucks and areas, charges, messages and settings. Jobber is a one-way display for the field. The app pushes each scheduled pass visit to Jobber (a job and visit assigned to the truck's user) so Ryan's calendar and phone show it. The only signals read back are "visit completed" and "visit moved"; a move is accepted and logged as an exception shown on the admin Home, never treated as the truth. No capacity, scheduling or customer data is read from Jobber for a pass once it exists. Non-pass work (repairs, installs, quotes and invoices for everything else) stays in Jobber for now and is read only for the dashboard's totals. Trucks are unbounded rows, areas are data, and everything is organization-scoped so a second branch is a data change.
+
+Jobber retirement path, in order, each its own later plan: the tech's day view on the phone replaces Jobber's field app; quotes and invoices for non-pass work move to the app; payments for that work move to Stripe. The original split below is kept for the record.
+
 ## System of record
 
 Hannah's requirement: one good system of record. The split is:
