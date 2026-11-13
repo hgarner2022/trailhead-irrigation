@@ -173,7 +173,7 @@ const MARKETING = [
 ] as const
 
 /** The consent boxes above the button: the terms, required, then email and text marketing, each off until ticked. */
-export function ConsentBoxes({ state, set, attempted }: StepProps & { attempted: boolean }) {
+export function ConsentBoxes({ state, set, attempted, locked = false }: StepProps & { attempted: boolean; locked?: boolean }) {
   const id = useId()
   const problem = attempted && !state.termsAccepted
   return (
@@ -183,6 +183,7 @@ export function ConsentBoxes({ state, set, attempted }: StepProps & { attempted:
           <Checkbox
             id={`${id}-terms`}
             checked={state.termsAccepted}
+            disabled={locked}
             onCheckedChange={(checked) => set("termsAccepted", checked === true)}
             aria-invalid={problem || undefined}
             aria-describedby={problem ? CONSENT_PROBLEM_ID : undefined}
@@ -217,6 +218,11 @@ export function ConsentBoxes({ state, set, attempted }: StepProps & { attempted:
           </div>
         </div>
       ))}
+      {locked && (
+        <p data-slot="consent-locked" className="text-sm text-muted-foreground">
+          The terms stay accepted while the card form is open. Go back one step to change that.
+        </p>
+      )}
     </div>
   )
 }

@@ -3,7 +3,7 @@
 import { after } from "next/server"
 import { db } from "@/db"
 import { ctxForCheckout } from "@/lib/admin/api-ctx"
-import { beginCheckoutWith, finishCheckoutWith, type CheckoutDeps } from "@/lib/pass/server/checkout"
+import { beginCheckoutWith, finishCheckoutWith, recordConsentWith, type CheckoutDeps } from "@/lib/pass/server/checkout"
 import { drain } from "@/lib/queue"
 import { handlers } from "@/lib/queue/handlers"
 import { getStripe } from "@/lib/stripe/client"
@@ -25,4 +25,9 @@ export async function finishCheckout(passId: string, sessionId: string, consent:
   const result = await finishCheckoutWith(deps(), passId, sessionId, consent, firstName)
   if (result.ok) after(() => drain(db(), handlers))
   return result
+}
+
+/** The card form opened: keep the ticked boxes on the pending pass, so a webhook-first activation records them too. */
+export async function recordConsent(passId: string, consent: CheckoutConsent): Promise<void> {
+  return recordConsentWith(deps(), passId, consent)
 }

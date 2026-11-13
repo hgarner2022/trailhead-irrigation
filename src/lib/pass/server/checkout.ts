@@ -5,7 +5,7 @@ import type { z } from "zod"
 import { callApi } from "@/api/core/call"
 import type { Ctx } from "@/api/core/context"
 import { ApiError } from "@/api/core/errors"
-import { passesActivate, passesCreate } from "@/api/v1/passes/handlers"
+import { passesActivate, passesConsent, passesCreate } from "@/api/v1/passes/handlers"
 import type { PassDetail } from "@/api/v1/passes/schemas"
 import * as s from "@/db/schema"
 import type { BeginResult, CheckoutConsent, CheckoutProblem, CheckoutSubmission, FinishResult } from "@/app/(checkout)/season-pass/checkout/_screens/checkout-submit"
@@ -32,6 +32,7 @@ const MESSAGE: Record<CheckoutProblem, string> = {
   "too-many": "That email has started a few passes in the last hour. Please try again in a bit, or call us.",
   invalid: "Something in the answers needs another look. Go back a step and check them.",
   unavailable: "We couldn't reach the card form just now. Nothing was charged. Please try again.",
+  expired: "That card form timed out. Nothing was charged. Press Try again for a fresh one.",
 }
 
 /** A refusal the customer caused needs no log; anything else (Stripe, the database) is written to the function log so the deploy's logs say why. */
@@ -126,6 +127,31 @@ export async function finishCheckoutWith(deps: CheckoutDeps, passId: string, ses
     return { ok: true, pass: passForDone(detail, firstName) }
   } catch (error) {
     logCheckoutFailure("finishCheckout", error)
+    if (await sessionExpired(deps, sessionId)) return { ok: false, problem: "expired", message: MESSAGE.expired }
     return { ok: false, ...problemOf(error) }
+  }
+}
+
+/** Whether Stripe has expired the card form's session, so the screen opens a new one instead of retrying the old. */
+async function sessionExpired(deps: CheckoutDeps, sessionId: string): Promise<boolean> {
+  try {
+    return (await deps.stripe().checkout.sessions.retrieve(sessionId)).status === "expired"
+  } catch {
+    return false
+  }
+}
+
+/**
+ * The card form opened: record the boxes as ticked on the pending pass, so an activation that Stripe's webhook gets to first
+ * (the tab closed after the card was saved) records the same consent. Best effort; the finishing request carries the boxes too.
+ */
+export async function recordConsentWith(deps: CheckoutDeps, passId: string, consent: CheckoutConsent): Promise<void> {
+  try {
+    if (!consent.termsAccepted) return
+    const ctx = await deps.ctx(passId)
+    const marketingChannels = [...(consent.marketingEmail ? ["email" as const] : []), ...(consent.marketingSms ? ["sms" as const] : [])]
+    await callApi(ctx, passesConsent, { id: passId, consent: { termsAccepted: true as const, marketingOptIn: marketingChannels.length > 0, marketingChannels } })
+  } catch (error) {
+    logCheckoutFailure("recordConsent", error)
   }
 }

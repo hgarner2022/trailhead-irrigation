@@ -13,7 +13,7 @@ import { useCheckoutState } from "./use-checkout-state"
 import { useCheckoutServer } from "./use-checkout-server"
 import { useCheckoutStorage } from "./use-checkout-storage"
 import { CardStep } from "./checkout-card"
-import type { BeginCheckout, FinishCheckout } from "./checkout-submit"
+import type { BeginCheckout, FinishCheckout, RecordConsent } from "./checkout-submit"
 import { savePassImage } from "@/lib/pass-card-image"
 import { InspectionStep } from "./checkout-inspection"
 import { TimingStep } from "./checkout-timing"
@@ -54,6 +54,8 @@ export interface CheckoutFlowProps {
   onBegin?: BeginCheckout
   /** called when Stripe says the card is saved: activates the pass */
   onFinish?: FinishCheckout
+  /** called when the card form opens: records the ticked boxes on the pending pass */
+  onConsent?: RecordConsent
 }
 
 const BACKDROP = "/images/trail-mountain-meadow.jpg"
@@ -67,7 +69,7 @@ function StepBody({ duration, enabled, children }: { duration: number; enabled: 
   return <div ref={ref}>{children}</div>
 }
 
-export function CheckoutFlow({ season, initialZones, initialStep, prefill, places, today, onComplete, onSaveImage, onDone, stripeKey, onBegin, onFinish }: CheckoutFlowProps) {
+export function CheckoutFlow({ season, initialZones, initialStep, prefill, places, today, onComplete, onSaveImage, onDone, stripeKey, onBegin, onFinish, onConsent }: CheckoutFlowProps) {
   const [state, dispatch] = useCheckoutState({ ...(initialZones ? { zones: initialZones } : {}), ...(today ? { today } : {}), ...prefill, ...(initialStep ? { step: initialStep } : {}) })
   // The step on which Enter was pressed too early, so the address and contact steps show what is missing.
   const [attemptedStep, setAttemptedStep] = useState<number | null>(null)
@@ -82,7 +84,7 @@ export function CheckoutFlow({ season, initialZones, initialStep, prefill, place
   const attempted = attemptedStep === step
   const wired = Boolean(stripeKey && onBegin && onFinish)
   const markMoved = useCallback(() => setMoved(true), [])
-  const { busy, begin, finishCard } = useCheckoutServer({ state, dispatch, onBegin, onFinish, onComplete, moved: markMoved })
+  const { busy, begin, finishCard, retry } = useCheckoutServer({ state, dispatch, onBegin, onFinish, onComplete, onConsent, moved: markMoved })
   useCheckoutStorage(state, dispatch, wired)
 
   const set = <K extends keyof CheckoutFields>(field: K, value: CheckoutFields[K]) => dispatch({ type: "set", field, value })
@@ -218,13 +220,18 @@ export function CheckoutFlow({ season, initialZones, initialStep, prefill, place
               </p>
             )}
             {state.failure && (
-              <p role="alert" data-slot="checkout-failure" className="mt-6 text-base text-destructive">
-                {state.failure}
-              </p>
+              <div role="alert" data-slot="checkout-failure" className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-2 text-base text-destructive">
+                <p>{state.failure}</p>
+                {state.retry && (
+                  <Button variant="outline" size="sm" data-nav disabled={busy} onClick={retry}>
+                    Try again
+                  </Button>
+                )}
+              </div>
             )}
           </StepBody>
         </div>
-        {!done && !(wired && current.key === "card") && (
+        {!done && (
           <div className={cn(COLUMN, "flex items-center justify-between pb-8", current.key === "timing" && "lg:max-w-3xl")}>
             {step > 1 ? (
               <Button variant="ghost" data-nav onClick={back}>
@@ -233,9 +240,11 @@ export function CheckoutFlow({ season, initialZones, initialStep, prefill, place
             ) : (
               <span />
             )}
-            <Button size="lg" data-nav disabled={!valid || busy} aria-busy={busy || undefined} aria-describedby={current.key === "card" && attempted && !valid ? CONSENT_PROBLEM_ID : undefined} onClick={next}>
-              {busy ? "One moment" : current.action}
-            </Button>
+            {!(wired && current.key === "card") && (
+              <Button size="lg" data-nav disabled={!valid || busy} aria-busy={busy || undefined} aria-describedby={current.key === "card" && attempted && !valid ? CONSENT_PROBLEM_ID : undefined} onClick={next}>
+                {busy ? "One moment" : current.action}
+              </Button>
+            )}
           </div>
         )}
       </section>
