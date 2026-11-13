@@ -125,13 +125,14 @@ complete, charges the card and sends the receipt. Until it exists, the
 Schedule's day column must at least read well on a phone. It is the next
 phase after scheduling, not a later one.
 
-**12b. The feed must not count the app's own visits.** The Claude routine
-posts pass visits into Jobber as requests; once Ryan accepts them they
-appear in his Jobber calendar, which the app reads as busy blocks. Without
-a rule, the app would subtract its own visits from capacity twice and
-halve Ryan's days silently. The feed reader recognises its own visits (by
-the request link stored on the visit, or the title it writes) and ignores
-them.
+**12b. Jobber is on its way out (Hannah, 14 Nov: "we're going to try to
+move away from Jobber, so don't worry too much about it").** So: pass
+visits live in the app only; the routine that posted them into Jobber as
+requests is dropped; the calendar feed stays as a nightly read of Ryan's
+non-pass work while that work is still in Jobber, and goes when it is not;
+no Jobber words, links or buttons in the admin. The crew day view (12a) is
+therefore not a later phase but the thing Ryan runs his day from, and it
+moves to right after the data step.
 
 **12. What does the admin do, and when?** Four things. Once a season: route
 days, working days, capacity, the calendar feed link. Weekly from
@@ -172,7 +173,6 @@ screens read it, nothing is derived twice.
 | Renewal consent | `consent` row kind `renewal` with the wording version | the checkout box | pass panel "Renews" line, the December email |
 | Renewal made | `pass.renewed_from` (new) | the January run | pass panel, Passes table filter |
 | Status | `pass.status`: pending, active, cancelled, done | checkout, activation, cancel, season end | Passes table: pending is never shown as Active; pending older than an hour is expired by the cron |
-| Jobber request | `visit.jobber_request_url` | the Claude routine | "Open in Jobber" only when set; hidden otherwise |
 
 Admin changes that follow:
 
@@ -196,11 +196,13 @@ the admin and the routine never disagree.
 0. The data: the new columns above (`time_preference`, `start_time`,
    `window_minutes`, `renewed_from`, the waitlist table), the Pending
    status shown as pending, the Passes table and panel reading the visit
-   row and nothing else, "Open in Jobber" only when linked.
+   row and nothing else, no Jobber words or buttons anywhere in the admin.
 1. Fix the offers: all six sources honoured (window, route days, working
    days, capacity, Ryan's calendar, placed visits), the last two fall weeks
    held back, one test per rule. Add "Does someone need to be home?" with
    morning/afternoon, replacing the access-only question.
+1b. The crew day view on Ryan's phone: today's stops in route order with
+   address, access note, zones, window, map, and Done (charge + receipt).
 2. The route build fourteen days out: order, windows for attended stops,
    the confirmation text (day for everyone, window for attended), the
    calendar update. The day-before reminder already exists.
