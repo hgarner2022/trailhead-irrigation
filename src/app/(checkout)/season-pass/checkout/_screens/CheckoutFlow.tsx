@@ -215,7 +215,7 @@ export function CheckoutFlow({ season, initialZones, initialStep, prefill, place
         <div data-slot="checkout-progress" className="h-full bg-primary transition-[width] duration-300 ease-out motion-reduce:transition-none" style={{ width: `${(shown / total) * 100}%` }} />
       </div>
       <header className="fixed inset-x-0 top-1 z-10 flex items-center justify-between container-padding-x py-3">
-        <Image src={LOGO} alt="Trailhead Lawn & Irrigation" width={51} height={36} priority className="h-9 w-auto" />
+        <Image src={LOGO} alt="Trailhead Lawn & Irrigation" width={102} height={72} priority className="h-14 w-auto sm:h-[4.5rem]" />
         {/* A small "2 of 6", not a numbered stepper (the PRD's rule); hidden from
             readers because the progress bar's valuetext already says it. A point
             for Hannah: keep it, or let the orange line stand alone. */}
