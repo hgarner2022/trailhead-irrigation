@@ -125,8 +125,53 @@ if needed. Daily: clear the Home rows. Everything else is automatic.
 - The default settings are a guess from the Jobber data. Ryan's answers
   below replace them.
 
+## What the data and the admin must carry (Hannah, 14 Nov: "make sure all those data points carry into the new data tables and the admin")
+
+Every decision above is a fact the pass or the visit holds, and every fact
+has one home. The live admin tonight still showed "Mid May" in the Passes
+table while the panel's Charges knew "Apr 26": two sources of truth on one
+screen. The rule from here: **the visit row is the only source**, the
+screens read it, nothing is derived twice.
+
+| Fact | Where it lives | Set by | Shown in |
+|---|---|---|---|
+| Chosen day | `visit.scheduled_on`, `visit.truck_id` | the checkout, a move, Ryan | Passes table (Turn-on, Blowout columns become dates), pass panel, Schedule, pass page, every message |
+| Someone must be home, morning or afternoon | `pass.needs_customer_home`, `visit.time_preference` (new) | the checkout, the pass page | pass panel "Access" line, Schedule stop card, the route build |
+| Access note | `pass.access_note` | the checkout | pass panel, the crew's stop |
+| Arrival window | `visit.start_time`, `visit.window_minutes` (new) | the route build 14 days out, Ryan by hand | pass panel, Schedule, pass page, the two-week and day-before texts |
+| Route built | `visit.stop_order`, `schedule_run` | the daily run | Schedule (ordered vs not yet) |
+| Moves | `pass_change` kind `moved` with from/to and who | customer, Ryan, weather pull | pass panel history, Home count |
+| Weather pull | `schedule_run` kind `pull` with the day and count | Ryan on the Schedule | Home, the texts |
+| Jobber conflict | `admin_alert` kind `conflict` with the block and the stops | the daily feed read | Home row with Move or Clear |
+| Waiting list | `waitlist` (new: email, town, kind, season) | the checkout when nothing fits | Home row, Customers |
+| Renewal consent | `consent` row kind `renewal` with the wording version | the checkout box | pass panel "Renews" line, the December email |
+| Renewal made | `pass.renewed_from` (new) | the January run | pass panel, Passes table filter |
+| Status | `pass.status`: pending, active, cancelled, done | checkout, activation, cancel, season end | Passes table: pending is never shown as Active; pending older than an hour is expired by the cron |
+| Jobber request | `visit.jobber_request_url` | the Claude routine | "Open in Jobber" only when set; hidden otherwise |
+
+Admin changes that follow:
+
+- Passes table: Turn-on and Blowout show the day ("Apr 26") and, once
+  built, the window; a Pending status filter; "Renews" as a column.
+- Pass panel: Access (needs home, morning or afternoon, the note), the
+  days with their windows and a Move button each, the history of moves,
+  "Renews next season: yes/no", Jobber link only when linked.
+- Schedule: stops carry the preference and the window; a day shows
+  "ordered" or "not yet"; the pull action; the conflict row.
+- Home: counts for conflicts, waiting list, moves this week, days not yet
+  ordered inside 14 days.
+- Settings: route days per town per window, working days, capacity, feed
+  link, slack weeks, all "not confirmed" until saved.
+
+The API carries the same fields on `visits` and `passes` so the pass page,
+the admin and the routine never disagree.
+
 ## Build order, one PR each, the live checklist after each
 
+0. The data: the new columns above (`time_preference`, `start_time`,
+   `window_minutes`, `renewed_from`, the waitlist table), the Pending
+   status shown as pending, the Passes table and panel reading the visit
+   row and nothing else, "Open in Jobber" only when linked.
 1. Fix the offers: all six sources honoured (window, route days, working
    days, capacity, Ryan's calendar, placed visits), the last two fall weeks
    held back, one test per rule. Add "Does someone need to be home?" with
