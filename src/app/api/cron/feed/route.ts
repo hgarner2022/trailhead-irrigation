@@ -16,7 +16,11 @@ function authorised(request: Request): boolean {
   return given.length === want.length && timingSafeEqual(given, want)
 }
 
-/** Every five minutes: queue a `jobber-feed-sync` for each truck with a calendar URL (one per truck per five-minute slot) and drain. */
+/**
+ * Queue a `jobber-feed-sync` for each truck with a calendar URL (one per truck per five-minute slot) and drain.
+ * Vercel's Hobby plan runs a cron once a day at most, so `vercel.json` schedules this at 12:00 UTC (early morning in
+ * Colorado); on a Pro plan set it to every five minutes. The route can also be hit by hand with the secret.
+ */
 export async function GET(request: Request) {
   if (!authorised(request)) return Response.json({ error: "unauthorized" }, { status: 401 })
   const database = db()
