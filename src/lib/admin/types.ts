@@ -85,7 +85,7 @@ export interface Visit {
   truckId?: string
   /** placed by the scheduler and waiting for Ryan to approve the batch */
   proposed?: boolean
-  /** 1-based position in the truck's day; from Jobber's route tool in the transition */
+  /** 1-based position in the truck's day; from Jobber's route tool while Jobber is the field display */
   stopOrder?: number
   /** the property's point, geocoded once when the customer is created */
   lat?: number
