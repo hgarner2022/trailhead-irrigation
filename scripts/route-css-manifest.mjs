@@ -51,6 +51,17 @@ const hash = (t) => createHash("sha256").update(t).digest("hex").slice(0, 12)
 // declaration renames `.<font>-module__<hash>__variable` without changing a single rule.
 const stableFontClasses = (css) => css.replace(/(_[a-f0-9]{8})?-module__[A-Za-z0-9]{6}__/g, "-module__")
 
+/** The CSS chunk names referenced by the prerendered HTML of the marketing routes; empty when nothing is prerendered. */
+function marketingCssNames(routes) {
+  const names = new Set()
+  for (const route of routes) {
+    const file = join(".next/server/app", route === "/" ? "index.html" : `${route.replace(/^\//, "")}.html`)
+    if (!existsSync(file)) continue
+    for (const m of readFileSync(file, "utf8").matchAll(/\/_next\/static\/(?:css|chunks)\/([A-Za-z0-9_.-]+\.css)/g)) names.add(m[1])
+  }
+  return names
+}
+
 export function readManifest() {
   const paths = JSON.parse(readFileSync(".next/server/app-paths-manifest.json", "utf8"))
   const routes = Object.keys(paths)
@@ -60,7 +71,11 @@ export function readManifest() {
     .sort()
   const css = {}
   const dir = [".next/static/css", ".next/static/chunks"].find((d) => existsSync(d) && readdirSync(d).some((n) => n.endsWith(".css")))
-  for (const name of dir ? readdirSync(dir).filter((n) => n.endsWith(".css")).sort() : []) {
+  // Only the stylesheets the marketing pages load. The app route groups have their
+  // own stylesheet (app.css) that changes with every admin screen and is not this
+  // manifest's business; the prerendered marketing HTML says which chunks are its.
+  const referenced = marketingCssNames(routes)
+  for (const name of dir ? readdirSync(dir).filter((n) => n.endsWith(".css") && (referenced.size === 0 || referenced.has(n))).sort() : []) {
     const text = stableFontClasses(readFileSync(join(dir, name), "utf8"))
     const selectors = hash(selectorsOf(text).join("\n"))
     const rules = rulesOf(text)
