@@ -36,3 +36,23 @@ export function readCronSecret(): string {
 export function readGeocodeContact(): string {
   return readEnv(["GEOCODE_CONTACT"]).GEOCODE_CONTACT
 }
+
+/** Stripe's secret key (`sk_test_...` or `sk_live_...`); only `src/lib/stripe/client.ts` uses it. */
+export function readStripeSecretKey(): string {
+  return readEnv(["STRIPE_SECRET_KEY"]).STRIPE_SECRET_KEY
+}
+
+/** The publishable key for Stripe.js in the browser (Phase 8's embedded checkout). Safe to expose, so it is the one `NEXT_PUBLIC_` name. */
+export function readStripePublishableKey(): string {
+  return readEnv(["NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY"]).NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+}
+
+/** The signing secret (`whsec_...`) of the Stripe webhook endpoint; the webhook route verifies every request with it. */
+export function readStripeWebhookSecret(): string {
+  return readEnv(["STRIPE_WEBHOOK_SECRET"]).STRIPE_WEBHOOK_SECRET
+}
+
+/** The site's origin (https://www.trailheadirrigation.com in production), for links in messages and Stripe return pages. */
+export function readAppUrl(): string {
+  return readEnv(["APP_URL"]).APP_URL.replace(/\/+$/, "")
+}
