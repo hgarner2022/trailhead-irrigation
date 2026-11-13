@@ -134,6 +134,20 @@ no Jobber words, links or buttons in the admin. The crew day view (12a) is
 therefore not a later phase but the thing Ryan runs his day from, and it
 moves to right after the data step.
 
+**12c. Ryan creates jobs himself (Hannah, 14 Nov: "we probably need
+something in our admin that allows them to create visits, with what they
+are, what the time is, all that").** A "New job" action on the Schedule and
+on a customer: pick or add the customer and property (name, street, town,
+email, phone, access note), the kind (turn-on, inspection, blowout, repair,
+install, other), the day, a start time or "any time that day", the length
+in minutes (defaulting from the kind's setting), the truck, the price or
+"quote later", and notes. It creates the same job row the checkout
+creates, with the same states, so it shows on the Schedule, the day view
+and Home like any other, and is charged or invoiced the same way. This is
+the first piece of the Jobber replacement for non-pass work and comes
+right after the data step, before the route build, because Ryan needs it
+to put his existing spring work on the calendar.
+
 **12. What does the admin do, and when?** Four things. Once a season: route
 days, working days, capacity, the calendar feed link. Weekly from
 September: look at the freeze forecast and decide whether to pull a day.
@@ -208,6 +222,9 @@ the admin and the routine never disagree.
    `window_minutes`, `renewed_from`), the Pending
    status shown as pending, the Passes table and panel reading the visit
    row and nothing else, no Jobber words or buttons anywhere in the admin.
+0b. New job from the admin (12c): customer, property, kind, day, time or
+    any time, minutes, truck, price, notes; the same job row as the
+    checkout's.
 1. Fix the offers: all six sources honoured (window, route days, working
    days, capacity, Ryan's calendar, placed visits), the last two fall weeks
    held back, one test per rule. Add "Does someone need to be home?" with
