@@ -7,7 +7,6 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { CardTitleHeading } from "@/components/blocks/CardTitleHeading"
-import { DayMap } from "@/components/blocks/DayMap"
 import { EmptyState } from "@/components/blocks/EmptyState"
 import { PageHeader } from "@/components/blocks/PageHeader"
 import { StatusPill } from "@/components/blocks/StatusPill"
@@ -18,6 +17,7 @@ import { KIND_WORDS, TIME_ZONE, shortDate, writtenDate } from "@/lib/admin/forma
 import { cn } from "@/lib/utils"
 import { clockTime } from "./home-model"
 import { addDays, dayOf, dayVisits, weekOf, weekVisits } from "@/lib/admin/calendar"
+import { ScheduleDayMap } from "./ScheduleDayMap"
 import { ScheduleMoveTo } from "./ScheduleMoveTo"
 import { exceptionCount, firstWorkingDay, moveOutcome, placeVisit, scheduleItems, trayItems, weekContext, type TrayItem } from "./schedule-model"
 
@@ -39,6 +39,12 @@ export interface ScheduleScreenProps {
   today: string
   /** the tab open on first render; for the catalog, since the prototype has no URL state */
   defaultTab?: "week" | "day"
+  /** a day (yyyy-mm-dd) to open on, from `?day=`; the week follows it */
+  defaultDay?: string
+  /** a Monday (yyyy-mm-dd) to open the week on, from `?week=` */
+  defaultWeek?: string
+  /** the visit selected on first render, from `?visit=` */
+  defaultSelectedId?: string
 }
 
 function DayStepper({ day, today, onChange }: { day: string; today: string; onChange: (day: string) => void }) {
@@ -117,13 +123,13 @@ function Exceptions({ visits }: { visits: Visit[] }) {
   )
 }
 
-export function ScheduleScreen({ data, today, defaultTab = "week" }: ScheduleScreenProps) {
+export function ScheduleScreen({ data, today, defaultTab = "week", defaultDay, defaultWeek, defaultSelectedId }: ScheduleScreenProps) {
   const todayDay = dayOf(today, TIME_ZONE)
   const { trucks, areas } = data.settings
   const [visits, setVisits] = useState(data.visits)
-  const [weekStart, setWeekStart] = useState(() => weekOf(today, TIME_ZONE))
-  const [day, setDay] = useState(todayDay)
-  const [selectedId, setSelectedId] = useState<string>()
+  const [weekStart, setWeekStart] = useState(() => weekOf(defaultDay ?? defaultWeek ?? today, TIME_ZONE))
+  const [day, setDay] = useState(defaultDay ?? todayDay)
+  const [selectedId, setSelectedId] = useState<string | undefined>(defaultSelectedId)
   const [announcement, setAnnouncement] = useState("")
   const week = weekVisits(visits, weekStart, TIME_ZONE)
   const selected = week.find((v) => v.id === selectedId && v.startAt)
@@ -225,7 +231,7 @@ export function ScheduleScreen({ data, today, defaultTab = "week" }: ScheduleScr
                   <StopList stops={stops} trucks={trucks} selectedId={selectedId} onSelect={setSelectedId} />
                 </CardContent>
               </Card>
-              <DayMap className="min-w-0 lg:col-span-3" stops={stops} trucks={trucks} selectedId={selectedId} onSelect={setSelectedId} />
+              <ScheduleDayMap className="min-w-0 lg:col-span-3" stops={stops} trucks={trucks} selectedId={selectedId} onSelect={setSelectedId} />
             </div>
           </TabsContent>
         </Tabs>
