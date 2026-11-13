@@ -41,6 +41,60 @@ export const visitRows = (pass: Pass): VisitRow[] => pass.visits.map((v) => visi
 /** The turn-on and the blowout can be moved by the customer until a day is set; the inspection has no preference. */
 export const canChange = (visit: PassVisit): visit is PassVisit & { kind: "turn-on" | "blowout" } => visit.kind !== "inspection" && !visit.scheduledAt && !visit.completedAt
 
+export type HeadlineAction = "pick-day" | "change-day" | "update-card" | "renew" | "book" | null
+
+export interface Headline {
+  title: string
+  line: string
+  action: HeadlineAction
+  /** the visit the action is about, when there is one */
+  kind?: PassVisit["kind"]
+}
+
+const SEASON_ROLLS = "-11-01"
+const upcoming = (pass: Pass) => pass.visits.find((v) => !v.completedAt)
+
+/**
+ * The one thing that matters to this customer right now, read top to bottom:
+ * a failed card first, then cancelled, then a day to pick, then the next
+ * visit, then a season that is done (with renewal once the next season is
+ * on sale). Hannah, 2026-11-13: "think through the different states".
+ */
+export function passHeadline(pass: Pass, today: string): Headline {
+  if (pass.status === "cancelled") return { title: "This pass is cancelled.", line: "Nothing further is charged and no more visits are placed. Book any visit online whenever you like.", action: "book" }
+  if (pass.cardFailedAt) return { title: "Your card didn't go through.", line: "Update it and we'll try again; your visits stay as they are until then.", action: "update-card" }
+  const next = upcoming(pass)
+  if (!next) {
+    const renewalOpen = today >= `${pass.season}${SEASON_ROLLS}`
+    return renewalOpen
+      ? { title: `Your ${pass.season} season is done.`, line: `Reserve ${pass.season + 1} on the same card; nothing is charged until a visit is done.`, action: "renew" }
+      : { title: `Your ${pass.season} season is done.`, line: `We'll email you in January about ${pass.season + 1}.`, action: null }
+  }
+  const row = visitRow(next, pass)
+  if (next.scheduledAt) return { title: `Next up: ${row.name.toLowerCase()}, ${writtenDate(next.scheduledAt)}.`, line: "We'll text you the day before, and when we're on our way.", action: "change-day", kind: next.kind }
+  if (pass.needsCustomerHome && next.kind !== "inspection") return { title: `Pick your ${row.name.toLowerCase()} day.`, line: "These are the days we're in your town. Pick the one that works and we'll see you then.", action: "pick-day", kind: next.kind }
+  const done = pass.visits.filter((v) => v.completedAt)
+  const last = done[done.length - 1]
+  const lastWords = last ? `${VISIT_NAMES[last.kind]} done ${writtenDate(last.completedAt!)}. ` : ""
+  const when = next.kind === "inspection" ? "in July" : `preferred ${preferencePhrase(next.kind, preferenceOf(pass, next.kind) ?? "recommended")}`
+  const tell = next.kind === "blowout" ? "We'll text your date in September." : next.kind === "inspection" ? "We'll text your date in June." : "We'll text your date in April."
+  return { title: last ? `${lastWords}Next up: ${row.name.toLowerCase()}, ${when}.` : `Your ${pass.season} season is reserved.`, line: last ? tell : `${row.name} ${when}. ${tell}`, action: null, kind: next.kind }
+}
+
+/** Three days we are in the customer's town inside the visit's window, Tuesday and Thursday first, as YYYY-MM-DD. The prototype's stand-in for the scheduler's area days. */
+export function pickDayOptions(pass: Pass, kind: "turn-on" | "blowout"): string[] {
+  const preference = preferenceOf(pass, kind) ?? "recommended"
+  const month = kind === "turn-on" ? "05" : "10"
+  const start = { earlier: 1, recommended: 8, later: 18 }[preference]
+  const days: string[] = []
+  for (let d = start; d <= start + 13 && days.length < 3; d++) {
+    const iso = `${pass.season}-${month}-${String(d).padStart(2, "0")}`
+    const weekday = new Date(`${iso}T12:00:00Z`).getUTCDay()
+    if (weekday === 2 || weekday === 4) days.push(iso)
+  }
+  return days
+}
+
 /** "3 of 3 visits done, $385 paid" for an earlier season; a skipped or cancelled season says how many were done. */
 export function seasonSummary(pass: Pass): string {
   const done = pass.visits.filter((v) => v.completedAt).length

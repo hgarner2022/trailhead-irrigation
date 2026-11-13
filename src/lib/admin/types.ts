@@ -141,6 +141,8 @@ export interface Pass {
   cardExpires?: string
   /** the consent recorded with the purchase */
   consent?: Consent
+  /** the last charge on the card failed and has not been retried since; the pass page puts it first */
+  cardFailedAt?: string
   /** the customer must be there for a visit; the app offers area days to pick instead of placing one */
   needsCustomerHome?: boolean
   /** gate code, dog, where the controller is */
@@ -200,7 +202,6 @@ export type MessageKind =
   | "date-set"
   | "date-moved"
   | "day-before"
-  | "on-my-way"
   | "receipt"
   | "card-failed"
   | "cancelled"
@@ -208,9 +209,12 @@ export type MessageKind =
 
 /**
  * One email or text the app sent a customer and how it went. Messages are
- * one-way (Hannah, 2026-11-12 late: transactional only, Ryan texts "on my
- * way" from his own phone); any change the customer wants goes through the
- * link in the message to their pass page.
+ * one-way, and one per event (Hannah, 2026-11-13): text for timing (date
+ * set, date moved, the day-before reminder), email for money and records
+ * (confirmation, receipt, card failed, cancelled, renewal); a customer with
+ * no mobile gets the timing messages by email. "On my way" is Ryan's own
+ * phone, never the app. Any change the customer wants goes through the link
+ * in the message to their pass page.
  */
 export interface Message {
   id: string

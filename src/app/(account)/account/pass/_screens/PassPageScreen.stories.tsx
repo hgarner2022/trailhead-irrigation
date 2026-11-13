@@ -33,7 +33,7 @@ const meta = {
   title: "Screens/PassPage",
   component: PassPageScreen,
   parameters: { layout: "fullscreen" },
-  args: { pass: active, today: "2026-11-12", onCancel: fn(), onChangePreference: fn() },
+  args: { pass: active, today: "2026-11-12", onCancel: fn(), onChangePreference: fn(), onPickDay: fn() },
 } satisfies Meta<typeof PassPageScreen>
 export default meta
 type Story = StoryObj<typeof meta>
@@ -89,6 +89,36 @@ export const Returning: Story = {
     await userEvent.click(await canvas.findByText("2026 season"))
     await expect((await canvas.findAllByText("Fall blowout")).length).toBeGreaterThan(1)
   },
+}
+
+/** Must be home, the window about to open: the days to pick from come first. */
+export const PickDay: Story = {
+  args: { pass: { ...fresh, needsCustomerHome: true }, today: "2027-04-20" },
+  globals: { viewport: { value: "wide", isRotated: false } },
+  play: async ({ canvas, userEvent, args }) => {
+    const [first] = await canvas.findAllByRole("button", { name: /^(Tuesday|Thursday)/ })
+    await userEvent.click(first)
+    await expect(await canvas.findByText(/it is\. We'll text you the window the day before\./)).toBeInTheDocument()
+    await expect(args.onPickDay).toHaveBeenCalledTimes(1)
+  },
+}
+
+/** The turn-on is booked: the date first, with the day-before promise. */
+export const DateSet: Story = {
+  args: { pass: { ...fresh, visits: fresh.visits.map((v, i) => (i === 0 ? { ...v, scheduledAt: "2027-05-05T15:00:00Z" } : v)) }, today: "2027-04-20" },
+  globals: { viewport: { value: "wide", isRotated: false } },
+}
+
+/** The card failed: the warning comes before everything else. */
+export const CardFailed: Story = {
+  args: { pass: { ...active, cardFailedAt: "2027-05-03T17:12:00Z" }, today: "2027-05-04" },
+  globals: { viewport: { value: "wide", isRotated: false } },
+}
+
+/** Every visit done and the next season on sale: renew. */
+export const Renew: Story = {
+  args: { pass: allDone, today: "2027-11-02" },
+  globals: { viewport: { value: "wide", isRotated: false } },
 }
 
 export const Phone: Story = {

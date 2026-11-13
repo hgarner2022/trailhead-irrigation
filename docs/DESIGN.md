@@ -173,7 +173,7 @@ The app follows the same copy rules as the site. Headings are sentence case. Sen
 
 2026-11-12 (late). One scheduling state. No proposals, no approvals, no planned-versus-firm (Hannah: "I don't know what proposed means", "think simple"). The Schedule is the week, the "To schedule" tray and one Schedule button that places the whole tray; Place places one; drag moves one; placed means scheduled, in Jobber and told to the customer. Customers who must be there pick their own day from the pass page and wait in the tray as "Customer picks the day". `Visit.proposed`, `Visit.firm`, the hatch and `firmDaysAhead` are gone.
 
-2026-11-12 (late). Messages are one-way in the first season (Hannah: "start with one-way communication"). The customer panel shows the sent history; there is no reply box and no "customer replied" row. Every message links to the pass page, where the customer acts. Ryan texts "on my way" from his phone.
+2026-11-12 (late) and 2026-11-13. Messages are one-way, one per event, one channel each (Hannah: "start with one-way communication", "this needs to be simpler"): text for timing (date set, moved, the day-before reminder), email for money and records (confirmation, receipt, card failed, cancelled, renewal). The customer panel shows the sent history; there is no reply box and no "customer replied" row. Every message links to the pass page, where the customer acts. Ryan texts "on my way" from his phone; the app never does.
 
 2026-11-12 (night). The purchase confirmation email carries the pass card as an image (the holographic art, since nothing can move in an email), generated server-side at purchase; wiring plan, Phase 12.
 
