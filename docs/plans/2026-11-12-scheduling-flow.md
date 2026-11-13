@@ -108,8 +108,15 @@ The rule that falls out, in one state and no approvals:
    Ryan can call. This is the only waiting state, and it is the customer's,
    not the office's.
 3. **Everyone:** the day-before reminder with the window and the link,
-   "on my way" from Ryan's own phone, and the 48-hour change rule already
-   in the terms.
+   "on my way" from Ryan's own phone (never the app), and the 48-hour
+   change rule already in the terms.
+
+The messages, one per event and one channel each (Hannah, 2026-11-13:
+"this needs to be simpler"): bought, a confirmation email with the pass
+image and the link; date set or moved, a text; the day before, a text;
+visit done, a receipt email naming the next visit; card failed, cancelled
+and the January renewal, an email each. A customer with no mobile gets the
+timing messages by email. Nothing else, nothing twice.
 
 What a cancellation is now: a customer who could not make the day had
 two chances to move it (two weeks out, and the day before); a customer

@@ -14751,20 +14751,10 @@
       "status": "delivered"
     },
     {
-      "id": "m2",
-      "clientId": "c100",
-      "passId": "p1",
-      "channel": "sms",
-      "kind": "purchase-confirmation",
-      "body": "Trailhead: your 2027 Season Pass is reserved. Turn-on preferred mid May, blowout mid October. Reply STOP to opt out.",
-      "at": "2026-11-02T16:10:05Z",
-      "status": "delivered"
-    },
-    {
       "id": "m3",
       "clientId": "c100",
       "passId": "p1",
-      "channel": "email",
+      "channel": "sms",
       "kind": "date-set",
       "body": "Your spring turn-on is set for Monday, May 3",
       "at": "2027-04-19T15:00:00Z",
@@ -14778,16 +14768,6 @@
       "kind": "day-before",
       "body": "Trailhead: Ryan is coming tomorrow, Mon May 3, between 9 and 11 for your turn-on. Reply if that no longer works.",
       "at": "2027-05-02T23:00:00Z",
-      "status": "delivered"
-    },
-    {
-      "id": "m7",
-      "clientId": "c100",
-      "passId": "p1",
-      "channel": "sms",
-      "kind": "on-my-way",
-      "body": "Trailhead: Ryan is on his way, about 20 minutes out.",
-      "at": "2027-05-03T16:05:00Z",
       "status": "delivered"
     },
     {
@@ -14811,16 +14791,6 @@
       "status": "bounced"
     },
     {
-      "id": "m10",
-      "clientId": "c140",
-      "passId": "p3",
-      "channel": "sms",
-      "kind": "purchase-confirmation",
-      "body": "Trailhead: your 2027 Season Pass is reserved. Reply STOP to opt out.",
-      "at": "2026-11-09T20:30:05Z",
-      "status": "delivered"
-    },
-    {
       "id": "m11",
       "clientId": "c197",
       "passId": "p5",
@@ -14828,16 +14798,6 @@
       "kind": "purchase-confirmation",
       "body": "Your 2027 Season Pass is reserved",
       "at": "2026-11-11T18:00:00Z",
-      "status": "delivered"
-    },
-    {
-      "id": "m12",
-      "clientId": "c197",
-      "passId": "p5",
-      "channel": "sms",
-      "kind": "purchase-confirmation",
-      "body": "Trailhead: your 2027 Season Pass is reserved. Reply STOP to opt out.",
-      "at": "2026-11-11T18:00:05Z",
       "status": "delivered"
     }
   ]

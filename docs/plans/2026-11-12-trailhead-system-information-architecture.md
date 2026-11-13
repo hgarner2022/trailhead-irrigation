@@ -104,9 +104,13 @@ first for a crew login.
   image), date set or moved, day-before reminder, on-my-way when the crew
   taps it, after-visit receipt naming the next visit, failed card,
   cancelled, January renewal.
-- **Messages are one-way for now** (Hannah, 2026-11-12 late: "start with
-  one-way, transactional text messages first to simplify"; Ryan texts "on
-  my way" from his own phone). Every message carries a link to the pass
+- **Messages are one-way and one per event** (Hannah, 2026-11-12 late and
+  2026-11-13: "start with one-way, transactional text messages first to
+  simplify", "this needs to be simpler"). Text for timing (date set, date
+  moved, the day-before reminder), email for money and records
+  (confirmation with the pass image, receipt, card failed, cancelled,
+  renewal); a customer with no mobile gets the timing messages by email.
+  Ryan texts "on my way" from his own phone; the app never does. Every message carries a link to the pass
   page, and that link is how a customer changes anything: pick a day,
   change a preference, skip, cancel, update the card. STOP is handled by
   Twilio's own opt-out, not by our code. The two-way design below is kept

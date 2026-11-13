@@ -5,11 +5,10 @@ import { EmptyState } from "./EmptyState"
 import { MessageSquare } from "lucide-react"
 
 // What the app has sent one customer, oldest first: each message's kind,
-// channel, day and how it went (sent, delivered, failed, bounced). Messages
-// are one-way (Hannah, 2026-11-12 late: transactional only; Ryan texts "on
-// my way" from his own phone), so there is no reply box; a failed or
-// bounced row is what Hannah checks before calling. Pure render, server
-// component.
+// channel, day and how it went (sent, delivered, failed, bounced). One
+// message per event, text for timing and email for money (Hannah,
+// 2026-11-13); one-way, so there is no reply box; a failed or bounced row
+// is what Hannah checks before calling. Pure render, server component.
 
 export interface MessageThreadProps {
   messages: Message[]
@@ -21,7 +20,6 @@ export const KIND_NAMES: Record<MessageKind, string> = {
   "date-set": "Date set",
   "date-moved": "Date moved",
   "day-before": "Reminder",
-  "on-my-way": "On my way",
   receipt: "Receipt",
   "card-failed": "Card failed",
   cancelled: "Cancelled",

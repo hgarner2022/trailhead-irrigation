@@ -3,8 +3,8 @@ import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import type { AdminData } from "@/lib/admin/types"
 import { MessageThread } from "./MessageThread"
 
-// Andrea's messages from the snapshot: the confirmation, the date, the
-// reminder, on-my-way and the receipt. One-way: nothing to type.
+// Andrea's messages from the snapshot: the confirmation by email, the date
+// and the reminder by text, the receipt by email. One-way: nothing to type.
 const data = snapshot as AdminData
 const andrea = data.messages.filter((m) => m.clientId === "c100")
 const bounced = data.messages.filter((m) => m.status === "bounced")

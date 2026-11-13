@@ -1,4 +1,5 @@
 import Image from "next/image"
+import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { PassCard } from "@/components/blocks/PassCard"
@@ -10,7 +11,8 @@ import { CancelPassDialog } from "./CancelPassDialog"
 import { EarlierSeasons } from "./EarlierSeasons"
 import { PassActions } from "@/components/blocks/PassActions"
 import { PreferenceDialog } from "@/components/blocks/PreferenceDialog"
-import { canChange, cardLine, earlierSeasons, seasonCaption, visitRows } from "./pass-page-model"
+import { PickDayButtons } from "./PickDayButtons"
+import { canChange, cardLine, earlierSeasons, passHeadline, pickDayOptions, seasonCaption, visitRows } from "./pass-page-model"
 
 // The customer's pass page: a season card, not a dashboard. The pass card at
 // the top, the season line with the visits and their state, the card
@@ -37,6 +39,8 @@ export interface PassPageScreenProps {
   onChangePreference?: (kind: "turn-on" | "blowout", preference: TimingPreference) => void
   onAddInspection?: (passId: string) => void
   onSkip?: (passId: string, kind: Pass["visits"][number]["kind"]) => void
+  /** a customer who must be home picked one of the offered days */
+  onPickDay?: (kind: "turn-on" | "blowout", dayIso: string) => void
 }
 
 const LOGO = "/images/logo-badge.png"
@@ -45,9 +49,10 @@ function Title({ children }: { children: string }) {
   return <h2 className="font-display text-2xl font-semibold leading-none text-navy">{children}</h2>
 }
 
-export function PassPageScreen({ pass, passes = [pass], today, onCancel, onChangePreference, onAddInspection, onSkip }: PassPageScreenProps) {
+export function PassPageScreen({ pass, passes = [pass], today, onCancel, onChangePreference, onAddInspection, onSkip, onPickDay }: PassPageScreenProps) {
   const cancelled = pass.status === "cancelled"
   const earlier = earlierSeasons(passes, pass)
+  const headline = passHeadline(pass, today)
   return (
     <div data-slot="pass-page" data-status={pass.status} className="min-h-svh bg-cream text-foreground">
       <div className="mx-auto max-w-3xl space-y-8 container-padding-x py-10">
@@ -56,15 +61,43 @@ export function PassPageScreen({ pass, passes = [pass], today, onCancel, onChang
           <h1 className="font-display text-2xl font-semibold leading-none text-navy">Season Pass</h1>
         </header>
 
+        <section
+          data-slot="pass-headline"
+          data-action={headline.action ?? undefined}
+          aria-labelledby="pass-headline-title"
+          className={cn("rounded-lg border p-5", headline.action === "update-card" ? "border-warning/40 bg-warning/10" : "border-border bg-background")}
+        >
+          <h2 id="pass-headline-title" className="font-display text-3xl leading-tight text-navy">
+            {headline.title}
+          </h2>
+          <p className={cn("mt-2 text-base", headline.action === "update-card" ? "text-foreground" : "text-muted-foreground")}>{headline.line}</p>
+          {headline.action === "pick-day" && headline.kind && headline.kind !== "inspection" && (
+            <div className="mt-5">
+              <PickDayButtons kind={headline.kind} days={pickDayOptions(pass, headline.kind)} onPick={onPickDay} />
+            </div>
+          )}
+          {headline.action === "change-day" && headline.kind && headline.kind !== "inspection" && (
+            <div className="mt-5">
+              <PickDayButtons kind={headline.kind} days={pickDayOptions(pass, headline.kind)} onPick={onPickDay} foldedLabel="Pick a different day" />
+            </div>
+          )}
+          {headline.action === "update-card" && (
+            <Button className="mt-5">Update card</Button>
+          )}
+          {headline.action === "renew" && (
+            <Button className="mt-5">{`Reserve ${pass.season + 1}`}</Button>
+          )}
+          {headline.action === "book" && (
+            <Button asChild variant="outline" className="mt-5">
+              <a href="/book">Book a visit</a>
+            </Button>
+          )}
+        </section>
+
         <PassCard pass={pass} priority className="w-full" />
 
         {cancelled ? (
-          <>
-            <p data-slot="pass-cancelled" className="text-base text-muted-foreground">
-              This pass is cancelled. Nothing further is charged, and no more visits are placed. Book any visit online whenever you like.
-            </p>
-            <EarlierSeasons passes={earlier} />
-          </>
+          <EarlierSeasons passes={earlier} />
         ) : (
           <>
             <Card>

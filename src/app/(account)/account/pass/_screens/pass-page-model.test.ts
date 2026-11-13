@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest"
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import type { Pass } from "@/lib/admin/types"
-import { cardLine, earlierSeasons, expiry, seasonCaption, seasonSummary, visitRows, visitStatus } from "./pass-page-model"
+import { cardLine, earlierSeasons, expiry, passHeadline, pickDayOptions, seasonCaption, seasonSummary, visitRows, visitStatus } from "./pass-page-model"
 
 // passes[0] is Andrea in Erie: turn-on done May 3, inspection in July, blowout preferred for mid October.
 // passes[2] has no visit yet, with the turn-on preferred earlier.
@@ -83,5 +83,29 @@ describe("earlier seasons", () => {
     expect(seasonSummary(one2025)).toBe(`1 of 3 visits done, $${current.visits[0].amount} paid`)
     expect(earlierSeasons([one2025, current, done2026], current).map((p) => p.season)).toEqual([2026, 2025])
     expect(earlierSeasons([current], current)).toEqual([])
+  })
+})
+
+describe("passHeadline", () => {
+  const fresh = snapshot.passes[2] as Pass
+  it("reads the state top to bottom: card failed, cancelled, pick a day, next visit, reserved, done", () => {
+    expect(passHeadline({ ...pass, cardFailedAt: "2027-05-03T17:12:00Z" }, "2027-05-04")).toMatchObject({ action: "update-card", title: "Your card didn't go through." })
+    expect(passHeadline({ ...pass, status: "cancelled", cardFailedAt: "2027-05-03T17:12:00Z" }, "2027-05-04").action).toBe("book")
+    expect(passHeadline({ ...fresh, needsCustomerHome: true }, "2027-04-20")).toMatchObject({ action: "pick-day", kind: "turn-on", title: "Pick your spring turn-on day." })
+    expect(passHeadline(fresh, "2026-11-12")).toMatchObject({ action: null, title: "Your 2027 season is reserved." })
+    expect(passHeadline(pass, "2027-05-04")).toMatchObject({ action: null, title: "Spring turn-on done May 3. Next up: mid-season inspection, in July." })
+    const booked: Pass = { ...fresh, visits: fresh.visits.map((v, i) => (i === 0 ? { ...v, scheduledAt: "2027-05-05T15:00:00Z" } : v)) }
+    expect(passHeadline(booked, "2027-04-20")).toMatchObject({ action: "change-day", kind: "turn-on", title: "Next up: spring turn-on, May 5." })
+    const done: Pass = { ...pass, visits: pass.visits.map((v) => ({ ...v, completedAt: v.completedAt ?? "2027-10-05T16:40:00Z" })) }
+    expect(passHeadline(done, "2027-10-20")).toMatchObject({ action: null, title: "Your 2027 season is done." })
+    expect(passHeadline(done, "2027-11-02")).toMatchObject({ action: "renew" })
+  })
+
+  it("offers three Tuesdays or Thursdays inside the preferred part of the window", () => {
+    const days = pickDayOptions({ ...fresh, turnOnPreference: "recommended" }, "turn-on")
+    expect(days).toHaveLength(3)
+    expect(days.every((d) => d.startsWith("2027-05-"))).toBe(true)
+    expect(days.every((d) => [2, 4].includes(new Date(`${d}T12:00:00Z`).getUTCDay()))).toBe(true)
+    expect(pickDayOptions({ ...fresh, blowoutPreference: "later" }, "blowout")[0] >= "2027-10-18").toBe(true)
   })
 })
