@@ -7,7 +7,7 @@ const now = "2026-11-12T18:00:00Z"
 const items: Attention[] = [
   { kind: "charge-failed", passId: "p3", message: "Card declined for the spring turn-on; customer emailed an update link", since: "2026-11-10T15:04:00Z" },
   { kind: "jobs-failed", passId: "p7", message: "Jobber jobs for pass TH-2027-0007 were not created; retrying", since: "2026-11-11T22:41:00Z" },
-  { kind: "week-full", message: "The week of October 11 is full", since: "2026-11-12T17:20:00Z" },
+  { kind: "card-expiring", message: "A card on file with no pass yet expires next month", since: "2026-11-12T17:20:00Z" },
   { kind: "card-expiring", passId: "p5", message: "Card on file expires before the October blowout", since: "2026-11-12T08:00:00Z" },
 ]
 
@@ -28,18 +28,17 @@ describe("NeedsAttention", () => {
   it("names the kind for a screen reader before the message", () => {
     render(<NeedsAttention items={items} now={now} />)
     const hidden = rows().map((r) => r.querySelector(".sr-only")?.textContent)
-    expect(hidden).toEqual(["Charge failed: ", "Jobs not created: ", "Week full: ", "Card expiring: "])
+    expect(hidden).toEqual(["Charge failed: ", "Jobs not created: ", "Card expiring: ", "Card expiring: "])
   })
 
   it("colours the icon circle by kind", () => {
     render(<NeedsAttention items={items} now={now} />)
-    const [charge, jobs, week, card] = rows().map(iconOf)
+    const [charge, jobs, , card] = rows().map(iconOf)
     expect(charge).toHaveClass("bg-warning/10", "text-warning")
     expect(jobs).toHaveClass("bg-warning/10", "text-warning")
-    expect(week).toHaveClass("bg-primary/10", "text-primary-dark")
     expect(card).toHaveClass("bg-stone", "text-muted-foreground")
     expect(charge.querySelector("svg")).not.toBeNull()
-    expect(rows().map((r) => r.dataset.kind)).toEqual(["charge-failed", "jobs-failed", "week-full", "card-expiring"])
+    expect(rows().map((r) => r.dataset.kind)).toEqual(["charge-failed", "jobs-failed", "card-expiring", "card-expiring"])
   })
 
   it("links a row to its pass and leaves a row without one unlinked", () => {

@@ -1,12 +1,11 @@
-import { CalendarCheck, CalendarX, Clock, CreditCard, type LucideIcon } from "lucide-react"
+import { CalendarX, Clock, CreditCard, type LucideIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { Attention } from "@/lib/admin/types"
 import { EmptyState } from "./EmptyState"
 import { relativeTime } from "./needs-attention-time"
 
 // The short list on Home of what needs a person: a failed charge, Jobber
-// jobs that were not created, a blowout week that filled up, a card about
-// to expire. One row per item with an icon coloured by how urgent the kind
+// jobs that were not created, a card about to expire. One row per item with an icon coloured by how urgent the kind
 // is, the message, and how long it has been waiting. A row with a pass
 // links to that pass; the prototype has no handlers, so the link is a page
 // anchor. Pure render, server component.
@@ -25,7 +24,6 @@ export interface NeedsAttentionProps {
 const KINDS: Record<Attention["kind"], { icon: LucideIcon; tone: string; name: string }> = {
   "charge-failed": { icon: CreditCard, tone: "bg-warning/10 text-warning", name: "Charge failed" },
   "jobs-failed": { icon: CalendarX, tone: "bg-warning/10 text-warning", name: "Jobs not created" },
-  "week-full": { icon: CalendarCheck, tone: "bg-primary/10 text-primary-dark", name: "Week full" },
   "card-expiring": { icon: Clock, tone: "bg-stone text-muted-foreground", name: "Card expiring" },
 }
 

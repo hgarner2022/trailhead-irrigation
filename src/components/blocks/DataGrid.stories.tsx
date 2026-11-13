@@ -4,7 +4,7 @@ import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import type { Client, Pass } from "@/lib/admin/types"
 import { DataGrid, type GridColumnDef } from "./DataGrid"
 import { shortDate } from "@/lib/admin/format"
-import { passColumns } from "./data-grid-columns"
+import { passColumns, preferenceOptions } from "./data-grid-columns"
 import { statusLabel } from "./StatusPill"
 
 // Twelve passes for the Passes grid; the 375 clients prove paging and the
@@ -17,7 +17,7 @@ const option = (value: string, label = value) => ({ value, label })
 const FILTERS = [
   { column: "town", label: "Town", options: ["Erie", "Longmont", "Louisville", "Lafayette", "Firestone", "Broomfield"].map((t) => option(t)) },
   { column: "status", label: "Status", options: (["active", "cancelled", "lapsed"] as const).map((s) => option(s, statusLabel(s))) },
-  { column: "blowoutWeek", label: "Blowout week", options: [...new Set(passes.map((p) => p.blowoutWeek))].sort().map((w) => option(w, `Week of ${shortDate(w)}`)) },
+  { column: "blowout", label: "Blowout", options: preferenceOptions("blowout") },
 ]
 
 const clientColumns: GridColumnDef<Client>[] = [

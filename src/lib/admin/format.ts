@@ -13,6 +13,9 @@ import type { TimingPreference } from "./types"
 /** Where the reader is: every clock and calendar word in the app is in Mountain time. */
 export const TIME_ZONE = "America/Denver"
 
+/** The three answers, in the order the checkout and the filters show them. */
+export const TIMING_PREFERENCES: readonly TimingPreference[] = ["earlier", "recommended", "later"]
+
 /**
  * The customer's words for a timing preference. Trailhead's recommendation
  * is the first to second week of May for the turn-on and the second week of

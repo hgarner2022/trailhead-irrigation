@@ -2,10 +2,15 @@ import { describe, it, expect } from "vitest"
 import { render, screen } from "@testing-library/react"
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import type { Pass } from "@/lib/admin/types"
-import { chargedTotal, nextVisit, nextVisitSortKey, passColumns } from "./data-grid-columns"
+import { chargedTotal, nextVisit, nextVisitSortKey, passColumns, preferenceOptions } from "./data-grid-columns"
 
-// passes[0] is Andrea in Erie: turn-on charged, inspection in July, blowout the week of October 4.
+// passes[0] is Andrea in Erie: turn-on charged, inspection in July, both preferences recommended.
 const andrea = snapshot.passes[0] as Pass
+const cellText = (id: string, pass: Pass) => {
+  const column = passColumns.find((c) => c.id === id)
+  const cell = column?.cell as unknown as (ctx: { row: { original: Pass } }) => React.ReactNode
+  return cell({ row: { original: pass } })
+}
 
 describe("chargedTotal", () => {
   it("sums the amounts of the charged visits only", () => {
@@ -49,9 +54,38 @@ describe("status column", () => {
   })
 })
 
+describe("preference columns", () => {
+  it("write the preference in the customer's words and export the same", () => {
+    expect(cellText("turnOn", andrea)).toBe("First half of May")
+    expect(cellText("blowout", andrea)).toBe("Second week of October")
+    expect(cellText("blowout", { ...andrea, blowoutPreference: "later" })).toBe("Late October")
+    expect(passColumns.find((c) => c.id === "turnOn")?.meta?.csv?.({ ...andrea, turnOnPreference: "earlier" })).toBe("Early May")
+    expect(passColumns.find((c) => c.id === "blowout")?.meta?.csv?.(andrea)).toBe("Second week of October")
+  })
+
+  it("sort earlier before recommended before later, whatever the alphabet says", () => {
+    const column = passColumns.find((c) => c.id === "blowout")
+    const row = (value: string) => ({ getValue: () => value }) as unknown as Parameters<NonNullable<typeof column>["sortFn"] & ((a: never, b: never, id: string) => number)>[0]
+    const sort = column?.sortFn as unknown as (a: unknown, b: unknown, id: string) => number
+    expect(sort(row("earlier"), row("recommended"), "blowout")).toBeLessThan(0)
+    expect(sort(row("recommended"), row("later"), "blowout")).toBeLessThan(0)
+    expect(sort(row("later"), row("earlier"), "blowout")).toBeGreaterThan(0)
+    expect(sort(row("later"), row("later"), "blowout")).toBe(0)
+  })
+
+  it("offer the three answers as filter chips, earlier to later", () => {
+    expect(preferenceOptions("blowout")).toEqual([
+      { value: "earlier", label: "Early October" },
+      { value: "recommended", label: "Second week of October" },
+      { value: "later", label: "Late October" },
+    ])
+    expect(preferenceOptions("turn-on").map((o) => o.label)).toEqual(["Early May", "First half of May", "Late May"])
+  })
+})
+
 describe("passColumns", () => {
-  it("puts the name first and keeps the seven columns in the agreed order", () => {
-    expect(passColumns.map((c) => c.id)).toEqual(["firstName", "town", "zones", "blowoutWeek", "status", "charged", "nextVisit"])
+  it("puts the name first and keeps the eight columns in the agreed order", () => {
+    expect(passColumns.map((c) => c.id)).toEqual(["firstName", "town", "zones", "turnOn", "blowout", "status", "charged", "nextVisit"])
   })
 
   it("sorts finished passes last on next visit and exports its written form", () => {

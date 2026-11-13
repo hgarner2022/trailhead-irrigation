@@ -71,7 +71,7 @@ describe("DataGrid sorting", () => {
     const names = bodyRows().map((r) => within(r).getByRole("button", { name: /^[A-Z]/ }).textContent)
     expect(names.at(-1)).toBe("Zed")
     expect(names.slice(0, 10)).not.toContain("Andrea")
-    expect(within(bodyRows()[0]).getByText("April to May")).toBeInTheDocument()
+    expect(within(bodyRows()[0]).getByText("May")).toBeInTheDocument()
   })
 })
 
@@ -221,9 +221,9 @@ describe("DataGrid columns menu", () => {
     expect(screen.queryByRole("columnheader", { name: /Town/ })).not.toBeInTheDocument()
     // The menu stays open; Zones cannot pass the pinned name, and a move skips the hidden Town.
     expect(screen.getByRole("menuitem", { name: "Move Zones up" })).toHaveAttribute("aria-disabled", "true")
-    await user.click(screen.getByRole("menuitem", { name: "Move Blowout week up" }))
+    await user.click(screen.getByRole("menuitem", { name: "Move Turn-on up" }))
     const headers = screen.getAllByRole("columnheader").map((h) => h.textContent?.trim())
-    expect(headers.slice(1, 4)).toEqual(["Name", "Blowout week", "Zones"])
+    expect(headers.slice(1, 4)).toEqual(["Name", "Turn-on", "Zones"])
   })
 
   it("never offers to hide or move the name column, and keeps it frozen and linked when others move", async () => {
@@ -266,7 +266,7 @@ describe("DataGrid export", () => {
     expect(blob).toBeDefined()
     const bytes = new Uint8Array(await blob!.arrayBuffer())
     expect([...bytes.slice(0, 3)]).toEqual([0xef, 0xbb, 0xbf])
-    expect(new TextDecoder().decode(bytes)).toBe("Name,Zones,Blowout week,Status,Charged so far,Next visit\r\nReese,8,2027-10-11,Active,145,July\r\nReesa,8,2027-10-18,Active,0,April to May\r\n")
+    expect(new TextDecoder().decode(bytes)).toBe("Name,Zones,Turn-on,Blowout,Status,Charged so far,Next visit\r\nReese,8,First half of May,Early October,Active,145,July\r\nReesa,8,First half of May,Early October,Active,0,May\r\n")
   })
 })
 

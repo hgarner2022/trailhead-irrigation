@@ -4,15 +4,17 @@ import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import type { Pass } from "@/lib/admin/types"
 import { PassCard } from "./PassCard"
 
-// passes[0] is Andrea in Erie, blowout reserved for the week of October 4.
+// passes[0] is Andrea in Erie: turn-on done May 3, both preferences recommended.
+// passes[2] has not had a visit yet, with the turn-on preferred earlier.
 const pass = snapshot.passes[0] as Pass
+const fresh = snapshot.passes[2] as Pass
 const cancelled: Pass = { ...pass, status: "cancelled" }
 const allDone: Pass = {
   ...(snapshot.passes[1] as Pass),
   visits: (snapshot.passes[1] as Pass).visits.map((v, i) => ({
     ...v,
-    scheduledAt: ["2027-04-21T16:00:00Z", "2027-07-13T15:00:00Z", "2027-10-12T16:00:00Z"][i],
-    completedAt: ["2027-04-21T17:10:00Z", "2027-07-13T16:05:00Z", "2027-10-12T16:40:00Z"][i],
+    scheduledAt: ["2027-05-04T16:00:00Z", "2027-07-13T15:00:00Z", "2027-10-12T16:00:00Z"][i],
+    completedAt: ["2027-05-04T17:10:00Z", "2027-07-13T16:05:00Z", "2027-10-12T16:40:00Z"][i],
   })),
 }
 
@@ -76,29 +78,51 @@ describe("PassCard at full size", () => {
     expect(screen.getByText("Trailhead Lawn & Irrigation")).toHaveClass("whitespace-nowrap")
   })
 
-  it("shows the reserved blowout week in the blowout cell", () => {
+  it("shows the blowout preference with a Preferred chip in the blowout cell", () => {
     render(<PassCard pass={pass} />)
     const blowout = card().querySelector('[data-slot="pass-visit"][data-kind="blowout"]')
-    expect(blowout?.textContent).toContain("Reserved")
-    expect(blowout?.textContent).toContain("Week of Oct 4")
+    expect(blowout?.textContent).toContain("Preferred")
+    expect(blowout?.textContent).toContain("Second week of October")
+    expect(blowout?.textContent).toContain("2nd week of Oct")
+    expect(screen.queryByText("Reserved")).not.toBeInTheDocument()
+  })
+
+  it("shows the turn-on preference until the visit has a day, without a chip", () => {
+    render(<PassCard pass={fresh} />)
+    const turnOn = card().querySelector('[data-slot="pass-visit"][data-kind="turn-on"]')
+    expect(turnOn?.textContent).toContain("Early May")
+    expect(turnOn?.textContent).not.toContain("Preferred")
+    const inspection = card().querySelector('[data-slot="pass-visit"][data-kind="inspection"]')
+    expect(inspection?.textContent).toBe("InspectionJuly")
+  })
+
+  it("shows a booked blowout as its date, lit, with no chip", () => {
+    const booked: Pass = { ...pass, visits: pass.visits.map((v) => (v.kind === "blowout" ? { ...v, scheduledAt: "2027-10-12T16:00:00Z" } : v)) }
+    render(<PassCard pass={booked} />)
+    const blowout = card().querySelector('[data-slot="pass-visit"][data-kind="blowout"]')
+    expect(blowout?.textContent).toBe("BlowoutOct 12")
+    expect(card().getAttribute("aria-label")).toContain("blowout on October 12")
   })
 
   it("shows a completed visit as its date with a check", () => {
     render(<PassCard pass={pass} />)
     const turnOn = card().querySelector('[data-slot="pass-visit"][data-kind="turn-on"]')
-    expect(turnOn?.textContent).toContain("Apr 20")
+    expect(turnOn?.textContent).toContain("May 3")
     expect(turnOn?.textContent).toContain("done")
   })
 
-  it("describes the pass with the town and the reserved week", () => {
+  it("describes the pass with the town and the two preferences", () => {
+    const { unmount } = render(<PassCard pass={fresh} />)
+    expect(card().getAttribute("aria-label")).toBe("Season Pass 2027 for Abby, Broomfield, turn-on preferred early May, blowout preferred second week of October")
+    unmount()
     render(<PassCard pass={pass} />)
-    expect(card().getAttribute("aria-label")).toBe("Season Pass 2027 for Andrea, Erie, blowout reserved for the week of October 4")
+    expect(card().getAttribute("aria-label")).toBe("Season Pass 2027 for Andrea, Erie, turn-on done on May 3, blowout preferred second week of October")
   })
 
   it("describes a finished season by its blowout date", () => {
     render(<PassCard pass={allDone} />)
     expect(card().getAttribute("aria-label")).toContain("blowout done on October 12")
-    expect(screen.queryByText("Reserved")).not.toBeInTheDocument()
+    expect(screen.queryByText("Preferred")).not.toBeInTheDocument()
   })
 
   it("uses the flat artwork by default and the holographic artwork on request", () => {
@@ -197,7 +221,7 @@ describe("PassCard as a thumbnail", () => {
     expect(screen.queryByText("TH-2027-0001")).not.toBeInTheDocument()
     expect(screen.queryByText("Turn-on")).not.toBeInTheDocument()
     expect(screen.queryByText("Cancelled")).not.toBeInTheDocument()
-    expect(card().getAttribute("aria-label")).toContain("week of October 4")
+    expect(card().getAttribute("aria-label")).toContain("blowout preferred second week of October")
   })
 
   it("keeps the sheen but attaches no listeners", () => {
