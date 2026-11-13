@@ -267,7 +267,7 @@ export interface BusyBlock {
 }
 
 export interface Attention {
-  kind: "new-pass" | "charge-failed" | "jobs-failed" | "card-expiring" | "not-closed" | "pass-cancelled"
+  kind: "new-pass" | "charge-failed" | "jobs-failed" | "card-expiring" | "not-closed" | "pass-cancelled" | "scheduled" | "unplaced"
   passId?: string
   message: string
   since: string

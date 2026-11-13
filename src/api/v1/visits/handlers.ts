@@ -6,10 +6,13 @@ import type { Ctx } from "../../core/context"
 import { ApiError, notFound } from "../../core/errors"
 import { defineHandler } from "../../core/handler"
 import { afterTimeCursor, cursorPage, page, pageInput, timeCursor } from "../../core/pagination"
-import { assertOwnsCustomer, capacityKind, Day, Id, idInput, okOutput, OK, today, VisitKind, VisitStatus, weekdayOf } from "../shared"
+import { addDays, assertOwnsCustomer, capacityKind, Day, Id, idInput, okOutput, OK, today, VisitKind, VisitStatus, weekdayOf } from "../shared"
 import { hasScope } from "@/lib/auth/principal"
-import { readAppUrl } from "@/lib/env"
-import { longDay, kindName, queueEmail, queueText } from "@/lib/pass/server/messages"
+import { queueDateMessage } from "@/lib/scheduling/server/notify"
+import { enqueue } from "@/lib/queue"
+import { orderDay } from "@/lib/scheduling/server/order-day"
+import { blockedMinutes, capacityAfterBlocks } from "@/lib/admin/calendar"
+import { loadBlocks } from "@/lib/jobber-feed"
 import { offeredDays, openSlots, truckFor } from "@/lib/pass/server/area-days"
 import { emitEvent } from "../webhooks/deliver"
 import { recordChange } from "../passes/queries"
@@ -84,7 +87,10 @@ export const visitsMove = defineHandler({
       and(eq(s.visit.organizationId, ctx.organizationId), eq(s.visit.truckId, truck.id), eq(s.visit.scheduledOn, input.scheduledOn), ne(s.visit.id, visit.id), notInArray(s.visit.status, ["cancelled", "skipped"])),
     )
     const kind = capacityKind(visit.kind)
-    if (others.filter((o) => capacityKind(o.visit.kind) === kind).length >= truck.capacityByKind[kind])
+    // The truck's own Jobber calendar shrinks the day; Ryan may use the buffer the scheduler holds back.
+    const blocks = await loadBlocks(ctx.db, ctx.organizationId, new Date(`${addDays(input.scheduledOn, -1)}T00:00:00Z`), new Date(`${addDays(input.scheduledOn, 2)}T00:00:00Z`))
+    const room = capacityAfterBlocks(truck.capacityByKind[kind], blockedMinutes(blocks, truck.id, input.scheduledOn, "America/Denver"))
+    if (others.filter((o) => capacityKind(o.visit.kind) === kind).length >= room)
       throw new ApiError("unprocessable", `${truck.name} is full of ${kind} visits on ${input.scheduledOn}`)
     const areas = await ctx.db.select().from(s.area).where(eq(s.area.organizationId, ctx.organizationId))
     const areaOf = (town: string) => areas.find((a) => a.towns.includes(town as never))?.id ?? town
@@ -93,8 +99,13 @@ export const visitsMove = defineHandler({
     const moved = visit.status === "scheduled"
     await ctx.db
       .update(s.visit)
-      .set({ status: "scheduled", truckId: truck.id, scheduledOn: input.scheduledOn, startTime: input.startTime ?? null, awaitingPick: false, stopOrder: null })
+      .set({ status: "scheduled", truckId: truck.id, scheduledOn: input.scheduledOn, startTime: null, awaitingPick: false, stopOrder: null, exception: null })
       .where(eq(s.visit.id, visit.id))
+    await orderDay(ctx.db, { truckId: truck.id, day: input.scheduledOn })
+    if (moved && visit.truckId && visit.scheduledOn && (visit.truckId !== truck.id || visit.scheduledOn !== input.scheduledOn)) await orderDay(ctx.db, { truckId: visit.truckId, day: visit.scheduledOn })
+    if (input.startTime) await ctx.db.update(s.visit).set({ startTime: input.startTime }).where(eq(s.visit.id, visit.id))
+    await ctx.db.update(s.adminAlert).set({ resolvedAt: ctx.now }).where(and(eq(s.adminAlert.organizationId, ctx.organizationId), eq(s.adminAlert.kind, "unplaced"), eq(s.adminAlert.key, visit.id)))
+    if (visit.scheduledOn !== input.scheduledOn) await queueDateMessage(ctx.db, visit, moved ? "date-moved" : "date-set", input.scheduledOn)
     await emitEvent(ctx.db, ctx.organizationId, moved ? "visit.moved" : "visit.scheduled", { visitId: visit.id, truckId: truck.id, scheduledOn: input.scheduledOn, from: moved ? { truckId: visit.truckId, scheduledOn: visit.scheduledOn } : null })
     return visitOut(ctx, await loadVisit(ctx, visit.id))
   },
@@ -114,6 +125,8 @@ export const visitsMarkClosed = defineHandler({
     if (!(["scheduled", "not-closed"] as string[]).includes(visit.status)) throw new ApiError("unprocessable", `A ${visit.status} visit cannot be closed`)
     await ctx.db.update(s.visit).set({ status: "completed", completedOn: input.completedOn ?? today(ctx) }).where(eq(s.visit.id, visit.id))
     await emitEvent(ctx.db, ctx.organizationId, "visit.done", { visitId: visit.id, completedOn: input.completedOn ?? today(ctx) })
+    // Ryan marking it done is the one human path to a charge without a completion signal; the queue and the charge are idempotent.
+    if (visit.passId) await enqueue(ctx.db, ctx.organizationId, "pass-charge", visit.id, { visitId: visit.id })
     return visitOut(ctx, await loadVisit(ctx, visit.id))
   },
 })
@@ -217,13 +230,7 @@ export const visitsPick = defineHandler({
     await ctx.db.update(s.visit).set({ status: "scheduled", truckId: slot.truckId, scheduledOn: input.day, startTime: null, stopOrder: null, awaitingPick: false, exception: null }).where(eq(s.visit.id, visit.id))
     await recordChange(ctx, { customerId: visit.customerId, passId: visit.passId, visitId: visit.id, kind: "day-picked", detail: { visit: visit.kind, day: input.day, truck: slot.truckName, from: visit.scheduledOn } })
     await emitEvent(ctx.db, ctx.organizationId, moved ? "visit.moved" : "visit.scheduled", { visitId: visit.id, truckId: slot.truckId, scheduledOn: input.day, from: moved ? { truckId: visit.truckId, scheduledOn: visit.scheduledOn } : null })
-    const [customer] = await ctx.db.select().from(s.customer).where(eq(s.customer.id, visit.customerId))
-    if (customer) {
-      const text = `Trailhead: your ${kindName(visit.kind)} is ${longDay(input.day)}. Change your day or anything else: ${readAppUrl()}/account/pass`
-      const base = { organizationId: ctx.organizationId, customerId: customer.id, visitId: visit.id, kind: moved ? ("date-moved" as const) : ("date-set" as const), key: `${visit.id}-${input.day}`, body: text }
-      if (customer.phone) await queueText(ctx.db, { ...base, to: customer.phone })
-      else if (customer.email) await queueEmail(ctx.db, { ...base, to: customer.email, subject: `Your ${kindName(visit.kind)} is ${longDay(input.day)}` })
-    }
+    await queueDateMessage(ctx.db, visit, moved ? "date-moved" : "date-set", input.day)
     return visitOut(ctx, await loadVisit(ctx, visit.id))
   },
 })

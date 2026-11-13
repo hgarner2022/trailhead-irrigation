@@ -399,10 +399,10 @@ export const scheduleRun = pgTable(
     organizationId: orgId(),
     season: integer("season").notNull(),
     window: text("window").notNull(),
-    proposedAt: ts("proposed_at"),
-    approvedAt: ts("approved_at"),
-    approvedBy: text("approved_by"),
-    mode: text("mode").notNull().default("manual"),
+    /** when the run happened; Schedule applies its own result, so there is no second step to record */
+    ranAt: ts("ran_at").notNull().defaultNow(),
+    /** the email of the person who pressed Schedule, or `system` for the daily run */
+    ranBy: text("ran_by").notNull().default("system"),
     counts: jsonb("counts").$type<Record<string, number>>().notNull().default(sql`'{}'::jsonb`),
     createdAt: createdAt(),
     updatedAt: updatedAt(),

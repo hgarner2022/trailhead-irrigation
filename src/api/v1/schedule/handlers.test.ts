@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { afterAll, beforeAll, describe, expect, it } from "vitest"
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest"
 import { eq } from "drizzle-orm"
 import * as s from "@/db/schema"
 import type { TestDb } from "@/db/test-db"
@@ -10,6 +10,7 @@ import { scheduleDay, scheduleRun, scheduleSlots, scheduleWeek } from "./handler
 
 let db: TestDb
 beforeAll(async () => {
+  vi.stubEnv("APP_URL", "https://site.test")
   db = await apiDb()
   await callApi(ctxFor(db, writeKey), visitsMove, { id: "p3-turn-on", truckId: "truck-1", scheduledOn: "2027-05-05", startTime: "08:00" })
   await callApi(ctxFor(db, writeKey), visitsMove, { id: "p4-turn-on", truckId: "truck-1", scheduledOn: "2027-05-05", startTime: "09:00" })
@@ -58,8 +59,7 @@ describe("schedule.slots", () => {
 })
 
 describe("schedule.run", () => {
-  it("is a stub that still needs the admin scope", async () => {
-    await expect(callApi(ctxFor(db, adminKey), scheduleRun, { window: "blowout" })).rejects.toMatchObject({ code: "not_implemented" })
+  it("needs the admin scope and a real window", async () => {
     await expect(callApi(ctxFor(db, writeKey), scheduleRun, { window: "blowout" })).rejects.toMatchObject({ code: "forbidden" })
     await expect(callApi(ctxFor(db, adminKey), scheduleRun, { window: "spring" })).rejects.toMatchObject({ code: "invalid" })
   })

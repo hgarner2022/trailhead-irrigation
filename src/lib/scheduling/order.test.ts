@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { haversine, orderStops, routeLength } from "./order"
+import { orderStops, routeLength } from "./order"
 
 // About 1.1 km per 0.01 degree of latitude; a square of corners a (SW), b (SE), c (NE), d (NW).
 const a = { id: "a", lat: 40.0, lng: -105.0 }

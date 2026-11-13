@@ -8,6 +8,8 @@ import { chargeVisit } from "@/lib/pass/server/charge-visit"
 import { getStripe } from "@/lib/stripe/client"
 import { handleStripeEvent } from "@/lib/stripe/webhook"
 import { geocodeProperty } from "@/lib/geocode"
+import { runSchedule, type RunWindow } from "@/lib/scheduling/server/run"
+import { mountainDay } from "@/api/v1/shared"
 import { syncTruckFeed } from "@/lib/jobber-feed"
 import type Stripe from "stripe"
 import type { QueueHandler, QueueKind } from "./index"
@@ -49,4 +51,10 @@ export const stripeWebhook: QueueHandler = async (db, item) => {
   await handleStripeEvent(db, getStripe(), item.organizationId, event, readAppUrl())
 }
 
-export const handlers: Partial<Record<QueueKind, QueueHandler>> = { "jobber-feed-sync": jobberFeedSync, geocode, "pass-charge": passCharge, "pass-onboard": passOnboard, "pass-cancel": passCancel, "stripe-webhook": stripeWebhook }
+/** `schedule-run`: payload `{ window, season?, by? }`; the same run the Schedule button makes (`runSchedule`), for the daily cron. */
+export const scheduleRun: QueueHandler = async (db, item) => {
+  const { window, season, by } = item.payload as { window: RunWindow; season?: number; by?: string }
+  await runSchedule(db, { organizationId: item.organizationId, window, season, today: mountainDay(new Date()), by })
+}
+
+export const handlers: Partial<Record<QueueKind, QueueHandler>> = { "jobber-feed-sync": jobberFeedSync, geocode, "pass-charge": passCharge, "pass-onboard": passOnboard, "pass-cancel": passCancel, "stripe-webhook": stripeWebhook, "schedule-run": scheduleRun }
