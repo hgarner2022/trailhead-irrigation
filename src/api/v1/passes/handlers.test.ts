@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { afterAll, beforeAll, describe, expect, it } from "vitest"
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest"
 import { eq } from "drizzle-orm"
 import * as s from "@/db/schema"
 import type { TestDb } from "@/db/test-db"
@@ -9,6 +9,10 @@ import {
   passesActivate, passesAddInspection, passesCancel, passesCreate, passesGet, passesList, passesResendConfirmation,
   passesSendCardUpdateLink, passesSkipVisit, passesUpdatePreference,
 } from "./handlers"
+import { completeSession, stubStripe } from "@/lib/stripe/test-stripe"
+
+const { getStripe } = vi.hoisted(() => ({ getStripe: vi.fn() }))
+vi.mock("@/lib/stripe/client", async (original) => ({ ...(await original<typeof import("@/lib/stripe/client")>()), getStripe }))
 
 let db: TestDb
 beforeAll(async () => {
@@ -164,10 +168,36 @@ describe("passes.skipVisit", () => {
 })
 
 describe("stubs", () => {
-  it("answers not_implemented for the Stripe and messaging calls, with the scope still enforced", async () => {
-    await expect(callApi(ctxFor(db, writeKey), passesActivate, { id: "p1", setupSessionId: "cs_1" })).rejects.toMatchObject({ code: "not_implemented", status: 501 })
+  it("answers not_implemented for the confirmation email, with the scope still enforced", async () => {
     await expect(callApi(ctxFor(db, writeKey), passesResendConfirmation, { id: "p1" })).rejects.toMatchObject({ code: "not_implemented" })
-    await expect(callApi(ctxFor(db, writeKey), passesSendCardUpdateLink, { id: "p1" })).rejects.toMatchObject({ code: "not_implemented" })
-    await expect(callApi(ctxFor(db, readKey), passesActivate, { id: "p1", setupSessionId: "cs_1" })).rejects.toMatchObject({ code: "forbidden" })
+    await expect(callApi(ctxFor(db, readKey), passesResendConfirmation, { id: "p1" })).rejects.toMatchObject({ code: "forbidden" })
+  })
+})
+
+describe("passes.activate and passes.sendCardUpdateLink (Stripe stubbed)", () => {
+  const fresh = (email: string) => create({ customer: { firstName: "Stripe", email } })
+  it("activates a pending pass from a finished setup session, once", async () => {
+    const pass = await fresh("activate@example.com")
+    const stub = stubStripe({ sessions: { cs_a: completeSession("cs_a", { purpose: "pass-setup", passId: pass.id }, { last4: "4242", customer: "cus_act" }) } })
+    getStripe.mockReturnValue(stub.stripe)
+    const active = await callApi(ctxFor(db, writeKey), passesActivate, { id: pass.id, setupSessionId: "cs_a" })
+    expect(active).toMatchObject({ status: "active" })
+    await callApi(ctxFor(db, writeKey), passesActivate, { id: pass.id, setupSessionId: "cs_a" })
+    expect(stub.calls.customersUpdate).toHaveBeenCalledTimes(1)
+    const [c] = await db.select().from(s.customer).where(eq(s.customer.id, pass.customer!.id))
+    expect(c!.stripeCustomerId).toBe("cus_act")
+    await expect(callApi(ctxFor(db, readKey), passesActivate, { id: pass.id, setupSessionId: "cs_a" })).rejects.toMatchObject({ code: "forbidden" })
+  })
+  it("queues a card-update email with a fresh link", async () => {
+    const pass = await fresh("link@example.com")
+    await db.update(s.customer).set({ stripeCustomerId: "cus_link" }).where(eq(s.customer.id, pass.customer!.id))
+    const stub = stubStripe()
+    getStripe.mockReturnValue(stub.stripe)
+    vi.stubEnv("APP_URL", "https://site.test")
+    await expect(callApi(ctxFor(db, writeKey), passesSendCardUpdateLink, { id: pass.id })).resolves.toEqual({ ok: true })
+    const rows = await db.select().from(s.messageLog).where(eq(s.messageLog.customerId, pass.customer!.id))
+    expect(rows).toHaveLength(1)
+    expect(rows[0]).toMatchObject({ kind: "card-failed", status: "queued" })
+    expect(rows[0]!.body).toContain("https://checkout.stripe.test/c/pay")
   })
 })
