@@ -119,6 +119,7 @@ export function ContactStep({ state, set, attempted }: StepProps & { attempted: 
             </Label>
             <Input
               id={inputId}
+              name={field.key}
               data-autofocus={i === 0 || undefined}
               type={field.type}
               autoComplete={field.autoComplete}
@@ -182,6 +183,7 @@ export function ConsentBoxes({ state, set, attempted, locked = false }: StepProp
         <div className="flex items-start gap-3">
           <Checkbox
             id={`${id}-terms`}
+            name="termsAccepted"
             checked={state.termsAccepted}
             disabled={locked}
             onCheckedChange={(checked) => set("termsAccepted", checked === true)}
@@ -203,6 +205,7 @@ export function ConsentBoxes({ state, set, attempted, locked = false }: StepProp
         <div key={box.key} className="flex items-start gap-3">
           <Checkbox
             id={`${id}-${box.key}`}
+            name={box.key}
             checked={state[box.key]}
             onCheckedChange={(checked) => set(box.key, checked === true)}
             aria-describedby={`${id}-${box.key}-note`}

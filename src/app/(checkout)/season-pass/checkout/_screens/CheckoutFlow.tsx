@@ -5,7 +5,7 @@ import Image from "next/image"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import type { Pass } from "@/lib/admin/types"
-import { STEPS, STEP_COUNT, canContinue, toPass, type CheckoutFields, type CheckoutState } from "./checkout-state"
+import { STEPS, STEP_COUNT, canContinue, stepProblems, toPass, type CheckoutFields, type CheckoutState } from "./checkout-state"
 import type { PlaceProvider } from "@/lib/places"
 import { AddressStep } from "./checkout-address"
 import { CONSENT_PROBLEM_ID, ContactStep, DoneStep, ZonesStep, useReveal } from "./checkout-steps"
@@ -13,6 +13,7 @@ import { useCheckoutState } from "./use-checkout-state"
 import { useCheckoutServer } from "./use-checkout-server"
 import { useCheckoutStorage } from "./use-checkout-storage"
 import { CardStep } from "./checkout-card"
+import { ErrorSummary } from "./checkout-errors"
 import type { BeginCheckout, FinishCheckout, RecordConsent } from "./checkout-submit"
 import { savePassImage } from "@/lib/pass-card-image"
 import { InspectionStep } from "./checkout-inspection"
@@ -71,8 +72,8 @@ function StepBody({ duration, enabled, children }: { duration: number; enabled: 
 
 export function CheckoutFlow({ season, initialZones, initialStep, prefill, places, today, onComplete, onSaveImage, onDone, stripeKey, onBegin, onFinish, onConsent }: CheckoutFlowProps) {
   const [state, dispatch] = useCheckoutState({ ...(initialZones ? { zones: initialZones } : {}), ...(today ? { today } : {}), ...prefill, ...(initialStep ? { step: initialStep } : {}) })
-  // The step on which Enter was pressed too early, so the address and contact steps show what is missing.
-  const [attemptedStep, setAttemptedStep] = useState<number | null>(null)
+  // The step on which Continue (or Enter) was pressed too early, so it shows every field's problem; `n` counts the presses so each one moves focus again.
+  const [attempt, setAttempt] = useState<{ step: number; n: number } | null>(null)
   const section = useRef<HTMLElement>(null)
   const questionId = useId()
   // Set on the first move, so opening the page does not animate; Done always rises.
@@ -81,7 +82,7 @@ export function CheckoutFlow({ season, initialZones, initialStep, prefill, place
   const current = STEPS[step - 1]
   const done = current.key === "done"
   const valid = canContinue(state)
-  const attempted = attemptedStep === step
+  const attempted = attempt?.step === step
   const wired = Boolean(stripeKey && onBegin && onFinish)
   const markMoved = useCallback(() => setMoved(true), [])
   const { busy, begin, finishCard, retry } = useCheckoutServer({ state, dispatch, onBegin, onFinish, onComplete, onConsent, moved: markMoved })
@@ -92,7 +93,7 @@ export function CheckoutFlow({ season, initialZones, initialStep, prefill, place
     // On the wired card step only Stripe's own form saves the card; Enter and the arrows must not skip it.
     if (busy || (wired && current.key === "card")) return
     if (!valid) {
-      setAttemptedStep(step)
+      setAttempt((prev) => ({ step, n: (prev?.n ?? 0) + 1 }))
       return
     }
     if (wired && current.key === "contact") {
@@ -114,6 +115,12 @@ export function CheckoutFlow({ season, initialZones, initialStep, prefill, place
     const target = el?.querySelector<HTMLElement>("[data-autofocus]") ?? el
     target?.focus({ preventScroll: true })
   }, [step])
+
+  // A press that could not pass puts focus on the first field with a problem, once its message is on screen.
+  useEffect(() => {
+    if (!attempt) return
+    section.current?.querySelector<HTMLElement>('[aria-invalid="true"], [data-invalid="true"]')?.focus()
+  }, [attempt])
 
   const onKeyDown = (event: KeyboardEvent<HTMLElement>) => {
     const target = event.target as HTMLElement
@@ -214,6 +221,7 @@ export function CheckoutFlow({ season, initialZones, initialStep, prefill, place
               {current.question}
             </h1>
             <div className={done ? "mt-5" : "mt-8"}>{body}</div>
+            {attempted && <ErrorSummary problems={stepProblems(state)} />}
             {state.notice && (
               <p role="status" data-slot="checkout-notice" className="mt-6 text-base text-muted-foreground">
                 {state.notice}
@@ -241,7 +249,7 @@ export function CheckoutFlow({ season, initialZones, initialStep, prefill, place
               <span />
             )}
             {!(wired && current.key === "card") && (
-              <Button size="lg" data-nav disabled={!valid || busy} aria-busy={busy || undefined} aria-describedby={current.key === "card" && attempted && !valid ? CONSENT_PROBLEM_ID : undefined} onClick={next}>
+              <Button size="lg" data-nav disabled={busy} aria-busy={busy || undefined} aria-describedby={current.key === "card" && attempted && !valid ? CONSENT_PROBLEM_ID : undefined} onClick={next}>
                 {busy ? "One moment" : current.action}
               </Button>
             )}

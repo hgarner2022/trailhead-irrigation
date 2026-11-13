@@ -147,6 +147,7 @@ export function contactProblem(field: "firstName" | "email" | "phone", value: st
   return digits(value).length === 10 ? null : "We need a ten-digit phone number for the day-of text."
 }
 
+export const ACCESS_PROBLEM = "Tell us whether we can get to the system without you."
 export const PICK_ADDRESS = "Pick your address from the list so we have it right."
 
 /** The line under the address box: outside the six towns, or nothing picked after Enter; null when the step can pass. */
@@ -156,6 +157,21 @@ export function addressProblem(state: Pick<CheckoutFields, "place">, attempted: 
     return check.ok ? null : outOfAreaMessage(check)
   }
   return attempted ? PICK_ADDRESS : null
+}
+
+/** The fields of the step on screen that cannot pass yet, named for the error summary (each one's own message sits beside it). */
+export function stepProblems(state: CheckoutState): string[] {
+  const label = { firstName: "First name", email: "Email", phone: "Phone" } as const
+  switch (STEPS[state.step - 1]?.key) {
+    case "address":
+      return [...(addressProblem(state, true) ? ["Address"] : []), ...(state.place && state.access === null ? ["Access"] : [])]
+    case "contact":
+      return (["firstName", "email", "phone"] as const).filter((f) => contactProblem(f, state[f]) !== null).map((f) => label[f])
+    case "card":
+      return state.termsAccepted ? [] : ["Terms"]
+    default:
+      return []
+  }
 }
 
 /** Whether the step on screen has what it needs to move on. */

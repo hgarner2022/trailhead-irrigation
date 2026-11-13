@@ -45,14 +45,15 @@ export const MidSeason: Story = {
   globals: { viewport: { value: "wide", isRotated: false } },
 }
 
-/** A Boulder address picked: the out-of-area line and Continue off. */
+/** A Boulder address picked: the out-of-area line; Continue stays on the step. */
 export const AddressOutOfArea: Story = {
   globals: { viewport: { value: "wide", isRotated: false } },
   play: async ({ canvas, userEvent }) => {
     await userEvent.type(await canvas.findByRole("combobox", { name: "Street address" }), "1200 Pe")
     await userEvent.click(await canvas.findByRole("option", { name: /Boulder/ }))
     await expect(await canvas.findByText(/We don't serve Boulder yet/)).toBeInTheDocument()
-    await expect(canvas.getByRole("button", { name: "Continue" })).toBeDisabled()
+    await userEvent.click(canvas.getByRole("button", { name: "Continue" }))
+    await expect(canvas.getByRole("heading", { level: 1 })).toHaveTextContent("Where is the yard?")
   },
 }
 
@@ -76,6 +77,17 @@ export const Timing: Story = {
 export const Contact: Story = {
   args: { initialStep: 5, prefill: { ...answers, firstName: "", email: "", phone: "" } },
   globals: { viewport: { value: "wide", isRotated: false } },
+}
+
+/** Continue pressed with nothing typed: every problem beside its field, a summary naming them, and focus on the first. */
+export const ContactErrors: Story = {
+  args: { initialStep: 5, prefill: { ...answers, firstName: "", email: "", phone: "" } },
+  globals: { viewport: { value: "wide", isRotated: false } },
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(canvas.getByRole("button", { name: "Continue" }))
+    await expect(await canvas.findByRole("alert")).toHaveTextContent("3 things need another look: First name, Email, Phone")
+    await expect(canvas.getByLabelText("First name")).toHaveFocus()
+  },
 }
 
 /** The consent boxes under the card form: the terms unticked, so the button waits. */
@@ -188,7 +200,7 @@ export const Walkthrough: Story = {
     await userEvent.click(canvas.getByRole("button", { name: "Continue" }))
 
     const save = await canvas.findByRole("button", { name: "Save card and reserve" })
-    await expect(save).toBeDisabled()
+    await expect(save).toBeEnabled()
     await userEvent.click(canvas.getByRole("checkbox", { name: /I accept the Season Pass terms/ }))
     await userEvent.click(canvas.getByRole("checkbox", { name: "Seasonal tips and offers by email" }))
     await userEvent.click(save)

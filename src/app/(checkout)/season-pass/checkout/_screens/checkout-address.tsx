@@ -5,7 +5,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { AddressSearch } from "@/components/blocks/AddressSearch"
 import { SERVICE_AREA_SENTENCE, type PlaceProvider, type PlaceSuggestion } from "@/lib/places"
 import { fixturePlaces } from "@/lib/places/fixture"
-import { addressProblem, type CheckoutFields } from "./checkout-state"
+import { ACCESS_PROBLEM, addressProblem, type CheckoutFields } from "./checkout-state"
 import { Helper } from "./checkout-steps"
 
 // The first question: one box that finds the address as the customer types
@@ -26,6 +26,8 @@ export interface AddressStepProps {
   places?: PlaceProvider
 }
 
+const ACCESS_PROBLEM_ID = "checkout-access-problem"
+
 const ACCESS = [
   { value: "yes", name: "Yes", detail: "The controller and shut-off are reachable" },
   { value: "no", name: "No, I need to be there", detail: "We'll offer you days to pick from" },
@@ -33,15 +35,16 @@ const ACCESS = [
 
 export function AddressStep({ state, attempted, onType, onPick, set, places = fixturePlaces }: AddressStepProps) {
   const picked = state.place !== null
+  const accessMissing = attempted && picked && state.access === null
   return (
     <>
-      <AddressSearch autoFocus value={state.address} picked={state.place} provider={places} onChange={onType} onPick={onPick} problem={addressProblem(state, attempted)} />
+      <AddressSearch name="address" autoFocus value={state.address} picked={state.place} provider={places} onChange={onType} onPick={onPick} problem={addressProblem(state, attempted)} />
       <Helper>{SERVICE_AREA_SENTENCE} Pick your address from the list so we have it right.</Helper>
       {picked && (
         <div data-slot="checkout-access" className="mt-8">
           <p id="access-question" className="font-display text-2xl leading-tight text-navy">Can we reach the controller and the water shut-off without you?</p>
-          <div role="group" aria-labelledby="access-question" className="mt-4 grid gap-3 sm:grid-cols-2">
-            {ACCESS.map((choice) => {
+          <div role="group" aria-labelledby="access-question" aria-describedby={accessMissing ? ACCESS_PROBLEM_ID : undefined} className="mt-4 grid gap-3 sm:grid-cols-2">
+            {ACCESS.map((choice, i) => {
               const pressed = state.access === choice.value
               return (
                 <button
@@ -49,6 +52,7 @@ export function AddressStep({ state, attempted, onType, onPick, set, places = fi
                   type="button"
                   aria-pressed={pressed}
                   data-slot="access-choice"
+                  data-invalid={(accessMissing && i === 0) || undefined}
                   onClick={() => set("access", choice.value)}
                   className={cn(
                     "flex min-h-20 cursor-pointer flex-col items-start justify-center rounded-lg border px-4 py-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2",
@@ -63,6 +67,7 @@ export function AddressStep({ state, attempted, onType, onPick, set, places = fi
           </div>
           {state.access === "yes" && (
             <Textarea
+              name="accessNote"
               aria-label="How we get in"
               placeholder="Gate code, the dog, where the controller is"
               value={state.accessNote}
@@ -71,8 +76,10 @@ export function AddressStep({ state, attempted, onType, onPick, set, places = fi
               className="mt-3 rounded-lg bg-background text-base shadow-sm"
             />
           )}
-          {attempted && picked && state.access === null && (
-            <p className="mt-3 text-sm text-destructive">Tell us whether we can get to the system without you.</p>
+          {accessMissing && (
+            <p id={ACCESS_PROBLEM_ID} className="mt-3 text-sm text-destructive">
+              {ACCESS_PROBLEM}
+            </p>
           )}
         </div>
       )}
