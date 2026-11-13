@@ -3,6 +3,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { Sun, Search, Snowflake, ArrowRight } from "lucide-react"
 import { SectionHeader } from "@/components/sections/SectionHeader"
+import { PassReservedNotice } from "@/components/sections/PassReservedNotice"
 import { SeasonPassCalculator } from "@/components/sections/SeasonPassCalculator"
 import { FaqList, type FaqItem } from "@/components/sections/FaqList"
 import { CTAStrip } from "@/components/sections/CTAStrip"
@@ -109,6 +110,7 @@ export default function SeasonPassPage() {
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
+      <PassReservedNotice />
 
       {/* Hero: same treatment as the homepage, with the calculator card in
           the frame so the price and the action are the first thing seen. */}

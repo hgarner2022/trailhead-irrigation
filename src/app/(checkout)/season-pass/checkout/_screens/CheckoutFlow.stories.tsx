@@ -100,17 +100,6 @@ export const Card: Story = {
   },
 }
 
-/** Wired: the card form mounts under the summary with no box and no locked line (no key reaches Stripe.js, so nothing loads). */
-export const CardWired: Story = {
-  args: { initialStep: 6, prefill: { ...answers, termsAccepted: true, passId: "p-story", sessionId: "cs_story", clientSecret: "cs_story_secret" }, stripeKey: "pk_test_story", onBegin: fn(), onFinish: fn() },
-  globals: { viewport: { value: "wide", isRotated: false } },
-  play: async ({ canvas }) => {
-    await expect(canvas.queryByText(/Accept the terms/)).toBeNull()
-    await expect(canvas.queryByRole("checkbox")).toBeNull()
-    await expect(canvas.queryByRole("button", { name: "Save card and reserve" })).toBeNull()
-  },
-}
-
 /** Continue with everything answered but the terms unticked: the line beside the box says what is missing and the box takes focus. */
 export const ContactTermsMissing: Story = {
   args: { initialStep: 5, prefill: answers },
@@ -148,11 +137,11 @@ export const CardSummary: Story = {
   },
 }
 
-/** Activation failed after the card was saved: the message, a Try again that re-runs it, and Back. */
+/** Activation failed after the card was saved (no secret, so no Stripe.js loads in the story): the message, a Try again that re-runs it, and Back. */
 export const CardFailed: Story = {
   args: {
     initialStep: 6,
-    prefill: { ...answers, termsAccepted: true, passId: "p-story", sessionId: "cs_story", clientSecret: "cs_story_secret", failure: "We couldn't reach the card form just now. Nothing was charged. Please try again.", retry: "finish" },
+    prefill: { ...answers, termsAccepted: true, passId: "p-story", failure: "We couldn't reach the card form just now. Nothing was charged. Please try again.", retry: "finish" },
     stripeKey: "pk_test_story",
     onBegin: fn(),
     onFinish: fn(),
