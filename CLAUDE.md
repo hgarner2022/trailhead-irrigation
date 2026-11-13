@@ -40,6 +40,8 @@ src/
     sections/                   # Page sections (Hero, ServicesOverview, StatsStrip, …)
     ConversionTracking.tsx      # GA4 click delegation for tel: + /book + form events
     blocks/                     # Composed app pieces (StatTile, SeasonLine, PassCard, DataGrid, SidePanel, AdminShell, AddressSearch, TimingChoice, …), each with a story; never imported by marketing
+  api/                          # The open API: core/ (handler shape, ctx, callApi, route wrapper, idempotency, pagination), v1/<resource>/ (schemas, handlers, tests; registry in v1/index.ts), openapi.ts, mcp.ts. Every screen and agent calls handlers through callApi; marketing never imports it
+  lib/admin/api-ctx.ts          # ctxFromSession() for pages and actions, ctxForJob(org) for queue handlers and crons
   lib/places/                   # Address type-ahead: PlaceProvider, serviceability (six towns by name, then zip), the fixture provider; Google Places when wired
   lib/email-check.ts            # Email shape check + the common-domain slip suggestion
   lib/
