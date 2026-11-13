@@ -33,7 +33,7 @@ describe("step order", () => {
     expect(STEPS).toHaveLength(7)
     expect(STEPS.map((s) => s.key)).toEqual(["address", "zones", "inspection", "days", "contact", "card", "done"])
     expect(STEPS[2]).toEqual({ key: "inspection", question: "Add a mid-season inspection?", action: "Continue" })
-    expect(STEPS[3]).toEqual({ key: "days", question: "Pick your days.", action: "Continue" })
+    expect(STEPS[3]).toEqual({ key: "days", question: "Pick your days", action: "Continue" })
   })
 
   it("starts on the address step with the minimum zones, both recommendations and no consent", () => {

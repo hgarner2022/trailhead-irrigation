@@ -27,7 +27,7 @@ export const STEPS: readonly Step[] = [
   { key: "address", question: "Where is the yard?", action: "Continue" },
   { key: "zones", question: "How many zones does your system have?", action: "Continue" },
   { key: "inspection", question: "Add a mid-season inspection?", action: "Continue" },
-  { key: "days", question: "Pick your days.", action: "Continue" },
+  { key: "days", question: "Pick your days", action: "Continue" },
   { key: "contact", question: "Who should we reach?", action: "Continue" },
   { key: "card", question: "Save a card for after each visit.", action: "Save card and reserve" },
   { key: "done", question: "Your season is reserved" },

@@ -189,7 +189,7 @@ describe("CheckoutFlow", () => {
 
   it("offers three days for each visit with the first selected, and the line about changing it later", async () => {
     render(<CheckoutFlow season={2027} initialStep={4} prefill={{ address: "9 Elm St", town: "Erie", inspection: true }} />)
-    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Pick your days.")
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Pick your days")
     const radios = await screen.findAllByRole("radio")
     expect(radios).toHaveLength(9)
     const turnOn = screen.getByRole("group", { name: "Your spring turn-on" })
@@ -461,7 +461,7 @@ describe("a renewal on the card on file", () => {
       fireEvent.click(screen.getByRole("button", { name: "Reserve 2028" }))
     })
     expect(screen.getByRole("alert")).toHaveTextContent("Your 2028 season is already reserved.")
-    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Pick your days.")
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Pick your days")
   })
 
   it("keeps the card step when there is no card on file", () => {
