@@ -36,6 +36,15 @@ export function visitRow(visit: PassVisit, pass: Pass): VisitRow {
   return { kind: visit.kind, name: VISIT_NAMES[visit.kind], when, status, label }
 }
 
+const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+
+/** "Tuesday, May 5" for a booked visit, with the truck's name when it has one: "Tuesday, May 5, Truck 1". Null before a day is set or once the visit is done. */
+export function bookedWhen(visit: PassVisit): string | null {
+  if (!visit.scheduledAt || visit.completedAt) return null
+  const weekday = WEEKDAYS[new Date(`${visit.scheduledAt.slice(0, 10)}T12:00:00Z`).getUTCDay()]
+  return `${weekday}, ${writtenDate(visit.scheduledAt)}${visit.truckName ? `, ${visit.truckName}` : ""}`
+}
+
 export const visitRows = (pass: Pass): VisitRow[] => pass.visits.map((v) => visitRow(v, pass))
 
 /** The turn-on and the blowout can be moved by the customer until a day is set; the inspection has no preference. */

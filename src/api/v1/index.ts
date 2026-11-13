@@ -7,12 +7,12 @@ import { customersList, customersGet, customersCreate, customersUpdate, consents
 import { mirrorUpsert } from "./mirror/handlers"
 import { messagesList, messagesSend } from "./messages/handlers"
 import { organizationGet } from "./organization/handlers"
-import { passesList, passesGet, passesCreate, passesActivate, passesCancel, passesResendConfirmation, passesSendCardUpdateLink, passesUpdatePreference, passesAddInspection, passesSkipVisit } from "./passes/handlers"
+import { passesList, passesGet, passesCreate, passesActivate, passesCancel, passesResendConfirmation, passesSendCardUpdateLink, passesStartCardUpdate, passesUpdatePreference, passesAddInspection, passesSkipVisit } from "./passes/handlers"
 import { scheduleRun, scheduleWeek, scheduleDay, scheduleSlots } from "./schedule/handlers"
 import { servicesList, servicesCreate, servicesUpdate, servicesDeactivate } from "./services/handlers"
 import { settingsGet, settingsUpdate, settingsChangesList } from "./settings/handlers"
 import { trucksList, trucksCreate, trucksUpdate, trucksDeactivate } from "./trucks/handlers"
-import { visitsList, visitsGet, visitsMove, visitsMarkClosed, visitsStretch, visitsRequestMove, visitsLinkRequest } from "./visits/handlers"
+import { visitsList, visitsGet, visitsMove, visitsMarkClosed, visitsStretch, visitsRequestMove, visitsLinkRequest, visitsAreaDays, visitsPick } from "./visits/handlers"
 import { webhooksList, webhooksCreate, webhooksDelete, webhooksTest } from "./webhooks/handlers"
 
 /** Every operation of the API, in the order the docs list them. The OpenAPI document, the MCP tools and the routes all read this array. */
@@ -24,11 +24,11 @@ export const handlers: AnyHandler[] = [
   messagesList, messagesSend,
   mirrorUpsert,
   organizationGet,
-  passesList, passesGet, passesCreate, passesActivate, passesCancel, passesResendConfirmation, passesSendCardUpdateLink, passesUpdatePreference, passesAddInspection, passesSkipVisit,
+  passesList, passesGet, passesCreate, passesActivate, passesCancel, passesResendConfirmation, passesSendCardUpdateLink, passesStartCardUpdate, passesUpdatePreference, passesAddInspection, passesSkipVisit,
   scheduleRun, scheduleWeek, scheduleDay, scheduleSlots,
   servicesList, servicesCreate, servicesUpdate, servicesDeactivate,
   settingsGet, settingsUpdate, settingsChangesList,
   trucksList, trucksCreate, trucksUpdate, trucksDeactivate,
-  visitsList, visitsGet, visitsMove, visitsMarkClosed, visitsStretch, visitsRequestMove, visitsLinkRequest,
+  visitsList, visitsGet, visitsMove, visitsMarkClosed, visitsStretch, visitsRequestMove, visitsLinkRequest, visitsAreaDays, visitsPick,
   webhooksList, webhooksCreate, webhooksDelete, webhooksTest,
 ]

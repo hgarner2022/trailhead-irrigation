@@ -7,12 +7,12 @@ import { SeasonLine } from "@/components/blocks/SeasonLine"
 import { StatusPill } from "@/components/blocks/StatusPill"
 import type { Pass, TimingPreference } from "@/lib/admin/types"
 import { preferenceOf } from "@/lib/admin/format"
-import { CancelPassDialog } from "./CancelPassDialog"
+import { CancelPassDialog, type ActionResult } from "./CancelPassDialog"
 import { EarlierSeasons } from "./EarlierSeasons"
 import { PassActions } from "@/components/blocks/PassActions"
 import { PreferenceDialog } from "@/components/blocks/PreferenceDialog"
 import { PickDayButtons } from "./PickDayButtons"
-import { canChange, cardLine, earlierSeasons, passHeadline, pickDayOptions, seasonCaption, visitRows } from "./pass-page-model"
+import { bookedWhen, canChange, cardLine, earlierSeasons, passHeadline, pickDayOptions, seasonCaption, visitRows } from "./pass-page-model"
 
 // The customer's pass page: a season card, not a dashboard. The pass card at
 // the top, the season line with the visits and their state, the card
@@ -34,22 +34,35 @@ export interface PassPageScreenProps {
   /** ISO date the season line's marker is read from */
   today: string
   /** called when the customer confirms the cancel dialog */
-  onCancel?: () => void
+  onCancel?: () => ActionResult | Promise<ActionResult>
   /** called when the customer saves a new timing preference for the turn-on or the blowout */
   onChangePreference?: (kind: "turn-on" | "blowout", preference: TimingPreference) => void
   onAddInspection?: (passId: string) => void
   onSkip?: (passId: string, kind: Pass["visits"][number]["kind"]) => void
   /** a customer who must be home picked one of the offered days */
-  onPickDay?: (kind: "turn-on" | "blowout", dayIso: string) => void
+  onPickDay?: (kind: "turn-on" | "blowout", dayIso: string) => ActionResult | Promise<ActionResult>
+  /** the customer asked to update the card; the wiring sends them to Stripe's hosted page. Rendered as a form action. */
+  onUpdateCard?: () => void | Promise<void>
+  /** the area days the scheduler offers, when the page has them; the prototype's stand-in days are used when absent */
+  pickDays?: Partial<Record<"turn-on" | "blowout", string[]>>
 }
 
 const LOGO = "/images/logo-badge.png"
+
+function UpdateCardButton({ onUpdateCard, variant, className }: { onUpdateCard?: () => void | Promise<void>; variant?: "outline"; className?: string }) {
+  const button = (
+    <Button variant={variant} className={className} type={onUpdateCard ? "submit" : "button"}>
+      Update card
+    </Button>
+  )
+  return onUpdateCard ? <form action={onUpdateCard}>{button}</form> : button
+}
 
 function Title({ children }: { children: string }) {
   return <h2 className="font-display text-2xl font-semibold leading-none text-navy">{children}</h2>
 }
 
-export function PassPageScreen({ pass, passes = [pass], today, onCancel, onChangePreference, onAddInspection, onSkip, onPickDay }: PassPageScreenProps) {
+export function PassPageScreen({ pass, passes = [pass], today, onCancel, onChangePreference, onAddInspection, onSkip, onPickDay, onUpdateCard, pickDays }: PassPageScreenProps) {
   const cancelled = pass.status === "cancelled"
   const earlier = earlierSeasons(passes, pass)
   const headline = passHeadline(pass, today)
@@ -73,17 +86,15 @@ export function PassPageScreen({ pass, passes = [pass], today, onCancel, onChang
           <p className={cn("mt-2 text-base", headline.action === "update-card" ? "text-foreground" : "text-muted-foreground")}>{headline.line}</p>
           {headline.action === "pick-day" && headline.kind && headline.kind !== "inspection" && (
             <div className="mt-5">
-              <PickDayButtons kind={headline.kind} days={pickDayOptions(pass, headline.kind)} onPick={onPickDay} />
+              <PickDayButtons kind={headline.kind} days={pickDays?.[headline.kind] ?? pickDayOptions(pass, headline.kind)} onPick={onPickDay} />
             </div>
           )}
           {headline.action === "change-day" && headline.kind && headline.kind !== "inspection" && (
             <div className="mt-5">
-              <PickDayButtons kind={headline.kind} days={pickDayOptions(pass, headline.kind)} onPick={onPickDay} foldedLabel="Pick a different day" />
+              <PickDayButtons kind={headline.kind} days={pickDays?.[headline.kind] ?? pickDayOptions(pass, headline.kind)} onPick={onPickDay} foldedLabel="Pick a different day" />
             </div>
           )}
-          {headline.action === "update-card" && (
-            <Button className="mt-5">Update card</Button>
-          )}
+          {headline.action === "update-card" && <UpdateCardButton onUpdateCard={onUpdateCard} className="mt-5" />}
           {headline.action === "renew" && (
             <Button className="mt-5">{`Reserve ${pass.season + 1}`}</Button>
           )}
@@ -114,7 +125,7 @@ export function PassPageScreen({ pass, passes = [pass], today, onCancel, onChang
                       <li key={row.kind} data-slot="pass-visit-row" className="flex items-center gap-3 py-3">
                         <span className="min-w-0 flex-1">
                           <span className="block text-base font-semibold text-foreground">{row.name}</span>
-                          <span className="block text-sm text-muted-foreground">{row.when}</span>
+                          <span className="block text-sm text-muted-foreground">{bookedWhen(visit) ?? row.when}</span>
                         </span>
                         {preference && canChange(visit) && <PreferenceDialog kind={visit.kind} value={preference} onSave={onChangePreference} />}
                         <StatusPill status={row.status} label={row.label} />
@@ -131,7 +142,7 @@ export function PassPageScreen({ pass, passes = [pass], today, onCancel, onChang
               </CardHeader>
               <CardContent className="flex flex-wrap items-center justify-between gap-4">
                 <p className="text-base text-foreground">{cardLine(pass)}</p>
-                <Button variant="outline">Update card</Button>
+                <UpdateCardButton onUpdateCard={onUpdateCard} variant="outline" />
               </CardContent>
             </Card>
 

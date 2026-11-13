@@ -14,11 +14,12 @@ export const visitSelect = {
   lat: s.property.lat,
   lng: s.property.lng,
   address: s.property.address,
+  truckName: s.truck.name,
 }
 
 /** Visits with the customer's first name and the property's town and point. Add `.where(...)` in the caller. */
 export const visitsQuery = (db: Database) =>
-  db.select(visitSelect).from(s.visit).innerJoin(s.customer, eq(s.customer.id, s.visit.customerId)).innerJoin(s.property, eq(s.property.id, s.visit.propertyId))
+  db.select(visitSelect).from(s.visit).innerJoin(s.customer, eq(s.customer.id, s.visit.customerId)).innerJoin(s.property, eq(s.property.id, s.visit.propertyId)).leftJoin(s.truck, eq(s.truck.id, s.visit.truckId))
 
 export type VisitJoined = Awaited<ReturnType<ReturnType<typeof visitsQuery>["limit"]>>[number]
 
@@ -38,6 +39,7 @@ export function visitOut(ctx: Ctx, row: VisitJoined): VisitOutType {
     preference: v.preference,
     awaitingPick: v.awaitingPick,
     truckId: v.truckId,
+    truckName: row.truckName,
     scheduledOn: v.scheduledOn,
     startTime: v.startTime,
     durationMinutes: v.durationMinutes,

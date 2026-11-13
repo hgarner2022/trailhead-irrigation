@@ -13,7 +13,7 @@ export interface QueuedMessage {
   organizationId: string
   customerId: string
   visitId?: string | null
-  kind: "receipt" | "card-failed" | "card-expiring" | "purchase-confirmation"
+  kind: "receipt" | "card-failed" | "card-expiring" | "purchase-confirmation" | "cancelled" | "date-set" | "date-moved"
   /** with `kind` and the customer, makes the row unique: a repeat of the same event adds nothing */
   key: string
   to: string
@@ -22,10 +22,15 @@ export interface QueuedMessage {
 }
 
 /** Writes one email row with status `queued`. Sending is the messaging layer's job (Phase 12); this only records what must go. Returns whether a row was added. */
-export async function queueEmail(db: Database, m: QueuedMessage): Promise<boolean> {
+export const queueEmail = (db: Database, m: QueuedMessage) => queueMessage(db, "email", m)
+
+/** The same row for a text: `to` is the phone number and there is no subject. */
+export const queueText = (db: Database, m: Omit<QueuedMessage, "subject">) => queueMessage(db, "sms", { ...m, subject: null })
+
+async function queueMessage(db: Database, channel: "email" | "sms", m: Omit<QueuedMessage, "subject"> & { subject: string | null }): Promise<boolean> {
   const rows = await db
     .insert(s.messageLog)
-    .values({ organizationId: m.organizationId, customerId: m.customerId, visitId: m.visitId ?? null, channel: "email", kind: m.kind, key: m.key, to: m.to, subject: m.subject, body: m.body, status: "queued" })
+    .values({ organizationId: m.organizationId, customerId: m.customerId, visitId: m.visitId ?? null, channel, kind: m.kind, key: m.key, to: m.to, subject: m.subject, body: m.body, status: "queued" })
     .onConflictDoNothing()
     .returning({ id: s.messageLog.id })
   return rows.length > 0
@@ -38,7 +43,7 @@ interface NextVisit {
   preference: TimingPreference | null
 }
 
-const longDay = (day: string) => new Date(`${day}T12:00:00Z`).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", timeZone: "UTC" })
+export const longDay = (day: string) => new Date(`${day}T12:00:00Z`).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", timeZone: "UTC" })
 
 /** "Your fall blowout is Tuesday, October 6." or, with no day yet, "Your fall blowout is planned for early October." */
 export function nextVisitLine(visits: NextVisit[]): string {

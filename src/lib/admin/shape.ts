@@ -16,7 +16,7 @@ const DAY_MS = 86_400_000
 export interface ApiVisit {
   id: string; passId: string | null; bookingId: string | null; customerId: string; firstName: string; town: Town; kind: string; status: string
   window: string | null; amount: number; preference: string | null; awaitingPick: boolean; truckId: string | null; scheduledOn: string | null
-  startTime: string | null; stopOrder: number | null; completedOn: string | null; chargedAt: string | null
+  startTime: string | null; truckName?: string | null; stopOrder: number | null; completedOn: string | null; chargedAt: string | null
   exception: { kind: "moved-in-jobber"; at: string; note: string } | null; lat: number | null; lng: number | null
 }
 export interface ApiPass {
@@ -151,6 +151,7 @@ export function shapeAdminData(i: ShapeInput): AdminData {
       .map((v) => ({
         kind: v.kind as PassVisit["kind"], window: v.window ?? WINDOWS[v.kind]!, amount: v.amount,
         ...(v.scheduledOn ? { scheduledAt: instantOf(v.scheduledOn, v.startTime) } : {}),
+        ...(v.truckName ? { truckName: v.truckName } : {}),
         ...(v.completedOn ? { completedAt: instantOf(v.completedOn, "12:00") } : {}),
         ...(v.chargedAt ? { chargedAt: v.chargedAt } : {}),
       }))
@@ -209,7 +210,7 @@ export function attention(i: ShapeInput, passes: Pass[]): Attention[] {
   for (const p of passes) {
     if (p.status !== "cancelled" && p.cardFailedAt) out.push({ kind: "charge-failed", passId: p.id, message: `The card on ${p.number} was declined; ${p.firstName} has the update link`, since: p.cardFailedAt })
   }
-  for (const a of i.alerts ?? []) out.push({ kind: a.kind === "new-pass" ? "new-pass" : "jobs-failed", ...(a.passId ? { passId: a.passId } : {}), message: a.message, since: iso(a.createdAt) })
+  for (const a of i.alerts ?? []) out.push({ kind: a.kind === "new-pass" ? "new-pass" : a.kind === "pass-cancelled" ? "pass-cancelled" : "jobs-failed", ...(a.passId ? { passId: a.passId } : {}), message: a.message, since: iso(a.createdAt) })
   for (const q of i.queueProblems) out.push({ kind: "jobs-failed", message: `A ${q.kind} task ${q.status === "failed" ? "gave up" : "is retrying"}: ${q.lastError ?? "no error recorded"}`, since: iso(q.updatedAt) })
   for (const v of i.visits) {
     if ((v.status === "not-closed" || v.status === "scheduled") && v.scheduledOn && v.scheduledOn < i.today && !v.completedOn)
@@ -222,6 +223,8 @@ export function attention(i: ShapeInput, passes: Pass[]): Attention[] {
   const ap = new Map(i.passes.map((p) => [p.id, p]))
   for (const p of passes) {
     const cancelledAt = ap.get(p.id)?.cancelledAt
+    // The `pass-cancel` task's own alert says it already; the computed row is the fallback until the queue has run.
+    if ((i.alerts ?? []).some((a) => a.kind === "pass-cancelled" && a.passId === p.id)) continue
     if (p.status === "cancelled" && cancelledAt && i.now.getTime() - Date.parse(cancelledAt) < FOURTEEN_DAYS)
       out.push({ kind: "pass-cancelled", passId: p.id, message: `${p.firstName} cancelled ${p.number}; remove any Jobber jobs still open`, since: cancelledAt })
   }

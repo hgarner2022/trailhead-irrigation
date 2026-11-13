@@ -13,7 +13,12 @@ import { emailDomainReachable, failedCheckoutStep, MAX_PENDING_PER_HOUR, pending
 import { recordPurchase } from "@/lib/pass/server/purchase"
 import { outOfAreaMessage } from "@/lib/places"
 import { queueCardUpdateLink } from "@/lib/pass/server/card-link"
+import { queueCancelledEmail } from "@/lib/pass/server/cancel"
+import { createCardUpdateSession } from "@/lib/stripe/card-update"
+import { enqueue } from "@/lib/queue"
+import { emitEvent } from "../webhooks/deliver"
 import { getStripe } from "@/lib/stripe/client"
+import type { Ctx } from "../../core/context"
 import { ApiError, notImplemented } from "../../core/errors"
 import { defineHandler } from "../../core/handler"
 import { afterTimeCursor, cursorPage, page, pageInput, timeCursor } from "../../core/pagination"
@@ -25,12 +30,20 @@ const WINDOW_LABEL = { "turn-on": "May", inspection: "July", blowout: "October" 
 const PassVisitKind = z.enum(["turn-on", "inspection", "blowout"])
 const OPEN = ["pending", "active"] as const
 
+/** The customer behind a signed-in customer's call; only reached when the caller has no `read` scope. */
+function ownCustomerId(ctx: Ctx): string {
+  const p = ctx.principal
+  if (p.kind === "person" && p.type === "customer" && p.customerId) return p.customerId
+  throw new ApiError("forbidden", "This call needs the read scope")
+}
+
 export const passesList = defineHandler({
   name: "passes.list",
   method: "GET",
   path: "/passes",
   scope: "read",
-  summary: "List passes, newest first. Filter by season, status, town or a timing preference.",
+  customerSelf: true,
+  summary: "List passes, newest first. Filter by season, status, town or a timing preference. A customer lists only their own.",
   input: z.object({
     season: z.coerce.number().int().optional(),
     status: PassStatus.optional(),
@@ -44,6 +57,7 @@ export const passesList = defineHandler({
       .where(
         and(
           eq(s.seasonPass.organizationId, ctx.organizationId),
+          hasScope(ctx.principal, "read") ? undefined : eq(s.seasonPass.customerId, ownCustomerId(ctx)),
           input.season ? eq(s.seasonPass.season, input.season) : undefined,
           input.status ? eq(s.seasonPass.status, input.status) : undefined,
           input.town ? eq(s.property.town, input.town) : undefined,
@@ -204,19 +218,26 @@ export const passesCancel = defineHandler({
   path: "/passes/{id}/cancel",
   scope: "write",
   customerSelf: true,
-  summary: "Cancel a pass and its visits that have not happened. Nothing further is charged. A customer cancels only their own.",
+  summary: "Cancel a pass and its visits that have not happened. Nothing further is charged, the customer is emailed, Home shows the cancellation and the Jobber routine removes the Jobber requests. A customer cancels only a pass their own email address holds.",
   input: z.object({ id: Id, reason: z.string().max(500).optional() }),
   output: z.object({ id: Id, status: z.literal("cancelled"), cancelledVisits: z.number().int() }),
   async run(ctx, input) {
     const row = await loadPass(ctx, input.id)
+    const p = ctx.principal
+    // A signed-in customer must hold the pass by email as well as by id; an admin or a key with the write scope may cancel any.
+    if (!hasScope(p, "write") && p.kind === "person" && row.email && p.email.toLowerCase() !== row.email.toLowerCase())
+      throw new ApiError("forbidden", "That pass belongs to another customer")
     if (row.pass.status === "cancelled") return { id: row.pass.id, status: "cancelled" as const, cancelledVisits: 0 }
     await ctx.db.update(s.seasonPass).set({ status: "cancelled", cancelledAt: ctx.now }).where(eq(s.seasonPass.id, row.pass.id))
     const cancelled = await ctx.db
       .update(s.visit)
-      .set({ status: "cancelled", truckId: null, scheduledOn: null, startTime: null, stopOrder: null })
+      .set({ status: "cancelled", truckId: null, scheduledOn: null, startTime: null, stopOrder: null, awaitingPick: false })
       .where(and(eq(s.visit.passId, row.pass.id), notInArray(s.visit.status, ["completed", "cancelled"])))
       .returning({ id: s.visit.id })
     await recordChange(ctx, { customerId: row.pass.customerId, passId: row.pass.id, kind: "cancelled", detail: { reason: input.reason ?? null, visits: cancelled.length } })
+    await enqueue(ctx.db, ctx.organizationId, "pass-cancel", row.pass.id, { passId: row.pass.id })
+    await queueCancelledEmail(ctx.db, row.pass.id, readAppUrl())
+    await emitEvent(ctx.db, ctx.organizationId, "pass.cancelled", { passId: row.pass.id, number: row.pass.number, visits: cancelled.length })
     return { id: row.pass.id, status: "cancelled" as const, cancelledVisits: cancelled.length }
   },
 })
@@ -246,6 +267,24 @@ export const passesSendCardUpdateLink = defineHandler({
     const row = await loadPass(ctx, input.id)
     await queueCardUpdateLink(ctx.db, getStripe(), ctx.organizationId, row.pass.id, readAppUrl())
     return OK
+  },
+})
+
+export const passesStartCardUpdate = defineHandler({
+  name: "passes.startCardUpdate",
+  method: "POST",
+  path: "/passes/{id}/card-update",
+  scope: "write",
+  customerSelf: true,
+  summary: "Open Stripe's hosted page to update the card on a pass and return its address. The link is good for 24 hours. A customer does this only for their own pass.",
+  input: idInput,
+  output: z.object({ url: z.string().url() }),
+  async run(ctx, input) {
+    const row = await loadPass(ctx, input.id)
+    const [customer] = await ctx.db.select({ stripeCustomerId: s.customer.stripeCustomerId }).from(s.customer).where(eq(s.customer.id, row.pass.customerId))
+    if (!customer?.stripeCustomerId) throw new ApiError("unprocessable", "This customer has no card on file to update yet")
+    const session = await createCardUpdateSession(getStripe(), { passId: row.pass.id, customerId: customer.stripeCustomerId, origin: readAppUrl() })
+    return { url: session.url }
   },
 })
 

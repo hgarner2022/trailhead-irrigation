@@ -17,6 +17,7 @@ export const VisitOut = z.object({
   preference: Preference.nullable(),
   awaitingPick: z.boolean().describe("The customer must be there and has not picked a day."),
   truckId: Id.nullable(),
+  truckName: z.string().nullable().describe("The truck's name, 'Truck 1', once a truck has the visit."),
   scheduledOn: Day.nullable(),
   startTime: z.string().nullable(),
   durationMinutes: z.number().int().nullable(),

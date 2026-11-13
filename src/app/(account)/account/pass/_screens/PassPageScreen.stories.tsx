@@ -124,3 +124,9 @@ export const Renew: Story = {
 export const Phone: Story = {
   globals: { viewport: { value: "phone", isRotated: false } },
 }
+
+/** The scheduler (or the customer) placed the blowout: "Booked" with weekday, date and truck. */
+export const Booked: Story = {
+  args: { pass: { ...active, visits: active.visits.map((v) => (v.kind === "blowout" ? { ...v, scheduledAt: "2026-10-06T14:00:00Z", truckName: "Truck 1" } : v)) } },
+  globals: { viewport: { value: "wide", isRotated: false } },
+}

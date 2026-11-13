@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { afterAll, beforeAll, describe, expect, it } from "vitest"
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest"
 import { eq } from "drizzle-orm"
 import * as s from "@/db/schema"
 import type { TestDb } from "@/db/test-db"
@@ -40,6 +40,7 @@ describe("ctxFromSession", () => {
 
 describe("ctxForJob", () => {
   it("is a system principal with every scope, logged as system", async () => {
+    vi.stubEnv("APP_URL", "https://site.test")
     const ctx = await ctxForJob(ORG, deps(null))
     expect(ctx.principal).toMatchObject({ kind: "api-key", id: "system", scopes: ["read", "write", "admin"] })
     await expect(callApi(ctx, passesCancel, { id: "p6" })).resolves.toMatchObject({ status: "cancelled" })

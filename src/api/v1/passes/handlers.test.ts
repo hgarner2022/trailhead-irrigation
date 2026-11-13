@@ -16,6 +16,7 @@ vi.mock("@/lib/stripe/client", async (original) => ({ ...(await original<typeof 
 
 let db: TestDb
 beforeAll(async () => {
+  vi.stubEnv("APP_URL", "https://site.test")
   db = await apiDb()
 })
 afterAll(() => db.close())

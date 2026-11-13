@@ -2,10 +2,15 @@ import "server-only"
 import { and, desc, eq, gte, lte, ne, notInArray } from "drizzle-orm"
 import { z } from "zod"
 import * as s from "@/db/schema"
+import type { Ctx } from "../../core/context"
 import { ApiError, notFound } from "../../core/errors"
 import { defineHandler } from "../../core/handler"
 import { afterTimeCursor, cursorPage, page, pageInput, timeCursor } from "../../core/pagination"
-import { capacityKind, Day, Id, idInput, okOutput, OK, today, VisitKind, VisitStatus, weekdayOf } from "../shared"
+import { assertOwnsCustomer, capacityKind, Day, Id, idInput, okOutput, OK, today, VisitKind, VisitStatus, weekdayOf } from "../shared"
+import { hasScope } from "@/lib/auth/principal"
+import { readAppUrl } from "@/lib/env"
+import { longDay, kindName, queueEmail, queueText } from "@/lib/pass/server/messages"
+import { offeredDays, openSlots, truckFor } from "@/lib/pass/server/area-days"
 import { emitEvent } from "../webhooks/deliver"
 import { recordChange } from "../passes/queries"
 import { loadVisit, visitOut, visitsQuery } from "./queries"
@@ -160,6 +165,65 @@ export const visitsLinkRequest = defineHandler({
   async run(ctx, input) {
     const { visit } = await loadVisit(ctx, input.id)
     await ctx.db.update(s.visit).set({ jobberJobUrl: input.url }).where(eq(s.visit.id, visit.id))
+    return visitOut(ctx, await loadVisit(ctx, visit.id))
+  },
+})
+
+const PICKABLE = ["unscheduled", "scheduled"] as const
+
+/** The pass visit and its open pass, for the two calls a customer makes about their own day. */
+async function loadPickable(ctx: Ctx, id: string) {
+  const row = await loadVisit(ctx, id)
+  const { visit } = row
+  assertOwnsCustomer(ctx, visit.customerId)
+  if (!visit.passId) throw new ApiError("unprocessable", "Only a pass visit has days to pick from")
+  const [pass] = await ctx.db.select().from(s.seasonPass).where(eq(s.seasonPass.id, visit.passId))
+  if (!pass || pass.status !== "active") throw new ApiError("unprocessable", "This pass is not open")
+  if (!(PICKABLE as readonly string[]).includes(visit.status)) throw new ApiError("unprocessable", `A ${visit.status} visit has no day to pick`)
+  return { row, visit, pass }
+}
+
+export const visitsAreaDays = defineHandler({
+  name: "visits.areaDays",
+  method: "GET",
+  path: "/visits/{id}/area-days",
+  scope: "read",
+  customerSelf: true,
+  summary: "The days a pass visit could take, up to three, each a day a truck already works the customer's area or has room: what the pass page offers a customer who must be home. A customer asks only about their own visit.",
+  input: idInput,
+  output: z.object({ days: z.array(Day) }),
+  async run(ctx, input) {
+    const { row, visit } = await loadPickable(ctx, input.id)
+    return { days: offeredDays(await openSlots(ctx.db, { id: visit.id, organizationId: visit.organizationId, kind: visit.kind, town: row.town }, today(ctx))) }
+  },
+})
+
+export const visitsPick = defineHandler({
+  name: "visits.pick",
+  method: "POST",
+  path: "/visits/{id}/pick",
+  scope: "write",
+  customerSelf: true,
+  summary: "A customer who must be home picks one of the offered area days for their pass visit. The visit lands on that day on a truck that works the area, and the customer is texted the date (emailed when there is no mobile number). A day that was not offered is refused.",
+  input: z.object({ id: Id, day: Day }),
+  output: VisitOut,
+  async run(ctx, input) {
+    const { row, visit, pass } = await loadPickable(ctx, input.id)
+    if (!pass.needsCustomerHome && !hasScope(ctx.principal, "write")) throw new ApiError("unprocessable", "Your visits are placed for you; ask us if you need a different day")
+    const slots = await openSlots(ctx.db, { id: visit.id, organizationId: visit.organizationId, kind: visit.kind, town: row.town }, today(ctx))
+    const slot = offeredDays(slots).includes(input.day) ? truckFor(slots, input.day) : undefined
+    if (!slot) throw new ApiError("unprocessable", "That day is not one of the days on offer; pick another")
+    const moved = visit.status === "scheduled"
+    await ctx.db.update(s.visit).set({ status: "scheduled", truckId: slot.truckId, scheduledOn: input.day, startTime: null, stopOrder: null, awaitingPick: false, exception: null }).where(eq(s.visit.id, visit.id))
+    await recordChange(ctx, { customerId: visit.customerId, passId: visit.passId, visitId: visit.id, kind: "day-picked", detail: { visit: visit.kind, day: input.day, truck: slot.truckName, from: visit.scheduledOn } })
+    await emitEvent(ctx.db, ctx.organizationId, moved ? "visit.moved" : "visit.scheduled", { visitId: visit.id, truckId: slot.truckId, scheduledOn: input.day, from: moved ? { truckId: visit.truckId, scheduledOn: visit.scheduledOn } : null })
+    const [customer] = await ctx.db.select().from(s.customer).where(eq(s.customer.id, visit.customerId))
+    if (customer) {
+      const text = `Trailhead: your ${kindName(visit.kind)} is ${longDay(input.day)}. Change your day or anything else: ${readAppUrl()}/account/pass`
+      const base = { organizationId: ctx.organizationId, customerId: customer.id, visitId: visit.id, kind: moved ? ("date-moved" as const) : ("date-set" as const), key: `${visit.id}-${input.day}`, body: text }
+      if (customer.phone) await queueText(ctx.db, { ...base, to: customer.phone })
+      else if (customer.email) await queueEmail(ctx.db, { ...base, to: customer.email, subject: `Your ${kindName(visit.kind)} is ${longDay(input.day)}` })
+    }
     return visitOut(ctx, await loadVisit(ctx, visit.id))
   },
 })
