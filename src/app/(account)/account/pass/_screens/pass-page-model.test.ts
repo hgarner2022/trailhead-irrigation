@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest"
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import type { Pass } from "@/lib/admin/types"
-import { cardLine, earlierSeasons, expiry, passHeadline, pickDayOptions, seasonCaption, seasonSummary, visitRows, visitStatus } from "./pass-page-model"
+import { bookedWhen, cardLine, earlierSeasons, expiry, passHeadline, pickDayOptions, seasonCaption, seasonSummary, visitRows, visitStatus } from "./pass-page-model"
 
 // passes[0] is Andrea in Erie: turn-on done May 3, inspection in July, blowout preferred for mid October.
 // passes[2] has no visit yet, with the turn-on preferred earlier.
@@ -107,5 +107,15 @@ describe("passHeadline", () => {
     expect(days.every((d) => d.startsWith("2027-05-"))).toBe(true)
     expect(days.every((d) => [2, 4].includes(new Date(`${d}T12:00:00Z`).getUTCDay()))).toBe(true)
     expect(pickDayOptions({ ...fresh, blowoutPreference: "later" }, "blowout")[0] >= "2027-10-18").toBe(true)
+  })
+})
+
+describe("bookedWhen", () => {
+  it("reads weekday, date and truck for a booked visit, and nothing before a day or after the visit", () => {
+    const v = { kind: "turn-on", window: "May", amount: 145, scheduledAt: "2027-05-04T14:00:00Z", truckName: "Truck 1" } as const
+    expect(bookedWhen(v)).toBe("Tuesday, May 4, Truck 1")
+    expect(bookedWhen({ ...v, truckName: undefined })).toBe("Tuesday, May 4")
+    expect(bookedWhen({ kind: "turn-on", window: "May", amount: 145 })).toBeNull()
+    expect(bookedWhen({ ...v, completedAt: "2027-05-04T17:00:00Z" })).toBeNull()
   })
 })
