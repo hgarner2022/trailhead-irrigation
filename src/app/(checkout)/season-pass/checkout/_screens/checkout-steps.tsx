@@ -220,18 +220,6 @@ export function ConsentBoxes({ state, set, attempted }: StepProps & { attempted:
   )
 }
 
-export function CardStep({ state, set, attempted }: StepProps & { attempted: boolean }) {
-  return (
-    <>
-      <div className="rounded-lg border border-dashed border-border bg-stone p-8 text-center text-muted-foreground">
-        Stripe&apos;s card form mounts here. Nothing is charged today.
-      </div>
-      <Helper>We charge the card after each visit, at the price you just saw.</Helper>
-      <ConsentBoxes state={state} set={set} attempted={attempted} />
-    </>
-  )
-}
-
 export function DoneStep({ pass, email, today, onSaveImage, onDone }: { pass: Pass; email: string; today: string; onSaveImage?: () => void; onDone?: () => void }) {
   return (
     <div>

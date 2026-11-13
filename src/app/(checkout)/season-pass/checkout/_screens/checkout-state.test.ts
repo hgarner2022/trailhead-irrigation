@@ -253,3 +253,23 @@ describe("toPass", () => {
     expect(pass.cardLast4).toBeUndefined()
   })
 })
+
+describe("the server round trip", () => {
+  const pass = { id: "p1" } as never
+  it("begun records the pass and the session and opens the card step; going back keeps them", () => {
+    const at = { ...filled, step: 5 }
+    const begun = reducer(at, { type: "begun", passId: "p1", sessionId: "cs_1", clientSecret: "sec" })
+    expect(begun).toMatchObject({ step: 6, passId: "p1", sessionId: "cs_1", clientSecret: "sec" })
+    expect(reducer(begun, { type: "back" })).toMatchObject({ step: 5, passId: "p1" })
+  })
+  it("failed holds the step and shows a message that the next answer clears", () => {
+    const failed = reducer({ ...filled, step: 5 }, { type: "failed", message: "Try again" })
+    expect(failed).toMatchObject({ step: 5, failure: "Try again" })
+    expect(reducer(failed, { type: "set", field: "email", value: "x@y.com" }).failure).toBeUndefined()
+  })
+  it("finished stores the real pass, marks the card saved and ends on Done with no way back", () => {
+    const done = reducer({ ...filled, step: 6, passId: "p1" }, { type: "finished", pass })
+    expect(done).toMatchObject({ step: 7, cardSaved: true, pass })
+    expect(reducer(done, { type: "back" })).toBe(done)
+  })
+})

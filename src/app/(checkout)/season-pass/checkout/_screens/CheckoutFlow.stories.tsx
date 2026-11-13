@@ -1,7 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite"
 import { expect, fn } from "storybook/test"
-import { toPng } from "html-to-image"
-import type { Pass } from "@/lib/admin/types"
+import { savePassImage } from "@/lib/pass-card-image"
 import { FIXTURE_HOME } from "@/lib/places/fixture"
 import { CheckoutFlow } from "./CheckoutFlow"
 import type { CheckoutFields } from "./checkout-state"
@@ -24,17 +23,6 @@ const answers: Partial<CheckoutFields> = {
   firstName: "Andrea",
   email: "andrea@example.com",
   phone: "(970) 555-0123",
-}
-
-/** Saves the pass card as a PNG, the way the PassCard Full story does. */
-async function savePassImage(pass: Pass) {
-  const card = document.querySelector<HTMLElement>('[data-slot="pass-card"]')
-  if (!card) return
-  const url = await toPng(card, { pixelRatio: 2, cacheBust: true })
-  const link = document.createElement("a")
-  link.href = url
-  link.download = `${pass.number}.png`
-  link.click()
 }
 
 const meta = {
@@ -104,6 +92,32 @@ export const CardTermsMissing: Story = {
     await canvas.findByRole("button", { name: "Save card and reserve" })
     await userEvent.keyboard("{Enter}")
     await expect(await canvas.findByText("Please accept the terms to continue")).toBeInTheDocument()
+  },
+}
+
+/** Wired, before the terms: the card form waits behind the boxes (no key reaches Stripe.js, so nothing loads). */
+export const CardTermsFirst: Story = {
+  args: { initialStep: 6, prefill: { ...answers, termsAccepted: false, passId: "p-story", sessionId: "cs_story", clientSecret: "cs_story_secret" }, stripeKey: "pk_test_story", onBegin: fn(), onFinish: fn() },
+  globals: { viewport: { value: "wide", isRotated: false } },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByText(/Accept the terms above and the card form opens here/)).toBeInTheDocument()
+    await expect(canvas.queryByRole("button", { name: "Save card and reserve" })).toBeNull()
+  },
+}
+
+/** The server refused the contact step: the message sits under the answers and the step stays. */
+export const ContactRefused: Story = {
+  args: {
+    initialStep: 5,
+    prefill: answers,
+    stripeKey: "pk_test_story",
+    onBegin: fn(async () => ({ ok: false as const, problem: "email-unreachable" as const, message: "We can't find that email's mail server. Check the spelling." })),
+    onFinish: fn(),
+  },
+  globals: { viewport: { value: "wide", isRotated: false } },
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(canvas.getByRole("button", { name: "Continue" }))
+    await expect(await canvas.findByRole("alert")).toHaveTextContent("mail server")
   },
 }
 

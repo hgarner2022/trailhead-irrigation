@@ -3,7 +3,18 @@ import { render, screen, fireEvent, act, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { FIXTURE_HOME } from "@/lib/places/fixture"
 import { CheckoutFlow } from "./CheckoutFlow"
+import type { Pass } from "@/lib/admin/types"
+import type { BeginResult, FinishResult } from "./checkout-submit"
 import type { CheckoutFields } from "./checkout-state"
+
+// Stripe.js never loads in a test: the card form is a button that says the card was saved.
+vi.mock("./StripeCard", () => ({
+  StripeCard: ({ clientSecret, onComplete }: { clientSecret: string; onComplete: () => void }) => (
+    <button type="button" data-secret={clientSecret} onClick={onComplete}>
+      Stripe card saved
+    </button>
+  ),
+}))
 
 // jsdom has none of these; the Radix select reads them.
 beforeAll(() => {
@@ -331,5 +342,60 @@ describe("CheckoutFlow", () => {
       expect(animate).toHaveBeenCalledTimes(1)
       expect(animate.mock.calls[0][1]).toMatchObject({ duration: 300 })
     })
+  })
+})
+
+describe("CheckoutFlow wired to the server actions", () => {
+  const realPass = { id: "p-real", number: "TH-2027-0042", season: 2027, clientId: "c1", firstName: "Andrea", town: "Erie", zones: 8, turnOnPreference: "earlier", blowoutPreference: "recommended", status: "active", visits: [{ kind: "turn-on", window: "May", amount: 145 }, { kind: "blowout", window: "October", amount: 115 }], stripeUrl: "", jobberUrl: "", cardLast4: "4242" } as Pass
+  const begun: BeginResult = { ok: true, passId: "p-real", sessionId: "cs_1", clientSecret: "secret_1" }
+  const saved: FinishResult = { ok: true, pass: realPass }
+  const setup = (over: { begin?: BeginResult; finish?: FinishResult } = {}) => {
+    const onBegin = vi.fn(async () => over.begin ?? begun)
+    const onFinish = vi.fn(async () => over.finish ?? saved)
+    const onComplete = vi.fn()
+    render(<CheckoutFlow season={2027} initialStep={5} prefill={{ ...answers, termsAccepted: false }} stripeKey="pk_test_x" onBegin={onBegin} onFinish={onFinish} onComplete={onComplete} />)
+    return { onBegin, onFinish, onComplete }
+  }
+
+  it("makes the pending pass when the contact step passes and opens the card step on its session", async () => {
+    const { onBegin } = setup()
+    fireEvent.click(continueButton())
+    await screen.findByRole("heading", { name: /Save a card for after each visit/ })
+    expect(onBegin).toHaveBeenCalledTimes(1)
+    expect(onBegin.mock.calls[0]).toEqual([expect.objectContaining({ firstName: "Andrea", email: "andrea@example.com", town: "Erie", zones: 8, needsCustomerHome: false, accessNote: "Gate code 4471, controller in the garage." }), undefined])
+  })
+  it("keeps Continue on the contact step and says why when the server refuses", async () => {
+    setup({ begin: { ok: false, problem: "email-unreachable", message: "We can't find that email's mail server. Check the spelling." } })
+    fireEvent.click(continueButton())
+    expect(await screen.findByRole("alert")).toHaveTextContent("mail server")
+    expect(screen.getByRole("heading", { name: "Who should we reach?" })).toBeInTheDocument()
+  })
+  it("holds the card form back until the terms are accepted, then activates the pass on Stripe's completion and shows the real pass", async () => {
+    const { onFinish, onComplete } = setup()
+    fireEvent.click(continueButton())
+    await screen.findByRole("heading", { name: /Save a card for after each visit/ })
+    expect(screen.queryByRole("button", { name: "Stripe card saved" })).not.toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Save card and reserve" })).not.toBeInTheDocument()
+    expect(screen.getByText(/Accept the terms above/)).toBeInTheDocument()
+    fireEvent.click(screen.getByRole("checkbox", { name: /I accept the Season Pass terms/ }))
+    fireEvent.click(screen.getByRole("checkbox", { name: "Seasonal tips and offers by email" }))
+    fireEvent.keyDown(section(), { key: "Enter" })
+    expect(screen.getByRole("heading", { name: "Save a card for after each visit." })).toBeInTheDocument()
+    const card = screen.getByRole("button", { name: "Stripe card saved" })
+    expect(card).toHaveAttribute("data-secret", "secret_1")
+    fireEvent.click(card)
+    await screen.findByRole("heading", { name: "Your season is reserved" })
+    expect(onFinish).toHaveBeenCalledWith("p-real", "cs_1", { termsAccepted: true, marketingEmail: true, marketingSms: false }, "Andrea")
+    expect(onComplete).toHaveBeenCalledWith(realPass)
+    expect(screen.getByText("TH-2027-0042")).toBeInTheDocument()
+  })
+  it("stays on the card step with a message when activation fails", async () => {
+    setup({ finish: { ok: false, problem: "unavailable", message: "We couldn't reach the card form just now." } })
+    fireEvent.click(continueButton())
+    await screen.findByRole("heading", { name: /Save a card for after each visit/ })
+    fireEvent.click(screen.getByRole("checkbox", { name: /I accept the Season Pass terms/ }))
+    fireEvent.click(screen.getByRole("button", { name: "Stripe card saved" }))
+    expect(await screen.findByRole("alert")).toHaveTextContent("couldn't reach the card form")
+    expect(screen.queryByRole("heading", { name: "Your season is reserved" })).not.toBeInTheDocument()
   })
 })
