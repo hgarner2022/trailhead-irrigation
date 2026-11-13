@@ -236,7 +236,7 @@ export function DoneStep({ pass, email, today, onSaveImage, onDone }: { pass: Pa
   useEffect(() => {
     if (fired.current) return
     fired.current = true
-    fireSeasonPassPurchase({ number: pass.number, zones: pass.zones, value: pass.visits.reduce((sum, v) => sum + v.amount, 0), inspection: pass.visits.some((v) => v.kind === "inspection") })
+    fireSeasonPassPurchase({ number: pass.number, zones: pass.zones, passTotal: pass.visits.reduce((sum, v) => sum + v.amount, 0), inspection: pass.visits.some((v) => v.kind === "inspection") })
   }, [pass])
   return (
     <div>

@@ -8,7 +8,7 @@ import { ApiError } from "@/api/core/errors"
 import { apiDb, ORG } from "@/api/test-helpers"
 import type { CheckoutSubmission } from "@/app/(checkout)/season-pass/checkout/_screens/checkout-submit"
 import { completeSession, stubStripe } from "@/lib/stripe/test-stripe"
-import { beginCheckoutWith, finishCheckoutWith, problemOf, recordConsentWith, type CheckoutDeps } from "./checkout"
+import { beginCheckoutWith, finishCheckoutWith, logCheckoutFailure, problemOf, recordConsentWith, type CheckoutDeps } from "./checkout"
 
 const { getStripe } = vi.hoisted(() => ({ getStripe: vi.fn() }))
 vi.mock("@/lib/stripe/client", async (original) => ({ ...(await original<typeof import("@/lib/stripe/client")>()), getStripe }))
@@ -120,6 +120,20 @@ describe("the consent snapshot and an expired session", () => {
     getStripe.mockReturnValue(stubStripe().stripe)
     const stripe = stubStripe({ sessions: { cs_x: { id: "cs_x", status: "expired" } } }).stripe
     expect(await finishCheckoutWith(depsWith(stripe), begun.passId, "cs_x", { termsAccepted: true, marketingEmail: false, marketingSms: false })).toMatchObject({ ok: false, problem: "expired" })
+  })
+})
+
+describe("logCheckoutFailure", () => {
+  it("writes the action, the checkout step and the pass for a failure we caused, and nothing for one the customer caused", () => {
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {})
+    logCheckoutFailure("finishCheckout", "card", "pass_77", new Error("stripe down"))
+    expect(spy).toHaveBeenCalledWith("finishCheckout failed at the card step (pass pass_77):", "Error: stripe down")
+    logCheckoutFailure("beginCheckout", "contact", undefined, new Error("db down"))
+    expect(spy).toHaveBeenLastCalledWith("beginCheckout failed at the contact step (pass not made yet):", "Error: db down")
+    spy.mockClear()
+    logCheckoutFailure("beginCheckout", "contact", undefined, new ApiError("invalid", "x"))
+    expect(spy).not.toHaveBeenCalled()
+    spy.mockRestore()
   })
 })
 

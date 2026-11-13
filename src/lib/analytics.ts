@@ -10,12 +10,15 @@ export function fireEvent(name: string, params: Record<string, unknown> = {}): b
 export interface PurchaseDetails {
   number: string
   zones: number
-  /** whole dollars: what the pass's visits cost in total */
-  value: number
+  /** whole dollars: what the pass's visits cost in total, charged after each visit, not at purchase */
+  passTotal: number
   inspection: boolean
 }
 
-/** The `season_pass_purchase` event, with GA4's purchase fields so it reports revenue. Mark it as a conversion in GA4 → Admin → Events. */
+/**
+ * The `season_pass_purchase` event, with GA4's purchase fields. Nothing is charged when the season is reserved, so `value` is 0
+ * and GA4 counts no revenue for it; the pass's total goes in `pass_total`. Mark it as a conversion in GA4 → Admin → Events.
+ */
 export function fireSeasonPassPurchase(p: PurchaseDetails): boolean {
-  return fireEvent("season_pass_purchase", { transaction_id: p.number, value: p.value, currency: "USD", zones: p.zones, inspection: p.inspection })
+  return fireEvent("season_pass_purchase", { transaction_id: p.number, value: 0, pass_total: p.passTotal, currency: "USD", zones: p.zones, inspection: p.inspection })
 }

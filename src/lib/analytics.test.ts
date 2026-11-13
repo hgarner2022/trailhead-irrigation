@@ -16,10 +16,10 @@ describe("fireEvent", () => {
 })
 
 describe("fireSeasonPassPurchase", () => {
-  it("fires season_pass_purchase with the pass number as the transaction and the price as the value", () => {
+  it("fires season_pass_purchase with the pass number as the transaction, a value of 0 (nothing is charged yet) and the pass total in its own parameter", () => {
     const gtag = vi.fn()
     vi.stubGlobal("gtag", gtag)
-    fireSeasonPassPurchase({ number: "TH-2027-0007", zones: 8, value: 260, inspection: false })
-    expect(gtag).toHaveBeenCalledWith("event", "season_pass_purchase", { transaction_id: "TH-2027-0007", value: 260, currency: "USD", zones: 8, inspection: false })
+    fireSeasonPassPurchase({ number: "TH-2027-0007", zones: 8, passTotal: 260, inspection: false })
+    expect(gtag).toHaveBeenCalledWith("event", "season_pass_purchase", { transaction_id: "TH-2027-0007", value: 0, pass_total: 260, currency: "USD", zones: 8, inspection: false })
   })
 })

@@ -36,10 +36,10 @@ const MESSAGE: Record<CheckoutProblem, string> = {
   expired: "That card form timed out. Nothing was charged. Press Try again for a fresh one.",
 }
 
-/** A refusal the customer caused needs no log; anything else (Stripe, the database) is written to the function log so the deploy's logs say why. */
-function logCheckoutFailure(step: string, error: unknown): void {
+/** A refusal the customer caused needs no log; anything else (Stripe, the database) is written to the function log with the checkout step and the pass, so the deploy's logs say where and for whom. */
+export function logCheckoutFailure(action: string, step: "contact" | "card", passId: string | undefined, error: unknown): void {
   if (error instanceof ApiError && (error.code === "invalid" || error.code === "unprocessable" || error.code === "rate_limited")) return
-  console.error(`${step} failed:`, error instanceof Error ? `${error.name}: ${error.message}` : String(error))
+  console.error(`${action} failed at the ${step} step (pass ${passId ?? "not made yet"}):`, error instanceof Error ? `${error.name}: ${error.message}` : String(error))
 }
 
 /** The reason an API refusal carries (`issues[0]` with path `reason`), as a problem the screen can word; anything else is `unavailable`. */
@@ -73,9 +73,11 @@ function createInput(f: CheckoutSubmission, passId?: string) {
  * Stripe session in setup mode. Nothing is charged. A refusal comes back as a problem for the screen, never a throw.
  */
 export async function beginCheckoutWith(deps: CheckoutDeps, f: CheckoutSubmission, passId?: string): Promise<BeginResult> {
+  let known = passId
   try {
     const ctx = await deps.ctx()
     const pass = await callApi(ctx, passesCreate, createInput(f, passId))
+    known = pass.id
     const [customer] = await ctx.db.select({ stripeCustomerId: s.customer.stripeCustomerId }).from(s.customer).where(eq(s.customer.id, pass.customerId))
     const bucket = Math.floor(Date.now() / BUCKET_MS) * BUCKET_MS
     const session = await createSetupSession(deps.stripe(), {
@@ -88,7 +90,7 @@ export async function beginCheckoutWith(deps: CheckoutDeps, f: CheckoutSubmissio
     })
     return { ok: true, passId: pass.id, sessionId: session.id, clientSecret: session.clientSecret }
   } catch (error) {
-    logCheckoutFailure("beginCheckout", error)
+    logCheckoutFailure("beginCheckout", "contact", known, error)
     return { ok: false, ...problemOf(error) }
   }
 }
@@ -128,7 +130,7 @@ export async function finishCheckoutWith(deps: CheckoutDeps, passId: string, ses
     const detail = await callApi(ctx, passesActivate, { id: passId, setupSessionId: sessionId, consent: { termsAccepted: true as const, marketingOptIn: marketingChannels.length > 0, marketingChannels } })
     return { ok: true, pass: passForDone(detail, firstName) }
   } catch (error) {
-    logCheckoutFailure("finishCheckout", error)
+    logCheckoutFailure("finishCheckout", "card", passId, error)
     if (await sessionExpired(deps, sessionId)) return { ok: false, problem: "expired", message: MESSAGE.expired }
     return { ok: false, ...problemOf(error) }
   }
@@ -154,6 +156,6 @@ export async function recordConsentWith(deps: CheckoutDeps, passId: string, cons
     const marketingChannels = [...(consent.marketingEmail ? ["email" as const] : []), ...(consent.marketingSms ? ["sms" as const] : [])]
     await callApi(ctx, passesConsent, { id: passId, consent: { termsAccepted: true as const, marketingOptIn: marketingChannels.length > 0, marketingChannels } })
   } catch (error) {
-    logCheckoutFailure("recordConsent", error)
+    logCheckoutFailure("recordConsent", "card", passId, error)
   }
 }
