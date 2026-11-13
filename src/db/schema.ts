@@ -81,7 +81,7 @@ export const queueKindEnum = pgEnum("queue_kind", [
   "jobber-feed-sync",
 ])
 export const messageChannelEnum = pgEnum("message_channel", ["email", "sms"])
-export const messageStatusEnum = pgEnum("message_status", ["queued", "sent", "delivered", "failed", "bounced"])
+export const messageStatusEnum = pgEnum("message_status", ["queued", "sent", "delivered", "failed", "bounced", "skipped"])
 export const consentSourceEnum = pgEnum("consent_source", ["checkout", "booking", "admin", "reply"])
 export const principalKindEnum = pgEnum("principal_kind", ["person", "api-key", "public"])
 
@@ -425,6 +425,8 @@ export const messageLog = pgTable(
     to: text("to").notNull(),
     subject: text("subject"),
     body: text("body").notNull(),
+    /** the arguments the template renders from (the HTML email is built from these at send time, so a pass image link is signed when it goes out) */
+    data: jsonb("data").$type<Record<string, unknown>>(),
     status: messageStatusEnum("status").notNull().default("queued"),
     providerId: text("provider_id"),
     error: text("error"),

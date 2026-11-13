@@ -18,7 +18,7 @@ needed, roughly how long it takes, and which phase waits on it.
    the test publishable and secret keys. Test mode lets us build and try the
    card step with fake cards; live keys come at launch. About 10 minutes.
    Needed by Phase 7.
-4. **STARTED 2026-11-12: the account exists (onboarding answered: business, owner, notifications) but is a 30-day trial with no number. Twilio's Buy A Number page says the feature is not available on a trial and that a primary compliance profile (business name, address, tax id) is needed first. So: upgrade with a card, create the compliance profile, then buy one local number, set its incoming-message webhook to https://www.trailheadirrigation.com/api/twilio/inbound, file the A2P 10DLC registration, and put TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN and TWILIO_FROM into Vercel. Twilio account and carrier registration.** Sign up at twilio.com, buy
+4. **COMPLIANCE PROFILE SUBMITTED 2026-11-13 evening (EIN from the Heritage supplier form; Twilio reviews it in a day or two). Number bought the same evening: (970) 699-3599, in Vercel as TWILIO_FROM. Still to do: paste TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN into Vercel (Secret, Production); set the number's incoming-message webhook to https://www.trailheadirrigation.com/api/webhooks/twilio (Phase 12 adds the route); file the A2P 10DLC brand + campaign with the campaign text below. Earlier: STARTED 2026-11-12: the account exists (onboarding answered: business, owner, notifications) but is a 30-day trial with no number. Twilio's Buy A Number page says the feature is not available on a trial and that a primary compliance profile (business name, address, tax id) is needed first. So: upgrade with a card, create the compliance profile, then buy one local number, set its incoming-message webhook to https://www.trailheadirrigation.com/api/twilio/inbound, file the A2P 10DLC registration, and put TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN and TWILIO_FROM into Vercel. Twilio account and carrier registration.** Sign up at twilio.com, buy
    one local number (about $1 a month), then complete the "A2P 10DLC"
    registration in the Twilio console: Trailhead's business details and a
    description of the texts we send (reminders, on-my-way, receipts; a
@@ -29,6 +29,17 @@ needed, roughly how long it takes, and which phase waits on it.
 ## Vercel settings (done)
 
 - **DONE 2026-11-13: CRON_SECRET (generated, sensitive) and GEOCODE_CONTACT (contact@trailheadirrigation.com) are in Vercel production.** They take effect on the next production deploy; the daily feed cron and geocoding read them.
+
+## A2P 10DLC campaign text (copy into Twilio when the profile is approved)
+
+- **Campaign type:** Low volume mixed, or Customer care if asked for one use case.
+- **Campaign description:** Trailhead Lawn & Irrigation LLC sends appointment texts to customers who bought a Season Pass or booked a visit on trailheadirrigation.com: the date we set for their sprinkler visit, a change to that date, and a reminder the day before. One-way, transactional, no marketing unless the customer ticked the offers box at checkout.
+- **Sample message 1:** Trailhead Lawn & Irrigation: your spring turn-on is set for Tue May 5, 8 to 10 am. Details and changes: trailheadirrigation.com/account/pass. Reply STOP to opt out.
+- **Sample message 2:** Trailhead Lawn & Irrigation: reminder, Ryan comes tomorrow, Tue May 5, between 8 and 10 am, for your sprinkler turn-on. Reply STOP to opt out.
+- **How customers opt in:** at checkout on trailheadirrigation.com they enter their mobile number and accept the terms, which say we text the date of each visit; a separate box opts into offers.
+- **Opt-out:** Reply STOP at any time; the app records it and stops texting.
+- **Help:** Reply HELP or call (970) 692-7270.
+- **Message flow URL:** https://www.trailheadirrigation.com/season-pass/checkout (the screen with the phone field and the terms).
 
 ## Words to write
 

@@ -11,7 +11,7 @@ export const MESSAGE_KINDS = ["purchase-confirmation", "date-set", "date-moved",
 
 const MessageOut = z.object({
   id: Id, customerId: Id, visitId: Id.nullable(), channel: Channel, kind: z.string(), subject: z.string().nullable(), body: z.string(),
-  status: z.enum(["queued", "sent", "delivered", "failed", "bounced"]), sentAt: Iso.nullable(), createdAt: Iso,
+  status: z.enum(["queued", "sent", "delivered", "failed", "bounced", "skipped"]), sentAt: Iso.nullable(), createdAt: Iso,
   to: z.string().optional().describe("The address or number it went to. Only for callers with the write scope."),
 })
 

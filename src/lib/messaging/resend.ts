@@ -10,16 +10,19 @@ export interface OutgoingEmail {
 }
 
 export type EmailSender = (message: OutgoingEmail) => Promise<void>
+/** The same, returning Resend's id so `message_log` can keep it. */
+export type LoggedEmailSender = (message: OutgoingEmail) => Promise<{ id: string | null }>
 
-const FROM = "Trailhead <contact@trailheadirrigation.com>"
+export const FROM = "Trailhead <contact@trailheadirrigation.com>"
 
-/**
- * Sends one email now through Resend with the shared `RESEND_API_KEY`.
- * Phase 12 replaces this with the queued, logged sender; callers keep the
- * same shape. Tests pass their own `EmailSender` and never reach Resend.
- */
-export const sendEmailNow: EmailSender = async (message) => {
+/** Sends one email through Resend with the shared `RESEND_API_KEY` and returns its id. Tests pass their own sender and never reach Resend. */
+export const sendEmailLogged: LoggedEmailSender = async (message) => {
   const { RESEND_API_KEY } = readEnv(["RESEND_API_KEY"])
-  const { error } = await new Resend(RESEND_API_KEY).emails.send({ from: FROM, ...message })
+  const { data, error } = await new Resend(RESEND_API_KEY).emails.send({ from: FROM, ...message })
   if (error) throw new Error(`Resend failed: ${error.message}`)
+  return { id: data?.id ?? null }
+}
+
+export const sendEmailNow: EmailSender = async (message) => {
+  await sendEmailLogged(message)
 }

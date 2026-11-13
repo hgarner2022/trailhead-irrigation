@@ -1,6 +1,7 @@
 import "server-only"
 import * as s from "@/db/schema"
 import type { Database } from "@/db/types"
+import { enqueue } from "@/lib/queue"
 import { preferencePhrase } from "@/lib/admin/format"
 import type { TimingPreference } from "@/lib/admin/types"
 
@@ -21,7 +22,7 @@ export interface QueuedMessage {
   body: string
 }
 
-/** Writes one email row with status `queued`. Sending is the messaging layer's job (Phase 12); this only records what must go. Returns whether a row was added. */
+/** Writes one email row with status `queued` and a `message` queue item that sends it (`sendMessageRow`). Returns whether a row was added. */
 export const queueEmail = (db: Database, m: QueuedMessage) => queueMessage(db, "email", m)
 
 /** The same row for a text: `to` is the phone number and there is no subject. */
@@ -33,6 +34,7 @@ async function queueMessage(db: Database, channel: "email" | "sms", m: Omit<Queu
     .values({ organizationId: m.organizationId, customerId: m.customerId, visitId: m.visitId ?? null, channel, kind: m.kind, key: m.key, to: m.to, subject: m.subject, body: m.body, status: "queued" })
     .onConflictDoNothing()
     .returning({ id: s.messageLog.id })
+  if (rows[0]) await enqueue(db, m.organizationId, "message", rows[0].id, { messageId: rows[0].id })
   return rows.length > 0
 }
 
