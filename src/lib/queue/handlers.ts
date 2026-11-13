@@ -1,6 +1,7 @@
 import "server-only"
 import { eq } from "drizzle-orm"
 import * as s from "@/db/schema"
+import { geocodeProperty } from "@/lib/geocode"
 import { syncTruckFeed } from "@/lib/jobber-feed"
 import type { QueueHandler, QueueKind } from "./index"
 
@@ -11,4 +12,10 @@ export const jobberFeedSync: QueueHandler = async (db, item) => {
   if (truck && truck.organizationId === item.organizationId) await syncTruckFeed(db, truck)
 }
 
-export const handlers: Partial<Record<QueueKind, QueueHandler>> = { "jobber-feed-sync": jobberFeedSync }
+/** `geocode`: payload `{ propertyId }`; one Nominatim lookup, cached on the property. */
+export const geocode: QueueHandler = async (db, item) => {
+  const { propertyId } = item.payload as { propertyId: string }
+  await geocodeProperty(db, propertyId)
+}
+
+export const handlers: Partial<Record<QueueKind, QueueHandler>> = { "jobber-feed-sync": jobberFeedSync, geocode }

@@ -2,6 +2,7 @@ import "server-only"
 import { and, desc, eq, notInArray, or, sql } from "drizzle-orm"
 import { z } from "zod"
 import * as s from "@/db/schema"
+import { enqueueGeocode } from "@/lib/geocode"
 import { currentSeason } from "@/lib/pass/season"
 import { nextPassNumber } from "@/lib/pass/number"
 import { SEASON_PASS_ADD_ON, visitPrice, visitsOnSale } from "@/lib/season-pass"
@@ -90,6 +91,7 @@ export const passesCreate = defineHandler({
       .where(and(eq(s.property.customerId, customerRow.id), eq(s.property.address, input.property.address), eq(s.property.town, input.property.town)))
       .limit(1)
     const property = knownProperty ?? (await ctx.db.insert(s.property).values({ organizationId: org, customerId: customerRow.id, ...input.property }).returning())[0]!
+    if (!knownProperty) await enqueueGeocode(ctx.db, org, property.id, ctx.now)
     const [terms] = await ctx.db.select({ v: s.organization.termsVersion }).from(s.organization).where(eq(s.organization.id, org))
 
     let pass: typeof s.seasonPass.$inferSelect | undefined
