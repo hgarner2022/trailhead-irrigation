@@ -47,9 +47,9 @@ export function readStripePublishableKey(): string {
   return readEnv(["NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY"]).NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
 }
 
-/** The signing secret (`whsec_...`) of the Stripe webhook endpoint; the webhook route verifies every request with it. */
-export function readStripeWebhookSecret(): string {
-  return readEnv(["STRIPE_WEBHOOK_SECRET"]).STRIPE_WEBHOOK_SECRET
+/** The signing secret (`whsec_...`) of the Stripe webhook endpoint; the webhook route verifies every request with it and answers 503 while it is unset. */
+export function readStripeWebhookSecret(): string | undefined {
+  return readOptionalEnv("STRIPE_WEBHOOK_SECRET")
 }
 
 /** The site's origin (https://www.trailheadirrigation.com in production), for links in messages and Stripe return pages. */

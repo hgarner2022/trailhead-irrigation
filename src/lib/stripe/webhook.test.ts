@@ -34,6 +34,11 @@ async function pendingPass() {
 }
 
 describe("receiveStripeEvent", () => {
+  it("answers 503 webhook not configured when the secret is unset, without reading the body", async () => {
+    const { stripe } = stubStripe()
+    await expect(receiveStripeEvent(db, stripe, undefined, "{}", "t=1,v1=x")).resolves.toEqual({ status: 503, error: "webhook not configured" })
+    await expect(receiveStripeEvent(db, stripe, "", "{}", null)).resolves.toMatchObject({ status: 503 })
+  })
   it("rejects a bad or missing signature with 400 and queues nothing", async () => {
     const { stripe } = stubStripe()
     const p = await pendingPass()

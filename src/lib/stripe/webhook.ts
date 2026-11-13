@@ -10,7 +10,9 @@ import { dollars, queueEmail } from "@/lib/pass/server/messages"
 import { enqueue } from "@/lib/queue"
 import { applyCardUpdate, createCardUpdateSession } from "./card-update"
 
-export type ReceiveResult = { status: 200; queued: boolean } | { status: 400; error: string }
+export type ReceiveResult = { status: 200; queued: boolean } | { status: 400 | 503; error: string }
+
+export const WEBHOOK_NOT_CONFIGURED = "webhook not configured"
 
 /** The organization an event belongs to, read from the pass, payment method or charge it names; null for an event we do not act on. */
 export async function organizationOfEvent(db: Database, event: Stripe.Event): Promise<string | null> {
@@ -38,7 +40,8 @@ export async function organizationOfEvent(db: Database, event: Stripe.Event): Pr
  * The webhook route's work: verify the signature on the raw body, then queue the event on its id. A replayed event
  * finds its id taken and queues nothing. An event of a kind we do not use, or for a pass we do not know, is answered 200.
  */
-export async function receiveStripeEvent(db: Database, stripe: Stripe, secret: string, body: string, signature: string | null): Promise<ReceiveResult> {
+export async function receiveStripeEvent(db: Database, stripe: Stripe, secret: string | undefined, body: string, signature: string | null): Promise<ReceiveResult> {
+  if (!secret) return { status: 503, error: WEBHOOK_NOT_CONFIGURED }
   let event: Stripe.Event
   try {
     if (!signature) throw new Error("No Stripe-Signature header")
