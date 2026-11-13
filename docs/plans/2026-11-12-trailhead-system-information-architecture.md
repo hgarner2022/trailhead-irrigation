@@ -83,6 +83,23 @@ first for a crew login.
   naming the next visit, failed card, January renewal; texts opt-in with
   STOP handled.
 
+## Consent, recorded in the CRM
+
+Hannah's rule (2026-11-12): at checkout the customer must accept the terms,
+and may opt in to marketing, and both are recorded on the customer.
+
+- Terms acceptance is required to continue past the card step; marketing is
+  a separate, unticked box covering email and text, with "you can stop any
+  time" beside it. Visit reminders and receipts are transactional and go
+  out either way.
+- Every consent is a record on the customer: what was accepted, the terms
+  version, when, from where (checkout, booking form, admin), and the
+  channels. Changes append, never overwrite, so the history is auditable.
+- The Customers page shows the current consent and its history; the
+  Messages settings respect it (no marketing message to anyone without the
+  opt-in; STOP and unsubscribe write a new consent record).
+- The booking form captures the same two boxes when it lands.
+
 ## Scheduling, the rules
 
 - Trucks are rows with working days and visits per day by visit type.
