@@ -1,148 +1,107 @@
-import Link from "next/link"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { CardTitleHeading } from "@/components/blocks/CardTitleHeading"
+import { JobPill } from "@/components/blocks/JobPill"
 import { NeedsAttention, type NeedsAttentionProps } from "@/components/blocks/NeedsAttention"
 import { PageHeader } from "@/components/blocks/PageHeader"
-import { SeasonLine } from "@/components/blocks/SeasonLine"
-import { StatTile } from "@/components/blocks/StatTile"
-import { JobPill } from "@/components/blocks/JobPill"
-import type { AdminData, Visit } from "@/lib/admin/types"
 import { TIME_ZONE } from "@/lib/admin/format"
-import { visitJob } from "@/lib/admin/jobs"
 import { dayOf } from "@/lib/admin/calendar"
-import { committedByMonth, visitsOn } from "@/lib/admin/metrics"
-import { SEASON, clockTime, dayHeading, greeting, jobTiles, notClosedAttention, pageContext, seasonDescription, tileModels, tomorrowOf, upcomingWindow, windowTitle } from "./home-model"
-import type { Outcome } from "./action-types"
-import { ScheduleSeasonButton } from "./ScheduleSeasonButton"
+import { visitJob } from "@/lib/admin/jobs"
+import { KIND_LABEL, type OfficeKind } from "@/lib/admin/visit-defaults"
+import type { AdminData, Visit } from "@/lib/admin/types"
+import type { VisitActions } from "./visit-actions-types"
+import { OpenVisit, VisitPanelHost } from "./VisitPanelHost"
+import { dayByTruck, dayHeading, greeting, pageContext, stopTime, tomorrowOf } from "./home-model"
 
-// What Hannah opens to in the morning: a greeting, the four numbers that
-// matter today, the season line, the next two days of visits and the short
-// list of what needs a person. Pure composition over `data` and a fixed
-// `today`; the route's page.tsx supplies both. Server component.
-// When a season window opens within its lead weeks plus two, a prompt above
-// the tiles sends the owner to Settings and to Schedule; visits from the last
-// two weeks nobody marked done add a row to Needs attention. Server component;
-// only the Schedule button is client code.
+// What Hannah opens to in the evening (docs/plans build-1 spec): a greeting line, Today and Tomorrow with each
+// truck's stops in order, and Needs action, one row per thing a person can act on with its one button and Dismiss.
+// Nothing else: the counts, the season line and the revenue moved to Reports. Pure composition over `data` and a
+// fixed `today`; the route's page.tsx supplies both. Server component; the row buttons are client code.
 
 export interface HomeScreenProps {
   data: AdminData
   /** ISO datetime the greeting, the date, "updated" and the day lists are read from */
   today: string
-  /** a tech sees the day and changes nothing: no Schedule button, no row actions */
+  /** a tech sees the day and changes nothing: no row actions */
   readOnly?: boolean
-  /** the season prompt's Schedule button; a server action in the app */
-  onSchedule?: (window: "turn-on" | "inspection" | "blowout") => Promise<Outcome<{ placed: number; unplaced: number }>>
-  /** a Needs attention row's button; a server action in the app */
+  /** a Needs action row's button; a server action in the app */
   onAttentionAction?: NeedsAttentionProps["onAction"]
+  /** Dismiss on a Needs action row, and its Undo; a server action in the app */
+  onDismiss?: NeedsAttentionProps["onDismiss"]
+  /** the visit panel a stop opens; server actions in the app */
+  visitActions?: VisitActions
 }
 
-function VisitRow({ visit, today }: { visit: Visit; today: string }) {
+function Stop({ visit, today }: { visit: Visit; today: string }) {
   return (
-    <li className="flex items-center gap-3 py-2.5">
-      <span className="w-16 shrink-0 text-sm tabular-nums text-muted-foreground">{visit.startAt ? clockTime(visit.startAt) : ""}</span>
-      <span className="min-w-0 flex-1 truncate text-sm text-foreground">
-        {visit.clientName}
-        <span className="text-muted-foreground"> · {visit.town}</span>
-      </span>
-      {visit.isPass && <Badge variant="outline">Pass</Badge>}
-      <JobPill job={visitJob(visit, dayOf(today, TIME_ZONE), TIME_ZONE)} />
+    <li>
+      <OpenVisit id={visit.id} className="-mx-2 flex-wrap gap-x-3 gap-y-1 rounded-lg px-2 py-2 hover:bg-accent sm:flex-nowrap">
+        <span className="w-16 shrink-0 text-sm tabular-nums text-muted-foreground">{stopTime(visit)}</span>
+        <span className="min-w-0 flex-1 text-sm text-foreground">
+          <span className="block truncate">
+            {visit.clientName}
+            <span className="text-muted-foreground"> · {visit.town}</span>
+          </span>
+          <span className="block truncate text-xs text-muted-foreground">{KIND_LABEL[visit.kind as OfficeKind] ?? "Visit"}</span>
+        </span>
+        <span className="w-full pl-[4.75rem] sm:w-auto sm:pl-0">
+          <JobPill job={visitJob(visit, dayOf(today, TIME_ZONE), TIME_ZONE)} />
+        </span>
+      </OpenVisit>
     </li>
   )
 }
 
-function Day({ id, heading, visits, today }: { id: string; heading: string; visits: Visit[]; today: string }) {
+function Day({ id, heading, data, dayIso, today }: { id: string; heading: string; data: AdminData; dayIso: string; today: string }) {
+  const trucks = dayByTruck(data.visits, dayIso, data.settings.trucks)
   return (
-    <section aria-labelledby={id}>
+    <section aria-labelledby={id} data-slot="home-day">
       <h3 id={id} className="font-display text-sm uppercase tracking-wide text-muted-foreground">
         {heading}
       </h3>
-      {visits.length === 0 ? (
+      {trucks.length === 0 ? (
         <p className="py-2.5 text-sm text-muted-foreground">No visits scheduled.</p>
       ) : (
-        <ul className="divide-y divide-border">
-          {visits.map((visit) => (
-            <VisitRow key={visit.id} visit={visit} today={today} />
-          ))}
-        </ul>
+        trucks.map((truck) => (
+          <div key={truck.truckId} data-slot="home-truck" className="mt-2">
+            <p className="text-sm font-medium text-navy">{truck.name}</p>
+            <ul className="divide-y divide-border">
+              {truck.stops.map((visit) => (
+                <Stop key={visit.id} visit={visit} today={today} />
+              ))}
+            </ul>
+          </div>
+        ))
       )}
     </section>
   )
 }
 
-export function HomeScreen({ data, today, readOnly = false, onSchedule, onAttentionAction }: HomeScreenProps) {
-  const tomorrow = tomorrowOf(today)
-  const bars = committedByMonth(data.passes, SEASON)
-  const upcoming = upcomingWindow(data.settings, today)
-  const notClosed = notClosedAttention(data.visits, today, TIME_ZONE)
-  const attention = notClosed ? [...data.attention, notClosed] : data.attention
+export function HomeScreen({ data, today, readOnly = false, onAttentionAction, onDismiss, visitActions }: HomeScreenProps) {
   return (
     <div data-slot="home-screen" className="space-y-6">
+      <VisitPanelHost data={data} today={today} readOnly={readOnly} actions={visitActions}>
       <PageHeader title={greeting(today)} context={pageContext(data, today)} />
-
-      {upcoming && (
-        <Card data-slot="season-prompt" className="border-primary/30 bg-primary/10">
-          <CardHeader>
-            <CardTitleHeading>{windowTitle(upcoming)}</CardTitleHeading>
-            <p className="text-sm text-foreground">Check the trucks, capacity and areas, then schedule the season. Every pass visit gets a day and every customer gets a date.</p>
-          </CardHeader>
-          <CardContent className="flex flex-wrap gap-2">
-            <Button variant="outline" asChild>
-              <Link href="/admin/settings">Open settings</Link>
-            </Button>
-            {!readOnly && <ScheduleSeasonButton season={upcoming} onSchedule={onSchedule} />}
-          </CardContent>
-        </Card>
-      )}
-
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        {tileModels(data, today).map((tile) => (
-          <StatTile key={tile.label} {...tile} />
-        ))}
-      </div>
-
-      <div data-slot="job-counts" className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        {jobTiles(data, today).map((tile) => (
-          <StatTile key={tile.label} {...tile} />
-        ))}
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitleHeading>{`Season ${SEASON}`}</CardTitleHeading>
-          <CardDescription>{seasonDescription(data)}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <SeasonLine
-            mode="business"
-            season={SEASON}
-            bars={bars}
-            today={today}
-            caption={bars.length === 0 ? "No passes sold yet. The line fills in as customers reserve their season." : undefined}
-          />
-        </CardContent>
-      </Card>
 
       <div className="grid gap-6 lg:grid-cols-5">
         <Card className="lg:col-span-3">
-          <CardHeader>
+          <CardHeader className="sr-only">
             <CardTitleHeading>Today and tomorrow</CardTitleHeading>
           </CardHeader>
-          <CardContent className="space-y-5">
-            <Day id="home-today" heading={dayHeading("Today", today)} visits={visitsOn(data.visits, today, TIME_ZONE)} today={today} />
-            <Day id="home-tomorrow" heading={dayHeading("Tomorrow", tomorrow)} visits={visitsOn(data.visits, tomorrow, TIME_ZONE)} today={today} />
+          <CardContent className="space-y-6 pt-6">
+            <Day id="home-today" heading={dayHeading("Today", today)} data={data} dayIso={today} today={today} />
+            <Day id="home-tomorrow" heading={dayHeading("Tomorrow", tomorrowOf(today))} data={data} dayIso={tomorrowOf(today)} today={today} />
           </CardContent>
         </Card>
         <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitleHeading>Needs attention</CardTitleHeading>
+            <CardTitleHeading>Needs action</CardTitleHeading>
           </CardHeader>
           <CardContent>
-            <NeedsAttention items={attention} now={today} onAction={readOnly ? undefined : onAttentionAction} readOnly={readOnly} />
+            <NeedsAttention items={data.attention} now={today} onAction={readOnly ? undefined : onAttentionAction} onDismiss={readOnly ? undefined : onDismiss} readOnly={readOnly} />
           </CardContent>
         </Card>
       </div>
+      </VisitPanelHost>
     </div>
   )
 }

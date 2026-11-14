@@ -1,5 +1,6 @@
 import "server-only"
 import type { AnyHandler } from "../core/handler"
+import { alertsDismiss } from "./alerts/handlers"
 import { apiKeysList, apiKeysCreate, apiKeysRevoke } from "./apikeys/handlers"
 import { areasList, areasCreate, areasUpdate, areasDelete } from "./areas/handlers"
 import { bookingsCreate, bookingsCancel, quoteRequestsCreate, quoteRequestsList } from "./bookings/handlers"
@@ -12,11 +13,14 @@ import { scheduleRun, scheduleWeek, scheduleDay, scheduleSlots, scheduleOfferDay
 import { servicesList, servicesCreate, servicesUpdate, servicesDeactivate } from "./services/handlers"
 import { settingsGet, settingsUpdate, settingsChangesList } from "./settings/handlers"
 import { trucksList, trucksCreate, trucksUpdate, trucksDeactivate } from "./trucks/handlers"
-import { visitsList, visitsGet, visitsMove, visitsMarkClosed, visitsStretch, visitsRequestMove, visitsLinkRequest, visitsAreaDays, visitsPick } from "./visits/handlers"
+import { visitsList, visitsGet, visitsMove, visitsStretch, visitsRequestMove, visitsLinkRequest, visitsAreaDays, visitsPick } from "./visits/handlers"
+import { visitsMarkClosed, visitsRecordPayment } from "./visits/money"
+import { visitsCancel, visitsCreate, visitsMarkNotDone, visitsUpdate } from "./visits/office"
 import { webhooksList, webhooksCreate, webhooksDelete, webhooksTest } from "./webhooks/handlers"
 
 /** Every operation of the API, in the order the docs list them. The OpenAPI document, the MCP tools and the routes all read this array. */
 export const handlers: AnyHandler[] = [
+  alertsDismiss,
   apiKeysList, apiKeysCreate, apiKeysRevoke,
   areasList, areasCreate, areasUpdate, areasDelete,
   bookingsCreate, bookingsCancel, quoteRequestsCreate, quoteRequestsList,
@@ -29,6 +33,7 @@ export const handlers: AnyHandler[] = [
   servicesList, servicesCreate, servicesUpdate, servicesDeactivate,
   settingsGet, settingsUpdate, settingsChangesList,
   trucksList, trucksCreate, trucksUpdate, trucksDeactivate,
-  visitsList, visitsGet, visitsMove, visitsMarkClosed, visitsStretch, visitsRequestMove, visitsLinkRequest, visitsAreaDays, visitsPick,
+  visitsList, visitsGet, visitsMove, visitsMarkClosed, visitsRecordPayment, visitsStretch, visitsRequestMove, visitsLinkRequest, visitsAreaDays, visitsPick,
+  visitsCreate, visitsUpdate, visitsMarkNotDone, visitsCancel,
   webhooksList, webhooksCreate, webhooksDelete, webhooksTest,
 ]

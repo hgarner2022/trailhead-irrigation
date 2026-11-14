@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 import type { Invoice, PassStatus } from "@/lib/admin/types"
-import { JOB_WORDS, type JobState } from "@/lib/admin/jobs"
+import { JOB_WORDS, type JobState, type MoneyState, type WorkState } from "@/lib/admin/jobs"
 
 // One chip for every status word in the app, coloured by what the status
 // means for the business (docs/DESIGN.md, Copy): good outcomes green, a
@@ -15,10 +15,14 @@ import { JOB_WORDS, type JobState } from "@/lib/admin/jobs"
 // is 5.45 and 5.25 (5.02 on stone). The lighter positive and warning inks
 // only reach 4.2 to 4.4 on their tints, which is why they are not used here.
 
-export type PillStatus = PassStatus | JobState | Invoice["status"]
+export type PillStatus = PassStatus | JobState | WorkState | MoneyState | Invoice["status"]
 
 const LABELS: Record<PillStatus, string> = {
   ...JOB_WORDS,
+  "not-done": "Not done",
+  "not-yet": "Not yet",
+  "bill-sent": "Bill sent",
+  failed: "Failed",
   pending: "Pending",
   active: "Active",
   paid: "Paid",
@@ -40,6 +44,10 @@ const TONES: Record<PillStatus, string> = {
   done: GOOD,
   charged: GOOD,
   "charge-failed": BAD,
+  "not-done": WAITING,
+  "not-yet": OVER,
+  "bill-sent": BOOKED,
+  failed: BAD,
   cancelled: OVER,
   skipped: OVER,
   pending: WAITING,
@@ -58,11 +66,13 @@ export interface StatusPillProps {
   /** Another word for the same status, in the status's colour: the customer's pass page says "Reserved" and "Booked" where the admin says "Not scheduled" and "Scheduled". */
   label?: string
   className?: string
+  /** which of a visit's two pills this is */
+  "data-pill"?: "work" | "money"
 }
 
-export function StatusPill({ status, label, className }: StatusPillProps) {
+export function StatusPill({ status, label, className, ...rest }: StatusPillProps) {
   return (
-    <Badge data-slot="status-pill" data-status={status} variant="outline" className={cn("whitespace-nowrap", TONES[status], className)}>
+    <Badge {...rest} data-slot="status-pill" data-status={status} variant="outline" className={cn("whitespace-nowrap", TONES[status], className)}>
       {label ?? statusLabel(status)}
     </Badge>
   )

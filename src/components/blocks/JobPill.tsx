@@ -1,12 +1,12 @@
-import { Badge } from "@/components/ui/badge"
-import { NOT_CLOSED_WORD, type Job } from "@/lib/admin/jobs"
+import type { Job } from "@/lib/admin/jobs"
 import { cn } from "@/lib/utils"
 import { StatusPill } from "./StatusPill"
 
-// A job's state as one chip (docs/UX_WRITING.md: one name per state), with
-// "Not closed" as a second chip beside it when the day has passed and nobody
-// marked the job done. The flag is never a state of its own. Pure render,
-// server component.
+// A visit's two pills (owner, 14 Nov): WORK says what happened to the stop (Needs a day, Scheduled, Done, Not done
+// with its reason, Cancelled) and MONEY says whether it was paid (Not yet, Paid with how, Bill sent, Failed), so
+// it is obvious at a glance that money was collected. A Scheduled visit whose day has passed keeps its state and
+// gains a small "day passed" note. Named JobPill from step zero and kept so no import churns; it renders a
+// visit's states. Pure render, server component.
 
 export interface JobPillProps {
   job: Job
@@ -16,12 +16,13 @@ export interface JobPillProps {
 export function JobPill({ job, className }: JobPillProps) {
   return (
     <span data-slot="job-pill" className={cn("inline-flex flex-wrap items-center gap-1", className)}>
-      <StatusPill status={job.state} />
-      {job.notClosed && (
-        <Badge data-slot="not-closed-badge" variant="outline" className="whitespace-nowrap border-warning/40 bg-warning/10 text-foreground">
-          {NOT_CLOSED_WORD}
-        </Badge>
+      <StatusPill status={job.work} label={job.workLabel} data-pill="work" />
+      {job.dayPassed && (
+        <span data-slot="day-passed" className="text-xs text-muted-foreground">
+          day passed
+        </span>
       )}
+      <StatusPill status={job.money} label={job.moneyLabel} data-pill="money" />
     </span>
   )
 }

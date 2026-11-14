@@ -6,11 +6,16 @@ const wrap = (d: { origin: string }, preheader: string, title: string, body: str
 
 export function receiptEmail(d: ReceiptData): RenderedEmail {
   const subject = `Receipt: ${dollars(d.amount)} for your ${d.visitName}`
-  const intro = `Thank you, ${d.firstName}. We charged ${dollars(d.amount)}${d.card ? ` to your ${d.card}` : ""} for your ${d.visitName} on Season Pass ${d.passNumber}.`
-  const rows: [string, string][] = [["Charged", dollars(d.amount)], ["Visit", d.visitName], ["Pass", d.passNumber]]
-  if (d.card) rows.push(["Card", d.card])
-  const body = paragraph(intro) + facts(rows) + paragraph(d.nextLine) + (d.receiptUrl ? button(d.receiptUrl, "View the receipt", "quiet") : "") + button(d.signInUrl, "Open your pass page")
-  return { subject, text: plainText([intro, "", d.nextLine, ...(d.receiptUrl ? ["", `Your receipt: ${d.receiptUrl}`] : []), `Your pass: ${d.passUrl}`]), html: wrap(d, intro, "Thank you", body, `You are getting this because a visit on Season Pass ${d.passNumber} was completed.`) }
+  const how = d.paidBy ? ` by ${d.paidBy}` : d.card ? ` to your ${d.card}` : ""
+  const verb = d.paidBy ? "We received" : "We charged"
+  const intro = `Thank you, ${d.firstName}. ${verb} ${dollars(d.amount)}${how} for your ${d.visitName}${d.passNumber ? ` on Season Pass ${d.passNumber}` : ""}.`
+  const rows: [string, string][] = [[d.paidBy ? "Paid" : "Charged", dollars(d.amount)], ["Visit", d.visitName]]
+  if (d.passNumber) rows.push(["Pass", d.passNumber])
+  if (d.paidBy) rows.push(["Paid by", d.paidBy])
+  else if (d.card) rows.push(["Card", d.card])
+  const body = paragraph(intro) + facts(rows) + (d.nextLine ? paragraph(d.nextLine) : "") + (d.receiptUrl ? button(d.receiptUrl, "View the receipt", "quiet") : "") + (d.passNumber ? button(d.signInUrl, "Open your pass page") : "")
+  const text = plainText([intro, ...(d.nextLine ? ["", d.nextLine] : []), ...(d.receiptUrl ? ["", `Your receipt: ${d.receiptUrl}`] : []), ...(d.passNumber ? [`Your pass: ${d.passUrl}`] : [])])
+  return { subject, text, html: wrap(d, intro, "Thank you", body, d.passNumber ? `You are getting this because a visit on Season Pass ${d.passNumber} was completed.` : "You are getting this because a visit of yours was completed.") }
 }
 
 export function cardFailedEmail(d: CardFailedData): RenderedEmail {

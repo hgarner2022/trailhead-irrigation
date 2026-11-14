@@ -30,15 +30,15 @@ describe("AdminShell", () => {
   it("renders the six nav links in the plan's order with the current one marked, the user and the children", () => {
     stubViewport(1440)
     render(
-      <AdminShell current="passes" user={user}>
+      <AdminShell current="visits" user={user}>
         <p>Screen body</p>
       </AdminShell>,
     )
     const nav = within(rail() as HTMLElement)
     const links = nav.getAllByRole("link")
-    expect(links.map((l) => l.textContent)).toEqual(["Home", "Schedule", "Passes", "Revenue", "Customers", "Settings"])
-    expect(links.map((l) => l.getAttribute("href"))).toEqual(["/admin", "/admin/schedule", "/admin/passes", "/admin/revenue", "/admin/customers", "/admin/settings"])
-    expect(nav.getByRole("link", { name: "Passes" })).toHaveAttribute("aria-current", "page")
+    expect(links.map((l) => l.textContent)).toEqual(["Home", "Schedule", "Visits", "Customers", "Reports", "Settings"])
+    expect(links.map((l) => l.getAttribute("href"))).toEqual(["/admin", "/admin/schedule", "/admin/visits", "/admin/customers", "/admin/reports", "/admin/settings"])
+    expect(nav.getByRole("link", { name: "Visits" })).toHaveAttribute("aria-current", "page")
     expect(nav.getByRole("link", { name: "Home" })).not.toHaveAttribute("aria-current")
     expect(screen.getByText("HG")).toBeInTheDocument()
     expect(nav.getByRole("button", { name: "Sign out Hannah" })).toBeInTheDocument()
@@ -79,7 +79,7 @@ describe("AdminShell", () => {
     expect(bar).not.toBeNull()
     expect(screen.getByRole("navigation", { name: "Main" })).toBe(bar)
     const links = within(bar).getAllByRole("link")
-    expect(links.map((l) => l.textContent)).toEqual(["Home", "Schedule", "Passes", "Revenue", "Customers", "Settings"])
+    expect(links.map((l) => l.textContent)).toEqual(["Home", "Schedule", "Visits", "Customers", "Reports", "Settings"])
     expect(within(bar).getByRole("link", { name: "Settings" })).toHaveAttribute("aria-current", "page")
     expect(screen.getByText("Phone body")).toBeInTheDocument()
     expect(screen.queryByRole("button", { name: /toggle sidebar/i })).toBeNull()

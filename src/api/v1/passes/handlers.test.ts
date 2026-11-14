@@ -40,6 +40,15 @@ describe("passes.create", () => {
     expect(pass.consent).toMatchObject({ termsVersion: "2026-11", marketingOptIn: false, source: "checkout" })
     expect(pass.customer?.email).toBe("maya@example.com")
   })
+  it("makes the pass's job: kind pass, source checkout, the visits point at it and its price is the total", async () => {
+    const pass = await create({ customer: { firstName: "Jobby", lastName: "Tester", email: "jobby@example.com" } })
+    const [row] = await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, pass.id))
+    const [job] = await db.select().from(s.job).where(eq(s.job.id, row!.jobId))
+    expect(job).toMatchObject({ kind: "pass", source: "checkout", status: "pending", price: 260, customerId: pass.customerId })
+    const visits = await db.select().from(s.visit).where(eq(s.visit.passId, pass.id))
+    expect(visits).toHaveLength(2)
+    expect(visits.every((v) => v.jobId === job!.id)).toBe(true)
+  })
   it("makes three visits with the inspection add-on", async () => {
     const pass = await create({ inspection: true, customer: { firstName: "Jo", lastName: "Tester", email: "jo@example.com" }, zones: 6 })
     expect(pass.visits.map((v) => [v.kind, v.amount])).toEqual([["turn-on", 145], ["inspection", 145], ["blowout", 95]])

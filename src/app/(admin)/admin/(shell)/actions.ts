@@ -1,11 +1,9 @@
 "use server"
 
 import "server-only"
-import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import { callApi } from "@/api/core/call"
-import type { Ctx } from "@/api/core/context"
-import { ApiError } from "@/api/core/errors"
+import { alertsDismiss } from "@/api/v1/alerts/handlers"
 import { apiKeysCreate, apiKeysRevoke } from "@/api/v1/apikeys/handlers"
 import { consentsRecord } from "@/api/v1/customers/handlers"
 import { passesAddInspection, passesCancel, passesResendConfirmation, passesSendCardUpdateLink, passesSkipVisit, passesUpdatePreference } from "@/api/v1/passes/handlers"
@@ -13,44 +11,17 @@ import { scheduleRun } from "@/api/v1/schedule/handlers"
 import { servicesUpdate } from "@/api/v1/services/handlers"
 import { areasCreate, areasDelete, areasUpdate } from "@/api/v1/areas/handlers"
 import { trucksCreate, trucksDeactivate, trucksUpdate } from "@/api/v1/trucks/handlers"
-import { visitsMarkClosed, visitsMove } from "@/api/v1/visits/handlers"
+import { visitsGet, visitsMove } from "@/api/v1/visits/handlers"
+import { visitsMarkClosed } from "@/api/v1/visits/money"
 import { webhooksCreate, webhooksDelete, webhooksTest } from "@/api/v1/webhooks/handlers"
-import { ctxFromSession } from "@/lib/admin/api-ctx"
 import type { Attention, OrganizationSettings, TimingPreference } from "@/lib/admin/types"
 import { requireAdmin } from "@/lib/auth/guard"
+import { act, nothing, type ActionOutcome } from "./act"
 import { toApiScopes } from "./key-scopes"
 import { saveSettings as writeSettings } from "./settings-save"
 
-// The admin's server actions. Every one is a manager's (a tech reads and sees no buttons), runs the same API handler
-// the HTTPS route runs, through `callApi` with the signed-in person's own context, and refreshes every admin page.
-// None takes an identity from the client. An action answers `{ ok: true }` or `{ ok: false, message }` with the API's
-// own words, so a screen can say why and put things back; only a sign-in problem throws, as the guard redirects.
-
-export type ActionOutcome<T = undefined> = { ok: true; data: T } | { ok: false; message: string }
-
-/** Only what the screen reads is sent back; a handler call that answers nothing the screen needs is dropped. */
-const nothing = async (call: Promise<unknown>): Promise<undefined> => {
-  await call
-}
-
-const failure = (error: unknown): { ok: false; message: string } => ({
-  ok: false,
-  message: error instanceof ApiError && error.status < 500 ? error.message : "That did not go through. Please try again.",
-})
-
-/** The one shape of every action: guard, context, the handler call, the refresh. */
-async function act<T = undefined>(run: (ctx: Ctx) => Promise<T>): Promise<ActionOutcome<T>> {
-  await requireAdmin("manager")
-  try {
-    const out = await run(await ctxFromSession())
-    revalidatePath("/admin", "layout")
-    return { ok: true, data: out }
-  } catch (error) {
-    // A half-finished save still changed some rows; show them either way.
-    revalidatePath("/admin", "layout")
-    return failure(error)
-  }
-}
+// The admin's server actions for passes, the schedule, settings and Home (the visit and customer actions are in
+// visit-actions.ts). The shape of every action is in act.ts.
 
 // Passes ------------------------------------------------------------------------------------------------------------
 
@@ -131,8 +102,9 @@ export const recordMarketingOptOut = async (customerId: string, note = "Opted ou
 // Home --------------------------------------------------------------------------------------------------------------
 
 /**
- * The one button on a Needs attention row. A declined card and an expiring card send the card update link; every
- * other row is a place to go and takes the person there, so the redirect is the answer.
+ * The one button on a Needs action row. A declined card and an expiring card send the card update link and a visit
+ * nobody marked done is marked done; every other row is a place to go, so the redirect is the answer: a visit to its
+ * panel on Visits, a pass to its panel on Passes.
  */
 export async function attentionAction(item: Attention): Promise<ActionOutcome | { ok: true; data: undefined; message: string }> {
   await requireAdmin("manager")
@@ -140,7 +112,20 @@ export async function attentionAction(item: Attention): Promise<ActionOutcome | 
     const sent = await act((ctx) => callApi(ctx, passesSendCardUpdateLink, { id: item.passId }))
     return sent.ok ? { ok: true, data: undefined, message: "Card update link sent." } : sent
   }
+  if (item.kind === "not-closed" && item.visitId) {
+    // A one-off visit with a price is also asked how it was paid, so its row opens the panel instead.
+    const visit = await act((ctx) => callApi(ctx, visitsGet, { id: item.visitId! }))
+    if (visit.ok && !visit.data.passId && visit.data.amount > 0) redirect(`/admin/visits?visit=${encodeURIComponent(item.visitId)}`)
+    const done = await act((ctx) => nothing(callApi(ctx, visitsMarkClosed, { id: item.visitId! })))
+    return done.ok ? { ok: true, data: undefined, message: "Marked done." } : done
+  }
+  if (item.visitId) redirect(`/admin/visits?visit=${encodeURIComponent(item.visitId)}`)
   if (item.passId) redirect(`/admin/passes?pass=${encodeURIComponent(item.passId)}`)
-  if (item.visitId) redirect(`/admin/schedule?visit=${encodeURIComponent(item.visitId)}`)
   redirect("/admin/schedule")
+}
+
+/** Dismiss on a Needs action row, or with `undo` its Undo. */
+export async function dismissAttention(item: Attention, undo = false): Promise<ActionOutcome> {
+  if (!item.key) return { ok: false, message: "That row cannot be dismissed." }
+  return act((ctx) => nothing(callApi(ctx, alertsDismiss, { kind: item.kind, key: item.key!, ...(undo ? { undo: true } : {}) })))
 }

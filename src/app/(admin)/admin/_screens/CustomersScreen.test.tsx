@@ -87,7 +87,7 @@ describe("CustomersScreen panel", () => {
     expect(panel.getByRole("heading", { name: "Consent history" })).toBeInTheDocument()
     expect(panel.getByText(/Terms 2026-11 accepted Nov 2\./)).toBeInTheDocument()
     expect(panel.getByRole("heading", { name: "Messages" })).toBeInTheDocument()
-    expect(panel.getByRole("heading", { name: "Jobs" })).toBeInTheDocument()
+    expect(panel.getByRole("heading", { name: "Visits" })).toBeInTheDocument()
   })
 
   it("lists every consent record, newest first", () => {

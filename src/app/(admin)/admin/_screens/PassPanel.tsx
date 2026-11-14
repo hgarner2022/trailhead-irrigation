@@ -4,6 +4,7 @@ import { useState, useTransition, type ReactNode } from "react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { JobPill } from "@/components/blocks/JobPill"
+import { OpenVisit } from "./VisitPanelHost"
 import { PassActions } from "@/components/blocks/PassActions"
 import { PassCard } from "@/components/blocks/PassCard"
 import { SeasonLine } from "@/components/blocks/SeasonLine"
@@ -51,13 +52,16 @@ function Jobs({ pass, today }: { pass: Pass; today: string }) {
   return (
     <ul data-slot="pass-jobs" className="mt-2 divide-y divide-border text-sm">
       {jobRows(pass, today).map((row) => (
-        <li key={row.kind} className="flex items-center gap-4 py-2.5">
-          <span className="min-w-0 flex-1">
-            <span className="block font-medium">{row.name}</span>
-            {/* The state says Needs a day; the line under the name is for a day and window. */}
-            {row.job.state !== "needs-a-day" && <span className="block text-muted-foreground">{row.when}</span>}
-          </span>
-          <JobPill job={row.job} />
+        <li key={row.kind}>
+          {/* The row opens the visit's panel (a link to it where there is no host). */}
+          <OpenVisit id={row.visitId ?? ""} className="gap-4 py-1.5">
+            <span className="min-w-0 flex-1">
+              <span className="block font-medium">{row.name}</span>
+              {/* The state says Needs a day; the line under the name is for a day and window. */}
+              {row.job.state !== "needs-a-day" && <span className="block text-muted-foreground">{row.when}</span>}
+            </span>
+            <JobPill job={row.job} />
+          </OpenVisit>
         </li>
       ))}
     </ul>
@@ -83,6 +87,12 @@ function Charges({ pass }: { pass: Pass }) {
   )
 }
 
+/** What Cancel the pass says about the money: the visits not yet charged are not charged. */
+function cancelMoney(pass: Pass): string {
+  const left = pass.visits.filter((v) => !v.chargedAt).reduce((sum, v) => sum + v.amount, 0)
+  return `${left > 0 ? `$${left.toLocaleString("en-US")} in visits not yet charged will not be charged.` : "Nothing further is charged."} The remaining visits come off the schedule.`
+}
+
 export function CancelDialog({ pass, open, onOpenChange, onCancel }: { pass: Pass; open: boolean; onOpenChange: (open: boolean) => void; onCancel?: (passId: string) => Promise<Outcome> }) {
   const [pending, start] = useTransition()
   const [problem, setProblem] = useState("")
@@ -102,7 +112,7 @@ export function CancelDialog({ pass, open, onOpenChange, onCancel }: { pass: Pas
       <DialogContent showCloseButton={false} className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle className="font-display text-2xl font-semibold text-navy">Cancel this pass?</DialogTitle>
-          <DialogDescription>Nothing further is charged and the remaining visits come off the schedule.</DialogDescription>
+          <DialogDescription>{cancelMoney(pass)}</DialogDescription>
         </DialogHeader>
         <p role="alert" className="text-sm text-destructive empty:hidden">
           {problem}
@@ -141,7 +151,7 @@ export function PassDetail({ pass, today, readOnly, actions, run, notice }: { pa
         <span className="font-medium">{consentLine(pass.consent)}</span>
       </p>
       <section aria-labelledby="pass-jobs">
-        <Subtitle id="pass-jobs">Jobs</Subtitle>
+        <Subtitle id="pass-jobs">Visits</Subtitle>
         <Jobs pass={pass} today={today} />
       </section>
       <section aria-labelledby="pass-season">

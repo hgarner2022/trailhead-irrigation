@@ -1,4 +1,5 @@
 import "server-only"
+import { syncPassJob } from "./job"
 import { eq } from "drizzle-orm"
 import type Stripe from "stripe"
 import { emitEvent } from "@/api/v1/webhooks/deliver"
@@ -23,6 +24,7 @@ export async function activatePass(db: Database, stripe: Stripe, passId: string,
     .update(s.seasonPass)
     .set({ status: "active", stripePaymentMethodId: card.paymentMethodId, cardBrand: card.brand, cardLast4: card.last4, cardExpires: card.expires, cardFailedAt: null, updatedAt: now })
     .where(eq(s.seasonPass.id, passId))
+  await syncPassJob(db, passId)
   await emitEvent(db, pass.organizationId, "pass.bought", { passId, number: pass.number })
   return "activated"
 }

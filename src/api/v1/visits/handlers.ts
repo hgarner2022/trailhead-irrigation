@@ -8,7 +8,6 @@ import { defineHandler } from "../../core/handler"
 import { afterTimeCursor, cursorPage, page, pageInput, timeCursor } from "../../core/pagination"
 import { addDays, assertOwnsCustomer, capacityKind, Day, Id, idInput, okOutput, OK, today, VisitKind, VisitStatus, weekdayOf } from "../shared"
 import { queueDateMessage } from "@/lib/scheduling/server/notify"
-import { enqueue } from "@/lib/queue"
 import { orderDay } from "@/lib/scheduling/server/order-day"
 import { blockedMinutes, capacityAfterBlocks } from "@/lib/admin/calendar"
 import { loadBlocks } from "@/lib/jobber-feed"
@@ -62,15 +61,8 @@ export const visitsGet = defineHandler({
   },
 })
 
-export const visitsMove = defineHandler({
-  name: "visits.move",
-  method: "POST",
-  path: "/visits/{id}/move",
-  scope: "write",
-  summary: "Put a visit on a truck and a day. Hard rules: the truck works that weekday, the day is inside the visit's window, the truck-day has capacity for the kind, and the truck-day stays in one area group.",
-  input: z.object({ id: Id, truckId: Id, scheduledOn: Day, startTime: z.string().regex(/^\d{2}:\d{2}$/).optional() }),
-  output: VisitOut,
-  async run(ctx, input) {
+/** The one placement: every hard rule, the day ordered, the date text queued. `visits.move` and `visits.create` both run it. */
+export async function placeVisit(ctx: Ctx, input: { id: string; truckId: string; scheduledOn: string; startTime?: string }) {
     const row = await loadVisit(ctx, input.id)
     const visit = row.visit
     if ((FINAL as readonly string[]).includes(visit.status)) throw new ApiError("unprocessable", `A ${visit.status} visit cannot be moved`)
@@ -98,7 +90,7 @@ export const visitsMove = defineHandler({
     const moved = visit.status === "scheduled"
     await ctx.db
       .update(s.visit)
-      .set({ status: "scheduled", truckId: truck.id, scheduledOn: input.scheduledOn, startTime: null, awaitingPick: false, stopOrder: null, exception: null })
+      .set({ status: "scheduled", truckId: truck.id, scheduledOn: input.scheduledOn, startTime: null, awaitingPick: false, stopOrder: null, exception: null, notDoneReason: null })
       .where(eq(s.visit.id, visit.id))
     await orderDay(ctx.db, { truckId: truck.id, day: input.scheduledOn })
     if (moved && visit.truckId && visit.scheduledOn && (visit.truckId !== truck.id || visit.scheduledOn !== input.scheduledOn)) await orderDay(ctx.db, { truckId: visit.truckId, day: visit.scheduledOn })
@@ -107,26 +99,18 @@ export const visitsMove = defineHandler({
     if (visit.scheduledOn !== input.scheduledOn) await queueDateMessage(ctx.db, visit, moved ? "date-moved" : "date-set", input.scheduledOn)
     await emitEvent(ctx.db, ctx.organizationId, moved ? "visit.moved" : "visit.scheduled", { visitId: visit.id, truckId: truck.id, scheduledOn: input.scheduledOn, from: moved ? { truckId: visit.truckId, scheduledOn: visit.scheduledOn } : null })
     return visitOut(ctx, await loadVisit(ctx, visit.id))
-  },
-})
+}
 
-export const visitsMarkClosed = defineHandler({
-  name: "visits.markClosed",
+export const visitsMove = defineHandler({
+  name: "visits.move",
   method: "POST",
-  path: "/visits/{id}/close",
-  scope: "admin",
-  summary: "Mark a visit done when the completion never arrived from the field (21 percent of 2026 visits were never closed).",
-  input: z.object({ id: Id, completedOn: Day.optional().describe("Defaults to today.") }),
+  path: "/visits/{id}/move",
+  scope: "write",
+  summary: "Put a visit on a truck and a day. Hard rules: the truck works that weekday, the day is inside the visit's window, the truck-day has capacity for the kind, and the truck-day stays in one area group.",
+  input: z.object({ id: Id, truckId: Id, scheduledOn: Day, startTime: z.string().regex(/^\d{2}:\d{2}$/).optional() }),
   output: VisitOut,
   async run(ctx, input) {
-    const { visit } = await loadVisit(ctx, input.id)
-    if (visit.status === "completed") return visitOut(ctx, await loadVisit(ctx, visit.id))
-    if (!(["scheduled", "not-closed"] as string[]).includes(visit.status)) throw new ApiError("unprocessable", `A ${visit.status} visit cannot be closed`)
-    await ctx.db.update(s.visit).set({ status: "completed", completedOn: input.completedOn ?? today(ctx) }).where(eq(s.visit.id, visit.id))
-    await emitEvent(ctx.db, ctx.organizationId, "visit.done", { visitId: visit.id, completedOn: input.completedOn ?? today(ctx) })
-    // Ryan marking it done is the one human path to a charge without a completion signal; the queue and the charge are idempotent.
-    if (visit.passId) await enqueue(ctx.db, ctx.organizationId, "pass-charge", visit.id, { visitId: visit.id })
-    return visitOut(ctx, await loadVisit(ctx, visit.id))
+    return placeVisit(ctx, input)
   },
 })
 
@@ -225,7 +209,7 @@ export const visitsPick = defineHandler({
     const slot = offeredDays(slots).includes(input.day) ? truckFor(slots, input.day) : undefined
     if (!slot) throw new ApiError("unprocessable", "That day is not one of the days on offer; pick another")
     const moved = visit.status === "scheduled"
-    await ctx.db.update(s.visit).set({ status: "scheduled", truckId: slot.truckId, scheduledOn: input.day, startTime: null, stopOrder: null, awaitingPick: false, exception: null }).where(eq(s.visit.id, visit.id))
+    await ctx.db.update(s.visit).set({ status: "scheduled", truckId: slot.truckId, scheduledOn: input.day, startTime: null, stopOrder: null, awaitingPick: false, exception: null, notDoneReason: null }).where(eq(s.visit.id, visit.id))
     await recordChange(ctx, { customerId: visit.customerId, passId: visit.passId, visitId: visit.id, kind: "day-picked", detail: { visit: visit.kind, day: input.day, truck: slot.truckName, from: visit.scheduledOn } })
     await emitEvent(ctx.db, ctx.organizationId, moved ? "visit.moved" : "visit.scheduled", { visitId: visit.id, truckId: slot.truckId, scheduledOn: input.day, from: moved ? { truckId: visit.truckId, scheduledOn: visit.scheduledOn } : null })
     await queueDateMessage(ctx.db, visit, moved ? "date-moved" : "date-set", input.day)

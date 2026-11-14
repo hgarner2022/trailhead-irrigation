@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { useMemo, useState, useTransition } from "react"
 import { Button } from "@/components/ui/button"
 import { DataGrid } from "@/components/blocks/DataGrid"
@@ -10,6 +11,9 @@ import { dayOf } from "@/lib/admin/calendar"
 import { TIME_ZONE } from "@/lib/admin/format"
 import type { Outcome } from "./action-types"
 import { CustomerPanelBody } from "./CustomerPanel"
+import { NewVisitButton } from "./NewVisit"
+import type { VisitActions } from "./visit-actions-types"
+import { VisitPanelHost } from "./VisitPanelHost"
 import { customerColumns } from "./customers-columns"
 import { MARKETING_WORDS, SCHEDULED_WORDS, customerRows, customersContext, type CustomerRow } from "./customers-model"
 
@@ -34,6 +38,8 @@ export interface CustomersScreenProps {
   readOnly?: boolean
   /** the panel's actions; server actions in the app. Without them the catalog's pass-offer buttons only log. */
   actions?: CustomersActions
+  /** the visit panel and New visit; server actions in the app */
+  visitActions?: VisitActions
 }
 
 export interface CustomersActions {
@@ -46,7 +52,7 @@ const option = (value: string, label = value) => ({ value, label })
 const log = (action: string) => (rows: CustomerRow[]) => console.info(action, rows.map((r) => r.name))
 const BULK_ACTIONS = [{ label: "Send pass offer", onClick: log("send pass offer") }]
 
-export function CustomersScreen({ data, today, defaultSelectedId, readOnly = false, actions }: CustomersScreenProps) {
+export function CustomersScreen({ data, today, defaultSelectedId, readOnly = false, actions, visitActions }: CustomersScreenProps) {
   const rows = useMemo(() => customerRows(data, today), [data, today])
   const [selectedId, setSelectedId] = useState<string | undefined>(defaultSelectedId)
   const [open, setOpen] = useState(() => rows.some((r) => r.id === defaultSelectedId))
@@ -77,6 +83,7 @@ export function CustomersScreen({ data, today, defaultSelectedId, readOnly = fal
 
   return (
     <div data-slot="customers-screen">
+      <VisitPanelHost data={data} today={today} readOnly={readOnly} actions={visitActions}>
       <PageHeader title="Customers" context={customersContext(rows)} />
       <SidePanelLayout
         panel={
@@ -88,6 +95,12 @@ export function CustomersScreen({ data, today, defaultSelectedId, readOnly = fal
               description={row.pass === "none" ? "Customer" : `Season Pass holder`}
               footer={
                 <>
+                  {!readOnly && client?.app && <NewVisitButton data={data} today={today} actions={visitActions} customerId={row.id} label="New visit" />}
+                  {row.passId && (
+                    <Button variant="outline" className="min-h-11" asChild>
+                      <Link href={`/admin/passes?pass=${encodeURIComponent(row.passId)}`}>Open pass</Link>
+                    </Button>
+                  )}
                   {offers && (
                     <Button variant="outline" onClick={() => console.info("send pass offer", [row.name])}>
                       Send pass offer
@@ -105,7 +118,7 @@ export function CustomersScreen({ data, today, defaultSelectedId, readOnly = fal
                 <p role="status" className="text-sm text-muted-foreground empty:hidden">
                   {notice}
                 </p>
-                <CustomerPanelBody row={row} client={client} data={data} today={dayOf(today, TIME_ZONE)} />
+                <CustomerPanelBody row={row} client={client} data={data} today={dayOf(today, TIME_ZONE)} readOnly={readOnly} actions={visitActions} />
               </div>
             </SidePanel>
           )
@@ -125,6 +138,7 @@ export function CustomersScreen({ data, today, defaultSelectedId, readOnly = fal
           emptyLine="Customers appear here as passes are sold and work is booked."
         />
       </SidePanelLayout>
+      </VisitPanelHost>
     </div>
   )
 }

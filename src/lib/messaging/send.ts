@@ -26,7 +26,7 @@ const skip = (db: Database, row: MessageRow, reason: string) =>
 
 /** A text that cannot go becomes the same message by email, once: key `<key>~email`, so a replay adds nothing. */
 async function emailInstead(db: Database, row: MessageRow, customer: typeof s.customer.$inferSelect): Promise<void> {
-  if (!customer.email) return
+  if (!customer.email || row.kind === "note") return
   const rendered = renderEmail(row.kind, row.data)
   const added = await db
     .insert(s.messageLog)

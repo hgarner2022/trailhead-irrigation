@@ -64,6 +64,8 @@ export interface Client {
   town: Town
   jobberUrl: string
   hasPass: boolean
+  /** a customer of the app (the office can add a visit for them), not only a client read from the Jobber mirror */
+  app?: boolean
   lastVisitAt?: string
   /** the current consent record */
   consent?: Consent
@@ -111,6 +113,36 @@ export interface Visit {
   lat?: number
   lng?: number
   exception?: VisitException
+  /** the job (pass or booked work) this visit belongs to */
+  jobId?: string
+  /** whole dollars the visit is worth; 0 until priced */
+  price?: number
+  /** how long the stop takes */
+  minutes?: number
+  notes?: string
+  /** the truck's name once it has one */
+  truckName?: string
+  /** why the last attempt did not happen, until the visit gets a day again */
+  notDoneReason?: string
+  /** how it was paid, once it is: card_on_file, card_now, check, venmo, cash */
+  paidMethod?: string
+  /** a bill was sent and is not yet paid */
+  billSent?: boolean
+}
+
+/** The sold work a visit belongs to: a Season Pass (kind pass) or booked work. A visit is the stop; a job is what was sold. */
+export interface SoldJob {
+  id: string
+  customerId: string
+  kind: "pass" | "repair" | "install" | "other"
+  status: "pending" | "active" | "done" | "cancelled"
+  /** whole dollars; absent until quoted */
+  price?: number
+  source: "checkout" | "office" | "site"
+  notes?: string
+  passId?: string
+  passNumber?: string
+  visitIds: string[]
 }
 
 export interface Quote {
@@ -153,6 +185,9 @@ export interface PassVisit {
   completedAt?: string
   amount: number
   chargedAt?: string
+  notDoneReason?: string
+  paidMethod?: string
+  billSent?: boolean
 }
 
 export interface Pass {
@@ -244,6 +279,7 @@ export type MessageKind =
   | "card-expiring"
   | "cancelled"
   | "renewal"
+  | "note"
 
 /**
  * One email or text the app sent a customer and how it went. Messages are
@@ -258,6 +294,8 @@ export interface Message {
   id: string
   clientId: string
   passId?: string
+  /** the visit the message was about, when it was about one */
+  visitId?: string
   channel: "email" | "sms"
   kind: MessageKind
   /** the subject for an email, the text itself for an SMS */
@@ -302,7 +340,9 @@ export interface BusyBlock {
 }
 
 export interface Attention {
-  kind: "new-pass" | "charge-failed" | "jobs-failed" | "card-expiring" | "not-closed" | "pass-cancelled" | "scheduled" | "unplaced"
+  /** what Dismiss records with `kind`: a stored alert's key, or the pass, visit or task the row is worked out from */
+  key?: string
+  kind: "new-pass" | "pending-pass" | "unpaid" | "charge-failed" | "jobs-failed" | "card-expiring" | "not-closed" | "pass-cancelled" | "scheduled" | "unplaced"
   passId?: string
   /** the visit an unplaced alert is about; Home links to it on the Schedule */
   visitId?: string
@@ -316,6 +356,8 @@ export interface AdminData {
   syncedAt: string
   clients: Client[]
   visits: Visit[]
+  /** the sold work, with its visits; absent in the fixtures */
+  jobs?: SoldJob[]
   quotes: Quote[]
   invoices: Invoice[]
   passes: Pass[]

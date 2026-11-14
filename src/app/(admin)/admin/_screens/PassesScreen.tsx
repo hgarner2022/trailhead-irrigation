@@ -11,6 +11,8 @@ import type { AdminData, Pass } from "@/lib/admin/types"
 import type { Outcome } from "./action-types"
 import type { PassesActions } from "./passes-actions"
 import { CancelDialog, PassDetail } from "./PassPanel"
+import type { VisitActions } from "./visit-actions-types"
+import { VisitPanelHost } from "./VisitPanelHost"
 import { passName, passesContext } from "./passes-model"
 
 export type { PassesActions }
@@ -34,6 +36,8 @@ export interface PassesScreenProps {
   /** a tech reads the passes and changes nothing: no buttons in the panel, no bulk actions */
   readOnly?: boolean
   actions?: PassesActions
+  /** the visit panel a visit in the pass panel opens; server actions in the app */
+  visitActions?: VisitActions
 }
 
 const TOWNS = ["Erie", "Longmont", "Louisville", "Lafayette", "Firestone", "Broomfield"]
@@ -42,7 +46,7 @@ const option = (value: string, label = value) => ({ value, label })
 
 const log = (action: string) => (rows: Pass[]) => console.info(action, rows.map((p) => p.number))
 
-export function PassesScreen({ data, today, defaultSelectedId, readOnly = false, actions }: PassesScreenProps) {
+export function PassesScreen({ data, today, defaultSelectedId, readOnly = false, actions, visitActions }: PassesScreenProps) {
   const passes = data.passes
   // Only the id is state; the pass is read from `data` each render. The id is
   // kept while the panel closes, so the sheet slides out with its content.
@@ -89,6 +93,7 @@ export function PassesScreen({ data, today, defaultSelectedId, readOnly = false,
 
   return (
     <div data-slot="passes-screen">
+      <VisitPanelHost data={data} today={today} readOnly={readOnly} actions={visitActions}>
       <PageHeader title="Passes" context={passesContext(passes)} />
       <p role="status" className="mb-4 text-sm text-muted-foreground empty:hidden">
         {pass && open ? "" : notice}
@@ -137,6 +142,7 @@ export function PassesScreen({ data, today, defaultSelectedId, readOnly = false,
           emptyLine="Passes appear here as customers reserve their season."
         />
       </SidePanelLayout>
+      </VisitPanelHost>
     </div>
   )
 }

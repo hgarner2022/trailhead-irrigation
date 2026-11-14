@@ -19,6 +19,8 @@ export interface RevenueScreenProps {
   data: AdminData
   /** ISO datetime the upcoming charges are read from */
   today: string
+  /** inside Reports, which has its own header */
+  embedded?: boolean
 }
 
 const passesWord = (n: number) => (n === 1 ? "1 pass" : `${n} passes`)
@@ -44,7 +46,7 @@ function Count({ label, value }: { label: string; value: number }) {
   )
 }
 
-export function RevenueScreen({ data, today }: RevenueScreenProps) {
+export function RevenueScreen({ data, today, embedded = false }: RevenueScreenProps) {
   const season = seasonOf(data.passes) ?? SEASON
   const active = data.passes.filter((p) => p.status === "active").length
   const series = seriesFor(data.monthTotals)
@@ -54,7 +56,7 @@ export function RevenueScreen({ data, today }: RevenueScreenProps) {
 
   return (
     <div data-slot="revenue-screen" className="space-y-6">
-      <PageHeader title="Revenue" context={revenueContext(series, thisYear, season)} />
+      {!embedded && <PageHeader title="Revenue" context={revenueContext(series, thisYear, season)} />}
 
       <div className="grid gap-4 sm:grid-cols-2">
         <StatTile label={`Committed this season, ${passesWord(active)}`} value={formatMoney(committedRevenue(data.passes))} />

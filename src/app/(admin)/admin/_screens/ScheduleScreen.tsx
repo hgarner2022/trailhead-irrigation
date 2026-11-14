@@ -13,6 +13,8 @@ import type { AdminData } from "@/lib/admin/types"
 import { TIME_ZONE, writtenDate } from "@/lib/admin/format"
 import { dayOf, dayVisits, weekOf, weekVisits } from "@/lib/admin/calendar"
 import type { Outcome } from "./action-types"
+import type { VisitActions } from "./visit-actions-types"
+import { VisitPanelHost, useOpenVisit } from "./VisitPanelHost"
 import { ScheduleDayMap } from "./ScheduleDayMap"
 import { ScheduleMoveTo } from "./ScheduleMoveTo"
 import { DayStepper, Exceptions, NextJobsLine, StopList } from "./ScheduleParts"
@@ -49,11 +51,25 @@ export interface ScheduleScreenProps {
   onSchedule?: (window: "turn-on" | "inspection" | "blowout") => Promise<Outcome<{ placed: number; unplaced: number }>>
   /** Place and drag: put a visit on a truck and a day; a refusal's words show and the block snaps back */
   onMove?: (visitId: string, truckId: string, dayIso: string) => Promise<Outcome>
+  /** the visit panel a stop opens; server actions in the app */
+  visitActions?: VisitActions
 }
 
 const WINDOWS = ["turn-on", "inspection", "blowout"] as const
 
-export function ScheduleScreen({ data, today, defaultTab = "week", defaultDay, defaultWeek, defaultSelectedId, readOnly = false, onSchedule, onMove }: ScheduleScreenProps) {
+/** The Schedule with the visit panel: a stop in the week, the day list or the map opens the visit. */
+export function ScheduleScreen(props: ScheduleScreenProps) {
+  return (
+    <VisitPanelHost data={props.data} today={props.today} readOnly={props.readOnly} actions={props.visitActions}>
+      <ScheduleBody {...props} />
+    </VisitPanelHost>
+  )
+}
+
+function ScheduleBody({ data, today, defaultTab = "week", defaultDay, defaultWeek, defaultSelectedId, readOnly = false, onSchedule, onMove, visitActions }: ScheduleScreenProps) {
+  // With the visit panel wired (the app), a stop opens it and its Move replaces the strip above the week; without it (the catalog) the strip stays.
+  const panel = Boolean(visitActions)
+  const openVisit = useOpenVisit()
   const todayDay = dayOf(today, TIME_ZONE)
   const { trucks, areas } = data.settings
   const [visits, setVisits] = useState(data.visits)
@@ -67,6 +83,11 @@ export function ScheduleScreen({ data, today, defaultTab = "week", defaultDay, d
   const [weekStart, setWeekStart] = useState(() => (defaultDay || defaultWeek ? weekOf(defaultDay ?? defaultWeek!, TIME_ZONE) : firstJobWeek(data.visits, today, TIME_ZONE)))
   const [day, setDay] = useState(defaultDay ?? todayDay)
   const [selectedId, setSelectedId] = useState<string | undefined>(defaultSelectedId)
+  /** Selecting a stop highlights it everywhere and opens its visit. */
+  const select = (id: string | undefined) => {
+    setSelectedId(id)
+    if (id && panel) openVisit?.(id)
+  }
   const [announcement, setAnnouncement] = useState("")
   /** why a Place was refused, by the job's id, shown under its row */
   const [problems, setProblems] = useState<Record<string, string>>({})
@@ -157,7 +178,7 @@ export function ScheduleScreen({ data, today, defaultTab = "week", defaultDay, d
             )
           }
         />
-        {selected && !readOnly && <ScheduleMoveTo key={`${selected.id}-${selected.truckId}-${selected.startAt}`} visit={selected} trucks={trucks} weekStart={weekStart} timeZone={TIME_ZONE} onMove={move} />}
+        {selected && !readOnly && !panel && <ScheduleMoveTo key={`${selected.id}-${selected.truckId}-${selected.startAt}`} visit={selected} trucks={trucks} weekStart={weekStart} timeZone={TIME_ZONE} onMove={move} />}
         <p role="status" className="text-sm text-muted-foreground empty:sr-only">
           {announcement}
         </p>
@@ -178,7 +199,7 @@ export function ScheduleScreen({ data, today, defaultTab = "week", defaultDay, d
                 today={todayDay}
                 timeZone={TIME_ZONE}
                 selectedId={selectedId}
-                onSelect={setSelectedId}
+                onSelect={select}
                 onMove={readOnly ? undefined : move}
                 onWeekChange={setWeekStart}
               />
@@ -201,10 +222,10 @@ export function ScheduleScreen({ data, today, defaultTab = "week", defaultDay, d
                   <CardTitleHeading>Stops in order</CardTitleHeading>
                 </CardHeader>
                 <CardContent>
-                  <StopList stops={stops} trucks={trucks} today={todayDay} selectedId={selectedId} onSelect={setSelectedId} />
+                  <StopList stops={stops} trucks={trucks} today={todayDay} selectedId={selectedId} onSelect={select} />
                 </CardContent>
               </Card>
-              <ScheduleDayMap className="min-w-0 lg:col-span-3" stops={stops} trucks={trucks} selectedId={selectedId} onSelect={setSelectedId} />
+              <ScheduleDayMap className="min-w-0 lg:col-span-3" stops={stops} trucks={trucks} selectedId={selectedId} onSelect={select} />
             </div>
           </TabsContent>
         </Tabs>

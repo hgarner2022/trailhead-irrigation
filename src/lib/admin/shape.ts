@@ -5,8 +5,9 @@
  */
 import { zonedToUtc } from "./calendar"
 import { fullName } from "./format"
+import { NOT_CLOSED_LOOKBACK_DAYS, visitJob } from "./jobs"
 import type {
-  AdminData, Attention, BusyBlock, Client, Consent, Invoice, Message, MessageKind, MonthTotal, Pass, PassVisit, Quote, SettingsChange,
+  SoldJob, AdminData, Attention, BusyBlock, Client, Consent, Invoice, Message, MessageKind, MonthTotal, Pass, PassVisit, Quote, SettingsChange,
   Truck, AreaGroup, OrganizationSettings, Town, Visit, VisitKind, VisitStatus,
 } from "./types"
 
@@ -15,9 +16,9 @@ const DEFAULT_START = "08:00"
 const DAY_MS = 86_400_000
 
 export interface ApiVisit {
-  id: string; passId: string | null; bookingId: string | null; customerId: string; firstName: string; town: Town; kind: string; status: string
+  id: string; jobId?: string; notes?: string | null; passId: string | null; bookingId: string | null; customerId: string; firstName: string; town: Town; kind: string; status: string
   window: string | null; amount: number; preference: string | null; awaitingPick: boolean; truckId: string | null; scheduledOn: string | null
-  startTime: string | null; durationMinutes?: number | null; truckName?: string | null; stopOrder: number | null; completedOn: string | null; chargedAt: string | null
+  notDoneReason?: string | null; paidBy?: string | null; paymentStatus?: string; startTime: string | null; durationMinutes?: number | null; truckName?: string | null; stopOrder: number | null; completedOn: string | null; chargedAt: string | null
   exception: { kind: "moved-in-jobber"; at: string; note: string } | null; lat: number | null; lng: number | null
 }
 export interface ApiPass {
@@ -33,6 +34,7 @@ export interface MirrorVisit { id: string; clientId: string | null; kind: string
 export interface MirrorJob { id: string; clientId: string | null; jobberUrl: string | null }
 export interface MirrorQuote { id: string; clientName: string | null; town: Town | null; total: number | null; sentAt: Date | null; status: Quote["status"] | null; jobberUrl: string | null }
 export interface MirrorInvoice { id: string; clientName: string | null; total: number | null; issuedAt: Date | null; dueAt: Date | null; status: Invoice["status"] | null; jobberUrl: string | null }
+export interface JobRow { id: string; customerId: string; kind: SoldJob["kind"]; status: SoldJob["status"]; price: number | null; source: SoldJob["source"]; notes: string | null }
 export interface QueueProblem { kind: string; lastError: string | null; updatedAt: Date; status: string }
 
 /** `key` is what the alert is about: a visit's id for an unplaced visit. */
@@ -60,8 +62,19 @@ export interface ShapeInput {
   failedChargeVisitIds?: string[]
   /** unresolved free-form alerts (a new Season Pass); absent in the fixtures */
   alerts?: AlertRow[]
+  /** the (kind, key) of rows Home must not show again: dismissed by the office */
+  dismissed?: { kind: string; key: string }[]
+  /** the job rows; absent in the fixtures */
+  jobRows?: JobRow[]
   blocks: BusyBlock[]
 }
+
+/** What the newest charge and the last not-done say about a visit: the reason, how it was paid, a bill waiting. */
+const money = (v: Pick<ApiVisit, "notDoneReason" | "paidBy" | "paymentStatus">) => ({
+  ...(v.notDoneReason ? { notDoneReason: v.notDoneReason } : {}),
+  ...(v.paymentStatus === "paid" && v.paidBy ? { paidMethod: v.paidBy } : {}),
+  ...(v.paymentStatus === "pending" && v.paidBy === "bill" ? { billSent: true } : {}),
+})
 
 const toKind = (k: string): VisitKind => (k === "turn-on" || k === "inspection" || k === "blowout" || k === "repair" || k === "install" ? k : "other")
 /** The visits whose newest charge attempt failed: a retry that went through clears the earlier failure. */
@@ -118,6 +131,7 @@ export function shapeAdminData(i: ShapeInput): AdminData {
       ...(v.startTime ? { startTime: v.startTime } : {}), ...(v.completedOn ? { completedOn: v.completedOn } : {}), ...(v.chargedAt ? { chargedAt: v.chargedAt } : {}),
       ...(failed.has(v.id) ? { chargeFailed: true } : {}), ...(v.status === "skipped" ? { skipped: true } : {}), ...(v.passId ? { passId: v.passId } : {}),
       isPass: v.passId !== null, jobberUrl: "",
+      ...(v.jobId ? { jobId: v.jobId } : {}), ...money(v), price: v.amount, ...(v.durationMinutes ? { minutes: v.durationMinutes } : {}), ...(v.notes ? { notes: v.notes } : {}), ...(v.truckName ? { truckName: v.truckName } : {}),
       ...(v.truckId ? { truckId: v.truckId } : {}),
       ...(v.awaitingPick ? { awaitingPick: true } : {}),
       ...(v.stopOrder !== null ? { stopOrder: v.stopOrder } : {}),
@@ -154,7 +168,7 @@ export function shapeAdminData(i: ShapeInput): AdminData {
       const jobberId = i.jobberClientOf.get(c.id)
       const records = (history.get(c.id) ?? []).sort((a, b) => b.recordedAt.getTime() - a.recordedAt.getTime())
       return {
-        id: c.id, firstName: c.firstName, town: (c.town ?? "Erie") as Town, jobberUrl: (jobberId && mirrorClient.get(jobberId)?.jobberUrl) || "", hasPass: c.hasPass,
+        id: c.id, firstName: c.firstName, town: (c.town ?? "Erie") as Town, jobberUrl: (jobberId && mirrorClient.get(jobberId)?.jobberUrl) || "", hasPass: c.hasPass, app: true,
         ...present("lastName", c.lastName), ...present("email", c.email), ...present("phone", c.phone), ...present("address", c.address),
         ...(lastVisit.has(c.id) ? { lastVisitAt: lastVisit.get(c.id) } : {}), ...(consent ? { consent: consentOf(consent), consentHistory: records.map(consentOf) } : {}),
       }
@@ -180,6 +194,7 @@ export function shapeAdminData(i: ShapeInput): AdminData {
         ...(v.truckName ? { truckName: v.truckName } : {}),
         ...(v.completedOn ? { completedAt: instantOf(v.completedOn, "12:00") } : {}),
         ...(v.chargedAt ? { chargedAt: v.chargedAt } : {}),
+        ...money(v),
       }))
     const consent = newestConsent.get(p.customerId)
     const jobberId = i.jobberClientOf.get(p.customerId)
@@ -199,13 +214,23 @@ export function shapeAdminData(i: ShapeInput): AdminData {
   const messages: Message[] = i.messages
     .map((m): Message => {
       const passId = m.visitId ? (i.visits.find((v) => v.id === m.visitId)?.passId ?? undefined) : undefined
-      return { id: m.id, clientId: m.customerId, ...(passId ? { passId } : {}), channel: m.channel, kind: m.kind as MessageKind, body: m.channel === "email" ? (m.subject ?? m.body) : m.body, at: m.sentAt ?? m.createdAt, status: m.status }
+      return { id: m.id, clientId: m.customerId, ...(passId ? { passId } : {}), ...(m.visitId ? { visitId: m.visitId } : {}), channel: m.channel, kind: m.kind as MessageKind, body: m.channel === "email" ? (m.subject ?? m.body) : m.body, at: m.sentAt ?? m.createdAt, status: m.status }
     })
     .sort((a, b) => a.at.localeCompare(b.at))
 
+  const soldJobs: SoldJob[] | undefined = i.jobRows?.map((j) => {
+    const pass = i.passes.find((p) => p.id && i.visits.some((v) => v.passId === p.id && v.jobId === j.id))
+    return {
+      id: j.id, customerId: j.customerId, kind: j.kind, status: j.status, source: j.source,
+      ...(j.price !== null ? { price: j.price } : {}), ...(j.notes ? { notes: j.notes } : {}),
+      ...(pass ? { passId: pass.id, passNumber: pass.number } : {}),
+      visitIds: i.visits.filter((v) => v.jobId === j.id).map((v) => v.id),
+    }
+  })
+
   return {
-    organizationId: i.organizationId, syncedAt: iso(i.syncedAt), clients, visits, quotes, invoices, passes,
-    monthTotals: monthTotals(i), attention: attention(i, passes), settings: { ...i.settings, trucks: i.trucks, areas: i.areas },
+    organizationId: i.organizationId, syncedAt: iso(i.syncedAt), clients, visits, ...(soldJobs ? { jobs: soldJobs } : {}), quotes, invoices, passes,
+    monthTotals: monthTotals(i), attention: attention(i, passes, visitRows(i, appVisits, visits)), settings: { ...i.settings, trucks: i.trucks, areas: i.areas },
     settingsChanges: i.settingsChanges, messages, blocks: i.blocks,
   }
 }
@@ -230,17 +255,49 @@ export function monthTotals(i: Pick<ShapeInput, "visits" | "mirror">): MonthTota
 
 const FOURTEEN_DAYS = 14 * DAY_MS
 
-/** What Home asks Hannah to look at: failed charges, queue items with an error, cards that expire before the blowout, cancelled passes. Jobs not closed are counted by Home itself from `src/lib/admin/jobs.ts`. */
-export function attention(i: ShapeInput, passes: Pass[]): Attention[] {
+const KIND_WORDS: Record<string, string> = { "turn-on": "spring turn-on", inspection: "inspection", blowout: "fall blowout", repair: "repair", install: "installation" }
+const SHORT_MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+const shortDay = (day: string) => `${SHORT_MONTHS[Number(day.slice(5, 7)) - 1]} ${Number(day.slice(8, 10))}`
+const possessive = (name: string) => `${name}'s`
+
+/**
+ * The rows Home works out from the visits themselves, one per visit: a visit whose day has passed and nobody marked done
+ * (the last two weeks; the key is the visit), and a one-off visit the office took that still has no day. A pass's own
+ * visits without a day are placed by the schedule run, which leaves its own row when it cannot.
+ */
+function visitRows(i: ShapeInput, app: Visit[], all: Visit[]): Attention[] {
   const out: Attention[] = []
-  for (const p of passes) {
-    if (p.status !== "cancelled" && p.cardFailedAt) out.push({ kind: "charge-failed", passId: p.id, message: `The card on ${p.number} didn't go through; ${p.firstName} has the update link`, since: p.cardFailedAt })
+  const earliest = new Date(Date.parse(`${i.today}T12:00:00Z`) - NOT_CLOSED_LOOKBACK_DAYS * DAY_MS).toISOString().slice(0, 10)
+  for (const v of all) {
+    const job = visitJob(v, i.today, ZONE)
+    if (job.notClosed && job.day && job.day >= earliest)
+      out.push({ kind: "not-closed", key: v.id, visitId: v.id, message: `${possessive(v.clientName)} ${KIND_WORDS[v.kind] ?? "visit"} on ${shortDay(job.day)} is not marked done`, since: instantOf(job.day, v.startTime ?? null) })
   }
-  for (const a of i.alerts ?? []) out.push({ kind: a.kind === "new-pass" || a.kind === "pass-cancelled" || a.kind === "scheduled" || a.kind === "unplaced" ? a.kind : "jobs-failed", ...(a.passId ? { passId: a.passId } : {}), ...(a.kind === "unplaced" && a.key ? { visitId: a.key } : {}), message: a.message, since: iso(a.createdAt) })
-  for (const q of i.queueProblems) out.push({ kind: "jobs-failed", message: `A ${q.kind} task ${q.status === "failed" ? "gave up" : "is retrying"}: ${q.lastError ?? "no error recorded"}`, since: iso(q.updatedAt) })
+  const appIds = new Set(app.map((v) => v.id))
+  // Done and not paid: a one-off visit with a price whose money has not come. A pass visit is charged to its card on its own, and a failed charge has its own row.
+  for (const v of all)
+    if (appIds.has(v.id) && !v.isPass && (v.price ?? 0) > 0 && v.status === "completed" && !v.chargedAt && !v.billSent)
+      out.push({ kind: "unpaid", key: v.id, visitId: v.id, message: `${possessive(v.clientName)} ${KIND_WORDS[v.kind] ?? "visit"} is done and not paid`, since: instantOf(v.completedOn ?? i.today, "12:00") })
+  for (const v of all)
+    if (appIds.has(v.id) && !v.isPass && v.status === "unscheduled")
+      out.push({ kind: "unplaced", key: v.id, visitId: v.id, message: `${possessive(v.clientName)} ${KIND_WORDS[v.kind] ?? "visit"} needs a day`, since: i.now.toISOString().replace(".000Z", "Z") })
+  return out
+}
+
+/** What Home asks Hannah to look at: failed charges, queue items with an error, cards that expire before the blowout, cancelled passes. Jobs not closed are counted by Home itself from `src/lib/admin/jobs.ts`. */
+export function attention(i: ShapeInput, passes: Pass[], visitRows: Attention[] = []): Attention[] {
+  const out: Attention[] = [...visitRows]
+  for (const p of passes)
+    if (p.status === "pending" && p.createdAt && i.now.getTime() - Date.parse(p.createdAt) > 60 * 60_000)
+      out.push({ kind: "pending-pass", key: p.id, passId: p.id, message: `${p.firstName} started ${p.number} and has not paid`, since: p.createdAt })
+  for (const p of passes) {
+    if (p.status !== "cancelled" && p.cardFailedAt) out.push({ kind: "charge-failed", key: `${p.id}@${p.cardFailedAt}`, passId: p.id, message: `The card on ${p.number} didn't go through; ${p.firstName} has the update link`, since: p.cardFailedAt })
+  }
+  for (const a of i.alerts ?? []) out.push({ key: a.key, kind: a.kind === "new-pass" || a.kind === "pass-cancelled" || a.kind === "scheduled" || a.kind === "unplaced" ? a.kind : "jobs-failed", ...(a.passId ? { passId: a.passId } : {}), ...(a.kind === "unplaced" && a.key ? { visitId: a.key } : {}), message: a.message, since: iso(a.createdAt) })
+  for (const q of i.queueProblems) out.push({ kind: "jobs-failed", key: `${q.kind}@${iso(q.updatedAt)}`, message: `A ${q.kind} task ${q.status === "failed" ? "gave up" : "is retrying"}: ${q.lastError ?? "no error recorded"}`, since: iso(q.updatedAt) })
   for (const p of passes) {
     if (p.status === "active" && p.cardExpires && p.cardExpires < `${p.season}-10` && !p.cardFailedAt)
-      out.push({ kind: "card-expiring", passId: p.id, message: `The card on ${p.number} expires before the October blowout`, since: iso(i.now) })
+      out.push({ kind: "card-expiring", key: p.id, passId: p.id, message: `The card on ${p.number} expires before the October blowout`, since: iso(i.now) })
   }
   const ap = new Map(i.passes.map((p) => [p.id, p]))
   for (const p of passes) {
@@ -248,7 +305,8 @@ export function attention(i: ShapeInput, passes: Pass[]): Attention[] {
     // The `pass-cancel` task's own alert says it already; the computed row is the fallback until the queue has run.
     if ((i.alerts ?? []).some((a) => a.kind === "pass-cancelled" && a.passId === p.id)) continue
     if (p.status === "cancelled" && cancelledAt && i.now.getTime() - Date.parse(cancelledAt) < FOURTEEN_DAYS)
-      out.push({ kind: "pass-cancelled", passId: p.id, message: `${p.firstName} cancelled ${p.number}`, since: cancelledAt })
+      out.push({ kind: "pass-cancelled", key: p.id, passId: p.id, message: `${p.firstName} cancelled ${p.number}`, since: cancelledAt })
   }
-  return out.sort((a, b) => b.since.localeCompare(a.since))
+  const gone = new Set((i.dismissed ?? []).map((d) => `${d.kind}:${d.key}`))
+  return out.filter((a) => !(a.key && gone.has(`${a.kind}:${a.key}`))).sort((a, b) => b.since.localeCompare(a.since))
 }

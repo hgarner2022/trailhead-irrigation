@@ -33,7 +33,7 @@ const meta = {
   parameters: { layout: "fullscreen" },
   args: { data, today: TODAY },
   render: (args) => (
-    <AdminShell current="passes" user={{ initials: "HG", name: "Hannah" }}>
+    <AdminShell current="visits" user={{ initials: "HG", name: "Hannah" }}>
       <PassesScreen {...args} />
     </AdminShell>
   ),

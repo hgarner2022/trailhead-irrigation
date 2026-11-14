@@ -34,8 +34,22 @@ export const CustomerOut = z.object({
   createdAt: Iso,
 })
 
+/** A job is the sold work (a pass, or booked work); its visits are the stops. */
+export const JobOut = z.object({
+  id: Id,
+  kind: z.enum(["pass", "repair", "install", "other"]),
+  status: z.enum(["pending", "active", "done", "cancelled"]),
+  price: z.number().int().nullable().describe("Whole dollars; null until quoted."),
+  source: z.enum(["checkout", "office", "site"]),
+  notes: z.string().nullable(),
+  createdAt: Iso,
+  passId: Id.nullable(),
+  passNumber: z.string().nullable(),
+  visits: z.array(z.object({ id: Id, kind: VisitKind, status: z.string(), scheduledOn: Day.nullable(), amount: z.number().int() })),
+})
+
 export const CustomerListItem = CustomerOut.extend({ town: Town.nullable(), address: z.string().nullable().optional().describe("The first property's street line. Only for callers with the write scope."), hasPass: z.boolean(), next: NextOut })
-export const CustomerDetail = CustomerOut.extend({ properties: z.array(PropertyOut), consent: ConsentOut.nullable(), preference: Preference.optional() }).omit({ preference: true })
+export const CustomerDetail = CustomerOut.extend({ properties: z.array(PropertyOut), consent: ConsentOut.nullable(), jobs: z.array(JobOut), preference: Preference.optional() }).omit({ preference: true })
 
 export const propertyInput = z.object({ address: z.string().min(3).max(200), town: Town })
 export const customerFields = {
