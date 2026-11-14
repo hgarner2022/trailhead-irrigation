@@ -93,9 +93,9 @@ describe("PassesScreen reads the visit rows", () => {
     const items = jobs.getAllByRole("listitem")
     expect(items[0]).toHaveTextContent("Turn-on")
     expect(items[0]).toHaveTextContent("May 3")
-    expect(items[0]).toHaveTextContent("Charged")
+    expect(items[0]).toHaveTextContent("Paid")
     expect(items[1]).toHaveTextContent("Needs a day")
-    expect(screen.getByRole("heading", { name: "Jobs" })).toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: "Visits" })).toBeInTheDocument()
   })
 
   it("says nothing of Jobber and has no Open in Jobber button", () => {

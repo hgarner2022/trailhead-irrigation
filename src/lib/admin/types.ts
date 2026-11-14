@@ -120,6 +120,12 @@ export interface Visit {
   notes?: string
   /** the truck's name once it has one */
   truckName?: string
+  /** why the last attempt did not happen, until the visit gets a day again */
+  notDoneReason?: string
+  /** how it was paid, once it is: card_on_file, card_now, check, venmo, cash */
+  paidMethod?: string
+  /** a bill was sent and is not yet paid */
+  billSent?: boolean
 }
 
 /** The sold work a visit belongs to: a Season Pass (kind pass) or booked work. A visit is the stop; a job is what was sold. */
@@ -177,6 +183,9 @@ export interface PassVisit {
   completedAt?: string
   amount: number
   chargedAt?: string
+  notDoneReason?: string
+  paidMethod?: string
+  billSent?: boolean
 }
 
 export interface Pass {
@@ -328,7 +337,7 @@ export interface BusyBlock {
 export interface Attention {
   /** what Dismiss records with `kind`: a stored alert's key, or the pass, visit or task the row is worked out from */
   key?: string
-  kind: "new-pass" | "pending-pass" | "charge-failed" | "jobs-failed" | "card-expiring" | "not-closed" | "pass-cancelled" | "scheduled" | "unplaced"
+  kind: "new-pass" | "pending-pass" | "unpaid" | "charge-failed" | "jobs-failed" | "card-expiring" | "not-closed" | "pass-cancelled" | "scheduled" | "unplaced"
   passId?: string
   /** the visit an unplaced alert is about; Home links to it on the Schedule */
   visitId?: string

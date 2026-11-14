@@ -33,7 +33,10 @@ export interface VisitData extends Base {
   visit: VisitFacts
 }
 export interface ReceiptData extends Base {
-  passNumber: string
+  /** null for a one-off visit that is not on a pass */
+  passNumber: string | null
+  /** how a payment the office recorded came: "check", "Venmo", "cash" */
+  paidBy?: string | null
   amount: number
   visitName: string
   /** "Visa ending 4242" or null */

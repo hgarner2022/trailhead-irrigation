@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import snapshot from "./fixtures/snapshot.json"
-import { JOB_WORDS, NOT_CLOSED_LOOKBACK_DAYS, dayWords, jobCounts, jobOf, passVisitJob, visitJob, windowLabel, type JobRow } from "./jobs"
+import { JOB_WORDS, NOT_CLOSED_LOOKBACK_DAYS, dayWords, jobCounts, jobMoney, jobOf, statesOf, passVisitJob, visitJob, windowLabel, type JobRow } from "./jobs"
 import type { AdminData, PassVisit, Visit } from "./types"
 
 const TODAY = "2026-11-12"
@@ -49,7 +49,7 @@ describe("jobOf", () => {
   })
 
   it("flags Not closed on a job whose day has passed and was not marked done, and on nothing else", () => {
-    expect(jobOf({ status: "scheduled", scheduledOn: "2026-11-11" }, TODAY)).toEqual({ state: "scheduled", notClosed: true, day: "2026-11-11" })
+    expect(jobOf({ status: "scheduled", scheduledOn: "2026-11-11" }, TODAY)).toMatchObject({ state: "scheduled", notClosed: true, day: "2026-11-11" })
     expect(jobOf({ status: "scheduled", scheduledOn: "2026-11-11", startTime: "08:00" }, TODAY).notClosed).toBe(true)
     // Today is not yet past, and a job with a day ahead is open, not unclosed.
     expect(jobOf({ status: "scheduled", scheduledOn: TODAY }, TODAY).notClosed).toBe(false)
@@ -126,5 +126,35 @@ describe("jobCounts", () => {
     const pass = { ...data.passes.find((p) => p.status === "active")!, visits: [{ kind: "turn-on" as const, window: "May", amount: 145, scheduledOn: "2026-11-05", scheduledAt: "2026-11-05T16:00:00Z" }] }
     const row: Visit = { id: "p-turn-on", clientId: pass.clientId, clientName: "A", town: "Erie", kind: "turn-on", status: "scheduled", startAt: "2026-11-05T16:00:00Z", isPass: true, jobberUrl: "" }
     expect(jobCounts({ passes: [pass], visits: [row] }, TODAY, TZ).notClosed).toBe(1)
+  })
+})
+
+describe("statesOf: the work pill and the money pill", () => {
+  const s = (row: JobRow) => statesOf(row, TODAY)
+  it("reads the work from the day and the money from the charge", () => {
+    expect(s({ status: "unscheduled" })).toMatchObject({ work: "needs-a-day", money: "not-yet", moneyLabel: "Not yet", dayPassed: false })
+    expect(s({ status: "scheduled", scheduledOn: "2026-11-20" })).toMatchObject({ work: "scheduled", money: "not-yet" })
+    expect(s({ status: "cancelled" })).toMatchObject({ work: "cancelled" })
+    expect(s({ status: "completed", completedOn: "2026-11-10" })).toMatchObject({ work: "done", money: "not-yet" })
+  })
+  it("keeps a Scheduled visit whose day has passed Scheduled, with a note, and never calls Routed a state", () => {
+    expect(s({ status: "scheduled", scheduledOn: "2026-11-09", startTime: "08:00" })).toMatchObject({ work: "scheduled", dayPassed: true, workLabel: "Scheduled" })
+    expect(s({ status: "scheduled", scheduledOn: "2026-11-12" }).dayPassed).toBe(false)
+  })
+  it("says Not done with the reason until the visit has a day again", () => {
+    expect(s({ status: "unscheduled", notDoneReason: "no-water" })).toMatchObject({ work: "not-done", workLabel: "Not done, no water on" })
+    expect(s({ status: "scheduled", scheduledOn: "2026-11-20", notDoneReason: "no-water" }).work).toBe("scheduled")
+  })
+  it("says how the money came, or that it failed or a bill is out", () => {
+    const done = { status: "completed" as const, completedOn: "2026-11-10" }
+    expect(s({ ...done, chargedAt: "2026-11-10T20:00:00Z", paidMethod: "check" })).toMatchObject({ money: "paid", moneyLabel: "Paid, check" })
+    expect(s({ ...done, chargedAt: "2026-11-10T20:00:00Z", paidMethod: "card_on_file" }).moneyLabel).toBe("Paid, card")
+    expect(s({ ...done, chargeFailed: true }).money).toBe("failed")
+    expect(s({ ...done, cardFailedAt: "2026-11-11T00:00:00Z" }).money).toBe("failed")
+    expect(s({ ...done, billSent: true })).toMatchObject({ money: "bill-sent", moneyLabel: "Bill sent" })
+  })
+  it("sums a job's money across its visits, leaving cancelled ones out", () => {
+    const paid = s({ status: "completed", completedOn: "2026-11-10", chargedAt: "2026-11-10T20:00:00Z" })
+    expect(jobMoney([paid, s({ status: "scheduled", scheduledOn: "2026-11-20" }), s({ status: "cancelled" })])).toBe("1 of 2 paid")
   })
 })

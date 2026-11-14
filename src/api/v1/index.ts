@@ -13,7 +13,8 @@ import { scheduleRun, scheduleWeek, scheduleDay, scheduleSlots, scheduleOfferDay
 import { servicesList, servicesCreate, servicesUpdate, servicesDeactivate } from "./services/handlers"
 import { settingsGet, settingsUpdate, settingsChangesList } from "./settings/handlers"
 import { trucksList, trucksCreate, trucksUpdate, trucksDeactivate } from "./trucks/handlers"
-import { visitsList, visitsGet, visitsMove, visitsMarkClosed, visitsStretch, visitsRequestMove, visitsLinkRequest, visitsAreaDays, visitsPick } from "./visits/handlers"
+import { visitsList, visitsGet, visitsMove, visitsStretch, visitsRequestMove, visitsLinkRequest, visitsAreaDays, visitsPick } from "./visits/handlers"
+import { visitsMarkClosed, visitsRecordPayment } from "./visits/money"
 import { visitsCancel, visitsCreate, visitsMarkNotDone, visitsUpdate } from "./visits/office"
 import { webhooksList, webhooksCreate, webhooksDelete, webhooksTest } from "./webhooks/handlers"
 
@@ -32,7 +33,7 @@ export const handlers: AnyHandler[] = [
   servicesList, servicesCreate, servicesUpdate, servicesDeactivate,
   settingsGet, settingsUpdate, settingsChangesList,
   trucksList, trucksCreate, trucksUpdate, trucksDeactivate,
-  visitsList, visitsGet, visitsMove, visitsMarkClosed, visitsStretch, visitsRequestMove, visitsLinkRequest, visitsAreaDays, visitsPick,
+  visitsList, visitsGet, visitsMove, visitsMarkClosed, visitsRecordPayment, visitsStretch, visitsRequestMove, visitsLinkRequest, visitsAreaDays, visitsPick,
   visitsCreate, visitsUpdate, visitsMarkNotDone, visitsCancel,
   webhooksList, webhooksCreate, webhooksDelete, webhooksTest,
 ]

@@ -50,7 +50,7 @@ afterAll(() => db.close())
 
 describe("the job states, read from the rows", () => {
   it("reads Needs a day for an unscheduled visit and Scheduled for a day with no start time", () => {
-    expect(jobsOf("p3").inspection).toEqual({ state: "needs-a-day", notClosed: false })
+    expect(jobsOf("p3").inspection).toMatchObject({ state: "needs-a-day", notClosed: false })
     const withDay = data.passes.flatMap((p) => p.visits.map((v) => ({ p, v }))).find(({ v }) => v.scheduledOn && !v.startTime && !v.completedAt)!
     expect(passVisitJob(withDay.p, withDay.v, "2027-01-01", TZ)).toMatchObject({ state: "scheduled", notClosed: false })
   })

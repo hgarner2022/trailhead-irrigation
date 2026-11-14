@@ -11,7 +11,8 @@ import { scheduleRun } from "@/api/v1/schedule/handlers"
 import { servicesUpdate } from "@/api/v1/services/handlers"
 import { areasCreate, areasDelete, areasUpdate } from "@/api/v1/areas/handlers"
 import { trucksCreate, trucksDeactivate, trucksUpdate } from "@/api/v1/trucks/handlers"
-import { visitsMarkClosed, visitsMove } from "@/api/v1/visits/handlers"
+import { visitsGet, visitsMove } from "@/api/v1/visits/handlers"
+import { visitsMarkClosed } from "@/api/v1/visits/money"
 import { webhooksCreate, webhooksDelete, webhooksTest } from "@/api/v1/webhooks/handlers"
 import type { Attention, OrganizationSettings, TimingPreference } from "@/lib/admin/types"
 import { requireAdmin } from "@/lib/auth/guard"
@@ -112,6 +113,9 @@ export async function attentionAction(item: Attention): Promise<ActionOutcome | 
     return sent.ok ? { ok: true, data: undefined, message: "Card update link sent." } : sent
   }
   if (item.kind === "not-closed" && item.visitId) {
+    // A one-off visit with a price is also asked how it was paid, so its row opens the panel instead.
+    const visit = await act((ctx) => callApi(ctx, visitsGet, { id: item.visitId! }))
+    if (visit.ok && !visit.data.passId && visit.data.amount > 0) redirect(`/admin/visits?visit=${encodeURIComponent(item.visitId)}`)
     const done = await act((ctx) => nothing(callApi(ctx, visitsMarkClosed, { id: item.visitId! })))
     return done.ok ? { ok: true, data: undefined, message: "Marked done." } : done
   }

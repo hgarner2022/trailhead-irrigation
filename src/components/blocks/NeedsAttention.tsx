@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { BadgeCheck, Ban, CalendarCheck, CalendarX, CircleDashed, Clock, CreditCard, type LucideIcon } from "lucide-react"
+import { BadgeCheck, Ban, Banknote, CalendarCheck, CalendarX, CircleDashed, Clock, CreditCard, type LucideIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { Attention } from "@/lib/admin/types"
 import { EmptyState } from "./EmptyState"
@@ -35,6 +35,7 @@ const KINDS: Record<Attention["kind"], { icon: LucideIcon; tone: string; name: s
   "new-pass": { icon: BadgeCheck, tone: "bg-success/10 text-success", name: "New pass" },
   "charge-failed": { icon: CreditCard, tone: "bg-warning/10 text-warning", name: "Charge failed" },
   "jobs-failed": { icon: CalendarX, tone: "bg-warning/10 text-warning", name: "Task needs a retry" },
+  unpaid: { icon: Banknote, tone: "bg-warning/10 text-warning", name: "Done, not paid" },
   "pending-pass": { icon: Clock, tone: "bg-stone text-muted-foreground", name: "Pass not paid" },
   "card-expiring": { icon: Clock, tone: "bg-stone text-muted-foreground", name: "Card expiring" },
   "not-closed": { icon: CircleDashed, tone: "bg-stone text-muted-foreground", name: "Jobs not marked done" },

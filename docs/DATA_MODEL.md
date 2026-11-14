@@ -8,7 +8,11 @@
 
 Written 13 Nov 2026 from `src/db/schema.ts`, `src/lib/admin/{types,shape,jobs}.ts` and the screens. Docs means `public/llms.txt`, `public/pricing.md` and `docs/*`; a dash means the field is not shown there on purpose.
 
-## Visit states: one vocabulary for a visit
+## The two pills on every visit
+
+Every visit row and panel shows two pills, derived by `statesOf` in `src/lib/admin/jobs.ts` from the one row. **Work**: Needs a day (no day), Scheduled (has a day), Done, Not done (with the reason, while it has no day again), Cancelled. A Scheduled visit whose day has passed stays Scheduled with a small "day passed" note, never a state; Routed is a start time in the Time column, not a state. **Money**: Not yet (before Done), Paid (with how: "Paid, check"), Bill sent, Failed (the newest charge did not go through). A job (a pass or booked work) carries the same money across its visits: "1 of 2 paid" (`jobMoney`). The older single-state vocabulary below still drives the counts and the customer's pass page.
+
+## Visit states: the older single vocabulary
 
 `src/lib/admin/jobs.ts` derives it in one function from the row, and every screen uses it. No schema enum was added: the words map onto the existing rows.
 
@@ -35,6 +39,8 @@ A pending pass is an unpaid attempt (expires after an hour). Its visits are neve
 | not done (reason) | `pass_change` row kind `not-done`, detail reason, note, day, truck | `visits.markNotDone` (could-not-get-in, no-water, customer-asked-to-wait, other; sets Needs a day) | admin visit panel history; the visit's state reads Needs a day again |
 | visit cancelled | `visit.status` cancelled, `pass_change` kind `visit-cancelled`; a pending `pass-charge` queue item is closed and `chargeVisit` refuses a cancelled visit | `visits.cancel` | Cancelled state everywhere; the job's price drops by the visit |
 | note (a one-off text) | `message_log` kind `note`, channel sms only, body "Trailhead: ... Reply STOP to opt out." | `messages.send` kind `note` (text up to 320; needs a mobile and no STOP; never falls back to email) | admin visit and customer panel threads; the customer's phone |
+| charge.method, charge.reference | `charge.method` (card_on_file, card_now, check, venmo, cash, bill; default card_on_file) and `charge.reference` (a check number or Venmo handle) | the charge task (card_on_file); `visits.markClosed` with `paidBy` and `visits.recordPayment` (check, venmo, cash: a succeeded charge, `visit.charged_at` set, the receipt sent); card_now and bill wait for the payment page | API `visits.*` `paidBy`, `paymentStatus`; the Money pill ("Paid, check"); the receipt email ("We received $145 by check"); Reports read the one charge row whatever the method |
+| visit.not_done_reason | `visit.not_done_reason` | `visits.markNotDone`; cleared when the visit gets a day (`visits.move`, `visits.pick`) | API `visits.*` `notDoneReason`; the Work pill "Not done, no water on" |
 | alert dismissed | `admin_alert` row (kind, key) with `resolved_at`; Home's worked-out rows carry a key (`pass@failedAt`, `task@time`, pass id) | `alerts.dismiss` | Home's Needs action stops showing it until the key changes |
 
 | customer.first_name | `customer.first_name` | checkout contact step; `customers.create/update`; `passes.create` (cleaned with `cleanName`) | checkout step "First name"; API `customers.*`, `passes.*` (`firstName`); admin Customers and Passes tables and panels (inside the full name); pass card and emails (first name only); pass page |

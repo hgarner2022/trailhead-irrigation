@@ -17,6 +17,11 @@
  *
  * "Not closed" is a flag on a job that has a day that has passed and is not
  * marked done. It is shown as a badge beside the state, never as a state.
+ *
+ * The screens show two pills instead of that one state (owner, 14 Nov: "it needs to be very obvious that money
+ * was collected"): WORK (Needs a day, Scheduled, Done, Not done with its reason, Cancelled) and MONEY (Not yet,
+ * Paid with how, Bill sent, Failed). A Scheduled visit whose day has passed stays Scheduled with a "day passed"
+ * note; Routed is a start time in the Time column, not a state. `statesOf` derives both from the same row.
  */
 import { addDays, dayOf } from "./calendar"
 import { TIME_ZONE } from "./format"
@@ -37,6 +42,28 @@ export const JOB_WORDS: Record<JobState, string> = {
 
 export const NOT_CLOSED_WORD = "Not closed"
 
+export type WorkState = "needs-a-day" | "scheduled" | "done" | "not-done" | "cancelled"
+export type MoneyState = "not-yet" | "paid" | "bill-sent" | "failed"
+
+export const WORK_WORDS: Record<WorkState, string> = { "needs-a-day": "Needs a day", scheduled: "Scheduled", done: "Done", "not-done": "Not done", cancelled: "Cancelled" }
+export const MONEY_WORDS: Record<MoneyState, string> = { "not-yet": "Not yet", paid: "Paid", "bill-sent": "Bill sent", failed: "Failed" }
+/** The words for how a payment came, as the pill's suffix and the receipt say them. */
+export const METHOD_WORDS: Record<string, string> = { card_on_file: "card", card_now: "card", check: "check", venmo: "Venmo", cash: "cash", bill: "bill" }
+export const REASON_WORDS: Record<string, string> = { "could-not-get-in": "could not get in", "no-water": "no water on", "customer-asked-to-wait": "customer asked to wait", other: "something else" }
+
+/** What the two pills and the small note say about one visit. */
+export interface VisitStates {
+  work: WorkState
+  money: MoneyState
+  /** "Paid, check" for a paid visit, else the money word */
+  moneyLabel: string
+  /** "Not done, no water on" for a not-done visit, else the work word */
+  workLabel: string
+  /** the visit is Scheduled and its day has passed: a note under the pill, never a state */
+  dayPassed: boolean
+  reason?: string
+}
+
 /** How far back "not closed" looks: older days are a cleanup, not a morning prompt. */
 export const NOT_CLOSED_LOOKBACK_DAYS = 14
 
@@ -51,9 +78,15 @@ export interface JobRow {
   chargeFailed?: boolean
   /** the pass's card failed and has not been retried since */
   cardFailedAt?: string | null
+  /** why the last attempt did not happen, until the visit has a day again */
+  notDoneReason?: string | null
+  /** how it was paid (`charge.method`), once it is */
+  paidMethod?: string | null
+  /** a bill was sent and is not yet paid */
+  billSent?: boolean
 }
 
-export interface Job {
+export interface Job extends VisitStates {
   state: JobState
   /** the day has passed and nobody marked the job done */
   notClosed: boolean
@@ -61,11 +94,40 @@ export interface Job {
   day?: string
 }
 
+/** The two pills' states for one row. `today` is the Mountain calendar day (YYYY-MM-DD). */
+export function statesOf(row: JobRow, today: string): VisitStates {
+  const done = row.status === "completed" || Boolean(row.completedOn)
+  const gone = row.status === "cancelled" || row.status === "skipped"
+  const paid = Boolean(row.chargedAt)
+  const reason = !done && !row.scheduledOn && row.notDoneReason ? row.notDoneReason : undefined
+  const work: WorkState = gone ? "cancelled" : done ? "done" : row.scheduledOn || row.status === "scheduled" || row.status === "not-closed" ? "scheduled" : reason ? "not-done" : "needs-a-day"
+  const money: MoneyState = paid ? "paid" : row.chargeFailed || (done && row.cardFailedAt) ? "failed" : row.billSent ? "bill-sent" : "not-yet"
+  const how = row.paidMethod ? METHOD_WORDS[row.paidMethod] : undefined
+  return {
+    work,
+    money,
+    moneyLabel: money === "paid" && how ? `Paid, ${how}` : MONEY_WORDS[money],
+    workLabel: reason ? `Not done, ${REASON_WORDS[reason] ?? reason}` : WORK_WORDS[work],
+    dayPassed: work === "scheduled" && Boolean(row.scheduledOn) && row.scheduledOn! < today,
+    ...(reason ? { reason } : {}),
+  }
+}
+
+/** "1 of 2 paid": the money summary a job (a pass or booked work) carries across its visits; cancelled visits are not counted. */
+export function jobMoney(states: Pick<VisitStates, "work" | "money">[]): string {
+  const live = states.filter((s) => s.work !== "cancelled")
+  return `${live.filter((s) => s.money === "paid").length} of ${live.length} paid`
+}
+
 /** The job's state and its not-closed flag. `today` is the Mountain calendar day (YYYY-MM-DD). */
 export function jobOf(row: JobRow, today: string): Job {
+  return { ...baseJob(row, today), ...statesOf(row, today) }
+}
+
+function baseJob(row: JobRow, today: string): Omit<Job, keyof VisitStates> {
   const done = row.status === "completed" || Boolean(row.completedOn)
   const day = row.scheduledOn ?? undefined
-  const open = (state: JobState): Job => ({ state, notClosed: false, ...(day ? { day } : {}) })
+  const open = (state: JobState): Omit<Job, keyof VisitStates> => ({ state, notClosed: false, ...(day ? { day } : {}) })
   if (row.status === "skipped") return open("skipped")
   if (row.status === "cancelled") return open("cancelled")
   if (row.chargedAt) return open("charged")
@@ -88,6 +150,9 @@ export function visitJob(visit: Visit, today: string, timeZone: string, cardFail
       chargedAt: visit.chargedAt,
       chargeFailed: visit.chargeFailed,
       cardFailedAt,
+      notDoneReason: visit.notDoneReason,
+      paidMethod: visit.paidMethod,
+      billSent: visit.billSent,
     },
     today,
   )
@@ -104,6 +169,9 @@ export function passVisitJob(pass: Pick<Pass, "cardFailedAt">, visit: PassVisit,
       chargedAt: visit.chargedAt,
       chargeFailed: visit.chargeFailed,
       cardFailedAt: pass.cardFailedAt,
+      notDoneReason: visit.notDoneReason,
+      paidMethod: visit.paidMethod,
+      billSent: visit.billSent,
     },
     today,
   )

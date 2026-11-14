@@ -141,7 +141,7 @@ export function PassDetail({ pass, today, readOnly, actions, run, notice }: { pa
         <span className="font-medium">{consentLine(pass.consent)}</span>
       </p>
       <section aria-labelledby="pass-jobs">
-        <Subtitle id="pass-jobs">Jobs</Subtitle>
+        <Subtitle id="pass-jobs">Visits</Subtitle>
         <Jobs pass={pass} today={today} />
       </section>
       <section aria-labelledby="pass-season">

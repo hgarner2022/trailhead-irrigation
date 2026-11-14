@@ -18,7 +18,7 @@ const DAY_MS = 86_400_000
 export interface ApiVisit {
   id: string; jobId?: string; notes?: string | null; passId: string | null; bookingId: string | null; customerId: string; firstName: string; town: Town; kind: string; status: string
   window: string | null; amount: number; preference: string | null; awaitingPick: boolean; truckId: string | null; scheduledOn: string | null
-  startTime: string | null; durationMinutes?: number | null; truckName?: string | null; stopOrder: number | null; completedOn: string | null; chargedAt: string | null
+  notDoneReason?: string | null; paidBy?: string | null; paymentStatus?: string; startTime: string | null; durationMinutes?: number | null; truckName?: string | null; stopOrder: number | null; completedOn: string | null; chargedAt: string | null
   exception: { kind: "moved-in-jobber"; at: string; note: string } | null; lat: number | null; lng: number | null
 }
 export interface ApiPass {
@@ -68,6 +68,13 @@ export interface ShapeInput {
   jobRows?: JobRow[]
   blocks: BusyBlock[]
 }
+
+/** What the newest charge and the last not-done say about a visit: the reason, how it was paid, a bill waiting. */
+const money = (v: Pick<ApiVisit, "notDoneReason" | "paidBy" | "paymentStatus">) => ({
+  ...(v.notDoneReason ? { notDoneReason: v.notDoneReason } : {}),
+  ...(v.paymentStatus === "paid" && v.paidBy ? { paidMethod: v.paidBy } : {}),
+  ...(v.paymentStatus === "pending" && v.paidBy === "bill" ? { billSent: true } : {}),
+})
 
 const toKind = (k: string): VisitKind => (k === "turn-on" || k === "inspection" || k === "blowout" || k === "repair" || k === "install" ? k : "other")
 /** The visits whose newest charge attempt failed: a retry that went through clears the earlier failure. */
@@ -124,7 +131,7 @@ export function shapeAdminData(i: ShapeInput): AdminData {
       ...(v.startTime ? { startTime: v.startTime } : {}), ...(v.completedOn ? { completedOn: v.completedOn } : {}), ...(v.chargedAt ? { chargedAt: v.chargedAt } : {}),
       ...(failed.has(v.id) ? { chargeFailed: true } : {}), ...(v.status === "skipped" ? { skipped: true } : {}), ...(v.passId ? { passId: v.passId } : {}),
       isPass: v.passId !== null, jobberUrl: "",
-      ...(v.jobId ? { jobId: v.jobId } : {}), price: v.amount, ...(v.durationMinutes ? { minutes: v.durationMinutes } : {}), ...(v.notes ? { notes: v.notes } : {}), ...(v.truckName ? { truckName: v.truckName } : {}),
+      ...(v.jobId ? { jobId: v.jobId } : {}), ...money(v), price: v.amount, ...(v.durationMinutes ? { minutes: v.durationMinutes } : {}), ...(v.notes ? { notes: v.notes } : {}), ...(v.truckName ? { truckName: v.truckName } : {}),
       ...(v.truckId ? { truckId: v.truckId } : {}),
       ...(v.awaitingPick ? { awaitingPick: true } : {}),
       ...(v.stopOrder !== null ? { stopOrder: v.stopOrder } : {}),
@@ -187,6 +194,7 @@ export function shapeAdminData(i: ShapeInput): AdminData {
         ...(v.truckName ? { truckName: v.truckName } : {}),
         ...(v.completedOn ? { completedAt: instantOf(v.completedOn, "12:00") } : {}),
         ...(v.chargedAt ? { chargedAt: v.chargedAt } : {}),
+        ...money(v),
       }))
     const consent = newestConsent.get(p.customerId)
     const jobberId = i.jobberClientOf.get(p.customerId)
@@ -266,6 +274,10 @@ function visitRows(i: ShapeInput, app: Visit[], all: Visit[]): Attention[] {
       out.push({ kind: "not-closed", key: v.id, visitId: v.id, message: `${possessive(v.clientName)} ${KIND_WORDS[v.kind] ?? "visit"} on ${shortDay(job.day)} is not marked done`, since: instantOf(job.day, v.startTime ?? null) })
   }
   const appIds = new Set(app.map((v) => v.id))
+  // Done and not paid: a one-off visit with a price whose money has not come. A pass visit is charged to its card on its own, and a failed charge has its own row.
+  for (const v of all)
+    if (appIds.has(v.id) && !v.isPass && (v.price ?? 0) > 0 && v.status === "completed" && !v.chargedAt && !v.billSent)
+      out.push({ kind: "unpaid", key: v.id, visitId: v.id, message: `${possessive(v.clientName)} ${KIND_WORDS[v.kind] ?? "visit"} is done and not paid`, since: instantOf(v.completedOn ?? i.today, "12:00") })
   for (const v of all)
     if (appIds.has(v.id) && !v.isPass && v.status === "unscheduled")
       out.push({ kind: "unplaced", key: v.id, visitId: v.id, message: `${possessive(v.clientName)} ${KIND_WORDS[v.kind] ?? "visit"} needs a day`, since: i.now.toISOString().replace(".000Z", "Z") })

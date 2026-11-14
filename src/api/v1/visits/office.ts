@@ -36,7 +36,7 @@ export const visitsMarkNotDone = defineHandler({
     const { visit } = await loadOpen(ctx, input.id, "marked not done")
     if (visit.status !== "scheduled") throw new ApiError("unprocessable", "This visit has no day yet, so there is nothing to mark not done")
     if (input.reason === "other" && !input.note) throw new ApiError("invalid", "Say what happened when the reason is something else", [{ path: "note", message: "Add a short note" }])
-    await ctx.db.update(s.visit).set({ status: "unscheduled", truckId: null, scheduledOn: null, startTime: null, stopOrder: null, awaitingPick: false }).where(eq(s.visit.id, visit.id))
+    await ctx.db.update(s.visit).set({ status: "unscheduled", truckId: null, scheduledOn: null, startTime: null, stopOrder: null, awaitingPick: false, notDoneReason: input.reason }).where(eq(s.visit.id, visit.id))
     if (visit.truckId && visit.scheduledOn) await orderDay(ctx.db, { truckId: visit.truckId, day: visit.scheduledOn })
     await recordChange(ctx, { customerId: visit.customerId, passId: visit.passId, visitId: visit.id, kind: "not-done", detail: { reason: input.reason, note: input.note ?? null, day: visit.scheduledOn, truckId: visit.truckId } })
     return visitOut(ctx, await loadVisit(ctx, visit.id))

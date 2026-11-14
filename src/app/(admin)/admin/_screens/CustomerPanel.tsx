@@ -50,7 +50,7 @@ function Facts({ row }: { row: CustomerRow }) {
 /** The customer's jobs with a day, newest first, the last few, each with its state. */
 function Jobs({ visits, today }: { visits: Visit[]; today: string }) {
   const recent = [...visits].filter((v) => v.startAt).sort((a, b) => (b.startAt ?? "").localeCompare(a.startAt ?? "")).slice(0, RECENT)
-  if (recent.length === 0) return <p className="mt-2 text-sm text-muted-foreground">No jobs on record.</p>
+  if (recent.length === 0) return <p className="mt-2 text-sm text-muted-foreground">No visits on record.</p>
   return (
     <ul className="mt-2 divide-y divide-border text-sm">
       {recent.map((v) => (
@@ -86,7 +86,7 @@ export function CustomerPanelBody({ row, client, data, today }: { row: CustomerR
     <>
       <Facts row={row} />
       <section aria-labelledby="customer-jobs">
-        <Subtitle id="customer-jobs">Jobs</Subtitle>
+        <Subtitle id="customer-jobs">Visits</Subtitle>
         <Jobs visits={data.visits.filter((v) => v.clientId === row.id)} today={today} />
       </section>
       <section aria-labelledby="customer-consent">

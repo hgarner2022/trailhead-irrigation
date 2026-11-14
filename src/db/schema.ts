@@ -344,6 +344,8 @@ export const visit = pgTable(
     durationMinutes: integer("duration_minutes"),
     /** what the office or Ryan wants remembered about this one stop */
     notes: text("notes"),
+    /** why the last attempt did not happen (could-not-get-in, no-water, customer-asked-to-wait, other); cleared when the visit is given a day */
+    notDoneReason: text("not_done_reason"),
     stopOrder: integer("stop_order"),
     confirmedAt: ts("confirmed_at"),
     exception: jsonb("exception").$type<VisitException>(),
@@ -394,6 +396,10 @@ export const charge = pgTable(
     stripePaymentIntentId: text("stripe_payment_intent_id").unique(),
     failureMessage: text("failure_message"),
     receiptUrl: text("receipt_url"),
+    /** how the money came: the pass's card on file, a card paid now, a check, Venmo or cash the office recorded, or a bill */
+    method: text("method", { enum: ["card_on_file", "card_now", "check", "venmo", "cash", "bill"] }).notNull().default("card_on_file"),
+    /** a check number or a Venmo handle, when the office wrote one down */
+    reference: text("reference"),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
