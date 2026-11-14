@@ -82,12 +82,16 @@ this, not the other way round.
 
 ## The simplicity rule (Hannah, 14 Nov: "Jobber is too complicated. If you close out a job, they make you create an invoice. We want to be as simple as possible")
 
-**Done is the whole close.** One tap on a visit marks it done, charges the
-card on file for the visit and any parts added before the tap, and sends
-the receipt, which is the record. There is no invoice step, no second
-screen, nothing to close out. Invoices exist later only for the few who pay
-by check or need paper, printed from the receipt, never as a step in
-Ryan's day. The test for every later feature: if it makes Ryan do a second
+**Done closes the visit, and how the money came is one question, not a
+workflow** (Hannah, refining it: "Venmo, close it. Check, close it. If you
+need to get a card, you get that"). When the job has a card on file (every
+pass), Done charges it and sends the receipt with nothing to answer. When
+it does not, Done asks once, "Paid by": Card now (a payment link, or the
+reader later), Check, Venmo, Cash, or Send a bill. The first that applies
+is preselected. Check, Venmo and Cash just record the payment; Send a bill
+is the only path that makes a bill, and it emails one with a pay link.
+Every method is the same money row, so the receipt and Reports read one
+thing. The test for every later feature: if it makes Ryan do a second
 thing to get paid or to finish, it is wrong.
 
 ## What the product is, from those jobs
