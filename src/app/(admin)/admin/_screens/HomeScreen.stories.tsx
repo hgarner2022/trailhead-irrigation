@@ -26,8 +26,6 @@ const nothingYet: AdminData = {
   messages: [],
 }
 
-const BEFORE_FALL = "2027-09-17T18:00:00Z"
-
 const meta = {
   title: "Screens/Home",
   component: HomeScreen,
@@ -43,12 +41,6 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
-  globals: { viewport: { value: "wide", isRotated: false } },
-}
-
-/** Two weeks before the fixture's blowout window opens (October 1, 2027, four lead weeks): the season prompt shows above the tiles. */
-export const BeforeFall: Story = {
-  args: { today: BEFORE_FALL, data: { ...data, syncedAt: "2027-09-17T17:56:00Z" } },
   globals: { viewport: { value: "wide", isRotated: false } },
 }
 

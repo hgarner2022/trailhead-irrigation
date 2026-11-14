@@ -21,6 +21,7 @@ vi.mock("@/lib/admin/api-ctx", async () => {
 import HomePage from "./page"
 import SchedulePage from "./schedule/page"
 import PassesPage from "./passes/page"
+import ReportsPage from "./reports/page"
 import RevenuePage from "./revenue/page"
 import CustomersPage from "./customers/page"
 import SettingsPage from "./settings/page"
@@ -42,7 +43,7 @@ describe("the admin pages", () => {
   it("Home greets and lists today's work", async () => {
     const out = html(await HomePage())
     expect(out).toContain('data-slot="home-screen"')
-    expect(out).toContain("Needs attention")
+    expect(out).toContain("Needs action")
   })
 
   it("Schedule shows the week and takes ?week=, ?day= and ?visit=", async () => {
@@ -63,8 +64,15 @@ describe("the admin pages", () => {
     expect(html(await PassesPage(search({ pass: "p1" })))).toContain('data-slot="passes-screen"')
   })
 
-  it("Revenue, Customers and Settings render with data", async () => {
-    expect(html(await RevenuePage())).toContain('data-slot="revenue-screen"')
+  it("Reports holds Home's old numbers and Revenue's content, and /admin/revenue redirects to it", async () => {
+    const out = html(await ReportsPage())
+    expect(out).toContain('data-slot="reports-screen"')
+    expect(out).toContain('data-slot="revenue-screen"')
+    expect(out).toContain("Revenue this month")
+    expect(() => RevenuePage()).toThrow(/NEXT_REDIRECT/)
+  })
+
+  it("Customers and Settings render with data", async () => {
     const customers = html(await CustomersPage(search({})))
     expect(customers).toContain('data-slot="customers-screen"')
     const settings = html(await SettingsPage())

@@ -24,6 +24,8 @@ export interface NeedsAttentionProps {
   now?: string
   /** runs a row's one action (a server action in the app); without it the button only logs, as in the catalog */
   onAction?: (item: Attention) => Promise<ActionResult | void>
+  /** Dismiss on every row, or with `undo` its Undo; a server action in the app. Rows show no Dismiss without it unless `onAction` is given too. */
+  onDismiss?: (item: Attention, undo: boolean) => Promise<ActionResult | void>
   /** a tech reads the list; the rows keep their links and lose their buttons */
   readOnly?: boolean
   className?: string
@@ -33,6 +35,7 @@ const KINDS: Record<Attention["kind"], { icon: LucideIcon; tone: string; name: s
   "new-pass": { icon: BadgeCheck, tone: "bg-success/10 text-success", name: "New pass" },
   "charge-failed": { icon: CreditCard, tone: "bg-warning/10 text-warning", name: "Charge failed" },
   "jobs-failed": { icon: CalendarX, tone: "bg-warning/10 text-warning", name: "Task needs a retry" },
+  "pending-pass": { icon: Clock, tone: "bg-stone text-muted-foreground", name: "Pass not paid" },
   "card-expiring": { icon: Clock, tone: "bg-stone text-muted-foreground", name: "Card expiring" },
   "not-closed": { icon: CircleDashed, tone: "bg-stone text-muted-foreground", name: "Jobs not marked done" },
   "pass-cancelled": { icon: Ban, tone: "bg-warning/10 text-warning", name: "Pass cancelled" },
@@ -40,15 +43,15 @@ const KINDS: Record<Attention["kind"], { icon: LucideIcon; tone: string; name: s
   unplaced: { icon: CalendarX, tone: "bg-warning/10 text-warning", name: "Needs a day" },
 }
 
-/** A pass opens in Passes, a visit or a schedule line in Schedule; the rest have no page of their own. */
+/** A visit opens in Visits, a pass in its panel, a schedule line in Schedule; the rest have no page of their own. */
 export function attentionHref(item: Attention): string | undefined {
+  if (item.visitId) return `/admin/visits?visit=${encodeURIComponent(item.visitId)}`
   if (item.passId) return `/admin/passes?pass=${encodeURIComponent(item.passId)}`
-  if (item.visitId) return `/admin/schedule?visit=${encodeURIComponent(item.visitId)}`
   if (item.kind === "unplaced" || item.kind === "not-closed" || item.kind === "scheduled") return "/admin/schedule"
   return undefined
 }
 
-function Row({ item, now, onAction, readOnly }: { item: Attention; now: string; onAction?: NeedsAttentionProps["onAction"]; readOnly?: boolean }) {
+function Row({ item, now, onAction, onDismiss, readOnly }: { item: Attention; now: string; onAction?: NeedsAttentionProps["onAction"]; onDismiss?: NeedsAttentionProps["onDismiss"]; readOnly?: boolean }) {
   const { icon: Icon, tone, name } = KINDS[item.kind]
   const body = (
     <>
@@ -69,7 +72,7 @@ function Row({ item, now, onAction, readOnly }: { item: Attention; now: string; 
   const href = attentionHref(item)
   const layout = "flex min-w-0 flex-1 items-start gap-3"
   return (
-    <li data-kind={item.kind} className="flex items-center gap-3 py-3">
+    <li data-kind={item.kind} className="flex flex-col gap-2 py-3 has-[[data-dismissed]]:hidden sm:flex-row sm:items-center sm:gap-3">
       {href ? (
         <Link
           href={href}
@@ -80,20 +83,20 @@ function Row({ item, now, onAction, readOnly }: { item: Attention; now: string; 
       ) : (
         <div className={layout}>{body}</div>
       )}
-      {!readOnly && <AttentionAction item={item} onAction={onAction} />}
+      {!readOnly && <AttentionAction item={item} onAction={onAction} onDismiss={onDismiss} />}
     </li>
   )
 }
 
-export function NeedsAttention({ items, now, onAction, readOnly, className }: NeedsAttentionProps) {
+export function NeedsAttention({ items, now, onAction, onDismiss, readOnly, className }: NeedsAttentionProps) {
   if (items.length === 0) {
-    return <EmptyState className={className} title="Nothing needs you right now" line="Failed charges, tasks that need a retry and expiring cards show up here." />
+    return <EmptyState className={className} title="Nothing needs you right now" line="Failed charges, visits that need a day and visits nobody marked done show up here." />
   }
   const at = now ?? new Date().toISOString()
   return (
     <ul data-slot="needs-attention" className={cn("divide-y divide-border", className)}>
       {items.map((item, i) => (
-        <Row key={`${item.kind}-${item.passId ?? i}`} item={item} now={at} onAction={onAction} readOnly={readOnly} />
+        <Row key={`${item.kind}-${item.key ?? item.passId ?? i}`} item={item} now={at} onAction={onAction} onDismiss={onDismiss} readOnly={readOnly} />
       ))}
     </ul>
   )

@@ -59,7 +59,7 @@ describe("NeedsAttention", () => {
     render(<NeedsAttention items={[]} now={now} />)
     expect(rows()).toHaveLength(0)
     expect(document.querySelector('[data-slot="empty-state"]')).toHaveTextContent("Nothing needs you right now")
-    expect(screen.getByText("Failed charges, tasks that need a retry and expiring cards show up here.")).toBeInTheDocument()
+    expect(screen.getByText("Failed charges, visits that need a day and visits nobody marked done show up here.")).toBeInTheDocument()
   })
 
   it("shows visits not closed with the dashed circle, a muted icon and a link to the Schedule", () => {
@@ -70,8 +70,8 @@ describe("NeedsAttention", () => {
     expect(row.querySelector("a")).toHaveAttribute("href", "/admin/schedule")
   })
 
-  it("links an unplaced visit to that visit in the Schedule", () => {
+  it("links an unplaced visit to that visit on Visits", () => {
     render(<NeedsAttention items={[{ kind: "unplaced", visitId: "v 1", message: "Percy could not be placed.", since: "2026-11-09T17:00:00Z" }]} now={now} />)
-    expect(rows()[0]!.querySelector("a")).toHaveAttribute("href", "/admin/schedule?visit=v%201")
+    expect(rows()[0]!.querySelector("a")).toHaveAttribute("href", "/admin/visits?visit=v%201")
   })
 })

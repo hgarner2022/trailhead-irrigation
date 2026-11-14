@@ -3,7 +3,7 @@
 import { useMemo, useState, useSyncExternalStore, type CSSProperties, type ReactNode } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { CalendarDays, LayoutDashboard, LogOut, Settings2, Ticket, TrendingUp, Users, type LucideIcon } from "lucide-react"
+import { CalendarDays, ClipboardList, LayoutDashboard, LogOut, Settings2, TrendingUp, Users, type LucideIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
   Sidebar,
@@ -20,6 +20,7 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar"
 import { AdminBarContext } from "./admin-bar"
+import { UndoToastProvider } from "./UndoToast"
 
 // The frame every admin screen sits in (docs/DESIGN.md, Spacing): the navy
 // rail on a laptop, collapsed to icons under 1024px, and a bottom tab bar
@@ -32,7 +33,7 @@ import { AdminBarContext } from "./admin-bar"
 // layout, and does nothing in the catalog. The tab bar pads for `env(safe-area-inset-bottom)`, which
 // the admin root layout enables with `viewport.viewportFit = "cover"`.
 
-export type AdminSection = "home" | "schedule" | "passes" | "revenue" | "customers" | "settings"
+export type AdminSection = "home" | "schedule" | "visits" | "customers" | "reports" | "settings"
 
 export interface AdminShellProps {
   current: AdminSection
@@ -46,15 +47,14 @@ export interface AdminShellProps {
   children: ReactNode
 }
 
-// The order of the information architecture plan: one job each. Schedule and
-// Settings arrive with the next task; their links are in place so the frame
-// never changes under Hannah.
+// The order of Build 1: Home, Schedule, Visits, Customers, Reports, Settings. A pass has no item of its own: it
+// opens from a visit or a customer, and /admin/passes stays reachable from the Visits header.
 const NAV: { id: AdminSection; label: string; href: string; icon: LucideIcon }[] = [
   { id: "home", label: "Home", href: "/admin", icon: LayoutDashboard },
   { id: "schedule", label: "Schedule", href: "/admin/schedule", icon: CalendarDays },
-  { id: "passes", label: "Passes", href: "/admin/passes", icon: Ticket },
-  { id: "revenue", label: "Revenue", href: "/admin/revenue", icon: TrendingUp },
+  { id: "visits", label: "Visits", href: "/admin/visits", icon: ClipboardList },
   { id: "customers", label: "Customers", href: "/admin/customers", icon: Users },
+  { id: "reports", label: "Reports", href: "/admin/reports", icon: TrendingUp },
   { id: "settings", label: "Settings", href: "/admin/settings", icon: Settings2 },
 ]
 
@@ -195,7 +195,9 @@ export function AdminShell({ current, user, switcher, onSignOut, defaultOpen = t
           )}
         </div>
         <div className={cn(GUTTER, "w-full max-w-7xl pt-4 md:pt-6", phone ? "pb-[calc(5rem+env(safe-area-inset-bottom))]" : "pb-8")}>
-          <AdminBarContext.Provider value={bar}>{children}</AdminBarContext.Provider>
+          <AdminBarContext.Provider value={bar}>
+            <UndoToastProvider>{children}</UndoToastProvider>
+          </AdminBarContext.Provider>
         </div>
       </SidebarInset>
       {phone && <TabBar current={current} />}

@@ -11,7 +11,7 @@ const meta = {
   component: AdminShell,
   parameters: { layout: "fullscreen" },
   args: {
-    current: "passes",
+    current: "visits",
     user: { initials: "HG", name: "Hannah" },
     children: (
       <>

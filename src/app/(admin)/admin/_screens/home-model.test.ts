@@ -174,7 +174,7 @@ describe("upcomingWindow", () => {
 describe("jobTiles", () => {
   it("counts the four things from the same derivations the screens use", () => {
     const [needsDay, chargeFailed, notClosed, pending] = jobTiles(data, TODAY)
-    expect([needsDay.label, chargeFailed.label, notClosed.label, pending.label]).toEqual(["Jobs needing a day", "Charges that didn't go through", "Jobs not closed", "Pending passes, expire after an hour"])
+    expect([needsDay.label, chargeFailed.label, notClosed.label, pending.label]).toEqual(["Visits needing a day", "Charges that didn't go through", "Visits not closed", "Pending passes, expire after an hour"])
     // Jobs of active passes with no day; the pending pass's jobs are not among them.
     const active = data.passes.filter((p) => p.status === "active")
     expect(needsDay.value).toBe(String(active.flatMap((p) => p.visits).filter((v) => !v.scheduledAt && !v.completedAt).length))

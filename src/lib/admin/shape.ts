@@ -5,6 +5,7 @@
  */
 import { zonedToUtc } from "./calendar"
 import { fullName } from "./format"
+import { NOT_CLOSED_LOOKBACK_DAYS, visitJob } from "./jobs"
 import type {
   SoldJob, AdminData, Attention, BusyBlock, Client, Consent, Invoice, Message, MessageKind, MonthTotal, Pass, PassVisit, Quote, SettingsChange,
   Truck, AreaGroup, OrganizationSettings, Town, Visit, VisitKind, VisitStatus,
@@ -221,7 +222,7 @@ export function shapeAdminData(i: ShapeInput): AdminData {
 
   return {
     organizationId: i.organizationId, syncedAt: iso(i.syncedAt), clients, visits, ...(soldJobs ? { jobs: soldJobs } : {}), quotes, invoices, passes,
-    monthTotals: monthTotals(i), attention: attention(i, passes), settings: { ...i.settings, trucks: i.trucks, areas: i.areas },
+    monthTotals: monthTotals(i), attention: attention(i, passes, visitRows(i, appVisits, visits)), settings: { ...i.settings, trucks: i.trucks, areas: i.areas },
     settingsChanges: i.settingsChanges, messages, blocks: i.blocks,
   }
 }
@@ -246,9 +247,37 @@ export function monthTotals(i: Pick<ShapeInput, "visits" | "mirror">): MonthTota
 
 const FOURTEEN_DAYS = 14 * DAY_MS
 
-/** What Home asks Hannah to look at: failed charges, queue items with an error, cards that expire before the blowout, cancelled passes. Jobs not closed are counted by Home itself from `src/lib/admin/jobs.ts`. */
-export function attention(i: ShapeInput, passes: Pass[]): Attention[] {
+const KIND_WORDS: Record<string, string> = { "turn-on": "spring turn-on", inspection: "inspection", blowout: "fall blowout", repair: "repair", install: "installation" }
+const SHORT_MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+const shortDay = (day: string) => `${SHORT_MONTHS[Number(day.slice(5, 7)) - 1]} ${Number(day.slice(8, 10))}`
+const possessive = (name: string) => `${name}'s`
+
+/**
+ * The rows Home works out from the visits themselves, one per visit: a visit whose day has passed and nobody marked done
+ * (the last two weeks; the key is the visit), and a one-off visit the office took that still has no day. A pass's own
+ * visits without a day are placed by the schedule run, which leaves its own row when it cannot.
+ */
+function visitRows(i: ShapeInput, app: Visit[], all: Visit[]): Attention[] {
   const out: Attention[] = []
+  const earliest = new Date(Date.parse(`${i.today}T12:00:00Z`) - NOT_CLOSED_LOOKBACK_DAYS * DAY_MS).toISOString().slice(0, 10)
+  for (const v of all) {
+    const job = visitJob(v, i.today, ZONE)
+    if (job.notClosed && job.day && job.day >= earliest)
+      out.push({ kind: "not-closed", key: v.id, visitId: v.id, message: `${possessive(v.clientName)} ${KIND_WORDS[v.kind] ?? "visit"} on ${shortDay(job.day)} is not marked done`, since: instantOf(job.day, v.startTime ?? null) })
+  }
+  const appIds = new Set(app.map((v) => v.id))
+  for (const v of all)
+    if (appIds.has(v.id) && !v.isPass && v.status === "unscheduled")
+      out.push({ kind: "unplaced", key: v.id, visitId: v.id, message: `${possessive(v.clientName)} ${KIND_WORDS[v.kind] ?? "visit"} needs a day`, since: i.now.toISOString().replace(".000Z", "Z") })
+  return out
+}
+
+/** What Home asks Hannah to look at: failed charges, queue items with an error, cards that expire before the blowout, cancelled passes. Jobs not closed are counted by Home itself from `src/lib/admin/jobs.ts`. */
+export function attention(i: ShapeInput, passes: Pass[], visitRows: Attention[] = []): Attention[] {
+  const out: Attention[] = [...visitRows]
+  for (const p of passes)
+    if (p.status === "pending" && p.createdAt && i.now.getTime() - Date.parse(p.createdAt) > 60 * 60_000)
+      out.push({ kind: "pending-pass", key: p.id, passId: p.id, message: `${p.firstName} started ${p.number} and has not paid`, since: p.createdAt })
   for (const p of passes) {
     if (p.status !== "cancelled" && p.cardFailedAt) out.push({ kind: "charge-failed", key: `${p.id}@${p.cardFailedAt}`, passId: p.id, message: `The card on ${p.number} didn't go through; ${p.firstName} has the update link`, since: p.cardFailedAt })
   }
