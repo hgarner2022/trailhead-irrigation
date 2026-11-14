@@ -78,7 +78,7 @@ Six surfaces, each owning the jobs above and nothing else.
 2. **The pass page** (customer, after buying): the days, Move, Change the answer to "need to be home", Add the inspection, Update the card, Cancel, Book a repair, Renew.
 3. **The messages** (customer, over time): confirmation, two-week, day-before, receipt, card failed, moved, cancelled, renewal. One per event, one channel each.
 4. **The day view** (Ryan, in the truck): the list, the stop card, Done, Not done, Add parts, New job.
-5. **The office** (Hannah, on a laptop): Home, Schedule, Jobs, Customers, Revenue, Settings. Every action lives on the thing it acts on: the job panel has Move, Done, Not done, Edit, Contact, Cancel; the customer panel has Contact, New job, the pass; the pass panel has Add inspection, Card link, Resend, Cancel.
+5. **The office** (Hannah, on a laptop): Home, Schedule, Jobs, Customers, Reports, Settings. Home is two things only (Hannah, 14 Nov: "Home should be about what's coming up today, what needs action. Everything else can go in reports"): Today and tomorrow, each truck's stops in order, and Needs action, one row per thing with its one button and a Dismiss. Revenue, passes sold, the season chart, quotes and invoices live in Reports. Every action lives on the thing it acts on: the job panel has Move, Done, Not done, Edit, Contact, Cancel; the customer panel has Contact, New job, the pass; the pass panel has Add inspection, Card link, Resend, Cancel.
 6. **The season logic** (the business, unattended): the offers, the route build, the texts, the pull, the renewals, the nightly Jobber read.
 
 ## What is built, and what the live admin showed
@@ -94,7 +94,7 @@ Six surfaces, each owning the jobs above and nothing else.
 
 ## The order, by whose job breaks first
 
-1. **The office can act on a job** (Hannah tonight: "we need to reschedule things"): the Jobs page and the job panel with Move, Done, Not done, Edit, Contact, Cancel; New job. Without this Hannah cannot fix anything a customer asks for.
+1. **The office can act on a job, and Home is today plus what needs action** (Hannah tonight: "we need to reschedule things"): the Jobs page and the job panel with Move, Done, Not done, Edit, Contact, Cancel; New job. Without this Hannah cannot fix anything a customer asks for.
 2. **The offers tell the truth**: honour the six sources, derive capacity from minutes, start the day at 8:00, drop the fake window. Without this the checkout promises days Ryan does not have.
 3. **Ryan can run a day**: the day view with Done and Not done. Without this the Season Pass still depends on Jobber for the one thing that earns the money.
 4. **The customer can move a day** from the pass page and the texts.
