@@ -80,6 +80,16 @@ this, not the other way round.
 | Growth | "Where do passes come from?" | The purchase event in analytics, lead source on the customer. |
 | Leaving Jobber | "Can I stop paying for Jobber?" | Every job type on one list, invoices and quotes added in order, and the day the last Jobber job closes. |
 
+## The simplicity rule (Hannah, 14 Nov: "Jobber is too complicated. If you close out a job, they make you create an invoice. We want to be as simple as possible")
+
+**Done is the whole close.** One tap on a visit marks it done, charges the
+card on file for the visit and any parts added before the tap, and sends
+the receipt, which is the record. There is no invoice step, no second
+screen, nothing to close out. Invoices exist later only for the few who pay
+by check or need paper, printed from the receipt, never as a step in
+Ryan's day. The test for every later feature: if it makes Ryan do a second
+thing to get paid or to finish, it is wrong.
+
 ## What the product is, from those jobs
 
 Six surfaces, each owning the jobs above and nothing else.
