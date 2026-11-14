@@ -216,9 +216,16 @@ screens read it, nothing is derived twice.
 
 **Visits are jobs (Hannah, 14 Nov: "think about Season Pass as jobs with
 a status and all that; we can start with the Season Pass, but that is the
-direction").** The `visit` row is the job. One vocabulary everywhere: Needs
-a day, Scheduled, Routed (window set), Done, Charged, Charge failed,
-Cancelled; "not closed" is a flag on a Scheduled job whose day has passed.
+direction").** The `visit` row is the job. Two pills, never mixed (Hannah, 14 Nov: "their job status is really
+weird, late, active"; "it needs to be very obvious that money was
+collected, do we need to invoice them"): WORK: Needs a day, Scheduled,
+Done, Not done (with its reason), Cancelled; a Scheduled visit whose day
+has passed carries a small "day passed" note, not a state; whether the
+window is set is a detail in the Time column. MONEY: Not yet (nothing is
+owed before Done), Paid with how (card, check, Venmo, cash), Bill sent,
+Failed. The job shows the same money summary across its visits ("1 of 2
+paid"). Home lists every visit that is Done and not Paid, with the Paid-by
+choice as its button.
 A one-off booking creates a job row of its own kind rather than living in
 its own table with its own lifecycle. Nothing pass-specific goes on the job
 itself, so repairs, installs and the rest join the same list later; job

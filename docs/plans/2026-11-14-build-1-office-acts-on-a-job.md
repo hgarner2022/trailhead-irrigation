@@ -52,8 +52,8 @@ opened from a job or a customer) and the Home tiles.
 8. The customer's thread shows every message we sent, so the admin never
    has to wonder what the customer knows.
 9. Words from `docs/UX_WRITING.md`: verbs on buttons, sentence case, no
-   jargon, the job words (Needs a day, Scheduled, Routed, Done, Charged,
-   Charge failed, Cancelled).
+   jargon, the two pills: work (Needs a day, Scheduled, Done, Not done,
+   Cancelled) and money (Not yet, Paid with how, Bill sent, Failed).
 10. A phone works: the panel is a sheet, the forms are one column.
 
 ## The screens
