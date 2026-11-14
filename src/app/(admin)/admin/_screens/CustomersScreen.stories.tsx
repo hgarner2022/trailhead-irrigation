@@ -39,7 +39,7 @@ export const PanelOpen: Story = {
   args: { defaultSelectedId: "c100" },
   globals: { viewport: { value: "wide", isRotated: false } },
   play: async ({ canvas }) => {
-    await expect(await canvas.findByRole("heading", { name: "Jobs" })).toBeInTheDocument()
+    await expect(await canvas.findByRole("heading", { name: "Visits" })).toBeInTheDocument()
     await expect(await canvas.findByRole("heading", { name: "Consent history" })).toBeInTheDocument()
   },
 }

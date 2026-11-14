@@ -37,16 +37,27 @@ const messages: Message[] = [
   { id: "m3", clientId: "c-joe", visitId: "office-paid", channel: "email", kind: "receipt", body: "Receipt: $145 for your repair", at: "2026-11-09T22:05:00Z", status: "delivered" },
 ]
 
+/** The fixture's pass visits as visit rows (the snapshot keeps them on the passes, the live data on `visits`). */
+const passVisits: Visit[] = base.passes
+  .filter((p) => p.status !== "pending")
+  .slice(0, 6)
+  .flatMap((p) =>
+    p.visits.map((pv): Visit => ({
+      id: `${p.id}-${pv.kind}`, clientId: p.clientId, clientName: [p.firstName, p.lastName].filter(Boolean).join(" "), town: p.town, kind: pv.kind,
+      status: p.status === "cancelled" ? "cancelled" : pv.completedAt ? "completed" : pv.scheduledOn ? "scheduled" : "unscheduled", isPass: true, passId: p.id, jobId: `job_${p.id}`, jobberUrl: "",
+      ...(pv.scheduledOn ? { scheduledOn: pv.scheduledOn, startAt: pv.scheduledAt } : {}), ...(pv.completedAt ? { completedOn: pv.scheduledOn } : {}),
+      ...(pv.chargedAt ? { chargedAt: pv.chargedAt, paidMethod: "card_on_file" } : {}), price: pv.amount, minutes: 120,
+      ...(pv.scheduledOn ? { truckId: "truck-1", truckName: "Truck 1" } : {}),
+    })),
+  )
+
 export const visitsData: AdminData = {
   ...base,
-  visits: [...oneOffs, ...base.visits],
+  visits: [...oneOffs, ...passVisits, ...base.visits],
   clients: [...people, ...base.clients],
   messages: [...messages, ...base.messages],
   attention: [],
 }
 
-/** A visit of the first active pass in the fixture, for the panel's pass job block. */
-export const passVisitId = (() => {
-  const pass = base.passes.find((p) => p.status === "active" && p.visits.some((v) => v.id))!
-  return pass.visits.find((v) => v.id)!.id!
-})()
+/** A visit of an active pass that is booked and not yet done, for the panel's pass job block. */
+export const passVisitId = passVisits.find((v) => v.status === "scheduled")?.id ?? passVisits[0]!.id

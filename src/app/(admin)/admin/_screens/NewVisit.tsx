@@ -147,7 +147,7 @@ export function NewVisit({ data, today, open, onOpenChange, customerId, actions 
               </>
             )}
             {!customerId && (
-              <Button type="button" variant="link" className="mt-1 min-h-11 px-0" onClick={() => setIsNew(!isNew)}>
+              <Button type="button" variant="ghost" className="mt-1 min-h-11 px-2 text-primary-dark underline underline-offset-2" onClick={() => setIsNew(!isNew)}>
                 {isNew ? "Find an existing customer" : "New customer"}
               </Button>
             )}
