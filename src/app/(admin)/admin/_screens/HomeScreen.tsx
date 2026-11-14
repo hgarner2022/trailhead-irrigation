@@ -34,7 +34,7 @@ export interface HomeScreenProps {
 function Stop({ visit, today }: { visit: Visit; today: string }) {
   return (
     <li>
-      <OpenVisit id={visit.id} className="-mx-2 gap-3 rounded-lg px-2 py-2 hover:bg-accent">
+      <OpenVisit id={visit.id} className="-mx-2 flex-wrap gap-x-3 gap-y-1 rounded-lg px-2 py-2 hover:bg-accent sm:flex-nowrap">
         <span className="w-16 shrink-0 text-sm tabular-nums text-muted-foreground">{stopTime(visit)}</span>
         <span className="min-w-0 flex-1 text-sm text-foreground">
           <span className="block truncate">
@@ -43,7 +43,9 @@ function Stop({ visit, today }: { visit: Visit; today: string }) {
           </span>
           <span className="block truncate text-xs text-muted-foreground">{KIND_LABEL[visit.kind as OfficeKind] ?? "Visit"}</span>
         </span>
-        <JobPill job={visitJob(visit, dayOf(today, TIME_ZONE), TIME_ZONE)} />
+        <span className="w-full pl-[4.75rem] sm:w-auto sm:pl-0">
+          <JobPill job={visitJob(visit, dayOf(today, TIME_ZONE), TIME_ZONE)} />
+        </span>
       </OpenVisit>
     </li>
   )

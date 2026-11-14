@@ -84,7 +84,7 @@ function VisitBlock({ facts }: { facts: VisitFacts }) {
 function JobBlock({ facts, today, onOpenVisit }: { facts: VisitFacts; today: string; onOpenVisit: (id: string) => void }) {
   const { pass, job, siblings, visit } = facts
   const day = dayOf(today, TIME_ZONE)
-  const title = pass ? `Season Pass ${pass.number}` : job ? `${job.kind === "repair" || job.kind === "install" ? kindLabel({ kind: job.kind }) : "Booked work"}, ${job.source === "site" ? "from the site" : "taken by the office"}` : "Job"
+  const title = pass ? `Season Pass ${pass.number}` : job ? `${job.kind === "repair" || job.kind === "install" ? kindLabel({ kind: job.kind }) : "Booked work"}, ${job.source === "site" ? "from the site" : "taken by the office"}` : "One-off visit"
   return (
     <section aria-labelledby="visit-job" data-slot="visit-job">
       <Subtitle id="visit-job">Job</Subtitle>
