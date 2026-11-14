@@ -1,5 +1,15 @@
 # Jobs to be done: the whole thing, from every chair
 
+> **Vocabulary (Hannah, 14 Nov, 4:10am: "I thought we were calling jobs
+> visits").** A **visit** is the stop: the `visit` row with its day, time,
+> truck, minutes, state, notes and charge. A **job** is the sold work it
+> belongs to: a Season Pass (two or three visits) or a booking (one visit),
+> with its price, status, customer and card. Move, Done, Not done and Edit
+> act on a visit; Cancel the whole thing and the money live on the job. The
+> office lists visits; the nav item is Visits, not Jobs. Where this document
+> says "job" for a stop, read "visit".
+
+
 Written 2026-11-14, 3am, after Hannah: "Think through all the jobs to be
 done. You are an excellent product manager." This is the product thought
 through before more of it is built: who hires the app, in what situation,
@@ -78,7 +88,7 @@ Six surfaces, each owning the jobs above and nothing else.
 2. **The pass page** (customer, after buying): the days, Move, Change the answer to "need to be home", Add the inspection, Update the card, Cancel, Book a repair, Renew.
 3. **The messages** (customer, over time): confirmation, two-week, day-before, receipt, card failed, moved, cancelled, renewal. One per event, one channel each.
 4. **The day view** (Ryan, in the truck): the list, the stop card, Done, Not done, Add parts, New job.
-5. **The office** (Hannah, on a laptop): Home, Schedule, Jobs, Customers, Reports, Settings. Home is two things only (Hannah, 14 Nov: "Home should be about what's coming up today, what needs action. Everything else can go in reports"): Today and tomorrow, each truck's stops in order, and Needs action, one row per thing with its one button and a Dismiss. Revenue, passes sold, the season chart, quotes and invoices live in Reports. Every action lives on the thing it acts on: the job panel has Move, Done, Not done, Edit, Contact, Cancel; the customer panel has Contact, New job, the pass; the pass panel has Add inspection, Card link, Resend, Cancel.
+5. **The office** (Hannah, on a laptop): Home, Schedule, Visits, Customers, Reports, Settings. Home is two things only (Hannah, 14 Nov: "Home should be about what's coming up today, what needs action. Everything else can go in reports"): Today and tomorrow, each truck's stops in order, and Needs action, one row per thing with its one button and a Dismiss. Revenue, passes sold, the season chart, quotes and invoices live in Reports. Every action lives on the thing it acts on: the job panel has Move, Done, Not done, Edit, Contact, Cancel; the customer panel has Contact, New job, the pass; the pass panel has Add inspection, Card link, Resend, Cancel.
 6. **The season logic** (the business, unattended): the offers, the route build, the texts, the pull, the renewals, the nightly Jobber read.
 
 ## What is built, and what the live admin showed

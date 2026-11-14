@@ -1,5 +1,15 @@
 # Scheduling, decided against the evidence
 
+> **Vocabulary (Hannah, 14 Nov, 4:10am: "I thought we were calling jobs
+> visits").** A **visit** is the stop: the `visit` row with its day, time,
+> truck, minutes, state, notes and charge. A **job** is the sold work it
+> belongs to: a Season Pass (two or three visits) or a booking (one visit),
+> with its price, status, customer and card. Move, Done, Not done and Edit
+> act on a visit; Cancel the whole thing and the money live on the job. The
+> office lists visits; the nav item is Visits, not Jobs. Where this document
+> says "job" for a stop, read "visit".
+
+
 Second version, 2026-11-14 early, after the research in
 `2026-11-14-scheduling-research.md`. The first version (13 Nov, late) was
 written before the research; this one replaces it. Every decision below
