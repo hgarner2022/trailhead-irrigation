@@ -21,10 +21,15 @@ beforeAll(async () => {
   })
   await db.insert(s.customer).values({ id: "c1", organizationId: ORG, firstName: "Andrea" })
   await db.insert(s.property).values({ id: "pr1", organizationId: ORG, customerId: "c1", address: "1 Main St", town: "Erie" })
+  await db.insert(s.job).values([
+    { id: "j1", organizationId: ORG, customerId: "c1", propertyId: "pr1", kind: "pass", source: "checkout" },
+    { id: "j2", organizationId: ORG, customerId: "c1", propertyId: "pr1", kind: "repair", source: "office" },
+  ])
 })
 afterAll(() => db.close())
 
 const pass = (over: Partial<typeof s.seasonPass.$inferInsert> = {}) => ({
+  jobId: "j1",
   organizationId: ORG,
   number: "TH-2027-0001",
   season: 2027,
@@ -45,7 +50,8 @@ describe("schema", () => {
     await db.insert(s.organization).values({ id: "org-2", name: "Other", termsVersion: "1", settings: { windows: [], bufferPercentEarly: 0, bufferPercentLate: 0, fallTownOrder: [], springTownOrder: [], messages: [] } })
     await db.insert(s.customer).values({ id: "c2", organizationId: "org-2", firstName: "B" })
     await db.insert(s.property).values({ id: "pr2", organizationId: "org-2", customerId: "c2", address: "2 Main", town: "Erie" })
-    await db.insert(s.seasonPass).values(pass({ organizationId: "org-2", customerId: "c2", propertyId: "pr2" }))
+    await db.insert(s.job).values({ id: "j-org2", organizationId: "org-2", customerId: "c2", propertyId: "pr2", kind: "pass", source: "checkout" })
+    await db.insert(s.seasonPass).values(pass({ jobId: "j-org2", organizationId: "org-2", customerId: "c2", propertyId: "pr2" }))
   })
 
   it("keeps queue_item unique on (kind, key)", async () => {
@@ -55,14 +61,15 @@ describe("schema", () => {
   })
 
   it("allows one pass_visit per kind per pass", async () => {
-    const v = { organizationId: ORG, passId: "p1", customerId: "c1", propertyId: "pr1", kind: "turn-on" as const }
+    const v = { organizationId: ORG, jobId: "j1", passId: "p1", customerId: "c1", propertyId: "pr1", kind: "turn-on" as const }
     await db.insert(s.visit).values(v)
     await reject(db.insert(s.visit).values(v))
     await db.insert(s.visit).values({ ...v, kind: "blowout" })
   })
 
-  it("needs exactly one of pass or booking on a visit", async () => {
-    await reject(db.insert(s.visit).values({ organizationId: ORG, customerId: "c1", propertyId: "pr1", kind: "repair" }))
+  it("needs a job on every visit, and lets a repair visit stand on its job alone", async () => {
+    await reject(db.insert(s.visit).values({ organizationId: ORG, customerId: "c1", propertyId: "pr1", kind: "repair" } as never))
+    await db.insert(s.visit).values({ organizationId: ORG, jobId: "j2", customerId: "c1", propertyId: "pr1", kind: "repair" })
   })
 
   it("cannot update a consent row, only append", async () => {

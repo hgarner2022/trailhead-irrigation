@@ -2,9 +2,13 @@
 
 **The rule: a change to a field is not done until every cell of its row is updated, and every PR that adds a field adds its row.** A field that shows in the checkout but not in the admin, or in the table but not the panel, is the bug the owner found on 13 Nov 2026 ("Mid May" in the Passes table beside a panel that knew "Apr 26"; a customer with a first name and no last name). The visit row is the only source for a day; screens read it and nothing derives it twice.
 
+## Two words, one meaning each
+
+**A job is the sold work**: a Season Pass, or a repair, an installation or other work booked by the office or the site. It has a customer, an address, a price, a status (pending, active, done, cancelled) and a source (checkout, office, site). **A visit is one stop on a job**: a day, a time, a truck, minutes, a state, notes and a charge. A pass is a job of kind pass, with two or three visits. The admin says "visit" for the stop and "job" only for the pass or the booked work.
+
 Written 13 Nov 2026 from `src/db/schema.ts`, `src/lib/admin/{types,shape,jobs}.ts` and the screens. Docs means `public/llms.txt`, `public/pricing.md` and `docs/*`; a dash means the field is not shown there on purpose.
 
-## Jobs: one vocabulary for a visit
+## Visit states: one vocabulary for a visit
 
 `src/lib/admin/jobs.ts` derives it in one function from the row, and every screen uses it. No schema enum was added: the words map onto the existing rows.
 
@@ -17,14 +21,22 @@ Written 13 Nov 2026 from `src/db/schema.ts`, `src/lib/admin/{types,shape,jobs}.t
 | Charged | `charged_at` set |
 | Charge failed | the visit's newest `charge` row failed, or the visit is done and `season_pass.card_failed_at` is set |
 | Cancelled, Skipped | `visit.status` cancelled, skipped |
-| Not closed (a badge, not a state) | a day that has passed on a job not marked done |
+| Not closed (a badge, not a state) | a day that has passed on a visit not marked done |
 
-A pending pass is an unpaid attempt (expires after an hour). Its jobs are never on the Schedule, in the Needs a day list or in Home's counts, and its status reads Pending, never Active.
+A pending pass is an unpaid attempt (expires after an hour). Its visits are never on the Schedule, in the Needs a day list or in Home's counts, and its status reads Pending, never Active.
 
 ## Fields
 
 | Entity.field | Lives in | Set by | Shown in |
 |---|---|---|---|
+| job (id, kind, status, price, source, notes, created_at, cancelled_at) | `job`; one row per pass (id `job_<pass id>` when backfilled, kind `pass`, source `checkout`, price the total of its live visits, status copied from the pass by `syncPassJob`) and one per booked work (kind repair, install or other, source `office` or `site`) | `passes.create/renew/activate/cancel/addInspection/skipVisit` (through `src/lib/pass/server/job.ts`); `visits.create`; `visits.cancel` (cancels a job left with no visit) | API: `visits.*` carry `jobId`; `customers.get` lists `jobs` with their visits; admin `AdminData.jobs`, the visit panel's job block and Visits table (Job column, pass number) |
+| season_pass.job_id, visit.job_id | both tables, not null | every writer above | API `visits.*` `jobId`; `visit.pass_id` stays as a convenience read for a pass's visits; `visit.booking_id` and the `booking` table are legacy, no longer written (the backfill made a job from each booking, `job_<booking id>`) |
+| visit.notes | `visit.notes` | `visits.create`, `visits.update` (empty clears) | API `visits.*` (`notes`); admin visit panel Edit and the Visits table; the crew's stop later |
+| not done (reason) | `pass_change` row kind `not-done`, detail reason, note, day, truck | `visits.markNotDone` (could-not-get-in, no-water, customer-asked-to-wait, other; sets Needs a day) | admin visit panel history; the visit's state reads Needs a day again |
+| visit cancelled | `visit.status` cancelled, `pass_change` kind `visit-cancelled`; a pending `pass-charge` queue item is closed and `chargeVisit` refuses a cancelled visit | `visits.cancel` | Cancelled state everywhere; the job's price drops by the visit |
+| note (a one-off text) | `message_log` kind `note`, channel sms only, body "Trailhead: ... Reply STOP to opt out." | `messages.send` kind `note` (text up to 320; needs a mobile and no STOP; never falls back to email) | admin visit and customer panel threads; the customer's phone |
+| alert dismissed | `admin_alert` row (kind, key) with `resolved_at`; Home's worked-out rows carry a key (`pass@failedAt`, `task@time`, pass id) | `alerts.dismiss` | Home's Needs action stops showing it until the key changes |
+
 | customer.first_name | `customer.first_name` | checkout contact step; `customers.create/update`; `passes.create` (cleaned with `cleanName`) | checkout step "First name"; API `customers.*`, `passes.*` (`firstName`); admin Customers and Passes tables and panels (inside the full name); pass card and emails (first name only); pass page |
 | customer.last_name | `customer.last_name` | checkout contact step (required, "Last name"); `customers.create/update`; `passes.create` (cleaned with `cleanName`; filled in if empty, never rewritten by an email resume) | checkout step; API `customers.*` (`lastName`, readable with the read scope), `passes.get` `customer`; admin Customers (Name column, panel title), Passes (Name column, panel title), Schedule stops and Home rows (`clientName`); not on the pass card or in emails |
 | customer.email | `customer.email` | checkout; `customers.create/update` | checkout step; API (write scope only); admin Customers Email column and panel; every email is sent to it |

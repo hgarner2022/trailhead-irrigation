@@ -30,7 +30,7 @@ afterAll(() => db.close())
 
 describe("getLiveAdminData", () => {
   it("carries every part of AdminData, scoped to the organization", () => {
-    expect(Object.keys(data).sort()).toEqual([...Object.keys(fixture), "blocks"].sort())
+    expect(Object.keys(data).sort()).toEqual([...Object.keys(fixture), "blocks", "jobs"].sort())
     expect(data.organizationId).toBe(ORG)
     expect(Number.isNaN(Date.parse(data.syncedAt))).toBe(false)
   })

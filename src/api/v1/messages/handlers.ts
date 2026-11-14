@@ -5,7 +5,7 @@ import * as s from "@/db/schema"
 import { randomUUID } from "node:crypto"
 import { readAppUrl } from "@/lib/env"
 import { baseData, loadVisitFacts } from "@/lib/messaging/data"
-import { queueMessage } from "@/lib/messaging/queue"
+import { NOTE_MAX, queueMessage, queueNote } from "@/lib/messaging/queue"
 import { renewUrl } from "@/lib/messaging/tokens"
 import { queuePurchaseConfirmation } from "@/lib/pass/server/purchase"
 import { ApiError } from "../../core/errors"
@@ -13,7 +13,7 @@ import { defineHandler } from "../../core/handler"
 import { afterTimeCursor, cursorPage, page, pageInput, timeCursor } from "../../core/pagination"
 import { canSeeContact, Channel, Id, Iso } from "../shared"
 
-export const MESSAGE_KINDS = ["purchase-confirmation", "date-set", "date-moved", "day-before", "receipt", "card-failed", "cancelled", "renewal"] as const
+export const MESSAGE_KINDS = ["purchase-confirmation", "date-set", "date-moved", "day-before", "receipt", "card-failed", "cancelled", "renewal", "note"] as const
 
 const MessageOut = z.object({
   id: Id, customerId: Id, visitId: Id.nullable(), channel: Channel, kind: z.string(), subject: z.string().nullable(), body: z.string(),
@@ -46,7 +46,7 @@ export const messagesList = defineHandler({
 export const messagesSend = defineHandler({
   name: "messages.send", method: "POST", path: "/messages", scope: "write", status: 201,
   summary: "Send one of the app's messages to a customer, on the channel its kind uses, through the same consent gate as every automatic message: transactional kinds by email always and by text when there is a mobile and no STOP, renewal only with the opt-in. Receipts and card messages go out on their own events and are not sent here.",
-  input: z.object({ customerId: Id, kind: z.enum(MESSAGE_KINDS), visitId: Id.optional() }),
+  input: z.object({ customerId: Id, kind: z.enum(MESSAGE_KINDS), visitId: Id.optional(), text: z.string().trim().min(1).max(NOTE_MAX).optional().describe("The words of a note: a free-text text to the customer's mobile, up to 320 characters.") }),
   output: MessageOut,
   async run(ctx, input) {
     const [customer] = await ctx.db.select().from(s.customer).where(and(eq(s.customer.id, input.customerId), eq(s.customer.organizationId, ctx.organizationId)))
@@ -55,7 +55,16 @@ export const messagesSend = defineHandler({
     const key = `admin-${randomUUID()}`
     const base = { organizationId: ctx.organizationId, customerId: customer.id, key }
     let queued: boolean
-    if (input.kind === "date-set" || input.kind === "date-moved" || input.kind === "day-before") {
+    if (input.kind === "note") {
+      if (!input.text) throw new ApiError("invalid", "Write the text to send")
+      if (input.visitId) {
+        const [v] = await ctx.db.select({ customerId: s.visit.customerId }).from(s.visit).where(and(eq(s.visit.id, input.visitId), eq(s.visit.organizationId, ctx.organizationId)))
+        if (!v || v.customerId !== customer.id) throw new ApiError("not_found", "Visit not found")
+      }
+      const note = await queueNote(ctx.db, { organizationId: ctx.organizationId, customerId: customer.id, visitId: input.visitId, text: input.text, key })
+      if (!note.ok) throw new ApiError("unprocessable", note.reason === "no-phone" ? "This customer has no mobile number to text." : "This customer replied STOP, so no texts can go until they reply START.")
+      queued = true
+    } else if (input.kind === "date-set" || input.kind === "date-moved" || input.kind === "day-before") {
       if (!input.visitId) throw new ApiError("invalid", "A visit is needed for this message")
       const [visit] = await ctx.db.select({ id: s.visit.id, customerId: s.visit.customerId }).from(s.visit).where(and(eq(s.visit.id, input.visitId), eq(s.visit.organizationId, ctx.organizationId)))
       if (!visit || visit.customerId !== customer.id) throw new ApiError("not_found", "Visit not found")

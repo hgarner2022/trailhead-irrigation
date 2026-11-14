@@ -54,6 +54,9 @@ export const visitKindEnum = pgEnum("visit_kind", [
   "lights",
   "other",
 ])
+/** A job is the sold work: a Season Pass, or a repair, install or other thing booked by the office or the site. A visit is one stop on it. */
+export const jobKindEnum = pgEnum("job_kind", ["pass", "repair", "install", "other"])
+export const jobStatusEnum = pgEnum("job_status", ["pending", "active", "done", "cancelled"])
 export const visitStatusEnum = pgEnum("visit_status", [
   "unscheduled",
   "scheduled",
@@ -243,11 +246,33 @@ export const consent = pgTable(
   (t) => [index("consent_customer_idx").on(t.customerId, t.recordedAt)],
 )
 
+/** The sold work. A `season_pass` row is the pass-specific part of a job of kind pass; its visits are the job's visits. */
+export const job = pgTable(
+  "job",
+  {
+    id: id(),
+    organizationId: orgId(),
+    customerId: text("customer_id").notNull().references(() => customer.id),
+    propertyId: text("property_id").notNull().references(() => property.id),
+    kind: jobKindEnum("kind").notNull(),
+    status: jobStatusEnum("status").notNull().default("active"),
+    /** whole dollars; null until quoted */
+    price: integer("price"),
+    source: text("source", { enum: ["checkout", "office", "site"] }).notNull(),
+    notes: text("notes"),
+    createdAt: createdAt(),
+    cancelledAt: ts("cancelled_at"),
+    updatedAt: updatedAt(),
+  },
+  (t) => [index("job_org_customer_idx").on(t.organizationId, t.customerId)],
+)
+
 export const seasonPass = pgTable(
   "season_pass",
   {
     id: id(),
     organizationId: orgId(),
+    jobId: text("job_id").notNull().references(() => job.id),
     number: text("number").notNull(),
     season: integer("season").notNull(),
     customerId: text("customer_id").notNull().references(() => customer.id),
@@ -295,12 +320,13 @@ export const booking = pgTable(
   (t) => [index("booking_org_idx").on(t.organizationId)],
 )
 
-/** The one table for pass visits and booked visits. Exactly one of pass_id or booking_id is set. */
+/** One stop on a job: a day, a time, a truck, minutes, a state, notes, a charge. `job_id` is always set; `pass_id` stays as a convenience read for a pass's visits and `booking_id` is the legacy booking table, no longer written. */
 export const visit = pgTable(
   "visit",
   {
     id: id(),
     organizationId: orgId(),
+    jobId: text("job_id").notNull().references(() => job.id),
     passId: text("pass_id").references(() => seasonPass.id),
     bookingId: text("booking_id").references(() => booking.id),
     customerId: text("customer_id").notNull().references(() => customer.id),
@@ -316,6 +342,8 @@ export const visit = pgTable(
     scheduledOn: day("scheduled_on"),
     startTime: text("start_time"),
     durationMinutes: integer("duration_minutes"),
+    /** what the office or Ryan wants remembered about this one stop */
+    notes: text("notes"),
     stopOrder: integer("stop_order"),
     confirmedAt: ts("confirmed_at"),
     exception: jsonb("exception").$type<VisitException>(),
@@ -330,7 +358,6 @@ export const visit = pgTable(
     updatedAt: updatedAt(),
   },
   (t) => [
-    check("visit_one_parent", sql`num_nonnulls(${t.passId}, ${t.bookingId}) = 1`),
     uniqueIndex("visit_pass_kind_unique").on(t.passId, t.kind).where(sql`${t.passId} is not null`),
     index("visit_org_scheduled_idx").on(t.organizationId, t.scheduledOn),
     index("visit_jobber_visit_idx").on(t.jobberVisitId),

@@ -57,7 +57,7 @@ export async function getLiveAdminData(ctx: Ctx): Promise<AdminData> {
 
   const db = ctx.db
   const contact = canSeeContact(ctx)
-  const [consents, links, mClients, mVisits, mJobs, mQuotes, mInvoices, problems, blocks, synced, alerts, charges] = await Promise.all([
+  const [consents, links, mClients, mVisits, mJobs, mQuotes, mInvoices, problems, blocks, synced, alerts, charges, dismissed, jobRows] = await Promise.all([
     db.select({ customerId: s.consent.customerId, termsAcceptedAt: s.consent.termsAcceptedAt, termsVersion: s.consent.termsVersion, marketingOptIn: s.consent.marketingOptIn, marketingChannels: s.consent.marketingChannels, source: s.consent.source, recordedAt: s.consent.recordedAt }).from(s.consent).where(eq(s.consent.organizationId, org)),
     db.select({ id: s.customer.id, jobberClientId: s.customer.jobberClientId }).from(s.customer).where(and(eq(s.customer.organizationId, org), isNotNull(s.customer.jobberClientId))),
     db.select({ id: s.jobberClient.id, firstName: s.jobberClient.firstName, lastName: s.jobberClient.lastName, email: s.jobberClient.email, phone: s.jobberClient.phone, town: s.jobberClient.town, jobberUrl: s.jobberClient.jobberUrl }).from(s.jobberClient).where(eq(s.jobberClient.organizationId, org)),
@@ -70,6 +70,8 @@ export async function getLiveAdminData(ctx: Ctx): Promise<AdminData> {
     db.select({ at: sql<Date | null>`max(${s.jobberClient.syncedAt})` }).from(s.jobberClient).where(eq(s.jobberClient.organizationId, org)),
     db.select({ kind: s.adminAlert.kind, key: s.adminAlert.key, passId: s.adminAlert.passId, message: s.adminAlert.message, createdAt: s.adminAlert.createdAt }).from(s.adminAlert).where(and(eq(s.adminAlert.organizationId, org), isNull(s.adminAlert.resolvedAt))),
     db.select({ visitId: s.charge.visitId, attempt: s.charge.attempt, status: s.charge.status }).from(s.charge).where(eq(s.charge.organizationId, org)),
+    db.select({ kind: s.adminAlert.kind, key: s.adminAlert.key }).from(s.adminAlert).where(and(eq(s.adminAlert.organizationId, org), isNotNull(s.adminAlert.resolvedAt))),
+    db.select({ id: s.job.id, customerId: s.job.customerId, kind: s.job.kind, status: s.job.status, price: s.job.price, source: s.job.source, notes: s.job.notes }).from(s.job).where(eq(s.job.organizationId, org)),
   ])
 
   return shapeAdminData({
@@ -91,6 +93,8 @@ export async function getLiveAdminData(ctx: Ctx): Promise<AdminData> {
     mirror: { clients: contact ? mClients : mClients.map((c) => ({ id: c.id, firstName: c.firstName, lastName: c.lastName, town: c.town, jobberUrl: c.jobberUrl })), visits: mVisits, jobsWithoutVisit: mJobs, quotes: mQuotes, invoices: mInvoices },
     queueProblems: problems,
     alerts,
+    dismissed,
+    jobRows,
     blocks,
   })
 }

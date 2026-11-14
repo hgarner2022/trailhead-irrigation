@@ -1,4 +1,5 @@
 import "server-only"
+import { createPassJob, syncPassJob } from "@/lib/pass/server/job"
 import { and, eq, inArray } from "drizzle-orm"
 import type { z } from "zod"
 import * as s from "@/db/schema"
@@ -50,9 +51,11 @@ export async function renewPass(ctx: Ctx, input: z.infer<typeof passCreateInput>
   if (!known) await enqueueGeocode(ctx.db, org, property.id, ctx.now)
 
   const numbers = await ctx.db.select({ n: s.seasonPass.number }).from(s.seasonPass).where(and(eq(s.seasonPass.organizationId, org), eq(s.seasonPass.season, season)))
+  const jobId = await createPassJob(ctx.db, { organizationId: org, customerId: old.customerId, propertyId: property.id, status: "active", createdAt: ctx.now })
   const [pass] = await ctx.db
     .insert(s.seasonPass)
     .values({
+      jobId,
       organizationId: org,
       number: nextPassNumber(season, numbers.map((r) => r.n)),
       season,
@@ -73,6 +76,7 @@ export async function renewPass(ctx: Ctx, input: z.infer<typeof passCreateInput>
   await ctx.db.insert(s.visit).values(
     onSale.map((v) => ({
       organizationId: org,
+      jobId,
       passId: pass!.id,
       customerId: old.customerId,
       propertyId: property.id,
@@ -83,6 +87,7 @@ export async function renewPass(ctx: Ctx, input: z.infer<typeof passCreateInput>
       awaitingPick: false,
     })),
   )
+  await syncPassJob(ctx.db, pass!.id)
   await holdChosenDays(ctx.db, pass!.id, input.days, input.property.town, season, day)
   const moved = await scheduleChosenDays(ctx.db, pass!.id, input.property.town, season, day)
   for (const m of moved) await recordChange(ctx, { customerId: old.customerId, passId: pass!.id, visitId: m.visitId, kind: "day-filled", detail: { visit: m.kind, from: m.from, to: m.to } })

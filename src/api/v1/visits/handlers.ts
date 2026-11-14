@@ -62,15 +62,8 @@ export const visitsGet = defineHandler({
   },
 })
 
-export const visitsMove = defineHandler({
-  name: "visits.move",
-  method: "POST",
-  path: "/visits/{id}/move",
-  scope: "write",
-  summary: "Put a visit on a truck and a day. Hard rules: the truck works that weekday, the day is inside the visit's window, the truck-day has capacity for the kind, and the truck-day stays in one area group.",
-  input: z.object({ id: Id, truckId: Id, scheduledOn: Day, startTime: z.string().regex(/^\d{2}:\d{2}$/).optional() }),
-  output: VisitOut,
-  async run(ctx, input) {
+/** The one placement: every hard rule, the day ordered, the date text queued. `visits.move` and `visits.create` both run it. */
+export async function placeVisit(ctx: Ctx, input: { id: string; truckId: string; scheduledOn: string; startTime?: string }) {
     const row = await loadVisit(ctx, input.id)
     const visit = row.visit
     if ((FINAL as readonly string[]).includes(visit.status)) throw new ApiError("unprocessable", `A ${visit.status} visit cannot be moved`)
@@ -107,6 +100,18 @@ export const visitsMove = defineHandler({
     if (visit.scheduledOn !== input.scheduledOn) await queueDateMessage(ctx.db, visit, moved ? "date-moved" : "date-set", input.scheduledOn)
     await emitEvent(ctx.db, ctx.organizationId, moved ? "visit.moved" : "visit.scheduled", { visitId: visit.id, truckId: truck.id, scheduledOn: input.scheduledOn, from: moved ? { truckId: visit.truckId, scheduledOn: visit.scheduledOn } : null })
     return visitOut(ctx, await loadVisit(ctx, visit.id))
+}
+
+export const visitsMove = defineHandler({
+  name: "visits.move",
+  method: "POST",
+  path: "/visits/{id}/move",
+  scope: "write",
+  summary: "Put a visit on a truck and a day. Hard rules: the truck works that weekday, the day is inside the visit's window, the truck-day has capacity for the kind, and the truck-day stays in one area group.",
+  input: z.object({ id: Id, truckId: Id, scheduledOn: Day, startTime: z.string().regex(/^\d{2}:\d{2}$/).optional() }),
+  output: VisitOut,
+  async run(ctx, input) {
+    return placeVisit(ctx, input)
   },
 })
 

@@ -6,7 +6,8 @@ export const ExceptionOut = z.object({ kind: z.literal("moved-in-jobber"), at: I
 export const VisitOut = z.object({
   id: Id,
   passId: Id.nullable(),
-  bookingId: Id.nullable(),
+  bookingId: Id.nullable().describe("The old booking row; new jobs have none."),
+  jobId: Id.describe("The job (the pass or the booked work) this visit belongs to."),
   customerId: Id,
   firstName: z.string(),
   town: Town,
@@ -21,6 +22,7 @@ export const VisitOut = z.object({
   scheduledOn: Day.nullable(),
   startTime: z.string().nullable(),
   durationMinutes: z.number().int().nullable(),
+  notes: z.string().nullable().describe("Notes on this visit, from the office."),
   stopOrder: z.number().int().nullable(),
   confirmedAt: Iso.nullable(),
   completedOn: Day.nullable(),

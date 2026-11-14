@@ -111,6 +111,30 @@ export interface Visit {
   lat?: number
   lng?: number
   exception?: VisitException
+  /** the job (pass or booked work) this visit belongs to */
+  jobId?: string
+  /** whole dollars the visit is worth; 0 until priced */
+  price?: number
+  /** how long the stop takes */
+  minutes?: number
+  notes?: string
+  /** the truck's name once it has one */
+  truckName?: string
+}
+
+/** The sold work a visit belongs to: a Season Pass (kind pass) or booked work. A visit is the stop; a job is what was sold. */
+export interface SoldJob {
+  id: string
+  customerId: string
+  kind: "pass" | "repair" | "install" | "other"
+  status: "pending" | "active" | "done" | "cancelled"
+  /** whole dollars; absent until quoted */
+  price?: number
+  source: "checkout" | "office" | "site"
+  notes?: string
+  passId?: string
+  passNumber?: string
+  visitIds: string[]
 }
 
 export interface Quote {
@@ -302,6 +326,8 @@ export interface BusyBlock {
 }
 
 export interface Attention {
+  /** what Dismiss records with `kind`: a stored alert's key, or the pass, visit or task the row is worked out from */
+  key?: string
   kind: "new-pass" | "charge-failed" | "jobs-failed" | "card-expiring" | "not-closed" | "pass-cancelled" | "scheduled" | "unplaced"
   passId?: string
   /** the visit an unplaced alert is about; Home links to it on the Schedule */
@@ -316,6 +342,8 @@ export interface AdminData {
   syncedAt: string
   clients: Client[]
   visits: Visit[]
+  /** the sold work, with its visits; absent in the fixtures */
+  jobs?: SoldJob[]
   quotes: Quote[]
   invoices: Invoice[]
   passes: Pass[]

@@ -4,7 +4,7 @@ import * as s from "@/db/schema"
 import type { Database } from "@/db/types"
 
 /** Sent to a customer because something happened to their pass or visit; go by email always and by text when there is a phone and no STOP. */
-export const TRANSACTIONAL_KINDS = ["purchase-confirmation", "booking-confirmation", "date-set", "date-moved", "day-before", "date-confirm", "receipt", "card-failed", "card-expiring", "cancelled", "sign-in"] as const
+export const TRANSACTIONAL_KINDS = ["purchase-confirmation", "booking-confirmation", "date-set", "date-moved", "day-before", "date-confirm", "receipt", "card-failed", "card-expiring", "cancelled", "sign-in", "note"] as const
 /** Marketing, needing the matching opt-in; so is any kind not listed above. */
 export const MARKETING_KINDS = ["renewal", "pre-sell"] as const
 

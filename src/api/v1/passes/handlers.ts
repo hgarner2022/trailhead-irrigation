@@ -27,6 +27,7 @@ import { ApiError, notImplemented } from "../../core/errors"
 import { defineHandler } from "../../core/handler"
 import { afterTimeCursor, cursorPage, page, pageInput, timeCursor } from "../../core/pagination"
 import { addDays, Id, idInput, OK, okOutput, PassStatus, Preference, Town, today } from "../shared"
+import { createPassJob, syncPassJob } from "@/lib/pass/server/job"
 import { renewPass } from "./renew"
 import { PassDetail, PassOut, passActivateInput, passConsentInput, passCreateInput } from "./schemas"
 import { loadPass, passDetail, passesQuery, passOut, recordChange } from "./queries"
@@ -171,9 +172,11 @@ export const passesCreate = defineHandler({
     for (let attempt = 0; attempt < 3 && !pass; attempt++) {
       const numbers = await ctx.db.select({ n: s.seasonPass.number }).from(s.seasonPass).where(and(eq(s.seasonPass.organizationId, org), eq(s.seasonPass.season, season)))
       try {
+        const jobId = await createPassJob(ctx.db, { organizationId: org, customerId: customerRow.id, propertyId: property.id, createdAt: ctx.now })
         ;[pass] = await ctx.db
           .insert(s.seasonPass)
           .values({
+            jobId,
             organizationId: org,
             number: nextPassNumber(season, numbers.map((r) => r.n)),
             season,
@@ -202,6 +205,7 @@ export const passesCreate = defineHandler({
     await ctx.db.insert(s.visit).values(
       onSale.map((v) => ({
         organizationId: org,
+        jobId: pass!.jobId,
         passId: pass!.id,
         customerId: customerRow.id,
         propertyId: property.id,
@@ -214,6 +218,7 @@ export const passesCreate = defineHandler({
         awaitingPick: false,
       })),
     )
+    await syncPassJob(ctx.db, pass!.id)
     await holdChosenDays(ctx.db, pass!.id, input.days, input.property.town, season, day)
     return passDetail(ctx, await loadPass(ctx, pass!.id))
   },
@@ -275,6 +280,7 @@ export const passesCancel = defineHandler({
       throw new ApiError("forbidden", "That pass belongs to another customer")
     if (row.pass.status === "cancelled") return { id: row.pass.id, status: "cancelled" as const, cancelledVisits: 0 }
     await ctx.db.update(s.seasonPass).set({ status: "cancelled", cancelledAt: ctx.now }).where(eq(s.seasonPass.id, row.pass.id))
+    await syncPassJob(ctx.db, row.pass.id)
     const cancelled = await ctx.db
       .update(s.visit)
       .set({ status: "cancelled", truckId: null, scheduledOn: null, startTime: null, stopOrder: null, awaitingPick: false })
@@ -389,8 +395,9 @@ export const passesAddInspection = defineHandler({
     await ctx.db.update(s.seasonPass).set({ inspection: true }).where(eq(s.seasonPass.id, row.pass.id))
     const [visit] = await ctx.db
       .insert(s.visit)
-      .values({ organizationId: ctx.organizationId, passId: row.pass.id, customerId: row.pass.customerId, propertyId: row.pass.propertyId, kind: "inspection", window: WINDOW_LABEL.inspection, amount })
+      .values({ organizationId: ctx.organizationId, jobId: row.pass.jobId, passId: row.pass.id, customerId: row.pass.customerId, propertyId: row.pass.propertyId, kind: "inspection", window: WINDOW_LABEL.inspection, amount })
       .returning({ id: s.visit.id })
+    await syncPassJob(ctx.db, row.pass.id)
     await recordChange(ctx, { customerId: row.pass.customerId, passId: row.pass.id, visitId: visit!.id, kind: "inspection-added", detail: { amount } })
     return { id: row.pass.id, inspection: true as const, visitId: visit!.id, amount }
   },
@@ -412,6 +419,7 @@ export const passesSkipVisit = defineHandler({
     if (visit.status === "skipped") return { id: row.pass.id, visitId: visit.id, status: "skipped" as const }
     if (!(["unscheduled", "scheduled"] as string[]).includes(visit.status)) throw new ApiError("unprocessable", "This visit can no longer be skipped")
     await ctx.db.update(s.visit).set({ status: "skipped", truckId: null, scheduledOn: null, startTime: null, stopOrder: null }).where(eq(s.visit.id, visit.id))
+    await ctx.db.update(s.job).set({ price: sql`greatest(coalesce(${s.job.price}, 0) - ${visit.amount}, 0)` }).where(eq(s.job.id, visit.jobId))
     await recordChange(ctx, { customerId: row.pass.customerId, passId: row.pass.id, visitId: visit.id, kind: "skipped", detail: { visit: input.kind } })
     return { id: row.pass.id, visitId: visit.id, status: "skipped" as const }
   },

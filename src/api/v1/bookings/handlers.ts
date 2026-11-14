@@ -1,5 +1,5 @@
 import "server-only"
-import { and, desc, eq, notInArray } from "drizzle-orm"
+import { and, desc, eq, inArray, notInArray } from "drizzle-orm"
 import { z } from "zod"
 import * as s from "@/db/schema"
 import { ApiError, notFound, notImplemented } from "../../core/errors"
@@ -40,17 +40,18 @@ export const bookingsCancel = defineHandler({
   method: "POST",
   path: "/bookings/{id}/cancel",
   scope: "write",
-  summary: "Cancel a booking and its visits that have not happened.",
+  summary: "Cancel a job booked by the office or the site (its id, or the old booking id) and its visits that have not happened.",
   input: idInput,
   output: z.object({ id: Id, status: z.literal("cancelled"), cancelledVisits: z.number().int() }),
   async run(ctx, input) {
-    const [row] = await ctx.db.select().from(s.booking).where(and(eq(s.booking.id, input.id), eq(s.booking.organizationId, ctx.organizationId)))
+    // A job's id, or a booking's old id: the backfill made job_<booking id>.
+    const [row] = await ctx.db.select().from(s.job).where(and(inArray(s.job.id, [input.id, `job_${input.id}`]), eq(s.job.organizationId, ctx.organizationId)))
     if (!row) throw notFound("Booking")
-    await ctx.db.update(s.booking).set({ status: "cancelled" }).where(eq(s.booking.id, row.id))
-    const cancelled = await ctx.db
-      .update(s.visit)
+    await ctx.db.update(s.job).set({ status: "cancelled", cancelledAt: ctx.now }).where(eq(s.job.id, row.id))
+    const cancelled = await ctx
+      .db.update(s.visit)
       .set({ status: "cancelled", truckId: null, scheduledOn: null, startTime: null, stopOrder: null })
-      .where(and(eq(s.visit.bookingId, row.id), notInArray(s.visit.status, ["completed", "cancelled"])))
+      .where(and(eq(s.visit.jobId, row.id), notInArray(s.visit.status, ["completed", "cancelled"])))
       .returning({ id: s.visit.id })
     return { id: row.id, status: "cancelled" as const, cancelledVisits: cancelled.length }
   },

@@ -119,10 +119,16 @@ async function seedPasses(db: Database, snapshot: AdminData, org: string) {
       .values({ id: propertyId, organizationId: org, customerId: pass.clientId, address: client?.address ?? `Fixture address, ${town}`, town })
       .onConflictDoNothing()
     if (pass.consent) await seedConsent(db, org, pass)
+    const jobId = `job_${pass.id}`
+    await db
+      .insert(s.job)
+      .values({ id: jobId, organizationId: org, customerId: pass.clientId, propertyId, kind: "pass", source: "checkout", status: pass.status === "lapsed" ? "done" : pass.status, price: pass.visits.reduce((n, v) => n + v.amount, 0) })
+      .onConflictDoNothing()
     await db
       .insert(s.seasonPass)
       .values({
         id: pass.id,
+        jobId,
         organizationId: org,
         number: pass.number,
         season: pass.season,
@@ -146,6 +152,7 @@ async function seedPasses(db: Database, snapshot: AdminData, org: string) {
         pass.visits.map((v) => ({
           id: `${pass.id}-${v.kind}`,
           organizationId: org,
+          jobId,
           passId: pass.id,
           customerId: pass.clientId,
           propertyId,
