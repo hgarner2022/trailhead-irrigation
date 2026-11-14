@@ -33,13 +33,13 @@ describe("HomeScreen", () => {
     ]
     render(<HomeScreen data={{ ...data, visits, attention: [] }} today={TODAY} />)
     const today = within(document.querySelector<HTMLElement>('[aria-labelledby="home-today"]')!)
-    const names = today.getAllByRole("link").map((l) => l.textContent)
+    const names = today.getAllByRole("button").map((l) => l.textContent)
     expect(names[0]).toContain("First Fay")
     expect(names[1]).toContain("Late Lee")
     expect(names[2]).toContain("Any Amy")
     expect(today.getAllByText(/^Truck/)).toHaveLength(2)
     expect(today.getByText("Any time")).toBeInTheDocument()
-    expect(today.getByRole("link", { name: /First Fay/ })).toHaveAttribute("href", "/admin/visits?visit=b")
+    expect(today.getByRole("button", { name: /First Fay/ })).toBeInTheDocument()
     expect(within(document.querySelector<HTMLElement>('[aria-labelledby="home-tomorrow"]')!).getByText(/Tomorrow Tim/)).toBeInTheDocument()
   })
 

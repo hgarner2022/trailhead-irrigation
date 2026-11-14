@@ -1,4 +1,3 @@
-import Link from "next/link"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { CardTitleHeading } from "@/components/blocks/CardTitleHeading"
 import { JobPill } from "@/components/blocks/JobPill"
@@ -9,6 +8,8 @@ import { dayOf } from "@/lib/admin/calendar"
 import { visitJob } from "@/lib/admin/jobs"
 import { KIND_LABEL, type OfficeKind } from "@/lib/admin/visit-defaults"
 import type { AdminData, Visit } from "@/lib/admin/types"
+import type { VisitActions } from "./visit-actions-types"
+import { OpenVisit, VisitPanelHost } from "./VisitPanelHost"
 import { dayByTruck, dayHeading, greeting, pageContext, stopTime, tomorrowOf } from "./home-model"
 
 // What Hannah opens to in the evening (docs/plans build-1 spec): a greeting line, Today and Tomorrow with each
@@ -26,15 +27,14 @@ export interface HomeScreenProps {
   onAttentionAction?: NeedsAttentionProps["onAction"]
   /** Dismiss on a Needs action row, and its Undo; a server action in the app */
   onDismiss?: NeedsAttentionProps["onDismiss"]
+  /** the visit panel a stop opens; server actions in the app */
+  visitActions?: VisitActions
 }
 
 function Stop({ visit, today }: { visit: Visit; today: string }) {
   return (
     <li>
-      <Link
-        href={`/admin/visits?visit=${encodeURIComponent(visit.id)}`}
-        className="-mx-2 flex min-h-11 items-center gap-3 rounded-lg px-2 py-2 hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
-      >
+      <OpenVisit id={visit.id} className="-mx-2 gap-3 rounded-lg px-2 py-2 hover:bg-accent">
         <span className="w-16 shrink-0 text-sm tabular-nums text-muted-foreground">{stopTime(visit)}</span>
         <span className="min-w-0 flex-1 text-sm text-foreground">
           <span className="block truncate">
@@ -44,7 +44,7 @@ function Stop({ visit, today }: { visit: Visit; today: string }) {
           <span className="block truncate text-xs text-muted-foreground">{KIND_LABEL[visit.kind as OfficeKind] ?? "Visit"}</span>
         </span>
         <JobPill job={visitJob(visit, dayOf(today, TIME_ZONE), TIME_ZONE)} />
-      </Link>
+      </OpenVisit>
     </li>
   )
 }
@@ -74,9 +74,10 @@ function Day({ id, heading, data, dayIso, today }: { id: string; heading: string
   )
 }
 
-export function HomeScreen({ data, today, readOnly = false, onAttentionAction, onDismiss }: HomeScreenProps) {
+export function HomeScreen({ data, today, readOnly = false, onAttentionAction, onDismiss, visitActions }: HomeScreenProps) {
   return (
     <div data-slot="home-screen" className="space-y-6">
+      <VisitPanelHost data={data} today={today} readOnly={readOnly} actions={visitActions}>
       <PageHeader title={greeting(today)} context={pageContext(data, today)} />
 
       <div className="grid gap-6 lg:grid-cols-5">
@@ -98,6 +99,7 @@ export function HomeScreen({ data, today, readOnly = false, onAttentionAction, o
           </CardContent>
         </Card>
       </div>
+      </VisitPanelHost>
     </div>
   )
 }

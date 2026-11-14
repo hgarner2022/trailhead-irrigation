@@ -64,6 +64,8 @@ export interface Client {
   town: Town
   jobberUrl: string
   hasPass: boolean
+  /** a customer of the app (the office can add a visit for them), not only a client read from the Jobber mirror */
+  app?: boolean
   lastVisitAt?: string
   /** the current consent record */
   consent?: Consent
@@ -277,6 +279,7 @@ export type MessageKind =
   | "card-expiring"
   | "cancelled"
   | "renewal"
+  | "note"
 
 /**
  * One email or text the app sent a customer and how it went. Messages are
@@ -291,6 +294,8 @@ export interface Message {
   id: string
   clientId: string
   passId?: string
+  /** the visit the message was about, when it was about one */
+  visitId?: string
   channel: "email" | "sms"
   kind: MessageKind
   /** the subject for an email, the text itself for an SMS */

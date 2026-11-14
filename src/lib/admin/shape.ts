@@ -168,7 +168,7 @@ export function shapeAdminData(i: ShapeInput): AdminData {
       const jobberId = i.jobberClientOf.get(c.id)
       const records = (history.get(c.id) ?? []).sort((a, b) => b.recordedAt.getTime() - a.recordedAt.getTime())
       return {
-        id: c.id, firstName: c.firstName, town: (c.town ?? "Erie") as Town, jobberUrl: (jobberId && mirrorClient.get(jobberId)?.jobberUrl) || "", hasPass: c.hasPass,
+        id: c.id, firstName: c.firstName, town: (c.town ?? "Erie") as Town, jobberUrl: (jobberId && mirrorClient.get(jobberId)?.jobberUrl) || "", hasPass: c.hasPass, app: true,
         ...present("lastName", c.lastName), ...present("email", c.email), ...present("phone", c.phone), ...present("address", c.address),
         ...(lastVisit.has(c.id) ? { lastVisitAt: lastVisit.get(c.id) } : {}), ...(consent ? { consent: consentOf(consent), consentHistory: records.map(consentOf) } : {}),
       }
@@ -214,7 +214,7 @@ export function shapeAdminData(i: ShapeInput): AdminData {
   const messages: Message[] = i.messages
     .map((m): Message => {
       const passId = m.visitId ? (i.visits.find((v) => v.id === m.visitId)?.passId ?? undefined) : undefined
-      return { id: m.id, clientId: m.customerId, ...(passId ? { passId } : {}), channel: m.channel, kind: m.kind as MessageKind, body: m.channel === "email" ? (m.subject ?? m.body) : m.body, at: m.sentAt ?? m.createdAt, status: m.status }
+      return { id: m.id, clientId: m.customerId, ...(passId ? { passId } : {}), ...(m.visitId ? { visitId: m.visitId } : {}), channel: m.channel, kind: m.kind as MessageKind, body: m.channel === "email" ? (m.subject ?? m.body) : m.body, at: m.sentAt ?? m.createdAt, status: m.status }
     })
     .sort((a, b) => a.at.localeCompare(b.at))
 

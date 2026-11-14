@@ -61,12 +61,14 @@ export interface JobRow {
   when: string
   job: Job
   amount: number
+  /** the visit row, so the panel can open it */
+  visitId?: string
 }
 
 /** One job per visit on the pass: its name, its day and window, its state. The same visit rows `chargeRows` reads. */
 export function jobRows(pass: Pass, today: string): JobRow[] {
   const day = dayOf(today, TIME_ZONE)
-  return pass.visits.map((visit) => ({ kind: visit.kind, name: VISIT_NAMES[visit.kind], when: visitWhen(visit), job: passVisitJob(pass, visit, day, TIME_ZONE), amount: visit.amount }))
+  return pass.visits.map((visit) => ({ kind: visit.kind, name: VISIT_NAMES[visit.kind], when: visitWhen(visit), job: passVisitJob(pass, visit, day, TIME_ZONE), amount: visit.amount, visitId: visit.id }))
 }
 
 export interface ChargeRow {

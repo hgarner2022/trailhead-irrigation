@@ -55,6 +55,7 @@ export const visitsUpdate = defineHandler({
     truckId: Id.optional(),
     notes: z.string().trim().max(1000).optional().describe("An empty string clears the notes."),
     accessNote: z.string().trim().max(500).optional().describe("Pass visits only: gate code, dog, where the controller is."),
+    unscheduled: z.literal(true).optional().describe("Take the visit back to Needs a day: the undo of giving it a day."),
   }),
   output: VisitOut,
   async run(ctx, input) {
@@ -70,7 +71,13 @@ export const visitsUpdate = defineHandler({
       changed.notes = true
     }
     let reorder: { truckId: string; day: string }[] = []
-    if (input.truckId && input.truckId !== visit.truckId) {
+    if (input.unscheduled) {
+      if (visit.status !== "scheduled") throw new ApiError("unprocessable", "This visit has no day to take back")
+      Object.assign(set, { status: "unscheduled", truckId: null, scheduledOn: null, startTime: null, stopOrder: null })
+      changed.unscheduled = { from: visit.scheduledOn }
+      if (visit.truckId && visit.scheduledOn) reorder = [{ truckId: visit.truckId, day: visit.scheduledOn }]
+    }
+    if (input.truckId && input.truckId !== visit.truckId && !input.unscheduled) {
       if (!visit.scheduledOn) throw new ApiError("unprocessable", "Give this visit a day before choosing its truck")
       const [truck] = await ctx.db.select().from(s.truck).where(and(eq(s.truck.id, input.truckId), eq(s.truck.organizationId, ctx.organizationId)))
       if (!truck) throw notFound("Truck")

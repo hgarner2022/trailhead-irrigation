@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils"
 import { EmptyState } from "./EmptyState"
 import { MessageSquare } from "lucide-react"
 
-// What the app has sent one customer, oldest first: each message's kind,
+// What the app has sent one customer, oldest first (newest first in the panels): each message's kind,
 // channel, day and how it went (sent, delivered, failed, bounced). One
 // message per event, text for timing and email for money (Hannah,
 // 2026-11-13); one-way, so there is no reply box; a failed or bounced row
@@ -12,6 +12,8 @@ import { MessageSquare } from "lucide-react"
 
 export interface MessageThreadProps {
   messages: Message[]
+  /** the panels read newest first, so the last thing the customer was told is at the top */
+  newestFirst?: boolean
   className?: string
 }
 
@@ -26,6 +28,7 @@ export const KIND_NAMES: Record<MessageKind, string> = {
   "card-expiring": "Card expiring",
   cancelled: "Cancelled",
   renewal: "Renewal",
+  note: "Text from the office",
 }
 
 const STATUS_WORDS: Record<Message["status"], string> = {
@@ -45,8 +48,8 @@ export function messageMeta(message: Message): string {
 
 const byTime = (a: Message, b: Message) => a.at.localeCompare(b.at)
 
-export function MessageThread({ messages, className }: MessageThreadProps) {
-  const ordered = [...messages].sort(byTime)
+export function MessageThread({ messages, newestFirst = false, className }: MessageThreadProps) {
+  const ordered = [...messages].sort(newestFirst ? (a, b) => byTime(b, a) : byTime)
   if (ordered.length === 0) {
     return <EmptyState className={className} icon={MessageSquare} title="No messages yet" line="Every email and text the app sends this customer shows here." />
   }

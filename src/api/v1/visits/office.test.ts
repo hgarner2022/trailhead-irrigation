@@ -93,6 +93,15 @@ describe("visits.update", () => {
   })
 })
 
+describe("visits.update unscheduled", () => {
+  it("takes a placed visit back to Needs a day, and refuses one with no day", async () => {
+    const v = await create({ customerId: "c100", kind: "repair", scheduledOn: "2027-05-12" })
+    const out = await callApi(as(), visitsUpdate, { id: v.id, unscheduled: true })
+    expect(out).toMatchObject({ status: "unscheduled", scheduledOn: null, truckId: null })
+    await expect(callApi(as(), visitsUpdate, { id: v.id, unscheduled: true })).rejects.toMatchObject({ code: "unprocessable" })
+  })
+})
+
 describe("visits.cancel", () => {
   it("cancels one pass visit, keeps the others, drops its price and does not make a pending charge", async () => {
     await callApi(as(), visitsMove, { id: "p4-blowout", truckId: "truck-1", scheduledOn: "2027-10-12" })

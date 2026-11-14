@@ -1,6 +1,9 @@
 import type { ReactNode } from "react"
 import { JobPill } from "@/components/blocks/JobPill"
 import { MessageThread } from "@/components/blocks/MessageThread"
+import { OpenVisit } from "./VisitPanelHost"
+import { TextForm } from "./VisitEditText"
+import type { VisitActions } from "./visit-actions-types"
 import { StatusPill } from "@/components/blocks/StatusPill"
 import type { AdminData, Client, Visit } from "@/lib/admin/types"
 import { KIND_WORDS, TIME_ZONE, shortDate } from "@/lib/admin/format"
@@ -47,19 +50,21 @@ function Facts({ row }: { row: CustomerRow }) {
   )
 }
 
-/** The customer's jobs with a day, newest first, the last few, each with its state. */
+/** The customer's visits, the ones that need a day first, then newest first, the last few, each with its two pills; each opens its panel. */
 function Jobs({ visits, today }: { visits: Visit[]; today: string }) {
-  const recent = [...visits].filter((v) => v.startAt).sort((a, b) => (b.startAt ?? "").localeCompare(a.startAt ?? "")).slice(0, RECENT)
+  const recent = [...visits].sort((a, b) => (a.startAt ? 1 : 0) - (b.startAt ? 1 : 0) || (b.startAt ?? "").localeCompare(a.startAt ?? "")).slice(0, RECENT)
   if (recent.length === 0) return <p className="mt-2 text-sm text-muted-foreground">No visits on record.</p>
   return (
     <ul className="mt-2 divide-y divide-border text-sm">
       {recent.map((v) => (
-        <li key={v.id} className="flex items-center gap-4 py-2.5">
-          <span className="min-w-0 flex-1">
-            <span className="block font-medium">{capital(KIND_WORDS[v.kind])}</span>
-            <span className="block text-muted-foreground">{shortDate(v.startAt!, TIME_ZONE)}</span>
-          </span>
-          <JobPill job={visitJob(v, today, TIME_ZONE)} />
+        <li key={v.id}>
+          <OpenVisit id={v.id} className="gap-4 py-1.5">
+            <span className="min-w-0 flex-1">
+              <span className="block font-medium">{capital(KIND_WORDS[v.kind])}</span>
+              <span className="block text-muted-foreground">{v.startAt ? shortDate(v.startAt, TIME_ZONE) : "Needs a day"}</span>
+            </span>
+            <JobPill job={visitJob(v, today, TIME_ZONE)} />
+          </OpenVisit>
         </li>
       ))}
     </ul>
@@ -81,7 +86,7 @@ function ConsentHistory({ client }: { client: Pick<Client, "consent" | "consentH
   )
 }
 
-export function CustomerPanelBody({ row, client, data, today }: { row: CustomerRow; client: Client | undefined; data: AdminData; today: string }) {
+export function CustomerPanelBody({ row, client, data, today, readOnly = false, actions }: { row: CustomerRow; client: Client | undefined; data: AdminData; today: string; readOnly?: boolean; actions?: VisitActions }) {
   return (
     <>
       <Facts row={row} />
@@ -89,13 +94,14 @@ export function CustomerPanelBody({ row, client, data, today }: { row: CustomerR
         <Subtitle id="customer-jobs">Visits</Subtitle>
         <Jobs visits={data.visits.filter((v) => v.clientId === row.id)} today={today} />
       </section>
+      {!readOnly && client?.app && <TextForm client={client} actions={actions} />}
       <section aria-labelledby="customer-consent">
         <Subtitle id="customer-consent">Consent history</Subtitle>
         <ConsentHistory client={client} />
       </section>
       <section aria-labelledby="customer-messages">
         <Subtitle id="customer-messages">Messages</Subtitle>
-        <MessageThread messages={data.messages.filter((m) => m.clientId === row.id)} className="mt-3" />
+        <MessageThread messages={data.messages.filter((m) => m.clientId === row.id)} newestFirst className="mt-3" />
       </section>
     </>
   )

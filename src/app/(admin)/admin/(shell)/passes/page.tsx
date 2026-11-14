@@ -3,6 +3,7 @@ import type { Metadata } from "next"
 import { PassesScreen } from "@/app/(admin)/admin/_screens/PassesScreen"
 import { getAdminData } from "@/lib/admin/data"
 import { requireAdmin } from "@/lib/auth/guard"
+import { visitActions } from "../visit-action-set"
 import { addInspection, cancelPass, changePreference, resendConfirmation, sendCardUpdateLink, skipVisit } from "../actions"
 
 export const metadata: Metadata = { title: "Passes" }
@@ -15,5 +16,5 @@ export default async function PassesPage({ searchParams }: { searchParams: Promi
   const principal = await requireAdmin()
   const { pass } = await searchParams
   const data = await getAdminData("live")
-  return <PassesScreen data={data} today={new Date().toISOString()} defaultSelectedId={pass} readOnly={principal.role === "tech"} actions={actions} />
+  return <PassesScreen data={data} today={new Date().toISOString()} defaultSelectedId={pass} readOnly={principal.role === "tech"} actions={actions} visitActions={visitActions} />
 }

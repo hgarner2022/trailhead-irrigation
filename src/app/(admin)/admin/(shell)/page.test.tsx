@@ -22,6 +22,7 @@ import HomePage from "./page"
 import SchedulePage from "./schedule/page"
 import PassesPage from "./passes/page"
 import ReportsPage from "./reports/page"
+import VisitsPage from "./visits/page"
 import RevenuePage from "./revenue/page"
 import CustomersPage from "./customers/page"
 import SettingsPage from "./settings/page"
@@ -70,6 +71,13 @@ describe("the admin pages", () => {
     expect(out).toContain('data-slot="revenue-screen"')
     expect(out).toContain("Revenue this month")
     expect(() => RevenuePage()).toThrow(/NEXT_REDIRECT/)
+  })
+
+  it("Visits lists the seeded passes' visits and opens the one in ?visit=", async () => {
+    const out = html(await VisitsPage(search({})))
+    expect(out).toContain('data-slot="visits-screen"')
+    expect(out).toContain("New visit")
+    expect(html(await VisitsPage(search({ visit: "p3-turn-on" })))).toContain('data-slot="visits-screen"')
   })
 
   it("Customers and Settings render with data", async () => {
