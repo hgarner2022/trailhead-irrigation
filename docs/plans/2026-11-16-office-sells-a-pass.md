@@ -75,3 +75,27 @@ the visit"), charge.method (a pass visit with no card is asked at Done),
 consent.source (admin), visit.scheduled_on (the sheet's dates),
 message_log purchase (the office sale's email), card link (sent at sale
 when chosen).
+
+## Next: what the service is (Hannah, 16 Nov, on a Jobber job: "add a little bit more about what the service is")
+
+A Jobber job shows the line item's name, its price rule and a paragraph
+of what the visit includes and what it does not. Ours shows the kind and
+a price. Ryan already wrote the paragraphs: they are the descriptions on
+his Jobber products and services (read on 16 Nov; the turn-on one reads
+"Complete system activation and check including sprinkler head
+adjustments, minor leak fixes where possible, controller programming,
+and water efficiency evaluation. Larger repairs will be quoted separately
+and may require a return visit."). Those paragraphs carry prices that
+disagree with the site (+$18 a zone in one, +$10 in another), so the
+price rule is never typed into the text: it is rendered from the service
+row (price, included zones, extra zone price) and the text holds only
+what is included and what is not.
+
+Build, after the pass sale: `service.description` (what the visit
+includes, plain text; a row in DATA_MODEL.md), seeded from Ryan's Jobber
+descriptions with the prices taken out; `services.update` takes it and
+Settings edits it; the visit panel's visit block gains "What's included"
+(the price rule line, then the text); New visit and New pass show the
+same two lines under the kind so Ryan reads the customer what they get;
+the purchase confirmation and the date texts' calendar file carry the
+text later, once Hannah has read it on the panel.

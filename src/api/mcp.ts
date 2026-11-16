@@ -3,6 +3,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js"
 import type { Database } from "@/db/types"
 import { principalFromRequest } from "@/lib/auth/principal"
+import { drainAfter } from "@/lib/queue/drain-after"
 import { callApi } from "./core/call"
 import { makeCtx, type Ctx } from "./core/context"
 import { ApiError } from "./core/errors"
@@ -22,6 +23,7 @@ export function createMcpServer(ctx: Ctx, list = handlers) {
       async (args: unknown) => {
         try {
           const out = await callApi(ctx, h, args)
+          if (h.method !== "GET") drainAfter()
           return { content: [{ type: "text" as const, text: JSON.stringify(out) }] }
         } catch (error) {
           if (!(error instanceof ApiError)) {
