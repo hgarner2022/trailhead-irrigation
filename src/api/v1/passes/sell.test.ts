@@ -3,7 +3,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest"
 import { and, eq } from "drizzle-orm"
 import * as s from "@/db/schema"
 import type { TestDb } from "@/db/test-db"
-import type { PublicPrincipal } from "@/lib/auth/types"
+import type { Principal, PublicPrincipal } from "@/lib/auth/types"
 import { chargeVisit } from "@/lib/pass/server/charge-visit"
 import { stubStripe } from "@/lib/stripe/test-stripe"
 import { callApi } from "../../core/call"
@@ -25,10 +25,10 @@ afterAll(() => db.close())
 
 // November 10, 2027: the 2028 season is on sale, every visit ahead; the fixture's passes are all 2027.
 const NOW = "2027-11-10T17:00:00Z"
-const as = (p = writeKey, now = NOW) => ctxFor(db, p, now)
+const as = (p: Principal = writeKey, now = NOW) => ctxFor(db, p, now)
 let n = 0
 const newCustomer = (over: Record<string, unknown> = {}) => ({ firstName: "maya", lastName: "ortiz", email: `Maya${++n}@Example.com`, phone: "303-555-0142", property: { address: "12 Elm St", town: "Erie" }, ...over })
-const sell = (input: Record<string, unknown>, p = writeKey) => callApi(as(p), passesSell, { zones: 8, paysBy: "at-visit", termsAccepted: true, ...input })
+const sell = (input: Record<string, unknown>, p: Principal = writeKey) => callApi(as(p), passesSell, { zones: 8, paysBy: "at-visit", termsAccepted: true, ...input })
 const messages = (customerId: string) => db.select().from(s.messageLog).where(eq(s.messageLog.customerId, customerId))
 
 describe("passes.sell", () => {
