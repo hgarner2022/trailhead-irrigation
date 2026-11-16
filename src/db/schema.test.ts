@@ -1,6 +1,13 @@
 // @vitest-environment node
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
-import { eq } from "drizzle-orm"
+import { eq, sql } from "drizzle-orm"
+import { PGlite } from "@electric-sql/pglite"
+import { drizzle } from "drizzle-orm/pglite"
+import { migrate } from "drizzle-orm/pglite/migrator"
+import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs"
+import { tmpdir } from "node:os"
+import { join } from "node:path"
+import { fileURLToPath } from "node:url"
 import { testDb, type TestDb } from "./test-db"
 import * as s from "./schema"
 
@@ -92,5 +99,54 @@ describe("schema", () => {
     expect(v.awaitingPick).toBe(false)
     const [m] = await db.insert(s.messageLog).values({ organizationId: ORG, customerId: "c1", channel: "email", kind: "receipt", key: "k", to: "a@b.c", body: "x" }).returning()
     expect(m.direction).toBe("out")
+  })
+
+  it("has a person table that holds a truck's scheduling fields and an admin's sign-in", async () => {
+    const db = await testDb()
+    const cols = await db.execute(sql`select column_name from information_schema.columns where table_name = 'person' order by 1`)
+    expect(cols.rows.map((r) => r.column_name)).toEqual(expect.arrayContaining(["email", "role", "truck", "working_days", "capacity_by_kind", "season_start", "season_end", "legacy_truck_id"]))
+    db.close()
+  })
+
+  it("applies the latest migration on a database where the earlier ones are already committed, and backfills people from admins and trucks", async () => {
+    // testDb() runs every migration from 0000 in one transaction, which hides what a deploy
+    // hits on Neon: Postgres refuses a value added to an existing enum inside the transaction
+    // that added it. So commit the earlier migrations first, then apply the last one alone.
+    const folder = fileURLToPath(new URL("../../drizzle", import.meta.url))
+    const journal = JSON.parse(readFileSync(join(folder, "meta/_journal.json"), "utf8")) as { entries: { tag: string }[] }
+    const earlier = mkdtempSync(join(tmpdir(), "drizzle-earlier-"))
+    mkdirSync(join(earlier, "meta"))
+    const entries = journal.entries.slice(0, -1)
+    writeFileSync(join(earlier, "meta/_journal.json"), JSON.stringify({ ...journal, entries }))
+    for (const e of entries) copyFileSync(join(folder, `${e.tag}.sql`), join(earlier, `${e.tag}.sql`))
+    const client = new PGlite()
+    const database = drizzle(client)
+    try {
+      await migrate(database, { migrationsFolder: earlier })
+      await database.execute(sql`insert into "organization" ("id", "name", "settings", "terms_version") values ('o', 'Trailhead', '{}', '1')`)
+      await database.execute(sql`insert into "admin_user" ("id", "organization_id", "email", "name", "initials", "role") values ('a1', 'o', 'hannah@example.com', 'Hannah Garner', 'HG', 'owner')`)
+      await database.execute(sql`insert into "truck" ("id", "organization_id", "name", "working_days", "capacity_by_kind") values ('t1', 'o', 'Truck 1', '["mon"]', '{"blowout":10}'), ('t2', 'o', 'Truck 2', '["tue"]', '{"blowout":5}')`)
+      await database.execute(sql`insert into "customer" ("id", "organization_id", "first_name") values ('c', 'o', 'Andrea')`)
+      await database.execute(sql`insert into "property" ("id", "organization_id", "customer_id", "address", "town") values ('pr', 'o', 'c', '1 Main St', 'Erie')`)
+      await database.execute(sql`insert into "job" ("id", "organization_id", "customer_id", "property_id", "kind", "source") values ('j', 'o', 'c', 'pr', 'repair', 'office')`)
+      await database.execute(sql`insert into "visit" ("id", "organization_id", "job_id", "customer_id", "property_id", "kind", "truck_id") values ('v1', 'o', 'j', 'c', 'pr', 'repair', 't2'), ('v2', 'o', 'j', 'c', 'pr', 'repair', null)`)
+
+      await migrate(database, { migrationsFolder: folder })
+
+      const people = await database.execute(sql`select "id", "name", "initials", "email", "role", "truck", "working_days", "legacy_truck_id" from "person" order by "id"`)
+      expect(people.rows).toEqual([
+        { id: "person_a1", name: "Hannah Garner", initials: "HG", email: "hannah@example.com", role: "owner", truck: null, working_days: ["mon", "tue", "wed", "thu", "fri"], legacy_truck_id: null },
+        { id: "person_t1", name: "Ryan Garner", initials: "RG", email: null, role: "owner", truck: "Truck 1", working_days: ["mon"], legacy_truck_id: "t1" },
+        { id: "person_t2", name: "Second truck", initials: "T2", email: null, role: "tech", truck: "Truck 2", working_days: ["tue"], legacy_truck_id: "t2" },
+      ])
+      const visits = await database.execute(sql`select "id", "person_id" from "visit" order by "id"`)
+      expect(visits.rows).toEqual([
+        { id: "v1", person_id: "person_t2" },
+        { id: "v2", person_id: null },
+      ])
+    } finally {
+      await client.close()
+      rmSync(earlier, { recursive: true, force: true })
+    }
   })
 })
