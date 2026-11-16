@@ -27,11 +27,13 @@ export interface VisitsScreenProps {
   /** a tech reads the visits and changes nothing: no New visit, no buttons in the panel */
   readOnly?: boolean
   actions?: VisitActions
+  /** filter chips set on first render: Home's money line links here with the visits its figure counts */
+  defaultFilters?: { column: string; values: string[] }[]
 }
 
 const TOWNS = ["Erie", "Longmont", "Louisville", "Lafayette", "Firestone", "Broomfield"]
 
-function Grid({ rows, data }: { rows: VisitRow[]; data: AdminData }) {
+function Grid({ rows, data, defaultFilters }: { rows: VisitRow[]; data: AdminData; defaultFilters?: VisitsScreenProps["defaultFilters"] }) {
   const open = useOpenVisit()
   const filters = useMemo(
     () => [
@@ -53,6 +55,7 @@ function Grid({ rows, data }: { rows: VisitRow[]; data: AdminData }) {
       filters={filters}
       onOpen={(row) => open?.(row.id)}
       exportName="visits"
+      defaultFilters={defaultFilters}
       pageSize={25}
       emptyTitle="No visits yet"
       emptyLine="Visits appear here as passes are sold and work is booked. Add one with New visit."
@@ -60,7 +63,7 @@ function Grid({ rows, data }: { rows: VisitRow[]; data: AdminData }) {
   )
 }
 
-export function VisitsScreen({ data, today, defaultVisitId, readOnly = false, actions }: VisitsScreenProps) {
+export function VisitsScreen({ data, today, defaultVisitId, readOnly = false, actions, defaultFilters }: VisitsScreenProps) {
   const rows = useMemo(() => visitRows(data, today), [data, today])
   return (
     <div data-slot="visits-screen">
@@ -77,7 +80,7 @@ export function VisitsScreen({ data, today, defaultVisitId, readOnly = false, ac
             </>
           }
         />
-        <Grid rows={rows} data={data} />
+        <Grid rows={rows} data={data} defaultFilters={defaultFilters} />
       </VisitPanelHost>
     </div>
   )

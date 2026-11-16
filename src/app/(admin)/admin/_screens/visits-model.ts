@@ -79,6 +79,11 @@ export function visitRows(data: AdminData, today: string): VisitRow[] {
 
 export const WORK_OPTIONS = (Object.keys(WORK_WORDS) as WorkState[]).map((value) => ({ value, label: WORK_WORDS[value] }))
 export const MONEY_OPTIONS = (Object.keys(MONEY_WORDS) as MoneyState[]).filter((value) => MONEY_WORDS[value]).map((value) => ({ value, label: MONEY_WORDS[value] }))
+/** A filter chip from a link's `?money=unpaid,failed`: the listed values that are real options, or no chip at all. */
+export function filterFrom(column: string, param: string | undefined, options: { value: string }[]): { column: string; values: string[] }[] {
+  const values = (param ?? "").split(",").filter((v) => options.some((o) => o.value === v))
+  return values.length ? [{ column, values }] : []
+}
 export const KIND_OPTIONS = OFFICE_KINDS.map((value) => ({ value, label: KIND_LABEL[value] }))
 export const JOB_TYPE_OPTIONS = [
   { value: "pass", label: "On a pass" },
