@@ -50,7 +50,9 @@ export function AddressSearch({ value, picked, provider, onChange, onPick, onNoM
   const abort = useRef<AbortController | null>(null)
   // Read through a ref so a parent's inline callback never restarts the lookup.
   const noMatch = useRef(onNoMatch)
-  noMatch.current = onNoMatch
+  useEffect(() => {
+    noMatch.current = onNoMatch
+  }, [onNoMatch])
 
   // The list can show only while the customer is typing a query long enough to ask about;
   // an old answer is hidden by `visible` rather than cleared, so the effect never sets state on its own.
