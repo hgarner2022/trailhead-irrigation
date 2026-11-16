@@ -52,10 +52,11 @@ describe("GET /api/places", () => {
 
   it("turns Google's predictions into suggestions, five at most, with the town and state from the secondary text and no zip yet", async () => {
     vi.stubEnv("GOOGLE_PLACES_KEY", "k")
+    vi.stubEnv("APP_URL", "https://preview.test/")
     const fetchFn = vi.fn(async (url: string, init: RequestInit) => {
       expect(url).toBe("https://places.googleapis.com/v1/places:autocomplete")
       expect(init.method).toBe("POST")
-      expect((init.headers as Record<string, string>)["X-Goog-Api-Key"]).toBe("k")
+      expect(init.headers).toMatchObject({ "X-Goog-Api-Key": "k", Referer: "https://preview.test/" })
       const body = JSON.parse(init.body as string)
       expect(body).toEqual({
         input: "480 Briggs",
@@ -90,7 +91,7 @@ describe("GET /api/places", () => {
     vi.stubEnv("GOOGLE_PLACES_KEY", "k")
     const fetchFn = vi.fn(async (url: string, init: RequestInit) => {
       expect(url).toBe("https://places.googleapis.com/v1/places/ChIJbriggs")
-      expect((init.headers as Record<string, string>)["X-Goog-FieldMask"]).toBe("id,formattedAddress,addressComponents")
+      expect(init.headers).toMatchObject({ "X-Goog-Api-Key": "k", "X-Goog-FieldMask": "id,formattedAddress,addressComponents", Referer: "https://www.trailheadirrigation.com/" })
       return json(details)
     })
     vi.stubGlobal("fetch", fetchFn)

@@ -72,12 +72,22 @@ export function suggestionFromDetails(place: PlaceDetails): PlaceSuggestion | nu
 /** One warning, naming the call and the status only: never the key, never what the customer typed. */
 const warn = (call: string, status: number | string) => console.warn(`Google Places ${call} answered ${status}`)
 
+export interface GoogleOptions {
+  key: string
+  /** the site's origin, sent as the referer so a key restricted to the website still answers a server call */
+  referer?: string
+  fetchFn?: Fetch
+}
+
+const headersFor = ({ key, referer }: GoogleOptions, more: Record<string, string> = {}) => ({ "X-Goog-Api-Key": key, ...(referer ? { Referer: `${referer.replace(/\/+$/, "")}/` } : {}), ...more })
+
 /** Up to five street addresses for what the customer typed, in the US, biased to the six towns. An error answers none. */
-export async function autocomplete(key: string, input: string, fetchFn: Fetch = fetch): Promise<PlaceSuggestion[]> {
+export async function autocomplete(options: GoogleOptions, input: string): Promise<PlaceSuggestion[]> {
+  const fetchFn = options.fetchFn ?? fetch
   try {
     const response = await fetchFn(AUTOCOMPLETE_URL, {
       method: "POST",
-      headers: { "Content-Type": "application/json", "X-Goog-Api-Key": key },
+      headers: headersFor(options, { "Content-Type": "application/json" }),
       body: JSON.stringify({ input, includedRegionCodes: ["us"], includedPrimaryTypes: ["street_address", "premise", "subpremise"], locationBias: { circle: AREA } }),
     })
     if (!response.ok) {
@@ -96,10 +106,11 @@ export async function autocomplete(key: string, input: string, fetchFn: Fetch = 
 }
 
 /** The whole address behind a place id; null when Google has no such place or the call fails. */
-export async function placeDetails(key: string, id: string, fetchFn: Fetch = fetch): Promise<PlaceSuggestion | null> {
+export async function placeDetails(options: GoogleOptions, id: string): Promise<PlaceSuggestion | null> {
   if (!PLACE_ID.test(id)) return null
+  const fetchFn = options.fetchFn ?? fetch
   try {
-    const response = await fetchFn(`${DETAILS_URL}${id}`, { headers: { "X-Goog-Api-Key": key, "X-Goog-FieldMask": "id,formattedAddress,addressComponents" } })
+    const response = await fetchFn(`${DETAILS_URL}${id}`, { headers: headersFor(options, { "X-Goog-FieldMask": "id,formattedAddress,addressComponents" }) })
     if (!response.ok) {
       if (response.status !== 404) warn("details", response.status)
       return null
