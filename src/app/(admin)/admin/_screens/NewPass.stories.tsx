@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite"
-import { expect } from "storybook/test"
+import { expect, screen } from "storybook/test"
 import { AdminShell } from "@/components/blocks/AdminShell"
 import { NewPass, type NewPassInitial } from "./NewPass"
 import { EMPTY_PERSON } from "./CustomerPicker"
@@ -41,10 +41,10 @@ const phone = { viewport: { value: "phone", isRotated: false } }
 /** As it opens: find a customer, eight zones, no day yet on either visit, card on file, the terms box empty, Sell pass disabled. */
 export const Empty: Story = {
   globals: wide,
-  play: async ({ canvas }) => {
-    await expect(await canvas.findByText("Spring turn-on $145 · Fall blowout $115 · billed after each visit")).toBeInTheDocument()
-    await expect((await canvas.findAllByText("No day yet")).length).toBe(2)
-    await expect(await canvas.findByRole("button", { name: "Sell pass" })).toBeDisabled()
+  play: async () => {
+    await expect(await screen.findByText("Spring turn-on $145 · Fall blowout $115 · billed after each visit")).toBeInTheDocument()
+    await expect((await screen.findAllByText("No day yet")).length).toBe(2)
+    await expect(await screen.findByRole("button", { name: "Sell pass" })).toBeDisabled()
   },
 }
 export const EmptyPhone: Story = { globals: phone }
@@ -53,10 +53,10 @@ export const EmptyPhone: Story = { globals: phone }
 export const FilledIn: Story = {
   args: { initial: filled },
   globals: wide,
-  play: async ({ canvas }) => {
-    await expect(await canvas.findByText("Spring turn-on $165 · July inspection $165 · Fall blowout $135 · billed after each visit")).toBeInTheDocument()
-    await expect(await canvas.findByText("Tue, May 4")).toBeInTheDocument()
-    await expect(await canvas.findByRole("button", { name: "Sell pass" })).toBeEnabled()
+  play: async () => {
+    await expect(await screen.findByText("Spring turn-on $165 · July inspection $165 · Fall blowout $135 · billed after each visit")).toBeInTheDocument()
+    await expect(await screen.findByText("Tue, May 4")).toBeInTheDocument()
+    await expect(await screen.findByRole("button", { name: "Sell pass" })).toBeEnabled()
   },
 }
 export const FilledInPhone: Story = { args: { initial: filled }, globals: phone }
@@ -65,7 +65,7 @@ export const FilledInPhone: Story = { args: { initial: filled }, globals: phone 
 export const CustomerWithoutEmail: Story = {
   args: { customerId: "c-joe" },
   globals: wide,
-  play: async ({ canvas }) => {
-    await expect(await canvas.findByText("Joe has no email on file. The confirmation goes by email.")).toBeInTheDocument()
+  play: async () => {
+    await expect(await screen.findByText("Joe has no email on file. The confirmation goes by email.")).toBeInTheDocument()
   },
 }
