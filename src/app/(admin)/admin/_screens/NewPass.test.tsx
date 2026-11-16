@@ -10,7 +10,8 @@ const clients: Client[] = [
 
 describe("priceLine", () => {
   it("reads the visits on sale at the pass's zones from src/lib/season-pass.ts, with the July inspection when ticked", () => {
-    expect(priceLine(8, false, "2026-11-12")).toBe("Spring turn-on $145 · Fall blowout $95 · billed after each visit")
+    expect(priceLine(8, false, "2026-11-12")).toBe("Spring turn-on $145 · Fall blowout $115 · billed after each visit")
+    expect(priceLine(6, false, "2026-11-12")).toBe("Spring turn-on $145 · Fall blowout $95 · billed after each visit")
     expect(priceLine(10, true, "2026-11-12")).toBe("Spring turn-on $165 · July inspection $165 · Fall blowout $135 · billed after each visit")
     expect(priceLine(6, true, "2027-06-15")).toBe("July inspection $145 · Fall blowout $95 · billed after each visit")
   })

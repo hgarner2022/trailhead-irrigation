@@ -73,15 +73,14 @@ export const RYAN_DOES = {
 
 const andList = (items: string[]) => (items.length <= 2 ? items.join(" and ") : `${items.slice(0, -1).join(", ")}, and ${items.at(-1)}`)
 
-/**
- * "You pay $0 today. We charge $145 after the spring turn-on and $95 after the fall blowout to the card ending 4242." With no card
- * on file and no link to add one, the pass is paid at each visit: "You pay $145 after the spring turn-on and $95 after the fall
- * blowout, by check, Venmo or cash at the visit."
- */
-export function moneyLine(visits: { name: string; amount: number }[], cardLast4: string | null | undefined, cardUpdateUrl?: string | null): string {
-  const each = andList(visits.map((v) => `${dollars(v.amount)} after the ${v.name}`))
-  if (!cardLast4 && !cardUpdateUrl) return `You pay ${each}, by check, Venmo or cash at the visit.`
-  return `You pay $0 today. We charge ${each}${cardLast4 ? ` to the card ending ${cardLast4}` : ""}.`
+/** "You pay $0 today. We charge $145 after the spring turn-on and $95 after the fall blowout to the card ending 4242." */
+export function moneyLine(visits: { name: string; amount: number }[], cardLast4: string | null | undefined): string {
+  return `You pay $0 today. We charge ${andList(visits.map((v) => `${dollars(v.amount)} after the ${v.name}`))}${cardLast4 ? ` to the card ending ${cardLast4}` : ""}.`
+}
+
+/** The money line of a pass sold by the office with no card and no link to add one: "You pay $145 after the spring turn-on and $95 after the fall blowout, by check, Venmo or cash at the visit." */
+export function atVisitMoneyLine(visits: { name: string; amount: number }[]): string {
+  return `You pay ${andList(visits.map((v) => `${dollars(v.amount)} after the ${v.name}`))}, by check, Venmo or cash at the visit.`
 }
 
 /** The line under the money line when the card is still to be added: the office sold the pass and emailed the link. */

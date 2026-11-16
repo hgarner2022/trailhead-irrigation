@@ -1,5 +1,5 @@
 import { googleCalendarUrl } from "./calendar"
-import { ADD_CARD_LINE, BUSINESS, CONFIRM_LINE, RYAN_DOES, moneyLine, whenText } from "./format"
+import { ADD_CARD_LINE, BUSINESS, CONFIRM_LINE, RYAN_DOES, atVisitMoneyLine, moneyLine, whenText } from "./format"
 import { button, emailLayout, esc, heading, paragraph, plainText, EMAIL_COLORS } from "./layout"
 import type { PurchaseConfirmationData, RenderedEmail } from "./types"
 
@@ -11,8 +11,9 @@ export function purchaseConfirmationEmail(d: PurchaseConfirmationData): Rendered
   // Never "your days are set" while a visit has no day: those are Ryan's to set.
   const allDated = d.visits.every((v) => v.visit)
   const intro = `Your Season Pass for ${d.town} is reserved for ${d.season}. ${allDated ? "Here are your days." : "Ryan sets the days that are missing and we text them to you."}`
-  const money = moneyLine(d.visits, d.cardLast4, d.cardUpdateUrl)
+  // A pass sold by the office: no card and no link means the money comes at each visit; a link means the card is still to be added.
   const addCard = !d.cardLast4 && d.cardUpdateUrl ? d.cardUpdateUrl : null
+  const money = !d.cardLast4 && !addCard ? atVisitMoneyLine(d.visits) : moneyLine(d.visits, d.cardLast4)
   const image = `<p style="margin:0 0 24px"><a href="${esc(d.signInUrl)}"><img src="${esc(d.passImageUrl)}" width="544" alt="Season Pass ${esc(String(d.season))} for ${esc(d.firstName)}, ${esc(d.town)}" style="display:block;width:100%;max-width:544px;height:auto;border:0;border-radius:8px"></a></p>`
   const rows = d.visits
     .map((v) => {

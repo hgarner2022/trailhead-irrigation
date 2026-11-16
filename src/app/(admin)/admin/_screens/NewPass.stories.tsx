@@ -42,7 +42,7 @@ const phone = { viewport: { value: "phone", isRotated: false } }
 export const Empty: Story = {
   globals: wide,
   play: async ({ canvas }) => {
-    await expect(await canvas.findByText("Spring turn-on $145 · Fall blowout $95 · billed after each visit")).toBeInTheDocument()
+    await expect(await canvas.findByText("Spring turn-on $145 · Fall blowout $115 · billed after each visit")).toBeInTheDocument()
     await expect((await canvas.findAllByText("No day yet")).length).toBe(2)
     await expect(await canvas.findByRole("button", { name: "Sell pass" })).toBeDisabled()
   },
