@@ -49,6 +49,18 @@ describe("the days picked at checkout", () => {
     expect((await db.select().from(s.visit).where(eq(s.visit.passId, pass.id))).filter((v) => v.status === "scheduled")).toHaveLength(2)
   })
 
+  it("hold the same day when the person is given as `truckId` with the legacy truck id, and the scheduled event names the person both ways", async () => {
+    await db.insert(s.webhookEndpoint).values({ id: "hook-days", organizationId: ORG, url: "https://hooks.example.com/days", secret: "whsec_x", events: ["visit.scheduled"] })
+    const ryan = (await offer("turn-on")).days.find((d) => d.personId === "person_truck-1")!
+    expect(ryan).toBeDefined()
+    const pass = await start("days-legacy@example.com", [{ kind: "turn-on", day: ryan.day, truckId: "truck-1", start: ryan.start }])
+    const rows = await db.select().from(s.visit).where(eq(s.visit.passId, pass.id))
+    expect(rows.find((v) => v.kind === "turn-on")).toMatchObject({ status: "unscheduled", scheduledOn: ryan.day, personId: "person_truck-1", startTime: ryan.start })
+    await activate(pass.id, "cs_legacy")
+    const events = (await db.select().from(s.outboundEvent)).filter((e) => e.event === "visit.scheduled" && (e.payload as { visitId: string }).visitId === rows.find((v) => v.kind === "turn-on")!.id)
+    expect(events[0]?.payload).toMatchObject({ personId: "person_truck-1", truckId: "person_truck-1", scheduledOn: ryan.day })
+  })
+
   it("drops a day that is not open, and leaves that visit with no day", async () => {
     const pass = await start("days2@example.com", [{ kind: "turn-on", day: "2027-05-08", personId: "person_truck-1", start: "08:00" }])
     const rows = await db.select().from(s.visit).where(eq(s.visit.passId, pass.id))

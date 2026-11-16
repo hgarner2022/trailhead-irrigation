@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest"
 import { preferredRange, scheduleVisits, type ScheduleInput } from "./schedule"
 import type { SchedArea, SchedPerson, SchedVisit, Town } from "./types"
 
-const person = (id: string, over: Partial<SchedPerson> = {}): SchedPerson => ({ id, name: id === "t1" ? "Ryan Garner" : "Second truck", workingDays: ["mon", "tue", "wed", "thu", "fri"], capacityByKind: { "turn-on": 8, inspection: 6, blowout: 14, repair: 4, other: 2 }, ...over })
+const person = (id: string, over: Partial<SchedPerson> = {}): SchedPerson => ({ id, name: id === "t1" ? "Ryan Garner" : "Second truck", truck: id === "t1" ? "Truck 1" : "Truck 2", workingDays: ["mon", "tue", "wed", "thu", "fri"], capacityByKind: { "turn-on": 8, inspection: 6, blowout: 14, repair: 4, other: 2 }, ...over })
 const areas: SchedArea[] = [
   { id: "north", name: "Erie and Firestone", towns: ["Erie", "Firestone"], springOrder: 3, fallOrder: 0 },
   { id: "lm", name: "Longmont", towns: ["Longmont"], springOrder: 2, fallOrder: 1 },

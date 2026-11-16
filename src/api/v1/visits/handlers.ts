@@ -42,7 +42,8 @@ export const visitsList = defineHandler({
   input: z.object({ from: Day.optional(), to: Day.optional(), personId: Id.optional(), truckId: PersonIdAlias, status: VisitStatus.optional(), kind: VisitKind.optional(), passId: Id.optional(), ...pageInput }),
   output: page(VisitOut),
   async run(ctx, input) {
-    const personId = input.personId ?? input.truckId
+    const filterId = input.personId ?? input.truckId
+    const personId = filterId ? await resolvePersonId(ctx, filterId) : undefined
     const rows = await visitsQuery(ctx.db)
       .where(
         and(
@@ -77,7 +78,7 @@ export const visitsGet = defineHandler({
 })
 
 /** The webhook's word for who has the visit: `personId`, with `truckId` the same id for one season. */
-const who = (personId: string | null) => ({ personId, truckId: personId })
+export const who = (personId: string | null) => ({ personId, truckId: personId })
 
 /** The one placement: every hard rule, the day ordered, the date text queued. `visits.move` and `visits.create` both run it. `personId` names the person; `truckId` is its alias. */
 export async function placeVisit(ctx: Ctx, input: { id: string; personId?: string; truckId?: string; scheduledOn: string; startTime?: string }) {

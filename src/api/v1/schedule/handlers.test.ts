@@ -38,6 +38,12 @@ describe("schedule.day", () => {
     expect(out.stops[0]).toMatchObject({ town: "Broomfield", startTime: "08:00" })
     expect((await callApi(ctxFor(db, readKey), scheduleDay, { day: "2027-05-06" })).stops).toEqual([])
   })
+  it("takes `truckId` as the legacy truck id for one season", async () => {
+    const byPerson = (await callApi(ctxFor(db, readKey), scheduleDay, { day: "2027-05-05", personId: "person_truck-1" })).stops
+    expect(byPerson).toHaveLength(2)
+    expect((await callApi(ctxFor(db, readKey), scheduleDay, { day: "2027-05-05", truckId: "truck-1" })).stops).toEqual(byPerson)
+    await expect(callApi(ctxFor(db, readKey), scheduleDay, { day: "2027-05-05", truckId: "nope" })).rejects.toMatchObject({ code: "not_found" })
+  })
 })
 
 describe("schedule.slots", () => {

@@ -1,5 +1,7 @@
 import "server-only"
 import { and, eq } from "drizzle-orm"
+import { resolvePersonId } from "@/api/v1/people/handlers"
+import { who } from "@/api/v1/visits/handlers"
 import { emitEvent } from "@/api/v1/webhooks/deliver"
 import * as s from "@/db/schema"
 import type { Database } from "@/db/types"
@@ -9,6 +11,7 @@ import { openSlots, personFor, type Slot } from "./area-days"
 export interface ChosenDayInput {
   kind: "turn-on" | "inspection" | "blowout"
   day: string
+  /** the person offered with the day: their id, or for one season the id of the truck they were made from ("truck-1") */
   personId: string
   start: string
 }
@@ -34,9 +37,10 @@ export async function holdChosenDays(db: Database, passId: string, days: ChosenD
   for (const v of visits) {
     const chosen = days.find((d) => d.kind === v.kind)
     if (!chosen) continue
+    const personId = await resolvePersonId({ db, organizationId: v.organizationId }, chosen.personId)
     const slots = await openSlots(db, pickable(v, town), today, season)
-    if (!slots.some((x) => x.day === chosen.day && x.personId === chosen.personId)) continue
-    await db.update(s.visit).set({ personId: chosen.personId, scheduledOn: chosen.day, startTime: chosen.start, awaitingPick: false }).where(eq(s.visit.id, v.id))
+    if (!slots.some((x) => x.day === chosen.day && x.personId === personId)) continue
+    await db.update(s.visit).set({ personId, scheduledOn: chosen.day, startTime: chosen.start, awaitingPick: false }).where(eq(s.visit.id, v.id))
     held++
   }
   return held
@@ -93,7 +97,7 @@ export async function scheduleChosenDays(db: Database, passId: string, town: str
     await db.update(s.visit).set({ status: "scheduled", personId: slot.personId, scheduledOn: slot.day, stopOrder: null, ...(stillOpen ? {} : { startTime: null }) }).where(eq(s.visit.id, v.id))
     touched.set(`${slot.personId}|${slot.day}`, { personId: slot.personId, day: slot.day })
     if (!stillOpen) shifted.push({ visitId: v.id, kind: v.kind, from: v.scheduledOn, to: slot.day })
-    await emitEvent(db, v.organizationId, "visit.scheduled", { visitId: v.id, personId: slot.personId, scheduledOn: slot.day, from: null })
+    await emitEvent(db, v.organizationId, "visit.scheduled", { visitId: v.id, ...who(slot.personId), scheduledOn: slot.day, from: null })
   }
   for (const t of touched.values()) await orderDay(db, t)
   return shifted

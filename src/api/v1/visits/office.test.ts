@@ -55,6 +55,23 @@ describe("visits.create", () => {
   })
 })
 
+describe("visits.create's default assignee", () => {
+  it("is the owner before anyone whose name sorts first", async () => {
+    const [aaron] = await db.insert(s.person).values({ organizationId: ORG, name: "Aaron Lee", initials: "AL", role: "tech", truck: "Truck 3" }).returning({ id: s.person.id })
+    const out = await create({ customerId: "c100", kind: "repair", scheduledOn: "2027-05-10" })
+    expect(out).toMatchObject({ personId: "person_truck-1", personName: "Ryan Garner" })
+    await db.update(s.person).set({ active: false }).where(eq(s.person.id, aaron!.id))
+  })
+  it("with no one on the schedule refuses the day and leaves nothing behind", async () => {
+    const [jobs, visits] = [await count(s.job), await count(s.visit)]
+    const people = await db.select({ id: s.person.id, truck: s.person.truck }).from(s.person).where(eq(s.person.organizationId, ORG))
+    await db.update(s.person).set({ truck: null }).where(eq(s.person.organizationId, ORG))
+    await expect(create({ customerId: "c100", kind: "repair", scheduledOn: "2027-05-11" })).rejects.toMatchObject({ code: "unprocessable", message: "No one is on the schedule to take this visit" })
+    expect([await count(s.job), await count(s.visit)]).toEqual([jobs, visits])
+    for (const p of people) await db.update(s.person).set({ truck: p.truck }).where(eq(s.person.id, p.id))
+  })
+})
+
 describe("visits.markNotDone", () => {
   it("sends a scheduled visit back to Needs a day and keeps the reason", async () => {
     const v = await create({ customerId: "c100", kind: "repair", scheduledOn: "2027-05-06" })

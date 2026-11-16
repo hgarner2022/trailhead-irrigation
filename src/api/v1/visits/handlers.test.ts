@@ -144,3 +144,13 @@ describe("visits.requestMove", () => {
     await expect(callApi(ctxFor(db, readKey), visitsRequestMove, { id: "p6-blowout" })).rejects.toMatchObject({ code: "forbidden" })
   })
 })
+
+describe("visits.list by person, after the moves", () => {
+  it("filters by person, with `truckId` taking the legacy truck id for one season", async () => {
+    const byPerson = (await callApi(ctxFor(db, readKey), visitsList, { personId: "person_truck-1" })).data.map((v) => v.id)
+    expect(byPerson.length).toBeGreaterThan(0)
+    expect((await callApi(ctxFor(db, readKey), visitsList, { truckId: "truck-1" })).data.map((v) => v.id)).toEqual(byPerson)
+    expect((await callApi(ctxFor(db, readKey), visitsList, { truckId: "person_truck-1" })).data.map((v) => v.id)).toEqual(byPerson)
+    await expect(callApi(ctxFor(db, readKey), visitsList, { truckId: "nope" })).rejects.toMatchObject({ code: "not_found" })
+  })
+})

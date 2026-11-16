@@ -5,6 +5,8 @@ export interface SchedPerson {
   id: string
   /** the person's name, "Ryan Garner" */
   name: string
+  /** the truck they drive, as a label: "Truck 1"; null when they are off the schedule */
+  truck: string | null
   workingDays: Weekday[]
   capacityByKind: Record<CapacityKind, number>
   active?: boolean

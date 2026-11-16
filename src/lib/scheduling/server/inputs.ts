@@ -24,7 +24,7 @@ export async function loadWorld(db: Database, organizationId: string, from: stri
     db.select().from(s.area).where(eq(s.area.organizationId, organizationId)),
   ])
   const blocks = await loadBlocks(db, organizationId, new Date(`${addDays(from, -1)}T00:00:00Z`), new Date(`${addDays(to, 2)}T00:00:00Z`))
-  return { settings: org.settings, people, areas, blocks }
+  return { settings: org.settings, people: people.map((p) => ({ id: p.id, name: p.name, truck: p.truck, workingDays: p.workingDays, capacityByKind: p.capacityByKind, active: p.active })), areas, blocks }
 }
 
 /** Visits already assigned to someone between two days (cancelled and skipped ones excluded), as what each takes from that person's day. `exceptId` leaves one visit out, so a move does not collide with itself. */

@@ -3,7 +3,7 @@ import { openSlots, type OpenSlotsInput } from "./slots"
 import type { SchedArea, SchedPerson } from "./types"
 
 const people: SchedPerson[] = [
-  { id: "t1", name: "Ryan Garner", workingDays: ["mon", "tue", "wed", "thu", "fri"], capacityByKind: { "turn-on": 8, inspection: 6, blowout: 14, repair: 4, other: 2 } },
+  { id: "t1", name: "Ryan Garner", truck: "Truck 1", workingDays: ["mon", "tue", "wed", "thu", "fri"], capacityByKind: { "turn-on": 8, inspection: 6, blowout: 14, repair: 4, other: 2 } },
 ]
 const areas: SchedArea[] = [
   { id: "north", name: "Erie and Firestone", towns: ["Erie", "Firestone"] },

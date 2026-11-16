@@ -10,7 +10,7 @@ import { runSchedule } from "@/lib/scheduling/server/run"
 import { loadBlocks } from "@/lib/jobber-feed"
 import { openSlots, spreadDays } from "@/lib/pass/server/area-days"
 import { windowText } from "@/emails/format"
-import { isRoutePerson, listPeople, Role, routePeople } from "../people/handlers"
+import { isRoutePerson, listPeople, resolvePersonId, Role, routePeople } from "../people/handlers"
 import { PersonIdAlias } from "../visits/handlers"
 import { visitOut, visitsQuery } from "../visits/queries"
 import { VisitOut } from "../visits/schemas"
@@ -92,7 +92,8 @@ export const scheduleDay = defineHandler({
   input: z.object({ day: Day, personId: Id.optional(), truckId: PersonIdAlias }),
   output: z.object({ day: Day, stops: z.array(Stop) }),
   async run(ctx, input) {
-    const personId = input.personId ?? input.truckId
+    const filterId = input.personId ?? input.truckId
+    const personId = filterId ? await resolvePersonId(ctx, filterId) : undefined
     const rows = await visitsQuery(ctx.db)
       .where(and(eq(s.visit.organizationId, ctx.organizationId), eq(s.visit.scheduledOn, input.day), personId ? eq(s.visit.personId, personId) : undefined, notInArray(s.visit.status, ["cancelled", "skipped"])))
       .orderBy(asc(s.visit.personId), asc(s.visit.stopOrder), asc(s.visit.startTime), asc(s.visit.id))
