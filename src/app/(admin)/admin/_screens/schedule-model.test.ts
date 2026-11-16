@@ -90,7 +90,7 @@ describe("moveOutcome", () => {
   it("moves and says where", () => {
     const out = moveOutcome(data.visits, "v477", "person_truck-2", "2026-11-13", people, TIME_ZONE)
     expect(out.moved).toBe(true)
-    expect(out.message).toBe(`Moved ${percy!.clientName} to Second truck on Friday, November 13.`)
+    expect(out.message).toBe(`Moved ${percy!.clientName} to Friday, November 13 with Second truck.`)
     expect(out.visits.find((v) => v.id === "v477")).toMatchObject({ personId: "person_truck-2" })
   })
   it("refuses a day the person does not work and says why, leaving the list as it was", () => {

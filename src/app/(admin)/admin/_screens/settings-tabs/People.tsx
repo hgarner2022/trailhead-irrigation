@@ -1,6 +1,7 @@
 "use client"
 
 import { Plus } from "lucide-react"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
@@ -23,7 +24,8 @@ import { CommitInput, ConfirmButton, type Apply } from "./fields"
 
 const DAY_WORDS: Record<Weekday, string> = { mon: "Mon", tue: "Tue", wed: "Wed", thu: "Thu", fri: "Fri", sat: "Sat", sun: "Sun" }
 const PER_DAY: CapacityKind[] = ["turn-on", "inspection", "blowout", "repair"]
-const SELECT = "min-h-9 w-full rounded-lg border border-input bg-background px-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+/** The native select and the date input, styled like `Input`. */
+const FIELD = "min-h-9 w-full rounded-lg border border-input bg-background px-2 text-sm disabled:cursor-not-allowed disabled:opacity-50"
 
 export function People({ state, apply }: { state: SettingsState; apply: Apply }) {
   const { people } = state.settings
@@ -44,7 +46,7 @@ export function People({ state, apply }: { state: SettingsState; apply: Apply })
                 <TableHead>Jobber user</TableHead>
                 <TableHead>Working days</TableHead>
                 {PER_DAY.map((kind) => (
-                  <TableHead key={kind} className="w-24">{`${KIND_PLURALS[kind].replace(/^./, (c) => c.toUpperCase())} a day`}</TableHead>
+                  <TableHead key={kind} className="w-24">{`${KIND_PLURALS[kind].replace(/^./, (c) => c.toUpperCase())} per day`}</TableHead>
                 ))}
                 <TableHead>Season from</TableHead>
                 <TableHead>Season to</TableHead>
@@ -66,7 +68,7 @@ export function People({ state, apply }: { state: SettingsState; apply: Apply })
                     <CommitInput label={`${person.name} phone`} value={person.phone ?? ""} onCommit={(v) => apply((s, a) => setPersonText(s, person.id, "phone", v, a))} />
                   </TableCell>
                   <TableCell className="min-w-28 align-top">
-                    <select aria-label={`${person.name} role`} value={person.role} onChange={(e) => apply((s, a) => setPersonRole(s, person.id, e.target.value as PersonRole, a))} className={SELECT}>
+                    <select aria-label={`${person.name} role`} value={person.role} onChange={(e) => apply((s, a) => setPersonRole(s, person.id, e.target.value as PersonRole, a))} className={FIELD}>
                       {ROLES.map((role) => (
                         <option key={role} value={role}>
                           {ROLE_WORDS[role]}
@@ -136,20 +138,31 @@ export function People({ state, apply }: { state: SettingsState; apply: Apply })
   )
 }
 
-/** A season date that can be cleared: a blank commit means "all year", which `CommitInput` would revert, so this one allows it. */
+/**
+ * A season date that can be cleared: a blank commit means "all year", which `CommitInput` would revert, so this
+ * one allows it. It keeps `CommitInput`'s draft and seen pair: a date the reducer refuses (an end before the
+ * start) snaps back to the date it had, the way every other refused edit on the screen does.
+ */
 function SeasonInput({ person, field, apply }: { person: SettingsState["settings"]["people"][number]; field: "seasonStart" | "seasonEnd"; apply: Apply }) {
   const label = `${person.name} season ${field === "seasonStart" ? "from" : "to"}`
   const value = person[field] ?? ""
+  const [draft, setDraft] = useState(value)
+  const [seen, setSeen] = useState(value)
+  if (value !== seen) {
+    setSeen(value)
+    setDraft(value)
+  }
   return (
     <input
       type="date"
       aria-label={label}
-      value={value}
+      value={draft}
       onChange={(e) => {
         const v = e.target.value
         if (v !== value) apply((s, a) => setSeason(s, person.id, field, v, a))
+        setDraft(value)
       }}
-      className={SELECT}
+      className={FIELD}
     />
   )
 }

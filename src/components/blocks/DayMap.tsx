@@ -7,7 +7,7 @@ import "maplibre-gl/dist/maplibre-gl.css"
 import { cn } from "@/lib/utils"
 import type { Person, Visit } from "@/lib/admin/types"
 import { EmptyState } from "./EmptyState"
-import { hasPoint, readTokenColour, shadeOf, stopLine, stopsDescription, townBounds, truckClass, type Stop } from "./day-map-helpers"
+import { hasPoint, personClass, readTokenColour, shadeOf, stopLine, stopsDescription, townBounds, type Stop } from "./day-map-helpers"
 
 // One day's stops on real geography: open tiles from OpenFreeMap (no key),
 // one numbered pin per visit in its person's colour, a translucent patch
@@ -50,7 +50,7 @@ function shadeFeatures(stops: Stop[], people: Person[], container: HTMLElement):
   const features = people.flatMap((person, i): GeoJSON.Feature[] => {
     const ring = shadeOf(stops.filter((s) => s.personId === person.id)).map((p) => [...p])
     if (ring.length === 0) return []
-    return [{ type: "Feature", properties: { colour: readTokenColour(container, truckClass(i)) }, geometry: { type: "Polygon", coordinates: [ring] } }]
+    return [{ type: "Feature", properties: { colour: readTokenColour(container, personClass(i)) }, geometry: { type: "Polygon", coordinates: [ring] } }]
   })
   return { type: "FeatureCollection", features }
 }
@@ -143,7 +143,7 @@ export function DayMap({ stops, people, selectedId, onSelect, className }: DayMa
       }
     }
     placed.forEach((stop, i) => {
-      const colour = truckClass(Math.max(0, people.findIndex((p) => p.id === stop.personId)))
+      const colour = personClass(Math.max(0, people.findIndex((p) => p.id === stop.personId)))
       const label = String(stop.stopOrder ?? i + 1)
       const key = `${stop.lng},${stop.lat},${colour},${label}`
       const existing = pins.current.get(stop.id)

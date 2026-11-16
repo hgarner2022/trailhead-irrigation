@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it, vi } from "vitest"
-import { render, screen, waitFor, within } from "@testing-library/react"
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import type { AdminData } from "@/lib/admin/types"
@@ -59,6 +59,20 @@ describe("SettingsScreen fields", () => {
     expect(name).toHaveValue("Ryan Garner")
     expect(log().queryByText("Ryan Garner blowouts per day")).toBeNull()
   })
+
+  it("puts a season date back when the end would come before the start", async () => {
+    render(<SettingsScreen data={data} today={TODAY} />)
+    const from = screen.getByLabelText("Second truck season from")
+    const to = screen.getByLabelText("Second truck season to")
+    fireEvent.change(from, { target: { value: "2027-04-01" } })
+    expect(from).toHaveValue("2027-04-01")
+    fireEvent.change(to, { target: { value: "2027-03-31" } })
+    expect(to).toHaveValue("")
+    expect(log().queryByText("Second truck season to")).toBeNull()
+    fireEvent.change(to, { target: { value: "2027-10-31" } })
+    expect(to).toHaveValue("2027-10-31")
+    expect(log().getByText("Second truck season to")).toBeInTheDocument()
+  })
 })
 
 describe("SettingsScreen API keys", () => {
@@ -103,6 +117,9 @@ describe("SettingsScreen with actions", () => {
     expect(screen.queryByRole("button", { name: "Save" })).toBeNull()
     expect(screen.getByRole("textbox", { name: "Second truck name" })).toBeDisabled()
     expect(screen.getByRole("combobox", { name: "Second truck role" })).toBeDisabled()
+    expect(screen.getByRole("checkbox", { name: /^Mon\s?for Second truck$/ })).toBeDisabled()
+    expect(screen.getByRole("button", { name: "Add person" })).toBeDisabled()
+    expect(screen.getByRole("button", { name: "Remove Second truck" })).toBeDisabled()
     expect(screen.getByRole("tab", { name: "People" })).toBeInTheDocument()
     expect(screen.getByText("You can read the settings. A manager changes them.")).toBeInTheDocument()
   })

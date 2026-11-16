@@ -8,7 +8,6 @@ import { dayOf } from "@/lib/admin/calendar"
 import { TIME_ZONE } from "@/lib/admin/format"
 import { committedRevenue, formatMoney, monthComparison } from "@/lib/admin/metrics"
 import type { AdminData, Visit } from "@/lib/admin/types"
-import { routePeople } from "@/lib/admin/people"
 import { dayByPerson, monthOf, type PersonDay } from "./home-model"
 import { dayLabel } from "./visit-panel-model"
 import { visitRows } from "./visits-model"
@@ -48,7 +47,8 @@ export function weekView(data: Pick<AdminData, "visits" | "settings">, today: st
     .sort()
   const day = days[0] ?? null
   if (!day) return { day: null, isToday: false, title: "Today", heading: "", people: [], visits: [] }
-  const people = dayByPerson(data.visits, day, routePeople(data.settings.people))
+  // Every person, not only those on the schedule: a visit still held by someone who lost their truck files under their name here, as it does on Visits. `routePeople` decides only the schedule rows.
+  const people = dayByPerson(data.visits, day, data.settings.people)
   const visits = people.flatMap((p) => p.stops)
   const isToday = day === todayDay
   const heading = `${dayLabel(day)} · ${visits.length} ${visits.length === 1 ? "visit" : "visits"} in ${townsPhrase(visits.map((v) => v.town))}`

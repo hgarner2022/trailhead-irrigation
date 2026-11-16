@@ -68,11 +68,20 @@ describe("people", () => {
     expect(await callApi(ctxFor(db, adminKey), peopleUpdate, { id: ryan.id, calendarFeedUrl: null, truck: "Truck 1" })).toMatchObject({ hasCalendarFeed: false, truck: "Truck 1" })
     await expect(callApi(ctxFor(db, adminKey), peopleUpdate, { id: "missing", name: "x" })).rejects.toMatchObject({ code: "not_found" })
   })
+  it("lets an owner step down while another owner stays, and refuses to demote the only one", async () => {
+    const [first, second] = (await callApi(ctxFor(db, readKey), peopleList, { active: "true" })).data.filter((p) => p.role === "owner")
+    expect((await callApi(ctxFor(db, adminKey), peopleUpdate, { id: second!.id, role: "admin" })).role).toBe("admin")
+    await expect(callApi(ctxFor(db, adminKey), peopleUpdate, { id: first!.id, role: "tech" })).rejects.toMatchObject({ code: "unprocessable", message: "Keep at least one owner." })
+    // Naming the role they already have is not a demotion; neither is a change that leaves the role alone.
+    expect((await callApi(ctxFor(db, adminKey), peopleUpdate, { id: first!.id, role: "owner", phone: "303-555-0100" })).role).toBe("owner")
+    expect((await callApi(ctxFor(db, adminKey), peopleUpdate, { id: first!.id, name: first!.name })).role).toBe("owner")
+    expect((await callApi(ctxFor(db, adminKey), peopleUpdate, { id: second!.id, role: "owner" })).role).toBe("owner")
+  })
   it("keeps at least one owner", async () => {
     const owners = (await callApi(ctxFor(db, readKey), peopleList, { active: "true" })).data.filter((p) => p.role === "owner")
     expect(owners).toHaveLength(2)
     expect((await callApi(ctxFor(db, adminKey), peopleDeactivate, { id: owners[0]!.id })).active).toBe(false)
-    await expect(callApi(ctxFor(db, adminKey), peopleDeactivate, { id: owners[1]!.id })).rejects.toMatchObject({ code: "unprocessable", message: "Keep at least one owner" })
+    await expect(callApi(ctxFor(db, adminKey), peopleDeactivate, { id: owners[1]!.id })).rejects.toMatchObject({ code: "unprocessable", message: "Keep at least one owner." })
     await expect(callApi(ctxFor(db, adminKey), peopleDeactivate, { id: "missing" })).rejects.toMatchObject({ code: "not_found" })
   })
   it("rejects bad input", async () => {

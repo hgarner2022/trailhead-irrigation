@@ -119,7 +119,9 @@ export async function seed(db: Database, snapshot: AdminData, options: SeedOptio
  * An admin named or emailed ryan% is the same person as the snapshot's Ryan
  * Garner, as the people migration (drizzle/0010_person.sql) merges them: he
  * gets that admin's email instead of a second row. Inserts ignore a row that
- * is already there, so a re-seed changes nothing.
+ * is already there, so a re-seed changes nothing. A migrated database holds
+ * Ryan under `person_<admin id>`, so nothing outside the fixtures may assume
+ * `person_truck-1`.
  */
 async function seedPeople(db: Database, org: string, people: Person[]) {
   if (people.length) {

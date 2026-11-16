@@ -6,29 +6,34 @@
  */
 import type { CapacityKind, OrganizationSettings, Person, PersonRole, Weekday } from "@/lib/admin/types"
 import { WEEKDAYS } from "@/lib/admin/calendar"
-import { ROLE_WORDS } from "@/lib/admin/people"
+import { emailProblem } from "@/lib/email-check"
+import { ROLE_WORDS, TEXT_MAX, hasAnotherOwner, initialsOf } from "@/lib/admin/people"
 import { KIND_PLURALS, MAX_CAPACITY, daysWords, isRealDate, record, type Actor, type SettingsState } from "./settings-model"
 
 const replacePerson = (s: OrganizationSettings, person: Person) => ({ ...s, people: s.people.map((p) => (p.id === person.id ? person : p)) })
 const personOf = (state: SettingsState, id: string) => state.settings.people.find((p) => p.id === id)
 /** Someone else is an owner, so this person may stop being one or leave. */
-const anotherOwner = (state: SettingsState, id: string) => state.settings.people.some((p) => p.id !== id && p.role === "owner")
+const anotherOwner = (state: SettingsState, id: string) => hasAnotherOwner(state.settings.people, id)
 
+/** The initials follow the name. */
 export function setPersonName(state: SettingsState, personId: string, raw: string, actor: Actor): SettingsState {
   const person = personOf(state, personId)
   const name = raw.trim()
-  if (!person || !name) return state
-  return record(state, actor, `${person.name} name`, person.name, name, replacePerson(state.settings, { ...person, name }))
+  if (!person || !name || name.length > TEXT_MAX.name) return state
+  return record(state, actor, `${person.name} name`, person.name, name, replacePerson(state.settings, { ...person, name, initials: initialsOf(name) }))
 }
 
 /** The text fields a person has besides the name; a blank clears the field. */
 export type PersonText = "email" | "phone" | "truck" | "jobberUserId"
 const TEXT_WORDS: Record<PersonText, string> = { email: "email", phone: "phone", truck: "truck", jobberUserId: "Jobber user" }
 
+/** A value too long for the API, or an email that is not shaped like one, is refused as the API would refuse it at Save. */
 export function setPersonText(state: SettingsState, personId: string, field: PersonText, raw: string, actor: Actor): SettingsState {
   const person = personOf(state, personId)
   if (!person) return state
   const value = raw.trim()
+  if (value.length > TEXT_MAX[field]) return state
+  if (field === "email" && value && emailProblem(value)) return state
   const next = { ...person }
   if (value) next[field] = value
   else delete next[field]
@@ -61,10 +66,12 @@ export function setSeason(state: SettingsState, personId: string, field: "season
   return record(state, actor, `${person.name} ${words}`, person[field] || "All year", value || "All year", replacePerson(state.settings, next))
 }
 
+/** A person keeps at least one working day: the last one cannot be turned off. */
 export function toggleWorkingDay(state: SettingsState, personId: string, day: Weekday, actor: Actor): SettingsState {
   const person = personOf(state, personId)
   if (!person) return state
   const workingDays = WEEKDAYS.filter((d) => (d === day ? !person.workingDays.includes(d) : person.workingDays.includes(d)))
+  if (workingDays.length === 0) return state
   return record(state, actor, `${person.name} working days`, daysWords(person.workingDays), daysWords(workingDays), replacePerson(state.settings, { ...person, workingDays }))
 }
 
@@ -87,10 +94,11 @@ export function removePerson(state: SettingsState, personId: string, actor: Acto
 /** A new tech with no truck yet, working Monday to Friday with nothing planned per day; the name is the first thing to type. */
 export function addPerson(state: SettingsState, actor: Actor): SettingsState {
   const n = state.settings.people.length + 1
+  const name = "New person"
   const person: Person = {
     id: `person-${n}-${actor.at}`,
-    name: "New person",
-    initials: "NP",
+    name,
+    initials: initialsOf(name),
     role: "tech",
     workingDays: ["mon", "tue", "wed", "thu", "fri"],
     capacityByKind: { "turn-on": 0, inspection: 0, blowout: 0, repair: 0, other: 0 },

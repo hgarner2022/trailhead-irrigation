@@ -5,7 +5,7 @@ import { callApi } from "@/api/core/call"
 import { ApiError } from "@/api/core/errors"
 import { messagesSend } from "@/api/v1/messages/handlers"
 import { passesSell } from "@/api/v1/passes/sell"
-import { peopleList } from "@/api/v1/people/handlers"
+import { isRoutePerson, peopleList } from "@/api/v1/people/handlers"
 import { visitsGet, visitsMove } from "@/api/v1/visits/handlers"
 import { visitsMarkClosed, visitsRecordPayment } from "@/api/v1/visits/money"
 import { visitsCancel, visitsCreate, visitsMarkNotDone, visitsUpdate } from "@/api/v1/visits/office"
@@ -28,7 +28,7 @@ export interface Where {
 export const moveVisitTo = async (visitId: string, day: string, time: string | null): Promise<ActionOutcome<Where>> =>
   act(async (ctx) => {
     const v = await callApi(ctx, visitsGet, { id: visitId })
-    const people = (await callApi(ctx, peopleList, { active: "true" })).data.filter((p) => p.truck !== null && p.workingDays.includes(weekdayOf(day)))
+    const people = (await callApi(ctx, peopleList, { active: "true" })).data.filter((p) => isRoutePerson(p) && p.workingDays.includes(weekdayOf(day)))
     const person = people.find((p) => p.id === v.personId) ?? people[0]
     if (!person) throw new ApiError("unprocessable", "No one works that day. Pick another day.")
     await callApi(ctx, visitsMove, { id: visitId, personId: person.id, scheduledOn: day, ...(time ? { startTime: time } : {}) })

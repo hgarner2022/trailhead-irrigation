@@ -52,6 +52,12 @@ describe("people", () => {
     expect(on.changes).toHaveLength(2)
   })
 
+  it("keeps the last working day on", () => {
+    const monday = (["tue", "wed", "thu", "fri", "sat"] as const).reduce((s, day) => toggleWorkingDay(s, "person_truck-2", day, actor), state)
+    expect(monday.settings.people[1].workingDays).toEqual(["mon"])
+    expect(toggleWorkingDay(monday, "person_truck-2", "mon", actor)).toBe(monday)
+  })
+
   it("sets a capacity and refuses a fraction or a negative", () => {
     const next = setCapacity(state, "person_truck-1", "blowout", 12, actor)
     expect(next.settings.people[0].capacityByKind.blowout).toBe(12)
@@ -69,6 +75,15 @@ describe("people", () => {
     expect(next.settings.people[2].truck).toBeUndefined()
     expect(last(next)).toMatchObject({ field: "People", from: "2", to: "3" })
     expect(addPerson(next, actor).settings.people).toHaveLength(4)
+  })
+
+  it("gives a renamed person the initials of the new name", () => {
+    const added = addPerson(state, actor)
+    const id = added.settings.people[2].id
+    const named = setPersonName(added, id, "Ada Lovelace", actor)
+    expect(named.settings.people[2]).toMatchObject({ name: "Ada Lovelace", initials: "AL" })
+    expect(setPersonName(named, id, "Ada", actor).settings.people[2].initials).toBe("AD")
+    expect(setPersonName(named, id, "x".repeat(81), actor)).toBe(named)
   })
 
   it("sets the role in a word and keeps the last owner an owner", () => {
@@ -92,6 +107,15 @@ describe("people", () => {
     expect(noTruck.settings.people[1].truck).toBeUndefined()
     expect(last(noTruck)).toMatchObject({ field: "Second truck truck", from: "Truck 2", to: "None" })
     expect(setPersonText(state, "person_truck-2", "phone", "", actor)).toBe(state)
+  })
+
+  it("refuses an email that is not shaped like one, and a value longer than the API takes", () => {
+    expect(setPersonText(state, "person_truck-2", "email", "sam@", actor)).toBe(state)
+    expect(setPersonText(state, "person_truck-2", "email", "sam example.com", actor)).toBe(state)
+    expect(setPersonText(state, "person_truck-2", "truck", "T".repeat(41), actor)).toBe(state)
+    expect(setPersonText(state, "person_truck-2", "truck", "T".repeat(40), actor).settings.people[1].truck).toBe("T".repeat(40))
+    expect(setPersonText(state, "person_truck-2", "phone", "5".repeat(41), actor)).toBe(state)
+    expect(setPersonText(state, "person_truck-2", "jobberUserId", "j".repeat(81), actor)).toBe(state)
   })
 
   it("sets a season that is real and in order, and a blank means all year", () => {

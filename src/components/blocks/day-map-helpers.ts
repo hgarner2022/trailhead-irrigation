@@ -84,8 +84,8 @@ export function stopLine(stop: Visit): string {
 }
 
 /** The background class each person's markers and shade take, by their position in the list; a fourth person wraps. */
-export const TRUCK_CLASSES = ["bg-primary", "bg-navy", "bg-positive"] as const
-export const truckClass = (index: number): (typeof TRUCK_CLASSES)[number] => TRUCK_CLASSES[index % TRUCK_CLASSES.length]
+export const PERSON_CLASSES = ["bg-primary", "bg-navy", "bg-positive"] as const
+export const personClass = (index: number): (typeof PERSON_CLASSES)[number] => PERSON_CLASSES[index % PERSON_CLASSES.length]
 
 /**
  * The colour a token class resolves to, read from a probe element so the map

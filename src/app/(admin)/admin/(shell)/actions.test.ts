@@ -31,8 +31,18 @@ vi.mock("@/lib/admin/api-ctx", async () => {
   const { ctxFor } = await import("@/api/test-helpers")
   return { ctxFromSession: async () => ctxFor(state.db as never, state.principal as never) }
 })
+// The real callApi, watched: the settings tests count the people.* calls a save makes.
+vi.mock("@/api/core/call", async (importOriginal) => {
+  const real = await importOriginal<typeof import("@/api/core/call")>()
+  return { ...real, callApi: vi.fn(real.callApi) }
+})
 
 import * as actions from "./actions"
+import { addPerson, setPersonName, setPersonText } from "@/app/(admin)/admin/_screens/settings-people"
+import { SAMPLE_KEYS } from "@/app/(admin)/admin/_screens/settings-model"
+
+/** The handler names callApi was asked to run, in order, since the last `beforeEach`. */
+const calls = (prefix: string) => vi.mocked(callApi).mock.calls.map(([, handler]) => (handler as { name: string }).name).filter((n) => n.startsWith(prefix))
 
 let db: TestDb
 beforeAll(async () => {
@@ -44,6 +54,7 @@ afterAll(() => db.close())
 beforeEach(() => {
   state.principal = owner
   state.revalidated = []
+  vi.mocked(callApi).mockClear()
 })
 
 const live = () => getLiveAdminData(ctxFor(db, owner))
@@ -141,6 +152,60 @@ describe("settings", () => {
     expect((await settingsOf()).people.map((p) => p.id)).not.toContain(gone.id)
     const noOwner = await actions.saveSettings({ ...now, people: now.people.map((p) => ({ ...p, role: "tech" as const })) })
     expect(noOwner).toMatchObject({ ok: false, message: "Keep at least one owner." })
+  })
+  it("a rename alone is one people.update carrying the new initials, and no create", async () => {
+    const now = await settingsOf()
+    const ryan = now.people.find((p) => p.name === "Ryan Garner")!
+    const actor = { who: "Hannah", at: "2026-11-16T19:00:00Z" }
+    const renamed = setPersonName({ settings: now, changes: [], keys: SAMPLE_KEYS }, ryan.id, "Ada Lovelace", actor).settings
+    vi.mocked(callApi).mockClear()
+    expect((await actions.saveSettings(renamed)).ok).toBe(true)
+    expect(calls("people.")).toEqual(["people.list", "people.update"])
+    expect((await callApi(ctxFor(db, owner), peopleList, { active: "true" })).data.find((p) => p.id === ryan.id)).toMatchObject({ name: "Ada Lovelace", initials: "AL" })
+    expect((await actions.saveSettings(now)).ok).toBe(true)
+  })
+  it("promotes B to owner and demotes A in one save, in that order", async () => {
+    const now = await settingsOf()
+    const owners = now.people.filter((p) => p.role === "owner")
+    expect(owners.length).toBeGreaterThanOrEqual(2)
+    const [a, b] = owners
+    // First one owner only: B steps down while A stays.
+    expect((await actions.saveSettings({ ...now, people: now.people.map((p) => (p.id === b!.id ? { ...p, role: "admin" as const } : p)) })).ok).toBe(true)
+    vi.mocked(callApi).mockClear()
+    const swapped = await actions.saveSettings({ ...now, people: now.people.map((p) => (p.id === a!.id ? { ...p, role: "tech" as const } : p.id === b!.id ? { ...p, role: "owner" as const } : p)) })
+    expect(swapped).toEqual({ ok: true, data: undefined })
+    const updates = vi.mocked(callApi).mock.calls.filter(([, h]) => (h as { name: string }).name === "people.update").map(([, , input]) => (input as { id: string }).id)
+    expect(updates).toEqual([b!.id, a!.id])
+    expect((await settingsOf()).people.filter((p) => p.role === "owner").map((p) => p.id)).toEqual([b!.id])
+    expect((await actions.saveSettings(now)).ok).toBe(true)
+  })
+  it("writes nothing when a person's email is not shaped like one", async () => {
+    const now = await settingsOf()
+    const ryan = now.people.find((p) => p.name === "Ryan Garner")!
+    const bad = { ...now, people: now.people.map((p) => (p.id === ryan.id ? { ...p, name: "Ryan G", email: "ryan@" } : p)) }
+    vi.mocked(callApi).mockClear()
+    expect(await actions.saveSettings(bad)).toMatchObject({ ok: false, message: "Ryan G's email doesn't look complete." })
+    expect(calls("people.")).toEqual([])
+    expect((await settingsOf()).people.find((p) => p.id === ryan.id)!.name).toBe("Ryan Garner")
+    vi.mocked(callApi).mockClear()
+    const noDays = { ...now, people: now.people.map((p) => (p.id === ryan.id ? { ...p, workingDays: [] } : p)) }
+    expect(await actions.saveSettings(noDays)).toMatchObject({ ok: false, message: "Give Ryan Garner at least one working day." })
+    const longTruck = { ...now, people: now.people.map((p) => (p.id === ryan.id ? { ...p, truck: "T".repeat(41) } : p)) }
+    expect(await actions.saveSettings(longTruck)).toMatchObject({ ok: false, message: "Ryan Garner's truck is longer than 40 characters." })
+    expect(calls("people.")).toEqual([])
+  })
+  it("a person added and edited before one Save is one people.create with the edited values", async () => {
+    const now = await settingsOf()
+    const actor = { who: "Hannah", at: "2026-11-16T19:00:00Z" }
+    const added = addPerson({ settings: now, changes: [], keys: SAMPLE_KEYS }, actor)
+    const id = added.settings.people[added.settings.people.length - 1]!.id
+    const edited = setPersonText(setPersonName(added, id, "Ada Lovelace", actor), id, "truck", "Truck 4", actor).settings
+    vi.mocked(callApi).mockClear()
+    expect((await actions.saveSettings(edited)).ok).toBe(true)
+    expect(calls("people.")).toEqual(["people.list", "people.create"])
+    const made = (await callApi(ctxFor(db, owner), peopleList, { active: "true" })).data.find((p) => p.name === "Ada Lovelace")
+    expect(made).toMatchObject({ initials: "AL", truck: "Truck 4", role: "tech", workingDays: ["mon", "tue", "wed", "thu", "fri"] })
+    expect(made!.id).not.toBe(id)
   })
   it("moves a town between areas by writing the area that gives it up first", async () => {
     const now = await settingsOf()

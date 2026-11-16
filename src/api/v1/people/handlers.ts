@@ -2,6 +2,7 @@ import "server-only"
 import { and, asc, eq, ne, or, sql } from "drizzle-orm"
 import { z } from "zod"
 import * as s from "@/db/schema"
+import { initialsOf } from "@/lib/admin/people"
 import { cleanEmail } from "@/lib/format/contact"
 import { ApiError, notFound } from "../../core/errors"
 import { defineHandler } from "../../core/handler"
@@ -62,11 +63,10 @@ export const personOut = (r: PersonRow): PersonOut => ({
   seasonStart: r.seasonStart, seasonEnd: r.seasonEnd, active: r.active, canSignIn: r.email !== null && r.active,
 })
 
-/** "Ryan Garner" gives RG; a one-word name gives its first two letters. */
-export function initialsOf(name: string): string {
-  const words = name.trim().split(/\s+/).filter(Boolean)
-  return (words.length >= 2 ? words.slice(0, 2).map((w) => w.charAt(0)).join("") : (words[0] ?? "").slice(0, 2)).toUpperCase()
-}
+export { initialsOf }
+
+/** The words every surface uses for the rule, the screen included (settings-save.ts, settings-people.ts). */
+export const LAST_OWNER = "Keep at least one owner."
 
 const inOrg = (ctx: Ctx) => eq(s.person.organizationId, ctx.organizationId)
 
@@ -123,8 +123,16 @@ export async function createPerson(ctx: Ctx, input: z.infer<z.ZodObject<typeof f
   return row!
 }
 
+/** Refuses when `person` is an active owner and no other active owner exists: they can neither leave nor stop being one. */
+async function assertAnotherOwner(ctx: Ctx, person: PersonRow) {
+  if (person.role !== "owner" || !person.active) return
+  const [other] = await ctx.db.select({ id: s.person.id }).from(s.person).where(and(inOrg(ctx), eq(s.person.role, "owner"), eq(s.person.active, true), ne(s.person.id, person.id)))
+  if (!other) throw new ApiError("unprocessable", LAST_OWNER)
+}
+
 export async function updatePerson(ctx: Ctx, id: string, input: z.infer<z.ZodObject<typeof changes>>): Promise<PersonRow> {
-  await loadPerson(ctx, id)
+  const person = await loadPerson(ctx, id)
+  if (input.role !== undefined && input.role !== "owner") await assertAnotherOwner(ctx, person)
   if (input.email) await assertEmailFree(ctx, input.email, id)
   const defined = Object.fromEntries(Object.entries(input).filter(([, v]) => v !== undefined))
   if (Object.keys(defined).length) await ctx.db.update(s.person).set(defined).where(eq(s.person.id, id))
@@ -134,10 +142,7 @@ export async function updatePerson(ctx: Ctx, id: string, input: z.infer<z.ZodObj
 /** Takes the person out of service; their history stays. The last active owner stays in. */
 export async function deactivatePerson(ctx: Ctx, id: string): Promise<PersonRow> {
   const person = await loadPerson(ctx, id)
-  if (person.role === "owner" && person.active) {
-    const [other] = await ctx.db.select({ id: s.person.id }).from(s.person).where(and(inOrg(ctx), eq(s.person.role, "owner"), eq(s.person.active, true), ne(s.person.id, id)))
-    if (!other) throw new ApiError("unprocessable", "Keep at least one owner")
-  }
+  await assertAnotherOwner(ctx, person)
   await ctx.db.update(s.person).set({ active: false }).where(eq(s.person.id, id))
   return loadPerson(ctx, id)
 }

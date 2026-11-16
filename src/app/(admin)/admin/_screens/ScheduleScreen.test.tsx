@@ -44,7 +44,7 @@ describe("ScheduleScreen move control", () => {
     await pick(user, "Move to person", "Second truck")
     await pick(user, "Move to day", "Fri 13")
     await user.click(within(control).getByRole("button", { name: "Move" }))
-    expect(screen.getByRole("status")).toHaveTextContent("Moved Percy to Second truck on Friday, November 13.")
+    expect(screen.getByRole("status")).toHaveTextContent("Moved Percy to Friday, November 13 with Second truck.")
     expect(percy(cell("person_truck-2", "2026-11-13"))).toBeInTheDocument()
   })
 
@@ -96,7 +96,7 @@ describe("ScheduleScreen with actions", () => {
     await pick(user, "Move to person", "Second truck")
     await pick(user, "Move to day", "Fri 13")
     await user.click(screen.getByRole("button", { name: "Move" }))
-    expect(await screen.findByText("Moved Percy to Second truck on Friday, November 13.", {}, { timeout: 5000 })).toBeInTheDocument()
+    expect(await screen.findByText("Moved Percy to Friday, November 13 with Second truck.", {}, { timeout: 5000 })).toBeInTheDocument()
     expect(percy(cell("person_truck-2", "2026-11-13"))).toBeInTheDocument()
   })
 

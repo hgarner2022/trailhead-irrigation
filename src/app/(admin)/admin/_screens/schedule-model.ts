@@ -67,7 +67,7 @@ export function moveOutcome(visits: Visit[], visitId: string, personId: string, 
   }
   const next = moveVisit(visits, visitId, personId, dayIso, people, timeZone)
   if (next === visits) return { visits, moved: false, message: `${name} is already with ${person.name} on ${sentenceDay(dayIso)}.` }
-  return { visits: next, moved: true, message: `Moved ${name} to ${person.name} on ${sentenceDay(dayIso)}.` }
+  return { visits: next, moved: true, message: `Moved ${name} to ${sentenceDay(dayIso)} with ${person.name}.` }
 }
 
 /** A job that needs a day: a visit of an active pass with no day. */
