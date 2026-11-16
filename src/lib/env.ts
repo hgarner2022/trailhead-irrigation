@@ -8,7 +8,8 @@ import "server-only"
 export function readEnv<const N extends string>(names: readonly N[]): Record<N, string> {
   const out = {} as Record<N, string>
   for (const name of names) {
-    const value = process.env[name]
+    // Trimmed: a value pasted into Vercel's multi-line box can carry a trailing newline, which Twilio read as an invalid username.
+    const value = process.env[name]?.trim()
     if (value === undefined || value === "") throw new Error(`${name} is not set`)
     out[name] = value
   }
@@ -17,7 +18,7 @@ export function readEnv<const N extends string>(names: readonly N[]): Record<N, 
 
 /** Like `readEnv` for one optional name: undefined when unset or empty. */
 export function readOptionalEnv(name: string): string | undefined {
-  const value = process.env[name]
+  const value = process.env[name]?.trim()
   return value === undefined || value === "" ? undefined : value
 }
 
