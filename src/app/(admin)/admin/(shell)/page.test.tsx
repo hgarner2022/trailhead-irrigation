@@ -85,7 +85,8 @@ describe("the admin pages", () => {
     expect(customers).toContain('data-slot="customers-screen"')
     const settings = html(await SettingsPage())
     expect(settings).toContain('data-slot="settings-screen"')
-    expect(settings).toContain("Truck 1")
+    // Settings still reads trucks.*, which answers the people with a truck under their own names (step 1); the screen moves to people.* later.
+    expect(settings).toContain("Ryan Garner")
   })
 
   it("lists the live API keys on Settings in the tab's words", async () => {

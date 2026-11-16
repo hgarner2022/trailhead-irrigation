@@ -1,5 +1,6 @@
 // No `server-only` here on purpose: scripts/db-seed.ts runs this under tsx
 // with its own database handle. It touches only the handle it is given.
+import { eq } from "drizzle-orm"
 import type { Database } from "./types"
 import * as s from "./schema"
 import { SERVICE_LIST } from "@/lib/services"
@@ -64,6 +65,7 @@ export async function seed(db: Database, snapshot: AdminData, options: SeedOptio
       .values(trucks.map((t) => ({ id: t.id, organizationId: org, name: t.name, jobberUserId: t.jobberUserId, workingDays: t.workingDays, capacityByKind: t.capacityByKind })))
       .onConflictDoNothing()
   }
+  await seedPeople(db, org)
   if (areas.length) {
     await db
       .insert(s.area)
@@ -102,6 +104,46 @@ export async function seed(db: Database, snapshot: AdminData, options: SeedOptio
 
   if (options.passes) await seedPasses(db, snapshot, org)
   if (options.mirror) await seedMirror(db, snapshot, org)
+}
+
+/**
+ * The people migration 0010 makes from the admins and trucks already in the
+ * database (drizzle/0010_person.sql), so a seeded database and a migrated one
+ * hold the same rows: one person per admin (`person_<admin id>`, keeping the
+ * sign-in), one per truck (`person_<truck id>`, keeping the scheduling fields
+ * with the truck name as the label), Truck 1 as Ryan Garner the owner and
+ * Truck 2 as Second truck. An admin named or emailed ryan% is merged with the
+ * Truck 1 person instead of standing beside him. Inserts ignore a row that is
+ * already there, so a re-seed changes nothing.
+ */
+async function seedPeople(db: Database, org: string) {
+  const admins = await db.select().from(s.adminUser).where(eq(s.adminUser.organizationId, org))
+  const trucks = await db.select().from(s.truck).where(eq(s.truck.organizationId, org))
+  const ryan = admins.find((a) => /^ryan/i.test(a.name) || /^ryan/i.test(a.email))
+  const truckOne = trucks.find((t) => t.name === "Truck 1")
+  const fromTruck = (t: typeof trucks[number]) => ({ truck: t.name, jobberUserId: t.jobberUserId, calendarFeedUrl: t.calendarFeedUrl, workingDays: t.workingDays, capacityByKind: t.capacityByKind, active: t.active, legacyTruckId: t.id })
+  const rows: (typeof s.person.$inferInsert)[] = [
+    ...admins.map((a) => ({
+      id: `person_${a.id}`,
+      organizationId: org,
+      name: a.name,
+      initials: a.initials,
+      email: a.email,
+      role: a.role,
+      ...(ryan && truckOne && a.id === ryan.id ? { name: "Ryan Garner", initials: "RG", role: "owner" as const, ...fromTruck(truckOne) } : {}),
+    })),
+    ...trucks
+      .filter((t) => !(ryan && t.id === truckOne?.id))
+      .map((t) => ({
+        id: `person_${t.id}`,
+        organizationId: org,
+        name: t.name === "Truck 1" ? "Ryan Garner" : t.name === "Truck 2" ? "Second truck" : t.name,
+        initials: t.name === "Truck 1" ? "RG" : t.name === "Truck 2" ? "T2" : t.name.charAt(0).toUpperCase() + t.name.slice(-1).toUpperCase(),
+        role: t.name === "Truck 1" ? ("owner" as const) : ("tech" as const),
+        ...fromTruck(t),
+      })),
+  ]
+  if (rows.length) await db.insert(s.person).values(rows).onConflictDoNothing()
 }
 
 async function seedPasses(db: Database, snapshot: AdminData, org: string) {
