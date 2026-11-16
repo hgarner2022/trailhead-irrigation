@@ -61,6 +61,7 @@ A pending pass is an unpaid attempt (expires after an hour). Its visits are neve
 | pass.card_failed_at | `season_pass.card_failed_at` | the charge task | Charge failed state; Home "Charges that didn't go through" and row; pass page headline; card-failed email |
 | pass.cancelled_at | `season_pass.cancelled_at` | `passes.cancel` | API; Home row for two weeks |
 | pass.created_at | `season_pass.created_at` | `passes.create` | API; decides when a pending pass expires |
+| integrations.twilio (state, at) | `organization.settings.integrations.twilio`: `ok`, `not-set` or `rejected` | `sendMessageRow`, on every text attempt (written only when the state changes). A 401, 403 or error 20003 from Twilio skips the text with reason `sms-sender-rejected` and sends the same message by email | `readTwilioHealth` (`src/lib/messaging/health.ts`); Home's grouped text row |
 | visit (job).kind, window | `visit.kind`, `visit.window` | `passes.create` | API; every job list; Passes columns Turn-on, Inspection, Blowout |
 | visit.scheduled_on, truck_id | `visit.scheduled_on`, `truck_id` | checkout days step; `visits.move/pick`; the scheduler | API (`scheduledOn`); Passes day columns, panel jobs, charges and season line; Schedule grid and day view; Customers Next and Scheduled; pass page; date texts; calendar file |
 | visit.start_time | `visit.start_time` | the checkout's offered window; the route build later | API (`startTime`); Passes columns and panel (the window "8 to 10 am"); Routed state; pass page; day-before text |

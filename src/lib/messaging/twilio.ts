@@ -15,6 +15,17 @@ export interface TwilioEnv {
   from: string
 }
 
+/** Twilio refused the account itself (401, 403, code 20003, "Authentication Error"): retrying cannot help, so the text goes by email. */
+export class TwilioRejectedError extends Error {
+  constructor(detail: string) {
+    super(`Twilio rejected the account credentials: ${detail}`)
+    this.name = "TwilioRejectedError"
+  }
+}
+
+export const isTwilioRejection = (status: number, json: { code?: number; message?: string }): boolean =>
+  status === 401 || status === 403 || json.code === 20003 || /authentication error/i.test(json.message ?? "")
+
 /** Twilio is optional until the owner finishes its registration: null while any of the three names is unset. */
 export function readTwilioEnv(): TwilioEnv | null {
   const accountSid = readOptionalEnv("TWILIO_ACCOUNT_SID")
@@ -32,7 +43,8 @@ export const sendTextNow: TextSender = async ({ to, body }) => {
     headers: { authorization: `Basic ${Buffer.from(`${env.accountSid}:${env.authToken}`).toString("base64")}`, "content-type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({ To: to, From: env.from, Body: body }),
   })
-  const json = (await response.json().catch(() => ({}))) as { sid?: string; message?: string }
+  const json = (await response.json().catch(() => ({}))) as { sid?: string; message?: string; code?: number }
+  if (isTwilioRejection(response.status, json)) throw new TwilioRejectedError(`${response.status}${json.code ? ` ${json.code}` : ""}`)
   if (!response.ok || !json.sid) throw new Error(`Twilio failed: ${json.message ?? response.status}`)
   return { id: json.sid }
 }
