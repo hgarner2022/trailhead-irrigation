@@ -12,7 +12,7 @@ import { statusLabel } from "./StatusPill"
 // state can be looked at without clicking into it. The whole grid is in
 // Blocks/DataGrid.
 const passes = snapshot.passes as Pass[]
-const SEARCH = { column: "firstName", placeholder: "Search by name" }
+const SEARCH = { column: "name", placeholder: "Search by name" }
 const FILTERS: GridFilter[] = [
   { column: "town", label: "Town", options: ["Erie", "Longmont", "Louisville", "Lafayette", "Firestone", "Broomfield"].map((t) => ({ value: t, label: t })) },
   { column: "status", label: "Status", options: (["active", "cancelled", "lapsed"] as const).map((s) => ({ value: s, label: statusLabel(s) })) },
@@ -35,7 +35,7 @@ function Toolbar({ disabled, columnFilters = [], selected = [] }: ToolbarStoryPr
   })
   return (
     <div className="flex flex-col gap-3">
-      <DataGridToolbar table={table} nameId="firstName" search={SEARCH} filters={FILTERS} exportName="passes" disabled={disabled} />
+      <DataGridToolbar table={table} nameId="name" search={SEARCH} filters={FILTERS} exportName="passes" disabled={disabled} />
       <DataGridBulkBar table={table} actions={[{ label: "Send card update link", onClick: fn() }, { label: "Resend confirmation", onClick: fn() }]} />
     </div>
   )

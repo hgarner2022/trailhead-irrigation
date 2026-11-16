@@ -15,17 +15,18 @@ const allDone: Pass = {
 
 describe("visit rows", () => {
   it("names each visit and reads its state from the dates", () => {
-    expect(pass.visits.map(visitStatus)).toEqual(["completed", "unscheduled", "unscheduled"])
+    // The admin's job states, from the one derivation: a charged turn-on, then two jobs that need a day.
+    expect(pass.visits.map(visitStatus)).toEqual(["charged", "needs-a-day", "needs-a-day"])
     expect(visitRows(pass)).toEqual([
-      { kind: "turn-on", name: "Spring turn-on", when: "May 3", status: "completed", label: "Done" },
-      { kind: "inspection", name: "Mid-season inspection", when: "July", status: "unscheduled", label: "July" },
-      { kind: "blowout", name: "Fall blowout", when: "Mid October", status: "unscheduled", label: "Preferred" },
+      { kind: "turn-on", name: "Spring turn-on", when: "May 3", status: "charged", label: "Done" },
+      { kind: "inspection", name: "Mid-season inspection", when: "July", status: "needs-a-day", label: "July" },
+      { kind: "blowout", name: "Fall blowout", when: "Mid October", status: "needs-a-day", label: "Preferred" },
     ])
   })
 
   it("shows the turn-on preference until it has a day", () => {
-    expect(visitRows(fresh)[0]).toEqual({ kind: "turn-on", name: "Spring turn-on", when: "Early May", status: "unscheduled", label: "Preferred" })
-    expect(visitRows({ ...fresh, blowoutPreference: "later" })[2]).toEqual({ kind: "blowout", name: "Fall blowout", when: "Late October", status: "unscheduled", label: "Preferred" })
+    expect(visitRows(fresh)[0]).toEqual({ kind: "turn-on", name: "Spring turn-on", when: "Early May", status: "needs-a-day", label: "Preferred" })
+    expect(visitRows({ ...fresh, blowoutPreference: "later" })[2]).toEqual({ kind: "blowout", name: "Fall blowout", when: "Late October", status: "needs-a-day", label: "Preferred" })
   })
 
   it("shows the date once a visit is booked", () => {
@@ -38,7 +39,7 @@ describe("visit rows", () => {
     expect(words).not.toContain("Scheduled")
     expect(words).not.toContain("Completed")
     expect(words).not.toContain("Reserved")
-    expect(visitRows({ ...pass, visits: pass.visits.map((v) => ({ ...v, completedAt: undefined, scheduledAt: undefined })) })[0].label).toBe("Preferred")
+    expect(visitRows({ ...pass, visits: pass.visits.map((v) => ({ ...v, completedAt: undefined, scheduledAt: undefined, scheduledOn: undefined, chargedAt: undefined })) })[0].label).toBe("Preferred")
     expect(visitRows(allDone).map((r) => r.label)).toEqual(["Done", "Done", "Done"])
   })
 })

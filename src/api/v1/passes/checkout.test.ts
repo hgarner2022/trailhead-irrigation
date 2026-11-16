@@ -26,7 +26,7 @@ afterAll(() => db.close())
 const visitor = (passId?: string): PublicPrincipal => ({ kind: "public", id: "checkout", organizationId: ORG, scopes: ["checkout"], ...(passId ? { passId } : {}) })
 const NOW = "2026-12-01T17:00:00Z"
 const fields = (over: Record<string, unknown> = {}) => ({
-  customer: { firstName: "Dana", email: "dana@example.com", phone: "(303) 555-0101" },
+  customer: { firstName: "Dana", lastName: "Tester", email: "dana@example.com", phone: "(303) 555-0101" },
   property: { address: "5 Pine St", town: "Erie", state: "CO", zip: "80516" },
   zones: 8,
   ...over,
@@ -43,10 +43,10 @@ describe("the public checkout principal", () => {
   })
   it("activates only its own pass, and never sees the contact details or the access note", async () => {
     reachable.mockResolvedValue(true)
-    const pass = await create({ customer: { firstName: "Own", email: "own@example.com", phone: "3035550102" }, accessNote: "gate 12" })
+    const pass = await create({ customer: { firstName: "Own", lastName: "Tester", email: "own@example.com", phone: "3035550102" }, accessNote: "gate 12" })
     expect(pass.customer).toBeUndefined()
     expect(pass.accessNote).toBeUndefined()
-    const other = await create({ customer: { firstName: "Other", email: "other@example.com", phone: "3035550103" } })
+    const other = await create({ customer: { firstName: "Other", lastName: "Tester", email: "other@example.com", phone: "3035550103" } })
     const input = { id: pass.id, setupSessionId: "cs_x" }
     await expect(callApi(ctxFor(db, visitor(), NOW), passesActivate, input)).rejects.toMatchObject({ code: "forbidden" })
     await expect(callApi(ctxFor(db, visitor(other.id), NOW), passesActivate, input)).rejects.toMatchObject({ code: "forbidden" })
@@ -56,8 +56,8 @@ describe("the public checkout principal", () => {
 describe("passes.create for the checkout", () => {
   it("holds one pending pass per email: a second call with its passId updates it", async () => {
     reachable.mockResolvedValue(true)
-    const first = await create({ customer: { firstName: "Back", email: "back@example.com", phone: "3035550104" } })
-    const again = await create({ passId: first.id, zones: 12, inspection: true, customer: { firstName: "Back", email: "back@example.com", phone: "3035550104" } })
+    const first = await create({ customer: { firstName: "Back", lastName: "Tester", email: "back@example.com", phone: "3035550104" } })
+    const again = await create({ passId: first.id, zones: 12, inspection: true, customer: { firstName: "Back", lastName: "Tester", email: "back@example.com", phone: "3035550104" } })
     expect(again.id).toBe(first.id)
     expect(again.number).toBe(first.number)
     expect(again).toMatchObject({ zones: 12, inspection: true })
@@ -67,7 +67,7 @@ describe("passes.create for the checkout", () => {
   })
   it("resumes the same pending pass when the customer comes back without its id, so submit, submit, submit makes one pass", async () => {
     reachable.mockResolvedValue(true)
-    const body = { customer: { firstName: "Many", email: "many@example.com", phone: "3035550105" } }
+    const body = { customer: { firstName: "Many", lastName: "Tester", email: "many@example.com", phone: "3035550105" } }
     const first = await create(body)
     const second = await create({ ...body, zones: 10 })
     const third = await create({ ...body, zones: 12 })
@@ -75,7 +75,7 @@ describe("passes.create for the checkout", () => {
     expect(third.id).toBe(first.id)
     expect(third.zones).toBe(12)
     // a resume by email alone never rewrites the customer's name or phone
-    await create({ ...body, customer: { firstName: "Stranger", email: "many@example.com", phone: "3035559999" } })
+    await create({ ...body, customer: { firstName: "Stranger", lastName: "Tester", email: "many@example.com", phone: "3035559999" } })
     const [who] = await db.select().from(s.customer).where(eq(s.customer.email, "many@example.com"))
     expect(who).toMatchObject({ firstName: "Many", phone: "+13035550105" })
     const rows = await db.select().from(s.seasonPass).where(eq(s.seasonPass.customerId, (await db.select().from(s.customer).where(eq(s.customer.email, "many@example.com")))[0]!.id))
@@ -87,20 +87,20 @@ describe("passes.create for the checkout", () => {
   })
   it("refuses an address outside the six towns, a missing phone and an unreachable email", async () => {
     reachable.mockResolvedValue(true)
-    await expect(create({ property: { address: "9 Elm", town: "Erie", state: "CO", zip: "80516" }, customer: { firstName: "No", email: "nophone@example.com" } })).rejects.toMatchObject({ code: "invalid", issues: [{ message: "contact" }] })
+    await expect(create({ property: { address: "9 Elm", town: "Erie", state: "CO", zip: "80516" }, customer: { firstName: "No", lastName: "Tester", email: "nophone@example.com" } })).rejects.toMatchObject({ code: "invalid", issues: [{ message: "contact" }] })
     reachable.mockResolvedValue(false)
-    await expect(create({ customer: { firstName: "Bad", email: "bad@nowhere.test", phone: "3035550106" } })).rejects.toMatchObject({ issues: [{ path: "reason", message: "email-unreachable" }] })
+    await expect(create({ customer: { firstName: "Bad", lastName: "Tester", email: "bad@nowhere.test", phone: "3035550106" } })).rejects.toMatchObject({ issues: [{ path: "reason", message: "email-unreachable" }] })
   })
   it("does not hold an admin key to the checkout's rules", async () => {
     const { writeKey } = await import("../../test-helpers")
-    await expect(callApi(ctxFor(db, writeKey, NOW), passesCreate, fields({ customer: { firstName: "Admin", email: "admin-made@example.com" } }))).resolves.toMatchObject({ status: "pending" })
+    await expect(callApi(ctxFor(db, writeKey, NOW), passesCreate, fields({ customer: { firstName: "Admin", lastName: "Tester", email: "admin-made@example.com" } }))).resolves.toMatchObject({ status: "pending" })
   })
 })
 
 describe("passes.activate for the checkout", () => {
   it("appends the consent once, queues pass-onboard and the confirmation, and a repeat adds nothing", async () => {
     reachable.mockResolvedValue(true)
-    const pass = await create({ customer: { firstName: "Cora", email: "cora@example.com", phone: "3035550107" } })
+    const pass = await create({ customer: { firstName: "Cora", lastName: "Tester", email: "cora@example.com", phone: "3035550107" } })
     getStripe.mockReturnValue(stubStripe({ sessions: { cs_c: completeSession("cs_c", { purpose: "pass-setup", passId: pass.id }, { customer: "cus_cora" }) } }).stripe)
     const input = { id: pass.id, setupSessionId: "cs_c", consent: { termsAccepted: true, marketingOptIn: true, marketingChannels: ["email", "sms"] } }
     const active = await callApi(ctxFor(db, visitor(pass.id), NOW), passesActivate, input)
@@ -119,7 +119,7 @@ describe("passes.activate for the checkout", () => {
   it("drops the text channel when the customer has no phone", async () => {
     reachable.mockResolvedValue(true)
     const { writeKey } = await import("../../test-helpers")
-    const pass = await callApi(ctxFor(db, writeKey, NOW), passesCreate, fields({ customer: { firstName: "Nora", email: "nora@example.com" } }))
+    const pass = await callApi(ctxFor(db, writeKey, NOW), passesCreate, fields({ customer: { firstName: "Nora", lastName: "Tester", email: "nora@example.com" } }))
     getStripe.mockReturnValue(stubStripe({ sessions: { cs_n: completeSession("cs_n", { purpose: "pass-setup", passId: pass.id }) } }).stripe)
     const active = await callApi(ctxFor(db, visitor(pass.id), NOW), passesActivate, { id: pass.id, setupSessionId: "cs_n", consent: { termsAccepted: true, marketingOptIn: true, marketingChannels: ["email", "sms"] } })
     expect(active.consent).toMatchObject({ marketingChannels: ["email"] })
@@ -129,8 +129,8 @@ describe("passes.activate for the checkout", () => {
 describe("expirePendingPasses", () => {
   it("removes pending passes older than an hour with their visits and keeps active and recent ones", async () => {
     reachable.mockResolvedValue(true)
-    const old = await create({ customer: { firstName: "Old", email: "old@example.com", phone: "3035550108" } })
-    const fresh = await create({ customer: { firstName: "Fresh", email: "fresh@example.com", phone: "3035550109" } })
+    const old = await create({ customer: { firstName: "Old", lastName: "Tester", email: "old@example.com", phone: "3035550108" } })
+    const fresh = await create({ customer: { firstName: "Fresh", lastName: "Tester", email: "fresh@example.com", phone: "3035550109" } })
     await db.update(s.seasonPass).set({ createdAt: new Date(Date.now() - 61 * 60_000) }).where(eq(s.seasonPass.id, old.id))
     const removed = await expirePendingPasses(db, new Date())
     expect(removed).toBeGreaterThanOrEqual(1)

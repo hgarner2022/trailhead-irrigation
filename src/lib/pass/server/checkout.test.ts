@@ -33,6 +33,7 @@ const submission = (over: Partial<CheckoutSubmission> = {}): CheckoutSubmission 
   turnOnPreference: "earlier",
   blowoutPreference: "recommended",
   firstName: "Eli",
+  lastName: "Hart",
   email: "eli@example.com",
   phone: "(303) 555-0111",
   consent: { termsAccepted: true, marketingEmail: false, marketingSms: false },

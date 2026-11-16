@@ -39,6 +39,8 @@ export interface CheckoutDeps {
 /** The one line for the terms box, said wherever the terms are missing. */
 export const TERMS_MESSAGE = "Accept the terms to continue."
 
+const FINISH_UNAVAILABLE = "Your card was saved, but we couldn't finish setting up the pass. Nothing was charged. Press Try again, or call us and we'll finish it for you."
+
 const MESSAGE: Record<CheckoutProblem, string> = {
   "out-of-area": "We work in Erie, Longmont, Louisville, Lafayette, Firestone and Broomfield.",
   "email-unreachable": "We can't find that email's mail server. Check the spelling.",
@@ -70,7 +72,7 @@ export function problemOf(error: unknown): { problem: CheckoutProblem; message: 
 function createInput(f: CheckoutSubmission, passId?: string) {
   return {
     ...(passId ? { passId } : {}),
-    customer: { firstName: f.firstName, email: f.email, phone: f.phone },
+    customer: { firstName: f.firstName, lastName: f.lastName, email: f.email, phone: f.phone },
     property: { address: f.address.line1, town: f.town as Town, state: f.address.state, zip: f.address.zip },
     zones: f.zones,
     inspection: f.inspection,
@@ -102,10 +104,10 @@ export async function beginCheckoutWith(deps: CheckoutDeps, f: CheckoutSubmissio
       passId: pass.id,
       customerId: customer?.stripeCustomerId,
       email: f.email,
-      name: f.firstName,
+      name: `${f.firstName} ${f.lastName}`.trim(),
       expiresAt: Math.floor(bucket / 1000) + SESSION_MINUTES * 60,
       // The key also carries the contact details, so a corrected email or name inside the bucket is a new request, not a 400.
-      idempotencyKey: `setup-${pass.id}-${bucket}-${fingerprint(`${f.email}|${f.firstName}`)}`,
+      idempotencyKey: `setup-${pass.id}-${bucket}-${fingerprint(`${f.email}|${f.firstName}|${f.lastName}`)}`,
     })
     return { ok: true, passId: pass.id, sessionId: session.id, clientSecret: session.clientSecret }
   } catch (error) {
@@ -159,7 +161,9 @@ export async function finishCheckoutWith(deps: CheckoutDeps, passId: string, ses
   } catch (error) {
     logCheckoutFailure("finishCheckout", "card", passId, error)
     if (await sessionExpired(deps, sessionId)) return { ok: false, problem: "expired", message: MESSAGE.expired }
-    return { ok: false, ...problemOf(error) }
+    const problem = problemOf(error)
+    // The card is already saved at this point, so the customer is told that, not "we couldn't reach the card form".
+    return { ok: false, ...problem, ...(problem.problem === "unavailable" ? { message: FINISH_UNAVAILABLE } : {}) }
   }
 }
 

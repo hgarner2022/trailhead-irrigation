@@ -23,6 +23,7 @@ const answers: Partial<CheckoutFields> = {
   turnOnPreference: "earlier",
   blowoutPreference: "recommended",
   firstName: "Andrea",
+  lastName: "Anderson",
   email: "andrea@example.com",
   phone: "(970) 555-0123",
 }
@@ -88,7 +89,7 @@ export const Renewal: Story = {
     season: 2028,
     today: "2027-11-02",
     initialStep: 4,
-    renewal: { passId: "p-last", season: 2028, firstName: "Andrea", email: "andrea@example.com", phone: "(970) 555-0123", place: { id: "property-1", label: "123 Trailhead Way, Erie, CO", line1: "123 Trailhead Way", town: "Erie", state: "CO", zip: "80516" }, zones: 8, inspection: false, needsCustomerHome: false, accessNote: "", card: { last4: "4242", expires: "2029-08" } },
+    renewal: { passId: "p-last", season: 2028, firstName: "Andrea", lastName: "Anderson", email: "andrea@example.com", phone: "(970) 555-0123", place: { id: "property-1", label: "123 Trailhead Way, Erie, CO", line1: "123 Trailhead Way", town: "Erie", state: "CO", zip: "80516" }, zones: 8, inspection: false, needsCustomerHome: false, accessNote: "", card: { last4: "4242", expires: "2029-08" } },
   },
   globals: { viewport: { value: "wide", isRotated: false } },
   play: async ({ canvas }) => {
@@ -98,17 +99,17 @@ export const Renewal: Story = {
 }
 
 export const Contact: Story = {
-  args: { initialStep: 5, prefill: { ...answers, firstName: "", email: "", phone: "" } },
+  args: { initialStep: 5, prefill: { ...answers, firstName: "", lastName: "", email: "", phone: "" } },
   globals: { viewport: { value: "wide", isRotated: false } },
 }
 
 /** Continue pressed with nothing typed: every problem beside its field, a summary naming them, and focus on the first. */
 export const ContactErrors: Story = {
-  args: { initialStep: 5, prefill: { ...answers, firstName: "", email: "", phone: "", termsAccepted: true } },
+  args: { initialStep: 5, prefill: { ...answers, firstName: "", lastName: "", email: "", phone: "", termsAccepted: true } },
   globals: { viewport: { value: "wide", isRotated: false } },
   play: async ({ canvas, userEvent }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Continue" }))
-    await expect(await canvas.findByRole("alert")).toHaveTextContent("Check these before you continue: First name, Email, Phone.")
+    await expect(await canvas.findByRole("alert")).toHaveTextContent("Check these before you continue: First name, Last name, Email, Phone.")
     await expect(canvas.getByLabelText("First name")).toHaveFocus()
   },
 }
@@ -213,6 +214,7 @@ export const Walkthrough: Story = {
     await userEvent.click(canvas.getByRole("button", { name: "Continue" }))
 
     await userEvent.type(await canvas.findByLabelText("First name"), "Andrea")
+    await userEvent.type(canvas.getByLabelText("Last name"), "Anderson")
     await userEvent.type(canvas.getByLabelText("Email"), "andrea@example.com")
     await userEvent.type(canvas.getByLabelText("Phone"), "9705550123")
     await userEvent.click(canvas.getByRole("checkbox", { name: /I accept the Season Pass terms/ }))
@@ -237,7 +239,7 @@ export const PhoneDays: Story = {
 
 /** Contact with every error showing at 375px: the sticky bar keeps Continue on screen under the summary. */
 export const PhoneContactErrors: Story = {
-  args: { initialStep: 5, prefill: { ...answers, firstName: "", email: "", phone: "", termsAccepted: true } },
+  args: { initialStep: 5, prefill: { ...answers, firstName: "", lastName: "", email: "", phone: "", termsAccepted: true } },
   globals: { viewport: { value: "phone", isRotated: false } },
   play: async ({ canvas, userEvent }) => {
     await userEvent.click(canvas.getByRole("button", { name: "Continue" }))

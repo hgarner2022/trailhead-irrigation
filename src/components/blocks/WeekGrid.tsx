@@ -11,7 +11,7 @@ import { EmptyState } from "./EmptyState"
 import { KIND_WORDS } from "@/lib/admin/format"
 
 // The week by truck: one row per truck, Monday to Sunday across, every visit
-// a block in its area's colour, marked when Ryan moved it in Jobber. A block is a button: click or Enter selects
+// a block in its area's colour, marked when Ryan moved it. A block is a button: click or Enter selects
 // it, and it can be dragged to another cell, which calls `onMove`; a cell on
 // a day the truck does not work refuses the drop. Under `md` the same data
 // is one day at a time with the trucks stacked, stepped by the day buttons.
@@ -74,7 +74,7 @@ function VisitBlock({ visit, areas, selected, onSelect, draggable }: { visit: Vi
       {visit.exception && (
         <>
           <TriangleAlert className="relative size-3.5 shrink-0 text-warning" aria-hidden />
-          <span className="sr-only">, moved in Jobber</span>
+          <span className="sr-only">, moved</span>
         </>
       )}
     </button>
@@ -116,7 +116,7 @@ function Legend({ areas }: { areas: AreaGroup[] }) {
       ))}
       <li className="flex items-center gap-1.5">
         <TriangleAlert className="size-3 text-warning" aria-hidden />
-        Moved in Jobber
+        Moved
       </li>
     </ul>
   )
@@ -184,7 +184,7 @@ export function WeekGrid({ trucks, areas, visits, weekStart, today, timeZone, se
         <Stepper label="week" onPrevious={() => onWeekChange(addDays(weekStart, -7))} onNext={() => onWeekChange(addDays(weekStart, 7))} onToday={goToday}>
           {filters}
         </Stepper>
-        <div className="mt-3 overflow-x-auto rounded-lg border border-border bg-background">
+        <div role="region" aria-label="Week by truck" tabIndex={0} className="mt-3 overflow-x-auto rounded-lg border border-border bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50">
           <table className="w-full border-collapse text-sm">
             <thead>
               <tr className="border-b border-border">

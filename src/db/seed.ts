@@ -112,17 +112,23 @@ async function seedPasses(db: Database, snapshot: AdminData, org: string) {
     const propertyId = `property-${pass.clientId}`
     await db
       .insert(s.customer)
-      .values({ id: pass.clientId, organizationId: org, firstName: client?.firstName ?? pass.firstName })
+      .values({ id: pass.clientId, organizationId: org, firstName: client?.firstName ?? pass.firstName, lastName: client?.lastName ?? pass.lastName })
       .onConflictDoNothing()
     await db
       .insert(s.property)
-      .values({ id: propertyId, organizationId: org, customerId: pass.clientId, address: `Fixture address, ${town}`, town })
+      .values({ id: propertyId, organizationId: org, customerId: pass.clientId, address: client?.address ?? `Fixture address, ${town}`, town })
       .onConflictDoNothing()
     if (pass.consent) await seedConsent(db, org, pass)
+    const jobId = `job_${pass.id}`
+    await db
+      .insert(s.job)
+      .values({ id: jobId, organizationId: org, customerId: pass.clientId, propertyId, kind: "pass", source: "checkout", status: pass.status === "lapsed" ? "done" : pass.status, price: pass.visits.reduce((n, v) => n + v.amount, 0) })
+      .onConflictDoNothing()
     await db
       .insert(s.seasonPass)
       .values({
         id: pass.id,
+        jobId,
         organizationId: org,
         number: pass.number,
         season: pass.season,
@@ -146,6 +152,7 @@ async function seedPasses(db: Database, snapshot: AdminData, org: string) {
         pass.visits.map((v) => ({
           id: `${pass.id}-${v.kind}`,
           organizationId: org,
+          jobId,
           passId: pass.id,
           customerId: pass.clientId,
           propertyId,
@@ -155,6 +162,7 @@ async function seedPasses(db: Database, snapshot: AdminData, org: string) {
           status: v.completedAt ? ("completed" as const) : v.scheduledAt ? ("scheduled" as const) : ("unscheduled" as const),
           preference: v.kind === "turn-on" ? pass.turnOnPreference : v.kind === "blowout" ? pass.blowoutPreference : undefined,
           scheduledOn: v.scheduledAt ? toMountainDay(v.scheduledAt) : undefined,
+          startTime: v.startTime,
           completedOn: v.completedAt ? toMountainDay(v.completedAt) : undefined,
           chargedAt: v.chargedAt ? new Date(v.chargedAt) : undefined,
         })),

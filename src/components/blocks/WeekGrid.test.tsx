@@ -49,11 +49,11 @@ describe("WeekGrid", () => {
     expect(blocksIn(cell("truck-2", "2026-11-13"))).toHaveLength(0)
   })
 
-  it("colours a block by its area and marks a Jobber move", () => {
+  it("colours a block by its area and marks a moved visit", () => {
     render(<WeekGrid {...base} />)
-    const [josh] = blocksIn(cell("truck-1", "2026-11-10")) // Broomfield, moved in Jobber
+    const [josh] = blocksIn(cell("truck-1", "2026-11-10")) // Broomfield, moved
     expect(josh).toHaveClass("border-l-positive")
-    expect(josh).toHaveTextContent("moved in Jobber")
+    expect(josh).toHaveTextContent("moved")
     expect(josh.querySelector("svg")).not.toBeNull()
     const [percy] = blocksIn(cell("truck-1", "2026-11-12")) // Erie
     expect(percy).toHaveClass("border-l-primary")
@@ -151,7 +151,8 @@ describe("WeekGrid", () => {
     const { unmount } = render(<WeekGrid {...base} />)
     const legend = document.querySelector('[data-slot="week-grid-legend"]')
     expect(legend).toHaveTextContent("Erie and Firestone")
-    expect(legend).toHaveTextContent("Moved in Jobber")
+    expect(legend).toHaveTextContent("Moved")
+    expect(legend).not.toHaveTextContent("Jobber")
     unmount()
     render(<WeekGrid {...base} trucks={[]} />)
     expect(screen.queryByRole("table")).toBeNull()

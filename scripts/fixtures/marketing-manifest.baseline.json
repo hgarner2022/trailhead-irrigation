@@ -19,6 +19,7 @@
     "/season-pass",
     "/services",
     "/services/[city]",
+    "/sign-in/confirm",
     "/sitemap.xml",
     "/smart-controllers",
     "/smart-controllers/[city]",

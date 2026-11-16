@@ -5,8 +5,8 @@ import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import type { Pass, PassVisit } from "@/lib/admin/types"
 import { Button } from "@/components/ui/button"
 import { DataGrid } from "./DataGrid"
-import { preferenceLabel, shortDate } from "@/lib/admin/format"
-import { passColumns, preferenceOptions } from "./data-grid-columns"
+import { shortDate } from "@/lib/admin/format"
+import { passColumns } from "./data-grid-columns"
 import { StatusPill, statusLabel } from "./StatusPill"
 import { SidePanel, SidePanelLayout } from "./SidePanel"
 
@@ -17,8 +17,7 @@ const passes = snapshot.passes as Pass[]
 const option = (value: string, label = value) => ({ value, label })
 const FILTERS = [
   { column: "town", label: "Town", options: ["Erie", "Longmont", "Louisville", "Lafayette", "Firestone", "Broomfield"].map((t) => option(t)) },
-  { column: "status", label: "Status", options: (["active", "cancelled", "lapsed"] as const).map((s) => option(s, statusLabel(s))) },
-  { column: "blowout", label: "Blowout", options: preferenceOptions("blowout") },
+  { column: "status", label: "Status", options: (["pending", "active", "cancelled", "lapsed"] as const).map((s) => option(s, statusLabel(s))) },
 ]
 const VISIT_NAMES: Record<PassVisit["kind"], string> = { "turn-on": "Turn-on", inspection: "Inspection", blowout: "Blowout" }
 
@@ -29,8 +28,6 @@ function PassDetail({ pass }: { pass: Pass }) {
   const facts: [string, React.ReactNode][] = [
     ["Town", pass.town],
     ["Zones", pass.zones],
-    ["Turn-on", preferenceLabel("turn-on", pass.turnOnPreference)],
-    ["Blowout", preferenceLabel("blowout", pass.blowoutPreference)],
     ["Status", <StatusPill key="status" status={pass.status} />],
   ]
   return (
@@ -87,7 +84,7 @@ function BesideGridDemo() {
           columns={passColumns}
           data={passes}
           getRowId={(p) => p.id}
-          search={{ column: "firstName", placeholder: "Search by name" }}
+          search={{ column: "name", placeholder: "Search by name" }}
           filters={FILTERS}
           exportName="passes"
           onOpen={(p) => {

@@ -28,7 +28,7 @@ describe("NeedsAttention", () => {
   it("names the kind for a screen reader before the message", () => {
     render(<NeedsAttention items={items} now={now} />)
     const hidden = rows().map((r) => r.querySelector(".sr-only")?.textContent)
-    expect(hidden).toEqual(["Charge failed: ", "Visits missing a Jobber job: ", "Card expiring: ", "Card expiring: "])
+    expect(hidden).toEqual(["Charge failed: ", "Task needs a retry: ", "Card expiring: ", "Card expiring: "])
   })
 
   it("colours the icon circle by kind", () => {
@@ -59,19 +59,19 @@ describe("NeedsAttention", () => {
     render(<NeedsAttention items={[]} now={now} />)
     expect(rows()).toHaveLength(0)
     expect(document.querySelector('[data-slot="empty-state"]')).toHaveTextContent("Nothing needs you right now")
-    expect(screen.getByText("Failed charges, missing jobs and expiring cards show up here.")).toBeInTheDocument()
+    expect(screen.getByText("Failed charges, visits with no day yet and visits nobody marked done show up here.")).toBeInTheDocument()
   })
 
   it("shows visits not closed with the dashed circle, a muted icon and a link to the Schedule", () => {
     render(<NeedsAttention items={[{ kind: "not-closed", message: "3 visits from before today are not marked done yet.", since: "2026-11-09T17:00:00Z" }]} now={now} />)
     const [row] = rows()
-    expect(row.querySelector(".sr-only")?.textContent).toBe("Visits not marked done: ")
+    expect(row.querySelector(".sr-only")?.textContent).toBe("Jobs not marked done: ")
     expect(iconOf(row)).toHaveClass("bg-stone", "text-muted-foreground")
     expect(row.querySelector("a")).toHaveAttribute("href", "/admin/schedule")
   })
 
-  it("links an unplaced visit to that visit in the Schedule", () => {
+  it("links an unplaced visit to that visit on Visits", () => {
     render(<NeedsAttention items={[{ kind: "unplaced", visitId: "v 1", message: "Percy could not be placed.", since: "2026-11-09T17:00:00Z" }]} now={now} />)
-    expect(rows()[0]!.querySelector("a")).toHaveAttribute("href", "/admin/schedule?visit=v%201")
+    expect(rows()[0]!.querySelector("a")).toHaveAttribute("href", "/admin/visits?visit=v%201")
   })
 })

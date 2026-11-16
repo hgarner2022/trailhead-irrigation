@@ -7,7 +7,7 @@ import { SMS_TEMPLATES, type SmsKind } from "@/sms/texts"
 import { enqueue } from "@/lib/queue"
 import { currentConsent, mayMessage } from "./consent"
 
-export type MessageKind = "purchase-confirmation" | "booking-confirmation" | "date-set" | "date-moved" | "day-before" | "date-confirm" | "receipt" | "card-failed" | "card-expiring" | "cancelled" | "renewal"
+export type MessageKind = "purchase-confirmation" | "booking-confirmation" | "date-set" | "date-moved" | "day-before" | "date-confirm" | "receipt" | "card-failed" | "card-expiring" | "cancelled" | "renewal" | "note"
 
 /** The kinds that go by text: one channel each, the customer's mobile, and by email instead when there is none or texts are off. */
 const BY_TEXT = new Set<string>(Object.keys(SMS_TEMPLATES))
@@ -60,4 +60,25 @@ export async function queueStaffMessage(db: Database, organizationId: string, ki
   let queued = 0
   for (const a of admins) if (await enqueue(db, organizationId, "message", `${kind}:${key}:${a.email}`, { staff: true, kind, to: a.email, data })) queued++
   return queued
+}
+
+export const NOTE_MAX = 320
+
+/**
+ * A one-off text from the office: free text, transactional, to the customer's mobile only (never by email), through the same
+ * consent check as every text. Answers why it was refused instead of falling back to email.
+ */
+export async function queueNote(db: Database, req: { organizationId: string; customerId: string; visitId?: string | null; text: string; key: string }): Promise<{ ok: true; id: string } | { ok: false; reason: "no-phone" | "stopped" | "no-customer" }> {
+  const [customer] = await db.select().from(s.customer).where(eq(s.customer.id, req.customerId))
+  if (!customer || customer.organizationId !== req.organizationId) return { ok: false, reason: "no-customer" }
+  if (!customer.phone) return { ok: false, reason: "no-phone" }
+  const consent = await currentConsent(db, customer.id)
+  if (!mayMessage(consent, "note", "sms", true)) return { ok: false, reason: "stopped" }
+  const body = `Trailhead: ${req.text.trim()} Reply STOP to opt out.`
+  const [added] = await db
+    .insert(s.messageLog)
+    .values({ organizationId: req.organizationId, customerId: customer.id, visitId: req.visitId ?? null, channel: "sms", kind: "note", key: req.key, to: customer.phone, subject: null, body, data: null, status: "queued" })
+    .returning({ id: s.messageLog.id })
+  await enqueue(db, req.organizationId, "message", added!.id, { messageId: added!.id })
+  return { ok: true, id: added!.id }
 }

@@ -22,7 +22,8 @@ export type VisitKind =
 
 export type VisitStatus = "unscheduled" | "scheduled" | "completed" | "cancelled"
 
-export type PassStatus = "active" | "cancelled" | "lapsed"
+/** `pending` is an unpaid checkout attempt; it expires after an hour and is never a customer. */
+export type PassStatus = "pending" | "active" | "cancelled" | "lapsed"
 
 /**
  * When the customer would like a visit, against Trailhead's recommendation:
@@ -53,12 +54,23 @@ export interface Consent {
 export interface Client {
   id: string
   firstName: string
+  /** absent for customers the app has not asked a last name */
+  lastName?: string
+  /** contact details: the admin session sees them, read keys never do */
+  email?: string
+  phone?: string
+  /** the street line of the property */
+  address?: string
   town: Town
   jobberUrl: string
   hasPass: boolean
+  /** a customer of the app (the office can add a visit for them), not only a client read from the Jobber mirror */
+  app?: boolean
   lastVisitAt?: string
-  /** the current consent record; the history lives in the CRM */
+  /** the current consent record */
   consent?: Consent
+  /** every consent record, newest first; it is append-only, so this is the audit trail */
+  consentHistory?: Consent[]
 }
 
 /**
@@ -74,6 +86,7 @@ export interface VisitException {
 export interface Visit {
   id: string
   clientId: string
+  /** the customer's full name where the app has it */
   clientName: string
   town: Town
   kind: VisitKind
@@ -81,6 +94,15 @@ export interface Visit {
   startAt?: string
   isPass: boolean
   jobberUrl: string
+  /** the row behind the job's state (src/lib/admin/jobs.ts): the day, the window start, done, charged, a failed charge */
+  passId?: string
+  scheduledOn?: string
+  startTime?: string
+  completedOn?: string
+  chargedAt?: string
+  chargeFailed?: boolean
+  /** the visit was skipped (the admin shows Skipped; `status` stays cancelled for the calendar) */
+  skipped?: boolean
   /** the truck the visit rides on; absent until the schedule places it */
   truckId?: string
   /** the customer must be there and has not yet picked a day; the visit waits in the tray for them (scheduling flow, 2026-11-12) */
@@ -91,6 +113,36 @@ export interface Visit {
   lat?: number
   lng?: number
   exception?: VisitException
+  /** the job (pass or booked work) this visit belongs to */
+  jobId?: string
+  /** whole dollars the visit is worth; 0 until priced */
+  price?: number
+  /** how long the stop takes */
+  minutes?: number
+  notes?: string
+  /** the truck's name once it has one */
+  truckName?: string
+  /** why the last attempt did not happen, until the visit gets a day again */
+  notDoneReason?: string
+  /** how it was paid, once it is: card_on_file, card_now, check, venmo, cash */
+  paidMethod?: string
+  /** a bill was sent and is not yet paid */
+  billSent?: boolean
+}
+
+/** The sold work a visit belongs to: a Season Pass (kind pass) or booked work. A visit is the stop; a job is what was sold. */
+export interface SoldJob {
+  id: string
+  customerId: string
+  kind: "pass" | "repair" | "install" | "other"
+  status: "pending" | "active" | "done" | "cancelled"
+  /** whole dollars; absent until quoted */
+  price?: number
+  source: "checkout" | "office" | "site"
+  notes?: string
+  passId?: string
+  passNumber?: string
+  visitIds: string[]
 }
 
 export interface Quote {
@@ -121,6 +173,10 @@ export interface PassVisit {
   /** the Mountain day and start time behind `scheduledAt`, for the calendar links */
   scheduledOn?: string
   startTime?: string
+  /** how long the window runs from `startTime`, in minutes; two hours when the row says nothing */
+  windowMinutes?: number
+  /** the newest charge attempt for this visit did not go through */
+  chargeFailed?: boolean
   /** the signed link to the visit's .ics file, from the API */
   calendarUrl?: string
   id?: string
@@ -129,6 +185,9 @@ export interface PassVisit {
   completedAt?: string
   amount: number
   chargedAt?: string
+  notDoneReason?: string
+  paidMethod?: string
+  billSent?: boolean
 }
 
 export interface Pass {
@@ -137,6 +196,7 @@ export interface Pass {
   season: number
   clientId: string
   firstName: string
+  lastName?: string
   town: Town
   zones: number
   turnOnPreference: TimingPreference
@@ -144,6 +204,7 @@ export interface Pass {
   status: PassStatus
   visits: PassVisit[]
   stripeUrl: string
+  /** kept for the data's sake; no admin screen shows it any more */
   jobberUrl: string
   cardLast4?: string
   cardExpires?: string
@@ -155,6 +216,8 @@ export interface Pass {
   needsCustomerHome?: boolean
   /** gate code, dog, where the controller is */
   accessNote?: string
+  /** when the pass was started; a pending pass expires an hour after it */
+  createdAt?: string
 }
 
 export interface MonthTotal {
@@ -216,6 +279,7 @@ export type MessageKind =
   | "card-expiring"
   | "cancelled"
   | "renewal"
+  | "note"
 
 /**
  * One email or text the app sent a customer and how it went. Messages are
@@ -230,6 +294,8 @@ export interface Message {
   id: string
   clientId: string
   passId?: string
+  /** the visit the message was about, when it was about one */
+  visitId?: string
   channel: "email" | "sms"
   kind: MessageKind
   /** the subject for an email, the text itself for an SMS */
@@ -274,12 +340,19 @@ export interface BusyBlock {
 }
 
 export interface Attention {
-  kind: "new-pass" | "charge-failed" | "jobs-failed" | "card-expiring" | "not-closed" | "pass-cancelled" | "scheduled" | "unplaced"
+  /** what Dismiss records with `kind`: a stored alert's key, or the pass, visit or task the row is worked out from */
+  key?: string
+  kind: "new-pass" | "pending-pass" | "unpaid" | "charge-failed" | "jobs-failed" | "card-expiring" | "not-closed" | "pass-cancelled" | "scheduled" | "unplaced"
   passId?: string
   /** the visit an unplaced alert is about; Home links to it on the Schedule */
   visitId?: string
   message: string
   since: string
+  /** a queue failure: the task kind, and the queue rows Retry puts back in line */
+  queueKind?: string
+  queueIds?: string[]
+  /** a grouped row (several failures with one cause): the rows it stands for, which Dismiss clears together */
+  members?: Attention[]
 }
 
 export interface AdminData {
@@ -288,6 +361,8 @@ export interface AdminData {
   syncedAt: string
   clients: Client[]
   visits: Visit[]
+  /** the sold work, with its visits; absent in the fixtures */
+  jobs?: SoldJob[]
   quotes: Quote[]
   invoices: Invoice[]
   passes: Pass[]

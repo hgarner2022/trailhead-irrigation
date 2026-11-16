@@ -5,7 +5,8 @@ import * as s from "@/db/schema"
 import type { TestDb } from "@/db/test-db"
 import { callApi } from "../../core/call"
 import { adminKey, apiDb, ctxFor, customerPerson, ORG, readKey, writeKey } from "../../test-helpers"
-import { visitsGet, visitsList, visitsMarkClosed, visitsMove, visitsRequestMove, visitsStretch } from "./handlers"
+import { visitsGet, visitsList, visitsMove, visitsRequestMove, visitsStretch } from "./handlers"
+import { visitsMarkClosed } from "./money"
 
 let db: TestDb
 beforeAll(async () => {

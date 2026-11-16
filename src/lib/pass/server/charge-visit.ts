@@ -30,6 +30,8 @@ export async function chargeVisit(db: Database, stripe: Stripe, visitId: string,
   const [visit] = await db.select().from(s.visit).where(eq(s.visit.id, visitId))
   if (!visit) throw new Error(`Visit ${visitId} not found`)
   if (visit.chargedAt) return "already-charged"
+  // A visit the office cancelled is never charged, even if a charge was queued before.
+  if (visit.status === "cancelled" || visit.status === "skipped") return "cancelled-pass"
   if (!visit.passId) return "not-a-pass-visit"
   const [pass] = await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, visit.passId))
   if (!pass) throw new Error(`Pass ${visit.passId} not found`)

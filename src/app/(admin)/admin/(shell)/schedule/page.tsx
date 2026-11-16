@@ -1,5 +1,6 @@
 import "server-only"
 import type { Metadata } from "next"
+import { visitActions } from "../visit-action-set"
 import { ScheduleScreen } from "@/app/(admin)/admin/_screens/ScheduleScreen"
 import { getAdminData } from "@/lib/admin/data"
 import { requireAdmin } from "@/lib/auth/guard"
@@ -19,5 +20,5 @@ export default async function SchedulePage({ searchParams }: { searchParams: Pro
   // A link to one visit opens on the week it is in.
   const visitDay = data.visits.find((v) => v.id === visit)?.startAt
   const open = { week: validDay(week) ?? (validDay(day) ? undefined : visitDay), day: validDay(day) }
-  return <ScheduleScreen data={data} today={new Date().toISOString()} defaultTab={open.day ? "day" : "week"} defaultDay={open.day} defaultWeek={open.week} defaultSelectedId={visit} readOnly={principal.role === "tech"} onSchedule={runSchedule} onMove={moveVisit} />
+  return <ScheduleScreen data={data} today={new Date().toISOString()} defaultTab={open.day ? "day" : "week"} defaultDay={open.day} defaultWeek={open.week} defaultSelectedId={visit} readOnly={principal.role === "tech"} onSchedule={runSchedule} onMove={moveVisit} visitActions={visitActions} />
 }

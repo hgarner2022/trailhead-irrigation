@@ -18,6 +18,7 @@ export interface CheckoutSubmission {
   /** the day held for each visit: the server keeps those still open and puts them on a truck when the card is saved */
   days: { kind: "turn-on" | "inspection" | "blowout"; day: string; truckId: string; start: string }[]
   firstName: string
+  lastName: string
   email: string
   phone: string
   /** the boxes ticked at the end of the contact step; the server records them on the pending pass */
@@ -57,6 +58,7 @@ export function toSubmission(f: CheckoutFields): CheckoutSubmission | null {
     blowoutPreference: f.blowoutPreference,
     days: f.days.map(({ kind, day, truckId, start }) => ({ kind, day, truckId, start })),
     firstName: f.firstName.trim(),
+    lastName: f.lastName.trim(),
     email: f.email.trim(),
     phone: f.phone.trim(),
     consent: { termsAccepted: f.termsAccepted, marketingEmail: f.marketingEmail, marketingSms: f.marketingSms },
@@ -75,6 +77,8 @@ export interface RenewalPrefill {
   /** the signed link's token, when the customer arrived by the email; sent back so the server can check it again */
   token?: string
   firstName: string
+  /** empty for a customer the app has no last name for yet; the checkout asks */
+  lastName?: string
   email: string
   phone: string
   place: { id: string; label: string; line1: string; town: string; state: string; zip: string }

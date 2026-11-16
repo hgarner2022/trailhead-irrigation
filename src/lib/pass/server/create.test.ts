@@ -2,7 +2,7 @@
 import { describe, expect, it } from "vitest"
 import { emailDomainReachable, failedCheckoutStep } from "./create"
 
-const ok = { property: { address: "5 Pine St", town: "Erie", state: "CO", zip: "80516" }, zones: 8, needsCustomerHome: false, customer: { firstName: "Dana", email: "dana@example.com", phone: "3035550101" }, today: "2026-12-01" }
+const ok = { property: { address: "5 Pine St", town: "Erie", state: "CO", zip: "80516" }, zones: 8, needsCustomerHome: false, customer: { firstName: "Dana", lastName: "Tester", email: "dana@example.com", phone: "3035550101" }, today: "2026-12-01" }
 
 describe("failedCheckoutStep", () => {
   it("passes complete answers", () => expect(failedCheckoutStep(ok)).toBeNull())

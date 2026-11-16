@@ -12,7 +12,8 @@ import type { StatTileProps } from "@/components/blocks/StatTile"
 import type { AdminData, Attention, MonthTotal, OrganizationSettings, SeasonWindow, Visit } from "@/lib/admin/types"
 import { TIME_ZONE, monthDay, monthShort } from "@/lib/admin/format"
 import { addDays, dayOf } from "@/lib/admin/calendar"
-import { chargedSoFar, committedRevenue, formatMoney, invoicesOverdue, monthComparison, quotesAwaiting } from "@/lib/admin/metrics"
+import { NOT_CLOSED_LOOKBACK_DAYS, jobCounts, visitJob } from "@/lib/admin/jobs"
+import { chargedSoFar, committedRevenue, formatMoney, invoicesOverdue, monthComparison, quotesAwaiting, visitsOn } from "@/lib/admin/metrics"
 
 /** The season the Home line shows. The snapshot's passes are all 2027; the wiring phase derives this from the passes on hand. */
 export const SEASON = 2027
@@ -167,28 +168,65 @@ export function windowTitle(season: SeasonWindow): string {
   return `${WINDOW_WORDS[season.kind]} open ${monthShort(month)} ${day}`
 }
 
-/** How far back Home looks for visits nobody closed; older ones are a cleanup in Jobber, not a morning prompt. */
-export const NOT_CLOSED_LOOKBACK_DAYS = 14
+/** How far back Home looks for jobs nobody closed; older ones are a cleanup, not a morning prompt. */
+export { NOT_CLOSED_LOOKBACK_DAYS }
 
-/** Scheduled visits from the last `NOT_CLOSED_LOOKBACK_DAYS` Mountain-time days before today (today excluded) that nobody has marked done, oldest first. */
+/** Jobs from the last `NOT_CLOSED_LOOKBACK_DAYS` Mountain-time days before today (today excluded) whose day passed and nobody marked done, oldest first. The flag is `jobOf`'s, the one derivation. */
 export function notClosedVisits(visits: Visit[], today: string, timeZone: string): Visit[] {
   const todayDay = dayOf(today, timeZone)
   const earliest = addDays(todayDay, -NOT_CLOSED_LOOKBACK_DAYS)
   return visits
     .filter((v): v is Visit & { startAt: string } => {
-      if (v.status !== "scheduled" || v.startAt === undefined) return false
-      const day = dayOf(v.startAt, timeZone)
-      return day < todayDay && day >= earliest
+      if (v.startAt === undefined) return false
+      const job = visitJob(v, todayDay, timeZone)
+      return job.notClosed && job.day !== undefined && job.day >= earliest
     })
     .sort((a, b) => (a.startAt < b.startAt ? -1 : 1))
 }
 
 export const notClosedCount = (visits: Visit[], today: string, timeZone: string) => notClosedVisits(visits, today, timeZone).length
 
-/** The Needs attention row for visits left open, or null when every earlier visit is closed. It waits since the oldest one. */
+/** The Needs attention row for jobs left open, or null when every earlier job is closed. It waits since the oldest one. */
 export function notClosedAttention(visits: Visit[], today: string, timeZone: string): Attention | null {
   const open = notClosedVisits(visits, today, timeZone)
   if (open.length === 0) return null
   const n = open.length
-  return { kind: "not-closed", message: `${n} ${n === 1 ? "visit" : "visits"} from the last two weeks ${n === 1 ? "is" : "are"} not marked done yet.`, since: open[0].startAt! }
+  return { kind: "not-closed", message: `${n} ${n === 1 ? "job" : "jobs"} from the last two weeks ${n === 1 ? "is" : "are"} not marked done yet.`, since: open[0].startAt! }
+}
+
+/** The second row of tiles on Reports: visits needing a day, charges that did not go through, visits not closed and pending passes, all counted by `jobCounts`. */
+export function jobTiles(data: Pick<AdminData, "passes" | "visits">, today: string): StatTileProps[] {
+  const c = jobCounts(data, dayOf(today, TIME_ZONE), TIME_ZONE)
+  return [
+    { label: "Visits needing a day", value: String(c.needsDay), href: "/admin/schedule" },
+    { label: "Charges that didn't go through", value: String(c.chargeFailed), href: "/admin/passes" },
+    { label: "Visits not closed", value: String(c.notClosed), href: "/admin/schedule" },
+    { label: "Pending passes, expire after an hour", value: String(c.pendingPasses), href: "/admin/passes" },
+  ]
+}
+
+export interface TruckDay {
+  /** the truck's id, or "none" for stops with no truck yet */
+  truckId: string
+  name: string
+  stops: Visit[]
+}
+
+/**
+ * Home's day list: the visits that are on for `dayIso`, grouped by truck in the settings' order, each truck's stops in
+ * route order (the stop number where the route build has set one, else the start time). A visit with no truck yet goes
+ * last under "No truck yet". A truck with no stop that day is left out.
+ */
+export function dayByTruck(visits: Visit[], dayIso: string, trucks: { id: string; name: string }[]): TruckDay[] {
+  const onDay = visitsOn(visits, dayIso, TIME_ZONE)
+  const order = (a: Visit, b: Visit) => (a.stopOrder ?? 1e9) - (b.stopOrder ?? 1e9) || (a.startAt ?? "").localeCompare(b.startAt ?? "")
+  const days = trucks.map((t) => ({ truckId: t.id, name: t.name, stops: onDay.filter((v) => v.truckId === t.id).sort(order) }))
+  const known = new Set(trucks.map((t) => t.id))
+  const loose = onDay.filter((v) => !v.truckId || !known.has(v.truckId)).sort(order)
+  return [...days, { truckId: "none", name: "No truck yet", stops: loose }].filter((d) => d.stops.length > 0)
+}
+
+/** The time a stop shows: its start ("8:00 am") when the route has one, else "Any time". */
+export function stopTime(visit: Pick<Visit, "startAt" | "startTime">): string {
+  return visit.startTime && visit.startAt ? clockTime(visit.startAt) : "Any time"
 }

@@ -26,7 +26,7 @@ const visitor = (passId?: string): PublicPrincipal => ({ kind: "public", id: "ch
 const NOW = "2026-12-01T17:00:00Z"
 const offer = (kind: "turn-on" | "blowout") => callApi(ctxFor(db, visitor(), NOW), scheduleOfferDays, { town: "Erie", kind, season: 2027, zones: 8 })
 const start = async (email: string, days: Record<string, unknown>[]) =>
-  callApi(ctxFor(db, visitor(), NOW), passesCreate, { customer: { firstName: "Dana", email, phone: "(303) 555-0101" }, property: { address: "5 Pine St", town: "Erie", state: "CO", zip: "80516" }, zones: 8, days })
+  callApi(ctxFor(db, visitor(), NOW), passesCreate, { customer: { firstName: "Dana", lastName: "Tester", email, phone: "(303) 555-0101" }, property: { address: "5 Pine St", town: "Erie", state: "CO", zip: "80516" }, zones: 8, days })
 const activate = (passId: string, session: string) => {
   getStripe.mockReturnValue(stubStripe({ sessions: { [session]: completeSession(session, { purpose: "pass-setup", passId }, { customer: `cus_${session}` }) } }).stripe)
   return callApi(ctxFor(db, visitor(passId), NOW), passesActivate, { id: passId, setupSessionId: session, consent: { termsAccepted: true, marketingOptIn: false, marketingChannels: [] } })

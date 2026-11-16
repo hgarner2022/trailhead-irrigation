@@ -1,5 +1,5 @@
 import "server-only"
-import { and, eq } from "drizzle-orm"
+import { and, eq, sql } from "drizzle-orm"
 import * as s from "@/db/schema"
 import type { Database } from "@/db/types"
 import type { Ctx } from "../../core/context"
@@ -15,6 +15,9 @@ export const visitSelect = {
   lng: s.property.lng,
   address: s.property.address,
   truckName: s.truck.name,
+  // the newest charge attempt on the visit: how it was paid and whether it went through
+  chargeMethod: sql<string | null>`(select c.method from charge c where c.visit_id = ${s.visit.id} order by c.attempt desc limit 1)`,
+  chargeStatus: sql<string | null>`(select c.status from charge c where c.visit_id = ${s.visit.id} order by c.attempt desc limit 1)`,
 }
 
 /** Visits with the customer's first name and the property's town and point. Add `.where(...)` in the caller. */
@@ -29,6 +32,7 @@ export function visitOut(ctx: Ctx, row: VisitJoined): VisitOutType {
     id: v.id,
     passId: v.passId,
     bookingId: v.bookingId,
+    jobId: v.jobId,
     customerId: v.customerId,
     firstName: row.firstName,
     town: row.town,
@@ -43,6 +47,10 @@ export function visitOut(ctx: Ctx, row: VisitJoined): VisitOutType {
     scheduledOn: v.scheduledOn,
     startTime: v.startTime,
     durationMinutes: v.durationMinutes,
+    notes: v.notes,
+    notDoneReason: v.notDoneReason,
+    paidBy: row.chargeMethod ?? null,
+    paymentStatus: row.chargeStatus === "succeeded" ? "paid" : row.chargeStatus === "failed" ? "failed" : row.chargeStatus === "pending" ? "pending" : "none",
     stopOrder: v.stopOrder,
     confirmedAt: v.confirmedAt?.toISOString() ?? null,
     completedOn: v.completedOn,

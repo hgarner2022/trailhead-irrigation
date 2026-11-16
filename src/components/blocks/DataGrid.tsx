@@ -47,6 +47,8 @@ export interface DataGridProps<T extends RowData> {
   loading?: boolean
   /** Row ids selected on first render; read once, later changes are ignored */
   defaultSelectedIds?: string[]
+  /** Filter chips already set on first render (a link from Home); read once, like `defaultSelectedIds` */
+  defaultFilters?: { column: string; values: string[] }[]
   className?: string
 }
 
@@ -99,6 +101,7 @@ export function DataGrid<T extends RowData>({
   emptyLine = "Rows appear as data arrives.",
   loading = false,
   defaultSelectedIds,
+  defaultFilters,
   className,
 }: DataGridProps<T>) {
   const searchColumn = search?.column
@@ -115,6 +118,7 @@ export function DataGrid<T extends RowData>({
   const [initialState] = useState(() => ({
     pagination: { pageIndex: 0, pageSize },
     rowSelection: Object.fromEntries((defaultSelectedIds ?? []).map((id) => [id, true as const])),
+    columnFilters: (defaultFilters ?? []).map((f) => ({ id: f.column, value: f.values })),
   }))
   const table = useTable({ features: gridFeatures, columns: allColumns, data, getRowId, initialState })
 
@@ -180,7 +184,7 @@ export function DataGrid<T extends RowData>({
           <TableBody>
             {loading ? (
               Array.from({ length: SKELETON_ROWS }, (_, r) => (
-                <TableRow key={r} className="bg-background">
+                <TableRow key={r} className="h-11 bg-background">
                   {table.getVisibleLeafColumns().map((column) => (
                     <TableCell key={column.id} className={freeze(column.id)}>
                       <Skeleton className={column.id === SELECT_COLUMN ? "size-4" : "h-4 w-24"} />
@@ -197,7 +201,7 @@ export function DataGrid<T extends RowData>({
               </TableRow>
             ) : (
               rows.map((row) => (
-                <TableRow key={row.id} data-state={row.getIsSelected() ? "selected" : undefined} className="bg-background">
+                <TableRow key={row.id} data-state={row.getIsSelected() ? "selected" : undefined} className="h-11 bg-background">
                   {row.getVisibleCells().map((cell) => {
                     const { column } = cell
                     const right = column.columnDef.meta?.align === "right"

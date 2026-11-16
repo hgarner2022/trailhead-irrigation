@@ -13,6 +13,9 @@ import type { Pass, PassVisit, TimingPreference, Visit } from "./types"
 /** Where the reader is: every clock and calendar word in the app is in Mountain time. */
 export const TIME_ZONE = "America/Denver"
 
+/** A person's name as it reads in a table and a panel: first and last when there is a last, the first alone otherwise. */
+export const fullName = (first: string, last?: string | null) => [first, last].filter((x): x is string => Boolean(x?.trim())).map((x) => x.trim()).join(" ")
+
 /** The three answers, in the order the checkout and the filters show them. */
 export const TIMING_PREFERENCES: readonly TimingPreference[] = ["earlier", "recommended", "later"]
 

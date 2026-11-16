@@ -11,10 +11,10 @@ let db: TestDb
 beforeAll(async () => {
   db = await apiDb()
   await db.insert(s.webhookEndpoint).values({ id: "hook", organizationId: ORG, url: "https://hooks.example.com/r", secret: "whsec_r", events: ["request.received"] })
-  await db.insert(s.booking).values({ id: "b1", organizationId: ORG, customerId: "c100", propertyId: "property-c100" })
+  await db.insert(s.job).values({ id: "b1", organizationId: ORG, customerId: "c100", propertyId: "property-c100", kind: "repair", source: "office" })
   await db.insert(s.visit).values([
-    { id: "b1-v1", organizationId: ORG, bookingId: "b1", customerId: "c100", propertyId: "property-c100", kind: "repair", status: "scheduled", scheduledOn: "2027-05-05", truckId: "truck-1" },
-    { id: "b1-v2", organizationId: ORG, bookingId: "b1", customerId: "c100", propertyId: "property-c100", kind: "repair", status: "completed" },
+    { id: "b1-v1", organizationId: ORG, jobId: "b1", customerId: "c100", propertyId: "property-c100", kind: "repair", status: "scheduled", scheduledOn: "2027-05-05", truckId: "truck-1" },
+    { id: "b1-v2", organizationId: ORG, jobId: "b1", customerId: "c100", propertyId: "property-c100", kind: "repair", status: "completed" },
   ])
 })
 afterAll(() => db.close())
@@ -23,7 +23,7 @@ describe("bookings", () => {
   it("is a stub for create, with the scope and the schema still enforced", async () => {
     const input = {
       serviceKey: "turn-on-8", day: "2027-05-05", truckId: "truck-1",
-      customer: { firstName: "A", email: "a@example.com" }, property: { address: "1 Main St", town: "Erie" },
+      customer: { firstName: "A", lastName: "Tester", email: "a@example.com" }, property: { address: "1 Main St", town: "Erie" },
       consent: { termsAccepted: true, source: "booking" },
     }
     await expect(callApi(ctxFor(db, writeKey), bookingsCreate, input)).rejects.toMatchObject({ code: "not_implemented" })

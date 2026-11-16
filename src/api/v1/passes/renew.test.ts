@@ -21,7 +21,7 @@ afterAll(() => db.close())
 
 const visitor = (renewPassId?: string): PublicPrincipal => ({ kind: "public", id: "checkout", organizationId: ORG, scopes: ["checkout"], ...(renewPassId ? { renewPassId } : {}) })
 const answers = (over: Record<string, unknown> = {}) => ({
-  customer: { firstName: "Andrea", email: "p1@example.com", phone: "3035550101" },
+  customer: { firstName: "Andrea", lastName: "Anderson", email: "p1@example.com", phone: "3035550101" },
   property: { address: "5 Pine St", town: "Erie", state: "CO", zip: "80516" },
   zones: 6,
   consent: { termsAccepted: true as const, marketingOptIn: false, marketingChannels: [] },

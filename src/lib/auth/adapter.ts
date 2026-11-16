@@ -85,11 +85,18 @@ export function authAdapter(getDb: () => Database): Adapter {
       return { identifier, token, expires }
     },
     async useVerificationToken({ identifier, token }) {
-      const [row] = await getDb()
+      const db = getDb()
+      const [row] = await db
         .delete(s.authVerificationToken)
         .where(and(eq(s.authVerificationToken.identifier, identifier), eq(s.authVerificationToken.token, token)))
         .returning()
-      return row ? { identifier: row.identifier, token: row.token, expires: row.expires } : null
+      if (!row) {
+        // Says which half failed to match, without the token: the row count tells "spent or never made" from "wrong email".
+        const others = await db.select({ expires: s.authVerificationToken.expires }).from(s.authVerificationToken).where(eq(s.authVerificationToken.identifier, identifier))
+        console.warn(`sign-in link rejected for ${identifier}: no row for this token; ${others.length} other token(s) for this email, hash starts ${token.slice(0, 6)}`)
+        return null
+      }
+      return { identifier: row.identifier, token: row.token, expires: row.expires }
     },
   }
 }

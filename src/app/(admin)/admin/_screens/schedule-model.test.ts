@@ -3,7 +3,7 @@ import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import type { AdminData, Visit } from "@/lib/admin/types"
 import { TIME_ZONE } from "@/lib/admin/format"
 import { dayVisits, weekDays, weekVisits } from "@/lib/admin/calendar"
-import { exceptionCount, moveOutcome, moveVisit, weekContext } from "./schedule-model"
+import { exceptionCount, firstJobWeek, moveOutcome, moveVisit, nextJobsWeek, weekContext } from "./schedule-model"
 
 const data = snapshot as AdminData
 const { trucks } = data.settings
@@ -21,10 +21,10 @@ describe("the week's visits", () => {
     expect(dayVisits(week, "2026-11-10", "truck-2", TIME_ZONE)).toEqual([])
   })
 
-  it("counts the Jobber exceptions and writes the context line", () => {
+  it("counts the moved visits and writes the context line", () => {
     const week = weekVisits(data.visits, WEEK, TIME_ZONE)
     expect(exceptionCount(week)).toBe(2)
-    expect(weekContext(WEEK, week)).toBe(`Week of Nov 9. ${week.length} visits, 2 moved in Jobber.`)
+    expect(weekContext(WEEK, week)).toBe(`Week of Nov 9. ${week.length} visits, 2 moved.`)
     expect(weekContext("2026-10-05", weekVisits(data.visits, "2026-10-05", TIME_ZONE))).toBe("Week of Oct 5. 25 visits.")
     expect(weekContext("2027-03-01", [])).toBe("Week of Mar 1. Nothing on the calendar.")
     expect(weekContext(WEEK, week.filter((v) => !v.exception))).toBe(`Week of Nov 9. ${week.length - 2} visits.`)
@@ -110,10 +110,11 @@ describe("to schedule tray, placing and scheduling", async () => {
   const snapshot = (await import("@/lib/admin/fixtures/snapshot.json")).default as import("@/lib/admin/types").AdminData
   const tz = "America/Denver"
 
-  it("lists every active pass visit with no day, earliest window first, earlier preferences first", () => {
+  it("lists every job of an active pass with no day, earliest window first, earlier preferences first", () => {
     const items = trayItems(snapshot)
     expect(items.length).toBeGreaterThan(10)
-    expect(items.every((i) => i.passId || i.window === "Open job")).toBe(true)
+    expect(items.every((i) => i.passId)).toBe(true)
+    expect(items.some((i) => i.window === "Open job")).toBe(false)
     const keys = items.map((i) => i.sortKey)
     expect([...keys].sort()).toEqual(keys)
     const cancelled = snapshot.passes.find((p) => p.status === "cancelled")!
@@ -135,8 +136,27 @@ describe("to schedule tray, placing and scheduling", async () => {
     expect(trayItems({ visits: placed, passes: snapshot.passes }).some((i) => i.id === item.id)).toBe(false)
   })
 
-  it("schedules every tray item that is not waiting for its customer, round-robin over the trucks' working days", () => {
+  it("never lists a pending pass's jobs, a job that has a day, or a cancelled pass's jobs", () => {
+    const pending = snapshot.passes.find((p) => p.status === "pending")!
+    expect(pending.visits.every((v) => v.scheduledAt || v.window)).toBe(true)
     const items = trayItems(snapshot)
+    expect(items.some((i) => i.passId === pending.id)).toBe(false)
+    // Every item is a pass visit with no day: the tray and the Passes panel read the same row.
+    const noDay = new Set(snapshot.passes.filter((p) => p.status === "active").flatMap((p) => p.visits.filter((v) => !v.scheduledAt && !v.completedAt).map((v) => `${p.id}:${v.kind}`)))
+    expect(new Set(items.map((i) => `${i.passId}:${i.kind}`))).toEqual(noDay)
+    // The same pass visit with a day, or on the pending pass, drops out.
+    const dated = { ...snapshot, passes: snapshot.passes.map((p) => (p.id === items[0].passId ? { ...p, visits: p.visits.map((v) => (v.kind === items[0].kind ? { ...v, scheduledAt: "2027-05-03T16:00:00Z", scheduledOn: "2027-05-03" } : v)) } : p)) }
+    expect(trayItems(dated)).toHaveLength(items.length - 1)
+    expect(trayItems({ ...snapshot, passes: snapshot.passes.map((p) => ({ ...p, status: "pending" as const })) })).toEqual([])
+  })
+
+  it("uses the visit's own id when the pass carries it, so Place moves the real visit", () => {
+    const withIds = { ...snapshot, passes: snapshot.passes.map((p) => ({ ...p, visits: p.visits.map((v) => ({ ...v, id: `${p.id}-${v.kind}` })) })) }
+    expect(trayItems(withIds).every((i) => i.id === `${i.passId}-${i.kind}`)).toBe(true)
+  })
+
+  it("schedules every tray item that is not waiting for its customer, round-robin over the trucks' working days", () => {
+    const items = trayItems(snapshot).map((i, n) => (n % 5 === 0 ? { ...i, awaitingPick: true } : i))
     const waiting = items.filter((i) => i.awaitingPick)
     expect(waiting.length).toBeGreaterThan(0)
     const { visits, placed, waiting: left } = scheduleItems(snapshot.visits, items, snapshot.settings.trucks, "2027-05-03", tz)
@@ -147,5 +167,30 @@ describe("to schedule tray, placing and scheduling", async () => {
     const days = new Set(visits.filter((v) => items.some((i) => i.id === v.id)).map((v) => `${v.truckId}:${v.startAt?.slice(0, 10)}`))
     expect(days.size).toBeGreaterThan(1)
     expect(scheduleItems(snapshot.visits, items, [], "2027-05-03", tz)).toEqual({ visits: snapshot.visits, placed: 0, waiting: waiting.length })
+  })
+})
+
+describe("which week the Schedule opens on", () => {
+  const visit = (id: string, startAt: string, status: Visit["status"] = "scheduled"): Visit => ({ id, clientId: "c", clientName: "A", town: "Erie", kind: "turn-on", status, startAt, isPass: true, jobberUrl: "" })
+
+  it("opens on the first week that has a job, not on an empty week", () => {
+    // Today is Thursday Nov 12; the first job is April 27, 2027 (the week of Apr 26).
+    expect(firstJobWeek([visit("a", "2027-04-27T15:00:00Z"), visit("b", "2027-05-10T15:00:00Z")], TODAY, TIME_ZONE)).toBe("2027-04-26")
+  })
+
+  it("opens on this week when it has a job, even one earlier in the week", () => {
+    expect(firstJobWeek([visit("a", "2026-11-10T15:00:00Z"), visit("b", "2027-04-27T15:00:00Z")], TODAY, TIME_ZONE)).toBe("2026-11-09")
+  })
+
+  it("opens on today's week when nothing is ahead, and skips cancelled and past jobs", () => {
+    expect(firstJobWeek([], TODAY, TIME_ZONE)).toBe("2026-11-09")
+    expect(firstJobWeek([visit("old", "2026-10-01T15:00:00Z"), visit("gone", "2027-04-27T15:00:00Z", "cancelled")], TODAY, TIME_ZONE)).toBe("2026-11-09")
+  })
+
+  it("names the next week with jobs after an empty one, or nothing", () => {
+    const visits = [visit("a", "2027-04-27T15:00:00Z")]
+    expect(nextJobsWeek(visits, "2026-11-09", TIME_ZONE)).toBe("2027-04-26")
+    expect(nextJobsWeek(visits, "2027-04-26", TIME_ZONE)).toBeUndefined()
+    expect(nextJobsWeek([], "2026-11-09", TIME_ZONE)).toBeUndefined()
   })
 })

@@ -18,3 +18,14 @@ describe("readEnv", () => {
     expect(readOptionalEnv("OPTIONAL_NAME_XYZ")).toBeUndefined()
   })
 })
+
+describe("whitespace around a value", () => {
+  it("is trimmed, so a pasted trailing newline never reaches a provider", () => {
+    process.env.TRIM_TEST = "ACabc123\n"
+    expect(readOptionalEnv("TRIM_TEST")).toBe("ACabc123")
+    expect(readEnv(["TRIM_TEST"]).TRIM_TEST).toBe("ACabc123")
+    process.env.TRIM_TEST = "  \n"
+    expect(readOptionalEnv("TRIM_TEST")).toBeUndefined()
+    delete process.env.TRIM_TEST
+  })
+})

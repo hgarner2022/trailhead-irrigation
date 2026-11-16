@@ -3,12 +3,13 @@
  * state), the card on file line and the season caption. Kept out of the
  * screen so the wording can be unit tested.
  */
-import type { Pass, PassVisit, VisitStatus } from "@/lib/admin/types"
-import { preferenceLabel, preferenceOf, preferencePhrase, writtenDate } from "@/lib/admin/format"
+import type { Pass, PassVisit } from "@/lib/admin/types"
+import { TIME_ZONE, preferenceLabel, preferenceOf, preferencePhrase, writtenDate } from "@/lib/admin/format"
+import { passVisitJob, type JobState } from "@/lib/admin/jobs"
 
 export const VISIT_NAMES: Record<PassVisit["kind"], string> = { "turn-on": "Spring turn-on", inspection: "Mid-season inspection", blowout: "Fall blowout" }
 
-export type RowStatus = Extract<VisitStatus, "completed" | "scheduled" | "unscheduled">
+export type RowStatus = JobState
 
 export interface VisitRow {
   kind: PassVisit["kind"]
@@ -20,7 +21,11 @@ export interface VisitRow {
   label: string
 }
 
-export const visitStatus = (visit: PassVisit): RowStatus => (visit.completedAt ? "completed" : visit.scheduledAt ? "scheduled" : "unscheduled")
+/** The visit's job state, from the one derivation the admin uses (`src/lib/admin/jobs.ts`). */
+export const visitStatus = (visit: PassVisit): RowStatus => passVisitJob({}, visit, "", TIME_ZONE).state
+
+const FINISHED: readonly RowStatus[] = ["done", "charged", "charge-failed"]
+const HAS_DAY: readonly RowStatus[] = ["scheduled", "routed"]
 
 /** The pass's preference for a visit in the customer's words; the inspection has none. */
 function preferenceWords(visit: PassVisit, pass: Pass): string | null {
@@ -32,7 +37,7 @@ export function visitRow(visit: PassVisit, pass: Pass): VisitRow {
   const status = visitStatus(visit)
   const preference = preferenceWords(visit, pass)
   const when = visit.completedAt ? writtenDate(visit.completedAt) : visit.scheduledAt ? writtenDate(visit.scheduledAt) : (preference ?? visit.window)
-  const label = status === "completed" ? "Done" : status === "scheduled" ? "Booked" : preference ? "Preferred" : visit.window
+  const label = FINISHED.includes(status) ? "Done" : HAS_DAY.includes(status) ? "Booked" : preference ? "Preferred" : visit.window
   return { kind: visit.kind, name: VISIT_NAMES[visit.kind], when, status, label }
 }
 

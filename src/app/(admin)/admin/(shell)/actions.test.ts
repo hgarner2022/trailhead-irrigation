@@ -166,7 +166,7 @@ describe("keys, webhooks and consent", () => {
 
 describe("Needs attention", () => {
   it("takes a visit row to that visit in the Schedule", async () => {
-    await expect(actions.attentionAction({ kind: "unplaced", visitId: "v1", message: "x", since: "2027-01-01T00:00:00Z" })).rejects.toThrow("redirect:/admin/schedule?visit=v1")
+    await expect(actions.attentionAction({ kind: "unplaced", visitId: "v1", message: "x", since: "2027-01-01T00:00:00Z" })).rejects.toThrow("redirect:/admin/visits?visit=v1")
     await expect(actions.attentionAction({ kind: "new-pass", passId: "p1", message: "x", since: "2027-01-01T00:00:00Z" })).rejects.toThrow("redirect:/admin/passes?pass=p1")
   })
 })

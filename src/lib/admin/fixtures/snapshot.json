@@ -8,7 +8,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/156368396",
       "hasPass": false,
-      "lastVisitAt": "2026-10-22T18:00:00Z"
+      "lastVisitAt": "2026-10-22T18:00:00Z",
+      "lastName": "Dawson",
+      "address": "100 Briggs St"
     },
     {
       "id": "c2",
@@ -16,7 +18,9 @@
       "town": "Broomfield",
       "jobberUrl": "https://secure.getjobber.com/clients/156375748",
       "hasPass": false,
-      "lastVisitAt": "2026-10-27T22:30:00Z"
+      "lastVisitAt": "2026-10-27T22:30:00Z",
+      "lastName": "Larson",
+      "address": "153 Weld County Rd 5"
     },
     {
       "id": "c3",
@@ -24,7 +28,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/156379139",
       "hasPass": false,
-      "lastVisitAt": "2026-10-21T20:00:00Z"
+      "lastVisitAt": "2026-10-21T20:00:00Z",
+      "lastName": "Bishop",
+      "address": "206 Coal Creek Dr"
     },
     {
       "id": "c4",
@@ -32,7 +38,9 @@
       "town": "Broomfield",
       "jobberUrl": "https://secure.getjobber.com/clients/156382826",
       "hasPass": false,
-      "lastVisitAt": "2026-10-27T21:00:00Z"
+      "lastVisitAt": "2026-10-27T21:00:00Z",
+      "lastName": "Everett",
+      "address": "259 Main St"
     },
     {
       "id": "c5",
@@ -40,7 +48,9 @@
       "town": "Lafayette",
       "jobberUrl": "https://secure.getjobber.com/clients/156384051",
       "hasPass": false,
-      "lastVisitAt": "2026-10-30T18:00:00Z"
+      "lastVisitAt": "2026-10-30T18:00:00Z",
+      "lastName": "Anderson",
+      "address": "312 Cherry Ave"
     },
     {
       "id": "c6",
@@ -48,7 +58,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/156393520",
       "hasPass": false,
-      "lastVisitAt": "2026-10-27T16:30:00Z"
+      "lastVisitAt": "2026-10-27T16:30:00Z",
+      "lastName": "Hayes",
+      "address": "365 Pine St"
     },
     {
       "id": "c7",
@@ -56,7 +68,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/156399908",
       "hasPass": false,
-      "lastVisitAt": "2026-10-20T20:00:00Z"
+      "lastVisitAt": "2026-10-20T20:00:00Z",
+      "lastName": "Owens",
+      "address": "418 Aspen Ct"
     },
     {
       "id": "c8",
@@ -64,7 +78,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/156419545",
       "hasPass": false,
-      "lastVisitAt": "2026-10-28T16:00:00Z"
+      "lastVisitAt": "2026-10-28T16:00:00Z",
+      "lastName": "Vance",
+      "address": "471 Meadowlark Ln"
     },
     {
       "id": "c9",
@@ -72,7 +88,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/156423160",
       "hasPass": false,
-      "lastVisitAt": "2026-10-21T21:00:00Z"
+      "lastVisitAt": "2026-10-21T21:00:00Z",
+      "lastName": "Gibson",
+      "address": "524 Sunset Way"
     },
     {
       "id": "c10",
@@ -80,7 +98,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/156438014",
       "hasPass": false,
-      "lastVisitAt": "2026-10-22T19:00:00Z"
+      "lastVisitAt": "2026-10-22T19:00:00Z",
+      "lastName": "Carter",
+      "address": "577 Homestead Rd"
     },
     {
       "id": "c11",
@@ -88,7 +108,9 @@
       "town": "Broomfield",
       "jobberUrl": "https://secure.getjobber.com/clients/156458809",
       "hasPass": false,
-      "lastVisitAt": "2026-10-29T21:00:00Z"
+      "lastVisitAt": "2026-10-29T21:00:00Z",
+      "lastName": "Nolan",
+      "address": "630 Prairie View Dr"
     },
     {
       "id": "c12",
@@ -96,7 +118,9 @@
       "town": "Lafayette",
       "jobberUrl": "https://secure.getjobber.com/clients/156460006",
       "hasPass": false,
-      "lastVisitAt": "2026-10-20T21:00:00Z"
+      "lastVisitAt": "2026-10-20T21:00:00Z",
+      "lastName": "Reed",
+      "address": "683 Cottonwood Cir"
     },
     {
       "id": "c13",
@@ -104,7 +128,9 @@
       "town": "Broomfield",
       "jobberUrl": "https://secure.getjobber.com/clients/156470811",
       "hasPass": false,
-      "lastVisitAt": "2026-11-03T20:00:00Z"
+      "lastVisitAt": "2026-11-03T20:00:00Z",
+      "lastName": "Zimmer",
+      "address": "736 Briggs St"
     },
     {
       "id": "c14",
@@ -112,7 +138,9 @@
       "town": "Broomfield",
       "jobberUrl": "https://secure.getjobber.com/clients/156486340",
       "hasPass": false,
-      "lastVisitAt": "2026-10-21T23:00:00Z"
+      "lastVisitAt": "2026-10-21T23:00:00Z",
+      "lastName": "Anderson",
+      "address": "789 Weld County Rd 5"
     },
     {
       "id": "c15",
@@ -120,14 +148,18 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/156510822",
       "hasPass": false,
-      "lastVisitAt": "2026-10-23T19:00:00Z"
+      "lastVisitAt": "2026-10-23T19:00:00Z",
+      "lastName": "Larson",
+      "address": "842 Coal Creek Dr"
     },
     {
       "id": "c16",
       "firstName": "Titus",
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/156521016",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Owens",
+      "address": "895 Main St"
     },
     {
       "id": "c17",
@@ -135,7 +167,9 @@
       "town": "Lafayette",
       "jobberUrl": "https://secure.getjobber.com/clients/156539883",
       "hasPass": false,
-      "lastVisitAt": "2026-10-23T21:00:00Z"
+      "lastVisitAt": "2026-10-23T21:00:00Z",
+      "lastName": "Vance",
+      "address": "948 Cherry Ave"
     },
     {
       "id": "c18",
@@ -143,7 +177,9 @@
       "town": "Louisville",
       "jobberUrl": "https://secure.getjobber.com/clients/156549145",
       "hasPass": false,
-      "lastVisitAt": "2026-10-26T19:00:00Z"
+      "lastVisitAt": "2026-10-26T19:00:00Z",
+      "lastName": "Dalton",
+      "address": "101 Pine St"
     },
     {
       "id": "c19",
@@ -151,28 +187,36 @@
       "town": "Louisville",
       "jobberUrl": "https://secure.getjobber.com/clients/156565442",
       "hasPass": false,
-      "lastVisitAt": "2026-10-26T20:00:00Z"
+      "lastVisitAt": "2026-10-26T20:00:00Z",
+      "lastName": "Dawson",
+      "address": "154 Aspen Ct"
     },
     {
       "id": "c20",
       "firstName": "Justin",
       "town": "Louisville",
       "jobberUrl": "https://secure.getjobber.com/clients/156702545",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Larson",
+      "address": "207 Meadowlark Ln"
     },
     {
       "id": "c21",
       "firstName": "Arina",
       "town": "Broomfield",
       "jobberUrl": "https://secure.getjobber.com/clients/156734465",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Reed",
+      "address": "260 Sunset Way"
     },
     {
       "id": "c22",
       "firstName": "Alex",
       "town": "Louisville",
       "jobberUrl": "https://secure.getjobber.com/clients/156755221",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Young",
+      "address": "313 Homestead Rd"
     },
     {
       "id": "c23",
@@ -180,7 +224,9 @@
       "town": "Louisville",
       "jobberUrl": "https://secure.getjobber.com/clients/156755662",
       "hasPass": false,
-      "lastVisitAt": "2026-10-26T18:00:00Z"
+      "lastVisitAt": "2026-10-26T18:00:00Z",
+      "lastName": "Gibson",
+      "address": "366 Prairie View Dr"
     },
     {
       "id": "c24",
@@ -188,7 +234,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/156780766",
       "hasPass": false,
-      "lastVisitAt": "2026-10-23T19:00:00Z"
+      "lastVisitAt": "2026-10-23T19:00:00Z",
+      "lastName": "Grant",
+      "address": "419 Cottonwood Cir"
     },
     {
       "id": "c25",
@@ -196,14 +244,18 @@
       "town": "Lafayette",
       "jobberUrl": "https://secure.getjobber.com/clients/156872428",
       "hasPass": false,
-      "lastVisitAt": "2026-10-30T20:00:00Z"
+      "lastVisitAt": "2026-10-30T20:00:00Z",
+      "lastName": "Nolan",
+      "address": "472 Briggs St"
     },
     {
       "id": "c26",
       "firstName": "Jon",
       "town": "Lafayette",
       "jobberUrl": "https://secure.getjobber.com/clients/156874680",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Sutton",
+      "address": "525 Weld County Rd 5"
     },
     {
       "id": "c27",
@@ -211,14 +263,18 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/156884616",
       "hasPass": false,
-      "lastVisitAt": "2026-10-29T17:30:00Z"
+      "lastVisitAt": "2026-10-29T17:30:00Z",
+      "lastName": "Gibson",
+      "address": "578 Coal Creek Dr"
     },
     {
       "id": "c28",
       "firstName": "Will",
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/157017943",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Baker",
+      "address": "631 Main St"
     },
     {
       "id": "c29",
@@ -226,7 +282,9 @@
       "town": "Louisville",
       "jobberUrl": "https://secure.getjobber.com/clients/157018165",
       "hasPass": false,
-      "lastVisitAt": "2026-10-28T19:00:00Z"
+      "lastVisitAt": "2026-10-28T19:00:00Z",
+      "lastName": "Hayes",
+      "address": "684 Cherry Ave"
     },
     {
       "id": "c30",
@@ -234,7 +292,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/157077515",
       "hasPass": false,
-      "lastVisitAt": "2026-10-29T23:00:00Z"
+      "lastVisitAt": "2026-10-29T23:00:00Z",
+      "lastName": "Reed",
+      "address": "737 Pine St"
     },
     {
       "id": "c31",
@@ -242,7 +302,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/157095302",
       "hasPass": false,
-      "lastVisitAt": "2026-10-27T19:00:00Z"
+      "lastVisitAt": "2026-10-27T19:00:00Z",
+      "lastName": "Walker",
+      "address": "790 Aspen Ct"
     },
     {
       "id": "c32",
@@ -250,7 +312,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/157111903",
       "hasPass": false,
-      "lastVisitAt": "2026-11-02T20:30:00Z"
+      "lastVisitAt": "2026-11-02T20:30:00Z",
+      "lastName": "Harper",
+      "address": "843 Meadowlark Ln"
     },
     {
       "id": "c33",
@@ -258,7 +322,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/157176019",
       "hasPass": false,
-      "lastVisitAt": "2026-10-26T18:00:00Z"
+      "lastVisitAt": "2026-10-26T18:00:00Z",
+      "lastName": "Grant",
+      "address": "896 Sunset Way"
     },
     {
       "id": "c34",
@@ -266,7 +332,9 @@
       "town": "Lafayette",
       "jobberUrl": "https://secure.getjobber.com/clients/157213720",
       "hasPass": false,
-      "lastVisitAt": "2026-10-27T17:30:00Z"
+      "lastVisitAt": "2026-10-27T17:30:00Z",
+      "lastName": "Keller",
+      "address": "949 Homestead Rd"
     },
     {
       "id": "c35",
@@ -274,7 +342,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/157331458",
       "hasPass": false,
-      "lastVisitAt": "2026-10-26T17:00:00Z"
+      "lastVisitAt": "2026-10-26T17:00:00Z",
+      "lastName": "Sutton",
+      "address": "102 Prairie View Dr"
     },
     {
       "id": "c36",
@@ -282,7 +352,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/157373385",
       "hasPass": false,
-      "lastVisitAt": "2026-10-29T18:30:00Z"
+      "lastVisitAt": "2026-10-29T18:30:00Z",
+      "lastName": "Coleman",
+      "address": "155 Cottonwood Cir"
     },
     {
       "id": "c37",
@@ -290,7 +362,9 @@
       "town": "Longmont",
       "jobberUrl": "https://secure.getjobber.com/clients/157387565",
       "hasPass": false,
-      "lastVisitAt": "2026-11-02T23:30:00Z"
+      "lastVisitAt": "2026-11-02T23:30:00Z",
+      "lastName": "Hayes",
+      "address": "208 Briggs St"
     },
     {
       "id": "c38",
@@ -298,7 +372,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/157476529",
       "hasPass": false,
-      "lastVisitAt": "2026-10-27T19:00:00Z"
+      "lastVisitAt": "2026-10-27T19:00:00Z",
+      "lastName": "Ingram",
+      "address": "261 Weld County Rd 5"
     },
     {
       "id": "c39",
@@ -306,7 +382,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/157481752",
       "hasPass": false,
-      "lastVisitAt": "2026-11-04T20:00:00Z"
+      "lastVisitAt": "2026-11-04T20:00:00Z",
+      "lastName": "Parker",
+      "address": "314 Coal Creek Dr"
     },
     {
       "id": "c40",
@@ -314,7 +392,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/157487584",
       "hasPass": false,
-      "lastVisitAt": "2026-10-27T20:00:00Z"
+      "lastVisitAt": "2026-10-27T20:00:00Z",
+      "lastName": "Young",
+      "address": "367 Main St"
     },
     {
       "id": "c41",
@@ -322,7 +402,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/157497656",
       "hasPass": false,
-      "lastVisitAt": "2026-10-30T23:00:00Z"
+      "lastVisitAt": "2026-10-30T23:00:00Z",
+      "lastName": "Dalton",
+      "address": "420 Cherry Ave"
     },
     {
       "id": "c42",
@@ -330,7 +412,9 @@
       "town": "Lafayette",
       "jobberUrl": "https://secure.getjobber.com/clients/157608930",
       "hasPass": false,
-      "lastVisitAt": "2026-10-30T16:00:00Z"
+      "lastVisitAt": "2026-10-30T16:00:00Z",
+      "lastName": "Grant",
+      "address": "473 Pine St"
     },
     {
       "id": "c43",
@@ -338,14 +422,18 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/157622153",
       "hasPass": false,
-      "lastVisitAt": "2026-10-30T19:00:00Z"
+      "lastVisitAt": "2026-10-30T19:00:00Z",
+      "lastName": "Larson",
+      "address": "526 Aspen Ct"
     },
     {
       "id": "c44",
       "firstName": "Todd",
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/157631675",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Reed",
+      "address": "579 Meadowlark Ln"
     },
     {
       "id": "c45",
@@ -353,7 +441,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/157641797",
       "hasPass": false,
-      "lastVisitAt": "2026-10-30T20:00:00Z"
+      "lastVisitAt": "2026-10-30T20:00:00Z",
+      "lastName": "Bishop",
+      "address": "632 Sunset Way"
     },
     {
       "id": "c46",
@@ -361,7 +451,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/157749905",
       "hasPass": false,
-      "lastVisitAt": "2026-11-02T21:00:00Z"
+      "lastVisitAt": "2026-11-02T21:00:00Z",
+      "lastName": "Anderson",
+      "address": "685 Homestead Rd"
     },
     {
       "id": "c47",
@@ -369,7 +461,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/157750863",
       "hasPass": false,
-      "lastVisitAt": "2026-11-05T19:00:00Z"
+      "lastVisitAt": "2026-11-05T19:00:00Z",
+      "lastName": "Hayes",
+      "address": "738 Prairie View Dr"
     },
     {
       "id": "c48",
@@ -377,7 +471,9 @@
       "town": "Louisville",
       "jobberUrl": "https://secure.getjobber.com/clients/157779416",
       "hasPass": false,
-      "lastVisitAt": "2026-11-03T21:00:00Z"
+      "lastVisitAt": "2026-11-03T21:00:00Z",
+      "lastName": "Nolan",
+      "address": "791 Cottonwood Cir"
     },
     {
       "id": "c49",
@@ -385,7 +481,9 @@
       "town": "Louisville",
       "jobberUrl": "https://secure.getjobber.com/clients/157803489",
       "hasPass": false,
-      "lastVisitAt": "2026-11-03T21:30:00Z"
+      "lastVisitAt": "2026-11-03T21:30:00Z",
+      "lastName": "Walker",
+      "address": "844 Briggs St"
     },
     {
       "id": "c50",
@@ -393,7 +491,9 @@
       "town": "Lafayette",
       "jobberUrl": "https://secure.getjobber.com/clients/157809996",
       "hasPass": false,
-      "lastVisitAt": "2026-11-04T20:00:00Z"
+      "lastVisitAt": "2026-11-04T20:00:00Z",
+      "lastName": "Gibson",
+      "address": "897 Weld County Rd 5"
     },
     {
       "id": "c51",
@@ -401,14 +501,18 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/157830562",
       "hasPass": false,
-      "lastVisitAt": "2026-11-03T17:30:00Z"
+      "lastVisitAt": "2026-11-03T17:30:00Z",
+      "lastName": "Dawson",
+      "address": "950 Coal Creek Dr"
     },
     {
       "id": "c52",
       "firstName": "Ricky",
       "town": "Firestone",
       "jobberUrl": "https://secure.getjobber.com/clients/157865503",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Keller",
+      "address": "103 Main St"
     },
     {
       "id": "c53",
@@ -416,7 +520,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/157899308",
       "hasPass": false,
-      "lastVisitAt": "2026-11-05T21:30:00Z"
+      "lastVisitAt": "2026-11-05T21:30:00Z",
+      "lastName": "Parker",
+      "address": "156 Cherry Ave"
     },
     {
       "id": "c54",
@@ -424,7 +530,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/157931997",
       "hasPass": false,
-      "lastVisitAt": "2026-11-04T22:00:00Z"
+      "lastVisitAt": "2026-11-04T22:00:00Z",
+      "lastName": "Coleman",
+      "address": "209 Pine St"
     },
     {
       "id": "c55",
@@ -432,7 +540,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/157973257",
       "hasPass": false,
-      "lastVisitAt": "2026-11-06T21:30:00Z"
+      "lastVisitAt": "2026-11-06T21:30:00Z",
+      "lastName": "Gibson",
+      "address": "262 Aspen Ct"
     },
     {
       "id": "c56",
@@ -440,7 +550,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/157989853",
       "hasPass": false,
-      "lastVisitAt": "2026-10-30T23:30:00Z"
+      "lastVisitAt": "2026-10-30T23:30:00Z",
+      "lastName": "Grant",
+      "address": "315 Meadowlark Ln"
     },
     {
       "id": "c57",
@@ -448,7 +560,9 @@
       "town": "Lafayette",
       "jobberUrl": "https://secure.getjobber.com/clients/158027035",
       "hasPass": false,
-      "lastVisitAt": "2026-11-05T20:30:00Z"
+      "lastVisitAt": "2026-11-05T20:30:00Z",
+      "lastName": "Quinn",
+      "address": "368 Sunset Way"
     },
     {
       "id": "c58",
@@ -456,7 +570,9 @@
       "town": "Lafayette",
       "jobberUrl": "https://secure.getjobber.com/clients/158040068",
       "hasPass": false,
-      "lastVisitAt": "2026-11-10T23:00:00Z"
+      "lastVisitAt": "2026-11-10T23:00:00Z",
+      "lastName": "Walker",
+      "address": "421 Homestead Rd"
     },
     {
       "id": "c59",
@@ -464,7 +580,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/158066203",
       "hasPass": false,
-      "lastVisitAt": "2026-11-03T19:00:00Z"
+      "lastVisitAt": "2026-11-03T19:00:00Z",
+      "lastName": "Coleman",
+      "address": "474 Prairie View Dr"
     },
     {
       "id": "c60",
@@ -472,7 +590,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/158096239",
       "hasPass": false,
-      "lastVisitAt": "2026-11-02T22:00:00Z"
+      "lastVisitAt": "2026-11-02T22:00:00Z",
+      "lastName": "Anderson",
+      "address": "527 Cottonwood Cir"
     },
     {
       "id": "c61",
@@ -480,7 +600,9 @@
       "town": "Lafayette",
       "jobberUrl": "https://secure.getjobber.com/clients/158098877",
       "hasPass": false,
-      "lastVisitAt": "2026-11-05T23:30:00Z"
+      "lastVisitAt": "2026-11-05T23:30:00Z",
+      "lastName": "Ingram",
+      "address": "580 Briggs St"
     },
     {
       "id": "c62",
@@ -488,7 +610,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/158144604",
       "hasPass": false,
-      "lastVisitAt": "2026-11-04T23:00:00Z"
+      "lastVisitAt": "2026-11-04T23:00:00Z",
+      "lastName": "Quinn",
+      "address": "633 Weld County Rd 5"
     },
     {
       "id": "c63",
@@ -496,7 +620,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/158206020",
       "hasPass": false,
-      "lastVisitAt": "2026-11-04T19:00:00Z"
+      "lastVisitAt": "2026-11-04T19:00:00Z",
+      "lastName": "Walker",
+      "address": "686 Coal Creek Dr"
     },
     {
       "id": "c64",
@@ -504,14 +630,18 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/158206558",
       "hasPass": false,
-      "lastVisitAt": "2026-11-05T17:00:00Z"
+      "lastVisitAt": "2026-11-05T17:00:00Z",
+      "lastName": "Gibson",
+      "address": "739 Main St"
     },
     {
       "id": "c65",
       "firstName": "Bryan",
       "town": "Firestone",
       "jobberUrl": "https://secure.getjobber.com/clients/158214510",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Foster",
+      "address": "792 Cherry Ave"
     },
     {
       "id": "c66",
@@ -519,7 +649,9 @@
       "town": "Longmont",
       "jobberUrl": "https://secure.getjobber.com/clients/158244582",
       "hasPass": false,
-      "lastVisitAt": "2026-11-03T20:00:00Z"
+      "lastVisitAt": "2026-11-03T20:00:00Z",
+      "lastName": "Larson",
+      "address": "845 Pine St"
     },
     {
       "id": "c67",
@@ -527,14 +659,18 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/158248581",
       "hasPass": false,
-      "lastVisitAt": "2026-11-06T17:00:00Z"
+      "lastVisitAt": "2026-11-06T17:00:00Z",
+      "lastName": "Underwood",
+      "address": "898 Aspen Ct"
     },
     {
       "id": "c68",
       "firstName": "John",
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/158316749",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Bishop",
+      "address": "951 Meadowlark Ln"
     },
     {
       "id": "c69",
@@ -542,7 +678,9 @@
       "town": "Lafayette",
       "jobberUrl": "https://secure.getjobber.com/clients/158356004",
       "hasPass": false,
-      "lastVisitAt": "2026-11-06T20:30:00Z"
+      "lastVisitAt": "2026-11-06T20:30:00Z",
+      "lastName": "Foster",
+      "address": "104 Sunset Way"
     },
     {
       "id": "c70",
@@ -550,7 +688,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/158403309",
       "hasPass": false,
-      "lastVisitAt": "2026-11-05T22:30:00Z"
+      "lastVisitAt": "2026-11-05T22:30:00Z",
+      "lastName": "Jensen",
+      "address": "157 Homestead Rd"
     },
     {
       "id": "c71",
@@ -558,7 +698,9 @@
       "town": "Lafayette",
       "jobberUrl": "https://secure.getjobber.com/clients/158407830",
       "hasPass": false,
-      "lastVisitAt": "2026-11-09T17:00:00Z"
+      "lastVisitAt": "2026-11-09T17:00:00Z",
+      "lastName": "Owens",
+      "address": "210 Prairie View Dr"
     },
     {
       "id": "c72",
@@ -566,14 +708,18 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/158428979",
       "hasPass": false,
-      "lastVisitAt": "2026-11-09T19:30:00Z"
+      "lastVisitAt": "2026-11-09T19:30:00Z",
+      "lastName": "Zimmer",
+      "address": "263 Cottonwood Cir"
     },
     {
       "id": "c73",
       "firstName": "Scott",
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/158488087",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Fischer",
+      "address": "316 Briggs St"
     },
     {
       "id": "c74",
@@ -581,7 +727,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/158491573",
       "hasPass": false,
-      "lastVisitAt": "2026-11-09T23:00:00Z"
+      "lastVisitAt": "2026-11-09T23:00:00Z",
+      "lastName": "Grant",
+      "address": "369 Weld County Rd 5"
     },
     {
       "id": "c75",
@@ -589,7 +737,9 @@
       "town": "Broomfield",
       "jobberUrl": "https://secure.getjobber.com/clients/158504756",
       "hasPass": false,
-      "lastVisitAt": "2026-11-10T20:00:00Z"
+      "lastVisitAt": "2026-11-10T20:00:00Z",
+      "lastName": "Keller",
+      "address": "422 Coal Creek Dr"
     },
     {
       "id": "c76",
@@ -597,7 +747,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/158510450",
       "hasPass": false,
-      "lastVisitAt": "2026-11-09T20:30:00Z"
+      "lastVisitAt": "2026-11-09T20:30:00Z",
+      "lastName": "Sutton",
+      "address": "475 Main St"
     },
     {
       "id": "c77",
@@ -605,7 +757,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/158568436",
       "hasPass": false,
-      "lastVisitAt": "2026-11-09T21:30:00Z"
+      "lastVisitAt": "2026-11-09T21:30:00Z",
+      "lastName": "Zimmer",
+      "address": "528 Cherry Ave"
     },
     {
       "id": "c78",
@@ -613,14 +767,18 @@
       "town": "Firestone",
       "jobberUrl": "https://secure.getjobber.com/clients/158593396",
       "hasPass": false,
-      "lastVisitAt": "2026-11-11T19:00:00Z"
+      "lastVisitAt": "2026-11-11T19:00:00Z",
+      "lastName": "Anderson",
+      "address": "581 Pine St"
     },
     {
       "id": "c79",
       "firstName": "Sarah",
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/158635377",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Hayes",
+      "address": "634 Aspen Ct"
     },
     {
       "id": "c80",
@@ -628,70 +786,90 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/158646949",
       "hasPass": false,
-      "lastVisitAt": "2026-11-10T21:00:00Z"
+      "lastVisitAt": "2026-11-10T21:00:00Z",
+      "lastName": "Mason",
+      "address": "687 Meadowlark Ln"
     },
     {
       "id": "c81",
       "firstName": "Matthew",
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/158677720",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Young",
+      "address": "740 Sunset Way"
     },
     {
       "id": "c82",
       "firstName": "Percy",
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/158683430",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Everett",
+      "address": "793 Homestead Rd"
     },
     {
       "id": "c83",
       "firstName": "Alicia",
       "town": "Firestone",
       "jobberUrl": "https://secure.getjobber.com/clients/158731822",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Ellis",
+      "address": "846 Prairie View Dr"
     },
     {
       "id": "c84",
       "firstName": "David",
       "town": "Firestone",
       "jobberUrl": "https://secure.getjobber.com/clients/158785549",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Keller",
+      "address": "899 Cottonwood Cir"
     },
     {
       "id": "c85",
       "firstName": "Ethan",
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/158818150",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Reed",
+      "address": "952 Briggs St"
     },
     {
       "id": "c86",
       "firstName": "Lindsey",
       "town": "Longmont",
       "jobberUrl": "https://secure.getjobber.com/clients/158886661",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Coleman",
+      "address": "105 Weld County Rd 5"
     },
     {
       "id": "c87",
       "firstName": "Brian",
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/159004846",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Harper",
+      "address": "158 Coal Creek Dr"
     },
     {
       "id": "c88",
       "firstName": "Francisco",
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/159122707",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Keller",
+      "address": "211 Main St"
     },
     {
       "id": "c89",
       "firstName": "Zhengzheng",
       "town": "Broomfield",
       "jobberUrl": "https://secure.getjobber.com/clients/159161553",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Sutton",
+      "address": "264 Cherry Ave"
     },
     {
       "id": "c90",
@@ -699,42 +877,54 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/135010733",
       "hasPass": false,
-      "lastVisitAt": "2026-04-11T20:00:00Z"
+      "lastVisitAt": "2026-04-11T20:00:00Z",
+      "lastName": "Sutton",
+      "address": "317 Pine St"
     },
     {
       "id": "c91",
       "firstName": "Chris",
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/135095389",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Dalton",
+      "address": "370 Aspen Ct"
     },
     {
       "id": "c92",
       "firstName": "Hannah",
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/135097889",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Dawson",
+      "address": "423 Meadowlark Ln"
     },
     {
       "id": "c93",
       "firstName": "Josh",
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/135113318",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Ingram",
+      "address": "476 Sunset Way"
     },
     {
       "id": "c94",
       "firstName": "Tyler",
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/135235694",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Quinn",
+      "address": "529 Homestead Rd"
     },
     {
       "id": "c95",
       "firstName": "Tyler",
       "town": "Firestone",
       "jobberUrl": "https://secure.getjobber.com/clients/135239815",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Young",
+      "address": "582 Prairie View Dr"
     },
     {
       "id": "c96",
@@ -742,7 +932,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/135464929",
       "hasPass": false,
-      "lastVisitAt": "2026-10-23T13:30:00Z"
+      "lastVisitAt": "2026-10-23T13:30:00Z",
+      "lastName": "Everett",
+      "address": "635 Cottonwood Cir"
     },
     {
       "id": "c97",
@@ -750,7 +942,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/135703921",
       "hasPass": false,
-      "lastVisitAt": "2026-04-08T21:00:00Z"
+      "lastVisitAt": "2026-04-08T21:00:00Z",
+      "lastName": "Dawson",
+      "address": "688 Briggs St"
     },
     {
       "id": "c98",
@@ -758,7 +952,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/135704764",
       "hasPass": false,
-      "lastVisitAt": "2026-04-24T19:00:00Z"
+      "lastVisitAt": "2026-04-24T19:00:00Z",
+      "lastName": "Mason",
+      "address": "741 Weld County Rd 5"
     },
     {
       "id": "c99",
@@ -766,7 +962,9 @@
       "town": "Longmont",
       "jobberUrl": "https://secure.getjobber.com/clients/135705431",
       "hasPass": false,
-      "lastVisitAt": "2026-04-25T19:00:00Z"
+      "lastVisitAt": "2026-04-25T19:00:00Z",
+      "lastName": "Turner",
+      "address": "794 Coal Creek Dr"
     },
     {
       "id": "c100",
@@ -785,7 +983,9 @@
         ],
         "source": "checkout",
         "recordedAt": "2026-11-02T15:10:00Z"
-      }
+      },
+      "lastName": "Dalton",
+      "address": "847 Main St"
     },
     {
       "id": "c101",
@@ -793,7 +993,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/135869831",
       "hasPass": false,
-      "lastVisitAt": "2026-04-22T21:00:00Z"
+      "lastVisitAt": "2026-04-22T21:00:00Z",
+      "lastName": "Carter",
+      "address": "900 Cherry Ave"
     },
     {
       "id": "c102",
@@ -801,7 +1003,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/135923288",
       "hasPass": false,
-      "lastVisitAt": "2026-05-02T19:00:00Z"
+      "lastVisitAt": "2026-05-02T19:00:00Z",
+      "lastName": "Ingram",
+      "address": "953 Pine St"
     },
     {
       "id": "c103",
@@ -809,7 +1013,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/136287228",
       "hasPass": false,
-      "lastVisitAt": "2026-04-27T19:30:00Z"
+      "lastVisitAt": "2026-04-27T19:30:00Z",
+      "lastName": "Nolan",
+      "address": "106 Aspen Ct"
     },
     {
       "id": "c104",
@@ -825,14 +1031,18 @@
         "marketingChannels": [],
         "source": "checkout",
         "recordedAt": "2026-11-07T15:25:00Z"
-      }
+      },
+      "lastName": "Young",
+      "address": "159 Meadowlark Ln"
     },
     {
       "id": "c105",
       "firstName": "Trenton",
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/136454048",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Harper",
+      "address": "212 Sunset Way"
     },
     {
       "id": "c106",
@@ -840,7 +1050,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/136472758",
       "hasPass": false,
-      "lastVisitAt": "2026-04-29T19:00:00Z"
+      "lastVisitAt": "2026-04-29T19:00:00Z",
+      "lastName": "Dawson",
+      "address": "265 Homestead Rd"
     },
     {
       "id": "c107",
@@ -848,21 +1060,27 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/136485347",
       "hasPass": false,
-      "lastVisitAt": "2026-04-22T19:00:00Z"
+      "lastVisitAt": "2026-04-22T19:00:00Z",
+      "lastName": "Larson",
+      "address": "318 Prairie View Dr"
     },
     {
       "id": "c108",
       "firstName": "Jen",
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/136690234",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Quinn",
+      "address": "371 Cottonwood Cir"
     },
     {
       "id": "c109",
       "firstName": "John",
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/137096700",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Zimmer",
+      "address": "424 Briggs St"
     },
     {
       "id": "c110",
@@ -870,7 +1088,9 @@
       "town": "Lafayette",
       "jobberUrl": "https://secure.getjobber.com/clients/137096775",
       "hasPass": false,
-      "lastVisitAt": "2026-05-01T21:00:00Z"
+      "lastVisitAt": "2026-05-01T21:00:00Z",
+      "lastName": "Anderson",
+      "address": "477 Weld County Rd 5"
     },
     {
       "id": "c111",
@@ -878,7 +1098,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/137166436",
       "hasPass": false,
-      "lastVisitAt": "2026-10-30T22:00:00Z"
+      "lastVisitAt": "2026-10-30T22:00:00Z",
+      "lastName": "Hayes",
+      "address": "530 Coal Creek Dr"
     },
     {
       "id": "c112",
@@ -894,14 +1116,18 @@
         "marketingChannels": [],
         "source": "checkout",
         "recordedAt": "2026-11-10T18:34:00Z"
-      }
+      },
+      "lastName": "Sutton",
+      "address": "583 Main St"
     },
     {
       "id": "c113",
       "firstName": "Jan",
       "town": "Firestone",
       "jobberUrl": "https://secure.getjobber.com/clients/137229355",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Turner",
+      "address": "636 Cherry Ave"
     },
     {
       "id": "c114",
@@ -920,7 +1146,9 @@
         ],
         "source": "checkout",
         "recordedAt": "2026-11-12T15:40:00Z"
-      }
+      },
+      "lastName": "Coleman",
+      "address": "689 Pine St"
     },
     {
       "id": "c115",
@@ -928,7 +1156,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/137507807",
       "hasPass": false,
-      "lastVisitAt": "2026-05-13T22:00:00Z"
+      "lastVisitAt": "2026-05-13T22:00:00Z",
+      "lastName": "Dawson",
+      "address": "742 Aspen Ct"
     },
     {
       "id": "c116",
@@ -936,7 +1166,9 @@
       "town": "Firestone",
       "jobberUrl": "https://secure.getjobber.com/clients/137538366",
       "hasPass": false,
-      "lastVisitAt": "2026-05-09T19:00:00Z"
+      "lastVisitAt": "2026-05-09T19:00:00Z",
+      "lastName": "Keller",
+      "address": "795 Meadowlark Ln"
     },
     {
       "id": "c117",
@@ -944,7 +1176,9 @@
       "town": "Firestone",
       "jobberUrl": "https://secure.getjobber.com/clients/137542438",
       "hasPass": false,
-      "lastVisitAt": "2026-04-25T17:30:00Z"
+      "lastVisitAt": "2026-04-25T17:30:00Z",
+      "lastName": "Sutton",
+      "address": "848 Sunset Way"
     },
     {
       "id": "c118",
@@ -960,7 +1194,9 @@
         "marketingChannels": [],
         "source": "checkout",
         "recordedAt": "2026-11-13T16:43:00Z"
-      }
+      },
+      "lastName": "Zimmer",
+      "address": "901 Homestead Rd"
     },
     {
       "id": "c119",
@@ -968,7 +1204,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/137814663",
       "hasPass": false,
-      "lastVisitAt": "2026-05-13T20:30:00Z"
+      "lastVisitAt": "2026-05-13T20:30:00Z",
+      "lastName": "Baker",
+      "address": "954 Prairie View Dr"
     },
     {
       "id": "c120",
@@ -976,7 +1214,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/137854393",
       "hasPass": false,
-      "lastVisitAt": "2026-05-11T19:00:00Z"
+      "lastVisitAt": "2026-05-11T19:00:00Z",
+      "lastName": "Foster",
+      "address": "107 Cottonwood Cir"
     },
     {
       "id": "c121",
@@ -994,7 +1234,9 @@
         ],
         "source": "checkout",
         "recordedAt": "2026-11-03T16:13:00Z"
-      }
+      },
+      "lastName": "Nolan",
+      "address": "160 Briggs St"
     },
     {
       "id": "c122",
@@ -1002,7 +1244,9 @@
       "town": "Longmont",
       "jobberUrl": "https://secure.getjobber.com/clients/138275567",
       "hasPass": false,
-      "lastVisitAt": "2026-07-28T19:00:00Z"
+      "lastVisitAt": "2026-07-28T19:00:00Z",
+      "lastName": "Vance",
+      "address": "213 Weld County Rd 5"
     },
     {
       "id": "c123",
@@ -1010,7 +1254,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/138282162",
       "hasPass": false,
-      "lastVisitAt": "2026-05-04T22:45:00Z"
+      "lastVisitAt": "2026-05-04T22:45:00Z",
+      "lastName": "Gibson",
+      "address": "266 Coal Creek Dr"
     },
     {
       "id": "c124",
@@ -1018,14 +1264,18 @@
       "town": "Lafayette",
       "jobberUrl": "https://secure.getjobber.com/clients/138430140",
       "hasPass": false,
-      "lastVisitAt": "2026-06-13T19:30:00Z"
+      "lastVisitAt": "2026-06-13T19:30:00Z",
+      "lastName": "Harper",
+      "address": "319 Main St"
     },
     {
       "id": "c125",
       "firstName": "Sam",
       "town": "Longmont",
       "jobberUrl": "https://secure.getjobber.com/clients/138545668",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Hayes",
+      "address": "372 Cherry Ave"
     },
     {
       "id": "c126",
@@ -1033,7 +1283,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/138651084",
       "hasPass": false,
-      "lastVisitAt": "2026-06-05T20:30:00Z"
+      "lastVisitAt": "2026-06-05T20:30:00Z",
+      "lastName": "Parker",
+      "address": "425 Pine St"
     },
     {
       "id": "c127",
@@ -1041,7 +1293,9 @@
       "town": "Louisville",
       "jobberUrl": "https://secure.getjobber.com/clients/138693960",
       "hasPass": false,
-      "lastVisitAt": "2026-07-15T18:00:00Z"
+      "lastVisitAt": "2026-07-15T18:00:00Z",
+      "lastName": "Vance",
+      "address": "478 Aspen Ct"
     },
     {
       "id": "c128",
@@ -1049,7 +1303,9 @@
       "town": "Longmont",
       "jobberUrl": "https://secure.getjobber.com/clients/138716393",
       "hasPass": false,
-      "lastVisitAt": "2026-06-19T17:30:00Z"
+      "lastVisitAt": "2026-06-19T17:30:00Z",
+      "lastName": "Everett",
+      "address": "531 Meadowlark Ln"
     },
     {
       "id": "c129",
@@ -1057,21 +1313,27 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/138926317",
       "hasPass": false,
-      "lastVisitAt": "2026-10-15T21:00:00Z"
+      "lastVisitAt": "2026-10-15T21:00:00Z",
+      "lastName": "Dawson",
+      "address": "584 Sunset Way"
     },
     {
       "id": "c130",
       "firstName": "Ross",
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/139337487",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Larson",
+      "address": "637 Homestead Rd"
     },
     {
       "id": "c131",
       "firstName": "Te",
       "town": "Longmont",
       "jobberUrl": "https://secure.getjobber.com/clients/139415000",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Quinn",
+      "address": "690 Prairie View Dr"
     },
     {
       "id": "c132",
@@ -1079,14 +1341,18 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/139415866",
       "hasPass": false,
-      "lastVisitAt": "2026-05-29T18:00:00Z"
+      "lastVisitAt": "2026-05-29T18:00:00Z",
+      "lastName": "Zimmer",
+      "address": "743 Cottonwood Cir"
     },
     {
       "id": "c133",
       "firstName": "Property",
       "town": "Longmont",
       "jobberUrl": "https://secure.getjobber.com/clients/139417261",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Ellis",
+      "address": "796 Briggs St"
     },
     {
       "id": "c134",
@@ -1094,7 +1360,9 @@
       "town": "Louisville",
       "jobberUrl": "https://secure.getjobber.com/clients/139433372",
       "hasPass": false,
-      "lastVisitAt": "2026-05-09T17:30:00Z"
+      "lastVisitAt": "2026-05-09T17:30:00Z",
+      "lastName": "Keller",
+      "address": "849 Weld County Rd 5"
     },
     {
       "id": "c135",
@@ -1102,7 +1370,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/139443113",
       "hasPass": false,
-      "lastVisitAt": "2026-05-23T19:00:00Z"
+      "lastVisitAt": "2026-05-23T19:00:00Z",
+      "lastName": "Nolan",
+      "address": "902 Coal Creek Dr"
     },
     {
       "id": "c136",
@@ -1110,14 +1380,18 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/139445569",
       "hasPass": false,
-      "lastVisitAt": "2026-05-09T22:00:00Z"
+      "lastVisitAt": "2026-05-09T22:00:00Z",
+      "lastName": "Vance",
+      "address": "955 Main St"
     },
     {
       "id": "c137",
       "firstName": "Tume",
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/139498232",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Everett",
+      "address": "108 Cherry Ave"
     },
     {
       "id": "c138",
@@ -1125,14 +1399,18 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/139540610",
       "hasPass": false,
-      "lastVisitAt": "2026-10-23T16:00:00Z"
+      "lastVisitAt": "2026-10-23T16:00:00Z",
+      "lastName": "Foster",
+      "address": "161 Pine St"
     },
     {
       "id": "c139",
       "firstName": "Thomas",
       "town": "Firestone",
       "jobberUrl": "https://secure.getjobber.com/clients/139543126",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Mason",
+      "address": "214 Aspen Ct"
     },
     {
       "id": "c140",
@@ -1148,14 +1426,18 @@
         "marketingChannels": [],
         "source": "checkout",
         "recordedAt": "2026-11-04T17:16:00Z"
-      }
+      },
+      "lastName": "Reed",
+      "address": "267 Meadowlark Ln"
     },
     {
       "id": "c141",
       "firstName": "Tod",
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/139673351",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Young",
+      "address": "320 Sunset Way"
     },
     {
       "id": "c142",
@@ -1163,14 +1445,18 @@
       "town": "Lafayette",
       "jobberUrl": "https://secure.getjobber.com/clients/139716384",
       "hasPass": false,
-      "lastVisitAt": "2026-05-23T20:30:00Z"
+      "lastVisitAt": "2026-05-23T20:30:00Z",
+      "lastName": "Harper",
+      "address": "373 Homestead Rd"
     },
     {
       "id": "c143",
       "firstName": "Jon",
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/139726605",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Foster",
+      "address": "426 Prairie View Dr"
     },
     {
       "id": "c144",
@@ -1178,14 +1464,18 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/139730962",
       "hasPass": false,
-      "lastVisitAt": "2026-10-12T18:15:00Z"
+      "lastVisitAt": "2026-10-12T18:15:00Z",
+      "lastName": "Quinn",
+      "address": "479 Cottonwood Cir"
     },
     {
       "id": "c145",
       "firstName": "Kevin",
       "town": "Lafayette",
       "jobberUrl": "https://secure.getjobber.com/clients/139760879",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Vance",
+      "address": "532 Briggs St"
     },
     {
       "id": "c146",
@@ -1193,7 +1483,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/139808644",
       "hasPass": false,
-      "lastVisitAt": "2026-06-01T19:00:00Z"
+      "lastVisitAt": "2026-06-01T19:00:00Z",
+      "lastName": "Everett",
+      "address": "585 Weld County Rd 5"
     },
     {
       "id": "c147",
@@ -1201,35 +1493,45 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/139868366",
       "hasPass": false,
-      "lastVisitAt": "2026-06-12T18:00:00Z"
+      "lastVisitAt": "2026-06-12T18:00:00Z",
+      "lastName": "Dawson",
+      "address": "638 Coal Creek Dr"
     },
     {
       "id": "c148",
       "firstName": "Paula",
       "town": "Longmont",
       "jobberUrl": "https://secure.getjobber.com/clients/140031144",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Keller",
+      "address": "691 Main St"
     },
     {
       "id": "c149",
       "firstName": "John",
       "town": "Lafayette",
       "jobberUrl": "https://secure.getjobber.com/clients/140071527",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Quinn",
+      "address": "744 Cherry Ave"
     },
     {
       "id": "c150",
       "firstName": "Cory",
       "town": "Louisville",
       "jobberUrl": "https://secure.getjobber.com/clients/140129241",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Young",
+      "address": "797 Pine St"
     },
     {
       "id": "c151",
       "firstName": "Joyce",
       "town": "Louisville",
       "jobberUrl": "https://secure.getjobber.com/clients/140140825",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Harper",
+      "address": "850 Aspen Ct"
     },
     {
       "id": "c152",
@@ -1237,14 +1539,18 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/140164129",
       "hasPass": false,
-      "lastVisitAt": "2026-10-26T23:00:00Z"
+      "lastVisitAt": "2026-10-26T23:00:00Z",
+      "lastName": "Foster",
+      "address": "903 Meadowlark Ln"
     },
     {
       "id": "c153",
       "firstName": "Veena",
       "town": "Louisville",
       "jobberUrl": "https://secure.getjobber.com/clients/140233596",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Nolan",
+      "address": "956 Sunset Way"
     },
     {
       "id": "c154",
@@ -1252,21 +1558,27 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/140242395",
       "hasPass": false,
-      "lastVisitAt": "2026-10-16T17:30:00Z"
+      "lastVisitAt": "2026-10-16T17:30:00Z",
+      "lastName": "Vance",
+      "address": "109 Homestead Rd"
     },
     {
       "id": "c155",
       "firstName": "Christine",
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/140308344",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Harper",
+      "address": "162 Prairie View Dr"
     },
     {
       "id": "c156",
       "firstName": "Vanessa",
       "town": "Lafayette",
       "jobberUrl": "https://secure.getjobber.com/clients/140322886",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Ellis",
+      "address": "215 Cottonwood Cir"
     },
     {
       "id": "c157",
@@ -1274,7 +1586,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/140479053",
       "hasPass": false,
-      "lastVisitAt": "2026-06-15T21:30:00Z"
+      "lastVisitAt": "2026-06-15T21:30:00Z",
+      "lastName": "Jensen",
+      "address": "268 Briggs St"
     },
     {
       "id": "c158",
@@ -1282,7 +1596,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/140572599",
       "hasPass": false,
-      "lastVisitAt": "2026-05-30T21:00:00Z"
+      "lastVisitAt": "2026-05-30T21:00:00Z",
+      "lastName": "Quinn",
+      "address": "321 Weld County Rd 5"
     },
     {
       "id": "c159",
@@ -1290,14 +1606,18 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/140704250",
       "hasPass": false,
-      "lastVisitAt": "2026-06-24T19:00:00Z"
+      "lastVisitAt": "2026-06-24T19:00:00Z",
+      "lastName": "Walker",
+      "address": "374 Coal Creek Dr"
     },
     {
       "id": "c160",
       "firstName": "Marian",
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/140707556",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Harper",
+      "address": "427 Main St"
     },
     {
       "id": "c161",
@@ -1305,14 +1625,18 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/140949811",
       "hasPass": false,
-      "lastVisitAt": "2026-10-09T18:45:00Z"
+      "lastVisitAt": "2026-10-09T18:45:00Z",
+      "lastName": "Ingram",
+      "address": "480 Cherry Ave"
     },
     {
       "id": "c162",
       "firstName": "Ashli",
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/140960769",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Mason",
+      "address": "533 Pine St"
     },
     {
       "id": "c163",
@@ -1320,14 +1644,18 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/141031676",
       "hasPass": false,
-      "lastVisitAt": "2026-06-10T21:00:00Z"
+      "lastVisitAt": "2026-06-10T21:00:00Z",
+      "lastName": "Young",
+      "address": "586 Aspen Ct"
     },
     {
       "id": "c164",
       "firstName": "Dillon",
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/141038766",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Dalton",
+      "address": "639 Meadowlark Ln"
     },
     {
       "id": "c165",
@@ -1335,7 +1663,9 @@
       "town": "Lafayette",
       "jobberUrl": "https://secure.getjobber.com/clients/141236075",
       "hasPass": false,
-      "lastVisitAt": "2026-06-18T20:00:00Z"
+      "lastVisitAt": "2026-06-18T20:00:00Z",
+      "lastName": "Harper",
+      "address": "692 Sunset Way"
     },
     {
       "id": "c166",
@@ -1343,7 +1673,9 @@
       "town": "Lafayette",
       "jobberUrl": "https://secure.getjobber.com/clients/141268653",
       "hasPass": false,
-      "lastVisitAt": "2026-10-14T20:30:00Z"
+      "lastVisitAt": "2026-10-14T20:30:00Z",
+      "lastName": "Jensen",
+      "address": "745 Homestead Rd"
     },
     {
       "id": "c167",
@@ -1362,7 +1694,9 @@
         ],
         "source": "checkout",
         "recordedAt": "2026-11-05T18:19:00Z"
-      }
+      },
+      "lastName": "Quinn",
+      "address": "798 Prairie View Dr"
     },
     {
       "id": "c168",
@@ -1370,7 +1704,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/141296960",
       "hasPass": false,
-      "lastVisitAt": "2026-06-06T21:30:00Z"
+      "lastVisitAt": "2026-06-06T21:30:00Z",
+      "lastName": "Walker",
+      "address": "851 Cottonwood Cir"
     },
     {
       "id": "c169",
@@ -1378,7 +1714,9 @@
       "town": "Louisville",
       "jobberUrl": "https://secure.getjobber.com/clients/141302985",
       "hasPass": false,
-      "lastVisitAt": "2026-06-08T21:30:00Z"
+      "lastVisitAt": "2026-06-08T21:30:00Z",
+      "lastName": "Fischer",
+      "address": "904 Briggs St"
     },
     {
       "id": "c170",
@@ -1386,7 +1724,9 @@
       "town": "Longmont",
       "jobberUrl": "https://secure.getjobber.com/clients/141304956",
       "hasPass": false,
-      "lastVisitAt": "2026-10-05T19:00:00Z"
+      "lastVisitAt": "2026-10-05T19:00:00Z",
+      "lastName": "Ellis",
+      "address": "957 Weld County Rd 5"
     },
     {
       "id": "c171",
@@ -1394,7 +1734,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/141309448",
       "hasPass": false,
-      "lastVisitAt": "2026-06-23T20:00:00Z"
+      "lastVisitAt": "2026-06-23T20:00:00Z",
+      "lastName": "Jensen",
+      "address": "110 Coal Creek Dr"
     },
     {
       "id": "c172",
@@ -1402,7 +1744,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/141491413",
       "hasPass": false,
-      "lastVisitAt": "2026-09-18T20:00:00Z"
+      "lastVisitAt": "2026-09-18T20:00:00Z",
+      "lastName": "Sutton",
+      "address": "163 Main St"
     },
     {
       "id": "c173",
@@ -1410,7 +1754,9 @@
       "town": "Longmont",
       "jobberUrl": "https://secure.getjobber.com/clients/141653109",
       "hasPass": false,
-      "lastVisitAt": "2026-07-16T19:30:00Z"
+      "lastVisitAt": "2026-07-16T19:30:00Z",
+      "lastName": "Zimmer",
+      "address": "216 Cherry Ave"
     },
     {
       "id": "c174",
@@ -1418,7 +1764,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/141675258",
       "hasPass": false,
-      "lastVisitAt": "2026-10-08T19:00:00Z"
+      "lastVisitAt": "2026-10-08T19:00:00Z",
+      "lastName": "Harper",
+      "address": "269 Pine St"
     },
     {
       "id": "c175",
@@ -1426,7 +1774,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/141836511",
       "hasPass": false,
-      "lastVisitAt": "2026-06-04T22:23:00Z"
+      "lastVisitAt": "2026-06-04T22:23:00Z",
+      "lastName": "Hayes",
+      "address": "322 Aspen Ct"
     },
     {
       "id": "c176",
@@ -1434,7 +1784,9 @@
       "town": "Lafayette",
       "jobberUrl": "https://secure.getjobber.com/clients/142227590",
       "hasPass": false,
-      "lastVisitAt": "2026-06-09T21:00:00Z"
+      "lastVisitAt": "2026-06-09T21:00:00Z",
+      "lastName": "Parker",
+      "address": "375 Meadowlark Ln"
     },
     {
       "id": "c177",
@@ -1442,7 +1794,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/142241955",
       "hasPass": false,
-      "lastVisitAt": "2026-06-11T21:00:00Z"
+      "lastVisitAt": "2026-06-11T21:00:00Z",
+      "lastName": "Young",
+      "address": "428 Sunset Way"
     },
     {
       "id": "c178",
@@ -1450,7 +1804,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/142245961",
       "hasPass": false,
-      "lastVisitAt": "2026-06-04T22:30:00Z"
+      "lastVisitAt": "2026-06-04T22:30:00Z",
+      "lastName": "Everett",
+      "address": "481 Homestead Rd"
     },
     {
       "id": "c179",
@@ -1458,21 +1814,27 @@
       "town": "Lafayette",
       "jobberUrl": "https://secure.getjobber.com/clients/142248896",
       "hasPass": false,
-      "lastVisitAt": "2026-07-03T17:30:00Z"
+      "lastVisitAt": "2026-07-03T17:30:00Z",
+      "lastName": "Carter",
+      "address": "534 Prairie View Dr"
     },
     {
       "id": "c180",
       "firstName": "Vance",
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/142300568",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Keller",
+      "address": "587 Cottonwood Cir"
     },
     {
       "id": "c181",
       "firstName": "Joe",
       "town": "Firestone",
       "jobberUrl": "https://secure.getjobber.com/clients/142428681",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Parker",
+      "address": "640 Briggs St"
     },
     {
       "id": "c182",
@@ -1480,7 +1842,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/142429262",
       "hasPass": false,
-      "lastVisitAt": "2026-10-28T22:00:00Z"
+      "lastVisitAt": "2026-10-28T22:00:00Z",
+      "lastName": "Zimmer",
+      "address": "693 Weld County Rd 5"
     },
     {
       "id": "c183",
@@ -1488,7 +1852,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/142503907",
       "hasPass": false,
-      "lastVisitAt": "2026-10-29T16:00:00Z"
+      "lastVisitAt": "2026-10-29T16:00:00Z",
+      "lastName": "Gibson",
+      "address": "746 Coal Creek Dr"
     },
     {
       "id": "c184",
@@ -1496,7 +1862,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/142510887",
       "hasPass": false,
-      "lastVisitAt": "2026-06-13T18:00:00Z"
+      "lastVisitAt": "2026-06-13T18:00:00Z",
+      "lastName": "Ingram",
+      "address": "799 Main St"
     },
     {
       "id": "c185",
@@ -1504,14 +1872,18 @@
       "town": "Broomfield",
       "jobberUrl": "https://secure.getjobber.com/clients/142541678",
       "hasPass": false,
-      "lastVisitAt": "2026-06-16T19:30:00Z"
+      "lastVisitAt": "2026-06-16T19:30:00Z",
+      "lastName": "Nolan",
+      "address": "852 Cherry Ave"
     },
     {
       "id": "c186",
       "firstName": "Amanda",
       "town": "Longmont",
       "jobberUrl": "https://secure.getjobber.com/clients/142554523",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Vance",
+      "address": "905 Pine St"
     },
     {
       "id": "c187",
@@ -1519,14 +1891,18 @@
       "town": "Louisville",
       "jobberUrl": "https://secure.getjobber.com/clients/142620833",
       "hasPass": false,
-      "lastVisitAt": "2026-06-09T06:00:00Z"
+      "lastVisitAt": "2026-06-09T06:00:00Z",
+      "lastName": "Gibson",
+      "address": "958 Aspen Ct"
     },
     {
       "id": "c188",
       "firstName": "Chris",
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/142650571",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Carter",
+      "address": "111 Meadowlark Ln"
     },
     {
       "id": "c189",
@@ -1545,7 +1921,9 @@
         ],
         "source": "checkout",
         "recordedAt": "2026-11-08T16:28:00Z"
-      }
+      },
+      "lastName": "Jensen",
+      "address": "164 Sunset Way"
     },
     {
       "id": "c190",
@@ -1553,7 +1931,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/142695985",
       "hasPass": false,
-      "lastVisitAt": "2026-10-13T21:00:00Z"
+      "lastVisitAt": "2026-10-13T21:00:00Z",
+      "lastName": "Parker",
+      "address": "217 Homestead Rd"
     },
     {
       "id": "c191",
@@ -1561,7 +1941,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/142865352",
       "hasPass": false,
-      "lastVisitAt": "2026-06-15T19:00:00Z"
+      "lastVisitAt": "2026-06-15T19:00:00Z",
+      "lastName": "Dalton",
+      "address": "270 Prairie View Dr"
     },
     {
       "id": "c192",
@@ -1579,7 +1961,9 @@
         ],
         "source": "checkout",
         "recordedAt": "2026-11-11T19:37:00Z"
-      }
+      },
+      "lastName": "Gibson",
+      "address": "323 Cottonwood Cir"
     },
     {
       "id": "c193",
@@ -1587,7 +1971,9 @@
       "town": "Lafayette",
       "jobberUrl": "https://secure.getjobber.com/clients/142909595",
       "hasPass": false,
-      "lastVisitAt": "2026-06-26T18:30:00Z"
+      "lastVisitAt": "2026-06-26T18:30:00Z",
+      "lastName": "Ellis",
+      "address": "376 Briggs St"
     },
     {
       "id": "c194",
@@ -1595,7 +1981,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/143006404",
       "hasPass": false,
-      "lastVisitAt": "2026-09-29T18:30:00Z"
+      "lastVisitAt": "2026-09-29T18:30:00Z",
+      "lastName": "Keller",
+      "address": "429 Weld County Rd 5"
     },
     {
       "id": "c195",
@@ -1603,14 +1991,18 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/143077788",
       "hasPass": false,
-      "lastVisitAt": "2026-10-02T20:00:00Z"
+      "lastVisitAt": "2026-10-02T20:00:00Z",
+      "lastName": "Walker",
+      "address": "482 Coal Creek Dr"
     },
     {
       "id": "c196",
       "firstName": "Baseball",
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/143161966",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Fischer",
+      "address": "535 Main St"
     },
     {
       "id": "c197",
@@ -1629,7 +2021,9 @@
         ],
         "source": "checkout",
         "recordedAt": "2026-11-06T19:22:00Z"
-      }
+      },
+      "lastName": "Baker",
+      "address": "588 Cherry Ave"
     },
     {
       "id": "c198",
@@ -1637,7 +2031,9 @@
       "town": "Lafayette",
       "jobberUrl": "https://secure.getjobber.com/clients/143371932",
       "hasPass": false,
-      "lastVisitAt": "2026-06-20T21:30:00Z"
+      "lastVisitAt": "2026-06-20T21:30:00Z",
+      "lastName": "Hayes",
+      "address": "641 Pine St"
     },
     {
       "id": "c199",
@@ -1645,7 +2041,9 @@
       "town": "Louisville",
       "jobberUrl": "https://secure.getjobber.com/clients/143398538",
       "hasPass": false,
-      "lastVisitAt": "2026-07-01T18:30:00Z"
+      "lastVisitAt": "2026-07-01T18:30:00Z",
+      "lastName": "Nolan",
+      "address": "694 Aspen Ct"
     },
     {
       "id": "c200",
@@ -1653,7 +2051,9 @@
       "town": "Lafayette",
       "jobberUrl": "https://secure.getjobber.com/clients/143405187",
       "hasPass": false,
-      "lastVisitAt": "2026-06-26T21:00:00Z"
+      "lastVisitAt": "2026-06-26T21:00:00Z",
+      "lastName": "Young",
+      "address": "747 Meadowlark Ln"
     },
     {
       "id": "c201",
@@ -1661,14 +2061,18 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/143495829",
       "hasPass": false,
-      "lastVisitAt": "2026-07-21T18:00:00Z"
+      "lastVisitAt": "2026-07-21T18:00:00Z",
+      "lastName": "Fischer",
+      "address": "800 Sunset Way"
     },
     {
       "id": "c202",
       "firstName": "Alex",
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/143631088",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Dawson",
+      "address": "853 Homestead Rd"
     },
     {
       "id": "c203",
@@ -1676,7 +2080,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/143705077",
       "hasPass": false,
-      "lastVisitAt": "2026-07-20T19:00:00Z"
+      "lastVisitAt": "2026-07-20T19:00:00Z",
+      "lastName": "Nolan",
+      "address": "906 Prairie View Dr"
     },
     {
       "id": "c204",
@@ -1684,14 +2090,18 @@
       "town": "Longmont",
       "jobberUrl": "https://secure.getjobber.com/clients/143716257",
       "hasPass": false,
-      "lastVisitAt": "2026-10-14T19:15:00Z"
+      "lastVisitAt": "2026-10-14T19:15:00Z",
+      "lastName": "Sutton",
+      "address": "959 Cottonwood Cir"
     },
     {
       "id": "c205",
       "firstName": "Peter",
       "town": "Louisville",
       "jobberUrl": "https://secure.getjobber.com/clients/143774998",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Bishop",
+      "address": "112 Briggs St"
     },
     {
       "id": "c206",
@@ -1699,7 +2109,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/143880761",
       "hasPass": false,
-      "lastVisitAt": "2026-06-27T20:00:00Z"
+      "lastVisitAt": "2026-06-27T20:00:00Z",
+      "lastName": "Harper",
+      "address": "165 Weld County Rd 5"
     },
     {
       "id": "c207",
@@ -1718,7 +2130,9 @@
         ],
         "source": "checkout",
         "recordedAt": "2026-11-09T17:31:00Z"
-      }
+      },
+      "lastName": "Grant",
+      "address": "218 Coal Creek Dr"
     },
     {
       "id": "c208",
@@ -1726,7 +2140,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/143932930",
       "hasPass": false,
-      "lastVisitAt": "2026-11-06T18:00:00Z"
+      "lastVisitAt": "2026-11-06T18:00:00Z",
+      "lastName": "Nolan",
+      "address": "271 Main St"
     },
     {
       "id": "c209",
@@ -1734,14 +2150,18 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/143952912",
       "hasPass": false,
-      "lastVisitAt": "2026-10-22T17:00:00Z"
+      "lastVisitAt": "2026-10-22T17:00:00Z",
+      "lastName": "Walker",
+      "address": "324 Cherry Ave"
     },
     {
       "id": "c210",
       "firstName": "Ruth",
       "town": "Lafayette",
       "jobberUrl": "https://secure.getjobber.com/clients/144058762",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Dalton",
+      "address": "377 Pine St"
     },
     {
       "id": "c211",
@@ -1749,7 +2169,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/144185124",
       "hasPass": false,
-      "lastVisitAt": "2026-10-14T22:30:00Z"
+      "lastVisitAt": "2026-10-14T22:30:00Z",
+      "lastName": "Dawson",
+      "address": "430 Aspen Ct"
     },
     {
       "id": "c212",
@@ -1757,21 +2179,27 @@
       "town": "Longmont",
       "jobberUrl": "https://secure.getjobber.com/clients/144333821",
       "hasPass": false,
-      "lastVisitAt": "2026-07-25T15:00:00Z"
+      "lastVisitAt": "2026-07-25T15:00:00Z",
+      "lastName": "Jensen",
+      "address": "483 Meadowlark Ln"
     },
     {
       "id": "c213",
       "firstName": "Vince",
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/144394912",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Reed",
+      "address": "536 Sunset Way"
     },
     {
       "id": "c214",
       "firstName": "Sabrina",
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/144497825",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Coleman",
+      "address": "589 Homestead Rd"
     },
     {
       "id": "c215",
@@ -1779,7 +2207,9 @@
       "town": "Lafayette",
       "jobberUrl": "https://secure.getjobber.com/clients/144731351",
       "hasPass": false,
-      "lastVisitAt": "2026-06-26T22:30:00Z"
+      "lastVisitAt": "2026-06-26T22:30:00Z",
+      "lastName": "Anderson",
+      "address": "642 Prairie View Dr"
     },
     {
       "id": "c216",
@@ -1787,21 +2217,27 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/144827916",
       "hasPass": false,
-      "lastVisitAt": "2026-07-01T21:30:00Z"
+      "lastVisitAt": "2026-07-01T21:30:00Z",
+      "lastName": "Dawson",
+      "address": "695 Cottonwood Cir"
     },
     {
       "id": "c217",
       "firstName": "Sarah",
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/144870977",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Nolan",
+      "address": "748 Briggs St"
     },
     {
       "id": "c218",
       "firstName": "Peter",
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/145001206",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Underwood",
+      "address": "801 Weld County Rd 5"
     },
     {
       "id": "c219",
@@ -1809,7 +2245,9 @@
       "town": "Firestone",
       "jobberUrl": "https://secure.getjobber.com/clients/145044888",
       "hasPass": false,
-      "lastVisitAt": "2026-07-02T21:30:00Z"
+      "lastVisitAt": "2026-07-02T21:30:00Z",
+      "lastName": "Everett",
+      "address": "854 Coal Creek Dr"
     },
     {
       "id": "c220",
@@ -1817,7 +2255,9 @@
       "town": "Longmont",
       "jobberUrl": "https://secure.getjobber.com/clients/145054237",
       "hasPass": false,
-      "lastVisitAt": "2026-07-14T19:00:00Z"
+      "lastVisitAt": "2026-07-14T19:00:00Z",
+      "lastName": "Baker",
+      "address": "907 Main St"
     },
     {
       "id": "c221",
@@ -1825,7 +2265,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/145058514",
       "hasPass": false,
-      "lastVisitAt": "2026-06-30T23:00:00Z"
+      "lastVisitAt": "2026-06-30T23:00:00Z",
+      "lastName": "Ingram",
+      "address": "960 Cherry Ave"
     },
     {
       "id": "c222",
@@ -1833,7 +2275,9 @@
       "town": "Broomfield",
       "jobberUrl": "https://secure.getjobber.com/clients/145240129",
       "hasPass": false,
-      "lastVisitAt": "2026-10-22T18:00:00Z"
+      "lastVisitAt": "2026-10-22T18:00:00Z",
+      "lastName": "Parker",
+      "address": "113 Pine St"
     },
     {
       "id": "c223",
@@ -1841,7 +2285,9 @@
       "town": "Lafayette",
       "jobberUrl": "https://secure.getjobber.com/clients/145310501",
       "hasPass": false,
-      "lastVisitAt": "2026-07-24T20:30:00Z"
+      "lastVisitAt": "2026-07-24T20:30:00Z",
+      "lastName": "Walker",
+      "address": "166 Aspen Ct"
     },
     {
       "id": "c224",
@@ -1849,28 +2295,36 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/145764357",
       "hasPass": false,
-      "lastVisitAt": "2026-07-22T21:00:00Z"
+      "lastVisitAt": "2026-07-22T21:00:00Z",
+      "lastName": "Gibson",
+      "address": "219 Meadowlark Ln"
     },
     {
       "id": "c225",
       "firstName": "Conner",
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/145982268",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Grant",
+      "address": "272 Sunset Way"
     },
     {
       "id": "c226",
       "firstName": "Liz",
       "town": "Lafayette",
       "jobberUrl": "https://secure.getjobber.com/clients/145982963",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Keller",
+      "address": "325 Homestead Rd"
     },
     {
       "id": "c227",
       "firstName": "Going",
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/146055134",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Turner",
+      "address": "378 Prairie View Dr"
     },
     {
       "id": "c228",
@@ -1878,7 +2332,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/146089974",
       "hasPass": false,
-      "lastVisitAt": "2026-10-23T20:00:00Z"
+      "lastVisitAt": "2026-10-23T20:00:00Z",
+      "lastName": "Zimmer",
+      "address": "431 Cottonwood Cir"
     },
     {
       "id": "c229",
@@ -1886,7 +2342,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/146140421",
       "hasPass": false,
-      "lastVisitAt": "2026-10-30T18:00:00Z"
+      "lastVisitAt": "2026-10-30T18:00:00Z",
+      "lastName": "Foster",
+      "address": "484 Briggs St"
     },
     {
       "id": "c230",
@@ -1894,7 +2352,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/146327398",
       "hasPass": false,
-      "lastVisitAt": "2026-07-23T19:00:00Z"
+      "lastVisitAt": "2026-07-23T19:00:00Z",
+      "lastName": "Jensen",
+      "address": "537 Weld County Rd 5"
     },
     {
       "id": "c231",
@@ -1902,7 +2362,9 @@
       "town": "Longmont",
       "jobberUrl": "https://secure.getjobber.com/clients/146401223",
       "hasPass": false,
-      "lastVisitAt": "2026-10-21T16:00:00Z"
+      "lastVisitAt": "2026-10-21T16:00:00Z",
+      "lastName": "Owens",
+      "address": "590 Coal Creek Dr"
     },
     {
       "id": "c232",
@@ -1910,7 +2372,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/146450167",
       "hasPass": false,
-      "lastVisitAt": "2026-07-23T21:30:00Z"
+      "lastVisitAt": "2026-07-23T21:30:00Z",
+      "lastName": "Vance",
+      "address": "643 Main St"
     },
     {
       "id": "c233",
@@ -1918,7 +2382,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/146497024",
       "hasPass": false,
-      "lastVisitAt": "2026-08-25T22:00:00Z"
+      "lastVisitAt": "2026-08-25T22:00:00Z",
+      "lastName": "Gibson",
+      "address": "696 Cherry Ave"
     },
     {
       "id": "c234",
@@ -1926,7 +2392,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/146507277",
       "hasPass": false,
-      "lastVisitAt": "2026-07-28T18:00:00Z"
+      "lastVisitAt": "2026-07-28T18:00:00Z",
+      "lastName": "Dawson",
+      "address": "749 Pine St"
     },
     {
       "id": "c235",
@@ -1934,7 +2402,9 @@
       "town": "Longmont",
       "jobberUrl": "https://secure.getjobber.com/clients/146539698",
       "hasPass": false,
-      "lastVisitAt": "2026-07-29T19:00:00Z"
+      "lastVisitAt": "2026-07-29T19:00:00Z",
+      "lastName": "Keller",
+      "address": "802 Aspen Ct"
     },
     {
       "id": "c236",
@@ -1942,14 +2412,18 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/146622480",
       "hasPass": false,
-      "lastVisitAt": "2026-08-04T18:30:00Z"
+      "lastVisitAt": "2026-08-04T18:30:00Z",
+      "lastName": "Turner",
+      "address": "855 Meadowlark Ln"
     },
     {
       "id": "c237",
       "firstName": "Kevin",
       "town": "Longmont",
       "jobberUrl": "https://secure.getjobber.com/clients/146747857",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Bishop",
+      "address": "908 Sunset Way"
     },
     {
       "id": "c238",
@@ -1957,7 +2431,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/146890781",
       "hasPass": false,
-      "lastVisitAt": "2026-10-02T16:00:00Z"
+      "lastVisitAt": "2026-10-02T16:00:00Z",
+      "lastName": "Harper",
+      "address": "961 Homestead Rd"
     },
     {
       "id": "c239",
@@ -1965,7 +2441,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/147054388",
       "hasPass": false,
-      "lastVisitAt": "2026-10-14T14:30:00Z"
+      "lastVisitAt": "2026-10-14T14:30:00Z",
+      "lastName": "Grant",
+      "address": "114 Prairie View Dr"
     },
     {
       "id": "c240",
@@ -1973,14 +2451,18 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/147207946",
       "hasPass": false,
-      "lastVisitAt": "2026-08-01T13:00:00Z"
+      "lastVisitAt": "2026-08-01T13:00:00Z",
+      "lastName": "Quinn",
+      "address": "167 Cottonwood Cir"
     },
     {
       "id": "c241",
       "firstName": "Thomas",
       "town": "Lafayette",
       "jobberUrl": "https://secure.getjobber.com/clients/147222340",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Walker",
+      "address": "220 Briggs St"
     },
     {
       "id": "c242",
@@ -1988,7 +2470,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/147270310",
       "hasPass": false,
-      "lastVisitAt": "2026-10-22T18:45:00Z"
+      "lastVisitAt": "2026-10-22T18:45:00Z",
+      "lastName": "Fischer",
+      "address": "273 Weld County Rd 5"
     },
     {
       "id": "c243",
@@ -1996,7 +2480,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/147291514",
       "hasPass": false,
-      "lastVisitAt": "2026-10-02T22:00:00Z"
+      "lastVisitAt": "2026-10-02T22:00:00Z",
+      "lastName": "Ellis",
+      "address": "326 Coal Creek Dr"
     },
     {
       "id": "c244",
@@ -2004,7 +2490,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/147707716",
       "hasPass": false,
-      "lastVisitAt": "2026-07-30T21:30:00Z"
+      "lastVisitAt": "2026-07-30T21:30:00Z",
+      "lastName": "Larson",
+      "address": "379 Main St"
     },
     {
       "id": "c245",
@@ -2012,14 +2500,18 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/147708537",
       "hasPass": false,
-      "lastVisitAt": "2026-08-03T21:30:00Z"
+      "lastVisitAt": "2026-08-03T21:30:00Z",
+      "lastName": "Quinn",
+      "address": "432 Cherry Ave"
     },
     {
       "id": "c246",
       "firstName": "Aleix",
       "town": "Lafayette",
       "jobberUrl": "https://secure.getjobber.com/clients/147801599",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Zimmer",
+      "address": "485 Pine St"
     },
     {
       "id": "c247",
@@ -2027,7 +2519,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/148107896",
       "hasPass": false,
-      "lastVisitAt": "2026-08-19T21:00:00Z"
+      "lastVisitAt": "2026-08-19T21:00:00Z",
+      "lastName": "Harper",
+      "address": "538 Aspen Ct"
     },
     {
       "id": "c248",
@@ -2035,7 +2529,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/148446880",
       "hasPass": false,
-      "lastVisitAt": "2026-08-06T20:30:00Z"
+      "lastVisitAt": "2026-08-06T20:30:00Z",
+      "lastName": "Hayes",
+      "address": "591 Meadowlark Ln"
     },
     {
       "id": "c249",
@@ -2043,21 +2539,27 @@
       "town": "Broomfield",
       "jobberUrl": "https://secure.getjobber.com/clients/148676669",
       "hasPass": false,
-      "lastVisitAt": "2026-11-04T21:00:00Z"
+      "lastVisitAt": "2026-11-04T21:00:00Z",
+      "lastName": "Mason",
+      "address": "644 Sunset Way"
     },
     {
       "id": "c250",
       "firstName": "Andrea",
       "town": "Longmont",
       "jobberUrl": "https://secure.getjobber.com/clients/148777714",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Vance",
+      "address": "697 Homestead Rd"
     },
     {
       "id": "c251",
       "firstName": "Flloyd",
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/148883331",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Everett",
+      "address": "750 Prairie View Dr"
     },
     {
       "id": "c252",
@@ -2065,7 +2567,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/148885399",
       "hasPass": false,
-      "lastVisitAt": "2026-08-12T21:30:00Z"
+      "lastVisitAt": "2026-08-12T21:30:00Z",
+      "lastName": "Dawson",
+      "address": "803 Cottonwood Cir"
     },
     {
       "id": "c253",
@@ -2073,7 +2577,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/148961545",
       "hasPass": false,
-      "lastVisitAt": "2026-08-17T19:00:00Z"
+      "lastVisitAt": "2026-08-17T19:00:00Z",
+      "lastName": "Keller",
+      "address": "856 Briggs St"
     },
     {
       "id": "c254",
@@ -2081,7 +2587,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/149230941",
       "hasPass": false,
-      "lastVisitAt": "2026-08-18T19:00:00Z"
+      "lastVisitAt": "2026-08-18T19:00:00Z",
+      "lastName": "Parker",
+      "address": "909 Weld County Rd 5"
     },
     {
       "id": "c255",
@@ -2089,7 +2597,9 @@
       "town": "Louisville",
       "jobberUrl": "https://secure.getjobber.com/clients/149593792",
       "hasPass": false,
-      "lastVisitAt": "2026-10-21T21:00:00Z"
+      "lastVisitAt": "2026-10-21T21:00:00Z",
+      "lastName": "Vance",
+      "address": "962 Coal Creek Dr"
     },
     {
       "id": "c256",
@@ -2097,7 +2607,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/149847323",
       "hasPass": false,
-      "lastVisitAt": "2026-10-09T18:00:00Z"
+      "lastVisitAt": "2026-10-09T18:00:00Z",
+      "lastName": "Anderson",
+      "address": "115 Main St"
     },
     {
       "id": "c257",
@@ -2105,7 +2617,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/149948233",
       "hasPass": false,
-      "lastVisitAt": "2026-08-24T20:30:00Z"
+      "lastVisitAt": "2026-08-24T20:30:00Z",
+      "lastName": "Hayes",
+      "address": "168 Cherry Ave"
     },
     {
       "id": "c258",
@@ -2113,7 +2627,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/150002162",
       "hasPass": false,
-      "lastVisitAt": "2026-08-24T22:00:00Z"
+      "lastVisitAt": "2026-08-24T22:00:00Z",
+      "lastName": "Mason",
+      "address": "221 Pine St"
     },
     {
       "id": "c259",
@@ -2121,7 +2637,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/150132971",
       "hasPass": false,
-      "lastVisitAt": "2026-08-28T19:00:00Z"
+      "lastVisitAt": "2026-08-28T19:00:00Z",
+      "lastName": "Underwood",
+      "address": "274 Aspen Ct"
     },
     {
       "id": "c260",
@@ -2129,7 +2647,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/150176724",
       "hasPass": false,
-      "lastVisitAt": "2026-10-21T20:00:00Z"
+      "lastVisitAt": "2026-10-21T20:00:00Z",
+      "lastName": "Coleman",
+      "address": "327 Meadowlark Ln"
     },
     {
       "id": "c261",
@@ -2137,14 +2657,18 @@
       "town": "Lafayette",
       "jobberUrl": "https://secure.getjobber.com/clients/150293256",
       "hasPass": false,
-      "lastVisitAt": "2026-09-09T18:30:00Z"
+      "lastVisitAt": "2026-09-09T18:30:00Z",
+      "lastName": "Anderson",
+      "address": "380 Sunset Way"
     },
     {
       "id": "c262",
       "firstName": "Matt",
       "town": "Longmont",
       "jobberUrl": "https://secure.getjobber.com/clients/150295540",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Hayes",
+      "address": "433 Homestead Rd"
     },
     {
       "id": "c263",
@@ -2152,7 +2676,9 @@
       "town": "Louisville",
       "jobberUrl": "https://secure.getjobber.com/clients/150634512",
       "hasPass": false,
-      "lastVisitAt": "2026-10-15T20:00:00Z"
+      "lastVisitAt": "2026-10-15T20:00:00Z",
+      "lastName": "Reed",
+      "address": "486 Prairie View Dr"
     },
     {
       "id": "c264",
@@ -2160,21 +2686,27 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/150732315",
       "hasPass": false,
-      "lastVisitAt": "2026-09-02T20:30:00Z"
+      "lastVisitAt": "2026-09-02T20:30:00Z",
+      "lastName": "Vance",
+      "address": "539 Cottonwood Cir"
     },
     {
       "id": "c265",
       "firstName": "Dane",
       "town": "Broomfield",
       "jobberUrl": "https://secure.getjobber.com/clients/150738881",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Everett",
+      "address": "592 Briggs St"
     },
     {
       "id": "c266",
       "firstName": "Alexandra",
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/150752349",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Ingram",
+      "address": "645 Weld County Rd 5"
     },
     {
       "id": "c267",
@@ -2182,7 +2714,9 @@
       "town": "Longmont",
       "jobberUrl": "https://secure.getjobber.com/clients/150833735",
       "hasPass": false,
-      "lastVisitAt": "2026-09-10T18:00:00Z"
+      "lastVisitAt": "2026-09-10T18:00:00Z",
+      "lastName": "Keller",
+      "address": "698 Coal Creek Dr"
     },
     {
       "id": "c268",
@@ -2190,7 +2724,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/150848557",
       "hasPass": false,
-      "lastVisitAt": "2026-10-19T23:00:00Z"
+      "lastVisitAt": "2026-10-19T23:00:00Z",
+      "lastName": "Sutton",
+      "address": "751 Main St"
     },
     {
       "id": "c269",
@@ -2198,7 +2734,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/150904797",
       "hasPass": false,
-      "lastVisitAt": "2026-10-21T19:00:00Z"
+      "lastVisitAt": "2026-10-21T19:00:00Z",
+      "lastName": "Coleman",
+      "address": "804 Cherry Ave"
     },
     {
       "id": "c270",
@@ -2206,28 +2744,36 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/150909831",
       "hasPass": false,
-      "lastVisitAt": "2026-10-28T17:00:00Z"
+      "lastVisitAt": "2026-10-28T17:00:00Z",
+      "lastName": "Gibson",
+      "address": "857 Pine St"
     },
     {
       "id": "c271",
       "firstName": "Coner",
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/150946965",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Hayes",
+      "address": "910 Aspen Ct"
     },
     {
       "id": "c272",
       "firstName": "Paul",
       "town": "Lafayette",
       "jobberUrl": "https://secure.getjobber.com/clients/151050406",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Nolan",
+      "address": "963 Meadowlark Ln"
     },
     {
       "id": "c273",
       "firstName": "Reed",
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/151933639",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Underwood",
+      "address": "116 Sunset Way"
     },
     {
       "id": "c274",
@@ -2235,7 +2781,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/152049006",
       "hasPass": false,
-      "lastVisitAt": "2026-09-18T22:00:00Z"
+      "lastVisitAt": "2026-09-18T22:00:00Z",
+      "lastName": "Dalton",
+      "address": "169 Homestead Rd"
     },
     {
       "id": "c275",
@@ -2243,7 +2791,9 @@
       "town": "Louisville",
       "jobberUrl": "https://secure.getjobber.com/clients/152061887",
       "hasPass": false,
-      "lastVisitAt": "2026-09-22T16:00:00Z"
+      "lastVisitAt": "2026-09-22T16:00:00Z",
+      "lastName": "Dawson",
+      "address": "222 Prairie View Dr"
     },
     {
       "id": "c276",
@@ -2251,7 +2801,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/152582235",
       "hasPass": false,
-      "lastVisitAt": "2026-10-20T18:00:00Z"
+      "lastVisitAt": "2026-10-20T18:00:00Z",
+      "lastName": "Jensen",
+      "address": "275 Cottonwood Cir"
     },
     {
       "id": "c277",
@@ -2259,7 +2811,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/152635664",
       "hasPass": false,
-      "lastVisitAt": "2026-09-28T19:00:00Z"
+      "lastVisitAt": "2026-09-28T19:00:00Z",
+      "lastName": "Reed",
+      "address": "328 Briggs St"
     },
     {
       "id": "c278",
@@ -2267,7 +2821,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/152849301",
       "hasPass": false,
-      "lastVisitAt": "2026-10-06T19:00:00Z"
+      "lastVisitAt": "2026-10-06T19:00:00Z",
+      "lastName": "Bishop",
+      "address": "381 Weld County Rd 5"
     },
     {
       "id": "c279",
@@ -2275,7 +2831,9 @@
       "town": "Longmont",
       "jobberUrl": "https://secure.getjobber.com/clients/153084112",
       "hasPass": false,
-      "lastVisitAt": "2026-10-15T18:30:00Z"
+      "lastVisitAt": "2026-10-15T18:30:00Z",
+      "lastName": "Foster",
+      "address": "434 Coal Creek Dr"
     },
     {
       "id": "c280",
@@ -2283,7 +2841,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/153133707",
       "hasPass": false,
-      "lastVisitAt": "2026-10-13T18:30:00Z"
+      "lastVisitAt": "2026-10-13T18:30:00Z",
+      "lastName": "Ellis",
+      "address": "487 Main St"
     },
     {
       "id": "c281",
@@ -2291,7 +2851,9 @@
       "town": "Lafayette",
       "jobberUrl": "https://secure.getjobber.com/clients/153141129",
       "hasPass": false,
-      "lastVisitAt": "2026-10-12T21:00:00Z"
+      "lastVisitAt": "2026-10-12T21:00:00Z",
+      "lastName": "Turner",
+      "address": "540 Cherry Ave"
     },
     {
       "id": "c282",
@@ -2299,7 +2861,9 @@
       "town": "Louisville",
       "jobberUrl": "https://secure.getjobber.com/clients/153141742",
       "hasPass": false,
-      "lastVisitAt": "2026-10-12T17:00:00Z"
+      "lastVisitAt": "2026-10-12T17:00:00Z",
+      "lastName": "Sutton",
+      "address": "593 Pine St"
     },
     {
       "id": "c283",
@@ -2307,7 +2871,9 @@
       "town": "Lafayette",
       "jobberUrl": "https://secure.getjobber.com/clients/153157430",
       "hasPass": false,
-      "lastVisitAt": "2026-09-21T18:30:00Z"
+      "lastVisitAt": "2026-09-21T18:30:00Z",
+      "lastName": "Everett",
+      "address": "646 Aspen Ct"
     },
     {
       "id": "c284",
@@ -2315,7 +2881,9 @@
       "town": "Lafayette",
       "jobberUrl": "https://secure.getjobber.com/clients/153251091",
       "hasPass": false,
-      "lastVisitAt": "2026-10-06T17:00:00Z"
+      "lastVisitAt": "2026-10-06T17:00:00Z",
+      "lastName": "Dawson",
+      "address": "699 Meadowlark Ln"
     },
     {
       "id": "c285",
@@ -2323,21 +2891,27 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/153403333",
       "hasPass": false,
-      "lastVisitAt": "2026-09-21T22:00:00Z"
+      "lastVisitAt": "2026-09-21T22:00:00Z",
+      "lastName": "Ingram",
+      "address": "752 Sunset Way"
     },
     {
       "id": "c286",
       "firstName": "Scott",
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/153528502",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Quinn",
+      "address": "805 Homestead Rd"
     },
     {
       "id": "c287",
       "firstName": "Amir",
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/153567106",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Walker",
+      "address": "858 Prairie View Dr"
     },
     {
       "id": "c288",
@@ -2345,7 +2919,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/153579501",
       "hasPass": false,
-      "lastVisitAt": "2026-10-14T16:45:00Z"
+      "lastVisitAt": "2026-10-14T16:45:00Z",
+      "lastName": "Gibson",
+      "address": "911 Cottonwood Cir"
     },
     {
       "id": "c289",
@@ -2353,7 +2929,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/153605426",
       "hasPass": false,
-      "lastVisitAt": "2026-09-21T20:00:00Z"
+      "lastVisitAt": "2026-09-21T20:00:00Z",
+      "lastName": "Jensen",
+      "address": "964 Briggs St"
     },
     {
       "id": "c290",
@@ -2361,21 +2939,27 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/153610875",
       "hasPass": false,
-      "lastVisitAt": "2026-10-08T20:00:00Z"
+      "lastVisitAt": "2026-10-08T20:00:00Z",
+      "lastName": "Mason",
+      "address": "117 Weld County Rd 5"
     },
     {
       "id": "c291",
       "firstName": "Parker",
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/153669318",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Underwood",
+      "address": "170 Coal Creek Dr"
     },
     {
       "id": "c292",
       "firstName": "Jooseok",
       "town": "Broomfield",
       "jobberUrl": "https://secure.getjobber.com/clients/153755711",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Everett",
+      "address": "223 Main St"
     },
     {
       "id": "c293",
@@ -2383,7 +2967,9 @@
       "town": "Lafayette",
       "jobberUrl": "https://secure.getjobber.com/clients/153767810",
       "hasPass": false,
-      "lastVisitAt": "2026-09-28T20:00:00Z"
+      "lastVisitAt": "2026-09-28T20:00:00Z",
+      "lastName": "Carter",
+      "address": "276 Cherry Ave"
     },
     {
       "id": "c294",
@@ -2391,7 +2977,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/153784770",
       "hasPass": false,
-      "lastVisitAt": "2026-09-30T18:30:00Z"
+      "lastVisitAt": "2026-09-30T18:30:00Z",
+      "lastName": "Hayes",
+      "address": "329 Pine St"
     },
     {
       "id": "c295",
@@ -2399,7 +2987,9 @@
       "town": "Lafayette",
       "jobberUrl": "https://secure.getjobber.com/clients/153808739",
       "hasPass": false,
-      "lastVisitAt": "2026-10-08T22:00:00Z"
+      "lastVisitAt": "2026-10-08T22:00:00Z",
+      "lastName": "Reed",
+      "address": "382 Aspen Ct"
     },
     {
       "id": "c296",
@@ -2407,7 +2997,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/153962900",
       "hasPass": false,
-      "lastVisitAt": "2026-10-19T18:30:00Z"
+      "lastVisitAt": "2026-10-19T18:30:00Z",
+      "lastName": "Walker",
+      "address": "435 Meadowlark Ln"
     },
     {
       "id": "c297",
@@ -2415,14 +3007,18 @@
       "town": "Longmont",
       "jobberUrl": "https://secure.getjobber.com/clients/154065472",
       "hasPass": false,
-      "lastVisitAt": "2026-10-01T18:30:00Z"
+      "lastVisitAt": "2026-10-01T18:30:00Z",
+      "lastName": "Fischer",
+      "address": "488 Sunset Way"
     },
     {
       "id": "c298",
       "firstName": "Darwin",
       "town": "Longmont",
       "jobberUrl": "https://secure.getjobber.com/clients/154072289",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Foster",
+      "address": "541 Homestead Rd"
     },
     {
       "id": "c299",
@@ -2430,7 +3026,9 @@
       "town": "Longmont",
       "jobberUrl": "https://secure.getjobber.com/clients/154157881",
       "hasPass": false,
-      "lastVisitAt": "2026-10-28T18:00:00Z"
+      "lastVisitAt": "2026-10-28T18:00:00Z",
+      "lastName": "Mason",
+      "address": "594 Prairie View Dr"
     },
     {
       "id": "c300",
@@ -2438,7 +3036,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/154193825",
       "hasPass": false,
-      "lastVisitAt": "2026-10-14T16:00:00Z"
+      "lastVisitAt": "2026-10-14T16:00:00Z",
+      "lastName": "Sutton",
+      "address": "647 Cottonwood Cir"
     },
     {
       "id": "c301",
@@ -2446,7 +3046,9 @@
       "town": "Lafayette",
       "jobberUrl": "https://secure.getjobber.com/clients/154196932",
       "hasPass": false,
-      "lastVisitAt": "2026-10-29T19:00:00Z"
+      "lastVisitAt": "2026-10-29T19:00:00Z",
+      "lastName": "Zimmer",
+      "address": "700 Briggs St"
     },
     {
       "id": "c302",
@@ -2454,21 +3056,27 @@
       "town": "Lafayette",
       "jobberUrl": "https://secure.getjobber.com/clients/154210638",
       "hasPass": false,
-      "lastVisitAt": "2026-10-14T18:00:00Z"
+      "lastVisitAt": "2026-10-14T18:00:00Z",
+      "lastName": "Baker",
+      "address": "753 Weld County Rd 5"
     },
     {
       "id": "c303",
       "firstName": "Felicia",
       "town": "Louisville",
       "jobberUrl": "https://secure.getjobber.com/clients/154270591",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Jensen",
+      "address": "806 Coal Creek Dr"
     },
     {
       "id": "c304",
       "firstName": "Mike",
       "town": "Louisville",
       "jobberUrl": "https://secure.getjobber.com/clients/154299340",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Nolan",
+      "address": "859 Main St"
     },
     {
       "id": "c305",
@@ -2476,7 +3084,9 @@
       "town": "Longmont",
       "jobberUrl": "https://secure.getjobber.com/clients/154304053",
       "hasPass": false,
-      "lastVisitAt": "2026-10-01T16:00:00Z"
+      "lastVisitAt": "2026-10-01T16:00:00Z",
+      "lastName": "Vance",
+      "address": "912 Cherry Ave"
     },
     {
       "id": "c306",
@@ -2484,7 +3094,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/154309291",
       "hasPass": false,
-      "lastVisitAt": "2026-10-20T19:15:00Z"
+      "lastVisitAt": "2026-10-20T19:15:00Z",
+      "lastName": "Everett",
+      "address": "965 Pine St"
     },
     {
       "id": "c307",
@@ -2492,7 +3104,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/154343991",
       "hasPass": false,
-      "lastVisitAt": "2026-10-14T21:30:00Z"
+      "lastVisitAt": "2026-10-14T21:30:00Z",
+      "lastName": "Carter",
+      "address": "118 Aspen Ct"
     },
     {
       "id": "c308",
@@ -2500,7 +3114,9 @@
       "town": "Lafayette",
       "jobberUrl": "https://secure.getjobber.com/clients/154450985",
       "hasPass": false,
-      "lastVisitAt": "2026-10-23T19:30:00Z"
+      "lastVisitAt": "2026-10-23T19:30:00Z",
+      "lastName": "Nolan",
+      "address": "171 Meadowlark Ln"
     },
     {
       "id": "c309",
@@ -2508,7 +3124,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/154456184",
       "hasPass": false,
-      "lastVisitAt": "2026-10-21T16:00:00Z"
+      "lastVisitAt": "2026-10-21T16:00:00Z",
+      "lastName": "Turner",
+      "address": "224 Sunset Way"
     },
     {
       "id": "c310",
@@ -2516,7 +3134,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/154460320",
       "hasPass": false,
-      "lastVisitAt": "2026-10-19T19:30:00Z"
+      "lastVisitAt": "2026-10-19T19:30:00Z",
+      "lastName": "Zimmer",
+      "address": "277 Homestead Rd"
     },
     {
       "id": "c311",
@@ -2524,7 +3144,9 @@
       "town": "Broomfield",
       "jobberUrl": "https://secure.getjobber.com/clients/154717135",
       "hasPass": false,
-      "lastVisitAt": "2026-10-22T22:00:00Z"
+      "lastVisitAt": "2026-10-22T22:00:00Z",
+      "lastName": "Baker",
+      "address": "330 Prairie View Dr"
     },
     {
       "id": "c312",
@@ -2532,7 +3154,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/154731409",
       "hasPass": false,
-      "lastVisitAt": "2026-10-02T17:00:00Z"
+      "lastVisitAt": "2026-10-02T17:00:00Z",
+      "lastName": "Foster",
+      "address": "383 Cottonwood Cir"
     },
     {
       "id": "c313",
@@ -2540,7 +3164,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/154782432",
       "hasPass": false,
-      "lastVisitAt": "2026-10-12T16:00:00Z"
+      "lastVisitAt": "2026-10-12T16:00:00Z",
+      "lastName": "Nolan",
+      "address": "436 Briggs St"
     },
     {
       "id": "c314",
@@ -2548,7 +3174,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/154783817",
       "hasPass": false,
-      "lastVisitAt": "2026-10-06T16:00:00Z"
+      "lastVisitAt": "2026-10-06T16:00:00Z",
+      "lastName": "Underwood",
+      "address": "489 Weld County Rd 5"
     },
     {
       "id": "c315",
@@ -2556,7 +3184,9 @@
       "town": "Lafayette",
       "jobberUrl": "https://secure.getjobber.com/clients/154898654",
       "hasPass": false,
-      "lastVisitAt": "2026-10-13T16:00:00Z"
+      "lastVisitAt": "2026-10-13T16:00:00Z",
+      "lastName": "Bishop",
+      "address": "542 Coal Creek Dr"
     },
     {
       "id": "c316",
@@ -2564,7 +3194,9 @@
       "town": "Longmont",
       "jobberUrl": "https://secure.getjobber.com/clients/154958260",
       "hasPass": false,
-      "lastVisitAt": "2026-10-14T18:30:00Z"
+      "lastVisitAt": "2026-10-14T18:30:00Z",
+      "lastName": "Anderson",
+      "address": "595 Main St"
     },
     {
       "id": "c317",
@@ -2572,7 +3204,9 @@
       "town": "Lafayette",
       "jobberUrl": "https://secure.getjobber.com/clients/154958555",
       "hasPass": false,
-      "lastVisitAt": "2026-10-23T21:00:00Z"
+      "lastVisitAt": "2026-10-23T21:00:00Z",
+      "lastName": "Jensen",
+      "address": "648 Cherry Ave"
     },
     {
       "id": "c318",
@@ -2580,7 +3214,9 @@
       "town": "Broomfield",
       "jobberUrl": "https://secure.getjobber.com/clients/154958682",
       "hasPass": false,
-      "lastVisitAt": "2026-10-26T16:00:00Z"
+      "lastVisitAt": "2026-10-26T16:00:00Z",
+      "lastName": "Quinn",
+      "address": "701 Pine St"
     },
     {
       "id": "c319",
@@ -2588,7 +3224,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/155012955",
       "hasPass": false,
-      "lastVisitAt": "2026-10-02T18:00:00Z"
+      "lastVisitAt": "2026-10-02T18:00:00Z",
+      "lastName": "Vance",
+      "address": "754 Aspen Ct"
     },
     {
       "id": "c320",
@@ -2596,7 +3234,9 @@
       "town": "Firestone",
       "jobberUrl": "https://secure.getjobber.com/clients/155014367",
       "hasPass": false,
-      "lastVisitAt": "2026-10-20T20:00:00Z"
+      "lastVisitAt": "2026-10-20T20:00:00Z",
+      "lastName": "Gibson",
+      "address": "807 Meadowlark Ln"
     },
     {
       "id": "c321",
@@ -2604,7 +3244,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/155027747",
       "hasPass": false,
-      "lastVisitAt": "2026-10-19T20:30:00Z"
+      "lastVisitAt": "2026-10-19T20:30:00Z",
+      "lastName": "Dawson",
+      "address": "860 Sunset Way"
     },
     {
       "id": "c322",
@@ -2612,14 +3254,18 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/155034745",
       "hasPass": false,
-      "lastVisitAt": "2026-10-13T20:00:00Z"
+      "lastVisitAt": "2026-10-13T20:00:00Z",
+      "lastName": "Mason",
+      "address": "913 Homestead Rd"
     },
     {
       "id": "c323",
       "firstName": "Ashley",
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/155126090",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Underwood",
+      "address": "966 Prairie View Dr"
     },
     {
       "id": "c324",
@@ -2627,7 +3273,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/155150678",
       "hasPass": false,
-      "lastVisitAt": "2026-10-19T21:30:00Z"
+      "lastVisitAt": "2026-10-19T21:30:00Z",
+      "lastName": "Coleman",
+      "address": "119 Cottonwood Cir"
     },
     {
       "id": "c325",
@@ -2635,7 +3283,9 @@
       "town": "Broomfield",
       "jobberUrl": "https://secure.getjobber.com/clients/155171259",
       "hasPass": false,
-      "lastVisitAt": "2026-10-07T17:00:00Z"
+      "lastVisitAt": "2026-10-07T17:00:00Z",
+      "lastName": "Anderson",
+      "address": "172 Briggs St"
     },
     {
       "id": "c326",
@@ -2643,7 +3293,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/155175521",
       "hasPass": false,
-      "lastVisitAt": "2026-10-03T21:00:00Z"
+      "lastVisitAt": "2026-10-03T21:00:00Z",
+      "lastName": "Ingram",
+      "address": "225 Weld County Rd 5"
     },
     {
       "id": "c327",
@@ -2651,7 +3303,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/155184603",
       "hasPass": false,
-      "lastVisitAt": "2026-10-20T22:30:00Z"
+      "lastVisitAt": "2026-10-20T22:30:00Z",
+      "lastName": "Owens",
+      "address": "278 Coal Creek Dr"
     },
     {
       "id": "c328",
@@ -2659,7 +3313,9 @@
       "town": "Lafayette",
       "jobberUrl": "https://secure.getjobber.com/clients/155185392",
       "hasPass": false,
-      "lastVisitAt": "2026-10-07T19:30:00Z"
+      "lastVisitAt": "2026-10-07T19:30:00Z",
+      "lastName": "Walker",
+      "address": "331 Main St"
     },
     {
       "id": "c329",
@@ -2667,7 +3323,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/155214560",
       "hasPass": false,
-      "lastVisitAt": "2026-10-09T16:00:00Z"
+      "lastVisitAt": "2026-10-09T16:00:00Z",
+      "lastName": "Gibson",
+      "address": "384 Cherry Ave"
     },
     {
       "id": "c330",
@@ -2675,7 +3333,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/155214787",
       "hasPass": false,
-      "lastVisitAt": "2026-10-15T22:00:00Z"
+      "lastVisitAt": "2026-10-15T22:00:00Z",
+      "lastName": "Ellis",
+      "address": "437 Pine St"
     },
     {
       "id": "c331",
@@ -2683,7 +3343,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/155241470",
       "hasPass": false,
-      "lastVisitAt": "2026-10-09T20:00:00Z"
+      "lastVisitAt": "2026-10-09T20:00:00Z",
+      "lastName": "Jensen",
+      "address": "490 Aspen Ct"
     },
     {
       "id": "c332",
@@ -2691,7 +3353,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/155259570",
       "hasPass": false,
-      "lastVisitAt": "2026-10-13T22:00:00Z"
+      "lastVisitAt": "2026-10-13T22:00:00Z",
+      "lastName": "Turner",
+      "address": "543 Meadowlark Ln"
     },
     {
       "id": "c333",
@@ -2699,7 +3363,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/155268232",
       "hasPass": false,
-      "lastVisitAt": "2026-10-26T16:00:00Z"
+      "lastVisitAt": "2026-10-26T16:00:00Z",
+      "lastName": "Zimmer",
+      "address": "596 Sunset Way"
     },
     {
       "id": "c334",
@@ -2707,14 +3373,18 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/155298705",
       "hasPass": false,
-      "lastVisitAt": "2026-10-09T17:00:00Z"
+      "lastVisitAt": "2026-10-09T17:00:00Z",
+      "lastName": "Anderson",
+      "address": "649 Homestead Rd"
     },
     {
       "id": "c335",
       "firstName": "Drew",
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/155341538",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Grant",
+      "address": "702 Prairie View Dr"
     },
     {
       "id": "c336",
@@ -2722,7 +3392,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/155344555",
       "hasPass": false,
-      "lastVisitAt": "2026-10-09T18:00:00Z"
+      "lastVisitAt": "2026-10-09T18:00:00Z",
+      "lastName": "Owens",
+      "address": "755 Cottonwood Cir"
     },
     {
       "id": "c337",
@@ -2730,7 +3402,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/155361559",
       "hasPass": false,
-      "lastVisitAt": "2026-10-15T14:30:00Z"
+      "lastVisitAt": "2026-10-15T14:30:00Z",
+      "lastName": "Vance",
+      "address": "808 Briggs St"
     },
     {
       "id": "c338",
@@ -2738,7 +3412,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/155370544",
       "hasPass": false,
-      "lastVisitAt": "2026-10-16T13:30:00Z"
+      "lastVisitAt": "2026-10-16T13:30:00Z",
+      "lastName": "Fischer",
+      "address": "861 Weld County Rd 5"
     },
     {
       "id": "c339",
@@ -2746,7 +3422,9 @@
       "town": "Broomfield",
       "jobberUrl": "https://secure.getjobber.com/clients/155404569",
       "hasPass": false,
-      "lastVisitAt": "2026-10-09T21:00:00Z"
+      "lastVisitAt": "2026-10-09T21:00:00Z",
+      "lastName": "Dawson",
+      "address": "914 Coal Creek Dr"
     },
     {
       "id": "c340",
@@ -2754,7 +3432,9 @@
       "town": "Lafayette",
       "jobberUrl": "https://secure.getjobber.com/clients/155446679",
       "hasPass": false,
-      "lastVisitAt": "2026-10-13T17:00:00Z"
+      "lastVisitAt": "2026-10-13T17:00:00Z",
+      "lastName": "Jensen",
+      "address": "967 Main St"
     },
     {
       "id": "c341",
@@ -2762,7 +3442,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/155535773",
       "hasPass": false,
-      "lastVisitAt": "2026-10-08T21:00:00Z"
+      "lastVisitAt": "2026-10-08T21:00:00Z",
+      "lastName": "Reed",
+      "address": "120 Cherry Ave"
     },
     {
       "id": "c342",
@@ -2770,7 +3452,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/155592325",
       "hasPass": false,
-      "lastVisitAt": "2026-10-12T15:00:00Z"
+      "lastVisitAt": "2026-10-12T15:00:00Z",
+      "lastName": "Bishop",
+      "address": "173 Pine St"
     },
     {
       "id": "c343",
@@ -2778,7 +3462,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/155636164",
       "hasPass": false,
-      "lastVisitAt": "2026-10-13T15:00:00Z"
+      "lastVisitAt": "2026-10-13T15:00:00Z",
+      "lastName": "Harper",
+      "address": "226 Aspen Ct"
     },
     {
       "id": "c344",
@@ -2786,7 +3472,9 @@
       "town": "Louisville",
       "jobberUrl": "https://secure.getjobber.com/clients/155653238",
       "hasPass": false,
-      "lastVisitAt": "2026-10-23T22:00:00Z"
+      "lastVisitAt": "2026-10-23T22:00:00Z",
+      "lastName": "Ingram",
+      "address": "279 Meadowlark Ln"
     },
     {
       "id": "c345",
@@ -2794,7 +3482,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/155685856",
       "hasPass": false,
-      "lastVisitAt": "2026-10-27T19:45:00Z"
+      "lastVisitAt": "2026-10-27T19:45:00Z",
+      "lastName": "Mason",
+      "address": "332 Sunset Way"
     },
     {
       "id": "c346",
@@ -2802,7 +3492,9 @@
       "town": "Broomfield",
       "jobberUrl": "https://secure.getjobber.com/clients/155723835",
       "hasPass": false,
-      "lastVisitAt": "2026-10-22T20:30:00Z"
+      "lastVisitAt": "2026-10-22T20:30:00Z",
+      "lastName": "Vance",
+      "address": "385 Homestead Rd"
     },
     {
       "id": "c347",
@@ -2810,7 +3502,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/155740897",
       "hasPass": false,
-      "lastVisitAt": "2026-10-20T18:00:00Z"
+      "lastVisitAt": "2026-10-20T18:00:00Z",
+      "lastName": "Coleman",
+      "address": "438 Prairie View Dr"
     },
     {
       "id": "c348",
@@ -2818,7 +3512,9 @@
       "town": "Longmont",
       "jobberUrl": "https://secure.getjobber.com/clients/155790831",
       "hasPass": false,
-      "lastVisitAt": "2026-10-12T19:30:00Z"
+      "lastVisitAt": "2026-10-12T19:30:00Z",
+      "lastName": "Carter",
+      "address": "491 Cottonwood Cir"
     },
     {
       "id": "c349",
@@ -2826,7 +3522,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/155820015",
       "hasPass": false,
-      "lastVisitAt": "2026-10-23T17:00:00Z"
+      "lastVisitAt": "2026-10-23T17:00:00Z",
+      "lastName": "Jensen",
+      "address": "544 Briggs St"
     },
     {
       "id": "c350",
@@ -2834,21 +3532,27 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/155846151",
       "hasPass": false,
-      "lastVisitAt": "2026-10-13T17:30:00Z"
+      "lastVisitAt": "2026-10-13T17:30:00Z",
+      "lastName": "Reed",
+      "address": "597 Weld County Rd 5"
     },
     {
       "id": "c351",
       "firstName": "Jacob",
       "town": "Longmont",
       "jobberUrl": "https://secure.getjobber.com/clients/155856589",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Young",
+      "address": "650 Coal Creek Dr"
     },
     {
       "id": "c352",
       "firstName": "Chris",
       "town": "Lafayette",
       "jobberUrl": "https://secure.getjobber.com/clients/155861161",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Gibson",
+      "address": "703 Main St"
     },
     {
       "id": "c353",
@@ -2856,14 +3560,18 @@
       "town": "Broomfield",
       "jobberUrl": "https://secure.getjobber.com/clients/155911071",
       "hasPass": false,
-      "lastVisitAt": "2026-10-29T22:00:00Z"
+      "lastVisitAt": "2026-10-29T22:00:00Z",
+      "lastName": "Grant",
+      "address": "756 Cherry Ave"
     },
     {
       "id": "c354",
       "firstName": "Travis",
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/155927780",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Nolan",
+      "address": "809 Pine St"
     },
     {
       "id": "c355",
@@ -2871,7 +3579,9 @@
       "town": "Broomfield",
       "jobberUrl": "https://secure.getjobber.com/clients/155945027",
       "hasPass": false,
-      "lastVisitAt": "2026-10-22T19:30:00Z"
+      "lastVisitAt": "2026-10-22T19:30:00Z",
+      "lastName": "Turner",
+      "address": "862 Aspen Ct"
     },
     {
       "id": "c356",
@@ -2879,7 +3589,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/155948847",
       "hasPass": false,
-      "lastVisitAt": "2026-10-14T17:45:00Z"
+      "lastVisitAt": "2026-10-14T17:45:00Z",
+      "lastName": "Coleman",
+      "address": "915 Meadowlark Ln"
     },
     {
       "id": "c357",
@@ -2887,14 +3599,18 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/155949804",
       "hasPass": false,
-      "lastVisitAt": "2026-10-14T18:30:00Z"
+      "lastVisitAt": "2026-10-14T18:30:00Z",
+      "lastName": "Dawson",
+      "address": "968 Sunset Way"
     },
     {
       "id": "c358",
       "firstName": "Jack",
       "town": "Broomfield",
       "jobberUrl": "https://secure.getjobber.com/clients/155951182",
-      "hasPass": false
+      "hasPass": false,
+      "lastName": "Hayes",
+      "address": "121 Homestead Rd"
     },
     {
       "id": "c359",
@@ -2902,7 +3618,9 @@
       "town": "Longmont",
       "jobberUrl": "https://secure.getjobber.com/clients/155956439",
       "hasPass": false,
-      "lastVisitAt": "2026-10-14T20:00:00Z"
+      "lastVisitAt": "2026-10-14T20:00:00Z",
+      "lastName": "Parker",
+      "address": "174 Prairie View Dr"
     },
     {
       "id": "c360",
@@ -2910,7 +3628,9 @@
       "town": "Longmont",
       "jobberUrl": "https://secure.getjobber.com/clients/155962118",
       "hasPass": false,
-      "lastVisitAt": "2026-10-14T23:30:00Z"
+      "lastVisitAt": "2026-10-14T23:30:00Z",
+      "lastName": "Young",
+      "address": "227 Cottonwood Cir"
     },
     {
       "id": "c361",
@@ -2918,7 +3638,9 @@
       "town": "Lafayette",
       "jobberUrl": "https://secure.getjobber.com/clients/155962386",
       "hasPass": false,
-      "lastVisitAt": "2026-10-14T20:00:00Z"
+      "lastVisitAt": "2026-10-14T20:00:00Z",
+      "lastName": "Gibson",
+      "address": "280 Briggs St"
     },
     {
       "id": "c362",
@@ -2926,7 +3648,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/155969503",
       "hasPass": false,
-      "lastVisitAt": "2026-10-20T19:00:00Z"
+      "lastVisitAt": "2026-10-20T19:00:00Z",
+      "lastName": "Carter",
+      "address": "333 Weld County Rd 5"
     },
     {
       "id": "c363",
@@ -2934,7 +3658,9 @@
       "town": "Lafayette",
       "jobberUrl": "https://secure.getjobber.com/clients/155985910",
       "hasPass": false,
-      "lastVisitAt": "2026-10-13T20:00:00Z"
+      "lastVisitAt": "2026-10-13T20:00:00Z",
+      "lastName": "Jensen",
+      "address": "386 Coal Creek Dr"
     },
     {
       "id": "c364",
@@ -2942,7 +3668,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/156018191",
       "hasPass": false,
-      "lastVisitAt": "2026-10-21T18:00:00Z"
+      "lastVisitAt": "2026-10-21T18:00:00Z",
+      "lastName": "Vance",
+      "address": "439 Main St"
     },
     {
       "id": "c365",
@@ -2950,7 +3678,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/156023912",
       "hasPass": false,
-      "lastVisitAt": "2026-10-23T18:00:00Z"
+      "lastVisitAt": "2026-10-23T18:00:00Z",
+      "lastName": "Bishop",
+      "address": "492 Cherry Ave"
     },
     {
       "id": "c366",
@@ -2958,7 +3688,9 @@
       "town": "Lafayette",
       "jobberUrl": "https://secure.getjobber.com/clients/156088372",
       "hasPass": false,
-      "lastVisitAt": "2026-10-13T19:00:00Z"
+      "lastVisitAt": "2026-10-13T19:00:00Z",
+      "lastName": "Anderson",
+      "address": "545 Pine St"
     },
     {
       "id": "c367",
@@ -2966,7 +3698,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/156116036",
       "hasPass": false,
-      "lastVisitAt": "2026-10-20T21:00:00Z"
+      "lastVisitAt": "2026-10-20T21:00:00Z",
+      "lastName": "Jensen",
+      "address": "598 Aspen Ct"
     },
     {
       "id": "c368",
@@ -2974,7 +3708,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/156232280",
       "hasPass": false,
-      "lastVisitAt": "2026-10-21T19:00:00Z"
+      "lastVisitAt": "2026-10-21T19:00:00Z",
+      "lastName": "Mason",
+      "address": "651 Meadowlark Ln"
     },
     {
       "id": "c369",
@@ -2982,7 +3718,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/156233047",
       "hasPass": false,
-      "lastVisitAt": "2026-10-21T18:00:00Z"
+      "lastVisitAt": "2026-10-21T18:00:00Z",
+      "lastName": "Young",
+      "address": "704 Sunset Way"
     },
     {
       "id": "c370",
@@ -2990,7 +3728,9 @@
       "town": "Louisville",
       "jobberUrl": "https://secure.getjobber.com/clients/156236104",
       "hasPass": false,
-      "lastVisitAt": "2026-10-21T22:30:00Z"
+      "lastVisitAt": "2026-10-21T22:30:00Z",
+      "lastName": "Coleman",
+      "address": "757 Homestead Rd"
     },
     {
       "id": "c371",
@@ -2998,7 +3738,9 @@
       "town": "Longmont",
       "jobberUrl": "https://secure.getjobber.com/clients/156267783",
       "hasPass": false,
-      "lastVisitAt": "2026-10-14T21:35:00Z"
+      "lastVisitAt": "2026-10-14T21:35:00Z",
+      "lastName": "Dawson",
+      "address": "810 Prairie View Dr"
     },
     {
       "id": "c372",
@@ -3006,7 +3748,9 @@
       "town": "Erie",
       "jobberUrl": "https://secure.getjobber.com/clients/156274686",
       "hasPass": false,
-      "lastVisitAt": "2026-10-23T18:00:00Z"
+      "lastVisitAt": "2026-10-23T18:00:00Z",
+      "lastName": "Ingram",
+      "address": "863 Cottonwood Cir"
     },
     {
       "id": "c373",
@@ -3014,7 +3758,9 @@
       "town": "Broomfield",
       "jobberUrl": "https://secure.getjobber.com/clients/156296469",
       "hasPass": false,
-      "lastVisitAt": "2026-10-29T20:00:00Z"
+      "lastVisitAt": "2026-10-29T20:00:00Z",
+      "lastName": "Parker",
+      "address": "916 Briggs St"
     },
     {
       "id": "c374",
@@ -3022,7 +3768,9 @@
       "town": "Longmont",
       "jobberUrl": "https://secure.getjobber.com/clients/156324710",
       "hasPass": false,
-      "lastVisitAt": "2026-11-02T19:00:00Z"
+      "lastVisitAt": "2026-11-02T19:00:00Z",
+      "lastName": "Young",
+      "address": "969 Weld County Rd 5"
     },
     {
       "id": "c375",
@@ -3030,7 +3778,9 @@
       "town": "Broomfield",
       "jobberUrl": "https://secure.getjobber.com/clients/156328553",
       "hasPass": false,
-      "lastVisitAt": "2026-11-03T19:00:00Z"
+      "lastVisitAt": "2026-11-03T19:00:00Z",
+      "lastName": "Harper",
+      "address": "122 Coal Creek Dr"
     }
   ],
   "visits": [
@@ -10111,7 +10861,7 @@
       "exception": {
         "kind": "moved-in-jobber",
         "at": "2026-11-10T13:30:00Z",
-        "note": "Ryan moved it from the day before in Jobber"
+        "note": "Ryan moved it from the day before"
       }
     },
     {
@@ -10161,7 +10911,7 @@
       "exception": {
         "kind": "moved-in-jobber",
         "at": "2026-11-11T13:30:00Z",
-        "note": "Ryan moved it from the day before in Jobber"
+        "note": "Ryan moved it from the day before"
       }
     },
     {
@@ -14006,7 +14756,8 @@
           "amount": 145,
           "scheduledAt": "2027-05-03T16:00:00Z",
           "completedAt": "2027-05-03T17:10:00Z",
-          "chargedAt": "2027-05-03T17:12:00Z"
+          "chargedAt": "2027-05-03T17:12:00Z",
+          "scheduledOn": "2027-05-03"
         },
         {
           "kind": "inspection",
@@ -14034,7 +14785,9 @@
         "source": "checkout",
         "recordedAt": "2026-11-02T15:10:00Z"
       },
-      "accessNote": "Gate code 4471, controller in the garage."
+      "accessNote": "Gate code 4471, controller in the garage.",
+      "lastName": "Dalton",
+      "createdAt": "2026-11-02T15:10:00Z"
     },
     {
       "id": "p2",
@@ -14054,7 +14807,8 @@
           "amount": 145,
           "scheduledAt": "2027-05-04T16:00:00Z",
           "completedAt": "2027-05-04T17:10:00Z",
-          "chargedAt": "2027-05-04T17:12:00Z"
+          "chargedAt": "2027-05-04T17:12:00Z",
+          "scheduledOn": "2027-05-04"
         },
         {
           "kind": "inspection",
@@ -14081,7 +14835,9 @@
         "source": "checkout",
         "recordedAt": "2026-11-03T16:13:00Z"
       },
-      "accessNote": "Side gate unlocked, dog is friendly."
+      "accessNote": "Side gate unlocked, dog is friendly.",
+      "lastName": "Nolan",
+      "createdAt": "2026-11-03T16:13:00Z"
     },
     {
       "id": "p3",
@@ -14123,7 +14879,9 @@
         "source": "checkout",
         "recordedAt": "2026-11-04T17:16:00Z"
       },
-      "accessNote": "Controller on the north wall of the garage."
+      "accessNote": "Controller on the north wall of the garage.",
+      "lastName": "Reed",
+      "createdAt": "2026-11-04T17:16:00Z"
     },
     {
       "id": "p4",
@@ -14163,7 +14921,9 @@
         "source": "checkout",
         "recordedAt": "2026-11-05T18:19:00Z"
       },
-      "accessNote": "Shut-off in the basement; door code 2290."
+      "accessNote": "Shut-off in the basement; door code 2290.",
+      "lastName": "Quinn",
+      "createdAt": "2026-11-05T18:19:00Z"
     },
     {
       "id": "p5",
@@ -14203,7 +14963,9 @@
         "source": "checkout",
         "recordedAt": "2026-11-06T19:22:00Z"
       },
-      "needsCustomerHome": true
+      "needsCustomerHome": true,
+      "lastName": "Baker",
+      "createdAt": "2026-11-06T19:22:00Z"
     },
     {
       "id": "p6",
@@ -14239,7 +15001,9 @@
         "marketingChannels": [],
         "source": "checkout",
         "recordedAt": "2026-11-07T15:25:00Z"
-      }
+      },
+      "lastName": "Young",
+      "createdAt": "2026-11-07T15:25:00Z"
     },
     {
       "id": "p7",
@@ -14278,7 +15042,9 @@
         ],
         "source": "checkout",
         "recordedAt": "2026-11-08T16:28:00Z"
-      }
+      },
+      "lastName": "Jensen",
+      "createdAt": "2026-11-08T16:28:00Z"
     },
     {
       "id": "p8",
@@ -14322,7 +15088,9 @@
         ],
         "source": "checkout",
         "recordedAt": "2026-11-09T17:31:00Z"
-      }
+      },
+      "lastName": "Grant",
+      "createdAt": "2026-11-09T17:31:00Z"
     },
     {
       "id": "p9",
@@ -14358,7 +15126,9 @@
         "marketingChannels": [],
         "source": "checkout",
         "recordedAt": "2026-11-10T18:34:00Z"
-      }
+      },
+      "lastName": "Sutton",
+      "createdAt": "2026-11-10T18:34:00Z"
     },
     {
       "id": "p10",
@@ -14402,7 +15172,9 @@
         "source": "checkout",
         "recordedAt": "2026-11-11T19:37:00Z"
       },
-      "needsCustomerHome": true
+      "needsCustomerHome": true,
+      "lastName": "Gibson",
+      "createdAt": "2026-11-11T19:37:00Z"
     },
     {
       "id": "p11",
@@ -14441,7 +15213,9 @@
         ],
         "source": "checkout",
         "recordedAt": "2026-11-12T15:40:00Z"
-      }
+      },
+      "lastName": "Coleman",
+      "createdAt": "2026-11-12T15:40:00Z"
     },
     {
       "id": "p12",
@@ -14477,7 +15251,39 @@
         "marketingChannels": [],
         "source": "checkout",
         "recordedAt": "2026-11-13T16:43:00Z"
-      }
+      },
+      "lastName": "Zimmer",
+      "createdAt": "2026-11-13T16:43:00Z"
+    },
+    {
+      "id": "p13",
+      "number": "TH-2027-0013",
+      "season": 2027,
+      "clientId": "c1",
+      "firstName": "Amy",
+      "lastName": "Dawson",
+      "town": "Erie",
+      "zones": 6,
+      "turnOnPreference": "recommended",
+      "blowoutPreference": "recommended",
+      "status": "pending",
+      "visits": [
+        {
+          "kind": "turn-on",
+          "window": "May",
+          "amount": 145,
+          "scheduledAt": "2027-04-27T14:00:00Z",
+          "scheduledOn": "2027-04-27"
+        },
+        {
+          "kind": "blowout",
+          "window": "October",
+          "amount": 95
+        }
+      ],
+      "stripeUrl": "",
+      "jobberUrl": "",
+      "createdAt": "2026-11-12T19:40:00Z"
     }
   ],
   "monthTotals": [
@@ -14534,19 +15340,19 @@
     {
       "kind": "charge-failed",
       "passId": "p3",
-      "message": "Card declined for the spring turn-on; customer emailed an update link",
+      "message": "The card didn't go through for the spring turn-on; the customer has an update link",
       "since": "2026-11-10T15:04:00Z"
     },
     {
       "kind": "pass-cancelled",
       "passId": "p9",
-      "message": "Christian cancelled TH-2027-0009; the two Jobber jobs still open, remove them",
+      "message": "Christian cancelled TH-2027-0009",
       "since": "2026-11-12T14:30:00Z"
     },
     {
       "kind": "jobs-failed",
       "passId": "p7",
-      "message": "Jobber jobs for pass TH-2027-0007 were not created; retrying",
+      "message": "A task for pass TH-2027-0007 did not finish; retrying",
       "since": "2026-11-11T22:41:00Z"
     },
     {

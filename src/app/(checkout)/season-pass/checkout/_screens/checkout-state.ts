@@ -64,6 +64,7 @@ export interface CheckoutFields {
   /** the day held for each visit on the "Your days" step, the first offer unless the customer chose another */
   days: DayChoice[]
   firstName: string
+  lastName: string
   email: string
   phone: string
   /** the required box that ends the contact step: the Season Pass terms and the terms of service */
@@ -136,6 +137,7 @@ export function initialState(prefill: Partial<CheckoutState> = {}): CheckoutStat
     days: [],
     offers: null,
     firstName: "",
+    lastName: "",
     email: "",
     phone: "",
     termsAccepted: false,
@@ -150,8 +152,8 @@ export function initialState(prefill: Partial<CheckoutState> = {}): CheckoutStat
 export const digits = (phone: string) => phone.replace(/\D/g, "")
 
 /** Why a contact field cannot pass yet, in the words the screen shows; null when it can. */
-export function contactProblem(field: "firstName" | "email" | "phone", value: string): string | null {
-  if (field === "firstName") return value.trim() ? null : "We need a first name for the visit notes."
+export function contactProblem(field: "firstName" | "lastName" | "email" | "phone", value: string): string | null {
+  if (field === "firstName" || field === "lastName") return value.trim() ? null : field === "firstName" ? "We need a first name for the visit notes." : "We need a last name so Ryan knows who to ask for."
   if (field === "email") return emailProblem(value)
   return digits(value).length === 10 ? null : "We need a ten-digit phone number for the day-of text."
 }
@@ -170,12 +172,12 @@ export function addressProblem(state: Pick<CheckoutFields, "place">, attempted: 
 
 /** The fields of the step on screen that cannot pass yet, named for the error summary (each one's own message sits beside it). */
 export function stepProblems(state: CheckoutState): string[] {
-  const label = { firstName: "First name", email: "Email", phone: "Phone" } as const
+  const label = { firstName: "First name", lastName: "Last name", email: "Email", phone: "Phone" } as const
   switch (STEPS[state.step - 1]?.key) {
     case "address":
       return [...(addressProblem(state, true) ? ["Address"] : []), ...(state.place && state.access === null ? ["Access"] : [])]
     case "contact":
-      return [...(["firstName", "email", "phone"] as const).filter((f) => contactProblem(f, state[f]) !== null).map((f) => label[f]), ...(state.termsAccepted ? [] : ["Terms"])]
+      return [...(["firstName", "lastName", "email", "phone"] as const).filter((f) => contactProblem(f, state[f]) !== null).map((f) => label[f]), ...(state.termsAccepted ? [] : ["Terms"])]
     case "days":
       return state.skipCard && !state.termsAccepted ? ["Terms"] : []
     default:
@@ -198,7 +200,7 @@ export function canContinue(state: CheckoutState): boolean {
       return daysComplete(state.offers, state.days) && (!state.skipCard || state.termsAccepted)
     // The terms are accepted here, so Continue on the contact step is the moment of acceptance.
     case "contact":
-      return state.termsAccepted && (["firstName", "email", "phone"] as const).every((f) => contactProblem(f, state[f]) === null)
+      return state.termsAccepted && (["firstName", "lastName", "email", "phone"] as const).every((f) => contactProblem(f, state[f]) === null)
     case "card":
       return true
     default:
@@ -281,7 +283,7 @@ export function toPass(state: CheckoutState, season: number, at = new Date().toI
     number: `TH-${season}-NEW`,
     season,
     clientId: "c-new",
-    firstName: state.firstName.trim(),
+    firstName: state.firstName.trim(), ...(state.lastName.trim() ? { lastName: state.lastName.trim() } : {}),
     town: state.town ?? "Erie",
     zones: state.zones,
     turnOnPreference: state.turnOnPreference,

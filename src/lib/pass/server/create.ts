@@ -14,7 +14,7 @@ export interface CheckoutAnswers {
   property: { address: string; town: string; state?: string; zip?: string }
   zones: number
   needsCustomerHome: boolean
-  customer: { firstName: string; email: string; phone?: string }
+  customer: { firstName: string; lastName?: string; email: string; phone?: string }
   today: string
 }
 
@@ -30,6 +30,7 @@ export function failedCheckoutStep(a: CheckoutAnswers): (typeof STEPS)[number]["
     access: a.needsCustomerHome ? "no" : "yes",
     zones: a.zones,
     firstName: a.customer.firstName,
+    lastName: a.customer.lastName ?? "",
     email: a.customer.email,
     phone: a.customer.phone ?? "",
     // The terms box is the browser's; the server records the consent itself (`passes.consent`), so only the answers are held to the rule here.

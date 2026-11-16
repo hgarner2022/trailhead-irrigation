@@ -18,6 +18,7 @@ const filled: CheckoutState = {
   turnOnPreference: "earlier",
   blowoutPreference: "recommended",
   firstName: "Andrea",
+  lastName: "Anderson",
   email: "andrea@example.com",
   phone: "(970) 555-0123",
   termsAccepted: true,
@@ -126,6 +127,21 @@ describe("addressProblem", () => {
     expect(addressProblem({ place: null }, true)).toBe(PICK_ADDRESS)
     expect(addressProblem({ place: FIXTURE_HOME }, true)).toBeNull()
     expect(addressProblem({ place: boulder }, false)).toBe("We don't serve Boulder yet. We work in Erie, Longmont, Louisville, Lafayette, Firestone and Broomfield.")
+  })
+})
+
+describe("the last name", () => {
+  it("is required on the contact step, beside the first name", () => {
+    expect(contactProblem("lastName", "")).toBe("We need a last name so Ryan knows who to ask for.")
+    expect(contactProblem("lastName", "  ")).not.toBeNull()
+    expect(contactProblem("lastName", "Anderson")).toBeNull()
+    expect(canContinue({ ...filled, step: 5, lastName: " " })).toBe(false)
+    expect(canContinue({ ...filled, step: 5 })).toBe(true)
+  })
+
+  it("starts empty, and lands on the pass the Done step shows", () => {
+    expect(initialState().lastName).toBe("")
+    expect(toPass({ ...filled, step: 7 }, 2027).lastName).toBe("Anderson")
   })
 })
 

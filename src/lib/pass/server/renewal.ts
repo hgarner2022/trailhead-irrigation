@@ -36,6 +36,7 @@ export async function loadRenewal(db: Database, input: { passId: string; token?:
     season,
     ...(input.token ? { token: input.token } : {}),
     firstName: customer.firstName,
+    ...(customer.lastName ? { lastName: customer.lastName } : {}),
     email: customer.email ?? "",
     phone: customer.phone ?? "",
     place: { id: `property-${property.id}`, label: `${property.address}, ${property.town}, CO`, line1: property.address, town: property.town, state: "CO", zip: "" },

@@ -17,9 +17,10 @@ type ConsentRow = typeof s.consent.$inferSelect
 
 
 /** The contact fields a caller sent, cleaned the way they are stored and print; fields not sent stay absent. */
-function cleanContact(f: { firstName?: string; email?: string; phone?: string | null }) {
+export function cleanContact(f: { firstName?: string; lastName?: string; email?: string; phone?: string | null }) {
   return {
     ...(f.firstName !== undefined ? { firstName: cleanName(f.firstName) } : {}),
+    ...(f.lastName !== undefined ? { lastName: f.lastName.trim() ? cleanName(f.lastName) : null } : {}),
     ...(f.email !== undefined ? { email: cleanEmail(f.email) } : {}),
     ...(f.phone !== undefined ? { phone: f.phone === null ? null : (normalizePhone(f.phone) ?? f.phone) } : {}),
   }
@@ -119,7 +120,7 @@ export const customersList = defineHandler({
     const result = cursorPage(rows, input.limit, timeCursor)
     const ids = result.data.map((r) => r.id)
     const next = await nextFor(ctx, result.data)
-    const towns = ids.length ? await ctx.db.select({ customerId: s.property.customerId, town: s.property.town }).from(s.property).where(inArray(s.property.customerId, ids)) : []
+    const towns = ids.length ? await ctx.db.select({ customerId: s.property.customerId, town: s.property.town, address: s.property.address }).from(s.property).where(inArray(s.property.customerId, ids)).orderBy(asc(s.property.createdAt)) : []
     const passes = ids.length
       ? await ctx.db.select({ customerId: s.seasonPass.customerId }).from(s.seasonPass).where(and(inArray(s.seasonPass.customerId, ids), ne(s.seasonPass.status, "cancelled")))
       : []
@@ -128,6 +129,7 @@ export const customersList = defineHandler({
       data: result.data.map((r) => ({
         ...customerOut(ctx, r),
         town: towns.find((t) => t.customerId === r.id)?.town ?? null,
+        ...(canSeeContact(ctx) ? { address: towns.find((t) => t.customerId === r.id)?.address ?? null } : {}),
         hasPass: passes.some((p) => p.customerId === r.id),
         next: next.get(r.id)!,
       })),
@@ -151,9 +153,26 @@ export const customersGet = defineHandler({
       ...customerOut(ctx, row),
       properties: props.map((p) => ({ id: p.id, town: p.town, lat: p.lat, lng: p.lng, ...(canSeeContact(ctx) ? { address: p.address } : {}) })),
       consent: consent ? consentOut(consent) : null,
+      jobs: await jobsOf(ctx.db, row.id),
     }
   },
 })
+
+/** A customer's jobs, newest first, each with its visits and, for a pass, its number. */
+async function jobsOf(db: Database, customerId: string) {
+  const jobs = await db.select().from(s.job).where(eq(s.job.customerId, customerId)).orderBy(desc(s.job.createdAt), desc(s.job.id))
+  if (!jobs.length) return []
+  const visits = await db.select().from(s.visit).where(inArray(s.visit.jobId, jobs.map((j) => j.id))).orderBy(asc(s.visit.scheduledOn), asc(s.visit.createdAt))
+  const passes = await db.select({ id: s.seasonPass.id, jobId: s.seasonPass.jobId, number: s.seasonPass.number }).from(s.seasonPass).where(inArray(s.seasonPass.jobId, jobs.map((j) => j.id)))
+  return jobs.map((j) => {
+    const pass = passes.find((p) => p.jobId === j.id)
+    return {
+      id: j.id, kind: j.kind, status: j.status, price: j.price, source: j.source, notes: j.notes, createdAt: j.createdAt.toISOString(),
+      passId: pass?.id ?? null, passNumber: pass?.number ?? null,
+      visits: visits.filter((v) => v.jobId === j.id).map((v) => ({ id: v.id, kind: v.kind, status: v.status, scheduledOn: v.scheduledOn, amount: v.amount })),
+    }
+  })
+}
 
 export const customersCreate = defineHandler({
   name: "customers.create",
@@ -173,6 +192,7 @@ export const customersCreate = defineHandler({
       ...customerOut(ctx, row!),
       properties: props.map((p) => ({ id: p.id, town: p.town, lat: p.lat, lng: p.lng, address: p.address })),
       consent: null,
+      jobs: [],
     }
   },
 })
