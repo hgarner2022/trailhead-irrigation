@@ -16,6 +16,7 @@ import { visitsMarkClosed } from "@/api/v1/visits/money"
 import { webhooksCreate, webhooksDelete, webhooksTest } from "@/api/v1/webhooks/handlers"
 import type { Attention, OrganizationSettings, TimingPreference } from "@/lib/admin/types"
 import { requireAdmin } from "@/lib/auth/guard"
+import { retryQueueTasks } from "@/lib/admin/queue-retry"
 import { act, nothing, type ActionOutcome } from "./act"
 import { toApiScopes } from "./key-scopes"
 import { saveSettings as writeSettings } from "./settings-save"
@@ -111,6 +112,11 @@ export async function attentionAction(item: Attention): Promise<ActionOutcome | 
   if ((item.kind === "charge-failed" || item.kind === "card-expiring") && item.passId) {
     const sent = await act((ctx) => callApi(ctx, passesSendCardUpdateLink, { id: item.passId }))
     return sent.ok ? { ok: true, data: undefined, message: "Card update link sent." } : sent
+  }
+  if (item.kind === "jobs-failed" && item.queueIds?.length) {
+    const ids = item.queueIds
+    const retried = await act(async (ctx) => retryQueueTasks(ctx.db, ctx.organizationId, ids))
+    return retried.ok ? { ok: true, data: undefined, message: retried.data === 1 ? "Retrying that task." : `Retrying ${retried.data} tasks.` } : retried
   }
   if (item.kind === "not-closed" && item.visitId) {
     // A one-off visit with a price is also asked how it was paid, so its row opens the panel instead.

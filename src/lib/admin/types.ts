@@ -348,6 +348,11 @@ export interface Attention {
   visitId?: string
   message: string
   since: string
+  /** a queue failure: the task kind, and the queue rows Retry puts back in line */
+  queueKind?: string
+  queueIds?: string[]
+  /** a grouped row (several failures with one cause): the rows it stands for, which Dismiss clears together */
+  members?: Attention[]
 }
 
 export interface AdminData {

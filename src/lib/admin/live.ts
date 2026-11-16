@@ -65,7 +65,7 @@ export async function getLiveAdminData(ctx: Ctx): Promise<AdminData> {
     db.select({ id: s.jobberJob.id, clientId: s.jobberJob.clientId, jobberUrl: s.jobberJob.jobberUrl }).from(s.jobberJob).where(and(eq(s.jobberJob.organizationId, org), eq(s.jobberJob.hasVisit, false), eq(s.jobberJob.status, "open"))),
     db.select().from(s.jobberQuote).where(eq(s.jobberQuote.organizationId, org)),
     db.select().from(s.jobberInvoice).where(eq(s.jobberInvoice.organizationId, org)),
-    db.select({ kind: s.queueItem.kind, lastError: s.queueItem.lastError, updatedAt: s.queueItem.updatedAt, status: s.queueItem.status }).from(s.queueItem).where(and(eq(s.queueItem.organizationId, org), isNotNull(s.queueItem.lastError), or(eq(s.queueItem.status, "pending"), eq(s.queueItem.status, "failed")))),
+    db.select({ id: s.queueItem.id, kind: s.queueItem.kind, lastError: s.queueItem.lastError, updatedAt: s.queueItem.updatedAt, status: s.queueItem.status }).from(s.queueItem).where(and(eq(s.queueItem.organizationId, org), isNotNull(s.queueItem.lastError), or(eq(s.queueItem.status, "pending"), eq(s.queueItem.status, "failed")))),
     loadBlocks(db, org, new Date(ctx.now.getTime() - 7 * 86_400_000)),
     db.select({ at: sql<Date | null>`max(${s.jobberClient.syncedAt})` }).from(s.jobberClient).where(eq(s.jobberClient.organizationId, org)),
     db.select({ kind: s.adminAlert.kind, key: s.adminAlert.key, passId: s.adminAlert.passId, message: s.adminAlert.message, createdAt: s.adminAlert.createdAt }).from(s.adminAlert).where(and(eq(s.adminAlert.organizationId, org), isNull(s.adminAlert.resolvedAt))),
