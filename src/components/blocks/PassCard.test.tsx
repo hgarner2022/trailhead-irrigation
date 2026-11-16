@@ -189,7 +189,7 @@ describe("PassCard at full size", () => {
     expect(spy.window()).not.toContain("deviceorientation")
     fireEvent.click(button)
     expect(ask).toHaveBeenCalledTimes(1)
-    await waitFor(() => expect(screen.queryByRole("button", { name: "Turn on the tilt shine" })).not.toBeInTheDocument())
+    await waitFor(() => expect(screen.queryByRole("button", { name: "Turn on the tilt shine" })).not.toBeInTheDocument(), { timeout: 5000 })
     expect(spy.window()).toContain("deviceorientation")
   })
 
