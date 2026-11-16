@@ -10,7 +10,7 @@ import { passesAddInspection, passesCancel, passesResendConfirmation, passesSend
 import { scheduleRun } from "@/api/v1/schedule/handlers"
 import { servicesUpdate } from "@/api/v1/services/handlers"
 import { areasCreate, areasDelete, areasUpdate } from "@/api/v1/areas/handlers"
-import { trucksCreate, trucksDeactivate, trucksUpdate } from "@/api/v1/trucks/handlers"
+import { peopleCreate, peopleDeactivate, peopleUpdate } from "@/api/v1/people/handlers"
 import { visitsGet, visitsMove } from "@/api/v1/visits/handlers"
 import { visitsMarkClosed } from "@/api/v1/visits/money"
 import { webhooksCreate, webhooksDelete, webhooksTest } from "@/api/v1/webhooks/handlers"
@@ -41,28 +41,33 @@ export const skipVisit = async (passId: string, kind: "turn-on" | "inspection" |
 
 // Schedule ----------------------------------------------------------------------------------------------------------
 
-/** The Schedule button: every pass visit of the window that is due goes onto a truck-day and its customer is told the date. */
+/** The Schedule button: every pass visit of the window that is due goes onto someone's day and its customer is told the date. */
 export const runSchedule = async (window: "turn-on" | "inspection" | "blowout", season?: number) =>
   act(async (ctx) => {
     const { placed, unplaced } = await callApi(ctx, scheduleRun, { window, ...(season ? { season } : {}) })
     return { placed, unplaced }
   })
 
-/** Place and drag: put a visit on a truck and a day. A refusal comes back in the API's words and the block snaps back. */
-export const moveVisit = async (visitId: string, truckId: string, scheduledOn: string) => act((ctx) => nothing(callApi(ctx, visitsMove, { id: visitId, truckId, scheduledOn })))
+/** Place and drag: give a visit to a person on a day. A refusal comes back in the API's words and the block snaps back. */
+export const moveVisit = async (visitId: string, personId: string, scheduledOn: string) => act((ctx) => nothing(callApi(ctx, visitsMove, { id: visitId, personId, scheduledOn })))
 
 /** A visit nobody closed in the field, marked done by hand; a pass visit is then charged. */
 export const markVisitClosed = async (visitId: string, completedOn?: string) => act((ctx) => nothing(callApi(ctx, visitsMarkClosed, { id: visitId, ...(completedOn ? { completedOn } : {}) })))
 
 // Settings ----------------------------------------------------------------------------------------------------------
 
-/** Save on the Settings page: the whole screen's settings, written as trucks, areas and sections. */
+/** Save on the Settings page: the whole screen's settings, written as people, areas and sections. */
 export const saveSettings = async (settings: OrganizationSettings) => act((ctx) => nothing(writeSettings(ctx, settings)))
 
-type TruckFields = { name: string; jobberUserId?: string; workingDays: string[]; capacityByKind: Record<string, number>; calendarFeedUrl?: string | null }
-export const createTruck = async (input: TruckFields) => act((ctx) => nothing(callApi(ctx, trucksCreate, input)))
-export const updateTruck = async (id: string, changes: Partial<TruckFields>) => act((ctx) => nothing(callApi(ctx, trucksUpdate, { id, ...changes })))
-export const deactivateTruck = async (id: string) => act((ctx) => nothing(callApi(ctx, trucksDeactivate, { id })))
+/** One person's fields as people.create takes them; on update every one is optional and a text field takes null to clear it. */
+type PersonFields = {
+  name: string; initials?: string; email?: string; phone?: string; role?: "owner" | "admin" | "tech"; truck?: string; jobberUserId?: string; calendarFeedUrl?: string | null
+  workingDays?: string[]; capacityByKind?: Record<string, number>; seasonStart?: string; seasonEnd?: string
+}
+type PersonChanges = { [K in keyof PersonFields]?: PersonFields[K] | null }
+export const createPerson = async (input: PersonFields) => act((ctx) => nothing(callApi(ctx, peopleCreate, input)))
+export const updatePerson = async (id: string, changes: PersonChanges) => act((ctx) => nothing(callApi(ctx, peopleUpdate, { id, ...changes })))
+export const deactivatePerson = async (id: string) => act((ctx) => nothing(callApi(ctx, peopleDeactivate, { id })))
 
 type AreaFields = { name: string; towns: string[]; springOrder?: number; fallOrder?: number }
 export const createArea = async (input: AreaFields) => act((ctx) => nothing(callApi(ctx, areasCreate, input)))

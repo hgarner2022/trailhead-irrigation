@@ -24,11 +24,11 @@ describe("HomeScreen", () => {
     expect(document.querySelector('[data-slot="season-prompt"]')).toBeNull()
   })
 
-  it("groups the day's stops by truck in route order, with the time or Any time, each row opening the visit, and leaves out a truck with none", () => {
+  it("groups the day's stops under the person's name in route order, with the time or Any time, each row opening the visit, and leaves out a person with none", () => {
     const visits = [
-      stop({ id: "a", clientName: "Late Lee", startAt: "2026-11-12T18:00:00Z", startTime: "11:00", stopOrder: 2, truckId: "truck-1" }),
-      stop({ id: "b", clientName: "First Fay", startAt: "2026-11-12T15:00:00Z", startTime: "08:00", stopOrder: 1, truckId: "truck-1" }),
-      stop({ id: "c", clientName: "Any Amy", truckId: "truck-2" }),
+      stop({ id: "a", clientName: "Late Lee", startAt: "2026-11-12T18:00:00Z", startTime: "11:00", stopOrder: 2, personId: "person_truck-1" }),
+      stop({ id: "b", clientName: "First Fay", startAt: "2026-11-12T15:00:00Z", startTime: "08:00", stopOrder: 1, personId: "person_truck-1" }),
+      stop({ id: "c", clientName: "Any Amy", personId: "person_truck-2" }),
     ]
     render(<HomeScreen data={{ ...data, visits, attention: [] }} today={TODAY} />)
     const week = within(document.querySelector<HTMLElement>('[data-slot="home-week"]')!)
@@ -36,15 +36,17 @@ describe("HomeScreen", () => {
     expect(names[0]).toContain("First Fay")
     expect(names[1]).toContain("Late Lee")
     expect(names[2]).toContain("Any Amy")
-    expect(week.getAllByText(/^Truck/)).toHaveLength(2)
+    const headings = week.getAllByText(/^(Ryan Garner|Second truck|No one yet)$/).map((h) => h.textContent)
+    expect(headings).toEqual(["Ryan Garner", "Second truck"])
+    expect(week.queryByText(/^Truck/)).toBeNull()
     expect(week.getByText("Any time")).toBeInTheDocument()
   })
 
   it("with nothing today shows the next day that has visits, once, with its count and towns", () => {
     const visits = [
-      stop({ id: "n1", clientName: "Next Nia", startAt: "2027-04-27T15:00:00Z", scheduledOn: "2027-04-27", truckId: "truck-1" }),
-      stop({ id: "n2", clientName: "Next Ned", town: "Longmont", startAt: "2027-04-27T17:00:00Z", scheduledOn: "2027-04-27", truckId: "truck-2" }),
-      stop({ id: "n3", clientName: "Later Lou", startAt: "2027-05-04T15:00:00Z", scheduledOn: "2027-05-04", truckId: "truck-1" }),
+      stop({ id: "n1", clientName: "Next Nia", startAt: "2027-04-27T15:00:00Z", scheduledOn: "2027-04-27", personId: "person_truck-1" }),
+      stop({ id: "n2", clientName: "Next Ned", town: "Longmont", startAt: "2027-04-27T17:00:00Z", scheduledOn: "2027-04-27", personId: "person_truck-2" }),
+      stop({ id: "n3", clientName: "Later Lou", startAt: "2027-05-04T15:00:00Z", scheduledOn: "2027-05-04", personId: "person_truck-1" }),
     ]
     render(<HomeScreen data={{ ...data, visits, attention: [] }} today={TODAY} />)
     expect(screen.getByText("Tue, Apr 27 · 2 visits in Erie and Longmont")).toBeInTheDocument()

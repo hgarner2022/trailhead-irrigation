@@ -85,8 +85,10 @@ describe("the admin pages", () => {
     expect(customers).toContain('data-slot="customers-screen"')
     const settings = html(await SettingsPage())
     expect(settings).toContain('data-slot="settings-screen"')
-    // Settings still reads trucks.*, which answers the people with a truck under their own names (step 1); the screen moves to people.* later.
+    // The People tab, through people.list: the seeded admin, Ryan Garner and Second truck, each with their role in a word.
     expect(settings).toContain("Ryan Garner")
+    expect(settings).toContain("Second truck")
+    expect(settings).not.toContain("truck_id")
   })
 
   it("lists the live API keys on Settings in the tab's words", async () => {

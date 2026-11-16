@@ -1,7 +1,7 @@
 /**
  * The pure parts of DayMap: the bounds of the six towns, the shaded area
- * around a truck's stops, the stop description for the map's accessible
- * name, and how a truck's colour is read from the tokens. Kept out of the
+ * around a person's stops, the stop description for the map's accessible
+ * name, and how a person's colour is read from the tokens. Kept out of the
  * map file so they run in jsdom, where the map itself cannot.
  */
 import type { Town, Visit } from "@/lib/admin/types"
@@ -83,7 +83,7 @@ export function stopLine(stop: Visit): string {
   return `${stop.clientName} · ${stop.town} · ${KIND_WORDS[stop.kind]}`
 }
 
-/** The background class each truck's markers and shade take, by the truck's position in the list; a fourth truck wraps. */
+/** The background class each person's markers and shade take, by their position in the list; a fourth person wraps. */
 export const TRUCK_CLASSES = ["bg-primary", "bg-navy", "bg-positive"] as const
 export const truckClass = (index: number): (typeof TRUCK_CLASSES)[number] => TRUCK_CLASSES[index % TRUCK_CLASSES.length]
 

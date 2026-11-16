@@ -1,8 +1,8 @@
 import type { OrganizationSettings } from "./types"
 
-/** What an organization has before anyone opens Settings: no trucks, no areas, no windows, no messages. */
+/** What an organization has before anyone opens Settings: no people, no areas, no windows, no messages. */
 export const EMPTY_SETTINGS: OrganizationSettings = {
-  trucks: [],
+  people: [],
   areas: [],
   windows: [],
   bufferPercentEarly: 0,

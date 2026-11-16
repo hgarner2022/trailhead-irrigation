@@ -2,9 +2,10 @@ import { describe, expect, it } from "vitest"
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import type { AdminData } from "@/lib/admin/types"
 import {
-  addArea, addTruck, createKey, removeTruck, revokeKey, secretFor, sampleFor, setJobberUser, SAMPLE_KEYS, channelWord, clip, daysWords, fillMessage, messageName, moveTownInOrder, setAreaName, setBuffer, setCapacity,
-  setMessage, setTruckName, setWindow, toggleAreaTown, toggleWorkingDay, type SettingsState,
+  addArea, createKey, revokeKey, secretFor, sampleFor, SAMPLE_KEYS, channelWord, clip, daysWords, fillMessage, messageName, moveTownInOrder, setAreaName, setBuffer,
+  setMessage, setWindow, toggleAreaTown, type SettingsState,
 } from "./settings-model"
+import { addPerson, removePerson, setCapacity, setPersonName, setPersonRole, setPersonText, setSeason, toggleWorkingDay } from "./settings-people"
 
 const data = snapshot as AdminData
 const state: SettingsState = { settings: data.settings, changes: [], keys: SAMPLE_KEYS }
@@ -31,42 +32,80 @@ describe("words", () => {
   })
 })
 
-describe("trucks", () => {
-  it("renames a truck and logs it", () => {
-    const next = setTruckName(state, "truck-2", "Blowout truck", actor)
-    expect(next.settings.trucks[1].name).toBe("Blowout truck")
-    expect(last(next)).toMatchObject({ who: "Hannah", at: actor.at, field: "Truck 2 name", from: "Truck 2", to: "Blowout truck" })
+describe("people", () => {
+  it("renames a person and logs it", () => {
+    const next = setPersonName(state, "person_truck-2", "Blowout truck", actor)
+    expect(next.settings.people[1].name).toBe("Blowout truck")
+    expect(last(next)).toMatchObject({ who: "Hannah", at: actor.at, field: "Second truck name", from: "Second truck", to: "Blowout truck" })
     expect(next.changes).toHaveLength(1)
-    expect(setTruckName(state, "truck-2", "Truck 2", actor)).toBe(state)
-    expect(setTruckName(state, "nope", "X", actor)).toBe(state)
+    expect(setPersonName(state, "person_truck-2", "Second truck", actor)).toBe(state)
+    expect(setPersonName(state, "nope", "X", actor)).toBe(state)
   })
 
   it("toggles a working day both ways", () => {
-    const off = toggleWorkingDay(state, "truck-2", "sat", actor)
-    expect(off.settings.trucks[1].workingDays).toEqual(["mon", "tue", "wed", "thu", "fri"])
-    expect(last(off)).toMatchObject({ field: "Truck 2 working days", from: "Mon to Sat", to: "Mon to Fri" })
-    const on = toggleWorkingDay(off, "truck-2", "sun", actor)
-    expect(on.settings.trucks[1].workingDays).toEqual(["mon", "tue", "wed", "thu", "fri", "sun"])
+    const off = toggleWorkingDay(state, "person_truck-2", "sat", actor)
+    expect(off.settings.people[1].workingDays).toEqual(["mon", "tue", "wed", "thu", "fri"])
+    expect(last(off)).toMatchObject({ field: "Second truck working days", from: "Mon to Sat", to: "Mon to Fri" })
+    const on = toggleWorkingDay(off, "person_truck-2", "sun", actor)
+    expect(on.settings.people[1].workingDays).toEqual(["mon", "tue", "wed", "thu", "fri", "sun"])
     expect(last(on).to).toBe("Mon, Tue, Wed, Thu, Fri, Sun")
     expect(on.changes).toHaveLength(2)
   })
 
   it("sets a capacity and refuses a fraction or a negative", () => {
-    const next = setCapacity(state, "truck-1", "blowout", 12, actor)
-    expect(next.settings.trucks[0].capacityByKind.blowout).toBe(12)
-    expect(next.settings.trucks[0].capacityByKind.repair).toBe(4)
-    expect(last(next)).toMatchObject({ field: "Truck 1 blowouts per day", from: "10", to: "12" })
-    expect(setCapacity(state, "truck-1", "blowout", 1.5, actor)).toBe(state)
-    expect(setCapacity(state, "truck-1", "blowout", -1, actor)).toBe(state)
-    expect(setCapacity(state, "truck-1", "blowout", 10, actor)).toBe(state)
+    const next = setCapacity(state, "person_truck-1", "blowout", 12, actor)
+    expect(next.settings.people[0].capacityByKind.blowout).toBe(12)
+    expect(next.settings.people[0].capacityByKind.repair).toBe(4)
+    expect(last(next)).toMatchObject({ field: "Ryan Garner blowouts per day", from: "10", to: "12" })
+    expect(setCapacity(state, "person_truck-1", "blowout", 1.5, actor)).toBe(state)
+    expect(setCapacity(state, "person_truck-1", "blowout", -1, actor)).toBe(state)
+    expect(setCapacity(state, "person_truck-1", "blowout", 10, actor)).toBe(state)
   })
 
-  it("adds a blank truck after the others", () => {
-    const next = addTruck(state, actor)
-    expect(next.settings.trucks).toHaveLength(3)
-    expect(next.settings.trucks[2]).toMatchObject({ name: "Truck 3", workingDays: ["mon", "tue", "wed", "thu", "fri"], capacityByKind: { "turn-on": 0, inspection: 0, blowout: 0, repair: 0, other: 0 } })
-    expect(last(next)).toMatchObject({ field: "Trucks", from: "2", to: "3" })
-    expect(addTruck(next, actor).settings.trucks[3].name).toBe("Truck 4")
+  it("adds a blank tech after the others, with no truck until one is typed", () => {
+    const next = addPerson(state, actor)
+    expect(next.settings.people).toHaveLength(3)
+    expect(next.settings.people[2]).toMatchObject({ name: "New person", initials: "NP", role: "tech", workingDays: ["mon", "tue", "wed", "thu", "fri"], capacityByKind: { "turn-on": 0, inspection: 0, blowout: 0, repair: 0, other: 0 } })
+    expect(next.settings.people[2].truck).toBeUndefined()
+    expect(last(next)).toMatchObject({ field: "People", from: "2", to: "3" })
+    expect(addPerson(next, actor).settings.people).toHaveLength(4)
+  })
+
+  it("sets the role in a word and keeps the last owner an owner", () => {
+    const admin = setPersonRole(state, "person_truck-2", "admin", actor)
+    expect(admin.settings.people[1].role).toBe("admin")
+    expect(last(admin)).toMatchObject({ field: "Second truck role", from: "Tech", to: "Admin" })
+    expect(setPersonRole(state, "person_truck-1", "tech", actor)).toBe(state)
+    const two = setPersonRole(state, "person_truck-2", "owner", actor)
+    expect(setPersonRole(two, "person_truck-1", "tech", actor).settings.people[0].role).toBe("tech")
+    expect(setPersonRole(state, "person_truck-2", "tech", actor)).toBe(state)
+  })
+
+  it("sets and clears the contact and the truck, logging None for a blank", () => {
+    const email = setPersonText(state, "person_truck-2", "email", " sam@example.com ", actor)
+    expect(email.settings.people[1].email).toBe("sam@example.com")
+    expect(last(email)).toMatchObject({ field: "Second truck email", from: "None", to: "sam@example.com" })
+    const cleared = setPersonText(email, "person_truck-2", "email", "", actor)
+    expect("email" in cleared.settings.people[1]).toBe(false)
+    expect(last(cleared)).toMatchObject({ field: "Second truck email", from: "sam@example.com", to: "None" })
+    const noTruck = setPersonText(state, "person_truck-2", "truck", "", actor)
+    expect(noTruck.settings.people[1].truck).toBeUndefined()
+    expect(last(noTruck)).toMatchObject({ field: "Second truck truck", from: "Truck 2", to: "None" })
+    expect(setPersonText(state, "person_truck-2", "phone", "", actor)).toBe(state)
+  })
+
+  it("sets a season that is real and in order, and a blank means all year", () => {
+    const from = setSeason(state, "person_truck-2", "seasonStart", "2027-04-01", actor)
+    expect(from.settings.people[1].seasonStart).toBe("2027-04-01")
+    expect(last(from)).toMatchObject({ field: "Second truck season from", from: "All year", to: "2027-04-01" })
+    const to = setSeason(from, "person_truck-2", "seasonEnd", "2027-10-31", actor)
+    expect(to.settings.people[1].seasonEnd).toBe("2027-10-31")
+    expect(setSeason(to, "person_truck-2", "seasonEnd", "2027-03-31", actor)).toBe(to)
+    expect(setSeason(to, "person_truck-2", "seasonStart", "2027-11-01", actor)).toBe(to)
+    expect(setSeason(state, "person_truck-2", "seasonStart", "2027-02-30", actor)).toBe(state)
+    const cleared = setSeason(to, "person_truck-2", "seasonStart", "", actor)
+    expect(cleared.settings.people[1].seasonStart).toBeUndefined()
+    expect(last(cleared)).toMatchObject({ field: "Second truck season from", to: "All year" })
   })
 })
 
@@ -157,15 +196,16 @@ describe("the log", () => {
   })
 })
 
-describe("more trucks, areas and keys", () => {
-  it("sets the Jobber user and removes a truck, logging both", () => {
-    const user = setJobberUser(state, "truck-1", "jobber-user-9", actor)
-    expect(user.settings.trucks[0].jobberUserId).toBe("jobber-user-9")
-    expect(last(user)).toMatchObject({ field: "Truck 1 Jobber user", from: "jobber-user-1", to: "jobber-user-9" })
-    const gone = removeTruck(state, "truck-2", actor)
-    expect(gone.settings.trucks.map((t) => t.id)).toEqual(["truck-1"])
-    expect(last(gone).field).toBe("Trucks")
-    expect(removeTruck(state, "nope", actor)).toBe(state)
+describe("more people, areas and keys", () => {
+  it("sets the Jobber user and removes a person, logging both, and keeps the last owner", () => {
+    const user = setPersonText(state, "person_truck-1", "jobberUserId", "jobber-user-9", actor)
+    expect(user.settings.people[0].jobberUserId).toBe("jobber-user-9")
+    expect(last(user)).toMatchObject({ field: "Ryan Garner Jobber user", from: "jobber-user-1", to: "jobber-user-9" })
+    const gone = removePerson(state, "person_truck-2", actor)
+    expect(gone.settings.people.map((p) => p.id)).toEqual(["person_truck-1"])
+    expect(last(gone)).toMatchObject({ field: "People", from: "2 (Second truck included)", to: "1 (Second truck removed)" })
+    expect(removePerson(state, "nope", actor)).toBe(state)
+    expect(removePerson(state, "person_truck-1", actor)).toBe(state)
   })
 
   it("adds an empty area", () => {
@@ -214,15 +254,15 @@ describe("validation", () => {
   it("caps lead weeks at 12 and capacity at 50", () => {
     expect(setWindow(state, "turn-on", "leadWeeks", 13, actor)).toBe(state)
     expect(setWindow(state, "turn-on", "leadWeeks", 12, actor).settings.windows[0].leadWeeks).toBe(12)
-    expect(setCapacity(state, "truck-1", "blowout", 51, actor)).toBe(state)
-    expect(setCapacity(state, "truck-1", "blowout", 50, actor).settings.trucks[0].capacityByKind.blowout).toBe(50)
+    expect(setCapacity(state, "person_truck-1", "blowout", 51, actor)).toBe(state)
+    expect(setCapacity(state, "person_truck-1", "blowout", 50, actor).settings.people[0].capacityByKind.blowout).toBe(50)
     expect(setBuffer(state, "early", 100, actor).settings.bufferPercentEarly).toBe(100)
     expect(setBuffer(state, "early", -1, actor)).toBe(state)
   })
 
   it("trims names and refuses an empty one", () => {
-    expect(setTruckName(state, "truck-2", "  Blowout truck  ", actor).settings.trucks[1].name).toBe("Blowout truck")
-    expect(setTruckName(state, "truck-2", "   ", actor)).toBe(state)
+    expect(setPersonName(state, "person_truck-2", "  Blowout truck  ", actor).settings.people[1].name).toBe("Blowout truck")
+    expect(setPersonName(state, "person_truck-2", "   ", actor)).toBe(state)
     expect(setAreaName(state, "area-north", "  North ", actor).settings.areas[0].name).toBe("North")
     expect(setAreaName(state, "area-north", "", actor)).toBe(state)
   })

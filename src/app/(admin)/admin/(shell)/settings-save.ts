@@ -4,11 +4,11 @@ import type { Ctx } from "@/api/core/context"
 import { ApiError } from "@/api/core/errors"
 import { areasCreate, areasDelete, areasList, areasUpdate } from "@/api/v1/areas/handlers"
 import { settingsGet, settingsUpdate } from "@/api/v1/settings/handlers"
-import { trucksCreate, trucksDeactivate, trucksList, trucksUpdate } from "@/api/v1/trucks/handlers"
-import type { AreaGroup, OrganizationSettings, Truck } from "@/lib/admin/types"
+import { peopleCreate, peopleDeactivate, peopleList, peopleUpdate, type PersonOut } from "@/api/v1/people/handlers"
+import type { AreaGroup, OrganizationSettings, Person } from "@/lib/admin/types"
 
 // Settings Save: the screen holds the whole `OrganizationSettings` and sends it once. This turns the difference
-// from what the API holds into the API's own calls: trucks.*, areas.* and one settings.update per changed section.
+// from what the API holds into the API's own calls: people.*, areas.* and one settings.update per changed section.
 // The API's current values are read here, never taken from the client, and the change log is written by the handlers.
 
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b)
@@ -17,6 +17,7 @@ const SECTIONS = ["windows", "bufferPercentEarly", "bufferPercentLate", "fallTow
 /** What would stop a save: said before anything is written, so a half-made area never half-saves. */
 export function settingsProblems(after: OrganizationSettings): string[] {
   const problems: string[] = []
+  if (after.people.length && !after.people.some((p) => p.role === "owner")) problems.push("Keep at least one owner.")
   for (const a of after.areas) if (a.towns.length === 0) problems.push(`Pick at least one town for ${a.name} before saving.`)
   const seen = new Map<string, string>()
   for (const a of after.areas)
@@ -28,22 +29,31 @@ export function settingsProblems(after: OrganizationSettings): string[] {
   return problems
 }
 
-const truckFields = (t: Truck) => ({ name: t.name, jobberUserId: t.jobberUserId || undefined, workingDays: t.workingDays, capacityByKind: t.capacityByKind })
+/** A person's fields as people.update takes them: null clears a text field. */
+const personFields = (p: Person) => ({
+  name: p.name, email: p.email ?? null, phone: p.phone ?? null, role: p.role, truck: p.truck ?? null, jobberUserId: p.jobberUserId ?? null,
+  workingDays: p.workingDays, capacityByKind: p.capacityByKind, seasonStart: p.seasonStart ?? null, seasonEnd: p.seasonEnd ?? null,
+})
+const apiFields = (p: PersonOut) => ({
+  name: p.name, email: p.email, phone: p.phone, role: p.role, truck: p.truck, jobberUserId: p.jobberUserId,
+  workingDays: p.workingDays, capacityByKind: p.capacityByKind, seasonStart: p.seasonStart, seasonEnd: p.seasonEnd,
+})
+/** people.create takes no nulls: a field the person does not have is left out. */
+const defined = <T extends object>(o: T) => Object.fromEntries(Object.entries(o).filter(([, v]) => v !== null && v !== undefined)) as T
 
 /** Writes the difference between the API's settings and `after`; throws the API's own error on the first refusal. */
 export async function saveSettings(ctx: Ctx, after: OrganizationSettings): Promise<void> {
   const problems = settingsProblems(after)
   if (problems.length) throw new ApiError("unprocessable", problems[0]!)
-  const [trucks, areas, current] = await Promise.all([callApi(ctx, trucksList, {}), callApi(ctx, areasList, {}), callApi(ctx, settingsGet, {})])
+  const [people, areas, current] = await Promise.all([callApi(ctx, peopleList, { active: "true" }), callApi(ctx, areasList, {}), callApi(ctx, settingsGet, {})])
 
-  const haveTrucks = new Map(trucks.data.filter((t) => t.active).map((t) => [t.id, t]))
-  for (const t of after.trucks) {
-    const was = haveTrucks.get(t.id)
-    if (!was) await callApi(ctx, trucksCreate, truckFields(t))
-    else if (!same({ name: was.name, jobberUserId: was.jobberUserId ?? undefined, workingDays: was.workingDays, capacityByKind: was.capacityByKind }, truckFields(t)))
-      await callApi(ctx, trucksUpdate, { id: t.id, ...truckFields(t), jobberUserId: t.jobberUserId ?? "" })
+  const havePeople = new Map(people.data.map((p) => [p.id, p]))
+  for (const p of after.people) {
+    const was = havePeople.get(p.id)
+    if (!was) await callApi(ctx, peopleCreate, { ...defined(personFields(p)), initials: p.initials })
+    else if (!same(apiFields(was), personFields(p))) await callApi(ctx, peopleUpdate, { id: p.id, ...personFields(p) })
   }
-  for (const id of haveTrucks.keys()) if (!after.trucks.some((t) => t.id === id)) await callApi(ctx, trucksDeactivate, { id })
+  for (const id of havePeople.keys()) if (!after.people.some((p) => p.id === id)) await callApi(ctx, peopleDeactivate, { id })
 
   // A town can belong to one area at a time, so areas that give towns up are written before the ones that take them.
   const haveAreas = new Map(areas.data.map((a) => [a.id, a]))

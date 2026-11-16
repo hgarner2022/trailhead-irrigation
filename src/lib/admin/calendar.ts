@@ -1,11 +1,11 @@
 /**
  * The calendar behind WeekGrid and the schedule: which Monday a date belongs
  * to, the seven days of a week, a day's or a week's visits in stop order, the
- * area a town sits in and the days a truck works. Every calendar word is read
+ * area a town sits in and the days a person works. Every calendar word is read
  * in the given time zone, so a 7 pm Denver visit stays on its Mountain day.
  * Day keys are YYYY-MM-DD. Pure, so it runs in jsdom and on the server.
  */
-import type { AreaGroup, BusyBlock, Town, Truck, Visit, Weekday } from "@/lib/admin/types"
+import type { AreaGroup, BusyBlock, Person, Town, Visit, Weekday } from "@/lib/admin/types"
 
 export type { BusyBlock }
 
@@ -82,9 +82,9 @@ export function areaOf(town: Town, areas: AreaGroup[]): AreaGroup | undefined {
   return areas.find((a) => a.towns.includes(town))
 }
 
-/** Whether a truck works on the weekday of `dayIso`. */
-export function worksOn(truck: Truck, dayIso: string): boolean {
-  return truck.workingDays.includes(weekdayOf(dayIso))
+/** Whether a person works on the weekday of `dayIso`. */
+export function worksOn(person: Pick<Person, "workingDays">, dayIso: string): boolean {
+  return person.workingDays.includes(weekdayOf(dayIso))
 }
 
 const clockFormatters = new Map<string, Intl.DateTimeFormat>()

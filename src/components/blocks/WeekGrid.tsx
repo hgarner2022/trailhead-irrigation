@@ -1,27 +1,28 @@
 "use client"
 
 import { useState, type DragEvent } from "react"
-import { ChevronLeft, ChevronRight, TriangleAlert, Truck as TruckIcon } from "lucide-react"
+import { ChevronLeft, ChevronRight, TriangleAlert, Users } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import type { AreaGroup, Truck, Visit } from "@/lib/admin/types"
+import type { AreaGroup, Person, Visit } from "@/lib/admin/types"
 import { addDays, areaOf, dayLabel, dayVisits, weekDays, weekOf, weekVisits, worksOn } from "@/lib/admin/calendar"
 import { EmptyState } from "./EmptyState"
 import { KIND_WORDS } from "@/lib/admin/format"
 
-// The week by truck: one row per truck, Monday to Sunday across, every visit
+// The week by person: one row per person on the schedule, Monday to Sunday across, every visit
 // a block in its area's colour, marked when Ryan moved it. A block is a button: click or Enter selects
 // it, and it can be dragged to another cell, which calls `onMove`; a cell on
-// a day the truck does not work refuses the drop. Under `md` the same data
-// is one day at a time with the trucks stacked, stepped by the day buttons.
+// a day the person does not work refuses the drop. Under `md` the same data
+// is one day at a time with the people stacked, stepped by the day buttons.
 // Both layouts are in the DOM and CSS picks one, so the block renders the
 // same on the server. The week's actions (Schedule) belong to the page
 // header, not the grid. Client because the filters and the phone's day
 // are state.
 
 export interface WeekGridProps {
-  trucks: Truck[]
+  /** the people on the schedule, a row each */
+  people: Person[]
   areas: AreaGroup[]
   /** every visit; the grid keeps the week's */
   visits: Visit[]
@@ -33,7 +34,7 @@ export interface WeekGridProps {
   selectedId?: string
   onSelect: (visitId: string | undefined) => void
   /** a drop on a cell; without it the visits are not draggable (a tech reads the week) */
-  onMove?: (visitId: string, truckId: string, dayIso: string) => void
+  onMove?: (visitId: string, personId: string, dayIso: string) => void
   onWeekChange: (weekStart: string) => void
   className?: string
 }
@@ -81,18 +82,18 @@ function VisitBlock({ visit, areas, selected, onSelect, draggable }: { visit: Vi
   )
 }
 
-function Cell({ truck, day, visits, areas, selectedId, onSelect, onMove }: { truck: Truck; day: string; visits: Visit[]; areas: AreaGroup[]; selectedId?: string; onSelect: WeekGridProps["onSelect"]; onMove: WeekGridProps["onMove"] }) {
-  const working = worksOn(truck, day)
+function Cell({ person, day, visits, areas, selectedId, onSelect, onMove }: { person: Person; day: string; visits: Visit[]; areas: AreaGroup[]; selectedId?: string; onSelect: WeekGridProps["onSelect"]; onMove: WeekGridProps["onMove"] }) {
+  const working = worksOn(person, day)
   const onDrop = (event: DragEvent<HTMLTableCellElement>) => {
     event.preventDefault()
     const id = event.dataTransfer.getData("text/plain")
-    if (id) onMove?.(id, truck.id, day)
+    if (id) onMove?.(id, person.id, day)
   }
   return (
     <td
       data-slot="week-grid-cell"
       data-day={day}
-      data-truck={truck.id}
+      data-person={person.id}
       onDragOver={working ? (event) => event.preventDefault() : undefined}
       onDrop={working && onMove ? onDrop : undefined}
       className={cn("h-24 min-w-32 space-y-1 border-l border-border p-1.5 align-top", !working && "bg-stone")}
@@ -139,17 +140,17 @@ function Stepper({ label, onPrevious, onNext, onToday, children }: { label: stri
   )
 }
 
-export function WeekGrid({ trucks, areas, visits, weekStart, today, timeZone, selectedId, onSelect, onMove, onWeekChange, className }: WeekGridProps) {
-  const [truckFilter, setTruckFilter] = useState("all")
+export function WeekGrid({ people, areas, visits, weekStart, today, timeZone, selectedId, onSelect, onMove, onWeekChange, className }: WeekGridProps) {
+  const [personFilter, setPersonFilter] = useState("all")
   const [areaFilter, setAreaFilter] = useState("all")
   const [dayChoice, setDayChoice] = useState<string | null>(null)
-  if (trucks.length === 0) {
-    return <EmptyState className={className} icon={TruckIcon} title="No trucks yet" line="Add a truck in Settings and the week fills in from the calendar." />
+  if (people.length === 0) {
+    return <EmptyState className={className} icon={Users} title="No people yet" line="Add a person with a truck in Settings and the week fills in from the calendar." />
   }
   const days = weekDays(weekStart)
   const area = areas.find((a) => a.id === areaFilter)
   const shown = weekVisits(visits, weekStart, timeZone).filter((v) => !area || area.towns.includes(v.town))
-  const rows = trucks.filter((t) => truckFilter === "all" || t.id === truckFilter)
+  const rows = people.filter((p) => personFilter === "all" || p.id === personFilter)
   const phoneDay = dayChoice && days.includes(dayChoice) ? dayChoice : days.includes(today) ? today : weekStart
   const stepDay = (n: number) => {
     const next = addDays(phoneDay, n)
@@ -162,11 +163,11 @@ export function WeekGrid({ trucks, areas, visits, weekStart, today, timeZone, se
   }
   const filters = (
     <>
-      <Select value={truckFilter} onValueChange={setTruckFilter}>
-        <SelectTrigger aria-label="Truck" className="ml-auto bg-background"><SelectValue /></SelectTrigger>
+      <Select value={personFilter} onValueChange={setPersonFilter}>
+        <SelectTrigger aria-label="Who" className="ml-auto bg-background"><SelectValue /></SelectTrigger>
         <SelectContent>
-          <SelectItem value="all">All trucks</SelectItem>
-          {trucks.map((t) => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
+          <SelectItem value="all">Everyone</SelectItem>
+          {people.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
         </SelectContent>
       </Select>
       <Select value={areaFilter} onValueChange={setAreaFilter}>
@@ -184,11 +185,11 @@ export function WeekGrid({ trucks, areas, visits, weekStart, today, timeZone, se
         <Stepper label="week" onPrevious={() => onWeekChange(addDays(weekStart, -7))} onNext={() => onWeekChange(addDays(weekStart, 7))} onToday={goToday}>
           {filters}
         </Stepper>
-        <div role="region" aria-label="Week by truck" tabIndex={0} className="mt-3 overflow-x-auto rounded-lg border border-border bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50">
+        <div role="region" aria-label="Week by person" tabIndex={0} className="mt-3 overflow-x-auto rounded-lg border border-border bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50">
           <table className="w-full border-collapse text-sm">
             <thead>
               <tr className="border-b border-border">
-                <th scope="col" className="w-28 px-3 py-2 text-left font-display text-sm uppercase tracking-wide text-muted-foreground">Truck</th>
+                <th scope="col" className="w-32 px-3 py-2 text-left font-display text-sm uppercase tracking-wide text-muted-foreground">Who</th>
                 {days.map((day) => (
                   <th key={day} scope="col" aria-current={day === today ? "date" : undefined} className={cn("border-l border-border px-2 py-2 text-left font-display text-sm uppercase tracking-wide", day === today ? "bg-primary/10 text-primary-deep" : "text-muted-foreground")}>
                     {dayLabel(day)}
@@ -198,11 +199,11 @@ export function WeekGrid({ trucks, areas, visits, weekStart, today, timeZone, se
               </tr>
             </thead>
             <tbody>
-              {rows.map((truck) => (
-                <tr key={truck.id} className="border-b border-border last:border-0">
-                  <th scope="row" className="px-3 py-2 text-left align-top font-medium text-foreground">{truck.name}</th>
+              {rows.map((person) => (
+                <tr key={person.id} className="border-b border-border last:border-0">
+                  <th scope="row" className="px-3 py-2 text-left align-top font-medium text-foreground">{person.name}</th>
                   {days.map((day) => (
-                    <Cell key={day} truck={truck} day={day} visits={dayVisits(shown, day, truck.id, timeZone)} areas={areas} selectedId={selectedId} onSelect={onSelect} onMove={onMove} />
+                    <Cell key={day} person={person} day={day} visits={dayVisits(shown, day, person.id, timeZone)} areas={areas} selectedId={selectedId} onSelect={onSelect} onMove={onMove} />
                   ))}
                 </tr>
               ))}
@@ -214,13 +215,13 @@ export function WeekGrid({ trucks, areas, visits, weekStart, today, timeZone, se
         <Stepper label="day" onPrevious={() => stepDay(-1)} onNext={() => stepDay(1)} onToday={goToday} />
         <h2 className="mt-3 font-display text-xl text-navy">{dayLabel(phoneDay)}{phoneDay === today && <span className="text-muted-foreground"> · today</span>}</h2>
         <div className="mt-2 flex flex-wrap gap-2">{filters}</div>
-        {rows.map((truck) => {
-          const list = dayVisits(shown, phoneDay, truck.id, timeZone)
+        {rows.map((person) => {
+          const list = dayVisits(shown, phoneDay, person.id, timeZone)
           return (
-            <section key={truck.id} aria-label={truck.name} className="mt-4">
-              <h3 className="font-display text-sm uppercase tracking-wide text-muted-foreground">{truck.name}</h3>
+            <section key={person.id} aria-label={person.name} className="mt-4">
+              <h3 className="font-display text-sm uppercase tracking-wide text-muted-foreground">{person.name}</h3>
               {list.length === 0 ? (
-                <p className="py-2 text-sm text-muted-foreground">{worksOn(truck, phoneDay) ? "No visits." : "Not a working day."}</p>
+                <p className="py-2 text-sm text-muted-foreground">{worksOn(person, phoneDay) ? "No visits." : "Not a working day."}</p>
               ) : (
                 <ul className="mt-1.5 space-y-1.5">
                   {list.map((visit) => (

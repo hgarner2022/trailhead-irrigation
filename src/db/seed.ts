@@ -1,10 +1,10 @@
 // No `server-only` here on purpose: scripts/db-seed.ts runs this under tsx
 // with its own database handle. It touches only the handle it is given.
-import { eq } from "drizzle-orm"
+import { and, eq, isNull } from "drizzle-orm"
 import type { Database } from "./types"
 import * as s from "./schema"
 import { SERVICE_LIST } from "@/lib/services"
-import type { AdminData, Pass, Town } from "@/lib/admin/types"
+import type { AdminData, Pass, Person, Town } from "@/lib/admin/types"
 
 export interface SeedOptions {
   organizationId: string
@@ -36,15 +36,19 @@ function townRank(order: readonly Town[], towns: readonly Town[]) {
   return ranks.length ? Math.min(...ranks) : 0
 }
 
+/** The truck row a snapshot person was made from: `person_truck-1` came from `truck-1`. Gone in step 6 with the truck table. */
+const legacyTruckIdOf = (p: Pick<Person, "id">) => (p.id.startsWith("person_") ? p.id.slice("person_".length) : p.id)
+
 /**
- * Inserts the organization, admins, trucks, areas, settings and services
- * always; the fixture passes (with customers, properties, consents and visits)
- * only with `passes: true`; the mirror only with `mirror: true`. Every insert
- * ignores a row that is already there, so running it twice changes nothing.
+ * Inserts the organization, admins, people (and, until step 6, a truck row
+ * per person with a truck), areas, settings and services always; the fixture
+ * passes (with customers, properties, consents and visits) only with
+ * `passes: true`; the mirror only with `mirror: true`. Every insert ignores a
+ * row that is already there, so running it twice changes nothing.
  */
 export async function seed(db: Database, snapshot: AdminData, options: SeedOptions): Promise<void> {
   const org = options.organizationId
-  const { trucks, areas, ...settings } = snapshot.settings
+  const { people, areas, ...settings } = snapshot.settings
   const windows = settings.windows.map((w) => ({ ...w, leadWeeks: LEAD_WEEKS[w.kind] }))
 
   await db
@@ -59,13 +63,14 @@ export async function seed(db: Database, snapshot: AdminData, options: SeedOptio
       .onConflictDoNothing()
   }
 
+  const trucks = people.filter((p) => p.truck)
   if (trucks.length) {
     await db
       .insert(s.truck)
-      .values(trucks.map((t) => ({ id: t.id, organizationId: org, name: t.name, jobberUserId: t.jobberUserId, workingDays: t.workingDays, capacityByKind: t.capacityByKind })))
+      .values(trucks.map((p) => ({ id: legacyTruckIdOf(p), organizationId: org, name: p.truck!, jobberUserId: p.jobberUserId, workingDays: p.workingDays, capacityByKind: p.capacityByKind })))
       .onConflictDoNothing()
   }
-  await seedPeople(db, org)
+  await seedPeople(db, org, people)
   if (areas.length) {
     await db
       .insert(s.area)
@@ -107,42 +112,35 @@ export async function seed(db: Database, snapshot: AdminData, options: SeedOptio
 }
 
 /**
- * The people migration 0010 makes from the admins and trucks already in the
- * database (drizzle/0010_person.sql), so a seeded database and a migrated one
- * hold the same rows: one person per admin (`person_<admin id>`, keeping the
- * sign-in), one per truck (`person_<truck id>`, keeping the scheduling fields
- * with the truck name as the label), Truck 1 as Ryan Garner the owner and
- * Truck 2 as Second truck. An admin named or emailed ryan% is merged with the
- * Truck 1 person instead of standing beside him. Inserts ignore a row that is
- * already there, so a re-seed changes nothing.
+ * The people: the snapshot's rows as they are (`settings.people` is the one
+ * source; Ryan Garner the owner on Truck 1, Second truck the tech on Truck 2,
+ * each keeping the truck id it was made from as `legacyTruckId` until step 6),
+ * then one person per admin (`person_<admin id>`) so the sign-in has a row.
+ * An admin named or emailed ryan% is the same person as the snapshot's Ryan
+ * Garner, as the people migration (drizzle/0010_person.sql) merges them: he
+ * gets that admin's email instead of a second row. Inserts ignore a row that
+ * is already there, so a re-seed changes nothing.
  */
-async function seedPeople(db: Database, org: string) {
+async function seedPeople(db: Database, org: string, people: Person[]) {
+  if (people.length) {
+    await db
+      .insert(s.person)
+      .values(
+        people.map((p) => ({
+          id: p.id, organizationId: org, name: p.name, initials: p.initials, email: p.email, phone: p.phone, role: p.role, truck: p.truck, jobberUserId: p.jobberUserId,
+          workingDays: p.workingDays, capacityByKind: p.capacityByKind, seasonStart: p.seasonStart, seasonEnd: p.seasonEnd, legacyTruckId: p.truck ? legacyTruckIdOf(p) : undefined,
+        })),
+      )
+      .onConflictDoNothing()
+  }
   const admins = await db.select().from(s.adminUser).where(eq(s.adminUser.organizationId, org))
-  const trucks = await db.select().from(s.truck).where(eq(s.truck.organizationId, org))
-  const ryan = admins.find((a) => /^ryan/i.test(a.name) || /^ryan/i.test(a.email))
-  const truckOne = trucks.find((t) => t.name === "Truck 1")
-  const fromTruck = (t: typeof trucks[number]) => ({ truck: t.name, jobberUserId: t.jobberUserId, calendarFeedUrl: t.calendarFeedUrl, workingDays: t.workingDays, capacityByKind: t.capacityByKind, active: t.active, legacyTruckId: t.id })
-  const rows: (typeof s.person.$inferInsert)[] = [
-    ...admins.map((a) => ({
-      id: `person_${a.id}`,
-      organizationId: org,
-      name: a.name,
-      initials: a.initials,
-      email: a.email,
-      role: a.role,
-      ...(ryan && truckOne && a.id === ryan.id ? { name: "Ryan Garner", initials: "RG", role: "owner" as const, ...fromTruck(truckOne) } : {}),
-    })),
-    ...trucks
-      .filter((t) => !(ryan && t.id === truckOne?.id))
-      .map((t) => ({
-        id: `person_${t.id}`,
-        organizationId: org,
-        name: t.name === "Truck 1" ? "Ryan Garner" : t.name === "Truck 2" ? "Second truck" : t.name,
-        initials: t.name === "Truck 1" ? "RG" : t.name === "Truck 2" ? "T2" : t.name.charAt(0).toUpperCase() + t.name.slice(-1).toUpperCase(),
-        role: t.name === "Truck 1" ? ("owner" as const) : ("tech" as const),
-        ...fromTruck(t),
-      })),
-  ]
+  const ryan = people.find((p) => p.name === "Ryan Garner" && !p.email)
+  const rows: (typeof s.person.$inferInsert)[] = []
+  for (const a of admins) {
+    if (ryan && (/^ryan/i.test(a.name) || /^ryan/i.test(a.email))) {
+      await db.update(s.person).set({ email: a.email }).where(and(eq(s.person.id, ryan.id), isNull(s.person.email)))
+    } else rows.push({ id: `person_${a.id}`, organizationId: org, name: a.name, initials: a.initials, email: a.email, role: a.role })
+  }
   if (rows.length) await db.insert(s.person).values(rows).onConflictDoNothing()
 }
 

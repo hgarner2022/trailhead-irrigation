@@ -95,7 +95,7 @@ export interface TwilioHealthRow {
   state: "ok" | "not-set" | "rejected"
   at: string
 }
-export type OrganizationSettingsRow = Omit<OrganizationSettings, "trucks" | "areas"> & { integrations?: { twilio?: TwilioHealthRow } }
+export type OrganizationSettingsRow = Omit<OrganizationSettings, "people" | "areas"> & { integrations?: { twilio?: TwilioHealthRow } }
 
 export const organization = pgTable("organization", {
   id: text("id").primaryKey().$defaultFn(newId),

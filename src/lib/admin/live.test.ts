@@ -9,6 +9,7 @@ import { visitsMove } from "@/api/v1/visits/handlers"
 import snapshot from "./fixtures/snapshot.json"
 import { getLiveAdminData } from "./live"
 import type { AdminData } from "./types"
+import { routePeople } from "./people"
 
 const fixture = snapshot as AdminData
 let db: TestDb
@@ -58,8 +59,10 @@ describe("getLiveAdminData", () => {
     expect(data.visits.filter((v) => !v.isPass).length).toBeGreaterThan(100)
     expect(data.visits.every((v) => v.id && v.clientId !== undefined && v.town)).toBe(true)
   })
-  it("reads people (as trucks), areas, settings and the change log through the handlers", () => {
-    expect(data.settings.trucks.map((t) => t.id)).toEqual(["person_truck-1", "person_truck-2"])
+  it("reads people, areas, settings and the change log through the handlers", () => {
+    // owners first: the seeded admin (no truck, so not on the schedule), Ryan Garner, then Second truck
+    expect(data.settings.people.map((p) => [p.name, p.role, p.truck ?? null])).toEqual([["Owner", "owner", null], ["Ryan Garner", "owner", "Truck 1"], ["Second truck", "tech", "Truck 2"]])
+    expect(routePeople(data.settings.people).map((p) => p.id)).toEqual(["person_truck-1", "person_truck-2"])
     expect(data.settings.areas).toHaveLength(fixture.settings.areas.length)
     expect(data.settings.windows).toHaveLength(fixture.settings.windows.length)
     expect(data.settings.messages.length).toBe(fixture.settings.messages.length)

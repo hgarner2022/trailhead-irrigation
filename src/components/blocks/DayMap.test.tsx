@@ -14,7 +14,7 @@ const friday = dayVisits(data.visits, "2026-11-13", undefined, TIME_ZONE)
 
 describe("DayMap", () => {
   it("shows the fallback where there is no WebGL", () => {
-    render(<DayMap stops={friday} trucks={data.settings.trucks} onSelect={() => {}} />)
+    render(<DayMap stops={friday} people={data.settings.people} onSelect={() => {}} />)
     const block = document.querySelector('[data-slot="day-map"]')
     expect(block).toHaveAttribute("data-state", "unsupported")
     expect(screen.getByText("Map needs a browser")).toBeInTheDocument()

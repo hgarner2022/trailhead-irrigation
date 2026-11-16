@@ -205,25 +205,26 @@ export function jobTiles(data: Pick<AdminData, "passes" | "visits">, today: stri
   ]
 }
 
-export interface TruckDay {
-  /** the truck's id, or "none" for stops with no truck yet */
-  truckId: string
+export interface PersonDay {
+  /** the person's id, or "none" for stops nobody has yet */
+  personId: string
+  /** "Ryan Garner", or "No one yet" */
   name: string
   stops: Visit[]
 }
 
 /**
- * Home's day list: the visits that are on for `dayIso`, grouped by truck in the settings' order, each truck's stops in
- * route order (the stop number where the route build has set one, else the start time). A visit with no truck yet goes
- * last under "No truck yet". A truck with no stop that day is left out.
+ * Home's day list: the visits that are on for `dayIso`, grouped under the person who has them in the settings' order,
+ * each person's stops in route order (the stop number where the route build has set one, else the start time). A visit
+ * nobody has yet goes last under "No one yet". A person with no stop that day is left out.
  */
-export function dayByTruck(visits: Visit[], dayIso: string, trucks: { id: string; name: string }[]): TruckDay[] {
+export function dayByPerson(visits: Visit[], dayIso: string, people: { id: string; name: string }[]): PersonDay[] {
   const onDay = visitsOn(visits, dayIso, TIME_ZONE)
   const order = (a: Visit, b: Visit) => (a.stopOrder ?? 1e9) - (b.stopOrder ?? 1e9) || (a.startAt ?? "").localeCompare(b.startAt ?? "")
-  const days = trucks.map((t) => ({ truckId: t.id, name: t.name, stops: onDay.filter((v) => v.truckId === t.id).sort(order) }))
-  const known = new Set(trucks.map((t) => t.id))
-  const loose = onDay.filter((v) => !v.truckId || !known.has(v.truckId)).sort(order)
-  return [...days, { truckId: "none", name: "No truck yet", stops: loose }].filter((d) => d.stops.length > 0)
+  const days = people.map((p) => ({ personId: p.id, name: p.name, stops: onDay.filter((v) => v.personId === p.id).sort(order) }))
+  const known = new Set(people.map((p) => p.id))
+  const loose = onDay.filter((v) => !v.personId || !known.has(v.personId)).sort(order)
+  return [...days, { personId: "none", name: "No one yet", stops: loose }].filter((d) => d.stops.length > 0)
 }
 
 /** The time a stop shows: its start ("8:00 am") when the route has one, else "Any time". */

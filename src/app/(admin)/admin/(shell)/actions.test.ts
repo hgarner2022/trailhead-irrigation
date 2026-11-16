@@ -7,7 +7,7 @@ import { apiDb, ctxFor, ORG, owner, tech } from "@/api/test-helpers"
 import { callApi } from "@/api/core/call"
 import { areasList } from "@/api/v1/areas/handlers"
 import { settingsGet } from "@/api/v1/settings/handlers"
-import { trucksList } from "@/api/v1/trucks/handlers"
+import { peopleList } from "@/api/v1/people/handlers"
 import { passesList } from "@/api/v1/passes/handlers"
 import { getLiveAdminData } from "@/lib/admin/live"
 import type { OrganizationSettings } from "@/lib/admin/types"
@@ -85,10 +85,10 @@ describe("passes", () => {
 })
 
 describe("schedule", () => {
-  it("moves a visit, and refuses a day the truck does not work in the API's words", async () => {
-    const ok = await actions.moveVisit("p4-turn-on", "truck-1", "2027-05-05")
+  it("moves a visit, and refuses a day the person does not work in the API's words", async () => {
+    const ok = await actions.moveVisit("p4-turn-on", "person_truck-1", "2027-05-05")
     expect(ok.ok).toBe(true)
-    const sunday = await actions.moveVisit("p4-turn-on", "truck-1", "2027-05-09")
+    const sunday = await actions.moveVisit("p4-turn-on", "person_truck-1", "2027-05-09")
     expect(sunday).toMatchObject({ ok: false, message: expect.stringMatching(/does not work on/) })
     const [visit] = await db.select().from(s.visit).where(eq(s.visit.id, "p4-turn-on"))
     expect(visit!.scheduledOn).toBe("2027-05-05")
@@ -105,31 +105,42 @@ describe("schedule", () => {
 })
 
 describe("settings", () => {
-  it("saves the whole screen: a new truck, a changed area, a section, and logs who", async () => {
+  it("saves the whole screen: a new person, a changed area, a section, and logs who", async () => {
     const before = await settingsOf()
     const after: OrganizationSettings = {
       ...before,
-      trucks: [...before.trucks, { id: "truck-new", name: "Truck 3", workingDays: ["mon", "tue"], capacityByKind: { "turn-on": 4, inspection: 4, blowout: 6, repair: 2, other: 0 } }],
+      people: [...before.people, { id: "person-new", name: "Third Tech", initials: "TT", role: "tech", truck: "Truck 3", email: "third@example.com", workingDays: ["mon", "tue"], capacityByKind: { "turn-on": 4, inspection: 4, blowout: 6, repair: 2, other: 0 }, seasonStart: "2027-04-01" }],
       bufferPercentEarly: before.bufferPercentEarly + 5,
       areas: [...before.areas, { id: "area-new", name: "Area 9", towns: [] }],
     }
     const refused = await actions.saveSettings(after)
     expect(refused).toMatchObject({ ok: false, message: "Pick at least one town for Area 9 before saving." })
-    expect((await callApi(ctxFor(db, owner), trucksList, {})).data).toHaveLength(before.trucks.length)
+    expect((await callApi(ctxFor(db, owner), peopleList, { active: "true" })).data).toHaveLength(before.people.length)
 
     const ok = await actions.saveSettings({ ...after, areas: before.areas })
     expect(ok.ok).toBe(true)
-    const trucks = (await callApi(ctxFor(db, owner), trucksList, {})).data
-    expect(trucks.map((t) => t.name)).toContain("Truck 3")
+    const people = (await callApi(ctxFor(db, owner), peopleList, { active: "true" })).data
+    expect(people.find((p) => p.name === "Third Tech")).toMatchObject({ role: "tech", truck: "Truck 3", email: "third@example.com", seasonStart: "2027-04-01", canSignIn: true })
     expect((await callApi(ctxFor(db, owner), settingsGet, {})).bufferPercentEarly).toBe(before.bufferPercentEarly + 5)
     const changes = await db.select().from(s.settingsChange).where(eq(s.settingsChange.organizationId, ORG))
     expect(changes.some((c) => c.field === "bufferPercentEarly" && c.byEmail === owner.email)).toBe(true)
   })
-  it("takes a removed truck out of service and leaves it out of the data", async () => {
+  it("changes a person's role and clears their email through the API, in one save", async () => {
     const now = await settingsOf()
-    const gone = now.trucks.find((t) => t.name === "Truck 3")!
-    expect((await actions.saveSettings({ ...now, trucks: now.trucks.filter((t) => t.id !== gone.id) })).ok).toBe(true)
-    expect((await settingsOf()).trucks.map((t) => t.id)).not.toContain(gone.id)
+    const third = now.people.find((p) => p.name === "Third Tech")!
+    const { email: _email, ...noEmail } = third
+    void _email
+    expect((await actions.saveSettings({ ...now, people: now.people.map((p) => (p.id === third.id ? { ...noEmail, role: "admin" as const } : p)) })).ok).toBe(true)
+    expect((await settingsOf()).people.find((p) => p.id === third.id)).toMatchObject({ role: "admin" })
+    expect((await callApi(ctxFor(db, owner), peopleList, { active: "true" })).data.find((p) => p.id === third.id)).toMatchObject({ email: null, canSignIn: false })
+  })
+  it("takes a removed person out of service and leaves them out of the data, and keeps the last owner", async () => {
+    const now = await settingsOf()
+    const gone = now.people.find((p) => p.name === "Third Tech")!
+    expect((await actions.saveSettings({ ...now, people: now.people.filter((p) => p.id !== gone.id) })).ok).toBe(true)
+    expect((await settingsOf()).people.map((p) => p.id)).not.toContain(gone.id)
+    const noOwner = await actions.saveSettings({ ...now, people: now.people.map((p) => ({ ...p, role: "tech" as const })) })
+    expect(noOwner).toMatchObject({ ok: false, message: "Keep at least one owner." })
   })
   it("moves a town between areas by writing the area that gives it up first", async () => {
     const now = await settingsOf()

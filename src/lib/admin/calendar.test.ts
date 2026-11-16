@@ -5,7 +5,7 @@ import { TIME_ZONE } from "@/lib/admin/format"
 import { addDays, areaOf, dayLabel, dayOf, dayVisits, weekDays, weekOf, weekVisits, weekdayOf, worksOn } from "./calendar"
 
 const data = snapshot as AdminData
-const { trucks, areas } = data.settings
+const { people, areas } = data.settings
 // 12:56 pm in Denver on Thursday, November 12, 2026.
 const TODAY = "2026-11-12T19:56:30Z"
 const WEEK = "2026-11-09"
@@ -50,7 +50,7 @@ describe("the week's visits", () => {
   })
 })
 
-describe("areas and trucks", () => {
+describe("areas and people", () => {
   it("finds the area a town sits in", () => {
     expect(areaOf("Firestone", areas)?.id).toBe("area-north")
     expect(areaOf("Broomfield", areas)?.id).toBe("area-south")
@@ -58,9 +58,9 @@ describe("areas and trucks", () => {
   })
 
   it("knows which days a truck works", () => {
-    expect(worksOn(trucks[0], "2026-11-13")).toBe(true) // Friday
-    expect(worksOn(trucks[0], "2026-11-14")).toBe(false) // Saturday
-    expect(worksOn(trucks[1], "2026-11-14")).toBe(true)
-    expect(worksOn(trucks[1], "2026-11-15")).toBe(false)
+    expect(worksOn(people[0], "2026-11-13")).toBe(true) // Friday
+    expect(worksOn(people[0], "2026-11-14")).toBe(false) // Saturday
+    expect(worksOn(people[1], "2026-11-14")).toBe(true)
+    expect(worksOn(people[1], "2026-11-15")).toBe(false)
   })
 })

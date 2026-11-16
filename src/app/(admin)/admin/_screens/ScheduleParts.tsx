@@ -10,6 +10,7 @@ import { visitJob } from "@/lib/admin/jobs"
 import { addDays } from "@/lib/admin/calendar"
 import { cn } from "@/lib/utils"
 import { clockTime } from "./home-model"
+import { personNameOf } from "@/lib/admin/people"
 
 // The small pieces of the Schedule screen: the day stepper, the stops of one
 // day in order, the "Moved" card and the line that points at the next week
@@ -36,7 +37,7 @@ export function DayStepper({ day, today, onChange }: { day: string; today: strin
   )
 }
 
-export function StopList({ stops, trucks, today, selectedId, onSelect }: { stops: Visit[]; trucks: AdminData["settings"]["trucks"]; today: string; selectedId?: string; onSelect: (id: string | undefined) => void }) {
+export function StopList({ stops, people, today, selectedId, onSelect }: { stops: Visit[]; people: AdminData["settings"]["people"]; today: string; selectedId?: string; onSelect: (id: string | undefined) => void }) {
   if (stops.length === 0) return <EmptyState title="No stops" line="Nothing is on the calendar for this day." />
   return (
     <ol data-slot="stop-list" className="divide-y divide-border">
@@ -55,7 +56,7 @@ export function StopList({ stops, trucks, today, selectedId, onSelect }: { stops
               <span className="min-w-0 flex-1 text-sm">
                 <span className="block truncate font-medium text-foreground">{stop.clientName}</span>
                 <span className="block text-muted-foreground">
-                  {`${stop.town} · ${KIND_WORDS[stop.kind]} · ${trucks.find((t) => t.id === stop.truckId)?.name ?? "No truck"}`}
+                  {`${stop.town} · ${KIND_WORDS[stop.kind]} · ${personNameOf(stop, people) || "No one yet"}`}
                 </span>
               </span>
               <JobPill job={visitJob(stop, today, TIME_ZONE)} />

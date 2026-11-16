@@ -8,14 +8,14 @@ const base = snapshot as AdminData
 const TODAY = "2026-11-12T19:56:30Z"
 const visit = (over: Partial<Visit>): Visit => ({
   id: "x", clientId: "c", clientName: "Dana Reed", town: "Erie", kind: "repair", status: "scheduled", isPass: false, jobberUrl: "", jobId: "j",
-  scheduledOn: "2026-11-12", startAt: "2026-11-12T15:00:00Z", price: 145, truckId: "truck-1", truckName: "Truck 1", ...over,
+  scheduledOn: "2026-11-12", startAt: "2026-11-12T15:00:00Z", price: 145, personId: "person_truck-1", personName: "Ryan Garner", ...over,
 })
 
 describe("weekView", () => {
   it("shows today when today has a visit", () => {
     const week = weekView({ ...base, visits: [visit({ id: "a" })] }, TODAY)
     expect(week).toMatchObject({ day: "2026-11-12", isToday: true, title: "Today", heading: "Thu, Nov 12 · 1 visit in Erie" })
-    expect(week.trucks.map((t) => t.name)).toEqual(["Truck 1"])
+    expect(week.people.map((p) => p.name)).toEqual(["Ryan Garner"])
   })
 
   it("skips past days and cancelled visits to the first day ahead that has one", () => {
@@ -23,8 +23,8 @@ describe("weekView", () => {
       visit({ id: "past", startAt: "2026-11-09T15:00:00Z", scheduledOn: "2026-11-09" }),
       visit({ id: "gone", status: "cancelled", startAt: "2026-11-20T15:00:00Z", scheduledOn: "2026-11-20" }),
       visit({ id: "n1", startAt: "2027-04-27T15:00:00Z", scheduledOn: "2027-04-27" }),
-      visit({ id: "n2", town: "Longmont", truckId: "truck-2", startAt: "2027-04-27T17:00:00Z", scheduledOn: "2027-04-27" }),
-      visit({ id: "n3", town: "Louisville", truckId: "truck-2", startAt: "2027-04-27T19:00:00Z", scheduledOn: "2027-04-27" }),
+      visit({ id: "n2", town: "Longmont", personId: "person_truck-2", startAt: "2027-04-27T17:00:00Z", scheduledOn: "2027-04-27" }),
+      visit({ id: "n3", town: "Louisville", personId: "person_truck-2", startAt: "2027-04-27T19:00:00Z", scheduledOn: "2027-04-27" }),
     ]
     const week = weekView({ ...base, visits }, TODAY)
     expect(week.title).toBe("Next up")
@@ -33,7 +33,7 @@ describe("weekView", () => {
   })
 
   it("has no day when nothing is ahead", () => {
-    expect(weekView({ ...base, visits: [visit({ startAt: "2026-11-09T15:00:00Z" })] }, TODAY)).toMatchObject({ day: null, trucks: [], visits: [] })
+    expect(weekView({ ...base, visits: [visit({ startAt: "2026-11-09T15:00:00Z" })] }, TODAY)).toMatchObject({ day: null, people: [], visits: [] })
   })
 })
 

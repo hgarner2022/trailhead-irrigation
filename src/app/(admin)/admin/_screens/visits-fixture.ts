@@ -10,13 +10,13 @@ const base = snapshot as AdminData
 
 const visit = (over: Partial<Visit>): Visit => ({
   id: "x", clientId: "c-dana", clientName: "Dana Reed", town: "Erie", kind: "repair", status: "scheduled", isPass: false, jobberUrl: "", jobId: "job-x",
-  scheduledOn: "2026-11-19", startAt: "2026-11-19T15:00:00Z", price: 145, minutes: 120, truckId: "truck-1", truckName: "Truck 1", ...over,
+  scheduledOn: "2026-11-19", startAt: "2026-11-19T15:00:00Z", price: 145, minutes: 120, personId: "person_truck-1", personName: "Ryan Garner", ...over,
 })
 
 export const oneOffs: Visit[] = [
   visit({ id: "office-scheduled", jobId: "job-a" }),
-  visit({ id: "office-needs-day", jobId: "job-b", clientId: "c-sam", clientName: "Sam Ortiz", town: "Louisville", kind: "install", status: "unscheduled", scheduledOn: undefined, startAt: undefined, truckId: undefined, truckName: undefined, price: 0, minutes: 120 }),
-  visit({ id: "office-not-done", jobId: "job-c", clientId: "c-lee", clientName: "Lee Park", kind: "repair", status: "unscheduled", scheduledOn: undefined, startAt: undefined, truckId: undefined, truckName: undefined, notDoneReason: "no-water" }),
+  visit({ id: "office-needs-day", jobId: "job-b", clientId: "c-sam", clientName: "Sam Ortiz", town: "Louisville", kind: "install", status: "unscheduled", scheduledOn: undefined, startAt: undefined, personId: undefined, personName: undefined, price: 0, minutes: 120 }),
+  visit({ id: "office-not-done", jobId: "job-c", clientId: "c-lee", clientName: "Lee Park", kind: "repair", status: "unscheduled", scheduledOn: undefined, startAt: undefined, personId: undefined, personName: undefined, notDoneReason: "no-water" }),
   visit({ id: "office-unpaid", jobId: "job-d", clientId: "c-ana", clientName: "Ana Ruiz", town: "Lafayette", status: "completed", completedOn: "2026-11-10", scheduledOn: "2026-11-10", startAt: "2026-11-10T15:00:00Z" }),
   visit({ id: "office-paid", jobId: "job-e", clientId: "c-joe", clientName: "Joe Hart", town: "Longmont", status: "completed", completedOn: "2026-11-09", scheduledOn: "2026-11-09", startAt: "2026-11-09T15:00:00Z", chargedAt: "2026-11-09T22:00:00Z", paidMethod: "check" }),
   visit({ id: "office-day-passed", jobId: "job-f", clientId: "c-kim", clientName: "Kim Lowe", scheduledOn: "2026-11-09", startAt: "2026-11-09T15:00:00Z" }),
@@ -47,7 +47,7 @@ const passVisits: Visit[] = base.passes
       status: p.status === "cancelled" ? "cancelled" : pv.completedAt ? "completed" : pv.scheduledOn ? "scheduled" : "unscheduled", isPass: true, passId: p.id, jobId: `job_${p.id}`, jobberUrl: "",
       ...(pv.scheduledOn ? { scheduledOn: pv.scheduledOn, startAt: pv.scheduledAt } : {}), ...(pv.completedAt ? { completedOn: pv.scheduledOn } : {}),
       ...(pv.chargedAt ? { chargedAt: pv.chargedAt, paidMethod: "card_on_file" } : {}), price: pv.amount, minutes: 120,
-      ...(pv.scheduledOn ? { truckId: "truck-1", truckName: "Truck 1" } : {}),
+      ...(pv.scheduledOn ? { personId: "person_truck-1", personName: "Ryan Garner" } : {}),
     })),
   )
 
@@ -67,12 +67,12 @@ export const noCardPass: Pass = {
   consent: { termsVersion: "2026-11", termsAcceptedAt: "2026-11-12T19:00:00Z", marketingOptIn: false, marketingChannels: [], source: "admin", recordedAt: "2026-11-12T19:00:00Z" },
   visits: officeSold.visits.map((v) => ({
     kind: v.kind, window: v.window, amount: v.amount, id: `p-office-${v.kind}`,
-    ...(v.kind === "turn-on" ? { scheduledOn: "2027-05-04", scheduledAt: "2027-05-04T14:00:00Z", startTime: "08:00", truckName: "Truck 1" } : {}),
+    ...(v.kind === "turn-on" ? { scheduledOn: "2027-05-04", scheduledAt: "2027-05-04T14:00:00Z", startTime: "08:00", personName: "Ryan Garner" } : {}),
   })),
 }
 export const noCardVisits: Visit[] = noCardPass.visits.map((pv) => ({
   id: pv.id!, clientId: "c-dana", clientName: "Dana Reed", town: "Erie", kind: pv.kind, status: pv.scheduledOn ? "scheduled" : "unscheduled", isPass: true, passId: noCardPass.id, jobId: "job_p-office", jobberUrl: "",
-  ...(pv.scheduledOn ? { scheduledOn: pv.scheduledOn, startAt: pv.scheduledAt, startTime: pv.startTime, truckId: "truck-1", truckName: "Truck 1" } : {}), price: pv.amount, minutes: 60,
+  ...(pv.scheduledOn ? { scheduledOn: pv.scheduledOn, startAt: pv.scheduledAt, startTime: pv.startTime, personId: "person_truck-1", personName: "Ryan Garner" } : {}), price: pv.amount, minutes: 60,
 }))
 
 export const visitsData: AdminData = {

@@ -18,31 +18,46 @@ beforeAll(() => {
 
 const log = () => within(document.querySelector('[data-slot="change-log"]') as HTMLElement)
 
+describe("SettingsScreen people", () => {
+  it("opens on the People tab, Ryan Garner first as the owner, with the role in a word", () => {
+    render(<SettingsScreen data={data} today={TODAY} />)
+    expect(screen.getByRole("tab", { name: "People" })).toHaveAttribute("aria-selected", "true")
+    expect(screen.queryByRole("tab", { name: "Trucks" })).toBeNull()
+    const rows = within(screen.getByRole("table")).getAllByRole("row").slice(1)
+    expect(within(rows[0]!).getByRole("textbox", { name: "Ryan Garner name" })).toHaveValue("Ryan Garner")
+    const role = within(rows[0]!).getByRole("combobox", { name: "Ryan Garner role" })
+    expect(role).toHaveValue("owner")
+    expect(within(role).getByRole("option", { name: "Owner" })).toBeInTheDocument()
+    expect(within(rows[0]!).getByRole("textbox", { name: "Ryan Garner truck" })).toHaveValue("Truck 1")
+    expect(within(rows[1]!).getByRole("combobox", { name: "Second truck role" })).toHaveValue("tech")
+  })
+})
+
 describe("SettingsScreen fields", () => {
   it("commits on Enter, keeps focus and logs one line", async () => {
     const user = userEvent.setup()
     render(<SettingsScreen data={data} today={TODAY} />)
-    const name = screen.getByRole("textbox", { name: "Truck 2 name" })
+    const name = screen.getByRole("textbox", { name: "Second truck name" })
     await user.clear(name)
     await user.type(name, "Blowout truck{Enter}")
     const after = screen.getByRole("textbox", { name: "Blowout truck name" })
     expect(after).toHaveValue("Blowout truck")
     expect(after).toHaveFocus()
-    expect(log().getByText("Truck 2 name")).toBeInTheDocument()
+    expect(log().getByText("Second truck name")).toBeInTheDocument()
   })
 
   it("puts the old value back when a field is blank or out of range", async () => {
     const user = userEvent.setup()
     render(<SettingsScreen data={data} today={TODAY} />)
-    const blowouts = screen.getByRole("spinbutton", { name: "Truck 1 blowouts per day" })
+    const blowouts = screen.getByRole("spinbutton", { name: "Ryan Garner blowouts per day" })
     await user.clear(blowouts)
     await user.type(blowouts, "99{Enter}")
     expect(blowouts).toHaveValue(10)
-    const name = screen.getByRole("textbox", { name: "Truck 1 name" })
+    const name = screen.getByRole("textbox", { name: "Ryan Garner name" })
     await user.clear(name)
     await user.tab()
-    expect(name).toHaveValue("Truck 1")
-    expect(log().queryByText("Truck 1 blowouts per day")).toBeNull()
+    expect(name).toHaveValue("Ryan Garner")
+    expect(log().queryByText("Ryan Garner blowouts per day")).toBeNull()
   })
 })
 
@@ -72,12 +87,12 @@ describe("SettingsScreen with actions", () => {
     const save = vi.fn().mockResolvedValueOnce({ ok: false, message: "Pick at least one town for Area 3 before saving." }).mockResolvedValueOnce({ ok: true, data: undefined })
     const actions = { save, createKey: vi.fn(), revokeKey: vi.fn() }
     render(<SettingsScreen data={data} today={TODAY} actions={actions} />)
-    const name = screen.getByRole("textbox", { name: "Truck 2 name" })
+    const name = screen.getByRole("textbox", { name: "Second truck name" })
     await user.clear(name)
     await user.type(name, "Blowout truck{Enter}")
     await user.click(screen.getByRole("button", { name: "Save" }))
     expect(await screen.findByText("Pick at least one town for Area 3 before saving.", {}, { timeout: 5000 })).toBeInTheDocument()
-    expect(save.mock.calls[0]![0].trucks.map((t: { name: string }) => t.name)).toContain("Blowout truck")
+    expect(save.mock.calls[0]![0].people.map((p: { name: string }) => p.name)).toContain("Blowout truck")
     await waitFor(() => expect(screen.getByRole("button", { name: "Save" })).toBeEnabled())
     await user.click(screen.getByRole("button", { name: "Save" }))
     expect(await screen.findByText("Saved just now", {}, { timeout: 5000 })).toBeInTheDocument()
@@ -86,7 +101,9 @@ describe("SettingsScreen with actions", () => {
   it("disables every field and offers no Save to a tech", () => {
     render(<SettingsScreen data={data} today={TODAY} readOnly actions={{ save: vi.fn(), createKey: vi.fn(), revokeKey: vi.fn() }} />)
     expect(screen.queryByRole("button", { name: "Save" })).toBeNull()
-    expect(screen.getByRole("textbox", { name: "Truck 2 name" })).toBeDisabled()
+    expect(screen.getByRole("textbox", { name: "Second truck name" })).toBeDisabled()
+    expect(screen.getByRole("combobox", { name: "Second truck role" })).toBeDisabled()
+    expect(screen.getByRole("tab", { name: "People" })).toBeInTheDocument()
     expect(screen.getByText("You can read the settings. A manager changes them.")).toBeInTheDocument()
   })
 })

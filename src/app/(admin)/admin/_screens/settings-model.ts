@@ -4,9 +4,9 @@
  * entry (who, when, the field in words, the value before and after as
  * words). An edit that changes nothing returns the state it was given.
  * Also the words for weekdays and visit kinds, and the preview that fills a
- * message template.
+ * message template. The People tab's reducers are in settings-people.ts.
  */
-import type { AdminData, AreaGroup, CapacityKind, MessageTemplate, OrganizationSettings, SeasonWindow, SettingsChange, Town, Truck, Weekday } from "@/lib/admin/types"
+import type { AdminData, AreaGroup, CapacityKind, MessageTemplate, OrganizationSettings, SeasonWindow, SettingsChange, Town, Weekday } from "@/lib/admin/types"
 import { WEEKDAYS } from "@/lib/admin/calendar"
 import { KIND_WORDS, TIME_ZONE, writtenDate } from "@/lib/admin/format"
 
@@ -88,60 +88,11 @@ const CLIP = 60
 /** A value as it is logged: trimmed to sixty characters with an ellipsis. */
 export const clip = (s: string) => (s.length > CLIP ? `${s.slice(0, CLIP - 1).trimEnd()}…` : s)
 
-function record(state: SettingsState, actor: Actor, field: string, from: string, to: string, settings: OrganizationSettings): SettingsState {
+/** One logged change: the settings with the edit made and the log one line longer; the same value twice logs nothing. */
+export function record(state: SettingsState, actor: Actor, field: string, from: string, to: string, settings: OrganizationSettings): SettingsState {
   if (from === to) return state
   const change: SettingsChange = { id: `sc${state.changes.length + 1}-${actor.at}`, at: actor.at, who: actor.who, field, from: clip(from), to: clip(to) }
   return { ...state, settings, changes: [...state.changes, change] }
-}
-
-const replaceTruck = (s: OrganizationSettings, truck: Truck) => ({ ...s, trucks: s.trucks.map((t) => (t.id === truck.id ? truck : t)) })
-const truckOf = (state: SettingsState, id: string) => state.settings.trucks.find((t) => t.id === id)
-
-export function setTruckName(state: SettingsState, truckId: string, raw: string, actor: Actor): SettingsState {
-  const truck = truckOf(state, truckId)
-  const name = raw.trim()
-  if (!truck || !name) return state
-  return record(state, actor, `${truck.name} name`, truck.name, name, replaceTruck(state.settings, { ...truck, name }))
-}
-
-export function toggleWorkingDay(state: SettingsState, truckId: string, day: Weekday, actor: Actor): SettingsState {
-  const truck = truckOf(state, truckId)
-  if (!truck) return state
-  const workingDays = WEEKDAYS.filter((d) => (d === day ? !truck.workingDays.includes(d) : truck.workingDays.includes(d)))
-  return record(state, actor, `${truck.name} working days`, daysWords(truck.workingDays), daysWords(workingDays), replaceTruck(state.settings, { ...truck, workingDays }))
-}
-
-export function setCapacity(state: SettingsState, truckId: string, kind: CapacityKind, n: number, actor: Actor): SettingsState {
-  const truck = truckOf(state, truckId)
-  if (!truck || !Number.isInteger(n) || n < 0 || n > MAX_CAPACITY) return state
-  const capacityByKind = { ...truck.capacityByKind, [kind]: n }
-  return record(state, actor, `${truck.name} ${KIND_PLURALS[kind]} per day`, String(truck.capacityByKind[kind]), String(n), replaceTruck(state.settings, { ...truck, capacityByKind }))
-}
-
-export function setJobberUser(state: SettingsState, truckId: string, jobberUserId: string, actor: Actor): SettingsState {
-  const truck = truckOf(state, truckId)
-  if (!truck) return state
-  return record(state, actor, `${truck.name} Jobber user`, truck.jobberUserId || "None", jobberUserId || "None", replaceTruck(state.settings, { ...truck, jobberUserId }))
-}
-
-/** The truck leaves the list; its visits are not touched here, the next schedule run no longer plans onto it. */
-export function removeTruck(state: SettingsState, truckId: string, actor: Actor): SettingsState {
-  const truck = truckOf(state, truckId)
-  if (!truck) return state
-  const trucks = state.settings.trucks.filter((t) => t.id !== truckId)
-  return record(state, actor, "Trucks", `${state.settings.trucks.length} (${truck.name} included)`, `${trucks.length} (${truck.name} removed)`, { ...state.settings, trucks })
-}
-
-/** A new truck, named after its position, working Monday to Friday with nothing planned per day yet. */
-export function addTruck(state: SettingsState, actor: Actor): SettingsState {
-  const n = state.settings.trucks.length + 1
-  const truck: Truck = {
-    id: `truck-${n}-${actor.at}`,
-    name: `Truck ${n}`,
-    workingDays: ["mon", "tue", "wed", "thu", "fri"],
-    capacityByKind: { "turn-on": 0, inspection: 0, blowout: 0, repair: 0, other: 0 },
-  }
-  return record(state, actor, "Trucks", String(n - 1), String(n), { ...state.settings, trucks: [...state.settings.trucks, truck] })
 }
 
 const areaOf = (state: SettingsState, id: string) => state.settings.areas.find((a) => a.id === id)
@@ -262,11 +213,12 @@ export function fillMessage(body: string, sample: Sample): string {
   return body.replace(/\{(\w+)\}/g, (match, key: string) => (key in sample ? sample[key as keyof Sample] : match))
 }
 
-/** The preview's sample: the first pass's first name, the first scheduled visit with a truck, and the pass's next visit; plain stand-ins when the data is empty. */
+/** The preview's sample: the first pass's first name, the first scheduled visit someone has, and the pass's next visit; plain stand-ins when the data is empty. The truck is that person's truck label (the messages still say {truck}; they name the person in task 1.6). */
 export function sampleFor(data: AdminData): Sample {
   const pass = data.passes[0]
-  const visit = data.visits.find((v) => v.startAt && v.truckId)
-  const truck = visit ? data.settings.trucks.find((t) => t.id === visit.truckId) : undefined
+  const visit = data.visits.find((v) => v.startAt && v.personId)
+  const person = visit ? data.settings.people.find((p) => p.id === visit.personId) : undefined
+  const truck = person ? { name: person.truck ?? person.name } : undefined
   return {
     firstName: pass?.firstName ?? "Alex",
     visit: visit ? KIND_WORDS[visit.kind] : "visit",

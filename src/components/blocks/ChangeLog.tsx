@@ -18,7 +18,7 @@ const clock = (iso: string) =>
 
 export function ChangeLog({ changes, className }: ChangeLogProps) {
   if (changes.length === 0) {
-    return <EmptyState className={className} icon={History} title="No changes yet" line="Every edit to the trucks, areas, windows and messages is listed here with who made it." />
+    return <EmptyState className={className} icon={History} title="No changes yet" line="Every edit to the people, areas, windows and messages is listed here with who made it." />
   }
   // Newest first; entries with the same time keep the order they were logged in, latest on top.
   const newestFirst = changes.map((change, i) => ({ change, i })).sort((a, b) => (a.change.at < b.change.at ? 1 : a.change.at > b.change.at ? -1 : b.i - a.i)).map((x) => x.change)

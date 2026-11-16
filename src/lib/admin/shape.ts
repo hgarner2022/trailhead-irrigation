@@ -9,7 +9,7 @@ import { causeOf, groupAttention, type QueueAttention } from "./attention-groups
 import { NOT_CLOSED_LOOKBACK_DAYS, visitJob } from "./jobs"
 import type {
   SoldJob, AdminData, Attention, BusyBlock, Client, Consent, Invoice, Message, MessageKind, MonthTotal, Pass, PassVisit, Quote, SettingsChange,
-  Truck, AreaGroup, OrganizationSettings, Town, Visit, VisitKind, VisitStatus,
+  Person, AreaGroup, OrganizationSettings, Town, Visit, VisitKind, VisitStatus,
 } from "./types"
 
 const ZONE = "America/Denver"
@@ -53,9 +53,10 @@ export interface ShapeInput {
   visits: ApiVisit[]
   passes: ApiPass[]
   messages: ApiMessage[]
-  trucks: Truck[]
+  /** everyone active, owners first, as the People tab lists them */
+  people: Person[]
   areas: AreaGroup[]
-  settings: Omit<OrganizationSettings, "trucks" | "areas">
+  settings: Omit<OrganizationSettings, "people" | "areas">
   settingsChanges: SettingsChange[]
   mirror: { clients: MirrorClient[]; visits: MirrorVisit[]; jobsWithoutVisit: MirrorJob[]; quotes: MirrorQuote[]; invoices: MirrorInvoice[] }
   queueProblems: QueueProblem[]
@@ -133,7 +134,7 @@ export function shapeAdminData(i: ShapeInput): AdminData {
       ...(failed.has(v.id) ? { chargeFailed: true } : {}), ...(v.status === "skipped" ? { skipped: true } : {}), ...(v.passId ? { passId: v.passId } : {}),
       isPass: v.passId !== null, jobberUrl: "",
       ...(v.jobId ? { jobId: v.jobId } : {}), ...money(v), price: v.amount, ...(v.durationMinutes ? { minutes: v.durationMinutes } : {}), ...(v.notes ? { notes: v.notes } : {}),
-      // the person assigned, under the deprecated truck names too until the screens read people
+      // the person assigned, under the deprecated truck names too (the same values; dropped in step 6)
       ...(v.personName ? { personName: v.personName, truckName: v.personName } : {}),
       ...(v.personId ? { personId: v.personId, truckId: v.personId } : {}),
       ...(v.awaitingPick ? { awaitingPick: true } : {}),
@@ -233,7 +234,7 @@ export function shapeAdminData(i: ShapeInput): AdminData {
 
   return {
     organizationId: i.organizationId, syncedAt: iso(i.syncedAt), clients, visits, ...(soldJobs ? { jobs: soldJobs } : {}), quotes, invoices, passes,
-    monthTotals: monthTotals(i), attention: attention(i, passes, visitRows(i, appVisits, visits)), settings: { ...i.settings, trucks: i.trucks, areas: i.areas },
+    monthTotals: monthTotals(i), attention: attention(i, passes, visitRows(i, appVisits, visits)), settings: { ...i.settings, people: i.people, areas: i.areas },
     settingsChanges: i.settingsChanges, messages, blocks: i.blocks,
   }
 }
