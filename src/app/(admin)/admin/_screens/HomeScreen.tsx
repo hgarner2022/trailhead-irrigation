@@ -12,7 +12,7 @@ import { HomeMoney } from "./HomeMoney"
 import { HomeWeek } from "./HomeWeek"
 
 // What Hannah opens to, her four jobs on one screen in her order (docs/plans/2026-11-14-jobs-to-be-done.md):
-// Your week ("is the week sane"), the money line ("how is the money"), the map of that day, and Needs action
+// Today or Next up ("is the week sane"), the money line ("how is the money"), the map of that day, and Needs action
 // ("what needs me"), grouped by cause, every row with its button and Dismiss. Reports keeps everything else. Pure
 // composition over `data` and a fixed `today`; the route's page.tsx supplies both. Server component; the row
 // buttons and the map are client code. On a laptop the map sits beside the week and the money line.

@@ -10,7 +10,7 @@ import { OpenVisit } from "./VisitPanelHost"
 import { stopTime } from "./home-model"
 import type { WeekView } from "./home-week"
 
-// Your week (Hannah's first job: "is the week sane"): the next day that has visits, today when it has any, each
+// Today (Hannah's first job: "is the week sane"; a card that says "week" over one day was wrong): the next day that has visits, today when it has any, each
 // truck's stops in route order, every row opening the visit panel. A truck with nothing that day is left out and
 // an empty calendar says so once. Server component over a `WeekView`.
 
@@ -38,7 +38,7 @@ export function HomeWeek({ week, today, className }: { week: WeekView; today: st
   return (
     <Card data-slot="home-week" className={className}>
       <CardHeader>
-        <CardTitleHeading id="home-week">Your week</CardTitleHeading>
+        <CardTitleHeading id="home-week">{week.title}</CardTitleHeading>
         {week.day && <CardDescription data-slot="home-week-day">{week.heading}</CardDescription>}
       </CardHeader>
       <CardContent>

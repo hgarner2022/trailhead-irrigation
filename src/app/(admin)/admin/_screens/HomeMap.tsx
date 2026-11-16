@@ -7,7 +7,7 @@ import type { Truck, Visit } from "@/lib/admin/types"
 import { mapStops } from "./home-week"
 import { ScheduleDayMap } from "./ScheduleDayMap"
 
-// The map of the day Your week shows (Hannah: "maybe a map of where your things are"): the same DayMap the
+// The map of the day the Today card shows (Hannah: "maybe a map of where your things are"): the same DayMap the
 // Schedule uses, a pin per stop in its truck's colour, a visit with no point at its town's centre. Client because
 // the selected pin is state and the map draws in the browser.
 

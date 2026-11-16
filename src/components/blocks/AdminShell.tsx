@@ -48,7 +48,7 @@ export interface AdminShellProps {
 }
 
 // The order of Build 1: Home, Schedule, Visits, Customers, Reports, Settings. A pass has no item of its own: it
-// opens from a visit or a customer, and /admin/passes stays reachable from the Visits header.
+// opens from a visit or a customer (the Pass column and chip on Visits, "Open pass" on Customers); no button.
 const NAV: { id: AdminSection; label: string; href: string; icon: LucideIcon }[] = [
   { id: "home", label: "Home", href: "/admin", icon: LayoutDashboard },
   { id: "schedule", label: "Schedule", href: "/admin/schedule", icon: CalendarDays },

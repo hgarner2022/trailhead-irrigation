@@ -1,6 +1,6 @@
 /**
  * The pure parts of Home v2 (owner, 16 Nov: "Home should have your schedule on it, the money, maybe a map of where
- * your things are"): the day "Your week" shows, the four money figures and the stops the map draws. Kept apart from
+ * your things are"): the day the Today card shows, the four money figures and the stops the map draws. Kept apart from
  * home-model.ts so each file stays small and both can be tested with a fixed `today`.
  */
 import { TOWN_CENTRES, hasPoint } from "@/components/blocks/day-map-helpers"
@@ -16,15 +16,15 @@ export interface WeekView {
   /** the day shown, YYYY-MM-DD; null when nothing is on the calendar from today on */
   day: string | null
   isToday: boolean
-  /** "Today, Mon 16", or "Next: Tue, Apr 27 · 3 visits in Erie" */
+  /** the card's title: "Today" when today has a visit, else "Next up" */
+  title: string
+  /** "Mon, Nov 16 · 4 visits in Erie", under the title */
   heading: string
   /** each truck's stops that day in route order, a truck with none left out */
   trucks: TruckDay[]
   /** every stop of the day, for the map */
   visits: Visit[]
 }
-
-const WEEKDAY = (day: string) => dayLabel(day).slice(0, 3)
 
 /** "Erie", "Erie and Longmont", "Erie, Longmont and Lafayette", "5 towns". */
 export function townsPhrase(towns: string[]): string {
@@ -35,7 +35,7 @@ export function townsPhrase(towns: string[]): string {
 }
 
 /**
- * The day Your week shows: today when it has a visit, else the first day after today that has one. Cancelled visits
+ * The day the Today card shows: today when it has a visit, else the first day after today that has one (the card is then "Next up"). Cancelled visits
  * and visits with no day are not on a day. With nothing ahead, `day` is null and the heading says so once.
  */
 export function weekView(data: Pick<AdminData, "visits" | "settings">, today: string): WeekView {
@@ -46,14 +46,12 @@ export function weekView(data: Pick<AdminData, "visits" | "settings">, today: st
     .filter((d) => d >= todayDay)
     .sort()
   const day = days[0] ?? null
-  if (!day) return { day: null, isToday: false, heading: "Your week", trucks: [], visits: [] }
+  if (!day) return { day: null, isToday: false, title: "Today", heading: "", trucks: [], visits: [] }
   const trucks = dayByTruck(data.visits, day, data.settings.trucks)
   const visits = trucks.flatMap((t) => t.stops)
   const isToday = day === todayDay
-  const heading = isToday
-    ? `Today, ${WEEKDAY(day)} ${Number(day.slice(8, 10))}`
-    : `Next: ${dayLabel(day)} · ${visits.length} ${visits.length === 1 ? "visit" : "visits"} in ${townsPhrase(visits.map((v) => v.town))}`
-  return { day, isToday, heading, trucks, visits }
+  const heading = `${dayLabel(day)} · ${visits.length} ${visits.length === 1 ? "visit" : "visits"} in ${townsPhrase(visits.map((v) => v.town))}`
+  return { day, isToday, title: isToday ? "Today" : "Next up", heading, trucks, visits }
 }
 
 /** The stops the map draws: a visit with no point sits at its town's centre, so no stop is left off. */

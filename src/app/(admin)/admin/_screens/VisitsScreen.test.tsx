@@ -84,7 +84,7 @@ describe("visits-model", () => {
 })
 
 describe("VisitsScreen", () => {
-  it("shows the spec's columns and a row per visit, with New visit and a link to Passes in the header", () => {
+  it("shows the spec's columns and a row per visit, with New visit in the header and no Passes button", () => {
     renderScreen(actions())
     const headers = screen.getAllByRole("columnheader").map((h) => h.textContent)
     expect(headers).toEqual(expect.arrayContaining(["Customer", "Town", "Visit", "Day", "Time", "Truck", "Work", "Money", "Price", "Pass"]))
@@ -94,7 +94,7 @@ describe("VisitsScreen", () => {
     expect(screen.queryByText("None")).toBeNull()
     expect(screen.getAllByText("No day yet").length).toBeGreaterThan(0)
     expect(screen.getByRole("button", { name: "New visit" })).toBeInTheDocument()
-    expect(screen.getByRole("link", { name: "Passes" })).toHaveAttribute("href", "/admin/passes")
+    expect(screen.queryByRole("link", { name: "Passes" })).toBeNull()
   })
 
   it("searches by street and by phone", async () => {

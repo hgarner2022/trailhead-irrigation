@@ -15,11 +15,11 @@ const stop = (over: Partial<Visit>): Visit => ({
 })
 
 describe("HomeScreen", () => {
-  it("opens on the four jobs in order: Your week, the money line, the map and Needs action", () => {
+  it("opens on the four jobs in order: Today, the money line, the map and Needs action", () => {
     render(<HomeScreen data={data} today={TODAY} />)
-    const order = ["Your week", "Money", "Map", "Needs action"].map((name) => screen.getByRole("heading", { name }))
+    const order = ["Today", "Money", "Map", "Needs action"].map((name) => screen.getByRole("heading", { name }))
     order.slice(1).forEach((h, i) => expect(order[i]!.compareDocumentPosition(h) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy())
-    expect(screen.getByText("Today, Thu 12")).toBeInTheDocument()
+    expect(screen.getByText(/^Thu, Nov 12 · \d+ visits? in /)).toBeInTheDocument()
     expect(document.querySelector('[data-slot="job-counts"]')).toBeNull()
     expect(document.querySelector('[data-slot="season-prompt"]')).toBeNull()
   })
@@ -47,7 +47,7 @@ describe("HomeScreen", () => {
       stop({ id: "n3", clientName: "Later Lou", startAt: "2027-05-04T15:00:00Z", scheduledOn: "2027-05-04", truckId: "truck-1" }),
     ]
     render(<HomeScreen data={{ ...data, visits, attention: [] }} today={TODAY} />)
-    expect(screen.getByText("Next: Tue, Apr 27 · 2 visits in Erie and Longmont")).toBeInTheDocument()
+    expect(screen.getByText("Tue, Apr 27 · 2 visits in Erie and Longmont")).toBeInTheDocument()
     expect(screen.queryByText("No visits scheduled.")).toBeNull()
     expect(screen.queryByText(/Later Lou/)).toBeNull()
     expect(screen.getByText(/Next Nia/)).toBeInTheDocument()

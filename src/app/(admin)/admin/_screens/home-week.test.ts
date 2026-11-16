@@ -14,7 +14,7 @@ const visit = (over: Partial<Visit>): Visit => ({
 describe("weekView", () => {
   it("shows today when today has a visit", () => {
     const week = weekView({ ...base, visits: [visit({ id: "a" })] }, TODAY)
-    expect(week).toMatchObject({ day: "2026-11-12", isToday: true, heading: "Today, Thu 12" })
+    expect(week).toMatchObject({ day: "2026-11-12", isToday: true, title: "Today", heading: "Thu, Nov 12 · 1 visit in Erie" })
     expect(week.trucks.map((t) => t.name)).toEqual(["Truck 1"])
   })
 
@@ -27,7 +27,8 @@ describe("weekView", () => {
       visit({ id: "n3", town: "Louisville", truckId: "truck-2", startAt: "2027-04-27T19:00:00Z", scheduledOn: "2027-04-27" }),
     ]
     const week = weekView({ ...base, visits }, TODAY)
-    expect(week.heading).toBe("Next: Tue, Apr 27 · 3 visits in Erie, Longmont and Louisville")
+    expect(week.title).toBe("Next up")
+    expect(week.heading).toBe("Tue, Apr 27 · 3 visits in Erie, Longmont and Louisville")
     expect(week.visits.map((v) => v.id)).toEqual(["n1", "n2", "n3"])
   })
 
