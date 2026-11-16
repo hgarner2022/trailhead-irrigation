@@ -470,3 +470,103 @@ describe("a renewal on the card on file", () => {
     expect(progress()).toHaveAttribute("aria-valuemax", "7")
   })
 })
+
+describe("the typed address", () => {
+  afterEach(() => vi.unstubAllGlobals())
+  const heading = () => screen.getByRole("heading", { level: 1 })
+  const accessQuestion = () => screen.queryByText(/Can we reach the controller/)
+
+  it("opens the three fields from the button, builds the address from them and sends it on as the property", async () => {
+    const user = userEvent.setup()
+    const onBegin = vi.fn(async (): Promise<BeginResult> => ({ ok: true, passId: "p1", sessionId: "cs_1", clientSecret: "secret" }))
+    render(<CheckoutFlow season={2027} prefill={{ ...answers, address: "", place: null, town: null, access: null }} stripeKey="pk_test_x" onBegin={onBegin} onFinish={vi.fn()} />)
+    await user.click(screen.getByRole("button", { name: "Can't find it? Type your address" }))
+    expect(screen.queryByRole("combobox", { name: "Street address" })).not.toBeInTheDocument()
+    const street = screen.getByLabelText("Street address")
+    expect(street).toHaveFocus()
+    await user.type(street, "9 Elm St")
+    expect(accessQuestion()).not.toBeInTheDocument()
+    await user.selectOptions(screen.getByLabelText("Town"), "Erie")
+    expect(accessQuestion()).toBeInTheDocument()
+    // A zip is optional, but a started one must be five digits before the address counts again.
+    const zip = screen.getByLabelText("ZIP (optional)")
+    await user.type(zip, "805")
+    expect(accessQuestion()).not.toBeInTheDocument()
+    await user.type(zip, "16")
+    expect(accessQuestion()).toBeInTheDocument()
+    await user.click(screen.getByRole("button", { name: /^Yes/ }))
+    await user.click(continueButton())
+    expect(heading()).toHaveTextContent("How many zones does your system have?")
+    await user.click(continueButton())
+    await user.click(continueButton())
+    await screen.findAllByRole("radio")
+    await user.click(continueButton())
+    expect(heading()).toHaveTextContent("Who should we reach?")
+    await act(async () => {
+      fireEvent.click(continueButton())
+    })
+    expect(onBegin).toHaveBeenCalledTimes(1)
+    expect(onBegin).toHaveBeenCalledWith(
+      expect.objectContaining({
+        town: "Erie",
+        address: { id: "typed:9 elm st|erie|80516", label: "9 Elm St, Erie, CO 80516", line1: "9 Elm St", town: "Erie", state: "CO", zip: "80516" },
+      }),
+      undefined,
+    )
+  })
+
+  it("names each missing field when Continue is pressed too early, and goes back to the box on Find it instead", async () => {
+    const user = userEvent.setup()
+    render(<CheckoutFlow season={2027} />)
+    await user.click(screen.getByRole("button", { name: "Can't find it? Type your address" }))
+    await user.click(continueButton())
+    expect(screen.getByText("We need your street address, with the house number.")).toBeInTheDocument()
+    expect(screen.getByText("Pick your town so we know which route you are on.")).toBeInTheDocument()
+    expect(screen.queryByText("Pick your address from the list so we have it right.")).not.toBeInTheDocument()
+    expect(screen.getByLabelText("Street address")).toHaveFocus()
+    await user.click(screen.getByRole("button", { name: "Find it instead" }))
+    expect(screen.getByRole("combobox", { name: "Street address" })).toHaveValue("")
+  })
+
+  it("opens the fields on its own when nothing is found for five characters, with the street filled in", async () => {
+    const user = userEvent.setup()
+    const none = vi.fn(async () => [])
+    render(<CheckoutFlow season={2027} places={none} />)
+    await user.type(screen.getByRole("combobox", { name: "Street address" }), "9 Elm")
+    expect(await screen.findByLabelText("Town")).toBeInTheDocument()
+    expect(screen.getByLabelText("Street address")).toHaveValue("9 Elm")
+    expect(screen.getByLabelText("Street address")).toHaveFocus()
+  })
+
+  it("completes a suggestion without a zip from the details call, keeping the pick meanwhile, and keeps it as is when the call fails", async () => {
+    const user = userEvent.setup()
+    const partial = { id: "ChIJa", label: "9 Elm St, Erie, CO, USA", line1: "9 Elm St", town: "Erie", state: "CO", zip: "" }
+    const full = { ...partial, label: "9 Elm St, Erie, CO 80516", zip: "80516" }
+    // The details answer is held back, so the pick can be seen landing before it.
+    let answer: (response: Response) => void = () => {}
+    const fetchFn = vi.fn(() => new Promise<Response>((resolve) => { answer = resolve }))
+    vi.stubGlobal("fetch", fetchFn)
+    const places = async () => [partial]
+    const { unmount } = render(<CheckoutFlow season={2027} places={places} />)
+    const box = screen.getByRole("combobox", { name: "Street address" })
+    await user.type(box, "9 Elm")
+    await user.click(await screen.findByRole("option", { name: /9 Elm St/ }))
+    expect(box).toHaveValue("9 Elm St, Erie, CO, USA")
+    expect(accessQuestion()).toBeInTheDocument()
+    expect(fetchFn).toHaveBeenCalledWith("/api/places?id=ChIJa", { signal: undefined })
+    await act(async () => {
+      answer(new Response(JSON.stringify(full), { status: 200, headers: { "Content-Type": "application/json" } }))
+    })
+    expect(await screen.findByDisplayValue("9 Elm St, Erie, CO 80516")).toBe(box)
+    unmount()
+
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("{}", { status: 404 })))
+    render(<CheckoutFlow season={2027} places={places} />)
+    const again = screen.getByRole("combobox", { name: "Street address" })
+    await user.type(again, "9 Elm")
+    await user.click(await screen.findByRole("option", { name: /9 Elm St/ }))
+    await act(async () => {})
+    expect(again).toHaveValue("9 Elm St, Erie, CO, USA")
+    expect(accessQuestion()).toBeInTheDocument()
+  })
+})

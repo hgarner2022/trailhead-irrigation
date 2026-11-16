@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite"
 import { expect, fn } from "storybook/test"
 import { savePassImage } from "@/lib/pass-card-image"
+import { typedPlace } from "@/lib/places"
 import { FIXTURE_HOME } from "@/lib/places/fixture"
 import { CheckoutFlow } from "./CheckoutFlow"
 import { choicesAfterOffer, fixtureOffers } from "./checkout-days"
@@ -40,6 +41,24 @@ type Story = StoryObj<typeof meta>
 /** One box; type "123" to see the fixture's matches. */
 export const Address: Story = {
   globals: { viewport: { value: "wide", isRotated: false } },
+}
+
+/** The typed fallback under the box: street, one of the six towns, an optional zip; filled in, the access question follows. */
+export const AddressTyped: Story = {
+  globals: { viewport: { value: "wide", isRotated: false } },
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(await canvas.findByRole("button", { name: "Can't find it? Type your address" }))
+    await userEvent.type(await canvas.findByLabelText("Street address"), "9 Elm St")
+    await userEvent.selectOptions(canvas.getByLabelText("Town"), "Erie")
+    await userEvent.type(canvas.getByLabelText("ZIP (optional)"), "80516")
+    await expect(await canvas.findByText(/Can we reach the controller/)).toBeInTheDocument()
+  },
+}
+
+/** The typed fields at 375px, opened on a typed address the customer came back to. */
+export const PhoneAddressTyped: Story = {
+  args: { prefill: { address: "9 Elm St", place: typedPlace("9 Elm St", "Erie", "80516"), town: "Erie" } },
+  globals: { viewport: { value: "phone", isRotated: false } },
 }
 
 /** Bought in August: the turn-on has passed, the pass is the blowout, and the zones step says so. */
