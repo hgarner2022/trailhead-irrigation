@@ -4,12 +4,14 @@ import "server-only"
 import { callApi } from "@/api/core/call"
 import { ApiError } from "@/api/core/errors"
 import { messagesSend } from "@/api/v1/messages/handlers"
+import { passesSell } from "@/api/v1/passes/sell"
 import { trucksList } from "@/api/v1/trucks/handlers"
 import { visitsGet, visitsMove } from "@/api/v1/visits/handlers"
 import { visitsMarkClosed, visitsRecordPayment } from "@/api/v1/visits/money"
 import { visitsCancel, visitsCreate, visitsMarkNotDone, visitsUpdate } from "@/api/v1/visits/office"
 import { weekdayOf } from "@/api/v1/shared"
 import type { NotDoneReason } from "@/lib/admin/visit-defaults"
+import type { NewPassInput, SoldPass } from "@/app/(admin)/admin/_screens/visit-actions-types"
 import { act, nothing, type ActionOutcome } from "./act"
 
 // The server actions of the visit panel, the customer panel and New visit. Each one runs a handler through
@@ -83,4 +85,11 @@ export const createVisit = async (input: NewVisitInput): Promise<ActionOutcome<{
   act(async (ctx) => {
     const made = await callApi(ctx, visitsCreate, input as never)
     return { id: made.id }
+  })
+
+/** New pass: `passes.sell` makes the job, the active pass, its visits with their days, the consent and the confirmation in one call. */
+export const sellPass = async (input: NewPassInput): Promise<ActionOutcome<SoldPass>> =>
+  act(async (ctx) => {
+    const sold = await callApi(ctx, passesSell, input as never)
+    return { id: sold.id, number: sold.number, firstName: sold.firstName }
   })

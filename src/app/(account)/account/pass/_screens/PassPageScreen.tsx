@@ -13,7 +13,7 @@ import { PassActions } from "@/components/blocks/PassActions"
 import { PreferenceDialog } from "@/components/blocks/PreferenceDialog"
 import { AddToCalendar } from "./AddToCalendar"
 import { PickDayButtons } from "./PickDayButtons"
-import { bookedWhen, canChange, canReserveNext, reserveNextHref, cardLine, earlierSeasons, passHeadline, pickDayOptions, seasonCaption, visitRows } from "./pass-page-model"
+import { bookedWhen, canChange, canReserveNext, reserveNextHref, cardAction, cardLine, earlierSeasons, passHeadline, pickDayOptions, seasonCaption, visitRows } from "./pass-page-model"
 
 // The customer's pass page: a season card, not a dashboard. The pass card at
 // the top, the season line with the visits and their state, the card
@@ -50,10 +50,10 @@ export interface PassPageScreenProps {
 
 const LOGO = "/images/logo-badge.png"
 
-function UpdateCardButton({ onUpdateCard, variant, className }: { onUpdateCard?: () => void | Promise<void>; variant?: "outline"; className?: string }) {
+function UpdateCardButton({ onUpdateCard, variant, className, label = "Update card" }: { onUpdateCard?: () => void | Promise<void>; variant?: "outline"; className?: string; label?: string }) {
   const button = (
     <Button variant={variant} className={className} type={onUpdateCard ? "submit" : "button"}>
-      Update card
+      {label}
     </Button>
   )
   return onUpdateCard ? <form action={onUpdateCard}>{button}</form> : button
@@ -160,7 +160,7 @@ export function PassPageScreen({ pass, passes = [pass], today, onCancel, onChang
               </CardHeader>
               <CardContent className="flex flex-wrap items-center justify-between gap-4">
                 <p className="text-base text-foreground">{cardLine(pass)}</p>
-                <UpdateCardButton onUpdateCard={onUpdateCard} variant="outline" />
+                <UpdateCardButton onUpdateCard={onUpdateCard} variant="outline" label={cardAction(pass)} />
               </CardContent>
             </Card>
 

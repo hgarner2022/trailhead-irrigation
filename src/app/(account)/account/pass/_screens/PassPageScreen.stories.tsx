@@ -130,3 +130,12 @@ export const Booked: Story = {
   args: { pass: { ...active, visits: active.visits.map((v) => (v.kind === "blowout" ? { ...v, scheduledAt: "2026-10-06T14:00:00Z", truckName: "Truck 1" } : v)) } },
   globals: { viewport: { value: "wide", isRotated: false } },
 }
+
+/** Sold by the office with no card: the customer pays at each visit, and the card block offers "Add a card". */
+export const NoCard: Story = {
+  args: { pass: { ...fresh, cardLast4: undefined, cardExpires: undefined } },
+  globals: { viewport: { value: "wide", isRotated: false } },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByRole("button", { name: "Add a card" })).toBeInTheDocument()
+  },
+}

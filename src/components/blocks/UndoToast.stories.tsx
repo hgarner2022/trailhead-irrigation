@@ -9,6 +9,12 @@ function Demo() {
   return <Button onClick={() => toast("Moved to Thu, Oct 14. ", () => undefined)}>Move the blowout</Button>
 }
 
+/** A pass sold has no reverse here (cancelling is its own dialog), so the toast says what happened and offers no Undo. */
+function NoticeDemo() {
+  const toast = useUndoToast()
+  return <Button onClick={() => toast("Pass TH-2027-0014 sold. Maya gets the confirmation by email.")}>Sell pass</Button>
+}
+
 const meta = {
   title: "Blocks/UndoToast",
   component: UndoToastProvider,
@@ -19,3 +25,5 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 export const Default: Story = {}
+
+export const Notice: Story = { args: { children: <NoticeDemo /> } }

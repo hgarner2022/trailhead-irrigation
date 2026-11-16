@@ -13,10 +13,12 @@ import type { Pass } from "@/lib/admin/types"
 import { formatMoney } from "@/lib/admin/metrics"
 import type { Outcome } from "./action-types"
 import type { PassesActions } from "./passes-actions"
-import { PENDING_NOTE, chargeRows, consentLine, jobRows } from "./passes-model"
+import { PENDING_NOTE, cardWords, chargeRows, consentLine, jobRows } from "./passes-model"
 
 // The body of the Passes side panel: who and what the pass is, its status
-// (a pending pass says it is an unpaid attempt), the jobs with their day and
+// (a pending pass says it is an unpaid attempt), the consent and the card
+// (an active pass sold by the office may have none: "No card yet, collect at
+// the visit", with Send card link beside it), the jobs with their day and
 // window and state, the charges and the season line, all read from the same
 // visit rows, then the change buttons. Client for the cancel dialog and the
 // actions; PassesScreen owns which pass is open.
@@ -130,7 +132,7 @@ export function CancelDialog({ pass, open, onOpenChange, onCancel }: { pass: Pas
   )
 }
 
-export function PassDetail({ pass, today, readOnly, actions, run, notice }: { pass: Pass; today: string; readOnly: boolean; actions?: PassesActions; run: (call: () => Promise<Outcome>) => void; notice: string }) {
+export function PassDetail({ pass, today, readOnly, actions, run, notice }: { pass: Pass; today: string; readOnly: boolean; actions?: PassesActions; run: (call: () => Promise<Outcome>, done?: string) => void; notice: string }) {
   return (
     <div className="flex flex-col gap-6">
       <p role="status" className="text-sm text-muted-foreground empty:hidden">
@@ -145,11 +147,23 @@ export function PassDetail({ pass, today, readOnly, actions, run, notice }: { pa
           {PENDING_NOTE}
         </p>
       )}
-      {/* On its own line, not in the facts grid: beside the thumbnail on a phone it would wrap four deep. */}
+      {/* On their own lines, not in the facts grid: beside the thumbnail on a phone they would wrap four deep. */}
       <p data-slot="pass-consent" className="text-sm">
         <span className="text-muted-foreground">Consent </span>
         <span className="font-medium">{consentLine(pass.consent)}</span>
       </p>
+      <div data-slot="pass-card-line" className="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
+        <p>
+          <span className="text-muted-foreground">Card </span>
+          <span className="font-medium">{cardWords(pass)}</span>
+        </p>
+        {/* A pass sold with no card gets its link from here; a pass with a card has Send card update link in the footer. */}
+        {!readOnly && pass.status === "active" && !pass.cardLast4 && (
+          <Button variant="outline" size="sm" onClick={() => (actions ? run(() => actions.sendCardUpdateLink(pass.id), "Card link sent.") : console.info("send card link", [pass.number]))}>
+            Send card link
+          </Button>
+        )}
+      </div>
       <section aria-labelledby="pass-jobs">
         <Subtitle id="pass-jobs">Visits</Subtitle>
         <Jobs pass={pass} today={today} />

@@ -131,12 +131,15 @@ export const earlierSeasons = (passes: Pass[], current: Pass): Pass[] => passes.
 /** "08/28" from the stored "2028-08". */
 export const expiry = (yearMonth: string) => `${yearMonth.slice(5, 7)}/${yearMonth.slice(2, 4)}`
 
-/** "Visa ending 4242, expires 08/28"; the brand is Visa until Stripe tells us otherwise in the wiring phase. */
+/** "Visa ending 4242, expires 08/28"; the brand is Visa until Stripe tells us otherwise in the wiring phase. A pass sold by the office may have no card: the customer pays at each visit, or adds one here. */
 export function cardLine(pass: Pass): string {
-  if (!pass.cardLast4) return "No card on file yet."
+  if (!pass.cardLast4) return "No card on file yet. Pay at each visit by check, Venmo or cash, or add a card and we charge it after each visit."
   const ending = `Visa ending ${pass.cardLast4}`
   return pass.cardExpires ? `${ending}, expires ${expiry(pass.cardExpires)}` : ending
 }
+
+/** The card button's verb: a pass with a card updates it, a pass with none adds one. Both open Stripe's hosted page. */
+export const cardAction = (pass: Pick<Pass, "cardLast4">): string => (pass.cardLast4 ? "Update card" : "Add a card")
 
 /** One line under the season line: what is next, or that the season is done. */
 export function seasonCaption(pass: Pass): string {

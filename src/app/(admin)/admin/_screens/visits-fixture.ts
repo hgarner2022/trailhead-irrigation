@@ -3,7 +3,7 @@
  * one-off visits added, one in each state a visit can be in. Used by the stories only; the tests build their own.
  */
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
-import type { AdminData, Client, Message, Visit } from "@/lib/admin/types"
+import type { AdminData, Client, Message, Pass, Visit } from "@/lib/admin/types"
 
 export const VISITS_TODAY = "2026-11-12T19:56:30Z"
 const base = snapshot as AdminData
@@ -51,13 +51,40 @@ const passVisits: Visit[] = base.passes
     })),
   )
 
+/** A pass the office sold Dana by phone, with no card: she pays at each visit, so Done asks how it was paid and the pass panel offers Send card link. */
+const officeSold = base.passes.find((p) => p.status === "active" && p.visits.length === 2)!
+export const noCardPass: Pass = {
+  ...officeSold,
+  id: "p-office",
+  number: "TH-2027-0014",
+  clientId: "c-dana",
+  firstName: "Dana",
+  lastName: "Reed",
+  town: "Erie",
+  cardLast4: undefined,
+  cardExpires: undefined,
+  cardFailedAt: undefined,
+  consent: { termsVersion: "2026-11", termsAcceptedAt: "2026-11-12T19:00:00Z", marketingOptIn: false, marketingChannels: [], source: "admin", recordedAt: "2026-11-12T19:00:00Z" },
+  visits: officeSold.visits.map((v) => ({
+    kind: v.kind, window: v.window, amount: v.amount, id: `p-office-${v.kind}`,
+    ...(v.kind === "turn-on" ? { scheduledOn: "2027-05-04", scheduledAt: "2027-05-04T14:00:00Z", startTime: "08:00", truckName: "Truck 1" } : {}),
+  })),
+}
+export const noCardVisits: Visit[] = noCardPass.visits.map((pv) => ({
+  id: pv.id!, clientId: "c-dana", clientName: "Dana Reed", town: "Erie", kind: pv.kind, status: pv.scheduledOn ? "scheduled" : "unscheduled", isPass: true, passId: noCardPass.id, jobId: "job_p-office", jobberUrl: "",
+  ...(pv.scheduledOn ? { scheduledOn: pv.scheduledOn, startAt: pv.scheduledAt, startTime: pv.startTime, truckId: "truck-1", truckName: "Truck 1" } : {}), price: pv.amount, minutes: 60,
+}))
+
 export const visitsData: AdminData = {
   ...base,
-  visits: [...oneOffs, ...passVisits, ...base.visits],
+  visits: [...oneOffs, ...passVisits, ...noCardVisits, ...base.visits],
   clients: [...people, ...base.clients],
+  passes: [...base.passes, noCardPass],
   messages: [...messages, ...base.messages],
   attention: [],
 }
 
 /** A visit of an active pass that is booked and not yet done, for the panel's pass job block. */
 export const passVisitId = passVisits.find((v) => v.status === "scheduled")?.id ?? passVisits[0]!.id
+/** The scheduled visit of the pass with no card: Done asks how it was paid. */
+export const noCardVisitId = "p-office-turn-on"
