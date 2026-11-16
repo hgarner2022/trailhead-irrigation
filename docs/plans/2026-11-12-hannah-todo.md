@@ -26,9 +26,15 @@ needed, roughly how long it takes, and which phase waits on it.
    carrier approval takes days to two weeks, so start it early. Without it
    the texts are blocked. Needed by Phase 12.
 
-## Vercel settings (done)
+## Vercel settings
 
 - **DONE 2026-11-13: CRON_SECRET (generated, sensitive) and GEOCODE_CONTACT (contact@trailheadirrigation.com) are in Vercel production.** They take effect on the next production deploy; the daily feed cron and geocoding read them.
+- **TO DO (added 2026-11-16): GOOGLE_PLACES_KEY, so the checkout's address box finds real addresses.** In the Google Cloud console
+  (console.cloud.google.com, any Google account; a project and billing are needed, the first $200 a month of Places use is
+  free), enable "Places API (New)", then Credentials, Create credentials, API key. Restrict the key: Application
+  restrictions, Websites, add `www.trailheadirrigation.com`; API restrictions, Restrict key, tick only Places API (New).
+  Paste it into Vercel as `GOOGLE_PLACES_KEY` (Production, Sensitive) and redeploy. About 20 minutes. Until then the
+  checkout still works: the box finds nothing and opens the typed fields (street, town, zip), so nobody is stopped from buying.
 
 ## A2P 10DLC campaign text (copy into Twilio when the profile is approved)
 

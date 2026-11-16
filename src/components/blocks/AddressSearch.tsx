@@ -4,14 +4,16 @@ import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react"
 import { Check } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Input } from "@/components/ui/input"
-import { MIN_QUERY, type PlaceProvider, type PlaceSuggestion } from "@/lib/places"
+import { MIN_QUERY, NO_MATCH_QUERY, type PlaceProvider, type PlaceSuggestion } from "@/lib/places"
 
 // One box that finds the address as the customer types: a combobox over the
 // provider's suggestions, arrow keys and Enter to pick, Escape to close, a
 // check mark once an address is picked. Typing again clears the pick. The
-// provider is injected (the fixture in stories, Google Places once wired), so
-// the block never holds a key. The line under the box is the parent's: the
-// checkout puts the out-of-area message there.
+// provider is injected (the fixture in stories, Google Places behind
+// /api/places on the live site), so the block never holds a key. The line
+// under the box is the parent's: the checkout puts the out-of-area message
+// there. A query of NO_MATCH_QUERY characters that finds nothing tells the
+// parent (`onNoMatch`), which opens its typed fields.
 
 export interface AddressSearchProps {
   /** what is in the box */
@@ -21,6 +23,8 @@ export interface AddressSearchProps {
   provider: PlaceProvider
   onChange: (text: string) => void
   onPick: (place: PlaceSuggestion) => void
+  /** the provider found nothing for a query at least NO_MATCH_QUERY characters long */
+  onNoMatch?: (query: string) => void
   /** the line under the box, in the destructive colour */
   problem?: string | null
   /** the input's `name`, so autofill and form tooling can see it */
@@ -35,7 +39,7 @@ export interface AddressSearchProps {
 const DEBOUNCE_MS = 150
 const LOOKUP_FAILED = "We couldn't look that address up just now. Try again in a moment."
 
-export function AddressSearch({ value, picked, provider, onChange, onPick, problem, name, label = "Street address", placeholder = "Start typing your address", autoFocus, className }: AddressSearchProps) {
+export function AddressSearch({ value, picked, provider, onChange, onPick, onNoMatch, problem, name, label = "Street address", placeholder = "Start typing your address", autoFocus, className }: AddressSearchProps) {
   const id = useId()
   const listId = `${id}-list`
   const noteId = `${id}-note`
@@ -44,6 +48,11 @@ export function AddressSearch({ value, picked, provider, onChange, onPick, probl
   const [active, setActive] = useState(0)
   const [failed, setFailed] = useState(false)
   const abort = useRef<AbortController | null>(null)
+  // Read through a ref so a parent's inline callback never restarts the lookup.
+  const noMatch = useRef(onNoMatch)
+  useEffect(() => {
+    noMatch.current = onNoMatch
+  }, [onNoMatch])
 
   // The list can show only while the customer is typing a query long enough to ask about;
   // an old answer is hidden by `visible` rather than cleared, so the effect never sets state on its own.
@@ -62,6 +71,7 @@ export function AddressSearch({ value, picked, provider, onChange, onPick, probl
           setActive(0)
           setOpen(true)
           setFailed(false)
+          if (found.length === 0 && value.trim().length >= NO_MATCH_QUERY) noMatch.current?.(value)
         })
         .catch((error: unknown) => {
           if (controller.signal.aborted || (error instanceof DOMException && error.name === "AbortError")) return
