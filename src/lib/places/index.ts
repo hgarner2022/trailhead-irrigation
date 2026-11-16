@@ -1,14 +1,16 @@
 /**
  * Address search for the checkout and the booking form. A `PlaceProvider`
  * turns what the customer has typed into a short list of real addresses (the
- * fixture provider in stories and the prototype; Google Places behind a
- * server route once wired) and `serviceability` says whether a picked
- * address is in one of the six towns. No key lives here: client-safe.
+ * fixture provider in stories and tests; `googlePlaces` in google.ts, which
+ * asks `/api/places`, on the live site) and `serviceability` says whether a
+ * picked address is in one of the six towns. A customer the search cannot
+ * find types the address instead (`typedPlace`), and the rest of the checkout
+ * cannot tell the two apart. No key lives here: client-safe.
  */
 import type { Town } from "@/lib/admin/types"
 
 export interface PlaceSuggestion {
-  /** the provider's id (a Google place id once wired) */
+  /** the provider's id: a Google place id, or `typed:` and the address when the customer typed it */
   id: string
   /** the whole address on one line, as the box shows it once picked */
   label: string
@@ -16,6 +18,7 @@ export interface PlaceSuggestion {
   town: string
   /** two letters */
   state: string
+  /** empty on a Google suggestion until its details answer, and on a typed address with no zip */
   zip: string
 }
 
@@ -23,6 +26,31 @@ export type PlaceProvider = (query: string, signal?: AbortSignal) => Promise<Pla
 
 /** Fewer characters than this and the provider is not asked. */
 export const MIN_QUERY = 3
+/** A query this long that finds nothing opens the typed fields on its own. */
+export const NO_MATCH_QUERY = 5
+/** The id prefix of an address the customer typed rather than picked. */
+export const TYPED_PREFIX = "typed:"
+
+export const isTypedPlace = (id: string) => id.startsWith(TYPED_PREFIX)
+
+/** A Google suggestion carries no zip until its details are fetched; a typed address and the fixture are complete as they are. */
+export const needsDetails = (place: PlaceSuggestion) => place.zip === "" && !isTypedPlace(place.id)
+
+const squash = (text: string) => text.trim().replace(/\s+/g, " ")
+
+/** The address as the customer typed it in the three fields: the same shape as a picked one, so the checkout treats it the same. */
+export function typedPlace(line1: string, town: Town, zip = ""): PlaceSuggestion {
+  const street = squash(line1)
+  const code = zip.trim()
+  return {
+    id: `${TYPED_PREFIX}${street.toLowerCase()}|${town.toLowerCase()}|${code}`,
+    label: `${street}, ${town}, CO${code ? ` ${code}` : ""}`,
+    line1: street,
+    town,
+    state: "CO",
+    zip: code,
+  }
+}
 
 export const SERVICE_TOWNS: readonly Town[] = ["Erie", "Longmont", "Louisville", "Lafayette", "Firestone", "Broomfield"]
 

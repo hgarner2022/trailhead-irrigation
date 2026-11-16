@@ -1,8 +1,8 @@
 /**
- * The address provider for stories and the prototype: fourteen addresses,
- * nine in the six towns and five outside, matched on the words typed. Street
- * numbers are invented. The real provider (Google Places behind
- * `/api/v1/places/suggest`) replaces it in the wiring plan's Phase 8.
+ * The address provider for stories and tests: fourteen addresses, nine in
+ * the six towns and five outside, matched on the words typed. Street numbers
+ * are invented. The live checkout uses `googlePlaces` (google.ts, behind
+ * `/api/places`) and never this.
  */
 import { MIN_QUERY, type PlaceProvider, type PlaceSuggestion } from "./index"
 
