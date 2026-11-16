@@ -50,14 +50,19 @@ export function AttentionAction({ item, onAction, onDismiss }: AttentionActionPr
   const dismiss = async () => {
     if (!onDismiss) return console.info("dismiss", [item.kind, item.key])
     setGone(true)
-    const result = await onDismiss(item, false)
-    if (result && !result.ok) {
-      setGone(false)
-      setNote(result.message)
-      return
+    // A grouped row dismisses every row it stands for, and its Undo brings every one back.
+    const rows = item.members ?? [item]
+    for (const row of rows) {
+      const result = await onDismiss(row, false)
+      if (result && !result.ok) {
+        for (const done of rows.slice(0, rows.indexOf(row))) await onDismiss(done, true)
+        setGone(false)
+        setNote(result.message)
+        return
+      }
     }
     toast("Dismissed.", async () => {
-      await onDismiss(item, true)
+      for (const row of rows) await onDismiss(row, true)
       setGone(false)
     })
   }

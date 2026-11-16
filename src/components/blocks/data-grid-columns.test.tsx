@@ -23,7 +23,7 @@ describe("chargedTotal", () => {
 
 describe("nextVisit", () => {
   it("says a visit with no day needs one, never a month or a preference", () => {
-    expect(nextVisit(andrea)).toBe("Needs a day")
+    expect(nextVisit(andrea)).toBe("No day yet")
   })
 
   it("names the first uncharged visit by its day when it has one", () => {
@@ -62,10 +62,10 @@ describe("status column", () => {
 })
 
 describe("visit day columns", () => {
-  it("show the day the visit row holds, and Needs a day before it has one", () => {
+  it("show the day the visit row holds, and No day yet before it has one", () => {
     expect(cellText("turnOn", andrea)).toBe("May 3")
-    expect(cellText("inspection", andrea)).toBe("Needs a day")
-    expect(cellText("blowout", andrea)).toBe("Needs a day")
+    expect(cellText("inspection", andrea)).toBe("No day yet")
+    expect(cellText("blowout", andrea)).toBe("No day yet")
   })
 
   it("add the window once a start time is set", () => {
@@ -97,7 +97,7 @@ describe("passColumns", () => {
   it("sorts finished passes last on next visit and exports its written form", () => {
     const column = passColumns.find((c) => c.id === "nextVisit")
     expect(column?.sortUndefined).toBe("last")
-    expect(column?.meta?.csv?.(andrea)).toBe("Needs a day")
+    expect(column?.meta?.csv?.(andrea)).toBe("No day yet")
   })
 
   it("aligns the two numeric columns to the right", () => {

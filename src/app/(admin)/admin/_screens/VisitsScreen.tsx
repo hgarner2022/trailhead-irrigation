@@ -1,8 +1,6 @@
 "use client"
 
-import Link from "next/link"
 import { useMemo } from "react"
-import { Button } from "@/components/ui/button"
 import { DataGrid } from "@/components/blocks/DataGrid"
 import { PageHeader } from "@/components/blocks/PageHeader"
 import type { AdminData } from "@/lib/admin/types"
@@ -15,7 +13,8 @@ import { JOB_TYPE_OPTIONS, KIND_OPTIONS, MONEY_OPTIONS, WORK_OPTIONS, visitRows,
 // Every visit of the season (docs/plans build-1): the customer's full name, town, the kind, day, time, truck, the
 // two pills (work and money), price and pass number. Filters on both pill sets, kind, truck, town and pass or
 // one-off; search by name, street or phone; New visit in the header; a row opens the visit panel beside the
-// grid (a sheet on a phone). /admin/passes stays one link away in the header. Client because the open visit is
+// grid (a sheet on a phone). A pass is a filter chip and a link in the Pass column, never a button of its own
+// (owner, 16 Nov: "Passes is a visits, so it could just be part of the filter"). Client because the open visit is
 // state; the route's page.tsx supplies `data`, `today` and the actions.
 
 export interface VisitsScreenProps {
@@ -27,11 +26,13 @@ export interface VisitsScreenProps {
   /** a tech reads the visits and changes nothing: no New visit, no buttons in the panel */
   readOnly?: boolean
   actions?: VisitActions
+  /** filter chips set on first render: Home's money line links here with the visits its figure counts */
+  defaultFilters?: { column: string; values: string[] }[]
 }
 
 const TOWNS = ["Erie", "Longmont", "Louisville", "Lafayette", "Firestone", "Broomfield"]
 
-function Grid({ rows, data }: { rows: VisitRow[]; data: AdminData }) {
+function Grid({ rows, data, defaultFilters }: { rows: VisitRow[]; data: AdminData; defaultFilters?: VisitsScreenProps["defaultFilters"] }) {
   const open = useOpenVisit()
   const filters = useMemo(
     () => [
@@ -53,6 +54,7 @@ function Grid({ rows, data }: { rows: VisitRow[]; data: AdminData }) {
       filters={filters}
       onOpen={(row) => open?.(row.id)}
       exportName="visits"
+      defaultFilters={defaultFilters}
       pageSize={25}
       emptyTitle="No visits yet"
       emptyLine="Visits appear here as passes are sold and work is booked. Add one with New visit."
@@ -60,7 +62,7 @@ function Grid({ rows, data }: { rows: VisitRow[]; data: AdminData }) {
   )
 }
 
-export function VisitsScreen({ data, today, defaultVisitId, readOnly = false, actions }: VisitsScreenProps) {
+export function VisitsScreen({ data, today, defaultVisitId, readOnly = false, actions, defaultFilters }: VisitsScreenProps) {
   const rows = useMemo(() => visitRows(data, today), [data, today])
   return (
     <div data-slot="visits-screen">
@@ -68,16 +70,9 @@ export function VisitsScreen({ data, today, defaultVisitId, readOnly = false, ac
         <PageHeader
           title="Visits"
           context={visitsContext(rows)}
-          actions={
-            <>
-              <Button variant="outline" className="min-h-11" asChild>
-                <Link href="/admin/passes">Passes</Link>
-              </Button>
-              {!readOnly && <NewVisitButton data={data} today={today} actions={actions} />}
-            </>
-          }
+          actions={!readOnly && <NewVisitButton data={data} today={today} actions={actions} />}
         />
-        <Grid rows={rows} data={data} />
+        <Grid rows={rows} data={data} defaultFilters={defaultFilters} />
       </VisitPanelHost>
     </div>
   )

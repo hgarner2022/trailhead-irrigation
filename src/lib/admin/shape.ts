@@ -5,6 +5,7 @@
  */
 import { zonedToUtc } from "./calendar"
 import { fullName } from "./format"
+import { causeOf, groupAttention, type QueueAttention } from "./attention-groups"
 import { NOT_CLOSED_LOOKBACK_DAYS, visitJob } from "./jobs"
 import type {
   SoldJob, AdminData, Attention, BusyBlock, Client, Consent, Invoice, Message, MessageKind, MonthTotal, Pass, PassVisit, Quote, SettingsChange,
@@ -35,7 +36,7 @@ export interface MirrorJob { id: string; clientId: string | null; jobberUrl: str
 export interface MirrorQuote { id: string; clientName: string | null; town: Town | null; total: number | null; sentAt: Date | null; status: Quote["status"] | null; jobberUrl: string | null }
 export interface MirrorInvoice { id: string; clientName: string | null; total: number | null; issuedAt: Date | null; dueAt: Date | null; status: Invoice["status"] | null; jobberUrl: string | null }
 export interface JobRow { id: string; customerId: string; kind: SoldJob["kind"]; status: SoldJob["status"]; price: number | null; source: SoldJob["source"]; notes: string | null }
-export interface QueueProblem { kind: string; lastError: string | null; updatedAt: Date; status: string }
+export interface QueueProblem { id?: string; kind: string; lastError: string | null; updatedAt: Date; status: string }
 
 /** `key` is what the alert is about: a visit's id for an unplaced visit. */
 export interface AlertRow { kind: string; key?: string; passId: string | null; message: string; createdAt: Date }
@@ -280,7 +281,7 @@ function visitRows(i: ShapeInput, app: Visit[], all: Visit[]): Attention[] {
       out.push({ kind: "unpaid", key: v.id, visitId: v.id, message: `${possessive(v.clientName)} ${KIND_WORDS[v.kind] ?? "visit"} is done and not paid`, since: instantOf(v.completedOn ?? i.today, "12:00") })
   for (const v of all)
     if (appIds.has(v.id) && !v.isPass && v.status === "unscheduled")
-      out.push({ kind: "unplaced", key: v.id, visitId: v.id, message: `${possessive(v.clientName)} ${KIND_WORDS[v.kind] ?? "visit"} needs a day`, since: i.now.toISOString().replace(".000Z", "Z") })
+      out.push({ kind: "unplaced", key: v.id, visitId: v.id, message: `${possessive(v.clientName)} ${KIND_WORDS[v.kind] ?? "visit"} has no day yet`, since: i.now.toISOString().replace(".000Z", "Z") })
   return out
 }
 
@@ -294,7 +295,10 @@ export function attention(i: ShapeInput, passes: Pass[], visitRows: Attention[] 
     if (p.status !== "cancelled" && p.cardFailedAt) out.push({ kind: "charge-failed", key: `${p.id}@${p.cardFailedAt}`, passId: p.id, message: `The card on ${p.number} didn't go through; ${p.firstName} has the update link`, since: p.cardFailedAt })
   }
   for (const a of i.alerts ?? []) out.push({ key: a.key, kind: a.kind === "new-pass" || a.kind === "pass-cancelled" || a.kind === "scheduled" || a.kind === "unplaced" ? a.kind : "jobs-failed", ...(a.passId ? { passId: a.passId } : {}), ...(a.kind === "unplaced" && a.key ? { visitId: a.key } : {}), message: a.message, since: iso(a.createdAt) })
-  for (const q of i.queueProblems) out.push({ kind: "jobs-failed", key: `${q.kind}@${iso(q.updatedAt)}`, message: `A ${q.kind} task ${q.status === "failed" ? "gave up" : "is retrying"}: ${q.lastError ?? "no error recorded"}`, since: iso(q.updatedAt) })
+  for (const q of i.queueProblems) {
+    const row: QueueAttention = { kind: "jobs-failed", key: `${q.kind}@${iso(q.updatedAt)}`, message: `A ${q.kind} task ${q.status === "failed" ? "gave up" : "is retrying"}: ${q.lastError ?? "no error recorded"}`, since: iso(q.updatedAt), queueKind: q.kind, ...(q.id ? { queueIds: [q.id] } : {}), cause: causeOf(q.lastError) }
+    out.push(row)
+  }
   for (const p of passes) {
     if (p.status === "active" && p.cardExpires && p.cardExpires < `${p.season}-10` && !p.cardFailedAt)
       out.push({ kind: "card-expiring", key: p.id, passId: p.id, message: `The card on ${p.number} expires before the October blowout`, since: iso(i.now) })
@@ -308,5 +312,10 @@ export function attention(i: ShapeInput, passes: Pass[], visitRows: Attention[] 
       out.push({ kind: "pass-cancelled", key: p.id, passId: p.id, message: `${p.firstName} cancelled ${p.number}`, since: cancelledAt })
   }
   const gone = new Set((i.dismissed ?? []).map((d) => `${d.kind}:${d.key}`))
-  return out.filter((a) => !(a.key && gone.has(`${a.kind}:${a.key}`))).sort((a, b) => b.since.localeCompare(a.since))
+  const shown = out.filter((a) => !(a.key && gone.has(`${a.kind}:${a.key}`))).sort((a, b) => b.since.localeCompare(a.since))
+  // One row per kind and cause for queue failures; the working `cause` stays out of what the screens get.
+  return groupAttention(shown).map((a) => {
+    const { cause: _cause, ...rest } = a as Attention & { cause?: unknown }
+    return rest
+  })
 }

@@ -67,10 +67,10 @@ describe("customerRow", () => {
     expect(row).toMatchObject({ nextState: "booked", next: "Apr 26", nextKey: "2027-04-26" })
   })
 
-  it("says Needs a day for an active pass whose job has none", () => {
+  it("says No day yet for an active pass whose job has none", () => {
     const row = customerRow(client, [pass], [], TODAY)
     expect(row.nextState).toBe("to-schedule")
-    expect(row.next).toBe("Needs a day")
+    expect(row.next).toBe("No day yet")
     expect(row.nextKey).toBeUndefined()
   })
 
@@ -118,7 +118,7 @@ describe("consentEntries", () => {
 describe("customersContext", () => {
   it("counts customers, passes, those needing a day and those scheduled", () => {
     const rows = customerRows({ clients: [client, { ...client, id: "c2", firstName: "Ben", hasPass: false }], passes: [pass], visits: [{ ...visit("2027-04-20T15:00:00Z", "repair"), clientId: "c2" }] }, TODAY)
-    expect(customersContext(rows)).toBe("2 customers, 1 with a pass. 1 need a day, 1 scheduled ahead.")
+    expect(customersContext(rows)).toBe("2 customers, 1 with a pass. 1 with no day yet, 1 scheduled ahead.")
     expect(customersContext([])).toBe("No customers yet.")
   })
 })

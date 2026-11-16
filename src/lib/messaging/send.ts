@@ -6,7 +6,8 @@ import { renderEmail } from "@/emails/render"
 import { enqueue, MAX_ATTEMPTS } from "@/lib/queue"
 import { currentConsent, mayMessage } from "./consent"
 import { sendEmailLogged, type LoggedEmailSender } from "./resend"
-import { readTwilioEnv, sendTextNow, type TextSender } from "./twilio"
+import { recordTwilioHealth } from "./health"
+import { readTwilioEnv, sendTextNow, TwilioRejectedError, type TextSender } from "./twilio"
 
 export type MessageRow = typeof s.messageLog.$inferSelect
 
@@ -39,7 +40,7 @@ async function emailInstead(db: Database, row: MessageRow, customer: typeof s.cu
 /**
  * Sends one `message_log` row: through Resend for email or Twilio for sms, checked once more against the customer's consent.
  * Stores the provider id on success. A provider error is stored on the row and thrown so the queue retries; `final` marks
- * the row `failed` on the last attempt. A text with no Twilio sender is `skipped` with reason `no-sms-sender` and goes by email.
+ * the row `failed` on the last attempt. A text with no Twilio sender is `skipped` with reason `no-sms-sender`, and one Twilio rejects (401, 403, error 20003) with `sms-sender-rejected`; both go by email, and the last attempt's state is kept as the `twilio` health.
  */
 export async function sendMessageRow(db: Database, messageId: string, opts: { deps?: SendDeps; final?: boolean; now?: Date } = {}): Promise<SendOutcome> {
   const deps = opts.deps ?? defaultDeps
@@ -57,6 +58,7 @@ export async function sendMessageRow(db: Database, messageId: string, opts: { de
   }
   if (row.channel === "sms" && !deps.smsConfigured()) {
     await skip(db, row, "no-sms-sender")
+    await recordTwilioHealth(db, row.organizationId, "not-set", now)
     await emailInstead(db, row, customer)
     return "skipped"
   }
@@ -68,9 +70,18 @@ export async function sendMessageRow(db: Database, messageId: string, opts: { de
       const rendered = renderEmail(row.kind, row.data)
       providerId = (await deps.email({ to: row.to, subject: rendered?.subject ?? row.subject ?? "A message from Trailhead", text: rendered?.text ?? row.body, html: rendered?.html })).id
     }
+    if (row.channel === "sms") await recordTwilioHealth(db, row.organizationId, "ok", now)
     await db.update(s.messageLog).set({ status: "sent", providerId, error: null, sentAt: now, updatedAt: now }).where(eq(s.messageLog.id, row.id))
     return "sent"
   } catch (error) {
+    // Twilio refusing the account is a setup problem, not a blip: skip the text, send the same message by email, say why once.
+    if (row.channel === "sms" && error instanceof TwilioRejectedError) {
+      console.warn("Twilio rejected the account credentials (401 or error 20003). Texts go by email until TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN are fixed in Vercel.")
+      await skip(db, row, "sms-sender-rejected")
+      await recordTwilioHealth(db, row.organizationId, "rejected", now)
+      await emailInstead(db, row, customer)
+      return "skipped"
+    }
     const message = error instanceof Error ? error.message : String(error)
     await db.update(s.messageLog).set({ status: opts.final ? "failed" : "queued", error: message.slice(0, 500), updatedAt: now }).where(eq(s.messageLog.id, row.id))
     throw error

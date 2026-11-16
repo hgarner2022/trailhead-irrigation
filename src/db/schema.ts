@@ -88,7 +88,12 @@ export const messageStatusEnum = pgEnum("message_status", ["queued", "sent", "de
 export const consentSourceEnum = pgEnum("consent_source", ["checkout", "booking", "admin", "reply"])
 export const principalKindEnum = pgEnum("principal_kind", ["person", "api-key", "public"])
 
-export type OrganizationSettingsRow = Omit<OrganizationSettings, "trucks" | "areas">
+/** What the last text attempt said about Twilio: working, no credentials set, or credentials Twilio rejected. */
+export interface TwilioHealthRow {
+  state: "ok" | "not-set" | "rejected"
+  at: string
+}
+export type OrganizationSettingsRow = Omit<OrganizationSettings, "trucks" | "areas"> & { integrations?: { twilio?: TwilioHealthRow } }
 
 export const organization = pgTable("organization", {
   id: text("id").primaryKey().$defaultFn(newId),

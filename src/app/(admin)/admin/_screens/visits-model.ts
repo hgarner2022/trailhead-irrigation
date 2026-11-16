@@ -73,25 +73,30 @@ export function visitRows(data: AdminData, today: string): VisitRow[] {
       ...(pass ? { passNumber: pass.number, passId: pass.id } : {}),
     }
   })
-  // Needs a day first (they are the ones that want a person), then the days in order.
+  // No day yet first (they are the ones that want a person), then the days in order.
   return rows.sort((a, b) => (a.day ?? "0").localeCompare(b.day ?? "0") || a.name.localeCompare(b.name))
 }
 
 export const WORK_OPTIONS = (Object.keys(WORK_WORDS) as WorkState[]).map((value) => ({ value, label: WORK_WORDS[value] }))
-export const MONEY_OPTIONS = (Object.keys(MONEY_WORDS) as MoneyState[]).map((value) => ({ value, label: MONEY_WORDS[value] }))
+export const MONEY_OPTIONS = (Object.keys(MONEY_WORDS) as MoneyState[]).filter((value) => MONEY_WORDS[value]).map((value) => ({ value, label: MONEY_WORDS[value] }))
+/** A filter chip from a link's `?money=unpaid,failed`: the listed values that are real options, or no chip at all. */
+export function filterFrom(column: string, param: string | undefined, options: { value: string }[]): { column: string; values: string[] }[] {
+  const values = (param ?? "").split(",").filter((v) => options.some((o) => o.value === v))
+  return values.length ? [{ column, values }] : []
+}
 export const KIND_OPTIONS = OFFICE_KINDS.map((value) => ({ value, label: KIND_LABEL[value] }))
 export const JOB_TYPE_OPTIONS = [
   { value: "pass", label: "On a pass" },
   { value: "one-off", label: "One-off" },
 ]
 
-/** The header's line: how many visits, and how many need a day or money. */
+/** The header's line: how many visits, then (only when non-zero) how many have no day and how many are done and not paid. */
 export function visitsContext(rows: VisitRow[]): string {
   if (rows.length === 0) return "No visits yet."
   const needDay = rows.filter((r) => r.work === "needs-a-day" || r.work === "not-done").length
   const owed = rows.filter((r) => r.work === "done" && r.money !== "paid").length
-  const parts = [`${rows.length} ${rows.length === 1 ? "visit" : "visits"}`]
-  if (needDay) parts.push(`${needDay} need a day`)
-  if (owed) parts.push(`${owed} done and not paid`)
-  return `${parts.join(", ")}.`
+  const parts = [`${rows.length} ${rows.length === 1 ? "visit" : "visits"} this season.`]
+  if (needDay) parts.push(`${needDay} ${needDay === 1 ? "has" : "have"} no day yet.`)
+  if (owed) parts.push(`${owed} done and not paid.`)
+  return parts.join(" ")
 }

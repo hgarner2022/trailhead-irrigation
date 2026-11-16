@@ -8,7 +8,8 @@ import { drain } from "@/lib/queue"
 import { handlers } from "@/lib/queue/handlers"
 import { handleInboundText } from "./inbound"
 import { sendMessageRow, type SendDeps } from "./send"
-import { twilioSignature, validateTwilioSignature } from "./twilio"
+import { readTwilioHealth } from "./health"
+import { sendTextNow, TwilioRejectedError, twilioSignature, validateTwilioSignature } from "./twilio"
 
 let db: TestDb
 let phoneCustomer: string
@@ -59,6 +60,48 @@ describe("sendMessageRow", () => {
     expect(emails).toHaveLength(1)
     expect(emails[0]).toMatchObject({ status: "queued", to: "andrea@example.com", body: "Trailhead: hello" })
     expect(d.sms).not.toHaveBeenCalled()
+  })
+
+  it("skips a text Twilio rejects (401) with sms-sender-rejected, emails the same message once, and records the health", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined)
+    const d = deps({ sms: vi.fn(async () => { throw new TwilioRejectedError("401 20003") }) })
+    const r = await row("sms", "day-before", "t3")
+    expect(await sendMessageRow(db, r.id, { deps: d })).toBe("skipped")
+    expect((await db.select().from(s.messageLog).where(eq(s.messageLog.id, r.id)))[0]).toMatchObject({ status: "skipped", error: "sms-sender-rejected" })
+    const emails = await db.select().from(s.messageLog).where(and(eq(s.messageLog.key, "t3~email"), eq(s.messageLog.channel, "email")))
+    expect(emails).toHaveLength(1)
+    expect(emails[0]).toMatchObject({ status: "queued", to: "andrea@example.com" })
+    expect((await readTwilioHealth(db, ORG))?.state).toBe("rejected")
+    expect(warn).toHaveBeenCalledTimes(1)
+    expect(JSON.stringify(warn.mock.calls)).not.toContain("tok")
+    warn.mockRestore()
+    const ok = await row("sms", "date-set", "t4")
+    expect(await sendMessageRow(db, ok.id, { deps: deps() })).toBe("sent")
+    expect((await readTwilioHealth(db, ORG))?.state).toBe("ok")
+  })
+
+  it("reads 401, 403 and error 20003 from Twilio's REST answer as a rejection, and a 500 as a plain failure", async () => {
+    vi.stubEnv("TWILIO_ACCOUNT_SID", "ACx")
+    vi.stubEnv("TWILIO_AUTH_TOKEN", "tok")
+    vi.stubEnv("TWILIO_FROM", "+13035550000")
+    const answer = (status: number, body: object) => vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify(body), { status })))
+    answer(401, { code: 20003, message: "Authentication Error - invalid username", status: 401 })
+    await expect(sendTextNow({ to: phone, body: "hi" })).rejects.toBeInstanceOf(TwilioRejectedError)
+    answer(403, { message: "Forbidden" })
+    await expect(sendTextNow({ to: phone, body: "hi" })).rejects.toBeInstanceOf(TwilioRejectedError)
+    answer(500, { message: "Server error" })
+    await expect(sendTextNow({ to: phone, body: "hi" })).rejects.toThrow("Twilio failed: Server error")
+    await expect(sendTextNow({ to: phone, body: "hi" })).rejects.not.toBeInstanceOf(TwilioRejectedError)
+    vi.unstubAllGlobals()
+    vi.unstubAllEnvs()
+  })
+
+  it("still retries a text on a 500: the row stays queued and the error is thrown", async () => {
+    const d = deps({ sms: vi.fn(async () => { throw new Error("Twilio failed: Server error") }) })
+    const r = await row("sms", "day-before", "t5")
+    await expect(sendMessageRow(db, r.id, { deps: d })).rejects.toThrow("Twilio failed")
+    expect((await db.select().from(s.messageLog).where(eq(s.messageLog.id, r.id)))[0]).toMatchObject({ status: "queued" })
+    expect(await db.select().from(s.messageLog).where(eq(s.messageLog.key, "t5~email"))).toHaveLength(0)
   })
 
   it("stores a provider error and throws so the queue retries, failing the row on the last attempt", async () => {

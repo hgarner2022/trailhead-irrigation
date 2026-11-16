@@ -57,7 +57,7 @@ function Jobs({ pass, today }: { pass: Pass; today: string }) {
           <OpenVisit id={row.visitId ?? ""} className="gap-4 py-1.5">
             <span className="min-w-0 flex-1">
               <span className="block font-medium">{row.name}</span>
-              {/* The state says Needs a day; the line under the name is for a day and window. */}
+              {/* The state says No day yet; the line under the name is for a day and window. */}
               {row.job.state !== "needs-a-day" && <span className="block text-muted-foreground">{row.when}</span>}
             </span>
             <JobPill job={row.job} />

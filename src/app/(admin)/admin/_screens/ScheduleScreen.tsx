@@ -22,7 +22,7 @@ import { exceptionCount, firstJobWeek, firstWorkingDay, moveOutcome, nextJobsWee
 
 // Where Ryan lives in season (the scheduling flow, 2026-11-12: one state,
 // no second step): the week by truck, a day map beside the day's stops in
-// order, and the "Needs a day" list beside the week with every job of an
+// order, and the "No day yet" list beside the week with every job of an
 // active pass that has no day. It opens on the first week that has a job; a
 // week with none points at the next week that does. Schedule puts the whole
 // list on the week (the customers who must be there pick their own day and
@@ -173,7 +173,7 @@ function ScheduleBody({ data, today, defaultTab = "week", defaultDay, defaultWee
                     <Button disabled>Schedule</Button>
                   </span>
                 </TooltipTrigger>
-                <TooltipContent>Nothing needs a day</TooltipContent>
+                <TooltipContent>Nothing is waiting for a day</TooltipContent>
               </Tooltip>
             )
           }
@@ -205,7 +205,7 @@ function ScheduleBody({ data, today, defaultTab = "week", defaultDay, defaultWee
               />
               <Card className="min-w-0 self-start">
                 <CardHeader>
-                  <CardTitleHeading>{`Needs a day${tray.length ? ` (${tray.length})` : ""}`}</CardTitleHeading>
+                  <CardTitleHeading>{`No day yet${tray.length ? ` (${tray.length})` : ""}`}</CardTitleHeading>
                 </CardHeader>
                 <CardContent>
                   <ToScheduleTray items={tray} onPlace={place} readOnly={readOnly} problems={problems} />

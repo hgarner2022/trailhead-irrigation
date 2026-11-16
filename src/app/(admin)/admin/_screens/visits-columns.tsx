@@ -18,11 +18,11 @@ export const visitColumns: GridColumnDef<VisitRow>[] = [
     id: "day",
     accessorFn: (r) => r.day ?? "0",
     header: "Day",
-    cell: ({ row }) => (row.original.day ? dayLabel(row.original.day) : muted("Needs a day")),
+    cell: ({ row }) => (row.original.day ? dayLabel(row.original.day) : muted("No day yet")),
     meta: { csv: (r) => (r as VisitRow).day ?? "" },
   },
-  { id: "time", accessorKey: "time", header: "Time", cell: ({ getValue }) => (getValue() as string) || muted("None") },
-  { id: "truckId", accessorKey: "truckId", header: "Truck", cell: ({ row }) => row.original.truck || muted("None"), meta: { csv: (r) => (r as VisitRow).truck } },
+  { id: "time", accessorKey: "time", header: "Time", cell: ({ getValue }) => (getValue() as string) || null },
+  { id: "truckId", accessorKey: "truckId", header: "Truck", cell: ({ row }) => row.original.truck || null, meta: { csv: (r) => (r as VisitRow).truck } },
   {
     id: "work",
     accessorKey: "work",
@@ -35,7 +35,7 @@ export const visitColumns: GridColumnDef<VisitRow>[] = [
     ),
     meta: { csv: (r) => (r as VisitRow).workLabel },
   },
-  { id: "money", accessorKey: "money", header: "Money", cell: ({ row }) => <StatusPill status={row.original.money} label={row.original.moneyLabel} data-pill="money" />, meta: { csv: (r) => (r as VisitRow).moneyLabel } },
+  { id: "money", accessorKey: "money", header: "Money", cell: ({ row }) => (row.original.moneyLabel ? <StatusPill status={row.original.money} label={row.original.moneyLabel} data-pill="money" /> : null), meta: { csv: (r) => (r as VisitRow).moneyLabel } },
   { id: "price", accessorKey: "price", header: "Price", cell: ({ row }) => row.original.priceLabel, meta: { align: "right", csv: (r) => String((r as VisitRow).price) } },
   { id: "jobType", accessorKey: "jobType", header: "Pass", cell: ({ row }) => (row.original.passId ? <Link href={`/admin/passes?pass=${encodeURIComponent(row.original.passId)}`} className="text-primary-dark underline underline-offset-2">{row.original.passNumber}</Link> : muted("One-off")), meta: { csv: (r) => (r as VisitRow).passNumber ?? "" } },
 ]

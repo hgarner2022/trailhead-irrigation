@@ -6,7 +6,7 @@
  * (`visit.status`, `scheduled_on`, `start_time`, `charged_at`, a failed
  * `charge` row, `season_pass.card_failed_at`).
  *
- *   Needs a day     unscheduled
+ *   No day yet      unscheduled
  *   Scheduled       a day, no start time yet
  *   Routed          a start time is set
  *   Done            marked done, not charged
@@ -19,8 +19,8 @@
  * marked done. It is shown as a badge beside the state, never as a state.
  *
  * The screens show two pills instead of that one state (owner, 14 Nov: "it needs to be very obvious that money
- * was collected"): WORK (Needs a day, Scheduled, Done, Not done with its reason, Cancelled) and MONEY (Not yet,
- * Paid with how, Bill sent, Failed). A Scheduled visit whose day has passed stays Scheduled with a "day passed"
+ * was collected"): WORK (No day yet, Scheduled, Done, Not done with its reason, Cancelled) and MONEY (nothing
+ * until the visit is done, then Paid with how, Unpaid, Bill sent, Failed). A Scheduled visit whose day has passed stays Scheduled with a "day passed"
  * note; Routed is a start time in the Time column, not a state. `statesOf` derives both from the same row.
  */
 import { addDays, dayOf } from "./calendar"
@@ -30,7 +30,7 @@ import type { AdminData, Pass, PassVisit, Visit, VisitStatus } from "./types"
 export type JobState = "needs-a-day" | "scheduled" | "routed" | "done" | "charged" | "charge-failed" | "cancelled" | "skipped"
 
 export const JOB_WORDS: Record<JobState, string> = {
-  "needs-a-day": "Needs a day",
+  "needs-a-day": "No day yet",
   scheduled: "Scheduled",
   routed: "Routed",
   done: "Done",
@@ -43,10 +43,10 @@ export const JOB_WORDS: Record<JobState, string> = {
 export const NOT_CLOSED_WORD = "Not closed"
 
 export type WorkState = "needs-a-day" | "scheduled" | "done" | "not-done" | "cancelled"
-export type MoneyState = "not-yet" | "paid" | "bill-sent" | "failed"
+export type MoneyState = "not-yet" | "paid" | "unpaid" | "bill-sent" | "failed"
 
-export const WORK_WORDS: Record<WorkState, string> = { "needs-a-day": "Needs a day", scheduled: "Scheduled", done: "Done", "not-done": "Not done", cancelled: "Cancelled" }
-export const MONEY_WORDS: Record<MoneyState, string> = { "not-yet": "Not yet", paid: "Paid", "bill-sent": "Bill sent", failed: "Failed" }
+export const WORK_WORDS: Record<WorkState, string> = { "needs-a-day": "No day yet", scheduled: "Scheduled", done: "Done", "not-done": "Not done", cancelled: "Cancelled" }
+export const MONEY_WORDS: Record<MoneyState, string> = { "not-yet": "", paid: "Paid", unpaid: "Unpaid", "bill-sent": "Bill sent", failed: "Failed" }
 /** The words for how a payment came, as the pill's suffix and the receipt say them. */
 export const METHOD_WORDS: Record<string, string> = { card_on_file: "card", card_now: "card", check: "check", venmo: "Venmo", cash: "cash", bill: "bill" }
 export const REASON_WORDS: Record<string, string> = { "could-not-get-in": "could not get in", "no-water": "no water on", "customer-asked-to-wait": "customer asked to wait", other: "something else" }
@@ -101,7 +101,7 @@ export function statesOf(row: JobRow, today: string): VisitStates {
   const paid = Boolean(row.chargedAt)
   const reason = !done && !row.scheduledOn && row.notDoneReason ? row.notDoneReason : undefined
   const work: WorkState = gone ? "cancelled" : done ? "done" : row.scheduledOn || row.status === "scheduled" || row.status === "not-closed" ? "scheduled" : reason ? "not-done" : "needs-a-day"
-  const money: MoneyState = paid ? "paid" : row.chargeFailed || (done && row.cardFailedAt) ? "failed" : row.billSent ? "bill-sent" : "not-yet"
+  const money: MoneyState = paid ? "paid" : row.chargeFailed || (done && row.cardFailedAt) ? "failed" : row.billSent ? "bill-sent" : done ? "unpaid" : "not-yet"
   const how = row.paidMethod ? METHOD_WORDS[row.paidMethod] : undefined
   return {
     work,
