@@ -11,10 +11,11 @@ import { defineHandler } from "../../core/handler"
 import { customerFields, propertyInput } from "../customers/schemas"
 import { cleanContact } from "../customers/handlers"
 import { recordChange } from "../passes/queries"
-import { Day, Id, weekdayOf } from "../shared"
+import { routePeople } from "../people/handlers"
+import { Day, Id } from "../shared"
 import { loadVisit, visitOut } from "./queries"
 import { VisitOut } from "./schemas"
-import { placeVisit } from "./handlers"
+import { assignee, PersonIdAlias, placeVisit } from "./handlers"
 
 const OPEN_STATES = ["unscheduled", "scheduled"] as const
 
@@ -29,16 +30,16 @@ export const visitsMarkNotDone = defineHandler({
   method: "POST",
   path: "/visits/{id}/not-done",
   scope: "write",
-  summary: "The visit was not done. The reason is kept on the change log; the visit goes back to Needs a day, its truck-day is ordered again, and nothing is charged.",
+  summary: "The visit was not done. The reason is kept on the change log; the visit goes back to Needs a day, the person's day is ordered again, and nothing is charged.",
   input: z.object({ id: Id, reason: z.enum(NOT_DONE_REASONS), note: z.string().trim().max(300).optional() }),
   output: VisitOut,
   async run(ctx, input) {
     const { visit } = await loadOpen(ctx, input.id, "marked not done")
     if (visit.status !== "scheduled") throw new ApiError("unprocessable", "This visit has no day yet, so there is nothing to mark not done")
     if (input.reason === "other" && !input.note) throw new ApiError("invalid", "Say what happened when the reason is something else", [{ path: "note", message: "Add a short note" }])
-    await ctx.db.update(s.visit).set({ status: "unscheduled", truckId: null, scheduledOn: null, startTime: null, stopOrder: null, awaitingPick: false, notDoneReason: input.reason }).where(eq(s.visit.id, visit.id))
-    if (visit.truckId && visit.scheduledOn) await orderDay(ctx.db, { truckId: visit.truckId, day: visit.scheduledOn })
-    await recordChange(ctx, { customerId: visit.customerId, passId: visit.passId, visitId: visit.id, kind: "not-done", detail: { reason: input.reason, note: input.note ?? null, day: visit.scheduledOn, truckId: visit.truckId } })
+    await ctx.db.update(s.visit).set({ status: "unscheduled", personId: null, scheduledOn: null, startTime: null, stopOrder: null, awaitingPick: false, notDoneReason: input.reason }).where(eq(s.visit.id, visit.id))
+    if (visit.personId && visit.scheduledOn) await orderDay(ctx.db, { personId: visit.personId, day: visit.scheduledOn })
+    await recordChange(ctx, { customerId: visit.customerId, passId: visit.passId, visitId: visit.id, kind: "not-done", detail: { reason: input.reason, note: input.note ?? null, day: visit.scheduledOn, personId: visit.personId } })
     return visitOut(ctx, await loadVisit(ctx, visit.id))
   },
 })
@@ -48,11 +49,12 @@ export const visitsUpdate = defineHandler({
   method: "PATCH",
   path: "/visits/{id}",
   scope: "write",
-  summary: "Change a visit's minutes, truck or notes, and for a pass visit the pass's access note. A new truck must be in service and work the visit's weekday.",
+  summary: "Change a visit's minutes, person or notes, and for a pass visit the pass's access note. A new person must be on the schedule and work the visit's weekday.",
   input: z.object({
     id: Id,
     durationMinutes: z.number().int().min(15).max(480).multipleOf(15).optional(),
-    truckId: Id.optional(),
+    personId: Id.optional().describe("Who takes the visit; it needs a day first."),
+    truckId: PersonIdAlias,
     notes: z.string().trim().max(1000).optional().describe("An empty string clears the notes."),
     accessNote: z.string().trim().max(500).optional().describe("Pass visits only: gate code, dog, where the controller is."),
     unscheduled: z.literal(true).optional().describe("Take the visit back to Needs a day: the undo of giving it a day."),
@@ -70,24 +72,24 @@ export const visitsUpdate = defineHandler({
       set.notes = input.notes || null
       changed.notes = true
     }
-    let reorder: { truckId: string; day: string }[] = []
+    let reorder: { personId: string; day: string }[] = []
     if (input.unscheduled) {
       if (visit.status !== "scheduled") throw new ApiError("unprocessable", "This visit has no day to take back")
-      Object.assign(set, { status: "unscheduled", truckId: null, scheduledOn: null, startTime: null, stopOrder: null })
+      Object.assign(set, { status: "unscheduled", personId: null, scheduledOn: null, startTime: null, stopOrder: null })
       changed.unscheduled = { from: visit.scheduledOn }
-      if (visit.truckId && visit.scheduledOn) reorder = [{ truckId: visit.truckId, day: visit.scheduledOn }]
+      if (visit.personId && visit.scheduledOn) reorder = [{ personId: visit.personId, day: visit.scheduledOn }]
     }
-    if (input.truckId && input.truckId !== visit.truckId && !input.unscheduled) {
-      if (!visit.scheduledOn) throw new ApiError("unprocessable", "Give this visit a day before choosing its truck")
-      const [truck] = await ctx.db.select().from(s.truck).where(and(eq(s.truck.id, input.truckId), eq(s.truck.organizationId, ctx.organizationId)))
-      if (!truck) throw notFound("Truck")
-      if (!truck.active) throw new ApiError("unprocessable", `${truck.name} is not in service`)
-      if (!truck.workingDays.includes(weekdayOf(visit.scheduledOn))) throw new ApiError("unprocessable", `${truck.name} does not work on ${weekdayOf(visit.scheduledOn)}days`)
-      set.truckId = truck.id
-      set.startTime = null
-      set.stopOrder = null
-      changed.truckId = { from: visit.truckId, to: truck.id }
-      reorder = [{ truckId: truck.id, day: visit.scheduledOn }, ...(visit.truckId ? [{ truckId: visit.truckId, day: visit.scheduledOn }] : [])]
+    const wanted = input.personId ?? input.truckId
+    if (wanted && wanted !== visit.personId && !input.unscheduled) {
+      if (!visit.scheduledOn) throw new ApiError("unprocessable", "Give this visit a day before choosing who takes it")
+      const person = await assignee(ctx, { personId: wanted }, visit.scheduledOn)
+      if (person.id !== visit.personId) {
+        set.personId = person.id
+        set.startTime = null
+        set.stopOrder = null
+        changed.personId = { from: visit.personId, to: person.id }
+        reorder = [{ personId: person.id, day: visit.scheduledOn }, ...(visit.personId ? [{ personId: visit.personId, day: visit.scheduledOn }] : [])]
+      }
     }
     if (input.accessNote !== undefined) {
       if (!visit.passId) throw new ApiError("unprocessable", "Only a pass visit has an access note")
@@ -111,8 +113,8 @@ export const visitsCancel = defineHandler({
   output: VisitOut,
   async run(ctx, input) {
     const { visit } = await loadOpen(ctx, input.id, "cancelled")
-    await ctx.db.update(s.visit).set({ status: "cancelled", truckId: null, scheduledOn: null, startTime: null, stopOrder: null, awaitingPick: false }).where(eq(s.visit.id, visit.id))
-    if (visit.truckId && visit.scheduledOn) await orderDay(ctx.db, { truckId: visit.truckId, day: visit.scheduledOn })
+    await ctx.db.update(s.visit).set({ status: "cancelled", personId: null, scheduledOn: null, startTime: null, stopOrder: null, awaitingPick: false }).where(eq(s.visit.id, visit.id))
+    if (visit.personId && visit.scheduledOn) await orderDay(ctx.db, { personId: visit.personId, day: visit.scheduledOn })
     // A charge asked for but not yet made: leave it undone (the charge task also refuses a cancelled visit).
     await ctx.db.update(s.queueItem).set({ status: "done", lastError: "visit cancelled", doneAt: ctx.now }).where(and(eq(s.queueItem.kind, "pass-charge"), eq(s.queueItem.key, visit.id), eq(s.queueItem.status, "pending")))
     await ctx.db.update(s.adminAlert).set({ resolvedAt: ctx.now }).where(and(eq(s.adminAlert.organizationId, ctx.organizationId), eq(s.adminAlert.kind, "unplaced"), eq(s.adminAlert.key, visit.id)))
@@ -134,7 +136,7 @@ export const visitsCreate = defineHandler({
   path: "/visits",
   scope: "write",
   status: 201,
-  summary: "Add a visit for work taken by phone: makes the job (kind repair, install or other, source office) and its first visit. Give an existing customer or a new one. With a day it goes through the same rules as a move and the customer is texted the date; with none it waits as Needs a day. Minutes default from the kind, the truck from the first in service.",
+  summary: "Add a visit for work taken by phone: makes the job (kind repair, install or other, source office) and its first visit. Give an existing customer or a new one. With a day it goes through the same rules as a move and the customer is texted the date; with none it waits as Needs a day. Minutes default from the kind, the person from the first on the schedule (the owner, else by name).",
   input: z.object({
     customerId: Id.optional(),
     propertyId: Id.optional().describe("One of the customer's properties; the first when left out."),
@@ -143,7 +145,8 @@ export const visitsCreate = defineHandler({
     scheduledOn: Day.optional(),
     startTime: z.string().regex(/^\d{2}:\d{2}$/).optional().describe("Left out means any time that day."),
     durationMinutes: z.number().int().min(15).max(480).multipleOf(15).optional(),
-    truckId: Id.optional(),
+    personId: Id.optional().describe("Who takes the visit; left out, the first person on the schedule."),
+    truckId: PersonIdAlias,
     price: z.number().int().min(0).max(100000).optional().describe("Whole dollars; left out means quote later."),
     notes: z.string().trim().max(1000).optional(),
   }),
@@ -172,11 +175,11 @@ export const visitsCreate = defineHandler({
       if (!prop) throw new ApiError("unprocessable", "This customer has no address on file; add one first")
       propertyId = prop.id
     }
-    let truckId = input.truckId
-    if (input.scheduledOn && !truckId) {
-      const trucks = await ctx.db.select().from(s.truck).where(and(eq(s.truck.organizationId, org), eq(s.truck.active, true)))
-      truckId = trucks.sort((a, b) => a.name.localeCompare(b.name))[0]?.id
-      if (!truckId) throw new ApiError("unprocessable", "No truck is in service to put this visit on")
+    let personId = input.personId ?? input.truckId
+    if (input.scheduledOn && !personId) {
+      // The default assignee: the first person on the schedule, the owner before anyone else.
+      personId = (await routePeople(ctx))[0]?.id
+      if (!personId) throw new ApiError("unprocessable", "No one is on the schedule to take this visit")
     }
     const [job] = await ctx.db
       .insert(s.job)
@@ -188,7 +191,7 @@ export const visitsCreate = defineHandler({
       .returning({ id: s.visit.id })
     if (input.scheduledOn) {
       try {
-        await placeVisit(ctx, { id: made!.id, truckId: truckId!, scheduledOn: input.scheduledOn, startTime: input.startTime })
+        await placeVisit(ctx, { id: made!.id, personId: personId!, scheduledOn: input.scheduledOn, startTime: input.startTime })
       } catch (error) {
         // A refused day leaves nothing behind: the visit, its job and a customer made for it are taken back.
         await ctx.db.delete(s.visit).where(eq(s.visit.id, made!.id))

@@ -33,8 +33,8 @@ export function runSummary(window: RunWindow, placedDays: string[], placed: numb
 }
 
 /**
- * Schedule: every "to schedule" pass visit of the window whose window opens within its lead weeks goes onto a truck-day, in one
- * step. The result is written as scheduled visits (day, truck, length), the day's stops are ordered, each customer is queued
+ * Schedule: every "to schedule" pass visit of the window whose window opens within its lead weeks goes onto a person's day, in one
+ * step. The result is written as scheduled visits (day, person, length), the day's stops are ordered, each customer is queued
  * their date, and Home gets one line for the run plus a row for each visit that could not be placed. A visit marked as waiting for
  * its customer's pick is left for it. Running it twice places nothing the second time.
  */
@@ -62,15 +62,15 @@ export async function runSchedule(db: Database, input: { organizationId: string;
   for (const p of result.placed) {
     await db
       .update(s.visit)
-      .set({ status: "scheduled", truckId: p.truckId, scheduledOn: p.day, durationMinutes: p.durationMinutes, awaitingPick: false, startTime: null, stopOrder: null })
+      .set({ status: "scheduled", personId: p.personId, scheduledOn: p.day, durationMinutes: p.durationMinutes, awaitingPick: false, startTime: null, stopOrder: null })
       .where(and(eq(s.visit.id, p.visitId), eq(s.visit.status, "unscheduled")))
   }
-  const touched = new Map(result.placed.map((p) => [`${p.truckId}|${p.day}`, p]))
-  for (const p of touched.values()) await orderDay(db, { truckId: p.truckId, day: p.day })
+  const touched = new Map(result.placed.map((p) => [`${p.personId}|${p.day}`, p]))
+  for (const p of touched.values()) await orderDay(db, { personId: p.personId, day: p.day })
   for (const p of result.placed) {
     const r = byId.get(p.visitId)!
     await queueDateMessage(db, r.visit, "date-set", p.day)
-    await emitEvent(db, organizationId, "visit.scheduled", { visitId: p.visitId, truckId: p.truckId, scheduledOn: p.day, from: null })
+    await emitEvent(db, organizationId, "visit.scheduled", { visitId: p.visitId, personId: p.personId, scheduledOn: p.day, from: null })
   }
   if (result.waiting.length) await db.update(s.visit).set({ awaitingPick: true }).where(inArray(s.visit.id, result.waiting))
 

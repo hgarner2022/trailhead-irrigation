@@ -14,15 +14,15 @@ export const visitSelect = {
   lat: s.property.lat,
   lng: s.property.lng,
   address: s.property.address,
-  truckName: s.truck.name,
+  personName: s.person.name,
   // the newest charge attempt on the visit: how it was paid and whether it went through
   chargeMethod: sql<string | null>`(select c.method from charge c where c.visit_id = ${s.visit.id} order by c.attempt desc limit 1)`,
   chargeStatus: sql<string | null>`(select c.status from charge c where c.visit_id = ${s.visit.id} order by c.attempt desc limit 1)`,
 }
 
-/** Visits with the customer's first name and the property's town and point. Add `.where(...)` in the caller. */
+/** Visits with the customer's first name, the property's town and point, and the name of the person assigned. Add `.where(...)` in the caller. */
 export const visitsQuery = (db: Database) =>
-  db.select(visitSelect).from(s.visit).innerJoin(s.customer, eq(s.customer.id, s.visit.customerId)).innerJoin(s.property, eq(s.property.id, s.visit.propertyId)).leftJoin(s.truck, eq(s.truck.id, s.visit.truckId))
+  db.select(visitSelect).from(s.visit).innerJoin(s.customer, eq(s.customer.id, s.visit.customerId)).innerJoin(s.property, eq(s.property.id, s.visit.propertyId)).leftJoin(s.person, eq(s.person.id, s.visit.personId))
 
 export type VisitJoined = Awaited<ReturnType<ReturnType<typeof visitsQuery>["limit"]>>[number]
 
@@ -42,8 +42,11 @@ export function visitOut(ctx: Ctx, row: VisitJoined): VisitOutType {
     amount: v.amount,
     preference: v.preference,
     awaitingPick: v.awaitingPick,
-    truckId: v.truckId,
-    truckName: row.truckName,
+    personId: v.personId,
+    personName: row.personName,
+    // aliases for one season: the same person
+    truckId: v.personId,
+    truckName: row.personName,
     scheduledOn: v.scheduledOn,
     startTime: v.startTime,
     durationMinutes: v.durationMinutes,

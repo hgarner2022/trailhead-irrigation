@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest"
-import { eq } from "drizzle-orm"
+import { desc, eq } from "drizzle-orm"
 import * as s from "@/db/schema"
 import type { TestDb } from "@/db/test-db"
 import { callApi } from "../../core/call"
@@ -38,57 +38,75 @@ describe("visits.move after the write", () => {
     const [v] = await db.select().from(s.visit).where(eq(s.visit.id, "p11-turn-on"))
     await db.update(s.customer).set({ phone: "303-555-0111" }).where(eq(s.customer.id, v!.customerId))
     await db.insert(s.adminAlert).values({ organizationId: ORG, kind: "unplaced", key: "p11-turn-on", message: "x" })
-    const first = await move({ id: "p11-turn-on", truckId: "truck-1", scheduledOn: "2027-05-17" })
+    const first = await move({ id: "p11-turn-on", personId: "person_truck-1", scheduledOn: "2027-05-17" })
     expect(first).toMatchObject({ status: "scheduled", stopOrder: 1, startTime: "08:00" })
     expect((await db.select().from(s.adminAlert).where(eq(s.adminAlert.key, "p11-turn-on")))[0]!.resolvedAt).not.toBeNull()
-    await move({ id: "p11-turn-on", truckId: "truck-1", scheduledOn: "2027-05-18" })
+    await move({ id: "p11-turn-on", personId: "person_truck-1", scheduledOn: "2027-05-18" })
     const texts = (await db.select().from(s.messageLog)).filter((m) => m.visitId === "p11-turn-on")
     expect(texts.map((m) => m.kind).sort()).toEqual(["date-moved", "date-set"])
     expect(texts.every((m) => m.channel === "sms")).toBe(true)
   })
 
   it("counts a Jobber calendar block against the day", async () => {
-    await db.insert(s.jobberVisit).values({ id: "blk", organizationId: ORG, truckId: "truck-2", isBlock: true, title: "Out", startAt: new Date("2027-05-20T06:00:00Z"), endAt: new Date("2027-05-21T06:00:00Z") })
-    await expect(move({ id: "p12-turn-on", truckId: "truck-2", scheduledOn: "2027-05-20" })).rejects.toThrow(/full of turn-on/)
+    await db.insert(s.jobberVisit).values({ id: "feed:person_truck-2:blk", organizationId: ORG, isBlock: true, title: "Out", startAt: new Date("2027-05-20T06:00:00Z"), endAt: new Date("2027-05-21T06:00:00Z") })
+    await expect(move({ id: "p12-turn-on", personId: "person_truck-2", scheduledOn: "2027-05-20" })).rejects.toThrow(/full of turn-on/)
   })
 })
 
 describe("visits.move", () => {
   it("places a visit, marks it scheduled and queues the visit.scheduled event", async () => {
-    const out = await move({ id: "p3-turn-on", truckId: "truck-1", scheduledOn: "2027-05-05", startTime: "08:30" })
-    expect(out).toMatchObject({ status: "scheduled", truckId: "truck-1", scheduledOn: "2027-05-05", startTime: "08:30", awaitingPick: false })
+    const out = await move({ id: "p3-turn-on", personId: "person_truck-1", scheduledOn: "2027-05-05", startTime: "08:30" })
+    expect(out).toMatchObject({ status: "scheduled", personId: "person_truck-1", scheduledOn: "2027-05-05", startTime: "08:30", awaitingPick: false })
     const events = await db.select().from(s.outboundEvent)
     expect(events.map((e) => e.event)).toContain("visit.scheduled")
-    await move({ id: "p3-turn-on", truckId: "truck-1", scheduledOn: "2027-05-06" })
+    await move({ id: "p3-turn-on", personId: "person_truck-1", scheduledOn: "2027-05-06" })
     expect((await db.select().from(s.outboundEvent)).map((e) => e.event)).toContain("visit.moved")
   })
+  it("names the person and answers the same under the old truck names", async () => {
+    const out = await move({ id: "p3-turn-on", personId: "person_truck-1", scheduledOn: "2027-05-07" })
+    expect(out).toMatchObject({ personId: "person_truck-1", personName: "Ryan Garner", truckId: "person_truck-1", truckName: "Ryan Garner" })
+    const event = (await db.select().from(s.outboundEvent).orderBy(desc(s.outboundEvent.createdAt))).find((e) => e.event === "visit.moved")!
+    expect(event.payload).toMatchObject({ visitId: "p3-turn-on", personId: "person_truck-1", truckId: "person_truck-1", scheduledOn: "2027-05-07" })
+  })
+  it("takes `truckId` as an alias of personId for one season: the person's id, or the truck id they were made from", async () => {
+    await expect(move({ id: "p3-turn-on", truckId: "person_truck-2", scheduledOn: "2027-05-07" })).resolves.toMatchObject({ personId: "person_truck-2", personName: "Second truck" })
+    await expect(move({ id: "p3-turn-on", truckId: "truck-1", scheduledOn: "2027-05-06" })).resolves.toMatchObject({ personId: "person_truck-1", personName: "Ryan Garner" })
+    await expect(move({ id: "p3-turn-on", scheduledOn: "2027-05-07" })).rejects.toMatchObject({ code: "invalid" })
+  })
+  it("refuses a person who is not on the schedule: out of service, or with no truck to drive", async () => {
+    await db.update(s.person).set({ active: false }).where(eq(s.person.id, "person_truck-2"))
+    await expect(move({ id: "p3-turn-on", personId: "person_truck-2", scheduledOn: "2027-05-06" })).rejects.toThrow(/not in service/)
+    await db.update(s.person).set({ active: true, truck: null }).where(eq(s.person.id, "person_truck-2"))
+    await expect(move({ id: "p3-turn-on", personId: "person_truck-2", scheduledOn: "2027-05-06" })).rejects.toThrow(/not in service/)
+    await db.update(s.person).set({ truck: "Truck 2" }).where(eq(s.person.id, "person_truck-2"))
+  })
   it("refuses a day the truck does not work", async () => {
-    await expect(move({ id: "p4-turn-on", truckId: "truck-1", scheduledOn: "2027-05-08" })).rejects.toMatchObject({ code: "unprocessable" })
-    await expect(move({ id: "p4-turn-on", truckId: "truck-2", scheduledOn: "2027-05-08" })).resolves.toMatchObject({ scheduledOn: "2027-05-08" })
+    await expect(move({ id: "p4-turn-on", personId: "person_truck-1", scheduledOn: "2027-05-08" })).rejects.toMatchObject({ code: "unprocessable" })
+    await expect(move({ id: "p4-turn-on", personId: "person_truck-2", scheduledOn: "2027-05-08" })).resolves.toMatchObject({ scheduledOn: "2027-05-08" })
   })
   it("refuses a day outside the visit's window", async () => {
-    await expect(move({ id: "p5-turn-on", truckId: "truck-1", scheduledOn: "2027-06-02" })).rejects.toThrow(/must land between/)
-    await expect(move({ id: "p5-blowout", truckId: "truck-1", scheduledOn: "2027-05-05" })).rejects.toThrow(/must land between/)
+    await expect(move({ id: "p5-turn-on", personId: "person_truck-1", scheduledOn: "2027-06-02" })).rejects.toThrow(/must land between/)
+    await expect(move({ id: "p5-blowout", personId: "person_truck-1", scheduledOn: "2027-05-05" })).rejects.toThrow(/must land between/)
   })
   it("refuses a second area on a truck-day", async () => {
-    await expect(move({ id: "p6-turn-on", truckId: "truck-1", scheduledOn: "2027-05-06" })).rejects.toThrow(/different area/)
-    await expect(move({ id: "p7-turn-on", truckId: "truck-1", scheduledOn: "2027-05-06" })).resolves.toMatchObject({ truckId: "truck-1" })
+    await expect(move({ id: "p6-turn-on", personId: "person_truck-1", scheduledOn: "2027-05-06" })).rejects.toThrow(/different area/)
+    await expect(move({ id: "p7-turn-on", personId: "person_truck-1", scheduledOn: "2027-05-06" })).resolves.toMatchObject({ personId: "person_truck-1" })
   })
   it("refuses a full truck-day", async () => {
-    await db.update(s.truck).set({ capacityByKind: { "turn-on": 1, inspection: 5, blowout: 10, repair: 4, other: 2 } }).where(eq(s.truck.id, "truck-2"))
-    await move({ id: "p8-turn-on", truckId: "truck-2", scheduledOn: "2027-05-12" })
-    await expect(move({ id: "p10-turn-on", truckId: "truck-2", scheduledOn: "2027-05-12" })).rejects.toThrow(/full of turn-on/)
+    await db.update(s.person).set({ capacityByKind: { "turn-on": 1, inspection: 5, blowout: 10, repair: 4, other: 2 } }).where(eq(s.person.id, "person_truck-2"))
+    await move({ id: "p8-turn-on", personId: "person_truck-2", scheduledOn: "2027-05-12" })
+    await expect(move({ id: "p10-turn-on", personId: "person_truck-2", scheduledOn: "2027-05-12" })).rejects.toThrow(/full of turn-on/)
   })
   it("refuses a finished visit, an unknown truck, a bad day and a read key", async () => {
-    await expect(move({ id: "p1-turn-on", truckId: "truck-1", scheduledOn: "2027-05-10" })).rejects.toThrow(/completed/)
-    await expect(move({ id: "p11-turn-on", truckId: "nope", scheduledOn: "2027-05-10" })).rejects.toMatchObject({ code: "not_found" })
-    await expect(move({ id: "p11-turn-on", truckId: "truck-1", scheduledOn: "May 10" })).rejects.toMatchObject({ code: "invalid" })
-    await expect(move({ id: "p11-turn-on", truckId: "truck-1", scheduledOn: "2027-05-10" }, readKey)).rejects.toMatchObject({ code: "forbidden" })
+    await expect(move({ id: "p1-turn-on", personId: "person_truck-1", scheduledOn: "2027-05-10" })).rejects.toThrow(/completed/)
+    await expect(move({ id: "p11-turn-on", personId: "nope", scheduledOn: "2027-05-10" })).rejects.toMatchObject({ code: "not_found" })
+    await expect(move({ id: "p11-turn-on", personId: "person_truck-1", scheduledOn: "May 10" })).rejects.toMatchObject({ code: "invalid" })
+    await expect(move({ id: "p11-turn-on", personId: "person_truck-1", scheduledOn: "2027-05-10" }, readKey)).rejects.toMatchObject({ code: "forbidden" })
   })
   it("is idempotent on an Idempotency-Key", async () => {
     const ctx = { ...ctxFor(db, writeKey), idempotencyKey: "move-1" }
-    const a = await callApi(ctx, visitsMove, { id: "p12-turn-on", truckId: "truck-1", scheduledOn: "2027-05-11" })
-    const b = await callApi(ctx, visitsMove, { id: "p12-turn-on", truckId: "truck-1", scheduledOn: "2027-05-11" })
+    const a = await callApi(ctx, visitsMove, { id: "p12-turn-on", personId: "person_truck-1", scheduledOn: "2027-05-11" })
+    const b = await callApi(ctx, visitsMove, { id: "p12-turn-on", personId: "person_truck-1", scheduledOn: "2027-05-11" })
     expect(b).toEqual(a)
   })
 })

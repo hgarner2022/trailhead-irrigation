@@ -10,6 +10,8 @@ import { runSchedule } from "@/lib/scheduling/server/run"
 import { loadBlocks } from "@/lib/jobber-feed"
 import { openSlots, spreadDays } from "@/lib/pass/server/area-days"
 import { windowText } from "@/emails/format"
+import { isRoutePerson, listPeople, Role, routePeople } from "../people/handlers"
+import { PersonIdAlias } from "../visits/handlers"
 import { visitOut, visitsQuery } from "../visits/queries"
 import { VisitOut } from "../visits/schemas"
 
@@ -18,7 +20,7 @@ export const scheduleRun = defineHandler({
   method: "POST",
   path: "/schedule/run",
   scope: "admin",
-  summary: "Schedule: place every pass visit of the window that is due within its lead time onto a truck-day in one step. Each placed visit is scheduled, its stops ordered and its customer texted the date (emailed with no mobile number); a visit waiting for its customer's pick is left alone. Home gets a line for the run and a row for each visit that could not be placed. Running it again places nothing new.",
+  summary: "Schedule: place every pass visit of the window that is due within its lead time onto a person's day in one step. Each placed visit is scheduled, its stops ordered and its customer texted the date (emailed with no mobile number); a visit waiting for its customer's pick is left alone. Home gets a line for the run and a row for each visit that could not be placed. Running it again places nothing new.",
   input: z.object({ window: z.enum(["turn-on", "inspection", "blowout"]), season: z.number().int().optional() }),
   output: z.object({ placed: z.number().int(), unplaced: z.number().int() }),
   async run(ctx, input) {
@@ -27,23 +29,27 @@ export const scheduleRun = defineHandler({
   },
 })
 
+const WeekPerson = z.object({ id: Id, name: z.string(), role: Role, truck: z.string().nullable(), workingDays: z.array(z.string()), active: z.boolean() })
+
 export const scheduleWeek = defineHandler({
   name: "schedule.week",
   method: "GET",
   path: "/schedule/week",
   scope: "read",
-  summary: "The week grid: the trucks, the visits on each day for seven days from `from`, and the tray of visits still to schedule.",
+  summary: "The week grid: the people who drive a route (owner first), the visits on each day for seven days from `from`, and the tray of visits still to schedule. `trucks` is the same list under its old name, for one season.",
   input: z.object({ from: Day }),
   output: z.object({
     from: Day,
     to: Day,
-    trucks: z.array(z.object({ id: Id, name: z.string(), workingDays: z.array(z.string()), active: z.boolean() })),
+    people: z.array(WeekPerson),
+    trucks: z.array(WeekPerson).describe("Alias of people, kept for one season."),
     visits: z.array(VisitOut),
     tray: z.array(VisitOut),
   }),
   async run(ctx, input) {
     const to = addDays(input.from, 6)
-    const trucks = await ctx.db.select().from(s.truck).where(eq(s.truck.organizationId, ctx.organizationId)).orderBy(asc(s.truck.name))
+    // Everyone with a truck, in or out of service: a visit still on someone who left stays readable in the grid.
+    const people = (await listPeople(ctx)).filter((p) => p.truck !== null).map((p) => ({ id: p.id, name: p.name, role: p.role, truck: p.truck, workingDays: p.workingDays, active: p.active }))
     const visits = await visitsQuery(ctx.db)
       .where(and(eq(s.visit.organizationId, ctx.organizationId), gte(s.visit.scheduledOn, input.from), lte(s.visit.scheduledOn, to), notInArray(s.visit.status, ["cancelled", "skipped"])))
       .orderBy(asc(s.visit.scheduledOn), asc(s.visit.stopOrder), asc(s.visit.startTime), asc(s.visit.id))
@@ -54,7 +60,8 @@ export const scheduleWeek = defineHandler({
     return {
       from: input.from,
       to,
-      trucks: trucks.map((t) => ({ id: t.id, name: t.name, workingDays: t.workingDays, active: t.active })),
+      people,
+      trucks: people,
       visits: visits.map((v) => visitOut(ctx, v)),
       tray: tray.map((v) => visitOut(ctx, v)),
     }
@@ -63,8 +70,9 @@ export const scheduleWeek = defineHandler({
 
 const Stop = z.object({
   visitId: Id,
-  truckId: Id.nullable(),
-  order: z.number().int().describe("1-based position in the truck's day."),
+  personId: Id.nullable(),
+  truckId: Id.nullable().describe("Alias of personId, kept for one season."),
+  order: z.number().int().describe("1-based position in the person's day."),
   kind: VisitKind,
   firstName: z.string(),
   town: Town,
@@ -80,26 +88,30 @@ export const scheduleDay = defineHandler({
   method: "GET",
   path: "/schedule/day",
   scope: "read",
-  summary: "The map's pins and stop order for one day, optionally for one truck.",
-  input: z.object({ day: Day, truckId: Id.optional() }),
+  summary: "The map's pins and stop order for one day, optionally for one person.",
+  input: z.object({ day: Day, personId: Id.optional(), truckId: PersonIdAlias }),
   output: z.object({ day: Day, stops: z.array(Stop) }),
   async run(ctx, input) {
+    const personId = input.personId ?? input.truckId
     const rows = await visitsQuery(ctx.db)
-      .where(and(eq(s.visit.organizationId, ctx.organizationId), eq(s.visit.scheduledOn, input.day), input.truckId ? eq(s.visit.truckId, input.truckId) : undefined, notInArray(s.visit.status, ["cancelled", "skipped"])))
-      .orderBy(asc(s.visit.truckId), asc(s.visit.stopOrder), asc(s.visit.startTime), asc(s.visit.id))
+      .where(and(eq(s.visit.organizationId, ctx.organizationId), eq(s.visit.scheduledOn, input.day), personId ? eq(s.visit.personId, personId) : undefined, notInArray(s.visit.status, ["cancelled", "skipped"])))
+      .orderBy(asc(s.visit.personId), asc(s.visit.stopOrder), asc(s.visit.startTime), asc(s.visit.id))
     const position = new Map<string, number>()
     return {
       day: input.day,
       stops: rows.map((r) => {
-        const key = r.visit.truckId ?? ""
+        const key = r.visit.personId ?? ""
         const next = (position.get(key) ?? 0) + 1
         position.set(key, next)
         const v = r.visit
-        return { visitId: v.id, truckId: v.truckId, order: v.stopOrder ?? next, kind: v.kind, firstName: r.firstName, town: r.town, lat: r.lat, lng: r.lng, startTime: v.startTime, durationMinutes: v.durationMinutes, status: v.status }
+        return { visitId: v.id, personId: v.personId, truckId: v.personId, order: v.stopOrder ?? next, kind: v.kind, firstName: r.firstName, town: r.town, lat: r.lat, lng: r.lng, startTime: v.startTime, durationMinutes: v.durationMinutes, status: v.status }
       }),
     }
   },
 })
+
+/** A day on someone's schedule, as the slot and offer lists name them; `truckId` and `truckName` are the same person for one season. */
+const slotPerson = { personId: Id, personName: z.string(), truckId: Id.describe("Alias of personId, kept for one season."), truckName: z.string().describe("Alias of personName, kept for one season.") }
 
 export const scheduleSlots = defineHandler({
   name: "schedule.slots",
@@ -107,34 +119,34 @@ export const scheduleSlots = defineHandler({
   path: "/schedule/slots",
   scope: "read",
   checkout: true,
-  summary: "Open truck-days for a service, zone count and town, from tomorrow: the truck works the weekday, has room for the kind after the busy time on its Jobber calendar, and is not already in another area that day.",
+  summary: "Open days for a service, zone count and town, from tomorrow, per person: they work the weekday, have room for the kind after the busy time on their Jobber calendar, and are not already in another area that day.",
   input: z.object({ service: z.string().min(1).describe("A service key, e.g. `turn-on-8`."), zones: z.coerce.number().int().min(1).max(16).optional(), town: Town, from: Day.optional(), days: z.coerce.number().int().min(1).max(60).default(14) }),
-  output: z.object({ data: z.array(z.object({ day: Day, truckId: Id, truckName: z.string(), remaining: z.number().int(), slotMinutes: z.number().int() })) }),
+  output: z.object({ data: z.array(z.object({ day: Day, ...slotPerson, remaining: z.number().int(), slotMinutes: z.number().int() })) }),
   async run(ctx, input) {
     const [service] = await ctx.db.select().from(s.service).where(and(eq(s.service.organizationId, ctx.organizationId), eq(s.service.key, input.service)))
     if (!service) throw notFound("Service")
     if (!service.bookable || service.quoteOnly) throw new ApiError("unprocessable", "This service is not booked online")
     if (input.zones !== undefined && ((service.minZones && input.zones < service.minZones) || (service.maxZones && input.zones > service.maxZones)))
       throw new ApiError("unprocessable", `This service covers ${service.minZones} to ${service.maxZones} zones`)
-    const trucks = await ctx.db.select().from(s.truck).where(and(eq(s.truck.organizationId, ctx.organizationId), eq(s.truck.active, true)))
+    const people = await routePeople(ctx)
     const areas = await ctx.db.select().from(s.area).where(eq(s.area.organizationId, ctx.organizationId))
     const areaOf = (town: string) => areas.find((a) => a.towns.includes(town as never))?.id ?? town
     const first = addDays(input.from ?? today(ctx), input.from ? 0 : 1)
     const last = addDays(first, input.days - 1)
     const booked = await visitsQuery(ctx.db).where(and(eq(s.visit.organizationId, ctx.organizationId), gte(s.visit.scheduledOn, first), lte(s.visit.scheduledOn, last), notInArray(s.visit.status, ["cancelled", "skipped"])))
     const kind = capacityKind(service.kind)
-    // Busy time from each truck's Jobber calendar feed shrinks the truck-day (all-day blocks close it).
+    // Busy time from each person's Jobber calendar feed shrinks their day (all-day blocks close it).
     const blocks = await loadBlocks(ctx.db, ctx.organizationId, new Date(`${first}T00:00:00Z`), new Date(`${addDays(last, 1)}T23:59:59Z`))
-    const data: { day: string; truckId: string; truckName: string; remaining: number; slotMinutes: number }[] = []
+    const data: { day: string; personId: string; personName: string; truckId: string; truckName: string; remaining: number; slotMinutes: number }[] = []
     for (let i = 0; i < input.days; i++) {
       const day = addDays(first, i)
-      for (const truck of trucks) {
-        if (!truck.workingDays.includes(weekdayOf(day))) continue
-        const mine = booked.filter((b) => b.visit.truckId === truck.id && b.visit.scheduledOn === day)
+      for (const person of people) {
+        if (!isRoutePerson(person) || !person.workingDays.includes(weekdayOf(day))) continue
+        const mine = booked.filter((b) => b.visit.personId === person.id && b.visit.scheduledOn === day)
         if (mine.some((b) => areaOf(b.town) !== areaOf(input.town))) continue
-        const capacity = capacityAfterBlocks(truck.capacityByKind[kind], blockedMinutes(blocks, truck.id, day, "America/Denver"))
+        const capacity = capacityAfterBlocks(person.capacityByKind[kind], blockedMinutes(blocks, person.id, day, "America/Denver"))
         const remaining = capacity - mine.filter((b) => capacityKind(b.visit.kind) === kind).length
-        if (remaining > 0) data.push({ day, truckId: truck.id, truckName: truck.name, remaining, slotMinutes: service.slotMinutes })
+        if (remaining > 0) data.push({ day, personId: person.id, personName: person.name, truckId: person.id, truckName: person.name, remaining, slotMinutes: service.slotMinutes })
       }
     }
     return { data }
@@ -149,13 +161,13 @@ export const scheduleOfferDays = defineHandler({
   path: "/schedule/offer-days",
   scope: "read",
   checkout: true,
-  summary: "The three best open days for one pass visit that does not exist yet, for the checkout's \"Your days\" step: the town's truck-days inside the visit's window for that season, under capacity in visits and minutes after the busy time on the Jobber calendar, spread out as the earliest open day, one near the middle and the last. Each has the day, the truck and the two-hour arrival window from the slot grid. Fewer open days gives fewer days; none gives an empty list.",
+  summary: "The three best open days for one pass visit that does not exist yet, for the checkout's \"Your days\" step: the town's open days inside the visit's window for that season, under capacity in visits and minutes after the busy time on the Jobber calendar, spread out as the earliest open day, one near the middle and the last. Each has the day, the person who would take it and the two-hour arrival window from the slot grid. Fewer open days gives fewer days; none gives an empty list.",
   input: z.object({ town: Town, kind: PassKind, season: z.coerce.number().int().min(2026).max(2100), zones: z.coerce.number().int().min(1).max(16) }),
-  output: z.object({ days: z.array(z.object({ day: Day, truckId: Id, truckName: z.string(), start: z.string().describe("HH:MM, Mountain."), window: z.string().describe("The two-hour window, \"8 to 10 am\".") })) }),
+  output: z.object({ days: z.array(z.object({ day: Day, ...slotPerson, start: z.string().describe("HH:MM, Mountain."), window: z.string().describe("The two-hour window, \"8 to 10 am\".") })) }),
   async run(ctx, input) {
     const slots = await openSlots(ctx.db, { id: "", organizationId: ctx.organizationId, kind: input.kind, town: input.town }, today(ctx), input.season)
-    // Ordering a truck-day starts its first stop at FIRST_STOP (8:00), so no window opens earlier than that.
+    // Ordering a day starts its first stop at FIRST_STOP (8:00), so no window opens earlier than that.
     const opens = (start: string) => (start < "08:00" ? "08:00" : start)
-    return { days: spreadDays(slots).map((x) => ({ day: x.day, truckId: x.truckId, truckName: x.truckName, start: opens(x.start), window: windowText(opens(x.start)) })) }
+    return { days: spreadDays(slots).map((x) => ({ day: x.day, personId: x.personId, personName: x.personName, truckId: x.personId, truckName: x.personName, start: opens(x.start), window: windowText(opens(x.start)) })) }
   },
 })

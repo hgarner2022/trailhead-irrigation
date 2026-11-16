@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest"
 import { openSlots, type OpenSlotsInput } from "./slots"
-import type { SchedArea, SchedTruck } from "./types"
+import type { SchedArea, SchedPerson } from "./types"
 
-const trucks: SchedTruck[] = [
-  { id: "t1", name: "Truck 1", workingDays: ["mon", "tue", "wed", "thu", "fri"], capacityByKind: { "turn-on": 8, inspection: 6, blowout: 14, repair: 4, other: 2 } },
+const people: SchedPerson[] = [
+  { id: "t1", name: "Ryan Garner", workingDays: ["mon", "tue", "wed", "thu", "fri"], capacityByKind: { "turn-on": 8, inspection: 6, blowout: 14, repair: 4, other: 2 } },
 ]
 const areas: SchedArea[] = [
   { id: "north", name: "Erie and Firestone", towns: ["Erie", "Firestone"] },
@@ -11,21 +11,21 @@ const areas: SchedArea[] = [
 ]
 const settings = { windows: [], bufferPercentEarly: 0, bufferPercentLate: 0 }
 // 2027-05-10 is a Monday.
-const base: OpenSlotsInput = { service: { kind: "blowout", slotMinutes: 30 }, town: "Erie", trucks, areas, settings, from: "2027-05-10", to: "2027-05-10", taken: [], blocks: [] }
+const base: OpenSlotsInput = { service: { kind: "blowout", slotMinutes: 30 }, town: "Erie", people, areas, settings, from: "2027-05-10", to: "2027-05-10", taken: [], blocks: [] }
 const days = (slots: { day: string }[]) => [...new Set(slots.map((s) => s.day))]
-const fullDay = Array.from({ length: 14 }, () => ({ truckId: "t1", day: "2027-05-10", kind: "blowout", town: "Erie" as const, minutes: 30 }))
+const fullDay = Array.from({ length: 14 }, () => ({ personId: "t1", day: "2027-05-10", kind: "blowout", town: "Erie" as const, minutes: 30 }))
 
 describe("openSlots", () => {
   it("lays starts on a 30-minute grid from 7:00 to 17:00, the last one ending at 17:00", () => {
     const s = openSlots(base)
-    expect(s[0]).toMatchObject({ day: "2027-05-10", start: "07:00", truckId: "t1" })
+    expect(s[0]).toMatchObject({ day: "2027-05-10", start: "07:00", personId: "t1" })
     expect(s.at(-1)!.start).toBe("16:30")
     expect(s).toHaveLength(20)
   })
   it("fits the service's length: a 90-minute visit's last start is 15:30", () => {
     expect(openSlots({ ...base, service: { kind: "inspection", slotMinutes: 90 } }).at(-1)!.start).toBe("15:30")
   })
-  it("skips days the truck does not work", () => {
+  it("skips days the person does not work", () => {
     expect(days(openSlots({ ...base, from: "2027-05-08", to: "2027-05-09" }))).toEqual([])
   })
   it("offers nothing on a full day and the next day instead", () => {
@@ -33,7 +33,7 @@ describe("openSlots", () => {
     expect(days(out)).toEqual(["2027-05-11"])
   })
   it("keeps a town outside the day's area off that day, and marks an area day", () => {
-    const taken = [{ truckId: "t1", day: "2027-05-10", kind: "blowout", town: "Longmont" as const, minutes: 30 }]
+    const taken = [{ personId: "t1", day: "2027-05-10", kind: "blowout", town: "Longmont" as const, minutes: 30 }]
     expect(openSlots({ ...base, taken })).toEqual([])
     const same = openSlots({ ...base, taken: [{ ...taken[0]!, town: "Firestone" }] })
     expect(same.length).toBeGreaterThan(0)
@@ -42,17 +42,17 @@ describe("openSlots", () => {
   })
   it("shortens the day around a block and closes it for an all-day block", () => {
     // 9:00 to 11:00 Mountain on May 10 (UTC-6 in May).
-    const blocks = [{ truckId: "t1", startAt: "2027-05-10T15:00:00Z", endAt: "2027-05-10T17:00:00Z", title: "Dentist" }]
+    const blocks = [{ personId: "t1", startAt: "2027-05-10T15:00:00Z", endAt: "2027-05-10T17:00:00Z", title: "Dentist" }]
     const starts = openSlots({ ...base, blocks }).map((x) => x.start)
     expect(starts).not.toContain("09:00")
     expect(starts).not.toContain("10:30")
     expect(starts).toContain("08:30")
     expect(starts).toContain("11:00")
-    const allDay = [{ truckId: "t1", startAt: "2027-05-10T06:00:00Z", endAt: "2027-05-11T06:00:00Z", title: "Out" }]
+    const allDay = [{ personId: "t1", startAt: "2027-05-10T06:00:00Z", endAt: "2027-05-11T06:00:00Z", title: "Out" }]
     expect(openSlots({ ...base, blocks: allDay })).toEqual([])
   })
   it("counts the visits the blocks leave: a half-blocked day holds half", () => {
-    const half = [{ truckId: "t1", startAt: "2027-05-10T13:00:00Z", endAt: "2027-05-10T18:00:00Z", title: "Half" }]
+    const half = [{ personId: "t1", startAt: "2027-05-10T13:00:00Z", endAt: "2027-05-10T18:00:00Z", title: "Half" }]
     const seven = fullDay.slice(0, 7)
     expect(openSlots({ ...base, blocks: half, taken: seven })).toEqual([])
     expect(openSlots({ ...base, blocks: half, taken: seven.slice(0, 6) }).length).toBeGreaterThan(0)
@@ -62,7 +62,7 @@ describe("openSlots", () => {
     expect(days(openSlots({ ...base, to: "2027-05-20", window: w }))).toEqual(["2027-05-12", "2027-05-13"])
     expect(days(openSlots({ ...base, from: "2027-05-13", to: "2027-05-20", window: w }))).toEqual(["2027-05-13"])
   })
-  it("subtracts the buffer: a truck holding back 25 percent offers fewer blowouts", () => {
+  it("subtracts the buffer: a person holding back 25 percent offers fewer blowouts", () => {
     const taken = fullDay.slice(0, 10)
     expect(openSlots({ ...base, taken, settings: { ...settings, bufferPercentLate: 25 } })).toEqual([])
     expect(openSlots({ ...base, taken }).length).toBeGreaterThan(0)

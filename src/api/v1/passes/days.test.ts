@@ -35,9 +35,9 @@ const activate = (passId: string, session: string) => {
 describe("the days picked at checkout", () => {
   it("are held on the pending pass's visits, then scheduled with their window when the card is saved", async () => {
     const [turnOn, blowout] = [(await offer("turn-on")).days[1]!, (await offer("blowout")).days[0]!]
-    const pass = await start("days1@example.com", [{ kind: "turn-on", day: turnOn.day, truckId: turnOn.truckId, start: turnOn.start }, { kind: "blowout", day: blowout.day, truckId: blowout.truckId, start: blowout.start }])
+    const pass = await start("days1@example.com", [{ kind: "turn-on", day: turnOn.day, personId: turnOn.personId, start: turnOn.start }, { kind: "blowout", day: blowout.day, personId: blowout.personId, start: blowout.start }])
     let rows = await db.select().from(s.visit).where(eq(s.visit.passId, pass.id))
-    expect(rows.map((v) => [v.kind, v.status, v.scheduledOn, v.truckId])).toEqual(expect.arrayContaining([["turn-on", "unscheduled", turnOn.day, turnOn.truckId], ["blowout", "unscheduled", blowout.day, blowout.truckId]]))
+    expect(rows.map((v) => [v.kind, v.status, v.scheduledOn, v.personId])).toEqual(expect.arrayContaining([["turn-on", "unscheduled", turnOn.day, turnOn.personId], ["blowout", "unscheduled", blowout.day, blowout.personId]]))
     const active = await activate(pass.id, "cs_d1")
     expect(active.visits.map((v) => [v.kind, v.status, v.scheduledOn])).toEqual(expect.arrayContaining([["turn-on", "scheduled", turnOn.day], ["blowout", "scheduled", blowout.day]]))
     rows = await db.select().from(s.visit).where(eq(s.visit.passId, pass.id))
@@ -50,16 +50,16 @@ describe("the days picked at checkout", () => {
   })
 
   it("drops a day that is not open, and leaves that visit with no day", async () => {
-    const pass = await start("days2@example.com", [{ kind: "turn-on", day: "2027-05-08", truckId: "truck-1", start: "08:00" }])
+    const pass = await start("days2@example.com", [{ kind: "turn-on", day: "2027-05-08", personId: "person_truck-1", start: "08:00" }])
     const rows = await db.select().from(s.visit).where(eq(s.visit.passId, pass.id))
-    expect(rows.find((v) => v.kind === "turn-on")).toMatchObject({ scheduledOn: null, truckId: null })
+    expect(rows.find((v) => v.kind === "turn-on")).toMatchObject({ scheduledOn: null, personId: null })
   })
 
   it("move to the next open day when theirs filled up in between, and the change is recorded", async () => {
     const pick = (await offer("turn-on")).days[0]!
-    const pass = await start("days3@example.com", [{ kind: "turn-on", day: pick.day, truckId: pick.truckId, start: pick.start }])
-    const trucks = await db.select().from(s.truck)
-    await db.insert(s.jobberVisit).values(trucks.map((t, i) => ({ id: `gone-${i}`, organizationId: ORG, truckId: t.id, isBlock: true, title: "Out", startAt: new Date(`${pick.day}T06:00:00Z`), endAt: new Date(`${pick.day}T23:59:00Z`) })))
+    const pass = await start("days3@example.com", [{ kind: "turn-on", day: pick.day, personId: pick.personId, start: pick.start }])
+    const trucks = (await db.select().from(s.person)).filter((p) => p.truck !== null)
+    await db.insert(s.jobberVisit).values(trucks.map((t, i) => ({ id: `feed:${t.id}:gone-${i}`, organizationId: ORG, isBlock: true, title: "Out", startAt: new Date(`${pick.day}T06:00:00Z`), endAt: new Date(`${pick.day}T23:59:00Z`) })))
     const active = await activate(pass.id, "cs_d3")
     const visit = active.visits.find((v) => v.kind === "turn-on")!
     expect(visit.status).toBe("scheduled")

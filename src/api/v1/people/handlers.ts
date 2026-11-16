@@ -1,5 +1,5 @@
 import "server-only"
-import { and, asc, eq, ne, sql } from "drizzle-orm"
+import { and, asc, eq, ne, or, sql } from "drizzle-orm"
 import { z } from "zod"
 import * as s from "@/db/schema"
 import { cleanEmail } from "@/lib/format/contact"
@@ -75,6 +75,21 @@ export async function loadPerson(ctx: Ctx, id: string): Promise<PersonRow> {
   const [row] = await ctx.db.select().from(s.person).where(and(eq(s.person.id, id), inOrg(ctx)))
   if (!row) throw notFound("Person")
   return row
+}
+
+/** On the schedule: in service and with a truck to drive. Visits are assigned to these people and to no one else. */
+export const isRoutePerson = (p: Pick<PersonRow, "active" | "truck">): boolean => p.active && p.truck !== null
+
+/** The people a visit can be assigned to, owners first then by name; the first is the default assignee for a new visit. */
+export async function routePeople(ctx: Ctx): Promise<PersonRow[]> {
+  return (await listPeople(ctx, { active: true })).filter(isRoutePerson)
+}
+
+/** The person behind an id: their own, or for one season the id of the truck they were made from ("truck-1"). */
+export async function resolvePersonId(ctx: Ctx, id: string): Promise<string> {
+  const [row] = await ctx.db.select({ id: s.person.id }).from(s.person).where(and(inOrg(ctx), or(eq(s.person.id, id), eq(s.person.legacyTruckId, id))))
+  if (!row) throw notFound("Person")
+  return row.id
 }
 
 /** Owners first, then by name; `active` narrows to the people in or out of service. */

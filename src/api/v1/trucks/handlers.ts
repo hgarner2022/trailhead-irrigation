@@ -1,27 +1,19 @@
 import "server-only"
-import { and, eq, or } from "drizzle-orm"
 import { z } from "zod"
-import * as s from "@/db/schema"
-import { notFound } from "../../core/errors"
 import { defineHandler } from "../../core/handler"
 import { Id, idInput } from "../shared"
-import { Capacity, createPerson, deactivatePerson, listPeople, updatePerson, Weekday, type PersonRow } from "../people/handlers"
+import { Capacity, createPerson, deactivatePerson, listPeople, resolvePersonId, updatePerson, Weekday, type PersonRow } from "../people/handlers"
 
 // Alias of people.*, kept for one season: a truck is a person with a truck label, read and written in the
-// person table. A row keeps the truck id visits still carry (`legacyTruckId`) where it has one, so a caller
-// holding "truck-1" keeps working; a person made here answers under their own id.
+// person table. Every row answers under the person's id, the same id `VisitOut.personId` carries; a caller
+// still holding the old truck id ("truck-1") is understood on the way in.
 
-export const TruckOut = z.object({ id: Id, name: z.string(), jobberUserId: z.string().nullable(), hasCalendarFeed: z.boolean().describe("Whether the truck reads a Jobber calendar feed for busy time. The URL itself is private and never returned."), workingDays: z.array(Weekday), capacityByKind: Capacity.describe("Visits of each kind that fit in the truck's day."), active: z.boolean() })
+export const TruckOut = z.object({ id: Id.describe("The person's id, as visits carry it."), name: z.string(), jobberUserId: z.string().nullable(), hasCalendarFeed: z.boolean().describe("Whether the truck reads a Jobber calendar feed for busy time. The URL itself is private and never returned."), workingDays: z.array(Weekday), capacityByKind: Capacity.describe("Visits of each kind that fit in the truck's day."), active: z.boolean() })
 const fields = { name: z.string().min(1).max(60), jobberUserId: z.string().max(80).optional(), workingDays: z.array(Weekday).min(1), capacityByKind: Capacity, calendarFeedUrl: z.string().url().max(500).nullable().optional().describe("The truck's Jobber calendar subscription (iCal) URL; null clears it.") }
-const out = (p: PersonRow) => ({ id: p.legacyTruckId ?? p.id, name: p.name, jobberUserId: p.jobberUserId, hasCalendarFeed: Boolean(p.calendarFeedUrl), workingDays: p.workingDays, capacityByKind: p.capacityByKind, active: p.active })
-type Ctx = { db: import("@/db/types").Database; organizationId: string }
+const out = (p: PersonRow) => ({ id: p.id, name: p.name, jobberUserId: p.jobberUserId, hasCalendarFeed: Boolean(p.calendarFeedUrl), workingDays: p.workingDays, capacityByKind: p.capacityByKind, active: p.active })
 
-/** The person behind a truck id: the old truck id or the person's own. */
-async function personIdOf(ctx: Ctx, id: string) {
-  const [row] = await ctx.db.select({ id: s.person.id }).from(s.person).where(and(eq(s.person.organizationId, ctx.organizationId), or(eq(s.person.legacyTruckId, id), eq(s.person.id, id))))
-  if (!row) throw notFound("Truck")
-  return row.id
-}
+/** The person behind a truck id: the person's own id, or the old truck id for one season. */
+const personIdOf = resolvePersonId
 
 export const trucksList = defineHandler({
   name: "trucks.list", method: "GET", path: "/trucks", scope: "read", summary: "Alias of people.list, kept for one season: the people with a truck, by name, with working days and capacity by visit kind.",

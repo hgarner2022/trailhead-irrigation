@@ -16,10 +16,10 @@ const capacity = { "turn-on": 6, inspection: 5, blowout: 10, repair: 4, other: 2
 const seeded = async () => (await callApi(ctxFor(db, readKey), trucksList, {})).data
 
 describe("trucks (an alias of people with a truck, kept for one season)", () => {
-  it("lists the people who have a truck for a read key, by name, under the ids visits still carry", async () => {
+  it("lists the people who have a truck for a read key, by name, under the person ids visits carry", async () => {
     const out = await seeded()
     expect(out.map((t) => t.name)).toEqual(["Ryan Garner", "Second truck"])
-    expect(out.map((t) => t.id)).toEqual(["truck-1", "truck-2"])
+    expect(out.map((t) => t.id)).toEqual(["person_truck-1", "person_truck-2"])
     expect(out[0]).toMatchObject({ jobberUserId: "jobber-user-1", hasCalendarFeed: false, active: true, workingDays: ["mon", "tue", "wed", "thu", "fri"] })
     expect(out[1]!.workingDays).toContain("sat")
     expect(Object.keys(out[0]!).sort()).toEqual(["active", "capacityByKind", "hasCalendarFeed", "id", "jobberUserId", "name", "workingDays"])
@@ -40,10 +40,10 @@ describe("trucks (an alias of people with a truck, kept for one season)", () => 
     expect((await callApi(ctxFor(db, readKey), peopleList, { active: "false" })).data.map((p) => p.id)).toEqual([made.id])
     await expect(callApi(ctxFor(db, adminKey), trucksUpdate, { id: "missing", name: "x" })).rejects.toMatchObject({ code: "not_found" })
   })
-  it("takes a seeded truck by its old id or by the person's id", async () => {
+  it("takes a seeded truck by its old id or by the person's id, answering under the person's", async () => {
     const ryan = (await callApi(ctxFor(db, readKey), peopleList, {})).data.find((p) => p.name === "Ryan Garner")!
-    expect(await callApi(ctxFor(db, adminKey), trucksUpdate, { id: "truck-1", jobberUserId: "jobber-user-1b" })).toMatchObject({ id: "truck-1", jobberUserId: "jobber-user-1b" })
-    expect(await callApi(ctxFor(db, adminKey), trucksUpdate, { id: ryan.id, jobberUserId: "jobber-user-1" })).toMatchObject({ id: "truck-1", jobberUserId: "jobber-user-1" })
+    expect(await callApi(ctxFor(db, adminKey), trucksUpdate, { id: "truck-1", jobberUserId: "jobber-user-1b" })).toMatchObject({ id: "person_truck-1", jobberUserId: "jobber-user-1b" })
+    expect(await callApi(ctxFor(db, adminKey), trucksUpdate, { id: ryan.id, jobberUserId: "jobber-user-1" })).toMatchObject({ id: "person_truck-1", jobberUserId: "jobber-user-1" })
   })
   it("rejects bad input", async () => {
     await expect(callApi(ctxFor(db, adminKey), trucksCreate, { name: "", workingDays: ["mon"], capacityByKind: capacity })).rejects.toMatchObject({ code: "invalid" })

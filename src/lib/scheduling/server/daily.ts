@@ -83,14 +83,14 @@ export async function queueDueRuns(db: Database, organizationId: string, today: 
 export async function crewSummaryEmails(db: Database, organizationId: string, today: string): Promise<number> {
   const tomorrow = addDays(today, 1)
   const rows = await db
-    .select({ visit: s.visit, truckName: s.truck.name, town: s.property.town })
+    .select({ visit: s.visit, personName: s.person.name, town: s.property.town })
     .from(s.visit)
     .innerJoin(s.property, eq(s.property.id, s.visit.propertyId))
-    .leftJoin(s.truck, eq(s.truck.id, s.visit.truckId))
+    .leftJoin(s.person, eq(s.person.id, s.visit.personId))
     .where(eq(s.visit.organizationId, organizationId))
   const live = rows.filter((r) => r.visit.status !== "cancelled" && r.visit.status !== "skipped")
   const weekStart = weekOf(today, TIME_ZONE)
-  const going = live.filter((r) => r.visit.scheduledOn === tomorrow && r.truckName).map((r) => ({ truckName: r.truckName!, town: r.town }))
+  const going = live.filter((r) => r.visit.scheduledOn === tomorrow && r.personName).map((r) => ({ personName: r.personName!, town: r.town }))
   const text = crewSummary({
     tomorrow: going,
     movedInJobber: live.filter((r) => r.visit.exception && r.visit.scheduledOn && r.visit.scheduledOn >= weekStart && r.visit.scheduledOn <= addDays(weekStart, 6)).length,

@@ -19,10 +19,11 @@ export function baseData(origin: string, customer: { firstName: string; email: s
 /** The visit as the messages know it, on `day` when the caller already knows the new one; null while it has no day. */
 export async function loadVisitFacts(db: Database, visitId: string, origin: string, day?: string): Promise<VisitFacts | null> {
   const [row] = await db
-    .select({ visit: s.visit, address: s.property.address, town: s.property.town, truck: s.truck.name })
+    // The person's truck label ("Truck 1") is what the messages say for now; naming the person is step 1's message task.
+    .select({ visit: s.visit, address: s.property.address, town: s.property.town, truck: s.person.truck })
     .from(s.visit)
     .innerJoin(s.property, eq(s.property.id, s.visit.propertyId))
-    .leftJoin(s.truck, eq(s.truck.id, s.visit.truckId))
+    .leftJoin(s.person, eq(s.person.id, s.visit.personId))
     .where(eq(s.visit.id, visitId))
   const when = day ?? row?.visit.scheduledOn
   if (!row || !when) return null
