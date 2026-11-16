@@ -141,7 +141,10 @@ export function CustomerPicker({ data, customerId, value, onChange, emailRequire
         <div className="grid grid-cols-2 gap-3">
           <Input aria-label="First name" placeholder="First name" value={person.firstName} onChange={(e) => setPerson({ firstName: e.target.value })} className="min-h-11" />
           <Input aria-label="Last name" placeholder="Last name" value={person.lastName} onChange={(e) => setPerson({ lastName: e.target.value })} className="min-h-11" />
-          <Input aria-label="Street" placeholder="Street" value={person.address} onChange={(e) => setPerson({ address: e.target.value })} className="col-span-2 min-h-11" />
+          {/* Input wraps its element in a div, so the span goes on a wrapper of our own. */}
+          <div className="col-span-2">
+            <Input aria-label="Street" placeholder="Street" value={person.address} onChange={(e) => setPerson({ address: e.target.value })} className="min-h-11" />
+          </div>
           <select aria-label="Town" value={person.town} onChange={(e) => setPerson({ town: e.target.value as Town })} className={FIELD}>
             {TOWNS.map((t) => (
               <option key={t}>{t}</option>
@@ -149,7 +152,9 @@ export function CustomerPicker({ data, customerId, value, onChange, emailRequire
           </select>
           <Input aria-label="Phone" inputMode="tel" placeholder="Phone" value={person.phone} onChange={(e) => setPerson({ phone: e.target.value })} className="min-h-11" />
           <EmailField id={`${idPrefix}-new-email`} value={person.email} onChange={(email) => setPerson({ email })} required={emailRequired} className="col-span-2" />
-          <Input aria-label="Access note" placeholder="Access note (gate code, dog)" value={person.access} onChange={(e) => setPerson({ access: e.target.value })} className="col-span-2 min-h-11" />
+          <div className="col-span-2">
+            <Input aria-label="Access note" placeholder="Access note (gate code, dog)" value={person.access} onChange={(e) => setPerson({ access: e.target.value })} className="min-h-11" />
+          </div>
         </div>
       ) : (
         <>
