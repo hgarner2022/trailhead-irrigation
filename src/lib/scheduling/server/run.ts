@@ -2,6 +2,7 @@ import "server-only"
 import { and, eq, inArray, isNull } from "drizzle-orm"
 import * as s from "@/db/schema"
 import type { Database } from "@/db/types"
+import { who } from "@/api/v1/visits/schemas"
 import { emitEvent } from "@/api/v1/webhooks/deliver"
 import { shortDate } from "@/lib/admin/format"
 import { currentSeason } from "@/lib/pass/season"
@@ -70,7 +71,7 @@ export async function runSchedule(db: Database, input: { organizationId: string;
   for (const p of result.placed) {
     const r = byId.get(p.visitId)!
     await queueDateMessage(db, r.visit, "date-set", p.day)
-    await emitEvent(db, organizationId, "visit.scheduled", { visitId: p.visitId, personId: p.personId, scheduledOn: p.day, from: null })
+    await emitEvent(db, organizationId, "visit.scheduled", { visitId: p.visitId, ...who(p.personId), scheduledOn: p.day, from: null })
   }
   if (result.waiting.length) await db.update(s.visit).set({ awaitingPick: true }).where(inArray(s.visit.id, result.waiting))
 

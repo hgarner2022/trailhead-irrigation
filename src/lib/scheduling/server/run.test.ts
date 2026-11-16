@@ -15,6 +15,7 @@ beforeAll(async () => {
   vi.stubEnv("APP_URL", "https://site.test")
   db = await apiDb()
   for (const c of await db.select().from(s.customer)) await db.update(s.customer).set({ phone: `303-555-${c.id.slice(-4).padStart(4, "0")}`.slice(0, 12), email: `${c.id}@example.com` }).where(eq(s.customer.id, c.id))
+  await db.insert(s.webhookEndpoint).values({ id: "hook-run", organizationId: ORG, url: "https://hooks.example.com/run", secret: "whsec_x", events: ["visit.scheduled"] })
 })
 afterAll(() => db.close())
 
@@ -49,6 +50,14 @@ describe("schedule.run", () => {
     }
     const stillWaiting = rows.find((v) => v.id === waitingId)!
     expect(stillWaiting).toMatchObject({ status: "unscheduled", awaitingPick: true })
+    // the webhook names the person both ways, as every other emitter does through `who()`
+    const events = (await db.select().from(s.outboundEvent)).filter((e) => e.event === "visit.scheduled")
+    expect(events.length).toBe(out.placed)
+    for (const e of events) {
+      const personId = (e.payload as { personId: string }).personId
+      expect(personId).toMatch(/^person_/)
+      expect(e.payload).toMatchObject({ personId, truckId: personId, from: null })
+    }
   })
 
   it("queues a date-set text for each placed visit and writes the run and its Home line", async () => {

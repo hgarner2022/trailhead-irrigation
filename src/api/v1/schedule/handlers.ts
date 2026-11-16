@@ -10,7 +10,7 @@ import { runSchedule } from "@/lib/scheduling/server/run"
 import { loadBlocks } from "@/lib/jobber-feed"
 import { openSlots, spreadDays } from "@/lib/pass/server/area-days"
 import { windowText } from "@/emails/format"
-import { isRoutePerson, listPeople, resolvePersonId, Role, routePeople } from "../people/handlers"
+import { listPeople, resolvePersonId, Role, routePeople } from "../people/handlers"
 import { PersonIdAlias } from "../visits/handlers"
 import { visitOut, visitsQuery } from "../visits/queries"
 import { VisitOut } from "../visits/schemas"
@@ -146,7 +146,7 @@ export const scheduleSlots = defineHandler({
     for (let i = 0; i < input.days; i++) {
       const day = addDays(first, i)
       for (const person of people) {
-        if (!isRoutePerson(person) || !person.workingDays.includes(weekdayOf(day))) continue
+        if (!person.workingDays.includes(weekdayOf(day))) continue
         const mine = booked.filter((b) => b.visit.personId === person.id && b.visit.scheduledOn === day)
         if (mine.some((b) => areaOf(b.town) !== areaOf(input.town))) continue
         const capacity = capacityAfterBlocks(person.capacityByKind[kind], blockedMinutes(blocks, person.id, day, "America/Denver"))

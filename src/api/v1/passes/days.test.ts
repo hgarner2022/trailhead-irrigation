@@ -20,7 +20,12 @@ beforeAll(async () => {
   vi.stubEnv("APP_URL", "https://site.test")
   reachable.mockResolvedValue(true)
 })
-afterAll(() => db.close())
+afterAll(async () => {
+  // the endpoint one test adds, and the events queued to it, so nothing is left behind in the shared file DB
+  await db.delete(s.outboundEvent).where(eq(s.outboundEvent.endpointId, "hook-days"))
+  await db.delete(s.webhookEndpoint).where(eq(s.webhookEndpoint.id, "hook-days"))
+  db.close()
+})
 
 const visitor = (passId?: string): PublicPrincipal => ({ kind: "public", id: "checkout", organizationId: ORG, scopes: ["checkout"], ...(passId ? { passId } : {}) })
 const NOW = "2026-12-01T17:00:00Z"

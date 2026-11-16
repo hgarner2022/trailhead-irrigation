@@ -3,7 +3,7 @@ import { and, desc, eq, gte, lte, ne, notInArray } from "drizzle-orm"
 import { z } from "zod"
 import * as s from "@/db/schema"
 import type { Ctx } from "../../core/context"
-import { ApiError } from "../../core/errors"
+import { ApiError, notFound } from "../../core/errors"
 import { defineHandler } from "../../core/handler"
 import { afterTimeCursor, cursorPage, page, pageInput, timeCursor } from "../../core/pagination"
 import { addDays, assertOwnsCustomer, capacityKind, Day, Id, idInput, okOutput, OK, today, VisitKind, VisitStatus, weekdayOf } from "../shared"
@@ -13,7 +13,7 @@ import { blockedMinutes, capacityAfterBlocks } from "@/lib/admin/calendar"
 import { loadBlocks } from "@/lib/jobber-feed"
 import { offeredDays, openSlots, personFor } from "@/lib/pass/server/area-days"
 import { emitEvent } from "../webhooks/deliver"
-import { isRoutePerson, loadPerson, resolvePersonId } from "../people/handlers"
+import { isRoutePerson, personByAnyId, resolvePersonId } from "../people/handlers"
 import { recordChange } from "../passes/queries"
 import { loadVisit, visitOut, visitsQuery } from "./queries"
 import { VisitOut, who } from "./schemas"
@@ -23,11 +23,16 @@ const FINAL = ["completed", "cancelled", "skipped"] as const
 /** The alias on every input that names a person: `truckId` means the same id for one season. */
 export const PersonIdAlias = Id.optional().describe("Alias of personId, kept for one season: the same id (the old truck id is still understood).")
 
-/** Who a visit is assigned to, from an input that may name them either way; the person must be on the schedule and work that weekday. */
-export async function assignee(ctx: Ctx, input: { personId?: string; truckId?: string }, day: string) {
+/**
+ * Who a visit is assigned to, from an input that may name them either way; the person must be on the schedule and work that weekday.
+ * Naming `current`, the person the visit already has, is a no-op and passes those checks, even once that person is out of service.
+ */
+export async function assignee(ctx: Ctx, input: { personId?: string; truckId?: string }, day: string, current?: string | null) {
   const id = input.personId ?? input.truckId
   if (!id) throw new ApiError("invalid", "Say who takes the visit", [{ path: "personId", message: "Give a person" }])
-  const person = await loadPerson(ctx, await resolvePersonId(ctx, id))
+  const person = await personByAnyId(ctx, id)
+  if (!person) throw notFound("Person")
+  if (person.id === current) return person
   if (!isRoutePerson(person)) throw new ApiError("unprocessable", `${person.name} is not in service`)
   if (!person.workingDays.includes(weekdayOf(day))) throw new ApiError("unprocessable", `${person.name} does not work on ${weekdayOf(day)}days`)
   return person

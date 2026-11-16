@@ -676,7 +676,7 @@ export const jobberVisit = pgTable(
     endAt: ts("end_at"),
     assignedUserId: text("assigned_user_id"),
     isBlock: boolean("is_block").notNull().default(false),
-    /** Set on rows the calendar feed wrote (busy time on that truck); their id is `feed:<truckId>:<uid>`. */
+    /** Set on rows the calendar feed wrote (busy time on that person); their id is `feed:<personId>:<uid>` and this column carries only the legacy truck id, for rows from before people existed. */
     truckId: text("truck_id").references(() => truck.id, { onDelete: "cascade" }),
     completedAt: ts("completed_at"),
     jobberUrl: text("jobber_url"),

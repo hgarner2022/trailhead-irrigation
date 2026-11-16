@@ -108,6 +108,18 @@ describe("visits.update", () => {
     await expect(callApi(as(), visitsUpdate, { id: dated.id, personId: "nope" })).rejects.toMatchObject({ code: "not_found" })
     await expect(callApi(as(readKey), visitsUpdate, { id: none.id, notes: "x" })).rejects.toMatchObject({ code: "forbidden" })
   })
+  it("naming the person the visit already has is a no-op, by either id, even once that person is out of service", async () => {
+    const v = await create({ customerId: "c100", kind: "repair", scheduledOn: "2027-05-12" })
+    expect(v.personId).toBe("person_truck-1")
+    await db.update(s.person).set({ active: false }).where(eq(s.person.id, "person_truck-1"))
+    try {
+      expect(await callApi(as(), visitsUpdate, { id: v.id, personId: "person_truck-1" })).toMatchObject({ personId: "person_truck-1", scheduledOn: "2027-05-12", startTime: v.startTime, stopOrder: v.stopOrder })
+      expect(await callApi(as(), visitsUpdate, { id: v.id, truckId: "truck-1" })).toMatchObject({ personId: "person_truck-1", scheduledOn: "2027-05-12", startTime: v.startTime, stopOrder: v.stopOrder })
+      expect((await db.select().from(s.passChange).where(eq(s.passChange.visitId, v.id))).some((c) => c.kind === "visit-edited")).toBe(false)
+    } finally {
+      await db.update(s.person).set({ active: true }).where(eq(s.person.id, "person_truck-1"))
+    }
+  })
 })
 
 describe("visits.update unscheduled", () => {

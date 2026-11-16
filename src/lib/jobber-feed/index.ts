@@ -88,6 +88,7 @@ export async function loadBlocks(db: Database, organizationId: string, from: Dat
     db.select({ id: s.person.id, legacyTruckId: s.person.legacyTruckId }).from(s.person).where(eq(s.person.organizationId, organizationId)),
   ])
   const ids = new Set(people.map((p) => p.id))
+  // step 6: drop the legacy truck id mapping
   const fromTruck = new Map(people.flatMap((p) => (p.legacyTruckId ? [[p.legacyTruckId, p.id] as const] : [])))
   const personOf = (key: string | null | undefined) => (key ? (ids.has(key) ? key : fromTruck.get(key)) : undefined)
   return rows

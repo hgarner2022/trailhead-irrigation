@@ -85,9 +85,16 @@ export async function routePeople(ctx: Ctx): Promise<PersonRow[]> {
   return (await listPeople(ctx, { active: true })).filter(isRoutePerson)
 }
 
-/** The person behind an id: their own, or for one season the id of the truck they were made from ("truck-1"). */
+/** The person behind an id: their own, or for one season the id of the truck they were made from ("truck-1"). The one lookup every legacy-id site goes through. */
+export async function personByAnyId(ctx: Ctx, idOrLegacyId: string): Promise<PersonRow | undefined> {
+  // step 6: drop the legacy truck id clause
+  const [row] = await ctx.db.select().from(s.person).where(and(inOrg(ctx), or(eq(s.person.id, idOrLegacyId), eq(s.person.legacyTruckId, idOrLegacyId))))
+  return row
+}
+
+/** `personByAnyId`'s id, or not found. */
 export async function resolvePersonId(ctx: Ctx, id: string): Promise<string> {
-  const [row] = await ctx.db.select({ id: s.person.id }).from(s.person).where(and(inOrg(ctx), or(eq(s.person.id, id), eq(s.person.legacyTruckId, id))))
+  const row = await personByAnyId(ctx, id)
   if (!row) throw notFound("Person")
   return row.id
 }

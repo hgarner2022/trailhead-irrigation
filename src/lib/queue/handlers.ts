@@ -1,6 +1,5 @@
 import "server-only"
-import { and, eq, or } from "drizzle-orm"
-import * as s from "@/db/schema"
+import { personByAnyId } from "@/api/v1/people/handlers"
 import { readAppUrl } from "@/lib/env"
 import { cancelPassTask } from "@/lib/pass/server/cancel"
 import { onboardPass } from "@/lib/pass/server/onboard"
@@ -20,7 +19,7 @@ export const jobberFeedSync: QueueHandler = async (db, item) => {
   const { personId, truckId } = item.payload as { personId?: string; truckId?: string }
   const id = personId ?? truckId
   if (!id) return
-  const [person] = await db.select().from(s.person).where(and(eq(s.person.organizationId, item.organizationId), or(eq(s.person.id, id), eq(s.person.legacyTruckId, id))))
+  const person = await personByAnyId({ db, organizationId: item.organizationId }, id)
   if (person) await syncPersonFeed(db, person)
 }
 

@@ -82,7 +82,7 @@ export const visitsUpdate = defineHandler({
     const wanted = input.personId ?? input.truckId
     if (wanted && wanted !== visit.personId && !input.unscheduled) {
       if (!visit.scheduledOn) throw new ApiError("unprocessable", "Give this visit a day before choosing who takes it")
-      const person = await assignee(ctx, { personId: wanted }, visit.scheduledOn)
+      const person = await assignee(ctx, { personId: wanted }, visit.scheduledOn, visit.personId)
       if (person.id !== visit.personId) {
         set.personId = person.id
         set.startTime = null
@@ -145,8 +145,8 @@ export const visitsCreate = defineHandler({
     scheduledOn: Day.optional(),
     startTime: z.string().regex(/^\d{2}:\d{2}$/).optional().describe("Left out means any time that day."),
     durationMinutes: z.number().int().min(15).max(480).multipleOf(15).optional(),
-    personId: Id.optional().describe("Who takes the visit; left out, the first person on the schedule."),
-    truckId: PersonIdAlias,
+    personId: Id.optional().describe("Who takes the visit, used only with scheduledOn; left out, the first person on the schedule."),
+    truckId: PersonIdAlias.describe("Alias of personId, kept for one season: the same id (the old truck id is still understood); used only with scheduledOn."),
     price: z.number().int().min(0).max(100000).optional().describe("Whole dollars; left out means quote later."),
     notes: z.string().trim().max(1000).optional(),
   }),
