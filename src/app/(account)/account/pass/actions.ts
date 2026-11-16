@@ -7,10 +7,11 @@ import { ApiError } from "@/api/core/errors"
 import { passesAddInspection, passesCancel, passesGet, passesSkipVisit, passesStartCardUpdate, passesUpdatePreference } from "@/api/v1/passes/handlers"
 import { visitsPick } from "@/api/v1/visits/handlers"
 import { ctxFromSession } from "@/lib/admin/api-ctx"
+import { drainAfter } from "@/lib/queue/drain-after"
 import type { TimingPreference } from "@/lib/admin/types"
 
 // The customer pass page's server actions. Each runs as the signed-in person through `callApi`, so the handlers check that the
-// pass is theirs; none takes an identity from the client. The two that end in a message to the customer (cancel, pick a day)
+// pass is theirs; none takes an identity from the client. Each drains the queue after the response, so the email or text it queued goes now. The two that end in a message to the customer (cancel, pick a day)
 // answer `{ ok, message }` so the dialog can say when it did not go through; the rest throw to the page's error boundary.
 
 const PAGE = "/account/pass"
@@ -27,6 +28,7 @@ export async function cancelPass(passId: string): Promise<Result> {
   } catch (error) {
     return failure(error, CANCEL_FAILED)
   }
+  drainAfter()
   revalidatePath(PAGE)
   return { ok: true }
 }
@@ -34,12 +36,14 @@ export async function cancelPass(passId: string): Promise<Result> {
 /** Sends the customer to Stripe's hosted page to update the card. */
 export async function startCardUpdate(passId: string): Promise<void> {
   const { url } = await callApi(await ctxFromSession(), passesStartCardUpdate, { id: passId })
+  drainAfter()
   redirect(url)
 }
 
 /** Earlier, recommended or later for the turn-on or the blowout, until its day is set. */
 export async function changePreference(passId: string, kind: "turn-on" | "blowout", preference: TimingPreference): Promise<void> {
   await callApi(await ctxFromSession(), passesUpdatePreference, { id: passId, kind, preference })
+  drainAfter()
   revalidatePath(PAGE)
 }
 
@@ -54,6 +58,7 @@ export async function pickDay(passId: string, kind: "turn-on" | "blowout", day: 
   } catch (error) {
     return failure(error, DAY_FAILED)
   }
+  drainAfter()
   revalidatePath(PAGE)
   return { ok: true }
 }
@@ -61,11 +66,13 @@ export async function pickDay(passId: string, kind: "turn-on" | "blowout", day: 
 /** Adds the July inspection while its window is still open. */
 export async function addInspection(passId: string): Promise<void> {
   await callApi(await ctxFromSession(), passesAddInspection, { id: passId })
+  drainAfter()
   revalidatePath(PAGE)
 }
 
 /** Skips one visit that has not happened; it is not charged. */
 export async function skipVisit(passId: string, kind: "turn-on" | "inspection" | "blowout"): Promise<void> {
   await callApi(await ctxFromSession(), passesSkipVisit, { id: passId, kind })
+  drainAfter()
   revalidatePath(PAGE)
 }

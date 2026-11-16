@@ -1,6 +1,7 @@
 import "server-only"
 import type { Database } from "@/db/types"
 import { principalFromRequest } from "@/lib/auth/principal"
+import { drainAfter } from "@/lib/queue/drain-after"
 import type { PersonPrincipal } from "@/lib/auth/types"
 import { callApi } from "./call"
 import { makeCtx } from "./context"
@@ -52,6 +53,8 @@ export function route(handler: AnyHandler, deps: RouteDeps = {}) {
       const input = await readInput(request, routeContext, handler.method)
       const ctx = makeCtx(db, principal, { requestId, idempotencyKey: request.headers.get("idempotency-key") ?? undefined })
       const output = await callApi(ctx, handler, input)
+      // A call that changed something may have queued a message or a charge: send it right after the response.
+      if (handler.method !== "GET") drainAfter()
       return json(output, handler.status ?? 200, requestId)
     } catch (error) {
       if (error instanceof ApiError)
