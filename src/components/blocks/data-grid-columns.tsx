@@ -8,17 +8,17 @@ import type { GridColumnDef } from "./data-grid-table"
 // The Passes grid's columns, in the order Hannah reads them: the customer's
 // full name first (the link that opens the pass), then town, zones, the day
 // each visit has (Turn-on, Inspection, Blowout: "Apr 26", with its window
-// once one is set, "Needs a day" before; never a timing preference), status
+// once one is set, "No day yet" before; never a timing preference), status
 // (Pending for an unpaid attempt, never Active), charged so far and the next
 // visit. Every day is read off the visit row. The per-row derivations are
 // small pure functions so the tests can read them without a table.
 
-const NEEDS_DAY = "Needs a day"
+const NEEDS_DAY = "No day yet"
 
 /** The visit of a kind on the pass; undefined when the pass has none (no July inspection). */
 const visitOf = (pass: Pass, kind: PassVisit["kind"]): PassVisit | undefined => pass.visits.find((v) => v.kind === kind)
 
-/** A visit column's text: its day and window, "Needs a day", or "None" for a visit the pass does not have. */
+/** A visit column's text: its day and window, "No day yet", or "None" for a visit the pass does not have. */
 export function visitDayText(pass: Pass, kind: PassVisit["kind"]): string {
   const visit = visitOf(pass, kind)
   return visit ? dayWords(visit) || NEEDS_DAY : "None"
@@ -44,7 +44,7 @@ function visitColumn(kind: PassVisit["kind"], header: string): GridColumnDef<Pas
 /** Sum of the visit amounts already charged on this pass. */
 export const chargedTotal = (pass: Pass) => pass.visits.filter((v) => v.chargedAt).reduce((sum, v) => sum + v.amount, 0)
 
-/** The first uncharged visit: its day when it has one, else "Needs a day"; "Done" when every visit is charged. */
+/** The first uncharged visit: its day when it has one, else "No day yet"; "Done" when every visit is charged. */
 export function nextVisit(pass: Pass): string {
   const visit = pass.visits.find((v) => !v.chargedAt)
   if (!visit) return "Done"

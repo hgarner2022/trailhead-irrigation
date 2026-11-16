@@ -2,9 +2,9 @@ import type { Job } from "@/lib/admin/jobs"
 import { cn } from "@/lib/utils"
 import { StatusPill } from "./StatusPill"
 
-// A visit's two pills (owner, 14 Nov): WORK says what happened to the stop (Needs a day, Scheduled, Done, Not done
-// with its reason, Cancelled) and MONEY says whether it was paid (Not yet, Paid with how, Bill sent, Failed), so
-// it is obvious at a glance that money was collected. A Scheduled visit whose day has passed keeps its state and
+// A visit's two pills (owner, 14 Nov): WORK says what happened to the stop (No day yet, Scheduled, Done, Not done
+// with its reason, Cancelled) and MONEY says whether it was paid (nothing until the visit is done, then Paid with
+// how, Unpaid, Bill sent, Failed), so it is obvious at a glance that money was collected. A Scheduled visit whose day has passed keeps its state and
 // gains a small "day passed" note. Named JobPill from step zero and kept so no import churns; it renders a
 // visit's states. Pure render, server component.
 
@@ -22,7 +22,7 @@ export function JobPill({ job, className }: JobPillProps) {
           day passed
         </span>
       )}
-      <StatusPill status={job.money} label={job.moneyLabel} data-pill="money" />
+      {job.moneyLabel && <StatusPill status={job.money} label={job.moneyLabel} data-pill="money" />}
     </span>
   )
 }

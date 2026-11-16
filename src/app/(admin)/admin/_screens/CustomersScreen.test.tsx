@@ -45,10 +45,10 @@ describe("CustomersScreen table", () => {
     expect(row.getByText("Active")).toHaveAttribute("data-slot", "status-pill")
   })
 
-  it("says Needs a day and No for a customer whose pass visit has no day, and a day and Yes for one that has", () => {
+  it("says No day yet and No for a customer whose pass visit has no day, and a day and Yes for one that has", () => {
     render(<CustomersScreen data={data} today={TODAY} />)
     const needing = within(rowOf(`${andrea.firstName} ${andrea.lastName}`))
-    expect(needing.getByText("Needs a day")).toBeInTheDocument()
+    expect(needing.getByText("No day yet")).toBeInTheDocument()
     expect(needing.getByText("No")).toBeInTheDocument()
   })
 

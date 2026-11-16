@@ -51,13 +51,13 @@ export function consentLine(consent: Consent | undefined): string {
   return `${terms}Marketing: ${marketing}.`
 }
 
-/** A visit's day and window for a table cell or a line: "Apr 26", "Apr 26, 8 to 10 am", or "Needs a day". */
-export const visitWhen = (visit: PassVisit | undefined): string => dayWords(visit) || "Needs a day"
+/** A visit's day and window for a table cell or a line: "Apr 26", "Apr 26, 8 to 10 am", or "No day yet". */
+export const visitWhen = (visit: PassVisit | undefined): string => dayWords(visit) || "No day yet"
 
 export interface JobRow {
   kind: PassVisit["kind"]
   name: string
-  /** "Apr 26" or "Apr 26, 8 to 10 am"; "Needs a day" before there is one */
+  /** "Apr 26" or "Apr 26, 8 to 10 am"; "No day yet" before there is one */
   when: string
   job: Job
   amount: number
@@ -74,10 +74,10 @@ export function jobRows(pass: Pass, today: string): JobRow[] {
 export interface ChargeRow {
   kind: PassVisit["kind"]
   name: string
-  /** the booked day as "Apr 20", else "Needs a day" */
+  /** the booked day as "Apr 20", else "No day yet" */
   when: string
   amount: number
-  /** "Charged Apr 20" or "Not yet" */
+  /** "Charged Apr 20", blank before */
   charged: string
 }
 
@@ -88,6 +88,6 @@ export function chargeRows(pass: Pass): ChargeRow[] {
     name: VISIT_NAMES[visit.kind],
     when: visitWhen(visit),
     amount: visit.amount,
-    charged: visit.chargedAt ? `Charged ${shortDate(visit.chargedAt, TIME_ZONE)}` : "Not yet",
+    charged: visit.chargedAt ? `Charged ${shortDate(visit.chargedAt, TIME_ZONE)}` : "",
   }))
 }

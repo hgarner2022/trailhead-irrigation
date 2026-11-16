@@ -10,7 +10,7 @@ Written 13 Nov 2026 from `src/db/schema.ts`, `src/lib/admin/{types,shape,jobs}.t
 
 ## The two pills on every visit
 
-Every visit row and panel shows two pills, derived by `statesOf` in `src/lib/admin/jobs.ts` from the one row. **Work**: Needs a day (no day), Scheduled (has a day), Done, Not done (with the reason, while it has no day again), Cancelled. A Scheduled visit whose day has passed stays Scheduled with a small "day passed" note, never a state; Routed is a start time in the Time column, not a state. **Money**: Not yet (before Done), Paid (with how: "Paid, check"), Bill sent, Failed (the newest charge did not go through). A job (a pass or booked work) carries the same money across its visits: "1 of 2 paid" (`jobMoney`). The older single-state vocabulary below still drives the counts and the customer's pass page.
+Every visit row and panel shows two pills, derived by `statesOf` in `src/lib/admin/jobs.ts` from the one row. **Work**: No day yet (no day), Scheduled (has a day), Done, Not done (with the reason, while it has no day again), Cancelled. A Scheduled visit whose day has passed stays Scheduled with a small "day passed" note, never a state; Routed is a start time in the Time column, not a state. **Money**: nothing while the work is not Done (the pill is not drawn), then Paid (with how: "Paid, card", "Paid, check", "Paid, Venmo", "Paid, cash"), Unpaid, Bill sent, Failed (the newest charge did not go through). A job (a pass or booked work) carries the same money across its visits: "1 of 2 paid" (`jobMoney`). The older single-state vocabulary below still drives the counts and the customer's pass page.
 
 ## Visit states: the older single vocabulary
 
@@ -18,7 +18,7 @@ Every visit row and panel shows two pills, derived by `statesOf` in `src/lib/adm
 
 | Admin word | Read from |
 |---|---|
-| Needs a day | `visit.status` unscheduled, no `scheduled_on` |
+| No day yet | `visit.status` unscheduled, no `scheduled_on` |
 | Scheduled | `scheduled_on` set, `start_time` empty |
 | Routed | `start_time` set |
 | Done | `completed_on` set (status completed), not charged |
@@ -27,7 +27,7 @@ Every visit row and panel shows two pills, derived by `statesOf` in `src/lib/adm
 | Cancelled, Skipped | `visit.status` cancelled, skipped |
 | Not closed (a badge, not a state) | a day that has passed on a visit not marked done |
 
-A pending pass is an unpaid attempt (expires after an hour). Its visits are never on the Schedule, in the Needs a day list or in Home's counts, and its status reads Pending, never Active.
+A pending pass is an unpaid attempt (expires after an hour). Its visits are never on the Schedule, in the No day yet list or in Home's counts, and its status reads Pending, never Active.
 
 ## Fields
 
@@ -36,7 +36,7 @@ A pending pass is an unpaid attempt (expires after an hour). Its visits are neve
 | job (id, kind, status, price, source, notes, created_at, cancelled_at) | `job`; one row per pass (id `job_<pass id>` when backfilled, kind `pass`, source `checkout`, price the total of its live visits, status copied from the pass by `syncPassJob`) and one per booked work (kind repair, install or other, source `office` or `site`) | `passes.create/renew/activate/cancel/addInspection/skipVisit` (through `src/lib/pass/server/job.ts`); `visits.create`; `visits.cancel` (cancels a job left with no visit) | API: `visits.*` carry `jobId`; `customers.get` lists `jobs` with their visits; admin `AdminData.jobs`, the visit panel's job block and Visits table (Job column, pass number) |
 | season_pass.job_id, visit.job_id | both tables, not null | every writer above | API `visits.*` `jobId`; `visit.pass_id` stays as a convenience read for a pass's visits; `visit.booking_id` and the `booking` table are legacy, no longer written (the backfill made a job from each booking, `job_<booking id>`) |
 | visit.notes | `visit.notes` | `visits.create`, `visits.update` (empty clears) | API `visits.*` (`notes`); admin visit panel Edit and the Visits table; the crew's stop later |
-| not done (reason) | `pass_change` row kind `not-done`, detail reason, note, day, truck | `visits.markNotDone` (could-not-get-in, no-water, customer-asked-to-wait, other; sets Needs a day) | admin visit panel history; the visit's state reads Needs a day again |
+| not done (reason) | `pass_change` row kind `not-done`, detail reason, note, day, truck | `visits.markNotDone` (could-not-get-in, no-water, customer-asked-to-wait, other; sets No day yet) | admin visit panel history; the visit's state reads No day yet again |
 | visit cancelled | `visit.status` cancelled, `pass_change` kind `visit-cancelled`; a pending `pass-charge` queue item is closed and `chargeVisit` refuses a cancelled visit | `visits.cancel` | Cancelled state everywhere; the job's price drops by the visit |
 | note (a one-off text) | `message_log` kind `note`, channel sms only, body "Trailhead: ... Reply STOP to opt out." | `messages.send` kind `note` (text up to 320; needs a mobile and no STOP; never falls back to email) | admin visit and customer panel threads; the customer's phone |
 | charge.method, charge.reference | `charge.method` (card_on_file, card_now, check, venmo, cash, bill; default card_on_file) and `charge.reference` (a check number or Venmo handle) | the charge task (card_on_file); `visits.markClosed` with `paidBy` and `visits.recordPayment` (check, venmo, cash: a succeeded charge, `visit.charged_at` set, the receipt sent); card_now and bill wait for the payment page | API `visits.*` `paidBy`, `paymentStatus`; the Money pill ("Paid, check"); the receipt email ("We received $145 by check"); Reports read the one charge row whatever the method |
@@ -56,7 +56,7 @@ A pending pass is an unpaid attempt (expires after an hour). Its visits are neve
 | pass.inspection | `season_pass.inspection` | checkout add-on step; `passes.addInspection` | checkout; API; admin pass panel (a third job); pass page |
 | pass.status | `season_pass.status` (pending, active, cancelled, lapsed) | `passes.create` (pending), `passes.activate` (active), `passes.cancel`, season end | API; admin Passes Status column, Pending filter and panel note "Unpaid attempt, expires after an hour."; Customers Pass column; Home "Pending passes"; pass page |
 | pass.access (needs_customer_home, access_note) | `season_pass` | checkout address step | checkout; API (note: write scope only); admin Passes panel "Access" and Customers panel "Access note"; the crew's stop |
-| pass.turn_on / blowout_preference | `season_pass` | checkout (kept at the recommendation); pass page | API; used to order the Needs a day list; **never shown as a day anywhere in the admin**; pass page words |
+| pass.turn_on / blowout_preference | `season_pass` | checkout (kept at the recommendation); pass page | API; used to order the No day yet list; **never shown as a day anywhere in the admin**; pass page words |
 | pass.card (brand, last4, expires) | `season_pass.card_*` | `passes.activate` from Stripe | API; admin Passes panel; pass page; card-expiring row on Home |
 | pass.card_failed_at | `season_pass.card_failed_at` | the charge task | Charge failed state; Home "Charges that didn't go through" and row; pass page headline; card-failed email |
 | pass.cancelled_at | `season_pass.cancelled_at` | `passes.cancel` | API; Home row for two weeks |

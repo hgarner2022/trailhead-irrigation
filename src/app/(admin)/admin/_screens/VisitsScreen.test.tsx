@@ -6,7 +6,7 @@ import type { AdminData, Visit } from "@/lib/admin/types"
 import { UndoToastProvider } from "@/components/blocks/UndoToast"
 import type { VisitActions } from "./visit-actions-types"
 import { VisitsScreen } from "./VisitsScreen"
-import { visitRows } from "./visits-model"
+import { visitRows, visitsContext } from "./visits-model"
 
 const base = snapshot as AdminData
 const TODAY = "2026-11-12T19:56:30Z"
@@ -72,6 +72,15 @@ describe("visits-model", () => {
     expect(rows.find((r) => r.id === "a")!.search).toContain("12 Elm St")
     expect(rows.find((r) => r.id === "a")!.search).toContain("3035550111")
   })
+
+  it("words the money pill only once a visit is done, and the header in two short sentences", () => {
+    const rows = visitRows({ ...data, visits: [...mine, visit({ id: "d", clientName: "Ana Ruiz", clientId: "cl", status: "completed", completedOn: "2026-11-10", scheduledOn: "2026-11-10", startAt: "2026-11-10T15:00:00Z" })] }, TODAY)
+    expect(rows.find((r) => r.id === "a")!.moneyLabel).toBe("")
+    expect(rows.find((r) => r.id === "b")!.workLabel).toBe("No day yet")
+    expect(rows.find((r) => r.id === "d")!.moneyLabel).toBe("Unpaid")
+    expect(visitsContext(rows)).toBe("4 visits this season. 1 has no day yet. 1 done and not paid.")
+    expect(visitsContext(visitRows({ ...data, visits: [mine[0]!] }, TODAY))).toBe("1 visit this season.")
+  })
 })
 
 describe("VisitsScreen", () => {
@@ -81,6 +90,9 @@ describe("VisitsScreen", () => {
     expect(headers).toEqual(expect.arrayContaining(["Customer", "Town", "Visit", "Day", "Time", "Truck", "Work", "Money", "Price", "Pass"]))
     expect(screen.getByRole("button", { name: "Dana Reed" })).toBeInTheDocument()
     expect(screen.getByText("Paid, check")).toBeInTheDocument()
+    expect(screen.queryByText("Not yet")).toBeNull()
+    expect(screen.queryByText("None")).toBeNull()
+    expect(screen.getAllByText("No day yet").length).toBeGreaterThan(0)
     expect(screen.getByRole("button", { name: "New visit" })).toBeInTheDocument()
     expect(screen.getByRole("link", { name: "Passes" })).toHaveAttribute("href", "/admin/passes")
   })

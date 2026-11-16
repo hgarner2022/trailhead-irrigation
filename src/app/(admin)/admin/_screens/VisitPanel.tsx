@@ -68,9 +68,9 @@ function VisitBlock({ facts }: { facts: VisitFacts }) {
       <Subtitle id="visit-facts">Visit</Subtitle>
       <Facts
         rows={[
-          ["Day", day ? dayLabel(day) : "Needs a day"],
-          ["Time", timeWords(visit) || "None yet"],
-          ["Truck", visit.truckName ?? "None yet"],
+          ["Day", day ? dayLabel(day) : "No day yet"],
+          ["Time", timeWords(visit)],
+          ["Truck", visit.truckName ?? ""],
           ["Minutes", String(visit.minutes ?? 60)],
           ["Price", priceWords(visit)],
           ...(visit.notes ? ([["Notes", visit.notes]] as [string, ReactNode][]) : []),
@@ -106,7 +106,7 @@ function JobBlock({ facts, today, onOpenVisit }: { facts: VisitFacts; today: str
             <li key={v.id} className="flex items-center gap-3 py-1">
               <button type="button" onClick={() => onOpenVisit(v.id)} aria-current={v.id === visit.id ? "true" : undefined} className="min-h-11 min-w-0 flex-1 text-left">
                 <span className={v.id === visit.id ? "block font-semibold" : "block font-medium text-primary-dark"}>{kindLabel(v)}</span>
-                <span className="block text-muted-foreground">{dayOfVisit(v) ? dayLabel(dayOfVisit(v)!) : "Needs a day"}</span>
+                <span className="block text-muted-foreground">{dayOfVisit(v) ? dayLabel(dayOfVisit(v)!) : "No day yet"}</span>
               </button>
               <JobPill job={visitJob(v, day, TIME_ZONE, pass?.cardFailedAt)} />
             </li>
@@ -121,7 +121,7 @@ function Actions({ facts, data, today, actions }: { facts: VisitFacts; data: Adm
   const { visit, pass, states, client } = facts
   const day = dayOf(today, TIME_ZONE)
   const open = states.work === "needs-a-day" || states.work === "not-done" || states.work === "scheduled"
-  const owed = states.work === "done" && states.money === "not-yet" && !visit.passId
+  const owed = states.work === "done" && states.money === "unpaid" && !visit.passId
   const pay = useRunner()
   return (
     <div className="flex flex-col gap-6" data-slot="visit-actions">
@@ -173,7 +173,7 @@ export function VisitPanel({ data, today, visitId, open, onOpenChange, onOpenVis
       open={open}
       onOpenChange={onOpenChange}
       title={visit.clientName}
-      description={`${kindLabel(visit)}${day ? `, ${dayLabel(day)}` : ", needs a day"}`}
+      description={`${kindLabel(visit)}${day ? `, ${dayLabel(day)}` : ", no day yet"}`}
       className="z-50"
     >
       <div className="flex flex-col gap-6" data-slot="visit-panel">

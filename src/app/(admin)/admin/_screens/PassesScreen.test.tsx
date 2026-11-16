@@ -61,7 +61,7 @@ describe("PassesScreen reads the visit rows", () => {
     render(<PassesScreen data={data} today={TODAY} />)
     const row = within(screen.getByRole("button", { name: fullName(open) }).closest("tr")!)
     expect(row.getByText("May 3")).toBeInTheDocument()
-    expect(row.getAllByText("Needs a day").length).toBeGreaterThan(0)
+    expect(row.getAllByText("No day yet").length).toBeGreaterThan(0)
     expect(document.body).not.toHaveTextContent(/\b(Early|Mid|Late) (May|October)\b/)
   })
 
@@ -94,7 +94,7 @@ describe("PassesScreen reads the visit rows", () => {
     expect(items[0]).toHaveTextContent("Turn-on")
     expect(items[0]).toHaveTextContent("May 3")
     expect(items[0]).toHaveTextContent("Paid")
-    expect(items[1]).toHaveTextContent("Needs a day")
+    expect(items[1]).toHaveTextContent("No day yet")
     expect(screen.getByRole("heading", { name: "Visits" })).toBeInTheDocument()
   })
 

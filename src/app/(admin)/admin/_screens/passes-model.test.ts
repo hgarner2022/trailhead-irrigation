@@ -48,11 +48,11 @@ describe("consentLine", () => {
 })
 
 describe("chargeRows", () => {
-  it("reads the booked day and the charge, else Needs a day and Not yet", () => {
+  it("reads the booked day and the charge, else No day yet and blank", () => {
     expect(chargeRows(passes[0])).toEqual([
       { kind: "turn-on", name: "Turn-on", when: "May 3", amount: 145, charged: "Charged May 3" },
-      { kind: "inspection", name: "Inspection", when: "Needs a day", amount: 145, charged: "Not yet" },
-      { kind: "blowout", name: "Blowout", when: "Needs a day", amount: 95, charged: "Not yet" },
+      { kind: "inspection", name: "Inspection", when: "No day yet", amount: 145, charged: "" },
+      { kind: "blowout", name: "Blowout", when: "No day yet", amount: 95, charged: "" },
     ])
   })
 
@@ -64,7 +64,7 @@ describe("chargeRows", () => {
 
   it("keeps a booked but uncharged visit on its date", () => {
     const pass: Pass = { ...passes[2], visits: [{ ...passes[2].visits[0], scheduledAt: "2027-04-23T15:00:00Z" }] }
-    expect(chargeRows(pass)[0]).toEqual({ kind: "turn-on", name: "Turn-on", when: "Apr 23", amount: 145, charged: "Not yet" })
+    expect(chargeRows(pass)[0]).toEqual({ kind: "turn-on", name: "Turn-on", when: "Apr 23", amount: 145, charged: "" })
   })
 })
 
@@ -75,8 +75,8 @@ describe("one source: the day on the table, the panel's charges and its jobs", (
   it("reads the day, and the window once a start time is set, from the visit row", () => {
     expect(visitWhen(dated.visits[0])).toBe("Apr 26, 8 to 10 am")
     expect(visitWhen({ ...dated.visits[0], startTime: undefined })).toBe("Apr 26")
-    expect(visitWhen(dated.visits[1])).toBe("Needs a day")
-    expect(visitWhen(undefined)).toBe("Needs a day")
+    expect(visitWhen(dated.visits[1])).toBe("No day yet")
+    expect(visitWhen(undefined)).toBe("No day yet")
   })
 
   it("shows the same words in the charges, the jobs and the table cell", () => {
@@ -84,10 +84,10 @@ describe("one source: the day on the table, the panel's charges and its jobs", (
     expect(jobRows(dated, TODAY)[0].when).toBe("Apr 26, 8 to 10 am")
   })
 
-  it("never shows a timing preference: a pass asking for early May still reads Needs a day", () => {
+  it("never shows a timing preference: a pass asking for early May still reads No day yet", () => {
     expect(passes[2].turnOnPreference).toBe("earlier")
-    expect(jobRows(passes[2], TODAY)[0].when).toBe("Needs a day")
-    expect(chargeRows(passes[2])[0].when).toBe("Needs a day")
+    expect(jobRows(passes[2], TODAY)[0].when).toBe("No day yet")
+    expect(chargeRows(passes[2])[0].when).toBe("No day yet")
   })
 })
 

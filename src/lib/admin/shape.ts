@@ -280,7 +280,7 @@ function visitRows(i: ShapeInput, app: Visit[], all: Visit[]): Attention[] {
       out.push({ kind: "unpaid", key: v.id, visitId: v.id, message: `${possessive(v.clientName)} ${KIND_WORDS[v.kind] ?? "visit"} is done and not paid`, since: instantOf(v.completedOn ?? i.today, "12:00") })
   for (const v of all)
     if (appIds.has(v.id) && !v.isPass && v.status === "unscheduled")
-      out.push({ kind: "unplaced", key: v.id, visitId: v.id, message: `${possessive(v.clientName)} ${KIND_WORDS[v.kind] ?? "visit"} needs a day`, since: i.now.toISOString().replace(".000Z", "Z") })
+      out.push({ kind: "unplaced", key: v.id, visitId: v.id, message: `${possessive(v.clientName)} ${KIND_WORDS[v.kind] ?? "visit"} has no day yet`, since: i.now.toISOString().replace(".000Z", "Z") })
   return out
 }
 

@@ -20,7 +20,7 @@ export type PillStatus = PassStatus | JobState | WorkState | MoneyState | Invoic
 const LABELS: Record<PillStatus, string> = {
   ...JOB_WORDS,
   "not-done": "Not done",
-  "not-yet": "Not yet",
+  "not-yet": "",
   "bill-sent": "Bill sent",
   failed: "Failed",
   pending: "Pending",
@@ -58,7 +58,7 @@ const TONES: Record<PillStatus, string> = {
   lapsed: OVER,
 }
 
-/** The word shown for a status: "Past due" for overdue, "Needs a day" for a job with no day, else the status in sentence case. */
+/** The word shown for a status: "Past due" for overdue, "No day yet" for a job with no day, else the status in sentence case. */
 export const statusLabel = (status: PillStatus): string => LABELS[status]
 
 export interface StatusPillProps {

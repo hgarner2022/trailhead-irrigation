@@ -31,7 +31,7 @@ export function trayLine(item: TrayItem): string {
 }
 
 export function ToScheduleTray({ items, onPlace, readOnly, problems = {}, className }: ToScheduleTrayProps) {
-  if (items.length === 0) return <EmptyState className={className} title="Nothing needs a day" line="Jobs of active passes with no day show here." />
+  if (items.length === 0) return <EmptyState className={className} title="Nothing is waiting for a day" line="Jobs of active passes with no day show here." />
   return (
     <ol data-slot="to-schedule-tray" className={cn("divide-y divide-border", className)}>
       {items.map((item) => (

@@ -34,7 +34,7 @@ export interface CustomerRow {
   season?: number
   accessNote?: string
   nextState: NextState
-  /** "Apr 26" when the next job has a day; "Needs a day" when it has none; "Nothing ahead" */
+  /** "Apr 26" when the next job has a day; "No day yet" when it has none; "Nothing ahead" */
   next: string
   /** the next job's day, for sorting; nothing when it has none */
   nextKey?: string
@@ -79,7 +79,7 @@ export function customerRow(client: Client, passes: Pass[], visits: Visit[], tod
     marketing: client.consent ? (client.consent.marketingOptIn ? ("yes" as const) : ("no" as const)) : ("not-asked" as const),
   }
   if (day) return { ...base, nextState: "booked", next: shortDate(day), nextKey: day }
-  if (mine.needsDay) return { ...base, nextState: "to-schedule", next: "Needs a day" }
+  if (mine.needsDay) return { ...base, nextState: "to-schedule", next: "No day yet" }
   return { ...base, nextState: "none", next: "Nothing ahead" }
 }
 
@@ -95,13 +95,13 @@ export function customerRows(data: Pick<AdminData, "clients" | "passes" | "visit
   return data.clients.map((c) => customerRow(c, data.passes, visits.get(c.id) ?? [], today))
 }
 
-/** "375 customers, 12 with a pass. 10 need a day, 3 scheduled ahead." or "No customers yet." */
+/** "375 customers, 12 with a pass. 10 with no day yet, 3 scheduled ahead." or "No customers yet." */
 export function customersContext(rows: CustomerRow[]): string {
   if (rows.length === 0) return "No customers yet."
   const withPass = rows.filter((r) => r.pass === "active").length
   const needDay = rows.filter((r) => r.nextState === "to-schedule").length
   const scheduled = rows.filter((r) => r.nextState === "booked").length
-  return `${rows.length} customers, ${withPass} with a pass. ${needDay} need a day, ${scheduled} scheduled ahead.`
+  return `${rows.length} customers, ${withPass} with a pass. ${needDay} with no day yet, ${scheduled} scheduled ahead.`
 }
 
 const SOURCE_WORDS: Record<NonNullable<Client["consent"]>["source"], string> = { checkout: "Checkout", form: "Form", admin: "Admin" }
@@ -119,6 +119,6 @@ export function consentEntries(client: Pick<Client, "consent" | "consentHistory"
   return records.map((c) => ({ day: shortDate(c.recordedAt, TIME_ZONE), source: SOURCE_WORDS[c.source], line: consentLine(c) }))
 }
 
-export const NEXT_WORDS: Record<NextState, string> = { booked: "Scheduled", "to-schedule": "Needs a day", none: "Nothing ahead" }
+export const NEXT_WORDS: Record<NextState, string> = { booked: "Scheduled", "to-schedule": "No day yet", none: "Nothing ahead" }
 export const SCHEDULED_WORDS: Record<NextState, string> = { booked: "Yes", "to-schedule": "No", none: "No" }
 export const MARKETING_WORDS: Record<MarketingState, string> = { yes: "Yes", no: "No", "not-asked": "Not asked" }

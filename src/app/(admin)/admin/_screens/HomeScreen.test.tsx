@@ -49,7 +49,7 @@ describe("HomeScreen", () => {
     const onAction = vi.fn().mockResolvedValue({ ok: true, message: "Marked done." })
     render(
       <UndoToastProvider>
-        <HomeScreen data={{ ...data, attention: [item, { ...item, kind: "unplaced", key: "v2", visitId: "v2", message: "Sam's install needs a day" }] }} today={TODAY} onAttentionAction={onAction} onDismiss={onDismiss} />
+        <HomeScreen data={{ ...data, attention: [item, { ...item, kind: "unplaced", key: "v2", visitId: "v2", message: "Sam's install has no day yet" }] }} today={TODAY} onAttentionAction={onAction} onDismiss={onDismiss} />
       </UndoToastProvider>,
     )
     expect(screen.getAllByRole("button", { name: /^Dismiss:/ })).toHaveLength(2)
@@ -62,7 +62,7 @@ describe("HomeScreen", () => {
   })
 
   it("hands a tech the lists with no buttons", () => {
-    render(<HomeScreen data={{ ...data, attention: [{ kind: "unplaced", key: "v2", visitId: "v2", message: "Sam's install needs a day", since: "2026-11-09T15:00:00Z" }] }} today={TODAY} readOnly />)
+    render(<HomeScreen data={{ ...data, attention: [{ kind: "unplaced", key: "v2", visitId: "v2", message: "Sam's install has no day yet", since: "2026-11-09T15:00:00Z" }] }} today={TODAY} readOnly />)
     expect(screen.queryByRole("button", { name: /Dismiss/ })).toBeNull()
   })
 })
