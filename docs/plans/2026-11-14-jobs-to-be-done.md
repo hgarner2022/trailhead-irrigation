@@ -60,6 +60,7 @@ this, not the other way round.
 | Can't do a stop | "No water on / can't get in / they asked to wait." | One tap: Not done, a reason, and the office sees it; the stop goes back for a day. |
 | Found more work | "Needs two heads and a valve." | Add parts to the job, or a follow-up job, from the stop; the receipt carries it. |
 | Running late | "I'm two stops behind." | He sends the on-my-way from his phone; nothing in the app pretends to know his minute. |
+| A pass by phone | "Sign me up for the pass." (Hannah, 16 Nov: "you can't even manually add a pass") | New pass from the office: customer, zones, the add-on, days if known, pays by card link or at the visit. The same rows and emails as a website sale (`docs/plans/2026-11-16-office-sells-a-pass.md`). |
 | A call comes in | "Can you come Thursday?" | New job from his phone: customer, kind, day, time or any time, done in a minute. |
 | The forecast turns | "Freeze Tuesday. I need everything before it." | Pull a day earlier in one move; every stop on it is told; the slack was there because the app never sold it. |
 | Planning the season | "Which towns which days? How many a day?" | Settings he fills once, in his words, and the offers follow. |
