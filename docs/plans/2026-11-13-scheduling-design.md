@@ -202,7 +202,7 @@ screens read it, nothing is derived twice.
 
 | Fact | Where it lives | Set by | Shown in |
 |---|---|---|---|
-| Chosen day | `visit.scheduled_on`, `visit.truck_id` | the checkout, a move, Ryan | Passes table (Turn-on, Blowout columns become dates), pass panel, Schedule, pass page, every message |
+| Chosen day | `visit.scheduled_on`, `visit.employee_id` | the checkout, a move, Ryan | Passes table (Turn-on, Blowout columns become dates), pass panel, Schedule, pass page, every message |
 | Someone must be home, morning or afternoon | `pass.needs_customer_home`, `visit.time_preference` (new) | the checkout, the pass page | pass panel "Access" line, Schedule stop card, the route build |
 | Access note | `pass.access_note` | the checkout | pass panel, the crew's stop |
 | Arrival window | `visit.start_time`, `visit.window_minutes` (new) | the route build 14 days out, Ryan by hand | pass panel, Schedule, pass page, the two-week and day-before texts |
@@ -231,6 +231,20 @@ its own table with its own lifecycle. Nothing pass-specific goes on the job
 itself, so repairs, installs and the rest join the same list later; job
 number, notes, photos, parts line items, quotes and invoices are added in
 that order with the day view and field payments.
+
+**People, not trucks (Hannah, 16 Nov, on the live Visits panel: "It would
+be associated with the employee who's on the truck, so Ryan Garner. We
+would need to add the employees. It's the employees that are the
+information hierarchy").** The data model gains an `employee`: name,
+phone, email, role (owner, tech), active, season start and end, the truck
+they usually drive, and the admin login they use. A visit is assigned to
+an employee, never to a truck; the truck is a field on the person. The
+Schedule, the day view, the Visits list and every message that names who
+is coming use the person's name. Capacity, working days and route days
+belong to the employee. The migration backfills Truck 1 to Ryan Garner and
+Truck 2 to the second person (fall only, from the Jobber data), then
+removes `truck_id` from visits. This is the first item of build 2's data
+step.
 
 Admin changes that follow:
 
