@@ -33,7 +33,7 @@ with a name on it, and **messages** go out and come in along the way.
 | Job | property, customer, sold on, source (website, office, site, renewal), season and pass number when it is a Season Pass, renews job id, notes, cancelled at | customer, property |
 | Line item | job, service, name, description, quantity, unit price, taxable, the visit it is billed on (optional) | job |
 | Visit | job, property, person, scheduled on, window (morning, afternoon, any), start time, minutes, route order, completed on, not-done reason, cancelled at, notes | job |
-| Person | name, phone, email, role (owner, tech), truck, working days, capacity by kind, season start and end, sign-in | organization |
+| Person | name, phone, email, role (owner, admin, tech), truck, working days, capacity by kind, season start and end, sign-in | organization |
 | Payment | job, visit (optional), amount (negative for a refund, linked to the payment it reverses), method (card on file, card now, check, Venmo, cash), reference, paid on, status (succeeded, failed), Stripe ids, receipt url | job |
 | Invoice | job, lines (a frozen copy of the line items at sending), amount, tax, sent on, due on, paid on, pay link | job |
 | Consent | customer, terms version, accepted at, marketing opt-in and channels, source | customer |

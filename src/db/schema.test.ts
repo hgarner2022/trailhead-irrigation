@@ -7,8 +7,7 @@ import { migrate } from "drizzle-orm/pglite/migrator"
 import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { fileURLToPath } from "node:url"
-import { testDb, type TestDb } from "./test-db"
+import { migrationsFolder, testDb, type TestDb } from "./test-db"
 import * as s from "./schema"
 
 let db: TestDb
@@ -101,52 +100,95 @@ describe("schema", () => {
     expect(m.direction).toBe("out")
   })
 
-  it("has a person table that holds a truck's scheduling fields and an admin's sign-in", async () => {
-    const db = await testDb()
+  it("has a person table that holds a truck's scheduling fields and an admin's sign-in, with email unique per organization ignoring case", async () => {
     const cols = await db.execute(sql`select column_name from information_schema.columns where table_name = 'person' order by 1`)
     expect(cols.rows.map((r) => r.column_name)).toEqual(expect.arrayContaining(["email", "role", "truck", "working_days", "capacity_by_kind", "season_start", "season_end", "legacy_truck_id"]))
-    db.close()
+    await db.insert(s.person).values({ id: "p-upper", organizationId: ORG, name: "Ryan", initials: "R", email: "Ryan@x.test" })
+    await reject(db.insert(s.person).values({ id: "p-lower", organizationId: ORG, name: "Ryan", initials: "R", email: "ryan@x.test" }))
   })
 
-  it("applies the latest migration on a database where the earlier ones are already committed, and backfills people from admins and trucks", async () => {
-    // testDb() runs every migration from 0000 in one transaction, which hides what a deploy
-    // hits on Neon: Postgres refuses a value added to an existing enum inside the transaction
-    // that added it. So commit the earlier migrations first, then apply the last one alone.
-    const folder = fileURLToPath(new URL("../../drizzle", import.meta.url))
-    const journal = JSON.parse(readFileSync(join(folder, "meta/_journal.json"), "utf8")) as { entries: { tag: string }[] }
-    const earlier = mkdtempSync(join(tmpdir(), "drizzle-earlier-"))
-    mkdirSync(join(earlier, "meta"))
-    const entries = journal.entries.slice(0, -1)
-    writeFileSync(join(earlier, "meta/_journal.json"), JSON.stringify({ ...journal, entries }))
-    for (const e of entries) copyFileSync(join(folder, `${e.tag}.sql`), join(earlier, `${e.tag}.sql`))
+  type Run = (q: ReturnType<typeof sql>) => Promise<{ rows: Record<string, unknown>[] }>
+
+  /**
+   * Commits every migration before 0010_person on a fresh database, seeds it the way a deploy finds it
+   * (an admin, two trucks, visits on Truck 1, Truck 2 and none), lets the test add rows, then applies
+   * the rest of the migrations and hands the database to the assertions.
+   */
+  async function afterMigration0010(seed: (run: Run) => Promise<void>, check: (run: Run) => Promise<void>) {
     const client = new PGlite()
     const database = drizzle(client)
+    let earlier: string | undefined
     try {
+      const journal = JSON.parse(readFileSync(join(migrationsFolder, "meta/_journal.json"), "utf8")) as { entries: { tag: string }[] }
+      const at = journal.entries.findIndex((e) => e.tag === "0010_person")
+      expect(at).toBeGreaterThan(0)
+      const entries = journal.entries.slice(0, at)
+      earlier = mkdtempSync(join(tmpdir(), "drizzle-earlier-"))
+      mkdirSync(join(earlier, "meta"))
+      writeFileSync(join(earlier, "meta/_journal.json"), JSON.stringify({ ...journal, entries }))
+      for (const e of entries) copyFileSync(join(migrationsFolder, `${e.tag}.sql`), join(earlier, `${e.tag}.sql`))
       await migrate(database, { migrationsFolder: earlier })
-      await database.execute(sql`insert into "organization" ("id", "name", "settings", "terms_version") values ('o', 'Trailhead', '{}', '1')`)
-      await database.execute(sql`insert into "admin_user" ("id", "organization_id", "email", "name", "initials", "role") values ('a1', 'o', 'hannah@example.com', 'Hannah Garner', 'HG', 'owner')`)
-      await database.execute(sql`insert into "truck" ("id", "organization_id", "name", "working_days", "capacity_by_kind") values ('t1', 'o', 'Truck 1', '["mon"]', '{"blowout":10}'), ('t2', 'o', 'Truck 2', '["tue"]', '{"blowout":5}')`)
-      await database.execute(sql`insert into "customer" ("id", "organization_id", "first_name") values ('c', 'o', 'Andrea')`)
-      await database.execute(sql`insert into "property" ("id", "organization_id", "customer_id", "address", "town") values ('pr', 'o', 'c', '1 Main St', 'Erie')`)
-      await database.execute(sql`insert into "job" ("id", "organization_id", "customer_id", "property_id", "kind", "source") values ('j', 'o', 'c', 'pr', 'repair', 'office')`)
-      await database.execute(sql`insert into "visit" ("id", "organization_id", "job_id", "customer_id", "property_id", "kind", "truck_id") values ('v1', 'o', 'j', 'c', 'pr', 'repair', 't2'), ('v2', 'o', 'j', 'c', 'pr', 'repair', null)`)
+      const run: Run = (q) => database.execute(q)
+      await run(sql`insert into "organization" ("id", "name", "settings", "terms_version") values ('o', 'Trailhead', '{}', '1')`)
+      await run(sql`insert into "admin_user" ("id", "organization_id", "email", "name", "initials", "role") values ('a1', 'o', 'hannah@example.com', 'Hannah Garner', 'HG', 'owner')`)
+      await run(sql`insert into "truck" ("id", "organization_id", "name", "working_days", "capacity_by_kind") values ('t1', 'o', 'Truck 1', '["mon"]', '{"blowout":10}'), ('t2', 'o', 'Truck 2', '["tue"]', '{"blowout":5}')`)
+      await run(sql`insert into "customer" ("id", "organization_id", "first_name") values ('c', 'o', 'Andrea')`)
+      await run(sql`insert into "property" ("id", "organization_id", "customer_id", "address", "town") values ('pr', 'o', 'c', '1 Main St', 'Erie')`)
+      await run(sql`insert into "job" ("id", "organization_id", "customer_id", "property_id", "kind", "source") values ('j', 'o', 'c', 'pr', 'repair', 'office')`)
+      await run(sql`insert into "visit" ("id", "organization_id", "job_id", "customer_id", "property_id", "kind", "truck_id") values ('v1', 'o', 'j', 'c', 'pr', 'repair', 't2'), ('v2', 'o', 'j', 'c', 'pr', 'repair', null), ('v3', 'o', 'j', 'c', 'pr', 'repair', 't1')`)
+      await seed(run)
 
-      await migrate(database, { migrationsFolder: folder })
-
-      const people = await database.execute(sql`select "id", "name", "initials", "email", "role", "truck", "working_days", "legacy_truck_id" from "person" order by "id"`)
-      expect(people.rows).toEqual([
-        { id: "person_a1", name: "Hannah Garner", initials: "HG", email: "hannah@example.com", role: "owner", truck: null, working_days: ["mon", "tue", "wed", "thu", "fri"], legacy_truck_id: null },
-        { id: "person_t1", name: "Ryan Garner", initials: "RG", email: null, role: "owner", truck: "Truck 1", working_days: ["mon"], legacy_truck_id: "t1" },
-        { id: "person_t2", name: "Second truck", initials: "T2", email: null, role: "tech", truck: "Truck 2", working_days: ["tue"], legacy_truck_id: "t2" },
-      ])
-      const visits = await database.execute(sql`select "id", "person_id" from "visit" order by "id"`)
-      expect(visits.rows).toEqual([
-        { id: "v1", person_id: "person_t2" },
-        { id: "v2", person_id: null },
-      ])
+      await migrate(database, { migrationsFolder })
+      await check(run)
     } finally {
       await client.close()
-      rmSync(earlier, { recursive: true, force: true })
+      if (earlier) rmSync(earlier, { recursive: true, force: true })
     }
+  }
+
+  const peopleSql = sql`select "id", "name", "initials", "email", "role", "truck", "working_days", "legacy_truck_id" from "person" order by "id"`
+  const visitsSql = sql`select "id", "person_id" from "visit" order by "id"`
+  const hannah = { id: "person_a1", name: "Hannah Garner", initials: "HG", email: "hannah@example.com", role: "owner", truck: null, working_days: ["mon", "tue", "wed", "thu", "fri"], legacy_truck_id: null }
+  const secondTruck = { id: "person_t2", name: "Second truck", initials: "T2", email: null, role: "tech", truck: "Truck 2", working_days: ["tue"], legacy_truck_id: "t2" }
+
+  // The next two prove the backfill on committed rows, the way a deploy finds them on Neon.
+  it("migration 0010 applies to a committed database and backfills people", async () => {
+    await afterMigration0010(
+      async () => {},
+      async (run) => {
+        expect((await run(peopleSql)).rows).toEqual([
+          hannah,
+          { id: "person_t1", name: "Ryan Garner", initials: "RG", email: null, role: "owner", truck: "Truck 1", working_days: ["mon"], legacy_truck_id: "t1" },
+          secondTruck,
+        ])
+        expect((await run(visitsSql)).rows).toEqual([
+          { id: "v1", person_id: "person_t2" },
+          { id: "v2", person_id: null },
+          { id: "v3", person_id: "person_t1" },
+        ])
+      },
+    )
+  })
+
+  it("migration 0010 merges a Ryan on the admin allow-list with the Truck 1 person, so Ryan is one person", async () => {
+    await afterMigration0010(
+      async (run) => {
+        await run(sql`insert into "admin_user" ("id", "organization_id", "email", "name", "initials", "role") values ('a2', 'o', 'ryan@example.com', 'Ryan', 'R', 'admin')`)
+      },
+      async (run) => {
+        expect((await run(peopleSql)).rows).toEqual([
+          hannah,
+          { id: "person_a2", name: "Ryan Garner", initials: "RG", email: "ryan@example.com", role: "owner", truck: "Truck 1", working_days: ["mon"], legacy_truck_id: "t1" },
+          secondTruck,
+        ])
+        const ryans = await run(sql`select count(*)::int as n from "person" where "name" = 'Ryan Garner'`)
+        expect(ryans.rows[0].n).toBe(1)
+        expect((await run(visitsSql)).rows).toEqual([
+          { id: "v1", person_id: "person_t2" },
+          { id: "v2", person_id: null },
+          { id: "v3", person_id: "person_a2" },
+        ])
+      },
+    )
   })
 })

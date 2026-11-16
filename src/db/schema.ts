@@ -162,7 +162,7 @@ export const person = pgTable(
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
-  (t) => [index("person_org_idx").on(t.organizationId), uniqueIndex("person_org_email_unique").on(t.organizationId, t.email).where(sql`${t.email} is not null`)],
+  (t) => [index("person_org_idx").on(t.organizationId), uniqueIndex("person_org_email_unique").on(t.organizationId, sql`lower(${t.email})`).where(sql`${t.email} is not null`)],
 )
 
 export const truck = pgTable(
