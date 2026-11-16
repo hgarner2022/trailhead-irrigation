@@ -9,6 +9,7 @@ import { mirrorUpsert } from "./mirror/handlers"
 import { messagesList, messagesSend } from "./messages/handlers"
 import { organizationGet } from "./organization/handlers"
 import { passesList, passesGet, passesCreate, passesActivate, passesConsent, passesCancel, passesResendConfirmation, passesSendCardUpdateLink, passesStartCardUpdate, passesUpdatePreference, passesAddInspection, passesSkipVisit } from "./passes/handlers"
+import { passesSell } from "./passes/sell"
 import { scheduleRun, scheduleWeek, scheduleDay, scheduleSlots, scheduleOfferDays } from "./schedule/handlers"
 import { servicesList, servicesCreate, servicesUpdate, servicesDeactivate } from "./services/handlers"
 import { settingsGet, settingsUpdate, settingsChangesList } from "./settings/handlers"
@@ -28,7 +29,7 @@ export const handlers: AnyHandler[] = [
   messagesList, messagesSend,
   mirrorUpsert,
   organizationGet,
-  passesList, passesGet, passesCreate, passesActivate, passesConsent, passesCancel, passesResendConfirmation, passesSendCardUpdateLink, passesStartCardUpdate, passesUpdatePreference, passesAddInspection, passesSkipVisit,
+  passesList, passesGet, passesCreate, passesSell, passesActivate, passesConsent, passesCancel, passesResendConfirmation, passesSendCardUpdateLink, passesStartCardUpdate, passesUpdatePreference, passesAddInspection, passesSkipVisit,
   scheduleRun, scheduleWeek, scheduleDay, scheduleSlots, scheduleOfferDays,
   servicesList, servicesCreate, servicesUpdate, servicesDeactivate,
   settingsGet, settingsUpdate, settingsChangesList,

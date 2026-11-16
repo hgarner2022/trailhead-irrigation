@@ -80,6 +80,24 @@ export const checkoutConsentInput = z.object({
 
 export const passConsentInput = z.object({ id: Id, consent: checkoutConsentInput })
 
+/** The day the office typed for each visit kind; a kind left out, or blank, leaves that visit with no day yet. */
+export const SellDays = z.object({ "turn-on": Day.optional(), inspection: Day.optional(), blowout: Day.optional() })
+
+export const passSellInput = z.object({
+  customerId: Id.optional().describe("An existing customer. Give this or `newCustomer`, not both."),
+  propertyId: Id.optional().describe("One of the customer's properties; the first when left out."),
+  email: z.email().optional().describe("For an existing customer with no email on file: recorded on the customer, since the confirmation and the pass card go by email."),
+  newCustomer: z
+    .object({ ...customerFields, lastName: z.string().min(1).max(80), email: z.email().describe("Required: the confirmation goes by email."), property: propertyInput, accessNote: z.string().max(500).optional() })
+    .optional(),
+  zones: z.number().int().min(MIN_ZONES).max(MAX_ZONES),
+  inspection: z.boolean().default(false).describe("The July inspection add-on."),
+  days: SellDays.default({}).describe("A day per visit, each optional. A day goes through the same rules as a move: a day that is not open goes to the next open one and the move is recorded as `day-filled`, which the confirmation says."),
+  paysBy: z.enum(["card-link", "at-visit"]).describe("`card-link`: the confirmation carries a link to add the card, charged after each visit once added. `at-visit`: no card; Done asks how each visit was paid (check, Venmo or cash)."),
+  termsAccepted: z.literal(true).describe("Required: the terms were read to the customer and accepted; recorded as consent with source `admin`."),
+  notes: z.string().trim().max(1000).optional().describe("Kept on the job."),
+})
+
 export const passActivateInput = z.object({
   id: Id,
   setupSessionId: z.string().min(1).describe("The Stripe Checkout Session in setup mode that saved the card."),

@@ -27,6 +27,7 @@ export function stubStripe(over: { sessions?: Record<string, unknown>; charge?: 
       return s
     }),
     customersUpdate: vi.fn(async () => ({})),
+    customersCreate: vi.fn(async () => ({ id: `cus_new_${calls.customersCreate.mock.calls.length}` })),
     detach: vi.fn(async () => ({})),
     paymentIntentsCreate: vi.fn<(params: Record<string, unknown>, options: { idempotencyKey: string }) => Promise<unknown>>(async () =>
       over.charge ? over.charge() : { id: `pi_ok_${++intents}`, status: "succeeded", latest_charge: { receipt_url: "https://pay.stripe.test/receipt/1" } },
@@ -34,7 +35,7 @@ export function stubStripe(over: { sessions?: Record<string, unknown>; charge?: 
   }
   const stripe = {
     checkout: { sessions: { create: calls.sessionCreate, retrieve: calls.sessionRetrieve } },
-    customers: { update: calls.customersUpdate },
+    customers: { update: calls.customersUpdate, create: calls.customersCreate },
     paymentMethods: { detach: calls.detach },
     paymentIntents: { create: calls.paymentIntentsCreate },
     webhooks: signer,

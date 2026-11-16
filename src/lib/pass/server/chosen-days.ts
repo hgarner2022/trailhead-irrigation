@@ -42,6 +42,28 @@ export async function holdChosenDays(db: Database, passId: string, days: ChosenD
   return held
 }
 
+/**
+ * Holds the days the office typed on a pass's visits, one day per visit kind. An open day is held on the truck `truckFor` picks,
+ * with its window start; a day that is not open (a weekend, a full day, outside the window) is held as typed on the first
+ * truck with any open day, so `scheduleChosenDays` moves it to the next open day and records the move for the confirmation.
+ * A kind with no open day at all is left with no day yet. Returns the kinds held.
+ */
+export async function holdOfficeDays(db: Database, passId: string, days: Partial<Record<ChosenDayInput["kind"], string | undefined>>, town: string, season: number, today: string): Promise<string[]> {
+  const held: string[] = []
+  const visits = await db.select().from(s.visit).where(eq(s.visit.passId, passId))
+  for (const v of visits) {
+    const day = days[v.kind as ChosenDayInput["kind"]]
+    if (!day) continue
+    const slots = await openSlots(db, pickable(v, town), today, season)
+    const slot = truckFor(slots, day) ?? slots[0]
+    if (!slot) continue
+    const open = slot.day === day
+    await db.update(s.visit).set({ truckId: slot.truckId, scheduledOn: day, startTime: open ? slot.start : null, awaitingPick: false }).where(eq(s.visit.id, v.id))
+    held.push(v.kind)
+  }
+  return held
+}
+
 /** The slot a visit takes when its chosen day filled up: the next open day after it, else the earliest open one; none when nothing is open. */
 export function nextOpen(slots: Slot[], chosenDay: string): Slot | undefined {
   const later = slots.filter((x) => x.day > chosenDay)

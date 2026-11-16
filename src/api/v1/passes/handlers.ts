@@ -18,6 +18,7 @@ import { outOfAreaMessage } from "@/lib/places"
 import { queueCardUpdateLink } from "@/lib/pass/server/card-link"
 import { queueCancelledEmail } from "@/lib/pass/server/cancel"
 import { createCardUpdateSession } from "@/lib/stripe/card-update"
+import { ensureStripeCustomer } from "@/lib/stripe/customer"
 import { enqueue } from "@/lib/queue"
 import { emitEvent } from "../webhooks/deliver"
 import { getStripe } from "@/lib/stripe/client"
@@ -295,14 +296,14 @@ export const passesStartCardUpdate = defineHandler({
   path: "/passes/{id}/card-update",
   scope: "write",
   customerSelf: true,
-  summary: "Open Stripe's hosted page to update the card on a pass and return its address. The link is good for 24 hours. A customer does this only for their own pass.",
+  summary: "Open Stripe's hosted page to update the card on a pass, or to add one to a pass sold with none, and return its address. The link is good for 24 hours. A customer does this only for their own pass.",
   input: idInput,
   output: z.object({ url: z.string().url() }),
   async run(ctx, input) {
     const row = await loadPass(ctx, input.id)
-    const [customer] = await ctx.db.select({ stripeCustomerId: s.customer.stripeCustomerId }).from(s.customer).where(eq(s.customer.id, row.pass.customerId))
-    if (!customer?.stripeCustomerId) throw new ApiError("unprocessable", "This customer has no card on file to update yet")
-    const session = await createCardUpdateSession(getStripe(), { passId: row.pass.id, customerId: customer.stripeCustomerId, origin: readAppUrl() })
+    if (row.pass.status === "pending") throw new ApiError("unprocessable", "This pass has not been bought yet")
+    const stripe = getStripe()
+    const session = await createCardUpdateSession(stripe, { passId: row.pass.id, customerId: await ensureStripeCustomer(ctx.db, stripe, row.pass.customerId, ctx.now), origin: readAppUrl() })
     return { url: session.url }
   },
 })
