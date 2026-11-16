@@ -13,7 +13,7 @@ import { formatPhone } from "@/lib/format/contact"
 import type { AdminData } from "@/lib/admin/types"
 import type { VisitActions } from "./visit-actions-types"
 import { CancelVisit, EditForm, ResendButton, TextForm } from "./VisitEditText"
-import { DoneForm, MoveForm, NotDoneForm, PaidByChoice } from "./VisitMoveDone"
+import { DoneForm, MoveForm, NotDoneForm, PaidByChoice, doneAsksPaidBy } from "./VisitMoveDone"
 import { useRunner } from "./use-runner"
 import { dayLabel, dayOfVisit, kindLabel, priceWords, timeWords, visitFacts, type VisitFacts } from "./visit-panel-model"
 
@@ -121,12 +121,13 @@ function Actions({ facts, data, today, actions }: { facts: VisitFacts; data: Adm
   const { visit, pass, states, client } = facts
   const day = dayOf(today, TIME_ZONE)
   const open = states.work === "needs-a-day" || states.work === "not-done" || states.work === "scheduled"
-  const owed = states.work === "done" && states.money === "unpaid" && !visit.passId
+  // Money owed is recorded here for a one-off and for a pass visit whose pass has no card; a pass with a card is charged.
+  const owed = states.work === "done" && states.money === "unpaid" && doneAsksPaidBy(visit, pass)
   const pay = useRunner()
   return (
     <div className="flex flex-col gap-6" data-slot="visit-actions">
       {open && <MoveForm key={visit.id + (visit.scheduledOn ?? "")} visit={visit} today={day} actions={actions} />}
-      {states.work === "scheduled" && <DoneForm visit={visit} today={day} actions={actions} />}
+      {states.work === "scheduled" && <DoneForm visit={visit} pass={pass} today={day} actions={actions} />}
       {owed && (
         <section aria-labelledby="visit-pay">
           <Subtitle id="visit-pay">Record the payment</Subtitle>

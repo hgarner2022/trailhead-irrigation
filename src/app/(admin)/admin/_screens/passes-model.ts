@@ -51,6 +51,20 @@ export function consentLine(consent: Consent | undefined): string {
   return `${terms}Marketing: ${marketing}.`
 }
 
+/** "08/28" from the stored "2028-08". */
+const expiry = (yearMonth: string) => `${yearMonth.slice(5, 7)}/${yearMonth.slice(2, 4)}`
+
+/**
+ * The panel's card line: "Card ending 4242, expires 08/28"; "No card yet, collect at the visit" on an active pass sold by the
+ * office with none (the money is asked for at Done, and Send card link turns it into a card pass); "No card yet" on a pending
+ * pass, whose card step is not done.
+ */
+export function cardWords(pass: Pick<Pass, "status" | "cardLast4" | "cardExpires">): string {
+  if (!pass.cardLast4) return pass.status === "active" ? "No card yet, collect at the visit" : "No card yet"
+  const ending = `Card ending ${pass.cardLast4}`
+  return pass.cardExpires ? `${ending}, expires ${expiry(pass.cardExpires)}` : ending
+}
+
 /** A visit's day and window for a table cell or a line: "Apr 26", "Apr 26, 8 to 10 am", or "No day yet". */
 export const visitWhen = (visit: PassVisit | undefined): string => dayWords(visit) || "No day yet"
 

@@ -4,13 +4,14 @@ import type Stripe from "stripe"
 import { emitEvent } from "@/api/v1/webhooks/deliver"
 import * as s from "@/db/schema"
 import type { Database } from "@/db/types"
+import { passHasCard } from "@/lib/pass/card"
 import { chargeOffSession } from "@/lib/stripe/charge"
 import { createCardUpdateSession } from "@/lib/stripe/card-update"
 import { baseData } from "@/lib/messaging/data"
 import { queueMessage, queueStaffMessage } from "@/lib/messaging/queue"
 import { dollars, kindName, nextVisitLine } from "./messages"
 
-export type ChargeVisitOutcome = "charged" | "already-charged" | "failed" | "waiting-for-card" | "cancelled-pass" | "not-a-pass-visit"
+export type ChargeVisitOutcome = "charged" | "already-charged" | "failed" | "waiting-for-card" | "cancelled-pass" | "not-a-pass-visit" | "no-card"
 
 export interface ChargeVisitOptions {
   /** the site origin, for the card-update link in the failure message */
@@ -23,7 +24,8 @@ export interface ChargeVisitOptions {
 /**
  * Charges the pass's saved card for one completed visit. Idempotent: a visit already charged is done; a pending attempt
  * left by a crash is re-sent with the same idempotency key; a failed visit waits for a new card (`afterCardUpdate`)
- * and then gets attempt n+1. A cancelled pass charges nothing (Home already shows the cancellation).
+ * and then gets attempt n+1. A cancelled pass charges nothing (Home already shows the cancellation), and a pass with no card
+ * (sold by the office, paid at each visit) is not a failure: nothing is written and the visit's money is recorded at Done.
  */
 export async function chargeVisit(db: Database, stripe: Stripe, visitId: string, opts: ChargeVisitOptions): Promise<ChargeVisitOutcome> {
   const now = opts.now ?? new Date()
@@ -36,6 +38,7 @@ export async function chargeVisit(db: Database, stripe: Stripe, visitId: string,
   const [pass] = await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, visit.passId))
   if (!pass) throw new Error(`Pass ${visit.passId} not found`)
   if (pass.status === "cancelled") return "cancelled-pass"
+  if (!passHasCard(pass)) return "no-card"
   const [customer] = await db.select().from(s.customer).where(eq(s.customer.id, pass.customerId))
   if (!customer) throw new Error(`Customer ${pass.customerId} not found`)
 

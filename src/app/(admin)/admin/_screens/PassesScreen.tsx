@@ -112,9 +112,12 @@ export function PassesScreen({ data, today, defaultSelectedId, readOnly = false,
                     <Button variant="outline" disabled={pending} onClick={() => (actions ? run(() => actions.resendConfirmation(pass.id), "Confirmation sent.") : console.info("resend confirmation", [pass.number]))}>
                       Resend confirmation
                     </Button>
-                    <Button disabled={pending} onClick={() => (actions ? run(() => actions.sendCardUpdateLink(pass.id), "Card update link sent.") : console.info("send card update link", [pass.number]))}>
-                      Send card update link
-                    </Button>
+                    {/* A pass with no card has Send card link on its card line in the panel instead. */}
+                    {pass.cardLast4 && (
+                      <Button disabled={pending} onClick={() => (actions ? run(() => actions.sendCardUpdateLink(pass.id), "Card update link sent.") : console.info("send card update link", [pass.number]))}>
+                        Send card update link
+                      </Button>
+                    )}
                     <Button variant="ghost" className="ml-auto text-destructive hover:text-destructive" onClick={() => setCancelling(true)}>
                       Cancel pass
                     </Button>

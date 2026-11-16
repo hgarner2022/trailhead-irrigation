@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import type { Pass } from "@/lib/admin/types"
-import { chargeRows, consentLine, jobRows, passName, passesContext, seasonOf, visitWhen } from "./passes-model"
+import { cardWords, chargeRows, consentLine, jobRows, passName, passesContext, seasonOf, visitWhen } from "./passes-model"
 
 const passes = snapshot.passes as Pass[]
 const TODAY = "2026-11-12T19:56:30Z"
@@ -119,5 +119,14 @@ describe("passName", () => {
     expect(passName({ firstName: "Andrea", lastName: "Dalton" })).toBe("Andrea Dalton")
     expect(passName({ firstName: "Andrea" })).toBe("Andrea")
     expect(passName({ firstName: " Andrea ", lastName: " " })).toBe("Andrea")
+  })
+})
+
+describe("cardWords", () => {
+  it("names the card on file, says to collect at the visit on an active pass with none, and only No card yet on a pending one", () => {
+    expect(cardWords({ status: "active", cardLast4: "4242", cardExpires: "2028-08" })).toBe("Card ending 4242, expires 08/28")
+    expect(cardWords({ status: "active", cardLast4: "4242" })).toBe("Card ending 4242")
+    expect(cardWords({ status: "active" })).toBe("No card yet, collect at the visit")
+    expect(cardWords({ status: "pending" })).toBe("No card yet")
   })
 })

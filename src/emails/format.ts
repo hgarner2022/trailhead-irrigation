@@ -78,5 +78,13 @@ export function moneyLine(visits: { name: string; amount: number }[], cardLast4:
   return `You pay $0 today. We charge ${andList(visits.map((v) => `${dollars(v.amount)} after the ${v.name}`))}${cardLast4 ? ` to the card ending ${cardLast4}` : ""}.`
 }
 
+/** The money line of a pass sold by the office with no card and no link to add one: "You pay $145 after the spring turn-on and $95 after the fall blowout, by check, Venmo or cash at the visit." */
+export function atVisitMoneyLine(visits: { name: string; amount: number }[]): string {
+  return `You pay ${andList(visits.map((v) => `${dollars(v.amount)} after the ${v.name}`))}, by check, Venmo or cash at the visit.`
+}
+
+/** The line under the money line when the card is still to be added: the office sold the pass and emailed the link. */
+export const ADD_CARD_LINE = "Add your card from the link below and we charge it after each visit. The link is good for 24 hours; your pass page can make a new one any time."
+
 /** The line for a visit whose chosen day filled up before the card was saved. */
 export const filledLine = (from: string, to: string) => `Your first choice, ${longDay(from)}, filled up, so we put it on ${longDay(to)}.`

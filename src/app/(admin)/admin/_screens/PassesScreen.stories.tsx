@@ -5,6 +5,7 @@ import type { AdminData } from "@/lib/admin/types"
 import { EMPTY_SETTINGS } from "@/lib/admin/empty-settings"
 import { AdminShell } from "@/components/blocks/AdminShell"
 import { PassesScreen } from "./PassesScreen"
+import { noCardPass } from "./visits-fixture"
 
 // `today` is pinned to 12:56 pm Mountain on Thursday, November 12, 2026, the
 // same moment as the Home story, so the season line's marker sits before the
@@ -88,4 +89,15 @@ export const Phone: Story = {
 export const PhonePanel: Story = {
   args: { defaultSelectedId: data.passes[0].id },
   globals: { viewport: { value: "phone", isRotated: false } },
+}
+
+/** A pass the office sold with no card: the card line says to collect at the visit, with Send card link beside it; the footer's card update button is gone. */
+export const PanelNoCard: Story = {
+  args: { data: { ...data, passes: [noCardPass, ...data.passes] }, defaultSelectedId: noCardPass.id },
+  globals: { viewport: { value: "wide", isRotated: false } },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText("No card yet, collect at the visit")).toBeInTheDocument()
+    await expect(await canvas.findByRole("button", { name: "Send card link" })).toBeInTheDocument()
+    await expect(canvas.queryByRole("button", { name: "Send card update link" })).not.toBeInTheDocument()
+  },
 }

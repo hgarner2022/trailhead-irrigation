@@ -10,9 +10,11 @@ import { CustomersScreen } from "./CustomersScreen"
 // `today` is pinned to 12:56 pm Mountain on Thursday, November 12, 2026, the
 // same moment as the Home story. The snapshot's 375 customers include the
 // twelve pass holders and one unpaid attempt (Amy, Pending); PanelOpen starts with
-// Andrea (c100) open. The snapshot has no email or phone, so the story adds made-up ones.
+// Andrea (c100) open. The snapshot has no email or phone, so the story adds made-up ones, and its pass holders are
+// the app's own customers (`app`), so the panel offers New visit and Sell a pass for them.
 const TODAY = "2026-11-12T19:56:30Z"
-const data = withFixtureContact(snapshot as AdminData)
+const base = snapshot as AdminData
+const data = withFixtureContact({ ...base, clients: base.clients.map((c) => (c.hasPass ? { ...c, app: true } : c)) })
 
 const nothingYet: AdminData = { ...data, syncedAt: TODAY, clients: [], visits: [], quotes: [], invoices: [], passes: [], monthTotals: [], attention: [], settings: EMPTY_SETTINGS, settingsChanges: [], messages: [] }
 
@@ -34,13 +36,25 @@ export const Default: Story = {
   globals: { viewport: { value: "wide", isRotated: false } },
 }
 
-/** Andrea's panel open: the same normal data as her row, the access note, her jobs, the consent history and her messages. */
+/** Andrea's panel open: the same normal data as her row, the access note, her jobs, the consent history and her messages; New visit and Sell a pass in the footer. */
 export const PanelOpen: Story = {
   args: { defaultSelectedId: "c100" },
   globals: { viewport: { value: "wide", isRotated: false } },
   play: async ({ canvas }) => {
     await expect(await canvas.findByRole("heading", { name: "Visits" })).toBeInTheDocument()
     await expect(await canvas.findByRole("heading", { name: "Consent history" })).toBeInTheDocument()
+    await expect(await canvas.findByRole("button", { name: "New visit" })).toBeInTheDocument()
+    await expect(await canvas.findByRole("button", { name: "Sell a pass" })).toBeInTheDocument()
+  },
+}
+
+/** A tech sees the panel with no New visit and no Sell a pass. */
+export const PanelReadOnly: Story = {
+  args: { defaultSelectedId: "c100", readOnly: true },
+  globals: { viewport: { value: "wide", isRotated: false } },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByRole("heading", { name: "Visits" })).toBeInTheDocument()
+    await expect(canvas.queryByRole("button", { name: "Sell a pass" })).not.toBeInTheDocument()
   },
 }
 

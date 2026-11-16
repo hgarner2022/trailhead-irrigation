@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useUndoToast } from "@/components/blocks/UndoToast"
 import { NOT_DONE_LABEL, NOT_DONE_REASONS, type NotDoneReason } from "@/lib/admin/visit-defaults"
-import type { Visit } from "@/lib/admin/types"
+import type { Pass, Visit } from "@/lib/admin/types"
 import type { PaidByInput, VisitActions, Where } from "./visit-actions-types"
 import { FORM_STATUS, useRunner } from "./use-runner"
 import { TIME_CHOICES, dayLabel, dayOfVisit, moveSentence } from "./visit-panel-model"
@@ -120,12 +120,15 @@ export function PaidByChoice({ visit, onChoose, pending, label }: { visit: Visit
   )
 }
 
-/** Done: a pass visit or a visit with no price closes at once (the card is charged, or nothing is owed yet); a priced one-off asks how it was paid, once. */
-export function DoneForm({ visit, today, actions }: { visit: Visit; today: string; actions?: VisitActions }) {
+/** Whether Done asks how the money came: a priced one-off, or a pass visit whose pass has no card (sold by the office, paid at the visit). A pass visit with a card is charged. */
+export const doneAsksPaidBy = (visit: Pick<Visit, "passId" | "price">, pass: Pick<Pass, "cardLast4"> | undefined): boolean => (visit.price ?? 0) > 0 && (!visit.passId || (pass !== undefined && !pass.cardLast4))
+
+/** Done: a pass visit with a card or a visit with no price closes at once (the card is charged, or nothing is owed yet); a priced one-off, or a pass visit with no card on the pass, asks how it was paid, once. */
+export function DoneForm({ visit, pass, today, actions }: { visit: Visit; pass?: Pass; today: string; actions?: VisitActions }) {
   const [day, setDay] = useState(today)
   const { pending, error, run } = useRunner()
   const toast = useUndoToast()
-  const asks = !visit.passId && (visit.price ?? 0) > 0
+  const asks = doneAsksPaidBy(visit, pass)
   const done = (paidBy?: PaidByInput) => {
     if (!actions) return console.info("mark done", visit.id, paidBy)
     run(
@@ -151,7 +154,7 @@ export function DoneForm({ visit, today, actions }: { visit: Visit; today: strin
           Mark done
         </Button>
       )}
-      <p className="mt-1 text-sm text-muted-foreground">{visit.passId ? "Charges the card on the pass and sends the receipt." : asks ? "Sends the receipt, which says how it was paid." : ""}</p>
+      <p className="mt-1 text-sm text-muted-foreground">{asks ? "Sends the receipt, which says how it was paid." : visit.passId ? "Charges the card on the pass and sends the receipt." : ""}</p>
       <p role="alert" className={`${FORM_STATUS} ${ERROR}`}>
         {error}
       </p>

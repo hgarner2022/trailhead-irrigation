@@ -12,14 +12,22 @@ import { kindName } from "./messages"
 export interface PurchaseConsent {
   marketingOptIn: boolean
   marketingChannels: ("email" | "sms")[]
+  /** who recorded it: the checkout's card step, or the office reading the terms to the customer (`passes.sell`) */
+  source?: "checkout" | "admin"
+}
+
+export interface PurchaseExtras {
+  /** the fresh card link an office sale paid by card carries in its confirmation, so the customer adds the card from the email */
+  cardUpdateUrl?: string | null
 }
 
 /**
- * Everything that follows a card being saved on a pending pass, each step safe to repeat (so a retry after a failure part-way repeats nothing): the consent row (terms as accepted
- * now, marketing only for the ticked channels, `sms` only with a phone), the `pass-onboard` task and the queued
- * purchase confirmation. Sending is the messaging layer's job (Phase 12); the email only records what must go.
+ * Everything that follows a pass turning active (the checkout's card step, a renewal, an office sale), each step safe to repeat
+ * (so a retry after a failure part-way repeats nothing): the consent row (terms as accepted now, marketing only for the ticked
+ * channels, `sms` only with a phone), the `pass-onboard` task and the queued purchase confirmation. Sending is the messaging
+ * layer's job (Phase 12); the email only records what must go.
  */
-export async function recordPurchase(db: Database, passId: string, consent: PurchaseConsent | undefined, origin: string, now: Date): Promise<void> {
+export async function recordPurchase(db: Database, passId: string, consent: PurchaseConsent | undefined, origin: string, now: Date, extras: PurchaseExtras = {}): Promise<void> {
   const [row] = await db
     .select({ pass: s.seasonPass, customer: s.customer, town: s.property.town })
     .from(s.seasonPass)
@@ -33,11 +41,12 @@ export async function recordPurchase(db: Database, passId: string, consent: Purc
   if (consent) {
     const channels = consent.marketingChannels.filter((c) => c === "email" || (c === "sms" && Boolean(customer.phone)))
     const [terms] = await db.select({ v: s.organization.termsVersion }).from(s.organization).where(eq(s.organization.id, org))
-    // Safe to repeat: one checkout consent per pass, found by being recorded after the pass was made.
+    const source = consent.source ?? "checkout"
+    // Safe to repeat: one purchase consent per pass, found by being recorded after the pass was made.
     const [already] = await db
       .select({ id: s.consent.id })
       .from(s.consent)
-      .where(and(eq(s.consent.customerId, customer.id), eq(s.consent.source, "checkout"), gte(s.consent.recordedAt, pass.createdAt)))
+      .where(and(eq(s.consent.customerId, customer.id), eq(s.consent.source, source), gte(s.consent.recordedAt, pass.createdAt)))
       .limit(1)
     if (!already)
       await db.insert(s.consent).values({
@@ -47,19 +56,19 @@ export async function recordPurchase(db: Database, passId: string, consent: Purc
         termsAcceptedAt: now,
         marketingOptIn: consent.marketingOptIn && channels.length > 0,
         marketingChannels: consent.marketingOptIn ? channels : [],
-        source: "checkout",
+        source,
         recordedAt: now,
       })
   }
 
   await enqueue(db, org, "pass-onboard", pass.id, { passId: pass.id }, now)
 
-  await queuePurchaseConfirmation(db, pass.id, origin, pass.id)
+  await queuePurchaseConfirmation(db, pass.id, origin, pass.id, extras)
   await queueStaffMessage(db, org, "admin-alert", `new-pass:${pass.id}`, { origin, title: `New Season Pass ${pass.number}`, detail: `${customer.firstName} in ${row.town} bought Season Pass ${pass.number}.`, path: "/admin/passes" })
 }
 
-/** The purchase confirmation for a pass, with whatever the pass holds today: each visit's day and calendar links, or its window wording. `key` makes it once per purchase; an admin's resend uses a new one. */
-export async function queuePurchaseConfirmation(db: Database, passId: string, origin: string, key: string): Promise<boolean> {
+/** The purchase confirmation for a pass, with whatever the pass holds today: each visit's day and calendar links, or its window wording, and how the money comes (the card on file, the link to add one, or at each visit). `key` makes it once per purchase; an admin's resend uses a new one. */
+export async function queuePurchaseConfirmation(db: Database, passId: string, origin: string, key: string, extras: PurchaseExtras = {}): Promise<boolean> {
   const [row] = await db
     .select({ pass: s.seasonPass, customer: s.customer, town: s.property.town })
     .from(s.seasonPass)
@@ -80,6 +89,6 @@ export async function queuePurchaseConfirmation(db: Database, passId: string, or
   }
   return queueMessage(db, {
     organizationId: org, customerId: customer.id, kind: "purchase-confirmation", key,
-    data: { ...baseData(origin, customer), passNumber: pass.number, season: pass.season, town: row.town, passImageUrl: passImageUrl(origin, pass.id), visits: held, cardLast4: pass.cardLast4 },
+    data: { ...baseData(origin, customer), passNumber: pass.number, season: pass.season, town: row.town, passImageUrl: passImageUrl(origin, pass.id), visits: held, cardLast4: pass.cardLast4, cardUpdateUrl: extras.cardUpdateUrl ?? null },
   })
 }

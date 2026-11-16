@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest"
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import type { Pass } from "@/lib/admin/types"
-import { bookedWhen, cardLine, earlierSeasons, expiry, passHeadline, pickDayOptions, seasonCaption, seasonSummary, visitRows, visitStatus } from "./pass-page-model"
+import { bookedWhen, cardAction, cardLine, earlierSeasons, expiry, passHeadline, pickDayOptions, seasonCaption, seasonSummary, visitRows, visitStatus } from "./pass-page-model"
 
 // passes[0] is Andrea in Erie: turn-on done May 3, inspection in July, blowout preferred for mid October.
 // passes[2] has no visit yet, with the turn-on preferred earlier.
@@ -53,7 +53,9 @@ describe("card line", () => {
   it("reads the brand, last four and expiry from the pass", () => {
     expect(cardLine(pass)).toBe("Visa ending 4242, expires 08/28")
     expect(cardLine({ ...pass, cardExpires: undefined })).toBe("Visa ending 4242")
-    expect(cardLine({ ...pass, cardLast4: undefined })).toBe("No card on file yet.")
+    expect(cardLine({ ...pass, cardLast4: undefined })).toBe("No card on file yet. Pay at each visit by check, Venmo or cash, or add a card and we charge it after each visit.")
+    expect(cardAction(pass)).toBe("Update card")
+    expect(cardAction({ cardLast4: undefined })).toBe("Add a card")
   })
 })
 
