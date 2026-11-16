@@ -7,7 +7,7 @@ import type { VisitFacts } from "./format"
 
 const origin = "https://www.trailheadirrigation.com"
 const base = { origin, firstName: "Andrea", passUrl: `${origin}/account/pass`, signInUrl: `${origin}/account/sign-in?email=andrea%40example.com` }
-const visit: VisitFacts = { id: "v1", name: "spring turn-on", day: "2027-05-05", startTime: "08:00", crew: "Ryan's truck", location: "412 Ash St, Erie", icsUrl: `${origin}/api/visits/v1/calendar.ics?token=abc` }
+const visit: VisitFacts = { id: "v1", name: "spring turn-on", day: "2027-05-05", startTime: "08:00", crew: "Ryan's truck", who: null, location: "412 Ash St, Erie", icsUrl: `${origin}/api/visits/v1/calendar.ics?token=abc` }
 
 const blowoutVisit: VisitFacts = { ...visit, id: "v2", name: "fall blowout", day: "2027-10-05", icsUrl: `${origin}/api/visits/v2/calendar.ics?token=def` }
 const TWO_DAYS = { ...base, passNumber: "TH-2027-0004", season: 2027, town: "Erie", passImageUrl: `${origin}/api/pass-image/p1?token=t`, cardLast4: "4242", visits: [{ kind: "turn-on", name: "spring turn-on", amount: 145, visit, fallback: "" }, { kind: "blowout", name: "fall blowout", amount: 95, visit: blowoutVisit, fallback: "", note: "Your first choice, Friday, October 1, filled up, so we put it on Tuesday, October 5." }] }
@@ -93,6 +93,14 @@ describe("wording per kind", () => {
     expect(html).toContain("/api/visits/v1/calendar.ics?token=abc")
     expect(html).toContain("/account/sign-in?email=")
     expect(text).toContain(`${origin}/account/pass`)
+  })
+  it("day-before names who is coming when the visit has a person, and leaves the sentence out when it has none", () => {
+    const named = renderEmail("day-before", { ...base, visit: { ...visit, who: "Ryan" } })!
+    expect(named.text).toContain("we're coming tomorrow, Wednesday, May 5, for your spring turn-on. Ryan will be there.")
+    expect(named.html).toContain("Ryan will be there.")
+    const nobody = renderEmail("day-before", { ...base, visit: { ...visit, who: null } })!
+    expect(nobody.text).toContain("we're coming tomorrow, Wednesday, May 5, for your spring turn-on.")
+    expect(nobody.text).not.toMatch(/will be there|\.\s*\. |  /)
   })
   it("date-set, date-moved and day-before say their event", () => {
     expect(get("date-set").subject).toBe("Your spring turn-on is Wednesday, May 5")

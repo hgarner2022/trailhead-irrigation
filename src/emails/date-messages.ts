@@ -22,5 +22,8 @@ const ryanDoes = (name: string) => (name.includes("inspection") ? RYAN_DOES.insp
 export const dateConfirmEmail = (d: VisitData): RenderedEmail =>
   build(d, `Your ${d.visit.name} is ${longDay(d.visit.day)}`, `Your ${d.visit.name} is in two weeks`, `Hi ${d.firstName}, we're confirming your ${d.visit.name}: ${longDay(d.visit.day)}. ${ryanDoes(d.visit.name)}`, `Your ${d.visit.name} is ${longDay(d.visit.day)}.`)
 
+/** "Ryan will be there." after the reminder when the visit has a person; nothing at all when it has none. */
+const whoLine = (d: VisitData) => (d.visit.who ? ` ${d.visit.who} will be there.` : "")
+
 export const dayBeforeEmail = (d: VisitData): RenderedEmail =>
-  build(d, `Tomorrow: your ${d.visit.name}`, `We're coming tomorrow`, `Hi ${d.firstName}, a reminder that we're coming tomorrow, ${longDay(d.visit.day)}, for your ${d.visit.name}.`, `Tomorrow, ${longDay(d.visit.day)}: your ${d.visit.name}.`)
+  build(d, `Tomorrow: your ${d.visit.name}`, `We're coming tomorrow`, `Hi ${d.firstName}, a reminder that we're coming tomorrow, ${longDay(d.visit.day)}, for your ${d.visit.name}.${whoLine(d)}`, `Tomorrow, ${longDay(d.visit.day)}: your ${d.visit.name}.`)

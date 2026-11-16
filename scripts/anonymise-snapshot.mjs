@@ -375,7 +375,7 @@ const MESSAGES = [
   {
     key: "day-before",
     channel: "sms",
-    body: "Trailhead here. Your {visit} is tomorrow, {date}. Please leave the gate unlatched and the controller reachable. Reply STOP to stop texts.",
+    body: "Trailhead here. {who} will be there tomorrow, {date}, for your {visit}. Please leave the gate unlatched and the controller reachable. Reply STOP to stop texts.",
     enabled: true,
   },
   {

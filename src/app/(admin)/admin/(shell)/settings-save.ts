@@ -58,14 +58,18 @@ export async function saveSettings(ctx: Ctx, after: OrganizationSettings): Promi
   if (problems.length) throw new ApiError("unprocessable", problems[0]!)
   const [people, areas, current] = await Promise.all([callApi(ctx, peopleList, { active: "true" }), callApi(ctx, areasList, {}), callApi(ctx, settingsGet, {})])
 
-  // The API keeps one owner at every step, so whoever becomes an owner is written first, then every other change, and
-  // whoever leaves goes last: promoting B and demoting A in one save succeeds in that order and in no other.
+  // The API keeps one owner at every step, so whoever becomes an owner is written first (a brand-new owner is created
+  // before anything else, then a promotion), then every other change, and whoever leaves goes last: a new owner plus
+  // the old owner's demotion in one save succeeds in that order and in no other.
   const havePeople = new Map(people.data.map((p) => [p.id, p]))
+  const created = after.people.filter((x) => !havePeople.has(x.id))
   const edited = after.people.filter((p) => havePeople.has(p.id) && !same(apiFields(havePeople.get(p.id)!), personFields(p)))
-  const promoted = (p: Person) => p.role === "owner" && havePeople.get(p.id)!.role !== "owner"
+  const isOwner = (p: Person) => p.role === "owner"
+  const promoted = (p: Person) => isOwner(p) && havePeople.get(p.id)!.role !== "owner"
+  for (const p of created.filter(isOwner)) await callApi(ctx, peopleCreate, defined(personFields(p)))
   for (const p of edited.filter(promoted)) await callApi(ctx, peopleUpdate, { id: p.id, ...personFields(p) })
   for (const p of edited.filter((x) => !promoted(x))) await callApi(ctx, peopleUpdate, { id: p.id, ...personFields(p) })
-  for (const p of after.people.filter((x) => !havePeople.has(x.id))) await callApi(ctx, peopleCreate, defined(personFields(p)))
+  for (const p of created.filter((x) => !isOwner(x))) await callApi(ctx, peopleCreate, defined(personFields(p)))
   for (const id of havePeople.keys()) if (!after.people.some((p) => p.id === id)) await callApi(ctx, peopleDeactivate, { id })
 
   // A town can belong to one area at a time, so areas that give towns up are written before the ones that take them.

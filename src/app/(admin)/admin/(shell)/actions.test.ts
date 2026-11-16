@@ -179,6 +179,20 @@ describe("settings", () => {
     expect((await settingsOf()).people.filter((p) => p.role === "owner").map((p) => p.id)).toEqual([b!.id])
     expect((await actions.saveSettings(now)).ok).toBe(true)
   })
+  it("a brand-new owner and every old owner's demotion in one save: the new owner is created first", async () => {
+    const now = await settingsOf()
+    const owners = now.people.filter((p) => p.role === "owner").map((p) => p.id)
+    expect(owners.length).toBeGreaterThanOrEqual(1)
+    const fresh = { id: "person-fresh", name: "Fresh Owner", initials: "FO", role: "owner" as const, workingDays: ["mon" as const], capacityByKind: now.people[0]!.capacityByKind }
+    vi.mocked(callApi).mockClear()
+    const out = await actions.saveSettings({ ...now, people: [...now.people.map((p) => (p.role === "owner" ? { ...p, role: "tech" as const } : p)), fresh] })
+    expect(out).toEqual({ ok: true, data: undefined })
+    expect(calls("people.")).toEqual(["people.list", "people.create", ...owners.map(() => "people.update")])
+    const after = await settingsOf()
+    expect(after.people.filter((p) => p.role === "owner").map((p) => p.name)).toEqual(["Fresh Owner"])
+    expect((await actions.saveSettings(now)).ok).toBe(true)
+    expect((await settingsOf()).people.filter((p) => p.role === "owner").map((p) => p.id)).toEqual(owners)
+  })
   it("writes nothing when a person's email is not shaped like one", async () => {
     const now = await settingsOf()
     const ryan = now.people.find((p) => p.name === "Ryan Garner")!
@@ -206,6 +220,7 @@ describe("settings", () => {
     const made = (await callApi(ctxFor(db, owner), peopleList, { active: "true" })).data.find((p) => p.name === "Ada Lovelace")
     expect(made).toMatchObject({ initials: "AL", truck: "Truck 4", role: "tech", workingDays: ["mon", "tue", "wed", "thu", "fri"] })
     expect(made!.id).not.toBe(id)
+    expect((await actions.saveSettings(now)).ok).toBe(true)
   })
   it("moves a town between areas by writing the area that gives it up first", async () => {
     const now = await settingsOf()

@@ -1,6 +1,7 @@
 // The text versions, one per kind that goes by text: date-set, date-moved and the day-before reminder. Each carries the
 // business name, the date (and the window when there is one), a short link and the opt-out line once. Under 160 characters
-// where the day and the link allow it.
+// where the day and the link allow it; the day-before with a name on it ("Ryan will be there") runs a few characters over
+// and goes as two parts, which the name is worth.
 import { shortDay, windowText } from "@/emails/format"
 import type { VisitData } from "@/emails/types"
 
@@ -12,7 +13,8 @@ const link = (d: VisitData) => d.passUrl
 export const dateSetText = (d: VisitData) => `Trailhead: your ${d.visit.name} is ${when(d)}. Calendar and changes: ${link(d)} ${OPT_OUT}`
 export const dateMovedText = (d: VisitData) => `Trailhead: your ${d.visit.name} moved to ${when(d)}. Calendar and changes: ${link(d)} ${OPT_OUT}`
 export const dateConfirmText = (d: VisitData) => `Trailhead: your ${d.visit.name} is ${when(d)}. Need a different day? ${link(d)} ${OPT_OUT}`
-export const dayBeforeText = (d: VisitData) => `Trailhead: we come tomorrow, ${when(d)}, for your ${d.visit.name}. Changes: ${link(d)} ${OPT_OUT}`
+/** "Ryan will be there tomorrow" when the visit has a person, "we come tomorrow" when it has none. */
+export const dayBeforeText = (d: VisitData) => `Trailhead: ${d.visit.who ? `${d.visit.who} will be there` : "we come"} tomorrow, ${when(d)}, for your ${d.visit.name}. Changes: ${link(d)} ${OPT_OUT}`
 
 export const SMS_TEMPLATES = { "date-set": dateSetText, "date-moved": dateMovedText, "day-before": dayBeforeText, "date-confirm": dateConfirmText }
 export type SmsKind = keyof typeof SMS_TEMPLATES

@@ -20,6 +20,8 @@ beforeAll(async () => {
     { organizationId: ORG, name: "Sam Tech", initials: "ST", email: TECH, role: "tech" },
     { organizationId: ORG, name: "Gone Owner", initials: "GO", email: GONE, role: "owner", active: false },
     { organizationId: ORG, name: "No Email", initials: "NE", email: null, role: "admin" },
+    // The customer's email on a person who has left: the person row no longer counts.
+    { organizationId: ORG, name: "Andrea Was Staff", initials: "AW", email: CUSTOMER, role: "admin", active: false },
   ])
 })
 afterAll(() => db.close())
@@ -32,6 +34,9 @@ describe("findPerson reads the person table", () => {
   })
   it("treats an inactive person as a stranger", async () => {
     expect(await findPerson(db, GONE)).toBeNull()
+  })
+  it("never signs an inactive staff email in as staff: it falls through to the customer on file", async () => {
+    expect((await findPerson(db, CUSTOMER))?.classification).toEqual({ kind: "customer", customerId })
   })
   it("never matches a person with no email", async () => {
     expect(await findPerson(db, "")).toBeNull()

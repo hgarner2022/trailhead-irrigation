@@ -120,7 +120,7 @@ describe("people", () => {
 
 **Step 2: Run** → FAIL (module missing).
 
-**Step 3: Implement** `people/handlers.ts` with `PersonOut` (`id, name, initials, email, phone, role, truck, jobberUserId, hasCalendarFeed, workingDays, capacityByKind, seasonStart, seasonEnd, active, canSignIn`), `peopleList` (order: owner first, then name), `peopleCreate` (initials derived when not given: first letters of the first two words), `peopleUpdate`, `peopleDeactivate` (also refuses to deactivate the last active owner: `ApiError("unprocessable", "Keep at least one owner")`). Rewrite `trucks/handlers.ts` so each handler calls the people handler and maps `PersonOut` to `TruckOut` (`name`, `jobberUserId`, `hasCalendarFeed`, `workingDays`, `capacityByKind`, `active`), summaries marked "Alias of people.*, kept for one season". Register `people.*` in `v1/index.ts` next to `trucks.*`.
+**Step 3: Implement** `people/handlers.ts` with `PersonOut` (`id, name, initials, email, phone, role, truck, jobberUserId, hasCalendarFeed, workingDays, capacityByKind, seasonStart, seasonEnd, active, canSignIn`), `peopleList` (order: owner first, then name), `peopleCreate` (initials derived when not given: first letters of the first two words), `peopleUpdate`, `peopleDeactivate` (also refuses to deactivate the last active owner: `ApiError("unprocessable", "Keep at least one owner.")`). Rewrite `trucks/handlers.ts` so each handler calls the people handler and maps `PersonOut` to `TruckOut` (`name`, `jobberUserId`, `hasCalendarFeed`, `workingDays`, `capacityByKind`, `active`), summaries marked "Alias of people.*, kept for one season". Register `people.*` in `v1/index.ts` next to `trucks.*`.
 
 **Step 4: Run** `npx vitest run --project unit src/api/v1/people src/api/v1/trucks` → PASS.
 

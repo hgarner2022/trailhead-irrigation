@@ -60,6 +60,7 @@ export async function queueStaffMessage(db: Database, organizationId: string, ki
   const staff = await db
     .select({ email: s.person.email })
     .from(s.person)
+    // Owner and admin run the office, so they hear about passes, charges and unclosed days; a tech drives and gets the crew summary instead.
     .where(and(eq(s.person.organizationId, organizationId), inArray(s.person.role, ["owner", "admin"]), isNotNull(s.person.email), eq(s.person.active, true)))
   let queued = 0
   for (const p of staff) {

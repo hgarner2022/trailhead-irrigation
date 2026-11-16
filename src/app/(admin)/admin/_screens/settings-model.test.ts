@@ -202,11 +202,13 @@ describe("messages", () => {
   })
 
   it("fills a template from the sample and leaves unknown placeholders", () => {
-    const sample = { firstName: "Andrea", visit: "turn-on", date: "May 3", truck: "Truck 1", nextVisit: "inspection" }
-    expect(fillMessage("Hi {firstName}, your {visit} is booked for {date} on {truck}. Next: {nextVisit}. {other}", sample)).toBe(
-      "Hi Andrea, your turn-on is booked for May 3 on Truck 1. Next: inspection. {other}",
+    const sample = { firstName: "Andrea", visit: "turn-on", date: "May 3", who: "Ryan", truck: "Truck 1", nextVisit: "inspection" }
+    expect(fillMessage("Hi {firstName}, your {visit} is booked for {date}. {who} will be there on {truck}. Next: {nextVisit}. {other}", sample)).toBe(
+      "Hi Andrea, your turn-on is booked for May 3. Ryan will be there on Truck 1. Next: inspection. {other}",
     )
     expect(fillMessage(data.settings.messages[1].body, sample)).not.toMatch(/\{/)
+    expect(data.settings.messages[2].body).toContain("{who}")
+    expect(fillMessage(data.settings.messages[2].body, sample)).toContain("Ryan will be there")
   })
 })
 
@@ -258,10 +260,10 @@ describe("more people, areas and keys", () => {
 
 describe("sampleFor", () => {
   it("reads the first pass and the first scheduled visit", () => {
-    expect(sampleFor(data)).toEqual({ firstName: "Andrea", visit: "inspection", date: "April 8", truck: "Truck 1", nextVisit: "inspection" })
+    expect(sampleFor(data)).toEqual({ firstName: "Andrea", visit: "inspection", date: "April 8", who: "Ryan", truck: "Truck 1", nextVisit: "inspection" })
   })
   it("falls back when there is nothing", () => {
-    expect(sampleFor({ ...data, passes: [], visits: [] })).toMatchObject({ firstName: "Alex", visit: "visit", truck: "Truck 1" })
+    expect(sampleFor({ ...data, passes: [], visits: [] })).toMatchObject({ firstName: "Alex", visit: "visit", who: "Ryan", truck: "Truck 1" })
   })
 })
 

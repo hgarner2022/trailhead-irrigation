@@ -284,7 +284,7 @@ export interface SeasonWindow {
   leadWeeks: number
 }
 
-/** One customer message the app sends, in Trailhead's voice. The body may carry {firstName}, {visit}, {date} and {truck}. */
+/** One customer message the app sends, in Trailhead's voice. The body may carry {firstName}, {visit}, {date}, {who} (the first name of the person on the visit) and {nextVisit}; {truck} (the truck label) still fills for one season and goes in step 6. */
 export interface MessageTemplate {
   key: string
   channel: "email" | "sms"

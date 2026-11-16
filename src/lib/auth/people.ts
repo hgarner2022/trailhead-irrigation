@@ -1,5 +1,5 @@
 import "server-only"
-import { and, eq, isNotNull, sql } from "drizzle-orm"
+import { and, asc, eq, isNotNull, sql } from "drizzle-orm"
 import type { Database } from "@/db/types"
 import * as s from "@/db/schema"
 import { classify, type Classification } from "./allow"
@@ -21,6 +21,9 @@ export async function findPerson(db: Database, email: string): Promise<PersonMat
     .select({ email: s.person.email, role: s.person.role, organizationId: s.person.organizationId })
     .from(s.person)
     .where(and(isNotNull(s.person.email), eq(s.person.active, true), sql`lower(${s.person.email}) = ${lower}`))
+    // One row per email per organization by the unique index; should that ever slip, the owner wins and the answer never changes between calls.
+    .orderBy(sql`case when ${s.person.role} = 'owner' then 0 else 1 end`, asc(s.person.id))
+    .limit(1)
   const customers = await db
     .select({ email: s.customer.email, id: s.customer.id, organizationId: s.customer.organizationId })
     .from(s.customer)
