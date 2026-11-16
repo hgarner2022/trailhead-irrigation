@@ -61,6 +61,14 @@ describe("the days picked at checkout", () => {
     expect(events[0]?.payload).toMatchObject({ personId: "person_truck-1", truckId: "person_truck-1", scheduledOn: ryan.day })
   })
 
+  it("still makes the pass when the chosen day names a person it does not know, and leaves that visit with no day", async () => {
+    const ryan = (await offer("turn-on")).days.find((d) => d.personId === "person_truck-1")!
+    const pass = await start("days-unknown@example.com", [{ kind: "turn-on", day: ryan.day, truckId: "nope", start: ryan.start }])
+    expect(pass.id).toBeTruthy()
+    const rows = await db.select().from(s.visit).where(eq(s.visit.passId, pass.id))
+    expect(rows.find((v) => v.kind === "turn-on")).toMatchObject({ status: "unscheduled", scheduledOn: null, personId: null, startTime: null })
+  })
+
   it("drops a day that is not open, and leaves that visit with no day", async () => {
     const pass = await start("days2@example.com", [{ kind: "turn-on", day: "2027-05-08", personId: "person_truck-1", start: "08:00" }])
     const rows = await db.select().from(s.visit).where(eq(s.visit.passId, pass.id))

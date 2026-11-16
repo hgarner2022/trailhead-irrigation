@@ -16,7 +16,7 @@ import { emitEvent } from "../webhooks/deliver"
 import { isRoutePerson, loadPerson, resolvePersonId } from "../people/handlers"
 import { recordChange } from "../passes/queries"
 import { loadVisit, visitOut, visitsQuery } from "./queries"
-import { VisitOut } from "./schemas"
+import { VisitOut, who } from "./schemas"
 
 const FINAL = ["completed", "cancelled", "skipped"] as const
 
@@ -39,7 +39,16 @@ export const visitsList = defineHandler({
   path: "/visits",
   scope: "read",
   summary: "List visits, newest first. Filter by day range, person, status, kind or pass.",
-  input: z.object({ from: Day.optional(), to: Day.optional(), personId: Id.optional(), truckId: PersonIdAlias, status: VisitStatus.optional(), kind: VisitKind.optional(), passId: Id.optional(), ...pageInput }),
+  input: z.object({
+    from: Day.optional(),
+    to: Day.optional(),
+    personId: Id.optional().describe("Only the visits assigned to this person; an unknown id answers not_found."),
+    truckId: PersonIdAlias.describe("Alias of personId, kept for one season: the same id (the old truck id is still understood); an unknown id answers not_found."),
+    status: VisitStatus.optional(),
+    kind: VisitKind.optional(),
+    passId: Id.optional(),
+    ...pageInput,
+  }),
   output: page(VisitOut),
   async run(ctx, input) {
     const filterId = input.personId ?? input.truckId
@@ -76,9 +85,6 @@ export const visitsGet = defineHandler({
     return visitOut(ctx, await loadVisit(ctx, input.id))
   },
 })
-
-/** The webhook's word for who has the visit: `personId`, with `truckId` the same id for one season. */
-export const who = (personId: string | null) => ({ personId, truckId: personId })
 
 /** The one placement: every hard rule, the day ordered, the date text queued. `visits.move` and `visits.create` both run it. `personId` names the person; `truckId` is its alias. */
 export async function placeVisit(ctx: Ctx, input: { id: string; personId?: string; truckId?: string; scheduledOn: string; startTime?: string }) {

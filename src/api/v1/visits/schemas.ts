@@ -39,3 +39,6 @@ export const VisitOut = z.object({
   address: z.string().optional().describe("Only for callers with the write scope."),
 })
 export type VisitOutType = z.infer<typeof VisitOut>
+
+/** The webhook's word for who has the visit: `personId`, with `truckId` the same id for one season. */
+export const who = (personId: string | null) => ({ personId, truckId: personId })

@@ -1,7 +1,8 @@
 import "server-only"
 import { and, eq } from "drizzle-orm"
+import { ApiError } from "@/api/core/errors"
 import { resolvePersonId } from "@/api/v1/people/handlers"
-import { who } from "@/api/v1/visits/handlers"
+import { who } from "@/api/v1/visits/schemas"
 import { emitEvent } from "@/api/v1/webhooks/deliver"
 import * as s from "@/db/schema"
 import type { Database } from "@/db/types"
@@ -26,10 +27,21 @@ export interface ShiftedDay {
 
 const pickable = (row: { id: string; organizationId: string; kind: string }, town: string) => ({ id: row.id, organizationId: row.organizationId, kind: row.kind, town })
 
+/** The person's own id, or null for an id (person or legacy truck) the organization does not know. */
+async function knownPersonId(db: Database, organizationId: string, id: string): Promise<string | null> {
+  try {
+    return await resolvePersonId({ db, organizationId }, id)
+  } catch (error) {
+    if (error instanceof ApiError && error.code === "not_found") return null
+    throw error
+  }
+}
+
 /**
  * Holds the days the customer picked on the pending pass's visits: day, person and the start of the window, the visit still
  * `unscheduled`. A held day counts against that person's day (the scheduler reads every visit assigned to someone), so two buyers are not
- * offered the last place. A day that is not open any more is not stored; that visit waits for the scheduler.
+ * offered the last place. A day that is not open any more, or one with a person the organization does not know, is not stored; that
+ * visit waits for the scheduler.
  */
 export async function holdChosenDays(db: Database, passId: string, days: ChosenDayInput[], town: string, season: number, today: string): Promise<number> {
   let held = 0
@@ -37,7 +49,8 @@ export async function holdChosenDays(db: Database, passId: string, days: ChosenD
   for (const v of visits) {
     const chosen = days.find((d) => d.kind === v.kind)
     if (!chosen) continue
-    const personId = await resolvePersonId({ db, organizationId: v.organizationId }, chosen.personId)
+    const personId = await knownPersonId(db, v.organizationId, chosen.personId)
+    if (!personId) continue
     const slots = await openSlots(db, pickable(v, town), today, season)
     if (!slots.some((x) => x.day === chosen.day && x.personId === personId)) continue
     await db.update(s.visit).set({ personId, scheduledOn: chosen.day, startTime: chosen.start, awaitingPick: false }).where(eq(s.visit.id, v.id))

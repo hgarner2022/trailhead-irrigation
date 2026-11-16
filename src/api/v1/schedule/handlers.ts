@@ -89,7 +89,11 @@ export const scheduleDay = defineHandler({
   path: "/schedule/day",
   scope: "read",
   summary: "The map's pins and stop order for one day, optionally for one person.",
-  input: z.object({ day: Day, personId: Id.optional(), truckId: PersonIdAlias }),
+  input: z.object({
+    day: Day,
+    personId: Id.optional().describe("Only this person's stops; an unknown id answers not_found."),
+    truckId: PersonIdAlias.describe("Alias of personId, kept for one season: the same id (the old truck id is still understood); an unknown id answers not_found."),
+  }),
   output: z.object({ day: Day, stops: z.array(Stop) }),
   async run(ctx, input) {
     const filterId = input.personId ?? input.truckId
