@@ -70,10 +70,10 @@ export function weekVisits(visits: Visit[], weekStart: string, timeZone: string)
   })
 }
 
-/** A day's visits, on one truck when `truckId` is given, by stop order then start time. */
-export function dayVisits(visits: Visit[], dayIso: string, truckId: string | undefined, timeZone: string): Visit[] {
+/** A day's visits, one person's when `personId` is given, by stop order then start time. */
+export function dayVisits(visits: Visit[], dayIso: string, personId: string | undefined, timeZone: string): Visit[] {
   return visits
-    .filter((v) => onCalendar(v) && dayOf(v.startAt, timeZone) === dayIso && (truckId === undefined || v.truckId === truckId))
+    .filter((v) => onCalendar(v) && dayOf(v.startAt, timeZone) === dayIso && (personId === undefined || v.personId === personId))
     .sort(byStop)
 }
 
@@ -121,7 +121,7 @@ export function zonedToUtc(y: number, mo: number, d: number, h: number, mi: numb
   return new Date(ms)
 }
 
-/** A truck's working day, in the zone's wall clock: busy time inside it counts against capacity, an all-day event fills all of it. */
+/** A person's working day, in the zone's wall clock: busy time inside it counts against capacity, an all-day event fills all of it. */
 export const WORKDAY = { startHour: 7, endHour: 17 } as const
 export const WORKDAY_MINUTES = (WORKDAY.endHour - WORKDAY.startHour) * 60
 
@@ -131,16 +131,16 @@ function workdayBounds(dayIso: string, timeZone: string): [number, number] {
   return [zonedToUtc(y, m, d, WORKDAY.startHour, 0, 0, timeZone).getTime(), zonedToUtc(y, m, d, WORKDAY.endHour, 0, 0, timeZone).getTime()]
 }
 
-/** The blocks of `truckId` that overlap the working day of `dayIso`. */
-export function blocksOn(blocks: BusyBlock[], truckId: string, dayIso: string, timeZone: string): BusyBlock[] {
+/** The blocks of `personId` that overlap the working day of `dayIso`. */
+export function blocksOn(blocks: BusyBlock[], personId: string, dayIso: string, timeZone: string): BusyBlock[] {
   const [open, close] = workdayBounds(dayIso, timeZone)
-  return blocks.filter((b) => b.truckId === truckId && Date.parse(b.startAt) < close && Date.parse(b.endAt) > open)
+  return blocks.filter((b) => b.personId === personId && Date.parse(b.startAt) < close && Date.parse(b.endAt) > open)
 }
 
-/** Minutes of the working day on `dayIso` that the truck's blocks cover (overlapping blocks counted once). */
-export function blockedMinutes(blocks: BusyBlock[], truckId: string, dayIso: string, timeZone: string): number {
+/** Minutes of the working day on `dayIso` that the person's blocks cover (overlapping blocks counted once). */
+export function blockedMinutes(blocks: BusyBlock[], personId: string, dayIso: string, timeZone: string): number {
   const [open, close] = workdayBounds(dayIso, timeZone)
-  const spans = blocksOn(blocks, truckId, dayIso, timeZone)
+  const spans = blocksOn(blocks, personId, dayIso, timeZone)
     .map((b) => [Math.max(open, Date.parse(b.startAt)), Math.min(close, Date.parse(b.endAt))] as const)
     .sort((a, b) => a[0] - b[0])
   let total = 0
@@ -152,7 +152,7 @@ export function blockedMinutes(blocks: BusyBlock[], truckId: string, dayIso: str
   return Math.round(total / 60_000)
 }
 
-/** The capacity left on a truck-day after its busy time: all of it with no blocks, none when the day is covered, else scaled by the share of the working day still free (rounded down, so a half-booked day holds half the visits). */
+/** The capacity left on a person's day after its busy time: all of it with no blocks, none when the day is covered, else scaled by the share of the working day still free (rounded down, so a half-booked day holds half the visits). */
 export function capacityAfterBlocks(remaining: number, blockedMin: number): number {
   if (blockedMin <= 0) return remaining
   if (blockedMin >= WORKDAY_MINUTES) return 0

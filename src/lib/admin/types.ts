@@ -103,7 +103,11 @@ export interface Visit {
   chargeFailed?: boolean
   /** the visit was skipped (the admin shows Skipped; `status` stays cancelled for the calendar) */
   skipped?: boolean
-  /** the truck the visit rides on; absent until the schedule places it */
+  /** who the visit is assigned to; absent until the schedule places it */
+  personId?: string
+  /** that person's name, "Ryan Garner" */
+  personName?: string
+  /** @deprecated alias of `personId`, the same id, kept until the screens read people (step 1's admin task) */
   truckId?: string
   /** the customer must be there and has not yet picked a day; the visit waits in the tray for them (scheduling flow, 2026-11-12) */
   awaitingPick?: boolean
@@ -120,7 +124,7 @@ export interface Visit {
   /** how long the stop takes */
   minutes?: number
   notes?: string
-  /** the truck's name once it has one */
+  /** @deprecated alias of `personName`, the same name, kept until the screens read people */
   truckName?: string
   /** why the last attempt did not happen, until the visit gets a day again */
   notDoneReason?: string
@@ -180,7 +184,9 @@ export interface PassVisit {
   /** the signed link to the visit's .ics file, from the API */
   calendarUrl?: string
   id?: string
-  /** the truck's name once the visit has one, "Truck 1"; the pass page shows it beside the date */
+  /** the name of the person who has the visit, "Ryan Garner"; the pass page shows it beside the date */
+  personName?: string
+  /** @deprecated alias of `personName`, the same name, kept until the screens read people */
   truckName?: string
   completedAt?: string
   amount: number
@@ -330,9 +336,9 @@ export interface SettingsChange {
   to: string
 }
 
-/** Busy time on a truck from its Jobber calendar feed; the scheduler and the pass page's day picker subtract it. */
+/** Busy time on a person from their Jobber calendar feed; the scheduler and the pass page's day picker subtract it. */
 export interface BusyBlock {
-  truckId: string
+  personId: string
   /** ISO instants */
   startAt: string
   endAt: string

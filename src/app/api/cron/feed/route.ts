@@ -2,7 +2,7 @@ import "server-only"
 import { timingSafeEqual } from "node:crypto"
 import { db } from "@/db"
 import { readCronSecret } from "@/lib/env"
-import { trucksWithFeed } from "@/lib/jobber-feed"
+import { peopleWithFeed } from "@/lib/jobber-feed"
 import { drain, enqueue } from "@/lib/queue"
 import { handlers } from "@/lib/queue/handlers"
 
@@ -17,7 +17,7 @@ function authorised(request: Request): boolean {
 }
 
 /**
- * Queue a `jobber-feed-sync` for each truck with a calendar URL (one per truck per five-minute slot) and drain.
+ * Queue a `jobber-feed-sync` for each person with a calendar URL (one per person per five-minute slot) and drain.
  * Vercel's Hobby plan allows two cron jobs, once a day each, so `vercel.json` schedules only `/api/cron/daily`, which
  * runs this first (early morning in
  * Colorado); on a Pro plan set it to every five minutes. The route can also be hit by hand with the secret.
@@ -26,8 +26,8 @@ export async function GET(request: Request) {
   if (!authorised(request)) return Response.json({ error: "unauthorized" }, { status: 401 })
   const database = db()
   const slot = Math.floor(Date.now() / 300_000)
-  const trucks = await trucksWithFeed(database)
-  for (const t of trucks) await enqueue(database, t.organizationId, "jobber-feed-sync", `${t.id}:${slot}`, { truckId: t.id })
+  const people = await peopleWithFeed(database)
+  for (const p of people) await enqueue(database, p.organizationId, "jobber-feed-sync", `${p.id}:${slot}`, { personId: p.id })
   const result = await drain(database, handlers)
-  return Response.json({ trucks: trucks.length, ...result })
+  return Response.json({ people: people.length, ...result })
 }

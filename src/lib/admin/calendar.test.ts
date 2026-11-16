@@ -42,9 +42,9 @@ describe("the week's visits", () => {
   })
 
   it("lists a day's stops by stop order, then by start time when none", () => {
-    const names = (visits: Visit[], truckId?: string) => dayVisits(visits, "2026-11-13", truckId, TIME_ZONE).map((v) => v.clientName)
+    const names = (visits: Visit[], personId?: string) => dayVisits(visits, "2026-11-13", personId, TIME_ZONE).map((v) => v.clientName)
     expect(names(data.visits)).toEqual(["David", "Ricky", "Joel", "Brian"])
-    expect(names(data.visits, "truck-2")).toEqual([])
+    expect(names(data.visits, "person_truck-2")).toEqual([])
     const unordered = dayVisits(data.visits, "2026-11-13", undefined, TIME_ZONE).map((v) => ({ ...v, stopOrder: undefined })).reverse()
     expect(names(unordered)).toEqual(["David", "Ricky", "Joel", "Brian"])
   })
