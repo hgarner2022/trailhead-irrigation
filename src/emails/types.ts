@@ -28,6 +28,8 @@ export interface PurchaseConfirmationData extends Base {
   visits: { kind: "turn-on" | "inspection" | "blowout"; name: string; amount: number; visit: VisitFacts | null; fallback: string; /** said when the day picked at checkout filled up before the card was saved */ note?: string }[]
   /** the last four of the card on file, or null */
   cardLast4: string | null
+  /** with no card on file: the link to add one (an office sale paid by card), else null and the customer pays at each visit */
+  cardUpdateUrl?: string | null
 }
 export interface VisitData extends Base {
   visit: VisitFacts

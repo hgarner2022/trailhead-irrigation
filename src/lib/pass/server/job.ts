@@ -4,8 +4,8 @@ import * as s from "@/db/schema"
 import type { Database } from "@/db/types"
 
 /** The job a Season Pass is: made with the pass, kept in step with it (`syncPassJob`). A job is the sold work; the pass row holds only what is pass-specific. */
-export async function createPassJob(db: Database, job: { organizationId: string; customerId: string; propertyId: string; status?: "pending" | "active"; createdAt?: Date }): Promise<string> {
-  const [row] = await db.insert(s.job).values({ ...job, kind: "pass", source: "checkout", status: job.status ?? "pending" }).returning({ id: s.job.id })
+export async function createPassJob(db: Database, job: { organizationId: string; customerId: string; propertyId: string; status?: "pending" | "active"; source?: "checkout" | "office"; createdAt?: Date }): Promise<string> {
+  const [row] = await db.insert(s.job).values({ ...job, kind: "pass", source: job.source ?? "checkout", status: job.status ?? "pending" }).returning({ id: s.job.id })
   return row!.id
 }
 

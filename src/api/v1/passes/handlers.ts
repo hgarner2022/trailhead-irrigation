@@ -4,15 +4,15 @@ import { z } from "zod"
 import * as s from "@/db/schema"
 import { enqueueGeocode } from "@/lib/geocode"
 import { currentSeason } from "@/lib/pass/season"
-import { nextPassNumber } from "@/lib/pass/number"
 import { SEASON_PASS_ADD_ON, visitPrice, visitsOnSale } from "@/lib/season-pass"
 import { hasScope } from "@/lib/auth/principal"
 import { readAppUrl } from "@/lib/env"
 import { activatePass } from "@/lib/pass/server/activate"
-import { holdChosenDays, scheduleChosenDays } from "@/lib/pass/server/chosen-days"
+import { holdChosenDays } from "@/lib/pass/server/chosen-days"
 import { emailDomainReachable, failedCheckoutStep, MAX_PENDING_PER_HOUR, newestPendingPass, pendingPassesLastHour } from "@/lib/pass/server/create"
 import { cleanEmail, cleanName, cleanText, normalizePhone } from "@/lib/format/contact"
-import { queuePurchaseConfirmation, recordPurchase } from "@/lib/pass/server/purchase"
+import { queuePurchaseConfirmation } from "@/lib/pass/server/purchase"
+import { insertPassVisits, makePassRows, WINDOW_LABEL } from "@/lib/pass/server/rows"
 import { CONSENT_SNAPSHOT, consentSnapshot } from "@/lib/pass/server/consent-snapshot"
 import { outOfAreaMessage } from "@/lib/places"
 import { queueCardUpdateLink } from "@/lib/pass/server/card-link"
@@ -27,12 +27,12 @@ import { ApiError, notImplemented } from "../../core/errors"
 import { defineHandler } from "../../core/handler"
 import { afterTimeCursor, cursorPage, page, pageInput, timeCursor } from "../../core/pagination"
 import { addDays, Id, idInput, OK, okOutput, PassStatus, Preference, Town, today } from "../shared"
-import { createPassJob, syncPassJob } from "@/lib/pass/server/job"
+import { syncPassJob } from "@/lib/pass/server/job"
+import { finishPurchase } from "./finish"
 import { renewPass } from "./renew"
 import { PassDetail, PassOut, passActivateInput, passConsentInput, passCreateInput } from "./schemas"
 import { loadPass, passDetail, passesQuery, passOut, recordChange } from "./queries"
 
-const WINDOW_LABEL = { "turn-on": "May", inspection: "July", blowout: "October" } as const
 const PassVisitKind = z.enum(["turn-on", "inspection", "blowout"])
 const OPEN = ["pending", "active"] as const
 
@@ -158,7 +158,7 @@ export const passesCreate = defineHandler({
       needsCustomerHome: input.needsCustomerHome,
       accessNote,
     }
-    let pass: typeof s.seasonPass.$inferSelect | undefined = reused
+    let pass: typeof s.seasonPass.$inferSelect
     if (reused) {
       // A customer who went back changes the answers on the pass they hold; its visits are rebuilt, none has a day yet.
       await ctx.db.update(s.seasonPass).set({ ...fields, season, updatedAt: ctx.now }).where(eq(s.seasonPass.id, reused.id))
@@ -168,27 +168,11 @@ export const passesCreate = defineHandler({
       // Filling a last name nobody has recorded yet is not rewriting who the customer is, so a resume by email may do it.
       else if (!customerRow.lastName && contact.lastName) await ctx.db.update(s.customer).set({ lastName: contact.lastName, updatedAt: ctx.now }).where(eq(s.customer.id, customerRow.id))
       await ctx.db.delete(s.visit).where(eq(s.visit.passId, reused.id))
-    }
-    for (let attempt = 0; attempt < 3 && !pass; attempt++) {
-      const numbers = await ctx.db.select({ n: s.seasonPass.number }).from(s.seasonPass).where(and(eq(s.seasonPass.organizationId, org), eq(s.seasonPass.season, season)))
-      try {
-        const jobId = await createPassJob(ctx.db, { organizationId: org, customerId: customerRow.id, propertyId: property.id, createdAt: ctx.now })
-        ;[pass] = await ctx.db
-          .insert(s.seasonPass)
-          .values({
-            jobId,
-            organizationId: org,
-            number: nextPassNumber(season, numbers.map((r) => r.n)),
-            season,
-            customerId: customerRow.id,
-            ...fields,
-            status: "pending",
-            createdAt: ctx.now,
-          })
-          .returning()
-      } catch (error) {
-        if (attempt === 2) throw error
-      }
+      pass = { ...reused, ...fields, season }
+      await insertPassVisits(ctx.db, pass, onSale)
+      await syncPassJob(ctx.db, pass.id)
+    } else {
+      pass = await makePassRows(ctx.db, { organizationId: org, customerId: customerRow.id, season, onSale, ...fields, status: "pending", source: "checkout", now: ctx.now })
     }
     if (input.consent)
       await ctx.db.insert(s.consent).values({
@@ -202,25 +186,8 @@ export const passesCreate = defineHandler({
         recordedAt: ctx.now,
         note: input.consent.note,
       })
-    await ctx.db.insert(s.visit).values(
-      onSale.map((v) => ({
-        organizationId: org,
-        jobId: pass!.jobId,
-        passId: pass!.id,
-        customerId: customerRow.id,
-        propertyId: property.id,
-        kind: v.key,
-        window: WINDOW_LABEL[v.key],
-        amount: visitPrice(v, input.zones),
-        status: "unscheduled" as const,
-        preference: v.key === "turn-on" ? input.turnOnPreference : v.key === "blowout" ? input.blowoutPreference : undefined,
-        // needsCustomerHome is a note for Ryan now; no visit waits for the customer to pick.
-        awaitingPick: false,
-      })),
-    )
-    await syncPassJob(ctx.db, pass!.id)
-    await holdChosenDays(ctx.db, pass!.id, input.days, input.property.town, season, day)
-    return passDetail(ctx, await loadPass(ctx, pass!.id))
+    await holdChosenDays(ctx.db, pass.id, input.days, input.property.town, season, day)
+    return passDetail(ctx, await loadPass(ctx, pass.id))
   },
 })
 
@@ -236,12 +203,9 @@ export const passesActivate = defineHandler({
   async run(ctx, input) {
     const row = await loadPass(ctx, input.id)
     await activatePass(ctx.db, getStripe(), row.pass.id, input.setupSessionId, ctx.now)
-    // The days picked at checkout become scheduled visits; a day that filled up since moves to the next open one and is recorded for the confirmation.
-    for (const moved of await scheduleChosenDays(ctx.db, row.pass.id, row.town, row.pass.season, today(ctx)))
-      await recordChange(ctx, { customerId: row.pass.customerId, passId: row.pass.id, visitId: moved.visitId, kind: "day-filled", detail: { visit: moved.kind, from: moved.from, to: moved.to } })
     // The boxes in the request win; without them (the webhook activated first) the snapshot from when the card form opened stands in.
     const consent = input.consent ?? (await consentSnapshot(ctx.db, row.pass.id))
-    await recordPurchase(ctx.db, row.pass.id, consent, readAppUrl(), ctx.now)
+    await finishPurchase(ctx, row.pass, row.town, consent)
     return passDetail(ctx, await loadPass(ctx, input.id))
   },
 })
