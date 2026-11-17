@@ -128,7 +128,7 @@ describe("VisitsScreen", () => {
     expect(screen.queryByRole("heading", { name: "What's included" })).toBeNull()
   })
 
-  it("shows the spec's columns and a row per visit, with New visit in the header and no Passes button", () => {
+  it("shows the spec's columns and a row per visit, with New job in the header and no Passes button", () => {
     renderScreen(actions())
     const headers = screen.getAllByRole("columnheader").map((h) => h.textContent)
     expect(headers).toEqual(expect.arrayContaining(["Customer", "Town", "Visit", "Day", "Time", "Who", "Work", "Money", "Price", "Pass"]))
@@ -139,7 +139,7 @@ describe("VisitsScreen", () => {
     expect(screen.queryByText("Not yet")).toBeNull()
     expect(screen.queryByText("None")).toBeNull()
     expect(screen.getAllByText("No day yet").length).toBeGreaterThan(0)
-    expect(screen.getByRole("button", { name: "New visit" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "New job" })).toBeInTheDocument()
     expect(screen.queryByRole("link", { name: "Passes" })).toBeNull()
   })
 
@@ -233,41 +233,43 @@ describe("VisitsScreen", () => {
     expect(a.recordPayment).toHaveBeenCalledWith("u", { method: "check" })
   })
 
-  it("hands a tech the visit read-only: no New visit and no action buttons", () => {
+  it("hands a tech the visit read-only: no New job and no action buttons", () => {
     renderScreen(actions(), { readOnly: true, defaultVisitId: "a" })
-    expect(screen.queryByRole("button", { name: "New visit" })).toBeNull()
+    expect(screen.queryByRole("button", { name: "New job" })).toBeNull()
     const panel = within(screen.getByRole("complementary"))
     expect(panel.queryByRole("button", { name: "Move" })).toBeNull()
     expect(panel.getByText("Customer")).toBeInTheDocument()
   })
 })
 
-describe("New visit", () => {
-  it("needs only a customer, a kind and a day; More details holds the defaults", async () => {
+describe("New job", () => {
+  it("needs only a customer, a service and a day; More details holds the defaults", async () => {
     const a = actions()
     renderScreen(a)
-    await userEvent.click(screen.getByRole("button", { name: "New visit" }))
+    await userEvent.click(screen.getByRole("button", { name: "New job" }))
     const sheet = within(await screen.findByRole("dialog"))
-    expect(sheet.getByRole("button", { name: "Add visit" })).toBeDisabled()
+    expect(sheet.queryByRole("button", { name: "Add job" })).toBeNull()
     await userEvent.type(sheet.getByLabelText("Find a customer"), "Elm")
     await userEvent.click(await sheet.findByRole("button", { name: /Dana Reed/ }))
-    expect(sheet.getByRole("button", { name: "Add visit" })).toBeEnabled()
+    await userEvent.selectOptions(sheet.getByLabelText("What are we doing?"), "repair")
+    expect(sheet.getByRole("button", { name: "Add job" })).toBeEnabled()
     expect(sheet.getByLabelText("Minutes")).toHaveValue("120")
     expect(sheet.getByLabelText("Price")).toHaveValue("145")
-    await userEvent.click(sheet.getByRole("button", { name: "Add visit" }))
-    expect(a.createVisit).toHaveBeenCalledWith(expect.objectContaining({ customerId: "cx", kind: "repair", scheduledOn: "2026-11-12", durationMinutes: 120, price: 145 }))
+    await userEvent.click(sheet.getByRole("button", { name: "Add job" }))
+    expect(a.createVisit).toHaveBeenCalledWith(expect.objectContaining({ customerId: "cx", serviceKey: "repair", scheduledOn: "2026-11-12", durationMinutes: 120, price: 145 }))
   })
 
   it("takes a new customer with name, street and town, and shows the API's refusal", async () => {
     const a = actions({ createVisit: vi.fn().mockResolvedValue({ ok: false, message: "Truck 1 does not work on sundays" }) })
     renderScreen(a)
-    await userEvent.click(screen.getByRole("button", { name: "New visit" }))
+    await userEvent.click(screen.getByRole("button", { name: "New job" }))
     const sheet = within(await screen.findByRole("dialog"))
     await userEvent.click(sheet.getByRole("button", { name: "New customer" }))
     await userEvent.type(sheet.getByLabelText("First name"), "Nora")
     await userEvent.type(sheet.getByLabelText("Last name"), "Vale")
     await userEvent.type(sheet.getByLabelText("Street"), "1 Main St")
-    await userEvent.click(sheet.getByRole("button", { name: "Add visit" }))
+    await userEvent.selectOptions(sheet.getByLabelText("What are we doing?"), "repair")
+    await userEvent.click(sheet.getByRole("button", { name: "Add job" }))
     expect(a.createVisit).toHaveBeenCalledWith(expect.objectContaining({ newCustomer: expect.objectContaining({ firstName: "Nora", lastName: "Vale", property: { address: "1 Main St", town: "Erie" } }) }))
     expect(await sheet.findByText("Truck 1 does not work on sundays")).toBeInTheDocument()
   })

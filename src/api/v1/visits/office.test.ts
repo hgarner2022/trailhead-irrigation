@@ -58,6 +58,17 @@ describe("visits.create", () => {
     await expect(create({ customerId: "c100", kind: "repair", startTime: "09:00" })).rejects.toMatchObject({ code: "invalid" })
     await expect(create({ customerId: "nope", kind: "repair" })).rejects.toMatchObject({ code: "not_found" })
   })
+  it("with a serviceKey, takes the service's kind, minutes, price rule and description; kind is not needed", async () => {
+    const out = await create({ customerId: "c100", serviceKey: "blowout" })
+    expect(out).toMatchObject({ kind: "blowout", amount: SERVICES.blowout!.price, durationMinutes: SERVICES.blowout!.slotMinutes })
+    expect(await linesOfJob(db, out.jobId)).toMatchObject([{ visitId: out.id, name: SERVICES.blowout!.name, unitPrice: SERVICES.blowout!.price, serviceKey: "blowout", description: SERVICES.blowout!.description }])
+    const own = await create({ customerId: "c100", serviceKey: "blowout", price: 120 })
+    expect(own.amount).toBe(120)
+  })
+  it("refuses an unknown service and a call with neither a service nor a kind", async () => {
+    await expect(create({ customerId: "c100", serviceKey: "nope-nope" })).rejects.toThrow(/not offered/)
+    await expect(create({ customerId: "c100" })).rejects.toThrow(/what the job is for/)
+  })
   it("lists the job with its visits on customers.get", async () => {
     const got = await callApi(as(), customersGet, { id: "c100" })
     expect(got.jobs.some((j) => j.kind === "repair" && j.source === "office" && j.visits.length === 1)).toBe(true)

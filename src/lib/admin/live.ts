@@ -8,6 +8,7 @@ import { customersList } from "@/api/v1/customers/handlers"
 import { messagesList } from "@/api/v1/messages/handlers"
 import { passesList } from "@/api/v1/passes/handlers"
 import { settingsChangesList, settingsGet } from "@/api/v1/settings/handlers"
+import { servicesList } from "@/api/v1/services/handlers"
 import { peopleList, type PersonOut } from "@/api/v1/people/handlers"
 import { visitsList } from "@/api/v1/visits/handlers"
 import { today as todayOf } from "@/api/v1/shared"
@@ -16,7 +17,7 @@ import { loadBlocks } from "@/lib/jobber-feed"
 import { ctxFromSession } from "./api-ctx"
 import { canSeeContact } from "@/api/v1/shared"
 import { failedChargeVisits, shapeAdminData, type ApiCustomer, type ApiMessage, type ApiPass, type ApiVisit } from "./shape"
-import type { AdminData, Person, Town } from "./types"
+import type { AdminData, Person, ServiceItem, Town } from "./types"
 
 const PAGE = 100
 
@@ -41,6 +42,12 @@ async function all<T>(ctx: Ctx, handler: Handler<never, never>, input: Record<st
   return rows
 }
 
+const serviceItem = (r: { key: string; name: string; description: string | null; kind: string; minZones: number | null; maxZones: number | null; includedZones: number | null; price: number | null; extraZonePrice: number | null; slotMinutes: number; quoteOnly: boolean }): ServiceItem => ({
+  key: r.key, name: r.name, description: r.description, kind: r.kind, slotMinutes: r.slotMinutes, quoteOnly: r.quoteOnly,
+  ...(r.minZones !== null ? { minZones: r.minZones } : {}), ...(r.maxZones !== null ? { maxZones: r.maxZones } : {}), ...(r.includedZones !== null ? { includedZones: r.includedZones } : {}),
+  ...(r.price !== null ? { price: r.price } : {}), ...(r.extraZonePrice !== null ? { extraZonePrice: r.extraZonePrice } : {}),
+})
+
 /**
  * `AdminData` from the database, composed from the API's own list handlers
  * through `callApi` (so the caller's scopes apply and every read is logged)
@@ -49,7 +56,7 @@ async function all<T>(ctx: Ctx, handler: Handler<never, never>, input: Record<st
  */
 export async function getLiveAdminData(ctx: Ctx): Promise<AdminData> {
   const org = ctx.organizationId
-  const [customers, visits, passes, messages, people, areas, settings, changes] = await Promise.all([
+  const [customers, visits, passes, messages, people, areas, settings, changes, serviceRows] = await Promise.all([
     all<ApiCustomer>(ctx, customersList as never),
     all<ApiVisit>(ctx, visitsList as never),
     all<ApiPass>(ctx, passesList as never),
@@ -58,6 +65,7 @@ export async function getLiveAdminData(ctx: Ctx): Promise<AdminData> {
     callApi(ctx, areasList, {}),
     callApi(ctx, settingsGet, {}),
     all<{ id: string; at: string; who: string; field: string; from: string; to: string }>(ctx, settingsChangesList as never),
+    callApi(ctx, servicesList, { active: "true" }),
   ])
   const { termsVersion: _terms, ...rest } = settings
   void _terms
@@ -105,6 +113,7 @@ export async function getLiveAdminData(ctx: Ctx): Promise<AdminData> {
     jobRows,
     lineRows,
     blocks,
+    services: serviceRows.data.map(serviceItem),
   })
 }
 

@@ -404,6 +404,22 @@ export interface Attention {
   members?: Attention[]
 }
 
+/** One service the office can sell: what `services.list` sends for the active ones. Absent from the fixtures, where the sheet reads the catalogue in `src/lib/services.ts`. */
+export interface ServiceItem {
+  key: string
+  name: string
+  description: string | null
+  kind: string
+  minZones?: number
+  maxZones?: number
+  includedZones?: number
+  /** whole dollars; absent when the service is quoted */
+  price?: number
+  extraZonePrice?: number
+  slotMinutes: number
+  quoteOnly: boolean
+}
+
 export interface AdminData {
   /** Trailhead is organization one; every row is scoped for a second branch later */
   organizationId: string
@@ -423,4 +439,6 @@ export interface AdminData {
   messages: Message[]
   /** busy time read from the people's Jobber calendar feeds; absent in the fixtures */
   blocks?: BusyBlock[]
+  /** the active services, by key; absent in the fixtures */
+  services?: ServiceItem[]
 }

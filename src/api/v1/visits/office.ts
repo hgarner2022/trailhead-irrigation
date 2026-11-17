@@ -152,7 +152,8 @@ export const visitsCreate = defineHandler({
     customerId: Id.optional(),
     propertyId: Id.optional().describe("One of the customer's properties; the first when left out."),
     newCustomer: NewCustomer.optional(),
-    kind: z.enum(OFFICE_KINDS),
+    kind: z.enum(OFFICE_KINDS).optional().describe("Left out when `serviceKey` is given: the service's own kind is used."),
+    serviceKey: z.string().min(2).max(40).optional().describe("The catalogue service the job is for (services.list); its kind, minutes, price and description are used unless the call gives its own."),
     scheduledOn: Day.optional(),
     startTime: z.string().regex(/^\d{2}:\d{2}$/).optional().describe("Left out means any time that day."),
     durationMinutes: z.number().int().min(15).max(480).multipleOf(15).optional(),
@@ -164,6 +165,7 @@ export const visitsCreate = defineHandler({
   output: VisitOut,
   async run(ctx, input) {
     if (!input.customerId === !input.newCustomer) throw new ApiError("invalid", "Choose an existing customer or add a new one", [{ path: "customerId", message: "Give a customer or a newCustomer, not both" }])
+    if (!input.kind && !input.serviceKey) throw new ApiError("invalid", "Choose what the job is for", [{ path: "serviceKey", message: "Give a serviceKey or a kind" }])
     if (input.startTime && !input.scheduledOn) throw new ApiError("invalid", "Choose a day for that time", [{ path: "scheduledOn", message: "A time needs a day" }])
     const org = ctx.organizationId
     let customerId = input.customerId!
@@ -193,16 +195,22 @@ export const visitsCreate = defineHandler({
       if (!personId) throw new ApiError("unprocessable", "No one is on the schedule to take this visit")
     }
     // The price is the office's, else the service's fixed price (a repair visit), else none until quoted.
-    const price = input.price ?? defaultVisitPrice(input.kind)
+    let service: typeof s.service.$inferSelect | undefined
+    if (input.serviceKey) {
+      ;[service] = await ctx.db.select().from(s.service).where(and(eq(s.service.organizationId, org), eq(s.service.key, input.serviceKey)))
+      if (!service || !service.active) throw new ApiError("invalid", "That service is not offered", [{ path: "serviceKey", message: "No active service has that key" }])
+    }
+    const kind = service ? service.kind : input.kind!
+    const price = input.price ?? (service ? (service.price ?? undefined) : defaultVisitPrice(kind as (typeof OFFICE_KINDS)[number]))
     const [job] = await ctx.db
       .insert(s.job)
-      .values({ organizationId: org, customerId, propertyId, kind: input.kind === "repair" || input.kind === "install" ? input.kind : "other", status: "active", price: price ?? null, source: "office", notes: input.notes || null })
+      .values({ organizationId: org, customerId, propertyId, kind: kind === "repair" || kind === "install" ? kind : "other", status: "active", price: price ?? null, source: "office", notes: input.notes || null })
       .returning()
     const [made] = await ctx.db
       .insert(s.visit)
-      .values({ organizationId: org, jobId: job!.id, customerId, propertyId, kind: input.kind, amount: price ?? 0, status: "unscheduled", durationMinutes: input.durationMinutes ?? KIND_MINUTES[input.kind], notes: input.notes || null })
+      .values({ organizationId: org, jobId: job!.id, customerId, propertyId, kind, amount: price ?? 0, status: "unscheduled", durationMinutes: input.durationMinutes ?? service?.slotMinutes ?? KIND_MINUTES[kind as (typeof OFFICE_KINDS)[number]], notes: input.notes || null })
       .returning({ id: s.visit.id })
-    await insertLines(ctx.db, { organizationId: org, jobId: job!.id, now: ctx.now }, [{ ...lineForVisitKind(input.kind, price ?? 0), visitId: made!.id }])
+    await insertLines(ctx.db, { organizationId: org, jobId: job!.id, now: ctx.now }, [{ ...(service ? { name: service.name, description: service.description, quantity: 1, unitPrice: price ?? 0, taxable: service.taxable, serviceKey: service.key, visitKind: kind } : lineForVisitKind(kind, price ?? 0)), visitId: made!.id }])
     if (input.scheduledOn) {
       try {
         await placeVisit(ctx, { id: made!.id, personId: personId!, scheduledOn: input.scheduledOn, startTime: input.startTime })
@@ -219,7 +227,7 @@ export const visitsCreate = defineHandler({
         throw error
       }
     }
-    await recordChange(ctx, { customerId, visitId: made!.id, kind: "visit-created", detail: { job: job!.id, kind: input.kind, day: input.scheduledOn ?? null } })
+    await recordChange(ctx, { customerId, visitId: made!.id, kind: "visit-created", detail: { job: job!.id, kind, day: input.scheduledOn ?? null } })
     return visitOut(ctx, await loadVisit(ctx, made!.id))
   },
 })

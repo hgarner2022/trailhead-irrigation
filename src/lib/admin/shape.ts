@@ -10,7 +10,7 @@ import { jobTotal } from "@/lib/jobs/lines"
 import { NOT_CLOSED_LOOKBACK_DAYS, visitJob } from "./jobs"
 import type {
   SoldJob, AdminData, Attention, BusyBlock, Client, Consent, Invoice, Message, MessageKind, MonthTotal, Pass, PassVisit, Quote, SettingsChange,
-  Person, AreaGroup, OrganizationSettings, Town, Visit, VisitKind, VisitStatus,
+  Person, ServiceItem, AreaGroup, OrganizationSettings, Town, Visit, VisitKind, VisitStatus,
 } from "./types"
 
 const ZONE = "America/Denver"
@@ -74,6 +74,8 @@ export interface ShapeInput {
   /** every line on those jobs, oldest first */
   lineRows?: LineRow[]
   blocks: BusyBlock[]
+  /** the active services; absent in the fixtures */
+  services?: ServiceItem[]
 }
 
 /** What the newest charge and the last not-done say about a visit: the reason, how it was paid, a bill waiting. */
@@ -248,7 +250,7 @@ export function shapeAdminData(i: ShapeInput): AdminData {
   return {
     organizationId: i.organizationId, syncedAt: iso(i.syncedAt), clients, visits, ...(soldJobs ? { jobs: soldJobs } : {}), quotes, invoices, passes,
     monthTotals: monthTotals(i), attention: attention(i, passes, visitRows(i, appVisits, visits)), settings: { ...i.settings, people: i.people, areas: i.areas },
-    settingsChanges: i.settingsChanges, messages, blocks: i.blocks,
+    settingsChanges: i.settingsChanges, messages, blocks: i.blocks, ...(i.services ? { services: i.services } : {}),
   }
 }
 

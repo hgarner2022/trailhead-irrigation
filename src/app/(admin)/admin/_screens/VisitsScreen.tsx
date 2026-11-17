@@ -4,8 +4,7 @@ import { useMemo } from "react"
 import { DataGrid } from "@/components/blocks/DataGrid"
 import { PageHeader } from "@/components/blocks/PageHeader"
 import type { AdminData } from "@/lib/admin/types"
-import { NewPassButton } from "./NewPass"
-import { NewVisitButton } from "./NewVisit"
+import { NewJobButton } from "./NewJob"
 import type { VisitActions } from "./visit-actions-types"
 import { VisitPanelHost, useOpenVisit } from "./VisitPanelHost"
 import { visitColumns } from "./visits-columns"
@@ -14,7 +13,7 @@ import { routePeople } from "@/lib/admin/people"
 
 // Every visit of the season (docs/plans build-1): the customer's full name, town, the kind, day, time, who has it, the
 // two pills (work and money), price and pass number. Filters on both pill sets, kind, person, town and pass or
-// one-off; search by name, street or phone; New pass and New visit in the header; a row opens the visit panel beside the
+// one-off; search by name, street or phone; New job in the header; a row opens the visit panel beside the
 // grid (a sheet on a phone). A pass is a filter chip and a link in the Pass column, never a button of its own
 // (owner, 16 Nov: "Passes is a visits, so it could just be part of the filter"). Client because the open visit is
 // state; the route's page.tsx supplies `data`, `today` and the actions.
@@ -25,7 +24,7 @@ export interface VisitsScreenProps {
   today: string
   /** the visit open on first render: `?visit=` on the page, or the catalog */
   defaultVisitId?: string
-  /** a tech reads the visits and changes nothing: no New visit, no buttons in the panel */
+  /** a tech reads the visits and changes nothing: no New job, no buttons in the panel */
   readOnly?: boolean
   actions?: VisitActions
   /** filter chips set on first render: Home's money line links here with the visits its figure counts */
@@ -59,7 +58,7 @@ function Grid({ rows, data, defaultFilters }: { rows: VisitRow[]; data: AdminDat
       defaultFilters={defaultFilters}
       pageSize={25}
       emptyTitle="No visits yet"
-      emptyLine="Visits appear here as passes are sold and work is booked. Add one with New visit."
+      emptyLine="Visits appear here as passes are sold and work is booked. Add one with New job."
     />
   )
 }
@@ -73,12 +72,7 @@ export function VisitsScreen({ data, today, defaultVisitId, readOnly = false, ac
           title="Visits"
           context={visitsContext(rows)}
           actions={
-            !readOnly && (
-              <>
-                <NewPassButton data={data} today={today} actions={actions} />
-                <NewVisitButton data={data} today={today} actions={actions} />
-              </>
-            )
+            !readOnly && <NewJobButton data={data} today={today} actions={actions} />
           }
         />
         <Grid rows={rows} data={data} defaultFilters={defaultFilters} />
