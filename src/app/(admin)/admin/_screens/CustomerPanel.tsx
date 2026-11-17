@@ -9,10 +9,11 @@ import type { AdminData, Client, Visit } from "@/lib/admin/types"
 import { KIND_WORDS, TIME_ZONE, shortDate } from "@/lib/admin/format"
 import { visitJob } from "@/lib/admin/jobs"
 import { formatPhone } from "@/lib/format/contact"
-import { MARKETING_WORDS, SCHEDULED_WORDS, consentEntries, type CustomerRow } from "./customers-model"
+import { PropertyBlock } from "./PropertyFields"
+import { MARKETING_WORDS, SCHEDULED_WORDS, consentEntries, propertiesOf, type CustomerRow } from "./customers-model"
 
 // The body of the Customers side panel: the same normal data as the row,
-// plus the access note, the jobs, the consent history (append-only, newest
+// plus the property (the yard: zones, controller, gate code, access note, contact), the jobs, the consent history (append-only, newest
 // first) and every message the app sent. Pure render; CustomersScreen owns
 // which customer is open and the buttons.
 
@@ -36,7 +37,6 @@ function Facts({ row }: { row: CustomerRow }) {
     ["Next", row.next],
     ["Scheduled", SCHEDULED_WORDS[row.nextState]],
     ["Marketing", MARKETING_WORDS[row.marketing]],
-    ...(row.accessNote ? ([["Access note", row.accessNote]] as [string, ReactNode][]) : []),
   ]
   return (
     <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm">
@@ -87,9 +87,12 @@ function ConsentHistory({ client }: { client: Pick<Client, "consent" | "consentH
 }
 
 export function CustomerPanelBody({ row, client, data, today, readOnly = false, actions }: { row: CustomerRow; client: Client | undefined; data: AdminData; today: string; readOnly?: boolean; actions?: VisitActions }) {
+  // The first property is the one shown; a customer with a second one is a later step.
+  const property = client ? propertiesOf(client, data.passes)[0] : undefined
   return (
     <>
       <Facts row={row} />
+      {property && <PropertyBlock key={property.id} propertyId={property.id} yard={property} readOnly={readOnly} actions={actions} />}
       <section aria-labelledby="customer-jobs">
         <Subtitle id="customer-jobs">Visits</Subtitle>
         <Jobs visits={data.visits.filter((v) => v.clientId === row.id)} today={today} />

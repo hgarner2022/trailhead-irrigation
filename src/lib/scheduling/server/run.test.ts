@@ -33,10 +33,13 @@ describe("schedule.run", () => {
   let waitingId: string
   it("schedules the visits due, in one step, and leaves a visit waiting for its customer's pick", async () => {
     const open = new Set((await db.select().from(s.seasonPass)).filter((p) => p.status === "active").map((p) => p.id))
-    const [waiting] = (await unscheduledTurnOns()).filter((v) => open.has(v.passId!) && !v.awaitingPick)
+    const home = new Set((await db.select().from(s.property)).filter((p) => p.mustBeHome).map((p) => p.id))
+    const [waiting] = (await unscheduledTurnOns()).filter((v) => open.has(v.passId!) && !home.has(v.propertyId))
     waitingId = waiting!.id
-    await db.update(s.visit).set({ awaitingPick: true }).where(eq(s.visit.id, waiting!.id))
-    const due = (await unscheduledTurnOns()).filter((v) => open.has(v.passId!) && !v.awaitingPick && v.passId !== waiting!.passId).length
+    // the customer must be home: that is a fact of the property, not of the visit
+    await db.update(s.property).set({ mustBeHome: true }).where(eq(s.property.id, waiting!.propertyId))
+    home.add(waiting!.propertyId)
+    const due = (await unscheduledTurnOns()).filter((v) => open.has(v.passId!) && !home.has(v.propertyId)).length
     const out = await run()
     expect(out.placed).toBe(due)
     expect(out.unplaced).toBe(0)
@@ -80,7 +83,7 @@ describe("schedule.run", () => {
   })
 
   it("raises a Home row for each visit that has no room, and clears it when the visit is placed", async () => {
-    await db.update(s.seasonPass).set({ needsCustomerHome: false }).where(eq(s.seasonPass.id, (await db.select().from(s.visit).where(eq(s.visit.id, waitingId)))[0]!.passId!))
+    await db.update(s.property).set({ mustBeHome: false }).where(eq(s.property.id, (await db.select().from(s.visit).where(eq(s.visit.id, waitingId)))[0]!.propertyId))
     await db.update(s.visit).set({ awaitingPick: false }).where(eq(s.visit.id, waitingId))
     await db.update(s.person).set({ workingDays: [] })
     const out = await run("2027-05-20T15:00:00Z")

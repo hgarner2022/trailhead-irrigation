@@ -51,6 +51,28 @@ export interface Consent {
   recordedAt: string
 }
 
+/** What is true about a yard, as the property holds it. A field nobody set is absent. Gate code, access note and contact phone come only to a session with the write scope. */
+export interface Yard {
+  zones?: number
+  controller?: string
+  backflowLocation?: string
+  gateCode?: string
+  /** the customer must be there for a visit; the app offers area days to pick instead of placing one */
+  mustBeHome: boolean
+  accessNote?: string
+  contactName?: string
+  contactPhone?: string
+  /** property notes: the yard's own, not any one visit's */
+  notes?: string
+}
+
+/** A customer's property: the yard's nine facts and where it is. `address` only for a session with the write scope. */
+export interface Property extends Yard {
+  id: string
+  address?: string
+  town: Town
+}
+
 export interface Client {
   id: string
   firstName: string
@@ -64,6 +86,8 @@ export interface Client {
   town: Town
   jobberUrl: string
   hasPass: boolean
+  /** the customer's properties, from the property rows; empty for a customer read from the Jobber mirror */
+  properties?: Property[]
   /** a customer of the app (the office can add a visit for them), not only a client read from the Jobber mirror */
   app?: boolean
   lastVisitAt?: string
@@ -109,6 +133,8 @@ export interface Visit {
   personName?: string
   /** @deprecated alias of `personId`, the same id; the screens read `personId`, dropped in step 6 */
   truckId?: string
+  /** the yard the visit is at; absent for a visit read from the Jobber mirror */
+  property?: Yard
   /** the customer must be there and has not yet picked a day; the visit waits in the tray for them (scheduling flow, 2026-11-12) */
   awaitingPick?: boolean
   /** 1-based position in the person's day; from Jobber's route tool while Jobber is the field display */

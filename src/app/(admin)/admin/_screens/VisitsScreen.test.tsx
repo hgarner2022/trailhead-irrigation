@@ -70,6 +70,7 @@ const actions = (over: Partial<VisitActions> = {}): VisitActions => ({
   resendConfirmation: vi.fn().mockResolvedValue(ok),
   createVisit: vi.fn().mockResolvedValue({ ok: true, data: { id: "new" } }),
   sellPass: vi.fn().mockResolvedValue({ ok: true, data: { id: "p-new", number: "TH-2027-0014", firstName: "Maya" } }),
+  updateProperty: vi.fn().mockResolvedValue(ok),
   ...over,
 })
 

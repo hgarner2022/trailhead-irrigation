@@ -50,6 +50,19 @@ export interface SoldPass {
   firstName: string
 }
 
+/** What Edit property sends: only the fields that changed; null or an empty text clears one. */
+export interface YardChanges {
+  zones?: number | null
+  controller?: string | null
+  backflowLocation?: string | null
+  gateCode?: string | null
+  mustBeHome?: boolean
+  accessNote?: string | null
+  contactName?: string | null
+  contactPhone?: string | null
+  notes?: string | null
+}
+
 /**
  * What the visit panel, the customer panel, New visit and New pass can do; the server actions in `(shell)/visit-actions.ts` in
  * the app. Every action answers with the API's own words when it is refused. A screen without them (the catalog)
@@ -65,6 +78,8 @@ export interface VisitActions {
   markNotDone: (visitId: string, reason: NotDoneReason, note?: string) => Promise<Outcome<Where>>
   edit: (visitId: string, changes: { durationMinutes?: number; personId?: string; notes?: string; accessNote?: string }) => Promise<Outcome>
   cancel: (visitId: string, reason?: string) => Promise<Outcome>
+  /** `properties.update`: the yard's nine facts, from the customer panel's Property block */
+  updateProperty: (propertyId: string, changes: YardChanges) => Promise<Outcome>
   sendText: (customerId: string, visitId: string | undefined, text: string) => Promise<Outcome>
   resendConfirmation: (passId: string) => Promise<Outcome>
   createVisit: (input: NewVisitInput) => Promise<Outcome<{ id: string }>>

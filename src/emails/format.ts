@@ -55,6 +55,9 @@ export interface VisitFacts {
   crew: string | null
   /** the first name of the person on the visit ("Ryan"); null while the visit has no one, and then the messages say nothing about who */
   who: string | null
+  /** the property's gate code and on-site contact, when it has them; no template says them yet (step 3 writes them into the facts only) */
+  gateCode?: string
+  contactName?: string
   /** street address and town, for the calendar's location */
   location: string
   /** the app's signed link to the .ics file */

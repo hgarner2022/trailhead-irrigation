@@ -103,10 +103,9 @@ export const visitsUpdate = defineHandler({
       }
     }
     if (input.accessNote !== undefined) {
-      if (!visit.passId) throw new ApiError("unprocessable", "Only a pass visit has an access note")
       // The property holds the yard's access note; the pass keeps the same words as its alias.
       await ctx.db.update(s.property).set({ accessNote: input.accessNote || null, updatedAt: ctx.now }).where(eq(s.property.id, visit.propertyId))
-      await ctx.db.update(s.seasonPass).set({ accessNote: input.accessNote || null }).where(eq(s.seasonPass.id, visit.passId))
+      if (visit.passId) await ctx.db.update(s.seasonPass).set({ accessNote: input.accessNote || null }).where(eq(s.seasonPass.id, visit.passId))
       changed.accessNote = true
     }
     if (Object.keys(set).length) await ctx.db.update(s.visit).set(set).where(eq(s.visit.id, visit.id))

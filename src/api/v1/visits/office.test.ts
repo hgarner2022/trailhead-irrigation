@@ -132,9 +132,10 @@ describe("visits.update", () => {
     expect((await db.select().from(s.passChange).where(eq(s.passChange.visitId, v.id))).some((c) => c.kind === "visit-edited")).toBe(true)
     await expect(callApi(as(), visitsUpdate, { id: v.id, durationMinutes: 50 })).rejects.toMatchObject({ code: "invalid" })
   })
-  it("sets a pass's access note from its visit, and refuses one on a one-off visit", async () => {
+  it("sets a pass's access note from its visit, and a one-off visit's on its property", async () => {
     const one = await create({ customerId: "c100", kind: "repair" })
-    await expect(callApi(as(), visitsUpdate, { id: one.id, accessNote: "Gate 1234" })).rejects.toMatchObject({ code: "unprocessable" })
+    const out = await callApi(as(), visitsUpdate, { id: one.id, accessNote: "Gate 1234" })
+    expect(out.property.accessNote).toBe("Gate 1234")
     await callApi(as(), visitsUpdate, { id: "p3-turn-on", accessNote: "Gate 1234" })
     const [pass] = await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, "p3"))
     expect(pass!.accessNote).toBe("Gate 1234")

@@ -23,14 +23,14 @@ export function EditForm({ visit, pass, people, actions }: { visit: Visit; pass?
   const [minutes, setMinutes] = useState(String(visit.minutes ?? 60))
   const [personId, setPersonId] = useState(visit.personId ?? "")
   const [notes, setNotes] = useState(visit.notes ?? "")
-  const [access, setAccess] = useState(pass?.accessNote ?? "")
+  const [access, setAccess] = useState(visit.property?.accessNote ?? pass?.accessNote ?? "")
   const { pending, error, done, run } = useRunner()
   const save = () => {
     const changes = {
       ...(Number(minutes) !== (visit.minutes ?? 60) ? { durationMinutes: Number(minutes) } : {}),
       ...(personId && personId !== visit.personId ? { personId } : {}),
       ...(notes !== (visit.notes ?? "") ? { notes } : {}),
-      ...(pass && access !== (pass.accessNote ?? "") ? { accessNote: access } : {}),
+      ...(access !== (visit.property?.accessNote ?? pass?.accessNote ?? "") ? { accessNote: access } : {}),
     }
     if (!actions) return console.info("edit", visit.id, changes)
     run(() => actions.edit(visit.id, changes), undefined, "Saved.")
@@ -67,14 +67,12 @@ export function EditForm({ visit, pass, people, actions }: { visit: Visit; pass?
           </select>
         </div>
       </div>
-      {pass && (
-        <div className="mt-3">
-          <label htmlFor="edit-access" className={LABEL}>
-            Access note
-          </label>
-          <Input id="edit-access" value={access} onChange={(e) => setAccess(e.target.value)} placeholder="Gate code, dog, where the controller is" className="min-h-11" />
-        </div>
-      )}
+      <div className="mt-3">
+        <label htmlFor="edit-access" className={LABEL}>
+          Access note
+        </label>
+        <Input id="edit-access" value={access} onChange={(e) => setAccess(e.target.value)} placeholder="Gate code, dog, where the controller is" className="min-h-11" />
+      </div>
       <div className="mt-3">
         <label htmlFor="edit-notes" className={LABEL}>
           Notes

@@ -8,10 +8,11 @@
  * data". The next job is read off the visit rows, never off a preference.
  * Timestamps are read in Mountain time (`TIME_ZONE`).
  */
-import type { AdminData, Client, Pass, PassStatus, Visit } from "@/lib/admin/types"
+import type { AdminData, Client, Pass, PassStatus, Property, Visit, Yard } from "@/lib/admin/types"
 import { TIME_ZONE, fullName, shortDate } from "@/lib/admin/format"
 import { dayOf } from "@/lib/admin/calendar"
 import { passVisitJob } from "@/lib/admin/jobs"
+import { formatPhone } from "@/lib/format/contact"
 import { consentLine } from "./passes-model"
 
 export type NextState = "booked" | "to-schedule" | "none"
@@ -32,7 +33,6 @@ export interface CustomerRow {
   passId?: string
   /** the pass's season, with `pass` the status */
   season?: number
-  accessNote?: string
   nextState: NextState
   /** "Apr 26" when the next job has a day; "No day yet" when it has none; "Nothing ahead" */
   next: string
@@ -74,7 +74,6 @@ export function customerRow(client: Client, passes: Pass[], visits: Visit[], tod
     ...(client.phone ? { phone: client.phone } : {}),
     pass: pass?.status ?? ("none" as const),
     ...(pass ? { passId: pass.id, season: pass.season } : {}),
-    ...(pass?.accessNote ? { accessNote: pass.accessNote } : {}),
     lastVisitAt: client.lastVisitAt,
     marketing: client.consent ? (client.consent.marketingOptIn ? ("yes" as const) : ("no" as const)) : ("not-asked" as const),
   }
@@ -122,3 +121,37 @@ export function consentEntries(client: Pick<Client, "consent" | "consentHistory"
 export const NEXT_WORDS: Record<NextState, string> = { booked: "Scheduled", "to-schedule": "No day yet", none: "Nothing ahead" }
 export const SCHEDULED_WORDS: Record<NextState, string> = { booked: "Yes", "to-schedule": "No", none: "No" }
 export const MARKETING_WORDS: Record<MarketingState, string> = { yes: "Yes", no: "No", "not-asked": "Not asked" }
+
+/** The yard a pass records: the fixtures (and a property no one has filled in) keep zones and the access answer on the pass. */
+export function yardFromPass(pass: Pick<Pass, "zones" | "needsCustomerHome" | "accessNote"> | undefined): Yard | undefined {
+  if (!pass) return undefined
+  return { zones: pass.zones, mustBeHome: Boolean(pass.needsCustomerHome), ...(pass.accessNote ? { accessNote: pass.accessNote } : {}) }
+}
+
+/** The customer's properties: the rows the API sent, else (fixtures) one built from their newest pass. */
+export function propertiesOf(client: Client, passes: Pass[]): Property[] {
+  if (client.properties) return client.properties
+  const pass = passes.find((p) => p.clientId === client.id && p.status === "active") ?? passes.find((p) => p.clientId === client.id)
+  const yard = yardFromPass(pass)
+  return yard ? [{ id: `property-${client.id}`, town: client.town, ...(client.address ? { address: client.address } : {}), ...yard }] : []
+}
+
+/**
+ * What the Property block and the visit's "At the property" say, one line per fact that is set, in the order the crew reads
+ * them. The gate code and the on-site phone go only to someone who may see contact details (a tech does not).
+ */
+export function propertyLines(yard: Yard | undefined, { canSeeContact }: { canSeeContact: boolean }): string[] {
+  if (!yard) return []
+  const phone = canSeeContact && yard.contactPhone ? formatPhone(yard.contactPhone) : ""
+  const contact = [yard.contactName, phone].filter(Boolean).join(", ")
+  return [
+    ...(yard.zones ? [`${yard.zones} ${yard.zones === 1 ? "zone" : "zones"}`] : []),
+    ...(yard.controller ? [yard.controller] : []),
+    ...(yard.backflowLocation ? [`Backflow ${yard.backflowLocation}`] : []),
+    ...(canSeeContact && yard.gateCode ? [`Gate code ${yard.gateCode}`] : []),
+    ...(yard.mustBeHome ? ["Must be home"] : []),
+    ...(yard.accessNote ? [yard.accessNote] : []),
+    ...(contact ? [`Contact ${contact}`] : []),
+    ...(yard.notes ? [`Property notes ${yard.notes}`] : []),
+  ]
+}

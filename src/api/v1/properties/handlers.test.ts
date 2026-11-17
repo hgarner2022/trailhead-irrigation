@@ -6,6 +6,8 @@ import type { TestDb } from "@/db/test-db"
 import { callApi } from "../../core/call"
 import { apiDb, ctxFor, ORG, readKey, writeKey } from "../../test-helpers"
 import { customersGet } from "../customers/handlers"
+import { passesGet } from "../passes/handlers"
+import { visitsGet } from "../visits/handlers"
 import { propertiesUpdate } from "./handlers"
 
 let db: TestDb
@@ -54,5 +56,17 @@ describe("properties.update", () => {
     expect(p).not.toHaveProperty("gateCode")
     expect(p).not.toHaveProperty("contactPhone")
     expect(p).not.toHaveProperty("accessNote")
+  })
+  it("is read by the pass and the visit: zones, must be home and the access note come from the property", async () => {
+    const [pass] = await db.select().from(s.seasonPass).where(eq(s.seasonPass.customerId, "c100"))
+    const [visit] = await db.select().from(s.visit).where(eq(s.visit.passId, pass!.id))
+    const out = await callApi(ctxFor(db, writeKey), passesGet, { id: pass!.id })
+    expect(out).toMatchObject({ zones: 10, needsCustomerHome: true, accessNote: "Dog in the yard" })
+    const v = await callApi(ctxFor(db, writeKey), visitsGet, { id: visit!.id })
+    expect(v.property).toMatchObject({ zones: 10, controller: "Rachio 3", gateCode: "1234", mustBeHome: true, contactPhone: "+19705550199" })
+    const r = await callApi(ctxFor(db, readKey), visitsGet, { id: visit!.id })
+    expect(r.property).toMatchObject({ zones: 10, mustBeHome: true })
+    expect(r.property).not.toHaveProperty("gateCode")
+    expect(r.property).not.toHaveProperty("contactPhone")
   })
 })

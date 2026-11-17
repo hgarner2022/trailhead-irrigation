@@ -48,7 +48,10 @@ interface Props {
 export function NewJobPass({ data, today, choice, actions, initial = {}, onDone }: Props) {
   const toast = useUndoToast()
   const todayDay = today.slice(0, 10)
-  const [zones, setZones] = useState(initial.zones ?? 8)
+  // The zones start at what the chosen customer's property says it has; whatever the office picks wins over that.
+  const [picked, setZones] = useState<number | undefined>(initial.zones)
+  const propertyZones = choice.isNew ? undefined : data.clients.find((c) => c.id === choice.chosen)?.properties?.find((p) => p.zones)?.zones
+  const zones = picked ?? (propertyZones ? Math.min(MAX_ZONES, Math.max(MIN_ZONES, propertyZones)) : 8)
   const [inspection, setInspection] = useState(initial.inspection ?? false)
   const [days, setDays] = useState<NewPassInput["days"]>(initial.days ?? {})
   const [paysBy, setPaysBy] = useState<PaysBy>(initial.paysBy ?? "card-link")

@@ -105,6 +105,23 @@ describe("passes", () => {
   })
 })
 
+describe("property", () => {
+  it("writes the yard through properties.update and the live data reads it back", async () => {
+    const [prop] = await db.select().from(s.property).where(eq(s.property.customerId, "c100"))
+    const out = await actions.updateProperty(prop!.id, { zones: 10, controller: "Hunter in the garage", gateCode: "4471", mustBeHome: true, contactName: "Dana", contactPhone: "970-555-0123", notes: "" })
+    expect(out).toEqual({ ok: true, data: undefined })
+    expect(calls("properties.")).toEqual(["properties.update"])
+    expect(state.revalidated).toContainEqual(["/admin", "layout"])
+    const client = (await live()).clients.find((c) => c.id === "c100")!
+    expect(client.properties?.[0]).toMatchObject({ id: prop!.id, zones: 10, controller: "Hunter in the garage", gateCode: "4471", mustBeHome: true, contactName: "Dana", contactPhone: "+19705550123" })
+  })
+  it("answers the API's words for a property that is not there, and sends a tech to sign in", async () => {
+    expect(await actions.updateProperty("nope", { zones: 8 })).toMatchObject({ ok: false })
+    state.principal = tech
+    await expect(actions.updateProperty("nope", { zones: 8 })).rejects.toThrow("redirect:/admin/sign-in")
+  })
+})
+
 describe("schedule", () => {
   it("moves a visit, and refuses a day the person does not work in the API's words", async () => {
     const ok = await actions.moveVisit("p4-turn-on", "person_truck-1", "2027-05-05")

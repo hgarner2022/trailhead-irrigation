@@ -6,6 +6,7 @@ import { callApi } from "@/api/core/call"
 import { alertsDismiss } from "@/api/v1/alerts/handlers"
 import { apiKeysCreate, apiKeysRevoke } from "@/api/v1/apikeys/handlers"
 import { consentsRecord } from "@/api/v1/customers/handlers"
+import { propertiesUpdate } from "@/api/v1/properties/handlers"
 import { passesAddInspection, passesCancel, passesResendConfirmation, passesSendCardUpdateLink, passesSkipVisit, passesUpdatePreference } from "@/api/v1/passes/handlers"
 import { scheduleRun } from "@/api/v1/schedule/handlers"
 import { servicesUpdate } from "@/api/v1/services/handlers"
@@ -14,6 +15,7 @@ import { peopleCreate, peopleDeactivate, peopleUpdate } from "@/api/v1/people/ha
 import { visitsGet, visitsMove } from "@/api/v1/visits/handlers"
 import { visitsMarkClosed } from "@/api/v1/visits/money"
 import { webhooksCreate, webhooksDelete, webhooksTest } from "@/api/v1/webhooks/handlers"
+import type { YardChanges } from "@/app/(admin)/admin/_screens/visit-actions-types"
 import type { Attention, OrganizationSettings, ServiceItem, TimingPreference } from "@/lib/admin/types"
 import { requireAdmin } from "@/lib/auth/guard"
 import { retryQueueTasks } from "@/lib/admin/queue-retry"
@@ -38,6 +40,9 @@ export const changePreference = async (passId: string, kind: "turn-on" | "blowou
   act((ctx) => nothing(callApi(ctx, passesUpdatePreference, { id: passId, kind, preference })))
 
 export const skipVisit = async (passId: string, kind: "turn-on" | "inspection" | "blowout") => act((ctx) => nothing(callApi(ctx, passesSkipVisit, { id: passId, kind })))
+
+/** The Property block's Save: the yard's nine facts, written on the property through `properties.update`. */
+export const updateProperty = async (propertyId: string, changes: YardChanges) => act((ctx) => nothing(callApi(ctx, propertiesUpdate, { id: propertyId, ...changes })))
 
 // Schedule ----------------------------------------------------------------------------------------------------------
 

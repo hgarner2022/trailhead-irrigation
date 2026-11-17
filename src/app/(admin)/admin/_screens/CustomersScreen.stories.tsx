@@ -47,6 +47,32 @@ export const PanelOpen: Story = {
   },
 }
 
+const yard = { mustBeHome: false }
+const withProperties = (properties: NonNullable<AdminData["clients"][number]["properties"]>): AdminData => ({ ...data, clients: data.clients.map((c) => (c.id === "c100" ? { ...c, properties } : c)) })
+
+/** Andrea's Property block with everything filled in, and Edit beside the heading. */
+export const PanelPropertyFull: Story = {
+  args: {
+    defaultSelectedId: "c100",
+    data: withProperties([{ id: "prop-c100", town: "Erie", address: "12 Briggs St", ...yard, zones: 8, controller: "Rachio 3 in the garage", backflowLocation: "north side", gateCode: "4471", mustBeHome: true, accessNote: "Dog loose, close the gate", contactName: "Dana", contactPhone: "+19705550123", notes: "Clay soil by the fence" }]),
+  },
+  globals: { viewport: { value: "wide", isRotated: false } },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByRole("heading", { name: "Property" })).toBeInTheDocument()
+    await expect(await canvas.findByText("Gate code 4471")).toBeInTheDocument()
+    await expect(await canvas.findByRole("button", { name: "Edit" })).toBeInTheDocument()
+  },
+}
+
+/** A property nobody has filled in: "Nothing on file yet", and Edit to start. */
+export const PanelPropertyEmpty: Story = {
+  args: { defaultSelectedId: "c100", data: withProperties([{ id: "prop-c100", town: "Erie", address: "12 Briggs St", ...yard }]) },
+  globals: { viewport: { value: "wide", isRotated: false } },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText("Nothing on file yet")).toBeInTheDocument()
+  },
+}
+
 /** A tech sees the panel with no New job. */
 export const PanelReadOnly: Story = {
   args: { defaultSelectedId: "c100", readOnly: true },

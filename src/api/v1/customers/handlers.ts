@@ -38,20 +38,26 @@ export const customerOut = (ctx: Ctx, row: CustomerRow) => ({
 
 type PropertyRow = typeof s.property.$inferSelect
 
-/** A property as the API serves it: the street line, gate code, on-site phone and access note only with the write scope. */
-export const propertyOut = (ctx: Ctx, p: PropertyRow) => ({
-  id: p.id,
-  customerId: p.customerId,
-  town: p.town,
-  lat: p.lat,
-  lng: p.lng,
+/** The yard's nine facts as the API serves them: the gate code, access note and on-site phone only with the write scope. */
+export const yardOut = (ctx: Ctx, p: PropertyRow) => ({
   zones: p.zones,
   controller: p.controller,
   backflowLocation: p.backflowLocation,
   mustBeHome: p.mustBeHome,
   contactName: p.contactName,
   notes: p.notes,
-  ...(canSeeContact(ctx) ? { address: p.address, gateCode: p.gateCode, accessNote: p.accessNote, contactPhone: p.contactPhone } : {}),
+  ...(canSeeContact(ctx) ? { gateCode: p.gateCode, accessNote: p.accessNote, contactPhone: p.contactPhone } : {}),
+})
+
+/** A property as the API serves it: the street line too, only with the write scope. */
+export const propertyOut = (ctx: Ctx, p: PropertyRow) => ({
+  id: p.id,
+  customerId: p.customerId,
+  town: p.town,
+  lat: p.lat,
+  lng: p.lng,
+  ...yardOut(ctx, p),
+  ...(canSeeContact(ctx) ? { address: p.address } : {}),
 })
 
 type YardInput = Partial<Record<"zones" | "controller" | "backflowLocation" | "gateCode" | "accessNote" | "contactName" | "contactPhone" | "notes", string | number | null>> & { mustBeHome?: boolean }

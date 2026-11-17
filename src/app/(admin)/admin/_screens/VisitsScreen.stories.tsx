@@ -74,5 +74,27 @@ export const PanelPassVisitNoCard: Story = {
   },
 }
 
+/** A manager sees the whole yard under "At the property", the gate code and Dana's number included. */
+export const PanelProperty: Story = {
+  args: { defaultVisitId: "office-scheduled" },
+  globals: wide,
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByRole("heading", { name: "At the property" })).toBeInTheDocument()
+    await expect(await canvas.findByText("Gate code 4471")).toBeInTheDocument()
+    await expect(await canvas.findByText("Contact Dana, (303) 555-0111")).toBeInTheDocument()
+  },
+}
+
+/** A tech sees the yard with no gate code and no phone for the contact. */
+export const PanelPropertyTech: Story = {
+  args: { defaultVisitId: "office-scheduled", readOnly: true },
+  globals: wide,
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByRole("heading", { name: "At the property" })).toBeInTheDocument()
+    await expect(await canvas.findByText("Contact Dana")).toBeInTheDocument()
+    await expect(canvas.queryByText(/Gate code/)).not.toBeInTheDocument()
+  },
+}
+
 /** A tech reads the visit and sees no buttons. */
 export const PanelReadOnly: Story = { args: { defaultVisitId: "office-scheduled", readOnly: true }, globals: wide }
