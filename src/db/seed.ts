@@ -169,7 +169,7 @@ async function seedPasses(db: Database, snapshot: AdminData, org: string) {
       .onConflictDoNothing()
     await db
       .insert(s.property)
-      .values({ id: propertyId, organizationId: org, customerId: pass.clientId, address: client?.address ?? `Fixture address, ${town}`, town })
+      .values({ id: propertyId, organizationId: org, customerId: pass.clientId, address: client?.address ?? `Fixture address, ${town}`, town, zones: pass.zones, mustBeHome: pass.needsCustomerHome ?? false, accessNote: pass.accessNote ?? null })
       .onConflictDoNothing()
     if (pass.consent) await seedConsent(db, org, pass)
     const jobId = `job_${pass.id}`

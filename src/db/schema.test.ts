@@ -264,4 +264,9 @@ describe("schema", () => {
       await client.close()
     }
   })
+
+  it("has the yard's facts on the property", async () => {
+    const cols = await db.execute(sql`select column_name from information_schema.columns where table_name = 'property' order by 1`)
+    expect(cols.rows.map((r) => r.column_name)).toEqual(expect.arrayContaining(["zones", "controller", "backflow_location", "gate_code", "must_be_home", "access_note", "contact_name", "contact_phone", "notes"]))
+  })
 })
