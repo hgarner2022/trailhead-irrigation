@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest"
-import { eq } from "drizzle-orm"
+import { and, eq } from "drizzle-orm"
 import * as s from "@/db/schema"
 import type { TestDb } from "@/db/test-db"
 import { callApi } from "../../core/call"
@@ -125,6 +125,47 @@ describe("passes.list and passes.get", () => {
     await db.update(s.job).set({ season: row!.season }).where(eq(s.job.id, row!.jobId))
     expect((await callApi(ctxFor(db, readKey), passesList, { preference: "later", limit: 100 })).data.every((p) => p.turnOnPreference === "later" || p.blowoutPreference === "later")).toBe(true)
     await expect(callApi(ctxFor(db, readKey), passesList, { town: "Boulder" })).rejects.toMatchObject({ code: "invalid" })
+  })
+  it("reads status from the job: a job cancelled on the job only reads cancelled, a past season reads lapsed", async () => {
+    const [row] = await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, "p3"))
+    const jobId = row!.jobId
+    const statusOf = async (id: string) => (await callApi(ctxFor(db, readKey), passesGet, { id })).status
+    expect(row!.status).toBe("active")
+    // cancelled on the job alone: the alias still says active
+    await db.update(s.job).set({ status: "cancelled", cancelledAt: new Date("2027-03-01T12:00:00Z") }).where(eq(s.job.id, jobId))
+    expect(await statusOf("p3")).toBe("cancelled")
+    expect((await callApi(ctxFor(db, readKey), passesList, { status: "cancelled", limit: 100 })).data.map((p) => p.id)).toContain("p3")
+    expect((await callApi(ctxFor(db, readKey), passesList, { status: "active", limit: 100 })).data.map((p) => p.id)).not.toContain("p3")
+    expect((await callApi(ctxFor(db, readKey), passesGet, { id: "p3" })).cancelledAt).toBe("2027-03-01T12:00:00.000Z")
+    await db.update(s.job).set({ status: "active", cancelledAt: null }).where(eq(s.job.id, jobId))
+    expect(await statusOf("p3")).toBe("active")
+    // a season before the current one reads lapsed, in the list filter too
+    await db.update(s.job).set({ season: 2025 }).where(eq(s.job.id, jobId))
+    expect(await statusOf("p3")).toBe("lapsed")
+    expect((await callApi(ctxFor(db, readKey), passesList, { status: "lapsed", limit: 100 })).data.map((p) => p.id)).toContain("p3")
+    expect((await callApi(ctxFor(db, readKey), passesList, { status: "active", limit: 100 })).data.map((p) => p.id)).not.toContain("p3")
+    await db.update(s.job).set({ season: row!.season }).where(eq(s.job.id, jobId))
+    // a pending job reads pending
+    await db.update(s.job).set({ status: "pending" }).where(eq(s.job.id, jobId))
+    expect(await statusOf("p3")).toBe("pending")
+    await db.update(s.job).set({ status: "active" }).where(eq(s.job.id, jobId))
+  })
+  it("reads the preferences from the visits and the inspection from the lines", async () => {
+    const [row] = await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, "p3"))
+    await db.update(s.visit).set({ preference: "later" }).where(and(eq(s.visit.passId, "p3"), eq(s.visit.kind, "blowout")))
+    // the alias column disagrees; the visit wins
+    const had = (await callApi(ctxFor(db, readKey), passesGet, { id: "p3" })).inspection
+    await db.update(s.seasonPass).set({ blowoutPreference: "earlier", inspection: !had }).where(eq(s.seasonPass.id, "p3"))
+    const out = await callApi(ctxFor(db, readKey), passesGet, { id: "p3" })
+    expect(out.blowoutPreference).toBe("later")
+    expect(out.inspection).toBe(had)
+    expect((await callApi(ctxFor(db, readKey), passesList, { preference: "later", limit: 100 })).data.map((p) => p.id)).toContain("p3")
+    // the line is the fact: flip it and the pass follows
+    const [line] = await db.select().from(s.lineItem).where(and(eq(s.lineItem.jobId, row!.jobId), eq(s.lineItem.name, had ? "Mid-season inspection" : "Spring turn-on")))
+    await db.update(s.lineItem).set(had ? { cancelledAt: new Date() } : { name: "Mid-season inspection" }).where(eq(s.lineItem.id, line!.id))
+    expect((await callApi(ctxFor(db, readKey), passesGet, { id: "p3" })).inspection).toBe(!had)
+    await db.update(s.lineItem).set({ name: line!.name, cancelledAt: line!.cancelledAt }).where(eq(s.lineItem.id, line!.id))
+    await db.update(s.seasonPass).set({ blowoutPreference: row!.blowoutPreference, inspection: row!.inspection }).where(eq(s.seasonPass.id, "p3"))
   })
   it("gives a customer only their own pass", async () => {
     await expect(callApi(ctxFor(db, customerPerson("c100")), passesGet, { id: "p1" })).resolves.toMatchObject({ number: "TH-2027-0001" })

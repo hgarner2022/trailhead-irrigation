@@ -7,13 +7,20 @@ import * as s from "@/db/schema"
 import type { Database } from "@/db/types"
 import { paymentMethodFromSession, type SavedCard } from "@/lib/stripe/checkout"
 
+async function jobCancelled(db: Database, jobId: string): Promise<boolean> {
+  const [job] = await db.select({ status: s.job.status, cancelledAt: s.job.cancelledAt }).from(s.job).where(eq(s.job.id, jobId))
+  return job?.status === "cancelled" || !!job?.cancelledAt
+}
+
 /**
  * Turns a pass active, with the card it was bought on when there is one (the checkout) or none (an office sale that pays at
  * each visit, or by a card link later). The job follows the pass and `pass.bought` goes out. The part of activation that has
  * nothing to do with Stripe, so the checkout and `passes.sell` share it.
  */
 export async function markPassActive(db: Database, pass: typeof s.seasonPass.$inferSelect, card: SavedCard | null, now = new Date()): Promise<void> {
-  if (pass.status === "cancelled") throw new Error("This pass was cancelled")
+  if (pass.status === "cancelled" || (await jobCancelled(db, pass.jobId))) throw new Error("This pass was cancelled")
+  // The job first, the pass alias second (`syncPassJob` below copies the rest).
+  await db.update(s.job).set({ status: "active", updatedAt: now }).where(eq(s.job.id, pass.jobId))
   // The card lives on the customer; the pass gets the same columns as an alias until step 6.
   if (card) {
     const columns = { stripePaymentMethodId: card.paymentMethodId, cardBrand: card.brand, cardLast4: card.last4, cardExpires: card.expires, cardFailedAt: null }

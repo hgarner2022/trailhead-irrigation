@@ -1,5 +1,6 @@
 import "server-only"
 import { and, desc, eq, gte, lte, ne, notInArray } from "drizzle-orm"
+import { passStatus } from "@/lib/pass/facts"
 import { z } from "zod"
 import * as s from "@/db/schema"
 import type { Ctx } from "../../core/context"
@@ -201,7 +202,9 @@ async function loadPickable(ctx: Ctx, id: string) {
   assertOwnsCustomer(ctx, visit.customerId)
   if (!visit.passId) throw new ApiError("unprocessable", "Only a pass visit has days to pick from")
   const [pass] = await ctx.db.select().from(s.seasonPass).where(eq(s.seasonPass.id, visit.passId))
-  if (!pass || pass.status !== "active") throw new ApiError("unprocessable", "This pass is not open")
+  // The pass is open when its job is: the status is read from the job and its visits, never from the alias column.
+  const [job] = pass ? await ctx.db.select({ status: s.job.status, cancelledAt: s.job.cancelledAt, season: s.job.season }).from(s.job).where(eq(s.job.id, pass.jobId)) : []
+  if (!pass || !job || passStatus(job, [], today(ctx)) !== "active") throw new ApiError("unprocessable", "This pass is not open")
   if (!(PICKABLE as readonly string[]).includes(visit.status)) throw new ApiError("unprocessable", `A ${visit.status} visit has no day to pick`)
   return { row, visit, pass }
 }

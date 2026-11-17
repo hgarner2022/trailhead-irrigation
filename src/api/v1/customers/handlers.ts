@@ -1,5 +1,5 @@
 import "server-only"
-import { and, asc, desc, eq, inArray, ne, or, sql } from "drizzle-orm"
+import { and, asc, desc, eq, inArray, isNull, ne, or, sql } from "drizzle-orm"
 import { z } from "zod"
 import * as s from "@/db/schema"
 import type { Database } from "@/db/types"
@@ -167,7 +167,7 @@ export const customersList = defineHandler({
     const next = await nextFor(ctx, result.data)
     const towns = ids.length ? await ctx.db.select({ customerId: s.property.customerId, town: s.property.town, address: s.property.address }).from(s.property).where(inArray(s.property.customerId, ids)).orderBy(asc(s.property.createdAt)) : []
     const passes = ids.length
-      ? await ctx.db.select({ customerId: s.seasonPass.customerId }).from(s.seasonPass).where(and(inArray(s.seasonPass.customerId, ids), ne(s.seasonPass.status, "cancelled")))
+      ? await ctx.db.select({ customerId: s.job.customerId }).from(s.job).where(and(inArray(s.job.customerId, ids), eq(s.job.kind, "pass"), ne(s.job.status, "cancelled"), isNull(s.job.cancelledAt)))
       : []
     return {
       next_cursor: result.next_cursor,

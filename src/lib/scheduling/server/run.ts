@@ -49,11 +49,10 @@ export async function runSchedule(db: Database, input: { organizationId: string;
   const rows = await db
     .select({ visit: s.visit, firstName: s.customer.firstName, town: s.property.town })
     .from(s.visit)
-    .innerJoin(s.seasonPass, eq(s.seasonPass.id, s.visit.passId))
-    .innerJoin(s.job, eq(s.job.id, s.seasonPass.jobId))
+    .innerJoin(s.job, eq(s.job.id, s.visit.jobId))
     .innerJoin(s.customer, eq(s.customer.id, s.visit.customerId))
     .innerJoin(s.property, eq(s.property.id, s.visit.propertyId))
-    .where(and(eq(s.visit.organizationId, organizationId), eq(s.visit.kind, window), eq(s.visit.status, "unscheduled"), eq(s.seasonPass.status, "active"), eq(s.job.season, season)))
+    .where(and(eq(s.visit.organizationId, organizationId), eq(s.visit.kind, window), eq(s.visit.status, "unscheduled"), eq(s.job.kind, "pass"), eq(s.job.status, "active"), isNull(s.job.cancelledAt), eq(s.job.season, season)))
   const world = await loadWorld(db, organizationId, today, closes)
   const taken = await loadTaken(db, organizationId, today, closes)
   const visits: SchedVisit[] = rows.map((r) => ({ id: r.visit.id, kind: r.visit.kind, town: r.town, preference: r.visit.preference, needsCustomerHome: r.visit.awaitingPick, durationMinutes: r.visit.durationMinutes }))

@@ -1,5 +1,5 @@
 import "server-only"
-import { and, eq, inArray } from "drizzle-orm"
+import { and, eq, inArray, isNull } from "drizzle-orm"
 import * as s from "@/db/schema"
 import { readAppUrl } from "@/lib/env"
 import { cleanText } from "@/lib/format/contact"
@@ -61,9 +61,9 @@ export const passesSell = defineHandler({
       if (found.zones !== input.zones) [property] = (await ctx.db.update(s.property).set({ zones: input.zones, updatedAt: ctx.now }).where(eq(s.property.id, found.id)).returning()) as [typeof s.property.$inferSelect]
     }
     const [held] = await ctx.db
-      .select({ number: s.seasonPass.number })
-      .from(s.seasonPass)
-      .where(and(eq(s.seasonPass.customerId, customer.id), eq(s.seasonPass.season, season), inArray(s.seasonPass.status, ["active", "pending"])))
+      .select({ number: s.job.passNumber })
+      .from(s.job)
+      .where(and(eq(s.job.customerId, customer.id), eq(s.job.kind, "pass"), eq(s.job.season, season), inArray(s.job.status, ["active", "pending"]), isNull(s.job.cancelledAt)))
     if (held) throw new ApiError("unprocessable", `${customer.firstName} already holds the ${season} Season Pass, ${held.number}`)
 
     const accessNote = input.newCustomer?.accessNote ? cleanText(input.newCustomer.accessNote) : null

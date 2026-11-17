@@ -35,9 +35,10 @@ describe("loadRenewal", () => {
 
   it("opens as an ordinary checkout for a pass that is cancelled, or whose next season is already held", async () => {
     expect(await loadRenewal(db, { passId: "nope", today: "2027-11-02", token: token() })).toBeNull()
-    await db.update(s.seasonPass).set({ status: "cancelled" }).where(eq(s.seasonPass.id, "p1"))
+    const [alias] = await db.select({ jobId: s.seasonPass.jobId }).from(s.seasonPass).where(eq(s.seasonPass.id, "p1"))
+    await db.update(s.job).set({ status: "cancelled", cancelledAt: new Date() }).where(eq(s.job.id, alias!.jobId))
     expect(await ask({ token: token() })).toBeNull()
-    await db.update(s.seasonPass).set({ status: "active" }).where(eq(s.seasonPass.id, "p1"))
+    await db.update(s.job).set({ status: "active", cancelledAt: null }).where(eq(s.job.id, alias!.jobId))
   })
 
   it("has a card of null when none is on file, so the checkout keeps its card step", async () => {

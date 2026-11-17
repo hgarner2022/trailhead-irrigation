@@ -73,12 +73,12 @@ export const messagesSend = defineHandler({
       queued = await queueMessage(ctx.db, { ...base, visitId: visit.id, kind: input.kind, data: { ...baseData(origin, customer), visit: facts } })
     } else {
       const passes = await ctx.db
-        .select({ pass: s.seasonPass, season: s.job.season, number: s.job.passNumber })
+        .select({ pass: s.seasonPass, season: s.job.season, number: s.job.passNumber, jobStatus: s.job.status, jobCancelledAt: s.job.cancelledAt })
         .from(s.seasonPass)
         .innerJoin(s.job, eq(s.job.id, s.seasonPass.jobId))
         .where(and(eq(s.seasonPass.customerId, customer.id), eq(s.seasonPass.organizationId, ctx.organizationId)))
         .orderBy(desc(s.job.season))
-      const found = passes.find((p) => (input.kind === "cancelled" ? p.pass.status === "cancelled" : p.pass.status !== "pending"))
+      const found = passes.find((p) => (input.kind === "cancelled" ? p.jobStatus === "cancelled" || p.jobCancelledAt !== null : p.jobStatus !== "pending"))
       const pass = found?.pass
       if (input.kind === "purchase-confirmation" || input.kind === "cancelled" || input.kind === "renewal") {
         if (!pass) throw new ApiError("unprocessable", "This customer has no pass for that message")

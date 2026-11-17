@@ -1,5 +1,5 @@
 import "server-only"
-import { and, eq, inArray } from "drizzle-orm"
+import { and, eq, inArray, isNull } from "drizzle-orm"
 import * as s from "@/db/schema"
 import type { Database } from "@/db/types"
 import type { PersonPrincipal } from "@/lib/auth/types"
@@ -21,19 +21,18 @@ export function mayRenew(pass: { id: string; customerId: string }, who: { token?
  */
 export async function loadRenewal(db: Database, input: { passId: string; token?: string | null; principal?: PersonPrincipal | null; today: string }): Promise<RenewalPrefill | null> {
   const [row] = await db
-    .select({ pass: s.seasonPass, season: s.job.season, customer: s.customer, property: s.property })
+    .select({ pass: s.seasonPass, season: s.job.season, jobStatus: s.job.status, jobCancelledAt: s.job.cancelledAt, customer: s.customer, property: s.property })
     .from(s.seasonPass)
     .innerJoin(s.job, eq(s.job.id, s.seasonPass.jobId))
     .innerJoin(s.customer, eq(s.customer.id, s.seasonPass.customerId))
     .innerJoin(s.property, eq(s.property.id, s.seasonPass.propertyId))
     .where(eq(s.seasonPass.id, input.passId))
-  if (!row || row.pass.status === "pending" || row.pass.status === "cancelled" || !mayRenew(row.pass, input)) return null
+  if (!row || row.jobStatus === "pending" || row.jobStatus === "cancelled" || row.jobCancelledAt || !mayRenew(row.pass, input)) return null
   const season = Math.max(currentSeason(input.today), (row.season ?? 0) + 1)
   const [held] = await db
-    .select({ id: s.seasonPass.id })
-    .from(s.seasonPass)
-    .innerJoin(s.job, eq(s.job.id, s.seasonPass.jobId))
-    .where(and(eq(s.seasonPass.customerId, row.pass.customerId), eq(s.job.season, season), inArray(s.seasonPass.status, ["active", "pending"])))
+    .select({ id: s.job.id })
+    .from(s.job)
+    .where(and(eq(s.job.customerId, row.pass.customerId), eq(s.job.kind, "pass"), eq(s.job.season, season), inArray(s.job.status, ["active", "pending"]), isNull(s.job.cancelledAt)))
   if (held) return null
   const { pass, customer, property } = row
   return {

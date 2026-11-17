@@ -94,6 +94,17 @@ describe("schedule.run", () => {
     expect((await db.select().from(s.adminAlert).where(and(eq(s.adminAlert.kind, "unplaced"), eq(s.adminAlert.key, waitingId))))[0]!.resolvedAt).not.toBeNull()
   })
 
+  it("leaves a cancelled job's visits alone even when the pass alias still says active", async () => {
+    const [visit] = await db.select().from(s.visit).where(eq(s.visit.id, waitingId))
+    const [alias] = await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, visit!.passId!))
+    expect(alias!.status).toBe("active")
+    await db.update(s.visit).set({ status: "unscheduled", scheduledOn: null, personId: null, awaitingPick: false }).where(eq(s.visit.id, waitingId))
+    await db.update(s.job).set({ status: "cancelled", cancelledAt: new Date("2027-05-01T12:00:00Z") }).where(eq(s.job.id, alias!.jobId))
+    expect(await run("2027-05-20T15:00:00Z")).toEqual({ placed: 0, unplaced: 0 })
+    expect((await db.select().from(s.visit).where(eq(s.visit.id, waitingId)))[0]!.status).toBe("unscheduled")
+    await db.update(s.job).set({ status: "active", cancelledAt: null }).where(eq(s.job.id, alias!.jobId))
+  })
+
   it("is the same path the queue handler takes", async () => {
     await db.update(s.visit).set({ status: "unscheduled", scheduledOn: null, personId: null }).where(eq(s.visit.id, waitingId))
     vi.useFakeTimers({ toFake: ["Date"], now: new Date("2027-05-20T15:00:00Z") })
