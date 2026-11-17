@@ -150,6 +150,18 @@ describe("passes.list and passes.get", () => {
     expect(await statusOf("p3")).toBe("pending")
     await db.update(s.job).set({ status: "active" }).where(eq(s.job.id, jobId))
   })
+  it("reads a pass an older deploy wrote with no number or season on its job from the alias", async () => {
+    const [row] = await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, "p3"))
+    const [job] = await db.select().from(s.job).where(eq(s.job.id, row!.jobId))
+    await db.update(s.job).set({ passNumber: null, season: null }).where(eq(s.job.id, row!.jobId))
+    try {
+      const listed = (await callApi(ctxFor(db, readKey), passesList, { limit: 100 })).data.find((p) => p.id === "p3")
+      expect(listed).toMatchObject({ number: row!.number, season: row!.season })
+      expect(await callApi(ctxFor(db, readKey), passesGet, { id: "p3" })).toMatchObject({ number: row!.number, season: row!.season })
+    } finally {
+      await db.update(s.job).set({ passNumber: job!.passNumber, season: job!.season }).where(eq(s.job.id, row!.jobId))
+    }
+  })
   it("reads the preferences from the visits and the inspection from the lines", async () => {
     const [row] = await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, "p3"))
     await db.update(s.visit).set({ preference: "later" }).where(and(eq(s.visit.passId, "p3"), eq(s.visit.kind, "blowout")))

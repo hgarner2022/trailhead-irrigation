@@ -51,7 +51,7 @@ export async function withPassFacts(ctx: Ctx, rows: PassJoined[]): Promise<PassR
     return {
       ...row,
       facts: {
-        status: passStatus(row.job, mine, day),
+        status: passStatus(row.job, day),
         inspection: passInspection(lines.filter((l) => l.jobId === row.pass.jobId)),
         ...passPreferences(mine),
         cancelledAt: row.job.cancelledAt,
@@ -60,13 +60,16 @@ export async function withPassFacts(ctx: Ctx, rows: PassJoined[]): Promise<PassR
   })
 }
 
+/** The pass's season: the job's, or the alias's for a pass an older deploy wrote with no season on its job. */
+export const passSeason = (row: { job: { season: number | null }; pass: { season: number } }): number => row.job.season ?? row.pass.season
+
 export function passOut(ctx: Ctx, row: PassRow) {
   const p = row.pass
   // The yard lives on the property; only the zones fall back to the pass (a property with none yet).
   return {
     id: p.id,
-    number: row.job.passNumber!,
-    season: row.job.season!,
+    number: row.job.passNumber ?? p.number,
+    season: passSeason(row),
     customerId: p.customerId,
     propertyId: p.propertyId,
     firstName: row.firstName,

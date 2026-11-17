@@ -30,23 +30,24 @@ export const expiryWords = (cardExpires: string) => {
 export async function queueCardExpiryMessages(db: Database, makeLink: (input: { passId: string; stripeCustomerId: string }) => Promise<string>, origin: string, now = new Date()): Promise<number> {
   const today = mountainDay(now)
   const rows = await db
-    .select({ pass: s.seasonPass, customer: s.customer })
+    .select({ pass: s.seasonPass, customer: s.customer, jobSeason: s.job.season })
     .from(s.seasonPass)
+    .innerJoin(s.job, eq(s.job.id, s.seasonPass.jobId))
     .innerJoin(s.customer, eq(s.customer.id, s.seasonPass.customerId))
     .where(and(eq(s.seasonPass.status, "active"), isNotNull(s.customer.cardExpires)))
     .orderBy(asc(s.seasonPass.createdAt))
   // One customer, one card, one email: the customer's newest active pass speaks for them.
-  const byCustomer = new Map<string, { pass: typeof s.seasonPass.$inferSelect; customer: typeof s.customer.$inferSelect; passIds: string[] }>()
-  for (const { pass, customer } of rows) {
+  const byCustomer = new Map<string, { pass: typeof s.seasonPass.$inferSelect; customer: typeof s.customer.$inferSelect; season: number; passIds: string[] }>()
+  for (const { pass, customer, jobSeason } of rows) {
     const held = byCustomer.get(customer.id)
-    byCustomer.set(customer.id, { pass, customer, passIds: [...(held?.passIds ?? []), pass.id] })
+    byCustomer.set(customer.id, { pass, customer, season: jobSeason ?? pass.season, passIds: [...(held?.passIds ?? []), pass.id] })
   }
   let queued = 0
-  for (const { pass, customer, passIds } of byCustomer.values()) {
+  for (const { pass, customer, season, passIds } of byCustomer.values()) {
     const expires = customer.cardExpires!
     const lastDay = lastDayOf(expires)
     if (today < addDays(lastDay, -EXPIRY_LEAD_DAYS) || today > lastDay) continue
-    if (lastDay >= `${pass.season}-10-31`) continue
+    if (lastDay >= `${season}-10-31`) continue
     const visits = await db.select({ amount: s.visit.amount, status: s.visit.status }).from(s.visit).where(inArray(s.visit.passId, passIds))
     const left = visits.filter((v) => !["completed", "cancelled", "skipped"].includes(v.status)).reduce((sum, v) => sum + v.amount, 0)
     if (left === 0) continue

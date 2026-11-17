@@ -6,7 +6,7 @@ import { withFixtureContact } from "@/lib/admin/fixtures/contact"
 import { SERVICES } from "@/lib/services"
 import type { AdminData, Client } from "@/lib/admin/types"
 import { NewJob } from "./NewJob"
-import { priceLine } from "./NewJobPass"
+import { cardOnFileLine, priceLine } from "./NewJobPass"
 import { servicePriceLine } from "./NewJobService"
 import { choiceReady, emptyChoice, newCustomerFrom, EMPTY_PERSON } from "./CustomerPicker"
 import type { VisitActions } from "./visit-actions-types"
@@ -101,6 +101,30 @@ describe("New job", () => {
     await waitFor(() => expect(actions.sellPass).toHaveBeenCalledTimes(1))
     expect(actions.sellPass).toHaveBeenCalledWith(expect.objectContaining({ customerId: "c100", zones: 8, paysBy: "card-link", termsAccepted: true }))
     expect(actions.createVisit).not.toHaveBeenCalled()
+  })
+})
+
+describe("Pays by for a customer who has a card", () => {
+  it("says the card is on file, hides the at-each-visit choice and sells on the card", async () => {
+    const actions = { createVisit: vi.fn(), sellPass: vi.fn(async () => ({ ok: true as const, data: { id: "p1", number: "TP-1", firstName: "Andrea" } })) }
+    const withCard = { ...data, clients: data.clients.map((c: Client) => (c.id === "c100" ? { ...c, card: { brand: "visa", last4: "4242", expires: "2028-08" } } : c)) }
+    render(<NewJob data={withCard} today={TODAY} open onOpenChange={() => undefined} customerId="c100" actions={actions as unknown as VisitActions} />)
+    await choose("season-pass")
+    expect(screen.getByText("Visa ending 4242 is on file and is charged after each visit")).toBeInTheDocument()
+    expect(screen.queryByText("At each visit, check, Venmo or cash")).toBeNull()
+    await userEvent.click(screen.getByLabelText("Terms read and accepted"))
+    await userEvent.click(screen.getByRole("button", { name: "Sell pass" }))
+    await waitFor(() => expect(actions.sellPass).toHaveBeenCalledTimes(1))
+    expect(actions.sellPass).toHaveBeenCalledWith(expect.objectContaining({ paysBy: "card-link" }))
+  })
+  it("reads the line without a brand as Card", () => {
+    expect(cardOnFileLine({ last4: "0005" })).toBe("Card ending 0005 is on file and is charged after each visit")
+    expect(cardOnFileLine({ brand: "amex", last4: "0005" })).toBe("Amex ending 0005 is on file and is charged after each visit")
+  })
+  it("still offers both choices to a customer with no card", async () => {
+    open()
+    await choose("season-pass")
+    expect(screen.getByText("At each visit, check, Venmo or cash")).toBeInTheDocument()
   })
 })
 

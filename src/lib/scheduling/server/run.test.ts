@@ -105,6 +105,17 @@ describe("schedule.run", () => {
     await db.update(s.job).set({ status: "active", cancelledAt: null }).where(eq(s.job.id, alias!.jobId))
   })
 
+  it("schedules the visit of a pass an older deploy wrote with no season on its job, by the alias's season", async () => {
+    const [visit] = await db.select().from(s.visit).where(eq(s.visit.id, waitingId))
+    const [alias] = await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, visit!.passId!))
+    const [job] = await db.select().from(s.job).where(eq(s.job.id, alias!.jobId))
+    expect(alias!.season).toBe(2027)
+    await db.update(s.visit).set({ status: "unscheduled", scheduledOn: null, personId: null, awaitingPick: false }).where(eq(s.visit.id, waitingId))
+    await db.update(s.job).set({ season: null }).where(eq(s.job.id, job!.id))
+    expect(await run("2027-05-20T15:00:00Z")).toEqual({ placed: 1, unplaced: 0 })
+    await db.update(s.job).set({ season: job!.season }).where(eq(s.job.id, job!.id))
+  })
+
   it("is the same path the queue handler takes", async () => {
     await db.update(s.visit).set({ status: "unscheduled", scheduledOn: null, personId: null }).where(eq(s.visit.id, waitingId))
     vi.useFakeTimers({ toFake: ["Date"], now: new Date("2027-05-20T15:00:00Z") })

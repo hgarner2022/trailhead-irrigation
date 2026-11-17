@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button"
 import type { ClientCard } from "@/lib/admin/types"
 import type { VisitActions } from "./visit-actions-types"
-import { cardWords } from "./customers-model"
+import { customerCardWords } from "./customers-model"
 import { FORM_STATUS, useRunner } from "./use-runner"
 
 /**
@@ -14,7 +14,7 @@ export function CustomerCardLine({ card, passId, readOnly, actions }: { card: Cl
   const { pending, error, done, run } = useRunner()
   return (
     <span data-slot="customer-card-line" className="flex flex-wrap items-center gap-x-3 gap-y-1">
-      <span>{cardWords(card)}</span>
+      <span>{customerCardWords(card)}</span>
       {!readOnly && passId && (
         <Button variant="outline" size="sm" disabled={pending} onClick={() => (actions ? run(() => actions.sendCardUpdateLink(passId), undefined, "Card link sent.") : console.info("send card link", passId))}>
           Send card link

@@ -4,7 +4,6 @@ import type Stripe from "stripe"
 import { emitEvent } from "@/api/v1/webhooks/deliver"
 import * as s from "@/db/schema"
 import type { Database } from "@/db/types"
-import { customerHasCard } from "@/lib/customer/card"
 import { chargeOffSession } from "@/lib/stripe/charge"
 import { createCardUpdateSession } from "@/lib/stripe/card-update"
 import { baseData } from "@/lib/messaging/data"
@@ -40,7 +39,8 @@ export async function chargeVisit(db: Database, stripe: Stripe, visitId: string,
   if (pass.status === "cancelled") return "cancelled-pass"
   const [customer] = await db.select().from(s.customer).where(eq(s.customer.id, pass.customerId))
   if (!customer) throw new Error(`Customer ${pass.customerId} not found`)
-  if (!customerHasCard(customer)) return "no-card"
+  // Only a card Stripe can charge counts here: a customer with just a last 4 (a fixture, an old import) never reaches Stripe and never records a failure.
+  if (!customer.stripePaymentMethodId || !customer.stripeCustomerId) return "no-card"
 
   const [last] = await db.select().from(s.charge).where(eq(s.charge.visitId, visit.id)).orderBy(desc(s.charge.attempt)).limit(1)
   if (last?.status === "succeeded") return "already-charged"

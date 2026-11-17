@@ -1,11 +1,12 @@
 import "server-only"
-import { and, desc, eq } from "drizzle-orm"
+import { and, desc, eq, isNull } from "drizzle-orm"
 import type Stripe from "stripe"
 import { callApi } from "@/api/core/call"
 import { passesActivate } from "@/api/v1/passes/handlers"
 import * as s from "@/db/schema"
 import type { Database } from "@/db/types"
 import { ctxForJob } from "@/lib/admin/api-ctx"
+import { clearedCardColumns } from "@/lib/customer/card"
 import { baseData } from "@/lib/messaging/data"
 import { queueMessage } from "@/lib/messaging/queue"
 import { enqueue } from "@/lib/queue"
@@ -84,33 +85,43 @@ export async function handleStripeEvent(db: Database, stripe: Stripe, organizati
     }
     case "payment_method.detached": {
       const method = event.data.object
+      const ofOrg = eq(s.customer.organizationId, organizationId)
       // The customer holds the card; a pass still carrying it as the alias (the old column) finds the customer too.
-      const [byCustomer] = await db.select().from(s.customer).where(eq(s.customer.stripePaymentMethodId, method.id))
+      const [byCustomer] = await db.select().from(s.customer).where(and(eq(s.customer.stripePaymentMethodId, method.id), ofOrg))
       let customer = byCustomer
       if (!customer) {
         const [alias] = await db
           .select({ customer: s.customer })
           .from(s.seasonPass)
           .innerJoin(s.customer, eq(s.customer.id, s.seasonPass.customerId))
-          .where(eq(s.seasonPass.stripePaymentMethodId, method.id))
+          .where(and(eq(s.seasonPass.stripePaymentMethodId, method.id), eq(s.seasonPass.organizationId, organizationId), ofOrg))
         customer = alias?.customer
       }
       if (!customer) return
-      const gone = { stripePaymentMethodId: null, cardBrand: null, cardLast4: null, cardExpires: null, updatedAt: now }
-      await db.update(s.customer).set(gone).where(eq(s.customer.id, customer.id))
-      await db.update(s.seasonPass).set(gone).where(and(eq(s.seasonPass.customerId, customer.id), eq(s.seasonPass.stripePaymentMethodId, method.id)))
-      const [pass] = await db.select().from(s.seasonPass).where(eq(s.seasonPass.customerId, customer.id)).orderBy(desc(s.seasonPass.createdAt)).limit(1)
-      const row = { pass, customer }
-      if (!pass) return
-      if (row.customer.email) {
-        const link = row.customer.stripeCustomerId ? (await createCardUpdateSession(stripe, { passId: row.pass.id, customerId: row.customer.stripeCustomerId, origin })).url : null
-        const owed = await db.select({ amount: s.visit.amount, status: s.visit.status }).from(s.visit).where(eq(s.visit.passId, row.pass.id))
-        const left = owed.filter((v) => !["completed", "cancelled", "skipped"].includes(v.status)).reduce((sum, v) => sum + v.amount, 0)
-        await queueMessage(db, {
-          organizationId, customerId: row.customer.id, kind: "card-expiring", key: `pm-${method.id}`,
-          data: { ...baseData(origin, row.customer), passNumber: row.pass.number, cardState: "was removed or has expired", left, updateUrl: link },
-        })
+      const aliasOfMethod = and(eq(s.seasonPass.customerId, customer.id), eq(s.seasonPass.stripePaymentMethodId, method.id))
+      // The customer already holds a newer card (a card update detaches the old one): only the stale pass aliases go, and nobody is told.
+      if (customer.stripePaymentMethodId && customer.stripePaymentMethodId !== method.id) {
+        await db.update(s.seasonPass).set({ ...clearedCardColumns, updatedAt: now }).where(aliasOfMethod)
+        return
       }
+      await db.update(s.customer).set({ ...clearedCardColumns, updatedAt: now }).where(and(eq(s.customer.id, customer.id), ofOrg))
+      await db.update(s.seasonPass).set({ ...clearedCardColumns, updatedAt: now }).where(aliasOfMethod)
+      // The pass that speaks for the customer is their newest active one.
+      const [row] = await db
+        .select({ pass: s.seasonPass, number: s.job.passNumber })
+        .from(s.seasonPass)
+        .innerJoin(s.job, eq(s.job.id, s.seasonPass.jobId))
+        .where(and(eq(s.seasonPass.customerId, customer.id), eq(s.job.kind, "pass"), eq(s.job.status, "active"), isNull(s.job.cancelledAt)))
+        .orderBy(desc(s.seasonPass.createdAt))
+        .limit(1)
+      if (!row || !customer.email) return
+      const link = customer.stripeCustomerId ? (await createCardUpdateSession(stripe, { passId: row.pass.id, customerId: customer.stripeCustomerId, origin })).url : null
+      const owed = await db.select({ amount: s.visit.amount, status: s.visit.status }).from(s.visit).where(eq(s.visit.passId, row.pass.id))
+      const left = owed.filter((v) => !["completed", "cancelled", "skipped"].includes(v.status)).reduce((sum, v) => sum + v.amount, 0)
+      await queueMessage(db, {
+        organizationId, customerId: customer.id, kind: "card-expiring", key: `pm-${method.id}`,
+        data: { ...baseData(origin, customer), passNumber: row.number ?? row.pass.number, cardState: "was removed or has expired", left, updateUrl: link },
+      })
       return
     }
     default:

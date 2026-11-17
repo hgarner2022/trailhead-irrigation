@@ -5,24 +5,24 @@ const job = (over: Partial<Parameters<typeof passStatus>[0]> = {}) => ({ status:
 
 describe("passStatus", () => {
   it("is active for an active job in the season", () => {
-    expect(passStatus(job(), [], "2026-06-01")).toBe("active")
+    expect(passStatus(job(), "2026-06-01")).toBe("active")
   })
   it("is pending for a pending job", () => {
-    expect(passStatus(job({ status: "pending" }), [], "2026-06-01")).toBe("pending")
+    expect(passStatus(job({ status: "pending" }), "2026-06-01")).toBe("pending")
   })
   it("is cancelled when the job has a cancelledAt or the cancelled status", () => {
-    expect(passStatus(job({ cancelledAt: new Date() }), [], "2026-06-01")).toBe("cancelled")
-    expect(passStatus(job({ status: "cancelled" }), [], "2026-06-01")).toBe("cancelled")
+    expect(passStatus(job({ cancelledAt: new Date() }), "2026-06-01")).toBe("cancelled")
+    expect(passStatus(job({ status: "cancelled" }), "2026-06-01")).toBe("cancelled")
   })
   it("is cancelled before it is pending or lapsed", () => {
-    expect(passStatus(job({ status: "pending", cancelledAt: new Date(), season: 2020 }), [], "2026-06-01")).toBe("cancelled")
+    expect(passStatus(job({ status: "pending", cancelledAt: new Date(), season: 2020 }), "2026-06-01")).toBe("cancelled")
   })
   it("is lapsed once the season is over", () => {
-    expect(passStatus(job({ status: "done", season: 2025 }), [{ status: "completed", completedOn: "2025-10-01" }], "2026-06-01")).toBe("lapsed")
-    expect(passStatus(job({ season: 2025 }), [], "2026-06-01")).toBe("lapsed")
+    expect(passStatus(job({ status: "done", season: 2025 }), "2026-06-01")).toBe("lapsed")
+    expect(passStatus(job({ season: 2025 }), "2026-06-01")).toBe("lapsed")
   })
   it("stays active after November 1 of its own year, so the renewal offer still has an active pass to hang on", () => {
-    expect(passStatus(job(), [], "2026-11-17")).toBe("active")
+    expect(passStatus(job(), "2026-11-17")).toBe("active")
   })
 })
 

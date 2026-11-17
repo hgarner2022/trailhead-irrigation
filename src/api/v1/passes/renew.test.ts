@@ -40,8 +40,11 @@ describe("passes.create with renewOf", () => {
     const offer = await callApi(ctxFor(db, visitor(), NOW), scheduleOfferDays, { town: "Erie", kind: "turn-on", season: 2028, zones: 6 })
     const pick = offer.days[1]!
     expect(pick.day.startsWith("2028-")).toBe(true)
+    // The old pass's alias is stale (a card the customer replaced): the renewal copies the customer's card, never the old pass's.
+    await db.update(s.seasonPass).set({ stripePaymentMethodId: "pm_stale" }).where(eq(s.seasonPass.id, "p1"))
     const pass = await renew(visitor("p1"), "p1", { days: [{ kind: "turn-on", day: pick.day, personId: pick.personId, start: pick.start }] })
     expect(pass).toMatchObject({ season: 2028, status: "active", cardLast4: "4242" })
+    expect((await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, pass.id)))[0]!.stripePaymentMethodId).toBe("pm_old")
     expect(pass.visits.find((v) => v.kind === "turn-on")).toMatchObject({ status: "scheduled", scheduledOn: pick.day })
     expect(pass.visits.find((v) => v.kind === "blowout")).toMatchObject({ status: "unscheduled", scheduledOn: null })
     const mail = await db.select().from(s.messageLog).where(eq(s.messageLog.customerId, pass.customerId))

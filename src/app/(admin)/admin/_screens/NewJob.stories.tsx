@@ -83,6 +83,18 @@ export const SeasonPassFilledIn: Story = {
 }
 export const SeasonPassFilledInPhone: Story = { args: { initial: filled }, globals: phone }
 
+const withCard = { ...visitsData, clients: visitsData.clients.map((c) => (c.id === "c-dana" ? { ...c, card: { brand: "visa", last4: "4242", expires: "2028-08" } } : c)) }
+
+/** Dana already has a card: Pays by says "Visa ending 4242 is on file and is charged after each visit" and offers no choice, so "At each visit" is not there. */
+export const SeasonPassCustomerWithCard: Story = {
+  args: { data: withCard, customerId: "c-dana", initial: { choice: "season-pass" } },
+  globals: wide,
+  play: async () => {
+    await expect(await screen.findByText("Visa ending 4242 is on file and is charged after each visit")).toBeInTheDocument()
+    await expect(screen.queryByText("At each visit, check, Venmo or cash")).not.toBeInTheDocument()
+  },
+}
+
 /** A customer with no email on file (Joe) and the pass chosen: the sheet asks for one before it can sell. */
 export const PassForCustomerWithoutEmail: Story = {
   args: { customerId: "c-joe", initial: { choice: "season-pass" } },

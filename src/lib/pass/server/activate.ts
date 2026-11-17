@@ -5,6 +5,7 @@ import type Stripe from "stripe"
 import { emitEvent } from "@/api/v1/webhooks/deliver"
 import * as s from "@/db/schema"
 import type { Database } from "@/db/types"
+import { cardColumns } from "@/lib/customer/card"
 import { paymentMethodFromSession, type SavedCard } from "@/lib/stripe/checkout"
 
 async function jobCancelled(db: Database, jobId: string): Promise<boolean> {
@@ -23,7 +24,7 @@ export async function markPassActive(db: Database, pass: typeof s.seasonPass.$in
   await db.update(s.job).set({ status: "active", updatedAt: now }).where(eq(s.job.id, pass.jobId))
   // The card lives on the customer; the pass gets the same columns as an alias until step 6.
   if (card) {
-    const columns = { stripePaymentMethodId: card.paymentMethodId, cardBrand: card.brand, cardLast4: card.last4, cardExpires: card.expires, cardFailedAt: null }
+    const columns = cardColumns(card)
     await db.update(s.customer).set({ ...columns, updatedAt: now }).where(eq(s.customer.id, pass.customerId))
     await db.update(s.seasonPass).set({ status: "active", ...columns, updatedAt: now }).where(eq(s.seasonPass.id, pass.id))
   } else {

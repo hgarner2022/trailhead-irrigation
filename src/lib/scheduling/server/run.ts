@@ -1,5 +1,5 @@
 import "server-only"
-import { and, eq, inArray, isNull } from "drizzle-orm"
+import { and, eq, inArray, isNull, or } from "drizzle-orm"
 import * as s from "@/db/schema"
 import type { Database } from "@/db/types"
 import { who } from "@/api/v1/visits/schemas"
@@ -50,9 +50,10 @@ export async function runSchedule(db: Database, input: { organizationId: string;
     .select({ visit: s.visit, firstName: s.customer.firstName, town: s.property.town })
     .from(s.visit)
     .innerJoin(s.job, eq(s.job.id, s.visit.jobId))
+    .leftJoin(s.seasonPass, eq(s.seasonPass.jobId, s.job.id))
     .innerJoin(s.customer, eq(s.customer.id, s.visit.customerId))
     .innerJoin(s.property, eq(s.property.id, s.visit.propertyId))
-    .where(and(eq(s.visit.organizationId, organizationId), eq(s.visit.kind, window), eq(s.visit.status, "unscheduled"), eq(s.job.kind, "pass"), eq(s.job.status, "active"), isNull(s.job.cancelledAt), eq(s.job.season, season)))
+    .where(and(eq(s.visit.organizationId, organizationId), eq(s.visit.kind, window), eq(s.visit.status, "unscheduled"), eq(s.job.kind, "pass"), eq(s.job.status, "active"), isNull(s.job.cancelledAt), or(eq(s.job.season, season), and(isNull(s.job.season), eq(s.seasonPass.season, season)))))
   const world = await loadWorld(db, organizationId, today, closes)
   const taken = await loadTaken(db, organizationId, today, closes)
   const visits: SchedVisit[] = rows.map((r) => ({ id: r.visit.id, kind: r.visit.kind, town: r.town, preference: r.visit.preference, needsCustomerHome: r.visit.awaitingPick, durationMinutes: r.visit.durationMinutes }))

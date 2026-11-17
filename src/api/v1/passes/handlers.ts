@@ -34,7 +34,7 @@ import { syncPassJob } from "@/lib/pass/server/job"
 import { finishPurchase } from "./finish"
 import { renewPass } from "./renew"
 import { chosenDay, PassDetail, PassOut, passActivateInput, passConsentInput, passCreateInput } from "./schemas"
-import { loadPass, passDetail, passesQuery, passOut, recordChange, withPassFacts } from "./queries"
+import { loadPass, passDetail, passesQuery, passOut, passSeason, recordChange, withPassFacts } from "./queries"
 
 const PassVisitKind = z.enum(["turn-on", "inspection", "blowout"])
 const OPEN = ["pending", "active"] as const
@@ -52,7 +52,7 @@ function statusFilter(status: z.infer<typeof PassStatus>, day: string) {
 /** A pass has the preference when its turn-on or blowout visit asks for it (a visit with none asks for the recommended day). */
 function preferenceFilter(preference: z.infer<typeof Preference>) {
   return exists(
-    sql`(select 1 from ${s.visit} where ${s.visit.jobId} = ${s.job.id} and ${s.visit.kind} in ('turn-on', 'blowout') and coalesce(${s.visit.preference}, 'recommended') = ${preference})`,
+    sql`(select 1 from ${s.visit} where ${s.visit.jobId} = ${s.job.id} and ${s.visit.kind} in ('turn-on', 'blowout') and ${s.visit.status} <> 'cancelled' and coalesce(${s.visit.preference}, 'recommended') = ${preference})`,
   )
 }
 
@@ -151,7 +151,9 @@ export const passesCreate = defineHandler({
     // starting another: there is no cart to lose, and the hourly limit is then only ever reached by something odd.
     const [resumed] = visitor && known && !held ? await newestPendingPass(ctx.db, org, known.id, ctx.now) : []
     const candidate = held ?? resumed
-    const reused = candidate && candidate.status === "pending" && known && candidate.customerId === known.id ? candidate : undefined
+    // A pending pass of an earlier season is not picked up again: the new season gets its own pass.
+    const [candidateJob] = candidate ? await ctx.db.select({ season: s.job.season }).from(s.job).where(eq(s.job.id, candidate.jobId)) : []
+    const reused = candidate && candidate.status === "pending" && known && candidate.customerId === known.id && (candidateJob?.season ?? candidate.season) === season ? candidate : undefined
     if (visitor && !reused && known && (await pendingPassesLastHour(ctx.db, org, known.id, ctx.now)) >= MAX_PENDING_PER_HOUR)
       throw new ApiError("rate_limited", "Too many passes started for this email in the last hour. Try again later or call us.", [{ path: "reason", message: "too-many" }])
     const customerRow =
@@ -191,8 +193,8 @@ export const passesCreate = defineHandler({
     let pass: typeof s.seasonPass.$inferSelect
     if (reused) {
       // A customer who went back changes the answers on the pass they hold; its visits are rebuilt, none has a day yet.
-      await ctx.db.update(s.seasonPass).set({ ...fields, season, updatedAt: ctx.now }).where(eq(s.seasonPass.id, reused.id))
       await ctx.db.update(s.job).set({ season, updatedAt: ctx.now }).where(eq(s.job.id, reused.jobId))
+      await ctx.db.update(s.seasonPass).set({ ...fields, season, updatedAt: ctx.now }).where(eq(s.seasonPass.id, reused.id))
       // Only the checkout that holds the pass id (the same browser going back) may change the customer's name and phone.
       // A resume by email alone reuses the pass but never rewrites who the customer is: anyone can type an email.
       if (held) await ctx.db.update(s.customer).set({ firstName: contact.firstName, lastName: contact.lastName ?? customerRow.lastName, phone: contact.phone ?? customerRow.phone, updatedAt: ctx.now }).where(eq(s.customer.id, customerRow.id))
@@ -387,7 +389,7 @@ export const passesAddInspection = defineHandler({
     if (!OPEN.includes(row.facts.status as (typeof OPEN)[number])) throw new ApiError("unprocessable", "This pass is no longer open")
     if (row.facts.inspection) throw new ApiError("conflict", "This pass already has the inspection")
     const day = today(ctx)
-    const season = row.pass.season
+    const season = passSeason(row)
     const lastDay = hasScope(ctx.principal, "write") ? `${season}-07-31` : addDays(`${season}-07-01`, -1)
     if (day > lastDay) throw new ApiError("unprocessable", "The inspection can no longer be added to this pass")
     const amount = visitPrice(SEASON_PASS_ADD_ON, row.pass.zones)

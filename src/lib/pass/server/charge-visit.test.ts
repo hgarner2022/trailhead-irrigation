@@ -138,3 +138,36 @@ describe("applyCardUpdate", () => {
     await expect(applyCardUpdate(db, stripe, "cs_x", NOW)).rejects.toThrow("not a card update")
   })
 })
+
+describe("applyCardUpdate across passes", () => {
+  it("writes the new card on the customer and on every pass of theirs, and re-queues a failed charge of the other pass", async () => {
+    const p = await activePass()
+    const [owner] = await db.select().from(s.customer).where(eq(s.customer.id, p.customerId))
+    // A second pass of the same customer (the first is active, so the checkout makes a new pending one).
+    const second = await callApi(ctxFor(db, writeKey, "2026-12-01T17:00:00Z"), passesCreate, {
+      customer: { firstName: "Maya", lastName: "Tester", email: owner!.email! }, property: { address: `${n} Elm St`, town: "Erie" }, zones: 8, consent: { termsAccepted: true },
+    })
+    expect(second.id).not.toBe(p.passId)
+    await db.update(s.seasonPass).set({ status: "active", stripePaymentMethodId: "pm_old", cardLast4: "4242" }).where(eq(s.seasonPass.id, second.id))
+    const otherVisit = second.visits.find((v) => v.kind === "turn-on")!.id
+    await chargeVisit(db, stubStripe({ charge: () => { throw declined() } }).stripe, otherVisit, opts)
+    const { stripe } = stubStripe({ sessions: { cs_two: completeSession("cs_two", { purpose: "card-update", passId: p.passId }, { pm: "pm_new2", last4: "9999" }) } })
+    expect(await applyCardUpdate(db, stripe, "cs_two", NOW)).toBe("applied")
+    const passes = await db.select().from(s.seasonPass).where(eq(s.seasonPass.customerId, p.customerId))
+    expect(passes).toHaveLength(2)
+    for (const pass of passes) expect(pass).toMatchObject({ stripePaymentMethodId: "pm_new2", cardLast4: "9999", cardFailedAt: null })
+    expect(await db.select().from(s.queueItem).where(and(eq(s.queueItem.kind, "pass-charge"), eq(s.queueItem.key, `${otherVisit}:card-cs_two`)))).toHaveLength(1)
+  })
+})
+
+describe("chargeVisit without a Stripe card", () => {
+  it("a customer with only a last 4 (a fixture) is no-card: nothing written, no failure mark", async () => {
+    const p = await activePass()
+    await db.update(s.customer).set({ stripePaymentMethodId: null, stripeCustomerId: null, cardLast4: "4242", cardFailedAt: null }).where(eq(s.customer.id, p.customerId))
+    const { stripe, calls } = stubStripe()
+    expect(await chargeVisit(db, stripe, p.turnOn, opts)).toBe("no-card")
+    expect(calls.paymentIntentsCreate).not.toHaveBeenCalled()
+    expect(await db.select().from(s.charge).where(eq(s.charge.visitId, p.turnOn))).toHaveLength(0)
+    expect((await db.select().from(s.customer).where(eq(s.customer.id, p.customerId)))[0]!.cardFailedAt).toBeNull()
+  })
+})

@@ -82,13 +82,19 @@ describe("passes.sell", () => {
   })
 
   it("refuses an existing customer with no email on file, a second pass of the season, a read key and the anonymous checkout", async () => {
-    await expect(sell({ customerId: "c121" })).rejects.toMatchObject({ code: "invalid", message: expect.stringMatching(/no email on file/) })
+    await expect(sell({ customerId: "c121", paysBy: "card-link" })).rejects.toMatchObject({ code: "invalid", message: expect.stringMatching(/no email on file/) })
     await expect(sell({ customerId: "c100", email: "andrea@example.com" })).rejects.toMatchObject({ code: "unprocessable", message: expect.stringMatching(/already holds the 2028 Season Pass, TH-2028-/) })
     await expect(sell({ newCustomer: newCustomer() }, readKey)).rejects.toMatchObject({ code: "forbidden" })
     const visitor: PublicPrincipal = { kind: "public", id: "checkout", organizationId: ORG, scopes: ["checkout"] }
     await expect(sell({ newCustomer: newCustomer() }, visitor)).rejects.toMatchObject({ code: "forbidden" })
     await expect(sell({ customerId: "c100", newCustomer: newCustomer() })).rejects.toMatchObject({ code: "invalid" })
     await expect(callApi(as(), passesSell, { newCustomer: newCustomer(), zones: 8, paysBy: "at-visit", termsAccepted: false })).rejects.toMatchObject({ code: "invalid" })
+  })
+
+  it("refuses paying at each visit for a customer who has a card on file", async () => {
+    const first = await sell({ newCustomer: newCustomer() })
+    await db.update(s.customer).set({ stripePaymentMethodId: "pm_have", stripeCustomerId: "cus_have", cardBrand: "visa", cardLast4: "4242" }).where(eq(s.customer.id, first.customerId))
+    await expect(sell({ customerId: first.customerId })).rejects.toMatchObject({ code: "unprocessable", message: "This customer has a card on file; it is charged after each visit" })
   })
 
   it("sells a new customer a pass with the inspection, placing an open day and moving a day that is not open to the next open one", async () => {

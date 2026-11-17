@@ -2,6 +2,7 @@ import "server-only"
 import { and, eq, inArray, isNull } from "drizzle-orm"
 import * as s from "@/db/schema"
 import { readAppUrl } from "@/lib/env"
+import { customerHasCard } from "@/lib/customer/card"
 import { cleanText } from "@/lib/format/contact"
 import { enqueueGeocode } from "@/lib/geocode"
 import { currentSeason } from "@/lib/pass/season"
@@ -49,6 +50,7 @@ export const passesSell = defineHandler({
       const [known] = await ctx.db.select().from(s.customer).where(and(eq(s.customer.id, input.customerId!), eq(s.customer.organizationId, org)))
       if (!known) throw notFound("Customer")
       customer = known
+      if (input.paysBy === "at-visit" && customerHasCard(customer)) throw new ApiError("unprocessable", "This customer has a card on file; it is charged after each visit")
       if (!customer.email) {
         if (!input.email) throw new ApiError("invalid", "This customer has no email on file. Add one: the confirmation and the pass card go by email", [{ path: "email", message: "An email is needed" }])
         ;[customer] = (await ctx.db.update(s.customer).set({ ...cleanContact({ email: input.email }), updatedAt: ctx.now }).where(eq(s.customer.id, known.id)).returning()) as [typeof s.customer.$inferSelect]
@@ -75,7 +77,8 @@ export const passesSell = defineHandler({
 
     // Card on file: the confirmation carries the same link "Send card link" sends, on a Stripe customer made now when the person has none.
     let cardUpdateUrl: string | null = null
-    if (input.paysBy === "card-link") {
+    // A customer who already has a card is charged on it; the link only goes to one who has none.
+    if (input.paysBy === "card-link" && !customerHasCard(customer)) {
       const stripe = getStripe()
       const stripeCustomerId = await ensureStripeCustomer(ctx.db, stripe, customer.id, ctx.now)
       cardUpdateUrl = (await createCardUpdateSession(stripe, { passId: pass.id, customerId: stripeCustomerId, origin: readAppUrl() })).url

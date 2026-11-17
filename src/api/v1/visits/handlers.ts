@@ -204,9 +204,9 @@ async function loadPickable(ctx: Ctx, id: string) {
   const [pass] = await ctx.db.select().from(s.seasonPass).where(eq(s.seasonPass.id, visit.passId))
   // The pass is open when its job is: the status is read from the job and its visits, never from the alias column.
   const [job] = pass ? await ctx.db.select({ status: s.job.status, cancelledAt: s.job.cancelledAt, season: s.job.season }).from(s.job).where(eq(s.job.id, pass.jobId)) : []
-  if (!pass || !job || passStatus(job, [], today(ctx)) !== "active") throw new ApiError("unprocessable", "This pass is not open")
+  if (!pass || !job || passStatus(job, today(ctx)) !== "active") throw new ApiError("unprocessable", "This pass is not open")
   if (!(PICKABLE as readonly string[]).includes(visit.status)) throw new ApiError("unprocessable", `A ${visit.status} visit has no day to pick`)
-  return { row, visit, pass }
+  return { row, visit, pass, season: job.season ?? pass.season }
 }
 
 export const visitsAreaDays = defineHandler({
@@ -219,8 +219,8 @@ export const visitsAreaDays = defineHandler({
   input: idInput,
   output: z.object({ days: z.array(Day) }),
   async run(ctx, input) {
-    const { row, visit, pass } = await loadPickable(ctx, input.id)
-    return { days: offeredDays(await openSlots(ctx.db, { id: visit.id, organizationId: visit.organizationId, kind: visit.kind, town: row.town }, today(ctx), pass.season)) }
+    const { row, visit, season } = await loadPickable(ctx, input.id)
+    return { days: offeredDays(await openSlots(ctx.db, { id: visit.id, organizationId: visit.organizationId, kind: visit.kind, town: row.town }, today(ctx), season)) }
   },
 })
 
@@ -234,8 +234,8 @@ export const visitsPick = defineHandler({
   input: z.object({ id: Id, day: Day }),
   output: VisitOut,
   async run(ctx, input) {
-    const { row, visit, pass } = await loadPickable(ctx, input.id)
-    const slots = await openSlots(ctx.db, { id: visit.id, organizationId: visit.organizationId, kind: visit.kind, town: row.town }, today(ctx), pass.season)
+    const { row, visit, season } = await loadPickable(ctx, input.id)
+    const slots = await openSlots(ctx.db, { id: visit.id, organizationId: visit.organizationId, kind: visit.kind, town: row.town }, today(ctx), season)
     const slot = offeredDays(slots).includes(input.day) ? personFor(slots, input.day) : undefined
     if (!slot) throw new ApiError("unprocessable", "That day is not one of the days on offer; pick another")
     const moved = visit.status === "scheduled"

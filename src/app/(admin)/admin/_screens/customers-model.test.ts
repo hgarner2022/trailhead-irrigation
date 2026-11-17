@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest"
 import type { Client, Pass, Visit, Yard } from "@/lib/admin/types"
-import { cardOf, cardWords, consentEntries, customerRow, customerRows, customersContext, propertiesOf, propertyLines, yardFromPass } from "./customers-model"
+import { cardOf, customerCardWords, consentEntries, customerRow, customerRows, customersContext, propertiesOf, propertyLines, yardFromPass } from "./customers-model"
 
 const TODAY = "2026-11-12T19:56:30Z"
 const client: Client = {
@@ -161,15 +161,18 @@ describe("propertiesOf", () => {
 
 describe("the customer's Card line", () => {
   it("says the brand, the last four and the expiry", () => {
-    expect(cardWords({ brand: "visa", last4: "4242", expires: "2028-08" })).toBe("Visa ending 4242, expires 08/28")
-    expect(cardWords({ last4: "4242", expires: "2028-08" })).toBe("Card ending 4242, expires 08/28")
-    expect(cardWords({ brand: "amex", last4: "0005" })).toBe("Amex ending 0005")
-    expect(cardWords(undefined)).toBe("No card on file")
+    expect(customerCardWords({ brand: "visa", last4: "4242", expires: "2028-08" })).toBe("Visa ending 4242, expires 08/28")
+    expect(customerCardWords({ last4: "4242", expires: "2028-08" })).toBe("Card ending 4242, expires 08/28")
+    expect(customerCardWords({ brand: "amex", last4: "0005" })).toBe("Amex ending 0005")
+    expect(customerCardWords(undefined)).toBe("No card on file")
   })
   it("reads the customer's card, else the newest pass's (the fixtures)", () => {
     const own = { last4: "1111", brand: "visa" }
     expect(cardOf({ ...client, card: own }, [{ ...pass, cardLast4: "2222" }])).toBe(own)
     expect(cardOf(client, [{ ...pass, cardLast4: "2222", cardExpires: "2028-08" }])).toEqual({ last4: "2222", expires: "2028-08" })
     expect(cardOf(client, [pass])).toBeUndefined()
+  })
+  it("never lets a pass speak for a customer the API sent with no card", () => {
+    expect(cardOf({ ...client, properties: [] }, [{ ...pass, cardLast4: "2222" }])).toBeUndefined()
   })
 })
