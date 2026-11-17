@@ -7,7 +7,9 @@ import type { Principal, PublicPrincipal } from "@/lib/auth/types"
 import { chargeVisit } from "@/lib/pass/server/charge-visit"
 import { stubStripe } from "@/lib/stripe/test-stripe"
 import { callApi } from "../../core/call"
-import { adminKey, apiDb, ctxFor, ORG, readKey, writeKey } from "../../test-helpers"
+import { adminKey, apiDb, ctxFor, linesOfPass, ORG, readKey, writeKey } from "../../test-helpers"
+import { jobTotal } from "@/lib/jobs/lines"
+import { SERVICES } from "@/lib/services"
 import { scheduleOfferDays } from "../schedule/handlers"
 import { visitsMarkClosed, visitsRecordPayment } from "../visits/money"
 import { passesGet, passesSendCardUpdateLink, passesStartCardUpdate } from "./handlers"
@@ -50,6 +52,21 @@ describe("passes.sell", () => {
     expect(confirmation.body).toContain("by check, Venmo or cash at the visit")
     expect(confirmation.body).not.toContain("card ending")
     expect((await db.select().from(s.passChange).where(eq(s.passChange.passId, pass.id))).map((c) => c.kind)).toEqual(["sold"])
+  })
+
+  it("writes one line per visit beside the visits, three with the inspection, each from the service of the pass's zone band", async () => {
+    const pass = await sell({ newCustomer: newCustomer(), zones: 12, inspection: true })
+    const lines = await linesOfPass(db, pass.id)
+    expect(lines.map((l) => [l.visitKind, l.name, l.unitPrice, l.serviceKey, l.quantity, l.taxable, l.cancelledAt])).toEqual([
+      ["turn-on", "Spring turn-on", 185, "turn-on-12", 1, false, null],
+      ["inspection", "Mid-season inspection", 185, "inspection-12", 1, false, null],
+      ["blowout", "Fall blowout", 155, "blowout", 1, false, null],
+    ])
+    expect(lines.map((l) => l.description)).toEqual([SERVICES["turn-on-12"]!.description, SERVICES["inspection-12"]!.description, SERVICES.blowout.description])
+    expect(lines.map((l) => l.visitId).sort()).toEqual(pass.visits.map((v) => v.id).sort())
+    expect(jobTotal(lines)).toBe(pass.price)
+    const two = await sell({ newCustomer: newCustomer() })
+    expect((await linesOfPass(db, two.id)).map((l) => l.visitKind)).toEqual(["turn-on", "blowout"])
   })
 
   it("refuses an existing customer with no email on file, a second pass of the season, a read key and the anonymous checkout", async () => {

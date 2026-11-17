@@ -3,6 +3,7 @@ import { resolveMx } from "node:dns/promises"
 import { and, desc, eq, gt, inArray, lt, sql } from "drizzle-orm"
 import * as s from "@/db/schema"
 import type { Database } from "@/db/types"
+import { deletePassVisitLines } from "@/lib/jobs/write-lines"
 import { canContinue, initialState, STEPS, type CheckoutState } from "@/app/(checkout)/season-pass/checkout/_screens/checkout-state"
 
 /** An unpaid checkout lives 60 minutes (the Stripe session itself expires at 30). */
@@ -95,6 +96,7 @@ export async function expirePendingPasses(db: Database, now: Date, minutes = PEN
     .where(and(eq(s.seasonPass.status, "pending"), lt(s.seasonPass.createdAt, cutoff)))
   if (stale.length === 0) return 0
   const ids = stale.map((r) => r.id)
+  await deletePassVisitLines(db, ids)
   await db.delete(s.visit).where(inArray(s.visit.passId, ids))
   await db.delete(s.passChange).where(inArray(s.passChange.passId, ids))
   await db.delete(s.adminAlert).where(inArray(s.adminAlert.passId, ids))

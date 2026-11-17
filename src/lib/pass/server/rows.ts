@@ -2,6 +2,8 @@ import "server-only"
 import { and, eq } from "drizzle-orm"
 import * as s from "@/db/schema"
 import type { Database } from "@/db/types"
+import { linesForPassVisits } from "@/lib/jobs/lines"
+import { insertLines } from "@/lib/jobs/write-lines"
 import { nextPassNumber } from "@/lib/pass/number"
 import { visitPrice, type SeasonPassVisit } from "@/lib/season-pass"
 import { createPassJob, syncPassJob } from "./job"
@@ -32,8 +34,8 @@ export interface PassRowsInput {
 
 /**
  * The rows every pass is made of, whoever sells it: the job (kind pass), the `season_pass` with the next number of its season,
- * and one `unscheduled` visit per visit on sale at the per-zone price. The pass number is retried twice when two sales race
- * for the same one. The job's status and price are synced from the pass and its visits.
+ * one `unscheduled` visit per visit on sale at the per-zone price, and the job's line for each visit. The pass number is
+ * retried twice when two sales race for the same one. The job's status and price are synced from the pass and its visits.
  */
 export async function makePassRows(db: Database, input: PassRowsInput): Promise<typeof s.seasonPass.$inferSelect> {
   const { organizationId: org, now } = input
@@ -66,28 +68,36 @@ export async function makePassRows(db: Database, input: PassRowsInput): Promise<
       if (attempt === 2) throw error
     }
   }
-  await insertPassVisits(db, pass!, input.onSale)
+  await insertPassVisits(db, pass!, input.onSale, now)
   await syncPassJob(db, pass!.id)
   return pass!
 }
 
-/** One unscheduled visit per visit on sale, priced by the pass's zones; a visit's preference is the pass's for its kind. */
-export async function insertPassVisits(db: Database, pass: typeof s.seasonPass.$inferSelect, onSale: readonly SeasonPassVisit[]): Promise<void> {
+/**
+ * One unscheduled visit per visit on sale, priced by the pass's zones, and the job's line for each, named for the visit and
+ * priced from the service of the pass's zone band; a visit's preference is the pass's for its kind.
+ */
+export async function insertPassVisits(db: Database, pass: typeof s.seasonPass.$inferSelect, onSale: readonly SeasonPassVisit[], now?: Date): Promise<void> {
   if (onSale.length === 0) return
-  await db.insert(s.visit).values(
-    onSale.map((v) => ({
-      organizationId: pass.organizationId,
-      jobId: pass.jobId,
-      passId: pass.id,
-      customerId: pass.customerId,
-      propertyId: pass.propertyId,
-      kind: v.key,
-      window: WINDOW_LABEL[v.key],
-      amount: visitPrice(v, pass.zones),
-      status: "unscheduled" as const,
-      preference: v.key === "turn-on" ? pass.turnOnPreference : v.key === "blowout" ? pass.blowoutPreference : undefined,
-      // needsCustomerHome is a note for Ryan; no visit waits for the customer to pick.
-      awaitingPick: false,
-    })),
-  )
+  const made = await db
+    .insert(s.visit)
+    .values(
+      onSale.map((v) => ({
+        organizationId: pass.organizationId,
+        jobId: pass.jobId,
+        passId: pass.id,
+        customerId: pass.customerId,
+        propertyId: pass.propertyId,
+        kind: v.key,
+        window: WINDOW_LABEL[v.key],
+        amount: visitPrice(v, pass.zones),
+        status: "unscheduled" as const,
+        preference: v.key === "turn-on" ? pass.turnOnPreference : v.key === "blowout" ? pass.blowoutPreference : undefined,
+        // needsCustomerHome is a note for Ryan; no visit waits for the customer to pick.
+        awaitingPick: false,
+      })),
+    )
+    .returning({ id: s.visit.id, kind: s.visit.kind })
+  const lines = linesForPassVisits(onSale, pass.zones).map((line) => ({ ...line, visitId: made.find((v) => v.kind === line.visitKind)!.id }))
+  await insertLines(db, { organizationId: pass.organizationId, jobId: pass.jobId, now }, lines)
 }

@@ -7,7 +7,8 @@ import { callApi } from "../../core/call"
 import { alertsDismiss } from "../alerts/handlers"
 import { customersGet } from "../customers/handlers"
 import { messagesSend } from "../messages/handlers"
-import { apiDb, ctxFor, ORG, readKey, writeKey } from "../../test-helpers"
+import { apiDb, ctxFor, linesOfJob, ORG, readKey, writeKey } from "../../test-helpers"
+import { SERVICES } from "@/lib/services"
 import { visitsCancel, visitsCreate, visitsMarkNotDone, visitsUpdate } from "./office"
 import { visitsMove } from "./handlers"
 
@@ -21,7 +22,7 @@ afterAll(() => db.close())
 
 const as = (p = writeKey) => ctxFor(db, p)
 const create = (input: Record<string, unknown>, p = writeKey) => callApi(as(p), visitsCreate, input)
-const count = async (t: typeof s.job | typeof s.customer | typeof s.visit) => (await db.select().from(t)).length
+const count = async (t: typeof s.job | typeof s.customer | typeof s.visit | typeof s.lineItem) => (await db.select().from(t)).length
 
 describe("visits.create", () => {
   it("makes the job and the visit, places it with the first person on the schedule (Ryan, the owner) and texts the date", async () => {
@@ -31,17 +32,25 @@ describe("visits.create", () => {
     expect(job).toMatchObject({ kind: "repair", source: "office", status: "active", price: 145, customerId: "c100" })
     const texts = (await db.select().from(s.messageLog)).filter((m) => m.visitId === out.id)
     expect(texts.map((m) => [m.kind, m.channel])).toEqual([["date-set", "sms"]])
+    expect(await linesOfJob(db, out.jobId)).toMatchObject([{ visitId: out.id, name: "Repair", unitPrice: 145, quantity: 1, taxable: false, serviceKey: "repair", description: SERVICES.repair!.description, cancelledAt: null }])
+  })
+  it("a repair with no price given is priced from the service, $145, on the line and the legacy columns alike", async () => {
+    const out = await create({ customerId: "c100", kind: "repair" })
+    expect(out.amount).toBe(145)
+    expect(await linesOfJob(db, out.jobId)).toMatchObject([{ visitId: out.id, unitPrice: 145, serviceKey: "repair" }])
+    expect((await db.select().from(s.job).where(eq(s.job.id, out.jobId)))[0]!.price).toBe(145)
   })
   it("with no day waits as Needs a day, minutes from the kind, price left blank", async () => {
     const out = await create({ newCustomer: { firstName: "nora", lastName: "ortiz", email: "Nora@Example.com", phone: "303-555-0177", property: { address: "9 Oak St", town: "Erie" } }, kind: "install" })
     expect(out).toMatchObject({ status: "unscheduled", scheduledOn: null, personId: null, durationMinutes: 120, firstName: "Nora", amount: 0 })
     const [job] = await db.select().from(s.job).where(eq(s.job.id, out.jobId))
     expect(job).toMatchObject({ kind: "install", price: null })
+    expect(await linesOfJob(db, out.jobId)).toMatchObject([{ visitId: out.id, name: "Installation", unitPrice: 0, serviceKey: "install", description: SERVICES.install!.description }])
   })
   it("a refused day leaves nothing behind, not even a new customer", async () => {
-    const [jobs, customers, visits] = [await count(s.job), await count(s.customer), await count(s.visit)]
+    const [jobs, customers, visits, lines] = [await count(s.job), await count(s.customer), await count(s.visit), await count(s.lineItem)]
     await expect(create({ newCustomer: { firstName: "Gone", lastName: "Tester", property: { address: "1 Main St", town: "Erie" } }, kind: "repair", scheduledOn: "2027-05-02" })).rejects.toMatchObject({ code: "unprocessable", message: expect.stringMatching(/does not work on sundays/) })
-    expect([await count(s.job), await count(s.customer), await count(s.visit)]).toEqual([jobs, customers, visits])
+    expect([await count(s.job), await count(s.customer), await count(s.visit), await count(s.lineItem)]).toEqual([jobs, customers, visits, lines])
   })
   it("refuses a read key, both or neither customer, and a time with no day", async () => {
     await expect(create({ customerId: "c100", kind: "repair" }, readKey)).rejects.toMatchObject({ code: "forbidden" })
@@ -122,6 +131,24 @@ describe("visits.update", () => {
   })
 })
 
+describe("visits.update price", () => {
+  it("changes the visit's line and its amount, not job.price, and records the change", async () => {
+    const v = await create({ customerId: "c100", kind: "repair", price: 145 })
+    const out = await callApi(as(), visitsUpdate, { id: v.id, price: 220 })
+    expect(out.amount).toBe(220)
+    expect(await linesOfJob(db, v.jobId)).toMatchObject([{ visitId: v.id, name: "Repair", unitPrice: 220 }])
+    expect((await db.select().from(s.job).where(eq(s.job.id, v.jobId)))[0]!.price).toBe(145)
+    expect((await db.select().from(s.passChange).where(eq(s.passChange.visitId, v.id))).find((c) => c.kind === "visit-edited")?.detail).toMatchObject({ price: { from: 145, to: 220 } })
+    await expect(callApi(as(), visitsUpdate, { id: v.id, price: -1 })).rejects.toMatchObject({ code: "invalid" })
+  })
+  it("makes the line when the visit has none yet", async () => {
+    const v = await create({ customerId: "c100", kind: "repair", price: 145 })
+    await db.delete(s.lineItem).where(eq(s.lineItem.visitId, v.id))
+    await callApi(as(), visitsUpdate, { id: v.id, price: 300 })
+    expect(await linesOfJob(db, v.jobId)).toMatchObject([{ visitId: v.id, name: "Repair", unitPrice: 300, serviceKey: "repair" }])
+  })
+})
+
 describe("visits.update unscheduled", () => {
   it("takes a placed visit back to Needs a day, and refuses one with no day", async () => {
     const v = await create({ customerId: "c100", kind: "repair", scheduledOn: "2027-05-12" })
@@ -143,12 +170,14 @@ describe("visits.cancel", () => {
     expect(rest.filter((v) => v.status !== "cancelled").length).toBeGreaterThan(0)
     expect((await db.select().from(s.job).where(eq(s.job.id, passRow!.jobId)))[0]!.price!).toBeLessThan(before)
     expect((await db.select().from(s.queueItem).where(eq(s.queueItem.key, "p4-blowout")))[0]).toMatchObject({ status: "done", lastError: "visit cancelled" })
+    expect((await linesOfJob(db, passRow!.jobId)).find((l) => l.visitId === "p4-blowout")!.cancelledAt).toBeInstanceOf(Date)
     await expect(callApi(as(), visitsCancel, { id: "p4-blowout" })).rejects.toMatchObject({ code: "unprocessable" })
   })
   it("cancels a one-off visit and its job", async () => {
     const v = await create({ customerId: "c100", kind: "repair", scheduledOn: "2027-05-10" })
     await callApi(as(), visitsCancel, { id: v.id })
     expect((await db.select().from(s.job).where(eq(s.job.id, v.jobId)))[0]).toMatchObject({ status: "cancelled" })
+    expect((await linesOfJob(db, v.jobId))[0]!.cancelledAt).toBeInstanceOf(Date)
     await expect(callApi(as(readKey), visitsCancel, { id: v.id })).rejects.toMatchObject({ code: "forbidden" })
   })
 })

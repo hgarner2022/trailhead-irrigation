@@ -62,7 +62,7 @@ describe("seed", () => {
 
   it("is idempotent", async () => {
     await seed(db, data, { organizationId: org, admins: ["hannah@example.com", "ryan@example.com"], passes: true, mirror: true })
-    const counts = async () => [await n(s.adminUser), await n(s.person), await n(s.service), await n(s.seasonPass), await n(s.visit), await n(s.consent), await n(s.jobberVisit)]
+    const counts = async () => [await n(s.adminUser), await n(s.person), await n(s.service), await n(s.seasonPass), await n(s.visit), await n(s.lineItem), await n(s.consent), await n(s.jobberVisit)]
     const people = () => db.select({ id: s.person.id, name: s.person.name, email: s.person.email, role: s.person.role, truck: s.person.truck, legacyTruckId: s.person.legacyTruckId }).from(s.person).orderBy(s.person.id)
     const first = await counts()
     const firstPeople = await people()
@@ -112,6 +112,16 @@ describe("seed", () => {
     const done = await db.select().from(s.visit).where(eq(s.visit.id, "p1-turn-on"))
     expect(done[0].status).toBe("completed")
     expect(done[0].completedOn).toBe("2027-05-03")
+  })
+  it("gives every fixture visit its line, with the backfill's id, so a seeded and a migrated database agree", async () => {
+    expect(await n(s.lineItem)).toBe(data.passes.reduce((sum, p) => sum + p.visits.length, 0))
+    const [line] = await db
+      .select({ line: s.lineItem, serviceKey: s.service.key, amount: s.visit.amount })
+      .from(s.lineItem)
+      .leftJoin(s.service, eq(s.service.id, s.lineItem.serviceId))
+      .innerJoin(s.visit, eq(s.visit.id, s.lineItem.visitId))
+      .where(eq(s.lineItem.id, "line_p2-turn-on"))
+    expect(line).toMatchObject({ serviceKey: "turn-on-8", line: { jobId: "job_p2", visitId: "p2-turn-on", name: "Spring turn-on", unitPrice: line!.amount, quantity: 1, taxable: false, cancelledAt: null, description: SERVICE_LIST.find((v) => v.key === "turn-on-8")!.description } })
   })
 })
 

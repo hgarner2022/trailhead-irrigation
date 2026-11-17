@@ -4,7 +4,9 @@ import { eq } from "drizzle-orm"
 import * as s from "@/db/schema"
 import type { TestDb } from "@/db/test-db"
 import { callApi } from "../../core/call"
-import { adminKey, apiDb, ctxFor, customerPerson, readKey, writeKey } from "../../test-helpers"
+import { adminKey, apiDb, ctxFor, customerPerson, linesOfPass, readKey, writeKey } from "../../test-helpers"
+import { jobTotal } from "@/lib/jobs/lines"
+import { SERVICES } from "@/lib/services"
 import {
   passesActivate, passesAddInspection, passesCancel, passesCreate, passesGet, passesList, passesResendConfirmation,
   passesSendCardUpdateLink, passesSkipVisit, passesUpdatePreference,
@@ -88,6 +90,19 @@ describe("passes.create", () => {
   })
 })
 
+describe("passes.create's lines", () => {
+  it("writes the lines beside the visits, and rebuilds them when the held pending pass's answers change", async () => {
+    const who = { firstName: "Lines", lastName: "Tester", email: "lines@example.com", phone: "303-555-0150" }
+    const first = await create({ customer: who })
+    expect((await linesOfPass(db, first.id)).map((l) => [l.visitKind, l.unitPrice, l.serviceKey])).toEqual([["turn-on", 145, "turn-on-8"], ["blowout", 115, "blowout"]])
+    const again = await create({ passId: first.id, zones: 12, inspection: true, customer: who })
+    expect(again.id).toBe(first.id)
+    const lines = await linesOfPass(db, first.id)
+    expect(lines.map((l) => [l.visitKind, l.unitPrice, l.serviceKey, l.visitStatus])).toEqual([["turn-on", 185, "turn-on-12", "unscheduled"], ["inspection", 185, "inspection-12", "unscheduled"], ["blowout", 155, "blowout", "unscheduled"]])
+    expect(lines.map((l) => l.visitId).sort()).toEqual(again.visits.map((v) => v.id).sort())
+  })
+})
+
 describe("passes.list and passes.get", () => {
   it("leaks no email, access note, address or Stripe id to a read key", async () => {
     await create({ accessNote: "Gate code 9999", customer: { firstName: "Leak", lastName: "Tester", email: "leak@example.com" } })
@@ -121,6 +136,8 @@ describe("passes.cancel", () => {
     const visits = await db.select().from(s.visit).where(eq(s.visit.passId, "p1"))
     expect(visits.map((v) => v.status).sort()).toEqual(["cancelled", "cancelled", "completed"])
     expect(await callApi(ctxFor(db, writeKey), passesCancel, { id: "p1" })).toMatchObject({ cancelledVisits: 0 })
+    const lines = await linesOfPass(db, "p1")
+    expect(lines.map((l) => [l.visitStatus, l.cancelledAt !== null]).sort()).toEqual([["cancelled", true], ["cancelled", true], ["completed", false]])
     expect(await db.select().from(s.passChange).where(eq(s.passChange.passId, "p1"))).toHaveLength(1)
   })
   it("lets a customer cancel their own pass and no one else's", async () => {
@@ -155,6 +172,9 @@ describe("passes.addInspection", () => {
     await expect(callApi(ctxFor(db, customerPerson("c167"), "2027-06-01T17:00:00Z"), passesAddInspection, { id: "p4" })).rejects.toMatchObject({ code: "conflict" })
     const [pass] = await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, "p4"))
     expect(pass!.inspection).toBe(true)
+    const line = (await linesOfPass(db, "p4")).find((l) => l.visitKind === "inspection")
+    expect(line).toMatchObject({ visitId: out.visitId, name: "Mid-season inspection", unitPrice: out.amount, serviceKey: expect.stringMatching(/^inspection-(8|12|16)$/), taxable: false, cancelledAt: null })
+    expect(line!.description).toBe(SERVICES[line!.serviceKey!]!.description)
   })
   it("refuses a customer on July 1 but lets an admin while July is open", async () => {
     await expect(callApi(ctxFor(db, customerPerson("c197"), "2027-07-01T17:00:00Z"), passesAddInspection, { id: "p5" })).rejects.toMatchObject({ code: "unprocessable" })
@@ -170,6 +190,18 @@ describe("passes.skipVisit", () => {
     await callApi(ctxFor(db, writeKey), passesSkipVisit, { id: "p6", kind: "turn-on" })
     const [visit] = await db.select().from(s.visit).where(eq(s.visit.id, "p6-turn-on"))
     expect(visit).toMatchObject({ status: "skipped", scheduledOn: null, personId: null })
+    const lines = await linesOfPass(db, "p6")
+    expect(lines.filter((l) => l.cancelledAt).map((l) => l.visitKind).sort()).toEqual(["blowout", "turn-on"])
+  })
+  it("takes the skipped visit's line out of the job's total, whatever job.price says", async () => {
+    const pass = await create({ customer: { firstName: "Skip", lastName: "Tester", email: "skip@example.com", phone: "303-555-0151" }, inspection: true })
+    const [row] = await db.select({ jobId: s.seasonPass.jobId }).from(s.seasonPass).where(eq(s.seasonPass.id, pass.id))
+    await db.update(s.job).set({ price: 999 }).where(eq(s.job.id, row!.jobId))
+    await callApi(ctxFor(db, writeKey), passesSkipVisit, { id: pass.id, kind: "inspection" })
+    const lines = await linesOfPass(db, pass.id)
+    expect(lines.map((l) => [l.visitKind, l.cancelledAt instanceof Date])).toEqual([["turn-on", false], ["inspection", true], ["blowout", false]])
+    expect(jobTotal(lines)).toBe(145 + 115)
+    expect((await db.select().from(s.job).where(eq(s.job.id, row!.jobId)))[0]!.price).not.toBe(145 + 115)
   })
   it("refuses a completed visit and a customer on another pass", async () => {
     await expect(callApi(ctxFor(db, writeKey), passesSkipVisit, { id: "p1", kind: "turn-on" })).rejects.toMatchObject({ code: "unprocessable" })

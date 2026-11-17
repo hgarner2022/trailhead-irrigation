@@ -5,7 +5,7 @@ import * as s from "@/db/schema"
 import type { TestDb } from "@/db/test-db"
 import type { PublicPrincipal } from "@/lib/auth/types"
 import { callApi } from "../../core/call"
-import { apiDb, ctxFor, ORG } from "../../test-helpers"
+import { apiDb, ctxFor, linesOfPass, ORG } from "../../test-helpers"
 import { scheduleOfferDays } from "../schedule/handlers"
 import { passesCreate } from "./handlers"
 
@@ -47,6 +47,9 @@ describe("passes.create with renewOf", () => {
     expect(mail.find((m) => m.kind === "purchase-confirmation" && m.body.includes("Google Calendar:"))).toBeTruthy()
     expect(mail.find((m) => m.kind === "purchase-confirmation")!.body).toContain("Ryan sets the days that are missing")
     expect((await db.select().from(s.passChange).where(eq(s.passChange.passId, pass.id))).map((c) => c.kind)).toContain("renewed")
+    const lines = await linesOfPass(db, pass.id)
+    expect(lines.map((l) => [l.visitKind, l.unitPrice, l.serviceKey])).toEqual([["turn-on", 145, "turn-on-8"], ["blowout", 95, "blowout"]])
+    expect(lines[0]!.visitId).toBe(pass.visits.find((v) => v.kind === "turn-on")!.id)
   })
 
   it("refuses a second reservation of the same season, a pass with no card on file, and a visitor who has not accepted the terms", async () => {

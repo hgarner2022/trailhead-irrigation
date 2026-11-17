@@ -1,5 +1,7 @@
 // Test helper (no server-only: tests import it): a seeded in-memory organization and the principals the handler tests call as.
 import { vi } from "vitest"
+import { eq } from "drizzle-orm"
+import * as s from "@/db/schema"
 import { seed } from "@/db/seed"
 import { testDb, type TestDb } from "@/db/test-db"
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
@@ -29,3 +31,24 @@ export const writeKey = key("read", "write")
 export const adminKey = key("read", "write", "admin")
 
 export const ctxFor = (db: TestDb, principal: Principal, now = "2027-04-20T15:00:00Z") => makeCtx(db, principal, { now: new Date(now) })
+
+const KIND_ORDER: Record<string, number> = { "turn-on": 0, inspection: 1, blowout: 2 }
+
+/** A job's lines, oldest first and pass visits in season order, each with its service's key and its visit's kind and status. */
+export async function linesOfJob(db: TestDb, jobId: string) {
+  const rows = await db
+    .select({ line: s.lineItem, serviceKey: s.service.key, visitKind: s.visit.kind, visitStatus: s.visit.status })
+    .from(s.lineItem)
+    .leftJoin(s.service, eq(s.service.id, s.lineItem.serviceId))
+    .leftJoin(s.visit, eq(s.visit.id, s.lineItem.visitId))
+    .where(eq(s.lineItem.jobId, jobId))
+  return rows
+    .map((r) => ({ ...r.line, serviceKey: r.serviceKey, visitKind: r.visitKind, visitStatus: r.visitStatus }))
+    .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime() || (KIND_ORDER[a.visitKind ?? ""] ?? 9) - (KIND_ORDER[b.visitKind ?? ""] ?? 9))
+}
+
+/** The lines of a pass's job. */
+export async function linesOfPass(db: TestDb, passId: string) {
+  const [pass] = await db.select({ jobId: s.seasonPass.jobId }).from(s.seasonPass).where(eq(s.seasonPass.id, passId))
+  return linesOfJob(db, pass!.jobId)
+}

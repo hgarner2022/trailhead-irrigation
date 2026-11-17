@@ -48,9 +48,11 @@ describe("migration 0014: line items backfill", () => {
     const all = files()
     const at = all.findIndex((f) => f.startsWith("0014_line_items"))
     expect(at).toBeGreaterThan(0)
-    for (const f of all.slice(0, at)) for (const stmt of migration(f)) if (stmt.trim()) await client.exec(stmt)
+    for (const f of all.slice(0, at + 1)) for (const stmt of migration(f)) if (stmt.trim()) await client.exec(stmt)
     const org = data.organizationId
     await seed(drizzle(client, { schema }), data, { organizationId: org, admins: [], passes: true })
+    // The seed writes the fixture's lines itself; the backfill is for a database that had none.
+    await client.exec(`DELETE FROM line_item`)
     const visits = data.passes.reduce((sum, p) => sum + p.visits.length, 0)
     await client.exec(`UPDATE visit SET status = 'skipped' WHERE id = 'p9-blowout'`)
     await client.exec(`INSERT INTO customer (id, organization_id, first_name) VALUES ('c-x', '${org}', 'B')`)
@@ -84,7 +86,8 @@ describe("migration 0014: line items backfill", () => {
     await client.exec(`INSERT INTO property (id, organization_id, customer_id, address, town) VALUES ('pr-o2', 'o2', 'c-o2', '3 Main', 'Erie')`)
     await client.exec(`INSERT INTO job (id, organization_id, customer_id, property_id, kind, price, source) VALUES ('j-two', 'o2', 'c-o2', 'pr-o2', 'repair', 145, 'office')`)
     await client.exec(`INSERT INTO visit (id, organization_id, job_id, customer_id, property_id, kind, amount) VALUES ('v-two', 'o2', 'j-two', 'c-o2', 'pr-o2', 'repair', 145)`)
-    const statements = migration(all[at]!).filter((stmt) => stmt.trim())
+    const statements = migration(all[at]!).filter((stmt) => /INSERT INTO "line_item"/.test(stmt))
+    expect(statements).toHaveLength(2)
     for (const stmt of statements) await client.exec(stmt)
 
     type Row = { visit_id: string | null; job_id: string; name: string; unit_price: number; amount: number | null; kind: string; service_key: string | null; description: string | null; cancelled: boolean; cancelled_at: string | null; taxable: boolean; quantity: number }
@@ -125,7 +128,7 @@ describe("migration 0014: line items backfill", () => {
     expect(oneOff("j-two")).toMatchObject([{ visit_id: "v-two", name: "Repair", unit_price: 145, service_key: null, description: null }])
     expect(lines).toHaveLength(visits + 1 + 6)
 
-    for (const stmt of statements.filter((s) => /INSERT INTO "line_item"/.test(s))) await client.exec(stmt)
+    for (const stmt of statements) await client.exec(stmt)
     expect(await read()).toEqual(lines)
     await client.close()
   })
