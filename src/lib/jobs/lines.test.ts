@@ -31,6 +31,19 @@ describe("lineForVisitKind", () => {
     expect(lineForVisitKind("other", 50).name).toBe("Other")
   })
 
+  it("has no service, and so no description, for a banded kind with no zones or zones no band fits", () => {
+    expect(lineForVisitKind("turn-on", 145)).toMatchObject({ name: "Spring turn-on", unitPrice: 145, visitKind: "turn-on" })
+    expect(lineForVisitKind("turn-on", 145).serviceKey).toBeUndefined()
+    expect(lineForVisitKind("turn-on", 145).description).toBeUndefined()
+    expect(lineForVisitKind("inspection", 145, 20).serviceKey).toBeUndefined()
+    expect(lineForVisitKind("rachio-install", 250)).toMatchObject({ name: "Rachio controller install" })
+    expect(lineForVisitKind("rachio-install", 250).serviceKey).toBeUndefined()
+    expect(lineForVisitKind("rachio-install", 250, 8).serviceKey).toBe("rachio-install-8")
+    expect(lineForVisitKind("turn-on", 145, 12).serviceKey).toBe("turn-on-12")
+    expect(linesForPass(20, false).map((l) => l.serviceKey)).toEqual([undefined, undefined])
+    expect(linesForPass(20, false).map((l) => l.description)).toEqual([undefined, undefined])
+  })
+
   it("takes the catalogue name and description for the other kinds", () => {
     const consult = lineForVisitKind("consult", 0)
     expect(consult.name).toBe(SERVICES.consult!.name)
