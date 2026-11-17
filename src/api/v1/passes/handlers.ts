@@ -148,7 +148,11 @@ export const passesCreate = defineHandler({
       .from(s.property)
       .where(and(eq(s.property.customerId, customerRow.id), eq(s.property.address, address.address), eq(s.property.town, address.town)))
       .limit(1)
-    const property = knownProperty ?? (await ctx.db.insert(s.property).values({ organizationId: org, customerId: customerRow.id, ...address }).returning())[0]!
+    // The yard answers the customer just gave (zones, must be home, the access note) go on the property; a known property takes them as the newer word.
+    const yard = { zones: input.zones, mustBeHome: input.needsCustomerHome ?? false, accessNote }
+    const property = knownProperty
+      ? (await ctx.db.update(s.property).set({ ...yard, updatedAt: ctx.now }).where(eq(s.property.id, knownProperty.id)).returning())[0]!
+      : (await ctx.db.insert(s.property).values({ organizationId: org, customerId: customerRow.id, address: address.address, town: address.town, ...yard }).returning())[0]!
     if (!knownProperty) await enqueueGeocode(ctx.db, org, property.id, ctx.now)
     const [terms] = await ctx.db.select({ v: s.organization.termsVersion }).from(s.organization).where(eq(s.organization.id, org))
 

@@ -11,7 +11,8 @@ import { orderDay } from "@/lib/scheduling/server/order-day"
 import { ApiError, notFound } from "../../core/errors"
 import { defineHandler } from "../../core/handler"
 import { customerFields, propertyInput } from "../customers/schemas"
-import { cleanContact } from "../customers/handlers"
+import { cleanText } from "@/lib/format/contact"
+import { cleanContact, cleanYard } from "../customers/handlers"
 import { recordChange } from "../passes/queries"
 import { routePeople } from "../people/handlers"
 import { Day, Id } from "../shared"
@@ -103,6 +104,8 @@ export const visitsUpdate = defineHandler({
     }
     if (input.accessNote !== undefined) {
       if (!visit.passId) throw new ApiError("unprocessable", "Only a pass visit has an access note")
+      // The property holds the yard's access note; the pass keeps the same words as its alias.
+      await ctx.db.update(s.property).set({ accessNote: input.accessNote || null, updatedAt: ctx.now }).where(eq(s.property.id, visit.propertyId))
       await ctx.db.update(s.seasonPass).set({ accessNote: input.accessNote || null }).where(eq(s.seasonPass.id, visit.passId))
       changed.accessNote = true
     }
@@ -179,10 +182,9 @@ export const visitsCreate = defineHandler({
     let propertyId: string
     let created: { customerId: string; propertyId: string } | null = null
     if (input.newCustomer) {
-      const { property, accessNote: _a, ...fields } = input.newCustomer
-      void _a
+      const { property, accessNote, ...fields } = input.newCustomer
       const [c] = await ctx.db.insert(s.customer).values({ organizationId: org, ...fields, ...cleanContact(fields), leadSource: "office" }).returning()
-      const [p] = await ctx.db.insert(s.property).values({ organizationId: org, customerId: c!.id, ...property }).returning()
+      const [p] = await ctx.db.insert(s.property).values({ organizationId: org, customerId: c!.id, address: property.address, town: property.town, ...cleanYard(property), ...(accessNote ? { accessNote: cleanText(accessNote) } : {}) }).returning()
       await enqueueGeocode(ctx.db, org, p!.id, ctx.now)
       customerId = c!.id
       propertyId = p!.id

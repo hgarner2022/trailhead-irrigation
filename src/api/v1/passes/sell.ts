@@ -41,10 +41,9 @@ export const passesSell = defineHandler({
     let customer: typeof s.customer.$inferSelect
     let property: typeof s.property.$inferSelect
     if (input.newCustomer) {
-      const { property: address, accessNote: _a, ...fields } = input.newCustomer
-      void _a
+      const { property: address, accessNote: note, ...fields } = input.newCustomer
       ;[customer] = (await ctx.db.insert(s.customer).values({ organizationId: org, ...fields, ...cleanContact(fields), leadSource: "office" }).returning()) as [typeof s.customer.$inferSelect]
-      ;[property] = (await ctx.db.insert(s.property).values({ organizationId: org, customerId: customer.id, address: cleanText(address.address), town: address.town }).returning()) as [typeof s.property.$inferSelect]
+      ;[property] = (await ctx.db.insert(s.property).values({ organizationId: org, customerId: customer.id, address: cleanText(address.address), town: address.town, zones: input.zones, accessNote: note ? cleanText(note) : null }).returning()) as [typeof s.property.$inferSelect]
       await enqueueGeocode(ctx.db, org, property.id, ctx.now)
     } else {
       const [known] = await ctx.db.select().from(s.customer).where(and(eq(s.customer.id, input.customerId!), eq(s.customer.organizationId, org)))
@@ -58,6 +57,8 @@ export const passesSell = defineHandler({
       const found = input.propertyId ? props.find((p) => p.id === input.propertyId) : props[0]
       if (!found) throw new ApiError("unprocessable", "This customer has no address on file; add one first")
       property = found
+      // The zone count just sold is what the yard has; the access note stays as the office last wrote it.
+      if (found.zones !== input.zones) [property] = (await ctx.db.update(s.property).set({ zones: input.zones, updatedAt: ctx.now }).where(eq(s.property.id, found.id)).returning()) as [typeof s.property.$inferSelect]
     }
     const [held] = await ctx.db
       .select({ number: s.seasonPass.number })

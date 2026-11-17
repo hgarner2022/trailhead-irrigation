@@ -56,6 +56,14 @@ describe("passes.sell", () => {
     expect((await db.select().from(s.passChange).where(eq(s.passChange.passId, pass.id))).map((c) => c.kind)).toEqual(["sold"])
   })
 
+  it("writes the zones sold on an existing customer's property", async () => {
+    const [c] = await db.insert(s.customer).values({ organizationId: ORG, firstName: "Ivy", lastName: "Lund", email: "ivy@example.com" }).returning()
+    const [p] = await db.insert(s.property).values({ organizationId: ORG, customerId: c!.id, address: "4 Ash St", town: "Erie", zones: 5, gateCode: "55" }).returning()
+    const pass = await sell({ customerId: c!.id, zones: 11 })
+    expect(pass.zones).toBe(11)
+    expect((await db.select().from(s.property).where(eq(s.property.id, p!.id)))[0]).toMatchObject({ zones: 11, gateCode: "55" })
+  })
+
   it("writes one line per visit beside the visits, three with the inspection, each from the service of the pass's zone band", async () => {
     const pass = await sell({ newCustomer: newCustomer(), zones: 12, inspection: true })
     const lines = await linesOfPass(db, pass.id)
@@ -87,6 +95,8 @@ describe("passes.sell", () => {
     // October 1, 2028 is a Sunday: no truck works it, so the blowout goes to the next open day and the move is recorded.
     const pass = await sell({ newCustomer: newCustomer({ accessNote: "Gate code 4411" }), inspection: true, days: { "turn-on": open, blowout: "2028-10-01" } })
     expect(pass).toMatchObject({ status: "active", inspection: true, accessNote: "Gate code 4411", firstName: "Maya" })
+    const [prop] = await db.select().from(s.property).where(eq(s.property.customerId, pass.customerId))
+    expect(prop).toMatchObject({ zones: 8, accessNote: "Gate code 4411" })
     expect(pass.customer).toMatchObject({ lastName: "Ortiz", email: expect.stringMatching(/^maya\d+@example\.com$/), phone: "+13035550142" })
     expect(pass.visits.map((v) => v.kind)).toEqual(["turn-on", "inspection", "blowout"])
     expect(pass.visits.find((v) => v.kind === "turn-on")).toMatchObject({ status: "scheduled", scheduledOn: open, startTime: offer.days[0]!.start })

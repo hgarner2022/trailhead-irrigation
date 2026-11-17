@@ -36,6 +36,35 @@ export const customerOut = (ctx: Ctx, row: CustomerRow) => ({
   createdAt: row.createdAt.toISOString(),
 })
 
+type PropertyRow = typeof s.property.$inferSelect
+
+/** A property as the API serves it: the street line, gate code, on-site phone and access note only with the write scope. */
+export const propertyOut = (ctx: Ctx, p: PropertyRow) => ({
+  id: p.id,
+  customerId: p.customerId,
+  town: p.town,
+  lat: p.lat,
+  lng: p.lng,
+  zones: p.zones,
+  controller: p.controller,
+  backflowLocation: p.backflowLocation,
+  mustBeHome: p.mustBeHome,
+  contactName: p.contactName,
+  notes: p.notes,
+  ...(canSeeContact(ctx) ? { address: p.address, gateCode: p.gateCode, accessNote: p.accessNote, contactPhone: p.contactPhone } : {}),
+})
+
+type YardInput = Partial<Record<"zones" | "controller" | "backflowLocation" | "gateCode" | "accessNote" | "contactName" | "contactPhone" | "notes", string | number | null>> & { mustBeHome?: boolean }
+
+/** The yard fields a caller sent, cleaned the way they are stored (the phone printed like the customer's); fields not sent stay absent. */
+export function cleanYard(f: YardInput) {
+  const out: Record<string, unknown> = {}
+  for (const [k, v] of Object.entries(f)) if (v !== undefined) out[k] = v
+  if (typeof f.contactPhone === "string") out.contactPhone = normalizePhone(f.contactPhone) ?? f.contactPhone
+  if (out.mustBeHome === null) delete out.mustBeHome
+  return out as Partial<Pick<PropertyRow, "zones" | "controller" | "backflowLocation" | "gateCode" | "mustBeHome" | "accessNote" | "contactName" | "contactPhone" | "notes">>
+}
+
 export const consentOut = (c: ConsentRow) => ({
   id: c.id,
   termsVersion: c.termsVersion,
@@ -152,7 +181,7 @@ export const customersGet = defineHandler({
     const consent = await latestConsent(ctx.db, row.id)
     return {
       ...customerOut(ctx, row),
-      properties: props.map((p) => ({ id: p.id, town: p.town, lat: p.lat, lng: p.lng, ...(canSeeContact(ctx) ? { address: p.address } : {}) })),
+      properties: props.map((p) => propertyOut(ctx, p)),
       consent: consent ? consentOut(consent) : null,
       jobs: await jobsOf(ctx.db, row.id),
     }
@@ -194,11 +223,11 @@ export const customersCreate = defineHandler({
   async run(ctx, input) {
     const { property, ...fields } = input
     const [row] = await ctx.db.insert(s.customer).values({ organizationId: ctx.organizationId, ...fields, ...cleanContact(fields) }).returning()
-    const props = property ? await ctx.db.insert(s.property).values({ organizationId: ctx.organizationId, customerId: row!.id, ...property }).returning() : []
+    const props = property ? await ctx.db.insert(s.property).values({ organizationId: ctx.organizationId, customerId: row!.id, address: property.address, town: property.town, ...cleanYard(property) }).returning() : []
     for (const p of props) await enqueueGeocode(ctx.db, ctx.organizationId, p.id, ctx.now)
     return {
       ...customerOut(ctx, row!),
-      properties: props.map((p) => ({ id: p.id, town: p.town, lat: p.lat, lng: p.lng, address: p.address })),
+      properties: props.map((p) => propertyOut(ctx, p)),
       consent: null,
       jobs: [],
     }

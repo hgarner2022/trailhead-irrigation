@@ -54,6 +54,16 @@ describe("the public checkout principal", () => {
 })
 
 describe("passes.create for the checkout", () => {
+  it("writes the yard answers on the property, and an existing property takes the newer answers", async () => {
+    reachable.mockResolvedValue(true)
+    const who = { firstName: "Yard", lastName: "Tester", email: "yard@example.com", phone: "3035550105" }
+    const first = await create({ customer: who, property: { address: "7 Cedar St", town: "Erie" }, zones: 6, needsCustomerHome: true, accessNote: "Gate code 9" })
+    const [row] = await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, first.id))
+    const props = () => db.select().from(s.property).where(eq(s.property.customerId, row!.customerId))
+    expect(await props()).toMatchObject([{ address: "7 Cedar St", zones: 6, mustBeHome: true, accessNote: "Gate code 9" }])
+    await create({ passId: first.id, customer: who, property: { address: "7 Cedar St", town: "Erie" }, zones: 9, accessNote: "No gate now" })
+    expect(await props()).toMatchObject([{ zones: 9, mustBeHome: false, accessNote: "No gate now" }])
+  })
   it("holds one pending pass per email: a second call with its passId updates it", async () => {
     reachable.mockResolvedValue(true)
     const first = await create({ customer: { firstName: "Back", lastName: "Tester", email: "back@example.com", phone: "3035550104" } })
