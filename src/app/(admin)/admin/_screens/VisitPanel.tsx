@@ -62,8 +62,9 @@ function CustomerBlock({ facts }: { facts: VisitFacts }) {
 }
 
 /** The yard the visit is at, as the property holds it; the gate code and on-site phone only for a manager. Nothing for a visit with no property. */
-function PropertyBlock({ facts, readOnly }: { facts: VisitFacts; readOnly: boolean }) {
-  const yard = facts.visit.property ?? yardFromPass(facts.pass)
+function AtTheProperty({ facts, readOnly }: { facts: VisitFacts; readOnly: boolean }) {
+  // Only the fixtures (a client with no property rows) fall back to the pass; live data never does.
+  const yard = facts.visit.property ?? (facts.client?.properties ? undefined : yardFromPass(facts.pass))
   if (!yard) return null
   const lines = propertyLines(yard, { canSeeContact: !readOnly })
   return (
@@ -76,7 +77,7 @@ function PropertyBlock({ facts, readOnly }: { facts: VisitFacts; readOnly: boole
           ))}
         </ul>
       ) : (
-        <p className="mt-2 text-sm text-muted-foreground">Nothing on file yet.</p>
+        <p className="mt-2 text-sm text-muted-foreground">Nothing on file yet</p>
       )}
     </section>
   )
@@ -166,7 +167,7 @@ function Actions({ facts, data, today, actions }: { facts: VisitFacts; data: Adm
         </section>
       )}
       {states.work === "scheduled" && <NotDoneForm visit={visit} actions={actions} />}
-      {open && <EditForm key={`edit-${visit.id}`} visit={visit} pass={pass} people={routePeople(data.settings.people)} actions={actions} />}
+      {open && <EditForm key={`edit-${visit.id}`} visit={visit} people={routePeople(data.settings.people)} actions={actions} />}
       <TextForm client={client} visitId={visit.id} actions={actions} />
       <div className="flex flex-wrap items-start gap-3">
         {pass && pass.status === "active" && <ResendButton passId={pass.id} actions={actions} />}
@@ -205,7 +206,7 @@ export function VisitPanel({ data, today, visitId, open, onOpenChange, onOpenVis
           <JobPill job={states} />
         </div>
         <CustomerBlock facts={facts} />
-        <PropertyBlock facts={facts} readOnly={readOnly} />
+        <AtTheProperty facts={facts} readOnly={readOnly} />
         <VisitBlock facts={facts} />
         {facts.line?.description ? <Included text={facts.line.description} /> : null}
         <JobBlock facts={facts} today={today} onOpenVisit={onOpenVisit} />

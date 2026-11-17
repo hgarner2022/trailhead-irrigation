@@ -4,7 +4,7 @@ import { callApi } from "@/api/core/call"
 import type { Ctx } from "@/api/core/context"
 import type { Handler } from "@/api/core/handler"
 import { areasList } from "@/api/v1/areas/handlers"
-import { customersList } from "@/api/v1/customers/handlers"
+import { customersList, gateYard } from "@/api/v1/customers/handlers"
 import { messagesList } from "@/api/v1/messages/handlers"
 import { passesList } from "@/api/v1/passes/handlers"
 import { settingsChangesList, settingsGet } from "@/api/v1/settings/handlers"
@@ -116,7 +116,7 @@ export async function getLiveAdminData(ctx: Ctx): Promise<AdminData> {
     // the same gate as `properties`: the street line, gate code, access note and on-site phone only with the write scope
     propertyRows: propertyRows.map((p) => ({
       id: p.id, customerId: p.customerId, town: p.town as Town, zones: p.zones, controller: p.controller, backflowLocation: p.backflowLocation, mustBeHome: p.mustBeHome, contactName: p.contactName, notes: p.notes,
-      address: contact ? p.address : null, gateCode: contact ? p.gateCode : null, accessNote: contact ? p.accessNote : null, contactPhone: contact ? p.contactPhone : null,
+      address: contact ? p.address : null, gateCode: null, accessNote: null, contactPhone: null, ...gateYard(ctx, p),
     })),
     blocks,
     services: serviceRows.data.map(serviceItem),

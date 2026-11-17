@@ -123,7 +123,7 @@ export const passesCreate = defineHandler({
     const accessNote = input.accessNote ? cleanText(input.accessNote) : null
     const visitor = ctx.principal.kind === "public"
     if (visitor) {
-      const step = failedCheckoutStep({ property: input.property, zones: input.zones, needsCustomerHome: input.needsCustomerHome, customer: { ...input.customer, email }, today: day })
+      const step = failedCheckoutStep({ property: input.property, zones: input.zones, needsCustomerHome: input.needsCustomerHome ?? false, customer: { ...input.customer, email }, today: day })
       if (step === "address") throw new ApiError("unprocessable", outOfAreaMessage({ ok: false, place: input.property.town }), [{ path: "reason", message: "out-of-area" }])
       if (step) throw new ApiError("invalid", `The ${step} step is not complete`, [{ path: "reason", message: step }])
       if (!(await emailDomainReachable(email))) throw new ApiError("unprocessable", "We can't find that email's mail server. Check the spelling.", [{ path: "reason", message: "email-unreachable" }])
@@ -149,9 +149,15 @@ export const passesCreate = defineHandler({
       .where(and(eq(s.property.customerId, customerRow.id), eq(s.property.address, address.address), eq(s.property.town, address.town)))
       .limit(1)
     // The yard answers the customer just gave (zones, must be home, the access note) go on the property; a known property takes them as the newer word.
+    // A known property takes the zones as the newer word, but an answer the checkout did not give never clears what the office or the customer already holds.
     const yard = { zones: input.zones, mustBeHome: input.needsCustomerHome ?? false, accessNote }
+    const knownYard = {
+      zones: input.zones,
+      ...(typeof input.needsCustomerHome === "boolean" ? { mustBeHome: input.needsCustomerHome } : {}),
+      ...(accessNote ? { accessNote } : {}),
+    }
     const property = knownProperty
-      ? (await ctx.db.update(s.property).set({ ...yard, updatedAt: ctx.now }).where(eq(s.property.id, knownProperty.id)).returning())[0]!
+      ? (await ctx.db.update(s.property).set({ ...knownYard, updatedAt: ctx.now }).where(eq(s.property.id, knownProperty.id)).returning())[0]!
       : (await ctx.db.insert(s.property).values({ organizationId: org, customerId: customerRow.id, address: address.address, town: address.town, ...yard }).returning())[0]!
     if (!knownProperty) await enqueueGeocode(ctx.db, org, property.id, ctx.now)
     const [terms] = await ctx.db.select({ v: s.organization.termsVersion }).from(s.organization).where(eq(s.organization.id, org))
@@ -162,7 +168,7 @@ export const passesCreate = defineHandler({
       inspection: input.inspection,
       turnOnPreference: input.turnOnPreference,
       blowoutPreference: input.blowoutPreference,
-      needsCustomerHome: input.needsCustomerHome,
+      needsCustomerHome: input.needsCustomerHome ?? false,
       accessNote,
     }
     let pass: typeof s.seasonPass.$inferSelect

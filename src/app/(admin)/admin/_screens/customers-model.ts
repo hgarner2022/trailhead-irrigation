@@ -138,7 +138,7 @@ export function propertiesOf(client: Client, passes: Pass[]): Property[] {
 
 /**
  * What the Property block and the visit's "At the property" say, one line per fact that is set, in the order the crew reads
- * them. The gate code and the on-site phone go only to someone who may see contact details (a tech does not).
+ * them. The gate code, the access note and the on-site phone go only to someone who may see contact details (a tech does not).
  */
 export function propertyLines(yard: Yard | undefined, { canSeeContact }: { canSeeContact: boolean }): string[] {
   if (!yard) return []
@@ -150,7 +150,7 @@ export function propertyLines(yard: Yard | undefined, { canSeeContact }: { canSe
     ...(yard.backflowLocation ? [`Backflow ${yard.backflowLocation}`] : []),
     ...(canSeeContact && yard.gateCode ? [`Gate code ${yard.gateCode}`] : []),
     ...(yard.mustBeHome ? ["Must be home"] : []),
-    ...(yard.accessNote ? [yard.accessNote] : []),
+    ...(canSeeContact && yard.accessNote ? [yard.accessNote] : []),
     ...(contact ? [`Contact ${contact}`] : []),
     ...(yard.notes ? [`Property notes ${yard.notes}`] : []),
   ]

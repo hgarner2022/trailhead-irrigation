@@ -31,8 +31,7 @@ export type PassJoined = Awaited<ReturnType<ReturnType<typeof passesQuery>["limi
 
 export function passOut(ctx: Ctx, row: PassJoined) {
   const p = row.pass
-  // The yard lives on the property; the pass columns answer only for a property with no zones yet.
-  const fromProperty = row.yard.zones !== null
+  // The yard lives on the property; only the zones fall back to the pass (a property with none yet).
   return {
     id: p.id,
     number: p.number,
@@ -46,8 +45,8 @@ export function passOut(ctx: Ctx, row: PassJoined) {
     status: p.status,
     turnOnPreference: p.turnOnPreference,
     blowoutPreference: p.blowoutPreference,
-    needsCustomerHome: fromProperty ? row.yard.mustBeHome : p.needsCustomerHome,
-    ...(canSeeContact(ctx) ? { accessNote: fromProperty ? row.yard.accessNote : p.accessNote } : {}),
+    needsCustomerHome: row.yard.mustBeHome,
+    ...(canSeeContact(ctx) ? { accessNote: row.yard.accessNote } : {}),
     cardBrand: p.cardBrand,
     cardLast4: p.cardLast4,
     cardExpires: p.cardExpires,

@@ -48,7 +48,7 @@ describe("scheduleVisits", () => {
   })
 
   it("never places a visit whose customer must be home", () => {
-    const r = run([v("a", "Erie", { mustBeHome: true }), v("b", "Erie")])
+    const r = run([v("a", "Erie", { needsCustomerHome: true }), v("b", "Erie")])
     expect(r.waiting).toEqual(["a"])
     expect(r.placed.map((p) => p.visitId)).toEqual(["b"])
   })

@@ -59,7 +59,7 @@ export function scheduleVisits(input: ScheduleInput): ScheduleResult {
     const opens = window.opensOn.slice(0, 10)
     const horizon = addDays(from, window.leadWeeks * 7)
     if (window.closesOn.slice(0, 10) < from) continue
-    if (visit.mustBeHome) { waiting.push(visit.id); continue }
+    if (visit.needsCustomerHome) { waiting.push(visit.id); continue }
     if (opens > horizon) { deferred.push(visit.id); continue }
     const range = preferredRange(window, visit.preference)
     // A customer's preferred third that the lead time cannot reach yet is the next run's, not a reason to place them early.

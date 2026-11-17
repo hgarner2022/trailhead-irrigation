@@ -52,7 +52,7 @@ export const visitsUpdate = defineHandler({
   method: "PATCH",
   path: "/visits/{id}",
   scope: "write",
-  summary: "Change a visit's minutes, price, person or notes, and for a pass visit the pass's access note. A new person must be on the schedule and work the visit's weekday. A price edits the visit's line.",
+  summary: "Change a visit's minutes, price, person or notes, and the access note of the visit's property. A new person must be on the schedule and work the visit's weekday. A price edits the visit's line.",
   input: z.object({
     id: Id,
     durationMinutes: z.number().int().min(15).max(480).multipleOf(15).optional(),
@@ -60,7 +60,7 @@ export const visitsUpdate = defineHandler({
     personId: Id.optional().describe("Who takes the visit; it needs a day first."),
     truckId: PersonIdAlias,
     notes: z.string().trim().max(1000).optional().describe("An empty string clears the notes."),
-    accessNote: z.string().trim().max(500).optional().describe("Pass visits only: gate code, dog, where the controller is."),
+    accessNote: z.string().trim().max(500).optional().describe("Lands on the visit's property: gate code, dog, where the controller is."),
     unscheduled: z.literal(true).optional().describe("Take the visit back to Needs a day: the undo of giving it a day."),
   }),
   output: VisitOut,
@@ -104,7 +104,7 @@ export const visitsUpdate = defineHandler({
     }
     if (input.accessNote !== undefined) {
       // The property holds the yard's access note; the pass keeps the same words as its alias.
-      await ctx.db.update(s.property).set({ accessNote: input.accessNote || null, updatedAt: ctx.now }).where(eq(s.property.id, visit.propertyId))
+      await ctx.db.update(s.property).set({ accessNote: input.accessNote || null, updatedAt: ctx.now }).where(and(eq(s.property.id, visit.propertyId), eq(s.property.organizationId, ctx.organizationId)))
       if (visit.passId) await ctx.db.update(s.seasonPass).set({ accessNote: input.accessNote || null }).where(eq(s.seasonPass.id, visit.passId))
       changed.accessNote = true
     }

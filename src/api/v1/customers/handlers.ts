@@ -5,7 +5,7 @@ import * as s from "@/db/schema"
 import type { Database } from "@/db/types"
 import { enqueueGeocode } from "@/lib/geocode"
 import { defineHandler } from "../../core/handler"
-import { notFound } from "../../core/errors"
+import { ApiError, notFound } from "../../core/errors"
 import type { Ctx } from "../../core/context"
 import { afterTimeCursor, cursorPage, page, pageInput, timeCursor } from "../../core/pagination"
 import { canSeeContact, idInput, iso, today } from "../shared"
@@ -39,6 +39,10 @@ export const customerOut = (ctx: Ctx, row: CustomerRow) => ({
 type PropertyRow = typeof s.property.$inferSelect
 
 /** The yard's nine facts as the API serves them: the gate code, access note and on-site phone only with the write scope. */
+/** The yard facts only a write-scope caller may see; the one gate for the API and the admin's live data. Absent keys for anyone else. */
+export const gateYard = (ctx: Ctx, p: Pick<PropertyRow, "gateCode" | "accessNote" | "contactPhone">) =>
+  canSeeContact(ctx) ? { gateCode: p.gateCode, accessNote: p.accessNote, contactPhone: p.contactPhone } : {}
+
 export const yardOut = (ctx: Ctx, p: PropertyRow) => ({
   zones: p.zones,
   controller: p.controller,
@@ -46,7 +50,7 @@ export const yardOut = (ctx: Ctx, p: PropertyRow) => ({
   mustBeHome: p.mustBeHome,
   contactName: p.contactName,
   notes: p.notes,
-  ...(canSeeContact(ctx) ? { gateCode: p.gateCode, accessNote: p.accessNote, contactPhone: p.contactPhone } : {}),
+  ...gateYard(ctx, p),
 })
 
 /** A property as the API serves it: the street line too, only with the write scope. */
@@ -66,8 +70,11 @@ type YardInput = Partial<Record<"zones" | "controller" | "backflowLocation" | "g
 export function cleanYard(f: YardInput) {
   const out: Record<string, unknown> = {}
   for (const [k, v] of Object.entries(f)) if (v !== undefined) out[k] = v
-  if (typeof f.contactPhone === "string") out.contactPhone = normalizePhone(f.contactPhone) ?? f.contactPhone
-  if (out.mustBeHome === null) delete out.mustBeHome
+  if (typeof f.contactPhone === "string") {
+    const phone = normalizePhone(f.contactPhone)
+    if (!phone) throw new ApiError("invalid", "That phone number is not valid", [{ path: "contactPhone", message: "invalid-phone" }])
+    out.contactPhone = phone
+  }
   return out as Partial<Pick<PropertyRow, "zones" | "controller" | "backflowLocation" | "gateCode" | "mustBeHome" | "accessNote" | "contactName" | "contactPhone" | "notes">>
 }
 

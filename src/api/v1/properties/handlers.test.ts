@@ -35,6 +35,10 @@ describe("properties.update", () => {
     await expect(callApi(ctxFor(db, writeKey), propertiesUpdate, { id, zones: 0 })).rejects.toMatchObject({ code: "invalid" })
     await expect(callApi(ctxFor(db, writeKey), propertiesUpdate, { id, zones: 17 })).rejects.toMatchObject({ code: "invalid" })
   })
+  it("refuses an on-site phone that is not a phone number, and keeps the property as it was", async () => {
+    await expect(callApi(ctxFor(db, writeKey), propertiesUpdate, { id, contactPhone: "call Jim" })).rejects.toMatchObject({ code: "invalid" })
+    expect((await db.select().from(s.property).where(eq(s.property.id, id)))[0]!.contactPhone).toBe("+19705550199")
+  })
   it("needs the write scope", async () => {
     await expect(callApi(ctxFor(db, readKey), propertiesUpdate, { id, zones: 6 })).rejects.toMatchObject({ code: "forbidden" })
   })
@@ -68,5 +72,12 @@ describe("properties.update", () => {
     expect(r.property).toMatchObject({ zones: 10, mustBeHome: true })
     expect(r.property).not.toHaveProperty("gateCode")
     expect(r.property).not.toHaveProperty("contactPhone")
+  })
+  it("reads cleared on the pass: after the access note is cleared, passes.get shows none", async () => {
+    const [pass] = await db.select().from(s.seasonPass).where(eq(s.seasonPass.customerId, "c100"))
+    await callApi(ctxFor(db, writeKey), propertiesUpdate, { id, accessNote: "", mustBeHome: false })
+    const out = await callApi(ctxFor(db, writeKey), passesGet, { id: pass!.id })
+    expect(out.accessNote).toBeNull()
+    expect(out.needsCustomerHome).toBe(false)
   })
 })

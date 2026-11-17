@@ -19,18 +19,18 @@ const FIELD = "min-h-11 w-full rounded-lg border border-input bg-background px-3
 const LABEL = "mb-1 block text-sm font-medium text-foreground"
 export const TEXT_MAX = 320
 
-export function EditForm({ visit, pass, people, actions }: { visit: Visit; pass?: Pass; people: AdminData["settings"]["people"]; actions?: VisitActions }) {
+export function EditForm({ visit, people, actions }: { visit: Visit; people: AdminData["settings"]["people"]; actions?: VisitActions }) {
   const [minutes, setMinutes] = useState(String(visit.minutes ?? 60))
   const [personId, setPersonId] = useState(visit.personId ?? "")
   const [notes, setNotes] = useState(visit.notes ?? "")
-  const [access, setAccess] = useState(visit.property?.accessNote ?? pass?.accessNote ?? "")
+  const [access, setAccess] = useState(visit.property?.accessNote ?? "")
   const { pending, error, done, run } = useRunner()
   const save = () => {
     const changes = {
       ...(Number(minutes) !== (visit.minutes ?? 60) ? { durationMinutes: Number(minutes) } : {}),
       ...(personId && personId !== visit.personId ? { personId } : {}),
       ...(notes !== (visit.notes ?? "") ? { notes } : {}),
-      ...(access !== (visit.property?.accessNote ?? pass?.accessNote ?? "") ? { accessNote: access } : {}),
+      ...(access !== (visit.property?.accessNote ?? "") ? { accessNote: access } : {}),
     }
     if (!actions) return console.info("edit", visit.id, changes)
     run(() => actions.edit(visit.id, changes), undefined, "Saved.")

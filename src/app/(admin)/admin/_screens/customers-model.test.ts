@@ -141,6 +141,7 @@ describe("propertyLines", () => {
   it("keeps the gate code and the on-site phone from a tech", () => {
     const lines = propertyLines(full, { canSeeContact: false })
     expect(lines).not.toContain("Gate code 4471")
+    expect(lines).not.toContain("Dog loose, close the gate")
     expect(lines.join("|")).not.toMatch(/555/)
     expect(lines).toContain("Contact Dana")
   })

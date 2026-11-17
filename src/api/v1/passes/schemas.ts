@@ -67,7 +67,7 @@ export const passCreateInput = z.object({
   inspection: z.boolean().default(false),
   turnOnPreference: Preference.default("recommended"),
   blowoutPreference: Preference.default("recommended"),
-  needsCustomerHome: z.boolean().default(false).describe("A note for Ryan: the customer cannot be reached without being home. It no longer holds a visit back; every visit gets a day."),
+  needsCustomerHome: z.boolean().optional().describe("A note for Ryan: the customer cannot be reached without being home. It no longer holds a visit back; every visit gets a day."),
   days: z.array(ChosenDay).max(3).default([]).describe("The days the customer picked on the checkout's \"Your days\" step, one per visit at most. A day that is no longer open is dropped, and the visit is left for the scheduler. `passes.activate` puts each on its truck."),
   renewOf: Id.optional().describe("The pass this one renews: its address, zones and add-on fill what the call leaves out, and its customer holds the new pass."),
   accessNote: z.string().max(500).optional(),

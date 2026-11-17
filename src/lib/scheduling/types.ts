@@ -45,8 +45,8 @@ export interface SchedVisit {
   kind: string
   town: Town
   preference?: Preference | null
-  /** the property says the customer must be home, so they pick the day themselves; the scheduler never places it */
-  mustBeHome?: boolean
+  /** the customer must be home and picks the day themselves; the scheduler never places it */
+  needsCustomerHome?: boolean
   durationMinutes?: number | null
 }
 
