@@ -203,19 +203,19 @@ export const customersGet = defineHandler({
   },
 })
 
-/** A customer's jobs, newest first, each with its visits and, for a pass, its number. */
+/** A customer's jobs, newest first, each with its visits and, for a pass, its number (the job's own; the `season_pass` row only gives the alias id). */
 async function jobsOf(db: Database, customerId: string) {
   const jobs = await db.select().from(s.job).where(eq(s.job.customerId, customerId)).orderBy(desc(s.job.createdAt), desc(s.job.id))
   if (!jobs.length) return []
   const visits = await db.select().from(s.visit).where(inArray(s.visit.jobId, jobs.map((j) => j.id))).orderBy(asc(s.visit.scheduledOn), asc(s.visit.createdAt))
-  const passes = await db.select({ id: s.seasonPass.id, jobId: s.seasonPass.jobId, number: s.seasonPass.number }).from(s.seasonPass).where(inArray(s.seasonPass.jobId, jobs.map((j) => j.id)))
+  const passes = await db.select({ id: s.seasonPass.id, jobId: s.seasonPass.jobId }).from(s.seasonPass).where(inArray(s.seasonPass.jobId, jobs.map((j) => j.id)))
   const lineRows = await db.select().from(s.lineItem).where(inArray(s.lineItem.jobId, jobs.map((j) => j.id))).orderBy(asc(s.lineItem.createdAt), asc(s.lineItem.id))
   return jobs.map((j) => {
     const pass = passes.find((p) => p.jobId === j.id)
     const lines = lineRows.filter((l) => l.jobId === j.id)
     return {
       id: j.id, kind: j.kind, status: j.status, price: j.price, source: j.source, notes: j.notes, createdAt: j.createdAt.toISOString(),
-      passId: pass?.id ?? null, passNumber: pass?.number ?? null,
+      passId: pass?.id ?? null, passNumber: j.passNumber,
       lines: lines.map((l) => ({ id: l.id, name: l.name, description: l.description, quantity: l.quantity, unitPrice: l.unitPrice, taxable: l.taxable, cancelledAt: l.cancelledAt?.toISOString() ?? null, visitId: l.visitId })),
       total: jobTotal(lines),
       visits: visits.filter((v) => v.jobId === j.id).map((v) => {

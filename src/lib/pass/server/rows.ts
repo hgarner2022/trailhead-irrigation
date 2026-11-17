@@ -1,5 +1,5 @@
 import "server-only"
-import { and, eq } from "drizzle-orm"
+import { and, eq, isNotNull } from "drizzle-orm"
 import * as s from "@/db/schema"
 import type { Database } from "@/db/types"
 import { linesForPassVisits } from "@/lib/jobs/lines"
@@ -26,14 +26,16 @@ export interface PassRowsInput {
   /** pending for the checkout (the card step follows); active for a renewal on the card on file and for an office sale */
   status: "pending" | "active"
   /** where the pass was sold: the website checkout or the office */
-  source?: "checkout" | "office"
+  source?: "checkout" | "office" | "renewal"
+  /** the job this pass renews (a renewal only) */
+  renewsJobId?: string
   /** the card a renewal carries over; an office sale and the checkout's pending pass have none yet */
   card?: { stripePaymentMethodId: string | null; cardBrand: string | null; cardLast4: string | null; cardExpires: string | null }
   now: Date
 }
 
 /**
- * The rows every pass is made of, whoever sells it: the job (kind pass), the `season_pass` with the next number of its season,
+ * The rows every pass is made of, whoever sells it: the job (kind pass), the `season_pass` alias, both carrying the next number of the job's season (`job.pass_number`),
  * one `unscheduled` visit per visit on sale at the per-zone price, and the job's line for each visit. The pass number is
  * retried twice when two sales race for the same one. The job's status and price are synced from the pass and its visits.
  */
@@ -41,15 +43,16 @@ export async function makePassRows(db: Database, input: PassRowsInput): Promise<
   const { organizationId: org, now } = input
   let pass: typeof s.seasonPass.$inferSelect | undefined
   for (let attempt = 0; attempt < 3 && !pass; attempt++) {
-    const numbers = await db.select({ n: s.seasonPass.number }).from(s.seasonPass).where(and(eq(s.seasonPass.organizationId, org), eq(s.seasonPass.season, input.season)))
+    const numbers = await db.select({ n: s.job.passNumber }).from(s.job).where(and(eq(s.job.organizationId, org), eq(s.job.season, input.season), isNotNull(s.job.passNumber)))
+    const number = nextPassNumber(input.season, numbers.map((r) => r.n!))
     try {
-      const jobId = await createPassJob(db, { organizationId: org, customerId: input.customerId, propertyId: input.propertyId, status: input.status, source: input.source, createdAt: now })
+      const jobId = await createPassJob(db, { organizationId: org, customerId: input.customerId, propertyId: input.propertyId, status: input.status, source: input.source, season: input.season, passNumber: number, renewsJobId: input.renewsJobId, createdAt: now })
       ;[pass] = await db
         .insert(s.seasonPass)
         .values({
           jobId,
           organizationId: org,
-          number: nextPassNumber(input.season, numbers.map((r) => r.n)),
+          number,
           season: input.season,
           customerId: input.customerId,
           propertyId: input.propertyId,

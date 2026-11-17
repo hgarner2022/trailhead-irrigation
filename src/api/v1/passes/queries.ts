@@ -11,6 +11,8 @@ import { visitOut, visitsQuery } from "../visits/queries"
 
 export const passSelect = {
   pass: s.seasonPass,
+  // The pass number and season are the job's; `season_pass` holds them only as an alias until step 6.
+  job: { passNumber: s.job.passNumber, season: s.job.season },
   firstName: s.customer.firstName,
   lastName: s.customer.lastName,
   email: s.customer.email,
@@ -26,6 +28,7 @@ export const passesQuery = (ctx: Ctx) =>
   ctx.db
     .select(passSelect)
     .from(s.seasonPass)
+    .innerJoin(s.job, eq(s.job.id, s.seasonPass.jobId))
     .innerJoin(s.customer, eq(s.customer.id, s.seasonPass.customerId))
     .innerJoin(s.property, eq(s.property.id, s.seasonPass.propertyId))
 
@@ -36,8 +39,8 @@ export function passOut(ctx: Ctx, row: PassJoined) {
   // The yard lives on the property; only the zones fall back to the pass (a property with none yet).
   return {
     id: p.id,
-    number: p.number,
-    season: p.season,
+    number: row.job.passNumber!,
+    season: row.job.season!,
     customerId: p.customerId,
     propertyId: p.propertyId,
     firstName: row.firstName,

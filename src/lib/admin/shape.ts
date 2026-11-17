@@ -45,7 +45,7 @@ export interface MirrorVisit { id: string; clientId: string | null; kind: string
 export interface MirrorJob { id: string; clientId: string | null; jobberUrl: string | null }
 export interface MirrorQuote { id: string; clientName: string | null; town: Town | null; total: number | null; sentAt: Date | null; status: Quote["status"] | null; jobberUrl: string | null }
 export interface MirrorInvoice { id: string; clientName: string | null; total: number | null; issuedAt: Date | null; dueAt: Date | null; status: Invoice["status"] | null; jobberUrl: string | null }
-export interface JobRow { id: string; customerId: string; kind: SoldJob["kind"]; status: SoldJob["status"]; price: number | null; source: SoldJob["source"]; notes: string | null }
+export interface JobRow { id: string; customerId: string; kind: SoldJob["kind"]; status: SoldJob["status"]; price: number | null; source: SoldJob["source"]; passNumber?: string | null; notes: string | null }
 export interface LineRow { id: string; jobId: string; visitId: string | null; name: string; description: string | null; quantity: number; unitPrice: number; taxable: boolean; cancelledAt: Date | null }
 export interface QueueProblem { id?: string; kind: string; lastError: string | null; updatedAt: Date; status: string }
 
@@ -264,7 +264,7 @@ export function shapeAdminData(i: ShapeInput): AdminData {
       id: j.id, customerId: j.customerId, kind: j.kind, status: j.status, source: j.source,
       ...(i.lineRows ? { lines: lines.map((l) => ({ id: l.id, name: l.name, quantity: l.quantity, unitPrice: l.unitPrice, taxable: l.taxable, ...(l.description ? { description: l.description } : {}), ...(l.cancelledAt ? { cancelledAt: iso(l.cancelledAt) } : {}), ...(l.visitId ? { visitId: l.visitId } : {}) })), total: jobTotal(lines) } : {}),
       ...(j.price !== null ? { price: j.price } : {}), ...(j.notes ? { notes: j.notes } : {}),
-      ...(pass ? { passId: pass.id, passNumber: pass.number } : {}),
+      ...(pass ? { passId: pass.id, passNumber: j.passNumber ?? pass.number } : {}),
       visitIds: i.visits.filter((v) => v.jobId === j.id).map((v) => v.id),
     }
   })

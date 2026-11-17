@@ -48,7 +48,7 @@ describe("card expiry", () => {
     const { id: _id, number: _n, jobId: _j, ...rest } = first!
     void _id; void _n; void _j
     const job = (await db.select().from(s.job).where(eq(s.job.id, first!.jobId)))[0]!
-    await db.insert(s.job).values({ ...job, id: "job-twin" })
+    await db.insert(s.job).values({ ...job, id: "job-twin", passNumber: "TH-2027-9999" })
     await db.insert(s.seasonPass).values({ ...rest, id: "p-twin", number: "TH-2027-9999", jobId: "job-twin", season: 2027 })
     await db.insert(s.visit).values({ id: "v-twin", organizationId: first!.organizationId, jobId: "job-twin", passId: "p-twin", customerId, propertyId: first!.propertyId, kind: "blowout", window: "October", amount: 95, status: "unscheduled" })
     await db.delete(s.messageLog)

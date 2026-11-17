@@ -180,7 +180,7 @@ async function seedPasses(db: Database, snapshot: AdminData, org: string) {
     const jobId = `job_${pass.id}`
     await db
       .insert(s.job)
-      .values({ id: jobId, organizationId: org, customerId: pass.clientId, propertyId, kind: "pass", source: "checkout", status: pass.status === "lapsed" ? "done" : pass.status, price: pass.visits.reduce((n, v) => n + v.amount, 0) })
+      .values({ id: jobId, organizationId: org, customerId: pass.clientId, propertyId, kind: "pass", source: "checkout", season: pass.season, passNumber: pass.number, status: pass.status === "lapsed" ? "done" : pass.status, price: pass.visits.reduce((n, v) => n + v.amount, 0) })
       .onConflictDoNothing()
     await db
       .insert(s.seasonPass)

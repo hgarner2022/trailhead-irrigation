@@ -67,7 +67,7 @@ export const passesList = defineHandler({
         and(
           eq(s.seasonPass.organizationId, ctx.organizationId),
           hasScope(ctx.principal, "read") ? undefined : eq(s.seasonPass.customerId, ownCustomerId(ctx)),
-          input.season ? eq(s.seasonPass.season, input.season) : undefined,
+          input.season ? eq(s.job.season, input.season) : undefined,
           input.status ? eq(s.seasonPass.status, input.status) : undefined,
           input.town ? eq(s.property.town, input.town) : undefined,
           input.preference ? or(eq(s.seasonPass.turnOnPreference, input.preference), eq(s.seasonPass.blowoutPreference, input.preference)) : undefined,
@@ -175,6 +175,7 @@ export const passesCreate = defineHandler({
     if (reused) {
       // A customer who went back changes the answers on the pass they hold; its visits are rebuilt, none has a day yet.
       await ctx.db.update(s.seasonPass).set({ ...fields, season, updatedAt: ctx.now }).where(eq(s.seasonPass.id, reused.id))
+      await ctx.db.update(s.job).set({ season, updatedAt: ctx.now }).where(eq(s.job.id, reused.jobId))
       // Only the checkout that holds the pass id (the same browser going back) may change the customer's name and phone.
       // A resume by email alone reuses the pass but never rewrites who the customer is: anyone can type an email.
       if (held) await ctx.db.update(s.customer).set({ firstName: contact.firstName, lastName: contact.lastName ?? customerRow.lastName, phone: contact.phone ?? customerRow.phone, updatedAt: ctx.now }).where(eq(s.customer.id, customerRow.id))

@@ -118,6 +118,11 @@ describe("passes.list and passes.get", () => {
     expect((await callApi(ctxFor(db, readKey), passesList, { season: 2027, status: "cancelled" })).data.map((p) => p.number)).toEqual(["TH-2027-0009"])
     const erie = await callApi(ctxFor(db, readKey), passesList, { town: "Erie", season: 2027, limit: 100 })
     expect(erie.data.every((p) => p.town === "Erie")).toBe(true)
+    // The season is the job's: moving a pass job to another season moves the pass in the list.
+    const [row] = await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, "p3"))
+    await db.update(s.job).set({ season: 2099 }).where(eq(s.job.id, row!.jobId))
+    expect((await callApi(ctxFor(db, readKey), passesList, { season: 2099 })).data.map((p) => [p.id, p.season])).toEqual([["p3", 2099]])
+    await db.update(s.job).set({ season: row!.season }).where(eq(s.job.id, row!.jobId))
     expect((await callApi(ctxFor(db, readKey), passesList, { preference: "later", limit: 100 })).data.every((p) => p.turnOnPreference === "later" || p.blowoutPreference === "later")).toBe(true)
     await expect(callApi(ctxFor(db, readKey), passesList, { town: "Boulder" })).rejects.toMatchObject({ code: "invalid" })
   })

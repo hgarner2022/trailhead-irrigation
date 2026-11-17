@@ -32,11 +32,13 @@ export async function renewPass(ctx: Ctx, input: z.infer<typeof passCreateInput>
   const [customer] = old ? await ctx.db.select().from(s.customer).where(eq(s.customer.id, old.customerId)) : []
   if (old.status === "pending" || !customer || !customerHasCard(customer) || !customer.stripePaymentMethodId) throw new ApiError("unprocessable", "There's no card on file for that pass. Reserve the new season with a new card instead.")
   const day = today(ctx)
-  const season = Math.max(currentSeason(day), old.season + 1)
+  const [oldJob] = await ctx.db.select({ season: s.job.season }).from(s.job).where(eq(s.job.id, old.jobId))
+  const season = Math.max(currentSeason(day), (oldJob?.season ?? 0) + 1)
   const [held] = await ctx.db
     .select({ id: s.seasonPass.id })
     .from(s.seasonPass)
-    .where(and(eq(s.seasonPass.customerId, old.customerId), eq(s.seasonPass.season, season), inArray(s.seasonPass.status, ["active", "pending"])))
+    .innerJoin(s.job, eq(s.job.id, s.seasonPass.jobId))
+    .where(and(eq(s.seasonPass.customerId, old.customerId), eq(s.job.season, season), inArray(s.seasonPass.status, ["active", "pending"])))
   if (held) throw new ApiError("unprocessable", `Your ${season} season is already reserved.`)
   const onSale = visitsOnSale(input.inspection, day)
   if (onSale.length === 0) throw new ApiError("unprocessable", "No visits are on sale this season any more")
@@ -59,7 +61,8 @@ export async function renewPass(ctx: Ctx, input: z.infer<typeof passCreateInput>
     needsCustomerHome: input.needsCustomerHome,
     accessNote: input.accessNote ? cleanText(input.accessNote) : old.accessNote,
     status: "active",
-    source: "checkout",
+    source: "renewal",
+    renewsJobId: old.jobId,
     // The card is the customer's already; the new pass only gets the alias columns.
     card: { stripePaymentMethodId: customer.stripePaymentMethodId, cardBrand: customer.cardBrand, cardLast4: customer.cardLast4, cardExpires: customer.cardExpires },
     now: ctx.now,

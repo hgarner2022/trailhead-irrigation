@@ -196,7 +196,7 @@ export interface SoldJob {
   status: "pending" | "active" | "done" | "cancelled"
   /** whole dollars; absent until quoted */
   price?: number
-  source: "checkout" | "office" | "site"
+  source: "checkout" | "office" | "site" | "renewal"
   notes?: string
   passId?: string
   passNumber?: string

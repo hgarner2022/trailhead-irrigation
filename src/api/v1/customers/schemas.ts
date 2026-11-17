@@ -58,7 +58,7 @@ export const JobOut = z.object({
   kind: z.enum(["pass", "repair", "install", "other"]),
   status: z.enum(["pending", "active", "done", "cancelled"]),
   price: z.number().int().nullable().describe("Whole dollars; null until quoted."),
-  source: z.enum(["checkout", "office", "site"]),
+  source: z.enum(["checkout", "office", "site", "renewal"]),
   notes: z.string().nullable(),
   createdAt: Iso,
   passId: Id.nullable(),

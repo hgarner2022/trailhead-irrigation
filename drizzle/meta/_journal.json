@@ -120,6 +120,13 @@
       "when": 1794938142368,
       "tag": "0016_customer_card",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1794939606443,
+      "tag": "0017_job_pass",
+      "breakpoints": true
     }
   ]
 }

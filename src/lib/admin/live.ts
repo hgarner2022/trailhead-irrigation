@@ -86,7 +86,7 @@ export async function getLiveAdminData(ctx: Ctx): Promise<AdminData> {
     db.select({ kind: s.adminAlert.kind, key: s.adminAlert.key, passId: s.adminAlert.passId, message: s.adminAlert.message, createdAt: s.adminAlert.createdAt }).from(s.adminAlert).where(and(eq(s.adminAlert.organizationId, org), isNull(s.adminAlert.resolvedAt))),
     db.select({ visitId: s.charge.visitId, attempt: s.charge.attempt, status: s.charge.status }).from(s.charge).where(eq(s.charge.organizationId, org)),
     db.select({ kind: s.adminAlert.kind, key: s.adminAlert.key }).from(s.adminAlert).where(and(eq(s.adminAlert.organizationId, org), isNotNull(s.adminAlert.resolvedAt))),
-    db.select({ id: s.job.id, customerId: s.job.customerId, kind: s.job.kind, status: s.job.status, price: s.job.price, source: s.job.source, notes: s.job.notes }).from(s.job).where(eq(s.job.organizationId, org)),
+    db.select({ id: s.job.id, customerId: s.job.customerId, kind: s.job.kind, status: s.job.status, price: s.job.price, source: s.job.source, passNumber: s.job.passNumber, notes: s.job.notes }).from(s.job).where(eq(s.job.organizationId, org)),
     db.select({ id: s.lineItem.id, jobId: s.lineItem.jobId, visitId: s.lineItem.visitId, name: s.lineItem.name, description: s.lineItem.description, quantity: s.lineItem.quantity, unitPrice: s.lineItem.unitPrice, taxable: s.lineItem.taxable, cancelledAt: s.lineItem.cancelledAt }).from(s.lineItem).where(eq(s.lineItem.organizationId, org)).orderBy(asc(s.lineItem.createdAt), asc(s.lineItem.id)),
     db.select().from(s.property).where(eq(s.property.organizationId, org)).orderBy(asc(s.property.createdAt), asc(s.property.id)),
   ])

@@ -38,6 +38,15 @@ describe("customers", () => {
     expect(job.lines.find((l) => l.visitId === "p1-turn-on")).toMatchObject({ name: "Spring turn-on" })
     expect(job.total).toBe(job.lines.reduce((sum, l) => sum + l.quantity * l.unitPrice, 0))
   })
+  it("reads a pass job's number from the job, and keeps the pass id as the alias", async () => {
+    const [v] = await db.select().from(s.visit).where(eq(s.visit.id, "p1-turn-on"))
+    const [pass] = await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, "p1"))
+    const read = async () => (await callApi(ctxFor(db, readKey), customersGet, { id: v!.customerId })).jobs.find((j) => j.id === v!.jobId)!
+    expect(await read()).toMatchObject({ passId: "p1", passNumber: pass!.number })
+    await db.update(s.job).set({ passNumber: "TH-2027-7777" }).where(eq(s.job.id, v!.jobId))
+    expect(await read()).toMatchObject({ passId: "p1", passNumber: "TH-2027-7777" })
+    await db.update(s.job).set({ passNumber: pass!.number }).where(eq(s.job.id, v!.jobId))
+  })
   it("rejects a bad email, a missing name and a bad town", async () => {
     await expect(callApi(ctxFor(db, writeKey), customersCreate, { firstName: "A", email: "nope" })).rejects.toMatchObject({ code: "invalid" })
     await expect(callApi(ctxFor(db, writeKey), customersCreate, { email: "a@b.co" })).rejects.toMatchObject({ code: "invalid" })

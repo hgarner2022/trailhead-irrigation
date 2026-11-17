@@ -44,7 +44,7 @@ describe("passes.sell", () => {
     expect(pass.customer?.email).toBe("andrea@example.com")
     const [row] = await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, pass.id))
     const [job] = await db.select().from(s.job).where(eq(s.job.id, row!.jobId))
-    expect(job).toMatchObject({ kind: "pass", source: "office", status: "active", price: 260, notes: "Took it by phone" })
+    expect(job).toMatchObject({ kind: "pass", source: "office", status: "active", price: 260, notes: "Took it by phone", season: 2028, passNumber: pass.number, renewsJobId: null })
     const queued = await db.select().from(s.queueItem).where(and(eq(s.queueItem.kind, "pass-onboard"), eq(s.queueItem.key, pass.id)))
     expect(queued).toHaveLength(1)
     const mail = await messages("c100")

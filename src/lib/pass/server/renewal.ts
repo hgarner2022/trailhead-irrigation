@@ -21,14 +21,19 @@ export function mayRenew(pass: { id: string; customerId: string }, who: { token?
  */
 export async function loadRenewal(db: Database, input: { passId: string; token?: string | null; principal?: PersonPrincipal | null; today: string }): Promise<RenewalPrefill | null> {
   const [row] = await db
-    .select({ pass: s.seasonPass, customer: s.customer, property: s.property })
+    .select({ pass: s.seasonPass, season: s.job.season, customer: s.customer, property: s.property })
     .from(s.seasonPass)
+    .innerJoin(s.job, eq(s.job.id, s.seasonPass.jobId))
     .innerJoin(s.customer, eq(s.customer.id, s.seasonPass.customerId))
     .innerJoin(s.property, eq(s.property.id, s.seasonPass.propertyId))
     .where(eq(s.seasonPass.id, input.passId))
   if (!row || row.pass.status === "pending" || row.pass.status === "cancelled" || !mayRenew(row.pass, input)) return null
-  const season = Math.max(currentSeason(input.today), row.pass.season + 1)
-  const [held] = await db.select({ id: s.seasonPass.id }).from(s.seasonPass).where(and(eq(s.seasonPass.customerId, row.pass.customerId), eq(s.seasonPass.season, season), inArray(s.seasonPass.status, ["active", "pending"])))
+  const season = Math.max(currentSeason(input.today), (row.season ?? 0) + 1)
+  const [held] = await db
+    .select({ id: s.seasonPass.id })
+    .from(s.seasonPass)
+    .innerJoin(s.job, eq(s.job.id, s.seasonPass.jobId))
+    .where(and(eq(s.seasonPass.customerId, row.pass.customerId), eq(s.job.season, season), inArray(s.seasonPass.status, ["active", "pending"])))
   if (held) return null
   const { pass, customer, property } = row
   return {

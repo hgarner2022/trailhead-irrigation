@@ -319,13 +319,23 @@ export const job = pgTable(
     status: jobStatusEnum("status").notNull().default("active"),
     /** whole dollars; null until quoted */
     price: integer("price"),
-    source: text("source", { enum: ["checkout", "office", "site"] }).notNull(),
+    source: text("source", { enum: ["checkout", "office", "site", "renewal"] }).notNull(),
+    /** what makes a job a Season Pass (step 3); `season_pass` is an alias table until step 6 */
+    season: integer("season"),
+    /** what makes a job a Season Pass (step 3); `season_pass` is an alias table until step 6 */
+    passNumber: text("pass_number"),
+    /** what makes a job a Season Pass (step 3); `season_pass` is an alias table until step 6. The job this pass renews; no foreign key, like `renewed_from_id`. */
+    renewsJobId: text("renews_job_id"),
     notes: text("notes"),
     createdAt: createdAt(),
     cancelledAt: ts("cancelled_at"),
     updatedAt: updatedAt(),
   },
-  (t) => [index("job_org_customer_idx").on(t.organizationId, t.customerId)],
+  (t) => [
+    index("job_org_customer_idx").on(t.organizationId, t.customerId),
+    uniqueIndex("job_org_pass_number_unique").on(t.organizationId, t.passNumber).where(sql`pass_number is not null`),
+    index("job_org_season_idx").on(t.organizationId, t.season),
+  ],
 )
 
 export const seasonPass = pgTable(
