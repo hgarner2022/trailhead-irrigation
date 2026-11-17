@@ -23,6 +23,12 @@ const PAYS_BY: { value: PaysBy; label: string }[] = [
   { value: "at-visit", label: "At each visit, check, Venmo or cash" },
 ]
 
+/** "Visa ending 4242 is on file and is charged after each visit": what Pays by says for a customer who already has a card (no choice to make). */
+export function cardOnFileLine(card: { brand?: string; last4: string }): string {
+  const brand = card.brand ? card.brand.charAt(0).toUpperCase() + card.brand.slice(1) : "Card"
+  return `${brand} ending ${card.last4} is on file and is charged after each visit`
+}
+
 /** "Spring turn-on $145 · Fall blowout $95 · billed after each visit", with the July inspection between them when it is ticked. */
 export function priceLine(zones: number, inspection: boolean, today: string): string {
   return [...visitsOnSale(inspection, today).map((v) => `${NAMES[v.key]} $${visitPrice(v, zones)}`), "billed after each visit"].join(" · ")
@@ -48,10 +54,16 @@ interface Props {
 export function NewJobPass({ data, today, choice, actions, initial = {}, onDone }: Props) {
   const toast = useUndoToast()
   const todayDay = today.slice(0, 10)
-  const [zones, setZones] = useState(initial.zones ?? 8)
+  // The zones start at what the chosen customer's property says it has; whatever the office picks wins over that.
+  const [picked, setZones] = useState<number | undefined>(initial.zones)
+  const propertyZones = choice.isNew ? undefined : data.clients.find((c) => c.id === choice.chosen)?.properties?.find((p) => p.zones)?.zones
+  const zones = picked ?? (propertyZones ? Math.min(MAX_ZONES, Math.max(MIN_ZONES, propertyZones)) : 8)
   const [inspection, setInspection] = useState(initial.inspection ?? false)
   const [days, setDays] = useState<NewPassInput["days"]>(initial.days ?? {})
-  const [paysBy, setPaysBy] = useState<PaysBy>(initial.paysBy ?? "card-link")
+  // A customer who already has a card is charged on it after each visit: no way of paying to choose, and the sale refuses "at each visit".
+  const card = choice.isNew ? undefined : data.clients.find((c) => c.id === choice.chosen)?.card
+  const [chosenPaysBy, setPaysBy] = useState<PaysBy>(initial.paysBy ?? "card-link")
+  const paysBy: PaysBy = card ? "card-link" : chosenPaysBy
   const [terms, setTerms] = useState(initial.termsAccepted ?? false)
   const { pending, error, run } = useRunner()
   const onSale = visitsOnSale(inspection, todayDay)
@@ -121,14 +133,20 @@ export function NewJobPass({ data, today, choice, actions, initial = {}, onDone 
 
       <fieldset>
         <legend className={LABEL}>Pays by</legend>
-        <div className="flex flex-col gap-2">
-          {PAYS_BY.map((p) => (
-            <label key={p.value} className="flex min-h-11 cursor-pointer items-center gap-2 rounded-lg border border-input px-3 text-sm has-[:checked]:border-primary has-[:checked]:bg-primary/10">
-              <input type="radio" name="nj-pays-by" value={p.value} checked={paysBy === p.value} onChange={() => setPaysBy(p.value)} className="size-4 accent-primary" />
-              {p.label}
-            </label>
-          ))}
-        </div>
+        {card ? (
+          <p data-slot="card-on-file" className="text-sm">
+            {cardOnFileLine(card)}
+          </p>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {PAYS_BY.map((p) => (
+              <label key={p.value} className="flex min-h-11 cursor-pointer items-center gap-2 rounded-lg border border-input px-3 text-sm has-[:checked]:border-primary has-[:checked]:bg-primary/10">
+                <input type="radio" name="nj-pays-by" value={p.value} checked={paysBy === p.value} onChange={() => setPaysBy(p.value)} className="size-4 accent-primary" />
+                {p.label}
+              </label>
+            ))}
+          </div>
+        )}
       </fieldset>
 
       <label className="flex min-h-11 cursor-pointer items-center gap-2 text-sm font-medium">

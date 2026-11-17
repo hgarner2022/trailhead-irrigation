@@ -4,7 +4,7 @@
  * Passes panel, the Schedule, the pass page and Home never word a state two
  * ways. Nothing here is stored: the words map onto the existing rows
  * (`visit.status`, `scheduled_on`, `start_time`, `charged_at`, a failed
- * `charge` row, `season_pass.card_failed_at`).
+ * `charge` row, `customer.card_failed_at`).
  *
  *   No day yet      unscheduled
  *   Scheduled       a day, no start time yet
@@ -12,7 +12,7 @@
  *   Done            marked done, not charged
  *   Charged         `charged_at` is set
  *   Charge failed   the visit's newest charge did not go through, or it is
- *                   done and the pass's card failed
+ *                   done and the customer's card failed
  *   Cancelled, Skipped
  *
  * "Not closed" is a flag on a job that has a day that has passed and is not

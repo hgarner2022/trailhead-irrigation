@@ -1,9 +1,8 @@
 import "server-only"
 import { resolveMx } from "node:dns/promises"
-import { and, desc, eq, gt, inArray, lt, sql } from "drizzle-orm"
+import { and, desc, eq, gt, inArray, isNull, lt, sql } from "drizzle-orm"
 import * as s from "@/db/schema"
 import type { Database } from "@/db/types"
-import { deletePassVisitLines } from "@/lib/jobs/write-lines"
 import { canContinue, initialState, STEPS, type CheckoutState } from "@/app/(checkout)/season-pass/checkout/_screens/checkout-state"
 
 /** An unpaid checkout lives 60 minutes (the Stripe session itself expires at 30). */
@@ -71,35 +70,43 @@ export async function pendingPassesLastHour(db: Database, organizationId: string
   const since = new Date(now.getTime() - 3_600_000)
   const [row] = await db
     .select({ n: sql<number>`count(*)::int` })
-    .from(s.seasonPass)
-    .where(and(eq(s.seasonPass.organizationId, organizationId), eq(s.seasonPass.customerId, customerId), eq(s.seasonPass.status, "pending"), gt(s.seasonPass.createdAt, since)))
+    .from(s.job)
+    .where(and(eq(s.job.organizationId, organizationId), eq(s.job.customerId, customerId), eq(s.job.kind, "pass"), eq(s.job.status, "pending"), isNull(s.job.cancelledAt), gt(s.job.createdAt, since)))
   return row?.n ?? 0
 }
 
 /** The customer's newest pending pass from the last hour, if any: the one a reload or a return visit resumes. */
 export async function newestPendingPass(db: Database, organizationId: string, customerId: string, now: Date) {
   const since = new Date(now.getTime() - 60 * 60 * 1000)
-  return db
-    .select()
-    .from(s.seasonPass)
-    .where(and(eq(s.seasonPass.organizationId, organizationId), eq(s.seasonPass.customerId, customerId), eq(s.seasonPass.status, "pending"), gt(s.seasonPass.createdAt, since)))
-    .orderBy(desc(s.seasonPass.createdAt))
+  const rows = await db
+    .select({ pass: s.seasonPass })
+    .from(s.job)
+    .innerJoin(s.seasonPass, eq(s.seasonPass.jobId, s.job.id))
+    .where(and(eq(s.job.organizationId, organizationId), eq(s.job.customerId, customerId), eq(s.job.kind, "pass"), eq(s.job.status, "pending"), isNull(s.job.cancelledAt), gt(s.job.createdAt, since)))
+    .orderBy(desc(s.job.createdAt))
     .limit(1)
+  return rows.map((r) => r.pass)
 }
 
-/** Removes the pending passes (and their visits) nobody paid for within the hour. Returns how many. Customers and properties stay. */
+/** Removes the pending pass jobs (their lines, visits and the pass alias row) nobody paid for within the hour. Returns how many. Customers and properties stay. */
 export async function expirePendingPasses(db: Database, now: Date, minutes = PENDING_PASS_MINUTES): Promise<number> {
   const cutoff = new Date(now.getTime() - minutes * 60_000)
   const stale = await db
-    .select({ id: s.seasonPass.id })
-    .from(s.seasonPass)
-    .where(and(eq(s.seasonPass.status, "pending"), lt(s.seasonPass.createdAt, cutoff)))
+    .select({ id: s.job.id })
+    .from(s.job)
+    .where(and(eq(s.job.kind, "pass"), eq(s.job.status, "pending"), isNull(s.job.cancelledAt), lt(s.job.createdAt, cutoff)))
   if (stale.length === 0) return 0
-  const ids = stale.map((r) => r.id)
-  await deletePassVisitLines(db, ids)
-  await db.delete(s.visit).where(inArray(s.visit.passId, ids))
-  await db.delete(s.passChange).where(inArray(s.passChange.passId, ids))
-  await db.delete(s.adminAlert).where(inArray(s.adminAlert.passId, ids))
-  await db.delete(s.seasonPass).where(inArray(s.seasonPass.id, ids))
-  return ids.length
+  const jobIds = stale.map((r) => r.id)
+  const passes = await db.select({ id: s.seasonPass.id }).from(s.seasonPass).where(inArray(s.seasonPass.jobId, jobIds))
+  const passIds = passes.map((r) => r.id)
+  // Foreign-key order: line_item, visit, pass_change, admin_alert, season_pass, then job.
+  await db.delete(s.lineItem).where(inArray(s.lineItem.jobId, jobIds))
+  await db.delete(s.visit).where(inArray(s.visit.jobId, jobIds))
+  if (passIds.length > 0) {
+    await db.delete(s.passChange).where(inArray(s.passChange.passId, passIds))
+    await db.delete(s.adminAlert).where(inArray(s.adminAlert.passId, passIds))
+    await db.delete(s.seasonPass).where(inArray(s.seasonPass.id, passIds))
+  }
+  await db.delete(s.job).where(inArray(s.job.id, jobIds))
+  return jobIds.length
 }

@@ -48,7 +48,9 @@ describe("migration 0014: line items backfill", () => {
     const all = files()
     const at = all.findIndex((f) => f.startsWith("0014_line_items"))
     expect(at).toBeGreaterThan(0)
-    for (const f of all.slice(0, at + 1)) for (const stmt of migration(f)) if (stmt.trim()) await client.exec(stmt)
+    // 0015 to 0017 only add the property, card and pass columns the seed now writes; the seed needs them to insert.
+    const later = ["0015_property_fields", "0016_customer_card", "0017_job_pass"].map((name) => all.find((f) => f.startsWith(name))!)
+    for (const f of [...all.slice(0, at + 1), ...later]) for (const stmt of migration(f)) if (stmt.trim()) await client.exec(stmt)
     const org = data.organizationId
     await seed(drizzle(client, { schema }), data, { organizationId: org, admins: [], passes: true })
     // The seed writes the fixture's lines itself; the backfill is for a database that had none.
@@ -130,6 +132,42 @@ describe("migration 0014: line items backfill", () => {
 
     for (const stmt of statements) await client.exec(stmt)
     expect(await read()).toEqual(lines)
+    await client.close()
+  })
+})
+
+describe("migration 0017: the pass on the job", () => {
+  it("gives a pass job its season and number, points a renewed pass's job at the old job as a renewal, and a re-run changes nothing", async () => {
+    const client = new PGlite()
+    const all = files()
+    const at = all.findIndex((f) => f.startsWith("0017_job_pass"))
+    expect(at).toBeGreaterThan(0)
+    for (const f of all.slice(0, at)) for (const stmt of migration(f)) if (stmt.trim()) await client.exec(stmt)
+    await client.exec(`INSERT INTO organization (id, name, terms_version, settings) VALUES ('o', 'T', '1', '{"windows":[],"bufferPercentEarly":0,"bufferPercentLate":0,"fallTownOrder":[],"springTownOrder":[],"messages":[]}')`)
+    await client.exec(`INSERT INTO customer (id, organization_id, first_name) VALUES ('c', 'o', 'A')`)
+    await client.exec(`INSERT INTO property (id, organization_id, customer_id, address, town) VALUES ('pr', 'o', 'c', '1 Main', 'Erie')`)
+    await client.exec(`INSERT INTO job (id, organization_id, customer_id, property_id, kind, source) VALUES ('job_old', 'o', 'c', 'pr', 'pass', 'checkout'), ('job_new', 'o', 'c', 'pr', 'pass', 'checkout'), ('job_alone', 'o', 'c', 'pr', 'pass', 'office'), ('job_repair', 'o', 'c', 'pr', 'repair', 'office')`)
+    await client.exec(
+      `INSERT INTO season_pass (id, organization_id, job_id, number, season, customer_id, property_id, zones, status) VALUES
+        ('old', 'o', 'job_old', 'TH-2026-0001', 2026, 'c', 'pr', 8, 'lapsed'),
+        ('new', 'o', 'job_new', 'TH-2027-0001', 2027, 'c', 'pr', 8, 'active'),
+        ('alone', 'o', 'job_alone', 'TH-2027-0002', 2027, 'c', 'pr', 6, 'active')`,
+    )
+    await client.exec(`INSERT INTO pass_change (id, organization_id, customer_id, pass_id, kind, detail, by_principal) VALUES ('pc1', 'o', 'c', 'new', 'renewed', '{"from":"old","season":2027}', 'public')`)
+    type Row = { id: string; season: number | null; pass_number: string | null; renews_job_id: string | null; source: string }
+    const read = async () => (await client.query<Row>(`SELECT id, season, pass_number, renews_job_id, source FROM job ORDER BY id`)).rows
+    const statements = migration(all[at]!)
+    for (const stmt of statements) if (stmt.trim()) await client.exec(stmt)
+    const after = await read()
+    expect(after).toEqual([
+      { id: "job_alone", season: 2027, pass_number: "TH-2027-0002", renews_job_id: null, source: "office" },
+      { id: "job_new", season: 2027, pass_number: "TH-2027-0001", renews_job_id: "job_old", source: "renewal" },
+      { id: "job_old", season: 2026, pass_number: "TH-2026-0001", renews_job_id: null, source: "checkout" },
+      { id: "job_repair", season: null, pass_number: null, renews_job_id: null, source: "office" },
+    ])
+    // The data statements are the ones that update; a second run leaves every row as it was.
+    for (const stmt of statements.filter((x) => /^\s*update "job"/i.test(x))) await client.exec(stmt)
+    expect(await read()).toEqual(after)
     await client.close()
   })
 })

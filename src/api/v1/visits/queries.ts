@@ -6,6 +6,7 @@ import type { Ctx } from "../../core/context"
 import { notFound } from "../../core/errors"
 import { jobTotal } from "@/lib/jobs/lines"
 import { canSeeContact } from "../shared"
+import { yardOut } from "../customers/handlers"
 import type { VisitOutType } from "./schemas"
 
 /** The job's lines as the database hands them: one JSON array per visit, oldest first. */
@@ -18,6 +19,7 @@ export const visitSelect = {
   lat: s.property.lat,
   lng: s.property.lng,
   address: s.property.address,
+  yard: s.property,
   personName: s.person.name,
   // the newest charge attempt on the visit: how it was paid and whether it went through
   chargeMethod: sql<string | null>`(select c.method from charge c where c.visit_id = ${s.visit.id} order by c.attempt desc limit 1)`,
@@ -79,6 +81,7 @@ export function visitOut(ctx: Ctx, row: VisitJoined): VisitOutType {
     lat: row.lat,
     lng: row.lng,
     ...(canSeeContact(ctx) ? { address: row.address } : {}),
+    property: yardOut(ctx, row.yard),
   }
 }
 

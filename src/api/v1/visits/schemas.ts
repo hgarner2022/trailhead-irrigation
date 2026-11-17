@@ -14,6 +14,19 @@ export const LineOut = z.object({
   visitId: Id.nullable().describe("The visit the line is billed after; null for a line on the job as a whole."),
 })
 
+/** The yard the visit is at, as the property holds it. */
+export const YardOut = z.object({
+  zones: z.number().int().nullable(),
+  controller: z.string().nullable(),
+  backflowLocation: z.string().nullable(),
+  gateCode: z.string().nullable().optional().describe("Only for callers with the write scope."),
+  mustBeHome: z.boolean(),
+  accessNote: z.string().nullable().optional().describe("Only for callers with the write scope."),
+  contactName: z.string().nullable(),
+  contactPhone: z.string().nullable().optional().describe("Only for callers with the write scope."),
+  notes: z.string().nullable(),
+})
+
 export const VisitOut = z.object({
   id: Id,
   passId: Id.nullable(),
@@ -49,6 +62,7 @@ export const VisitOut = z.object({
   lat: z.number().nullable(),
   lng: z.number().nullable(),
   address: z.string().optional().describe("Only for callers with the write scope."),
+  property: YardOut.describe("What is true about the yard: zones, controller, backflow, gate code, who must be home, the access note, the on-site contact, property notes."),
 })
 export type VisitOutType = z.infer<typeof VisitOut>
 

@@ -132,12 +132,27 @@ describe("visits.update", () => {
     expect((await db.select().from(s.passChange).where(eq(s.passChange.visitId, v.id))).some((c) => c.kind === "visit-edited")).toBe(true)
     await expect(callApi(as(), visitsUpdate, { id: v.id, durationMinutes: 50 })).rejects.toMatchObject({ code: "invalid" })
   })
-  it("sets a pass's access note from its visit, and refuses one on a one-off visit", async () => {
+  it("sets a pass's access note from its visit, and a one-off visit's on its property", async () => {
     const one = await create({ customerId: "c100", kind: "repair" })
-    await expect(callApi(as(), visitsUpdate, { id: one.id, accessNote: "Gate 1234" })).rejects.toMatchObject({ code: "unprocessable" })
+    const out = await callApi(as(), visitsUpdate, { id: one.id, accessNote: "Gate 1234" })
+    expect(out.property.accessNote).toBe("Gate 1234")
     await callApi(as(), visitsUpdate, { id: "p3-turn-on", accessNote: "Gate 1234" })
     const [pass] = await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, "p3"))
     expect(pass!.accessNote).toBe("Gate 1234")
+  })
+  it("writes a pass visit's access note on the property of the visit, the pass keeping the same words", async () => {
+    const [visit] = await db.select().from(s.visit).where(eq(s.visit.id, "p3-turn-on"))
+    await callApi(as(), visitsUpdate, { id: "p3-turn-on", accessNote: "Side gate, code 7788" })
+    const [prop] = await db.select().from(s.property).where(eq(s.property.id, visit!.propertyId))
+    expect(prop!.accessNote).toBe("Side gate, code 7788")
+    await callApi(as(), visitsUpdate, { id: "p3-turn-on", accessNote: "" })
+    expect((await db.select().from(s.property).where(eq(s.property.id, visit!.propertyId)))[0]!.accessNote).toBeNull()
+  })
+  it("writes a new customer's access note on their new property", async () => {
+    const out = await create({ newCustomer: { firstName: "gil", lastName: "park", email: "gil@example.com", phone: "303-555-0188", property: { address: "3 Birch St", town: "Erie" }, accessNote: "  Dog loose  " }, kind: "repair" })
+    const [visit] = await db.select().from(s.visit).where(eq(s.visit.id, out.id))
+    const [prop] = await db.select().from(s.property).where(eq(s.property.id, visit!.propertyId))
+    expect(prop).toMatchObject({ address: "3 Birch St", accessNote: "Dog loose" })
   })
   it("refuses a person who does not work the day, and a person for a visit with no day", async () => {
     const none = await create({ customerId: "c100", kind: "repair" })

@@ -18,6 +18,7 @@ import { Included, JobLines } from "./VisitLines"
 import { useRunner } from "./use-runner"
 import { dayLabel, dayOfVisit, kindLabel, priceWords, timeWords, visitFacts, type VisitFacts } from "./visit-panel-model"
 import { routePeople } from "@/lib/admin/people"
+import { propertyLines, yardFromPass } from "./customers-model"
 
 // The visit panel (Build 1): from Visits, Home, Schedule, the pass panel and the customer panel. Header with the
 // customer and the visit's kind and day; the two pills; the customer block; the visit block; the job it belongs to
@@ -46,18 +47,38 @@ function Facts({ rows }: { rows: [string, ReactNode][] }) {
 }
 
 function CustomerBlock({ facts }: { facts: VisitFacts }) {
-  const { client, pass, visit } = facts
+  const { client, visit } = facts
   const rows: [string, ReactNode][] = [
     ["Address", client?.address ? `${client.address}, ${visit.town}` : visit.town],
     ...(client?.phone ? ([["Phone", <a key="p" className="text-primary-dark underline underline-offset-2" href={`tel:${client.phone}`}>{formatPhone(client.phone)}</a>]] as [string, ReactNode][]) : []),
     ...(client?.email ? ([["Email", client.email]] as [string, ReactNode][]) : []),
-    ...(pass?.accessNote ? ([["Access note", pass.accessNote]] as [string, ReactNode][]) : []),
-    ...(pass ? ([["Needs to be home", pass.needsCustomerHome ? "Yes" : "No"]] as [string, ReactNode][]) : []),
   ]
   return (
     <section aria-labelledby="visit-customer">
       <Subtitle id="visit-customer">Customer</Subtitle>
       <Facts rows={rows} />
+    </section>
+  )
+}
+
+/** The yard the visit is at, as the property holds it; the gate code and on-site phone only for a manager. Nothing for a visit with no property. */
+function AtTheProperty({ facts, readOnly }: { facts: VisitFacts; readOnly: boolean }) {
+  // Only the fixtures (a client with no property rows) fall back to the pass; live data never does.
+  const yard = facts.visit.property ?? (facts.client?.properties ? undefined : yardFromPass(facts.pass))
+  if (!yard) return null
+  const lines = propertyLines(yard, { canSeeContact: !readOnly })
+  return (
+    <section aria-labelledby="visit-property" data-slot="visit-property">
+      <Subtitle id="visit-property">At the property</Subtitle>
+      {lines.length ? (
+        <ul className="mt-2 space-y-1 text-sm">
+          {lines.map((line) => (
+            <li key={line}>{line}</li>
+          ))}
+        </ul>
+      ) : (
+        <p className="mt-2 text-sm text-muted-foreground">Nothing on file yet</p>
+      )}
     </section>
   )
 }
@@ -146,7 +167,7 @@ function Actions({ facts, data, today, actions }: { facts: VisitFacts; data: Adm
         </section>
       )}
       {states.work === "scheduled" && <NotDoneForm visit={visit} actions={actions} />}
-      {open && <EditForm key={`edit-${visit.id}`} visit={visit} pass={pass} people={routePeople(data.settings.people)} actions={actions} />}
+      {open && <EditForm key={`edit-${visit.id}`} visit={visit} people={routePeople(data.settings.people)} actions={actions} />}
       <TextForm client={client} visitId={visit.id} actions={actions} />
       <div className="flex flex-wrap items-start gap-3">
         {pass && pass.status === "active" && <ResendButton passId={pass.id} actions={actions} />}
@@ -185,6 +206,7 @@ export function VisitPanel({ data, today, visitId, open, onOpenChange, onOpenVis
           <JobPill job={states} />
         </div>
         <CustomerBlock facts={facts} />
+        <AtTheProperty facts={facts} readOnly={readOnly} />
         <VisitBlock facts={facts} />
         {facts.line?.description ? <Included text={facts.line.description} /> : null}
         <JobBlock facts={facts} today={today} onOpenVisit={onOpenVisit} />

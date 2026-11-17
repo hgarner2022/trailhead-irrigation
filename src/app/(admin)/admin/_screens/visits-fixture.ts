@@ -4,7 +4,7 @@
  */
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import { lineForVisitKind } from "@/lib/jobs/lines"
-import type { AdminData, Client, JobLine, Message, Pass, SoldJob, Visit } from "@/lib/admin/types"
+import type { AdminData, Client, JobLine, Message, Pass, SoldJob, Visit, Yard } from "@/lib/admin/types"
 
 export const VISITS_TODAY = "2026-11-12T19:56:30Z"
 const base = snapshot as AdminData
@@ -14,8 +14,14 @@ const visit = (over: Partial<Visit>): Visit => ({
   scheduledOn: "2026-11-19", startAt: "2026-11-19T15:00:00Z", price: 145, minutes: 120, personId: "person_truck-1", personName: "Ryan Garner", ...over,
 })
 
+/** What Dana's property holds: the lines the visit panel's "At the property" block reads. */
+export const YARD: Yard = {
+  zones: 8, controller: "Rachio 3 in the garage", backflowLocation: "north side of the house", gateCode: "4471", mustBeHome: false, accessNote: "Dog loose, close the gate",
+  contactName: "Dana", contactPhone: "+13035550111", notes: "Clay soil by the fence",
+}
+
 export const oneOffs: Visit[] = [
-  visit({ id: "office-scheduled", jobId: "job-a" }),
+  visit({ id: "office-scheduled", jobId: "job-a", property: YARD }),
   visit({ id: "office-needs-day", jobId: "job-b", clientId: "c-sam", clientName: "Sam Ortiz", town: "Louisville", kind: "install", status: "unscheduled", scheduledOn: undefined, startAt: undefined, personId: undefined, personName: undefined, price: 0, minutes: 120 }),
   visit({ id: "office-not-done", jobId: "job-c", clientId: "c-lee", clientName: "Lee Park", kind: "repair", status: "unscheduled", scheduledOn: undefined, startAt: undefined, personId: undefined, personName: undefined, notDoneReason: "no-water" }),
   visit({ id: "office-unpaid", jobId: "job-d", clientId: "c-ana", clientName: "Ana Ruiz", town: "Lafayette", status: "completed", completedOn: "2026-11-10", scheduledOn: "2026-11-10", startAt: "2026-11-10T15:00:00Z" }),

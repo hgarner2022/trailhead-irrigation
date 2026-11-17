@@ -41,7 +41,8 @@ beforeAll(async () => {
   // p7: a day that has passed and nobody marked done (Scheduled, with the Not closed flag).
   await db.update(s.visit).set({ status: "scheduled", scheduledOn: "2027-04-15", startTime: null, personId: "person_truck-1" }).where(eq(s.visit.id, "p7-turn-on"))
   // p8: a pass whose card failed after a visit was marked done, and the card never retried.
-  await db.update(s.seasonPass).set({ cardFailedAt: new Date("2027-04-19T10:00:00Z") }).where(eq(s.seasonPass.id, "p8"))
+  const p8 = (await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, "p8")))[0]!
+  await db.update(s.customer).set({ cardFailedAt: new Date("2027-04-19T10:00:00Z") }).where(eq(s.customer.id, p8.customerId))
   await db.update(s.visit).set({ status: "completed", completedOn: "2027-04-18", chargedAt: null }).where(eq(s.visit.id, "p8-turn-on"))
   await callApi(ctxFor(db, owner, NOW), customersUpdate, { id: "c121", lastName: "garner" })
   data = await getLiveAdminData(ctxFor(db, owner, NOW))

@@ -35,6 +35,8 @@ const messages = (customerId: string) => db.select().from(s.messageLog).where(eq
 
 describe("passes.sell", () => {
   it("sells an existing customer a pass: active from the start, job source office, consent source admin, the onboarding task and the confirmation", async () => {
+    // The card is the customer's: the fixture's Andrea has one, and this sale is the office taking money at each visit.
+    await db.update(s.customer).set({ stripePaymentMethodId: null, cardBrand: null, cardLast4: null, cardExpires: null }).where(eq(s.customer.id, "c100"))
     const pass = await sell({ customerId: "c100", email: "andrea@example.com", notes: "Took it by phone" })
     expect(pass).toMatchObject({ season: 2028, status: "active", zones: 8, inspection: false, customerId: "c100", cardLast4: null, cardBrand: null, price: 145 + 95 + 20 })
     expect(pass.visits.map((v) => [v.kind, v.amount, v.status, v.scheduledOn])).toEqual([["turn-on", 145, "unscheduled", null], ["blowout", 115, "unscheduled", null]])
@@ -42,7 +44,7 @@ describe("passes.sell", () => {
     expect(pass.customer?.email).toBe("andrea@example.com")
     const [row] = await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, pass.id))
     const [job] = await db.select().from(s.job).where(eq(s.job.id, row!.jobId))
-    expect(job).toMatchObject({ kind: "pass", source: "office", status: "active", price: 260, notes: "Took it by phone" })
+    expect(job).toMatchObject({ kind: "pass", source: "office", status: "active", price: 260, notes: "Took it by phone", season: 2028, passNumber: pass.number, renewsJobId: null })
     const queued = await db.select().from(s.queueItem).where(and(eq(s.queueItem.kind, "pass-onboard"), eq(s.queueItem.key, pass.id)))
     expect(queued).toHaveLength(1)
     const mail = await messages("c100")
@@ -54,6 +56,14 @@ describe("passes.sell", () => {
     expect(confirmation.body).toMatch(/Spring turn-on.* · \$\d+/)
     expect(confirmation.body).toContain("Season total · $")
     expect((await db.select().from(s.passChange).where(eq(s.passChange.passId, pass.id))).map((c) => c.kind)).toEqual(["sold"])
+  })
+
+  it("writes the zones sold on an existing customer's property", async () => {
+    const [c] = await db.insert(s.customer).values({ organizationId: ORG, firstName: "Ivy", lastName: "Lund", email: "ivy@example.com" }).returning()
+    const [p] = await db.insert(s.property).values({ organizationId: ORG, customerId: c!.id, address: "4 Ash St", town: "Erie", zones: 5, gateCode: "55" }).returning()
+    const pass = await sell({ customerId: c!.id, zones: 11 })
+    expect(pass.zones).toBe(11)
+    expect((await db.select().from(s.property).where(eq(s.property.id, p!.id)))[0]).toMatchObject({ zones: 11, gateCode: "55" })
   })
 
   it("writes one line per visit beside the visits, three with the inspection, each from the service of the pass's zone band", async () => {
@@ -72,7 +82,7 @@ describe("passes.sell", () => {
   })
 
   it("refuses an existing customer with no email on file, a second pass of the season, a read key and the anonymous checkout", async () => {
-    await expect(sell({ customerId: "c121" })).rejects.toMatchObject({ code: "invalid", message: expect.stringMatching(/no email on file/) })
+    await expect(sell({ customerId: "c121", paysBy: "card-link" })).rejects.toMatchObject({ code: "invalid", message: expect.stringMatching(/no email on file/) })
     await expect(sell({ customerId: "c100", email: "andrea@example.com" })).rejects.toMatchObject({ code: "unprocessable", message: expect.stringMatching(/already holds the 2028 Season Pass, TH-2028-/) })
     await expect(sell({ newCustomer: newCustomer() }, readKey)).rejects.toMatchObject({ code: "forbidden" })
     const visitor: PublicPrincipal = { kind: "public", id: "checkout", organizationId: ORG, scopes: ["checkout"] }
@@ -81,12 +91,20 @@ describe("passes.sell", () => {
     await expect(callApi(as(), passesSell, { newCustomer: newCustomer(), zones: 8, paysBy: "at-visit", termsAccepted: false })).rejects.toMatchObject({ code: "invalid" })
   })
 
+  it("refuses paying at each visit for a customer who has a card on file", async () => {
+    const first = await sell({ newCustomer: newCustomer() })
+    await db.update(s.customer).set({ stripePaymentMethodId: "pm_have", stripeCustomerId: "cus_have", cardBrand: "visa", cardLast4: "4242" }).where(eq(s.customer.id, first.customerId))
+    await expect(sell({ customerId: first.customerId })).rejects.toMatchObject({ code: "unprocessable", message: "This customer has a card on file; it is charged after each visit" })
+  })
+
   it("sells a new customer a pass with the inspection, placing an open day and moving a day that is not open to the next open one", async () => {
     const offer = await callApi(as(), scheduleOfferDays, { town: "Erie", kind: "turn-on", season: 2028, zones: 8 })
     const open = offer.days[0]!.day
     // October 1, 2028 is a Sunday: no truck works it, so the blowout goes to the next open day and the move is recorded.
     const pass = await sell({ newCustomer: newCustomer({ accessNote: "Gate code 4411" }), inspection: true, days: { "turn-on": open, blowout: "2028-10-01" } })
     expect(pass).toMatchObject({ status: "active", inspection: true, accessNote: "Gate code 4411", firstName: "Maya" })
+    const [prop] = await db.select().from(s.property).where(eq(s.property.customerId, pass.customerId))
+    expect(prop).toMatchObject({ zones: 8, accessNote: "Gate code 4411" })
     expect(pass.customer).toMatchObject({ lastName: "Ortiz", email: expect.stringMatching(/^maya\d+@example\.com$/), phone: "+13035550142" })
     expect(pass.visits.map((v) => v.kind)).toEqual(["turn-on", "inspection", "blowout"])
     expect(pass.visits.find((v) => v.kind === "turn-on")).toMatchObject({ status: "scheduled", scheduledOn: open, startTime: offer.days[0]!.start })

@@ -10,7 +10,7 @@ import { jobTotal } from "@/lib/jobs/lines"
 import { NOT_CLOSED_LOOKBACK_DAYS, visitJob } from "./jobs"
 import type {
   SoldJob, AdminData, Attention, BusyBlock, Client, Consent, Invoice, Message, MessageKind, MonthTotal, Pass, PassVisit, Quote, SettingsChange,
-  Person, ServiceItem, AreaGroup, OrganizationSettings, Town, Visit, VisitKind, VisitStatus,
+  Person, ServiceItem, AreaGroup, OrganizationSettings, Property, Town, Visit, VisitKind, VisitStatus, Yard,
 } from "./types"
 
 const ZONE = "America/Denver"
@@ -23,21 +23,29 @@ export interface ApiVisit {
   notDoneReason?: string | null; paidBy?: string | null; paymentStatus?: string; startTime: string | null; durationMinutes?: number | null; stopOrder: number | null; completedOn: string | null; chargedAt: string | null
   exception: { kind: "moved-in-jobber"; at: string; note: string } | null; lat: number | null; lng: number | null
   lineItems?: { id: string; visitId: string | null; quantity: number; unitPrice: number; cancelledAt: string | null }[]
+  /** the yard the visit is at; the gate code, access note and contact phone are there only for the write scope */
+  property?: ApiYard
+}
+export interface ApiYard {
+  zones: number | null; controller: string | null; backflowLocation: string | null; gateCode?: string | null; mustBeHome: boolean
+  accessNote?: string | null; contactName: string | null; contactPhone?: string | null; notes: string | null
 }
 export interface ApiPass {
   id: string; number: string; season: number; customerId: string; firstName: string; town: Town; zones: number; status: string
   turnOnPreference: Pass["turnOnPreference"]; blowoutPreference: Pass["blowoutPreference"]; needsCustomerHome: boolean
   accessNote?: string | null; cardLast4: string | null; cardExpires: string | null; cardFailedAt: string | null; cancelledAt: string | null; createdAt?: string
 }
-export interface ApiCustomer { id: string; firstName: string; lastName?: string | null; email?: string | null; phone?: string | null; address?: string | null; town: Town | null; hasPass: boolean }
+export interface ApiCustomer { id: string; firstName: string; lastName?: string | null; email?: string | null; phone?: string | null; address?: string | null; town: Town | null; hasPass: boolean; card?: { brand: string | null; last4: string | null; expires: string | null; failedAt: string | null } | null }
 export interface ApiMessage { id: string; customerId: string; visitId: string | null; channel: "email" | "sms"; kind: string; subject: string | null; body: string; status: Message["status"]; sentAt: string | null; createdAt: string }
+/** A `property` row as live.ts reads it; the street line, gate code, access note and phone are already null for a caller without the write scope. */
+export interface PropertyRow extends ApiYard { id: string; customerId: string; address: string | null; town: Town }
 export interface ConsentRow { customerId: string; termsAcceptedAt: Date | null; termsVersion: string | null; marketingOptIn: boolean; marketingChannels: ("email" | "sms")[]; source: string; recordedAt: Date }
 export interface MirrorClient { id: string; firstName: string | null; lastName?: string | null; email?: string | null; phone?: string | null; town: Town | null; jobberUrl: string | null }
 export interface MirrorVisit { id: string; clientId: string | null; kind: string | null; town: Town | null; startAt: Date | null; completedAt: Date | null; jobberUrl: string | null }
 export interface MirrorJob { id: string; clientId: string | null; jobberUrl: string | null }
 export interface MirrorQuote { id: string; clientName: string | null; town: Town | null; total: number | null; sentAt: Date | null; status: Quote["status"] | null; jobberUrl: string | null }
 export interface MirrorInvoice { id: string; clientName: string | null; total: number | null; issuedAt: Date | null; dueAt: Date | null; status: Invoice["status"] | null; jobberUrl: string | null }
-export interface JobRow { id: string; customerId: string; kind: SoldJob["kind"]; status: SoldJob["status"]; price: number | null; source: SoldJob["source"]; notes: string | null }
+export interface JobRow { id: string; customerId: string; kind: SoldJob["kind"]; status: SoldJob["status"]; price: number | null; source: SoldJob["source"]; passNumber?: string | null; notes: string | null }
 export interface LineRow { id: string; jobId: string; visitId: string | null; name: string; description: string | null; quantity: number; unitPrice: number; taxable: boolean; cancelledAt: Date | null }
 export interface QueueProblem { id?: string; kind: string; lastError: string | null; updatedAt: Date; status: string }
 
@@ -73,6 +81,8 @@ export interface ShapeInput {
   jobRows?: JobRow[]
   /** every line on those jobs, oldest first */
   lineRows?: LineRow[]
+  /** every property of the organization; absent in the fixtures, where the screens build one from the pass */
+  propertyRows?: PropertyRow[]
   blocks: BusyBlock[]
   /** every service, inactive ones included; absent in the fixtures */
   services?: ServiceItem[]
@@ -89,6 +99,13 @@ const money = (v: Pick<ApiVisit, "notDoneReason" | "paidBy" | "paymentStatus">) 
   ...(v.notDoneReason ? { notDoneReason: v.notDoneReason } : {}),
   ...(v.paymentStatus === "paid" && v.paidBy ? { paidMethod: v.paidBy } : {}),
   ...(v.paymentStatus === "pending" && v.paidBy === "bill" ? { billSent: true } : {}),
+})
+
+/** The yard as the screens hold it: a fact nobody set is left out. */
+export const yardOf = (y: ApiYard): Yard => ({
+  ...(y.zones ? { zones: y.zones } : {}), ...(y.controller ? { controller: y.controller } : {}), ...(y.backflowLocation ? { backflowLocation: y.backflowLocation } : {}),
+  ...(y.gateCode ? { gateCode: y.gateCode } : {}), mustBeHome: y.mustBeHome, ...(y.accessNote ? { accessNote: y.accessNote } : {}),
+  ...(y.contactName ? { contactName: y.contactName } : {}), ...(y.contactPhone ? { contactPhone: y.contactPhone } : {}), ...(y.notes ? { notes: y.notes } : {}),
 })
 
 const toKind = (k: string): VisitKind => (k === "turn-on" || k === "inspection" || k === "blowout" || k === "repair" || k === "install" ? k : "other")
@@ -151,6 +168,7 @@ export function shapeAdminData(i: ShapeInput): AdminData {
       ...(v.personName ? { personName: v.personName, truckName: v.personName } : {}),
       ...(v.personId ? { personId: v.personId, truckId: v.personId } : {}),
       ...(v.awaitingPick ? { awaitingPick: true } : {}),
+      ...(v.property ? { property: yardOf(v.property) } : {}),
       ...(v.stopOrder !== null ? { stopOrder: v.stopOrder } : {}),
       ...point,
       ...(v.exception ? { exception: v.exception } : {}),
@@ -178,6 +196,8 @@ export function shapeAdminData(i: ShapeInput): AdminData {
   const appIds = new Set(i.customers.map((c) => c.id))
   const history = new Map<string, ConsentRow[]>()
   for (const c of i.consents) history.set(c.customerId, [...(history.get(c.customerId) ?? []), c])
+  const propertiesOf = new Map<string, Property[]>()
+  for (const p of i.propertyRows ?? []) propertiesOf.set(p.customerId, [...(propertiesOf.get(p.customerId) ?? []), { id: p.id, town: p.town, ...(p.address ? { address: p.address } : {}), ...yardOf(p) }])
   const present = <T extends string | null | undefined>(k: string, v: T) => (v ? { [k]: v } : {})
   const clients: Client[] = [
     ...i.customers.map((c): Client => {
@@ -187,6 +207,8 @@ export function shapeAdminData(i: ShapeInput): AdminData {
       return {
         id: c.id, firstName: c.firstName, town: (c.town ?? "Erie") as Town, jobberUrl: (jobberId && mirrorClient.get(jobberId)?.jobberUrl) || "", hasPass: c.hasPass, app: true,
         ...present("lastName", c.lastName), ...present("email", c.email), ...present("phone", c.phone), ...present("address", c.address),
+        ...(c.card?.last4 ? { card: { last4: c.card.last4, ...present("brand", c.card.brand), ...present("expires", c.card.expires), ...present("failedAt", c.card.failedAt) } } : {}),
+        ...(i.propertyRows ? { properties: propertiesOf.get(c.id) ?? [] } : {}),
         ...(lastVisit.has(c.id) ? { lastVisitAt: lastVisit.get(c.id) } : {}), ...(consent ? { consent: consentOf(consent), consentHistory: records.map(consentOf) } : {}),
       }
     }),
@@ -242,7 +264,7 @@ export function shapeAdminData(i: ShapeInput): AdminData {
       id: j.id, customerId: j.customerId, kind: j.kind, status: j.status, source: j.source,
       ...(i.lineRows ? { lines: lines.map((l) => ({ id: l.id, name: l.name, quantity: l.quantity, unitPrice: l.unitPrice, taxable: l.taxable, ...(l.description ? { description: l.description } : {}), ...(l.cancelledAt ? { cancelledAt: iso(l.cancelledAt) } : {}), ...(l.visitId ? { visitId: l.visitId } : {}) })), total: jobTotal(lines) } : {}),
       ...(j.price !== null ? { price: j.price } : {}), ...(j.notes ? { notes: j.notes } : {}),
-      ...(pass ? { passId: pass.id, passNumber: pass.number } : {}),
+      ...(pass ? { passId: pass.id, passNumber: j.passNumber ?? pass.number } : {}),
       visitIds: i.visits.filter((v) => v.jobId === j.id).map((v) => v.id),
     }
   })

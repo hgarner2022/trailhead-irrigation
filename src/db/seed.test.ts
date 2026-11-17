@@ -113,6 +113,15 @@ describe("seed", () => {
     expect(done[0].status).toBe("completed")
     expect(done[0].completedOn).toBe("2027-05-03")
   })
+  it("seeds the yard on the property from the snapshot pass, and a re-seed keeps an office edit", async () => {
+    const pass = data.passes[0]
+    const id = `property-${pass.clientId}`
+    const read = async () => (await db.select({ zones: s.property.zones, mustBeHome: s.property.mustBeHome, accessNote: s.property.accessNote }).from(s.property).where(eq(s.property.id, id)))[0]
+    expect(await read()).toEqual({ zones: pass.zones, mustBeHome: pass.needsCustomerHome ?? false, accessNote: pass.accessNote ?? null })
+    await db.update(s.property).set({ zones: 99 }).where(eq(s.property.id, id))
+    await seed(db, data, { organizationId: org, admins: ["hannah@example.com", "ryan@example.com"], passes: true, mirror: true })
+    expect((await read()).zones).toBe(99)
+  })
   it("gives every fixture visit its line, with the backfill's id, so a seeded and a migrated database agree", async () => {
     expect(await n(s.lineItem)).toBe(data.passes.reduce((sum, p) => sum + p.visits.length, 0))
     const [line] = await db

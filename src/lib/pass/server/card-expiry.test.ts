@@ -16,6 +16,7 @@ beforeAll(async () => {
   passId = p!.id
   customerId = p!.customerId
   await db.update(s.customer).set({ email: "andrea@example.com", stripeCustomerId: "cus_1" }).where(eq(s.customer.id, customerId))
+  await db.update(s.customer).set({ cardExpires: "2027-07" }).where(eq(s.customer.id, customerId))
   await db.update(s.seasonPass).set({ cardExpires: "2027-07", season: 2027 }).where(eq(s.seasonPass.id, passId))
   await db.update(s.visit).set({ status: "unscheduled" }).where(eq(s.visit.passId, passId))
   await db.delete(s.messageLog)
@@ -37,15 +38,31 @@ describe("card expiry", () => {
     expect(await queueCardExpiryMessages(db, link, "https://x.test", new Date("2027-06-10T18:00:00Z"))).toBe(1)
     expect(await queueCardExpiryMessages(db, link, "https://x.test", new Date("2027-06-11T18:00:00Z"))).toBe(0)
     const [row] = await db.select().from(s.messageLog).where(eq(s.messageLog.kind, "card-expiring"))
-    expect(row).toMatchObject({ channel: "email", to: "andrea@example.com", key: `expiry-${passId}-2027-07` })
+    expect(row).toMatchObject({ channel: "email", to: "andrea@example.com", key: `expiry-${customerId}-2027-07` })
     expect(row!.body).toContain("expires in July 2027")
     expect(row!.body).toContain("https://billing.stripe.com/s/x")
   })
 
+  it("sends one email for a customer with two active passes", async () => {
+    const [first] = await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, passId))
+    const { id: _id, number: _n, jobId: _j, ...rest } = first!
+    void _id; void _n; void _j
+    const job = (await db.select().from(s.job).where(eq(s.job.id, first!.jobId)))[0]!
+    await db.insert(s.job).values({ ...job, id: "job-twin", passNumber: "TH-2027-9999" })
+    await db.insert(s.seasonPass).values({ ...rest, id: "p-twin", number: "TH-2027-9999", jobId: "job-twin", season: 2027 })
+    await db.insert(s.visit).values({ id: "v-twin", organizationId: first!.organizationId, jobId: "job-twin", passId: "p-twin", customerId, propertyId: first!.propertyId, kind: "blowout", window: "October", amount: 95, status: "unscheduled" })
+    await db.delete(s.messageLog)
+    expect(await queueCardExpiryMessages(db, link, "https://x.test", new Date("2027-06-12T18:00:00Z"))).toBe(1)
+    expect(await db.select().from(s.messageLog).where(eq(s.messageLog.kind, "card-expiring"))).toHaveLength(1)
+    await db.delete(s.visit).where(eq(s.visit.id, "v-twin"))
+    await db.delete(s.seasonPass).where(eq(s.seasonPass.id, "p-twin"))
+    await db.delete(s.job).where(eq(s.job.id, "job-twin"))
+  })
+
   it("leaves a card that outlasts October, and a pass with nothing left to do", async () => {
-    await db.update(s.seasonPass).set({ cardExpires: "2028-01" }).where(eq(s.seasonPass.id, passId))
+    await db.update(s.customer).set({ cardExpires: "2028-01" }).where(eq(s.customer.id, customerId))
     expect(await queueCardExpiryMessages(db, link, "https://x.test", new Date("2027-12-10T18:00:00Z"))).toBe(0)
-    await db.update(s.seasonPass).set({ cardExpires: "2027-08" }).where(eq(s.seasonPass.id, passId))
+    await db.update(s.customer).set({ cardExpires: "2027-08" }).where(eq(s.customer.id, customerId))
     await db.update(s.visit).set({ status: "completed" }).where(eq(s.visit.passId, passId))
     expect(await queueCardExpiryMessages(db, link, "https://x.test", new Date("2027-07-10T18:00:00Z"))).toBe(0)
   })

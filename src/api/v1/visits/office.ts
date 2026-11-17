@@ -11,7 +11,8 @@ import { orderDay } from "@/lib/scheduling/server/order-day"
 import { ApiError, notFound } from "../../core/errors"
 import { defineHandler } from "../../core/handler"
 import { customerFields, propertyInput } from "../customers/schemas"
-import { cleanContact } from "../customers/handlers"
+import { cleanText } from "@/lib/format/contact"
+import { cleanContact, cleanYard } from "../customers/handlers"
 import { recordChange } from "../passes/queries"
 import { routePeople } from "../people/handlers"
 import { Day, Id } from "../shared"
@@ -51,7 +52,7 @@ export const visitsUpdate = defineHandler({
   method: "PATCH",
   path: "/visits/{id}",
   scope: "write",
-  summary: "Change a visit's minutes, price, person or notes, and for a pass visit the pass's access note. A new person must be on the schedule and work the visit's weekday. A price edits the visit's line.",
+  summary: "Change a visit's minutes, price, person or notes, and the access note of the visit's property. A new person must be on the schedule and work the visit's weekday. A price edits the visit's line.",
   input: z.object({
     id: Id,
     durationMinutes: z.number().int().min(15).max(480).multipleOf(15).optional(),
@@ -59,7 +60,7 @@ export const visitsUpdate = defineHandler({
     personId: Id.optional().describe("Who takes the visit; it needs a day first."),
     truckId: PersonIdAlias,
     notes: z.string().trim().max(1000).optional().describe("An empty string clears the notes."),
-    accessNote: z.string().trim().max(500).optional().describe("Pass visits only: gate code, dog, where the controller is."),
+    accessNote: z.string().trim().max(500).optional().describe("Lands on the visit's property: gate code, dog, where the controller is."),
     unscheduled: z.literal(true).optional().describe("Take the visit back to Needs a day: the undo of giving it a day."),
   }),
   output: VisitOut,
@@ -102,8 +103,9 @@ export const visitsUpdate = defineHandler({
       }
     }
     if (input.accessNote !== undefined) {
-      if (!visit.passId) throw new ApiError("unprocessable", "Only a pass visit has an access note")
-      await ctx.db.update(s.seasonPass).set({ accessNote: input.accessNote || null }).where(eq(s.seasonPass.id, visit.passId))
+      // The property holds the yard's access note; the pass keeps the same words as its alias.
+      await ctx.db.update(s.property).set({ accessNote: input.accessNote || null, updatedAt: ctx.now }).where(and(eq(s.property.id, visit.propertyId), eq(s.property.organizationId, ctx.organizationId)))
+      if (visit.passId) await ctx.db.update(s.seasonPass).set({ accessNote: input.accessNote || null }).where(eq(s.seasonPass.id, visit.passId))
       changed.accessNote = true
     }
     if (Object.keys(set).length) await ctx.db.update(s.visit).set(set).where(eq(s.visit.id, visit.id))
@@ -179,10 +181,9 @@ export const visitsCreate = defineHandler({
     let propertyId: string
     let created: { customerId: string; propertyId: string } | null = null
     if (input.newCustomer) {
-      const { property, accessNote: _a, ...fields } = input.newCustomer
-      void _a
+      const { property, accessNote, ...fields } = input.newCustomer
       const [c] = await ctx.db.insert(s.customer).values({ organizationId: org, ...fields, ...cleanContact(fields), leadSource: "office" }).returning()
-      const [p] = await ctx.db.insert(s.property).values({ organizationId: org, customerId: c!.id, ...property }).returning()
+      const [p] = await ctx.db.insert(s.property).values({ organizationId: org, customerId: c!.id, address: property.address, town: property.town, ...cleanYard(property), ...(accessNote ? { accessNote: cleanText(accessNote) } : {}) }).returning()
       await enqueueGeocode(ctx.db, org, p!.id, ctx.now)
       customerId = c!.id
       propertyId = p!.id

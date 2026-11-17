@@ -1,7 +1,8 @@
 import "server-only"
-import { and, eq, inArray } from "drizzle-orm"
+import { and, eq, inArray, isNull } from "drizzle-orm"
 import type { z } from "zod"
 import * as s from "@/db/schema"
+import { customerHasCard } from "@/lib/customer/card"
 import { cleanText } from "@/lib/format/contact"
 import { hasScope } from "@/lib/auth/principal"
 import { enqueueGeocode } from "@/lib/geocode"
@@ -28,13 +29,15 @@ export async function renewPass(ctx: Ctx, input: z.infer<typeof passCreateInput>
   const [old] = await ctx.db.select().from(s.seasonPass).where(and(eq(s.seasonPass.id, input.renewOf!), eq(s.seasonPass.organizationId, ctx.organizationId)))
   const allowed = hasScope(p, "write") || (p.kind === "public" && p.renewPassId === input.renewOf)
   if (!old || !allowed) throw new ApiError("forbidden", "That pass can't be renewed from here")
-  if (old.status === "pending" || !old.stripePaymentMethodId) throw new ApiError("unprocessable", "There's no card on file for that pass. Reserve the new season with a new card instead.")
+  const [customer] = old ? await ctx.db.select().from(s.customer).where(eq(s.customer.id, old.customerId)) : []
+  const [oldJob] = await ctx.db.select({ season: s.job.season, status: s.job.status }).from(s.job).where(eq(s.job.id, old.jobId))
+  if (oldJob?.status === "pending" || !customer || !customerHasCard(customer) || !customer.stripePaymentMethodId) throw new ApiError("unprocessable", "There's no card on file for that pass. Reserve the new season with a new card instead.")
   const day = today(ctx)
-  const season = Math.max(currentSeason(day), old.season + 1)
+  const season = Math.max(currentSeason(day), (oldJob?.season ?? 0) + 1)
   const [held] = await ctx.db
-    .select({ id: s.seasonPass.id })
-    .from(s.seasonPass)
-    .where(and(eq(s.seasonPass.customerId, old.customerId), eq(s.seasonPass.season, season), inArray(s.seasonPass.status, ["active", "pending"])))
+    .select({ id: s.job.id })
+    .from(s.job)
+    .where(and(eq(s.job.customerId, old.customerId), eq(s.job.kind, "pass"), eq(s.job.season, season), inArray(s.job.status, ["active", "pending"]), isNull(s.job.cancelledAt)))
   if (held) throw new ApiError("unprocessable", `Your ${season} season is already reserved.`)
   const onSale = visitsOnSale(input.inspection, day)
   if (onSale.length === 0) throw new ApiError("unprocessable", "No visits are on sale this season any more")
@@ -57,8 +60,10 @@ export async function renewPass(ctx: Ctx, input: z.infer<typeof passCreateInput>
     needsCustomerHome: input.needsCustomerHome,
     accessNote: input.accessNote ? cleanText(input.accessNote) : old.accessNote,
     status: "active",
-    source: "checkout",
-    card: { stripePaymentMethodId: old.stripePaymentMethodId, cardBrand: old.cardBrand, cardLast4: old.cardLast4, cardExpires: old.cardExpires },
+    source: "renewal",
+    renewsJobId: old.jobId,
+    // The card is the customer's already; the new pass only gets the alias columns.
+    card: { stripePaymentMethodId: customer.stripePaymentMethodId, cardBrand: customer.cardBrand, cardLast4: customer.cardLast4, cardExpires: customer.cardExpires },
     now: ctx.now,
   })
   await holdChosenDays(ctx.db, pass.id, input.days.map(chosenDay), input.property.town, season, day)

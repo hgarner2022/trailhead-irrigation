@@ -60,6 +60,14 @@ describe("schema", () => {
     await db.insert(s.seasonPass).values(pass({ jobId: "j-org2", organizationId: "org-2", customerId: "c2", propertyId: "pr2" }))
   })
 
+  it("holds the pass on the job: a pass number is unique per organization, a job with none is free", async () => {
+    const base = { organizationId: ORG, customerId: "c1", propertyId: "pr1", kind: "pass" as const, source: "checkout" as const }
+    await db.insert(s.job).values({ ...base, id: "jp-1", season: 2027, passNumber: "TH-2027-7001" })
+    await reject(db.insert(s.job).values({ ...base, id: "jp-2", season: 2027, passNumber: "TH-2027-7001" }))
+    await db.insert(s.job).values({ ...base, id: "jp-3", season: 2028, passNumber: "TH-2028-7001", renewsJobId: "jp-1", source: "renewal" })
+    await db.insert(s.job).values([{ ...base, id: "jp-4" }, { ...base, id: "jp-5" }])
+  })
+
   it("keeps queue_item unique on (kind, key)", async () => {
     await db.insert(s.queueItem).values({ organizationId: ORG, kind: "stripe-webhook", key: "evt_1" })
     await reject(db.insert(s.queueItem).values({ organizationId: ORG, kind: "stripe-webhook", key: "evt_1" }))
@@ -263,5 +271,15 @@ describe("schema", () => {
     } finally {
       await client.close()
     }
+  })
+
+  it("has the yard's facts on the property", async () => {
+    const cols = await db.execute(sql`select column_name from information_schema.columns where table_name = 'property' order by 1`)
+    expect(cols.rows.map((r) => r.column_name)).toEqual(expect.arrayContaining(["zones", "controller", "backflow_location", "gate_code", "must_be_home", "access_note", "contact_name", "contact_phone", "notes"]))
+  })
+
+  it("has the card on file on the customer", async () => {
+    const cols = await db.execute(sql`select column_name from information_schema.columns where table_name = 'customer' order by 1`)
+    expect(cols.rows.map((r) => r.column_name)).toEqual(expect.arrayContaining(["stripe_payment_method_id", "card_brand", "card_last4", "card_expires", "card_failed_at"]))
   })
 })

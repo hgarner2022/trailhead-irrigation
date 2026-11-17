@@ -165,17 +165,22 @@ async function seedPasses(db: Database, snapshot: AdminData, org: string) {
     const propertyId = `property-${pass.clientId}`
     await db
       .insert(s.customer)
-      .values({ id: pass.clientId, organizationId: org, firstName: client?.firstName ?? pass.firstName, lastName: client?.lastName ?? pass.lastName })
+      .values({ id: pass.clientId, organizationId: org, firstName: client?.firstName ?? pass.firstName, lastName: client?.lastName ?? pass.lastName,
+        // The card on file is the customer's: the snapshot pass's, on insert only (an edited customer keeps theirs).
+        cardLast4: pass.cardLast4,
+        cardExpires: pass.cardExpires,
+        cardFailedAt: pass.cardFailedAt ? new Date(pass.cardFailedAt) : undefined,
+      })
       .onConflictDoNothing()
     await db
       .insert(s.property)
-      .values({ id: propertyId, organizationId: org, customerId: pass.clientId, address: client?.address ?? `Fixture address, ${town}`, town })
+      .values({ id: propertyId, organizationId: org, customerId: pass.clientId, address: client?.address ?? `Fixture address, ${town}`, town, zones: pass.zones, mustBeHome: pass.needsCustomerHome ?? false, accessNote: pass.accessNote ?? null })
       .onConflictDoNothing()
     if (pass.consent) await seedConsent(db, org, pass)
     const jobId = `job_${pass.id}`
     await db
       .insert(s.job)
-      .values({ id: jobId, organizationId: org, customerId: pass.clientId, propertyId, kind: "pass", source: "checkout", status: pass.status === "lapsed" ? "done" : pass.status, price: pass.visits.reduce((n, v) => n + v.amount, 0) })
+      .values({ id: jobId, organizationId: org, customerId: pass.clientId, propertyId, kind: "pass", source: "checkout", season: pass.season, passNumber: pass.number, status: pass.status === "lapsed" ? "done" : pass.status, price: pass.visits.reduce((n, v) => n + v.amount, 0) })
       .onConflictDoNothing()
     await db
       .insert(s.seasonPass)

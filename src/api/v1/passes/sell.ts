@@ -1,7 +1,8 @@
 import "server-only"
-import { and, eq, inArray } from "drizzle-orm"
+import { and, eq, inArray, isNull } from "drizzle-orm"
 import * as s from "@/db/schema"
 import { readAppUrl } from "@/lib/env"
+import { customerHasCard } from "@/lib/customer/card"
 import { cleanText } from "@/lib/format/contact"
 import { enqueueGeocode } from "@/lib/geocode"
 import { currentSeason } from "@/lib/pass/season"
@@ -41,15 +42,15 @@ export const passesSell = defineHandler({
     let customer: typeof s.customer.$inferSelect
     let property: typeof s.property.$inferSelect
     if (input.newCustomer) {
-      const { property: address, accessNote: _a, ...fields } = input.newCustomer
-      void _a
+      const { property: address, accessNote: note, ...fields } = input.newCustomer
       ;[customer] = (await ctx.db.insert(s.customer).values({ organizationId: org, ...fields, ...cleanContact(fields), leadSource: "office" }).returning()) as [typeof s.customer.$inferSelect]
-      ;[property] = (await ctx.db.insert(s.property).values({ organizationId: org, customerId: customer.id, address: cleanText(address.address), town: address.town }).returning()) as [typeof s.property.$inferSelect]
+      ;[property] = (await ctx.db.insert(s.property).values({ organizationId: org, customerId: customer.id, address: cleanText(address.address), town: address.town, zones: input.zones, accessNote: note ? cleanText(note) : null }).returning()) as [typeof s.property.$inferSelect]
       await enqueueGeocode(ctx.db, org, property.id, ctx.now)
     } else {
       const [known] = await ctx.db.select().from(s.customer).where(and(eq(s.customer.id, input.customerId!), eq(s.customer.organizationId, org)))
       if (!known) throw notFound("Customer")
       customer = known
+      if (input.paysBy === "at-visit" && customerHasCard(customer)) throw new ApiError("unprocessable", "This customer has a card on file; it is charged after each visit")
       if (!customer.email) {
         if (!input.email) throw new ApiError("invalid", "This customer has no email on file. Add one: the confirmation and the pass card go by email", [{ path: "email", message: "An email is needed" }])
         ;[customer] = (await ctx.db.update(s.customer).set({ ...cleanContact({ email: input.email }), updatedAt: ctx.now }).where(eq(s.customer.id, known.id)).returning()) as [typeof s.customer.$inferSelect]
@@ -58,11 +59,13 @@ export const passesSell = defineHandler({
       const found = input.propertyId ? props.find((p) => p.id === input.propertyId) : props[0]
       if (!found) throw new ApiError("unprocessable", "This customer has no address on file; add one first")
       property = found
+      // The zone count just sold is what the yard has; the access note stays as the office last wrote it.
+      if (found.zones !== input.zones) [property] = (await ctx.db.update(s.property).set({ zones: input.zones, updatedAt: ctx.now }).where(eq(s.property.id, found.id)).returning()) as [typeof s.property.$inferSelect]
     }
     const [held] = await ctx.db
-      .select({ number: s.seasonPass.number })
-      .from(s.seasonPass)
-      .where(and(eq(s.seasonPass.customerId, customer.id), eq(s.seasonPass.season, season), inArray(s.seasonPass.status, ["active", "pending"])))
+      .select({ number: s.job.passNumber })
+      .from(s.job)
+      .where(and(eq(s.job.customerId, customer.id), eq(s.job.kind, "pass"), eq(s.job.season, season), inArray(s.job.status, ["active", "pending"]), isNull(s.job.cancelledAt)))
     if (held) throw new ApiError("unprocessable", `${customer.firstName} already holds the ${season} Season Pass, ${held.number}`)
 
     const accessNote = input.newCustomer?.accessNote ? cleanText(input.newCustomer.accessNote) : null
@@ -74,7 +77,8 @@ export const passesSell = defineHandler({
 
     // Card on file: the confirmation carries the same link "Send card link" sends, on a Stripe customer made now when the person has none.
     let cardUpdateUrl: string | null = null
-    if (input.paysBy === "card-link") {
+    // A customer who already has a card is charged on it; the link only goes to one who has none.
+    if (input.paysBy === "card-link" && !customerHasCard(customer)) {
       const stripe = getStripe()
       const stripeCustomerId = await ensureStripeCustomer(ctx.db, stripe, customer.id, ctx.now)
       cardUpdateUrl = (await createCardUpdateSession(stripe, { passId: pass.id, customerId: stripeCustomerId, origin: readAppUrl() })).url

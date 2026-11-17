@@ -154,6 +154,14 @@ describe("statesOf: the work pill and the money pill", () => {
     expect(s({ ...done, cardFailedAt: "2026-11-11T00:00:00Z" }).money).toBe("failed")
     expect(s({ ...done, billSent: true })).toMatchObject({ money: "bill-sent", moneyLabel: "Bill sent" })
   })
+  it("reads a failed charge from the customer's card for every done pass visit, whichever pass it is on", () => {
+    const done: PassVisit = { kind: "turn-on", window: "May", amount: 145, completedAt: "2026-11-09T17:00:00Z" }
+    const failedAt = "2026-11-10T00:00:00Z"
+    // the pass row carries the customer's cardFailedAt (the API serves it from the customer), so two passes of one customer agree
+    expect(passVisitJob({ cardFailedAt: failedAt }, done, TODAY, TZ).state).toBe("charge-failed")
+    expect(passVisitJob({ cardFailedAt: failedAt }, { ...done, id: "other-pass-visit" }, TODAY, TZ).state).toBe("charge-failed")
+    expect(passVisitJob({ cardFailedAt: undefined }, done, TODAY, TZ).state).toBe("done")
+  })
   it("sums a job's money across its visits, leaving cancelled ones out", () => {
     const paid = s({ status: "completed", completedOn: "2026-11-10", chargedAt: "2026-11-10T20:00:00Z" })
     expect(jobMoney([paid, s({ status: "scheduled", scheduledOn: "2026-11-20" }), s({ status: "cancelled" })])).toBe("1 of 2 paid")

@@ -92,6 +92,6 @@ export async function queuePurchaseConfirmation(db: Database, passId: string, or
   const lines = lineRows.map((l) => ({ name: l.name, amount: l.quantity * l.unitPrice }))
   return queueMessage(db, {
     organizationId: org, customerId: customer.id, kind: "purchase-confirmation", key,
-    data: { ...baseData(origin, customer), passNumber: pass.number, season: pass.season, town: row.town, passImageUrl: passImageUrl(origin, pass.id), visits: held, ...(lines.length ? { lines } : {}), cardLast4: pass.cardLast4, cardUpdateUrl: extras.cardUpdateUrl ?? null },
+    data: { ...baseData(origin, customer), passNumber: pass.number, season: pass.season, town: row.town, passImageUrl: passImageUrl(origin, pass.id), visits: held, ...(lines.length ? { lines } : {}), cardLast4: customer.cardLast4, cardUpdateUrl: extras.cardUpdateUrl ?? null },
   })
 }

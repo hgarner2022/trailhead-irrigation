@@ -22,6 +22,20 @@ afterAll(() => db.close())
 
 const me = () => ctxFor(db, customerPerson(customerId, "p3@example.com"))
 
+describe("a cancelled job", () => {
+  it("refuses a pick and the area days even when the pass alias still says active", async () => {
+    const [alias] = await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, "p3"))
+    expect(alias!.status).toBe("active")
+    await db.update(s.job).set({ status: "cancelled", cancelledAt: new Date("2027-04-01T12:00:00Z") }).where(eq(s.job.id, alias!.jobId))
+    try {
+      await expect(callApi(me(), visitsAreaDays, { id: "p3-turn-on" })).rejects.toMatchObject({ code: "unprocessable", message: "This pass is not open" })
+      await expect(callApi(me(), visitsPick, { id: "p3-turn-on", day: "2027-05-05" })).rejects.toMatchObject({ code: "unprocessable", message: "This pass is not open" })
+    } finally {
+      await db.update(s.job).set({ status: "active", cancelledAt: null }).where(eq(s.job.id, alias!.jobId))
+    }
+  })
+})
+
 describe("visits.areaDays and visits.pick", () => {
   it("offers up to three days inside the window, none earlier than two days out", async () => {
     const { days } = await callApi(me(), visitsAreaDays, { id: "p3-turn-on" })

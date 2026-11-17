@@ -20,7 +20,9 @@ beforeAll(async () => {
   db = await apiDb()
   await db.update(s.person).set({ calendarFeedUrl: "https://calendar.example.com/t1.ics" }).where(eq(s.person.id, "person_truck-1"))
   await db.insert(s.jobberVisit).values({ id: "feed:truck-1:a", organizationId: ORG, truckId: "truck-1", title: "Day off", startAt: new Date("2027-05-06T13:00:00Z"), endAt: new Date("2027-05-06T23:00:00Z"), isBlock: true })
-  await db.update(s.seasonPass).set({ cardFailedAt: new Date("2027-04-19T10:00:00Z") }).where(eq(s.seasonPass.id, "p3"))
+  // The failed card is the customer's.
+  const p3 = (await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, "p3")))[0]!
+  await db.update(s.customer).set({ cardFailedAt: new Date("2027-04-19T10:00:00Z") }).where(eq(s.customer.id, p3.customerId))
   await callApi(ctxFor(db, owner), visitsMove, { id: "p4-turn-on", personId: "person_truck-1", scheduledOn: "2027-05-05", startTime: "09:30" })
   await db.insert(s.queueItem).values({ organizationId: ORG, kind: "geocode", key: "bad", status: "failed", lastError: "Nominatim answered 429", attempts: 5 })
   await db.update(s.seasonPass).set({ status: "cancelled", cancelledAt: new Date("2027-04-19T12:00:00Z") }).where(eq(s.seasonPass.id, "p5"))
@@ -52,6 +54,8 @@ describe("getLiveAdminData", () => {
     expect(p1.visits[0]!.scheduledAt).toBe("2027-05-03T14:00:00Z")
     expect(p1.consent).toMatchObject({ termsVersion: "2026-11", marketingOptIn: true, source: "checkout" })
     expect(p1.cardLast4).toBe("4242")
+    // The customer holds the card; the client carries it for the Customers panel's Card line.
+    expect(data.clients.find((c) => c.id === p1.clientId)?.card).toMatchObject({ last4: "4242", expires: "2028-08" })
     expect(p1.accessNote).toBeTruthy()
   })
   it("lists app visits and the mirror's visits, with the person and the stop", () => {

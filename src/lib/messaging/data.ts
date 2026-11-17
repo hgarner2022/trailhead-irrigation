@@ -22,7 +22,7 @@ export async function loadVisitFacts(db: Database, visitId: string, origin: stri
   const [row] = await db
     // `who` is the person's first name; `crew` keeps their truck label ("Truck 1") for one more season and goes in step 6. A person
     // who has left keeps their visits until the office moves them (Settings › People, Remove), so neither names them.
-    .select({ visit: s.visit, address: s.property.address, town: s.property.town, truck: s.person.truck, person: s.person.name, personActive: s.person.active })
+    .select({ visit: s.visit, address: s.property.address, town: s.property.town, gateCode: s.property.gateCode, contactName: s.property.contactName, truck: s.person.truck, person: s.person.name, personActive: s.person.active })
     .from(s.visit)
     .innerJoin(s.property, eq(s.property.id, s.visit.propertyId))
     .leftJoin(s.person, eq(s.person.id, s.visit.personId))
@@ -36,6 +36,8 @@ export async function loadVisitFacts(db: Database, visitId: string, origin: stri
     startTime: row.visit.startTime,
     crew: row.personActive && row.truck ? `${row.truck}` : null,
     who: row.personActive ? firstNameOf(row.person) : null,
+    ...(row.gateCode ? { gateCode: row.gateCode } : {}),
+    ...(row.contactName ? { contactName: row.contactName } : {}),
     location: `${row.address}, ${row.town}`,
     icsUrl: visitCalendarUrl(origin, row.visit.id),
   }

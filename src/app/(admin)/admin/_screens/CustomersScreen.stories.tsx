@@ -47,6 +47,57 @@ export const PanelOpen: Story = {
   },
 }
 
+const yard = { mustBeHome: false }
+const withProperties = (properties: NonNullable<AdminData["clients"][number]["properties"]>): AdminData => ({ ...data, clients: data.clients.map((c) => (c.id === "c100" ? { ...c, properties } : c)) })
+
+/** Andrea's Property block with everything filled in, and Edit beside the heading. */
+export const PanelPropertyFull: Story = {
+  args: {
+    defaultSelectedId: "c100",
+    data: withProperties([{ id: "prop-c100", town: "Erie", address: "12 Briggs St", ...yard, zones: 8, controller: "Rachio 3 in the garage", backflowLocation: "north side", gateCode: "4471", mustBeHome: true, accessNote: "Dog loose, close the gate", contactName: "Dana", contactPhone: "+19705550123", notes: "Clay soil by the fence" }]),
+  },
+  globals: { viewport: { value: "wide", isRotated: false } },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByRole("heading", { name: "Property" })).toBeInTheDocument()
+    await expect(await canvas.findByText("Gate code 4471")).toBeInTheDocument()
+    await expect(await canvas.findByRole("button", { name: "Edit" })).toBeInTheDocument()
+  },
+}
+
+/** A property nobody has filled in: "Nothing on file yet", and Edit to start. */
+export const PanelPropertyEmpty: Story = {
+  args: { defaultSelectedId: "c100", data: withProperties([{ id: "prop-c100", town: "Erie", address: "12 Briggs St", ...yard }]) },
+  globals: { viewport: { value: "wide", isRotated: false } },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText("Nothing on file yet")).toBeInTheDocument()
+  },
+}
+
+const withCard = (card: NonNullable<AdminData["clients"][number]["card"]> | null): AdminData => ({ ...data, clients: data.clients.map((c) => (c.id === "c100" ? { ...c, card: card ?? undefined } : c)) })
+
+/** The customer's Card line with a card on file: brand, last four and expiry, with Send card link beside it. */
+export const PanelCard: Story = {
+  args: { defaultSelectedId: "c100", data: withCard({ brand: "visa", last4: "4242", expires: "2028-08" }) },
+  globals: { viewport: { value: "wide", isRotated: false } },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText("Visa ending 4242, expires 08/28")).toBeInTheDocument()
+    await expect(await canvas.findByRole("button", { name: "Send card link" })).toBeInTheDocument()
+  },
+}
+
+/** A customer with no card on file: "No card on file", and Send card link to ask for one. Andrea's pass has a card in the snapshot, so the story takes it off the pass too. */
+export const PanelNoCard: Story = {
+  args: {
+    defaultSelectedId: "c100",
+    data: { ...withCard(null), passes: data.passes.map((p) => (p.clientId === "c100" ? { ...p, cardLast4: undefined, cardExpires: undefined } : p)) },
+  },
+  globals: { viewport: { value: "wide", isRotated: false } },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText("No card on file")).toBeInTheDocument()
+    await expect(await canvas.findByRole("button", { name: "Send card link" })).toBeInTheDocument()
+  },
+}
+
 /** A tech sees the panel with no New job. */
 export const PanelReadOnly: Story = {
   args: { defaultSelectedId: "c100", readOnly: true },

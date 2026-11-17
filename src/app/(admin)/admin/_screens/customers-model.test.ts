@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest"
-import type { Client, Pass, Visit } from "@/lib/admin/types"
-import { consentEntries, customerRow, customerRows, customersContext } from "./customers-model"
+import type { Client, Pass, Visit, Yard } from "@/lib/admin/types"
+import { cardOf, customerCardWords, consentEntries, customerRow, customerRows, customersContext, propertiesOf, propertyLines, yardFromPass } from "./customers-model"
 
 const TODAY = "2026-11-12T19:56:30Z"
 const client: Client = {
@@ -40,9 +40,9 @@ const pass: Pass = {
 const visit = (startAt: string, kind: Visit["kind"] = "blowout", status: Visit["status"] = "scheduled"): Visit => ({ id: startAt, clientId: "c1", clientName: "Andrea", town: "Erie", kind, status, startAt, isPass: false, jobberUrl: "" })
 
 describe("customerRow", () => {
-  it("reads the normal data: full name, street, town, email, phone and the access note", () => {
+  it("reads the normal data: full name, street, town, email, and phone", () => {
     const row = customerRow(client, [pass], [], TODAY)
-    expect(row).toMatchObject({ name: "Andrea Anderson", firstName: "Andrea", address: "12 Briggs St", town: "Erie", email: "andrea@example.com", phone: "+19705550123", accessNote: "Gate code 4471.", season: 2027, pass: "active" })
+    expect(row).toMatchObject({ name: "Andrea Anderson", firstName: "Andrea", address: "12 Briggs St", town: "Erie", email: "andrea@example.com", phone: "+19705550123", season: 2027, pass: "active" })
   })
 
   it("reads the first name alone where no last name is on record, and leaves contact out when the caller may not see it", () => {
@@ -120,5 +120,59 @@ describe("customersContext", () => {
     const rows = customerRows({ clients: [client, { ...client, id: "c2", firstName: "Ben", hasPass: false }], passes: [pass], visits: [{ ...visit("2027-04-20T15:00:00Z", "repair"), clientId: "c2" }] }, TODAY)
     expect(customersContext(rows)).toBe("2 customers, 1 with a pass. 1 with no day yet, 1 scheduled ahead.")
     expect(customersContext([])).toBe("No customers yet.")
+  })
+})
+
+describe("propertyLines", () => {
+  const full: Yard = {
+    zones: 8, controller: "Rachio 3 in the garage", backflowLocation: "north side", gateCode: "4471", mustBeHome: true, accessNote: "Dog loose, close the gate",
+    contactName: "Dana", contactPhone: "+19705550123", notes: "Clay soil by the fence",
+  }
+  it("says each fact that is set, in the order the crew reads them", () => {
+    expect(propertyLines(full, { canSeeContact: true })).toEqual([
+      "8 zones", "Rachio 3 in the garage", "Backflow north side", "Gate code 4471", "Must be home", "Dog loose, close the gate", "Contact Dana, (970) 555-0123", "Property notes Clay soil by the fence",
+    ])
+  })
+  it("skips what is not set and says Must be home only when it is true", () => {
+    expect(propertyLines({ zones: 6, mustBeHome: false }, { canSeeContact: true })).toEqual(["6 zones"])
+    expect(propertyLines({ mustBeHome: false }, { canSeeContact: true })).toEqual([])
+    expect(propertyLines(undefined, { canSeeContact: true })).toEqual([])
+  })
+  it("keeps the gate code and the on-site phone from a tech", () => {
+    const lines = propertyLines(full, { canSeeContact: false })
+    expect(lines).not.toContain("Gate code 4471")
+    expect(lines).not.toContain("Dog loose, close the gate")
+    expect(lines.join("|")).not.toMatch(/555/)
+    expect(lines).toContain("Contact Dana")
+  })
+})
+
+describe("propertiesOf", () => {
+  it("builds the one property from the pass when the customer carries none (the fixtures)", () => {
+    expect(yardFromPass(pass)).toEqual({ zones: 8, mustBeHome: false, accessNote: "Gate code 4471." })
+    expect(propertiesOf(client, [pass])).toEqual([{ id: "property-c1", town: "Erie", address: "12 Briggs St", zones: 8, mustBeHome: false, accessNote: "Gate code 4471." }])
+    expect(propertiesOf({ ...client, id: "c9" }, [pass])).toEqual([])
+  })
+  it("uses the customer's own properties when the API sent them", () => {
+    const own = [{ id: "pr1", town: "Erie" as const, mustBeHome: false }]
+    expect(propertiesOf({ ...client, properties: own }, [pass])).toBe(own)
+  })
+})
+
+describe("the customer's Card line", () => {
+  it("says the brand, the last four and the expiry", () => {
+    expect(customerCardWords({ brand: "visa", last4: "4242", expires: "2028-08" })).toBe("Visa ending 4242, expires 08/28")
+    expect(customerCardWords({ last4: "4242", expires: "2028-08" })).toBe("Card ending 4242, expires 08/28")
+    expect(customerCardWords({ brand: "amex", last4: "0005" })).toBe("Amex ending 0005")
+    expect(customerCardWords(undefined)).toBe("No card on file")
+  })
+  it("reads the customer's card, else the newest pass's (the fixtures)", () => {
+    const own = { last4: "1111", brand: "visa" }
+    expect(cardOf({ ...client, card: own }, [{ ...pass, cardLast4: "2222" }])).toBe(own)
+    expect(cardOf(client, [{ ...pass, cardLast4: "2222", cardExpires: "2028-08" }])).toEqual({ last4: "2222", expires: "2028-08" })
+    expect(cardOf(client, [pass])).toBeUndefined()
+  })
+  it("never lets a pass speak for a customer the API sent with no card", () => {
+    expect(cardOf({ ...client, properties: [] }, [{ ...pass, cardLast4: "2222" }])).toBeUndefined()
   })
 })

@@ -228,6 +228,10 @@ export const service = pgTable(
   (t) => [unique("service_org_key_unique").on(t.organizationId, t.key)],
 )
 
+/**
+ * One person. Holds the card on file, one per customer, charged after each visit;
+ * moved from season_pass in step 3 (season_pass keeps the same columns as an alias until step 6).
+ */
 export const customer = pgTable(
   "customer",
   {
@@ -240,6 +244,11 @@ export const customer = pgTable(
     leadSource: text("lead_source"),
     jobberClientId: text("jobber_client_id"),
     stripeCustomerId: text("stripe_customer_id"),
+    stripePaymentMethodId: text("stripe_payment_method_id"),
+    cardBrand: text("card_brand"),
+    cardLast4: text("card_last4"),
+    cardExpires: text("card_expires"),
+    cardFailedAt: ts("card_failed_at"),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
@@ -261,6 +270,16 @@ export const property = pgTable(
     lat: real("lat"),
     lng: real("lng"),
     geocodedAt: ts("geocoded_at"),
+    /** the yard: filled by the checkout's zones step, the office, or the backfill from the newest pass */
+    zones: integer("zones"),
+    controller: text("controller"),
+    backflowLocation: text("backflow_location"),
+    gateCode: text("gate_code"),
+    mustBeHome: boolean("must_be_home").notNull().default(false),
+    accessNote: text("access_note"),
+    contactName: text("contact_name"),
+    contactPhone: text("contact_phone"),
+    notes: text("notes"),
     jobberPropertyId: text("jobber_property_id"),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
@@ -300,13 +319,23 @@ export const job = pgTable(
     status: jobStatusEnum("status").notNull().default("active"),
     /** whole dollars; null until quoted */
     price: integer("price"),
-    source: text("source", { enum: ["checkout", "office", "site"] }).notNull(),
+    source: text("source", { enum: ["checkout", "office", "site", "renewal"] }).notNull(),
+    /** what makes a job a Season Pass (step 3); `season_pass` is an alias table until step 6 */
+    season: integer("season"),
+    /** what makes a job a Season Pass (step 3); `season_pass` is an alias table until step 6 */
+    passNumber: text("pass_number"),
+    /** what makes a job a Season Pass (step 3); `season_pass` is an alias table until step 6. The job this pass renews; no foreign key, like `renewed_from_id`. */
+    renewsJobId: text("renews_job_id"),
     notes: text("notes"),
     createdAt: createdAt(),
     cancelledAt: ts("cancelled_at"),
     updatedAt: updatedAt(),
   },
-  (t) => [index("job_org_customer_idx").on(t.organizationId, t.customerId)],
+  (t) => [
+    index("job_org_customer_idx").on(t.organizationId, t.customerId),
+    uniqueIndex("job_org_pass_number_unique").on(t.organizationId, t.passNumber).where(sql`pass_number is not null`),
+    index("job_org_season_idx").on(t.organizationId, t.season),
+  ],
 )
 
 export const seasonPass = pgTable(

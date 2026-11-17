@@ -4,7 +4,23 @@ import { LineOut } from "../visits/schemas"
 
 export const MarketingChannels = z.array(Channel).describe("Channels the customer opted into for marketing.")
 
-export const PropertyOut = z.object({ id: Id, town: Town, lat: z.number().nullable(), lng: z.number().nullable(), address: z.string().optional().describe("Only for callers with the write scope.") })
+export const PropertyOut = z.object({
+  id: Id,
+  customerId: Id,
+  town: Town,
+  lat: z.number().nullable(),
+  lng: z.number().nullable(),
+  address: z.string().optional().describe("Only for callers with the write scope."),
+  zones: z.number().int().nullable(),
+  controller: z.string().nullable(),
+  backflowLocation: z.string().nullable(),
+  gateCode: z.string().nullable().optional().describe("Only for callers with the write scope."),
+  mustBeHome: z.boolean(),
+  accessNote: z.string().nullable().optional().describe("Only for callers with the write scope."),
+  contactName: z.string().nullable(),
+  contactPhone: z.string().nullable().optional().describe("Only for callers with the write scope."),
+  notes: z.string().nullable(),
+})
 
 export const ConsentOut = z.object({
   id: Id,
@@ -32,6 +48,7 @@ export const CustomerOut = z.object({
   email: z.string().nullable().optional().describe("Only for callers with the write scope."),
   phone: z.string().nullable().optional().describe("Only for callers with the write scope."),
   leadSource: z.string().nullable(),
+  card: z.object({ brand: z.string().nullable(), last4: z.string().nullable(), expires: z.string().nullable().describe("YYYY-MM"), failedAt: Iso.nullable().describe("When the last charge to this card failed; cleared by the next success or a new card.") }).nullable().describe("The card on file, one per customer, charged after each visit; null when there is none."),
   createdAt: Iso,
 })
 
@@ -41,7 +58,7 @@ export const JobOut = z.object({
   kind: z.enum(["pass", "repair", "install", "other"]),
   status: z.enum(["pending", "active", "done", "cancelled"]),
   price: z.number().int().nullable().describe("Whole dollars; null until quoted."),
-  source: z.enum(["checkout", "office", "site"]),
+  source: z.enum(["checkout", "office", "site", "renewal"]),
   notes: z.string().nullable(),
   createdAt: Iso,
   passId: Id.nullable(),
@@ -54,7 +71,21 @@ export const JobOut = z.object({
 export const CustomerListItem = CustomerOut.extend({ town: Town.nullable(), address: z.string().nullable().optional().describe("The first property's street line. Only for callers with the write scope."), hasPass: z.boolean(), next: NextOut })
 export const CustomerDetail = CustomerOut.extend({ properties: z.array(PropertyOut), consent: ConsentOut.nullable(), jobs: z.array(JobOut), preference: Preference.optional() }).omit({ preference: true })
 
-export const propertyInput = z.object({ address: z.string().min(3).max(200), town: Town })
+/** A text field of the yard: trimmed, and an empty answer is stored as null. */
+const yardText = (max: number) => z.string().max(max).transform((v) => v.trim() || null).nullable().optional()
+/** The nine fields of the yard, all optional. */
+export const yardFields = {
+  zones: z.number().int().min(1).max(16).nullable().optional(),
+  controller: yardText(120),
+  backflowLocation: yardText(200),
+  gateCode: yardText(60),
+  mustBeHome: z.boolean().optional(),
+  accessNote: yardText(500),
+  contactName: yardText(120),
+  contactPhone: yardText(30),
+  notes: yardText(1000),
+}
+export const propertyInput = z.object({ address: z.string().min(3).max(200), town: Town, ...yardFields })
 export const customerFields = {
   firstName: z.string().min(1).max(80),
   lastName: z.string().max(80).optional(),
