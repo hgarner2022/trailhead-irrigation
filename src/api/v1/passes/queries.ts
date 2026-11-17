@@ -15,6 +15,8 @@ export const passSelect = {
   lastName: s.customer.lastName,
   email: s.customer.email,
   phone: s.customer.phone,
+  // The card on file is the customer's.
+  card: { brand: s.customer.cardBrand, last4: s.customer.cardLast4, expires: s.customer.cardExpires, failedAt: s.customer.cardFailedAt },
   town: s.property.town,
   address: s.property.address,
   yard: s.property,
@@ -47,10 +49,10 @@ export function passOut(ctx: Ctx, row: PassJoined) {
     blowoutPreference: p.blowoutPreference,
     needsCustomerHome: row.yard.mustBeHome,
     ...(canSeeContact(ctx) ? { accessNote: row.yard.accessNote } : {}),
-    cardBrand: p.cardBrand,
-    cardLast4: p.cardLast4,
-    cardExpires: p.cardExpires,
-    cardFailedAt: p.cardFailedAt?.toISOString() ?? null,
+    cardBrand: row.card.brand,
+    cardLast4: row.card.last4,
+    cardExpires: row.card.expires,
+    cardFailedAt: row.card.failedAt?.toISOString() ?? null,
     cancelledAt: p.cancelledAt?.toISOString() ?? null,
     createdAt: p.createdAt.toISOString(),
   }

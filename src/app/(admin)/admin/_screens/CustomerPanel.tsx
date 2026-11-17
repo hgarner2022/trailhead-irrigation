@@ -5,12 +5,13 @@ import { OpenVisit } from "./VisitPanelHost"
 import { TextForm } from "./VisitEditText"
 import type { VisitActions } from "./visit-actions-types"
 import { StatusPill } from "@/components/blocks/StatusPill"
-import type { AdminData, Client, Visit } from "@/lib/admin/types"
+import type { AdminData, Client, ClientCard, Visit } from "@/lib/admin/types"
 import { KIND_WORDS, TIME_ZONE, shortDate } from "@/lib/admin/format"
 import { visitJob } from "@/lib/admin/jobs"
 import { formatPhone } from "@/lib/format/contact"
 import { PropertyBlock } from "./PropertyFields"
-import { MARKETING_WORDS, SCHEDULED_WORDS, consentEntries, propertiesOf, type CustomerRow } from "./customers-model"
+import { CustomerCardLine } from "./CustomerCardLine"
+import { MARKETING_WORDS, SCHEDULED_WORDS, cardOf, consentEntries, propertiesOf, type CustomerRow } from "./customers-model"
 
 // The body of the Customers side panel: the same normal data as the row,
 // plus the property (the yard: zones, controller, gate code, access note, contact), the jobs, the consent history (append-only, newest
@@ -28,7 +29,7 @@ function Subtitle({ id, children }: { id: string; children: string }) {
   )
 }
 
-function Facts({ row }: { row: CustomerRow }) {
+function Facts({ row, card, readOnly, actions }: { row: CustomerRow; card: ClientCard | undefined; readOnly: boolean; actions?: VisitActions }) {
   const facts: [string, ReactNode][] = [
     ...(row.address ? ([["Address", `${row.address}, ${row.town}`]] as [string, ReactNode][]) : ([["Town", row.town]] as [string, ReactNode][])),
     ...(row.email ? ([["Email", row.email]] as [string, ReactNode][]) : []),
@@ -37,6 +38,7 @@ function Facts({ row }: { row: CustomerRow }) {
     ["Next", row.next],
     ["Scheduled", SCHEDULED_WORDS[row.nextState]],
     ["Marketing", MARKETING_WORDS[row.marketing]],
+    ["Card", <CustomerCardLine key="card" card={card} passId={row.passId} readOnly={readOnly} actions={actions} />],
   ]
   return (
     <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm">
@@ -89,9 +91,10 @@ function ConsentHistory({ client }: { client: Pick<Client, "consent" | "consentH
 export function CustomerPanelBody({ row, client, data, today, readOnly = false, actions }: { row: CustomerRow; client: Client | undefined; data: AdminData; today: string; readOnly?: boolean; actions?: VisitActions }) {
   // The first property is the one shown; a customer with a second one is a later step.
   const property = client ? propertiesOf(client, data.passes)[0] : undefined
+  const card = client ? cardOf(client, data.passes) : undefined
   return (
     <>
-      <Facts row={row} />
+      <Facts row={row} card={card} readOnly={readOnly} actions={actions} />
       {property && <PropertyBlock key={property.id} propertyId={property.id} yard={property} readOnly={readOnly} actions={actions} />}
       <section aria-labelledby="customer-jobs">
         <Subtitle id="customer-jobs">Visits</Subtitle>

@@ -12,8 +12,10 @@ let customerId: string
 beforeAll(async () => {
   vi.stubEnv("APP_URL", "https://site.test")
   db = await apiDb()
-  await db.update(s.seasonPass).set({ stripePaymentMethodId: "pm_old", cardExpires: "2029-08", needsCustomerHome: true, accessNote: "Gate 12" }).where(eq(s.seasonPass.id, "p1"))
+  await db.update(s.seasonPass).set({ needsCustomerHome: true, accessNote: "Gate 12" }).where(eq(s.seasonPass.id, "p1"))
   customerId = (await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, "p1")))[0]!.customerId
+  // The card the checkout offers to reuse is the customer's.
+  await db.update(s.customer).set({ stripePaymentMethodId: "pm_old", cardExpires: "2029-08" }).where(eq(s.customer.id, customerId))
 })
 afterAll(() => db.close())
 
@@ -39,7 +41,7 @@ describe("loadRenewal", () => {
   })
 
   it("has a card of null when none is on file, so the checkout keeps its card step", async () => {
-    await db.update(s.seasonPass).set({ stripePaymentMethodId: null }).where(eq(s.seasonPass.id, "p1"))
+    await db.update(s.customer).set({ stripePaymentMethodId: null }).where(eq(s.customer.id, customerId))
     expect((await ask({ token: token() }))?.card).toBeNull()
   })
 })

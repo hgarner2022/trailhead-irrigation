@@ -48,9 +48,9 @@ describe("migration 0014: line items backfill", () => {
     const all = files()
     const at = all.findIndex((f) => f.startsWith("0014_line_items"))
     expect(at).toBeGreaterThan(0)
-    // 0015 only adds the property columns the seed now writes; the seed needs them to insert.
-    const withYard = all.findIndex((f) => f.startsWith("0015_property_fields"))
-    for (const f of [...all.slice(0, at + 1), all[withYard]!]) for (const stmt of migration(f)) if (stmt.trim()) await client.exec(stmt)
+    // 0015 and 0016 only add the property and card columns the seed now writes; the seed needs them to insert.
+    const later = ["0015_property_fields", "0016_customer_card"].map((name) => all.find((f) => f.startsWith(name))!)
+    for (const f of [...all.slice(0, at + 1), ...later]) for (const stmt of migration(f)) if (stmt.trim()) await client.exec(stmt)
     const org = data.organizationId
     await seed(drizzle(client, { schema }), data, { organizationId: org, admins: [], passes: true })
     // The seed writes the fixture's lines itself; the backfill is for a database that had none.

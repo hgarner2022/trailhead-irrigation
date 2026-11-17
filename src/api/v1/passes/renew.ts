@@ -2,6 +2,7 @@ import "server-only"
 import { and, eq, inArray } from "drizzle-orm"
 import type { z } from "zod"
 import * as s from "@/db/schema"
+import { customerHasCard } from "@/lib/customer/card"
 import { cleanText } from "@/lib/format/contact"
 import { hasScope } from "@/lib/auth/principal"
 import { enqueueGeocode } from "@/lib/geocode"
@@ -28,7 +29,8 @@ export async function renewPass(ctx: Ctx, input: z.infer<typeof passCreateInput>
   const [old] = await ctx.db.select().from(s.seasonPass).where(and(eq(s.seasonPass.id, input.renewOf!), eq(s.seasonPass.organizationId, ctx.organizationId)))
   const allowed = hasScope(p, "write") || (p.kind === "public" && p.renewPassId === input.renewOf)
   if (!old || !allowed) throw new ApiError("forbidden", "That pass can't be renewed from here")
-  if (old.status === "pending" || !old.stripePaymentMethodId) throw new ApiError("unprocessable", "There's no card on file for that pass. Reserve the new season with a new card instead.")
+  const [customer] = old ? await ctx.db.select().from(s.customer).where(eq(s.customer.id, old.customerId)) : []
+  if (old.status === "pending" || !customer || !customerHasCard(customer) || !customer.stripePaymentMethodId) throw new ApiError("unprocessable", "There's no card on file for that pass. Reserve the new season with a new card instead.")
   const day = today(ctx)
   const season = Math.max(currentSeason(day), old.season + 1)
   const [held] = await ctx.db
@@ -58,7 +60,8 @@ export async function renewPass(ctx: Ctx, input: z.infer<typeof passCreateInput>
     accessNote: input.accessNote ? cleanText(input.accessNote) : old.accessNote,
     status: "active",
     source: "checkout",
-    card: { stripePaymentMethodId: old.stripePaymentMethodId, cardBrand: old.cardBrand, cardLast4: old.cardLast4, cardExpires: old.cardExpires },
+    // The card is the customer's already; the new pass only gets the alias columns.
+    card: { stripePaymentMethodId: customer.stripePaymentMethodId, cardBrand: customer.cardBrand, cardLast4: customer.cardLast4, cardExpires: customer.cardExpires },
     now: ctx.now,
   })
   await holdChosenDays(ctx.db, pass.id, input.days.map(chosenDay), input.property.town, season, day)

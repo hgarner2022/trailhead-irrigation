@@ -35,6 +35,8 @@ const messages = (customerId: string) => db.select().from(s.messageLog).where(eq
 
 describe("passes.sell", () => {
   it("sells an existing customer a pass: active from the start, job source office, consent source admin, the onboarding task and the confirmation", async () => {
+    // The card is the customer's: the fixture's Andrea has one, and this sale is the office taking money at each visit.
+    await db.update(s.customer).set({ stripePaymentMethodId: null, cardBrand: null, cardLast4: null, cardExpires: null }).where(eq(s.customer.id, "c100"))
     const pass = await sell({ customerId: "c100", email: "andrea@example.com", notes: "Took it by phone" })
     expect(pass).toMatchObject({ season: 2028, status: "active", zones: 8, inspection: false, customerId: "c100", cardLast4: null, cardBrand: null, price: 145 + 95 + 20 })
     expect(pass.visits.map((v) => [v.kind, v.amount, v.status, v.scheduledOn])).toEqual([["turn-on", 145, "unscheduled", null], ["blowout", 115, "unscheduled", null]])

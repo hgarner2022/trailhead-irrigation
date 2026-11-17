@@ -23,6 +23,13 @@ describe("customers", () => {
     const got = await callApi(ctxFor(db, writeKey), customersGet, { id })
     expect(got).toMatchObject({ firstName: "Maya", email: "maya@example.com", properties: [{ town: "Erie", address: "12 Elm St" }], consent: null })
   })
+  it("serves the card on file, null when there is none", async () => {
+    expect((await callApi(ctxFor(db, writeKey), customersGet, { id })).card).toBeNull()
+    await db.update(s.customer).set({ stripePaymentMethodId: "pm_1", cardBrand: "visa", cardLast4: "4242", cardExpires: "2028-08", cardFailedAt: new Date("2027-04-19T10:00:00Z") }).where(eq(s.customer.id, id))
+    expect((await callApi(ctxFor(db, readKey), customersGet, { id })).card).toEqual({ brand: "visa", last4: "4242", expires: "2028-08", failedAt: "2027-04-19T10:00:00.000Z" })
+    await db.update(s.customer).set({ stripePaymentMethodId: null, cardBrand: null, cardLast4: null, cardExpires: null, cardFailedAt: null }).where(eq(s.customer.id, id))
+    expect((await callApi(ctxFor(db, writeKey), customersGet, { id })).card).toBeNull()
+  })
   it("gives each job its lines and their total", async () => {
     const [v] = await db.select().from(s.visit).where(eq(s.visit.id, "p1-turn-on"))
     const got = await callApi(ctxFor(db, readKey), customersGet, { id: v!.customerId })

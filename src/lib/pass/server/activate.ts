@@ -14,14 +14,14 @@ import { paymentMethodFromSession, type SavedCard } from "@/lib/stripe/checkout"
  */
 export async function markPassActive(db: Database, pass: typeof s.seasonPass.$inferSelect, card: SavedCard | null, now = new Date()): Promise<void> {
   if (pass.status === "cancelled") throw new Error("This pass was cancelled")
-  await db
-    .update(s.seasonPass)
-    .set({
-      status: "active",
-      ...(card ? { stripePaymentMethodId: card.paymentMethodId, cardBrand: card.brand, cardLast4: card.last4, cardExpires: card.expires, cardFailedAt: null } : {}),
-      updatedAt: now,
-    })
-    .where(eq(s.seasonPass.id, pass.id))
+  // The card lives on the customer; the pass gets the same columns as an alias until step 6.
+  if (card) {
+    const columns = { stripePaymentMethodId: card.paymentMethodId, cardBrand: card.brand, cardLast4: card.last4, cardExpires: card.expires, cardFailedAt: null }
+    await db.update(s.customer).set({ ...columns, updatedAt: now }).where(eq(s.customer.id, pass.customerId))
+    await db.update(s.seasonPass).set({ status: "active", ...columns, updatedAt: now }).where(eq(s.seasonPass.id, pass.id))
+  } else {
+    await db.update(s.seasonPass).set({ status: "active", updatedAt: now }).where(eq(s.seasonPass.id, pass.id))
+  }
   await syncPassJob(db, pass.id)
   await emitEvent(db, pass.organizationId, "pass.bought", { passId: pass.id, number: pass.number })
 }
@@ -35,7 +35,8 @@ export async function activatePass(db: Database, stripe: Stripe, passId: string,
   if (card.passId !== passId) throw new Error("This card step belongs to a different pass")
   const [pass] = await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, passId))
   if (!pass) throw new Error(`Pass ${passId} not found`)
-  if (pass.status === "active" && pass.stripePaymentMethodId === card.paymentMethodId) return "already-active"
+  const [owner] = await db.select({ method: s.customer.stripePaymentMethodId }).from(s.customer).where(eq(s.customer.id, pass.customerId))
+  if (pass.status === "active" && (owner?.method ?? pass.stripePaymentMethodId) === card.paymentMethodId) return "already-active"
   if (pass.status === "cancelled") throw new Error("This pass was cancelled")
   await db.update(s.customer).set({ stripeCustomerId: card.customerId, updatedAt: now }).where(eq(s.customer.id, pass.customerId))
   await stripe.customers.update(card.customerId, { invoice_settings: { default_payment_method: card.paymentMethodId } })

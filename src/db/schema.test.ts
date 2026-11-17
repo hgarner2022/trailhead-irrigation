@@ -269,4 +269,9 @@ describe("schema", () => {
     const cols = await db.execute(sql`select column_name from information_schema.columns where table_name = 'property' order by 1`)
     expect(cols.rows.map((r) => r.column_name)).toEqual(expect.arrayContaining(["zones", "controller", "backflow_location", "gate_code", "must_be_home", "access_note", "contact_name", "contact_phone", "notes"]))
   })
+
+  it("has the card on file on the customer", async () => {
+    const cols = await db.execute(sql`select column_name from information_schema.columns where table_name = 'customer' order by 1`)
+    expect(cols.rows.map((r) => r.column_name)).toEqual(expect.arrayContaining(["stripe_payment_method_id", "card_brand", "card_last4", "card_expires", "card_failed_at"]))
+  })
 })

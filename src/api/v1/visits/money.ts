@@ -5,7 +5,7 @@ import * as s from "@/db/schema"
 import { readAppUrl } from "@/lib/env"
 import { baseData } from "@/lib/messaging/data"
 import { queueMessage } from "@/lib/messaging/queue"
-import { passHasCard } from "@/lib/pass/card"
+import { customerHasCard } from "@/lib/customer/card"
 import { kindName } from "@/lib/pass/server/messages"
 import { setVisitLinePrice } from "@/lib/jobs/write-lines"
 import { enqueue } from "@/lib/queue"
@@ -31,6 +31,13 @@ async function passOf(ctx: Ctx, visit: typeof s.visit.$inferSelect) {
   if (!visit.passId) return null
   const [pass] = await ctx.db.select().from(s.seasonPass).where(eq(s.seasonPass.id, visit.passId))
   return pass ?? null
+}
+
+/** Whether the pass's customer has a card on file: the card lives on the customer. */
+async function passCustomerHasCard(ctx: Ctx, pass: typeof s.seasonPass.$inferSelect | null): Promise<boolean> {
+  if (!pass) return false
+  const [customer] = await ctx.db.select().from(s.customer).where(eq(s.customer.id, pass.customerId))
+  return customer ? customerHasCard(customer) : false
 }
 
 /** A payment the office was handed (check, Venmo or cash), for a one-off visit or a pass visit whose pass has no card: a succeeded charge on the visit, the visit and its job priced if they were not, and the receipt, which says how it was paid. */
@@ -79,7 +86,7 @@ export const visitsMarkClosed = defineHandler({
     if (!(["scheduled", "not-closed"] as string[]).includes(visit.status)) throw new ApiError("unprocessable", `A ${visit.status} visit cannot be closed`)
     const pass = await passOf(ctx, visit)
     // A pass visit is charged to the pass's card; with no card on the pass (an office sale paid at the visit) the money is asked for like a one-off's.
-    const cardOnFile = pass ? passHasCard(pass) : false
+    const cardOnFile = await passCustomerHasCard(ctx, pass)
     if (!cardOnFile && visit.amount > 0 && !input.paidBy) throw new ApiError("invalid", "Say how it was paid: check, Venmo or cash", [{ path: "paidBy", message: "Choose how the money came" }])
     const day = input.completedOn ?? today(ctx)
     await ctx.db.update(s.visit).set({ status: "completed", completedOn: day }).where(eq(s.visit.id, visit.id))
@@ -102,7 +109,7 @@ export const visitsRecordPayment = defineHandler({
   async run(ctx, input) {
     const { visit } = await loadVisit(ctx, input.id)
     const pass = await passOf(ctx, visit)
-    if (pass && passHasCard(pass)) throw new ApiError("unprocessable", "A pass visit is charged to the pass's card")
+    if (pass && (await passCustomerHasCard(ctx, pass))) throw new ApiError("unprocessable", "A pass visit is charged to the pass's card")
     if (visit.status !== "completed") throw new ApiError("unprocessable", "Mark the visit done first")
     if (visit.chargedAt) throw new ApiError("conflict", "This visit is already paid")
     const { id: _id, ...paidBy } = input

@@ -44,6 +44,6 @@ export async function loadRenewal(db: Database, input: { passId: string; token?:
     inspection: pass.inspection,
     needsCustomerHome: pass.needsCustomerHome,
     accessNote: pass.accessNote ?? "",
-    card: pass.stripePaymentMethodId && pass.cardLast4 ? { last4: pass.cardLast4, expires: pass.cardExpires } : null,
+    card: customer.stripePaymentMethodId && customer.cardLast4 ? { last4: customer.cardLast4, expires: customer.cardExpires } : null,
   }
 }

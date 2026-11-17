@@ -1,5 +1,5 @@
 import "server-only"
-import { eq } from "drizzle-orm"
+import { and, desc, eq } from "drizzle-orm"
 import type Stripe from "stripe"
 import { callApi } from "@/api/core/call"
 import { passesActivate } from "@/api/v1/passes/handlers"
@@ -31,6 +31,8 @@ export async function organizationOfEvent(db: Database, event: Stripe.Event): Pr
     return null
   }
   if (event.type === "payment_method.detached" && obj.id) {
+    const [owner] = await db.select({ org: s.customer.organizationId }).from(s.customer).where(eq(s.customer.stripePaymentMethodId, obj.id))
+    if (owner) return owner.org
     const [pass] = await db.select({ org: s.seasonPass.organizationId }).from(s.seasonPass).where(eq(s.seasonPass.stripePaymentMethodId, obj.id))
     return pass?.org ?? null
   }
@@ -82,13 +84,24 @@ export async function handleStripeEvent(db: Database, stripe: Stripe, organizati
     }
     case "payment_method.detached": {
       const method = event.data.object
-      const [row] = await db
-        .select({ pass: s.seasonPass, customer: s.customer })
-        .from(s.seasonPass)
-        .innerJoin(s.customer, eq(s.customer.id, s.seasonPass.customerId))
-        .where(eq(s.seasonPass.stripePaymentMethodId, method.id))
-      if (!row) return
-      await db.update(s.seasonPass).set({ stripePaymentMethodId: null, cardBrand: null, cardLast4: null, cardExpires: null, updatedAt: now }).where(eq(s.seasonPass.id, row.pass.id))
+      // The customer holds the card; a pass still carrying it as the alias (the old column) finds the customer too.
+      const [byCustomer] = await db.select().from(s.customer).where(eq(s.customer.stripePaymentMethodId, method.id))
+      let customer = byCustomer
+      if (!customer) {
+        const [alias] = await db
+          .select({ customer: s.customer })
+          .from(s.seasonPass)
+          .innerJoin(s.customer, eq(s.customer.id, s.seasonPass.customerId))
+          .where(eq(s.seasonPass.stripePaymentMethodId, method.id))
+        customer = alias?.customer
+      }
+      if (!customer) return
+      const gone = { stripePaymentMethodId: null, cardBrand: null, cardLast4: null, cardExpires: null, updatedAt: now }
+      await db.update(s.customer).set(gone).where(eq(s.customer.id, customer.id))
+      await db.update(s.seasonPass).set(gone).where(and(eq(s.seasonPass.customerId, customer.id), eq(s.seasonPass.stripePaymentMethodId, method.id)))
+      const [pass] = await db.select().from(s.seasonPass).where(eq(s.seasonPass.customerId, customer.id)).orderBy(desc(s.seasonPass.createdAt)).limit(1)
+      const row = { pass, customer }
+      if (!pass) return
       if (row.customer.email) {
         const link = row.customer.stripeCustomerId ? (await createCardUpdateSession(stripe, { passId: row.pass.id, customerId: row.customer.stripeCustomerId, origin })).url : null
         const owed = await db.select({ amount: s.visit.amount, status: s.visit.status }).from(s.visit).where(eq(s.visit.passId, row.pass.id))

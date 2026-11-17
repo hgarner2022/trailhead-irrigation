@@ -73,6 +73,31 @@ export const PanelPropertyEmpty: Story = {
   },
 }
 
+const withCard = (card: NonNullable<AdminData["clients"][number]["card"]> | null): AdminData => ({ ...data, clients: data.clients.map((c) => (c.id === "c100" ? { ...c, card: card ?? undefined } : c)) })
+
+/** The customer's Card line with a card on file: brand, last four and expiry, with Send card link beside it. */
+export const PanelCard: Story = {
+  args: { defaultSelectedId: "c100", data: withCard({ brand: "visa", last4: "4242", expires: "2028-08" }) },
+  globals: { viewport: { value: "wide", isRotated: false } },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText("Visa ending 4242, expires 08/28")).toBeInTheDocument()
+    await expect(await canvas.findByRole("button", { name: "Send card link" })).toBeInTheDocument()
+  },
+}
+
+/** A customer with no card on file: "No card on file", and Send card link to ask for one. Andrea's pass has a card in the snapshot, so the story takes it off the pass too. */
+export const PanelNoCard: Story = {
+  args: {
+    defaultSelectedId: "c100",
+    data: { ...withCard(null), passes: data.passes.map((p) => (p.clientId === "c100" ? { ...p, cardLast4: undefined, cardExpires: undefined } : p)) },
+  },
+  globals: { viewport: { value: "wide", isRotated: false } },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText("No card on file")).toBeInTheDocument()
+    await expect(await canvas.findByRole("button", { name: "Send card link" })).toBeInTheDocument()
+  },
+}
+
 /** A tech sees the panel with no New job. */
 export const PanelReadOnly: Story = {
   args: { defaultSelectedId: "c100", readOnly: true },

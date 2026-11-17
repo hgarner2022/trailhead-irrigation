@@ -23,7 +23,7 @@ export async function createCardUpdateSession(stripe: Stripe, input: { passId: s
 }
 
 /**
- * Stores the new card on the pass, makes it the customer's default, removes the old one and queues one retry for each
+ * Stores the new card on the customer (and the pass alias), makes it the customer's default, removes the old one and queues one retry for each
  * visit whose charge failed. Safe to run twice for one session: the second sees the card already stored and does nothing.
  */
 export async function applyCardUpdate(db: Database, stripe: Stripe, sessionId: string, now = new Date()): Promise<"applied" | "already-applied"> {
@@ -31,13 +31,13 @@ export async function applyCardUpdate(db: Database, stripe: Stripe, sessionId: s
   if (card.purpose !== "card-update" || !card.passId) throw new Error("This session is not a card update")
   const [pass] = await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, card.passId))
   if (!pass) throw new Error(`Pass ${card.passId} not found`)
-  if (pass.stripePaymentMethodId === card.paymentMethodId) return "already-applied"
-  const old = pass.stripePaymentMethodId
-  await db
-    .update(s.seasonPass)
-    .set({ stripePaymentMethodId: card.paymentMethodId, cardBrand: card.brand, cardLast4: card.last4, cardExpires: card.expires, cardFailedAt: null, updatedAt: now })
-    .where(eq(s.seasonPass.id, pass.id))
-  await db.update(s.customer).set({ stripeCustomerId: card.customerId, updatedAt: now }).where(eq(s.customer.id, pass.customerId))
+  const [owner] = await db.select({ method: s.customer.stripePaymentMethodId }).from(s.customer).where(eq(s.customer.id, pass.customerId))
+  const current = owner?.method ?? pass.stripePaymentMethodId
+  if (current === card.paymentMethodId) return "already-applied"
+  const old = current
+  const columns = { stripePaymentMethodId: card.paymentMethodId, cardBrand: card.brand, cardLast4: card.last4, cardExpires: card.expires, cardFailedAt: null }
+  await db.update(s.customer).set({ stripeCustomerId: card.customerId, ...columns, updatedAt: now }).where(eq(s.customer.id, pass.customerId))
+  await db.update(s.seasonPass).set({ ...columns, updatedAt: now }).where(eq(s.seasonPass.id, pass.id))
   await stripe.customers.update(card.customerId, { invoice_settings: { default_payment_method: card.paymentMethodId } })
   if (old) await stripe.paymentMethods.detach(old).catch(() => undefined)
   const failed = await db

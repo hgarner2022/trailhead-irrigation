@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest"
 import type { Client, Pass, Visit, Yard } from "@/lib/admin/types"
-import { consentEntries, customerRow, customerRows, customersContext, propertiesOf, propertyLines, yardFromPass } from "./customers-model"
+import { cardOf, cardWords, consentEntries, customerRow, customerRows, customersContext, propertiesOf, propertyLines, yardFromPass } from "./customers-model"
 
 const TODAY = "2026-11-12T19:56:30Z"
 const client: Client = {
@@ -156,5 +156,20 @@ describe("propertiesOf", () => {
   it("uses the customer's own properties when the API sent them", () => {
     const own = [{ id: "pr1", town: "Erie" as const, mustBeHome: false }]
     expect(propertiesOf({ ...client, properties: own }, [pass])).toBe(own)
+  })
+})
+
+describe("the customer's Card line", () => {
+  it("says the brand, the last four and the expiry", () => {
+    expect(cardWords({ brand: "visa", last4: "4242", expires: "2028-08" })).toBe("Visa ending 4242, expires 08/28")
+    expect(cardWords({ last4: "4242", expires: "2028-08" })).toBe("Card ending 4242, expires 08/28")
+    expect(cardWords({ brand: "amex", last4: "0005" })).toBe("Amex ending 0005")
+    expect(cardWords(undefined)).toBe("No card on file")
+  })
+  it("reads the customer's card, else the newest pass's (the fixtures)", () => {
+    const own = { last4: "1111", brand: "visa" }
+    expect(cardOf({ ...client, card: own }, [{ ...pass, cardLast4: "2222" }])).toBe(own)
+    expect(cardOf(client, [{ ...pass, cardLast4: "2222", cardExpires: "2028-08" }])).toEqual({ last4: "2222", expires: "2028-08" })
+    expect(cardOf(client, [pass])).toBeUndefined()
   })
 })

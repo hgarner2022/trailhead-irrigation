@@ -71,22 +71,44 @@ describe("handleStripeEvent", () => {
     await drain(db, { "stripe-webhook": (d, item) => handleStripeEvent(d, st, item.organizationId, (item.payload as { event: Stripe.Event }).event, "https://site.test") })
     const [pass] = await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, p.passId))
     expect(pass).toMatchObject({ status: "active", stripePaymentMethodId: "pm_new" })
+    // The card lands on the customer first, the pass alias second.
+    const [owner] = await db.select().from(s.customer).where(eq(s.customer.id, p.customerId))
+    expect(owner).toMatchObject({ stripePaymentMethodId: "pm_new", stripeCustomerId: "cus_w" })
   })
 
   it("on payment_method.detached clears the card and queues card-expiring; a replaced card is ignored", async () => {
     const p = await pendingPass()
     await db.update(s.seasonPass).set({ status: "active", stripePaymentMethodId: "pm_gone", cardLast4: "4242" }).where(eq(s.seasonPass.id, p.passId))
-    await db.update(s.customer).set({ stripeCustomerId: "cus_gone" }).where(eq(s.customer.id, p.customerId))
+    await db.update(s.customer).set({ stripeCustomerId: "cus_gone", stripePaymentMethodId: "pm_gone", cardLast4: "4242", cardBrand: "visa", cardExpires: "2030-08" }).where(eq(s.customer.id, p.customerId))
     const { stripe } = stubStripe()
     const detached = (id: string, pm: string) => event(id, "payment_method.detached", { id: pm }) as unknown as Stripe.Event
     await handleStripeEvent(db, stripe, (await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, p.passId)))[0]!.organizationId, detached("evt_d1", "pm_gone"), "https://site.test")
     const [pass] = await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, p.passId))
     expect(pass).toMatchObject({ stripePaymentMethodId: null, cardLast4: null })
+    const [owner] = await db.select().from(s.customer).where(eq(s.customer.id, p.customerId))
+    expect(owner).toMatchObject({ stripePaymentMethodId: null, cardLast4: null, cardBrand: null, cardExpires: null })
     const rows = await db.select().from(s.messageLog).where(eq(s.messageLog.customerId, p.customerId))
     expect(rows).toHaveLength(1)
     expect(rows[0]).toMatchObject({ kind: "card-expiring", channel: "email", status: "queued" })
     await handleStripeEvent(db, stripe, pass!.organizationId, detached("evt_d2", "pm_gone"), "https://site.test")
     expect(await db.select().from(s.messageLog).where(eq(s.messageLog.customerId, p.customerId))).toHaveLength(1)
+  })
+
+  it("finds the customer by their payment method when only the customer holds it, and by the pass alias when only the pass does", async () => {
+    const p = await pendingPass()
+    await db.update(s.seasonPass).set({ status: "active" }).where(eq(s.seasonPass.id, p.passId))
+    await db.update(s.customer).set({ stripePaymentMethodId: "pm_only_customer", cardLast4: "1111" }).where(eq(s.customer.id, p.customerId))
+    const { stripe } = stubStripe()
+    const org = (await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, p.passId)))[0]!.organizationId
+    const detached = (id: string, pm: string) => event(id, "payment_method.detached", { id: pm }) as unknown as Stripe.Event
+    expect(await send(stripe, detached("evt_c1", "pm_only_customer"))).toEqual({ status: 200, queued: true })
+    await handleStripeEvent(db, stripe, org, detached("evt_c1", "pm_only_customer"), "https://site.test")
+    expect((await db.select().from(s.customer).where(eq(s.customer.id, p.customerId)))[0]).toMatchObject({ stripePaymentMethodId: null, cardLast4: null })
+    // A legacy row: the pass carries the method and the customer has none.
+    await db.update(s.seasonPass).set({ stripePaymentMethodId: "pm_only_pass", cardLast4: "2222" }).where(eq(s.seasonPass.id, p.passId))
+    expect(await send(stripe, detached("evt_c2", "pm_only_pass"))).toEqual({ status: 200, queued: true })
+    await handleStripeEvent(db, stripe, org, detached("evt_c2", "pm_only_pass"), "https://site.test")
+    expect((await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, p.passId)))[0]).toMatchObject({ stripePaymentMethodId: null, cardLast4: null })
   })
 
   it("reconciles a payment_intent.succeeded for a charge that was left pending", async () => {

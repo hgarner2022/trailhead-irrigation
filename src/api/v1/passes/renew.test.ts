@@ -14,8 +14,9 @@ const NOW = "2027-11-02T17:00:00Z"
 beforeAll(async () => {
   vi.stubEnv("APP_URL", "https://site.test")
   db = await apiDb()
-  await db.update(s.seasonPass).set({ stripePaymentMethodId: "pm_old" }).where(eq(s.seasonPass.id, "p1"))
-  await db.update(s.customer).set({ email: "p1@example.com" }).where(eq(s.customer.id, (await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, "p1")))[0]!.customerId))
+  // The card on file is the customer's.
+  const owner = (await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, "p1")))[0]!.customerId
+  await db.update(s.customer).set({ email: "p1@example.com", stripePaymentMethodId: "pm_old" }).where(eq(s.customer.id, owner))
 })
 afterAll(() => db.close())
 
@@ -52,10 +53,18 @@ describe("passes.create with renewOf", () => {
     expect(lines[0]!.visitId).toBe(pass.visits.find((v) => v.kind === "turn-on")!.id)
   })
 
+  it("refuses a customer whose card was detached, with the same words, and renews again once a card is back", async () => {
+    const owner = (await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, "p1")))[0]!.customerId
+    await db.update(s.customer).set({ stripePaymentMethodId: null, cardBrand: null, cardLast4: null, cardExpires: null }).where(eq(s.customer.id, owner))
+    await expect(renew(visitor("p1"), "p1")).rejects.toMatchObject({ code: "unprocessable", message: expect.stringContaining("no card on file") })
+    await db.update(s.customer).set({ stripePaymentMethodId: "pm_old", cardLast4: "4242" }).where(eq(s.customer.id, owner))
+  })
+
   it("refuses a second reservation of the same season, a pass with no card on file, and a visitor who has not accepted the terms", async () => {
     await expect(renew(visitor("p1"), "p1")).rejects.toMatchObject({ code: "unprocessable", message: expect.stringContaining("already reserved") })
     await expect(renew(visitor("p2"), "p2")).rejects.toMatchObject({ code: "unprocessable", message: expect.stringContaining("no card on file") })
-    await db.update(s.seasonPass).set({ stripePaymentMethodId: "pm_two" }).where(eq(s.seasonPass.id, "p2"))
+    const two = (await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, "p2")))[0]!.customerId
+    await db.update(s.customer).set({ stripePaymentMethodId: "pm_two" }).where(eq(s.customer.id, two))
     await expect(callApi(ctxFor(db, visitor("p2"), NOW), passesCreate, answers({ renewOf: "p2", consent: undefined }))).rejects.toMatchObject({ code: "invalid" })
   })
 })

@@ -8,7 +8,7 @@
  * data". The next job is read off the visit rows, never off a preference.
  * Timestamps are read in Mountain time (`TIME_ZONE`).
  */
-import type { AdminData, Client, Pass, PassStatus, Property, Visit, Yard } from "@/lib/admin/types"
+import type { AdminData, Client, ClientCard, Pass, PassStatus, Property, Visit, Yard } from "@/lib/admin/types"
 import { TIME_ZONE, fullName, shortDate } from "@/lib/admin/format"
 import { dayOf } from "@/lib/admin/calendar"
 import { passVisitJob } from "@/lib/admin/jobs"
@@ -126,6 +126,22 @@ export const MARKETING_WORDS: Record<MarketingState, string> = { yes: "Yes", no:
 export function yardFromPass(pass: Pick<Pass, "zones" | "needsCustomerHome" | "accessNote"> | undefined): Yard | undefined {
   if (!pass) return undefined
   return { zones: pass.zones, mustBeHome: Boolean(pass.needsCustomerHome), ...(pass.accessNote ? { accessNote: pass.accessNote } : {}) }
+}
+
+/** "Visa ending 4242, expires 08/28"; "Card ending 4242" with no brand; "No card on file" with none. */
+export function cardWords(card: ClientCard | undefined): string {
+  if (!card) return "No card on file"
+  const brand = card.brand ? card.brand.charAt(0).toUpperCase() + card.brand.slice(1) : "Card"
+  const ending = `${brand} ending ${card.last4}`
+  return card.expires ? `${ending}, expires ${card.expires.slice(5, 7)}/${card.expires.slice(2, 4)}` : ending
+}
+
+/** The customer's card: the one the API sent, else (fixtures) the card on their newest pass. */
+export function cardOf(client: Client, passes: Pass[]): ClientCard | undefined {
+  if (client.card) return client.card
+  const mine = passes.filter((p) => p.clientId === client.id && p.cardLast4)
+  const pass = mine.find((p) => p.status === "active") ?? mine[0]
+  return pass?.cardLast4 ? { last4: pass.cardLast4, ...(pass.cardExpires ? { expires: pass.cardExpires } : {}), ...(pass.cardFailedAt ? { failedAt: pass.cardFailedAt } : {}) } : undefined
 }
 
 /** The customer's properties: the rows the API sent, else (fixtures) one built from their newest pass. */

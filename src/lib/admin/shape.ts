@@ -35,7 +35,7 @@ export interface ApiPass {
   turnOnPreference: Pass["turnOnPreference"]; blowoutPreference: Pass["blowoutPreference"]; needsCustomerHome: boolean
   accessNote?: string | null; cardLast4: string | null; cardExpires: string | null; cardFailedAt: string | null; cancelledAt: string | null; createdAt?: string
 }
-export interface ApiCustomer { id: string; firstName: string; lastName?: string | null; email?: string | null; phone?: string | null; address?: string | null; town: Town | null; hasPass: boolean }
+export interface ApiCustomer { id: string; firstName: string; lastName?: string | null; email?: string | null; phone?: string | null; address?: string | null; town: Town | null; hasPass: boolean; card?: { brand: string | null; last4: string | null; expires: string | null; failedAt: string | null } | null }
 export interface ApiMessage { id: string; customerId: string; visitId: string | null; channel: "email" | "sms"; kind: string; subject: string | null; body: string; status: Message["status"]; sentAt: string | null; createdAt: string }
 /** A `property` row as live.ts reads it; the street line, gate code, access note and phone are already null for a caller without the write scope. */
 export interface PropertyRow extends ApiYard { id: string; customerId: string; address: string | null; town: Town }
@@ -207,6 +207,7 @@ export function shapeAdminData(i: ShapeInput): AdminData {
       return {
         id: c.id, firstName: c.firstName, town: (c.town ?? "Erie") as Town, jobberUrl: (jobberId && mirrorClient.get(jobberId)?.jobberUrl) || "", hasPass: c.hasPass, app: true,
         ...present("lastName", c.lastName), ...present("email", c.email), ...present("phone", c.phone), ...present("address", c.address),
+        ...(c.card?.last4 ? { card: { last4: c.card.last4, ...present("brand", c.card.brand), ...present("expires", c.card.expires), ...present("failedAt", c.card.failedAt) } } : {}),
         ...(i.propertyRows ? { properties: propertiesOf.get(c.id) ?? [] } : {}),
         ...(lastVisit.has(c.id) ? { lastVisitAt: lastVisit.get(c.id) } : {}), ...(consent ? { consent: consentOf(consent), consentHistory: records.map(consentOf) } : {}),
       }

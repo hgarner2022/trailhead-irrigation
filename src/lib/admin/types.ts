@@ -95,6 +95,18 @@ export interface Client {
   consent?: Consent
   /** every consent record, newest first; it is append-only, so this is the audit trail */
   consentHistory?: Consent[]
+  /** the card on file, one per customer; absent when there is none. Fixtures leave it off and the screens read it from the newest pass. */
+  card?: ClientCard
+}
+
+/** The card on file as the Customers panel shows it. */
+export interface ClientCard {
+  brand?: string
+  last4: string
+  /** "2028-08" */
+  expires?: string
+  /** the last charge to it failed and has not been retried since */
+  failedAt?: string
 }
 
 /**

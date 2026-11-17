@@ -48,6 +48,7 @@ export const CustomerOut = z.object({
   email: z.string().nullable().optional().describe("Only for callers with the write scope."),
   phone: z.string().nullable().optional().describe("Only for callers with the write scope."),
   leadSource: z.string().nullable(),
+  card: z.object({ brand: z.string().nullable(), last4: z.string().nullable(), expires: z.string().nullable().describe("YYYY-MM"), failedAt: Iso.nullable().describe("When the last charge to this card failed; cleared by the next success or a new card.") }).nullable().describe("The card on file, one per customer, charged after each visit; null when there is none."),
   createdAt: Iso,
 })
 

@@ -1,6 +1,6 @@
 import "server-only"
 import type { VisitActions } from "@/app/(admin)/admin/_screens/visit-actions-types"
-import { resendConfirmation, updateProperty } from "./actions"
+import { resendConfirmation, sendCardUpdateLink, updateProperty } from "./actions"
 import { cancelVisit, createVisit, editVisit, markDone, markNotDone, moveVisitTo, putBack, recordPayment, sellPass, sendText, undoDone } from "./visit-actions"
 
 /** The visit panel's and New visit's actions, as one object the pages hand their screens. */
@@ -16,6 +16,7 @@ export const visitActions: VisitActions = {
   updateProperty,
   sendText,
   resendConfirmation,
+  sendCardUpdateLink,
   createVisit,
   sellPass,
 }

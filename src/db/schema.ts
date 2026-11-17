@@ -228,6 +228,10 @@ export const service = pgTable(
   (t) => [unique("service_org_key_unique").on(t.organizationId, t.key)],
 )
 
+/**
+ * One person. Holds the card on file, one per customer, charged after each visit;
+ * moved from season_pass in step 3 (season_pass keeps the same columns as an alias until step 6).
+ */
 export const customer = pgTable(
   "customer",
   {
@@ -240,6 +244,11 @@ export const customer = pgTable(
     leadSource: text("lead_source"),
     jobberClientId: text("jobber_client_id"),
     stripeCustomerId: text("stripe_customer_id"),
+    stripePaymentMethodId: text("stripe_payment_method_id"),
+    cardBrand: text("card_brand"),
+    cardLast4: text("card_last4"),
+    cardExpires: text("card_expires"),
+    cardFailedAt: ts("card_failed_at"),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },

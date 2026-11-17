@@ -23,8 +23,9 @@ async function activePass() {
   const pass = await callApi(ctxFor(db, writeKey, "2026-12-01T17:00:00Z"), passesCreate, {
     customer: { firstName: "Maya", lastName: "Tester", email: `maya${n}@example.com` }, property: { address: `${n} Elm St`, town: "Erie" }, zones: 8, consent: { termsAccepted: true },
   })
-  await db.update(s.seasonPass).set({ status: "active", stripePaymentMethodId: "pm_old", cardBrand: "visa", cardLast4: "4242", cardExpires: "2030-08" }).where(eq(s.seasonPass.id, pass.id))
-  await db.update(s.customer).set({ stripeCustomerId: "cus_1" }).where(eq(s.customer.id, pass.customer!.id))
+  const card = { stripePaymentMethodId: "pm_old", cardBrand: "visa", cardLast4: "4242", cardExpires: "2030-08" }
+  await db.update(s.seasonPass).set({ status: "active", ...card }).where(eq(s.seasonPass.id, pass.id))
+  await db.update(s.customer).set({ stripeCustomerId: "cus_1", ...card }).where(eq(s.customer.id, pass.customer!.id))
   const visit = (kind: string) => pass.visits.find((v) => v.kind === kind)!.id
   return { passId: pass.id, customerId: pass.customer!.id, turnOn: visit("turn-on"), blowout: visit("blowout") }
 }
@@ -33,6 +34,7 @@ const messages = (customerId: string) => db.select().from(s.messageLog).where(eq
 describe("chargeVisit", () => {
   it("charges the card, marks the visit, and queues a receipt naming the next visit and its preference words", async () => {
     const p = await activePass()
+    await db.update(s.customer).set({ cardFailedAt: new Date("2027-05-01T00:00:00Z") }).where(eq(s.customer.id, p.customerId))
     const { stripe, calls } = stubStripe()
     expect(await chargeVisit(db, stripe, p.turnOn, opts)).toBe("charged")
     expect(calls.paymentIntentsCreate.mock.calls[0]![0]).toMatchObject({ amount: 14500, customer: "cus_1", payment_method: "pm_old" })
@@ -46,6 +48,9 @@ describe("chargeVisit", () => {
     expect(mail!.to).toMatch(/^maya\d+@example.com$/)
     expect(mail!.body).toContain("$145")
     expect(mail!.body).toContain("visa card ending 4242")
+    // A success clears the customer's failure mark.
+    const [owner] = await db.select().from(s.customer).where(eq(s.customer.id, p.customerId))
+    expect(owner!.cardFailedAt).toBeNull()
     expect(mail!.body).toContain("Your fall blowout is planned for mid October")
   })
 
@@ -66,12 +71,24 @@ describe("chargeVisit", () => {
     expect(charge).toMatchObject({ attempt: 1, status: "failed", failureMessage: "Your card was declined.", stripePaymentIntentId: "pi_bad" })
     const [pass] = await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, p.passId))
     expect(pass!.cardFailedAt).toEqual(NOW)
+    const [owner] = await db.select().from(s.customer).where(eq(s.customer.id, p.customerId))
+    expect(owner!.cardFailedAt).toEqual(NOW)
     const [mail] = await messages(p.customerId)
     expect(mail).toMatchObject({ kind: "card-failed", status: "queued" })
     expect(mail!.body).toContain("https://checkout.stripe.test/c/pay")
     expect(calls.sessionCreate.mock.calls[0]![0]).toMatchObject({ mode: "setup", customer: "cus_1", success_url: "https://site.test/account/pass/card-updated", metadata: { purpose: "card-update", passId: p.passId } })
     expect(await chargeVisit(db, stripe, p.turnOn, opts)).toBe("waiting-for-card")
     expect(calls.paymentIntentsCreate).toHaveBeenCalledTimes(1)
+  })
+
+  it("charges the customer's payment method, not the pass alias, and a customer with no card is not charged", async () => {
+    const p = await activePass()
+    await db.update(s.customer).set({ stripePaymentMethodId: "pm_customer" }).where(eq(s.customer.id, p.customerId))
+    const { stripe, calls } = stubStripe()
+    expect(await chargeVisit(db, stripe, p.turnOn, opts)).toBe("charged")
+    expect(calls.paymentIntentsCreate.mock.calls[0]![0]).toMatchObject({ payment_method: "pm_customer" })
+    await db.update(s.customer).set({ stripePaymentMethodId: null, cardLast4: null }).where(eq(s.customer.id, p.customerId))
+    expect(await chargeVisit(db, stripe, p.blowout, opts)).toBe("no-card")
   })
 
   it("charges nothing on a cancelled pass and nothing for a booking visit", async () => {
@@ -105,6 +122,8 @@ describe("applyCardUpdate", () => {
     expect(calls.customersUpdate).toHaveBeenCalledTimes(1)
     const [pass] = await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, p.passId))
     expect(pass).toMatchObject({ stripePaymentMethodId: "pm_new", cardLast4: "1111", cardExpires: "2031-01", cardFailedAt: null })
+    const [owner] = await db.select().from(s.customer).where(eq(s.customer.id, p.customerId))
+    expect(owner).toMatchObject({ stripePaymentMethodId: "pm_new", cardLast4: "1111", cardExpires: "2031-01", cardFailedAt: null })
     const queued = await db.select().from(s.queueItem).where(and(eq(s.queueItem.kind, "pass-charge"), eq(s.queueItem.key, `${p.turnOn}:card-cs_up`)))
     expect(queued).toHaveLength(1)
     const retry = stubStripe()

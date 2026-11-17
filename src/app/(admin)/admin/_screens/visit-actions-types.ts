@@ -82,6 +82,8 @@ export interface VisitActions {
   updateProperty: (propertyId: string, changes: YardChanges) => Promise<Outcome>
   sendText: (customerId: string, visitId: string | undefined, text: string) => Promise<Outcome>
   resendConfirmation: (passId: string) => Promise<Outcome>
+  /** `passes.sendCardUpdateLink`: the card link by email, from the customer panel's Card line */
+  sendCardUpdateLink: (passId: string) => Promise<Outcome>
   createVisit: (input: NewVisitInput) => Promise<Outcome<{ id: string }>>
   /** New pass: `passes.sell`, the pass active from the start with no card step */
   sellPass: (input: NewPassInput) => Promise<Outcome<SoldPass>>

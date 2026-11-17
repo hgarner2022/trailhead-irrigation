@@ -165,7 +165,12 @@ async function seedPasses(db: Database, snapshot: AdminData, org: string) {
     const propertyId = `property-${pass.clientId}`
     await db
       .insert(s.customer)
-      .values({ id: pass.clientId, organizationId: org, firstName: client?.firstName ?? pass.firstName, lastName: client?.lastName ?? pass.lastName })
+      .values({ id: pass.clientId, organizationId: org, firstName: client?.firstName ?? pass.firstName, lastName: client?.lastName ?? pass.lastName,
+        // The card on file is the customer's: the snapshot pass's, on insert only (an edited customer keeps theirs).
+        cardLast4: pass.cardLast4,
+        cardExpires: pass.cardExpires,
+        cardFailedAt: pass.cardFailedAt ? new Date(pass.cardFailedAt) : undefined,
+      })
       .onConflictDoNothing()
     await db
       .insert(s.property)

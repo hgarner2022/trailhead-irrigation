@@ -9,6 +9,7 @@ import { ApiError, notFound } from "../../core/errors"
 import type { Ctx } from "../../core/context"
 import { afterTimeCursor, cursorPage, page, pageInput, timeCursor } from "../../core/pagination"
 import { canSeeContact, idInput, iso, today } from "../shared"
+import { customerHasCard } from "@/lib/customer/card"
 import { ConsentOut, consentInput, CustomerDetail, CustomerListItem, CustomerOut, customerFields, propertyInput } from "./schemas"
 import { jobTotal } from "@/lib/jobs/lines"
 import { cleanEmail, cleanName, normalizePhone } from "@/lib/format/contact"
@@ -33,6 +34,7 @@ export const customerOut = (ctx: Ctx, row: CustomerRow) => ({
   lastName: row.lastName,
   ...(canSeeContact(ctx) ? { email: row.email, phone: row.phone } : {}),
   leadSource: row.leadSource,
+  card: customerHasCard(row) ? { brand: row.cardBrand, last4: row.cardLast4, expires: row.cardExpires, failedAt: row.cardFailedAt?.toISOString() ?? null } : null,
   createdAt: row.createdAt.toISOString(),
 })
 
