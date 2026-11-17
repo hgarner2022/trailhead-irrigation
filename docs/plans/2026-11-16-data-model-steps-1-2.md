@@ -292,4 +292,4 @@ The sheet: Customer (the picker) → "What are we doing?" (a select over `servic
 
 ## After step 2
 
-Steps 3 to 6 get their own plan files when step 2 is merged, in the design's order: property takes zones, access and the on-site contact and the card moves to the customer (3); payment gains `visit_id` and refund rows, the invoice with its pay page and reminder (4); event replaces `pass_change` (5); the legacy columns and tables go (6). Ryan's answer on sales tax is needed before step 4 is planned.
+Steps 3 to 6 get their own plan files when step 2 is merged, in the design's order: property takes zones, access and the on-site contact and the card moves to the customer (3); payment gains `visit_id` and refund rows, the invoice with its pay page and reminder (4); event replaces `pass_change` (5); the legacy columns and tables go (6). Ryan's answer on sales tax is needed before step 4 is planned. Step 3's plan is `docs/plans/2026-11-17-data-model-step-3.md`.
