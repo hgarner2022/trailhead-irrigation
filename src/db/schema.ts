@@ -411,6 +411,28 @@ export const visit = pgTable(
   ],
 )
 
+/** What a job is made of: one row per sold line, copied from the service at sale so a later catalogue edit never rewrites an old job. A pass line names the visit it is billed after. */
+export const lineItem = pgTable(
+  "line_item",
+  {
+    id: id(),
+    organizationId: orgId(),
+    jobId: text("job_id").notNull().references(() => job.id),
+    serviceId: text("service_id").references(() => service.id),
+    visitId: text("visit_id").references(() => visit.id),
+    name: text("name").notNull(),
+    description: text("description"),
+    quantity: integer("quantity").notNull().default(1),
+    /** whole dollars */
+    unitPrice: integer("unit_price").notNull(),
+    taxable: boolean("taxable").notNull().default(false),
+    cancelledAt: ts("cancelled_at"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [index("line_item_job_idx").on(t.jobId), index("line_item_visit_idx").on(t.visitId)],
+)
+
 export const quoteRequest = pgTable(
   "quote_request",
   {
