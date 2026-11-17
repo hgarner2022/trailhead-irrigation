@@ -235,4 +235,33 @@ describe("schema", () => {
       },
     )
   })
+
+  // The deploy seed of Nov 16 2026 put the snapshot's person_truck-1 back after 0011 had merged him away, so Truck 1 was held twice.
+  it("migration 0012 folds a second person on the same truck into the one with the sign-in", async () => {
+    const client = new PGlite()
+    const database = drizzle(client)
+    try {
+      const journal = JSON.parse(readFileSync(join(migrationsFolder, "meta/_journal.json"), "utf8")) as { entries: Entry[] }
+      const at = journal.entries.findIndex((e) => e.tag === "0012_person_duplicate")
+      expect(at).toBeGreaterThan(0)
+      await applyEntries(database, journal, journal.entries.slice(0, at))
+      const run: Run = (q) => database.execute(q)
+      await run(sql`insert into "organization" ("id", "name", "settings", "terms_version") values ('o', 'Trailhead', '{}', '1')`)
+      await run(sql`insert into "person" ("id", "organization_id", "name", "initials", "email", "role", "truck", "legacy_truck_id") values ('person_a2', 'o', 'Ryan Garner', 'RG', 'ryan@example.com', 'owner', 'Truck 1', 't1'), ('person_t1', 'o', 'Ryan Garner', 'RG', null, 'owner', 'Truck 1', 't1'), ('person_t2', 'o', 'Tech Two', 'TT', null, 'tech', 'Truck 2', 't2')`)
+      await run(sql`insert into "customer" ("id", "organization_id", "first_name") values ('c', 'o', 'Andrea')`)
+      await run(sql`insert into "property" ("id", "organization_id", "customer_id", "address", "town") values ('pr', 'o', 'c', '1 Main St', 'Erie')`)
+      await run(sql`insert into "job" ("id", "organization_id", "customer_id", "property_id", "kind", "source") values ('j', 'o', 'c', 'pr', 'repair', 'office')`)
+      await run(sql`insert into "visit" ("id", "organization_id", "job_id", "customer_id", "property_id", "kind", "person_id") values ('v1', 'o', 'j', 'c', 'pr', 'repair', 'person_t1'), ('v2', 'o', 'j', 'c', 'pr', 'repair', 'person_a2'), ('v3', 'o', 'j', 'c', 'pr', 'repair', 'person_t2')`)
+
+      await migrate(database, { migrationsFolder })
+      expect((await run(sql`select "id" from "person" order by "id"`)).rows).toEqual([{ id: "person_a2" }, { id: "person_t2" }])
+      expect((await run(visitsSql)).rows).toEqual([
+        { id: "v1", person_id: "person_a2" },
+        { id: "v2", person_id: "person_a2" },
+        { id: "v3", person_id: "person_t2" },
+      ])
+    } finally {
+      await client.close()
+    }
+  })
 })

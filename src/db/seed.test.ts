@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
-import { count, eq } from "drizzle-orm"
+import { count, eq, sql } from "drizzle-orm"
 import type { PgTable } from "drizzle-orm/pg-core"
 import { testDb, type TestDb } from "./test-db"
 import * as s from "./schema"
@@ -61,6 +61,22 @@ describe("seed", () => {
     const ryan = rows.find((p) => p.name === "Ryan Garner")!
     expect(ryan.workingDays).toEqual(data.settings.people[0]!.workingDays)
     expect(ryan.capacityByKind).toEqual(data.settings.people[0]!.capacityByKind)
+  })
+
+  it("adds no second Ryan to a migrated database, where he is person_<admin id> holding truck-1", async () => {
+    const migrated = await testDb()
+    try {
+      await migrated.execute(sql`insert into "organization" ("id", "name", "settings", "terms_version") values (${org}, 'Trailhead', '{}', '1')`)
+      await migrated.insert(s.adminUser).values({ id: "a2", organizationId: org, email: "ryan@example.com", name: "Ryan", initials: "R", role: "admin" })
+      await migrated.insert(s.person).values({ id: "person_a2", organizationId: org, name: "Ryan Garner", initials: "RG", email: "ryan@example.com", role: "owner", truck: "Truck 1", legacyTruckId: "truck-1" })
+      await seed(migrated, data, { organizationId: org, admins: ["ryan@example.com", "hannah@example.com"] })
+      const rows = await migrated.select({ id: s.person.id, name: s.person.name, email: s.person.email, legacyTruckId: s.person.legacyTruckId }).from(s.person).orderBy(s.person.id)
+      expect(rows.filter((p) => p.name === "Ryan Garner")).toEqual([{ id: "person_a2", name: "Ryan Garner", email: "ryan@example.com", legacyTruckId: "truck-1" }])
+      expect(rows.map((p) => p.legacyTruckId).filter(Boolean)).toEqual(["truck-1", "truck-2"])
+      expect(rows.some((p) => p.email === "hannah@example.com")).toBe(true)
+    } finally {
+      await migrated.close()
+    }
   })
 
   it("seeds the fixture passes with visits, consents and the mirror when asked", async () => {

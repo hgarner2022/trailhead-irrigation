@@ -85,6 +85,13 @@
       "when": 1794879138468,
       "tag": "0011_person_merge",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1794879591273,
+      "tag": "0012_person_duplicate",
+      "breakpoints": true
     }
   ]
 }

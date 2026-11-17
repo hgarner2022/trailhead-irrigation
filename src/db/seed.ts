@@ -120,15 +120,22 @@ export async function seed(db: Database, snapshot: AdminData, options: SeedOptio
  * Garner, as the people migration (drizzle/0011_person_merge.sql) merges them: he
  * gets that admin's email instead of a second row. Inserts ignore a row that
  * is already there, so a re-seed changes nothing. A migrated database holds
- * Ryan under `person_<admin id>`, so nothing outside the fixtures may assume
+ * Ryan under `person_<admin id>` with `legacyTruckId` truck-1, so a snapshot
+ * person whose truck id someone already holds is not inserted (the deploy of
+ * Nov 16 2026 did, and made a second Ryan), and an admin whose email a person
+ * already carries is left alone; nothing outside the fixtures may assume
  * `person_truck-1`.
  */
 async function seedPeople(db: Database, org: string, people: Person[]) {
-  if (people.length) {
+  const existing = await db.select({ email: s.person.email, legacyTruckId: s.person.legacyTruckId }).from(s.person).where(eq(s.person.organizationId, org))
+  const heldTrucks = new Set(existing.map((p) => p.legacyTruckId).filter(Boolean))
+  const heldEmails = new Set(existing.map((p) => p.email?.toLowerCase()).filter(Boolean))
+  const fresh = people.filter((p) => !(p.truck && heldTrucks.has(legacyTruckIdOf(p))))
+  if (fresh.length) {
     await db
       .insert(s.person)
       .values(
-        people.map((p) => ({
+        fresh.map((p) => ({
           id: p.id, organizationId: org, name: p.name, initials: p.initials, email: p.email, phone: p.phone, role: p.role, truck: p.truck, jobberUserId: p.jobberUserId,
           workingDays: p.workingDays, capacityByKind: p.capacityByKind, seasonStart: p.seasonStart, seasonEnd: p.seasonEnd, legacyTruckId: p.truck ? legacyTruckIdOf(p) : undefined,
         })),
@@ -139,6 +146,7 @@ async function seedPeople(db: Database, org: string, people: Person[]) {
   const ryan = people.find((p) => p.name === "Ryan Garner" && !p.email)
   const rows: (typeof s.person.$inferInsert)[] = []
   for (const a of admins) {
+    if (heldEmails.has(a.email.toLowerCase())) continue
     if (ryan && (/^ryan/i.test(a.name) || /^ryan/i.test(a.email))) {
       await db.update(s.person).set({ email: a.email }).where(and(eq(s.person.id, ryan.id), isNull(s.person.email)))
     } else rows.push({ id: `person_${a.id}`, organizationId: org, name: a.name, initials: a.initials, email: a.email, role: a.role })
