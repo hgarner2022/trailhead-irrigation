@@ -98,6 +98,7 @@ export const quoteRequestsCreate = defineHandler({
     if (input.serviceKey) {
       const [svc] = await ctx.db.select().from(s.service).where(and(eq(s.service.organizationId, ctx.organizationId), eq(s.service.key, input.serviceKey)))
       if (!svc) throw notFound("Service")
+      if (!svc.active) throw new ApiError("unprocessable", "This service is not offered")
       serviceId = svc.id
     }
     const [row] = await ctx.db.insert(s.quoteRequest).values({ organizationId: ctx.organizationId, customerId: input.customerId, propertyId: input.propertyId, serviceId, notes: input.notes }).returning()

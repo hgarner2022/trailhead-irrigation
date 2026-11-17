@@ -85,11 +85,11 @@ describe("wording per kind", () => {
     const { html, text } = renderEmail("purchase-confirmation", { ...TWO_DAYS, lines })!
     expect(text).toContain("Spring turn-on, 8 zones · $145")
     expect(text).toContain("Fall blowout, 8 zones · $95")
-    expect(text).toContain("Total · $240")
+    expect(text).toContain("Season total · $240")
     expect(html).toContain("Spring turn-on, 8 zones · $145")
-    expect(html).toContain("Total · $240")
+    expect(html).toContain("Season total · $240")
     expect(html.indexOf("Spring turn-on, 8 zones · $145")).toBeLessThan(html.indexOf("Open your pass page"))
-    expect(renderEmail("purchase-confirmation", TWO_DAYS)!.text).not.toContain("Total ·")
+    expect(renderEmail("purchase-confirmation", TWO_DAYS)!.text).not.toContain("Season total ·")
   })
   it.each(["date-set", "date-moved", "day-before", "booking-confirmation"] as const)("%s has the day, the two-hour window, who is coming and both calendar links", (kind) => {
     const { html, text } = get(kind)

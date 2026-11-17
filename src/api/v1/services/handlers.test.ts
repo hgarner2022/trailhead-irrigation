@@ -47,6 +47,12 @@ describe("services", () => {
     expect(await callApi(ctxFor(db, adminKey), servicesUpdate, { id: made.id })).toMatchObject({ taxable: true, active: false })
     expect(await row()).toEqual(before)
   })
+  it("setting active false also closes online booking; reactivating leaves bookable as it is", async () => {
+    const made = await callApi(ctxFor(db, adminKey), servicesCreate, { ...input, key: "went-off" })
+    expect(made.bookable).toBe(true)
+    expect(await callApi(ctxFor(db, adminKey), servicesUpdate, { id: made.id, active: false })).toMatchObject({ active: false, bookable: false })
+    expect(await callApi(ctxFor(db, adminKey), servicesUpdate, { id: made.id, active: true })).toMatchObject({ active: true, bookable: false })
+  })
   it("updates one field without resetting bookable and quoteOnly to their defaults", async () => {
     const made = await callApi(ctxFor(db, adminKey), servicesCreate, { ...input, key: "quoted-only", bookable: false, quoteOnly: true })
     expect(made).toMatchObject({ bookable: false, quoteOnly: true })

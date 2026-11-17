@@ -7,7 +7,7 @@ import { callApi } from "../../core/call"
 import { alertsDismiss } from "../alerts/handlers"
 import { customersGet } from "../customers/handlers"
 import { messagesSend } from "../messages/handlers"
-import { apiDb, ctxFor, linesOfJob, ORG, readKey, writeKey } from "../../test-helpers"
+import { adminKey, apiDb, ctxFor, linesOfJob, ORG, readKey, writeKey } from "../../test-helpers"
 import { SERVICES } from "@/lib/services"
 import { visitsCancel, visitsCreate, visitsMarkNotDone, visitsUpdate } from "./office"
 import { visitsMove } from "./handlers"
@@ -61,13 +61,31 @@ describe("visits.create", () => {
   it("with a serviceKey, takes the service's kind, minutes, price rule and description; kind is not needed", async () => {
     const out = await create({ customerId: "c100", serviceKey: "blowout" })
     expect(out).toMatchObject({ kind: "blowout", amount: SERVICES.blowout!.price, durationMinutes: SERVICES.blowout!.slotMinutes })
-    expect(await linesOfJob(db, out.jobId)).toMatchObject([{ visitId: out.id, name: SERVICES.blowout!.name, unitPrice: SERVICES.blowout!.price, serviceKey: "blowout", description: SERVICES.blowout!.description }])
+    expect(await linesOfJob(db, out.jobId)).toMatchObject([{ visitId: out.id, name: "Fall blowout", unitPrice: SERVICES.blowout!.price, serviceKey: "blowout", description: SERVICES.blowout!.description }])
     const own = await create({ customerId: "c100", serviceKey: "blowout", price: 120 })
     expect(own.amount).toBe(120)
   })
   it("refuses an unknown service and a call with neither a service nor a kind", async () => {
     await expect(create({ customerId: "c100", serviceKey: "nope-nope" })).rejects.toThrow(/not offered/)
     await expect(create({ customerId: "c100" })).rejects.toThrow(/what the job is for/)
+  })
+  it("takes a one-off repair line's name from the one convention, Repair, and a one-off turn-on's as Spring turn-on", async () => {
+    const repair = await create({ customerId: "c100", serviceKey: "repair" })
+    expect(await linesOfJob(db, repair.jobId)).toMatchObject([{ name: "Repair", serviceKey: "repair" }])
+    const turnOn = await create({ customerId: "c100", serviceKey: "turn-on-8" })
+    expect(await linesOfJob(db, turnOn.jobId)).toMatchObject([{ name: "Spring turn-on", serviceKey: "turn-on-8", description: SERVICES["turn-on-8"]!.description }])
+  })
+  it("refuses an inactive service for an existing customer, and for a new one makes no customer", async () => {
+    await db.update(s.service).set({ active: false }).where(eq(s.service.key, "aeration"))
+    const [jobs, customers, properties, visits] = [await count(s.job), await count(s.customer), (await db.select().from(s.property)).length, await count(s.visit)]
+    await expect(create({ customerId: "c100", serviceKey: "aeration" })).rejects.toMatchObject({ code: "invalid", message: expect.stringMatching(/not offered/) })
+    await expect(create({ newCustomer: { firstName: "Orphan", lastName: "Test", property: { address: "3 Elm St", town: "Erie" } }, serviceKey: "aeration" })).rejects.toMatchObject({ code: "invalid" })
+    expect([await count(s.job), await count(s.customer), (await db.select().from(s.property)).length, await count(s.visit)]).toEqual([jobs, customers, properties, visits])
+    await db.update(s.service).set({ active: true }).where(eq(s.service.key, "aeration"))
+  })
+  it("refuses a kind that disagrees with the service, and takes one that agrees", async () => {
+    await expect(create({ customerId: "c100", serviceKey: "repair", kind: "install" })).rejects.toMatchObject({ code: "invalid", message: "kind does not match the service" })
+    expect((await create({ customerId: "c100", serviceKey: "repair", kind: "repair" })).kind).toBe("repair")
   })
   it("lists the job with its visits on customers.get", async () => {
     const got = await callApi(as(), customersGet, { id: "c100" })

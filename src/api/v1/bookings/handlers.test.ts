@@ -66,6 +66,11 @@ describe("quote requests", () => {
     await expect(callApi(ctxFor(db, writeKey), quoteRequestsCreate, { customerId: "c100", propertyId: "property-c121" })).rejects.toMatchObject({ code: "unprocessable" })
     await expect(callApi(ctxFor(db, readKey), quoteRequestsCreate, { customerId: "c100" })).rejects.toMatchObject({ code: "forbidden" })
   })
+  it("refuses an inactive service", async () => {
+    await db.update(s.service).set({ active: false }).where(eq(s.service.key, "aeration"))
+    await expect(callApi(ctxFor(db, writeKey), quoteRequestsCreate, { customerId: "c100", serviceKey: "aeration" })).rejects.toMatchObject({ code: "unprocessable" })
+    await db.update(s.service).set({ active: true }).where(eq(s.service.key, "aeration"))
+  })
   it("honours an Idempotency-Key", async () => {
     const ctx = { ...ctxFor(db, writeKey), idempotencyKey: "q-1" }
     const a = await callApi(ctx, quoteRequestsCreate, { customerId: "c100", notes: "once" })

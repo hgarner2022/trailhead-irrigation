@@ -22,7 +22,7 @@ export interface Line {
 }
 
 /** The line names the backfill uses for the same kinds, plus the one banded kind whose catalogue name carries a band; the rest take the catalogue name. */
-const LINE_NAMES: Partial<Record<ServiceKind, string>> = {
+export const LINE_NAMES: Partial<Record<ServiceKind, string>> = {
   "turn-on": "Spring turn-on",
   inspection: "Mid-season inspection",
   blowout: "Fall blowout",

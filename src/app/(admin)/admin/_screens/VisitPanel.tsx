@@ -74,7 +74,7 @@ function VisitBlock({ facts }: { facts: VisitFacts }) {
           ["Time", timeWords(visit)],
           ["Who", visit.personName ?? ""],
           ["Minutes", String(visit.minutes ?? 60)],
-          ["Price", priceWords({ price: facts.price })],
+          ["Price", facts.priceCancelled ? "Cancelled" : priceWords({ price: facts.price })],
           ...(visit.notes ? ([["Notes", visit.notes]] as [string, ReactNode][]) : []),
         ]}
       />

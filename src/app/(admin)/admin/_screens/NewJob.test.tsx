@@ -55,6 +55,24 @@ describe("New job", () => {
     expect(screen.getByText("$95 up to 6 zones, +$10 a zone")).toBeInTheDocument()
   })
 
+  it("choosing a banded service shows a zones box and the price follows it, still editable", async () => {
+    const actions = open()
+    await choose("blowout")
+    const zones = screen.getByLabelText("Zones")
+    expect(zones).toHaveValue(6)
+    await userEvent.click(screen.getByText("More details"))
+    expect(screen.getByLabelText("Price")).toHaveValue("95")
+    await userEvent.clear(zones)
+    await userEvent.type(zones, "10")
+    expect(screen.getByLabelText("Price")).toHaveValue("135")
+    await userEvent.clear(screen.getByLabelText("Price"))
+    await userEvent.type(screen.getByLabelText("Price"), "100")
+    await userEvent.click(screen.getByRole("button", { name: "Add job" }))
+    await waitFor(() => expect(actions.createVisit).toHaveBeenCalledTimes(1))
+    expect(actions.createVisit).toHaveBeenCalledWith(expect.objectContaining({ serviceKey: "blowout", price: 100 }))
+    expect((actions.createVisit.mock.calls as unknown[][])[0]![0]).not.toHaveProperty("zones")
+  })
+
   it("choosing Season Pass shows the zones and a date box per visit", async () => {
     open()
     await choose("season-pass")

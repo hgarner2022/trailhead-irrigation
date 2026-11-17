@@ -75,7 +75,9 @@ export const servicesUpdate = defineHandler({
   async run(ctx, { id, ...changes }) {
     await load(ctx, id)
     // Only a field left out is dropped; null reaches the UPDATE and clears the description.
-    const defined = Object.fromEntries(Object.entries(changes).filter(([, v]) => v !== undefined))
+    const defined: Record<string, unknown> = Object.fromEntries(Object.entries(changes).filter(([, v]) => v !== undefined))
+    // Deactivating also closes online booking, as services.deactivate does; reactivating leaves bookable as it is.
+    if (defined.active === false) defined.bookable = false
     if (Object.keys(defined).length) await ctx.db.update(s.service).set(defined).where(eq(s.service.id, id))
     return out(await load(ctx, id))
   },

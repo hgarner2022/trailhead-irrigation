@@ -23,7 +23,7 @@ export function purchaseConfirmationEmail(d: PurchaseConfirmationData): Rendered
     .join("")
   // What was sold, a line to a row and the total under it; nothing when the pass has no lines.
   const sold = (d.lines ?? []).map((l) => `${capital(l.name)} · ${dollars(l.amount)}`)
-  const total = sold.length ? `Total · ${dollars((d.lines ?? []).reduce((sum, l) => sum + l.amount, 0))}` : ""
+  const total = sold.length ? `Season total · ${dollars((d.lines ?? []).reduce((sum, l) => sum + l.amount, 0))}` : ""
   const soldHtml = sold.length
     ? `<p style="margin:0 0 16px;font-family:'Source Sans 3',Helvetica,Arial,sans-serif;font-size:17px;line-height:25px;color:${EMAIL_COLORS.text}">${sold.map(esc).join("<br>")}<br><strong>${esc(total)}</strong></p>`
     : ""

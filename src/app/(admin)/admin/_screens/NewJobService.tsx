@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import type { AdminData, ServiceItem } from "@/lib/admin/types"
 import { routePeople } from "@/lib/admin/people"
+import { serviceCost } from "@/lib/services"
 import { FIELD, LABEL, choiceReady, newCustomerFrom, type CustomerChoice } from "./CustomerPicker"
 import type { NewVisitInput, VisitActions } from "./visit-actions-types"
 import { FORM_STATUS, useRunner } from "./use-runner"
@@ -41,7 +42,13 @@ export function NewJobService({ data, today, choice, service, actions, onDone }:
   const [price, setPrice] = useState<string | null>(null)
   const [notes, setNotes] = useState("")
   const { pending, error, run } = useRunner()
-  const shownPrice = price ?? (service.price !== undefined ? String(service.price) : "")
+  // A service with a per-zone rule asks for the zones so the prefilled price follows them; the zones go no further than this box.
+  const banded = service.includedZones !== undefined
+  const [zones, setZones] = useState<string | null>(null)
+  const shownZones = zones ?? String(service.includedZones ?? "")
+  const zoneCount = Math.min(16, Math.max(1, Number(shownZones) || service.includedZones || 1))
+  const ruled = banded ? serviceCost(service, zoneCount) : service.price
+  const shownPrice = price ?? (ruled !== undefined ? String(ruled) : "")
   const shownMinutes = minutes ?? String(service.slotMinutes)
   const people = routePeople(data.settings.people)
   const ready = choiceReady(choice, data.clients) && Boolean(day)
@@ -74,6 +81,15 @@ export function NewJobService({ data, today, choice, service, actions, onDone }:
         </label>
         <Input id="nj-day" type="date" value={day} min={todayDay} onChange={(e) => setDay(e.target.value)} className="min-h-11" />
       </div>
+
+      {banded && (
+        <div>
+          <label htmlFor="nj-zones" className={LABEL}>
+            Zones
+          </label>
+          <Input id="nj-zones" type="number" min={1} max={16} inputMode="numeric" value={shownZones} onChange={(e) => setZones(e.target.value)} className="min-h-11" />
+        </div>
+      )}
 
       <details className="rounded-lg border border-border p-3">
         <summary className="min-h-11 cursor-pointer py-2 text-sm font-medium">More details</summary>

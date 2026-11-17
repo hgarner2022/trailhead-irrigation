@@ -4,7 +4,7 @@ import { z } from "zod"
 import * as s from "@/db/schema"
 import { KIND_MINUTES, NOT_DONE_REASONS, OFFICE_KINDS } from "@/lib/admin/visit-defaults"
 import { enqueueGeocode } from "@/lib/geocode"
-import { defaultVisitPrice, lineForVisitKind } from "@/lib/jobs/lines"
+import { defaultVisitPrice, LINE_NAMES, lineForVisitKind } from "@/lib/jobs/lines"
 import { cancelVisitLines, deleteVisitLines, insertLines, setVisitLinePrice } from "@/lib/jobs/write-lines"
 import { syncPassJob } from "@/lib/pass/server/job"
 import { orderDay } from "@/lib/scheduling/server/order-day"
@@ -168,6 +168,13 @@ export const visitsCreate = defineHandler({
     if (!input.kind && !input.serviceKey) throw new ApiError("invalid", "Choose what the job is for", [{ path: "serviceKey", message: "Give a serviceKey or a kind" }])
     if (input.startTime && !input.scheduledOn) throw new ApiError("invalid", "Choose a day for that time", [{ path: "scheduledOn", message: "A time needs a day" }])
     const org = ctx.organizationId
+    // The service is checked before any customer row is made, so a refused service leaves nothing behind.
+    let service: typeof s.service.$inferSelect | undefined
+    if (input.serviceKey) {
+      ;[service] = await ctx.db.select().from(s.service).where(and(eq(s.service.organizationId, org), eq(s.service.key, input.serviceKey)))
+      if (!service || !service.active) throw new ApiError("invalid", "That service is not offered", [{ path: "serviceKey", message: "No active service has that key" }])
+      if (input.kind && input.kind !== service.kind) throw new ApiError("invalid", "kind does not match the service", [{ path: "kind", message: "kind does not match the service" }])
+    }
     let customerId = input.customerId!
     let propertyId: string
     let created: { customerId: string; propertyId: string } | null = null
@@ -195,11 +202,6 @@ export const visitsCreate = defineHandler({
       if (!personId) throw new ApiError("unprocessable", "No one is on the schedule to take this visit")
     }
     // The price is the office's, else the service's fixed price (a repair visit), else none until quoted.
-    let service: typeof s.service.$inferSelect | undefined
-    if (input.serviceKey) {
-      ;[service] = await ctx.db.select().from(s.service).where(and(eq(s.service.organizationId, org), eq(s.service.key, input.serviceKey)))
-      if (!service || !service.active) throw new ApiError("invalid", "That service is not offered", [{ path: "serviceKey", message: "No active service has that key" }])
-    }
     const kind = service ? service.kind : input.kind!
     const price = input.price ?? (service ? (service.price ?? undefined) : defaultVisitPrice(kind as (typeof OFFICE_KINDS)[number]))
     const [job] = await ctx.db
@@ -210,7 +212,7 @@ export const visitsCreate = defineHandler({
       .insert(s.visit)
       .values({ organizationId: org, jobId: job!.id, customerId, propertyId, kind, amount: price ?? 0, status: "unscheduled", durationMinutes: input.durationMinutes ?? service?.slotMinutes ?? KIND_MINUTES[kind as (typeof OFFICE_KINDS)[number]], notes: input.notes || null })
       .returning({ id: s.visit.id })
-    await insertLines(ctx.db, { organizationId: org, jobId: job!.id, now: ctx.now }, [{ ...(service ? { name: service.name, description: service.description, quantity: 1, unitPrice: price ?? 0, taxable: service.taxable, serviceKey: service.key, visitKind: kind } : lineForVisitKind(kind, price ?? 0)), visitId: made!.id }])
+    await insertLines(ctx.db, { organizationId: org, jobId: job!.id, now: ctx.now }, [{ ...(service ? { name: LINE_NAMES[service.kind] ?? service.name, description: service.description, quantity: 1, unitPrice: price ?? 0, taxable: service.taxable, serviceKey: service.key, visitKind: kind } : lineForVisitKind(kind, price ?? 0)), visitId: made!.id }])
     if (input.scheduledOn) {
       try {
         await placeVisit(ctx, { id: made!.id, personId: personId!, scheduledOn: input.scheduledOn, startTime: input.startTime })
