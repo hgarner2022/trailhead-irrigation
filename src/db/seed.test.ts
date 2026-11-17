@@ -1,5 +1,7 @@
 // @vitest-environment node
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
+import { readFileSync } from "node:fs"
+import { join } from "node:path"
 import { count, eq, sql } from "drizzle-orm"
 import type { PgTable } from "drizzle-orm/pg-core"
 import { testDb, type TestDb } from "./test-db"
@@ -34,8 +36,21 @@ describe("seed", () => {
     expect(await n(s.person)).toBe(3)
     expect(await n(s.area)).toBe(data.settings.areas.length)
     expect(await n(s.service)).toBe(SERVICE_LIST.length)
+    const services = await db.select({ key: s.service.key, description: s.service.description, taxable: s.service.taxable, active: s.service.active }).from(s.service)
+    expect(services.every((v) => typeof v.description === "string" && v.description.length > 0 && !v.description.includes("$"))).toBe(true)
+    expect(services.every((v) => v.taxable === false && v.active === true)).toBe(true)
+    expect(services.find((v) => v.key === "blowout")?.description).toBe(SERVICE_LIST.find((v) => v.key === "blowout")?.description)
     expect(await n(s.seasonPass)).toBe(0)
     expect(await n(s.jobberClient)).toBe(0)
+  })
+
+  it("backfills the same description in migration 0013 that the seed writes, so a migrated database and a fresh one agree", () => {
+    const migration = readFileSync(join(process.cwd(), "drizzle/0013_service_description.sql"), "utf8")
+    for (const v of SERVICE_LIST) {
+      const statement = migration.split("--> statement-breakpoint").find((part) => part.includes(`'${v.key}'`))
+      expect(statement, v.key).toContain(`SET "description" = '${v.description}'`)
+      expect(statement, v.key).toContain(`"description" IS NULL`)
+    }
   })
 
   it("is idempotent", async () => {

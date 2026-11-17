@@ -22,6 +22,33 @@ describe("services", () => {
     expect(bookable.data.every((s) => s.bookable)).toBe(true)
     expect(bookable.data.length).toBeLessThan(all.data.length)
   })
+  it("carries what the visit includes, with no price in it, and the office can change the text", async () => {
+    const all = await callApi(ctxFor(db, readKey), servicesList, {})
+    const turnOn = all.data.find((s) => s.key === "turn-on-8")!
+    expect(turnOn.description).toContain("controller programming")
+    expect(turnOn.description).not.toContain("$")
+    expect(turnOn).toMatchObject({ taxable: false, active: true })
+    expect(all.data.every((s) => typeof s.description === "string" && s.description.length > 0)).toBe(true)
+    const changed = await callApi(ctxFor(db, adminKey), servicesUpdate, { id: turnOn.id, description: "A spring start." })
+    expect(changed.description).toBe("A spring start.")
+    await callApi(ctxFor(db, adminKey), servicesUpdate, { id: turnOn.id, description: turnOn.description! })
+  })
+  it("updates one field without resetting bookable and quoteOnly to their defaults", async () => {
+    const made = await callApi(ctxFor(db, adminKey), servicesCreate, { ...input, key: "quoted-only", bookable: false, quoteOnly: true })
+    expect(made).toMatchObject({ bookable: false, quoteOnly: true })
+    expect(await callApi(ctxFor(db, adminKey), servicesUpdate, { id: made.id, description: "Quoted first." })).toMatchObject({ bookable: false, quoteOnly: true, description: "Quoted first." })
+  })
+  it("deactivating stops booking and listing as active; the default list keeps the service", async () => {
+    const made = await callApi(ctxFor(db, adminKey), servicesCreate, { ...input, key: "retired" })
+    expect(await callApi(ctxFor(db, adminKey), servicesDeactivate, { id: made.id })).toMatchObject({ active: false, bookable: false })
+    const active = await callApi(ctxFor(db, readKey), servicesList, { active: "true" })
+    expect(active.data.some((s) => s.id === made.id)).toBe(false)
+    expect(active.data.every((s) => s.active)).toBe(true)
+    const all = await callApi(ctxFor(db, readKey), servicesList, {})
+    expect(all.data.some((s) => s.id === made.id)).toBe(true)
+    const inactive = await callApi(ctxFor(db, readKey), servicesList, { active: "false" })
+    expect(inactive.data.map((s) => s.id)).toContain(made.id)
+  })
   it("needs the admin scope to change anything", async () => {
     await expect(callApi(ctxFor(db, writeKey), servicesCreate, input)).rejects.toMatchObject({ code: "forbidden" })
     await expect(callApi(ctxFor(db, writeKey), servicesDeactivate, { id: "x" })).rejects.toMatchObject({ code: "forbidden" })

@@ -205,8 +205,14 @@ export const service = pgTable(
     organizationId: orgId(),
     key: text("key").notNull(),
     name: text("name").notNull(),
+    /** what the visit includes, in the customer's words, with no price in it */
+    description: text("description"),
     kind: visitKindEnum("kind").notNull(),
     bookable: boolean("bookable").notNull().default(true),
+    /** sales tax applies to the line (labour is not taxed in Colorado; parts are) */
+    taxable: boolean("taxable").notNull().default(false),
+    /** an inactive service is kept for its old jobs and offered nowhere */
+    active: boolean("active").notNull().default(true),
     minZones: integer("min_zones"),
     maxZones: integer("max_zones"),
     /** zones the price covers; the cost is price + max(0, zones - included_zones) * extra_zone_price */
