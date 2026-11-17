@@ -1,5 +1,6 @@
 import { z } from "zod"
 import { Channel, Day, Id, Iso, Preference, Town, VisitKind } from "../shared"
+import { LineOut } from "../visits/schemas"
 
 export const MarketingChannels = z.array(Channel).describe("Channels the customer opted into for marketing.")
 
@@ -45,6 +46,8 @@ export const JobOut = z.object({
   createdAt: Iso,
   passId: Id.nullable(),
   passNumber: z.string().nullable(),
+  lines: z.array(LineOut).describe("What was sold on this job, oldest first."),
+  total: z.number().int().describe("Whole dollars: the lines added up, cancelled lines left out."),
   visits: z.array(z.object({ id: Id, kind: VisitKind, status: z.string(), scheduledOn: Day.nullable(), amount: z.number().int() })),
 })
 

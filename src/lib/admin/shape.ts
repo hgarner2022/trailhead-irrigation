@@ -6,6 +6,7 @@
 import { zonedToUtc } from "./calendar"
 import { fullName } from "./format"
 import { causeOf, groupAttention, type QueueAttention } from "./attention-groups"
+import { jobTotal } from "@/lib/jobs/lines"
 import { NOT_CLOSED_LOOKBACK_DAYS, visitJob } from "./jobs"
 import type {
   SoldJob, AdminData, Attention, BusyBlock, Client, Consent, Invoice, Message, MessageKind, MonthTotal, Pass, PassVisit, Quote, SettingsChange,
@@ -21,6 +22,7 @@ export interface ApiVisit {
   window: string | null; amount: number; preference: string | null; awaitingPick: boolean; personId: string | null; personName?: string | null; scheduledOn: string | null
   notDoneReason?: string | null; paidBy?: string | null; paymentStatus?: string; startTime: string | null; durationMinutes?: number | null; stopOrder: number | null; completedOn: string | null; chargedAt: string | null
   exception: { kind: "moved-in-jobber"; at: string; note: string } | null; lat: number | null; lng: number | null
+  lineItems?: { id: string; visitId: string | null; quantity: number; unitPrice: number; cancelledAt: string | null }[]
 }
 export interface ApiPass {
   id: string; number: string; season: number; customerId: string; firstName: string; town: Town; zones: number; status: string
@@ -36,6 +38,7 @@ export interface MirrorJob { id: string; clientId: string | null; jobberUrl: str
 export interface MirrorQuote { id: string; clientName: string | null; town: Town | null; total: number | null; sentAt: Date | null; status: Quote["status"] | null; jobberUrl: string | null }
 export interface MirrorInvoice { id: string; clientName: string | null; total: number | null; issuedAt: Date | null; dueAt: Date | null; status: Invoice["status"] | null; jobberUrl: string | null }
 export interface JobRow { id: string; customerId: string; kind: SoldJob["kind"]; status: SoldJob["status"]; price: number | null; source: SoldJob["source"]; notes: string | null }
+export interface LineRow { id: string; jobId: string; visitId: string | null; name: string; description: string | null; quantity: number; unitPrice: number; taxable: boolean; cancelledAt: Date | null }
 export interface QueueProblem { id?: string; kind: string; lastError: string | null; updatedAt: Date; status: string }
 
 /** `key` is what the alert is about: a visit's id for an unplaced visit. */
@@ -68,10 +71,18 @@ export interface ShapeInput {
   dismissed?: { kind: string; key: string }[]
   /** the job rows; absent in the fixtures */
   jobRows?: JobRow[]
+  /** every line on those jobs, oldest first */
+  lineRows?: LineRow[]
   blocks: BusyBlock[]
 }
 
 /** What the newest charge and the last not-done say about a visit: the reason, how it was paid, a bill waiting. */
+/** What the visit is worth: its own line when the API sent one, else the amount (which already reads the line). */
+const lineAmountOf = (v: Pick<ApiVisit, "id" | "amount" | "lineItems">) => {
+  const own = (v.lineItems ?? []).filter((l) => l.visitId === v.id)
+  return own.length ? own.filter((l) => !l.cancelledAt).reduce((sum, l) => sum + l.quantity * l.unitPrice, 0) : v.amount
+}
+
 const money = (v: Pick<ApiVisit, "notDoneReason" | "paidBy" | "paymentStatus">) => ({
   ...(v.notDoneReason ? { notDoneReason: v.notDoneReason } : {}),
   ...(v.paymentStatus === "paid" && v.paidBy ? { paidMethod: v.paidBy } : {}),
@@ -133,7 +144,7 @@ export function shapeAdminData(i: ShapeInput): AdminData {
       ...(v.startTime ? { startTime: v.startTime } : {}), ...(v.completedOn ? { completedOn: v.completedOn } : {}), ...(v.chargedAt ? { chargedAt: v.chargedAt } : {}),
       ...(failed.has(v.id) ? { chargeFailed: true } : {}), ...(v.status === "skipped" ? { skipped: true } : {}), ...(v.passId ? { passId: v.passId } : {}),
       isPass: v.passId !== null, jobberUrl: "",
-      ...(v.jobId ? { jobId: v.jobId } : {}), ...money(v), price: v.amount, ...(v.durationMinutes ? { minutes: v.durationMinutes } : {}), ...(v.notes ? { notes: v.notes } : {}),
+      ...(v.jobId ? { jobId: v.jobId } : {}), ...money(v), price: lineAmountOf(v), ...(v.durationMinutes ? { minutes: v.durationMinutes } : {}), ...(v.notes ? { notes: v.notes } : {}),
       // the person assigned, under the deprecated truck names too (the same values; dropped in step 6)
       ...(v.personName ? { personName: v.personName, truckName: v.personName } : {}),
       ...(v.personId ? { personId: v.personId, truckId: v.personId } : {}),
@@ -224,8 +235,10 @@ export function shapeAdminData(i: ShapeInput): AdminData {
 
   const soldJobs: SoldJob[] | undefined = i.jobRows?.map((j) => {
     const pass = i.passes.find((p) => p.id && i.visits.some((v) => v.passId === p.id && v.jobId === j.id))
+    const lines = (i.lineRows ?? []).filter((l) => l.jobId === j.id)
     return {
       id: j.id, customerId: j.customerId, kind: j.kind, status: j.status, source: j.source,
+      ...(i.lineRows ? { lines: lines.map((l) => ({ id: l.id, name: l.name, quantity: l.quantity, unitPrice: l.unitPrice, taxable: l.taxable, ...(l.description ? { description: l.description } : {}), ...(l.cancelledAt ? { cancelledAt: iso(l.cancelledAt) } : {}), ...(l.visitId ? { visitId: l.visitId } : {}) })), total: jobTotal(lines) } : {}),
       ...(j.price !== null ? { price: j.price } : {}), ...(j.notes ? { notes: j.notes } : {}),
       ...(pass ? { passId: pass.id, passNumber: pass.number } : {}),
       visitIds: i.visits.filter((v) => v.jobId === j.id).map((v) => v.id),

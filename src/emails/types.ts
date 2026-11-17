@@ -26,6 +26,8 @@ export interface PurchaseConfirmationData extends Base {
   passImageUrl: string
   /** each visit on the pass: its charge, and its day with the window once it has one (else `fallback` says what happens) */
   visits: { kind: "turn-on" | "inspection" | "blowout"; name: string; amount: number; visit: VisitFacts | null; fallback: string; /** said when the day picked at checkout filled up before the card was saved */ note?: string }[]
+  /** what was sold, one row per line, cancelled lines left out; `amount` is the line's total in whole dollars. Absent for a pass with no lines. */
+  lines?: { name: string; amount: number }[]
   /** the last four of the card on file, or null */
   cardLast4: string | null
   /** with no card on file: the link to add one (an office sale paid by card), else null and the customer pays at each visit */

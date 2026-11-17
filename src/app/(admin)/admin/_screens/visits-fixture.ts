@@ -3,7 +3,8 @@
  * one-off visits added, one in each state a visit can be in. Used by the stories only; the tests build their own.
  */
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
-import type { AdminData, Client, Message, Pass, Visit } from "@/lib/admin/types"
+import { lineForVisitKind } from "@/lib/jobs/lines"
+import type { AdminData, Client, JobLine, Message, Pass, SoldJob, Visit } from "@/lib/admin/types"
 
 export const VISITS_TODAY = "2026-11-12T19:56:30Z"
 const base = snapshot as AdminData
@@ -75,11 +76,29 @@ export const noCardVisits: Visit[] = noCardPass.visits.map((pv) => ({
   ...(pv.scheduledOn ? { scheduledOn: pv.scheduledOn, startAt: pv.scheduledAt, startTime: pv.startTime, personId: "person_truck-1", personName: "Ryan Garner" } : {}), price: pv.amount, minutes: 60,
 }))
 
+const allVisits = [...oneOffs, ...passVisits, ...noCardVisits, ...base.visits]
+const allPasses = [...base.passes, noCardPass]
+
+/** The sold work behind the fixture's visits: one job per `jobId`, one line per visit with the service's own description, as the writers make them. */
+const jobs: SoldJob[] = [...new Set(allVisits.map((v) => v.jobId).filter((id): id is string => Boolean(id)))].map((id) => {
+  const mine = allVisits.filter((v) => v.jobId === id)
+  const pass = allPasses.find((p) => mine.some((v) => v.passId === p.id))
+  const lines: JobLine[] = mine.map((v) => {
+    const line = lineForVisitKind(v.kind, v.price ?? 0, pass?.zones)
+    return { id: `line-${v.id}`, name: line.name, ...(line.description ? { description: line.description } : {}), quantity: 1, unitPrice: line.unitPrice, taxable: false, visitId: v.id }
+  })
+  return {
+    id, customerId: mine[0]!.clientId, kind: pass ? "pass" : mine[0]!.kind === "install" ? "install" : "repair", status: "active", source: pass ? "checkout" : "office",
+    ...(pass ? { passId: pass.id, passNumber: pass.number } : {}), visitIds: mine.map((v) => v.id), lines, total: lines.reduce((sum, l) => sum + l.unitPrice, 0),
+  }
+})
+
 export const visitsData: AdminData = {
   ...base,
-  visits: [...oneOffs, ...passVisits, ...noCardVisits, ...base.visits],
+  visits: allVisits,
+  jobs,
   clients: [...people, ...base.clients],
-  passes: [...base.passes, noCardPass],
+  passes: allPasses,
   messages: [...messages, ...base.messages],
   attention: [],
 }

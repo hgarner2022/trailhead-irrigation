@@ -51,6 +51,8 @@ describe("passes.sell", () => {
     expect(confirmation.body).toContain("Ryan sets the days that are missing")
     expect(confirmation.body).toContain("by check, Venmo or cash at the visit")
     expect(confirmation.body).not.toContain("card ending")
+    expect(confirmation.body).toMatch(/Spring turn-on.* · \$\d+/)
+    expect(confirmation.body).toContain("Total · $")
     expect((await db.select().from(s.passChange).where(eq(s.passChange.passId, pass.id))).map((c) => c.kind)).toEqual(["sold"])
   })
 

@@ -33,6 +33,39 @@ describe("visits.list and visits.get", () => {
   })
 })
 
+describe("visits carry the job's lines", () => {
+  it("lists the lines with the service's description, and the amount is the visit's own line", async () => {
+    const got = await callApi(ctxFor(db, readKey), visitsGet, { id: "p1-turn-on" })
+    expect(got.lineItems.length).toBeGreaterThan(1)
+    const own = got.lineItems.find((l) => l.visitId === "p1-turn-on")!
+    expect(own.description).toContain("controller programming")
+    expect(got.amount).toBe(own.quantity * own.unitPrice)
+  })
+  it("reads the amount from the line, not the stored amount, and takes a cancelled line to nothing", async () => {
+    const [line] = await db.select().from(s.lineItem).where(eq(s.lineItem.visitId, "p1-blowout"))
+    await db.update(s.visit).set({ amount: 1 }).where(eq(s.visit.id, "p1-blowout"))
+    try {
+      expect((await callApi(ctxFor(db, readKey), visitsGet, { id: "p1-blowout" })).amount).toBe(line!.quantity * line!.unitPrice)
+      await db.update(s.lineItem).set({ cancelledAt: new Date() }).where(eq(s.lineItem.id, line!.id))
+      const got = await callApi(ctxFor(db, readKey), visitsGet, { id: "p1-blowout" })
+      expect(got.amount).toBe(0)
+      expect(got.lineItems.find((l) => l.id === line!.id)!.cancelledAt).toMatch(/^\d{4}-\d\d-\d\dT/)
+    } finally {
+      await db.update(s.lineItem).set({ cancelledAt: null }).where(eq(s.lineItem.id, line!.id))
+    }
+  })
+  it("keeps the stored amount for a visit with no line of its own", async () => {
+    const [line] = await db.select().from(s.lineItem).where(eq(s.lineItem.visitId, "p1-inspection"))
+    await db.update(s.lineItem).set({ visitId: null }).where(eq(s.lineItem.id, line!.id))
+    try {
+      const [v] = await db.select().from(s.visit).where(eq(s.visit.id, "p1-inspection"))
+      expect((await callApi(ctxFor(db, readKey), visitsGet, { id: "p1-inspection" })).amount).toBe(v!.amount)
+    } finally {
+      await db.update(s.lineItem).set({ visitId: "p1-inspection" }).where(eq(s.lineItem.id, line!.id))
+    }
+  })
+})
+
 describe("visits.move after the write", () => {
   it("orders both truck-days, resolves the unplaced row and texts date-set, then date-moved", async () => {
     const [v] = await db.select().from(s.visit).where(eq(s.visit.id, "p11-turn-on"))

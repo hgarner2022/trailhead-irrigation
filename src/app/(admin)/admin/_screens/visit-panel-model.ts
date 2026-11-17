@@ -8,7 +8,7 @@ import { TIME_ZONE } from "@/lib/admin/format"
 import { dayOf } from "@/lib/admin/calendar"
 import { jobMoney, visitJob, windowLabel, type Job } from "@/lib/admin/jobs"
 import { KIND_LABEL, type OfficeKind } from "@/lib/admin/visit-defaults"
-import type { AdminData, Client, Message, Pass, SoldJob, Visit } from "@/lib/admin/types"
+import type { AdminData, Client, JobLine, Message, Pass, SoldJob, Visit } from "@/lib/admin/types"
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
@@ -36,13 +36,31 @@ export function timeWords(visit: Visit): string {
   return visit.startTime ? windowLabel(visit.startTime, visit.minutes ?? 120) : "Any time"
 }
 
+/** The visit's own line on its job: the one billed after this visit and not cancelled. Absent when the data has no lines. */
+export function visitLine(data: Pick<AdminData, "jobs">, visit: Pick<Visit, "id" | "jobId">): JobLine | undefined {
+  return data.jobs?.find((j) => j.id === visit.jobId)?.lines?.find((l) => l.visitId === visit.id && !l.cancelledAt)
+}
+
+/** What the visit is worth: its line (quantity times unit price) when the job has one for it, else `visit.price`. */
+export const visitPrice = (data: Pick<AdminData, "jobs">, visit: Visit): number => {
+  const line = visitLine(data, visit)
+  return line ? line.quantity * line.unitPrice : (visit.price ?? 0)
+}
+
 export const priceWords = (visit: Pick<Visit, "price">) => ((visit.price ?? 0) > 0 ? `$${visit.price!.toLocaleString("en-US")}` : "Quote later")
+
+/** "Spring turn-on, 8 zones · $145": the line's name, then its total; a cancelled line reads "cancelled" in place of the price. */
+export const lineWords = (line: JobLine): string => (line.cancelledAt ? `${line.name} · cancelled` : `${line.name} · $${(line.quantity * line.unitPrice).toLocaleString("en-US")}`)
 
 export interface VisitFacts {
   visit: Visit
   client?: Client
   pass?: Pass
   job?: SoldJob
+  /** the line billed after this visit, when the job has lines */
+  line?: JobLine
+  /** what the visit is worth, from that line when there is one */
+  price: number
   /** the job's visits in day order, this one included */
   siblings: Visit[]
   states: Job
@@ -66,6 +84,8 @@ export function visitFacts(data: AdminData, visitId: string, today: string): Vis
     client: data.clients.find((c) => c.id === visit.clientId),
     pass,
     job,
+    line: visitLine(data, visit),
+    price: visitPrice(data, visit),
     siblings,
     states: visitJob(visit, day, TIME_ZONE, pass?.cardFailedAt),
     money: jobMoney(siblings.map((v) => visitJob(v, day, TIME_ZONE, pass?.cardFailedAt))),

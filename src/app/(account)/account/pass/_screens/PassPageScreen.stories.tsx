@@ -2,14 +2,17 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite"
 import { expect, fn, screen } from "storybook/test"
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import type { Pass } from "@/lib/admin/types"
+import { serviceFor } from "@/lib/services"
 import { PassPageScreen } from "./PassPageScreen"
 
 // passes[0] is Andrea in Erie with the turn-on done and the blowout preferred
 // for mid October; passes[2] has had no visit yet. `today` sits
 // before the 2027 season for Active and after it for AllDone.
 const passes = snapshot.passes as Pass[]
-const active = passes[0]
-const fresh = passes[2]
+// each visit carries what it includes, as the pass page reads it from the visit's line
+const withDescriptions = (p: Pass): Pass => ({ ...p, visits: p.visits.map((v) => ({ ...v, description: serviceFor(v.kind, p.zones)?.description })) })
+const active = withDescriptions(passes[0])
+const fresh = withDescriptions(passes[2])
 const allDone: Pass = {
   ...active,
   visits: active.visits.map((v, i) => ({

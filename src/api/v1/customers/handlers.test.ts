@@ -1,5 +1,7 @@
 // @vitest-environment node
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
+import { eq } from "drizzle-orm"
+import * as s from "@/db/schema"
 import type { TestDb } from "@/db/test-db"
 import { callApi } from "../../core/call"
 import { adminKey, apiDb, ctxFor, customerPerson, owner, readKey, writeKey } from "../../test-helpers"
@@ -20,6 +22,14 @@ describe("customers", () => {
   it("creates with a property and shows the contact to a writer", async () => {
     const got = await callApi(ctxFor(db, writeKey), customersGet, { id })
     expect(got).toMatchObject({ firstName: "Maya", email: "maya@example.com", properties: [{ town: "Erie", address: "12 Elm St" }], consent: null })
+  })
+  it("gives each job its lines and their total", async () => {
+    const [v] = await db.select().from(s.visit).where(eq(s.visit.id, "p1-turn-on"))
+    const got = await callApi(ctxFor(db, readKey), customersGet, { id: v!.customerId })
+    const job = got.jobs.find((j) => j.id === v!.jobId)!
+    expect(job.lines.length).toBeGreaterThan(1)
+    expect(job.lines.find((l) => l.visitId === "p1-turn-on")).toMatchObject({ name: "Spring turn-on" })
+    expect(job.total).toBe(job.lines.reduce((sum, l) => sum + l.quantity * l.unitPrice, 0))
   })
   it("rejects a bad email, a missing name and a bad town", async () => {
     await expect(callApi(ctxFor(db, writeKey), customersCreate, { firstName: "A", email: "nope" })).rejects.toMatchObject({ code: "invalid" })

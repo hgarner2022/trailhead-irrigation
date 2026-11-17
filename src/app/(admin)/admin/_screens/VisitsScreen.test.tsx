@@ -41,6 +41,21 @@ const data: AdminData = {
   ],
 }
 
+// Dana's repair was sold at $160 although the visit row still says 145: the line is the truth. A second, cancelled line shows struck through.
+const TURN_ON_TEXT = "Check every zone, program the controller, adjust heads and report anything that needs a repair."
+const withLines: AdminData = {
+  ...data,
+  jobs: [
+    {
+      id: "jx", customerId: "cx", kind: "repair", status: "active", source: "office", visitIds: ["a", "c"], total: 160,
+      lines: [
+        { id: "l1", name: "Spring turn-on, 8 zones", description: TURN_ON_TEXT, quantity: 1, unitPrice: 160, taxable: false, visitId: "a" },
+        { id: "l2", name: "Extra head", quantity: 2, unitPrice: 20, taxable: false, cancelledAt: "2026-11-11T10:00:00Z" },
+      ],
+    },
+  ],
+}
+
 const ok = { ok: true as const, data: undefined }
 const actions = (over: Partial<VisitActions> = {}): VisitActions => ({
   move: vi.fn().mockResolvedValue({ ok: true, data: { day: "2026-11-20", personId: "person_truck-1", startTime: null } }),
@@ -58,10 +73,10 @@ const actions = (over: Partial<VisitActions> = {}): VisitActions => ({
   ...over,
 })
 
-const renderScreen = (a: VisitActions | undefined, props: { readOnly?: boolean; defaultVisitId?: string } = {}) =>
+const renderScreen = (a: VisitActions | undefined, props: { readOnly?: boolean; defaultVisitId?: string; data?: AdminData } = {}) =>
   render(
     <UndoToastProvider>
-      <VisitsScreen data={data} today={TODAY} actions={a} {...props} />
+      <VisitsScreen data={props.data ?? data} today={TODAY} actions={a} {...props} />
     </UndoToastProvider>,
   )
 
@@ -84,7 +99,35 @@ describe("visits-model", () => {
   })
 })
 
+describe("visits read the job's lines", () => {
+  it("prices a row from its line, and from the visit when the job has none", () => {
+    expect(visitRows(withLines, TODAY).find((r) => r.id === "a")).toMatchObject({ price: 160, priceLabel: "$160" })
+    expect(visitRows(data, TODAY).find((r) => r.id === "a")).toMatchObject({ price: 145, priceLabel: "$145" })
+  })
+})
+
 describe("VisitsScreen", () => {
+  it("shows the line's price in the Price column", () => {
+    renderScreen(actions(), { data: withLines })
+    expect(screen.getAllByRole("cell").some((c) => c.textContent === "$160")).toBe(true)
+    expect(screen.getAllByRole("cell").some((c) => c.textContent === "$145")).toBe(true)
+  })
+
+  it("lists the job's lines in the panel, strikes the cancelled one, and shows what's included", () => {
+    renderScreen(actions(), { data: withLines, defaultVisitId: "a" })
+    const panel = within(screen.getByRole("complementary"))
+    const lines = within(panel.getByRole("list", { name: "What was sold" })).getAllByRole("listitem")
+    expect(lines.map((l) => l.textContent)).toEqual(["Spring turn-on, 8 zones · $160", "Extra head · cancelled"])
+    expect(lines[1]).toHaveClass("line-through")
+    expect(panel.getByRole("heading", { name: "What's included" })).toBeInTheDocument()
+    expect(panel.getByText(TURN_ON_TEXT)).toBeInTheDocument()
+  })
+
+  it("has no What's included block when the visit's line has no description", () => {
+    renderScreen(actions(), { data, defaultVisitId: "a" })
+    expect(screen.queryByRole("heading", { name: "What's included" })).toBeNull()
+  })
+
   it("shows the spec's columns and a row per visit, with New visit in the header and no Passes button", () => {
     renderScreen(actions())
     const headers = screen.getAllByRole("columnheader").map((h) => h.textContent)

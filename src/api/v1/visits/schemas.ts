@@ -3,6 +3,17 @@ import { Day, Id, Iso, Preference, Town, VisitKind, VisitStatus } from "../share
 
 export const ExceptionOut = z.object({ kind: z.literal("moved-in-jobber"), at: Iso, note: z.string() })
 
+export const LineOut = z.object({
+  id: Id,
+  name: z.string().describe('What was sold: "Spring turn-on".'),
+  description: z.string().nullable().describe("What the visit includes, copied from the service at the sale."),
+  quantity: z.number().int(),
+  unitPrice: z.number().int().describe("Whole dollars."),
+  taxable: z.boolean(),
+  cancelledAt: Iso.nullable().describe("Set once the line is cancelled; a cancelled line counts nothing."),
+  visitId: Id.nullable().describe("The visit the line is billed after; null for a line on the job as a whole."),
+})
+
 export const VisitOut = z.object({
   id: Id,
   passId: Id.nullable(),
@@ -14,7 +25,8 @@ export const VisitOut = z.object({
   kind: VisitKind,
   status: VisitStatus,
   window: z.string().nullable().describe('The month the visit lands in: "May", "July", "October".'),
-  amount: z.number().int().describe("Whole dollars."),
+  amount: z.number().int().describe("Whole dollars. The visit's own line, quantity times unit price; the old stored amount only when the visit has no line."),
+  lineItems: z.array(LineOut).describe("Every line on the job this visit belongs to, oldest first."),
   preference: Preference.nullable(),
   awaitingPick: z.boolean().describe("The customer must be there and has not picked a day."),
   personId: Id.nullable().describe("Who the visit is assigned to, once someone has it."),

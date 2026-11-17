@@ -4,8 +4,12 @@ import * as s from "@/db/schema"
 import type { Database } from "@/db/types"
 import type { Ctx } from "../../core/context"
 import { notFound } from "../../core/errors"
+import { jobTotal } from "@/lib/jobs/lines"
 import { canSeeContact } from "../shared"
 import type { VisitOutType } from "./schemas"
+
+/** The job's lines as the database hands them: one JSON array per visit, oldest first. */
+interface LineJson { id: string; name: string; description: string | null; quantity: number; unit_price: number; taxable: boolean; cancelled_at: string | null; visit_id: string | null }
 
 export const visitSelect = {
   visit: s.visit,
@@ -17,6 +21,8 @@ export const visitSelect = {
   personName: s.person.name,
   // the newest charge attempt on the visit: how it was paid and whether it went through
   chargeMethod: sql<string | null>`(select c.method from charge c where c.visit_id = ${s.visit.id} order by c.attempt desc limit 1)`,
+  // what was sold on the visit's job: its lines are the truth for what the visit costs
+  lines: sql<LineJson[] | null>`(select json_agg(json_build_object('id', l.id, 'name', l.name, 'description', l.description, 'quantity', l.quantity, 'unit_price', l.unit_price, 'taxable', l.taxable, 'cancelled_at', l.cancelled_at, 'visit_id', l.visit_id) order by l.created_at, l.id) from line_item l where l.job_id = ${s.visit.jobId})`,
   chargeStatus: sql<string | null>`(select c.status from charge c where c.visit_id = ${s.visit.id} order by c.attempt desc limit 1)`,
 }
 
@@ -26,8 +32,17 @@ export const visitsQuery = (db: Database) =>
 
 export type VisitJoined = Awaited<ReturnType<ReturnType<typeof visitsQuery>["limit"]>>[number]
 
+/** A timestamp as Postgres prints it inside JSON, as an ISO string (zone-less text is UTC). */
+const isoOf = (at: string) => new Date(/(Z|[+-]\d\d(:?\d\d)?)$/.test(at) ? at : `${at}Z`).toISOString()
+
 export function visitOut(ctx: Ctx, row: VisitJoined): VisitOutType {
   const v = row.visit
+  const lineItems = (row.lines ?? []).map((l) => ({
+    id: l.id, name: l.name, description: l.description, quantity: l.quantity, unitPrice: l.unit_price, taxable: l.taxable,
+    cancelledAt: l.cancelled_at ? isoOf(l.cancelled_at) : null, visitId: l.visit_id,
+  }))
+  // The visit's own line is what it costs (nothing once cancelled); only a visit with no line of its own keeps the legacy amount.
+  const own = lineItems.filter((l) => l.visitId === v.id)
   return {
     id: v.id,
     passId: v.passId,
@@ -39,7 +54,8 @@ export function visitOut(ctx: Ctx, row: VisitJoined): VisitOutType {
     kind: v.kind,
     status: v.status,
     window: v.window,
-    amount: v.amount,
+    amount: own.length ? jobTotal(own.map((l) => ({ ...l, cancelledAt: l.cancelledAt ? new Date(l.cancelledAt) : null }))) : v.amount,
+    lineItems,
     preference: v.preference,
     awaitingPick: v.awaitingPick,
     personId: v.personId,

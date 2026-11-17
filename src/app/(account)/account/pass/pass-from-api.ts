@@ -6,6 +6,9 @@ import type { Pass, PassVisit } from "@/lib/admin/types"
 const ORDER = ["turn-on", "inspection", "blowout"]
 const WINDOWS: Record<string, string> = { "turn-on": "May", inspection: "July", blowout: "October" }
 
+/** The visit's own line, from the job's lines the API sends with it. */
+const ownLine = (v: { id: string; lineItems?: { visitId: string | null; description: string | null; cancelledAt: string | null }[] }) => v.lineItems?.find((l) => l.visitId === v.id && !l.cancelledAt)
+
 /**
  * The `Pass` the customer page takes, from one `passes.get` answer. A cancelled or skipped visit is left out, as in the admin's
  * shaping; a pending pass (checkout not finished) is not a pass the customer holds and is left to the caller to drop.
@@ -19,6 +22,7 @@ export function passFromApi(d: z.infer<typeof PassDetail>): Pass {
       window: v.window ?? WINDOWS[v.kind]!,
       amount: v.amount,
       id: v.id,
+      ...(ownLine(v)?.description ? { description: ownLine(v)!.description! } : {}),
       ...(v.scheduledOn ? { scheduledAt: instantOf(v.scheduledOn, v.startTime), scheduledOn: v.scheduledOn } : {}),
       ...(v.startTime ? { startTime: v.startTime } : {}),
       ...(v.durationMinutes ? { windowMinutes: v.durationMinutes } : {}),
