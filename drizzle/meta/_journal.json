@@ -75,8 +75,15 @@
     {
       "idx": 10,
       "version": "7",
-      "when": 1794843862610,
+      "when": 1794842978799,
       "tag": "0010_person",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1794879138468,
+      "tag": "0011_person_merge",
       "breakpoints": true
     }
   ]

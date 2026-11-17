@@ -88,6 +88,8 @@ UPDATE "person" SET "name" = 'Second truck', "initials" = 'T2' WHERE "legacy_tru
 UPDATE "visit" v SET "person_id" = p."id" FROM "person" p WHERE p."legacy_truck_id" = v."truck_id" AND v."person_id" IS NULL;
 ```
 
+**What happened (Nov 16 2026):** this first form of 0010 ran on the live database the moment the task's commit was pushed, because Vercel's Preview and Production share `DATABASE_URL` and the build migrates. The Ryan merge and the case-insensitive email index written into 0010 afterwards could then never apply (the migrator saw a newer timestamp on an already-applied migration and failed every deploy), so they live in `drizzle/0011_person_merge.sql`, which also backfills the visits the old code wrote between the two deploys. 0010 must stay exactly what the database has seen. Never edit a migration after its commit is pushed: a pushed branch deploys and migrates.
+
 **Step 5: Run** `npx vitest run --project unit src/db/schema.test.ts` → PASS. Then `npx vitest run --project unit src/db` → PASS (the seed test may need `people` in the snapshot; see Task 1.5).
 
 **Step 6: Commit** `git add src/db drizzle && git commit -m "Person table: a person who works here, with the truck as a label; visits gain person_id, backfilled from their truck"`.

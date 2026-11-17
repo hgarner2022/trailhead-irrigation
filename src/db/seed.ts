@@ -117,7 +117,7 @@ export async function seed(db: Database, snapshot: AdminData, options: SeedOptio
  * each keeping the truck id it was made from as `legacyTruckId` until step 6),
  * then one person per admin (`person_<admin id>`) so the sign-in has a row.
  * An admin named or emailed ryan% is the same person as the snapshot's Ryan
- * Garner, as the people migration (drizzle/0010_person.sql) merges them: he
+ * Garner, as the people migration (drizzle/0011_person_merge.sql) merges them: he
  * gets that admin's email instead of a second row. Inserts ignore a row that
  * is already there, so a re-seed changes nothing. A migrated database holds
  * Ryan under `person_<admin id>`, so nothing outside the fixtures may assume

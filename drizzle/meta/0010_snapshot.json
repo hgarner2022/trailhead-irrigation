@@ -1,5 +1,5 @@
 {
-  "id": "bd01608e-f0a2-428a-887d-4b59078a5fd7",
+  "id": "1a286830-c5fe-41a4-b970-b5ca38e05b26",
   "prevId": "c79c18f4-a74e-4444-b0d7-128ba9c0e512",
   "version": "7",
   "dialect": "postgresql",
@@ -3072,9 +3072,9 @@
               "nulls": "last"
             },
             {
-              "expression": "lower(\"email\")",
+              "expression": "email",
+              "isExpression": false,
               "asc": true,
-              "isExpression": true,
               "nulls": "last"
             }
           ],
