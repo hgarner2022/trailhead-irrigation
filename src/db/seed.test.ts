@@ -56,7 +56,7 @@ describe("seed", () => {
     expect(rows.map((p) => ({ id: p.id, name: p.name, initials: p.initials, email: p.email, role: p.role, truck: p.truck, legacyTruckId: p.legacyTruckId, jobberUserId: p.jobberUserId }))).toEqual([
       { id: idOf("hannah@example.com"), name: "Hannah", initials: "HA", email: "hannah@example.com", role: "owner", truck: null, legacyTruckId: null, jobberUserId: null },
       { id: "person_truck-1", name: "Ryan Garner", initials: "RG", email: "ryan@example.com", role: "owner", truck: "Truck 1", legacyTruckId: "truck-1", jobberUserId: "jobber-user-1" },
-      { id: "person_truck-2", name: "Tech Two", initials: "T2", email: null, role: "tech", truck: "Truck 2", legacyTruckId: "truck-2", jobberUserId: "jobber-user-2" },
+      { id: "person_truck-2", name: "Tech Two", initials: "TT", email: null, role: "tech", truck: "Truck 2", legacyTruckId: "truck-2", jobberUserId: "jobber-user-2" },
     ])
     const ryan = rows.find((p) => p.name === "Ryan Garner")!
     expect(ryan.workingDays).toEqual(data.settings.people[0]!.workingDays)

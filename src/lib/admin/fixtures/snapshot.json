@@ -16847,7 +16847,7 @@
       {
         "id": "person_truck-2",
         "name": "Tech Two",
-        "initials": "T2",
+        "initials": "TT",
         "role": "tech",
         "truck": "Truck 2",
         "jobberUserId": "jobber-user-2",
