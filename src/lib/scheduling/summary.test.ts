@@ -5,13 +5,13 @@ const v = (personName: string, town: string) => ({ personName, town })
 
 describe("crewSummary", () => {
   it("says where each person is and how many, then what moved and what is unmarked, with nothing about approvals", () => {
-    const tomorrow = [...Array(4).fill(v("Ryan Garner", "Erie")), ...Array(3).fill(v("Ryan Garner", "Firestone")), ...Array(5).fill(v("Second truck", "Longmont"))]
+    const tomorrow = [...Array(4).fill(v("Ryan Garner", "Erie")), ...Array(3).fill(v("Ryan Garner", "Firestone")), ...Array(5).fill(v("Tech Two", "Longmont"))]
     const text = crewSummary({ tomorrow, movedInJobber: 3, notMarkedDone: 2 })
-    expect(text).toBe("Tomorrow: 12 visits, Ryan Garner in Erie and Firestone (7), Second truck in Longmont (5). 3 moved in Jobber this week. 2 visits from yesterday not marked done.")
+    expect(text).toBe("Tomorrow: 12 visits, Ryan Garner in Erie and Firestone (7), Tech Two in Longmont (5). 3 moved in Jobber this week. 2 visits from yesterday not marked done.")
     expect(text).not.toMatch(/approv|propos/i)
   })
   it("leaves out a part with nothing in it and handles one visit and an empty day", () => {
-    expect(crewSummary({ tomorrow: [v("Second truck", "Erie")], movedInJobber: 0, notMarkedDone: 1 })).toBe("Tomorrow: 1 visit, Second truck in Erie (1). 1 visit from yesterday not marked done.")
+    expect(crewSummary({ tomorrow: [v("Tech Two", "Erie")], movedInJobber: 0, notMarkedDone: 1 })).toBe("Tomorrow: 1 visit, Tech Two in Erie (1). 1 visit from yesterday not marked done.")
     expect(crewSummary({ tomorrow: [], movedInJobber: 0, notMarkedDone: 0 })).toBe("Tomorrow: nothing on the calendar.")
   })
   it("lists three towns with commas and an and", () => {

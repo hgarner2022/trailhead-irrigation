@@ -29,4 +29,10 @@ describe("loadVisitFacts", () => {
   it("is null while the visit has no day", async () => {
     expect(await loadVisitFacts(db, "p4-blowout", origin)).toBeNull()
   })
+  it("names no one once the person has left, though the visit keeps its day until moved", async () => {
+    await db.update(s.person).set({ active: false }).where(eq(s.person.id, "person_truck-1"))
+    const facts = await loadVisitFacts(db, "p4-turn-on", origin)
+    expect(facts).toMatchObject({ id: "p4-turn-on", day: "2027-05-05", who: null, crew: null })
+    await db.update(s.person).set({ active: true }).where(eq(s.person.id, "person_truck-1"))
+  })
 })

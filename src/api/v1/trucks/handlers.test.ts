@@ -18,7 +18,7 @@ const seeded = async () => (await callApi(ctxFor(db, readKey), trucksList, {})).
 describe("trucks (an alias of people with a truck, kept for one season)", () => {
   it("lists the people who have a truck for a read key, by name, under the person ids visits carry", async () => {
     const out = await seeded()
-    expect(out.map((t) => t.name)).toEqual(["Ryan Garner", "Second truck"])
+    expect(out.map((t) => t.name)).toEqual(["Ryan Garner", "Tech Two"])
     expect(out.map((t) => t.id)).toEqual(["person_truck-1", "person_truck-2"])
     expect(out[0]).toMatchObject({ jobberUserId: "jobber-user-1", hasCalendarFeed: false, active: true, workingDays: ["mon", "tue", "wed", "thu", "fri"] })
     expect(out[1]!.workingDays).toContain("sat")

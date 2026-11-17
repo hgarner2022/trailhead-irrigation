@@ -9,6 +9,8 @@ import { PassCard } from "./PassCard"
 const pass = snapshot.passes[0] as Pass
 const fresh = snapshot.passes[2] as Pass
 const cancelled: Pass = { ...pass, status: "cancelled" }
+/** The tilt offer leaves after a permission round trip, which the slowest CI run takes a while to settle. */
+const WAIT = { timeout: 5000 }
 const allDone: Pass = {
   ...(snapshot.passes[1] as Pass),
   visits: (snapshot.passes[1] as Pass).visits.map((v, i) => ({
@@ -189,7 +191,7 @@ describe("PassCard at full size", () => {
     expect(spy.window()).not.toContain("deviceorientation")
     fireEvent.click(button)
     expect(ask).toHaveBeenCalledTimes(1)
-    await waitFor(() => expect(screen.queryByRole("button", { name: "Turn on the tilt shine" })).not.toBeInTheDocument(), { timeout: 5000 })
+    await waitFor(() => expect(screen.queryByRole("button", { name: "Turn on the tilt shine" })).not.toBeInTheDocument(), WAIT)
     expect(spy.window()).toContain("deviceorientation")
   })
 
@@ -198,7 +200,7 @@ describe("PassCard at full size", () => {
     const spy = listeners()
     render(<PassCard pass={pass} />)
     fireEvent.click(screen.getByRole("button", { name: "Turn on the tilt shine" }))
-    await waitFor(() => expect(screen.queryByRole("button")).not.toBeInTheDocument())
+    await waitFor(() => expect(screen.queryByRole("button")).not.toBeInTheDocument(), WAIT)
     expect(ask).toHaveBeenCalledTimes(1)
     expect(spy.window()).not.toContain("deviceorientation")
   })

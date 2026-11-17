@@ -18,7 +18,7 @@ describe("people", () => {
   it("lists owners first, then by name: Ryan with his truck and working days, the seeded admin, the second truck", async () => {
     const out = await callApi(ctxFor(db, readKey), peopleList, {})
     // The test organization has two owners: the seeded sign-in (owner@example.com) and Ryan, merged from Truck 1.
-    expect(out.data.map((p) => [p.name, p.role])).toEqual([["Owner", "owner"], ["Ryan Garner", "owner"], ["Second truck", "tech"]])
+    expect(out.data.map((p) => [p.name, p.role])).toEqual([["Owner", "owner"], ["Ryan Garner", "owner"], ["Tech Two", "tech"]])
     expect(out.data[1]).toMatchObject({ name: "Ryan Garner", initials: "RG", truck: "Truck 1", role: "owner", email: null, canSignIn: false, jobberUserId: "jobber-user-1", workingDays: ["mon", "tue", "wed", "thu", "fri"], hasCalendarFeed: false, active: true })
     expect(out.data[0]).toMatchObject({ email: "owner@example.com", canSignIn: true, truck: null })
     expect(out.data[2]!.workingDays).toContain("sat")
@@ -93,6 +93,6 @@ describe("people", () => {
   })
   it("trucks.list still answers, with the same rows under the old names", async () => {
     const out = await callApi(ctxFor(db, readKey), trucksList, {})
-    expect(out.data.map((t) => t.name)).toEqual(["Ryan Garner", "Second truck"])
+    expect(out.data.map((t) => t.name)).toEqual(["Ryan Garner", "Tech Two"])
   })
 })

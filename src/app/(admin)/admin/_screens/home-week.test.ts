@@ -20,8 +20,8 @@ describe("weekView", () => {
 
   it("files a visit under its person even when they have no truck now, as Visits does, never under No one yet", () => {
     const people = base.settings.people.map((p) => (p.id === "person_truck-2" ? { ...p, truck: undefined } : p))
-    const week = weekView({ visits: [visit({ id: "a", personId: "person_truck-2", personName: "Second truck" })], settings: { ...base.settings, people } }, TODAY)
-    expect(week.people.map((p) => p.name)).toEqual(["Second truck"])
+    const week = weekView({ visits: [visit({ id: "a", personId: "person_truck-2", personName: "Tech Two" })], settings: { ...base.settings, people } }, TODAY)
+    expect(week.people.map((p) => p.name)).toEqual(["Tech Two"])
     const loose = weekView({ visits: [visit({ id: "b", personId: undefined, personName: undefined })], settings: base.settings }, TODAY)
     expect(loose.people.map((p) => p.name)).toEqual(["No one yet"])
   })

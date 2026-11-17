@@ -69,7 +69,7 @@ describe("visits.move", () => {
     expect(event.payload).toMatchObject({ visitId: "p3-turn-on", personId: "person_truck-1", truckId: "person_truck-1", scheduledOn: "2027-05-07" })
   })
   it("takes `truckId` as an alias of personId for one season: the person's id, or the truck id they were made from", async () => {
-    await expect(move({ id: "p3-turn-on", truckId: "person_truck-2", scheduledOn: "2027-05-07" })).resolves.toMatchObject({ personId: "person_truck-2", personName: "Second truck" })
+    await expect(move({ id: "p3-turn-on", truckId: "person_truck-2", scheduledOn: "2027-05-07" })).resolves.toMatchObject({ personId: "person_truck-2", personName: "Tech Two" })
     await expect(move({ id: "p3-turn-on", truckId: "truck-1", scheduledOn: "2027-05-06" })).resolves.toMatchObject({ personId: "person_truck-1", personName: "Ryan Garner" })
     await expect(move({ id: "p3-turn-on", scheduledOn: "2027-05-07" })).rejects.toMatchObject({ code: "invalid" })
   })

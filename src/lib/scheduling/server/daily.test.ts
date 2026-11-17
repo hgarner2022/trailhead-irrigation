@@ -50,7 +50,7 @@ describe("daily", () => {
     const [item] = (await db.select().from(s.queueItem)).filter((q) => q.kind === "message" && q.key.startsWith("admin-alert:crew-summary:2027-05-06:"))
     expect(item).toBeDefined()
     const body = (item!.payload as { data: { detail: string } }).data.detail
-    expect(body).toMatch(/^Tomorrow: 2 visits, Ryan Garner in .+ \(1\), Second truck in .+ \(1\)\./)
+    expect(body).toMatch(/^Tomorrow: 2 visits, Ryan Garner in .+ \(1\), Tech Two in .+ \(1\)\./)
     expect(body).toMatch(/2 visits from yesterday not marked done\.$/)
     expect(body).not.toMatch(/approv|propos/i)
     expect((item!.payload as { to: string }).to).toBe("owner@example.com")

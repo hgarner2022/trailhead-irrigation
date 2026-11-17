@@ -149,6 +149,7 @@ describe("schema", () => {
   const peopleSql = sql`select "id", "name", "initials", "email", "role", "truck", "working_days", "legacy_truck_id" from "person" order by "id"`
   const visitsSql = sql`select "id", "person_id" from "visit" order by "id"`
   const hannah = { id: "person_a1", name: "Hannah Garner", initials: "HG", email: "hannah@example.com", role: "owner", truck: null, working_days: ["mon", "tue", "wed", "thu", "fri"], legacy_truck_id: null }
+  // The migration names the Truck 2 person "Second truck" (it has already run live); the fixture person is Tech Two, and the live checklist renames the row.
   const secondTruck = { id: "person_t2", name: "Second truck", initials: "T2", email: null, role: "tech", truck: "Truck 2", working_days: ["tue"], legacy_truck_id: "t2" }
 
   // The next two prove the backfill on committed rows, the way a deploy finds them on Neon.

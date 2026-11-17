@@ -48,7 +48,7 @@ describe("moveVisit", () => {
 
   it("moves a visit to the other person on the same day", () => {
     const moved = move("v478", "person_truck-2", "2026-11-12")
-    expect(find(moved, "v478")).toMatchObject({ personId: "person_truck-2", personName: "Second truck", startAt: "2026-11-12T20:00:00Z", stopOrder: 1 })
+    expect(find(moved, "v478")).toMatchObject({ personId: "person_truck-2", personName: "Tech Two", startAt: "2026-11-12T20:00:00Z", stopOrder: 1 })
     expect(dayVisits(moved, "2026-11-12", "person_truck-1", TIME_ZONE)).toHaveLength(3)
   })
 
@@ -90,7 +90,7 @@ describe("moveOutcome", () => {
   it("moves and says where", () => {
     const out = moveOutcome(data.visits, "v477", "person_truck-2", "2026-11-13", people, TIME_ZONE)
     expect(out.moved).toBe(true)
-    expect(out.message).toBe(`Moved ${percy!.clientName} to Friday, November 13 with Second truck.`)
+    expect(out.message).toBe(`Moved ${percy!.clientName} to Friday, November 13 with Tech Two.`)
     expect(out.visits.find((v) => v.id === "v477")).toMatchObject({ personId: "person_truck-2" })
   })
   it("refuses a day the person does not work and says why, leaving the list as it was", () => {

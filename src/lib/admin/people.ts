@@ -12,6 +12,12 @@ export const ROLES: readonly PersonRole[] = ["owner", "admin", "tech"]
 export const onRoute = (p: Pick<Person, "truck">): boolean => Boolean(p.truck)
 export const routePeople = <P extends Pick<Person, "truck">>(people: readonly P[]): P[] => people.filter(onRoute)
 
+/** "Ryan" from "Ryan Garner"; null for no person or a blank name, so a message says nothing about who rather than half a sentence. */
+export function firstNameOf(name: string | null | undefined): string | null {
+  const first = name?.trim().split(/\s+/)[0]
+  return first ? first : null
+}
+
 /** "Ryan Garner" gives RG; a one-word name gives its first two letters. */
 export function initialsOf(name: string): string {
   const words = name.trim().split(/\s+/).filter(Boolean)

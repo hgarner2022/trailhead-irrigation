@@ -113,7 +113,7 @@ describe("people", () => {
   })
   it("trucks.list still answers, with the same rows under the old names", async () => {
     const out = await callApi(ctxFor(db, readKey), trucksList, {})
-    expect(out.data.map((t) => t.name)).toEqual(["Ryan Garner", "Second truck"])
+    expect(out.data.map((t) => t.name)).toEqual(["Ryan Garner", "Tech Two"])
   })
 })
 ```
@@ -155,7 +155,7 @@ Mechanical sweep: `grep -rn "truckId\|s\.truck\b" src/api src/lib --include=*.ts
 ### Task 1.5: The admin reads people
 
 **Files:**
-- Modify: `src/lib/admin/types.ts:237` (`Truck` becomes `Person` with `name, initials, email?, phone?, role, truck?, seasonStart?, seasonEnd?`; `export type Truck = Person` for one step), `src/lib/admin/live.ts`, `src/lib/admin/shape.ts`, `src/lib/admin/fixtures/snapshot.json` (`settings.trucks` → `settings.people`, two rows named Ryan Garner and Second truck), `src/db/seed.ts` (insert people from `snapshot.settings.people`; keep inserting trucks until step 6), `src/app/(admin)/admin/_screens/{home-model,home-week,schedule-model,visits-model,settings-model}.ts`, `ScheduleScreen.tsx`, `ScheduleMoveTo.tsx`, `HomeWeek.tsx`, `VisitEditText.tsx`, `NewVisit.tsx`, `src/components/blocks/{WeekGrid,DayMap}.tsx`
+- Modify: `src/lib/admin/types.ts:237` (`Truck` becomes `Person` with `name, initials, email?, phone?, role, truck?, seasonStart?, seasonEnd?`; `export type Truck = Person` for one step), `src/lib/admin/live.ts`, `src/lib/admin/shape.ts`, `src/lib/admin/fixtures/snapshot.json` (`settings.trucks` → `settings.people`, two rows named Ryan Garner and Tech Two), `src/db/seed.ts` (insert people from `snapshot.settings.people`; keep inserting trucks until step 6), `src/app/(admin)/admin/_screens/{home-model,home-week,schedule-model,visits-model,settings-model}.ts`, `ScheduleScreen.tsx`, `ScheduleMoveTo.tsx`, `HomeWeek.tsx`, `VisitEditText.tsx`, `NewVisit.tsx`, `src/components/blocks/{WeekGrid,DayMap}.tsx`
 - Rename: `settings-tabs/Trucks.tsx` → `settings-tabs/People.tsx` (columns: Name, Email, Phone, Role, Truck, Working days, the per-day capacities, Season from/to, Remove); `settings-save.ts` writes through `people.*`
 - Test: the screens' existing tests, `settings-model.test.ts`, `HomeScreen.test.tsx` ("Ryan Garner" as the group heading instead of "Truck 1")
 
@@ -177,7 +177,7 @@ Mechanical sweep: `grep -rn "truckId\|s\.truck\b" src/api src/lib --include=*.ts
 
 ### Task 1.7: Checks and the PR
 
-Run `npx tsc --noEmit`, `npx vitest run --project unit`, `npm run lint`, `npm run build`, `npm run manifest:compare` (unchanged), `npm run test:stories` (from the main checkout, or with the worktree config trick). Render Home, Schedule, Visits and Settings › People from Storybook at 1440 and 375. Push, open the PR titled "Step 1: a person on every visit, the truck a label on them", merge when green, run the live checklist on `/admin` (Home groups by Ryan Garner; Settings shows People).
+Run `npx tsc --noEmit`, `npx vitest run --project unit`, `npm run lint`, `npm run build`, `npm run manifest:compare` (unchanged), `npm run test:stories` (from the main checkout, or with the worktree config trick). Render Home, Schedule, Visits and Settings › People from Storybook at 1440 and 375. Push, open the PR titled "Step 1: a person on every visit, the truck a label on them", merge when green, run the live checklist on `/admin` (Home groups by Ryan Garner; Settings shows People). Settings › People: the second person in the live database is still named "Second truck" from the old seed; rename it before the day-before send ships (Phase 12).
 
 ---
 

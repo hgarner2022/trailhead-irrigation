@@ -64,7 +64,7 @@ it("settings carry two people with a truck each, three areas, three 2027 windows
   const { settings: s } = snapshot as AdminData
   expect(s.people.map((p) => [p.id, p.name, p.initials, p.role, p.truck])).toEqual([
     ["person_truck-1", "Ryan Garner", "RG", "owner", "Truck 1"],
-    ["person_truck-2", "Second truck", "T2", "tech", "Truck 2"],
+    ["person_truck-2", "Tech Two", "T2", "tech", "Truck 2"],
   ])
   expect(s.people[0].workingDays).toEqual(["mon", "tue", "wed", "thu", "fri"])
   expect(s.people[1].workingDays).toEqual(["mon", "tue", "wed", "thu", "fri", "sat"])

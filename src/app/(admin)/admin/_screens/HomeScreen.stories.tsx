@@ -26,7 +26,7 @@ const data: AdminData = { ...snap, attention: [groupedTexts, ...snap.attention.f
 const quiet: AdminData = {
   ...snap,
   visits: [
-    ...snap.visits.filter((v) => v.status === "scheduled").slice(0, 3).map((v, i) => ({ ...v, id: `april-${i}`, town: "Erie" as const, personId: i === 2 ? "person_truck-2" : "person_truck-1", personName: i === 2 ? "Second truck" : "Ryan Garner", startAt: `2027-04-27T${15 + i}:00:00Z`, scheduledOn: "2027-04-27", startTime: undefined, stopOrder: undefined })),
+    ...snap.visits.filter((v) => v.status === "scheduled").slice(0, 3).map((v, i) => ({ ...v, id: `april-${i}`, town: "Erie" as const, personId: i === 2 ? "person_truck-2" : "person_truck-1", personName: i === 2 ? "Tech Two" : "Ryan Garner", startAt: `2027-04-27T${15 + i}:00:00Z`, scheduledOn: "2027-04-27", startTime: undefined, stopOrder: undefined })),
     ...snap.visits.filter((v) => v.status === "completed" && v.startAt?.startsWith("2026-11-10")).slice(0, 1),
   ],
   attention: snap.attention.filter((a) => a.kind === "pass-cancelled"),

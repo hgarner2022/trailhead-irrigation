@@ -36,16 +36,16 @@ describe("people", () => {
   it("renames a person and logs it", () => {
     const next = setPersonName(state, "person_truck-2", "Blowout truck", actor)
     expect(next.settings.people[1].name).toBe("Blowout truck")
-    expect(last(next)).toMatchObject({ who: "Hannah", at: actor.at, field: "Second truck name", from: "Second truck", to: "Blowout truck" })
+    expect(last(next)).toMatchObject({ who: "Hannah", at: actor.at, field: "Tech Two name", from: "Tech Two", to: "Blowout truck" })
     expect(next.changes).toHaveLength(1)
-    expect(setPersonName(state, "person_truck-2", "Second truck", actor)).toBe(state)
+    expect(setPersonName(state, "person_truck-2", "Tech Two", actor)).toBe(state)
     expect(setPersonName(state, "nope", "X", actor)).toBe(state)
   })
 
   it("toggles a working day both ways", () => {
     const off = toggleWorkingDay(state, "person_truck-2", "sat", actor)
     expect(off.settings.people[1].workingDays).toEqual(["mon", "tue", "wed", "thu", "fri"])
-    expect(last(off)).toMatchObject({ field: "Second truck working days", from: "Mon to Sat", to: "Mon to Fri" })
+    expect(last(off)).toMatchObject({ field: "Tech Two working days", from: "Mon to Sat", to: "Mon to Fri" })
     const on = toggleWorkingDay(off, "person_truck-2", "sun", actor)
     expect(on.settings.people[1].workingDays).toEqual(["mon", "tue", "wed", "thu", "fri", "sun"])
     expect(last(on).to).toBe("Mon, Tue, Wed, Thu, Fri, Sun")
@@ -89,7 +89,7 @@ describe("people", () => {
   it("sets the role in a word and keeps the last owner an owner", () => {
     const admin = setPersonRole(state, "person_truck-2", "admin", actor)
     expect(admin.settings.people[1].role).toBe("admin")
-    expect(last(admin)).toMatchObject({ field: "Second truck role", from: "Tech", to: "Admin" })
+    expect(last(admin)).toMatchObject({ field: "Tech Two role", from: "Tech", to: "Admin" })
     expect(setPersonRole(state, "person_truck-1", "tech", actor)).toBe(state)
     const two = setPersonRole(state, "person_truck-2", "owner", actor)
     expect(setPersonRole(two, "person_truck-1", "tech", actor).settings.people[0].role).toBe("tech")
@@ -99,13 +99,13 @@ describe("people", () => {
   it("sets and clears the contact and the truck, logging None for a blank", () => {
     const email = setPersonText(state, "person_truck-2", "email", " sam@example.com ", actor)
     expect(email.settings.people[1].email).toBe("sam@example.com")
-    expect(last(email)).toMatchObject({ field: "Second truck email", from: "None", to: "sam@example.com" })
+    expect(last(email)).toMatchObject({ field: "Tech Two email", from: "None", to: "sam@example.com" })
     const cleared = setPersonText(email, "person_truck-2", "email", "", actor)
     expect("email" in cleared.settings.people[1]).toBe(false)
-    expect(last(cleared)).toMatchObject({ field: "Second truck email", from: "sam@example.com", to: "None" })
+    expect(last(cleared)).toMatchObject({ field: "Tech Two email", from: "sam@example.com", to: "None" })
     const noTruck = setPersonText(state, "person_truck-2", "truck", "", actor)
     expect(noTruck.settings.people[1].truck).toBeUndefined()
-    expect(last(noTruck)).toMatchObject({ field: "Second truck truck", from: "Truck 2", to: "None" })
+    expect(last(noTruck)).toMatchObject({ field: "Tech Two truck", from: "Truck 2", to: "None" })
     expect(setPersonText(state, "person_truck-2", "phone", "", actor)).toBe(state)
   })
 
@@ -121,7 +121,7 @@ describe("people", () => {
   it("sets a season that is real and in order, and a blank means all year", () => {
     const from = setSeason(state, "person_truck-2", "seasonStart", "2027-04-01", actor)
     expect(from.settings.people[1].seasonStart).toBe("2027-04-01")
-    expect(last(from)).toMatchObject({ field: "Second truck season from", from: "All year", to: "2027-04-01" })
+    expect(last(from)).toMatchObject({ field: "Tech Two season from", from: "All year", to: "2027-04-01" })
     const to = setSeason(from, "person_truck-2", "seasonEnd", "2027-10-31", actor)
     expect(to.settings.people[1].seasonEnd).toBe("2027-10-31")
     expect(setSeason(to, "person_truck-2", "seasonEnd", "2027-03-31", actor)).toBe(to)
@@ -129,7 +129,7 @@ describe("people", () => {
     expect(setSeason(state, "person_truck-2", "seasonStart", "2027-02-30", actor)).toBe(state)
     const cleared = setSeason(to, "person_truck-2", "seasonStart", "", actor)
     expect(cleared.settings.people[1].seasonStart).toBeUndefined()
-    expect(last(cleared)).toMatchObject({ field: "Second truck season from", to: "All year" })
+    expect(last(cleared)).toMatchObject({ field: "Tech Two season from", to: "All year" })
   })
 })
 
@@ -207,8 +207,9 @@ describe("messages", () => {
       "Hi Andrea, your turn-on is booked for May 3. Ryan will be there on Truck 1. Next: inspection. {other}",
     )
     expect(fillMessage(data.settings.messages[1].body, sample)).not.toMatch(/\{/)
-    expect(data.settings.messages[2].body).toContain("{who}")
-    expect(fillMessage(data.settings.messages[2].body, sample)).toContain("Ryan will be there")
+    const dayBefore = data.settings.messages.find((m) => m.key === "day-before")!
+    expect(dayBefore.body).toContain("{who}")
+    expect(fillMessage(dayBefore.body, sample)).toContain("Ryan will be there")
   })
 })
 
@@ -229,7 +230,7 @@ describe("more people, areas and keys", () => {
     expect(last(user)).toMatchObject({ field: "Ryan Garner Jobber user", from: "jobber-user-1", to: "jobber-user-9" })
     const gone = removePerson(state, "person_truck-2", actor)
     expect(gone.settings.people.map((p) => p.id)).toEqual(["person_truck-1"])
-    expect(last(gone)).toMatchObject({ field: "People", from: "2 (Second truck included)", to: "1 (Second truck removed)" })
+    expect(last(gone)).toMatchObject({ field: "People", from: "2 (Tech Two included)", to: "1 (Tech Two removed)" })
     expect(removePerson(state, "nope", actor)).toBe(state)
     expect(removePerson(state, "person_truck-1", actor)).toBe(state)
   })

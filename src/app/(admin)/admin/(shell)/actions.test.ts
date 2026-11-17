@@ -50,7 +50,10 @@ beforeAll(async () => {
   db = await apiDb()
   state.db = db
 })
-afterAll(() => db.close())
+afterAll(() => {
+  vi.unstubAllEnvs()
+  db.close()
+})
 beforeEach(() => {
   state.principal = owner
   state.revalidated = []

@@ -9,6 +9,7 @@
 import type { AdminData, AreaGroup, CapacityKind, MessageTemplate, OrganizationSettings, SeasonWindow, SettingsChange, Town, Weekday } from "@/lib/admin/types"
 import { WEEKDAYS } from "@/lib/admin/calendar"
 import { KIND_WORDS, TIME_ZONE, writtenDate } from "@/lib/admin/format"
+import { firstNameOf } from "@/lib/admin/people"
 
 /** One API key as the list shows it; the secret is shown once at creation and never kept. */
 export interface ApiKey {
@@ -225,7 +226,7 @@ export function sampleFor(data: AdminData): Sample {
     firstName: pass?.firstName ?? "Alex",
     visit: visit ? KIND_WORDS[visit.kind] : "visit",
     date: visit?.startAt ? writtenDate(visit.startAt, TIME_ZONE) : "a day we will confirm",
-    who: person?.name.trim().split(/\s+/)[0] || "Ryan",
+    who: firstNameOf(person?.name) ?? "Ryan",
     truck: person?.truck ?? person?.name ?? "Truck 1",
     nextVisit: pass?.visits[1] ? KIND_WORDS[pass.visits[1].kind] : "next visit",
   }

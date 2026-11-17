@@ -29,7 +29,7 @@ describe("SettingsScreen people", () => {
     expect(role).toHaveValue("owner")
     expect(within(role).getByRole("option", { name: "Owner" })).toBeInTheDocument()
     expect(within(rows[0]!).getByRole("textbox", { name: "Ryan Garner truck" })).toHaveValue("Truck 1")
-    expect(within(rows[1]!).getByRole("combobox", { name: "Second truck role" })).toHaveValue("tech")
+    expect(within(rows[1]!).getByRole("combobox", { name: "Tech Two role" })).toHaveValue("tech")
   })
 })
 
@@ -37,13 +37,13 @@ describe("SettingsScreen fields", () => {
   it("commits on Enter, keeps focus and logs one line", async () => {
     const user = userEvent.setup()
     render(<SettingsScreen data={data} today={TODAY} />)
-    const name = screen.getByRole("textbox", { name: "Second truck name" })
+    const name = screen.getByRole("textbox", { name: "Tech Two name" })
     await user.clear(name)
     await user.type(name, "Blowout truck{Enter}")
     const after = screen.getByRole("textbox", { name: "Blowout truck name" })
     expect(after).toHaveValue("Blowout truck")
     expect(after).toHaveFocus()
-    expect(log().getByText("Second truck name")).toBeInTheDocument()
+    expect(log().getByText("Tech Two name")).toBeInTheDocument()
   })
 
   it("puts the old value back when a field is blank or out of range", async () => {
@@ -62,16 +62,16 @@ describe("SettingsScreen fields", () => {
 
   it("puts a season date back when the end would come before the start", async () => {
     render(<SettingsScreen data={data} today={TODAY} />)
-    const from = screen.getByLabelText("Second truck season from")
-    const to = screen.getByLabelText("Second truck season to")
+    const from = screen.getByLabelText("Tech Two season from")
+    const to = screen.getByLabelText("Tech Two season to")
     fireEvent.change(from, { target: { value: "2027-04-01" } })
     expect(from).toHaveValue("2027-04-01")
     fireEvent.change(to, { target: { value: "2027-03-31" } })
     expect(to).toHaveValue("")
-    expect(log().queryByText("Second truck season to")).toBeNull()
+    expect(log().queryByText("Tech Two season to")).toBeNull()
     fireEvent.change(to, { target: { value: "2027-10-31" } })
     expect(to).toHaveValue("2027-10-31")
-    expect(log().getByText("Second truck season to")).toBeInTheDocument()
+    expect(log().getByText("Tech Two season to")).toBeInTheDocument()
   })
 })
 
@@ -101,7 +101,7 @@ describe("SettingsScreen with actions", () => {
     const save = vi.fn().mockResolvedValueOnce({ ok: false, message: "Pick at least one town for Area 3 before saving." }).mockResolvedValueOnce({ ok: true, data: undefined })
     const actions = { save, createKey: vi.fn(), revokeKey: vi.fn() }
     render(<SettingsScreen data={data} today={TODAY} actions={actions} />)
-    const name = screen.getByRole("textbox", { name: "Second truck name" })
+    const name = screen.getByRole("textbox", { name: "Tech Two name" })
     await user.clear(name)
     await user.type(name, "Blowout truck{Enter}")
     await user.click(screen.getByRole("button", { name: "Save" }))
@@ -115,11 +115,11 @@ describe("SettingsScreen with actions", () => {
   it("disables every field and offers no Save to a tech", () => {
     render(<SettingsScreen data={data} today={TODAY} readOnly actions={{ save: vi.fn(), createKey: vi.fn(), revokeKey: vi.fn() }} />)
     expect(screen.queryByRole("button", { name: "Save" })).toBeNull()
-    expect(screen.getByRole("textbox", { name: "Second truck name" })).toBeDisabled()
-    expect(screen.getByRole("combobox", { name: "Second truck role" })).toBeDisabled()
-    expect(screen.getByRole("checkbox", { name: /^Mon\s?for Second truck$/ })).toBeDisabled()
+    expect(screen.getByRole("textbox", { name: "Tech Two name" })).toBeDisabled()
+    expect(screen.getByRole("combobox", { name: "Tech Two role" })).toBeDisabled()
+    expect(screen.getByRole("checkbox", { name: /^Mon\s?for Tech Two$/ })).toBeDisabled()
     expect(screen.getByRole("button", { name: "Add person" })).toBeDisabled()
-    expect(screen.getByRole("button", { name: "Remove Second truck" })).toBeDisabled()
+    expect(screen.getByRole("button", { name: "Remove Tech Two" })).toBeDisabled()
     expect(screen.getByRole("tab", { name: "People" })).toBeInTheDocument()
     expect(screen.getByText("You can read the settings. A manager changes them.")).toBeInTheDocument()
   })

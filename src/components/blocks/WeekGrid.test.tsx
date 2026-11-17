@@ -38,7 +38,7 @@ describe("WeekGrid", () => {
     const headers = within(table()).getAllByRole("columnheader").map((h) => h.textContent)
     expect(headers).toEqual(["Who", "Mon 9", "Tue 10", "Wed 11", "Thu 12, today", "Fri 13", "Sat 14", "Sun 15"])
     expect(within(table()).getByRole("columnheader", { name: /Thu 12/ })).toHaveAttribute("aria-current", "date")
-    expect(within(table()).getAllByRole("rowheader").map((h) => h.textContent)).toEqual(["Ryan Garner", "Second truck"])
+    expect(within(table()).getAllByRole("rowheader").map((h) => h.textContent)).toEqual(["Ryan Garner", "Tech Two"])
     expect(blocksIn(cell("person_truck-1", "2026-11-09"))).toHaveLength(5)
     expect(blocksIn(cell("person_truck-1", "2026-11-13")).map((b) => b.textContent)).toEqual([
       "DavidFirestone · blowout",
@@ -117,8 +117,8 @@ describe("WeekGrid", () => {
     render(<WeekGrid {...base} />)
     const [who, area] = screen.getAllByRole("combobox", { name: /Who|Area/ })
     await user.click(who)
-    await user.click(screen.getByRole("option", { name: "Second truck" }))
-    expect(within(table()).getAllByRole("rowheader").map((h) => h.textContent)).toEqual(["Second truck"])
+    await user.click(screen.getByRole("option", { name: "Tech Two" }))
+    expect(within(table()).getAllByRole("rowheader").map((h) => h.textContent)).toEqual(["Tech Two"])
     await user.click(who)
     await user.click(screen.getByRole("option", { name: "Everyone" }))
     await user.click(area)
@@ -135,7 +135,7 @@ describe("WeekGrid", () => {
     render(<WeekGrid {...base} onWeekChange={onWeekChange} />)
     const day = document.querySelector<HTMLElement>('[data-slot="week-grid-day"]') as HTMLElement
     expect(within(day).getByRole("heading", { level: 2 })).toHaveTextContent("Thu 12 · today")
-    expect(within(day).getAllByRole("heading", { level: 3 }).map((h) => h.textContent)).toEqual(["Ryan Garner", "Second truck"])
+    expect(within(day).getAllByRole("heading", { level: 3 }).map((h) => h.textContent)).toEqual(["Ryan Garner", "Tech Two"])
     expect(blocksIn(day)).toHaveLength(4)
     expect(blocksIn(day)[0]).not.toHaveAttribute("draggable", "true")
     await user.click(within(day).getByRole("button", { name: "Next day" }))

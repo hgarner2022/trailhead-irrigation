@@ -39,7 +39,7 @@ describe("visits.areaDays and visits.pick", () => {
     const { days } = await callApi(me(), visitsAreaDays, { id: "p3-turn-on" })
     const out = await callApi(me(), visitsPick, { id: "p3-turn-on", day: days[0]! })
     expect(out).toMatchObject({ status: "scheduled", scheduledOn: days[0], awaitingPick: false })
-    expect(out.personName).toMatch(/^(Ryan Garner|Second truck)$/)
+    expect(out.personName).toMatch(/^(Ryan Garner|Tech Two)$/)
     expect(out.truckName).toBe(out.personName)
     const pass = await callApi(me(), passesGet, { id: "p3" })
     expect(pass.visits.find((v) => v.kind === "turn-on")).toMatchObject({ scheduledOn: days[0], personName: out.personName })

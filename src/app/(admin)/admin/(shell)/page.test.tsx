@@ -85,9 +85,9 @@ describe("the admin pages", () => {
     expect(customers).toContain('data-slot="customers-screen"')
     const settings = html(await SettingsPage())
     expect(settings).toContain('data-slot="settings-screen"')
-    // The People tab, through people.list: the seeded admin, Ryan Garner and Second truck, each with their role in a word.
+    // The People tab, through people.list: the seeded admin, Ryan Garner and Tech Two, each with their role in a word.
     expect(settings).toContain("Ryan Garner")
-    expect(settings).toContain("Second truck")
+    expect(settings).toContain("Tech Two")
     expect(settings).not.toContain("truck_id")
   })
 

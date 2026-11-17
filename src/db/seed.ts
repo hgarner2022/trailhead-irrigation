@@ -113,7 +113,7 @@ export async function seed(db: Database, snapshot: AdminData, options: SeedOptio
 
 /**
  * The people: the snapshot's rows as they are (`settings.people` is the one
- * source; Ryan Garner the owner on Truck 1, Second truck the tech on Truck 2,
+ * source; Ryan Garner the owner on Truck 1, Tech Two the tech on Truck 2,
  * each keeping the truck id it was made from as `legacyTruckId` until step 6),
  * then one person per admin (`person_<admin id>`) so the sign-in has a row.
  * An admin named or emailed ryan% is the same person as the snapshot's Ryan

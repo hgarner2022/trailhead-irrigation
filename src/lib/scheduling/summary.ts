@@ -20,7 +20,7 @@ const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? o
 /** "Erie", "Erie and Firestone", "Erie, Firestone and Longmont". */
 export const listWords = (items: string[]): string => (items.length <= 1 ? (items[0] ?? "") : `${items.slice(0, -1).join(", ")} and ${items.at(-1)}`)
 
-/** "Tomorrow: 12 visits, Ryan Garner in Erie and Firestone (7), Second truck in Longmont (5). 3 moved in Jobber this week. 2 visits from yesterday not marked done." */
+/** "Tomorrow: 12 visits, Ryan Garner in Erie and Firestone (7), Tech Two in Longmont (5). 3 moved in Jobber this week. 2 visits from yesterday not marked done." */
 export function crewSummary(input: CrewSummaryInput): string {
   const parts: string[] = []
   if (input.tomorrow.length === 0) parts.push("Tomorrow: nothing on the calendar.")
