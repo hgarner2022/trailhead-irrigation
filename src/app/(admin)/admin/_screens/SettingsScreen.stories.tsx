@@ -36,6 +36,18 @@ export const People: Story = {
   globals: { viewport: { value: "wide", isRotated: false } },
 }
 
+/** The Services tab: the catalogue with what each visit includes, the price rule, minutes, taxable and active. */
+export const Services: Story = {
+  args: { defaultTab: "services" },
+  globals: { viewport: { value: "wide", isRotated: false } },
+}
+
+/** On a phone the Services table scrolls inside its card, the description box keeping its width. */
+export const ServicesPhone: Story = {
+  args: { defaultTab: "services" },
+  globals: { viewport: { value: "phone", isRotated: false } },
+}
+
 export const Areas: Story = {
   args: { defaultTab: "areas" },
   globals: { viewport: { value: "wide", isRotated: false } },

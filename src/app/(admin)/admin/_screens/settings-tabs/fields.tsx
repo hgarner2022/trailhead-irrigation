@@ -4,6 +4,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import type { Actor, SettingsState } from "../settings-model"
 
 /** What a tab calls to change the settings: a reducer and its arguments are applied and logged by the screen. */
@@ -59,6 +60,33 @@ export function CommitInput({ value, label, onCommit, type = "text", min, max, c
       onBlur={commit}
       onKeyDown={(e) => {
         if (e.key === "Enter") commit()
+      }}
+    />
+  )
+}
+
+/**
+ * A textarea that commits like `CommitInput`, on leaving it. Unlike it, a blank text is a real edit (it clears the
+ * field), so the reducer decides what a blank means; a text the reducer refuses comes back the same way, because
+ * the draft is set back to `value` after every commit.
+ */
+export function CommitTextarea({ value, label, onCommit, rows = 4 }: { value: string; label: string; onCommit: (raw: string) => void; rows?: number }) {
+  const [draft, setDraft] = useState(value)
+  const [seen, setSeen] = useState(value)
+  if (value !== seen) {
+    setSeen(value)
+    setDraft(value)
+  }
+  return (
+    <Textarea
+      aria-label={label}
+      rows={rows}
+      value={draft}
+      className="min-h-20"
+      onChange={(e) => setDraft(e.target.value)}
+      onBlur={() => {
+        if (draft.trim() !== value.trim()) onCommit(draft)
+        setDraft(value)
       }}
     />
   )

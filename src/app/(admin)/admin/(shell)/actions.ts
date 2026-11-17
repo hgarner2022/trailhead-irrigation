@@ -14,7 +14,7 @@ import { peopleCreate, peopleDeactivate, peopleUpdate } from "@/api/v1/people/ha
 import { visitsGet, visitsMove } from "@/api/v1/visits/handlers"
 import { visitsMarkClosed } from "@/api/v1/visits/money"
 import { webhooksCreate, webhooksDelete, webhooksTest } from "@/api/v1/webhooks/handlers"
-import type { Attention, OrganizationSettings, TimingPreference } from "@/lib/admin/types"
+import type { Attention, OrganizationSettings, ServiceItem, TimingPreference } from "@/lib/admin/types"
 import { requireAdmin } from "@/lib/auth/guard"
 import { retryQueueTasks } from "@/lib/admin/queue-retry"
 import { act, nothing, type ActionOutcome } from "./act"
@@ -57,7 +57,7 @@ export const markVisitClosed = async (visitId: string, completedOn?: string) => 
 // Settings ----------------------------------------------------------------------------------------------------------
 
 /** Save on the Settings page: the whole screen's settings, written as people, areas and sections. */
-export const saveSettings = async (settings: OrganizationSettings) => act((ctx) => nothing(writeSettings(ctx, settings)))
+export const saveSettings = async (settings: OrganizationSettings, services?: ServiceItem[]) => act((ctx) => nothing(writeSettings(ctx, settings, services)))
 
 /** One person's fields as people.create takes them; on update every one is optional and a text field takes null to clear it. */
 type PersonFields = {

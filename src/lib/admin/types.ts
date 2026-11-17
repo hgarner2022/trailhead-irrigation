@@ -404,9 +404,16 @@ export interface Attention {
   members?: Attention[]
 }
 
-/** One service the office can sell: what `services.list` sends for the active ones. Absent from the fixtures, where the sheet reads the catalogue in `src/lib/services.ts`. */
+/** One service in the catalogue, as `services.list` sends it (inactive ones too; the New job sheet offers the active ones). Absent from the fixtures, where the screens read the catalogue in `src/lib/services.ts`, which has no id and none of the three flags. */
 export interface ServiceItem {
+  /** the database row; what `services.update` takes. Absent from the site's own catalogue */
+  id?: string
   key: string
+  /** read as not taxable when absent */
+  taxable?: boolean
+  /** read as active when absent; false once deactivated */
+  active?: boolean
+  bookable?: boolean
   name: string
   description: string | null
   kind: string
@@ -439,6 +446,6 @@ export interface AdminData {
   messages: Message[]
   /** busy time read from the people's Jobber calendar feeds; absent in the fixtures */
   blocks?: BusyBlock[]
-  /** the active services, by key; absent in the fixtures */
+  /** every service in the catalogue, by key, inactive ones included; absent in the fixtures */
   services?: ServiceItem[]
 }

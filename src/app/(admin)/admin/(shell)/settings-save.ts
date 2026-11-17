@@ -4,10 +4,11 @@ import type { Ctx } from "@/api/core/context"
 import { ApiError } from "@/api/core/errors"
 import { areasCreate, areasDelete, areasList, areasUpdate } from "@/api/v1/areas/handlers"
 import { settingsGet, settingsUpdate } from "@/api/v1/settings/handlers"
+import { servicesList, servicesUpdate } from "@/api/v1/services/handlers"
 import { LAST_OWNER, peopleCreate, peopleDeactivate, peopleList, peopleUpdate, type PersonOut } from "@/api/v1/people/handlers"
 import { emailProblem } from "@/lib/email-check"
 import { TEXT_MAX, hasAnotherOwner } from "@/lib/admin/people"
-import type { AreaGroup, OrganizationSettings, Person } from "@/lib/admin/types"
+import type { AreaGroup, OrganizationSettings, Person, ServiceItem } from "@/lib/admin/types"
 
 // Settings Save: the screen holds the whole `OrganizationSettings` and sends it once. This turns the difference
 // from what the API holds into the API's own calls: people.*, areas.* and one settings.update per changed section.
@@ -52,8 +53,33 @@ const apiFields = (p: PersonOut) => ({
 /** people.create takes no nulls: a field the person does not have is left out. */
 const defined = <T extends object>(o: T) => Object.fromEntries(Object.entries(o).filter(([, v]) => v !== null && v !== undefined)) as T
 
-/** Writes the difference between the API's settings and `after`; throws the API's own error on the first refusal. */
-export async function saveSettings(ctx: Ctx, after: OrganizationSettings): Promise<void> {
+const SERVICE_FIELDS = ["name", "description", "price", "includedZones", "extraZonePrice", "slotMinutes", "taxable", "active"] as const
+
+/**
+ * The catalogue's edits, one services.update per changed service with only the fields that changed. The rows to
+ * compare with are the API's own, found by id (a row the API does not hold is ignored). A field the screen can
+ * leave empty (a description, a price) is only sent when the screen holds a value for it: the API cannot clear a
+ * price, and a cleared description goes as null.
+ */
+async function saveServices(ctx: Ctx, after: ServiceItem[]): Promise<void> {
+  const have = new Map((await callApi(ctx, servicesList, {})).data.map((r) => [r.id, r]))
+  for (const edited of after) {
+    const row = edited.id ? have.get(edited.id) : undefined
+    if (!row) continue
+    const changes: Record<string, unknown> = {}
+    for (const field of SERVICE_FIELDS) {
+      const was = row[field]
+      const now = field === "description" ? (edited.description ?? null) : edited[field]
+      if (now === undefined || now === null) {
+        if (field === "description" && was !== null) changes.description = null
+      } else if (was !== now) changes[field] = now
+    }
+    if (Object.keys(changes).length) await callApi(ctx, servicesUpdate, { id: row.id, ...changes })
+  }
+}
+
+/** Writes the difference between the API's settings and `after`, then the catalogue's edits; throws the API's own error on the first refusal. */
+export async function saveSettings(ctx: Ctx, after: OrganizationSettings, services?: ServiceItem[]): Promise<void> {
   const problems = settingsProblems(after)
   if (problems.length) throw new ApiError("unprocessable", problems[0]!)
   const [people, areas, current] = await Promise.all([callApi(ctx, peopleList, { active: "true" }), callApi(ctx, areasList, {}), callApi(ctx, settingsGet, {})])
@@ -83,4 +109,5 @@ export async function saveSettings(ctx: Ctx, after: OrganizationSettings): Promi
   for (const a of after.areas.filter((x) => !haveAreas.has(x.id))) await callApi(ctx, areasCreate, { name: a.name, towns: a.towns, springOrder: 0, fallOrder: 0 })
 
   for (const section of SECTIONS) if (!same(current[section], after[section])) await callApi(ctx, settingsUpdate, { section, value: after[section] })
+  if (services) await saveServices(ctx, services)
 }

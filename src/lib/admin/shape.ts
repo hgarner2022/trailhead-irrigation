@@ -74,7 +74,7 @@ export interface ShapeInput {
   /** every line on those jobs, oldest first */
   lineRows?: LineRow[]
   blocks: BusyBlock[]
-  /** the active services; absent in the fixtures */
+  /** every service, inactive ones included; absent in the fixtures */
   services?: ServiceItem[]
 }
 

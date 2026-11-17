@@ -43,7 +43,7 @@ export interface NewJobProps {
 }
 
 /** The active services the sheet offers: the screen's own, else the site's catalogue. */
-const offered = (data: AdminData): readonly ServiceItem[] => data.services ?? SERVICE_LIST
+const offered = (data: AdminData): readonly ServiceItem[] => (data.services ?? (SERVICE_LIST as readonly ServiceItem[])).filter((s) => s.active !== false)
 
 export function NewJob({ data, today, open, onOpenChange, customerId, actions, initial = {} }: NewJobProps) {
   const openVisit = useOpenVisit()

@@ -7,7 +7,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { CardTitleHeading } from "@/components/blocks/CardTitleHeading"
 import { ChangeLog } from "@/components/blocks/ChangeLog"
 import { PageHeader } from "@/components/blocks/PageHeader"
-import type { AdminData } from "@/lib/admin/types"
+import type { AdminData, ServiceItem } from "@/lib/admin/types"
+import { SERVICE_LIST } from "@/lib/services"
 import type { Outcome } from "./action-types"
 import { SAMPLE_KEYS, createKey, type Actor, type ApiKey, type ApiScope, type SettingsState } from "./settings-model"
 import { Areas } from "./settings-tabs/Areas"
@@ -15,17 +16,18 @@ import { ApiKeys } from "./settings-tabs/ApiKeys"
 import { Capacity } from "./settings-tabs/Capacity"
 import { Messages } from "./settings-tabs/Messages"
 import { People } from "./settings-tabs/People"
+import { Services } from "./settings-tabs/Services"
 import type { Apply } from "./settings-tabs/fields"
 
 // Where Ryan and Hannah set the rules the scheduler and the messages follow:
-// the people, area groups and town order, capacity and season windows, the
+// the people, the services, area groups and town order, capacity and season windows, the
 // customer messages and the API keys. Every edit goes through a reducer in
 // settings-model.ts that also writes the change log under the tabs. Client
 // because the tabs, the edits and the saved line are state; Save only logs
 // in the prototype. The route's page.tsx supplies `data` and `today`; the
 // log's times count up from `today` so a render is the same each time.
 
-export type SettingsTab = "people" | "areas" | "capacity" | "messages" | "keys"
+export type SettingsTab = "people" | "services" | "areas" | "capacity" | "messages" | "keys"
 
 export interface SettingsScreenProps {
   data: AdminData
@@ -44,13 +46,14 @@ export interface SettingsScreenProps {
 }
 
 export interface SettingsActions {
-  save: (settings: AdminData["settings"]) => Promise<Outcome>
+  save: (settings: AdminData["settings"], services?: ServiceItem[]) => Promise<Outcome>
   createKey: (name: string, scopes: ApiScope[]) => Promise<Outcome<{ key: string }>>
   revokeKey: (keyId: string) => Promise<Outcome>
 }
 
 const TABS: { value: SettingsTab; label: string }[] = [
   { value: "people", label: "People" },
+  { value: "services", label: "Services" },
   { value: "areas", label: "Areas" },
   { value: "capacity", label: "Capacity and windows" },
   { value: "messages", label: "Messages" },
@@ -58,14 +61,14 @@ const TABS: { value: SettingsTab; label: string }[] = [
 ]
 
 export function SettingsScreen({ data, today, defaultTab = "people", who = "Hannah", keys, readOnly = false, actions }: SettingsScreenProps) {
-  const fresh = (): SettingsState => ({ settings: data.settings, changes: data.settingsChanges, keys: keys ?? SAMPLE_KEYS })
+  const fresh = (): SettingsState => ({ settings: data.settings, changes: data.settingsChanges, keys: keys ?? SAMPLE_KEYS, services: [...(data.services ?? SERVICE_LIST)] })
   const [state, setState] = useState<SettingsState>(fresh)
-  const [seen, setSeen] = useState({ settings: data.settings, keys })
+  const [seen, setSeen] = useState({ settings: data.settings, keys, services: data.services })
   const [pending, start] = useTransition()
   const [message, setMessage] = useState("")
   // What the server holds, after Save or a key change refreshed the page, replaces what the screen holds.
-  if (data.settings !== seen.settings || keys !== seen.keys) {
-    setSeen({ settings: data.settings, keys })
+  if (data.settings !== seen.settings || keys !== seen.keys || data.services !== seen.services) {
+    setSeen({ settings: data.settings, keys, services: data.services })
     setState(fresh())
   }
   const [savedAtCount, setSavedAtCount] = useState<number>()
@@ -102,7 +105,7 @@ export function SettingsScreen({ data, today, defaultTab = "people", who = "Hann
       return setSavedAtCount(state.changes.length)
     }
     start(async () => {
-      const out = await actions.save(state.settings)
+      const out = await actions.save(state.settings, state.services)
       setMessage(out.ok ? "Saved just now" : out.message)
     })
   }
@@ -139,6 +142,11 @@ export function SettingsScreen({ data, today, defaultTab = "people", who = "Hann
         <TabsContent value="people">
           <fieldset disabled={readOnly} className="min-w-0">
             <People state={state} apply={apply} />
+          </fieldset>
+        </TabsContent>
+        <TabsContent value="services">
+          <fieldset disabled={readOnly} className="min-w-0">
+            <Services state={state} apply={apply} />
           </fieldset>
         </TabsContent>
         <TabsContent value="areas">

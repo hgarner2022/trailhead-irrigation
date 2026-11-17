@@ -3,6 +3,7 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import userEvent from "@testing-library/user-event"
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import type { AdminData } from "@/lib/admin/types"
+import { SERVICE_LIST } from "@/lib/services"
 import { SettingsScreen } from "./SettingsScreen"
 
 const data = snapshot as AdminData
@@ -122,5 +123,64 @@ describe("SettingsScreen with actions", () => {
     expect(screen.getByRole("button", { name: "Remove Tech Two" })).toBeDisabled()
     expect(screen.getByRole("tab", { name: "People" })).toBeInTheDocument()
     expect(screen.getByText("You can read the settings. A manager changes them.")).toBeInTheDocument()
+  })
+})
+
+describe("SettingsScreen services", () => {
+  const open = async () => {
+    const user = userEvent.setup()
+    await user.click(screen.getByRole("tab", { name: "Services" }))
+    return user
+  }
+
+  it("lists every catalogue service in order with its zone rule, empty cells where there is none", async () => {
+    render(<SettingsScreen data={data} today={TODAY} />)
+    expect(screen.getByRole("tab", { name: "Services" })).toBeInTheDocument()
+    expect(screen.getByRole("tab", { name: "People" })).toBeInTheDocument()
+    await open()
+    const rows = within(screen.getByRole("table")).getAllByRole("row").slice(1)
+    expect(rows.length).toBeGreaterThan(10)
+    const first = within(rows[0]!)
+    expect(first.getByRole("spinbutton", { name: /price$/ })).toHaveValue(SERVICE_LIST[0]!.price)
+    expect(first.getByRole("spinbutton", { name: /per extra zone$/ })).toBeInTheDocument()
+    const repair = within(rows.find((r) => within(r).queryByRole("textbox", { name: "Sprinkler repair visit name" }))!)
+    expect(repair.getByRole("spinbutton", { name: /price$/ })).toHaveValue(145)
+    expect(repair.queryByRole("spinbutton", { name: /per extra zone$/ })).toBeNull()
+    expect(repair.queryByRole("spinbutton", { name: /included zones$/ })).toBeNull()
+    expect(repair.getByRole("checkbox", { name: /active$/ })).toBeChecked()
+    expect(repair.getByRole("checkbox", { name: /taxable$/ })).not.toBeChecked()
+  })
+
+  it("saves an edited description through the action with the services, and logs one line", async () => {
+    const save = vi.fn().mockResolvedValue({ ok: true, data: undefined })
+    render(<SettingsScreen data={data} today={TODAY} actions={{ save, createKey: vi.fn(), revokeKey: vi.fn() }} />)
+    const user = await open()
+    const text = screen.getByRole("textbox", { name: "Sprinkler repair visit what's included" })
+    await user.clear(text)
+    await user.type(text, "Find the fault and fix it.")
+    await user.tab()
+    expect(screen.getByRole("textbox", { name: "Sprinkler repair visit what's included" })).toHaveValue("Find the fault and fix it.")
+    expect(log().getByText("Sprinkler repair visit what's included")).toBeInTheDocument()
+    await user.click(screen.getByRole("button", { name: "Save" }))
+    await waitFor(() => expect(save).toHaveBeenCalled())
+    const sent = save.mock.calls[0]![1] as { key: string; description: string }[]
+    expect(sent.find((s) => s.key === "repair")!.description).toBe("Find the fault and fix it.")
+  })
+
+  it("puts a description with a dollar sign back as it was", async () => {
+    render(<SettingsScreen data={data} today={TODAY} />)
+    const user = await open()
+    const before = (screen.getByRole("textbox", { name: "Sprinkler repair visit what's included" }) as HTMLTextAreaElement).value
+    await user.clear(screen.getByRole("textbox", { name: "Sprinkler repair visit what's included" }))
+    await user.type(screen.getByRole("textbox", { name: "Sprinkler repair visit what's included" }), "Only $50")
+    await user.tab()
+    expect(screen.getByRole("textbox", { name: "Sprinkler repair visit what's included" })).toHaveValue(before)
+  })
+
+  it("reads, and changes nothing, for a tech", async () => {
+    render(<SettingsScreen data={data} today={TODAY} readOnly />)
+    await open()
+    expect(screen.getByRole("textbox", { name: "Sprinkler repair visit what's included" })).toBeDisabled()
+    expect(screen.getByRole("checkbox", { name: "Sprinkler repair visit active" })).toBeDisabled()
   })
 })

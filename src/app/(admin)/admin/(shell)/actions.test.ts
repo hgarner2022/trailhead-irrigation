@@ -8,9 +8,16 @@ import { callApi } from "@/api/core/call"
 import { areasList } from "@/api/v1/areas/handlers"
 import { settingsGet } from "@/api/v1/settings/handlers"
 import { peopleList } from "@/api/v1/people/handlers"
+import { servicesList } from "@/api/v1/services/handlers"
 import { passesList } from "@/api/v1/passes/handlers"
 import { getLiveAdminData } from "@/lib/admin/live"
 import type { OrganizationSettings } from "@/lib/admin/types"
+
+/** A service row as the screen holds it: the nulls the API sends left out. */
+const liveService = (r: { id: string; key: string; name: string; description: string | null; kind: string; taxable: boolean; active: boolean; bookable: boolean; slotMinutes: number; quoteOnly: boolean; price: number | null; includedZones: number | null; extraZonePrice: number | null }) => ({
+  id: r.id, key: r.key, name: r.name, description: r.description, kind: r.kind, taxable: r.taxable, active: r.active, bookable: r.bookable, slotMinutes: r.slotMinutes, quoteOnly: r.quoteOnly,
+  ...(r.price !== null ? { price: r.price } : {}), ...(r.includedZones !== null ? { includedZones: r.includedZones } : {}), ...(r.extraZonePrice !== null ? { extraZonePrice: r.extraZonePrice } : {}),
+})
 
 const state = vi.hoisted(() => ({ db: null as unknown, principal: null as unknown, revalidated: [] as unknown[][] }))
 vi.mock("next/cache", () => ({ revalidatePath: (...args: unknown[]) => void state.revalidated.push(args) }))
@@ -160,7 +167,7 @@ describe("settings", () => {
     const now = await settingsOf()
     const ryan = now.people.find((p) => p.name === "Ryan Garner")!
     const actor = { who: "Hannah", at: "2026-11-16T19:00:00Z" }
-    const renamed = setPersonName({ settings: now, changes: [], keys: SAMPLE_KEYS }, ryan.id, "Ada Lovelace", actor).settings
+    const renamed = setPersonName({ settings: now, changes: [], keys: SAMPLE_KEYS, services: [] }, ryan.id, "Ada Lovelace", actor).settings
     vi.mocked(callApi).mockClear()
     expect((await actions.saveSettings(renamed)).ok).toBe(true)
     expect(calls("people.")).toEqual(["people.list", "people.update"])
@@ -214,7 +221,7 @@ describe("settings", () => {
   it("a person added and edited before one Save is one people.create with the edited values", async () => {
     const now = await settingsOf()
     const actor = { who: "Hannah", at: "2026-11-16T19:00:00Z" }
-    const added = addPerson({ settings: now, changes: [], keys: SAMPLE_KEYS }, actor)
+    const added = addPerson({ settings: now, changes: [], keys: SAMPLE_KEYS, services: [] }, actor)
     const id = added.settings.people[added.settings.people.length - 1]!.id
     const edited = setPersonText(setPersonName(added, id, "Ada Lovelace", actor), id, "truck", "Truck 4", actor).settings
     vi.mocked(callApi).mockClear()
@@ -233,6 +240,33 @@ describe("settings", () => {
     expect(out).toEqual({ ok: true, data: undefined })
     const areas = (await callApi(ctxFor(db, owner), areasList, {})).data
     expect(areas.find((x) => x.id === b!.id)!.towns).toContain(town)
+  })
+})
+
+describe("services", () => {
+  it("saves a changed description and price through services.update, one call per changed service, and leaves the rest", async () => {
+    const ctx = ctxFor(db, owner)
+    const before = (await callApi(ctx, servicesList, {})).data
+    const repair = before.find((r) => r.key === "repair")!
+    const blowout = before.find((r) => r.key === "blowout")!
+    const items = before.map((r) => ({ ...liveService(r) }))
+    const edited = items.map((i) => (i.key === "repair" ? { ...i, description: "Find the fault and fix it.", price: 150 } : i))
+    const ok = await actions.saveSettings(await settingsOf(), edited)
+    expect(ok.ok).toBe(true)
+    const after = (await callApi(ctx, servicesList, {})).data
+    expect(after.find((r) => r.key === "repair")).toMatchObject({ description: "Find the fault and fix it.", price: 150, name: repair.name, slotMinutes: repair.slotMinutes })
+    expect(after.find((r) => r.key === "blowout")).toEqual(blowout)
+    const refused = await actions.saveSettings(await settingsOf(), edited.map((i) => (i.key === "repair" ? { ...i, description: "Only $50" } : i)))
+    expect(refused).toMatchObject({ ok: false })
+    expect((await callApi(ctx, servicesList, {})).data.find((r) => r.key === "repair")!.description).toBe("Find the fault and fix it.")
+  })
+  it("deactivates a service from the catalogue and the live data keeps it, inactive", async () => {
+    const ctx = ctxFor(db, owner)
+    const rows = (await callApi(ctx, servicesList, {})).data
+    const items = rows.map((r) => ({ ...liveService(r), ...(r.key === "consult" ? { active: false } : {}) }))
+    expect((await actions.saveSettings(await settingsOf(), items)).ok).toBe(true)
+    const live = await getLiveAdminData(ctx)
+    expect(live.services?.find((x) => x.key === "consult")).toMatchObject({ active: false })
   })
 })
 

@@ -42,8 +42,8 @@ async function all<T>(ctx: Ctx, handler: Handler<never, never>, input: Record<st
   return rows
 }
 
-const serviceItem = (r: { key: string; name: string; description: string | null; kind: string; minZones: number | null; maxZones: number | null; includedZones: number | null; price: number | null; extraZonePrice: number | null; slotMinutes: number; quoteOnly: boolean }): ServiceItem => ({
-  key: r.key, name: r.name, description: r.description, kind: r.kind, slotMinutes: r.slotMinutes, quoteOnly: r.quoteOnly,
+const serviceItem = (r: { id: string; taxable: boolean; active: boolean; bookable: boolean; key: string; name: string; description: string | null; kind: string; minZones: number | null; maxZones: number | null; includedZones: number | null; price: number | null; extraZonePrice: number | null; slotMinutes: number; quoteOnly: boolean }): ServiceItem => ({
+  id: r.id, taxable: r.taxable, active: r.active, bookable: r.bookable, key: r.key, name: r.name, description: r.description, kind: r.kind, slotMinutes: r.slotMinutes, quoteOnly: r.quoteOnly,
   ...(r.minZones !== null ? { minZones: r.minZones } : {}), ...(r.maxZones !== null ? { maxZones: r.maxZones } : {}), ...(r.includedZones !== null ? { includedZones: r.includedZones } : {}),
   ...(r.price !== null ? { price: r.price } : {}), ...(r.extraZonePrice !== null ? { extraZonePrice: r.extraZonePrice } : {}),
 })
@@ -65,7 +65,7 @@ export async function getLiveAdminData(ctx: Ctx): Promise<AdminData> {
     callApi(ctx, areasList, {}),
     callApi(ctx, settingsGet, {}),
     all<{ id: string; at: string; who: string; field: string; from: string; to: string }>(ctx, settingsChangesList as never),
-    callApi(ctx, servicesList, { active: "true" }),
+    callApi(ctx, servicesList, {}),
   ])
   const { termsVersion: _terms, ...rest } = settings
   void _terms
