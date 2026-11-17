@@ -1,5 +1,7 @@
 // @vitest-environment node
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
+import { eq } from "drizzle-orm"
+import * as s from "@/db/schema"
 import type { TestDb } from "@/db/test-db"
 import { callApi } from "../../core/call"
 import { adminKey, apiDb, ctxFor, readKey, writeKey } from "../../test-helpers"
@@ -22,16 +24,28 @@ describe("services", () => {
     expect(bookable.data.every((s) => s.bookable)).toBe(true)
     expect(bookable.data.length).toBeLessThan(all.data.length)
   })
-  it("carries what the visit includes, with no price in it, and the office can change the text", async () => {
+  it("carries what the visit includes, with no price in it, and the office can change or clear the text", async () => {
     const all = await callApi(ctxFor(db, readKey), servicesList, {})
     const turnOn = all.data.find((s) => s.key === "turn-on-8")!
     expect(turnOn.description).toContain("controller programming")
     expect(turnOn.description).not.toContain("$")
     expect(turnOn).toMatchObject({ taxable: false, active: true })
     expect(all.data.every((s) => typeof s.description === "string" && s.description.length > 0)).toBe(true)
-    const changed = await callApi(ctxFor(db, adminKey), servicesUpdate, { id: turnOn.id, description: "A spring start." })
-    expect(changed.description).toBe("A spring start.")
-    await callApi(ctxFor(db, adminKey), servicesUpdate, { id: turnOn.id, description: turnOn.description! })
+    const made = await callApi(ctxFor(db, adminKey), servicesCreate, { ...input, key: "described", description: "A look at the drip line." })
+    expect(made.description).toBe("A look at the drip line.")
+    expect((await callApi(ctxFor(db, adminKey), servicesUpdate, { id: made.id, description: "  Every emitter checked.  " })).description).toBe("Every emitter checked.")
+    expect((await callApi(ctxFor(db, adminKey), servicesUpdate, { id: made.id, description: null })).description).toBeNull()
+    await expect(callApi(ctxFor(db, adminKey), servicesUpdate, { id: made.id, description: "$145 visit" })).rejects.toMatchObject({ code: "invalid" })
+    await expect(callApi(ctxFor(db, adminKey), servicesUpdate, { id: made.id, description: "   " })).rejects.toMatchObject({ code: "invalid" })
+  })
+  it("sets taxable and active, and a PATCH with nothing in it leaves the row alone", async () => {
+    const made = await callApi(ctxFor(db, adminKey), servicesCreate, { ...input, key: "taxed" })
+    expect(await callApi(ctxFor(db, adminKey), servicesUpdate, { id: made.id, taxable: true, active: false })).toMatchObject({ taxable: true, active: false })
+    const row = () => db.select({ taxable: s.service.taxable, active: s.service.active, updatedAt: s.service.updatedAt }).from(s.service).where(eq(s.service.id, made.id))
+    const before = await row()
+    expect(before[0]).toMatchObject({ taxable: true, active: false })
+    expect(await callApi(ctxFor(db, adminKey), servicesUpdate, { id: made.id })).toMatchObject({ taxable: true, active: false })
+    expect(await row()).toEqual(before)
   })
   it("updates one field without resetting bookable and quoteOnly to their defaults", async () => {
     const made = await callApi(ctxFor(db, adminKey), servicesCreate, { ...input, key: "quoted-only", bookable: false, quoteOnly: true })

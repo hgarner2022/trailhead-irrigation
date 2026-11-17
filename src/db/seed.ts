@@ -97,8 +97,6 @@ export async function seed(db: Database, snapshot: AdminData, options: SeedOptio
         description: v.description,
         kind: v.kind,
         bookable: v.bookable,
-        taxable: false,
-        active: true,
         minZones: v.minZones,
         maxZones: v.maxZones,
         includedZones: v.includedZones,

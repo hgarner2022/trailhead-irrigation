@@ -44,13 +44,20 @@ describe("seed", () => {
     expect(await n(s.jobberClient)).toBe(0)
   })
 
-  it("backfills the same description in migration 0013 that the seed writes, so a migrated database and a fresh one agree", () => {
-    const migration = readFileSync(join(process.cwd(), "drizzle/0013_service_description.sql"), "utf8")
-    for (const v of SERVICE_LIST) {
-      const statement = migration.split("--> statement-breakpoint").find((part) => part.includes(`'${v.key}'`))
-      expect(statement, v.key).toContain(`SET "description" = '${v.description}'`)
-      expect(statement, v.key).toContain(`"description" IS NULL`)
-    }
+  it("backfills in migration 0013 the description the seed writes, so a migrated database and a fresh one agree, and leaves a filled row alone", async () => {
+    // The columns exist on the test database already, so only the UPDATE statements run; the file is read as the one source of them.
+    const statements = readFileSync(join(process.cwd(), "drizzle/0013_service_description.sql"), "utf8")
+      .split("--> statement-breakpoint")
+      .map((part) => part.trim())
+      .filter((part) => part && !part.startsWith("ALTER TABLE"))
+    const read = () => db.select({ key: s.service.key, description: s.service.description }).from(s.service).orderBy(s.service.key)
+    await db.execute(sql`update "service" set "description" = null`)
+    for (const statement of statements) await db.execute(sql.raw(statement))
+    const backfilled = await read()
+    expect(backfilled.length).toBe(SERVICE_LIST.length)
+    for (const row of backfilled) expect(row.description, row.key).toBe(SERVICE_LIST.find((v) => v.key === row.key)?.description)
+    for (const statement of statements) await db.execute(sql.raw(statement))
+    expect(await read()).toEqual(backfilled)
   })
 
   it("is idempotent", async () => {

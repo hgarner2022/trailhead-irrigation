@@ -36,7 +36,7 @@ export interface ServiceDef {
 }
 
 const [TURN_ON, INSPECTION, BLOWOUT] = SEASON_PASS_VISITS
-/** What each visit includes, by service kind (the zone bands share one text; "other" has no catalogue entry) plus the quoted larger repair, which is its own text. Ryan's Jobber wording with every price removed; prices live on the service row. */
+/** What each visit includes, by service kind (the zone bands share one text; "other" has no catalogue entry) plus the quoted larger repair, which is its own text. The turn-on, inspection, blowout and repair texts are Ryan's Jobber wording with every price removed; the rest restate what the service's own page on the site says. Prices live on the service row. */
 const DESCRIPTION: Record<Exclude<ServiceKind, "other"> | "repair-large", string> = {
   "turn-on":
     "Complete system activation and check: sprinkler head adjustments, minor leak fixes where possible, controller programming and a water efficiency evaluation. Larger repairs are quoted separately and may need a return visit.",
@@ -45,14 +45,14 @@ const DESCRIPTION: Record<Exclude<ServiceKind, "other"> | "repair-large", string
   blowout:
     "Compressor hookup and a blowout of every zone to clear water from the lines, valves and heads, and the backflow and controller readied for winter. We need access to the system, the controller and the backflow.",
   repair: "A visit to find the fault and fix what can be fixed on the spot. Larger repairs are quoted and may need a return visit.",
-  consult: "A walk through the yard to talk over what the system needs and how we would approach it, with a written quote to follow.",
+  consult: "A visit to look at the property and talk over what you have in mind, with a quote to follow. For a new system Ryan checks the water pressure and flow and puts the zone layout and price in writing before anyone digs.",
   "rachio-install":
-    "A Rachio smart controller installed in place of the old one, every zone named, the schedule set up in the app and a walkthrough of how it waters.",
+    "A Rachio 3 for your zone count, mounted and wired to your existing valves, with the Wi-Fi set up, the zones named, the schedules built and a walkthrough of the app before we leave.",
   install:
-    "A new sprinkler system designed for the yard and installed: trenching, pipe, valves, heads, the controller and the backflow, with a walkthrough once it runs. Quoted after a site visit.",
-  "repair-large": "The bigger repair found on a visit, quoted first: a valve or manifold, a mainline break, a backflow replacement or rewiring. Scheduled as its own visit.",
-  aeration: "Core aeration of the lawn: plugs pulled across the turf so water, air and nutrients reach the roots.",
-  lights: "Christmas lights hung along the roofline before the season and taken down after it. Quoted by the house.",
+    "A new sprinkler system designed for the yard: zones laid out from your water pressure and flow, heads and rotors matched per zone with head-to-head coverage, the controller and the backflow assembly, and a full system walkthrough after the install. Quoted on site after walking the property, with the zone layout and price in writing before anyone digs.",
+  "repair-large": "The bigger repair found on a visit, one that needs parts we do not carry or more time: a valve rebuild, a line repair or a controller swap. Priced before any of that work starts, and you decide.",
+  aeration: "Core aeration of the lawn: plugs pulled out of the compacted clay so water, air and fertilizer can get down to the roots. The plugs stay on the lawn and break down within a couple of weeks.",
+  lights: "C9 bulbs on socket wire, cut to length for each run of the house and hung along the rooflines and peaks, with trees, bushes, walkways and railings lit if you want them. We supply the lights, and the takedown in January is included.",
 }
 const REPAIR_VISIT_PRICE = 145
 const REPAIR_SLOT_MINUTES = 120

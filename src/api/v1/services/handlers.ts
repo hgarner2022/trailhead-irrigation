@@ -15,7 +15,8 @@ export const ServiceOut = z.object({
 })
 // No `.default()` here: zod 4 keeps a default through `.partial()`, so a default on a shared field would reset it on every PATCH that left it out. The create input adds the defaults.
 const fields = {
-  key: z.string().regex(/^[a-z0-9-]+$/).min(2).max(40), name: z.string().min(1).max(120), description: z.string().max(1000).optional(), kind: VisitKind,
+  key: z.string().regex(/^[a-z0-9-]+$/).min(2).max(40), name: z.string().min(1).max(120), kind: VisitKind,
+  description: z.string().trim().min(1).max(1000).nullable().optional().refine((v) => v == null || !v.includes("$"), "Prices live on the service, not in its description"),
   bookable: z.boolean(), taxable: z.boolean(), active: z.boolean(),
   minZones: z.number().int().min(1).max(16).optional(), maxZones: z.number().int().min(1).max(16).optional(), includedZones: z.number().int().min(1).max(16).optional(),
   price: z.number().int().min(0).max(100_000).optional(), extraZonePrice: z.number().int().min(0).max(1000).optional(),
@@ -73,6 +74,7 @@ export const servicesUpdate = defineHandler({
   input: z.object(fields).omit({ key: true }).partial().extend({ id: idInput.shape.id }), output: ServiceOut,
   async run(ctx, { id, ...changes }) {
     await load(ctx, id)
+    // Only a field left out is dropped; null reaches the UPDATE and clears the description.
     const defined = Object.fromEntries(Object.entries(changes).filter(([, v]) => v !== undefined))
     if (Object.keys(defined).length) await ctx.db.update(s.service).set(defined).where(eq(s.service.id, id))
     return out(await load(ctx, id))
