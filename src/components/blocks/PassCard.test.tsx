@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from "vitest"
-import { render, screen, fireEvent, waitFor } from "@testing-library/react"
+import { act, render, screen, fireEvent, waitFor } from "@testing-library/react"
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import type { Pass } from "@/lib/admin/types"
 import { PassCard } from "./PassCard"
@@ -189,17 +189,21 @@ describe("PassCard at full size", () => {
     expect(button).toHaveTextContent("Tilt")
     expect(ask).not.toHaveBeenCalled()
     expect(spy.window()).not.toContain("deviceorientation")
-    fireEvent.click(button)
+    await act(async () => {
+      fireEvent.click(button)
+    })
     expect(ask).toHaveBeenCalledTimes(1)
     await waitFor(() => expect(screen.queryByRole("button", { name: "Turn on the tilt shine" })).not.toBeInTheDocument(), WAIT)
-    expect(spy.window()).toContain("deviceorientation")
+    await waitFor(() => expect(spy.window()).toContain("deviceorientation"), WAIT)
   })
 
   it("drops the offer when the tap is refused", async () => {
     const ask = stubIos("denied")
     const spy = listeners()
     render(<PassCard pass={pass} />)
-    fireEvent.click(screen.getByRole("button", { name: "Turn on the tilt shine" }))
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Turn on the tilt shine" }))
+    })
     await waitFor(() => expect(screen.queryByRole("button")).not.toBeInTheDocument(), WAIT)
     expect(ask).toHaveBeenCalledTimes(1)
     expect(spy.window()).not.toContain("deviceorientation")

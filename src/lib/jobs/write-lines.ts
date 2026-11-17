@@ -3,6 +3,9 @@
 // take it away with its visit. No `server-only` here on purpose: the seed runs
 // this under tsx with its own database handle (see `src/db/seed.ts`). It touches
 // only the handle it is given. The words and prices come from `lines.ts`.
+// neon-http has no interactive transactions, so a visit can exist briefly without its line if the second
+// statement fails. Recovery is a retry of the creating call; the reconciliation query is "visits not
+// cancelled with no line_item row naming them".
 import { and, eq, inArray, isNull } from "drizzle-orm"
 import * as s from "@/db/schema"
 import type { Database } from "@/db/types"

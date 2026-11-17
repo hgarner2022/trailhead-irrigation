@@ -4,9 +4,8 @@ import { z } from "zod"
 import * as s from "@/db/schema"
 import { KIND_MINUTES, NOT_DONE_REASONS, OFFICE_KINDS } from "@/lib/admin/visit-defaults"
 import { enqueueGeocode } from "@/lib/geocode"
-import { lineForVisitKind } from "@/lib/jobs/lines"
+import { defaultVisitPrice, lineForVisitKind } from "@/lib/jobs/lines"
 import { cancelVisitLines, deleteVisitLines, insertLines, setVisitLinePrice } from "@/lib/jobs/write-lines"
-import { SERVICES } from "@/lib/services"
 import { syncPassJob } from "@/lib/pass/server/job"
 import { orderDay } from "@/lib/scheduling/server/order-day"
 import { ApiError, notFound } from "../../core/errors"
@@ -193,11 +192,8 @@ export const visitsCreate = defineHandler({
       personId = (await routePeople(ctx))[0]?.id
       if (!personId) throw new ApiError("unprocessable", "No one is on the schedule to take this visit")
     }
-    // The job's one line, from the service of the kind (none for a zone-banded kind, whose zones the office does not give).
-    // The price is the office's, else the service's fixed price (a repair visit), else nothing until quoted.
-    const service = lineForVisitKind(input.kind, 0).serviceKey
-    const fixed = service ? SERVICES[service] : undefined
-    const price = input.price ?? (fixed && fixed.includedZones === undefined ? fixed.price : undefined)
+    // The price is the office's, else the service's fixed price (a repair visit), else none until quoted.
+    const price = input.price ?? defaultVisitPrice(input.kind)
     const [job] = await ctx.db
       .insert(s.job)
       .values({ organizationId: org, customerId, propertyId, kind: input.kind === "repair" || input.kind === "install" ? input.kind : "other", status: "active", price: price ?? null, source: "office", notes: input.notes || null })

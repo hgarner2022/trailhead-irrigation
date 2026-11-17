@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { jobTotal, lineForVisitKind, linesForPass, lineTotal, type Line } from "./lines"
+import { defaultVisitPrice, jobTotal, lineForVisitKind, linesForPass, lineTotal, type Line } from "./lines"
 import { SEASON_PASS_VISITS, visitPrice } from "@/lib/season-pass"
 import { SERVICES } from "@/lib/services"
 
@@ -65,5 +65,13 @@ describe("lineTotal and jobTotal", () => {
 
   it("sums nothing to zero", () => {
     expect(jobTotal([])).toBe(0)
+  })
+})
+
+describe("defaultVisitPrice", () => {
+  it("is the fixed price of a kind with one unzoned service, and nothing for a banded kind", () => {
+    expect(defaultVisitPrice("repair")).toBe(145)
+    expect(defaultVisitPrice("install")).toBeUndefined()
+    expect(defaultVisitPrice("turn-on")).toBeUndefined()
   })
 })

@@ -221,7 +221,7 @@ async function seedPasses(db: Database, snapshot: AdminData, org: string) {
         })),
       )
       .onConflictDoNothing()
-    // The job's line per visit, with the id migration 0014's backfill gives the same visit, so a seeded database and a migrated one agree.
+    // The job's line per visit, with the id migration 0014's backfill gives the same visit (`line_<visit id>`), so a re-run of the backfill adds nothing to a seeded database.
     await insertLines(
       db,
       { organizationId: org, jobId, keepExisting: true },

@@ -4,7 +4,7 @@ import { eq } from "drizzle-orm"
 import * as s from "@/db/schema"
 import type { TestDb } from "@/db/test-db"
 import { callApi } from "../../core/call"
-import { adminKey, apiDb, ctxFor, ORG, writeKey } from "../../test-helpers"
+import { adminKey, apiDb, ctxFor, linesOfJob, ORG, writeKey } from "../../test-helpers"
 import { visitsGet, visitsMove } from "./handlers"
 import { visitsMarkClosed, visitsRecordPayment } from "./money"
 import { visitsCreate, visitsMarkNotDone } from "./office"
@@ -49,6 +49,12 @@ describe("Done and the money", () => {
     expect(back).toMatchObject({ status: "scheduled", paymentStatus: "none", completedOn: null })
     expect(await db.select().from(s.charge).where(eq(s.charge.visitId, v.id))).toEqual([])
     await expect(callApi(as(), visitsMarkClosed, { id: v.id, undo: true })).rejects.toMatchObject({ code: "unprocessable" })
+  })
+
+  it("prices the visit's line from a payment handed over when an unpriced install is closed", async () => {
+    const v = await callApi(as(writeKey), visitsCreate, { customerId: "c100", kind: "install", scheduledOn: "2027-05-12" })
+    await callApi(as(), visitsMarkClosed, { id: v.id, paidBy: { method: "cash", amount: 3500 } })
+    expect(await linesOfJob(db, v.jobId)).toMatchObject([{ visitId: v.id, unitPrice: 3500 }])
   })
 
   it("records a payment later on a visit marked done with no price, and prices it", async () => {

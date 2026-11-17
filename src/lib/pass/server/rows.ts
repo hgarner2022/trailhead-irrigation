@@ -98,6 +98,7 @@ export async function insertPassVisits(db: Database, pass: typeof s.seasonPass.$
       })),
     )
     .returning({ id: s.visit.id, kind: s.visit.kind })
+  // One visit per kind on a pass (the visit_pass_kind_unique index enforces it), so the kind finds the visit.
   const lines = linesForPassVisits(onSale, pass.zones).map((line) => ({ ...line, visitId: made.find((v) => v.kind === line.visitKind)!.id }))
   await insertLines(db, { organizationId: pass.organizationId, jobId: pass.jobId, now }, lines)
 }

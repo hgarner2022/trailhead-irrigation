@@ -65,6 +65,12 @@ export function lineForVisitKind(kind: ServiceKind, price: number, zones?: numbe
   return { name: LINE_NAMES[kind] ?? service?.name ?? "Other", description: service?.description, quantity: 1, unitPrice: price, taxable: false, serviceKey: service?.key, visitKind: kind }
 }
 
+/** The fixed price of a kind's one service with no zones (a repair visit), or undefined for a banded kind or one with no service. */
+export function defaultVisitPrice(kind: ServiceKind): number | undefined {
+  const service = catalogue(kind, undefined)
+  return service && service.includedZones === undefined ? service.price : undefined
+}
+
 /** What the line adds to the job: quantity times the unit price, nothing once cancelled. */
 export function lineTotal(line: Pick<Line, "quantity" | "unitPrice" | "cancelledAt">): number {
   return line.cancelledAt ? 0 : line.quantity * line.unitPrice
