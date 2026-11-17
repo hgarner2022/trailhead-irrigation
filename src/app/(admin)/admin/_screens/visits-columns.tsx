@@ -5,7 +5,7 @@ import { dayLabel } from "./visit-panel-model"
 import type { VisitRow } from "./visits-model"
 
 // The Visits grid's columns, in the order the spec gives them: the customer (the full name, opens the visit),
-// town, the visit's kind, day, time, truck, the two pills, price and the pass number. The first column's value
+// town, the visit's kind, day, time, who has it, the two pills, price and the pass number. The first column's value
 // is the search text (name, street, phone) and its cell shows the name.
 
 const muted = (text: string) => <span className="text-muted-foreground">{text}</span>
@@ -22,7 +22,7 @@ export const visitColumns: GridColumnDef<VisitRow>[] = [
     meta: { csv: (r) => (r as VisitRow).day ?? "" },
   },
   { id: "time", accessorKey: "time", header: "Time", cell: ({ getValue }) => (getValue() as string) || null },
-  { id: "truckId", accessorKey: "truckId", header: "Truck", cell: ({ row }) => row.original.truck || null, meta: { csv: (r) => (r as VisitRow).truck } },
+  { id: "personId", accessorKey: "personId", header: "Who", cell: ({ row }) => row.original.who || null, meta: { csv: (r) => (r as VisitRow).who } },
   {
     id: "work",
     accessorKey: "work",

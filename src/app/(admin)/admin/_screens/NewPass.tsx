@@ -132,7 +132,7 @@ export function NewPass({ data, today, open, onOpenChange, customerId, actions, 
                 )
               })}
             </div>
-            <p className="mt-1 text-sm text-muted-foreground">A day goes on a truck like a move. A day that is not open moves to the next open one, and the confirmation says so.</p>
+            <p className="mt-1 text-sm text-muted-foreground">A day is given to a person like a move. A day that is not open moves to the next open one, and the confirmation says so.</p>
           </fieldset>
 
           <fieldset>

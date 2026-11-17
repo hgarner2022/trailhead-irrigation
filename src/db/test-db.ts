@@ -4,6 +4,9 @@ import { migrate } from "drizzle-orm/pglite/migrator"
 import { fileURLToPath } from "node:url"
 import * as schema from "./schema"
 
+/** The folder holding every migration and its journal. */
+export const migrationsFolder = fileURLToPath(new URL("../../drizzle", import.meta.url))
+
 /**
  * An empty in-memory Postgres (PGlite) with every migration applied. Database
  * tests use this and never reach Neon; `npm test` needs no network and no
@@ -12,7 +15,7 @@ import * as schema from "./schema"
 export async function testDb() {
   const client = new PGlite()
   const database = drizzle(client, { schema })
-  await migrate(database, { migrationsFolder: fileURLToPath(new URL("../../drizzle", import.meta.url)) })
+  await migrate(database, { migrationsFolder })
   return Object.assign(database, { close: () => client.close() })
 }
 

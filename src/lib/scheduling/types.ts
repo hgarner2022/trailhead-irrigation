@@ -1,9 +1,12 @@
 import type { BusyBlock, CapacityKind, SeasonWindow, Town, Weekday } from "@/lib/admin/types"
 
-/** The pieces of the organization the scheduler reads; the rows from `truck`, `area` and the settings column fit these. */
-export interface SchedTruck {
+/** The pieces of the organization the scheduler reads; the rows from `person`, `area` and the settings column fit these. */
+export interface SchedPerson {
   id: string
+  /** the person's name, "Ryan Garner" */
   name: string
+  /** the truck they drive, as a label: "Truck 1"; null when they are off the schedule */
+  truck: string | null
   workingDays: Weekday[]
   capacityByKind: Record<CapacityKind, number>
   active?: boolean
@@ -27,9 +30,9 @@ export type { BusyBlock, CapacityKind, SeasonWindow, Town, Weekday }
 
 export type Preference = "earlier" | "recommended" | "later"
 
-/** A visit already on a truck-day (or being placed in this run): what it takes from the day. */
+/** A visit already on someone's day (or being placed in this run): what it takes from the day. */
 export interface Taken {
-  truckId: string
+  personId: string
   day: string
   kind: string
   town: Town
@@ -49,7 +52,7 @@ export interface SchedVisit {
 
 export interface Placement {
   visitId: string
-  truckId: string
+  personId: string
   day: string
   durationMinutes: number
 }

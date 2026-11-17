@@ -9,6 +9,7 @@ import { visitsMove } from "@/api/v1/visits/handlers"
 import snapshot from "./fixtures/snapshot.json"
 import { getLiveAdminData } from "./live"
 import type { AdminData } from "./types"
+import { routePeople } from "./people"
 
 const fixture = snapshot as AdminData
 let db: TestDb
@@ -17,10 +18,10 @@ let data: AdminData
 beforeAll(async () => {
   vi.stubEnv("APP_URL", "https://site.test")
   db = await apiDb()
-  await db.update(s.truck).set({ calendarFeedUrl: "https://calendar.example.com/t1.ics" }).where(eq(s.truck.id, "truck-1"))
+  await db.update(s.person).set({ calendarFeedUrl: "https://calendar.example.com/t1.ics" }).where(eq(s.person.id, "person_truck-1"))
   await db.insert(s.jobberVisit).values({ id: "feed:truck-1:a", organizationId: ORG, truckId: "truck-1", title: "Day off", startAt: new Date("2027-05-06T13:00:00Z"), endAt: new Date("2027-05-06T23:00:00Z"), isBlock: true })
   await db.update(s.seasonPass).set({ cardFailedAt: new Date("2027-04-19T10:00:00Z") }).where(eq(s.seasonPass.id, "p3"))
-  await callApi(ctxFor(db, owner), visitsMove, { id: "p4-turn-on", truckId: "truck-1", scheduledOn: "2027-05-05", startTime: "09:30" })
+  await callApi(ctxFor(db, owner), visitsMove, { id: "p4-turn-on", personId: "person_truck-1", scheduledOn: "2027-05-05", startTime: "09:30" })
   await db.insert(s.queueItem).values({ organizationId: ORG, kind: "geocode", key: "bad", status: "failed", lastError: "Nominatim answered 429", attempts: 5 })
   await db.update(s.seasonPass).set({ status: "cancelled", cancelledAt: new Date("2027-04-19T12:00:00Z") }).where(eq(s.seasonPass.id, "p5"))
   await db.insert(s.adminAlert).values({ organizationId: ORG, kind: "pass-cancelled", key: "p5", passId: "p5", message: "Season Pass TH-2027-0005 cancelled: Sam, Erie" })
@@ -52,14 +53,16 @@ describe("getLiveAdminData", () => {
     expect(p1.cardLast4).toBe("4242")
     expect(p1.accessNote).toBeTruthy()
   })
-  it("lists app visits and the mirror's visits, with the truck and the stop", () => {
+  it("lists app visits and the mirror's visits, with the person and the stop", () => {
     const moved = data.visits.find((v) => v.id === "p4-turn-on")!
-    expect(moved).toMatchObject({ isPass: true, truckId: "truck-1", status: "scheduled", startAt: "2027-05-05T15:30:00Z" })
+    expect(moved).toMatchObject({ isPass: true, personId: "person_truck-1", status: "scheduled", startAt: "2027-05-05T15:30:00Z" })
     expect(data.visits.filter((v) => !v.isPass).length).toBeGreaterThan(100)
     expect(data.visits.every((v) => v.id && v.clientId !== undefined && v.town)).toBe(true)
   })
-  it("reads trucks, areas, settings and the change log through the handlers", () => {
-    expect(data.settings.trucks.map((t) => t.id)).toEqual(["truck-1", "truck-2"])
+  it("reads people, areas, settings and the change log through the handlers", () => {
+    // owners first: the seeded admin (no truck, so not on the schedule), Ryan Garner, then Tech Two
+    expect(data.settings.people.map((p) => [p.name, p.role, p.truck ?? null])).toEqual([["Owner", "owner", null], ["Ryan Garner", "owner", "Truck 1"], ["Tech Two", "tech", "Truck 2"]])
+    expect(routePeople(data.settings.people).map((p) => p.id)).toEqual(["person_truck-1", "person_truck-2"])
     expect(data.settings.areas).toHaveLength(fixture.settings.areas.length)
     expect(data.settings.windows).toHaveLength(fixture.settings.windows.length)
     expect(data.settings.messages.length).toBe(fixture.settings.messages.length)
@@ -80,7 +83,7 @@ describe("getLiveAdminData", () => {
   it("totals the months and returns the calendar blocks", () => {
     expect(data.monthTotals.length).toBeGreaterThan(3)
     expect(data.monthTotals.every((m) => m.month >= 1 && m.month <= 12 && m.revenue >= 0)).toBe(true)
-    expect(data.blocks).toEqual([{ truckId: "truck-1", title: "Day off", startAt: "2027-05-06T13:00:00.000Z", endAt: "2027-05-06T23:00:00.000Z" }])
+    expect(data.blocks).toEqual([{ personId: "person_truck-1", title: "Day off", startAt: "2027-05-06T13:00:00.000Z", endAt: "2027-05-06T23:00:00.000Z" }])
   })
 })
 

@@ -4,7 +4,7 @@ import type { Outcome } from "./action-types"
 /** Where a visit was before a routine action, so Undo can put it back. */
 export interface Where {
   day: string | null
-  truckId: string | null
+  personId: string | null
   startTime: string | null
 }
 
@@ -21,7 +21,7 @@ export interface NewVisitInput {
   scheduledOn?: string
   startTime?: string
   durationMinutes?: number
-  truckId?: string
+  personId?: string
   price?: number
   notes?: string
 }
@@ -60,7 +60,7 @@ export interface VisitActions {
   undoDone: (visitId: string) => Promise<Outcome>
   recordPayment: (visitId: string, paidBy: PaidByInput) => Promise<Outcome>
   markNotDone: (visitId: string, reason: NotDoneReason, note?: string) => Promise<Outcome<Where>>
-  edit: (visitId: string, changes: { durationMinutes?: number; truckId?: string; notes?: string; accessNote?: string }) => Promise<Outcome>
+  edit: (visitId: string, changes: { durationMinutes?: number; personId?: string; notes?: string; accessNote?: string }) => Promise<Outcome>
   cancel: (visitId: string, reason?: string) => Promise<Outcome>
   sendText: (customerId: string, visitId: string | undefined, text: string) => Promise<Outcome>
   resendConfirmation: (passId: string) => Promise<Outcome>

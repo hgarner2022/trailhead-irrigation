@@ -60,15 +60,19 @@ const TOWN_CENTRES: Record<string, [number, number]> = {
 }
 const denverDay = (iso: string) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Denver", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(iso))
 
-it("settings carry two trucks, three areas, three 2027 windows, the orders, the buffers and six messages", () => {
+it("settings carry two people with a truck each, three areas, three 2027 windows, the orders, the buffers and six messages", () => {
   const { settings: s } = snapshot as AdminData
-  expect(s.trucks.map((t) => t.name)).toEqual(["Truck 1", "Truck 2"])
-  expect(s.trucks[0].workingDays).toEqual(["mon", "tue", "wed", "thu", "fri"])
-  expect(s.trucks[1].workingDays).toEqual(["mon", "tue", "wed", "thu", "fri", "sat"])
-  for (const truck of s.trucks) {
-    expect(Object.keys(truck.capacityByKind).sort()).toEqual(["blowout", "inspection", "other", "repair", "turn-on"])
-    expect(Object.values(truck.capacityByKind).every((n) => Number.isInteger(n) && n > 0)).toBe(true)
+  expect(s.people.map((p) => [p.id, p.name, p.initials, p.role, p.truck])).toEqual([
+    ["person_truck-1", "Ryan Garner", "RG", "owner", "Truck 1"],
+    ["person_truck-2", "Tech Two", "TT", "tech", "Truck 2"],
+  ])
+  expect(s.people[0].workingDays).toEqual(["mon", "tue", "wed", "thu", "fri"])
+  expect(s.people[1].workingDays).toEqual(["mon", "tue", "wed", "thu", "fri", "sat"])
+  for (const person of s.people) {
+    expect(Object.keys(person.capacityByKind).sort()).toEqual(["blowout", "inspection", "other", "repair", "turn-on"])
+    expect(Object.values(person.capacityByKind).every((n) => Number.isInteger(n) && n > 0)).toBe(true)
   }
+  expect("trucks" in s).toBe(false)
   expect(s.areas.map((a) => a.towns)).toEqual([["Erie", "Firestone"], ["Longmont"], ["Louisville", "Lafayette", "Broomfield"]])
   expect(s.areas.flatMap((a) => a.towns).sort()).toEqual([...TOWNS].sort())
   expect(s.windows).toEqual([
@@ -103,26 +107,28 @@ it("four settings changes, each with who, when, field, from and to", () => {
   }
 })
 
-it("every dated 2026 visit rides a truck with a stop order and a point near its town", () => {
+it("every dated 2026 visit has a person (under the deprecated truck names too) with a stop order and a point near its town", () => {
   const d = snapshot as AdminData
-  const truckIds = d.settings.trucks.map((t) => t.id)
+  const personIds = d.settings.people.map((p) => p.id)
   const dated = d.visits.filter((v) => v.startAt?.startsWith("2026") && v.status !== "cancelled")
   expect(dated.length).toBeGreaterThan(400)
   const perDay = new Map<string, number[]>()
   for (const v of dated) {
-    expect(truckIds, v.id).toContain(v.truckId)
+    expect(personIds, v.id).toContain(v.personId)
+    expect(v.truckId, v.id).toBe(v.personId)
+    expect(v.truckName, v.id).toBe(v.personName)
     const [lat, lng] = TOWN_CENTRES[v.town]
     expect(Math.abs((v.lat ?? 99) - lat), v.id).toBeLessThan(0.02)
     expect(Math.abs((v.lng ?? 99) - lng), v.id).toBeLessThan(0.02)
-    const key = `${v.truckId}|${denverDay(v.startAt!)}`
+    const key = `${v.personId}|${denverDay(v.startAt!)}`
     perDay.set(key, [...(perDay.get(key) ?? []), v.stopOrder!])
   }
   for (const [key, orders] of perDay) expect([...orders].sort((a, b) => a - b), key).toEqual(orders.map((_, i) => i + 1))
   const october = dated.filter((v) => denverDay(v.startAt!).startsWith("2026-10"))
-  expect(new Set(october.map((v) => v.truckId)).size).toBe(2)
+  expect(new Set(october.map((v) => v.personId)).size).toBe(2)
   const notOctober = dated.filter((v) => !denverDay(v.startAt!).startsWith("2026-10"))
-  expect(notOctober.every((v) => v.truckId === truckIds[0])).toBe(true)
-  expect(d.visits.filter((v) => !v.startAt?.startsWith("2026")).every((v) => v.truckId === undefined)).toBe(true)
+  expect(notOctober.every((v) => v.personId === personIds[0])).toBe(true)
+  expect(d.visits.filter((v) => !v.startAt?.startsWith("2026")).every((v) => v.personId === undefined)).toBe(true)
 })
 
 it("two November visits carry a Jobber exception and nothing waits for approval", () => {

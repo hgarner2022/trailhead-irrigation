@@ -41,6 +41,8 @@ const updatedAt = () => ts("updated_at").notNull().defaultNow().$onUpdateFn(() =
 // Enums, named after the screen types in src/lib/admin/types.ts.
 export const townEnum = pgEnum("town", ["Erie", "Longmont", "Louisville", "Lafayette", "Firestone", "Broomfield"])
 export const adminRoleEnum = pgEnum("admin_role", ["owner", "admin"])
+/** A person's role: the owner, a manager (admin) or a tech. Its own type, not a value added to admin_role: Postgres refuses a value added to an existing enum inside the same transaction, and every migration runs in one. */
+export const personRoleEnum = pgEnum("person_role", ["owner", "admin", "tech"])
 export const passStatusEnum = pgEnum("pass_status", ["pending", "active", "cancelled", "lapsed"])
 export const visitKindEnum = pgEnum("visit_kind", [
   "turn-on",
@@ -93,7 +95,7 @@ export interface TwilioHealthRow {
   state: "ok" | "not-set" | "rejected"
   at: string
 }
-export type OrganizationSettingsRow = Omit<OrganizationSettings, "trucks" | "areas"> & { integrations?: { twilio?: TwilioHealthRow } }
+export type OrganizationSettingsRow = Omit<OrganizationSettings, "people" | "areas"> & { integrations?: { twilio?: TwilioHealthRow } }
 
 export const organization = pgTable("organization", {
   id: text("id").primaryKey().$defaultFn(newId),
@@ -132,6 +134,35 @@ export const adminUser = pgTable(
     updatedAt: updatedAt(),
   },
   (t) => [index("admin_user_org_idx").on(t.organizationId)],
+)
+
+/** A person who works here: the owner, a manager or a tech. Visits are assigned to a person; the truck is a label on them. An email makes them able to sign in. */
+export const person = pgTable(
+  "person",
+  {
+    id: id(),
+    organizationId: orgId(),
+    name: text("name").notNull(),
+    initials: text("initials").notNull(),
+    email: text("email"),
+    phone: text("phone"),
+    role: personRoleEnum("role").notNull().default("tech"),
+    /** the truck they usually drive, as a label: "Truck 1" */
+    truck: text("truck"),
+    jobberUserId: text("jobber_user_id"),
+    /** their Jobber calendar subscription (iCal) URL; private, never returned by the API */
+    calendarFeedUrl: text("calendar_feed_url"),
+    workingDays: jsonb("working_days").$type<Weekday[]>().notNull().default(["mon", "tue", "wed", "thu", "fri"]),
+    capacityByKind: jsonb("capacity_by_kind").$type<Record<CapacityKind, number>>().notNull().default({ "turn-on": 8, inspection: 8, blowout: 10, repair: 4, other: 2 }),
+    seasonStart: text("season_start"),
+    seasonEnd: text("season_end"),
+    active: boolean("active").notNull().default(true),
+    /** the truck row this person was made from by the step 1 migration; dropped in step 6 */
+    legacyTruckId: text("legacy_truck_id"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [index("person_org_idx").on(t.organizationId), uniqueIndex("person_org_email_unique").on(t.organizationId, sql`lower(${t.email})`).where(sql`${t.email} is not null`)],
 )
 
 export const truck = pgTable(
@@ -344,6 +375,8 @@ export const visit = pgTable(
     preference: timingPreferenceEnum("preference"),
     awaitingPick: boolean("awaiting_pick").notNull().default(false),
     truckId: text("truck_id").references(() => truck.id),
+    /** who the visit is assigned to; replaces truck_id, which stays until step 6 */
+    personId: text("person_id").references(() => person.id),
     scheduledOn: day("scheduled_on"),
     startTime: text("start_time"),
     durationMinutes: integer("duration_minutes"),
@@ -367,6 +400,7 @@ export const visit = pgTable(
   (t) => [
     uniqueIndex("visit_pass_kind_unique").on(t.passId, t.kind).where(sql`${t.passId} is not null`),
     index("visit_org_scheduled_idx").on(t.organizationId, t.scheduledOn),
+    index("visit_person_day_idx").on(t.personId, t.scheduledOn),
     index("visit_jobber_visit_idx").on(t.jobberVisitId),
   ],
 )
@@ -642,7 +676,7 @@ export const jobberVisit = pgTable(
     endAt: ts("end_at"),
     assignedUserId: text("assigned_user_id"),
     isBlock: boolean("is_block").notNull().default(false),
-    /** Set on rows the calendar feed wrote (busy time on that truck); their id is `feed:<truckId>:<uid>`. */
+    /** Set on rows the calendar feed wrote (busy time on that person); their id is `feed:<personId>:<uid>` and this column carries only the legacy truck id, for rows from before people existed. */
     truckId: text("truck_id").references(() => truck.id, { onDelete: "cascade" }),
     completedAt: ts("completed_at"),
     jobberUrl: text("jobber_url"),

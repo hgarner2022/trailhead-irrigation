@@ -20,9 +20,9 @@ describe("orderDay", () => {
     const points: Record<string, [number | null, number | null]> = { [a.id]: [40.05, -105.05], [b.id]: [40.0, -105.0], [c.id]: [40.02, -105.02], [d.id]: [null, null] }
     for (const v of visits) {
       await db.update(s.property).set({ town: "Erie", lat: points[v.id]![0], lng: points[v.id]![1] }).where(eq(s.property.id, v.propertyId))
-      await db.update(s.visit).set({ status: "scheduled", truckId: "truck-1", scheduledOn: "2027-10-05", durationMinutes: 30 }).where(eq(s.visit.id, v.id))
+      await db.update(s.visit).set({ status: "scheduled", personId: "person_truck-1", scheduledOn: "2027-10-05", durationMinutes: 30 }).where(eq(s.visit.id, v.id))
     }
-    const order = await orderDay(db, { truckId: "truck-1", day: "2027-10-05" })
+    const order = await orderDay(db, { personId: "person_truck-1", day: "2027-10-05" })
     expect(order).toHaveLength(4)
     expect(order.at(-1)).toBe(d.id)
     const stored = await db.select().from(s.visit).where(inArray(s.visit.id, order))
@@ -32,6 +32,6 @@ describe("orderDay", () => {
   })
 
   it("leaves a day with nothing on it alone", async () => {
-    expect(await orderDay(db, { truckId: "truck-2", day: "2027-10-06" })).toEqual([])
+    expect(await orderDay(db, { personId: "person_truck-2", day: "2027-10-06" })).toEqual([])
   })
 })

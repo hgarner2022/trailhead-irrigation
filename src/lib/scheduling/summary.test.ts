@@ -1,21 +1,21 @@
 import { describe, expect, it } from "vitest"
 import { crewSummary, twoHourWindow } from "./summary"
 
-const v = (truckName: string, town: string) => ({ truckName, town })
+const v = (personName: string, town: string) => ({ personName, town })
 
 describe("crewSummary", () => {
-  it("says where each truck is and how many, then what moved and what is unmarked, with nothing about approvals", () => {
-    const tomorrow = [...Array(4).fill(v("Truck 1", "Erie")), ...Array(3).fill(v("Truck 1", "Firestone")), ...Array(5).fill(v("Truck 2", "Longmont"))]
+  it("says where each person is and how many, then what moved and what is unmarked, with nothing about approvals", () => {
+    const tomorrow = [...Array(4).fill(v("Ryan Garner", "Erie")), ...Array(3).fill(v("Ryan Garner", "Firestone")), ...Array(5).fill(v("Tech Two", "Longmont"))]
     const text = crewSummary({ tomorrow, movedInJobber: 3, notMarkedDone: 2 })
-    expect(text).toBe("Tomorrow: 12 visits, Truck 1 in Erie and Firestone (7), Truck 2 in Longmont (5). 3 moved in Jobber this week. 2 visits from yesterday not marked done.")
+    expect(text).toBe("Tomorrow: 12 visits, Ryan Garner in Erie and Firestone (7), Tech Two in Longmont (5). 3 moved in Jobber this week. 2 visits from yesterday not marked done.")
     expect(text).not.toMatch(/approv|propos/i)
   })
   it("leaves out a part with nothing in it and handles one visit and an empty day", () => {
-    expect(crewSummary({ tomorrow: [v("Truck 2", "Erie")], movedInJobber: 0, notMarkedDone: 1 })).toBe("Tomorrow: 1 visit, Truck 2 in Erie (1). 1 visit from yesterday not marked done.")
+    expect(crewSummary({ tomorrow: [v("Tech Two", "Erie")], movedInJobber: 0, notMarkedDone: 1 })).toBe("Tomorrow: 1 visit, Tech Two in Erie (1). 1 visit from yesterday not marked done.")
     expect(crewSummary({ tomorrow: [], movedInJobber: 0, notMarkedDone: 0 })).toBe("Tomorrow: nothing on the calendar.")
   })
   it("lists three towns with commas and an and", () => {
-    expect(crewSummary({ tomorrow: [v("Truck 1", "Erie"), v("Truck 1", "Lafayette"), v("Truck 1", "Louisville")], movedInJobber: 0, notMarkedDone: 0 })).toContain("Erie, Lafayette and Louisville (3)")
+    expect(crewSummary({ tomorrow: [v("Ryan Garner", "Erie"), v("Ryan Garner", "Lafayette"), v("Ryan Garner", "Louisville")], movedInJobber: 0, notMarkedDone: 0 })).toContain("Erie, Lafayette and Louisville (3)")
   })
 })
 

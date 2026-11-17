@@ -46,12 +46,18 @@ export const PassDetail = PassOut.extend({
   price: z.number().int().describe("What the pass's visits cost in total, whole dollars."),
 })
 
-export const ChosenDay = z.object({
-  kind: z.enum(["turn-on", "inspection", "blowout"]),
-  day: Day,
-  truckId: Id,
-  start: z.string().regex(/^\d{2}:\d{2}$/).describe("HH:MM, the start of the two-hour window offered with the day."),
-})
+export const ChosenDay = z
+  .object({
+    kind: z.enum(["turn-on", "inspection", "blowout"]),
+    day: Day,
+    personId: Id.optional().describe("The person offered with the day."),
+    truckId: Id.optional().describe("Alias of personId, kept for one season: the same id."),
+    start: z.string().regex(/^\d{2}:\d{2}$/).describe("HH:MM, the start of the two-hour window offered with the day."),
+  })
+  .refine((d) => d.personId !== undefined || d.truckId !== undefined, { message: "Give the person offered with the day", path: ["personId"] })
+
+/** A chosen day as the pass modules take it: the person under one name. */
+export const chosenDay = (d: z.infer<typeof ChosenDay>) => ({ kind: d.kind, day: d.day, start: d.start, personId: (d.personId ?? d.truckId)! })
 
 export const passCreateInput = z.object({
   passId: Id.optional().describe("The pending pass this checkout already holds; when it is still pending for the same email it is updated instead of a second one being made."),

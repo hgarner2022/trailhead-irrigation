@@ -9,7 +9,7 @@ import { causeOf, groupAttention, type QueueAttention } from "./attention-groups
 import { NOT_CLOSED_LOOKBACK_DAYS, visitJob } from "./jobs"
 import type {
   SoldJob, AdminData, Attention, BusyBlock, Client, Consent, Invoice, Message, MessageKind, MonthTotal, Pass, PassVisit, Quote, SettingsChange,
-  Truck, AreaGroup, OrganizationSettings, Town, Visit, VisitKind, VisitStatus,
+  Person, AreaGroup, OrganizationSettings, Town, Visit, VisitKind, VisitStatus,
 } from "./types"
 
 const ZONE = "America/Denver"
@@ -18,8 +18,8 @@ const DAY_MS = 86_400_000
 
 export interface ApiVisit {
   id: string; jobId?: string; notes?: string | null; passId: string | null; bookingId: string | null; customerId: string; firstName: string; town: Town; kind: string; status: string
-  window: string | null; amount: number; preference: string | null; awaitingPick: boolean; truckId: string | null; scheduledOn: string | null
-  notDoneReason?: string | null; paidBy?: string | null; paymentStatus?: string; startTime: string | null; durationMinutes?: number | null; truckName?: string | null; stopOrder: number | null; completedOn: string | null; chargedAt: string | null
+  window: string | null; amount: number; preference: string | null; awaitingPick: boolean; personId: string | null; personName?: string | null; scheduledOn: string | null
+  notDoneReason?: string | null; paidBy?: string | null; paymentStatus?: string; startTime: string | null; durationMinutes?: number | null; stopOrder: number | null; completedOn: string | null; chargedAt: string | null
   exception: { kind: "moved-in-jobber"; at: string; note: string } | null; lat: number | null; lng: number | null
 }
 export interface ApiPass {
@@ -53,9 +53,10 @@ export interface ShapeInput {
   visits: ApiVisit[]
   passes: ApiPass[]
   messages: ApiMessage[]
-  trucks: Truck[]
+  /** everyone active, owners first, as the People tab lists them */
+  people: Person[]
   areas: AreaGroup[]
-  settings: Omit<OrganizationSettings, "trucks" | "areas">
+  settings: Omit<OrganizationSettings, "people" | "areas">
   settingsChanges: SettingsChange[]
   mirror: { clients: MirrorClient[]; visits: MirrorVisit[]; jobsWithoutVisit: MirrorJob[]; quotes: MirrorQuote[]; invoices: MirrorInvoice[] }
   queueProblems: QueueProblem[]
@@ -132,8 +133,10 @@ export function shapeAdminData(i: ShapeInput): AdminData {
       ...(v.startTime ? { startTime: v.startTime } : {}), ...(v.completedOn ? { completedOn: v.completedOn } : {}), ...(v.chargedAt ? { chargedAt: v.chargedAt } : {}),
       ...(failed.has(v.id) ? { chargeFailed: true } : {}), ...(v.status === "skipped" ? { skipped: true } : {}), ...(v.passId ? { passId: v.passId } : {}),
       isPass: v.passId !== null, jobberUrl: "",
-      ...(v.jobId ? { jobId: v.jobId } : {}), ...money(v), price: v.amount, ...(v.durationMinutes ? { minutes: v.durationMinutes } : {}), ...(v.notes ? { notes: v.notes } : {}), ...(v.truckName ? { truckName: v.truckName } : {}),
-      ...(v.truckId ? { truckId: v.truckId } : {}),
+      ...(v.jobId ? { jobId: v.jobId } : {}), ...money(v), price: v.amount, ...(v.durationMinutes ? { minutes: v.durationMinutes } : {}), ...(v.notes ? { notes: v.notes } : {}),
+      // the person assigned, under the deprecated truck names too (the same values; dropped in step 6)
+      ...(v.personName ? { personName: v.personName, truckName: v.personName } : {}),
+      ...(v.personId ? { personId: v.personId, truckId: v.personId } : {}),
       ...(v.awaitingPick ? { awaitingPick: true } : {}),
       ...(v.stopOrder !== null ? { stopOrder: v.stopOrder } : {}),
       ...point,
@@ -192,7 +195,7 @@ export function shapeAdminData(i: ShapeInput): AdminData {
         ...(v.scheduledOn ? { scheduledAt: instantOf(v.scheduledOn, v.startTime), scheduledOn: v.scheduledOn } : {}),
         ...(v.startTime ? { startTime: v.startTime } : {}), ...(v.durationMinutes ? { windowMinutes: v.durationMinutes } : {}),
         ...(failed.has(v.id) ? { chargeFailed: true } : {}),
-        ...(v.truckName ? { truckName: v.truckName } : {}),
+        ...(v.personName ? { personName: v.personName, truckName: v.personName } : {}),
         ...(v.completedOn ? { completedAt: instantOf(v.completedOn, "12:00") } : {}),
         ...(v.chargedAt ? { chargedAt: v.chargedAt } : {}),
         ...money(v),
@@ -231,7 +234,7 @@ export function shapeAdminData(i: ShapeInput): AdminData {
 
   return {
     organizationId: i.organizationId, syncedAt: iso(i.syncedAt), clients, visits, ...(soldJobs ? { jobs: soldJobs } : {}), quotes, invoices, passes,
-    monthTotals: monthTotals(i), attention: attention(i, passes, visitRows(i, appVisits, visits)), settings: { ...i.settings, trucks: i.trucks, areas: i.areas },
+    monthTotals: monthTotals(i), attention: attention(i, passes, visitRows(i, appVisits, visits)), settings: { ...i.settings, people: i.people, areas: i.areas },
     settingsChanges: i.settingsChanges, messages, blocks: i.blocks,
   }
 }

@@ -10,9 +10,10 @@ import type { VisitActions } from "./visit-actions-types"
 import { VisitPanelHost, useOpenVisit } from "./VisitPanelHost"
 import { visitColumns } from "./visits-columns"
 import { JOB_TYPE_OPTIONS, KIND_OPTIONS, MONEY_OPTIONS, WORK_OPTIONS, visitRows, visitsContext, type VisitRow } from "./visits-model"
+import { routePeople } from "@/lib/admin/people"
 
-// Every visit of the season (docs/plans build-1): the customer's full name, town, the kind, day, time, truck, the
-// two pills (work and money), price and pass number. Filters on both pill sets, kind, truck, town and pass or
+// Every visit of the season (docs/plans build-1): the customer's full name, town, the kind, day, time, who has it, the
+// two pills (work and money), price and pass number. Filters on both pill sets, kind, person, town and pass or
 // one-off; search by name, street or phone; New pass and New visit in the header; a row opens the visit panel beside the
 // grid (a sheet on a phone). A pass is a filter chip and a link in the Pass column, never a button of its own
 // (owner, 16 Nov: "Passes is a visits, so it could just be part of the filter"). Client because the open visit is
@@ -40,11 +41,11 @@ function Grid({ rows, data, defaultFilters }: { rows: VisitRow[]; data: AdminDat
       { column: "work", label: "Work", options: WORK_OPTIONS },
       { column: "money", label: "Money", options: MONEY_OPTIONS },
       { column: "kind", label: "Visit", options: KIND_OPTIONS },
-      { column: "truckId", label: "Truck", options: [...data.settings.trucks.map((t) => ({ value: t.id, label: t.name })), { value: "none", label: "No truck yet" }] },
+      { column: "personId", label: "Who", options: [...routePeople(data.settings.people).map((p) => ({ value: p.id, label: p.name })), { value: "none", label: "No one yet" }] },
       { column: "town", label: "Town", options: TOWNS.map((t) => ({ value: t, label: t })) },
       { column: "jobType", label: "Pass", options: JOB_TYPE_OPTIONS },
     ],
-    [data.settings.trucks],
+    [data.settings.people],
   )
   return (
     <DataGrid

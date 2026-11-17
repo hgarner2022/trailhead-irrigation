@@ -8,7 +8,7 @@ import { customersList } from "@/api/v1/customers/handlers"
 import { messagesList } from "@/api/v1/messages/handlers"
 import { passesList } from "@/api/v1/passes/handlers"
 import { settingsChangesList, settingsGet } from "@/api/v1/settings/handlers"
-import { trucksList } from "@/api/v1/trucks/handlers"
+import { peopleList, type PersonOut } from "@/api/v1/people/handlers"
 import { visitsList } from "@/api/v1/visits/handlers"
 import { today as todayOf } from "@/api/v1/shared"
 import * as s from "@/db/schema"
@@ -16,9 +16,16 @@ import { loadBlocks } from "@/lib/jobber-feed"
 import { ctxFromSession } from "./api-ctx"
 import { canSeeContact } from "@/api/v1/shared"
 import { failedChargeVisits, shapeAdminData, type ApiCustomer, type ApiMessage, type ApiPass, type ApiVisit } from "./shape"
-import type { AdminData, Town, Truck } from "./types"
+import type { AdminData, Person, Town } from "./types"
 
 const PAGE = 100
+
+/** The API's person as the screens hold it: a null field is left out. */
+const personFromApi = (p: PersonOut): Person => ({
+  id: p.id, name: p.name, initials: p.initials, role: p.role, workingDays: p.workingDays, capacityByKind: p.capacityByKind,
+  ...(p.email ? { email: p.email } : {}), ...(p.phone ? { phone: p.phone } : {}), ...(p.truck ? { truck: p.truck } : {}), ...(p.jobberUserId ? { jobberUserId: p.jobberUserId } : {}),
+  ...(p.seasonStart ? { seasonStart: p.seasonStart } : {}), ...(p.seasonEnd ? { seasonEnd: p.seasonEnd } : {}),
+})
 const MAX_PAGES = 100
 
 /** Every page of a paginated list handler, called in process with the caller's own principal. */
@@ -42,12 +49,12 @@ async function all<T>(ctx: Ctx, handler: Handler<never, never>, input: Record<st
  */
 export async function getLiveAdminData(ctx: Ctx): Promise<AdminData> {
   const org = ctx.organizationId
-  const [customers, visits, passes, messages, trucks, areas, settings, changes] = await Promise.all([
+  const [customers, visits, passes, messages, people, areas, settings, changes] = await Promise.all([
     all<ApiCustomer>(ctx, customersList as never),
     all<ApiVisit>(ctx, visitsList as never),
     all<ApiPass>(ctx, passesList as never),
     all<ApiMessage>(ctx, messagesList as never),
-    callApi(ctx, trucksList, {}),
+    callApi(ctx, peopleList, { active: "true" }),
     callApi(ctx, areasList, {}),
     callApi(ctx, settingsGet, {}),
     all<{ id: string; at: string; who: string; field: string; from: string; to: string }>(ctx, settingsChangesList as never),
@@ -85,7 +92,7 @@ export async function getLiveAdminData(ctx: Ctx): Promise<AdminData> {
     visits,
     passes,
     messages,
-    trucks: trucks.data.filter((t) => t.active).map((t): Truck => ({ id: t.id, name: t.name, ...(t.jobberUserId ? { jobberUserId: t.jobberUserId } : {}), workingDays: t.workingDays, capacityByKind: t.capacityByKind })),
+    people: people.data.map(personFromApi),
     areas: areas.data.map((a) => ({ id: a.id, name: a.name, towns: a.towns as Town[] })),
     settings: rest as never,
     settingsChanges: changes,

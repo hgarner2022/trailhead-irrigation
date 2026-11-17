@@ -1,18 +1,18 @@
 /**
- * The scheduler's calendar rules, pure: the days a truck works, whether a day is inside a window, what a truck-day holds
+ * The scheduler's calendar rules, pure: the days a person works, whether a day is inside a window, what a person's day holds
  * after the buffer, and the order the towns are worked in. The busy-time helpers are Phase 6's, re-exported so the scheduler
  * and the Schedule screen subtract blocks the same way.
  */
 import { addDays, blockedMinutes, blocksOn, capacityAfterBlocks, WORKDAY_MINUTES, weekdayOf } from "@/lib/admin/calendar"
-import type { CapacityKind, SchedArea, SchedSettings, SchedTruck, Town } from "./types"
+import type { CapacityKind, SchedArea, SchedSettings, SchedPerson, Town } from "./types"
 
 export { addDays, blockedMinutes, blocksOn, capacityAfterBlocks, WORKDAY_MINUTES, weekdayOf }
 
-/** Every day from `from` to `to` (inclusive) that the truck works; none for a truck out of service. */
-export function workingDays(truck: Pick<SchedTruck, "workingDays" | "active">, from: string, to: string): string[] {
+/** Every day from `from` to `to` (inclusive) that the person works; none for a person out of service. */
+export function workingDays(person: Pick<SchedPerson, "workingDays" | "active">, from: string, to: string): string[] {
   const days: string[] = []
-  if (truck.active === false) return days
-  for (let day = from; day <= to; day = addDays(day, 1)) if (truck.workingDays.includes(weekdayOf(day))) days.push(day)
+  if (person.active === false) return days
+  for (let day = from; day <= to; day = addDays(day, 1)) if (person.workingDays.includes(weekdayOf(day))) days.push(day)
   return days
 }
 
@@ -30,14 +30,14 @@ export interface DayCapacity {
 }
 
 /**
- * What one truck-day holds for a kind once the buffer for repairs and weather is held back: the truck's visits of that kind
+ * What one person's day holds for a kind once the buffer for repairs and weather is held back: their visits of that kind
  * and the working minutes, each reduced by the early percent in the window's first two weeks and the late percent after
- * (the late one when no `windowStart` is given). A kind the truck has no room for stays zero; any other keeps at least one.
+ * (the late one when no `windowStart` is given). A kind the person has no room for stays zero; any other keeps at least one.
  */
-export function capacityFor(truck: Pick<SchedTruck, "capacityByKind">, kind: CapacityKind, day: string, settings: Pick<SchedSettings, "bufferPercentEarly" | "bufferPercentLate">, windowStart?: string): DayCapacity {
+export function capacityFor(person: Pick<SchedPerson, "capacityByKind">, kind: CapacityKind, day: string, settings: Pick<SchedSettings, "bufferPercentEarly" | "bufferPercentLate">, windowStart?: string): DayCapacity {
   const early = windowStart !== undefined && day < addDays(windowStart.slice(0, 10), EARLY_DAYS)
   const keep = 1 - (early ? settings.bufferPercentEarly : settings.bufferPercentLate) / 100
-  const base = truck.capacityByKind[kind] ?? 0
+  const base = person.capacityByKind[kind] ?? 0
   return { visits: base > 0 ? Math.max(1, Math.floor(base * keep)) : 0, minutes: Math.floor(WORKDAY_MINUTES * keep) }
 }
 

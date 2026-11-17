@@ -39,7 +39,7 @@ describe("passes.create with renewOf", () => {
     const offer = await callApi(ctxFor(db, visitor(), NOW), scheduleOfferDays, { town: "Erie", kind: "turn-on", season: 2028, zones: 6 })
     const pick = offer.days[1]!
     expect(pick.day.startsWith("2028-")).toBe(true)
-    const pass = await renew(visitor("p1"), "p1", { days: [{ kind: "turn-on", day: pick.day, truckId: pick.truckId, start: pick.start }] })
+    const pass = await renew(visitor("p1"), "p1", { days: [{ kind: "turn-on", day: pick.day, personId: pick.personId, start: pick.start }] })
     expect(pass).toMatchObject({ season: 2028, status: "active", cardLast4: "4242" })
     expect(pass.visits.find((v) => v.kind === "turn-on")).toMatchObject({ status: "scheduled", scheduledOn: pick.day })
     expect(pass.visits.find((v) => v.kind === "blowout")).toMatchObject({ status: "unscheduled", scheduledOn: null })

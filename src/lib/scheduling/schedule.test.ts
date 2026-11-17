@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest"
 import { preferredRange, scheduleVisits, type ScheduleInput } from "./schedule"
-import type { SchedArea, SchedTruck, SchedVisit, Town } from "./types"
+import type { SchedArea, SchedPerson, SchedVisit, Town } from "./types"
 
-const truck = (id: string, over: Partial<SchedTruck> = {}): SchedTruck => ({ id, name: id, workingDays: ["mon", "tue", "wed", "thu", "fri"], capacityByKind: { "turn-on": 8, inspection: 6, blowout: 14, repair: 4, other: 2 }, ...over })
+const person = (id: string, over: Partial<SchedPerson> = {}): SchedPerson => ({ id, name: id === "t1" ? "Ryan Garner" : "Tech Two", truck: id === "t1" ? "Truck 1" : "Truck 2", workingDays: ["mon", "tue", "wed", "thu", "fri"], capacityByKind: { "turn-on": 8, inspection: 6, blowout: 14, repair: 4, other: 2 }, ...over })
 const areas: SchedArea[] = [
   { id: "north", name: "Erie and Firestone", towns: ["Erie", "Firestone"], springOrder: 3, fallOrder: 0 },
   { id: "lm", name: "Longmont", towns: ["Longmont"], springOrder: 2, fallOrder: 1 },
@@ -18,7 +18,7 @@ const settings = {
 }
 const v = (id: string, town: Town, over: Partial<SchedVisit> = {}): SchedVisit => ({ id, kind: "turn-on", town, preference: "recommended", ...over })
 const run = (visits: SchedVisit[], over: Partial<ScheduleInput> = {}) =>
-  scheduleVisits({ visits, trucks: [truck("t1")], areas, settings, from: "2027-04-26", taken: [], blocks: [], ...over })
+  scheduleVisits({ visits, people: [person("t1")], areas, settings, from: "2027-04-26", taken: [], blocks: [], ...over })
 const where = (r: ReturnType<typeof run>, id: string) => r.placed.find((p) => p.visitId === id)
 
 describe("scheduleVisits", () => {
@@ -53,7 +53,7 @@ describe("scheduleVisits", () => {
     expect(r.placed.map((p) => p.visitId)).toEqual(["b"])
   })
 
-  it("keeps a truck-day to one area group", () => {
+  it("keeps a person's day to one area group", () => {
     const r = run([v("a", "Erie"), v("b", "Longmont"), v("c", "Firestone")])
     expect(where(r, "a")!.day).toBe(where(r, "c")!.day)
     expect(where(r, "b")!.day).not.toBe(where(r, "a")!.day)
@@ -67,8 +67,8 @@ describe("scheduleVisits", () => {
   })
 
   it("serves an earlier preference before a later one when there is only one seat", () => {
-    const one = truck("t1", { capacityByKind: { "turn-on": 1, inspection: 1, blowout: 1, repair: 1, other: 1 }, workingDays: ["tue"] })
-    const r = run([v("late", "Erie", { preference: "later" }), v("early", "Erie", { preference: "earlier" })], { trucks: [one] })
+    const one = person("t1", { capacityByKind: { "turn-on": 1, inspection: 1, blowout: 1, repair: 1, other: 1 }, workingDays: ["tue"] })
+    const r = run([v("late", "Erie", { preference: "later" }), v("early", "Erie", { preference: "earlier" })], { people: [one] })
     expect(where(r, "early")!.day).toBe("2027-05-04")
     expect(where(r, "late")!.day > "2027-05-04").toBe(true)
   })
@@ -83,51 +83,51 @@ describe("scheduleVisits", () => {
   })
 
   it("falls back to the whole window when the preferred third is full", () => {
-    const one = truck("t1", { capacityByKind: { "turn-on": 1, inspection: 1, blowout: 1, repair: 1, other: 1 } })
+    const one = person("t1", { capacityByKind: { "turn-on": 1, inspection: 1, blowout: 1, repair: 1, other: 1 } })
     const visits = Array.from({ length: 6 }, (_, i) => v(`e${i}`, "Erie", { preference: "earlier" }))
-    const r = run(visits, { trucks: [one] })
+    const r = run(visits, { people: [one] })
     expect(r.placed).toHaveLength(6)
     expect(r.placed.some((p) => p.day > "2027-05-06")).toBe(true)
   })
 
-  it("stays under each truck-day's capacity in visits, counting what is taken", () => {
-    const one = truck("t1", { capacityByKind: { "turn-on": 2, inspection: 2, blowout: 2, repair: 2, other: 2 }, workingDays: ["mon"] })
-    const taken = [{ truckId: "t1", day: "2027-05-03", kind: "turn-on", town: "Erie" as const, minutes: 60 }]
-    const r = run(["a", "b", "c"].map((id) => v(id, "Erie")), { trucks: [one], taken })
+  it("stays under each person's capacity in visits, counting what is taken", () => {
+    const one = person("t1", { capacityByKind: { "turn-on": 2, inspection: 2, blowout: 2, repair: 2, other: 2 }, workingDays: ["mon"] })
+    const taken = [{ personId: "t1", day: "2027-05-03", kind: "turn-on", town: "Erie" as const, minutes: 60 }]
+    const r = run(["a", "b", "c"].map((id) => v(id, "Erie")), { people: [one], taken })
     const count = (day: string) => r.placed.filter((p) => p.day === day).length
     expect(count("2027-05-03")).toBe(1)
     expect(count("2027-05-10")).toBe(2)
   })
 
   it("stays under capacity in minutes", () => {
-    const r = run(["a", "b"].map((id) => v(id, "Erie", { durationMinutes: 400 })), { trucks: [truck("t1", { workingDays: ["mon"] })] })
+    const r = run(["a", "b"].map((id) => v(id, "Erie", { durationMinutes: 400 })), { people: [person("t1", { workingDays: ["mon"] })] })
     expect(r.placed.map((p) => p.day)).toEqual(["2027-05-03", "2027-05-10"])
   })
 
-  it("subtracts the busy blocks on a truck's Jobber calendar", () => {
-    const allDay = [{ truckId: "t1", startAt: "2027-05-03T06:00:00Z", endAt: "2027-05-04T06:00:00Z", title: "Out" }]
-    const r = run([v("a", "Erie")], { trucks: [truck("t1", { workingDays: ["mon"] })], blocks: allDay })
+  it("subtracts the busy blocks on a person's Jobber calendar", () => {
+    const allDay = [{ personId: "t1", startAt: "2027-05-03T06:00:00Z", endAt: "2027-05-04T06:00:00Z", title: "Out" }]
+    const r = run([v("a", "Erie")], { people: [person("t1", { workingDays: ["mon"] })], blocks: allDay })
     expect(where(r, "a")!.day).toBe("2027-05-10")
   })
 
-  it("walks the trucks in turn: the second truck takes the day's overflow in the same area", () => {
+  it("walks the people in turn: the second person takes the day's overflow in the same area", () => {
     const small = { "turn-on": 1, inspection: 1, blowout: 1, repair: 1, other: 1 }
-    const r = run([v("a", "Erie", { preference: "earlier" }), v("b", "Erie", { preference: "earlier" })], { trucks: [truck("t1", { capacityByKind: small }), truck("t2", { capacityByKind: small })] })
-    expect(where(r, "a")).toMatchObject({ day: "2027-05-03", truckId: "t1" })
-    expect(where(r, "b")).toMatchObject({ day: "2027-05-03", truckId: "t2" })
+    const r = run([v("a", "Erie", { preference: "earlier" }), v("b", "Erie", { preference: "earlier" })], { people: [person("t1", { capacityByKind: small }), person("t2", { capacityByKind: small })] })
+    expect(where(r, "a")).toMatchObject({ day: "2027-05-03", personId: "t1" })
+    expect(where(r, "b")).toMatchObject({ day: "2027-05-03", personId: "t2" })
   })
 
   it("reports a visit that has no room before its window closes as unplaced, with the reason", () => {
-    const none = truck("t1", { workingDays: [] })
-    const r = run([v("a", "Erie")], { trucks: [none], from: "2027-05-03" })
+    const none = person("t1", { workingDays: [] })
+    const r = run([v("a", "Erie")], { people: [none], from: "2027-05-03" })
     expect(r.placed).toEqual([])
-    expect(r.unplaced).toEqual([{ visitId: "a", reason: "No turn-on truck-day has room before 2027-05-14" }])
+    expect(r.unplaced).toEqual([{ visitId: "a", reason: "No one has room for a turn-on before 2027-05-14" }])
   })
 
   it("gives the same answer for the same inputs, whatever order they arrive in", () => {
     const visits = ["a", "b", "c", "d", "e"].map((id, i) => v(id, (["Erie", "Longmont", "Lafayette", "Firestone", "Erie"] as Town[])[i]!))
-    const forward = run(visits, { trucks: [truck("t1"), truck("t2")] })
-    const backward = run([...visits].reverse(), { trucks: [truck("t2"), truck("t1")] })
+    const forward = run(visits, { people: [person("t1"), person("t2")] })
+    const backward = run([...visits].reverse(), { people: [person("t2"), person("t1")] })
     expect(backward).toEqual(forward)
   })
 })

@@ -24,9 +24,9 @@ const create = (input: Record<string, unknown>, p = writeKey) => callApi(as(p), 
 const count = async (t: typeof s.job | typeof s.customer | typeof s.visit) => (await db.select().from(t)).length
 
 describe("visits.create", () => {
-  it("makes the job and the visit, places it and texts the date", async () => {
+  it("makes the job and the visit, places it with the first person on the schedule (Ryan, the owner) and texts the date", async () => {
     const out = await create({ customerId: "c100", kind: "repair", scheduledOn: "2027-05-05", price: 145, notes: "Zone 3 will not shut off" })
-    expect(out).toMatchObject({ kind: "repair", status: "scheduled", scheduledOn: "2027-05-05", truckId: "truck-1", amount: 145, durationMinutes: 120, notes: "Zone 3 will not shut off", bookingId: null, passId: null })
+    expect(out).toMatchObject({ kind: "repair", status: "scheduled", scheduledOn: "2027-05-05", personId: "person_truck-1", personName: "Ryan Garner", truckId: "person_truck-1", truckName: "Ryan Garner", amount: 145, durationMinutes: 120, notes: "Zone 3 will not shut off", bookingId: null, passId: null })
     const [job] = await db.select().from(s.job).where(eq(s.job.id, out.jobId))
     expect(job).toMatchObject({ kind: "repair", source: "office", status: "active", price: 145, customerId: "c100" })
     const texts = (await db.select().from(s.messageLog)).filter((m) => m.visitId === out.id)
@@ -34,7 +34,7 @@ describe("visits.create", () => {
   })
   it("with no day waits as Needs a day, minutes from the kind, price left blank", async () => {
     const out = await create({ newCustomer: { firstName: "nora", lastName: "ortiz", email: "Nora@Example.com", phone: "303-555-0177", property: { address: "9 Oak St", town: "Erie" } }, kind: "install" })
-    expect(out).toMatchObject({ status: "unscheduled", scheduledOn: null, truckId: null, durationMinutes: 120, firstName: "Nora", amount: 0 })
+    expect(out).toMatchObject({ status: "unscheduled", scheduledOn: null, personId: null, durationMinutes: 120, firstName: "Nora", amount: 0 })
     const [job] = await db.select().from(s.job).where(eq(s.job.id, out.jobId))
     expect(job).toMatchObject({ kind: "install", price: null })
   })
@@ -55,13 +55,30 @@ describe("visits.create", () => {
   })
 })
 
+describe("visits.create's default assignee", () => {
+  it("is the owner before anyone whose name sorts first", async () => {
+    const [aaron] = await db.insert(s.person).values({ organizationId: ORG, name: "Aaron Lee", initials: "AL", role: "tech", truck: "Truck 3" }).returning({ id: s.person.id })
+    const out = await create({ customerId: "c100", kind: "repair", scheduledOn: "2027-05-10" })
+    expect(out).toMatchObject({ personId: "person_truck-1", personName: "Ryan Garner" })
+    await db.update(s.person).set({ active: false }).where(eq(s.person.id, aaron!.id))
+  })
+  it("with no one on the schedule refuses the day and leaves nothing behind", async () => {
+    const [jobs, visits] = [await count(s.job), await count(s.visit)]
+    const people = await db.select({ id: s.person.id, truck: s.person.truck }).from(s.person).where(eq(s.person.organizationId, ORG))
+    await db.update(s.person).set({ truck: null }).where(eq(s.person.organizationId, ORG))
+    await expect(create({ customerId: "c100", kind: "repair", scheduledOn: "2027-05-11" })).rejects.toMatchObject({ code: "unprocessable", message: "No one is on the schedule to take this visit" })
+    expect([await count(s.job), await count(s.visit)]).toEqual([jobs, visits])
+    for (const p of people) await db.update(s.person).set({ truck: p.truck }).where(eq(s.person.id, p.id))
+  })
+})
+
 describe("visits.markNotDone", () => {
   it("sends a scheduled visit back to Needs a day and keeps the reason", async () => {
     const v = await create({ customerId: "c100", kind: "repair", scheduledOn: "2027-05-06" })
     await expect(callApi(as(), visitsMarkNotDone, { id: v.id, reason: "other" })).rejects.toMatchObject({ code: "invalid" })
     await expect(callApi(as(readKey), visitsMarkNotDone, { id: v.id, reason: "no-water" })).rejects.toMatchObject({ code: "forbidden" })
     const out = await callApi(as(), visitsMarkNotDone, { id: v.id, reason: "no-water" })
-    expect(out).toMatchObject({ status: "unscheduled", scheduledOn: null, truckId: null })
+    expect(out).toMatchObject({ status: "unscheduled", scheduledOn: null, personId: null })
     const changes = await db.select().from(s.passChange).where(eq(s.passChange.visitId, v.id))
     expect(changes.find((c) => c.kind === "not-done")?.detail).toMatchObject({ reason: "no-water", day: "2027-05-06" })
     await expect(callApi(as(), visitsMarkNotDone, { id: v.id, reason: "no-water" })).rejects.toMatchObject({ code: "unprocessable" })
@@ -84,12 +101,24 @@ describe("visits.update", () => {
     const [pass] = await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, "p3"))
     expect(pass!.accessNote).toBe("Gate 1234")
   })
-  it("refuses a truck that does not work the day, and a truck for a visit with no day", async () => {
+  it("refuses a person who does not work the day, and a person for a visit with no day", async () => {
     const none = await create({ customerId: "c100", kind: "repair" })
-    await expect(callApi(as(), visitsUpdate, { id: none.id, truckId: "truck-2" })).rejects.toMatchObject({ code: "unprocessable" })
+    await expect(callApi(as(), visitsUpdate, { id: none.id, personId: "person_truck-2" })).rejects.toMatchObject({ code: "unprocessable" })
     const dated = await create({ customerId: "c100", kind: "repair", scheduledOn: "2027-05-11" })
-    await expect(callApi(as(), visitsUpdate, { id: dated.id, truckId: "nope" })).rejects.toMatchObject({ code: "not_found" })
+    await expect(callApi(as(), visitsUpdate, { id: dated.id, personId: "nope" })).rejects.toMatchObject({ code: "not_found" })
     await expect(callApi(as(readKey), visitsUpdate, { id: none.id, notes: "x" })).rejects.toMatchObject({ code: "forbidden" })
+  })
+  it("naming the person the visit already has is a no-op, by either id, even once that person is out of service", async () => {
+    const v = await create({ customerId: "c100", kind: "repair", scheduledOn: "2027-05-12" })
+    expect(v.personId).toBe("person_truck-1")
+    await db.update(s.person).set({ active: false }).where(eq(s.person.id, "person_truck-1"))
+    try {
+      expect(await callApi(as(), visitsUpdate, { id: v.id, personId: "person_truck-1" })).toMatchObject({ personId: "person_truck-1", scheduledOn: "2027-05-12", startTime: v.startTime, stopOrder: v.stopOrder })
+      expect(await callApi(as(), visitsUpdate, { id: v.id, truckId: "truck-1" })).toMatchObject({ personId: "person_truck-1", scheduledOn: "2027-05-12", startTime: v.startTime, stopOrder: v.stopOrder })
+      expect((await db.select().from(s.passChange).where(eq(s.passChange.visitId, v.id))).some((c) => c.kind === "visit-edited")).toBe(false)
+    } finally {
+      await db.update(s.person).set({ active: true }).where(eq(s.person.id, "person_truck-1"))
+    }
   })
 })
 
@@ -97,19 +126,19 @@ describe("visits.update unscheduled", () => {
   it("takes a placed visit back to Needs a day, and refuses one with no day", async () => {
     const v = await create({ customerId: "c100", kind: "repair", scheduledOn: "2027-05-12" })
     const out = await callApi(as(), visitsUpdate, { id: v.id, unscheduled: true })
-    expect(out).toMatchObject({ status: "unscheduled", scheduledOn: null, truckId: null })
+    expect(out).toMatchObject({ status: "unscheduled", scheduledOn: null, personId: null })
     await expect(callApi(as(), visitsUpdate, { id: v.id, unscheduled: true })).rejects.toMatchObject({ code: "unprocessable" })
   })
 })
 
 describe("visits.cancel", () => {
   it("cancels one pass visit, keeps the others, drops its price and does not make a pending charge", async () => {
-    await callApi(as(), visitsMove, { id: "p4-blowout", truckId: "truck-1", scheduledOn: "2027-10-12" })
+    await callApi(as(), visitsMove, { id: "p4-blowout", personId: "person_truck-1", scheduledOn: "2027-10-12" })
     await db.insert(s.queueItem).values({ organizationId: ORG, kind: "pass-charge", key: "p4-blowout", payload: { visitId: "p4-blowout" } })
     const [passRow] = await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, "p4"))
     const before = (await db.select().from(s.job).where(eq(s.job.id, passRow!.jobId)))[0]!.price!
     const out = await callApi(as(), visitsCancel, { id: "p4-blowout", reason: "Moving" })
-    expect(out).toMatchObject({ status: "cancelled", scheduledOn: null, truckId: null })
+    expect(out).toMatchObject({ status: "cancelled", scheduledOn: null, personId: null })
     const rest = await db.select().from(s.visit).where(eq(s.visit.passId, "p4"))
     expect(rest.filter((v) => v.status !== "cancelled").length).toBeGreaterThan(0)
     expect((await db.select().from(s.job).where(eq(s.job.id, passRow!.jobId)))[0]!.price!).toBeLessThan(before)

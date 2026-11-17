@@ -12,7 +12,7 @@ const TODAY = "2026-11-12T19:56:30Z"
 const data = snapshot as AdminData
 
 const more: SettingsChange[] = [
-  { id: "sc5", at: "2026-11-12T15:10:00Z", who: "Ryan", field: "Truck 1 repairs per day", from: "3", to: "4" },
+  { id: "sc5", at: "2026-11-12T15:10:00Z", who: "Ryan", field: "Ryan Garner repairs per day", from: "3", to: "4" },
   { id: "sc6", at: "2026-11-12T16:42:00Z", who: "Hannah", field: "Fall order", from: "Erie, Firestone, Longmont, Broomfield, Louisville, Lafayette", to: "Firestone, Erie, Longmont, Broomfield, Louisville, Lafayette" },
   { id: "sc7", at: "2026-11-12T18:03:00Z", who: "Hannah", field: "Renewal (email)", from: "On", to: "Off" },
 ]
@@ -31,7 +31,8 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-export const Trucks: Story = {
+/** The People tab: everyone who works here, owners first, with their role, truck, days, capacities and season. */
+export const People: Story = {
   globals: { viewport: { value: "wide", isRotated: false } },
 }
 
@@ -61,7 +62,7 @@ export const WithChanges: Story = {
   globals: { viewport: { value: "wide", isRotated: false } },
 }
 
-/** On a phone the tab list scrolls sideways and the tables scroll inside their cards. */
+/** On a phone the tab list scrolls sideways and the People table scrolls inside its card. */
 export const Phone: Story = {
   globals: { viewport: { value: "phone", isRotated: false } },
 }

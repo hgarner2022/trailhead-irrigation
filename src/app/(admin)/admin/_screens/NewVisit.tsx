@@ -12,10 +12,11 @@ import type { NewVisitInput, VisitActions } from "./visit-actions-types"
 import { FORM_STATUS, useRunner } from "./use-runner"
 import { TIME_CHOICES } from "./visit-panel-model"
 import { useOpenVisit } from "./VisitPanelHost"
+import { routePeople } from "@/lib/admin/people"
 
 // New visit: a sheet that works in under a minute with a phone in the other hand. It needs only the customer, the
-// kind and the day; the time, minutes, truck, price and notes sit under "More details" with the defaults from the
-// spec (any time, the kind's minutes, the first truck, the kind's price where it is known, else quote later).
+// kind and the day; the time, minutes, who, price and notes sit under "More details" with the defaults from the
+// spec (any time, the kind's minutes, the first person on the schedule, the kind's price where it is known, else quote later).
 // Adding it makes the job and its first visit; with a day and a customer who can be texted, the date goes out.
 // The customer block is shared with New pass (CustomerPicker.tsx), so the two sheets feel the same.
 
@@ -40,13 +41,13 @@ export function NewVisit({ data, today, open, onOpenChange, customerId, actions 
   const [day, setDay] = useState(todayDay)
   const [time, setTime] = useState("")
   const [minutes, setMinutes] = useState<string | null>(null)
-  const [truckId, setTruckId] = useState("")
+  const [personId, setPersonId] = useState("")
   const [price, setPrice] = useState<string | null>(null)
   const [notes, setNotes] = useState("")
   const { pending, error, run } = useRunner()
   const shownPrice = price ?? (KIND_PRICE[kind] ? String(KIND_PRICE[kind]) : "")
   const shownMinutes = minutes ?? String(KIND_MINUTES[kind])
-  const trucks = data.settings.trucks
+  const people = routePeople(data.settings.people)
   const ready = choiceReady(choice, data.clients) && Boolean(day)
 
   const submit = () => {
@@ -58,7 +59,7 @@ export function NewVisit({ data, today, open, onOpenChange, customerId, actions 
       scheduledOn: day,
       ...(time ? { startTime: time } : {}),
       durationMinutes: Number(shownMinutes),
-      ...(truckId ? { truckId } : {}),
+      ...(personId ? { personId } : {}),
       ...(shownPrice ? { price: Number(shownPrice) } : {}),
       ...(text ? { notes: text } : {}),
     }
@@ -126,14 +127,14 @@ export function NewVisit({ data, today, open, onOpenChange, customerId, actions 
                 <Input id="nv-minutes" inputMode="numeric" value={shownMinutes} onChange={(e) => setMinutes(e.target.value.replace(/\D/g, ""))} className="min-h-11" />
               </div>
               <div>
-                <label htmlFor="nv-truck" className={LABEL}>
-                  Truck
+                <label htmlFor="nv-person" className={LABEL}>
+                  Who
                 </label>
-                <select id="nv-truck" value={truckId} onChange={(e) => setTruckId(e.target.value)} className={FIELD}>
-                  <option value="">First in service</option>
-                  {trucks.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.name}
+                <select id="nv-person" value={personId} onChange={(e) => setPersonId(e.target.value)} className={FIELD}>
+                  <option value="">First on the schedule</option>
+                  {people.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
                     </option>
                   ))}
                 </select>

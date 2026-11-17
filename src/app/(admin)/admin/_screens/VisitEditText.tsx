@@ -19,16 +19,16 @@ const FIELD = "min-h-11 w-full rounded-lg border border-input bg-background px-3
 const LABEL = "mb-1 block text-sm font-medium text-foreground"
 export const TEXT_MAX = 320
 
-export function EditForm({ visit, pass, trucks, actions }: { visit: Visit; pass?: Pass; trucks: AdminData["settings"]["trucks"]; actions?: VisitActions }) {
+export function EditForm({ visit, pass, people, actions }: { visit: Visit; pass?: Pass; people: AdminData["settings"]["people"]; actions?: VisitActions }) {
   const [minutes, setMinutes] = useState(String(visit.minutes ?? 60))
-  const [truckId, setTruckId] = useState(visit.truckId ?? "")
+  const [personId, setPersonId] = useState(visit.personId ?? "")
   const [notes, setNotes] = useState(visit.notes ?? "")
   const [access, setAccess] = useState(pass?.accessNote ?? "")
   const { pending, error, done, run } = useRunner()
   const save = () => {
     const changes = {
       ...(Number(minutes) !== (visit.minutes ?? 60) ? { durationMinutes: Number(minutes) } : {}),
-      ...(truckId && truckId !== visit.truckId ? { truckId } : {}),
+      ...(personId && personId !== visit.personId ? { personId } : {}),
       ...(notes !== (visit.notes ?? "") ? { notes } : {}),
       ...(pass && access !== (pass.accessNote ?? "") ? { accessNote: access } : {}),
     }
@@ -54,14 +54,14 @@ export function EditForm({ visit, pass, trucks, actions }: { visit: Visit; pass?
           </select>
         </div>
         <div>
-          <label htmlFor="edit-truck" className={LABEL}>
-            Truck
+          <label htmlFor="edit-person" className={LABEL}>
+            Who
           </label>
-          <select id="edit-truck" value={truckId} onChange={(e) => setTruckId(e.target.value)} className={FIELD} disabled={!visit.scheduledOn}>
-            {!visit.truckId && <option value="">No truck yet</option>}
-            {trucks.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.name}
+          <select id="edit-person" value={personId} onChange={(e) => setPersonId(e.target.value)} className={FIELD} disabled={!visit.scheduledOn}>
+            {!visit.personId && <option value="">No one yet</option>}
+            {people.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
               </option>
             ))}
           </select>

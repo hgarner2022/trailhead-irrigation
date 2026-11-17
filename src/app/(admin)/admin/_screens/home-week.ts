@@ -8,7 +8,7 @@ import { dayOf } from "@/lib/admin/calendar"
 import { TIME_ZONE } from "@/lib/admin/format"
 import { committedRevenue, formatMoney, monthComparison } from "@/lib/admin/metrics"
 import type { AdminData, Visit } from "@/lib/admin/types"
-import { dayByTruck, monthOf, type TruckDay } from "./home-model"
+import { dayByPerson, monthOf, type PersonDay } from "./home-model"
 import { dayLabel } from "./visit-panel-model"
 import { visitRows } from "./visits-model"
 
@@ -20,8 +20,8 @@ export interface WeekView {
   title: string
   /** "Mon, Nov 16 · 4 visits in Erie", under the title */
   heading: string
-  /** each truck's stops that day in route order, a truck with none left out */
-  trucks: TruckDay[]
+  /** each person's stops that day in route order, a person with none left out */
+  people: PersonDay[]
   /** every stop of the day, for the map */
   visits: Visit[]
 }
@@ -46,12 +46,13 @@ export function weekView(data: Pick<AdminData, "visits" | "settings">, today: st
     .filter((d) => d >= todayDay)
     .sort()
   const day = days[0] ?? null
-  if (!day) return { day: null, isToday: false, title: "Today", heading: "", trucks: [], visits: [] }
-  const trucks = dayByTruck(data.visits, day, data.settings.trucks)
-  const visits = trucks.flatMap((t) => t.stops)
+  if (!day) return { day: null, isToday: false, title: "Today", heading: "", people: [], visits: [] }
+  // Every person, not only those on the schedule: a visit still held by someone who lost their truck files under their name here, as it does on Visits. `routePeople` decides only the schedule rows.
+  const people = dayByPerson(data.visits, day, data.settings.people)
+  const visits = people.flatMap((p) => p.stops)
   const isToday = day === todayDay
   const heading = `${dayLabel(day)} · ${visits.length} ${visits.length === 1 ? "visit" : "visits"} in ${townsPhrase(visits.map((v) => v.town))}`
-  return { day, isToday, title: isToday ? "Today" : "Next up", heading, trucks, visits }
+  return { day, isToday, title: isToday ? "Today" : "Next up", heading, people, visits }
 }
 
 /** The stops the map draws: a visit with no point sits at its town's centre, so no stop is left off. */

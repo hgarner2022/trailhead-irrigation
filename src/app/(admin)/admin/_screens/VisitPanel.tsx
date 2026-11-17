@@ -16,6 +16,7 @@ import { CancelVisit, EditForm, ResendButton, TextForm } from "./VisitEditText"
 import { DoneForm, MoveForm, NotDoneForm, PaidByChoice, doneAsksPaidBy } from "./VisitMoveDone"
 import { useRunner } from "./use-runner"
 import { dayLabel, dayOfVisit, kindLabel, priceWords, timeWords, visitFacts, type VisitFacts } from "./visit-panel-model"
+import { routePeople } from "@/lib/admin/people"
 
 // The visit panel (Build 1): from Visits, Home, Schedule, the pass panel and the customer panel. Header with the
 // customer and the visit's kind and day; the two pills; the customer block; the visit block; the job it belongs to
@@ -70,7 +71,7 @@ function VisitBlock({ facts }: { facts: VisitFacts }) {
         rows={[
           ["Day", day ? dayLabel(day) : "No day yet"],
           ["Time", timeWords(visit)],
-          ["Truck", visit.truckName ?? ""],
+          ["Who", visit.personName ?? ""],
           ["Minutes", String(visit.minutes ?? 60)],
           ["Price", priceWords(visit)],
           ...(visit.notes ? ([["Notes", visit.notes]] as [string, ReactNode][]) : []),
@@ -143,7 +144,7 @@ function Actions({ facts, data, today, actions }: { facts: VisitFacts; data: Adm
         </section>
       )}
       {states.work === "scheduled" && <NotDoneForm visit={visit} actions={actions} />}
-      {open && <EditForm key={`edit-${visit.id}`} visit={visit} pass={pass} trucks={data.settings.trucks} actions={actions} />}
+      {open && <EditForm key={`edit-${visit.id}`} visit={visit} pass={pass} people={routePeople(data.settings.people)} actions={actions} />}
       <TextForm client={client} visitId={visit.id} actions={actions} />
       <div className="flex flex-wrap items-start gap-3">
         {pass && pass.status === "active" && <ResendButton passId={pass.id} actions={actions} />}

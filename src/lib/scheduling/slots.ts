@@ -1,12 +1,12 @@
 /**
- * Open truck-days on a 30-minute grid, pure. The booking form reads it for its times and the pass page for its days; the
- * scheduler walks the same capacity rules. A truck-day is open when the truck works the weekday, holds no visit from another
+ * Open days on a 30-minute grid, pure, per person. The booking form reads it for its times and the pass page for its days; the
+ * scheduler walks the same capacity rules. A person's day is open when they work the weekday, hold no visit from another
  * area group, has room in visits and in minutes for the service after the buffer, the taken visits and the busy time on its
  * Jobber calendar, and the visit fits between 7:00 and 17:00 Mountain clear of every block.
  */
 import { WORKDAY } from "@/lib/admin/calendar"
 import { areaIdOf, blocksOn, blockedMinutes, capacityAfterBlocks, capacityFor, isInWindow, addDays, weekdayOf } from "./calendar"
-import { TIME_ZONE, type BusyBlock, type CapacityKind, type SchedArea, type SchedSettings, type SchedTruck, type Taken, type Town } from "./types"
+import { TIME_ZONE, type BusyBlock, type CapacityKind, type SchedArea, type SchedSettings, type SchedPerson, type Taken, type Town } from "./types"
 
 export const GRID_MINUTES = 30
 const DAY_START = WORKDAY.startHour * 60
@@ -16,15 +16,15 @@ export interface OpenSlot {
   day: string
   /** "HH:MM", Mountain, on the grid */
   start: string
-  truckId: string
-  /** the truck already works this area group that day */
+  personId: string
+  /** the person already works this area group that day */
   areaDay: boolean
 }
 
 export interface OpenSlotsInput {
   service: { kind: string; slotMinutes: number }
   town: Town
-  trucks: SchedTruck[]
+  people: SchedPerson[]
   areas: SchedArea[]
   settings: SchedSettings
   /** the floor: the earliest day offered (a booking is tomorrow or later) */
@@ -47,9 +47,9 @@ function minuteOf(iso: string): { day: string; minute: number } {
   return { day: `${p.year}-${p.month}-${p.day}`, minute: Number(p.hour) * 60 + Number(p.minute) }
 }
 
-/** The busy spans of a truck's day as minutes after midnight, clipped to the working day. */
-export function busySpans(blocks: BusyBlock[], truckId: string, day: string): [number, number][] {
-  return blocksOn(blocks, truckId, day, TIME_ZONE).map((b) => {
+/** The busy spans of a person's day as minutes after midnight, clipped to the working day. */
+export function busySpans(blocks: BusyBlock[], personId: string, day: string): [number, number][] {
+  return blocksOn(blocks, personId, day, TIME_ZONE).map((b) => {
     const a = minuteOf(b.startAt)
     const z = minuteOf(b.endAt)
     return [a.day < day ? DAY_START : Math.max(DAY_START, a.minute), z.day > day ? DAY_END : Math.min(DAY_END, z.minute)] as [number, number]
@@ -57,7 +57,7 @@ export function busySpans(blocks: BusyBlock[], truckId: string, day: string): [n
 }
 
 export function openSlots(input: OpenSlotsInput): OpenSlot[] {
-  const { service, town, trucks, areas, settings, taken, blocks } = input
+  const { service, town, people, areas, settings, taken, blocks } = input
   const kind = capacityKindOf(service.kind)
   const mine = areaIdOf(areas, town)
   const windowStart = settings.windows.find((w) => w.kind === service.kind)?.opensOn
@@ -66,21 +66,21 @@ export function openSlots(input: OpenSlotsInput): OpenSlot[] {
   const last = input.window ? [input.to, input.window.closesOn.slice(0, 10)].sort()[0]! : input.to
   for (let day = first; day <= last; day = addDays(day, 1)) {
     if (input.window && !isInWindow(input.window, day)) continue
-    for (const truck of [...trucks].sort((a, b) => a.id.localeCompare(b.id))) {
-      if (truck.active === false || !truck.workingDays.includes(weekdayOf(day))) continue
-      const here = taken.filter((t) => t.truckId === truck.id && t.day === day)
+    for (const person of [...people].sort((a, b) => a.id.localeCompare(b.id))) {
+      if (person.active === false || !person.workingDays.includes(weekdayOf(day))) continue
+      const here = taken.filter((t) => t.personId === person.id && t.day === day)
       if (here.some((t) => areaIdOf(areas, t.town) !== mine)) continue
-      const blocked = blockedMinutes(blocks, truck.id, day, TIME_ZONE)
-      const cap = capacityFor(truck, kind, day, settings, windowStart)
+      const blocked = blockedMinutes(blocks, person.id, day, TIME_ZONE)
+      const cap = capacityFor(person, kind, day, settings, windowStart)
       const visitsLeft = capacityAfterBlocks(cap.visits, blocked) - here.filter((t) => capacityKindOf(t.kind) === kind).length
       const minutesLeft = cap.minutes - blocked - here.reduce((sum, t) => sum + t.minutes, 0)
       if (visitsLeft < 1 || minutesLeft < service.slotMinutes) continue
-      const spans = busySpans(blocks, truck.id, day)
+      const spans = busySpans(blocks, person.id, day)
       // Visits already on the day stack from the open of day; offer starts after them, clear of blocks, ending by 17:00.
       const used = Math.ceil(here.reduce((sum, t) => sum + t.minutes, 0) / GRID_MINUTES) * GRID_MINUTES
       for (let start = DAY_START + used; start + service.slotMinutes <= DAY_END; start += GRID_MINUTES) {
         if (spans.some(([a, z]) => start < z && start + service.slotMinutes > a)) continue
-        slots.push({ day, start: clock(start), truckId: truck.id, areaDay: here.length > 0 })
+        slots.push({ day, start: clock(start), personId: person.id, areaDay: here.length > 0 })
       }
     }
   }

@@ -71,6 +71,27 @@
       "when": 1794616201551,
       "tag": "0009_charge_method_and_not_done",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1794842978799,
+      "tag": "0010_person",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1794879138468,
+      "tag": "0011_person_merge",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1794879591273,
+      "tag": "0012_person_duplicate",
+      "breakpoints": true
     }
   ]
 }

@@ -1,6 +1,5 @@
 import "server-only"
-import { eq } from "drizzle-orm"
-import * as s from "@/db/schema"
+import { personByAnyId } from "@/api/v1/people/handlers"
 import { readAppUrl } from "@/lib/env"
 import { cancelPassTask } from "@/lib/pass/server/cancel"
 import { onboardPass } from "@/lib/pass/server/onboard"
@@ -11,15 +10,17 @@ import { handleStripeEvent } from "@/lib/stripe/webhook"
 import { geocodeProperty } from "@/lib/geocode"
 import { runSchedule, type RunWindow } from "@/lib/scheduling/server/run"
 import { mountainDay } from "@/api/v1/shared"
-import { syncTruckFeed } from "@/lib/jobber-feed"
+import { syncPersonFeed } from "@/lib/jobber-feed"
 import type Stripe from "stripe"
 import type { QueueHandler, QueueKind } from "./index"
 
-/** `jobber-feed-sync`: payload `{ truckId }`; reads that truck's calendar feed into busy blocks. */
+/** `jobber-feed-sync`: payload `{ personId }` (`truckId`, the old truck id, for items queued before people existed); reads that person's calendar feed into busy blocks. */
 export const jobberFeedSync: QueueHandler = async (db, item) => {
-  const { truckId } = item.payload as { truckId: string }
-  const [truck] = await db.select().from(s.truck).where(eq(s.truck.id, truckId))
-  if (truck && truck.organizationId === item.organizationId) await syncTruckFeed(db, truck)
+  const { personId, truckId } = item.payload as { personId?: string; truckId?: string }
+  const id = personId ?? truckId
+  if (!id) return
+  const person = await personByAnyId({ db, organizationId: item.organizationId }, id)
+  if (person) await syncPersonFeed(db, person)
 }
 
 /** `geocode`: payload `{ propertyId }`; one Nominatim lookup, cached on the property. */

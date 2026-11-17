@@ -11,8 +11,8 @@ import { stopTime } from "./home-model"
 import type { WeekView } from "./home-week"
 
 // Today (Hannah's first job: "is the week sane"; a card that says "week" over one day was wrong): the next day that has visits, today when it has any, each
-// truck's stops in route order, every row opening the visit panel. A truck with nothing that day is left out and
-// an empty calendar says so once. Server component over a `WeekView`.
+// person's stops in route order under their name, every row opening the visit panel. A person with nothing that day
+// is left out and an empty calendar says so once. Server component over a `WeekView`.
 
 function Stop({ visit, today }: { visit: Visit; today: string }) {
   return (
@@ -45,11 +45,11 @@ export function HomeWeek({ week, today, className }: { week: WeekView; today: st
         {week.day === null ? (
           <p className="text-sm text-muted-foreground">Nothing is on the calendar yet. Visits appear here as days are set.</p>
         ) : (
-          week.trucks.map((truck) => (
-            <div key={truck.truckId} data-slot="home-truck" className="mt-2 first:mt-0">
-              <p className="text-sm font-medium text-navy">{truck.name}</p>
+          week.people.map((person) => (
+            <div key={person.personId} data-slot="home-person" className="mt-2 first:mt-0">
+              <p className="text-sm font-medium text-navy">{person.name}</p>
               <ul className="divide-y divide-border">
-                {truck.stops.map((visit) => (
+                {person.stops.map((visit) => (
                   <Stop key={visit.id} visit={visit} today={today} />
                 ))}
               </ul>

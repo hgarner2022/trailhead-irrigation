@@ -23,7 +23,8 @@ export function passFromApi(d: z.infer<typeof PassDetail>): Pass {
       ...(v.startTime ? { startTime: v.startTime } : {}),
       ...(v.durationMinutes ? { windowMinutes: v.durationMinutes } : {}),
       ...(v.calendarUrl ? { calendarUrl: v.calendarUrl } : {}),
-      ...(v.truckName ? { truckName: v.truckName } : {}),
+      // the person assigned, under the deprecated truck name too until the screens read people
+      ...(v.personName ? { personName: v.personName, truckName: v.personName } : {}),
       ...(v.completedOn ? { completedAt: instantOf(v.completedOn, "12:00") } : {}),
       ...(v.chargedAt ? { chargedAt: v.chargedAt } : {}),
     }))

@@ -15,6 +15,7 @@ beforeAll(async () => {
   vi.stubEnv("APP_URL", "https://site.test")
   db = await apiDb()
   for (const c of await db.select().from(s.customer)) await db.update(s.customer).set({ phone: `303-555-${c.id.slice(-4).padStart(4, "0")}`.slice(0, 12), email: `${c.id}@example.com` }).where(eq(s.customer.id, c.id))
+  await db.insert(s.webhookEndpoint).values({ id: "hook-run", organizationId: ORG, url: "https://hooks.example.com/run", secret: "whsec_x", events: ["visit.scheduled"] })
 })
 afterAll(() => db.close())
 
@@ -43,12 +44,20 @@ describe("schedule.run", () => {
     const placed = rows.filter((v) => v.status === "scheduled" && v.scheduledOn && v.scheduledOn >= "2027-05-03")
     expect(placed.length).toBeGreaterThanOrEqual(out.placed)
     for (const v of placed.filter((p) => p.stopOrder !== null)) {
-      expect(v.truckId).toMatch(/^truck-/)
+      expect(v.personId).toMatch(/^person_/)
       expect(v.scheduledOn! >= "2027-05-03" && v.scheduledOn! <= "2027-05-31").toBe(true)
       expect(v.startTime).toMatch(/^\d\d:\d\d$/)
     }
     const stillWaiting = rows.find((v) => v.id === waitingId)!
     expect(stillWaiting).toMatchObject({ status: "unscheduled", awaitingPick: true })
+    // the webhook names the person both ways, as every other emitter does through `who()`
+    const events = (await db.select().from(s.outboundEvent)).filter((e) => e.event === "visit.scheduled")
+    expect(events.length).toBe(out.placed)
+    for (const e of events) {
+      const personId = (e.payload as { personId: string }).personId
+      expect(personId).toMatch(/^person_/)
+      expect(e.payload).toMatchObject({ personId, truckId: personId, from: null })
+    }
   })
 
   it("queues a date-set text for each placed visit and writes the run and its Home line", async () => {
@@ -73,20 +82,20 @@ describe("schedule.run", () => {
   it("raises a Home row for each visit that has no room, and clears it when the visit is placed", async () => {
     await db.update(s.seasonPass).set({ needsCustomerHome: false }).where(eq(s.seasonPass.id, (await db.select().from(s.visit).where(eq(s.visit.id, waitingId)))[0]!.passId!))
     await db.update(s.visit).set({ awaitingPick: false }).where(eq(s.visit.id, waitingId))
-    await db.update(s.truck).set({ workingDays: [] })
+    await db.update(s.person).set({ workingDays: [] })
     const out = await run("2027-05-20T15:00:00Z")
     expect(out).toEqual({ placed: 0, unplaced: 1 })
     const rows = await db.select().from(s.adminAlert).where(and(eq(s.adminAlert.kind, "unplaced"), eq(s.adminAlert.key, waitingId)))
     expect(rows).toHaveLength(1)
     expect(rows[0]!.message).toMatch(/could not be placed/)
     expect(rows[0]!.resolvedAt).toBeNull()
-    await db.update(s.truck).set({ workingDays: ["mon", "tue", "wed", "thu", "fri"] })
+    await db.update(s.person).set({ workingDays: ["mon", "tue", "wed", "thu", "fri"] })
     expect(await run("2027-05-20T15:00:00Z")).toEqual({ placed: 1, unplaced: 0 })
     expect((await db.select().from(s.adminAlert).where(and(eq(s.adminAlert.kind, "unplaced"), eq(s.adminAlert.key, waitingId))))[0]!.resolvedAt).not.toBeNull()
   })
 
   it("is the same path the queue handler takes", async () => {
-    await db.update(s.visit).set({ status: "unscheduled", scheduledOn: null, truckId: null }).where(eq(s.visit.id, waitingId))
+    await db.update(s.visit).set({ status: "unscheduled", scheduledOn: null, personId: null }).where(eq(s.visit.id, waitingId))
     vi.useFakeTimers({ toFake: ["Date"], now: new Date("2027-05-20T15:00:00Z") })
     try {
       await db.insert(s.queueItem).values({ organizationId: ORG, kind: "schedule-run", key: "turn-on:test", payload: { window: "turn-on" } })

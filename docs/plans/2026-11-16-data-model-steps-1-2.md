@@ -88,6 +88,8 @@ UPDATE "person" SET "name" = 'Second truck', "initials" = 'T2' WHERE "legacy_tru
 UPDATE "visit" v SET "person_id" = p."id" FROM "person" p WHERE p."legacy_truck_id" = v."truck_id" AND v."person_id" IS NULL;
 ```
 
+**What happened (Nov 16 2026):** this first form of 0010 ran on the live database the moment the task's commit was pushed, because Vercel's Preview and Production share `DATABASE_URL` and the build migrates. The Ryan merge and the case-insensitive email index written into 0010 afterwards could then never apply (the migrator saw a newer timestamp on an already-applied migration and failed every deploy), so they live in `drizzle/0011_person_merge.sql`, which also backfills the visits the old code wrote between the two deploys. 0010 must stay exactly what the database has seen. Never edit a migration after its commit is pushed: a pushed branch deploys and migrates.
+
 **Step 5: Run** `npx vitest run --project unit src/db/schema.test.ts` → PASS. Then `npx vitest run --project unit src/db` → PASS (the seed test may need `people` in the snapshot; see Task 1.5).
 
 **Step 6: Commit** `git add src/db drizzle && git commit -m "Person table: a person who works here, with the truck as a label; visits gain person_id, backfilled from their truck"`.
@@ -113,14 +115,14 @@ describe("people", () => {
   })
   it("trucks.list still answers, with the same rows under the old names", async () => {
     const out = await callApi(ctxFor(db, readKey), trucksList, {})
-    expect(out.data.map((t) => t.name)).toEqual(["Ryan Garner", "Second truck"])
+    expect(out.data.map((t) => t.name)).toEqual(["Ryan Garner", "Tech Two"])
   })
 })
 ```
 
 **Step 2: Run** → FAIL (module missing).
 
-**Step 3: Implement** `people/handlers.ts` with `PersonOut` (`id, name, initials, email, phone, role, truck, jobberUserId, hasCalendarFeed, workingDays, capacityByKind, seasonStart, seasonEnd, active, canSignIn`), `peopleList` (order: owner first, then name), `peopleCreate` (initials derived when not given: first letters of the first two words), `peopleUpdate`, `peopleDeactivate` (also refuses to deactivate the last active owner: `ApiError("unprocessable", "Keep at least one owner")`). Rewrite `trucks/handlers.ts` so each handler calls the people handler and maps `PersonOut` to `TruckOut` (`name`, `jobberUserId`, `hasCalendarFeed`, `workingDays`, `capacityByKind`, `active`), summaries marked "Alias of people.*, kept for one season". Register `people.*` in `v1/index.ts` next to `trucks.*`.
+**Step 3: Implement** `people/handlers.ts` with `PersonOut` (`id, name, initials, email, phone, role, truck, jobberUserId, hasCalendarFeed, workingDays, capacityByKind, seasonStart, seasonEnd, active, canSignIn`), `peopleList` (order: owner first, then name), `peopleCreate` (initials derived when not given: first letters of the first two words), `peopleUpdate`, `peopleDeactivate` (also refuses to deactivate the last active owner: `ApiError("unprocessable", "Keep at least one owner.")`). Rewrite `trucks/handlers.ts` so each handler calls the people handler and maps `PersonOut` to `TruckOut` (`name`, `jobberUserId`, `hasCalendarFeed`, `workingDays`, `capacityByKind`, `active`), summaries marked "Alias of people.*, kept for one season". Register `people.*` in `v1/index.ts` next to `trucks.*`.
 
 **Step 4: Run** `npx vitest run --project unit src/api/v1/people src/api/v1/trucks` → PASS.
 
@@ -155,7 +157,7 @@ Mechanical sweep: `grep -rn "truckId\|s\.truck\b" src/api src/lib --include=*.ts
 ### Task 1.5: The admin reads people
 
 **Files:**
-- Modify: `src/lib/admin/types.ts:237` (`Truck` becomes `Person` with `name, initials, email?, phone?, role, truck?, seasonStart?, seasonEnd?`; `export type Truck = Person` for one step), `src/lib/admin/live.ts`, `src/lib/admin/shape.ts`, `src/lib/admin/fixtures/snapshot.json` (`settings.trucks` → `settings.people`, two rows named Ryan Garner and Second truck), `src/db/seed.ts` (insert people from `snapshot.settings.people`; keep inserting trucks until step 6), `src/app/(admin)/admin/_screens/{home-model,home-week,schedule-model,visits-model,settings-model}.ts`, `ScheduleScreen.tsx`, `ScheduleMoveTo.tsx`, `HomeWeek.tsx`, `VisitEditText.tsx`, `NewVisit.tsx`, `src/components/blocks/{WeekGrid,DayMap}.tsx`
+- Modify: `src/lib/admin/types.ts:237` (`Truck` becomes `Person` with `name, initials, email?, phone?, role, truck?, seasonStart?, seasonEnd?`; `export type Truck = Person` for one step), `src/lib/admin/live.ts`, `src/lib/admin/shape.ts`, `src/lib/admin/fixtures/snapshot.json` (`settings.trucks` → `settings.people`, two rows named Ryan Garner and Tech Two), `src/db/seed.ts` (insert people from `snapshot.settings.people`; keep inserting trucks until step 6), `src/app/(admin)/admin/_screens/{home-model,home-week,schedule-model,visits-model,settings-model}.ts`, `ScheduleScreen.tsx`, `ScheduleMoveTo.tsx`, `HomeWeek.tsx`, `VisitEditText.tsx`, `NewVisit.tsx`, `src/components/blocks/{WeekGrid,DayMap}.tsx`
 - Rename: `settings-tabs/Trucks.tsx` → `settings-tabs/People.tsx` (columns: Name, Email, Phone, Role, Truck, Working days, the per-day capacities, Season from/to, Remove); `settings-save.ts` writes through `people.*`
 - Test: the screens' existing tests, `settings-model.test.ts`, `HomeScreen.test.tsx` ("Ryan Garner" as the group heading instead of "Truck 1")
 
@@ -177,7 +179,7 @@ Mechanical sweep: `grep -rn "truckId\|s\.truck\b" src/api src/lib --include=*.ts
 
 ### Task 1.7: Checks and the PR
 
-Run `npx tsc --noEmit`, `npx vitest run --project unit`, `npm run lint`, `npm run build`, `npm run manifest:compare` (unchanged), `npm run test:stories` (from the main checkout, or with the worktree config trick). Render Home, Schedule, Visits and Settings › People from Storybook at 1440 and 375. Push, open the PR titled "Step 1: a person on every visit, the truck a label on them", merge when green, run the live checklist on `/admin` (Home groups by Ryan Garner; Settings shows People).
+Run `npx tsc --noEmit`, `npx vitest run --project unit`, `npm run lint`, `npm run build`, `npm run manifest:compare` (unchanged), `npm run test:stories` (from the main checkout, or with the worktree config trick). Render Home, Schedule, Visits and Settings › People from Storybook at 1440 and 375. Push, open the PR titled "Step 1: a person on every visit, the truck a label on them", merge when green, run the live checklist on `/admin` (Home groups by Ryan Garner; Settings shows People). Settings › People: the second person in the live database is still named "Second truck" from the old seed; rename it before the day-before send ships (Phase 12).
 
 ---
 

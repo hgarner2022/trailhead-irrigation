@@ -166,10 +166,10 @@ describe("passes.addInspection", () => {
 describe("passes.skipVisit", () => {
   it("skips an unscheduled visit and frees a scheduled one", async () => {
     expect(await callApi(ctxFor(db, customerPerson("c104")), passesSkipVisit, { id: "p6", kind: "blowout" })).toMatchObject({ status: "skipped" })
-    await db.update(s.visit).set({ status: "scheduled", scheduledOn: "2027-05-10", truckId: "truck-1" }).where(eq(s.visit.id, "p6-turn-on"))
+    await db.update(s.visit).set({ status: "scheduled", scheduledOn: "2027-05-10", personId: "person_truck-1" }).where(eq(s.visit.id, "p6-turn-on"))
     await callApi(ctxFor(db, writeKey), passesSkipVisit, { id: "p6", kind: "turn-on" })
     const [visit] = await db.select().from(s.visit).where(eq(s.visit.id, "p6-turn-on"))
-    expect(visit).toMatchObject({ status: "skipped", scheduledOn: null, truckId: null })
+    expect(visit).toMatchObject({ status: "skipped", scheduledOn: null, personId: null })
   })
   it("refuses a completed visit and a customer on another pass", async () => {
     await expect(callApi(ctxFor(db, writeKey), passesSkipVisit, { id: "p1", kind: "turn-on" })).rejects.toMatchObject({ code: "unprocessable" })

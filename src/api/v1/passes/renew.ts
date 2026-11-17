@@ -14,7 +14,7 @@ import { ApiError } from "../../core/errors"
 import { today } from "../shared"
 import { emitEvent } from "../webhooks/deliver"
 import { finishPurchase } from "./finish"
-import type { passCreateInput } from "./schemas"
+import { chosenDay, type passCreateInput } from "./schemas"
 import { loadPass, passDetail, recordChange } from "./queries"
 
 /**
@@ -61,7 +61,7 @@ export async function renewPass(ctx: Ctx, input: z.infer<typeof passCreateInput>
     card: { stripePaymentMethodId: old.stripePaymentMethodId, cardBrand: old.cardBrand, cardLast4: old.cardLast4, cardExpires: old.cardExpires },
     now: ctx.now,
   })
-  await holdChosenDays(ctx.db, pass.id, input.days, input.property.town, season, day)
+  await holdChosenDays(ctx.db, pass.id, input.days.map(chosenDay), input.property.town, season, day)
   await recordChange(ctx, { customerId: old.customerId, passId: pass.id, kind: "renewed", detail: { from: old.id, season } })
   const c = input.consent
   await finishPurchase(ctx, pass, input.property.town, c ? { marketingOptIn: c.marketingOptIn, marketingChannels: c.marketingChannels } : undefined)

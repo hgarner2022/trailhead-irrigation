@@ -11,30 +11,60 @@ import { queueDateMessage } from "@/lib/scheduling/server/notify"
 import { orderDay } from "@/lib/scheduling/server/order-day"
 import { blockedMinutes, capacityAfterBlocks } from "@/lib/admin/calendar"
 import { loadBlocks } from "@/lib/jobber-feed"
-import { offeredDays, openSlots, truckFor } from "@/lib/pass/server/area-days"
+import { offeredDays, openSlots, personFor } from "@/lib/pass/server/area-days"
 import { emitEvent } from "../webhooks/deliver"
+import { isRoutePerson, personByAnyId, resolvePersonId } from "../people/handlers"
 import { recordChange } from "../passes/queries"
 import { loadVisit, visitOut, visitsQuery } from "./queries"
-import { VisitOut } from "./schemas"
+import { VisitOut, who } from "./schemas"
 
 const FINAL = ["completed", "cancelled", "skipped"] as const
+
+/** The alias on every input that names a person: `truckId` means the same id for one season. */
+export const PersonIdAlias = Id.optional().describe("Alias of personId, kept for one season: the same id (the old truck id is still understood).")
+
+/**
+ * Who a visit is assigned to, from an input that may name them either way; the person must be on the schedule and work that weekday.
+ * Naming `current`, the person the visit already has, is a no-op and passes those checks, even once that person is out of service.
+ */
+export async function assignee(ctx: Ctx, input: { personId?: string; truckId?: string }, day: string, current?: string | null) {
+  const id = input.personId ?? input.truckId
+  if (!id) throw new ApiError("invalid", "Say who takes the visit", [{ path: "personId", message: "Give a person" }])
+  const person = await personByAnyId(ctx, id)
+  if (!person) throw notFound("Person")
+  if (person.id === current) return person
+  if (!isRoutePerson(person)) throw new ApiError("unprocessable", `${person.name} is not in service`)
+  if (!person.workingDays.includes(weekdayOf(day))) throw new ApiError("unprocessable", `${person.name} does not work on ${weekdayOf(day)}days`)
+  return person
+}
 
 export const visitsList = defineHandler({
   name: "visits.list",
   method: "GET",
   path: "/visits",
   scope: "read",
-  summary: "List visits, newest first. Filter by day range, truck, status, kind or pass.",
-  input: z.object({ from: Day.optional(), to: Day.optional(), truckId: Id.optional(), status: VisitStatus.optional(), kind: VisitKind.optional(), passId: Id.optional(), ...pageInput }),
+  summary: "List visits, newest first. Filter by day range, person, status, kind or pass.",
+  input: z.object({
+    from: Day.optional(),
+    to: Day.optional(),
+    personId: Id.optional().describe("Only the visits assigned to this person; an unknown id answers not_found."),
+    truckId: PersonIdAlias.describe("Alias of personId, kept for one season: the same id (the old truck id is still understood); an unknown id answers not_found."),
+    status: VisitStatus.optional(),
+    kind: VisitKind.optional(),
+    passId: Id.optional(),
+    ...pageInput,
+  }),
   output: page(VisitOut),
   async run(ctx, input) {
+    const filterId = input.personId ?? input.truckId
+    const personId = filterId ? await resolvePersonId(ctx, filterId) : undefined
     const rows = await visitsQuery(ctx.db)
       .where(
         and(
           eq(s.visit.organizationId, ctx.organizationId),
           input.from ? gte(s.visit.scheduledOn, input.from) : undefined,
           input.to ? lte(s.visit.scheduledOn, input.to) : undefined,
-          input.truckId ? eq(s.visit.truckId, input.truckId) : undefined,
+          personId ? eq(s.visit.personId, personId) : undefined,
           input.status ? eq(s.visit.status, input.status) : undefined,
           input.kind ? eq(s.visit.kind, input.kind) : undefined,
           input.passId ? eq(s.visit.passId, input.passId) : undefined,
@@ -53,7 +83,7 @@ export const visitsGet = defineHandler({
   method: "GET",
   path: "/visits/{id}",
   scope: "read",
-  summary: "One visit, with its truck, day and the customer's first name.",
+  summary: "One visit, with the person assigned, the day and the customer's first name.",
   input: idInput,
   output: VisitOut,
   async run(ctx, input) {
@@ -61,43 +91,40 @@ export const visitsGet = defineHandler({
   },
 })
 
-/** The one placement: every hard rule, the day ordered, the date text queued. `visits.move` and `visits.create` both run it. */
-export async function placeVisit(ctx: Ctx, input: { id: string; truckId: string; scheduledOn: string; startTime?: string }) {
+/** The one placement: every hard rule, the day ordered, the date text queued. `visits.move` and `visits.create` both run it. `personId` names the person; `truckId` is its alias. */
+export async function placeVisit(ctx: Ctx, input: { id: string; personId?: string; truckId?: string; scheduledOn: string; startTime?: string }) {
     const row = await loadVisit(ctx, input.id)
     const visit = row.visit
     if ((FINAL as readonly string[]).includes(visit.status)) throw new ApiError("unprocessable", `A ${visit.status} visit cannot be moved`)
-    const [truck] = await ctx.db.select().from(s.truck).where(and(eq(s.truck.id, input.truckId), eq(s.truck.organizationId, ctx.organizationId)))
-    if (!truck) throw notFound("Truck")
-    if (!truck.active) throw new ApiError("unprocessable", `${truck.name} is not in service`)
-    if (!truck.workingDays.includes(weekdayOf(input.scheduledOn))) throw new ApiError("unprocessable", `${truck.name} does not work on ${weekdayOf(input.scheduledOn)}days`)
+    const person = await assignee(ctx, input, input.scheduledOn)
     const [org] = await ctx.db.select({ settings: s.organization.settings }).from(s.organization).where(eq(s.organization.id, ctx.organizationId))
     const window = visit.passId ? org?.settings.windows.find((w) => w.kind === visit.kind) : undefined
     if (window && (input.scheduledOn < window.opensOn.slice(0, 10) || input.scheduledOn > window.closesOn.slice(0, 10)))
       throw new ApiError("unprocessable", `A ${visit.kind} visit must land between ${window.opensOn.slice(0, 10)} and ${window.closesOn.slice(0, 10)}`)
     const others = await visitsQuery(ctx.db).where(
-      and(eq(s.visit.organizationId, ctx.organizationId), eq(s.visit.truckId, truck.id), eq(s.visit.scheduledOn, input.scheduledOn), ne(s.visit.id, visit.id), notInArray(s.visit.status, ["cancelled", "skipped"])),
+      and(eq(s.visit.organizationId, ctx.organizationId), eq(s.visit.personId, person.id), eq(s.visit.scheduledOn, input.scheduledOn), ne(s.visit.id, visit.id), notInArray(s.visit.status, ["cancelled", "skipped"])),
     )
     const kind = capacityKind(visit.kind)
-    // The truck's own Jobber calendar shrinks the day; Ryan may use the buffer the scheduler holds back.
+    // The person's own Jobber calendar shrinks the day; Ryan may use the buffer the scheduler holds back.
     const blocks = await loadBlocks(ctx.db, ctx.organizationId, new Date(`${addDays(input.scheduledOn, -1)}T00:00:00Z`), new Date(`${addDays(input.scheduledOn, 2)}T00:00:00Z`))
-    const room = capacityAfterBlocks(truck.capacityByKind[kind], blockedMinutes(blocks, truck.id, input.scheduledOn, "America/Denver"))
+    const room = capacityAfterBlocks(person.capacityByKind[kind], blockedMinutes(blocks, person.id, input.scheduledOn, "America/Denver"))
     if (others.filter((o) => capacityKind(o.visit.kind) === kind).length >= room)
-      throw new ApiError("unprocessable", `${truck.name} is full of ${kind} visits on ${input.scheduledOn}`)
+      throw new ApiError("unprocessable", `${person.name} is full of ${kind} visits on ${input.scheduledOn}`)
     const areas = await ctx.db.select().from(s.area).where(eq(s.area.organizationId, ctx.organizationId))
     const areaOf = (town: string) => areas.find((a) => a.towns.includes(town as never))?.id ?? town
     if (others.some((o) => areaOf(o.town) !== areaOf(row.town)))
-      throw new ApiError("unprocessable", `${truck.name} already works a different area on ${input.scheduledOn}`)
+      throw new ApiError("unprocessable", `${person.name} already works a different area on ${input.scheduledOn}`)
     const moved = visit.status === "scheduled"
     await ctx.db
       .update(s.visit)
-      .set({ status: "scheduled", truckId: truck.id, scheduledOn: input.scheduledOn, startTime: null, awaitingPick: false, stopOrder: null, exception: null, notDoneReason: null })
+      .set({ status: "scheduled", personId: person.id, scheduledOn: input.scheduledOn, startTime: null, awaitingPick: false, stopOrder: null, exception: null, notDoneReason: null })
       .where(eq(s.visit.id, visit.id))
-    await orderDay(ctx.db, { truckId: truck.id, day: input.scheduledOn })
-    if (moved && visit.truckId && visit.scheduledOn && (visit.truckId !== truck.id || visit.scheduledOn !== input.scheduledOn)) await orderDay(ctx.db, { truckId: visit.truckId, day: visit.scheduledOn })
+    await orderDay(ctx.db, { personId: person.id, day: input.scheduledOn })
+    if (moved && visit.personId && visit.scheduledOn && (visit.personId !== person.id || visit.scheduledOn !== input.scheduledOn)) await orderDay(ctx.db, { personId: visit.personId, day: visit.scheduledOn })
     if (input.startTime) await ctx.db.update(s.visit).set({ startTime: input.startTime }).where(eq(s.visit.id, visit.id))
     await ctx.db.update(s.adminAlert).set({ resolvedAt: ctx.now }).where(and(eq(s.adminAlert.organizationId, ctx.organizationId), eq(s.adminAlert.kind, "unplaced"), eq(s.adminAlert.key, visit.id)))
     if (visit.scheduledOn !== input.scheduledOn) await queueDateMessage(ctx.db, visit, moved ? "date-moved" : "date-set", input.scheduledOn)
-    await emitEvent(ctx.db, ctx.organizationId, moved ? "visit.moved" : "visit.scheduled", { visitId: visit.id, truckId: truck.id, scheduledOn: input.scheduledOn, from: moved ? { truckId: visit.truckId, scheduledOn: visit.scheduledOn } : null })
+    await emitEvent(ctx.db, ctx.organizationId, moved ? "visit.moved" : "visit.scheduled", { visitId: visit.id, ...who(person.id), scheduledOn: input.scheduledOn, from: moved ? { ...who(visit.personId), scheduledOn: visit.scheduledOn } : null })
     return visitOut(ctx, await loadVisit(ctx, visit.id))
 }
 
@@ -106,8 +133,8 @@ export const visitsMove = defineHandler({
   method: "POST",
   path: "/visits/{id}/move",
   scope: "write",
-  summary: "Put a visit on a truck and a day. Hard rules: the truck works that weekday, the day is inside the visit's window, the truck-day has capacity for the kind, and the truck-day stays in one area group.",
-  input: z.object({ id: Id, truckId: Id, scheduledOn: Day, startTime: z.string().regex(/^\d{2}:\d{2}$/).optional() }),
+  summary: "Put a visit on a person and a day. Hard rules: the person is on the schedule and works that weekday, the day is inside the visit's window, their day has capacity for the kind, and it stays in one area group. `personId` names them; `truckId` is the same id for one season.",
+  input: z.object({ id: Id, personId: Id.optional(), truckId: PersonIdAlias, scheduledOn: Day, startTime: z.string().regex(/^\d{2}:\d{2}$/).optional() }),
   output: VisitOut,
   async run(ctx, input) {
     return placeVisit(ctx, input)
@@ -185,7 +212,7 @@ export const visitsAreaDays = defineHandler({
   path: "/visits/{id}/area-days",
   scope: "read",
   customerSelf: true,
-  summary: "The days a pass visit could take, up to three, each a day a truck already works the customer's area or has room: what the pass page offers a customer who must be home. A customer asks only about their own visit.",
+  summary: "The days a pass visit could take, up to three, each a day someone already works the customer's area or has room: what the pass page offers a customer who must be home. A customer asks only about their own visit.",
   input: idInput,
   output: z.object({ days: z.array(Day) }),
   async run(ctx, input) {
@@ -200,18 +227,18 @@ export const visitsPick = defineHandler({
   path: "/visits/{id}/pick",
   scope: "write",
   customerSelf: true,
-  summary: "A customer picks one of the offered days for their pass visit, to set it or to change it. The visit lands on that day on a truck that works the area, and the customer is texted the date (emailed when there is no mobile number). A day that was not offered is refused.",
+  summary: "A customer picks one of the offered days for their pass visit, to set it or to change it. The visit lands on that day with the person who works the area, and the customer is texted the date (emailed when there is no mobile number). A day that was not offered is refused.",
   input: z.object({ id: Id, day: Day }),
   output: VisitOut,
   async run(ctx, input) {
     const { row, visit, pass } = await loadPickable(ctx, input.id)
     const slots = await openSlots(ctx.db, { id: visit.id, organizationId: visit.organizationId, kind: visit.kind, town: row.town }, today(ctx), pass.season)
-    const slot = offeredDays(slots).includes(input.day) ? truckFor(slots, input.day) : undefined
+    const slot = offeredDays(slots).includes(input.day) ? personFor(slots, input.day) : undefined
     if (!slot) throw new ApiError("unprocessable", "That day is not one of the days on offer; pick another")
     const moved = visit.status === "scheduled"
-    await ctx.db.update(s.visit).set({ status: "scheduled", truckId: slot.truckId, scheduledOn: input.day, startTime: null, stopOrder: null, awaitingPick: false, exception: null, notDoneReason: null }).where(eq(s.visit.id, visit.id))
-    await recordChange(ctx, { customerId: visit.customerId, passId: visit.passId, visitId: visit.id, kind: "day-picked", detail: { visit: visit.kind, day: input.day, truck: slot.truckName, from: visit.scheduledOn } })
-    await emitEvent(ctx.db, ctx.organizationId, moved ? "visit.moved" : "visit.scheduled", { visitId: visit.id, truckId: slot.truckId, scheduledOn: input.day, from: moved ? { truckId: visit.truckId, scheduledOn: visit.scheduledOn } : null })
+    await ctx.db.update(s.visit).set({ status: "scheduled", personId: slot.personId, scheduledOn: input.day, startTime: null, stopOrder: null, awaitingPick: false, exception: null, notDoneReason: null }).where(eq(s.visit.id, visit.id))
+    await recordChange(ctx, { customerId: visit.customerId, passId: visit.passId, visitId: visit.id, kind: "day-picked", detail: { visit: visit.kind, day: input.day, person: slot.personName, from: visit.scheduledOn } })
+    await emitEvent(ctx.db, ctx.organizationId, moved ? "visit.moved" : "visit.scheduled", { visitId: visit.id, ...who(slot.personId), scheduledOn: input.day, from: moved ? { ...who(visit.personId), scheduledOn: visit.scheduledOn } : null })
     await queueDateMessage(ctx.db, visit, moved ? "date-moved" : "date-set", input.day)
     return visitOut(ctx, await loadVisit(ctx, visit.id))
   },

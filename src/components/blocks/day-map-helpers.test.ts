@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import type { AdminData, Visit } from "@/lib/admin/types"
-import { hasPoint, hullOf, readTokenColour, shadeOf, stopLine, stopsDescription, townBounds, truckClass, type Stop } from "./day-map-helpers"
+import { hasPoint, hullOf, personClass, readTokenColour, shadeOf, stopLine, stopsDescription, townBounds, type Stop } from "./day-map-helpers"
 
 const data = snapshot as AdminData
 const friday = data.visits.filter((v) => v.startAt?.startsWith("2026-11-13")).filter(hasPoint)
@@ -57,8 +57,8 @@ describe("stops in words", () => {
 })
 
 describe("colours", () => {
-  it("gives each truck a token class and wraps after three", () => {
-    expect([0, 1, 2, 3].map(truckClass)).toEqual(["bg-primary", "bg-navy", "bg-positive", "bg-primary"])
+  it("gives each person a token class and wraps after three", () => {
+    expect([0, 1, 2, 3].map(personClass)).toEqual(["bg-primary", "bg-navy", "bg-positive", "bg-primary"])
   })
 
   it("reads a token colour from a probe and leaves nothing behind", () => {

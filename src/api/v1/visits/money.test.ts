@@ -22,7 +22,7 @@ const repair = (price = 145) => callApi(as(writeKey), visitsCreate, { customerId
 
 describe("Done and the money", () => {
   it("charges a pass visit to its card with no question", async () => {
-    await callApi(as(writeKey), visitsMove, { id: "p3-turn-on", truckId: "truck-1", scheduledOn: "2027-05-05" })
+    await callApi(as(writeKey), visitsMove, { id: "p3-turn-on", personId: "person_truck-1", scheduledOn: "2027-05-05" })
     const out = await callApi(as(), visitsMarkClosed, { id: "p3-turn-on" })
     expect(out).toMatchObject({ status: "completed", paymentStatus: "none" })
     expect((await db.select().from(s.queueItem).where(eq(s.queueItem.key, "p3-turn-on"))).map((q) => q.kind)).toEqual(["pass-charge"])
@@ -66,7 +66,7 @@ describe("Done and the money", () => {
     const v = await repair()
     const out = await callApi(as(writeKey), visitsMarkNotDone, { id: v.id, reason: "no-water" })
     expect(out.notDoneReason).toBe("no-water")
-    const placed = await callApi(as(writeKey), visitsMove, { id: v.id, truckId: "truck-1", scheduledOn: "2027-05-12" })
+    const placed = await callApi(as(writeKey), visitsMove, { id: v.id, personId: "person_truck-1", scheduledOn: "2027-05-12" })
     expect(placed.notDoneReason).toBeNull()
     expect(ORG).toBeTruthy()
   })

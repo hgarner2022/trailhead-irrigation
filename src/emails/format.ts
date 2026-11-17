@@ -51,8 +51,10 @@ export interface VisitFacts {
   day: string
   /** "08:00", or null while only the day is known */
   startTime: string | null
-  /** who is coming, as a sentence subject ("Ryan's truck"); null reads as "Ryan" */
+  /** who is coming, as a sentence subject ("Ryan's truck"); null reads as "Ryan". Today the person's truck label; the label goes away in step 6 */
   crew: string | null
+  /** the first name of the person on the visit ("Ryan"); null while the visit has no one, and then the messages say nothing about who */
+  who: string | null
   /** street address and town, for the calendar's location */
   location: string
   /** the app's signed link to the .ics file */

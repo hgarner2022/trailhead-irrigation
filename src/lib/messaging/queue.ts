@@ -1,5 +1,5 @@
 import "server-only"
-import { eq } from "drizzle-orm"
+import { and, eq, inArray, isNotNull } from "drizzle-orm"
 import * as s from "@/db/schema"
 import type { Database } from "@/db/types"
 import { renderEmail } from "@/emails/render"
@@ -52,13 +52,21 @@ export async function queueMessage(db: Database, req: MessageRequest): Promise<b
 export type StaffKind = "admin-alert" | "not-closed-crew"
 
 /**
- * A note to the office: one `message` queue item per admin, sent as the kind's email with no `message_log` row (it is not a
- * customer message and needs no consent). `key` makes it once per event and admin.
+ * A note to the office: one `message` queue item per active owner or admin with an email (the `person` table; a tech never
+ * gets one), sent as the kind's email with no `message_log` row (it is not a customer message and needs no consent). `key`
+ * makes it once per event and person.
  */
 export async function queueStaffMessage(db: Database, organizationId: string, kind: StaffKind, key: string, data: Record<string, unknown>): Promise<number> {
-  const admins = await db.select({ email: s.adminUser.email }).from(s.adminUser).where(eq(s.adminUser.organizationId, organizationId))
+  const staff = await db
+    .select({ email: s.person.email })
+    .from(s.person)
+    // Owner and admin run the office, so they hear about passes, charges and unclosed days (and the crew summary, which goes to the same two roles); a tech hears nothing from the office yet.
+    .where(and(eq(s.person.organizationId, organizationId), inArray(s.person.role, ["owner", "admin"]), isNotNull(s.person.email), eq(s.person.active, true)))
   let queued = 0
-  for (const a of admins) if (await enqueue(db, organizationId, "message", `${kind}:${key}:${a.email}`, { staff: true, kind, to: a.email, data })) queued++
+  for (const p of staff) {
+    if (!p.email) continue
+    if (await enqueue(db, organizationId, "message", `${kind}:${key}:${p.email}`, { staff: true, kind, to: p.email, data })) queued++
+  }
   return queued
 }
 

@@ -103,11 +103,15 @@ export interface Visit {
   chargeFailed?: boolean
   /** the visit was skipped (the admin shows Skipped; `status` stays cancelled for the calendar) */
   skipped?: boolean
-  /** the truck the visit rides on; absent until the schedule places it */
+  /** who the visit is assigned to; absent until the schedule places it */
+  personId?: string
+  /** that person's name, "Ryan Garner" */
+  personName?: string
+  /** @deprecated alias of `personId`, the same id; the screens read `personId`, dropped in step 6 */
   truckId?: string
   /** the customer must be there and has not yet picked a day; the visit waits in the tray for them (scheduling flow, 2026-11-12) */
   awaitingPick?: boolean
-  /** 1-based position in the truck's day; from Jobber's route tool while Jobber is the field display */
+  /** 1-based position in the person's day; from Jobber's route tool while Jobber is the field display */
   stopOrder?: number
   /** the property's point, geocoded once when the customer is created */
   lat?: number
@@ -120,7 +124,7 @@ export interface Visit {
   /** how long the stop takes */
   minutes?: number
   notes?: string
-  /** the truck's name once it has one */
+  /** @deprecated alias of `personName`, the same name; the screens read `personName`, dropped in step 6 */
   truckName?: string
   /** why the last attempt did not happen, until the visit gets a day again */
   notDoneReason?: string
@@ -180,7 +184,9 @@ export interface PassVisit {
   /** the signed link to the visit's .ics file, from the API */
   calendarUrl?: string
   id?: string
-  /** the truck's name once the visit has one, "Truck 1"; the pass page shows it beside the date */
+  /** the name of the person who has the visit, "Ryan Garner"; the pass page shows it beside the date */
+  personName?: string
+  /** @deprecated alias of `personName`, the same name, kept until the screens read people */
   truckName?: string
   completedAt?: string
   amount: number
@@ -230,20 +236,39 @@ export interface MonthTotal {
 
 export type Weekday = "mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun"
 
-/** The visit kinds a truck's capacity is counted in; install rides under "other". */
+/** The visit kinds a person's capacity is counted in; install rides under "other". */
 export type CapacityKind = "turn-on" | "inspection" | "blowout" | "repair" | "other"
 
-/** A truck is a row, not a count: its working days and how many visits of each kind fit in its day. */
-export interface Truck {
+/** What a person is here: the owner, a manager (admin) or a tech. */
+export type PersonRole = "owner" | "admin" | "tech"
+
+/**
+ * A person who works here: a row on the schedule when they have a truck to drive, with the days they work and how
+ * many visits of each kind fit in their day. The truck is a label on them ("Truck 1"); an email lets them sign in.
+ */
+export interface Person {
   id: string
   name: string
-  /** the Jobber user the truck's visits are assigned to while Jobber is the field display */
+  /** "RG" */
+  initials: string
+  email?: string
+  phone?: string
+  role: PersonRole
+  /** the truck they usually drive, as a label: "Truck 1"; without one they are not on the schedule */
+  truck?: string
+  /** the Jobber user their visits are assigned to while Jobber is the field display */
   jobberUserId?: string
   workingDays: Weekday[]
   capacityByKind: Record<CapacityKind, number>
+  /** ISO dates; the season they work, when it is shorter than the year */
+  seasonStart?: string
+  seasonEnd?: string
 }
 
-/** The towns a truck works on one day: one town or two or three that sit together. */
+/** @deprecated a truck is a person with a truck label; alias kept for one step */
+export type Truck = Person
+
+/** The towns a person works on one day: one town or two or three that sit together. */
 export interface AreaGroup {
   id: string
   name: string
@@ -259,7 +284,7 @@ export interface SeasonWindow {
   leadWeeks: number
 }
 
-/** One customer message the app sends, in Trailhead's voice. The body may carry {firstName}, {visit}, {date} and {truck}. */
+/** One customer message the app sends, in Trailhead's voice. The body may carry {firstName}, {visit}, {date}, {who} (the first name of the person on the visit) and {nextVisit}; {truck} (the truck label) still fills for one season and goes in step 6. */
 export interface MessageTemplate {
   key: string
   channel: "email" | "sms"
@@ -306,10 +331,11 @@ export interface Message {
 
 /** Everything the Settings page edits; the scheduler reads it on its next run. */
 export interface OrganizationSettings {
-  trucks: Truck[]
+  /** everyone who works here, owners first; the ones with a truck are the schedule's rows */
+  people: Person[]
   areas: AreaGroup[]
   windows: SeasonWindow[]
-  /** percent of a truck-day held back for repairs and weather in a season's first two weeks */
+  /** percent of a person's day held back for repairs and weather in a season's first two weeks */
   bufferPercentEarly: number
   /** the same after the first two weeks */
   bufferPercentLate: number
@@ -330,9 +356,9 @@ export interface SettingsChange {
   to: string
 }
 
-/** Busy time on a truck from its Jobber calendar feed; the scheduler and the pass page's day picker subtract it. */
+/** Busy time on a person from their Jobber calendar feed; the scheduler and the pass page's day picker subtract it. */
 export interface BusyBlock {
-  truckId: string
+  personId: string
   /** ISO instants */
   startAt: string
   endAt: string
@@ -372,6 +398,6 @@ export interface AdminData {
   settingsChanges: SettingsChange[]
   /** every message to or from a customer, newest last */
   messages: Message[]
-  /** busy time read from the trucks' Jobber calendar feeds; absent in the fixtures */
+  /** busy time read from the people's Jobber calendar feeds; absent in the fixtures */
   blocks?: BusyBlock[]
 }

@@ -20,7 +20,7 @@ beforeAll(() => {
   vi.stubGlobal("matchMedia", (query: string) => ({ matches: query === "(min-width: 1024px)", media: query, addEventListener: vi.fn(), removeEventListener: vi.fn() }))
 })
 
-const cell = (truck: string, day: string) => document.querySelector<HTMLElement>(`[data-slot="week-grid-cell"][data-truck="${truck}"][data-day="${day}"]`)!
+const cell = (person: string, day: string) => document.querySelector<HTMLElement>(`[data-slot="week-grid-cell"][data-person="${person}"][data-day="${day}"]`)!
 const percy = (el: HTMLElement) => within(el).getByRole("button", { name: /^Percy/ })
 
 async function pick(user: ReturnType<typeof userEvent.setup>, trigger: string, option: string) {
@@ -35,27 +35,27 @@ describe("ScheduleScreen move control", () => {
     expect(screen.getByRole("status")).toHaveTextContent("")
   })
 
-  it("moves the selected visit to another truck and day and says so", async () => {
+  it("moves the selected visit to another person and day and says so", async () => {
     const user = userEvent.setup()
     render(<ScheduleScreen data={data} today={TODAY} />)
-    await user.click(percy(cell("truck-1", "2026-11-12")))
+    await user.click(percy(cell("person_truck-1", "2026-11-12")))
     const control = screen.getByRole("region", { name: "Move the selected visit" })
     expect(control).toHaveTextContent("Move Percy, blowout")
-    await pick(user, "Move to truck", "Truck 2")
+    await pick(user, "Move to person", "Tech Two")
     await pick(user, "Move to day", "Fri 13")
     await user.click(within(control).getByRole("button", { name: "Move" }))
-    expect(screen.getByRole("status")).toHaveTextContent("Moved Percy to Truck 2 on Friday, November 13.")
-    expect(percy(cell("truck-2", "2026-11-13"))).toBeInTheDocument()
+    expect(screen.getByRole("status")).toHaveTextContent("Moved Percy to Friday, November 13 with Tech Two.")
+    expect(percy(cell("person_truck-2", "2026-11-13"))).toBeInTheDocument()
   })
 
-  it("announces why a move to a day the truck does not work is refused", async () => {
+  it("announces why a move to a day the person does not work is refused", async () => {
     const user = userEvent.setup()
     render(<ScheduleScreen data={data} today={TODAY} />)
-    await user.click(percy(cell("truck-1", "2026-11-12")))
+    await user.click(percy(cell("person_truck-1", "2026-11-12")))
     await pick(user, "Move to day", "Sun 15")
     await user.click(screen.getByRole("button", { name: "Move" }))
-    expect(screen.getByRole("status")).toHaveTextContent("Truck 1 does not work Sunday, so Percy stays on Thursday, November 12.")
-    expect(percy(cell("truck-1", "2026-11-12"))).toBeInTheDocument()
+    expect(screen.getByRole("status")).toHaveTextContent("Ryan Garner does not work Sunday, so Percy stays on Thursday, November 12.")
+    expect(percy(cell("person_truck-1", "2026-11-12"))).toBeInTheDocument()
   })
 })
 
@@ -79,25 +79,25 @@ describe("ScheduleScreen with actions", () => {
     const user = userEvent.setup()
     const onMove = vi.fn().mockResolvedValue({ ok: false, message: "Truck 2 is full of blowout visits on 2026-11-13" })
     render(<ScheduleScreen data={data} today={TODAY} onMove={onMove} />)
-    await user.click(percy(cell("truck-1", "2026-11-12")))
-    await pick(user, "Move to truck", "Truck 2")
+    await user.click(percy(cell("person_truck-1", "2026-11-12")))
+    await pick(user, "Move to person", "Tech Two")
     await pick(user, "Move to day", "Fri 13")
     await user.click(screen.getByRole("button", { name: "Move" }))
-    expect(onMove).toHaveBeenCalledWith(expect.any(String), "truck-2", "2026-11-13")
+    expect(onMove).toHaveBeenCalledWith(expect.any(String), "person_truck-2", "2026-11-13")
     expect(await screen.findByText("Truck 2 is full of blowout visits on 2026-11-13", {}, { timeout: 5000 })).toBeInTheDocument()
-    expect(percy(cell("truck-1", "2026-11-12"))).toBeInTheDocument()
+    expect(percy(cell("person_truck-1", "2026-11-12"))).toBeInTheDocument()
   })
 
   it("keeps the block where it went when the move is accepted", async () => {
     const user = userEvent.setup()
     const onMove = vi.fn().mockResolvedValue({ ok: true, data: undefined })
     render(<ScheduleScreen data={data} today={TODAY} onMove={onMove} />)
-    await user.click(percy(cell("truck-1", "2026-11-12")))
-    await pick(user, "Move to truck", "Truck 2")
+    await user.click(percy(cell("person_truck-1", "2026-11-12")))
+    await pick(user, "Move to person", "Tech Two")
     await pick(user, "Move to day", "Fri 13")
     await user.click(screen.getByRole("button", { name: "Move" }))
-    expect(await screen.findByText("Moved Percy to Truck 2 on Friday, November 13.", {}, { timeout: 5000 })).toBeInTheDocument()
-    expect(percy(cell("truck-2", "2026-11-13"))).toBeInTheDocument()
+    expect(await screen.findByText("Moved Percy to Friday, November 13 with Tech Two.", {}, { timeout: 5000 })).toBeInTheDocument()
+    expect(percy(cell("person_truck-2", "2026-11-13"))).toBeInTheDocument()
   })
 
   it("runs the scheduler once per window in the tray and adds up what it placed", async () => {
@@ -114,7 +114,7 @@ describe("ScheduleScreen with actions", () => {
     render(<ScheduleScreen data={data} today={TODAY} readOnly onMove={vi.fn()} />)
     expect(screen.queryByRole("button", { name: /^Schedule/ })).toBeNull()
     expect(screen.queryByRole("button", { name: /^Place / })).toBeNull()
-    await userEvent.click(percy(cell("truck-1", "2026-11-12")))
+    await userEvent.click(percy(cell("person_truck-1", "2026-11-12")))
     expect(screen.queryByRole("region", { name: "Move the selected visit" })).toBeNull()
   })
 })
@@ -123,7 +123,7 @@ describe("ScheduleScreen with actions", () => {
 // visits with a day and visits of unpaid passes, and a sentence about the window leaked onto the page.
 describe("ScheduleScreen opens on the work", () => {
   // The calendar holds only jobs in the spring: the first is the week of April 26, 2027.
-  const spring = { ...data, visits: data.visits.slice(0, 1).map((v) => ({ ...v, id: "spring", startAt: "2027-04-27T15:00:00Z", status: "scheduled" as const, truckId: "truck-1", stopOrder: 1 })) }
+  const spring = { ...data, visits: data.visits.slice(0, 1).map((v) => ({ ...v, id: "spring", startAt: "2027-04-27T15:00:00Z", status: "scheduled" as const, personId: "person_truck-1", stopOrder: 1 })) }
 
   it("opens on the first week that has a job, not on an empty November week", () => {
     render(<ScheduleScreen data={spring} today={TODAY} />)
@@ -208,7 +208,7 @@ describe("ScheduleScreen's No day yet list", () => {
     render(<ScheduleScreen data={data} today={TODAY} onMove={onMove} />)
     const before = rows().length
     await userEvent.click(within(rows()[0]).getByRole("button", { name: /^Place / }))
-    expect(await screen.findByText(/is scheduled on Truck 1/, {}, { timeout: 5000 })).toBeInTheDocument()
+    expect(await screen.findByText(/is scheduled with Ryan Garner/, {}, { timeout: 5000 })).toBeInTheDocument()
     expect(rows().length).toBe(before - 1)
   })
 })

@@ -17,8 +17,10 @@ export const VisitOut = z.object({
   amount: z.number().int().describe("Whole dollars."),
   preference: Preference.nullable(),
   awaitingPick: z.boolean().describe("The customer must be there and has not picked a day."),
-  truckId: Id.nullable(),
-  truckName: z.string().nullable().describe("The truck's name, 'Truck 1', once a truck has the visit."),
+  personId: Id.nullable().describe("Who the visit is assigned to, once someone has it."),
+  personName: z.string().nullable().describe("That person's name, 'Ryan Garner', once the visit has one."),
+  truckId: Id.nullable().describe("Alias of personId, kept for one season: the same id."),
+  truckName: z.string().nullable().describe("Alias of personName, kept for one season: the same name."),
   scheduledOn: Day.nullable(),
   startTime: z.string().nullable(),
   durationMinutes: z.number().int().nullable(),
@@ -37,3 +39,6 @@ export const VisitOut = z.object({
   address: z.string().optional().describe("Only for callers with the write scope."),
 })
 export type VisitOutType = z.infer<typeof VisitOut>
+
+/** The webhook's word for who has the visit: `personId`, with `truckId` the same id for one season. */
+export const who = (personId: string | null) => ({ personId, truckId: personId })

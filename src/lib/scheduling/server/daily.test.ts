@@ -20,10 +20,10 @@ const messages = async (kind: string) => (await db.select().from(s.messageLog)).
 
 describe("daily", () => {
   it("flags a past visit nobody closed, leaves a closed one and a future one", async () => {
-    await db.update(s.visit).set({ status: "scheduled", scheduledOn: "2027-05-04", truckId: "truck-1", completedOn: null }).where(eq(s.visit.id, "p3-turn-on"))
-    await db.update(s.visit).set({ status: "scheduled", scheduledOn: "2027-05-04", truckId: "truck-1", completedOn: null }).where(eq(s.visit.id, "p6-turn-on"))
-    await db.update(s.visit).set({ status: "scheduled", scheduledOn: "2027-05-06", truckId: "truck-1", startTime: "08:00" }).where(eq(s.visit.id, "p4-turn-on"))
-    await db.update(s.visit).set({ status: "scheduled", scheduledOn: "2027-05-06", truckId: "truck-2", startTime: "09:00" }).where(eq(s.visit.id, "p7-turn-on"))
+    await db.update(s.visit).set({ status: "scheduled", scheduledOn: "2027-05-04", personId: "person_truck-1", completedOn: null }).where(eq(s.visit.id, "p3-turn-on"))
+    await db.update(s.visit).set({ status: "scheduled", scheduledOn: "2027-05-04", personId: "person_truck-1", completedOn: null }).where(eq(s.visit.id, "p6-turn-on"))
+    await db.update(s.visit).set({ status: "scheduled", scheduledOn: "2027-05-06", personId: "person_truck-1", startTime: "08:00" }).where(eq(s.visit.id, "p4-turn-on"))
+    await db.update(s.visit).set({ status: "scheduled", scheduledOn: "2027-05-06", personId: "person_truck-2", startTime: "09:00" }).where(eq(s.visit.id, "p7-turn-on"))
     const out = await daily(db, NOW)
     expect(out.notClosed).toBeGreaterThanOrEqual(2)
     expect((await db.select().from(s.visit).where(eq(s.visit.id, "p3-turn-on")))[0]!.status).toBe("not-closed")
@@ -50,7 +50,7 @@ describe("daily", () => {
     const [item] = (await db.select().from(s.queueItem)).filter((q) => q.kind === "message" && q.key.startsWith("admin-alert:crew-summary:2027-05-06:"))
     expect(item).toBeDefined()
     const body = (item!.payload as { data: { detail: string } }).data.detail
-    expect(body).toMatch(/^Tomorrow: 2 visits, Truck 1 in .+ \(1\), Truck 2 in .+ \(1\)\./)
+    expect(body).toMatch(/^Tomorrow: 2 visits, Ryan Garner in .+ \(1\), Tech Two in .+ \(1\)\./)
     expect(body).toMatch(/2 visits from yesterday not marked done\.$/)
     expect(body).not.toMatch(/approv|propos/i)
     expect((item!.payload as { to: string }).to).toBe("owner@example.com")
@@ -74,7 +74,7 @@ describe("daily", () => {
 })
 
 describe("two weeks before", () => {
-  const setDay = (id: string, day: string) => db.update(s.visit).set({ status: "scheduled", scheduledOn: day, truckId: "truck-1", startTime: "08:00" }).where(eq(s.visit.id, id))
+  const setDay = (id: string, day: string) => db.update(s.visit).set({ status: "scheduled", scheduledOn: day, personId: "person_truck-1", startTime: "08:00" }).where(eq(s.visit.id, id))
   it("texts a visit 14 days out once, however often the daily run goes, and none at 13 or 15 days", async () => {
     await db.delete(s.messageLog)
     await setDay("p1-turn-on", "2027-05-19")

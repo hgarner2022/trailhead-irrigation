@@ -10,6 +10,7 @@ import { moneyFigures, weekView } from "./home-week"
 import { HomeMap } from "./HomeMap"
 import { HomeMoney } from "./HomeMoney"
 import { HomeWeek } from "./HomeWeek"
+import { routePeople } from "@/lib/admin/people"
 
 // What Hannah opens to, her four jobs on one screen in her order (docs/plans/2026-11-14-jobs-to-be-done.md):
 // Today or Next up ("is the week sane"), the money line ("how is the money"), the map of that day, and Needs action
@@ -41,7 +42,7 @@ export function HomeScreen({ data, today, readOnly = false, onAttentionAction, o
         <div className="grid gap-6 lg:grid-cols-5">
           <HomeWeek week={week} today={today} className="lg:col-span-3 lg:col-start-1 lg:row-start-1" />
           <HomeMoney figures={moneyFigures(data, today)} className="lg:col-span-3 lg:col-start-1 lg:row-start-2" />
-          <HomeMap visits={week.visits} trucks={data.settings.trucks} className="lg:col-span-2 lg:col-start-4 lg:row-span-2 lg:row-start-1" />
+          <HomeMap visits={week.visits} people={routePeople(data.settings.people)} className="lg:col-span-2 lg:col-start-4 lg:row-span-2 lg:row-start-1" />
           <Card className="lg:col-span-5 lg:row-start-3">
             <CardHeader>
               <CardTitleHeading>Needs action</CardTitleHeading>

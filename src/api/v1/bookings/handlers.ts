@@ -21,7 +21,8 @@ export const bookingsCreate = defineHandler({
   input: z.object({
     serviceKey: z.string().min(1),
     day: Day,
-    truckId: Id,
+    personId: Id.optional().describe("Who takes the visit, from the slot."),
+    truckId: Id.optional().describe("Alias of personId, kept for one season: the same id."),
     customer: z.object({ ...customerFields, email: z.email() }),
     property: propertyInput,
     zones: z.number().int().min(1).max(16).optional(),
@@ -50,7 +51,7 @@ export const bookingsCancel = defineHandler({
     await ctx.db.update(s.job).set({ status: "cancelled", cancelledAt: ctx.now }).where(eq(s.job.id, row.id))
     const cancelled = await ctx
       .db.update(s.visit)
-      .set({ status: "cancelled", truckId: null, scheduledOn: null, startTime: null, stopOrder: null })
+      .set({ status: "cancelled", personId: null, scheduledOn: null, startTime: null, stopOrder: null })
       .where(and(eq(s.visit.jobId, row.id), notInArray(s.visit.status, ["completed", "cancelled"])))
       .returning({ id: s.visit.id })
     return { id: row.id, status: "cancelled" as const, cancelledVisits: cancelled.length }

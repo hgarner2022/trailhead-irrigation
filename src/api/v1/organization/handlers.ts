@@ -1,5 +1,5 @@
 import "server-only"
-import { count, desc, eq } from "drizzle-orm"
+import { and, count, desc, eq, isNotNull } from "drizzle-orm"
 import { z } from "zod"
 import * as s from "@/db/schema"
 import { notFound } from "../../core/errors"
@@ -18,7 +18,8 @@ export const organizationGet = defineHandler({
   async run(ctx) {
     const [org] = await ctx.db.select().from(s.organization).where(eq(s.organization.id, ctx.organizationId))
     if (!org) throw notFound("Organization")
-    const [trucks] = await ctx.db.select({ n: count() }).from(s.truck).where(eq(s.truck.organizationId, org.id))
+    // "trucks" counts the people on the schedule: in service with a truck to drive.
+    const [trucks] = await ctx.db.select({ n: count() }).from(s.person).where(and(eq(s.person.organizationId, org.id), eq(s.person.active, true), isNotNull(s.person.truck)))
     const [areas] = await ctx.db.select({ n: count() }).from(s.area).where(eq(s.area.organizationId, org.id))
     const [token] = await ctx.db.select({ id: s.jobberToken.id }).from(s.jobberToken).where(eq(s.jobberToken.organizationId, org.id)).limit(1)
     const [sync] = await ctx.db.select().from(s.syncRun).where(eq(s.syncRun.organizationId, org.id)).orderBy(desc(s.syncRun.startedAt)).limit(1)

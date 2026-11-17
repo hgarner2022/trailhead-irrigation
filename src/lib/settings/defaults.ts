@@ -36,8 +36,8 @@ export const DEFAULT_AREAS: Pick<AreaGroup, "name" | "towns">[] = [
   { name: "Broomfield", towns: ["Broomfield"] },
 ]
 
-/** The settings an organization starts with for `season`. Trucks and areas are rows, so they are not here. */
-export const defaultSettings = (season: number): Omit<OrganizationSettings, "trucks" | "areas"> => ({
+/** The settings an organization starts with for `season`. People and areas are rows, so they are not here. */
+export const defaultSettings = (season: number): Omit<OrganizationSettings, "people" | "areas"> => ({
   windows: defaultWindows(season),
   bufferPercentEarly: 25,
   bufferPercentLate: 15,

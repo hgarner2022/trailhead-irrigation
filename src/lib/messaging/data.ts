@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm"
 import * as s from "@/db/schema"
 import type { Database } from "@/db/types"
 import type { Base, VisitFacts } from "@/emails/types"
+import { firstNameOf } from "@/lib/admin/people"
 import { kindName } from "@/lib/pass/server/messages"
 import { visitCalendarUrl } from "./tokens"
 
@@ -19,10 +20,12 @@ export function baseData(origin: string, customer: { firstName: string; email: s
 /** The visit as the messages know it, on `day` when the caller already knows the new one; null while it has no day. */
 export async function loadVisitFacts(db: Database, visitId: string, origin: string, day?: string): Promise<VisitFacts | null> {
   const [row] = await db
-    .select({ visit: s.visit, address: s.property.address, town: s.property.town, truck: s.truck.name })
+    // `who` is the person's first name; `crew` keeps their truck label ("Truck 1") for one more season and goes in step 6. A person
+    // who has left keeps their visits until the office moves them (Settings › People, Remove), so neither names them.
+    .select({ visit: s.visit, address: s.property.address, town: s.property.town, truck: s.person.truck, person: s.person.name, personActive: s.person.active })
     .from(s.visit)
     .innerJoin(s.property, eq(s.property.id, s.visit.propertyId))
-    .leftJoin(s.truck, eq(s.truck.id, s.visit.truckId))
+    .leftJoin(s.person, eq(s.person.id, s.visit.personId))
     .where(eq(s.visit.id, visitId))
   const when = day ?? row?.visit.scheduledOn
   if (!row || !when) return null
@@ -31,7 +34,8 @@ export async function loadVisitFacts(db: Database, visitId: string, origin: stri
     name: kindName(row.visit.kind),
     day: when,
     startTime: row.visit.startTime,
-    crew: row.truck ? `${row.truck}` : null,
+    crew: row.personActive && row.truck ? `${row.truck}` : null,
+    who: row.personActive ? firstNameOf(row.person) : null,
     location: `${row.address}, ${row.town}`,
     icsUrl: visitCalendarUrl(origin, row.visit.id),
   }

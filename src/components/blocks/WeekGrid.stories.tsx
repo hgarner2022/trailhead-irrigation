@@ -6,9 +6,9 @@ import { TIME_ZONE } from "@/lib/admin/format"
 import { moveVisit } from "@/app/(admin)/admin/_screens/schedule-model"
 import { WeekGrid } from "./WeekGrid"
 
-// The week of Monday, November 9, 2026 from the snapshot: Truck 1 carries
+// The week of Monday, November 9, 2026 from the snapshot: Ryan Garner carries
 // every visit, two moved in
-// Jobber earlier in the week; Truck 2 is idle until October. Today is the
+// Jobber earlier in the week; the second truck is idle until October. Today is the
 // Thursday. The stateful wrapper lets a visit be selected and dragged.
 const data = snapshot as AdminData
 const TODAY = "2026-11-12"
@@ -25,7 +25,7 @@ function Live(props: Omit<React.ComponentProps<typeof WeekGrid>, "selectedId" | 
       weekStart={weekStart}
       selectedId={selectedId}
       onSelect={setSelectedId}
-      onMove={(id, truckId, day) => setVisits((v) => moveVisit(v, id, truckId, day, props.trucks, TIME_ZONE))}
+      onMove={(id, personId, day) => setVisits((v) => moveVisit(v, id, personId, day, props.people, TIME_ZONE))}
       onWeekChange={setWeekStart}
     />
   )
@@ -36,7 +36,7 @@ const meta = {
   component: WeekGrid,
   parameters: { layout: "padded" },
   args: {
-    trucks: data.settings.trucks,
+    people: data.settings.people,
     areas: data.settings.areas,
     visits: data.visits,
     weekStart: WEEK,
@@ -55,17 +55,17 @@ export const Default: Story = {
   globals: { viewport: { value: "wide", isRotated: false } },
 }
 
-/** An October week, when both trucks run and the days are full. */
-export const TwoTrucks: Story = {
+/** An October week, when both people are out and the days are full. */
+export const TwoPeople: Story = {
   args: { weekStart: "2026-10-05", today: "2026-10-08" },
   globals: { viewport: { value: "wide", isRotated: false } },
 }
 
 export const Empty: Story = {
-  args: { trucks: [], areas: [] },
+  args: { people: [], areas: [] },
 }
 
-/** Under `md` the grid becomes one day with the trucks stacked. */
+/** Under `md` the grid becomes one day with the people stacked. */
 export const Phone: Story = {
   globals: { viewport: { value: "phone", isRotated: false } },
 }

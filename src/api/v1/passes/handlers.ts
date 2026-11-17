@@ -31,7 +31,7 @@ import { addDays, Id, idInput, OK, okOutput, PassStatus, Preference, Town, today
 import { syncPassJob } from "@/lib/pass/server/job"
 import { finishPurchase } from "./finish"
 import { renewPass } from "./renew"
-import { PassDetail, PassOut, passActivateInput, passConsentInput, passCreateInput } from "./schemas"
+import { chosenDay, PassDetail, PassOut, passActivateInput, passConsentInput, passCreateInput } from "./schemas"
 import { loadPass, passDetail, passesQuery, passOut, recordChange } from "./queries"
 
 const PassVisitKind = z.enum(["turn-on", "inspection", "blowout"])
@@ -187,7 +187,7 @@ export const passesCreate = defineHandler({
         recordedAt: ctx.now,
         note: input.consent.note,
       })
-    await holdChosenDays(ctx.db, pass.id, input.days, input.property.town, season, day)
+    await holdChosenDays(ctx.db, pass.id, input.days.map(chosenDay), input.property.town, season, day)
     return passDetail(ctx, await loadPass(ctx, pass.id))
   },
 })
@@ -248,7 +248,7 @@ export const passesCancel = defineHandler({
     await syncPassJob(ctx.db, row.pass.id)
     const cancelled = await ctx.db
       .update(s.visit)
-      .set({ status: "cancelled", truckId: null, scheduledOn: null, startTime: null, stopOrder: null, awaitingPick: false })
+      .set({ status: "cancelled", personId: null, scheduledOn: null, startTime: null, stopOrder: null, awaitingPick: false })
       .where(and(eq(s.visit.passId, row.pass.id), notInArray(s.visit.status, ["completed", "cancelled"])))
       .returning({ id: s.visit.id })
     await recordChange(ctx, { customerId: row.pass.customerId, passId: row.pass.id, kind: "cancelled", detail: { reason: input.reason ?? null, visits: cancelled.length } })
@@ -383,7 +383,7 @@ export const passesSkipVisit = defineHandler({
     if (!visit) throw new ApiError("unprocessable", `This pass has no ${input.kind} visit`)
     if (visit.status === "skipped") return { id: row.pass.id, visitId: visit.id, status: "skipped" as const }
     if (!(["unscheduled", "scheduled"] as string[]).includes(visit.status)) throw new ApiError("unprocessable", "This visit can no longer be skipped")
-    await ctx.db.update(s.visit).set({ status: "skipped", truckId: null, scheduledOn: null, startTime: null, stopOrder: null }).where(eq(s.visit.id, visit.id))
+    await ctx.db.update(s.visit).set({ status: "skipped", personId: null, scheduledOn: null, startTime: null, stopOrder: null }).where(eq(s.visit.id, visit.id))
     await ctx.db.update(s.job).set({ price: sql`greatest(coalesce(${s.job.price}, 0) - ${visit.amount}, 0)` }).where(eq(s.job.id, visit.jobId))
     await recordChange(ctx, { customerId: row.pass.customerId, passId: row.pass.id, visitId: visit.id, kind: "skipped", detail: { visit: input.kind } })
     return { id: row.pass.id, visitId: visit.id, status: "skipped" as const }

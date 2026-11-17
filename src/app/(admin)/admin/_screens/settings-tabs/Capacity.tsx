@@ -30,7 +30,7 @@ export function Capacity({ state, apply }: { state: SettingsState; apply: Apply 
           <CardTitleHeading>Buffer</CardTitleHeading>
         </CardHeader>
         <CardContent className="space-y-5">
-          <Field id="buffer-early" label="Held back in a season's first two weeks (percent)" hint="Capacity per truck-day minus this much, left for repairs and weather. The plan starts at 20 to 25.">
+          <Field id="buffer-early" label="Held back in a season's first two weeks (percent)" hint="Each person's capacity for the day minus this much, left for repairs and weather. The plan starts at 20 to 25.">
             {(d) => <CommitInput type="number" min={0} max={100} label="Buffer, first two weeks, percent" describedBy={d} value={bufferPercentEarly} onCommit={(v) => apply((s, a) => setBuffer(s, "early", Number(v), a))} />}
           </Field>
           <Field id="buffer-late" label="Held back after the first two weeks (percent)" hint="The same hold-back once the season settles. The plan uses 10 to 15.">

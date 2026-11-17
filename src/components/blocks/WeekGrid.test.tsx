@@ -18,7 +18,7 @@ beforeAll(() => {
 })
 
 const base: WeekGridProps = {
-  trucks: data.settings.trucks,
+  people: data.settings.people,
   areas: data.settings.areas,
   visits: data.visits,
   weekStart: WEEK,
@@ -29,73 +29,73 @@ const base: WeekGridProps = {
   onWeekChange: () => {},
 }
 const table = () => screen.getByRole("table")
-const cell = (truck: string, day: string) => document.querySelector<HTMLElement>(`[data-slot="week-grid-cell"][data-truck="${truck}"][data-day="${day}"]`) as HTMLElement
+const cell = (person: string, day: string) => document.querySelector<HTMLElement>(`[data-slot="week-grid-cell"][data-person="${person}"][data-day="${day}"]`) as HTMLElement
 const blocksIn = (el: HTMLElement) => Array.from(el.querySelectorAll<HTMLElement>('[data-slot="week-grid-visit"]'))
 
 describe("WeekGrid", () => {
-  it("lays the week out with a row per truck, the seven days across and today marked", () => {
+  it("lays the week out with a row per person, the seven days across and today marked", () => {
     render(<WeekGrid {...base} />)
     const headers = within(table()).getAllByRole("columnheader").map((h) => h.textContent)
-    expect(headers).toEqual(["Truck", "Mon 9", "Tue 10", "Wed 11", "Thu 12, today", "Fri 13", "Sat 14", "Sun 15"])
+    expect(headers).toEqual(["Who", "Mon 9", "Tue 10", "Wed 11", "Thu 12, today", "Fri 13", "Sat 14", "Sun 15"])
     expect(within(table()).getByRole("columnheader", { name: /Thu 12/ })).toHaveAttribute("aria-current", "date")
-    expect(within(table()).getAllByRole("rowheader").map((h) => h.textContent)).toEqual(["Truck 1", "Truck 2"])
-    expect(blocksIn(cell("truck-1", "2026-11-09"))).toHaveLength(5)
-    expect(blocksIn(cell("truck-1", "2026-11-13")).map((b) => b.textContent)).toEqual([
+    expect(within(table()).getAllByRole("rowheader").map((h) => h.textContent)).toEqual(["Ryan Garner", "Tech Two"])
+    expect(blocksIn(cell("person_truck-1", "2026-11-09"))).toHaveLength(5)
+    expect(blocksIn(cell("person_truck-1", "2026-11-13")).map((b) => b.textContent)).toEqual([
       "DavidFirestone · blowout",
       "RickyFirestone · blowout",
       "JoelLafayette · blowout",
       "BrianErie · blowout",
     ])
-    expect(blocksIn(cell("truck-2", "2026-11-13"))).toHaveLength(0)
+    expect(blocksIn(cell("person_truck-2", "2026-11-13"))).toHaveLength(0)
   })
 
   it("colours a block by its area and marks a moved visit", () => {
     render(<WeekGrid {...base} />)
-    const [josh] = blocksIn(cell("truck-1", "2026-11-10")) // Broomfield, moved
+    const [josh] = blocksIn(cell("person_truck-1", "2026-11-10")) // Broomfield, moved
     expect(josh).toHaveClass("border-l-positive")
     expect(josh).toHaveTextContent("moved")
     expect(josh.querySelector("svg")).not.toBeNull()
-    const [percy] = blocksIn(cell("truck-1", "2026-11-12")) // Erie
+    const [percy] = blocksIn(cell("person_truck-1", "2026-11-12")) // Erie
     expect(percy).toHaveClass("border-l-primary")
     expect(percy).not.toHaveAttribute("data-proposed")
-    const [john] = blocksIn(cell("truck-1", "2026-11-09")) // Lafayette
+    const [john] = blocksIn(cell("person_truck-1", "2026-11-09")) // Lafayette
     expect(john).toHaveClass("border-l-positive")
   })
 
-  it("shades the days a truck does not work and names them for a reader", () => {
+  it("shades the days a person does not work and names them for a reader", () => {
     render(<WeekGrid {...base} />)
-    expect(cell("truck-1", "2026-11-14")).toHaveClass("bg-stone")
-    expect(cell("truck-1", "2026-11-14")).toHaveTextContent("Not a working day")
-    expect(cell("truck-2", "2026-11-14")).not.toHaveClass("bg-stone")
-    expect(cell("truck-2", "2026-11-15")).toHaveClass("bg-stone")
+    expect(cell("person_truck-1", "2026-11-14")).toHaveClass("bg-stone")
+    expect(cell("person_truck-1", "2026-11-14")).toHaveTextContent("Not a working day")
+    expect(cell("person_truck-2", "2026-11-14")).not.toHaveClass("bg-stone")
+    expect(cell("person_truck-2", "2026-11-15")).toHaveClass("bg-stone")
   })
 
   it("selects a block on click and reports it, pressed", async () => {
     const user = userEvent.setup()
     const onSelect = vi.fn()
     const { rerender } = render(<WeekGrid {...base} onSelect={onSelect} />)
-    const [percy] = blocksIn(cell("truck-1", "2026-11-12"))
+    const [percy] = blocksIn(cell("person_truck-1", "2026-11-12"))
     expect(percy).toHaveAttribute("aria-pressed", "false")
     await user.click(percy)
     expect(onSelect).toHaveBeenCalledWith("v477")
     rerender(<WeekGrid {...base} onSelect={onSelect} selectedId="v477" />)
-    expect(blocksIn(cell("truck-1", "2026-11-12"))[0]).toHaveAttribute("aria-pressed", "true")
-    await user.click(blocksIn(cell("truck-1", "2026-11-12"))[0])
+    expect(blocksIn(cell("person_truck-1", "2026-11-12"))[0]).toHaveAttribute("aria-pressed", "true")
+    await user.click(blocksIn(cell("person_truck-1", "2026-11-12"))[0])
     expect(onSelect).toHaveBeenLastCalledWith(undefined)
   })
 
   it("moves a dragged block onto a working cell and refuses a day off", () => {
     const onMove = vi.fn()
     render(<WeekGrid {...base} onMove={onMove} />)
-    const [percy] = blocksIn(cell("truck-1", "2026-11-12"))
+    const [percy] = blocksIn(cell("person_truck-1", "2026-11-12"))
     const store: Record<string, string> = {}
     const dataTransfer = { setData: (k: string, v: string) => { store[k] = v }, getData: (k: string) => store[k], effectAllowed: "" }
     fireEvent.dragStart(percy, { dataTransfer })
-    const friday = cell("truck-2", "2026-11-14")
+    const friday = cell("person_truck-2", "2026-11-14")
     fireEvent.dragOver(friday, { dataTransfer })
     fireEvent.drop(friday, { dataTransfer })
-    expect(onMove).toHaveBeenCalledWith("v477", "truck-2", "2026-11-14")
-    fireEvent.drop(cell("truck-1", "2026-11-14"), { dataTransfer })
+    expect(onMove).toHaveBeenCalledWith("v477", "person_truck-2", "2026-11-14")
+    fireEvent.drop(cell("person_truck-1", "2026-11-14"), { dataTransfer })
     expect(onMove).toHaveBeenCalledTimes(1)
   })
 
@@ -112,30 +112,30 @@ describe("WeekGrid", () => {
     expect(onWeekChange).toHaveBeenCalledWith(WEEK)
   })
 
-  it("filters by truck and by area", async () => {
+  it("filters by person and by area", async () => {
     const user = userEvent.setup()
     render(<WeekGrid {...base} />)
-    const [truck, area] = screen.getAllByRole("combobox", { name: /Truck|Area/ })
-    await user.click(truck)
-    await user.click(screen.getByRole("option", { name: "Truck 2" }))
-    expect(within(table()).getAllByRole("rowheader").map((h) => h.textContent)).toEqual(["Truck 2"])
-    await user.click(truck)
-    await user.click(screen.getByRole("option", { name: "All trucks" }))
+    const [who, area] = screen.getAllByRole("combobox", { name: /Who|Area/ })
+    await user.click(who)
+    await user.click(screen.getByRole("option", { name: "Tech Two" }))
+    expect(within(table()).getAllByRole("rowheader").map((h) => h.textContent)).toEqual(["Tech Two"])
+    await user.click(who)
+    await user.click(screen.getByRole("option", { name: "Everyone" }))
     await user.click(area)
     await user.click(screen.getByRole("option", { name: "Longmont" }))
     expect(blocksIn(table())).toHaveLength(0)
     await user.click(area)
     await user.click(screen.getByRole("option", { name: "Erie and Firestone" }))
-    expect(blocksIn(cell("truck-1", "2026-11-09"))).toHaveLength(4)
+    expect(blocksIn(cell("person_truck-1", "2026-11-09"))).toHaveLength(4)
   })
 
-  it("renders the phone's day view beside the table, on today, with the trucks stacked", async () => {
+  it("renders the phone's day view beside the table, on today, with the people stacked", async () => {
     const user = userEvent.setup()
     const onWeekChange = vi.fn()
     render(<WeekGrid {...base} onWeekChange={onWeekChange} />)
     const day = document.querySelector<HTMLElement>('[data-slot="week-grid-day"]') as HTMLElement
     expect(within(day).getByRole("heading", { level: 2 })).toHaveTextContent("Thu 12 · today")
-    expect(within(day).getAllByRole("heading", { level: 3 }).map((h) => h.textContent)).toEqual(["Truck 1", "Truck 2"])
+    expect(within(day).getAllByRole("heading", { level: 3 }).map((h) => h.textContent)).toEqual(["Ryan Garner", "Tech Two"])
     expect(blocksIn(day)).toHaveLength(4)
     expect(blocksIn(day)[0]).not.toHaveAttribute("draggable", "true")
     await user.click(within(day).getByRole("button", { name: "Next day" }))
@@ -147,15 +147,15 @@ describe("WeekGrid", () => {
     expect(onWeekChange).toHaveBeenCalledWith("2026-11-16")
   })
 
-  it("lists the legend and shows the empty state with no trucks", () => {
+  it("lists the legend and shows the empty state with no people", () => {
     const { unmount } = render(<WeekGrid {...base} />)
     const legend = document.querySelector('[data-slot="week-grid-legend"]')
     expect(legend).toHaveTextContent("Erie and Firestone")
     expect(legend).toHaveTextContent("Moved")
     expect(legend).not.toHaveTextContent("Jobber")
     unmount()
-    render(<WeekGrid {...base} trucks={[]} />)
+    render(<WeekGrid {...base} people={[]} />)
     expect(screen.queryByRole("table")).toBeNull()
-    expect(document.querySelector('[data-slot="empty-state"]')).toHaveTextContent("No trucks yet")
+    expect(document.querySelector('[data-slot="empty-state"]')).toHaveTextContent("No people yet")
   })
 })

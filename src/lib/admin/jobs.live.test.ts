@@ -30,7 +30,7 @@ beforeAll(async () => {
   vi.stubEnv("APP_URL", "https://site.test")
   db = await apiDb()
   // p4: a day with a start time (Routed). p3: marked done, its charge failed once (Charge failed). p6: done, failed, retried and charged.
-  await callApi(ctxFor(db, owner, NOW), visitsMove, { id: "p4-turn-on", truckId: "truck-1", scheduledOn: "2027-05-05", startTime: "09:30" })
+  await callApi(ctxFor(db, owner, NOW), visitsMove, { id: "p4-turn-on", personId: "person_truck-1", scheduledOn: "2027-05-05", startTime: "09:30" })
   await db.update(s.visit).set({ status: "completed", completedOn: "2027-04-19" }).where(eq(s.visit.id, "p3-turn-on"))
   await db.insert(s.charge).values({ organizationId: ORG, passId: "p3", visitId: "p3-turn-on", attempt: 1, amount: 145, status: "failed", failureMessage: "Card declined" })
   await db.update(s.visit).set({ status: "completed", completedOn: "2027-04-19", chargedAt: new Date("2027-04-20T09:00:00Z") }).where(eq(s.visit.id, "p6-turn-on"))
@@ -39,7 +39,7 @@ beforeAll(async () => {
     { organizationId: ORG, passId: "p6", visitId: "p6-turn-on", attempt: 2, amount: 145, status: "succeeded" },
   ])
   // p7: a day that has passed and nobody marked done (Scheduled, with the Not closed flag).
-  await db.update(s.visit).set({ status: "scheduled", scheduledOn: "2027-04-15", startTime: null, truckId: "truck-1" }).where(eq(s.visit.id, "p7-turn-on"))
+  await db.update(s.visit).set({ status: "scheduled", scheduledOn: "2027-04-15", startTime: null, personId: "person_truck-1" }).where(eq(s.visit.id, "p7-turn-on"))
   // p8: a pass whose card failed after a visit was marked done, and the card never retried.
   await db.update(s.seasonPass).set({ cardFailedAt: new Date("2027-04-19T10:00:00Z") }).where(eq(s.seasonPass.id, "p8"))
   await db.update(s.visit).set({ status: "completed", completedOn: "2027-04-18", chargedAt: null }).where(eq(s.visit.id, "p8-turn-on"))

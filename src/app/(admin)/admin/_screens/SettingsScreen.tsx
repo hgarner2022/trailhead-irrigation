@@ -14,18 +14,18 @@ import { Areas } from "./settings-tabs/Areas"
 import { ApiKeys } from "./settings-tabs/ApiKeys"
 import { Capacity } from "./settings-tabs/Capacity"
 import { Messages } from "./settings-tabs/Messages"
-import { Trucks } from "./settings-tabs/Trucks"
+import { People } from "./settings-tabs/People"
 import type { Apply } from "./settings-tabs/fields"
 
 // Where Ryan and Hannah set the rules the scheduler and the messages follow:
-// trucks, area groups and town order, capacity and season windows, the
+// the people, area groups and town order, capacity and season windows, the
 // customer messages and the API keys. Every edit goes through a reducer in
 // settings-model.ts that also writes the change log under the tabs. Client
 // because the tabs, the edits and the saved line are state; Save only logs
 // in the prototype. The route's page.tsx supplies `data` and `today`; the
 // log's times count up from `today` so a render is the same each time.
 
-export type SettingsTab = "trucks" | "areas" | "capacity" | "messages" | "keys"
+export type SettingsTab = "people" | "areas" | "capacity" | "messages" | "keys"
 
 export interface SettingsScreenProps {
   data: AdminData
@@ -50,14 +50,14 @@ export interface SettingsActions {
 }
 
 const TABS: { value: SettingsTab; label: string }[] = [
-  { value: "trucks", label: "Trucks" },
+  { value: "people", label: "People" },
   { value: "areas", label: "Areas" },
   { value: "capacity", label: "Capacity and windows" },
   { value: "messages", label: "Messages" },
   { value: "keys", label: "API keys" },
 ]
 
-export function SettingsScreen({ data, today, defaultTab = "trucks", who = "Hannah", keys, readOnly = false, actions }: SettingsScreenProps) {
+export function SettingsScreen({ data, today, defaultTab = "people", who = "Hannah", keys, readOnly = false, actions }: SettingsScreenProps) {
   const fresh = (): SettingsState => ({ settings: data.settings, changes: data.settingsChanges, keys: keys ?? SAMPLE_KEYS })
   const [state, setState] = useState<SettingsState>(fresh)
   const [seen, setSeen] = useState({ settings: data.settings, keys })
@@ -136,9 +136,9 @@ export function SettingsScreen({ data, today, defaultTab = "trucks", who = "Hann
             ))}
           </TabsList>
         </div>
-        <TabsContent value="trucks">
+        <TabsContent value="people">
           <fieldset disabled={readOnly} className="min-w-0">
-            <Trucks state={state} apply={apply} />
+            <People state={state} apply={apply} />
           </fieldset>
         </TabsContent>
         <TabsContent value="areas">

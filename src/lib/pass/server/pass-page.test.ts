@@ -17,14 +17,14 @@ beforeAll(async () => {
 afterAll(() => db.close())
 
 describe("loadPassPage", () => {
-  it("shapes the customer's own pass, with a booked visit carrying its date and truck", async () => {
-    await db.update(s.visit).set({ status: "scheduled", truckId: "truck-1", scheduledOn: "2027-05-04", startTime: "08:00" }).where(eq(s.visit.id, "p3-turn-on"))
+  it("shapes the customer's own pass, with a booked visit carrying its date and the person coming", async () => {
+    await db.update(s.visit).set({ status: "scheduled", personId: "person_truck-1", scheduledOn: "2027-05-04", startTime: "08:00" }).where(eq(s.visit.id, "p3-turn-on"))
     const data = await loadPassPage(ctxFor(db, customerPerson(customerId)))
     expect(data?.pass.id).toBe("p3")
     expect(data?.passes.every((p) => p.clientId === customerId)).toBe(true)
     const turnOn = data!.pass.visits.find((v) => v.kind === "turn-on")!
     expect(turnOn.scheduledAt).toMatch(/^2027-05-04T/)
-    expect(turnOn.truckName).toMatch(/^Truck/)
+    expect(turnOn.truckName).toBe("Ryan Garner")
     expect(data!.today).toBe("2027-04-20")
     expect(Object.keys(data!.pickDays).sort()).toEqual(["blowout", "turn-on"])
   })

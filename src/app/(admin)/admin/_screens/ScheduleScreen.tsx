@@ -19,9 +19,10 @@ import { ScheduleDayMap } from "./ScheduleDayMap"
 import { ScheduleMoveTo } from "./ScheduleMoveTo"
 import { DayStepper, Exceptions, NextJobsLine, StopList } from "./ScheduleParts"
 import { exceptionCount, firstJobWeek, firstWorkingDay, moveOutcome, nextJobsWeek, placeVisit, scheduleItems, trayItems, weekContext, type TrayItem } from "./schedule-model"
+import { routePeople } from "@/lib/admin/people"
 
 // Where Ryan lives in season (the scheduling flow, 2026-11-12: one state,
-// no second step): the week by truck, a day map beside the day's stops in
+// no second step): the week by person, a day map beside the day's stops in
 // order, and the "No day yet" list beside the week with every job of an
 // active pass that has no day. It opens on the first week that has a job; a
 // week with none points at the next week that does. Schedule puts the whole
@@ -49,8 +50,8 @@ export interface ScheduleScreenProps {
   readOnly?: boolean
   /** Schedule: runs the scheduler for one window; without it the button only moves blocks locally, as in the catalog */
   onSchedule?: (window: "turn-on" | "inspection" | "blowout") => Promise<Outcome<{ placed: number; unplaced: number }>>
-  /** Place and drag: put a visit on a truck and a day; a refusal's words show and the block snaps back */
-  onMove?: (visitId: string, truckId: string, dayIso: string) => Promise<Outcome>
+  /** Place and drag: give a visit to a person on a day; a refusal's words show and the block snaps back */
+  onMove?: (visitId: string, personId: string, dayIso: string) => Promise<Outcome>
   /** the visit panel a stop opens; server actions in the app */
   visitActions?: VisitActions
 }
@@ -71,7 +72,8 @@ function ScheduleBody({ data, today, defaultTab = "week", defaultDay, defaultWee
   const panel = Boolean(visitActions)
   const openVisit = useOpenVisit()
   const todayDay = dayOf(today, TIME_ZONE)
-  const { trucks, areas } = data.settings
+  const { areas } = data.settings
+  const people = routePeople(data.settings.people)
   const [visits, setVisits] = useState(data.visits)
   const [seen, setSeen] = useState(data.visits)
   const [pending, startTransition] = useTransition()
@@ -115,37 +117,37 @@ function ScheduleBody({ data, today, defaultTab = "week", defaultDay, defaultWee
       return
     }
     console.info("schedule", weekStart, tray.filter((i) => !i.awaitingPick).map((i) => i.id))
-    const outcome = scheduleItems(visits, tray, trucks, weekStart, TIME_ZONE)
+    const outcome = scheduleItems(visits, tray, people, weekStart, TIME_ZONE)
     setVisits(outcome.visits)
     const waiting = outcome.waiting ? ` ${outcome.waiting} ${outcome.waiting === 1 ? "customer picks their own day and stays" : "customers pick their own days and stay"} in the list.` : ""
     setAnnouncement(`${outcome.placed} ${outcome.placed === 1 ? "visit" : "visits"} scheduled on the week of ${writtenDate(weekStart)}. The customers get their dates.${waiting}`)
   }
   /** Sends the move to the API; the block shows where it is going at once and goes back with the API's words if it is refused. */
-  const send = (visitId: string, truckId: string, dayIso: string, before: typeof visits, done: string, refused: (message: string) => void = setAnnouncement) =>
+  const send = (visitId: string, personId: string, dayIso: string, before: typeof visits, done: string, refused: (message: string) => void = setAnnouncement) =>
     startTransition(async () => {
-      const out = await onMove!(visitId, truckId, dayIso)
+      const out = await onMove!(visitId, personId, dayIso)
       if (out.ok) return setAnnouncement(done)
       setVisits(before)
       refused(out.message)
     })
-  const move = (visitId: string, truckId: string, dayIso: string) => {
-    if (!onMove) console.info("move visit", visitId, truckId, dayIso)
-    const outcome = moveOutcome(visits, visitId, truckId, dayIso, trucks, TIME_ZONE)
+  const move = (visitId: string, personId: string, dayIso: string) => {
+    if (!onMove) console.info("move visit", visitId, personId, dayIso)
+    const outcome = moveOutcome(visits, visitId, personId, dayIso, people, TIME_ZONE)
     if (outcome.moved) setVisits(outcome.visits)
-    if (onMove) return send(visitId, truckId, dayIso, visits, outcome.moved ? outcome.message : "Moved.")
+    if (onMove) return send(visitId, personId, dayIso, visits, outcome.moved ? outcome.message : "Moved.")
     setAnnouncement(outcome.message)
   }
   const place = (item: TrayItem) => {
-    const truck = trucks[0]
-    if (!truck) return
-    const dayIso = firstWorkingDay(truck, weekStart)
-    if (!onMove) console.info("place visit", item.id, truck.id, dayIso)
+    const person = people[0]
+    if (!person) return
+    const dayIso = firstWorkingDay(person, weekStart)
+    if (!onMove) console.info("place visit", item.id, person.id, dayIso)
     const before = visits
     setProblems((p) => Object.fromEntries(Object.entries(p).filter(([id]) => id !== item.id)))
-    setVisits((v) => placeVisit(v, item, truck.id, dayIso, TIME_ZONE))
+    setVisits((v) => placeVisit(v, item, person, dayIso, TIME_ZONE))
     setSelectedId(item.id)
-    const done = `${item.clientName} is scheduled on ${truck.name} for ${writtenDate(dayIso)}, and we'll send the date. Drag it if another day is better.`
-    if (onMove) return send(item.id, truck.id, dayIso, before, done, (message) => setProblems((p) => ({ ...p, [item.id]: message })))
+    const done = `${item.clientName} is scheduled with ${person.name} for ${writtenDate(dayIso)}, and we'll send the date. Drag it if another day is better.`
+    if (onMove) return send(item.id, person.id, dayIso, before, done, (message) => setProblems((p) => ({ ...p, [item.id]: message })))
     setAnnouncement(done)
   }
   const goToWeek = (next: string) => {
@@ -178,7 +180,7 @@ function ScheduleBody({ data, today, defaultTab = "week", defaultDay, defaultWee
             )
           }
         />
-        {selected && !readOnly && !panel && <ScheduleMoveTo key={`${selected.id}-${selected.truckId}-${selected.startAt}`} visit={selected} trucks={trucks} weekStart={weekStart} timeZone={TIME_ZONE} onMove={move} />}
+        {selected && !readOnly && !panel && <ScheduleMoveTo key={`${selected.id}-${selected.personId}-${selected.startAt}`} visit={selected} people={people} weekStart={weekStart} timeZone={TIME_ZONE} onMove={move} />}
         <p role="status" className="text-sm text-muted-foreground empty:sr-only">
           {announcement}
         </p>
@@ -192,7 +194,7 @@ function ScheduleBody({ data, today, defaultTab = "week", defaultDay, defaultWee
             <div className="grid gap-6 xl:grid-cols-[1fr_20rem]">
               <WeekGrid
                 className="min-w-0"
-                trucks={trucks}
+                people={people}
                 areas={areas}
                 visits={visits}
                 weekStart={weekStart}
@@ -222,10 +224,10 @@ function ScheduleBody({ data, today, defaultTab = "week", defaultDay, defaultWee
                   <CardTitleHeading>Stops in order</CardTitleHeading>
                 </CardHeader>
                 <CardContent>
-                  <StopList stops={stops} trucks={trucks} today={todayDay} selectedId={selectedId} onSelect={select} />
+                  <StopList stops={stops} people={people} today={todayDay} selectedId={selectedId} onSelect={select} />
                 </CardContent>
               </Card>
-              <ScheduleDayMap className="min-w-0 lg:col-span-3" stops={stops} trucks={trucks} selectedId={selectedId} onSelect={select} />
+              <ScheduleDayMap className="min-w-0 lg:col-span-3" stops={stops} people={people} selectedId={selectedId} onSelect={select} />
             </div>
           </TabsContent>
         </Tabs>

@@ -11,16 +11,16 @@ export const FIRST_STOP = 8 * 60
 const clock = (minutes: number) => `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`
 
 /**
- * Orders one truck-day and stores it: `stop_order` from 1, and `start_time` from 8:00, each visit starting when the one
+ * Orders one person's day and stores it: `stop_order` from 1, and `start_time` from 8:00, each visit starting when the one
  * before it ends (its own length, or the kind's usual one). App-computed from the visits' geocoded points; a visit with no
- * point goes last. The truck starts at the centre of the day's most common town. Returns the visit ids in order.
+ * point goes last. The person starts at the centre of the day's most common town. Returns the visit ids in order.
  */
-export async function orderDay(db: Database, { truckId, day }: { truckId: string; day: string }): Promise<string[]> {
+export async function orderDay(db: Database, { personId, day }: { personId: string; day: string }): Promise<string[]> {
   const rows = await db
     .select({ visit: s.visit, town: s.property.town, lat: s.property.lat, lng: s.property.lng })
     .from(s.visit)
     .innerJoin(s.property, eq(s.property.id, s.visit.propertyId))
-    .where(and(eq(s.visit.truckId, truckId), eq(s.visit.scheduledOn, day), eq(s.visit.status, "scheduled")))
+    .where(and(eq(s.visit.personId, personId), eq(s.visit.scheduledOn, day), eq(s.visit.status, "scheduled")))
   if (rows.length === 0) return []
   const counts = new Map<string, number>()
   for (const r of rows) counts.set(r.town, (counts.get(r.town) ?? 0) + 1)

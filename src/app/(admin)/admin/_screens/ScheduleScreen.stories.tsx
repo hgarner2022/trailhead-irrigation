@@ -7,14 +7,14 @@ import { AdminShell } from "@/components/blocks/AdminShell"
 import { ScheduleScreen } from "./ScheduleScreen"
 
 // `today` is pinned to 12:56 pm Mountain on Thursday, November 12, 2026, the
-// same moment as the Home story, so the week is Monday the 9th: Truck 1
+// same moment as the Home story, so the week is Monday the 9th: Ryan Garner
 // carries every visit and two earlier in the week were moved. The map draws from
 // OpenFreeMap tiles; without WebGL it shows its fallback.
 const TODAY = "2026-11-12T19:56:30Z"
 const data = snapshot as AdminData
 
 // Only spring jobs on the calendar: the Schedule opens on the first week that has one, and an empty week points there.
-const spring: AdminData = { ...data, visits: data.visits.slice(0, 6).map((v, i) => ({ ...v, startAt: `2027-04-2${7 + (i % 3)}T15:00:00Z`, status: "scheduled" as const, truckId: "truck-1", stopOrder: i + 1 })) }
+const spring: AdminData = { ...data, visits: data.visits.slice(0, 6).map((v, i) => ({ ...v, startAt: `2027-04-2${7 + (i % 3)}T15:00:00Z`, status: "scheduled" as const, personId: "person_truck-1", personName: "Ryan Garner", stopOrder: i + 1 })) }
 
 const nothingYet: AdminData = {
   organizationId: data.organizationId,
@@ -82,7 +82,7 @@ export const Tablet: Story = {
   globals: { viewport: { value: "tablet", isRotated: false } },
 }
 
-/** On a phone the Week tab is one day at a time with the trucks stacked. */
+/** On a phone the Week tab is one day at a time with the people stacked. */
 export const Phone: Story = {
   globals: { viewport: { value: "phone", isRotated: false } },
 }

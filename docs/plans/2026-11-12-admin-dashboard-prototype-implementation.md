@@ -4,6 +4,8 @@
 
 Every task from 0.1 to 4.8 is done and committed on `admin-prototype` (`git log --oneline main..HEAD`). Task 5.1 is done. Task 5.2 is done: Hannah approved every screen on 2026-11-12 (table in `docs/DESIGN.md` under Approvals). Task 5.3, the wiring plan, is next.
 
+Nov 16 2026: step 1 of the data model plan (`docs/plans/2026-11-16-data-model-steps-1-2.md`, a `person` on every visit with the truck as a label on them, tasks 1.1 to 1.6) is done on `step-1-person`: the table and migration, the people API, the admin screens with a People tab, the day-before messages naming who is coming, and the `person` rows in `docs/DATA_MODEL.md`.
+
 | Task | Commits |
 |---|---|
 | 0.1 Vitest | `3690f94` |

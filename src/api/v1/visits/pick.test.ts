@@ -35,13 +35,14 @@ describe("visits.areaDays and visits.pick", () => {
     }
   })
 
-  it("books the picked day on a truck, texts the date, and texts again when the day changes", async () => {
+  it("books the picked day with a person, texts the date, and texts again when the day changes", async () => {
     const { days } = await callApi(me(), visitsAreaDays, { id: "p3-turn-on" })
     const out = await callApi(me(), visitsPick, { id: "p3-turn-on", day: days[0]! })
     expect(out).toMatchObject({ status: "scheduled", scheduledOn: days[0], awaitingPick: false })
-    expect(out.truckName).toMatch(/^Truck/)
+    expect(out.personName).toMatch(/^(Ryan Garner|Tech Two)$/)
+    expect(out.truckName).toBe(out.personName)
     const pass = await callApi(me(), passesGet, { id: "p3" })
-    expect(pass.visits.find((v) => v.kind === "turn-on")).toMatchObject({ scheduledOn: days[0], truckName: out.truckName })
+    expect(pass.visits.find((v) => v.kind === "turn-on")).toMatchObject({ scheduledOn: days[0], personName: out.personName })
     let texts = (await db.select().from(s.messageLog)).filter((m) => m.visitId === "p3-turn-on")
     expect(texts).toHaveLength(1)
     expect(texts[0]).toMatchObject({ channel: "sms", kind: "date-set", to: "303-555-0100", status: "queued" })
@@ -70,7 +71,7 @@ describe("visits.areaDays and visits.pick", () => {
   it("emails the date when the customer has no mobile number", async () => {
     await db.update(s.seasonPass).set({ needsCustomerHome: true }).where(eq(s.seasonPass.id, "p3"))
     await db.update(s.customer).set({ phone: null }).where(eq(s.customer.id, customerId))
-    await db.update(s.visit).set({ status: "unscheduled", scheduledOn: null, truckId: null }).where(eq(s.visit.id, "p3-turn-on"))
+    await db.update(s.visit).set({ status: "unscheduled", scheduledOn: null, personId: null }).where(eq(s.visit.id, "p3-turn-on"))
     const { days } = await callApi(me(), visitsAreaDays, { id: "p3-blowout" })
     expect(days.length).toBeGreaterThan(0)
     const offered = (await callApi(me(), visitsAreaDays, { id: "p3-turn-on" })).days
@@ -83,14 +84,14 @@ describe("visits.areaDays and visits.pick", () => {
     expect(mail[0]).toMatchObject({ kind: "date-set", to: "p3@example.com" })
   })
 
-  it("leaves off a day both trucks' Jobber calendars block", async () => {
-    await db.update(s.visit).set({ status: "unscheduled", scheduledOn: null, truckId: null }).where(eq(s.visit.id, "p3-turn-on"))
+  it("leaves off a day both people's Jobber calendars block", async () => {
+    await db.update(s.visit).set({ status: "unscheduled", scheduledOn: null, personId: null }).where(eq(s.visit.id, "p3-turn-on"))
     const before = (await callApi(me(), visitsAreaDays, { id: "p3-turn-on" })).days
     const day = before[0]!
-    const trucks = await db.select().from(s.truck)
+    const trucks = (await db.select().from(s.person)).filter((p) => p.truck !== null)
     const at = (d: string, h: number) => new Date(`${d}T${String(h).padStart(2, "0")}:00:00Z`)
     for (const [i, truck] of trucks.entries())
-      await db.insert(s.jobberVisit).values({ id: `block-${i}`, organizationId: truck.organizationId, truckId: truck.id, isBlock: true, title: "Out", startAt: at(day, 6), endAt: new Date(at(day, 6).getTime() + 30 * 3_600_000) })
+      await db.insert(s.jobberVisit).values({ id: `feed:${truck.id}:block-${i}`, organizationId: truck.organizationId, isBlock: true, title: "Out", startAt: at(day, 6), endAt: new Date(at(day, 6).getTime() + 30 * 3_600_000) })
     const after = (await callApi(me(), visitsAreaDays, { id: "p3-turn-on" })).days
     expect(after).not.toContain(day)
     expect(after.length).toBeGreaterThan(0)

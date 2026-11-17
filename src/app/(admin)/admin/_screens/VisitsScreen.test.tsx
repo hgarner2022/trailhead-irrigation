@@ -22,12 +22,12 @@ beforeAll(() => {
 
 const visit = (over: Partial<Visit>): Visit => ({
   id: "x", clientId: "cx", clientName: "Dana Reed", town: "Erie", kind: "repair", status: "scheduled", isPass: false, jobberUrl: "", jobId: "jx",
-  scheduledOn: "2026-11-20", startAt: "2026-11-20T15:00:00Z", price: 145, minutes: 120, truckId: "truck-1", truckName: "Truck 1", ...over,
+  scheduledOn: "2026-11-20", startAt: "2026-11-20T15:00:00Z", price: 145, minutes: 120, personId: "person_truck-1", personName: "Ryan Garner", ...over,
 })
 
 const mine: Visit[] = [
   visit({ id: "a", clientName: "Dana Reed" }),
-  visit({ id: "b", clientName: "Sam Ortiz", clientId: "cs", kind: "install", status: "unscheduled", scheduledOn: undefined, startAt: undefined, truckId: undefined, truckName: undefined, price: 0 }),
+  visit({ id: "b", clientName: "Sam Ortiz", clientId: "cs", kind: "install", status: "unscheduled", scheduledOn: undefined, startAt: undefined, personId: undefined, personName: undefined, price: 0 }),
   visit({ id: "c", clientName: "Lee Park", clientId: "cl", status: "completed", completedOn: "2026-11-10", scheduledOn: "2026-11-10", startAt: "2026-11-10T15:00:00Z", chargedAt: "2026-11-10T20:00:00Z", paidMethod: "check" }),
 ]
 const data: AdminData = {
@@ -43,12 +43,12 @@ const data: AdminData = {
 
 const ok = { ok: true as const, data: undefined }
 const actions = (over: Partial<VisitActions> = {}): VisitActions => ({
-  move: vi.fn().mockResolvedValue({ ok: true, data: { day: "2026-11-20", truckId: "truck-1", startTime: null } }),
+  move: vi.fn().mockResolvedValue({ ok: true, data: { day: "2026-11-20", personId: "person_truck-1", startTime: null } }),
   putBack: vi.fn().mockResolvedValue(ok),
   markDone: vi.fn().mockResolvedValue(ok),
   undoDone: vi.fn().mockResolvedValue(ok),
   recordPayment: vi.fn().mockResolvedValue(ok),
-  markNotDone: vi.fn().mockResolvedValue({ ok: true, data: { day: "2026-11-20", truckId: "truck-1", startTime: null } }),
+  markNotDone: vi.fn().mockResolvedValue({ ok: true, data: { day: "2026-11-20", personId: "person_truck-1", startTime: null } }),
   edit: vi.fn().mockResolvedValue(ok),
   cancel: vi.fn().mockResolvedValue(ok),
   sendText: vi.fn().mockResolvedValue(ok),
@@ -88,8 +88,10 @@ describe("VisitsScreen", () => {
   it("shows the spec's columns and a row per visit, with New visit in the header and no Passes button", () => {
     renderScreen(actions())
     const headers = screen.getAllByRole("columnheader").map((h) => h.textContent)
-    expect(headers).toEqual(expect.arrayContaining(["Customer", "Town", "Visit", "Day", "Time", "Truck", "Work", "Money", "Price", "Pass"]))
+    expect(headers).toEqual(expect.arrayContaining(["Customer", "Town", "Visit", "Day", "Time", "Who", "Work", "Money", "Price", "Pass"]))
+    expect(headers).not.toContain("Truck")
     expect(screen.getByRole("button", { name: "Dana Reed" })).toBeInTheDocument()
+    expect(screen.getAllByRole("cell").some((c) => c.textContent === "Ryan Garner")).toBe(true)
     expect(screen.getByText("Paid, check")).toBeInTheDocument()
     expect(screen.queryByText("Not yet")).toBeNull()
     expect(screen.queryByText("None")).toBeNull()
@@ -117,7 +119,7 @@ describe("VisitsScreen", () => {
     await userEvent.click(panel.getByRole("button", { name: "Move" }))
     expect(a.move).toHaveBeenCalledWith("a", "2026-11-24", "09:00")
     await userEvent.click(await screen.findByRole("button", { name: "Undo" }))
-    expect(a.putBack).toHaveBeenCalledWith("a", { day: "2026-11-20", truckId: "truck-1", startTime: null })
+    expect(a.putBack).toHaveBeenCalledWith("a", { day: "2026-11-20", personId: "person_truck-1", startTime: null })
   })
 
   it("shows the API's refusal next to the Move", async () => {

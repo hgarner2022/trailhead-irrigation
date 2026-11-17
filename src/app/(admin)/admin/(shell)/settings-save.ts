@@ -4,19 +4,31 @@ import type { Ctx } from "@/api/core/context"
 import { ApiError } from "@/api/core/errors"
 import { areasCreate, areasDelete, areasList, areasUpdate } from "@/api/v1/areas/handlers"
 import { settingsGet, settingsUpdate } from "@/api/v1/settings/handlers"
-import { trucksCreate, trucksDeactivate, trucksList, trucksUpdate } from "@/api/v1/trucks/handlers"
-import type { AreaGroup, OrganizationSettings, Truck } from "@/lib/admin/types"
+import { LAST_OWNER, peopleCreate, peopleDeactivate, peopleList, peopleUpdate, type PersonOut } from "@/api/v1/people/handlers"
+import { emailProblem } from "@/lib/email-check"
+import { TEXT_MAX, hasAnotherOwner } from "@/lib/admin/people"
+import type { AreaGroup, OrganizationSettings, Person } from "@/lib/admin/types"
 
 // Settings Save: the screen holds the whole `OrganizationSettings` and sends it once. This turns the difference
-// from what the API holds into the API's own calls: trucks.*, areas.* and one settings.update per changed section.
-// The API's current values are read here, never taken from the client, and the change log is written by the handlers.
+// from what the API holds into the API's own calls: people.*, areas.* and one settings.update per changed section.
+// The API's current values are read here, never taken from the client. The settings.* handlers write the change
+// log; people edits are not in the server change log yet.
 
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b)
 const SECTIONS = ["windows", "bufferPercentEarly", "bufferPercentLate", "fallTownOrder", "springTownOrder", "messages"] as const
 
-/** What would stop a save: said before anything is written, so a half-made area never half-saves. */
+/** What would stop a save: said before anything is written, so a half-made area or a bad person row never half-saves. The same rules the reducers keep, run once more here. */
 export function settingsProblems(after: OrganizationSettings): string[] {
   const problems: string[] = []
+  if (after.people.length && !hasAnotherOwner(after.people)) problems.push(LAST_OWNER)
+  for (const p of after.people) {
+    const who = p.name.trim() || "the new person"
+    if (!p.name.trim()) problems.push("Give every person a name before saving.")
+    if (p.email && emailProblem(p.email)) problems.push(`${who}'s email doesn't look complete.`)
+    if (p.workingDays.length === 0) problems.push(`Give ${who} at least one working day.`)
+    for (const [field, max] of Object.entries(TEXT_MAX) as [keyof typeof TEXT_MAX, number][])
+      if ((p[field] ?? "").length > max) problems.push(`${who}'s ${field === "jobberUserId" ? "Jobber user" : field} is longer than ${max} characters.`)
+  }
   for (const a of after.areas) if (a.towns.length === 0) problems.push(`Pick at least one town for ${a.name} before saving.`)
   const seen = new Map<string, string>()
   for (const a of after.areas)
@@ -28,22 +40,37 @@ export function settingsProblems(after: OrganizationSettings): string[] {
   return problems
 }
 
-const truckFields = (t: Truck) => ({ name: t.name, jobberUserId: t.jobberUserId || undefined, workingDays: t.workingDays, capacityByKind: t.capacityByKind })
+/** A person's fields as people.update takes them: null clears a text field. The initials travel with the name. */
+const personFields = (p: Person) => ({
+  name: p.name, initials: p.initials, email: p.email ?? null, phone: p.phone ?? null, role: p.role, truck: p.truck ?? null, jobberUserId: p.jobberUserId ?? null,
+  workingDays: p.workingDays, capacityByKind: p.capacityByKind, seasonStart: p.seasonStart ?? null, seasonEnd: p.seasonEnd ?? null,
+})
+const apiFields = (p: PersonOut) => ({
+  name: p.name, initials: p.initials, email: p.email, phone: p.phone, role: p.role, truck: p.truck, jobberUserId: p.jobberUserId,
+  workingDays: p.workingDays, capacityByKind: p.capacityByKind, seasonStart: p.seasonStart, seasonEnd: p.seasonEnd,
+})
+/** people.create takes no nulls: a field the person does not have is left out. */
+const defined = <T extends object>(o: T) => Object.fromEntries(Object.entries(o).filter(([, v]) => v !== null && v !== undefined)) as T
 
 /** Writes the difference between the API's settings and `after`; throws the API's own error on the first refusal. */
 export async function saveSettings(ctx: Ctx, after: OrganizationSettings): Promise<void> {
   const problems = settingsProblems(after)
   if (problems.length) throw new ApiError("unprocessable", problems[0]!)
-  const [trucks, areas, current] = await Promise.all([callApi(ctx, trucksList, {}), callApi(ctx, areasList, {}), callApi(ctx, settingsGet, {})])
+  const [people, areas, current] = await Promise.all([callApi(ctx, peopleList, { active: "true" }), callApi(ctx, areasList, {}), callApi(ctx, settingsGet, {})])
 
-  const haveTrucks = new Map(trucks.data.filter((t) => t.active).map((t) => [t.id, t]))
-  for (const t of after.trucks) {
-    const was = haveTrucks.get(t.id)
-    if (!was) await callApi(ctx, trucksCreate, truckFields(t))
-    else if (!same({ name: was.name, jobberUserId: was.jobberUserId ?? undefined, workingDays: was.workingDays, capacityByKind: was.capacityByKind }, truckFields(t)))
-      await callApi(ctx, trucksUpdate, { id: t.id, ...truckFields(t), jobberUserId: t.jobberUserId ?? "" })
-  }
-  for (const id of haveTrucks.keys()) if (!after.trucks.some((t) => t.id === id)) await callApi(ctx, trucksDeactivate, { id })
+  // The API keeps one owner at every step, so whoever becomes an owner is written first (a brand-new owner is created
+  // before anything else, then a promotion), then every other change, and whoever leaves goes last: a new owner plus
+  // the old owner's demotion in one save succeeds in that order and in no other.
+  const havePeople = new Map(people.data.map((p) => [p.id, p]))
+  const created = after.people.filter((x) => !havePeople.has(x.id))
+  const edited = after.people.filter((p) => havePeople.has(p.id) && !same(apiFields(havePeople.get(p.id)!), personFields(p)))
+  const isOwner = (p: Person) => p.role === "owner"
+  const promoted = (p: Person) => isOwner(p) && havePeople.get(p.id)!.role !== "owner"
+  for (const p of created.filter(isOwner)) await callApi(ctx, peopleCreate, defined(personFields(p)))
+  for (const p of edited.filter(promoted)) await callApi(ctx, peopleUpdate, { id: p.id, ...personFields(p) })
+  for (const p of edited.filter((x) => !promoted(x))) await callApi(ctx, peopleUpdate, { id: p.id, ...personFields(p) })
+  for (const p of created.filter((x) => !isOwner(x))) await callApi(ctx, peopleCreate, defined(personFields(p)))
+  for (const id of havePeople.keys()) if (!after.people.some((p) => p.id === id)) await callApi(ctx, peopleDeactivate, { id })
 
   // A town can belong to one area at a time, so areas that give towns up are written before the ones that take them.
   const haveAreas = new Map(areas.data.map((a) => [a.id, a]))

@@ -6,12 +6,12 @@ import { TIME_ZONE } from "@/lib/admin/format"
 import { dayVisits } from "@/lib/admin/calendar"
 import { DayMap } from "./DayMap"
 
-// Friday, November 13, 2026 from the snapshot: four blowouts on Truck 1 in
-// Firestone, Lafayette and Erie. The October day has both trucks out. The
+// Friday, November 13, 2026 from the snapshot: four blowouts with Ryan Garner in
+// Firestone, Lafayette and Erie. The October day has both people out. The
 // tiles come from OpenFreeMap over the network; without WebGL (jsdom, some
 // headless browsers) the block shows its fallback instead.
 const data = snapshot as AdminData
-const { trucks } = data.settings
+const { people } = data.settings
 const friday = dayVisits(data.visits, "2026-11-13", undefined, TIME_ZONE)
 const october = dayVisits(data.visits, "2026-10-09", undefined, TIME_ZONE)
 
@@ -24,7 +24,7 @@ const meta = {
   title: "Blocks/DayMap",
   component: DayMap,
   parameters: { layout: "padded" },
-  args: { stops: friday, trucks, onSelect: () => {} },
+  args: { stops: friday, people, onSelect: () => {} },
   render: (args) => <Live {...args} />,
 } satisfies Meta<typeof DayMap>
 export default meta
@@ -32,8 +32,8 @@ type Story = StoryObj<typeof meta>
 
 export const Default: Story = {}
 
-/** An October day with both trucks out, each with its own colour and patch. */
-export const TwoTrucks: Story = {
+/** An October day with both people out, each with their own colour and patch. */
+export const TwoPeople: Story = {
   args: { stops: october },
 }
 
