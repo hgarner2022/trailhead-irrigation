@@ -205,8 +205,14 @@ export const service = pgTable(
     organizationId: orgId(),
     key: text("key").notNull(),
     name: text("name").notNull(),
+    /** what the visit includes, in the customer's words, with no price in it */
+    description: text("description"),
     kind: visitKindEnum("kind").notNull(),
     bookable: boolean("bookable").notNull().default(true),
+    /** sales tax applies to the line (labour is not taxed in Colorado; parts are) */
+    taxable: boolean("taxable").notNull().default(false),
+    /** an inactive service is kept for its old jobs and offered nowhere */
+    active: boolean("active").notNull().default(true),
     minZones: integer("min_zones"),
     maxZones: integer("max_zones"),
     /** zones the price covers; the cost is price + max(0, zones - included_zones) * extra_zone_price */
@@ -403,6 +409,28 @@ export const visit = pgTable(
     index("visit_person_day_idx").on(t.personId, t.scheduledOn),
     index("visit_jobber_visit_idx").on(t.jobberVisitId),
   ],
+)
+
+/** What a job is made of: one row per sold line, copied from the service at sale so a later catalogue edit never rewrites an old job. A pass line names the visit it is billed after. */
+export const lineItem = pgTable(
+  "line_item",
+  {
+    id: id(),
+    organizationId: orgId(),
+    jobId: text("job_id").notNull().references(() => job.id),
+    serviceId: text("service_id").references(() => service.id),
+    visitId: text("visit_id").references(() => visit.id),
+    name: text("name").notNull(),
+    description: text("description"),
+    quantity: integer("quantity").notNull().default(1),
+    /** whole dollars */
+    unitPrice: integer("unit_price").notNull(),
+    taxable: boolean("taxable").notNull().default(false),
+    cancelledAt: ts("cancelled_at"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [index("line_item_job_idx").on(t.jobId), index("line_item_visit_idx").on(t.visitId)],
 )
 
 export const quoteRequest = pgTable(

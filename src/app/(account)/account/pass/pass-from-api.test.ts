@@ -15,6 +15,18 @@ describe("passFromApi", () => {
     expect(pass.visits[0]!.scheduledAt).toBe("2027-05-04T14:00:00Z")
     expect(pass).toMatchObject({ clientId: "c", cardLast4: "4242", status: "active", blowoutPreference: "later" })
   })
+  it("carries what the visit's own line includes, and ignores another visit's line or a cancelled one", () => {
+    const line = (id: string, visitId: string, description: string, cancelledAt: string | null = null) => ({ id, visitId, name: "Spring turn-on", description, quantity: 1, unitPrice: 145, taxable: false, cancelledAt })
+    const pass = passFromApi(detail({ visits: [visit({ id: "t", lineItems: [line("l0", "b", "Blowout text"), line("l1", "t", "Old text", "2027-01-02T00:00:00Z"), line("l2", "t", "Controller programming and a walk of every zone.")] }), visit({ id: "b", kind: "blowout", lineItems: [] })] }))
+    expect(pass.visits[0]!.description).toBe("Controller programming and a walk of every zone.")
+    expect(pass.visits[1]).not.toHaveProperty("description")
+  })
+  it("prices a visit by the sum of its own live lines, and falls back to its amount with none", () => {
+    const line = (id: string, unitPrice: number, cancelledAt: string | null = null, description: string | null = null) => ({ id, visitId: "t", name: "Spring turn-on", description, quantity: 1, unitPrice, taxable: false, cancelledAt })
+    const pass = passFromApi(detail({ visits: [visit({ id: "t", amount: 145, lineItems: [line("l1", 145, null, "First text"), line("l2", 40, null, "Second text"), line("l3", 900, "2027-01-02T00:00:00Z")] }), visit({ id: "b", kind: "blowout", amount: 115, lineItems: [] })] }))
+    expect(pass.visits[0]).toMatchObject({ amount: 185, description: "First text" })
+    expect(pass.visits[1]!.amount).toBe(115)
+  })
   it("maps cancelled and failed-card state", () => {
     const pass = passFromApi(detail({ status: "cancelled", cardFailedAt: "2027-06-01T00:00:00Z", needsCustomerHome: true }))
     expect(pass).toMatchObject({ status: "cancelled", cardFailedAt: "2027-06-01T00:00:00Z", needsCustomerHome: true })

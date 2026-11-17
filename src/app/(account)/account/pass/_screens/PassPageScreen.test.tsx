@@ -15,13 +15,21 @@ describe("PassPageScreen", () => {
     expect(screen.getByRole("article", { name: /Season Pass 2027 for Andrea, Erie/ })).toBeInTheDocument()
     expect(screen.getByRole("img", { name: /Your 2027 season: turn-on done on May 3, inspection in July, blowout preferred mid October/ })).toBeInTheDocument()
     expect(rows().map((r) => r.textContent)).toEqual([
-      "Spring turn-onMay 3Done",
-      "Mid-season inspectionJulyJuly",
-      "Fall blowoutMid OctoberChangePreferred",
+      "Spring turn-on · $145May 3Done",
+      "Mid-season inspection · $145JulyJuly",
+      "Fall blowout · $95Mid OctoberChangePreferred",
     ])
     expect(document.body.textContent).not.toMatch(/Not scheduled|Scheduled|Completed|Reserved|Week of/)
     expect(screen.getByText("Visa ending 4242, expires 08/28")).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Update card" })).toBeInTheDocument()
+  })
+
+  it("shows what a visit includes under its day when its line has a description", () => {
+    const text = "Controller programming and a walk of every zone."
+    render(<PassPageScreen pass={{ ...pass, visits: pass.visits.map((v) => (v.kind === "turn-on" ? { ...v, description: text } : v)) }} today="2026-11-12" />)
+    expect(screen.getByText(text)).toBeInTheDocument()
+    expect(rows()[0]!.textContent).toContain(`${text}Done`)
+    expect(rows()[1]!.textContent).not.toContain("Controller")
   })
 
   it("lets the customer change the blowout preference until its day is set, and not the done turn-on", () => {

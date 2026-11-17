@@ -5,6 +5,7 @@
  */
 import type { Pass, PassVisit } from "@/lib/admin/types"
 import { TIME_ZONE, preferenceLabel, preferenceOf, preferencePhrase, writtenDate } from "@/lib/admin/format"
+import { formatMoney } from "@/lib/admin/metrics"
 import { passVisitJob, type JobState } from "@/lib/admin/jobs"
 
 export const VISIT_NAMES: Record<PassVisit["kind"], string> = { "turn-on": "Spring turn-on", inspection: "Mid-season inspection", blowout: "Fall blowout" }
@@ -48,6 +49,11 @@ export function bookedWhen(visit: PassVisit): string | null {
   if (!visit.scheduledAt || visit.completedAt) return null
   const weekday = WEEKDAYS[new Date(`${visit.scheduledAt.slice(0, 10)}T12:00:00Z`).getUTCDay()]
   return `${weekday}, ${writtenDate(visit.scheduledAt)}${visit.truckName ? `, ${visit.truckName}` : ""}`
+}
+
+/** The visit's price ("$145") and what it includes, both from its line; the description is absent when the line has none. */
+export function visitLineInfo(visit: PassVisit): { price: string; description?: string } {
+  return { price: formatMoney(visit.amount), ...(visit.description ? { description: visit.description } : {}) }
 }
 
 export const visitRows = (pass: Pass): VisitRow[] => pass.visits.map((v) => visitRow(v, pass))

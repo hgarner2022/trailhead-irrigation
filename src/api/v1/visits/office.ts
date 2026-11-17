@@ -4,6 +4,8 @@ import { z } from "zod"
 import * as s from "@/db/schema"
 import { KIND_MINUTES, NOT_DONE_REASONS, OFFICE_KINDS } from "@/lib/admin/visit-defaults"
 import { enqueueGeocode } from "@/lib/geocode"
+import { defaultVisitPrice, LINE_NAMES, lineForVisitKind } from "@/lib/jobs/lines"
+import { cancelVisitLines, deleteVisitLines, insertLines, setVisitLinePrice } from "@/lib/jobs/write-lines"
 import { syncPassJob } from "@/lib/pass/server/job"
 import { orderDay } from "@/lib/scheduling/server/order-day"
 import { ApiError, notFound } from "../../core/errors"
@@ -49,10 +51,11 @@ export const visitsUpdate = defineHandler({
   method: "PATCH",
   path: "/visits/{id}",
   scope: "write",
-  summary: "Change a visit's minutes, person or notes, and for a pass visit the pass's access note. A new person must be on the schedule and work the visit's weekday.",
+  summary: "Change a visit's minutes, price, person or notes, and for a pass visit the pass's access note. A new person must be on the schedule and work the visit's weekday. A price edits the visit's line.",
   input: z.object({
     id: Id,
     durationMinutes: z.number().int().min(15).max(480).multipleOf(15).optional(),
+    price: z.number().int().min(0).max(100000).optional().describe("Whole dollars: reprices the visit's line (and the visit's amount), never the job's old price column."),
     personId: Id.optional().describe("Who takes the visit; it needs a day first."),
     truckId: PersonIdAlias,
     notes: z.string().trim().max(1000).optional().describe("An empty string clears the notes."),
@@ -71,6 +74,13 @@ export const visitsUpdate = defineHandler({
     if (input.notes !== undefined && (input.notes || null) !== visit.notes) {
       set.notes = input.notes || null
       changed.notes = true
+    }
+    if (input.price !== undefined) {
+      await setVisitLinePrice(ctx.db, visit, input.price, ctx.now)
+      if (input.price !== visit.amount) {
+        set.amount = input.price
+        changed.price = { from: visit.amount, to: input.price }
+      }
     }
     let reorder: { personId: string; day: string }[] = []
     if (input.unscheduled) {
@@ -114,6 +124,7 @@ export const visitsCancel = defineHandler({
   async run(ctx, input) {
     const { visit } = await loadOpen(ctx, input.id, "cancelled")
     await ctx.db.update(s.visit).set({ status: "cancelled", personId: null, scheduledOn: null, startTime: null, stopOrder: null, awaitingPick: false }).where(eq(s.visit.id, visit.id))
+    await cancelVisitLines(ctx.db, [visit.id], ctx.now)
     if (visit.personId && visit.scheduledOn) await orderDay(ctx.db, { personId: visit.personId, day: visit.scheduledOn })
     // A charge asked for but not yet made: leave it undone (the charge task also refuses a cancelled visit).
     await ctx.db.update(s.queueItem).set({ status: "done", lastError: "visit cancelled", doneAt: ctx.now }).where(and(eq(s.queueItem.kind, "pass-charge"), eq(s.queueItem.key, visit.id), eq(s.queueItem.status, "pending")))
@@ -136,25 +147,34 @@ export const visitsCreate = defineHandler({
   path: "/visits",
   scope: "write",
   status: 201,
-  summary: "Add a visit for work taken by phone: makes the job (kind repair, install or other, source office) and its first visit. Give an existing customer or a new one. With a day it goes through the same rules as a move and the customer is texted the date; with none it waits as Needs a day. Minutes default from the kind, the person from the first on the schedule (the owner, else by name).",
+  summary: "Add a visit for work taken by phone: makes the job (kind repair, install or other, source office), its first visit and the job's one line from the service of that kind. Give an existing customer or a new one. With a day it goes through the same rules as a move and the customer is texted the date; with none it waits as Needs a day. Minutes default from the kind, the price from the service when it has a fixed one (a repair visit), the person from the first on the schedule (the owner, else by name).",
   input: z.object({
     customerId: Id.optional(),
     propertyId: Id.optional().describe("One of the customer's properties; the first when left out."),
     newCustomer: NewCustomer.optional(),
-    kind: z.enum(OFFICE_KINDS),
+    kind: z.enum(OFFICE_KINDS).optional().describe("Left out when `serviceKey` is given: the service's own kind is used."),
+    serviceKey: z.string().min(2).max(40).optional().describe("The catalogue service the job is for (services.list); its kind, minutes, price and description are used unless the call gives its own."),
     scheduledOn: Day.optional(),
     startTime: z.string().regex(/^\d{2}:\d{2}$/).optional().describe("Left out means any time that day."),
     durationMinutes: z.number().int().min(15).max(480).multipleOf(15).optional(),
     personId: Id.optional().describe("Who takes the visit, used only with scheduledOn; left out, the first person on the schedule."),
     truckId: PersonIdAlias.describe("Alias of personId, kept for one season: the same id (the old truck id is still understood); used only with scheduledOn."),
-    price: z.number().int().min(0).max(100000).optional().describe("Whole dollars; left out means quote later."),
+    price: z.number().int().min(0).max(100000).optional().describe("Whole dollars; left out, the service's fixed price when it has one (a repair visit is $145), else quote later."),
     notes: z.string().trim().max(1000).optional(),
   }),
   output: VisitOut,
   async run(ctx, input) {
     if (!input.customerId === !input.newCustomer) throw new ApiError("invalid", "Choose an existing customer or add a new one", [{ path: "customerId", message: "Give a customer or a newCustomer, not both" }])
+    if (!input.kind && !input.serviceKey) throw new ApiError("invalid", "Choose what the job is for", [{ path: "serviceKey", message: "Give a serviceKey or a kind" }])
     if (input.startTime && !input.scheduledOn) throw new ApiError("invalid", "Choose a day for that time", [{ path: "scheduledOn", message: "A time needs a day" }])
     const org = ctx.organizationId
+    // The service is checked before any customer row is made, so a refused service leaves nothing behind.
+    let service: typeof s.service.$inferSelect | undefined
+    if (input.serviceKey) {
+      ;[service] = await ctx.db.select().from(s.service).where(and(eq(s.service.organizationId, org), eq(s.service.key, input.serviceKey)))
+      if (!service || !service.active) throw new ApiError("invalid", "That service is not offered", [{ path: "serviceKey", message: "No active service has that key" }])
+      if (input.kind && input.kind !== service.kind) throw new ApiError("invalid", "kind does not match the service", [{ path: "kind", message: "kind does not match the service" }])
+    }
     let customerId = input.customerId!
     let propertyId: string
     let created: { customerId: string; propertyId: string } | null = null
@@ -181,19 +201,24 @@ export const visitsCreate = defineHandler({
       personId = (await routePeople(ctx))[0]?.id
       if (!personId) throw new ApiError("unprocessable", "No one is on the schedule to take this visit")
     }
+    // The price is the office's, else the service's fixed price (a repair visit), else none until quoted.
+    const kind = service ? service.kind : input.kind!
+    const price = input.price ?? (service ? (service.price ?? undefined) : defaultVisitPrice(kind as (typeof OFFICE_KINDS)[number]))
     const [job] = await ctx.db
       .insert(s.job)
-      .values({ organizationId: org, customerId, propertyId, kind: input.kind === "repair" || input.kind === "install" ? input.kind : "other", status: "active", price: input.price ?? null, source: "office", notes: input.notes || null })
+      .values({ organizationId: org, customerId, propertyId, kind: kind === "repair" || kind === "install" ? kind : "other", status: "active", price: price ?? null, source: "office", notes: input.notes || null })
       .returning()
     const [made] = await ctx.db
       .insert(s.visit)
-      .values({ organizationId: org, jobId: job!.id, customerId, propertyId, kind: input.kind, amount: input.price ?? 0, status: "unscheduled", durationMinutes: input.durationMinutes ?? KIND_MINUTES[input.kind], notes: input.notes || null })
+      .values({ organizationId: org, jobId: job!.id, customerId, propertyId, kind, amount: price ?? 0, status: "unscheduled", durationMinutes: input.durationMinutes ?? service?.slotMinutes ?? KIND_MINUTES[kind as (typeof OFFICE_KINDS)[number]], notes: input.notes || null })
       .returning({ id: s.visit.id })
+    await insertLines(ctx.db, { organizationId: org, jobId: job!.id, now: ctx.now }, [{ ...(service ? { name: LINE_NAMES[service.kind] ?? service.name, description: service.description, quantity: 1, unitPrice: price ?? 0, taxable: service.taxable, serviceKey: service.key, visitKind: kind } : lineForVisitKind(kind, price ?? 0)), visitId: made!.id }])
     if (input.scheduledOn) {
       try {
         await placeVisit(ctx, { id: made!.id, personId: personId!, scheduledOn: input.scheduledOn, startTime: input.startTime })
       } catch (error) {
-        // A refused day leaves nothing behind: the visit, its job and a customer made for it are taken back.
+        // A refused day leaves nothing behind: the line, the visit, its job and a customer made for it are taken back.
+        await deleteVisitLines(ctx.db, [made!.id])
         await ctx.db.delete(s.visit).where(eq(s.visit.id, made!.id))
         await ctx.db.delete(s.job).where(eq(s.job.id, job!.id))
         if (created) {
@@ -204,7 +229,7 @@ export const visitsCreate = defineHandler({
         throw error
       }
     }
-    await recordChange(ctx, { customerId, visitId: made!.id, kind: "visit-created", detail: { job: job!.id, kind: input.kind, day: input.scheduledOn ?? null } })
+    await recordChange(ctx, { customerId, visitId: made!.id, kind: "visit-created", detail: { job: job!.id, kind, day: input.scheduledOn ?? null } })
     return visitOut(ctx, await loadVisit(ctx, made!.id))
   },
 })

@@ -7,6 +7,7 @@ import { baseData } from "@/lib/messaging/data"
 import { queueMessage } from "@/lib/messaging/queue"
 import { passHasCard } from "@/lib/pass/card"
 import { kindName } from "@/lib/pass/server/messages"
+import { setVisitLinePrice } from "@/lib/jobs/write-lines"
 import { enqueue } from "@/lib/queue"
 import type { Ctx } from "../../core/context"
 import { ApiError } from "../../core/errors"
@@ -39,6 +40,7 @@ async function recordPayment(ctx: Ctx, visit: typeof s.visit.$inferSelect, paidB
   if (visit.amount === 0) {
     await ctx.db.update(s.visit).set({ amount }).where(eq(s.visit.id, visit.id))
     await ctx.db.update(s.job).set({ price: amount }).where(eq(s.job.id, visit.jobId))
+    await setVisitLinePrice(ctx.db, visit, amount, ctx.now)
   }
   const [last] = await ctx.db.select({ attempt: s.charge.attempt }).from(s.charge).where(eq(s.charge.visitId, visit.id)).orderBy(desc(s.charge.attempt)).limit(1)
   await ctx.db.insert(s.charge).values({ organizationId: ctx.organizationId, passId: visit.passId, visitId: visit.id, attempt: (last?.attempt ?? 0) + 1, amount, status: "succeeded", method: paidBy.method, reference: paidBy.reference || null })

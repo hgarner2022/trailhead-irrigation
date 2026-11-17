@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest"
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import type { Pass } from "@/lib/admin/types"
-import { bookedWhen, cardAction, cardLine, earlierSeasons, expiry, passHeadline, pickDayOptions, seasonCaption, seasonSummary, visitRows, visitStatus } from "./pass-page-model"
+import { bookedWhen, cardAction, cardLine, earlierSeasons, expiry, passHeadline, pickDayOptions, seasonCaption, seasonSummary, visitLineInfo, visitRows, visitStatus } from "./pass-page-model"
 
 // passes[0] is Andrea in Erie: turn-on done May 3, inspection in July, blowout preferred for mid October.
 // passes[2] has no visit yet, with the turn-on preferred earlier.
@@ -41,6 +41,13 @@ describe("visit rows", () => {
     expect(words).not.toContain("Reserved")
     expect(visitRows({ ...pass, visits: pass.visits.map((v) => ({ ...v, completedAt: undefined, scheduledAt: undefined, scheduledOn: undefined, chargedAt: undefined })) })[0].label).toBe("Preferred")
     expect(visitRows(allDone).map((r) => r.label)).toEqual(["Done", "Done", "Done"])
+  })
+})
+
+describe("visit line info", () => {
+  it("gives the visit's price and, when its line has one, what it includes", () => {
+    expect(visitLineInfo({ ...pass.visits[0]!, amount: 145 })).toEqual({ price: "$145" })
+    expect(visitLineInfo({ ...pass.visits[0]!, amount: 1450, description: "Controller programming and a walk of every zone." })).toEqual({ price: "$1,450", description: "Controller programming and a walk of every zone." })
   })
 })
 

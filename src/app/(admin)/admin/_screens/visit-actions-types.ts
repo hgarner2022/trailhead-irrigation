@@ -17,7 +17,10 @@ export interface PaidByInput {
 export interface NewVisitInput {
   customerId?: string
   newCustomer?: { firstName: string; lastName: string; email?: string; phone?: string; property: { address: string; town: string } }
-  kind: "turn-on" | "inspection" | "blowout" | "repair" | "install" | "other"
+  /** left out when `serviceKey` is given */
+  kind?: "turn-on" | "inspection" | "blowout" | "repair" | "install" | "other"
+  /** the catalogue service the job is for; its kind, minutes and price rule apply */
+  serviceKey?: string
   scheduledOn?: string
   startTime?: string
   durationMinutes?: number

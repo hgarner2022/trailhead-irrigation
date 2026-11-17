@@ -6,7 +6,7 @@
  * Also the words for weekdays and visit kinds, and the preview that fills a
  * message template. The People tab's reducers are in settings-people.ts.
  */
-import type { AdminData, AreaGroup, CapacityKind, MessageTemplate, OrganizationSettings, SeasonWindow, SettingsChange, Town, Weekday } from "@/lib/admin/types"
+import type { AdminData, AreaGroup, CapacityKind, MessageTemplate, OrganizationSettings, SeasonWindow, ServiceItem, SettingsChange, Town, Weekday } from "@/lib/admin/types"
 import { WEEKDAYS } from "@/lib/admin/calendar"
 import { KIND_WORDS, TIME_ZONE, writtenDate } from "@/lib/admin/format"
 import { firstNameOf } from "@/lib/admin/people"
@@ -44,6 +44,8 @@ export interface SettingsState {
   settings: OrganizationSettings
   changes: SettingsChange[]
   keys: ApiKey[]
+  /** the catalogue the Services tab edits, in catalogue order; its rows are saved through services.update */
+  services: ServiceItem[]
 }
 
 /** Who made the change and when; the screen passes its user and `today`. */
@@ -198,6 +200,59 @@ export function revokeKey(state: SettingsState, keyId: string, actor: Actor): Se
   if (!key) return state
   const keys = state.keys.filter((k) => k.id !== keyId)
   return record({ ...state, keys }, actor, "API keys", `${state.keys.length} (${key.name} included)`, `${keys.length} (${key.name} revoked)`, state.settings)
+}
+
+/** The service fields the Services tab edits. */
+export type ServiceField = "name" | "description" | "price" | "includedZones" | "extraZonePrice" | "slotMinutes" | "taxable" | "active"
+const SERVICE_WORDS: Record<ServiceField, string> = {
+  name: "name", description: "what's included", price: "price", includedZones: "included zones", extraZonePrice: "per extra zone", slotMinutes: "minutes", taxable: "taxable", active: "active",
+}
+/** A service with a per-zone rule carries a price for each zone past the included ones; one without has no zone cells. */
+export const hasZoneRule = (s: ServiceItem) => s.extraZonePrice !== undefined
+/** A quote-only service with no price stays without one. */
+export const priceIsFixed = (s: ServiceItem) => !(s.quoteOnly && s.price === undefined)
+
+/** The limits services.update enforces, so a value it would refuse snaps back instead of failing at Save. */
+const wholeIn = (v: unknown, min: number, max: number): v is number => typeof v === "number" && Number.isInteger(v) && v >= min && v <= max
+
+/**
+ * One edit to a catalogue service, found by key. A blank description clears it; a description with a dollar sign
+ * (prices live on the service) and any number outside the API's range is refused as it would be at Save. The zone
+ * fields change only on a service with a per-zone rule, the price only when the service has one to change.
+ */
+export function setServiceField(state: SettingsState, key: string, field: ServiceField, raw: string | number | boolean, actor: Actor): SettingsState {
+  const service = state.services.find((s) => s.key === key)
+  if (!service) return state
+  const next: ServiceItem = { ...service }
+  const show = (s: ServiceItem): string => {
+    const v = field === "active" ? (s.active ?? true) : field === "taxable" ? (s.taxable ?? false) : s[field]
+    if (v === undefined || v === null || v === "") return "None"
+    if (typeof v === "boolean") return v ? "Yes" : "No"
+    return field === "price" || field === "extraZonePrice" ? `$${v}` : String(v)
+  }
+  if (field === "name" || field === "description") {
+    const text = String(raw).trim()
+    if (field === "name") {
+      if (!text || text.length > 120) return state
+      next.name = text
+    } else {
+      if (text.length > 1000 || text.includes("$")) return state
+      next.description = text || null
+    }
+  } else if (field === "taxable" || field === "active") {
+    if (typeof raw !== "boolean") return state
+    next[field] = raw
+  } else {
+    const n = typeof raw === "string" ? (raw.trim() === "" ? NaN : Number(raw)) : raw
+    if (field === "price" ? !priceIsFixed(service) || !wholeIn(n, 0, 100_000) : false) return state
+    if (field === "slotMinutes" ? !wholeIn(n, 15, 480) || n % 15 !== 0 : false) return state
+    if (field === "includedZones" ? !hasZoneRule(service) || !wholeIn(n, 1, 16) : false) return state
+    if (field === "extraZonePrice" ? !hasZoneRule(service) || !wholeIn(n, 0, 1000) : false) return state
+    next[field] = n as number
+  }
+  if (show(service) === show(next)) return state
+  const services = state.services.map((s) => (s.key === key ? next : s))
+  return record({ ...state, services }, actor, `${service.name} ${SERVICE_WORDS[field]}`, show(service), show(next), state.settings)
 }
 
 /** What the preview fills the template's placeholders with. */

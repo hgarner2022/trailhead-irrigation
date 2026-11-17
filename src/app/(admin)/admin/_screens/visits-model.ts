@@ -10,7 +10,7 @@ import { MONEY_WORDS, WORK_WORDS, type MoneyState, type WorkState, visitJob } fr
 import { KIND_LABEL, OFFICE_KINDS } from "@/lib/admin/visit-defaults"
 import type { AdminData, Visit } from "@/lib/admin/types"
 import { personNameOf } from "@/lib/admin/people"
-import { dayOfVisit, kindLabel, priceWords, timeWords } from "./visit-panel-model"
+import { dayOfVisit, kindLabel, priceWords, timeWords, visitPrice } from "./visit-panel-model"
 
 export interface VisitRow {
   id: string
@@ -70,8 +70,8 @@ export function visitRows(data: AdminData, today: string): VisitRow[] {
       money: states.money,
       moneyLabel: states.moneyLabel,
       dayPassed: states.dayPassed,
-      price: v.price ?? 0,
-      priceLabel: priceWords(v),
+      price: visitPrice(data, v),
+      priceLabel: priceWords({ price: visitPrice(data, v) }),
       jobType: v.passId ? "pass" : "one-off",
       ...(pass ? { passNumber: pass.number, passId: pass.id } : {}),
     }

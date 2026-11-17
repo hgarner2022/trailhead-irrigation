@@ -1,5 +1,5 @@
 import "server-only"
-import { and, eq, gte } from "drizzle-orm"
+import { and, asc, eq, gte, isNull } from "drizzle-orm"
 import * as s from "@/db/schema"
 import type { Database } from "@/db/types"
 import { enqueue } from "@/lib/queue"
@@ -87,8 +87,11 @@ export async function queuePurchaseConfirmation(db: Database, passId: string, or
     const moved = filled.find((c) => c.visitId === v.id)?.detail as { from?: string; to?: string } | undefined
     held.push({ kind: v.kind, name: kindName(v.kind), amount: v.amount, visit: facts, fallback: "Ryan sets the day and we text it to you.", ...(moved?.from && v.scheduledOn ? { note: filledLine(moved.from, v.scheduledOn) } : {}) })
   }
+  // What was sold, from the pass job's lines (a pass bought before lines existed has none, and the email leaves the list out).
+  const lineRows = await db.select().from(s.lineItem).where(and(eq(s.lineItem.jobId, pass.jobId), isNull(s.lineItem.cancelledAt))).orderBy(asc(s.lineItem.createdAt), asc(s.lineItem.id))
+  const lines = lineRows.map((l) => ({ name: l.name, amount: l.quantity * l.unitPrice }))
   return queueMessage(db, {
     organizationId: org, customerId: customer.id, kind: "purchase-confirmation", key,
-    data: { ...baseData(origin, customer), passNumber: pass.number, season: pass.season, town: row.town, passImageUrl: passImageUrl(origin, pass.id), visits: held, cardLast4: pass.cardLast4, cardUpdateUrl: extras.cardUpdateUrl ?? null },
+    data: { ...baseData(origin, customer), passNumber: pass.number, season: pass.season, town: row.town, passImageUrl: passImageUrl(origin, pass.id), visits: held, ...(lines.length ? { lines } : {}), cardLast4: pass.cardLast4, cardUpdateUrl: extras.cardUpdateUrl ?? null },
   })
 }

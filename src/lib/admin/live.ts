@@ -1,5 +1,5 @@
 import "server-only"
-import { and, eq, isNotNull, isNull, or, sql } from "drizzle-orm"
+import { and, asc, eq, isNotNull, isNull, or, sql } from "drizzle-orm"
 import { callApi } from "@/api/core/call"
 import type { Ctx } from "@/api/core/context"
 import type { Handler } from "@/api/core/handler"
@@ -8,6 +8,7 @@ import { customersList } from "@/api/v1/customers/handlers"
 import { messagesList } from "@/api/v1/messages/handlers"
 import { passesList } from "@/api/v1/passes/handlers"
 import { settingsChangesList, settingsGet } from "@/api/v1/settings/handlers"
+import { servicesList } from "@/api/v1/services/handlers"
 import { peopleList, type PersonOut } from "@/api/v1/people/handlers"
 import { visitsList } from "@/api/v1/visits/handlers"
 import { today as todayOf } from "@/api/v1/shared"
@@ -16,7 +17,7 @@ import { loadBlocks } from "@/lib/jobber-feed"
 import { ctxFromSession } from "./api-ctx"
 import { canSeeContact } from "@/api/v1/shared"
 import { failedChargeVisits, shapeAdminData, type ApiCustomer, type ApiMessage, type ApiPass, type ApiVisit } from "./shape"
-import type { AdminData, Person, Town } from "./types"
+import type { AdminData, Person, ServiceItem, Town } from "./types"
 
 const PAGE = 100
 
@@ -41,6 +42,12 @@ async function all<T>(ctx: Ctx, handler: Handler<never, never>, input: Record<st
   return rows
 }
 
+const serviceItem = (r: { id: string; taxable: boolean; active: boolean; bookable: boolean; key: string; name: string; description: string | null; kind: string; minZones: number | null; maxZones: number | null; includedZones: number | null; price: number | null; extraZonePrice: number | null; slotMinutes: number; quoteOnly: boolean }): ServiceItem => ({
+  id: r.id, taxable: r.taxable, active: r.active, bookable: r.bookable, key: r.key, name: r.name, description: r.description, kind: r.kind, slotMinutes: r.slotMinutes, quoteOnly: r.quoteOnly,
+  ...(r.minZones !== null ? { minZones: r.minZones } : {}), ...(r.maxZones !== null ? { maxZones: r.maxZones } : {}), ...(r.includedZones !== null ? { includedZones: r.includedZones } : {}),
+  ...(r.price !== null ? { price: r.price } : {}), ...(r.extraZonePrice !== null ? { extraZonePrice: r.extraZonePrice } : {}),
+})
+
 /**
  * `AdminData` from the database, composed from the API's own list handlers
  * through `callApi` (so the caller's scopes apply and every read is logged)
@@ -49,7 +56,7 @@ async function all<T>(ctx: Ctx, handler: Handler<never, never>, input: Record<st
  */
 export async function getLiveAdminData(ctx: Ctx): Promise<AdminData> {
   const org = ctx.organizationId
-  const [customers, visits, passes, messages, people, areas, settings, changes] = await Promise.all([
+  const [customers, visits, passes, messages, people, areas, settings, changes, serviceRows] = await Promise.all([
     all<ApiCustomer>(ctx, customersList as never),
     all<ApiVisit>(ctx, visitsList as never),
     all<ApiPass>(ctx, passesList as never),
@@ -58,13 +65,14 @@ export async function getLiveAdminData(ctx: Ctx): Promise<AdminData> {
     callApi(ctx, areasList, {}),
     callApi(ctx, settingsGet, {}),
     all<{ id: string; at: string; who: string; field: string; from: string; to: string }>(ctx, settingsChangesList as never),
+    callApi(ctx, servicesList, {}),
   ])
   const { termsVersion: _terms, ...rest } = settings
   void _terms
 
   const db = ctx.db
   const contact = canSeeContact(ctx)
-  const [consents, links, mClients, mVisits, mJobs, mQuotes, mInvoices, problems, blocks, synced, alerts, charges, dismissed, jobRows] = await Promise.all([
+  const [consents, links, mClients, mVisits, mJobs, mQuotes, mInvoices, problems, blocks, synced, alerts, charges, dismissed, jobRows, lineRows] = await Promise.all([
     db.select({ customerId: s.consent.customerId, termsAcceptedAt: s.consent.termsAcceptedAt, termsVersion: s.consent.termsVersion, marketingOptIn: s.consent.marketingOptIn, marketingChannels: s.consent.marketingChannels, source: s.consent.source, recordedAt: s.consent.recordedAt }).from(s.consent).where(eq(s.consent.organizationId, org)),
     db.select({ id: s.customer.id, jobberClientId: s.customer.jobberClientId }).from(s.customer).where(and(eq(s.customer.organizationId, org), isNotNull(s.customer.jobberClientId))),
     db.select({ id: s.jobberClient.id, firstName: s.jobberClient.firstName, lastName: s.jobberClient.lastName, email: s.jobberClient.email, phone: s.jobberClient.phone, town: s.jobberClient.town, jobberUrl: s.jobberClient.jobberUrl }).from(s.jobberClient).where(eq(s.jobberClient.organizationId, org)),
@@ -79,6 +87,7 @@ export async function getLiveAdminData(ctx: Ctx): Promise<AdminData> {
     db.select({ visitId: s.charge.visitId, attempt: s.charge.attempt, status: s.charge.status }).from(s.charge).where(eq(s.charge.organizationId, org)),
     db.select({ kind: s.adminAlert.kind, key: s.adminAlert.key }).from(s.adminAlert).where(and(eq(s.adminAlert.organizationId, org), isNotNull(s.adminAlert.resolvedAt))),
     db.select({ id: s.job.id, customerId: s.job.customerId, kind: s.job.kind, status: s.job.status, price: s.job.price, source: s.job.source, notes: s.job.notes }).from(s.job).where(eq(s.job.organizationId, org)),
+    db.select({ id: s.lineItem.id, jobId: s.lineItem.jobId, visitId: s.lineItem.visitId, name: s.lineItem.name, description: s.lineItem.description, quantity: s.lineItem.quantity, unitPrice: s.lineItem.unitPrice, taxable: s.lineItem.taxable, cancelledAt: s.lineItem.cancelledAt }).from(s.lineItem).where(eq(s.lineItem.organizationId, org)).orderBy(asc(s.lineItem.createdAt), asc(s.lineItem.id)),
   ])
 
   return shapeAdminData({
@@ -102,7 +111,9 @@ export async function getLiveAdminData(ctx: Ctx): Promise<AdminData> {
     alerts,
     dismissed,
     jobRows,
+    lineRows,
     blocks,
+    services: serviceRows.data.map(serviceItem),
   })
 }
 

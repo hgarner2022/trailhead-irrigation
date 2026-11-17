@@ -3,6 +3,8 @@ import { and, desc, eq, notInArray, or, sql } from "drizzle-orm"
 import { z } from "zod"
 import * as s from "@/db/schema"
 import { enqueueGeocode } from "@/lib/geocode"
+import { linesForPassVisits } from "@/lib/jobs/lines"
+import { cancelVisitLines, deletePassVisitLines, insertLines } from "@/lib/jobs/write-lines"
 import { currentSeason } from "@/lib/pass/season"
 import { SEASON_PASS_ADD_ON, visitPrice, visitsOnSale } from "@/lib/season-pass"
 import { hasScope } from "@/lib/auth/principal"
@@ -168,9 +170,10 @@ export const passesCreate = defineHandler({
       if (held) await ctx.db.update(s.customer).set({ firstName: contact.firstName, lastName: contact.lastName ?? customerRow.lastName, phone: contact.phone ?? customerRow.phone, updatedAt: ctx.now }).where(eq(s.customer.id, customerRow.id))
       // Filling a last name nobody has recorded yet is not rewriting who the customer is, so a resume by email may do it.
       else if (!customerRow.lastName && contact.lastName) await ctx.db.update(s.customer).set({ lastName: contact.lastName, updatedAt: ctx.now }).where(eq(s.customer.id, customerRow.id))
+      await deletePassVisitLines(ctx.db, [reused.id])
       await ctx.db.delete(s.visit).where(eq(s.visit.passId, reused.id))
       pass = { ...reused, ...fields, season }
-      await insertPassVisits(ctx.db, pass, onSale)
+      await insertPassVisits(ctx.db, pass, onSale, ctx.now)
       await syncPassJob(ctx.db, pass.id)
     } else {
       pass = await makePassRows(ctx.db, { organizationId: org, customerId: customerRow.id, season, onSale, ...fields, status: "pending", source: "checkout", now: ctx.now })
@@ -251,6 +254,7 @@ export const passesCancel = defineHandler({
       .set({ status: "cancelled", personId: null, scheduledOn: null, startTime: null, stopOrder: null, awaitingPick: false })
       .where(and(eq(s.visit.passId, row.pass.id), notInArray(s.visit.status, ["completed", "cancelled"])))
       .returning({ id: s.visit.id })
+    await cancelVisitLines(ctx.db, cancelled.map((v) => v.id), ctx.now)
     await recordChange(ctx, { customerId: row.pass.customerId, passId: row.pass.id, kind: "cancelled", detail: { reason: input.reason ?? null, visits: cancelled.length } })
     await enqueue(ctx.db, ctx.organizationId, "pass-cancel", row.pass.id, { passId: row.pass.id })
     await queueCancelledEmail(ctx.db, row.pass.id, readAppUrl())
@@ -362,6 +366,8 @@ export const passesAddInspection = defineHandler({
       .insert(s.visit)
       .values({ organizationId: ctx.organizationId, jobId: row.pass.jobId, passId: row.pass.id, customerId: row.pass.customerId, propertyId: row.pass.propertyId, kind: "inspection", window: WINDOW_LABEL.inspection, amount })
       .returning({ id: s.visit.id })
+    const lines = linesForPassVisits([SEASON_PASS_ADD_ON], row.pass.zones).map((line) => ({ ...line, visitId: visit!.id }))
+    await insertLines(ctx.db, { organizationId: ctx.organizationId, jobId: row.pass.jobId, now: ctx.now }, lines)
     await syncPassJob(ctx.db, row.pass.id)
     await recordChange(ctx, { customerId: row.pass.customerId, passId: row.pass.id, visitId: visit!.id, kind: "inspection-added", detail: { amount } })
     return { id: row.pass.id, inspection: true as const, visitId: visit!.id, amount }
@@ -384,6 +390,7 @@ export const passesSkipVisit = defineHandler({
     if (visit.status === "skipped") return { id: row.pass.id, visitId: visit.id, status: "skipped" as const }
     if (!(["unscheduled", "scheduled"] as string[]).includes(visit.status)) throw new ApiError("unprocessable", "This visit can no longer be skipped")
     await ctx.db.update(s.visit).set({ status: "skipped", personId: null, scheduledOn: null, startTime: null, stopOrder: null }).where(eq(s.visit.id, visit.id))
+    await cancelVisitLines(ctx.db, [visit.id], ctx.now)
     await ctx.db.update(s.job).set({ price: sql`greatest(coalesce(${s.job.price}, 0) - ${visit.amount}, 0)` }).where(eq(s.job.id, visit.jobId))
     await recordChange(ctx, { customerId: row.pass.customerId, passId: row.pass.id, visitId: visit.id, kind: "skipped", detail: { visit: input.kind } })
     return { id: row.pass.id, visitId: visit.id, status: "skipped" as const }

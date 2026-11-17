@@ -4,7 +4,8 @@ import { eq } from "drizzle-orm"
 import * as s from "@/db/schema"
 import type { TestDb } from "@/db/test-db"
 import { callApi } from "../../core/call"
-import { apiDb, ctxFor, ORG, readKey, writeKey } from "../../test-helpers"
+import { apiDb, ctxFor, linesOfJob, ORG, readKey, writeKey } from "../../test-helpers"
+import { visitsCreate } from "../visits/office"
 import { bookingsCancel, bookingsCreate, quoteRequestsCreate, quoteRequestsList } from "./handlers"
 
 let db: TestDb
@@ -39,6 +40,17 @@ describe("bookings", () => {
   })
 })
 
+describe("cancelling a job made by visits.create", () => {
+  it("cancels every line of the job", async () => {
+    const v = await callApi(ctxFor(db, writeKey), visitsCreate, { customerId: "c100", kind: "repair", price: 145 })
+    expect((await linesOfJob(db, v.jobId)).length).toBeGreaterThan(0)
+    await callApi(ctxFor(db, writeKey), bookingsCancel, { id: v.jobId })
+    const lines = await linesOfJob(db, v.jobId)
+    expect(lines.length).toBeGreaterThan(0)
+    for (const l of lines) expect(l.cancelledAt).not.toBeNull()
+  })
+})
+
 describe("quote requests", () => {
   it("records a request, queues request.received and lists it", async () => {
     const out = await callApi(ctxFor(db, writeKey), quoteRequestsCreate, { customerId: "c100", serviceKey: "repair", notes: "Zone 3 will not shut off" })
@@ -53,6 +65,11 @@ describe("quote requests", () => {
     await expect(callApi(ctxFor(db, writeKey), quoteRequestsCreate, { customerId: "c100", serviceKey: "nope" })).rejects.toMatchObject({ code: "not_found" })
     await expect(callApi(ctxFor(db, writeKey), quoteRequestsCreate, { customerId: "c100", propertyId: "property-c121" })).rejects.toMatchObject({ code: "unprocessable" })
     await expect(callApi(ctxFor(db, readKey), quoteRequestsCreate, { customerId: "c100" })).rejects.toMatchObject({ code: "forbidden" })
+  })
+  it("refuses an inactive service", async () => {
+    await db.update(s.service).set({ active: false }).where(eq(s.service.key, "aeration"))
+    await expect(callApi(ctxFor(db, writeKey), quoteRequestsCreate, { customerId: "c100", serviceKey: "aeration" })).rejects.toMatchObject({ code: "unprocessable" })
+    await db.update(s.service).set({ active: true }).where(eq(s.service.key, "aeration"))
   })
   it("honours an Idempotency-Key", async () => {
     const ctx = { ...ctxFor(db, writeKey), idempotencyKey: "q-1" }

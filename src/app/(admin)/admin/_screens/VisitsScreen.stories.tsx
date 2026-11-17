@@ -1,14 +1,11 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite"
 import { expect } from "storybook/test"
 import { AdminShell } from "@/components/blocks/AdminShell"
-import { NewVisit } from "./NewVisit"
-import { VisitPanelHost } from "./VisitPanelHost"
 import { VisitsScreen } from "./VisitsScreen"
 import { VISITS_TODAY, noCardVisitId, passVisitId, visitsData } from "./visits-fixture"
 
 // Visits at 12:56 pm Mountain on Thursday, November 12, 2026: the pass visits of the fixture, a pass the office sold
-// with no card, and six one-off visits, one in each state. The header carries New pass (outline) and New visit
-// (filled); a tech sees neither. The panel stories open one visit beside the list (a sheet on a phone).
+// with no card, and six one-off visits, one in each state. The header carries New job; a tech sees none. The panel stories open one visit beside the list (a sheet on a phone).
 
 const meta = {
   title: "Screens/Visits",
@@ -30,19 +27,17 @@ const phone = { viewport: { value: "phone", isRotated: false } }
 export const Default: Story = {
   globals: wide,
   play: async ({ canvas }) => {
-    await expect(await canvas.findByRole("button", { name: "New pass" })).toBeInTheDocument()
-    await expect(await canvas.findByRole("button", { name: "New visit" })).toBeInTheDocument()
+    await expect(await canvas.findByRole("button", { name: "New job" })).toBeInTheDocument()
   },
 }
 export const Phone: Story = { globals: phone }
 
-/** A tech reads the list and sees neither New pass nor New visit. */
+/** A tech reads the list and sees no New job. */
 export const ReadOnly: Story = {
   args: { readOnly: true },
   globals: wide,
   play: async ({ canvas }) => {
-    await expect(canvas.queryByRole("button", { name: "New pass" })).not.toBeInTheDocument()
-    await expect(canvas.queryByRole("button", { name: "New visit" })).not.toBeInTheDocument()
+    await expect(canvas.queryByRole("button", { name: "New job" })).not.toBeInTheDocument()
   },
 }
 
@@ -81,15 +76,3 @@ export const PanelPassVisitNoCard: Story = {
 
 /** A tech reads the visit and sees no buttons. */
 export const PanelReadOnly: Story = { args: { defaultVisitId: "office-scheduled", readOnly: true }, globals: wide }
-
-function NewVisitSheet() {
-  return (
-    <VisitPanelHost data={visitsData} today={VISITS_TODAY}>
-      <NewVisit data={visitsData} today={VISITS_TODAY} open onOpenChange={() => undefined} />
-    </VisitPanelHost>
-  )
-}
-
-/** New visit: customer, kind and day; everything else under More details. */
-export const NewVisitSheetWide: Story = { render: () => <NewVisitSheet />, globals: wide }
-export const NewVisitSheetPhone: Story = { render: () => <NewVisitSheet />, globals: phone }

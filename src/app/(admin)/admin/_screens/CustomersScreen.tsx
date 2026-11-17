@@ -11,8 +11,7 @@ import { dayOf } from "@/lib/admin/calendar"
 import { TIME_ZONE } from "@/lib/admin/format"
 import type { Outcome } from "./action-types"
 import { CustomerPanelBody } from "./CustomerPanel"
-import { NewPassButton } from "./NewPass"
-import { NewVisitButton } from "./NewVisit"
+import { NewJobButton } from "./NewJob"
 import type { VisitActions } from "./visit-actions-types"
 import { VisitPanelHost } from "./VisitPanelHost"
 import { customerColumns } from "./customers-columns"
@@ -96,8 +95,7 @@ export function CustomersScreen({ data, today, defaultSelectedId, readOnly = fal
               description={row.pass === "none" ? "Customer" : `Season Pass holder`}
               footer={
                 <>
-                  {!readOnly && client?.app && <NewVisitButton data={data} today={today} actions={visitActions} customerId={row.id} label="New visit" />}
-                  {!readOnly && client?.app && <NewPassButton data={data} today={today} actions={visitActions} customerId={row.id} label="Sell a pass" />}
+                  {!readOnly && client?.app && <NewJobButton data={data} today={today} actions={visitActions} customerId={row.id} />}
                   {row.passId && (
                     <Button variant="outline" className="min-h-11" asChild>
                       <Link href={`/admin/passes?pass=${encodeURIComponent(row.passId)}`}>Open pass</Link>

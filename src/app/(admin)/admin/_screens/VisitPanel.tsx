@@ -14,6 +14,7 @@ import type { AdminData } from "@/lib/admin/types"
 import type { VisitActions } from "./visit-actions-types"
 import { CancelVisit, EditForm, ResendButton, TextForm } from "./VisitEditText"
 import { DoneForm, MoveForm, NotDoneForm, PaidByChoice, doneAsksPaidBy } from "./VisitMoveDone"
+import { Included, JobLines } from "./VisitLines"
 import { useRunner } from "./use-runner"
 import { dayLabel, dayOfVisit, kindLabel, priceWords, timeWords, visitFacts, type VisitFacts } from "./visit-panel-model"
 import { routePeople } from "@/lib/admin/people"
@@ -73,7 +74,7 @@ function VisitBlock({ facts }: { facts: VisitFacts }) {
           ["Time", timeWords(visit)],
           ["Who", visit.personName ?? ""],
           ["Minutes", String(visit.minutes ?? 60)],
-          ["Price", priceWords(visit)],
+          ["Price", facts.priceCancelled ? "Cancelled" : priceWords({ price: facts.price })],
           ...(visit.notes ? ([["Notes", visit.notes]] as [string, ReactNode][]) : []),
         ]}
       />
@@ -101,6 +102,7 @@ function JobBlock({ facts, today, onOpenVisit }: { facts: VisitFacts; today: str
           </>
         )}
       </p>
+      {job?.lines?.length ? <JobLines lines={job.lines} visitId={visit.id} /> : null}
       {siblings.length > 1 && (
         <ul className="mt-2 divide-y divide-border text-sm">
           {siblings.map((v) => (
@@ -184,6 +186,7 @@ export function VisitPanel({ data, today, visitId, open, onOpenChange, onOpenVis
         </div>
         <CustomerBlock facts={facts} />
         <VisitBlock facts={facts} />
+        {facts.line?.description ? <Included text={facts.line.description} /> : null}
         <JobBlock facts={facts} today={today} onOpenVisit={onOpenVisit} />
         {!readOnly && <Actions facts={facts} data={data} today={today} actions={actions} />}
         <section aria-labelledby="visit-thread">

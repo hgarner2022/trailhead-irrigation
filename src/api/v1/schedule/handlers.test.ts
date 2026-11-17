@@ -65,6 +65,14 @@ describe("schedule.slots", () => {
   })
 })
 
+describe("schedule.slots on an inactive service", () => {
+  it("refuses it even when bookable is still set", async () => {
+    await db.update(s.service).set({ active: false }).where(eq(s.service.key, "turn-on-8"))
+    await expect(callApi(ctxFor(db, readKey), scheduleSlots, { service: "turn-on-8", town: "Erie" })).rejects.toMatchObject({ code: "unprocessable" })
+    await db.update(s.service).set({ active: true }).where(eq(s.service.key, "turn-on-8"))
+  })
+})
+
 describe("schedule.run", () => {
   it("needs the admin scope and a real window", async () => {
     await expect(callApi(ctxFor(db, writeKey), scheduleRun, { window: "blowout" })).rejects.toMatchObject({ code: "forbidden" })

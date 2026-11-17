@@ -3,6 +3,8 @@
 import { and, eq, isNull } from "drizzle-orm"
 import type { Database } from "./types"
 import * as s from "./schema"
+import { lineForVisitKind } from "@/lib/jobs/lines"
+import { insertLines } from "@/lib/jobs/write-lines"
 import { SERVICE_LIST } from "@/lib/services"
 import type { AdminData, Pass, Person, Town } from "@/lib/admin/types"
 
@@ -94,6 +96,7 @@ export async function seed(db: Database, snapshot: AdminData, options: SeedOptio
         organizationId: org,
         key: v.key,
         name: v.name,
+        description: v.description,
         kind: v.kind,
         bookable: v.bookable,
         minZones: v.minZones,
@@ -218,6 +221,12 @@ async function seedPasses(db: Database, snapshot: AdminData, org: string) {
         })),
       )
       .onConflictDoNothing()
+    // The job's line per visit, with the id migration 0014's backfill gives the same visit (`line_<visit id>`), so a re-run of the backfill adds nothing to a seeded database.
+    await insertLines(
+      db,
+      { organizationId: org, jobId, keepExisting: true },
+      pass.visits.map((v) => ({ ...lineForVisitKind(v.kind, v.amount, pass.zones), id: `line_${pass.id}-${v.kind}`, visitId: `${pass.id}-${v.kind}` })),
+    )
   }
 }
 

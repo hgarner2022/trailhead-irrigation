@@ -76,7 +76,7 @@ describe("the admin pages", () => {
   it("Visits lists the seeded passes' visits and opens the one in ?visit=", async () => {
     const out = html(await VisitsPage(search({})))
     expect(out).toContain('data-slot="visits-screen"')
-    expect(out).toContain("New visit")
+    expect(out).toContain("New job")
     expect(html(await VisitsPage(search({ visit: "p3-turn-on" })))).toContain('data-slot="visits-screen"')
   })
 

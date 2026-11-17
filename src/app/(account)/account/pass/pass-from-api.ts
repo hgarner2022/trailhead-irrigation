@@ -1,10 +1,26 @@
-import type { z } from "zod"
-import type { PassDetail } from "@/api/v1/passes/schemas"
-import { instantOf } from "@/lib/admin/shape"
-import type { Pass, PassVisit } from "@/lib/admin/types"
+import type { z } from "zod";
+import type { PassDetail } from "@/api/v1/passes/schemas";
+import { instantOf } from "@/lib/admin/shape";
+import type { Pass, PassVisit } from "@/lib/admin/types";
 
-const ORDER = ["turn-on", "inspection", "blowout"]
-const WINDOWS: Record<string, string> = { "turn-on": "May", inspection: "July", blowout: "October" }
+const ORDER = ["turn-on", "inspection", "blowout"];
+const WINDOWS: Record<string, string> = {
+  "turn-on": "May",
+  inspection: "July",
+  blowout: "October",
+};
+
+type OwnLine = {
+  visitId: string | null;
+  description: string | null;
+  quantity: number;
+  unitPrice: number;
+  cancelledAt: string | null;
+};
+
+/** The visit's own lines from the job's lines the API sends with it: the ones billed after this visit and not cancelled. */
+const ownLines = (v: { id: string; lineItems?: OwnLine[] }) =>
+  v.lineItems?.filter((l) => l.visitId === v.id && !l.cancelledAt) ?? [];
 
 /**
  * The `Pass` the customer page takes, from one `passes.get` answer. A cancelled or skipped visit is left out, as in the admin's
@@ -12,22 +28,44 @@ const WINDOWS: Record<string, string> = { "turn-on": "May", inspection: "July", 
  */
 export function passFromApi(d: z.infer<typeof PassDetail>): Pass {
   const visits: PassVisit[] = d.visits
-    .filter((v) => ORDER.includes(v.kind) && v.status !== "cancelled" && v.status !== "skipped")
+    .filter(
+      (v) =>
+        ORDER.includes(v.kind) &&
+        v.status !== "cancelled" &&
+        v.status !== "skipped",
+    )
     .sort((a, b) => ORDER.indexOf(a.kind) - ORDER.indexOf(b.kind))
-    .map((v) => ({
-      kind: v.kind as PassVisit["kind"],
-      window: v.window ?? WINDOWS[v.kind]!,
-      amount: v.amount,
-      id: v.id,
-      ...(v.scheduledOn ? { scheduledAt: instantOf(v.scheduledOn, v.startTime), scheduledOn: v.scheduledOn } : {}),
-      ...(v.startTime ? { startTime: v.startTime } : {}),
-      ...(v.durationMinutes ? { windowMinutes: v.durationMinutes } : {}),
-      ...(v.calendarUrl ? { calendarUrl: v.calendarUrl } : {}),
-      // the person assigned, under the deprecated truck name too until the screens read people
-      ...(v.personName ? { personName: v.personName, truckName: v.personName } : {}),
-      ...(v.completedOn ? { completedAt: instantOf(v.completedOn, "12:00") } : {}),
-      ...(v.chargedAt ? { chargedAt: v.chargedAt } : {}),
-    }))
+    .map((v) => {
+      const own = ownLines(v);
+      // Price is what the visit's lines come to; the description is the first line's.
+      const description = own[0]?.description;
+      return {
+        kind: v.kind as PassVisit["kind"],
+        window: v.window ?? WINDOWS[v.kind]!,
+        amount: own.length
+          ? own.reduce((sum, l) => sum + l.quantity * l.unitPrice, 0)
+          : v.amount,
+        id: v.id,
+        ...(description ? { description } : {}),
+        ...(v.scheduledOn
+          ? {
+              scheduledAt: instantOf(v.scheduledOn, v.startTime),
+              scheduledOn: v.scheduledOn,
+            }
+          : {}),
+        ...(v.startTime ? { startTime: v.startTime } : {}),
+        ...(v.durationMinutes ? { windowMinutes: v.durationMinutes } : {}),
+        ...(v.calendarUrl ? { calendarUrl: v.calendarUrl } : {}),
+        // the person assigned, under the deprecated truck name too until the screens read people
+        ...(v.personName
+          ? { personName: v.personName, truckName: v.personName }
+          : {}),
+        ...(v.completedOn
+          ? { completedAt: instantOf(v.completedOn, "12:00") }
+          : {}),
+        ...(v.chargedAt ? { chargedAt: v.chargedAt } : {}),
+      };
+    });
   return {
     id: d.id,
     number: d.number,
@@ -38,7 +76,14 @@ export function passFromApi(d: z.infer<typeof PassDetail>): Pass {
     zones: d.zones,
     turnOnPreference: d.turnOnPreference,
     blowoutPreference: d.blowoutPreference,
-    status: d.status === "cancelled" ? "cancelled" : d.status === "lapsed" ? "lapsed" : d.status === "pending" ? "pending" : "active",
+    status:
+      d.status === "cancelled"
+        ? "cancelled"
+        : d.status === "lapsed"
+          ? "lapsed"
+          : d.status === "pending"
+            ? "pending"
+            : "active",
     visits,
     stripeUrl: "",
     jobberUrl: "",
@@ -46,5 +91,5 @@ export function passFromApi(d: z.infer<typeof PassDetail>): Pass {
     ...(d.cardExpires ? { cardExpires: d.cardExpires } : {}),
     ...(d.cardFailedAt ? { cardFailedAt: d.cardFailedAt } : {}),
     ...(d.needsCustomerHome ? { needsCustomerHome: true } : {}),
-  }
+  };
 }

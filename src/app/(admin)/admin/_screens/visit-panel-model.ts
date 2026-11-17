@@ -5,10 +5,11 @@
  * Dates are Mountain calendar days (YYYY-MM-DD).
  */
 import { TIME_ZONE } from "@/lib/admin/format"
+import { jobTotal } from "@/lib/jobs/lines"
 import { dayOf } from "@/lib/admin/calendar"
 import { jobMoney, visitJob, windowLabel, type Job } from "@/lib/admin/jobs"
 import { KIND_LABEL, type OfficeKind } from "@/lib/admin/visit-defaults"
-import type { AdminData, Client, Message, Pass, SoldJob, Visit } from "@/lib/admin/types"
+import type { AdminData, Client, JobLine, Message, Pass, SoldJob, Visit } from "@/lib/admin/types"
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
@@ -36,13 +37,42 @@ export function timeWords(visit: Visit): string {
   return visit.startTime ? windowLabel(visit.startTime, visit.minutes ?? 120) : "Any time"
 }
 
+/** The visit's own line on its job: the one billed after this visit and not cancelled. Absent when the data has no lines. */
+export function visitLine(data: Pick<AdminData, "jobs">, visit: Pick<Visit, "id" | "jobId">): JobLine | undefined {
+  return data.jobs?.find((j) => j.id === visit.jobId)?.lines?.find((l) => l.visitId === visit.id && !l.cancelledAt)
+}
+
+/** Every line billed after this visit, cancelled ones included. Empty when the data has no lines for it. */
+const ownLines = (data: Pick<AdminData, "jobs">, visit: Pick<Visit, "id" | "jobId">): JobLine[] => data.jobs?.find((j) => j.id === visit.jobId)?.lines?.filter((l) => l.visitId === visit.id) ?? []
+
+/** True when the visit has lines of its own and every one is cancelled. */
+export const visitCancelled = (data: Pick<AdminData, "jobs">, visit: Pick<Visit, "id" | "jobId">): boolean => {
+  const own = ownLines(data, visit)
+  return own.length > 0 && own.every((l) => l.cancelledAt)
+}
+
+/** What the visit is worth: the total of its own lines that are not cancelled when it has any, else `visit.price`. */
+export const visitPrice = (data: Pick<AdminData, "jobs">, visit: Visit): number => {
+  const own = ownLines(data, visit)
+  return own.length ? jobTotal(own.map((l) => ({ quantity: l.quantity, unitPrice: l.unitPrice, cancelledAt: l.cancelledAt ? new Date(l.cancelledAt) : null }))) : (visit.price ?? 0)
+}
+
 export const priceWords = (visit: Pick<Visit, "price">) => ((visit.price ?? 0) > 0 ? `$${visit.price!.toLocaleString("en-US")}` : "Quote later")
+
+/** "Spring turn-on, 8 zones · $145": the line's name, then its total; a cancelled line reads "cancelled" in place of the price. */
+export const lineWords = (line: JobLine): string => (line.cancelledAt ? `${line.name} · cancelled` : `${line.name} · $${(line.quantity * line.unitPrice).toLocaleString("en-US")}`)
 
 export interface VisitFacts {
   visit: Visit
   client?: Client
   pass?: Pass
   job?: SoldJob
+  /** the line billed after this visit, when the job has lines */
+  line?: JobLine
+  /** what the visit is worth, from its lines when it has any */
+  price: number
+  /** the visit has lines and all of them are cancelled: the price reads "Cancelled" */
+  priceCancelled: boolean
   /** the job's visits in day order, this one included */
   siblings: Visit[]
   states: Job
@@ -66,6 +96,9 @@ export function visitFacts(data: AdminData, visitId: string, today: string): Vis
     client: data.clients.find((c) => c.id === visit.clientId),
     pass,
     job,
+    line: visitLine(data, visit),
+    price: visitPrice(data, visit),
+    priceCancelled: visitCancelled(data, visit),
     siblings,
     states: visitJob(visit, day, TIME_ZONE, pass?.cardFailedAt),
     money: jobMoney(siblings.map((v) => visitJob(v, day, TIME_ZONE, pass?.cardFailedAt))),

@@ -1,5 +1,7 @@
 // @vitest-environment node
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
+import { readFileSync } from "node:fs"
+import { join } from "node:path"
 import { count, eq, sql } from "drizzle-orm"
 import type { PgTable } from "drizzle-orm/pg-core"
 import { testDb, type TestDb } from "./test-db"
@@ -34,13 +36,33 @@ describe("seed", () => {
     expect(await n(s.person)).toBe(3)
     expect(await n(s.area)).toBe(data.settings.areas.length)
     expect(await n(s.service)).toBe(SERVICE_LIST.length)
+    const services = await db.select({ key: s.service.key, description: s.service.description, taxable: s.service.taxable, active: s.service.active }).from(s.service)
+    expect(services.every((v) => typeof v.description === "string" && v.description.length > 0 && !v.description.includes("$"))).toBe(true)
+    expect(services.every((v) => v.taxable === false && v.active === true)).toBe(true)
+    expect(services.find((v) => v.key === "blowout")?.description).toBe(SERVICE_LIST.find((v) => v.key === "blowout")?.description)
     expect(await n(s.seasonPass)).toBe(0)
     expect(await n(s.jobberClient)).toBe(0)
   })
 
+  it("backfills in migration 0013 the description the seed writes, so a migrated database and a fresh one agree, and leaves a filled row alone", async () => {
+    // The columns exist on the test database already, so only the UPDATE statements run; the file is read as the one source of them.
+    const statements = readFileSync(join(process.cwd(), "drizzle/0013_service_description.sql"), "utf8")
+      .split("--> statement-breakpoint")
+      .map((part) => part.trim())
+      .filter((part) => part && !part.startsWith("ALTER TABLE"))
+    const read = () => db.select({ key: s.service.key, description: s.service.description }).from(s.service).orderBy(s.service.key)
+    await db.execute(sql`update "service" set "description" = null`)
+    for (const statement of statements) await db.execute(sql.raw(statement))
+    const backfilled = await read()
+    expect(backfilled.length).toBe(SERVICE_LIST.length)
+    for (const row of backfilled) expect(row.description, row.key).toBe(SERVICE_LIST.find((v) => v.key === row.key)?.description)
+    for (const statement of statements) await db.execute(sql.raw(statement))
+    expect(await read()).toEqual(backfilled)
+  })
+
   it("is idempotent", async () => {
     await seed(db, data, { organizationId: org, admins: ["hannah@example.com", "ryan@example.com"], passes: true, mirror: true })
-    const counts = async () => [await n(s.adminUser), await n(s.person), await n(s.service), await n(s.seasonPass), await n(s.visit), await n(s.consent), await n(s.jobberVisit)]
+    const counts = async () => [await n(s.adminUser), await n(s.person), await n(s.service), await n(s.seasonPass), await n(s.visit), await n(s.lineItem), await n(s.consent), await n(s.jobberVisit)]
     const people = () => db.select({ id: s.person.id, name: s.person.name, email: s.person.email, role: s.person.role, truck: s.person.truck, legacyTruckId: s.person.legacyTruckId }).from(s.person).orderBy(s.person.id)
     const first = await counts()
     const firstPeople = await people()
@@ -90,6 +112,16 @@ describe("seed", () => {
     const done = await db.select().from(s.visit).where(eq(s.visit.id, "p1-turn-on"))
     expect(done[0].status).toBe("completed")
     expect(done[0].completedOn).toBe("2027-05-03")
+  })
+  it("gives every fixture visit its line, with the backfill's id, so a seeded and a migrated database agree", async () => {
+    expect(await n(s.lineItem)).toBe(data.passes.reduce((sum, p) => sum + p.visits.length, 0))
+    const [line] = await db
+      .select({ line: s.lineItem, serviceKey: s.service.key, amount: s.visit.amount })
+      .from(s.lineItem)
+      .leftJoin(s.service, eq(s.service.id, s.lineItem.serviceId))
+      .innerJoin(s.visit, eq(s.visit.id, s.lineItem.visitId))
+      .where(eq(s.lineItem.id, "line_p2-turn-on"))
+    expect(line).toMatchObject({ serviceKey: "turn-on-8", line: { jobId: "job_p2", visitId: "p2-turn-on", name: "Spring turn-on", unitPrice: line!.amount, quantity: 1, taxable: false, cancelledAt: null, description: SERVICE_LIST.find((v) => v.key === "turn-on-8")!.description } })
   })
 })
 

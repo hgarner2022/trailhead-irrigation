@@ -1,14 +1,15 @@
 import { describe, expect, it } from "vitest"
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
-import type { AdminData } from "@/lib/admin/types"
+import type { AdminData, ServiceItem } from "@/lib/admin/types"
+import { SERVICE_LIST } from "@/lib/services"
 import {
-  addArea, createKey, revokeKey, secretFor, sampleFor, SAMPLE_KEYS, channelWord, clip, daysWords, fillMessage, messageName, moveTownInOrder, setAreaName, setBuffer,
+  setServiceField, addArea, createKey, revokeKey, secretFor, sampleFor, SAMPLE_KEYS, channelWord, clip, daysWords, fillMessage, messageName, moveTownInOrder, setAreaName, setBuffer,
   setMessage, setWindow, toggleAreaTown, type SettingsState,
 } from "./settings-model"
 import { addPerson, removePerson, setCapacity, setPersonName, setPersonRole, setPersonText, setSeason, toggleWorkingDay } from "./settings-people"
 
 const data = snapshot as AdminData
-const state: SettingsState = { settings: data.settings, changes: [], keys: SAMPLE_KEYS }
+const state: SettingsState = { settings: data.settings, changes: [], keys: SAMPLE_KEYS, services: SERVICE_LIST as ServiceItem[] }
 const actor = { who: "Hannah", at: "2026-11-12T19:56:30Z" }
 const last = (s: SettingsState) => s.changes[s.changes.length - 1]
 
@@ -299,5 +300,64 @@ describe("validation", () => {
     expect(last(next).to).toBe("Longmont, Erie (moved from Erie and Firestone)")
     const plain = toggleAreaTown(next, "area-longmont", "Erie", actor)
     expect(last(plain).to).toBe("Longmont")
+  })
+})
+
+describe("setServiceField", () => {
+  const blowout = () => state.services.find((s) => s.key === "blowout")!
+  const turnOn = () => state.services.find((s) => s.key === "turn-on-8")!
+  const repair = () => state.services.find((s) => s.key === "repair")!
+  const edit = (s: SettingsState, key: string) => s.services.find((x) => x.key === key)!
+
+  it("changes a description, trims it and logs the old and new words", () => {
+    const next = setServiceField(state, "blowout", "description", "  A blowout of every zone.  ", actor)
+    expect(edit(next, "blowout").description).toBe("A blowout of every zone.")
+    expect(last(next)).toMatchObject({ field: `${blowout().name} what's included`, to: "A blowout of every zone." })
+    expect(edit(state, "blowout").description).toBe(blowout().description)
+  })
+
+  it("clears a description on a blank, and refuses a dollar sign or more than a thousand characters", () => {
+    expect(edit(setServiceField(state, "blowout", "description", "   ", actor), "blowout").description).toBeNull()
+    expect(setServiceField(state, "blowout", "description", "Only $95 today", actor)).toBe(state)
+    expect(setServiceField(state, "blowout", "description", "x".repeat(1001), actor)).toBe(state)
+  })
+
+  it("keeps the price in whole dollars and refuses a negative or fractional one", () => {
+    expect(edit(setServiceField(state, "repair", "price", "160", actor), "repair").price).toBe(160)
+    expect(last(setServiceField(state, "repair", "price", 160, actor)).to).toBe("$160")
+    expect(setServiceField(state, "repair", "price", "145.5", actor)).toBe(state)
+    expect(setServiceField(state, "repair", "price", -1, actor)).toBe(state)
+    expect(setServiceField(state, "repair", "price", "", actor)).toBe(state)
+  })
+
+  it("changes the zone rule only on a service that has one", () => {
+    expect(edit(setServiceField(state, "turn-on-8", "includedZones", 6, actor), "turn-on-8").includedZones).toBe(6)
+    expect(edit(setServiceField(state, "turn-on-8", "extraZonePrice", 12, actor), "turn-on-8").extraZonePrice).toBe(12)
+    expect(setServiceField(state, "turn-on-8", "includedZones", 17, actor)).toBe(state)
+    expect(setServiceField(state, "repair", "extraZonePrice", 12, actor)).toBe(state)
+    expect(setServiceField(state, "repair", "includedZones", 2, actor)).toBe(state)
+    expect(turnOn().extraZonePrice).toBeDefined()
+    expect(repair().extraZonePrice).toBeUndefined()
+  })
+
+  it("takes minutes in quarter hours from 15 to 480", () => {
+    expect(edit(setServiceField(state, "repair", "slotMinutes", 90, actor), "repair").slotMinutes).toBe(90)
+    expect(setServiceField(state, "repair", "slotMinutes", 100, actor)).toBe(state)
+    expect(setServiceField(state, "repair", "slotMinutes", 495, actor)).toBe(state)
+  })
+
+  it("turns taxable and active on and off, and logs nothing for no change", () => {
+    const off = setServiceField(state, "repair", "active", false, actor)
+    expect(edit(off, "repair").active).toBe(false)
+    expect(last(off)).toMatchObject({ from: "Yes", to: "No" })
+    expect(edit(setServiceField(state, "repair", "taxable", true, actor), "repair").taxable).toBe(true)
+    expect(setServiceField(state, "repair", "taxable", false, actor)).toBe(state)
+    expect(setServiceField(state, "nope", "active", false, actor)).toBe(state)
+  })
+
+  it("leaves a quoted service without a price without one", () => {
+    const quoted = { ...repair(), key: "quoted", quoteOnly: true, price: undefined }
+    const withQuoted = { ...state, services: [...state.services, quoted] }
+    expect(setServiceField(withQuoted, "quoted", "price", 100, actor)).toBe(withQuoted)
   })
 })

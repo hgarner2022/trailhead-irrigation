@@ -1,5 +1,7 @@
 // @vitest-environment node
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
+import { eq } from "drizzle-orm"
+import * as s from "@/db/schema"
 import type { TestDb } from "@/db/test-db"
 import { callApi } from "../../core/call"
 import { adminKey, apiDb, ctxFor, readKey, writeKey } from "../../test-helpers"
@@ -21,6 +23,51 @@ describe("services", () => {
     const bookable = await callApi(ctxFor(db, readKey), servicesList, { bookable: "true" })
     expect(bookable.data.every((s) => s.bookable)).toBe(true)
     expect(bookable.data.length).toBeLessThan(all.data.length)
+  })
+  it("carries what the visit includes, with no price in it, and the office can change or clear the text", async () => {
+    const all = await callApi(ctxFor(db, readKey), servicesList, {})
+    const turnOn = all.data.find((s) => s.key === "turn-on-8")!
+    expect(turnOn.description).toContain("controller programming")
+    expect(turnOn.description).not.toContain("$")
+    expect(turnOn).toMatchObject({ taxable: false, active: true })
+    expect(all.data.every((s) => typeof s.description === "string" && s.description.length > 0)).toBe(true)
+    const made = await callApi(ctxFor(db, adminKey), servicesCreate, { ...input, key: "described", description: "A look at the drip line." })
+    expect(made.description).toBe("A look at the drip line.")
+    expect((await callApi(ctxFor(db, adminKey), servicesUpdate, { id: made.id, description: "  Every emitter checked.  " })).description).toBe("Every emitter checked.")
+    expect((await callApi(ctxFor(db, adminKey), servicesUpdate, { id: made.id, description: null })).description).toBeNull()
+    await expect(callApi(ctxFor(db, adminKey), servicesUpdate, { id: made.id, description: "$145 visit" })).rejects.toMatchObject({ code: "invalid" })
+    await expect(callApi(ctxFor(db, adminKey), servicesUpdate, { id: made.id, description: "   " })).rejects.toMatchObject({ code: "invalid" })
+  })
+  it("sets taxable and active, and a PATCH with nothing in it leaves the row alone", async () => {
+    const made = await callApi(ctxFor(db, adminKey), servicesCreate, { ...input, key: "taxed" })
+    expect(await callApi(ctxFor(db, adminKey), servicesUpdate, { id: made.id, taxable: true, active: false })).toMatchObject({ taxable: true, active: false })
+    const row = () => db.select({ taxable: s.service.taxable, active: s.service.active, updatedAt: s.service.updatedAt }).from(s.service).where(eq(s.service.id, made.id))
+    const before = await row()
+    expect(before[0]).toMatchObject({ taxable: true, active: false })
+    expect(await callApi(ctxFor(db, adminKey), servicesUpdate, { id: made.id })).toMatchObject({ taxable: true, active: false })
+    expect(await row()).toEqual(before)
+  })
+  it("setting active false also closes online booking; reactivating leaves bookable as it is", async () => {
+    const made = await callApi(ctxFor(db, adminKey), servicesCreate, { ...input, key: "went-off" })
+    expect(made.bookable).toBe(true)
+    expect(await callApi(ctxFor(db, adminKey), servicesUpdate, { id: made.id, active: false })).toMatchObject({ active: false, bookable: false })
+    expect(await callApi(ctxFor(db, adminKey), servicesUpdate, { id: made.id, active: true })).toMatchObject({ active: true, bookable: false })
+  })
+  it("updates one field without resetting bookable and quoteOnly to their defaults", async () => {
+    const made = await callApi(ctxFor(db, adminKey), servicesCreate, { ...input, key: "quoted-only", bookable: false, quoteOnly: true })
+    expect(made).toMatchObject({ bookable: false, quoteOnly: true })
+    expect(await callApi(ctxFor(db, adminKey), servicesUpdate, { id: made.id, description: "Quoted first." })).toMatchObject({ bookable: false, quoteOnly: true, description: "Quoted first." })
+  })
+  it("deactivating stops booking and listing as active; the default list keeps the service", async () => {
+    const made = await callApi(ctxFor(db, adminKey), servicesCreate, { ...input, key: "retired" })
+    expect(await callApi(ctxFor(db, adminKey), servicesDeactivate, { id: made.id })).toMatchObject({ active: false, bookable: false })
+    const active = await callApi(ctxFor(db, readKey), servicesList, { active: "true" })
+    expect(active.data.some((s) => s.id === made.id)).toBe(false)
+    expect(active.data.every((s) => s.active)).toBe(true)
+    const all = await callApi(ctxFor(db, readKey), servicesList, {})
+    expect(all.data.some((s) => s.id === made.id)).toBe(true)
+    const inactive = await callApi(ctxFor(db, readKey), servicesList, { active: "false" })
+    expect(inactive.data.map((s) => s.id)).toContain(made.id)
   })
   it("needs the admin scope to change anything", async () => {
     await expect(callApi(ctxFor(db, writeKey), servicesCreate, input)).rejects.toMatchObject({ code: "forbidden" })

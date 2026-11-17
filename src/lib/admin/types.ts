@@ -119,7 +119,7 @@ export interface Visit {
   exception?: VisitException
   /** the job (pass or booked work) this visit belongs to */
   jobId?: string
-  /** whole dollars the visit is worth; 0 until priced */
+  /** whole dollars the visit is worth, read from the visit's own line; 0 until priced */
   price?: number
   /** how long the stop takes */
   minutes?: number
@@ -132,6 +132,22 @@ export interface Visit {
   paidMethod?: string
   /** a bill was sent and is not yet paid */
   billSent?: boolean
+}
+
+/** One sold line on a job: what the customer bought, copied from the service at the sale. */
+export interface JobLine {
+  id: string
+  name: string
+  /** what the visit includes, from the service at the sale */
+  description?: string
+  quantity: number
+  /** whole dollars */
+  unitPrice: number
+  taxable: boolean
+  /** set once the line is cancelled; it then counts nothing */
+  cancelledAt?: string
+  /** the visit the line is billed after; absent for a line on the job as a whole */
+  visitId?: string
 }
 
 /** The sold work a visit belongs to: a Season Pass (kind pass) or booked work. A visit is the stop; a job is what was sold. */
@@ -147,6 +163,10 @@ export interface SoldJob {
   passId?: string
   passNumber?: string
   visitIds: string[]
+  /** what was sold, oldest first; the lines are the truth for what the job costs */
+  lines?: JobLine[]
+  /** whole dollars: the lines added up, cancelled lines left out */
+  total?: number
 }
 
 export interface Quote {
@@ -189,7 +209,10 @@ export interface PassVisit {
   /** @deprecated alias of `personName`, the same name, kept until the screens read people */
   truckName?: string
   completedAt?: string
+  /** whole dollars, read from the visit's own line */
   amount: number
+  /** what the visit includes, from the service at the sale (the visit's line) */
+  description?: string
   chargedAt?: string
   notDoneReason?: string
   paidMethod?: string
@@ -381,6 +404,29 @@ export interface Attention {
   members?: Attention[]
 }
 
+/** One service in the catalogue, as `services.list` sends it (inactive ones too; the New job sheet offers the active ones). Absent from the fixtures, where the screens read the catalogue in `src/lib/services.ts`, which has no id and none of the three flags. */
+export interface ServiceItem {
+  /** the database row; what `services.update` takes. Absent from the site's own catalogue */
+  id?: string
+  key: string
+  /** read as not taxable when absent */
+  taxable?: boolean
+  /** read as active when absent; false once deactivated */
+  active?: boolean
+  bookable?: boolean
+  name: string
+  description: string | null
+  kind: string
+  minZones?: number
+  maxZones?: number
+  includedZones?: number
+  /** whole dollars; absent when the service is quoted */
+  price?: number
+  extraZonePrice?: number
+  slotMinutes: number
+  quoteOnly: boolean
+}
+
 export interface AdminData {
   /** Trailhead is organization one; every row is scoped for a second branch later */
   organizationId: string
@@ -400,4 +446,6 @@ export interface AdminData {
   messages: Message[]
   /** busy time read from the people's Jobber calendar feeds; absent in the fixtures */
   blocks?: BusyBlock[]
+  /** every service in the catalogue, by key, inactive ones included; absent in the fixtures */
+  services?: ServiceItem[]
 }

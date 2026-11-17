@@ -13,7 +13,7 @@ import { PassActions } from "@/components/blocks/PassActions"
 import { PreferenceDialog } from "@/components/blocks/PreferenceDialog"
 import { AddToCalendar } from "./AddToCalendar"
 import { PickDayButtons } from "./PickDayButtons"
-import { bookedWhen, canChange, canReserveNext, reserveNextHref, cardAction, cardLine, earlierSeasons, passHeadline, pickDayOptions, seasonCaption, visitRows } from "./pass-page-model"
+import { bookedWhen, canChange, canReserveNext, reserveNextHref, cardAction, cardLine, earlierSeasons, passHeadline, pickDayOptions, seasonCaption, visitLineInfo, visitRows } from "./pass-page-model"
 
 // The customer's pass page: a season card, not a dashboard. The pass card at
 // the top, the season line with the visits and their state, the card
@@ -123,12 +123,17 @@ export function PassPageScreen({ pass, passes = [pass], today, onCancel, onChang
                 <ul className="divide-y divide-border">
                   {pass.visits.map((visit) => {
                     const row = visitRows(pass).find((r) => r.kind === visit.kind)!
+                    const info = visitLineInfo(visit)
                     const preference = canChange(visit) ? preferenceOf(pass, visit.kind) : null
                     return (
                       <li key={row.kind} data-slot="pass-visit-row" className="flex flex-wrap items-center gap-3 py-3">
                         <span className="min-w-0 flex-1">
-                          <span className="block text-base font-semibold text-foreground">{row.name}</span>
+                          <span className="block text-base font-semibold text-foreground">
+                            {row.name}
+                            <span className="font-normal text-muted-foreground">{` · ${info.price}`}</span>
+                          </span>
                           <span className="block text-sm text-muted-foreground">{bookedWhen(visit) ?? row.when}</span>
+                          {info.description && <span className="block text-sm text-muted-foreground">{info.description}</span>}
                         </span>
                         {preference && canChange(visit) && <PreferenceDialog kind={visit.kind} value={preference} onSave={onChangePreference} />}
                         <StatusPill status={row.status} label={row.label} />

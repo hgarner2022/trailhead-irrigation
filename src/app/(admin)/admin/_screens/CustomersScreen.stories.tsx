@@ -11,7 +11,7 @@ import { CustomersScreen } from "./CustomersScreen"
 // same moment as the Home story. The snapshot's 375 customers include the
 // twelve pass holders and one unpaid attempt (Amy, Pending); PanelOpen starts with
 // Andrea (c100) open. The snapshot has no email or phone, so the story adds made-up ones, and its pass holders are
-// the app's own customers (`app`), so the panel offers New visit and Sell a pass for them.
+// the app's own customers (`app`), so the panel offers New job for them.
 const TODAY = "2026-11-12T19:56:30Z"
 const base = snapshot as AdminData
 const data = withFixtureContact({ ...base, clients: base.clients.map((c) => (c.hasPass ? { ...c, app: true } : c)) })
@@ -36,25 +36,24 @@ export const Default: Story = {
   globals: { viewport: { value: "wide", isRotated: false } },
 }
 
-/** Andrea's panel open: the same normal data as her row, the access note, her jobs, the consent history and her messages; New visit and Sell a pass in the footer. */
+/** Andrea's panel open: the same normal data as her row, the access note, her jobs, the consent history and her messages; New job in the footer. */
 export const PanelOpen: Story = {
   args: { defaultSelectedId: "c100" },
   globals: { viewport: { value: "wide", isRotated: false } },
   play: async ({ canvas }) => {
     await expect(await canvas.findByRole("heading", { name: "Visits" })).toBeInTheDocument()
     await expect(await canvas.findByRole("heading", { name: "Consent history" })).toBeInTheDocument()
-    await expect(await canvas.findByRole("button", { name: "New visit" })).toBeInTheDocument()
-    await expect(await canvas.findByRole("button", { name: "Sell a pass" })).toBeInTheDocument()
+    await expect(await canvas.findByRole("button", { name: "New job" })).toBeInTheDocument()
   },
 }
 
-/** A tech sees the panel with no New visit and no Sell a pass. */
+/** A tech sees the panel with no New job. */
 export const PanelReadOnly: Story = {
   args: { defaultSelectedId: "c100", readOnly: true },
   globals: { viewport: { value: "wide", isRotated: false } },
   play: async ({ canvas }) => {
     await expect(await canvas.findByRole("heading", { name: "Visits" })).toBeInTheDocument()
-    await expect(canvas.queryByRole("button", { name: "Sell a pass" })).not.toBeInTheDocument()
+    await expect(canvas.queryByRole("button", { name: "New job" })).not.toBeInTheDocument()
   },
 }
 

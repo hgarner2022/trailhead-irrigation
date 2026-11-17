@@ -130,7 +130,7 @@ export const scheduleSlots = defineHandler({
   async run(ctx, input) {
     const [service] = await ctx.db.select().from(s.service).where(and(eq(s.service.organizationId, ctx.organizationId), eq(s.service.key, input.service)))
     if (!service) throw notFound("Service")
-    if (!service.bookable || service.quoteOnly) throw new ApiError("unprocessable", "This service is not booked online")
+    if (!service.active || !service.bookable || service.quoteOnly) throw new ApiError("unprocessable", "This service is not booked online")
     if (input.zones !== undefined && ((service.minZones && input.zones < service.minZones) || (service.maxZones && input.zones > service.maxZones)))
       throw new ApiError("unprocessable", `This service covers ${service.minZones} to ${service.maxZones} zones`)
     const people = await routePeople(ctx)

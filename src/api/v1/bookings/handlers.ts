@@ -1,5 +1,5 @@
 import "server-only"
-import { and, desc, eq, inArray, notInArray } from "drizzle-orm"
+import { and, desc, eq, inArray, isNull, notInArray } from "drizzle-orm"
 import { z } from "zod"
 import * as s from "@/db/schema"
 import { ApiError, notFound, notImplemented } from "../../core/errors"
@@ -49,6 +49,8 @@ export const bookingsCancel = defineHandler({
     const [row] = await ctx.db.select().from(s.job).where(and(inArray(s.job.id, [input.id, `job_${input.id}`]), eq(s.job.organizationId, ctx.organizationId)))
     if (!row) throw notFound("Booking")
     await ctx.db.update(s.job).set({ status: "cancelled", cancelledAt: ctx.now }).where(eq(s.job.id, row.id))
+    // Job-wide, so a line with no visit (a backfilled one-off) goes too; a line already cancelled keeps its time.
+    await ctx.db.update(s.lineItem).set({ cancelledAt: ctx.now, updatedAt: ctx.now }).where(and(eq(s.lineItem.jobId, row.id), isNull(s.lineItem.cancelledAt)))
     const cancelled = await ctx
       .db.update(s.visit)
       .set({ status: "cancelled", personId: null, scheduledOn: null, startTime: null, stopOrder: null })
@@ -96,6 +98,7 @@ export const quoteRequestsCreate = defineHandler({
     if (input.serviceKey) {
       const [svc] = await ctx.db.select().from(s.service).where(and(eq(s.service.organizationId, ctx.organizationId), eq(s.service.key, input.serviceKey)))
       if (!svc) throw notFound("Service")
+      if (!svc.active) throw new ApiError("unprocessable", "This service is not offered")
       serviceId = svc.id
     }
     const [row] = await ctx.db.insert(s.quoteRequest).values({ organizationId: ctx.organizationId, customerId: input.customerId, propertyId: input.propertyId, serviceId, notes: input.notes }).returning()
