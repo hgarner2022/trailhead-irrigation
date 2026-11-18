@@ -206,6 +206,30 @@ describe("settings", () => {
     expect((await callApi(ctxFor(db, owner), peopleList, { active: "true" })).data.find((p) => p.id === ryan.id)).toMatchObject({ name: "Ada Lovelace", initials: "AL" })
     expect((await actions.saveSettings(now)).ok).toBe(true)
   })
+  it("renaming a person with no truck is one people.update, persists, and writes a change log row by the signed-in email", async () => {
+    const now = await settingsOf()
+    const admin = now.people.find((p) => !p.truck)!
+    const renamed = { ...now, people: now.people.map((p) => (p.id === admin.id ? { ...p, name: "Hannah Garner", initials: "HG" } : p)) }
+    vi.mocked(callApi).mockClear()
+    expect(await actions.saveSettings(renamed)).toEqual({ ok: true, data: undefined })
+    expect(calls("people.")).toEqual(["people.list", "people.update"])
+    expect((await callApi(ctxFor(db, owner), peopleList, { active: "true" })).data.find((p) => p.id === admin.id)).toMatchObject({ name: "Hannah Garner", initials: "HG" })
+    const log = (await live()).settingsChanges.filter((c) => c.field === `${admin.name} name`)
+    expect(log).toEqual([expect.objectContaining({ who: owner.email, from: admin.name, to: "Hannah Garner" })])
+    // saving the same screen again changes nothing and logs nothing more
+    expect((await actions.saveSettings(renamed)).ok).toBe(true)
+    expect((await live()).settingsChanges.filter((c) => c.field === `${admin.name} name`)).toHaveLength(1)
+  })
+  it("a refused person update says why and changes nothing, instead of Saved", async () => {
+    const now = await settingsOf()
+    const [a, b] = now.people
+    const clash = { ...now, people: now.people.map((p) => (p.id === b!.id ? { ...p, name: "Renamed anyway", email: "owner@example.com" } : p)) }
+    const out = await actions.saveSettings(clash)
+    expect(out).toMatchObject({ ok: false, message: expect.stringMatching(/already belongs to/) })
+    const after = (await callApi(ctxFor(db, owner), peopleList, { active: "true" })).data
+    expect(after.find((p) => p.id === b!.id)!.name).toBe(b!.name)
+    expect(after.find((p) => p.id === a!.id)!.name).toBe(a!.name)
+  })
   it("promotes B to owner and demotes A in one save, in that order", async () => {
     const now = await settingsOf()
     const owners = now.people.filter((p) => p.role === "owner")

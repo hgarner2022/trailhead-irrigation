@@ -6,7 +6,8 @@ import { ApiError } from "../../core/errors"
 import { defineHandler } from "../../core/handler"
 import { afterTimeCursor, cursorPage, page, pageInput, timeCursor } from "../../core/pagination"
 import { DEFAULT_BILLING } from "@/lib/settings/defaults"
-import { byPrincipal, Day, Id, Iso, Town } from "../shared"
+import { Day, Id, Iso, Town } from "../shared"
+import { logSettingsChanges, type Leaf } from "./log"
 
 const Window = z.object({ kind: z.enum(["turn-on", "inspection", "blowout"]), opensOn: Day, closesOn: Day, leadWeeks: z.number().int().min(0).max(12) })
 const Template = z.object({ key: z.string().min(1).max(60), channel: z.enum(["email", "sms"]), subject: z.string().max(200).optional(), body: z.string().min(1).max(2000), enabled: z.boolean() })
@@ -55,7 +56,6 @@ async function isConfirmed(ctx: { db: import("@/db/types").Database; organizatio
 export const billingOf = (settings: typeof s.organization.$inferSelect.settings) => settings.billing ?? DEFAULT_BILLING
 const settingsOut = (org: typeof s.organization.$inferSelect, confirmed: boolean) => ({ ...org.settings, billing: billingOf(org.settings), termsVersion: org.termsVersion, confirmed })
 
-interface Leaf { field: string; from: string; to: string }
 const clip = (text: string) => (text.length > 400 ? `${text.slice(0, 397)}...` : text)
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b)
 
@@ -126,7 +126,7 @@ export const settingsUpdate = defineHandler({
     if (leaves.length === 0) return settingsOut(org, await isConfirmed(ctx))
     const settings = { ...org.settings, [input.section]: parsed.data }
     await ctx.db.update(s.organization).set({ settings }).where(eq(s.organization.id, org.id))
-    await ctx.db.insert(s.settingsChange).values(leaves.map((l) => ({ organizationId: org.id, byEmail: byPrincipal(ctx), field: l.field, fromValue: l.from, toValue: l.to, at: ctx.now })))
+    await logSettingsChanges(ctx, leaves)
     return settingsOut({ ...org, settings }, true)
   },
 })

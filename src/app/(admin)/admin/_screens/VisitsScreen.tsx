@@ -13,8 +13,8 @@ import { routePeople } from "@/lib/admin/people"
 
 // Every visit of the season (docs/plans build-1): the customer's full name, town, the kind, day, time, who has it, the
 // two pills (work and money), price and pass number. Filters on both pill sets, kind, person, town and pass or
-// one-off; search by name, street or phone; New job in the header; a row opens the visit panel beside the
-// grid (a sheet on a phone). A pass is a filter chip and a link in the Pass column, never a button of its own
+// one-off; search by name, street or phone; New job in the header; a row opens the visit panel over the
+// grid (a drawer on a laptop, a sheet on a phone). A pass is a filter chip and a link in the Pass column, never a button of its own
 // (owner, 16 Nov: "Passes is a visits, so it could just be part of the filter"). Client because the open visit is
 // state; the route's page.tsx supplies `data`, `today` and the actions.
 

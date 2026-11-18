@@ -21,7 +21,7 @@ export type { PassesActions }
 // beside it from its name. A pending pass is an unpaid attempt and says
 // Pending, never Active; the Pending filter finds them. Each visit column
 // and the panel's jobs, charges and season line read the same visit rows.
-// On a laptop the panel pushes the grid narrower; on a phone it covers it as
+// On a laptop the panel is a drawer over the grid; on a phone it covers it as
 // a sheet. Client because the selected pass is state (its id; the pass
 // itself is read from `data.passes`, so a refreshed `data` shows in the open
 // panel); the route's page.tsx supplies `data` and `today`. The bulk actions
