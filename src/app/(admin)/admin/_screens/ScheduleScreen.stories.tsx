@@ -45,6 +45,18 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
+// Percy's Thursday blowout was moved to a must-be-home property: Waiting on customer on the week block and on the day's stop, until they answer.
+const waiting: AdminData = { ...data, visits: data.visits.map((v) => (v.clientName === "Percy" && v.startAt?.startsWith("2026-11-12") ? { ...v, waiting: true, timeBooked: true } : v)) }
+
+/** A moved visit that asked the customer to reply YES reads Waiting on customer in the week and in the day. */
+export const WaitingOnCustomer: Story = {
+  args: { data: waiting },
+  globals: { viewport: { value: "wide", isRotated: false } },
+  play: async ({ canvas }) => {
+    await expect((await canvas.findAllByText("Waiting on customer")).length).toBeGreaterThan(0)
+  },
+}
+
 export const Week: Story = {
   globals: { viewport: { value: "wide", isRotated: false } },
 }
