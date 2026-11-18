@@ -1,6 +1,5 @@
 import "server-only"
 import type { Metadata } from "next"
-import Image from "next/image"
 import Link from "next/link"
 import { EmptyState } from "@/components/blocks/EmptyState"
 import { Button } from "@/components/ui/button"
@@ -22,10 +21,9 @@ export default async function PassPage() {
   const data = principal.type === "customer" ? await loadPassPage(await ctxFromSession()) : null
   if (!data) {
     return (
-      <main className="flex min-h-dvh items-center justify-center bg-cream px-4 py-10">
+      <main className="flex items-center justify-center bg-cream px-4 py-10">
         <div data-slot="pass-empty" className="w-full max-w-md space-y-4">
-          <Image src="/images/logo-badge.png" alt="Trailhead Lawn & Irrigation" width={57} height={40} className="h-12 w-auto" />
-          <EmptyState icon={Ticket} title="No Season Pass on this email yet" line="Sign in with the email you bought with, or look at what the pass includes." className="py-6" />
+          <EmptyState icon={Ticket} title="No Season Pass on this account yet" line="Look at what the pass includes, or reserve one for next season." className="py-6" />
           <Button asChild>
             <Link href="/season-pass">See the Season Pass</Link>
           </Button>

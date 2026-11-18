@@ -1,4 +1,3 @@
-import Image from "next/image"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
@@ -48,8 +47,6 @@ export interface PassPageScreenProps {
   pickDays?: Partial<Record<"turn-on" | "blowout", string[]>>
 }
 
-const LOGO = "/images/logo-badge.png"
-
 function UpdateCardButton({ onUpdateCard, variant, className, label = "Update card" }: { onUpdateCard?: () => void | Promise<void>; variant?: "outline"; className?: string; label?: string }) {
   const button = (
     <Button variant={variant} className={className} type={onUpdateCard ? "submit" : "button"}>
@@ -70,10 +67,7 @@ export function PassPageScreen({ pass, passes = [pass], today, onCancel, onChang
   return (
     <div data-slot="pass-page" data-status={pass.status} className="min-h-svh bg-cream text-foreground">
       <div className="mx-auto max-w-3xl space-y-8 container-padding-x py-10">
-        <header className="flex items-center gap-3">
-          <Image src={LOGO} alt="Trailhead Lawn & Irrigation" width={51} height={36} className="h-9 w-auto" />
-          <h1 className="font-display text-2xl font-semibold leading-none text-navy">Season Pass</h1>
-        </header>
+        <h1 className="font-display text-2xl font-semibold leading-none text-navy">Season Pass</h1>
 
         <section
           data-slot="pass-headline"
@@ -87,12 +81,12 @@ export function PassPageScreen({ pass, passes = [pass], today, onCancel, onChang
           <p className={cn("mt-2 text-base", headline.action === "update-card" ? "text-foreground" : "text-muted-foreground")}>{headline.line}</p>
           {headline.action === "pick-day" && headline.kind && headline.kind !== "inspection" && (
             <div className="mt-5">
-              <PickDayButtons kind={headline.kind} days={pickDays?.[headline.kind] ?? pickDayOptions(pass, headline.kind)} onPick={onPickDay} />
+              <PickDayButtons kind={headline.kind} days={pickDays?.[headline.kind] ?? pickDayOptions(pass, headline.kind)} onPick={onPickDay && ((k, d) => onPickDay(k as "turn-on" | "blowout", d))} />
             </div>
           )}
           {headline.action === "change-day" && headline.kind && headline.kind !== "inspection" && (
             <div className="mt-5">
-              <PickDayButtons kind={headline.kind} days={pickDays?.[headline.kind] ?? pickDayOptions(pass, headline.kind)} onPick={onPickDay} foldedLabel="Change your day" />
+              <PickDayButtons kind={headline.kind} days={pickDays?.[headline.kind] ?? pickDayOptions(pass, headline.kind)} onPick={onPickDay && ((k, d) => onPickDay(k as "turn-on" | "blowout", d))} foldedLabel="Change your day" />
             </div>
           )}
           {headline.action === "update-card" && <UpdateCardButton onUpdateCard={onUpdateCard} className="mt-5" />}

@@ -11,16 +11,19 @@ import type { ActionResult } from "./CancelPassDialog"
 // the wiring phase books the visit; the prototype only swaps the words.
 
 export interface PickDayButtonsProps {
-  kind: "turn-on" | "blowout"
+  /** what the visit is, handed back to `onPick`: the pass page's turn-on or blowout, or any visit the account page moves */
+  kind: string
   days: string[]
-  onPick?: (kind: "turn-on" | "blowout", dayIso: string) => ActionResult | Promise<ActionResult>
+  onPick?: (kind: string, dayIso: string) => ActionResult | Promise<ActionResult>
   /** start folded behind this button; for a customer whose day is already set and may want another */
   foldedLabel?: string
+  /** the day the visit has now: once another is picked it is shown as gone, and the answer says "Moved to" */
+  previousDay?: string
 }
 
 const weekdayOf = (iso: string) => ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][new Date(`${iso}T12:00:00Z`).getUTCDay()]
 
-export function PickDayButtons({ kind, days, onPick, foldedLabel }: PickDayButtonsProps) {
+export function PickDayButtons({ kind, days, onPick, foldedLabel, previousDay }: PickDayButtonsProps) {
   const [picked, setPicked] = useState<string | null>(null)
   const [open, setOpen] = useState(!foldedLabel)
   const [error, setError] = useState<string | null>(null)
@@ -54,9 +57,14 @@ export function PickDayButtons({ kind, days, onPick, foldedLabel }: PickDayButto
   }
   if (picked) {
     return (
-      <p data-slot="pick-day-done" className="text-base text-foreground">
-        {`You're set for ${weekdayOf(picked)}, ${writtenDate(picked)}. We'll text you the window the day before.`}
-      </p>
+      <div data-slot="pick-day-done" className="space-y-1 text-base text-foreground">
+        {previousDay && (
+          <p className="text-sm text-muted-foreground">
+            <s>{`${weekdayOf(previousDay)}, ${writtenDate(previousDay)}`}</s>
+          </p>
+        )}
+        <p>{previousDay ? `Moved to ${weekdayOf(picked)}, ${writtenDate(picked)}. We texted you the new date.` : `You're set for ${weekdayOf(picked)}, ${writtenDate(picked)}. We'll text you the window the day before.`}</p>
+      </div>
     )
   }
   return (
