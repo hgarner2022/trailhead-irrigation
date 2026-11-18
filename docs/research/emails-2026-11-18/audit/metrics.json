@@ -1,0 +1,489 @@
+{
+  "purchase-confirmation": {
+    "subject": "Your 2027 Season Pass is reserved",
+    "htmlBytes": 9529,
+    "h1": 1,
+    "fontSizes": [
+      1,
+      14,
+      15,
+      16,
+      17,
+      22,
+      34
+    ],
+    "buttons": [
+      {
+        "fill": "#FFFFFF",
+        "pad": "12x22",
+        "font": "16",
+        "label": "Add to Google Calendar"
+      },
+      {
+        "fill": "#FFFFFF",
+        "pad": "12x22",
+        "font": "16",
+        "label": "Add to Apple or Outlook calendar"
+      },
+      {
+        "fill": "#FFFFFF",
+        "pad": "12x22",
+        "font": "16",
+        "label": "Add to Google Calendar"
+      },
+      {
+        "fill": "#FFFFFF",
+        "pad": "12x22",
+        "font": "16",
+        "label": "Add to Apple or Outlook calendar"
+      },
+      {
+        "fill": "#B45309",
+        "pad": "12x22",
+        "font": "16",
+        "label": "Open your Trailhead account"
+      }
+    ],
+    "greeting": "Welcome, Andrea.",
+    "preheader": "Your Season Pass for Erie is reserved. We haven't charged you today."
+  },
+  "booking-confirmation": {
+    "subject": "Your sprinkler repair is booked for Wednesday, May 5",
+    "htmlBytes": 5502,
+    "h1": 1,
+    "fontSizes": [
+      1,
+      14,
+      15,
+      16,
+      17,
+      34
+    ],
+    "buttons": [
+      {
+        "fill": "#FFFFFF",
+        "pad": "12x22",
+        "font": "16",
+        "label": "Add to Google Calendar"
+      },
+      {
+        "fill": "#FFFFFF",
+        "pad": "12x22",
+        "font": "16",
+        "label": "Add to Apple or Outlook calendar"
+      },
+      {
+        "fill": "#B45309",
+        "pad": "12x22",
+        "font": "16",
+        "label": "Open your Trailhead account"
+      }
+    ],
+    "greeting": "Hi Andrea, Ryan will be there We",
+    "preheader": "Your sprinkler repair: Wednesday, May 5."
+  },
+  "date-set": {
+    "subject": "Your spring turn-on is Wednesday, May 5",
+    "htmlBytes": 5468,
+    "h1": 1,
+    "fontSizes": [
+      1,
+      14,
+      15,
+      16,
+      17,
+      34
+    ],
+    "buttons": [
+      {
+        "fill": "#FFFFFF",
+        "pad": "12x22",
+        "font": "16",
+        "label": "Add to Google Calendar"
+      },
+      {
+        "fill": "#FFFFFF",
+        "pad": "12x22",
+        "font": "16",
+        "label": "Add to Apple or Outlook calendar"
+      },
+      {
+        "fill": "#B45309",
+        "pad": "12x22",
+        "font": "16",
+        "label": "Open your Trailhead account"
+      }
+    ],
+    "greeting": "Hi Andrea, your spring turn-on i",
+    "preheader": "Your spring turn-on is Wednesday, May 5."
+  },
+  "date-moved": {
+    "subject": "Your spring turn-on moved to Wednesday, May 5",
+    "htmlBytes": 5468,
+    "h1": 1,
+    "fontSizes": [
+      1,
+      14,
+      15,
+      16,
+      17,
+      34
+    ],
+    "buttons": [
+      {
+        "fill": "#FFFFFF",
+        "pad": "12x22",
+        "font": "16",
+        "label": "Add to Google Calendar"
+      },
+      {
+        "fill": "#FFFFFF",
+        "pad": "12x22",
+        "font": "16",
+        "label": "Add to Apple or Outlook calendar"
+      },
+      {
+        "fill": "#B45309",
+        "pad": "12x22",
+        "font": "16",
+        "label": "Open your Trailhead account"
+      }
+    ],
+    "greeting": "Hi Andrea, your spring turn-on m",
+    "preheader": "Your spring turn-on moved to Wednesday, May 5."
+  },
+  "day-before": {
+    "subject": "Tomorrow: your spring turn-on",
+    "htmlBytes": 5521,
+    "h1": 1,
+    "fontSizes": [
+      1,
+      14,
+      15,
+      16,
+      17,
+      34
+    ],
+    "buttons": [
+      {
+        "fill": "#FFFFFF",
+        "pad": "12x22",
+        "font": "16",
+        "label": "Add to Google Calendar"
+      },
+      {
+        "fill": "#FFFFFF",
+        "pad": "12x22",
+        "font": "16",
+        "label": "Add to Apple or Outlook calendar"
+      },
+      {
+        "fill": "#B45309",
+        "pad": "12x22",
+        "font": "16",
+        "label": "Open your Trailhead account"
+      }
+    ],
+    "greeting": "Hi Andrea, a reminder that we're",
+    "preheader": "Tomorrow, Wednesday, May 5: your spring turn-on."
+  },
+  "date-confirm": {
+    "subject": "Your spring turn-on is Wednesday, May 5",
+    "htmlBytes": 5544,
+    "h1": 1,
+    "fontSizes": [
+      1,
+      14,
+      15,
+      16,
+      17,
+      34
+    ],
+    "buttons": [
+      {
+        "fill": "#FFFFFF",
+        "pad": "12x22",
+        "font": "16",
+        "label": "Add to Google Calendar"
+      },
+      {
+        "fill": "#FFFFFF",
+        "pad": "12x22",
+        "font": "16",
+        "label": "Add to Apple or Outlook calendar"
+      },
+      {
+        "fill": "#B45309",
+        "pad": "12x22",
+        "font": "16",
+        "label": "Open your Trailhead account"
+      }
+    ],
+    "greeting": "Hi Andrea, we're confirming your",
+    "preheader": "Your spring turn-on is Wednesday, May 5."
+  },
+  "receipt": {
+    "subject": "Receipt: $178 for your repair at 480 Briggs St",
+    "htmlBytes": 7627,
+    "h1": 1,
+    "fontSizes": [
+      1,
+      14,
+      15,
+      16,
+      17,
+      34
+    ],
+    "buttons": [
+      {
+        "fill": "#B45309",
+        "pad": "12x22",
+        "font": "16",
+        "label": "See this job in your Trailhead account"
+      },
+      {
+        "fill": "#FFFFFF",
+        "pad": "12x22",
+        "font": "16",
+        "label": "View the receipt"
+      }
+    ],
+    "greeting": "Thank you, Andrea. Your repai",
+    "preheader": "Thank you, Andrea. Your repair at 480 Briggs St is paid."
+  },
+  "invoice": {
+    "subject": "Your Trailhead invoice for the repair at 480 Briggs St: $178",
+    "htmlBytes": 7530,
+    "h1": 1,
+    "fontSizes": [
+      1,
+      14,
+      15,
+      16,
+      17,
+      34
+    ],
+    "buttons": [
+      {
+        "fill": "#B45309",
+        "pad": "12x22",
+        "font": "16",
+        "label": "Pay $178"
+      },
+      {
+        "fill": "#FFFFFF",
+        "pad": "12x22",
+        "font": "16",
+        "label": "See this job in your Trailhead account"
+      }
+    ],
+    "greeting": "Hi Andrea, here is your invoice ",
+    "preheader": "Hi Andrea, here is your invoice for the repair at 480 Briggs St: $178, due Friday, May 21."
+  },
+  "invoice-reminder": {
+    "subject": "Your Trailhead invoice, $178, is still unpaid",
+    "htmlBytes": 7524,
+    "h1": 1,
+    "fontSizes": [
+      1,
+      14,
+      15,
+      16,
+      17,
+      34
+    ],
+    "buttons": [
+      {
+        "fill": "#B45309",
+        "pad": "12x22",
+        "font": "16",
+        "label": "Pay $178"
+      },
+      {
+        "fill": "#FFFFFF",
+        "pad": "12x22",
+        "font": "16",
+        "label": "See this job in your Trailhead account"
+      }
+    ],
+    "greeting": "Hi Andrea, a reminder that $178 ",
+    "preheader": "Hi Andrea, a reminder that $178 for the repair is still unpaid, due Friday, May 21."
+  },
+  "card-failed": {
+    "subject": "The card for your spring turn-on didn't go through",
+    "htmlBytes": 3236,
+    "h1": 1,
+    "fontSizes": [
+      1,
+      14,
+      16,
+      17,
+      34
+    ],
+    "buttons": [
+      {
+        "fill": "#B45309",
+        "pad": "12x22",
+        "font": "16",
+        "label": "Update your card"
+      }
+    ],
+    "greeting": "Hi Andrea, your spring turn-on a",
+    "preheader": "Hi Andrea, your spring turn-on at 480 Briggs St is done, but your Visa ending 4242 didn't go through for $145."
+  },
+  "card-expiring": {
+    "subject": "Your Visa ending 4242 expires in July 2027",
+    "htmlBytes": 3072,
+    "h1": 1,
+    "fontSizes": [
+      1,
+      14,
+      16,
+      17,
+      34
+    ],
+    "buttons": [
+      {
+        "fill": "#B45309",
+        "pad": "12x22",
+        "font": "16",
+        "label": "Add a new card"
+      }
+    ],
+    "greeting": "Hi Andrea, the card we have for ",
+    "preheader": "Hi Andrea, the card we have for your visits expires in July 2027, and $190 of visits are still to come. A new card now keeps them on schedule."
+  },
+  "cancelled": {
+    "subject": "Your 2027 Season Pass is canceled",
+    "htmlBytes": 3074,
+    "h1": 1,
+    "fontSizes": [
+      1,
+      14,
+      16,
+      17,
+      34
+    ],
+    "buttons": [
+      {
+        "fill": "#B45309",
+        "pad": "12x22",
+        "font": "16",
+        "label": "Book a visit"
+      }
+    ],
+    "greeting": "Hi Andrea, your 2027 Season Pass",
+    "preheader": "Hi Andrea, your 2027 Season Pass is canceled and your remaining visits are off the schedule. We won't charge you again."
+  },
+  "visit-cancelled": {
+    "subject": "Canceled: your spring turn-on at 480 Briggs St",
+    "htmlBytes": 3082,
+    "h1": 1,
+    "fontSizes": [
+      1,
+      14,
+      16,
+      17,
+      34
+    ],
+    "buttons": [
+      {
+        "fill": "#B45309",
+        "pad": "12x22",
+        "font": "16",
+        "label": "See your visit"
+      }
+    ],
+    "greeting": "Hi Andrea, your spring turn-on a",
+    "preheader": "Hi Andrea, your spring turn-on at 480 Briggs St on Wednesday, May 5 is canceled. Nothing was charged."
+  },
+  "renewal": {
+    "subject": "Reserve your 2028 turn-on and blowout",
+    "htmlBytes": 3096,
+    "h1": 1,
+    "fontSizes": [
+      1,
+      14,
+      16,
+      17,
+      34
+    ],
+    "buttons": [
+      {
+        "fill": "#B45309",
+        "pad": "12x22",
+        "font": "16",
+        "label": "Reserve 2028"
+      }
+    ],
+    "greeting": "Hi Andrea, you can reserve your ",
+    "preheader": "Hi Andrea, you can reserve your Erie spring turn-on and fall blowout for 2028 now and pick your days in the same step."
+  },
+  "not-closed-crew": {
+    "subject": "2 visits still need to be marked done",
+    "htmlBytes": 3480,
+    "h1": 1,
+    "fontSizes": [
+      1,
+      14,
+      15,
+      16,
+      17,
+      34
+    ],
+    "buttons": [
+      {
+        "fill": "#B45309",
+        "pad": "12x22",
+        "font": "16",
+        "label": "Open Home"
+      }
+    ],
+    "greeting": "",
+    "preheader": "2 visits had their day and were not marked done. Nothing charges until they are."
+  },
+  "admin-alert": {
+    "subject": "New Season Pass: Andrea, Erie, 8 zones",
+    "htmlBytes": 2564,
+    "h1": 1,
+    "fontSizes": [
+      1,
+      14,
+      16,
+      17,
+      34
+    ],
+    "buttons": [
+      {
+        "fill": "#B45309",
+        "pad": "12x22",
+        "font": "16",
+        "label": "Open it in the admin"
+      }
+    ],
+    "greeting": "",
+    "preheader": "Andrea in Erie bought a 2027 Season Pass."
+  },
+  "sign-in": {
+    "subject": "Your Trailhead sign-in link",
+    "htmlBytes": 2974,
+    "h1": 1,
+    "fontSizes": [
+      1,
+      14,
+      16,
+      17,
+      34
+    ],
+    "buttons": [
+      {
+        "fill": "#B45309",
+        "pad": "12x22",
+        "font": "16",
+        "label": "Sign in"
+      }
+    ],
+    "greeting": "Hi,",
+    "preheader": "Your sign-in link works once and for ten minutes."
+  }
+}
