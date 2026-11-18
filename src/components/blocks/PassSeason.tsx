@@ -2,8 +2,9 @@ import type { ReactNode } from "react"
 import { cn } from "@/lib/utils"
 import type { Job } from "@/lib/admin/jobs"
 import type { Pass } from "@/lib/admin/types"
-import { JobPill } from "./JobPill"
-import { PANEL_ROW, PanelFacts, PanelHeading, PanelList, PanelRowEnd, PanelRowText } from "./PanelParts"
+import { StatusPills } from "./StatusPill"
+import { RECORD_ROW, RecordFacts, RecordList, RecordRowEnd, RecordRowText } from "./RecordPanel"
+import { SectionHeading } from "./SectionHeading"
 import { PassCard } from "./PassCard"
 import { SeasonLine } from "./SeasonLine"
 
@@ -58,13 +59,13 @@ export interface PassSeasonProps {
 function VisitRow({ visit, onOpen }: { visit: PassSeasonVisit; onOpen?: (id: string) => void }) {
   const inner = (
     <>
-      <PanelRowText title={visit.name} detail={visit.detail} />
-      <PanelRowEnd>
-        <JobPill job={visit.job} />
-      </PanelRowEnd>
+      <RecordRowText title={visit.name} detail={visit.detail} />
+      <RecordRowEnd>
+        <StatusPills job={visit.job} />
+      </RecordRowEnd>
     </>
   )
-  const cls = cn("flex min-h-11 w-full items-center text-left", PANEL_ROW)
+  const cls = cn("flex min-h-11 w-full items-center text-left", RECORD_ROW)
   return visit.id && onOpen ? (
     <button type="button" className={cn(cls, "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50")} onClick={() => onOpen(visit.id!)}>
       {inner}
@@ -79,7 +80,7 @@ export function PassSeason({ pass, today, facts, consent, card, cardAction, pend
     <div data-slot="pass-season" className={cn("flex flex-col gap-6", className)}>
       <div className="flex items-start gap-5">
         <PassCard pass={pass} size="thumb" interactive={false} className="shrink-0" />
-        <PanelFacts rows={facts} className="mt-0" />
+        <RecordFacts rows={facts} className="mt-0" />
       </div>
       {pendingNote && (
         <p data-slot="pass-pending-note" className="text-sm text-muted-foreground">
@@ -101,32 +102,32 @@ export function PassSeason({ pass, today, facts, consent, card, cardAction, pend
         {cardAction}
       </div>
       <section aria-labelledby={`${idPrefix}-visits`}>
-        <PanelHeading id={`${idPrefix}-visits`}>Visits</PanelHeading>
-        <PanelList data-slot="pass-jobs">
+        <SectionHeading id={`${idPrefix}-visits`}>Visits</SectionHeading>
+        <RecordList data-slot="pass-jobs">
           {visits.map((visit, i) => (
             <li key={visit.id ?? `${visit.name}-${i}`}>
               <VisitRow visit={visit} onOpen={onOpenVisit} />
             </li>
           ))}
-        </PanelList>
+        </RecordList>
       </section>
       <section aria-labelledby={`${idPrefix}-season`}>
-        <PanelHeading id={`${idPrefix}-season`}>Season</PanelHeading>
+        <SectionHeading id={`${idPrefix}-season`}>Season</SectionHeading>
         <SeasonLine mode="customer" season={pass.season} visits={pass.visits} today={today} className="mt-3" />
       </section>
       <section aria-labelledby={`${idPrefix}-charges`}>
-        <PanelHeading id={`${idPrefix}-charges`}>Charges</PanelHeading>
-        <PanelList>
+        <SectionHeading id={`${idPrefix}-charges`}>Charges</SectionHeading>
+        <RecordList>
           {charges.map((row) => (
-            <li key={row.name} className={cn("flex items-center", PANEL_ROW)}>
-              <PanelRowText title={row.name} detail={row.when} />
-              <PanelRowEnd>
+            <li key={row.name} className={cn("flex items-center", RECORD_ROW)}>
+              <RecordRowText title={row.name} detail={row.when} />
+              <RecordRowEnd>
                 <span className="block tabular-nums">{row.amount}</span>
                 <span className="block text-muted-foreground">{row.paid}</span>
-              </PanelRowEnd>
+              </RecordRowEnd>
             </li>
           ))}
-        </PanelList>
+        </RecordList>
       </section>
     </div>
   )

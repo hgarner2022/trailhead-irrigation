@@ -1,6 +1,8 @@
 "use client"
 
 import { useId, useState, useTransition, type FormEvent } from "react"
+import { FormRow } from "./FormRow"
+import { SectionHeading } from "./SectionHeading"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { TIME_ZONE, shortDate } from "@/lib/admin/format"
@@ -87,14 +89,11 @@ export function NotesAndHistory({ lines, onAddNote, now, className }: NotesAndHi
 
   return (
     <section aria-labelledby={`${id}-heading`} data-slot="notes-and-history" className={className}>
-      <h3 id={`${id}-heading`} className="font-display text-lg leading-tight text-navy">
-        Notes and history
-      </h3>
+      <SectionHeading id={`${id}-heading`}>Notes and history</SectionHeading>
       <form onSubmit={submit} className="mt-2">
-        <label htmlFor={`${id}-note`} className="mb-1 block text-sm font-medium text-foreground">
-          Add a note
-        </label>
-        <Textarea id={`${id}-note`} value={text} maxLength={NOTE_MAX} rows={3} onChange={(e) => { setText(e.target.value); setNotice("") }} />
+        <FormRow label="Add a note">
+          <Textarea value={text} maxLength={NOTE_MAX} rows={3} onChange={(e) => { setText(e.target.value); setNotice("") }} />
+        </FormRow>
         <Button type="submit" variant="outline" className="mt-2 min-h-11" disabled={pending || !text.trim()}>
           {pending ? "Adding" : "Add note"}
         </Button>

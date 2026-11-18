@@ -1,16 +1,20 @@
 "use client"
 
-import { useId, useState, useTransition } from "react"
+import { useId, useState, useTransition, type ReactNode } from "react"
+import { createPortal } from "react-dom"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { chargingWords, paidWords, receiptLine, type CollectPlan, type PayChoice, type PayOption } from "@/lib/money/collect"
 import { cn } from "@/lib/utils"
+import { FormRow } from "./FormRow"
+import { useFooterSlot } from "./record-slot"
 
 // "How is this paid?": the second beat of a finished visit, in one block for the visit panel and the job panel. Pure props. The
 // choices come from `collectPlan` (the card on file first and selected, the cash ways, an invoice, Pay later only for a customer
 // with no card; there is no Tap to pay row until it is built). Nothing moves money until the one button under the choices is pressed, and
 // each press does exactly one thing: one payment row, or one invoice, or nothing at all for Pay later. A decline says so and
-// offers the other ways; once it has gone through the block says what happened in the words of `words.ts`. Client component.
+// offers the other ways; once it has gone through the block says what happened in the words of `words.ts`. Inside a record panel the
+// one button goes to the panel's footer (`RecordFooter slot`), so beat two reads as the panel's body with the footer's primary; in a dialog it stays under the choices. Client component.
 
 export type Answer = { ok: true } | { ok: false; message: string }
 
@@ -29,6 +33,8 @@ export interface CollectPaymentProps {
   /** Leave it unpaid: nothing is written */
   onLater: () => void
   onClose: () => void
+  /** called once the money has gone through (or the invoice has), so a panel can drop its Cancel and leave the one Close */
+  onSettled?: () => void
   className?: string
 }
 
@@ -38,7 +44,7 @@ function Choice({ option, checked, disabled, onPick }: { option: PayOption; chec
   const title = useId()
   const line = useId()
   return (
-    <label className={RADIO}>
+    <div className={RADIO} onClick={() => !disabled && onPick()}>
       <input type="radio" name="pay-choice" value={option.value} checked={checked} disabled={disabled} onChange={onPick} aria-labelledby={title} aria-describedby={line} className="mt-0.5 size-4 shrink-0 accent-primary" />
       <span className="flex min-w-0 flex-col">
         <span id={title} className="font-medium text-foreground">
@@ -48,11 +54,11 @@ function Choice({ option, checked, disabled, onPick }: { option: PayOption; chec
           {option.line}
         </span>
       </span>
-    </label>
+    </div>
   )
 }
 
-export function CollectPayment({ plan, summary, firstName, onCharge, onRecord, onInvoice, onLater, onClose, className }: CollectPaymentProps) {
+export function CollectPayment({ plan, summary, firstName, onCharge, onRecord, onInvoice, onLater, onClose, onSettled, className }: CollectPaymentProps) {
   const [choice, setChoice] = useState<PayChoice>(plan.initial)
   const [more, setMore] = useState(false)
   const [reference, setReference] = useState("")
@@ -67,9 +73,14 @@ export function CollectPayment({ plan, summary, firstName, onCharge, onRecord, o
   const charging = plan.charging || (pending && picked.value === "card")
   const handed = picked.value === "check" || picked.value === "venmo" || picked.value === "cash"
   const settle = (answer: Answer, done: { title: string; line: string }) => {
-    if (answer.ok) setResult(done)
-    else setProblem(answer.message)
+    if (answer.ok) {
+      setResult(done)
+      onSettled?.()
+    } else setProblem(answer.message)
   }
+  // The one button: in the footer of the panel it is in, else under the choices.
+  const slot = useFooterSlot()
+  const place = (button: ReactNode) => (slot ? createPortal(button, slot) : button)
   const press = () => {
     setProblem("")
     if (picked.value === "later") return onLater()
@@ -88,9 +99,11 @@ export function CollectPayment({ plan, summary, firstName, onCharge, onRecord, o
         <p className="text-sm text-muted-foreground">{summary}</p>
         <p role="status" className="font-display text-2xl text-navy">{result.title}</p>
         <p className="text-sm">{result.line}</p>
-        <Button type="button" className="min-h-11 self-start" onClick={onClose}>
-          Close
-        </Button>
+        {place(
+          <Button type="button" className={cn("min-h-11", !slot && "self-start")} onClick={onClose}>
+            Close
+          </Button>,
+        )}
       </div>
     )
   }
@@ -115,28 +128,24 @@ export function CollectPayment({ plan, summary, firstName, onCharge, onRecord, o
       )}
       {handed && (
         <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label htmlFor="collect-reference" className="mb-1 block text-sm font-medium text-foreground">
-              {picked.value === "check" ? "Check number (optional)" : picked.value === "venmo" ? "Venmo handle (optional)" : "Note (optional)"}
-            </label>
-            <Input id="collect-reference" value={reference} onChange={(e) => setReference(e.target.value)} className="min-h-11" />
-          </div>
+          <FormRow label={picked.value === "check" ? "Check number (optional)" : picked.value === "venmo" ? "Venmo handle (optional)" : "Note (optional)"}>
+            <Input value={reference} onChange={(e) => setReference(e.target.value)} className="min-h-11" />
+          </FormRow>
           {plan.needsAmount && (
-            <div>
-              <label htmlFor="collect-amount" className="mb-1 block text-sm font-medium text-foreground">
-                Amount received
-              </label>
-              <Input id="collect-amount" inputMode="numeric" value={amount} onChange={(e) => setAmount(e.target.value.replace(/\D/g, ""))} placeholder="$" className="min-h-11" />
-            </div>
+            <FormRow label="Amount received">
+              <Input inputMode="numeric" value={amount} onChange={(e) => setAmount(e.target.value.replace(/\D/g, ""))} placeholder="$" className="min-h-11" />
+            </FormRow>
           )}
         </div>
       )}
       <p role="alert" className="text-sm text-destructive empty:hidden">
         {problem}
       </p>
-      <Button type="button" className="min-h-11 w-full sm:w-auto sm:self-start" disabled={busy || (handed && plan.needsAmount && !Number(amount))} onClick={press}>
-        {picked.button}
-      </Button>
+      {place(
+        <Button type="button" className={cn("min-h-11", !slot && "w-full sm:w-auto sm:self-start")} disabled={busy || (handed && plan.needsAmount && !Number(amount))} onClick={press}>
+          {picked.button}
+        </Button>,
+      )}
     </div>
   )
 }
