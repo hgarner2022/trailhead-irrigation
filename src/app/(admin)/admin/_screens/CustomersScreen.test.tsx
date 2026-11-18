@@ -133,7 +133,7 @@ describe("CustomersScreen panel", () => {
     const fold = document.querySelector<HTMLElement>('[data-slot="customer-jobs-list"] details')!
     await userEvent.click(within(fold).getAllByText(/./)[0]!)
     await userEvent.click(within(fold).getAllByRole("button")[0]!)
-    expect(await screen.findByRole("heading", { name: "Customer" })).toBeInTheDocument()
+    expect(await screen.findByRole("heading", { name: "At the property" })).toBeInTheDocument()
     await waitFor(() => expect(screen.getAllByRole("dialog")).toHaveLength(1))
     expect(screen.queryByRole("heading", { name: "Consent history" })).toBeNull()
   })
