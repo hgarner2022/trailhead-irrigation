@@ -1,7 +1,7 @@
-// The invoice, as pure rules: which lines a bill freezes, the tax on them, the status it reads as, and the next number.
+// The invoice, as pure rules: which lines an invoice freezes, the tax on them, the status it reads as, and the next number.
 // No database and no React; the handlers in `src/api/v1/invoices/` write the row and the screens read the words.
 
-/** A line as a job holds it, with the fields a bill copies. */
+/** A line as a job holds it, with the fields an invoice copies. */
 export interface BillableLine {
   name: string
   description?: string | null
@@ -10,18 +10,18 @@ export interface BillableLine {
   unitPrice: number
   taxable: boolean
   cancelledAt?: Date | string | null
-  /** the visit the line is billed after, when it has one */
+  /** the visit the line is invoiced after, when it has one */
   visitId?: string | null
 }
 
-/** A line as the invoice freezes it: a copy, so a later price edit never rewrites a bill that was sent. */
+/** A line as the invoice freezes it: a copy, so a later price edit never rewrites an invoice that was sent. */
 export interface InvoiceLine {
   name: string
   description: string | null
   quantity: number
   unitPrice: number
   taxable: boolean
-  /** the visit it was billed after: what lets a later bill leave out what an earlier one covered */
+  /** the visit it was invoiced after: what lets a later invoice leave out what an earlier one covered */
   visitId?: string | null
 }
 
@@ -44,14 +44,14 @@ export interface InvoiceFacts {
   cancelledAt?: Date | string | null
 }
 
-/** Cancelled, paid, overdue once the day after the due day has come, else sent. A bill is open while it is sent or overdue. */
+/** Canceled, paid, overdue once the day after the due day has come, else sent. An invoice is open while it is sent or overdue. */
 export function invoiceStatus(invoice: InvoiceFacts, today: string): InvoiceStatus {
   if (invoice.cancelledAt) return "cancelled"
   if (invoice.paidOn) return "paid"
   return today > invoice.dueOn ? "overdue" : "sent"
 }
 
-/** Not paid and not cancelled: the bill the job's money reads as Bill sent. */
+/** Not paid and not canceled: the invoice the job's money reads as Invoice sent. */
 export const invoiceOpen = (invoice: Pick<InvoiceFacts, "paidOn" | "cancelledAt">): boolean => !invoice.paidOn && !invoice.cancelledAt
 
 const NUMBER = /^INV-(\d{4})-(\d+)$/

@@ -147,11 +147,11 @@ describe("wording per kind", () => {
     expect(text).toContain("to your Visa ending 4242")
     expect(text).toContain("Your fall blowout is planned for early October.")
   })
-  it("the receipt for a bill paid on the pay page names the bill, its lines, the tax only when there is tax, a credit as a minus and the card", () => {
+  it("the receipt for an invoice paid on the pay page names the invoice, its lines, the tax only when there is tax, a credit as a minus and the card", () => {
     const bill = { ...base, passNumber: null, amount: 224, invoiceNumber: "INV-2027-0001", lines: [{ name: "Repair", amount: 145 }, { name: "Extra zones", amount: 20 }, { name: "Payments received", amount: -45 }], tax: 9, total: 224, card: "Visa ending 4242", nextLine: "", receiptUrl: "https://pay.stripe.com/r/2" }
     const { subject, text, html } = renderEmail("receipt", bill)!
-    expect(subject).toBe("Receipt: $224 for your bill INV-2027-0001")
-    expect(text).toContain("We received $224 for your bill INV-2027-0001.")
+    expect(subject).toBe("Receipt: $224 for your invoice INV-2027-0001")
+    expect(text).toContain("We received $224 for your invoice INV-2027-0001.")
     expect(text).toContain("Repair: $145")
     expect(text).toContain("Payments received: -$45")
     expect(text).toContain("Tax: $9")
@@ -161,9 +161,9 @@ describe("wording per kind", () => {
     copyRules(text)
     expect(renderEmail("receipt", { ...bill, tax: 0 })!.text).not.toContain("Tax:")
   })
-  it("the bill names the lines, the total, the due day and one Pay button, with a tax line only when there is tax", () => {
+  it("the invoice names the lines, the total, the due day and one Pay button, with a tax line only when there is tax", () => {
     const { subject, text, html } = get("invoice")
-    expect(subject).toBe("Your bill from Trailhead: $145")
+    expect(subject).toBe("Your invoice from Trailhead: $145")
     expect(text).toContain("Repair: $145")
     expect(text).toContain("Total: $145")
     expect(text).toContain("Due: Friday, May 21")
@@ -173,16 +173,16 @@ describe("wording per kind", () => {
     expect(html).toContain(">Pay $145<")
     expect(html.match(/Pay \$145/g)).toHaveLength(1)
     const taxed = renderEmail("invoice", { ...INVOICE, lines: [{ name: "Repair", amount: 145 }, { name: "Spring turn-on", amount: 100 }], amount: 245, tax: 12, total: 257 })!
-    expect(taxed.subject).toBe("Your bill from Trailhead: $257")
+    expect(taxed.subject).toBe("Your invoice from Trailhead: $257")
     expect(taxed.text).toContain("Tax: $12")
     expect(taxed.html).toMatch(/\bTax\b/)
     expect(taxed.html).toContain(">Pay $257<")
   })
   it("the reminder is the same bill under a reminder heading", () => {
     const { subject, text, html } = get("invoice-reminder")
-    expect(subject).toBe("A reminder: your bill from Trailhead, $145")
+    expect(subject).toBe("A reminder: your invoice from Trailhead, $145")
     expect(html).toContain("A reminder")
-    expect(text).toContain("a reminder that your bill for the repair, $145, is due Friday, May 21")
+    expect(text).toContain("a reminder that your invoice for the repair, $145, is due Friday, May 21")
     expect(text).toContain(`Pay here: ${origin}/pay/inv1?token=abc`)
   })
   it("card-failed and card-expiring carry the update link and the amount", () => {

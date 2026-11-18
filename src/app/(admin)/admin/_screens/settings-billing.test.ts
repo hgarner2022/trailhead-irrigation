@@ -12,7 +12,7 @@ describe("setBilling", () => {
   it("changes the due days and logs it in words", () => {
     const next = setBilling(state(), "dueDays", 30, actor)
     expect(next.settings.billing.dueDays).toBe(30)
-    expect(next.changes).toMatchObject([{ field: "Bills are due in", from: "14 days", to: "30 days", who: "Hannah" }])
+    expect(next.changes).toMatchObject([{ field: "Invoices are due in", from: "14 days", to: "30 days", who: "Hannah" }])
   })
   it("refuses days that are not whole, below zero or above 120, and a value that did not change", () => {
     const s = state()

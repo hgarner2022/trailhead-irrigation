@@ -3,8 +3,8 @@ import { cn } from "@/lib/utils"
 import { StatusPill } from "./StatusPill"
 
 // A visit's two pills (owner, 14 Nov): WORK says what happened to the stop (Unscheduled, Scheduled, Done, Not done
-// with its reason after the pill, "Not done · no water on", Cancelled) and MONEY says whether it was paid (nothing until the visit is done, then Paid with
-// how, Owed, Bill sent, Failed, all read from the payment rows by src/lib/money/words.ts), so it is obvious at a glance that money was collected. A Scheduled visit whose day has passed keeps its state and
+// with its reason after the pill, "Not done · no water on", Canceled) and MONEY says whether it was paid (nothing until the visit is done, then Paid with
+// how, Unpaid, Invoice sent, Failed, all read from the payment rows by src/lib/money/words.ts), so it is obvious at a glance that money was collected. A Scheduled visit whose day has passed keeps its state and
 // gains a small "day passed" note. Named JobPill from step zero and kept so no import churns; it renders a
 // visit's states. Pure render, server component.
 

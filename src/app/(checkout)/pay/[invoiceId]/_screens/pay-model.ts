@@ -1,6 +1,6 @@
 import { monthDay } from "@/emails/format"
 
-/** What the pay page shows of one bill: the shape `invoices.payView` returns, nothing more (no contact details, no other record's id). */
+/** What the pay page shows of one invoice: the shape `invoices.payView` returns, nothing more (no contact details, no other record's id). */
 export interface PayBill {
   number: string
   firstName: string

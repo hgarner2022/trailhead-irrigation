@@ -1,5 +1,5 @@
 // The money words, read from the payment rows: pure, no database. A job is Paid when its succeeded payments equal its
-// total and Owed with the number otherwise; a refund is a negative row. The screens (task 4.2) read these, never a flag.
+// total and Unpaid with the number otherwise; a refund is a negative row. The screens (task 4.2) read these, never a flag.
 import { jobTotal, type PricedLine } from "@/lib/jobs/lines"
 import type { TaxRule } from "@/lib/jobs/tax"
 
@@ -7,7 +7,7 @@ export { jobTotal }
 export { jobSubtotal, jobTax, visitTax, type TaxRule } from "@/lib/jobs/tax"
 
 /** The words for how a payment came, as the pill's suffix and the receipt say them. */
-export const METHOD_WORDS: Record<string, string> = { card_on_file: "card", card_now: "card", check: "check", venmo: "Venmo", cash: "cash", bill: "bill" }
+export const METHOD_WORDS: Record<string, string> = { card_on_file: "card", card_now: "card", check: "check", venmo: "Venmo", cash: "cash", bill: "invoice" }
 
 /** The payment-row facts the words are read from. `amount` is whole dollars, negative for a refund. */
 export interface MoneyPayment {
@@ -44,9 +44,9 @@ export interface AllocVisit {
 }
 
 /**
- * Where a job's payments on the job as a whole (`visitId` null: a bill paid on the pay page is one) go among its visits, the one
+ * Where a job's payments on the job as a whole (`visitId` null: an invoice paid on the pay page is one) go among its visits, the one
  * rule every visit-level word reads. Each such payment's net (refunds that name it, or the newest unlinked refund, taken off) covers
- * the job's done visits, each up to its price less what its own rows already paid: first the visits the paid bills name
+ * the job's done visits, each up to its price less what its own rows already paid: first the visits the paid invoices name
  * (`preferred`, in order), then the oldest done visit first. A cancelled visit or one not yet done takes nothing. Returns, per
  * visit, the slices of those payments it was credited: copies of the payment with the visit's id and the slice's amount, and an
  * id of `<paymentId>@<visitId>` so a slice is never taken for a row of its own. The slices are for words and visit-level sums
@@ -86,7 +86,7 @@ export function allocateJobPayments<P extends MoneyPayment>(payments: readonly P
   return out
 }
 
-/** What is still owed on a job: its live lines with their sales tax (`rule`) less what arrived, never below zero. */
+/** What is still unpaid on a job: its live lines with their sales tax (`rule`) less what arrived, never below zero. */
 export function jobOwed(lines: readonly PricedLine[], payments: readonly Pick<MoneyPayment, "amount" | "status">[], rule: TaxRule): number {
   return Math.max(0, jobTotal(lines, rule) - paidTotal(payments))
 }
@@ -95,17 +95,17 @@ export interface JobMoney {
   paid: number
   total: number
   owed: number
-  /** "Paid", "Bill sent", "$115 owed", "2 of 3 paid, $115 owed", or "" for a job with no price and no money */
+  /** "Paid", "Invoice sent", "$115 unpaid", "2 of 3 paid, $115 unpaid", or "" for a job with no price and no money */
   words: string
-  /** the job owes money and an open bill (sent or overdue, not paid, not cancelled) was sent for it; the words read "Bill sent" */
+  /** the job owes money and an open invoice (sent or overdue, not paid, not canceled) was sent for it; the words read "Invoice sent" */
   billSent: boolean
 }
 
 /**
- * The money summary of a job across its visits; a cancelled visit is not counted. The job's total includes its sales tax (`rule`).
+ * The money summary of a job across its visits; a canceled visit is not counted. The job's total includes its sales tax (`rule`).
  * A visit counts as paid by `isPaid`, its own rows against its price (`price`, from its lines with their tax; a part-paid visit
  * is not paid), as every screen reads it. A job that owes
- * money and has an open `invoice` reads "Bill sent": the customer has the bill, and an overdue one still reads so (Home
+ * money and has an open `invoice` reads "Invoice sent": the customer has the invoice, and an overdue one still reads so (Home
  * carries the overdue row).
  */
 export function jobMoney(
@@ -121,12 +121,12 @@ export function jobMoney(
   const owed = Math.max(0, total - paid)
   if (total === 0 && paid === 0) return { paid, total, owed, words: "", billSent: false }
   if (owed === 0) return { paid, total, owed, words: "Paid", billSent: false }
-  if (invoice && !invoice.paidOn && !invoice.cancelledAt) return { paid, total, owed, words: "Bill sent", billSent: true }
+  if (invoice && !invoice.paidOn && !invoice.cancelledAt) return { paid, total, owed, words: "Invoice sent", billSent: true }
   const live = visits.filter((v) => !v.cancelled)
   // A visit is paid by its own rows and by its share of the payments made on the job as a whole (`allocateJobPayments`).
   const credit = allocateJobPayments(payments, live.map((v) => ({ id: v.id, done: Boolean(v.done), price: v.price ?? 0, doneOn: v.doneOn })), paidBillVisitIds)
   const paidVisits = live.filter((v) => isPaid([...payments.filter((p) => p.visitId === v.id), ...(credit.get(v.id) ?? [])], v.price)).length
-  return { paid, total, owed, words: live.length > 1 && paidVisits > 0 ? `${paidVisits} of ${live.length} paid, $${owed} owed` : `$${owed} owed`, billSent: false }
+  return { paid, total, owed, words: live.length > 1 && paidVisits > 0 ? `${paidVisits} of ${live.length} paid, $${owed} unpaid` : `$${owed} unpaid`, billSent: false }
 }
 
 export type VisitMoneyState = "not-yet" | "paid" | "failed" | "bill-sent" | "owed"
@@ -138,9 +138,9 @@ export interface MoneyInvoice {
 }
 
 /**
- * The money pill of one visit: nothing until it is done, then Paid with how, Failed, Bill sent or Owed. Paid takes the whole
- * price (`price`; a part-paid visit is Owed) and still shows once the visit is cancelled or skipped, since the money is held;
- * a cancelled visit with nothing paid says nothing. `invoice` is the open bill the visit's lines are on, if any.
+ * The money pill of one visit: nothing until it is done, then Paid with how, Failed, Invoice sent or Unpaid. Paid takes the whole
+ * price (`price`; a part-paid visit is Unpaid) and still shows once the visit is canceled or skipped, since the money is held;
+ * a canceled visit with nothing paid says nothing. `invoice` is the open invoice the visit's lines are on, if any.
  */
 export function visitMoney(
   visit: { id: string; done: boolean; cancelled?: boolean; cardFailed?: boolean; price?: number | null },
@@ -157,6 +157,6 @@ export function visitMoney(
   }
   const last = own[own.length - 1]
   if (last?.status === "failed" || (visit.cardFailed && succeeded.length === 0)) return { state: "failed", label: "Failed" }
-  if (invoice && !invoice.paidOn && !invoice.cancelledAt) return { state: "bill-sent", label: "Bill sent" }
-  return { state: "owed", label: "Owed" }
+  if (invoice && !invoice.paidOn && !invoice.cancelledAt) return { state: "bill-sent", label: "Invoice sent" }
+  return { state: "owed", label: "Unpaid" }
 }

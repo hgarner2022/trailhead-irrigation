@@ -23,7 +23,7 @@ export interface TodayVisitRowProps {
   work: WorkState
   workLabel: string
   money: MoneyState
-  /** "Paid, Venmo", "$95 owed", "Bill sent": only on a Done visit */
+  /** "Paid, Venmo", "$95 unpaid", "Invoice sent": only on a Done visit */
   moneyWord: string
   /** the visit's place in its person's day, shown before the window when the list is by person */
   route?: number

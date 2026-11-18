@@ -128,7 +128,7 @@ export async function setPass(
 /**
  * Builds a Season Pass job for a customer the fixtures already hold (the one helper tests use where they once inserted a `season_pass`
  * row): the job with its season, number and sold day, its turn-on and blowout visits (and the inspection when asked) priced per zone,
- * and their lines. `status` says whether it is pending (no sold day), active or cancelled.
+ * and their lines. `status` says whether it is pending (no sold day), active or canceled.
  */
 export async function passFixture(
   db: TestDb,

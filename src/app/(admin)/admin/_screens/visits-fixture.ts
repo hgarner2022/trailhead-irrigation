@@ -23,7 +23,7 @@ export const YARD: Yard = {
   contactName: "Dana", contactPhone: "+13035550111", notes: "Clay soil by the fence",
 }
 
-/** The bill the office sent Ben for his repair: due two weeks after it went out, with the customer's pay link. */
+/** The invoice the office sent Ben for his repair: due two weeks after it went out, with the customer's pay link. */
 export const BEN_BILL: AdminInvoice = {
   id: "inv-ben", jobId: "job-g", number: "INV-2026-0001", amount: 145, tax: 0, total: 145, sentOn: "2026-11-10", dueOn: "2026-11-24", status: "sent", visitIds: ["office-billed"],
   payUrl: "https://www.trailheadirrigation.com/pay/inv-ben?token=story",
@@ -105,7 +105,7 @@ const jobs: SoldJob[] = [...new Set(allVisits.map((v) => v.jobId).filter((id): i
     const line = lineForVisitKind(v.kind, v.price ?? 0, pass?.zones)
     return { id: `line-${v.id}`, name: line.name, ...(line.description ? { description: line.description } : {}), quantity: 1, unitPrice: line.unitPrice, taxable: false, visitId: v.id }
   })
-  // The money of an office job is read from its lines, its payment rows and its open bill, as the live data does (a pass is charged to its card and left out).
+  // The money of an office job is read from its lines, its payment rows and its open invoice, as the live data does (a pass is charged to its card and left out).
   const invoice = mine.find((v) => v.invoice)?.invoice
   const payments = mine.flatMap((v) => v.payments ?? [])
   const money = pass ? undefined : jobMoney(lines.map((l) => ({ quantity: l.quantity, unitPrice: l.unitPrice, taxable: l.taxable, cancelledAt: null })), payments, mine.map((v) => ({ id: v.id, price: v.price })), NO_TAX, invoice ? {} : undefined)

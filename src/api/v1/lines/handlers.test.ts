@@ -38,7 +38,7 @@ describe("lines.add", () => {
     expect(row!.serviceId).toBe(service!.id)
   })
 
-  it("writes the job's story: one event for each line added, changed and cancelled, who did it and what it was", async () => {
+  it("writes the job's story: one event for each line added, changed and canceled, who did it and what it was", async () => {
     const v = await install()
     const line = await callApi(as(), linesAdd, { jobId: v.jobId, name: "Sensor", quantity: 2, unitPrice: 50 })
     await callApi(as(), linesUpdate, { id: line.id, unitPrice: 60 })
@@ -63,7 +63,7 @@ describe("lines.add", () => {
     await expect(callApi(as(), linesAdd, { jobId: "nope", name: "x" })).rejects.toMatchObject({ code: "not_found" })
   })
 
-  it("is refused on a cancelled job, on a job paid in full and on a Season Pass", async () => {
+  it("is refused on a canceled job, on a job paid in full and on a Season Pass", async () => {
     const gone = await callApi(as(), visitsCreate, { customerId: "c100", kind: "repair", price: 145 })
     await callApi(as(), visitsCancel, { id: gone.id })
     await expect(callApi(as(), linesAdd, { jobId: gone.jobId, name: "More" })).rejects.toMatchObject({ code: "unprocessable" })

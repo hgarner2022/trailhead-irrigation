@@ -69,7 +69,7 @@ describe("migration 0014: line items backfill", () => {
     await client.exec(`UPDATE visit SET status = 'skipped' WHERE id = 'p9-blowout'`)
     await client.exec(`INSERT INTO customer (id, organization_id, first_name) VALUES ('c-x', '${org}', 'B')`)
     await client.exec(`INSERT INTO property (id, organization_id, customer_id, address, town) VALUES ('pr-x', '${org}', 'c-x', '2 Main', 'Erie')`)
-    // One-off jobs: a repair, an unpriced other, an install, a cancelled repair, and a repair whose first visit names a blowout service.
+    // One-off jobs: a repair, an unpriced other, an install, a canceled repair, and a repair whose first visit names a blowout service.
     await client.exec(
       `INSERT INTO job (id, organization_id, customer_id, property_id, kind, price, source, status, cancelled_at) VALUES
         ('j-repair', '${org}', 'c-x', 'pr-x', 'repair', 145, 'office', 'active', NULL),
@@ -336,7 +336,7 @@ describe("migration 0021: the expand step", () => {
     await client.exec(
       `INSERT INTO message_log (id, organization_id, customer_id, channel, kind, key, "to", body) VALUES
         ('m1', 'o', 'c', 'email', 'purchase-confirmation', 'p', 'a@example.com', 'Thanks'),
-        ('m2', 'o', 'c', 'email', 'cancelled', 'p', 'a@example.com', 'Cancelled'),
+        ('m2', 'o', 'c', 'email', 'cancelled', 'p', 'a@example.com', 'Canceled'),
         ('m3', 'o', 'c', 'sms', 'day-before', 'p', '+1', 'Tomorrow'),
         ('m4', 'o', 'c3', 'email', 'purchase-confirmation', 'pp', 'c@example.com', 'Taken'),
         ('m5', 'o', 'c3', 'email', 'purchase-confirmation', 'job_pp', 'c@example.com', 'Already on the job id')`,
@@ -405,7 +405,7 @@ describe("migration 0021: the expand step", () => {
     const messages = await q<{ id: string; key: string }>(`SELECT id, key FROM message_log ORDER BY id`)
     expect(messages).toEqual([{ id: "m1", key: "job_p" }, { id: "m2", key: "job_p" }, { id: "m3", key: "p" }, { id: "m4", key: "pp" }, { id: "m5", key: "job_pp" }])
 
-    // Lines: a priced visit with none gets one named in the words of the app, a cancelled or skipped visit's line is cancelled, a lined or free visit gets nothing.
+    // Lines: a priced visit with none gets one named in the words of the app, a canceled or skipped visit's line is canceled, a lined or free visit gets nothing.
     const lines = await q<{ id: string; job_id: string; visit_id: string | null; name: string; description: string | null; unit_price: number; taxable: boolean; cancelled: boolean; service_id: string | null }>(
       `SELECT id, job_id, visit_id, name, description, unit_price, taxable, cancelled_at IS NOT NULL AS cancelled, service_id FROM line_item WHERE id NOT LIKE 'line_job_qr_%' ORDER BY id`,
     )
@@ -524,7 +524,7 @@ describe("migration 0021: the expand step", () => {
     expect(await q(`SELECT legacy_pass_id, to_char(sold_on, 'YYYY-MM-DD') AS sold_on, cancelled_at IS NULL AS open FROM job WHERE id = 'job_old'`)).toEqual([{ legacy_pass_id: "old-pass", sold_on: today, open: true }])
     await client.exec(`UPDATE season_pass SET cancelled_at = '2027-06-01T12:00:00Z', status = 'cancelled' WHERE id = 'old-pass'`)
     expect(await q(`SELECT to_char(cancelled_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS cancelled_at FROM job WHERE id = 'job_old'`)).toEqual([{ cancelled_at: "2027-06-01T12:00:00Z" }])
-    // A job that is already cancelled keeps its own day.
+    // A job that is already canceled keeps its own day.
     await client.exec(`UPDATE job SET cancelled_at = '2027-05-01T12:00:00Z' WHERE id = 'job_old'`)
     await client.exec(`UPDATE season_pass SET cancelled_at = '2027-07-01T12:00:00Z' WHERE id = 'old-pass'`)
     expect(await q(`SELECT to_char(cancelled_at AT TIME ZONE 'UTC', 'YYYY-MM-DD') AS d FROM job WHERE id = 'job_old'`)).toEqual([{ d: "2027-05-01" }])

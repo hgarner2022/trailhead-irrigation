@@ -8,8 +8,8 @@ import { getStripe } from "@/lib/stripe/client"
 import { startBillPayment, type StartBillPayment } from "@/lib/stripe/invoice-checkout"
 
 /**
- * The pay page's button: checks the signed link again, then sends the customer to Stripe's card form for the bill (in
- * `src/lib/stripe/invoice-checkout.ts`, tested without Next). A bill that is paid or cancelled, or a form that would not open,
+ * The pay page's button: checks the signed link again, then sends the customer to Stripe's card form for the invoice (in
+ * `src/lib/stripe/invoice-checkout.ts`, tested without Next). An invoice that is paid or canceled, or a form that would not open,
  * answers one sentence for the page to show; success redirects and never returns.
  */
 export async function startPayment(invoiceId: string, token: string): Promise<{ message: string } | undefined> {

@@ -16,14 +16,14 @@ const state = (over: Partial<Job>): Job => ({ state: "needs-a-day", notClosed: f
 const done = state({ state: "charged", work: "done", money: "paid", moneyLabel: "Paid, card", workLabel: "Done" })
 const booked = state({ state: "scheduled", work: "scheduled", workLabel: "Scheduled", day: "2027-05-04" })
 const open = state({})
-const gone = state({ state: "cancelled", work: "cancelled", workLabel: "Cancelled" })
+const gone = state({ state: "cancelled", work: "cancelled", workLabel: "Canceled" })
 
 const facts = (pass: Pass, status: string, money?: string): [string, string][] => [["Town", pass.town], ["Zones", String(pass.zones)], ["Status", status], ...(money ? ([["Money", money]] as [string, string][]) : [])]
 
 const props = (pass: Pass, status: string, visits: PassSeasonProps["visits"], extra: Partial<PassSeasonProps> = {}): PassSeasonProps => ({
   ...base,
   pass,
-  facts: facts(pass, status, "$145 owed"),
+  facts: facts(pass, status, "$145 unpaid"),
   consent: "Terms 2026-11 accepted Nov 2. Marketing: email and text.",
   card: "Card ending 4242, expires 08/28",
   visits,
@@ -58,14 +58,14 @@ export const Pending: Story = {
   args: props(passes[12]!, "Pending", [{ name: "Turn-on", job: open }, { name: "Blowout", job: open }], { pendingNote: "Checkout not finished, expires after an hour.", card: "No card yet", facts: facts(passes[12]!, "Pending"), onOpenVisit: undefined }),
 }
 
-/** A cancelled pass: its visits are Cancelled. */
-export const Cancelled: Story = {
-  args: props(passes[8]!, "Cancelled", [{ id: "c1", name: "Turn-on", job: gone }, { id: "c2", name: "Blowout", job: gone }], { facts: facts(passes[8]!, "Cancelled", "") }),
+/** A cancelled pass: its visits are Canceled. */
+export const Canceled: Story = {
+  args: props(passes[8]!, "Canceled", [{ id: "c1", name: "Turn-on", job: gone }, { id: "c2", name: "Blowout", job: gone }], { facts: facts(passes[8]!, "Canceled", "") }),
 }
 
 /** An earlier season, as the Customers panel folds it under "2026 season": every visit done and paid. */
 export const PastSeason: Story = {
-  args: props({ ...passes[1]!, season: 2026 }, "Lapsed", [{ id: "p1", name: "Turn-on", detail: "Apr 22, Ryan Garner", job: done }, { id: "p2", name: "Blowout", detail: "Oct 20, Ryan Garner", job: done }], { today: "2027-01-12T19:56:30Z", facts: facts(passes[1]!, "Lapsed", "Paid") }),
+  args: props({ ...passes[1]!, season: 2026 }, "Expired", [{ id: "p1", name: "Turn-on", detail: "Apr 22, Ryan Garner", job: done }, { id: "p2", name: "Blowout", detail: "Oct 20, Ryan Garner", job: done }], { today: "2027-01-12T19:56:30Z", facts: facts(passes[1]!, "Expired", "Paid") }),
 }
 
 /** Send card link sits beside the card line for a pass that has no card. */

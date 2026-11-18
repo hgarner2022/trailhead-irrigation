@@ -74,13 +74,13 @@ describe("activatePass", () => {
     expect((await passJobOf(db, pass.id)).soldOn).toBe("2026-12-01")
   })
 
-  it("refuses a session that belongs to a different pass, and a cancelled pass", async () => {
+  it("refuses a session that belongs to a different pass, and a canceled pass", async () => {
     const a = await pending()
     const b = await pending()
     const { stripe } = stubStripe({ sessions: { cs_b: completeSession("cs_b", { purpose: "pass-setup", passId: b.id }) } })
     await expect(activatePass(db, stripe, a.id, "cs_b", NOW)).rejects.toThrow("different pass")
     await db.update(s.job).set({ cancelledAt: NOW }).where(eq(s.job.id, b.id))
-    await expect(activatePass(db, stripe, b.id, "cs_b", NOW)).rejects.toThrow("cancelled")
+    await expect(activatePass(db, stripe, b.id, "cs_b", NOW)).rejects.toThrow("canceled")
     expect((await passJobOf(db, b.id)).soldOn).toBeNull()
   })
 })

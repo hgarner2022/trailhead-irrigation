@@ -107,21 +107,21 @@ describe("CustomersScreen panel", () => {
     expect(jobs.getByText("Season Pass TH-2027-0014")).toBeInTheDocument()
   })
 
-  it("has a Bills section for a done job that owes money (Send a bill) and for one with a bill out (Remind and the pay link), and not for a tech", () => {
+  it("has a Bills section for a done job that owes money (Send an invoice) and for one with an invoice out (Remind and the pay link), and not for a tech", () => {
     const visit = { id: "bv", clientId: "c100", clientName: "Andrea Dalton", town: "Erie" as const, kind: "repair" as const, status: "completed" as const, isPass: false, jobberUrl: "", jobId: "bj", completedOn: "2026-11-10", scheduledOn: "2026-11-10", startAt: "2026-11-10T15:00:00Z", price: 145 }
-    const job = { id: "bj", customerId: "c100", kind: "repair" as const, status: "open" as const, source: "office" as const, visitIds: ["bv"], total: 145, lines: [{ id: "bl", name: "Repair", quantity: 1, unitPrice: 145, taxable: false, visitId: "bv" }], payments: [], money: { paid: 0, total: 145, owed: 145, words: "$145 owed" } }
+    const job = { id: "bj", customerId: "c100", kind: "repair" as const, status: "open" as const, source: "office" as const, visitIds: ["bv"], total: 145, lines: [{ id: "bl", name: "Repair", quantity: 1, unitPrice: 145, taxable: false, visitId: "bv" }], payments: [], money: { paid: 0, total: 145, owed: 145, words: "$145 unpaid" } }
     const owed: AdminData = { ...data, visits: [...data.visits, visit], jobs: [job] }
     const send = vi.fn().mockResolvedValue({ ok: true, data: undefined })
     const { unmount } = render(<CustomersScreen data={owed} today={TODAY} defaultSelectedId="c100" actions={{ sendBill: send } as never} />)
     const section = () => within(document.querySelector<HTMLElement>('[data-slot="customer-bills"]')!)
-    expect(section().getByText("Repair, $145 owed")).toBeInTheDocument()
-    expect(section().getByRole("button", { name: "Send a bill" })).toBeInTheDocument()
+    expect(section().getByText("Repair, $145 unpaid")).toBeInTheDocument()
+    expect(section().getByRole("button", { name: "Send an invoice" })).toBeInTheDocument()
     unmount()
 
     const invoice = { id: "bi", jobId: "bj", number: "INV-2026-0003", amount: 145, tax: 0, total: 145, sentOn: "2026-11-17", dueOn: "2026-12-01", status: "sent" as const, visitIds: ["bv"], payUrl: "https://site.test/pay/bi?token=t" }
-    const billed: AdminData = { ...owed, visits: [...data.visits, { ...visit, invoice }], jobs: [{ ...job, invoice, money: { ...job.money, words: "Bill sent", billSent: true } }] }
+    const billed: AdminData = { ...owed, visits: [...data.visits, { ...visit, invoice }], jobs: [{ ...job, invoice, money: { ...job.money, words: "Invoice sent", billSent: true } }] }
     const second = render(<CustomersScreen data={billed} today={TODAY} defaultSelectedId="c100" />)
-    expect(section().getByText("Bill sent Nov 17, due Dec 1")).toBeInTheDocument()
+    expect(section().getByText("Invoice sent Nov 17, due Dec 1")).toBeInTheDocument()
     expect(section().getByRole("button", { name: "Remind" })).toBeInTheDocument()
     expect(section().getByRole("link", { name: "Pay link" })).toHaveAttribute("href", "https://site.test/pay/bi?token=t")
     second.unmount()

@@ -59,7 +59,7 @@ describe("lineTotal and jobTotal", () => {
     expect(lineTotal(line({ quantity: 3, unitPrice: 40 }))).toBe(120)
   })
 
-  it("counts a cancelled line as nothing", () => {
+  it("counts a canceled line as nothing", () => {
     expect(lineTotal(line({ cancelledAt: new Date("2027-05-01T00:00:00Z") }))).toBe(0)
     expect(jobTotal([line({ unitPrice: 145 }), line({ unitPrice: 95, cancelledAt: new Date() }), line({ unitPrice: 20, quantity: 2 })], NO_TAX)).toBe(185)
   })

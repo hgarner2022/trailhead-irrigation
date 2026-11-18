@@ -14,7 +14,7 @@ import type { MonthTotal, Pass, PassVisit, Quote, SoldJob, Visit } from "./types
 const MONTHS = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"]
 const MONTH_BY_NAME = new Map(MONTHS.flatMap((name, i) => [[name, i + 1], [name.slice(0, 3), i + 1]]))
 
-/** A lapsed or cancelled pass is no longer a commitment, so it counts nowhere; money collected on a pass that later lapsed will be its own metric if Hannah wants it. */
+/** A lapsed or canceled pass is no longer a commitment, so it counts nowhere; money collected on a pass that later lapsed will be its own metric if Hannah wants it. */
 const counts = (p: Pass) => p.status === "active"
 
 const dayFormatters = new Map<string, Intl.DateTimeFormat>()
@@ -118,8 +118,8 @@ export function quotesAwaiting(quotes: Quote[]): { count: number; total: number 
 }
 
 /**
- * Our own bills past their due day: each job's open bill (`SoldJob.invoice` is only ever sent or overdue, never paid or cancelled)
- * whose `dueOn` is before `today`, counted once per bill, by the bill's total. Home's money line, the Reports tile and the
+ * Our own invoices past their due day: each job's open invoice (`SoldJob.invoice` is only ever sent or overdue, never paid or canceled)
+ * whose `dueOn` is before `today`, counted once per invoice, by the invoice's total. Home's money line, the Reports tile and the
  * overdue rows all read this rule.
  */
 export function billsOverdue(jobs: SoldJob[] | undefined, today: string, timeZone?: string): { count: number; total: number } {
@@ -128,8 +128,8 @@ export function billsOverdue(jobs: SoldJob[] | undefined, today: string, timeZon
 }
 
 /**
- * Our own bills (the `invoice` table) that are open (not paid, not cancelled) and whose `due_on` is before today, counted once per
- * bill, by the bill's total. `today` is a Mountain calendar day or an instant, read as the day it is in `timeZone` (Denver unless
+ * Our own invoices (the `invoice` table) that are open (not paid, not canceled) and whose `due_on` is before today, counted once per
+ * invoice, by the invoice's total. `today` is a Mountain calendar day or an instant, read as the day it is in `timeZone` (Denver unless
  * said otherwise); `dueOn` is already a Mountain calendar day. The Jobber mirror's invoices are not read.
  */
 export function invoicesOverdue(invoices: readonly { total: number; dueOn: string; paidOn?: string | null; cancelledAt?: Date | string | null }[], today: string, timeZone = "America/Denver"): { count: number; total: number } {

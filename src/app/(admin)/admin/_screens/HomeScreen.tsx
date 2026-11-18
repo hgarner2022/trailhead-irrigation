@@ -54,7 +54,7 @@ export function HomeScreen({ data, today, readOnly = false, onAttentionAction, o
             { label: "Today", value: formatMoney(money.today) },
             { label: "Done", value: formatMoney(money.done) },
             { label: "Ahead", value: formatMoney(money.ahead) },
-            { label: "Owed", value: formatMoney(money.owed) },
+            { label: "Unpaid", value: formatMoney(money.owed) },
           ]}
           scheduleHref={`/admin/schedule?day=${view.day}`}
           className="mb-6"

@@ -149,7 +149,7 @@ describe("PassCard at full size", () => {
     expect(spy.window()).toContain("resize")
   })
 
-  it("attaches no listeners when not interactive, nor for a cancelled pass", () => {
+  it("attaches no listeners when not interactive, nor for a canceled pass", () => {
     const spy = listeners()
     const { unmount } = render(<PassCard pass={pass} interactive={false} />)
     expect(spy.card()).toEqual([])
@@ -209,12 +209,12 @@ describe("PassCard at full size", () => {
     expect(spy.window()).not.toContain("deviceorientation")
   })
 
-  it("reads cancelled in the band and greys the artwork", () => {
+  it("reads canceled in the band and greys the artwork", () => {
     render(<PassCard pass={cancelled} />)
-    expect(screen.getByText("Cancelled")).toBeInTheDocument()
+    expect(screen.getByText("Canceled")).toBeInTheDocument()
     expect(screen.queryByText("Turn-on")).not.toBeInTheDocument()
     expect(card().querySelector("img")?.className).toContain("grayscale")
-    expect(card().getAttribute("aria-label")).toBe("Season Pass 2027 for Andrea, Erie, cancelled")
+    expect(card().getAttribute("aria-label")).toBe("Season Pass 2027 for Andrea, Erie, canceled")
   })
 })
 
@@ -225,7 +225,7 @@ describe("PassCard as a thumbnail", () => {
     expect(screen.getByText("2027")).toBeInTheDocument()
     expect(screen.queryByText("TH-2027-0001")).not.toBeInTheDocument()
     expect(screen.queryByText("Turn-on")).not.toBeInTheDocument()
-    expect(screen.queryByText("Cancelled")).not.toBeInTheDocument()
+    expect(screen.queryByText("Canceled")).not.toBeInTheDocument()
     expect(card().getAttribute("aria-label")).toContain("blowout preferred mid October")
   })
 
@@ -237,10 +237,10 @@ describe("PassCard as a thumbnail", () => {
     expect(slot("pass-card-sheen")).not.toBeNull()
   })
 
-  it("labels a cancelled pass with a chip", () => {
+  it("labels a canceled pass with a chip", () => {
     render(<PassCard pass={cancelled} size="thumb" />)
-    expect(screen.getByText("Cancelled")).toBeInTheDocument()
+    expect(screen.getByText("Canceled")).toBeInTheDocument()
     expect(card().querySelector("img")?.className).toContain("grayscale")
-    expect(card().getAttribute("aria-label")).toContain("cancelled")
+    expect(card().getAttribute("aria-label")).toContain("canceled")
   })
 })

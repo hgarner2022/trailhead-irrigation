@@ -4,8 +4,8 @@ import { PayScreen } from "./PayScreen"
 import type { PayAction } from "./PayForm"
 import type { PayBill } from "./pay-model"
 
-// The pay page for one bill: Andrea's repair, $145, sent Nov 17 and due Dec 1. Sent, overdue, paid and cancelled are the four
-// states a bill is read as; the sales tax line and the credit line show on their own stories.
+// The pay page for one invoice: Andrea's repair, $145, sent Nov 17 and due Dec 1. Sent, overdue, paid and canceled are the four
+// states an invoice is read as; the sales tax line and the credit line show on their own stories.
 const sent: PayBill = {
   number: "INV-2026-0001",
   firstName: "Andrea",
@@ -31,7 +31,7 @@ type Story = StoryObj<typeof meta>
 export const Sent: Story = {
   play: async ({ canvasElement, args }) => {
     const canvas = within(canvasElement)
-    await expect(canvas.getByRole("heading", { name: "Your bill" })).toBeInTheDocument()
+    await expect(canvas.getByRole("heading", { name: "Your invoice" })).toBeInTheDocument()
     await expect(canvas.getByText("Due Dec 1")).toBeInTheDocument()
     await expect(canvas.getByText("We keep the card for the visits after this one.")).toBeInTheDocument()
     await expect(canvas.getByText("Paid by check, Venmo or cash already? Nothing to do.")).toBeInTheDocument()
@@ -41,7 +41,7 @@ export const Sent: Story = {
 }
 
 /** Past the due day: "Was due Dec 1", in the warning colour; the button is the same. */
-export const Overdue: Story = {
+export const PastDue: Story = {
   args: { bill: { ...sent, status: "overdue" } },
   play: async ({ canvasElement }) => {
     await expect(within(canvasElement).getByText("Was due Dec 1")).toBeInTheDocument()
@@ -60,12 +60,12 @@ export const Paid: Story = {
   },
 }
 
-/** Cancelled: one sentence and the phone number; nothing to pay. */
-export const Cancelled: Story = {
+/** Canceled: one sentence and the phone number; nothing to pay. */
+export const Canceled: Story = {
   args: { bill: { ...sent, status: "cancelled" } },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    await expect(canvas.getByText("This bill was cancelled.")).toBeInTheDocument()
+    await expect(canvas.getByText("This invoice was voided.")).toBeInTheDocument()
     await expect(canvas.queryByRole("button")).toBeNull()
   },
 }

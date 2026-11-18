@@ -35,7 +35,7 @@ describe("timelineOf", () => {
   it("names every message kind and any other kind in plain words", () => {
     const kinds = ["purchase-confirmation", "date-set", "date-moved", "day-before", "date-confirm", "receipt", "invoice", "invoice-reminder", "card-failed", "card-expiring", "cancelled", "renewal", "note", "something-new"]
     const lines = timelineOf([], kinds.map((k, i) => message(`m${i}`, k, "email")))
-    expect(lines.map((l) => l.what).sort()).toEqual(expect.arrayContaining(["Email sent: purchase confirmation", "Email sent: bill reminder", "Email sent: something new"]))
+    expect(lines.map((l) => l.what).sort()).toEqual(expect.arrayContaining(["Email sent: purchase confirmation", "Email sent: invoice reminder", "Email sent: something new"]))
     for (const l of lines) expect(l.what).not.toMatch(/failed|—/)
   })
   it("calls the office's one-off text a message from the office", () => {

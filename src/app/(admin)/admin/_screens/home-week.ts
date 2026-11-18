@@ -33,7 +33,7 @@ export function townsPhrase(towns: string[]): string {
 }
 
 /**
- * The day the Today card shows: today when it has a visit, else the first day after today that has one (the card is then "Next up"). Cancelled visits
+ * The day the Today card shows: today when it has a visit, else the first day after today that has one (the card is then "Next up"). Canceled visits
  * and visits with no day are not on a day. With nothing ahead, `day` is null and the heading says so once.
  */
 export function weekView(data: Pick<AdminData, "visits" | "settings">, today: string): WeekView {

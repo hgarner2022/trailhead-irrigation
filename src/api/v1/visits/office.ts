@@ -121,18 +121,18 @@ export const visitsCancel = defineHandler({
   method: "POST",
   path: "/visits/{id}/cancel",
   scope: "write",
-  summary: "Cancel one visit. Its day is freed and a charge not yet made is not made. A pass's other visits stay; a job with no visit left is cancelled with it.",
+  summary: "Cancel one visit. Its day is freed and a charge not yet made is not made. A pass's other visits stay; a job with no visit left is canceled with it.",
   input: z.object({ id: Id, reason: z.string().trim().max(300).optional() }),
   output: VisitOut,
   async run(ctx, input) {
     const { visit, isPassVisit } = await loadOpen(ctx, input.id, "cancelled")
-    // What it gave up, read before its line is cancelled.
+    // What it gave up, read before its line is canceled.
     const gaveUp = await loadVisitPrice(ctx.db, ctx.organizationId, visit.id)
     await ctx.db.update(s.visit).set({ status: "cancelled", personId: null, scheduledOn: null, startTime: null, stopOrder: null, awaitingPick: false }).where(eq(s.visit.id, visit.id))
     await cancelVisitLines(ctx.db, [visit.id], ctx.now)
     if (visit.personId && visit.scheduledOn) await orderDay(ctx.db, { personId: visit.personId, day: visit.scheduledOn })
-    // A charge asked for but not yet made: leave it undone (the charge task also refuses a cancelled visit).
-    await ctx.db.update(s.queueItem).set({ status: "done", lastError: "visit cancelled", doneAt: ctx.now }).where(and(eq(s.queueItem.kind, "pass-charge"), eq(s.queueItem.key, visit.id), eq(s.queueItem.status, "pending")))
+    // A charge asked for but not yet made: leave it undone (the charge task also refuses a canceled visit).
+    await ctx.db.update(s.queueItem).set({ status: "done", lastError: "visit canceled", doneAt: ctx.now }).where(and(eq(s.queueItem.kind, "pass-charge"), eq(s.queueItem.key, visit.id), eq(s.queueItem.status, "pending")))
     await ctx.db.update(s.adminAlert).set({ resolvedAt: ctx.now }).where(and(eq(s.adminAlert.organizationId, ctx.organizationId), eq(s.adminAlert.kind, "unplaced"), eq(s.adminAlert.key, visit.id)))
     if (!isPassVisit) {
       const left = await ctx.db.select({ id: s.visit.id }).from(s.visit).where(and(eq(s.visit.jobId, visit.jobId), notInArray(s.visit.status, ["cancelled", "skipped"])))
@@ -191,7 +191,7 @@ export const visitsCreate = defineHandler({
     if (input.jobId) {
       ;[existingJob] = await ctx.db.select().from(s.job).where(and(eq(s.job.id, input.jobId), eq(s.job.organizationId, org)))
       if (!existingJob) throw notFound("Job")
-      if (existingJob.cancelledAt) throw new ApiError("unprocessable", "This job is cancelled, so it takes no more visits")
+      if (existingJob.cancelledAt) throw new ApiError("unprocessable", "This job is canceled, so it takes no more visits")
       // A job with a season is a Season Pass.
       if (existingJob.season !== null) throw new ApiError("unprocessable", "A Season Pass gets its visits from the pass: add an inspection to it")
       // One visit of each pass kind to a job (the visit_job_pass_kind_unique index says the same), so a second is refused with a plain word.

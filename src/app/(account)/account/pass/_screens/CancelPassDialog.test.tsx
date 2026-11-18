@@ -21,7 +21,7 @@ describe("CancelPassDialog", () => {
     fireEvent.click(screen.getByRole("button", { name: "Cancel my pass" }))
     fireEvent.click(screen.getByRole("button", { name: "Cancel my pass" }))
     expect(onConfirm).toHaveBeenCalledTimes(1)
-    expect(screen.getByRole("dialog", { name: "Your pass is cancelled." })).toHaveTextContent("Nothing further is charged.")
+    expect(screen.getByRole("dialog", { name: "Your pass is canceled." })).toHaveTextContent("Nothing further is charged.")
     expect(screen.queryByRole("button", { name: "Keep my pass" })).not.toBeInTheDocument()
     expect(screen.queryByRole("button", { name: "Cancel my pass" })).not.toBeInTheDocument()
     fireEvent.click(screen.getByRole("button", { name: "Back to my pass" }))

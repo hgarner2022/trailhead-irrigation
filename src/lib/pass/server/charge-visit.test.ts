@@ -130,7 +130,7 @@ describe("chargeVisit", () => {
     expect(await chargeVisit(db, stripe, p.blowout, opts)).toBe("no-card")
   })
 
-  it("owes nothing when the visit's line was cancelled after Done: no Stripe call, no payment row, no email", async () => {
+  it("owes nothing when the visit's line was canceled after Done: no Stripe call, no payment row, no email", async () => {
     const p = await activePass()
     await db.update(s.visit).set({ status: "completed" }).where(eq(s.visit.id, p.turnOn))
     await db.update(s.lineItem).set({ cancelledAt: NOW }).where(eq(s.lineItem.visitId, p.turnOn))
@@ -141,7 +141,7 @@ describe("chargeVisit", () => {
     expect(await messages(p.customerId)).toHaveLength(0)
   })
 
-  it("charges nothing on a cancelled pass and nothing for a booking visit", async () => {
+  it("charges nothing on a canceled pass and nothing for a booking visit", async () => {
     const p = await activePass()
     await setPass(db, p.passId, { status: "cancelled" })
     const { stripe, calls } = stubStripe()

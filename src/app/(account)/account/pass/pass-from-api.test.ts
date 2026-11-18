@@ -15,7 +15,7 @@ describe("passFromApi", () => {
     expect(pass.visits[0]!.scheduledAt).toBe("2027-05-04T14:00:00Z")
     expect(pass).toMatchObject({ clientId: "c", cardLast4: "4242", status: "active", blowoutPreference: "later" })
   })
-  it("carries what the visit's own line includes, and ignores another visit's line or a cancelled one", () => {
+  it("carries what the visit's own line includes, and ignores another visit's line or a canceled one", () => {
     const line = (id: string, visitId: string, description: string, cancelledAt: string | null = null) => ({ id, visitId, name: "Spring turn-on", description, quantity: 1, unitPrice: 145, taxable: false, cancelledAt })
     const pass = passFromApi(detail({ visits: [visit({ id: "t", lineItems: [line("l0", "b", "Blowout text"), line("l1", "t", "Old text", "2027-01-02T00:00:00Z"), line("l2", "t", "Controller programming and a walk of every zone.")] }), visit({ id: "b", kind: "blowout", lineItems: [] })] }))
     expect(pass.visits[0]!.description).toBe("Controller programming and a walk of every zone.")

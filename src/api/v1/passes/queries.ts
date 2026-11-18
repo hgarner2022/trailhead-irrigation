@@ -124,7 +124,7 @@ export async function passDetail(ctx: Ctx, row: PassRow) {
     visits: out,
     charges: charges.filter((c): c is typeof c & { visitId: string } => c.visitId !== null).map((c) => ({ id: c.id, visitId: c.visitId, attempt: c.attempt, amount: c.amount, status: c.status, failureMessage: c.failureMessage, createdAt: c.createdAt.toISOString() })),
     consent: consent ? consentOut(consent) : null,
-    // the pass's price is its visits' lines, the ones not cancelled
+    // the pass's price is its visits' lines, the ones not canceled
     price: out.filter((v) => v.status !== "cancelled").reduce((sum, v) => sum + v.amount, 0),
     ...(contact
       ? { customer: { id: row.pass.customerId, firstName: row.firstName, lastName: row.lastName, email: row.email, phone: row.phone }, address: row.address }

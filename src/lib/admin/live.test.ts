@@ -31,7 +31,7 @@ beforeAll(async () => {
   await db.insert(s.queueItem).values({ organizationId: ORG, kind: "geocode", key: "bad", status: "failed", lastError: "Nominatim answered 429", attempts: 5 })
   await setPass(db, "p5", { status: "cancelled" })
   const p5 = await jobIdOfPassId(db, "p5")
-  await db.insert(s.adminAlert).values({ organizationId: ORG, kind: "pass-cancelled", key: p5, jobId: p5, message: "Season Pass TH-2027-0005 cancelled: Sam, Erie" })
+  await db.insert(s.adminAlert).values({ organizationId: ORG, kind: "pass-cancelled", key: p5, jobId: p5, message: "Season Pass TH-2027-0005 canceled: Sam, Erie" })
   data = await getLiveAdminData(ctxFor(db, owner))
 })
 afterAll(() => db.close())
@@ -81,7 +81,7 @@ describe("getLiveAdminData", () => {
   it("shows the pass-cancel task's alert once as a pass-cancelled row, not also the computed one", () => {
     const rows = data.attention.filter((a) => a.kind === "pass-cancelled" && a.passId === "job_p5")
     expect(rows).toHaveLength(1)
-    expect(rows[0]!.message).toBe("Season Pass TH-2027-0005 cancelled: Sam, Erie")
+    expect(rows[0]!.message).toBe("Season Pass TH-2027-0005 canceled: Sam, Erie")
   })
 
   it("raises attention rows for a failed card and a failed queue item", () => {

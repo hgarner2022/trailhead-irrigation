@@ -20,7 +20,7 @@ import { useOpenVisit } from "./VisitPanelHost"
 export { findCustomers } from "./CustomerPicker"
 
 export const SEASON_PASS = "season-pass"
-const PASS_LINE = "The spring turn-on and the fall blowout at standard per-zone rates, billed after each visit. The July inspection is an add-on."
+const PASS_LINE = "The spring turn-on and the fall blowout at standard per-zone rates, invoiced after each visit. The July inspection is an add-on."
 
 export interface NewJobInitial {
   /** "season-pass" or a service key */

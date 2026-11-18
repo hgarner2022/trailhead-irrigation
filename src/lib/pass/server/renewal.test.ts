@@ -50,7 +50,7 @@ describe("loadRenewal", () => {
     await db.update(s.lineItem).set({ cancelledAt: null }).where(and(eq(s.lineItem.jobId, jobId), eq(s.lineItem.name, "Mid-season inspection")))
   })
 
-  it("opens as an ordinary checkout for a pass that is cancelled, or whose next season is already held", async () => {
+  it("opens as an ordinary checkout for a pass that is canceled, or whose next season is already held", async () => {
     expect(await loadRenewal(db, { passId: "nope", today: "2027-11-02", token: token() })).toBeNull()
     const { id: jobId } = await passJobOf(db, "p1")
     await db.update(s.job).set({ cancelledAt: new Date() }).where(eq(s.job.id, jobId))

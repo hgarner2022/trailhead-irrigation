@@ -53,7 +53,7 @@ const withoutEmail = (e: StoryEvent): StoryEvent => (e.who.includes("@") && !e.w
 
 /**
  * The three lookups, or undefined when no events were loaded (the fixtures), so a screen without them shows no block. For a tech
- * (`tech: true`, no write scope) the messages about money (receipt, bill, bill reminder, card trouble) are left out and no actor is an email.
+ * (`tech: true`, no write scope) the messages about money (receipt, invoice, invoice reminder, card trouble) are left out and no actor is an email.
  */
 export function storiesOf(events: readonly StoryEvent[] | undefined, allMessages: readonly StoryMessage[], options: { tech?: boolean } = {}): Stories | undefined {
   if (!events) return undefined

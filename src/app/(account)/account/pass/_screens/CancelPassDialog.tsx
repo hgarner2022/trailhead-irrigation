@@ -55,7 +55,7 @@ export function CancelPassDialog({ onConfirm }: CancelPassDialogProps) {
         {confirmed ? (
           <>
             <DialogHeader>
-              <DialogTitle className="font-display text-2xl text-navy">Your pass is cancelled.</DialogTitle>
+              <DialogTitle className="font-display text-2xl text-navy">Your pass is canceled.</DialogTitle>
               <DialogDescription className="text-base">Nothing further is charged.</DialogDescription>
             </DialogHeader>
             <DialogFooter>

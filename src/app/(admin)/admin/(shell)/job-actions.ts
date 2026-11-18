@@ -29,7 +29,7 @@ export const cancelLine = async (lineId: string): Promise<ActionOutcome<{ jobTot
     return { jobTotal: line.jobTotal }
   })
 
-/** Money handed over for the job as a whole: a payment row on the job, which settles its open bill when it covers what is owed. */
+/** Money handed over for the job as a whole: a payment row on the job, which settles its open invoice when it covers what is unpaid. */
 export const recordJobPayment = async (jobId: string, input: { method: "check" | "venmo" | "cash"; amount: number; reference?: string }): Promise<ActionOutcome> =>
   act(async (ctx) => {
     await callApi(ctx, paymentsRecord, { jobId, ...input })

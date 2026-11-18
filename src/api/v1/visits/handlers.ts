@@ -211,7 +211,7 @@ async function loadPickable(ctx: Ctx, id: string) {
   const { visit } = row
   assertOwnsCustomer(ctx, visit.customerId)
   if (!row.isPassVisit) throw new ApiError("unprocessable", "Only a pass visit has days to pick from")
-  // The pass is open when its job is: sold, not cancelled, in a season that has not ended (`passStatus`).
+  // The pass is open when its job is: sold, not canceled, in a season that has not ended (`passStatus`).
   const [job] = await ctx.db.select({ soldOn: s.job.soldOn, cancelledAt: s.job.cancelledAt, season: s.job.season }).from(s.job).where(eq(s.job.id, visit.jobId))
   if (!job || passStatus(job, today(ctx)) !== "active") throw new ApiError("unprocessable", "This pass is not open")
   if (!(PICKABLE as readonly string[]).includes(visit.status)) throw new ApiError("unprocessable", `A ${visit.status} visit has no day to pick`)

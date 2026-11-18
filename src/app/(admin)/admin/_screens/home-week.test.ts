@@ -26,7 +26,7 @@ describe("weekView", () => {
     expect(loose.people.map((p) => p.name)).toEqual(["No one yet"])
   })
 
-  it("skips past days and cancelled visits to the first day ahead that has one", () => {
+  it("skips past days and canceled visits to the first day ahead that has one", () => {
     const visits = [
       visit({ id: "past", startAt: "2026-11-09T15:00:00Z", scheduledOn: "2026-11-09" }),
       visit({ id: "gone", status: "cancelled", startAt: "2026-11-20T15:00:00Z", scheduledOn: "2026-11-20" }),
@@ -61,7 +61,7 @@ describe("mapStops", () => {
   })
 })
 
-describe("the Visits header reads Bill sent apart from Owed", () => {
+describe("the Visits header reads Invoice sent apart from Owed", () => {
   const done = { status: "completed" as const, completedOn: "2026-11-10", scheduledOn: "2026-11-10", startAt: "2026-11-10T15:00:00Z" }
   const bill = { id: "inv1", jobId: "j2", number: "INV-2026-0001", amount: 100, tax: 0, total: 100, sentOn: "2026-11-01", dueOn: "2026-11-08", status: "overdue" as const, visitIds: [] }
   const job = (id: string, over: Partial<NonNullable<AdminData["jobs"]>[number]> = {}) => ({ id, customerId: "c", kind: "repair" as const, status: "open" as const, source: "office" as const, visitIds: [], ...over })
@@ -69,19 +69,19 @@ describe("the Visits header reads Bill sent apart from Owed", () => {
     ...base, passes: [], monthTotals: [],
     visits: [
       visit({ id: "o1", jobId: "j1", ...done, payments: [] }),
-      // a done job with an open bill reads Bill sent: not owed on either line
+      // a done job with an open invoice reads Invoice sent: not owed on either line
       visit({ id: "b1", jobId: "j2", ...done, price: 100, payments: [], invoice: bill }),
     ],
     jobs: [job("j1", { visitIds: ["o1"] }), job("j2", { visitIds: ["b1"], invoice: bill })],
   }
 
-  it("counts Owed only in the header: a Bill sent visit is not in it", () => {
+  it("counts Owed only in the header: a Invoice sent visit is not in it", () => {
     const rows = visitRows(data, TODAY)
-    expect(rows.find((r) => r.id === "b1")).toMatchObject({ money: "bill-sent", moneyLabel: "Bill sent" })
-    expect(visitsContext(rows)).toBe("2 visits this season. 1 done and owed.")
+    expect(rows.find((r) => r.id === "b1")).toMatchObject({ money: "bill-sent", moneyLabel: "Invoice sent" })
+    expect(visitsContext(rows)).toBe("2 visits this season. 1 done and unpaid.")
   })
 
-  it("lets the Visits list be filtered to Bill sent from a link", () => {
+  it("lets the Visits list be filtered to Invoice sent from a link", () => {
     expect(filterFrom("money", "bill-sent", MONEY_OPTIONS)).toEqual([{ column: "money", values: ["bill-sent"] }])
   })
 })

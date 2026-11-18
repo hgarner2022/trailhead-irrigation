@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card"
 export const metadata: Metadata = { title: "Thank you" }
 
 /**
- * Where Stripe's card form returns after a bill is paid. It needs no token and shows nothing private: the payment is written
+ * Where Stripe's card form returns after an invoice is paid. It needs no token and shows nothing private: the payment is written
  * by the webhook, so this page only says thank you and that the receipt is coming.
  */
 export default function PaidPage() {

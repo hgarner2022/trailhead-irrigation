@@ -245,7 +245,7 @@ describe("quotesAwaiting", () => {
 })
 
 describe("invoicesOverdue", () => {
-  // our own bills (the `invoice` table): open while neither paid nor cancelled
+  // our own invoices (the `invoice` table): open while neither paid nor cancelled
   const bill = (total: number, dueOn: string, over: { paidOn?: string | null; cancelledAt?: Date | null } = {}) => ({ total, dueOn, ...over })
   const list = [
     bill(100, "2026-11-01"),
@@ -254,14 +254,14 @@ describe("invoicesOverdue", () => {
     bill(999, "2026-10-01", { paidOn: "2026-10-05" }), // paid
     bill(999, "2026-10-01", { cancelledAt: new Date("2026-10-02T12:00:00Z") }), // cancelled
   ]
-  it("counts our open bills whose due day has passed, by their totals", () => {
+  it("counts our open invoices whose due day has passed, by their totals", () => {
     expect(invoicesOverdue(list, "2026-11-12")).toEqual({ count: 2, total: 150 })
   })
-  it("counts nothing for no bills", () => {
+  it("counts nothing for no invoices", () => {
     expect(invoicesOverdue([], "2026-11-12")).toEqual({ count: 0, total: 0 })
   })
   it("reads today as the day it is in Denver: a late evening instant is still that Mountain day", () => {
-    // 2026-11-13T02:00Z is still Thursday the 12th in Denver, so the bill due on the 12th is not yet overdue there.
+    // 2026-11-13T02:00Z is still Thursday the 12th in Denver, so the invoice due on the 12th is not yet overdue there.
     expect(invoicesOverdue(list, "2026-11-13T02:00:00Z")).toEqual({ count: 2, total: 150 })
     // the same instant read as a UTC day, the 13th, would count it
     expect(invoicesOverdue(list, "2026-11-13T02:00:00Z", "UTC")).toEqual({ count: 3, total: 1149 })

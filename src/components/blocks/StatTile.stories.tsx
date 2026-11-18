@@ -11,7 +11,7 @@ const october = monthComparison(snapshot.monthTotals, 2026, 10)
 const november = monthComparison(snapshot.monthTotals, 2026, 11)
 const passes = snapshot.passes as Pass[]
 const quotes = quotesAwaiting(snapshot.quotes as Quote[])
-// Our own bills (the invoice table), open and past their due day: two invented ones, since the snapshot holds only the Jobber mirror's invoices.
+// Our own invoices (the invoice table), open and past their due day: two invented ones, since the snapshot holds only the Jobber mirror's invoices.
 const overdue = invoicesOverdue([{ total: 145, dueOn: "2026-11-03" }, { total: 310, dueOn: "2026-11-08" }, { total: 95, dueOn: "2026-11-20" }], snapshot.syncedAt)
 const activePasses = passes.filter((p) => p.status === "active").length
 

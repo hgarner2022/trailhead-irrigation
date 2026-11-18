@@ -202,7 +202,7 @@ describe("DataGrid opening a record", () => {
   it("writes the status in sentence case as a StatusPill", () => {
     renderPasses()
     expect(within(bodyRows()[0]).getByText("Active")).toHaveAttribute("data-slot", "status-pill")
-    expect(within(bodyRows()[8]).getByText("Cancelled")).toHaveAttribute("data-status", "cancelled")
+    expect(within(bodyRows()[8]).getByText("Canceled")).toHaveAttribute("data-status", "cancelled")
   })
 
   it("renders the name as a link when the column gives it a URL", () => {

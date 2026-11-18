@@ -10,11 +10,11 @@ describe("passStatus", () => {
   it("is pending while the job has no sold day", () => {
     expect(passStatus(job({ soldOn: null }), "2026-06-01")).toBe("pending")
   })
-  it("is cancelled when the job has a cancelledAt, sold or not", () => {
+  it("is canceled when the job has a cancelledAt, sold or not", () => {
     expect(passStatus(job({ cancelledAt: new Date() }), "2026-06-01")).toBe("cancelled")
     expect(passStatus(job({ soldOn: null, cancelledAt: new Date() }), "2026-06-01")).toBe("cancelled")
   })
-  it("is cancelled before it is pending or lapsed", () => {
+  it("is canceled before it is pending or lapsed", () => {
     expect(passStatus(job({ soldOn: null, cancelledAt: new Date(), season: 2020 }), "2026-06-01")).toBe("cancelled")
   })
   it("is lapsed once the season is over", () => {
@@ -30,7 +30,7 @@ describe("passInspection", () => {
     expect(passInspection([{ name: "Mid-season inspection", serviceId: null, cancelledAt: null }])).toBe(true)
     expect(passInspection([{ name: "Other", serviceId: "inspection-6", cancelledAt: null }])).toBe(true)
   })
-  it("is false when the line is cancelled or there is none", () => {
+  it("is false when the line is canceled or there is none", () => {
     expect(passInspection([{ name: "Mid-season inspection", serviceId: null, cancelledAt: new Date() }])).toBe(false)
     expect(passInspection([{ name: "Spring turn-on", serviceId: "turn-on-6", cancelledAt: null }])).toBe(false)
     expect(passInspection([])).toBe(false)

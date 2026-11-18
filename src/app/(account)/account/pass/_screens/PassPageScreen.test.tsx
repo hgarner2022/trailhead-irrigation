@@ -58,23 +58,23 @@ describe("PassPageScreen", () => {
     expect(onCancel).not.toHaveBeenCalled()
   })
 
-  it("answers when the pass is cancelled", () => {
+  it("answers when the pass is canceled", () => {
     const onCancel = vi.fn()
     render(<PassPageScreen pass={pass} today="2026-11-12" onCancel={onCancel} />)
     fireEvent.click(screen.getByRole("button", { name: "Cancel my pass" }))
     fireEvent.click(screen.getByRole("button", { name: "Cancel my pass" }))
     expect(onCancel).toHaveBeenCalledTimes(1)
-    const dialog = screen.getByRole("dialog", { name: "Your pass is cancelled." })
+    const dialog = screen.getByRole("dialog", { name: "Your pass is canceled." })
     expect(dialog).toHaveTextContent("Nothing further is charged.")
     expect(screen.queryByRole("button", { name: "Cancel my pass" })).not.toBeInTheDocument()
     fireEvent.click(screen.getByRole("button", { name: "Back to my pass" }))
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument()
   })
 
-  it("shows the grey card and one line for a cancelled pass", () => {
+  it("shows the grey card and one line for a canceled pass", () => {
     render(<PassPageScreen pass={cancelled} today="2026-11-12" />)
-    expect(screen.getByRole("article", { name: /cancelled$/ })).toBeInTheDocument()
-    expect(screen.getByText(/This pass is cancelled/)).toBeInTheDocument()
+    expect(screen.getByRole("article", { name: /canceled$/ })).toBeInTheDocument()
+    expect(screen.getByText(/This pass is canceled/)).toBeInTheDocument()
     expect(rows()).toHaveLength(0)
     expect(screen.queryByText("Card on file")).not.toBeInTheDocument()
     expect(screen.queryByRole("button", { name: "Cancel my pass" })).not.toBeInTheDocument()

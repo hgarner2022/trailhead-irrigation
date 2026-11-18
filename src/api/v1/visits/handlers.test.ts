@@ -48,7 +48,7 @@ describe("visits carry the job's lines", () => {
     expect(own.description).toContain("controller programming")
     expect(got.amount).toBe(own.quantity * own.unitPrice)
   })
-  it("a visit's price is its line's, and a cancelled line takes it to nothing", async () => {
+  it("a visit's price is its line's, and a canceled line takes it to nothing", async () => {
     const [line] = await db.select().from(s.lineItem).where(eq(s.lineItem.visitId, "p1-blowout"))
     try {
       expect((await callApi(ctxFor(db, readKey), visitsGet, { id: "p1-blowout" })).amount).toBe(line!.quantity * line!.unitPrice)

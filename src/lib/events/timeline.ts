@@ -41,8 +41,8 @@ export const MESSAGE_KIND_WORDS: Record<string, string> = {
   "day-before": "day-before reminder",
   "date-confirm": "date confirmation",
   receipt: "receipt",
-  invoice: "bill",
-  "invoice-reminder": "bill reminder",
+  invoice: "invoice",
+  "invoice-reminder": "invoice reminder",
   "card-failed": "card didn't go through",
   "card-expiring": "card expiring",
   cancelled: "cancellation",
@@ -50,7 +50,7 @@ export const MESSAGE_KIND_WORDS: Record<string, string> = {
   note: "message from the office",
 }
 
-/** The kinds of message a tech never reads in a story: they say what was billed or that a card needs attention. */
+/** The kinds of message a tech never reads in a story: they say what was invoiced or that a card needs attention. */
 export const TECH_HIDDEN_MESSAGE_KINDS: ReadonlySet<string> = new Set(["receipt", "invoice", "invoice-reminder", "card-failed", "card-expiring"])
 
 const iso = (d: Date | string) => (d instanceof Date ? d.toISOString() : new Date(d).toISOString())

@@ -91,7 +91,7 @@ describe("applySheen and frameWriter", () => {
     expect(sheen(el)).toEqual(["0.900", "0.300"])
   })
 
-  it("drops a queued point when cancelled", async () => {
+  it("drops a queued point when canceled", async () => {
     const el = document.createElement("div")
     const writer = frameWriter(el)
     writer.write({ x: 0.9, y: 0.9 })

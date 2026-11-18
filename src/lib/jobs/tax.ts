@@ -1,5 +1,5 @@
 // Sales tax on a job, as pure rules. Tax is per line and rounded to the dollar per line, so a job's tax always equals its
-// visits' tax plus its visit-less lines' tax, and a bill built from the same function always equals what the job owes.
+// visits' tax plus its visit-less lines' tax, and an invoice built from the same function always equals what the job owes.
 // The rule is `settings.billing` (`billingOf`): nothing is taxed while the organization does not collect it.
 
 /** What `billingOf(settings)` returns, as far as tax is concerned. */
@@ -24,7 +24,7 @@ export interface TaxLine {
 /** The rule out of an organization's settings row (an organization that never saved Billing has none: nothing is collected). */
 export const taxRuleOf = (billing: Partial<TaxRule> | null | undefined): TaxRule => ({ collectsSalesTax: Boolean(billing?.collectsSalesTax), salesTaxPercent: billing?.salesTaxPercent ?? 0 })
 
-/** The tax on one line: quantity times unit price times the percent, rounded to the dollar; 0 for a cancelled or non-taxable line or while nothing is collected. */
+/** The tax on one line: quantity times unit price times the percent, rounded to the dollar; 0 for a canceled or non-taxable line or while nothing is collected. */
 export function lineTax(line: TaxLine, rule: TaxRule): number {
   if (line.cancelledAt || !line.taxable || !rule.collectsSalesTax || rule.salesTaxPercent <= 0) return 0
   return Math.round((line.quantity * line.unitPrice * rule.salesTaxPercent) / 100)

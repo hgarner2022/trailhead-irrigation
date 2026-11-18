@@ -19,7 +19,7 @@ export interface Line {
   taxable: boolean
   /** the catalogue service the line was priced from, when one fits */
   serviceKey?: string
-  /** the visit the line is billed after; the writer attaches the visit id once the visit row exists */
+  /** the visit the line is invoiced after; the writer attaches the visit id once the visit row exists */
   visitKind?: ServiceKind
   cancelledAt?: Date | null
 }
@@ -74,7 +74,7 @@ export function defaultVisitPrice(kind: ServiceKind): number | undefined {
   return service && service.includedZones === undefined ? service.price : undefined
 }
 
-/** What the line adds to the job: quantity times the unit price, nothing once cancelled. */
+/** What the line adds to the job: quantity times the unit price, nothing once canceled. */
 export function lineTotal(line: Pick<Line, "quantity" | "unitPrice" | "cancelledAt">): number {
   return line.cancelledAt ? 0 : line.quantity * line.unitPrice
 }
@@ -95,7 +95,7 @@ export function visitPrice(lines: readonly PricedLine[], rule: TaxRule): number 
   return jobTotal(lines, rule)
 }
 
-/** The lines billed after one visit, picked out of a job's lines. */
+/** The lines invoiced after one visit, picked out of a job's lines. */
 export function linesOfVisit<T extends { visitId?: string | null }>(lines: readonly T[], visitId: string): T[] {
   return lines.filter((l) => l.visitId === visitId)
 }

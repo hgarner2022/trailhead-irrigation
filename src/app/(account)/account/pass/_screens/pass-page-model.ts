@@ -83,7 +83,7 @@ const upcoming = (pass: Pass) => pass.visits.find((v) => !v.completedAt)
  * on sale). Hannah, 2026-11-13: "think through the different states".
  */
 export function passHeadline(pass: Pass, today: string, pickable: readonly string[] = []): Headline {
-  if (pass.status === "cancelled") return { title: "This pass is cancelled.", line: "Nothing further is charged and no more visits are placed. Book any visit online whenever you like.", action: "book" }
+  if (pass.status === "cancelled") return { title: "This pass is canceled.", line: "Nothing further is charged and no more visits are placed. Book any visit online whenever you like.", action: "book" }
   if (pass.cardFailedAt) return { title: "Your card didn't go through.", line: "Update it and we'll try again. Your visits stay as they are until then.", action: "update-card" }
   const next = upcoming(pass)
   if (!next) {
@@ -118,7 +118,7 @@ export function pickDayOptions(pass: Pass, kind: "turn-on" | "blowout"): string[
   return days
 }
 
-/** "3 of 3 visits done, $385 paid" for an earlier season; a skipped or cancelled season says how many were done. */
+/** "3 of 3 visits done, $385 paid" for an earlier season; a skipped or canceled season says how many were done. */
 export function seasonSummary(pass: Pass): string {
   const done = pass.visits.filter((v) => v.completedAt).length
   const paid = pass.visits.reduce((sum, v) => sum + visitPaidTotal(v), 0)

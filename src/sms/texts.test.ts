@@ -23,10 +23,10 @@ describe("the day-before text", () => {
   })
 })
 
-describe("the bill texts", () => {
+describe("the invoice texts", () => {
   const bill = { ...base, invoiceNumber: "INV-2027-0001", visitName: "repair", lines: [{ name: "Repair", amount: 145 }], amount: 145, tax: 0, total: 145, dueOn: "2027-12-01", payUrl: `${origin}/pay/inv1?token=abc` }
   it("says the amount, the due day and the pay link, with the opt-out line once", () => {
-    expect(invoiceText(bill)).toBe(`Trailhead: your bill for the repair is $145, due Dec 1. Pay here: ${origin}/pay/inv1?token=abc Reply STOP to opt out.`)
+    expect(invoiceText(bill)).toBe(`Trailhead: your invoice for the repair is $145, due Dec 1. Pay here: ${origin}/pay/inv1?token=abc Reply STOP to opt out.`)
     expect(invoiceReminderText(bill)).toBe(`Trailhead: a reminder that $145 for the repair is due Dec 1. Pay here: ${origin}/pay/inv1?token=abc Reply STOP to opt out.`)
     expect(invoiceText(bill).match(/STOP/g)).toHaveLength(1)
   })

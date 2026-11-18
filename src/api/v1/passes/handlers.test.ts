@@ -133,7 +133,7 @@ describe("passes.list and passes.get", () => {
     expect((await callApi(ctxFor(db, readKey), passesList, { preference: "later", limit: 100 })).data.every((p) => p.turnOnPreference === "later" || p.blowoutPreference === "later")).toBe(true)
     await expect(callApi(ctxFor(db, readKey), passesList, { town: "Boulder" })).rejects.toMatchObject({ code: "invalid" })
   })
-  it("reads status from the job: sold and cancelled are the job's own days, a past season reads lapsed", async () => {
+  it("reads status from the job: sold and canceled are the job's own days, a past season reads lapsed", async () => {
     const row = await passJobOf(db, "p3")
     const jobId = row.id
     const statusOf = async (id: string) => (await callApi(ctxFor(db, readKey), passesGet, { id })).status

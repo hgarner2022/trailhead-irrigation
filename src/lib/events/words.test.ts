@@ -17,8 +17,8 @@ describe("eventWords: one sentence per kind", () => {
     expect(words("job.requested", {})).toBe("Quote needed")
   })
   it("job.cancelled", () => {
-    expect(words("job.cancelled")).toBe("Job cancelled")
-    expect(words("job.cancelled", { reason: "Moved away" })).toBe("Job cancelled, Moved away")
+    expect(words("job.cancelled")).toBe("Job canceled")
+    expect(words("job.cancelled", { reason: "Moved away" })).toBe("Job canceled, Moved away")
   })
   it("visit.scheduled and visit.moved", () => {
     expect(words("visit.scheduled", { name: "Spring turn-on", day: "2027-04-22", from: null })).toBe("Spring turn-on scheduled for Apr 22")
@@ -32,13 +32,13 @@ describe("eventWords: one sentence per kind", () => {
   it("visit.done, with how it was paid, and visit.undone", () => {
     expect(words("visit.done", { name: "Spring turn-on", completedOn: "2027-04-22", paidBy: "venmo" })).toBe("Spring turn-on marked done, paid by Venmo")
     expect(words("visit.done", { name: "Spring turn-on", completedOn: "2027-04-22" })).toBe("Spring turn-on marked done")
-    expect(words("visit.done", { name: "Fall blowout", paidBy: "bill" })).toBe("Fall blowout marked done, bill sent")
+    expect(words("visit.done", { name: "Fall blowout", paidBy: "bill" })).toBe("Fall blowout marked done, invoice sent")
     expect(words("visit.undone", { name: "Spring turn-on" })).toBe("Spring turn-on put back to not done")
   })
   it("visit.not-done, visit.cancelled and visit.skipped", () => {
     expect(words("visit.not-done", { name: "Spring turn-on", reason: "no-water", note: "Main valve off" })).toBe("Spring turn-on marked not done, no water on: Main valve off")
-    expect(words("visit.cancelled", { name: "Spring turn-on", reason: "Customer called" })).toBe("Spring turn-on cancelled, Customer called")
-    expect(words("visit.cancelled", { name: "Spring turn-on", reason: null })).toBe("Spring turn-on cancelled")
+    expect(words("visit.cancelled", { name: "Spring turn-on", reason: "Customer called" })).toBe("Spring turn-on canceled, Customer called")
+    expect(words("visit.cancelled", { name: "Spring turn-on", reason: null })).toBe("Spring turn-on canceled")
     expect(words("visit.skipped", { name: "Mid-season inspection" })).toBe("Mid-season inspection skipped")
   })
   it("visit.edited reads the flat detail", () => {
@@ -48,7 +48,7 @@ describe("eventWords: one sentence per kind", () => {
     expect(words("visit.edited", { name: "Spring turn-on", durationMinutes: { from: 45, to: 60 } })).toBe("Spring turn-on edited: length 45 to 60 minutes")
   })
   it("pass.cancelled, pass.preference-changed, pass.inspection-added", () => {
-    expect(words("pass.cancelled", { reason: "Sold the house", visits: 2, passNumber: "TH-2027-0014" })).toBe("Season Pass TH-2027-0014 cancelled, Sold the house")
+    expect(words("pass.cancelled", { reason: "Sold the house", visits: 2, passNumber: "TH-2027-0014" })).toBe("Season Pass TH-2027-0014 canceled, Sold the house")
     expect(words("pass.preference-changed", { visit: "turn-on", from: "recommended", to: "earlier" })).toBe("Spring turn-on timing changed from mid May to early May")
     expect(words("pass.inspection-added", { amount: 145 })).toBe("Mid-season inspection added, $145")
   })
@@ -68,12 +68,12 @@ describe("eventWords: one sentence per kind", () => {
     expect(words("payment.failed", { amount: 145, message: "Your card was declined.", name: "Spring turn-on" })).toBe("$145 payment for Spring turn-on didn't go through")
     expect(words("payment.refunded", { amount: 145, method: "venmo", refunds: "ch_1" })).toBe("$145 refunded, Venmo")
   })
-  it("invoice.sent, reminded, paid and cancelled", () => {
-    expect(words("invoice.sent", { number: "INV-2026-0001", total: 290, dueOn: "2026-12-01" })).toBe("Bill INV-2026-0001 sent, due Dec 1")
-    expect(words("invoice.reminded", { number: "INV-2026-0001", total: 290, dueOn: "2026-12-01" })).toBe("Reminder sent for bill INV-2026-0001, due Dec 1")
-    expect(words("invoice.paid", { number: "INV-2026-0001", total: 290, how: "card_now" })).toBe("Bill INV-2026-0001 paid, card")
-    expect(words("invoice.cancelled", { number: "INV-2026-0001", total: 290 })).toBe("Bill INV-2026-0001 cancelled")
-    expect(words("invoice.sent", {})).toBe("Bill sent")
+  it("invoice.sent, reminded, paid and canceled", () => {
+    expect(words("invoice.sent", { number: "INV-2026-0001", total: 290, dueOn: "2026-12-01" })).toBe("Invoice INV-2026-0001 sent, due Dec 1")
+    expect(words("invoice.reminded", { number: "INV-2026-0001", total: 290, dueOn: "2026-12-01" })).toBe("Reminder sent for invoice INV-2026-0001, due Dec 1")
+    expect(words("invoice.paid", { number: "INV-2026-0001", total: 290, how: "card_now" })).toBe("Invoice INV-2026-0001 paid, card")
+    expect(words("invoice.cancelled", { number: "INV-2026-0001", total: 290 })).toBe("Invoice INV-2026-0001 voided")
+    expect(words("invoice.sent", {})).toBe("Invoice sent")
   })
   it("card.saved, card.failed, card.removed", () => {
     expect(words("card.saved", { brand: "visa", last4: "4242" })).toBe("Card saved, Visa ending 4242")
@@ -95,7 +95,7 @@ describe("eventWords: one sentence per kind", () => {
     expect(words("job.line-added", { name: "Controller", quantity: 1, unitPrice: 300 })).toBe("Controller added, $300")
     expect(words("job.line-added", { name: "Drip zone", quantity: 1, unitPrice: 0 })).toBe("Drip zone added, quote later")
     expect(words("job.line-edited", { name: "Controller", quantity: 2, unitPrice: 250 })).toBe("Controller changed, 2 × $250")
-    expect(words("job.line-cancelled", { name: "Drip zone" })).toBe("Drip zone cancelled")
+    expect(words("job.line-cancelled", { name: "Drip zone" })).toBe("Drip zone canceled")
   })
   it("an unknown kind reads Something changed", () => {
     expect(words("widget.exploded", { anything: 1 })).toBe("Something changed")

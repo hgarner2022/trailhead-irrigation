@@ -31,9 +31,9 @@ export interface OfficePayment {
 }
 
 /**
- * Money that covers the job settles its open bill: when the rows now owe nothing, the bill's paid day is the day the money arrived (today,
+ * Money that covers the job settles its open invoice: when the rows now owe nothing, the invoice's paid day is the day the money arrived (today,
  * Mountain) and its payment is this row, so Home, Remind, the pay page and the money lines stop treating it as owed. Only the job's own
- * open bill, only while it is unpaid and not cancelled; a part payment leaves the bill open (the pay page then refuses it, and the office sends a new one).
+ * open invoice, only while it is unpaid and not canceled; a part payment leaves the invoice open (the pay page then refuses it, and the office sends a new one).
  */
 async function settleOpenBill(ctx: Ctx, jobId: string, row: { id: string; method: string }, customerId: string) {
   const org = ctx.organizationId
@@ -43,7 +43,7 @@ async function settleOpenBill(ctx: Ctx, jobId: string, row: { id: string; method
   ])
   if (jobOwed(lines.filter((l) => !l.cancelledAt), payments, await loadTaxRule(ctx.db, org)) > 0) return
   const settled = await ctx.db.update(s.invoice).set({ paidOn: paidDay(ctx.now), paymentId: row.id, updatedAt: ctx.now }).where(and(eq(s.invoice.jobId, jobId), eq(s.invoice.organizationId, org), isNull(s.invoice.paidOn), isNull(s.invoice.cancelledAt))).returning({ id: s.invoice.id, number: s.invoice.number, total: s.invoice.total, session: s.invoice.stripeCheckoutSessionId })
-  // The card form the customer may still have open is closed too, so the bill is not paid twice.
+  // The card form the customer may still have open is closed too, so the invoice is not paid twice.
   for (const b of settled) {
     await expireCheckoutSession(b.session)
     await recordEventSafe(ctx.db, { organizationId: org, about: "invoice", aboutId: b.id, customerId, jobId, kind: "invoice.paid", detail: { number: b.number, total: b.total, how: row.method }, who: whoOf(ctx), at: ctx.now })
@@ -54,7 +54,7 @@ async function settleOpenBill(ctx: Ctx, jobId: string, row: { id: string; method
  * Money the office was handed (check, Venmo or cash) as a succeeded payment row on the job: the one path under
  * `payments.record` and Done's "paid by" choices. A visit with no price yet takes the amount as its
  * price (its line). For a visit with a price it refuses what the rows would make wrong: a visit already paid in full, and an amount
- * above what is still owed on it (refused, not clamped: the record must say what was really handed over, so a stale panel or a
+ * above what is still unpaid on it (refused, not clamped: the record must say what was really handed over, so a stale panel or a
  * double submit writes nothing); the receipt is queued; the events are emitted.
  */
 /**
@@ -80,7 +80,7 @@ export async function recordOfficePayment(ctx: Ctx, input: OfficePayment) {
     await assertNoCardChargeInFlight(ctx, visit.id)
     const { price, owed } = await visitBalance(ctx.db, ctx.organizationId, visit)
     if (price > 0 && owed === 0) throw new ApiError("conflict", "This visit is already paid")
-    if (price > 0 && input.amount > owed) throw new ApiError("unprocessable", `Only $${owed} is still owed on this visit`, [{ path: "amount", message: `At most $${owed}` }])
+    if (price > 0 && input.amount > owed) throw new ApiError("unprocessable", `Only $${owed} is still unpaid on this visit`, [{ path: "amount", message: `At most $${owed}` }])
     unpriced = price === 0
   }
   // A visit nothing has priced takes the amount as its price: its line is priced (or made), and the job's total follows from its lines.

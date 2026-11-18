@@ -43,29 +43,29 @@ const gridRows = () => within(document.querySelector('[data-slot="data-grid-tabl
 const panel = () => within(screen.getByRole("dialog"))
 
 describe("JobsScreen", () => {
-  it("titles the page, counts the season's jobs and what is owed, and offers New job", () => {
+  it("titles the page, counts the season's jobs and what is unpaid, and offers New job", () => {
     view()
     expect(screen.getByRole("heading", { name: "Jobs", level: 1 })).toBeInTheDocument()
-    expect(document.querySelector('[data-slot="page-context"]')).toHaveTextContent(/^\d+ jobs this season\. 1 owed\. 1 needs a quote\.$/)
+    expect(document.querySelector('[data-slot="page-context"]')).toHaveTextContent(/^\d+ jobs this season\. 1 unpaid\. 1 needs a quote\.$/)
     expect(screen.getByRole("button", { name: "New job" })).toBeInTheDocument()
   })
 
-  it("has the columns in order and a row for each job, the bills that are out first", () => {
+  it("has the columns in order and a row for each job, the invoices that are out first", () => {
     view()
     const headers = within(document.querySelector('[data-slot="data-grid-table"]') as HTMLElement).getAllByRole("columnheader").map((h) => h.textContent)
     expect(headers).toEqual(["Customer", "Job", "Property", "Sold", "Status", "Visits", "Total", "Money", "Next"])
     const first = within(gridRows()[0]!).getAllByRole("cell").map((c) => c.textContent)
     expect(first[0]).toBe("Kim Lowe")
-    expect(first).toContain("$145 · Overdue since Nov 3")
+    expect(first).toContain("$145 · Past due since Nov 3")
     expect(within(gridRows()[1]!).getAllByRole("cell")[0]).toHaveTextContent("Ben Cole")
-    expect(within(gridRows()[1]!).getByText("$145 · Bill sent, due Nov 24")).toBeInTheDocument()
+    expect(within(gridRows()[1]!).getByText("$145 · Invoice sent, due Nov 24")).toBeInTheDocument()
   })
 
   it("says each stage in the five words and Money in the words of the payment rows", () => {
     view()
     const all = document.body.textContent ?? ""
-    for (const word of ["Needs a quote", "Open", "Done", "Cancelled", "$145 owed", "Quote later"]) expect(all).toContain(word)
-    for (const word of ["Charged", "Unpaid", "request"]) expect(all.toLowerCase()).not.toContain(word.toLowerCase())
+    for (const word of ["Needs a quote", "Open", "Done", "Canceled", "$145 unpaid", "Quote later"]) expect(all).toContain(word)
+    for (const word of ["Charged", "Owed", "request"]) expect(all.toLowerCase()).not.toContain(word.toLowerCase())
   })
 
   it("has the Status, Money, Job and Season filters", () => {
@@ -76,15 +76,15 @@ describe("JobsScreen", () => {
     expect(screen.getByRole("button", { name: /Export/ })).toBeInTheDocument()
   })
 
-  it("the bills out chip applies the Money filter and shows the jobs with an open bill, oldest due day first", async () => {
+  it("the invoices out chip applies the Money filter and shows the jobs with an open invoice, oldest due day first", async () => {
     view()
-    const chip = screen.getByRole("button", { name: "2 bills out" })
+    const chip = screen.getByRole("button", { name: "2 invoices out" })
     expect(chip).toHaveAttribute("aria-pressed", "false")
     await userEvent.click(chip)
-    expect(screen.getByRole("button", { name: "2 bills out" })).toHaveAttribute("aria-pressed", "true")
+    expect(screen.getByRole("button", { name: "2 invoices out" })).toHaveAttribute("aria-pressed", "true")
     const names = gridRows().map((r) => within(r).getAllByRole("cell")[0]!.textContent)
     expect(names).toEqual(["Kim Lowe", "Ben Cole"])
-    await userEvent.click(screen.getByRole("button", { name: "2 bills out" }))
+    await userEvent.click(screen.getByRole("button", { name: "2 invoices out" }))
     expect(gridRows().length).toBeGreaterThan(2)
   })
 
@@ -103,18 +103,18 @@ describe("the job panel", () => {
     expect(p.getByRole("heading", { name: "Ben Cole" })).toBeInTheDocument()
     expect(screen.getByRole("dialog")).toHaveTextContent("Repair · sold Oct 28")
     for (const heading of ["Property", "Lines", "Visits", "Money"]) expect(p.getByRole("heading", { name: heading })).toBeInTheDocument()
-    expect(p.getAllByText("Bill sent").length).toBeGreaterThan(0)
+    expect(p.getAllByText("Invoice sent").length).toBeGreaterThan(0)
     expect(p.getByText("Sent Nov 10, due Nov 24")).toBeInTheDocument()
     expect(p.getByRole("button", { name: "Remind" })).toBeInTheDocument()
     expect(p.getByRole("link", { name: "Pay link" })).toBeInTheDocument()
     expect(p.getByRole("link", { name: "Open customer" })).toHaveAttribute("href", "/admin/customers?customer=c-ben")
   })
 
-  it("offers Send a bill and Record the payment on a done job that is owed, and Record sends the amount owed", async () => {
+  it("offers Send an invoice and Record the payment on a done job that is unpaid, and Record sends the amount owed", async () => {
     const actions = jobActions()
     view({ defaultJobId: "job-d", actions, visitActions: visitActions() as VisitActions })
     const p = panel()
-    expect(p.getByRole("button", { name: "Send a bill" })).toBeInTheDocument()
+    expect(p.getByRole("button", { name: "Send an invoice" })).toBeInTheDocument()
     await userEvent.click(p.getByRole("button", { name: "Record the payment" }))
     const dialog = within(screen.getAllByRole("dialog").at(-1)!)
     await userEvent.type(dialog.getByLabelText("Check number"), "1042")
@@ -122,13 +122,13 @@ describe("the job panel", () => {
     expect(actions.recordPayment).toHaveBeenCalledWith("job-d", { method: "check", amount: 145, reference: "1042" })
   })
 
-  it("lists payments newest first with how they came and the reference, and Paid when nothing is owed", async () => {
+  it("lists payments newest first with how they came and the reference, and Paid when nothing is unpaid", async () => {
     view({ defaultJobId: "job-e" })
     const p = panel()
     expect(p.getByText("Check 1038")).toBeInTheDocument()
     expect(p.getByText("$145 · Paid")).toBeInTheDocument()
     expect(p.queryByRole("button", { name: "Record the payment" })).toBeNull()
-    expect(p.queryByRole("button", { name: "Send a bill" })).toBeNull()
+    expect(p.queryByRole("button", { name: "Send an invoice" })).toBeNull()
   })
 
   it("lists every visit with its day, who has it and its pills, opening that visit", async () => {
@@ -141,11 +141,11 @@ describe("the job panel", () => {
     expect(await screen.findByRole("heading", { name: "Customer" })).toBeInTheDocument()
   })
 
-  it("strikes a cancelled line through and adds up only the live ones; an unpriced line says Quote later", () => {
+  it("strikes a canceled line through and adds up only the live ones; an unpriced line says Quote later", () => {
     view({ defaultJobId: "job-install", actions: jobActions() })
     const lines = panel().getByRole("heading", { name: "Lines" }).closest("section")!
     expect(within(lines).getByText("Drip zone").closest("div")).toHaveClass("line-through")
-    expect(within(lines).getByText("cancelled")).toBeInTheDocument()
+    expect(within(lines).getByText("canceled")).toBeInTheDocument()
     expect(within(lines).getByText("$1,310")).toBeInTheDocument()
     view({ defaultJobId: "job-b" })
     expect(within(screen.getAllByRole("dialog").at(-1)!).getAllByText("Quote later").length).toBeGreaterThan(0)
@@ -194,7 +194,7 @@ describe("the job panel", () => {
   it("a tech reads the same job with no buttons, no New job and no line editor", () => {
     view({ defaultJobId: "job-d", readOnly: true, actions: jobActions() })
     const p = panel()
-    for (const name of ["Send a bill", "Record the payment", "New visit", "Add a line", "Remind"]) expect(p.queryByRole("button", { name })).toBeNull()
+    for (const name of ["Send an invoice", "Record the payment", "New visit", "Add a line", "Remind"]) expect(p.queryByRole("button", { name })).toBeNull()
     expect(p.getByRole("link", { name: "Open customer" })).toBeInTheDocument()
     expect(screen.queryByRole("button", { name: "New job" })).toBeNull()
   })

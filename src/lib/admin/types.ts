@@ -25,7 +25,7 @@ export type VisitKind =
 
 /**
  * One payment row as the screens hold it (`charge` in the database): whole dollars, negative for a refund. The money words
- * (Paid with how, Owed, Bill sent, Failed) are read from these by `src/lib/money/words.ts` and nowhere else.
+ * (Paid with how, Unpaid, Invoice sent, Failed) are read from these by `src/lib/money/words.ts` and nowhere else.
  */
 export interface AdminPayment {
   id: string
@@ -42,8 +42,8 @@ export interface AdminPayment {
 }
 
 /**
- * A bill the office sent (`invoice`): the frozen lines are in the API; the screens need the dates, the amounts and the pay link.
- * Open while it is sent or overdue; a paid or cancelled bill is not carried here.
+ * An invoice the office sent (`invoice`): the frozen lines are in the API; the screens need the dates, the amounts and the pay link.
+ * Open while it is sent or overdue; a paid or canceled invoice is not carried here.
  */
 export interface AdminInvoice {
   id: string
@@ -58,19 +58,19 @@ export interface AdminInvoice {
   dueOn: string
   /** sent, or overdue once the day after `dueOn` has come */
   status: "sent" | "overdue"
-  /** the visits its lines were billed after; empty when the lines name none, which means every visit of the job */
+  /** the visits its lines were invoiced after; empty when the lines name none, which means every visit of the job */
   visitIds: string[]
   /** the customer's pay link; only for the write scope, never for a tech */
   payUrl?: string
 }
 
-/** A job's money in words, from its lines and its payment rows: `words` is "Paid", "$115 owed" or "2 of 3 paid, $115 owed". */
+/** A job's money in words, from its lines and its payment rows: `words` is "Paid", "$115 unpaid" or "2 of 3 paid, $115 unpaid". */
 export interface SoldJobMoney {
   paid: number
   total: number
   owed: number
   words: string
-  /** the job owes money and has an open bill; the words read Bill sent */
+  /** the job owes money and has an open invoice; the words read Invoice sent */
   billSent?: boolean
 }
 
@@ -221,9 +221,9 @@ export interface Visit {
   notes?: string
   /** why the last attempt did not happen, until the visit gets a day again */
   notDoneReason?: string
-  /** the open bill this visit's lines are on; its money reads Bill sent */
+  /** the open invoice this visit's lines are on; its money reads Invoice sent */
   invoice?: AdminInvoice
-  /** @deprecated alias for the fixtures: a bill was sent and is not yet paid; live data reads `invoice` */
+  /** @deprecated alias for the fixtures: an invoice was sent and is not yet paid; live data reads `invoice` */
   billSent?: boolean
 }
 
@@ -237,9 +237,9 @@ export interface JobLine {
   /** whole dollars */
   unitPrice: number
   taxable: boolean
-  /** set once the line is cancelled; it then counts nothing */
+  /** set once the line is canceled; it then counts nothing */
   cancelledAt?: string
-  /** the visit the line is billed after; absent for a line on the job as a whole */
+  /** the visit the line is invoiced after; absent for a line on the job as a whole */
   visitId?: string
 }
 
@@ -276,7 +276,7 @@ export interface SoldJob {
   payments?: AdminPayment[]
   /** Paid, or the number owed, read from the lines and the payments; absent in the fixtures */
   money?: SoldJobMoney
-  /** the bill that is open on this job (sent or overdue), if there is one; its money reads Bill sent */
+  /** the invoice that is open on this job (sent or overdue), if there is one; its money reads Invoice sent */
   invoice?: AdminInvoice
 }
 
@@ -325,9 +325,9 @@ export interface PassVisit {
   /** the visit's own payment rows, oldest first (a charged visit has one succeeded row); absent in the fixtures for a visit nothing was paid for */
   payments?: AdminPayment[]
   notDoneReason?: string
-  /** the open bill this visit's lines are on; its money reads Bill sent */
+  /** the open invoice this visit's lines are on; its money reads Invoice sent */
   invoice?: AdminInvoice
-  /** @deprecated alias for the fixtures: a bill was sent and is not yet paid */
+  /** @deprecated alias for the fixtures: an invoice was sent and is not yet paid */
   billSent?: boolean
 }
 
@@ -463,11 +463,11 @@ export interface Message {
   status: "queued" | "sent" | "delivered" | "failed" | "bounced"
 }
 
-/** How bills are due and taxed (Settings › Billing). With the switch on, sales tax is part of every job's total, its visits' prices and its bill. */
+/** How invoices are due and taxed (Settings › Billing). With the switch on, sales tax is part of every job's total, its visits' prices and its invoice. */
 export interface BillingSettings {
-  /** a bill is due this many days after it is sent */
+  /** an invoice is due this many days after it is sent */
   dueDays: number
-  /** whether a bill adds Colorado sales tax to its taxable lines */
+  /** whether an invoice adds Colorado sales tax to its taxable lines */
   collectsSalesTax: boolean
   /** percent, one decimal at most; used only while `collectsSalesTax` is on */
   salesTaxPercent: number
@@ -517,11 +517,11 @@ export interface Attention {
   passId?: string
   /** the visit an unplaced alert is about; Home links to it on the Schedule. An owed row names the job's done visit, which opens its panel */
   visitId?: string
-  /** the job an owed row, or an overdue bill's row, is about */
+  /** the job an owed row, or an overdue invoice's row, is about */
   jobId?: string
-  /** the bill an overdue row is about: what Remind sends the reminder of */
+  /** the invoice an overdue row is about: what Remind sends the reminder of */
   invoiceId?: string
-  /** the customer an overdue row's bill is to: the row opens their panel on Customers, where the bill is */
+  /** the customer an overdue row's invoice is to: the row opens their panel on Customers, where the invoice is */
   customerId?: string
   message: string
   since: string

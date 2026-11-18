@@ -130,7 +130,7 @@ describe("visits.create with a jobId", () => {
     const [a, b] = await Promise.all([db.select().from(s.visit).where(eq(s.visit.id, first.id)), db.select().from(s.visit).where(eq(s.visit.id, second.id))])
     expect([b[0]!.customerId, b[0]!.propertyId]).toEqual([a[0]!.customerId, a[0]!.propertyId])
   })
-  it("refuses a customer beside the job, an unknown job, a cancelled job and a Season Pass, and a refused day takes only the visit back", async () => {
+  it("refuses a customer beside the job, an unknown job, a canceled job and a Season Pass, and a refused day takes only the visit back", async () => {
     const first = await create({ customerId: "c100", kind: "repair", price: 145 })
     await expect(create({ jobId: first.jobId, customerId: "c100", kind: "repair" })).rejects.toMatchObject({ code: "invalid" })
     await expect(create({ jobId: "nope", kind: "repair" })).rejects.toMatchObject({ code: "not_found" })
@@ -266,7 +266,7 @@ describe("visits.cancel", () => {
     const rest = await db.select().from(s.visit).where(eq(s.visit.jobId, passRow.jobId))
     expect(rest.filter((v) => v.status !== "cancelled").length).toBeGreaterThan(0)
     expect(jobTotal(await linesOfJob(db, passRow.jobId), NO_TAX)).toBeLessThan(before)
-    expect((await db.select().from(s.queueItem).where(eq(s.queueItem.key, "p4-blowout")))[0]).toMatchObject({ status: "done", lastError: "visit cancelled" })
+    expect((await db.select().from(s.queueItem).where(eq(s.queueItem.key, "p4-blowout")))[0]).toMatchObject({ status: "done", lastError: "visit canceled" })
     expect((await linesOfJob(db, passRow.jobId)).find((l) => l.visitId === "p4-blowout")!.cancelledAt).toBeInstanceOf(Date)
     await expect(callApi(as(), visitsCancel, { id: "p4-blowout" })).rejects.toMatchObject({ code: "unprocessable" })
   })
@@ -275,7 +275,7 @@ describe("visits.cancel", () => {
     await callApi(as(), visitsCancel, { id: v.id })
     expect((await db.select().from(s.job).where(eq(s.job.id, v.jobId)))[0]).toMatchObject({ cancelledAt: expect.any(Date) })
     expect((await linesOfJob(db, v.jobId))[0]!.cancelledAt).toBeInstanceOf(Date)
-    // The emptied job is cancelled by a `job.cancelled` event of its own, beside the visit's.
+    // The emptied job is canceled by a `job.cancelled` event of its own, beside the visit's.
     expect(await eventsOf(db, { kind: "job.cancelled", jobId: v.jobId })).toMatchObject([{ about: "job", aboutId: v.jobId, customerId: "c100", visitId: null }])
     await expect(callApi(as(readKey), visitsCancel, { id: v.id })).rejects.toMatchObject({ code: "forbidden" })
   })

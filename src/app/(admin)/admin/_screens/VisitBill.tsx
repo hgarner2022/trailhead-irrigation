@@ -6,11 +6,11 @@ import type { VisitActions } from "./visit-actions-types"
 import { billState, billWords, type BillState } from "./bill-model"
 import { FORM_STATUS, useRunner } from "./use-runner"
 
-// The bill on a job, in the visit panel and the customer panel. A Done job that still owes money offers Send a bill; once one
-// is out the panel says "Bill sent Nov 17, due Dec 1" with Remind and the customer's pay link. Both are the office's buttons:
+// The invoice on a job, in the visit panel and the customer panel. A Done job that still owes money offers Send an invoice; once one
+// is out the panel says "Invoice sent Nov 17, due Dec 1" with Remind and the customer's pay link. Both are the office's buttons:
 // a tech's panels render none of it (the pay link is not even in a tech's data).
 
-/** The one line that says a bill is out, with the pay link and Remind. */
+/** The one line that says an invoice is out, with the pay link and Remind. */
 export function BillSent({ invoice, actions }: { invoice: AdminInvoice; actions?: VisitActions }) {
   const { pending, error, done, run } = useRunner()
   return (
@@ -40,7 +40,7 @@ export function BillSent({ invoice, actions }: { invoice: AdminInvoice; actions?
   )
 }
 
-/** Send a bill, for a Done job that owes money: freezes the lines and sends the pay link by text, or by email when there is no mobile. */
+/** Send an invoice, for a Done job that owes money: freezes the lines and sends the pay link by text, or by email when there is no mobile. */
 export function SendBill({ jobId, actions }: { jobId: string; actions?: VisitActions }) {
   const { pending, error, done, run } = useRunner()
   return (
@@ -49,9 +49,9 @@ export function SendBill({ jobId, actions }: { jobId: string; actions?: VisitAct
         type="button"
         className="min-h-11"
         disabled={pending}
-        onClick={() => (actions ? run(() => actions.sendBill(jobId), undefined, "Bill sent.") : console.info("send a bill", jobId))}
+        onClick={() => (actions ? run(() => actions.sendBill(jobId), undefined, "Invoice sent.") : console.info("send an invoice", jobId))}
       >
-        Send a bill
+        Send an invoice
       </Button>
       <p className="mt-1 text-sm text-muted-foreground">Texts a pay link, or emails it when there is no mobile.</p>
       <p role="alert" className={`${FORM_STATUS} mt-1 ${error ? "text-destructive" : "text-muted-foreground"}`}>
@@ -61,11 +61,11 @@ export function SendBill({ jobId, actions }: { jobId: string; actions?: VisitAct
   )
 }
 
-/** What a job is called in the bills list: its pass number, else the names of its live lines. */
+/** What a job is called in the invoices list: its pass number, else the names of its live lines. */
 const jobTitle = (job: SoldJob): string => (job.passNumber ? `Season Pass ${job.passNumber}` : (job.lines ?? []).filter((l) => !l.cancelledAt).map((l) => l.name).join(", ") || "Job")
 
 /**
- * A customer's jobs that can be billed or have a bill out, each with Send a bill or the sent bill. Nothing when there are none;
+ * A customer's jobs that can be invoiced or have an invoice out, each with Send an invoice or the sent invoice. Nothing when there are none;
  * the office's own section (a tech's panel does not render it).
  */
 export function CustomerBills({ jobs, data, actions }: { jobs: SoldJob[]; data: Pick<AdminData, "visits" | "passes">; actions?: VisitActions }) {
@@ -81,9 +81,7 @@ export function CustomerBills({ jobs, data, actions }: { jobs: SoldJob[]; data: 
   if (rows.length === 0) return null
   return (
     <section aria-labelledby="customer-bills" data-slot="customer-bills">
-      <h3 id="customer-bills" className="font-display text-lg leading-tight text-navy">
-        Bills
-      </h3>
+      <h3 id="customer-bills" className="font-display text-lg leading-tight text-navy">Invoices</h3>
       <ul className="mt-2 divide-y divide-border">
         {rows.map(({ job, state }) => (
           <li key={job.id} className="py-3">
@@ -96,13 +94,13 @@ export function CustomerBills({ jobs, data, actions }: { jobs: SoldJob[]; data: 
   )
 }
 
-/** The bill block of a job: Send a bill, or the sent bill. Nothing when the job can be neither billed nor has a bill. */
+/** The invoice block of a job: Send an invoice, or the sent invoice. Nothing when the job can be neither invoiced nor has an invoice. */
 export function BillBlock({ state, jobId, actions, headingId, className }: { state: BillState; jobId: string; actions?: VisitActions; headingId: string; className?: string }) {
   if (!state.invoice && !state.canSend) return null
   return (
     <section aria-labelledby={headingId} className={className}>
       <h3 id={headingId} className="mb-2 font-display text-lg leading-tight text-navy">
-        Bill
+        Invoice
       </h3>
       {state.invoice ? <BillSent invoice={state.invoice} actions={actions} /> : <SendBill jobId={jobId} actions={actions} />}
     </section>

@@ -77,7 +77,7 @@ export const messagesSend = defineHandler({
         .from(s.job)
         .where(and(eq(s.job.customerId, customer.id), eq(s.job.organizationId, ctx.organizationId), isNotNull(s.job.season)))
         .orderBy(desc(s.job.season))
-      // A pass that is not pending (sold or cancelled) speaks for the customer; a cancelled message needs the cancelled one.
+      // A pass that is not pending (sold or canceled) speaks for the customer; a canceled message needs the canceled one.
       const found = passes.find((p) => (input.kind === "cancelled" ? p.job.cancelledAt !== null : p.job.soldOn !== null || p.job.cancelledAt !== null))
       const pass = found?.job
       if (input.kind === "purchase-confirmation" || input.kind === "cancelled" || input.kind === "renewal") {

@@ -19,7 +19,7 @@ describe("jobOf", () => {
       done: "Done",
       charged: "Charged",
       "charge-failed": "Charge failed",
-      cancelled: "Cancelled",
+      cancelled: "Canceled",
       skipped: "Skipped",
     })
   })
@@ -138,7 +138,7 @@ describe("statesOf: the work pill and the money pill", () => {
     expect(s({ status: "unscheduled" })).toMatchObject({ work: "needs-a-day", money: "not-yet", moneyLabel: "", workLabel: "Unscheduled", dayPassed: false })
     expect(s({ status: "scheduled", scheduledOn: "2026-11-20" })).toMatchObject({ work: "scheduled", money: "not-yet" })
     expect(s({ status: "cancelled" })).toMatchObject({ work: "cancelled" })
-    expect(s({ status: "completed", completedOn: "2026-11-10" })).toMatchObject({ work: "done", money: "owed", moneyLabel: "Owed" })
+    expect(s({ status: "completed", completedOn: "2026-11-10" })).toMatchObject({ work: "done", money: "owed", moneyLabel: "Unpaid" })
     expect(s({ status: "completed", completedOn: "2026-11-10", ...charged("check") })).toMatchObject({ money: "paid", moneyLabel: "Paid, check" })
   })
   it("keeps a Scheduled visit whose day has passed Scheduled, with a note, and never calls Routed a state", () => {
@@ -149,20 +149,20 @@ describe("statesOf: the work pill and the money pill", () => {
     expect(s({ status: "unscheduled", notDoneReason: "no-water" })).toMatchObject({ work: "not-done", workLabel: "Not done, no water on" })
     expect(s({ status: "scheduled", scheduledOn: "2026-11-20", notDoneReason: "no-water" }).work).toBe("scheduled")
   })
-  it("says how the money came, or that it failed or a bill is out", () => {
+  it("says how the money came, or that it failed or an invoice is out", () => {
     const done = { status: "completed" as const, completedOn: "2026-11-10" }
     expect(s({ ...done, ...charged("check") })).toMatchObject({ money: "paid", moneyLabel: "Paid, check" })
     expect(s({ ...done, ...charged("card_on_file") }).moneyLabel).toBe("Paid, card")
     expect(s({ ...done, chargeFailed: true }).money).toBe("failed")
     expect(s({ ...done, cardFailedAt: "2026-11-11T00:00:00Z" }).money).toBe("failed")
-    expect(s({ ...done, billSent: true })).toMatchObject({ money: "bill-sent", moneyLabel: "Bill sent" })
+    expect(s({ ...done, billSent: true })).toMatchObject({ money: "bill-sent", moneyLabel: "Invoice sent" })
     const invoice = { id: "i1", jobId: "j", number: "INV-2026-0001", amount: 145, tax: 0, total: 145, sentOn: "2026-11-10", dueOn: "2026-11-24", status: "sent" as const, visitIds: [] }
-    expect(s({ ...done, invoice })).toMatchObject({ money: "bill-sent", moneyLabel: "Bill sent" })
-    // an overdue bill still reads Bill sent; Paid and a failed card win over it
+    expect(s({ ...done, invoice })).toMatchObject({ money: "bill-sent", moneyLabel: "Invoice sent" })
+    // an overdue invoice still reads Invoice sent; Paid and a failed card win over it
     expect(s({ ...done, invoice: { ...invoice, status: "overdue" } }).money).toBe("bill-sent")
     expect(s({ ...done, invoice, ...charged("check") }).money).toBe("paid")
     expect(s({ ...done, invoice, chargeFailed: true }).money).toBe("failed")
-    // a visit that is not done yet reads nothing, whatever bill its job has
+    // a visit that is not done yet reads nothing, whatever invoice its job has
     expect(s({ status: "scheduled", scheduledOn: "2026-11-20", invoice }).money).toBe("not-yet")
   })
   it("reads a failed charge from the customer's card for every done pass visit, whichever pass it is on", () => {
@@ -178,16 +178,16 @@ describe("statesOf: the work pill and the money pill", () => {
     const row = (visitId: string, amount: number, over: Record<string, unknown> = {}) => ({ id: `pay-${visitId}`, visitId, amount, method: "check", status: "succeeded", ...over })
     const lines = [{ id: "l1", name: "Repair", quantity: 1, unitPrice: 145, taxable: false, visitId: "a" }, { id: "l2", name: "Repair", quantity: 1, unitPrice: 145, taxable: false, visitId: "b" }]
     // one of two visits paid
-    expect(jobMoney({ lines, payments: [row("a", 145)] }, [visit("a"), visit("b")], NO_TAX)).toBe("1 of 2 paid, $145 owed")
+    expect(jobMoney({ lines, payments: [row("a", 145)] }, [visit("a"), visit("b")], NO_TAX)).toBe("1 of 2 paid, $145 unpaid")
     // nothing paid yet
-    expect(jobMoney({ lines, payments: [] }, [visit("a"), visit("b")], NO_TAX)).toBe("$290 owed")
+    expect(jobMoney({ lines, payments: [] }, [visit("a"), visit("b")], NO_TAX)).toBe("$290 unpaid")
     // both paid, then a refund of one reopens the number
     expect(jobMoney({ lines, payments: [row("a", 145), row("b", 145)] }, [visit("a"), visit("b")], NO_TAX)).toBe("Paid")
-    expect(jobMoney({ lines, payments: [row("a", 145), row("b", 145), row("b", -145, { id: "refund" })] }, [visit("a"), visit("b")], NO_TAX)).toBe("1 of 2 paid, $145 owed")
-    // a cancelled visit is not counted
+    expect(jobMoney({ lines, payments: [row("a", 145), row("b", 145), row("b", -145, { id: "refund" })] }, [visit("a"), visit("b")], NO_TAX)).toBe("1 of 2 paid, $145 unpaid")
+    // a canceled visit is not counted
     expect(jobMoney({ lines: [lines[0]!], payments: [row("a", 145)] }, [visit("a"), visit("b", { status: "cancelled" })], NO_TAX)).toBe("Paid")
     // without the job's lines or payments (the fixtures) the visits stand in, with their own payments
-    expect(jobMoney(undefined, [visit("a", { payments: [row("a", 145)] }), visit("b")], NO_TAX)).toBe("1 of 2 paid, $145 owed")
+    expect(jobMoney(undefined, [visit("a", { payments: [row("a", 145)] }), visit("b")], NO_TAX)).toBe("1 of 2 paid, $145 unpaid")
     // a job nothing has priced says nothing
     expect(jobMoney({ lines: [], payments: [] }, [visit("a", { price: 0 })], NO_TAX)).toBe("")
   })
@@ -198,7 +198,7 @@ describe("the money words are read from the payment rows", () => {
   const pay = (method: string, over: Record<string, unknown> = {}) => ({ id: `p-${method}`, visitId: "v", amount: 145, method, status: "succeeded", ...over })
 
   it("has one word for each money state, with Owed where it said Unpaid", () => {
-    expect(MONEY_WORDS).toEqual({ "not-yet": "", paid: "Paid", owed: "Owed", "bill-sent": "Bill sent", failed: "Failed" })
+    expect(MONEY_WORDS).toEqual({ "not-yet": "", paid: "Paid", owed: "Unpaid", "bill-sent": "Invoice sent", failed: "Failed" })
   })
 
   it("says Paid with how, from the newest payment that arrived", () => {
@@ -209,13 +209,13 @@ describe("the money words are read from the payment rows", () => {
   })
 
   it("says Owed for a done visit with no payment row", () => {
-    expect(moneyOf({ ...done, payments: [] })).toEqual({ state: "owed", label: "Owed" })
-    expect(moneyOf(done)).toEqual({ state: "owed", label: "Owed" })
+    expect(moneyOf({ ...done, payments: [] })).toEqual({ state: "owed", label: "Unpaid" })
+    expect(moneyOf(done)).toEqual({ state: "owed", label: "Unpaid" })
   })
 
   it("says nothing until the visit is done, and Owed again once a refund leaves nothing paid", () => {
     expect(moneyOf({ status: "scheduled", scheduledOn: "2026-11-20", visitId: "v", payments: [] }).state).toBe("not-yet")
-    expect(moneyOf({ ...done, payments: [pay("check"), pay("check", { id: "refund", amount: -145 })] })).toEqual({ state: "owed", label: "Owed" })
+    expect(moneyOf({ ...done, payments: [pay("check"), pay("check", { id: "refund", amount: -145 })] })).toEqual({ state: "owed", label: "Unpaid" })
   })
 
   it("says Failed from a failed newest row, and a retry that went through clears it", () => {
@@ -239,7 +239,7 @@ describe("the money words are read from the payment rows", () => {
 
   it("reads Owed, not Paid, for a visit with only part of its price, from the pill, the job state and visitPaid", () => {
     const part = { ...done, price: 145, payments: [pay("check", { amount: 100 })] }
-    expect(moneyOf(part)).toEqual({ state: "owed", label: "Owed" })
+    expect(moneyOf(part)).toEqual({ state: "owed", label: "Unpaid" })
     expect(jobOf(part, TODAY).state).toBe("done")
     expect(visitPaid({ id: "v", price: 145, payments: [{ ...pay("check", { amount: 100 }) }] })).toBe(false)
     expect(visitPaid({ id: "v", amount: 145, payments: [{ ...pay("check", { amount: 100 }) }] })).toBe(false)

@@ -42,7 +42,7 @@ const nextWeekday = () => {
   while ([0, 6].includes(day.getUTCDay()))
   return day.toISOString().slice(0, 10)
 }
-/** Andrea's repair, done and billed: the sent bill, due 14 days after Nov 17 2026 (the real clock the page reads is far earlier or later, so the tests set `dueOn` themselves). */
+/** Andrea's repair, done and invoiced: the sent invoice, due 14 days after Nov 17 2026 (the real clock the page reads is far earlier or later, so the tests set `dueOn` themselves). */
 async function sentBill(price = 145) {
   const at = "2027-05-07T20:00:00Z"
   const v = await callApi(ctxFor(db, writeKey, at), visitsCreate, { customerId: "c100", kind: "repair", scheduledOn: nextWeekday(), price })
@@ -56,18 +56,18 @@ const page = (invoiceId: string, token: string | undefined) => PayPage({ params:
 const billOf = async (invoiceId: string) => ((await page(invoiceId, signToken("invoice-pay", invoiceId))) as { props: { bill: Record<string, unknown> } }).props.bill
 
 describe("the pay page", () => {
-  it("is a 404 without the signed token, with a wrong one, and with another bill's", async () => {
+  it("is a 404 without the signed token, with a wrong one, and with another invoice's", async () => {
     const a = await sentBill()
     const b = await sentBill()
     await expect(page(a.invoice.id, undefined)).rejects.toThrow("NEXT_NOT_FOUND")
     await expect(page(a.invoice.id, "nope")).rejects.toThrow("NEXT_NOT_FOUND")
     await expect(page(a.invoice.id, signToken("invoice-pay", b.invoice.id))).rejects.toThrow("NEXT_NOT_FOUND")
     await expect(page(a.invoice.id, signToken("renew-pass", a.invoice.id))).rejects.toThrow("NEXT_NOT_FOUND")
-    // A signed id that is no bill is a 404 too.
+    // A signed id that is no invoice is a 404 too.
     await expect(page("no-such-bill", signToken("invoice-pay", "no-such-bill"))).rejects.toThrow("NEXT_NOT_FOUND")
   })
 
-  it("shows a sent bill: the first name, the frozen lines, the total and the due day, and nothing else of the customer", async () => {
+  it("shows a sent invoice: the first name, the frozen lines, the total and the due day, and nothing else of the customer", async () => {
     const { invoice } = await sentBill()
     const bill = await billOf(invoice.id)
     expect(bill).toEqual({
@@ -77,7 +77,7 @@ describe("the pay page", () => {
     expect(JSON.stringify(bill)).not.toMatch(/andrea.test@example|phone|customerId|jobId|payUrl|token/i)
   })
 
-  it("reads an overdue bill, a paid one with its receipt, and a cancelled one", async () => {
+  it("reads an overdue invoice, a paid one with its receipt, and a canceled one", async () => {
     const late = await sentBill()
     await db.update(s.invoice).set({ dueOn: "2020-01-01" }).where(eq(s.invoice.id, late.invoice.id))
     expect(await billOf(late.invoice.id)).toMatchObject({ status: "overdue", dueOn: "2020-01-01" })
@@ -92,7 +92,7 @@ describe("the pay page", () => {
     expect(await billOf(gone.invoice.id)).toMatchObject({ status: "cancelled" })
   })
 
-  it("hands the screen a pay action bound to this bill and its token", async () => {
+  it("hands the screen a pay action bound to this invoice and its token", async () => {
     const { invoice } = await sentBill()
     const token = signToken("invoice-pay", invoice.id)
     const element = (await page(invoice.id, token)) as { props: { payAction: () => Promise<unknown> } }
@@ -102,7 +102,7 @@ describe("the pay page", () => {
 })
 
 describe("the pay page's visitor", () => {
-  it("reads the one bill its link opened through invoices.payView, and nothing else", async () => {
+  it("reads the one invoice its link opened through invoices.payView, and nothing else", async () => {
     const a = await sentBill()
     const b = await sentBill()
     const ctx = (await ctxForInvoice(a.invoice.id, { database: () => db }))!
@@ -128,7 +128,7 @@ describe("startBillPayment", () => {
     expect(calls.customersCreate).not.toHaveBeenCalled()
   })
 
-  it("opens a payment-mode session for the total that keeps the card, carries the bill on both objects, and stores the session on the bill", async () => {
+  it("opens a payment-mode session for the total that keeps the card, carries the invoice on both objects, and stores the session on the invoice", async () => {
     const { invoice } = await sentBill()
     const { stripe, calls } = stubStripe()
     const token = signToken("invoice-pay", invoice.id)
@@ -137,7 +137,7 @@ describe("startBillPayment", () => {
     const [params, options] = calls.sessionCreate.mock.calls[0]! as unknown as [Record<string, unknown>, { idempotencyKey: string }]
     expect(params).toMatchObject({
       mode: "payment", customer: "cus_new_1", allowed_payment_method_types: ["card"],
-      line_items: [{ quantity: 1, price_data: { currency: "usd", unit_amount: 14500, product_data: { name: `Trailhead bill ${invoice.number}` } } }],
+      line_items: [{ quantity: 1, price_data: { currency: "usd", unit_amount: 14500, product_data: { name: `Trailhead invoice ${invoice.number}` } } }],
       payment_intent_data: { setup_future_usage: "off_session", metadata: { purpose: "invoice", invoiceId: invoice.id } },
       metadata: { purpose: "invoice", invoiceId: invoice.id },
       success_url: `${origin}/pay/${invoice.id}/paid`, cancel_url: `${origin}/pay/${invoice.id}?token=${token}`,
@@ -147,7 +147,7 @@ describe("startBillPayment", () => {
     expect((await db.select().from(s.customer).where(eq(s.customer.id, "c100")))[0]!.stripeCustomerId).toBe("cus_new_1")
   })
 
-  it("opens a session for an overdue bill and reuses the Stripe customer", async () => {
+  it("opens a session for an overdue invoice and reuses the Stripe customer", async () => {
     const { invoice } = await sentBill()
     await db.update(s.invoice).set({ dueOn: "2020-01-01" }).where(eq(s.invoice.id, invoice.id))
     await db.update(s.customer).set({ stripeCustomerId: "cus_dana" }).where(eq(s.customer.id, "c100"))
@@ -157,22 +157,22 @@ describe("startBillPayment", () => {
     expect(calls.sessionCreate.mock.calls[0]![0]).toMatchObject({ customer: "cus_dana" })
   })
 
-  it("refuses a bill that is paid, one that was cancelled and one whose job was paid by cash since", async () => {
+  it("refuses an invoice that is paid, one that was canceled and one whose job was paid by cash since", async () => {
     const { stripe, calls } = stubStripe()
     const ask = (id: string) => startBillPayment(db, stripe, { invoiceId: id, token: signToken("invoice-pay", id), origin, now })
     const paid = await sentBill()
     await db.update(s.invoice).set({ paidOn: "2026-11-19" }).where(eq(s.invoice.id, paid.invoice.id))
-    expect(await ask(paid.invoice.id)).toEqual({ ok: false, message: "This bill is already paid." })
+    expect(await ask(paid.invoice.id)).toEqual({ ok: false, message: "This invoice is already paid." })
     const gone = await sentBill()
     await callApi(ctxFor(db, adminKey, "2027-05-08T20:00:00Z"), invoicesCancel, { id: gone.invoice.id })
-    expect(await ask(gone.invoice.id)).toEqual({ ok: false, message: "This bill was cancelled." })
+    expect(await ask(gone.invoice.id)).toEqual({ ok: false, message: "This invoice was voided." })
     const cash = await sentBill()
     await db.insert(s.charge).values({ organizationId: ORG, jobId: cash.visit.jobId, customerId: "c100", visitId: cash.visit.id, amount: 145, status: "succeeded", method: "cash", paidOn: "2026-11-19" })
-    expect(await ask(cash.invoice.id)).toEqual({ ok: false, message: "This bill is already paid." })
+    expect(await ask(cash.invoice.id)).toEqual({ ok: false, message: "This invoice is already paid." })
     expect(calls.sessionCreate).not.toHaveBeenCalled()
   })
 
-  it("says one sentence and keeps the bill untouched when Stripe will not open the form", async () => {
+  it("says one sentence and keeps the invoice untouched when Stripe will not open the form", async () => {
     const { invoice } = await sentBill()
     const { stripe, calls } = stubStripe()
     calls.sessionCreate.mockRejectedValueOnce(new Error("Stripe is down"))

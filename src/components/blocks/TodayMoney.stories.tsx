@@ -10,7 +10,7 @@ const meta = {
       { label: "Today", value: "$780" },
       { label: "Done", value: "$385" },
       { label: "Ahead", value: "$395" },
-      { label: "Owed", value: "$190" },
+      { label: "Unpaid", value: "$190" },
     ],
     scheduleHref: "/admin/schedule?day=2026-11-12",
   },
@@ -23,7 +23,7 @@ export const Default: Story = {}
 
 /** An empty day reads $0 across and keeps the button. */
 export const EmptyDay: Story = {
-  args: { figures: ["Today", "Done", "Ahead", "Owed"].map((label) => ({ label, value: "$0" })) },
+  args: { figures: ["Today", "Done", "Ahead", "Unpaid"].map((label) => ({ label, value: "$0" })) },
 }
 
 /** Two rows of two with the button full width under them. */

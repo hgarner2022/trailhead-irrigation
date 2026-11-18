@@ -125,7 +125,7 @@ export const addNote = async (about: "customer" | "property" | "job" | "visit", 
 
 /**
  * The one button on a Needs action row. A declined card and an expiring card send the card update link and a visit
- * nobody marked done is marked done, an overdue bill gets its reminder; every other row is a place to go, so the redirect is the answer: a visit to its
+ * nobody marked done is marked done, an overdue invoice gets its reminder; every other row is a place to go, so the redirect is the answer: a visit to its
  * panel on Visits, a pass to its job on Jobs.
  */
 export async function attentionAction(item: Attention): Promise<ActionOutcome | { ok: true; data: undefined; message: string }> {
@@ -146,12 +146,12 @@ export async function attentionAction(item: Attention): Promise<ActionOutcome | 
     const done = await act((ctx) => nothing(callApi(ctx, visitsMarkClosed, { id: item.visitId! })))
     return done.ok ? { ok: true, data: undefined, message: "Marked done." } : done
   }
-  // An overdue bill: Remind sends the customer one reminder with the pay link (`invoices.remind`, which keys the message by invoice and day, so two presses in a day send one).
+  // An overdue invoice: Remind sends the customer one reminder with the pay link (`invoices.remind`, which keys the message by invoice and day, so two presses in a day send one).
   if (item.kind === "overdue" && item.invoiceId) {
     const sent = await act((ctx) => nothing(callApi(ctx, invoicesRemind, { id: item.invoiceId! })))
     return sent.ok ? { ok: true, data: undefined, message: "Reminder sent." } : sent
   }
-  // A job that is done and owed carries the visit that is owed in `visitId`, so it opens on Visits like any visit row, where the panel's Record the payment (or Send a bill) asks how the money came.
+  // A job that is done and unpaid carries the visit that is unpaid in `visitId`, so it opens on Visits like any visit row, where the panel's Record the payment (or Send an invoice) asks how the money came.
   if (item.visitId) redirect(`/admin/visits?visit=${encodeURIComponent(item.visitId)}`)
   if (item.passId) redirect(item.jobId ? jobUrl(item.jobId) : "/admin/jobs")
   redirect("/admin/schedule")

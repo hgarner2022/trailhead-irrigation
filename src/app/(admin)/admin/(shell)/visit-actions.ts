@@ -56,7 +56,7 @@ export const markDone = async (visitId: string, opts: { completedOn?: string; pa
 export const undoDone = async (visitId: string): Promise<ActionOutcome> => act((ctx) => nothing(callApi(ctx, visitsMarkClosed, { id: visitId, undo: true })))
 
 /**
- * The Done-and-owed form's Record payment: a payment row on the visit's job through `payments.record`, for what is still owed on the
+ * The Done-and-owed form's Record payment: a payment row on the visit's job through `payments.record`, for what is still unpaid on the
  * visit (its price less what has arrived), or the amount typed for a visit with no price yet. A visit already paid says so and writes
  * nothing, so a double submit or a stale panel cannot post it twice; `payments.record` refuses it again and refuses a pass visit
  * charged to a card.
@@ -71,10 +71,10 @@ export const recordPayment = async (visitId: string, paidBy: PaidBy & { method: 
     return undefined
   })
 
-/** Send a bill for a done job that still owes money: `invoices.send` freezes the lines and sends one message with the pay link. */
+/** Send an invoice for a done job that still owes money: `invoices.send` freezes the lines and sends one message with the pay link. */
 export const sendBill = async (jobId: string): Promise<ActionOutcome> => act((ctx) => nothing(callApi(ctx, invoicesSend, { jobId })))
 
-/** Remind: `invoices.remind` sends the open bill's reminder; two presses in one day send one. */
+/** Remind: `invoices.remind` sends the open invoice's reminder; two presses in one day send one. */
 export const remindBill = async (invoiceId: string): Promise<ActionOutcome> => act((ctx) => nothing(callApi(ctx, invoicesRemind, { id: invoiceId })))
 
 export const markNotDone = async (visitId: string, reason: NotDoneReason, note?: string): Promise<ActionOutcome<Where>> =>

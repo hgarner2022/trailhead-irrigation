@@ -22,7 +22,7 @@ export async function onboardPass(db: Database, passId: string, organizationId?:
     .from(s.customer)
     .innerJoin(s.property, eq(s.property.id, pass.propertyId))
     .where(eq(s.customer.id, pass.customerId))
-  // A pass cancelled between the purchase and this task needs no welcome, and a pass not sold yet has nothing to announce.
+  // A pass canceled between the purchase and this task needs no welcome, and a pass not sold yet has nothing to announce.
   if (!who || !pass.soldOn || pass.cancelledAt) return false
   const added = await db
     .insert(s.adminAlert)

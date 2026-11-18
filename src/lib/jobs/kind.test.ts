@@ -19,7 +19,7 @@ describe("jobKindOf", () => {
   it("an installation job reads install", () => {
     expect(jobKindOf({ season: null, lines: [{ serviceKind: "install" }, { serviceKind: "repair" }], visitKinds: ["install"] })).toBe("install")
   })
-  it("a cancelled first line is skipped for the next live one", () => {
+  it("a canceled first line is skipped for the next live one", () => {
     expect(jobKindOf({ season: null, lines: [{ serviceKind: "repair", cancelledAt: new Date() }, { serviceKind: "install" }], visitKinds: [] })).toBe("install")
   })
   it("a blowout-only job is other", () => {

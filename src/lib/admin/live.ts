@@ -96,7 +96,7 @@ export async function getLiveAdminData(ctx: Ctx): Promise<AdminData> {
     db.select({ id: s.job.id, customerId: s.job.customerId, season: s.job.season, soldOn: s.job.soldOn, quoteSentOn: s.job.quoteSentOn, quoteAcceptedOn: s.job.quoteAcceptedOn, cancelledAt: s.job.cancelledAt, legacyPassId: s.job.legacyPassId, source: s.job.source, passNumber: s.job.passNumber, createdAt: s.job.createdAt }).from(s.job).where(eq(s.job.organizationId, org)),
     db.select({ id: s.lineItem.id, jobId: s.lineItem.jobId, visitId: s.lineItem.visitId, name: s.lineItem.name, description: s.lineItem.description, quantity: s.lineItem.quantity, unitPrice: s.lineItem.unitPrice, taxable: s.lineItem.taxable, cancelledAt: s.lineItem.cancelledAt }).from(s.lineItem).where(eq(s.lineItem.organizationId, org)).orderBy(asc(s.lineItem.createdAt), asc(s.lineItem.id)),
     db.select().from(s.property).where(eq(s.property.organizationId, org)).orderBy(asc(s.property.createdAt), asc(s.property.id)),
-    // the organization's own bills (not the Jobber mirror's): the open ones make a job's money read Bill sent
+    // the organization's own invoices (not the Jobber mirror's): the open ones make a job's money read Invoice sent
     db.select().from(s.invoice).where(eq(s.invoice.organizationId, org)).orderBy(asc(s.invoice.sentOn), asc(s.invoice.id)),
     // the organization's newest events, loaded once like the messages and grouped by customer, job and visit; a caller without the write scope gets only the kinds `techEvent` allows
     loadEvents(ctx, {}, { limit: EVENT_LOAD }),

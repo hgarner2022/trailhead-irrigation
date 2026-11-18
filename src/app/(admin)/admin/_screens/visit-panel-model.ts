@@ -39,15 +39,15 @@ export function timeWords(visit: Visit): string {
   return visit.startTime ? windowLabel(visit.startTime, visit.minutes ?? 120) : "Any time"
 }
 
-/** The visit's own line on its job: the one billed after this visit and not cancelled. Absent when the data has no lines. */
+/** The visit's own line on its job: the one invoiced after this visit and not canceled. Absent when the data has no lines. */
 export function visitLine(data: Pick<AdminData, "jobs">, visit: Pick<Visit, "id" | "jobId">): JobLine | undefined {
   return data.jobs?.find((j) => j.id === visit.jobId)?.lines?.find((l) => l.visitId === visit.id && !l.cancelledAt)
 }
 
-/** Every line billed after this visit, cancelled ones included. Empty when the data has no lines for it. */
+/** Every line invoiced after this visit, cancelled ones included. Empty when the data has no lines for it. */
 const ownLines = (data: Pick<AdminData, "jobs">, visit: Pick<Visit, "id" | "jobId">): JobLine[] => data.jobs?.find((j) => j.id === visit.jobId)?.lines?.filter((l) => l.visitId === visit.id) ?? []
 
-/** True when the visit has lines of its own and every one is cancelled. */
+/** True when the visit has lines of its own and every one is canceled. */
 export const visitCancelled = (data: Pick<AdminData, "jobs">, visit: Pick<Visit, "id" | "jobId">): boolean => {
   const own = ownLines(data, visit)
   return own.length > 0 && own.every((l) => l.cancelledAt)
@@ -56,7 +56,7 @@ export const visitCancelled = (data: Pick<AdminData, "jobs">, visit: Pick<Visit,
 /** The sales tax rule the data carries (`AdminData.billing`); the fixtures carry none and nothing is taxed. */
 export const ruleOfData = (data: Pick<AdminData, "billing">): TaxRule => data.billing ?? NO_TAX
 
-/** What the visit is worth with its sales tax: the total of its own lines that are not cancelled when it has any, else `visit.price`. */
+/** What the visit is worth with its sales tax: the total of its own lines that are not canceled when it has any, else `visit.price`. */
 export const visitPrice = (data: Pick<AdminData, "jobs" | "billing">, visit: Visit): number => {
   const own = ownLines(data, visit)
   return own.length ? jobTotal(own.map((l) => ({ quantity: l.quantity, unitPrice: l.unitPrice, taxable: l.taxable, cancelledAt: l.cancelledAt ? new Date(l.cancelledAt) : null })), ruleOfData(data)) : (visit.price ?? 0)
@@ -64,27 +64,27 @@ export const visitPrice = (data: Pick<AdminData, "jobs" | "billing">, visit: Vis
 
 export const priceWords = (visit: Pick<Visit, "price">) => ((visit.price ?? 0) > 0 ? `$${visit.price!.toLocaleString("en-US")}` : "Quote later")
 
-/** "Spring turn-on, 8 zones · $145": the line's name, then its total; a cancelled line reads "cancelled" in place of the price. */
+/** "Spring turn-on, 8 zones · $145": the line's name, then its total; a canceled line reads "cancelled" in place of the price. */
 export const lineWords = (line: JobLine): string =>
-  line.cancelledAt ? `${line.name} · cancelled` : line.unitPrice === 0 ? `${line.name} · Quote later` : `${line.name} · $${(line.quantity * line.unitPrice).toLocaleString("en-US")}`
+  line.cancelledAt ? `${line.name} · canceled` : line.unitPrice === 0 ? `${line.name} · Quote later` : `${line.name} · $${(line.quantity * line.unitPrice).toLocaleString("en-US")}`
 
 export interface VisitFacts {
   visit: Visit
   client?: Client
   pass?: Pass
   job?: SoldJob
-  /** the line billed after this visit, when the job has lines */
+  /** the line invoiced after this visit, when the job has lines */
   line?: JobLine
   /** what the visit is worth, from its lines when it has any */
   price: number
-  /** the visit has lines and all of them are cancelled: the price reads "Cancelled" */
+  /** the visit has lines and all of them are canceled: the price reads "Canceled" */
   priceCancelled: boolean
   /** the job's visits in day order, this one included */
   siblings: Visit[]
   states: Job
-  /** the job's money in words, read from its lines and payment rows: "Paid", "$115 owed", "1 of 2 paid, $115 owed"; empty when nothing is priced */
+  /** the job's money in words, read from its lines and payment rows: "Paid", "$115 unpaid", "1 of 2 paid, $115 unpaid"; empty when nothing is priced */
   money: string
-  /** the job's bill: Send a bill when it is done and owes money, or the open bill with Remind */
+  /** the job's invoice: Send an invoice when it is done and owes money, or the open invoice with Remind */
   bill: BillState
   /** every message to this customer, with the ones about this visit marked */
   messages: Message[]

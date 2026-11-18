@@ -8,7 +8,7 @@ import { AttentionAction, type ActionResult } from "./needs-attention-action"
 import { relativeTime } from "./needs-attention-time"
 
 // The short list on Home of what needs a person: a failed charge, a task that
-// did not finish, a card about to expire, jobs from earlier days nobody has marked done, a pass cancelled. One row per item with an icon coloured by how urgent the kind
+// did not finish, a card about to expire, jobs from earlier days nobody has marked done, a pass canceled. One row per item with an icon coloured by how urgent the kind
 // is, the message, how long it has been waiting, and ONE action (Retry, Send
 // card link, Reply, ...) so the list can be cleared like an inbox (the
 // review, 2026-11-12). A row with a pass links to that pass in Passes and a row with a
@@ -37,17 +37,17 @@ const KINDS: Record<Attention["kind"], { icon: LucideIcon; tone: string; name: s
   "charge-failed": { icon: CreditCard, tone: "bg-warning/10 text-warning", name: "Charge failed" },
   "no-card": { icon: CreditCard, tone: "bg-warning/10 text-warning", name: "No card" },
   "jobs-failed": { icon: CalendarX, tone: "bg-warning/10 text-warning", name: "Task needs a retry" },
-  owed: { icon: Banknote, tone: "bg-warning/10 text-warning", name: "Done, owed" },
-  overdue: { icon: ReceiptText, tone: "bg-warning/10 text-warning", name: "Bill overdue" },
+  owed: { icon: Banknote, tone: "bg-warning/10 text-warning", name: "Done, unpaid" },
+  overdue: { icon: ReceiptText, tone: "bg-warning/10 text-warning", name: "Invoice past due" },
   "pending-pass": { icon: Clock, tone: "bg-stone text-muted-foreground", name: "Pass not paid" },
   "card-expiring": { icon: Clock, tone: "bg-stone text-muted-foreground", name: "Card expiring" },
   "not-closed": { icon: CircleDashed, tone: "bg-stone text-muted-foreground", name: "Jobs not marked done" },
-  "pass-cancelled": { icon: Ban, tone: "bg-warning/10 text-warning", name: "Pass cancelled" },
+  "pass-cancelled": { icon: Ban, tone: "bg-warning/10 text-warning", name: "Pass canceled" },
   scheduled: { icon: CalendarCheck, tone: "bg-success/10 text-success", name: "Schedule run" },
   unplaced: { icon: CalendarX, tone: "bg-warning/10 text-warning", name: "Unscheduled" },
 }
 
-/** A visit opens in Visits, a pass or an overdue bill its job on Jobs (the bill is on the job), a schedule line in Schedule; the rest have no page of their own. */
+/** A visit opens in Visits, a pass or an overdue invoice its job on Jobs (the invoice is on the job), a schedule line in Schedule; the rest have no page of their own. */
 export function attentionHref(item: Attention): string | undefined {
   if (item.kind === "overdue" && item.jobId) return jobUrl(item.jobId)
   if (item.kind === "overdue" && item.customerId) return `/admin/customers?customer=${encodeURIComponent(item.customerId)}`

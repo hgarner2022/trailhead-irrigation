@@ -12,7 +12,7 @@ import type { InvoiceOutType } from "./schemas"
 
 export type InvoiceRow = typeof s.invoice.$inferSelect
 
-/** The customer's pay link for a bill, or undefined where the site address is not configured. */
+/** The customer's pay link for an invoice, or undefined where the site address is not configured. */
 export function payLinkOf(invoiceId: string): string | undefined {
   try {
     return payUrl(readAppUrl(), invoiceId)
@@ -21,7 +21,7 @@ export function payLinkOf(invoiceId: string): string | undefined {
   }
 }
 
-/** A bill as the API shows it. The pay link is a bearer link, so it goes only to a key or person that may write (a tech's read never carries it). */
+/** An invoice as the API shows it. The pay link is a bearer link, so it goes only to a key or person that may write (a tech's read never carries it). */
 export function invoiceOut(ctx: Ctx, r: InvoiceRow): InvoiceOutType {
   const link = canSeeContact(ctx) ? payLinkOf(r.id) : undefined
   return {
@@ -31,14 +31,14 @@ export function invoiceOut(ctx: Ctx, r: InvoiceRow): InvoiceOutType {
   }
 }
 
-/** One of the organization's bills; another organization's is not found. */
+/** One of the organization's invoices; another organization's is not found. */
 export async function loadInvoice(ctx: Ctx, id: string): Promise<InvoiceRow> {
   const [row] = await ctx.db.select().from(s.invoice).where(and(eq(s.invoice.id, id), eq(s.invoice.organizationId, ctx.organizationId)))
   if (!row) throw notFound("Invoice")
   return row
 }
 
-/** The job's open bill (not paid, not cancelled), if it has one. */
+/** The job's open invoice (not paid, not canceled), if it has one. */
 export async function openInvoiceOf(db: Database, organizationId: string, jobId: string): Promise<InvoiceRow | undefined> {
   const [row] = await db
     .select()

@@ -11,9 +11,9 @@ import { JOBS_TODAY, billedJobId, cancelledLineJobId, jobsData, overdueJobId, ow
 const body = within(document.body)
 
 // Jobs at 12:56 pm Mountain on Thursday, November 12, 2026: a Season Pass the office sold with no card, the snapshot's passes, and
-// the one-offs in every state: scheduled, needing a quote, done and owed, done and paid, a bill out, a bill past its due day, a
-// cancelled job, and an installation Ryan priced after walking the yard (one line cancelled). The bills that are out come first.
-// The header carries "N bills out" and New job; a tech sees no New job. The panel stories open one job over the grid (a drawer on
+// the one-offs in every state: scheduled, needing a quote, done and unpaid, done and paid, an invoice out, an invoice past its due day, a
+// cancelled job, and an installation Ryan priced after walking the yard (one line canceled). The invoices that are out come first.
+// The header carries "N invoices out" and New job; a tech sees no New job. The panel stories open one job over the grid (a drawer on
 // a laptop, a sheet on a phone).
 
 const meta = {
@@ -33,12 +33,12 @@ type Story = StoryObj<typeof meta>
 const wide = { viewport: { value: "wide", isRotated: false } }
 const phone = { viewport: { value: "phone", isRotated: false } }
 
-/** The grid: a bill past its due day on top, then the bill that is out, then the rest by the day they were sold. */
+/** The grid: an invoice past its due day on top, then the invoice that is out, then the rest by the day they were sold. */
 export const Default: Story = {
   globals: wide,
   play: async ({ canvas }) => {
     await expect(await canvas.findByRole("button", { name: "New job" })).toBeInTheDocument()
-    await expect(await canvas.findByRole("button", { name: "2 bills out" })).toBeInTheDocument()
+    await expect(await canvas.findByRole("button", { name: "2 invoices out" })).toBeInTheDocument()
   },
 }
 export const Phone: Story = { globals: phone }
@@ -52,7 +52,7 @@ export const Empty: Story = {
   },
 }
 
-/** "N bills out" applied: only the jobs with a bill sent or past due, the oldest due day first. */
+/** "N invoices out" applied: only the jobs with a invoice sent or past due, the oldest due day first. */
 export const BillsOut: Story = { args: { defaultFilters: [{ column: "money", values: [...BILLS_OUT] }] }, globals: wide }
 
 /** A tech reads the list and sees no New job. */
@@ -64,18 +64,18 @@ export const ReadOnly: Story = {
   },
 }
 
-/** Done and owed: Send a bill and Record the payment in the footer, the amount owed in Money. */
+/** Done and owed: Send an invoice and Record the payment in the footer, the amount owed in Money. */
 export const PanelOwed: Story = {
   args: { defaultJobId: ownedJobId },
   globals: wide,
   play: async () => {
-    await expect(await body.findByRole("button", { name: "Send a bill" })).toBeInTheDocument()
+    await expect(await body.findByRole("button", { name: "Send an invoice" })).toBeInTheDocument()
     await expect(await body.findByRole("button", { name: "Record the payment" })).toBeInTheDocument()
   },
 }
 export const PanelOwedPhone: Story = { args: { defaultJobId: ownedJobId }, globals: phone }
 
-/** A bill is out: "Bill sent Nov 10, due Nov 24", Remind and the pay link, and the job's money in one line. */
+/** An invoice is out: "Invoice sent Nov 10, due Nov 24", Remind and the pay link, and the job's money in one line. */
 export const PanelBillSent: Story = {
   args: { defaultJobId: billedJobId },
   globals: wide,
@@ -86,7 +86,7 @@ export const PanelBillSent: Story = {
   },
 }
 
-/** The due day has gone: "$145 · Overdue since Nov 3" and Remind. */
+/** The due day has gone: "$145 · Past due since Nov 3" and Remind. */
 export const PanelOverdue: Story = { args: { defaultJobId: overdueJobId }, globals: wide }
 
 /** Paid by check: the payment is listed with its check number and the job says Paid. */
@@ -98,7 +98,7 @@ export const PanelPaid: Story = {
   },
 }
 
-/** Ryan priced it after walking the yard: a part payment, a cancelled line struck through, and Add a line with Edit on each live one. */
+/** Ryan priced it after walking the yard: a part payment, a canceled line struck through, and Add a line with Edit on each live one. */
 export const PanelCancelledLine: Story = {
   args: { defaultJobId: cancelledLineJobId },
   globals: wide,
@@ -128,7 +128,7 @@ export const PanelReadOnly: Story = {
   args: { defaultJobId: ownedJobId, readOnly: true },
   globals: wide,
   play: async () => {
-    await expect(body.queryByRole("button", { name: "Send a bill" })).not.toBeInTheDocument()
+    await expect(body.queryByRole("button", { name: "Send an invoice" })).not.toBeInTheDocument()
     await expect(body.queryByRole("button", { name: "Add a line" })).not.toBeInTheDocument()
   },
 }

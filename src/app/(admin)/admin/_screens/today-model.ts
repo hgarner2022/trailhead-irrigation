@@ -4,10 +4,10 @@
  * under each person in route order, and the stops the map draws. Kept apart from home-model.ts so each file stays small
  * and every rule can be tested with a fixed `today`.
  *
- * Today is the Mountain calendar day. A visit is on it when it is scheduled today and not cancelled, or when it was
+ * Today is the Mountain calendar day. A visit is on it when it is scheduled today and not canceled, or when it was
  * done today (a visit done today for a day that has since moved still counts as done today). The three groups, in the
  * words of the screen only: Past its window (the window end has passed and the visit is not done), Ahead today (the
- * window is not over, or there is no window yet) and Done today. Not done, Cancelled and Skipped are on no group.
+ * window is not over, or there is no window yet) and Done today. Not done, Canceled and Skipped are on no group.
  */
 import { areaOf, dayOf } from "@/lib/admin/calendar"
 import { TIME_ZONE } from "@/lib/admin/format"
@@ -43,7 +43,7 @@ export interface TodayRow {
   work: WorkState
   workLabel: string
   money: MoneyState
-  /** "Paid, Venmo", "$95 owed", "Bill sent", "Failed", or nothing before the visit is done */
+  /** "Paid, Venmo", "$95 unpaid", "Invoice sent", "Failed", or nothing before the visit is done */
   moneyWord: string
   /** whole dollars, from the visit's own lines */
   price: number
@@ -77,9 +77,9 @@ export interface TodayView {
   stops: Visit[]
 }
 
-/** The word on a Done row: "Paid, Venmo", "$95 owed", "Bill sent", "Failed"; nothing for a visit not yet done. */
+/** The word on a Done row: "Paid, Venmo", "$95 unpaid", "Invoice sent", "Failed"; nothing for a visit not yet done. */
 export function moneyWordOf(money: MoneyState, label: string, price: number): string {
-  if (money === "owed") return price > 0 ? `$${price.toLocaleString("en-US")} owed` : "Owed"
+  if (money === "owed") return price > 0 ? `$${price.toLocaleString("en-US")} unpaid` : "Unpaid"
   return money === "not-yet" ? "" : label
 }
 

@@ -4,9 +4,9 @@ import type { JobRow } from "./jobs-model"
 
 // The Jobs grid's columns, in the order the filters use too: Customer (the full name, opens the job), Job ("Season Pass
 // TH-2027-0007", "Repair", "Installation"), Property (street and town), Sold (the day and how: website, office, site, renewal),
-// Status (Needs a quote, Quoted, Open, Done, Cancelled), Visits ("2 of 3 done"), Total, Money (one cell: "$145 · Bill sent, due
-// Dec 1", "$115 owed", "Paid") and Next (the next visit's day, Unscheduled or None). The first column's value is the search text
-// (name, street, phone, pass number) and its cell shows the name. Money sorts by what is owed while its chip filters by state.
+// Status (Needs a quote, Quote sent, Open, Done, Canceled), Visits ("2 of 3 done"), Total, Money (one cell: "$145 · Invoice sent, due
+// Dec 1", "$115 unpaid", "Paid") and Next (the next visit's day, Unscheduled or None). The first column's value is the search text
+// (name, street, phone, pass number) and its cell shows the name. Money sorts by what is unpaid while its chip filters by state.
 
 export const jobColumns: GridColumnDef<JobRow>[] = [
   { id: "name", accessorFn: (r) => r.search, header: "Customer", cell: ({ row }) => row.original.name, meta: { csv: (r) => (r as JobRow).name } },
@@ -41,7 +41,7 @@ export const jobColumns: GridColumnDef<JobRow>[] = [
     id: "money",
     accessorKey: "money",
     header: "Money",
-    // The chip filters by the state; a click on the header sorts by what is owed.
+    // The chip filters by the state; a click on the header sorts by what is unpaid.
     sortFn: (a, b) => (a.original as JobRow).owed - (b.original as JobRow).owed,
     cell: ({ row }) => (row.original.moneyText ? <span className="whitespace-nowrap tabular-nums">{row.original.moneyText}</span> : null),
     meta: { csv: (r) => (r as JobRow).moneyText },

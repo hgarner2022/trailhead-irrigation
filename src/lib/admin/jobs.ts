@@ -10,18 +10,18 @@
  *   Unscheduled      unscheduled
  *   Scheduled       a day, no start time yet
  *   Routed          a start time is set
- *   Done            marked done, no payment row yet (money: Owed)
+ *   Done            marked done, no payment row yet (money: Unpaid)
  *   Charged         the visit's payments add up above zero (money: Paid)
  *   Charge failed   the visit's newest payment did not go through, or it is
  *                   done and the customer's card failed (money: Failed)
- *   Cancelled, Skipped
+ *   Canceled, Skipped
  *
  * "Not closed" is a flag on a job that has a day that has passed and is not
  * marked done. It is shown as a badge beside the state, never as a state.
  *
  * The screens show two pills instead of that one state (owner, 14 Nov: "it needs to be very obvious that money
- * was collected"): WORK (Unscheduled, Scheduled, Done, Not done with its reason, Cancelled) and MONEY (nothing
- * until the visit is done, then Paid with how, Owed, Bill sent, Failed). A Scheduled visit whose day has passed stays Scheduled with a "day passed"
+ * was collected"): WORK (Unscheduled, Scheduled, Done, Not done with its reason, Canceled) and MONEY (nothing
+ * until the visit is done, then Paid with how, Unpaid, Invoice sent, Failed). A Scheduled visit whose day has passed stays Scheduled with a "day passed"
  * note; Routed is a start time in the Time column, not a state. `statesOf` derives both from the same row.
  */
 import type { TaxRule } from "@/lib/jobs/tax"
@@ -39,7 +39,7 @@ export const JOB_WORDS: Record<JobState, string> = {
   done: "Done",
   charged: "Charged",
   "charge-failed": "Charge failed",
-  cancelled: "Cancelled",
+  cancelled: "Canceled",
   skipped: "Skipped",
 }
 
@@ -48,8 +48,8 @@ export const NOT_CLOSED_WORD = "Not closed"
 export type WorkState = "needs-a-day" | "scheduled" | "done" | "not-done" | "cancelled"
 export type MoneyState = "not-yet" | "paid" | "owed" | "bill-sent" | "failed"
 
-export const WORK_WORDS: Record<WorkState, string> = { "needs-a-day": "Unscheduled", scheduled: "Scheduled", done: "Done", "not-done": "Not done", cancelled: "Cancelled" }
-export const MONEY_WORDS: Record<MoneyState, string> = { "not-yet": "", paid: "Paid", owed: "Owed", "bill-sent": "Bill sent", failed: "Failed" }
+export const WORK_WORDS: Record<WorkState, string> = { "needs-a-day": "Unscheduled", scheduled: "Scheduled", done: "Done", "not-done": "Not done", cancelled: "Canceled" }
+export const MONEY_WORDS: Record<MoneyState, string> = { "not-yet": "", paid: "Paid", owed: "Unpaid", "bill-sent": "Invoice sent", failed: "Failed" }
 export { METHOD_WORDS }
 export const REASON_WORDS: Record<string, string> = { "could-not-get-in": "could not get in", "no-water": "no water on", "customer-asked-to-wait": "customer asked to wait", other: "something else" }
 
@@ -87,9 +87,9 @@ export interface JobRow {
   cardFailedAt?: string | null
   /** why the last attempt did not happen, until the visit has a day again */
   notDoneReason?: string | null
-  /** the open bill this visit's lines are on (sent or overdue): the money reads Bill sent */
+  /** the open invoice this visit's lines are on (sent or overdue): the money reads Invoice sent */
   invoice?: AdminInvoice
-  /** @deprecated alias for the fixtures: a bill was sent and is not yet paid; live data reads `invoice` */
+  /** @deprecated alias for the fixtures: an invoice was sent and is not yet paid; live data reads `invoice` */
   billSent?: boolean
 }
 
@@ -123,7 +123,7 @@ export function visitPaidOn(v: PaymentSource): string | undefined {
   return [...v.payments].reverse().find((p) => p.status === "succeeded" && p.amount > 0 && p.paidOn)?.paidOn ?? undefined
 }
 
-/** The money word of one row, read from its payment rows by `src/lib/money/words.ts`: nothing until it is done, then Paid with how, Failed, Bill sent or Owed. */
+/** The money word of one row, read from its payment rows by `src/lib/money/words.ts`: nothing until it is done, then Paid with how, Failed, Invoice sent or Unpaid. */
 export function moneyOf(row: JobRow): { state: MoneyState; label: string } {
   const done = row.status === "completed" || Boolean(row.completedOn)
   const gone = row.status === "cancelled" || row.status === "skipped"
@@ -154,8 +154,8 @@ export function statesOf(row: JobRow, today: string): VisitStates {
 
 /**
  * The money summary a job carries across its visits, from its lines and payment rows (`jobMoney` in `src/lib/money/words.ts`):
- * "Paid", "$115 owed" or "1 of 2 paid, $115 owed", empty for a job nothing has priced. Without the job's own lines or payments
- * (the fixtures) the visits' prices and their payments stand in; a cancelled visit is not counted.
+ * "Paid", "$115 unpaid" or "1 of 2 paid, $115 unpaid", empty for a job nothing has priced. Without the job's own lines or payments
+ * (the fixtures) the visits' prices and their payments stand in; a canceled visit is not counted.
  */
 export function jobMoney(job: Pick<SoldJob, "lines" | "payments" | "invoice"> | undefined, visits: Pick<Visit, "id" | "status" | "price" | "payments">[], rule: TaxRule): string {
   const live = visits.filter((v) => v.status !== "cancelled")

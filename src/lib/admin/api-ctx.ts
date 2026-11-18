@@ -54,9 +54,9 @@ export async function ctxForCheckout(passId?: string, deps: CtxDeps = {}): Promi
 }
 
 /**
- * The context for the pay page: the `public` principal in the organization the bill belongs to (read off the bill itself, since
- * the signed link has already proved the id is real), carrying the bill's id. `callApi` lets it call only the handlers marked
- * `own-invoice`, and only for that bill. The caller verifies the token first; this never does. Null when no such bill exists.
+ * The context for the pay page: the `public` principal in the organization the invoice belongs to (read off the invoice itself, since
+ * the signed link has already proved the id is real), carrying the invoice's id. `callApi` lets it call only the handlers marked
+ * `own-invoice`, and only for that invoice. The caller verifies the token first; this never does. Null when no such invoice exists.
  */
 export async function ctxForInvoice(invoiceId: string, deps: CtxDeps = {}): Promise<Ctx | null> {
   const database = await db(deps)

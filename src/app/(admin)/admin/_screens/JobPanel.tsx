@@ -86,7 +86,7 @@ export interface JobPanelProps {
   readOnly?: boolean
   /** the job panel's own actions (lines, payments, a new visit, the pass's buttons) */
   actions?: JobActions
-  /** Send a bill and Remind, the same ones the visit panel uses */
+  /** Send an invoice and Remind, the same ones the visit panel uses */
   visitActions?: VisitActions
 }
 
@@ -99,7 +99,7 @@ export function JobPanel({ data, today, jobId, open, onOpenChange, readOnly = fa
   if (!facts) return null
   const { job, row, pass, bill } = facts
   const say = (call: () => Promise<{ ok: boolean }>, said?: string) => run(call as never, undefined, said ?? "")
-  const sendBill = () => (visitActions ? run(() => visitActions.sendBill(job.id), undefined, "Bill sent.") : console.info("send a bill", job.id))
+  const sendBill = () => (visitActions ? run(() => visitActions.sendBill(job.id), undefined, "Invoice sent.") : console.info("send an invoice", job.id))
   const canAct = !readOnly
   const passOpen = canAct && pass?.status === "active"
   return (
@@ -112,7 +112,7 @@ export function JobPanel({ data, today, jobId, open, onOpenChange, readOnly = fa
         <>
           {canAct && bill.canSend && (
             <Button type="button" className="min-h-11" disabled={pending} onClick={sendBill}>
-              Send a bill
+              Send an invoice
             </Button>
           )}
           {canAct && facts.canRecord && (

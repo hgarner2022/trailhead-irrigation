@@ -26,12 +26,12 @@ export const expiryWords = (cardExpires: string) => {
  * Sixty days before a card on file expires, when the season's October (the blowout window's end) still lies beyond it, one
  * `card-expiring` message with the update link. Once per customer and card (`expiry-<customer>-<expires>`), so the daily run repeats
  * nothing and two passes on one customer send one email; a replaced card has a new expiry and can warn again. A customer with
- * every visit on their active passes done or cancelled is left alone.
+ * every visit on their active passes done or canceled is left alone.
  * `makeLink` makes the 24-hour Stripe update link (injected so tests never reach Stripe). Returns how many were queued.
  */
 export async function queueCardExpiryMessages(db: Database, makeLink: (input: { passId: string; stripeCustomerId: string }) => Promise<string>, origin: string, now = new Date()): Promise<number> {
   const today = mountainDay(now)
-  // Passes that are sold and not cancelled; the job's season and number are its own columns.
+  // Passes that are sold and not canceled; the job's season and number are its own columns.
   const rows = await db
     .select({ job: s.job, customer: s.customer })
     .from(s.job)

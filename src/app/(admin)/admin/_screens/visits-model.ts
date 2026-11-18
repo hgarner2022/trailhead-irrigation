@@ -28,13 +28,13 @@ export interface VisitRow {
   /** their id, or "none" */
   personId: string
   work: WorkState
-  /** the pill's word: Unscheduled, Scheduled, Done, Not done, Cancelled */
+  /** the pill's word: Unscheduled, Scheduled, Done, Not done, Canceled */
   workLabel: string
   /** after the pill on a Not done visit: "could not get in" */
   reason?: string
   money: MoneyState
   moneyLabel: string
-  /** the one Money cell: "$95" until Done, then "$95 · Paid, Venmo", "$95 owed", "$95 · Bill sent", "$95 · Failed"; "Cancelled"; "Quote later" */
+  /** the one Money cell: "$95" until Done, then "$95 · Paid, Venmo", "$95 unpaid", "$95 · Invoice sent", "$95 · Failed"; "Canceled"; "Quote later" */
   moneyText: string
   dayPassed: boolean
   /** whole dollars; what Money sorts by */
@@ -53,14 +53,14 @@ const JOB_KIND_WORDS: Record<string, string> = { repair: "Repair", install: "Ins
 
 /**
  * The Money cell, one string for the visit: its price until it is Done, then what happened to the money. A cancelled
- * visit with nothing held reads "Cancelled"; one nobody has priced reads "Quote later".
+ * visit with nothing held reads "Canceled"; one nobody has priced reads "Quote later".
  */
 export function moneyText(row: Pick<VisitRow, "work" | "money" | "moneyLabel" | "price"> & { noCard?: boolean }): string {
-  if (row.work === "cancelled" && row.money === "not-yet") return "Cancelled"
+  if (row.work === "cancelled" && row.money === "not-yet") return "Canceled"
   const amount = row.price > 0 ? `$${row.price.toLocaleString("en-US")}` : "Quote later"
   if (row.money === "paid" || row.money === "bill-sent" || row.money === "failed") return `${amount} · ${row.moneyLabel}`
   // A pass visit whose customer has no card to charge says so, so an owed visit is never a silent one.
-  if (row.money === "owed") return `${row.price > 0 ? `${amount} owed` : "Owed"}${row.noCard ? " · no card" : ""}`
+  if (row.money === "owed") return `${row.price > 0 ? `${amount} unpaid` : "Unpaid"}${row.noCard ? " · no card" : ""}`
   return amount
 }
 
@@ -121,20 +121,20 @@ export function filterFrom(column: string, param: string | undefined, options: {
 export const KIND_OPTIONS = OFFICE_KINDS.map((value) => ({ value, label: KIND_LABEL[value] }))
 
 /**
- * The rows "done and owed" counts, on Visits' header line and on Home's money line ("Owed on N done jobs"): a Done visit whose
- * money word is Owed, and only that word. Bill sent has its own word (a bill that is overdue is Home's "N bills overdue", linking
- * to the Bill sent filter) and Failed its own figure, so neither is counted here. One job counts once however many of its visits are owed.
+ * The rows "done and unpaid" counts, on Visits' header line and on Home's money line ("Unpaid on N done jobs"): a Done visit whose
+ * money word is Unpaid, and only that word. Invoice sent has its own word (an invoice that is overdue is Home's "N invoices past due", linking
+ * to the Invoice sent filter) and Failed its own figure, so neither is counted here. One job counts once however many of its visits are owed.
  */
 export const owedRows = (rows: VisitRow[]): VisitRow[] => rows.filter((r) => r.work === "done" && r.money === "owed")
 export const jobCount = (rows: VisitRow[]): number => new Set(rows.map((r) => r.jobId ?? r.id)).size
 
-/** The header's line: how many visits, then (only when non-zero) how many have no day and how many done jobs are Owed (`owedRows`, the same count as Home's). */
+/** The header's line: how many visits, then (only when non-zero) how many have no day and how many done jobs are Unpaid (`owedRows`, the same count as Home's). */
 export function visitsContext(rows: VisitRow[]): string {
   if (rows.length === 0) return "No visits yet."
   const needDay = rows.filter((r) => r.work === "needs-a-day" || r.work === "not-done").length
   const owed = jobCount(owedRows(rows))
   const parts = [`${rows.length} ${rows.length === 1 ? "visit" : "visits"} this season.`]
   if (needDay) parts.push(`${needDay} unscheduled.`)
-  if (owed) parts.push(`${owed} done and owed.`)
+  if (owed) parts.push(`${owed} done and unpaid.`)
   return parts.join(" ")
 }

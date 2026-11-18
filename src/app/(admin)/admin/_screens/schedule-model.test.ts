@@ -137,7 +137,7 @@ describe("to schedule tray, placing and scheduling", async () => {
     expect(trayItems({ visits: placed, passes: snapshot.passes }).some((i) => i.id === item.id)).toBe(false)
   })
 
-  it("never lists a pending pass's jobs, a job that has a day, or a cancelled pass's jobs", () => {
+  it("never lists a pending pass's jobs, a job that has a day, or a canceled pass's jobs", () => {
     const pending = snapshot.passes.find((p) => p.status === "pending")!
     expect(pending.visits.every((v) => v.scheduledAt || v.window)).toBe(true)
     const items = trayItems(snapshot)

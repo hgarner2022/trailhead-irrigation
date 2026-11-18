@@ -11,7 +11,7 @@ const STORE = "trailhead.home.today-view"
 // `today` is pinned to 12:56 pm Mountain on Thursday, November 12, 2026: four
 // minutes after the snapshot's sync, so the header reads "Updated 4 minutes
 // ago". In season, that day has four scheduled blowouts with no window yet (all Ahead today). `busy` is the same day with eight
-// visits in all three groups: two past their window, three ahead and three done (paid by Venmo, owed, and a bill sent).
+// visits in all three groups: two past their window, three ahead and three done (paid by Venmo, owed, and a invoice sent).
 // The quiet November fixture has nothing today or this month: its next visits are three in April, so every group reads "Nothing here" and the screen links to the next day.
 const TODAY = "2026-11-12T19:56:30Z"
 const snap = snapshot as AdminData
@@ -26,7 +26,7 @@ const groupedTexts: Attention = {
 }
 const data: AdminData = { ...snap, attention: [groupedTexts, ...snap.attention.filter((a) => a.kind !== "jobs-failed")] }
 
-/** November with nothing on: no visits today or for months, the next three in Erie on April 27, a done visit that is owed and no failed charge. */
+/** November with nothing on: no visits today or for months, the next three in Erie on April 27, a done visit that is unpaid and no failed charge. */
 const quiet: AdminData = {
   ...snap,
   visits: [
@@ -98,7 +98,7 @@ export const InSeason: Story = {
   globals: { viewport: { value: "wide", isRotated: false } },
 }
 
-/** A busy Thursday at 12:56 pm: two visits past their window, three ahead and three done, with Paid, Venmo, $95 owed and Bill sent at the right of the done ones; By visit. */
+/** A busy Thursday at 12:56 pm: two visits past their window, three ahead and three done, with Paid, Venmo, $95 unpaid and Invoice sent at the right of the done ones; By visit. */
 export const Busy: Story = {
   args: { data: busy },
   globals: { viewport: { value: "wide", isRotated: false } },
@@ -146,14 +146,14 @@ export const QuietNovemberPhone: Story = {
   globals: { viewport: { value: "phone", isRotated: false } },
 }
 
-/** A job that is done and owed: one row for the job, "Done, owed", with the number in the message and a Paid by button that opens its visit. */
-const owedRow: Attention = { kind: "owed", key: "job-owed", jobId: "job-owed", visitId: "owed-visit", message: "Andrea's repair is done, $145 owed", since: "2026-11-10T22:00:00Z" }
+/** A job that is done and unpaid: one row for the job, "Done, unpaid", with the number in the message and a Paid by button that opens its visit. */
+const owedRow: Attention = { kind: "owed", key: "job-owed", jobId: "job-owed", visitId: "owed-visit", message: "Andrea's repair is done, $145 unpaid", since: "2026-11-10T22:00:00Z" }
 export const OwedRow: Story = {
   args: { data: { ...data, attention: [owedRow, ...data.attention] } },
   globals: { viewport: { value: "wide", isRotated: false } },
 }
 
-/** A bill past its due day: the money line gains "1 bill overdue" and Needs action has the bill's one row, "Bill overdue", with Remind. The job, which reads Bill sent, has no owed row. */
+/** An invoice past its due day: the money line gains "1 invoice past due" and Needs action has the invoice's one row, "Invoice past due", with Remind. The job, which reads Invoice sent, has no owed row. */
 const overdueBill = { id: "inv-overdue", jobId: "job-billed", number: "INV-2026-0007", amount: 145, tax: 0, total: 145, sentOn: "2026-10-22", dueOn: "2026-11-05", status: "overdue" as const, visitIds: [] }
 const overdueRow: Attention = { kind: "overdue", key: "invoice-inv-overdue@2026-11-05", invoiceId: "inv-overdue", jobId: "job-billed", customerId: "c-andrea", message: "Andrea Reyes's bill of $145 was due Nov 5", since: "2026-11-05T19:00:00Z" }
 export const OverdueBill: Story = {

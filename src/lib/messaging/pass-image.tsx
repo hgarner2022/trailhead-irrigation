@@ -57,7 +57,7 @@ export function PassImage({ model, art }: { model: PassImageModel; art: string }
       </div>
       <div style={{ position: "absolute", left: 0, bottom: 0, width: PASS_IMAGE.width, display: "flex", alignItems: "center", padding: "26px 52px", background: "rgba(43,53,68,0.88)", color: "#FFFFFF" }}>
         {model.cancelled ? (
-          <div style={{ fontSize: 30, fontWeight: 600 }}>Cancelled</div>
+          <div style={{ fontSize: 30, fontWeight: 600 }}>Canceled</div>
         ) : (
           <div style={{ display: "flex", flex: 1 }}>
             {model.cells.map((cell) => (

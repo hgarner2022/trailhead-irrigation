@@ -16,14 +16,14 @@ export type InvoicePaymentResult = "recorded" | "already-recorded" | "ignored"
 const cardWords = (card: { brand: string; last4: string }) => `${card.brand.charAt(0).toUpperCase()}${card.brand.slice(1)} ending ${card.last4}`
 
 /**
- * A bill's Checkout Session completed: writes the payment, marks the bill paid, keeps the card on the customer and queues the receipt.
+ * An invoice's Checkout Session completed: writes the payment, marks the invoice paid, keeps the card on the customer and queues the receipt.
  * Safe to run any number of times for the same payment (a redelivered event, a second event for one session, a retry after a crash
  * half way): the payment row is unique on its Stripe payment intent, so only the run that inserts it emits `payment.succeeded`, and every
  * later step is a no-op the second time (the card already stored, the visits already stamped, the receipt keyed by the payment row,
- * the bill's update only while it is unpaid). The database handle has no transactions, so the order is the guarantee: every Stripe call
- * first, then the payment row, then the event, then the steps that follow from the row, and the bill's paid day last, so a retry after a
- * crash finds the bill unpaid and finishes the work. A bill cancelled before the money arrived still gets the payment row (the money
- * is real and the customer is owed a receipt) and is left cancelled: nothing reopens it.
+ * the invoice's update only while it is unpaid). The database handle has no transactions, so the order is the guarantee: every Stripe call
+ * first, then the payment row, then the event, then the steps that follow from the row, and the invoice's paid day last, so a retry after a
+ * crash finds the invoice unpaid and finishes the work. An invoice canceled before the money arrived still gets the payment row (the money
+ * is real and the customer is owed a receipt) and is left canceled: nothing reopens it.
  */
 export async function applyInvoicePayment(db: Database, stripe: Stripe, organizationId: string, session: Stripe.Checkout.Session, origin: string, now = new Date()): Promise<InvoicePaymentResult> {
   const invoiceId = session.metadata?.invoiceId
@@ -32,7 +32,7 @@ export async function applyInvoicePayment(db: Database, stripe: Stripe, organiza
   const intentId = typeof session.payment_intent === "string" ? session.payment_intent : session.payment_intent?.id
   if (!invoice || !intentId) return "ignored"
   const [taken] = await db.select({ id: s.charge.id }).from(s.charge).where(and(eq(s.charge.stripePaymentIntentId, intentId), eq(s.charge.organizationId, organizationId)))
-  // Settled already: the row is there and the bill is marked (or was cancelled and is left alone).
+  // Settled already: the row is there and the invoice is marked (or was canceled and is left alone).
   if (taken && (invoice.paidOn || invoice.cancelledAt)) return "already-recorded"
 
   const intent = await stripe.paymentIntents.retrieve(intentId, { expand: ["latest_charge", "payment_method"] })
@@ -71,7 +71,7 @@ export async function applyInvoicePayment(db: Database, stripe: Stripe, organiza
     })
   }
   if (!invoice.cancelledAt) {
-    // Only the run that marks the bill paid writes `invoice.paid`, so a redelivered event adds none.
+    // Only the run that marks the invoice paid writes `invoice.paid`, so a redelivered event adds none.
     const settled = await db.update(s.invoice).set({ paidOn: paidDay(now), paymentId: row.id, stripePaymentIntentId: intentId, updatedAt: now }).where(and(eq(s.invoice.id, invoice.id), eq(s.invoice.organizationId, organizationId), isNull(s.invoice.paidOn), isNull(s.invoice.cancelledAt))).returning({ id: s.invoice.id })
     if (settled.length) await recordEventSafe(db, { organizationId, about: "invoice", aboutId: invoice.id, customerId: invoice.customerId, jobId: invoice.jobId, kind: "invoice.paid", detail: { number: invoice.number, total: invoice.total, how: "card_now" }, who: "system", at: now })
   }

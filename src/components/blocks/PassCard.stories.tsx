@@ -91,7 +91,7 @@ export const AllDone: Story = {
   args: { pass: allDone },
 }
 
-export const Cancelled: Story = {
+export const Canceled: Story = {
   args: { pass: cancelled },
 }
 

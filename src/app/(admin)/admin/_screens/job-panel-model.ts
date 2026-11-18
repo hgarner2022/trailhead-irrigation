@@ -1,6 +1,6 @@
 /**
  * The pure derivations behind the job panel: one job's row, its customer, pass, visits in day order, the yard it is at, its
- * lines, its payments newest first, its open bill, and what the manager may do (change lines, take a payment, send a bill, add
+ * lines, its payments newest first, its open invoice, and what the manager may do (change lines, take a payment, send an invoice, add
  * a visit). Everything is read from `AdminData`; the same words as the grid (`jobs-model.ts`).
  */
 import type { AdminData, AdminPayment, Client, JobLine, Pass, SoldJob, Visit, Yard } from "@/lib/admin/types"
@@ -27,11 +27,11 @@ export interface JobFacts {
   bill: BillState
   /** "Season Pass TH-2027-0007 · 2027" or "Repair · sold Nov 3" */
   heading: string
-  /** a manager may add, change and cancel lines: an open one-off job with something still owed or nothing paid yet */
+  /** a manager may add, change and cancel lines: an open one-off job with something still unpaid or nothing paid yet */
   canEditLines: boolean
-  /** money can be recorded: something is owed and the job is not cancelled; on a Season Pass, once its money is due */
+  /** money can be recorded: something is unpaid and the job is not canceled; on a Season Pass, once its money is due */
   canRecord: boolean
-  /** a visit can be added: a one-off job that is not cancelled */
+  /** a visit can be added: a one-off job that is not canceled */
   canAddVisit: boolean
 }
 

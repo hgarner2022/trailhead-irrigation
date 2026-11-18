@@ -8,7 +8,7 @@ import { MAX_DUE_DAYS, setBilling } from "../settings-billing"
 import type { SettingsState } from "../settings-model"
 import { CommitInput, type Apply } from "./fields"
 
-// How a bill is due and taxed: the days after it is sent, and whether it carries Colorado sales tax. Sales tax is off until the
+// How an invoice is due and taxed: the days after it is sent, and whether it carries Colorado sales tax. Sales tax is off until the
 // office says it collects it; the percent is asked for only then. Which lines are taxed is set per service (the Services tab).
 
 export function Billing({ state, apply }: { state: SettingsState; apply: Apply }) {
@@ -16,18 +16,18 @@ export function Billing({ state, apply }: { state: SettingsState; apply: Apply }
   return (
     <Card className="max-w-2xl">
       <CardHeader>
-        <CardTitleHeading>Bills</CardTitleHeading>
-        <p className="text-sm text-muted-foreground">What a bill says when you press Send a bill on a job that is done.</p>
+        <CardTitleHeading>Invoices</CardTitleHeading>
+        <p className="text-sm text-muted-foreground">What an invoice says when you press Send an invoice on a job that is done.</p>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="space-y-1.5">
           <div className="flex flex-wrap items-center gap-2 text-sm font-medium text-foreground">
-            <span>Bills are due in</span>
-            <CommitInput type="number" min={0} max={MAX_DUE_DAYS} label="Days until a bill is due" className="w-24" describedBy="billing-due-hint" value={dueDays} onCommit={(v) => apply((s, a) => setBilling(s, "dueDays", Number(v), a))} />
+            <span>Invoices are due in</span>
+            <CommitInput type="number" min={0} max={MAX_DUE_DAYS} label="Days until an invoice is due" className="w-24" describedBy="billing-due-hint" value={dueDays} onCommit={(v) => apply((s, a) => setBilling(s, "dueDays", Number(v), a))} />
             <span>days</span>
           </div>
           <p id="billing-due-hint" className="text-sm text-muted-foreground">
-            Counted from the day the bill is sent.
+            Counted from the day the invoice is sent.
           </p>
         </div>
         <div className="space-y-1.5">
@@ -38,7 +38,7 @@ export function Billing({ state, apply }: { state: SettingsState; apply: Apply }
             </Label>
           </div>
           <p id="billing-tax-hint" className="text-sm text-muted-foreground">
-            A bill adds the tax to its taxable lines. Off, no bill shows a tax line.
+            An invoice adds the tax to its taxable lines. Off, no invoice shows a tax line.
           </p>
         </div>
         {collectsSalesTax && (
@@ -49,7 +49,7 @@ export function Billing({ state, apply }: { state: SettingsState; apply: Apply }
               <span className="text-sm text-muted-foreground">%</span>
             </div>
             <p id="billing-percent-hint" className="text-sm text-muted-foreground">
-              Up to two decimals, like 8.8. The tax is rounded to the dollar on each bill.
+              Up to two decimals, like 8.8. The tax is rounded to the dollar on each invoice.
             </p>
           </div>
         )}

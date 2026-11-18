@@ -22,7 +22,7 @@ export function mayRenew(pass: { customerId: string }, who: { passId: string; to
 
 /**
  * What the checkout fills in for a renewal, or null when it should open as an ordinary checkout: the pass is not found, the
- * visitor may not renew it, it is pending or cancelled, or its customer already holds the next season. Nothing leaves here for a
+ * visitor may not renew it, it is pending or canceled, or its customer already holds the next season. Nothing leaves here for a
  * visitor who is not the pass's own customer. The zones, the access answers and the yard come from the property, the add-on from
  * the pass's lines.
  */

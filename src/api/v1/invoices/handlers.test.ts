@@ -53,7 +53,7 @@ describe("invoices.send", () => {
     expect(verifyToken("invoice-pay", out.id, new URL(out.payUrl!).searchParams.get("token"))).toBe(true)
     const [msg, ...rest] = (await messagesOf("invoice")).filter((m) => m.key === `invoice-${out.id}`)
     expect(rest).toEqual([])
-    expect(msg).toMatchObject({ channel: "email", to: "dana@example.com", status: "queued", subject: "Your bill from Trailhead: $145" })
+    expect(msg).toMatchObject({ channel: "email", to: "dana@example.com", status: "queued", subject: "Your invoice from Trailhead: $145" })
     expect(msg!.body).toContain(out.payUrl)
     expect((await eventsOf("invoice.sent")).some((e) => (e.payload as { invoiceId: string }).invoiceId === out.id)).toBe(true)
     expect((await callApi(as(readKey), invoicesGet, { id: out.id })).payUrl).toBeUndefined()
@@ -65,28 +65,28 @@ describe("invoices.send", () => {
     const out = await callApi(as(writeKey), invoicesSend, { jobId: v.jobId })
     const msg = (await messagesOf("invoice")).find((m) => m.key === `invoice-${out.id}`)!
     expect(msg).toMatchObject({ channel: "sms", to: "+17205550100" })
-    expect(msg.body).toBe(`Trailhead: your bill for the repair is $145, due May 21. Pay here: ${out.payUrl} Reply STOP to opt out.`)
+    expect(msg.body).toBe(`Trailhead: your invoice for the repair is $145, due May 21. Pay here: ${out.payUrl} Reply STOP to opt out.`)
     await db.update(s.customer).set({ phone: null }).where(eq(s.customer.id, "c100"))
   })
 
   it("refuses a job that is not done, a job already paid, a second bill while one is open, and an unpriced job", async () => {
     const ahead = await repair()
-    await expect(callApi(as(writeKey), invoicesSend, { jobId: ahead.jobId })).rejects.toMatchObject({ code: "unprocessable", message: "Mark the job done before sending a bill" })
+    await expect(callApi(as(writeKey), invoicesSend, { jobId: ahead.jobId })).rejects.toMatchObject({ code: "unprocessable", message: "Mark the job done before sending an invoice" })
     const paid = await doneAndOwed()
     await callApi(as(writeKey), paymentsRecord, { jobId: paid.jobId, visitId: paid.id, amount: 145, method: "cash" })
     await expect(callApi(as(writeKey), invoicesSend, { jobId: paid.jobId })).rejects.toMatchObject({ code: "conflict", message: "This job is already paid" })
     const open = await doneAndOwed()
     await callApi(as(writeKey), invoicesSend, { jobId: open.jobId })
-    await expect(callApi(as(writeKey), invoicesSend, { jobId: open.jobId })).rejects.toMatchObject({ code: "conflict", message: "A bill is already open for this job" })
+    await expect(callApi(as(writeKey), invoicesSend, { jobId: open.jobId })).rejects.toMatchObject({ code: "conflict", message: "An invoice is already open for this job" })
     await expect(callApi(as(writeKey), invoicesSend, { jobId: "nope" })).rejects.toMatchObject({ code: "not_found" })
     await expect(callApi(as(readKey), invoicesSend, { jobId: open.jobId })).rejects.toMatchObject({ code: "forbidden" })
   })
 
-  it("refuses a job with another visit still ahead (the bill for a partly done job is Done with Send a bill)", async () => {
+  it("refuses a job with another visit still ahead (the invoice for a partly done job is Done with Send an invoice)", async () => {
     const v = await doneAndOwed()
     const [first] = await db.select().from(s.visit).where(eq(s.visit.id, v.id))
     await db.insert(s.visit).values({ ...first!, id: `${v.id}-b`, status: "scheduled", completedOn: null })
-    await expect(callApi(as(writeKey), invoicesSend, { jobId: v.jobId })).rejects.toMatchObject({ code: "unprocessable", message: "Mark the job done before sending a bill" })
+    await expect(callApi(as(writeKey), invoicesSend, { jobId: v.jobId })).rejects.toMatchObject({ code: "unprocessable", message: "Mark the job done before sending an invoice" })
   })
 
   it("counts the number up from the organization's highest, starts a year at 0001 and never reuses a number", async () => {
@@ -97,7 +97,7 @@ describe("invoices.send", () => {
     expect(Number(second.number.slice(-4))).toBe(Number(first.number.slice(-4)) + 1)
     const c = await doneAndOwed()
     expect((await callApi(as(writeKey, "2028-01-05T20:00:00Z"), invoicesSend, { jobId: c.jobId })).number).toBe("INV-2028-0001")
-    // a cancelled bill keeps its number: the next bill takes the next one
+    // a canceled invoice keeps its number: the next invoice takes the next one
     await callApi(as(), invoicesCancel, { id: first.id })
     const again = await callApi(as(writeKey), invoicesSend, { jobId: a.jobId })
     expect(Number(again.number.slice(-4))).toBe(Number(second.number.slice(-4)) + 1)
@@ -138,7 +138,7 @@ describe("invoices.send", () => {
     expect(back.total).toBe(145)
   })
 
-  it("takes money already paid on the job as a whole off the bill", async () => {
+  it("takes money already paid on the job as a whole off the invoice", async () => {
     const v = await doneAndOwed(200)
     await callApi(as(writeKey), paymentsRecord, { jobId: v.jobId, amount: 50, method: "check" })
     const out = await callApi(as(writeKey), invoicesSend, { jobId: v.jobId })
@@ -148,21 +148,21 @@ describe("invoices.send", () => {
 })
 
 describe("invoices.send, what it checks before it writes", () => {
-  it("refuses a customer with no mobile and no email, and writes no bill", async () => {
+  it("refuses a customer with no mobile and no email, and writes no invoice", async () => {
     const v = await doneAndOwed()
     await db.update(s.customer).set({ email: null, phone: null }).where(eq(s.customer.id, "c100"))
-    await expect(callApi(as(writeKey), invoicesSend, { jobId: v.jobId })).rejects.toMatchObject({ code: "unprocessable", message: "This customer has no mobile or email to send the bill to." })
+    await expect(callApi(as(writeKey), invoicesSend, { jobId: v.jobId })).rejects.toMatchObject({ code: "unprocessable", message: "This customer has no mobile or email to send the invoice to." })
     expect(await db.select().from(s.invoice).where(eq(s.invoice.jobId, v.jobId))).toEqual([])
     // texts stopped and no email is also nobody to reach
     await db.update(s.customer).set({ phone: "+17205550100" }).where(eq(s.customer.id, "c100"))
     await db.insert(s.consent).values({ id: "stop-1", organizationId: ORG, customerId: "c100", source: "reply", note: "STOP", marketingOptIn: false, marketingChannels: [], recordedAt: new Date("2027-05-01T00:00:00Z") })
-    await expect(callApi(as(writeKey), invoicesSend, { jobId: v.jobId })).rejects.toMatchObject({ message: "This customer has no mobile or email to send the bill to." })
+    await expect(callApi(as(writeKey), invoicesSend, { jobId: v.jobId })).rejects.toMatchObject({ message: "This customer has no mobile or email to send the invoice to." })
     expect(await db.select().from(s.invoice).where(eq(s.invoice.jobId, v.jobId))).toEqual([])
     await db.delete(s.consent).where(eq(s.consent.id, "stop-1"))
     await db.update(s.customer).set({ email: "dana@example.com", phone: null }).where(eq(s.customer.id, "c100"))
   })
 
-  it("refuses with the site address missing before any bill is written", async () => {
+  it("refuses with the site address missing before any invoice is written", async () => {
     const v = await doneAndOwed()
     vi.stubEnv("APP_URL", "")
     await expect(callApi(as(writeKey), invoicesSend, { jobId: v.jobId })).rejects.toThrow(/APP_URL is not set/)
@@ -171,10 +171,10 @@ describe("invoices.send, what it checks before it writes", () => {
     expect(await callApi(as(writeKey), invoicesSend, { jobId: v.jobId })).toMatchObject({ jobId: v.jobId })
   })
 
-  it("bills a visit again after its paid bill was refunded in full", async () => {
+  it("bills a visit again after its paid invoice was refunded in full", async () => {
     const v = await doneAndOwed()
     const first = await callApi(as(writeKey), invoicesSend, { jobId: v.jobId })
-    // the bill is paid on the pay page (a payment on the job as a whole), then refunded in full
+    // the invoice is paid on the pay page (a payment on the job as a whole), then refunded in full
     const [pay] = await db.insert(s.charge).values({ organizationId: ORG, jobId: v.jobId, customerId: "c100", attempt: 1, amount: 145, method: "card_now", status: "succeeded", stripePaymentIntentId: `pi_${first.id}`, paidOn: "2027-05-07" }).returning()
     await db.update(s.invoice).set({ paidOn: "2027-05-07", paymentId: pay!.id }).where(eq(s.invoice.id, first.id))
     await callApi(as(), paymentsRefund, { paymentId: pay!.id })
@@ -197,7 +197,7 @@ describe("invoices.payView", () => {
   })
 })
 
-describe("a bill and money that arrives another way", () => {
+describe("an invoice and money that arrives another way", () => {
   it("is settled by an office payment that covers the job: paid on the day, with that payment, and its card form closed", async () => {
     const v = await doneAndOwed()
     const bill = await callApi(as(writeKey), invoicesSend, { jobId: v.jobId })
@@ -205,7 +205,7 @@ describe("a bill and money that arrives another way", () => {
     const row = await callApi(as(writeKey), paymentsRecord, { jobId: v.jobId, visitId: v.id, amount: 145, method: "check", reference: "1042" })
     expect(await callApi(as(writeKey), invoicesGet, { id: bill.id })).toMatchObject({ status: "paid", paidOn: "2027-05-07", paymentId: row.id })
     expect(stripe.calls.sessionExpire).toHaveBeenCalledWith("cs_open")
-    await expect(callApi(as(writeKey), invoicesRemind, { id: bill.id })).rejects.toMatchObject({ code: "conflict", message: "This bill is already paid" })
+    await expect(callApi(as(writeKey), invoicesRemind, { id: bill.id })).rejects.toMatchObject({ code: "conflict", message: "This invoice is already paid" })
     expect((await callApi(as(readKey), invoicesList, { status: "overdue" })).data.map((i) => i.id)).not.toContain(bill.id)
   })
 
@@ -216,7 +216,7 @@ describe("a bill and money that arrives another way", () => {
     expect(await callApi(as(writeKey), invoicesGet, { id: bill.id })).toMatchObject({ status: "sent", paidOn: null })
     const { startBillPayment } = await import("@/lib/stripe/invoice-checkout")
     const { signToken } = await import("@/lib/messaging/tokens")
-    expect(await startBillPayment(db, stripe.stripe, { invoiceId: bill.id, token: signToken("invoice-pay", bill.id), origin: "https://site.test" })).toEqual({ ok: false, message: "Part of this bill was paid another way. Please call us for the new amount." })
+    expect(await startBillPayment(db, stripe.stripe, { invoiceId: bill.id, token: signToken("invoice-pay", bill.id), origin: "https://site.test" })).toEqual({ ok: false, message: "Part of this invoice was paid another way. Please call us for the new amount." })
     expect(stripe.calls.sessionCreate).not.toHaveBeenCalled()
   })
 
@@ -237,13 +237,13 @@ describe("invoices.remind", () => {
     await callApi(as(writeKey), invoicesRemind, { id: bill.id })
     const today = (await messagesOf("invoice-reminder")).filter((m) => m.key === `invoice-${bill.id}-2027-05-07`)
     expect(today).toHaveLength(1)
-    expect(today[0]!.subject).toBe("A reminder: your bill from Trailhead, $145")
+    expect(today[0]!.subject).toBe("A reminder: your invoice from Trailhead, $145")
     expect((await eventsOf("invoice.reminded")).filter((e) => (e.payload as { invoiceId: string }).invoiceId === bill.id)).toHaveLength(1)
     await callApi(as(writeKey, "2027-05-08T20:00:00Z"), invoicesRemind, { id: bill.id })
     expect((await messagesOf("invoice-reminder")).filter((m) => m.key.startsWith(`invoice-${bill.id}-`))).toHaveLength(2)
   })
 
-  it("refuses a paid or cancelled bill, a read key and another organization's bill", async () => {
+  it("refuses a paid or canceled invoice, a read key and another organization's bill", async () => {
     const v = await doneAndOwed()
     const bill = await callApi(as(writeKey), invoicesSend, { jobId: v.jobId })
     await expect(callApi(as(readKey), invoicesRemind, { id: bill.id })).rejects.toMatchObject({ code: "forbidden" })
@@ -251,11 +251,11 @@ describe("invoices.remind", () => {
     const other = { ...key("read", "write", "admin"), organizationId: "org-r" }
     await expect(callApi(ctxFor(db, other), invoicesRemind, { id: bill.id })).rejects.toMatchObject({ code: "not_found" })
     await db.update(s.invoice).set({ paidOn: "2027-05-08" }).where(eq(s.invoice.id, bill.id))
-    await expect(callApi(as(writeKey), invoicesRemind, { id: bill.id })).rejects.toMatchObject({ code: "conflict", message: "This bill is already paid" })
+    await expect(callApi(as(writeKey), invoicesRemind, { id: bill.id })).rejects.toMatchObject({ code: "conflict", message: "This invoice is already paid" })
     const w = await doneAndOwed()
     const second = await callApi(as(writeKey), invoicesSend, { jobId: w.jobId })
     await callApi(as(), invoicesCancel, { id: second.id })
-    await expect(callApi(as(writeKey), invoicesRemind, { id: second.id })).rejects.toMatchObject({ code: "conflict", message: "This bill was cancelled" })
+    await expect(callApi(as(writeKey), invoicesRemind, { id: second.id })).rejects.toMatchObject({ code: "conflict", message: "This invoice was voided" })
   })
 
   it("says so when the customer has no mobile or email", async () => {
@@ -268,7 +268,7 @@ describe("invoices.remind", () => {
 })
 
 describe("invoices.cancel, list and get", () => {
-  it("cancels an unpaid bill (admin only), lets the job be billed again and refuses a paid one", async () => {
+  it("cancels an unpaid invoice (admin only), lets the job be billed again and refuses a paid one", async () => {
     const v = await doneAndOwed()
     const bill = await callApi(as(writeKey), invoicesSend, { jobId: v.jobId })
     await expect(callApi(as(writeKey), invoicesCancel, { id: bill.id })).rejects.toMatchObject({ code: "forbidden" })
@@ -281,7 +281,7 @@ describe("invoices.cancel, list and get", () => {
     await expect(callApi(as(), invoicesCancel, { id: "nope" })).rejects.toMatchObject({ code: "not_found" })
   })
 
-  it("closes the bill's open card form on Stripe when it cancels, and still cancels when Stripe fails", async () => {
+  it("closes the invoice's open card form on Stripe when it cancels, and still cancels when Stripe fails", async () => {
     const v = await doneAndOwed()
     const bill = await callApi(as(writeKey), invoicesSend, { jobId: v.jobId })
     await db.update(s.invoice).set({ stripeCheckoutSessionId: "cs_cancel" }).where(eq(s.invoice.id, bill.id))
@@ -292,7 +292,7 @@ describe("invoices.cancel, list and get", () => {
     await db.update(s.invoice).set({ stripeCheckoutSessionId: "cs_broken" }).where(eq(s.invoice.id, second.id))
     stripe.calls.sessionExpire.mockRejectedValueOnce(new Error("session already expired"))
     expect(await callApi(as(), invoicesCancel, { id: second.id })).toMatchObject({ status: "cancelled" })
-    // a bill that never opened a card form calls nothing
+    // an invoice that never opened a card form calls nothing
     const x = await doneAndOwed()
     const third = await callApi(as(writeKey), invoicesSend, { jobId: x.jobId })
     stripe.calls.sessionExpire.mockClear()
@@ -328,7 +328,7 @@ describe("invoices.cancel, list and get", () => {
   })
 })
 
-describe("the events a bill writes", () => {
+describe("the events an invoice writes", () => {
   it("send writes invoice.sent, a reminder writes invoice.reminded once a day, and a cancel writes invoice.cancelled once", async () => {
     const v = await doneAndOwed()
     const bill = await callApi(as(writeKey), invoicesSend, { jobId: v.jobId })

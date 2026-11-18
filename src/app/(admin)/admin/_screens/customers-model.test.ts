@@ -88,7 +88,7 @@ describe("customerRow", () => {
     expect(customerRow({ ...client, consent: { ...pass.consent!, marketingOptIn: false, marketingChannels: [] } }, [pass], [], TODAY).marketing).toBe("no")
   })
 
-  it("does not count a cancelled pass's visits, or a pending pass's, as needing a day", () => {
+  it("does not count a canceled pass's visits, or a pending pass's, as needing a day", () => {
     const cancelled = customerRow(client, [{ ...pass, status: "cancelled" }], [], TODAY)
     expect(cancelled.pass).toBe("cancelled")
     expect(cancelled.nextState).toBe("none")

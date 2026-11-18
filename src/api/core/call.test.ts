@@ -84,7 +84,7 @@ describe("callApi", () => {
 
   describe("the own-invoice gate (the pay page's visitor)", () => {
     const bill = defineHandler({
-      name: "test.bill", method: "GET", path: "/bill/{id}", scope: "read", checkout: "own-invoice", summary: "One bill",
+      name: "test.bill", method: "GET", path: "/bill/{id}", scope: "read", checkout: "own-invoice", summary: "One invoice",
       input: z.object({ id: z.string() }), output: z.object({ id: z.string() }),
       async run(_ctx, input) { return { id: input.id } },
     })
@@ -105,16 +105,16 @@ describe("callApi", () => {
     })
     const visitor = (extra: { invoiceId?: string; passId?: string } = {}) => ({ kind: "public" as const, id: "checkout" as const, organizationId: ORG, scopes: ["checkout"] as ["checkout"], ...extra })
 
-    it("reads only the bill its link opened", async () => {
+    it("reads only the invoice its link opened", async () => {
       const ctx = ctxFor(db, visitor({ invoiceId: "inv-1" }))
       await expect(callApi(ctx, bill, { id: "inv-1" })).resolves.toEqual({ id: "inv-1" })
-      await expect(callApi(ctx, bill, { id: "inv-2" })).rejects.toMatchObject({ code: "forbidden", message: "This call is only for the bill being paid" })
+      await expect(callApi(ctx, bill, { id: "inv-2" })).rejects.toMatchObject({ code: "forbidden", message: "This call is only for the invoice being paid" })
     })
-    it("refuses a visitor with no bill, for any id", async () => {
+    it("refuses a visitor with no invoice, for any id", async () => {
       await expect(callApi(ctxFor(db, visitor()), bill, { id: "inv-1" })).rejects.toMatchObject({ code: "forbidden" })
       await expect(callApi(ctxFor(db, visitor({ passId: "p1" })), bill, { id: "p1" })).rejects.toMatchObject({ code: "forbidden" })
     })
-    it("refuses a visitor with a bill every other handler: the checkout's, own-pass, and any that needs a scope", async () => {
+    it("refuses a visitor with an invoice every other handler: the checkout's, own-pass, and any that needs a scope", async () => {
       const ctx = ctxFor(db, visitor({ invoiceId: "inv-1" }))
       await expect(callApi(ctx, open, {})).rejects.toMatchObject({ code: "forbidden" })
       await expect(callApi(ctx, ownPass, { id: "inv-1" })).rejects.toMatchObject({ code: "forbidden" })

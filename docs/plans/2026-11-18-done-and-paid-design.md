@@ -32,8 +32,8 @@ The visit panel stays open between beats.
 | Charge the Visa ending 4242 now (default, only with a real card) | Charges $145 to the card and emails a receipt | Charge $145 |
 | Check, Venmo | Check number or handle field, emails a receipt | Record $145 paid |
 | Cash | Emails a receipt | Record $145 paid |
-| Send a bill | Texts a pay link, due in 14 days | Send the bill |
-| Pay later (only when the customer has no card) | Nothing is collected now; it reads Unpaid until a payment or a bill | Leave it unpaid |
+| Send an invoice | Texts a pay link, due in 14 days | Send the invoice |
+| Pay later (only when the customer has no card) | Nothing is collected now; it reads Unpaid until a payment or an invoice | Leave it unpaid |
 | Tap to pay (greyed) | Not built yet | none |
 
 ```
@@ -78,7 +78,7 @@ PHONE, beat two (rows 56px, one button pinned at the bottom)
 
 **Done but never charged, never automatic.** Jobber has the same hole and lives with it: its manual Collect path leaves the invoice Awaiting Payment until someone collects. We add one row and still never charge on our own. The next morning (done on an earlier day, no payment row, a card on file) Needs action reads "Charge not pressed for Andrea's spring turn-on" with **Charge $145** on the row, and the visit's money reads "$145 unpaid · card on file".
 
-**Undo.** Undo Done works until a payment row exists (it cancels an unpaid bill and any waiting retry). After a payment it says "Refund the payment from the job first".
+**Undo.** Undo Done works until a payment row exists (it cancels an unpaid invoice and any waiting retry). After a payment it says "Refund the payment from the job first".
 
 **Pay later** (no card) shows under Needs action at once, as "Done, unpaid".
 
@@ -88,12 +88,12 @@ PHONE, beat two (rows 56px, one button pinned at the bottom)
 
 - **Card charged:** `receiptEmail` (`src/emails/account-messages.ts`), "We charged $145 to your Visa ending 4242", on success.
 - **Check, Venmo, cash:** `receiptEmail`, "We received $145 by check", on Record.
-- **Bill:** `invoiceEmail` (`src/emails/invoice.ts`) and `invoiceText` (`src/sms/texts.ts`), on Send the bill; reminders stay a button.
+- **Invoice:** `invoiceEmail` (`src/emails/invoice.ts`) and `invoiceText` (`src/sms/texts.ts`), on Send the invoice; reminders stay a button.
 - **Card didn't go through:** `cardFailedEmail` with the update link, at once; again only if the day-3 try fails.
 
 ## 5. Statuses against the data model
 
-Every cell is read from facts by `src/lib/money/words.ts` (`visitMoney`, `jobMoney`) and the locked lifecycle table (payment Succeeded or Failed, a refund a negative row; invoice Sent, Paid, Overdue). Check, Venmo and cash are one row: only the word differs. The money word is "Unpaid" (Hannah, Nov 18). Housecall Pro's help calls a finished, unpaid job an "unpaid invoice" sent to QuickBooks ([source](https://help.housecallpro.com/articles/996013-when-do-invoices-get-pushed-to-quickbooks)); QuickBooks' own label is unconfirmed.
+Every cell is read from facts by `src/lib/money/words.ts` (`visitMoney`, `jobMoney`) and the locked lifecycle table (payment Succeeded or Failed, a refund a negative row; invoice Sent, Paid, Past due). Check, Venmo and cash are one row: only the word differs. The money word is "Unpaid" (Hannah, Nov 18). Housecall Pro's help calls a finished, unpaid job an "unpaid invoice" sent to QuickBooks ([source](https://help.housecallpro.com/articles/996013-when-do-invoices-get-pushed-to-quickbooks)); QuickBooks' own label is unconfirmed.
 
 | Outcome | Visit | Payment row | Invoice | Job money | Today / Home | Customer gets |
 |---|---|---|---|---|---|---|
@@ -102,21 +102,21 @@ Every cell is read from facts by `src/lib/money/words.ts` (`visitMoney`, `jobMon
 | Card failed | Done, Failed | +145 card_on_file, failed | none | $145 unpaid (E) | Needs action "Card failed" + Send card link | card-failed email |
 | Card failed, then fixed | Done, Paid, card | failed row stays; a second succeeded | none | Paid | leaves Needs action | receipt |
 | Check, Venmo, cash | Done, Paid, Venmo | +145 same method, succeeded | none | Paid | Done today "Paid, Venmo" | receipt |
-| Bill sent | Done, Bill sent | none | Sent, due +14 days | Bill sent | "Bill sent"; past due: "Bill overdue" + Remind | bill text or email |
-| Bill paid on the pay page | Done, Paid, card | +145 card_now, succeeded, on the job | Paid | Paid | leaves | bill receipt |
-| Bill paid by check later | Done, Paid, check | +145 check, succeeded | Paid | Paid | leaves | receipt |
+| Invoice sent | Done, Invoice sent | none | Sent, due +14 days | Invoice sent | "Invoice sent"; past due: "Invoice past due" + Remind | invoice text or email |
+| Invoice paid on the pay page | Done, Paid, card | +145 card_now, succeeded, on the job | Paid | Paid | leaves | invoice receipt |
+| Invoice paid by check later | Done, Paid, check | +145 check, succeeded | Paid | Paid | leaves | receipt |
 | Charge not pressed (card on file) | Done, Unpaid · card on file (H) | none | none | $145 unpaid | Done today; next morning "Charge not pressed" + Charge $145 | nothing |
 | Pay later (no card) | Done, Unpaid | none | none | $145 unpaid | "Done, unpaid" at once | nothing |
 | Full refund, card | Done, Unpaid (B) | -145 naming the payment, succeeded; Stripe refunds | stays Paid (D) | $145 unpaid | "Done, unpaid" | Stripe's notice only (C) |
 | Full refund, check, Venmo, cash | Done, Unpaid (B) | -145, record only | stays Paid (D) | $145 unpaid | "Done, unpaid" | nothing (C) |
 | Part refund | Done, Unpaid | -40 | stays Paid (D) | $40 unpaid | "Done, unpaid" | nothing (C) |
-| Undo Done, no payment | Scheduled | none; retry and open bill cancelled | Cancelled if out | no word | leaves Done today | nothing |
+| Undo Done, no payment | Scheduled | none; retry and open invoice canceled | Canceled if out | no word | leaves Done today | nothing |
 
 **What the model cannot express yet:**
 - **A.** No word for a pending row, so a charge in flight reads Unpaid. Add a derived "Charging".
 - **B.** No Refunded word: a full refund reads Unpaid and returns the visit to Needs action, wrong for a goodwill refund.
 - **C.** `payments.refund` queues no customer message.
-- **D.** A paid bill still reads Paid after a refund.
+- **D.** A paid invoice still reads Paid after a refund.
 - **E.** The visit says Failed, the job says "$145 unpaid".
 - **F.** The day-3 retry needs a delayed queue item and a cap of three; `applyCardUpdate` finds failed charges by pass id and must read the job.
 - **G.** Today's row is "Charge failed" (`NeedsAttention.tsx:37`); it becomes "Card failed".
@@ -128,7 +128,7 @@ Every cell is read from facts by `src/lib/money/words.ts` (`visitMoney`, `jobMon
 - **Season Pass checkout:** it promises "We charge the card after each visit" (`checkout-summary.tsx:39`) and the site says "once the visit is done" (`season-pass/page.tsx:49`). The charge is one press right after Done; the morning row keeps the promise.
 - **Today's Done today group:** a done visit stays there with its money word.
 - **Receipt and card-failed messages:** unchanged, sent by the charge result, never by Done.
-- **Customer portal:** the pass page reads the same rows (Paid, Unpaid, the bill's link).
+- **Customer portal:** the pass page reads the same rows (Paid, Unpaid, the invoice's link).
 - **Jobber's Collect payment:** a separate screen where a charge is a button and cash or check a record; ours matches, card first.
 - **ServiceTitan:** it advises collecting before closing. We collect right after Done on the same panel, since Done also moves the schedule; the morning row stands in for its nudge.
 
