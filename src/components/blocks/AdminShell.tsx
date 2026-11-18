@@ -3,6 +3,7 @@
 import { useMemo, useState, useSyncExternalStore, type CSSProperties, type ReactNode } from "react"
 import Image from "next/image"
 import Link from "next/link"
+import { usePathname } from "next/navigation"
 import { CalendarDays, ClipboardList, LayoutDashboard, LogOut, Settings2, TrendingUp, Users, type LucideIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
@@ -20,6 +21,7 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar"
 import { AdminBarContext } from "./admin-bar"
+import { sectionOf } from "./admin-section"
 import { UndoToastProvider } from "./UndoToast"
 
 // The frame every admin screen sits in (docs/DESIGN.md, Spacing): the navy
@@ -166,7 +168,11 @@ function TabBar({ current }: Pick<AdminShellProps, "current">) {
   )
 }
 
-export function AdminShell({ current, user, switcher, onSignOut, defaultOpen = true, children }: AdminShellProps) {
+export function AdminShell({ current: initial, user, switcher, onSignOut, defaultOpen = true, children }: AdminShellProps) {
+  // The rail follows the address, not the server's first render: the layout stays mounted while the reader moves between
+  // pages, so a section chosen once on the server would stay lit (Home on every page). Outside the app, in the catalog, `current` is used.
+  const pathname = usePathname()
+  const current = pathname?.startsWith("/admin") ? sectionOf(pathname) : initial
   const phone = useMedia("(max-width: 767px)")
   const belowLg = useMedia("(max-width: 1023px)")
   // Until the trigger is used the rail follows the width: icons under 1024px, the default above. A toggle is kept across resizes.
