@@ -137,8 +137,9 @@ describe("the job panel", () => {
     render(<JobsScreen data={data()} today={JOBS_TODAY} defaultJobId="job_p-office" actions={actions()} />)
     expect(lines()[0]).toBe("Nov 10 · Ryan · Andrea would like the first Monday in May if it can be done.")
     expect(lines()).toContain("Nov 8 · the customer · Spring turn-on timing changed from mid May to early May")
-    const change = screen.getByRole("heading", { name: "Change the pass" })
-    expect(change.compareDocumentPosition(block()) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    // Change the pass is a footer button now, and the story still comes after the season
+    expect(screen.getByRole("button", { name: "Change the pass" })).toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: "Season" }).compareDocumentPosition(block()) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
 
   it("adds a note about the job, for a tech too", async () => {

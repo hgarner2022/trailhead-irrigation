@@ -113,13 +113,14 @@ export const PanelCancelledLinePhone: Story = { args: { defaultJobId: cancelledL
 /** Not priced yet: the line says Quote later and the stage says Needs a quote. */
 export const PanelNeedsAQuote: Story = { args: { defaultJobId: quoteJobId }, globals: wide }
 
-/** A Season Pass shows its season, with the pass's own buttons and no line editor. */
+/** A Season Pass shows its season; the footer is Open visit, Change the pass, More (Send card link, Resend confirmation) and Cancel pass. */
 export const PanelPass: Story = {
   args: { defaultJobId: passJobId },
   globals: wide,
   play: async () => {
     await expect(await body.findByRole("button", { name: "Cancel pass" })).toBeInTheDocument()
-    await expect(await body.findByRole("button", { name: "Send card link" })).toBeInTheDocument()
+    await expect(await body.findByRole("button", { name: "Change the pass" })).toBeInTheDocument()
+    await expect(await body.findByRole("button", { name: "More" })).toBeInTheDocument()
   },
 }
 export const PanelPassPhone: Story = { args: { defaultJobId: passJobId }, globals: phone }

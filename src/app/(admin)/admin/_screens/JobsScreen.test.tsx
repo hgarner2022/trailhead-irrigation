@@ -258,11 +258,16 @@ describe("the job panel", () => {
     expect(screen.getByRole("dialog")).toHaveTextContent("Season Pass TH-2027-0014 · 2027")
     expect(p.getByRole("heading", { name: "Season" })).toBeInTheDocument()
     expect(p.queryByRole("button", { name: "Add a line" })).toBeNull()
-    expect(p.getByRole("button", { name: "Send card link" })).toBeInTheDocument()
+    // the footer follows the design: the next step, Change the pass, More, and Cancel pass as the destructive ghost
+    expect(footerButtons()).toEqual(["Open visit", "Change the pass", "More", "Cancel pass"])
     await userEvent.click(p.getByRole("button", { name: "More" }))
-    expect(await screen.findByRole("menuitem", { name: "Resend confirmation" })).toBeInTheDocument()
+    for (const name of ["Send card link", "Resend confirmation"]) expect(await screen.findByRole("menuitem", { name })).toBeInTheDocument()
     await userEvent.keyboard("{Escape}")
-    await userEvent.click(p.getByRole("button", { name: "Cancel pass" }))
+    await userEvent.click(p.getByRole("button", { name: "Change the pass" }))
+    expect(await ask().findByRole("heading", { name: "Change the pass" })).toBeInTheDocument()
+    expect(ask().getByRole("button", { name: /July inspection/ })).toBeInTheDocument()
+    await userEvent.keyboard("{Escape}")
+    await userEvent.click(panel().getByRole("button", { name: "Cancel pass" }))
     expect(await screen.findByRole("heading", { name: "Cancel this pass?" })).toBeInTheDocument()
   })
 
@@ -362,10 +367,40 @@ describe("the job panel", () => {
     expect(dialog.getByRole("radio", { name: /^Check/ })).toBeInTheDocument()
   })
 
-  it("a done and paid job has no footer buttons; the customer is a link in its facts", () => {
+  it("a done and paid job has no primary; New visit is under More and the customer is a link in its facts", async () => {
     view({ defaultJobId: "job-e", actions: jobActions() })
-    expect(footerButtons()).toEqual([])
+    expect(footerButtons()).toEqual(["More"])
+    await more("New visit")
+    expect(ask().getByRole("heading", { name: "New visit" })).toBeInTheDocument()
     expect(customerLink()).toBeInTheDocument()
+  })
+
+  it("the job's facts follow the design: Customer, Property, Total, Paid, Unpaid, Next", () => {
+    view({ defaultJobId: "job-e", actions: jobActions() })
+    const labels = [...document.querySelectorAll('[data-slot="record-facts"] dt')].map((d) => d.textContent)
+    expect(labels.slice(0, 2)).toEqual(["Customer", "Property"])
+    expect(labels).toContain("Total")
+    expect(labels).toContain("Paid")
+    expect(labels.at(-1)).toBe("Next")
+  })
+
+  it("the address follows the open record: a job, then another job's visit, then closed", async () => {
+    window.history.replaceState(null, "", "/admin/jobs?job=job-a")
+    view({ defaultJobId: "job-a", actions: jobActions() })
+    await userEvent.click(panel().getByRole("button", { name: /Repair.*Thu, Nov 19/ }))
+    await screen.findByRole("heading", { name: "At the property" })
+    const params = new URLSearchParams(window.location.search)
+    expect(params.get("job")).toBeNull()
+    expect(params.get("visit")).toBeTruthy()
+    await userEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Close panel" }))
+    expect(window.location.search).toBe("")
+  })
+
+  it("opening a job's row puts ?job= in the address and takes any visit off", async () => {
+    window.history.replaceState(null, "", "/admin/jobs")
+    view()
+    await userEvent.click(within(gridRows()[1]!).getByRole("button", { name: "Ben Cole" }))
+    expect(new URLSearchParams(window.location.search).get("job")).toBeTruthy()
   })
 
   it("a job that needs a quote leads with Add a line, which opens the line form (and the section keeps no second button)", async () => {

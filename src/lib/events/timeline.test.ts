@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { TECH_HIDDEN_MESSAGE_KINDS, timelineOf } from "./timeline"
+import { MESSAGE_KIND_WORDS, TECH_HIDDEN_MESSAGE_KINDS, timelineOf } from "./timeline"
 
 const event = (id: string, at: string, kind: string, detail: Record<string, unknown> = {}, who = "ryan@example.com") => ({ id, at, kind, detail, who, whoName: who === "ryan@example.com" ? "Ryan Garner" : null })
 const message = (id: string, kind: string, channel: "sms" | "email", extra: Record<string, unknown> = {}) => ({ id, kind, channel, status: "sent", createdAt: "2027-04-20T12:00:00Z", ...extra })
@@ -50,5 +50,11 @@ describe("timelineOf", () => {
   })
   it("is empty with nothing in it", () => {
     expect(timelineOf([], [])).toEqual([])
+  })
+})
+
+describe("message words", () => {
+  it("reads a canceled visit's text as \"visit canceled\", in US spelling", () => {
+    expect(MESSAGE_KIND_WORDS["visit-cancelled"]).toBe("visit canceled")
   })
 })

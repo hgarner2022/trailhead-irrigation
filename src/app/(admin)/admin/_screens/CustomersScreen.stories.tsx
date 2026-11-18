@@ -108,7 +108,7 @@ export const PanelReadOnly: Story = {
   args: { defaultSelectedId: "c100", readOnly: true },
   globals: { viewport: { value: "wide", isRotated: false } },
   play: async () => {
-    await expect(await body.findByRole("heading", { name: "Visits" })).toBeInTheDocument()
+    await expect(await body.findByRole("heading", { name: "Jobs" })).toBeInTheDocument()
     await expect(body.queryByRole("button", { name: "New job" })).not.toBeInTheDocument()
   },
 }

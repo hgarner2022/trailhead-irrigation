@@ -19,9 +19,10 @@ import { CancelJobDialog, NewVisitDialog } from "./JobDialogs"
 import { JobCollectDialog } from "./JobCollect"
 import { JobLinesSection } from "./JobLinesSection"
 import { JobMoneySection } from "./JobMoneySection"
+import { StatusPill } from "@/components/blocks/StatusPill"
 import { MoneyPill, StagePill } from "./JobPills"
 import { PanelNotes } from "./PanelNotes"
-import { CancelDialog, PassChange, PassSeasonView } from "./PassPanel"
+import { CancelDialog, ChangePassDialog, PassSeasonView } from "./PassPanel"
 import { propertyLines } from "./customers-model"
 import { useRunner } from "./use-runner"
 import type { VisitActions } from "./visit-actions-types"
@@ -99,6 +100,7 @@ export function JobPanel({ data, today, jobId, open, onOpenChange, readOnly = fa
   const [adding, setAdding] = useState(false)
   const [cancelling, setCancelling] = useState(false)
   const [cancellingJob, setCancellingJob] = useState(false)
+  const [changingPass, setChangingPass] = useState(false)
   // Add a line is the primary of a job waiting on a quote, so the Lines section's own form is opened from the footer.
   const [addingLine, setAddingLine] = useState(false)
   // The Collect dialog keeps what it opened with, as state, like the visit panel's: after the money arrives the job no longer offers Collect,
@@ -115,7 +117,9 @@ export function JobPanel({ data, today, jobId, open, onOpenChange, readOnly = fa
   const hasFooter = Boolean(bar.primary || bar.secondary.length || bar.more.length || bar.destructive)
   const rec: RecordFact[] = [
     ["Customer", <Link key="c" href={customerUrl(row.customerId)} className="text-primary-dark underline underline-offset-2">{row.name}</Link>],
+    ...(row.property ? ([["Property", row.property]] as RecordFact[]) : []),
     ["Total", row.total > 0 ? `$${row.total.toLocaleString("en-US")}` : "Quote later"],
+    ...(facts.held > 0 ? ([["Paid", `$${facts.held.toLocaleString("en-US")}`]] as RecordFact[]) : []),
     ...(row.owed > 0 ? ([["Unpaid", `$${row.owed.toLocaleString("en-US")}`]] as RecordFact[]) : []),
     ["Next", row.nextText],
   ]
@@ -128,6 +132,7 @@ export function JobPanel({ data, today, jobId, open, onOpenChange, readOnly = fa
       pills={
         <>
           <StagePill stage={row.stage} />
+          {pass && <StatusPill status={pass.status} />}
           <MoneyPill money={row.money} />
         </>
       }
@@ -154,6 +159,7 @@ export function JobPanel({ data, today, jobId, open, onOpenChange, readOnly = fa
           onCollect={() => setCollect({ facts, plan: jobCollect(facts, data) })}
           onAddVisit={() => setAdding(true)}
           onAddLine={() => setAddingLine(true)}
+          onChangePass={() => setChangingPass(true)}
           onSendCardUpdateLink={() => (actions?.pass ? say(() => actions.pass!.sendCardUpdateLink(pass!.id), "Card update link sent.") : console.info("send card update link", [pass!.number]))}
           onResendConfirmation={() => (actions?.pass ? say(() => actions.pass!.resendConfirmation(pass!.id), "Confirmation sent.") : console.info("resend confirmation", [pass!.number]))}
           onCancelPass={() => setCancelling(true)}
@@ -171,15 +177,8 @@ export function JobPanel({ data, today, jobId, open, onOpenChange, readOnly = fa
             money={row.moneyText}
             idPrefix="job-pass"
             withAccess={false}
-            cardAction={
-              passOpen && !pass.cardLast4 ? (
-                <Button type="button" variant="outline" size="sm" onClick={() => (actions?.pass ? say(() => actions.pass!.sendCardUpdateLink(pass.id), "Card link sent.") : console.info("send card link", [pass.number]))}>
-                  Send card link
-                </Button>
-              ) : undefined
-            }
           />
-          {canAct && pass.status === "active" && <PassChange pass={pass} actions={actions?.pass} run={(call, said) => say(call, said)} />}
+          {passOpen && <ChangePassDialog pass={pass} actions={actions?.pass} run={(call, said) => say(call, said)} open={changingPass} onOpenChange={setChangingPass} />}
           {pass && <CancelDialog pass={pass} open={cancelling} onOpenChange={setCancelling} onCancel={actions?.pass?.cancel} />}
         </>
       ) : (

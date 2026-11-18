@@ -42,8 +42,8 @@ function factsOf(row: CustomerRow, card: ClientCard | undefined, jobId: string |
     ["Job", <JobFact key="job" row={row} jobId={jobId} />],
     ["Next", row.next],
     ["Scheduled", SCHEDULED_WORDS[row.nextState]],
-    ["Marketing", MARKETING_WORDS[row.marketing]],
     ["Card", <CustomerCardLine key="card" card={card} passId={row.passId} readOnly={readOnly} actions={actions} />],
+    ["Marketing", MARKETING_WORDS[row.marketing]],
   ]
 }
 
@@ -55,13 +55,13 @@ function PassSeasons({ passes, today }: { passes: Pass[]; today: string }) {
     <section aria-labelledby="customer-pass-current" data-slot="customer-pass">
       <SectionHeading id="customer-pass-current">Season Pass</SectionHeading>
       <div className="mt-3">
-        <PassSeasonView pass={current} today={today} idPrefix="cust-pass-current" withAccess={false} withConsent={false} />
+        <PassSeasonView pass={current} today={today} idPrefix="cust-pass-current" withAccess={false} withConsent={false} variant="customer" />
       </div>
       {earlier.map((p) => (
         <details key={p.id} className="mt-4 border-t border-border pt-2" data-slot="customer-pass-earlier">
           <summary className="flex min-h-11 cursor-pointer items-center font-display text-lg text-navy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50">{`${p.season} season`}</summary>
           <div className="mt-2">
-            <PassSeasonView pass={p} today={today} idPrefix={`cust-pass-${p.id}`} withAccess={false} withConsent={false} />
+            <PassSeasonView pass={p} today={today} idPrefix={`cust-pass-${p.id}`} withAccess={false} withConsent={false} variant="customer" />
           </div>
         </details>
       ))}
@@ -104,7 +104,7 @@ export interface CustomerPanelProps {
   optOutPending?: boolean
 }
 
-/** The Customers side panel, a `RecordPanel`: the street under the name, the pass pill, the facts, then the pass, Property, Notes and history, Jobs, Invoices, Consent history and Messages. */
+/** The Customers side panel, a `RecordPanel`: the street under the name, the pass pill, the facts, then the pass (its card over the season line), Jobs (each job once, its visits inside it), Invoices, Property, Notes and history, Consent history and Messages. */
 export function CustomerPanel({ open, onOpenChange, row, client, data, today, readOnly = false, actions, notice, offers = false, onOptOut, optOutPending = false }: CustomerPanelProps) {
   const day = dayOf(today, TIME_ZONE)
   // The first property is the one shown; a customer with a second one is a later step.
@@ -128,10 +128,10 @@ export function CustomerPanel({ open, onOpenChange, row, client, data, today, re
       footer={hasFooter ? <CustomerFooter row={row} client={client} data={data} today={today} readOnly={readOnly} actions={actions} jobHref={jobId ? jobUrl(jobId) : undefined} offers={offers} onOptOut={onOptOut} optOutPending={optOutPending} /> : undefined}
     >
       <PassSeasons passes={passes} today={day} />
-      {property && <PropertyBlock key={property.id} propertyId={property.id} yard={property} readOnly={readOnly} actions={actions} />}
-      <PanelNotes about="customer" aboutId={row.id} timeline={client?.timeline} addNote={actions?.addNote} />
       <CustomerJobsSection rows={jobRows(data, day).filter((j) => j.customerId === row.id)} data={data} today={day} />
       {!readOnly && <CustomerBills jobs={(data.jobs ?? []).filter((j) => j.customerId === row.id)} data={data} actions={actions} />}
+      {property && <PropertyBlock key={property.id} propertyId={property.id} yard={property} readOnly={readOnly} actions={actions} />}
+      <PanelNotes about="customer" aboutId={row.id} timeline={client?.timeline} addNote={actions?.addNote} />
       <section aria-labelledby="customer-consent">
         <SectionHeading id="customer-consent">Consent history</SectionHeading>
         <ConsentHistory client={client} />
