@@ -49,7 +49,7 @@ export const Week: Story = {
   globals: { viewport: { value: "wide", isRotated: false } },
 }
 
-/** Opens on the first week that has a job, with the list of jobs that need a day beside it. */
+/** Opens on the first week that has a job, with the list of jobs that need a day under it. */
 export const OpensOnFirstJobWeek: Story = {
   args: { data: spring },
   globals: { viewport: { value: "wide", isRotated: false } },
@@ -67,10 +67,24 @@ export const EmptyWeek: Story = {
   },
 }
 
-/** The Day tab: Thursday's stops in order beside the map. */
+/** The Day tab: Thursday's stops in order, through the same grid as Visits, with the map under them. */
 export const Day: Story = {
   args: { defaultTab: "day" },
   globals: { viewport: { value: "wide", isRotated: false } },
+}
+
+const firstStop = data.visits.find((v) => v.startAt && v.status === "scheduled")!.id
+
+/** The visit panel open over the week on a laptop: the week keeps its seven columns and does not move; the panel is an overlay. */
+export const PanelOpen: Story = {
+  args: { defaultVisitId: firstStop, defaultSelectedId: firstStop },
+  globals: { viewport: { value: "wide", isRotated: false } },
+}
+
+/** The same panel on a phone: a full width sheet over the day list. */
+export const PanelOpenPhone: Story = {
+  args: { defaultVisitId: firstStop },
+  globals: { viewport: { value: "phone", isRotated: false } },
 }
 
 export const NoDataYet: Story = {

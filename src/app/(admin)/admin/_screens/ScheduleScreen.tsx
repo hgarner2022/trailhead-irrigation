@@ -47,6 +47,8 @@ export interface ScheduleScreenProps {
   defaultWeek?: string
   /** the visit selected on first render, from `?visit=` */
   defaultSelectedId?: string
+  /** the visit whose panel is open on first render (the catalog) */
+  defaultVisitId?: string
   /** a tech reads the week and changes nothing: no Schedule, Place, Move or drag */
   readOnly?: boolean
   /** Schedule: runs the scheduler for one window; without it the button only moves blocks locally, as in the catalog */
@@ -62,7 +64,7 @@ const WINDOWS = ["turn-on", "inspection", "blowout"] as const
 /** The Schedule with the visit panel: a stop in the week, the day list or the map opens the visit. */
 export function ScheduleScreen(props: ScheduleScreenProps) {
   return (
-    <VisitPanelHost data={props.data} today={props.today} readOnly={props.readOnly} actions={props.visitActions}>
+    <VisitPanelHost data={props.data} today={props.today} readOnly={props.readOnly} actions={props.visitActions} defaultVisitId={props.defaultVisitId}>
       <ScheduleBody {...props} />
     </VisitPanelHost>
   )

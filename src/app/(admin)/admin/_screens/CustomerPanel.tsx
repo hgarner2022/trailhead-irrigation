@@ -1,3 +1,4 @@
+import { PANEL_ROW, PanelFacts, PanelHeading, PanelList, PanelRowEnd, PanelRowText } from "@/components/blocks/PanelParts"
 import type { ReactNode } from "react"
 import { JobPill } from "@/components/blocks/JobPill"
 import { MessageThread } from "@/components/blocks/MessageThread"
@@ -22,14 +23,6 @@ import { MARKETING_WORDS, SCHEDULED_WORDS, cardOf, consentEntries, propertiesOf,
 const RECENT = 5
 const capital = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
 
-function Subtitle({ id, children }: { id: string; children: string }) {
-  return (
-    <h3 id={id} className="font-display text-lg leading-tight text-navy">
-      {children}
-    </h3>
-  )
-}
-
 function Facts({ row, card, readOnly, actions }: { row: CustomerRow; card: ClientCard | undefined; readOnly: boolean; actions?: VisitActions }) {
   const facts: [string, ReactNode][] = [
     ...(row.address ? ([["Address", `${row.address}, ${row.town}`]] as [string, ReactNode][]) : ([["Town", row.town]] as [string, ReactNode][])),
@@ -41,16 +34,7 @@ function Facts({ row, card, readOnly, actions }: { row: CustomerRow; card: Clien
     ["Marketing", MARKETING_WORDS[row.marketing]],
     ["Card", <CustomerCardLine key="card" card={card} passId={row.passId} readOnly={readOnly} actions={actions} />],
   ]
-  return (
-    <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm">
-      {facts.map(([term, value]) => (
-        <div key={term} className="contents">
-          <dt className="text-muted-foreground">{term}</dt>
-          <dd className="font-medium">{value}</dd>
-        </div>
-      ))}
-    </dl>
-  )
+  return <PanelFacts rows={facts} className="mt-0" />
 }
 
 /** The customer's visits, the ones that need a day first, then newest first, the last few, each with its two pills; each opens its panel. */
@@ -58,19 +42,18 @@ function Jobs({ visits, today }: { visits: Visit[]; today: string }) {
   const recent = [...visits].sort((a, b) => (a.startAt ? 1 : 0) - (b.startAt ? 1 : 0) || (b.startAt ?? "").localeCompare(a.startAt ?? "")).slice(0, RECENT)
   if (recent.length === 0) return <p className="mt-2 text-sm text-muted-foreground">No visits on record.</p>
   return (
-    <ul className="mt-2 divide-y divide-border text-sm">
+    <PanelList>
       {recent.map((v) => (
         <li key={v.id}>
-          <OpenVisit id={v.id} className="gap-4 py-1.5">
-            <span className="min-w-0 flex-1">
-              <span className="block font-medium">{capital(KIND_WORDS[v.kind])}</span>
-              <span className="block text-muted-foreground">{v.startAt ? shortDate(v.startAt, TIME_ZONE) : "Unscheduled"}</span>
-            </span>
-            <JobPill job={visitJob(v, today, TIME_ZONE)} />
+          <OpenVisit id={v.id} className={PANEL_ROW}>
+            <PanelRowText title={capital(KIND_WORDS[v.kind])} detail={v.startAt ? shortDate(v.startAt, TIME_ZONE) : undefined} />
+            <PanelRowEnd>
+              <JobPill job={visitJob(v, today, TIME_ZONE)} />
+            </PanelRowEnd>
           </OpenVisit>
         </li>
       ))}
-    </ul>
+    </PanelList>
   )
 }
 
@@ -78,14 +61,14 @@ function ConsentHistory({ client }: { client: Pick<Client, "consent" | "consentH
   const entries = client ? consentEntries(client) : []
   if (entries.length === 0) return <p className="mt-2 text-sm text-muted-foreground">No consent recorded.</p>
   return (
-    <ul data-slot="consent-history" className="mt-2 divide-y divide-border text-sm">
+    <PanelList data-slot="consent-history">
       {entries.map((e, i) => (
-        <li key={i} className="py-2.5">
+        <li key={i} className="py-1.5">
           <span className="block font-medium">{`${e.day}, ${e.source}`}</span>
           <span className="block text-muted-foreground">{e.line}</span>
         </li>
       ))}
-    </ul>
+    </PanelList>
   )
 }
 
@@ -98,17 +81,17 @@ export function CustomerPanelBody({ row, client, data, today, readOnly = false, 
       <Facts row={row} card={card} readOnly={readOnly} actions={actions} />
       {property && <PropertyBlock key={property.id} propertyId={property.id} yard={property} readOnly={readOnly} actions={actions} />}
       <section aria-labelledby="customer-jobs">
-        <Subtitle id="customer-jobs">Visits</Subtitle>
+        <PanelHeading id="customer-jobs">Visits</PanelHeading>
         <Jobs visits={data.visits.filter((v) => v.clientId === row.id)} today={today} />
       </section>
       {!readOnly && <CustomerBills jobs={(data.jobs ?? []).filter((j) => j.customerId === row.id)} data={data} actions={actions} />}
       {!readOnly && client?.app && <TextForm client={client} actions={actions} />}
       <section aria-labelledby="customer-consent">
-        <Subtitle id="customer-consent">Consent history</Subtitle>
+        <PanelHeading id="customer-consent">Consent history</PanelHeading>
         <ConsentHistory client={client} />
       </section>
       <section aria-labelledby="customer-messages">
-        <Subtitle id="customer-messages">Messages</Subtitle>
+        <PanelHeading id="customer-messages">Messages</PanelHeading>
         <MessageThread messages={data.messages.filter((m) => m.clientId === row.id)} newestFirst className="mt-3" />
       </section>
     </>
