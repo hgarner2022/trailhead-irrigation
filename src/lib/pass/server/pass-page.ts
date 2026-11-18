@@ -23,9 +23,10 @@ export interface PassPageData {
 /**
  * What the customer's pass page shows, read through the API with the caller's own principal: `passes.list` (a customer sees
  * only their own), `passes.get` for each season, and `visits.areaDays` for the turn-on and blowout still open, so any customer can change a day.
- * Null when the caller holds no pass; a pass still pending (checkout unfinished) does not count.
+ * Null when the caller holds no pass; a pass still pending (checkout unfinished) does not count. `pickDays: false` skips the area-day reads, for the
+ * account's Home, which shows only the pass card and its season line.
  */
-export async function loadPassPage(ctx: Ctx): Promise<PassPageData | null> {
+export async function loadPassPage(ctx: Ctx, options: { pickDays?: boolean } = {}): Promise<PassPageData | null> {
   const list = await callApi(ctx, passesList, { limit: 50 })
   const held = list.data.filter((p) => p.status !== "pending").sort((a, b) => b.season - a.season).slice(0, SEASONS_SHOWN)
   if (held.length === 0) return null
@@ -33,7 +34,7 @@ export async function loadPassPage(ctx: Ctx): Promise<PassPageData | null> {
   const passes = details.map(passFromApi)
   const current = details[0]!
   const pickDays: PassPageData["pickDays"] = {}
-  if (current.status === "active") {
+  if (options.pickDays !== false && current.status === "active") {
     for (const v of current.visits) {
       if ((v.kind === "turn-on" || v.kind === "blowout") && (v.status === "unscheduled" || v.status === "scheduled")) {
         const { days } = await callApi(ctx, visitsAreaDays, { id: v.id })

@@ -1,6 +1,9 @@
 import "server-only"
 import { and, desc, eq, gte, lte, ne, notInArray } from "drizzle-orm"
 import { passStatus } from "@/lib/pass/facts"
+import { beforeCutoff, CHANGE_CUTOFF_DAYS } from "@/lib/portal/change-day"
+import { PHONE_DISPLAY } from "@/lib/nav"
+import { hasScope } from "@/lib/auth/principal"
 import { resolvePassJob } from "@/lib/pass/server/resolve"
 import { z } from "zod"
 import * as s from "@/db/schema"
@@ -205,16 +208,21 @@ export const visitsLinkRequest = defineHandler({
 
 const PICKABLE = ["unscheduled", "scheduled"] as const
 
-/** The pass visit and its open pass, for the two calls a customer makes about their own day. */
+/**
+ * The visit and its open job, for the two calls a customer makes about their own day. Any visit of a kind with a season window (turn-on,
+ * inspection, blowout) may be moved, on a pass or on a one-off job; the job must be sold and open (a pass: `passStatus` active). A customer's
+ * booked day may change until two days before it (`CHANGE_CUTOFF_DAYS`); office staff are not held to that.
+ */
 async function loadPickable(ctx: Ctx, id: string) {
   const row = await loadVisit(ctx, id)
   const { visit } = row
   assertOwnsCustomer(ctx, visit.customerId)
-  if (!row.isPassVisit) throw new ApiError("unprocessable", "Only a pass visit has days to pick from")
-  // The pass is open when its job is: sold, not canceled, in a season that has not ended (`passStatus`).
   const [job] = await ctx.db.select({ soldOn: s.job.soldOn, cancelledAt: s.job.cancelledAt, season: s.job.season }).from(s.job).where(eq(s.job.id, visit.jobId))
-  if (!job || passStatus(job, today(ctx)) !== "active") throw new ApiError("unprocessable", "This pass is not open")
+  if (!job) throw notFound("Job")
+  if (row.isPassVisit ? passStatus(job, today(ctx)) !== "active" : !job.soldOn || job.cancelledAt) throw new ApiError("unprocessable", row.isPassVisit ? "This pass is not open" : "This job is not open")
   if (!(PICKABLE as readonly string[]).includes(visit.status)) throw new ApiError("unprocessable", `A ${visit.status} visit has no day to pick`)
+  if (visit.status === "scheduled" && visit.scheduledOn && !hasScope(ctx.principal, "write") && !beforeCutoff(visit.scheduledOn, today(ctx)))
+    throw new ApiError("unprocessable", `This day is within ${CHANGE_CUTOFF_DAYS} days, so it can't be changed online. Call or text Ryan at ${PHONE_DISPLAY}.`)
   return { row, visit, season: job.season ?? 0 }
 }
 
@@ -224,7 +232,7 @@ export const visitsAreaDays = defineHandler({
   path: "/visits/{id}/area-days",
   scope: "read",
   customerSelf: true,
-  summary: "The days a pass visit could take, up to three, each a day someone already works the customer's area or has room: what the pass page offers a customer who must be home. A customer asks only about their own visit.",
+  summary: "The days a visit with a season window (a turn-on, inspection or blowout, on a pass or a one-off job) could take, up to three, each a day someone already works the customer's area or has room: what the pass page offers a customer who must be home. A customer asks only about their own visit, and only until two days before its day.",
   input: idInput,
   output: z.object({ days: z.array(Day) }),
   async run(ctx, input) {
@@ -239,7 +247,7 @@ export const visitsPick = defineHandler({
   path: "/visits/{id}/pick",
   scope: "write",
   customerSelf: true,
-  summary: "A customer picks one of the offered days for their pass visit, to set it or to change it. The visit lands on that day with the person who works the area, and the customer is texted the date (emailed when there is no mobile number). A day that was not offered is refused.",
+  summary: "A customer picks one of the offered days for their visit (a pass visit or a one-off job's turn-on or blowout), to set it or to change it. The visit lands on that day with the person who works the area, and the customer is texted the date (emailed when there is no mobile number). A day that was not offered is refused.",
   input: z.object({ id: Id, day: Day }),
   output: VisitOut,
   async run(ctx, input) {
