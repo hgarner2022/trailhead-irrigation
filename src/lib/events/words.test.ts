@@ -39,6 +39,11 @@ describe("eventWords: one sentence per kind", () => {
     expect(words("visit.not-done", { name: "Spring turn-on", reason: "no-water", note: "Main valve off" })).toBe("Spring turn-on marked not done, no water on: Main valve off")
     expect(words("visit.cancelled", { name: "Spring turn-on", reason: "Customer called" })).toBe("Spring turn-on canceled, Customer called")
     expect(words("visit.cancelled", { name: "Spring turn-on", reason: null })).toBe("Spring turn-on canceled")
+    // a customer's own cancel and move say they came from the account, and the actor is the customer
+    expect(words("visit.cancelled", { name: "Spring turn-on", reason: "Away that week" }, "customer", null)).toBe("Spring turn-on canceled from the account, Away that week")
+    expect(words("visit.cancelled", { name: "Spring turn-on" }, "customer", null)).toBe("Spring turn-on canceled from the account")
+    expect(words("visit.moved", { name: "Spring turn-on", day: "2027-04-30", from: "2027-04-28" }, "customer", null)).toBe("Spring turn-on moved from Apr 28 to Apr 30, from the account")
+    expect(eventWords({ kind: "visit.cancelled", detail: { name: "Spring turn-on" }, who: "customer" }).text).toBe("the customer: Spring turn-on canceled from the account")
     expect(words("visit.skipped", { name: "Mid-season inspection" })).toBe("Mid-season inspection skipped")
   })
   it("visit.edited reads the flat detail", () => {

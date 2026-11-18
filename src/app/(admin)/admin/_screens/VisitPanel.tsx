@@ -97,6 +97,11 @@ function VisitBlock({ facts }: { facts: VisitFacts }) {
           ...(visit.notes && !visit.timeline?.length ?([["Notes", visit.notes]] as [string, ReactNode][]) : []),
         ]}
       />
+      {facts.customerChange && (
+        <p data-slot="customer-change" className="mt-2 text-sm text-muted-foreground">
+          {facts.customerChange}
+        </p>
+      )}
       <p className="mt-2 text-sm text-muted-foreground empty:hidden">{facts.states.dayPassed ? `The day passed on ${dayLabel(day!)}. Mark it done or move it.` : ""}</p>
     </section>
   )

@@ -8,6 +8,7 @@ import { TIME_ZONE } from "@/lib/admin/format"
 import { jobTotal } from "@/lib/jobs/lines"
 import { NO_TAX, type TaxRule } from "@/lib/jobs/tax"
 import { dayOf } from "@/lib/admin/calendar"
+import { cutoffShortWords, withinCutoff } from "@/lib/portal/change-day"
 import { jobMoney, visitJob, windowLabel, type Job } from "@/lib/admin/jobs"
 import { KIND_LABEL, type OfficeKind } from "@/lib/admin/visit-defaults"
 import { billState, type BillState } from "./bill-model"
@@ -88,6 +89,17 @@ export interface VisitFacts {
   bill: BillState
   /** every message to this customer, with the ones about this visit marked */
   messages: Message[]
+  /** what the customer's account allows for this booked visit: "Customer can change online until Sun, Apr 26, 11:59 pm" or "Closed, texts only"; null when the visit is not booked */
+  customerChange: string | null
+}
+
+/** The line under a booked visit about the customer's own changes (the 24-hour rule, `withinCutoff`): open until its last minute, then closed and texts only. */
+export function customerChangeLine(visit: Pick<Visit, "scheduledOn" | "startAt">, booked: boolean, today: string): string | null {
+  const day = dayOfVisit(visit as Visit)
+  if (!booked || !day) return null
+  // Noon on the Mountain day `today` falls on the same Mountain day in both daylight and standard time.
+  const now = new Date(`${today.slice(0, 10)}T19:00:00Z`)
+  return withinCutoff({ scheduledOn: day }, now) ? "Closed, texts only" : `Customer can change online until ${cutoffShortWords({ scheduledOn: day })}`
 }
 
 /** Everything the panel shows about one visit; undefined when the visit is not in `data`. */
@@ -114,6 +126,7 @@ export function visitFacts(data: AdminData, visitId: string, today: string): Vis
     // a job charged to the card on its pass is left to the card (unless the card failed)
     bill: billState(job, siblings, Boolean(pass?.cardLast4) && states.money !== "failed"),
     messages: data.messages.filter((m) => m.clientId === visit.clientId),
+    customerChange: customerChangeLine(visit, states.work === "scheduled", day),
   }
 }
 

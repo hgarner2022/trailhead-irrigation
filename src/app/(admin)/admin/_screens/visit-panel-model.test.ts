@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import type { AdminData, JobLine, Visit } from "@/lib/admin/types"
-import { visitCancelled, visitFacts, visitPrice } from "./visit-panel-model"
+import { customerChangeLine, visitCancelled, visitFacts, visitPrice } from "./visit-panel-model"
 
 const visit = { id: "v1", jobId: "j1", price: 145 } as Visit
 const line = (id: string, unitPrice: number, over: Partial<JobLine> = {}): JobLine => ({ id, name: "Repair", quantity: 1, unitPrice, taxable: false, visitId: "v1", ...over })
@@ -45,5 +45,19 @@ describe("visitFacts money", () => {
   it("says Paid once the rows cover the job, and the number owed again after a refund", () => {
     expect(visitFacts(world([row("a", 145)], [a]), "a", TODAY)!.money).toBe("Paid")
     expect(visitFacts(world([row("a", 145), row("a", -145, { refundsPaymentId: "pay-a-145" })], [a]), "a", TODAY)!.money).toBe("$145 unpaid")
+  })
+})
+
+describe("customerChangeLine (the 24-hour rule as the office reads it)", () => {
+  const booked = { scheduledOn: "2027-04-28" } as Visit
+  it("says what the customer's account allows until the last minute, then Closed, texts only", () => {
+    expect(customerChangeLine(booked, true, "2027-04-20")).toBe("Customer can change online until Mon, Apr 26, 11:59 pm")
+    expect(customerChangeLine(booked, true, "2027-04-26")).toBe("Customer can change online until Mon, Apr 26, 11:59 pm")
+    expect(customerChangeLine(booked, true, "2027-04-27")).toBe("Closed, texts only")
+    expect(customerChangeLine(booked, true, "2027-04-28")).toBe("Closed, texts only")
+  })
+  it("says nothing for a visit that is not booked", () => {
+    expect(customerChangeLine(booked, false, "2027-04-20")).toBeNull()
+    expect(customerChangeLine({} as Visit, true, "2027-04-20")).toBeNull()
   })
 })

@@ -108,4 +108,11 @@ describe("NeedsAttention", () => {
     render(<NeedsAttention items={[{ kind: "unplaced", visitId: "v 1", message: "Percy could not be placed.", since: "2026-11-09T17:00:00Z" }]} now={now} />)
     expect(rows()[0]!.querySelector("a")).toHaveAttribute("href", "/admin/visits?visit=v%201")
   })
+
+  it("shows a customer's own change with its words, opens the visit and offers Open visit", () => {
+    render(<NeedsAttention items={[{ kind: "customer-changed", key: "v1:cancelled:2027-04-10T15:00:00.000Z", visitId: "v1", message: "Andrea Smith canceled Spring turn-on, Wed, Apr 28, Erie. The day is free.", since: "2026-11-12T17:30:00Z" }]} now={now} onAction={async () => undefined} />)
+    expect(screen.getByText("Customer change:")).toBeInTheDocument()
+    expect(screen.getByText("Andrea Smith canceled Spring turn-on, Wed, Apr 28, Erie. The day is free.").closest("a")).toHaveAttribute("href", "/admin/visits?visit=v1")
+    expect(screen.getByRole("button", { name: /^Open visit:/ })).toBeInTheDocument()
+  })
 })

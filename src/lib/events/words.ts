@@ -136,7 +136,8 @@ function whatOf(e: EventForWords): string {
     case "visit.moved": {
       const from = dayWords(d.from)
       const to = dayWords(d.day)
-      return from && to ? `${name} moved from ${from} to ${to}` : to ? `${name} moved to ${to}` : `${name} moved`
+      const by = e.who === "customer" ? ", from the account" : ""
+      return `${from && to ? `${name} moved from ${from} to ${to}` : to ? `${name} moved to ${to}` : `${name} moved`}${by}`
     }
     case "visit.day-filled": {
       const from = dayWords(d.from)
@@ -159,7 +160,7 @@ function whatOf(e: EventForWords): string {
       const note = str(d.note)
       return `${name} marked not done${why ? `, ${why.charAt(0).toLowerCase()}${why.slice(1)}` : ""}${note ? `: ${note}` : ""}`
     }
-    case "visit.cancelled": return str(d.reason) ? `${name} canceled, ${d.reason}` : `${name} canceled`
+    case "visit.cancelled": return `${name} canceled${e.who === "customer" ? " from the account" : ""}${str(d.reason) ? `, ${d.reason}` : ""}`
     case "visit.skipped": return `${name} skipped`
     case "visit.edited": return editWords(d)
     case "pass.cancelled": {

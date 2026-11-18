@@ -57,6 +57,14 @@ export function cutoffWords(v: { scheduledOn: string }): string {
   return `${weekday}, ${writtenDate(last)}, 11:59 pm`
 }
 
+/** "Sun, Apr 25, 11:59 pm": the same last minute, as the office reads it. */
+export function cutoffShortWords(v: { scheduledOn: string }): string {
+  const last = addDays(v.scheduledOn, -2)
+  const weekday = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][new Date(`${last}T12:00:00Z`).getUTCDay()]!
+  const month = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][Number(last.slice(5, 7)) - 1]!
+  return `${weekday}, ${month} ${Number(last.slice(8, 10))}, 11:59 pm`
+}
+
 /** What a customer may do with a visit online: reschedule it and cancel it, each yes, text or no. */
 export function changeFor(f: ChangeFacts, now: Date): { reschedule: ChangeState; cancel: ChangeState } {
   const NONE = { reschedule: "no", cancel: "no" } as const

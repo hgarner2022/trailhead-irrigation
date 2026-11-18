@@ -434,6 +434,11 @@ export function attention(i: ShapeInput, passes: Pass[], visitRows: Attention[] 
   for (const a of i.alerts ?? []) {
     // A no-card row goes away once the visit is paid (the money was recorded) or its pass is gone.
     if (a.kind === "no-card" && (() => { const v = passes.flatMap((p) => p.visits).find((x) => x.id === a.key); return !v || visitPaid(v) })()) continue
+    // A change a customer made from their account names its visit in the key (`<visit id>:cancelled:<time>`), so the row opens that visit.
+    if (a.kind === "customer-changed") {
+      out.push({ key: a.key, kind: "customer-changed", visitId: a.key.split(":")[0]!, message: a.message, since: iso(a.createdAt) })
+      continue
+    }
     out.push({ key: a.key, kind: a.kind === "new-pass" || a.kind === "pass-cancelled" || a.kind === "scheduled" || a.kind === "unplaced" || a.kind === "no-card" ? a.kind : "jobs-failed", ...(a.passId ? { passId: a.passId } : {}), ...((a.kind === "unplaced" || a.kind === "no-card") && a.key ? { visitId: a.key } : {}), message: a.message, since: iso(a.createdAt) })
   }
   for (const q of i.queueProblems) {

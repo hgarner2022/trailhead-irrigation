@@ -85,13 +85,14 @@ export interface PillFacts {
   canPick?: boolean
 }
 
-/** What the customer reads on a visit: Booked, Done, Pick a day or Day coming soon, Needs a new day, Canceled or Skipped. */
+/** What the customer reads on a visit: Booked, Done, Pick a day or Day coming soon, Needs a new day, or Canceled (a skipped visit reads Canceled too). */
 export function visitPill(v: PillFacts): VisitPill {
   // a booked visit whose day has passed and is not closed yet still reads Booked
   if (v.status === "scheduled" || v.status === "not-closed") return { status: "scheduled", label: "Booked" }
   if (v.status === "completed") return { status: "done", label: "Done" }
   if (v.status === "cancelled") return { status: "cancelled", label: "Canceled" }
-  if (v.status === "skipped") return { status: "skipped", label: "Skipped" }
+  // one customer word for skipped and canceled: a pass visit the customer (or Ryan) skipped is Canceled to them
+  if (v.status === "skipped") return { status: "skipped", label: "Canceled" }
   if (v.notDoneReason) return { status: "needs-a-day", label: "Needs a new day" }
   return { status: "needs-a-day", label: v.canPick ? "Pick a day" : "Day coming soon" }
 }
