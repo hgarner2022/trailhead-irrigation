@@ -18,7 +18,7 @@ import { KIND_WORDS } from "@/lib/admin/format"
 // The week by person: one row per person on the schedule, Monday to Sunday across in seven equal columns after a fixed,
 // narrow Who column. The week is never narrower than 56rem: below that the table scrolls sideways inside its own box,
 // and the side panel, an overlay, never changes its width. Every visit is a one-line block ("Hannah · Erie · turn-on",
-// cut with an ellipsis and the full words in its title when the column is tight, after its time, "9:00" or "Any time") with a bar in its area's colour, marked when Ryan moved it.
+// cut with an ellipsis and the full words in its title when the column is tight, after its time when it has one, "9:00"; an untimed stop reads "Any time" to a screen reader and in its title, since in the narrow column the name matters more) with a bar in its area's colour, marked when Ryan moved it.
 // Each person's row opens with their route colour (the same dot the Day view's list and the map's pins take) and each day's header says how full it is and which towns are in it (`DayHeader`). A block is a button: click or Enter selects
 // it, and it can be dragged to another cell, which calls `onMove`; a cell on
 // a day the person does not work refuses the drop. Under `md` the same data
@@ -73,7 +73,7 @@ function VisitBlock({ visit, areas, selected, onSelect, draggable }: { visit: Vi
       )}
     >
       <span className="relative block min-w-0 flex-1 truncate" title={`${stopTime(visit)} · ${visit.clientName} · ${visit.town} · ${KIND_WORDS[visit.kind]}`}>
-        <span data-slot="stop-time" className="tabular-nums text-muted-foreground">{`${stopTime(visit)} `}</span>
+        <span data-slot="stop-time" className={cn("tabular-nums text-muted-foreground", visit.startTime ? undefined : "sr-only")}>{`${stopTime(visit)} `}</span>
         <span className="font-medium text-foreground">{visit.clientName}</span>
         <span className="text-muted-foreground">{` · ${visit.town} · ${KIND_WORDS[visit.kind]}`}</span>
       </span>
@@ -195,7 +195,7 @@ export function WeekGrid({ people, areas, visits, weekStart, today, timeZone, se
           <table className="w-full min-w-[56rem] table-fixed border-collapse text-sm">
             <thead>
               <tr className="border-b border-border">
-                <th scope="col" className="w-28 px-3 py-2 text-left font-display text-sm uppercase tracking-wide text-muted-foreground">Who</th>
+                <th scope="col" className="w-36 px-3 py-2 text-left font-display text-sm uppercase tracking-wide text-muted-foreground">Who</th>
                 {days.map((day) => {
                   const fill = dayFill(visits, day, people, timeZone)
                   return (
@@ -240,7 +240,10 @@ export function WeekGrid({ people, areas, visits, weekStart, today, timeZone, se
           const list = dayVisits(shown, phoneDay, person.id, timeZone)
           return (
             <section key={person.id} aria-label={person.name} className="mt-4">
-              <h3 className="font-display text-sm uppercase tracking-wide text-muted-foreground">{person.name}</h3>
+              <h3 className="flex items-center gap-2 font-display text-sm uppercase tracking-wide text-muted-foreground">
+                <span aria-hidden className={cn("size-2.5 shrink-0 rounded-full", personClass(people.indexOf(person)))} />
+                {person.name}
+              </h3>
               {list.length === 0 ? (
                 <p className="py-2 text-sm text-muted-foreground">{worksOn(person, phoneDay) ? "No visits." : "Not a working day."}</p>
               ) : (
