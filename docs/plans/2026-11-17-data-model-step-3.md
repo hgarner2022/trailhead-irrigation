@@ -168,4 +168,4 @@ After 3.1 to 3.5 the only things still read from `season_pass` are `status`, `in
 
 ## After step 3
 
-Step 4 (payment with `visit_id` and refund rows, the invoice with its pay page, reminder and Home row) needs Ryan's sales tax answer before it is planned. Step 5 (event replaces `pass_change` for every record; notes are events) and step 6 (the legacy tables and columns go, `pass_id` foreign keys re-pointed to `job_id`, the Jobber mirror at the exit) each get their own plan file.
+Step 4 (payments as records, the invoice with its pay page, Owed and Overdue on Home) is planned in `docs/plans/2026-11-17-data-model-step-4.md`; sales tax is in the model and off until Ryan answers. Step 5 (event replaces `pass_change` for every record; notes are events) and step 6 (the legacy tables and columns go, `pass_id` foreign keys re-pointed to `job_id`, the Jobber mirror at the exit) each get their own plan file.

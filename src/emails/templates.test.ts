@@ -12,6 +12,8 @@ const visit: VisitFacts = { id: "v1", name: "spring turn-on", day: "2027-05-05",
 const blowoutVisit: VisitFacts = { ...visit, id: "v2", name: "fall blowout", day: "2027-10-05", icsUrl: `${origin}/api/visits/v2/calendar.ics?token=def` }
 const TWO_DAYS = { ...base, passNumber: "TH-2027-0004", season: 2027, town: "Erie", passImageUrl: `${origin}/api/pass-image/p1?token=t`, cardLast4: "4242", visits: [{ kind: "turn-on", name: "spring turn-on", amount: 145, visit, fallback: "" }, { kind: "blowout", name: "fall blowout", amount: 95, visit: blowoutVisit, fallback: "", note: "Your first choice, Friday, October 1, filled up, so we put it on Tuesday, October 5." }] }
 
+const INVOICE = { ...base, invoiceNumber: "INV-2027-0001", visitName: "repair", lines: [{ name: "Repair", amount: 145 }], amount: 145, tax: 0, total: 145, dueOn: "2027-05-21", payUrl: `${origin}/pay/inv1?token=abc` }
+
 const DATA: Record<keyof typeof EMAIL_TEMPLATES, Record<string, unknown>> = {
   "purchase-confirmation": { ...base, passNumber: "TH-2027-0004", season: 2027, town: "Erie", passImageUrl: `${origin}/api/pass-image/p1?token=t`, cardLast4: "4242", visits: [{ kind: "turn-on", name: "spring turn-on", amount: 145, visit, fallback: "" }, { kind: "blowout", name: "fall blowout", amount: 95, visit: null, fallback: "Ryan sets the day and we text it to you." }] },
   "booking-confirmation": { ...base, serviceName: "sprinkler repair", visit },
@@ -20,6 +22,8 @@ const DATA: Record<keyof typeof EMAIL_TEMPLATES, Record<string, unknown>> = {
   "day-before": { ...base, visit },
   "date-confirm": { ...base, visit },
   receipt: { ...base, passNumber: "TH-2027-0004", amount: 145, visitName: "spring turn-on", card: "Visa ending 4242", nextLine: "Your fall blowout is planned for early October.", receiptUrl: "https://pay.stripe.com/r/1" },
+  invoice: INVOICE,
+  "invoice-reminder": INVOICE,
   "card-failed": { ...base, passNumber: "TH-2027-0004", amount: 145, visitName: "spring turn-on", updateUrl: "https://billing.stripe.com/s/1" },
   "card-expiring": { ...base, passNumber: "TH-2027-0004", cardState: "expires in July 2027", left: 190, updateUrl: "https://billing.stripe.com/s/2" },
   cancelled: { ...base, passNumber: "TH-2027-0004" },
@@ -128,6 +132,44 @@ describe("wording per kind", () => {
     expect(text).toContain("to your Visa ending 4242")
     expect(text).toContain("Your fall blowout is planned for early October.")
   })
+  it("the receipt for a bill paid on the pay page names the bill, its lines, the tax only when there is tax, a credit as a minus and the card", () => {
+    const bill = { ...base, passNumber: null, amount: 224, invoiceNumber: "INV-2027-0001", lines: [{ name: "Repair", amount: 145 }, { name: "Extra zones", amount: 20 }, { name: "Payments received", amount: -45 }], tax: 9, total: 224, card: "Visa ending 4242", nextLine: "", receiptUrl: "https://pay.stripe.com/r/2" }
+    const { subject, text, html } = renderEmail("receipt", bill)!
+    expect(subject).toBe("Receipt: $224 for your bill INV-2027-0001")
+    expect(text).toContain("We received $224 for your bill INV-2027-0001.")
+    expect(text).toContain("Repair: $145")
+    expect(text).toContain("Payments received: -$45")
+    expect(text).toContain("Sales tax: $9")
+    expect(text).toContain("Card: Visa ending 4242")
+    expect(html).toContain("View the receipt")
+    expect(html).not.toContain("Open your pass page")
+    copyRules(text)
+    expect(renderEmail("receipt", { ...bill, tax: 0 })!.text).not.toContain("Sales tax")
+  })
+  it("the bill names the lines, the total, the due day and one Pay button, with a tax line only when there is tax", () => {
+    const { subject, text, html } = get("invoice")
+    expect(subject).toBe("Your bill from Trailhead: $145")
+    expect(text).toContain("Repair: $145")
+    expect(text).toContain("Total: $145")
+    expect(text).toContain("Due: Friday, May 21")
+    expect(text).toContain(`Pay here: ${origin}/pay/inv1?token=abc`)
+    expect(text).not.toContain("Sales tax")
+    expect(html).not.toContain("Sales tax")
+    expect(html).toContain(">Pay $145<")
+    expect(html.match(/Pay \$145/g)).toHaveLength(1)
+    const taxed = renderEmail("invoice", { ...INVOICE, lines: [{ name: "Repair", amount: 145 }, { name: "Spring turn-on", amount: 100 }], amount: 245, tax: 12, total: 257 })!
+    expect(taxed.subject).toBe("Your bill from Trailhead: $257")
+    expect(taxed.text).toContain("Sales tax: $12")
+    expect(taxed.html).toContain("Sales tax")
+    expect(taxed.html).toContain(">Pay $257<")
+  })
+  it("the reminder is the same bill under a reminder heading", () => {
+    const { subject, text, html } = get("invoice-reminder")
+    expect(subject).toBe("A reminder: your bill from Trailhead, $145")
+    expect(html).toContain("A reminder")
+    expect(text).toContain("a reminder that your bill for the repair, $145, is due Friday, May 21")
+    expect(text).toContain(`Pay here: ${origin}/pay/inv1?token=abc`)
+  })
   it("card-failed and card-expiring carry the update link and the amount", () => {
     expect(get("card-failed").text).toContain("didn't go through for $145")
     expect(get("card-failed").text).toContain("https://billing.stripe.com/s/1")
@@ -150,13 +192,23 @@ describe("wording per kind", () => {
 
 describe("text versions", () => {
   const d = { ...base, visit } as never
-  it.each(Object.keys(SMS_TEMPLATES) as (keyof typeof SMS_TEMPLATES)[])("%s names the business, the day, the link and the opt-out once, within 160 characters", (kind) => {
+  const visitKinds = ["date-set", "date-moved", "day-before", "date-confirm"] as const
+  it.each(visitKinds)("%s names the business, the day, the link and the opt-out once, within 160 characters", (kind) => {
     const t = SMS_TEMPLATES[kind](d)
     expect(t.startsWith("Trailhead:")).toBe(true)
     expect(t).toContain("Wed, May 5")
     expect(t).toContain(`${origin}/account/pass`)
     expect(t.match(/STOP/g)).toHaveLength(1)
     expect(t.length).toBeLessThanOrEqual(160)
+    copyRules(t)
+  })
+  it.each(["invoice", "invoice-reminder"] as const)("%s names the business, the amount, the due day and the pay link, with the opt-out once and the copy rules kept", (kind) => {
+    const t = SMS_TEMPLATES[kind]({ ...INVOICE, dueOn: "2027-12-01" } as never)
+    expect(t.startsWith("Trailhead:")).toBe(true)
+    expect(t).toContain("$145")
+    expect(t).toContain("due Dec 1")
+    expect(t).toContain(`${origin}/pay/inv1?token=abc`)
+    expect(t.match(/STOP/g)).toHaveLength(1)
     copyRules(t)
   })
   it("says moved, set and tomorrow in their own words", () => {

@@ -226,6 +226,27 @@ async function seedPasses(db: Database, snapshot: AdminData, org: string) {
         })),
       )
       .onConflictDoNothing()
+    // A visit the snapshot shows as charged gets the one succeeded payment row a real charge would have written, on insert only: a database that already holds a real attempt for the visit keeps it.
+    const charged = pass.visits.filter((v) => v.chargedAt)
+    if (charged.length)
+      await db
+        .insert(s.charge)
+        .values(
+          charged.map((v) => ({
+            id: `charge-${pass.id}-${v.kind}-1`,
+            organizationId: org,
+            jobId,
+            passId: pass.id,
+            visitId: `${pass.id}-${v.kind}`,
+            customerId: pass.clientId,
+            attempt: 1,
+            amount: v.amount,
+            status: "succeeded" as const,
+            method: "card_on_file" as const,
+            paidOn: toMountainDay(v.chargedAt!),
+          })),
+        )
+        .onConflictDoNothing()
     // The job's line per visit, with the id migration 0014's backfill gives the same visit (`line_<visit id>`), so a re-run of the backfill adds nothing to a seeded database.
     await insertLines(
       db,

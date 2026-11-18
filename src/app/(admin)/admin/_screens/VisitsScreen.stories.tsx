@@ -51,9 +51,51 @@ export const PanelNeedsADay: Story = { args: { defaultVisitId: "office-needs-day
 /** Not done keeps its reason in the pill until the visit has a day again. */
 export const PanelNotDone: Story = { args: { defaultVisitId: "office-not-done" }, globals: wide }
 
-/** Done and the money has not come: the panel asks how it was paid. */
-export const PanelDoneNotPaid: Story = { args: { defaultVisitId: "office-unpaid" }, globals: wide }
-export const PanelDoneNotPaidPhone: Story = { args: { defaultVisitId: "office-unpaid" }, globals: phone }
+/** Done and owed: the money pill says Owed and the panel offers Record the payment. */
+export const PanelOwed: Story = { args: { defaultVisitId: "office-owed" }, globals: wide }
+export const PanelOwedPhone: Story = { args: { defaultVisitId: "office-owed" }, globals: phone }
+
+/** Done and owed: besides Record the payment, the panel offers Send a bill with what it does under it. */
+export const PanelOwedSendBill: Story = {
+  args: { defaultVisitId: "office-owed" },
+  globals: wide,
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByRole("button", { name: "Send a bill" })).toBeInTheDocument()
+    await expect(await canvas.findByText("Texts a pay link, or emails it when there is no mobile.")).toBeInTheDocument()
+  },
+}
+
+/** Done asks how it was paid: Check, Venmo, Cash, and last Send a bill, which texts a pay link instead of recording money. */
+export const PanelDoneSendBill: Story = {
+  args: { defaultVisitId: "office-scheduled" },
+  globals: wide,
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(await canvas.findByLabelText("Send a bill"))
+    await expect(await canvas.findByRole("button", { name: "Mark done and send a bill" })).toBeInTheDocument()
+  },
+}
+
+/** A bill is out: the Money pill says Bill sent, and the panel shows "Bill sent Nov 10, due Nov 24" with Remind and the pay link. */
+export const PanelBillSent: Story = {
+  args: { defaultVisitId: "office-billed" },
+  globals: wide,
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText("Bill sent Nov 10, due Nov 24")).toBeInTheDocument()
+    await expect(await canvas.findByRole("button", { name: "Remind" })).toBeInTheDocument()
+    await expect(await canvas.findByRole("link", { name: "Pay link" })).toBeInTheDocument()
+  },
+}
+export const PanelBillSentPhone: Story = { args: { defaultVisitId: "office-billed" }, globals: phone }
+
+/** A tech sees Bill sent in the pill and no Remind, no pay link and no Send a bill. */
+export const PanelBillSentTech: Story = {
+  args: { defaultVisitId: "office-billed", readOnly: true },
+  globals: wide,
+  play: async ({ canvas }) => {
+    await expect(canvas.queryByRole("button", { name: "Remind" })).not.toBeInTheDocument()
+    await expect(canvas.queryByRole("link", { name: "Pay link" })).not.toBeInTheDocument()
+  },
+}
 
 /** Paid by check: the Money pill says how, and the thread shows the receipt. */
 export const PanelPaid: Story = { args: { defaultVisitId: "office-paid" }, globals: wide }
@@ -61,7 +103,7 @@ export const PanelPaid: Story = { args: { defaultVisitId: "office-paid" }, globa
 /** The day passed: still Scheduled, with a small note. */
 export const PanelDayPassed: Story = { args: { defaultVisitId: "office-day-passed" }, globals: wide }
 
-/** A visit on a Season Pass: the job block shows the pass number, "n of m paid" and the other visits. */
+/** A visit on a Season Pass: the job block shows the pass number, "$290 owed" or "1 of 2 paid, $145 owed" and the other visits. */
 export const PanelPassVisit: Story = { args: { defaultVisitId: passVisitId }, globals: wide }
 
 /** A visit on a pass the office sold with no card: Done asks how it was paid, like a one-off, instead of charging a card. */
@@ -70,7 +112,7 @@ export const PanelPassVisitNoCard: Story = {
   globals: wide,
   play: async ({ canvas }) => {
     await expect(await canvas.findByRole("button", { name: "Mark done and record payment" })).toBeInTheDocument()
-    await expect(await canvas.findByText("Sends the receipt, which says how it was paid.")).toBeInTheDocument()
+    await expect(await canvas.findByText("Sends the receipt, which says how it was paid. A bill goes with a pay link instead.")).toBeInTheDocument()
   },
 }
 

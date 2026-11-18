@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import snapshot from "./fixtures/snapshot.json"
-import { JOB_WORDS, NOT_CLOSED_LOOKBACK_DAYS, dayWords, jobCounts, jobMoney, jobOf, statesOf, passVisitJob, visitJob, windowLabel, type JobRow } from "./jobs"
+import { JOB_WORDS, MONEY_WORDS, NOT_CLOSED_LOOKBACK_DAYS, dayWords, jobCounts, jobMoney, jobOf, moneyOf, paymentsOf, statesOf, passVisitJob, visitJob, visitPaid, visitPaidOn, visitPaidTotal, windowLabel, type JobRow } from "./jobs"
 import type { AdminData, PassVisit, Visit } from "./types"
 
 const TODAY = "2026-11-12"
@@ -135,7 +135,7 @@ describe("statesOf: the work pill and the money pill", () => {
     expect(s({ status: "unscheduled" })).toMatchObject({ work: "needs-a-day", money: "not-yet", moneyLabel: "", workLabel: "No day yet", dayPassed: false })
     expect(s({ status: "scheduled", scheduledOn: "2026-11-20" })).toMatchObject({ work: "scheduled", money: "not-yet" })
     expect(s({ status: "cancelled" })).toMatchObject({ work: "cancelled" })
-    expect(s({ status: "completed", completedOn: "2026-11-10" })).toMatchObject({ work: "done", money: "unpaid", moneyLabel: "Unpaid" })
+    expect(s({ status: "completed", completedOn: "2026-11-10" })).toMatchObject({ work: "done", money: "owed", moneyLabel: "Owed" })
     expect(s({ status: "completed", completedOn: "2026-11-10", chargedAt: "2026-11-10T20:00:00Z", paidMethod: "check" })).toMatchObject({ money: "paid", moneyLabel: "Paid, check" })
   })
   it("keeps a Scheduled visit whose day has passed Scheduled, with a note, and never calls Routed a state", () => {
@@ -153,6 +153,14 @@ describe("statesOf: the work pill and the money pill", () => {
     expect(s({ ...done, chargeFailed: true }).money).toBe("failed")
     expect(s({ ...done, cardFailedAt: "2026-11-11T00:00:00Z" }).money).toBe("failed")
     expect(s({ ...done, billSent: true })).toMatchObject({ money: "bill-sent", moneyLabel: "Bill sent" })
+    const invoice = { id: "i1", jobId: "j", number: "INV-2026-0001", amount: 145, tax: 0, total: 145, sentOn: "2026-11-10", dueOn: "2026-11-24", status: "sent" as const, visitIds: [] }
+    expect(s({ ...done, invoice })).toMatchObject({ money: "bill-sent", moneyLabel: "Bill sent" })
+    // an overdue bill still reads Bill sent; Paid and a failed card win over it
+    expect(s({ ...done, invoice: { ...invoice, status: "overdue" } }).money).toBe("bill-sent")
+    expect(s({ ...done, invoice, chargedAt: "2026-11-10T20:00:00Z", paidMethod: "check" }).money).toBe("paid")
+    expect(s({ ...done, invoice, chargeFailed: true }).money).toBe("failed")
+    // a visit that is not done yet reads nothing, whatever bill its job has
+    expect(s({ status: "scheduled", scheduledOn: "2026-11-20", invoice }).money).toBe("not-yet")
   })
   it("reads a failed charge from the customer's card for every done pass visit, whichever pass it is on", () => {
     const done: PassVisit = { kind: "turn-on", window: "May", amount: 145, completedAt: "2026-11-09T17:00:00Z" }
@@ -162,8 +170,94 @@ describe("statesOf: the work pill and the money pill", () => {
     expect(passVisitJob({ cardFailedAt: failedAt }, { ...done, id: "other-pass-visit" }, TODAY, TZ).state).toBe("charge-failed")
     expect(passVisitJob({ cardFailedAt: undefined }, done, TODAY, TZ).state).toBe("done")
   })
-  it("sums a job's money across its visits, leaving cancelled ones out", () => {
-    const paid = s({ status: "completed", completedOn: "2026-11-10", chargedAt: "2026-11-10T20:00:00Z" })
-    expect(jobMoney([paid, s({ status: "scheduled", scheduledOn: "2026-11-20" }), s({ status: "cancelled" })])).toBe("1 of 2 paid")
+  it("sums a job's money across its visits from the payment rows, leaving cancelled ones out", () => {
+    const visit = (id: string, over: Partial<Visit> = {}): Visit => ({ id, clientId: "c", clientName: "A", town: "Erie", kind: "repair", status: "completed", isPass: false, jobberUrl: "", price: 145, ...over })
+    const row = (visitId: string, amount: number, over: Record<string, unknown> = {}) => ({ id: `pay-${visitId}`, visitId, amount, method: "check", status: "succeeded", ...over })
+    const lines = [{ id: "l1", name: "Repair", quantity: 1, unitPrice: 145, taxable: false, visitId: "a" }, { id: "l2", name: "Repair", quantity: 1, unitPrice: 145, taxable: false, visitId: "b" }]
+    // one of two visits paid
+    expect(jobMoney({ lines, payments: [row("a", 145)] }, [visit("a"), visit("b")])).toBe("1 of 2 paid, $145 owed")
+    // nothing paid yet
+    expect(jobMoney({ lines, payments: [] }, [visit("a"), visit("b")])).toBe("$290 owed")
+    // both paid, then a refund of one reopens the number
+    expect(jobMoney({ lines, payments: [row("a", 145), row("b", 145)] }, [visit("a"), visit("b")])).toBe("Paid")
+    expect(jobMoney({ lines, payments: [row("a", 145), row("b", 145), row("b", -145, { id: "refund" })] }, [visit("a"), visit("b")])).toBe("1 of 2 paid, $145 owed")
+    // a cancelled visit is not counted
+    expect(jobMoney({ lines: [lines[0]!], payments: [row("a", 145)] }, [visit("a"), visit("b", { status: "cancelled" })])).toBe("Paid")
+    // without the job's lines or payments (the fixtures) the visits stand in, the alias flag as one succeeded row
+    expect(jobMoney(undefined, [visit("a", { chargedAt: "2026-11-10T20:00:00Z" }), visit("b")])).toBe("1 of 2 paid, $145 owed")
+    // a job nothing has priced says nothing
+    expect(jobMoney({ lines: [], payments: [] }, [visit("a", { price: 0 })])).toBe("")
+  })
+})
+
+describe("the money words are read from the payment rows", () => {
+  const done = { status: "completed" as const, completedOn: "2026-11-10", visitId: "v" }
+  const pay = (method: string, over: Record<string, unknown> = {}) => ({ id: `p-${method}`, visitId: "v", amount: 145, method, status: "succeeded", ...over })
+
+  it("has one word for each money state, with Owed where it said Unpaid", () => {
+    expect(MONEY_WORDS).toEqual({ "not-yet": "", paid: "Paid", owed: "Owed", "bill-sent": "Bill sent", failed: "Failed" })
+  })
+
+  it("says Paid with how, from the newest payment that arrived", () => {
+    expect(moneyOf({ ...done, payments: [pay("card_on_file")] })).toEqual({ state: "paid", label: "Paid, card" })
+    expect(moneyOf({ ...done, payments: [pay("check")] })).toEqual({ state: "paid", label: "Paid, check" })
+    expect(moneyOf({ ...done, payments: [pay("venmo")] })).toEqual({ state: "paid", label: "Paid, Venmo" })
+    expect(moneyOf({ ...done, payments: [pay("cash")] })).toEqual({ state: "paid", label: "Paid, cash" })
+  })
+
+  it("says Owed for a done visit with no payment row, even when the old charged flag is set", () => {
+    expect(moneyOf({ ...done, payments: [] })).toEqual({ state: "owed", label: "Owed" })
+    expect(moneyOf({ ...done, payments: [], chargedAt: "2026-11-10T20:00:00Z" })).toMatchObject({ state: "owed" })
+  })
+
+  it("says nothing until the visit is done, and Owed again once a refund leaves nothing paid", () => {
+    expect(moneyOf({ status: "scheduled", scheduledOn: "2026-11-20", visitId: "v", payments: [] }).state).toBe("not-yet")
+    expect(moneyOf({ ...done, payments: [pay("check"), pay("check", { id: "refund", amount: -145 })] })).toEqual({ state: "owed", label: "Owed" })
+  })
+
+  it("says Failed from a failed newest row, and a retry that went through clears it", () => {
+    expect(moneyOf({ ...done, payments: [pay("card_on_file", { status: "failed" })] })).toEqual({ state: "failed", label: "Failed" })
+    expect(moneyOf({ ...done, payments: [pay("card_on_file", { id: "a", status: "failed" }), pay("card_on_file", { id: "b" })] })).toEqual({ state: "paid", label: "Paid, card" })
+  })
+
+  it("drives the pills and the job state from the same rows", () => {
+    expect(statesOf({ ...done, payments: [pay("venmo")] }, TODAY)).toMatchObject({ work: "done", money: "paid", moneyLabel: "Paid, Venmo" })
+    expect(jobOf({ ...done, payments: [pay("venmo")] }, TODAY).state).toBe("charged")
+    expect(jobOf({ ...done, payments: [] }, TODAY).state).toBe("done")
+    expect(jobOf({ ...done, payments: [pay("card_on_file", { status: "failed" })] }, TODAY).state).toBe("charge-failed")
+  })
+
+  it("keeps the old flags only as a fixture alias, read when a visit has no rows array", () => {
+    expect(paymentsOf({ id: "v", chargedAt: "2026-11-10T20:00:00Z", paidMethod: "check", amount: 145 })).toMatchObject([{ visitId: "v", amount: 145, method: "check", status: "succeeded" }])
+    expect(paymentsOf({ id: "v", payments: [], chargedAt: "2026-11-10T20:00:00Z" })).toEqual([])
+    expect(visitPaid({ id: "v", chargedAt: "2026-11-10T20:00:00Z", amount: 145 })).toBe(true)
+    expect(visitPaid({ id: "v", payments: [] })).toBe(false)
+    expect(visitPaidTotal({ id: "v", payments: [pay("check"), pay("check", { id: "r", amount: -45 })] })).toBe(100)
+  })
+
+  it("reads Owed, not Paid, for a visit with only part of its price, from the pill, the job state and visitPaid", () => {
+    const part = { ...done, price: 145, payments: [pay("check", { amount: 100 })] }
+    expect(moneyOf(part)).toEqual({ state: "owed", label: "Owed" })
+    expect(jobOf(part, TODAY).state).toBe("done")
+    expect(visitPaid({ id: "v", price: 145, payments: [{ ...pay("check", { amount: 100 }) }] })).toBe(false)
+    expect(visitPaid({ id: "v", amount: 145, payments: [{ ...pay("check", { amount: 100 }) }] })).toBe(false)
+    const full = { ...part, payments: [pay("check", { amount: 100 }), pay("cash", { id: "rest", amount: 45 })] }
+    expect(moneyOf(full)).toEqual({ state: "paid", label: "Paid, cash" })
+    expect(visitPaid({ id: "v", price: 145, payments: [pay("check", { amount: 145 })] })).toBe(true)
+    // the old charged flag stands for the whole price
+    expect(moneyOf({ ...done, price: 145, chargedAt: "2026-11-10T20:00:00Z", paidMethod: "check" })).toEqual({ state: "paid", label: "Paid, check" })
+  })
+
+  it("keeps the money on a visit that was paid and then cancelled", () => {
+    expect(moneyOf({ status: "cancelled", visitId: "v", payments: [pay("check")] })).toEqual({ state: "paid", label: "Paid, check" })
+    expect(moneyOf({ status: "cancelled", visitId: "v", payments: [] }).state).toBe("not-yet")
+  })
+
+  it("names the day the money last arrived", () => {
+    expect(visitPaidOn({ id: "v", payments: [{ ...pay("check"), paidOn: "2026-11-09" }, { ...pay("cash", { id: "later" }), paidOn: "2026-11-11" }] })).toBe("2026-11-11")
+    expect(visitPaidOn({ id: "v", payments: [] })).toBeUndefined()
+    // after a full refund nothing arrived: no day, so the pass panel does not print "Paid Nov 9"
+    expect(visitPaidOn({ id: "v", payments: [{ ...pay("check"), paidOn: "2026-11-09" }, { ...pay("check", { id: "refund", amount: -145, refundsPaymentId: "p-check" }), paidOn: "2026-11-10" }] })).toBeUndefined()
+    expect(visitPaidOn({ id: "v", chargedAt: "2026-11-10T20:00:00Z" })).toBe("2026-11-10T20:00:00Z")
   })
 })

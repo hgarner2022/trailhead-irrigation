@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { BadgeCheck, Ban, Banknote, CalendarCheck, CalendarX, CircleDashed, Clock, CreditCard, type LucideIcon } from "lucide-react"
+import { BadgeCheck, Ban, Banknote, CalendarCheck, CalendarX, CircleDashed, Clock, CreditCard, ReceiptText, type LucideIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { Attention } from "@/lib/admin/types"
 import { EmptyState } from "./EmptyState"
@@ -35,7 +35,8 @@ const KINDS: Record<Attention["kind"], { icon: LucideIcon; tone: string; name: s
   "new-pass": { icon: BadgeCheck, tone: "bg-success/10 text-success", name: "New pass" },
   "charge-failed": { icon: CreditCard, tone: "bg-warning/10 text-warning", name: "Charge failed" },
   "jobs-failed": { icon: CalendarX, tone: "bg-warning/10 text-warning", name: "Task needs a retry" },
-  unpaid: { icon: Banknote, tone: "bg-warning/10 text-warning", name: "Done, not paid" },
+  owed: { icon: Banknote, tone: "bg-warning/10 text-warning", name: "Done, owed" },
+  overdue: { icon: ReceiptText, tone: "bg-warning/10 text-warning", name: "Bill overdue" },
   "pending-pass": { icon: Clock, tone: "bg-stone text-muted-foreground", name: "Pass not paid" },
   "card-expiring": { icon: Clock, tone: "bg-stone text-muted-foreground", name: "Card expiring" },
   "not-closed": { icon: CircleDashed, tone: "bg-stone text-muted-foreground", name: "Jobs not marked done" },
@@ -44,8 +45,9 @@ const KINDS: Record<Attention["kind"], { icon: LucideIcon; tone: string; name: s
   unplaced: { icon: CalendarX, tone: "bg-warning/10 text-warning", name: "No day yet" },
 }
 
-/** A visit opens in Visits, a pass in its panel, a schedule line in Schedule; the rest have no page of their own. */
+/** A visit opens in Visits, a pass in its panel, an overdue bill its customer's panel on Customers (the bill is there), a schedule line in Schedule; the rest have no page of their own. */
 export function attentionHref(item: Attention): string | undefined {
+  if (item.kind === "overdue" && item.customerId) return `/admin/customers?customer=${encodeURIComponent(item.customerId)}`
   if (item.visitId) return `/admin/visits?visit=${encodeURIComponent(item.visitId)}`
   if (item.passId) return `/admin/passes?pass=${encodeURIComponent(item.passId)}`
   if (item.kind === "unplaced" || item.kind === "not-closed" || item.kind === "scheduled") return "/admin/schedule"

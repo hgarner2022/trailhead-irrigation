@@ -66,7 +66,7 @@ describe("HomeScreen", () => {
     const money = within(document.querySelector<HTMLElement>('[data-slot="home-money"]')!)
     const links = money.getAllByRole("link")
     expect(links).toHaveLength(4)
-    expect(links.map((l) => l.getAttribute("href"))).toEqual(["/admin/reports", "/admin/visits?money=unpaid,bill-sent", "/admin/visits?money=failed", "/admin/reports"])
+    expect(links.map((l) => l.getAttribute("href"))).toEqual(["/admin/reports", "/admin/visits?money=owed", "/admin/visits?money=failed", "/admin/reports"])
     expect(links[0]).toHaveAccessibleName(/^Charged this month: \$/)
     expect(links[3]).toHaveAccessibleName(/^Season total committed: \$/)
   })

@@ -1,6 +1,6 @@
 import type { Pass, PassStatus, PassVisit } from "@/lib/admin/types"
 import { fullName, shortDate } from "@/lib/admin/format"
-import { dayWords } from "@/lib/admin/jobs"
+import { dayWords, visitPaid, visitPaidTotal } from "@/lib/admin/jobs"
 import { formatMoney } from "@/lib/admin/metrics"
 import { StatusPill, statusLabel } from "./StatusPill"
 import type { GridColumnDef } from "./data-grid-table"
@@ -41,12 +41,12 @@ function visitColumn(kind: PassVisit["kind"], header: string): GridColumnDef<Pas
   }
 }
 
-/** Sum of the visit amounts already charged on this pass. */
-export const chargedTotal = (pass: Pass) => pass.visits.filter((v) => v.chargedAt).reduce((sum, v) => sum + v.amount, 0)
+/** What has been paid on this pass: its visits' payment rows added up (refunds counting against). */
+export const chargedTotal = (pass: Pass) => pass.visits.reduce((sum, v) => sum + visitPaidTotal(v), 0)
 
 /** The first uncharged visit: its day when it has one, else "No day yet"; "Done" when every visit is charged. */
 export function nextVisit(pass: Pass): string {
-  const visit = pass.visits.find((v) => !v.chargedAt)
+  const visit = pass.visits.find((v) => !visitPaid(v))
   if (!visit) return "Done"
   return dayWords(visit) ? shortDate(visit.scheduledOn ?? visit.scheduledAt!) : NEEDS_DAY
 }
@@ -56,7 +56,7 @@ const NEEDS_DAY_KEY = "9999-99-99"
 
 /** The pass's next visit as a sortable day: its day, else a key after every day while it needs one; nothing once every visit is charged. */
 export function nextVisitSortKey(pass: Pass): string | undefined {
-  const visit = pass.visits.find((v) => !v.chargedAt)
+  const visit = pass.visits.find((v) => !visitPaid(v))
   if (!visit) return undefined
   return visit.scheduledOn ?? visit.scheduledAt?.slice(0, 10) ?? NEEDS_DAY_KEY
 }

@@ -14,7 +14,8 @@ import { useUndoToast } from "./UndoToast"
 export const ACTION_LABELS: Record<Attention["kind"], string> = {
   "new-pass": "Open",
   "pending-pass": "Open",
-  unpaid: "Paid by",
+  owed: "Paid by",
+  overdue: "Remind",
   "charge-failed": "Send card link",
   "jobs-failed": "Retry",
   "card-expiring": "Send card link",

@@ -22,7 +22,7 @@ const groupedTexts: Attention = {
 }
 const data: AdminData = { ...snap, attention: [groupedTexts, ...snap.attention.filter((a) => a.kind !== "jobs-failed")] }
 
-/** November with nothing on: no visits today or for months, the next three in Erie on April 27, a done visit that is unpaid and no failed charge. */
+/** November with nothing on: no visits today or for months, the next three in Erie on April 27, a done visit that is owed and no failed charge. */
 const quiet: AdminData = {
   ...snap,
   visits: [
@@ -75,6 +75,27 @@ export const QuietNovember: Story = {
 export const QuietNovemberPhone: Story = {
   args: { data: quiet },
   globals: { viewport: { value: "phone", isRotated: false } },
+}
+
+/** A job that is done and owed: one row for the job, "Done, owed", with the number in the message and a Paid by button that opens its visit. */
+const owedRow: Attention = { kind: "owed", key: "job-owed", jobId: "job-owed", visitId: "owed-visit", message: "Andrea's repair is done, $145 owed", since: "2026-11-10T22:00:00Z" }
+export const OwedRow: Story = {
+  args: { data: { ...data, attention: [owedRow, ...data.attention] } },
+  globals: { viewport: { value: "wide", isRotated: false } },
+}
+
+/** A bill past its due day: the money line gains "1 bill overdue" and Needs action has the bill's one row, "Bill overdue", with Remind. The job, which reads Bill sent, has no owed row. */
+const overdueBill = { id: "inv-overdue", jobId: "job-billed", number: "INV-2026-0007", amount: 145, tax: 0, total: 145, sentOn: "2026-10-22", dueOn: "2026-11-05", status: "overdue" as const, visitIds: [] }
+const overdueRow: Attention = { kind: "overdue", key: "invoice-inv-overdue@2026-11-05", invoiceId: "inv-overdue", jobId: "job-billed", customerId: "c-andrea", message: "Andrea Reyes's bill of $145 was due Nov 5", since: "2026-11-05T19:00:00Z" }
+export const OverdueBill: Story = {
+  args: {
+    data: {
+      ...data,
+      jobs: [{ id: "job-billed", customerId: "c-andrea", kind: "repair", status: "active", source: "office", visitIds: [], invoice: overdueBill }],
+      attention: [overdueRow, ...data.attention],
+    },
+  },
+  globals: { viewport: { value: "wide", isRotated: false } },
 }
 
 export const NoDataYet: Story = {

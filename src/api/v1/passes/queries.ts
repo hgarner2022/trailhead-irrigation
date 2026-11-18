@@ -8,7 +8,7 @@ import type { Ctx } from "../../core/context"
 import { notFound } from "../../core/errors"
 import { assertOwnsCustomer, canSeeContact, today } from "../shared"
 import { consentOut, latestConsent } from "../customers/handlers"
-import { visitOut, visitsQuery } from "../visits/queries"
+import { visitOut, visitsQuery, withJobCredit } from "../visits/queries"
 
 export const passSelect = {
   pass: s.seasonPass,
@@ -110,14 +110,14 @@ function calendarLink(visit: { id: string; scheduledOn: string | null }): string
 }
 
 export async function passDetail(ctx: Ctx, row: PassRow) {
-  const visits = await visitsQuery(ctx.db).where(eq(s.visit.passId, row.pass.id)).orderBy(sql`case ${s.visit.kind} when 'turn-on' then 1 when 'inspection' then 2 when 'blowout' then 3 else 4 end`, asc(s.visit.createdAt), asc(s.visit.id))
+  const visits = await withJobCredit(ctx.db, ctx.organizationId, await visitsQuery(ctx.db).where(eq(s.visit.passId, row.pass.id)).orderBy(sql`case ${s.visit.kind} when 'turn-on' then 1 when 'inspection' then 2 when 'blowout' then 3 else 4 end`, asc(s.visit.createdAt), asc(s.visit.id)))
   const charges = await ctx.db.select().from(s.charge).where(eq(s.charge.passId, row.pass.id)).orderBy(desc(s.charge.createdAt))
   const consent = await latestConsent(ctx.db, row.pass.customerId)
   const contact = canSeeContact(ctx)
   return {
     ...passOut(ctx, row),
     visits: visits.map((v) => ({ ...visitOut(ctx, v), calendarUrl: calendarLink(v.visit) })),
-    charges: charges.map((c) => ({ id: c.id, visitId: c.visitId, attempt: c.attempt, amount: c.amount, status: c.status, failureMessage: c.failureMessage, createdAt: c.createdAt.toISOString() })),
+    charges: charges.filter((c): c is typeof c & { visitId: string } => c.visitId !== null).map((c) => ({ id: c.id, visitId: c.visitId, attempt: c.attempt, amount: c.amount, status: c.status, failureMessage: c.failureMessage, createdAt: c.createdAt.toISOString() })),
     consent: consent ? consentOut(consent) : null,
     price: visits.filter((v) => v.visit.status !== "cancelled").reduce((sum, v) => sum + v.visit.amount, 0),
     ...(contact

@@ -7,6 +7,7 @@ import type { Database } from "@/db/types"
 import { chargeOffSession } from "@/lib/stripe/charge"
 import { createCardUpdateSession } from "@/lib/stripe/card-update"
 import { baseData } from "@/lib/messaging/data"
+import { paidDay, recordPaymentRow } from "@/lib/money/record"
 import { queueMessage, queueStaffMessage } from "@/lib/messaging/queue"
 import { dollars, kindName, nextVisitLine } from "./messages"
 
@@ -47,7 +48,7 @@ export async function chargeVisit(db: Database, stripe: Stripe, visitId: string,
   if (last?.status === "failed" && !opts.afterCardUpdate) return "waiting-for-card"
   const attempt = !last ? 1 : last.status === "pending" ? last.attempt : last.attempt + 1
   if (!last || last.status !== "pending") {
-    await db.insert(s.charge).values({ organizationId: visit.organizationId, passId: pass.id, visitId: visit.id, attempt, amount: visit.amount, status: "pending" }).onConflictDoNothing()
+    await recordPaymentRow(db, { organizationId: visit.organizationId, jobId: visit.jobId, customerId: customer.id, passId: pass.id, visitId: visit.id, attempt, amount: visit.amount, method: "card_on_file", status: "pending", now })
   }
 
   const result =
@@ -66,7 +67,7 @@ export async function chargeVisit(db: Database, stripe: Stripe, visitId: string,
   const where = and(eq(s.charge.visitId, visit.id), eq(s.charge.attempt, attempt))
   const to = customer.email
   if (result.ok) {
-    await db.update(s.charge).set({ status: "succeeded", stripePaymentIntentId: result.paymentIntentId, receiptUrl: result.receiptUrl, failureMessage: null, updatedAt: now }).where(where)
+    await db.update(s.charge).set({ status: "succeeded", jobId: visit.jobId, customerId: customer.id, paidOn: paidDay(now), stripePaymentIntentId: result.paymentIntentId, receiptUrl: result.receiptUrl, failureMessage: null, updatedAt: now }).where(where)
     await db.update(s.visit).set({ chargedAt: now, stripePaymentIntentId: result.paymentIntentId, updatedAt: now }).where(eq(s.visit.id, visit.id))
     await db.update(s.customer).set({ cardFailedAt: null, updatedAt: now }).where(eq(s.customer.id, customer.id))
     await db.update(s.seasonPass).set({ cardFailedAt: null, updatedAt: now }).where(eq(s.seasonPass.id, pass.id))

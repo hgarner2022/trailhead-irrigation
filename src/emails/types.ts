@@ -42,12 +42,35 @@ export interface ReceiptData extends Base {
   /** how a payment the office recorded came: "check", "Venmo", "cash" */
   paidBy?: string | null
   amount: number
-  visitName: string
+  /** what the payment was for, as a phrase after "your": "spring turn-on". Absent for a bill paid on the pay page (`invoiceNumber` names it). */
+  visitName?: string
+  /** a bill paid on the pay page: its number, its frozen lines (`amount` is the line's total in whole dollars), the tax on them (0 when none) and its total */
+  invoiceNumber?: string
+  lines?: { name: string; amount: number }[]
+  tax?: number
+  total?: number
   /** "Visa ending 4242" or null */
   card: string | null
   /** the line that names the next visit */
   nextLine: string
   receiptUrl: string | null
+}
+/** A bill the office sent: what it is for, the frozen lines, the tax, the total, the due day and the pay link. */
+export interface InvoiceData extends Base {
+  invoiceNumber: string
+  /** what the bill is for, as a phrase after "the": "repair", "spring turn-on and fall blowout" */
+  visitName: string
+  /** one row per frozen line; `amount` is the line's total in whole dollars */
+  lines: { name: string; amount: number }[]
+  /** the lines before tax */
+  amount: number
+  /** 0 while no sales tax is collected; the email shows a tax line only when it is above zero */
+  tax: number
+  total: number
+  /** ISO day */
+  dueOn: string
+  /** the signed pay link */
+  payUrl: string
 }
 export interface CardFailedData extends Base {
   passNumber: string

@@ -38,6 +38,8 @@ export interface VisitRow {
   jobType: "pass" | "one-off"
   passNumber?: string
   passId?: string
+  /** the job the visit belongs to, so Home counts jobs and not visits */
+  jobId?: string
 }
 
 const digits = (s: string | undefined) => (s ?? "").replace(/\D/g, "")
@@ -74,6 +76,7 @@ export function visitRows(data: AdminData, today: string): VisitRow[] {
       priceLabel: priceWords({ price: visitPrice(data, v) }),
       jobType: v.passId ? "pass" : "one-off",
       ...(pass ? { passNumber: pass.number, passId: pass.id } : {}),
+      ...(v.jobId ? { jobId: v.jobId } : {}),
     }
   })
   // No day yet first (they are the ones that want a person), then the days in order.
@@ -82,7 +85,7 @@ export function visitRows(data: AdminData, today: string): VisitRow[] {
 
 export const WORK_OPTIONS = (Object.keys(WORK_WORDS) as WorkState[]).map((value) => ({ value, label: WORK_WORDS[value] }))
 export const MONEY_OPTIONS = (Object.keys(MONEY_WORDS) as MoneyState[]).filter((value) => MONEY_WORDS[value]).map((value) => ({ value, label: MONEY_WORDS[value] }))
-/** A filter chip from a link's `?money=unpaid,failed`: the listed values that are real options, or no chip at all. */
+/** A filter chip from a link's `?money=owed,failed`: the listed values that are real options, or no chip at all. */
 export function filterFrom(column: string, param: string | undefined, options: { value: string }[]): { column: string; values: string[] }[] {
   const values = (param ?? "").split(",").filter((v) => options.some((o) => o.value === v))
   return values.length ? [{ column, values }] : []
@@ -93,13 +96,21 @@ export const JOB_TYPE_OPTIONS = [
   { value: "one-off", label: "One-off" },
 ]
 
-/** The header's line: how many visits, then (only when non-zero) how many have no day and how many are done and not paid. */
+/**
+ * The rows "done and owed" counts, on Visits' header line and on Home's money line ("Owed on N done jobs"): a Done visit whose
+ * money word is Owed, and only that word. Bill sent has its own word (a bill that is overdue is Home's "N bills overdue", linking
+ * to the Bill sent filter) and Failed its own figure, so neither is counted here. One job counts once however many of its visits are owed.
+ */
+export const owedRows = (rows: VisitRow[]): VisitRow[] => rows.filter((r) => r.work === "done" && r.money === "owed")
+export const jobCount = (rows: VisitRow[]): number => new Set(rows.map((r) => r.jobId ?? r.id)).size
+
+/** The header's line: how many visits, then (only when non-zero) how many have no day and how many done jobs are Owed (`owedRows`, the same count as Home's). */
 export function visitsContext(rows: VisitRow[]): string {
   if (rows.length === 0) return "No visits yet."
   const needDay = rows.filter((r) => r.work === "needs-a-day" || r.work === "not-done").length
-  const owed = rows.filter((r) => r.work === "done" && r.money !== "paid").length
+  const owed = jobCount(owedRows(rows))
   const parts = [`${rows.length} ${rows.length === 1 ? "visit" : "visits"} this season.`]
   if (needDay) parts.push(`${needDay} ${needDay === 1 ? "has" : "have"} no day yet.`)
-  if (owed) parts.push(`${owed} done and not paid.`)
+  if (owed) parts.push(`${owed} done and owed.`)
   return parts.join(" ")
 }

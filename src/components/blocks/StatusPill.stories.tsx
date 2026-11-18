@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { StatusPill, statusLabel, type PillStatus } from "./StatusPill"
 
-const STATUSES: PillStatus[] = ["pending", "active", "paid", "needs-a-day", "scheduled", "routed", "done", "charged", "charge-failed", "cancelled", "skipped", "unpaid", "overdue", "lapsed"]
+const STATUSES: PillStatus[] = ["pending", "active", "paid", "needs-a-day", "scheduled", "routed", "done", "charged", "charge-failed", "cancelled", "skipped", "owed", "bill-sent", "failed", "overdue", "lapsed"]
 
 const meta = {
   title: "Blocks/StatusPill",
@@ -43,7 +43,7 @@ export const All: Story = {
 
 const ROWS: { name: string; total: string; status: PillStatus }[] = [
   { name: "Andrea", total: "$145", status: "paid" },
-  { name: "Reese", total: "$290", status: "unpaid" },
+  { name: "Reese", total: "$290", status: "owed" },
   { name: "Katie", total: "$115", status: "overdue" },
 ]
 

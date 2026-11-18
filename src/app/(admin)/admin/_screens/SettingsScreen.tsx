@@ -8,10 +8,12 @@ import { CardTitleHeading } from "@/components/blocks/CardTitleHeading"
 import { ChangeLog } from "@/components/blocks/ChangeLog"
 import { PageHeader } from "@/components/blocks/PageHeader"
 import type { AdminData, ServiceItem } from "@/lib/admin/types"
+import { DEFAULT_BILLING } from "@/lib/settings/defaults"
 import { SERVICE_LIST } from "@/lib/services"
 import type { Outcome } from "./action-types"
 import { SAMPLE_KEYS, createKey, type Actor, type ApiKey, type ApiScope, type SettingsState } from "./settings-model"
 import { Areas } from "./settings-tabs/Areas"
+import { Billing } from "./settings-tabs/Billing"
 import { ApiKeys } from "./settings-tabs/ApiKeys"
 import { Capacity } from "./settings-tabs/Capacity"
 import { Messages } from "./settings-tabs/Messages"
@@ -20,14 +22,14 @@ import { Services } from "./settings-tabs/Services"
 import type { Apply } from "./settings-tabs/fields"
 
 // Where Ryan and Hannah set the rules the scheduler and the messages follow:
-// the people, the services, area groups and town order, capacity and season windows, the
+// the people, the services, billing, area groups and town order, capacity and season windows, the
 // customer messages and the API keys. Every edit goes through a reducer in
 // settings-model.ts that also writes the change log under the tabs. Client
 // because the tabs, the edits and the saved line are state; Save only logs
 // in the prototype. The route's page.tsx supplies `data` and `today`; the
 // log's times count up from `today` so a render is the same each time.
 
-export type SettingsTab = "people" | "services" | "areas" | "capacity" | "messages" | "keys"
+export type SettingsTab = "people" | "services" | "billing" | "areas" | "capacity" | "messages" | "keys"
 
 export interface SettingsScreenProps {
   data: AdminData
@@ -54,6 +56,7 @@ export interface SettingsActions {
 const TABS: { value: SettingsTab; label: string }[] = [
   { value: "people", label: "People" },
   { value: "services", label: "Services" },
+  { value: "billing", label: "Billing" },
   { value: "areas", label: "Areas" },
   { value: "capacity", label: "Capacity and windows" },
   { value: "messages", label: "Messages" },
@@ -61,7 +64,8 @@ const TABS: { value: SettingsTab; label: string }[] = [
 ]
 
 export function SettingsScreen({ data, today, defaultTab = "people", who = "Hannah", keys, readOnly = false, actions }: SettingsScreenProps) {
-  const fresh = (): SettingsState => ({ settings: data.settings, changes: data.settingsChanges, keys: keys ?? SAMPLE_KEYS, services: [...(data.services ?? SERVICE_LIST)] })
+  // The fixtures carry no billing settings: they read the defaults, as an organization that never saved the tab does.
+  const fresh = (): SettingsState => ({ settings: { ...data.settings, billing: data.settings.billing ?? DEFAULT_BILLING }, changes: data.settingsChanges, keys: keys ?? SAMPLE_KEYS, services: [...(data.services ?? SERVICE_LIST)] })
   const [state, setState] = useState<SettingsState>(fresh)
   const [seen, setSeen] = useState({ settings: data.settings, keys, services: data.services })
   const [pending, start] = useTransition()
@@ -147,6 +151,11 @@ export function SettingsScreen({ data, today, defaultTab = "people", who = "Hann
         <TabsContent value="services">
           <fieldset disabled={readOnly} className="min-w-0">
             <Services state={state} apply={apply} />
+          </fieldset>
+        </TabsContent>
+        <TabsContent value="billing">
+          <fieldset disabled={readOnly} className="min-w-0">
+            <Billing state={state} apply={apply} />
           </fieldset>
         </TabsContent>
         <TabsContent value="areas">

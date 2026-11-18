@@ -17,8 +17,17 @@ export const completeSession = (id: string, metadata: Record<string, string>, ca
   setup_intent: { payment_method: { id: card.pm ?? "pm_new", card: { brand: card.brand ?? "visa", last4: card.last4 ?? "4242", exp_month: card.expMonth ?? 8, exp_year: card.expYear ?? 2030 } } },
 })
 
+/** A succeeded payment intent as `paymentIntents.retrieve` returns it with the card and the latest charge expanded: what a paid bill's Checkout Session leaves behind. */
+export const paidIntent = (id: string, card: StubCard = {}, receiptUrl = "https://pay.stripe.test/receipt/bill") => ({
+  id,
+  status: "succeeded",
+  customer: card.customer ?? "cus_1",
+  latest_charge: { id: `ch_${id}`, receipt_url: receiptUrl },
+  payment_method: { id: card.pm ?? "pm_bill", type: "card", card: { brand: card.brand ?? "visa", last4: card.last4 ?? "4242", exp_month: card.expMonth ?? 8, exp_year: card.expYear ?? 2030 } },
+})
+
 let intents = 0
-export function stubStripe(over: { sessions?: Record<string, unknown>; charge?: () => unknown | Promise<unknown> } = {}) {
+export function stubStripe(over: { sessions?: Record<string, unknown>; intents?: Record<string, unknown>; charge?: () => unknown | Promise<unknown> } = {}) {
   const calls = {
     sessionCreate: vi.fn(async (params: Record<string, unknown>) => ({ id: `cs_${calls.sessionCreate.mock.calls.length}`, url: "https://checkout.stripe.test/c/pay", client_secret: "cs_secret", ...params })),
     sessionRetrieve: vi.fn(async (id: string) => {
@@ -26,18 +35,27 @@ export function stubStripe(over: { sessions?: Record<string, unknown>; charge?: 
       if (!s) throw new Error(`no session ${id}`)
       return s
     }),
+    // The payment intent behind a paid bill's session, with the card and the latest charge expanded (`paidIntent`).
+    paymentIntentsRetrieve: vi.fn(async (id: string) => {
+      const i = over.intents?.[id]
+      if (!i) throw new Error(`no payment intent ${id}`)
+      return i
+    }),
+    sessionExpire: vi.fn(async (id: string) => ({ id, status: "expired" })),
     customersUpdate: vi.fn(async () => ({})),
     customersCreate: vi.fn(async () => ({ id: `cus_new_${calls.customersCreate.mock.calls.length}` })),
     detach: vi.fn(async () => ({})),
+    refundsCreate: vi.fn(async (params: Record<string, unknown>) => ({ id: `re_${calls.refundsCreate.mock.calls.length}`, status: "succeeded", ...params })),
     paymentIntentsCreate: vi.fn<(params: Record<string, unknown>, options: { idempotencyKey: string }) => Promise<unknown>>(async () =>
       over.charge ? over.charge() : { id: `pi_ok_${++intents}`, status: "succeeded", latest_charge: { receipt_url: "https://pay.stripe.test/receipt/1" } },
     ),
   }
   const stripe = {
-    checkout: { sessions: { create: calls.sessionCreate, retrieve: calls.sessionRetrieve } },
+    checkout: { sessions: { create: calls.sessionCreate, retrieve: calls.sessionRetrieve, expire: calls.sessionExpire } },
     customers: { update: calls.customersUpdate, create: calls.customersCreate },
     paymentMethods: { detach: calls.detach },
-    paymentIntents: { create: calls.paymentIntentsCreate },
+    paymentIntents: { create: calls.paymentIntentsCreate, retrieve: calls.paymentIntentsRetrieve },
+    refunds: { create: calls.refundsCreate },
     webhooks: signer,
   } as unknown as Stripe
   return { stripe, calls }

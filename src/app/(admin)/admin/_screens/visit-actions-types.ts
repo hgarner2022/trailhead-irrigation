@@ -8,11 +8,15 @@ export interface Where {
   startTime: string | null
 }
 
+/** How the money for a done visit was dealt with: in hand (check, Venmo, cash) or `bill` (Send a bill: Done sends a pay link and records no payment). */
 export interface PaidByInput {
-  method: "check" | "venmo" | "cash"
+  method: "check" | "venmo" | "cash" | "bill"
   reference?: string
   amount?: number
 }
+
+/** What Record the payment sends: money in hand only, never a bill. */
+export type RecordPaidInput = PaidByInput & { method: "check" | "venmo" | "cash" }
 
 export interface NewVisitInput {
   customerId?: string
@@ -74,7 +78,11 @@ export interface VisitActions {
   putBack: (visitId: string, was: Where) => Promise<Outcome>
   markDone: (visitId: string, opts?: { completedOn?: string; paidBy?: PaidByInput }) => Promise<Outcome>
   undoDone: (visitId: string) => Promise<Outcome>
-  recordPayment: (visitId: string, paidBy: PaidByInput) => Promise<Outcome>
+  recordPayment: (visitId: string, paidBy: RecordPaidInput) => Promise<Outcome>
+  /** `invoices.send`: a bill for a done job that still owes money, with its pay link; the message goes by text or email */
+  sendBill: (jobId: string) => Promise<Outcome>
+  /** `invoices.remind`: the reminder of an open bill (two presses in a day send one) */
+  remindBill: (invoiceId: string) => Promise<Outcome>
   markNotDone: (visitId: string, reason: NotDoneReason, note?: string) => Promise<Outcome<Where>>
   edit: (visitId: string, changes: { durationMinutes?: number; personId?: string; notes?: string; accessNote?: string }) => Promise<Outcome>
   cancel: (visitId: string, reason?: string) => Promise<Outcome>

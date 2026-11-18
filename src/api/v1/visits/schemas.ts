@@ -1,4 +1,5 @@
 import { z } from "zod"
+import { PaymentOut } from "../payments/schemas"
 import { Day, Id, Iso, Preference, Town, VisitKind, VisitStatus } from "../shared"
 
 export const ExceptionOut = z.object({ kind: z.literal("moved-in-jobber"), at: Iso, note: z.string() })
@@ -40,6 +41,8 @@ export const VisitOut = z.object({
   window: z.string().nullable().describe('The month the visit lands in: "May", "July", "October".'),
   amount: z.number().int().describe("Whole dollars. The visit's own line, quantity times unit price; the old stored amount only when the visit has no line."),
   lineItems: z.array(LineOut).describe("Every line on the job this visit belongs to, oldest first."),
+  payments: z.array(PaymentOut).describe("The visit's own payment rows, oldest first: the money that arrived for it and any refunds."),
+  jobPaymentShares: z.array(PaymentOut).describe("The shares of payments made on the job as a whole (a bill paid on the pay page) that cover this visit, as copies with the id `<paymentId>@<visitId>`; empty for most visits. Add them to `payments` for what has arrived for the visit. They are not rows of their own: refund the payment they name."),
   preference: Preference.nullable(),
   awaitingPick: z.boolean().describe("The customer must be there and has not picked a day."),
   personId: Id.nullable().describe("Who the visit is assigned to, once someone has it."),

@@ -74,6 +74,40 @@ describe("chargedSoFar", () => {
     })
     expect(chargedSoFar([partlyCharged, cancelled])).toBe(145)
   })
+
+  it("reads what has been received from the payment rows, a refund counting against and a failed row counting nothing", () => {
+    const row = (id: string, amount: number, status = "succeeded") => ({ id, amount, method: "check", status })
+    const p = pass({
+      id: "p4b",
+      visits: [
+        { ...turnOn, payments: [row("a", 145)] },
+        { ...inspection, payments: [row("b", 145), row("c", -45)] },
+        { ...blowout, payments: [row("d", 95, "failed")] },
+      ],
+    })
+    expect(chargedSoFar([p])).toBe(245)
+    // rows win over the old flag: a flag with an empty rows array is nothing received
+    expect(chargedSoFar([pass({ id: "p4c", visits: [{ ...turnOn, chargedAt: "2027-04-20T17:12:00Z", payments: [] }] })])).toBe(0)
+    expect(committedByMonth([p], 2027)).toEqual([
+      { month: 5, committed: 145, charged: 145 },
+      { month: 7, committed: 145, charged: 100 },
+      { month: 10, committed: 95, charged: 0 },
+    ])
+  })
+})
+
+describe("upcomingCharges reads the payment rows", () => {
+  it("leaves out a visit that has been paid and keeps one whose payment was refunded", () => {
+    const row = (id: string, amount: number) => ({ id, amount, method: "card_on_file", status: "succeeded" })
+    const p = pass({
+      id: "p4d",
+      visits: [
+        { ...turnOn, scheduledAt: "2027-05-04T15:00:00Z", payments: [row("a", 145)] },
+        { ...inspection, scheduledAt: "2027-07-13T15:00:00Z", payments: [row("b", 145), row("c", -145)] },
+      ],
+    })
+    expect(upcomingCharges([p], "2027-04-01").map((c) => c.kind)).toEqual(["inspection"])
+  })
 })
 
 describe("a lapsed pass is no longer a commitment", () => {

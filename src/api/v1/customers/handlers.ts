@@ -12,6 +12,8 @@ import { canSeeContact, idInput, iso, today } from "../shared"
 import { customerHasCard } from "@/lib/customer/card"
 import { ConsentOut, consentInput, CustomerDetail, CustomerListItem, CustomerOut, customerFields, propertyInput } from "./schemas"
 import { jobTotal } from "@/lib/jobs/lines"
+import { jobMoney, jobOwed } from "@/lib/money/words"
+import { paymentOut } from "../payments/queries"
 import { cleanEmail, cleanName, normalizePhone } from "@/lib/format/contact"
 
 type CustomerRow = typeof s.customer.$inferSelect
@@ -198,27 +200,41 @@ export const customersGet = defineHandler({
       ...customerOut(ctx, row),
       properties: props.map((p) => propertyOut(ctx, p)),
       consent: consent ? consentOut(consent) : null,
-      jobs: await jobsOf(ctx.db, row.id),
+      jobs: await jobsOf(ctx, row.id),
     }
   },
 })
 
 /** A customer's jobs, newest first, each with its visits and, for a pass, its number (the job's own; the `season_pass` row only gives the alias id). */
-async function jobsOf(db: Database, customerId: string) {
-  const jobs = await db.select().from(s.job).where(eq(s.job.customerId, customerId)).orderBy(desc(s.job.createdAt), desc(s.job.id))
+async function jobsOf(ctx: Ctx, customerId: string) {
+  const db = ctx.db
+  const org = ctx.organizationId
+  const jobs = await db.select().from(s.job).where(and(eq(s.job.customerId, customerId), eq(s.job.organizationId, org))).orderBy(desc(s.job.createdAt), desc(s.job.id))
   if (!jobs.length) return []
-  const visits = await db.select().from(s.visit).where(inArray(s.visit.jobId, jobs.map((j) => j.id))).orderBy(asc(s.visit.scheduledOn), asc(s.visit.createdAt))
-  const passes = await db.select({ id: s.seasonPass.id, jobId: s.seasonPass.jobId }).from(s.seasonPass).where(inArray(s.seasonPass.jobId, jobs.map((j) => j.id)))
-  const lineRows = await db.select().from(s.lineItem).where(inArray(s.lineItem.jobId, jobs.map((j) => j.id))).orderBy(asc(s.lineItem.createdAt), asc(s.lineItem.id))
+  const visits = await db.select().from(s.visit).where(and(inArray(s.visit.jobId, jobs.map((j) => j.id)), eq(s.visit.organizationId, org))).orderBy(asc(s.visit.scheduledOn), asc(s.visit.createdAt))
+  const passes = await db.select({ id: s.seasonPass.id, jobId: s.seasonPass.jobId }).from(s.seasonPass).where(and(inArray(s.seasonPass.jobId, jobs.map((j) => j.id)), eq(s.seasonPass.organizationId, org)))
+  const lineRows = await db.select().from(s.lineItem).where(and(inArray(s.lineItem.jobId, jobs.map((j) => j.id)), eq(s.lineItem.organizationId, org))).orderBy(asc(s.lineItem.createdAt), asc(s.lineItem.id))
+  const paymentRows = await db.select().from(s.charge).where(and(inArray(s.charge.jobId, jobs.map((j) => j.id)), eq(s.charge.organizationId, org))).orderBy(asc(s.charge.createdAt), asc(s.charge.id))
+  const bills = await db.select().from(s.invoice).where(and(inArray(s.invoice.jobId, jobs.map((j) => j.id)), eq(s.invoice.organizationId, org), isNull(s.invoice.cancelledAt))).orderBy(asc(s.invoice.paidOn), asc(s.invoice.id))
+  const openBills = bills.filter((b) => !b.paidOn)
   return jobs.map((j) => {
     const pass = passes.find((p) => p.jobId === j.id)
     const lines = lineRows.filter((l) => l.jobId === j.id)
+    const payments = paymentRows.filter((p) => p.jobId === j.id)
+    const jobVisits = visits.filter((v) => v.jobId === j.id)
+    // An open bill on a job that owes nothing (money arrived another way) is not carried: the job reads Paid.
+    const bill = jobOwed(lines, payments) > 0 ? openBills.find((b) => b.jobId === j.id) : undefined
+    // The visits the paid bills name, which a payment made on the job as a whole credits first.
+    const paidBillVisits = bills.filter((b) => b.jobId === j.id && b.paidOn).flatMap((b) => b.lines.map((l) => l.visitId).filter((id): id is string => Boolean(id)))
     return {
       id: j.id, kind: j.kind, status: j.status, price: j.price, source: j.source, notes: j.notes, createdAt: j.createdAt.toISOString(),
       passId: pass?.id ?? null, passNumber: j.passNumber,
       lines: lines.map((l) => ({ id: l.id, name: l.name, description: l.description, quantity: l.quantity, unitPrice: l.unitPrice, taxable: l.taxable, cancelledAt: l.cancelledAt?.toISOString() ?? null, visitId: l.visitId })),
       total: jobTotal(lines),
-      visits: visits.filter((v) => v.jobId === j.id).map((v) => {
+      payments: payments.map((p) => paymentOut(ctx, p)),
+      money: jobMoney(lines, payments, jobVisits.map((v) => ({ id: v.id, cancelled: v.status === "cancelled" || v.status === "skipped", price: lines.some((l) => l.visitId === v.id) ? jobTotal(lines.filter((l) => l.visitId === v.id)) : v.amount, done: v.status === "completed", doneOn: v.completedOn })), bill, paidBillVisits),
+      invoiceId: bill?.id ?? null,
+      visits: jobVisits.map((v) => {
         const own = lines.filter((l) => l.visitId === v.id)
         return { id: v.id, kind: v.kind, status: v.status, scheduledOn: v.scheduledOn, amount: own.length ? jobTotal(own) : v.amount }
       }),

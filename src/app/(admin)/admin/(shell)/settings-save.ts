@@ -16,7 +16,7 @@ import type { AreaGroup, OrganizationSettings, Person, ServiceItem } from "@/lib
 // log; people edits are not in the server change log yet.
 
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b)
-const SECTIONS = ["windows", "bufferPercentEarly", "bufferPercentLate", "fallTownOrder", "springTownOrder", "messages"] as const
+const SECTIONS = ["windows", "bufferPercentEarly", "bufferPercentLate", "fallTownOrder", "springTownOrder", "messages", "billing"] as const
 
 /** What would stop a save: said before anything is written, so a half-made area or a bad person row never half-saves. The same rules the reducers keep, run once more here. */
 export function settingsProblems(after: OrganizationSettings): string[] {
@@ -108,6 +108,7 @@ export async function saveSettings(ctx: Ctx, after: OrganizationSettings, servic
   for (const a of changed.filter((x) => !shrinks(x))) await callApi(ctx, areasUpdate, { id: a.id, name: a.name, towns: a.towns })
   for (const a of after.areas.filter((x) => !haveAreas.has(x.id))) await callApi(ctx, areasCreate, { name: a.name, towns: a.towns, springOrder: 0, fallOrder: 0 })
 
-  for (const section of SECTIONS) if (!same(current[section], after[section])) await callApi(ctx, settingsUpdate, { section, value: after[section] })
+  // A save from data that carries no billing settings (the fixtures) leaves them as they are.
+  for (const section of SECTIONS) if (after[section] !== undefined && !same(current[section], after[section])) await callApi(ctx, settingsUpdate, { section, value: after[section] })
   if (services) await saveServices(ctx, services)
 }

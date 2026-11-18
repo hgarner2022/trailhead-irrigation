@@ -3,6 +3,7 @@
 import { cancelledEmail, cardExpiringEmail, cardFailedEmail, receiptEmail, renewalEmail } from "./account-messages"
 import { adminAlertEmail, bookingConfirmationEmail, notClosedCrewEmail } from "./booking-and-staff"
 import { dateConfirmEmail, dateMovedEmail, dateSetEmail, dayBeforeEmail } from "./date-messages"
+import { invoiceEmail, invoiceReminderEmail } from "./invoice"
 import { purchaseConfirmationEmail } from "./purchase-confirmation"
 import type { RenderedEmail } from "./types"
 
@@ -18,6 +19,8 @@ export const EMAIL_TEMPLATES = {
   "day-before": dayBeforeEmail,
   "date-confirm": dateConfirmEmail,
   receipt: receiptEmail,
+  invoice: invoiceEmail,
+  "invoice-reminder": invoiceReminderEmail,
   "card-failed": cardFailedEmail,
   "card-expiring": cardExpiringEmail,
   cancelled: cancelledEmail,

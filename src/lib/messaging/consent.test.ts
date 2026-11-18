@@ -11,6 +11,11 @@ describe("mayMessage, the gate's table", () => {
   it.each([
     ["receipt", "email", false, NO_CONSENT, true],
     ["receipt", "sms", false, NO_CONSENT, false],
+    ["invoice", "sms", true, NO_CONSENT, true],
+    ["invoice", "sms", true, { ...NO_CONSENT, smsStopped: true }, false],
+    ["invoice", "email", false, NO_CONSENT, true],
+    ["invoice-reminder", "sms", true, NO_CONSENT, true],
+    ["invoice-reminder", "email", true, { ...NO_CONSENT, smsStopped: true }, true],
     ["date-set", "sms", true, NO_CONSENT, true],
     ["date-set", "sms", true, { ...NO_CONSENT, smsStopped: true }, false],
     ["date-set", "email", true, { ...NO_CONSENT, smsStopped: true }, true],

@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite"
+import { expect } from "storybook/test"
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import type { AdminData, SettingsChange } from "@/lib/admin/types"
 import { AdminShell } from "@/components/blocks/AdminShell"
@@ -46,6 +47,22 @@ export const Services: Story = {
 export const ServicesPhone: Story = {
   args: { defaultTab: "services" },
   globals: { viewport: { value: "phone", isRotated: false } },
+}
+
+/** The Billing tab: bills are due in 14 days and sales tax is off, so the percent is not asked for. */
+export const Billing: Story = {
+  args: { defaultTab: "billing" },
+  globals: { viewport: { value: "wide", isRotated: false } },
+}
+
+/** Sales tax switched on: the percent field appears. */
+export const BillingWithSalesTax: Story = {
+  args: { defaultTab: "billing" },
+  globals: { viewport: { value: "wide", isRotated: false } },
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(await canvas.findByRole("checkbox", { name: "Collect Colorado sales tax" }))
+    await expect(await canvas.findByRole("textbox", { name: "Sales tax percent" })).toBeInTheDocument()
+  },
 }
 
 export const Areas: Story = {

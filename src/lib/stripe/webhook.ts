@@ -7,10 +7,12 @@ import * as s from "@/db/schema"
 import type { Database } from "@/db/types"
 import { ctxForJob } from "@/lib/admin/api-ctx"
 import { clearedCardColumns } from "@/lib/customer/card"
+import { paidDay } from "@/lib/money/record"
 import { baseData } from "@/lib/messaging/data"
 import { queueMessage } from "@/lib/messaging/queue"
 import { enqueue } from "@/lib/queue"
 import { applyCardUpdate, createCardUpdateSession } from "./card-update"
+import { applyInvoicePayment } from "./invoice-payment"
 
 export type ReceiveResult = { status: 200; queued: boolean } | { status: 400 | 503; error: string }
 
@@ -20,7 +22,13 @@ export const WEBHOOK_NOT_CONFIGURED = "webhook not configured"
 export async function organizationOfEvent(db: Database, event: Stripe.Event): Promise<string | null> {
   const obj = event.data.object as unknown as { id?: string; metadata?: Record<string, string> | null }
   const passId = obj.metadata?.passId
+  const invoiceId = obj.metadata?.invoiceId
   if (event.type === "checkout.session.completed" || event.type.startsWith("payment_intent.")) {
+    // A bill's session and its payment intent both carry the invoice id (the pay page sets it on each).
+    if (invoiceId) {
+      const [bill] = await db.select({ org: s.invoice.organizationId }).from(s.invoice).where(eq(s.invoice.id, invoiceId))
+      if (bill) return bill.org
+    }
     if (passId) {
       const [pass] = await db.select({ org: s.seasonPass.organizationId }).from(s.seasonPass).where(eq(s.seasonPass.id, passId))
       if (pass) return pass.org
@@ -64,6 +72,7 @@ export async function handleStripeEvent(db: Database, stripe: Stripe, organizati
     case "checkout.session.completed": {
       const session = event.data.object
       if (session.metadata?.purpose === "card-update") await applyCardUpdate(db, stripe, session.id, now)
+      else if (session.metadata?.purpose === "invoice") await applyInvoicePayment(db, stripe, organizationId, session, origin, now)
       else if (session.metadata?.purpose === "pass-setup" && session.metadata.passId) {
         const ctx = await ctxForJob(organizationId, { database: () => db, now: () => now })
         await callApi(ctx, passesActivate, { id: session.metadata.passId, setupSessionId: session.id })
@@ -73,11 +82,16 @@ export async function handleStripeEvent(db: Database, stripe: Stripe, organizati
     case "payment_intent.succeeded":
     case "payment_intent.payment_failed": {
       const intent = event.data.object
-      const [charge] = await db.select().from(s.charge).where(eq(s.charge.stripePaymentIntentId, intent.id))
+      const [charge] = await db.select().from(s.charge).where(and(eq(s.charge.stripePaymentIntentId, intent.id), eq(s.charge.organizationId, organizationId)))
       if (!charge) return
       if (event.type === "payment_intent.succeeded" && charge.status !== "succeeded") {
-        await db.update(s.charge).set({ status: "succeeded", failureMessage: null, updatedAt: now }).where(eq(s.charge.id, charge.id))
-        await db.update(s.visit).set({ chargedAt: now, stripePaymentIntentId: intent.id, updatedAt: now }).where(eq(s.visit.id, charge.visitId))
+        // A row written before payments carried their job (a pending attempt from the old charge) is completed from its visit; paid_on is the day the money arrived.
+        const [visit] = charge.visitId ? await db.select({ jobId: s.visit.jobId, customerId: s.visit.customerId }).from(s.visit).where(eq(s.visit.id, charge.visitId)) : []
+        await db
+          .update(s.charge)
+          .set({ status: "succeeded", failureMessage: null, paidOn: paidDay(now), jobId: charge.jobId ?? visit?.jobId ?? null, customerId: charge.customerId ?? visit?.customerId ?? null, updatedAt: now })
+          .where(eq(s.charge.id, charge.id))
+        if (charge.visitId) await db.update(s.visit).set({ chargedAt: now, stripePaymentIntentId: intent.id, updatedAt: now }).where(eq(s.visit.id, charge.visitId))
       } else if (event.type === "payment_intent.payment_failed" && charge.status === "pending") {
         await db.update(s.charge).set({ status: "failed", failureMessage: intent.last_payment_error?.message ?? "The payment failed", updatedAt: now }).where(eq(s.charge.id, charge.id))
       }

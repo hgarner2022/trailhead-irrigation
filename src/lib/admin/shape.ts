@@ -7,9 +7,11 @@ import { zonedToUtc } from "./calendar"
 import { fullName } from "./format"
 import { causeOf, groupAttention, type QueueAttention } from "./attention-groups"
 import { jobTotal } from "@/lib/jobs/lines"
-import { NOT_CLOSED_LOOKBACK_DAYS, visitJob } from "./jobs"
+import { invoiceOpen, invoiceStatus } from "@/lib/money/invoice"
+import { allocateJobPayments, jobMoney as moneyOfJob, jobOwed } from "@/lib/money/words"
+import { NOT_CLOSED_LOOKBACK_DAYS, visitJob, visitPaid } from "./jobs"
 import type {
-  SoldJob, AdminData, Attention, BusyBlock, Client, Consent, Invoice, Message, MessageKind, MonthTotal, Pass, PassVisit, Quote, SettingsChange,
+  AdminInvoice, AdminPayment, SoldJob, AdminData, Attention, BusyBlock, Client, Consent, Invoice, Message, MessageKind, MonthTotal, Pass, PassVisit, Quote, SettingsChange,
   Person, ServiceItem, AreaGroup, OrganizationSettings, Property, Town, Visit, VisitKind, VisitStatus, Yard,
 } from "./types"
 
@@ -20,7 +22,11 @@ const DAY_MS = 86_400_000
 export interface ApiVisit {
   id: string; jobId?: string; notes?: string | null; passId: string | null; bookingId: string | null; customerId: string; firstName: string; town: Town; kind: string; status: string
   window: string | null; amount: number; preference: string | null; awaitingPick: boolean; personId: string | null; personName?: string | null; scheduledOn: string | null
-  notDoneReason?: string | null; paidBy?: string | null; paymentStatus?: string; startTime: string | null; durationMinutes?: number | null; stopOrder: number | null; completedOn: string | null; chargedAt: string | null
+  notDoneReason?: string | null; paidBy?: string | null; paymentStatus?: string; startTime: string | null; durationMinutes?: number | null; stopOrder: number | null; completedOn: string | null
+  /** @deprecated the old charge flag; the screens read the payment rows, never this */
+  chargedAt?: string | null
+  /** the visit's own payment rows as `visits.list` sends them; `ShapeInput.paymentRows` (the whole organization's) wins when given */
+  payments?: { id: string; jobId: string | null; visitId: string | null; amount: number; method: string; status: string; paidOn: string | null; refundsPaymentId: string | null; createdAt?: string }[]
   exception: { kind: "moved-in-jobber"; at: string; note: string } | null; lat: number | null; lng: number | null
   lineItems?: { id: string; visitId: string | null; quantity: number; unitPrice: number; cancelledAt: string | null }[]
   /** the yard the visit is at; the gate code, access note and contact phone are there only for the write scope */
@@ -47,6 +53,13 @@ export interface MirrorQuote { id: string; clientName: string | null; town: Town
 export interface MirrorInvoice { id: string; clientName: string | null; total: number | null; issuedAt: Date | null; dueAt: Date | null; status: Invoice["status"] | null; jobberUrl: string | null }
 export interface JobRow { id: string; customerId: string; kind: SoldJob["kind"]; status: SoldJob["status"]; price: number | null; source: SoldJob["source"]; passNumber?: string | null; notes: string | null }
 export interface LineRow { id: string; jobId: string; visitId: string | null; name: string; description: string | null; quantity: number; unitPrice: number; taxable: boolean; cancelledAt: Date | null }
+/** A payment row (`charge`) as live.ts reads it: refunds are negative; `attempt` numbers a visit's tries. */
+export interface PaymentRow { id: string; jobId: string | null; visitId: string | null; amount: number; method: string; status: string; paidOn: string | null; refundsPaymentId: string | null; attempt: number; createdAt: Date }
+/** A bill (`invoice`) as live.ts reads it: its frozen lines only as far as the visits they name, and the pay link for a caller that may write. */
+export interface InvoiceRow {
+  id: string; jobId: string; number: string; amount: number; tax: number; total: number; sentOn: string; dueOn: string
+  paidOn: string | null; cancelledAt: Date | null; lines: { visitId?: string | null }[]; payUrl?: string
+}
 export interface QueueProblem { id?: string; kind: string; lastError: string | null; updatedAt: Date; status: string }
 
 /** `key` is what the alert is about: a visit's id for an unplaced visit. */
@@ -73,6 +86,8 @@ export interface ShapeInput {
   queueProblems: QueueProblem[]
   /** the visits whose newest charge attempt did not go through */
   failedChargeVisitIds?: string[]
+  /** every payment row of the organization: the money words, the month totals and the owed rows are read from these */
+  paymentRows?: PaymentRow[]
   /** unresolved free-form alerts (a new Season Pass); absent in the fixtures */
   alerts?: AlertRow[]
   /** the (kind, key) of rows Home must not show again: dismissed by the office */
@@ -83,22 +98,30 @@ export interface ShapeInput {
   lineRows?: LineRow[]
   /** every property of the organization; absent in the fixtures, where the screens build one from the pass */
   propertyRows?: PropertyRow[]
+  /** every bill of the organization; absent in the fixtures. The open ones (sent, overdue) make a job's money read Bill sent */
+  invoiceRows?: InvoiceRow[]
   blocks: BusyBlock[]
   /** every service, inactive ones included; absent in the fixtures */
   services?: ServiceItem[]
 }
 
-/** What the newest charge and the last not-done say about a visit: the reason, how it was paid, a bill waiting. */
 /** What the visit is worth: its own line when the API sent one, else the amount (which already reads the line). */
 const lineAmountOf = (v: Pick<ApiVisit, "id" | "amount" | "lineItems">) => {
   const own = (v.lineItems ?? []).filter((l) => l.visitId === v.id)
   return own.length ? own.filter((l) => !l.cancelledAt).reduce((sum, l) => sum + l.quantity * l.unitPrice, 0) : v.amount
 }
 
-const money = (v: Pick<ApiVisit, "notDoneReason" | "paidBy" | "paymentStatus">) => ({
-  ...(v.notDoneReason ? { notDoneReason: v.notDoneReason } : {}),
-  ...(v.paymentStatus === "paid" && v.paidBy ? { paidMethod: v.paidBy } : {}),
-  ...(v.paymentStatus === "pending" && v.paidBy === "bill" ? { billSent: true } : {}),
+/** What a visit costs from the job's line rows: its own live lines when it has any, else its `amount`. */
+const visitPriceOf = (v: Pick<ApiVisit, "id" | "amount">, lines: readonly Pick<LineRow, "visitId" | "quantity" | "unitPrice" | "cancelledAt">[]) => {
+  const own = lines.filter((l) => l.visitId === v.id)
+  return own.length ? own.filter((l) => !l.cancelledAt).reduce((sum, l) => sum + l.quantity * l.unitPrice, 0) : v.amount
+}
+
+/** The last not-done's reason. How it was paid is read from the payment rows, never carried on the visit. */
+const reasonOf = (v: Pick<ApiVisit, "notDoneReason">) => (v.notDoneReason ? { notDoneReason: v.notDoneReason } : {})
+
+const paymentOf = (r: Pick<PaymentRow, "id" | "jobId" | "visitId" | "amount" | "method" | "status" | "paidOn" | "refundsPaymentId">): AdminPayment => ({
+  id: r.id, jobId: r.jobId, visitId: r.visitId, amount: r.amount, method: r.method, status: r.status, paidOn: r.paidOn, refundsPaymentId: r.refundsPaymentId,
 })
 
 /** The yard as the screens hold it: a fact nobody set is left out. */
@@ -110,9 +133,9 @@ export const yardOf = (y: ApiYard): Yard => ({
 
 const toKind = (k: string): VisitKind => (k === "turn-on" || k === "inspection" || k === "blowout" || k === "repair" || k === "install" ? k : "other")
 /** The visits whose newest charge attempt failed: a retry that went through clears the earlier failure. */
-export function failedChargeVisits(rows: { visitId: string; attempt: number; status: string }[]): string[] {
+export function failedChargeVisits(rows: { visitId: string | null; attempt: number; status: string }[]): string[] {
   const newest = new Map<string, { attempt: number; status: string }>()
-  for (const r of rows) if (r.attempt > (newest.get(r.visitId)?.attempt ?? 0)) newest.set(r.visitId, r)
+  for (const r of rows) if (r.visitId && r.attempt > (newest.get(r.visitId)?.attempt ?? 0)) newest.set(r.visitId, r)
   return [...newest].filter(([, r]) => r.status === "failed").map(([id]) => id)
 }
 
@@ -151,6 +174,44 @@ export function shapeAdminData(i: ShapeInput): AdminData {
   const customerOf = new Map(i.customers.map((c) => [c.id, c]))
   const lastNameOf = (id: string) => customerOf.get(id)?.lastName ?? undefined
   const failed = new Set(i.failedChargeVisitIds ?? [])
+  // The payment rows every money word is read from: the organization's own rows when live.ts loaded them, else what each visit carried; oldest first.
+  const rows: PaymentRow[] = i.paymentRows ?? i.visits.flatMap((v) => (v.payments ?? []).map((p, n) => ({ ...p, attempt: n + 1, createdAt: new Date(p.createdAt ?? 0) })))
+  const ordered = [...rows].sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime() || a.id.localeCompare(b.id))
+  // The visits the paid bills of each job name, in the order the bills were paid: what a payment on the job as a whole credits first.
+  const paidBillVisits = (jobId: string) =>
+    (i.invoiceRows ?? []).filter((r) => r.jobId === jobId && r.paidOn && !r.cancelledAt).sort((a, b) => (a.paidOn ?? "").localeCompare(b.paidOn ?? "")).flatMap((r) => r.lines.map((l) => l.visitId).filter((id): id is string => Boolean(id)))
+  // A payment on the job as a whole (a bill paid on the pay page) is credited to the job's done visits, so the visit-level words and sums read it
+  // (`allocateJobPayments`); the job's own money counts the original rows, so nothing is counted twice.
+  const credit = new Map<string, AdminPayment[]>()
+  for (const jobId of new Set(ordered.filter((r) => r.jobId && !r.visitId && r.status === "succeeded").map((r) => r.jobId!))) {
+    const mine = i.visits.filter((v) => v.jobId === jobId)
+    const lines = (i.lineRows ?? []).filter((l) => l.jobId === jobId)
+    const ids = new Set(mine.map((v) => v.id))
+    const rowsOfJob = ordered.filter((r) => r.jobId === jobId || (r.visitId !== null && ids.has(r.visitId))).map(paymentOf)
+    const visitsOfJob = mine.map((v) => ({ id: v.id, done: v.status === "completed", cancelled: v.status === "cancelled" || v.status === "skipped", price: i.lineRows ? visitPriceOf(v, lines) : lineAmountOf(v), doneOn: v.completedOn }))
+    for (const [visitId, slices] of allocateJobPayments(rowsOfJob, visitsOfJob, paidBillVisits(jobId))) credit.set(visitId, slices)
+  }
+  const paymentsOfVisit = (id: string) => [...ordered.filter((r) => r.visitId === id).map(paymentOf), ...(credit.get(id) ?? [])]
+  // The open bill of each job (a job has at most one): its money reads Bill sent, on the visits its lines were billed after (every visit of the job when its lines name none).
+  // A bill is carried only while its job still owes money: one left open after the money arrived another way (a check, Venmo or cash) is no bill at all, so Home, Remind and the money lines never dun a customer who has paid.
+  const jobOwes = (jobId: string) => {
+    if (!i.lineRows) return true
+    const ids = new Set(i.visits.filter((v) => v.jobId === jobId).map((v) => v.id))
+    return jobOwed(i.lineRows.filter((l) => l.jobId === jobId), ordered.filter((r) => r.jobId === jobId || (r.visitId !== null && ids.has(r.visitId)))) > 0
+  }
+  const billOf = new Map<string, AdminInvoice>()
+  for (const r of i.invoiceRows ?? []) {
+    if (!invoiceOpen(r) || !jobOwes(r.jobId)) continue
+    billOf.set(r.jobId, {
+      id: r.id, jobId: r.jobId, number: r.number, amount: r.amount, tax: r.tax, total: r.total, sentOn: r.sentOn, dueOn: r.dueOn,
+      status: invoiceStatus(r, i.today) === "overdue" ? "overdue" : "sent", visitIds: [...new Set(r.lines.map((l) => l.visitId).filter((id): id is string => Boolean(id)))],
+      ...(r.payUrl ? { payUrl: r.payUrl } : {}),
+    })
+  }
+  const billFor = (jobId: string | undefined, visitId: string): AdminInvoice | undefined => {
+    const bill = jobId ? billOf.get(jobId) : undefined
+    return bill && (bill.visitIds.length === 0 || bill.visitIds.includes(visitId)) ? bill : undefined
+  }
   // A pending pass is an unpaid attempt: its visits are never a job anywhere on the Schedule or in the counts.
   const pending = new Set(i.passes.filter((p) => p.status === "pending").map((p) => p.id))
 
@@ -160,10 +221,10 @@ export function shapeAdminData(i: ShapeInput): AdminData {
     return {
       id: v.id, clientId: v.customerId, clientName: fullName(v.firstName, lastNameOf(v.customerId)), town: v.town, kind: toKind(v.kind), status: toStatus(v.status),
       ...(v.scheduledOn ? { startAt: instantOf(v.scheduledOn, v.startTime), scheduledOn: v.scheduledOn } : {}),
-      ...(v.startTime ? { startTime: v.startTime } : {}), ...(v.completedOn ? { completedOn: v.completedOn } : {}), ...(v.chargedAt ? { chargedAt: v.chargedAt } : {}),
+      ...(v.startTime ? { startTime: v.startTime } : {}), ...(v.completedOn ? { completedOn: v.completedOn } : {}), payments: paymentsOfVisit(v.id),
       ...(failed.has(v.id) ? { chargeFailed: true } : {}), ...(v.status === "skipped" ? { skipped: true } : {}), ...(v.passId ? { passId: v.passId } : {}),
       isPass: v.passId !== null, jobberUrl: "",
-      ...(v.jobId ? { jobId: v.jobId } : {}), ...money(v), price: lineAmountOf(v), ...(v.durationMinutes ? { minutes: v.durationMinutes } : {}), ...(v.notes ? { notes: v.notes } : {}),
+      ...(v.jobId ? { jobId: v.jobId } : {}), ...(billFor(v.jobId, v.id) ? { invoice: billFor(v.jobId, v.id) } : {}), ...reasonOf(v), price: lineAmountOf(v), ...(v.durationMinutes ? { minutes: v.durationMinutes } : {}), ...(v.notes ? { notes: v.notes } : {}),
       // the person assigned, under the deprecated truck names too (the same values; dropped in step 6)
       ...(v.personName ? { personName: v.personName, truckName: v.personName } : {}),
       ...(v.personId ? { personId: v.personId, truckId: v.personId } : {}),
@@ -232,8 +293,9 @@ export function shapeAdminData(i: ShapeInput): AdminData {
         ...(failed.has(v.id) ? { chargeFailed: true } : {}),
         ...(v.personName ? { personName: v.personName, truckName: v.personName } : {}),
         ...(v.completedOn ? { completedAt: instantOf(v.completedOn, "12:00") } : {}),
-        ...(v.chargedAt ? { chargedAt: v.chargedAt } : {}),
-        ...money(v),
+        payments: paymentsOfVisit(v.id),
+        ...(billFor(v.jobId, v.id) ? { invoice: billFor(v.jobId, v.id) } : {}),
+        ...reasonOf(v),
       }))
     const consent = newestConsent.get(p.customerId)
     const jobberId = i.jobberClientOf.get(p.customerId)
@@ -260,9 +322,15 @@ export function shapeAdminData(i: ShapeInput): AdminData {
   const soldJobs: SoldJob[] | undefined = i.jobRows?.map((j) => {
     const pass = i.passes.find((p) => p.id && i.visits.some((v) => v.passId === p.id && v.jobId === j.id))
     const lines = (i.lineRows ?? []).filter((l) => l.jobId === j.id)
+    const mine = i.visits.filter((v) => v.jobId === j.id)
+    const mineIds = new Set(mine.map((v) => v.id))
+    // The job's own money: rows on the job, and rows on its visits that carry no job id.
+    const payments = ordered.filter((r) => r.jobId === j.id || (r.visitId !== null && mineIds.has(r.visitId))).map(paymentOf)
+    const bill = billOf.get(j.id)
+    const money = moneyOfJob(lines, payments, mine.map((v) => ({ id: v.id, cancelled: v.status === "cancelled" || v.status === "skipped", price: visitPriceOf(v, lines), done: v.status === "completed", doneOn: v.completedOn })), bill ? {} : undefined, paidBillVisits(j.id))
     return {
-      id: j.id, customerId: j.customerId, kind: j.kind, status: j.status, source: j.source,
-      ...(i.lineRows ? { lines: lines.map((l) => ({ id: l.id, name: l.name, quantity: l.quantity, unitPrice: l.unitPrice, taxable: l.taxable, ...(l.description ? { description: l.description } : {}), ...(l.cancelledAt ? { cancelledAt: iso(l.cancelledAt) } : {}), ...(l.visitId ? { visitId: l.visitId } : {}) })), total: jobTotal(lines) } : {}),
+      id: j.id, customerId: j.customerId, kind: j.kind, status: j.status, source: j.source, ...(bill ? { invoice: bill } : {}),
+      ...(i.lineRows ? { lines: lines.map((l) => ({ id: l.id, name: l.name, quantity: l.quantity, unitPrice: l.unitPrice, taxable: l.taxable, ...(l.description ? { description: l.description } : {}), ...(l.cancelledAt ? { cancelledAt: iso(l.cancelledAt) } : {}), ...(l.visitId ? { visitId: l.visitId } : {}) })), total: jobTotal(lines), payments, money } : {}),
       ...(j.price !== null ? { price: j.price } : {}), ...(j.notes ? { notes: j.notes } : {}),
       ...(pass ? { passId: pass.id, passNumber: j.passNumber ?? pass.number } : {}),
       visitIds: i.visits.filter((v) => v.jobId === j.id).map((v) => v.id),
@@ -271,13 +339,13 @@ export function shapeAdminData(i: ShapeInput): AdminData {
 
   return {
     organizationId: i.organizationId, syncedAt: iso(i.syncedAt), clients, visits, ...(soldJobs ? { jobs: soldJobs } : {}), quotes, invoices, passes,
-    monthTotals: monthTotals(i), attention: attention(i, passes, visitRows(i, appVisits, visits)), settings: { ...i.settings, people: i.people, areas: i.areas },
+    monthTotals: monthTotals({ ...i, paymentRows: rows }), attention: attention(i, passes, visitRows(i, appVisits, visits, soldJobs ?? [])), settings: { ...i.settings, people: i.people, areas: i.areas },
     settingsChanges: i.settingsChanges, messages, blocks: i.blocks, ...(i.services ? { services: i.services } : {}),
   }
 }
 
-/** Revenue and completed visits by Mountain month: paid Jobber invoices and completed Jobber visits from the mirror, charged pass visits and completed app visits from the app. */
-export function monthTotals(i: Pick<ShapeInput, "visits" | "mirror">): MonthTotal[] {
+/** Revenue and completed visits by Mountain month: paid Jobber invoices and completed Jobber visits from the mirror; from the app, the succeeded payment rows by the day the money arrived (`paid_on`, refunds counting against) and the completed visits. */
+export function monthTotals(i: Pick<ShapeInput, "visits" | "mirror" | "paymentRows">): MonthTotal[] {
   const by = new Map<string, MonthTotal>()
   const bucket = (day: string) => {
     const key = day.slice(0, 7)
@@ -287,10 +355,8 @@ export function monthTotals(i: Pick<ShapeInput, "visits" | "mirror">): MonthTota
   }
   for (const v of i.mirror.invoices) if (v.status === "paid" && v.issuedAt) bucket(mountainDay(v.issuedAt)).revenue += v.total ?? 0
   for (const v of i.mirror.visits) if (v.completedAt) bucket(mountainDay(v.completedAt)).visits += 1
-  for (const v of i.visits) {
-    if (v.chargedAt) bucket(mountainDay(new Date(v.chargedAt))).revenue += v.amount
-    if (v.completedOn) bucket(v.completedOn).visits += 1
-  }
+  for (const p of i.paymentRows ?? []) if (p.status === "succeeded") bucket(p.paidOn ?? mountainDay(p.createdAt)).revenue += p.amount
+  for (const v of i.visits) if (v.completedOn) bucket(v.completedOn).visits += 1
   return [...by.values()].sort((a, b) => a.year - b.year || a.month - b.month)
 }
 
@@ -306,7 +372,7 @@ const possessive = (name: string) => `${name}'s`
  * (the last two weeks; the key is the visit), and a one-off visit the office took that still has no day. A pass's own
  * visits without a day are placed by the schedule run, which leaves its own row when it cannot.
  */
-function visitRows(i: ShapeInput, app: Visit[], all: Visit[]): Attention[] {
+function visitRows(i: ShapeInput, app: Visit[], all: Visit[], jobs: SoldJob[] = []): Attention[] {
   const out: Attention[] = []
   const earliest = new Date(Date.parse(`${i.today}T12:00:00Z`) - NOT_CLOSED_LOOKBACK_DAYS * DAY_MS).toISOString().slice(0, 10)
   for (const v of all) {
@@ -315,10 +381,27 @@ function visitRows(i: ShapeInput, app: Visit[], all: Visit[]): Attention[] {
       out.push({ kind: "not-closed", key: v.id, visitId: v.id, message: `${possessive(v.clientName)} ${KIND_WORDS[v.kind] ?? "visit"} on ${shortDay(job.day)} is not marked done`, since: instantOf(job.day, v.startTime ?? null) })
   }
   const appIds = new Set(app.map((v) => v.id))
-  // Done and not paid: a one-off visit with a price whose money has not come. A pass visit is charged to its card on its own, and a failed charge has its own row.
-  for (const v of all)
-    if (appIds.has(v.id) && !v.isPass && (v.price ?? 0) > 0 && v.status === "completed" && !v.chargedAt && !v.billSent)
-      out.push({ kind: "unpaid", key: v.id, visitId: v.id, message: `${possessive(v.clientName)} ${KIND_WORDS[v.kind] ?? "visit"} is done and not paid`, since: instantOf(v.completedOn ?? i.today, "12:00") })
+  // Done and owed, one row per JOB: booked work whose visits are all done (or cancelled) with money still to come, read from the lines and the payment rows
+  // (`jobMoney`). A pass is charged to its card on its own, and a failed charge has its own row. The row opens the job's latest done visit that is itself owed (not paid up), else its latest done visit.
+  // A job with an open bill has no owed row: it reads Bill sent, and its bill has its own row once it is overdue (below).
+  for (const j of jobs) {
+    if (j.kind === "pass" || !j.money || j.money.owed <= 0 || j.invoice) continue
+    const mine = all.filter((v) => j.visitIds.includes(v.id) && appIds.has(v.id) && v.status !== "cancelled")
+    const done = mine.filter((v) => v.status === "completed")
+    if (!done.length || done.length !== mine.length) continue
+    const latest = (list: Visit[]) => list.reduce((a, b) => ((b.completedOn ?? "") >= (a.completedOn ?? "") ? b : a))
+    const unpaid = done.filter((v) => !visitPaid(v))
+    const last = latest(unpaid.length ? unpaid : done)
+    out.push({ kind: "owed", key: j.id, jobId: j.id, visitId: last.id, message: `${possessive(last.clientName)} ${KIND_WORDS[last.kind] ?? "visit"} is done, $${j.money.owed} owed`, since: instantOf(last.completedOn ?? i.today, "12:00") })
+  }
+  // An overdue bill, one row per bill: open (not paid, not cancelled; `SoldJob.invoice` is only ever an open one) with its due day before today. Remind sends the reminder.
+  // The key carries the due day, so a dismissed row is gone for that due day only.
+  const names = new Map(i.customers.map((c) => [c.id, fullName(c.firstName, c.lastName ?? undefined)]))
+  for (const j of jobs) {
+    const bill = j.money && j.money.owed <= 0 ? undefined : j.invoice
+    if (!bill || bill.dueOn >= i.today) continue
+    out.push({ kind: "overdue", key: `invoice-${bill.id}@${bill.dueOn}`, invoiceId: bill.id, jobId: j.id, customerId: j.customerId, message: `${possessive(names.get(j.customerId) ?? "A customer")} bill of $${bill.total} was due ${shortDay(bill.dueOn)}`, since: instantOf(bill.dueOn, "12:00") })
+  }
   for (const v of all)
     if (appIds.has(v.id) && !v.isPass && v.status === "unscheduled")
       out.push({ kind: "unplaced", key: v.id, visitId: v.id, message: `${possessive(v.clientName)} ${KIND_WORDS[v.kind] ?? "visit"} has no day yet`, since: i.now.toISOString().replace(".000Z", "Z") })

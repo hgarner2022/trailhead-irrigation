@@ -9,7 +9,7 @@
 import type { Consent, Pass, PassStatus, PassVisit } from "@/lib/admin/types"
 import { TIME_ZONE, fullName, shortDate } from "@/lib/admin/format"
 import { dayOf } from "@/lib/admin/calendar"
-import { dayWords, passVisitJob, type Job } from "@/lib/admin/jobs"
+import { dayWords, passVisitJob, visitPaidOn, type Job } from "@/lib/admin/jobs"
 import { statusLabel } from "@/components/blocks/StatusPill"
 
 const STATUS_ORDER: PassStatus[] = ["active", "pending", "cancelled", "lapsed"]
@@ -17,7 +17,7 @@ const STATUS_ORDER: PassStatus[] = ["active", "pending", "cancelled", "lapsed"]
 export const VISIT_NAMES: Record<PassVisit["kind"], string> = { "turn-on": "Turn-on", inspection: "Inspection", blowout: "Blowout" }
 
 /** The one-line note a pending pass carries in the panel. */
-export const PENDING_NOTE = "Unpaid attempt, expires after an hour."
+export const PENDING_NOTE = "Checkout not finished, expires after an hour."
 
 /** "Hannah Garner", or the first name alone where no last name is on record. */
 export const passName = (pass: Pick<Pass, "firstName" | "lastName">) => fullName(pass.firstName, pass.lastName)
@@ -91,17 +91,17 @@ export interface ChargeRow {
   /** the booked day as "Apr 20", else "No day yet" */
   when: string
   amount: number
-  /** "Charged Apr 20", blank before */
+  /** "Paid Apr 20", blank before */
   charged: string
 }
 
-/** One row per visit on the pass: its name, its day, its amount and whether it has been charged. */
+/** One row per visit on the pass: its name, its day, its amount and the day it was paid, read from the visit's payment rows. */
 export function chargeRows(pass: Pass): ChargeRow[] {
   return pass.visits.map((visit) => ({
     kind: visit.kind,
     name: VISIT_NAMES[visit.kind],
     when: visitWhen(visit),
     amount: visit.amount,
-    charged: visit.chargedAt ? `Charged ${shortDate(visit.chargedAt, TIME_ZONE)}` : "",
+    charged: visitPaidOn(visit) ? `Paid ${shortDate(visitPaidOn(visit)!, TIME_ZONE)}` : "",
   }))
 }

@@ -20,6 +20,55 @@ export type VisitKind =
   | "install"
   | "other"
 
+/**
+ * One payment row as the screens hold it (`charge` in the database): whole dollars, negative for a refund. The money words
+ * (Paid with how, Owed, Bill sent, Failed) are read from these by `src/lib/money/words.ts` and nowhere else.
+ */
+export interface AdminPayment {
+  id: string
+  jobId?: string | null
+  visitId?: string | null
+  amount: number
+  method: string
+  status: string
+  /** the Mountain day the money arrived */
+  paidOn?: string | null
+  refundsPaymentId?: string | null
+}
+
+/**
+ * A bill the office sent (`invoice`): the frozen lines are in the API; the screens need the dates, the amounts and the pay link.
+ * Open while it is sent or overdue; a paid or cancelled bill is not carried here.
+ */
+export interface AdminInvoice {
+  id: string
+  jobId: string
+  number: string
+  /** whole dollars: the lines, the tax on them, and what is asked for */
+  amount: number
+  tax: number
+  total: number
+  /** Mountain calendar days */
+  sentOn: string
+  dueOn: string
+  /** sent, or overdue once the day after `dueOn` has come */
+  status: "sent" | "overdue"
+  /** the visits its lines were billed after; empty when the lines name none, which means every visit of the job */
+  visitIds: string[]
+  /** the customer's pay link; only for the write scope, never for a tech */
+  payUrl?: string
+}
+
+/** A job's money in words, from its lines and its payment rows: `words` is "Paid", "$115 owed" or "2 of 3 paid, $115 owed". */
+export interface SoldJobMoney {
+  paid: number
+  total: number
+  owed: number
+  words: string
+  /** the job owes money and has an open bill; the words read Bill sent */
+  billSent?: boolean
+}
+
 export type VisitStatus = "unscheduled" | "scheduled" | "completed" | "cancelled"
 
 /** `pending` is an unpaid checkout attempt; it expires after an hour and is never a customer. */
@@ -135,8 +184,11 @@ export interface Visit {
   scheduledOn?: string
   startTime?: string
   completedOn?: string
+  /** @deprecated alias for the fixtures: a charged day with no `payments` reads as one succeeded card payment; live data never sets it, the payment rows are the truth */
   chargedAt?: string
   chargeFailed?: boolean
+  /** the visit's own payment rows, oldest first; absent in the fixtures */
+  payments?: AdminPayment[]
   /** the visit was skipped (the admin shows Skipped; `status` stays cancelled for the calendar) */
   skipped?: boolean
   /** who the visit is assigned to; absent until the schedule places it */
@@ -166,9 +218,11 @@ export interface Visit {
   truckName?: string
   /** why the last attempt did not happen, until the visit gets a day again */
   notDoneReason?: string
-  /** how it was paid, once it is: card_on_file, card_now, check, venmo, cash */
+  /** @deprecated alias for the fixtures, read only when `payments` is absent: how it was paid (card_on_file, card_now, check, venmo, cash) */
   paidMethod?: string
-  /** a bill was sent and is not yet paid */
+  /** the open bill this visit's lines are on; its money reads Bill sent */
+  invoice?: AdminInvoice
+  /** @deprecated alias for the fixtures: a bill was sent and is not yet paid; live data reads `invoice` */
   billSent?: boolean
 }
 
@@ -205,6 +259,12 @@ export interface SoldJob {
   lines?: JobLine[]
   /** whole dollars: the lines added up, cancelled lines left out */
   total?: number
+  /** every payment row on the job, oldest first, refunds included; absent in the fixtures */
+  payments?: AdminPayment[]
+  /** Paid, or the number owed, read from the lines and the payments; absent in the fixtures */
+  money?: SoldJobMoney
+  /** the bill that is open on this job (sent or overdue), if there is one; its money reads Bill sent */
+  invoice?: AdminInvoice
 }
 
 export interface Quote {
@@ -251,9 +311,16 @@ export interface PassVisit {
   amount: number
   /** what the visit includes, from the service at the sale (the visit's line) */
   description?: string
+  /** @deprecated alias for the fixtures, read only when `payments` is absent: see `Visit.chargedAt` */
   chargedAt?: string
+  /** the visit's own payment rows, oldest first; absent in the fixtures */
+  payments?: AdminPayment[]
   notDoneReason?: string
+  /** @deprecated alias for the fixtures, read only when `payments` is absent */
   paidMethod?: string
+  /** the open bill this visit's lines are on; its money reads Bill sent */
+  invoice?: AdminInvoice
+  /** @deprecated alias for the fixtures: a bill was sent and is not yet paid */
   billSent?: boolean
 }
 
@@ -361,6 +428,8 @@ export type MessageKind =
   | "day-before"
   | "date-confirm"
   | "receipt"
+  | "invoice"
+  | "invoice-reminder"
   | "card-failed"
   | "card-expiring"
   | "cancelled"
@@ -390,6 +459,16 @@ export interface Message {
   status: "queued" | "sent" | "delivered" | "failed" | "bounced"
 }
 
+/** How bills are due and taxed (Settings › Billing). Sales tax is in the model and off until the office answers. */
+export interface BillingSettings {
+  /** a bill is due this many days after it is sent */
+  dueDays: number
+  /** whether a bill adds Colorado sales tax to its taxable lines */
+  collectsSalesTax: boolean
+  /** percent, one decimal at most; used only while `collectsSalesTax` is on */
+  salesTaxPercent: number
+}
+
 /** Everything the Settings page edits; the scheduler reads it on its next run. */
 export interface OrganizationSettings {
   /** everyone who works here, owners first; the ones with a truck are the schedule's rows */
@@ -405,6 +484,7 @@ export interface OrganizationSettings {
   /** spring runs the other way */
   springTownOrder: Town[]
   messages: MessageTemplate[]
+  billing: BillingSettings
 }
 
 /** One edit to the settings: who, when, which field, and the value before and after, as words. */
@@ -429,10 +509,16 @@ export interface BusyBlock {
 export interface Attention {
   /** what Dismiss records with `kind`: a stored alert's key, or the pass, visit or task the row is worked out from */
   key?: string
-  kind: "new-pass" | "pending-pass" | "unpaid" | "charge-failed" | "jobs-failed" | "card-expiring" | "not-closed" | "pass-cancelled" | "scheduled" | "unplaced"
+  kind: "new-pass" | "pending-pass" | "owed" | "overdue" | "charge-failed" | "jobs-failed" | "card-expiring" | "not-closed" | "pass-cancelled" | "scheduled" | "unplaced"
   passId?: string
-  /** the visit an unplaced alert is about; Home links to it on the Schedule */
+  /** the visit an unplaced alert is about; Home links to it on the Schedule. An owed row names the job's done visit, which opens its panel */
   visitId?: string
+  /** the job an owed row, or an overdue bill's row, is about */
+  jobId?: string
+  /** the bill an overdue row is about: what Remind sends the reminder of */
+  invoiceId?: string
+  /** the customer an overdue row's bill is to: the row opens their panel on Customers, where the bill is */
+  customerId?: string
   message: string
   since: string
   /** a queue failure: the task kind, and the queue rows Retry puts back in line */
