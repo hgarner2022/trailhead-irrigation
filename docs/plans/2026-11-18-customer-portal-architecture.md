@@ -39,13 +39,12 @@ A customer never sees notes, events, other customers, staff surnames, voided inv
   - Idempotent: a second call on a cancelled visit answers the same result.
 - Both actions carry the customer's words back: the screen shows the handler's message on a refusal, never a second copy of the rule.
 
-## 4. The time model: a day is a promise, a window is a message
+## 4. The time model: a booked visit has a time (corrected Nov 18 2026)
 
-- A visit has a day (`scheduled_on`), a start time (`start_time`) and a length. **A customer picks a day, never a time (Hannah, Nov 2026); the window is told the day before.**
-- `orderDay` stacks a Season Pass's visits from 8:00 so the day has an order and a map. That start time is the office's estimate, not a promise, and the portal must not read it as one.
-- The portal shows the window only when the day-before message for that visit exists in `message_log` (kind `day-before`, the row `dayBeforeMessages` writes). There is no by-hand case: the office's stamp cannot be told from the scheduler's, and Hannah's rule is the day-before text. Until then the visit reads "Tuesday, May 5. We'll text your window the day before." No new column: the message row is the fact that the window was told. `PortalVisit` gains `windowTold: boolean` and `window: string | null`; `arrivalWindow` is only called when `windowTold`.
-- The data matches the words everywhere a customer reads: `loadVisitFacts` nulls `startTime` until the day-before row exists, so the date-set and date-moved texts and the checkout's day cards state the day only; the day-before text is the first message that carries a window. The person's first name is shown with the window, not before it.
-- The admin's **Routed** is the office's own fact (the day's stops were ordered) and may exist before the customer is told; Ryan's Time column keeps the estimate. Two surfaces, two facts, on purpose.
+- The earlier version of this section said "a customer picks a day, never a time; the window is told the day before" and attributed it to Hannah. She never decided that; it came from the Nov 12 pass checkout design, and the attribution was the architect's mistake. Withdrawn.
+- **The rule now, from Hannah and from her live Jobber booking form:** a customer picks a day and an exact start time from the open slots of that day, each slot the length of the service, drawn from the gaps around existing timed visits. The booked time is written to `visit.start_time` when the booking is made and is the promise. The day-before text confirms it. A move of a booked time always texts the customer. "Order the day" keeps booked times fixed and orders only untimed stops around them.
+- A visit the office adds without a time (Any time) is ordered by "Order the day" and its window is told the day before, as before; `PortalVisit.windowTold` keeps that one case.
+- The scheduling engine design (`docs/plans/2026-11-18-scheduling-engine-design.md`) defines the open-slot rule; the portal's Reschedule offers the same day-and-slot choice through the same function.
 
 ## 5. One timeline, no new tables
 
