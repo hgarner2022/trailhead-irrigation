@@ -139,7 +139,7 @@ export function tileModels(data: AdminData, today: string): StatTileProps[] {
     {
       label: `Invoices past due, ${formatMoney(overdue.total)}`,
       value: String(overdue.count),
-      href: "/admin/visits?money=bill-sent",
+      href: "/admin/schedule?view=list&money=bill-sent",
       delta: { value: null, baseline: "last month", goodWhen: "down" },
     },
   ]
@@ -202,7 +202,7 @@ export function jobTiles(data: Pick<AdminData, "passes" | "visits">, today: stri
   const c = jobCounts(data, dayOf(today, TIME_ZONE), TIME_ZONE)
   return [
     { label: "Visits needing a day", value: String(c.needsDay), href: "/admin/schedule" },
-    { label: "Charges that didn't go through", value: String(c.chargeFailed), href: "/admin/visits?money=failed" },
+    { label: "Charges that didn't go through", value: String(c.chargeFailed), href: "/admin/schedule?view=list&money=failed" },
     { label: "Visits not closed", value: String(c.notClosed), href: "/admin/schedule" },
     { label: "Pending passes, expire after an hour", value: String(c.pendingPasses), href: "/admin/customers" },
   ]

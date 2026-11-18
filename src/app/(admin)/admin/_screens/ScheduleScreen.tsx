@@ -3,9 +3,9 @@
 import { useMemo, useState, useTransition } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { SectionHeading } from "@/components/blocks/SectionHeading"
+import { SegmentedControl } from "@/components/blocks/SegmentedControl"
 import { PageHeader } from "@/components/blocks/PageHeader"
 import { ToScheduleTray } from "@/components/blocks/ToScheduleTray"
 import { WeekGrid } from "@/components/blocks/WeekGrid"
@@ -14,13 +14,19 @@ import { TIME_ZONE, writtenDate } from "@/lib/admin/format"
 import { dayOf, dayVisits, weekOf, weekVisits } from "@/lib/admin/calendar"
 import type { Outcome } from "./action-types"
 import type { VisitActions } from "./visit-actions-types"
-import { VisitPanelHost, useOpenVisit } from "./VisitPanelHost"
+import type { CustomersActions } from "./CustomersScreen"
+import type { JobActions } from "./job-actions-types"
+import { NewJob, NewJobButton } from "./NewJob"
+import { RecordHost, useOpenVisit } from "./RecordHost"
+import { VisitsList } from "./VisitsList"
+import { useScheduleAddress } from "./schedule-address"
 import { ScheduleDayMap } from "./ScheduleDayMap"
 import { ScheduleMoveTo } from "./ScheduleMoveTo"
 import { DayStepper, Exceptions, NextJobsLine, StopGrid } from "./ScheduleParts"
 import { rowsOf } from "./visits-model"
 import { exceptionCount, firstJobWeek, firstWorkingDay, moveOutcome, nextJobsWeek, placeVisit, scheduleItems, trayItems, weekContext, type TrayItem } from "./schedule-model"
 import { routePeople } from "@/lib/admin/people"
+import { initialRecord } from "@/lib/admin/record-url"
 
 // Where Ryan lives in season (the scheduling flow, 2026-11-12: one state,
 // no second step): the week by person, a day map beside the day's stops in
@@ -39,38 +45,64 @@ export interface ScheduleScreenProps {
   data: AdminData
   /** ISO datetime the week, today's column and the day view are read from */
   today: string
-  /** the tab open on first render; for the catalog, since the prototype has no URL state */
-  defaultTab?: "week" | "day"
+  /** the view open on first render: `?view=` (and `?day=`) on the page, or the catalog */
+  defaultTab?: ScheduleView
   /** a day (yyyy-mm-dd) to open on, from `?day=`; the week follows it */
   defaultDay?: string
   /** a Monday (yyyy-mm-dd) to open the week on, from `?week=` */
   defaultWeek?: string
   /** the visit selected on first render, from `?visit=` */
   defaultSelectedId?: string
-  /** the visit whose panel is open on first render (the catalog) */
+  /** the record whose panel is open on first render: `?visit=`, `?job=` or `?customer=` in the address, or the catalog */
   defaultVisitId?: string
+  defaultJobId?: string
+  defaultCustomerId?: string
+  /** the List view's filters: only this job's visits (`?forJob=`) and the chips Home's money line links with */
+  forJob?: string
+  defaultFilters?: { column: string; values: string[] }[]
+  /** a tech who may Mark done and take the money */
+  canCollect?: boolean
   /** a tech reads the week and changes nothing: no Schedule, Place, Move or drag */
   readOnly?: boolean
   /** Schedule: runs the scheduler for one window; without it the button only moves blocks locally, as in the catalog */
   onSchedule?: (window: "turn-on" | "inspection" | "blowout") => Promise<Outcome<{ placed: number; unplaced: number }>>
   /** Place and drag: give a visit to a person on a day; a refusal's words show and the block snaps back */
   onMove?: (visitId: string, personId: string, dayIso: string) => Promise<Outcome>
-  /** the visit panel a stop opens; server actions in the app */
+  /** the visit panel a stop opens, and New job; server actions in the app */
   visitActions?: VisitActions
+  /** the job panel and the customer panel, for a record opened from a visit */
+  jobActions?: JobActions
+  customerActions?: CustomersActions
 }
+
+export type ScheduleView = "week" | "day" | "list"
+const VIEWS = [
+  { value: "week", label: "Week" },
+  { value: "day", label: "Day" },
+  { value: "list", label: "List" },
+] as const
 
 const WINDOWS = ["turn-on", "inspection", "blowout"] as const
 
 /** The Schedule with the visit panel: a stop in the week, the day list or the map opens the visit. */
 export function ScheduleScreen(props: ScheduleScreenProps) {
   return (
-    <VisitPanelHost data={props.data} today={props.today} readOnly={props.readOnly} actions={props.visitActions} defaultVisitId={props.defaultVisitId}>
+    <RecordHost
+      data={props.data}
+      today={props.today}
+      readOnly={props.readOnly}
+      canCollect={props.canCollect}
+      visitActions={props.visitActions}
+      jobActions={props.jobActions}
+      customerActions={props.customerActions}
+      initial={initialRecord({ visitId: props.defaultVisitId, jobId: props.defaultJobId, customerId: props.defaultCustomerId })}
+    >
       <ScheduleBody {...props} />
-    </VisitPanelHost>
+    </RecordHost>
   )
 }
 
-function ScheduleBody({ data, today, defaultTab = "week", defaultDay, defaultWeek, defaultSelectedId, readOnly = false, onSchedule, onMove, visitActions }: ScheduleScreenProps) {
+function ScheduleBody({ data, today, defaultTab = "week", defaultDay, defaultWeek, defaultSelectedId, forJob, defaultFilters, readOnly = false, onSchedule, onMove, visitActions }: ScheduleScreenProps) {
   // With the visit panel wired (the app), a stop opens it and its Move replaces the strip above the week; without it (the catalog) the strip stays.
   const panel = Boolean(visitActions)
   const openVisit = useOpenVisit()
@@ -87,6 +119,10 @@ function ScheduleBody({ data, today, defaultTab = "week", defaultDay, defaultWee
   }
   const [weekStart, setWeekStart] = useState(() => (defaultDay || defaultWeek ? weekOf(defaultDay ?? defaultWeek!, TIME_ZONE) : firstJobWeek(data.visits, today, TIME_ZONE)))
   const [day, setDay] = useState(defaultDay ?? todayDay)
+  const [view, setView] = useState<ScheduleView>(defaultTab)
+  // New job from a day: the sheet opens with that day filled in (the day view's header, a week column's "+").
+  const [jobDay, setJobDay] = useState<string | null>(null)
+  useScheduleAddress({ view, day, weekStart, setView, setDay, setWeekStart })
   const [selectedId, setSelectedId] = useState<string | undefined>(defaultSelectedId)
   /** Selecting a stop highlights it everywhere and opens its visit. */
   const select = (id: string | undefined) => {
@@ -170,19 +206,24 @@ function ScheduleBody({ data, today, defaultTab = "week", defaultDay, defaultWee
       <div data-slot="schedule-screen" className="space-y-6">
         <PageHeader
           title="Schedule"
-          context={weekContext(weekStart, week)}
+          context={view === "list" ? undefined : weekContext(weekStart, week)}
           actions={
-            readOnly ? undefined : passTray.length > 0 ? (
-              <Button onClick={scheduleAll} disabled={pending}>{`Schedule ${passTray.length} ${passTray.length === 1 ? "visit" : "visits"}`}</Button>
-            ) : (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span tabIndex={0} className="inline-flex rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50">
-                    <Button disabled>Schedule</Button>
-                  </span>
-                </TooltipTrigger>
-                <TooltipContent>{tray.length ? "Give each job its day from the list" : "Nothing is waiting for a day"}</TooltipContent>
-              </Tooltip>
+            readOnly ? undefined : (
+              <>
+                {passTray.length > 0 ? (
+                  <Button variant="outline" className="min-h-11" onClick={scheduleAll} disabled={pending}>{`Schedule ${passTray.length} ${passTray.length === 1 ? "visit" : "visits"}`}</Button>
+                ) : (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span tabIndex={0} className="inline-flex rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50">
+                        <Button variant="outline" className="min-h-11" disabled>Schedule</Button>
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>{tray.length ? "Give each job its day from the list" : "Nothing is waiting for a day"}</TooltipContent>
+                  </Tooltip>
+                )}
+                <NewJobButton data={data} today={today} actions={visitActions} />
+              </>
             )
           }
         />
@@ -190,12 +231,9 @@ function ScheduleBody({ data, today, defaultTab = "week", defaultDay, defaultWee
         <p role="status" className="text-sm text-muted-foreground empty:sr-only">
           {announcement}
         </p>
-        <Tabs defaultValue={defaultTab}>
-          <TabsList aria-label="Schedule view">
-            <TabsTrigger value="week">Week</TabsTrigger>
-            <TabsTrigger value="day">Day</TabsTrigger>
-          </TabsList>
-          <TabsContent value="week" className="space-y-6">
+        <SegmentedControl label="Schedule view" options={VIEWS} value={view} onChange={(v) => setView(v as ScheduleView)} />
+        {view === "week" && (
+          <div data-slot="schedule-week" className="space-y-6">
             {week.length === 0 && <NextJobsLine weekStart={nextJobsWeek(visits, weekStart, TIME_ZONE)} onGo={goToWeek} />}
             <div className="space-y-6">
               <WeekGrid
@@ -210,6 +248,7 @@ function ScheduleBody({ data, today, defaultTab = "week", defaultDay, defaultWee
                 onSelect={select}
                 onMove={readOnly ? undefined : move}
                 onWeekChange={setWeekStart}
+                onNewJob={readOnly ? undefined : setJobDay}
               />
               <Card className="min-w-0">
                 <CardHeader>
@@ -221,9 +260,17 @@ function ScheduleBody({ data, today, defaultTab = "week", defaultDay, defaultWee
               </Card>
             </div>
             {exceptionCount(week) > 0 && <Exceptions visits={week} />}
-          </TabsContent>
-          <TabsContent value="day" className="space-y-4">
-            <DayStepper day={day} today={todayDay} onChange={changeDay} />
+          </div>
+        )}
+        {view === "day" && (
+          <div data-slot="schedule-day" className="space-y-4">
+            <DayStepper day={day} today={todayDay} onChange={changeDay}>
+              {!readOnly && (
+                <Button type="button" variant="outline" className="min-h-11" onClick={() => setJobDay(day)}>
+                  New job
+                </Button>
+              )}
+            </DayStepper>
             <div className="space-y-6">
               <Card className="min-w-0">
                 <CardHeader>
@@ -235,8 +282,10 @@ function ScheduleBody({ data, today, defaultTab = "week", defaultDay, defaultWee
               </Card>
               <ScheduleDayMap className="min-w-0" stops={stops} people={people} selectedId={selectedId} onSelect={select} />
             </div>
-          </TabsContent>
-        </Tabs>
+          </div>
+        )}
+        {view === "list" && <VisitsList data={data} today={today} forJob={forJob} defaultFilters={defaultFilters} />}
+        {!readOnly && <NewJob data={data} today={today} open={jobDay !== null} onOpenChange={(o) => !o && setJobDay(null)} actions={visitActions} day={jobDay ?? undefined} />}
       </div>
     </TooltipProvider>
   )

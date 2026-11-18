@@ -43,7 +43,7 @@ const search = <T,>(params: T) => ({ searchParams: Promise.resolve(params) })
 
 describe("the admin pages", () => {
   it("Home greets and lists today's work", async () => {
-    const out = html(await HomePage())
+    const out = html(await HomePage(search({})))
     expect(out).toContain('data-slot="home-screen"')
     expect(out).toContain("Needs action")
   })
@@ -79,11 +79,26 @@ describe("the admin pages", () => {
     expect(() => RevenuePage()).toThrow(/NEXT_REDIRECT/)
   })
 
-  it("Visits lists the seeded passes' visits and opens the one in ?visit=", async () => {
-    const out = html(await VisitsPage(search({})))
-    expect(out).toContain('data-slot="visits-screen"')
+  it("Visits is the Schedule's List: /admin/visits redirects there and keeps ?visit=, the filters and, as ?forJob=, the old ?job=", async () => {
+    const target = async (params: Record<string, string>) => {
+      const err = await VisitsPage(search(params)).catch((e: unknown) => e as { digest?: string })
+      return String((err as { digest?: string }).digest).split(";")[2]
+    }
+    expect(await target({})).toBe("/admin/schedule?view=list")
+    expect(await target({ visit: "p3-turn-on" })).toBe("/admin/schedule?view=list&visit=p3-turn-on")
+    expect(await target({ money: "owed", work: "done" })).toBe("/admin/schedule?view=list&money=owed&work=done")
+    expect(await target({ job: "job_x" })).toBe("/admin/schedule?view=list&forJob=job_x")
+    // only what the old page took, a repeated key is its first value, and an explicit forJob beats the old job
+    expect(await target({ job: "job_x", forJob: "job_y", junk: "1" })).toBe("/admin/schedule?view=list&forJob=job_y")
+    expect(await target({ visit: ["a", "b"] as never })).toBe("/admin/schedule?view=list&visit=a")
+  })
+
+  it("the Schedule's List view lists the seeded passes' visits, opens the one in ?visit= and keeps New job", async () => {
+    const out = html(await SchedulePage(search({ view: "list" })))
+    expect(out).toContain('data-slot="visits-list"')
     expect(out).toContain("New job")
-    expect(html(await VisitsPage(search({ visit: "p3-turn-on" })))).toContain('data-slot="visits-screen"')
+    expect(html(await SchedulePage(search({ view: "list", visit: "p3-turn-on" })))).toContain('data-slot="visits-list"')
+    expect(html(await SchedulePage(search({ view: "list", forJob: "nope" })))).toContain("No visits on that job.")
   })
 
   it("Customers and Settings render with data", async () => {
@@ -114,7 +129,7 @@ describe("the admin pages", () => {
       const settings = html(await SettingsPage())
       expect(settings).toContain("You can read the settings. A manager changes them.")
       expect(settings).not.toContain(">Save<")
-      expect(html(await HomePage())).not.toContain('data-slot="attention-action"')
+      expect(html(await HomePage(search({})))).not.toContain('data-slot="attention-action"')
       expect(html(await SchedulePage(search({})))).not.toContain("Schedule 1 visit")
     } finally {
       state.principal = owner

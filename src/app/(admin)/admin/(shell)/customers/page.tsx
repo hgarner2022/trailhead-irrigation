@@ -4,16 +4,17 @@ import { CustomersScreen } from "@/app/(admin)/admin/_screens/CustomersScreen"
 import { getAdminData } from "@/lib/admin/data"
 import { requireAdmin } from "@/lib/auth/guard"
 import { visitActions } from "../visit-action-set"
+import { jobActions } from "../job-action-set"
 import { recordMarketingOptOut } from "../actions"
 
 export const metadata: Metadata = { title: "Customers" }
 // Always the live numbers, read fresh for the signed-in admin.
 export const dynamic = "force-dynamic"
 
-export default async function CustomersPage({ searchParams }: { searchParams: Promise<{ customer?: string; visit?: string }> }) {
+export default async function CustomersPage({ searchParams }: { searchParams: Promise<{ customer?: string; job?: string; visit?: string }> }) {
   const principal = await requireAdmin()
-  const { customer, visit } = await searchParams
+  const { customer, job, visit } = await searchParams
   const data = await getAdminData("live")
   // `data.clients[].consent` is the newest consent record of each customer; the panel's opt-out appends the next one.
-  return <CustomersScreen data={data} today={new Date().toISOString()} defaultSelectedId={customer} defaultVisitId={visit} readOnly={principal.role === "tech"} actions={{ recordMarketingOptOut }} visitActions={visitActions} />
+  return <CustomersScreen data={data} today={new Date().toISOString()} defaultSelectedId={customer} defaultJobId={job} defaultVisitId={visit} readOnly={principal.role === "tech"} actions={{ recordMarketingOptOut }} visitActions={visitActions} jobActions={jobActions} />
 }

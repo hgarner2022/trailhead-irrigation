@@ -4,7 +4,7 @@ import { RecordFooter, type FooterAction } from "@/components/blocks/RecordFoote
 import type { Pass } from "@/lib/admin/types"
 import type { JobBar, JobBarId } from "./job-footer-model"
 import type { JobFacts } from "./job-panel-model"
-import { useOpenVisit } from "./VisitPanelHost"
+import { useOpenVisit } from "./RecordHost"
 
 // The job panel's footer, a `RecordFooter`: one filled primary, the next step for this job (`footerPlan`: Add a line for a job waiting on a
 // quote, Open visit while a visit is ahead, Collect $145 for work done and unpaid, which opens How is this paid?), up to two
@@ -33,7 +33,7 @@ export function JobFooter({ facts, bar, nextVisitId, pass, pending, onCollect, o
   const openVisit = useOpenVisit()
   const act: Record<JobBarId, FooterAction> = {
     "add-line": { label: "Add a line", onClick: onAddLine },
-    "open-visit": openVisit && nextVisitId ? { label: "Open visit", onClick: () => openVisit(nextVisitId) } : { label: "Open visit", href: nextVisitId ? `/admin/visits?visit=${encodeURIComponent(nextVisitId)}` : undefined },
+    "open-visit": openVisit && nextVisitId ? { label: "Open visit", onClick: () => openVisit(nextVisitId) } : { label: "Open visit", href: nextVisitId ? `/admin/schedule?visit=${encodeURIComponent(nextVisitId)}` : undefined },
     collect: { label: `Collect $${facts.row.owed.toLocaleString("en-US")}`, onClick: onCollect, disabled: pending },
     "new-visit": { label: "New visit", onClick: onAddVisit },
     record: { label: "Record the payment", onClick: onCollect, disabled: pending },

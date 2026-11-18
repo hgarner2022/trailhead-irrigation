@@ -183,3 +183,12 @@ export const OpenOnPhone: Story = {
 export const LongContent: Story = {
   render: () => <LongContentDemo />,
 }
+
+/** A record opened from another: "‹ Andrea Reyes" above the title goes back to it. */
+export const WithCrumb: Story = {
+  globals: { viewport: { value: "wide", isRotated: false } },
+  args: { title: "Spring turn-on", description: "Tue, Nov 24", back: { label: "Andrea Reyes", onClick: fn() }, children: <p className="text-sm">Erie, 8 zones</p> },
+  play: async () => {
+    await expect(await within(document.body).findByRole("button", { name: /Andrea Reyes/ })).toBeInTheDocument()
+  },
+}

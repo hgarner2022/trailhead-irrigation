@@ -108,6 +108,41 @@ test("the word visit on a screen outside the panels fails; inside the visit and 
   }
 })
 
+test("the word visit passes in the Schedule's List view: VisitsList, the visits columns and the visits model", () => {
+  for (const name of ["VisitsList", "visits-columns", "visits-model"]) {
+    const ok = run({ [`app/(admin)/admin/_screens/${name}.tsx`]: `export const T = () => <h2>Today's visits</h2>\n` })
+    assert.equal(ok.status, 0, `${name}: ${ok.out}`)
+  }
+  // the Schedule itself is not the List: its own text says days and jobs
+  const bad = run(screen("ScheduleThing", `export const T = () => <h2>All visits</h2>\n`))
+  assert.equal(bad.status, 1)
+  assert.match(bad.out, /ScheduleThing\.tsx:1: the word "visit" outside the job and visit panels/)
+})
+
+// Visits is not a nav item
+
+test("a nav item labelled Visits, a visits section or a link to /admin/visits fails, in a block and in a screen", () => {
+  const nav = run({ "components/blocks/AdminNav.ts": `export const NAV = [{ id: "home", label: "Home" }, { id: "visits", label: "Visits", href: "/admin/visits" }]\n` })
+  assert.equal(nav.status, 1)
+  assert.match(nav.out, /AdminNav\.ts:1: Visits is not a nav item: a nav item labelled "Visits"/)
+  assert.match(nav.out, /a nav item with the id "visits"/)
+  assert.match(nav.out, /a link to \/admin\/visits/)
+  const section = run({ "components/blocks/AdminShell.tsx": `export type AdminSection = "home" | "schedule" | "visits"\n` })
+  assert.equal(section.status, 1)
+  assert.match(section.out, /a "visits" section/)
+  const link = run(screen("HomeLink", "export const href = `/admin/visits?visit=${id}`\n"))
+  assert.equal(link.status, 1)
+  assert.match(link.out, /HomeLink\.tsx:1: Visits is not a nav item: a link to \/admin\/visits/)
+})
+
+test("the nav without Visits, and a link to the Schedule's List, pass", () => {
+  const r = run({
+    "components/blocks/AdminNav.ts": `export const NAV = [{ id: "home", label: "Home", href: "/admin" }, { id: "schedule", label: "Schedule", href: "/admin/schedule" }]\n`,
+    "app/(admin)/admin/_screens/HomeLink.tsx": `export const href = "/admin/schedule?view=list"\n`,
+  })
+  assert.equal(r.status, 0, r.out)
+})
+
 test("code that mentions visits (identifiers, a console line, a data-slot) is not screen text", () => {
   const r = run(screen("Thing", `console.info("move visit", visitId)\nexport const T = ({ visits }) => <div data-slot="visit-list" className="visit-row">{visits.length}</div>\n`))
   assert.equal(r.status, 0, r.out)

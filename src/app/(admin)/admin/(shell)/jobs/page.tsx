@@ -6,6 +6,7 @@ import { getAdminData } from "@/lib/admin/data"
 import { requireAdmin } from "@/lib/auth/guard"
 import { jobActions } from "../job-action-set"
 import { visitActions } from "../visit-action-set"
+import { recordMarketingOptOut } from "../actions"
 
 export const metadata: Metadata = { title: "Jobs" }
 // Always the live numbers, read fresh for the signed-in admin.
@@ -16,5 +17,5 @@ export default async function JobsPage({ searchParams }: { searchParams: Promise
   const { job, visit, money, status, kind } = await searchParams
   const defaultFilters = [...filterFrom("money", money, MONEY_OPTIONS), ...filterFrom("stage", status, STAGE_OPTIONS), ...filterFrom("kind", kind, KIND_OPTIONS)]
   const data = await getAdminData("live")
-  return <JobsScreen data={data} today={new Date().toISOString()} defaultJobId={job} defaultVisitId={visit} defaultFilters={defaultFilters} readOnly={principal.role === "tech"} actions={jobActions} visitActions={visitActions} />
+  return <JobsScreen data={data} today={new Date().toISOString()} defaultJobId={job} defaultVisitId={visit} defaultFilters={defaultFilters} readOnly={principal.role === "tech"} actions={jobActions} visitActions={visitActions} customerActions={{ recordMarketingOptOut }} />
 }

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, type DragEvent } from "react"
-import { ChevronLeft, ChevronRight, TriangleAlert, Users } from "lucide-react"
+import { ChevronLeft, ChevronRight, Plus, TriangleAlert, Users } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -39,6 +39,8 @@ export interface WeekGridProps {
   /** a drop on a cell; without it the visits are not draggable (a tech reads the week) */
   onMove?: (visitId: string, personId: string, dayIso: string) => void
   onWeekChange: (weekStart: string) => void
+  /** "New job" on a day's column header: opens the sheet with that day filled; without it the columns have no button (a tech reads the week) */
+  onNewJob?: (day: string) => void
   className?: string
 }
 
@@ -103,6 +105,22 @@ function Cell({ person, day, visits, areas, selectedId, onSelect, onMove }: { pe
   )
 }
 
+/** The "+" on a day's column header: New job with that day filled in. */
+function NewJobOnDay({ day, onNewJob }: { day: string; onNewJob: (day: string) => void }) {
+  return (
+    <button
+      type="button"
+      data-slot="week-grid-new-job"
+      aria-label={`New job on ${dayLabel(day)}`}
+      title="New job"
+      onClick={() => onNewJob(day)}
+      className="-my-1.5 flex size-11 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-cream hover:text-navy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+    >
+      <Plus className="size-4" aria-hidden />
+    </button>
+  )
+}
+
 function Legend({ areas }: { areas: AreaGroup[] }) {
   return (
     <ul data-slot="week-grid-legend" className="flex flex-wrap gap-x-5 gap-y-1.5 text-xs text-muted-foreground">
@@ -137,7 +155,7 @@ function Stepper({ label, onPrevious, onNext, onToday, children }: { label: stri
   )
 }
 
-export function WeekGrid({ people, areas, visits, weekStart, today, timeZone, selectedId, onSelect, onMove, onWeekChange, className }: WeekGridProps) {
+export function WeekGrid({ people, areas, visits, weekStart, today, timeZone, selectedId, onSelect, onMove, onWeekChange, onNewJob, className }: WeekGridProps) {
   const [personFilter, setPersonFilter] = useState("all")
   const [areaFilter, setAreaFilter] = useState("all")
   const [dayChoice, setDayChoice] = useState<string | null>(null)
@@ -189,8 +207,13 @@ export function WeekGrid({ people, areas, visits, weekStart, today, timeZone, se
                 <th scope="col" className="w-28 px-3 py-2 text-left font-display text-sm uppercase tracking-wide text-muted-foreground">Who</th>
                 {days.map((day) => (
                   <th key={day} scope="col" aria-current={day === today ? "date" : undefined} className={cn("border-l border-border px-2 py-2 text-left font-display text-sm uppercase tracking-wide", day === today ? "bg-primary/10 text-primary-deep" : "text-muted-foreground")}>
-                    {dayLabel(day)}
-                    {day === today && <span className="sr-only">, today</span>}
+                    <span className="flex items-center justify-between gap-1">
+                      <span>
+                        {dayLabel(day)}
+                        {day === today && <span className="sr-only">, today</span>}
+                      </span>
+                      {onNewJob && <NewJobOnDay day={day} onNewJob={onNewJob} />}
+                    </span>
                   </th>
                 ))}
               </tr>
@@ -210,7 +233,14 @@ export function WeekGrid({ people, areas, visits, weekStart, today, timeZone, se
       </div>
       <div className="md:hidden" data-slot="week-grid-day">
         <Stepper label="day" onPrevious={() => stepDay(-1)} onNext={() => stepDay(1)} onToday={goToday} />
-        <h2 className="mt-3 font-display text-xl text-navy">{dayLabel(phoneDay)}{phoneDay === today && <span className="text-muted-foreground"> · today</span>}</h2>
+        <div className="mt-3 flex items-center justify-between gap-2">
+          <h2 className="font-display text-xl text-navy">{dayLabel(phoneDay)}{phoneDay === today && <span className="text-muted-foreground"> · today</span>}</h2>
+          {onNewJob && (
+            <Button type="button" variant="outline" className="min-h-11" onClick={() => onNewJob(phoneDay)}>
+              New job
+            </Button>
+          )}
+        </div>
         <div className="mt-2 flex flex-wrap gap-2">{filters}</div>
         {rows.map((person) => {
           const list = dayVisits(shown, phoneDay, person.id, timeZone)

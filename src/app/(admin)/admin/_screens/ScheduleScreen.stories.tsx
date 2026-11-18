@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite"
-import { expect } from "storybook/test"
+import { expect, within } from "storybook/test"
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import type { AdminData } from "@/lib/admin/types"
 import { EMPTY_SETTINGS } from "@/lib/admin/empty-settings"
@@ -67,7 +67,7 @@ export const EmptyWeek: Story = {
   },
 }
 
-/** The Day tab: Thursday's stops in order, through the same grid as Visits, with the map under them. */
+/** The Day view: Thursday's stops in order, through the same grid as Visits, with the map under them. */
 export const Day: Story = {
   args: { defaultTab: "day" },
   globals: { viewport: { value: "wide", isRotated: false } },
@@ -96,7 +96,40 @@ export const Tablet: Story = {
   globals: { viewport: { value: "tablet", isRotated: false } },
 }
 
-/** On a phone the Week tab is one day at a time with the people stacked. */
+/** On a phone the Week view is one day at a time with the people stacked. */
 export const Phone: Story = {
   globals: { viewport: { value: "phone", isRotated: false } },
+}
+
+/** The List view, the old Visits grid: the same columns and filters, a row opens the visit in the panel. */
+export const List: Story = {
+  args: { defaultTab: "list" },
+  globals: { viewport: { value: "wide", isRotated: false } },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByRole("radio", { name: "List" })).toBeChecked()
+    await expect(canvas.queryByRole("tab")).not.toBeInTheDocument()
+  },
+}
+
+/** The "+" on a week column header opens New job with that day at the top and filled in. */
+export const NewJobFromAWeekDay: Story = {
+  globals: { viewport: { value: "wide", isRotated: false } },
+  play: async ({ canvas, userEvent }) => {
+    const plus = (await canvas.findAllByRole("button", { name: /^New job on Wed/ }))[0]!
+    await userEvent.click(plus)
+    const sheet = within(await within(document.body).findByRole("dialog"))
+    await expect(sheet.getByText(/^Wednesday, /)).toBeInTheDocument()
+  },
+}
+
+/** The Day view's header has New job too, with that day filled in. */
+export const NewJobFromTheDay: Story = {
+  args: { defaultTab: "day", defaultDay: "2026-11-12" },
+  globals: { viewport: { value: "wide", isRotated: false } },
+  play: async ({ canvas, userEvent }) => {
+    const day = (await canvas.findByRole("radio", { name: "Day" })).closest("[data-slot=schedule-screen]")!
+    await userEvent.click(within(day.querySelector<HTMLElement>("[data-slot=schedule-day]")!).getByRole("button", { name: "New job" }))
+    const sheet = within(await within(document.body).findByRole("dialog"))
+    await expect(sheet.getByText("Thursday, Nov 12")).toBeInTheDocument()
+  },
 }

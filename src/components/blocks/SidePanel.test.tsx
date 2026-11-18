@@ -135,3 +135,29 @@ describe("SidePanelLayout", () => {
     expect(screen.getByText("The grid")).toBeInTheDocument()
   })
 })
+
+describe.each([
+  ["a phone", false],
+  ["a laptop", true],
+])("SidePanel crumb on %s", (_name, desktop) => {
+  it("shows '‹ Andrea Reyes' above the title when the record was opened from another, and goes back to it", async () => {
+    stubViewport(desktop)
+    const back = vi.fn()
+    render(
+      <SidePanel open onOpenChange={() => {}} title="Spring turn-on" back={{ label: "Andrea Reyes", onClick: back }}>
+        <p>Body</p>
+      </SidePanel>,
+    )
+    const crumb = screen.getByRole("button", { name: /Andrea Reyes/ })
+    expect(crumb).toHaveAttribute("data-slot", "side-panel-back")
+    expect(crumb.compareDocumentPosition(screen.getByText("Spring turn-on")) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    await userEvent.click(crumb)
+    expect(back).toHaveBeenCalledTimes(1)
+  })
+
+  it("has no crumb when the record was not opened from another", () => {
+    stubViewport(desktop)
+    render(<Panel />)
+    expect(document.querySelector('[data-slot="side-panel-back"]')).toBeNull()
+  })
+})

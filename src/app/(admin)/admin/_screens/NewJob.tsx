@@ -9,7 +9,7 @@ import { CustomerPicker, FIELD, LABEL, emptyChoice, type CustomerChoice } from "
 import { NewJobPass, type NewPassInitial } from "./NewJobPass"
 import { NewJobService, servicePriceLine } from "./NewJobService"
 import type { VisitActions } from "./visit-actions-types"
-import { useOpenVisit } from "./VisitPanelHost"
+import { useOpenRecord } from "./RecordHost"
 
 // New job: one sheet for everything the office sells by phone or at the door. The customer, then "What are we doing?": the
 // Season Pass first, then the active services, each with what the visit includes and its price from the rule under the
@@ -40,15 +40,20 @@ export interface NewJobProps {
   actions?: VisitActions
   /** what the sheet opens with; the catalog's filled-in stories */
   initial?: NewJobInitial
-  /** after Add job: the screen opens the record it shows (Jobs the new job, Visits the new visit); without it the new visit's panel opens */
+  /** after Add job: the screen opens the record it shows; without it the new job's panel opens in place of the sheet */
   onCreated?: (made: { visitId: string; jobId: string }) => void
+  /** opened from a day on the Schedule (yyyy-mm-dd): the sheet says "Tuesday, Nov 24" at the top and the day is set */
+  day?: string
 }
+
+/** "Tuesday, Nov 24" from "2026-11-24". */
+export const sheetDay = (day: string) => new Date(`${day}T12:00:00Z`).toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric", timeZone: "UTC" })
 
 /** The active services the sheet offers: the screen's own, else the site's catalogue. */
 const offered = (data: AdminData): readonly ServiceItem[] => (data.services ?? (SERVICE_LIST as readonly ServiceItem[])).filter((s) => s.active !== false)
 
-export function NewJob({ data, today, open, onOpenChange, customerId, actions, initial = {}, onCreated }: NewJobProps) {
-  const openVisit = useOpenVisit()
+export function NewJob({ data, today, open, onOpenChange, customerId, actions, initial = {}, onCreated, day }: NewJobProps) {
+  const host = useOpenRecord()
   const [choice, setChoice] = useState<CustomerChoice>(initial.customer ?? emptyChoice(customerId))
   const [what, setWhat] = useState(initial.choice ?? "")
   const services = useMemo(() => offered(data), [data])
@@ -61,6 +66,11 @@ export function NewJob({ data, today, open, onOpenChange, customerId, actions, i
       <SheetContent side="right" className="w-full gap-0 sm:max-w-md" data-slot="new-job">
         <SheetHeader className="border-b border-border">
           <SheetTitle className="font-display text-2xl font-semibold text-navy">New job</SheetTitle>
+          {day && (
+            <p data-slot="new-job-day" className="text-sm font-medium text-foreground">
+              {sheetDay(day)}
+            </p>
+          )}
           <SheetDescription>Work taken by phone or at the door. It needs a customer and what we are doing.</SheetDescription>
         </SheetHeader>
         <div className="flex flex-1 flex-col gap-5 overflow-y-auto p-4">
@@ -103,10 +113,11 @@ export function NewJob({ data, today, open, onOpenChange, customerId, actions, i
               choice={choice}
               service={service}
               actions={actions}
+              initialDay={day}
               onDone={(made) => {
                 done()
                 if (onCreated) onCreated({ visitId: made.id, jobId: made.jobId })
-                else openVisit?.(made.id)
+                else host?.open("job", made.jobId)
               }}
             />
           )}
@@ -117,14 +128,14 @@ export function NewJob({ data, today, open, onOpenChange, customerId, actions, i
 }
 
 /** The header's and the customer panel's button: opens the sheet. */
-export function NewJobButton({ data, today, actions, customerId, onCreated, label = "New job", variant = "default" }: Omit<NewJobProps, "open" | "onOpenChange" | "initial"> & { label?: string; variant?: "default" | "outline" }) {
+export function NewJobButton({ data, today, actions, customerId, onCreated, day, label = "New job", variant = "default" }: Omit<NewJobProps, "open" | "onOpenChange" | "initial"> & { label?: string; variant?: "default" | "outline" }) {
   const [open, setOpen] = useState(false)
   return (
     <>
       <Button type="button" variant={variant} className="min-h-11" onClick={() => setOpen(true)}>
         {label}
       </Button>
-      <NewJob data={data} today={today} open={open} onOpenChange={setOpen} customerId={customerId} actions={actions} onCreated={onCreated} />
+      <NewJob data={data} today={today} open={open} onOpenChange={setOpen} customerId={customerId} actions={actions} onCreated={onCreated} day={day} />
     </>
   )
 }

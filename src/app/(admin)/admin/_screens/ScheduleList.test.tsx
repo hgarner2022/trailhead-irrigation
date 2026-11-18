@@ -5,7 +5,7 @@ import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import type { AdminData, Visit } from "@/lib/admin/types"
 import { UndoToastProvider } from "@/components/blocks/UndoToast"
 import type { VisitActions } from "./visit-actions-types"
-import { VisitsScreen } from "./VisitsScreen"
+import { VisitsScreen } from "./list-fixture"
 import { moneyText, visitRows, visitsContext } from "./visits-model"
 import { VISITS_TODAY, noCardVisitId, passVisitId, visitsData } from "./visits-fixture"
 
@@ -605,7 +605,7 @@ describe("Done and Unpaid on a pass visit", () => {
   })
 })
 
-describe("Visits filtered to a job (?job=)", () => {
+describe("The List filtered to a job (?forJob=)", () => {
   it("shows only that job's visits, says which job in the header, and links back to every visit", () => {
     const job = visitsData.visits.find((v) => v.id === noCardVisitId)!.jobId!
     const mine = visitRows(visitsData, VISITS_TODAY).filter((r) => r.jobId === job)
@@ -615,8 +615,8 @@ describe("Visits filtered to a job (?job=)", () => {
       </UndoToastProvider>,
     )
     expect(screen.getAllByRole("row")).toHaveLength(mine.length + 1)
-    expect(document.querySelector('[data-slot="page-context"]')).toHaveTextContent(`${mine[0]!.jobLabel}: ${mine.length} visit`)
-    expect(screen.getByRole("link", { name: "Show all visits" })).toHaveAttribute("href", "/admin/visits")
+    expect(document.querySelector('[data-slot="list-context"]')).toHaveTextContent(`${mine[0]!.jobLabel}: ${mine.length} visit`)
+    expect(screen.getByRole("link", { name: "Show all" })).toHaveAttribute("href", "/admin/schedule?view=list")
   })
 
   it("the grid has no Job column or filter; the panel names the job on one line under the pill and links to that job on Jobs", () => {

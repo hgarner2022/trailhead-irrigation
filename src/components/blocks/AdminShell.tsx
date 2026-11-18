@@ -1,11 +1,12 @@
 "use client"
 
-import { useMemo, useState, useSyncExternalStore, type CSSProperties, type ReactNode } from "react"
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore, type CSSProperties, type ReactNode } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { Briefcase, CalendarDays, ClipboardList, LayoutDashboard, LogOut, Settings2, TrendingUp, Users, type LucideIcon } from "lucide-react"
+import { usePathname, useRouter } from "next/navigation"
+import { LogOut, Search } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
 import {
   Sidebar,
   SidebarContent,
@@ -20,8 +21,13 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar"
+import { openRecordInAddress } from "@/lib/admin/record-url"
+import type { SearchHit } from "@/lib/admin/search-hit"
 import { AdminBarContext } from "./admin-bar"
+import { NAV } from "./admin-nav"
 import { sectionOf } from "./admin-section"
+import { AdminTabBar } from "./AdminTabBar"
+import { CommandSearch } from "./CommandSearch"
 import { UndoToastProvider } from "./UndoToast"
 
 // The frame every admin screen sits in (docs/DESIGN.md, Spacing): the navy
@@ -32,10 +38,11 @@ import { UndoToastProvider } from "./UndoToast"
 // children stays mounted, so a resize never resets the screen. The links are
 // next/link (plain anchors in the catalog). The switcher slot above
 // the items stays empty until a second branch exists. Sign out calls `onSignOut`, a server action in the
-// layout, and does nothing in the catalog. The tab bar pads for `env(safe-area-inset-bottom)`, which
-// the admin root layout enables with `viewport.viewportFit = "cover"`.
+// layout, and does nothing in the catalog. The bottom bar (`AdminTabBar`) is Home, Schedule, Jobs, Customers and More, and pads for
+// `env(safe-area-inset-bottom)`, which the admin root layout enables with `viewport.viewportFit = "cover"`. Cmd or Ctrl+K and the Search
+// button open `CommandSearch` when `onSearch` is given; a hit opens in place on a screen with a record host and on its own page elsewhere.
 
-export type AdminSection = "home" | "schedule" | "jobs" | "visits" | "customers" | "reports" | "settings"
+export type AdminSection = "home" | "schedule" | "jobs" | "customers" | "reports" | "settings"
 
 export interface AdminShellProps {
   current: AdminSection
@@ -44,22 +51,12 @@ export interface AdminShellProps {
   switcher?: ReactNode
   /** signs the person out; the sign-out button does nothing without it (the catalog) */
   onSignOut?: () => void | Promise<void>
+  /** Cmd or Ctrl+K and the Search button: finds customers, jobs and days by name, street, phone or pass number; the search is off without it (the catalog) */
+  onSearch?: (query: string) => Promise<SearchHit[]>
   /** whether the rail starts expanded on a laptop; under 1024px it starts collapsed either way */
   defaultOpen?: boolean
   children: ReactNode
 }
-
-// The order follows the sentence a customer has jobs and a job is done in visits: Home, Schedule, Jobs, Visits, Customers,
-// Reports, Settings. A pass has no item of its own: it is a job, opened from the Jobs screen.
-const NAV: { id: AdminSection; label: string; href: string; icon: LucideIcon }[] = [
-  { id: "home", label: "Home", href: "/admin", icon: LayoutDashboard },
-  { id: "schedule", label: "Schedule", href: "/admin/schedule", icon: CalendarDays },
-  { id: "jobs", label: "Jobs", href: "/admin/jobs", icon: Briefcase },
-  { id: "visits", label: "Visits", href: "/admin/visits", icon: ClipboardList },
-  { id: "customers", label: "Customers", href: "/admin/customers", icon: Users },
-  { id: "reports", label: "Reports", href: "/admin/reports", icon: TrendingUp },
-  { id: "settings", label: "Settings", href: "/admin/settings", icon: Settings2 },
-]
 
 // 15rem rail (240px); the bar and the content share the 16px phone and 24px laptop gutters.
 const RAIL_WIDTH = { "--sidebar-width": "15rem" } as CSSProperties
@@ -85,6 +82,21 @@ const subscribeTo = (query: string) => {
 /** A media query as a store: current on the client, `false` on the server. The Sidebar primitive keeps its own `useIsMobile` for its sheet. */
 function useMedia(query: string): boolean {
   return useSyncExternalStore(subscribeTo(query), () => window.matchMedia(query).matches, () => false)
+}
+
+/** The quiet Search button in the top bar: the same box Cmd or Ctrl+K opens, for anyone without the keys. */
+function SearchButton({ onClick, className, iconOnly = false }: { onClick: () => void; className?: string; iconOnly?: boolean }) {
+  return (
+    <Button type="button" variant="outline" size={iconOnly ? "icon" : "default"} aria-label="Search" onClick={onClick} className={cn("min-h-11 shrink-0 text-muted-foreground", iconOnly && "min-w-11", className)}>
+      <Search className="size-4" aria-hidden />
+      {!iconOnly && (
+        <>
+          <span>Search</span>
+          <kbd className="ml-1 hidden rounded border border-border px-1 font-sans text-[11px] leading-5 lg:inline">⌘K</kbd>
+        </>
+      )}
+    </Button>
+  )
 }
 
 function Rail({ current, user, switcher, onSignOut }: Pick<AdminShellProps, "current" | "user" | "switcher" | "onSignOut">) {
@@ -136,45 +148,34 @@ function Rail({ current, user, switcher, onSignOut }: Pick<AdminShellProps, "cur
   )
 }
 
-function TabBar({ current }: Pick<AdminShellProps, "current">) {
-  return (
-    <nav
-      aria-label="Main"
-      data-slot="admin-tabbar"
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-sidebar-border bg-sidebar pb-[env(safe-area-inset-bottom)] text-sidebar-foreground md:hidden"
-    >
-      <ul className="grid grid-cols-7">
-        {NAV.map(({ id, label, href, icon: Icon }) => {
-          const active = id === current
-          return (
-            <li key={id}>
-              <Link
-                href={href}
-                aria-current={active ? "page" : undefined}
-                className={cn(
-                  "flex flex-col items-center gap-0.5 pb-1.5 pt-1.5 text-xs font-medium leading-tight outline-hidden focus-visible:ring-2 focus-visible:ring-sidebar-ring",
-                  active ? "text-sidebar-primary-foreground" : "text-sidebar-foreground/80",
-                )}
-              >
-                <span className={cn("flex h-7 w-12 items-center justify-center rounded-full", active && "bg-sidebar-primary")}>
-                  <Icon className="size-5" aria-hidden />
-                </span>
-                {label}
-              </Link>
-            </li>
-          )
-        })}
-      </ul>
-    </nav>
-  )
-}
-
-export function AdminShell({ current: initial, user, switcher, onSignOut, defaultOpen = true, children }: AdminShellProps) {
+export function AdminShell({ current: initial, user, switcher, onSignOut, onSearch, defaultOpen = true, children }: AdminShellProps) {
   // The rail follows the address, not the server's first render: the layout stays mounted while the reader moves between
   // pages, so a section chosen once on the server would stay lit (Home on every page). Outside the app, in the catalog, `current` is used.
   const pathname = usePathname()
   const current = pathname?.startsWith("/admin") ? sectionOf(pathname) : initial
+  const router = useRouter()
   const phone = useMedia("(max-width: 767px)")
+  const [searching, setSearching] = useState(false)
+  // Cmd or Ctrl+K opens the search from anywhere in the admin.
+  useEffect(() => {
+    if (!onSearch) return
+    const onKey = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault()
+        setSearching(true)
+      }
+    }
+    document.addEventListener("keydown", onKey)
+    return () => document.removeEventListener("keydown", onKey)
+  }, [onSearch])
+  // A screen that holds records opens the hit in its panel, in place; Reports and Settings have no panel, so they go to the record's own page.
+  const openHit = useCallback(
+    (hit: SearchHit) => {
+      if (document.querySelector("[data-record-host]")) openRecordInAddress({ key: hit.kind, id: hit.id }, { fresh: true })
+      else router.push(hit.href)
+    },
+    [router],
+  )
   const belowLg = useMedia("(max-width: 1023px)")
   // Until the trigger is used the rail follows the width: icons under 1024px, the default above. A toggle is kept across resizes.
   const [choice, setChoice] = useState<boolean | null>(null)
@@ -192,12 +193,14 @@ export function AdminShell({ current: initial, user, switcher, onSignOut, defaul
             <>
               <Image src={LOGO} alt="Trailhead" width={51} height={36} className="h-9 w-auto shrink-0" />
               {switcher !== undefined && <div data-slot="admin-switcher">{switcher}</div>}
+              {onSearch && <SearchButton onClick={() => setSearching(true)} className="ml-auto" iconOnly />}
             </>
           ) : (
             <>
               <SidebarTrigger className="-ml-2 shrink-0 text-navy" />
               <div ref={setTitleSlot} data-slot="admin-bar-title" className="flex min-w-0 flex-1 items-baseline gap-3" />
               <div ref={setActionsSlot} data-slot="admin-bar-actions" className="flex shrink-0 items-center gap-2" />
+              {onSearch && <SearchButton onClick={() => setSearching(true)} />}
             </>
           )}
         </div>
@@ -207,7 +210,8 @@ export function AdminShell({ current: initial, user, switcher, onSignOut, defaul
           </AdminBarContext.Provider>
         </div>
       </SidebarInset>
-      {phone && <TabBar current={current} />}
+      {phone && <AdminTabBar current={current} user={user} onSignOut={onSignOut} />}
+      {onSearch && <CommandSearch open={searching} onOpenChange={setSearching} onSearch={onSearch} onOpen={openHit} />}
     </SidebarProvider>
   )
 }
