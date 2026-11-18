@@ -65,7 +65,7 @@ export const recordPayment = async (visitId: string, paidBy: PaidBy & { method: 
   act(async (ctx) => {
     const visit = await callApi(ctx, visitsGet, { id: visitId })
     if (visit.status !== "completed") throw new ApiError("unprocessable", "Mark the visit done first")
-    const owed = visit.amount - paidTotal(visit.payments)
+    const owed = visit.amount - paidTotal([...visit.payments, ...visit.jobPaymentShares])
     if (visit.amount > 0 && owed <= 0) throw new ApiError("conflict", "This visit is already paid")
     await callApi(ctx, paymentsRecord, { jobId: visit.jobId, visitId, amount: visit.amount > 0 ? owed : (paidBy.amount ?? 0), method: paidBy.method, ...(paidBy.reference ? { reference: paidBy.reference } : {}) })
     return undefined

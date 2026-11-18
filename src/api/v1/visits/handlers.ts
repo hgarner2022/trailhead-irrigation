@@ -16,7 +16,7 @@ import { offeredDays, openSlots, personFor } from "@/lib/pass/server/area-days"
 import { emitEvent } from "../webhooks/deliver"
 import { isRoutePerson, personByAnyId, resolvePersonId } from "../people/handlers"
 import { recordChange } from "../passes/queries"
-import { loadVisit, visitOut, visitsQuery } from "./queries"
+import { loadVisit, visitOut, visitsQuery, withJobCredit } from "./queries"
 import { VisitOut, who } from "./schemas"
 
 const FINAL = ["completed", "cancelled", "skipped"] as const
@@ -75,7 +75,7 @@ export const visitsList = defineHandler({
       .orderBy(desc(s.visit.createdAt), desc(s.visit.id))
       .limit(input.limit + 1)
     const result = cursorPage(rows, input.limit, (r) => timeCursor(r.visit))
-    return { data: result.data.map((r) => visitOut(ctx, r)), next_cursor: result.next_cursor }
+    return { data: (await withJobCredit(ctx.db, ctx.organizationId, result.data)).map((r) => visitOut(ctx, r)), next_cursor: result.next_cursor }
   },
 })
 

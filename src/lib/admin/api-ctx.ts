@@ -1,5 +1,5 @@
 import "server-only"
-import { asc } from "drizzle-orm"
+import { asc, eq } from "drizzle-orm"
 import * as s from "@/db/schema"
 import type { Database } from "@/db/types"
 import { makeCtx, systemPrincipal, type Ctx } from "@/api/core/context"
@@ -51,4 +51,16 @@ export async function ctxForCheckout(passId?: string, deps: CtxDeps = {}): Promi
   const [org] = await database.select({ id: s.organization.id }).from(s.organization).orderBy(asc(s.organization.createdAt)).limit(1)
   if (!org) throw new ApiError("unprocessable", "No organization is set up")
   return makeCtx(database, { kind: "public", id: "checkout", organizationId: org.id, scopes: ["checkout"], ...(passId ? { passId } : {}), ...(deps.renewPassId ? { renewPassId: deps.renewPassId } : {}) }, { now: deps.now?.(), clientIp: deps.clientIp })
+}
+
+/**
+ * The context for the pay page: the `public` principal in the organization the bill belongs to (read off the bill itself, since
+ * the signed link has already proved the id is real), carrying the bill's id. `callApi` lets it call only the handlers marked
+ * `own-invoice`, and only for that bill. The caller verifies the token first; this never does. Null when no such bill exists.
+ */
+export async function ctxForInvoice(invoiceId: string, deps: CtxDeps = {}): Promise<Ctx | null> {
+  const database = await db(deps)
+  const [row] = await database.select({ org: s.invoice.organizationId }).from(s.invoice).where(eq(s.invoice.id, invoiceId))
+  if (!row) return null
+  return makeCtx(database, { kind: "public", id: "checkout", organizationId: row.org, scopes: ["checkout"], invoiceId }, { now: deps.now?.(), clientIp: deps.clientIp })
 }

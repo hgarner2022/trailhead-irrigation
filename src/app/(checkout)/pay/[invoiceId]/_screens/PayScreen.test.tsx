@@ -1,0 +1,90 @@
+import { describe, expect, it, vi } from "vitest"
+import { fireEvent, render, screen, waitFor } from "@testing-library/react"
+import { PayScreen } from "./PayScreen"
+import { dueWords, paidWords, payLabel, type PayBill } from "./pay-model"
+
+const sent: PayBill = {
+  number: "INV-2026-0001",
+  firstName: "Andrea",
+  lines: [{ name: "Repair", description: "One hour on site.", quantity: 1, unitPrice: 145 }],
+  tax: 0,
+  total: 145,
+  dueOn: "2026-12-01",
+  paidOn: null,
+  status: "sent",
+  receiptUrl: null,
+}
+const ok = async () => undefined
+
+describe("PayScreen", () => {
+  it("shows the bill, the due day, the one button and the two lines around it", () => {
+    render(<PayScreen bill={sent} payAction={ok} />)
+    expect(screen.getByRole("heading", { level: 1, name: "Your bill" })).toBeInTheDocument()
+    expect(screen.getByText("Hi Andrea, here is bill INV-2026-0001.")).toBeInTheDocument()
+    expect(screen.getByText("Repair")).toBeInTheDocument()
+    expect(screen.getByText("One hour on site.")).toBeInTheDocument()
+    expect(screen.getByText("Due Dec 1")).toBeInTheDocument()
+    expect(screen.getByText("We keep the card for the visits after this one.")).toBeInTheDocument()
+    expect(screen.getByText("Paid by check, Venmo or cash already? Nothing to do.")).toBeInTheDocument()
+    expect(screen.getAllByRole("button")).toHaveLength(1)
+    expect(screen.getByRole("button", { name: "Pay $145 by card" })).toBeInTheDocument()
+    expect(screen.queryByText("Sales tax")).toBeNull()
+  })
+
+  it("says Was due for an overdue bill and keeps the button", () => {
+    render(<PayScreen bill={{ ...sent, status: "overdue" }} payAction={ok} />)
+    expect(screen.getByText("Was due Dec 1")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Pay $145 by card" })).toBeInTheDocument()
+  })
+
+  it("shows the tax line only when there is tax, a credit as a minus, and a quantity under its line", () => {
+    const bill: PayBill = {
+      ...sent, tax: 9, total: 224,
+      lines: [{ name: "Repair", description: null, quantity: 1, unitPrice: 145 }, { name: "Extra zones", description: null, quantity: 2, unitPrice: 10 }, { name: "Payments received", description: null, quantity: 1, unitPrice: -45 }],
+    }
+    render(<PayScreen bill={bill} payAction={ok} />)
+    expect(screen.getByText("Sales tax")).toBeInTheDocument()
+    expect(screen.getByText("$9")).toBeInTheDocument()
+    expect(screen.getByText("-$45")).toBeInTheDocument()
+    expect(screen.getByText("2 at $10")).toBeInTheDocument()
+    expect(screen.getByText("$20")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Pay $224 by card" })).toBeInTheDocument()
+  })
+
+  it("shows a paid bill with the date and the receipt, and no button", () => {
+    render(<PayScreen bill={{ ...sent, status: "paid", paidOn: "2026-11-20", receiptUrl: "https://pay.stripe.test/r/1" }} payAction={ok} />)
+    expect(screen.getByText("Paid Nov 20, thank you")).toBeInTheDocument()
+    expect(screen.getByRole("link", { name: "View the receipt" })).toHaveAttribute("href", "https://pay.stripe.test/r/1")
+    expect(screen.queryByRole("button")).toBeNull()
+    expect(screen.queryByText(/We keep the card/)).toBeNull()
+  })
+
+  it("shows a cancelled bill with one sentence and no button", () => {
+    render(<PayScreen bill={{ ...sent, status: "cancelled" }} payAction={ok} />)
+    expect(screen.getByText("This bill was cancelled.")).toBeInTheDocument()
+    expect(screen.queryByRole("button")).toBeNull()
+    expect(screen.getByRole("link", { name: "(970) 692-7270" })).toHaveAttribute("href", "tel:9706927270")
+  })
+
+  it("runs the action once on a press and shows its sentence when the form would not open", async () => {
+    const action = vi.fn(async () => ({ message: "We couldn't open the card form." }))
+    render(<PayScreen bill={sent} payAction={action} />)
+    fireEvent.click(screen.getByRole("button", { name: "Pay $145 by card" }))
+    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("We couldn't open the card form."))
+    expect(action).toHaveBeenCalledTimes(1)
+  })
+
+  it("carries nothing of the customer but the first name, and none of the banned words", () => {
+    const { container } = render(<PayScreen bill={sent} payAction={ok} />)
+    expect(container.textContent).not.toMatch(/@|proposed|approve|failed|declined|—/)
+  })
+})
+
+describe("pay-model words", () => {
+  it("words the due day, the paid day and the button", () => {
+    expect(dueWords({ dueOn: "2026-12-01", status: "sent" })).toBe("Due Dec 1")
+    expect(dueWords({ dueOn: "2026-12-01", status: "overdue" })).toBe("Was due Dec 1")
+    expect(paidWords({ paidOn: "2026-11-20" })).toBe("Paid Nov 20, thank you")
+    expect(payLabel({ total: 1234 })).toBe("Pay $1,234 by card")
+  })
+})

@@ -132,6 +132,20 @@ describe("wording per kind", () => {
     expect(text).toContain("to your Visa ending 4242")
     expect(text).toContain("Your fall blowout is planned for early October.")
   })
+  it("the receipt for a bill paid on the pay page names the bill, its lines, the tax only when there is tax, a credit as a minus and the card", () => {
+    const bill = { ...base, passNumber: null, amount: 224, invoiceNumber: "INV-2027-0001", lines: [{ name: "Repair", amount: 145 }, { name: "Extra zones", amount: 20 }, { name: "Payments received", amount: -45 }], tax: 9, total: 224, card: "Visa ending 4242", nextLine: "", receiptUrl: "https://pay.stripe.com/r/2" }
+    const { subject, text, html } = renderEmail("receipt", bill)!
+    expect(subject).toBe("Receipt: $224 for your bill INV-2027-0001")
+    expect(text).toContain("We received $224 for your bill INV-2027-0001.")
+    expect(text).toContain("Repair: $145")
+    expect(text).toContain("Payments received: -$45")
+    expect(text).toContain("Sales tax: $9")
+    expect(text).toContain("Card: Visa ending 4242")
+    expect(html).toContain("View the receipt")
+    expect(html).not.toContain("Open your pass page")
+    copyRules(text)
+    expect(renderEmail("receipt", { ...bill, tax: 0 })!.text).not.toContain("Sales tax")
+  })
   it("the bill names the lines, the total, the due day and one Pay button, with a tax line only when there is tax", () => {
     const { subject, text, html } = get("invoice")
     expect(subject).toBe("Your bill from Trailhead: $145")

@@ -213,20 +213,23 @@ async function jobsOf(db: Database, customerId: string) {
   const passes = await db.select({ id: s.seasonPass.id, jobId: s.seasonPass.jobId }).from(s.seasonPass).where(inArray(s.seasonPass.jobId, jobs.map((j) => j.id)))
   const lineRows = await db.select().from(s.lineItem).where(inArray(s.lineItem.jobId, jobs.map((j) => j.id))).orderBy(asc(s.lineItem.createdAt), asc(s.lineItem.id))
   const paymentRows = await db.select().from(s.charge).where(inArray(s.charge.jobId, jobs.map((j) => j.id))).orderBy(asc(s.charge.createdAt), asc(s.charge.id))
-  const openBills = await db.select().from(s.invoice).where(and(inArray(s.invoice.jobId, jobs.map((j) => j.id)), isNull(s.invoice.paidOn), isNull(s.invoice.cancelledAt)))
+  const bills = await db.select().from(s.invoice).where(and(inArray(s.invoice.jobId, jobs.map((j) => j.id)), isNull(s.invoice.cancelledAt))).orderBy(asc(s.invoice.paidOn), asc(s.invoice.id))
+  const openBills = bills.filter((b) => !b.paidOn)
   return jobs.map((j) => {
     const pass = passes.find((p) => p.jobId === j.id)
     const lines = lineRows.filter((l) => l.jobId === j.id)
     const payments = paymentRows.filter((p) => p.jobId === j.id)
     const jobVisits = visits.filter((v) => v.jobId === j.id)
     const bill = openBills.find((b) => b.jobId === j.id)
+    // The visits the paid bills name, which a payment made on the job as a whole credits first.
+    const paidBillVisits = bills.filter((b) => b.jobId === j.id && b.paidOn).flatMap((b) => b.lines.map((l) => l.visitId).filter((id): id is string => Boolean(id)))
     return {
       id: j.id, kind: j.kind, status: j.status, price: j.price, source: j.source, notes: j.notes, createdAt: j.createdAt.toISOString(),
       passId: pass?.id ?? null, passNumber: j.passNumber,
       lines: lines.map((l) => ({ id: l.id, name: l.name, description: l.description, quantity: l.quantity, unitPrice: l.unitPrice, taxable: l.taxable, cancelledAt: l.cancelledAt?.toISOString() ?? null, visitId: l.visitId })),
       total: jobTotal(lines),
       payments: payments.map(paymentOut),
-      money: jobMoney(lines, payments, jobVisits.map((v) => ({ id: v.id, cancelled: v.status === "cancelled" || v.status === "skipped", price: lines.some((l) => l.visitId === v.id) ? jobTotal(lines.filter((l) => l.visitId === v.id)) : v.amount })), bill),
+      money: jobMoney(lines, payments, jobVisits.map((v) => ({ id: v.id, cancelled: v.status === "cancelled" || v.status === "skipped", price: lines.some((l) => l.visitId === v.id) ? jobTotal(lines.filter((l) => l.visitId === v.id)) : v.amount, done: v.status === "completed", doneOn: v.completedOn })), bill, paidBillVisits),
       invoiceId: bill?.id ?? null,
       visits: jobVisits.map((v) => {
         const own = lines.filter((l) => l.visitId === v.id)

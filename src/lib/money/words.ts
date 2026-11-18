@@ -33,6 +33,59 @@ export function isPaid(payments: readonly Pick<MoneyPayment, "amount" | "status"
   return net > 0 && net >= (price ?? 0)
 }
 
+/** A visit as the allocator needs it: whether it is done, what it costs (its live lines) and the day it was done, for the oldest-first order. */
+export interface AllocVisit {
+  id: string
+  done: boolean
+  cancelled?: boolean
+  /** whole dollars */
+  price: number
+  doneOn?: string | null
+}
+
+/**
+ * Where a job's payments on the job as a whole (`visitId` null: a bill paid on the pay page is one) go among its visits, the one
+ * rule every visit-level word reads. Each such payment's net (refunds that name it, or the newest unlinked refund, taken off) covers
+ * the job's done visits, each up to its price less what its own rows already paid: first the visits the paid bills name
+ * (`preferred`, in order), then the oldest done visit first. A cancelled visit or one not yet done takes nothing. Returns, per
+ * visit, the slices of those payments it was credited: copies of the payment with the visit's id and the slice's amount, and an
+ * id of `<paymentId>@<visitId>` so a slice is never taken for a row of its own. The slices are for words and visit-level sums
+ * only; the job's money (`jobMoney`, `paidTotal` over the job's rows) counts the original rows, so nothing is counted twice.
+ * `payments` are the job's rows oldest first.
+ */
+export function allocateJobPayments<P extends MoneyPayment>(payments: readonly P[], visits: readonly AllocVisit[], preferred: readonly string[] = []): Map<string, P[]> {
+  const out = new Map<string, P[]>()
+  const level = payments.filter((p) => p.status === "succeeded" && !p.visitId)
+  const left = new Map(level.filter((p) => p.amount > 0 && !p.refundsPaymentId).map((p) => [p.id, p.amount]))
+  for (const refund of level.filter((p) => p.amount < 0)) {
+    let take = -refund.amount
+    const targets = refund.refundsPaymentId && left.has(refund.refundsPaymentId) ? [refund.refundsPaymentId] : [...left.keys()].reverse()
+    for (const id of targets) {
+      const cut = Math.min(left.get(id) ?? 0, take)
+      left.set(id, (left.get(id) ?? 0) - cut)
+      take -= cut
+      if (take <= 0) break
+    }
+  }
+  const need = new Map<string, number>()
+  const eligible = visits.filter((v) => v.done && !v.cancelled && v.price > 0)
+  for (const v of eligible) need.set(v.id, Math.max(0, v.price - paidTotal(payments.filter((p) => p.visitId === v.id))))
+  const named = preferred.map((id) => eligible.find((v) => v.id === id)).filter((v): v is AllocVisit => Boolean(v))
+  const order = [...new Set([...named, ...[...eligible].sort((a, b) => (a.doneOn ?? "").localeCompare(b.doneOn ?? "") || a.id.localeCompare(b.id))])]
+  for (const p of level) {
+    let rest = left.get(p.id) ?? 0
+    for (const v of order) {
+      if (rest <= 0) break
+      const give = Math.min(rest, need.get(v.id) ?? 0)
+      if (give <= 0) continue
+      need.set(v.id, (need.get(v.id) ?? 0) - give)
+      rest -= give
+      out.set(v.id, [...(out.get(v.id) ?? []), { ...p, id: `${p.id}@${v.id}`, visitId: v.id, amount: give }])
+    }
+  }
+  return out
+}
+
 /** What is still owed on a job: its live lines less what arrived, never below zero. */
 export function jobOwed(lines: readonly PricedLine[], payments: readonly Pick<MoneyPayment, "amount" | "status">[]): number {
   return Math.max(0, jobTotal(lines) - paidTotal(payments))
@@ -57,8 +110,9 @@ export interface JobMoney {
 export function jobMoney(
   lines: readonly PricedLine[],
   payments: readonly MoneyPayment[],
-  visits: readonly { id: string; cancelled?: boolean; price?: number | null }[],
+  visits: readonly { id: string; cancelled?: boolean; price?: number | null; done?: boolean; doneOn?: string | null }[],
   invoice?: MoneyInvoice,
+  paidBillVisitIds: readonly string[] = [],
 ): JobMoney {
   const total = jobTotal(lines)
   const paid = paidTotal(payments)
@@ -67,7 +121,9 @@ export function jobMoney(
   if (owed === 0) return { paid, total, owed, words: "Paid", billSent: false }
   if (invoice && !invoice.paidOn && !invoice.cancelledAt) return { paid, total, owed, words: "Bill sent", billSent: true }
   const live = visits.filter((v) => !v.cancelled)
-  const paidVisits = live.filter((v) => isPaid(payments.filter((p) => p.visitId === v.id), v.price)).length
+  // A visit is paid by its own rows and by its share of the payments made on the job as a whole (`allocateJobPayments`).
+  const credit = allocateJobPayments(payments, live.map((v) => ({ id: v.id, done: Boolean(v.done), price: v.price ?? 0, doneOn: v.doneOn })), paidBillVisitIds)
+  const paidVisits = live.filter((v) => isPaid([...payments.filter((p) => p.visitId === v.id), ...(credit.get(v.id) ?? [])], v.price)).length
   return { paid, total, owed, words: live.length > 1 && paidVisits > 0 ? `${paidVisits} of ${live.length} paid, $${owed} owed` : `$${owed} owed`, billSent: false }
 }
 

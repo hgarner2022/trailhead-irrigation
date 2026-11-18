@@ -31,3 +31,22 @@ export const InvoiceOut = z.object({
   createdAt: Iso,
 })
 export type InvoiceOutType = z.infer<typeof InvoiceOut>
+
+/**
+ * What the pay page may show of one bill and nothing more: the frozen lines, the amounts, the days, how it stands, the
+ * customer's first name and, once paid, the card receipt. No contact details, no ids of other records, no pay link.
+ */
+export const PayViewOut = z.object({
+  id: Id,
+  number: z.string(),
+  firstName: z.string().describe("The customer's first name, for the greeting."),
+  lines: z.array(z.object({ name: z.string(), description: z.string().nullable(), quantity: z.number().int(), unitPrice: z.number().int() })),
+  amount: z.number().int(),
+  tax: z.number().int(),
+  total: z.number().int(),
+  dueOn: Day,
+  paidOn: Day.nullable(),
+  status: z.enum(["sent", "paid", "overdue", "cancelled"]),
+  receiptUrl: z.string().nullable().describe("The card receipt of the payment that settled the bill, once there is one."),
+})
+export type PayViewOutType = z.infer<typeof PayViewOut>

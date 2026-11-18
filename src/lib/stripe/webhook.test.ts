@@ -5,11 +5,13 @@ import type Stripe from "stripe"
 import * as s from "@/db/schema"
 import type { TestDb } from "@/db/test-db"
 import { callApi } from "@/api/core/call"
+import { invoicesCancel, invoicesSend } from "@/api/v1/invoices/handlers"
 import { passesCreate } from "@/api/v1/passes/handlers"
-import { apiDb, ctxFor, writeKey } from "@/api/test-helpers"
+import { visitsCreate } from "@/api/v1/visits/office"
+import { adminKey, apiDb, ctxFor, ORG, writeKey } from "@/api/test-helpers"
 import { drain } from "@/lib/queue"
-import { handleStripeEvent, receiveStripeEvent } from "./webhook"
-import { completeSession, signer, stubStripe, WEBHOOK_SECRET } from "./test-stripe"
+import { handleStripeEvent, organizationOfEvent, receiveStripeEvent } from "./webhook"
+import { completeSession, paidIntent, signer, stubStripe, WEBHOOK_SECRET } from "./test-stripe"
 
 const { getStripe } = vi.hoisted(() => ({ getStripe: vi.fn() }))
 vi.mock("./client", async (original) => ({ ...(await original<typeof import("./client")>()), getStripe }))
@@ -135,5 +137,138 @@ describe("handleStripeEvent", () => {
     expect(c!.status).toBe("succeeded")
     const [after] = await db.select().from(s.visit).where(eq(s.visit.id, v!.id))
     expect(after!.chargedAt).not.toBeNull()
+  })
+})
+
+describe("a bill's Checkout Session completed", () => {
+  const NOW = "2027-05-10T18:00:00Z"
+  let day = new Date("2027-06-01T12:00:00Z")
+  const nextWeekday = () => {
+    do day = new Date(day.getTime() + 86_400_000)
+    while ([0, 6].includes(day.getUTCDay()))
+    return day.toISOString().slice(0, 10)
+  }
+  /** A repair for Dana that is done and billed: the sent invoice. */
+  async function sentBill() {
+    const v = await callApi(ctxFor(db, writeKey, "2027-05-07T20:00:00Z"), visitsCreate, { customerId: "c100", kind: "repair", scheduledOn: nextWeekday(), price: 145 })
+    await db.update(s.visit).set({ status: "completed", completedOn: "2027-05-07" }).where(eq(s.visit.id, v.id))
+    const invoice = await callApi(ctxFor(db, writeKey, "2027-05-07T20:00:00Z"), invoicesSend, { jobId: v.jobId })
+    return { visit: v, invoice }
+  }
+  const session = (id: string, invoiceId: string, intent: string, over: Record<string, unknown> = {}) => ({ id, payment_status: "paid", payment_intent: intent, customer: "cus_dana", metadata: { purpose: "invoice", invoiceId }, ...over })
+  const completed = (evt: string, sess: Record<string, unknown>) => event(evt, "checkout.session.completed", sess) as unknown as Stripe.Event
+  const rowsOf = (jobId: string) => db.select().from(s.charge).where(eq(s.charge.jobId, jobId))
+  const receipts = async (customerId: string, invoiceNumber: string) => (await db.select().from(s.messageLog).where(eq(s.messageLog.customerId, customerId))).filter((m) => m.kind === "receipt" && (m.data as { invoiceNumber?: string } | null)?.invoiceNumber === invoiceNumber)
+  const paidEvents = async (invoiceId: string) => (await db.select().from(s.outboundEvent)).filter((e) => e.event === "payment.succeeded" && (e.payload as { invoiceId?: string }).invoiceId === invoiceId)
+
+  beforeAll(async () => {
+    vi.stubEnv("APP_URL", "https://site.test")
+    await db.update(s.customer).set({ email: "dana@example.com", stripeCustomerId: "cus_dana" }).where(eq(s.customer.id, "c100"))
+    await db.insert(s.webhookEndpoint).values({ id: "wh-pay", organizationId: ORG, url: "https://hooks.test/pay", secret: "shh", events: ["payment.succeeded"] })
+  })
+
+  it("writes the payment, marks the bill paid, keeps the card on the customer, stamps the visits and queues the receipt", async () => {
+    const { visit, invoice } = await sentBill()
+    const { stripe, calls } = stubStripe({ intents: { pi_bill_a: paidIntent("pi_bill_a", { pm: "pm_bill_a", customer: "cus_dana" }, "https://pay.stripe.test/receipt/a") } })
+    await handleStripeEvent(db, stripe, ORG, completed("evt_bill_a", session("cs_bill_a", invoice.id, "pi_bill_a")), "https://site.test", new Date(NOW))
+
+    const [row, ...rest] = await rowsOf(visit.jobId)
+    expect(rest).toEqual([])
+    expect(row).toMatchObject({ organizationId: ORG, jobId: visit.jobId, customerId: "c100", visitId: null, amount: 145, method: "card_now", status: "succeeded", paidOn: "2027-05-10", stripePaymentIntentId: "pi_bill_a", receiptUrl: "https://pay.stripe.test/receipt/a" })
+    const [paid] = await db.select().from(s.invoice).where(eq(s.invoice.id, invoice.id))
+    expect(paid).toMatchObject({ paidOn: "2027-05-10", paymentId: row!.id, stripePaymentIntentId: "pi_bill_a", cancelledAt: null })
+    const [owner] = await db.select().from(s.customer).where(eq(s.customer.id, "c100"))
+    expect(owner).toMatchObject({ stripePaymentMethodId: "pm_bill_a", cardBrand: "visa", cardLast4: "4242", cardExpires: "2030-08", cardFailedAt: null })
+    expect(calls.customersUpdate).toHaveBeenCalledWith("cus_dana", { invoice_settings: { default_payment_method: "pm_bill_a" } })
+    const [done] = await db.select().from(s.visit).where(eq(s.visit.id, visit.id))
+    expect(done!.chargedAt).not.toBeNull()
+    const [receipt, ...more] = await receipts("c100", invoice.number)
+    expect(more).toEqual([])
+    expect(receipt).toMatchObject({ channel: "email", to: "dana@example.com", key: `payment-${row!.id}`, status: "queued", subject: `Receipt: $145 for your bill ${invoice.number}` })
+    expect(receipt!.body).toContain("Visa ending 4242")
+    expect(receipt!.body).toContain("Repair: $145")
+    expect(await paidEvents(invoice.id)).toHaveLength(1)
+  })
+
+  it("adds nothing when the same event, or another event for the same session, arrives again", async () => {
+    const { visit, invoice } = await sentBill()
+    const { stripe } = stubStripe({ intents: { pi_bill_b: paidIntent("pi_bill_b", { pm: "pm_bill_b", customer: "cus_dana" }) } })
+    const sess = session("cs_bill_b", invoice.id, "pi_bill_b")
+    await handleStripeEvent(db, stripe, ORG, completed("evt_bill_b", sess), "https://site.test", new Date(NOW))
+    await handleStripeEvent(db, stripe, ORG, completed("evt_bill_b", sess), "https://site.test", new Date("2027-05-11T18:00:00Z"))
+    await handleStripeEvent(db, stripe, ORG, completed("evt_bill_b2", sess), "https://site.test", new Date("2027-05-12T18:00:00Z"))
+    expect(await rowsOf(visit.jobId)).toHaveLength(1)
+    expect(await receipts("c100", invoice.number)).toHaveLength(1)
+    expect(await paidEvents(invoice.id)).toHaveLength(1)
+    expect((await db.select().from(s.invoice).where(eq(s.invoice.id, invoice.id)))[0]!.paidOn).toBe("2027-05-10")
+    // The queue route: the same event delivered twice queues one task, and draining it still adds nothing.
+    const e = completed("evt_bill_b3", sess)
+    expect(await send(stripe, e)).toEqual({ status: 200, queued: true })
+    expect(await send(stripe, e)).toEqual({ status: 200, queued: false })
+    await drain(db, { "stripe-webhook": (d, item) => handleStripeEvent(d, stripe, item.organizationId, (item.payload as { event: Stripe.Event }).event, "https://site.test") })
+    expect(await rowsOf(visit.jobId)).toHaveLength(1)
+    expect(await receipts("c100", invoice.number)).toHaveLength(1)
+  })
+
+  it("finishes a half-done run: a payment row with the bill still unpaid gets the rest, once", async () => {
+    const { visit, invoice } = await sentBill()
+    await db.insert(s.charge).values({ organizationId: ORG, jobId: visit.jobId, customerId: "c100", visitId: null, amount: 145, status: "succeeded", method: "card_now", stripePaymentIntentId: "pi_bill_c", paidOn: "2027-05-10" })
+    const { stripe } = stubStripe({ intents: { pi_bill_c: paidIntent("pi_bill_c", { pm: "pm_bill_c", customer: "cus_dana" }) } })
+    await handleStripeEvent(db, stripe, ORG, completed("evt_bill_c", session("cs_bill_c", invoice.id, "pi_bill_c")), "https://site.test", new Date(NOW))
+    expect(await rowsOf(visit.jobId)).toHaveLength(1)
+    expect((await db.select().from(s.invoice).where(eq(s.invoice.id, invoice.id)))[0]!.paidOn).toBe("2027-05-10")
+    expect(await receipts("c100", invoice.number)).toHaveLength(1)
+    // No second payment.succeeded: the run that wrote the row owns that event.
+    expect(await paidEvents(invoice.id)).toHaveLength(0)
+  })
+
+  it("records a payment that arrives for a cancelled bill, leaves the bill cancelled and never twice", async () => {
+    const { visit, invoice } = await sentBill()
+    await callApi(ctxFor(db, adminKey, NOW), invoicesCancel, { id: invoice.id })
+    const { stripe } = stubStripe({ intents: { pi_bill_d: paidIntent("pi_bill_d", { pm: "pm_bill_d", customer: "cus_dana" }) } })
+    const e = completed("evt_bill_d", session("cs_bill_d", invoice.id, "pi_bill_d"))
+    await handleStripeEvent(db, stripe, ORG, e, "https://site.test", new Date(NOW))
+    await handleStripeEvent(db, stripe, ORG, e, "https://site.test", new Date(NOW))
+    expect(await rowsOf(visit.jobId)).toHaveLength(1)
+    const [after] = await db.select().from(s.invoice).where(eq(s.invoice.id, invoice.id))
+    expect(after!.cancelledAt).not.toBeNull()
+    expect(after).toMatchObject({ paidOn: null, paymentId: null })
+    expect(await receipts("c100", invoice.number)).toHaveLength(1)
+  })
+
+  it("ignores a session that is not paid, one with no bill, and another organization's bill", async () => {
+    const { visit, invoice } = await sentBill()
+    const { stripe } = stubStripe({ intents: { pi_bill_e: paidIntent("pi_bill_e") } })
+    await handleStripeEvent(db, stripe, ORG, completed("evt_e1", session("cs_e1", invoice.id, "pi_bill_e", { payment_status: "unpaid" })), "https://site.test", new Date(NOW))
+    await handleStripeEvent(db, stripe, ORG, completed("evt_e2", session("cs_e2", "no-such-bill", "pi_bill_e")), "https://site.test", new Date(NOW))
+    await handleStripeEvent(db, stripe, "another-org", completed("evt_e3", session("cs_e3", invoice.id, "pi_bill_e")), "https://site.test", new Date(NOW))
+    expect(await rowsOf(visit.jobId)).toHaveLength(0)
+    expect((await db.select().from(s.invoice).where(eq(s.invoice.id, invoice.id)))[0]!.paidOn).toBeNull()
+  })
+
+  it("keeps the card the customer holds when it is the one just used, and replaces and detaches an old one", async () => {
+    await db.update(s.customer).set({ stripePaymentMethodId: "pm_same", cardLast4: "4242" }).where(eq(s.customer.id, "c100"))
+    const a = await sentBill()
+    const same = stubStripe({ intents: { pi_same: paidIntent("pi_same", { pm: "pm_same", customer: "cus_dana" }) } })
+    await handleStripeEvent(db, same.stripe, ORG, completed("evt_same", session("cs_same", a.invoice.id, "pi_same")), "https://site.test", new Date(NOW))
+    expect(same.calls.customersUpdate).not.toHaveBeenCalled()
+    expect(same.calls.detach).not.toHaveBeenCalled()
+    const b = await sentBill()
+    const fresh = stubStripe({ intents: { pi_fresh: paidIntent("pi_fresh", { pm: "pm_fresh", last4: "1111", customer: "cus_dana" }) } })
+    await handleStripeEvent(db, fresh.stripe, ORG, completed("evt_fresh", session("cs_fresh", b.invoice.id, "pi_fresh")), "https://site.test", new Date(NOW))
+    expect(fresh.calls.detach).toHaveBeenCalledWith("pm_same")
+    expect((await db.select().from(s.customer).where(eq(s.customer.id, "c100")))[0]).toMatchObject({ stripePaymentMethodId: "pm_fresh", cardLast4: "1111" })
+  })
+
+  it("finds the organization from the bill on both the session and its payment intent, and changes nothing for an attempt that did not go through", async () => {
+    const { visit, invoice } = await sentBill()
+    const { stripe } = stubStripe()
+    expect(await organizationOfEvent(db, completed("evt_o1", session("cs_o1", invoice.id, "pi_o1")))).toBe(ORG)
+    const failed = event("evt_o2", "payment_intent.payment_failed", { id: "pi_o2", metadata: { purpose: "invoice", invoiceId: invoice.id }, last_payment_error: { message: "Your card was declined." } }) as unknown as Stripe.Event
+    expect(await organizationOfEvent(db, failed)).toBe(ORG)
+    expect(await organizationOfEvent(db, completed("evt_o3", session("cs_o3", "no-such-bill", "pi_o3")))).toBeNull()
+    await handleStripeEvent(db, stripe, ORG, failed, "https://site.test", new Date(NOW))
+    expect(await rowsOf(visit.jobId)).toHaveLength(0)
+    expect((await db.select().from(s.invoice).where(eq(s.invoice.id, invoice.id)))[0]).toMatchObject({ paidOn: null, paymentId: null })
   })
 })

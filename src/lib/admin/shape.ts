@@ -8,7 +8,7 @@ import { fullName } from "./format"
 import { causeOf, groupAttention, type QueueAttention } from "./attention-groups"
 import { jobTotal } from "@/lib/jobs/lines"
 import { invoiceOpen, invoiceStatus } from "@/lib/money/invoice"
-import { jobMoney as moneyOfJob } from "@/lib/money/words"
+import { allocateJobPayments, jobMoney as moneyOfJob } from "@/lib/money/words"
 import { NOT_CLOSED_LOOKBACK_DAYS, visitJob, visitPaid } from "./jobs"
 import type {
   AdminInvoice, AdminPayment, SoldJob, AdminData, Attention, BusyBlock, Client, Consent, Invoice, Message, MessageKind, MonthTotal, Pass, PassVisit, Quote, SettingsChange,
@@ -177,7 +177,21 @@ export function shapeAdminData(i: ShapeInput): AdminData {
   // The payment rows every money word is read from: the organization's own rows when live.ts loaded them, else what each visit carried; oldest first.
   const rows: PaymentRow[] = i.paymentRows ?? i.visits.flatMap((v) => (v.payments ?? []).map((p, n) => ({ ...p, attempt: n + 1, createdAt: new Date(p.createdAt ?? 0) })))
   const ordered = [...rows].sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime() || a.id.localeCompare(b.id))
-  const paymentsOfVisit = (id: string) => ordered.filter((r) => r.visitId === id).map(paymentOf)
+  // The visits the paid bills of each job name, in the order the bills were paid: what a payment on the job as a whole credits first.
+  const paidBillVisits = (jobId: string) =>
+    (i.invoiceRows ?? []).filter((r) => r.jobId === jobId && r.paidOn && !r.cancelledAt).sort((a, b) => (a.paidOn ?? "").localeCompare(b.paidOn ?? "")).flatMap((r) => r.lines.map((l) => l.visitId).filter((id): id is string => Boolean(id)))
+  // A payment on the job as a whole (a bill paid on the pay page) is credited to the job's done visits, so the visit-level words and sums read it
+  // (`allocateJobPayments`); the job's own money counts the original rows, so nothing is counted twice.
+  const credit = new Map<string, AdminPayment[]>()
+  for (const jobId of new Set(ordered.filter((r) => r.jobId && !r.visitId && r.status === "succeeded").map((r) => r.jobId!))) {
+    const mine = i.visits.filter((v) => v.jobId === jobId)
+    const lines = (i.lineRows ?? []).filter((l) => l.jobId === jobId)
+    const ids = new Set(mine.map((v) => v.id))
+    const rowsOfJob = ordered.filter((r) => r.jobId === jobId || (r.visitId !== null && ids.has(r.visitId))).map(paymentOf)
+    const visitsOfJob = mine.map((v) => ({ id: v.id, done: v.status === "completed", cancelled: v.status === "cancelled" || v.status === "skipped", price: i.lineRows ? visitPriceOf(v, lines) : lineAmountOf(v), doneOn: v.completedOn }))
+    for (const [visitId, slices] of allocateJobPayments(rowsOfJob, visitsOfJob, paidBillVisits(jobId))) credit.set(visitId, slices)
+  }
+  const paymentsOfVisit = (id: string) => [...ordered.filter((r) => r.visitId === id).map(paymentOf), ...(credit.get(id) ?? [])]
   // The open bill of each job (a job has at most one): its money reads Bill sent, on the visits its lines were billed after (every visit of the job when its lines name none).
   const billOf = new Map<string, AdminInvoice>()
   for (const r of i.invoiceRows ?? []) {
@@ -307,7 +321,7 @@ export function shapeAdminData(i: ShapeInput): AdminData {
     // The job's own money: rows on the job, and rows on its visits that carry no job id.
     const payments = ordered.filter((r) => r.jobId === j.id || (r.visitId !== null && mineIds.has(r.visitId))).map(paymentOf)
     const bill = billOf.get(j.id)
-    const money = moneyOfJob(lines, payments, mine.map((v) => ({ id: v.id, cancelled: v.status === "cancelled" || v.status === "skipped", price: visitPriceOf(v, lines) })), bill ? {} : undefined)
+    const money = moneyOfJob(lines, payments, mine.map((v) => ({ id: v.id, cancelled: v.status === "cancelled" || v.status === "skipped", price: visitPriceOf(v, lines), done: v.status === "completed", doneOn: v.completedOn })), bill ? {} : undefined, paidBillVisits(j.id))
     return {
       id: j.id, customerId: j.customerId, kind: j.kind, status: j.status, source: j.source, ...(bill ? { invoice: bill } : {}),
       ...(i.lineRows ? { lines: lines.map((l) => ({ id: l.id, name: l.name, quantity: l.quantity, unitPrice: l.unitPrice, taxable: l.taxable, ...(l.description ? { description: l.description } : {}), ...(l.cancelledAt ? { cancelledAt: iso(l.cancelledAt) } : {}), ...(l.visitId ? { visitId: l.visitId } : {}) })), total: jobTotal(lines), payments, money } : {}),

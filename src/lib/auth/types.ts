@@ -31,6 +31,8 @@ export interface PublicPrincipal {
   scopes: ["checkout"]
   /** the pass this visitor is buying; `passes.activate` is allowed only for it */
   passId?: string
+  /** the bill this visitor is paying: set only by server code that checked the signed pay link. With it the visitor may call `own-invoice` handlers for this one bill and nothing else */
+  invoiceId?: string
   /** the pass this visitor may renew: set only by server code that checked the signed link or the signed-in customer, never from a request */
   renewPassId?: string
 }

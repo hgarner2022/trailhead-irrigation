@@ -42,7 +42,8 @@ export function windowText(startTime: string): string {
   return ampm(hour) === ampm(end) ? `${word(hour)} to ${word(end)} ${ampm(end)}` : `${word(hour)} ${ampm(hour)} to ${word(end)} ${ampm(end)}`
 }
 
-export const dollars = (n: number) => `$${n.toLocaleString("en-US")}`
+/** "$1,234"; a credit reads "-$45", never "$-45". */
+export const dollars = (n: number) => (n < 0 ? `-$${(-n).toLocaleString("en-US")}` : `$${n.toLocaleString("en-US")}`)
 
 /** "Tuesday, May 5, between 8 and 10 am" or just the day when no time is set. */
 export function whenText(day: string, startTime: string | null): string {

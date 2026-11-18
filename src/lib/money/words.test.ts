@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { isPaid, jobOwed, jobMoney, METHOD_WORDS, paidTotal, visitMoney, type MoneyPayment } from "./words"
+import { allocateJobPayments, isPaid, jobOwed, jobMoney, METHOD_WORDS, paidTotal, visitMoney, type MoneyPayment } from "./words"
 
 const line = (unitPrice: number, cancelledAt: Date | null = null) => ({ quantity: 1, unitPrice, cancelledAt })
 const pay = (over: Partial<MoneyPayment> = {}): MoneyPayment => ({ id: "p", visitId: "v1", amount: 145, method: "cash", status: "succeeded", ...over })
@@ -36,6 +36,43 @@ describe("jobOwed", () => {
   })
 })
 
+describe("allocateJobPayments", () => {
+  const job = (over: Partial<MoneyPayment> = {}) => pay({ id: "bill", visitId: null, amount: 260, method: "card_now", ...over })
+  const done = (id: string, price: number, doneOn: string, over: Record<string, unknown> = {}) => ({ id, done: true, price, doneOn, ...over })
+  const amounts = (m: Map<string, MoneyPayment[]>) => Object.fromEntries([...m].map(([id, rows]) => [id, rows.map((r) => r.amount)]))
+
+  it("credits a payment on the job to the done visits, the oldest first, each up to its price", () => {
+    const out = allocateJobPayments([job()], [done("late", 115, "2027-05-09"), done("early", 145, "2027-05-02")])
+    expect(amounts(out)).toEqual({ early: [145], late: [115] })
+    expect(out.get("early")![0]).toMatchObject({ id: "bill@early", visitId: "early", method: "card_now", status: "succeeded" })
+  })
+  it("takes the visits a paid bill names first, whatever their age", () => {
+    const visits = [done("old", 145, "2027-05-01"), done("named", 145, "2027-06-01")]
+    expect(amounts(allocateJobPayments([job({ amount: 145 })], visits, ["named"]))).toEqual({ named: [145] })
+    expect(amounts(allocateJobPayments([job({ amount: 145 })], visits))).toEqual({ old: [145] })
+  })
+  it("leaves out a visit not done, a cancelled one, and what its own rows already paid", () => {
+    const visits = [done("paid", 145, "2027-05-01"), done("owed", 115, "2027-05-02"), { id: "ahead", done: false, price: 100 }, done("gone", 100, "2027-05-03", { cancelled: true })]
+    const own = pay({ id: "own", visitId: "paid", amount: 145 })
+    expect(amounts(allocateJobPayments([own, job({ amount: 500 })], visits))).toEqual({ owed: [115] })
+  })
+  it("never credits more than the payment, and counts a part payment against the oldest visit first", () => {
+    expect(amounts(allocateJobPayments([job({ amount: 200 })], [done("a", 145, "2027-05-01"), done("b", 145, "2027-05-02")]))).toEqual({ a: [145], b: [55] })
+  })
+  it("takes a refund off the payment it names, or off the newest payment when it names none", () => {
+    const visits = [done("a", 145, "2027-05-01"), done("b", 145, "2027-05-02")]
+    const linked = allocateJobPayments([job({ amount: 290 }), job({ id: "r", amount: -145, refundsPaymentId: "bill" })], visits)
+    expect(amounts(linked)).toEqual({ a: [145] })
+    const unlinked = allocateJobPayments([job({ id: "p1", amount: 145 }), job({ id: "p2", amount: 145 }), job({ id: "r", amount: -145 })], visits)
+    expect(amounts(unlinked)).toEqual({ a: [145] })
+    expect(unlinked.get("a")![0]!.id).toBe("p1@a")
+  })
+  it("ignores a failed or pending payment and credits nothing to a job with no done visit", () => {
+    expect(allocateJobPayments([job({ status: "failed" }), job({ id: "q", status: "pending" })], [done("a", 145, "2027-05-01")]).size).toBe(0)
+    expect(allocateJobPayments([job()], [{ id: "a", done: false, price: 145 }]).size).toBe(0)
+  })
+})
+
 describe("jobMoney", () => {
   const visits = [{ id: "v1" }, { id: "v2" }, { id: "v3" }]
   const lines = [line(145), line(115), line(115)]
@@ -65,6 +102,12 @@ describe("jobMoney", () => {
     expect(jobMoney(lines, [pay({ visitId: "v2", amount: 40 })], priced).words).toBe("$335 owed")
     // a visit with no price given still counts any positive payment, as before
     expect(jobMoney(lines, [pay({ visitId: "v2", amount: 40 })], visits).words).toBe("1 of 3 paid, $335 owed")
+  })
+  it("counts a visit paid by a payment on the job as a whole, and the job's paid total once", () => {
+    const priced = [{ id: "v1", price: 145, done: true, doneOn: "2027-05-01" }, { id: "v2", price: 115, done: true, doneOn: "2027-05-02" }, { id: "v3", price: 115, done: false }]
+    const bill = pay({ id: "bill", visitId: null, amount: 145, method: "card_now" })
+    expect(jobMoney(lines, [bill], priced)).toMatchObject({ paid: 145, owed: 230, words: "1 of 3 paid, $230 owed" })
+    expect(jobMoney(lines, [pay({ id: "bill", visitId: null, amount: 260 })], priced)).toMatchObject({ paid: 260, owed: 115, words: "2 of 3 paid, $115 owed" })
   })
   it("says Bill sent while the job owes money and a bill is open, even past its due day, and Owed again once the bill is cancelled", () => {
     expect(jobMoney([line(145)], [], [{ id: "v1" }], {})).toEqual({ paid: 0, total: 145, owed: 145, words: "Bill sent", billSent: true })

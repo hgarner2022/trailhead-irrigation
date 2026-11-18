@@ -4,12 +4,27 @@ import type { CancelledData, CardExpiringData, CardFailedData, ReceiptData, Rend
 
 const wrap = (d: { origin: string }, preheader: string, title: string, body: string, reason: string) => emailLayout({ origin: d.origin, preheader, body: heading(title) + body, reason })
 
+/** The receipt for a bill paid on the pay page: what was received, the bill's lines as a facts table, the card, one quiet button for Stripe's receipt. */
+function billReceiptEmail(d: ReceiptData & { invoiceNumber: string }): RenderedEmail {
+  const subject = `Receipt: ${dollars(d.amount)} for your bill ${d.invoiceNumber}`
+  const intro = `Thank you, ${d.firstName}. We received ${dollars(d.amount)} for your bill ${d.invoiceNumber}.`
+  const rows: [string, string][] = (d.lines ?? []).map((l) => [l.name, dollars(l.amount)])
+  if ((d.tax ?? 0) > 0) rows.push(["Sales tax", dollars(d.tax!)])
+  rows.push(["Paid", dollars(d.amount)], ["Bill", d.invoiceNumber])
+  if (d.card) rows.push(["Card", d.card])
+  const body = paragraph(intro) + facts(rows) + (d.nextLine ? paragraph(d.nextLine) : "") + (d.receiptUrl ? button(d.receiptUrl, "View the receipt", "quiet") : "")
+  const text = plainText([intro, "", ...(d.lines ?? []).map((l) => `${l.name}: ${dollars(l.amount)}`), ...((d.tax ?? 0) > 0 ? [`Sales tax: ${dollars(d.tax!)}`] : []), `Paid: ${dollars(d.amount)}`, ...(d.card ? [`Card: ${d.card}`] : []), ...(d.nextLine ? ["", d.nextLine] : []), ...(d.receiptUrl ? ["", `Your receipt: ${d.receiptUrl}`] : [])])
+  return { subject, text, html: wrap(d, intro, "Thank you", body, `You are getting this because you paid bill ${d.invoiceNumber}.`) }
+}
+
 export function receiptEmail(d: ReceiptData): RenderedEmail {
-  const subject = `Receipt: ${dollars(d.amount)} for your ${d.visitName}`
+  if (d.invoiceNumber) return billReceiptEmail({ ...d, invoiceNumber: d.invoiceNumber })
+  const visitName = d.visitName ?? "visit"
+  const subject = `Receipt: ${dollars(d.amount)} for your ${visitName}`
   const how = d.paidBy ? ` by ${d.paidBy}` : d.card ? ` to your ${d.card}` : ""
   const verb = d.paidBy ? "We received" : "We charged"
-  const intro = `Thank you, ${d.firstName}. ${verb} ${dollars(d.amount)}${how} for your ${d.visitName}${d.passNumber ? ` on Season Pass ${d.passNumber}` : ""}.`
-  const rows: [string, string][] = [[d.paidBy ? "Paid" : "Charged", dollars(d.amount)], ["Visit", d.visitName]]
+  const intro = `Thank you, ${d.firstName}. ${verb} ${dollars(d.amount)}${how} for your ${visitName}${d.passNumber ? ` on Season Pass ${d.passNumber}` : ""}.`
+  const rows: [string, string][] = [[d.paidBy ? "Paid" : "Charged", dollars(d.amount)], ["Visit", visitName]]
   if (d.passNumber) rows.push(["Pass", d.passNumber])
   if (d.paidBy) rows.push(["Paid by", d.paidBy])
   else if (d.card) rows.push(["Card", d.card])

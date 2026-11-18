@@ -15,7 +15,9 @@ export const RATE_LIMIT_PER_MINUTE = 120
 const WRITES = new Set(["POST", "PATCH", "DELETE"])
 
 function allowed(ctx: Ctx, handler: Handler): boolean {
-  if (ctx.principal.kind === "public") return Boolean(handler.checkout)
+  const visitor = ctx.principal
+  // The pay page's visitor holds one bill's signed link: it reaches the handlers marked for that bill and nothing else, not even the checkout's.
+  if (visitor.kind === "public") return visitor.invoiceId ? handler.checkout === "own-invoice" : Boolean(handler.checkout)
   if (hasScope(ctx.principal, handler.scope)) return true
   const p = ctx.principal
   return Boolean(handler.customerSelf && p.kind === "person" && p.type === "customer" && p.customerId)
@@ -68,6 +70,8 @@ export async function callApi<I extends z.ZodObject, O extends z.ZodType>(
     const visitor = ctx.principal
     if (visitor.kind === "public" && handler.checkout === "own-pass" && (!visitor.passId || (parsed.data as { id?: string }).id !== visitor.passId))
       throw new ApiError("forbidden", "This call is only for the pass being bought")
+    if (visitor.kind === "public" && handler.checkout === "own-invoice" && (!visitor.invoiceId || (parsed.data as { id?: string }).id !== visitor.invoiceId))
+      throw new ApiError("forbidden", "This call is only for the bill being paid")
     await checkRate(ctx, parsed.data)
     const run = async () => handler.output.parse(await handler.run(ctx, parsed.data)) as z.infer<O>
     if (ctx.idempotencyKey && WRITES.has(handler.method))

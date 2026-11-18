@@ -12,7 +12,7 @@ import { openSlots, spreadDays } from "@/lib/pass/server/area-days"
 import { windowText } from "@/emails/format"
 import { listPeople, resolvePersonId, Role, routePeople } from "../people/handlers"
 import { PersonIdAlias } from "../visits/handlers"
-import { visitOut, visitsQuery } from "../visits/queries"
+import { visitOut, visitsQuery, withJobCredit } from "../visits/queries"
 import { VisitOut } from "../visits/schemas"
 
 export const scheduleRun = defineHandler({
@@ -62,8 +62,8 @@ export const scheduleWeek = defineHandler({
       to,
       people,
       trucks: people,
-      visits: visits.map((v) => visitOut(ctx, v)),
-      tray: tray.map((v) => visitOut(ctx, v)),
+      visits: (await withJobCredit(ctx.db, ctx.organizationId, visits)).map((v) => visitOut(ctx, v)),
+      tray: (await withJobCredit(ctx.db, ctx.organizationId, tray)).map((v) => visitOut(ctx, v)),
     }
   },
 })
