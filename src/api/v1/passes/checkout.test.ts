@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest"
-import { eq } from "drizzle-orm"
+import { eq, inArray } from "drizzle-orm"
 import * as s from "@/db/schema"
 import type { TestDb } from "@/db/test-db"
 import type { PublicPrincipal } from "@/lib/auth/types"
@@ -179,5 +179,17 @@ describe("expirePendingPasses", () => {
     expect((await db.select().from(s.lineItem).where(eq(s.lineItem.jobId, sold.id))).length).toBeGreaterThan(0)
     // a second run has nothing left to remove
     expect(await expirePendingPasses(db, new Date())).toBe(0)
+  })
+
+  it("keeps a pass with no sold day that has a job.sold event or a succeeded payment", async () => {
+    reachable.mockResolvedValue(true)
+    const sold = await create({ customer: { firstName: "Sold", lastName: "Tester", email: "sold@example.com", phone: "3035550110" } })
+    const paid = await create({ customer: { firstName: "Paid", lastName: "Tester", email: "paid@example.com", phone: "3035550111" } })
+    const old = new Date(Date.now() - 61 * 60_000)
+    for (const p of [sold, paid]) await db.update(s.job).set({ createdAt: old }).where(eq(s.job.id, p.id))
+    await db.insert(s.event).values({ organizationId: ORG, about: "job", aboutId: sold.id, jobId: sold.id, customerId: sold.customerId, kind: "job.sold", who: "system", detail: {} })
+    await db.insert(s.charge).values({ organizationId: ORG, jobId: paid.id, customerId: paid.customerId, attempt: 1, amount: 145, status: "succeeded", method: "card_on_file" })
+    expect(await expirePendingPasses(db, new Date())).toBe(0)
+    expect(await db.select().from(s.job).where(inArray(s.job.id, [sold.id, paid.id]))).toHaveLength(2)
   })
 })

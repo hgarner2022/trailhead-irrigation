@@ -45,6 +45,17 @@ describe("onboardPass", () => {
   })
 })
 
+describe("another organization's queue item", () => {
+  it("cannot read this organization's pass job: the lookup is scoped by the item's organization", async () => {
+    const [pass] = await db.select().from(s.job).where(and(isNotNull(s.job.season), isNotNull(s.job.soldOn), isNull(s.job.cancelledAt))).offset(3).limit(1)
+    const item = { organizationId: "org-someone-else", kind: "pass-onboard", key: pass!.id, payload: { passId: pass!.id } } as never
+    await expect(handlers["pass-onboard"]!(db, item)).rejects.toThrow(/not found/)
+    await expect(handlers["pass-cancel"]!(db, { ...(item as object), kind: "pass-cancel" } as never)).rejects.toThrow(/not found/)
+    await expect(onboardPass(db, pass!.id, "org-someone-else")).rejects.toThrow(/not found/)
+    expect(await db.select().from(s.adminAlert).where(eq(s.adminAlert.jobId, pass!.id))).toEqual([])
+  })
+})
+
 describe("the alert on Home", () => {
   it("shows up as a new-pass attention row from the shaped data", () => {
     const base = { organizationId: "o", now: new Date("2026-12-01T00:00:00Z"), today: "2026-12-01", syncedAt: new Date(), customers: [], jobberClientOf: new Map(), consents: [], visits: [], passes: [], messages: [], trucks: [], areas: [], settings: {}, settingsChanges: [], mirror: { clients: [], visits: [], jobsWithoutVisit: [], quotes: [], invoices: [] }, queueProblems: [], blocks: [] }

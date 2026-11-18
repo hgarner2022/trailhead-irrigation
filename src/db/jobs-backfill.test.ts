@@ -504,6 +504,42 @@ describe("migration 0021: the expand step", () => {
     await client.close()
   })
 
+  it("keeps rows the old code writes in the deploy window correct: sold day, old pass id and cancellation come from triggers", async () => {
+    const { client } = await before()
+    for (const f of files().slice(files().findIndex((x) => x.startsWith("0021_legacy_expand")))) for (const stmt of migration(f)) if (stmt.trim()) await client.exec(stmt)
+    const q = async <T>(text: string) => (await client.query<T>(text)).rows
+    const today = (await q<{ d: string }>(`SELECT to_char((now() at time zone 'America/Denver')::date, 'YYYY-MM-DD') AS d`))[0]!.d
+
+    // Old code: the pass job with kind and status set, then the season_pass row.
+    await client.exec(`INSERT INTO job (id, organization_id, customer_id, property_id, kind, status, source, season, pass_number) VALUES ('job_old', 'o', 'c', 'pr', 'pass', 'active', 'checkout', 2027, 'TH-2027-0001')`)
+    await client.exec(`INSERT INTO season_pass (id, organization_id, job_id, number, season, customer_id, property_id, zones, status) VALUES ('old-pass', 'o', 'job_old', 'TH-2027-0001', 2027, 'c', 'pr', 8, 'active')`)
+    expect(await q(`SELECT legacy_pass_id, to_char(sold_on, 'YYYY-MM-DD') AS sold_on, cancelled_at IS NULL AS open FROM job WHERE id = 'job_old'`)).toEqual([{ legacy_pass_id: "old-pass", sold_on: today, open: true }])
+    await client.exec(`UPDATE season_pass SET cancelled_at = '2027-06-01T12:00:00Z', status = 'cancelled' WHERE id = 'old-pass'`)
+    expect(await q(`SELECT to_char(cancelled_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS cancelled_at FROM job WHERE id = 'job_old'`)).toEqual([{ cancelled_at: "2027-06-01T12:00:00Z" }])
+    // A job that is already cancelled keeps its own day.
+    await client.exec(`UPDATE job SET cancelled_at = '2027-05-01T12:00:00Z' WHERE id = 'job_old'`)
+    await client.exec(`UPDATE season_pass SET cancelled_at = '2027-07-01T12:00:00Z' WHERE id = 'old-pass'`)
+    expect(await q(`SELECT to_char(cancelled_at AT TIME ZONE 'UTC', 'YYYY-MM-DD') AS d FROM job WHERE id = 'job_old'`)).toEqual([{ d: "2027-05-01" }])
+
+    // Old code: a pending pass is activated by moving the job off pending.
+    await client.exec(`INSERT INTO job (id, organization_id, customer_id, property_id, kind, status, source, season, pass_number) VALUES ('job_pend', 'o', 'c3', 'pr3', 'pass', 'pending', 'checkout', 2027, 'TH-2027-0002')`)
+    expect(await q(`SELECT sold_on FROM job WHERE id = 'job_pend'`)).toEqual([{ sold_on: null }])
+    await client.exec(`UPDATE job SET status = 'active' WHERE id = 'job_pend'`)
+    expect(await q(`SELECT to_char(sold_on, 'YYYY-MM-DD') AS sold_on FROM job WHERE id = 'job_pend'`)).toEqual([{ sold_on: today }])
+
+    // New code leaves kind empty and sets its own sold day, or none: nothing is filled in.
+    await client.exec(`INSERT INTO job (id, organization_id, customer_id, property_id, source) VALUES ('job_new', 'o', 'c', 'pr', 'office')`)
+    await client.exec(`INSERT INTO job (id, organization_id, customer_id, property_id, source, sold_on) VALUES ('job_new2', 'o', 'c', 'pr', 'office', '2027-01-02')`)
+    expect(await q(`SELECT id, to_char(sold_on, 'YYYY-MM-DD') AS sold_on FROM job WHERE id IN ('job_new', 'job_new2') ORDER BY id`)).toEqual([
+      { id: "job_new", sold_on: null },
+      { id: "job_new2", sold_on: "2027-01-02" },
+    ])
+    // A job made from a quote request stays unsold.
+    await client.exec(`INSERT INTO job (id, organization_id, customer_id, property_id, kind, status, source) VALUES ('job_qr_x', 'o', 'c', 'pr', 'other', 'active', 'site')`)
+    expect(await q(`SELECT sold_on FROM job WHERE id = 'job_qr_x'`)).toEqual([{ sold_on: null }])
+    await client.close()
+  })
+
   it("aborts at the guard when two visits of one pass kind share a job, and makes no unique index", async () => {
     const { client, all, at } = await before()
     await client.exec(`INSERT INTO job (id, organization_id, customer_id, property_id, kind, source) VALUES ('j', 'o', 'c', 'pr', 'repair', 'office')`)
@@ -511,7 +547,8 @@ describe("migration 0021: the expand step", () => {
     const statements = migration(all[at]!).filter((stmt) => stmt.trim())
     const guard = statements.findIndex((x) => /legacy_expand: two visits of one pass kind share a job/.test(x))
     expect(guard).toBeGreaterThan(0)
-    expect(guard).toBe(statements.length - 2)
+    // after the guard: the unique index, then the four deploy-window triggers (a function, a drop and a create each)
+    expect(guard).toBe(statements.length - 14)
     for (const stmt of statements.slice(0, guard)) await client.exec(stmt)
     await expect(client.exec(statements[guard]!)).rejects.toThrow(/two visits of one pass kind share a job/)
     expect((await client.query(`SELECT 1 FROM pg_indexes WHERE indexname = 'visit_job_pass_kind_unique'`)).rows).toHaveLength(0)

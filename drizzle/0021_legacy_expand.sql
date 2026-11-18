@@ -161,4 +161,47 @@ BEGIN
     RAISE EXCEPTION 'legacy_expand: two visits of one pass kind share a job';
   END IF;
 END $$;--> statement-breakpoint
-CREATE UNIQUE INDEX "visit_job_pass_kind_unique" ON "visit" USING btree ("job_id","kind") WHERE "visit"."kind" in ('turn-on', 'inspection', 'blowout');
+CREATE UNIQUE INDEX "visit_job_pass_kind_unique" ON "visit" USING btree ("job_id","kind") WHERE "visit"."kind" in ('turn-on', 'inspection', 'blowout');--> statement-breakpoint
+-- 7. Deploy-window triggers. The OLD code (main) stays live after this migration is applied and keeps writing season_pass rows and job rows with kind and status set and no sold_on or legacy_pass_id. These four triggers backfill such rows at once, so the new code stays correct on them.
+-- These four triggers exist only for the deploy window and are dropped by the migration that drops the legacy tables (step 6 push B).
+-- Only the old code writes job.kind (the new code leaves it null, and the seed sets its own sold_on), so a job with a kind and no sold_on is an old-code sale. A pending job is not sold yet, and job_qr_ jobs (made above from quote requests) stay unsold.
+CREATE OR REPLACE FUNCTION legacy_job_sold_on_insert() RETURNS trigger AS $fn$
+BEGIN
+  IF NEW."kind" IS NOT NULL AND NEW."sold_on" IS NULL AND NEW."status" <> 'pending' AND left(NEW."id", 7) <> 'job_qr_' THEN
+    NEW."sold_on" := (now() at time zone 'America/Denver')::date;
+  END IF;
+  RETURN NEW;
+END;
+$fn$ LANGUAGE plpgsql;--> statement-breakpoint
+DROP TRIGGER IF EXISTS legacy_job_sold_on_insert ON "job";--> statement-breakpoint
+CREATE TRIGGER legacy_job_sold_on_insert BEFORE INSERT ON "job" FOR EACH ROW EXECUTE FUNCTION legacy_job_sold_on_insert();--> statement-breakpoint
+-- The old code activates a pass by moving its job's status off pending.
+CREATE OR REPLACE FUNCTION legacy_job_sold_on_update() RETURNS trigger AS $fn$
+BEGIN
+  IF OLD."status" = 'pending' AND NEW."status" <> 'pending' AND NEW."sold_on" IS NULL THEN
+    NEW."sold_on" := (now() at time zone 'America/Denver')::date;
+  END IF;
+  RETURN NEW;
+END;
+$fn$ LANGUAGE plpgsql;--> statement-breakpoint
+DROP TRIGGER IF EXISTS legacy_job_sold_on_update ON "job";--> statement-breakpoint
+CREATE TRIGGER legacy_job_sold_on_update BEFORE UPDATE ON "job" FOR EACH ROW EXECUTE FUNCTION legacy_job_sold_on_update();--> statement-breakpoint
+-- The old code makes a season_pass row after its job: the job learns the old pass id, and a cancelled pass cancels its job.
+CREATE OR REPLACE FUNCTION legacy_season_pass_job_insert() RETURNS trigger AS $fn$
+BEGIN
+  UPDATE "job" SET "legacy_pass_id" = NEW."id" WHERE "id" = NEW."job_id" AND "legacy_pass_id" IS NULL;
+  RETURN NULL;
+END;
+$fn$ LANGUAGE plpgsql;--> statement-breakpoint
+DROP TRIGGER IF EXISTS legacy_season_pass_job_insert ON "season_pass";--> statement-breakpoint
+CREATE TRIGGER legacy_season_pass_job_insert AFTER INSERT ON "season_pass" FOR EACH ROW EXECUTE FUNCTION legacy_season_pass_job_insert();--> statement-breakpoint
+CREATE OR REPLACE FUNCTION legacy_season_pass_job_update() RETURNS trigger AS $fn$
+BEGIN
+  IF NEW."cancelled_at" IS NOT NULL THEN
+    UPDATE "job" SET "cancelled_at" = NEW."cancelled_at" WHERE "id" = NEW."job_id" AND "cancelled_at" IS NULL;
+  END IF;
+  RETURN NULL;
+END;
+$fn$ LANGUAGE plpgsql;--> statement-breakpoint
+DROP TRIGGER IF EXISTS legacy_season_pass_job_update ON "season_pass";--> statement-breakpoint
+CREATE TRIGGER legacy_season_pass_job_update AFTER UPDATE ON "season_pass" FOR EACH ROW EXECUTE FUNCTION legacy_season_pass_job_update();

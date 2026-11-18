@@ -73,7 +73,7 @@ export async function handleStripeEvent(db: Database, stripe: Stripe, organizati
   switch (event.type) {
     case "checkout.session.completed": {
       const session = event.data.object
-      if (session.metadata?.purpose === "card-update") await applyCardUpdate(db, stripe, session.id, now)
+      if (session.metadata?.purpose === "card-update") await applyCardUpdate(db, stripe, session.id, now, organizationId)
       else if (session.metadata?.purpose === "invoice") await applyInvoicePayment(db, stripe, organizationId, session, origin, now)
       else if (session.metadata?.purpose === "pass-setup" && session.metadata.passId) {
         const ctx = await ctxForJob(organizationId, { database: () => db, now: () => now })

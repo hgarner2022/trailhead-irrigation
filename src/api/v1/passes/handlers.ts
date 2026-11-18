@@ -231,7 +231,7 @@ export const passesActivate = defineHandler({
   output: PassDetail,
   async run(ctx, input) {
     const row = await loadPass(ctx, input.id)
-    await activatePass(ctx.db, getStripe(), row.pass.id, input.setupSessionId, ctx.now, whoOf(ctx))
+    await activatePass(ctx.db, getStripe(), row.pass.id, input.setupSessionId, ctx.now, whoOf(ctx), ctx.organizationId)
     // The boxes in the request win; without them (the webhook activated first) the snapshot from when the card form opened stands in.
     const consent = input.consent ?? (await consentSnapshot(ctx.db, row.pass.id))
     await finishPurchase(ctx, row.pass, row.town, consent)
@@ -282,7 +282,7 @@ export const passesCancel = defineHandler({
     await cancelVisitLines(ctx.db, cancelled.map((v) => v.id), ctx.now)
     await recordChange(ctx, { customerId: row.pass.customerId, jobId: row.pass.id, kind: "cancelled", detail: { reason: input.reason ?? null, visits: cancelled.length, passNumber: row.job.passNumber ?? "" } })
     await enqueue(ctx.db, ctx.organizationId, "pass-cancel", row.pass.id, { passId: row.pass.id })
-    await queueCancelledEmail(ctx.db, row.pass.id, readAppUrl())
+    await queueCancelledEmail(ctx.db, row.pass.id, readAppUrl(), ctx.organizationId)
     await emitEvent(ctx.db, ctx.organizationId, "pass.cancelled", { passId: row.pass.id, number: row.job.passNumber ?? "", visits: cancelled.length })
     return { id: row.pass.id, status: "cancelled" as const, cancelledVisits: cancelled.length }
   },
@@ -299,7 +299,7 @@ export const passesResendConfirmation = defineHandler({
   async run(ctx, input) {
     const row = await loadPass(ctx, input.id)
     if (row.facts.status === "pending") throw new ApiError("unprocessable", "This pass has not been bought yet")
-    if (!(await queuePurchaseConfirmation(ctx.db, row.pass.id, readAppUrl(), `resend-${randomUUID()}`))) throw new ApiError("unprocessable", "This customer has no email address to send it to")
+    if (!(await queuePurchaseConfirmation(ctx.db, row.pass.id, readAppUrl(), `resend-${randomUUID()}`, { organizationId: ctx.organizationId }))) throw new ApiError("unprocessable", "This customer has no email address to send it to")
     return OK
   },
 })

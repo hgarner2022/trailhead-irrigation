@@ -37,6 +37,34 @@ describe("activatePass", () => {
     expect(await eventsOf(db, { kind: "job.sold", jobId: pass.id })).toHaveLength(1)
   })
 
+  it("finishes an activation that died after the claim: the retry loses the claim but saves the card and writes the sale, once", async () => {
+    const pass = await pending()
+    const { stripe } = stubStripe({ sessions: { cs_crash: completeSession("cs_crash", { purpose: "pass-setup", passId: pass.id }, { last4: "4242", customer: "cus_crash" }) } })
+    // The first call claimed the sale (sold_on) and died before the card and the event.
+    await db.update(s.job).set({ soldOn: "2026-12-01" }).where(eq(s.job.id, pass.id))
+    expect(await eventsOf(db, { kind: "job.sold", jobId: pass.id })).toHaveLength(0)
+    expect(await activatePass(db, stripe, pass.id, "cs_crash", NOW)).toBe("already-active")
+    expect(await eventsOf(db, { kind: "job.sold", jobId: pass.id })).toHaveLength(1)
+    expect(await eventsOf(db, { kind: "card.saved", customerId: pass.customerId })).toHaveLength(1)
+    const [owner] = await db.select({ method: s.customer.stripePaymentMethodId, last4: s.customer.cardLast4 }).from(s.customer).where(eq(s.customer.id, pass.customerId))
+    expect(owner?.method).toBeTruthy()
+    expect(owner?.last4).toBe("4242")
+    // Calling again adds nothing.
+    expect(await activatePass(db, stripe, pass.id, "cs_crash", NOW)).toBe("already-active")
+    expect(await eventsOf(db, { kind: "job.sold", jobId: pass.id })).toHaveLength(1)
+    expect(await eventsOf(db, { kind: "card.saved", customerId: pass.customerId })).toHaveLength(1)
+  })
+
+  it("writes the missing sale event when only the card was saved before the crash", async () => {
+    const pass = await pending()
+    const { stripe } = stubStripe({ sessions: { cs_half: completeSession("cs_half", { purpose: "pass-setup", passId: pass.id }, { last4: "4242", customer: "cus_half" }) } })
+    expect(await activatePass(db, stripe, pass.id, "cs_half", NOW)).toBe("activated")
+    await db.delete(s.event).where(eq(s.event.jobId, pass.id))
+    expect(await activatePass(db, stripe, pass.id, "cs_half", NOW)).toBe("already-active")
+    expect(await eventsOf(db, { kind: "job.sold", jobId: pass.id })).toHaveLength(1)
+    expect(await eventsOf(db, { kind: "card.saved", customerId: pass.customerId })).toHaveLength(1)
+  })
+
   it("takes the pass named by an old pass id in the session's metadata, and the old id as the argument", async () => {
     const pass = await pending()
     // The job is made now with no old id; give it one the way migration 0021 did for a pass made before the move.

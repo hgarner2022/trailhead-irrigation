@@ -106,9 +106,10 @@ function soldWords(d: Record<string, unknown>): string {
   return `${name} ${source === "website" || source === "site" ? "booked online" : "added by the office"}`
 }
 
-/** "Quote asked for online": a job that needs a quote, made from the website's form. Any other source reads "Quote asked for". */
+/** "Quote asked for online": a job that needs a quote, made from the website's form; "Quote asked for at the office" from the office; "Quote needed" for any other source, so the line is always a whole sentence. */
 function requestedWords(d: Record<string, unknown>): string {
-  return str(d.source) === "site" ? "Quote asked for online" : "Quote asked for"
+  const source = str(d.source)
+  return source === "site" ? "Quote asked for online" : source === "office" ? "Quote asked for at the office" : "Quote needed"
 }
 
 /** "Rotors, 12 added, 12 × $38", "Drip zone added, quote later": a line of a job and what was done to it. */

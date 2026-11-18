@@ -9,8 +9,8 @@ import { loadPassRecord } from "./record"
 /** The Home line for a cancelled pass: "Season Pass TH-2027-0004 cancelled: Andrea, Erie". */
 export const cancelledMessage = (number: string, firstName: string, town: string) => `Season Pass ${number} cancelled: ${firstName}, ${town}`
 
-async function loadPass(db: Database, passId: string) {
-  const pass = await loadPassRecord(db, passId)
+async function loadPass(db: Database, passId: string, organizationId?: string) {
+  const pass = await loadPassRecord(db, passId, organizationId)
   if (!pass) throw new Error(`Pass ${passId} not found`)
   const [row] = await db
     .select({ customer: s.customer, town: s.property.town })
@@ -27,8 +27,8 @@ async function loadPass(db: Database, passId: string) {
  * Jobber requests and jobs. The id may be a job id or the old pass id of a task queued before the move; the alert is keyed by the
  * job id either way. Returns whether this call raised the alert.
  */
-export async function cancelPassTask(db: Database, passId: string): Promise<boolean> {
-  const { pass, customer, town } = await loadPass(db, passId)
+export async function cancelPassTask(db: Database, passId: string, organizationId?: string): Promise<boolean> {
+  const { pass, customer, town } = await loadPass(db, passId, organizationId)
   if (!pass.cancelledAt) return false
   const added = await db
     .insert(s.adminAlert)
@@ -39,8 +39,8 @@ export async function cancelPassTask(db: Database, passId: string): Promise<bool
 }
 
 /** The `cancelled` email row: nothing further is charged, with the pass page link. A customer with no email gets none. The message is once per pass (its key is the job id, which the old pass id resolves to). */
-export async function queueCancelledEmail(db: Database, passId: string, origin: string): Promise<boolean> {
-  const { pass, customer } = await loadPass(db, passId)
+export async function queueCancelledEmail(db: Database, passId: string, origin: string, organizationId?: string): Promise<boolean> {
+  const { pass, customer } = await loadPass(db, passId, organizationId)
   if (!customer.email) return false
   return queueMessage(db, { organizationId: pass.organizationId, customerId: customer.id, kind: "cancelled", key: pass.jobId, data: { ...baseData(origin, customer), passNumber: pass.number } })
 }

@@ -24,6 +24,8 @@ export interface PurchaseExtras {
   cardUpdateUrl?: string | null
   /** who the purchase's consent event is written as: the person or the customer behind the call; `system` when nothing says (a queue task) */
   who?: string
+  /** the organization of the caller, when it is known: the pass is looked up inside it */
+  organizationId?: string
 }
 
 /**
@@ -33,7 +35,7 @@ export interface PurchaseExtras {
  * layer's job (Phase 12); the email only records what must go.
  */
 export async function recordPurchase(db: Database, passId: string, consent: PurchaseConsent | undefined, origin: string, now: Date, extras: PurchaseExtras = {}): Promise<void> {
-  const pass = await loadPassRecord(db, passId)
+  const pass = await loadPassRecord(db, passId, extras.organizationId)
   if (!pass) throw new Error(`Pass ${passId} not found`)
   const [row] = await db
     .select({ customer: s.customer, town: s.property.town })
@@ -65,13 +67,13 @@ export async function recordPurchase(db: Database, passId: string, consent: Purc
 
   await enqueue(db, org, "pass-onboard", pass.jobId, { passId: pass.jobId }, now)
 
-  await queuePurchaseConfirmation(db, pass.jobId, origin, pass.jobId, extras)
+  await queuePurchaseConfirmation(db, pass.jobId, origin, pass.jobId, { ...extras, organizationId: org })
   await queueStaffMessage(db, org, "admin-alert", `new-pass:${pass.jobId}`, { origin, title: `New Season Pass ${pass.number}`, detail: `${customer.firstName} in ${row.town} bought Season Pass ${pass.number}.`, path: `/admin/visits?job=${encodeURIComponent(pass.jobId)}` })
 }
 
 /** The purchase confirmation for a pass, with whatever the pass holds today: each visit's day and calendar links, or its window wording, and how the money comes (the card on file, the link to add one, or at each visit). `key` makes it once per purchase; an admin's resend uses a new one. */
 export async function queuePurchaseConfirmation(db: Database, passId: string, origin: string, key: string, extras: PurchaseExtras = {}): Promise<boolean> {
-  const pass = await loadPassRecord(db, passId)
+  const pass = await loadPassRecord(db, passId, extras.organizationId)
   if (!pass) throw new Error(`Pass ${passId} not found`)
   const [row] = await db
     .select({ customer: s.customer, town: s.property.town })

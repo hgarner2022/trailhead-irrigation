@@ -38,13 +38,13 @@ export const passCharge: QueueHandler = async (db, item) => {
 /** `pass-onboard`: key is the pass's job id (an old pass id still resolves), payload `{ passId }`; raises the Home alert for a new pass (no Jobber call; see `onboardPass`). */
 export const passOnboard: QueueHandler = async (db, item) => {
   const { passId } = item.payload as { passId: string }
-  await onboardPass(db, passId)
+  await onboardPass(db, passId, item.organizationId)
 }
 
 /** `pass-cancel`: key is the pass's job id (an old pass id still resolves), payload `{ passId }`; raises the Home alert for a cancelled pass. No Jobber call: the routine removes the Jobber jobs (see `cancelPassTask`). */
 export const passCancel: QueueHandler = async (db, item) => {
   const { passId } = item.payload as { passId: string }
-  await cancelPassTask(db, passId)
+  await cancelPassTask(db, passId, item.organizationId)
 }
 
 /** `stripe-webhook`: key is the Stripe event id, payload `{ event }`, the verified event the route stored. */

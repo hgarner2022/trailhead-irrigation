@@ -94,14 +94,22 @@ export async function newestPendingPass(db: Database, organizationId: string, cu
 
 /**
  * Removes the pass jobs nobody paid for within the hour (a season, no sold day, not cancelled) with their lines, visits, events and
- * alerts. A sold pass has a sold day and is never touched here. Returns how many. Customers and properties stay.
+ * alerts. A sold pass has a sold day, a `job.sold` event or a succeeded payment and is never touched here. Returns how many. Customers and properties stay.
  */
 export async function expirePendingPasses(db: Database, now: Date, minutes = PENDING_PASS_MINUTES): Promise<number> {
   const cutoff = new Date(now.getTime() - minutes * 60_000)
   const stale = await db
     .select({ id: s.job.id, organizationId: s.job.organizationId })
     .from(s.job)
-    .where(and(unsold, lt(s.job.createdAt, cutoff)))
+    .where(
+      and(
+        unsold,
+        lt(s.job.createdAt, cutoff),
+        // A pass whose sold day was lost (a crash after payment, an old-code write) is still sold: a `job.sold` event or a succeeded payment keeps it.
+        sql`not exists (select 1 from ${s.event} where ${s.event.jobId} = ${s.job.id} and ${s.event.kind} = 'job.sold')`,
+        sql`not exists (select 1 from ${s.charge} where ${s.charge.jobId} = ${s.job.id} and ${s.charge.status} = 'succeeded')`,
+      ),
+    )
   if (stale.length === 0) return 0
   const jobIds = stale.map((r) => r.id)
   const orgs = [...new Set(stale.map((r) => r.organizationId))]

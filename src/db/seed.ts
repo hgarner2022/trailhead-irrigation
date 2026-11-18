@@ -106,19 +106,18 @@ export async function seed(db: Database, snapshot: AdminData, options: SeedOptio
  * email instead of a second row. Inserts ignore a row that is already there,
  * so a re-seed changes nothing.
  *
- * A database that already has people on the schedule (a migrated one holds
- * Ryan under `person_<admin id>` and the second tech under whatever name the
- * office gave them) gets none of the snapshot's: they are fixtures for a fresh
+ * A database that already has any person (a migrated one holds Ryan under
+ * `person_<admin id>` and the second tech under whatever name the office
+ * gave them, or only admins with no truck) gets none of the snapshot's: they are fixtures for a fresh
  * database, and inserting them there would put a second Ryan on the route
  * (the deploy of Nov 16 2026 did, once). An admin whose email a person
  * already carries is left alone. Nothing outside the fixtures may assume
  * `person_truck-1`.
  */
 async function seedPeople(db: Database, org: string, people: Person[], admins: readonly string[]) {
-  const existing = await db.select({ email: s.person.email, truck: s.person.truck }).from(s.person).where(eq(s.person.organizationId, org))
+  const existing = await db.select({ email: s.person.email }).from(s.person).where(eq(s.person.organizationId, org))
   const heldEmails = new Set(existing.map((p) => p.email?.toLowerCase()).filter(Boolean))
-  const onRoute = existing.some((p) => p.truck)
-  if (people.length && !onRoute) {
+  if (people.length && existing.length === 0) {
     await db
       .insert(s.person)
       .values(
@@ -172,6 +171,8 @@ async function seedPasses(db: Database, snapshot: AdminData, org: string) {
         id: jobId, organizationId: org, customerId: pass.clientId, propertyId, source: "checkout", season: pass.season, passNumber: pass.number,
         // `job.kind` is not read or written by the app (the kind is derived); the seed still fills it because the migration tests build databases from before 0021, where it is not null.
         kind: "pass" as const,
+        // The legacy status too, for the same reason: migration 0021's insert trigger gives a job that has a kind, is not pending and has no sold day today as its sold day, so a pending fixture must say pending (the old code reads it as pending as well).
+        status: pass.status === "pending" ? ("pending" as const) : ("active" as const),
         // The old pass id and the sold day, on insert only: the day the job row is made (its created_at), empty for a pending fixture, which is not sold yet (migration 0021's rule).
         legacyPassId: pass.id,
         soldOn: pass.status === "pending" ? null : toMountainDay(new Date().toISOString()),

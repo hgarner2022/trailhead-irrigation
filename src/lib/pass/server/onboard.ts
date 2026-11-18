@@ -14,8 +14,8 @@ export const newPassMessage = (firstName: string, town: string, zones: number) =
  * Jobber client and requests. The id may be a job id or the old pass id of a task queued before the move; the alert is keyed by
  * the job id either way. Returns whether this call raised the alert.
  */
-export async function onboardPass(db: Database, passId: string): Promise<boolean> {
-  const pass = await loadPassRecord(db, passId)
+export async function onboardPass(db: Database, passId: string, organizationId?: string): Promise<boolean> {
+  const pass = await loadPassRecord(db, passId, organizationId)
   if (!pass) throw new Error(`Pass ${passId} not found`)
   const [who] = await db
     .select({ firstName: s.customer.firstName, town: s.property.town })

@@ -14,7 +14,7 @@ import { isPaid } from "@/lib/money/words"
 import { queueMessage, queueStaffMessage } from "@/lib/messaging/queue"
 import { dollars, kindName, nextVisitLine } from "./messages"
 
-export type ChargeVisitOutcome = "charged" | "already-charged" | "failed" | "waiting-for-card" | "cancelled-pass" | "not-a-pass-visit" | "no-card"
+export type ChargeVisitOutcome = "charged" | "already-charged" | "failed" | "waiting-for-card" | "cancelled-pass" | "not-a-pass-visit" | "no-card" | "nothing-owed"
 
 export interface ChargeVisitOptions {
   /** the site origin, for the card-update link in the failure message */
@@ -39,6 +39,8 @@ export async function chargeVisit(db: Database, stripe: Stripe, visitId: string,
   // Paid already means succeeded payment rows that reach the price (the card on file, or the office recording a check, Venmo or cash), never a stamp on the visit.
   const own = await db.select({ amount: s.charge.amount, status: s.charge.status }).from(s.charge).where(eq(s.charge.visitId, visit.id))
   if (isPaid(own, price)) return "already-charged"
+  // A visit whose lines are all cancelled (or priced at nothing) owes nothing: no Stripe call, no payment row, no email.
+  if (price <= 0) return "nothing-owed"
   // A visit the office cancelled is never charged, even if a charge was queued before.
   if (visit.status === "cancelled" || visit.status === "skipped") return "cancelled-pass"
   // Only a Season Pass's visits are charged here: the pass is the job, and the job has a season.

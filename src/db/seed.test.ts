@@ -103,6 +103,18 @@ describe("seed", () => {
     }
   })
 
+  it("adds no snapshot people to a database that has only an office admin with no truck", async () => {
+    const migrated = await testDb()
+    try {
+      await migrated.execute(sql`insert into "organization" ("id", "name", "settings", "terms_version") values (${org}, 'Trailhead', '{}', '1')`)
+      await migrated.insert(s.person).values({ id: "person_office", organizationId: org, name: "Office Admin", initials: "OA", email: "office@example.com", role: "admin" })
+      await seed(migrated, data, { organizationId: org, admins: ["office@example.com"] })
+      expect((await migrated.select({ id: s.person.id }).from(s.person)).map((p) => p.id)).toEqual(["person_office"])
+    } finally {
+      await migrated.close()
+    }
+  })
+
   it("seeds the fixture passes with visits, consents and the mirror when asked", async () => {
     expect(await n(s.seasonPass)).toBe(data.passes.length)
     expect(await n(s.visit)).toBe(data.passes.reduce((sum, p) => sum + p.visits.length, 0))

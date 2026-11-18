@@ -82,7 +82,7 @@ export const messagesSend = defineHandler({
       const pass = found?.job
       if (input.kind === "purchase-confirmation" || input.kind === "cancelled" || input.kind === "renewal") {
         if (!pass) throw new ApiError("unprocessable", "This customer has no pass for that message")
-        if (input.kind === "purchase-confirmation") queued = await queuePurchaseConfirmation(ctx.db, pass.id, origin, key)
+        if (input.kind === "purchase-confirmation") queued = await queuePurchaseConfirmation(ctx.db, pass.id, origin, key, { organizationId: ctx.organizationId })
         else if (input.kind === "cancelled") queued = await queueMessage(ctx.db, { ...base, kind: "cancelled", data: { ...baseData(origin, customer), passNumber: pass.passNumber ?? "" } })
         else {
           const [prop] = await ctx.db.select({ town: s.property.town }).from(s.property).where(eq(s.property.id, pass.propertyId))

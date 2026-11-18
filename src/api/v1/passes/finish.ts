@@ -20,5 +20,5 @@ export async function finishPurchase(ctx: Ctx, pass: { id: string; customerId: s
   const season = job?.season ?? 0
   for (const moved of await scheduleChosenDays(ctx.db, pass.id, town, season, today(ctx), ctx.now))
     await recordChange(ctx, { customerId: pass.customerId, jobId: pass.id, visitId: moved.visitId, kind: "day-filled", detail: { visit: moved.kind, from: moved.from, to: moved.to } })
-  await recordPurchase(ctx.db, pass.id, consent, readAppUrl(), ctx.now, { who: whoOf(ctx), ...extras })
+  await recordPurchase(ctx.db, pass.id, consent, readAppUrl(), ctx.now, { who: whoOf(ctx), organizationId: ctx.organizationId, ...extras })
 }

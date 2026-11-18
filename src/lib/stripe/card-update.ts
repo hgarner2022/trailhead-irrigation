@@ -32,10 +32,10 @@ export async function createCardUpdateSession(stripe: Stripe, input: { passId: s
  * whose charge failed on any of their passes and has not been paid since. The session names the pass by its job id, or by the old
  * pass id of a session opened before the move. Safe to run twice for one session: the second sees the card already stored and does nothing.
  */
-export async function applyCardUpdate(db: Database, stripe: Stripe, sessionId: string, now = new Date()): Promise<"applied" | "already-applied"> {
+export async function applyCardUpdate(db: Database, stripe: Stripe, sessionId: string, now = new Date(), organizationId?: string): Promise<"applied" | "already-applied"> {
   const card = await paymentMethodFromSession(stripe, sessionId)
   if (card.purpose !== "card-update" || !card.passId) throw new Error("This session is not a card update")
-  const pass = await loadPassRecord(db, card.passId)
+  const pass = await loadPassRecord(db, card.passId, organizationId)
   if (!pass) throw new Error(`Pass ${card.passId} not found`)
   const org = pass.organizationId
   const [owner] = await db.select({ method: s.customer.stripePaymentMethodId }).from(s.customer).where(and(eq(s.customer.id, pass.customerId), eq(s.customer.organizationId, org)))

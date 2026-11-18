@@ -13,7 +13,8 @@ describe("eventWords: one sentence per kind", () => {
   })
   it("job.requested: a quote asked for online", () => {
     expect(words("job.requested", { source: "site", name: "Repair" })).toBe("Quote asked for online")
-    expect(words("job.requested", { source: "office" })).toBe("Quote asked for")
+    expect(words("job.requested", { source: "office" })).toBe("Quote asked for at the office")
+    expect(words("job.requested", {})).toBe("Quote needed")
   })
   it("job.cancelled", () => {
     expect(words("job.cancelled")).toBe("Job cancelled")
