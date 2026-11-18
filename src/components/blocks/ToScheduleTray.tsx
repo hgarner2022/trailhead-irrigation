@@ -4,9 +4,9 @@ import { KIND_WORDS } from "@/lib/admin/format"
 import { cn } from "@/lib/utils"
 import { EmptyState } from "./EmptyState"
 
-// The list beside the week: every job that needs a day, for active passes
-// only (a job with a day is never here, an unpaid pass's job is never here),
-// earliest window first, so the work of scheduling is done on the Schedule
+// The list beside the week: every visit that needs a day, a pass's or a
+// one-off job's (a job with a day is never here, an unpaid pass's job is
+// never here), one-off jobs first, then the earliest window, so the work of scheduling is done on the Schedule
 // and not found on Customers. Place puts the job on the week; Schedule fills
 // the whole list at once. A customer who must be there picks their own day,
 // so their row says so instead of offering Place. A refused Place says why
@@ -25,13 +25,13 @@ export interface ToScheduleTrayProps {
 
 const capital = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
 
-/** "Turn-on, May" or "Inspection, July": what the job is and the month it belongs to. */
+/** "Turn-on, May" or "Inspection, July": what the job is and the month it belongs to; a one-off job is just "Repair". */
 export function trayLine(item: TrayItem): string {
-  return `${capital(KIND_WORDS[item.kind])}, ${item.window}`
+  return item.window ? `${capital(KIND_WORDS[item.kind])}, ${item.window}` : capital(KIND_WORDS[item.kind])
 }
 
 export function ToScheduleTray({ items, onPlace, readOnly, problems = {}, className }: ToScheduleTrayProps) {
-  if (items.length === 0) return <EmptyState className={className} title="Nothing is waiting for a day" line="Jobs of active passes with no day show here." />
+  if (items.length === 0) return <EmptyState className={className} title="Every job has a day" line="Nothing is waiting for a day" />
   return (
     <ol data-slot="to-schedule-tray" className={cn("divide-y divide-border", className)}>
       {items.map((item) => (

@@ -40,6 +40,31 @@ describe("New job", () => {
     expect(options).toContain("repair")
   })
 
+  it("with no day Add job is on, says nothing is sent, and the job is made with no day and no time", async () => {
+    const actions = open()
+    await choose("repair")
+    expect(screen.getByLabelText("Day (optional)")).toHaveValue("")
+    expect(screen.getByRole("button", { name: "Add job" })).toBeEnabled()
+    expect(screen.getByText(/No day yet, nothing is sent/)).toBeInTheDocument()
+    await userEvent.click(screen.getByRole("button", { name: "Add job" }))
+    await waitFor(() => expect(actions.createVisit).toHaveBeenCalledTimes(1))
+    const sent = (actions.createVisit.mock.calls as unknown[][])[0]![0]
+    expect(sent).not.toHaveProperty("scheduledOn")
+    expect(sent).not.toHaveProperty("startTime")
+  })
+
+  it("with a day it says the customer is told, sends the day, and Time stays Any time unless one is picked", async () => {
+    const actions = open()
+    await choose("repair")
+    await userEvent.type(screen.getByLabelText("Day (optional)"), "2026-11-20")
+    expect(screen.getByText(/With a day, the customer is told/)).toBeInTheDocument()
+    await userEvent.click(screen.getByRole("button", { name: "Add job" }))
+    await waitFor(() => expect(actions.createVisit).toHaveBeenCalledTimes(1))
+    const sent = (actions.createVisit.mock.calls as unknown[][])[0]![0]
+    expect(sent).toMatchObject({ scheduledOn: "2026-11-20" })
+    expect(sent).not.toHaveProperty("startTime")
+  })
+
   it("choosing Repair shows what it includes and $145, then the day and Add job", async () => {
     open()
     await choose("repair")
@@ -88,7 +113,7 @@ describe("New job", () => {
     await choose("repair")
     await userEvent.click(screen.getByRole("button", { name: "Add job" }))
     await waitFor(() => expect(actions.createVisit).toHaveBeenCalledTimes(1))
-    expect(actions.createVisit).toHaveBeenCalledWith(expect.objectContaining({ customerId: "c100", serviceKey: "repair", scheduledOn: "2026-11-12", durationMinutes: 120, price: 145 }))
+    expect(actions.createVisit).toHaveBeenCalledWith(expect.objectContaining({ customerId: "c100", serviceKey: "repair", durationMinutes: 120, price: 145 }))
     expect(actions.sellPass).not.toHaveBeenCalled()
   })
 

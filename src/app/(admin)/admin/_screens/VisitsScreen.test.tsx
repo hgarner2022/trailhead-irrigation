@@ -337,7 +337,7 @@ describe("VisitsScreen", () => {
 })
 
 describe("New job", () => {
-  it("needs only a customer, a service and a day; More details holds the defaults", async () => {
+  it("needs only a customer and a service; the day is optional and More details holds the defaults", async () => {
     const a = actions()
     renderScreen(a)
     await userEvent.click(screen.getByRole("button", { name: "New job" }))
@@ -350,7 +350,8 @@ describe("New job", () => {
     expect(sheet.getByLabelText("Minutes")).toHaveValue("120")
     expect(sheet.getByLabelText("Price")).toHaveValue("145")
     await userEvent.click(sheet.getByRole("button", { name: "Add job" }))
-    expect(a.createVisit).toHaveBeenCalledWith(expect.objectContaining({ customerId: "cx", serviceKey: "repair", scheduledOn: "2026-11-12", durationMinutes: 120, price: 145 }))
+    expect(a.createVisit).toHaveBeenCalledWith(expect.objectContaining({ customerId: "cx", serviceKey: "repair", durationMinutes: 120, price: 145 }))
+    expect(a.createVisit.mock.calls[0]![0]).not.toHaveProperty("scheduledOn")
   })
 
   it("takes a new customer with name, street and town, and shows the API's refusal", async () => {

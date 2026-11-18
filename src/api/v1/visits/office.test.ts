@@ -73,6 +73,26 @@ describe("visits.create", () => {
     expect((await callApi(as(readKey), customersGet, { id: out.customerId })).jobs.find((j) => j.id === out.jobId)).toMatchObject({ kind: "install", price: null, status: "needs-a-quote" })
     expect(await linesOfJob(db, out.jobId)).toMatchObject([{ visitId: out.id, name: "Installation", unitPrice: 0, serviceKey: "install", description: SERVICES.install!.description }])
   })
+  it("a day with no time stays Any time: no start time is written, and placing another job that day leaves it so, and a time picked stays", async () => {
+    const anyTime = await create({ customerId: "c100", serviceKey: "repair", scheduledOn: "2027-06-08" })
+    expect(anyTime).toMatchObject({ status: "scheduled", scheduledOn: "2027-06-08", startTime: null, durationMinutes: 120 })
+    const timed = await create({ customerId: "c100", serviceKey: "repair", scheduledOn: "2027-06-08", startTime: "13:30" })
+    expect(timed).toMatchObject({ startTime: "13:30", durationMinutes: 120 })
+    // A third visit on the same day orders the stops again; neither the Any time one nor the picked time moves.
+    await create({ customerId: "c100", serviceKey: "repair", scheduledOn: "2027-06-08" })
+    expect(await callApi(as(readKey), visitsGet, { id: anyTime.id })).toMatchObject({ startTime: null })
+    expect(await callApi(as(readKey), visitsGet, { id: timed.id })).toMatchObject({ startTime: "13:30" })
+    // Moving it to another day with no time keeps it Any time.
+    expect(await callApi(as(), visitsMove, { id: anyTime.id, personId: "person_truck-1", scheduledOn: "2027-06-09" })).toMatchObject({ startTime: null, scheduledOn: "2027-06-09" })
+  })
+  it("a service job with no day waits as Unscheduled: no person, no day, no time, and no text or email is queued", async () => {
+    const before = await db.select().from(s.messageLog)
+    const out = await create({ customerId: "c100", serviceKey: "repair", price: 145 })
+    expect(out).toMatchObject({ status: "unscheduled", scheduledOn: null, startTime: null, personId: null, durationMinutes: 120, amount: 145, passId: null })
+    expect(await db.select().from(s.messageLog)).toHaveLength(before.length)
+    const events = await eventsOf(db, { jobId: out.jobId })
+    expect(events.map((e) => e.kind)).not.toContain("visit.scheduled")
+  })
   it("a refused day leaves nothing behind, not even a new customer", async () => {
     const [jobs, customers, visits, lines] = [await count(s.job), await count(s.customer), await count(s.visit), await count(s.lineItem)]
     await expect(create({ newCustomer: { firstName: "Gone", lastName: "Tester", property: { address: "1 Main St", town: "Erie" } }, kind: "repair", scheduledOn: "2027-05-02" })).rejects.toMatchObject({ code: "unprocessable", message: expect.stringMatching(/does not work on sundays/) })

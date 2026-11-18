@@ -124,6 +124,19 @@ describe("to schedule tray, placing and scheduling", async () => {
     expect(items.some((i) => i.passId === snapshot.passes[0].id && i.kind === done.kind)).toBe(false)
   })
 
+  it("lists a one-off job's visit with no day (pass or not), first, with no window", () => {
+    const oneOff: import("@/lib/admin/types").Visit = { id: "v-repair", clientId: "c1", clientName: "Nora Ortiz", town: "Erie", kind: "repair", status: "unscheduled", isPass: false, jobberUrl: "", jobId: "j-repair" }
+    const dated = { ...oneOff, id: "v-dated", status: "scheduled" as const, startAt: "2027-05-03T14:00:00Z", scheduledOn: "2027-05-03" }
+    const canceled = { ...oneOff, id: "v-gone", status: "cancelled" as const }
+    const feed = { ...oneOff, id: "v-feed", jobId: undefined }
+    const items = trayItems({ visits: [...snapshot.visits, oneOff, dated, canceled, feed], passes: snapshot.passes })
+    expect(items[0]).toMatchObject({ id: "v-repair", clientName: "Nora Ortiz", kind: "repair", window: "" })
+    expect(items.filter((i) => !i.passId).map((i) => i.id)).toEqual(["v-repair"])
+    expect(items).toHaveLength(trayItems(snapshot).length + 1)
+    // Placed since the data was read, it leaves the list.
+    expect(trayItems({ visits: [{ ...oneOff, startAt: "2027-05-03T14:00:00Z" }], passes: [] })).toEqual([])
+  })
+
   it("places an item on a person's day as a scheduled visit, last in the day, once", () => {
     const person = snapshot.settings.people[0]
     const item = trayItems(snapshot)[0]

@@ -101,11 +101,13 @@ function ScheduleBody({ data, today, defaultTab = "week", defaultDay, defaultWee
   const stops = useMemo(() => dayVisits(visits, day, undefined, TIME_ZONE), [visits, day])
   const stopRows = useMemo(() => rowsOf(data, stops, today), [data, stops, today])
   const tray = trayItems({ visits, passes: data.passes })
+  // The Schedule button runs the scheduler, which places a pass's visits by window; a one-off job's visit is placed from its row.
+  const passTray = tray.filter((i) => i.passId)
 
   const scheduleAll = () => {
     if (onSchedule) {
       // The scheduler works one window at a time; a list can hold more than one.
-      const windows = [...new Set(tray.filter((i) => !i.awaitingPick && WINDOWS.includes(i.kind as never)).map((i) => i.kind as (typeof WINDOWS)[number]))]
+      const windows = [...new Set(passTray.filter((i) => !i.awaitingPick && WINDOWS.includes(i.kind as never)).map((i) => i.kind as (typeof WINDOWS)[number]))]
       startTransition(async () => {
         let placed = 0
         let unplaced = 0
@@ -120,8 +122,8 @@ function ScheduleBody({ data, today, defaultTab = "week", defaultDay, defaultWee
       })
       return
     }
-    console.info("schedule", weekStart, tray.filter((i) => !i.awaitingPick).map((i) => i.id))
-    const outcome = scheduleItems(visits, tray, people, weekStart, TIME_ZONE)
+    console.info("schedule", weekStart, passTray.filter((i) => !i.awaitingPick).map((i) => i.id))
+    const outcome = scheduleItems(visits, passTray, people, weekStart, TIME_ZONE)
     setVisits(outcome.visits)
     const waiting = outcome.waiting ? ` ${outcome.waiting} ${outcome.waiting === 1 ? "customer picks their own day and stays" : "customers pick their own days and stay"} in the list.` : ""
     setAnnouncement(`${outcome.placed} ${outcome.placed === 1 ? "visit" : "visits"} scheduled on the week of ${writtenDate(weekStart)}. The customers get their dates.${waiting}`)
@@ -170,8 +172,8 @@ function ScheduleBody({ data, today, defaultTab = "week", defaultDay, defaultWee
           title="Schedule"
           context={weekContext(weekStart, week)}
           actions={
-            readOnly ? undefined : tray.length > 0 ? (
-              <Button onClick={scheduleAll} disabled={pending}>{`Schedule ${tray.length} ${tray.length === 1 ? "visit" : "visits"}`}</Button>
+            readOnly ? undefined : passTray.length > 0 ? (
+              <Button onClick={scheduleAll} disabled={pending}>{`Schedule ${passTray.length} ${passTray.length === 1 ? "visit" : "visits"}`}</Button>
             ) : (
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -179,7 +181,7 @@ function ScheduleBody({ data, today, defaultTab = "week", defaultDay, defaultWee
                     <Button disabled>Schedule</Button>
                   </span>
                 </TooltipTrigger>
-                <TooltipContent>Nothing is waiting for a day</TooltipContent>
+                <TooltipContent>{tray.length ? "Give each job its day from the list" : "Nothing is waiting for a day"}</TooltipContent>
               </Tooltip>
             )
           }
