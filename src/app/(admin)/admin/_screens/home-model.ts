@@ -6,14 +6,14 @@
  * There is one definition of "day" on Home, the calendar day in Mountain
  * time (`TIME_ZONE`): the greeting hour, the long date, "8:00 am", tomorrow
  * and the month all come from it, and the screen passes the same zone to
- * `visitsOn` and `invoicesOverdue`, so a 7 pm visit stays on its Thursday.
+ * `visitsOn` and `billsOverdue`, so a 7 pm visit stays on its Thursday.
  */
 import type { StatTileProps } from "@/components/blocks/StatTile"
 import type { AdminData, Attention, MonthTotal, OrganizationSettings, SeasonWindow, Visit } from "@/lib/admin/types"
 import { TIME_ZONE, monthDay, monthShort } from "@/lib/admin/format"
 import { addDays, dayOf } from "@/lib/admin/calendar"
 import { NOT_CLOSED_LOOKBACK_DAYS, jobCounts, visitJob } from "@/lib/admin/jobs"
-import { chargedSoFar, committedRevenue, formatMoney, invoicesOverdue, monthComparison, quotesAwaiting, visitsOn } from "@/lib/admin/metrics"
+import { billsOverdue, chargedSoFar, committedRevenue, formatMoney, monthComparison, quotesAwaiting, visitsOn } from "@/lib/admin/metrics"
 
 /** The season the Home line shows. The snapshot's passes are all 2027; the wiring phase derives this from the passes on hand. */
 export const SEASON = 2027
@@ -111,13 +111,13 @@ export function seasonDescription(data: Pick<AdminData, "passes">): string {
   return `${SEASON_LINE}. ${formatMoney(committedRevenue(data.passes))} on ${passes}, ${formatMoney(chargedSoFar(data.passes))} charged so far.`
 }
 
-/** The four tiles Home opens with, in order: revenue this month, passes sold, quotes awaiting, invoices past due. */
+/** The four tiles Home opens with, in order: revenue this month, passes sold, quotes awaiting, our bills overdue (the Jobber mirror's invoices no longer have a tile). */
 export function tileModels(data: AdminData, today: string): StatTileProps[] {
   const { year, month, name } = monthOf(today)
   const revenue = monthComparison(data.monthTotals, year, month)
   const active = data.passes.filter((p) => p.status === "active").length
   const quotes = quotesAwaiting(data.quotes)
-  const overdue = invoicesOverdue(data.invoices, today, TIME_ZONE)
+  const overdue = billsOverdue(data.jobs, today, TIME_ZONE)
   return [
     {
       label: "Revenue this month",
@@ -135,8 +135,9 @@ export function tileModels(data: AdminData, today: string): StatTileProps[] {
       value: String(quotes.count),
     },
     {
-      label: `Invoices past due, ${formatMoney(overdue.total)}`,
+      label: `Bills overdue, ${formatMoney(overdue.total)}`,
       value: String(overdue.count),
+      href: "/admin/visits?money=bill-sent",
       delta: { value: null, baseline: "last month", goodWhen: "down" },
     },
   ]

@@ -377,8 +377,9 @@ function visitRows(i: ShapeInput, app: Visit[], all: Visit[], jobs: SoldJob[] = 
   const appIds = new Set(app.map((v) => v.id))
   // Done and owed, one row per JOB: booked work whose visits are all done (or cancelled) with money still to come, read from the lines and the payment rows
   // (`jobMoney`). A pass is charged to its card on its own, and a failed charge has its own row. The row opens the job's latest done visit that is itself owed (not paid up), else its latest done visit.
+  // A job with an open bill has no owed row: it reads Bill sent, and its bill has its own row once it is overdue (below).
   for (const j of jobs) {
-    if (j.kind === "pass" || !j.money || j.money.owed <= 0) continue
+    if (j.kind === "pass" || !j.money || j.money.owed <= 0 || j.invoice) continue
     const mine = all.filter((v) => j.visitIds.includes(v.id) && appIds.has(v.id) && v.status !== "cancelled")
     const done = mine.filter((v) => v.status === "completed")
     if (!done.length || done.length !== mine.length) continue
@@ -386,6 +387,14 @@ function visitRows(i: ShapeInput, app: Visit[], all: Visit[], jobs: SoldJob[] = 
     const unpaid = done.filter((v) => !visitPaid(v))
     const last = latest(unpaid.length ? unpaid : done)
     out.push({ kind: "owed", key: j.id, jobId: j.id, visitId: last.id, message: `${possessive(last.clientName)} ${KIND_WORDS[last.kind] ?? "visit"} is done, $${j.money.owed} owed`, since: instantOf(last.completedOn ?? i.today, "12:00") })
+  }
+  // An overdue bill, one row per bill: open (not paid, not cancelled; `SoldJob.invoice` is only ever an open one) with its due day before today. Remind sends the reminder.
+  // The key carries the due day, so a dismissed row is gone for that due day only.
+  const names = new Map(i.customers.map((c) => [c.id, fullName(c.firstName, c.lastName ?? undefined)]))
+  for (const j of jobs) {
+    const bill = j.invoice
+    if (!bill || bill.dueOn >= i.today) continue
+    out.push({ kind: "overdue", key: `invoice-${bill.id}@${bill.dueOn}`, invoiceId: bill.id, jobId: j.id, customerId: j.customerId, message: `${possessive(names.get(j.customerId) ?? "A customer")} bill of $${bill.total} was due ${shortDay(bill.dueOn)}`, since: instantOf(bill.dueOn, "12:00") })
   }
   for (const v of all)
     if (appIds.has(v.id) && !v.isPass && v.status === "unscheduled")

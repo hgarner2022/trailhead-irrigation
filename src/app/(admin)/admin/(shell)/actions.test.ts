@@ -10,6 +10,8 @@ import { settingsGet } from "@/api/v1/settings/handlers"
 import { peopleList } from "@/api/v1/people/handlers"
 import { servicesList } from "@/api/v1/services/handlers"
 import { passesList } from "@/api/v1/passes/handlers"
+import { invoicesSend } from "@/api/v1/invoices/handlers"
+import { visitsCreate } from "@/api/v1/visits/office"
 import { getLiveAdminData } from "@/lib/admin/live"
 import type { OrganizationSettings } from "@/lib/admin/types"
 import { DEFAULT_BILLING } from "@/lib/settings/defaults"
@@ -330,5 +332,38 @@ describe("Needs attention", () => {
 
   it("takes a job that is done and owed to its done visit, where the panel records the payment", async () => {
     await expect(actions.attentionAction({ kind: "owed", key: "job-1", jobId: "job-1", visitId: "v9", message: "Andrea's repair is done, $145 owed", since: "2027-01-01T00:00:00Z" })).rejects.toThrow("redirect:/admin/visits?visit=v9")
+  })
+
+  it("Remind on an overdue bill calls invoices.remind; two presses in a day still send one message; a tech cannot press it", async () => {
+    await db.update(s.customer).set({ email: "dana@example.com" }).where(eq(s.customer.id, "c100"))
+    const ctx = ctxFor(db, owner)
+    const made = await callApi(ctx, visitsCreate, { customerId: "c100", kind: "repair", scheduledOn: "2027-05-28", price: 145 })
+    await db.update(s.visit).set({ status: "completed", completedOn: "2027-04-19" }).where(eq(s.visit.id, made.id))
+    const bill = await callApi(ctx, invoicesSend, { jobId: made.jobId })
+    const row = { kind: "overdue" as const, key: `invoice-${bill.id}@${bill.dueOn}`, invoiceId: bill.id, jobId: made.jobId, customerId: "c100", message: "Dana's bill of $145 was due May 4", since: "2027-05-04T18:00:00Z" }
+    vi.mocked(callApi).mockClear()
+
+    expect(await actions.attentionAction(row)).toEqual({ ok: true, data: undefined, message: "Reminder sent." })
+    expect(calls("invoices.")).toEqual(["invoices.remind"])
+    expect(await actions.attentionAction(row)).toEqual({ ok: true, data: undefined, message: "Reminder sent." })
+    const reminders = (await db.select().from(s.messageLog)).filter((m) => m.kind === "invoice-reminder" && m.key === `invoice-${bill.id}-2027-04-20`)
+    expect(reminders).toHaveLength(1)
+
+    state.principal = tech
+    await expect(actions.attentionAction(row)).rejects.toThrow("redirect:/admin/sign-in")
+    expect((await db.select().from(s.messageLog)).filter((m) => m.kind === "invoice-reminder" && m.key?.startsWith(`invoice-${bill.id}`))).toHaveLength(1)
+  })
+
+  it("answers the API's words when the bill is already paid, and Dismiss clears the row by its bill-and-due-day key", async () => {
+    const ctx = ctxFor(db, owner)
+    const made = await callApi(ctx, visitsCreate, { customerId: "c100", kind: "repair", scheduledOn: "2027-06-01", price: 60 })
+    await db.update(s.visit).set({ status: "completed", completedOn: "2027-04-19" }).where(eq(s.visit.id, made.id))
+    const bill = await callApi(ctx, invoicesSend, { jobId: made.jobId })
+    await db.update(s.invoice).set({ paidOn: "2027-04-20" }).where(eq(s.invoice.id, bill.id))
+    const row = { kind: "overdue" as const, key: `invoice-${bill.id}@${bill.dueOn}`, invoiceId: bill.id, customerId: "c100", message: "x", since: "2027-05-04T18:00:00Z" }
+    expect(await actions.attentionAction(row)).toMatchObject({ ok: false, message: "This bill is already paid" })
+    expect(await actions.dismissAttention(row)).toEqual({ ok: true, data: undefined })
+    const [gone] = await db.select().from(s.adminAlert).where(eq(s.adminAlert.key, row.key))
+    expect(gone).toMatchObject({ kind: "overdue", message: "Dismissed" })
   })
 })

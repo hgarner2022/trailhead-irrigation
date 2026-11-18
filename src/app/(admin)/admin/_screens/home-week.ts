@@ -6,11 +6,11 @@
 import { TOWN_CENTRES, hasPoint } from "@/components/blocks/day-map-helpers"
 import { dayOf } from "@/lib/admin/calendar"
 import { TIME_ZONE } from "@/lib/admin/format"
-import { committedRevenue, formatMoney, monthComparison } from "@/lib/admin/metrics"
+import { billsOverdue, committedRevenue, formatMoney, monthComparison } from "@/lib/admin/metrics"
 import type { AdminData, Visit } from "@/lib/admin/types"
 import { dayByPerson, monthOf, type PersonDay } from "./home-model"
 import { dayLabel } from "./visit-panel-model"
-import { visitRows } from "./visits-model"
+import { jobCount, owedRows, visitRows } from "./visits-model"
 
 export interface WeekView {
   /** the day shown, YYYY-MM-DD; null when nothing is on the calendar from today on */
@@ -76,21 +76,25 @@ const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`
 
 /**
  * The four figures on Home's one money line, in the order a person asks them: what came in this month, what is owed
- * on visits already done, what failed, and the season's total. Each links to where the rows behind it are. The Visits
- * list is read through `visitRows`, so the figure and the list never disagree.
+ * on visits already done, what failed, and the season's total; a fifth, "N bills overdue", joins them only while a bill is
+ * past its due day. Each links to where the rows behind it are. The Visits list is read through `visitRows`, so the figure
+ * and the list never disagree, and the owed figure counts the same rows as the Visits header's "done and owed" (`owedRows`).
  */
 export function moneyFigures(data: AdminData, today: string): MoneyFigure[] {
   const { year, month } = monthOf(today)
   const rows = visitRows(data, today)
   // Owed is read from the payment rows by `visitJob`; a job counts once however many of its visits are owed.
-  const owed = rows.filter((r) => r.work === "done" && r.money === "owed")
-  const owedJobs = new Set(owed.map((r) => r.jobId ?? r.id)).size
+  const owed = owedRows(rows)
+  const owedJobs = jobCount(owed)
   const failed = rows.filter((r) => r.money === "failed")
   const sum = (list: { price: number }[]) => formatMoney(list.reduce((n, r) => n + r.price, 0))
+  const overdue = billsOverdue(data.jobs, today, TIME_ZONE)
   return [
     { label: "Charged this month", value: formatMoney(monthComparison(data.monthTotals, year, month).current), href: "/admin/reports" },
     { label: owedJobs ? `Owed on ${plural(owedJobs, "done job")}` : "Owed on done jobs", value: sum(owed), href: "/admin/visits?money=owed" },
     { label: failed.length ? `Failed charges, ${failed.length}` : "Failed charges", value: sum(failed), href: "/admin/visits?money=failed" },
     { label: "Season total committed", value: formatMoney(committedRevenue(data.passes)), href: "/admin/reports" },
+    // The link is the Bill sent filter: it lists every open bill, the overdue ones among them.
+    ...(overdue.count ? [{ label: `${plural(overdue.count, "bill")} overdue`, value: formatMoney(overdue.total), href: "/admin/visits?money=bill-sent" }] : []),
   ]
 }

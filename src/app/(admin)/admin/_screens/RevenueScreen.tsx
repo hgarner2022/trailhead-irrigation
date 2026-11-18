@@ -3,11 +3,12 @@ import { CardTitleHeading } from "@/components/blocks/CardTitleHeading"
 import { MonthBars } from "@/components/blocks/Chart"
 import { PageHeader } from "@/components/blocks/PageHeader"
 import { StatTile } from "@/components/blocks/StatTile"
+import { cn } from "@/lib/utils"
 import type { AdminData, Pass } from "@/lib/admin/types"
 import { chargedSoFar, committedRevenue, formatMoney } from "@/lib/admin/metrics"
 import { SEASON } from "./home-model"
 import { seasonOf } from "./passes-model"
-import { hasRenewals, renewals, revenueContext, seriesFor, seriesWords, upcomingRows } from "./revenue-model"
+import { hasRenewals, outstanding, renewals, revenueContext, seriesFor, seriesWords, upcomingRows } from "./revenue-model"
 
 // Revenue in two parts: paid invoices by month against the year before, and
 // the Season Pass commitments for the coming season. Pure composition over
@@ -53,14 +54,16 @@ export function RevenueScreen({ data, today, embedded = false }: RevenueScreenPr
   const thisYear = series?.[0].year ?? season - 1
   const upcoming = upcomingRows(data.passes, today, 10)
   const pipeline = renewals(data.passes, season)
+  const owing = outstanding(data)
 
   return (
     <div data-slot="revenue-screen" className="space-y-6">
       {!embedded && <PageHeader title="Revenue" context={revenueContext(series, thisYear, season)} />}
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className={cn("grid gap-4 sm:grid-cols-2", owing && "lg:grid-cols-3")}>
         <StatTile label={`Committed this season, ${passesWord(active)}`} value={formatMoney(committedRevenue(data.passes))} />
         <StatTile label="Charged so far" value={formatMoney(chargedSoFar(data.passes))} />
+        {owing && <StatTile label={`Outstanding, ${owing.jobs === 1 ? "1 job" : `${owing.jobs} jobs`}`} value={formatMoney(owing.total)} href="/admin/visits?money=owed,bill-sent" />}
       </div>
 
       <Card>

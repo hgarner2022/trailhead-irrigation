@@ -1,5 +1,6 @@
-import { describe, it, expect } from "vitest"
+import { describe, it, expect, vi } from "vitest"
 import { render, screen } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import type { Attention } from "@/lib/admin/types"
 import { NeedsAttention } from "./NeedsAttention"
 
@@ -63,6 +64,29 @@ describe("NeedsAttention", () => {
     expect(document.querySelector('[data-slot="attention-action"]')?.textContent).toBe("Paid by")
     expect(rows()[0]!.dataset.kind).toBe("owed")
     expect(document.body.textContent).not.toMatch(/Unpaid|not paid/)
+  })
+
+  it("names an overdue bill, opens its customer and offers Remind; a tech reads it with no button", () => {
+    const overdue: Attention = { kind: "overdue", key: "invoice-i1@2026-12-01", invoiceId: "i1", jobId: "job-1", customerId: "c 1", message: "Andrea's bill of $145 was due Dec 1", since: "2026-12-01T19:00:00Z" }
+    const { unmount } = render(<NeedsAttention items={[overdue]} now="2026-12-04T18:00:00Z" />)
+    expect(rows()[0]!.querySelector(".sr-only")?.textContent).toBe("Bill overdue: ")
+    expect(iconOf(rows()[0]!)).toHaveClass("bg-warning/10", "text-warning")
+    expect(screen.getByRole("link").getAttribute("href")).toBe("/admin/customers?customer=c%201")
+    expect(document.querySelector('[data-slot="attention-action"]')?.textContent).toBe("Remind")
+    expect(screen.getByText("2 days ago")).toBeInTheDocument()
+    unmount()
+    render(<NeedsAttention items={[overdue]} now="2026-12-04T18:00:00Z" readOnly />)
+    expect(document.querySelector('[data-slot="attention-action"]')).toBeNull()
+    expect(screen.getByRole("link")).toBeInTheDocument()
+  })
+
+  it("runs Remind through onAction and shows the answer under the buttons", async () => {
+    const overdue: Attention = { kind: "overdue", key: "invoice-i1@2026-12-01", invoiceId: "i1", customerId: "c1", message: "Andrea's bill of $145 was due Dec 1", since: "2026-12-01T19:00:00Z" }
+    const onAction = vi.fn().mockResolvedValue({ ok: true, message: "Reminder sent." })
+    render(<NeedsAttention items={[overdue]} now="2026-12-04T18:00:00Z" onAction={onAction} />)
+    await userEvent.click(screen.getByRole("button", { name: /^Remind: Andrea's bill/ }))
+    expect(onAction).toHaveBeenCalledWith(overdue)
+    expect(await screen.findByRole("status")).toHaveTextContent("Reminder sent.")
   })
 
   it("shows the empty state when nothing needs attention", () => {

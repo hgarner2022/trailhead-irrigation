@@ -29,6 +29,12 @@ export const WithNotClosed: Story = {
   render: (args) => narrow(<NeedsAttention {...args} />),
 }
 
+/** A bill past its due day: "Bill overdue", the customer's name and the due day in the message, the row opens the customer, and Remind sends one reminder with the pay link. */
+export const WithOverdueBill: Story = {
+  args: { items: [{ kind: "overdue", key: "invoice-inv1@2026-11-05", invoiceId: "inv1", jobId: "job-1", customerId: "c-andrea", message: "Andrea Reyes's bill of $145 was due Nov 5", since: "2026-11-05T19:00:00Z" }, ...items] },
+  render: (args) => narrow(<NeedsAttention {...args} />),
+}
+
 export const Empty: Story = {
   args: { items: [] },
   render: (args) => narrow(<NeedsAttention {...args} />),

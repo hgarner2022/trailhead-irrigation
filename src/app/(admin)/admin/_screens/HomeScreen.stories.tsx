@@ -84,6 +84,20 @@ export const OwedRow: Story = {
   globals: { viewport: { value: "wide", isRotated: false } },
 }
 
+/** A bill past its due day: the money line gains "1 bill overdue" and Needs action has the bill's one row, "Bill overdue", with Remind. The job, which reads Bill sent, has no owed row. */
+const overdueBill = { id: "inv-overdue", jobId: "job-billed", number: "INV-2026-0007", amount: 145, tax: 0, total: 145, sentOn: "2026-10-22", dueOn: "2026-11-05", status: "overdue" as const, visitIds: [] }
+const overdueRow: Attention = { kind: "overdue", key: "invoice-inv-overdue@2026-11-05", invoiceId: "inv-overdue", jobId: "job-billed", customerId: "c-andrea", message: "Andrea Reyes's bill of $145 was due Nov 5", since: "2026-11-05T19:00:00Z" }
+export const OverdueBill: Story = {
+  args: {
+    data: {
+      ...data,
+      jobs: [{ id: "job-billed", customerId: "c-andrea", kind: "repair", status: "active", source: "office", visitIds: [], invoice: overdueBill }],
+      attention: [overdueRow, ...data.attention],
+    },
+  },
+  globals: { viewport: { value: "wide", isRotated: false } },
+}
+
 export const NoDataYet: Story = {
   args: { data: nothingYet },
   globals: { viewport: { value: "wide", isRotated: false } },

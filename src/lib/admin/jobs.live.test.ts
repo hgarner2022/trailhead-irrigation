@@ -10,6 +10,9 @@ import { invoicesCancel, invoicesSend } from "@/api/v1/invoices/handlers"
 import { paymentsRecord, paymentsRefund } from "@/api/v1/payments/handlers"
 import { visitsMove } from "@/api/v1/visits/handlers"
 import { visitsCreate } from "@/api/v1/visits/office"
+import { alertsDismiss } from "@/api/v1/alerts/handlers"
+import { outstanding } from "@/app/(admin)/admin/_screens/revenue-model"
+import { billsOverdue } from "./metrics"
 import { failedChargeVisits } from "./shape"
 import { passVisitJob, visitJob } from "./jobs"
 import { getLiveAdminData } from "./live"
@@ -199,11 +202,28 @@ describe("the money words, read from the payment rows", () => {
     expect(moneyOf(live, made.id)).toMatchObject({ state: "done", money: "bill-sent", moneyLabel: "Bill sent" })
     expect(live.visits.find((v) => v.id === made.id)!.invoice).toMatchObject({ id: bill.id, number: bill.number, total: 145, sentOn: "2027-04-20", dueOn: "2027-05-04", status: "sent", payUrl: bill.payUrl })
     expect(live.jobs!.find((j) => j.id === made.jobId)).toMatchObject({ money: { owed: 145, words: "Bill sent", billSent: true }, invoice: { id: bill.id } })
+    // Bill sent and not yet due: the job is on Home nowhere (no owed row, no overdue row).
+    expect(live.attention.filter((a) => a.jobId === made.jobId)).toEqual([])
 
-    // A bill past its due day is still Bill sent (the overdue row is Home's, task 4.5).
+    // On its due day the bill is still not overdue; the day after, it is, and its one row is the bill's, with Remind (the action) and the customer to open.
+    live = await getLiveAdminData(ctxFor(db, owner, "2027-05-04T15:00:00Z"))
+    expect(live.attention.filter((a) => a.jobId === made.jobId)).toEqual([])
     live = await getLiveAdminData(ctxFor(db, owner, "2027-06-10T15:00:00Z"))
     expect(live.visits.find((v) => v.id === made.id)!.invoice).toMatchObject({ status: "overdue" })
     expect(visitJob(live.visits.find((v) => v.id === made.id)!, "2027-06-10", TZ)).toMatchObject({ money: "bill-sent", moneyLabel: "Bill sent" })
+    expect(live.attention.filter((a) => a.jobId === made.jobId)).toEqual([
+      { kind: "overdue", key: `invoice-${bill.id}@2027-05-04`, invoiceId: bill.id, jobId: made.jobId, customerId: "c100", message: expect.stringMatching(/'s bill of \$145 was due May 4$/), since: "2027-05-04T18:00:00Z" },
+    ])
+    // The month's tile and the Visits link count it by the bill's total, not twice with its owed number.
+    expect(billsOverdue(live.jobs, "2027-06-10", TZ)).toEqual({ count: 1, total: 145 })
+    // Outstanding counts this job once, at the bill's total, whatever the other jobs of the shared database owe.
+    const without = outstanding({ visits: live.visits, jobs: live.jobs!.filter((j) => j.id !== made.jobId) })!
+    expect(outstanding(live)).toEqual({ total: without.total + 145, jobs: without.jobs + 1 })
+
+    // Dismissed for that due day, the row is gone.
+    await callApi(ctxFor(db, adminKey, NOW), alertsDismiss, { kind: "overdue", key: `invoice-${bill.id}@2027-05-04` })
+    live = await getLiveAdminData(ctxFor(db, owner, "2027-06-10T15:00:00Z"))
+    expect(live.attention.filter((a) => a.kind === "overdue" && a.invoiceId === bill.id)).toEqual([])
 
     // A read-only key's data never carries the pay link, which is a bearer link.
     const read = await getLiveAdminData(ctxFor(db, readKey, NOW))
@@ -215,6 +235,9 @@ describe("the money words, read from the payment rows", () => {
     expect(moneyOf(live, made.id)).toMatchObject({ money: "owed", moneyLabel: "Owed" })
     expect(live.visits.find((v) => v.id === made.id)).not.toHaveProperty("invoice")
     expect(live.jobs!.find((j) => j.id === made.jobId)).toMatchObject({ money: { words: "$145 owed", billSent: false } })
+    // Cancelled, the bill's row is gone and the job is Done and Owed on Home again.
+    expect(live.attention.filter((a) => a.kind === "owed" && a.jobId === made.jobId)).toHaveLength(1)
+    expect(live.attention.filter((a) => a.kind === "overdue" && a.invoiceId === bill.id)).toEqual([])
   })
 
   it("counts only a fully paid visit as paid when it words a job, so a part-paid visit does not read as paid", async () => {

@@ -8,7 +8,7 @@
  * the prefix; the wiring phase converts stored times to Mountain time.
  */
 import { visitPaid, visitPaidTotal } from "./jobs"
-import type { Invoice, MonthTotal, Pass, PassVisit, Quote, Visit } from "./types"
+import type { Invoice, MonthTotal, Pass, PassVisit, Quote, SoldJob, Visit } from "./types"
 
 const MONTHS = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"]
 const MONTH_BY_NAME = new Map(MONTHS.flatMap((name, i) => [[name, i + 1], [name.slice(0, 3), i + 1]]))
@@ -116,7 +116,17 @@ export function quotesAwaiting(quotes: Quote[]): { count: number; total: number 
   return countAndTotal(quotes.filter((q) => q.status === "awaiting"))
 }
 
-/** Unpaid invoices whose due day is before `today`. `timeZone` sets which calendar day `today` and the due dates fall on. */
+/**
+ * Our own bills past their due day: each job's open bill (`SoldJob.invoice` is only ever sent or overdue, never paid or cancelled)
+ * whose `dueOn` is before `today`, counted once per bill, by the bill's total. Home's money line, the Reports tile and the
+ * overdue rows all read this rule.
+ */
+export function billsOverdue(jobs: SoldJob[] | undefined, today: string, timeZone?: string): { count: number; total: number } {
+  const todayDay = day(today, timeZone)
+  return countAndTotal((jobs ?? []).flatMap((j) => (j.invoice && j.invoice.dueOn < todayDay ? [j.invoice] : [])))
+}
+
+/** The Jobber mirror's unpaid invoices whose due day is before `today` (no tile reads it since step 4; it goes with the mirror in step 6). `timeZone` sets which calendar day `today` and the due dates fall on. */
 export function invoicesOverdue(invoices: Invoice[], today: string, timeZone?: string): { count: number; total: number } {
   const todayDay = day(today, timeZone)
   return countAndTotal(invoices.filter((i) => i.status !== "paid" && day(i.dueAt, timeZone) < todayDay))

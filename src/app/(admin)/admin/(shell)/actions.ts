@@ -6,6 +6,7 @@ import { callApi } from "@/api/core/call"
 import { alertsDismiss } from "@/api/v1/alerts/handlers"
 import { apiKeysCreate, apiKeysRevoke } from "@/api/v1/apikeys/handlers"
 import { consentsRecord } from "@/api/v1/customers/handlers"
+import { invoicesRemind } from "@/api/v1/invoices/handlers"
 import { propertiesUpdate } from "@/api/v1/properties/handlers"
 import { passesAddInspection, passesCancel, passesResendConfirmation, passesSendCardUpdateLink, passesSkipVisit, passesUpdatePreference } from "@/api/v1/passes/handlers"
 import { scheduleRun } from "@/api/v1/schedule/handlers"
@@ -114,7 +115,7 @@ export const recordMarketingOptOut = async (customerId: string, note = "Opted ou
 
 /**
  * The one button on a Needs action row. A declined card and an expiring card send the card update link and a visit
- * nobody marked done is marked done; every other row is a place to go, so the redirect is the answer: a visit to its
+ * nobody marked done is marked done, an overdue bill gets its reminder; every other row is a place to go, so the redirect is the answer: a visit to its
  * panel on Visits, a pass to its panel on Passes.
  */
 export async function attentionAction(item: Attention): Promise<ActionOutcome | { ok: true; data: undefined; message: string }> {
@@ -135,7 +136,12 @@ export async function attentionAction(item: Attention): Promise<ActionOutcome | 
     const done = await act((ctx) => nothing(callApi(ctx, visitsMarkClosed, { id: item.visitId! })))
     return done.ok ? { ok: true, data: undefined, message: "Marked done." } : done
   }
-  // A job that is done and owed carries the visit that is owed in `visitId`, so it opens on Visits like any visit row, where the panel's Record the payment asks how the money came.
+  // An overdue bill: Remind sends the customer one reminder with the pay link (`invoices.remind`, which keys the message by invoice and day, so two presses in a day send one).
+  if (item.kind === "overdue" && item.invoiceId) {
+    const sent = await act((ctx) => nothing(callApi(ctx, invoicesRemind, { id: item.invoiceId! })))
+    return sent.ok ? { ok: true, data: undefined, message: "Reminder sent." } : sent
+  }
+  // A job that is done and owed carries the visit that is owed in `visitId`, so it opens on Visits like any visit row, where the panel's Record the payment (or Send a bill) asks how the money came.
   if (item.visitId) redirect(`/admin/visits?visit=${encodeURIComponent(item.visitId)}`)
   if (item.passId) redirect(`/admin/passes?pass=${encodeURIComponent(item.passId)}`)
   redirect("/admin/schedule")

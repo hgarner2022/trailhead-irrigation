@@ -6,7 +6,7 @@
  * (`TIME_ZONE`), so a 7 pm visit stays on its day; date-only strings never shift.
  */
 import type { YearSeries } from "@/components/blocks/chart-data"
-import type { MonthTotal, Pass } from "@/lib/admin/types"
+import type { AdminData, MonthTotal, Pass, Visit } from "@/lib/admin/types"
 import { TIME_ZONE, shortDate } from "@/lib/admin/format"
 import { upcomingCharges } from "@/lib/admin/metrics"
 import { VISIT_NAMES } from "./passes-model"
@@ -59,6 +59,32 @@ export function upcomingRows(passes: Pass[], today: string, limit = 10): Upcomin
     visit: VISIT_NAMES[c.kind],
     amount: c.amount,
   }))
+}
+
+/**
+ * What customers owe us right now, for the Revenue screen's "Outstanding": every open bill at its total, plus every booked job
+ * (not a pass, which is charged to its card on its own) whose visits are all done or cancelled and that still owes money, at what
+ * it still owes. A job counts once: with an open bill it is the bill's total and its owed number is not added on top; a bill for a
+ * part-done job asks only for the done lines, so the lines still ahead are not outstanding. Nothing without the sold jobs (the fixtures).
+ */
+export function outstanding(data: Pick<AdminData, "jobs" | "visits">): { total: number; jobs: number } | undefined {
+  if (!data.jobs) return undefined
+  const byId = new Map(data.visits.map((v) => [v.id, v]))
+  let total = 0
+  let count = 0
+  for (const job of data.jobs) {
+    if (job.invoice) {
+      total += job.invoice.total
+      count += 1
+      continue
+    }
+    if (job.kind === "pass" || !job.money || job.money.owed <= 0) continue
+    const visits = job.visitIds.map((id) => byId.get(id)).filter((v): v is Visit => v !== undefined && v.status !== "cancelled")
+    if (visits.length === 0 || visits.some((v) => v.status !== "completed")) continue
+    total += job.money.owed
+    count += 1
+  }
+  return { total, jobs: count }
 }
 
 /** Whether any pass belongs to a season before `season`, which is when the Renewals card has something to say. */
