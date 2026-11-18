@@ -1,20 +1,19 @@
 "use client"
 
-import { PanelHeading } from "@/components/blocks/PanelParts"
+import { SectionHeading } from "@/components/blocks/SectionHeading"
+import { ConfirmDialog } from "@/components/blocks/ConfirmDialog"
 import { PassActions } from "@/components/blocks/PassActions"
 import { PassSeason } from "@/components/blocks/PassSeason"
-import { Button } from "@/components/ui/button"
 import { visitPaid } from "@/lib/admin/jobs"
 import type { Pass } from "@/lib/admin/types"
 import type { Outcome } from "./action-types"
-import { ConfirmCancel } from "./ConfirmCancel"
 import type { PassesActions } from "./passes-actions"
 import { PENDING_NOTE, cardWords, consentLine, seasonCharges, seasonFacts, seasonVisits } from "./passes-model"
 import { useOpenVisit } from "./VisitPanelHost"
 
 // What the Jobs panel and the Customers panel show for a Season Pass. `PassSeasonView` is the season (the PassSeason block) with
 // the visit rows opening the visit panel of the screen it is on; `PassChange` is the pass's own buttons (add the July
-// inspection, change a timing preference, skip a visit, open it in Stripe), which only a manager of the Jobs panel gets, and
+// inspection, change a timing preference, skip a visit; Open in Stripe is in the job footer's More), which only a manager of the Jobs panel gets, and
 // `CancelDialog` is Cancel pass. Client for the dialogs and for the open-visit context.
 
 /** The season view of one pass: the card, the visits with their pills, the season line and the charges; "Send card link" beside the card line for a pass with no card. */
@@ -45,11 +44,11 @@ function cancelMoney(pass: Pass): string {
 
 export function CancelDialog({ pass, open, onOpenChange, onCancel }: { pass: Pass; open: boolean; onOpenChange: (open: boolean) => void; onCancel?: (passId: string) => Promise<Outcome> }) {
   return (
-    <ConfirmCancel
+    <ConfirmDialog
       title="Cancel this pass?"
       message={cancelMoney(pass)}
-      keepLabel="Keep pass"
-      cancelLabel="Cancel pass"
+      destructive
+      confirmLabel="Cancel pass"
       open={open}
       onOpenChange={onOpenChange}
       onConfirm={onCancel ? () => onCancel(pass.id) : undefined}
@@ -64,7 +63,7 @@ export function PassChange({ pass, actions, run }: { pass: Pass; actions?: Omit<
   return (
     <>
       <section aria-labelledby="pass-change">
-        <PanelHeading id="pass-change">Change the pass</PanelHeading>
+        <SectionHeading id="pass-change">Change the pass</SectionHeading>
         <PassActions
           pass={pass}
           voice="admin"
@@ -74,16 +73,6 @@ export function PassChange({ pass, actions, run }: { pass: Pass; actions?: Omit<
           onSkip={(id, kind) => (actions ? run(() => actions.skip(id, kind)) : console.info("skip visit", [id, kind]))}
         />
       </section>
-      {pass.stripeUrl && (
-        <div className="flex flex-wrap gap-2">
-          <Button asChild variant="outline" size="sm">
-            <a href={pass.stripeUrl} target="_blank" rel="noreferrer">
-              Open in Stripe
-              <span className="sr-only"> (opens in a new tab)</span>
-            </a>
-          </Button>
-        </div>
-      )}
     </>
   )
 }

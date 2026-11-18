@@ -42,6 +42,15 @@ const view = (props: Partial<React.ComponentProps<typeof JobsScreen>> = {}) =>
 
 const gridRows = () => within(document.querySelector('[data-slot="data-grid-table"]') as HTMLElement).getAllByRole("row").slice(1)
 const panel = () => within(screen.getByRole("dialog"))
+/** The newest dialog over the panel: what a footer button or a line's Edit opened. */
+const ask = () => within(screen.getAllByRole("dialog").at(-1)!)
+/** A footer button under More: open the menu, then pick it. */
+const more = async (name: string | RegExp) => {
+  await userEvent.click(panel().getByRole("button", { name: "More" }))
+  await userEvent.click(await screen.findByRole("menuitem", { name }))
+}
+/** The customer is a link in the panel's facts. */
+const customerLink = () => document.querySelector<HTMLAnchorElement>('[data-slot="record-facts"] a[href*="/admin/customers?customer="]')
 
 describe("JobsScreen", () => {
   it("titles the page, counts the season's jobs and what is unpaid, and offers New job", () => {
@@ -108,7 +117,8 @@ describe("the job panel", () => {
     expect(p.getByText("Sent Nov 10, due Nov 24")).toBeInTheDocument()
     expect(p.getByRole("button", { name: "Remind" })).toBeInTheDocument()
     expect(p.getByRole("link", { name: "Pay link" })).toBeInTheDocument()
-    expect(p.getByRole("link", { name: "Open customer" })).toHaveAttribute("href", "/admin/customers?customer=c-ben")
+    expect(customerLink()).toHaveAttribute("href", "/admin/customers?customer=c-ben")
+    expect(customerLink()).toHaveTextContent("Ben Cole")
   })
 
   it("offers one Collect button on a done job that is unpaid; it opens How is this paid? and Record sends the amount owed", async () => {
@@ -173,8 +183,8 @@ describe("the job panel", () => {
     expect(row).toHaveTextContent("Thu, Nov 19, Ryan Garner")
     expect(row).toHaveTextContent("Scheduled")
     await userEvent.click(row)
-    // the visit panel replaces the job panel: its own Customer section is there and the job's Lines are gone
-    expect(await screen.findByRole("heading", { name: "Customer" })).toBeInTheDocument()
+    // the visit panel replaces the job panel: its own At the property section is there and the job's Lines are gone
+    expect(await screen.findByRole("heading", { name: "At the property" })).toBeInTheDocument()
     await waitFor(() => expect(screen.getAllByRole("dialog")).toHaveLength(1))
     expect(screen.queryByRole("heading", { name: "Lines" })).toBeNull()
   })
@@ -182,11 +192,11 @@ describe("the job panel", () => {
   it("opening a job while a visit's panel is open closes the visit's: one panel at a time", async () => {
     view({ defaultJobId: "job-a" })
     await userEvent.click(panel().getByRole("button", { name: /Repair.*Thu, Nov 19/ }))
-    expect(await screen.findByRole("heading", { name: "Customer" })).toBeInTheDocument()
+    expect(await screen.findByRole("heading", { name: "At the property" })).toBeInTheDocument()
     fireEvent.click(screen.getByRole("button", { name: "Ben Cole", hidden: true }))
     expect(await screen.findByRole("heading", { name: "Lines" })).toBeInTheDocument()
     await waitFor(() => expect(screen.getAllByRole("dialog")).toHaveLength(1))
-    expect(screen.queryByRole("heading", { name: "Customer" })).toBeNull()
+    expect(screen.queryByRole("heading", { name: "At the property" })).toBeNull()
   })
 
   it("Add job opens the new job's panel, not the visit's and not a second panel on top", async () => {
@@ -201,7 +211,7 @@ describe("the job panel", () => {
     await waitFor(() => expect(createVisit).toHaveBeenCalledTimes(1))
     expect(await screen.findByRole("heading", { name: "Lines" })).toBeInTheDocument()
     await waitFor(() => expect(screen.getAllByRole("dialog")).toHaveLength(1))
-    expect(screen.queryByRole("heading", { name: "Customer" })).toBeNull()
+    expect(screen.queryByRole("heading", { name: "At the property" })).toBeNull()
   })
 
   it("strikes a canceled line through and adds up only the live ones; an unpriced line says Quote later", () => {
@@ -218,26 +228,26 @@ describe("the job panel", () => {
     const actions = jobActions({ updateLine: vi.fn().mockResolvedValue({ ok: false, message: "That visit is done and paid, so its line cannot change" }) })
     view({ defaultJobId: "job-install", actions })
     await userEvent.click(panel().getByRole("button", { name: "Edit Controller" }))
-    const qty = panel().getByLabelText("Quantity")
+    const qty = ask().getByLabelText("Quantity")
     await userEvent.clear(qty)
     await userEvent.type(qty, "2")
-    const price = panel().getByLabelText("Price each")
+    const price = ask().getByLabelText("Price each")
     await userEvent.clear(price)
     await userEvent.type(price, "250")
-    await userEvent.click(panel().getByRole("button", { name: "Save line" }))
+    await userEvent.click(ask().getByRole("button", { name: "Save line" }))
     expect(actions.updateLine).toHaveBeenCalledWith("l-2", { quantity: 2, unitPrice: 250 })
-    expect(await panel().findByText("That visit is done and paid, so its line cannot change")).toBeInTheDocument()
+    expect(await ask().findByText("That visit is done and paid, so its line cannot change")).toBeInTheDocument()
   })
 
   it("adds a line from the catalogue or a free line", async () => {
     const actions = jobActions()
     view({ defaultJobId: "job-install", actions })
     await userEvent.click(panel().getByRole("button", { name: "Add a line" }))
-    await userEvent.type(panel().getByLabelText("Name"), "Valve box")
-    await userEvent.clear(panel().getByLabelText("Quantity"))
-    await userEvent.type(panel().getByLabelText("Quantity"), "3")
-    await userEvent.type(panel().getByLabelText("Price each"), "40")
-    await userEvent.click(panel().getByRole("button", { name: "Add line" }))
+    await userEvent.type(ask().getByLabelText("Name"), "Valve box")
+    await userEvent.clear(ask().getByLabelText("Quantity"))
+    await userEvent.type(ask().getByLabelText("Quantity"), "3")
+    await userEvent.type(ask().getByLabelText("Price each"), "40")
+    await userEvent.click(ask().getByRole("button", { name: "Add line" }))
     expect(actions.addLine).toHaveBeenCalledWith({ jobId: "job-install", name: "Valve box", quantity: 3, unitPrice: 40 })
   })
 
@@ -249,7 +259,9 @@ describe("the job panel", () => {
     expect(p.getByRole("heading", { name: "Season" })).toBeInTheDocument()
     expect(p.queryByRole("button", { name: "Add a line" })).toBeNull()
     expect(p.getByRole("button", { name: "Send card link" })).toBeInTheDocument()
-    expect(p.getByRole("button", { name: "Resend confirmation" })).toBeInTheDocument()
+    await userEvent.click(p.getByRole("button", { name: "More" }))
+    expect(await screen.findByRole("menuitem", { name: "Resend confirmation" })).toBeInTheDocument()
+    await userEvent.keyboard("{Escape}")
     await userEvent.click(p.getByRole("button", { name: "Cancel pass" }))
     expect(await screen.findByRole("heading", { name: "Cancel this pass?" })).toBeInTheDocument()
   })
@@ -258,7 +270,7 @@ describe("the job panel", () => {
     view({ defaultJobId: "job-d", readOnly: true, actions: jobActions() })
     const p = panel()
     for (const name of ["Collect $145", "New visit", "Add a line", "Remind"]) expect(p.queryByRole("button", { name })).toBeNull()
-    expect(p.getByRole("link", { name: "Open customer" })).toBeInTheDocument()
+    expect(customerLink()).toBeInTheDocument()
     expect(screen.queryByRole("button", { name: "New job" })).toBeNull()
   })
 
@@ -279,7 +291,7 @@ describe("the job panel", () => {
     const dialog = within(screen.getAllByRole("dialog").at(-1)!)
     expect(dialog.getByRole("heading", { name: "Cancel this job?" })).toBeInTheDocument()
     expect(dialog.getByText(/come off the schedule/)).toBeInTheDocument()
-    await userEvent.click(dialog.getByRole("button", { name: "Keep job" }))
+    await userEvent.click(dialog.getByRole("button", { name: "Keep it" }))
     expect(actions.cancelJob).not.toHaveBeenCalled()
     await userEvent.click(panel().getByRole("button", { name: "Cancel job" }))
     await userEvent.click(within(screen.getAllByRole("dialog").at(-1)!).getByRole("button", { name: "Cancel job" }))
@@ -315,19 +327,22 @@ describe("the job panel", () => {
   })
 
   // The footer's first button is the next step, and the only filled one (Button's default variant carries bg-primary).
-  const footer = () => document.querySelector<HTMLElement>('[data-slot="sheet-footer"] > :first-child')!
-  const footerButtons = () => [...document.querySelectorAll('[data-slot="sheet-footer"] button, [data-slot="sheet-footer"] a')].map((b) => b.textContent)
+  const footer = () => document.querySelector<HTMLElement>('[data-slot="record-footer"] > :first-child')!
+  const footerButtons = () => [...document.querySelectorAll('[data-slot="record-footer"] button, [data-slot="record-footer"] a')].map((b) => b.textContent)
 
   it("a scheduled job leads with Open visit and Collect is not the primary while a visit is ahead", async () => {
     view({ defaultJobId: "job-a", actions: jobActions() })
     const names = footerButtons()
     expect(names[0]).toBe("Open visit")
     expect(footer()).toHaveClass("bg-primary-dark")
-    expect(names.some((n) => n?.startsWith("Collect"))).toBe(true)
-    expect(names.findIndex((n) => n?.startsWith("Collect"))).toBeGreaterThan(0)
+    // Collect is not drawn as a button while a visit is ahead; Record the payment is one menu away
+    expect(names.some((n) => n?.startsWith("Collect"))).toBe(false)
+    await more("Record the payment")
+    expect(ask().getByRole("heading", { name: "How is this paid?" })).toBeInTheDocument()
+    await userEvent.keyboard("{Escape}")
     // the primary opens the next visit's panel, in place of the job's
     await userEvent.click(footer())
-    expect(await screen.findByRole("heading", { name: "Customer" })).toBeInTheDocument()
+    expect(await screen.findByRole("heading", { name: "At the property" })).toBeInTheDocument()
     await waitFor(() => expect(screen.getAllByRole("dialog")).toHaveLength(1))
     expect(screen.queryByRole("heading", { name: "Lines" })).toBeNull()
   })
@@ -347,9 +362,10 @@ describe("the job panel", () => {
     expect(dialog.getByRole("radio", { name: /^Check/ })).toBeInTheDocument()
   })
 
-  it("a done and paid job has only Open customer", () => {
+  it("a done and paid job has no footer buttons; the customer is a link in its facts", () => {
     view({ defaultJobId: "job-e", actions: jobActions() })
-    expect(footerButtons()).toEqual(["Open customer"])
+    expect(footerButtons()).toEqual([])
+    expect(customerLink()).toBeInTheDocument()
   })
 
   it("a job that needs a quote leads with Add a line, which opens the line form (and the section keeps no second button)", async () => {

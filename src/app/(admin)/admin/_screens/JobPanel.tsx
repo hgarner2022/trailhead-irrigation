@@ -1,16 +1,18 @@
 "use client"
 
 import { useState } from "react"
-import { PANEL_ROW, PanelHeading, PanelList, PanelRowEnd, PanelRowText } from "@/components/blocks/PanelParts"
-import { JobPill } from "@/components/blocks/JobPill"
-import { SidePanel } from "@/components/blocks/SidePanel"
+import Link from "next/link"
+import { RECORD_ROW, RecordList, RecordPanel, RecordRowEnd, RecordRowText, type RecordFact } from "@/components/blocks/RecordPanel"
+import { SectionHeading } from "@/components/blocks/SectionHeading"
+import { StatusPills } from "@/components/blocks/StatusPill"
 import { Button } from "@/components/ui/button"
 import { dayOf } from "@/lib/admin/calendar"
 import { TIME_ZONE } from "@/lib/admin/format"
 import { visitJob } from "@/lib/admin/jobs"
+import { customerUrl } from "@/lib/admin/links"
 import type { AdminData, Visit } from "@/lib/admin/types"
 import type { JobActions } from "./job-actions-types"
-import { footerPlan } from "./job-footer-model"
+import { footerPlan, jobBar } from "./job-footer-model"
 import { jobCollect, jobFacts, type JobFacts } from "./job-panel-model"
 import { JobFooter } from "./JobFooter"
 import { CancelJobDialog, NewVisitDialog } from "./JobDialogs"
@@ -37,7 +39,7 @@ function Property({ facts, readOnly }: { facts: JobFacts; readOnly: boolean }) {
   if (!street && lines.length === 0) return null
   return (
     <section aria-labelledby="job-property" data-slot="job-property">
-      <PanelHeading id="job-property">Property</PanelHeading>
+      <SectionHeading id="job-property">Property</SectionHeading>
       <ul className="mt-2 space-y-1 text-sm">
         {street && <li className="font-medium">{street}</li>}
         {lines.map((line) => (
@@ -52,26 +54,26 @@ function Visits({ visits, facts, today }: { visits: Visit[]; facts: JobFacts; to
   const day = dayOf(today, TIME_ZONE)
   return (
     <section aria-labelledby="job-visits" data-slot="job-visits">
-      <PanelHeading id="job-visits">Visits</PanelHeading>
+      <SectionHeading id="job-visits">Visits</SectionHeading>
       {visits.length === 0 ? (
         <p className="mt-2 text-sm text-muted-foreground">No visits yet.</p>
       ) : (
-        <PanelList>
+        <RecordList>
           {visits.map((v) => {
             const d = dayOfVisit(v)
             const detail = [d ? dayLabel(d) : "", v.personName].filter(Boolean).join(", ")
             return (
               <li key={v.id}>
-                <OpenVisit id={v.id} className={PANEL_ROW}>
-                  <PanelRowText title={kindLabel(v)} detail={detail || undefined} />
-                  <PanelRowEnd>
-                    <JobPill job={visitJob(v, day, TIME_ZONE, facts.pass?.cardFailedAt)} />
-                  </PanelRowEnd>
+                <OpenVisit id={v.id} className={RECORD_ROW}>
+                  <RecordRowText title={kindLabel(v)} detail={detail || undefined} />
+                  <RecordRowEnd>
+                    <StatusPills job={visitJob(v, day, TIME_ZONE, facts.pass?.cardFailedAt)} />
+                  </RecordRowEnd>
                 </OpenVisit>
               </li>
             )
           })}
-        </PanelList>
+        </RecordList>
       )}
     </section>
   )
@@ -108,18 +110,42 @@ export function JobPanel({ data, today, jobId, open, onOpenChange, readOnly = fa
   const canAct = !readOnly
   const passOpen = canAct && pass?.status === "active"
   const plan = footerPlan(facts, canAct)
+  const bar = jobBar(facts, plan, canAct, pass, passOpen)
+  const rec: RecordFact[] = [
+    ["Customer", <Link key="c" href={customerUrl(row.customerId)} className="text-primary-dark underline underline-offset-2">{row.name}</Link>],
+    ["Total", row.total > 0 ? `$${row.total.toLocaleString("en-US")}` : "Quote later"],
+    ...(row.owed > 0 ? ([["Unpaid", `$${row.owed.toLocaleString("en-US")}`]] as RecordFact[]) : []),
+    ["Next", row.nextText],
+  ]
   return (
-    <SidePanel
+    <RecordPanel
       open={open}
       onOpenChange={onOpenChange}
       title={row.name}
-      description={facts.heading}
+      subtitle={facts.heading}
+      pills={
+        <>
+          <StagePill stage={row.stage} />
+          <MoneyPill money={row.money} />
+        </>
+      }
+      facts={rec}
+      slot="job-panel"
+      notice={
+        <>
+          <p role="status" className="text-sm text-muted-foreground empty:hidden">
+            {done}
+          </p>
+          <p role="alert" className="text-sm text-destructive empty:hidden">
+            {error}
+          </p>
+        </>
+      }
       footer={
         <JobFooter
           facts={facts}
-          plan={plan}
-          canAct={canAct}
-          passOpen={passOpen}
+          bar={bar}
+          nextVisitId={plan.nextVisitId}
           pass={pass}
           pending={pending}
           onCollect={() => setCollect({ facts, plan: jobCollect(facts, data) })}
@@ -132,56 +158,44 @@ export function JobPanel({ data, today, jobId, open, onOpenChange, readOnly = fa
         />
       }
     >
-      <div className="flex flex-col gap-6" data-slot="job-panel">
-        <p role="status" className="text-sm text-muted-foreground empty:hidden">
-          {done}
-        </p>
-        <p role="alert" className="text-sm text-destructive empty:hidden">
-          {error}
-        </p>
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-          <StagePill stage={row.stage} />
-          <MoneyPill money={row.money} />
-        </div>
-        <Property facts={facts} readOnly={readOnly} />
-        {pass ? (
-          <>
-            <PassSeasonView
-              pass={pass}
-              today={today}
-              money={row.moneyText}
-              idPrefix="job-pass"
-              withAccess={false}
-              cardAction={
-                passOpen && !pass.cardLast4 ? (
-                  <Button type="button" variant="outline" size="sm" onClick={() => (actions?.pass ? say(() => actions.pass!.sendCardUpdateLink(pass.id), "Card link sent.") : console.info("send card link", [pass.number]))}>
-                    Send card link
-                  </Button>
-                ) : undefined
-              }
-            />
-            {canAct && pass.status === "active" && <PassChange pass={pass} actions={actions?.pass} run={(call, said) => say(call, said)} />}
-            {pass && <CancelDialog pass={pass} open={cancelling} onOpenChange={setCancelling} onCancel={actions?.pass?.cancel} />}
-          </>
-        ) : (
-          <>
-            <JobLinesSection jobId={job.id} lines={facts.lines} total={row.total} tax={facts.tax} data={data} editable={canAct && facts.canEditLines} actions={actions} adding={addingLine} onAddingChange={setAddingLine} addInFooter={plan.primary === "add-line"} />
-            <Visits visits={facts.visits} facts={facts} today={today} />
-          </>
-        )}
-        <JobMoneySection row={row} payments={facts.payments} bill={bill} actions={canAct ? visitActions : undefined} />
-        {/* Notes are in the Notes and history block; the plain row stays for a job whose story is missing (the catalog's fixtures), so a note typed at the sale never disappears. */}
-        {job.notes && !job.timeline && (
-          <section aria-labelledby="job-notes" data-slot="job-notes">
-            <PanelHeading id="job-notes">Notes</PanelHeading>
-            <p className="mt-2 whitespace-pre-line text-sm">{job.notes}</p>
-          </section>
-        )}
-        <PanelNotes about="job" aboutId={job.id} timeline={job.timeline} addNote={actions?.addNote} />
-      </div>
+      <Property facts={facts} readOnly={readOnly} />
+      {pass ? (
+        <>
+          <PassSeasonView
+            pass={pass}
+            today={today}
+            money={row.moneyText}
+            idPrefix="job-pass"
+            withAccess={false}
+            cardAction={
+              passOpen && !pass.cardLast4 ? (
+                <Button type="button" variant="outline" size="sm" onClick={() => (actions?.pass ? say(() => actions.pass!.sendCardUpdateLink(pass.id), "Card link sent.") : console.info("send card link", [pass.number]))}>
+                  Send card link
+                </Button>
+              ) : undefined
+            }
+          />
+          {canAct && pass.status === "active" && <PassChange pass={pass} actions={actions?.pass} run={(call, said) => say(call, said)} />}
+          {pass && <CancelDialog pass={pass} open={cancelling} onOpenChange={setCancelling} onCancel={actions?.pass?.cancel} />}
+        </>
+      ) : (
+        <>
+          <JobLinesSection jobId={job.id} lines={facts.lines} total={row.total} tax={facts.tax} data={data} editable={canAct && facts.canEditLines} actions={actions} adding={addingLine} onAddingChange={setAddingLine} addInFooter />
+          <Visits visits={facts.visits} facts={facts} today={today} />
+        </>
+      )}
+      <JobMoneySection row={row} payments={facts.payments} bill={bill} actions={canAct ? visitActions : undefined} />
+      {/* Notes are in the Notes and history block; the plain row stays for a job whose story is missing (the catalog's fixtures), so a note typed at the sale never disappears. */}
+      {job.notes && !job.timeline && (
+        <section aria-labelledby="job-notes" data-slot="job-notes">
+          <SectionHeading id="job-notes">Notes</SectionHeading>
+          <p className="mt-2 whitespace-pre-line text-sm">{job.notes}</p>
+        </section>
+      )}
+      <PanelNotes about="job" aboutId={job.id} timeline={job.timeline} addNote={actions?.addNote} />
       {collect && <JobCollectDialog facts={collect.facts} {...collect.plan} open onOpenChange={(o) => !o && setCollect(null)} actions={actions} visitActions={visitActions} />}
       {canAct && facts.canCancel && <CancelJobDialog jobId={job.id} held={facts.held} open={cancellingJob} onOpenChange={setCancellingJob} onCancel={actions?.cancelJob} />}
       {canAct && facts.canAddVisit && <NewVisitDialog jobId={job.id} data={data} today={today} open={adding} onOpenChange={setAdding} actions={actions} />}
-    </SidePanel>
+    </RecordPanel>
   )
 }
