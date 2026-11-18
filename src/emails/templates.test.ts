@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest"
 import { EMAIL_TEMPLATES, renderEmail } from "./render"
 import { googleCalendarUrl, icsFile } from "./calendar"
-import { EMAIL_COLORS, emailLayout, heading, paragraph } from "./layout"
+import { EMAIL_COLORS, FONT, button, emailLayout, greetingLine, paragraph } from "./layout"
+import { capitalFirst, withoutGreeting } from "./editable"
+import { signInEmail } from "./sign-in"
 import { SMS_TEMPLATES } from "@/sms/texts"
 import type { VisitFacts } from "./format"
 
@@ -51,14 +53,15 @@ describe.each(Object.keys(DATA) as (keyof typeof DATA)[])("%s", (kind) => {
     expect(r.subject.length).toBeGreaterThan(8)
     copyRules(r.subject)
     copyRules(r.text)
-    copyRules(r.html.replace(/<[^>]+>/g, " "))
+    copyRules(r.html.replace(/<style[\s\S]*?<\/style>/g, "").replace(/<[^>]+>/g, " "))
   })
   it("is on the layout, with the footer, a table structure and no hex outside the layout's colour block", () => {
     expect(r.html).toContain('role="presentation"')
     expect(r.html).toContain("137 Morgan Circle North")
     expect(r.html).toContain("(970) 692-7270")
-    expect(r.html).toContain("/images/logo-horizontal-trim.png")
-    expect(r.html).not.toMatch(/<(script|style|link)\b/)
+    expect(r.html).toContain("/images/logo-email.png")
+    expect(r.html).not.toMatch(/<(script|link)\b/)
+    expect(r.html.match(/<style\b/g)).toHaveLength(1)
   })
 })
 
@@ -102,7 +105,7 @@ describe("wording per kind", () => {
   it("purchase-confirmation puts the pass image first, then each visit's day with calendar links, where, the text promise, the money line and the button", () => {
     const { html, text, subject } = get("purchase-confirmation")
     expect(subject).toBe("Your 2027 Season Pass is reserved")
-    expect(html).toContain("Welcome, Andrea")
+    expect(html).toContain("Welcome to the 2027 season")
     expect(html.indexOf("/api/pass-image/p1?token=t")).toBeLessThan(html.indexOf("Wednesday, May 5, between 8 and 10 am"))
     expect(html.indexOf("Add to Google Calendar")).toBeLessThan(html.indexOf("Open your Trailhead account"))
     expect(html.indexOf("Wednesday, May 5, between 8 and 10 am")).toBeLessThan(html.indexOf(">Where<"))
@@ -156,7 +159,7 @@ describe("wording per kind", () => {
   })
   it("day-before names who is coming when the visit has a person, and leaves the sentence out when it has none", () => {
     const named = renderEmail("day-before", { ...base, visit: { ...visit, who: "Ryan" } })!
-    expect(named.text).toContain("Hi Andrea, a reminder that we're coming tomorrow, Wednesday, May 5, for your spring turn-on. Ryan will be there.")
+    expect(named.text).toContain("Hi Andrea,\n\nA reminder that we're coming tomorrow, Wednesday, May 5, for your spring turn-on. Ryan will be there.")
     expect(named.html).toContain("Ryan will be there.")
     const nobody = renderEmail("day-before", { ...base, visit: { ...visit, who: null } })!
     expect(nobody.text).toContain("we're coming tomorrow, Wednesday, May 5, for your spring turn-on.")
@@ -185,15 +188,16 @@ describe("wording per kind", () => {
   })
   it("uses the words the office saved for the first sentence, and the shipped words when it saved none", () => {
     const saved = renderEmail("date-set", { ...base, visit: { ...visit, who: "Ryan" } }, { "date-set:email": "Hi {firstName}, {who} will be at {address} on {day} for your {service}." })!
-    expect(saved.text).toContain("Hi Andrea, Ryan will be at 412 Ash St on Wednesday, May 5 for your spring turn-on.")
-    expect(renderEmail("date-set", { ...base, visit })!.text).toContain("Hi Andrea, your spring turn-on is set for Wednesday, May 5.")
+    expect(saved.text).toContain("Hi Andrea,\n\nRyan will be at 412 Ash St on Wednesday, May 5 for your spring turn-on.")
+    expect(saved.text.match(/Hi Andrea/g)).toHaveLength(1)
+    expect(renderEmail("date-set", { ...base, visit })!.text).toContain("Hi Andrea,\n\nYour spring turn-on is set for Wednesday, May 5.")
   })
   it("the booking confirmation says who is coming, when, and what happens next", () => {
     const repair = { ...base, serviceName: "sprinkler repair", visit: { ...visit, name: "repair", who: "Ryan" } }
     const { subject, text, html } = renderEmail("booking-confirmation", repair)!
     expect(subject).toBe("Your sprinkler repair is booked for Wednesday, May 5")
     expect(html).toContain("Your repair is booked")
-    expect(text).toContain("Hi Andrea, Ryan will be there Wednesday, May 5, between 8 and 10 am. We text you the day before.")
+    expect(text).toContain("Hi Andrea,\n\nRyan will be there Wednesday, May 5, between 8 and 10 am. We text you the day before.")
     expect(get("booking-confirmation").text).toContain("Ryan and the crew will be there Wednesday, May 5, between 8 and 10 am")
     for (const label of ["Day", "Who is coming", "Where"]) expect(text).toContain(`${label}: `)
   })
@@ -202,8 +206,10 @@ describe("wording per kind", () => {
     const { subject, text, html } = renderEmail("receipt", receipt)!
     expect(subject).toBe("Receipt: $145 for your spring turn-on at 412 Ash St")
     expect(html).toContain("Paid, thank you")
-    expect(text.split("\n").slice(0, 14).join("\n")).toBe([
-      "Thank you, Andrea. Your spring turn-on at 412 Ash St is paid.",
+    expect(text.split("\n").slice(0, 16).join("\n")).toBe([
+      "Hi Andrea,",
+      "",
+      "Thank you. Your spring turn-on at 412 Ash St is paid.",
       "",
       "Where: 412 Ash St",
       "Done: Wednesday, May 5, with Ryan",
@@ -216,9 +222,9 @@ describe("wording per kind", () => {
       "Paid: $145, Check",
       "Paid on: Wednesday, May 5",
       "",
-      "See this job in your Trailhead account: https://www.trailheadirrigation.com/account",
+      "See it in your account: https://www.trailheadirrigation.com/account",
     ].join("\n"))
-    expect(html).toContain(">See this job in your Trailhead account<")
+    expect(html).toContain(">See it in your account<")
     expect(html).toContain(">View the receipt<")
     expect(html).not.toMatch(/Visit:|paid by check|>check</)
     expect(html).toContain("You are getting this because a visit of yours was completed.")
@@ -241,8 +247,10 @@ describe("wording per kind", () => {
     const { subject, text, html } = renderEmail("receipt", paid)!
     expect(subject).toBe("Receipt: $233 for your repair at 412 Ash St")
     expect(subject).not.toContain("INV-")
-    expect(text.split("\n").slice(0, 16).join("\n")).toBe([
-      "Thank you, Andrea. Your repair at 412 Ash St is paid.",
+    expect(text.split("\n").slice(0, 18).join("\n")).toBe([
+      "Hi Andrea,",
+      "",
+      "Thank you. Your repair at 412 Ash St is paid.",
       "",
       "Where: 412 Ash St",
       "Done: Wednesday, May 5, with Ryan",
@@ -267,8 +275,10 @@ describe("wording per kind", () => {
     const { subject, text, html } = renderEmail("invoice", invoice)!
     expect(subject).toBe("Your Trailhead invoice for the repair at 412 Ash St: $145")
     expect(html).toContain("Your invoice is ready")
-    expect(text.split("\n").slice(0, 15).join("\n")).toBe([
-      "Hi Andrea, here is your invoice for the repair at 412 Ash St: $145, due Friday, May 21.",
+    expect(text.split("\n").slice(0, 17).join("\n")).toBe([
+      "Hi Andrea,",
+      "",
+      "Here is your invoice for the repair at 412 Ash St: $145, due Friday, May 21.",
       "",
       "Where: 412 Ash St",
       "Done: Tuesday, May 4, with Ryan",
@@ -282,13 +292,13 @@ describe("wording per kind", () => {
       "Due: Friday, May 21",
       "",
       `Pay here: ${origin}/pay/inv1?token=abc`,
-      "See this job in your Trailhead account: https://www.trailheadirrigation.com/account",
+      "See it in your account: https://www.trailheadirrigation.com/account",
     ].join("\n"))
     expect(text).not.toContain("Sales tax")
     expect(html).not.toMatch(/Sales tax/)
     expect(html).toContain(">Pay $145<")
     expect(html.match(/Pay \$145/g)).toHaveLength(1)
-    expect(html).toContain(">See this job in your Trailhead account<")
+    expect(html).toContain(">See it in your account<")
     const taxed = renderEmail("invoice", { ...INVOICE, lines: [{ name: "Repair", amount: 145, quantity: 1, unitPrice: 145 }, { name: "Spring turn-on", amount: 100, quantity: 1, unitPrice: 100 }], amount: 245, tax: 12, total: 257 })!
     expect(taxed.subject).toBe("Your Trailhead invoice for the repair at 412 Ash St: $257")
     expect(taxed.text).toContain(["Subtotal: $245", "Sales tax: $12", "Total: $257", "", "Amount due: $257"].join("\n"))
@@ -298,33 +308,33 @@ describe("wording per kind", () => {
     const { subject, text, html } = get("invoice-reminder")
     expect(subject).toBe("Your Trailhead invoice, $145, is still unpaid")
     expect(html).toContain("A reminder about your invoice")
-    expect(text).toContain("a reminder that $145 for the repair is still unpaid, due Friday, May 21")
+    expect(text).toContain("Hi Andrea,\n\nA reminder that $145 for the repair is still unpaid, due Friday, May 21")
     expect(text).toContain(`Pay here: ${origin}/pay/inv1?token=abc`)
   })
   it("card-failed says which card, for which visit and where, then how to fix it", () => {
     const { subject, text, html } = get("card-failed")
     expect(subject).toBe("The card for your spring turn-on didn't go through")
     expect(html).toContain("Your card needs a quick update")
-    expect(text).toContain("Hi Andrea, your spring turn-on at 412 Ash St is done, but your Visa ending 4242 didn't go through for $145.")
+    expect(text).toContain("Hi Andrea,\n\nYour spring turn-on at 412 Ash St is done, but your Visa ending 4242 didn't go through for $145.")
     expect(text).toContain("Add a new card and we'll try it right away.")
     expect(text).toContain("https://billing.stripe.com/s/1")
     expect(text).toContain("The link is good for 24 hours. Your Trailhead account can make a new one.")
     expect(html).toContain(">Update your card<")
     const link = renderEmail("card-failed", { ...base, amount: null, visitName: null, card: null, address: null, updateUrl: "https://billing.stripe.com/s/3" })!
     expect(link.subject).toBe("Update the card in your Trailhead account")
-    expect(link.text).toContain("here is the link to update the card in your Trailhead account")
+    expect(link.text).toContain("Here is the link to update the card in your Trailhead account")
   })
   it("card-expiring names the card, when it ends and what is still to come", () => {
     const { subject, text, html } = get("card-expiring")
     expect(subject).toBe("Your Visa ending 4242 expires in July 2027")
-    expect(text).toContain("Hi Andrea, the card we have for your visits expires in July 2027, and $190 of visits are still to come. A new card now keeps them on schedule.")
+    expect(text).toContain("Hi Andrea,\n\nThe card we have for your visits expires in July 2027, and $190 of visits are still to come. A new card now keeps them on schedule.")
     expect(html).toContain(">Add a new card<")
     expect(renderEmail("card-expiring", { ...DATA["card-expiring"], left: 0 })!.text).not.toContain("still to come")
   })
   it("cancelled says the season, that nothing further is charged and how to book later", () => {
     const { subject, text, html } = get("cancelled")
     expect(subject).toBe("Your 2027 Season Pass is canceled")
-    expect(text).toContain("Hi Andrea, your 2027 Season Pass is canceled and your remaining visits are off the schedule. We won't charge you again.")
+    expect(text).toContain("Hi Andrea,\n\nYour 2027 Season Pass is canceled and your remaining visits are off the schedule. We won't charge you again.")
     expect(text).toContain("If you want a visit later, book online or call (970) 692-7270.")
     expect(html).toContain(">Book a visit<")
     expect(html).toContain(`${origin}/book`)
@@ -333,7 +343,7 @@ describe("wording per kind", () => {
     const { subject, text, html } = get("renewal")
     expect(subject).toBe("Reserve your 2028 turn-on and blowout")
     expect(html).toContain("Season Pass 2028 is open")
-    expect(text).toContain("Hi Andrea, you can reserve your Erie spring turn-on and fall blowout for 2028 now and pick your days in the same step.")
+    expect(text).toContain("Hi Andrea,\n\nYou can reserve your Erie spring turn-on and fall blowout for 2028 now and pick your days in the same step.")
     expect(text).toContain("You pay after each visit, on the card we have on file.")
     expect(html).toContain(">Reserve 2028<")
     expect(html).toContain("Reply to stop these emails.")
@@ -369,15 +379,197 @@ describe("text versions", () => {
 
 describe("the layout", () => {
   it("keeps the brand colours in one block and uses them", () => {
-    const html = emailLayout({ origin, preheader: "Hello", body: heading("Hi") + paragraph("Hi") })
+    const html = emailLayout({ origin, preheader: "Hello", title: "Hi", body: button(`${origin}/x`, "Go") + paragraph("Hi"), why: "You are getting this because a test ran." })
     expect(html).toContain(EMAIL_COLORS.navy)
     expect(html).toContain(EMAIL_COLORS.primary)
-    expect(html).toContain("Barlow Condensed")
-    expect(html).toContain("Source Sans 3")
-    expect(html).toContain("Hello</div>")
+    expect(html).toContain(EMAIL_COLORS.accent)
+    expect(html).toContain(FONT)
+    expect(html).not.toMatch(/Barlow|Source Sans/)
+    expect(html).toContain("Hello")
   })
   it("escapes what goes into the HTML", () => {
     expect(paragraph('<b>"x"</b> & y')).toContain("&lt;b&gt;&quot;x&quot;&lt;/b&gt; &amp; y")
+  })
+})
+
+describe("the greeting", () => {
+  it("reads 'Hi Andrea,' from the stored first name: a full name is trimmed to its first word, a shouted or lower-case name is capitalised, a typed capital stays", () => {
+    expect(greetingLine("Andrea")).toBe("Hi Andrea,")
+    expect(greetingLine("  Andrea Lopez ")).toBe("Hi Andrea,")
+    expect(greetingLine("andrea")).toBe("Hi Andrea,")
+    expect(greetingLine("ANDREA")).toBe("Hi Andrea,")
+    expect(greetingLine("McKay")).toBe("Hi McKay,")
+    expect(greetingLine("O'Brien")).toBe("Hi O'Brien,")
+  })
+  it("falls back to 'Hi there,' for an empty value, an email address or anything with a digit", () => {
+    for (const bad of ["", "   ", null, undefined, "andrea@example.com", "412", "N/A", "-", ","]) expect(greetingLine(bad)).toBe("Hi there,")
+  })
+  it("keeps initials as typed, drops trailing punctuation, and keeps accented and hyphenated names", () => {
+    expect(greetingLine("AJ")).toBe("Hi AJ,")
+    expect(greetingLine("Andrea,")).toBe("Hi Andrea,")
+    expect(greetingLine("Zoë")).toBe("Hi Zoë,")
+    expect(greetingLine("Mary-Jo")).toBe("Hi Mary-Jo,")
+  })
+  it("is one line under the heading on a customer email, and nothing sits in front of it but the heading", () => {
+    const { html } = renderEmail("receipt", DATA.receipt)!
+    expect(html.match(/>Hi Andrea,</g)).toHaveLength(1)
+    expect(html.indexOf("<h1")).toBeLessThan(html.indexOf(">Hi Andrea,<"))
+    expect(html.indexOf(">Hi Andrea,<")).toBeLessThan(html.indexOf("Thank you. Your"))
+    const noName = renderEmail("receipt", { ...DATA.receipt, firstName: "" })!
+    expect(noName.html).toContain(">Hi there,<")
+    expect(noName.text).toContain("Hi there,\n\nThank you.")
+  })
+  it("never prints 'Hi, ' with a comma after Hi, whatever is stored", () => {
+    for (const kind of CUSTOMER_KINDS) for (const name of ["Hannah", "Hannah Garner", "", "hannah"]) {
+      const r = renderEmail(kind, { ...DATA[kind], firstName: name })!
+      expect(r.text).not.toMatch(/\bHi, /)
+      expect(r.html).not.toMatch(/>Hi, /)
+    }
+  })
+  it("strips an opening greeting from a saved sentence, in any form the office might type, and falls back to the shipped words if only a greeting was saved", () => {
+    for (const saved of ["Hi {firstName}, {who} will be at {address} on {day}.", "Hi, {firstName}, {who} will be at {address} on {day}.", "Hello {firstName}: {who} will be at {address} on {day}.", "hi {firstName} - {who} will be at {address} on {day}."]) {
+      const out = renderEmail("date-set", { ...base, visit: { ...visit, who: "Ryan" } }, { "date-set:email": saved })!
+      expect(out.text).toContain("Hi Andrea,\n\nRyan will be at 412 Ash St on Wednesday, May 5.")
+      expect(out.text.match(/Andrea/g)).toHaveLength(1)
+    }
+    expect(renderEmail("date-set", { ...base, visit }, { "date-set:email": "Hi {firstName}," })!.text).toContain("Hi Andrea,\n\nYour spring turn-on is set for Wednesday, May 5.")
+    expect(withoutGreeting("Hi {firstName}, your {service} is {day}.")).toBe("your {service} is {day}.")
+    expect(capitalFirst("your spring turn-on")).toBe("Your spring turn-on")
+  })
+})
+
+describe("every email is on the one template", () => {
+  const kinds = [...(Object.keys(DATA) as (keyof typeof DATA)[]), "sign-in" as const]
+  const make = (k: (typeof kinds)[number]) => (k === "sign-in" ? signInEmail({ url: `${origin}/account/sign-in/verify?token=abc`, host: "www.trailheadirrigation.com" }) : renderEmail(k, DATA[k])!)
+  const STAFF = ["not-closed-crew", "admin-alert"]
+  const visible = (html: string) => html.replace(/<style[\s\S]*?<\/style>/g, "").replace(/<div style="display:none[\s\S]*?<\/div>/, "").replace(/<[^>]+>/g, " ").replace(/&[a-z]+;/g, " ").replace(/\s+/g, " ")
+  it.each(kinds)("%s has one h1 and one button, in the one frame", (k) => {
+    const { html } = make(k)
+    expect(html.match(/<h1\b/g)).toHaveLength(1)
+    expect(html.match(/class="cta"/g)).toHaveLength(1)
+    expect(html.match(/border-radius:8px;background:/g)?.length).toBeGreaterThanOrEqual(1)
+  })
+  it.each(kinds)("%s uses only the four sizes, the one font stack and 16px body text", (k) => {
+    const { html } = make(k)
+    const sizes = new Set([...html.matchAll(/font-size:(\d+)px/g)].map((m) => Number(m[1])))
+    sizes.delete(1)
+    for (const size of sizes) expect([28, 18, 16, 14]).toContain(size)
+    expect(sizes.has(16)).toBe(true)
+    expect(html).toContain(FONT)
+    expect(html).not.toMatch(/Barlow|Source Sans|Arial Narrow/)
+    expect(html).not.toMatch(/font-size:(15|17|22|34)px/)
+  })
+  it.each(kinds)("%s ends with the business name, address, phone and a why line, in the HTML and in the text", (k) => {
+    const { html, text } = make(k)
+    for (const part of [html, text]) {
+      expect(part).toContain("Trailhead Lawn")
+      expect(part).toContain("137 Morgan Circle North, Erie, CO 80516")
+      expect(part).toContain("(970) 692-7270")
+      expect(part).toMatch(/You are getting this (because|about)|A note for the Trailhead/)
+    }
+    expect(html).toContain('href="tel:9706927270"')
+    expect(html.indexOf("137 Morgan Circle North")).toBeGreaterThan(html.indexOf("<h1"))
+  })
+  it.each(kinds)("%s carries a greeting only when it is a customer email with a name to use, and its preheader is not a line of its body", (k) => {
+    const { html, text } = make(k)
+    if (STAFF.includes(k) || k === "sign-in") {
+      expect(html).not.toMatch(/>Hi /)
+      expect(text).not.toMatch(/^Hi\b/m)
+    } else {
+      expect(html.match(/>Hi (Andrea|there),</g)).toHaveLength(1)
+      expect(text).toMatch(/^Hi Andrea,$/m)
+    }
+    const pre = html.match(/opacity:0[^>]*>([^<]*)</)![1]!.replace(/&amp;/g, "&").replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/(&zwnj;&nbsp;)+$/, "")
+    expect(pre.trim().length).toBeGreaterThan(20)
+    expect(pre.trim().length).toBeLessThanOrEqual(100)
+    expect(visible(html)).not.toContain(pre.trim())
+  })
+  it("the day emails give both calendar actions as text links under the one button, and the money emails give a second action as a link, not a button", () => {
+    for (const k of ["booking-confirmation", "date-set", "date-moved", "day-before", "date-confirm"] as const) {
+      const { html } = make(k)
+      expect(html.indexOf("Open your Trailhead account")).toBeLessThan(html.indexOf("Add to Google Calendar"))
+      expect(html).toMatch(/<a href="[^"]*calendar\.google[^"]*" style="color:#B45309;font-weight:700;text-decoration:underline">Add to Google Calendar/)
+    }
+    expect(make("receipt").html).toMatch(/style="color:#B45309;font-weight:700;text-decoration:underline">View the receipt/)
+    expect(make("invoice").html).toMatch(/style="color:#B45309;font-weight:700;text-decoration:underline">See it in your account/)
+  })
+  it("the sign-in email says why in its footer and gives the link under the button for a client that blocks buttons", () => {
+    const { html, text } = make("sign-in")
+    expect(html).toContain("You are getting this because someone asked to sign in to Trailhead with this email address.")
+    expect(html).toContain("If the button doesn't work")
+    expect(text).not.toContain("Hi,")
+    expect(text).toContain("The Trailhead crew")
+    expect(html).toContain("The Trailhead crew")
+  })
+})
+
+describe("the branches of each email keep to the template", () => {
+  const one = (html: string) => {
+    expect(html.match(/<h1\b/g)).toHaveLength(1)
+    expect(html.match(/class="cta"/g)).toHaveLength(1)
+    expect(html).not.toMatch(/undefined|null|NaN/)
+  }
+  it("a purchase with a card still to add has one button (Add your card) and the account as a text link", () => {
+    const { html } = renderEmail("purchase-confirmation", { ...DATA["purchase-confirmation"], cardLast4: null, cardUpdateUrl: "https://billing.stripe.com/s/9" })!
+    one(html)
+    expect(html).toContain(">Add your card<")
+    expect(html).toMatch(/underline">Open your Trailhead account/)
+    const none = renderEmail("purchase-confirmation", { ...DATA["purchase-confirmation"], cardLast4: null, cardUpdateUrl: null })!.html
+    one(none)
+    expect(none).toContain(">Open your Trailhead account<")
+  })
+  it("card emails with no update link still have one button, the greeting and the why line", () => {
+    for (const kind of ["card-failed", "card-expiring"] as const) {
+      const r = renderEmail(kind, { ...DATA[kind], updateUrl: null })!
+      one(r.html)
+      expect(r.html).toContain(">Open your Trailhead account<")
+      expect(r.text).toContain("Hi Andrea,")
+      expect(r.text).toContain("You are getting this about the card")
+    }
+  })
+  it("a day email with no time and no person still has one button, a greeting and both calendar links", () => {
+    for (const kind of ["date-set", "date-moved", "day-before", "date-confirm", "booking-confirmation"] as const) {
+      const r = renderEmail(kind, { ...base, serviceName: "repair", visit: { ...visit, startTime: null, who: null } })!
+      one(r.html)
+      expect(r.html).toContain("Add to Google Calendar")
+      expect(r.text).toMatch(/^Hi Andrea,$/m)
+      expect(r.text).not.toMatch(/  |\.\s*\. /)
+    }
+  })
+  it("a receipt with no lines, no day and no receipt link has one button and its footer", () => {
+    const r = renderEmail("receipt", { ...base, amount: 145, serviceName: "repair", address: "412 Ash St", paidOn: "2027-05-05", card: null, paidBy: "cash", nextLine: "", receiptUrl: null })!
+    one(r.html)
+    expect(r.html).not.toContain("View the receipt")
+    expect(r.text).toContain("You are getting this because a visit of yours was completed.")
+  })
+  it("a saved sentence that names the customer with no name stored never reads 'there, ...'", () => {
+    for (const saved of ["{firstName}, your {service} is set for {day}.", "Thanks, {firstName}. Your {service} is set for {day}."]) {
+      const r = renderEmail("date-set", { ...base, firstName: "", visit }, { "date-set:email": saved })!
+      expect(r.text).toContain("Hi there,\n\n")
+      expect(r.text).not.toMatch(/There,|there, your|Thanks, there/)
+      expect(r.text).toMatch(/Your spring turn-on is set for Wednesday, May 5\.|Thanks\. Your spring turn-on is set for Wednesday, May 5\./)
+    }
+  })
+  it("escapes an address or a name with quotes and ampersands in the facts, the picture alt and the lead", () => {
+    const address = 'A & "B" <St>'
+    const r = renderEmail("purchase-confirmation", { ...DATA["purchase-confirmation"], address, firstName: 'An"dr<ea' })!
+    expect(r.html).toContain("A &amp; &quot;B&quot; &lt;St&gt;")
+    expect(r.html).not.toContain("<St>")
+    expect(r.html).not.toContain('"B"')
+    const inv = renderEmail("invoice", { ...DATA.invoice, address })!
+    expect(inv.html).toContain("A &amp; &quot;B&quot; &lt;St&gt;")
+  })
+  it("a long sign-in link wraps inside the card instead of running past it", () => {
+    const r = signInEmail({ url: `${origin}/api/auth/callback/resend?token=${"a".repeat(200)}&callbackUrl=${encodeURIComponent(`${origin}/account`)}`, host: "www.trailheadirrigation.com" })
+    expect(r.html).toContain("overflow-wrap:anywhere")
+  })
+  it("the plain-text twin of every email carries the HTML's one button link (or the account it opens)", () => {
+    const kinds = [...(Object.keys(DATA) as (keyof typeof DATA)[]), "sign-in" as const]
+    for (const k of kinds) {
+      const r = k === "sign-in" ? signInEmail({ url: `${origin}/account/sign-in/verify?token=abc&b=c`, host: "www.trailheadirrigation.com" }) : renderEmail(k, DATA[k])!
+      const href = r.html.match(/class="cta"[\s\S]*?<a href="([^"]+)"/)![1]!.replace(/&amp;/g, "&")
+      expect(r.text.includes(href) || (href.startsWith(`${origin}/account`) && r.text.includes(`${origin}/account`))).toBe(true)
+    }
   })
 })
 

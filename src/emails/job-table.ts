@@ -4,7 +4,7 @@
 // or what is due. Sentence case throughout; built once here so the three emails read alike. HTML and plain text come from the
 // same rows.
 import { dollars, whoWithDay } from "./format"
-import { BODY, EMAIL_COLORS, esc, facts } from "./layout"
+import { facts, moneyTable, type MoneyRow } from "./layout"
 import type { EmailLine } from "./types"
 
 export interface JobTableInput {
@@ -21,7 +21,6 @@ export interface JobTableInput {
   after?: [string, string][]
 }
 
-const C = EMAIL_COLORS
 export const sentence = (text: string) => `${text.charAt(0).toUpperCase()}${text.slice(1)}`
 
 /** "2 × $10" when a line is not a single one, else nothing. */
@@ -39,17 +38,11 @@ export function jobTable(t: JobTableInput): { html: string; text: string[] } {
     ...((t.tax ?? 0) > 0 ? ([["Sales tax", dollars(t.tax!), false]] as [string, string, boolean][]) : []),
     [t.totalLabel ?? "Total", dollars(t.total), true],
   ]
-  const cell = (extra: string) => `font-family:${BODY};font-size:16px;line-height:24px;color:${C.text};${extra}`
-  const lineRows = t.lines
-    .map((l) => {
-      const detail = quantityWords(l)
-      return `<tr><td style="padding:10px 12px 10px 0;border-top:1px solid ${C.border};${cell("vertical-align:top")}">${esc(sentence(l.name))}${detail ? `<br><span style="font-size:14px;color:${C.muted}">${esc(detail)}</span>` : ""}</td><td align="right" style="padding:10px 0;border-top:1px solid ${C.border};${cell("vertical-align:top;white-space:nowrap")}">${esc(dollars(l.amount))}</td></tr>`
-    })
-    .join("")
-  const totalRows = totals
-    .map(([k, v, strong]) => `<tr><td style="padding:8px 12px 8px 0;border-top:1px solid ${strong ? C.navy : C.border};${cell(strong ? "font-weight:700" : `color:${C.muted}`)}">${esc(k)}</td><td align="right" style="padding:8px 0;border-top:1px solid ${strong ? C.navy : C.border};${cell(strong ? "font-weight:700" : "")}">${esc(v)}</td></tr>`)
-    .join("")
-  const html = (t.facts.length ? facts(t.facts) : "") + `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 20px">${lineRows}${totalRows}</table>` + (t.after?.length ? facts(t.after) : "")
+  const rows: MoneyRow[] = [
+    ...t.lines.map((l) => ({ label: sentence(l.name), value: dollars(l.amount), detail: quantityWords(l) || undefined })),
+    ...totals.slice(0, -1).map(([label, value]) => ({ label, value, quiet: true })),
+  ]
+  const html = (t.facts.length ? facts(t.facts) : "") + moneyTable(rows, [totals.at(-1)![0], totals.at(-1)![1]]) + (t.after?.length ? facts(t.after) : "")
   const text = [
     ...t.facts.map(([k, v]) => `${k}: ${v}`),
     ...(t.facts.length ? [""] : []),

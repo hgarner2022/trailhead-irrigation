@@ -3,8 +3,8 @@
 /** What every message calls the customer's page: the one name in every link, button and sentence (`your ${ACCOUNT_NAME}`). The portal design (docs/plans/2026-11-18-customer-portal-design.md) set it. */
 export const ACCOUNT_NAME = "Trailhead account"
 
-/** The one link every money email carries to the customer's page. */
-export const SEE_JOB = `See this job in your ${ACCOUNT_NAME}`
+/** The one link every money email carries to the customer's page. Hannah, Nov 18 2026: short enough for one line on a phone. */
+export const SEE_JOB = "See it in your account"
 
 /** The line above the footer of every customer email. */
 export const SIGN_OFF = "The Trailhead crew"
