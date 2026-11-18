@@ -126,6 +126,28 @@ describe("the job panel", () => {
     expect(actions.recordPayment).toHaveBeenCalledWith("job-d", { method: "check", amount: 145, reference: "1042" })
   })
 
+  it("after the payment arrives and a Refund brings the job back to unpaid, How is this paid? does not reopen by itself", async () => {
+    const actions = jobActions()
+    const visits = visitActions() as VisitActions
+    const row = { id: "pay-d", jobId: "job-d", amount: 145, method: "check", status: "succeeded", paidOn: "2026-11-10" }
+    const refund = { ...row, id: "ref-d", amount: -145, refundsPaymentId: "pay-d" }
+    const withPayments = (payments: typeof row[], owed: number) => ({ ...jobsData, jobs: jobsData.jobs!.map((j) => (j.id === "job-d" ? { ...j, payments, money: { ...j.money!, paid: owed ? 0 : 145, owed, words: owed ? "$145 unpaid" : "Paid" } } : j)) })
+    const mk = (d: typeof jobsData) => (
+      <UndoToastProvider>
+        <JobsScreen data={d} today={JOBS_TODAY} defaultJobId="job-d" actions={actions} visitActions={visits} />
+      </UndoToastProvider>
+    )
+    const { rerender } = render(mk(jobsData))
+    await userEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Collect $145" }))
+    await userEvent.click(within(screen.getAllByRole("dialog").at(-1)!).getByRole("button", { name: "Record $145 paid" }))
+    rerender(mk(withPayments([row], 0)))
+    expect(await within(screen.getAllByRole("dialog").at(-1)!).findByText("Paid, check")).toBeInTheDocument()
+    await userEvent.click(within(screen.getAllByRole("dialog").at(-1)!).getAllByRole("button", { name: "Close" }).find((b) => b.getAttribute("data-slot") !== "dialog-close")!)
+    rerender(mk(withPayments([row, refund], 145)))
+    expect(screen.queryByRole("heading", { name: "How is this paid?" })).toBeNull()
+    expect(within(screen.getByRole("dialog")).getByRole("button", { name: "Collect $145" })).toBeInTheDocument()
+  })
+
   it("Send an invoice sits inside How is this paid? and goes only on its own button", async () => {
     const visits = visitActions()
     view({ defaultJobId: "job-d", actions: jobActions(), visitActions: visits as VisitActions })

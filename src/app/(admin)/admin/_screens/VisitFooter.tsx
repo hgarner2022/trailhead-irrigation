@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Input } from "@/components/ui/input"
 import { CollectPayment } from "@/components/blocks/CollectPayment"
 import { useUndoToast } from "@/components/blocks/UndoToast"
-import { dollars } from "@/lib/money/collect"
+import { dollars, type CollectPlan } from "@/lib/money/collect"
 import type { Visit } from "@/lib/admin/types"
 import { ConfirmCancel } from "./ConfirmCancel"
 import type { VisitActions } from "./visit-actions-types"
@@ -80,7 +80,19 @@ interface FooterProps {
 /** The buttons for the footer slot and the dialogs they open. Render inside `SidePanel`'s `footer` prop. */
 export function VisitFooter({ visit, plan, today, visitDay, firstName, summary, actions }: FooterProps) {
   const [doneOpen, setDoneOpen] = useState(false)
-  const [collectOpen, setCollectOpen] = useState(false)
+  // The dialog keeps the plan it opened with, as state: once the money has arrived the page refreshes and the visit has no plan any more,
+  // but the dialog stays to say what happened until it is closed, and closing it is what keeps it shut. (When it was dropped with its open
+  // flag still set, a later Refund brought it back by itself with the card preselected.) After Mark done the plan arrives with the refresh,
+  // so `wantCollect` waits for it once.
+  const [collectPlan, setCollectPlan] = useState<CollectPlan | null>(null)
+  const [wantCollect, setWantCollect] = useState(false)
+  if (wantCollect && plan.plan) {
+    setCollectPlan(plan.plan)
+    setWantCollect(false)
+  }
+  const closeCollect = (open: boolean) => {
+    if (!open) setCollectPlan(null)
+  }
   const [refundOpen, setRefundOpen] = useState(false)
   const { pending, error, run } = useRunner()
   const toast = useUndoToast()
@@ -101,7 +113,7 @@ export function VisitFooter({ visit, plan, today, visitDay, firstName, summary, 
         </Button>
       )}
       {plan.primary === "collect" && (
-        <Button type="button" className="min-h-11" onClick={() => setCollectOpen(true)}>
+        <Button type="button" className="min-h-11" onClick={() => setCollectPlan(plan.plan ?? null)}>
           {plan.unpaid > 0 ? `Collect ${dollars(plan.unpaid)}` : "Collect the payment"}
         </Button>
       )}
@@ -118,23 +130,23 @@ export function VisitFooter({ visit, plan, today, visitDay, firstName, summary, 
       <p role="alert" className={`${FORM_STATUS} w-full text-destructive`}>
         {error}
       </p>
-      <MarkDoneDialog visit={visit} today={today} visitDay={visitDay} open={doneOpen} onOpenChange={setDoneOpen} onDone={() => setCollectOpen(true)} actions={actions} />
-      {plan.plan && (
-        <Dialog open={collectOpen} onOpenChange={setCollectOpen}>
+      <MarkDoneDialog visit={visit} today={today} visitDay={visitDay} open={doneOpen} onOpenChange={setDoneOpen} onDone={() => setWantCollect(true)} actions={actions} />
+      {collectPlan && (
+        <Dialog open onOpenChange={closeCollect}>
           <DialogContent className="sm:max-w-md" data-slot="collect-dialog">
             <DialogHeader>
               <DialogTitle className="font-display text-2xl font-semibold text-navy">How is this paid?</DialogTitle>
               <DialogDescription className="sr-only">Choose how {firstName} paid, then press the button. Nothing is charged until you do.</DialogDescription>
             </DialogHeader>
             <CollectPayment
-              plan={plan.plan}
+              plan={collectPlan}
               summary={summary}
               firstName={firstName}
               onCharge={actions ? () => actions.chargeCard(visit.id) : log("charge")}
               onRecord={actions ? (input) => actions.recordPayment(visit.id, input) : log("record")}
               onInvoice={actions && visit.jobId ? () => actions.sendBill(visit.jobId!) : log("invoice")}
-              onLater={() => setCollectOpen(false)}
-              onClose={() => setCollectOpen(false)}
+              onLater={() => setCollectPlan(null)}
+              onClose={() => setCollectPlan(null)}
             />
           </DialogContent>
         </Dialog>

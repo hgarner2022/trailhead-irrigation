@@ -75,7 +75,7 @@ const handed = (value: "check" | "venmo" | "cash", amount: number): PayOption =>
 /**
  * The plan for one done visit that is not paid. A real card is the default and a button like the rest; a Season Pass visit with one
  * reads "Charge the card as agreed" with no Pay later and the cash ways behind "Paid another way". Pay later is offered only when the
- * customer has no card. Tap to pay is the panel's greyed row, never an option here.
+ * customer has no card. There is no Tap to pay row until it is built (Hannah, Nov 18 2026: a dead row is noise).
  */
 export function collectPlan(i: CollectInput): CollectPlan {
   const needsAmount = i.amount <= 0

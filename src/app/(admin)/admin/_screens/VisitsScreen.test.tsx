@@ -288,7 +288,7 @@ describe("VisitsScreen", () => {
     const a = actions()
     await openUnpaid(a, { ...data, visits: [doneUnpaid()], jobs: [unpaidJob] })
     expect(collect().getByRole("heading", { name: "How is this paid?" })).toBeInTheDocument()
-    expect(collect().getAllByRole("radio").map((r) => (r as HTMLInputElement).value)).toEqual(["check", "venmo", "cash", "invoice", "later", "on"])
+    expect(collect().getAllByRole("radio").map((r) => (r as HTMLInputElement).value)).toEqual(["check", "venmo", "cash", "invoice", "later"])
     expect(collect().getByRole("radio", { name: /^Check\b/ })).toBeChecked()
     expect(a.recordPayment).not.toHaveBeenCalled()
     await userEvent.type(collect().getByLabelText(/Check number/), "1042")
@@ -311,7 +311,7 @@ describe("VisitsScreen", () => {
     const a = actions()
     const withCard: AdminData = { ...data, clients: data.clients.map((c) => (c.id === "cx" ? { ...c, card: { brand: "visa", last4: "4242" } } : c)), visits: [doneUnpaid()], jobs: [unpaidJob] }
     await openUnpaid(a, withCard)
-    expect(collect().getAllByRole("radio").map((r) => (r as HTMLInputElement).value)).toEqual(["card", "check", "venmo", "cash", "invoice", "on"])
+    expect(collect().getAllByRole("radio").map((r) => (r as HTMLInputElement).value)).toEqual(["card", "check", "venmo", "cash", "invoice"])
     expect(collect().getByLabelText("Charge the Visa ending 4242 now", { exact: false })).toBeChecked()
     expect(a.chargeCard).not.toHaveBeenCalled()
     await userEvent.click(collect().getByRole("button", { name: "Charge $145" }))
@@ -398,6 +398,59 @@ describe("VisitsScreen", () => {
     expect(a.refundPayment).not.toHaveBeenCalled()
     await userEvent.click(ask.getByRole("button", { name: "Refund $145" }))
     expect(a.refundPayment).toHaveBeenCalledWith("pay-u")
+  })
+
+  it("after a payment and then a Refund, How is this paid? does not reopen by itself: the panel shows Done and unpaid with Collect, and nothing is open", async () => {
+    const a = actions()
+    const withCard = (visits: Visit[], jobs: AdminData["jobs"]): AdminData => ({ ...data, clients: data.clients.map((c) => (c.id === "cx" ? { ...c, card: { brand: "visa", last4: "4242" } } : c)), visits, jobs })
+    const screen_ = (d: AdminData) => (
+      <UndoToastProvider>
+        <VisitsScreen data={d} today={TODAY} actions={a} defaultVisitId="u" />
+      </UndoToastProvider>
+    )
+    const paidRow = { id: "pay-u", visitId: "u", amount: 145, method: "check", status: "succeeded", paidOn: "2026-11-10" }
+    const unpaid = withCard([doneUnpaid()], [unpaidJob])
+    const paid = withCard([doneUnpaid({ payments: [paidRow] })], [{ ...unpaidJob, payments: [paidRow], money: { paid: 145, total: 145, owed: 0, words: "Paid" } }])
+    const refunded = withCard([doneUnpaid({ payments: [paidRow, { ...paidRow, id: "ref-u", amount: -145, refundsPaymentId: "pay-u" }] })], [{ ...unpaidJob, payments: [paidRow, { ...paidRow, id: "ref-u", amount: -145, refundsPaymentId: "pay-u" }] }])
+    const { rerender } = render(screen_(unpaid))
+    await userEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Collect $145" }))
+    await userEvent.click(within(screen.getAllByRole("dialog").at(-1)!).getByRole("radio", { name: /^Check/ }))
+    await userEvent.click(within(screen.getAllByRole("dialog").at(-1)!).getByRole("button", { name: "Record $145 paid" }))
+    // the page refreshes with the payment: the dialog stays to say what happened until it is closed
+    rerender(screen_(paid))
+    expect(await within(screen.getAllByRole("dialog").at(-1)!).findByText("Paid, check")).toBeInTheDocument()
+    await userEvent.click(within(screen.getAllByRole("dialog").at(-1)!).getAllByRole("button", { name: "Close" }).find((b) => b.getAttribute("data-slot") !== "dialog-close")!)
+    // then a Refund brings the visit back to Done and unpaid
+    rerender(screen_(refunded))
+    expect(screen.queryByRole("heading", { name: "How is this paid?" })).toBeNull()
+    expect(screen.getAllByRole("dialog")).toHaveLength(1)
+    expect(within(screen.getByRole("dialog")).getByRole("button", { name: "Collect $145" })).toBeInTheDocument()
+    expect(a.chargeCard).not.toHaveBeenCalled()
+  })
+
+  it("does not reopen How is this paid? after a payment when the dialog was never closed by hand either", async () => {
+    // Even if the refreshed page drops the dialog while it is open (the visit is paid), a later Refund must not bring it back.
+    const a = actions()
+    const mk = (d: AdminData) => (
+      <UndoToastProvider>
+        <VisitsScreen data={d} today={TODAY} actions={a} defaultVisitId="u" />
+      </UndoToastProvider>
+    )
+    const paidRow = { id: "pay-u", visitId: "u", amount: 145, method: "check", status: "succeeded", paidOn: "2026-11-10" }
+    const refundRow = { ...paidRow, id: "ref-u", amount: -145, refundsPaymentId: "pay-u" }
+    const { rerender } = render(mk({ ...data, visits: [doneUnpaid()], jobs: [unpaidJob] }))
+    await userEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Collect $145" }))
+    await userEvent.keyboard("{Escape}")
+    rerender(mk({ ...data, visits: [doneUnpaid({ payments: [paidRow] })], jobs: [{ ...unpaidJob, payments: [paidRow], money: { paid: 145, total: 145, owed: 0, words: "Paid" } }] }))
+    rerender(mk({ ...data, visits: [doneUnpaid({ payments: [paidRow, refundRow] })], jobs: [{ ...unpaidJob, payments: [paidRow, refundRow] }] }))
+    expect(screen.queryByRole("heading", { name: "How is this paid?" })).toBeNull()
+  })
+
+  it("does not draw a Tap to pay row: it is not built, and a dead row is noise", async () => {
+    await openUnpaid(actions(), { ...data, visits: [doneUnpaid()], jobs: [unpaidJob] })
+    expect(collect().queryByText("Tap to pay")).toBeNull()
+    expect(collect().queryByText("Not built yet")).toBeNull()
+    expect(collect().getAllByRole("radio").every((r) => !(r as HTMLInputElement).disabled)).toBe(true)
   })
 
   it("Undo done is offered while no payment row exists and acts at once", async () => {

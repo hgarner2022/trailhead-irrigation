@@ -61,7 +61,7 @@ export const PanelNotDone: Story = { args: { defaultVisitId: "office-not-done" }
 export const PanelOwed: Story = { args: { defaultVisitId: "office-owed" }, globals: wide }
 export const PanelOwedPhone: Story = { args: { defaultVisitId: "office-owed" }, globals: phone }
 
-/** Collect opens "How is this paid?": Check, Venmo, Cash, Send an invoice, Pay later (no card on file), and Tap to pay greyed. */
+/** Collect opens "How is this paid?": Check, Venmo, Cash, Send an invoice, and Pay later (no card on file). There is no Tap to pay row until it is built. */
 export const PanelOwedCollect: Story = {
   args: { defaultVisitId: "office-owed" },
   globals: wide,
@@ -70,7 +70,7 @@ export const PanelOwedCollect: Story = {
     await expect(await body.findByRole("heading", { name: "How is this paid?" })).toBeInTheDocument()
     await expect(await body.findByText("Texts a pay link, due in 14 days")).toBeInTheDocument()
     await expect(await body.findByLabelText("Pay later")).toBeInTheDocument()
-    await expect(await body.findByLabelText("Tap to pay")).toBeDisabled()
+    await expect(body.queryByText("Tap to pay")).not.toBeInTheDocument()
   },
 }
 export const PanelOwedCollectPhone: Story = {

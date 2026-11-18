@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils"
 
 // "How is this paid?": the second beat of a finished visit, in one block for the visit panel and the job panel. Pure props. The
 // choices come from `collectPlan` (the card on file first and selected, the cash ways, an invoice, Pay later only for a customer
-// with no card, Tap to pay greyed as not built). Nothing moves money until the one button under the choices is pressed, and
+// with no card; there is no Tap to pay row until it is built). Nothing moves money until the one button under the choices is pressed, and
 // each press does exactly one thing: one payment row, or one invoice, or nothing at all for Pay later. A decline says so and
 // offers the other ways; once it has gone through the block says what happened in the words of `words.ts`. Client component.
 
@@ -107,13 +107,6 @@ export function CollectPayment({ plan, summary, firstName, onCharge, onRecord, o
         {shown.map((o) => (
           <Choice key={o.value} option={o} checked={picked.value === o.value} disabled={busy || Boolean(o.disabled)} onPick={() => setChoice(o.value)} />
         ))}
-        <label className={RADIO}>
-          <input type="radio" name="pay-choice" disabled aria-label="Tap to pay" className="mt-0.5 size-4 shrink-0" />
-          <span className="flex min-w-0 flex-col">
-            <span className="font-medium text-foreground">Tap to pay</span>
-            <span className="text-navy-light">Not built yet</span>
-          </span>
-        </label>
       </fieldset>
       {plan.anotherWay.length > 0 && !more && (
         <Button type="button" variant="ghost" className="min-h-11 self-start text-muted-foreground" onClick={() => (setMore(true), setChoice("check"))}>
