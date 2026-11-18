@@ -78,7 +78,7 @@ export function Messages({ state, apply, data }: { state: SettingsState; apply: 
                 else if (v !== m.body) apply((s, a) => setMessage(s, m.key, "body", v, a))
               }}
             />
-            <p className="text-xs text-muted-foreground">Placeholders: {"{firstName}, {visit}, {date}, {who} (the first name of who is coming), {nextVisit}. {truck}: the truck label, going away."}</p>
+            <p className="text-xs text-muted-foreground">Placeholders: {"{firstName}, {visit}, {date}, {who} (the first name of who is coming), {nextVisit}."}</p>
           </li>
         )
       })}

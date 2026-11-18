@@ -202,8 +202,7 @@ export async function offerDaysWith(deps: CheckoutDeps, q: OfferQuery): Promise<
   for (const v of visitsOnSale(q.inspection, q.today)) {
     try {
       const { days } = await callApi(ctx, scheduleOfferDays, { town: q.town as Town, kind: v.key, season: q.season, zones: q.zones })
-      // The checkout's `DayOffer` still names the person `truckId` (renamed in step 6 with the aliases); it is the person id.
-      offers[v.key] = days.map(({ day, personId, start, window }) => ({ day, truckId: personId, start, window }))
+      offers[v.key] = days.map(({ day, personId, start, window }) => ({ day, personId, start, window }))
     } catch (error) {
       logCheckoutFailure("offerDays", "contact", undefined, error)
     }

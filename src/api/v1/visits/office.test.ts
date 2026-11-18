@@ -30,7 +30,8 @@ const count = async (t: typeof s.job | typeof s.customer | typeof s.visit | type
 describe("visits.create", () => {
   it("makes the job and the visit, places it with the first person on the schedule (Ryan, the owner) and texts the date", async () => {
     const out = await create({ customerId: "c100", kind: "repair", scheduledOn: "2027-05-05", price: 145, notes: "Zone 3 will not shut off" })
-    expect(out).toMatchObject({ kind: "repair", status: "scheduled", scheduledOn: "2027-05-05", personId: "person_truck-1", personName: "Ryan Garner", truckId: "person_truck-1", truckName: "Ryan Garner", amount: 145, durationMinutes: 120, notes: "Zone 3 will not shut off", bookingId: null, passId: null })
+    expect(out).toMatchObject({ kind: "repair", status: "scheduled", scheduledOn: "2027-05-05", personId: "person_truck-1", personName: "Ryan Garner", truckId: "person_truck-1", truckName: "Ryan Garner", amount: 145, durationMinutes: 120, notes: "Zone 3 will not shut off", passId: null })
+    expect(out).not.toHaveProperty("bookingId")
     const [job] = await db.select().from(s.job).where(eq(s.job.id, out.jobId))
     expect(job).toMatchObject({ source: "office", customerId: "c100", soldOn: "2027-04-20", cancelledAt: null })
     const texts = (await db.select().from(s.messageLog)).filter((m) => m.visitId === out.id)

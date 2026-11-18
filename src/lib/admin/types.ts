@@ -201,8 +201,6 @@ export interface Visit {
   personId?: string
   /** that person's name, "Ryan Garner" */
   personName?: string
-  /** @deprecated alias of `personId`, the same id; the screens read `personId`, dropped in step 6 */
-  truckId?: string
   /** the yard the visit is at; absent for a visit read from the Jobber mirror */
   property?: Yard
   /** the customer must be there and has not yet picked a day; the visit waits in the tray for them (scheduling flow, 2026-11-12) */
@@ -220,8 +218,6 @@ export interface Visit {
   /** how long the stop takes */
   minutes?: number
   notes?: string
-  /** @deprecated alias of `personName`, the same name; the screens read `personName`, dropped in step 6 */
-  truckName?: string
   /** why the last attempt did not happen, until the visit gets a day again */
   notDoneReason?: string
   /** the open bill this visit's lines are on; its money reads Bill sent */
@@ -320,8 +316,6 @@ export interface PassVisit {
   id?: string
   /** the name of the person who has the visit, "Ryan Garner"; the pass page shows it beside the date */
   personName?: string
-  /** @deprecated alias of `personName`, the same name, kept until the screens read people */
-  truckName?: string
   completedAt?: string
   /** whole dollars, read from the visit's own line */
   amount: number
@@ -405,9 +399,6 @@ export interface Person {
   seasonEnd?: string
 }
 
-/** @deprecated a truck is a person with a truck label; alias kept for one step */
-export type Truck = Person
-
 /** The towns a person works on one day: one town or two or three that sit together. */
 export interface AreaGroup {
   id: string
@@ -424,7 +415,7 @@ export interface SeasonWindow {
   leadWeeks: number
 }
 
-/** One customer message the app sends, in Trailhead's voice. The body may carry {firstName}, {visit}, {date}, {who} (the first name of the person on the visit) and {nextVisit}; {truck} (the truck label) still fills for one season and goes in step 6. */
+/** One customer message the app sends, in Trailhead's voice. The body may carry {firstName}, {visit}, {date}, {who} (the first name of the person on the visit) and {nextVisit}. A placeholder it does not know, such as the old {truck}, is left as written. */
 export interface MessageTemplate {
   key: string
   channel: "email" | "sms"

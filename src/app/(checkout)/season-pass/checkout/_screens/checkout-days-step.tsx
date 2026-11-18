@@ -37,9 +37,9 @@ export function DaysStep({ state, offers: loaded, set, renewal, attempted = fals
             ) : (
               <div className="mt-4 grid gap-3 sm:grid-cols-3">
                 {list.map((offer, i) => {
-                  const checked = held?.day === offer.day && held.truckId === offer.truckId
+                  const checked = held?.day === offer.day && held.personId === offer.personId
                   return (
-                    <label key={`${offer.day}-${offer.truckId}`} className="relative block">
+                    <label key={`${offer.day}-${offer.personId}`} className="relative block">
                       <input
                         type="radio"
                         name={`${id}-${kind}`}

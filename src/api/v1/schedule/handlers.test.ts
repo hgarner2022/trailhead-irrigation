@@ -23,7 +23,6 @@ describe("schedule.week", () => {
     const out = await callApi(ctxFor(db, readKey), scheduleWeek, { from: "2027-05-03" })
     expect(out.to).toBe("2027-05-09")
     expect(out.people.map((t) => [t.id, t.name, t.truck])).toEqual([["person_truck-1", "Ryan Garner", "Truck 1"], ["person_truck-2", "Tech Two", "Truck 2"]])
-    expect(out.trucks).toEqual(out.people)
     expect(out.visits.map((v) => v.id)).toEqual(expect.arrayContaining(["p1-turn-on", "p3-turn-on", "p4-turn-on"]))
     expect(out.tray.every((v) => v.status === "unscheduled")).toBe(true)
     expect(out.visits.every((v) => v.address === undefined)).toBe(true)

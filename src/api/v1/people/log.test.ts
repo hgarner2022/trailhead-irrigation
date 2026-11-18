@@ -8,7 +8,7 @@ import { personLeaves } from "./log"
 const row = (over: Partial<PersonRow> = {}): PersonRow =>
   ({
     id: "p1", organizationId: "o", name: "Hannahn.garner", initials: "HA", email: "h@example.com", phone: null, role: "admin", truck: null, jobberUserId: null, calendarFeedUrl: null,
-    workingDays: ["mon", "tue"], capacityByKind: { "turn-on": 8, inspection: 8, blowout: 10, repair: 4, other: 2 }, seasonStart: null, seasonEnd: null, active: true, legacyTruckId: null,
+    workingDays: ["mon", "tue"], capacityByKind: { "turn-on": 8, inspection: 8, blowout: 10, repair: 4, other: 2 }, seasonStart: null, seasonEnd: null, active: true,
     createdAt: new Date(0), updatedAt: new Date(0), ...over,
   }) as PersonRow
 

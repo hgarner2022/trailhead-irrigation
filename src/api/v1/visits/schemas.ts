@@ -1,4 +1,5 @@
 import { z } from "zod"
+import { yardShape } from "@/lib/admin/yard"
 import { EventOut } from "../events/schemas"
 import { PaymentOut } from "../payments/schemas"
 import { Day, Id, Iso, Preference, Town, VisitKind, VisitStatus } from "../shared"
@@ -16,23 +17,12 @@ export const LineOut = z.object({
   visitId: Id.nullable().describe("The visit the line is billed after; null for a line on the job as a whole."),
 })
 
-/** The yard the visit is at, as the property holds it. */
-export const YardOut = z.object({
-  zones: z.number().int().nullable(),
-  controller: z.string().nullable(),
-  backflowLocation: z.string().nullable(),
-  gateCode: z.string().nullable().optional().describe("Only for callers with the write scope."),
-  mustBeHome: z.boolean(),
-  accessNote: z.string().nullable().optional().describe("Only for callers with the write scope."),
-  contactName: z.string().nullable(),
-  contactPhone: z.string().nullable().optional().describe("Only for callers with the write scope."),
-  notes: z.string().nullable(),
-})
+/** The yard the visit is at, as the property holds it: the one field list of `src/lib/admin/yard.ts`. */
+export const YardOut = z.object(yardShape)
 
 export const VisitOut = z.object({
   id: Id,
   passId: Id.nullable().describe("The Season Pass this visit belongs to: the id of its job when the job is a pass, else null."),
-  bookingId: Id.nullable().describe("The old booking row; new jobs have none."),
   jobId: Id.describe("The job (the pass or the booked work) this visit belongs to."),
   customerId: Id,
   firstName: z.string(),

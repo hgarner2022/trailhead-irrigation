@@ -23,7 +23,7 @@ describe("loadPassPage", () => {
     expect(data?.passes.every((p) => p.clientId === customerId)).toBe(true)
     const turnOn = data!.pass.visits.find((v) => v.kind === "turn-on")!
     expect(turnOn.scheduledAt).toMatch(/^2027-05-04T/)
-    expect(turnOn.truckName).toBe("Ryan Garner")
+    expect(turnOn.personName).toBe("Ryan Garner")
     expect(data!.today).toBe("2027-04-20")
     expect(Object.keys(data!.pickDays).sort()).toEqual(["blowout", "turn-on"])
   })

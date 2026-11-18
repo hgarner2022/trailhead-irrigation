@@ -38,12 +38,9 @@ function townRank(order: readonly Town[], towns: readonly Town[]) {
   return ranks.length ? Math.min(...ranks) : 0
 }
 
-/** The truck row a snapshot person was made from: `person_truck-1` came from `truck-1`. Gone in step 6 with the truck table. */
-const legacyTruckIdOf = (p: Pick<Person, "id">) => (p.id.startsWith("person_") ? p.id.slice("person_".length) : p.id)
-
 /**
- * Inserts the organization, admins, people (and, until step 6, a truck row
- * per person with a truck), areas, settings and services always; the fixture
+ * Inserts the organization, people (the snapshot's, then one per admin email),
+ * areas, settings and services always; the fixture
  * passes (with customers, properties, consents and visits) only with
  * `passes: true`; the mirror only with `mirror: true`. Every insert ignores a
  * row that is already there, so running it twice changes nothing.
@@ -58,21 +55,7 @@ export async function seed(db: Database, snapshot: AdminData, options: SeedOptio
     .values({ id: org, name: "Trailhead Lawn & Irrigation LLC", settings: { ...settings, windows }, termsVersion: "2026-11" })
     .onConflictDoNothing()
 
-  if (options.admins.length) {
-    await db
-      .insert(s.adminUser)
-      .values(options.admins.map((email, i) => ({ organizationId: org, email, role: i === 0 ? ("owner" as const) : ("admin" as const), ...nameFromEmail(email) })))
-      .onConflictDoNothing()
-  }
-
-  const trucks = people.filter((p) => p.truck)
-  if (trucks.length) {
-    await db
-      .insert(s.truck)
-      .values(trucks.map((p) => ({ id: legacyTruckIdOf(p), organizationId: org, name: p.truck!, jobberUserId: p.jobberUserId, workingDays: p.workingDays, capacityByKind: p.capacityByKind })))
-      .onConflictDoNothing()
-  }
-  await seedPeople(db, org, people)
+  await seedPeople(db, org, people, options.admins)
   if (areas.length) {
     await db
       .insert(s.area)
@@ -116,44 +99,47 @@ export async function seed(db: Database, snapshot: AdminData, options: SeedOptio
 
 /**
  * The people: the snapshot's rows as they are (`settings.people` is the one
- * source; Ryan Garner the owner on Truck 1, Tech Two the tech on Truck 2,
- * each keeping the truck id it was made from as `legacyTruckId` until step 6),
- * then one person per admin (`person_<admin id>`) so the sign-in has a row.
- * An admin named or emailed ryan% is the same person as the snapshot's Ryan
- * Garner, as the people migration (drizzle/0011_person_merge.sql) merges them: he
- * gets that admin's email instead of a second row. Inserts ignore a row that
- * is already there, so a re-seed changes nothing. A migrated database holds
- * Ryan under `person_<admin id>` with `legacyTruckId` truck-1, so a snapshot
- * person whose truck id someone already holds is not inserted (the deploy of
- * Nov 16 2026 did, and made a second Ryan), and an admin whose email a person
- * already carries is left alone; nothing outside the fixtures may assume
+ * source; Ryan Garner the owner on Truck 1, Tech Two the tech on Truck 2),
+ * then one person per admin email so the sign-in has a row. An admin named or
+ * emailed ryan% is the same person as the snapshot's Ryan Garner, as the
+ * people migration (drizzle/0011_person_merge.sql) merged them: he gets that
+ * email instead of a second row. Inserts ignore a row that is already there,
+ * so a re-seed changes nothing.
+ *
+ * A database that already has people on the schedule (a migrated one holds
+ * Ryan under `person_<admin id>` and the second tech under whatever name the
+ * office gave them) gets none of the snapshot's: they are fixtures for a fresh
+ * database, and inserting them there would put a second Ryan on the route
+ * (the deploy of Nov 16 2026 did, once). An admin whose email a person
+ * already carries is left alone. Nothing outside the fixtures may assume
  * `person_truck-1`.
  */
-async function seedPeople(db: Database, org: string, people: Person[]) {
-  const existing = await db.select({ email: s.person.email, legacyTruckId: s.person.legacyTruckId }).from(s.person).where(eq(s.person.organizationId, org))
-  const heldTrucks = new Set(existing.map((p) => p.legacyTruckId).filter(Boolean))
+async function seedPeople(db: Database, org: string, people: Person[], admins: readonly string[]) {
+  const existing = await db.select({ email: s.person.email, truck: s.person.truck }).from(s.person).where(eq(s.person.organizationId, org))
   const heldEmails = new Set(existing.map((p) => p.email?.toLowerCase()).filter(Boolean))
-  const fresh = people.filter((p) => !(p.truck && heldTrucks.has(legacyTruckIdOf(p))))
-  if (fresh.length) {
+  const onRoute = existing.some((p) => p.truck)
+  if (people.length && !onRoute) {
     await db
       .insert(s.person)
       .values(
-        fresh.map((p) => ({
+        people.map((p) => ({
           id: p.id, organizationId: org, name: p.name, initials: p.initials, email: p.email, phone: p.phone, role: p.role, truck: p.truck, jobberUserId: p.jobberUserId,
-          workingDays: p.workingDays, capacityByKind: p.capacityByKind, seasonStart: p.seasonStart, seasonEnd: p.seasonEnd, legacyTruckId: p.truck ? legacyTruckIdOf(p) : undefined,
+          workingDays: p.workingDays, capacityByKind: p.capacityByKind, seasonStart: p.seasonStart, seasonEnd: p.seasonEnd,
         })),
       )
       .onConflictDoNothing()
   }
-  const admins = await db.select().from(s.adminUser).where(eq(s.adminUser.organizationId, org))
   const ryan = people.find((p) => p.name === "Ryan Garner" && !p.email)
   const rows: (typeof s.person.$inferInsert)[] = []
-  for (const a of admins) {
-    if (heldEmails.has(a.email.toLowerCase())) continue
-    if (ryan && (/^ryan/i.test(a.name) || /^ryan/i.test(a.email))) {
-      await db.update(s.person).set({ email: a.email }).where(and(eq(s.person.id, ryan.id), isNull(s.person.email)))
-    } else rows.push({ id: `person_${a.id}`, organizationId: org, name: a.name, initials: a.initials, email: a.email, role: a.role })
-  }
+  const merged: { id: string; email: string }[] = []
+  admins.forEach((email, i) => {
+    if (heldEmails.has(email.toLowerCase())) return
+    heldEmails.add(email.toLowerCase())
+    const who = nameFromEmail(email)
+    if (ryan && (/^ryan/i.test(who.name) || /^ryan/i.test(email))) merged.push({ id: ryan.id, email })
+    else rows.push({ organizationId: org, email, role: i === 0 ? "owner" : "admin", ...who })
+  })
+  for (const m of merged) await db.update(s.person).set({ email: m.email }).where(and(eq(s.person.id, m.id), isNull(s.person.email)))
   if (rows.length) await db.insert(s.person).values(rows).onConflictDoNothing()
 }
 

@@ -23,9 +23,9 @@ All under `$TRAILHEAD_URL/api/v1`, with `Authorization: Bearer $TRAILHEAD_API_KE
 | Operation | Call | Used for |
 |---|---|---|
 | `mirror.upsert` | `POST /mirror` | Copy up to 200 of each kind per call: `clients`, `jobs`, `visits`, `quotes`, `invoices`, each keyed by Jobber's own id. Idempotent: the same id updates in place. Calendar-feed rows (ids starting `feed:`) are refused. Needs `write`. |
-| `visits.list` | `GET /visits?status=scheduled&from=<today>&limit=100` (follow `next_cursor`) | The placed pass visits. A visit still needs a request when `passId` is not null and `jobberRequestUrl` is null. Carries `kind`, `scheduledOn`, `startTime`, `truckId`, `town`, `firstName`, and, with `write`, `address`. |
+| `visits.list` | `GET /visits?status=scheduled&from=<today>&limit=100` (follow `next_cursor`) | The placed pass visits. A visit still needs a request when `passId` is not null and `jobberRequestUrl` is null. Carries `kind`, `scheduledOn`, `startTime`, `personId`, `personName`, `town`, `firstName`, and, with `write`, `address`. (`truckId` and `truckName` still answer for one season with the same values; read `personId` and `personName`.) |
 | `customers.get` | `GET /customers/{customerId}` | The customer's name, email and phone, and the property's address, for the request. Needs `write` to see the contact details. |
-| `trucks.list` | `GET /trucks` | The truck's name, to put in the request's notes. |
+| `people.list` | `GET /people` | The person's name, to put in the request's notes (a visit's `personName` already carries it; list people only to look one up by `personId`). `GET /trucks` is gone: the routine must not call it. |
 | `visits.linkRequest` | `POST /visits/{id}/jobber-request` with `{ "url": "<the request's Jobber address>" }` | Record the request just made, so the next run skips this visit. |
 
 ## The prompt
@@ -53,11 +53,11 @@ Send whole lists each run; Trailhead updates in place, so repeats are harmless. 
 JOB 2: PLACED PASS VISITS BECOME JOBBER REQUESTS
 1. GET /visits?status=scheduled&from=<today, Mountain time>&limit=100 and follow next_cursor to the end.
 2. Keep the visits where passId is not null and jobberRequestUrl is null. These are placed and not yet in Jobber. If there are none, you are done.
-3. GET /trucks once, for the truck names.
+3. Each visit carries personName, the name of the person who has it. If you need more about them, GET /people once.
 4. For each kept visit, oldest scheduledOn first:
    a. GET /customers/<customerId> for the name, email and phone, and use the visit's address.
    b. In Jobber, find the client by email, then by phone. If none matches, create the client with that name, email, phone and the property address.
-   c. Create one Jobber request for that client and property. Title: "Season Pass <turn-on | inspection | blowout>, <first name>, <town>, <Mon D>" (for example "Season Pass turn-on, Andrea, Erie, May 5"). Details, as plain text: the service and the zone count if you have it, the date and start time (scheduledOn and startTime, Mountain time), the truck's name, the property address, the customer's access note if the customer has one, and the last line exactly "Trailhead visit <visit id>". Do not set a price, do not send the request to the customer and do not schedule an assessment.
+   c. Create one Jobber request for that client and property. Title: "Season Pass <turn-on | inspection | blowout>, <first name>, <town>, <Mon D>" (for example "Season Pass turn-on, Andrea, Erie, May 5"). Details, as plain text: the service and the zone count if you have it, the date and start time (scheduledOn and startTime, Mountain time), the person's name (personName), the property address, the customer's access note if the customer has one, and the last line exactly "Trailhead visit <visit id>". Do not set a price, do not send the request to the customer and do not schedule an assessment.
    d. POST /visits/<visit id>/jobber-request with {"url": "<the new request's Jobber address>"}.
    Do d only after c succeeded. If c failed, do not call d; the next run tries again.
 5. Never create a second request for a visit: if a Jobber request whose details contain "Trailhead visit <visit id>" already exists, do not create one; send its address to POST /visits/<visit id>/jobber-request instead.
@@ -76,7 +76,11 @@ When a customer cancels on the pass page, or Hannah cancels in the admin, `passe
 
 ## Scheduled visits (Phase 10)
 
-Schedule (the button and the daily run) writes each placed visit straight to `scheduled`, with its truck, day and stop order, and pushes nothing to Jobber; there is no Jobber connection and no second step. The routine reads the newly scheduled visits from `GET /visits?status=scheduled&from=<today>` (follow `next_cursor`), keeps the ones with a `scheduledOn` and a null `jobberRequestUrl`, creates one Jobber request per visit with the day, the truck's name and the stop's start time in the details and "Trailhead visit <visit id>" in the notes, and then calls `visits.linkRequest` with the request's address so the next run skips it. A visit Ryan moves in the app afterward keeps the request it has; the routine never edits it.
+Schedule (the button and the daily run) writes each placed visit straight to `scheduled`, with its person, day and stop order, and pushes nothing to Jobber; there is no Jobber connection and no second step. The routine reads the newly scheduled visits from `GET /visits?status=scheduled&from=<today>` (follow `next_cursor`), keeps the ones with a `scheduledOn` and a null `jobberRequestUrl`, creates one Jobber request per visit with the day, the person's name and the stop's start time in the details and "Trailhead visit <visit id>" in the notes, and then calls `visits.linkRequest` with the request's address so the next run skips it. A visit Ryan moves in the app afterward keeps the request it has; the routine never edits it.
+
+## Quotes asked for online
+
+The website's contact form now also makes a job that needs a quote (`jobs.create` with `needsQuote`: no sold day, one unpriced line from the service with the customer's words as its description, no visit, source `site`; its story reads "Quote asked for online"). The email to Ryan still goes first. The routine does not read or write these: they are the app's own, and the Jobs grid shows them as Needs a quote. The old `quoteRequests.create` and `quoteRequests.list` are gone, and a job's `price`, `kind` and `notes` in `customers.get` are derived (the total of its lines, its service kind, its newest note), not stored.
 
 ## What a missed run costs
 

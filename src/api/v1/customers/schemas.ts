@@ -1,4 +1,5 @@
 import { z } from "zod"
+import { yardShape } from "@/lib/admin/yard"
 import { Channel, Day, Id, Iso, Preference, Town, VisitKind } from "../shared"
 import { EventOut } from "../events/schemas"
 import { PaymentOut } from "../payments/schemas"
@@ -13,15 +14,7 @@ export const PropertyOut = z.object({
   lat: z.number().nullable(),
   lng: z.number().nullable(),
   address: z.string().optional().describe("Only for callers with the write scope."),
-  zones: z.number().int().nullable(),
-  controller: z.string().nullable(),
-  backflowLocation: z.string().nullable(),
-  gateCode: z.string().nullable().optional().describe("Only for callers with the write scope."),
-  mustBeHome: z.boolean(),
-  accessNote: z.string().nullable().optional().describe("Only for callers with the write scope."),
-  contactName: z.string().nullable(),
-  contactPhone: z.string().nullable().optional().describe("Only for callers with the write scope."),
-  notes: z.string().nullable(),
+  ...yardShape,
 })
 
 export const ConsentOut = z.object({

@@ -22,7 +22,7 @@ beforeAll(async () => {
   vi.stubEnv("APP_URL", "https://site.test")
   db = await apiDb()
   await db.update(s.person).set({ calendarFeedUrl: "https://calendar.example.com/t1.ics" }).where(eq(s.person.id, "person_truck-1"))
-  await db.insert(s.jobberVisit).values({ id: "feed:truck-1:a", organizationId: ORG, truckId: "truck-1", title: "Day off", startAt: new Date("2027-05-06T13:00:00Z"), endAt: new Date("2027-05-06T23:00:00Z"), isBlock: true })
+  await db.insert(s.jobberVisit).values({ id: "feed:person_truck-1:a", organizationId: ORG, title: "Day off", startAt: new Date("2027-05-06T13:00:00Z"), endAt: new Date("2027-05-06T23:00:00Z"), isBlock: true })
   // The failed card is the customer's.
   const p3 = await passViewOf(db, "p3")
   await db.update(s.customer).set({ cardFailedAt: new Date("2027-04-19T10:00:00Z") }).where(eq(s.customer.id, p3.customerId))

@@ -6,10 +6,10 @@ import { writtenDate } from "@/lib/admin/format"
 
 export type DayKind = "turn-on" | "inspection" | "blowout"
 
-/** One offered day: the day, the truck behind it, where its two-hour window opens and the window in words ("8 to 10 am"). */
+/** One offered day: the day, the person behind it, where its two-hour window opens and the window in words ("8 to 10 am"). */
 export interface DayOffer {
   day: string
-  truckId: string
+  personId: string
   start: string
   window: string
 }
@@ -35,7 +35,7 @@ export const windowWords = (window: string) => `between ${window.replace(" to ",
 /** The heading over each visit's three cards. */
 export const DAY_HEADINGS: Record<DayKind, string> = { "turn-on": "Your spring turn-on", inspection: "Your July inspection", blowout: "Your fall blowout" }
 
-const same = (a: DayOffer, b: DayOffer) => a.day === b.day && a.truckId === b.truckId
+const same = (a: DayOffer, b: DayOffer) => a.day === b.day && a.personId === b.personId
 
 /**
  * The days held after a fresh set of offers: a day the customer already chose stays when it is still offered; every other visit
@@ -46,7 +46,7 @@ export function choicesAfterOffer(offers: Offers, held: readonly DayChoice[]): D
     const list = offers[kind] ?? []
     const keep = held.find((h) => h.kind === kind && list.some((o) => same(o, h)))
     const pick = keep ?? list[0]
-    return pick ? [{ kind, day: pick.day, truckId: pick.truckId, start: pick.start, window: pick.window }] : []
+    return pick ? [{ kind, day: pick.day, personId: pick.personId, start: pick.start, window: pick.window }] : []
   })
 }
 
@@ -65,7 +65,7 @@ const nextWeekday = (iso: string, weekday: number): string => {
 
 /** Stand-in offers for the stories and the unwired prototype, in the shape the server gives: early, middle and late in each window. */
 export function fixtureOffers(season: number, kinds: readonly DayKind[]): Offers {
-  const make = (picks: [string, number][]) => picks.map(([from, weekday]) => ({ day: nextWeekday(from, weekday), truckId: "truck-1", start: "08:00", window: "8 to 10 am" }))
+  const make = (picks: [string, number][]) => picks.map(([from, weekday]) => ({ day: nextWeekday(from, weekday), personId: "person_truck-1", start: "08:00", window: "8 to 10 am" }))
   const all: Offers = {
     "turn-on": make([[`${season}-05-04`, 2], [`${season}-05-17`, 4], [`${season}-05-24`, 2]]),
     inspection: make([[`${season}-07-06`, 3], [`${season}-07-15`, 2], [`${season}-07-27`, 4]]),

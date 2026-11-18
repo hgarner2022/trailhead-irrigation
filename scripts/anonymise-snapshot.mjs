@@ -13,10 +13,10 @@
 // Passes are invented: Jobber has no Season Pass product yet. Each carries a
 // timing preference for the turn-on and the blowout (earlier, recommended,
 // later; no capacity anywhere) and the consent recorded at checkout. The
-// organization settings (trucks, areas, windows, messages) and the schedule
-// fields on visits (truck, stop order, point, proposed, exception) are
-// invented too: Jobber has no trucks, no routing order and no geocodes in the
-// pull, so the trucks follow the audit (one all year, a second from late
+// organization settings (people, areas, windows, messages) and the schedule
+// fields on visits (person, stop order, point, proposed, exception) are
+// invented too: Jobber has no routes, no routing order and no geocodes in the
+// pull, so the people follow the audit (one all year, a second from late
 // September) and every dated 2026 visit gets a deterministic point near its
 // town's centre.
 
@@ -330,18 +330,25 @@ const attention = [
 // The audit: one person all year, a second from Sep 21 through the blowouts;
 // about nine visits a day per truck in October, two to five otherwise; blowouts
 // at 30 minutes, turn-ons at 60 to 120, inspections at 90, repairs at 120.
-const TRUCKS = [
+// The ids are the ones migration 0010 gave the first two people (`person_` and the old key).
+const PEOPLE = [
   {
-    id: "truck-1",
-    name: "Truck 1",
+    id: "person_truck-1",
+    name: "Ryan Garner",
+    initials: "RG",
+    role: "owner",
+    truck: "Truck 1",
     jobberUserId: "jobber-user-1",
     workingDays: ["mon", "tue", "wed", "thu", "fri"],
     capacityByKind: { "turn-on": 6, inspection: 5, blowout: 10, repair: 4, other: 2 },
   },
   {
-    // Runs in blowout season only (late September through October), six days a week.
-    id: "truck-2",
-    name: "Truck 2",
+    // Works blowout season only (late September through October), six days a week.
+    id: "person_truck-2",
+    name: "Tech Two",
+    initials: "TT",
+    role: "tech",
+    truck: "Truck 2",
     jobberUserId: "jobber-user-2",
     workingDays: ["mon", "tue", "wed", "thu", "fri", "sat"],
     capacityByKind: { "turn-on": 6, inspection: 5, blowout: 10, repair: 3, other: 2 },
@@ -371,7 +378,7 @@ const MESSAGES = [
     key: "date-set",
     channel: "email",
     subject: "Your {visit} is booked for {date}",
-    body: "Hi {firstName}, your {visit} is booked for {date}. Your street is on our {truck} day, so we can give the yard proper time. If that day does not work, reply to this email and we will find another.",
+    body: "Hi {firstName}, your {visit} is booked for {date}. {who} will be there. If that day does not work, reply to this email and we will find another.",
     enabled: true,
   },
   {
@@ -402,7 +409,7 @@ const MESSAGES = [
   },
 ]
 const settings = {
-  trucks: TRUCKS,
+  people: PEOPLE,
   areas: AREAS,
   windows: WINDOWS,
   bufferPercentEarly: 20,
@@ -420,8 +427,8 @@ const settingsChanges = [
 ]
 
 // Schedule fields on visits (invented) -------------------------------------
-// Every dated 2026 visit rides Truck 1, except in October, where the two
-// trucks alternate. Stop order counts up through each truck's Mountain day.
+// Every dated 2026 visit goes to the first person, except in October, where the two
+// people alternate. Stop order counts up through each person's Mountain day.
 // The point is the town centre plus a deterministic jitter of up to about
 // 1.5 km, from the visit's number, so the map has something to draw.
 const TOWN_CENTRES = {
@@ -434,16 +441,18 @@ const TOWN_CENTRES = {
 }
 const denverDay = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Denver", year: "numeric", month: "2-digit", day: "2-digit" })
 const jitter = (n, salt) => ((((n * 7919 + salt * 104729) % 41) - 20) / 20) * 0.015
-const stopsPerTruckDay = new Map()
+const stopsPerPersonDay = new Map()
 for (const v of visits) {
   if (!v.startAt?.startsWith("2026") || v.status === "cancelled") continue
   const n = Number(v.id.slice(1))
   const day = denverDay.format(new Date(v.startAt))
   const october = day.startsWith("2026-10")
-  v.truckId = october && n % 2 === 0 ? "truck-2" : "truck-1"
-  const key = `${v.truckId}|${day}`
-  const stop = (stopsPerTruckDay.get(key) ?? 0) + 1
-  stopsPerTruckDay.set(key, stop)
+  const person = october && n % 2 === 0 ? PEOPLE[1] : PEOPLE[0]
+  v.personId = person.id
+  v.personName = person.name
+  const key = `${v.personId}|${day}`
+  const stop = (stopsPerPersonDay.get(key) ?? 0) + 1
+  stopsPerPersonDay.set(key, stop)
   v.stopOrder = stop
   const [lat, lng] = TOWN_CENTRES[v.town]
   v.lat = Number((lat + jitter(n, 1)).toFixed(5))

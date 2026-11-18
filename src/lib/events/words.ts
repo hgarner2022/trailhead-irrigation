@@ -106,6 +106,11 @@ function soldWords(d: Record<string, unknown>): string {
   return `${name} ${source === "website" || source === "site" ? "booked online" : "added by the office"}`
 }
 
+/** "Quote asked for online": a job that needs a quote, made from the website's form. Any other source reads "Quote asked for". */
+function requestedWords(d: Record<string, unknown>): string {
+  return str(d.source) === "site" ? "Quote asked for online" : "Quote asked for"
+}
+
 /** "Rotors, 12 added, 12 × $38", "Drip zone added, quote later": a line of a job and what was done to it. */
 function lineWords(d: Record<string, unknown>, did: string): string {
   const name = str(d.name) ?? "A line"
@@ -120,6 +125,7 @@ function whatOf(e: EventForWords): string {
   const d = e.detail ?? {}
   const name = visitWords(d)
   switch (e.kind) {
+    case "job.requested": return requestedWords(d)
     case "job.sold": return soldWords(d)
     case "job.cancelled": return str(d.reason) ? `Job cancelled, ${d.reason}` : "Job cancelled"
     case "job.line-added": return lineWords(d, "added")

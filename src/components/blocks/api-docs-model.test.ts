@@ -64,6 +64,6 @@ describe("toDocsModel", () => {
     expect(cancel!.curl).toContain('-X POST "/api/v1/passes/<id>/cancel"')
     expect(cancel!.curl).toContain("Idempotency-Key")
     expect(cancel!.curl).toContain(`-d '{"reason":"..."}'`)
-    expect(curlFor("DELETE", "/api/v1", "/trucks/{id}", undefined)).not.toContain("-d")
+    expect(curlFor("DELETE", "/api/v1", "/people/{id}", undefined)).not.toContain("-d")
   })
 })

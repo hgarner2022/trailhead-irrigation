@@ -104,7 +104,7 @@ export function changedLeaves(section: Section, before: unknown, after: unknown)
 
 export const settingsGet = defineHandler({
   name: "settings.get", method: "GET", path: "/settings", scope: "read",
-  summary: "The scheduling windows, buffers, town orders and message templates. Trucks and areas have their own resources.",
+  summary: "The scheduling windows, buffers, town orders and message templates. People and areas have their own resources.",
   input: z.object({}), output: SettingsOut,
   async run(ctx) {
     return settingsOut(await load(ctx), await isConfirmed(ctx))

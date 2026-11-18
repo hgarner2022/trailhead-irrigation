@@ -7,7 +7,7 @@ import type { VisitFacts } from "./format"
 
 const origin = "https://www.trailheadirrigation.com"
 const base = { origin, firstName: "Andrea", passUrl: `${origin}/account/pass`, signInUrl: `${origin}/account/sign-in?email=andrea%40example.com` }
-const visit: VisitFacts = { id: "v1", name: "spring turn-on", day: "2027-05-05", startTime: "08:00", crew: "Ryan's truck", who: null, location: "412 Ash St, Erie", icsUrl: `${origin}/api/visits/v1/calendar.ics?token=abc` }
+const visit: VisitFacts = { id: "v1", name: "spring turn-on", day: "2027-05-05", startTime: "08:00", who: null, location: "412 Ash St, Erie", icsUrl: `${origin}/api/visits/v1/calendar.ics?token=abc` }
 
 const blowoutVisit: VisitFacts = { ...visit, id: "v2", name: "fall blowout", day: "2027-10-05", icsUrl: `${origin}/api/visits/v2/calendar.ics?token=def` }
 const TWO_DAYS = { ...base, passNumber: "TH-2027-0004", season: 2027, town: "Erie", passImageUrl: `${origin}/api/pass-image/p1?token=t`, cardLast4: "4242", visits: [{ kind: "turn-on", name: "spring turn-on", amount: 145, visit, fallback: "" }, { kind: "blowout", name: "fall blowout", amount: 95, visit: blowoutVisit, fallback: "", note: "Your first choice, Friday, October 1, filled up, so we put it on Tuesday, October 5." }] }
@@ -100,7 +100,8 @@ describe("wording per kind", () => {
     for (const part of [html, text]) {
       expect(part).toContain("Wednesday, May 5")
       expect(part).toContain("between 8 and 10 am")
-      expect(part).toContain("Ryan's truck")
+      expect(part).toContain("Ryan")
+      expect(part).not.toMatch(/truck/i)
     }
     expect(html).toContain("Add to Google Calendar")
     expect(html).toContain("Add to Apple or Outlook calendar")
@@ -117,13 +118,27 @@ describe("wording per kind", () => {
     expect(nobody.text).toContain("we're coming tomorrow, Wednesday, May 5, for your spring turn-on.")
     expect(nobody.text).not.toMatch(/will be there|\.\s*\. |  /)
   })
+  it("ignores a stored `crew` key in message data queued before the label went: nothing says a truck", () => {
+    const old = { ...visit, who: "Ryan", crew: "Truck 1" } as typeof visit
+    for (const kind of ["date-set", "date-moved", "day-before", "booking-confirmation"] as const) {
+      const out = renderEmail(kind, { ...base, serviceName: "sprinkler repair", visit: old })!
+      for (const part of [out.html, out.text]) {
+        expect(part).toContain("Ryan")
+        expect(part).not.toMatch(/truck/i)
+      }
+    }
+    const text = SMS_TEMPLATES["day-before"]({ ...base, visit: old })
+    expect(text).toContain("Ryan will be there tomorrow")
+    expect(text).not.toMatch(/truck/i)
+  })
   it("date-set, date-moved and day-before say their event", () => {
     expect(get("date-set").subject).toBe("Your spring turn-on is Wednesday, May 5")
     expect(get("date-moved").subject).toBe("Your spring turn-on moved to Wednesday, May 5")
     expect(get("day-before").subject).toBe("Tomorrow: your spring turn-on")
   })
   it("the booking confirmation says what happens next", () => {
-    expect(get("booking-confirmation").text).toContain("Ryan's truck will be there Wednesday, May 5, between 8 and 10 am")
+    expect(get("booking-confirmation").text).toContain("Ryan and the crew will be there Wednesday, May 5, between 8 and 10 am")
+    expect(renderEmail("booking-confirmation", { ...base, serviceName: "sprinkler repair", visit: { ...visit, who: "Ryan" } })!.text).toContain("Ryan will be there Wednesday, May 5, between 8 and 10 am")
     expect(get("booking-confirmation").text).toContain("We text the day before.")
   })
   it("the receipt names the amount, the card and the next visit", () => {

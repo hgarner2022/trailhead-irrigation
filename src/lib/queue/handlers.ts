@@ -14,7 +14,7 @@ import { syncPersonFeed } from "@/lib/jobber-feed"
 import type Stripe from "stripe"
 import type { QueueHandler, QueueKind } from "./index"
 
-/** `jobber-feed-sync`: payload `{ personId }` (`truckId`, the old truck id, for items queued before people existed); reads that person's calendar feed into busy blocks. */
+/** `jobber-feed-sync`: payload `{ personId }` (an old `truckId` payload from before people existed still resolves); reads that person's calendar feed into busy blocks. */
 export const jobberFeedSync: QueueHandler = async (db, item) => {
   const { personId, truckId } = item.payload as { personId?: string; truckId?: string }
   const id = personId ?? truckId

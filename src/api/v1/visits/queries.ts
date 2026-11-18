@@ -105,7 +105,6 @@ export function visitOut(ctx: Ctx, row: VisitJoined): VisitOutType {
     id: v.id,
     // the pass is the job: its id is the job id
     passId: row.isPassVisit ? v.jobId : null,
-    bookingId: v.bookingId,
     jobId: v.jobId,
     customerId: v.customerId,
     firstName: row.firstName,

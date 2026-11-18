@@ -16,7 +16,7 @@ const model: ApiDocsModel = {
         { id: "passes.cancel", method: "POST", path: "/passes/{id}/cancel", scope: "write", customerSelf: true, summary: "Cancel a pass.", status: "200", curl: "curl -X POST", input: [{ name: "id", type: "string", required: true, description: "The pass id." }], output: [] },
       ],
     },
-    { name: "trucks", operations: [] },
+    { name: "people", operations: [] },
   ],
 }
 
@@ -30,7 +30,7 @@ describe("ApiDocs", () => {
   it("links every resource in the nav and groups operations under it", () => {
     render(<ApiDocs model={model} />)
     const nav = screen.getByRole("navigation", { name: "Resources" })
-    expect(within(nav).getAllByRole("link").map((a) => a.getAttribute("href"))).toEqual(["#resource-passes", "#resource-trucks"])
+    expect(within(nav).getAllByRole("link").map((a) => a.getAttribute("href"))).toEqual(["#resource-passes", "#resource-people"])
     expect(screen.getByRole("heading", { level: 2, name: "passes" })).toBeInTheDocument()
   })
   it("renders each operation with method, path, scope, fields and curl", () => {

@@ -6,6 +6,7 @@
 import type { Pass, PassVisit } from "@/lib/admin/types"
 import { TIME_ZONE, preferenceLabel, preferenceOf, preferencePhrase, writtenDate } from "@/lib/admin/format"
 import { formatMoney } from "@/lib/admin/metrics"
+import { firstNameOf } from "@/lib/admin/people"
 import { passVisitJob, visitPaidTotal, type JobState } from "@/lib/admin/jobs"
 
 export const VISIT_NAMES: Record<PassVisit["kind"], string> = { "turn-on": "Spring turn-on", inspection: "Mid-season inspection", blowout: "Fall blowout" }
@@ -44,11 +45,12 @@ export function visitRow(visit: PassVisit, pass: Pass): VisitRow {
 
 const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
 
-/** "Tuesday, May 5" for a booked visit, with the truck's name when it has one: "Tuesday, May 5, Truck 1". Null before a day is set or once the visit is done. */
+/** "Tuesday, May 5" for a booked visit, with the first name of who is coming when it has someone: "Tuesday, May 5 with Ryan". Null before a day is set or once the visit is done. */
 export function bookedWhen(visit: PassVisit): string | null {
   if (!visit.scheduledAt || visit.completedAt) return null
   const weekday = WEEKDAYS[new Date(`${visit.scheduledAt.slice(0, 10)}T12:00:00Z`).getUTCDay()]
-  return `${weekday}, ${writtenDate(visit.scheduledAt)}${visit.truckName ? `, ${visit.truckName}` : ""}`
+  const who = firstNameOf(visit.personName)
+  return `${weekday}, ${writtenDate(visit.scheduledAt)}${who ? ` with ${who}` : ""}`
 }
 
 /** The visit's price ("$145") and what it includes, both from its line; the description is absent when the line has none. */

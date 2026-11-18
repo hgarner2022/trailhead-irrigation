@@ -133,10 +133,10 @@ describe("passHeadline", () => {
 })
 
 describe("bookedWhen", () => {
-  it("reads weekday, date and truck for a booked visit, and nothing before a day or after the visit", () => {
-    const v = { kind: "turn-on", window: "May", amount: 145, scheduledAt: "2027-05-04T14:00:00Z", truckName: "Truck 1" } as const
-    expect(bookedWhen(v)).toBe("Tuesday, May 4, Truck 1")
-    expect(bookedWhen({ ...v, truckName: undefined })).toBe("Tuesday, May 4")
+  it("reads weekday, date and the first name of who is coming for a booked visit, and nothing before a day or after the visit", () => {
+    const v = { kind: "turn-on", window: "May", amount: 145, scheduledAt: "2027-05-04T14:00:00Z", personName: "Ryan Garner" } as const
+    expect(bookedWhen(v)).toBe("Tuesday, May 4 with Ryan")
+    expect(bookedWhen({ ...v, personName: undefined })).toBe("Tuesday, May 4")
     expect(bookedWhen({ kind: "turn-on", window: "May", amount: 145 })).toBeNull()
     expect(bookedWhen({ ...v, completedAt: "2027-05-04T17:00:00Z" })).toBeNull()
   })
