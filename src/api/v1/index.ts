@@ -16,6 +16,7 @@ import { organizationGet } from "./organization/handlers"
 import { passesList, passesGet, passesCreate, passesActivate, passesConsent, passesCancel, passesResendConfirmation, passesSendCardUpdateLink, passesStartCardUpdate, passesUpdatePreference, passesAddInspection, passesSkipVisit } from "./passes/handlers"
 import { passesSell } from "./passes/sell"
 import { paymentsList, paymentsRecord, paymentsRefund } from "./payments/handlers"
+import { paymentsChargeCard } from "./payments/charge"
 import { peopleList, peopleCreate, peopleUpdate, peopleDeactivate } from "./people/handlers"
 import { propertiesUpdate } from "./properties/handlers"
 import { jobsGet, jobsList } from "./portal/jobs"
@@ -44,7 +45,7 @@ export const handlers: AnyHandler[] = [
   mirrorUpsert,
   organizationGet,
   passesList, passesGet, passesCreate, passesSell, passesActivate, passesConsent, passesCancel, passesResendConfirmation, passesSendCardUpdateLink, passesStartCardUpdate, passesUpdatePreference, passesAddInspection, passesSkipVisit,
-  paymentsList, paymentsRecord, paymentsRefund, paymentsReceipt,
+  paymentsList, paymentsRecord, paymentsRefund, paymentsChargeCard, paymentsReceipt,
   peopleList, peopleCreate, peopleUpdate, peopleDeactivate,
   propertiesUpdate, propertiesUpdateSelf,
   scheduleRun, scheduleWeek, scheduleDay, scheduleSlots, scheduleOfferDays,

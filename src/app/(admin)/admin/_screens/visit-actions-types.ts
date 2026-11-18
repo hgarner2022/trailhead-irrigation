@@ -8,15 +8,12 @@ export interface Where {
   startTime: string | null
 }
 
-/** How the money for a done visit was dealt with: in hand (check, Venmo, cash) or `bill` (Send an invoice: Done sends a pay link and records no payment). */
-export interface PaidByInput {
-  method: "check" | "venmo" | "cash" | "bill"
+/** Money handed over for a done visit: a check, Venmo or cash, the reference (a check number, a handle), and the amount when the visit has no price yet. */
+export interface RecordPaidInput {
+  method: "check" | "venmo" | "cash"
   reference?: string
   amount?: number
 }
-
-/** What Record the payment sends: money in hand only, never an invoice. */
-export type RecordPaidInput = PaidByInput & { method: "check" | "venmo" | "cash" }
 
 export interface NewVisitInput {
   customerId?: string
@@ -76,9 +73,15 @@ export interface VisitActions {
   move: (visitId: string, day: string, time: string | null) => Promise<Outcome<Where>>
   /** the undo of a move or a not done */
   putBack: (visitId: string, was: Where) => Promise<Outcome>
-  markDone: (visitId: string, opts?: { completedOn?: string; paidBy?: PaidByInput }) => Promise<Outcome>
+  /** Mark done, and nothing else: how it is paid is the next step (`chargeCard`, `recordPayment`, `sendBill`, or nothing yet) */
+  markDone: (visitId: string, opts?: { completedOn?: string }) => Promise<Outcome>
   undoDone: (visitId: string) => Promise<Outcome>
+  /** `payments.chargeCard`: charges the card on file for what is unpaid on the visit, because the button was pressed; a decline answers the refusal "The card didn't go through. Choose another way." */
+  chargeCard: (visitId: string) => Promise<Outcome>
+  /** `payments.record`: money in hand, one payment row, the receipt */
   recordPayment: (visitId: string, paidBy: RecordPaidInput) => Promise<Outcome>
+  /** `payments.refund`: the whole of what is left of a check, Venmo or cash payment, as a negative row; nothing is deleted */
+  refundPayment: (paymentId: string) => Promise<Outcome>
   /** `invoices.send`: an invoice for a done job that still owes money, with its pay link; the message goes by text or email */
   sendBill: (jobId: string) => Promise<Outcome>
   /** `invoices.remind`: the reminder of an open invoice (two presses in a day send one) */

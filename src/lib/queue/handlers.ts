@@ -29,10 +29,10 @@ export const geocode: QueueHandler = async (db, item) => {
   await geocodeProperty(db, propertyId)
 }
 
-/** `pass-charge`: payload `{ visitId, afterCardUpdate? }`; charges the saved card for one completed pass visit. */
+/** `pass-charge`: payload `{ visitId, afterCardUpdate?, retry? }`; the retries of a failed charge (after a card update, and the one three days on). A charge is never queued by Done: it starts only from a button. */
 export const passCharge: QueueHandler = async (db, item) => {
-  const { visitId, afterCardUpdate } = item.payload as { visitId: string; afterCardUpdate?: boolean }
-  await chargeVisit(db, getStripe(), visitId, { origin: readAppUrl(), afterCardUpdate })
+  const { visitId, afterCardUpdate, retry } = item.payload as { visitId: string; afterCardUpdate?: boolean; retry?: boolean }
+  await chargeVisit(db, getStripe(), visitId, { origin: readAppUrl(), afterCardUpdate, retry })
 }
 
 /** `pass-onboard`: key is the pass's job id (an old pass id still resolves), payload `{ passId }`; raises the Home alert for a new pass (no Jobber call; see `onboardPass`). */

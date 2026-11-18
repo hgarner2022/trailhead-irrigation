@@ -32,7 +32,7 @@ export async function createCardUpdateSession(stripe: Stripe, input: { passId?: 
 
 /**
  * Stores the new card on the customer, makes it the customer's default, removes the old one and queues one retry for each visit
- * whose charge failed on any of their passes and has not been paid since. The session names the pass by its job id, or by the old
+ * whose charge failed on any of their jobs and has not been paid since. The session names the pass by its job id, or by the old
  * pass id of a session opened before the move. Safe to run twice for one session: the second sees the card already stored and does nothing.
  */
 export async function applyCardUpdate(db: Database, stripe: Stripe, sessionId: string, now = new Date(), organizationId?: string): Promise<"applied" | "already-applied"> {
@@ -54,7 +54,8 @@ export async function applyCardUpdate(db: Database, stripe: Stripe, sessionId: s
   await recordEventSafe(db, { organizationId: org, about: "customer", aboutId: pass.customerId, customerId: pass.customerId, kind: "card.saved", detail: { brand: card.brand, last4: card.last4 }, who: "system", at: now })
   await stripe.customers.update(card.customerId, { invoice_settings: { default_payment_method: card.paymentMethodId } })
   if (current) await stripe.paymentMethods.detach(current).catch(() => undefined)
-  const jobIds = (await db.select({ id: s.job.id }).from(s.job).where(and(eq(s.job.organizationId, org), eq(s.job.customerId, pass.customerId), isNotNull(s.job.season)))).map((j) => j.id)
+  // Any job of the customer: a one-off's failed charge is retried with the new card as a pass's is.
+  const jobIds = (await db.select({ id: s.job.id }).from(s.job).where(and(eq(s.job.organizationId, org), eq(s.job.customerId, pass.customerId)))).map((j) => j.id)
   const failed = await db
     .select({ visitId: s.charge.visitId })
     .from(s.charge)

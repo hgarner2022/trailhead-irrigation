@@ -8,7 +8,8 @@ import { passesSell } from "@/api/v1/passes/sell"
 import { isRoutePerson, peopleList } from "@/api/v1/people/handlers"
 import { visitsGet, visitsMove } from "@/api/v1/visits/handlers"
 import { invoicesRemind, invoicesSend } from "@/api/v1/invoices/handlers"
-import { paymentsRecord } from "@/api/v1/payments/handlers"
+import { paymentsChargeCard, DECLINED } from "@/api/v1/payments/charge"
+import { paymentsRecord, paymentsRefund } from "@/api/v1/payments/handlers"
 import { visitsMarkClosed } from "@/api/v1/visits/money"
 import { visitsCancel, visitsCreate, visitsMarkNotDone, visitsUpdate } from "@/api/v1/visits/office"
 import { weekdayOf } from "@/api/v1/shared"
@@ -48,10 +49,22 @@ export const putBack = async (visitId: string, was: Where): Promise<ActionOutcom
     ),
   )
 
-export type PaidBy = { method: "check" | "venmo" | "cash" | "bill"; reference?: string; amount?: number }
+export type PaidBy = { method: "check" | "venmo" | "cash"; reference?: string; amount?: number }
 
-export const markDone = async (visitId: string, opts: { completedOn?: string; paidBy?: PaidBy } = {}): Promise<ActionOutcome> =>
+/** Mark done and nothing else (`visits.markClosed`): no charge, no payment row, no invoice. How it is paid is the next step. */
+export const markDone = async (visitId: string, opts: { completedOn?: string } = {}): Promise<ActionOutcome> =>
   act((ctx) => nothing(callApi(ctx, visitsMarkClosed, { id: visitId, ...opts })))
+
+/** The Charge button: `payments.chargeCard` as the signed-in manager. A declined card is a refusal in the panel's words (the row is written and the customer is emailed first), so the screen offers the other ways. */
+export const chargeCard = async (visitId: string): Promise<ActionOutcome> =>
+  act(async (ctx) => {
+    const row = await callApi(ctx, paymentsChargeCard, { visitId })
+    if (row.status !== "succeeded") throw new ApiError("unprocessable", DECLINED)
+    return undefined
+  })
+
+/** A Refund: `payments.refund` for the whole of what is left of that payment, a negative row naming it. */
+export const refundPayment = async (paymentId: string): Promise<ActionOutcome> => act((ctx) => nothing(callApi(ctx, paymentsRefund, { paymentId })))
 
 export const undoDone = async (visitId: string): Promise<ActionOutcome> => act((ctx) => nothing(callApi(ctx, visitsMarkClosed, { id: visitId, undo: true })))
 
@@ -61,7 +74,7 @@ export const undoDone = async (visitId: string): Promise<ActionOutcome> => act((
  * nothing, so a double submit or a stale panel cannot post it twice; `payments.record` refuses it again and refuses a pass visit
  * charged to a card.
  */
-export const recordPayment = async (visitId: string, paidBy: PaidBy & { method: "check" | "venmo" | "cash" }): Promise<ActionOutcome> =>
+export const recordPayment = async (visitId: string, paidBy: PaidBy): Promise<ActionOutcome> =>
   act(async (ctx) => {
     const visit = await callApi(ctx, visitsGet, { id: visitId })
     if (visit.status !== "completed") throw new ApiError("unprocessable", "Mark the visit done first")

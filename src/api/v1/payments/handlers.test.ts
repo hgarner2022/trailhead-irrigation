@@ -187,7 +187,8 @@ describe("payments.refund", () => {
 
   it("is what Done's undo asks for: after the refund the visit is still Done", async () => {
     const v = await repair()
-    await callApi(as(), visitsMarkClosed, { id: v.id, paidBy: { method: "cash" } })
+    await callApi(as(), visitsMarkClosed, { id: v.id })
+    await callApi(as(), paymentsRecord, { jobId: v.jobId, visitId: v.id, amount: 145, method: "cash" })
     const [paid] = await db.select().from(s.charge).where(eq(s.charge.visitId, v.id))
     await callApi(as(), paymentsRefund, { paymentId: paid!.id })
     await expect(callApi(as(), visitsMarkClosed, { id: v.id, undo: true })).rejects.toMatchObject({ code: "unprocessable" })

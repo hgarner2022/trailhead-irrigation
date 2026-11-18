@@ -1,5 +1,5 @@
 import "server-only"
-import { and, desc, eq, isNotNull } from "drizzle-orm"
+import { and, desc, eq } from "drizzle-orm"
 import type Stripe from "stripe"
 import { emitEvent } from "@/api/v1/webhooks/deliver"
 import * as s from "@/db/schema"
@@ -11,24 +11,34 @@ import { createCardUpdateSession } from "@/lib/stripe/card-update"
 import { baseData, cardWords, jobAddress, receiptLines, receiptNumber, visitWhoDay } from "@/lib/messaging/data"
 import { loadVisitPrice, paidDay, recordPaymentRow } from "@/lib/money/record"
 import { isPaid } from "@/lib/money/words"
+import { enqueue } from "@/lib/queue"
 import { queueMessage, queueStaffMessage } from "@/lib/messaging/queue"
 import { dollars, kindName, nextVisitLine } from "./messages"
 
-export type ChargeVisitOutcome = "charged" | "already-charged" | "failed" | "waiting-for-card" | "cancelled-pass" | "not-a-pass-visit" | "no-card" | "nothing-owed"
+export type ChargeVisitOutcome = "charged" | "already-charged" | "failed" | "waiting-for-card" | "cancelled-pass" | "no-card" | "nothing-owed"
+
+/** A failed first attempt is tried once more this many days later, then it stops (a new card retries again on its own). */
+export const RETRY_AFTER_DAYS = 3
+/** The most attempts one visit gets without someone fixing the card: the first, the card update's, the day-3 retry. */
+export const MAX_CHARGE_ATTEMPTS = 3
 
 export interface ChargeVisitOptions {
   /** the site origin, for the card-update link in the failure message */
   origin: string
   /** true for the retry a card update queued: it may charge a visit whose last attempt failed */
   afterCardUpdate?: boolean
+  /** true for the day-3 retry a failed first attempt queued: it may charge a visit whose last attempt failed, up to `MAX_CHARGE_ATTEMPTS` */
+  retry?: boolean
   now?: Date
 }
 
 /**
- * Charges the customer's saved card for one completed visit. Idempotent: a visit already charged is done; a pending attempt
+ * Charges the customer's saved card for one completed visit of any job (a Season Pass or a one-off). Only ever called by a press:
+ * the Charge button (`payments.chargeCard`), a Home row's button, or the retries a failure queues. Marking a visit done charges nothing. Idempotent: a visit already charged is done; a pending attempt
  * left by a crash is re-sent with the same idempotency key; a failed visit waits for a new card (`afterCardUpdate`)
- * and then gets attempt n+1. A cancelled pass charges nothing (Home already shows the cancellation), and a pass with no card
- * (sold by the office, paid at each visit) is not a failure: nothing is written and the visit's money is recorded at Done.
+ * and then gets attempt n+1. A cancelled job charges nothing (Home already shows the cancellation), and a customer with no card
+ * is not a failure: nothing is written and the money is recorded another way. A first attempt that fails queues one more try after
+ * three days and emails the customer the card link at once; a second failure stops there.
  */
 export async function chargeVisit(db: Database, stripe: Stripe, visitId: string, opts: ChargeVisitOptions): Promise<ChargeVisitOutcome> {
   const now = opts.now ?? new Date()
@@ -43,12 +53,13 @@ export async function chargeVisit(db: Database, stripe: Stripe, visitId: string,
   if (price <= 0) return "nothing-owed"
   // A visit the office cancelled is never charged, even if a charge was queued before.
   if (visit.status === "cancelled" || visit.status === "skipped") return "cancelled-pass"
-  // Only a Season Pass's visits are charged here: the pass is the job, and the job has a season.
-  const [pass] = await db.select().from(s.job).where(and(eq(s.job.id, visit.jobId), isNotNull(s.job.season)))
-  if (!pass) return "not-a-pass-visit"
+  // The job the visit is on: a Season Pass (it has a season) or a one-off.
+  const [pass] = await db.select().from(s.job).where(eq(s.job.id, visit.jobId))
+  if (!pass) throw new Error(`Job ${visit.jobId} not found`)
   if (pass.cancelledAt) return "cancelled-pass"
   const [customer] = await db.select().from(s.customer).where(eq(s.customer.id, pass.customerId))
   if (!customer) throw new Error(`Customer ${pass.customerId} not found`)
+  const isPass = pass.season !== null
   const passNumber = pass.passNumber ?? ""
   // Only a card Stripe can charge counts here: a customer with just a last 4 (a fixture, an old import) never reaches Stripe and never records a failure.
   if (!customer.stripePaymentMethodId || !customer.stripeCustomerId) {
@@ -62,7 +73,8 @@ export async function chargeVisit(db: Database, stripe: Stripe, visitId: string,
 
   const [last] = await db.select().from(s.charge).where(eq(s.charge.visitId, visit.id)).orderBy(desc(s.charge.attempt)).limit(1)
   if (last?.status === "succeeded") return "already-charged"
-  if (last?.status === "failed" && !opts.afterCardUpdate) return "waiting-for-card"
+  if (last?.status === "failed" && !opts.afterCardUpdate && !opts.retry) return "waiting-for-card"
+  if (opts.retry && !opts.afterCardUpdate && last && last.attempt >= MAX_CHARGE_ATTEMPTS) return "waiting-for-card"
   const attempt = !last ? 1 : last.status === "pending" ? last.attempt : last.attempt + 1
   if (!last || last.status !== "pending") {
     await recordPaymentRow(db, { organizationId: visit.organizationId, jobId: visit.jobId, customerId: customer.id, visitId: visit.id, attempt, amount: price, method: "card_on_file", status: "pending", now })
@@ -77,7 +89,7 @@ export async function chargeVisit(db: Database, stripe: Stripe, visitId: string,
           visitId: visit.id,
           passId: pass.id,
           attempt,
-          description: `Season Pass ${passNumber}: ${kindName(visit.kind)}`,
+          description: isPass ? `Season Pass ${passNumber}: ${kindName(visit.kind)}` : visitName(visit.kind),
         })
       : ({ ok: false, paymentIntentId: null, message: "No card is saved for this customer" } as const)
 
@@ -102,7 +114,7 @@ export async function chargeVisit(db: Database, stripe: Stripe, visitId: string,
   const [failedRow] = await db.update(s.charge).set({ status: "failed", stripePaymentIntentId: result.paymentIntentId, failureMessage: result.message, updatedAt: now }).where(where).returning({ id: s.charge.id })
   await db.update(s.customer).set({ cardFailedAt: now, updatedAt: now }).where(eq(s.customer.id, customer.id))
   if (to) {
-    const link = customer.stripeCustomerId ? (await createCardUpdateSession(stripe, { passId: pass.id, customerId: customer.stripeCustomerId, origin: opts.origin })).url : null
+    const link = customer.stripeCustomerId ? (await createCardUpdateSession(stripe, { ...(isPass ? { passId: pass.id } : { appCustomerId: customer.id }), customerId: customer.stripeCustomerId, origin: opts.origin })).url : null
     await queueMessage(db, {
       organizationId: visit.organizationId, customerId: customer.id, visitId: visit.id, kind: "card-failed", key: `visit-${visit.id}-${attempt}`,
       data: { ...baseData(opts.origin, customer), amount: price, visitName: kindName(visit.kind), card: cardWords(customer), address: await jobAddress(db, visit.jobId), updateUrl: link },
@@ -110,7 +122,9 @@ export async function chargeVisit(db: Database, stripe: Stripe, visitId: string,
   }
   if (failedRow) await recordEventSafe(db, { organizationId: visit.organizationId, about: "payment", aboutId: failedRow.id, customerId: customer.id, jobId: visit.jobId, visitId: visit.id, kind: "payment.failed", detail: { amount: price, message: result.message, name: visitName(visit.kind) }, who: "system", at: now })
   await recordEventSafe(db, { organizationId: visit.organizationId, about: "customer", aboutId: customer.id, customerId: customer.id, kind: "card.failed", detail: { brand: customer.cardBrand, last4: customer.cardLast4 }, who: "system", at: now })
-  await queueStaffMessage(db, visit.organizationId, "admin-alert", `card-failed:${visit.id}:${attempt}`, { origin: opts.origin, title: `Card declined for ${customer.firstName}`, detail: `${customer.firstName}'s card was declined for ${dollars(price)} after the ${kindName(visit.kind)} on Season Pass ${passNumber}.`, path: `/admin/visits?visit=${encodeURIComponent(visit.id)}` })
+  await queueStaffMessage(db, visit.organizationId, "admin-alert", `card-failed:${visit.id}:${attempt}`, { origin: opts.origin, title: `Card declined for ${customer.firstName}`, detail: `${customer.firstName}'s card was declined for ${dollars(price)} after the ${kindName(visit.kind)}${isPass ? ` on Season Pass ${passNumber}` : ""}.`, path: `/admin/visits?visit=${encodeURIComponent(visit.id)}` })
   await emitEvent(db, visit.organizationId, "charge.failed", { visitId: visit.id, passId: pass.id, amount: price, attempt, message: result.message })
+  // The first failure queues the one retry the design allows, three days on; a failure of that retry, or of a try after a card update, queues none.
+  if (attempt === 1 && !opts.afterCardUpdate && !opts.retry) await enqueue(db, visit.organizationId, "pass-charge", `${visit.id}:retry`, { visitId: visit.id, retry: true }, new Date(now.getTime() + RETRY_AFTER_DAYS * 86_400_000))
   return "failed"
 }

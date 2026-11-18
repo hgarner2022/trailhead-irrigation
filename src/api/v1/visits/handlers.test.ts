@@ -165,11 +165,10 @@ describe("visits.markClosed and visits.stretch", () => {
     expect(out).toMatchObject({ status: "completed", completedOn: "2027-05-07" })
     await expect(callApi(ctxFor(db, adminKey), visitsMarkClosed, { id: "p11-blowout" })).rejects.toMatchObject({ code: "unprocessable" })
   })
-  it("queues the charge for a pass visit once, however many times it is closed", async () => {
+  it("queues no charge for a pass visit however many times it is closed: Done is not a charge", async () => {
     await callApi(ctxFor(db, adminKey), visitsMarkClosed, { id: "p3-turn-on" })
-    const charges = (await db.select().from(s.queueItem)).filter((q) => q.kind === "pass-charge" && q.key === "p3-turn-on")
-    expect(charges).toHaveLength(1)
-    expect(charges[0]!.payload).toEqual({ visitId: "p3-turn-on" })
+    await callApi(ctxFor(db, adminKey), visitsMarkClosed, { id: "p3-turn-on" })
+    expect((await db.select().from(s.queueItem)).filter((q) => q.kind === "pass-charge" && q.key === "p3-turn-on")).toEqual([])
   })
   it("closes a visit the daily check marked not closed", async () => {
     await db.update(s.visit).set({ status: "not-closed", scheduledOn: "2027-05-05" }).where(eq(s.visit.id, "p9-turn-on"))

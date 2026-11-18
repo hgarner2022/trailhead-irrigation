@@ -63,7 +63,9 @@ const actions = (over: Partial<VisitActions> = {}): VisitActions => ({
   putBack: vi.fn().mockResolvedValue(ok),
   markDone: vi.fn().mockResolvedValue(ok),
   undoDone: vi.fn().mockResolvedValue(ok),
+  chargeCard: vi.fn().mockResolvedValue(ok),
   recordPayment: vi.fn().mockResolvedValue(ok),
+  refundPayment: vi.fn().mockResolvedValue(ok),
   sendBill: vi.fn().mockResolvedValue(ok),
   remindBill: vi.fn().mockResolvedValue(ok),
   markNotDone: vi.fn().mockResolvedValue({ ok: true, data: { day: "2026-11-20", personId: "person_truck-1", startTime: null } }),
@@ -199,25 +201,46 @@ describe("VisitsScreen", () => {
     expect(await screen.findByText("Truck 1 is full of repair visits on 2026-11-24")).toBeInTheDocument()
   })
 
-  it("Done on a priced one-off asks how it was paid, once, and passes the choice to the action", async () => {
+  it("Mark done is the footer's primary and opens one dialog; it writes the done fact and nothing else, then How is this paid? opens", async () => {
     const a = actions()
-    renderScreen(a, { defaultVisitId: "a" })
-    const panel = within(screen.getByRole("dialog"))
-    await userEvent.click(panel.getByLabelText("Venmo"))
-    await userEvent.type(panel.getByLabelText("Reference (optional)"), "@dana")
-    await userEvent.click(panel.getByRole("button", { name: "Mark done and record payment" }))
-    expect(a.markDone).toHaveBeenCalledWith("a", { paidBy: { method: "venmo", reference: "@dana" } })
+    const withDay: AdminData = { ...data, visits: [visit({ id: "t", scheduledOn: "2026-11-12", startAt: "2026-11-12T15:00:00Z" })], jobs: [] }
+    render(
+      <UndoToastProvider>
+        <VisitsScreen data={withDay} today={TODAY} actions={a} defaultVisitId="t" />
+      </UndoToastProvider>,
+    )
+    await userEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Mark done" }))
+    const done = within(screen.getAllByRole("dialog").at(-1)!)
+    expect(done.getByRole("heading", { name: "Mark done" })).toBeInTheDocument()
+    expect(done.getByText(/Nothing is charged/)).toBeInTheDocument()
+    await userEvent.click(done.getByRole("button", { name: "Mark done" }))
+    expect(a.markDone).toHaveBeenCalledWith("t", {})
+    expect(a.chargeCard).not.toHaveBeenCalled()
+    expect(a.recordPayment).not.toHaveBeenCalled()
   })
 
-  it("Done on a visit with no price needs no question", async () => {
+  it("a visit whose day is ahead asks \"This visit is scheduled for Friday. Mark it done today?\" before it marks anything", async () => {
     const a = actions()
-    const withDay: AdminData = { ...data, visits: [visit({ id: "q", clientName: "Quinn Vale", clientId: "cx", price: 0 })] }
+    renderScreen(a, { defaultVisitId: "a" })
+    await userEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Mark done" }))
+    const ask = within(screen.getAllByRole("dialog").at(-1)!)
+    expect(ask.getByRole("heading", { name: "Mark done today?" })).toBeInTheDocument()
+    expect(ask.getByText("This visit is scheduled for Friday. Mark it done today?")).toBeInTheDocument()
+    expect(a.markDone).not.toHaveBeenCalled()
+    await userEvent.click(ask.getByRole("button", { name: "Never mind" }))
+    expect(a.markDone).not.toHaveBeenCalled()
+  })
+
+  it("Mark done on a visit with no price needs no question", async () => {
+    const a = actions()
+    const withDay: AdminData = { ...data, visits: [visit({ id: "q", clientName: "Quinn Vale", clientId: "cx", price: 0, scheduledOn: "2026-11-12", startAt: "2026-11-12T15:00:00Z" })] }
     render(
       <UndoToastProvider>
         <VisitsScreen data={withDay} today={TODAY} actions={a} defaultVisitId="q" />
       </UndoToastProvider>,
     )
     await userEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Mark done" }))
+    await userEvent.click(within(screen.getAllByRole("dialog").at(-1)!).getByRole("button", { name: "Mark done" }))
     expect(a.markDone).toHaveBeenCalledWith("q", {})
   })
 
@@ -248,57 +271,109 @@ describe("VisitsScreen", () => {
     expect(a.sendText).toHaveBeenCalledWith("cx", "a", "Running late.")
   })
 
-  it("a done and unpaid one-off offers the payment record", async () => {
-    const a = actions()
-    const owed: AdminData = { ...data, visits: [visit({ id: "u", status: "completed", completedOn: "2026-11-10", scheduledOn: "2026-11-10", startAt: "2026-11-10T15:00:00Z" })] }
+  const doneUnpaid = (over: Partial<Visit> = {}) => visit({ id: "u", jobId: "ju", status: "completed", completedOn: "2026-11-10", scheduledOn: "2026-11-10", startAt: "2026-11-10T15:00:00Z", ...over })
+  const unpaidJob = { id: "ju", customerId: "cx", kind: "repair" as const, status: "open" as const, source: "office" as const, visitIds: ["u"], total: 145, payments: [], money: { paid: 0, total: 145, owed: 145, words: "$145 unpaid" } }
+  const openUnpaid = (a: VisitActions, d: AdminData) => {
     render(
       <UndoToastProvider>
-        <VisitsScreen data={owed} today={TODAY} actions={a} defaultVisitId="u" />
+        <VisitsScreen data={d} today={TODAY} actions={a} defaultVisitId="u" />
       </UndoToastProvider>,
     )
-    await userEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Record payment" }))
-    expect(a.recordPayment).toHaveBeenCalledWith("u", { method: "check" })
-  })
+    return userEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Collect $145" }))
+  }
+  const collect = () => within(screen.getAllByRole("dialog").at(-1)!)
 
-  it("Done offers Send an invoice as the last choice, with its hint, and sends it as the way it was paid", async () => {
+  it("a done and unpaid one-off leads with Collect $145 and asks How is this paid? with Check selected when there is no card", async () => {
     const a = actions()
-    renderScreen(a, { defaultVisitId: "a" })
-    const panel = within(screen.getByRole("dialog"))
-    const choices = panel.getAllByRole("radio").map((r) => (r as HTMLInputElement).value)
-    expect(choices).toEqual(["check", "venmo", "cash", "bill"])
-    expect(panel.queryByText("Texts a pay link, or emails it when there is no mobile.", { selector: "p.mt-2" })).toBeNull()
-    await userEvent.click(panel.getByLabelText("Send an invoice"))
-    expect(panel.getByText("Texts a pay link, or emails it when there is no mobile.", { selector: "p.mt-2" })).toBeInTheDocument()
-    expect(panel.queryByLabelText("Reference (optional)")).toBeNull()
-    await userEvent.click(panel.getByRole("button", { name: "Mark done and send an invoice" }))
-    expect(a.markDone).toHaveBeenCalledWith("a", { paidBy: { method: "bill" } })
-    expect(await screen.findByText(/Marked done\. Invoice sent\./)).toBeInTheDocument()
+    await openUnpaid(a, { ...data, visits: [doneUnpaid()], jobs: [unpaidJob] })
+    expect(collect().getByRole("heading", { name: "How is this paid?" })).toBeInTheDocument()
+    expect(collect().getAllByRole("radio").map((r) => (r as HTMLInputElement).value)).toEqual(["check", "venmo", "cash", "invoice", "later", "on"])
+    expect(collect().getByRole("radio", { name: /^Check\b/ })).toBeChecked()
+    expect(a.recordPayment).not.toHaveBeenCalled()
+    await userEvent.type(collect().getByLabelText(/Check number/), "1042")
+    await userEvent.click(collect().getByRole("button", { name: "Record $145 paid" }))
+    expect(a.recordPayment).toHaveBeenCalledWith("u", { method: "check", reference: "1042" })
+    expect(await collect().findByText("Paid, check")).toBeInTheDocument()
+    expect(collect().getByText("Receipt emailed to Dana.")).toBeInTheDocument()
   })
 
-  it("Record the payment never offers Send an invoice", () => {
-    const owed: AdminData = { ...data, visits: [visit({ id: "u", status: "completed", completedOn: "2026-11-10", scheduledOn: "2026-11-10", startAt: "2026-11-10T15:00:00Z" })] }
-    render(
-      <UndoToastProvider>
-        <VisitsScreen data={owed} today={TODAY} actions={actions()} defaultVisitId="u" />
-      </UndoToastProvider>,
-    )
-    expect(within(screen.getByRole("dialog")).queryByLabelText("Send an invoice")).toBeNull()
-  })
-
-  it("a done and unpaid job offers Send an invoice, and once sent reads Invoice sent with the dates, Remind and the pay link", async () => {
+  it("Pay later writes nothing: it closes the dialog and the visit stays Done and unpaid", async () => {
     const a = actions()
-    const done = visit({ id: "u", jobId: "ju", status: "completed", completedOn: "2026-11-10", scheduledOn: "2026-11-10", startAt: "2026-11-10T15:00:00Z" })
-    const job = { id: "ju", customerId: "cx", kind: "repair" as const, status: "open" as const, source: "office" as const, visitIds: ["u"], total: 145, payments: [], money: { paid: 0, total: 145, owed: 145, words: "$145 unpaid" } }
-    const owed: AdminData = { ...data, visits: [done], jobs: [job] }
-    const { unmount } = render(
-      <UndoToastProvider>
-        <VisitsScreen data={owed} today={TODAY} actions={a} defaultVisitId="u" />
-      </UndoToastProvider>,
-    )
-    await userEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Send an invoice" }))
+    await openUnpaid(a, { ...data, visits: [doneUnpaid()], jobs: [unpaidJob] })
+    await userEvent.click(collect().getByLabelText("Pay later", { exact: false }))
+    await userEvent.click(collect().getByRole("button", { name: "Leave it unpaid" }))
+    for (const fn of [a.recordPayment, a.chargeCard, a.sendBill, a.markDone]) expect(fn).not.toHaveBeenCalled()
+    expect(within(screen.getByRole("dialog")).getByRole("button", { name: "Collect $145" })).toBeInTheDocument()
+  })
+
+  it("a customer with a card gets the card first and selected, charges only on the button, and has no Pay later", async () => {
+    const a = actions()
+    const withCard: AdminData = { ...data, clients: data.clients.map((c) => (c.id === "cx" ? { ...c, card: { brand: "visa", last4: "4242" } } : c)), visits: [doneUnpaid()], jobs: [unpaidJob] }
+    await openUnpaid(a, withCard)
+    expect(collect().getAllByRole("radio").map((r) => (r as HTMLInputElement).value)).toEqual(["card", "check", "venmo", "cash", "invoice", "on"])
+    expect(collect().getByLabelText("Charge the Visa ending 4242 now", { exact: false })).toBeChecked()
+    expect(a.chargeCard).not.toHaveBeenCalled()
+    await userEvent.click(collect().getByRole("button", { name: "Charge $145" }))
+    expect(a.chargeCard).toHaveBeenCalledWith("u")
+    expect(a.recordPayment).not.toHaveBeenCalled()
+    expect(await collect().findByText("Paid, card")).toBeInTheDocument()
+  })
+
+  it("a decline is shown in the panel's words and the card is not offered again", async () => {
+    const a = actions({ chargeCard: vi.fn().mockResolvedValue({ ok: false, message: "The card didn't go through. Choose another way." }) })
+    const withCard: AdminData = { ...data, clients: data.clients.map((c) => (c.id === "cx" ? { ...c, card: { brand: "visa", last4: "4242" } } : c)), visits: [doneUnpaid()], jobs: [unpaidJob] }
+    await openUnpaid(a, withCard)
+    await userEvent.click(collect().getByRole("button", { name: "Charge $145" }))
+    expect(await collect().findByText("The card didn't go through. Choose another way.")).toBeInTheDocument()
+  })
+
+  it("offers Send an invoice inside How is this paid? and sends it only on that button", async () => {
+    const a = actions()
+    await openUnpaid(a, { ...data, visits: [doneUnpaid()], jobs: [unpaidJob] })
+    await userEvent.click(collect().getByLabelText("Send an invoice", { exact: false }))
+    expect(collect().getByText("Texts a pay link, due in 14 days")).toBeInTheDocument()
+    expect(a.sendBill).not.toHaveBeenCalled()
+    await userEvent.click(collect().getByRole("button", { name: "Send the invoice" }))
     expect(a.sendBill).toHaveBeenCalledWith("ju")
-    unmount()
+  })
 
+  it("offers no invoice when the job cannot be invoiced yet", async () => {
+    await openUnpaid(actions(), { ...data, visits: [doneUnpaid()], jobs: [] })
+    expect(collect().queryByLabelText("Send an invoice", { exact: false })).toBeNull()
+  })
+
+  it("a paid check can be taken back by a Refund that asks first; nothing is deleted", async () => {
+    const a = actions()
+    const paid = doneUnpaid({ payments: [{ id: "pay-u", visitId: "u", amount: 145, method: "check", status: "succeeded", paidOn: "2026-11-10" }] })
+    render(
+      <UndoToastProvider>
+        <VisitsScreen data={{ ...data, visits: [paid], jobs: [{ ...unpaidJob, payments: paid.payments, money: { paid: 145, total: 145, owed: 0, words: "Paid" } }] }} today={TODAY} actions={a} defaultVisitId="u" />
+      </UndoToastProvider>,
+    )
+    expect(within(screen.getByRole("dialog")).queryByRole("button", { name: "Undo done" })).toBeNull()
+    await userEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Refund $145" }))
+    const ask = within(screen.getAllByRole("dialog").at(-1)!)
+    expect(ask.getByText(/nothing is deleted/i)).toBeInTheDocument()
+    expect(a.refundPayment).not.toHaveBeenCalled()
+    await userEvent.click(ask.getByRole("button", { name: "Refund $145" }))
+    expect(a.refundPayment).toHaveBeenCalledWith("pay-u")
+  })
+
+  it("Undo done is offered while no payment row exists and acts at once", async () => {
+    const a = actions()
+    render(
+      <UndoToastProvider>
+        <VisitsScreen data={{ ...data, visits: [doneUnpaid()], jobs: [unpaidJob] }} today={TODAY} actions={a} defaultVisitId="u" />
+      </UndoToastProvider>,
+    )
+    await userEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Undo done" }))
+    expect(a.undoDone).toHaveBeenCalledWith("u")
+  })
+
+  it("a done and unpaid job shows the invoice once sent with the dates, Remind and the pay link", async () => {
+    const a = actions()
+    const done = doneUnpaid()
+    const job = unpaidJob
     const invoice = { id: "inv1", jobId: "ju", number: "INV-2026-0001", amount: 145, tax: 0, total: 145, sentOn: "2026-11-17", dueOn: "2026-12-01", status: "sent" as const, visitIds: ["u"], payUrl: "https://site.test/pay/inv1?token=t" }
     const billed: AdminData = { ...data, visits: [{ ...done, invoice }], jobs: [{ ...job, invoice, money: { ...job.money, words: "Invoice sent", billSent: true } }] }
     render(
@@ -308,8 +383,6 @@ describe("VisitsScreen", () => {
     )
     const panel = within(screen.getByRole("dialog"))
     expect(panel.getByText("Invoice sent Nov 17, due Dec 1")).toBeInTheDocument()
-    expect(panel.getByText(/Invoice sent\. \$145 unpaid|\. Invoice sent\./)).toBeInTheDocument()
-    expect(panel.queryByRole("button", { name: "Send an invoice" })).toBeNull()
     expect(panel.getByRole("link", { name: "Pay link" })).toHaveAttribute("href", "https://site.test/pay/inv1?token=t")
     await userEvent.click(panel.getByRole("button", { name: "Remind" }))
     expect(a.remindBill).toHaveBeenCalledWith("inv1")
@@ -371,47 +444,51 @@ describe("New job", () => {
   })
 })
 
-// A pass visit that is Done and Unpaid, with the customer's card and without: both must show how to take the money.
-describe("Done and Owed on a pass visit", () => {
+// A pass visit that is Done and Unpaid, with the customer's card and without: both lead with Collect, in the words the design gives.
+describe("Done and Unpaid on a pass visit", () => {
   const owedPass = (id: string): AdminData => ({
     ...visitsData,
     visits: visitsData.visits.map((v) => (v.id === id ? { ...v, status: "completed" as const, completedOn: "2026-11-10", scheduledOn: "2026-11-10", startAt: "2026-11-10T15:00:00Z", payments: [] } : v)),
   })
-  const open = (id: string, d: AdminData) =>
+  const open = (id: string, d: AdminData, a = actions()) =>
     render(
       <UndoToastProvider>
-        <VisitsScreen data={d} today={VISITS_TODAY} actions={actions()} defaultVisitId={id} />
+        <VisitsScreen data={d} today={VISITS_TODAY} actions={a} defaultVisitId={id} />
       </UndoToastProvider>,
     )
+  const dialog = () => within(screen.getAllByRole("dialog").at(-1)!)
 
-  it("offers Record the payment when the customer has no card, and the row says there is no card", () => {
+  it("with no card the choices are the no-card ones, Pay later included, and the row says there is no card", async () => {
     const d = owedPass(noCardVisitId)
     open(noCardVisitId, d)
-    const panel = within(screen.getByRole("dialog"))
-    expect(panel.getByRole("heading", { name: "Record the payment" })).toBeInTheDocument()
-    expect(panel.getByRole("button", { name: "Record payment" })).toBeInTheDocument()
+    await userEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: /^Collect \$/ }))
+    expect(dialog().getByLabelText("Pay later", { exact: false })).toBeInTheDocument()
+    expect(dialog().queryByLabelText("Charge the card as agreed", { exact: false })).toBeNull()
     expect(visitRows(d, VISITS_TODAY).find((r) => r.id === noCardVisitId)!.moneyText).toMatch(/ unpaid · no card$/)
   })
 
-  it("offers Record the payment when the customer has a card too, since a charge that never went through must not leave it stuck", () => {
-    open(passVisitId, owedPass(passVisitId))
-    expect(within(screen.getByRole("dialog")).getByRole("heading", { name: "Record the payment" })).toBeInTheDocument()
+  it("with a card it reads Charge the card as agreed, preselected, with no Pay later; Paid another way opens Check, Venmo and Cash", async () => {
+    const a = actions()
+    open(passVisitId, owedPass(passVisitId), a)
+    await userEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: /^Collect \$/ }))
+    expect(dialog().getByLabelText("Charge the card as agreed", { exact: false })).toBeChecked()
+    expect(dialog().queryByLabelText("Pay later", { exact: false })).toBeNull()
+    expect(dialog().queryByRole("radio", { name: /^Check\b/ })).toBeNull()
+    await userEvent.click(dialog().getByRole("button", { name: "Paid another way" }))
+    expect(dialog().getByRole("radio", { name: /^Check\b/ })).toBeInTheDocument()
+    expect(dialog().getByRole("radio", { name: /^Venmo\b/ })).toBeInTheDocument()
+    expect(dialog().getByRole("radio", { name: /^Cash\b/ })).toBeInTheDocument()
+    expect(a.chargeCard).not.toHaveBeenCalled()
   })
 
-  it("says it charges the card on Done and keeps Paid another way, which asks how", async () => {
-    // The fixture's pass visit, booked and not yet done, on a pass whose customer has a card.
+  it("Mark done on a booked pass visit with a card says nothing about charging: the charge is its own step", async () => {
     const booked: AdminData = { ...visitsData, visits: visitsData.visits.map((v) => (v.id === passVisitId ? { ...v, status: "scheduled" as const, completedOn: undefined, payments: [] } : v)) }
-    open(passVisitId, booked)
-    const panel = within(screen.getByRole("dialog"))
-    expect(panel.getByText(/Charges the card ending \d{4} after this visit/)).toBeInTheDocument()
-    expect(panel.queryByRole("button", { name: "Mark done and record payment" })).toBeNull()
-    await userEvent.click(panel.getByRole("button", { name: "Paid another way" }))
-    expect(panel.getByRole("button", { name: "Mark done and record payment" })).toBeInTheDocument()
-  })
-
-  it("asks how it was paid on Done when the customer has no card", () => {
-    open(noCardVisitId, visitsData)
-    expect(within(screen.getByRole("dialog")).getByRole("button", { name: "Mark done and record payment" })).toBeInTheDocument()
+    const a = actions()
+    open(passVisitId, booked, a)
+    await userEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Mark done" }))
+    expect(dialog().getByText(/Nothing is charged/)).toBeInTheDocument()
+    expect(within(screen.getByRole("dialog")).queryByText(/Paid another way/)).toBeNull()
+    expect(a.chargeCard).not.toHaveBeenCalled()
   })
 })
 
