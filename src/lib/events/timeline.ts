@@ -46,7 +46,7 @@ export const MESSAGE_KIND_WORDS: Record<string, string> = {
   "card-failed": "card didn't go through",
   "card-expiring": "card expiring",
   cancelled: "cancellation",
-  "visit-cancelled": "visit cancellation",
+  "visit-cancelled": "visit canceled",
   renewal: "renewal",
   note: "message from the office",
 }

@@ -208,7 +208,7 @@ describe("propertiesOf", () => {
 describe("the customer's Card line", () => {
   it("says the brand, the last four and the expiry", () => {
     expect(customerCardWords({ brand: "visa", last4: "4242", expires: "2028-08" })).toBe("Visa ending 4242, expires 08/28")
-    expect(customerCardWords({ last4: "4242", expires: "2028-08" })).toBe("Card ending 4242, expires 08/28")
+    expect(customerCardWords({ last4: "4242", expires: "2028-08" })).toBe("Ending 4242, expires 08/28")
     expect(customerCardWords({ brand: "amex", last4: "0005" })).toBe("Amex ending 0005")
     expect(customerCardWords(undefined)).toBe("No card on file")
   })

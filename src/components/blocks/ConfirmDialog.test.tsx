@@ -14,6 +14,13 @@ describe("ConfirmDialog", () => {
     expect(d.getByRole("button", { name: "Cancel job" })).toBeInTheDocument()
   })
 
+  it("draws a destructive confirm in the destructive colour and any other in the primary", () => {
+    const { rerender } = render(<ConfirmDialog {...base} destructive />)
+    expect(within(screen.getByRole("dialog")).getByRole("button", { name: "Cancel job" })).toHaveClass("bg-destructive")
+    rerender(<ConfirmDialog {...base} title="Mark done" confirmLabel="Mark done" />)
+    expect(within(screen.getByRole("dialog")).getByRole("button", { name: "Mark done" })).not.toHaveClass("bg-destructive")
+  })
+
   it("dismisses with Cancel when the question is not destructive", () => {
     render(<ConfirmDialog {...base} title="Mark done" confirmLabel="Mark done" />)
     expect(within(screen.getByRole("dialog")).getByRole("button", { name: "Cancel" })).toBeInTheDocument()

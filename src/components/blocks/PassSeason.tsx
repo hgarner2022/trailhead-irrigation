@@ -13,7 +13,8 @@ import { SeasonLine } from "./SeasonLine"
 // and what each visit is charged and whether it was paid. Pure props, no data of its own: the Jobs panel shows it for a pass
 // job and the Customers panel under the customer's facts, each handing in the same rows from `passes-model.ts`. A visit row
 // opens its panel when `onOpenVisit` is given and is plain text without it. The pass's own buttons sit beside it in the panel
-// that shows it, never inside it. Server-safe: no hooks.
+// that shows it, never inside it. `variant="customer"` is the Customers panel's block (the design's Season Pass: the card over its facts and
+// the season line, no Visits, Charges or card line: the visits live in the job and the card is a fact of the customer). Server-safe: no hooks.
 
 export interface PassSeasonVisit {
   /** the visit row's id; absent when the pass has no row yet */
@@ -51,6 +52,8 @@ export interface PassSeasonProps {
   visits: PassSeasonVisit[]
   charges: PassSeasonCharge[]
   onOpenVisit?: (visitId: string) => void
+  /** `job` is the Jobs panel's whole season; `customer` is the card, its facts and the season line only */
+  variant?: "job" | "customer"
   /** the headings' ids are `${idPrefix}-visits` and so on, so two blocks on a page never share one */
   idPrefix?: string
   className?: string
@@ -75,12 +78,14 @@ function VisitRow({ visit, onOpen }: { visit: PassSeasonVisit; onOpen?: (id: str
   )
 }
 
-export function PassSeason({ pass, today, facts, consent, card, cardAction, pendingNote, visits, charges, onOpenVisit, idPrefix = "pass", className }: PassSeasonProps) {
+export function PassSeason({ pass, today, facts, consent, card, cardAction, pendingNote, visits, charges, onOpenVisit, variant = "job", idPrefix = "pass", className }: PassSeasonProps) {
+  const compact = variant === "customer"
   return (
     <div data-slot="pass-season" className={cn("flex flex-col gap-6", className)}>
-      <div className="flex items-start gap-5">
+      {/* The card over its facts on a phone, beside them from sm up, so the facts never wrap a letter to a line. */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-5">
         <PassCard pass={pass} size="thumb" interactive={false} className="shrink-0" />
-        <RecordFacts rows={facts} className="mt-0" />
+        <RecordFacts rows={facts} className="mt-0 min-w-0 flex-1" />
       </div>
       {pendingNote && (
         <p data-slot="pass-pending-note" className="text-sm text-muted-foreground">
@@ -94,13 +99,13 @@ export function PassSeason({ pass, today, facts, consent, card, cardAction, pend
           <span className="font-medium">{consent}</span>
         </p>
       )}
-      <div data-slot="pass-card-line" className="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
-        <p>
-          <span className="text-muted-foreground">Card </span>
-          <span className="font-medium">{card}</span>
-        </p>
-        {cardAction}
-      </div>
+      {!compact && (
+        <div data-slot="pass-card-line" className="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
+          <p className="font-medium">{card}</p>
+          {cardAction}
+        </div>
+      )}
+      {!compact && (
       <section aria-labelledby={`${idPrefix}-visits`}>
         <SectionHeading id={`${idPrefix}-visits`}>Visits</SectionHeading>
         <RecordList data-slot="pass-jobs">
@@ -111,10 +116,12 @@ export function PassSeason({ pass, today, facts, consent, card, cardAction, pend
           ))}
         </RecordList>
       </section>
-      <section aria-labelledby={`${idPrefix}-season`}>
-        <SectionHeading id={`${idPrefix}-season`}>Season</SectionHeading>
-        <SeasonLine mode="customer" season={pass.season} visits={pass.visits} today={today} className="mt-3" />
+      )}
+      <section aria-labelledby={compact ? undefined : `${idPrefix}-season`} aria-label={compact ? "Season" : undefined}>
+        {!compact && <SectionHeading id={`${idPrefix}-season`}>Season</SectionHeading>}
+        <SeasonLine mode="customer" season={pass.season} visits={pass.visits} today={today} className={compact ? undefined : "mt-3"} />
       </section>
+      {!compact && (
       <section aria-labelledby={`${idPrefix}-charges`}>
         <SectionHeading id={`${idPrefix}-charges`}>Charges</SectionHeading>
         <RecordList>
@@ -129,6 +136,7 @@ export function PassSeason({ pass, today, facts, consent, card, cardAction, pend
           ))}
         </RecordList>
       </section>
+      )}
     </div>
   )
 }

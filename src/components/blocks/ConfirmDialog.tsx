@@ -2,6 +2,7 @@
 
 import { useState, useTransition, type ReactNode } from "react"
 import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 
 // The one dialog of the admin (docs/DESIGN.md, "The recipe"): one question, 400px, opened over a panel and never over another dialog.
@@ -9,7 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 // dismisses with "Cancel". `message` says what happens to the money and the schedule; `children` holds the one field or choice the
 // question needs (the day a visit was done, why it was not). The API's own words show under the body when it refuses, and the dialog
 // closes when the call goes through. `blocked` is why it cannot go ahead: it takes the message's place and the confirm button is
-// not drawn, so the only way forward is to keep it. `actions="none"` is for a body that carries its own button (How is this paid?).
+// not drawn, so the only way forward is to keep it. A destructive confirm is drawn in the destructive colour, never the orange of a primary. `actions="none"` is for a body that carries its own button (How is this paid?).
 // Without `onConfirm` (the catalog) it only logs. Moved up from the Cancel confirm of the screens.
 
 export type ConfirmOutcome = { ok: true } | { ok: false; message: string }
@@ -69,7 +70,7 @@ export function ConfirmDialog({ title, message, blocked, children, confirmLabel,
               {destructive || blocked ? "Keep it" : "Cancel"}
             </Button>
             {!blocked && confirmLabel && (
-              <Button className="min-h-11" onClick={confirm} disabled={pending || confirmDisabled}>
+              <Button className={cn("min-h-11", destructive && "bg-destructive text-white hover:bg-destructive/90")} onClick={confirm} disabled={pending || confirmDisabled}>
                 {confirmLabel}
               </Button>
             )}

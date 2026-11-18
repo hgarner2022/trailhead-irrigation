@@ -22,13 +22,14 @@ export interface JobFooterProps {
   onCollect: () => void
   onAddVisit: () => void
   onAddLine: () => void
+  onChangePass: () => void
   onSendCardUpdateLink: () => void
   onResendConfirmation: () => void
   onCancelPass: () => void
   onCancelJob: () => void
 }
 
-export function JobFooter({ facts, bar, nextVisitId, pass, pending, onCollect, onAddVisit, onAddLine, onSendCardUpdateLink, onResendConfirmation, onCancelPass, onCancelJob }: JobFooterProps) {
+export function JobFooter({ facts, bar, nextVisitId, pass, pending, onCollect, onAddVisit, onAddLine, onChangePass, onSendCardUpdateLink, onResendConfirmation, onCancelPass, onCancelJob }: JobFooterProps) {
   const openVisit = useOpenVisit()
   const act: Record<JobBarId, FooterAction> = {
     "add-line": { label: "Add a line", onClick: onAddLine },
@@ -36,6 +37,7 @@ export function JobFooter({ facts, bar, nextVisitId, pass, pending, onCollect, o
     collect: { label: `Collect $${facts.row.owed.toLocaleString("en-US")}`, onClick: onCollect, disabled: pending },
     "new-visit": { label: "New visit", onClick: onAddVisit },
     record: { label: "Record the payment", onClick: onCollect, disabled: pending },
+    "change-pass": { label: "Change the pass", onClick: onChangePass },
     "card-link": { label: "Send card link", onClick: onSendCardUpdateLink, disabled: pending },
     resend: { label: "Resend confirmation", onClick: onResendConfirmation, disabled: pending },
     stripe: { label: "Open in Stripe", href: pass?.stripeUrl, external: true },

@@ -184,4 +184,32 @@ describe("CustomersScreen panel", () => {
     const entries = within(document.querySelector<HTMLElement>('[data-slot="consent-history"]')!).getAllByRole("listitem")
     expect(entries.map((e) => e.textContent)).toEqual(["Nov 9, AdminMarketing: no.", "Nov 2, CheckoutTerms 2026-11 accepted Nov 2. Marketing: email and text."])
   })
+
+  it("follows the design's order for a pass holder: facts, the pass block, Jobs, Property; no Visits, Season or Charges headings", () => {
+    render(<CustomersScreen data={data} today={TODAY} defaultSelectedId="c100" />)
+    const panel = within(screen.getByRole("dialog"))
+    const labels = [...document.querySelectorAll('[data-slot="record-facts"]')[0]!.querySelectorAll("dt")].map((d) => d.textContent)
+    expect(labels.indexOf("Card")).toBeLessThan(labels.indexOf("Marketing"))
+    const order = ["Season Pass", "Jobs", "Property"].map((name) => panel.getByRole("heading", { name }))
+    order.slice(1).forEach((h, i) => expect(order[i]!.compareDocumentPosition(h) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy())
+    for (const name of ["Visits", "Season", "Charges"]) expect(panel.queryByRole("heading", { name })).toBeNull()
+    // the pass's season line is still there, with its card line left to the Card fact
+    expect(document.querySelector('[data-slot="customer-pass"] [data-slot="pass-card-line"]')).toBeNull()
+  })
+
+  it("shows the card once, in the facts, without the word twice", () => {
+    render(<CustomersScreen data={data} today={TODAY} defaultSelectedId="c100" />)
+    const text = screen.getByRole("dialog").textContent ?? ""
+    expect(text).not.toMatch(/Card\s*Card/)
+    expect(screen.getByRole("dialog").querySelectorAll('[data-slot="customer-card-line"]')).toHaveLength(1)
+  })
+
+  it("puts ?customer= in the address when a row opens, and takes it off on close", async () => {
+    window.history.replaceState(null, "", "/admin/customers")
+    render(<CustomersScreen data={data} today={TODAY} />)
+    await userEvent.click(screen.getByRole("button", { name: andrea.firstName + " " + andrea.lastName }))
+    expect(new URLSearchParams(window.location.search).get("customer")).toBe("c100")
+    await userEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Close panel" }))
+    expect(window.location.search).toBe("")
+  })
 })

@@ -153,11 +153,11 @@ export function yardFromPass(pass: Pick<Pass, "zones" | "needsCustomerHome" | "a
   return { zones: pass.zones, mustBeHome: Boolean(pass.needsCustomerHome), ...(pass.accessNote ? { accessNote: pass.accessNote } : {}) }
 }
 
-/** "Visa ending 4242, expires 08/28"; "Card ending 4242" with no brand; "No card on file" with none. */
+/** "Visa ending 4242, expires 08/28"; "Ending 4242" with no brand (it sits under the label Card, so it never says Card twice); "No card on file" with none. */
 export function customerCardWords(card: ClientCard | undefined): string {
   if (!card) return "No card on file"
-  const brand = card.brand ? card.brand.charAt(0).toUpperCase() + card.brand.slice(1) : "Card"
-  const ending = `${brand} ending ${card.last4}`
+  const brand = card.brand ? card.brand.charAt(0).toUpperCase() + card.brand.slice(1) : ""
+  const ending = `${brand ? `${brand} ending` : "Ending"} ${card.last4}`
   return card.expires ? `${ending}, expires ${card.expires.slice(5, 7)}/${card.expires.slice(2, 4)}` : ending
 }
 

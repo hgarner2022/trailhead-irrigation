@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/blocks/PageHeader"
 import { SidePanelLayout } from "@/components/blocks/SidePanel"
 import type { AdminData } from "@/lib/admin/types"
 import type { JobActions } from "./job-actions-types"
+import { setRecordInUrl } from "./record-url"
 import { JobPanel } from "./JobPanel"
 import { jobColumns } from "./jobs-columns"
 import { BILLS_OUT, KIND_OPTIONS, MONEY_OPTIONS, STAGE_OPTIONS, billsChip, billsOut, jobRows, jobsContext, seasonOptions, type JobRow } from "./jobs-model"
@@ -27,6 +28,8 @@ export interface JobsScreenProps {
   today: string
   /** the job open on first render: `?job=` on the page, or the catalog */
   defaultJobId?: string
+  /** the visit open on first render (`?visit=`), when the address holds one */
+  defaultVisitId?: string
   /** a tech reads the jobs and changes nothing: no New job, no buttons in the panel */
   readOnly?: boolean
   /** the job panel's lines, payments, new visit and the pass's buttons; server actions in the app */
@@ -64,7 +67,7 @@ function Grid({ rows, onOpen, defaultFilters }: { rows: JobRow[]; onOpen: (row: 
   )
 }
 
-export function JobsScreen({ data, today, defaultJobId, readOnly = false, actions, visitActions, defaultFilters }: JobsScreenProps) {
+export function JobsScreen({ data, today, defaultJobId, defaultVisitId, readOnly = false, actions, visitActions, defaultFilters }: JobsScreenProps) {
   const rows = useMemo(() => jobRows(data, today), [data, today])
   const [jobId, setJobId] = useState<string | undefined>(defaultJobId)
   const [open, setOpen] = useState(() => rows.some((r) => r.id === defaultJobId))
@@ -85,11 +88,12 @@ export function JobsScreen({ data, today, defaultJobId, readOnly = false, action
     closeVisit.current?.()
     setJobId(id)
     setOpen(true)
+    setRecordInUrl("job", id)
   }
   const show = (row: JobRow) => openJob(row.id)
   return (
     <div data-slot="jobs-screen">
-      <VisitPanelHost data={data} today={today} readOnly={readOnly} actions={visitActions} onShow={closeJob} closeRef={closeVisit}>
+      <VisitPanelHost data={data} today={today} readOnly={readOnly} actions={visitActions} defaultVisitId={defaultVisitId} onShow={closeJob} closeRef={closeVisit}>
         <PageHeader
           title="Jobs"
           context={jobsContext(rows, today)}
@@ -104,7 +108,7 @@ export function JobsScreen({ data, today, defaultJobId, readOnly = false, action
             </>
           }
         />
-        <SidePanelLayout panel={<JobPanel data={data} today={today} jobId={jobId} open={open} onOpenChange={setOpen} readOnly={readOnly} actions={actions} visitActions={visitActions} />}>
+        <SidePanelLayout panel={<JobPanel data={data} today={today} jobId={jobId} open={open} onOpenChange={(o) => (setOpen(o), !o && setRecordInUrl("job", undefined))} readOnly={readOnly} actions={actions} visitActions={visitActions} />}>
           <Grid key={gridKey} rows={rows} onOpen={show} defaultFilters={applied} />
         </SidePanelLayout>
       </VisitPanelHost>

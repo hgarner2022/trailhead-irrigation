@@ -69,7 +69,7 @@ export function EditDialog({ visit, people, actions, open, onOpenChange }: { vis
 
 /** The consent line the text shows before it goes: where it goes, what it says at the end. */
 export function textConsentLine(client: Pick<Client, "phone"> | undefined): string {
-  return client?.phone ? `Goes by text to ${formatPhone(client.phone)}, with the opt-out line added. Replies of STOP are honoured.` : "This customer has no mobile number, so a text cannot go."
+  return client?.phone ? `Goes by text to ${formatPhone(client.phone)}, with the opt-out line added. Replies of STOP are honored.` : "This customer has no mobile number, so a text cannot go."
 }
 
 export function TextDialog({ client, visitId, actions, open, onOpenChange }: { client: Pick<Client, "id" | "phone"> | undefined; visitId?: string; actions?: VisitActions } & Shown) {

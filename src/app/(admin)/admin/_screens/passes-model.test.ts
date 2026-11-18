@@ -134,9 +134,9 @@ describe("cardWords", () => {
 describe("the season view's rows", () => {
   it("lists the facts beside the card, with the access note and the money only when asked for", () => {
     const pass = { ...passes[0]!, accessNote: "Dog loose", status: "active" as const }
-    expect(seasonFacts(pass).map(([k]) => k)).toEqual(["Town", "Zones", "Access", "Status"])
-    expect(seasonFacts(pass, "$145 unpaid").at(-1)).toEqual(["Money", "$145 unpaid"])
-    expect(seasonFacts(pass, undefined, false).map(([k]) => k)).toEqual(["Town", "Zones", "Status"])
+    expect(seasonFacts(pass).map(([k]) => k)).toEqual(["Town", "Zones", "Access"])
+    expect(seasonFacts(pass, "$145 unpaid").map(([k]) => k)).toEqual(["Town", "Zones", "Access"])
+    expect(seasonFacts(pass, undefined, false).map(([k]) => k)).toEqual(["Town", "Zones"])
   })
 
   it("lists one row per visit with its day, then who has it, and its two pills", () => {

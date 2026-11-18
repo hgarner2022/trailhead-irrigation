@@ -5,6 +5,7 @@ import { DataGrid } from "@/components/blocks/DataGrid"
 import { PageHeader } from "@/components/blocks/PageHeader"
 import { SidePanelLayout } from "@/components/blocks/SidePanel"
 import type { AdminData } from "@/lib/admin/types"
+import { setRecordInUrl } from "./record-url"
 import type { Outcome } from "./action-types"
 import { CustomerPanel } from "./CustomerPanel"
 import type { VisitActions } from "./visit-actions-types"
@@ -29,6 +30,8 @@ export interface CustomersScreenProps {
   today: string
   /** The customer open on first render; for the catalog, since the prototype has no URL state */
   defaultSelectedId?: string
+  /** the visit open on first render (`?visit=`), when the address holds one */
+  defaultVisitId?: string
   /** a tech reads the customers and changes nothing */
   readOnly?: boolean
   /** the panel's actions; server actions in the app. Without them the catalog's pass-offer buttons only log. */
@@ -47,7 +50,7 @@ const option = (value: string, label = value) => ({ value, label })
 const log = (action: string) => (rows: CustomerRow[]) => console.info(action, rows.map((r) => r.name))
 const BULK_ACTIONS = [{ label: "Send pass offer", onClick: log("send pass offer") }]
 
-export function CustomersScreen({ data, today, defaultSelectedId, readOnly = false, actions, visitActions }: CustomersScreenProps) {
+export function CustomersScreen({ data, today, defaultSelectedId, defaultVisitId, readOnly = false, actions, visitActions }: CustomersScreenProps) {
   const rows = useMemo(() => customerRows(data, today), [data, today])
   const [selectedId, setSelectedId] = useState<string | undefined>(defaultSelectedId)
   const [open, setOpen] = useState(() => rows.some((r) => r.id === defaultSelectedId))
@@ -78,18 +81,19 @@ export function CustomersScreen({ data, today, defaultSelectedId, readOnly = fal
     closeVisit.current?.()
     setSelectedId(next.id)
     setOpen(true)
+    setRecordInUrl("customer", next.id)
   }
 
   return (
     <div data-slot="customers-screen">
-      <VisitPanelHost data={data} today={today} readOnly={readOnly} actions={visitActions} onShow={closeCustomer} closeRef={closeVisit}>
+      <VisitPanelHost data={data} today={today} readOnly={readOnly} actions={visitActions} defaultVisitId={defaultVisitId} onShow={closeCustomer} closeRef={closeVisit}>
       <PageHeader title="Customers" context={customersContext(rows)} />
       <SidePanelLayout
         panel={
           row && (
             <CustomerPanel
               open={open}
-              onOpenChange={setOpen}
+              onOpenChange={(o) => (setOpen(o), !o && setRecordInUrl("customer", undefined))}
               row={row}
               client={client}
               data={data}

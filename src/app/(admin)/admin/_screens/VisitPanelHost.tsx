@@ -6,6 +6,7 @@ import { SidePanelLayout } from "@/components/blocks/SidePanel"
 import type { AdminData } from "@/lib/admin/types"
 import type { VisitActions } from "./visit-actions-types"
 import { VisitPanel } from "./VisitPanel"
+import { setRecordInUrl } from "./record-url"
 
 // Wraps a screen so any row on it can open the visit panel in place: Home's stops, the Visits list, the
 // Schedule's stops, the pass panel's visits and the customer panel's visits all call `useOpenVisit()`. Without a
@@ -44,6 +45,7 @@ export function VisitPanelHost({ data, today, readOnly, canCollect, actions, def
       onShow?.()
       setVisitId(id)
       setOpen(true)
+      setRecordInUrl("visit", id)
     },
     [onShow],
   )
@@ -57,7 +59,7 @@ export function VisitPanelHost({ data, today, readOnly, canCollect, actions, def
   const value = useMemo(() => show, [show])
   return (
     <HostContext.Provider value={value}>
-      <SidePanelLayout panel={<VisitPanel data={data} today={today} visitId={visitId} open={open} onOpenChange={setOpen} onOpenVisit={show} readOnly={readOnly} canCollect={canCollect} actions={actions} />}>{children}</SidePanelLayout>
+      <SidePanelLayout panel={<VisitPanel data={data} today={today} visitId={visitId} open={open} onOpenChange={(o) => (setOpen(o), !o && setRecordInUrl("visit", undefined))} onOpenVisit={show} readOnly={readOnly} canCollect={canCollect} actions={actions} />}>{children}</SidePanelLayout>
     </HostContext.Provider>
   )
 }

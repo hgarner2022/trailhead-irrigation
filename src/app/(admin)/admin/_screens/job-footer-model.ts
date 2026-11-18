@@ -42,7 +42,7 @@ export function footerPlan(facts: Pick<JobFacts, "row" | "visits" | "bill" | "ca
   return { primary: null }
 }
 
-export type JobBarId = "add-line" | "open-visit" | "collect" | "new-visit" | "record" | "card-link" | "resend" | "stripe" | "cancel-pass" | "cancel-job"
+export type JobBarId = "add-line" | "open-visit" | "collect" | "new-visit" | "record" | "change-pass" | "card-link" | "resend" | "stripe" | "cancel-pass" | "cancel-job"
 
 export interface JobBar {
   primary?: JobBarId
@@ -53,8 +53,8 @@ export interface JobBar {
 
 /**
  * The job panel's footer as one primary, up to two outlines, More and one destructive ghost (docs/plans/2026-11-18-admin-holistic-design.md,
- * section 7). The primary is `footerPlan`'s; Add a line and New visit are outlines when they are not the primary; Send card link is an
- * outline on a pass with a card; Record the payment, Resend confirmation and Open in Stripe are under More; Cancel pass or Cancel job is the
+ * section 7). The primary is `footerPlan`'s; Add a line and New visit are outlines when they are not the primary; Change the pass is the
+ * outline of an active pass; Record the payment, New visit on a Done job, Send card link, Resend confirmation and Open in Stripe are under More; Cancel pass or Cancel job is the
  * ghost. A third outline spills into More. Pure; `passOpen` is an active pass seen by a manager.
  */
 export function jobBar(
@@ -67,15 +67,18 @@ export function jobBar(
   if (!canAct) return { secondary: [], more: [] }
   const primary = plan.primary
   const collectable = facts.bill.canSend || facts.canRecord
+  // A Done job is finished and has no primary of its own: more work for the customer is New visit, one menu away.
+  const done = facts.row.stage === "done"
   const quiet: JobBarId[] = [
     ...(facts.canEditLines && primary !== "add-line" ? (["add-line"] as JobBarId[]) : []),
-    ...(facts.canAddVisit && facts.row.stage !== "done" && primary !== "new-visit" ? (["new-visit"] as JobBarId[]) : []),
-    ...(passOpen && pass?.cardLast4 ? (["card-link"] as JobBarId[]) : []),
+    ...(facts.canAddVisit && !done && primary !== "new-visit" ? (["new-visit"] as JobBarId[]) : []),
+    ...(passOpen ? (["change-pass"] as JobBarId[]) : []),
   ]
   const more: JobBarId[] = [
     ...quiet.slice(2),
     ...(collectable && primary !== "collect" ? (["record"] as JobBarId[]) : []),
-    ...(passOpen ? (["resend"] as JobBarId[]) : []),
+    ...(facts.canAddVisit && done ? (["new-visit"] as JobBarId[]) : []),
+    ...(passOpen ? (["card-link", "resend"] as JobBarId[]) : []),
     ...(passOpen && pass?.stripeUrl ? (["stripe"] as JobBarId[]) : []),
   ]
   return {

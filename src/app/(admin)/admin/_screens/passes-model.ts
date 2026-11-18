@@ -106,14 +106,12 @@ export function chargeRows(pass: Pass): ChargeRow[] {
   }))
 }
 
-/** The facts beside the pass card: town, zones, the access note, the pass's status word and, when the job has priced lines, its money in words. */
-export function seasonFacts(pass: Pick<Pass, "town" | "zones" | "accessNote" | "status">, money?: string, withAccess = true): [string, string][] {
+/** The facts beside the pass card: town, zones and the access note. The status and the money are the panel's pills, so they are not said twice. */
+export function seasonFacts(pass: Pick<Pass, "town" | "zones" | "accessNote">, _money?: string, withAccess = true): [string, string][] {
   return [
     ["Town", pass.town],
     ["Zones", String(pass.zones)],
     ...(withAccess && pass.accessNote ? ([["Access", pass.accessNote]] as [string, string][]) : []),
-    ["Status", statusLabel(pass.status)],
-    ...(money ? ([["Money", money]] as [string, string][]) : []),
   ]
 }
 
