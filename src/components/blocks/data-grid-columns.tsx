@@ -8,17 +8,17 @@ import type { GridColumnDef } from "./data-grid-table"
 // The Passes grid's columns, in the order Hannah reads them: the customer's
 // full name first (the link that opens the pass), then town, zones, the day
 // each visit has (Turn-on, Inspection, Blowout: "Apr 26", with its window
-// once one is set, "No day yet" before; never a timing preference), status
+// once one is set, "Unscheduled" before; never a timing preference), status
 // (Pending for an unpaid attempt, never Active), charged so far and the next
 // visit. Every day is read off the visit row. The per-row derivations are
 // small pure functions so the tests can read them without a table.
 
-const NEEDS_DAY = "No day yet"
+const NEEDS_DAY = "Unscheduled"
 
 /** The visit of a kind on the pass; undefined when the pass has none (no July inspection). */
 const visitOf = (pass: Pass, kind: PassVisit["kind"]): PassVisit | undefined => pass.visits.find((v) => v.kind === kind)
 
-/** A visit column's text: its day and window, "No day yet", or "None" for a visit the pass does not have. */
+/** A visit column's text: its day and window, "Unscheduled", or "None" for a visit the pass does not have. */
 export function visitDayText(pass: Pass, kind: PassVisit["kind"]): string {
   const visit = visitOf(pass, kind)
   return visit ? dayWords(visit) || NEEDS_DAY : "None"
@@ -44,7 +44,7 @@ function visitColumn(kind: PassVisit["kind"], header: string): GridColumnDef<Pas
 /** What has been paid on this pass: its visits' payment rows added up (refunds counting against). */
 export const chargedTotal = (pass: Pass) => pass.visits.reduce((sum, v) => sum + visitPaidTotal(v), 0)
 
-/** The first uncharged visit: its day when it has one, else "No day yet"; "Done" when every visit is charged. */
+/** The first uncharged visit: its day when it has one, else "Unscheduled"; "Done" when every visit is charged. */
 export function nextVisit(pass: Pass): string {
   const visit = pass.visits.find((v) => !visitPaid(v))
   if (!visit) return "Done"
@@ -75,6 +75,6 @@ export const passColumns: GridColumnDef<Pass>[] = [
     cell: ({ getValue }) => <StatusPill status={getValue() as PassStatus} />,
     meta: { csv: (pass) => statusLabel((pass as Pass).status) },
   },
-  { id: "charged", accessorFn: chargedTotal, header: "Charged so far", meta: { align: "right" }, cell: ({ getValue }) => formatMoney(Number(getValue())) },
+  { id: "charged", accessorFn: chargedTotal, header: "Paid so far", meta: { align: "right" }, cell: ({ getValue }) => formatMoney(Number(getValue())) },
   { id: "nextVisit", accessorFn: nextVisitSortKey, header: "Next visit", sortUndefined: "last", cell: ({ row }) => nextVisit(row.original), meta: { csv: nextVisit } },
 ]

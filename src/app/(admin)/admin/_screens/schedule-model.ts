@@ -108,7 +108,7 @@ function passItem(pass: Pass, visit: PassVisit): TrayItem {
 }
 
 /**
- * What the "No day yet" list shows: the jobs that have no day, for ACTIVE
+ * What the "Unscheduled" list shows: the jobs that have no day, for ACTIVE
  * passes only. A job with a day is never here (the state is read off the
  * visit row by `passVisitJob`, the one derivation), a pending pass's jobs
  * never are (an unpaid attempt is not a customer), and neither are open

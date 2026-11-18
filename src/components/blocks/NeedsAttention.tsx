@@ -42,7 +42,7 @@ const KINDS: Record<Attention["kind"], { icon: LucideIcon; tone: string; name: s
   "not-closed": { icon: CircleDashed, tone: "bg-stone text-muted-foreground", name: "Jobs not marked done" },
   "pass-cancelled": { icon: Ban, tone: "bg-warning/10 text-warning", name: "Pass cancelled" },
   scheduled: { icon: CalendarCheck, tone: "bg-success/10 text-success", name: "Schedule run" },
-  unplaced: { icon: CalendarX, tone: "bg-warning/10 text-warning", name: "No day yet" },
+  unplaced: { icon: CalendarX, tone: "bg-warning/10 text-warning", name: "Unscheduled" },
 }
 
 /** A visit opens in Visits, a pass in its panel, an overdue bill its customer's panel on Customers (the bill is there), a schedule line in Schedule; the rest have no page of their own. */
@@ -93,7 +93,7 @@ function Row({ item, now, onAction, onDismiss, readOnly }: { item: Attention; no
 
 export function NeedsAttention({ items, now, onAction, onDismiss, readOnly, className }: NeedsAttentionProps) {
   if (items.length === 0) {
-    return <EmptyState className={className} title="Nothing needs you right now" line="Failed charges, visits with no day yet and visits nobody marked done show up here." />
+    return <EmptyState className={className} title="Nothing needs you right now" line="Failed charges, unscheduled visits and visits nobody marked done show up here." />
   }
   const at = now ?? new Date().toISOString()
   return (

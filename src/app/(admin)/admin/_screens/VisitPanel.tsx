@@ -1,5 +1,6 @@
 "use client"
 
+import { PANEL_ROW, PanelFacts, PanelHeading, PanelList, PanelRowEnd, PanelRowText } from "@/components/blocks/PanelParts"
 import Link from "next/link"
 import type { ReactNode } from "react"
 import { JobPill } from "@/components/blocks/JobPill"
@@ -26,27 +27,6 @@ import { propertyLines, yardFromPass } from "./customers-model"
 // (the pass with its number and its other visits, or the booked work); the actions; and the thread, newest first.
 // A tech sees all of it and no buttons. On a laptop it is the drawer over the page; on a phone it is a sheet.
 
-function Subtitle({ id, children }: { id: string; children: ReactNode }) {
-  return (
-    <h3 id={id} className="font-display text-lg leading-tight text-navy">
-      {children}
-    </h3>
-  )
-}
-
-function Facts({ rows }: { rows: [string, ReactNode][] }) {
-  return (
-    <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm">
-      {rows.map(([term, value]) => (
-        <div key={term} className="contents">
-          <dt className="text-muted-foreground">{term}</dt>
-          <dd className="font-medium">{value}</dd>
-        </div>
-      ))}
-    </dl>
-  )
-}
-
 function CustomerBlock({ facts }: { facts: VisitFacts }) {
   const { client, visit } = facts
   const rows: [string, ReactNode][] = [
@@ -56,8 +36,8 @@ function CustomerBlock({ facts }: { facts: VisitFacts }) {
   ]
   return (
     <section aria-labelledby="visit-customer">
-      <Subtitle id="visit-customer">Customer</Subtitle>
-      <Facts rows={rows} />
+      <PanelHeading id="visit-customer">Customer</PanelHeading>
+      <PanelFacts rows={rows} />
     </section>
   )
 }
@@ -70,7 +50,7 @@ function AtTheProperty({ facts, readOnly }: { facts: VisitFacts; readOnly: boole
   const lines = propertyLines(yard, { canSeeContact: !readOnly })
   return (
     <section aria-labelledby="visit-property" data-slot="visit-property">
-      <Subtitle id="visit-property">At the property</Subtitle>
+      <PanelHeading id="visit-property">At the property</PanelHeading>
       {lines.length ? (
         <ul className="mt-2 space-y-1 text-sm">
           {lines.map((line) => (
@@ -89,10 +69,10 @@ function VisitBlock({ facts }: { facts: VisitFacts }) {
   const day = dayOfVisit(visit)
   return (
     <section aria-labelledby="visit-facts">
-      <Subtitle id="visit-facts">Visit</Subtitle>
-      <Facts
+      <PanelHeading id="visit-facts">Visit</PanelHeading>
+      <PanelFacts
         rows={[
-          ["Day", day ? dayLabel(day) : "No day yet"],
+          ["Day", day ? dayLabel(day) : "Unscheduled"],
           ["Time", timeWords(visit)],
           ["Who", visit.personName ?? ""],
           ["Minutes", String(visit.minutes ?? 60)],
@@ -111,7 +91,7 @@ function JobBlock({ facts, today, onOpenVisit }: { facts: VisitFacts; today: str
   const title = pass ? `Season Pass ${pass.number}` : job ? `${job.kind === "repair" || job.kind === "install" ? kindLabel({ kind: job.kind }) : "Booked work"}, ${job.source === "site" ? "from the site" : "taken by the office"}` : "One-off visit"
   return (
     <section aria-labelledby="visit-job" data-slot="visit-job">
-      <Subtitle id="visit-job">Job</Subtitle>
+      <PanelHeading id="visit-job">Job</PanelHeading>
       <p className="mt-2 text-sm">
         <span className="font-medium">{title}</span>
         {facts.money && <span className="text-muted-foreground">{`. ${facts.money}.`}</span>}
@@ -126,17 +106,18 @@ function JobBlock({ facts, today, onOpenVisit }: { facts: VisitFacts; today: str
       </p>
       {job?.lines?.length ? <JobLines lines={job.lines} visitId={visit.id} /> : null}
       {siblings.length > 1 && (
-        <ul className="mt-2 divide-y divide-border text-sm">
+        <PanelList>
           {siblings.map((v) => (
-            <li key={v.id} className="flex items-center gap-3 py-1">
-              <button type="button" onClick={() => onOpenVisit(v.id)} aria-current={v.id === visit.id ? "true" : undefined} className="min-h-11 min-w-0 flex-1 text-left">
-                <span className={v.id === visit.id ? "block font-semibold" : "block font-medium text-primary-dark"}>{kindLabel(v)}</span>
-                <span className="block text-muted-foreground">{dayOfVisit(v) ? dayLabel(dayOfVisit(v)!) : "No day yet"}</span>
+            <li key={v.id}>
+              <button type="button" onClick={() => onOpenVisit(v.id)} aria-current={v.id === visit.id ? "true" : undefined} className={`flex min-h-11 w-full items-center text-left ${PANEL_ROW}`}>
+                <PanelRowText title={kindLabel(v)} detail={dayOfVisit(v) ? dayLabel(dayOfVisit(v)!) : undefined} strong={v.id === visit.id} />
+                <PanelRowEnd>
+                  <JobPill job={visitJob(v, day, TIME_ZONE, pass?.cardFailedAt)} />
+                </PanelRowEnd>
               </button>
-              <JobPill job={visitJob(v, day, TIME_ZONE, pass?.cardFailedAt)} />
             </li>
           ))}
-        </ul>
+        </PanelList>
       )}
     </section>
   )
@@ -155,7 +136,7 @@ function Actions({ facts, data, today, actions }: { facts: VisitFacts; data: Adm
       {states.work === "scheduled" && <DoneForm visit={visit} pass={pass} today={day} actions={actions} />}
       {owed && (
         <section aria-labelledby="visit-pay">
-          <Subtitle id="visit-pay">Record the payment</Subtitle>
+          <PanelHeading id="visit-pay">Record the payment</PanelHeading>
           <PaidByChoice
             visit={visit}
             pending={pay.pending}
@@ -205,8 +186,8 @@ export function VisitPanel({ data, today, visitId, open, onOpenChange, onOpenVis
       open={open}
       onOpenChange={onOpenChange}
       title={visit.clientName}
-      description={`${kindLabel(visit)}${day ? `, ${dayLabel(day)}` : ", no day yet"}`}
-      className="z-50"
+      // The pill carries the state, so the line says only what the visit is and, once it has one, its day.
+      description={`${kindLabel(visit)}${day ? `, ${dayLabel(day)}` : ""}`}
     >
       <div className="flex flex-col gap-6" data-slot="visit-panel">
         <div className="flex flex-wrap items-center gap-2">
@@ -219,7 +200,7 @@ export function VisitPanel({ data, today, visitId, open, onOpenChange, onOpenVis
         <JobBlock facts={facts} today={today} onOpenVisit={onOpenVisit} />
         {!readOnly && <Actions facts={facts} data={data} today={today} actions={actions} />}
         <section aria-labelledby="visit-thread">
-          <Subtitle id="visit-thread">Messages</Subtitle>
+          <PanelHeading id="visit-thread">Messages</PanelHeading>
           <MessageThread messages={facts.messages} newestFirst className="mt-3" />
         </section>
         <Button variant="ghost" className="min-h-11 self-start" onClick={() => onOpenChange(false)}>

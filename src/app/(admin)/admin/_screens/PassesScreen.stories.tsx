@@ -1,11 +1,14 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite"
-import { expect, screen } from "storybook/test"
+import { expect, screen, within } from "storybook/test"
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import type { AdminData } from "@/lib/admin/types"
 import { EMPTY_SETTINGS } from "@/lib/admin/empty-settings"
 import { AdminShell } from "@/components/blocks/AdminShell"
 import { PassesScreen } from "./PassesScreen"
 import { noCardPass } from "./visits-fixture"
+
+// The panel is a dialog in a portal on the body, outside the story's canvas.
+const body = within(document.body)
 
 // `today` is pinned to 12:56 pm Mountain on Thursday, November 12, 2026, the
 // same moment as the Home story, so the season line's marker sits before the
@@ -68,8 +71,8 @@ export const PendingFilter: Story = {
 export const PendingPanel: Story = {
   args: { defaultSelectedId: data.passes.find((p) => p.status === "pending")!.id },
   globals: { viewport: { value: "wide", isRotated: false } },
-  play: async ({ canvas }) => {
-    await expect(await canvas.findByText("Checkout not finished, expires after an hour.")).toBeInTheDocument()
+  play: async () => {
+    await expect(await body.findByText("Checkout not finished, expires after an hour.")).toBeInTheDocument()
   },
 }
 
@@ -95,9 +98,9 @@ export const PhonePanel: Story = {
 export const PanelNoCard: Story = {
   args: { data: { ...data, passes: [noCardPass, ...data.passes] }, defaultSelectedId: noCardPass.id },
   globals: { viewport: { value: "wide", isRotated: false } },
-  play: async ({ canvas }) => {
-    await expect(await canvas.findByText("No card yet, collect at the visit")).toBeInTheDocument()
-    await expect(await canvas.findByRole("button", { name: "Send card link" })).toBeInTheDocument()
-    await expect(canvas.queryByRole("button", { name: "Send card update link" })).not.toBeInTheDocument()
+  play: async () => {
+    await expect(await body.findByText("No card yet, collect at the visit")).toBeInTheDocument()
+    await expect(await body.findByRole("button", { name: "Send card link" })).toBeInTheDocument()
+    await expect(body.queryByRole("button", { name: "Send card update link" })).not.toBeInTheDocument()
   },
 }

@@ -2,15 +2,12 @@ import { ChevronLeft, ChevronRight, TriangleAlert } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { CardTitleHeading } from "@/components/blocks/CardTitleHeading"
-import { EmptyState } from "@/components/blocks/EmptyState"
-import { JobPill } from "@/components/blocks/JobPill"
-import type { AdminData, Visit } from "@/lib/admin/types"
+import { DataGrid } from "@/components/blocks/DataGrid"
+import type { Visit } from "@/lib/admin/types"
 import { KIND_WORDS, TIME_ZONE, shortDate, writtenDate } from "@/lib/admin/format"
-import { visitJob } from "@/lib/admin/jobs"
 import { addDays } from "@/lib/admin/calendar"
-import { cn } from "@/lib/utils"
-import { clockTime } from "./home-model"
-import { personNameOf } from "@/lib/admin/people"
+import { stopColumns } from "./visits-columns"
+import type { VisitRow } from "./visits-model"
 
 // The small pieces of the Schedule screen: the day stepper, the stops of one
 // day in order, the "Moved" card and the line that points at the next week
@@ -37,34 +34,18 @@ export function DayStepper({ day, today, onChange }: { day: string; today: strin
   )
 }
 
-export function StopList({ stops, people, today, selectedId, onSelect }: { stops: Visit[]; people: AdminData["settings"]["people"]; today: string; selectedId?: string; onSelect: (id: string | undefined) => void }) {
-  if (stops.length === 0) return <EmptyState title="No stops" line="Nothing is on the calendar for this day." />
+/** The stops of one day in order: the same DataGrid and the same columns as Visits, so the two lists read alike. */
+export function StopGrid({ rows, onOpen }: { rows: VisitRow[]; onOpen: (id: string) => void }) {
   return (
-    <ol data-slot="stop-list" className="divide-y divide-border">
-      {stops.map((stop) => {
-        const selected = stop.id === selectedId
-        return (
-          <li key={stop.id}>
-            <button
-              type="button"
-              aria-pressed={selected}
-              onClick={() => onSelect(selected ? undefined : stop.id)}
-              className={cn("flex w-full items-center gap-3 py-2.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50", selected && "bg-row-selected")}
-            >
-              <span className="w-7 shrink-0 text-center font-display text-lg text-primary-deep">{stop.stopOrder ?? ""}</span>
-              <span className="w-16 shrink-0 text-sm tabular-nums text-muted-foreground">{stop.startAt ? clockTime(stop.startAt) : ""}</span>
-              <span className="min-w-0 flex-1 text-sm">
-                <span className="block truncate font-medium text-foreground">{stop.clientName}</span>
-                <span className="block text-muted-foreground">
-                  {`${stop.town} · ${KIND_WORDS[stop.kind]} · ${personNameOf(stop, people) || "No one yet"}`}
-                </span>
-              </span>
-              <JobPill job={visitJob(stop, today, TIME_ZONE)} />
-            </button>
-          </li>
-        )
-      })}
-    </ol>
+    <DataGrid
+      columns={stopColumns}
+      data={rows}
+      getRowId={(r) => r.id}
+      onOpen={(row) => onOpen(row.id)}
+      pageSize={50}
+      emptyTitle="No stops"
+      emptyLine="Nothing is on the calendar for this day."
+    />
   )
 }
 

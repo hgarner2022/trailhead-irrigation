@@ -2,7 +2,7 @@ import type { Job } from "@/lib/admin/jobs"
 import { cn } from "@/lib/utils"
 import { StatusPill } from "./StatusPill"
 
-// A visit's two pills (owner, 14 Nov): WORK says what happened to the stop (No day yet, Scheduled, Done, Not done
+// A visit's two pills (owner, 14 Nov): WORK says what happened to the stop (Unscheduled, Scheduled, Done, Not done
 // with its reason, Cancelled) and MONEY says whether it was paid (nothing until the visit is done, then Paid with
 // how, Owed, Bill sent, Failed, all read from the payment rows by src/lib/money/words.ts), so it is obvious at a glance that money was collected. A Scheduled visit whose day has passed keeps its state and
 // gains a small "day passed" note. Named JobPill from step zero and kept so no import churns; it renders a

@@ -90,7 +90,7 @@ export function moneyFigures(data: AdminData, today: string): MoneyFigure[] {
   const sum = (list: { price: number }[]) => formatMoney(list.reduce((n, r) => n + r.price, 0))
   const overdue = billsOverdue(data.jobs, today, TIME_ZONE)
   return [
-    { label: "Charged this month", value: formatMoney(monthComparison(data.monthTotals, year, month).current), href: "/admin/reports" },
+    { label: "Paid this month", value: formatMoney(monthComparison(data.monthTotals, year, month).current), href: "/admin/reports" },
     { label: owedJobs ? `Owed on ${plural(owedJobs, "done job")}` : "Owed on done jobs", value: sum(owed), href: "/admin/visits?money=owed" },
     { label: failed.length ? `Failed charges, ${failed.length}` : "Failed charges", value: sum(failed), href: "/admin/visits?money=failed" },
     { label: "Season total committed", value: formatMoney(committedRevenue(data.passes)), href: "/admin/reports" },

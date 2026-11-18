@@ -62,7 +62,7 @@ export function RevenueScreen({ data, today, embedded = false }: RevenueScreenPr
 
       <div className={cn("grid gap-4 sm:grid-cols-2", owing && "lg:grid-cols-3")}>
         <StatTile label={`Committed this season, ${passesWord(active)}`} value={formatMoney(committedRevenue(data.passes))} />
-        <StatTile label="Charged so far" value={formatMoney(chargedSoFar(data.passes))} />
+        <StatTile label="Paid so far" value={formatMoney(chargedSoFar(data.passes))} />
         {owing && <StatTile label={`Outstanding, ${owing.jobs === 1 ? "1 job" : `${owing.jobs} jobs`}`} value={formatMoney(owing.total)} href="/admin/visits?money=owed,bill-sent" />}
       </div>
 

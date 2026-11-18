@@ -35,7 +35,7 @@ Written Nov 13 2026 for the admin, the day view, New job, the pass page and the 
 ## Schedule
 
 1. **Every move can be done by picking, not only by dragging.** The panel's Move and a "Place" button on each tray row are the main path; drag is the shortcut. Why: Jobber says drag does not work in a mobile browser, and a chair at a phone call needs a form. [11]
-2. **A tray of jobs with no day sits beside the week, as in both Jobber and ServiceTitan.** Why: this is the shape every field-service tool settled on, and it matches Needs a day. [10][11]
+2. **The tray of jobs with no day sits under the week, full width (Hannah, Nov 17 2026: beside the week it squeezed the grid), a heading and then one row per visit with Place on the right.** Why: the week keeps seven equal columns, and the list reads as a list; it matches Needs a day. [10][11]
 3. **A stop card in the week shows time or "any time", customer, town, kind and a state colour; the rest comes on click.** Why: ServiceTitan keeps the card to status colour and icon and puts detail in a flyout. [10]
 4. **A problem is a red outline plus words, and the day says why.** Why: ServiceTitan outlines late jobs and explains in the popup; colour alone fails some people. [1][10]
 5. **Each truck-day shows used time against capacity as a bar and a number, and the number is minutes: "5 h 10 of 7 h".** Why: capacity that cannot be seen gets overbooked; one length encodes it. [1]

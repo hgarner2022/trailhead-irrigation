@@ -2,6 +2,10 @@ import { afterEach, describe, expect, it, vi } from "vitest"
 import { render, screen, within } from "@testing-library/react"
 import { AdminShell } from "./AdminShell"
 
+// The address the rail follows; null is "not in the app" (the catalog), where the `current` prop decides.
+const path = vi.hoisted(() => ({ value: null as string | null }))
+vi.mock("next/navigation", () => ({ usePathname: () => path.value }))
+
 /** jsdom has no matchMedia; answer `(max-width: Npx)` and `(min-width: Npx)` queries for the given width. `innerWidth` is set for the Sidebar primitive's own hook. */
 function stubViewport(width: number) {
   Object.defineProperty(window, "innerWidth", { value: width, configurable: true, writable: true })
@@ -20,7 +24,10 @@ function stubViewport(width: number) {
   )
 }
 
-afterEach(() => vi.unstubAllGlobals())
+afterEach(() => {
+  vi.unstubAllGlobals()
+  path.value = null
+})
 
 const user = { initials: "HG", name: "Hannah" }
 const rail = () => document.querySelector('[data-slot="sidebar"]')
@@ -101,5 +108,42 @@ describe("AdminShell", () => {
       </AdminShell>,
     )
     expect(within(document.querySelector('[data-slot="admin-switcher"]') as HTMLElement).getByRole("button", { name: "Trailhead" })).toBeInTheDocument()
+  })
+})
+
+describe("AdminShell follows the address", () => {
+  const lit = () => within(rail() as HTMLElement).getAllByRole("link").filter((l) => l.getAttribute("aria-current") === "page").map((l) => l.textContent)
+
+  it.each([
+    ["/admin", "Home"],
+    ["/admin/schedule", "Schedule"],
+    ["/admin/schedule?day=2026-11-24", "Schedule"],
+    ["/admin/visits", "Visits"],
+    ["/admin/passes", "Visits"],
+    ["/admin/customers", "Customers"],
+    ["/admin/reports", "Reports"],
+    ["/admin/revenue", "Reports"],
+    ["/admin/settings", "Settings"],
+  ])("%s lights %s, whatever section the server first rendered", (address, label) => {
+    stubViewport(1440)
+    path.value = address
+    render(
+      <AdminShell current="home" user={user}>
+        <p>Screen body</p>
+      </AdminShell>,
+    )
+    expect(lit()).toEqual([label])
+  })
+
+  it("lights the same item in the phone tab bar", () => {
+    stubViewport(390)
+    path.value = "/admin/customers"
+    render(
+      <AdminShell current="home" user={user}>
+        <p>Screen body</p>
+      </AdminShell>,
+    )
+    const current = within(tabbar() as HTMLElement).getAllByRole("link").filter((l) => l.getAttribute("aria-current") === "page")
+    expect(current.map((l) => l.textContent)).toEqual(["Customers"])
   })
 })

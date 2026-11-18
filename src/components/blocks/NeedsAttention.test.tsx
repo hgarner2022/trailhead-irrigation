@@ -93,7 +93,7 @@ describe("NeedsAttention", () => {
     render(<NeedsAttention items={[]} now={now} />)
     expect(rows()).toHaveLength(0)
     expect(document.querySelector('[data-slot="empty-state"]')).toHaveTextContent("Nothing needs you right now")
-    expect(screen.getByText("Failed charges, visits with no day yet and visits nobody marked done show up here.")).toBeInTheDocument()
+    expect(screen.getByText("Failed charges, unscheduled visits and visits nobody marked done show up here.")).toBeInTheDocument()
   })
 
   it("shows visits not closed with the dashed circle, a muted icon and a link to the Schedule", () => {

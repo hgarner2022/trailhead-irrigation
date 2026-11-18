@@ -404,7 +404,7 @@ function visitRows(i: ShapeInput, app: Visit[], all: Visit[], jobs: SoldJob[] = 
   }
   for (const v of all)
     if (appIds.has(v.id) && !v.isPass && v.status === "unscheduled")
-      out.push({ kind: "unplaced", key: v.id, visitId: v.id, message: `${possessive(v.clientName)} ${KIND_WORDS[v.kind] ?? "visit"} has no day yet`, since: i.now.toISOString().replace(".000Z", "Z") })
+      out.push({ kind: "unplaced", key: v.id, visitId: v.id, message: `${possessive(v.clientName)} ${KIND_WORDS[v.kind] ?? "visit"} is unscheduled`, since: i.now.toISOString().replace(".000Z", "Z") })
   return out
 }
 

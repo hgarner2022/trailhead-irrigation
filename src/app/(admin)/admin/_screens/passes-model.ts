@@ -65,13 +65,13 @@ export function cardWords(pass: Pick<Pass, "status" | "cardLast4" | "cardExpires
   return pass.cardExpires ? `${ending}, expires ${expiry(pass.cardExpires)}` : ending
 }
 
-/** A visit's day and window for a table cell or a line: "Apr 26", "Apr 26, 8 to 10 am", or "No day yet". */
-export const visitWhen = (visit: PassVisit | undefined): string => dayWords(visit) || "No day yet"
+/** A visit's day and window for a table cell or a line: "Apr 26", "Apr 26, 8 to 10 am", or "Unscheduled". */
+export const visitWhen = (visit: PassVisit | undefined): string => dayWords(visit) || "Unscheduled"
 
 export interface JobRow {
   kind: PassVisit["kind"]
   name: string
-  /** "Apr 26" or "Apr 26, 8 to 10 am"; "No day yet" before there is one */
+  /** "Apr 26" or "Apr 26, 8 to 10 am"; "Unscheduled" before there is one */
   when: string
   job: Job
   amount: number
@@ -88,7 +88,7 @@ export function jobRows(pass: Pass, today: string): JobRow[] {
 export interface ChargeRow {
   kind: PassVisit["kind"]
   name: string
-  /** the booked day as "Apr 20", else "No day yet" */
+  /** the booked day as "Apr 20", else "Unscheduled" */
   when: string
   amount: number
   /** "Paid Apr 20", blank before */

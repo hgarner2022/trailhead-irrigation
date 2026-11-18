@@ -27,7 +27,7 @@ export const AllStates: Story = {
   render: () => (
     <ul className="flex flex-col gap-3">
       {[
-        ["No day yet", job({ status: "unscheduled", scheduledOn: null })],
+        ["Unscheduled", job({ status: "unscheduled", scheduledOn: null })],
         ["Scheduled", job({})],
         ["Not done, no water on", job({ status: "unscheduled", scheduledOn: null, notDoneReason: "no-water" })],
         ["Done, owed", job({ status: "completed", completedOn: "2026-11-10", scheduledOn: "2026-11-10", payments: [] })],

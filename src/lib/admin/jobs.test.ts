@@ -10,7 +10,7 @@ const state = (row: JobRow, today = TODAY) => jobOf(row, today).state
 describe("jobOf", () => {
   it("has one word for each of the eight states", () => {
     expect(JOB_WORDS).toEqual({
-      "needs-a-day": "No day yet",
+      "needs-a-day": "Unscheduled",
       scheduled: "Scheduled",
       routed: "Routed",
       done: "Done",
@@ -21,7 +21,7 @@ describe("jobOf", () => {
     })
   })
 
-  it("reads No day yet, Scheduled and Routed from the day and the start time", () => {
+  it("reads Unscheduled, Scheduled and Routed from the day and the start time", () => {
     expect(state({ status: "unscheduled" })).toBe("needs-a-day")
     expect(state({ status: "scheduled", scheduledOn: "2026-11-20" })).toBe("scheduled")
     expect(state({ status: "scheduled", scheduledOn: "2026-11-20", startTime: "09:30" })).toBe("routed")
@@ -132,7 +132,7 @@ describe("jobCounts", () => {
 describe("statesOf: the work pill and the money pill", () => {
   const s = (row: JobRow) => statesOf(row, TODAY)
   it("reads the work from the day and the money from the charge", () => {
-    expect(s({ status: "unscheduled" })).toMatchObject({ work: "needs-a-day", money: "not-yet", moneyLabel: "", workLabel: "No day yet", dayPassed: false })
+    expect(s({ status: "unscheduled" })).toMatchObject({ work: "needs-a-day", money: "not-yet", moneyLabel: "", workLabel: "Unscheduled", dayPassed: false })
     expect(s({ status: "scheduled", scheduledOn: "2026-11-20" })).toMatchObject({ work: "scheduled", money: "not-yet" })
     expect(s({ status: "cancelled" })).toMatchObject({ work: "cancelled" })
     expect(s({ status: "completed", completedOn: "2026-11-10" })).toMatchObject({ work: "done", money: "owed", moneyLabel: "Owed" })

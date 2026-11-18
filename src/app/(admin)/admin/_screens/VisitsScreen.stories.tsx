@@ -1,8 +1,11 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite"
-import { expect } from "storybook/test"
+import { expect, within } from "storybook/test"
 import { AdminShell } from "@/components/blocks/AdminShell"
 import { VisitsScreen } from "./VisitsScreen"
 import { VISITS_TODAY, noCardVisitId, passVisitId, visitsData } from "./visits-fixture"
+
+// The panel is a dialog in a portal on the body, outside the story's canvas.
+const body = within(document.body)
 
 // Visits at 12:56 pm Mountain on Thursday, November 12, 2026: the pass visits of the fixture, a pass the office sold
 // with no card, and six one-off visits, one in each state. The header carries New job; a tech sees none. The panel stories open one visit over the list (a drawer on a laptop, a sheet on a phone).
@@ -24,6 +27,7 @@ type Story = StoryObj<typeof meta>
 const wide = { viewport: { value: "wide", isRotated: false } }
 const phone = { viewport: { value: "phone", isRotated: false } }
 
+/** The grid with a row in each state: Scheduled ($145), Unscheduled and Not done (no day, the reason after the pill), Done and owed, Done and paid ("$145 · Paid, check"), Bill sent, and Cancelled. */
 export const Default: Story = {
   globals: wide,
   play: async ({ canvas }) => {
@@ -59,9 +63,9 @@ export const PanelOwedPhone: Story = { args: { defaultVisitId: "office-owed" }, 
 export const PanelOwedSendBill: Story = {
   args: { defaultVisitId: "office-owed" },
   globals: wide,
-  play: async ({ canvas }) => {
-    await expect(await canvas.findByRole("button", { name: "Send a bill" })).toBeInTheDocument()
-    await expect(await canvas.findByText("Texts a pay link, or emails it when there is no mobile.")).toBeInTheDocument()
+  play: async () => {
+    await expect(await body.findByRole("button", { name: "Send a bill" })).toBeInTheDocument()
+    await expect(await body.findByText("Texts a pay link, or emails it when there is no mobile.")).toBeInTheDocument()
   },
 }
 
@@ -69,9 +73,9 @@ export const PanelOwedSendBill: Story = {
 export const PanelDoneSendBill: Story = {
   args: { defaultVisitId: "office-scheduled" },
   globals: wide,
-  play: async ({ canvas, userEvent }) => {
-    await userEvent.click(await canvas.findByLabelText("Send a bill"))
-    await expect(await canvas.findByRole("button", { name: "Mark done and send a bill" })).toBeInTheDocument()
+  play: async ({ userEvent }) => {
+    await userEvent.click(await body.findByLabelText("Send a bill"))
+    await expect(await body.findByRole("button", { name: "Mark done and send a bill" })).toBeInTheDocument()
   },
 }
 
@@ -79,10 +83,10 @@ export const PanelDoneSendBill: Story = {
 export const PanelBillSent: Story = {
   args: { defaultVisitId: "office-billed" },
   globals: wide,
-  play: async ({ canvas }) => {
-    await expect(await canvas.findByText("Bill sent Nov 10, due Nov 24")).toBeInTheDocument()
-    await expect(await canvas.findByRole("button", { name: "Remind" })).toBeInTheDocument()
-    await expect(await canvas.findByRole("link", { name: "Pay link" })).toBeInTheDocument()
+  play: async () => {
+    await expect(await body.findByText("Bill sent Nov 10, due Nov 24")).toBeInTheDocument()
+    await expect(await body.findByRole("button", { name: "Remind" })).toBeInTheDocument()
+    await expect(await body.findByRole("link", { name: "Pay link" })).toBeInTheDocument()
   },
 }
 export const PanelBillSentPhone: Story = { args: { defaultVisitId: "office-billed" }, globals: phone }
@@ -91,9 +95,9 @@ export const PanelBillSentPhone: Story = { args: { defaultVisitId: "office-bille
 export const PanelBillSentTech: Story = {
   args: { defaultVisitId: "office-billed", readOnly: true },
   globals: wide,
-  play: async ({ canvas }) => {
-    await expect(canvas.queryByRole("button", { name: "Remind" })).not.toBeInTheDocument()
-    await expect(canvas.queryByRole("link", { name: "Pay link" })).not.toBeInTheDocument()
+  play: async () => {
+    await expect(body.queryByRole("button", { name: "Remind" })).not.toBeInTheDocument()
+    await expect(body.queryByRole("link", { name: "Pay link" })).not.toBeInTheDocument()
   },
 }
 
@@ -110,9 +114,9 @@ export const PanelPassVisit: Story = { args: { defaultVisitId: passVisitId }, gl
 export const PanelPassVisitNoCard: Story = {
   args: { defaultVisitId: noCardVisitId },
   globals: wide,
-  play: async ({ canvas }) => {
-    await expect(await canvas.findByRole("button", { name: "Mark done and record payment" })).toBeInTheDocument()
-    await expect(await canvas.findByText("Sends the receipt, which says how it was paid. A bill goes with a pay link instead.")).toBeInTheDocument()
+  play: async () => {
+    await expect(await body.findByRole("button", { name: "Mark done and record payment" })).toBeInTheDocument()
+    await expect(await body.findByText("Sends the receipt, which says how it was paid. A bill goes with a pay link instead.")).toBeInTheDocument()
   },
 }
 
@@ -120,10 +124,10 @@ export const PanelPassVisitNoCard: Story = {
 export const PanelProperty: Story = {
   args: { defaultVisitId: "office-scheduled" },
   globals: wide,
-  play: async ({ canvas }) => {
-    await expect(await canvas.findByRole("heading", { name: "At the property" })).toBeInTheDocument()
-    await expect(await canvas.findByText("Gate code 4471")).toBeInTheDocument()
-    await expect(await canvas.findByText("Contact Dana, (303) 555-0111")).toBeInTheDocument()
+  play: async () => {
+    await expect(await body.findByRole("heading", { name: "At the property" })).toBeInTheDocument()
+    await expect(await body.findByText("Gate code 4471")).toBeInTheDocument()
+    await expect(await body.findByText("Contact Dana, (303) 555-0111")).toBeInTheDocument()
   },
 }
 
@@ -131,10 +135,10 @@ export const PanelProperty: Story = {
 export const PanelPropertyTech: Story = {
   args: { defaultVisitId: "office-scheduled", readOnly: true },
   globals: wide,
-  play: async ({ canvas }) => {
-    await expect(await canvas.findByRole("heading", { name: "At the property" })).toBeInTheDocument()
-    await expect(await canvas.findByText("Contact Dana")).toBeInTheDocument()
-    await expect(canvas.queryByText(/Gate code/)).not.toBeInTheDocument()
+  play: async () => {
+    await expect(await body.findByRole("heading", { name: "At the property" })).toBeInTheDocument()
+    await expect(await body.findByText("Contact Dana")).toBeInTheDocument()
+    await expect(body.queryByText(/Gate code/)).not.toBeInTheDocument()
   },
 }
 

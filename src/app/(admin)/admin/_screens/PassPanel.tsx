@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useTransition, type ReactNode } from "react"
+import { PANEL_ROW, PanelFacts, PanelHeading, PanelList, PanelRowEnd, PanelRowText } from "@/components/blocks/PanelParts"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { JobPill } from "@/components/blocks/JobPill"
@@ -24,14 +25,6 @@ import { PENDING_NOTE, cardWords, chargeRows, consentLine, jobRows } from "./pas
 // visit rows, then the change buttons. Client for the cancel dialog and the
 // actions; PassesScreen owns which pass is open.
 
-function Subtitle({ id, children }: { id: string; children: string }) {
-  return (
-    <h3 id={id} className="font-display text-lg leading-tight text-navy">
-      {children}
-    </h3>
-  )
-}
-
 function Facts({ pass }: { pass: Pass }) {
   const facts: [string, ReactNode][] = [
     ["Town", pass.town],
@@ -39,54 +32,41 @@ function Facts({ pass }: { pass: Pass }) {
     ...(pass.accessNote ? ([["Access", pass.accessNote]] as [string, ReactNode][]) : []),
     ["Status", <StatusPill key="status" status={pass.status} />],
   ]
-  return (
-    <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm">
-      {facts.map(([term, value]) => (
-        <div key={term} className="contents">
-          <dt className="text-muted-foreground">{term}</dt>
-          <dd className="font-medium">{value}</dd>
-        </div>
-      ))}
-    </dl>
-  )
+  return <PanelFacts rows={facts as [string, ReactNode][]} className="mt-0" />
 }
 
 function Jobs({ pass, today }: { pass: Pass; today: string }) {
   return (
-    <ul data-slot="pass-jobs" className="mt-2 divide-y divide-border text-sm">
+    <PanelList data-slot="pass-jobs">
       {jobRows(pass, today).map((row) => (
         <li key={row.kind}>
           {/* The row opens the visit's panel (a link to it where there is no host). */}
-          <OpenVisit id={row.visitId ?? ""} className="gap-4 py-1.5">
-            <span className="min-w-0 flex-1">
-              <span className="block font-medium">{row.name}</span>
-              {/* The state says No day yet; the line under the name is for a day and window. */}
-              {row.job.state !== "needs-a-day" && <span className="block text-muted-foreground">{row.when}</span>}
-            </span>
-            <JobPill job={row.job} />
+          <OpenVisit id={row.visitId ?? ""} className={PANEL_ROW}>
+            {/* The state says Unscheduled; the line under the name is for a day and window. */}
+            <PanelRowText title={row.name} detail={row.job.state !== "needs-a-day" ? row.when : undefined} />
+            <PanelRowEnd>
+              <JobPill job={row.job} />
+            </PanelRowEnd>
           </OpenVisit>
         </li>
       ))}
-    </ul>
+    </PanelList>
   )
 }
 
 function Charges({ pass }: { pass: Pass }) {
   return (
-    <ul className="mt-2 divide-y divide-border text-sm">
+    <PanelList>
       {chargeRows(pass).map((row) => (
-        <li key={row.kind} className="flex items-center gap-4 py-2.5">
-          <span className="min-w-0 flex-1">
-            <span className="block font-medium">{row.name}</span>
-            <span className="block text-muted-foreground">{row.when}</span>
-          </span>
-          <span className="text-right">
+        <li key={row.kind} className={`flex items-center ${PANEL_ROW}`}>
+          <PanelRowText title={row.name} detail={row.when} />
+          <PanelRowEnd>
             <span className="block tabular-nums">{formatMoney(row.amount)}</span>
             <span className="block text-muted-foreground">{row.charged}</span>
-          </span>
+          </PanelRowEnd>
         </li>
       ))}
-    </ul>
+    </PanelList>
   )
 }
 
@@ -166,20 +146,20 @@ export function PassDetail({ pass, today, readOnly, actions, run, notice }: { pa
         )}
       </div>
       <section aria-labelledby="pass-jobs">
-        <Subtitle id="pass-jobs">Visits</Subtitle>
+        <PanelHeading id="pass-jobs">Visits</PanelHeading>
         <Jobs pass={pass} today={today} />
       </section>
       <section aria-labelledby="pass-season">
-        <Subtitle id="pass-season">Season</Subtitle>
+        <PanelHeading id="pass-season">Season</PanelHeading>
         <SeasonLine mode="customer" season={pass.season} visits={pass.visits} today={today} className="mt-3" />
       </section>
       <section aria-labelledby="pass-charges">
-        <Subtitle id="pass-charges">Charges</Subtitle>
+        <PanelHeading id="pass-charges">Charges</PanelHeading>
         <Charges pass={pass} />
       </section>
       {pass.status !== "pending" && (
         <section aria-labelledby="pass-change">
-          <Subtitle id="pass-change">Change the pass</Subtitle>
+          <PanelHeading id="pass-change">Change the pass</PanelHeading>
           {readOnly ? (
             <p className="mt-3 text-sm text-muted-foreground">A manager changes the pass.</p>
           ) : (
