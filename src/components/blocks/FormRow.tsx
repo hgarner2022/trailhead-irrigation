@@ -44,9 +44,11 @@ export function FormRow({ label, children, htmlFor, hint, error, hideLabel, clas
           {hint}
         </p>
       )}
-      <p id={errorId} role="alert" className="text-sm text-destructive empty:hidden">
-        {error}
-      </p>
+      {error && (
+        <p id={errorId} role="alert" className="text-sm text-destructive">
+          {error}
+        </p>
+      )}
     </div>
   )
 }
