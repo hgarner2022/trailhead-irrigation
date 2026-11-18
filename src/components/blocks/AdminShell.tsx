@@ -4,7 +4,7 @@ import { useMemo, useState, useSyncExternalStore, type CSSProperties, type React
 import Image from "next/image"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { CalendarDays, ClipboardList, LayoutDashboard, LogOut, Settings2, TrendingUp, Users, type LucideIcon } from "lucide-react"
+import { Briefcase, CalendarDays, ClipboardList, LayoutDashboard, LogOut, Settings2, TrendingUp, Users, type LucideIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
   Sidebar,
@@ -35,7 +35,7 @@ import { UndoToastProvider } from "./UndoToast"
 // layout, and does nothing in the catalog. The tab bar pads for `env(safe-area-inset-bottom)`, which
 // the admin root layout enables with `viewport.viewportFit = "cover"`.
 
-export type AdminSection = "home" | "schedule" | "visits" | "customers" | "reports" | "settings"
+export type AdminSection = "home" | "schedule" | "jobs" | "visits" | "customers" | "reports" | "settings"
 
 export interface AdminShellProps {
   current: AdminSection
@@ -49,11 +49,12 @@ export interface AdminShellProps {
   children: ReactNode
 }
 
-// The order of Build 1: Home, Schedule, Visits, Customers, Reports, Settings. A pass has no item of its own: it
-// opens from a visit or a customer (the Pass column and chip on Visits, "Open pass" on Customers); no button.
+// The order follows the sentence a customer has jobs and a job is done in visits: Home, Schedule, Jobs, Visits, Customers,
+// Reports, Settings. A pass has no item of its own: it is a job, opened from the Jobs screen.
 const NAV: { id: AdminSection; label: string; href: string; icon: LucideIcon }[] = [
   { id: "home", label: "Home", href: "/admin", icon: LayoutDashboard },
   { id: "schedule", label: "Schedule", href: "/admin/schedule", icon: CalendarDays },
+  { id: "jobs", label: "Jobs", href: "/admin/jobs", icon: Briefcase },
   { id: "visits", label: "Visits", href: "/admin/visits", icon: ClipboardList },
   { id: "customers", label: "Customers", href: "/admin/customers", icon: Users },
   { id: "reports", label: "Reports", href: "/admin/reports", icon: TrendingUp },
@@ -142,7 +143,7 @@ function TabBar({ current }: Pick<AdminShellProps, "current">) {
       data-slot="admin-tabbar"
       className="fixed inset-x-0 bottom-0 z-40 border-t border-sidebar-border bg-sidebar pb-[env(safe-area-inset-bottom)] text-sidebar-foreground md:hidden"
     >
-      <ul className="grid grid-cols-6">
+      <ul className="grid grid-cols-7">
         {NAV.map(({ id, label, href, icon: Icon }) => {
           const active = id === current
           return (

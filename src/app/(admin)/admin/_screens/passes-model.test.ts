@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import type { Pass } from "@/lib/admin/types"
-import { cardWords, chargeRows, consentLine, jobRows, passName, passesContext, seasonOf, visitWhen } from "./passes-model"
+import { cardWords, chargeRows, consentLine, jobRows, passName, passesContext, seasonCharges, seasonFacts, seasonOf, seasonVisits, visitWhen } from "./passes-model"
 
 const passes = snapshot.passes as Pass[]
 const TODAY = "2026-11-12T19:56:30Z"
@@ -128,5 +128,29 @@ describe("cardWords", () => {
     expect(cardWords({ status: "active", cardLast4: "4242" })).toBe("Card ending 4242")
     expect(cardWords({ status: "active" })).toBe("No card yet, collect at the visit")
     expect(cardWords({ status: "pending" })).toBe("No card yet")
+  })
+})
+
+describe("the season view's rows", () => {
+  it("lists the facts beside the card, with the access note and the money only when asked for", () => {
+    const pass = { ...passes[0]!, accessNote: "Dog loose", status: "active" as const }
+    expect(seasonFacts(pass).map(([k]) => k)).toEqual(["Town", "Zones", "Access", "Status"])
+    expect(seasonFacts(pass, "$145 owed").at(-1)).toEqual(["Money", "$145 owed"])
+    expect(seasonFacts(pass, undefined, false).map(([k]) => k)).toEqual(["Town", "Zones", "Status"])
+  })
+
+  it("lists one row per visit with its day, then who has it, and its two pills", () => {
+    const pass: Pass = { ...passes[0]!, visits: passes[0]!.visits.map((v, i) => ({ ...v, id: `v${i}`, ...(v.kind === "turn-on" ? { personName: "Ryan Garner" } : {}) })) }
+    const rows = seasonVisits(pass, TODAY)
+    expect(rows).toHaveLength(pass.visits.length)
+    expect(rows[0]).toMatchObject({ name: "Turn-on", id: "v0" })
+    expect(rows[0]!.detail).toContain("Ryan Garner")
+    expect(rows.find((r) => r.job.state === "needs-a-day")?.detail).toBeUndefined()
+  })
+
+  it("writes the charges as dollars and the day paid", () => {
+    const rows = seasonCharges(passes[0]!)
+    expect(rows.map((r) => r.name)).toEqual(chargeRows(passes[0]!).map((r) => r.name))
+    expect(rows[0]!.amount).toMatch(/^\$\d/)
   })
 })

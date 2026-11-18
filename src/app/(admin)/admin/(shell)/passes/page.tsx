@@ -1,20 +1,17 @@
 import "server-only"
-import type { Metadata } from "next"
-import { PassesScreen } from "@/app/(admin)/admin/_screens/PassesScreen"
+import { redirect } from "next/navigation"
 import { getAdminData } from "@/lib/admin/data"
 import { requireAdmin } from "@/lib/auth/guard"
-import { visitActions } from "../visit-action-set"
-import { addInspection, cancelPass, changePreference, resendConfirmation, sendCardUpdateLink, skipVisit } from "../actions"
+import { jobIdOfPass, jobUrl } from "@/lib/admin/links"
 
-export const metadata: Metadata = { title: "Passes" }
-// Always the live numbers, read fresh for the signed-in admin.
+// The Passes page is the Jobs screen now: a pass is a job. An old link, `/admin/passes?pass=<passId>`, opens that pass's job in
+// its panel; `/admin/passes` alone opens the Jobs screen filtered to Season Passes.
 export const dynamic = "force-dynamic"
 
-const actions = { resendConfirmation, sendCardUpdateLink, cancel: cancelPass, addInspection, changePreference, skip: skipVisit }
-
 export default async function PassesPage({ searchParams }: { searchParams: Promise<{ pass?: string }> }) {
-  const principal = await requireAdmin()
+  await requireAdmin()
   const { pass } = await searchParams
-  const data = await getAdminData("live")
-  return <PassesScreen data={data} today={new Date().toISOString()} defaultSelectedId={pass} readOnly={principal.role === "tech"} actions={actions} visitActions={visitActions} />
+  if (!pass) redirect("/admin/jobs?kind=pass")
+  const jobId = jobIdOfPass(await getAdminData("live"), pass)
+  redirect(jobId ? jobUrl(jobId) : "/admin/jobs?kind=pass")
 }

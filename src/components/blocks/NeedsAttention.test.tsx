@@ -42,10 +42,10 @@ describe("NeedsAttention", () => {
     expect(rows().map((r) => r.dataset.kind)).toEqual(["charge-failed", "jobs-failed", "card-expiring", "card-expiring"])
   })
 
-  it("links a row about a pass to Visits, filtered to the pass's job when the row carries it, and leaves a row without one unlinked", () => {
+  it("links a row about a pass to its job on Jobs when the row carries it, to Jobs when it does not, and leaves a row without a pass unlinked", () => {
     render(<NeedsAttention items={items.map((i, n) => (n === 0 ? { ...i, jobId: "job_p3" } : i))} now={now} />)
     const links = screen.getAllByRole("link")
-    expect(links.map((l) => l.getAttribute("href"))).toEqual(["/admin/visits?job=job_p3", "/admin/visits", "/admin/visits"])
+    expect(links.map((l) => l.getAttribute("href"))).toEqual(["/admin/jobs?job=job_p3", "/admin/jobs", "/admin/jobs"])
     expect(rows()[2].querySelector("a")).toBeNull()
   })
 
@@ -66,12 +66,12 @@ describe("NeedsAttention", () => {
     expect(document.body.textContent).not.toMatch(/Unpaid|not paid/)
   })
 
-  it("names an overdue bill, opens its customer and offers Remind; a tech reads it with no button", () => {
+  it("names an overdue bill, opens its job and offers Remind; a tech reads it with no button", () => {
     const overdue: Attention = { kind: "overdue", key: "invoice-i1@2026-12-01", invoiceId: "i1", jobId: "job-1", customerId: "c 1", message: "Andrea's bill of $145 was due Dec 1", since: "2026-12-01T19:00:00Z" }
     const { unmount } = render(<NeedsAttention items={[overdue]} now="2026-12-04T18:00:00Z" />)
     expect(rows()[0]!.querySelector(".sr-only")?.textContent).toBe("Bill overdue: ")
     expect(iconOf(rows()[0]!)).toHaveClass("bg-warning/10", "text-warning")
-    expect(screen.getByRole("link").getAttribute("href")).toBe("/admin/customers?customer=c%201")
+    expect(screen.getByRole("link").getAttribute("href")).toBe("/admin/jobs?job=job-1")
     expect(document.querySelector('[data-slot="attention-action"]')?.textContent).toBe("Remind")
     expect(screen.getByText("2 days ago")).toBeInTheDocument()
     unmount()

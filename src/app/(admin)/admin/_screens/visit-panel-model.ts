@@ -61,7 +61,8 @@ export const visitPrice = (data: Pick<AdminData, "jobs">, visit: Visit): number 
 export const priceWords = (visit: Pick<Visit, "price">) => ((visit.price ?? 0) > 0 ? `$${visit.price!.toLocaleString("en-US")}` : "Quote later")
 
 /** "Spring turn-on, 8 zones · $145": the line's name, then its total; a cancelled line reads "cancelled" in place of the price. */
-export const lineWords = (line: JobLine): string => (line.cancelledAt ? `${line.name} · cancelled` : `${line.name} · $${(line.quantity * line.unitPrice).toLocaleString("en-US")}`)
+export const lineWords = (line: JobLine): string =>
+  line.cancelledAt ? `${line.name} · cancelled` : line.unitPrice === 0 ? `${line.name} · Quote later` : `${line.name} · $${(line.quantity * line.unitPrice).toLocaleString("en-US")}`
 
 export interface VisitFacts {
   visit: Visit

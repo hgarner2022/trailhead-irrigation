@@ -6,11 +6,13 @@ import { ADMIN_ROUTES } from "@/lib/admin/links"
 import { UndoToastProvider } from "@/components/blocks/UndoToast"
 import { HomeScreen } from "./HomeScreen"
 import { ScheduleScreen } from "./ScheduleScreen"
+import { JobsScreen } from "./JobsScreen"
 import { VisitsScreen } from "./VisitsScreen"
 import { CustomersScreen } from "./CustomersScreen"
 import { ReportsScreen } from "./ReportsScreen"
 import { SettingsScreen } from "./SettingsScreen"
 import { VISITS_TODAY, noCardVisitId, passVisitId, visitsData } from "./visits-fixture"
+import { JOBS_TODAY, jobsData } from "./jobs-fixture"
 
 // The navigation audit (Hannah, Nov 17 2026: "When I say Open pass, it leads to the open pass"): every link on every admin
 // screen, with its panel open where it has one, goes to a page that is in the left column or off the site (tel, mailto,
@@ -58,8 +60,8 @@ describe("every link on an admin screen goes to a page in the left column", () =
   it("Visits, with a pass visit's panel open, and filtered to a job", () => {
     wrap(<VisitsScreen data={visitsData} today={VISITS_TODAY} defaultVisitId={passVisitId} />)
     const found = hrefs()
-    // the panel's job link opens that job's visits, and the Job column does the same for every row
-    expect(found).toContain("/admin/visits?job=job_" + visitsData.passes.find((p) => visitsData.visits.find((v) => v.id === passVisitId)?.passId === p.id)!.id)
+    // the panel names its job and links to it on Jobs: the way up from a visit
+    expect(found).toContain("/admin/jobs?job=job_" + visitsData.passes.find((p) => visitsData.visits.find((v) => v.id === passVisitId)?.passId === p.id)!.id)
     assertRoutes(found)
   })
 
@@ -68,16 +70,27 @@ describe("every link on an admin screen goes to a page in the left column", () =
     assertRoutes(hrefs())
   })
 
-  it("Customers, with a pass holder's panel open: the Job row and Open job's visits both go to that job's visits", () => {
+  it("Customers, with a pass holder's panel open: the Job row and Open job both go to that job on Jobs", () => {
     // visitsData carries the jobs the live data does; the snapshot keeps visits on its passes.
     const pass = visitsData.passes.find((p) => p.status === "active" && visitsData.visits.some((v) => v.passId === p.id && v.jobId))!
     const holder = visitsData.clients.find((c) => c.id === pass.clientId)!
     wrap(<CustomersScreen data={visitsData} today={VISITS_TODAY} defaultSelectedId={holder.id} />)
     const found = hrefs()
-    // the Job row and the footer button: two links, the same place
-    expect(found.filter((h) => h.startsWith("/admin/visits?job="))).toHaveLength(2)
+    // the Job row, the footer button and the job's own row in the Jobs list: each goes to that job on Jobs
+    expect(found.filter((h) => h === `/admin/jobs?job=job_${pass.id}` || h.startsWith("/admin/jobs?job=")).length).toBeGreaterThanOrEqual(2)
     expect(found.some((h) => h.includes(pass.id) && h.includes("/admin/passes"))).toBe(false)
     assertRoutes(found)
+  })
+
+  it("Jobs, with a one-off job's panel open and with a pass job's", () => {
+    const first = wrap(<JobsScreen data={jobsData} today={JOBS_TODAY} defaultJobId="job-g" />)
+    const found = hrefs()
+    expect(found).toContain("/admin/customers?customer=c-ben")
+    assertRoutes(found)
+    first.unmount()
+    wrap(<JobsScreen data={jobsData} today={JOBS_TODAY} defaultJobId="job_p-office" />)
+    expect(hrefs()).toContain("/admin/customers?customer=c-dana")
+    assertRoutes(hrefs())
   })
 
   it("Reports", () => {

@@ -1,72 +1,40 @@
 "use client"
 
-import { useState, useTransition, type ReactNode } from "react"
-import { PANEL_ROW, PanelFacts, PanelHeading, PanelList, PanelRowEnd, PanelRowText } from "@/components/blocks/PanelParts"
+import { useState, useTransition } from "react"
+import { PanelHeading } from "@/components/blocks/PanelParts"
+import { PassActions } from "@/components/blocks/PassActions"
+import { PassSeason } from "@/components/blocks/PassSeason"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { JobPill } from "@/components/blocks/JobPill"
-import { OpenVisit } from "./VisitPanelHost"
-import { PassActions } from "@/components/blocks/PassActions"
-import { PassCard } from "@/components/blocks/PassCard"
-import { SeasonLine } from "@/components/blocks/SeasonLine"
-import { StatusPill } from "@/components/blocks/StatusPill"
 import { visitPaid } from "@/lib/admin/jobs"
 import type { Pass } from "@/lib/admin/types"
-import { formatMoney } from "@/lib/admin/metrics"
 import type { Outcome } from "./action-types"
 import type { PassesActions } from "./passes-actions"
-import { PENDING_NOTE, cardWords, chargeRows, consentLine, jobRows } from "./passes-model"
+import { PENDING_NOTE, cardWords, consentLine, seasonCharges, seasonFacts, seasonVisits } from "./passes-model"
+import { useOpenVisit } from "./VisitPanelHost"
 
-// The body of the Passes side panel: who and what the pass is, its status
-// (a pending pass says it is an unpaid attempt), the consent and the card
-// (an active pass sold by the office may have none: "No card yet, collect at
-// the visit", with Send card link beside it), the jobs with their day and
-// window and state, the charges and the season line, all read from the same
-// visit rows, then the change buttons. Client for the cancel dialog and the
-// actions; PassesScreen owns which pass is open.
+// What the Jobs panel and the Customers panel show for a Season Pass. `PassSeasonView` is the season (the PassSeason block) with
+// the visit rows opening the visit panel of the screen it is on; `PassChange` is the pass's own buttons (add the July
+// inspection, change a timing preference, skip a visit, open it in Stripe), which only a manager of the Jobs panel gets, and
+// `CancelDialog` is Cancel pass. Client for the dialogs and for the open-visit context.
 
-function Facts({ pass }: { pass: Pass }) {
-  const facts: [string, ReactNode][] = [
-    ["Town", pass.town],
-    ["Zones", pass.zones],
-    ...(pass.accessNote ? ([["Access", pass.accessNote]] as [string, ReactNode][]) : []),
-    ["Status", <StatusPill key="status" status={pass.status} />],
-  ]
-  return <PanelFacts rows={facts as [string, ReactNode][]} className="mt-0" />
-}
-
-function Jobs({ pass, today }: { pass: Pass; today: string }) {
+/** The season view of one pass: the card, the visits with their pills, the season line and the charges; "Send card link" beside the card line for a pass with no card. */
+export function PassSeasonView({ pass, today, money, idPrefix, cardAction, withAccess = true, withConsent = true }: { pass: Pass; today: string; money?: string; idPrefix?: string; cardAction?: React.ReactNode; withAccess?: boolean; withConsent?: boolean }) {
+  const open = useOpenVisit()
   return (
-    <PanelList data-slot="pass-jobs">
-      {jobRows(pass, today).map((row) => (
-        <li key={row.kind}>
-          {/* The row opens the visit's panel (a link to it where there is no host). */}
-          <OpenVisit id={row.visitId ?? ""} className={PANEL_ROW}>
-            {/* The state says Unscheduled; the line under the name is for a day and window. */}
-            <PanelRowText title={row.name} detail={row.job.state !== "needs-a-day" ? row.when : undefined} />
-            <PanelRowEnd>
-              <JobPill job={row.job} />
-            </PanelRowEnd>
-          </OpenVisit>
-        </li>
-      ))}
-    </PanelList>
-  )
-}
-
-function Charges({ pass }: { pass: Pass }) {
-  return (
-    <PanelList>
-      {chargeRows(pass).map((row) => (
-        <li key={row.kind} className={`flex items-center ${PANEL_ROW}`}>
-          <PanelRowText title={row.name} detail={row.when} />
-          <PanelRowEnd>
-            <span className="block tabular-nums">{formatMoney(row.amount)}</span>
-            <span className="block text-muted-foreground">{row.charged}</span>
-          </PanelRowEnd>
-        </li>
-      ))}
-    </PanelList>
+    <PassSeason
+      pass={pass}
+      today={today}
+      facts={seasonFacts(pass, money, withAccess)}
+      consent={withConsent ? consentLine(pass.consent) : undefined}
+      card={cardWords(pass)}
+      cardAction={cardAction}
+      pendingNote={pass.status === "pending" ? PENDING_NOTE : undefined}
+      visits={seasonVisits(pass, today)}
+      charges={seasonCharges(pass)}
+      onOpenVisit={open ?? undefined}
+      idPrefix={idPrefix}
+    />
   )
 }
 
@@ -113,67 +81,22 @@ export function CancelDialog({ pass, open, onOpenChange, onCancel }: { pass: Pas
   )
 }
 
-export function PassDetail({ pass, today, readOnly, actions, run, notice }: { pass: Pass; today: string; readOnly: boolean; actions?: PassesActions; run: (call: () => Promise<Outcome>, done?: string) => void; notice: string }) {
+/** "Change the pass": add the July inspection, change a timing preference while the visit has no day, skip a visit; and the link to the pass in Stripe. */
+export function PassChange({ pass, actions, run }: { pass: Pass; actions?: PassesActions; run: (call: () => Promise<Outcome>, done?: string) => void }) {
+  if (pass.status === "pending") return null
   return (
-    <div className="flex flex-col gap-6">
-      <p role="status" className="text-sm text-muted-foreground empty:hidden">
-        {notice}
-      </p>
-      <div className="flex items-start gap-5">
-        <PassCard pass={pass} size="thumb" interactive={false} className="shrink-0" />
-        <Facts pass={pass} />
-      </div>
-      {pass.status === "pending" && (
-        <p data-slot="pass-pending-note" className="text-sm text-muted-foreground">
-          {PENDING_NOTE}
-        </p>
-      )}
-      {/* On their own lines, not in the facts grid: beside the thumbnail on a phone they would wrap four deep. */}
-      <p data-slot="pass-consent" className="text-sm">
-        <span className="text-muted-foreground">Consent </span>
-        <span className="font-medium">{consentLine(pass.consent)}</span>
-      </p>
-      <div data-slot="pass-card-line" className="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
-        <p>
-          <span className="text-muted-foreground">Card </span>
-          <span className="font-medium">{cardWords(pass)}</span>
-        </p>
-        {/* A pass sold with no card gets its link from here; a pass with a card has Send card update link in the footer. */}
-        {!readOnly && pass.status === "active" && !pass.cardLast4 && (
-          <Button variant="outline" size="sm" onClick={() => (actions ? run(() => actions.sendCardUpdateLink(pass.id), "Card link sent.") : console.info("send card link", [pass.number]))}>
-            Send card link
-          </Button>
-        )}
-      </div>
-      <section aria-labelledby="pass-jobs">
-        <PanelHeading id="pass-jobs">Visits</PanelHeading>
-        <Jobs pass={pass} today={today} />
+    <>
+      <section aria-labelledby="pass-change">
+        <PanelHeading id="pass-change">Change the pass</PanelHeading>
+        <PassActions
+          pass={pass}
+          voice="admin"
+          className="mt-3"
+          onAddInspection={(id) => (actions ? run(() => actions.addInspection(id)) : console.info("add inspection", [id]))}
+          onChangePreference={(kind, preference) => (actions ? run(() => actions.changePreference(pass.id, kind, preference)) : console.info("change preference", [pass.number, kind, preference]))}
+          onSkip={(id, kind) => (actions ? run(() => actions.skip(id, kind)) : console.info("skip visit", [id, kind]))}
+        />
       </section>
-      <section aria-labelledby="pass-season">
-        <PanelHeading id="pass-season">Season</PanelHeading>
-        <SeasonLine mode="customer" season={pass.season} visits={pass.visits} today={today} className="mt-3" />
-      </section>
-      <section aria-labelledby="pass-charges">
-        <PanelHeading id="pass-charges">Charges</PanelHeading>
-        <Charges pass={pass} />
-      </section>
-      {pass.status !== "pending" && (
-        <section aria-labelledby="pass-change">
-          <PanelHeading id="pass-change">Change the pass</PanelHeading>
-          {readOnly ? (
-            <p className="mt-3 text-sm text-muted-foreground">A manager changes the pass.</p>
-          ) : (
-            <PassActions
-              pass={pass}
-              voice="admin"
-              className="mt-3"
-              onAddInspection={(id) => (actions ? run(() => actions.addInspection(id)) : console.info("add inspection", [id]))}
-              onChangePreference={(kind, preference) => (actions ? run(() => actions.changePreference(pass.id, kind, preference)) : console.info("change preference", [pass.number, kind, preference]))}
-              onSkip={(id, kind) => (actions ? run(() => actions.skip(id, kind)) : console.info("skip visit", [id, kind]))}
-            />
-          )}
-        </section>
-      )}
       {pass.stripeUrl && (
         <div className="flex flex-wrap gap-2">
           <Button asChild variant="outline" size="sm">
@@ -184,6 +107,6 @@ export function PassDetail({ pass, today, readOnly, actions, run, notice }: { pa
           </Button>
         </div>
       )}
-    </div>
+    </>
   )
 }
