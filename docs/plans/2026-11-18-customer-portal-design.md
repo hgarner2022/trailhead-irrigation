@@ -38,9 +38,9 @@ PHONE: Home (375)              LAPTOP: Home (1280, max-w-5xl)
 +----------------------+       +-----------------------------------------------+
 | [logo]  Hi, Andrea   |       | [logo] Home Visits Jobs Pass Details  Andrea  |
 | Home Visits Jobs ... |       |-----------------------------------------------|
-|----------------------|       | Bill due: Spring repair $115    [Pay now]     |
-| Bill due $115        |       |-----------------------+-----------------------|
-| Due Dec 1  [Pay now] |       | NEXT VISIT            |  [holographic pass    |
+|----------------------|       | Bill sent: Spring repair $115, due Dec 1 [Pay]|
+| Bill sent, $115      |       |-----------------------+-----------------------|
+| due Dec 1  [Pay now] |       | NEXT VISIT            |  [holographic pass    |
 |----------------------|       | Tue, Apr 28           |   card: PassCard]     |
 | NEXT VISIT           |       | Arrive 9 to 11 am     |   Season Pass 2027    |
 | Tue, Apr 28          |       | Ryan · Spring turn-on |   Turn-on  Apr 28     |
@@ -56,7 +56,7 @@ PHONE: Home (375)              LAPTOP: Home (1280, max-w-5xl)
 +----------------------+
 ```
 
-**Home, in order.** (1) Bill due banner, only when a bill is open: "Bill due: Spring repair, $115, due Dec 1" with **Pay now** (after the day: "Overdue since Dec 1"). (2) **Next visit card**: day, window ("Arrive between 9 and 11 am"), the person's first name ("Ryan"), what ("Spring turn-on"), "Must be home" when the property says so, and **Change my day**. With no day yet: "Pick a day" with the same three days. With no visits: "Nothing booked. Book Online". (3) **Pass card**: the existing `PassCard` (holographic, tilt on a phone), over the existing season line, linking to the pass screen. (4) **Your jobs**: the latest three.
+**Home, in order.** (1) Bill sent banner, only when a bill is open: "Bill sent: Spring repair, $115, due Dec 1" with **Pay now** (after the day: "Overdue since Dec 1"). (2) **Next visit card**: day, window ("Arrive between 9 and 11 am"), the person's first name ("Ryan"), what ("Spring turn-on"), "Must be home" when the property says so, and **Change my day**. With no day yet: "Pick a day" with the same three days. With no visits: "Nothing booked. Book Online". (3) **Pass card**: the existing `PassCard` (holographic, tilt on a phone), over the existing season line, linking to the pass screen. (4) **Your jobs**: the latest three.
 
 **Change my day** opens the existing `PickDayButtons` with the three days from `visits.areaDays`, each as "Tuesday, May 5". Tapping one calls `visits.pick`; the screen says "Moved to Tuesday, May 5. We texted you the new date." The earlier day is shown as gone. Failure says "We couldn't save that day. Try another, or call Ryan at (970) 692-7270."
 
@@ -70,7 +70,7 @@ PHONE: Home (375)              LAPTOP: Home (1280, max-w-5xl)
 | Not done (no day again) | **Needs a new day**, with the reason ("no water on") and Pick a day |
 | Cancelled (or a skipped pass visit) | **Cancelled** / **Skipped** |
 
-**Jobs (`/account/jobs`, `/account/jobs/[jobId]`).** One row per job: name, date sold, total, money word. The job screen shows its lines and total ("Spring turn-on $145"; a cancelled line struck through), its visits, and **Money**: each payment ("Paid Nov 3, card $145", "Paid, check"), a **Receipt** link on every payment, and the open bill with **Pay now**. Money words come from `src/lib/money/words.ts` through one customer wording: Paid, Due (with the day), Overdue, never "Owed". **Pay now** opens `/pay/<invoiceId>?token=` with a token the server signs for the signed-in customer. **Receipt** opens the card receipt link when the payment has one, otherwise a plain printable page built from the payment row (check and Venmo payments have no card receipt). A Season Pass job shows `PassSeason` under the same heading, so the pass is a job like any other.
+**Jobs (`/account/jobs`, `/account/jobs/[jobId]`).** One row per job: name, date sold, total, money word. The job screen shows its lines and total ("Spring turn-on $145"; a cancelled line struck through), its visits, and **Money**: each payment ("Paid Nov 3, card $145", "Paid, check"), a **Receipt** link on every payment, and the open bill with **Pay now**. Money words come from `src/lib/money/words.ts` through one customer wording: Paid, "$145 unpaid" on a job, "Bill sent, due Dec 1" on a bill, Overdue after the day; never "Owed". **Pay now** opens `/pay/<invoiceId>?token=` with a token the server signs for the signed-in customer. **Receipt** opens the card receipt link when the payment has one, otherwise a plain printable page built from the payment row (check and Venmo payments have no card receipt). A Season Pass job shows `PassSeason` under the same heading, so the pass is a job like any other.
 
 **Season Pass (`/account/pass`).** As today: pass card and Save as image, the season line, pick a day, preferences, July add-on, skip, Reserve next season (from Nov 1), the card update, earlier seasons, cancel.
 
@@ -102,7 +102,7 @@ PHONE: Home (375)              LAPTOP: Home (1280, max-w-5xl)
 | Handlers to add (all `customerSelf`, scoped to the caller's customer) | `jobs.list` / `jobs.get` (lines, visits, payments, open bill; no notes or events); `invoices.list` and `invoices.get` for a customer; `customers.updateSelf` (name, phone, email through a confirm link); `properties.updateSelf` (yard facts); `payments.receipt`; `customers.startCardUpdate` |
 | Handlers to change | `visits.pick` and `visits.areaDays`: allow a non-pass visit with a window; add the two-day cut-off. The old ask-to-move handler stays for the office's inbox; no screen uses it |
 | Blocks to reuse | `PassCard`, `PassSeason`, `SeasonLine`, `StatusPill`, `PickDayButtons`, `SignInCard`, money words; new: `NextVisitCard`, `BillBanner`, `AccountNav`, `JobRow`, `ReceiptLine`, each pure props |
-| Stories | Home (next visit, no visit, bill due, no pass), Visits, Job (paid, part paid, bill out), Details, Change my day (success, cut-off passed, nothing open), at 375 and 1280 |
+| Stories | Home (next visit, no visit, bill sent, no pass), Visits, Job (paid, part paid, bill out), Details, Change my day (success, cut-off passed, nothing open), at 375 and 1280 |
 | Tables | None |
 
 ## 7. Open questions for Hannah
