@@ -13,6 +13,7 @@ Method: every number below comes from a command run on `main` at `c38bdf1` (git 
 | Delete code? | A little now, more at the Jobber exit. Deleting code is not the big win. |
 | Delete the design codes? | Delete `ui/` and `pro-blocks/` from your disk, not the repo: they are not in the repo (see 4). Keep the design gate; it is 298 lines and earns its keep. |
 | Biggest risk | Pushing any branch migrates production (one `DATABASE_URL`), and `/admin` shows fixture data when one env var is missing (see 8). |
+| Organisation | Code folders are clear. The project around them is not: `main` is unprotected and the repo is public, 12 dead worktrees take 16 GB, the README describes only the website. |
 | Biggest cleanup | `docs/`: 26 of 40 plan files are finished history, `CLAUDE.md` is 72 KB, there is no one-page architecture. |
 
 ## What world-class means here
@@ -263,7 +264,85 @@ Test layout: tests sit beside the file (`x.test.ts`), stories beside the compone
 
 **Grade: debt.** The one change: preview isolation (step 1), then error reporting (step 3). Those two fix what would hurt most on the first bad day.
 
-## 9. Scorecard
+## 9. Organisation
+
+Hannah, 18 Nov: "Make sure GitHub, our folder structure, everything that we do is very organized." Facts from `git fetch --prune`, `git branch -r`, `gh pr list`, `gh repo view`, `gh api`, `git ls-files`, `find` and `du`.
+
+### 9a. GitHub
+
+| Item | Finding | Verdict |
+|---|---|---|
+| Remote branches | 6 on origin: `main`, `claude/architecture-audit-dca82c` (this PR), `claude/messages-rewrite-210c25` (PR #61, 10 ahead), `claude/customer-portal-9b1b64` (merged in #63, 0 ahead, not deleted), `checkout-basics-2` (13 Nov, 2 commits not in `main`), `prototype-round-4` (12 Nov, 2 commits not in `main`) | Delete the merged one; check the other two (a squash can hide shipped work), then delete |
+| Pull requests, default branch | 65 PRs: 62 merged, 1 closed unmerged, 2 open (#61, #65); default branch `main` | Healthy: nothing stale open |
+| Branch protection / rulesets | `gh api .../branches/main/protection` returns 404 "Branch not protected"; `.../rulesets` returns `[]`. No required checks, no review rule. Auto-merge off. `delete_branch_on_merge` is on; squash and merge commits are both allowed | Debt: nothing stops a red or unreviewed push to `main` |
+| Visibility | **PUBLIC**, no `LICENSE` | Decide on purpose. The repo holds the whole app, `docs/plans` with the Jobber audit (counts of clients, visits, invoices), pricing strategy, `competitor-pricing-research.md`, and a 447 KB anonymised customer snapshot. No secrets were seen (`.env*` is ignored), but a public repo with no licence is also "all rights reserved" by default. Private costs nothing on Vercel |
+| Description and topics | "Marketing website for Trailhead Lawn & Irrigation LLC"; no topics | Stale: it is the site and the business app |
+| README | 50 lines: "Marketing website", "Next.js 14+", pages list, "Erie, Longmont, and Weld County". Says nothing of `/admin`, the API, Stripe, Twilio, Neon, the checkout, the portal, Storybook or the gate | Debt |
+| Templates | no `.github/` at all: no PR template, no issue templates, no CODEOWNERS, no workflow | Gap |
+| PR titles | Plain sentence-case words, often prefixed by track: "Design: ...", "Step 6: ...", "Status words: ..." (#50 to #64). Good and readable | Keep; write it down |
+| PR bodies | A numbered list of what changed, a "No migration" or migration line, ends with the Claude Code line | Keep; make it the template |
+| Commits | 165 of the last 200 carry a `Co-Authored-By` trailer; median subject is 93 characters (long); 32 of 200 are merge commits | Fine, but subjects past about 72 characters wrap in `git log` and GitHub |
+| Branch names | 52 of 65 PR heads are plain (`step-6-legacy`, `jobs-screen`), 13 are `claude/<adjective-name-hex>`, which says nothing | One scheme: `<track>/<what>` |
+
+### 9b. Folder tree and verdicts
+
+Tracked files by top-level folder (`git ls-files`): `src` 868, `docs` 60, `public` 63, `drizzle` 47, `Assets` 21, `scripts` 21, `.storybook` 4, `content` 1, `email` 1, plus 19 root files.
+
+| Top-level | Verdict | Why |
+|---|---|---|
+| `src/` | belongs | Clear: `app`, `api`, `components/{ui,sections,blocks}`, `db`, `lib/*`, `emails`, `sms`. Loose items listed in 9c |
+| `docs/` | belongs, reorganise | see section 5; `docs/screens` and `docs/screenshots` are two folders for 10 images |
+| `drizzle/` | belongs | generated; names `0003_lyrical_nightshade`, `0004_narrow_colonel_america` are Drizzle's random words; never rename a pushed migration |
+| `scripts/` | belongs | one folder per concern would help: `design-gate/` already is |
+| `public/` | belongs | 59 images, flat, kebab-case, descriptive; 10 are referenced nowhere (below) |
+| `.storybook/` | belongs | 4 files |
+| `Assets/` | move out | 21 files, 30 MB in a public repo; 7 are byte-identical copies of `public/images` files (`Lawn.jpg`/`lawn.jpg`, `Boulder-road.jpg`, `Primarylogoorgange.png`/`logo-badge.png`, `PrimaryLogoRyan.png`/`logo.png`, `Ryan_family.jpeg`, `erie-photo-1.jpg`/`erie.jpg`, `Service area.png`); names with spaces and capitals ("Image-1 2 (2) 1 1.png", "Boulder colroado .jpg", "logo-horizontal 1 (2).png"); no code reads it (only `CLAUDE.md` and a March plan name it) |
+| `content/` | move | one file, `gbp-posts.md`, 85 lines of Google Business posts: `docs/marketing/` |
+| `email/` | move | one file, `campaigns.mjs`, read only by two scripts: `scripts/email/` |
+| root `*-research.md` (3 files, 1,199 lines) | move | `docs/research/` |
+| `.claude/worktrees/` | delete 12 of 15 | 15 worktrees, 16 GB. 12 are clean and 0 commits ahead of `origin/main` (`audit-fixes-1`, `charming-meitner`, `charming-robinson`, `clever-dewdney`, `customer-portal`, `hopeful-stonebraker`, `interesting-williams`, `jolly-wilson`, `musing-lamarr`, `serene-euclid`, `status-words`, `youthful-mccarthy`). Keep `architecture-audit` (this), `messages-rewrite` (11 ahead) and `booking-design` (working). Hannah or the parent removes them with `git worktree remove`; I did not, because an idle session may still own one |
+| `.local-data/` | belongs (ignored) | 55 MB of GSC, GA4, GBP, research and the raw Jobber pull; has a `README.md`; never committed |
+| `ui/`, `pro-blocks/` | delete from the folder | section 4 |
+| `debug-storybook.log`, `tsconfig.tsbuildinfo`, `.next`, `.vercel`, `.DS_Store` | belongs (ignored) | local only |
+
+Image naming: `public/images` is consistent (lowercase, hyphens, subject first) except the logos (`logo.png`, `logo2.png`, `logo3.png`, `logo-new.png`, `logo-transparent.png`, `logo-badge.png`, `logo-horizontal.png`, `logo-horizontal-trim.png`, `logo.jpg`: 9 files, two unreferenced) and `ryan.jpg`, `ryan-avatar.jpg`, `ryan-family.jpeg`, `ryan-family-2.jpg`. Unreferenced in `src`, `docs`, `content`, `scripts`: `boulder-foothills-fence.jpg`, `erie-aerial-fall-front-range.jpg`, `garden-drip-rows.jpg`, `home-lawn-fall.jpg`, `logo-transparent.png`, `logo.png`, `micro-spray-garden-bed.jpg`, `mp-rotator-nozzle.jpg`, `new-system-sprinklers-running.jpg`, `rachio-app-usage.png` (`CLAUDE.md` names some as site photos, so check Search Console image traffic before deleting). Do not rename or move anything in `public/images`: these URLs are indexed and the marketing pages must not change.
+
+### 9c. Target trees
+
+Repo root, every change:
+
+| Move or change | From | To |
+|---|---|---|
+| Add | none | `.github/workflows/ci.yml`, `.github/pull_request_template.md` |
+| Move | `content/gbp-posts.md` | `docs/marketing/gbp-posts.md` |
+| Move | `email/campaigns.mjs` (2 imports: `scripts/build-email.mjs`, `scripts/brevo-campaign.mjs`) | `scripts/email/campaigns.mjs` |
+| Move | `competitor-pricing-research.md`, `smart-irrigation-research.md`, `software-platform-research.md` | `docs/research/` |
+| Merge | `docs/screens/`, `docs/screenshots/` | `docs/screenshots/` |
+| Move | `docs/jobber-api-facts.md`, `docs/jobber-routine.md` | `docs/jobber/` (deleted at the exit) |
+| Move out | `Assets/` (21 files) | Hannah's Drive; delete the 7 duplicates |
+| Archive | 26 plan files | `docs/plans/archive/` |
+| Remove | `ui/`, `pro-blocks/` | out of the folder |
+| Keep | `.storybook/ docs/ drizzle/ public/ scripts/ src/`, `components.json`, config files, `README.md`, `CLAUDE.md`, `vercel.json` | unchanged |
+
+`src/`, every move (each is a `git mv` plus import rewrites that `tsc` and the tests verify):
+
+| From | To | Importers |
+|---|---|---|
+| `lib/blog.ts`, `city-data.ts`, `freeze-data.ts`, `rachio-data.ts`, `rebate-data.ts`, `reviews.ts`, `seo.ts`, `nav.ts`, `jobber.ts` | `lib/site/` (marketing data; the gate then allows marketing to import only `lib/site`, `lib/pricing`, `lib/utils`, `lib/fonts`) | 3, 8, 1, 4, 3, 18, 29, 9, 3 |
+| `lib/season-pass.ts`, `lib/services.ts` (shared by site and app) | `lib/pricing/` | 21, 9 |
+| `lib/env.ts`, `lib/flags.ts` | `lib/config/` | 29, 2 |
+| `lib/analytics.ts`, `lib/analytics-url.ts` | `lib/analytics/` | 2, 1 |
+| `lib/email-check.ts` | `lib/format/` | 5 |
+| `lib/pass-card-image.ts` | `lib/pass/` | 1 |
+| `components/ConversionTracking.tsx`, `GoogleAnalytics.tsx` | `components/analytics/` | 2 |
+| `hooks/use-mobile.ts` (one importer, `ui/sidebar.tsx`) | `components/ui/use-mobile.ts`, delete `src/hooks` | 1 |
+| `emails/`, `sms/` (14 + 2 files) | `lib/messaging/templates/{email,sms}` | after the messages PR merges |
+| `app/(admin)/admin/_screens/` (64 files) | one subfolder per screen | section 11 step 12 |
+| Stay | `lib/utils.ts` (93 importers, shadcn path), `lib/fonts.ts`, `auth.ts`, `proxy.ts` (Next and Auth.js conventions), `test/server-only.ts` (Vitest alias) | n/a |
+
+**Grade: needs work.** The code tree is clear; the project around it is not (6 stale or unclear branches, 12 dead worktrees at 1.1 GB each, an unprotected public `main`, a README that describes 5% of the repo, 30 MB of untracked-in-use images). The one change: branch protection with a required CI check, which also forces the template and workflow into existence.
+
+## 10. Scorecard
 
 | Area | Grade | The one change |
 |---|---|---|
@@ -276,10 +355,11 @@ Test layout: tests sit beside the file (`x.test.ts`), stories beside the compone
 | 6 Consistency and size | solid | one shared money and day formatter |
 | 7 Tests and gates | solid | CI workflow on every PR |
 | 8 Operations | debt | error reporting plus a fail-closed admin data default |
+| 9 Organisation | needs work | protect `main` with a required CI check; add README, template, stale-branch and worktree cleanup |
 
 Overall: **solid code on a thin operations floor.** The product core (API, money, events, tests) is strong. The risks are ones a world-class setup removes cheaply, in a week of small PRs.
 
-## 10. Cleanup plan
+## 11. Cleanup plan
 
 Each step is its own PR. "Touches" lists files so the parent can sequence them against the three sessions now building (messages, customer portal, booking design). A step marked "any time" touches nothing those sessions are likely to edit. Lines are net.
 
@@ -298,6 +378,12 @@ Each step is its own PR. "Touches" lists files so the parent can sequence them a
 | 11 | **Widen the gate.** Add `admin, jobs, money, events, settings, auth, queue, customer` to `SERVER_SEGMENTS`; add the `@/db` rule for pages; tests in `check-design.test.mjs` | `scripts/design-gate/imports.mjs`, `scripts/check-design.test.mjs` | any time | +40 |
 | 12 | **Flatten `_screens`.** One subfolder per screen (`jobs/`, `schedule/`, `settings/`...), mechanical `git mv` | `src/app/(admin)/admin/_screens/*` and every importer | only when no admin build session is open | 0 |
 | 13 | **Remove unused primitives.** `avatar`, `command`, `popover`, `scroll-area`, `cmdk` | `src/components/ui/*`, `globals.css`, `package.json` | after messages and portal merge | -441 |
+| 14 | **Protect `main`.** Require the CI check from step 4 and a pull request; keep squash only; add `pull_request_template.md` (numbered changes, migration line, Claude Code line) | GitHub settings (Hannah), new `.github/pull_request_template.md` | after step 4 | +20 |
+| 15 | **README and repo card.** Rewrite README (site and app, commands, where docs live); set the repo description and topics; decide public or private and add a `LICENSE` if it stays public | `README.md`, GitHub settings | any time | -20 |
+| 16 | **Branch and worktree sweep.** Delete `claude/customer-portal-9b1b64`; check then delete `checkout-basics-2` and `prototype-round-4`; remove the 12 clean worktrees (16 GB freed); adopt `<track>/<what>` branch names | GitHub, `.claude/worktrees` (local) | any time, after confirming no idle session owns a worktree | 0 |
+| 17 | **Root tidy.** Move `content/`, `email/`, the 3 research files, `docs/screens` and `docs/jobber-*`; fix the 2 script imports | `content/`, `email/`, `scripts/build-email.mjs`, `scripts/brevo-campaign.mjs`, `docs/*` | with step 5 | 0 |
+| 18 | **Assets out.** Move `Assets/` to Drive; delete the 7 duplicates and, after a Search Console check, the 10 unreferenced images | `Assets/`, `public/images/*` | any time | 0 code, -30 MB tracked |
+| 19 | **`src/lib` regroup.** The moves in 9c, one PR per group (site, pricing, config, analytics), each verified by `tsc` and the tests; then switch the gate's marketing rule from a denylist to an allowlist | about 85 importer files, `scripts/design-gate/imports.mjs` | between merges; `lib/env` has 29 importers, so do it when no build session is open | 0 |
 
 Waiting for the Jobber exit, in one PR plus one migration:
 
@@ -309,7 +395,7 @@ Waiting for the Jobber exit, in one PR plus one migration:
 
 Waiting for a season to pass (spring 2027): `passes.*` names, `truckId` aliases and `legacy_pass_id` with `resolvePassJob` (about 150 lines, 14 files), only after Stripe metadata and signed links minted before Nov 2026 are gone.
 
-Order I would run: 1, 2, 4, 9, 11 this week (small, independent, no conflicts), 3 when Hannah picks the error tool, then 5 to 8 together between merges, then 10 and 13.
+Order I would run: 1, 2, 4, 9, 11 this week (small, independent, no conflicts), 3 when Hannah picks the error tool, then 15 and 16, then 5 to 8 and 17 together between merges, then 14, 18, 19, 10 and 13.
 
 ## What I did not check
 
