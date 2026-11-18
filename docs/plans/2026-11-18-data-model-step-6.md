@@ -152,6 +152,10 @@ select count(*) from job where sold_on is null and status <> 'pending' and sourc
 select count(*) from event where organization_id is null;                                                                -- 0
 ```
 
+## Reversed after the merge (Nov 18 2026)
+
+The contact form part of decision 5 is undone in the follow-up PR: `src/app/api/contact/route.ts` only sends its email, and `src/lib/contact/quote-job.ts` is deleted. Hannah: a form post is unknown until Ryan reads it (spam, a question, a wrong town, a lead), and Jobs is the list of real work, so nothing enters the system until a person makes the job from the New job sheet. `jobs.create` with `needsQuote` stays as the office's way to make a quote job; migration 0021's backfill of the old `quote_request` rows stands.
+
 ## After step 6
 
 Step 7 (the quote step: a Quoted and Needs a quote screen, sending and accepting a quote, then `sold_on`) adds no migration, only code over `quote_sent_on`, `quote_accepted_on` and `sold_on`. The Routes and Seasons design (PR #46) replaces `area` and the four settings when Hannah answers its questions. The Jobber mirror, `mirror.upsert`, the nightly feed and the Jobber routine go at the exit.
