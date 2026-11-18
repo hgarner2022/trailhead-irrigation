@@ -1,6 +1,8 @@
 import { describe, it, expect } from "vitest"
 import { render } from "@testing-library/react"
-import { StatusPill, statusLabel, type PillStatus } from "./StatusPill"
+import { StatusPill, StatusPills, statusLabel, type PillStatus } from "./StatusPill"
+import { visitJob } from "@/lib/admin/jobs"
+import type { Visit } from "@/lib/admin/types"
 
 const pill = () => document.querySelector<HTMLElement>('[data-slot="status-pill"]') as HTMLElement
 
@@ -70,5 +72,28 @@ describe("StatusPill", () => {
   it("keeps the caller's class", () => {
     render(<StatusPill status="active" className="ml-2" />)
     expect(pill()).toHaveClass("ml-2")
+  })
+})
+
+describe("StatusPill with no word", () => {
+  it("draws nothing for a status that has none (nothing is due yet)", () => {
+    render(<StatusPill status="not-yet" />)
+    expect(pill()).toBeNull()
+  })
+})
+
+describe("StatusPills", () => {
+  const visit = { id: "v", clientId: "c", clientName: "Dana", town: "Erie", kind: "turn-on", status: "scheduled", isPass: true, jobberUrl: "", scheduledOn: "2026-11-19" } as Visit
+
+  it("is a visit's work pill, and its money pill once there is money to say", () => {
+    render(<StatusPills job={visitJob({ ...visit, status: "completed", completedOn: "2026-11-10", scheduledOn: "2026-11-10" }, "2026-11-12", "America/Denver")} />)
+    expect(document.querySelector('[data-pill="work"]')).toHaveTextContent("Done")
+    expect(document.querySelector('[data-pill="money"]')).toHaveTextContent("Unpaid")
+  })
+
+  it("says only the work for a visit not yet done", () => {
+    render(<StatusPills job={visitJob(visit, "2026-11-12", "America/Denver")} />)
+    expect(document.querySelector('[data-pill="work"]')).toHaveTextContent("Scheduled")
+    expect(document.querySelector('[data-pill="money"]')).toBeNull()
   })
 })

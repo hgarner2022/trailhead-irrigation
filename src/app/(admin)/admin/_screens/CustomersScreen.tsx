@@ -1,18 +1,12 @@
 "use client"
 
-import Link from "next/link"
 import { useCallback, useMemo, useRef, useState, useTransition } from "react"
-import { Button } from "@/components/ui/button"
 import { DataGrid } from "@/components/blocks/DataGrid"
 import { PageHeader } from "@/components/blocks/PageHeader"
-import { jobIdOfPass, jobUrl } from "@/lib/admin/links"
-import { SidePanel, SidePanelLayout } from "@/components/blocks/SidePanel"
+import { SidePanelLayout } from "@/components/blocks/SidePanel"
 import type { AdminData } from "@/lib/admin/types"
-import { dayOf } from "@/lib/admin/calendar"
-import { TIME_ZONE } from "@/lib/admin/format"
 import type { Outcome } from "./action-types"
-import { CustomerPanelBody } from "./CustomerPanel"
-import { NewJobButton } from "./NewJob"
+import { CustomerPanel } from "./CustomerPanel"
 import type { VisitActions } from "./visit-actions-types"
 import { VisitPanelHost } from "./VisitPanelHost"
 import { customerColumns } from "./customers-columns"
@@ -93,39 +87,20 @@ export function CustomersScreen({ data, today, defaultSelectedId, readOnly = fal
       <SidePanelLayout
         panel={
           row && (
-            <SidePanel
+            <CustomerPanel
               open={open}
               onOpenChange={setOpen}
-              title={row.name}
-              description="Customer"
-              footer={
-                <>
-                  {!readOnly && client?.app && <NewJobButton data={data} today={today} actions={visitActions} customerId={row.id} />}
-                  {row.passId && jobIdOfPass(data, row.passId) && (
-                    <Button variant="outline" className="min-h-11" asChild>
-                      <Link href={jobUrl(jobIdOfPass(data, row.passId)!)}>Open job</Link>
-                    </Button>
-                  )}
-                  {offers && (
-                    <Button variant="outline" onClick={() => console.info("send pass offer", [row.name])}>
-                      Send pass offer
-                    </Button>
-                  )}
-                  {actions && !readOnly && client?.consent?.marketingOptIn && (
-                    <Button variant="outline" disabled={pending} onClick={() => optOut(row.id)}>
-                      Record phone opt-out
-                    </Button>
-                  )}
-                </>
-              }
-            >
-              <div className="flex flex-col gap-6">
-                <p role="status" className="text-sm text-muted-foreground empty:hidden">
-                  {notice}
-                </p>
-                <CustomerPanelBody row={row} client={client} data={data} today={dayOf(today, TIME_ZONE)} readOnly={readOnly} actions={visitActions} />
-              </div>
-            </SidePanel>
+              row={row}
+              client={client}
+              data={data}
+              today={today}
+              readOnly={readOnly}
+              actions={visitActions}
+              notice={notice}
+              offers={offers}
+              onOptOut={actions && !readOnly ? () => optOut(row.id) : undefined}
+              optOutPending={pending}
+            />
           )
         }
       >

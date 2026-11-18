@@ -1,7 +1,7 @@
 "use client"
 
 import { CollectPayment } from "@/components/blocks/CollectPayment"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { ConfirmDialog } from "@/components/blocks/ConfirmDialog"
 import { dollars } from "@/lib/money/collect"
 import type { JobActions } from "./job-actions-types"
 import type { VisitActions } from "./visit-actions-types"
@@ -17,12 +17,7 @@ export function JobCollectDialog({ facts, plan, visitId, open, onOpenChange, act
   const first = row.name.split(" ")[0] ?? row.name
   const log = (what: string) => async () => (console.info(what, job.id), { ok: true as const })
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md" data-slot="collect-dialog">
-        <DialogHeader>
-          <DialogTitle className="font-display text-2xl font-semibold text-navy">How is this paid?</DialogTitle>
-          <DialogDescription className="sr-only">Choose how {first} paid, then press the button. Nothing is charged until you do.</DialogDescription>
-        </DialogHeader>
+    <ConfirmDialog slot="collect-dialog" size="md" title="How is this paid?" actions="none" open={open} onOpenChange={onOpenChange}>
         <CollectPayment
           plan={plan}
           summary={`${facts.heading} · ${dollars(row.owed)} unpaid`}
@@ -33,7 +28,6 @@ export function JobCollectDialog({ facts, plan, visitId, open, onOpenChange, act
           onLater={() => onOpenChange(false)}
           onClose={() => onOpenChange(false)}
         />
-      </DialogContent>
-    </Dialog>
+    </ConfirmDialog>
   )
 }

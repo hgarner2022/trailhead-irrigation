@@ -1,7 +1,7 @@
 "use client"
 
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
-import { CardTitleHeading } from "@/components/blocks/CardTitleHeading"
+import { SectionHeading } from "@/components/blocks/SectionHeading"
 import { WINDOW_KINDS, WINDOW_NAMES, setBuffer, setWindow, type SettingsState } from "../settings-model"
 import { CommitInput, type Apply } from "./fields"
 
@@ -27,7 +27,7 @@ export function Capacity({ state, apply }: { state: SettingsState; apply: Apply 
     <div className="grid gap-6 lg:grid-cols-2">
       <Card>
         <CardHeader>
-          <CardTitleHeading>Buffer</CardTitleHeading>
+          <SectionHeading level={2}>Buffer</SectionHeading>
         </CardHeader>
         <CardContent className="space-y-5">
           <Field id="buffer-early" label="Held back in a season's first two weeks (percent)" hint="Each person's capacity for the day minus this much, left for repairs and weather. The plan starts at 20 to 25.">
@@ -40,7 +40,7 @@ export function Capacity({ state, apply }: { state: SettingsState; apply: Apply 
       </Card>
       <Card className="lg:col-span-2">
         <CardHeader>
-          <CardTitleHeading>Season windows</CardTitleHeading>
+          <SectionHeading level={2}>Season windows</SectionHeading>
           <p className="text-sm text-muted-foreground">A visit never leaves its window, and the scheduler opens a season this many weeks before it starts.</p>
         </CardHeader>
         <CardContent className="space-y-6">

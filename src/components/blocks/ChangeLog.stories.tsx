@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite"
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import type { SettingsChange } from "@/lib/admin/types"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
-import { CardTitleHeading } from "./CardTitleHeading"
+import { SectionHeading } from "./SectionHeading"
 import { ChangeLog } from "./ChangeLog"
 
 // The four changes in the snapshot: two by Hannah, one by Ryan, one more by
@@ -33,7 +33,7 @@ export const InCard: Story = {
   render: (args) => (
     <Card className="max-w-2xl">
       <CardHeader>
-        <CardTitleHeading>Change log</CardTitleHeading>
+        <SectionHeading level={2}>Change log</SectionHeading>
       </CardHeader>
       <CardContent>
         <ChangeLog {...args} />

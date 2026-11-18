@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
-import { CardTitleHeading } from "@/components/blocks/CardTitleHeading"
+import { SectionHeading } from "@/components/blocks/SectionHeading"
 import { NeedsAttention, type NeedsAttentionProps } from "@/components/blocks/NeedsAttention"
 import { PageHeader } from "@/components/blocks/PageHeader"
 import { TodayMoney } from "@/components/blocks/TodayMoney"
@@ -63,7 +63,7 @@ export function HomeScreen({ data, today, readOnly = false, onAttentionAction, o
         <div className="grid gap-6 lg:grid-cols-5">
           <Card className="lg:col-span-3 lg:col-start-1 lg:row-start-1">
             <CardHeader>
-              <CardTitleHeading>Today&rsquo;s visits</CardTitleHeading>
+              <SectionHeading level={2}>Today&rsquo;s visits</SectionHeading>
             </CardHeader>
             <CardContent>
               <TodayVisits view={view} areas={data.settings.areas} next={week?.day ? { day: week.day, heading: week.heading } : undefined} />
@@ -72,7 +72,7 @@ export function HomeScreen({ data, today, readOnly = false, onAttentionAction, o
           <HomeMap visits={view.stops} people={routePeople(data.settings.people)} className="lg:col-span-2 lg:col-start-4 lg:row-start-1" />
           <Card className="lg:col-span-5 lg:row-start-2">
             <CardHeader>
-              <CardTitleHeading>Needs action</CardTitleHeading>
+              <SectionHeading level={2}>Needs action</SectionHeading>
             </CardHeader>
             <CardContent>
               <NeedsAttention items={attention} now={today} onAction={readOnly ? undefined : onAttentionAction} onDismiss={readOnly ? undefined : onDismiss} readOnly={readOnly} />

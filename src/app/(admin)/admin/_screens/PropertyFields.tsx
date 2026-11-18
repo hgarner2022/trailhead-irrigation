@@ -1,6 +1,8 @@
 "use client"
 
 import { useState } from "react"
+import { FormRow } from "@/components/blocks/FormRow"
+import { SectionHeading } from "@/components/blocks/SectionHeading"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -13,7 +15,6 @@ import { FORM_STATUS, useRunner } from "./use-runner"
 // nine fields in place. Save sends only what changed through `properties.update`; a refusal shows in the API's words under
 // the buttons. A tech (readOnly) sees no Edit, no gate code and no contact phone. Client component.
 
-const LABEL = "mb-1 block text-sm font-medium text-foreground"
 const FIELD = "min-h-11"
 
 interface Draft {
@@ -58,20 +59,14 @@ export function PropertyFields({ propertyId, yard, actions, onDone, onCancel }: 
   const { pending, error, run } = useRunner()
   const set = <K extends keyof Draft>(key: K, value: Draft[K]) => setDraft((d) => ({ ...d, [key]: value }))
   const text = (key: Exclude<keyof Draft, "mustBeHome" | "zones" | "accessNote" | "notes">, label: string, placeholder?: string, type = "text") => (
-    <div>
-      <label htmlFor={`property-${key}`} className={LABEL}>
-        {label}
-      </label>
-      <Input id={`property-${key}`} type={type} value={draft[key]} placeholder={placeholder} onChange={(e) => set(key, e.target.value)} className={FIELD} />
-    </div>
+    <FormRow label={label}>
+      <Input type={type} value={draft[key]} placeholder={placeholder} onChange={(e) => set(key, e.target.value)} className={FIELD} />
+    </FormRow>
   )
   const area = (key: "accessNote" | "notes", label: string, placeholder: string) => (
-    <div>
-      <label htmlFor={`property-${key}`} className={LABEL}>
-        {label}
-      </label>
-      <Textarea id={`property-${key}`} value={draft[key]} placeholder={placeholder} rows={3} onChange={(e) => set(key, e.target.value)} />
-    </div>
+    <FormRow label={label}>
+      <Textarea value={draft[key]} placeholder={placeholder} rows={3} onChange={(e) => set(key, e.target.value)} />
+    </FormRow>
   )
   const save = () => {
     const changes = yardChanges(yard, draft)
@@ -92,26 +87,22 @@ export function PropertyFields({ propertyId, yard, actions, onDone, onCancel }: 
       }}
     >
       <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label htmlFor="property-zones" className={LABEL}>
-            Zones
-          </label>
-          <Input id="property-zones" type="number" inputMode="numeric" min={1} max={16} value={draft.zones} onChange={(e) => set("zones", e.target.value)} className={FIELD} />
-        </div>
+        <FormRow label="Zones">
+          <Input type="number" inputMode="numeric" min={1} max={16} value={draft.zones} onChange={(e) => set("zones", e.target.value)} className={FIELD} />
+        </FormRow>
         {text("controller", "Controller", "Rachio 3 in the garage")}
       </div>
       {text("backflowLocation", "Backflow", "North side of the house")}
       {text("gateCode", "Gate code")}
-      <label className="flex min-h-11 cursor-pointer items-center gap-2 text-sm font-medium">
-        <input type="checkbox" checked={draft.mustBeHome} onChange={(e) => set("mustBeHome", e.target.checked)} className="size-4 accent-primary" />
-        Must be home
-      </label>
+      <FormRow label="Must be home" htmlFor="property-must-be-home">
+        <input id="property-must-be-home" type="checkbox" checked={draft.mustBeHome} onChange={(e) => set("mustBeHome", e.target.checked)} className="size-5 accent-primary" />
+      </FormRow>
       {area("accessNote", "Access note", "Gate code, dog, where the controller is")}
       <div className="grid grid-cols-2 gap-3">
         {text("contactName", "Contact name")}
         {text("contactPhone", "Contact phone", undefined, "tel")}
       </div>
-      {area("notes", "Property notes", "Anything about the yard that is true every visit")}
+      {area("notes", "Property notes", "Anything about the yard that is always true")}
       <div className="flex flex-wrap gap-3">
         <Button type="submit" variant="outline" className="min-h-11" disabled={pending}>
           Save
@@ -133,16 +124,18 @@ export function PropertyBlock({ propertyId, yard, readOnly = false, actions }: {
   const lines = propertyLines(yard, { canSeeContact: !readOnly })
   return (
     <section aria-labelledby="customer-property" data-slot="customer-property">
-      <div className="flex items-center justify-between gap-3">
-        <h3 id="customer-property" className="font-display text-lg leading-tight text-navy">
-          Property
-        </h3>
-        {!readOnly && !editing && (
-          <Button type="button" variant="outline" className="min-h-11" onClick={() => setEditing(true)}>
-            Edit
-          </Button>
-        )}
-      </div>
+      <SectionHeading
+        id="customer-property"
+        action={
+          !readOnly && !editing ? (
+            <Button type="button" variant="outline" className="min-h-11" onClick={() => setEditing(true)}>
+              Edit
+            </Button>
+          ) : undefined
+        }
+      >
+        Property
+      </SectionHeading>
       {editing ? (
         <PropertyFields propertyId={propertyId} yard={yard} actions={actions} onDone={() => setEditing(false)} onCancel={() => setEditing(false)} />
       ) : lines.length ? (

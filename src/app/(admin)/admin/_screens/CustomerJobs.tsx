@@ -1,8 +1,9 @@
 "use client"
 
 import Link from "next/link"
-import { PANEL_ROW, PanelHeading, PanelList, PanelRowEnd, PanelRowText } from "@/components/blocks/PanelParts"
-import { JobPill } from "@/components/blocks/JobPill"
+import { RECORD_ROW, RecordList, RecordRowEnd, RecordRowText } from "@/components/blocks/RecordPanel"
+import { SectionHeading } from "@/components/blocks/SectionHeading"
+import { StatusPills } from "@/components/blocks/StatusPill"
 import { TIME_ZONE } from "@/lib/admin/format"
 import { visitJob } from "@/lib/admin/jobs"
 import { dayOf } from "@/lib/admin/calendar"
@@ -21,7 +22,7 @@ export function CustomerJobs({ rows, data, today }: { rows: JobRow[]; data: Pick
   const day = dayOf(today, TIME_ZONE)
   if (rows.length === 0) return <p className="mt-2 text-sm text-muted-foreground">No jobs on record.</p>
   return (
-    <PanelList data-slot="customer-jobs-list">
+    <RecordList data-slot="customer-jobs-list">
       {rows.map((row) => {
         const pass: Pass | undefined = row.passId ? data.passes.find((p) => p.id === row.passId) : undefined
         const visits = data.visits.filter((v) => v.jobId === row.id)
@@ -29,13 +30,13 @@ export function CustomerJobs({ rows, data, today }: { rows: JobRow[]; data: Pick
           <li key={row.id}>
             <details className="group py-1.5">
               <summary className="flex min-h-11 cursor-pointer list-none items-center gap-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 [&::-webkit-details-marker]:hidden">
-                <PanelRowText title={row.title} detail={[row.passId ? String(row.season) : "", row.soldText].filter(Boolean).join(" · ") || undefined} />
-                <PanelRowEnd>
+                <RecordRowText title={row.title} detail={[row.passId ? String(row.season) : "", row.soldText].filter(Boolean).join(" · ") || undefined} />
+                <RecordRowEnd>
                   <span className="inline-flex flex-wrap items-center justify-end gap-1">
                     <StagePill stage={row.stage} />
                     <MoneyPill money={row.money} />
                   </span>
-                </PanelRowEnd>
+                </RecordRowEnd>
               </summary>
               <div className="pb-2 pl-3">
                 {visits.length === 0 ? (
@@ -46,11 +47,11 @@ export function CustomerJobs({ rows, data, today }: { rows: JobRow[]; data: Pick
                       const d = dayOfVisit(v)
                       return (
                         <li key={v.id}>
-                          <OpenVisit id={v.id} className={PANEL_ROW}>
-                            <PanelRowText title={kindLabel(v)} detail={[d ? dayLabel(d) : "", v.personName].filter(Boolean).join(", ") || undefined} />
-                            <PanelRowEnd>
-                              <JobPill job={visitJob(v, day, TIME_ZONE, pass?.cardFailedAt)} />
-                            </PanelRowEnd>
+                          <OpenVisit id={v.id} className={RECORD_ROW}>
+                            <RecordRowText title={kindLabel(v)} detail={[d ? dayLabel(d) : "", v.personName].filter(Boolean).join(", ") || undefined} />
+                            <RecordRowEnd>
+                              <StatusPills job={visitJob(v, day, TIME_ZONE, pass?.cardFailedAt)} />
+                            </RecordRowEnd>
                           </OpenVisit>
                         </li>
                       )
@@ -65,7 +66,7 @@ export function CustomerJobs({ rows, data, today }: { rows: JobRow[]; data: Pick
           </li>
         )
       })}
-    </PanelList>
+    </RecordList>
   )
 }
 
@@ -73,7 +74,7 @@ export function CustomerJobs({ rows, data, today }: { rows: JobRow[]; data: Pick
 export function CustomerJobsSection({ rows, data, today }: { rows: JobRow[]; data: Pick<AdminData, "visits" | "passes">; today: string }) {
   return (
     <section aria-labelledby="customer-jobs" data-slot="customer-jobs">
-      <PanelHeading id="customer-jobs">Jobs</PanelHeading>
+      <SectionHeading id="customer-jobs">Jobs</SectionHeading>
       <CustomerJobs rows={rows} data={data} today={today} />
     </section>
   )

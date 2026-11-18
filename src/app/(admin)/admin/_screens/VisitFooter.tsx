@@ -1,99 +1,102 @@
 "use client"
 
 import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { CollectPayment } from "@/components/blocks/CollectPayment"
+import { ConfirmDialog } from "@/components/blocks/ConfirmDialog"
+import { FormRow } from "@/components/blocks/FormRow"
+import { RecordFooter, type FooterAction } from "@/components/blocks/RecordFooter"
 import { useUndoToast } from "@/components/blocks/UndoToast"
-import { dollars, type CollectPlan } from "@/lib/money/collect"
-import type { Visit } from "@/lib/admin/types"
-import { ConfirmCancel } from "./ConfirmCancel"
+import { Input } from "@/components/ui/input"
+import { jobUrl } from "@/lib/admin/links"
+import { dollars } from "@/lib/money/collect"
+import type { AdminData, Pass, Visit } from "@/lib/admin/types"
+import { CancelVisitDialog, EditDialog, TextDialog } from "./VisitEditText"
+import { MoveDialog, NotDoneDialog } from "./VisitMoveDone"
+import { OnMyWay } from "./VisitOnMyWay"
 import type { VisitActions } from "./visit-actions-types"
+import type { BarId, VisitBar } from "./visit-bar-model"
 import { aheadSentence, type VisitFooterPlan } from "./visit-collect-model"
 import { FORM_STATUS, useRunner } from "./use-runner"
-import { kindLabel } from "./visit-panel-model"
+import { kindLabel, type VisitFacts } from "./visit-panel-model"
 
-// The visit panel's footer and the two beats it opens, each in ONE dialog (never two at once): Mark done (the day, and "This visit is
-// scheduled for Friday. Mark it done today?" when its day is ahead), which writes the done fact and nothing else; then "How is this
-// paid?" (`CollectPayment`), which opens at once when the visit is unpaid and again from the primary "Collect $145". Undo done acts at
-// once with ten seconds of Undo; Refund asks first. Without `actions` (the catalog) the buttons only log.
+// The visit panel's footer (`RecordFooter`) and the dialogs its buttons open, each ONE `ConfirmDialog` and never two at once. Which buttons
+// there are, by state, is `visitBar` (docs/plans/2026-11-18-admin-holistic-design.md, section 7). Mark done asks the day (and "This visit is
+// scheduled for Friday. Mark it done today?" when its day is ahead), writes the done fact and nothing else, and then the panel itself turns
+// to "How is this paid?" (`CollectPayment` in the panel's body, its one button here in the footer). Undo done acts at once with ten seconds
+// of Undo; Refund asks first. While the panel is collecting, the footer has the choice's button and a Cancel. Without `actions` (the
+// catalog) the buttons only log.
 
-const LABEL = "mb-1 block text-sm font-medium text-foreground"
+const LABELS: Record<BarId, string> = {
+  place: "Place",
+  move: "Move",
+  "mark-done": "Mark done",
+  "not-done": "Not done",
+  edit: "Edit",
+  text: "Send a text",
+  "on-my-way": "On my way",
+  cancel: "Cancel visit",
+  collect: "Collect the payment",
+  "open-job": "Open job",
+  "undo-done": "Undo done",
+  refund: "Refund",
+}
 
 function MarkDoneDialog({ visit, today, visitDay, open, onOpenChange, onDone, actions }: { visit: Visit; today: string; visitDay?: string; open: boolean; onOpenChange: (open: boolean) => void; onDone: () => void; actions?: VisitActions }) {
   const [day, setDay] = useState(today)
-  const { pending, error, run } = useRunner()
   const toast = useUndoToast()
   const ahead = aheadSentence(visitDay, today)
-  const done = () => {
-    if (!actions) return (console.info("mark done", visit.id, day), onOpenChange(false), onDone())
-    run(
-      () => actions.markDone(visit.id, day !== today ? { completedOn: day } : {}),
-      () => {
-        onOpenChange(false)
-        toast("Marked done. ", async () => void (await actions.undoDone(visit.id)))
-        onDone()
-      },
-    )
+  const done = async () => {
+    if (!actions) return (console.info("mark done", visit.id, day), onDone(), { ok: true as const })
+    const out = await actions.markDone(visit.id, day !== today ? { completedOn: day } : {})
+    if (out.ok) {
+      toast("Marked done. ", async () => void (await actions.undoDone(visit.id)))
+      onDone()
+    }
+    return out
   }
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-sm" data-slot="mark-done">
-        <DialogHeader>
-          <DialogTitle className="font-display text-2xl font-semibold text-navy">{ahead ? "Mark done today?" : "Mark done"}</DialogTitle>
-          <DialogDescription>{ahead || `${kindLabel(visit)} for ${visit.clientName}.`}</DialogDescription>
-        </DialogHeader>
-        <p className="text-sm text-muted-foreground">Nothing is charged. How it is paid is the next step.</p>
-        <div className="max-w-48">
-          <label htmlFor="done-day" className={LABEL}>
-            Done on
-          </label>
-          <Input id="done-day" type="date" value={day} max={today} onChange={(e) => setDay(e.target.value)} className="min-h-11" />
-        </div>
-        <p role="alert" className={`${FORM_STATUS} text-destructive`}>
-          {error}
-        </p>
-        <div className="flex gap-2">
-          <Button type="button" className="min-h-11" disabled={pending || !day} onClick={done}>
-            Mark done
-          </Button>
-          <Button type="button" variant="outline" className="min-h-11" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
+    <ConfirmDialog
+      slot="mark-done"
+      title={ahead ? "Mark done today?" : "Mark done"}
+      message={ahead || `${kindLabel(visit)} for ${visit.clientName}.`}
+      confirmLabel="Mark done"
+      confirmDisabled={!day}
+      open={open}
+      onOpenChange={onOpenChange}
+      onConfirm={done}
+    >
+      <p className="text-sm text-muted-foreground">Nothing is charged. How it is paid is the next step.</p>
+      <FormRow label="Done on" className="max-w-48">
+        <Input type="date" value={day} max={today} onChange={(e) => setDay(e.target.value)} className="min-h-11" />
+      </FormRow>
+    </ConfirmDialog>
   )
 }
 
-interface FooterProps {
-  visit: Visit
+export interface VisitFooterProps {
+  facts: VisitFacts
+  people: AdminData["settings"]["people"]
   plan: VisitFooterPlan
+  bar: VisitBar
+  /** today as a Mountain calendar day */
   today: string
   visitDay?: string
-  firstName: string
-  summary: string
+  pass?: Pass
   actions?: VisitActions
+  /** beat two is open in the body: the footer holds its one button and a Cancel */
+  collecting: boolean
+  /** beat two has gone through: the Cancel goes and the one Close stays */
+  settled: boolean
+  /** open beat two (the unpaid visit's Collect, and what Mark done leads to) */
+  onCollect: () => void
+  onMarkedDone: () => void
+  onLeaveCollect: () => void
 }
 
-/** The buttons for the footer slot and the dialogs they open. Render inside `SidePanel`'s `footer` prop. */
-export function VisitFooter({ visit, plan, today, visitDay, firstName, summary, actions }: FooterProps) {
-  const [doneOpen, setDoneOpen] = useState(false)
-  // The dialog keeps the plan it opened with, as state: once the money has arrived the page refreshes and the visit has no plan any more,
-  // but the dialog stays to say what happened until it is closed, and closing it is what keeps it shut. (When it was dropped with its open
-  // flag still set, a later Refund brought it back by itself with the card preselected.) After Mark done the plan arrives with the refresh,
-  // so `wantCollect` waits for it once.
-  const [collectPlan, setCollectPlan] = useState<CollectPlan | null>(null)
-  const [wantCollect, setWantCollect] = useState(false)
-  if (wantCollect && plan.plan) {
-    setCollectPlan(plan.plan)
-    setWantCollect(false)
-  }
-  const closeCollect = (open: boolean) => {
-    if (!open) setCollectPlan(null)
-  }
-  const [refundOpen, setRefundOpen] = useState(false)
+/** The footer slot of the visit panel and the dialogs it opens. */
+export function VisitFooter({ facts, people, plan, bar, today, visitDay, pass, actions, collecting, settled, onCollect, onMarkedDone, onLeaveCollect }: VisitFooterProps) {
+  const { visit, client } = facts
+  const [open, setOpen] = useState<null | "done" | "move" | "not-done" | "edit" | "text" | "on-my-way" | "cancel" | "refund">(null)
+  const shown = (which: NonNullable<typeof open>) => ({ open: open === which, onOpenChange: (o: boolean) => setOpen(o ? which : null) })
   const { pending, error, run } = useRunner()
   const toast = useUndoToast()
   const refund = plan.refund
@@ -104,61 +107,51 @@ export function VisitFooter({ visit, plan, today, visitDay, firstName, summary, 
       () => toast("Marked not done yet. ", async () => void (await actions.markDone(visit.id, visit.completedOn ? { completedOn: visit.completedOn } : {}))),
     )
   }
-  const log = (what: string) => async () => (console.info(what, visit.id), { ok: true as const })
+  const act: Record<BarId, FooterAction> = {
+    place: { label: LABELS.place, onClick: () => setOpen("move") },
+    move: { label: LABELS.move, onClick: () => setOpen("move") },
+    "mark-done": { label: LABELS["mark-done"], onClick: () => setOpen("done") },
+    "not-done": { label: LABELS["not-done"], onClick: () => setOpen("not-done") },
+    edit: { label: LABELS.edit, onClick: () => setOpen("edit") },
+    text: { label: LABELS.text, onClick: () => setOpen("text") },
+    "on-my-way": { label: LABELS["on-my-way"], onClick: () => setOpen("on-my-way") },
+    cancel: { label: LABELS.cancel, onClick: () => setOpen("cancel") },
+    collect: { label: plan.unpaid > 0 ? `Collect ${dollars(plan.unpaid)}` : LABELS.collect, onClick: onCollect },
+    "open-job": { label: LABELS["open-job"], href: visit.jobId ? jobUrl(visit.jobId) : undefined },
+    "undo-done": { label: LABELS["undo-done"], onClick: undo, disabled: pending },
+    refund: { label: refund ? `Refund ${dollars(refund.left)}` : LABELS.refund, onClick: () => setOpen("refund") },
+  }
+  const pick = (id: BarId) => act[id]
+  const secondary = bar.secondary.map(pick)
   return (
     <>
-      {plan.primary === "mark-done" && (
-        <Button type="button" className="min-h-11" onClick={() => setDoneOpen(true)}>
-          Mark done
-        </Button>
-      )}
-      {plan.primary === "collect" && (
-        <Button type="button" className="min-h-11" onClick={() => setCollectPlan(plan.plan ?? null)}>
-          {plan.unpaid > 0 ? `Collect ${dollars(plan.unpaid)}` : "Collect the payment"}
-        </Button>
-      )}
-      {plan.canUndo && (
-        <Button type="button" variant="outline" className="min-h-11" disabled={pending} onClick={undo}>
-          Undo done
-        </Button>
-      )}
-      {refund && (
-        <Button type="button" variant="outline" className="min-h-11" onClick={() => setRefundOpen(true)}>
-          {`Refund ${dollars(refund.left)}`}
-        </Button>
+      {collecting ? (
+        <RecordFooter slot secondary={settled ? undefined : [{ label: "Cancel", onClick: onLeaveCollect }]} />
+      ) : (
+        <RecordFooter
+          primary={bar.primary ? pick(bar.primary) : undefined}
+          secondary={secondary.length === 0 ? undefined : secondary.length === 1 ? [secondary[0]!] : [secondary[0]!, secondary[1]!]}
+          more={bar.more.map(pick)}
+          destructive={bar.destructive ? pick(bar.destructive) : undefined}
+        />
       )}
       <p role="alert" className={`${FORM_STATUS} w-full text-destructive`}>
         {error}
       </p>
-      <MarkDoneDialog visit={visit} today={today} visitDay={visitDay} open={doneOpen} onOpenChange={setDoneOpen} onDone={() => setWantCollect(true)} actions={actions} />
-      {collectPlan && (
-        <Dialog open onOpenChange={closeCollect}>
-          <DialogContent className="sm:max-w-md" data-slot="collect-dialog">
-            <DialogHeader>
-              <DialogTitle className="font-display text-2xl font-semibold text-navy">How is this paid?</DialogTitle>
-              <DialogDescription className="sr-only">Choose how {firstName} paid, then press the button. Nothing is charged until you do.</DialogDescription>
-            </DialogHeader>
-            <CollectPayment
-              plan={collectPlan}
-              summary={summary}
-              firstName={firstName}
-              onCharge={actions ? () => actions.chargeCard(visit.id) : log("charge")}
-              onRecord={actions ? (input) => actions.recordPayment(visit.id, input) : log("record")}
-              onInvoice={actions && visit.jobId ? () => actions.sendBill(visit.jobId!) : log("invoice")}
-              onLater={() => setCollectPlan(null)}
-              onClose={() => setCollectPlan(null)}
-            />
-          </DialogContent>
-        </Dialog>
-      )}
+      <MarkDoneDialog visit={visit} today={today} visitDay={visitDay} {...shown("done")} onDone={onMarkedDone} actions={actions} />
+      <MoveDialog key={`move-${visit.id}-${visit.scheduledOn ?? ""}`} visit={visit} today={today} actions={actions} {...shown("move")} />
+      <NotDoneDialog visit={visit} actions={actions} {...shown("not-done")} />
+      <EditDialog key={`edit-${visit.id}`} visit={visit} people={people} actions={actions} {...shown("edit")} />
+      <TextDialog client={client} visitId={visit.id} actions={actions} {...shown("text")} />
+      <OnMyWay visit={visit} actions={actions} {...shown("on-my-way")} />
+      <CancelVisitDialog visit={visit} pass={pass} actions={actions} {...shown("cancel")} />
       {refund && (
-        <ConfirmCancel
+        <ConfirmDialog
           title={`Refund ${dollars(refund.left)}?`}
           message={`Takes back the ${dollars(refund.left)} recorded by ${refund.method}. It is a refund row on the job and nothing is deleted. The visit reads unpaid again.`}
-          keepLabel="Keep payment"
-          cancelLabel={`Refund ${dollars(refund.left)}`}
-          open={refundOpen}
-          onOpenChange={setRefundOpen}
+          destructive
+          confirmLabel={`Refund ${dollars(refund.left)}`}
+          {...shown("refund")}
           onConfirm={actions ? () => actions.refundPayment(refund.paymentId) : undefined}
           log={`refund ${refund.paymentId}`}
         />

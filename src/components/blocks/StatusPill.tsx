@@ -1,12 +1,13 @@
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 import type { PassStatus } from "@/lib/admin/types"
-import { JOB_WORDS, type JobState, type MoneyState, type WorkState } from "@/lib/admin/jobs"
+import { JOB_WORDS, REASON_WORDS, WORK_WORDS, type Job, type JobState, type MoneyState, type WorkState } from "@/lib/admin/jobs"
 
-// One chip for every status word in the app, coloured by what the status
+// The only status chip in the app (docs/DESIGN.md, "The recipe"), coloured by what the status
 // means for the business (docs/DESIGN.md, Copy): good outcomes green, a
 // booked visit orange, past due red, and the quiet states grey. The label is
-// the plain word in sentence case. Pure render, server component.
+// the plain word in sentence case. It sits under a panel's subtitle or at a row's right, never in a grid cell.
+// `StatusPills` is a visit's two pills (it absorbed JobPill). Pure render, server component.
 //
 // The coloured pills sit on a 10% tint with an ink dark enough for 12px text
 // (4.5:1 or better). Measured over white and over cream: positive-deep
@@ -71,9 +72,42 @@ export interface StatusPillProps {
 }
 
 export function StatusPill({ status, label, className, ...rest }: StatusPillProps) {
+  const word = label ?? statusLabel(status)
+  // "not-yet" has no word: nothing is due yet, so nothing is drawn
+  if (!word) return null
   return (
     <Badge {...rest} data-slot="status-pill" data-status={status} variant="outline" className={cn("whitespace-nowrap", TONES[status], className)}>
-      {label ?? statusLabel(status)}
+      {word}
     </Badge>
+  )
+}
+
+export interface StatusPillsProps {
+  job: Job
+  className?: string
+}
+
+/**
+ * A visit's two pills (owner, 14 Nov): WORK says what happened to the stop (Unscheduled, Scheduled, Done, Not done with its reason after
+ * the pill, Canceled) and MONEY says whether it was paid (nothing until the visit is done, then Paid with how, Unpaid, Invoice sent,
+ * Failed, all read from the payment rows by src/lib/money/words.ts). A Scheduled visit whose day has passed keeps its state and gains
+ * a small "day passed" note.
+ */
+export function StatusPills({ job, className }: StatusPillsProps) {
+  return (
+    <span data-slot="job-pill" className={cn("inline-flex flex-wrap items-center gap-1", className)}>
+      <StatusPill status={job.work} label={WORK_WORDS[job.work]} data-pill="work" />
+      {job.reason && (
+        <span data-slot="not-done-reason" className="text-xs text-muted-foreground">
+          {`· ${REASON_WORDS[job.reason] ?? job.reason}`}
+        </span>
+      )}
+      {job.dayPassed && (
+        <span data-slot="day-passed" className="text-xs text-muted-foreground">
+          day passed
+        </span>
+      )}
+      {job.moneyLabel && <StatusPill status={job.money} label={job.moneyLabel} data-pill="money" />}
+    </span>
   )
 }

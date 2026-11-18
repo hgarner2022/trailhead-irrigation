@@ -20,6 +20,8 @@ export interface SidePanelProps {
   onOpenChange: (open: boolean) => void
   title: string
   description?: string
+  /** The status pills, under the description: a record panel's stage and money */
+  pills?: ReactNode
   children: ReactNode
   /** Pinned under the scrolling body: the primary button first, then the secondary ones */
   footer?: ReactNode
@@ -93,13 +95,14 @@ export function SidePanelLayout({ panel, children, className }: { panel: ReactNo
 }
 
 /** One header, one body, one footer: the same in the drawer and the sheet. */
-function Frame({ title, description, children, footer }: Pick<SidePanelProps, "title" | "description" | "children" | "footer">) {
+function Frame({ title, description, pills, children, footer }: Pick<SidePanelProps, "title" | "description" | "pills" | "children" | "footer">) {
   return (
     <>
       <SheetHeader className="flex-row items-start gap-3 border-b border-border px-6 py-4">
         <div className="min-w-0 flex-1">
           <SheetTitle className="font-display text-2xl font-semibold leading-tight text-navy">{title}</SheetTitle>
           {description ? <SheetDescription className="mt-1 truncate" title={description}>{description}</SheetDescription> : null}
+          {pills ? <div data-slot="side-panel-pills" className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">{pills}</div> : null}
         </div>
         <SheetClose asChild>
           <Button variant="ghost" size="icon" aria-label="Close panel" className="-mr-2 -mt-1 size-8 shrink-0">
@@ -115,7 +118,7 @@ function Frame({ title, description, children, footer }: Pick<SidePanelProps, "t
   )
 }
 
-function Drawer({ open, onOpenChange, title, description, children, footer, className }: SidePanelProps) {
+function Drawer({ open, onOpenChange, title, description, pills, children, footer, className }: SidePanelProps) {
   const panel = useRef<PanelImperativeHandle>(null)
   const { content, ...handoff } = useFocusHandoff()
   const remember = useCallback(() => {
@@ -162,7 +165,7 @@ function Drawer({ open, onOpenChange, title, description, children, footer, clas
             groupResizeBehavior="preserve-pixel-size"
             className={cn("flex flex-col border-l border-border bg-background shadow-lg", className)}
           >
-            <Frame title={title} description={description} footer={footer}>
+            <Frame title={title} description={description} pills={pills} footer={footer}>
               {children}
             </Frame>
           </ResizablePanel>
@@ -172,7 +175,7 @@ function Drawer({ open, onOpenChange, title, description, children, footer, clas
   )
 }
 
-function PhoneSheet({ open, onOpenChange, title, description, children, footer, className }: SidePanelProps) {
+function PhoneSheet({ open, onOpenChange, title, description, pills, children, footer, className }: SidePanelProps) {
   const { content, ...handoff } = useFocusHandoff()
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -186,7 +189,7 @@ function PhoneSheet({ open, onOpenChange, title, description, children, footer, 
         className={cn("w-full gap-0 outline-none sm:max-w-none", className)}
         {...(description ? {} : { "aria-describedby": undefined })}
       >
-        <Frame title={title} description={description} footer={footer}>
+        <Frame title={title} description={description} pills={pills} footer={footer}>
           {children}
         </Frame>
       </SheetContent>

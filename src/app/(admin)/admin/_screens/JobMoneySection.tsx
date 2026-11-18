@@ -1,4 +1,5 @@
-import { PANEL_ROW, PanelHeading, PanelList, PanelRowEnd, PanelRowText } from "@/components/blocks/PanelParts"
+import { RECORD_ROW, RecordList, RecordRowEnd, RecordRowText } from "@/components/blocks/RecordPanel"
+import { SectionHeading } from "@/components/blocks/SectionHeading"
 import type { AdminPayment } from "@/lib/admin/types"
 import type { VisitActions } from "./visit-actions-types"
 import type { BillState } from "./bill-model"
@@ -18,19 +19,19 @@ export function JobMoneySection({ row, payments, bill, actions }: { row: JobRow;
   const ok = payments.filter((p) => p.status === "succeeded")
   return (
     <section aria-labelledby="job-money" data-slot="job-money">
-      <PanelHeading id="job-money">Money</PanelHeading>
+      <SectionHeading id="job-money">Money</SectionHeading>
       <p className="mt-2 text-sm font-medium">{row.moneyText}</p>
       {ok.length > 0 ? (
-        <PanelList data-slot="job-payments">
+        <RecordList data-slot="job-payments">
           {ok.map((p) => (
-            <li key={p.id} className={`flex items-center ${PANEL_ROW}`}>
-              <PanelRowText title={paymentWords(p)} detail={p.paidOn ? day(p.paidOn) : undefined} />
-              <PanelRowEnd>
+            <li key={p.id} className={`flex items-center ${RECORD_ROW}`}>
+              <RecordRowText title={paymentWords(p)} detail={p.paidOn ? day(p.paidOn) : undefined} />
+              <RecordRowEnd>
                 <span className="tabular-nums">{dollars(p.amount)}</span>
-              </PanelRowEnd>
+              </RecordRowEnd>
             </li>
           ))}
-        </PanelList>
+        </RecordList>
       ) : (
         <p className="mt-2 text-sm text-muted-foreground">No payments yet.</p>
       )}

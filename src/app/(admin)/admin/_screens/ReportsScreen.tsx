@@ -1,5 +1,5 @@
 import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card"
-import { CardTitleHeading } from "@/components/blocks/CardTitleHeading"
+import { SectionHeading } from "@/components/blocks/SectionHeading"
 import { PageHeader } from "@/components/blocks/PageHeader"
 import { SeasonLine } from "@/components/blocks/SeasonLine"
 import { StatTile } from "@/components/blocks/StatTile"
@@ -38,7 +38,7 @@ export function ReportsScreen({ data, today }: ReportsScreenProps) {
 
       <Card>
         <CardHeader>
-          <CardTitleHeading>{`Season ${SEASON}`}</CardTitleHeading>
+          <SectionHeading level={2}>{`Season ${SEASON}`}</SectionHeading>
           <CardDescription>{seasonDescription(data)}</CardDescription>
         </CardHeader>
         <CardContent>

@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
-import { CardTitleHeading } from "@/components/blocks/CardTitleHeading"
+import { SectionHeading } from "@/components/blocks/SectionHeading"
 import { PERSON_CLASSES } from "@/components/blocks/day-map-helpers"
 import { cn } from "@/lib/utils"
 import type { Person, Visit } from "@/lib/admin/types"
@@ -26,7 +26,7 @@ export function HomeMap({ visits, people, className }: { visits: Visit[]; people
   return (
     <Card data-slot="home-map" className={className}>
       <CardHeader>
-        <CardTitleHeading>Map</CardTitleHeading>
+        <SectionHeading level={2}>Map</SectionHeading>
       </CardHeader>
       <CardContent className="space-y-3">
         <ScheduleDayMap className="h-80 min-w-0 lg:h-96" stops={stops} people={people} selectedId={selectedId} onSelect={select} />

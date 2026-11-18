@@ -1,4 +1,5 @@
 import type { GridColumnDef } from "@/components/blocks/data-grid-table"
+import { MoneyCell } from "@/components/blocks/MoneyCell"
 import { StagePill } from "./JobPills"
 import type { JobRow } from "./jobs-model"
 
@@ -34,7 +35,7 @@ export const jobColumns: GridColumnDef<JobRow>[] = [
     id: "total",
     accessorKey: "total",
     header: "Total",
-    cell: ({ row }) => (row.original.stage === "cancelled" ? null : <span className="whitespace-nowrap tabular-nums">{row.original.total > 0 ? `$${row.original.total.toLocaleString("en-US")}` : "Quote later"}</span>),
+    cell: ({ row }) => (row.original.stage === "cancelled" ? null : <MoneyCell end text={row.original.total > 0 ? `$${row.original.total.toLocaleString("en-US")}` : "Quote later"} />),
     meta: { align: "right", csv: (r) => String((r as JobRow).total) },
   },
   {
@@ -43,7 +44,7 @@ export const jobColumns: GridColumnDef<JobRow>[] = [
     header: "Money",
     // The chip filters by the state; a click on the header sorts by what is unpaid.
     sortFn: (a, b) => (a.original as JobRow).owed - (b.original as JobRow).owed,
-    cell: ({ row }) => (row.original.moneyText ? <span className="whitespace-nowrap tabular-nums">{row.original.moneyText}</span> : null),
+    cell: ({ row }) => (row.original.moneyText ? <MoneyCell text={row.original.moneyText} tone={row.original.money === "overdue" ? "past-due" : row.original.money === "failed" ? "failed" : "plain"} /> : null),
     meta: { csv: (r) => (r as JobRow).moneyText },
   },
   {

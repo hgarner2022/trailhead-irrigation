@@ -1,62 +1,56 @@
 "use client"
 
 import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { ConfirmDialog } from "@/components/blocks/ConfirmDialog"
+import { FormRow } from "@/components/blocks/FormRow"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { formatPhone } from "@/lib/format/contact"
 import { visitPaid } from "@/lib/admin/jobs"
 import type { AdminData, Client, Pass, Visit } from "@/lib/admin/types"
+import { FIELD } from "./CustomerPicker"
 import type { VisitActions } from "./visit-actions-types"
-import { FORM_STATUS, useRunner } from "./use-runner"
 import { dayLabel, dayOfVisit, kindLabel, priceWords } from "./visit-panel-model"
 
-// Edit (minutes, who, access note: notes are added in the Notes and history block, never rewritten here), Send a text, Resend
-// confirmation and Cancel this visit: the visit panel's quieter actions. Edit and Send are forms with a button; Cancel asks first and names the visit and the money (it is the one action here that
-// cannot be taken back). A refusal shows in the API's words under the control. Client component.
+// Edit (minutes, who, access note: notes are added in the Notes and history block, never rewritten here), Send a text and Cancel visit:
+// the visit panel's quieter actions, each a footer button that opens ONE `ConfirmDialog` (nothing grows in the panel's body). Edit and
+// Send are forms with the dialog's own button; Cancel asks first and names the visit and the money (it is the one action here that
+// cannot be taken back). A refusal shows in the API's words in the dialog. Client component.
 
-const FIELD = "min-h-11 w-full rounded-lg border border-input bg-background px-3 text-sm"
-const LABEL = "mb-1 block text-sm font-medium text-foreground"
 export const TEXT_MAX = 320
 
-export function EditForm({ visit, people, actions }: { visit: Visit; people: AdminData["settings"]["people"]; actions?: VisitActions }) {
+interface Shown {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}
+
+export function EditDialog({ visit, people, actions, open, onOpenChange }: { visit: Visit; people: AdminData["settings"]["people"]; actions?: VisitActions } & Shown) {
   const [minutes, setMinutes] = useState(String(visit.minutes ?? 60))
   const [personId, setPersonId] = useState(visit.personId ?? "")
   const [access, setAccess] = useState(visit.property?.accessNote ?? "")
-  const { pending, error, done, run } = useRunner()
-  const save = () => {
+  const save = async () => {
     const changes = {
       ...(Number(minutes) !== (visit.minutes ?? 60) ? { durationMinutes: Number(minutes) } : {}),
       ...(personId && personId !== visit.personId ? { personId } : {}),
       ...(access !== (visit.property?.accessNote ?? "") ? { accessNote: access } : {}),
     }
-    if (!actions) return console.info("edit", visit.id, changes)
-    run(() => actions.edit(visit.id, changes), undefined, "Saved.")
+    if (!actions) return (console.info("edit", visit.id, changes), { ok: true as const })
+    return actions.edit(visit.id, changes)
   }
   return (
-    <section aria-labelledby="visit-edit">
-      <h3 id="visit-edit" className="font-display text-lg text-navy">
-        Edit
-      </h3>
-      <div className="mt-2 grid grid-cols-2 gap-3">
-        <div>
-          <label htmlFor="edit-minutes" className={LABEL}>
-            Minutes
-          </label>
-          <select id="edit-minutes" value={minutes} onChange={(e) => setMinutes(e.target.value)} className={FIELD}>
+    <ConfirmDialog slot="visit-edit" title="Edit" message="Minutes, who and the access note. Notes are added in Notes and history." confirmLabel="Save" open={open} onOpenChange={onOpenChange} onConfirm={save}>
+      <div className="grid grid-cols-2 gap-3">
+        <FormRow label="Minutes">
+          <select value={minutes} onChange={(e) => setMinutes(e.target.value)} className={FIELD}>
             {Array.from({ length: 32 }, (_, i) => (i + 1) * 15).map((m) => (
               <option key={m} value={m}>
                 {m}
               </option>
             ))}
           </select>
-        </div>
-        <div>
-          <label htmlFor="edit-person" className={LABEL}>
-            Who
-          </label>
-          <select id="edit-person" value={personId} onChange={(e) => setPersonId(e.target.value)} className={FIELD} disabled={!visit.scheduledOn}>
+        </FormRow>
+        <FormRow label="Who">
+          <select value={personId} onChange={(e) => setPersonId(e.target.value)} className={FIELD} disabled={!visit.scheduledOn}>
             {!visit.personId && <option value="">No one yet</option>}
             {people.map((p) => (
               <option key={p.id} value={p.id}>
@@ -64,21 +58,12 @@ export function EditForm({ visit, people, actions }: { visit: Visit; people: Adm
               </option>
             ))}
           </select>
-        </div>
+        </FormRow>
       </div>
-      <div className="mt-3">
-        <label htmlFor="edit-access" className={LABEL}>
-          Access note
-        </label>
-        <Input id="edit-access" value={access} onChange={(e) => setAccess(e.target.value)} placeholder="Gate code, dog, where the controller is" className="min-h-11" />
-      </div>
-      <Button type="button" variant="outline" className="mt-2 min-h-11" disabled={pending} onClick={save}>
-        Save changes
-      </Button>
-      <p role="alert" className={`${FORM_STATUS} mt-1 ${error ? "text-destructive" : "text-muted-foreground"}`}>
-        {error || done}
-      </p>
-    </section>
+      <FormRow label="Access note">
+        <Input value={access} onChange={(e) => setAccess(e.target.value)} placeholder="Gate code, dog, where the controller is" className="min-h-11" />
+      </FormRow>
+    </ConfirmDialog>
   )
 }
 
@@ -87,49 +72,25 @@ export function textConsentLine(client: Pick<Client, "phone"> | undefined): stri
   return client?.phone ? `Goes by text to ${formatPhone(client.phone)}, with the opt-out line added. Replies of STOP are honoured.` : "This customer has no mobile number, so a text cannot go."
 }
 
-export function TextForm({ client, visitId, actions }: { client: Pick<Client, "id" | "phone"> | undefined; visitId?: string; actions?: VisitActions }) {
+export function TextDialog({ client, visitId, actions, open, onOpenChange }: { client: Pick<Client, "id" | "phone"> | undefined; visitId?: string; actions?: VisitActions } & Shown) {
   const [text, setText] = useState("")
-  const { pending, error, done, run } = useRunner()
-  const send = () => {
-    if (!client) return
-    if (!actions) return console.info("send text", client.id, text)
-    run(() => actions.sendText(client.id, visitId, text.trim()), () => setText(""), "Text sent.")
+  const send = async () => {
+    if (!client) return { ok: false as const, message: "This customer has no mobile number, so a text cannot go." }
+    if (!actions) return (console.info("send text", client.id, text), { ok: true as const })
+    const out = await actions.sendText(client.id, visitId, text.trim())
+    if (out.ok) setText("")
+    return out
   }
   return (
-    <section aria-labelledby="visit-text">
-      <h3 id="visit-text" className="font-display text-lg text-navy">
-        Send a text
-      </h3>
-      <Textarea aria-label="Text to send" value={text} maxLength={TEXT_MAX} rows={3} onChange={(e) => setText(e.target.value)} className="mt-2" placeholder="Running 20 minutes late." />
-      <p className="mt-1 flex justify-between gap-3 text-sm text-muted-foreground">
-        <span>{textConsentLine(client)}</span>
-        <span className="tabular-nums">{`${text.length}/${TEXT_MAX}`}</span>
-      </p>
-      <Button type="button" variant="outline" className="mt-2 min-h-11" disabled={pending || !text.trim() || !client?.phone} onClick={send}>
-        Send text
-      </Button>
-      <p role="alert" className={`${FORM_STATUS} mt-1 ${error ? "text-destructive" : "text-muted-foreground"}`}>
-        {error || done}
-      </p>
-    </section>
+    <ConfirmDialog slot="visit-text" title="Send a text" message={textConsentLine(client)} confirmLabel="Send text" confirmDisabled={!text.trim() || !client?.phone} open={open} onOpenChange={onOpenChange} onConfirm={send}>
+      <FormRow label="Text to send" hideLabel hint={`${text.length}/${TEXT_MAX}`}>
+        <Textarea value={text} maxLength={TEXT_MAX} rows={3} onChange={(e) => setText(e.target.value)} placeholder="Running 20 minutes late." />
+      </FormRow>
+    </ConfirmDialog>
   )
 }
 
-export function ResendButton({ passId, actions }: { passId: string; actions?: VisitActions }) {
-  const { pending, error, done, run } = useRunner()
-  return (
-    <div>
-      <Button type="button" variant="outline" className="min-h-11" disabled={pending} onClick={() => (actions ? run(() => actions.resendConfirmation(passId), undefined, "Confirmation sent.") : console.info("resend confirmation", passId))}>
-        Resend confirmation
-      </Button>
-      <p role="alert" className={`${FORM_STATUS} mt-1 ${error ? "text-destructive" : "text-muted-foreground"}`}>
-        {error || done}
-      </p>
-    </div>
-  )
-}
-
-/** What Cancel this visit says will happen to the money, in words. */
+/** What Cancel visit says will happen to the money, in words. */
 export function cancelSentence(visit: Visit, pass?: Pass): string {
   const rest = pass ? ` The rest of Season Pass ${pass.number} stays.` : ""
   const paid = visitPaid(visit)
@@ -137,39 +98,19 @@ export function cancelSentence(visit: Visit, pass?: Pass): string {
   return `${money}${rest}`
 }
 
-export function CancelVisit({ visit, pass, actions }: { visit: Visit; pass?: Pass; actions?: VisitActions }) {
-  const [open, setOpen] = useState(false)
-  const { pending, error, run, clear } = useRunner()
+export function CancelVisitDialog({ visit, pass, actions, open, onOpenChange }: { visit: Visit; pass?: Pass; actions?: VisitActions } & Shown) {
   const day = dayOfVisit(visit)
   const what = `${visit.clientName}'s ${kindLabel(visit).toLowerCase()}${day ? ` on ${dayLabel(day)}` : ""}`
-  const cancel = () => {
-    if (!actions) return setOpen(false)
-    run(() => actions.cancel(visit.id), () => setOpen(false))
-  }
   return (
-    <>
-      <Button type="button" variant="ghost" className="min-h-11 text-destructive hover:text-destructive" onClick={() => (clear(), setOpen(true))}>
-        Cancel this visit
-      </Button>
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent showCloseButton={false} className="sm:max-w-sm">
-          <DialogHeader>
-            <DialogTitle className="font-display text-2xl font-semibold text-navy">{`Cancel ${what}?`}</DialogTitle>
-            <DialogDescription>{cancelSentence(visit, pass)}</DialogDescription>
-          </DialogHeader>
-          <p role="alert" className="text-sm text-destructive empty:hidden">
-            {error}
-          </p>
-          <DialogFooter>
-            <Button variant="outline" className="min-h-11" onClick={() => setOpen(false)}>
-              Keep visit
-            </Button>
-            <Button className="min-h-11" onClick={cancel} disabled={pending}>
-              Cancel visit
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </>
+    <ConfirmDialog
+      title={`Cancel ${what}?`}
+      message={cancelSentence(visit, pass)}
+      destructive
+      confirmLabel="Cancel visit"
+      open={open}
+      onOpenChange={onOpenChange}
+      onConfirm={actions ? () => actions.cancel(visit.id) : undefined}
+      log={`cancel visit ${visit.id}`}
+    />
   )
 }

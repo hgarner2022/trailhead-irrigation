@@ -41,3 +41,47 @@ export function footerPlan(facts: Pick<JobFacts, "row" | "visits" | "bill" | "ca
   if (stage === "open" && facts.canAddVisit) return { primary: "new-visit" }
   return { primary: null }
 }
+
+export type JobBarId = "add-line" | "open-visit" | "collect" | "new-visit" | "record" | "card-link" | "resend" | "stripe" | "cancel-pass" | "cancel-job"
+
+export interface JobBar {
+  primary?: JobBarId
+  secondary: JobBarId[]
+  more: JobBarId[]
+  destructive?: JobBarId
+}
+
+/**
+ * The job panel's footer as one primary, up to two outlines, More and one destructive ghost (docs/plans/2026-11-18-admin-holistic-design.md,
+ * section 7). The primary is `footerPlan`'s; Add a line and New visit are outlines when they are not the primary; Send card link is an
+ * outline on a pass with a card; Record the payment, Resend confirmation and Open in Stripe are under More; Cancel pass or Cancel job is the
+ * ghost. A third outline spills into More. Pure; `passOpen` is an active pass seen by a manager.
+ */
+export function jobBar(
+  facts: Pick<JobFacts, "row" | "bill" | "canEditLines" | "canRecord" | "canAddVisit" | "canCancel">,
+  plan: JobFooterPlan,
+  canAct: boolean,
+  pass?: { cardLast4?: string; stripeUrl?: string },
+  passOpen = false,
+): JobBar {
+  if (!canAct) return { secondary: [], more: [] }
+  const primary = plan.primary
+  const collectable = facts.bill.canSend || facts.canRecord
+  const quiet: JobBarId[] = [
+    ...(facts.canEditLines && primary !== "add-line" ? (["add-line"] as JobBarId[]) : []),
+    ...(facts.canAddVisit && facts.row.stage !== "done" && primary !== "new-visit" ? (["new-visit"] as JobBarId[]) : []),
+    ...(passOpen && pass?.cardLast4 ? (["card-link"] as JobBarId[]) : []),
+  ]
+  const more: JobBarId[] = [
+    ...quiet.slice(2),
+    ...(collectable && primary !== "collect" ? (["record"] as JobBarId[]) : []),
+    ...(passOpen ? (["resend"] as JobBarId[]) : []),
+    ...(passOpen && pass?.stripeUrl ? (["stripe"] as JobBarId[]) : []),
+  ]
+  return {
+    ...(primary ? { primary } : {}),
+    secondary: quiet.slice(0, 2),
+    more,
+    ...(passOpen ? { destructive: "cancel-pass" as const } : facts.canCancel ? { destructive: "cancel-job" as const } : {}),
+  }
+}

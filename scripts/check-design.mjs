@@ -6,6 +6,7 @@
 //   imports.mjs        no admin and marketing cross-imports; no server libraries in marketing code
 //   marketing-css.mjs  marketing CSS scans exactly the ui/ primitives marketing uses
 //   file-size.mjs      300-line cap in blocks/, ui/ and the app route groups
+//   admin-rules.mjs    the admin's one-recipe rules (one primary, banned words, "visit", overlays, tables, columns, new-block stories)
 // Other marketing checks are not run.
 // Usage: node scripts/check-design.mjs [--dir src]
 import { readFileSync } from "node:fs"
@@ -15,6 +16,7 @@ import { checkImports, checkServerImports } from "./design-gate/imports.mjs"
 import { checkStory } from "./design-gate/stories.mjs"
 import { loadExcludedUi, MarketingCss } from "./design-gate/marketing-css.mjs"
 import { checkFileSize } from "./design-gate/file-size.mjs"
+import { checkAdminRules, checkNewBlockStories, checkStaleAllow } from "./design-gate/admin-rules.mjs"
 
 const argv = process.argv.slice(2)
 const root = argv.includes("--dir") ? argv[argv.indexOf("--dir") + 1] : "src"
@@ -44,7 +46,10 @@ for (const abs of walk(root)) {
   else if (zone !== "marketing" && !fixture) checkColours(file, text, zone === "ui" && LEGACY.has(name), report)
   if (zone !== "ui") checkImports(file, text, zone, report)
   checkStory(abs, info, report)
+  checkAdminRules(abs, info, report)
 }
+checkNewBlockStories(root, report)
+checkStaleAllow(root, report)
 if (marketingCss) marketingCss.checkCoverage(report)
 
 for (const n of report.notes) console.log(n)
