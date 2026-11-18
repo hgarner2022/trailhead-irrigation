@@ -7,6 +7,7 @@ import { areasList } from "@/api/v1/areas/handlers"
 import { customersList, gateYard } from "@/api/v1/customers/handlers"
 import { payLinkOf } from "@/api/v1/invoices/queries"
 import { loadEvents } from "@/api/v1/events/queries"
+import { windowTold } from "@/lib/portal/window-told"
 import { messagesList } from "@/api/v1/messages/handlers"
 import { passesList } from "@/api/v1/passes/handlers"
 import { settingsChangesList, settingsGet } from "@/api/v1/settings/handlers"
@@ -103,6 +104,8 @@ export async function getLiveAdminData(ctx: Ctx): Promise<AdminData> {
   ])
 
   const kinds = await loadJobKinds(db, org, jobRows)
+  // which visits have had their window told (the day-before text for their present day), so Move knows a time is booked
+  const told = await windowTold(db, org, visits.map((v) => ({ id: v.id, scheduledOn: v.scheduledOn })))
 
   return shapeAdminData({
     organizationId: org,
@@ -137,6 +140,7 @@ export async function getLiveAdminData(ctx: Ctx): Promise<AdminData> {
       address: contact ? p.address : null, gateCode: null, accessNote: null, contactPhone: null, ...gateYard(ctx, p),
     })),
     events: events.data,
+    windowToldIds: [...told],
     techView: !contact,
     blocks,
     services: serviceRows.data.map(serviceItem),

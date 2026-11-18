@@ -16,6 +16,7 @@ export const EVENT_KINDS = [
   "visit.moved",
   "visit.day-filled",
   "visit.move-requested",
+  "visit.confirmed",
   "visit.done",
   "visit.undone",
   "visit.not-done",

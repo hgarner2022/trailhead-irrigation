@@ -1,4 +1,5 @@
 import "server-only"
+import { randomUUID } from "node:crypto"
 import { and, desc, eq, gte, lte, ne, notInArray } from "drizzle-orm"
 import { passStatus } from "@/lib/pass/facts"
 import { isCustomerCaller, assertBeforeCutoff } from "../portal/cutoff"
@@ -12,6 +13,8 @@ import { defineHandler } from "../../core/handler"
 import { afterTimeCursor, cursorPage, page, pageInput, timeCursor } from "../../core/pagination"
 import { addDays, assertOwnsCustomer, capacityKind, Day, Id, idInput, okOutput, OK, today, VisitKind, VisitStatus, weekdayOf } from "../shared"
 import { queueDateMessage } from "@/lib/scheduling/server/notify"
+import { timeBooked } from "@/lib/admin/move-rules"
+import { windowTold } from "@/lib/portal/window-told"
 import { orderDay } from "@/lib/scheduling/server/order-day"
 import { blockedMinutes, capacityAfterBlocks } from "@/lib/admin/calendar"
 import { loadBlocks } from "@/lib/jobber-feed"
@@ -100,9 +103,14 @@ export const visitsGet = defineHandler({
 })
 
 /** The one placement: every hard rule, the day ordered, the date text queued. `visits.move` and `visits.create` both run it. `personId` names the person; `truckId` is its alias. */
-export async function placeVisit(ctx: Ctx, input: { id: string; personId?: string; truckId?: string; scheduledOn: string; startTime?: string }) {
+export async function placeVisit(ctx: Ctx, input: { id: string; personId?: string; truckId?: string; scheduledOn: string; startTime?: string; notify?: boolean; note?: string }) {
     const row = await loadVisit(ctx, input.id)
     const visit = row.visit
+    const notify = input.notify ?? true
+    if (input.note && !notify) throw new ApiError("invalid", "The note goes in the text. Leave it out when you do not text the customer.")
+    // A booked time (a told window, or a time on a one-off) always texts the customer when it moves: nothing promised moves silently.
+    const booked = timeBooked({ isPass: row.isPassVisit, startTime: visit.startTime, windowTold: visit.scheduledOn ? (await windowTold(ctx.db, ctx.organizationId, [{ id: visit.id, scheduledOn: visit.scheduledOn }])).has(visit.id) : false })
+    if (!notify && visit.status === "scheduled" && booked) throw new ApiError("unprocessable", "This visit has a booked time, so the customer is always texted. Move it and text them.")
     if ((FINAL as readonly string[]).includes(visit.status)) throw new ApiError("unprocessable", `A ${visit.status} visit cannot be moved`)
     const person = await assignee(ctx, input, input.scheduledOn)
     const [org] = await ctx.db.select({ settings: s.organization.settings }).from(s.organization).where(eq(s.organization.id, ctx.organizationId))
@@ -131,10 +139,18 @@ export async function placeVisit(ctx: Ctx, input: { id: string; personId?: strin
     if (moved && visit.personId && visit.scheduledOn && (visit.personId !== person.id || visit.scheduledOn !== input.scheduledOn)) await orderDay(ctx.db, { personId: visit.personId, day: visit.scheduledOn })
     if (input.startTime) await ctx.db.update(s.visit).set({ startTime: input.startTime }).where(eq(s.visit.id, visit.id))
     await ctx.db.update(s.adminAlert).set({ resolvedAt: ctx.now }).where(and(eq(s.adminAlert.organizationId, ctx.organizationId), eq(s.adminAlert.kind, "unplaced"), eq(s.adminAlert.key, visit.id)))
-    if (visit.scheduledOn !== input.scheduledOn) await queueDateMessage(ctx.db, visit, moved ? "date-moved" : "date-set", input.scheduledOn)
+    // The text: a new day, or a new time on a booked visit. A property that must be home is asked "Reply YES or pick another day" and reads Waiting on customer until they answer.
+    const changed = visit.scheduledOn !== input.scheduledOn || (moved && booked && (input.startTime ?? null) !== visit.startTime)
+    const [yard] = await ctx.db.select({ mustBeHome: s.property.mustBeHome }).from(s.property).where(eq(s.property.id, visit.propertyId))
+    const asked = notify && changed && moved && Boolean(yard?.mustBeHome)
+    const note = input.note?.trim() || undefined
+    const texted = notify && changed
+      ? await queueDateMessage(ctx.db, visit, moved ? "date-moved" : "date-set", input.scheduledOn, moved ? { key: `moved-${visit.id}-${randomUUID()}`, note, asked, told: Boolean(input.startTime) } : {})
+      : false
     await emitEvent(ctx.db, ctx.organizationId, moved ? "visit.moved" : "visit.scheduled", { visitId: visit.id, ...who(person.id), scheduledOn: input.scheduledOn, from: moved ? { ...who(visit.personId), scheduledOn: visit.scheduledOn } : null }, {
       about: "visit", aboutId: visit.id, customerId: visit.customerId, jobId: visit.jobId, visitId: visit.id, who: whoOf(ctx), at: ctx.now,
-      detail: { name: visitName(visit.kind), day: input.scheduledOn, from: moved ? visit.scheduledOn : null, personId: person.id },
+      // `asked` is the fact Waiting on customer is read from (no column): a later move, a customer's own pick or `visit.confirmed` ends it
+      detail: { name: visitName(visit.kind), day: input.scheduledOn, from: moved ? visit.scheduledOn : null, personId: person.id, texted, ...(asked ? { asked: true } : {}), ...(note ? { note } : {}), ...(input.startTime ? { startTime: input.startTime } : {}) },
     })
     return visitOut(ctx, await loadVisit(ctx, visit.id))
 }
@@ -145,10 +161,30 @@ export const visitsMove = defineHandler({
   path: "/visits/{id}/move",
   scope: "write",
   summary: "Put a visit on a person and a day. Hard rules: the person is on the schedule and works that weekday, the day is inside the visit's window, their day has capacity for the kind, and it stays in one area group. `personId` names them; `truckId` is the same id for one season.",
-  input: z.object({ id: Id, personId: Id.optional(), truckId: PersonIdAlias, scheduledOn: Day, startTime: z.string().regex(/^\d{2}:\d{2}$/).optional() }),
+  input: z.object({
+    id: Id, personId: Id.optional(), truckId: PersonIdAlias, scheduledOn: Day, startTime: z.string().regex(/^\d{2}:\d{2}$/).optional(),
+    notify: z.boolean().optional().describe("Text the customer the new day (and time). Default true; false is refused for a visit with a booked time (a told window, or a time on a one-off), which always texts."),
+    note: z.string().trim().max(140).optional().describe("One line from Ryan, said in the text after the new day. Only with `notify`."),
+  }),
   output: VisitOut,
   async run(ctx, input) {
     return placeVisit(ctx, input)
+  },
+})
+
+export const visitsConfirm = defineHandler({
+  name: "visits.confirm",
+  method: "POST",
+  path: "/visits/{id}/confirm",
+  scope: "write",
+  summary: "Record that the customer confirmed the day Ryan moved their visit to (a YES by phone or in person), which ends Waiting on customer. A `visit.confirmed` event; nothing is texted.",
+  input: idInput,
+  output: VisitOut,
+  async run(ctx, input) {
+    const { visit } = await loadVisit(ctx, input.id)
+    if (visit.status !== "scheduled" || !visit.scheduledOn) throw new ApiError("unprocessable", "Only a scheduled visit has a day to confirm")
+    await recordEvent(ctx.db, { organizationId: ctx.organizationId, about: "visit", aboutId: visit.id, customerId: visit.customerId, jobId: visit.jobId, visitId: visit.id, kind: "visit.confirmed", detail: { name: visitName(visit.kind), day: visit.scheduledOn }, who: whoOf(ctx), at: ctx.now })
+    return visitOut(ctx, await loadVisit(ctx, visit.id))
   },
 })
 

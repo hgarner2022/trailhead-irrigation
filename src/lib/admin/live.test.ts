@@ -8,7 +8,7 @@ import { callApi } from "@/api/core/call"
 import { apiDb, ctxFor, jobIdOfPassId, linesOfJob, ORG, owner, passViewOf, readKey, setPass, tech } from "@/api/test-helpers"
 import { linesOfVisit, visitPrice } from "@/lib/jobs/lines"
 import { eventsNote } from "@/api/v1/events/handlers"
-import { visitsMove } from "@/api/v1/visits/handlers"
+import { visitsConfirm, visitsMove } from "@/api/v1/visits/handlers"
 import { recordEvent } from "@/lib/events/record"
 import snapshot from "./fixtures/snapshot.json"
 import { getLiveAdminData } from "./live"
@@ -151,5 +151,27 @@ describe("a visit marked done before its scheduled day", () => {
     const after = await getLiveAdminData(ctxFor(db, owner))
     const client = after.clients.find((c) => c.id === customerId)!
     expect(client.lastVisitAt?.slice(0, 10)).toBe("2027-04-19")
+  })
+})
+
+describe("Move's two facts on a visit (step 4)", () => {
+  it("reads Waiting on customer from the move that asked, ends it on a confirmation, and marks a told window as a booked time", async () => {
+    const ctx = ctxFor(db, owner)
+    const [v] = await db.select().from(s.visit).where(eq(s.visit.id, "p9-blowout"))
+    await db.update(s.property).set({ mustBeHome: true }).where(eq(s.property.id, v!.propertyId))
+    // each action at its own minute: the story is ordered by time
+    const at = (minute: number) => ctxFor(db, owner, `2027-04-20T16:${String(minute).padStart(2, "0")}:00Z`)
+    await callApi(at(1), visitsMove, { id: "p9-blowout", personId: "person_truck-1", scheduledOn: "2027-10-05" })
+    await callApi(at(2), visitsMove, { id: "p9-blowout", personId: "person_truck-1", scheduledOn: "2027-10-06" })
+    const read = async () => (await getLiveAdminData(ctx)).visits.find((x) => x.id === "p9-blowout")!
+    expect(await read()).toMatchObject({ waiting: true })
+    expect(await read()).not.toHaveProperty("timeBooked")
+    // the day-before text went for its present day: the time is booked
+    await db.insert(s.messageLog).values({ organizationId: ORG, customerId: v!.customerId, visitId: v!.id, kind: "day-before", key: "p9-blowout-2027-10-06", channel: "sms", to: "303-555-0100", subject: null, body: "x", data: {}, status: "sent" })
+    expect(await read()).toMatchObject({ waiting: true, timeBooked: true })
+    await callApi(at(3), visitsConfirm, { id: "p9-blowout" })
+    expect(await read()).not.toHaveProperty("waiting")
+    // a tech's read has the same facts (the events they may read include visit.*)
+    expect((await getLiveAdminData(ctxFor(db, tech))).visits.find((x) => x.id === "p9-blowout")).toMatchObject({ timeBooked: true })
   })
 })

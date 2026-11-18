@@ -137,8 +137,11 @@ function whatOf(e: EventForWords): string {
       const from = dayWords(d.from)
       const to = dayWords(d.day)
       const by = e.who === "customer" ? ", from the account" : ""
-      return `${from && to ? `${name} moved from ${from} to ${to}` : to ? `${name} moved to ${to}` : `${name} moved`}${by}`
+      // an office move says whether the customer was texted, and asked to reply YES; a move with no `texted` fact (an older row, the customer's own) says nothing
+      const told = d.texted === false ? ", not texted" : d.asked === true ? ", customer asked to confirm" : ""
+      return `${from && to ? `${name} moved from ${from} to ${to}` : to ? `${name} moved to ${to}` : `${name} moved`}${by}${told}`
     }
+    case "visit.confirmed": return `${name} confirmed by the customer`
     case "visit.day-filled": {
       const from = dayWords(d.from)
       const to = dayWords(d.to)

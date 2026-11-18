@@ -14,6 +14,7 @@ import { stageOf } from "@/lib/jobs/stage"
 import { invoiceOpen, invoiceStatus } from "@/lib/money/invoice"
 import { allocateJobPayments, jobMoney as moneyOfJob, jobOwed } from "@/lib/money/words"
 import { NOT_CLOSED_LOOKBACK_DAYS, visitJob, visitPaid, visitPaidTotal } from "./jobs"
+import { timeBooked, waitingVisitIds } from "./move-rules"
 import { newestNote, storiesOf, type StoryEvent } from "./story"
 import type {
   AdminInvoice, AdminPayment, SoldJob, AdminData, Attention, BusyBlock, Client, Consent, Invoice, Message, MessageKind, MonthTotal, Pass, PassVisit, Quote, SettingsChange,
@@ -100,6 +101,8 @@ export interface ShapeInput {
   propertyRows?: PropertyRow[]
   /** every invoice of the organization; absent in the fixtures. The open ones (sent, overdue) make a job's money read Invoice sent */
   invoiceRows?: InvoiceRow[]
+  /** the visits whose window the day-before text has told, for their present day (`windowTold`); absent in the fixtures */
+  windowToldIds?: string[]
   /** the organization's newest events (as a caller may read them): grouped into the story of each customer, job and visit; absent in the fixtures, where no panel shows the block */
   events?: StoryEvent[]
   /** the caller has no write scope (a tech): their stories drop the messages about money and show no email */
@@ -220,6 +223,8 @@ export function shapeAdminData(i: ShapeInput): AdminData {
     return bill && (bill.visitIds.length === 0 || bill.visitIds.includes(visitId)) ? bill : undefined
   }
   const stories = storiesOf(i.events, i.messages, { tech: i.techView })
+  const told = new Set(i.windowToldIds)
+  const waiting = waitingVisitIds(i.events)
   // A pending pass is an unpaid attempt: its visits are never a job anywhere on the Schedule or in the counts.
   const pending = new Set(i.passes.filter((p) => p.status === "pending").map((p) => p.id))
 
@@ -238,6 +243,8 @@ export function shapeAdminData(i: ShapeInput): AdminData {
       ...(v.personName ? { personName: v.personName } : {}),
       ...(v.personId ? { personId: v.personId } : {}),
       ...(v.awaitingPick ? { awaitingPick: true } : {}),
+      ...(timeBooked({ isPass: v.passId !== null, startTime: v.startTime, windowTold: told.has(v.id) }) ? { timeBooked: true } : {}),
+      ...(waiting.has(v.id) && v.status === "scheduled" ? { waiting: true } : {}),
       ...(v.property ? { property: yardOf(v.property) } : {}),
       ...(v.stopOrder !== null ? { stopOrder: v.stopOrder } : {}),
       ...point,

@@ -1,4 +1,4 @@
-import { SIGN_OFF, RYAN_DOES, longDay, whoIsComing, windowText } from "./format"
+import { SIGN_OFF, RYAN_DOES, longDay, noteLine, whoIsComing, windowText } from "./format"
 import { bodyOf, capitalFirst, defaultBody, fillTemplate, withoutGreeting, type EditableMessage, type Overrides } from "./editable"
 import { emailLayout, greetingName, greetingText, plainText } from "./layout"
 import { visitBody, visitLines } from "./visit-block"
@@ -34,8 +34,11 @@ function build(d: VisitData, subject: string, title: string, sentence: string, p
 export const dateSetEmail = (d: VisitData, o?: Opts): RenderedEmail =>
   build(d, `Your ${d.visit.name} is ${longDay(d.visit.day)}`, `Your ${d.visit.name} has a day`, intro("date-set", d, o), "Add it to your calendar below, or pick another day in your Trailhead account.")
 
+/** What Ryan added to a move: his line, and for a property that must be home the ask to confirm the day. */
+const movedSentence = (d: VisitData, o?: Opts) => [intro("date-moved", d, o), noteLine(d.visit.note), d.visit.asked ? "Someone needs to be home, so please confirm that day works, or pick another day in your Trailhead account." : ""].filter(Boolean).join(" ")
+
 export const dateMovedEmail = (d: VisitData, o?: Opts): RenderedEmail =>
-  build(d, `Your ${d.visit.name} moved to ${longDay(d.visit.day)}`, `Your ${d.visit.name} moved`, intro("date-moved", d, o), "Add the new day to your calendar below, or pick another day in your Trailhead account.")
+  build(d, `Your ${d.visit.name} moved to ${longDay(d.visit.day)}`, `Your ${d.visit.name} moved`, movedSentence(d, o), "Add the new day to your calendar below, or pick another day in your Trailhead account.")
 
 const ryanDoes = (name: string) => (name.includes("inspection") ? RYAN_DOES.inspection : name.includes("blowout") ? RYAN_DOES.blowout : RYAN_DOES["turn-on"])
 
