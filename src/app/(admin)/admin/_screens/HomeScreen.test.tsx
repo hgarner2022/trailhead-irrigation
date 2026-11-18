@@ -15,9 +15,9 @@ const stop = (over: Partial<Visit>): Visit => ({
 })
 
 describe("HomeScreen", () => {
-  it("opens on the four jobs in order: Today, the money line, the map and Needs action", () => {
+  it("opens on the four jobs in order: the money line, Today, the map and Needs action", () => {
     render(<HomeScreen data={data} today={TODAY} />)
-    const order = ["Today", "Money", "Map", "Needs action"].map((name) => screen.getByRole("heading", { name }))
+    const order = ["Money", "Today", "Map", "Needs action"].map((name) => screen.getByRole("heading", { name }))
     order.slice(1).forEach((h, i) => expect(order[i]!.compareDocumentPosition(h) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy())
     expect(screen.getByText(/^Thu, Nov 12 · \d+ visits? in /)).toBeInTheDocument()
     expect(document.querySelector('[data-slot="job-counts"]')).toBeNull()
@@ -49,7 +49,8 @@ describe("HomeScreen", () => {
       stop({ id: "n3", clientName: "Later Lou", startAt: "2027-05-04T15:00:00Z", scheduledOn: "2027-05-04", personId: "person_truck-1" }),
     ]
     render(<HomeScreen data={{ ...data, visits, attention: [] }} today={TODAY} />)
-    expect(screen.getByText("Tue, Apr 27 · 2 visits in Erie and Longmont")).toBeInTheDocument()
+    const dayLine = screen.getByText("Tue, Apr 27 · 2 visits in Erie and Longmont")
+    expect(dayLine.closest("a")).toHaveAttribute("href", "/admin/schedule?day=2027-04-27")
     expect(screen.queryByText("No visits scheduled.")).toBeNull()
     expect(screen.queryByText(/Later Lou/)).toBeNull()
     expect(screen.getByText(/Next Nia/)).toBeInTheDocument()

@@ -12,11 +12,11 @@ import { HomeMoney } from "./HomeMoney"
 import { HomeWeek } from "./HomeWeek"
 import { routePeople } from "@/lib/admin/people"
 
-// What Hannah opens to, her four jobs on one screen in her order (docs/plans/2026-11-14-jobs-to-be-done.md):
-// Today or Next up ("is the week sane"), the money line ("how is the money"), the map of that day, and Needs action
+// What Hannah opens to, her four jobs on one screen (docs/plans/2026-11-14-jobs-to-be-done.md): the money line
+// ("how is the money"), then Today or Next up ("is the week sane"), the map of that day, and Needs action
 // ("what needs me"), grouped by cause, every row with its button and Dismiss. Reports keeps everything else. Pure
 // composition over `data` and a fixed `today`; the route's page.tsx supplies both. Server component; the row
-// buttons and the map are client code. On a laptop the map sits beside the week and the money line.
+// buttons and the map are client code. On a laptop the map sits beside the money line and the day (the money first, Hannah, Nov 17 2026).
 
 export interface HomeScreenProps {
   data: AdminData
@@ -40,8 +40,8 @@ export function HomeScreen({ data, today, readOnly = false, onAttentionAction, o
         <PageHeader title={greeting(today)} context={pageContext(data, today)} />
 
         <div className="grid gap-6 lg:grid-cols-5">
-          <HomeWeek week={week} today={today} className="lg:col-span-3 lg:col-start-1 lg:row-start-1" />
-          <HomeMoney figures={moneyFigures(data, today)} className="lg:col-span-3 lg:col-start-1 lg:row-start-2" />
+          <HomeMoney figures={moneyFigures(data, today)} className="lg:col-span-3 lg:col-start-1 lg:row-start-1" />
+          <HomeWeek week={week} today={today} className="lg:col-span-3 lg:col-start-1 lg:row-start-2" />
           <HomeMap visits={week.visits} people={routePeople(data.settings.people)} className="lg:col-span-2 lg:col-start-4 lg:row-span-2 lg:row-start-1" />
           <Card className="lg:col-span-5 lg:row-start-3">
             <CardHeader>
