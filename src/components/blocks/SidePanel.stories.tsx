@@ -1,6 +1,6 @@
 import { useState } from "react"
 import type { Meta, StoryObj } from "@storybook/nextjs-vite"
-import { expect, fn } from "storybook/test"
+import { expect, fn, waitFor, within } from "storybook/test"
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import type { Pass, PassVisit } from "@/lib/admin/types"
 import { Button } from "@/components/ui/button"
@@ -153,15 +153,24 @@ export const OpenOnLaptop: Story = {
   render: () => <OverGridDemo />,
 }
 
-/** The width is changed from the handle's keyboard: three steps of 40px to the left make the drawer 120px wider. */
+/** Real browser: the handle takes the arrow keys in 40px steps, stops at 360px and at 70% of the window, and remembers the width. */
 export const OpenResized: Story = {
   globals: { viewport: { value: "wide", isRotated: false } },
   render: () => <OverGridDemo />,
-  play: async ({ canvas, userEvent }) => {
-    const handle = await canvas.findByRole("separator", { name: "Resize panel" })
+  play: async ({ userEvent }) => {
+    const body = within(document.body)
+    const handle = await body.findByRole("separator", { name: "Resize panel" })
+    const width = () => (document.querySelector('[data-slot="resizable-panel"][id="panel"]') as HTMLElement).getBoundingClientRect().width
+    await waitFor(() => expect(width()).toBeGreaterThanOrEqual(479))
+    const start = width()
     handle.focus()
     await userEvent.keyboard("{ArrowLeft}{ArrowLeft}{ArrowLeft}")
-    await expect(handle).toHaveAttribute("aria-valuenow", "600")
+    await waitFor(() => expect(Math.abs(width() - (start + 120))).toBeLessThan(2))
+    await userEvent.keyboard("{ArrowRight}".repeat(30))
+    await waitFor(() => expect(Math.abs(width() - 360)).toBeLessThan(2))
+    await userEvent.keyboard("{ArrowLeft}".repeat(40))
+    await waitFor(() => expect(width()).toBeLessThanOrEqual(window.innerWidth * 0.7 + 1))
+    await waitFor(() => expect(Number(window.localStorage.getItem("trailhead.side-panel-width"))).toBeGreaterThan(360))
   },
 }
 

@@ -206,7 +206,6 @@ export function VisitPanel({ data, today, visitId, open, onOpenChange, onOpenVis
       onOpenChange={onOpenChange}
       title={visit.clientName}
       description={`${kindLabel(visit)}${day ? `, ${dayLabel(day)}` : ", no day yet"}`}
-      className="z-50"
     >
       <div className="flex flex-col gap-6" data-slot="visit-panel">
         <div className="flex flex-wrap items-center gap-2">
