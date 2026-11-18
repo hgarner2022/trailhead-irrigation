@@ -1,14 +1,18 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite"
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
-import type { AdminData, Attention } from "@/lib/admin/types"
+import type { AdminData, Attention, Visit } from "@/lib/admin/types"
+import { expect } from "storybook/test"
 import { EMPTY_SETTINGS } from "@/lib/admin/empty-settings"
 import { AdminShell } from "@/components/blocks/AdminShell"
 import { HomeScreen } from "./HomeScreen"
 
+const STORE = "trailhead.home.today-view"
+
 // `today` is pinned to 12:56 pm Mountain on Thursday, November 12, 2026: four
 // minutes after the snapshot's sync, so the header reads "Updated 4 minutes
-// ago". In season, that day has four scheduled blowouts (the Today card). The quiet November
-// fixture has nothing today or this month: its next visits are three in April, so the day card is "Next up".
+// ago". In season, that day has four scheduled blowouts with no window yet (all Ahead today). `busy` is the same day with eight
+// visits in all three groups: two past their window, three ahead and three done (paid by Venmo, owed, and a bill sent).
+// The quiet November fixture has nothing today or this month: its next visits are three in April, so every group reads "Nothing here" and the screen links to the next day.
 const TODAY = "2026-11-12T19:56:30Z"
 const snap = snapshot as AdminData
 const groupedTexts: Attention = {
@@ -28,6 +32,26 @@ const quiet: AdminData = {
   visits: [
     ...snap.visits.filter((v) => v.status === "scheduled").slice(0, 3).map((v, i) => ({ ...v, id: `april-${i}`, town: "Erie" as const, personId: i === 2 ? "person_truck-2" : "person_truck-1", personName: i === 2 ? "Tech Two" : "Ryan Garner", startAt: `2027-04-27T${15 + i}:00:00Z`, scheduledOn: "2027-04-27", startTime: undefined, stopOrder: undefined })),
     ...snap.visits.filter((v) => v.status === "completed" && v.startAt?.startsWith("2026-11-10")).slice(0, 1),
+  ],
+  attention: snap.attention.filter((a) => a.kind === "pass-cancelled"),
+}
+
+const stop = (over: Partial<Visit>): Visit => ({
+  id: "v", clientId: "c", clientName: "Percy Dunn", town: "Erie", kind: "repair", status: "scheduled", isPass: false, jobberUrl: "", jobId: "j", price: 145,
+  scheduledOn: "2026-11-12", startAt: "2026-11-12T15:00:00Z", startTime: "08:00", personId: "person_truck-1", personName: "Ryan Garner", payments: [], ...over,
+})
+const doneToday = { status: "completed" as const, completedOn: "2026-11-12", personId: "person_truck-2", personName: "Tech Two" }
+const busy: AdminData = {
+  ...data,
+  visits: [
+    stop({ id: "b1", clientName: "Percy Dunn", stopOrder: 1 }),
+    stop({ id: "b2", clientName: "Alicia Moss", town: "Firestone", kind: "blowout", price: 95, startTime: "10:00", startAt: "2026-11-12T17:00:00Z", stopOrder: 2 }),
+    stop({ id: "b3", clientName: "Ethan Cole", kind: "blowout", price: 95, startTime: "13:00", startAt: "2026-11-12T20:00:00Z", stopOrder: 3 }),
+    stop({ id: "b4", clientName: "Matthew Ames", town: "Longmont", startTime: "15:00", startAt: "2026-11-12T22:00:00Z", stopOrder: 4 }),
+    stop({ id: "b5", clientName: "Rosa Vega", town: "Lafayette", ...doneToday, startTime: "08:00", startAt: "2026-11-12T15:00:00Z", payments: [{ id: "pay-b5", visitId: "b5", amount: 145, method: "venmo", status: "succeeded" }] }),
+    stop({ id: "b6", clientName: "Sam Ortiz", town: "Louisville", kind: "blowout", price: 95, ...doneToday, startTime: "10:00", startAt: "2026-11-12T17:00:00Z" }),
+    stop({ id: "b7", clientName: "Tina Lowe", town: "Broomfield", ...doneToday, startTime: "11:00", startAt: "2026-11-12T18:00:00Z", billSent: true }),
+    stop({ id: "b8", clientName: "Uri Fox", town: "Louisville", personId: "person_truck-2", personName: "Tech Two", startTime: "14:00", startAt: "2026-11-12T21:00:00Z" }),
   ],
   attention: snap.attention.filter((a) => a.kind === "pass-cancelled"),
 }
@@ -52,6 +76,14 @@ const meta = {
   component: HomeScreen,
   parameters: { layout: "fullscreen" },
   args: { data, today: TODAY },
+  // The By visit / By person choice is kept per browser; every story starts on By visit.
+  beforeEach: () => {
+    try {
+      window.localStorage.removeItem(STORE)
+    } catch {
+      // storage blocked: nothing to clear
+    }
+  },
   render: (args) => (
     <AdminShell current="home" user={{ initials: "HG", name: "Hannah" }}>
       <HomeScreen {...args} />
@@ -61,12 +93,49 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-/** In season: the money line first, then Today on the four blowouts (its day line links to the Schedule), the map and a grouped Needs action row. */
+/** In season: the Today money strip, the four blowouts as Ahead today (no window yet), the map beside them and a grouped Needs action row. */
 export const InSeason: Story = {
   globals: { viewport: { value: "wide", isRotated: false } },
 }
 
-/** November, nothing today: Next up says what is next and when, once, with no empty person lines. */
+/** A busy Thursday at 12:56 pm: two visits past their window, three ahead and three done, with Paid, Venmo, $95 owed and Bill sent at the right of the done ones; By visit. */
+export const Busy: Story = {
+  args: { data: busy },
+  globals: { viewport: { value: "wide", isRotated: false } },
+}
+
+/** The same day By person: each person's visits in route order under their name, the stop number the map pin carries. */
+export const ByPerson: Story = {
+  args: { data: busy },
+  globals: { viewport: { value: "wide", isRotated: false } },
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(await canvas.findByRole("tab", { name: "By person" }))
+    await expect(await canvas.findByRole("heading", { name: /Ryan Garner/ })).toBeInTheDocument()
+  },
+}
+
+/** A tech opens the same day and reads it: the rows open the visit panel without its buttons, and Needs action has none. */
+export const TechReadOnly: Story = {
+  args: { data: busy, readOnly: true },
+  globals: { viewport: { value: "wide", isRotated: false } },
+}
+
+/** On a phone the strip is two rows of two, the toggle runs full width, the groups come first and the map folds under them. */
+export const BusyPhone: Story = {
+  args: { data: busy },
+  globals: { viewport: { value: "phone", isRotated: false } },
+}
+
+export const ByPersonPhone: Story = {
+  args: { data: busy },
+  globals: { viewport: { value: "phone", isRotated: false } },
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(await canvas.findByRole("tab", { name: "By person" }))
+    await expect(await canvas.findByRole("heading", { name: /Tech Two/ })).toBeInTheDocument()
+  },
+}
+
+/** November, nothing today: every group says Nothing here and one line links to the next day that has visits. */
 export const QuietNovember: Story = {
   args: { data: quiet },
   globals: { viewport: { value: "wide", isRotated: false } },

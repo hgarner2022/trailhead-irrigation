@@ -6,8 +6,9 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import type { AreaGroup, Person, Visit } from "@/lib/admin/types"
-import { addDays, areaOf, dayLabel, dayVisits, weekDays, weekOf, weekVisits, worksOn } from "@/lib/admin/calendar"
+import { addDays, dayLabel, dayVisits, weekDays, weekOf, weekVisits, worksOn } from "@/lib/admin/calendar"
 import { EmptyState } from "./EmptyState"
+import { areaBorder, areaIndexOf, areaSwatch } from "./area-colours"
 import { KIND_WORDS } from "@/lib/admin/format"
 
 // The week by person: one row per person on the schedule, Monday to Sunday across in seven equal columns after a fixed,
@@ -41,13 +42,7 @@ export interface WeekGridProps {
   className?: string
 }
 
-// One colour per area, by its position in the list; a fourth area wraps.
-const AREA_BORDERS = ["border-l-primary", "border-l-navy", "border-l-positive"] as const
-const AREA_SWATCHES = ["bg-primary", "bg-navy", "bg-positive"] as const
-const areaIndex = (visit: Visit, areas: AreaGroup[]) => {
-  const area = areaOf(visit.town, areas)
-  return area ? areas.indexOf(area) % AREA_BORDERS.length : -1
-}
+const areaIndex = (visit: Visit, areas: AreaGroup[]) => areaIndexOf(visit.town, areas)
 
 function VisitBlock({ visit, areas, selected, onSelect, draggable }: { visit: Visit; areas: AreaGroup[]; selected: boolean; onSelect: (id: string | undefined) => void; draggable: boolean }) {
   const index = areaIndex(visit, areas)
@@ -65,7 +60,7 @@ function VisitBlock({ visit, areas, selected, onSelect, draggable }: { visit: Vi
       onClick={() => onSelect(selected ? undefined : visit.id)}
       className={cn(
         "relative flex w-full items-center gap-1 overflow-hidden rounded-lg border border-border border-l-4 bg-background px-2 py-1.5 text-left text-xs leading-tight transition-colors hover:bg-cream focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
-        index === -1 ? "border-l-muted" : AREA_BORDERS[index],
+        areaBorder(index),
         selected && "ring-2 ring-primary/50",
         draggable && "cursor-grab",
       )}
@@ -113,7 +108,7 @@ function Legend({ areas }: { areas: AreaGroup[] }) {
     <ul data-slot="week-grid-legend" className="flex flex-wrap gap-x-5 gap-y-1.5 text-xs text-muted-foreground">
       {areas.map((area, i) => (
         <li key={area.id} className="flex items-center gap-1.5">
-          <span aria-hidden className={cn("size-2.5 rounded-full", AREA_SWATCHES[i % AREA_SWATCHES.length])} />
+          <span aria-hidden className={cn("size-2.5 rounded-full", areaSwatch(i))} />
           {area.name}
         </li>
       ))}
