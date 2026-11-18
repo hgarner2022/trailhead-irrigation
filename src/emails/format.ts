@@ -58,8 +58,6 @@ export interface VisitFacts {
   day: string
   /** "08:00", or null while only the day is known */
   startTime: string | null
-  /** who is coming, as a sentence subject ("Ryan's truck"); null reads as "Ryan". Today the person's truck label; the label goes away in step 6 */
-  crew: string | null
   /** the first name of the person on the visit ("Ryan"); null while the visit has no one, and then the messages say nothing about who */
   who: string | null
   /** the property's gate code and on-site contact, when it has them; no template says them yet (step 3 writes them into the facts only) */
@@ -71,7 +69,8 @@ export interface VisitFacts {
   icsUrl: string
 }
 
-export const crewOf = (v: VisitFacts) => v.crew ?? "Ryan"
+/** Who is coming, as a sentence subject: the person's first name, else "Ryan and the crew" while the visit has no one. */
+export const whoIsComing = (v: Pick<VisitFacts, "who">) => v.who ?? "Ryan and the crew"
 
 /** What every dated message and the done step say about confirming a visit, so no screen promises a different timeline. */
 export const CONFIRM_LINE = "We confirm it by text two weeks before and remind you the day before. If it has to move, we tell you first and you can pick another day."

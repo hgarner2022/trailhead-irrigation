@@ -1,8 +1,10 @@
 import "server-only"
-import { and, asc, eq, inArray, isNotNull } from "drizzle-orm"
+import { and, asc, eq, inArray, isNotNull, isNull } from "drizzle-orm"
 import * as s from "@/db/schema"
 import type { Database } from "@/db/types"
 import { mountainDay, addDays } from "@/api/v1/shared"
+import { linesOfVisit, visitPrice } from "@/lib/jobs/lines"
+import { loadTaxRule } from "@/lib/money/tax-rule"
 import { baseData } from "@/lib/messaging/data"
 import { queueMessage } from "@/lib/messaging/queue"
 
@@ -29,31 +31,35 @@ export const expiryWords = (cardExpires: string) => {
  */
 export async function queueCardExpiryMessages(db: Database, makeLink: (input: { passId: string; stripeCustomerId: string }) => Promise<string>, origin: string, now = new Date()): Promise<number> {
   const today = mountainDay(now)
+  // Passes that are sold and not cancelled; the job's season and number are its own columns.
   const rows = await db
-    .select({ pass: s.seasonPass, customer: s.customer, jobSeason: s.job.season })
-    .from(s.seasonPass)
-    .innerJoin(s.job, eq(s.job.id, s.seasonPass.jobId))
-    .innerJoin(s.customer, eq(s.customer.id, s.seasonPass.customerId))
-    .where(and(eq(s.seasonPass.status, "active"), isNotNull(s.customer.cardExpires)))
-    .orderBy(asc(s.seasonPass.createdAt))
+    .select({ job: s.job, customer: s.customer })
+    .from(s.job)
+    .innerJoin(s.customer, eq(s.customer.id, s.job.customerId))
+    .where(and(isNotNull(s.job.season), isNotNull(s.job.soldOn), isNull(s.job.cancelledAt), isNotNull(s.customer.cardExpires)))
+    .orderBy(asc(s.job.createdAt))
   // One customer, one card, one email: the customer's newest active pass speaks for them.
-  const byCustomer = new Map<string, { pass: typeof s.seasonPass.$inferSelect; customer: typeof s.customer.$inferSelect; season: number; passIds: string[] }>()
-  for (const { pass, customer, jobSeason } of rows) {
+  const byCustomer = new Map<string, { job: typeof s.job.$inferSelect; customer: typeof s.customer.$inferSelect; season: number; jobIds: string[] }>()
+  for (const { job, customer } of rows) {
     const held = byCustomer.get(customer.id)
-    byCustomer.set(customer.id, { pass, customer, season: jobSeason ?? pass.season, passIds: [...(held?.passIds ?? []), pass.id] })
+    byCustomer.set(customer.id, { job, customer, season: job.season!, jobIds: [...(held?.jobIds ?? []), job.id] })
   }
   let queued = 0
-  for (const { pass, customer, season, passIds } of byCustomer.values()) {
+  for (const { job, customer, season, jobIds } of byCustomer.values()) {
     const expires = customer.cardExpires!
     const lastDay = lastDayOf(expires)
     if (today < addDays(lastDay, -EXPIRY_LEAD_DAYS) || today > lastDay) continue
     if (lastDay >= `${season}-10-31`) continue
-    const visits = await db.select({ amount: s.visit.amount, status: s.visit.status }).from(s.visit).where(inArray(s.visit.passId, passIds))
-    const left = visits.filter((v) => !["completed", "cancelled", "skipped"].includes(v.status)).reduce((sum, v) => sum + v.amount, 0)
+    const [rule, visits, lines] = await Promise.all([
+      loadTaxRule(db, job.organizationId),
+      db.select({ id: s.visit.id, status: s.visit.status }).from(s.visit).where(inArray(s.visit.jobId, jobIds)),
+      db.select().from(s.lineItem).where(and(eq(s.lineItem.organizationId, job.organizationId), inArray(s.lineItem.jobId, jobIds))),
+    ])
+    const left = visits.filter((v) => !["completed", "cancelled", "skipped"].includes(v.status)).reduce((sum, v) => sum + visitPrice(linesOfVisit(lines, v.id), rule), 0)
     if (left === 0) continue
     const key = `expiry-${customer.id}-${expires}`
-    const link = customer.stripeCustomerId ? await makeLink({ passId: pass.id, stripeCustomerId: customer.stripeCustomerId }) : null
-    if (await queueMessage(db, { organizationId: pass.organizationId, customerId: customer.id, kind: "card-expiring", key, data: { ...baseData(origin, customer), passNumber: pass.number, cardState: `expires in ${expiryWords(expires)}`, left, updateUrl: link } })) queued++
+    const link = customer.stripeCustomerId ? await makeLink({ passId: job.id, stripeCustomerId: customer.stripeCustomerId }) : null
+    if (await queueMessage(db, { organizationId: job.organizationId, customerId: customer.id, kind: "card-expiring", key, data: { ...baseData(origin, customer), passNumber: job.passNumber ?? "", cardState: `expires in ${expiryWords(expires)}`, left, updateUrl: link } })) queued++
   }
   return queued
 }

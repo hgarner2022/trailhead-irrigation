@@ -125,7 +125,7 @@ describe("invoices.send", () => {
     const untaxed = await doneAndOwed()
     expect(await callApi(as(writeKey), invoicesSend, { jobId: untaxed.jobId })).toMatchObject({ tax: 0, total: 145 })
     const email = (await messagesOf("invoice")).find((m) => m.key === `invoice-${taxed.id}`)!
-    expect(email.body).toContain("Sales tax: $13")
+    expect(email.body).toContain("Tax: $13")
     await db.update(s.organization).set({ settings: org!.settings }).where(eq(s.organization.id, ORG))
   })
 

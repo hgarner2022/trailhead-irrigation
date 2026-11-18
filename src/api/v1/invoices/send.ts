@@ -6,7 +6,9 @@ import { whoOf } from "@/lib/events/record"
 import { baseData } from "@/lib/messaging/data"
 import { messageChannel, queueMessage } from "@/lib/messaging/queue"
 import { payUrl } from "@/lib/messaging/tokens"
-import { invoiceAmount, invoiceLines, invoiceOpen, invoiceTax, nextInvoiceNumber, type InvoiceLine } from "@/lib/money/invoice"
+import { jobTax, visitPrice } from "@/lib/jobs/lines"
+import { taxRuleOf } from "@/lib/jobs/tax"
+import { invoiceAmount, invoiceLines, invoiceOpen, nextInvoiceNumber, type InvoiceLine } from "@/lib/money/invoice"
 import { isPaid, jobOwed, paidTotal } from "@/lib/money/words"
 import { billingOf } from "../settings/handlers"
 import type { Ctx } from "../../core/context"
@@ -68,26 +70,28 @@ async function planBill(ctx: Ctx, input: SendBill) {
   if (done.length === 0 || (input.requireAllDone && done.length !== live.length)) throw new ApiError("unprocessable", "Mark the job done before sending a bill")
   if (await openInvoiceOf(ctx.db, org, job.id)) throw new ApiError("conflict", "A bill is already open for this job")
   const liveLines = lines.filter((l) => !l.cancelledAt)
-  const owed = jobOwed(liveLines, payments)
+  // The same rule prices the job, its visits and the bill, so the bill's total is what the job owes.
+  const billing = billingOf(organization.settings)
+  const rule = taxRuleOf(billing)
+  const owed = jobOwed(liveLines, payments, rule)
   if (owed <= 0) throw new ApiError("conflict", "This job is already paid")
 
   const settled = await paidVisitIds(ctx, job.id)
   const doneIds = new Set(done.map((v) => v.id))
-  const priceOf = (visitId: string) => liveLines.filter((l) => l.visitId === visitId).reduce((sum, l) => sum + l.quantity * l.unitPrice, 0)
+  const priceOf = (visitId: string) => visitPrice(liveLines.filter((l) => l.visitId === visitId), rule)
   const paidUp = (visitId: string) => isPaid(payments.filter((p) => p.visitId === visitId), priceOf(visitId))
   const billable = liveLines.filter((l) => (l.visitId ? doneIds.has(l.visitId) && !settled.has(l.visitId) && !paidUp(l.visitId) : input.requireAllDone))
   const frozen = invoiceLines(billable)
   const subtotal = invoiceAmount(frozen)
   if (subtotal <= 0) throw new ApiError("unprocessable", "There is nothing to bill yet. Price the visit first.")
-  // Money paid on the job that no billed visit explains (a deposit on the job as a whole, part of a visit) comes off the bill.
-  const credit = subtotal - owed
+  // Money paid on the job that no billed visit explains (a deposit on the job as a whole, part of a visit) comes off the bill: what the billed lines come to with their tax, less what the job owes.
+  const credit = subtotal + jobTax(billable, rule) - owed
   if (credit > 0) frozen.push({ name: "Payments received", description: null, quantity: 1, unitPrice: -credit, taxable: false })
   // Checked before anything is written: a bill nobody can be sent, or one with no site address to link to, is never left open.
   if (!(await messageChannel(ctx.db, customer, "invoice"))) throw new ApiError("unprocessable", "This customer has no mobile or email to send the bill to.")
   const origin = readAppUrl()
-  const billing = billingOf(organization.settings)
   const amount = invoiceAmount(frozen)
-  const tax = invoiceTax(frozen, billing)
+  const tax = jobTax(frozen, rule)
   const day = today(ctx)
   const base = { organizationId: org, jobId: job.id, customerId: customer.id, lines: frozen, amount, tax, total: amount + tax, sentOn: day, dueOn: addDays(day, billing.dueDays) }
   return { job, customer, origin, base, year: Number(day.slice(0, 4)) }

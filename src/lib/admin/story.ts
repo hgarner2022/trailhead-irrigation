@@ -7,6 +7,15 @@ export interface StoryEvent extends TimelineEvent {
   customerId: string | null
   jobId: string | null
   visitId: string | null
+  /** the record the event is about (`job`, `visit`, `customer`...) and its id; absent in hand-built test events */
+  about?: string
+  aboutId?: string
+}
+
+/** The text of the newest `note` event about one record, from events listed newest first; null when it has none or none were loaded. */
+export function newestNote(events: readonly StoryEvent[] | undefined, about: string, aboutId: string): string | null {
+  const text = events?.find((e) => e.kind === "note" && e.about === about && e.aboutId === aboutId)?.detail?.text
+  return typeof text === "string" && text ? text : null
 }
 
 /** A message with the customer and visit it belongs to. */

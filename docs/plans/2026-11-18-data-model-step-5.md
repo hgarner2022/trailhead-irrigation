@@ -136,3 +136,5 @@ on conflict (id) do nothing;
 ## After step 5
 
 Step 6 (the legacy tables and columns go: `season_pass`, `truck`, `area`, `booking`, `quote_request`, `pass_change`, `admin_user`, `visit.charged_at`, `visit.amount`, `job.price`, `job.kind`, `visit.notes`, `job.notes`, `pass_id` foreign keys re-pointed to `job_id`; the Jobber mirror at the exit) gets its own plan file. Left for it from this step: `recordChange` and its `pass_change` alias write, the three `notes` aliases, the legacy `charge.*` webhook names that record no event, and whether the new event kinds become outbound webhook names.
+
+Step 6 is planned and built in `docs/plans/2026-11-18-data-model-step-6.md`.

@@ -4,7 +4,7 @@ import { eq } from "drizzle-orm"
 import * as s from "@/db/schema"
 import type { TestDb } from "@/db/test-db"
 import { callApi } from "@/api/core/call"
-import { adminKey, apiDb, ctxFor, ORG, owner, readKey, writeKey } from "@/api/test-helpers"
+import { adminKey, apiDb, ctxFor, ORG, owner, passViewOf, readKey, writeKey } from "@/api/test-helpers"
 import { customersUpdate } from "@/api/v1/customers/handlers"
 import { invoicesCancel, invoicesSend } from "@/api/v1/invoices/handlers"
 import { paymentsRecord, paymentsRefund } from "@/api/v1/payments/handlers"
@@ -27,8 +27,10 @@ const TZ = "America/Denver"
 let db: TestDb
 let data: AdminData
 
+/** A fixture pass's job id: the seed makes each pass's job `job_<pass id>`, and a pass's id is its job's. */
+const J = (passId: string) => `job_${passId}`
 const jobsOf = (passId: string) => {
-  const pass = data.passes.find((p) => p.id === passId)!
+  const pass = data.passes.find((p) => p.id === J(passId))!
   return Object.fromEntries(pass.visits.map((v) => [v.kind, passVisitJob(pass, v, TODAY, TZ)]))
 }
 
@@ -40,18 +42,18 @@ beforeAll(async () => {
   // p4: a day with a start time (Routed). p3: marked done, its charge failed once (Charge failed). p6: done, failed, retried and charged.
   await callApi(ctxFor(db, owner, NOW), visitsMove, { id: "p4-turn-on", personId: "person_truck-1", scheduledOn: "2027-05-05", startTime: "09:30" })
   await db.update(s.visit).set({ status: "completed", completedOn: "2027-04-19" }).where(eq(s.visit.id, "p3-turn-on"))
-  await db.insert(s.charge).values({ organizationId: ORG, passId: "p3", visitId: "p3-turn-on", attempt: 1, amount: 145, status: "failed", failureMessage: "Card declined" })
-  await db.update(s.visit).set({ status: "completed", completedOn: "2027-04-19", chargedAt: new Date("2027-04-20T09:00:00Z") }).where(eq(s.visit.id, "p6-turn-on"))
+  await db.insert(s.charge).values({ organizationId: ORG, jobId: J("p3"), visitId: "p3-turn-on", attempt: 1, amount: 145, status: "failed", failureMessage: "Card declined" })
+  await db.update(s.visit).set({ status: "completed", completedOn: "2027-04-19" }).where(eq(s.visit.id, "p6-turn-on"))
   await db.insert(s.charge).values([
-    { organizationId: ORG, passId: "p6", visitId: "p6-turn-on", attempt: 1, amount: 185, status: "failed" },
-    { organizationId: ORG, passId: "p6", visitId: "p6-turn-on", attempt: 2, amount: 185, status: "succeeded" },
+    { organizationId: ORG, jobId: J("p6"), visitId: "p6-turn-on", attempt: 1, amount: 185, status: "failed" },
+    { organizationId: ORG, jobId: J("p6"), visitId: "p6-turn-on", attempt: 2, amount: 185, status: "succeeded" },
   ])
   // p7: a day that has passed and nobody marked done (Scheduled, with the Not closed flag).
   await db.update(s.visit).set({ status: "scheduled", scheduledOn: "2027-04-15", startTime: null, personId: "person_truck-1" }).where(eq(s.visit.id, "p7-turn-on"))
   // p8: a pass whose card failed after a visit was marked done, and the card never retried.
-  const p8 = (await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, "p8")))[0]!
+  const p8 = await passViewOf(db, "p8")
   await db.update(s.customer).set({ cardFailedAt: new Date("2027-04-19T10:00:00Z") }).where(eq(s.customer.id, p8.customerId))
-  await db.update(s.visit).set({ status: "completed", completedOn: "2027-04-18", chargedAt: null }).where(eq(s.visit.id, "p8-turn-on"))
+  await db.update(s.visit).set({ status: "completed", completedOn: "2027-04-18" }).where(eq(s.visit.id, "p8-turn-on"))
   await callApi(ctxFor(db, owner, NOW), customersUpdate, { id: "c121", lastName: "garner" })
   data = await getLiveAdminData(ctxFor(db, owner, NOW))
 })
@@ -66,12 +68,12 @@ describe("the job states, read from the rows", () => {
 
   it("reads Routed once a start time is set", () => {
     expect(jobsOf("p4")["turn-on"]).toMatchObject({ state: "routed", notClosed: false })
-    expect(data.passes.find((p) => p.id === "p4")!.visits[0]).toMatchObject({ scheduledOn: "2027-05-05", startTime: "09:30" })
+    expect(data.passes.find((p) => p.id === J("p4"))!.visits[0]).toMatchObject({ scheduledOn: "2027-05-05", startTime: "09:30" })
   })
 
   it("reads Charged for a visit with a charge, and Done for one marked done and not charged", () => {
     expect(jobsOf("p1")["turn-on"].state).toBe("charged")
-    const done = { ...data.passes.find((p) => p.id === "p2")!, cardFailedAt: undefined }
+    const done = { ...data.passes.find((p) => p.id === J("p2"))!, cardFailedAt: undefined }
     expect(passVisitJob(done, { ...done.visits[1], completedAt: "2027-04-19T17:00:00Z" }, TODAY, TZ).state).toBe("done")
   })
 
@@ -93,7 +95,7 @@ describe("the job states, read from the rows", () => {
 
   it("reads the same state from the calendar visit row and from the pass's own visit", () => {
     for (const id of ["p3", "p4", "p7", "p8"]) {
-      const pass = data.passes.find((p) => p.id === id)!
+      const pass = data.passes.find((p) => p.id === J(id))!
       for (const pv of pass.visits) {
         const row = data.visits.find((v) => v.id === pv.id)!
         expect(visitJob(row, TODAY, TZ, pass.cardFailedAt).state, `${id} ${pv.kind}`).toBe(passVisitJob(pass, pv, TODAY, TZ).state)
@@ -105,13 +107,13 @@ describe("the job states, read from the rows", () => {
 describe("a pending pass", () => {
   it("is Pending, never Active", () => {
     const pending = data.passes.filter((p) => p.status === "pending")
-    expect(pending.map((p) => p.id)).toEqual(["p13"])
-    expect(data.passes.filter((p) => p.status === "active").some((p) => p.id === "p13")).toBe(false)
+    expect(pending.map((p) => p.id)).toEqual([J("p13")])
+    expect(data.passes.filter((p) => p.status === "active").some((p) => p.id === J("p13"))).toBe(false)
   })
 
   it("has no job anywhere on the calendar's data", () => {
-    expect(data.visits.some((v) => v.passId === "p13" || v.id.startsWith("p13-"))).toBe(false)
-    expect(data.passes.find((p) => p.id === "p13")!.visits.length).toBe(2)
+    expect(data.visits.some((v) => v.passId === J("p13") || v.id.startsWith("p13-"))).toBe(false)
+    expect(data.passes.find((p) => p.id === J("p13"))!.visits.length).toBe(2)
   })
 })
 
@@ -143,7 +145,7 @@ describe("the money words, read from the payment rows", () => {
   const moneyOf = (live: AdminData, visitId: string) => visitJob(live.visits.find((v) => v.id === visitId)!, TODAY, TZ)
 
   it("reads Paid, card from the payment row a charged pass visit has, never from a flag", () => {
-    const visit = data.passes.find((p) => p.id === "p1")!.visits[0]!
+    const visit = data.passes.find((p) => p.id === J("p1"))!.visits[0]!
     expect(visit.payments).toMatchObject([{ method: "card_on_file", status: "succeeded", amount: 145 }])
     expect(jobsOf("p1")["turn-on"]).toMatchObject({ state: "charged", money: "paid", moneyLabel: "Paid, card" })
     expect(visit).not.toHaveProperty("chargedAt")

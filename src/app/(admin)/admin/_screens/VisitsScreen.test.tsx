@@ -48,7 +48,7 @@ const withLines: AdminData = {
   ...data,
   jobs: [
     {
-      id: "jx", customerId: "cx", kind: "repair", status: "active", source: "office", visitIds: ["a", "c"], total: 160,
+      id: "jx", customerId: "cx", kind: "repair", status: "open", source: "office", visitIds: ["a", "c"], total: 160,
       lines: [
         { id: "l1", name: "Spring turn-on, 8 zones", description: TURN_ON_TEXT, quantity: 1, unitPrice: 160, taxable: false, visitId: "a" },
         { id: "l2", name: "Extra head", quantity: 2, unitPrice: 20, taxable: false, cancelledAt: "2026-11-11T10:00:00Z" },
@@ -287,7 +287,7 @@ describe("VisitsScreen", () => {
   it("a done and owed job offers Send a bill, and once sent reads Bill sent with the dates, Remind and the pay link", async () => {
     const a = actions()
     const done = visit({ id: "u", jobId: "ju", status: "completed", completedOn: "2026-11-10", scheduledOn: "2026-11-10", startAt: "2026-11-10T15:00:00Z" })
-    const job = { id: "ju", customerId: "cx", kind: "repair" as const, status: "active" as const, source: "office" as const, visitIds: ["u"], total: 145, payments: [], money: { paid: 0, total: 145, owed: 145, words: "$145 owed" } }
+    const job = { id: "ju", customerId: "cx", kind: "repair" as const, status: "open" as const, source: "office" as const, visitIds: ["u"], total: 145, payments: [], money: { paid: 0, total: 145, owed: 145, words: "$145 owed" } }
     const owed: AdminData = { ...data, visits: [done], jobs: [job] }
     const { unmount } = render(
       <UndoToastProvider>
@@ -318,7 +318,7 @@ describe("VisitsScreen", () => {
   it("shows a tech the bill's words and neither button nor pay link", () => {
     const invoice = { id: "inv1", jobId: "ju", number: "INV-2026-0001", amount: 145, tax: 0, total: 145, sentOn: "2026-11-17", dueOn: "2026-12-01", status: "sent" as const, visitIds: ["u"] }
     const done = visit({ id: "u", jobId: "ju", status: "completed", completedOn: "2026-11-10", scheduledOn: "2026-11-10", startAt: "2026-11-10T15:00:00Z", invoice })
-    const job = { id: "ju", customerId: "cx", kind: "repair" as const, status: "active" as const, source: "office" as const, visitIds: ["u"], total: 145, payments: [], invoice, money: { paid: 0, total: 145, owed: 145, words: "Bill sent", billSent: true } }
+    const job = { id: "ju", customerId: "cx", kind: "repair" as const, status: "open" as const, source: "office" as const, visitIds: ["u"], total: 145, payments: [], invoice, money: { paid: 0, total: 145, owed: 145, words: "Bill sent", billSent: true } }
     renderScreen(actions(), { readOnly: true, defaultVisitId: "u", data: { ...data, visits: [done], jobs: [job] } })
     const panel = within(screen.getByRole("dialog"))
     expect(panel.queryByRole("button", { name: "Remind" })).toBeNull()
@@ -398,7 +398,7 @@ describe("Done and Owed on a pass visit", () => {
 
   it("says it charges the card on Done and keeps Paid another way, which asks how", async () => {
     // The fixture's pass visit, booked and not yet done, on a pass whose customer has a card.
-    const booked: AdminData = { ...visitsData, visits: visitsData.visits.map((v) => (v.id === passVisitId ? { ...v, status: "scheduled" as const, completedOn: undefined, chargedAt: undefined, payments: [] } : v)) }
+    const booked: AdminData = { ...visitsData, visits: visitsData.visits.map((v) => (v.id === passVisitId ? { ...v, status: "scheduled" as const, completedOn: undefined, payments: [] } : v)) }
     open(passVisitId, booked)
     const panel = within(screen.getByRole("dialog"))
     expect(panel.getByText(/Charges the card ending \d{4} after this visit/)).toBeInTheDocument()

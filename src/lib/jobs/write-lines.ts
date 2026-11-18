@@ -22,6 +22,11 @@ export interface InsertLinesOptions {
   now?: Date
   /** keep a row that already holds the id (the seed, run again) */
   keepExisting?: boolean
+  /**
+   * A Season Pass sale's lines (checkout, office sale, renewal, the July inspection, the seed): always `taxable = false`, whatever the
+   * service row says, so the card is charged what the checkout, the confirmation and the pass page show.
+   */
+  untaxed?: boolean
 }
 
 /** The organization's service rows the lines name, by key: the id, and the description and taxable flag the row holds at the sale. */
@@ -39,9 +44,9 @@ async function servicesByKey(db: Database, organizationId: string, keys: readonl
 /**
  * Inserts a job's lines. Each takes the organization's service row for its key (none when no service fits), that row's
  * description and taxable flag as they are at the sale (the catalogue's words when the row has none), and the visit it is
- * billed after.
+ * billed after. A pass sale passes `untaxed`: its lines are never taxable.
  */
-export async function insertLines(db: Database, { organizationId, jobId, now, keepExisting }: InsertLinesOptions, lines: readonly VisitLine[]): Promise<void> {
+export async function insertLines(db: Database, { organizationId, jobId, now, keepExisting, untaxed }: InsertLinesOptions, lines: readonly VisitLine[]): Promise<void> {
   if (lines.length === 0) return
   const services = await servicesByKey(db, organizationId, lines.flatMap((l) => (l.serviceKey ? [l.serviceKey] : [])))
   const rows = lines.map((line) => {
@@ -56,7 +61,7 @@ export async function insertLines(db: Database, { organizationId, jobId, now, ke
       description: service?.description ?? line.description ?? null,
       quantity: line.quantity,
       unitPrice: line.unitPrice,
-      taxable: service?.taxable ?? line.taxable,
+      taxable: untaxed ? false : (service?.taxable ?? line.taxable),
       cancelledAt: line.cancelledAt ?? null,
       ...(now ? { createdAt: now, updatedAt: now } : {}),
     }
@@ -87,10 +92,10 @@ export async function deleteVisitLines(db: Database, visitIds: readonly string[]
   await db.delete(s.lineItem).where(inArray(s.lineItem.visitId, [...visitIds]))
 }
 
-/** The lines of every visit of the passes given (a held pending pass rebuilt, an unpaid pass removed): gone before the visits. */
-export async function deletePassVisitLines(db: Database, passIds: readonly string[]): Promise<void> {
-  if (passIds.length === 0) return
-  const visits = db.select({ id: s.visit.id }).from(s.visit).where(inArray(s.visit.passId, [...passIds]))
+/** The lines of every visit of the jobs given (a held pending pass rebuilt): gone before the visits. */
+export async function deleteJobVisitLines(db: Database, jobIds: readonly string[]): Promise<void> {
+  if (jobIds.length === 0) return
+  const visits = db.select({ id: s.visit.id }).from(s.visit).where(inArray(s.visit.jobId, [...jobIds]))
   await db.delete(s.lineItem).where(inArray(s.lineItem.visitId, visits))
 }
 
@@ -118,23 +123,15 @@ export async function addJobLine(db: Database, line: NewJobLine): Promise<typeof
   return row!
 }
 
-/** Changes a line's name, quantity or unit price; a field left out stays. A visit's own line keeps the visit's amount alias in step. */
-export async function updateLineRow(db: Database, line: { id: string; visitId: string | null }, changes: { name?: string; quantity?: number; unitPrice?: number }, now: Date): Promise<typeof s.lineItem.$inferSelect> {
+/** Changes a line's name, quantity or unit price; a field left out stays. A visit's price is its lines', so nothing else follows. */
+export async function updateLineRow(db: Database, line: { id: string }, changes: { name?: string; quantity?: number; unitPrice?: number }, now: Date): Promise<typeof s.lineItem.$inferSelect> {
   const set = Object.fromEntries(Object.entries(changes).filter(([, v]) => v !== undefined))
   const [row] = await db.update(s.lineItem).set({ ...set, updatedAt: now }).where(eq(s.lineItem.id, line.id)).returning()
-  if (line.visitId) await syncVisitAmount(db, line.visitId)
   return row!
 }
 
-/** Cancels one line: it counts for nothing from now on, and a visit's amount alias follows. */
-export async function cancelLineRow(db: Database, line: { id: string; visitId: string | null }, now: Date): Promise<typeof s.lineItem.$inferSelect> {
+/** Cancels one line: it counts for nothing from now on. */
+export async function cancelLineRow(db: Database, line: { id: string }, now: Date): Promise<typeof s.lineItem.$inferSelect> {
   const [row] = await db.update(s.lineItem).set({ cancelledAt: now, updatedAt: now }).where(eq(s.lineItem.id, line.id)).returning()
-  if (line.visitId) await syncVisitAmount(db, line.visitId)
   return row!
-}
-
-/** `visit.amount` is an alias of the visit's own live lines until step 6. */
-async function syncVisitAmount(db: Database, visitId: string): Promise<void> {
-  const lines = await db.select().from(s.lineItem).where(and(eq(s.lineItem.visitId, visitId), isNull(s.lineItem.cancelledAt)))
-  await db.update(s.visit).set({ amount: lines.reduce((sum, l) => sum + l.quantity * l.unitPrice, 0) }).where(eq(s.visit.id, visitId))
 }

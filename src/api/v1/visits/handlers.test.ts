@@ -5,7 +5,7 @@ import * as s from "@/db/schema"
 import type { TestDb } from "@/db/test-db"
 import { recordEvent } from "@/lib/events/record"
 import { callApi } from "../../core/call"
-import { adminKey, apiDb, ctxFor, customerPerson, eventsOf, ORG, readKey, writeKey } from "../../test-helpers"
+import { adminKey, apiDb, ctxFor, customerPerson, eventsOf, jobIdOfPassId, ORG, readKey, writeKey } from "../../test-helpers"
 import { visitsGet, visitsList, visitsMove, visitsRequestMove, visitsStretch } from "./handlers"
 import { visitsMarkClosed } from "./money"
 
@@ -22,6 +22,12 @@ const move = (input: Record<string, unknown>, principal = writeKey) => callApi(c
 describe("visits.list and visits.get", () => {
   it("filters by kind, status, pass and day range", async () => {
     expect((await callApi(ctxFor(db, readKey), visitsList, { passId: "p1" })).data.map((v) => v.kind).sort()).toEqual(["blowout", "inspection", "turn-on"])
+    // the job id of that pass finds the same visits, and carries itself as their pass id; a pass that is not there matches none
+    const jobId = await jobIdOfPassId(db, "p1")
+    const byJob = await callApi(ctxFor(db, readKey), visitsList, { passId: jobId })
+    expect(byJob.data.map((v) => v.kind).sort()).toEqual(["blowout", "inspection", "turn-on"])
+    expect(byJob.data.every((v) => v.passId === jobId)).toBe(true)
+    expect((await callApi(ctxFor(db, readKey), visitsList, { passId: "no-such-pass" })).data).toEqual([])
     const done = await callApi(ctxFor(db, readKey), visitsList, { status: "completed", kind: "turn-on" })
     expect(done.data.map((v) => v.id)).toContain("p1-turn-on")
     expect((await callApi(ctxFor(db, readKey), visitsList, { from: "2027-05-03", to: "2027-05-03" })).data.map((v) => v.id)).toEqual(["p1-turn-on"])
@@ -42,9 +48,8 @@ describe("visits carry the job's lines", () => {
     expect(own.description).toContain("controller programming")
     expect(got.amount).toBe(own.quantity * own.unitPrice)
   })
-  it("reads the amount from the line, not the stored amount, and takes a cancelled line to nothing", async () => {
+  it("a visit's price is its line's, and a cancelled line takes it to nothing", async () => {
     const [line] = await db.select().from(s.lineItem).where(eq(s.lineItem.visitId, "p1-blowout"))
-    await db.update(s.visit).set({ amount: 1 }).where(eq(s.visit.id, "p1-blowout"))
     try {
       expect((await callApi(ctxFor(db, readKey), visitsGet, { id: "p1-blowout" })).amount).toBe(line!.quantity * line!.unitPrice)
       await db.update(s.lineItem).set({ cancelledAt: new Date() }).where(eq(s.lineItem.id, line!.id))
@@ -55,12 +60,11 @@ describe("visits carry the job's lines", () => {
       await db.update(s.lineItem).set({ cancelledAt: null }).where(eq(s.lineItem.id, line!.id))
     }
   })
-  it("keeps the stored amount for a visit with no line of its own", async () => {
+  it("a visit with no line of its own costs nothing", async () => {
     const [line] = await db.select().from(s.lineItem).where(eq(s.lineItem.visitId, "p1-inspection"))
     await db.update(s.lineItem).set({ visitId: null }).where(eq(s.lineItem.id, line!.id))
     try {
-      const [v] = await db.select().from(s.visit).where(eq(s.visit.id, "p1-inspection"))
-      expect((await callApi(ctxFor(db, readKey), visitsGet, { id: "p1-inspection" })).amount).toBe(v!.amount)
+      expect((await callApi(ctxFor(db, readKey), visitsGet, { id: "p1-inspection" })).amount).toBe(0)
     } finally {
       await db.update(s.lineItem).set({ visitId: "p1-inspection" }).where(eq(s.lineItem.id, line!.id))
     }
@@ -183,8 +187,6 @@ describe("visits.markClosed and visits.stretch", () => {
 describe("visits.requestMove", () => {
   it("records a customer's request on their own visit only", async () => {
     await expect(callApi(ctxFor(db, customerPerson("c104")), visitsRequestMove, { id: "p6-blowout", preferredWeek: "2027-10-18", note: "away that week" })).resolves.toEqual({ ok: true })
-    const [change] = await db.select().from(s.passChange).where(eq(s.passChange.kind, "move-requested"))
-    expect(change).toMatchObject({ passId: "p6", visitId: "p6-blowout", detail: { preferredWeek: "2027-10-18", note: "away that week" } })
     expect(await eventsOf(db, { kind: "visit.move-requested", aboutId: "p6-blowout" })).toMatchObject([{ about: "visit", customerId: "c104", visitId: "p6-blowout", who: "customer", detail: { preferredWeek: "2027-10-18", note: "away that week" } }])
     await expect(callApi(ctxFor(db, customerPerson("c104")), visitsRequestMove, { id: "p7-blowout" })).rejects.toMatchObject({ code: "forbidden" })
     expect(await eventsOf(db, { kind: "visit.move-requested", aboutId: "p7-blowout" })).toEqual([])

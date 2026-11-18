@@ -108,6 +108,8 @@ person). The Jobber mirror tables stay until the exit and are marked
 temporary. `charge` is renamed to payment in words; the table may keep
 its name.
 
+Done in step 6 except `area`, which waits on the Routes and Seasons design.
+
 ## Open question for Ryan
 
 Sales tax: does Trailhead collect Colorado sales tax on materials (his

@@ -13,6 +13,7 @@ import type { PassDetail } from "@/api/v1/passes/schemas"
 import * as s from "@/db/schema"
 import type { PersonPrincipal } from "@/lib/auth/types"
 import { mayRenew } from "./renewal"
+import { resolvePassJobAnywhere } from "./resolve"
 import type { Offers } from "@/app/(checkout)/season-pass/checkout/_screens/checkout-days"
 import type { BeginResult, OfferQuery, RenewalPrefill, CheckoutConsent, CheckoutProblem, CheckoutSubmission, FinishResult } from "@/app/(checkout)/season-pass/checkout/_screens/checkout-submit"
 import { instantOf } from "@/lib/admin/shape"
@@ -201,8 +202,7 @@ export async function offerDaysWith(deps: CheckoutDeps, q: OfferQuery): Promise<
   for (const v of visitsOnSale(q.inspection, q.today)) {
     try {
       const { days } = await callApi(ctx, scheduleOfferDays, { town: q.town as Town, kind: v.key, season: q.season, zones: q.zones })
-      // The checkout's `DayOffer` still names the person `truckId` (renamed in step 6 with the aliases); it is the person id.
-      offers[v.key] = days.map(({ day, personId, start, window }) => ({ day, truckId: personId, start, window }))
+      offers[v.key] = days.map(({ day, personId, start, window }) => ({ day, personId, start, window }))
     } catch (error) {
       logCheckoutFailure("offerDays", "contact", undefined, error)
     }
@@ -219,8 +219,9 @@ export async function renewCheckoutWith(deps: CheckoutDeps, renewal: Pick<Renewa
   try {
     if (!f.consent.termsAccepted) return { ok: false, problem: "invalid", message: TERMS_MESSAGE }
     const probe = await deps.ctx()
-    const [pass] = await probe.db.select({ id: s.seasonPass.id, customerId: s.seasonPass.customerId }).from(s.seasonPass).where(eq(s.seasonPass.id, renewal.passId))
-    if (!pass || !mayRenew(pass, { token: renewal.token, principal })) return { ok: false, problem: "invalid", message: "We couldn't match that link to your pass. Sign in to your pass page and reserve from there." }
+    // The signed link is checked against the id as it arrived (a job id, or the old pass id of an earlier link), then the id is resolved.
+    const pass = await resolvePassJobAnywhere(probe.db, renewal.passId)
+    if (!pass || !mayRenew(pass, { passId: renewal.passId, token: renewal.token, principal })) return { ok: false, problem: "invalid", message: "We couldn't match that link to your pass. Sign in to your pass page and reserve from there." }
     const ctx = await deps.ctx(undefined, renewal.passId)
     const channels = [...(f.consent.marketingEmail ? ["email" as const] : []), ...(f.consent.marketingSms ? ["sms" as const] : [])]
     const detail = await callApi(ctx, passesCreate, { ...createInput(f), renewOf: renewal.passId, consent: { termsAccepted: true as const, marketingOptIn: channels.length > 0, marketingChannels: channels, source: "checkout" as const } })

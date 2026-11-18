@@ -58,7 +58,7 @@ describe("chargeRows", () => {
 
   it("reads a 7 pm Denver booking and charge as that Denver day", () => {
     // 01:00 UTC on July 9 is 7 pm on July 8 in Denver.
-    const pass: Pass = { ...passes[2], visits: [{ ...passes[2].visits[1], scheduledAt: "2027-07-09T01:00:00Z", chargedAt: "2027-07-09T01:30:00Z" }] }
+    const pass: Pass = { ...passes[2], visits: [{ ...passes[2].visits[1], scheduledAt: "2027-07-09T01:00:00Z", payments: [{ id: "pay-1", amount: 145, method: "card_on_file", status: "succeeded", paidOn: "2027-07-08" }] }] }
     expect(chargeRows(pass)[0]).toEqual({ kind: "inspection", name: "Inspection", when: "Jul 8", amount: 145, charged: "Paid Jul 8" })
   })
 

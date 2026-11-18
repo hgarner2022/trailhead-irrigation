@@ -5,6 +5,7 @@
  */
 
 import type { TimelineLine } from "@/lib/events/timeline"
+import type { TaxRule } from "@/lib/jobs/tax"
 
 export type Town =
   | "Erie"
@@ -192,10 +193,8 @@ export interface Visit {
   scheduledOn?: string
   startTime?: string
   completedOn?: string
-  /** @deprecated alias for the fixtures: a charged day with no `payments` reads as one succeeded card payment; live data never sets it, the payment rows are the truth */
-  chargedAt?: string
   chargeFailed?: boolean
-  /** the visit's own payment rows, oldest first; absent in the fixtures */
+  /** the visit's own payment rows, oldest first (a charged visit has one succeeded row); absent in the fixtures for a visit nothing was paid for */
   payments?: AdminPayment[]
   /** the visit was skipped (the admin shows Skipped; `status` stays cancelled for the calendar) */
   skipped?: boolean
@@ -203,8 +202,6 @@ export interface Visit {
   personId?: string
   /** that person's name, "Ryan Garner" */
   personName?: string
-  /** @deprecated alias of `personId`, the same id; the screens read `personId`, dropped in step 6 */
-  truckId?: string
   /** the yard the visit is at; absent for a visit read from the Jobber mirror */
   property?: Yard
   /** the customer must be there and has not yet picked a day; the visit waits in the tray for them (scheduling flow, 2026-11-12) */
@@ -222,12 +219,8 @@ export interface Visit {
   /** how long the stop takes */
   minutes?: number
   notes?: string
-  /** @deprecated alias of `personName`, the same name; the screens read `personName`, dropped in step 6 */
-  truckName?: string
   /** why the last attempt did not happen, until the visit gets a day again */
   notDoneReason?: string
-  /** @deprecated alias for the fixtures, read only when `payments` is absent: how it was paid (card_on_file, card_now, check, venmo, cash) */
-  paidMethod?: string
   /** the open bill this visit's lines are on; its money reads Bill sent */
   invoice?: AdminInvoice
   /** @deprecated alias for the fixtures: a bill was sent and is not yet paid; live data reads `invoice` */
@@ -256,16 +249,24 @@ export interface SoldJob {
   /** the job's story (its events: the sale, the visits, the pass, the notes), newest first; absent in the fixtures */
   timeline?: TimelineLine[]
   customerId: string
+  /** derived (`jobKindOf`): a Season Pass is the job with a season, other work takes its first line's service kind */
   kind: "pass" | "repair" | "install" | "other"
-  status: "pending" | "active" | "done" | "cancelled"
-  /** whole dollars; absent until quoted */
+  /** the job's stage, read from its facts (`stageOf`): never typed */
+  status: "needs-a-quote" | "quoted" | "open" | "done" | "cancelled"
+  /** whole dollars: the job total, absent while it is 0 */
   price?: number
   source: "checkout" | "office" | "site" | "renewal"
+  /** the text of the newest note event about the job */
   notes?: string
   passId?: string
+  /** the id the job's pass had before the pass became the job; an old link or alert key still opens it */
+  legacyPassId?: string
   passNumber?: string
-  /** the day the job was sold, "2026-11-03"; absent in the fixtures */
+  /** the Mountain day the job was sold (`sold_on`), "2026-11-03"; absent while a pass is pending or a quote has not been accepted */
   soldOn?: string
+  /** the days a quote went out and was accepted, when they have */
+  quoteSentOn?: string
+  quoteAcceptedOn?: string
   visitIds: string[]
   /** what was sold, oldest first; the lines are the truth for what the job costs */
   lines?: JobLine[]
@@ -316,20 +317,14 @@ export interface PassVisit {
   id?: string
   /** the name of the person who has the visit, "Ryan Garner"; the pass page shows it beside the date */
   personName?: string
-  /** @deprecated alias of `personName`, the same name, kept until the screens read people */
-  truckName?: string
   completedAt?: string
   /** whole dollars, read from the visit's own line */
   amount: number
   /** what the visit includes, from the service at the sale (the visit's line) */
   description?: string
-  /** @deprecated alias for the fixtures, read only when `payments` is absent: see `Visit.chargedAt` */
-  chargedAt?: string
-  /** the visit's own payment rows, oldest first; absent in the fixtures */
+  /** the visit's own payment rows, oldest first (a charged visit has one succeeded row); absent in the fixtures for a visit nothing was paid for */
   payments?: AdminPayment[]
   notDoneReason?: string
-  /** @deprecated alias for the fixtures, read only when `payments` is absent */
-  paidMethod?: string
   /** the open bill this visit's lines are on; its money reads Bill sent */
   invoice?: AdminInvoice
   /** @deprecated alias for the fixtures: a bill was sent and is not yet paid */
@@ -405,9 +400,6 @@ export interface Person {
   seasonEnd?: string
 }
 
-/** @deprecated a truck is a person with a truck label; alias kept for one step */
-export type Truck = Person
-
 /** The towns a person works on one day: one town or two or three that sit together. */
 export interface AreaGroup {
   id: string
@@ -424,7 +416,7 @@ export interface SeasonWindow {
   leadWeeks: number
 }
 
-/** One customer message the app sends, in Trailhead's voice. The body may carry {firstName}, {visit}, {date}, {who} (the first name of the person on the visit) and {nextVisit}; {truck} (the truck label) still fills for one season and goes in step 6. */
+/** One customer message the app sends, in Trailhead's voice. The body may carry {firstName}, {visit}, {date}, {who} (the first name of the person on the visit) and {nextVisit}. A placeholder it does not know, such as the old {truck}, is left as written. */
 export interface MessageTemplate {
   key: string
   channel: "email" | "sms"
@@ -471,7 +463,7 @@ export interface Message {
   status: "queued" | "sent" | "delivered" | "failed" | "bounced"
 }
 
-/** How bills are due and taxed (Settings › Billing). Sales tax is in the model and off until the office answers. */
+/** How bills are due and taxed (Settings › Billing). With the switch on, sales tax is part of every job's total, its visits' prices and its bill. */
 export interface BillingSettings {
   /** a bill is due this many days after it is sent */
   dueDays: number
@@ -577,6 +569,8 @@ export interface AdminData {
   monthTotals: MonthTotal[]
   attention: Attention[]
   settings: OrganizationSettings
+  /** the sales tax rule (`settings.billing`) every total on a screen carries; absent in the fixtures, where nothing is taxed */
+  billing?: TaxRule
   settingsChanges: SettingsChange[]
   /** every message to or from a customer, newest last */
   messages: Message[]

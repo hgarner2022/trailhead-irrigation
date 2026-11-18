@@ -1,5 +1,5 @@
 import "server-only"
-import { and, desc, eq, sql } from "drizzle-orm"
+import { and, desc, eq, inArray, sql } from "drizzle-orm"
 import * as s from "@/db/schema"
 import { techEvent } from "@/lib/events/words"
 import type { EventAbout } from "@/lib/events/kinds"
@@ -63,6 +63,28 @@ export async function loadEvents(ctx: Ctx, filter: EventFilter, page: { limit: n
 /** The newest `limit` events of a customer, a job or a visit, as a plain list (a detail view's story). */
 export async function recentEvents(ctx: Ctx, filter: EventFilter, limit: number): Promise<EventOutType[]> {
   return (await loadEvents(ctx, filter, { limit })).data
+}
+
+/** The text of the newest `note` among events listed newest first, or null: what `VisitOut.notes` and `JobOut.notes` read now that a note is only an event. */
+export function newestNoteText(events: readonly Pick<EventOutType, "kind" | "detail">[]): string | null {
+  const text = events.find((e) => e.kind === "note")?.detail?.text
+  return typeof text === "string" && text ? text : null
+}
+
+/** The newest note about each job given (`about` job), by job id; one query for all of them, organization-scoped. */
+export async function newestJobNotes(ctx: Ctx, jobIds: readonly string[]): Promise<Map<string, string>> {
+  const out = new Map<string, string>()
+  if (jobIds.length === 0) return out
+  const rows = await ctx.db
+    .select({ aboutId: s.event.aboutId, detail: s.event.detail })
+    .from(s.event)
+    .where(and(eq(s.event.organizationId, ctx.organizationId), eq(s.event.about, "job"), eq(s.event.kind, "note"), inArray(s.event.aboutId, [...jobIds])))
+    .orderBy(desc(s.event.at), desc(s.event.id))
+  for (const r of rows) {
+    const text = (r.detail as { text?: unknown } | null)?.text
+    if (!out.has(r.aboutId) && typeof text === "string" && text) out.set(r.aboutId, text)
+  }
+  return out
 }
 
 /** The name of the person of the organization with this email, or null (`system`, `customer`, `api` and strangers have none). */

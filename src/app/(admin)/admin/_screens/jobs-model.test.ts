@@ -8,7 +8,10 @@ const row = (id: string) => rows.find((r) => r.id === id)!
 
 describe("jobRows", () => {
   it("makes one row per job, a pass or a one-off, and none for an unfinished checkout", () => {
-    const pending = { ...jobsData, jobs: [...jobsData.jobs!, { ...jobsData.jobs![0]!, id: "job-pending", status: "pending" as const }] }
+    const { soldOn: _sold, ...first } = jobsData.jobs![0]!
+    void _sold
+    // a pass that is not sold yet (no sold day): the checkout's card step is not finished
+    const pending = { ...jobsData, jobs: [...jobsData.jobs!, { ...first, id: "job-pending", kind: "pass" as const, status: "open" as const }] }
     expect(jobRows(pending, JOBS_TODAY)).toHaveLength(rows.length)
     expect(new Set(rows.map((r) => r.id)).size).toBe(rows.length)
     expect(rows.some((r) => r.kind === "pass")).toBe(true)
@@ -28,7 +31,14 @@ describe("jobRows", () => {
   it("says when and how it was sold", () => {
     expect(row("job-a").soldText).toBe("Nov 3, office")
     expect(row("job-a").soldOn).toBe("2026-11-03")
-    expect(rows.find((r) => r.kind === "pass" && r.source === "checkout")!.soldText).toBe("website")
+    expect(rows.find((r) => r.kind === "pass" && r.source === "checkout")!.soldText).toMatch(/^[A-Z][a-z]{2} \d{1,2}, website$/)
+  })
+
+  it("says Not sold yet while a quote is waiting (no sold day), and Needs a quote is its stage", () => {
+    const { soldOn: _sold, ...first } = jobsData.jobs!.find((j) => j.id === "job-a")!
+    void _sold
+    const waiting = { ...jobsData, jobs: [...jobsData.jobs!, { ...first, id: "job-quote", status: "needs-a-quote" as const }] }
+    expect(jobRows(waiting, JOBS_TODAY).find((r) => r.id === "job-quote")).toMatchObject({ soldText: "Not sold yet", stage: "needs-a-quote", stageLabel: "Needs a quote" })
   })
 
   it("counts the visits done of the visits still live", () => {

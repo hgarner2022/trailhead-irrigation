@@ -220,7 +220,7 @@ describe("CheckoutFlow", () => {
   })
 
   it("asks the server for the days when it is wired, and says Ryan sets a day it has none for", async () => {
-    const onOffer = vi.fn().mockResolvedValue({ "turn-on": [], blowout: [{ day: "2027-10-05", truckId: "truck-1", start: "08:00", window: "8 to 10 am" }] })
+    const onOffer = vi.fn().mockResolvedValue({ "turn-on": [], blowout: [{ day: "2027-10-05", personId: "person_truck-1", start: "08:00", window: "8 to 10 am" }] })
     render(<CheckoutFlow season={2027} initialStep={4} prefill={answers} onOffer={onOffer} />)
     expect(await screen.findByText(/Ryan sets this one and we text it to you/)).toBeInTheDocument()
     expect(onOffer).toHaveBeenCalledWith({ town: "Erie", zones: 8, inspection: false, season: 2027, today: "2026-11-12" })

@@ -6,13 +6,12 @@ import type { TestDb } from "@/db/test-db"
 import { callApi } from "../../core/call"
 import { apiDb, ctxFor, eventsOf, linesOfJob, ORG, readKey, writeKey } from "../../test-helpers"
 import { visitsCreate } from "../visits/office"
-import { bookingsCancel, bookingsCreate, quoteRequestsCreate, quoteRequestsList } from "./handlers"
+import { bookingsCancel, bookingsCreate } from "./handlers"
 
 let db: TestDb
 beforeAll(async () => {
   db = await apiDb()
-  await db.insert(s.webhookEndpoint).values({ id: "hook", organizationId: ORG, url: "https://hooks.example.com/r", secret: "whsec_r", events: ["request.received"] })
-  await db.insert(s.job).values({ id: "b1", organizationId: ORG, customerId: "c100", propertyId: "property-c100", kind: "repair", source: "office" })
+  await db.insert(s.job).values({ id: "b1", organizationId: ORG, customerId: "c100", propertyId: "property-c100", source: "office" })
   await db.insert(s.visit).values([
     { id: "b1-v1", organizationId: ORG, jobId: "b1", customerId: "c100", propertyId: "property-c100", kind: "repair", status: "scheduled", scheduledOn: "2027-05-05", personId: "person_truck-1" },
     { id: "b1-v2", organizationId: ORG, jobId: "b1", customerId: "c100", propertyId: "property-c100", kind: "repair", status: "completed" },
@@ -55,32 +54,5 @@ describe("cancelling a job made by visits.create", () => {
     const lines = await linesOfJob(db, v.jobId)
     expect(lines.length).toBeGreaterThan(0)
     for (const l of lines) expect(l.cancelledAt).not.toBeNull()
-  })
-})
-
-describe("quote requests", () => {
-  it("records a request, queues request.received and lists it", async () => {
-    const out = await callApi(ctxFor(db, writeKey), quoteRequestsCreate, { customerId: "c100", serviceKey: "repair", notes: "Zone 3 will not shut off" })
-    expect(out).toMatchObject({ customerId: "c100", status: "new", notes: "Zone 3 will not shut off" })
-    expect((await db.select().from(s.outboundEvent)).map((e) => e.event)).toEqual(["request.received"])
-    const list = await callApi(ctxFor(db, readKey), quoteRequestsList, { status: "new" })
-    expect(list.data.map((r) => r.id)).toEqual([out.id])
-    expect((await callApi(ctxFor(db, readKey), quoteRequestsList, { status: "archived" })).data).toEqual([])
-  })
-  it("rejects an unknown customer, service or someone else's property, and a read key", async () => {
-    await expect(callApi(ctxFor(db, writeKey), quoteRequestsCreate, { customerId: "nope" })).rejects.toMatchObject({ code: "not_found" })
-    await expect(callApi(ctxFor(db, writeKey), quoteRequestsCreate, { customerId: "c100", serviceKey: "nope" })).rejects.toMatchObject({ code: "not_found" })
-    await expect(callApi(ctxFor(db, writeKey), quoteRequestsCreate, { customerId: "c100", propertyId: "property-c121" })).rejects.toMatchObject({ code: "unprocessable" })
-    await expect(callApi(ctxFor(db, readKey), quoteRequestsCreate, { customerId: "c100" })).rejects.toMatchObject({ code: "forbidden" })
-  })
-  it("refuses an inactive service", async () => {
-    await db.update(s.service).set({ active: false }).where(eq(s.service.key, "aeration"))
-    await expect(callApi(ctxFor(db, writeKey), quoteRequestsCreate, { customerId: "c100", serviceKey: "aeration" })).rejects.toMatchObject({ code: "unprocessable" })
-    await db.update(s.service).set({ active: true }).where(eq(s.service.key, "aeration"))
-  })
-  it("honours an Idempotency-Key", async () => {
-    const ctx = { ...ctxFor(db, writeKey), idempotencyKey: "q-1" }
-    const a = await callApi(ctx, quoteRequestsCreate, { customerId: "c100", notes: "once" })
-    expect((await callApi(ctx, quoteRequestsCreate, { customerId: "c100", notes: "once" })).id).toBe(a.id)
   })
 })

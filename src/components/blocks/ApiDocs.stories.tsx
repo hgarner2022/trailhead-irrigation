@@ -43,15 +43,15 @@ const doc: OpenApiLike = {
     },
     "/visits/{id}/move": {
       post: {
-        operationId: "visits.move", summary: "Put a visit on a truck and a day. Hard rules: the truck works that weekday, the day is inside the visit's window, the truck-day has capacity, and it stays in one area group.", tags: ["visits"], "x-scope": "write",
+        operationId: "visits.move", summary: "Put a visit on a person and a day. Hard rules: the person works that weekday, the day is inside the visit's window, their day has capacity, and it stays in one area group.", tags: ["visits"], "x-scope": "write",
         parameters: [{ name: "id", in: "path", required: true, schema: string }],
-        requestBody: { content: { "application/json": { schema: { type: "object", required: ["truckId", "scheduledOn"], properties: { truckId: string, scheduledOn: { type: "string", description: "A Mountain-time calendar day, YYYY-MM-DD." }, startTime: string } } } } },
+        requestBody: { content: { "application/json": { schema: { type: "object", required: ["personId", "scheduledOn"], properties: { personId: string, scheduledOn: { type: "string", description: "A Mountain-time calendar day, YYYY-MM-DD." }, startTime: string } } } } },
         responses: { "200": { content: { "application/json": { schema: { type: "object", properties: { id: string, status: string, scheduledOn: nullable(string) } } } } } },
       },
     },
-    "/trucks/{id}": {
+    "/people/{id}": {
       delete: {
-        operationId: "trucks.deactivate", summary: "Take a truck out of service. Its history stays; the scheduler stops using it.", tags: ["trucks"], "x-scope": "admin",
+        operationId: "people.deactivate", summary: "Take a person out of service. Their history stays; the scheduler stops using them.", tags: ["people"], "x-scope": "admin",
         parameters: [{ name: "id", in: "path", required: true, schema: string }],
         responses: { "200": { content: { "application/json": { schema: { type: "object", properties: { id: string, name: string, active: { type: "boolean" } } } } } } },
       },

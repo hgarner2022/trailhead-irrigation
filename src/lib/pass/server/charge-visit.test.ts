@@ -5,7 +5,8 @@ import * as s from "@/db/schema"
 import type { TestDb } from "@/db/test-db"
 import { callApi } from "@/api/core/call"
 import { passesCreate } from "@/api/v1/passes/handlers"
-import { apiDb, ctxFor, eventsOf, writeKey } from "@/api/test-helpers"
+import { visitsGet } from "@/api/v1/visits/handlers"
+import { apiDb, ctxFor, eventsOf, setPass, writeKey } from "@/api/test-helpers"
 import { applyCardUpdate } from "@/lib/stripe/card-update"
 import { completeSession, declined, stubStripe } from "@/lib/stripe/test-stripe"
 import { chargeVisit } from "./charge-visit"
@@ -24,7 +25,8 @@ async function activePass() {
     customer: { firstName: "Maya", lastName: "Tester", email: `maya${n}@example.com` }, property: { address: `${n} Elm St`, town: "Erie" }, zones: 8, consent: { termsAccepted: true },
   })
   const card = { stripePaymentMethodId: "pm_old", cardBrand: "visa", cardLast4: "4242", cardExpires: "2030-08" }
-  await db.update(s.seasonPass).set({ status: "active", ...card }).where(eq(s.seasonPass.id, pass.id))
+  // The website's pending pass is sold: the card step is done.
+  await setPass(db, pass.id, { status: "active" })
   await db.update(s.customer).set({ stripeCustomerId: "cus_1", ...card }).where(eq(s.customer.id, pass.customer!.id))
   const visit = (kind: string) => pass.visits.find((v) => v.kind === kind)!.id
   return { passId: pass.id, customerId: pass.customer!.id, turnOn: visit("turn-on"), blowout: visit("blowout") }
@@ -38,11 +40,10 @@ describe("chargeVisit", () => {
     const { stripe, calls } = stubStripe()
     expect(await chargeVisit(db, stripe, p.turnOn, opts)).toBe("charged")
     expect(calls.paymentIntentsCreate.mock.calls[0]![0]).toMatchObject({ amount: 14500, customer: "cus_1", payment_method: "pm_old" })
-    const [visit] = await db.select().from(s.visit).where(eq(s.visit.id, p.turnOn))
-    expect(visit!.stripePaymentIntentId).toMatch(/^pi_ok_/)
-    expect(visit!.chargedAt).toEqual(NOW)
     const [charge] = await db.select().from(s.charge).where(eq(s.charge.visitId, p.turnOn))
-    expect(charge).toMatchObject({ attempt: 1, status: "succeeded", amount: 145, receiptUrl: "https://pay.stripe.test/receipt/1" })
+    expect(charge).toMatchObject({ attempt: 1, status: "succeeded", amount: 145, receiptUrl: "https://pay.stripe.test/receipt/1", stripePaymentIntentId: expect.stringMatching(/^pi_ok_/) })
+    // the visit reads as charged from its payment row: the time the row was written, never a column on the visit
+    expect((await callApi(ctxFor(db, writeKey), visitsGet, { id: p.turnOn })).chargedAt).not.toBeNull()
     const [mail] = await messages(p.customerId)
     expect(mail).toMatchObject({ kind: "receipt", channel: "email", status: "queued", visitId: p.turnOn })
     expect(mail!.to).toMatch(/^maya\d+@example.com$/)
@@ -68,14 +69,43 @@ describe("chargeVisit", () => {
     expect(await messages(p.customerId)).toHaveLength(1)
   })
 
+  it("charges the visit's price as its line stands now: a line edited after Done is charged at its new price, and the visit is paid once the rows reach it", async () => {
+    const p = await activePass()
+    await db.update(s.lineItem).set({ unitPrice: 200 }).where(eq(s.lineItem.visitId, p.turnOn))
+    const { stripe, calls } = stubStripe()
+    expect(await chargeVisit(db, stripe, p.turnOn, opts)).toBe("charged")
+    expect(calls.paymentIntentsCreate.mock.calls[0]![0]).toMatchObject({ amount: 20000 })
+    const [charge] = await db.select().from(s.charge).where(eq(s.charge.visitId, p.turnOn))
+    expect(charge).toMatchObject({ status: "succeeded", amount: 200 })
+    expect(await chargeVisit(db, stripe, p.turnOn, opts)).toBe("already-charged")
+  })
+
+  it("charges a taxable visit's price with its sales tax: $145 and 8% is $157 on the card and in the payment row", async () => {
+    const p = await activePass()
+    const [org] = await db.select().from(s.organization).limit(1)
+    await db.update(s.organization).set({ settings: { ...org!.settings, billing: { dueDays: 14, collectsSalesTax: true, salesTaxPercent: 8 } } }).where(eq(s.organization.id, org!.id))
+    try {
+      await db.update(s.lineItem).set({ taxable: true }).where(eq(s.lineItem.visitId, p.turnOn))
+      const { stripe, calls } = stubStripe()
+      expect(await chargeVisit(db, stripe, p.turnOn, opts)).toBe("charged")
+      expect(calls.paymentIntentsCreate.mock.calls[0]![0]).toMatchObject({ amount: 15700 })
+      const [charge] = await db.select().from(s.charge).where(eq(s.charge.visitId, p.turnOn))
+      expect(charge).toMatchObject({ status: "succeeded", amount: 157 })
+      expect(await chargeVisit(db, stripe, p.turnOn, opts)).toBe("already-charged")
+      // the other visit has no taxable line, so it is charged its plain price
+      expect(await chargeVisit(db, stripe, p.blowout, opts)).toBe("charged")
+      expect(calls.paymentIntentsCreate.mock.calls[1]![0]).toMatchObject({ amount: 11500 })
+    } finally {
+      await db.update(s.organization).set({ settings: org!.settings }).where(eq(s.organization.id, org!.id))
+    }
+  })
+
   it("records a decline, queues card-failed with the update link, flags the pass, and does not retry until the card changes", async () => {
     const p = await activePass()
     const { stripe, calls } = stubStripe({ charge: () => { throw declined("pi_bad") } })
     expect(await chargeVisit(db, stripe, p.turnOn, opts)).toBe("failed")
     const [charge] = await db.select().from(s.charge).where(eq(s.charge.visitId, p.turnOn))
     expect(charge).toMatchObject({ attempt: 1, status: "failed", failureMessage: "Your card was declined.", stripePaymentIntentId: "pi_bad" })
-    const [pass] = await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, p.passId))
-    expect(pass!.cardFailedAt).toEqual(NOW)
     const [owner] = await db.select().from(s.customer).where(eq(s.customer.id, p.customerId))
     expect(owner!.cardFailedAt).toEqual(NOW)
     const [mail] = await messages(p.customerId)
@@ -100,9 +130,20 @@ describe("chargeVisit", () => {
     expect(await chargeVisit(db, stripe, p.blowout, opts)).toBe("no-card")
   })
 
+  it("owes nothing when the visit's line was cancelled after Done: no Stripe call, no payment row, no email", async () => {
+    const p = await activePass()
+    await db.update(s.visit).set({ status: "completed" }).where(eq(s.visit.id, p.turnOn))
+    await db.update(s.lineItem).set({ cancelledAt: NOW }).where(eq(s.lineItem.visitId, p.turnOn))
+    const { stripe, calls } = stubStripe()
+    expect(await chargeVisit(db, stripe, p.turnOn, opts)).toBe("nothing-owed")
+    expect(calls.paymentIntentsCreate).not.toHaveBeenCalled()
+    expect(await db.select().from(s.charge).where(eq(s.charge.visitId, p.turnOn))).toHaveLength(0)
+    expect(await messages(p.customerId)).toHaveLength(0)
+  })
+
   it("charges nothing on a cancelled pass and nothing for a booking visit", async () => {
     const p = await activePass()
-    await db.update(s.seasonPass).set({ status: "cancelled" }).where(eq(s.seasonPass.id, p.passId))
+    await setPass(db, p.passId, { status: "cancelled" })
     const { stripe, calls } = stubStripe()
     expect(await chargeVisit(db, stripe, p.turnOn, opts)).toBe("cancelled-pass")
     expect(calls.paymentIntentsCreate).not.toHaveBeenCalled()
@@ -110,7 +151,7 @@ describe("chargeVisit", () => {
 
   it("sends the same idempotency key when a crash left the attempt pending", async () => {
     const p = await activePass()
-    await db.insert(s.charge).values({ organizationId: (await db.select().from(s.visit).where(eq(s.visit.id, p.turnOn)))[0]!.organizationId, passId: p.passId, visitId: p.turnOn, attempt: 1, amount: 145, status: "pending" })
+    await db.insert(s.charge).values({ organizationId: (await db.select().from(s.visit).where(eq(s.visit.id, p.turnOn)))[0]!.organizationId, jobId: p.passId, visitId: p.turnOn, attempt: 1, amount: 145, status: "pending" })
     const { stripe, calls } = stubStripe()
     await chargeVisit(db, stripe, p.turnOn, opts)
     expect(calls.paymentIntentsCreate.mock.calls[0]![1].idempotencyKey).toBe(`visit-${p.turnOn}-1`)
@@ -123,6 +164,8 @@ describe("applyCardUpdate", () => {
     const p = await activePass()
     const failing = stubStripe({ charge: () => { throw declined() } })
     await chargeVisit(db, failing.stripe, p.turnOn, opts)
+    // the retry is only for a visit that is Done and not paid
+    await db.update(s.visit).set({ status: "completed", completedOn: "2027-05-06" }).where(eq(s.visit.id, p.turnOn))
     const sessions = { cs_up: completeSession("cs_up", { purpose: "card-update", passId: p.passId }, { pm: "pm_new", last4: "1111", expYear: 2031, expMonth: 1 }) }
     const { stripe, calls } = stubStripe({ sessions })
     expect(await applyCardUpdate(db, stripe, "cs_up", NOW)).toBe("applied")
@@ -131,8 +174,6 @@ describe("applyCardUpdate", () => {
     expect(await eventsOf(db, { kind: "card.saved", customerId: p.customerId })).toMatchObject([{ about: "customer", aboutId: p.customerId, jobId: null, who: "system", detail: { brand: "visa", last4: "1111" } }])
     expect(calls.detach).toHaveBeenCalledWith("pm_old")
     expect(calls.customersUpdate).toHaveBeenCalledTimes(1)
-    const [pass] = await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, p.passId))
-    expect(pass).toMatchObject({ stripePaymentMethodId: "pm_new", cardLast4: "1111", cardExpires: "2031-01", cardFailedAt: null })
     const [owner] = await db.select().from(s.customer).where(eq(s.customer.id, p.customerId))
     expect(owner).toMatchObject({ stripePaymentMethodId: "pm_new", cardLast4: "1111", cardExpires: "2031-01", cardFailedAt: null })
     const queued = await db.select().from(s.queueItem).where(and(eq(s.queueItem.kind, "pass-charge"), eq(s.queueItem.key, `${p.turnOn}:card-cs_up`)))
@@ -152,7 +193,7 @@ describe("applyCardUpdate", () => {
 })
 
 describe("applyCardUpdate across passes", () => {
-  it("writes the new card on the customer and on every pass of theirs, and re-queues a failed charge of the other pass", async () => {
+  it("writes the new card on the customer, and re-queues a failed charge of the customer's other pass", async () => {
     const p = await activePass()
     const [owner] = await db.select().from(s.customer).where(eq(s.customer.id, p.customerId))
     // A second pass of the same customer (the first is active, so the checkout makes a new pending one).
@@ -160,14 +201,14 @@ describe("applyCardUpdate across passes", () => {
       customer: { firstName: "Maya", lastName: "Tester", email: owner!.email! }, property: { address: `${n} Elm St`, town: "Erie" }, zones: 8, consent: { termsAccepted: true },
     })
     expect(second.id).not.toBe(p.passId)
-    await db.update(s.seasonPass).set({ status: "active", stripePaymentMethodId: "pm_old", cardLast4: "4242" }).where(eq(s.seasonPass.id, second.id))
+    await setPass(db, second.id, { status: "active" })
     const otherVisit = second.visits.find((v) => v.kind === "turn-on")!.id
     await chargeVisit(db, stubStripe({ charge: () => { throw declined() } }).stripe, otherVisit, opts)
+    await db.update(s.visit).set({ status: "completed", completedOn: "2027-05-06" }).where(eq(s.visit.id, otherVisit))
     const { stripe } = stubStripe({ sessions: { cs_two: completeSession("cs_two", { purpose: "card-update", passId: p.passId }, { pm: "pm_new2", last4: "9999" }) } })
     expect(await applyCardUpdate(db, stripe, "cs_two", NOW)).toBe("applied")
-    const passes = await db.select().from(s.seasonPass).where(eq(s.seasonPass.customerId, p.customerId))
-    expect(passes).toHaveLength(2)
-    for (const pass of passes) expect(pass).toMatchObject({ stripePaymentMethodId: "pm_new2", cardLast4: "9999", cardFailedAt: null })
+    expect(await db.select().from(s.job).where(eq(s.job.customerId, p.customerId))).toHaveLength(2)
+    expect((await db.select().from(s.customer).where(eq(s.customer.id, p.customerId)))[0]).toMatchObject({ stripePaymentMethodId: "pm_new2", cardLast4: "9999", cardFailedAt: null })
     expect(await db.select().from(s.queueItem).where(and(eq(s.queueItem.kind, "pass-charge"), eq(s.queueItem.key, `${otherVisit}:card-cs_two`)))).toHaveLength(1)
   })
 })
@@ -190,6 +231,6 @@ describe("chargeVisit without a Stripe card", () => {
     expect(await chargeVisit(db, stripe, p.turnOn, opts)).toBe("no-card")
     expect(await chargeVisit(db, stripe, p.turnOn, opts)).toBe("no-card")
     const alerts = await db.select().from(s.adminAlert).where(eq(s.adminAlert.key, p.turnOn))
-    expect(alerts).toMatchObject([{ kind: "no-card", passId: p.passId, message: expect.stringMatching(/^No card to charge for .+'s spring turn-on$/), resolvedAt: null }])
+    expect(alerts).toMatchObject([{ kind: "no-card", jobId: p.passId, message: expect.stringMatching(/^No card to charge for .+'s spring turn-on$/), resolvedAt: null }])
   })
 })

@@ -28,44 +28,28 @@ beforeAll(async () => {
   await db.insert(s.customer).values({ id: "c1", organizationId: ORG, firstName: "Andrea" })
   await db.insert(s.property).values({ id: "pr1", organizationId: ORG, customerId: "c1", address: "1 Main St", town: "Erie" })
   await db.insert(s.job).values([
-    { id: "j1", organizationId: ORG, customerId: "c1", propertyId: "pr1", kind: "pass", source: "checkout" },
-    { id: "j2", organizationId: ORG, customerId: "c1", propertyId: "pr1", kind: "repair", source: "office" },
+    { id: "j1", organizationId: ORG, customerId: "c1", propertyId: "pr1", source: "checkout" },
+    { id: "j2", organizationId: ORG, customerId: "c1", propertyId: "pr1", source: "office" },
   ])
 })
 afterAll(() => db.close())
 
-const pass = (over: Partial<typeof s.seasonPass.$inferInsert> = {}) => ({
-  jobId: "j1",
-  organizationId: ORG,
-  number: "TH-2027-0001",
-  season: 2027,
-  customerId: "c1",
-  propertyId: "pr1",
-  zones: 6,
-  ...over,
-})
-
 describe("schema", () => {
-  it("refuses a pass for an unknown organization", async () => {
-    await reject(db.insert(s.seasonPass).values(pass({ organizationId: "nope", number: "X" })))
-  })
-
-  it("numbers passes uniquely per organization", async () => {
-    await db.insert(s.seasonPass).values(pass({ id: "p1" }))
-    await reject(db.insert(s.seasonPass).values(pass()))
-    await db.insert(s.organization).values({ id: "org-2", name: "Other", termsVersion: "1", settings: { windows: [], bufferPercentEarly: 0, bufferPercentLate: 0, fallTownOrder: [], springTownOrder: [], messages: [] } })
-    await db.insert(s.customer).values({ id: "c2", organizationId: "org-2", firstName: "B" })
-    await db.insert(s.property).values({ id: "pr2", organizationId: "org-2", customerId: "c2", address: "2 Main", town: "Erie" })
-    await db.insert(s.job).values({ id: "j-org2", organizationId: "org-2", customerId: "c2", propertyId: "pr2", kind: "pass", source: "checkout" })
-    await db.insert(s.seasonPass).values(pass({ jobId: "j-org2", organizationId: "org-2", customerId: "c2", propertyId: "pr2" }))
+  it("refuses a job for an unknown organization", async () => {
+    await reject(db.insert(s.job).values({ id: "j-nope", organizationId: "nope", customerId: "c1", propertyId: "pr1", source: "checkout" }))
   })
 
   it("holds the pass on the job: a pass number is unique per organization, a job with none is free", async () => {
-    const base = { organizationId: ORG, customerId: "c1", propertyId: "pr1", kind: "pass" as const, source: "checkout" as const }
+    const base = { organizationId: ORG, customerId: "c1", propertyId: "pr1", source: "checkout" as const }
     await db.insert(s.job).values({ ...base, id: "jp-1", season: 2027, passNumber: "TH-2027-7001" })
     await reject(db.insert(s.job).values({ ...base, id: "jp-2", season: 2027, passNumber: "TH-2027-7001" }))
     await db.insert(s.job).values({ ...base, id: "jp-3", season: 2028, passNumber: "TH-2028-7001", renewsJobId: "jp-1", source: "renewal" })
     await db.insert(s.job).values([{ ...base, id: "jp-4" }, { ...base, id: "jp-5" }])
+    // The number is unique per organization: another organization may hold the same one.
+    await db.insert(s.organization).values({ id: "org-2", name: "Other", termsVersion: "1", settings: { windows: [], bufferPercentEarly: 0, bufferPercentLate: 0, fallTownOrder: [], springTownOrder: [], messages: [] } })
+    await db.insert(s.customer).values({ id: "c2", organizationId: "org-2", firstName: "B" })
+    await db.insert(s.property).values({ id: "pr2", organizationId: "org-2", customerId: "c2", address: "2 Main", town: "Erie" })
+    await db.insert(s.job).values({ id: "j-org2", organizationId: "org-2", customerId: "c2", propertyId: "pr2", source: "checkout", season: 2027, passNumber: "TH-2027-7001" })
   })
 
   it("holds a payment on the job: a job-level payment has no visit, a refund points at its payment", async () => {
@@ -85,8 +69,8 @@ describe("schema", () => {
     await db.insert(s.queueItem).values({ organizationId: ORG, kind: "message", key: "evt_1" })
   })
 
-  it("allows one pass_visit per kind per pass", async () => {
-    const v = { organizationId: ORG, jobId: "j1", passId: "p1", customerId: "c1", propertyId: "pr1", kind: "turn-on" as const }
+  it("allows one pass visit per kind per job", async () => {
+    const v = { organizationId: ORG, jobId: "j1", customerId: "c1", propertyId: "pr1", kind: "turn-on" as const }
     await db.insert(s.visit).values(v)
     await reject(db.insert(s.visit).values(v))
     await db.insert(s.visit).values({ ...v, kind: "blowout" })
@@ -121,7 +105,7 @@ describe("schema", () => {
 
   it("has a person table that holds a truck's scheduling fields and an admin's sign-in, with email unique per organization ignoring case", async () => {
     const cols = await db.execute(sql`select column_name from information_schema.columns where table_name = 'person' order by 1`)
-    expect(cols.rows.map((r) => r.column_name)).toEqual(expect.arrayContaining(["email", "role", "truck", "working_days", "capacity_by_kind", "season_start", "season_end", "legacy_truck_id"]))
+    expect(cols.rows.map((r) => r.column_name)).toEqual(expect.arrayContaining(["email", "role", "truck", "working_days", "capacity_by_kind", "season_start", "season_end"]))
     await db.insert(s.person).values({ id: "p-upper", organizationId: ORG, name: "Ryan", initials: "R", email: "Ryan@x.test" })
     await reject(db.insert(s.person).values({ id: "p-lower", organizationId: ORG, name: "Ryan", initials: "R", email: "ryan@x.test" }))
   })
@@ -287,6 +271,36 @@ describe("schema", () => {
   it("has the yard's facts on the property", async () => {
     const cols = await db.execute(sql`select column_name from information_schema.columns where table_name = 'property' order by 1`)
     expect(cols.rows.map((r) => r.column_name)).toEqual(expect.arrayContaining(["zones", "controller", "backflow_location", "gate_code", "must_be_home", "access_note", "contact_name", "contact_phone", "notes"]))
+  })
+
+  it("holds the old pass id and the three job dates on the job, and a job needs no kind", async () => {
+    const cols = await db.execute(sql`select column_name, is_nullable, data_type from information_schema.columns where table_name = 'job' and column_name in ('legacy_pass_id','sold_on','quote_sent_on','quote_accepted_on','kind')`)
+    const byName = Object.fromEntries(cols.rows.map((r) => [r.column_name as string, r]))
+    expect(Object.keys(byName).sort()).toEqual(["kind", "legacy_pass_id", "quote_accepted_on", "quote_sent_on", "sold_on"])
+    expect(Object.values(byName).every((r) => r.is_nullable === "YES")).toBe(true)
+    expect(["sold_on", "quote_sent_on", "quote_accepted_on"].map((n) => byName[n]!.data_type)).toEqual(["date", "date", "date"])
+    const base = { organizationId: ORG, customerId: "c1", propertyId: "pr1", source: "site" as const }
+    await db.insert(s.job).values({ ...base, id: "jl-1", legacyPassId: "old-1", soldOn: "2027-03-01", quoteSentOn: "2027-02-01", quoteAcceptedOn: "2027-02-20" })
+    await reject(db.insert(s.job).values({ ...base, id: "jl-2", legacyPassId: "old-1" }))
+    await db.insert(s.job).values([{ ...base, id: "jl-3" }, { ...base, id: "jl-4" }])
+    const [row] = await db.select({ soldOn: s.job.soldOn }).from(s.job).where(eq(s.job.id, "jl-3"))
+    expect(row).toEqual({ soldOn: null })
+    // The column is still in the database (the drops come in the next push) but nothing writes it: a job made by the code has none.
+    expect((await db.execute(sql`select "kind" from "job" where "id" = 'jl-3'`)).rows).toEqual([{ kind: null }])
+  })
+
+  it("lets a job hold one visit of each pass kind and no more, while any other kind repeats", async () => {
+    await db.insert(s.job).values({ id: "j-kinds", organizationId: ORG, customerId: "c1", propertyId: "pr1", source: "office" })
+    const v = { organizationId: ORG, jobId: "j-kinds", customerId: "c1", propertyId: "pr1" }
+    await db.insert(s.visit).values([{ ...v, kind: "turn-on" }, { ...v, kind: "inspection" }, { ...v, kind: "blowout" }])
+    for (const kind of ["turn-on", "inspection", "blowout"] as const) await reject(db.insert(s.visit).values({ ...v, kind }))
+    await db.insert(s.visit).values([{ ...v, kind: "repair" }, { ...v, kind: "repair" }])
+  })
+
+  it("has the job an alert is about, with no foreign key", async () => {
+    await db.insert(s.adminAlert).values({ organizationId: ORG, kind: "pass-new", key: "k-1", message: "New Season Pass", jobId: "not-a-job-yet" })
+    const [row] = await db.select({ jobId: s.adminAlert.jobId }).from(s.adminAlert).where(eq(s.adminAlert.key, "k-1"))
+    expect(row!.jobId).toBe("not-a-job-yet")
   })
 
   it("has the card on file on the customer", async () => {

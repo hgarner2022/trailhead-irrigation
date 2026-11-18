@@ -4,11 +4,12 @@
  * a visit). Everything is read from `AdminData`; the same words as the grid (`jobs-model.ts`).
  */
 import type { AdminData, AdminPayment, Client, JobLine, Pass, SoldJob, Visit, Yard } from "@/lib/admin/types"
+import { jobTax } from "@/lib/jobs/tax"
 import { METHOD_WORDS } from "@/lib/money/words"
 import { billState, type BillState } from "./bill-model"
 import { jobHeading, jobRows, type JobRow } from "./jobs-model"
 import { propertiesOf } from "./customers-model"
-import { dayOfVisit } from "./visit-panel-model"
+import { dayOfVisit, ruleOfData } from "./visit-panel-model"
 
 export interface JobFacts {
   job: SoldJob
@@ -19,6 +20,8 @@ export interface JobFacts {
   visits: Visit[]
   yard?: Yard
   lines: JobLine[]
+  /** the sales tax on the live lines, whole dollars (0 while nothing is collected): the panel shows a Tax line only above zero; `row.total` already includes it */
+  tax: number
   /** newest first, refunds included */
   payments: AdminPayment[]
   bill: BillState
@@ -49,6 +52,7 @@ export function jobFacts(data: AdminData, jobId: string, today: string): JobFact
   return {
     job, row, client, pass, visits, yard,
     lines: job.lines ?? [],
+    tax: jobTax(job.lines ?? [], ruleOfData(data)),
     payments,
     // a job charged to the card on its pass is left to the card, unless that card failed
     bill: billState(job, visits, Boolean(pass?.cardLast4) && !failed),

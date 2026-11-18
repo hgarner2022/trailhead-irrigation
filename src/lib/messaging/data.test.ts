@@ -18,13 +18,14 @@ beforeAll(async () => {
 afterAll(() => db.close())
 
 describe("loadVisitFacts", () => {
-  it("carries the person's first name as who, and their truck label as crew for one more season", async () => {
+  it("carries the person's first name as who", async () => {
     const facts = await loadVisitFacts(db, "p4-turn-on", origin)
-    expect(facts).toMatchObject({ id: "p4-turn-on", name: "spring turn-on", day: "2027-05-05", startTime: "08:00", who: "Ryan", crew: "Truck 1" })
+    expect(facts).toMatchObject({ id: "p4-turn-on", name: "spring turn-on", day: "2027-05-05", startTime: "08:00", who: "Ryan" })
+    expect(facts).not.toHaveProperty("crew")
   })
-  it("has no who and no crew when the visit has no person", async () => {
+  it("has no who when the visit has no person", async () => {
     const facts = await loadVisitFacts(db, "p4-blowout", origin, "2027-10-05")
-    expect(facts).toMatchObject({ id: "p4-blowout", day: "2027-10-05", who: null, crew: null })
+    expect(facts).toMatchObject({ id: "p4-blowout", day: "2027-10-05", who: null })
   })
   it("is null while the visit has no day", async () => {
     expect(await loadVisitFacts(db, "p4-blowout", origin)).toBeNull()
@@ -33,7 +34,7 @@ describe("loadVisitFacts", () => {
     await db.update(s.person).set({ active: false }).where(eq(s.person.id, "person_truck-1"))
     try {
       const facts = await loadVisitFacts(db, "p4-turn-on", origin)
-      expect(facts).toMatchObject({ id: "p4-turn-on", day: "2027-05-05", who: null, crew: null })
+      expect(facts).toMatchObject({ id: "p4-turn-on", day: "2027-05-05", who: null })
     } finally {
       await db.update(s.person).set({ active: true }).where(eq(s.person.id, "person_truck-1"))
     }

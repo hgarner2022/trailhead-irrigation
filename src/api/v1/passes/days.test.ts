@@ -41,23 +41,23 @@ describe("the days picked at checkout", () => {
   it("are held on the pending pass's visits, then scheduled with their window when the card is saved", async () => {
     const [turnOn, blowout] = [(await offer("turn-on")).days[1]!, (await offer("blowout")).days[0]!]
     const pass = await start("days1@example.com", [{ kind: "turn-on", day: turnOn.day, personId: turnOn.personId, start: turnOn.start }, { kind: "blowout", day: blowout.day, personId: blowout.personId, start: blowout.start }])
-    let rows = await db.select().from(s.visit).where(eq(s.visit.passId, pass.id))
+    let rows = await db.select().from(s.visit).where(eq(s.visit.jobId, pass.id))
     expect(rows.map((v) => [v.kind, v.status, v.scheduledOn, v.personId])).toEqual(expect.arrayContaining([["turn-on", "unscheduled", turnOn.day, turnOn.personId], ["blowout", "unscheduled", blowout.day, blowout.personId]]))
     const active = await activate(pass.id, "cs_d1")
     expect(active.visits.map((v) => [v.kind, v.status, v.scheduledOn])).toEqual(expect.arrayContaining([["turn-on", "scheduled", turnOn.day], ["blowout", "scheduled", blowout.day]]))
-    rows = await db.select().from(s.visit).where(eq(s.visit.passId, pass.id))
+    rows = await db.select().from(s.visit).where(eq(s.visit.jobId, pass.id))
     expect(rows.every((v) => v.startTime && v.stopOrder)).toBe(true)
     const mail = (await db.select().from(s.messageLog).where(eq(s.messageLog.customerId, pass.customerId)))[0]!
     expect(mail.body).toContain("Google Calendar:")
-    expect(await db.select().from(s.passChange).where(eq(s.passChange.passId, pass.id))).not.toContainEqual(expect.objectContaining({ kind: "day-filled" }))
+    expect(await eventsOf(db, { kind: "visit.day-filled", jobId: pass.id })).toEqual([])
     await activate(pass.id, "cs_d1")
-    expect((await db.select().from(s.visit).where(eq(s.visit.passId, pass.id))).filter((v) => v.status === "scheduled")).toHaveLength(2)
+    expect((await db.select().from(s.visit).where(eq(s.visit.jobId, pass.id))).filter((v) => v.status === "scheduled")).toHaveLength(2)
     // The story of that checkout: one sale, the card, the consent, and a `visit.scheduled` for each held day, none doubled by the second activation.
-    const [row] = await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, pass.id))
-    expect(await eventsOf(db, { kind: "job.sold", jobId: row!.jobId })).toMatchObject([{ about: "job", aboutId: row!.jobId, customerId: pass.customerId, who: "customer", detail: { source: "website", passNumber: pass.number } }])
+    const row = { jobId: pass.id }
+    expect(await eventsOf(db, { kind: "job.sold", jobId: row.jobId })).toMatchObject([{ about: "job", aboutId: row.jobId, customerId: pass.customerId, who: "customer", detail: { source: "website", passNumber: pass.number } }])
     expect(await eventsOf(db, { kind: "card.saved", customerId: pass.customerId })).toMatchObject([{ about: "customer", who: "customer", detail: { last4: "4242" } }])
-    expect(await eventsOf(db, { kind: "consent", jobId: row!.jobId })).toMatchObject([{ about: "job", who: "customer", detail: { source: "checkout" } }])
-    const scheduled = await eventsOf(db, { kind: "visit.scheduled", jobId: row!.jobId })
+    expect(await eventsOf(db, { kind: "consent", jobId: row.jobId })).toMatchObject([{ about: "job", who: "customer", detail: { source: "checkout" } }])
+    const scheduled = await eventsOf(db, { kind: "visit.scheduled", jobId: row.jobId })
     expect(scheduled).toHaveLength(2)
     expect(scheduled).toEqual(expect.arrayContaining([
       expect.objectContaining({ about: "visit", who: "system", detail: { name: "Spring turn-on", day: turnOn.day, from: null, personId: turnOn.personId } }),
@@ -70,7 +70,7 @@ describe("the days picked at checkout", () => {
     const ryan = (await offer("turn-on")).days.find((d) => d.personId === "person_truck-1")!
     expect(ryan).toBeDefined()
     const pass = await start("days-legacy@example.com", [{ kind: "turn-on", day: ryan.day, truckId: "truck-1", start: ryan.start }])
-    const rows = await db.select().from(s.visit).where(eq(s.visit.passId, pass.id))
+    const rows = await db.select().from(s.visit).where(eq(s.visit.jobId, pass.id))
     expect(rows.find((v) => v.kind === "turn-on")).toMatchObject({ status: "unscheduled", scheduledOn: ryan.day, personId: "person_truck-1", startTime: ryan.start })
     await activate(pass.id, "cs_legacy")
     const events = (await db.select().from(s.outboundEvent)).filter((e) => e.event === "visit.scheduled" && (e.payload as { visitId: string }).visitId === rows.find((v) => v.kind === "turn-on")!.id)
@@ -81,13 +81,13 @@ describe("the days picked at checkout", () => {
     const ryan = (await offer("turn-on")).days.find((d) => d.personId === "person_truck-1")!
     const pass = await start("days-unknown@example.com", [{ kind: "turn-on", day: ryan.day, truckId: "nope", start: ryan.start }])
     expect(pass.id).toBeTruthy()
-    const rows = await db.select().from(s.visit).where(eq(s.visit.passId, pass.id))
+    const rows = await db.select().from(s.visit).where(eq(s.visit.jobId, pass.id))
     expect(rows.find((v) => v.kind === "turn-on")).toMatchObject({ status: "unscheduled", scheduledOn: null, personId: null, startTime: null })
   })
 
   it("drops a day that is not open, and leaves that visit with no day", async () => {
     const pass = await start("days2@example.com", [{ kind: "turn-on", day: "2027-05-08", personId: "person_truck-1", start: "08:00" }])
-    const rows = await db.select().from(s.visit).where(eq(s.visit.passId, pass.id))
+    const rows = await db.select().from(s.visit).where(eq(s.visit.jobId, pass.id))
     expect(rows.find((v) => v.kind === "turn-on")).toMatchObject({ scheduledOn: null, personId: null })
   })
 
@@ -100,8 +100,6 @@ describe("the days picked at checkout", () => {
     const visit = active.visits.find((v) => v.kind === "turn-on")!
     expect(visit.status).toBe("scheduled")
     expect(visit.scheduledOn! > pick.day).toBe(true)
-    const changes = await db.select().from(s.passChange).where(eq(s.passChange.passId, pass.id))
-    expect(changes.find((c) => c.kind === "day-filled")?.detail).toMatchObject({ visit: "turn-on", from: pick.day, to: visit.scheduledOn })
     expect(await eventsOf(db, { kind: "visit.day-filled", visitId: visit.id })).toMatchObject([{ about: "visit", aboutId: visit.id, customerId: pass.customerId, who: "customer", detail: { visit: "turn-on", from: pick.day, to: visit.scheduledOn } }])
     const mail = (await db.select().from(s.messageLog).where(eq(s.messageLog.customerId, pass.customerId)))[0]!
     expect(mail.body).toContain("filled up")

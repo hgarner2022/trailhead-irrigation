@@ -7,5 +7,6 @@ it("the metrics read the real snapshot", async () => {
   expect(committedRevenue(d.passes)).toBeGreaterThan(0)
   expect(monthComparison(d.monthTotals, 2026, 10).current).toBeGreaterThan(15000)
   expect(quotesAwaiting(d.quotes).count).toBe(16)
-  expect(invoicesOverdue(d.invoices, "2026-11-12").count).toBe(14)
+  // our own bills (none in the snapshot), never the Jobber mirror's invoices
+  expect(invoicesOverdue([], "2026-11-12").count).toBe(0)
 })

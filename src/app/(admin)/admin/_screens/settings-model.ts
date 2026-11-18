@@ -262,8 +262,6 @@ export interface Sample {
   date: string
   /** the first name of the person on the visit */
   who: string
-  /** the truck label; kept for one season for templates that still say {truck} */
-  truck: string
   nextVisit: string
 }
 
@@ -272,7 +270,7 @@ export function fillMessage(body: string, sample: Sample): string {
   return body.replace(/\{(\w+)\}/g, (match, key: string) => (key in sample ? sample[key as keyof Sample] : match))
 }
 
-/** The preview's sample: the first pass's first name, the first scheduled visit someone has, that person's first name and truck label, and the pass's next visit; plain stand-ins when the data is empty. */
+/** The preview's sample: the first pass's first name, the first scheduled visit someone has, that person's first name, and the pass's next visit; plain stand-ins when the data is empty. */
 export function sampleFor(data: AdminData): Sample {
   const pass = data.passes[0]
   const visit = data.visits.find((v) => v.startAt && v.personId)
@@ -282,7 +280,6 @@ export function sampleFor(data: AdminData): Sample {
     visit: visit ? KIND_WORDS[visit.kind] : "visit",
     date: visit?.startAt ? writtenDate(visit.startAt, TIME_ZONE) : "a day we will confirm",
     who: firstNameOf(person?.name) ?? "Ryan",
-    truck: person?.truck ?? person?.name ?? "Truck 1",
     nextVisit: pass?.visits[1] ? KIND_WORDS[pass.visits[1].kind] : "next visit",
   }
 }

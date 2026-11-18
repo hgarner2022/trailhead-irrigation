@@ -4,7 +4,7 @@ import { eq } from "drizzle-orm"
 import * as s from "@/db/schema"
 import type { TestDb } from "@/db/test-db"
 import { callApi } from "../../core/call"
-import { apiDb, ctxFor, customerPerson, eventsOf } from "../../test-helpers"
+import { apiDb, passJobOf, setPass, ctxFor, customerPerson, eventsOf } from "../../test-helpers"
 import { passesGet } from "../passes/handlers"
 import { visitsAreaDays, visitsPick } from "./handlers"
 
@@ -13,9 +13,8 @@ let customerId: string
 beforeAll(async () => {
   vi.stubEnv("APP_URL", "https://site.test")
   db = await apiDb()
-  const [pass] = await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, "p3"))
-  customerId = pass!.customerId
-  await db.update(s.seasonPass).set({ needsCustomerHome: true }).where(eq(s.seasonPass.id, "p3"))
+  customerId = (await passJobOf(db, "p3")).customerId
+  await setPass(db, "p3", { needsCustomerHome: true })
   await db.update(s.customer).set({ phone: "303-555-0100", email: "p3@example.com" }).where(eq(s.customer.id, customerId))
 })
 afterAll(() => db.close())
@@ -23,15 +22,14 @@ afterAll(() => db.close())
 const me = () => ctxFor(db, customerPerson(customerId, "p3@example.com"))
 
 describe("a cancelled job", () => {
-  it("refuses a pick and the area days even when the pass alias still says active", async () => {
-    const [alias] = await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, "p3"))
-    expect(alias!.status).toBe("active")
-    await db.update(s.job).set({ status: "cancelled", cancelledAt: new Date("2027-04-01T12:00:00Z") }).where(eq(s.job.id, alias!.jobId))
+  it("refuses a pick and the area days once the job is cancelled", async () => {
+    const job = await passJobOf(db, "p3")
+    await db.update(s.job).set({ cancelledAt: new Date("2027-04-01T12:00:00Z") }).where(eq(s.job.id, job.id))
     try {
       await expect(callApi(me(), visitsAreaDays, { id: "p3-turn-on" })).rejects.toMatchObject({ code: "unprocessable", message: "This pass is not open" })
       await expect(callApi(me(), visitsPick, { id: "p3-turn-on", day: "2027-05-05" })).rejects.toMatchObject({ code: "unprocessable", message: "This pass is not open" })
     } finally {
-      await db.update(s.job).set({ status: "active", cancelledAt: null }).where(eq(s.job.id, alias!.jobId))
+      await db.update(s.job).set({ cancelledAt: null }).where(eq(s.job.id, job.id))
     }
   })
 })
@@ -65,7 +63,6 @@ describe("visits.areaDays and visits.pick", () => {
     await callApi(me(), visitsPick, { id: "p3-turn-on", day: second! })
     texts = (await db.select().from(s.messageLog)).filter((m) => m.visitId === "p3-turn-on")
     expect(texts.map((m) => m.kind).sort()).toEqual(["date-moved", "date-set"])
-    expect((await db.select().from(s.passChange).where(eq(s.passChange.visitId, "p3-turn-on"))).map((c) => c.kind)).toContain("day-picked")
     // One event per pick, written by the customer: `visit.scheduled` the first time, `visit.moved` once the visit had a day (never both for one action).
     expect(await eventsOf(db, { visitId: "p3-turn-on", kind: "visit.scheduled" })).toMatchObject([{ about: "visit", aboutId: "p3-turn-on", customerId, who: "customer", detail: { name: "Spring turn-on", day: days[0], from: null, personId: expect.any(String) } }])
     expect(await eventsOf(db, { visitId: "p3-turn-on", kind: "visit.moved" })).toMatchObject([{ who: "customer", detail: { day: second, from: days[0] } }])
@@ -79,15 +76,15 @@ describe("visits.areaDays and visits.pick", () => {
   })
 
   it("offers the same choice whether or not the pass is marked as needing the customer home", async () => {
-    await db.update(s.seasonPass).set({ needsCustomerHome: false }).where(eq(s.seasonPass.id, "p3"))
+    await setPass(db, "p3", { needsCustomerHome: false })
     const { days } = await callApi(me(), visitsAreaDays, { id: "p3-turn-on" })
     expect(days.length).toBeGreaterThan(0)
     await expect(callApi(me(), visitsPick, { id: "p3-turn-on", day: days[0]! })).resolves.toMatchObject({ status: "scheduled", scheduledOn: days[0] })
-    await db.update(s.seasonPass).set({ needsCustomerHome: true }).where(eq(s.seasonPass.id, "p3"))
+    await setPass(db, "p3", { needsCustomerHome: true })
   })
 
   it("emails the date when the customer has no mobile number", async () => {
-    await db.update(s.seasonPass).set({ needsCustomerHome: true }).where(eq(s.seasonPass.id, "p3"))
+    await setPass(db, "p3", { needsCustomerHome: true })
     await db.update(s.customer).set({ phone: null }).where(eq(s.customer.id, customerId))
     await db.update(s.visit).set({ status: "unscheduled", scheduledOn: null, personId: null }).where(eq(s.visit.id, "p3-turn-on"))
     const { days } = await callApi(me(), visitsAreaDays, { id: "p3-blowout" })

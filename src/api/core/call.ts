@@ -3,6 +3,7 @@ import { and, eq, gt, sql } from "drizzle-orm"
 import type { z } from "zod"
 import * as s from "@/db/schema"
 import { hasScope, logApiCall } from "@/lib/auth/principal"
+import { resolvePassJob } from "@/lib/pass/server/resolve"
 import type { Ctx } from "./context"
 import { SYSTEM_ID } from "./context"
 import { ApiError } from "./errors"
@@ -68,8 +69,13 @@ export async function callApi<I extends z.ZodObject, O extends z.ZodType>(
         parsed.error.issues.map((i) => ({ path: i.path.join("."), message: i.message })),
       )
     const visitor = ctx.principal
-    if (visitor.kind === "public" && handler.checkout === "own-pass" && (!visitor.passId || (parsed.data as { id?: string }).id !== visitor.passId))
-      throw new ApiError("forbidden", "This call is only for the pass being bought")
+    if (visitor.kind === "public" && handler.checkout === "own-pass") {
+      // The pass is its job; the principal's pass id and the call's id may each be the job id or an old pass id, so the resolved jobs are compared.
+      const wanted = (parsed.data as { id?: string }).id
+      const mine = visitor.passId ? await resolvePassJob(ctx.db, ctx.organizationId, visitor.passId) : null
+      const asked = wanted ? await resolvePassJob(ctx.db, ctx.organizationId, wanted) : null
+      if (!mine || !asked || mine.id !== asked.id) throw new ApiError("forbidden", "This call is only for the pass being bought")
+    }
     if (visitor.kind === "public" && handler.checkout === "own-invoice" && (!visitor.invoiceId || (parsed.data as { id?: string }).id !== visitor.invoiceId))
       throw new ApiError("forbidden", "This call is only for the bill being paid")
     await checkRate(ctx, parsed.data)

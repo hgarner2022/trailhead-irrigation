@@ -1,4 +1,4 @@
-import { crewOf, longDay, whenText } from "./format"
+import { longDay, whenText, whoIsComing } from "./format"
 import { button, emailLayout, facts, heading, paragraph, plainText } from "./layout"
 import { visitBody, visitLines } from "./visit-block"
 import type { AdminAlertData, BookingConfirmationData, NotClosedCrewData, RenderedEmail } from "./types"
@@ -6,7 +6,7 @@ import type { AdminAlertData, BookingConfirmationData, NotClosedCrewData, Render
 export function bookingConfirmationEmail(d: BookingConfirmationData): RenderedEmail {
   const v = d.visit
   const subject = `Your ${d.serviceName} is booked for ${longDay(v.day)}`
-  const intro = `Hi ${d.firstName}, ${crewOf(v)}${v.crew ? "" : " and the crew"} will be there ${whenText(v.day, v.startTime)}. We text the day before.`
+  const intro = `Hi ${d.firstName}, ${whoIsComing(v)} will be there ${whenText(v.day, v.startTime)}. We text the day before.`
   return {
     subject,
     text: plainText(["Your visit is booked.", "", ...visitLines(d, v, intro)]),

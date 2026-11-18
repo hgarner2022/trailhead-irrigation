@@ -126,5 +126,13 @@ describe("callApi", () => {
       await expect(callApi(ctxFor(db, visitor({ passId: "p1" })), ownPass, { id: "p1" })).resolves.toEqual({ ok: true })
       await expect(callApi(ctxFor(db, visitor()), closed, {})).rejects.toMatchObject({ code: "forbidden" })
     })
+    it("lets a visitor's pass id and the call's id each be the job's id or the old pass id, and refuses any other pass", async () => {
+      await expect(callApi(ctxFor(db, visitor({ passId: "p1" })), ownPass, { id: "job_p1" })).resolves.toEqual({ ok: true })
+      await expect(callApi(ctxFor(db, visitor({ passId: "job_p1" })), ownPass, { id: "p1" })).resolves.toEqual({ ok: true })
+      await expect(callApi(ctxFor(db, visitor({ passId: "job_p1" })), ownPass, { id: "job_p1" })).resolves.toEqual({ ok: true })
+      await expect(callApi(ctxFor(db, visitor({ passId: "p1" })), ownPass, { id: "p2" })).rejects.toMatchObject({ code: "forbidden" })
+      await expect(callApi(ctxFor(db, visitor({ passId: "p1" })), ownPass, { id: "job_p2" })).rejects.toMatchObject({ code: "forbidden" })
+      await expect(callApi(ctxFor(db, visitor({ passId: "no-such-pass" })), ownPass, { id: "no-such-pass" })).rejects.toMatchObject({ code: "forbidden" })
+    })
   })
 })

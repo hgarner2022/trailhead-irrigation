@@ -3,6 +3,7 @@
  * every state) with the days the jobs were sold, one job whose bill is past its due day, one with a cancelled line and a
  * quote-later installation. Used by the stories and the tests only.
  */
+import { stageOf } from "@/lib/jobs/stage"
 import type { AdminData, AdminInvoice, JobLine, SoldJob } from "@/lib/admin/types"
 import { VISITS_TODAY, visitsData } from "./visits-fixture"
 
@@ -17,7 +18,7 @@ const line = (id: string, name: string, unitPrice: number, over: Partial<JobLine
 
 /** An installation Ryan priced after walking the yard: one line cancelled, the rest adding up to $1,310. */
 const installJob: SoldJob = {
-  id: "job-install", customerId: "c-lee", kind: "install", status: "active", source: "office", soldOn: "2026-11-09", visitIds: [],
+  id: "job-install", customerId: "c-lee", kind: "install", status: "open", source: "office", soldOn: "2026-11-09", visitIds: [],
   lines: [line("l-1", "Rotors, 12", 456, { quantity: 12, unitPrice: 38 }), line("l-2", "Controller", 300), line("l-3", "Labor", 554), line("l-4", "Drip zone", 200, { cancelledAt: "2026-11-10T16:00:00Z" })],
   total: 1310,
   payments: [{ id: "pay-lee", jobId: "job-install", amount: 500, method: "check", status: "succeeded", paidOn: "2026-11-10", reference: "1042" }],
@@ -35,7 +36,10 @@ const jobs = visitsData.jobs!.map((j): SoldJob => {
 // Kim's visit is done, so her bill is for finished work.
 const visits = visitsData.visits.map((v) => (v.id === "office-day-passed" ? { ...v, status: "completed" as const, completedOn: "2026-11-09", payments: [] } : v))
 
-export const jobsData: AdminData = { ...visitsData, visits, jobs: [...jobs, installJob] }
+// A job's stage is read from its facts, so it follows the visits changed above (Kim's visit is done).
+const staged = jobs.map((j): SoldJob => ({ ...j, status: stageOf({ kind: j.kind, soldOn: j.soldOn, cancelledAt: j.status === "cancelled" ? "2026-11-10" : null, lines: (j.lines ?? []).map((l) => ({ quantity: l.quantity, unitPrice: l.unitPrice, cancelledAt: l.cancelledAt ? new Date(l.cancelledAt) : null })), visits: visits.filter((v) => v.jobId === j.id) }) }))
+
+export const jobsData: AdminData = { ...visitsData, visits, jobs: [...staged, installJob] }
 export const ownedJobId = "job-d"
 export const billedJobId = "job-g"
 export const overdueJobId = "job-f"

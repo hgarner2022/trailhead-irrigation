@@ -1,7 +1,6 @@
 import { sql } from "drizzle-orm"
 import {
   boolean,
-  check,
   date,
   index,
   integer,
@@ -41,10 +40,8 @@ const updatedAt = () => ts("updated_at").notNull().defaultNow().$onUpdateFn(() =
 
 // Enums, named after the screen types in src/lib/admin/types.ts.
 export const townEnum = pgEnum("town", ["Erie", "Longmont", "Louisville", "Lafayette", "Firestone", "Broomfield"])
-export const adminRoleEnum = pgEnum("admin_role", ["owner", "admin"])
-/** A person's role: the owner, a manager (admin) or a tech. Its own type, not a value added to admin_role: Postgres refuses a value added to an existing enum inside the same transaction, and every migration runs in one. */
+/** A person's role: the owner, a manager (admin) or a tech. */
 export const personRoleEnum = pgEnum("person_role", ["owner", "admin", "tech"])
-export const passStatusEnum = pgEnum("pass_status", ["pending", "active", "cancelled", "lapsed"])
 export const visitKindEnum = pgEnum("visit_kind", [
   "turn-on",
   "inspection",
@@ -57,9 +54,6 @@ export const visitKindEnum = pgEnum("visit_kind", [
   "lights",
   "other",
 ])
-/** A job is the sold work: a Season Pass, or a repair, install or other thing booked by the office or the site. A visit is one stop on it. */
-export const jobKindEnum = pgEnum("job_kind", ["pass", "repair", "install", "other"])
-export const jobStatusEnum = pgEnum("job_status", ["pending", "active", "done", "cancelled"])
 export const visitStatusEnum = pgEnum("visit_status", [
   "unscheduled",
   "scheduled",
@@ -123,21 +117,6 @@ export const settingsChange = pgTable("settings_change", {
   updatedAt: updatedAt(),
 })
 
-export const adminUser = pgTable(
-  "admin_user",
-  {
-    id: id(),
-    organizationId: orgId(),
-    email: text("email").notNull().unique(),
-    name: text("name").notNull(),
-    initials: text("initials").notNull(),
-    role: adminRoleEnum("role").notNull().default("admin"),
-    createdAt: createdAt(),
-    updatedAt: updatedAt(),
-  },
-  (t) => [index("admin_user_org_idx").on(t.organizationId)],
-)
-
 /** A person who works here: the owner, a manager or a tech. Visits are assigned to a person; the truck is a label on them. An email makes them able to sign in. */
 export const person = pgTable(
   "person",
@@ -159,30 +138,10 @@ export const person = pgTable(
     seasonStart: text("season_start"),
     seasonEnd: text("season_end"),
     active: boolean("active").notNull().default(true),
-    /** the truck row this person was made from by the step 1 migration; dropped in step 6 */
-    legacyTruckId: text("legacy_truck_id"),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
   (t) => [index("person_org_idx").on(t.organizationId), uniqueIndex("person_org_email_unique").on(t.organizationId, sql`lower(${t.email})`).where(sql`${t.email} is not null`)],
-)
-
-export const truck = pgTable(
-  "truck",
-  {
-    id: id(),
-    organizationId: orgId(),
-    name: text("name").notNull(),
-    jobberUserId: text("jobber_user_id"),
-    /** The truck's Jobber calendar subscription (iCal) URL; a private link, never returned by the API. */
-    calendarFeedUrl: text("calendar_feed_url"),
-    workingDays: jsonb("working_days").$type<Weekday[]>().notNull(),
-    capacityByKind: jsonb("capacity_by_kind").$type<Record<CapacityKind, number>>().notNull(),
-    active: boolean("active").notNull().default(true),
-    createdAt: createdAt(),
-    updatedAt: updatedAt(),
-  },
-  (t) => [index("truck_org_idx").on(t.organizationId)],
 )
 
 export const area = pgTable(
@@ -230,10 +189,7 @@ export const service = pgTable(
   (t) => [unique("service_org_key_unique").on(t.organizationId, t.key)],
 )
 
-/**
- * One person. Holds the card on file, one per customer, charged after each visit;
- * moved from season_pass in step 3 (season_pass keeps the same columns as an alias until step 6).
- */
+/** One person. Holds the card on file, one per customer, charged after each visit. */
 export const customer = pgTable(
   "customer",
   {
@@ -309,7 +265,7 @@ export const consent = pgTable(
   (t) => [index("consent_customer_idx").on(t.customerId, t.recordedAt)],
 )
 
-/** The sold work. A `season_pass` row is the pass-specific part of a job of kind pass; its visits are the job's visits. */
+/** The sold work: a Season Pass (a job with a `season`) or a repair, install or other thing booked by the office or the site. Its visits are its stops; its kind and stage are derived, never stored. */
 export const job = pgTable(
   "job",
   {
@@ -317,108 +273,52 @@ export const job = pgTable(
     organizationId: orgId(),
     customerId: text("customer_id").notNull().references(() => customer.id),
     propertyId: text("property_id").notNull().references(() => property.id),
-    kind: jobKindEnum("kind").notNull(),
-    status: jobStatusEnum("status").notNull().default("active"),
-    /** whole dollars; null until quoted */
-    price: integer("price"),
     source: text("source", { enum: ["checkout", "office", "site", "renewal"] }).notNull(),
-    /** what makes a job a Season Pass (step 3); `season_pass` is an alias table until step 6 */
+    /** what makes a job a Season Pass */
     season: integer("season"),
-    /** what makes a job a Season Pass (step 3); `season_pass` is an alias table until step 6 */
+    /** what makes a job a Season Pass */
     passNumber: text("pass_number"),
-    /** what makes a job a Season Pass (step 3); `season_pass` is an alias table until step 6. The job this pass renews; no foreign key, like `renewed_from_id`. */
+    /** what makes a job a Season Pass: the job this pass renews (no foreign key) */
     renewsJobId: text("renews_job_id"),
-    notes: text("notes"),
+    /** the id of the pass row this job replaced; an old pass id keeps opening its job (no foreign key: that table is gone) */
+    legacyPassId: text("legacy_pass_id"),
+    /** the Mountain day the work was sold; empty while a pass is pending or a quote has not been accepted */
+    soldOn: day("sold_on"),
+    /** the Mountain day a quote was sent and the day it was accepted (the quote step builds on them) */
+    quoteSentOn: day("quote_sent_on"),
+    quoteAcceptedOn: day("quote_accepted_on"),
     createdAt: createdAt(),
     cancelledAt: ts("cancelled_at"),
     updatedAt: updatedAt(),
   },
   (t) => [
     index("job_org_customer_idx").on(t.organizationId, t.customerId),
+    uniqueIndex("job_legacy_pass_id_unique").on(t.legacyPassId).where(sql`legacy_pass_id is not null`),
     uniqueIndex("job_org_pass_number_unique").on(t.organizationId, t.passNumber).where(sql`pass_number is not null`),
     index("job_org_season_idx").on(t.organizationId, t.season),
   ],
 )
 
-export const seasonPass = pgTable(
-  "season_pass",
-  {
-    id: id(),
-    organizationId: orgId(),
-    jobId: text("job_id").notNull().references(() => job.id),
-    number: text("number").notNull(),
-    season: integer("season").notNull(),
-    customerId: text("customer_id").notNull().references(() => customer.id),
-    propertyId: text("property_id").notNull().references(() => property.id),
-    zones: integer("zones").notNull(),
-    inspection: boolean("inspection").notNull().default(false),
-    turnOnPreference: timingPreferenceEnum("turn_on_preference").notNull().default("recommended"),
-    blowoutPreference: timingPreferenceEnum("blowout_preference").notNull().default("recommended"),
-    needsCustomerHome: boolean("needs_customer_home").notNull().default(false),
-    accessNote: text("access_note"),
-    status: passStatusEnum("status").notNull().default("pending"),
-    stripePaymentMethodId: text("stripe_payment_method_id"),
-    cardBrand: text("card_brand"),
-    cardLast4: text("card_last4"),
-    cardExpires: text("card_expires"),
-    cardFailedAt: ts("card_failed_at"),
-    renewedFromId: text("renewed_from_id"),
-    renewalAskedAt: ts("renewal_asked_at"),
-    cancelledAt: ts("cancelled_at"),
-    createdAt: createdAt(),
-    updatedAt: updatedAt(),
-  },
-  (t) => [
-    unique("season_pass_org_number_unique").on(t.organizationId, t.number),
-    index("season_pass_org_season_idx").on(t.organizationId, t.season),
-  ],
-)
-
-export const booking = pgTable(
-  "booking",
-  {
-    id: id(),
-    organizationId: orgId(),
-    customerId: text("customer_id").notNull().references(() => customer.id),
-    propertyId: text("property_id").notNull().references(() => property.id),
-    zonesBand: text("zones_band"),
-    accessConfirmed: boolean("access_confirmed").notNull().default(false),
-    notes: text("notes"),
-    source: text("source", { enum: ["web", "admin"] }).notNull().default("web"),
-    status: text("status", { enum: ["booked", "cancelled"] }).notNull().default("booked"),
-    jobberRequestId: text("jobber_request_id"),
-    createdAt: createdAt(),
-    updatedAt: updatedAt(),
-  },
-  (t) => [index("booking_org_idx").on(t.organizationId)],
-)
-
-/** One stop on a job: a day, a time, a truck, minutes, a state, notes, a charge. `job_id` is always set; `pass_id` stays as a convenience read for a pass's visits and `booking_id` is the legacy booking table, no longer written. */
+/** One stop on a job: a day, a time, a person, minutes, a state. `job_id` is always set; the price is its lines and the payment is `charge` rows. */
 export const visit = pgTable(
   "visit",
   {
     id: id(),
     organizationId: orgId(),
     jobId: text("job_id").notNull().references(() => job.id),
-    passId: text("pass_id").references(() => seasonPass.id),
-    bookingId: text("booking_id").references(() => booking.id),
     customerId: text("customer_id").notNull().references(() => customer.id),
     propertyId: text("property_id").notNull().references(() => property.id),
     serviceId: text("service_id").references(() => service.id),
     kind: visitKindEnum("kind").notNull(),
     window: text("window"),
-    amount: integer("amount").notNull().default(0),
     status: visitStatusEnum("status").notNull().default("unscheduled"),
     preference: timingPreferenceEnum("preference"),
     awaitingPick: boolean("awaiting_pick").notNull().default(false),
-    truckId: text("truck_id").references(() => truck.id),
-    /** who the visit is assigned to; replaces truck_id, which stays until step 6 */
+    /** who the visit is assigned to */
     personId: text("person_id").references(() => person.id),
     scheduledOn: day("scheduled_on"),
     startTime: text("start_time"),
     durationMinutes: integer("duration_minutes"),
-    /** what the office or Ryan wants remembered about this one stop */
-    notes: text("notes"),
     /** why the last attempt did not happen (could-not-get-in, no-water, customer-asked-to-wait, other); cleared when the visit is given a day */
     notDoneReason: text("not_done_reason"),
     stopOrder: integer("stop_order"),
@@ -429,13 +329,11 @@ export const visit = pgTable(
     jobberJobUrl: text("jobber_job_url"),
     jobberInvoiceId: text("jobber_invoice_id"),
     completedOn: day("completed_on"),
-    chargedAt: ts("charged_at"),
-    stripePaymentIntentId: text("stripe_payment_intent_id"),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
   (t) => [
-    uniqueIndex("visit_pass_kind_unique").on(t.passId, t.kind).where(sql`${t.passId} is not null`),
+    uniqueIndex("visit_job_pass_kind_unique").on(t.jobId, t.kind).where(sql`${t.kind} in ('turn-on', 'inspection', 'blowout')`),
     index("visit_org_scheduled_idx").on(t.organizationId, t.scheduledOn),
     index("visit_person_day_idx").on(t.personId, t.scheduledOn),
     index("visit_jobber_visit_idx").on(t.jobberVisitId),
@@ -464,34 +362,16 @@ export const lineItem = pgTable(
   (t) => [index("line_item_job_idx").on(t.jobId), index("line_item_visit_idx").on(t.visitId)],
 )
 
-export const quoteRequest = pgTable(
-  "quote_request",
-  {
-    id: id(),
-    organizationId: orgId(),
-    customerId: text("customer_id").notNull().references(() => customer.id),
-    propertyId: text("property_id").references(() => property.id),
-    serviceId: text("service_id").references(() => service.id),
-    notes: text("notes"),
-    status: text("status", { enum: ["new", "quoted", "archived"] }).notNull().default("new"),
-    jobberRequestId: text("jobber_request_id"),
-    createdAt: createdAt(),
-    updatedAt: updatedAt(),
-  },
-  (t) => [index("quote_request_org_idx").on(t.organizationId)],
-)
-
 /**
  * The payment record: one row per dollar movement on a job. A refund is a negative amount pointing at the payment it
- * reverses (`refunds_payment_id`). `pass_id` and the visit-level columns are aliases until step 6; `job_id` and
- * `customer_id` are nullable in the schema only until then (migration 0018 fills every existing row).
+ * reverses (`refunds_payment_id`). `job_id` and `customer_id` are nullable in the schema, as migration 0018 left them
+ * (it filled every existing row).
  */
 export const charge = pgTable(
   "charge",
   {
     id: id(),
     organizationId: orgId(),
-    passId: text("pass_id").references(() => seasonPass.id),
     jobId: text("job_id").references(() => job.id),
     customerId: text("customer_id").references(() => customer.id),
     /** null for a payment on the job as a whole (a bill paid on the pay page) */
@@ -568,27 +448,8 @@ export const invoice = pgTable(
   ],
 )
 
-/** A change the customer or an admin made to a pass or one of its visits: a preference, a skip, a cancel, an added inspection, a move request. */
-export const passChange = pgTable(
-  "pass_change",
-  {
-    id: id(),
-    organizationId: orgId(),
-    customerId: text("customer_id").notNull().references(() => customer.id),
-    passId: text("pass_id").references(() => seasonPass.id),
-    visitId: text("visit_id").references(() => visit.id),
-    kind: text("kind").notNull(),
-    detail: jsonb("detail").$type<Record<string, unknown>>().notNull().default(sql`'{}'::jsonb`),
-    byPrincipal: text("by_principal").notNull(),
-    at: ts("at").notNull().defaultNow(),
-    createdAt: createdAt(),
-    updatedAt: updatedAt(),
-  },
-  (t) => [index("pass_change_pass_idx").on(t.passId, t.at)],
-)
-
 /**
- * Every change and every note: one row, about a record, with a name on it. `pass_change` is an alias until step 6.
+ * Every change and every note: one row, about a record, with a name on it.
  * No foreign keys: `about_id` points at six tables, and `customer_id`, `job_id` and `visit_id` are plain text so a purge never trips on them.
  */
 export const event = pgTable(
@@ -831,8 +692,6 @@ export const jobberVisit = pgTable(
     endAt: ts("end_at"),
     assignedUserId: text("assigned_user_id"),
     isBlock: boolean("is_block").notNull().default(false),
-    /** Set on rows the calendar feed wrote (busy time on that person); their id is `feed:<personId>:<uid>` and this column carries only the legacy truck id, for rows from before people existed. */
-    truckId: text("truck_id").references(() => truck.id, { onDelete: "cascade" }),
     completedAt: ts("completed_at"),
     jobberUrl: text("jobber_url"),
     syncedAt: ts("synced_at").notNull().defaultNow(),
@@ -937,7 +796,8 @@ export const adminAlert = pgTable(
     organizationId: orgId(),
     kind: text("kind").notNull(),
     key: text("key").notNull(),
-    passId: text("pass_id").references(() => seasonPass.id),
+    /** the job the alert is about; no foreign key, so a purge of an unpaid pass never trips on it */
+    jobId: text("job_id"),
     message: text("message").notNull(),
     resolvedAt: ts("resolved_at"),
     createdAt: createdAt(),

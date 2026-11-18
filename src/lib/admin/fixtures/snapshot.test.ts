@@ -107,7 +107,7 @@ it("four settings changes, each with who, when, field, from and to", () => {
   }
 })
 
-it("every dated 2026 visit has a person (under the deprecated truck names too) with a stop order and a point near its town", () => {
+it("every dated 2026 visit has a person with a stop order and a point near its town", () => {
   const d = snapshot as AdminData
   const personIds = d.settings.people.map((p) => p.id)
   const dated = d.visits.filter((v) => v.startAt?.startsWith("2026") && v.status !== "cancelled")
@@ -115,8 +115,9 @@ it("every dated 2026 visit has a person (under the deprecated truck names too) w
   const perDay = new Map<string, number[]>()
   for (const v of dated) {
     expect(personIds, v.id).toContain(v.personId)
-    expect(v.truckId, v.id).toBe(v.personId)
-    expect(v.truckName, v.id).toBe(v.personName)
+    expect(v, v.id).not.toHaveProperty("truckId")
+    expect(v, v.id).not.toHaveProperty("truckName")
+    expect(v.personName, v.id).toBeTruthy()
     const [lat, lng] = TOWN_CENTRES[v.town]
     expect(Math.abs((v.lat ?? 99) - lat), v.id).toBeLessThan(0.02)
     expect(Math.abs((v.lng ?? 99) - lng), v.id).toBeLessThan(0.02)

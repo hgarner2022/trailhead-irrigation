@@ -16,7 +16,7 @@ const allDone: Pass = {
     ...v,
     scheduledAt: v.scheduledAt ?? ["2027-05-04T16:00:00Z", "2027-07-13T15:00:00Z", "2027-10-12T16:00:00Z"][i],
     completedAt: ["2027-05-04T17:10:00Z", "2027-07-13T16:05:00Z", "2027-10-12T16:40:00Z"][i],
-    chargedAt: ["2027-05-04T17:12:00Z", "2027-07-13T16:07:00Z", "2027-10-12T16:42:00Z"][i],
+    payments: [{ id: `pay-${i}`, amount: v.amount, method: "card_on_file", status: "succeeded", paidOn: ["2027-05-04", "2027-07-13", "2027-10-12"][i] }],
   })),
 }
 const cancelled: Pass = { ...passes[1], status: "cancelled" }

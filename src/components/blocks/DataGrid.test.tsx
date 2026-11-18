@@ -64,7 +64,7 @@ describe("DataGrid sorting", () => {
 
   it("sorts next visit by its date and puts finished passes last", async () => {
     const user = userEvent.setup()
-    const done: Pass = { ...passes[2], id: "done", firstName: "Zed", visits: passes[2].visits.map((v) => ({ ...v, chargedAt: "2027-10-12T16:00:00Z" })) }
+    const done: Pass = { ...passes[2], id: "done", firstName: "Zed", visits: passes[2].visits.map((v) => ({ ...v, payments: [{ id: "pay", amount: v.amount, method: "card_on_file", status: "succeeded", paidOn: "2027-10-12" }] })) }
     renderPasses({ data: [done, ...passes] })
     await user.click(headerButton("Next visit"))
     expect(firstName()).not.toBe("Zed")

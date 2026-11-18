@@ -14,10 +14,11 @@ import { recordChange } from "./queries"
  * held on its visits become scheduled visits (a day that filled up since moves to the next open one and is recorded as
  * `day-filled`, which the confirmation reads), then the consent, the `pass-onboard` task and the purchase confirmation.
  */
-export async function finishPurchase(ctx: Ctx, pass: { id: string; customerId: string; jobId: string; season: number }, town: string, consent: PurchaseConsent | undefined, extras: PurchaseExtras = {}): Promise<void> {
-  const [job] = await ctx.db.select({ season: s.job.season }).from(s.job).where(eq(s.job.id, pass.jobId))
-  const season = job?.season ?? pass.season
+export async function finishPurchase(ctx: Ctx, pass: { id: string; customerId: string }, town: string, consent: PurchaseConsent | undefined, extras: PurchaseExtras = {}): Promise<void> {
+  // The pass is its job: `pass.id` is the job's id, and the season is the job's.
+  const [job] = await ctx.db.select({ season: s.job.season }).from(s.job).where(eq(s.job.id, pass.id))
+  const season = job?.season ?? 0
   for (const moved of await scheduleChosenDays(ctx.db, pass.id, town, season, today(ctx), ctx.now))
-    await recordChange(ctx, { customerId: pass.customerId, passId: pass.id, visitId: moved.visitId, kind: "day-filled", detail: { visit: moved.kind, from: moved.from, to: moved.to } })
-  await recordPurchase(ctx.db, pass.id, consent, readAppUrl(), ctx.now, { who: whoOf(ctx), ...extras })
+    await recordChange(ctx, { customerId: pass.customerId, jobId: pass.id, visitId: moved.visitId, kind: "day-filled", detail: { visit: moved.kind, from: moved.from, to: moved.to } })
+  await recordPurchase(ctx.db, pass.id, consent, readAppUrl(), ctx.now, { who: whoOf(ctx), organizationId: ctx.organizationId, ...extras })
 }

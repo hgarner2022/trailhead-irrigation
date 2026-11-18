@@ -1,4 +1,4 @@
-import type { AreaGroup, BillingSettings, CapacityKind, OrganizationSettings, Town, Truck } from "@/lib/admin/types"
+import type { AreaGroup, BillingSettings, CapacityKind, OrganizationSettings, Town } from "@/lib/admin/types"
 
 /**
  * What the scheduler runs on until Ryan saves Settings once. Every value here comes from the wiring plan's Answers and
@@ -20,12 +20,6 @@ export const defaultWindows = (season: number): OrganizationSettings["windows"] 
   { kind: "turn-on", opensOn: `${season}-05-01`, closesOn: `${season}-05-31`, leadWeeks: DEFAULT_LEAD_WEEKS["turn-on"] },
   { kind: "inspection", opensOn: `${season}-07-01`, closesOn: `${season}-07-31`, leadWeeks: DEFAULT_LEAD_WEEKS.inspection },
   { kind: "blowout", opensOn: `${season}-10-01`, closesOn: `${season}-11-15`, leadWeeks: DEFAULT_LEAD_WEEKS.blowout },
-]
-
-/** Two trucks, Monday to Friday, both on for the full season (April 1 to November 15, Answers 5). */
-export const DEFAULT_TRUCKS: Pick<Truck, "name" | "workingDays" | "capacityByKind">[] = [
-  { name: "Truck 1", workingDays: ["mon", "tue", "wed", "thu", "fri"], capacityByKind: DEFAULT_CAPACITY },
-  { name: "Truck 2", workingDays: ["mon", "tue", "wed", "thu", "fri"], capacityByKind: DEFAULT_CAPACITY },
 ]
 
 /** Erie anchors a day and the second town rotates (Answers 1). */

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 import { DEFAULT_BILLING } from "@/lib/settings/defaults"
-import { invoiceAmount, invoiceLines, invoiceOpen, invoiceStatus, invoiceTax, nextInvoiceNumber } from "./invoice"
+import { jobTax } from "@/lib/jobs/tax"
+import { invoiceAmount, invoiceLines, invoiceOpen, invoiceStatus, nextInvoiceNumber } from "./invoice"
 
 const line = (over: Partial<Parameters<typeof invoiceLines>[0][number]> = {}) => ({ name: "Repair", description: "What the visit includes", quantity: 1, unitPrice: 145, taxable: false, ...over })
 
@@ -24,19 +25,19 @@ describe("invoiceLines", () => {
   })
 })
 
-describe("invoiceTax", () => {
+describe("the tax on a bill's lines (jobTax)", () => {
   const lines = [{ quantity: 1, unitPrice: 145, taxable: true }, { quantity: 1, unitPrice: 100, taxable: false }]
   it("is zero while the organization does not collect sales tax, whatever the percent says", () => {
-    expect(invoiceTax(lines, { dueDays: 14, collectsSalesTax: false, salesTaxPercent: 8.8 })).toBe(0)
-    expect(invoiceTax(lines, DEFAULT_BILLING)).toBe(0)
+    expect(jobTax(lines, { collectsSalesTax: false, salesTaxPercent: 8.8 })).toBe(0)
+    expect(jobTax(lines, DEFAULT_BILLING)).toBe(0)
   })
-  it("is the taxable subtotal times the percent, rounded to the dollar", () => {
-    expect(invoiceTax(lines, { dueDays: 14, collectsSalesTax: true, salesTaxPercent: 8 })).toBe(12)
-    expect(invoiceTax(lines, { dueDays: 14, collectsSalesTax: true, salesTaxPercent: 3.5 })).toBe(5)
-    expect(invoiceTax([{ quantity: 2, unitPrice: 50, taxable: true }], { dueDays: 14, collectsSalesTax: true, salesTaxPercent: 4.2 })).toBe(4)
+  it("is the taxable lines' tax, each rounded to the dollar", () => {
+    expect(jobTax(lines, { collectsSalesTax: true, salesTaxPercent: 8 })).toBe(12)
+    expect(jobTax(lines, { collectsSalesTax: true, salesTaxPercent: 3.5 })).toBe(5)
+    expect(jobTax([{ quantity: 2, unitPrice: 50, taxable: true }], { collectsSalesTax: true, salesTaxPercent: 4.2 })).toBe(4)
   })
   it("leaves untaxed lines out and is zero when none are taxable", () => {
-    expect(invoiceTax([{ quantity: 1, unitPrice: 145, taxable: false }], { dueDays: 14, collectsSalesTax: true, salesTaxPercent: 8 })).toBe(0)
+    expect(jobTax([{ quantity: 1, unitPrice: 145, taxable: false }], { collectsSalesTax: true, salesTaxPercent: 8 })).toBe(0)
   })
 })
 

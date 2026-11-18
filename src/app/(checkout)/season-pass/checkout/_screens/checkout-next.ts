@@ -35,7 +35,7 @@ export function nextLines(pass: Pass, chosen: readonly { kind: string; day: stri
     if (!v.scheduledOn) return { key: v.kind, lead: v.window, text: `${name}. Ryan sets the day and we text it to you.` }
     const when = v.startTime ? `${name}, between ${windowText(v.startTime).replace(" to ", " and ")}.` : `${name}.`
     const wanted = chosen.find((c) => c.kind === v.kind)?.day
-    const google = googleCalendarUrl({ id: v.id ?? v.kind, name: NAME[v.kind], day: v.scheduledOn, startTime: v.startTime ?? null, crew: null, who: null, location: `${pass.town}, CO`, icsUrl: v.calendarUrl ?? "" })
+    const google = googleCalendarUrl({ id: v.id ?? v.kind, name: NAME[v.kind], day: v.scheduledOn, startTime: v.startTime ?? null, who: null, location: `${pass.town}, CO`, icsUrl: v.calendarUrl ?? "" })
     return { key: v.kind, lead: longDay(v.scheduledOn), text: `${when} ${RYAN_DOES[v.kind]}`, ...(wanted && wanted !== v.scheduledOn ? { note: filledLine(wanted, v.scheduledOn) } : {}), calendar: { google, ...(v.calendarUrl ? { ics: v.calendarUrl } : {}) } }
   })
   if (visits.length > 0) {

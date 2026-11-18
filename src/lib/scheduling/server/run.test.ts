@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest"
-import { and, eq } from "drizzle-orm"
+import { and, eq, isNotNull, isNull } from "drizzle-orm"
 import * as s from "@/db/schema"
 import type { TestDb } from "@/db/test-db"
 import { callApi } from "@/api/core/call"
@@ -32,11 +32,12 @@ describe("runSummary", () => {
 describe("schedule.run", () => {
   let waitingId: string
   it("schedules the visits due, in one step, and leaves a visit waiting for its customer's pick", async () => {
-    const open = new Set((await db.select().from(s.seasonPass)).filter((p) => p.status === "active").map((p) => p.id))
-    const [waiting] = (await unscheduledTurnOns()).filter((v) => open.has(v.passId!) && !v.awaitingPick)
+    // a pass is open when its job is sold and not cancelled
+    const open = new Set((await db.select().from(s.job).where(and(isNotNull(s.job.season), isNotNull(s.job.soldOn), isNull(s.job.cancelledAt)))).map((j) => j.id))
+    const [waiting] = (await unscheduledTurnOns()).filter((v) => open.has(v.jobId) && !v.awaitingPick)
     waitingId = waiting!.id
     await db.update(s.visit).set({ awaitingPick: true }).where(eq(s.visit.id, waiting!.id))
-    const due = (await unscheduledTurnOns()).filter((v) => open.has(v.passId!) && !v.awaitingPick && v.passId !== waiting!.passId).length
+    const due = (await unscheduledTurnOns()).filter((v) => open.has(v.jobId) && !v.awaitingPick && v.jobId !== waiting!.jobId).length
     const out = await run()
     expect(out.placed).toBe(due)
     expect(out.unplaced).toBe(0)
@@ -90,7 +91,7 @@ describe("schedule.run", () => {
   })
 
   it("raises a Home row for each visit that has no room, and clears it when the visit is placed", async () => {
-    await db.update(s.seasonPass).set({ needsCustomerHome: false }).where(eq(s.seasonPass.id, (await db.select().from(s.visit).where(eq(s.visit.id, waitingId)))[0]!.passId!))
+    await db.update(s.property).set({ mustBeHome: false }).where(eq(s.property.id, (await db.select().from(s.visit).where(eq(s.visit.id, waitingId)))[0]!.propertyId))
     await db.update(s.visit).set({ awaitingPick: false }).where(eq(s.visit.id, waitingId))
     await db.update(s.person).set({ workingDays: [] })
     const out = await run("2027-05-20T15:00:00Z")
@@ -104,26 +105,23 @@ describe("schedule.run", () => {
     expect((await db.select().from(s.adminAlert).where(and(eq(s.adminAlert.kind, "unplaced"), eq(s.adminAlert.key, waitingId))))[0]!.resolvedAt).not.toBeNull()
   })
 
-  it("leaves a cancelled job's visits alone even when the pass alias still says active", async () => {
+  it("leaves a cancelled job's visits alone", async () => {
     const [visit] = await db.select().from(s.visit).where(eq(s.visit.id, waitingId))
-    const [alias] = await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, visit!.passId!))
-    expect(alias!.status).toBe("active")
     await db.update(s.visit).set({ status: "unscheduled", scheduledOn: null, personId: null, awaitingPick: false }).where(eq(s.visit.id, waitingId))
-    await db.update(s.job).set({ status: "cancelled", cancelledAt: new Date("2027-05-01T12:00:00Z") }).where(eq(s.job.id, alias!.jobId))
+    await db.update(s.job).set({ cancelledAt: new Date("2027-05-01T12:00:00Z") }).where(eq(s.job.id, visit!.jobId))
     expect(await run("2027-05-20T15:00:00Z")).toEqual({ placed: 0, unplaced: 0 })
     expect((await db.select().from(s.visit).where(eq(s.visit.id, waitingId)))[0]!.status).toBe("unscheduled")
-    await db.update(s.job).set({ status: "active", cancelledAt: null }).where(eq(s.job.id, alias!.jobId))
+    await db.update(s.job).set({ cancelledAt: null }).where(eq(s.job.id, visit!.jobId))
   })
 
-  it("schedules the visit of a pass an older deploy wrote with no season on its job, by the alias's season", async () => {
+  it("leaves the visits of a pass that is not sold yet (a pending checkout) alone, and schedules them once it is", async () => {
     const [visit] = await db.select().from(s.visit).where(eq(s.visit.id, waitingId))
-    const [alias] = await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, visit!.passId!))
-    const [job] = await db.select().from(s.job).where(eq(s.job.id, alias!.jobId))
-    expect(alias!.season).toBe(2027)
     await db.update(s.visit).set({ status: "unscheduled", scheduledOn: null, personId: null, awaitingPick: false }).where(eq(s.visit.id, waitingId))
-    await db.update(s.job).set({ season: null }).where(eq(s.job.id, job!.id))
+    await db.update(s.job).set({ soldOn: null }).where(eq(s.job.id, visit!.jobId))
+    expect(await run("2027-05-20T15:00:00Z")).toEqual({ placed: 0, unplaced: 0 })
+    expect((await db.select().from(s.visit).where(eq(s.visit.id, waitingId)))[0]!.status).toBe("unscheduled")
+    await db.update(s.job).set({ soldOn: "2027-04-20" }).where(eq(s.job.id, visit!.jobId))
     expect(await run("2027-05-20T15:00:00Z")).toEqual({ placed: 1, unplaced: 0 })
-    await db.update(s.job).set({ season: job!.season }).where(eq(s.job.id, job!.id))
   })
 
   it("is the same path the queue handler takes", async () => {

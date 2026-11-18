@@ -2,21 +2,19 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
 import * as s from "@/db/schema"
 import type { TestDb } from "@/db/test-db"
-import { apiDb, ORG } from "@/api/test-helpers"
+import { apiDb, ORG, passJobOf } from "@/api/test-helpers"
 import { recordEvent } from "@/lib/events/record"
-import { eq } from "drizzle-orm"
 import { consentSnapshot } from "./consent-snapshot"
 
 let db: TestDb
-let pass: typeof s.seasonPass.$inferSelect
+let pass: typeof s.job.$inferSelect
 beforeAll(async () => {
   db = await apiDb()
-  const [p] = await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, "p3"))
-  pass = p!
+  pass = await passJobOf(db, "p3")
 })
 afterAll(() => db.close())
 
-const consent = (detail: Record<string, unknown>, minute: number, jobId = pass.jobId, organizationId = ORG) =>
+const consent = (detail: Record<string, unknown>, minute: number, jobId = pass.id, organizationId = ORG) =>
   recordEvent(db, { organizationId, about: "job", aboutId: jobId, customerId: pass.customerId, jobId, kind: "consent", detail, who: "customer", at: new Date(Date.UTC(2027, 3, 1, 12, minute)) })
 
 describe("consentSnapshot reads the consent events of the pass's job", () => {
@@ -30,6 +28,8 @@ describe("consentSnapshot reads the consent events of the pass's job", () => {
     await consent({ marketingOptIn: false, marketingChannels: [], source: "checkout" }, 3)
     await consent({ marketingOptIn: false, marketingChannels: [], stage: "chosen" }, 4, "job_other")
     expect(await consentSnapshot(db, pass.id)).toEqual({ marketingOptIn: true, marketingChannels: ["sms", "email"] })
+    // the old pass id of the same job reads the same snapshot
+    expect(await consentSnapshot(db, pass.legacyPassId!)).toEqual({ marketingOptIn: true, marketingChannels: ["sms", "email"] })
   })
   it("is off when no channel is left", async () => {
     await consent({ marketingOptIn: true, marketingChannels: [], stage: "chosen" }, 5)

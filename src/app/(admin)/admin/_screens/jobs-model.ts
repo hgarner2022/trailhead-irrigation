@@ -10,8 +10,9 @@ import { dayOf } from "@/lib/admin/calendar"
 import { visitJob } from "@/lib/admin/jobs"
 import type { AdminData, AdminInvoice, Client, SoldJob, SoldJobMoney, Visit } from "@/lib/admin/types"
 import { jobMoney as moneyOfJob } from "@/lib/money/words"
-import { STAGE_WORDS, stageOf, type JobStage } from "@/lib/jobs/stage"
-import { dayLabel, dayOfVisit } from "./visit-panel-model"
+import { STAGE_WORDS, type JobStage } from "@/lib/jobs/stage"
+import type { TaxRule } from "@/lib/jobs/tax"
+import { dayLabel, dayOfVisit, ruleOfData } from "./visit-panel-model"
 
 export type JobMoneyState = "not-yet" | "paid" | "owed" | "bill-sent" | "overdue" | "failed"
 export type JobKind = SoldJob["kind"]
@@ -78,11 +79,11 @@ export function jobHeading(job: Pick<SoldJob, "kind" | "passNumber" | "lines" | 
 }
 
 /** The job's money as the data carries it, else worked out the same way from its lines and payments (the fixtures carry neither). */
-function moneyOf(job: SoldJob, visits: Visit[]): SoldJobMoney {
+function moneyOf(job: SoldJob, visits: Visit[], rule: TaxRule): SoldJobMoney {
   if (job.money) return job.money
-  const lines = job.lines?.length ? job.lines.map((l) => ({ quantity: l.quantity, unitPrice: l.unitPrice, cancelledAt: l.cancelledAt ? new Date(l.cancelledAt) : null })) : visits.filter((v) => v.status !== "cancelled").map((v) => ({ quantity: 1, unitPrice: v.price ?? 0, cancelledAt: null }))
+  const lines = job.lines?.length ? job.lines.map((l) => ({ quantity: l.quantity, unitPrice: l.unitPrice, taxable: l.taxable, cancelledAt: l.cancelledAt ? new Date(l.cancelledAt) : null })) : visits.filter((v) => v.status !== "cancelled").map((v) => ({ quantity: 1, unitPrice: v.price ?? 0, taxable: false, cancelledAt: null }))
   const payments = job.payments ?? visits.flatMap((v) => v.payments ?? [])
-  return moneyOfJob(lines, payments, visits.map((v) => ({ id: v.id, cancelled: v.status === "cancelled", price: v.price })), job.invoice ? {} : undefined)
+  return moneyOfJob(lines, payments, visits.map((v) => ({ id: v.id, cancelled: v.status === "cancelled", price: v.price })), rule, job.invoice ? {} : undefined)
 }
 
 /** The Money cell for a state: "$145 · Bill sent, due Dec 1", "$145 · Overdue since Dec 1", "$115 owed", "Paid", "Failed". */
@@ -124,7 +125,8 @@ export function jobRows(data: AdminData, today: string): JobRow[] {
   const clients = new Map(data.clients.map((c) => [c.id, c]))
   const passes = new Map(data.passes.map((p) => [p.id, p]))
   const rows = (data.jobs ?? [])
-    .filter((j) => j.status !== "pending")
+    // a pass that is not sold yet (the checkout's card step is not finished) is an unfinished checkout, not a job
+    .filter((j) => !(j.kind === "pass" && !j.soldOn))
     .map((job): JobRow => {
       const client = clients.get(job.customerId)
       const pass = job.passId ? passes.get(job.passId) : undefined
@@ -132,12 +134,9 @@ export function jobRows(data: AdminData, today: string): JobRow[] {
       const live = visits.filter((v) => v.status !== "cancelled" && !v.skipped)
       const done = live.filter((v) => v.status === "completed")
       const states = live.map((v) => visitJob(v, day, TIME_ZONE, pass?.cardFailedAt))
-      const stage = stageOf({
-        kind: job.kind, status: job.status,
-        lines: (job.lines ?? []).map((l) => ({ quantity: l.quantity, unitPrice: l.unitPrice, cancelledAt: l.cancelledAt ? new Date(l.cancelledAt) : null })),
-        visits: visits.map((v) => ({ status: v.status, ...(v.skipped ? { skipped: true } : {}) })),
-      })
-      const m = moneyOf(job, visits)
+      // the job's stage is read from its facts where the data is shaped (`stageOf`): there is no typed status
+      const stage = job.status
+      const m = moneyOf(job, visits, ruleOfData(data))
       const state = stateOf(m, job.invoice, states.map((s) => s.money), stage === "cancelled")
       const ahead = live.filter((v) => v.status !== "completed")
       const days = ahead.map(dayOfVisit).filter((d): d is string => Boolean(d) && d! >= day).sort()
@@ -157,7 +156,8 @@ export function jobRows(data: AdminData, today: string): JobRow[] {
         property: street,
         ...(job.soldOn ? { soldOn: job.soldOn } : {}),
         source: job.source,
-        soldText: [job.soldOn ? monthDay(job.soldOn) : "", SOURCE_WORDS[job.source]].filter(Boolean).join(", "),
+        // "Nov 3, website"; "Not sold yet" while a quote is waiting (`sold_on` is empty)
+        soldText: job.soldOn ? [monthDay(job.soldOn), SOURCE_WORDS[job.source]].join(", ") : "Not sold yet",
         visitsDone: done.length,
         visitsLive: live.length,
         visitsText: live.length ? `${done.length} of ${live.length} done` : "No visits",

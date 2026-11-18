@@ -36,13 +36,12 @@ export const scheduleWeek = defineHandler({
   method: "GET",
   path: "/schedule/week",
   scope: "read",
-  summary: "The week grid: the people who drive a route (owner first), the visits on each day for seven days from `from`, and the tray of visits still to schedule. `trucks` is the same list under its old name, for one season.",
+  summary: "The week grid: the people who drive a route (owner first), the visits on each day for seven days from `from`, and the tray of visits still to schedule.",
   input: z.object({ from: Day }),
   output: z.object({
     from: Day,
     to: Day,
     people: z.array(WeekPerson),
-    trucks: z.array(WeekPerson).describe("Alias of people, kept for one season."),
     visits: z.array(VisitOut),
     tray: z.array(VisitOut),
   }),
@@ -61,7 +60,6 @@ export const scheduleWeek = defineHandler({
       from: input.from,
       to,
       people,
-      trucks: people,
       visits: (await withJobCredit(ctx.db, ctx.organizationId, visits)).map((v) => visitOut(ctx, v)),
       tray: (await withJobCredit(ctx.db, ctx.organizationId, tray)).map((v) => visitOut(ctx, v)),
     }
@@ -71,7 +69,6 @@ export const scheduleWeek = defineHandler({
 const Stop = z.object({
   visitId: Id,
   personId: Id.nullable(),
-  truckId: Id.nullable().describe("Alias of personId, kept for one season."),
   order: z.number().int().describe("1-based position in the person's day."),
   kind: VisitKind,
   firstName: z.string(),
@@ -109,14 +106,14 @@ export const scheduleDay = defineHandler({
         const next = (position.get(key) ?? 0) + 1
         position.set(key, next)
         const v = r.visit
-        return { visitId: v.id, personId: v.personId, truckId: v.personId, order: v.stopOrder ?? next, kind: v.kind, firstName: r.firstName, town: r.town, lat: r.lat, lng: r.lng, startTime: v.startTime, durationMinutes: v.durationMinutes, status: v.status }
+        return { visitId: v.id, personId: v.personId, order: v.stopOrder ?? next, kind: v.kind, firstName: r.firstName, town: r.town, lat: r.lat, lng: r.lng, startTime: v.startTime, durationMinutes: v.durationMinutes, status: v.status }
       }),
     }
   },
 })
 
-/** A day on someone's schedule, as the slot and offer lists name them; `truckId` and `truckName` are the same person for one season. */
-const slotPerson = { personId: Id, personName: z.string(), truckId: Id.describe("Alias of personId, kept for one season."), truckName: z.string().describe("Alias of personName, kept for one season.") }
+/** A day on someone's schedule, as the slot and offer lists name them. */
+const slotPerson = { personId: Id, personName: z.string() }
 
 export const scheduleSlots = defineHandler({
   name: "schedule.slots",
@@ -142,7 +139,7 @@ export const scheduleSlots = defineHandler({
     const kind = capacityKind(service.kind)
     // Busy time from each person's Jobber calendar feed shrinks their day (all-day blocks close it).
     const blocks = await loadBlocks(ctx.db, ctx.organizationId, new Date(`${first}T00:00:00Z`), new Date(`${addDays(last, 1)}T23:59:59Z`))
-    const data: { day: string; personId: string; personName: string; truckId: string; truckName: string; remaining: number; slotMinutes: number }[] = []
+    const data: { day: string; personId: string; personName: string; remaining: number; slotMinutes: number }[] = []
     for (let i = 0; i < input.days; i++) {
       const day = addDays(first, i)
       for (const person of people) {
@@ -151,7 +148,7 @@ export const scheduleSlots = defineHandler({
         if (mine.some((b) => areaOf(b.town) !== areaOf(input.town))) continue
         const capacity = capacityAfterBlocks(person.capacityByKind[kind], blockedMinutes(blocks, person.id, day, "America/Denver"))
         const remaining = capacity - mine.filter((b) => capacityKind(b.visit.kind) === kind).length
-        if (remaining > 0) data.push({ day, personId: person.id, personName: person.name, truckId: person.id, truckName: person.name, remaining, slotMinutes: service.slotMinutes })
+        if (remaining > 0) data.push({ day, personId: person.id, personName: person.name, remaining, slotMinutes: service.slotMinutes })
       }
     }
     return { data }
@@ -173,6 +170,6 @@ export const scheduleOfferDays = defineHandler({
     const slots = await openSlots(ctx.db, { id: "", organizationId: ctx.organizationId, kind: input.kind, town: input.town }, today(ctx), input.season)
     // Ordering a day starts its first stop at FIRST_STOP (8:00), so no window opens earlier than that.
     const opens = (start: string) => (start < "08:00" ? "08:00" : start)
-    return { days: spreadDays(slots).map((x) => ({ day: x.day, personId: x.personId, personName: x.personName, truckId: x.personId, truckName: x.personName, start: opens(x.start), window: windowText(opens(x.start)) })) }
+    return { days: spreadDays(slots).map((x) => ({ day: x.day, personId: x.personId, personName: x.personName, start: opens(x.start), window: windowText(opens(x.start)) })) }
   },
 })

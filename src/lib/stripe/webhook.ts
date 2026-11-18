@@ -1,5 +1,5 @@
 import "server-only"
-import { and, desc, eq, isNull } from "drizzle-orm"
+import { and, desc, eq, isNotNull, isNull } from "drizzle-orm"
 import type Stripe from "stripe"
 import { callApi } from "@/api/core/call"
 import { passesActivate } from "@/api/v1/passes/handlers"
@@ -9,9 +9,12 @@ import { ctxForJob } from "@/lib/admin/api-ctx"
 import { clearedCardColumns } from "@/lib/customer/card"
 import { visitName } from "@/lib/events/names"
 import { recordEventSafe } from "@/lib/events/record"
+import { linesOfVisit, visitPrice } from "@/lib/jobs/lines"
+import { loadTaxRule } from "@/lib/money/tax-rule"
 import { paidDay } from "@/lib/money/record"
 import { baseData } from "@/lib/messaging/data"
 import { queueMessage } from "@/lib/messaging/queue"
+import { resolvePassJobAnywhere } from "@/lib/pass/server/resolve"
 import { enqueue } from "@/lib/queue"
 import { applyCardUpdate, createCardUpdateSession } from "./card-update"
 import { applyInvoicePayment } from "./invoice-payment"
@@ -20,7 +23,7 @@ export type ReceiveResult = { status: 200; queued: boolean } | { status: 400 | 5
 
 export const WEBHOOK_NOT_CONFIGURED = "webhook not configured"
 
-/** The organization an event belongs to, read from the pass, payment method or charge it names; null for an event we do not act on. */
+/** The organization an event belongs to, read from the pass (its job, named by the job id or an old pass id in the metadata), payment method or charge it names; null for an event we do not act on. */
 export async function organizationOfEvent(db: Database, event: Stripe.Event): Promise<string | null> {
   const obj = event.data.object as unknown as { id?: string; metadata?: Record<string, string> | null }
   const passId = obj.metadata?.passId
@@ -32,8 +35,8 @@ export async function organizationOfEvent(db: Database, event: Stripe.Event): Pr
       if (bill) return bill.org
     }
     if (passId) {
-      const [pass] = await db.select({ org: s.seasonPass.organizationId }).from(s.seasonPass).where(eq(s.seasonPass.id, passId))
-      if (pass) return pass.org
+      const pass = await resolvePassJobAnywhere(db, passId)
+      if (pass) return pass.organizationId
     }
     if (event.type.startsWith("payment_intent.") && obj.id) {
       const [c] = await db.select({ org: s.charge.organizationId }).from(s.charge).where(eq(s.charge.stripePaymentIntentId, obj.id))
@@ -43,9 +46,7 @@ export async function organizationOfEvent(db: Database, event: Stripe.Event): Pr
   }
   if (event.type === "payment_method.detached" && obj.id) {
     const [owner] = await db.select({ org: s.customer.organizationId }).from(s.customer).where(eq(s.customer.stripePaymentMethodId, obj.id))
-    if (owner) return owner.org
-    const [pass] = await db.select({ org: s.seasonPass.organizationId }).from(s.seasonPass).where(eq(s.seasonPass.stripePaymentMethodId, obj.id))
-    return pass?.org ?? null
+    return owner?.org ?? null
   }
   return null
 }
@@ -73,7 +74,7 @@ export async function handleStripeEvent(db: Database, stripe: Stripe, organizati
   switch (event.type) {
     case "checkout.session.completed": {
       const session = event.data.object
-      if (session.metadata?.purpose === "card-update") await applyCardUpdate(db, stripe, session.id, now)
+      if (session.metadata?.purpose === "card-update") await applyCardUpdate(db, stripe, session.id, now, organizationId)
       else if (session.metadata?.purpose === "invoice") await applyInvoicePayment(db, stripe, organizationId, session, origin, now)
       else if (session.metadata?.purpose === "pass-setup" && session.metadata.passId) {
         const ctx = await ctxForJob(organizationId, { database: () => db, now: () => now })
@@ -93,7 +94,6 @@ export async function handleStripeEvent(db: Database, stripe: Stripe, organizati
           .update(s.charge)
           .set({ status: "succeeded", failureMessage: null, paidOn: paidDay(now), jobId: charge.jobId ?? visit?.jobId ?? null, customerId: charge.customerId ?? visit?.customerId ?? null, updatedAt: now })
           .where(eq(s.charge.id, charge.id))
-        if (charge.visitId) await db.update(s.visit).set({ chargedAt: now, stripePaymentIntentId: intent.id, updatedAt: now }).where(eq(s.visit.id, charge.visitId))
         // Only the run that completes the pending row writes the event, so a redelivery adds none.
         await recordEventSafe(db, { organizationId, about: "payment", aboutId: charge.id, customerId: charge.customerId ?? visit?.customerId, jobId: charge.jobId ?? visit?.jobId, visitId: charge.visitId, kind: "payment.succeeded", detail: { amount: charge.amount, method: charge.method, ...(visit ? { name: visitName(visit.kind) } : {}) }, who: "system", at: now })
       } else if (event.type === "payment_intent.payment_failed" && charge.status === "pending") {
@@ -108,42 +108,30 @@ export async function handleStripeEvent(db: Database, stripe: Stripe, organizati
     case "payment_method.detached": {
       const method = event.data.object
       const ofOrg = eq(s.customer.organizationId, organizationId)
-      // The customer holds the card; a pass still carrying it as the alias (the old column) finds the customer too.
-      const [byCustomer] = await db.select().from(s.customer).where(and(eq(s.customer.stripePaymentMethodId, method.id), ofOrg))
-      let customer = byCustomer
-      if (!customer) {
-        const [alias] = await db
-          .select({ customer: s.customer })
-          .from(s.seasonPass)
-          .innerJoin(s.customer, eq(s.customer.id, s.seasonPass.customerId))
-          .where(and(eq(s.seasonPass.stripePaymentMethodId, method.id), eq(s.seasonPass.organizationId, organizationId), ofOrg))
-        customer = alias?.customer
-      }
+      // The customer holds the card; a card that is not theirs any more (a card update detaches the old one) changes nothing and nobody is told.
+      const [customer] = await db.select().from(s.customer).where(and(eq(s.customer.stripePaymentMethodId, method.id), ofOrg))
       if (!customer) return
-      const aliasOfMethod = and(eq(s.seasonPass.customerId, customer.id), eq(s.seasonPass.stripePaymentMethodId, method.id))
-      // The customer already holds a newer card (a card update detaches the old one): only the stale pass aliases go, and nobody is told.
-      if (customer.stripePaymentMethodId && customer.stripePaymentMethodId !== method.id) {
-        await db.update(s.seasonPass).set({ ...clearedCardColumns, updatedAt: now }).where(aliasOfMethod)
-        return
-      }
       await db.update(s.customer).set({ ...clearedCardColumns, updatedAt: now }).where(and(eq(s.customer.id, customer.id), ofOrg))
-      await db.update(s.seasonPass).set({ ...clearedCardColumns, updatedAt: now }).where(aliasOfMethod)
       await recordEventSafe(db, { organizationId, about: "customer", aboutId: customer.id, customerId: customer.id, kind: "card.removed", detail: { brand: customer.cardBrand, last4: customer.cardLast4 }, who: "system", at: now })
-      // The pass that speaks for the customer is their newest active one.
+      // The pass that speaks for the customer is their newest active one: a job with a season, sold and not cancelled.
       const [row] = await db
-        .select({ pass: s.seasonPass, number: s.job.passNumber })
-        .from(s.seasonPass)
-        .innerJoin(s.job, eq(s.job.id, s.seasonPass.jobId))
-        .where(and(eq(s.seasonPass.customerId, customer.id), eq(s.job.kind, "pass"), eq(s.job.status, "active"), isNull(s.job.cancelledAt)))
-        .orderBy(desc(s.seasonPass.createdAt))
+        .select({ pass: s.job })
+        .from(s.job)
+        .where(and(eq(s.job.organizationId, organizationId), eq(s.job.customerId, customer.id), isNotNull(s.job.season), isNotNull(s.job.soldOn), isNull(s.job.cancelledAt)))
+        .orderBy(desc(s.job.createdAt))
         .limit(1)
       if (!row || !customer.email) return
       const link = customer.stripeCustomerId ? (await createCardUpdateSession(stripe, { passId: row.pass.id, customerId: customer.stripeCustomerId, origin })).url : null
-      const owed = await db.select({ amount: s.visit.amount, status: s.visit.status }).from(s.visit).where(eq(s.visit.passId, row.pass.id))
-      const left = owed.filter((v) => !["completed", "cancelled", "skipped"].includes(v.status)).reduce((sum, v) => sum + v.amount, 0)
+      // What the pass has left to charge: the lines of its visits that are not done, cancelled or skipped.
+      const [rule, ahead, lines] = await Promise.all([
+        loadTaxRule(db, organizationId),
+        db.select({ id: s.visit.id, status: s.visit.status }).from(s.visit).where(eq(s.visit.jobId, row.pass.id)),
+        db.select().from(s.lineItem).where(and(eq(s.lineItem.organizationId, organizationId), eq(s.lineItem.jobId, row.pass.id))),
+      ])
+      const left = ahead.filter((v) => !["completed", "cancelled", "skipped"].includes(v.status)).reduce((sum, v) => sum + visitPrice(linesOfVisit(lines, v.id), rule), 0)
       await queueMessage(db, {
         organizationId, customerId: customer.id, kind: "card-expiring", key: `pm-${method.id}`,
-        data: { ...baseData(origin, customer), passNumber: row.number ?? row.pass.number, cardState: "was removed or has expired", left, updateUrl: link },
+        data: { ...baseData(origin, customer), passNumber: row.pass.passNumber ?? "", cardState: "was removed or has expired", left, updateUrl: link },
       })
       return
     }

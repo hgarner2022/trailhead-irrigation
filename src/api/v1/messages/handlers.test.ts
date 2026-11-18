@@ -44,9 +44,8 @@ describe("messages.send", () => {
 
   it("queues a cancelled email through the gate and a repeat is its own message", async () => {
     const { eq } = await import("drizzle-orm")
-    const [p] = await db.select().from(s.seasonPass).where(eq(s.seasonPass.customerId, "c100"))
-    await db.update(s.job).set({ status: "cancelled", cancelledAt: new Date() }).where(eq(s.job.id, p!.jobId))
-    await db.update(s.seasonPass).set({ status: "cancelled" }).where(eq(s.seasonPass.id, p!.id))
+    const [p] = await db.select().from(s.job).where(eq(s.job.customerId, "c100"))
+    await db.update(s.job).set({ cancelledAt: new Date() }).where(eq(s.job.id, p!.id))
     await db.update(s.customer).set({ email: "andrea@example.com" }).where(eq(s.customer.id, "c100"))
     const sent = await callApi(ctxFor(db, writeKey), messagesSend, { customerId: "c100", kind: "cancelled" })
     expect(sent).toMatchObject({ kind: "cancelled", channel: "email", status: "queued", to: "andrea@example.com" })

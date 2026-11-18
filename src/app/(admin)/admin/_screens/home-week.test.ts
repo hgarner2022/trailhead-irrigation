@@ -64,7 +64,7 @@ describe("mapStops", () => {
 describe("the Visits header reads Bill sent apart from Owed", () => {
   const done = { status: "completed" as const, completedOn: "2026-11-10", scheduledOn: "2026-11-10", startAt: "2026-11-10T15:00:00Z" }
   const bill = { id: "inv1", jobId: "j2", number: "INV-2026-0001", amount: 100, tax: 0, total: 100, sentOn: "2026-11-01", dueOn: "2026-11-08", status: "overdue" as const, visitIds: [] }
-  const job = (id: string, over: Partial<NonNullable<AdminData["jobs"]>[number]> = {}) => ({ id, customerId: "c", kind: "repair" as const, status: "active" as const, source: "office" as const, visitIds: [], ...over })
+  const job = (id: string, over: Partial<NonNullable<AdminData["jobs"]>[number]> = {}) => ({ id, customerId: "c", kind: "repair" as const, status: "open" as const, source: "office" as const, visitIds: [], ...over })
   const data: AdminData = {
     ...base, passes: [], monthTotals: [],
     visits: [

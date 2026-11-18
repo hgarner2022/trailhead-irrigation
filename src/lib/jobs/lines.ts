@@ -2,8 +2,11 @@
 // the sale so a later catalogue edit never rewrites an old job. Pure: the
 // writers (checkout, the office pass sale, New visit) build lines here and
 // insert them beside the visits; migration 0014 backfills the same names.
-import { passVisits, visitPrice, type SeasonPassVisit } from "@/lib/season-pass"
+import { passVisits, visitPrice as passVisitPrice, type SeasonPassVisit } from "@/lib/season-pass"
 import { serviceFor, SERVICE_LIST, type ServiceDef, type ServiceKind } from "@/lib/services"
+import { jobSubtotal, jobTax, type TaxLine, type TaxRule } from "./tax"
+
+export { jobSubtotal, jobTax, lineTax, visitTax, type TaxRule } from "./tax"
 
 /** A line as the writers build it and the readers total it; the row adds its ids. */
 export interface Line {
@@ -46,7 +49,7 @@ function catalogue(kind: ServiceKind, zones: number | undefined): ServiceDef | u
 
 function lineForVisit(visit: SeasonPassVisit, zones: number): Line {
   const service = catalogue(visit.key, zones)
-  return { name: LINE_NAMES[visit.key]!, description: service?.description, quantity: 1, unitPrice: visitPrice(visit, zones), taxable: false, serviceKey: service?.key, visitKind: visit.key }
+  return { name: LINE_NAMES[visit.key]!, description: service?.description, quantity: 1, unitPrice: passVisitPrice(visit, zones), taxable: false, serviceKey: service?.key, visitKind: visit.key }
 }
 
 /** The lines of the pass visits given (the ones on sale, or the July add-on alone), in the order given, priced per zone from `season-pass.ts`, never taxed. */
@@ -76,7 +79,23 @@ export function lineTotal(line: Pick<Line, "quantity" | "unitPrice" | "cancelled
   return line.cancelledAt ? 0 : line.quantity * line.unitPrice
 }
 
-/** What the job comes to, cancelled lines left out. */
-export function jobTotal(lines: readonly Pick<Line, "quantity" | "unitPrice" | "cancelledAt">[]): number {
-  return lines.reduce((sum, line) => sum + lineTotal(line), 0)
+/** The lines `jobTotal` and `visitPrice` read: what a line costs, and whether it is taxed. */
+export type PricedLine = TaxLine
+
+/** What the job comes to with its sales tax, cancelled lines left out; `jobSubtotal` is the same before tax. The rule is required so no caller forgets it. */
+export function jobTotal(lines: readonly PricedLine[], rule: TaxRule): number {
+  return jobSubtotal(lines) + jobTax(lines, rule)
+}
+
+/**
+ * What a visit costs: `jobTotal` (with tax) of its own non-cancelled lines (the lines whose `visitId` is the visit, which the
+ * caller picks out with `linesOfVisit`). A visit with no line costs nothing; the visit has no price column of its own.
+ */
+export function visitPrice(lines: readonly PricedLine[], rule: TaxRule): number {
+  return jobTotal(lines, rule)
+}
+
+/** The lines billed after one visit, picked out of a job's lines. */
+export function linesOfVisit<T extends { visitId?: string | null }>(lines: readonly T[], visitId: string): T[] {
+  return lines.filter((l) => l.visitId === visitId)
 }

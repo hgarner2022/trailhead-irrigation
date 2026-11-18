@@ -1,5 +1,5 @@
 import "server-only"
-import { and, asc, eq, ne, or, sql } from "drizzle-orm"
+import { and, asc, eq, ne, sql } from "drizzle-orm"
 import { z } from "zod"
 import * as s from "@/db/schema"
 import { initialsOf } from "@/lib/admin/people"
@@ -11,8 +11,8 @@ import { logSettingsChanges } from "../settings/log"
 import { personLeaves } from "./log"
 
 // A person who works here: the owner, a manager or a tech. The truck is a label on them, and an email
-// lets them sign in. trucks.* (../trucks/handlers.ts) reads and writes these same rows through the
-// functions exported here, as an alias kept for one season.
+// lets them sign in. The label puts them on the schedule; the functions exported here are what the
+// other handlers and the settings screen's save read and write people through.
 
 export const Weekday = z.enum(["mon", "tue", "wed", "thu", "fri", "sat", "sun"])
 export const Capacity = z.object({ "turn-on": z.number().int().min(0).max(40), inspection: z.number().int().min(0).max(40), blowout: z.number().int().min(0).max(40), repair: z.number().int().min(0).max(40), other: z.number().int().min(0).max(40) })
@@ -87,11 +87,12 @@ export async function routePeople(ctx: Ctx): Promise<PersonRow[]> {
   return (await listPeople(ctx, { active: true })).filter(isRoutePerson)
 }
 
-/** The person behind an id: their own, or for one season the id of the truck they were made from ("truck-1"). The one lookup every legacy-id site goes through. */
-export async function personByAnyId(ctx: Ctx, idOrLegacyId: string): Promise<PersonRow | undefined> {
-  // step 6: drop the legacy truck id clause
-  const [row] = await ctx.db.select().from(s.person).where(and(inOrg(ctx), or(eq(s.person.id, idOrLegacyId), eq(s.person.legacyTruckId, idOrLegacyId))))
-  return row
+/** The person behind an id: their own, or for one season the old truck id ("truck-1"), which is the person's id without the `person_` prefix (how migration 0010 named people). The one lookup every old-id site goes through. */
+export async function personByAnyId(ctx: Ctx, id: string): Promise<PersonRow | undefined> {
+  const [exact] = await ctx.db.select().from(s.person).where(and(inOrg(ctx), eq(s.person.id, id)))
+  if (exact) return exact
+  const [twin] = await ctx.db.select().from(s.person).where(and(inOrg(ctx), eq(s.person.id, `person_${id}`)))
+  return twin
 }
 
 /** `personByAnyId`'s id, or not found. */

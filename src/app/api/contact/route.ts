@@ -1,5 +1,6 @@
 import { Resend } from "resend"
 import { NextResponse } from "next/server"
+import { recordQuoteJob } from "@/lib/contact/quote-job"
 
 const TO_EMAIL = "ryan@trailheadirrigation.com"
 
@@ -45,6 +46,14 @@ export async function POST(request: Request) {
         { error: "Failed to send message" },
         { status: 500 }
       )
+    }
+
+    // The email has gone. The same inquiry is now also a job that needs a quote, best effort: a database error
+    // (or no database) never loses the email or changes what the visitor sees, and nothing here logs the inquiry.
+    try {
+      await recordQuoteJob({ name, email, phone, address, service, message })
+    } catch {
+      console.error("Contact form: the quote job was not saved")
     }
 
     return NextResponse.json({ success: true })

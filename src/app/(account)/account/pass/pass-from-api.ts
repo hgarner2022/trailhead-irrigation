@@ -37,7 +37,8 @@ export function passFromApi(d: z.infer<typeof PassDetail>): Pass {
     .sort((a, b) => ORDER.indexOf(a.kind) - ORDER.indexOf(b.kind))
     .map((v) => {
       const own = ownLines(v);
-      // Price is what the visit's lines come to; the description is the first line's.
+      // Price is what the visit's lines come to; the description is the first line's. The pass page stays untaxed: a pass's lines are always written with
+      // taxable false (`insertLines` with `untaxed`), so the lines' total is what the visit costs.
       const description = own[0]?.description;
       return {
         kind: v.kind as PassVisit["kind"],
@@ -56,10 +57,8 @@ export function passFromApi(d: z.infer<typeof PassDetail>): Pass {
         ...(v.startTime ? { startTime: v.startTime } : {}),
         ...(v.durationMinutes ? { windowMinutes: v.durationMinutes } : {}),
         ...(v.calendarUrl ? { calendarUrl: v.calendarUrl } : {}),
-        // the person assigned, under the deprecated truck name too until the screens read people
-        ...(v.personName
-          ? { personName: v.personName, truckName: v.personName }
-          : {}),
+        // the person assigned; the pass page says who is coming beside the date
+        ...(v.personName ? { personName: v.personName } : {}),
         ...(v.completedOn
           ? { completedAt: instantOf(v.completedOn, "12:00") }
           : {}),

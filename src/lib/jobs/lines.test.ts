@@ -1,3 +1,4 @@
+import { NO_TAX } from "@/lib/jobs/tax"
 import { describe, expect, it } from "vitest"
 import { defaultVisitPrice, jobTotal, lineForVisitKind, linesForPass, lineTotal, type Line } from "./lines"
 import { SEASON_PASS_VISITS, visitPrice } from "@/lib/season-pass"
@@ -19,7 +20,7 @@ describe("linesForPass", () => {
     expect(lines.map((l) => l.visitKind)).toEqual(["turn-on", "blowout"])
     expect(lines.map((l) => l.serviceKey)).toEqual(["turn-on-12", "blowout"])
     expect(lines.map((l) => l.description)).toEqual([SERVICES["turn-on-12"]!.description, SERVICES.blowout.description])
-    expect(jobTotal(lines)).toBe(185 + 155)
+    expect(jobTotal(lines, NO_TAX)).toBe(185 + 155)
   })
 })
 
@@ -60,11 +61,11 @@ describe("lineTotal and jobTotal", () => {
 
   it("counts a cancelled line as nothing", () => {
     expect(lineTotal(line({ cancelledAt: new Date("2027-05-01T00:00:00Z") }))).toBe(0)
-    expect(jobTotal([line({ unitPrice: 145 }), line({ unitPrice: 95, cancelledAt: new Date() }), line({ unitPrice: 20, quantity: 2 })])).toBe(185)
+    expect(jobTotal([line({ unitPrice: 145 }), line({ unitPrice: 95, cancelledAt: new Date() }), line({ unitPrice: 20, quantity: 2 })], NO_TAX)).toBe(185)
   })
 
   it("sums nothing to zero", () => {
-    expect(jobTotal([])).toBe(0)
+    expect(jobTotal([], NO_TAX)).toBe(0)
   })
 })
 

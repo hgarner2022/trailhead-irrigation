@@ -1,4 +1,5 @@
 // @vitest-environment node
+import { NO_TAX } from "@/lib/jobs/tax"
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest"
 import { and, eq } from "drizzle-orm"
 import * as s from "@/db/schema"
@@ -11,7 +12,8 @@ import { adminKey, apiDb, ctxFor, eventsOf, linesOfPass, ORG, readKey, writeKey 
 import { jobTotal } from "@/lib/jobs/lines"
 import { SERVICES } from "@/lib/services"
 import { scheduleOfferDays } from "../schedule/handlers"
-import { visitsMarkClosed, visitsRecordPayment } from "../visits/money"
+import { paymentsRecord } from "../payments/handlers"
+import { visitsMarkClosed } from "../visits/money"
 import { passesGet, passesSendCardUpdateLink, passesStartCardUpdate } from "./handlers"
 import { passesSell } from "./sell"
 
@@ -42,9 +44,10 @@ describe("passes.sell", () => {
     expect(pass.visits.map((v) => [v.kind, v.amount, v.status, v.scheduledOn])).toEqual([["turn-on", 145, "unscheduled", null], ["blowout", 115, "unscheduled", null]])
     expect(pass.consent).toMatchObject({ source: "admin", termsVersion: "2026-11", marketingOptIn: false })
     expect(pass.customer?.email).toBe("andrea@example.com")
-    const [row] = await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, pass.id))
-    const [job] = await db.select().from(s.job).where(eq(s.job.id, row!.jobId))
-    expect(job).toMatchObject({ kind: "pass", source: "office", status: "active", price: 260, notes: "Took it by phone", season: 2028, passNumber: pass.number, renewsJobId: null })
+    const row = { jobId: pass.id }
+    const [job] = await db.select().from(s.job).where(eq(s.job.id, row.jobId))
+    // an office sale is sold today: the job's sold day is set with the rows
+    expect(job).toMatchObject({ source: "office", soldOn: "2027-11-10", season: 2028, passNumber: pass.number, renewsJobId: null, legacyPassId: null })
     const queued = await db.select().from(s.queueItem).where(and(eq(s.queueItem.kind, "pass-onboard"), eq(s.queueItem.key, pass.id)))
     expect(queued).toHaveLength(1)
     const mail = await messages("c100")
@@ -55,11 +58,10 @@ describe("passes.sell", () => {
     expect(confirmation.body).not.toContain("card ending")
     expect(confirmation.body).toMatch(/Spring turn-on.* · \$\d+/)
     expect(confirmation.body).toContain("Season total · $")
-    expect((await db.select().from(s.passChange).where(eq(s.passChange.passId, pass.id))).map((c) => c.kind)).toEqual(["sold"])
     // One sale, one `job.sold` (the activation inside a sale writes none of its own), then the note and the consent it recorded.
-    expect(await eventsOf(db, { kind: "job.sold", jobId: row!.jobId })).toMatchObject([{ about: "job", aboutId: row!.jobId, customerId: "c100", who: "api", detail: { source: "office", name: "Season Pass", passNumber: pass.number, paysBy: "at-visit" } }])
-    expect(await eventsOf(db, { kind: "note", jobId: row!.jobId })).toMatchObject([{ about: "job", aboutId: row!.jobId, customerId: "c100", detail: { text: "Took it by phone" } }])
-    expect(await eventsOf(db, { kind: "consent", jobId: row!.jobId })).toMatchObject([{ about: "job", customerId: "c100", who: "api", detail: { source: "admin", marketingOptIn: false } }])
+    expect(await eventsOf(db, { kind: "job.sold", jobId: row.jobId })).toMatchObject([{ about: "job", aboutId: row.jobId, customerId: "c100", who: "api", detail: { source: "office", name: "Season Pass", passNumber: pass.number, paysBy: "at-visit" } }])
+    expect(await eventsOf(db, { kind: "note", jobId: row.jobId })).toMatchObject([{ about: "job", aboutId: row.jobId, customerId: "c100", detail: { text: "Took it by phone" } }])
+    expect(await eventsOf(db, { kind: "consent", jobId: row.jobId })).toMatchObject([{ about: "job", customerId: "c100", who: "api", detail: { source: "admin", marketingOptIn: false } }])
     expect(await eventsOf(db, { kind: "card.saved", customerId: "c100" })).toEqual([])
   })
 
@@ -88,9 +90,22 @@ describe("passes.sell", () => {
     ])
     expect(lines.map((l) => l.description)).toEqual([SERVICES["turn-on-12"]!.description, SERVICES["inspection-12"]!.description, SERVICES.blowout.description])
     expect(lines.map((l) => l.visitId).sort()).toEqual(pass.visits.map((v) => v.id).sort())
-    expect(jobTotal(lines)).toBe(pass.price)
+    expect(jobTotal(lines, NO_TAX)).toBe(pass.price)
     const two = await sell({ newCustomer: newCustomer() })
     expect((await linesOfPass(db, two.id)).map((l) => l.visitKind)).toEqual(["turn-on", "blowout"])
+  })
+
+  it("writes every pass line untaxed even when the service rows are flagged taxable", async () => {
+    await db.update(s.service).set({ taxable: true }).where(eq(s.service.organizationId, ORG))
+    try {
+      const pass = await sell({ newCustomer: newCustomer(), zones: 12, inspection: true })
+      const lines = await linesOfPass(db, pass.id)
+      expect(lines).toHaveLength(3)
+      expect(lines.map((l) => l.taxable)).toEqual([false, false, false])
+      expect(jobTotal(lines, { collectsSalesTax: true, salesTaxPercent: 8 })).toBe(pass.price)
+    } finally {
+      await db.update(s.service).set({ taxable: false }).where(eq(s.service.organizationId, ORG))
+    }
   })
 
   it("refuses an existing customer with no email on file, a second pass of the season, a read key and the anonymous checkout", async () => {
@@ -123,8 +138,6 @@ describe("passes.sell", () => {
     expect(pass.visits.find((v) => v.kind === "inspection")).toMatchObject({ status: "unscheduled", scheduledOn: null })
     const blowout = pass.visits.find((v) => v.kind === "blowout")!
     expect(blowout).toMatchObject({ status: "scheduled", scheduledOn: "2028-10-02" })
-    const changes = await db.select().from(s.passChange).where(eq(s.passChange.passId, pass.id))
-    expect(changes.find((c) => c.kind === "day-filled")).toMatchObject({ visitId: blowout.id, detail: { visit: "blowout", from: "2028-10-01", to: "2028-10-02" } })
     expect(await eventsOf(db, { kind: "visit.day-filled", visitId: blowout.id })).toMatchObject([{ about: "visit", aboutId: blowout.id, customerId: pass.customerId, who: "api", detail: { visit: "blowout", from: "2028-10-01", to: "2028-10-02" } }])
     // The held days become scheduled visits written by the system, one event each.
     expect(await eventsOf(db, { kind: "visit.scheduled", visitId: blowout.id })).toMatchObject([{ about: "visit", who: "system", detail: { name: "Fall blowout", day: "2028-10-02", from: null } }])
@@ -169,7 +182,7 @@ describe("passes.sell", () => {
     expect(done).toMatchObject({ status: "completed", paidBy: "venmo", paymentStatus: "paid" })
     expect(await db.select().from(s.queueItem).where(and(eq(s.queueItem.kind, "pass-charge"), eq(s.queueItem.key, visit.id)))).toEqual([])
     const [charge] = await db.select().from(s.charge).where(eq(s.charge.visitId, visit.id))
-    expect(charge).toMatchObject({ passId: pass.id, method: "venmo", reference: "@maya", status: "succeeded", amount: 145 })
+    expect(charge).toMatchObject({ jobId: pass.id, method: "venmo", reference: "@maya", status: "succeeded", amount: 145 })
     const receipt = (await messages(pass.customerId)).find((m) => m.kind === "receipt")!
     expect(receipt.body).toContain("Venmo")
     expect(receipt.body).toContain(`Season Pass ${pass.number}`)
@@ -178,6 +191,6 @@ describe("passes.sell", () => {
     expect(detail.cardFailedAt).toBeNull()
     expect(stub.calls.paymentIntentsCreate).not.toHaveBeenCalled()
     // A later payment on the pass visit is recorded here too, never sent to a card.
-    await expect(callApi(later(), visitsRecordPayment, { id: visit.id, method: "cash" })).rejects.toMatchObject({ code: "conflict" })
+    await expect(callApi(later(), paymentsRecord, { jobId: pass.id, visitId: visit.id, amount: 145, method: "cash" })).rejects.toMatchObject({ code: "conflict" })
   })
 })

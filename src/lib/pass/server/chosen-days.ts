@@ -44,9 +44,9 @@ async function knownPersonId(db: Database, organizationId: string, id: string): 
  * offered the last place. A day that is not open any more, or one with a person the organization does not know, is not stored; that
  * visit waits for the scheduler.
  */
-export async function holdChosenDays(db: Database, passId: string, days: ChosenDayInput[], town: string, season: number, today: string): Promise<number> {
+export async function holdChosenDays(db: Database, jobId: string, days: ChosenDayInput[], town: string, season: number, today: string): Promise<number> {
   let held = 0
-  const visits = await db.select().from(s.visit).where(eq(s.visit.passId, passId))
+  const visits = await db.select().from(s.visit).where(eq(s.visit.jobId, jobId))
   for (const v of visits) {
     const chosen = days.find((d) => d.kind === v.kind)
     if (!chosen) continue
@@ -66,9 +66,9 @@ export async function holdChosenDays(db: Database, passId: string, days: ChosenD
  * person with any open day, so `scheduleChosenDays` moves it to the next open day and records the move for the confirmation.
  * A kind with no open day at all is left with no day yet. Returns the kinds held.
  */
-export async function holdOfficeDays(db: Database, passId: string, days: Partial<Record<ChosenDayInput["kind"], string | undefined>>, town: string, season: number, today: string): Promise<string[]> {
+export async function holdOfficeDays(db: Database, jobId: string, days: Partial<Record<ChosenDayInput["kind"], string | undefined>>, town: string, season: number, today: string): Promise<string[]> {
   const held: string[] = []
-  const visits = await db.select().from(s.visit).where(eq(s.visit.passId, passId))
+  const visits = await db.select().from(s.visit).where(eq(s.visit.jobId, jobId))
   for (const v of visits) {
     const day = days[v.kind as ChosenDayInput["kind"]]
     if (!day) continue
@@ -94,8 +94,8 @@ export function nextOpen(slots: Slot[], chosenDay: string): Slot | undefined {
  * since, on the next open day. The touched days are ordered. A visit with no held day stays for the scheduler; one that is
  * already scheduled is left alone, so the webhook and the page both calling this changes nothing the second time.
  */
-export async function scheduleChosenDays(db: Database, passId: string, town: string, season: number, today: string, now = new Date()): Promise<ShiftedDay[]> {
-  const visits = await db.select().from(s.visit).where(and(eq(s.visit.passId, passId), eq(s.visit.status, "unscheduled")))
+export async function scheduleChosenDays(db: Database, jobId: string, town: string, season: number, today: string, now = new Date()): Promise<ShiftedDay[]> {
+  const visits = await db.select().from(s.visit).where(and(eq(s.visit.jobId, jobId), eq(s.visit.status, "unscheduled")))
   const shifted: ShiftedDay[] = []
   const touched = new Map<string, { personId: string; day: string }>()
   for (const v of visits) {

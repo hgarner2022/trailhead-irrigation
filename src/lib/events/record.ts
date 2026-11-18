@@ -18,13 +18,16 @@ export interface NewEvent {
   who: string
   /** defaults to now */
   at?: Date
+  /** a fixed id makes the write once-only: a repeat (or a racing call) finds the row and adds nothing */
+  id?: string
 }
 
 /** The one writer of `event`: every change and every note goes through it. Returns the new row's id. */
 export async function recordEvent(db: Database, event: NewEvent): Promise<string> {
-  const [row] = await db
+  const insert = db
     .insert(s.event)
     .values({
+      ...(event.id ? { id: event.id } : {}),
       organizationId: event.organizationId,
       about: event.about,
       aboutId: event.aboutId,
@@ -36,7 +39,11 @@ export async function recordEvent(db: Database, event: NewEvent): Promise<string
       who: event.who,
       ...(event.at ? { at: event.at } : {}),
     })
-    .returning({ id: s.event.id })
+  if (event.id) {
+    await insert.onConflictDoNothing()
+    return event.id
+  }
+  const [row] = await insert.returning({ id: s.event.id })
   return row!.id
 }
 

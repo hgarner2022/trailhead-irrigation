@@ -6,7 +6,7 @@ import type { TestDb } from "@/db/test-db"
 import { drain } from "@/lib/queue"
 import { handlers as queueHandlers } from "@/lib/queue/handlers"
 import { callApi } from "../../core/call"
-import { adminKey, apiDb, ctxFor, customerPerson, ORG, readKey } from "../../test-helpers"
+import { adminKey, apiDb, ctxFor, customerPerson, jobIdOfPassId, ORG, passJobOf, passViewOf, readKey } from "../../test-helpers"
 import { passesCancel, passesList, passesStartCardUpdate } from "./handlers"
 
 const { getStripe } = vi.hoisted(() => ({ getStripe: vi.fn() }))
@@ -19,13 +19,13 @@ beforeAll(async () => {
 })
 afterAll(() => db.close())
 
-const customerOf = async (passId: string) => (await db.select({ id: s.seasonPass.customerId }).from(s.seasonPass).where(eq(s.seasonPass.id, passId)))[0]!.id
+const customerOf = async (passId: string) => (await passJobOf(db, passId)).customerId
 const setEmail = async (passId: string, email: string) => {
   const id = await customerOf(passId)
   await db.update(s.customer).set({ email }).where(eq(s.customer.id, id))
   return id
 }
-const statusOf = async (passId: string) => (await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, passId)))[0]!.status
+const statusOf = async (passId: string) => (await passViewOf(db, passId)).status
 
 describe("passes.cancel for a customer", () => {
   it("refuses a customer whose email is not the pass's, even with the right customer id, and lets an admin through", async () => {
@@ -42,18 +42,21 @@ describe("passes.cancel for a customer", () => {
     await db.insert(s.webhookEndpoint).values({ id: "hook-c", organizationId: ORG, url: "https://hooks.example.com/c", secret: "whsec_c", events: ["pass.cancelled"] })
     await expect(callApi(ctxFor(db, customerPerson(id, "P5@Example.com")), passesCancel, { id: "p5", reason: "moving" })).resolves.toMatchObject({ status: "cancelled" })
     expect(await statusOf("p5")).toBe("cancelled")
-    const queued = (await db.select().from(s.queueItem)).filter((q) => q.kind === "pass-cancel" && q.key === "p5")
+    // the task is queued under the pass's id, which is its job's
+    const jobId = await jobIdOfPassId(db, "p5")
+    const queued = (await db.select().from(s.queueItem)).filter((q) => q.kind === "pass-cancel" && q.key === jobId)
     expect(queued).toHaveLength(1)
+    expect(queued[0]!.payload).toEqual({ passId: jobId })
     const mail = (await db.select().from(s.messageLog)).filter((m) => m.kind === "cancelled" && m.customerId === id)
     expect(mail).toHaveLength(1)
     expect(mail[0]).toMatchObject({ to: "p5@example.com", status: "queued" })
     expect((await db.select().from(s.outboundEvent)).map((e) => e.event)).toContain("pass.cancelled")
     // a second cancel changes nothing
     await callApi(ctxFor(db, adminKey), passesCancel, { id: "p5" })
-    expect((await db.select().from(s.queueItem)).filter((q) => q.kind === "pass-cancel" && q.key === "p5")).toHaveLength(1)
+    expect((await db.select().from(s.queueItem)).filter((q) => q.kind === "pass-cancel" && q.key === jobId)).toHaveLength(1)
     await drain(db, { "pass-cancel": queueHandlers["pass-cancel"]! })
-    const alerts = (await db.select().from(s.adminAlert)).filter((a) => a.passId === "p5")
-    expect(alerts.map((a) => a.kind)).toEqual(["pass-cancelled"])
+    const alerts = (await db.select().from(s.adminAlert)).filter((a) => a.jobId === jobId)
+    expect(alerts.map((a) => [a.kind, a.key])).toEqual([["pass-cancelled", jobId]])
     expect(alerts[0]!.message).toMatch(/^Season Pass TH-2027-\d{4} cancelled: .+, .+$/)
   })
 })
@@ -62,7 +65,7 @@ describe("passes.list as a customer", () => {
   it("returns only the caller's own passes", async () => {
     const id = await customerOf("p3")
     const out = await callApi(ctxFor(db, customerPerson(id)), passesList, {})
-    expect(out.data.map((p) => p.id)).toContain("p3")
+    expect(out.data.map((p) => p.id)).toContain(await jobIdOfPassId(db, "p3"))
     expect(out.data.every((p) => p.customerId === id)).toBe(true)
   })
 })
@@ -74,7 +77,7 @@ describe("passes.startCardUpdate", () => {
     const id = await customerOf("p3")
     await db.update(s.customer).set({ stripeCustomerId: "cus_p3" }).where(eq(s.customer.id, id))
     await expect(callApi(ctxFor(db, customerPerson(id)), passesStartCardUpdate, { id: "p3" })).resolves.toEqual({ url: "https://checkout.stripe.test/cs_1" })
-    expect(create).toHaveBeenCalledWith(expect.objectContaining({ customer: "cus_p3", metadata: { purpose: "card-update", passId: "p3" } }))
+    expect(create).toHaveBeenCalledWith(expect.objectContaining({ customer: "cus_p3", metadata: { purpose: "card-update", passId: await jobIdOfPassId(db, "p3") } }))
     await expect(callApi(ctxFor(db, customerPerson("someone-else")), passesStartCardUpdate, { id: "p3" })).rejects.toMatchObject({ code: "forbidden" })
   })
 })

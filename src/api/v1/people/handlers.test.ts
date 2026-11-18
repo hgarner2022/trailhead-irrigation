@@ -2,9 +2,8 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
 import type { TestDb } from "@/db/test-db"
 import { callApi } from "../../core/call"
-import { adminKey, apiDb, ctxFor, readKey, writeKey } from "../../test-helpers"
-import { trucksList } from "../trucks/handlers"
-import { peopleCreate, peopleDeactivate, peopleList, peopleUpdate } from "./handlers"
+import { adminKey, apiDb, ctxFor, ORG, readKey, writeKey } from "../../test-helpers"
+import { peopleCreate, peopleDeactivate, peopleList, peopleUpdate, personByAnyId, resolvePersonId } from "./handlers"
 
 let db: TestDb
 beforeAll(async () => {
@@ -22,7 +21,6 @@ describe("people", () => {
     expect(out.data[1]).toMatchObject({ name: "Ryan Garner", initials: "RG", truck: "Truck 1", role: "owner", email: null, canSignIn: false, jobberUserId: "jobber-user-1", workingDays: ["mon", "tue", "wed", "thu", "fri"], hasCalendarFeed: false, active: true })
     expect(out.data[0]).toMatchObject({ email: "owner@example.com", canSignIn: true, truck: null })
     expect(out.data[2]!.workingDays).toContain("sat")
-    expect(JSON.stringify(out.data)).not.toContain("legacyTruckId")
   })
   it("filters by active", async () => {
     const active = await callApi(ctxFor(db, readKey), peopleList, { active: "true" })
@@ -91,8 +89,14 @@ describe("people", () => {
     await expect(callApi(ctxFor(db, adminKey), peopleCreate, { name: "T", workingDays: [] })).rejects.toMatchObject({ code: "invalid" })
     await expect(callApi(ctxFor(db, adminKey), peopleCreate, { name: "T", seasonStart: "April 1" })).rejects.toMatchObject({ code: "invalid" })
   })
-  it("trucks.list still answers, with the same rows under the old names", async () => {
-    const out = await callApi(ctxFor(db, readKey), trucksList, {})
-    expect(out.data.map((t) => t.name)).toEqual(["Ryan Garner", "Tech Two"])
+  it("understands an old truck id for one season: the person's id, or that id with the person_ prefix", async () => {
+    const ctx = { db, organizationId: ORG }
+    expect(await resolvePersonId(ctx, "person_truck-1")).toBe("person_truck-1")
+    expect(await resolvePersonId(ctx, "truck-1")).toBe("person_truck-1")
+    expect((await personByAnyId(ctx, "truck-2"))?.name).toBe("Tech Two")
+    await expect(resolvePersonId(ctx, "truck-9")).rejects.toMatchObject({ code: "not_found" })
+    // another organization's person is not found, whichever way the id is written
+    expect(await personByAnyId({ db, organizationId: "other-org" }, "truck-1")).toBeUndefined()
+    expect(await personByAnyId({ db, organizationId: "other-org" }, "person_truck-1")).toBeUndefined()
   })
 })

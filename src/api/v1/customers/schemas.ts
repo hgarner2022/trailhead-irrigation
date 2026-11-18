@@ -1,4 +1,5 @@
 import { z } from "zod"
+import { yardShape } from "@/lib/admin/yard"
 import { Channel, Day, Id, Iso, Preference, Town, VisitKind } from "../shared"
 import { EventOut } from "../events/schemas"
 import { PaymentOut } from "../payments/schemas"
@@ -13,15 +14,7 @@ export const PropertyOut = z.object({
   lat: z.number().nullable(),
   lng: z.number().nullable(),
   address: z.string().optional().describe("Only for callers with the write scope."),
-  zones: z.number().int().nullable(),
-  controller: z.string().nullable(),
-  backflowLocation: z.string().nullable(),
-  gateCode: z.string().nullable().optional().describe("Only for callers with the write scope."),
-  mustBeHome: z.boolean(),
-  accessNote: z.string().nullable().optional().describe("Only for callers with the write scope."),
-  contactName: z.string().nullable(),
-  contactPhone: z.string().nullable().optional().describe("Only for callers with the write scope."),
-  notes: z.string().nullable(),
+  ...yardShape,
 })
 
 export const ConsentOut = z.object({
@@ -58,10 +51,10 @@ export const CustomerOut = z.object({
 export const JobOut = z.object({
   id: Id,
   kind: z.enum(["pass", "repair", "install", "other"]),
-  status: z.enum(["pending", "active", "done", "cancelled"]),
-  price: z.number().int().nullable().describe("Whole dollars; null until quoted."),
+  status: z.enum(["needs-a-quote", "quoted", "open", "done", "cancelled"]).describe("The job's stage, read from its facts (never typed): cancelled, done when every live visit is, then for work that is not a Season Pass quoted or needs-a-quote, else open."),
+  price: z.number().int().nullable().describe("Whole dollars: the job total (its lines added up), null while it is 0."),
   source: z.enum(["checkout", "office", "site", "renewal"]),
-  notes: z.string().nullable(),
+  notes: z.string().nullable().describe("The text of the newest note about the job (its story holds every note)."),
   createdAt: Iso,
   passId: Id.nullable(),
   passNumber: z.string().nullable(),

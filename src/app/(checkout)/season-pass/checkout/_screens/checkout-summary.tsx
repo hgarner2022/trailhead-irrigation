@@ -14,7 +14,7 @@ function whenLine(key: "turn-on" | "inspection" | "blowout", timing: Timing): st
   return preference ? `${capital(preferencePhrase(key, preference))}, your preference` : key === "turn-on" ? "April to May" : "October"
 }
 
-/** What the customer is agreeing to, above the card form: each visit still on sale with its price, the total, and what is charged today. Prices come from src/lib/season-pass.ts. */
+/** What the customer is agreeing to, above the card form: each visit still on sale with its price, the total, and what is charged today. Prices come from src/lib/season-pass.ts. The Season Pass checkout stays untaxed: a pass's lines are always written with taxable false (`insertLines` with `untaxed`, whatever the service row says), so no price here adds sales tax. */
 export function OrderSummary({ state }: { state: Pick<CheckoutFields, "zones" | "inspection" | "today"> & Partial<Pick<CheckoutFields, "turnOnPreference" | "blowoutPreference">> }) {
   const visits = visitsOnSale(state.inspection, state.today)
   return (

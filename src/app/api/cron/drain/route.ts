@@ -20,7 +20,13 @@ function authorised(request: Request): boolean {
 export async function GET(request: Request) {
   if (!authorised(request)) return Response.json({ error: "unauthorized" }, { status: 401 })
   const database = db()
-  const expired = await expirePendingPasses(database, new Date())
+  // A purge error must never stop the drain (a constant line only: no customer data in the log).
+  let expired = 0
+  try {
+    expired = await expirePendingPasses(database, new Date())
+  } catch {
+    console.error("cron: purge of unpaid checkouts failed")
+  }
   const result = await drain(database, handlers)
   return Response.json({ expired, ...result })
 }

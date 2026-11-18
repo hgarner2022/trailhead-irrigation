@@ -80,19 +80,10 @@ export const paymentsRefund = defineHandler({
       reference = refund.id
     }
     const row = await recordPaymentRow(ctx.db, {
-      organizationId: ctx.organizationId, jobId: payment.jobId, visitId: payment.visitId, customerId: payment.customerId, passId: payment.passId,
+      organizationId: ctx.organizationId, jobId: payment.jobId, visitId: payment.visitId, customerId: payment.customerId,
       amount: -amount, method: payment.method, reference, status: "succeeded", refundsPaymentId: payment.id, now: ctx.now,
     })
     if (!row) throw new ApiError("conflict", "That refund was already recorded")
-    // The alias follows the rows: a visit with nothing left paid is no longer charged.
-    if (payment.visitId) {
-      const own = await ctx.db.select().from(s.charge).where(eq(s.charge.visitId, payment.visitId))
-      if (paidTotal(own) <= 0) await ctx.db.update(s.visit).set({ chargedAt: null }).where(eq(s.visit.id, payment.visitId))
-    } else {
-      // A payment on the job as a whole (a bill paid on the pay page) stamped the done visits; with nothing left paid on the job they are no longer charged.
-      const all = await ctx.db.select().from(s.charge).where(and(eq(s.charge.jobId, payment.jobId), eq(s.charge.organizationId, ctx.organizationId)))
-      if (paidTotal(all) <= 0) await ctx.db.update(s.visit).set({ chargedAt: null }).where(and(eq(s.visit.jobId, payment.jobId), eq(s.visit.organizationId, ctx.organizationId)))
-    }
     const [owner] = payment.visitId ? await ctx.db.select({ kind: s.visit.kind }).from(s.visit).where(and(eq(s.visit.id, payment.visitId), eq(s.visit.organizationId, ctx.organizationId))) : []
     await emitEvent(ctx.db, ctx.organizationId, "payment.refunded", { paymentId: payment.id, refundId: row.id, jobId: payment.jobId, amount, method: payment.method, ...(input.reason ? { reason: input.reason } : {}) }, {
       about: "payment", aboutId: row.id, customerId: payment.customerId, jobId: payment.jobId, visitId: payment.visitId, who: whoOf(ctx), at: ctx.now,

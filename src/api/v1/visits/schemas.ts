@@ -1,4 +1,5 @@
 import { z } from "zod"
+import { yardShape } from "@/lib/admin/yard"
 import { EventOut } from "../events/schemas"
 import { PaymentOut } from "../payments/schemas"
 import { Day, Id, Iso, Preference, Town, VisitKind, VisitStatus } from "../shared"
@@ -16,23 +17,12 @@ export const LineOut = z.object({
   visitId: Id.nullable().describe("The visit the line is billed after; null for a line on the job as a whole."),
 })
 
-/** The yard the visit is at, as the property holds it. */
-export const YardOut = z.object({
-  zones: z.number().int().nullable(),
-  controller: z.string().nullable(),
-  backflowLocation: z.string().nullable(),
-  gateCode: z.string().nullable().optional().describe("Only for callers with the write scope."),
-  mustBeHome: z.boolean(),
-  accessNote: z.string().nullable().optional().describe("Only for callers with the write scope."),
-  contactName: z.string().nullable(),
-  contactPhone: z.string().nullable().optional().describe("Only for callers with the write scope."),
-  notes: z.string().nullable(),
-})
+/** The yard the visit is at, as the property holds it: the one field list of `src/lib/admin/yard.ts`. */
+export const YardOut = z.object(yardShape)
 
 export const VisitOut = z.object({
   id: Id,
-  passId: Id.nullable(),
-  bookingId: Id.nullable().describe("The old booking row; new jobs have none."),
+  passId: Id.nullable().describe("The Season Pass this visit belongs to: the id of its job when the job is a pass, else null."),
   jobId: Id.describe("The job (the pass or the booked work) this visit belongs to."),
   customerId: Id,
   firstName: z.string(),
@@ -40,7 +30,7 @@ export const VisitOut = z.object({
   kind: VisitKind,
   status: VisitStatus,
   window: z.string().nullable().describe('The month the visit lands in: "May", "July", "October".'),
-  amount: z.number().int().describe("Whole dollars. The visit's own line, quantity times unit price; the old stored amount only when the visit has no line."),
+  amount: z.number().int().describe("Whole dollars. The visit's own non-cancelled lines added up; a visit with no line costs 0."),
   lineItems: z.array(LineOut).describe("Every line on the job this visit belongs to, oldest first."),
   payments: z.array(PaymentOut).describe("The visit's own payment rows, oldest first: the money that arrived for it and any refunds."),
   jobPaymentShares: z.array(PaymentOut).describe("The shares of payments made on the job as a whole (a bill paid on the pay page) that cover this visit, as copies with the id `<paymentId>@<visitId>`; empty for most visits. Add them to `payments` for what has arrived for the visit. They are not rows of their own: refund the payment they name."),
@@ -53,14 +43,14 @@ export const VisitOut = z.object({
   scheduledOn: Day.nullable(),
   startTime: z.string().nullable(),
   durationMinutes: z.number().int().nullable(),
-  notes: z.string().nullable().describe("Notes on this visit, from the office."),
+  notes: z.string().nullable().describe("The text of the newest note about this visit (its story holds every note); null for a signed-in customer."),
   notDoneReason: z.string().nullable().describe("Why the last attempt did not happen; set by Not done, cleared when the visit gets a day."),
   paidBy: z.string().nullable().describe("How the visit was paid: card_on_file, card_now, check, venmo, cash or bill; null before a payment."),
   paymentStatus: z.enum(["none", "paid", "pending", "failed"]).describe("The newest charge: none before one exists."),
   stopOrder: z.number().int().nullable(),
   confirmedAt: Iso.nullable(),
   completedOn: Day.nullable(),
-  chargedAt: Iso.nullable(),
+  chargedAt: Iso.nullable().describe("Derived, never stored: when the newest payment arrived, once the visit is paid in full; null before that and after a refund leaves it unpaid."),
   exception: ExceptionOut.nullable(),
   jobberRequestUrl: z.string().nullable().describe("The Jobber request made for this visit by the routine; null until it has been."),
   lat: z.number().nullable(),

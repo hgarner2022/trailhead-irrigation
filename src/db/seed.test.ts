@@ -22,7 +22,7 @@ beforeAll(async () => {
 afterAll(() => db.close())
 
 describe("seed", () => {
-  it("seeds the organization, admins, people (and their trucks), areas, settings and services only", async () => {
+  it("seeds the organization, people (the snapshot's and one per admin email), areas, settings and services only", async () => {
     await seed(db, data, { organizationId: org, admins: ["hannah@example.com", "ryan@example.com"] })
     const [o] = await db.select().from(s.organization).where(eq(s.organization.id, org))
     expect(o.settings.windows.map((w) => [w.kind, w.leadWeeks])).toEqual([
@@ -31,8 +31,6 @@ describe("seed", () => {
       ["blowout", 2],
     ])
     expect(LEAD_WEEKS.blowout).toBe(2)
-    expect(await n(s.adminUser)).toBe(2)
-    expect(await n(s.truck)).toBe(data.settings.people.filter((p) => p.truck).length)
     expect(await n(s.person)).toBe(3)
     expect(await n(s.area)).toBe(data.settings.areas.length)
     expect(await n(s.service)).toBe(SERVICE_LIST.length)
@@ -40,7 +38,7 @@ describe("seed", () => {
     expect(services.every((v) => typeof v.description === "string" && v.description.length > 0 && !v.description.includes("$"))).toBe(true)
     expect(services.every((v) => v.taxable === false && v.active === true)).toBe(true)
     expect(services.find((v) => v.key === "blowout")?.description).toBe(SERVICE_LIST.find((v) => v.key === "blowout")?.description)
-    expect(await n(s.seasonPass)).toBe(0)
+    expect(await n(s.job)).toBe(0)
     expect(await n(s.jobberClient)).toBe(0)
   })
 
@@ -62,8 +60,8 @@ describe("seed", () => {
 
   it("is idempotent", async () => {
     await seed(db, data, { organizationId: org, admins: ["hannah@example.com", "ryan@example.com"], passes: true, mirror: true })
-    const counts = async () => [await n(s.adminUser), await n(s.person), await n(s.service), await n(s.seasonPass), await n(s.visit), await n(s.lineItem), await n(s.consent), await n(s.jobberVisit)]
-    const people = () => db.select({ id: s.person.id, name: s.person.name, email: s.person.email, role: s.person.role, truck: s.person.truck, legacyTruckId: s.person.legacyTruckId }).from(s.person).orderBy(s.person.id)
+    const counts = async () => [await n(s.person), await n(s.service), await n(s.job), await n(s.visit), await n(s.lineItem), await n(s.consent), await n(s.jobberVisit)]
+    const people = () => db.select({ id: s.person.id, name: s.person.name, email: s.person.email, role: s.person.role, truck: s.person.truck }).from(s.person).orderBy(s.person.id)
     const first = await counts()
     const firstPeople = await people()
     await seed(db, data, { organizationId: org, admins: ["hannah@example.com", "ryan@example.com"], passes: true, mirror: true })
@@ -71,44 +69,62 @@ describe("seed", () => {
     expect(await people()).toEqual(firstPeople)
   })
 
-  it("seeds the snapshot's people and one person per admin, a ryan admin merged into Ryan Garner", async () => {
-    const admins = await db.select({ id: s.adminUser.id, email: s.adminUser.email }).from(s.adminUser)
-    const idOf = (email: string) => `person_${admins.find((a) => a.email === email)!.id}`
+  it("seeds the snapshot's people and one person per admin email, a ryan admin merged into Ryan Garner", async () => {
     const rows = await db.select().from(s.person).orderBy(s.person.name)
-    expect(rows.map((p) => ({ id: p.id, name: p.name, initials: p.initials, email: p.email, role: p.role, truck: p.truck, legacyTruckId: p.legacyTruckId, jobberUserId: p.jobberUserId }))).toEqual([
-      { id: idOf("hannah@example.com"), name: "Hannah", initials: "HA", email: "hannah@example.com", role: "owner", truck: null, legacyTruckId: null, jobberUserId: null },
-      { id: "person_truck-1", name: "Ryan Garner", initials: "RG", email: "ryan@example.com", role: "owner", truck: "Truck 1", legacyTruckId: "truck-1", jobberUserId: "jobber-user-1" },
-      { id: "person_truck-2", name: "Tech Two", initials: "TT", email: null, role: "tech", truck: "Truck 2", legacyTruckId: "truck-2", jobberUserId: "jobber-user-2" },
+    expect(rows.map((p) => ({ id: p.id.startsWith("person_truck") ? p.id : "generated", name: p.name, initials: p.initials, email: p.email, role: p.role, truck: p.truck, jobberUserId: p.jobberUserId }))).toEqual([
+      { id: "generated", name: "Hannah", initials: "HA", email: "hannah@example.com", role: "owner", truck: null, jobberUserId: null },
+      { id: "person_truck-1", name: "Ryan Garner", initials: "RG", email: "ryan@example.com", role: "owner", truck: "Truck 1", jobberUserId: "jobber-user-1" },
+      { id: "person_truck-2", name: "Tech Two", initials: "TT", email: null, role: "tech", truck: "Truck 2", jobberUserId: "jobber-user-2" },
     ])
     const ryan = rows.find((p) => p.name === "Ryan Garner")!
     expect(ryan.workingDays).toEqual(data.settings.people[0]!.workingDays)
     expect(ryan.capacityByKind).toEqual(data.settings.people[0]!.capacityByKind)
   })
 
-  it("adds no second Ryan to a migrated database, where he is person_<admin id> holding truck-1", async () => {
+  it("adds no snapshot people to a migrated database, where Ryan is person_<admin id> and the second tech has the office's own name", async () => {
     const migrated = await testDb()
     try {
       await migrated.execute(sql`insert into "organization" ("id", "name", "settings", "terms_version") values (${org}, 'Trailhead', '{}', '1')`)
-      await migrated.insert(s.adminUser).values({ id: "a2", organizationId: org, email: "ryan@example.com", name: "Ryan", initials: "R", role: "admin" })
-      await migrated.insert(s.person).values({ id: "person_a2", organizationId: org, name: "Ryan Garner", initials: "RG", email: "ryan@example.com", role: "owner", truck: "Truck 1", legacyTruckId: "truck-1" })
+      await migrated.insert(s.person).values([
+        { id: "person_a2", organizationId: org, name: "Ryan Garner", initials: "RG", email: "ryan@example.com", role: "owner", truck: "Truck 1" },
+        { id: "person_truck-2", organizationId: org, name: "Second truck", initials: "ST", role: "tech", truck: "Second truck" },
+      ])
       await seed(migrated, data, { organizationId: org, admins: ["ryan@example.com", "hannah@example.com"] })
-      const rows = await migrated.select({ id: s.person.id, name: s.person.name, email: s.person.email, legacyTruckId: s.person.legacyTruckId }).from(s.person).orderBy(s.person.id)
-      expect(rows.filter((p) => p.name === "Ryan Garner")).toEqual([{ id: "person_a2", name: "Ryan Garner", email: "ryan@example.com", legacyTruckId: "truck-1" }])
-      expect(rows.map((p) => p.legacyTruckId).filter(Boolean)).toEqual(["truck-1", "truck-2"])
+      const rows = await migrated.select({ id: s.person.id, name: s.person.name, email: s.person.email }).from(s.person).orderBy(s.person.id)
+      expect(rows.filter((p) => p.name === "Ryan Garner")).toEqual([{ id: "person_a2", name: "Ryan Garner", email: "ryan@example.com" }])
+      expect(rows.some((p) => p.name === "Tech Two")).toBe(false)
+      expect(rows).toHaveLength(3)
       expect(rows.some((p) => p.email === "hannah@example.com")).toBe(true)
+      // a second run changes nothing
+      await seed(migrated, data, { organizationId: org, admins: ["ryan@example.com", "hannah@example.com"] })
+      expect(await migrated.select({ c: count() }).from(s.person)).toEqual([{ c: 3 }])
+    } finally {
+      await migrated.close()
+    }
+  })
+
+  it("adds no snapshot people to a database that has only an office admin with no truck", async () => {
+    const migrated = await testDb()
+    try {
+      await migrated.execute(sql`insert into "organization" ("id", "name", "settings", "terms_version") values (${org}, 'Trailhead', '{}', '1')`)
+      await migrated.insert(s.person).values({ id: "person_office", organizationId: org, name: "Office Admin", initials: "OA", email: "office@example.com", role: "admin" })
+      await seed(migrated, data, { organizationId: org, admins: ["office@example.com"] })
+      expect((await migrated.select({ id: s.person.id }).from(s.person)).map((p) => p.id)).toEqual(["person_office"])
     } finally {
       await migrated.close()
     }
   })
 
   it("seeds the fixture passes with visits, consents and the mirror when asked", async () => {
-    expect(await n(s.seasonPass)).toBe(data.passes.length)
+    expect(await n(s.job)).toBe(data.passes.length)
     expect(await n(s.visit)).toBe(data.passes.reduce((sum, p) => sum + p.visits.length, 0))
     expect(await n(s.consent)).toBe(data.passes.filter((p) => p.consent).length)
     expect(await n(s.jobberClient)).toBe(data.clients.length)
-    const [p1] = await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, "p1"))
-    expect(p1.number).toBe("TH-2027-0001")
-    expect(p1.inspection).toBe(true)
+    const [p1] = await db.select().from(s.job).where(eq(s.job.id, "job_p1"))
+    expect(p1.passNumber).toBe("TH-2027-0001")
+    expect(p1.season).toBe(data.passes.find((p) => p.id === "p1")!.season)
+    const inspection = await db.select({ id: s.visit.id }).from(s.visit).where(eq(s.visit.id, "p1-inspection"))
+    expect(inspection).toHaveLength(1)
     const done = await db.select().from(s.visit).where(eq(s.visit.id, "p1-turn-on"))
     expect(done[0].status).toBe("completed")
     expect(done[0].completedOn).toBe("2027-05-03")
@@ -122,15 +138,33 @@ describe("seed", () => {
     await seed(db, data, { organizationId: org, admins: ["hannah@example.com", "ryan@example.com"], passes: true, mirror: true })
     expect((await read()).zones).toBe(99)
   })
+  it("gives every seeded pass job its legacy pass id and its sold day (empty for the pending fixture), on insert only", async () => {
+    const read = async () => db.select({ id: s.job.id, legacyPassId: s.job.legacyPassId, soldOn: s.job.soldOn }).from(s.job).where(eq(s.job.organizationId, org)).orderBy(s.job.id)
+    const jobs = await read()
+    expect(jobs).toHaveLength(data.passes.length)
+    for (const pass of data.passes) {
+      const job = jobs.find((j) => j.id === `job_${pass.id}`)!
+      expect(job.legacyPassId, pass.id).toBe(pass.id)
+      if (pass.status === "pending") expect(job.soldOn, pass.id).toBeNull()
+      else expect(job.soldOn, pass.id).toBe(toMountainDay(new Date().toISOString()))
+    }
+    // An office edit survives a re-seed: the insert never overwrites the dates.
+    await db.update(s.job).set({ soldOn: "2027-01-02" }).where(eq(s.job.id, "job_p1"))
+    await db.update(s.job).set({ soldOn: "2027-03-04" }).where(eq(s.job.id, "job_p13"))
+    await seed(db, data, { organizationId: org, admins: ["hannah@example.com", "ryan@example.com"], passes: true, mirror: true })
+    const after = await read()
+    expect(after.find((j) => j.id === "job_p1")!.soldOn).toBe("2027-01-02")
+    expect(after.find((j) => j.id === "job_p13")!.soldOn).toBe("2027-03-04")
+  })
   it("gives every fixture visit its line, with the backfill's id, so a seeded and a migrated database agree", async () => {
     expect(await n(s.lineItem)).toBe(data.passes.reduce((sum, p) => sum + p.visits.length, 0))
     const [line] = await db
-      .select({ line: s.lineItem, serviceKey: s.service.key, amount: s.visit.amount })
+      .select({ line: s.lineItem, serviceKey: s.service.key })
       .from(s.lineItem)
       .leftJoin(s.service, eq(s.service.id, s.lineItem.serviceId))
       .innerJoin(s.visit, eq(s.visit.id, s.lineItem.visitId))
       .where(eq(s.lineItem.id, "line_p2-turn-on"))
-    expect(line).toMatchObject({ serviceKey: "turn-on-8", line: { jobId: "job_p2", visitId: "p2-turn-on", name: "Spring turn-on", unitPrice: line!.amount, quantity: 1, taxable: false, cancelledAt: null, description: SERVICE_LIST.find((v) => v.key === "turn-on-8")!.description } })
+    expect(line).toMatchObject({ serviceKey: "turn-on-8", line: { jobId: "job_p2", visitId: "p2-turn-on", name: "Spring turn-on", unitPrice: data.passes.find((p) => p.id === "p2")!.visits.find((v) => v.kind === "turn-on")!.amount, quantity: 1, taxable: false, cancelledAt: null, description: SERVICE_LIST.find((v) => v.key === "turn-on-8")!.description } })
   })
 })
 

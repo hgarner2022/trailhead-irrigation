@@ -1,5 +1,5 @@
 import "server-only"
-import { and, eq, inArray, isNull, or } from "drizzle-orm"
+import { and, eq, inArray, isNotNull, isNull } from "drizzle-orm"
 import * as s from "@/db/schema"
 import type { Database } from "@/db/types"
 import { who } from "@/api/v1/visits/schemas"
@@ -51,10 +51,9 @@ export async function runSchedule(db: Database, input: { organizationId: string;
     .select({ visit: s.visit, firstName: s.customer.firstName, town: s.property.town })
     .from(s.visit)
     .innerJoin(s.job, eq(s.job.id, s.visit.jobId))
-    .leftJoin(s.seasonPass, eq(s.seasonPass.jobId, s.job.id))
     .innerJoin(s.customer, eq(s.customer.id, s.visit.customerId))
     .innerJoin(s.property, eq(s.property.id, s.visit.propertyId))
-    .where(and(eq(s.visit.organizationId, organizationId), eq(s.visit.kind, window), eq(s.visit.status, "unscheduled"), eq(s.job.kind, "pass"), eq(s.job.status, "active"), isNull(s.job.cancelledAt), or(eq(s.job.season, season), and(isNull(s.job.season), eq(s.seasonPass.season, season)))))
+    .where(and(eq(s.visit.organizationId, organizationId), eq(s.visit.kind, window), eq(s.visit.status, "unscheduled"), eq(s.job.season, season), isNotNull(s.job.soldOn), isNull(s.job.cancelledAt)))
   const world = await loadWorld(db, organizationId, today, closes)
   const taken = await loadTaken(db, organizationId, today, closes)
   const visits: SchedVisit[] = rows.map((r) => ({ id: r.visit.id, kind: r.visit.kind, town: r.town, preference: r.visit.preference, needsCustomerHome: r.visit.awaitingPick, durationMinutes: r.visit.durationMinutes }))
@@ -91,7 +90,7 @@ export async function runSchedule(db: Database, input: { organizationId: string;
   for (const u of result.unplaced) {
     const r = byId.get(u.visitId)!
     const message = `${r.firstName}'s ${r.visit.kind.replace("-", " ")} could not be placed: ${u.reason}`
-    await db.insert(s.adminAlert).values({ organizationId, kind: "unplaced", key: u.visitId, passId: r.visit.passId, message }).onConflictDoUpdate({ target: [s.adminAlert.organizationId, s.adminAlert.kind, s.adminAlert.key], set: { message, resolvedAt: null } })
+    await db.insert(s.adminAlert).values({ organizationId, kind: "unplaced", key: u.visitId, jobId: r.visit.jobId, message }).onConflictDoUpdate({ target: [s.adminAlert.organizationId, s.adminAlert.kind, s.adminAlert.key], set: { message, resolvedAt: null } })
   }
   if (result.placed.length || result.unplaced.length) {
     await db.insert(s.adminAlert).values({ organizationId, kind: "scheduled", key: run!.id, message: runSummary(window, result.placed.map((p) => p.day), result.placed.length, result.unplaced.length) }).onConflictDoNothing()

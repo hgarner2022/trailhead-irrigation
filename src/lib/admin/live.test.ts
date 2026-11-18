@@ -1,10 +1,12 @@
 // @vitest-environment node
+import { NO_TAX } from "@/lib/jobs/tax"
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest"
 import { eq } from "drizzle-orm"
 import * as s from "@/db/schema"
 import type { TestDb } from "@/db/test-db"
 import { callApi } from "@/api/core/call"
-import { apiDb, ctxFor, ORG, owner, readKey, tech } from "@/api/test-helpers"
+import { apiDb, ctxFor, jobIdOfPassId, linesOfJob, ORG, owner, passViewOf, readKey, setPass, tech } from "@/api/test-helpers"
+import { linesOfVisit, visitPrice } from "@/lib/jobs/lines"
 import { eventsNote } from "@/api/v1/events/handlers"
 import { visitsMove } from "@/api/v1/visits/handlers"
 import { recordEvent } from "@/lib/events/record"
@@ -21,21 +23,22 @@ beforeAll(async () => {
   vi.stubEnv("APP_URL", "https://site.test")
   db = await apiDb()
   await db.update(s.person).set({ calendarFeedUrl: "https://calendar.example.com/t1.ics" }).where(eq(s.person.id, "person_truck-1"))
-  await db.insert(s.jobberVisit).values({ id: "feed:truck-1:a", organizationId: ORG, truckId: "truck-1", title: "Day off", startAt: new Date("2027-05-06T13:00:00Z"), endAt: new Date("2027-05-06T23:00:00Z"), isBlock: true })
+  await db.insert(s.jobberVisit).values({ id: "feed:person_truck-1:a", organizationId: ORG, title: "Day off", startAt: new Date("2027-05-06T13:00:00Z"), endAt: new Date("2027-05-06T23:00:00Z"), isBlock: true })
   // The failed card is the customer's.
-  const p3 = (await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, "p3")))[0]!
+  const p3 = await passViewOf(db, "p3")
   await db.update(s.customer).set({ cardFailedAt: new Date("2027-04-19T10:00:00Z") }).where(eq(s.customer.id, p3.customerId))
   await callApi(ctxFor(db, owner), visitsMove, { id: "p4-turn-on", personId: "person_truck-1", scheduledOn: "2027-05-05", startTime: "09:30" })
   await db.insert(s.queueItem).values({ organizationId: ORG, kind: "geocode", key: "bad", status: "failed", lastError: "Nominatim answered 429", attempts: 5 })
-  await db.update(s.seasonPass).set({ status: "cancelled", cancelledAt: new Date("2027-04-19T12:00:00Z") }).where(eq(s.seasonPass.id, "p5"))
-  await db.insert(s.adminAlert).values({ organizationId: ORG, kind: "pass-cancelled", key: "p5", passId: "p5", message: "Season Pass TH-2027-0005 cancelled: Sam, Erie" })
+  await setPass(db, "p5", { status: "cancelled" })
+  const p5 = await jobIdOfPassId(db, "p5")
+  await db.insert(s.adminAlert).values({ organizationId: ORG, kind: "pass-cancelled", key: p5, jobId: p5, message: "Season Pass TH-2027-0005 cancelled: Sam, Erie" })
   data = await getLiveAdminData(ctxFor(db, owner))
 })
 afterAll(() => db.close())
 
 describe("getLiveAdminData", () => {
   it("carries every part of AdminData, scoped to the organization", () => {
-    expect(Object.keys(data).sort()).toEqual([...Object.keys(fixture), "blocks", "jobs", "services"].sort())
+    expect(Object.keys(data).sort()).toEqual([...Object.keys(fixture), "billing", "blocks", "jobs", "services"].sort())
     expect(data.services?.map((x) => x.key)).toContain("repair")
     expect(data.organizationId).toBe(ORG)
     expect(Number.isNaN(Date.parse(data.syncedAt))).toBe(false)
@@ -49,7 +52,7 @@ describe("getLiveAdminData", () => {
     expect(data.clients.filter((c) => c.hasPass).length).toBeGreaterThan(5)
   })
   it("shapes a pass with its visits in order, its consent and its card", () => {
-    const p1 = data.passes.find((p) => p.id === "p1")!
+    const p1 = data.passes.find((p) => p.id === "job_p1")!
     expect(p1.visits.map((v) => v.kind)).toEqual(["turn-on", "inspection", "blowout"])
     expect(p1.visits[0]).toMatchObject({ window: "May", amount: 145 })
     // The fixture keeps only the day, so a scheduled visit with no time reads as 08:00 Mountain.
@@ -76,14 +79,14 @@ describe("getLiveAdminData", () => {
     expect(data.settingsChanges).toEqual([])
   })
   it("shows the pass-cancel task's alert once as a pass-cancelled row, not also the computed one", () => {
-    const rows = data.attention.filter((a) => a.kind === "pass-cancelled" && a.passId === "p5")
+    const rows = data.attention.filter((a) => a.kind === "pass-cancelled" && a.passId === "job_p5")
     expect(rows).toHaveLength(1)
     expect(rows[0]!.message).toBe("Season Pass TH-2027-0005 cancelled: Sam, Erie")
   })
 
   it("raises attention rows for a failed card and a failed queue item", () => {
     expect(data.attention).toEqual(expect.arrayContaining([
-      expect.objectContaining({ kind: "charge-failed", passId: "p3" }),
+      expect.objectContaining({ kind: "charge-failed", passId: "job_p3" }),
       expect.objectContaining({ kind: "jobs-failed", message: expect.stringContaining("429") }),
     ]))
   })
@@ -97,7 +100,7 @@ describe("getLiveAdminData", () => {
 describe("a read-only caller", () => {
   it("gets the screens' data without the contact details the handlers hide", async () => {
     const limited = await getLiveAdminData(ctxFor(db, readKey))
-    expect(limited.passes.find((p) => p.id === "p1")!.accessNote).toBeUndefined()
+    expect(limited.passes.find((p) => p.id === "job_p1")!.accessNote).toBeUndefined()
     expect(limited.passes).toHaveLength(data.passes.length)
   })
 })
@@ -132,11 +135,11 @@ describe("the story of a customer, a job and a visit", () => {
 
 describe("a charge with no card to charge", () => {
   it("shows a No card row with the visit and the pass while the visit is unpaid, and drops it once the money is recorded", async () => {
-    await db.insert(s.adminAlert).values({ organizationId: ORG, kind: "no-card", key: "p6-turn-on", passId: "p6", message: "No card to charge for Dana's spring turn-on" })
+    await db.insert(s.adminAlert).values({ organizationId: ORG, kind: "no-card", key: "p6-turn-on", jobId: "job_p6", message: "No card to charge for Dana's spring turn-on" })
     const row = (await getLiveAdminData(ctxFor(db, owner))).attention.find((a) => a.kind === "no-card")
-    expect(row).toMatchObject({ kind: "no-card", visitId: "p6-turn-on", passId: "p6", message: "No card to charge for Dana's spring turn-on" })
+    expect(row).toMatchObject({ kind: "no-card", visitId: "p6-turn-on", passId: "job_p6", message: "No card to charge for Dana's spring turn-on" })
     const [visit] = await db.select().from(s.visit).where(eq(s.visit.id, "p6-turn-on"))
-    await db.insert(s.charge).values({ organizationId: ORG, jobId: visit!.jobId, customerId: visit!.customerId, visitId: "p6-turn-on", attempt: 1, amount: visit!.amount, method: "cash", status: "succeeded", paidOn: "2027-05-07" })
+    await db.insert(s.charge).values({ organizationId: ORG, jobId: visit!.jobId, customerId: visit!.customerId, visitId: "p6-turn-on", attempt: 1, amount: visitPrice(linesOfVisit(await linesOfJob(db, visit!.jobId), visit!.id), NO_TAX), method: "cash", status: "succeeded", paidOn: "2027-05-07" })
     expect((await getLiveAdminData(ctxFor(db, owner))).attention.some((a) => a.kind === "no-card")).toBe(false)
   })
 })

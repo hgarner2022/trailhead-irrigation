@@ -19,7 +19,7 @@ const allDone: Pass = {
     ...v,
     scheduledAt: v.scheduledAt ?? ["2027-05-03T16:00:00Z", "2027-07-13T15:00:00Z", "2027-10-05T16:00:00Z"][i],
     completedAt: ["2027-05-03T17:10:00Z", "2027-07-13T16:05:00Z", "2027-10-05T16:40:00Z"][i],
-    chargedAt: ["2027-05-03T17:12:00Z", "2027-07-13T16:07:00Z", "2027-10-05T16:42:00Z"][i],
+    payments: [{ id: `pay-${i}`, amount: v.amount, method: "card_on_file", status: "succeeded", paidOn: ["2027-05-03", "2027-07-13", "2027-10-05"][i] }],
   })),
 }
 const cancelled: Pass = { ...active, status: "cancelled" }
@@ -29,7 +29,7 @@ const lastYear: Pass = {
   id: "p-2026",
   number: "TH-2026-0001",
   season: 2026,
-  visits: allDone.visits.map((v) => ({ ...v, scheduledAt: v.scheduledAt?.replace("2027", "2026"), completedAt: v.completedAt?.replace("2027", "2026"), chargedAt: v.chargedAt?.replace("2027", "2026") })),
+  visits: allDone.visits.map((v) => ({ ...v, scheduledAt: v.scheduledAt?.replace("2027", "2026"), completedAt: v.completedAt?.replace("2027", "2026"), payments: v.payments?.map((p) => ({ ...p, paidOn: p.paidOn?.replace("2027", "2026") })) })),
 }
 
 const meta = {
@@ -128,9 +128,9 @@ export const Phone: Story = {
   globals: { viewport: { value: "phone", isRotated: false } },
 }
 
-/** The scheduler (or the customer) placed the blowout: "Booked" with weekday, date and truck. */
+/** The scheduler (or the customer) placed the blowout: "Booked" with weekday, date and who is coming. */
 export const Booked: Story = {
-  args: { pass: { ...active, visits: active.visits.map((v) => (v.kind === "blowout" ? { ...v, scheduledAt: "2026-10-06T14:00:00Z", truckName: "Truck 1" } : v)) } },
+  args: { pass: { ...active, visits: active.visits.map((v) => (v.kind === "blowout" ? { ...v, scheduledAt: "2026-10-06T14:00:00Z", personName: "Ryan Garner" } : v)) } },
   globals: { viewport: { value: "wide", isRotated: false } },
 }
 

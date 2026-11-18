@@ -6,6 +6,7 @@ export const EVENT_ABOUT = ["customer", "property", "job", "visit", "payment", "
 export type EventAbout = (typeof EVENT_ABOUT)[number]
 
 export const EVENT_KINDS = [
+  "job.requested",
   "job.sold",
   "job.cancelled",
   "job.line-added",

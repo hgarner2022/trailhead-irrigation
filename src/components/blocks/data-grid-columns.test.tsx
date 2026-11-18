@@ -6,6 +6,8 @@ import { chargedTotal, nextVisit, nextVisitSortKey, passColumns, visitDayText } 
 
 // passes[0] is Andrea in Erie: turn-on done and charged, inspection and blowout still needing a day.
 const andrea = snapshot.passes[0] as Pass
+/** A charged visit carries one succeeded card payment, the way a real charge leaves it. */
+const paid = (v: { amount: number }) => ({ payments: [{ id: "pay", amount: v.amount, method: "card_on_file", status: "succeeded", paidOn: "2027-10-12" }] })
 const cellText = (id: string, pass: Pass) => {
   const column = passColumns.find((c) => c.id === id)
   const cell = column?.cell as unknown as (ctx: { row: { original: Pass } }) => React.ReactNode
@@ -16,8 +18,8 @@ const withInspectionDay = (extra: Record<string, unknown>): Pass => ({ ...andrea
 describe("chargedTotal", () => {
   it("sums the amounts of the charged visits only", () => {
     expect(chargedTotal(andrea)).toBe(145)
-    expect(chargedTotal({ ...andrea, visits: andrea.visits.map((v) => ({ ...v, chargedAt: undefined })) })).toBe(0)
-    expect(chargedTotal({ ...andrea, visits: andrea.visits.map((v) => ({ ...v, chargedAt: "2027-10-12T16:00:00Z" })) })).toBe(385)
+    expect(chargedTotal({ ...andrea, visits: andrea.visits.map((v) => ({ ...v, payments: undefined })) })).toBe(0)
+    expect(chargedTotal({ ...andrea, visits: andrea.visits.map((v) => ({ ...v, ...paid(v) })) })).toBe(385)
   })
 })
 
@@ -31,7 +33,7 @@ describe("nextVisit", () => {
   })
 
   it("reads done when every visit is charged", () => {
-    expect(nextVisit({ ...andrea, visits: andrea.visits.map((v) => ({ ...v, chargedAt: "2027-10-12T16:00:00Z" })) })).toBe("Done")
+    expect(nextVisit({ ...andrea, visits: andrea.visits.map((v) => ({ ...v, ...paid(v) })) })).toBe("Done")
   })
 })
 
@@ -39,7 +41,7 @@ describe("nextVisitSortKey", () => {
   it("is the day the visit has, after every day while it needs one, and nothing once done", () => {
     expect(nextVisitSortKey(andrea)).toBe("9999-99-99")
     expect(nextVisitSortKey(withInspectionDay({}))).toBe("2027-07-14")
-    expect(nextVisitSortKey({ ...andrea, visits: andrea.visits.map((v) => ({ ...v, chargedAt: "2027-10-12T16:00:00Z" })) })).toBeUndefined()
+    expect(nextVisitSortKey({ ...andrea, visits: andrea.visits.map((v) => ({ ...v, ...paid(v) })) })).toBeUndefined()
   })
 })
 

@@ -11,6 +11,11 @@ describe("eventWords: one sentence per kind", () => {
     expect(words("job.sold", { source: "renewal", name: "Season Pass", passNumber: "TH-2028-0002" })).toBe("Season Pass TH-2028-0002 renewed")
     expect(words("job.sold", { source: "office", name: "Repair", kind: "repair", day: "2027-05-05" })).toBe("Repair added by the office")
   })
+  it("job.requested: a quote asked for online", () => {
+    expect(words("job.requested", { source: "site", name: "Repair" })).toBe("Quote asked for online")
+    expect(words("job.requested", { source: "office" })).toBe("Quote asked for at the office")
+    expect(words("job.requested", {})).toBe("Quote needed")
+  })
   it("job.cancelled", () => {
     expect(words("job.cancelled")).toBe("Job cancelled")
     expect(words("job.cancelled", { reason: "Moved away" })).toBe("Job cancelled, Moved away")

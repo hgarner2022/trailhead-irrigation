@@ -5,7 +5,7 @@ import type { CheckoutAction, CheckoutState } from "./checkout-state"
 import type { OfferQuery } from "./checkout-submit"
 
 /**
- * Reaching the days step asks the server for the open days at this address and zone count, every time: they change as trucks fill.
+ * Reaching the days step asks the server for the open days at this address and zone count, every time: they change as days fill.
  * A failed lookup is an empty answer (those days come from Ryan), never a stopped checkout; with no `onOffer` the fixture days stand in.
  */
 export function useCheckoutOffers(state: CheckoutState, dispatch: Dispatch<CheckoutAction>, onDays: boolean, season: number, onOffer?: (query: OfferQuery) => Promise<Offers>) {

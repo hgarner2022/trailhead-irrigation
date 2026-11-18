@@ -1,8 +1,9 @@
 import "server-only"
 import { resolveMx } from "node:dns/promises"
-import { and, desc, eq, gt, inArray, isNull, lt, sql } from "drizzle-orm"
+import { and, desc, eq, gt, inArray, isNotNull, isNull, lt, sql } from "drizzle-orm"
 import * as s from "@/db/schema"
 import type { Database } from "@/db/types"
+import { passRecordOf } from "./record"
 import { canContinue, initialState, STEPS, type CheckoutState } from "@/app/(checkout)/season-pass/checkout/_screens/checkout-state"
 
 /** An unpaid checkout lives 60 minutes (the Stripe session itself expires at 30). */
@@ -65,13 +66,16 @@ export async function emailDomainReachable(email: string, lookup: MxLookup = (d)
   }
 }
 
+/** A pass job nobody has finished buying: it has a season, no sold day and no cancellation. */
+const unsold = and(isNotNull(s.job.season), isNull(s.job.soldOn), isNull(s.job.cancelledAt))
+
 /** Pending passes this customer started in the last hour. */
 export async function pendingPassesLastHour(db: Database, organizationId: string, customerId: string, now: Date): Promise<number> {
   const since = new Date(now.getTime() - 3_600_000)
   const [row] = await db
     .select({ n: sql<number>`count(*)::int` })
     .from(s.job)
-    .where(and(eq(s.job.organizationId, organizationId), eq(s.job.customerId, customerId), eq(s.job.kind, "pass"), eq(s.job.status, "pending"), isNull(s.job.cancelledAt), gt(s.job.createdAt, since)))
+    .where(and(eq(s.job.organizationId, organizationId), eq(s.job.customerId, customerId), unsold, gt(s.job.createdAt, since)))
   return row?.n ?? 0
 }
 
@@ -79,36 +83,46 @@ export async function pendingPassesLastHour(db: Database, organizationId: string
 export async function newestPendingPass(db: Database, organizationId: string, customerId: string, now: Date) {
   const since = new Date(now.getTime() - 60 * 60 * 1000)
   const rows = await db
-    .select({ pass: s.seasonPass })
+    .select({ job: s.job, zones: s.property.zones })
     .from(s.job)
-    .innerJoin(s.seasonPass, eq(s.seasonPass.jobId, s.job.id))
-    .where(and(eq(s.job.organizationId, organizationId), eq(s.job.customerId, customerId), eq(s.job.kind, "pass"), eq(s.job.status, "pending"), isNull(s.job.cancelledAt), gt(s.job.createdAt, since)))
+    .innerJoin(s.property, eq(s.property.id, s.job.propertyId))
+    .where(and(eq(s.job.organizationId, organizationId), eq(s.job.customerId, customerId), unsold, gt(s.job.createdAt, since)))
     .orderBy(desc(s.job.createdAt))
     .limit(1)
-  return rows.map((r) => r.pass)
+  return rows.map((r) => passRecordOf(r.job, r.zones))
 }
 
-/** Removes the pending pass jobs (their lines, visits and the pass alias row) nobody paid for within the hour. Returns how many. Customers and properties stay. */
+/**
+ * Removes the pass jobs nobody paid for within the hour (a season, no sold day, not cancelled) with their lines, visits, events and
+ * alerts. A sold pass has a sold day, a `job.sold` event or a succeeded payment and is never touched here. Returns how many. Customers and properties stay.
+ */
 export async function expirePendingPasses(db: Database, now: Date, minutes = PENDING_PASS_MINUTES): Promise<number> {
   const cutoff = new Date(now.getTime() - minutes * 60_000)
   const stale = await db
     .select({ id: s.job.id, organizationId: s.job.organizationId })
     .from(s.job)
-    .where(and(eq(s.job.kind, "pass"), eq(s.job.status, "pending"), isNull(s.job.cancelledAt), lt(s.job.createdAt, cutoff)))
+    .where(
+      and(
+        unsold,
+        lt(s.job.createdAt, cutoff),
+        // A pending pass the OLD live code made in the deploy window also has a `season_pass` row, and `season_pass.job_id` has a
+        // non-cascading foreign key to `job` until push B, so deleting that job would throw. The 0021 trigger sets `legacy_pass_id`
+        // on every job that has a `season_pass` row, so those jobs are skipped here. This filter goes after push B drops `season_pass`.
+        isNull(s.job.legacyPassId),
+        // A pass whose sold day was lost (a crash after payment, an old-code write) is still sold: a `job.sold` event or a succeeded payment keeps it.
+        sql`not exists (select 1 from ${s.event} where ${s.event.jobId} = ${s.job.id} and ${s.event.kind} = 'job.sold')`,
+        sql`not exists (select 1 from ${s.charge} where ${s.charge.jobId} = ${s.job.id} and ${s.charge.status} = 'succeeded')`,
+      ),
+    )
   if (stale.length === 0) return 0
   const jobIds = stale.map((r) => r.id)
-  const passes = await db.select({ id: s.seasonPass.id }).from(s.seasonPass).where(inArray(s.seasonPass.jobId, jobIds))
-  const passIds = passes.map((r) => r.id)
-  // Foreign-key order: line_item, visit, pass_change, admin_alert, season_pass, then job.
+  const orgs = [...new Set(stale.map((r) => r.organizationId))]
+  // Foreign-key order: events, lines, visits, alerts, then the job.
   // The events of a checkout that never finished are not history: they go with the pass (the one place anything leaves `event`).
-  await db.delete(s.event).where(and(inArray(s.event.organizationId, [...new Set(stale.map((r) => r.organizationId))]), inArray(s.event.jobId, jobIds)))
+  await db.delete(s.event).where(and(inArray(s.event.organizationId, orgs), inArray(s.event.jobId, jobIds)))
   await db.delete(s.lineItem).where(inArray(s.lineItem.jobId, jobIds))
   await db.delete(s.visit).where(inArray(s.visit.jobId, jobIds))
-  if (passIds.length > 0) {
-    await db.delete(s.passChange).where(inArray(s.passChange.passId, passIds))
-    await db.delete(s.adminAlert).where(inArray(s.adminAlert.passId, passIds))
-    await db.delete(s.seasonPass).where(inArray(s.seasonPass.id, passIds))
-  }
+  await db.delete(s.adminAlert).where(and(inArray(s.adminAlert.organizationId, orgs), inArray(s.adminAlert.jobId, jobIds)))
   await db.delete(s.job).where(inArray(s.job.id, jobIds))
   return jobIds.length
 }

@@ -1,12 +1,12 @@
 import "server-only"
-import { and, desc, eq, exists, gte, isNotNull, isNull, lt, notInArray, or, sql } from "drizzle-orm"
+import { and, desc, eq, exists, gte, isNotNull, isNull, lt, notInArray, sql } from "drizzle-orm"
 import { z } from "zod"
 import * as s from "@/db/schema"
 import { recordEvent, whoOf } from "@/lib/events/record"
 import { visitName } from "@/lib/events/names"
 import { enqueueGeocode } from "@/lib/geocode"
 import { linesForPassVisits } from "@/lib/jobs/lines"
-import { cancelVisitLines, deletePassVisitLines, insertLines } from "@/lib/jobs/write-lines"
+import { cancelVisitLines, deleteJobVisitLines, insertLines } from "@/lib/jobs/write-lines"
 import { currentSeason } from "@/lib/pass/season"
 import { SEASON_PASS_ADD_ON, visitPrice, visitsOnSale } from "@/lib/season-pass"
 import { hasScope } from "@/lib/auth/principal"
@@ -17,6 +17,7 @@ import { emailDomainReachable, failedCheckoutStep, MAX_PENDING_PER_HOUR, newestP
 import { cleanEmail, cleanName, cleanText, normalizePhone } from "@/lib/format/contact"
 import { queuePurchaseConfirmation } from "@/lib/pass/server/purchase"
 import { insertPassVisits, makePassRows, WINDOW_LABEL } from "@/lib/pass/server/rows"
+import { loadPassRecord, type PassRecord } from "@/lib/pass/server/record"
 import { CONSENT_SNAPSHOT, consentSnapshot } from "@/lib/pass/server/consent-snapshot"
 import { outOfAreaMessage } from "@/lib/places"
 import { queueCardUpdateLink } from "@/lib/pass/server/card-link"
@@ -32,23 +33,22 @@ import { ApiError, notImplemented } from "../../core/errors"
 import { defineHandler } from "../../core/handler"
 import { afterTimeCursor, cursorPage, page, pageInput, timeCursor } from "../../core/pagination"
 import { addDays, Id, idInput, OK, okOutput, PassStatus, Preference, Town, today } from "../shared"
-import { syncPassJob } from "@/lib/pass/server/job"
 import { finishPurchase } from "./finish"
 import { renewPass } from "./renew"
 import { chosenDay, PassDetail, PassOut, passActivateInput, passConsentInput, passCreateInput } from "./schemas"
-import { loadPass, passDetail, passesQuery, passOut, passSeason, recordChange, withPassFacts } from "./queries"
+import { loadPass, passDetail, passesQuery, passOut, passScope, recordChange, withPassFacts } from "./queries"
 
 const PassVisitKind = z.enum(["turn-on", "inspection", "blowout"])
 const OPEN = ["pending", "active"] as const
 
-/** The status filter against the job and the season, the same rules as `passStatus`: cancelled and pending are the job's, lapsed is a season whose year is over, active is the rest. */
+/** The status filter against the job and the season, the same rules as `passStatus`: cancelled is the job's `cancelled_at`, pending is a job not sold yet, lapsed is a season whose year is over, active is the rest. */
 function statusFilter(status: z.infer<typeof PassStatus>, day: string) {
   const year = Number(day.slice(0, 4))
-  const live = and(isNull(s.job.cancelledAt), notInArray(s.job.status, ["cancelled", "pending"]))
-  if (status === "cancelled") return or(eq(s.job.status, "cancelled"), isNotNull(s.job.cancelledAt))
-  if (status === "pending") return and(eq(s.job.status, "pending"), isNull(s.job.cancelledAt))
+  const live = and(isNull(s.job.cancelledAt), isNotNull(s.job.soldOn))
+  if (status === "cancelled") return isNotNull(s.job.cancelledAt)
+  if (status === "pending") return and(isNull(s.job.soldOn), isNull(s.job.cancelledAt))
   if (status === "lapsed") return and(live, lt(s.job.season, year))
-  return and(live, or(gte(s.job.season, year), isNull(s.job.season)))
+  return and(live, gte(s.job.season, year))
 }
 
 /** A pass has the preference when its turn-on or blowout visit asks for it (a visit with none asks for the recommended day). */
@@ -84,16 +84,16 @@ export const passesList = defineHandler({
     const rows = await passesQuery(ctx)
       .where(
         and(
-          eq(s.seasonPass.organizationId, ctx.organizationId),
-          hasScope(ctx.principal, "read") ? undefined : eq(s.seasonPass.customerId, ownCustomerId(ctx)),
+          passScope(ctx),
+          hasScope(ctx.principal, "read") ? undefined : eq(s.job.customerId, ownCustomerId(ctx)),
           input.season ? eq(s.job.season, input.season) : undefined,
           input.status ? statusFilter(input.status, today(ctx)) : undefined,
           input.town ? eq(s.property.town, input.town) : undefined,
           input.preference ? preferenceFilter(input.preference) : undefined,
-          afterTimeCursor(s.seasonPass.createdAt, s.seasonPass.id, input.cursor),
+          afterTimeCursor(s.job.createdAt, s.job.id, input.cursor),
         ),
       )
-      .orderBy(desc(s.seasonPass.createdAt), desc(s.seasonPass.id))
+      .orderBy(desc(s.job.createdAt), desc(s.job.id))
       .limit(input.limit + 1)
     const result = cursorPage(rows, input.limit, (r) => timeCursor(r.pass))
     return { data: (await withPassFacts(ctx, result.data)).map((r) => passOut(ctx, r)), next_cursor: result.next_cursor }
@@ -148,14 +148,14 @@ export const passesCreate = defineHandler({
       if (!(await emailDomainReachable(email))) throw new ApiError("unprocessable", "We can't find that email's mail server. Check the spelling.", [{ path: "reason", message: "email-unreachable" }])
     }
     const [known] = await ctx.db.select().from(s.customer).where(and(eq(s.customer.organizationId, org), sql`lower(${s.customer.email}) = ${email}`)).limit(1)
-    const [held] = input.passId ? await ctx.db.select().from(s.seasonPass).where(and(eq(s.seasonPass.id, input.passId), eq(s.seasonPass.organizationId, org))) : []
+    // The pass id the checkout holds may be the job's id or the old pass id a browser stored before the move.
+    const held = input.passId ? await loadPassRecord(ctx.db, input.passId, org) : null
     // A customer who reloads or comes back later picks up their own pending pass (the newest one this hour) rather than
     // starting another: there is no cart to lose, and the hourly limit is then only ever reached by something odd.
     const [resumed] = visitor && known && !held ? await newestPendingPass(ctx.db, org, known.id, ctx.now) : []
     const candidate = held ?? resumed
-    // A pending pass of an earlier season is not picked up again: the new season gets its own pass.
-    const [candidateJob] = candidate ? await ctx.db.select({ season: s.job.season }).from(s.job).where(eq(s.job.id, candidate.jobId)) : []
-    const reused = candidate && candidate.status === "pending" && known && candidate.customerId === known.id && (candidateJob?.season ?? candidate.season) === season ? candidate : undefined
+    // A pending pass (not sold, not cancelled) of an earlier season is not picked up again: the new season gets its own pass.
+    const reused = candidate && !candidate.soldOn && !candidate.cancelledAt && known && candidate.customerId === known.id && candidate.season === season ? candidate : undefined
     if (visitor && !reused && known && (await pendingPassesLastHour(ctx.db, org, known.id, ctx.now)) >= MAX_PENDING_PER_HOUR)
       throw new ApiError("rate_limited", "Too many passes started for this email in the last hour. Try again later or call us.", [{ path: "reason", message: "too-many" }])
     const customerRow =
@@ -183,32 +183,23 @@ export const passesCreate = defineHandler({
     if (!knownProperty) await enqueueGeocode(ctx.db, org, property.id, ctx.now)
     const [terms] = await ctx.db.select({ v: s.organization.termsVersion }).from(s.organization).where(eq(s.organization.id, org))
 
-    const fields = {
-      propertyId: property.id,
-      zones: input.zones,
-      inspection: input.inspection,
-      turnOnPreference: input.turnOnPreference,
-      blowoutPreference: input.blowoutPreference,
-      needsCustomerHome: input.needsCustomerHome ?? false,
-      accessNote,
-    }
-    let pass: typeof s.seasonPass.$inferSelect
+    // The yard answers (zones, must be home, the access note) are already on the property; the inspection add-on and the timing
+    // preferences are the lines and visits built below.
+    let pass: PassRecord
     if (reused) {
       // A customer who went back changes the answers on the pass they hold; its visits are rebuilt, none has a day yet.
-      await ctx.db.update(s.job).set({ season, updatedAt: ctx.now }).where(eq(s.job.id, reused.jobId))
-      await ctx.db.update(s.seasonPass).set({ ...fields, season, updatedAt: ctx.now }).where(eq(s.seasonPass.id, reused.id))
+      await ctx.db.update(s.job).set({ season, propertyId: property.id, updatedAt: ctx.now }).where(eq(s.job.id, reused.jobId))
       // Only the checkout that holds the pass id (the same browser going back) may change the customer's name and phone.
       // A resume by email alone reuses the pass but never rewrites who the customer is: anyone can type an email.
       if (held) await ctx.db.update(s.customer).set({ firstName: contact.firstName, lastName: contact.lastName ?? customerRow.lastName, phone: contact.phone ?? customerRow.phone, updatedAt: ctx.now }).where(eq(s.customer.id, customerRow.id))
       // Filling a last name nobody has recorded yet is not rewriting who the customer is, so a resume by email may do it.
       else if (!customerRow.lastName && contact.lastName) await ctx.db.update(s.customer).set({ lastName: contact.lastName, updatedAt: ctx.now }).where(eq(s.customer.id, customerRow.id))
-      await deletePassVisitLines(ctx.db, [reused.id])
-      await ctx.db.delete(s.visit).where(eq(s.visit.passId, reused.id))
-      pass = { ...reused, ...fields, season }
-      await insertPassVisits(ctx.db, pass, onSale, ctx.now)
-      await syncPassJob(ctx.db, pass.id)
+      await deleteJobVisitLines(ctx.db, [reused.jobId])
+      await ctx.db.delete(s.visit).where(eq(s.visit.jobId, reused.jobId))
+      pass = { ...reused, propertyId: property.id, zones: input.zones, season }
+      await insertPassVisits(ctx.db, { ...pass, turnOnPreference: input.turnOnPreference, blowoutPreference: input.blowoutPreference }, onSale, ctx.now)
     } else {
-      pass = await makePassRows(ctx.db, { organizationId: org, customerId: customerRow.id, season, onSale, ...fields, status: "pending", source: "checkout", now: ctx.now })
+      pass = await makePassRows(ctx.db, { organizationId: org, customerId: customerRow.id, propertyId: property.id, season, onSale, zones: input.zones, inspection: input.inspection, turnOnPreference: input.turnOnPreference, blowoutPreference: input.blowoutPreference, status: "pending", source: "checkout", now: ctx.now })
     }
     if (input.consent) {
       await ctx.db.insert(s.consent).values({
@@ -224,7 +215,7 @@ export const passesCreate = defineHandler({
       })
       await recordEvent(ctx.db, { organizationId: org, about: "job", aboutId: pass.jobId, customerId: customerRow.id, jobId: pass.jobId, kind: "consent", detail: { marketingOptIn: input.consent.marketingOptIn, marketingChannels: input.consent.marketingChannels, source: input.consent.source }, who: whoOf(ctx), at: ctx.now })
     }
-    await holdChosenDays(ctx.db, pass.id, input.days.map(chosenDay), input.property.town, season, day)
+    await holdChosenDays(ctx.db, pass.jobId, input.days.map(chosenDay), input.property.town, season, day)
     return passDetail(ctx, await loadPass(ctx, pass.id))
   },
 })
@@ -240,7 +231,7 @@ export const passesActivate = defineHandler({
   output: PassDetail,
   async run(ctx, input) {
     const row = await loadPass(ctx, input.id)
-    await activatePass(ctx.db, getStripe(), row.pass.id, input.setupSessionId, ctx.now, whoOf(ctx))
+    await activatePass(ctx.db, getStripe(), row.pass.id, input.setupSessionId, ctx.now, whoOf(ctx), ctx.organizationId)
     // The boxes in the request win; without them (the webhook activated first) the snapshot from when the card form opened stands in.
     const consent = input.consent ?? (await consentSnapshot(ctx.db, row.pass.id))
     await finishPurchase(ctx, row.pass, row.town, consent)
@@ -260,7 +251,7 @@ export const passesConsent = defineHandler({
   async run(ctx, input) {
     const row = await loadPass(ctx, input.id)
     if (row.facts.status !== "pending") return OK
-    await recordChange(ctx, { customerId: row.pass.customerId, passId: row.pass.id, kind: CONSENT_SNAPSHOT, detail: { ...input.consent, stage: "chosen" } })
+    await recordChange(ctx, { customerId: row.pass.customerId, jobId: row.pass.id, kind: CONSENT_SNAPSHOT, detail: { ...input.consent, stage: "chosen" } })
     return OK
   },
 })
@@ -281,20 +272,18 @@ export const passesCancel = defineHandler({
     if (!hasScope(p, "write") && p.kind === "person" && row.email && p.email.toLowerCase() !== row.email.toLowerCase())
       throw new ApiError("forbidden", "That pass belongs to another customer")
     if (row.facts.status === "cancelled") return { id: row.pass.id, status: "cancelled" as const, cancelledVisits: 0 }
-    // The job first, the pass alias second.
-    await ctx.db.update(s.job).set({ status: "cancelled", cancelledAt: ctx.now, updatedAt: ctx.now }).where(eq(s.job.id, row.pass.jobId))
-    await ctx.db.update(s.seasonPass).set({ status: "cancelled", cancelledAt: ctx.now }).where(eq(s.seasonPass.id, row.pass.id))
-    await syncPassJob(ctx.db, row.pass.id)
+    // The pass is cancelled when its job says so: `cancelled_at` is the whole fact.
+    await ctx.db.update(s.job).set({ cancelledAt: ctx.now, updatedAt: ctx.now }).where(eq(s.job.id, row.pass.id))
     const cancelled = await ctx.db
       .update(s.visit)
       .set({ status: "cancelled", personId: null, scheduledOn: null, startTime: null, stopOrder: null, awaitingPick: false })
-      .where(and(eq(s.visit.passId, row.pass.id), notInArray(s.visit.status, ["completed", "cancelled"])))
+      .where(and(eq(s.visit.jobId, row.pass.id), notInArray(s.visit.status, ["completed", "cancelled"])))
       .returning({ id: s.visit.id })
     await cancelVisitLines(ctx.db, cancelled.map((v) => v.id), ctx.now)
-    await recordChange(ctx, { customerId: row.pass.customerId, passId: row.pass.id, kind: "cancelled", detail: { reason: input.reason ?? null, visits: cancelled.length, passNumber: row.pass.number } })
+    await recordChange(ctx, { customerId: row.pass.customerId, jobId: row.pass.id, kind: "cancelled", detail: { reason: input.reason ?? null, visits: cancelled.length, passNumber: row.job.passNumber ?? "" } })
     await enqueue(ctx.db, ctx.organizationId, "pass-cancel", row.pass.id, { passId: row.pass.id })
-    await queueCancelledEmail(ctx.db, row.pass.id, readAppUrl())
-    await emitEvent(ctx.db, ctx.organizationId, "pass.cancelled", { passId: row.pass.id, number: row.pass.number, visits: cancelled.length })
+    await queueCancelledEmail(ctx.db, row.pass.id, readAppUrl(), ctx.organizationId)
+    await emitEvent(ctx.db, ctx.organizationId, "pass.cancelled", { passId: row.pass.id, number: row.job.passNumber ?? "", visits: cancelled.length })
     return { id: row.pass.id, status: "cancelled" as const, cancelledVisits: cancelled.length }
   },
 })
@@ -310,7 +299,7 @@ export const passesResendConfirmation = defineHandler({
   async run(ctx, input) {
     const row = await loadPass(ctx, input.id)
     if (row.facts.status === "pending") throw new ApiError("unprocessable", "This pass has not been bought yet")
-    if (!(await queuePurchaseConfirmation(ctx.db, row.pass.id, readAppUrl(), `resend-${randomUUID()}`))) throw new ApiError("unprocessable", "This customer has no email address to send it to")
+    if (!(await queuePurchaseConfirmation(ctx.db, row.pass.id, readAppUrl(), `resend-${randomUUID()}`, { organizationId: ctx.organizationId }))) throw new ApiError("unprocessable", "This customer has no email address to send it to")
     return OK
   },
 })
@@ -360,7 +349,7 @@ export const passesUpdatePreference = defineHandler({
   async run(ctx, input) {
     const row = await loadPass(ctx, input.id)
     if (!OPEN.includes(row.facts.status as (typeof OPEN)[number])) throw new ApiError("unprocessable", "This pass is no longer open")
-    const [visit] = await ctx.db.select().from(s.visit).where(and(eq(s.visit.passId, row.pass.id), eq(s.visit.kind, input.kind)))
+    const [visit] = await ctx.db.select().from(s.visit).where(and(eq(s.visit.jobId, row.pass.id), eq(s.visit.kind, input.kind)))
     if (!visit) throw new ApiError("unprocessable", `This pass has no ${input.kind} visit`)
     if (!hasScope(ctx.principal, "write")) {
       const [org] = await ctx.db.select({ settings: s.organization.settings }).from(s.organization).where(eq(s.organization.id, ctx.organizationId))
@@ -369,12 +358,8 @@ export const passesUpdatePreference = defineHandler({
       if (opens && today(ctx) >= opens) throw new ApiError("unprocessable", "The window for this visit has opened; ask us to move it")
     }
     await ctx.db.update(s.visit).set({ preference: input.preference }).where(eq(s.visit.id, visit.id))
-    await ctx.db
-      .update(s.seasonPass)
-      .set(input.kind === "turn-on" ? { turnOnPreference: input.preference } : { blowoutPreference: input.preference })
-      .where(eq(s.seasonPass.id, row.pass.id))
     const was = input.kind === "turn-on" ? row.facts.turnOnPreference : row.facts.blowoutPreference
-    await recordChange(ctx, { customerId: row.pass.customerId, passId: row.pass.id, visitId: visit.id, kind: "preference", detail: { visit: input.kind, from: was, to: input.preference } })
+    await recordChange(ctx, { customerId: row.pass.customerId, jobId: row.pass.id, visitId: visit.id, kind: "preference", detail: { visit: input.kind, from: was, to: input.preference } })
     return { id: row.pass.id, kind: input.kind, preference: input.preference }
   },
 })
@@ -393,20 +378,18 @@ export const passesAddInspection = defineHandler({
     if (!OPEN.includes(row.facts.status as (typeof OPEN)[number])) throw new ApiError("unprocessable", "This pass is no longer open")
     if (row.facts.inspection) throw new ApiError("conflict", "This pass already has the inspection")
     const day = today(ctx)
-    const season = passSeason(row)
+    const season = row.job.season ?? 0
     const lastDay = hasScope(ctx.principal, "write") ? `${season}-07-31` : addDays(`${season}-07-01`, -1)
     if (day > lastDay) throw new ApiError("unprocessable", "The inspection can no longer be added to this pass")
-    const amount = visitPrice(SEASON_PASS_ADD_ON, row.pass.zones)
+    const zones = row.yard.zones ?? 0
+    const amount = visitPrice(SEASON_PASS_ADD_ON, zones)
     const [visit] = await ctx.db
       .insert(s.visit)
-      .values({ organizationId: ctx.organizationId, jobId: row.pass.jobId, passId: row.pass.id, customerId: row.pass.customerId, propertyId: row.pass.propertyId, kind: "inspection", window: WINDOW_LABEL.inspection, amount })
+      .values({ organizationId: ctx.organizationId, jobId: row.pass.id, customerId: row.pass.customerId, propertyId: row.pass.propertyId, kind: "inspection", window: WINDOW_LABEL.inspection })
       .returning({ id: s.visit.id })
-    const lines = linesForPassVisits([SEASON_PASS_ADD_ON], row.pass.zones).map((line) => ({ ...line, visitId: visit!.id }))
-    await insertLines(ctx.db, { organizationId: ctx.organizationId, jobId: row.pass.jobId, now: ctx.now }, lines)
-    // The line and the visit are the fact; the pass column is the alias.
-    await ctx.db.update(s.seasonPass).set({ inspection: true }).where(eq(s.seasonPass.id, row.pass.id))
-    await syncPassJob(ctx.db, row.pass.id)
-    await recordChange(ctx, { customerId: row.pass.customerId, passId: row.pass.id, visitId: visit!.id, kind: "inspection-added", detail: { amount } })
+    const lines = linesForPassVisits([SEASON_PASS_ADD_ON], zones).map((line) => ({ ...line, visitId: visit!.id }))
+    await insertLines(ctx.db, { organizationId: ctx.organizationId, jobId: row.pass.id, now: ctx.now, untaxed: true }, lines)
+    await recordChange(ctx, { customerId: row.pass.customerId, jobId: row.pass.id, visitId: visit!.id, kind: "inspection-added", detail: { amount } })
     return { id: row.pass.id, inspection: true as const, visitId: visit!.id, amount }
   },
 })
@@ -422,14 +405,13 @@ export const passesSkipVisit = defineHandler({
   output: z.object({ id: Id, visitId: Id, status: z.literal("skipped") }),
   async run(ctx, input) {
     const row = await loadPass(ctx, input.id)
-    const [visit] = await ctx.db.select().from(s.visit).where(and(eq(s.visit.passId, row.pass.id), eq(s.visit.kind, input.kind)))
+    const [visit] = await ctx.db.select().from(s.visit).where(and(eq(s.visit.jobId, row.pass.id), eq(s.visit.kind, input.kind)))
     if (!visit) throw new ApiError("unprocessable", `This pass has no ${input.kind} visit`)
     if (visit.status === "skipped") return { id: row.pass.id, visitId: visit.id, status: "skipped" as const }
     if (!(["unscheduled", "scheduled"] as string[]).includes(visit.status)) throw new ApiError("unprocessable", "This visit can no longer be skipped")
     await ctx.db.update(s.visit).set({ status: "skipped", personId: null, scheduledOn: null, startTime: null, stopOrder: null }).where(eq(s.visit.id, visit.id))
     await cancelVisitLines(ctx.db, [visit.id], ctx.now)
-    await ctx.db.update(s.job).set({ price: sql`greatest(coalesce(${s.job.price}, 0) - ${visit.amount}, 0)` }).where(eq(s.job.id, visit.jobId))
-    await recordChange(ctx, { customerId: row.pass.customerId, passId: row.pass.id, visitId: visit.id, kind: "skipped", detail: { name: visitName(visit.kind), visit: input.kind } })
+    await recordChange(ctx, { customerId: row.pass.customerId, jobId: row.pass.id, visitId: visit.id, kind: "skipped", detail: { name: visitName(visit.kind), visit: input.kind } })
     return { id: row.pass.id, visitId: visit.id, status: "skipped" as const }
   },
 })

@@ -203,10 +203,12 @@ describe("messages", () => {
   })
 
   it("fills a template from the sample and leaves unknown placeholders", () => {
-    const sample = { firstName: "Andrea", visit: "turn-on", date: "May 3", who: "Ryan", truck: "Truck 1", nextVisit: "inspection" }
-    expect(fillMessage("Hi {firstName}, your {visit} is booked for {date}. {who} will be there on {truck}. Next: {nextVisit}. {other}", sample)).toBe(
-      "Hi Andrea, your turn-on is booked for May 3. Ryan will be there on Truck 1. Next: inspection. {other}",
+    const sample = { firstName: "Andrea", visit: "turn-on", date: "May 3", who: "Ryan", nextVisit: "inspection" }
+    expect(fillMessage("Hi {firstName}, your {visit} is booked for {date}. {who} will be there. Next: {nextVisit}. {other}", sample)).toBe(
+      "Hi Andrea, your turn-on is booked for May 3. Ryan will be there. Next: inspection. {other}",
     )
+    // a stored template that still says {truck} keeps the word as written
+    expect(fillMessage("Your street is on our {truck} day.", sample)).toBe("Your street is on our {truck} day.")
     expect(fillMessage(data.settings.messages[1].body, sample)).not.toMatch(/\{/)
     const dayBefore = data.settings.messages.find((m) => m.key === "day-before")!
     expect(dayBefore.body).toContain("{who}")
@@ -262,10 +264,10 @@ describe("more people, areas and keys", () => {
 
 describe("sampleFor", () => {
   it("reads the first pass and the first scheduled visit", () => {
-    expect(sampleFor(data)).toEqual({ firstName: "Andrea", visit: "inspection", date: "April 8", who: "Ryan", truck: "Truck 1", nextVisit: "inspection" })
+    expect(sampleFor(data)).toEqual({ firstName: "Andrea", visit: "inspection", date: "April 8", who: "Ryan", nextVisit: "inspection" })
   })
   it("falls back when there is nothing", () => {
-    expect(sampleFor({ ...data, passes: [], visits: [] })).toMatchObject({ firstName: "Alex", visit: "visit", who: "Ryan", truck: "Truck 1" })
+    expect(sampleFor({ ...data, passes: [], visits: [] })).toMatchObject({ firstName: "Alex", visit: "visit", who: "Ryan" })
   })
 })
 

@@ -15,8 +15,8 @@ export interface CheckoutSubmission {
   inspection: boolean
   turnOnPreference: TimingPreference
   blowoutPreference: TimingPreference
-  /** the day held for each visit: the server keeps those still open and puts them on a truck when the card is saved */
-  days: { kind: "turn-on" | "inspection" | "blowout"; day: string; truckId: string; start: string }[]
+  /** the day held for each visit: the server keeps those still open and puts them on a person when the card is saved */
+  days: { kind: "turn-on" | "inspection" | "blowout"; day: string; personId: string; start: string }[]
   firstName: string
   lastName: string
   email: string
@@ -56,7 +56,7 @@ export function toSubmission(f: CheckoutFields): CheckoutSubmission | null {
     inspection: f.inspection,
     turnOnPreference: f.turnOnPreference,
     blowoutPreference: f.blowoutPreference,
-    days: f.days.map(({ kind, day, truckId, start }) => ({ kind, day, truckId, start })),
+    days: f.days.map(({ kind, day, personId, start }) => ({ kind, day, personId, start })),
     firstName: f.firstName.trim(),
     lastName: f.lastName.trim(),
     email: f.email.trim(),

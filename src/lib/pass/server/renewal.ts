@@ -1,15 +1,21 @@
 import "server-only"
-import { and, eq, inArray, isNull } from "drizzle-orm"
+import { and, eq, isNotNull, isNull } from "drizzle-orm"
 import * as s from "@/db/schema"
 import type { Database } from "@/db/types"
 import type { PersonPrincipal } from "@/lib/auth/types"
 import { verifyToken } from "@/lib/messaging/tokens"
 import { currentSeason } from "../season"
+import { passInspection, passStatus } from "../facts"
+import { resolvePassJobAnywhere } from "./resolve"
 import type { RenewalPrefill } from "@/app/(checkout)/season-pass/checkout/_screens/checkout-submit"
 
-/** Whether this visitor may renew this pass: they came by its signed link, or they are signed in as the pass's own customer. */
-export function mayRenew(pass: { id: string; customerId: string }, who: { token?: string | null; principal?: PersonPrincipal | null }): boolean {
-  if (verifyToken("renew-pass", pass.id, who.token ?? null)) return true
+/**
+ * Whether this visitor may renew this pass: they came by its signed link, or they are signed in as the pass's own customer.
+ * `passId` is the id exactly as it arrived in the link (a job id, or the old pass id of a link sent before the move): the signature
+ * is over that text, so it is checked before the id is resolved.
+ */
+export function mayRenew(pass: { customerId: string }, who: { passId: string; token?: string | null; principal?: PersonPrincipal | null }): boolean {
+  if (verifyToken("renew-pass", who.passId, who.token ?? null)) return true
   const p = who.principal
   return p?.type === "customer" && p.customerId === pass.customerId
 }
@@ -17,26 +23,30 @@ export function mayRenew(pass: { id: string; customerId: string }, who: { token?
 /**
  * What the checkout fills in for a renewal, or null when it should open as an ordinary checkout: the pass is not found, the
  * visitor may not renew it, it is pending or cancelled, or its customer already holds the next season. Nothing leaves here for a
- * visitor who is not the pass's own customer.
+ * visitor who is not the pass's own customer. The zones, the access answers and the yard come from the property, the add-on from
+ * the pass's lines.
  */
 export async function loadRenewal(db: Database, input: { passId: string; token?: string | null; principal?: PersonPrincipal | null; today: string }): Promise<RenewalPrefill | null> {
-  const [row] = await db
-    .select({ pass: s.seasonPass, season: s.job.season, jobStatus: s.job.status, jobCancelledAt: s.job.cancelledAt, customer: s.customer, property: s.property })
-    .from(s.seasonPass)
-    .innerJoin(s.job, eq(s.job.id, s.seasonPass.jobId))
-    .innerJoin(s.customer, eq(s.customer.id, s.seasonPass.customerId))
-    .innerJoin(s.property, eq(s.property.id, s.seasonPass.propertyId))
-    .where(eq(s.seasonPass.id, input.passId))
-  if (!row || row.jobStatus === "pending" || row.jobStatus === "cancelled" || row.jobCancelledAt || !mayRenew(row.pass, input)) return null
-  const season = Math.max(currentSeason(input.today), (row.season ?? 0) + 1)
+  const job = await resolvePassJobAnywhere(db, input.passId)
+  const status = job ? passStatus(job, input.today) : null
+  if (!job || status === "pending" || status === "cancelled" || !mayRenew(job, input)) return null
+  const season = Math.max(currentSeason(input.today), (job.season ?? 0) + 1)
   const [held] = await db
     .select({ id: s.job.id })
     .from(s.job)
-    .where(and(eq(s.job.customerId, row.pass.customerId), eq(s.job.kind, "pass"), eq(s.job.season, season), inArray(s.job.status, ["active", "pending"]), isNull(s.job.cancelledAt)))
+    .where(and(eq(s.job.organizationId, job.organizationId), eq(s.job.customerId, job.customerId), isNotNull(s.job.season), eq(s.job.season, season), isNull(s.job.cancelledAt)))
   if (held) return null
-  const { pass, customer, property } = row
+  const [row] = await db
+    .select({ customer: s.customer, property: s.property })
+    .from(s.customer)
+    .innerJoin(s.property, eq(s.property.id, job.propertyId))
+    .where(eq(s.customer.id, job.customerId))
+  if (!row) return null
+  const lines = await db.select({ name: s.lineItem.name, serviceId: s.lineItem.serviceId, cancelledAt: s.lineItem.cancelledAt }).from(s.lineItem).where(eq(s.lineItem.jobId, job.id))
+  const { customer, property } = row
   return {
-    passId: pass.id,
+    // As it arrived, so the signed link still verifies when the checkout sends it back with the answers.
+    passId: input.passId,
     season,
     ...(input.token ? { token: input.token } : {}),
     firstName: customer.firstName,
@@ -44,10 +54,10 @@ export async function loadRenewal(db: Database, input: { passId: string; token?:
     email: customer.email ?? "",
     phone: customer.phone ?? "",
     place: { id: `property-${property.id}`, label: `${property.address}, ${property.town}, CO`, line1: property.address, town: property.town, state: "CO", zip: "" },
-    zones: pass.zones,
-    inspection: pass.inspection,
-    needsCustomerHome: pass.needsCustomerHome,
-    accessNote: pass.accessNote ?? "",
+    zones: property.zones ?? 0,
+    inspection: passInspection(lines),
+    needsCustomerHome: property.mustBeHome,
+    accessNote: property.accessNote ?? "",
     card: customer.stripePaymentMethodId && customer.cardLast4 ? { last4: customer.cardLast4, expires: customer.cardExpires } : null,
   }
 }

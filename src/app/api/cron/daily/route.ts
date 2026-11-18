@@ -37,7 +37,13 @@ export async function GET(request: Request) {
   for (const p of people) await enqueue(database, p.organizationId, "jobber-feed-sync", `${p.id}:${slot}`, { personId: p.id })
   const feed = await drain(database, handlers)
   const schedule = await daily(database)
-  const expired = await expirePendingPasses(database, new Date())
+  // A purge error must never stop the queue work after it (a constant line only: no customer data in the log).
+  let expired = 0
+  try {
+    expired = await expirePendingPasses(database, new Date())
+  } catch {
+    console.error("cron: purge of unpaid checkouts failed")
+  }
   const origin = readAppUrl()
   const cardExpiring = await queueCardExpiryMessages(database, async ({ passId, stripeCustomerId }) => (await createCardUpdateSession(getStripe(), { passId, customerId: stripeCustomerId, origin })).url, origin)
   const drained = await drain(database, handlers)

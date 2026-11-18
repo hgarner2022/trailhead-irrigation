@@ -38,12 +38,9 @@ function townRank(order: readonly Town[], towns: readonly Town[]) {
   return ranks.length ? Math.min(...ranks) : 0
 }
 
-/** The truck row a snapshot person was made from: `person_truck-1` came from `truck-1`. Gone in step 6 with the truck table. */
-const legacyTruckIdOf = (p: Pick<Person, "id">) => (p.id.startsWith("person_") ? p.id.slice("person_".length) : p.id)
-
 /**
- * Inserts the organization, admins, people (and, until step 6, a truck row
- * per person with a truck), areas, settings and services always; the fixture
+ * Inserts the organization, people (the snapshot's, then one per admin email),
+ * areas, settings and services always; the fixture
  * passes (with customers, properties, consents and visits) only with
  * `passes: true`; the mirror only with `mirror: true`. Every insert ignores a
  * row that is already there, so running it twice changes nothing.
@@ -58,21 +55,7 @@ export async function seed(db: Database, snapshot: AdminData, options: SeedOptio
     .values({ id: org, name: "Trailhead Lawn & Irrigation LLC", settings: { ...settings, windows }, termsVersion: "2026-11" })
     .onConflictDoNothing()
 
-  if (options.admins.length) {
-    await db
-      .insert(s.adminUser)
-      .values(options.admins.map((email, i) => ({ organizationId: org, email, role: i === 0 ? ("owner" as const) : ("admin" as const), ...nameFromEmail(email) })))
-      .onConflictDoNothing()
-  }
-
-  const trucks = people.filter((p) => p.truck)
-  if (trucks.length) {
-    await db
-      .insert(s.truck)
-      .values(trucks.map((p) => ({ id: legacyTruckIdOf(p), organizationId: org, name: p.truck!, jobberUserId: p.jobberUserId, workingDays: p.workingDays, capacityByKind: p.capacityByKind })))
-      .onConflictDoNothing()
-  }
-  await seedPeople(db, org, people)
+  await seedPeople(db, org, people, options.admins)
   if (areas.length) {
     await db
       .insert(s.area)
@@ -116,44 +99,46 @@ export async function seed(db: Database, snapshot: AdminData, options: SeedOptio
 
 /**
  * The people: the snapshot's rows as they are (`settings.people` is the one
- * source; Ryan Garner the owner on Truck 1, Tech Two the tech on Truck 2,
- * each keeping the truck id it was made from as `legacyTruckId` until step 6),
- * then one person per admin (`person_<admin id>`) so the sign-in has a row.
- * An admin named or emailed ryan% is the same person as the snapshot's Ryan
- * Garner, as the people migration (drizzle/0011_person_merge.sql) merges them: he
- * gets that admin's email instead of a second row. Inserts ignore a row that
- * is already there, so a re-seed changes nothing. A migrated database holds
- * Ryan under `person_<admin id>` with `legacyTruckId` truck-1, so a snapshot
- * person whose truck id someone already holds is not inserted (the deploy of
- * Nov 16 2026 did, and made a second Ryan), and an admin whose email a person
- * already carries is left alone; nothing outside the fixtures may assume
+ * source; Ryan Garner the owner on Truck 1, Tech Two the tech on Truck 2),
+ * then one person per admin email so the sign-in has a row. An admin named or
+ * emailed ryan% is the same person as the snapshot's Ryan Garner, as the
+ * people migration (drizzle/0011_person_merge.sql) merged them: he gets that
+ * email instead of a second row. Inserts ignore a row that is already there,
+ * so a re-seed changes nothing.
+ *
+ * A database that already has any person (a migrated one holds Ryan under
+ * `person_<admin id>` and the second tech under whatever name the office
+ * gave them, or only admins with no truck) gets none of the snapshot's: they are fixtures for a fresh
+ * database, and inserting them there would put a second Ryan on the route
+ * (the deploy of Nov 16 2026 did, once). An admin whose email a person
+ * already carries is left alone. Nothing outside the fixtures may assume
  * `person_truck-1`.
  */
-async function seedPeople(db: Database, org: string, people: Person[]) {
-  const existing = await db.select({ email: s.person.email, legacyTruckId: s.person.legacyTruckId }).from(s.person).where(eq(s.person.organizationId, org))
-  const heldTrucks = new Set(existing.map((p) => p.legacyTruckId).filter(Boolean))
+async function seedPeople(db: Database, org: string, people: Person[], admins: readonly string[]) {
+  const existing = await db.select({ email: s.person.email }).from(s.person).where(eq(s.person.organizationId, org))
   const heldEmails = new Set(existing.map((p) => p.email?.toLowerCase()).filter(Boolean))
-  const fresh = people.filter((p) => !(p.truck && heldTrucks.has(legacyTruckIdOf(p))))
-  if (fresh.length) {
+  if (people.length && existing.length === 0) {
     await db
       .insert(s.person)
       .values(
-        fresh.map((p) => ({
+        people.map((p) => ({
           id: p.id, organizationId: org, name: p.name, initials: p.initials, email: p.email, phone: p.phone, role: p.role, truck: p.truck, jobberUserId: p.jobberUserId,
-          workingDays: p.workingDays, capacityByKind: p.capacityByKind, seasonStart: p.seasonStart, seasonEnd: p.seasonEnd, legacyTruckId: p.truck ? legacyTruckIdOf(p) : undefined,
+          workingDays: p.workingDays, capacityByKind: p.capacityByKind, seasonStart: p.seasonStart, seasonEnd: p.seasonEnd,
         })),
       )
       .onConflictDoNothing()
   }
-  const admins = await db.select().from(s.adminUser).where(eq(s.adminUser.organizationId, org))
   const ryan = people.find((p) => p.name === "Ryan Garner" && !p.email)
   const rows: (typeof s.person.$inferInsert)[] = []
-  for (const a of admins) {
-    if (heldEmails.has(a.email.toLowerCase())) continue
-    if (ryan && (/^ryan/i.test(a.name) || /^ryan/i.test(a.email))) {
-      await db.update(s.person).set({ email: a.email }).where(and(eq(s.person.id, ryan.id), isNull(s.person.email)))
-    } else rows.push({ id: `person_${a.id}`, organizationId: org, name: a.name, initials: a.initials, email: a.email, role: a.role })
-  }
+  const merged: { id: string; email: string }[] = []
+  admins.forEach((email, i) => {
+    if (heldEmails.has(email.toLowerCase())) return
+    heldEmails.add(email.toLowerCase())
+    const who = nameFromEmail(email)
+    if (ryan && (/^ryan/i.test(who.name) || /^ryan/i.test(email))) merged.push({ id: ryan.id, email })
+    else rows.push({ organizationId: org, email, role: i === 0 ? "owner" : "admin", ...who })
+  })
+  for (const m of merged) await db.update(s.person).set({ email: m.email }).where(and(eq(s.person.id, m.id), isNull(s.person.email)))
   if (rows.length) await db.insert(s.person).values(rows).onConflictDoNothing()
 }
 
@@ -182,30 +167,13 @@ async function seedPasses(db: Database, snapshot: AdminData, org: string) {
     const jobId = `job_${pass.id}`
     await db
       .insert(s.job)
-      .values({ id: jobId, organizationId: org, customerId: pass.clientId, propertyId, kind: "pass", source: "checkout", season: pass.season, passNumber: pass.number, status: pass.status === "lapsed" ? "done" : pass.status, price: pass.visits.reduce((n, v) => n + v.amount, 0) })
-      .onConflictDoNothing()
-    await db
-      .insert(s.seasonPass)
       .values({
-        id: pass.id,
-        jobId,
-        organizationId: org,
-        number: pass.number,
-        season: pass.season,
-        customerId: pass.clientId,
-        propertyId,
-        zones: pass.zones,
-        inspection: pass.visits.some((v) => v.kind === "inspection"),
-        turnOnPreference: pass.turnOnPreference,
-        blowoutPreference: pass.blowoutPreference,
-        needsCustomerHome: pass.needsCustomerHome ?? false,
-        accessNote: pass.accessNote,
-        status: pass.status,
-        cardLast4: pass.cardLast4,
-        // A fake Stripe handle beside the last four, so a fixture card counts as a card; it never reaches Stripe (no Stripe customer).
-        stripePaymentMethodId: pass.cardLast4 ? `pm_fixture_${pass.clientId}` : undefined,
-        cardExpires: pass.cardExpires,
-        cardFailedAt: pass.cardFailedAt ? new Date(pass.cardFailedAt) : undefined,
+        id: jobId, organizationId: org, customerId: pass.clientId, propertyId, source: "checkout", season: pass.season, passNumber: pass.number,
+        // The old pass id and the sold day, on insert only: the day the job row is made (its created_at), empty for a pending fixture (a pending pass is a job with no sold day).
+        legacyPassId: pass.id,
+        soldOn: pass.status === "pending" ? null : toMountainDay(new Date().toISOString()),
+        // A cancelled fixture is cancelled the way every cancelled pass is: `cancelled_at` on its job (what `passStatus` reads).
+        cancelledAt: pass.status === "cancelled" ? new Date() : undefined,
       })
       .onConflictDoNothing()
     await db
@@ -215,46 +183,45 @@ async function seedPasses(db: Database, snapshot: AdminData, org: string) {
           id: `${pass.id}-${v.kind}`,
           organizationId: org,
           jobId,
-          passId: pass.id,
           customerId: pass.clientId,
           propertyId,
           kind: v.kind,
           window: v.window,
-          amount: v.amount,
           status: v.completedAt ? ("completed" as const) : v.scheduledAt ? ("scheduled" as const) : ("unscheduled" as const),
           preference: v.kind === "turn-on" ? pass.turnOnPreference : v.kind === "blowout" ? pass.blowoutPreference : undefined,
           scheduledOn: v.scheduledAt ? toMountainDay(v.scheduledAt) : undefined,
           startTime: v.startTime,
           completedOn: v.completedAt ? toMountainDay(v.completedAt) : undefined,
-          chargedAt: v.chargedAt ? new Date(v.chargedAt) : undefined,
         })),
       )
       .onConflictDoNothing()
-    // A visit the snapshot shows as charged gets the one succeeded payment row a real charge would have written, on insert only: a database that already holds a real attempt for the visit keeps it.
-    const charged = pass.visits.filter((v) => v.chargedAt)
+    // A visit the snapshot shows as charged carries one succeeded payment: it is written as the row a real charge would have, on insert only (a database that already holds a real attempt for the visit keeps it).
+    const charged = pass.visits.filter((v) => v.payments?.some((p) => p.status === "succeeded" && p.amount > 0))
     if (charged.length)
       await db
         .insert(s.charge)
         .values(
-          charged.map((v) => ({
-            id: `charge-${pass.id}-${v.kind}-1`,
-            organizationId: org,
-            jobId,
-            passId: pass.id,
-            visitId: `${pass.id}-${v.kind}`,
-            customerId: pass.clientId,
-            attempt: 1,
-            amount: v.amount,
-            status: "succeeded" as const,
-            method: "card_on_file" as const,
-            paidOn: toMountainDay(v.chargedAt!),
-          })),
+          charged.map((v) => {
+            const paid = v.payments!.find((p) => p.status === "succeeded" && p.amount > 0)!
+            return {
+              id: `charge-${pass.id}-${v.kind}-1`,
+              organizationId: org,
+              jobId,
+              visitId: `${pass.id}-${v.kind}`,
+              customerId: pass.clientId,
+              attempt: 1,
+              amount: paid.amount,
+              status: "succeeded" as const,
+              method: (paid.method as "card_on_file") ?? "card_on_file",
+              paidOn: paid.paidOn ?? toMountainDay(v.completedAt ?? new Date().toISOString()),
+            }
+          }),
         )
         .onConflictDoNothing()
     // The job's line per visit, with the id migration 0014's backfill gives the same visit (`line_<visit id>`), so a re-run of the backfill adds nothing to a seeded database.
     await insertLines(
       db,
-      { organizationId: org, jobId, keepExisting: true },
+      { organizationId: org, jobId, keepExisting: true, untaxed: true },
       pass.visits.map((v) => ({ ...lineForVisitKind(v.kind, v.amount, pass.zones), id: `line_${pass.id}-${v.kind}`, visitId: `${pass.id}-${v.kind}` })),
     )
   }

@@ -7,10 +7,10 @@ import type { InvoiceData, RenderedEmail } from "./types"
 
 function render(d: InvoiceData, subject: string, title: string, intro: string): RenderedEmail {
   const rows: [string, string][] = d.lines.map((l) => [l.name, dollars(l.amount)])
-  if (d.tax > 0) rows.push(["Sales tax", dollars(d.tax)])
+  if (d.tax > 0) rows.push(["Tax", dollars(d.tax)])
   rows.push(["Total", dollars(d.total)], ["Due", longDay(d.dueOn)], ["Bill", d.invoiceNumber])
   const body = paragraph(intro) + facts(rows) + button(d.payUrl, `Pay ${dollars(d.total)}`)
-  const text = plainText([intro, "", ...d.lines.map((l) => `${l.name}: ${dollars(l.amount)}`), ...(d.tax > 0 ? [`Sales tax: ${dollars(d.tax)}`] : []), `Total: ${dollars(d.total)}`, `Due: ${longDay(d.dueOn)}`, `Bill: ${d.invoiceNumber}`, "", `Pay here: ${d.payUrl}`])
+  const text = plainText([intro, "", ...d.lines.map((l) => `${l.name}: ${dollars(l.amount)}`), ...(d.tax > 0 ? [`Tax: ${dollars(d.tax)}`] : []), `Total: ${dollars(d.total)}`, `Due: ${longDay(d.dueOn)}`, `Bill: ${d.invoiceNumber}`, "", `Pay here: ${d.payUrl}`])
   return { subject, text, html: emailLayout({ origin: d.origin, preheader: intro, body: heading(title) + body, reason: `You are getting this about bill ${d.invoiceNumber} for your ${d.visitName}.` }) }
 }
 

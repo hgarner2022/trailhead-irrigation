@@ -7,7 +7,7 @@
  */
 export const customerHasCard = (customer: { stripePaymentMethodId?: string | null; cardLast4?: string | null }): boolean => Boolean(customer.stripePaymentMethodId)
 
-/** The card columns a saved card writes, on the customer and on every pass alias; a null card clears them (and, for a saved one, the failure mark). */
+/** The card columns a saved card writes, on the customer; a null card clears them (and, for a saved one, the failure mark). */
 export type CardColumns = { stripePaymentMethodId: string | null; cardBrand: string | null; cardLast4: string | null; cardExpires: string | null }
 export function cardColumns(card: { paymentMethodId: string; brand: string | null; last4: string | null; expires: string | null }): CardColumns & { cardFailedAt: null } {
   return { stripePaymentMethodId: card.paymentMethodId, cardBrand: card.brand, cardLast4: card.last4, cardExpires: card.expires, cardFailedAt: null }
