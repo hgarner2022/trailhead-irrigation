@@ -1,6 +1,6 @@
 # The admin and Settings as one system (design)
 
-Nov 18 2026. Design only; nothing is built until Hannah has read it. It is the one picture every later build is a step of, so nothing is invented screen by screen again. It reconciles `admin-hierarchy-design`, `done-and-paid-design`, `week-planning-design`, `routes-and-seasons-answers` (PR #72, background only), `admin-ux-audit`, `status-words-audit`, `online-booking-design` and the two portal docs; where they disagree this one decides and says so. Key screens are drawn in Figma (section 13). Hannah's method was questions first; her ten answers are folded in below and are not open.
+Nov 18 2026. Design only; nothing is built until Hannah has read it. It is the one picture every later build is a step of, so nothing is invented screen by screen again. It reconciles `admin-hierarchy-design`, `done-and-paid-design`, `week-planning-design`, `routes-and-seasons-answers` (PR #72, background only), `admin-ux-audit`, `status-words-audit`, `online-booking-design` and the two portal docs; where they disagree this one decides and says so. Key screens are drawn in Figma (section 14). Hannah's method was questions first; her ten answers are folded in below and are not open.
 
 ## 0. What is settled
 
@@ -190,14 +190,6 @@ Notes     [.....................]           [ Add job ]
 
 Header "Jobs", "N jobs this season. M unpaid. K need a quote."; New job. Eight columns at most (spans of 12): Customer 3 (link), Job 2, Status 1, Progress 1 ("1 of 2 done"), Total 1, Money 2, Next 2; hidden Property, Created. Filters Status, Money, Job, Season. Open invoices first, then newest. Changes: one Money shape ("$145 · Invoice sent, due Dec 1", "$115 unpaid", "$145 · Paid"); "created", not "sold", for a repair; the whole row opens on a phone.
 
-```
-LAPTOP                                                       PHONE
-Jobs  4 jobs this season. 2 unpaid.             [New job]    Jobs       [+ New job]
-[Status v][Money v][Job v][Season v]  Search   Export        [Search customers]
-Customer      Job          Status Progress Total Money   Next  Andrea Reyes  $145 unpaid
-Andrea Reyes  Season Pass  Open   1 of 2   $290 $145 unpaid Apr 28  Repair, Done   >
-```
-
 ### 5.5 Customers
 
 Header "Customers", New job. Columns: Name 3 (link), Phone 2, Town 1, Pass 2, Unpaid 1, Next 2, Last job 1; hidden Address, Email, Scheduled, Marketing. Search by name, street or phone. Unpaid is the sum over the customer's jobs. Phone: a card row, name over a muted phone, "$115 unpaid" or the next day at the right, 64px, the row opens the panel; the phone number is a tap-to-call link there.
@@ -370,8 +362,7 @@ Kept: `AdminShell` (bottom bar with More), `SidePanel`, `WeekGrid`, `DayMap` (ro
 | "Visit" only where allowed | The string fails in admin screens outside the job panel and the visit panel |
 | Overlays through blocks | `ui/dialog`, `ui/sheet`, `ui/popover` imported only from `blocks/` |
 | No screen markup for a list or form | `<table>` and `<label>` outside `DataGrid` and `FormRow` fail |
-| Eight columns | A `columns` array over eight fails |
-| Stories | Default, Empty, Phone for each new block |
+| Eight columns, stories | A `columns` array over eight fails; each new block has Default, Empty, Phone stories |
 
 ## 10. Words
 
@@ -390,12 +381,10 @@ Kept: `AdminShell` (bottom bar with More), `SidePanel`, `WeekGrid`, `DayMap` (ro
 | Home, nothing booked | Today, Tuesday, November 24 | Nothing booked today. Jobs with no day wait on the Schedule. | Open Schedule |
 | Needs action empty | Needs action | Nothing needs you. | none |
 | Unscheduled empty | Unscheduled | Every job has a day. | none |
-| Day, under two stops | Day | Needs two or more stops to order. | none |
 | Jobs | Jobs | No jobs yet. A job is what you sell: a repair, a turn-on, a pass. | New job |
 | Jobs, no match | Jobs | No jobs match. | Clear filters |
 | Customers | Customers | No customers yet. A customer is added when you make a job. | New job |
 | Reports | Reports | Numbers show here once a job is paid. | none |
-| Notes and history | Notes and history | No notes or history yet. Add a note and it shows here. | Add note |
 | People | People | You are the only person. Add someone who takes visits. | Add person |
 | Load failed | the screen's title | We couldn't load this. Try again, or reload the page. | Try again |
 
@@ -420,20 +409,42 @@ Each step leaves the admin whole. The two running builds stay on their branches 
 
 | # | Step | Folds in |
 |---|---|---|
-| 0 | Merge portal v2 and done-and-paid as designed; check done-and-paid against section 7 | both builds; PR #72 kept only as the Jobber-pattern check |
+| 0 | Merge portal v2 and done-and-paid after the fixes in section 13. **PR #75 already covers** `CollectPayment`, Mark done then "How is this paid?" (as two dialogs), `payments.chargeCard`, Card failed and Card not charged on Home, and a check, Venmo or cash refund; it covers none of steps 1 to 9 otherwise | PR #75, portal v2 (number to come); PR #72 kept only as the Jobber-pattern check |
 | 1 | Foundation: `words.ts` words, `RecordPanel`, `RecordFooter`, `ConfirmDialog`, `SectionHeading`, `FormRow`, `SplitButton`, the gate rules; the three record panels move onto it | hierarchy design 3 and 5; audit item 1 |
 | 2 | Navigation: Visits into Schedule's List, `?customer=` and Back, New job everywhere and on a day, the phone bar with More, Cmd+K | hierarchy design; audit items 2 and 7 |
 | 3 | Schedule and Home for one or many people: person rows, Unscheduled for every job, Place and Place all, drag between rows, the Move dialog (split button, optional line, Waiting on customer), Needs action in place, plain words | audit items 1 and 6; the messages build for the move texts, the "Reply YES" ask and the signed one-visit link |
-| 4 | Settings shell, People, Services: `SettingsList`, `SaveBar`, Takes visits, one row per service, bookable from and to, bands folded in the UI (bands stay rows; one edit writes the kind's rows; first check the band prices follow the zones rule); the Areas, Capacity and Seasons tabs and their fields go, with a migration dropping them | status audit; week planning 3 (without Routes) |
-| 5 | The one rule: `rankDays` behind `schedule.offerDays`; the pass checkout, `/book`, the portal's reschedule, the Place list and New job's chips use it; fill and towns on the Schedule's day headers | week planning 5; online booking 4.4; portal v2 |
-| 6 | Order the day: the button, the strip, Undo, the map per person; a plain drive-time algorithm first, then the routing engine, then Jev | week planning 4 |
-| 7 | Reports on every job; the final column sets; phone card rows | hierarchy design 4 |
-| 8 | Online booking reads the rule and the Services dates (its own plan) | online booking design |
+| 4 | **Move**: the split button "Move and text the customer" with "Move without texting", the optional line, "Waiting on customer" for a must-be-home property, and the "Reply YES or pick another day" text; replaces the visit panel's inline Move form (PR #75 left it as it was) | the messages build; portal v2's signed one-visit link |
+| 5 | Settings shell, People, Services: `SettingsList`, `SaveBar`, Takes visits, one row per service, bookable from and to, bands folded in the UI (bands stay rows; one edit writes the kind's rows; first check the band prices follow the zones rule); the Areas, Capacity and Seasons tabs and their fields go, with a migration dropping them | status audit; week planning 3 (without Routes) |
+| 6 | The one rule: `rankDays` behind `schedule.offerDays`; the pass checkout, `/book`, the portal's reschedule, the Place list and New job's chips use it; fill and towns on the Schedule's day headers | week planning 5; online booking 4.4; portal v2 |
+| 7 | Order the day: the button, the strip, Undo, the map per person; a plain drive-time algorithm first, then the routing engine, then Jev | week planning 4 |
+| 8 | Reports on every job; the final column sets; phone card rows | hierarchy design 4 |
+| 9 | Online booking reads the rule and the Services dates (its own plan) | online booking design |
 
-Steps 1 to 3 need no migration. Step 4 adds `bookable_from` and `bookable_to` to the service and drops `area`, the windows, the buffers and the town orders after a check that nothing reads them. Step 5 needs property coordinates on stops (geocoded when the address is saved).
+Steps 1 to 4 need no migration. Step 5 adds `bookable_from` and `bookable_to` to the service and drops `area`, the windows, the buffers and the town orders after a check that nothing reads them. Step 6 needs property coordinates on stops (geocoded when the address is saved).
 
 **Defaults I chose, for review:** "soon days" are the next two weeks; a stop Ryan placed by hand keeps its person when the day is ordered; the Waiting on customer pill is neutral, not a warning.
 
-## 13. Figma
+## 13. Where the builds in flight diverge
+
+Read against this design; each row is the fix to send back before merging. "Accept" means it can merge as built and a later step brings it in line.
+
+**PR #75, done and paid** (green; 50 files). Matches the design on: the card on file first and preselected, a Season Pass reading "Charge the card as agreed" with "Paid another way" folded, Pay later only with no card, Tap to pay greyed, Done charging nothing, `payments.chargeCard` as the only card charge, a decline emailing the card link, and the choice words.
+
+| # | Divergence | Fix |
+|---|---|---|
+| 1 | Anyone on a truck may take any payment (settled), but the new charge and record handlers need a manager, so a tech cannot collect | Add one scope, `collect`, that the tech role holds: Mark done, `payments.chargeCard`, `payments.record`, `invoices.send`. Refund, cancel, Edit and price changes stay with owner and admin |
+| 2 | Home's row is named "Charge not pressed"; the status words say "Card not charged" | Rename in `NeedsAttention` and `words.ts`; the row's button stays "Charge $145" |
+| 3 | Home's empty line reads "Failed charges, unscheduled visits and visits nobody marked done show up here." and the title "Nothing needs you right now"; "visit" may appear only inside a job | "Nothing needs you." with the line "Failed cards, jobs with no day and work nobody marked done show up here." |
+| 4 | Mark done's dismiss is "Never mind" | "Cancel" (a form's dismiss; "Keep it" is only for a destructive confirm) |
+| 5 | Send an invoice is hidden for a done visit while other visits of the same job are ahead, so the choice vanishes unexplained | Accept the rule (an invoice covers the job), but keep the choice greyed with "Other visits of this job are ahead. Send the invoice after the last one." |
+| 6 | A card payment cannot be refunded from the panel; only check, Venmo and cash can | Accept for this merge; add "Refund to card" through Stripe in step 1, and the derived "Refunded" word waits for Hannah's answer in done-and-paid section 8 |
+| 7 | The visit panel's Move is still the old inline form; no split button, no optional line, no "Waiting on customer" | Not a #75 defect; this is step 4 of the build order |
+| 8 | Mark done and "How is this paid?" are two dialogs one after the other, and the footer carries Undo done and Refund as outline buttons | Accept; at step 1 beat two moves onto the panel itself (the header turns Done, the body is `CollectPayment`) and Undo done and Refund move under More |
+| 9 | "Charge not pressed" is computed at page load from the rows | Accept; it matches "read from facts" and needs no daily run |
+| 10 | The footer is hand-built, not `RecordFooter` | Accept; step 1 moves every footer onto the recipe |
+
+**Portal v2** (customer side: cancel, reschedule, one timeline, the window as a message, signed one-visit links in texts): the PR is not open yet. I will check it for: the signed link opening that visit signed in; the 24-hour rule from one function; `visits.cancelSelf` and the Home alert; the window shown only once the day-before text exists; days offered through `rankDays` rather than a second picker (step 6); a must-be-home customer shown "Waiting on customer" to the office; and that no admin screen gains the word "visit".
+
+## 14. Figma
 
 [Trailhead admin: holistic design](https://www.figma.com/design/9TYdPIzdG8MLrHJm4qiUBu) (Hannah's own Figma team). Seven frames on the Trailhead tokens: Today at 1440 and 375 (5.1), the Schedule week for two people with the Place list (5.2), the Day with Order the day and one map for two people (5.2), the New job sheet with Who as "First with room" (5.3), and the visit panel after Mark done at 1440 and 375 (7). They are in Inter standing in for Barlow Condensed and Source Sans 3; flat layouts, not a component library. The fenced wireframes cover the rest.
