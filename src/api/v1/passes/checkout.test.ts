@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest"
-import { eq, inArray } from "drizzle-orm"
+import { eq, inArray, sql } from "drizzle-orm"
 import * as s from "@/db/schema"
 import type { TestDb } from "@/db/test-db"
 import type { PublicPrincipal } from "@/lib/auth/types"
@@ -62,6 +62,18 @@ describe("passes.create for the checkout", () => {
     expect(await props()).toMatchObject([{ address: "7 Cedar St", zones: 6, mustBeHome: true, accessNote: "Gate code 9" }])
     await create({ passId: first.id, customer: who, property: { address: "7 Cedar St", town: "Erie" }, zones: 9, accessNote: "No gate now" })
     expect(await props()).toMatchObject([{ zones: 9, mustBeHome: true, accessNote: "No gate now" }])
+  })
+  it("writes every line untaxed even when the service rows are flagged taxable", async () => {
+    reachable.mockResolvedValue(true)
+    await db.update(s.service).set({ taxable: true }).where(eq(s.service.organizationId, ORG))
+    try {
+      const pass = await create({ customer: { firstName: "Untaxed", lastName: "Tester", email: "untaxed@example.com", phone: "3035550113" }, inspection: true })
+      const lines = await db.select().from(s.lineItem).where(eq(s.lineItem.jobId, pass.id))
+      expect(lines.length).toBeGreaterThanOrEqual(3)
+      expect(lines.every((l) => l.taxable === false)).toBe(true)
+    } finally {
+      await db.update(s.service).set({ taxable: false }).where(eq(s.service.organizationId, ORG))
+    }
   })
   it("never clears a known property's access note or must-be-home when the checkout gives no answer", async () => {
     reachable.mockResolvedValue(true)
@@ -191,5 +203,18 @@ describe("expirePendingPasses", () => {
     await db.insert(s.charge).values({ organizationId: ORG, jobId: paid.id, customerId: paid.customerId, attempt: 1, amount: 145, status: "succeeded", method: "card_on_file" })
     expect(await expirePendingPasses(db, new Date())).toBe(0)
     expect(await db.select().from(s.job).where(inArray(s.job.id, [sold.id, paid.id]))).toHaveLength(2)
+  })
+
+  it("skips a stale pending job the old code still has a season_pass row for, and does not throw on its foreign key", async () => {
+    reachable.mockResolvedValue(true)
+    const made = await create({ customer: { firstName: "Legacy", lastName: "Tester", email: "legacy@example.com", phone: "3035550112" } })
+    const [job] = await db.select().from(s.job).where(eq(s.job.id, made.id))
+    // What the old live code leaves in the deploy window: a season_pass row whose job_id points at the job (non-cascading foreign key).
+    await db.execute(sql`insert into season_pass (id, organization_id, number, season, customer_id, property_id, zones, job_id) values ('sp_legacy_1', ${ORG}, 'SP-LEGACY-1', ${job!.season}, ${job!.customerId}, ${job!.propertyId}, 8, ${job!.id})`)
+    await db.update(s.job).set({ createdAt: new Date(Date.now() - 61 * 60_000) }).where(eq(s.job.id, made.id))
+    // The 0021 trigger gave the job the old pass id, which is what the purge reads.
+    expect((await db.select().from(s.job).where(eq(s.job.id, made.id)))[0]!.legacyPassId).toBe("sp_legacy_1")
+    await expect(expirePendingPasses(db, new Date())).resolves.toBe(0)
+    expect(await db.select().from(s.job).where(eq(s.job.id, made.id))).toHaveLength(1)
   })
 })

@@ -39,6 +39,15 @@ describe("visits.create", () => {
     expect(texts.map((m) => [m.kind, m.channel])).toEqual([["date-set", "sms"]])
     expect(await linesOfJob(db, out.jobId)).toMatchObject([{ visitId: out.id, name: "Repair", unitPrice: 145, quantity: 1, taxable: false, serviceKey: "repair", description: SERVICES.repair!.description, cancelledAt: null }])
   })
+  it("copies the taxable flag of the service to a one-off job's line", async () => {
+    await db.update(s.service).set({ taxable: true }).where(and(eq(s.service.organizationId, ORG), eq(s.service.key, "repair")))
+    try {
+      const out = await create({ customerId: "c100", kind: "repair", price: 145 })
+      expect(await linesOfJob(db, out.jobId)).toMatchObject([{ visitId: out.id, serviceKey: "repair", taxable: true }])
+    } finally {
+      await db.update(s.service).set({ taxable: false }).where(and(eq(s.service.organizationId, ORG), eq(s.service.key, "repair")))
+    }
+  })
   it("refuses a second visit of a pass kind on a job that already has one, and takes the first", async () => {
     const first = await create({ customerId: "c100", kind: "turn-on" })
     await expect(create({ jobId: first.jobId, kind: "turn-on" })).rejects.toMatchObject({ code: "unprocessable", message: "This job already has a turn-on visit." })

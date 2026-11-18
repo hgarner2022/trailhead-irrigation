@@ -12,7 +12,7 @@ import type { AdminData, AdminInvoice, Client, SoldJob, SoldJobMoney, Visit } fr
 import { jobMoney as moneyOfJob } from "@/lib/money/words"
 import { STAGE_WORDS, type JobStage } from "@/lib/jobs/stage"
 import type { TaxRule } from "@/lib/jobs/tax"
-import { dayLabel, dayOfVisit, taxRuleOf } from "./visit-panel-model"
+import { dayLabel, dayOfVisit, ruleOfData } from "./visit-panel-model"
 
 export type JobMoneyState = "not-yet" | "paid" | "owed" | "bill-sent" | "overdue" | "failed"
 export type JobKind = SoldJob["kind"]
@@ -136,7 +136,7 @@ export function jobRows(data: AdminData, today: string): JobRow[] {
       const states = live.map((v) => visitJob(v, day, TIME_ZONE, pass?.cardFailedAt))
       // the job's stage is read from its facts where the data is shaped (`stageOf`): there is no typed status
       const stage = job.status
-      const m = moneyOf(job, visits, taxRuleOf(data))
+      const m = moneyOf(job, visits, ruleOfData(data))
       const state = stateOf(m, job.invoice, states.map((s) => s.money), stage === "cancelled")
       const ahead = live.filter((v) => v.status !== "completed")
       const days = ahead.map(dayOfVisit).filter((d): d is string => Boolean(d) && d! >= day).sort()

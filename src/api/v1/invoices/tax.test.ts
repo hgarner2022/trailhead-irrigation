@@ -118,6 +118,23 @@ describe("a taxable $145 repair with 8% sales tax on", () => {
     expect(calls.sessionCreate).not.toHaveBeenCalled()
   })
 
+  it("stays payable at its frozen $157 when the tax rate is edited to 7% after the bill went out and nothing was paid", async () => {
+    const v = await taxedRepair()
+    const bill = await callApi(as(), invoicesSend, { jobId: v.jobId })
+    expect(bill.total).toBe(157)
+    const setRate = (salesTaxPercent: number) => db.update(s.organization).set({ settings: { ...before, billing: { dueDays: 14, collectsSalesTax: true, salesTaxPercent } } }).where(eq(s.organization.id, ORG))
+    await setRate(7)
+    try {
+      // the job now owes $155 at 7%, less than the bill's $157, but no money arrived: this is not a bill paid another way
+      expect((await jobOf(v.jobId)).money.owed).toBeLessThan(157)
+      const { stripe, calls } = stubStripe()
+      expect(await startBillPayment(db, stripe, { invoiceId: bill.id, token: signToken("invoice-pay", bill.id), origin: "https://site.test", now: new Date(NOW) })).toMatchObject({ ok: true })
+      expect(calls.sessionCreate.mock.calls[0]![0]).toMatchObject({ line_items: [{ price_data: { unit_amount: 15700 } }] })
+    } finally {
+      await setRate(8)
+    }
+  })
+
   it("bills only what is owed when money was paid on the job first: $57 after a $100 deposit, tax included", async () => {
     const v = await taxedRepair()
     await callApi(as(), paymentsRecord, { jobId: v.jobId, amount: 100, method: "check" })

@@ -37,8 +37,8 @@ export function passFromApi(d: z.infer<typeof PassDetail>): Pass {
     .sort((a, b) => ORDER.indexOf(a.kind) - ORDER.indexOf(b.kind))
     .map((v) => {
       const own = ownLines(v);
-      // Price is what the visit's lines come to; the description is the first line's. The pass page stays untaxed this step (a pass's lines are not taxable, so
-      // the lines' total is what the visit costs); when pass lines can be taxed this reads `visit.amount`, which carries the tax.
+      // Price is what the visit's lines come to; the description is the first line's. The pass page stays untaxed: a pass's lines are always written with
+      // taxable false (`insertLines` with `untaxed`), so the lines' total is what the visit costs.
       const description = own[0]?.description;
       return {
         kind: v.kind as PassVisit["kind"],

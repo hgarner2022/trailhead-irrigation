@@ -388,7 +388,7 @@ export const passesAddInspection = defineHandler({
       .values({ organizationId: ctx.organizationId, jobId: row.pass.id, customerId: row.pass.customerId, propertyId: row.pass.propertyId, kind: "inspection", window: WINDOW_LABEL.inspection })
       .returning({ id: s.visit.id })
     const lines = linesForPassVisits([SEASON_PASS_ADD_ON], zones).map((line) => ({ ...line, visitId: visit!.id }))
-    await insertLines(ctx.db, { organizationId: ctx.organizationId, jobId: row.pass.id, now: ctx.now }, lines)
+    await insertLines(ctx.db, { organizationId: ctx.organizationId, jobId: row.pass.id, now: ctx.now, untaxed: true }, lines)
     await recordChange(ctx, { customerId: row.pass.customerId, jobId: row.pass.id, visitId: visit!.id, kind: "inspection-added", detail: { amount } })
     return { id: row.pass.id, inspection: true as const, visitId: visit!.id, amount }
   },

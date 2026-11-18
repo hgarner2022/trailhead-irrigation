@@ -95,6 +95,19 @@ describe("passes.sell", () => {
     expect((await linesOfPass(db, two.id)).map((l) => l.visitKind)).toEqual(["turn-on", "blowout"])
   })
 
+  it("writes every pass line untaxed even when the service rows are flagged taxable", async () => {
+    await db.update(s.service).set({ taxable: true }).where(eq(s.service.organizationId, ORG))
+    try {
+      const pass = await sell({ newCustomer: newCustomer(), zones: 12, inspection: true })
+      const lines = await linesOfPass(db, pass.id)
+      expect(lines).toHaveLength(3)
+      expect(lines.map((l) => l.taxable)).toEqual([false, false, false])
+      expect(jobTotal(lines, { collectsSalesTax: true, salesTaxPercent: 8 })).toBe(pass.price)
+    } finally {
+      await db.update(s.service).set({ taxable: false }).where(eq(s.service.organizationId, ORG))
+    }
+  })
+
   it("refuses an existing customer with no email on file, a second pass of the season, a read key and the anonymous checkout", async () => {
     await expect(sell({ customerId: "c121", paysBy: "card-link" })).rejects.toMatchObject({ code: "invalid", message: expect.stringMatching(/no email on file/) })
     await expect(sell({ customerId: "c100", email: "andrea@example.com" })).rejects.toMatchObject({ code: "unprocessable", message: expect.stringMatching(/already holds the 2028 Season Pass, TH-2028-/) })

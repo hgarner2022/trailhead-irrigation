@@ -9,7 +9,7 @@ import { METHOD_WORDS } from "@/lib/money/words"
 import { billState, type BillState } from "./bill-model"
 import { jobHeading, jobRows, type JobRow } from "./jobs-model"
 import { propertiesOf } from "./customers-model"
-import { dayOfVisit, taxRuleOf } from "./visit-panel-model"
+import { dayOfVisit, ruleOfData } from "./visit-panel-model"
 
 export interface JobFacts {
   job: SoldJob
@@ -52,7 +52,7 @@ export function jobFacts(data: AdminData, jobId: string, today: string): JobFact
   return {
     job, row, client, pass, visits, yard,
     lines: job.lines ?? [],
-    tax: jobTax(job.lines ?? [], taxRuleOf(data)),
+    tax: jobTax(job.lines ?? [], ruleOfData(data)),
     payments,
     // a job charged to the card on its pass is left to the card, unless that card failed
     bill: billState(job, visits, Boolean(pass?.cardLast4) && !failed),

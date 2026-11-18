@@ -92,5 +92,5 @@ export async function insertPassVisits(db: Database, pass: PassVisitsFor, onSale
     .returning({ id: s.visit.id, kind: s.visit.kind })
   // One visit per pass kind on a job (the visit_job_pass_kind_unique index enforces it), so the kind finds the visit.
   const lines = linesForPassVisits(onSale, pass.zones).map((line) => ({ ...line, visitId: made.find((v) => v.kind === line.visitKind)!.id }))
-  await insertLines(db, { organizationId: pass.organizationId, jobId: pass.jobId, now }, lines)
+  await insertLines(db, { organizationId: pass.organizationId, jobId: pass.jobId, now, untaxed: true }, lines)
 }

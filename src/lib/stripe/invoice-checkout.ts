@@ -8,7 +8,7 @@ import { signToken, verifyToken } from "@/lib/messaging/tokens"
 import { invoiceStatus } from "@/lib/money/invoice"
 import { paidDay } from "@/lib/money/record"
 import { loadTaxRule } from "@/lib/money/tax-rule"
-import { jobOwed } from "@/lib/money/words"
+import { jobOwed, paidTotal } from "@/lib/money/words"
 import { toCents } from "./client"
 import { ensureStripeCustomer } from "./customer"
 
@@ -36,10 +36,12 @@ export async function startBillPayment(db: Database, stripe: Stripe, input: { in
     db.select().from(s.charge).where(and(eq(s.charge.jobId, invoice.jobId), eq(s.charge.organizationId, org))),
   ])
   // Money that arrived another way (a check, Venmo or cash) while the page was open: nothing owed is a paid bill, and less owed than the bill asks needs a new amount from the office.
-  // The job owes its lines with their sales tax, which is what the bill's total was made from, so a bill nothing has touched is accepted whole.
+  // The job owes its lines with their sales tax at today's rate, which can differ from the rate the bill froze (the office edited it), so "less owed" alone proves nothing:
+  // a bill is refused as paid another way only when payments were actually recorded against the job since the bill was made. Otherwise it is payable at its frozen total.
   const owed = jobOwed(lines.filter((l) => !l.cancelledAt), payments, await loadTaxRule(db, org))
   if (owed <= 0) return { ok: false, message: "This bill is already paid." }
-  if (owed < invoice.total) return { ok: false, message: "Part of this bill was paid another way. Please call us for the new amount." }
+  const arrivedSince = paidTotal(payments.filter((p) => p.createdAt > invoice.createdAt))
+  if (arrivedSince > 0 && owed < invoice.total) return { ok: false, message: "Part of this bill was paid another way. Please call us for the new amount." }
   if (invoice.total <= 0) return { ok: false, message: "There is nothing to pay on this bill." }
   try {
     const customer = await ensureStripeCustomer(db, stripe, invoice.customerId, now, org)

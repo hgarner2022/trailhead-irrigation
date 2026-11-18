@@ -22,6 +22,11 @@ export interface InsertLinesOptions {
   now?: Date
   /** keep a row that already holds the id (the seed, run again) */
   keepExisting?: boolean
+  /**
+   * A Season Pass sale's lines (checkout, office sale, renewal, the July inspection, the seed): always `taxable = false`, whatever the
+   * service row says, so the card is charged what the checkout, the confirmation and the pass page show.
+   */
+  untaxed?: boolean
 }
 
 /** The organization's service rows the lines name, by key: the id, and the description and taxable flag the row holds at the sale. */
@@ -39,9 +44,9 @@ async function servicesByKey(db: Database, organizationId: string, keys: readonl
 /**
  * Inserts a job's lines. Each takes the organization's service row for its key (none when no service fits), that row's
  * description and taxable flag as they are at the sale (the catalogue's words when the row has none), and the visit it is
- * billed after.
+ * billed after. A pass sale passes `untaxed`: its lines are never taxable.
  */
-export async function insertLines(db: Database, { organizationId, jobId, now, keepExisting }: InsertLinesOptions, lines: readonly VisitLine[]): Promise<void> {
+export async function insertLines(db: Database, { organizationId, jobId, now, keepExisting, untaxed }: InsertLinesOptions, lines: readonly VisitLine[]): Promise<void> {
   if (lines.length === 0) return
   const services = await servicesByKey(db, organizationId, lines.flatMap((l) => (l.serviceKey ? [l.serviceKey] : [])))
   const rows = lines.map((line) => {
@@ -56,7 +61,7 @@ export async function insertLines(db: Database, { organizationId, jobId, now, ke
       description: service?.description ?? line.description ?? null,
       quantity: line.quantity,
       unitPrice: line.unitPrice,
-      taxable: service?.taxable ?? line.taxable,
+      taxable: untaxed ? false : (service?.taxable ?? line.taxable),
       cancelledAt: line.cancelledAt ?? null,
       ...(now ? { createdAt: now, updatedAt: now } : {}),
     }
