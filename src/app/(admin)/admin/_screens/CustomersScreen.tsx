@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { useMemo, useRef, useState, useTransition } from "react"
+import { useCallback, useMemo, useRef, useState, useTransition } from "react"
 import { Button } from "@/components/ui/button"
 import { DataGrid } from "@/components/blocks/DataGrid"
 import { PageHeader } from "@/components/blocks/PageHeader"
@@ -79,6 +79,7 @@ export function CustomersScreen({ data, today, defaultSelectedId, readOnly = fal
   )
   // One panel at a time: a customer opening closes the visit panel, and a visit opening (the host's `onShow`) closes the customer's.
   const closeVisit = useRef<(() => void) | null>(null)
+  const closeCustomer = useCallback(() => setOpen(false), [])
   const show = (next: CustomerRow) => {
     closeVisit.current?.()
     setSelectedId(next.id)
@@ -87,7 +88,7 @@ export function CustomersScreen({ data, today, defaultSelectedId, readOnly = fal
 
   return (
     <div data-slot="customers-screen">
-      <VisitPanelHost data={data} today={today} readOnly={readOnly} actions={visitActions} onShow={() => setOpen(false)} closeRef={closeVisit}>
+      <VisitPanelHost data={data} today={today} readOnly={readOnly} actions={visitActions} onShow={closeCustomer} closeRef={closeVisit}>
       <PageHeader title="Customers" context={customersContext(rows)} />
       <SidePanelLayout
         panel={

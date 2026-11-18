@@ -31,7 +31,7 @@ export const jobsCancel = defineHandler({
   path: "/jobs/{id}/cancel",
   scope: "write",
   summary:
-    "Cancel a one-off job: the job is canceled, every line is canceled, every visit that is not done is canceled (its day is freed and no text is sent), an open unpaid invoice is voided, and the story reads \"Job canceled\". Nothing is deleted. Refused on a Season Pass (it has Cancel pass), on a job already canceled, and on a job that holds a payment: refund it first.",
+    "Cancel a one-off job: the job is canceled, every line is canceled, every visit that is not done is canceled (its day is freed and no text is sent), an open unpaid invoice is voided, and the story reads \"Job canceled\". Nothing is deleted. Visits already done stay done and their lines are canceled with the job's (the panel offers Cancel job only while the job is still being worked). Refused on a Season Pass (it has Cancel pass), on a job already canceled, and on a job that holds a payment: refund it first.",
   input: z.object({ id: Id, reason: z.string().trim().max(300).optional() }),
   output: JobCancelled,
   async run(ctx, input) {

@@ -148,9 +148,10 @@ export function nextJobsWeek(visits: Visit[], weekStart: string, timeZone: strin
   return days.length ? weekOf(days.sort()[0], timeZone) : undefined
 }
 
-/** The first day of the visible week the person works, else the Monday. */
-export function firstWorkingDay(person: Person, weekStart: string): string {
-  return weekDays(weekStart).find((day) => worksOn(person, day)) ?? weekStart
+/** The first day of the visible week the person works, else the Monday. With `from` (today), a day already gone is not chosen while a later one in the week is. */
+export function firstWorkingDay(person: Person, weekStart: string, from?: string): string {
+  const days = weekDays(weekStart).filter((day) => worksOn(person, day))
+  return days.find((day) => !from || day >= from) ?? days[0] ?? weekStart
 }
 
 /**

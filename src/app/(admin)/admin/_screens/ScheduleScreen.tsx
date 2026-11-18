@@ -146,7 +146,7 @@ function ScheduleBody({ data, today, defaultTab = "week", defaultDay, defaultWee
   const place = (item: TrayItem) => {
     const person = people[0]
     if (!person) return
-    const dayIso = firstWorkingDay(person, weekStart)
+    const dayIso = firstWorkingDay(person, weekStart, todayDay)
     if (!onMove) console.info("place visit", item.id, person.id, dayIso)
     const before = visits
     setProblems((p) => Object.fromEntries(Object.entries(p).filter(([id]) => id !== item.id)))

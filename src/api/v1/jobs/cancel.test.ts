@@ -4,7 +4,7 @@ import { eq } from "drizzle-orm"
 import * as s from "@/db/schema"
 import type { TestDb } from "@/db/test-db"
 import { callApi } from "../../core/call"
-import { adminKey, apiDb, ctxFor, eventsOf, jobIdOfPassId, readKey, writeKey } from "../../test-helpers"
+import { adminKey, apiDb, ctxFor, eventsOf, jobIdOfPassId, ORG, readKey, writeKey } from "../../test-helpers"
 import { invoicesSend } from "../invoices/handlers"
 import { paymentsRecord, paymentsRefund } from "../payments/handlers"
 import { visitsCreate } from "../visits/office"
@@ -90,5 +90,19 @@ describe("jobs.cancel", () => {
     await expect(callApi(as(), jobsCancel, { id: "nope" })).rejects.toMatchObject({ code: "not_found" })
     const other = await make({ scheduledOn: "2027-06-24" })
     await expect(callApi(as(readKey), jobsCancel, { id: other.jobId })).rejects.toMatchObject({ code: "forbidden" })
+  })
+})
+
+describe("jobs.cancel, the schedule", () => {
+  it("resolves the Home alert of a visit that is gone and orders the person's day again", async () => {
+    const a = await make({ scheduledOn: "2027-06-28" })
+    const b = await make({ scheduledOn: "2027-06-28" })
+    await db.insert(s.adminAlert).values({ organizationId: ORG, kind: "unplaced", key: a.id, jobId: a.jobId, message: "Needs a day" })
+    await callApi(as(), jobsCancel, { id: a.jobId })
+    const [other] = await db.select().from(s.visit).where(eq(s.visit.id, b.id))
+    expect(other).toMatchObject({ status: "scheduled", stopOrder: 1 })
+    const alerts = await db.select().from(s.adminAlert).where(eq(s.adminAlert.key, a.id))
+    expect(alerts).toHaveLength(1)
+    expect(alerts[0]!.resolvedAt).not.toBeNull()
   })
 })

@@ -290,6 +290,8 @@ export function jobCounts(data: Pick<AdminData, "passes" | "visits">, today: str
   }
   for (const visit of data.visits) {
     if (visit.isPass) continue
+    // A one-off job the app owns with no day yet needs one too (the Schedule's Unscheduled list holds it); the Jobber feed's are not ours to place.
+    if (visit.jobId && !visit.passId && visit.status === "unscheduled" && !visit.startAt) counts.needsDay += 1
     const job = visitJob(visit, today, timeZone)
     if (job.state === "charge-failed") counts.chargeFailed += 1
     if (recent(job)) counts.notClosed += 1

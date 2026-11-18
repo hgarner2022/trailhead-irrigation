@@ -118,6 +118,14 @@ describe("jobCounts", () => {
     expect(jobCounts({ passes: data.passes.map((p) => ({ ...p, status: "pending" as const })), visits: [] }, TODAY, TZ)).toEqual({ needsDay: 0, chargeFailed: 0, notClosed: 0, pendingPasses: data.passes.length })
   })
 
+  it("counts a one-off job's visit with no day, and not one from the Jobber feed or one with a day", () => {
+    const one = (over: Partial<Visit>): Visit => ({ id: "o", clientId: "c", clientName: "A", town: "Erie", kind: "repair", status: "unscheduled", isPass: false, jobberUrl: "", jobId: "j", ...over })
+    const count = (visits: Visit[]) => jobCounts({ passes: [], visits }, TODAY, TZ).needsDay
+    expect(count([one({})])).toBe(1)
+    expect(count([one({ jobId: undefined })])).toBe(0)
+    expect(count([one({ status: "scheduled", startAt: "2027-05-05T15:00:00Z" })])).toBe(0)
+  })
+
   it("counts not closed within the lookback and no further", () => {
     const visit = (id: string, day: string): Visit => ({ id, clientId: "c", clientName: "A", town: "Erie", kind: "blowout", status: "scheduled", startAt: `${day}T17:00:00Z`, isPass: false, jobberUrl: "" })
     expect(NOT_CLOSED_LOOKBACK_DAYS).toBe(14)
