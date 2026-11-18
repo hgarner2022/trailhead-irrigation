@@ -20,7 +20,7 @@ export const EMAIL_COLORS = {
 
 const C = EMAIL_COLORS
 const DISPLAY = "'Barlow Condensed','Arial Narrow',Arial,Helvetica,sans-serif"
-const BODY = "'Source Sans 3',Helvetica,Arial,sans-serif"
+export const BODY = "'Source Sans 3',Helvetica,Arial,sans-serif"
 
 export const esc = (value: string) => value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;")
 

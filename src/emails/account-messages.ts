@@ -1,5 +1,6 @@
-import { ACCOUNT_NAME, BUSINESS, SIGN_OFF, dollars, longDay } from "./format"
-import { button, emailLayout, facts, heading, paragraph, plainText, smallPrint } from "./layout"
+import { ACCOUNT_NAME, BUSINESS, SEE_JOB, SIGN_OFF, dollars, longDay } from "./format"
+import { doneWords, jobTable, linesOf, paidWords } from "./job-table"
+import { button, emailLayout, heading, paragraph, plainText, smallPrint } from "./layout"
 import type { CancelledData, CardExpiringData, CardFailedData, ReceiptData, RenderedEmail, RenewalData } from "./types"
 
 // The money and account emails, worded as docs/plans/2026-11-18-messages-design.md section 4 writes them: the fact first, the
@@ -10,21 +11,24 @@ const wrap = (d: { origin: string }, preheader: string, title: string, body: str
 const whereRow = (address?: string | null): [string, string][] => (address ? [["Where", address]] : [])
 const at = (address?: string | null) => (address ? ` at ${address}` : "")
 const account = `your ${ACCOUNT_NAME}`
-const lines = (rows: [string, string][]) => rows.map(([k, v]) => `${k}: ${v}`)
 
-/** "$95, Visa ending 4242" or "$95, Venmo": the amount and how it arrived. */
-const paidHow = (d: ReceiptData) => `${dollars(d.amount)}${d.paidBy ? `, ${d.paidBy}` : d.card ? `, ${d.card}` : ""}`
+/** The method in words: "Visa ending 4242" for a card, "Venmo", "Check" or "Cash" for what the office recorded. */
+const how = (d: ReceiptData) => d.paidBy ?? d.card
 
-/** The receipt for a visit paid, or an invoice paid on the pay page (its lines, its sales tax, its number as one quiet row). */
+/** The receipt for a visit paid, or an invoice paid on the pay page: where and when, the number, then the job's lines with their totals and what was paid. */
 export function receiptEmail(d: ReceiptData): RenderedEmail {
   const subject = `Receipt: ${dollars(d.amount)} for your ${d.serviceName}${at(d.address)}`
   const intro = `Thank you, ${d.firstName}. Your ${d.serviceName}${at(d.address)} is paid.`
-  const rows: [string, string][] = d.invoiceNumber
-    ? [...(d.lines ?? []).map((l): [string, string] => [l.name, dollars(l.amount)]), ...((d.tax ?? 0) > 0 ? ([["Sales tax", dollars(d.tax!)]] as [string, string][]) : []), ["Paid", paidHow(d)], ...whereRow(d.address), ["Invoice", d.invoiceNumber]]
-    : [["Service", d.serviceName], ...whereRow(d.address), ["Paid", paidHow(d)], ...(d.paidOn ? ([["Paid on", longDay(d.paidOn)]] as [string, string][]) : [])]
-  const body = paragraph(intro) + facts(rows) + (d.nextLine ? paragraph(d.nextLine) : "") + (d.receiptUrl ? button(d.receiptUrl, "View the receipt") : "")
-  const text = plainText([intro, "", ...lines(rows), ...(d.nextLine ? ["", d.nextLine] : []), ...(d.receiptUrl ? ["", `Your receipt: ${d.receiptUrl}`] : [])], SIGN_OFF)
-  return { subject, text, html: wrap(d, intro, "Paid, thank you", body, d.invoiceNumber ? `You are getting this because you paid invoice ${d.invoiceNumber}.` : "You are getting this because you paid for a visit with Trailhead.") }
+  const lines = linesOf(d)
+  const subtotal = d.subtotal ?? lines.reduce((sum, l) => sum + l.amount, 0)
+  const table = jobTable({
+    facts: [...whereRow(d.address), ...(d.day ? ([["Done", doneWords(d.day, d.who)]] as [string, string][]) : []), ...(d.number ? ([["Receipt", d.number]] as [string, string][]) : []), ...(d.invoiceNumber ? ([["Invoice", d.invoiceNumber]] as [string, string][]) : [])],
+    lines, subtotal, tax: d.tax, total: d.total ?? subtotal + (d.tax ?? 0),
+    after: [["Paid", paidWords(d.amount, how(d))], ...(d.paidOn ? ([["Paid on", longDay(d.paidOn)]] as [string, string][]) : [])],
+  })
+  const body = paragraph(intro) + table.html + (d.nextLine ? paragraph(d.nextLine) : "") + button(d.signInUrl, SEE_JOB) + (d.receiptUrl ? button(d.receiptUrl, "View the receipt", "quiet") : "")
+  const text = plainText([intro, "", ...table.text, ...(d.nextLine ? ["", d.nextLine] : []), "", `${SEE_JOB}: ${d.accountUrl}`, ...(d.receiptUrl ? [`Your receipt: ${d.receiptUrl}`] : [])], SIGN_OFF)
+  return { subject, text, html: wrap(d, intro, "Paid, thank you", body, d.invoiceNumber ? `You are getting this because you paid invoice ${d.invoiceNumber}.` : "You are getting this because a visit of yours was completed.") }
 }
 
 export function cardFailedEmail(d: CardFailedData): RenderedEmail {

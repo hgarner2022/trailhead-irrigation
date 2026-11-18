@@ -8,7 +8,7 @@ import { recordEventSafe } from "@/lib/events/record"
 import type { Database } from "@/db/types"
 import { chargeOffSession } from "@/lib/stripe/charge"
 import { createCardUpdateSession } from "@/lib/stripe/card-update"
-import { baseData, cardWords, jobAddress } from "@/lib/messaging/data"
+import { baseData, cardWords, jobAddress, receiptLines, receiptNumber, visitWhoDay } from "@/lib/messaging/data"
 import { loadVisitPrice, paidDay, recordPaymentRow } from "@/lib/money/record"
 import { isPaid } from "@/lib/money/words"
 import { queueMessage, queueStaffMessage } from "@/lib/messaging/queue"
@@ -90,7 +90,7 @@ export async function chargeVisit(db: Database, stripe: Stripe, visitId: string,
       const visits = await db.select().from(s.visit).where(eq(s.visit.jobId, pass.id))
       await queueMessage(db, {
         organizationId: visit.organizationId, customerId: customer.id, visitId: visit.id, kind: "receipt", key: `visit-${visit.id}`,
-        data: { ...baseData(opts.origin, customer), amount: price, serviceName: kindName(visit.kind), address: await jobAddress(db, visit.jobId), paidOn: paidDay(now), card: cardWords(customer), nextLine: nextVisitLine(visits.filter((v) => v.id !== visit.id)), receiptUrl: result.receiptUrl ?? null },
+        data: { ...baseData(opts.origin, customer), amount: price, serviceName: kindName(visit.kind), address: await jobAddress(db, visit.jobId), paidOn: paidDay(now), ...(await visitWhoDay(db, visit.id)), ...(await receiptLines(db, visit.organizationId, visit.jobId, visit.id)), ...(paid ? { number: receiptNumber(paid.id) } : {}), card: cardWords(customer), nextLine: nextVisitLine(visits.filter((v) => v.id !== visit.id)), receiptUrl: result.receiptUrl ?? null },
       })
     }
     await emitEvent(db, visit.organizationId, "charge.succeeded", { visitId: visit.id, passId: pass.id, amount: price, attempt })

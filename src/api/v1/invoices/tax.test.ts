@@ -71,8 +71,7 @@ describe("a taxable $145 repair with 8% sales tax on", () => {
     expect(bill).toMatchObject({ amount: 145, tax: 12, total: 157 })
     const message = (await db.select().from(s.messageLog)).find((m) => m.key === `invoice-${bill.id}`)!
     expect(message.subject).toMatch(/^Your Trailhead invoice for the repair at .+: \$157$/)
-    expect(message.body).toContain("Tax: $12")
-    expect(message.body).not.toContain("Sales tax")
+    expect(message.body).toContain("Sales tax: $12")
     const visitor = ctxFor(db, { kind: "public", id: "checkout", organizationId: ORG, scopes: ["checkout"], invoiceId: bill.id }, NOW)
     expect(await callApi(visitor, invoicesPayView, { id: bill.id })).toMatchObject({ tax: 12, total: 157 })
     const { stripe, calls } = stubStripe()

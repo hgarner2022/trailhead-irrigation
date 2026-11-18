@@ -126,16 +126,15 @@ describe("wording per kind", () => {
     expect(html.match(/Add to Google Calendar/g)).toHaveLength(2)
     expect(html.match(/Add to Apple or Outlook calendar/g)).toHaveLength(2)
   })
-  it("purchase-confirmation lists each line with its price, then the total, and leaves the list out when it has no lines", () => {
-    const lines = [{ name: "Spring turn-on, 8 zones", amount: 145 }, { name: "Fall blowout, 8 zones", amount: 95 }]
+  it("purchase-confirmation shows what was sold as the money table: a line to a row, quantity when it is not one, and the season total", () => {
+    const lines = [{ name: "Spring turn-on, 8 zones", amount: 145, quantity: 1, unitPrice: 145 }, { name: "fall blowout, 8 zones", amount: 95, quantity: 1, unitPrice: 95 }]
     const { html, text } = renderEmail("purchase-confirmation", { ...TWO_DAYS, lines })!
-    expect(text).toContain("Spring turn-on, 8 zones · $145")
-    expect(text).toContain("Fall blowout, 8 zones · $95")
-    expect(text).toContain("Season total · $240")
-    expect(html).toContain("Spring turn-on, 8 zones · $145")
-    expect(html).toContain("Season total · $240")
-    expect(html.indexOf("Spring turn-on, 8 zones · $145")).toBeLessThan(html.indexOf("Open your Trailhead account"))
-    expect(renderEmail("purchase-confirmation", TWO_DAYS)!.text).not.toContain("Season total ·")
+    expect(text).toContain("Spring turn-on, 8 zones: $145\nFall blowout, 8 zones: $95\nSeason total: $240\n")
+    expect(text).not.toContain("Subtotal")
+    expect(html).toContain("Spring turn-on, 8 zones")
+    expect(html).toContain("Season total")
+    expect(html.indexOf("Season total")).toBeLessThan(html.indexOf("Open your Trailhead account"))
+    expect(renderEmail("purchase-confirmation", TWO_DAYS)!.text).not.toContain("Season total")
   })
   it.each(["date-set", "date-moved", "day-before", "date-confirm", "booking-confirmation"] as const)("%s has the day, the two-hour window, who is coming, where, both calendar links and a button to the account", (kind) => {
     const { html, text } = get(kind)
@@ -197,50 +196,101 @@ describe("wording per kind", () => {
     expect(get("booking-confirmation").text).toContain("Ryan and the crew will be there Wednesday, May 5, between 8 and 10 am")
     for (const label of ["Day", "Who is coming", "Where"]) expect(text).toContain(`${label}: `)
   })
-  it("the receipt for a visit names the service, the address, how it was paid and the day, then the next visit and one button", () => {
-    const { subject, text, html } = get("receipt")
+  it("the receipt for a visit carries what was bought: where, who did it and when, the receipt number, each line, the totals, what was paid and one link to the account", () => {
+    const receipt = { ...RECEIPT, paidBy: "check", card: null, who: "Ryan", day: "2027-05-05", number: "R-1A2B3C4D", lines: [{ name: "repair", amount: 145, quantity: 1, unitPrice: 145 }], subtotal: 145, tax: 0, total: 145, nextLine: "" }
+    const { subject, text, html } = renderEmail("receipt", receipt)!
     expect(subject).toBe("Receipt: $145 for your spring turn-on at 412 Ash St")
     expect(html).toContain("Paid, thank you")
-    expect(text).toContain("Thank you, Andrea. Your spring turn-on at 412 Ash St is paid.")
-    for (const row of ["Service: spring turn-on", "Where: 412 Ash St", "Paid: $145, Visa ending 4242", "Paid on: Wednesday, May 5"]) expect(text).toContain(row)
-    expect(text).toContain("Your fall blowout is planned for early October.")
+    expect(text.split("\n").slice(0, 14).join("\n")).toBe([
+      "Thank you, Andrea. Your spring turn-on at 412 Ash St is paid.",
+      "",
+      "Where: 412 Ash St",
+      "Done: Wednesday, May 5, with Ryan",
+      "Receipt: R-1A2B3C4D",
+      "",
+      "Repair: $145",
+      "Subtotal: $145",
+      "Total: $145",
+      "",
+      "Paid: $145, Check",
+      "Paid on: Wednesday, May 5",
+      "",
+      "See this job in your Trailhead account: https://www.trailheadirrigation.com/account",
+    ].join("\n"))
+    expect(html).toContain(">See this job in your Trailhead account<")
     expect(html).toContain(">View the receipt<")
-    expect(renderEmail("receipt", { ...RECEIPT, card: null, paidBy: "Venmo" })!.text).toContain("Paid: $145, Venmo")
-    expect(renderEmail("receipt", { ...RECEIPT, receiptUrl: null, nextLine: "" })!.html).not.toContain("View the receipt")
+    expect(html).not.toMatch(/Visit:|paid by check|>check</)
+    expect(html).toContain("You are getting this because a visit of yours was completed.")
   })
-  it("the receipt for an invoice paid on the pay page names the lines, the sales tax only when there is tax, a credit as a minus, and the invoice number quietly", () => {
-    const paid = { ...RECEIPT, serviceName: "repair", amount: 224, invoiceNumber: "INV-2027-0001", lines: [{ name: "Repair", amount: 145 }, { name: "Extra zones", amount: 20 }, { name: "Payments received", amount: -45 }], tax: 9, total: 224, nextLine: "", receiptUrl: "https://pay.stripe.com/r/2" }
+  it("the receipt shows a quantity under the line, sales tax only when a line was taxed, the card in words, and a next visit when there is one", () => {
+    const receipt = { ...RECEIPT, who: null, day: "2027-05-05", number: "R-1A2B3C4D", lines: [{ name: "Repair", amount: 145, quantity: 1, unitPrice: 145 }, { name: "Extra zones", amount: 20, quantity: 2, unitPrice: 10 }], subtotal: 165, tax: 13, total: 178, amount: 178 }
+    const { text, html } = renderEmail("receipt", receipt)!
+    expect(text).toContain("Done: Wednesday, May 5\n")
+    expect(text).toContain(["Repair: $145", "Extra zones (2 × $10): $20", "Subtotal: $165", "Sales tax: $13", "Total: $178", "", "Paid: $178, Visa ending 4242"].join("\n"))
+    expect(html).toContain("2 × $10")
+    expect(text).toContain("Your fall blowout is planned for early October.")
+    const untaxed = renderEmail("receipt", { ...receipt, tax: 0, total: 165, amount: 165 })!
+    expect(untaxed.text).not.toContain("Sales tax")
+    expect(untaxed.html).not.toContain("Sales tax")
+    expect(renderEmail("receipt", { ...receipt, card: null, paidBy: "Venmo" })!.text).toContain("Paid: $178, Venmo")
+    expect(renderEmail("receipt", { ...receipt, receiptUrl: null })!.html).not.toContain("View the receipt")
+  })
+  it("the receipt for an invoice paid on the pay page lists its frozen lines and a credit as a minus, with the receipt and invoice numbers", () => {
+    const paid = { ...RECEIPT, serviceName: "repair", amount: 233, invoiceNumber: "INV-2027-0001", number: "R-9F8E7D6C", who: "Ryan", day: "2027-05-05", lines: [{ name: "Repair", amount: 145, quantity: 1, unitPrice: 145 }, { name: "Extra zones", amount: 20, quantity: 2, unitPrice: 10 }, { name: "Payments received", amount: -45, quantity: 1, unitPrice: -45 }], subtotal: 220, tax: 13, total: 233, nextLine: "", receiptUrl: "https://pay.stripe.com/r/2" }
     const { subject, text, html } = renderEmail("receipt", paid)!
-    expect(subject).toBe("Receipt: $224 for your repair at 412 Ash St")
-    expect(text).toContain("Thank you, Andrea. Your repair at 412 Ash St is paid.")
-    expect(text).toContain("Repair: $145")
-    expect(text).toContain("Payments received: -$45")
-    expect(text).toContain("Sales tax: $9")
-    expect(text).toContain("Paid: $224, Visa ending 4242")
-    expect(text).toContain("Where: 412 Ash St")
-    expect(text).toContain("Invoice: INV-2027-0001")
-    expect(text.indexOf("Paid: ")).toBeLessThan(text.indexOf("Invoice: INV"))
+    expect(subject).toBe("Receipt: $233 for your repair at 412 Ash St")
     expect(subject).not.toContain("INV-")
+    expect(text.split("\n").slice(0, 16).join("\n")).toBe([
+      "Thank you, Andrea. Your repair at 412 Ash St is paid.",
+      "",
+      "Where: 412 Ash St",
+      "Done: Wednesday, May 5, with Ryan",
+      "Receipt: R-9F8E7D6C",
+      "Invoice: INV-2027-0001",
+      "",
+      "Repair: $145",
+      "Extra zones (2 × $10): $20",
+      "Payments received: -$45",
+      "Subtotal: $220",
+      "Sales tax: $13",
+      "Total: $233",
+      "",
+      "Paid: $233, Visa ending 4242",
+      "Paid on: Wednesday, May 5",
+    ].join("\n"))
     expect(html).toContain("View the receipt")
     copyRules(text)
-    expect(renderEmail("receipt", { ...paid, tax: 0 })!.text).not.toContain("Sales tax:")
   })
-  it("the invoice names the lines, the total, the due day, the number as a quiet row and one Pay button, with a tax line only when there is tax", () => {
-    const { subject, text, html } = get("invoice")
+  it("the invoice carries the job: where, who did it and when, the invoice number, each line, the totals, the amount due, the due day, one Pay button and one link to the account", () => {
+    const invoice = { ...INVOICE, who: "Ryan", day: "2027-05-04", lines: [{ name: "Repair", amount: 145, quantity: 1, unitPrice: 145 }] }
+    const { subject, text, html } = renderEmail("invoice", invoice)!
     expect(subject).toBe("Your Trailhead invoice for the repair at 412 Ash St: $145")
     expect(html).toContain("Your invoice is ready")
-    expect(text).toContain("Repair: $145")
-    expect(text).toContain("Total: $145")
-    expect(text).toContain("Due: Friday, May 21")
-    expect(text).toContain("Invoice: INV-2027-0001")
-    expect(text).toContain(`Pay here: ${origin}/pay/inv1?token=abc`)
-    expect(text).not.toContain("Tax:")
-    expect(html).not.toMatch(/\bTax\b/)
+    expect(text.split("\n").slice(0, 15).join("\n")).toBe([
+      "Hi Andrea, here is your invoice for the repair at 412 Ash St: $145, due Friday, May 21.",
+      "",
+      "Where: 412 Ash St",
+      "Done: Tuesday, May 4, with Ryan",
+      "Invoice: INV-2027-0001",
+      "",
+      "Repair: $145",
+      "Subtotal: $145",
+      "Total: $145",
+      "",
+      "Amount due: $145",
+      "Due: Friday, May 21",
+      "",
+      `Pay here: ${origin}/pay/inv1?token=abc`,
+      "See this job in your Trailhead account: https://www.trailheadirrigation.com/account",
+    ].join("\n"))
+    expect(text).not.toContain("Sales tax")
+    expect(html).not.toMatch(/Sales tax/)
     expect(html).toContain(">Pay $145<")
     expect(html.match(/Pay \$145/g)).toHaveLength(1)
-    const taxed = renderEmail("invoice", { ...INVOICE, lines: [{ name: "Repair", amount: 145 }, { name: "Spring turn-on", amount: 100 }], amount: 245, tax: 12, total: 257 })!
+    expect(html).toContain(">See this job in your Trailhead account<")
+    const taxed = renderEmail("invoice", { ...INVOICE, lines: [{ name: "Repair", amount: 145, quantity: 1, unitPrice: 145 }, { name: "Spring turn-on", amount: 100, quantity: 1, unitPrice: 100 }], amount: 245, tax: 12, total: 257 })!
     expect(taxed.subject).toBe("Your Trailhead invoice for the repair at 412 Ash St: $257")
-    expect(taxed.text).toContain("Tax: $12")
+    expect(taxed.text).toContain(["Subtotal: $245", "Sales tax: $12", "Total: $257", "", "Amount due: $257"].join("\n"))
     expect(taxed.html).toContain(">Pay $257<")
   })
   it("the reminder is the same invoice under a reminder heading", () => {

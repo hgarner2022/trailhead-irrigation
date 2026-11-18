@@ -3,7 +3,7 @@ import { and, desc, eq, isNull, like, sql } from "drizzle-orm"
 import * as s from "@/db/schema"
 import { readAppUrl } from "@/lib/env"
 import { whoOf } from "@/lib/events/record"
-import { baseData, jobAddress } from "@/lib/messaging/data"
+import { baseData, emailLine, jobAddress, visitWhoDay } from "@/lib/messaging/data"
 import { billName } from "@/lib/money/bill-name"
 import { messageChannel, queueMessage } from "@/lib/messaging/queue"
 import { payUrl } from "@/lib/messaging/tokens"
@@ -21,10 +21,10 @@ import { loadInvoice, openInvoiceOf, type InvoiceRow } from "./queries"
 export { billName }
 
 /** The message's arguments: the frozen lines, the tax, the total, the due day and the signed pay link. */
-function billData(origin: string, customer: typeof s.customer.$inferSelect, inv: InvoiceRow, address: string) {
+function billData(origin: string, customer: typeof s.customer.$inferSelect, inv: InvoiceRow, address: string, visit: { who: string | null; day: string | null }) {
   return {
-    ...baseData(origin, customer), invoiceNumber: inv.number, visitName: billName(inv.lines), address,
-    lines: inv.lines.map((l) => ({ name: l.name, amount: l.quantity * l.unitPrice })),
+    ...baseData(origin, customer), invoiceNumber: inv.number, visitName: billName(inv.lines), address, ...visit,
+    lines: inv.lines.map(emailLine),
     amount: inv.amount, tax: inv.tax, total: inv.total, dueOn: inv.dueOn, payUrl: payUrl(origin, inv.id),
   }
 }
@@ -120,7 +120,7 @@ export async function sendBill(ctx: Ctx, input: SendBill): Promise<InvoiceRow> {
     if (!row && (await openInvoiceOf(ctx.db, org, job.id))) throw new ApiError("conflict", "An invoice is already open for this job")
   }
   if (!row) throw new ApiError("conflict", "Another bill was being made at the same moment. Try again.")
-  await queueMessage(ctx.db, { organizationId: org, customerId: customer.id, kind: "invoice", key: `invoice-${row.id}`, data: billData(origin, customer, row, await jobAddress(ctx.db, job.id)) })
+  await queueMessage(ctx.db, { organizationId: org, customerId: customer.id, kind: "invoice", key: `invoice-${row.id}`, data: billData(origin, customer, row, await jobAddress(ctx.db, job.id), await visitWhoDay(ctx.db, row.lines.find((l) => l.visitId)?.visitId)) })
   await emitEvent(ctx.db, org, "invoice.sent", { invoiceId: row.id, number: row.number, jobId: job.id, customerId: customer.id, total: row.total, sentOn: row.sentOn, dueOn: row.dueOn }, {
     about: "invoice", aboutId: row.id, customerId: customer.id, jobId: job.id, who: whoOf(ctx), at: ctx.now,
     detail: { number: row.number, total: row.total, dueOn: row.dueOn },
@@ -138,7 +138,7 @@ export async function remindBill(ctx: Ctx, invoiceId: string): Promise<InvoiceRo
   const [customer] = await ctx.db.select().from(s.customer).where(and(eq(s.customer.id, row.customerId), eq(s.customer.organizationId, ctx.organizationId)))
   if (!customer) throw notFound("Customer")
   const key = `invoice-${row.id}-${today(ctx)}`
-  const queued = await queueMessage(ctx.db, { organizationId: ctx.organizationId, customerId: customer.id, kind: "invoice-reminder", key, data: billData(readAppUrl(), customer, row, await jobAddress(ctx.db, row.jobId)) })
+  const queued = await queueMessage(ctx.db, { organizationId: ctx.organizationId, customerId: customer.id, kind: "invoice-reminder", key, data: billData(readAppUrl(), customer, row, await jobAddress(ctx.db, row.jobId), await visitWhoDay(ctx.db, row.lines.find((l) => l.visitId)?.visitId)) })
   if (!queued) {
     const [sent] = await ctx.db.select({ id: s.messageLog.id }).from(s.messageLog).where(and(eq(s.messageLog.customerId, customer.id), eq(s.messageLog.kind, "invoice-reminder"), eq(s.messageLog.key, key)))
     if (!sent) throw new ApiError("unprocessable", `${customer.firstName} has no mobile or email to send the reminder to`)

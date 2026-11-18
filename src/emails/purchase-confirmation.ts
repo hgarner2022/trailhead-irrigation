@@ -1,5 +1,6 @@
 import { googleCalendarUrl } from "./calendar"
 import { ACCOUNT_NAME, ADD_CARD_LINE, BUSINESS, CONFIRM_LINE, RYAN_DOES, atVisitMoneyLine, dollars, moneyLine, whenText } from "./format"
+import { jobTable } from "./job-table"
 import { button, emailLayout, esc, facts, heading, paragraph, plainText, EMAIL_COLORS } from "./layout"
 import type { PurchaseConfirmationData, RenderedEmail } from "./types"
 
@@ -23,17 +24,14 @@ export function purchaseConfirmationEmail(d: PurchaseConfirmationData): Rendered
       return `<tr><td style="padding:14px 0;border-top:1px solid ${EMAIL_COLORS.border}"><p style="margin:0;font-family:'Barlow Condensed','Arial Narrow',Arial,sans-serif;font-size:22px;line-height:26px;font-weight:600;color:${EMAIL_COLORS.primary}">${esc(capital(v.name))}</p><p style="margin:4px 0 0;font-family:'Source Sans 3',Helvetica,Arial,sans-serif;font-size:17px;line-height:25px;color:${EMAIL_COLORS.text}">${esc(dateOf(v))}</p>${v.note ? `<p style="margin:4px 0 0;font-family:'Source Sans 3',Helvetica,Arial,sans-serif;font-size:17px;line-height:25px;color:${EMAIL_COLORS.text}">${esc(v.note)}</p>` : ""}${v.visit ? `<p style="margin:4px 0 0;font-family:'Source Sans 3',Helvetica,Arial,sans-serif;font-size:15px;line-height:22px;color:${EMAIL_COLORS.text}">${esc(RYAN_DOES[v.kind])}</p>` : ""}${calendar}</td></tr>`
     })
     .join("")
-  // What was sold, a line to a row and the total under it; nothing when the pass has no lines.
-  const sold = (d.lines ?? []).map((l) => `${capital(l.name)} · ${dollars(l.amount)}`)
-  const total = sold.length ? `Season total · ${dollars((d.lines ?? []).reduce((sum, l) => sum + l.amount, 0))}` : ""
-  const soldHtml = sold.length
-    ? `<p style="margin:0 0 16px;font-family:'Source Sans 3',Helvetica,Arial,sans-serif;font-size:17px;line-height:25px;color:${EMAIL_COLORS.text}">${sold.map(esc).join("<br>")}<br><strong>${esc(total)}</strong></p>`
-    : ""
+  // What was sold, as the one money table: a line to a row and the season total under it; nothing when the pass has no lines.
+  const lines = d.lines ?? []
+  const sold = lines.length ? jobTable({ facts: [], lines, total: lines.reduce((sum, l) => sum + l.amount, 0), totalLabel: "Season total" }) : null
   const where = d.address ? facts([["Where", d.address]]) : ""
   const html = emailLayout({
     origin: d.origin,
     preheader: `Your Season Pass for ${d.town} is reserved. We haven't charged you today.`,
-    body: [image, heading(`Welcome, ${d.firstName}`), paragraph(intro), `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 4px">${rows}</table>`, where, soldHtml, paragraph(CONFIRM_LINE), paragraph(money), ...(addCard ? [paragraph(ADD_CARD_LINE), button(addCard, "Add your card")] : []), button(d.signInUrl, `Open your ${ACCOUNT_NAME}`)].join(""),
+    body: [image, heading(`Welcome, ${d.firstName}`), paragraph(intro), `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 4px">${rows}</table>`, where, sold?.html ?? "", paragraph(CONFIRM_LINE), paragraph(money), ...(addCard ? [paragraph(ADD_CARD_LINE), button(addCard, "Add your card")] : []), button(d.signInUrl, `Open your ${ACCOUNT_NAME}`)].join(""),
     reason: `You are getting this because you bought Season Pass ${d.passNumber}.`,
     signOff: PURCHASE_SIGN_OFF,
   })
@@ -41,7 +39,7 @@ export function purchaseConfirmationEmail(d: PurchaseConfirmationData): Rendered
     `Welcome, ${d.firstName}.`, "", intro, "",
     ...d.visits.flatMap((v) => [`${capital(v.name)}: ${dateOf(v)}`, ...(v.note ? [`  ${v.note}`] : []), ...(v.visit ? [`  ${RYAN_DOES[v.kind]}`] : []), ...(v.visit ? [`  Google Calendar: ${googleCalendarUrl(v.visit)}`, `  Apple or Outlook calendar: ${v.visit.icsUrl}`] : [])]),
     ...(d.address ? [`Where: ${d.address}`] : []),
-    ...(sold.length ? ["", ...sold, total] : []),
+    ...(sold ? ["", ...sold.text] : []),
     "", CONFIRM_LINE, money, ...(addCard ? [ADD_CARD_LINE, `Add your card: ${addCard}`] : []), "", `Your ${ACCOUNT_NAME}: ${d.signInUrl}`, `Questions: ${BUSINESS.phone}`,
   ], PURCHASE_SIGN_OFF)
   return { subject, text, html }

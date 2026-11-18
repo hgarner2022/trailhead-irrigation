@@ -6,7 +6,7 @@ import * as s from "@/db/schema"
 import type { Database } from "@/db/types"
 import { cardColumns } from "@/lib/customer/card"
 import { recordEventSafe } from "@/lib/events/record"
-import { baseData, brandWords, jobAddress } from "@/lib/messaging/data"
+import { baseData, brandWords, emailLine, jobAddress, receiptNumber, visitWhoDay } from "@/lib/messaging/data"
 import { billName } from "@/lib/money/bill-name"
 import { queueMessage } from "@/lib/messaging/queue"
 import { paidDay, recordPaymentRow } from "@/lib/money/record"
@@ -65,8 +65,8 @@ export async function applyInvoicePayment(db: Database, stripe: Stripe, organiza
     await queueMessage(db, {
       organizationId, customerId: customer.id, kind: "receipt", key: `payment-${row.id}`,
       data: {
-        ...baseData(origin, customer), amount: row.amount, serviceName: billName(invoice.lines), address: await jobAddress(db, invoice.jobId), paidOn: paidDay(now), invoiceNumber: invoice.number, lines: invoice.lines.map((l) => ({ name: l.name, amount: l.quantity * l.unitPrice })),
-        tax: invoice.tax, total: invoice.total, card: method?.card ? brandWords(method.card.brand, method.card.last4) : null, nextLine: "", receiptUrl,
+        ...baseData(origin, customer), amount: row.amount, serviceName: billName(invoice.lines), address: await jobAddress(db, invoice.jobId), paidOn: paidDay(now), invoiceNumber: invoice.number, number: receiptNumber(row.id), ...(await visitWhoDay(db, invoice.lines.find((l) => l.visitId)?.visitId)),
+        lines: invoice.lines.map(emailLine), subtotal: invoice.amount, tax: invoice.tax, total: invoice.total, card: method?.card ? brandWords(method.card.brand, method.card.last4) : null, nextLine: "", receiptUrl,
       },
     })
   }

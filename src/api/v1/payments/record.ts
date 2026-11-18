@@ -6,7 +6,7 @@ import { visitName } from "@/lib/events/names"
 import { recordEventSafe, whoOf } from "@/lib/events/record"
 import { loadJobKind } from "@/lib/jobs/kind-load"
 import { setVisitLinePrice } from "@/lib/jobs/write-lines"
-import { baseData, jobAddress } from "@/lib/messaging/data"
+import { baseData, jobAddress, receiptLines, receiptNumber, visitWhoDay } from "@/lib/messaging/data"
 import { queueMessage } from "@/lib/messaging/queue"
 import { paidDay, recordPaymentRow, visitBalance } from "@/lib/money/record"
 import { loadTaxRule } from "@/lib/money/tax-rule"
@@ -97,7 +97,7 @@ export async function recordOfficePayment(ctx: Ctx, input: OfficePayment) {
     const name = visit ? kindName(visit.kind) : job.season !== null ? "season of visits" : kindName(await loadJobKind(ctx.db, ctx.organizationId, job))
     await queueMessage(ctx.db, {
       organizationId: ctx.organizationId, customerId: customer.id, visitId: visit?.id ?? null, kind: "receipt", key: `payment-${row.id}`,
-      data: { ...baseData(readAppUrl(), customer), amount: input.amount, serviceName: name, address: await jobAddress(ctx.db, job.id), paidOn: row.paidOn, card: null, paidBy: RECEIVED_BY[input.method], nextLine: "", receiptUrl: null },
+      data: { ...baseData(readAppUrl(), customer), amount: input.amount, serviceName: name, address: await jobAddress(ctx.db, job.id), paidOn: row.paidOn, number: receiptNumber(row.id), ...(await visitWhoDay(ctx.db, visit?.id)), ...(await receiptLines(ctx.db, ctx.organizationId, job.id, visit?.id)), card: null, paidBy: RECEIVED_BY[input.method], nextLine: "", receiptUrl: null },
     })
   }
   await emitEvent(ctx.db, ctx.organizationId, "payment.succeeded", { paymentId: row.id, jobId: job.id, ...(visit ? { visitId: visit.id } : {}), amount: input.amount, method: input.method }, {

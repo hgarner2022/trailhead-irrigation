@@ -4,7 +4,7 @@ import { eq } from "drizzle-orm"
 import * as s from "@/db/schema"
 import type { TestDb } from "@/db/test-db"
 import { apiDb } from "@/api/test-helpers"
-import { loadVisitFacts } from "./data"
+import { loadVisitFacts, receiptLines, receiptNumber, visitWhoDay } from "./data"
 
 const origin = "https://site.test"
 
@@ -44,5 +44,26 @@ describe("loadVisitFacts", () => {
     } finally {
       await db.update(s.person).set({ active: true }).where(eq(s.person.id, "person_truck-1"))
     }
+  })
+})
+
+describe("what a receipt carries", () => {
+  it("numbers a receipt from the payment id's short form", () => {
+    expect(receiptNumber("1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d")).toBe("R-1A2B3C4D")
+  })
+  it("names who did the visit and the day, and nothing for no visit", async () => {
+    expect(await visitWhoDay(db, "p4-turn-on")).toEqual({ who: "Ryan", day: "2027-05-05" })
+    expect(await visitWhoDay(db, "p4-blowout")).toEqual({ who: null, day: null })
+    expect(await visitWhoDay(db, null)).toEqual({ who: null, day: null })
+  })
+  it("lists a visit's own live lines with quantity and unit price, the lines before tax and the sales tax per line", async () => {
+    const [v] = await db.select().from(s.visit).where(eq(s.visit.id, "p4-turn-on"))
+    const visit = await receiptLines(db, v!.organizationId, v!.jobId, "p4-turn-on")
+    expect(visit.lines.length).toBeGreaterThan(0)
+    for (const l of visit.lines) expect(l.amount).toBe((l.quantity ?? 1) * (l.unitPrice ?? 0))
+    expect(visit.subtotal).toBe(visit.lines.reduce((sum, l) => sum + l.amount, 0))
+    expect(visit.total).toBe(visit.subtotal + visit.tax)
+    const whole = await receiptLines(db, v!.organizationId, v!.jobId)
+    expect(whole.lines.length).toBeGreaterThanOrEqual(visit.lines.length)
   })
 })

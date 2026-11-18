@@ -46,7 +46,7 @@ describe("payments.record", () => {
     expect((await callApi(as(readKey), visitsGet, { id: v.id })).chargedAt).not.toBeNull()
     const receipts = (await db.select().from(s.messageLog)).filter((m) => m.visitId === v.id && m.kind === "receipt")
     expect(receipts).toHaveLength(1)
-    expect(receipts[0]!.body).toContain("check")
+    expect(receipts[0]!.body).toContain("Paid: $145, Check")
     // a read key sees the money but not the check number or a receipt link
     const asRead = { ...row, reference: null, receiptUrl: null }
     expect((await callApi(as(readKey), paymentsList, { jobId: v.jobId })).data).toEqual([asRead])

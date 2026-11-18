@@ -6,7 +6,7 @@ import { recordEvent } from "@/lib/events/record"
 import { linesOfVisit, visitPrice } from "@/lib/jobs/lines"
 import { loadTaxRule } from "@/lib/money/tax-rule"
 import { enqueue } from "@/lib/queue"
-import { baseData, loadVisitFacts } from "@/lib/messaging/data"
+import { baseData, emailLine, loadVisitFacts } from "@/lib/messaging/data"
 import { queueMessage, queueStaffMessage } from "@/lib/messaging/queue"
 import { passImageUrl } from "@/lib/messaging/tokens"
 import { filledLine } from "@/emails/format"
@@ -98,7 +98,7 @@ export async function queuePurchaseConfirmation(db: Database, passId: string, or
     const moved = filled.find((c) => c.visitId === v.id)?.detail as { from?: string; to?: string } | undefined
     held.push({ kind: v.kind, name: kindName(v.kind), amount: visitPrice(linesOfVisit(lineRows, v.id), rule), visit: facts, fallback: "Ryan sets the day and we text it to you.", ...(moved?.from && v.scheduledOn ? { note: filledLine(moved.from, v.scheduledOn) } : {}) })
   }
-  const lines = lineRows.map((l) => ({ name: l.name, amount: l.quantity * l.unitPrice }))
+  const lines = lineRows.map(emailLine)
   return queueMessage(db, {
     organizationId: org, customerId: customer.id, kind: "purchase-confirmation", key,
     data: { ...baseData(origin, customer), passNumber: pass.number, season: pass.season, town: row.town, address: row.address, passImageUrl: passImageUrl(origin, pass.jobId), visits: held, ...(lines.length ? { lines } : {}), cardLast4: customer.cardLast4, cardUpdateUrl: extras.cardUpdateUrl ?? null },

@@ -3,6 +3,9 @@
 /** What every message calls the customer's page: the one name in every link, button and sentence (`your ${ACCOUNT_NAME}`). The portal design (docs/plans/2026-11-18-customer-portal-design.md) set it. */
 export const ACCOUNT_NAME = "Trailhead account"
 
+/** The one link every money email carries to the customer's page. */
+export const SEE_JOB = `See this job in your ${ACCOUNT_NAME}`
+
 /** The line above the footer of every customer email. */
 export const SIGN_OFF = "The Trailhead crew"
 
@@ -26,6 +29,9 @@ export function longDay(day: string): string {
   const { m, d, weekday } = parts(day)
   return `${WEEKDAYS[weekday]}, ${MONTHS[m - 1]} ${d}`
 }
+
+/** "Friday, November 20, with Ryan"; just the day when no one has the visit. */
+export const whoWithDay = (day: string, who: string | null | undefined) => `${longDay(day)}${who ? `, with ${who}` : ""}`
 
 /** "Tue, May 5" for a text. */
 export function shortDay(day: string): string {

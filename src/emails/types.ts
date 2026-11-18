@@ -18,6 +18,14 @@ export interface Base {
   signInUrl: string
 }
 
+/** One line of a job as an email shows it: the name, what it came to, and quantity and unit price (whole dollars) for the "2 × $10" under the name. */
+export interface EmailLine {
+  name: string
+  amount: number
+  quantity?: number
+  unitPrice?: number
+}
+
 export interface PurchaseConfirmationData extends Base {
   passNumber: string
   season: number
@@ -29,7 +37,7 @@ export interface PurchaseConfirmationData extends Base {
   /** each visit on the pass: its charge, and its day with the window once it has one (else `fallback` says what happens) */
   visits: { kind: "turn-on" | "inspection" | "blowout"; name: string; amount: number; visit: VisitFacts | null; fallback: string; /** said when the day picked at checkout filled up before the card was saved */ note?: string }[]
   /** what was sold, one row per line, cancelled lines left out; `amount` is the line's total in whole dollars. Absent for a pass with no lines. */
-  lines?: { name: string; amount: number }[]
+  lines?: EmailLine[]
   /** the last four of the card on file, or null */
   cardLast4: string | null
   /** with no card on file: the link to add one (an office sale paid by card), else null and the customer pays at each visit */
@@ -48,11 +56,18 @@ export interface ReceiptData extends Base {
   address: string
   /** ISO day the money arrived */
   paidOn: string
-  /** an invoice paid on the pay page: its number, its frozen lines (`amount` is the line's total in whole dollars), the tax on them (0 when none) and its total */
-  invoiceNumber?: string
-  lines?: { name: string; amount: number }[]
+  /** the receipt's own number, the payment id's short form ("R-1A2B3C4D") */
+  number?: string
+  /** the first name of the person on the visit, and the day it was done; absent for a payment on a job with no visit */
+  who?: string | null
+  day?: string | null
+  /** the job's lines the receipt is for (a visit's, or an invoice's frozen ones), the lines before tax, the sales tax (0 when none) and what they come to; a row queued before these were carried has none and shows one line */
+  lines?: EmailLine[]
+  subtotal?: number
   tax?: number
   total?: number
+  /** an invoice paid on the pay page: its number */
+  invoiceNumber?: string
   /** "Visa ending 4242" or null */
   card: string | null
   /** the line that names the next visit */
@@ -67,8 +82,11 @@ export interface InvoiceData extends Base {
   /** the street address of the property */
   address: string
   /** one row per frozen line; `amount` is the line's total in whole dollars */
-  lines: { name: string; amount: number }[]
-  /** the lines before tax */
+  lines: EmailLine[]
+  /** the first name of the person on the visit the invoice is for, and the day it was done; absent when the invoice covers no visit */
+  who?: string | null
+  day?: string | null
+  /** the lines before tax: the table's Subtotal */
   amount: number
   /** 0 while no sales tax is collected; the email shows a tax line only when it is above zero */
   tax: number
