@@ -5,7 +5,7 @@ import type { Ctx } from "@/api/core/context"
 import { visitName } from "@/lib/events/names"
 import { readAppUrl } from "@/lib/env"
 import { firstNameOf } from "@/lib/admin/people"
-import { queueStaffMessage } from "@/lib/messaging/queue"
+import { queueStaffMessage, queueStaffText } from "@/lib/messaging/queue"
 import { shortDay } from "./words"
 
 /** The alert kind on Home for a change a customer made from their own account. */
@@ -58,4 +58,6 @@ export async function alertCustomerChange(ctx: Ctx, visit: { id: string; kind: s
     detail: message,
     path: `/admin/visits?visit=${encodeURIComponent(visit.id)}`,
   })
+  // One text to Ryan on every cancel or move while there is one truck (architecture section 8, question 4); the row and the email stay the record.
+  await queueStaffText(ctx.db, ctx.organizationId, `${CUSTOMER_CHANGED}:${key}`, `Trailhead: ${message}`)
 }

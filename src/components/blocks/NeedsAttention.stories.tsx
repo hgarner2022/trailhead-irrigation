@@ -35,7 +35,7 @@ export const WithOverdueBill: Story = {
   render: (args) => narrow(<NeedsAttention {...args} />),
 }
 
-/** A customer changed their own visit from the account: the row says who, what and when, a payment is flagged, and Open visit opens it. */
+/** A customer changed their own visit from the account: the row says who, what and when, a payment is flagged, and Open job opens it. */
 export const WithCustomerChanges: Story = {
   args: {
     items: [

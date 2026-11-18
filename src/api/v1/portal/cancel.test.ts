@@ -139,7 +139,7 @@ describe("visits.cancelSelf: a one-off visit", () => {
     expect(alerts).toHaveLength(1)
     expect(alerts[0]!.message).toMatch(/^Dana Tester canceled Repair, .+, Erie\. The day is free\.$/)
     expect(alerts[0]!.message).not.toContain("payment")
-    expect(await staffQueue(v.id)).toHaveLength(1)
+    expect((await staffQueue(v.id)).filter((q) => !(q.payload as { channel?: string }).channel)).toHaveLength(1)
   })
 
   it("is idempotent: a second call answers the same and adds no event, message or alert", async () => {
@@ -184,5 +184,22 @@ describe("visits.cancelSelf: a one-off visit", () => {
     // the customer's own account still shows the job, with its visit canceled
     const job = await callApi(me(dana), jobsGet, { id: v.jobId })
     expect(job.visits[0]).toMatchObject({ status: "cancelled", canceledOn: "2027-05-20" })
+  })
+})
+
+describe("the owner is texted on every customer cancel or move, beside the Home row and the email", () => {
+  it("queues one text to each owner and admin with a mobile number, in Ryan's words, and none to a tech or a person with no number", async () => {
+    const people = await db.select().from(s.person)
+    const owner = people.find((p) => p.role === "owner")!
+    await db.update(s.person).set({ phone: "(970) 555-0199", active: true }).where(eq(s.person.id, owner.id))
+    const v = await bookedRepair(dana)
+    await callApi(me(dana), visitsCancelSelf, { id: v.id })
+    const texts = (await db.select().from(s.queueItem)).filter((q) => q.kind === "message" && (q.payload as { channel?: string }).channel === "sms" && q.key.includes(v.id))
+    expect(texts).toHaveLength(1)
+    expect(texts[0]!.payload).toMatchObject({ staff: true, channel: "sms", to: "+19705550199" })
+    expect((texts[0]!.payload as { body: string }).body).toMatch(/^Trailhead: Dana Tester canceled Repair, .+, Erie\. The day is free\.$/)
+    // the Home row and the email are still there
+    expect((await db.select().from(s.adminAlert)).filter((a) => a.key.startsWith(`${v.id}:`))).toHaveLength(1)
+    expect((await staffQueue(v.id)).filter((q) => !(q.payload as { channel?: string }).channel)).toHaveLength(1)
   })
 })

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 import { attention, type ShapeInput } from "./shape"
 
-const input = (alerts: unknown[]) => ({ now: new Date("2027-04-10T18:00:00Z"), alerts, queueProblems: [], visits: [], dismissals: [], passes: [] }) as unknown as ShapeInput
+const input = (alerts: unknown[]) => ({ now: new Date("2027-04-10T18:00:00Z"), alerts, queueProblems: [], visits: [], dismissals: [], passes: [], customers: [], jobs: [], payments: [], invoices: [] }) as unknown as ShapeInput
 
 describe("Home's row for a customer's own change", () => {
   it("names the visit from the alert key, so the row opens that visit, and carries the alert's words", () => {
