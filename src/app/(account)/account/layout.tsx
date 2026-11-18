@@ -4,6 +4,7 @@ import { customersMe } from "@/api/v1/portal/me"
 import { auth } from "@/auth"
 import { AccountNav } from "@/components/blocks/AccountNav"
 import { ctxFromSession } from "@/lib/admin/api-ctx"
+import { signOutOfAccount } from "./actions"
 
 // The frame around every signed-in /account page: the header with the five places (Home, Visits, Jobs, Season Pass for someone who has held one,
 // Details). The sign-in pages and the card-saved page come to someone with no session, so they get no header. The header stays off the paper when a
@@ -15,7 +16,7 @@ export default async function AccountLayout({ children }: Readonly<{ children: R
   const me = await callApi(await ctxFromSession(), customersMe, {})
   return (
     <div className="min-h-svh bg-cream">
-      <AccountNav firstName={me.firstName} hasPass={me.hasHeldPass} className="print:hidden" />
+      <AccountNav firstName={me.firstName} hasPass={me.hasHeldPass} onSignOut={signOutOfAccount} className="print:hidden" />
       {children}
     </div>
   )

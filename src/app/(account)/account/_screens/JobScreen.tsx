@@ -110,6 +110,7 @@ export function JobScreen({ job, today, pass, days = {}, onChangeDay }: JobScree
                   <VisitRow
                     key={v.id}
                     visit={v}
+                    today={today}
                     canPick={offered.length > 0}
                     change={v.change}
                     action={v.change === "yes" ? <ChangeMyDay name={v.name} visitId={v.id} currentDay={v.scheduledOn} days={offered} onPick={onChangeDay} /> : undefined}

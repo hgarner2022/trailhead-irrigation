@@ -7,6 +7,16 @@ import { PHONE_DISPLAY } from "@/lib/nav"
 
 export { firstNameOf }
 
+/**
+ * The name a customer reads beside a visit: the first name of a person who has a first and a last name ("Ryan Garner" gives "Ryan"). A one-word name or a label such as
+ * "Second truck" (a truck's leftover name, not a person) gives null, and the visit is shown without a person. Customers see first names only.
+ */
+export function customerFacingFirstName(name: string | null | undefined): string | null {
+  const words = name?.trim().split(/\s+/).filter(Boolean) ?? []
+  if (words.length < 2 || /truck/i.test(name!)) return null
+  return firstNameOf(name)
+}
+
 const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
 export const weekdayName = (day: string) => WEEKDAYS[new Date(`${day}T12:00:00Z`).getUTCDay()]!
 
@@ -18,6 +28,22 @@ export const shortDay = (day: string) => `${weekdayName(day).slice(0, 3)}, ${mon
 export const dueDay = (day: string) => `${monthShort(monthDay(day).month)} ${monthDay(day).day}`
 /** "November 3, 2026": a sold or paid day in a list. */
 export const fullDay = (day: string) => `${monthName(monthDay(day).month)} ${monthDay(day).day}, ${day.slice(0, 4)}`
+
+export interface VisitDayFacts {
+  status: string
+  scheduledOn: string | null
+  completedOn?: string | null
+}
+
+/** The one day a visit is read by: a done visit by the day it was done (`completed_on`, the day the pass card shows), any other by its scheduled day; null with neither. */
+export const visitDay = (v: VisitDayFacts): string | null => (v.status === "completed" && v.completedOn ? v.completedOn : v.scheduledOn)
+
+/** "Tuesday, May 5" for a visit's day, with the year ("Tuesday, April 27, 2027") when it falls in another year than `today`; null when the visit has no day. Every list and card reads a visit's day through this. */
+export function visitDayWords(v: VisitDayFacts, today: string): string | null {
+  const day = visitDay(v)
+  if (!day) return null
+  return day.slice(0, 4) === today.slice(0, 4) ? longDay(day) : `${longDay(day)}, ${day.slice(0, 4)}`
+}
 
 export const CALL_LINE = `call or text Ryan at ${PHONE_DISPLAY}`
 export const DAY_FAILED = `We couldn't save that day. Try another, or call Ryan at ${PHONE_DISPLAY}.`

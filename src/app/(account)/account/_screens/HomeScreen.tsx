@@ -42,6 +42,7 @@ export function HomeScreen({ jobs, today, pass, days = {}, onChangeDay }: HomeSc
       <div className="grid gap-6 lg:grid-cols-2">
         <NextVisitCard
           visit={next?.visit ?? null}
+          today={today}
           change={next?.visit.change}
           canPick={offered.length > 0}
           action={next && next.visit.change === "yes" ? <ChangeMyDay name={next.visit.name} visitId={next.visit.id} currentDay={next.visit.scheduledOn} days={offered} onPick={onChangeDay} /> : undefined}

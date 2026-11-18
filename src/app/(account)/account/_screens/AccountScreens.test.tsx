@@ -121,6 +121,18 @@ describe("JobsScreen and JobScreen", () => {
   })
 })
 
+describe("the one date a visit shows", () => {
+  const early = { ...passJob, visits: passJob.visits.map((v) => (v.id === "v1" ? { ...v, status: "completed" as const, scheduledOn: "2027-04-27", completedOn: "2026-11-17", change: "no" as const } : v.id === "v2" ? { ...v, status: "scheduled" as const, scheduledOn: "2027-10-05" } : v)) }
+  it("reads a done visit by its done-on day and a visit in another year with the year", () => {
+    render(<VisitsScreen jobs={[early]} today="2026-11-18" />)
+    const past = screen.getByRole("heading", { name: "Past" }).closest("section")!
+    expect(within(past).getByText("Tuesday, November 17")).toBeInTheDocument()
+    expect(document.body.textContent).not.toContain("April 27")
+    const ahead = screen.getByRole("heading", { name: "Coming up" }).closest("section")!
+    expect(ahead.textContent).toContain("Tuesday, October 5, 2027")
+  })
+})
+
 describe("DetailsScreen", () => {
   it("shows the contact, the yard facts and the card, with the email as read only and how to change it", () => {
     render(<DetailsScreen customer={andrea} />)
@@ -128,6 +140,9 @@ describe("DetailsScreen", () => {
     expect(screen.getByText("andrea@example.com")).toBeInTheDocument()
     expect(screen.getByText(/To change your email,/)).toBeInTheDocument()
     expect(screen.getByDisplayValue("4471")).toBeInTheDocument()
+    expect(screen.getByDisplayValue("(970) 555-0142")).toBeInTheDocument()
+    expect(screen.getByDisplayValue("(970) 555-0177")).toBeInTheDocument()
+    expect(document.body.innerHTML).not.toContain("+1970")
     expect(screen.getByText("Visa ending 4242, expires 08/28")).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Update card" })).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Sign out" })).toBeInTheDocument()

@@ -143,3 +143,13 @@ describe("a charge with no card to charge", () => {
     expect((await getLiveAdminData(ctxFor(db, owner))).attention.some((a) => a.kind === "no-card")).toBe(false)
   })
 })
+
+describe("a visit marked done before its scheduled day", () => {
+  it("makes the customer's Last visit the day it was done, never the day it was scheduled for", async () => {
+    const customerId = (await passViewOf(db, "p3")).customerId
+    await db.update(s.visit).set({ status: "completed", scheduledOn: "2027-05-04", completedOn: "2027-04-19" }).where(eq(s.visit.id, "p3-turn-on"))
+    const after = await getLiveAdminData(ctxFor(db, owner))
+    const client = after.clients.find((c) => c.id === customerId)!
+    expect(client.lastVisitAt?.slice(0, 10)).toBe("2027-04-19")
+  })
+})

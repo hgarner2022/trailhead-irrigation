@@ -137,6 +137,8 @@ describe("bookedWhen", () => {
     const v = { kind: "turn-on", window: "May", amount: 145, scheduledAt: "2027-05-04T14:00:00Z", personName: "Ryan Garner" } as const
     expect(bookedWhen(v)).toBe("Tuesday, May 4 with Ryan")
     expect(bookedWhen({ ...v, personName: undefined })).toBe("Tuesday, May 4")
+    expect(bookedWhen({ ...v, personName: "Second truck" })).toBe("Tuesday, May 4")
+    expect(bookedWhen({ ...v, personName: "Second" })).toBe("Tuesday, May 4")
     expect(bookedWhen({ kind: "turn-on", window: "May", amount: 145 })).toBeNull()
     expect(bookedWhen({ ...v, completedAt: "2027-05-04T17:00:00Z" })).toBeNull()
   })

@@ -6,12 +6,13 @@ import { SeasonLine } from "@/components/blocks/SeasonLine"
 import { StatusPill } from "@/components/blocks/StatusPill"
 import type { Pass, TimingPreference } from "@/lib/admin/types"
 import { preferenceOf } from "@/lib/admin/format"
+import { PHONE_DISPLAY, PHONE_TEL } from "@/lib/nav"
 import { CancelPassDialog, type ActionResult } from "./CancelPassDialog"
 import { EarlierSeasons } from "./EarlierSeasons"
 import { PassActions } from "@/components/blocks/PassActions"
 import { PreferenceDialog } from "@/components/blocks/PreferenceDialog"
 import { AddToCalendar } from "./AddToCalendar"
-import { PickDayButtons } from "./PickDayButtons"
+import { PickDayButtons, type PickDayButtonsProps } from "./PickDayButtons"
 import { bookedWhen, canChange, canReserveNext, reserveNextHref, cardAction, cardLine, earlierSeasons, passHeadline, pickDayOptions, seasonCaption, visitLineInfo, visitRows } from "./pass-page-model"
 
 // The customer's pass page: a season card, not a dashboard. The pass card at
@@ -81,12 +82,23 @@ export function PassPageScreen({ pass, passes = [pass], today, onCancel, onChang
           <p className={cn("mt-2 text-base", headline.action === "update-card" ? "text-foreground" : "text-muted-foreground")}>{headline.line}</p>
           {headline.action === "pick-day" && headline.kind && headline.kind !== "inspection" && (
             <div className="mt-5">
-              <PickDayButtons kind={headline.kind} days={pickDays?.[headline.kind] ?? pickDayOptions(pass, headline.kind)} onPick={onPickDay && ((k, d) => onPickDay(k as "turn-on" | "blowout", d))} />
+              <PickDayButtons kind={headline.kind} days={pickDays?.[headline.kind] ?? pickDayOptions(pass, headline.kind)} onPick={onPickDay as PickDayButtonsProps["onPick"]} />
             </div>
           )}
           {headline.action === "change-day" && headline.kind && headline.kind !== "inspection" && (
             <div className="mt-5">
-              <PickDayButtons kind={headline.kind} days={pickDays?.[headline.kind] ?? pickDayOptions(pass, headline.kind)} onPick={onPickDay && ((k, d) => onPickDay(k as "turn-on" | "blowout", d))} foldedLabel="Change your day" />
+              {pickDays?.[headline.kind]?.length === 0 ? (
+                // inside the two-day cut-off the API offers no days: the customer calls instead
+                <p data-slot="call-to-change" className="text-base text-foreground">
+                  {"Call or text Ryan to change this visit: "}
+                  <a href={PHONE_TEL} className="font-semibold text-primary-deep underline underline-offset-2">
+                    {PHONE_DISPLAY}
+                  </a>
+                  .
+                </p>
+              ) : (
+                <PickDayButtons kind={headline.kind} days={pickDays?.[headline.kind] ?? pickDayOptions(pass, headline.kind)} onPick={onPickDay as PickDayButtonsProps["onPick"]} foldedLabel="Change your day" />
+              )}
             </div>
           )}
           {headline.action === "update-card" && <UpdateCardButton onUpdateCard={onUpdateCard} className="mt-5" />}

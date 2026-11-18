@@ -59,9 +59,22 @@ describe("jobs.list and jobs.get", () => {
     const job = data.find((j) => j.id === v.jobId)!
     expect(job).toMatchObject({ kind: "repair", name: "Repair", passId: null, stage: "done", total: 145, money: { paid: 0, owed: 145, words: "Invoice sent" } })
     expect(job.visits).toMatchObject([{ id: v.id, kind: "repair", name: "Repair", status: "completed", change: "no" }])
+    expect(job.visits[0]!.completedOn).toBe(job.visits[0]!.scheduledOn) // a done visit carries the day it was done
     expect(job.invoices).toMatchObject([{ id: inv.id, status: "sent", total: 145, paidOn: null }])
     expect(job.invoices[0]!.payUrl).toMatch(new RegExp(`^/pay/${inv.id}\\?token=`))
     expect(data.every((j) => j.passId === null)).toBe(true)
+  })
+
+  it("names the person on a visit by first name only when the person has a first and last name; a label like Second truck reads as no one", async () => {
+    const v = await doneRepair(dana)
+    const first = async () => (await callApi(me(dana), jobsList, {})).data.find((j) => j.id === v.jobId)!.visits[0]!.personFirstName
+    await db.update(s.person).set({ name: "Second truck" }).where(eq(s.person.id, "person_truck-2"))
+    await db.update(s.visit).set({ personId: "person_truck-2" }).where(eq(s.visit.id, v.id))
+    expect(await first()).toBeNull()
+    await db.update(s.person).set({ name: "Second" }).where(eq(s.person.id, "person_truck-2"))
+    expect(await first()).toBeNull()
+    await db.update(s.person).set({ name: "Sam Okafor" }).where(eq(s.person.id, "person_truck-2"))
+    expect(await first()).toBe("Sam")
   })
 
   it("never carries a note, an event, a Jobber link, a surname or a voided invoice", async () => {

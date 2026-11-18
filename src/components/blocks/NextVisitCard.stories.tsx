@@ -8,7 +8,7 @@ const meta = {
   title: "Blocks/NextVisitCard",
   component: NextVisitCard,
   parameters: { layout: "padded" },
-  args: { visit: booked, change: "yes", action: <Button variant="outline">Change my day</Button> },
+  args: { visit: booked, today: "2027-04-14", change: "yes", action: <Button variant="outline">Change my day</Button> },
 } satisfies Meta<typeof NextVisitCard>
 export default meta
 type Story = StoryObj<typeof meta>

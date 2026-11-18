@@ -100,4 +100,11 @@ describe("PassPageScreen", () => {
     render(<PassPageScreen pass={pass} passes={[next, pass]} today="2027-11-02" />)
     expect(screen.queryByRole("link", { name: "Reserve next season" })).not.toBeInTheDocument()
   })
+
+  it("says to call or text Ryan for a booked visit inside the cut-off, where no days are on offer", () => {
+    const booked: Pass = { ...pass, visits: pass.visits.filter((v) => v.kind !== "inspection").map((v) => (v.kind === "blowout" ? { ...v, scheduledOn: "2027-10-12", scheduledAt: "2027-10-12T14:00:00Z" } : v)) }
+    render(<PassPageScreen pass={booked} today="2027-10-11" pickDays={{ blowout: [] }} />)
+    expect(screen.getByText(/Call or text Ryan to change this visit/)).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: "Change your day" })).not.toBeInTheDocument()
+  })
 })

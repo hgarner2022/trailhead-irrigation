@@ -1,6 +1,6 @@
 import type { ReactNode } from "react"
 import { PHONE_DISPLAY, PHONE_TEL } from "@/lib/nav"
-import { arrivalWindow, longDay, visitPill } from "@/lib/portal/words"
+import { arrivalWindow, visitDayWords, visitPill } from "@/lib/portal/words"
 import { StatusPill } from "./StatusPill"
 
 // One visit as a customer reads it, in a list on the Visits screen and on a job: the day (or what the day is waiting on), what the visit is and
@@ -11,6 +11,8 @@ export interface VisitRowFacts {
   name: string
   status: string
   scheduledOn: string | null
+  /** the day a done visit was done; it is read by this day, not by the scheduled one */
+  completedOn?: string | null
   startTime?: string | null
   durationMinutes?: number | null
   personFirstName?: string | null
@@ -19,6 +21,8 @@ export interface VisitRowFacts {
 
 export interface VisitRowProps {
   visit: VisitRowFacts
+  /** today's day, so a day in another year shows its year */
+  today: string
   /** days are on offer for a visit with no day */
   canPick?: boolean
   /** "call": the day is within two days, show the phone number; otherwise `action` is shown when there is one */
@@ -27,10 +31,10 @@ export interface VisitRowProps {
   action?: ReactNode
 }
 
-export function VisitRow({ visit, canPick = false, change = "no", action }: VisitRowProps) {
+export function VisitRow({ visit, today, canPick = false, change = "no", action }: VisitRowProps) {
   const pill = visitPill({ status: visit.status, notDoneReason: visit.notDoneReason, canPick })
   const gone = visit.status === "cancelled" || visit.status === "skipped"
-  const day = visit.scheduledOn ? longDay(visit.scheduledOn) : "No day yet"
+  const day = visitDayWords(visit, today) ?? "No day yet"
   const window = visit.status === "scheduled" ? arrivalWindow(visit.startTime, visit.durationMinutes) : null
   return (
     <li data-slot="visit-row" data-status={pill.status} className="space-y-3 py-4">

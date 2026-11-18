@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import type { PortalCustomerType } from "@/api/v1/portal/schemas"
+import { formatPhone } from "@/lib/format/contact"
 
 // The two things a customer edits on Details: their own name and mobile, and the yard facts of a property. Each saves through a server action that
 // answers `{ ok, message }`, so a failure is said in place and a save is confirmed. The email and the street address are shown, not edited here.
@@ -48,7 +49,7 @@ function Footer({ pending, note }: { pending: boolean; note: { ok: boolean; text
 export function ContactForm({ customer, onSave }: { customer: Pick<PortalCustomerType, "firstName" | "lastName" | "phone">; onSave?: (fields: { firstName: string; lastName: string; phone: string }) => Promise<SaveResult> | SaveResult }) {
   const [firstName, setFirst] = useState(customer.firstName)
   const [lastName, setLast] = useState(customer.lastName ?? "")
-  const [phone, setPhone] = useState(customer.phone ?? "")
+  const [phone, setPhone] = useState(formatPhone(customer.phone))
   const { pending, note, save } = useSave(() => onSave?.({ firstName, lastName, phone }))
   return (
     <form
@@ -77,7 +78,7 @@ export function YardForm({ property, onSave }: { property: Property; onSave?: (i
   const [mustBeHome, setMustBeHome] = useState(property.mustBeHome)
   const [accessNote, setAccessNote] = useState(property.accessNote ?? "")
   const [contactName, setContactName] = useState(property.contactName ?? "")
-  const [contactPhone, setContactPhone] = useState(property.contactPhone ?? "")
+  const [contactPhone, setContactPhone] = useState(formatPhone(property.contactPhone))
   const { pending, note, save } = useSave(() =>
     onSave?.(property.id, { zones: zones.trim() ? Number(zones) : null, controller, backflowLocation: backflow, gateCode, mustBeHome, accessNote, contactName, contactPhone }),
   )

@@ -3,6 +3,7 @@
  * Pure: `live.ts` fetches, this shapes, and the tests run it on a seeded
  * database. Calendar days are Mountain time; instants are ISO strings.
  */
+import { lastVisitAt } from "./last-visit"
 import { zonedToUtc } from "./calendar"
 import type { YardWire } from "./yard"
 import { fullName } from "./format"
@@ -260,8 +261,7 @@ export function shapeAdminData(i: ShapeInput): AdminData {
   const visits = [...appVisits, ...mirrorVisits, ...jobs]
 
   // Clients: the app's customers, then the mirror's that no customer is linked to.
-  const lastVisit = new Map<string, string>()
-  for (const v of visits) if (v.status === "completed" && v.startAt && v.startAt > (lastVisit.get(v.clientId) ?? "")) lastVisit.set(v.clientId, v.startAt)
+  const lastVisit = lastVisitAt(visits, i.today)
   const appIds = new Set(i.customers.map((c) => c.id))
   const history = new Map<string, ConsentRow[]>()
   for (const c of i.consents) history.set(c.customerId, [...(history.get(c.customerId) ?? []), c])

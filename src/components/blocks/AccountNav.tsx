@@ -3,11 +3,13 @@
 import Image from "next/image"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { ChevronDown } from "lucide-react"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
 
-// The customer's account header (docs/plans/2026-11-18-customer-portal-design.md, section 4): the logo and "Hi, Andrea" on top, the five
-// places under it, Home · Visits · Jobs · Season Pass (only for someone who has held one) · Details. On a laptop the row sits beside the
-// logo. The current place is marked with aria-current; `current` overrides the route, which is how the story and the tests pin it.
+// The customer's account header (docs/plans/2026-11-18-customer-portal-design.md, section 4): the logo, and "Hi, Andrea" as a menu with Sign out pinned
+// to the far right of the header at every width, then the five places, Home · Visits · Jobs · Season Pass (only for someone who has held one) · Details.
+// On a laptop the row sits beside the logo, on a phone under it. The current place is marked with aria-current; `current` overrides the route, which is how the story and the tests pin it.
 // A signed-out visitor sees a quiet Sign in link in the same place, so the header never changes shape.
 
 export interface AccountNavProps {
@@ -17,6 +19,8 @@ export interface AccountNavProps {
   hasPass?: boolean
   /** the path to mark as current; defaults to the route */
   current?: string
+  /** the server action that signs the customer out: Sign out in the menu submits a form to it */
+  onSignOut?: () => void | Promise<void>
   className?: string
 }
 
@@ -32,15 +36,14 @@ const PLACES = [
 export const placeOf = (path: string) =>
   PLACES.filter((p) => (p.href === "/account" ? path === p.href : path === p.href || path.startsWith(`${p.href}/`))).sort((a, b) => b.href.length - a.href.length)[0]?.href
 
-export function AccountNav({ firstName, hasPass = false, current, className }: AccountNavProps) {
+export function AccountNav({ firstName, hasPass = false, current, onSignOut, className }: AccountNavProps) {
   const route = usePathname()
   const here = placeOf(current ?? route ?? "")
   return (
     <header data-slot="account-nav" className={cn("border-b border-border bg-background", className)}>
-      <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-8 gap-y-2 container-padding-x py-3">
+      <div className="flex flex-wrap items-center gap-x-8 gap-y-2 container-padding-x py-3">
         <Link href="/account" className="flex items-center gap-3" aria-label="Trailhead Lawn & Irrigation, your account">
           <Image src="/images/logo-badge.png" alt="" width={51} height={36} className="h-9 w-auto" />
-          {firstName && <span className="font-display text-xl leading-none text-navy sm:hidden">{`Hi, ${firstName}`}</span>}
         </Link>
         {firstName ? (
           <>
@@ -56,7 +59,24 @@ export function AccountNav({ firstName, hasPass = false, current, className }: A
                 </Link>
               ))}
             </nav>
-            <span className="ml-auto hidden font-display text-xl leading-none text-navy sm:block">{`Hi, ${firstName}`}</span>
+            <div data-slot="account-menu" className="order-2 ml-auto sm:order-none">
+              <DropdownMenu>
+                <DropdownMenuTrigger className="flex items-center gap-1 rounded-lg px-2 py-2 font-display text-xl leading-none text-navy hover:bg-stone">
+                  {`Hi, ${firstName}`}
+                  <ChevronDown aria-hidden className="size-4" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <form action={onSignOut}>
+                    {/* keep the menu mounted until the sign-out redirect: closing on select could unmount the form before it submits */}
+                    <DropdownMenuItem asChild onSelect={(e) => e.preventDefault()}>
+                      <button type="submit" className="w-full cursor-pointer text-base">
+                        Sign out
+                      </button>
+                    </DropdownMenuItem>
+                  </form>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </>
         ) : (
           <Link href="/account/sign-in" className="ml-auto text-base font-semibold text-navy-light hover:text-navy">
