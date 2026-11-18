@@ -7,10 +7,10 @@ import "maplibre-gl/dist/maplibre-gl.css"
 import { cn } from "@/lib/utils"
 import type { Person, Visit } from "@/lib/admin/types"
 import { EmptyState } from "./EmptyState"
-import { hasPoint, personClass, readTokenColour, shadeOf, stopLine, stopsDescription, townBounds, type Stop } from "./day-map-helpers"
+import { hasPoint, personClass, readTokenColour, routeNumbers, routesOf, shadeOf, stopLine, stopsDescription, townBounds, type Stop } from "./day-map-helpers"
 
 // One day's stops on real geography: open tiles from OpenFreeMap (no key),
-// one numbered pin per visit in its person's colour, a translucent patch
+// one numbered pin per visit in its person's colour (the number is the stop's place in that person's route), a line through each person's route in their colour, a translucent patch
 // around each person's stops, and a popup with the name, town and kind of
 // the selected stop. Clicking a pin reports it through `onSelect`, so the
 // grid and the stop list beside the map highlight the same visit; the pins
@@ -33,6 +33,7 @@ export interface DayMapProps {
 
 const STYLE = "https://tiles.openfreemap.org/styles/liberty"
 const SHADES = "person-shades"
+const ROUTES = "person-routes"
 const PIN = "flex size-7 cursor-pointer items-center justify-center rounded-full text-xs font-semibold text-white shadow-md ring-2 ring-white"
 
 /** WebGL is there to draw on: false on the server, in jsdom and in a browser that has it switched off. */
@@ -53,6 +54,17 @@ function shadeFeatures(stops: Stop[], people: Person[], container: HTMLElement):
     return [{ type: "Feature", properties: { colour: readTokenColour(container, personClass(i)) }, geometry: { type: "Polygon", coordinates: [ring] } }]
   })
   return { type: "FeatureCollection", features }
+}
+
+function routeFeatures(stops: Stop[], people: Person[], container: HTMLElement): GeoJSON.FeatureCollection {
+  return {
+    type: "FeatureCollection",
+    features: routesOf(stops).map((r) => ({
+      type: "Feature",
+      properties: { colour: readTokenColour(container, personClass(Math.max(0, people.findIndex((p) => p.id === r.personId)))) },
+      geometry: { type: "LineString", coordinates: r.points.map((p) => [...p]) },
+    })),
+  }
 }
 
 interface Pin {
@@ -110,6 +122,8 @@ export function DayMap({ stops, people, selectedId, onSelect, className }: DayMa
         map.addSource(SHADES, { type: "geojson", data: { type: "FeatureCollection", features: [] } })
         map.addLayer({ id: `${SHADES}-fill`, type: "fill", source: SHADES, paint: { "fill-color": ["get", "colour"], "fill-opacity": 0.15 } })
         map.addLayer({ id: `${SHADES}-line`, type: "line", source: SHADES, paint: { "line-color": ["get", "colour"], "line-width": 1.5, "line-opacity": 0.6 } })
+        map.addSource(ROUTES, { type: "geojson", data: { type: "FeatureCollection", features: [] } })
+        map.addLayer({ id: `${ROUTES}-line`, type: "line", source: ROUTES, layout: { "line-cap": "round", "line-join": "round" }, paint: { "line-color": ["get", "colour"], "line-width": 3, "line-opacity": 0.8 } })
         popup.current = new MapPopup({ closeButton: false, closeOnClick: false, offset: 18 })
         MarkerCtor.current = MapMarker
         mapRef.current = map
@@ -142,9 +156,10 @@ export function DayMap({ stops, people, selectedId, onSelect, className }: DayMa
         pins.current.delete(id)
       }
     }
-    placed.forEach((stop, i) => {
+    const numbers = routeNumbers(placed)
+    placed.forEach((stop) => {
       const colour = personClass(Math.max(0, people.findIndex((p) => p.id === stop.personId)))
-      const label = String(stop.stopOrder ?? i + 1)
+      const label = String(numbers.get(stop.id))
       const key = `${stop.lng},${stop.lat},${colour},${label}`
       const existing = pins.current.get(stop.id)
       if (existing?.key === key) return
@@ -168,6 +183,8 @@ export function DayMap({ stops, people, selectedId, onSelect, className }: DayMa
     })
     const source = map.getSource(SHADES)
     if (source && "setData" in source) (source as { setData: (d: GeoJSON.FeatureCollection) => void }).setData(shadeFeatures(placed, people, el))
+    const routes = map.getSource(ROUTES)
+    if (routes && "setData" in routes) (routes as { setData: (d: GeoJSON.FeatureCollection) => void }).setData(routeFeatures(placed, people, el))
     if (placed.length > 0) {
       const lngs = placed.map((s) => s.lng)
       const lats = placed.map((s) => s.lat)

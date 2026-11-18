@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import type { AdminData, Visit } from "@/lib/admin/types"
-import { hasPoint, hullOf, personClass, readTokenColour, shadeOf, stopLine, stopsDescription, townBounds, type Stop } from "./day-map-helpers"
+import { hasPoint, hullOf, personClass, readTokenColour, routeNumbers, routesOf, shadeOf, stopLine, stopsDescription, townBounds, type Stop } from "./day-map-helpers"
 
 const data = snapshot as AdminData
 const friday = data.visits.filter((v) => v.startAt?.startsWith("2026-11-13")).filter(hasPoint)
@@ -95,5 +95,20 @@ describe("hullOf", () => {
 
   it("keeps collinear ends only", () => {
     expect(hullOf([[0, 0], [1, 1], [2, 2], [3, 3]])).toEqual([[0, 0], [3, 3]])
+  })
+})
+
+describe("routes per person", () => {
+  const stop = (id: string, personId: string, lng: number, over: Partial<Stop> = {}): Stop => ({ id, clientId: id, clientName: id, town: "Erie", kind: "repair", status: "scheduled", isPass: false, jobberUrl: "", personId, lat: 40, lng, ...over })
+
+  it("numbers each person's stops from 1 in route order, keeping a stop order when it has one", () => {
+    const stops = [stop("a", "p1", -105), stop("b", "p2", -105.1), stop("c", "p1", -105.2), stop("d", "p2", -105.3, { stopOrder: 7 })]
+    expect(Object.fromEntries(routeNumbers(stops))).toEqual({ a: 1, b: 1, c: 2, d: 7 })
+    expect(stopsDescription(stops)).toMatch(/^Map of 4 stops: 1 a,.*; 1 b,.*; 2 c,.*; 7 d,/)
+  })
+
+  it("draws a line through each person's route, in route order, and none for one stop", () => {
+    const stops = [stop("c", "p1", -105.2, { stopOrder: 2 }), stop("a", "p1", -105, { stopOrder: 1 }), stop("b", "p2", -105.1)]
+    expect(routesOf(stops)).toEqual([{ personId: "p1", points: [[-105, 40], [-105.2, 40]] }])
   })
 })

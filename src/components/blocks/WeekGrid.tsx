@@ -1,9 +1,13 @@
 "use client"
 
 import { useState, type DragEvent } from "react"
-import { ChevronLeft, ChevronRight, Plus, TriangleAlert, Users } from "lucide-react"
+import { ChevronLeft, ChevronRight, TriangleAlert, Users } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
+import { stopTime } from "@/app/(admin)/admin/_screens/home-model"
+import { dayFill, fillWords, townsWords } from "@/lib/admin/day-fill"
+import { DayHeader } from "./DayHeader"
+import { personClass } from "./day-map-helpers"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import type { AreaGroup, Person, Visit } from "@/lib/admin/types"
 import { addDays, dayLabel, dayVisits, weekDays, weekOf, weekVisits, worksOn } from "@/lib/admin/calendar"
@@ -14,7 +18,8 @@ import { KIND_WORDS } from "@/lib/admin/format"
 // The week by person: one row per person on the schedule, Monday to Sunday across in seven equal columns after a fixed,
 // narrow Who column. The week is never narrower than 56rem: below that the table scrolls sideways inside its own box,
 // and the side panel, an overlay, never changes its width. Every visit is a one-line block ("Hannah · Erie · turn-on",
-// cut with an ellipsis and the full words in its title when the column is tight) with a bar in its area's colour, marked when Ryan moved it. A block is a button: click or Enter selects
+// cut with an ellipsis and the full words in its title when the column is tight, after its time, "9:00" or "Any time") with a bar in its area's colour, marked when Ryan moved it.
+// Each person's row opens with their route colour (the same dot the Day view's list and the map's pins take) and each day's header says how full it is and which towns are in it (`DayHeader`). A block is a button: click or Enter selects
 // it, and it can be dragged to another cell, which calls `onMove`; a cell on
 // a day the person does not work refuses the drop. Under `md` the same data
 // is one day at a time with the people stacked, stepped by the day buttons.
@@ -67,7 +72,8 @@ function VisitBlock({ visit, areas, selected, onSelect, draggable }: { visit: Vi
         draggable && "cursor-grab",
       )}
     >
-      <span className="relative block min-w-0 flex-1 truncate" title={`${visit.clientName} · ${visit.town} · ${KIND_WORDS[visit.kind]}`}>
+      <span className="relative block min-w-0 flex-1 truncate" title={`${stopTime(visit)} · ${visit.clientName} · ${visit.town} · ${KIND_WORDS[visit.kind]}`}>
+        <span data-slot="stop-time" className="tabular-nums text-muted-foreground">{`${stopTime(visit)} `}</span>
         <span className="font-medium text-foreground">{visit.clientName}</span>
         <span className="text-muted-foreground">{` · ${visit.town} · ${KIND_WORDS[visit.kind]}`}</span>
       </span>
@@ -102,22 +108,6 @@ function Cell({ person, day, visits, areas, selectedId, onSelect, onMove }: { pe
         <VisitBlock key={visit.id} visit={visit} areas={areas} selected={visit.id === selectedId} onSelect={onSelect} draggable={Boolean(onMove)} />
       ))}
     </td>
-  )
-}
-
-/** The "+" on a day's column header: New job with that day filled in. */
-function NewJobOnDay({ day, onNewJob }: { day: string; onNewJob: (day: string) => void }) {
-  return (
-    <button
-      type="button"
-      data-slot="week-grid-new-job"
-      aria-label={`New job on ${dayLabel(day)}`}
-      title="New job"
-      onClick={() => onNewJob(day)}
-      className="-my-1.5 flex size-11 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-cream hover:text-navy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
-    >
-      <Plus className="size-4" aria-hidden />
-    </button>
   )
 }
 
@@ -167,6 +157,7 @@ export function WeekGrid({ people, areas, visits, weekStart, today, timeZone, se
   const shown = weekVisits(visits, weekStart, timeZone).filter((v) => !area || area.towns.includes(v.town))
   const rows = people.filter((p) => personFilter === "all" || p.id === personFilter)
   const phoneDay = dayChoice && days.includes(dayChoice) ? dayChoice : days.includes(today) ? today : weekStart
+  const phoneFill = dayFill(visits, phoneDay, people, timeZone)
   const stepDay = (n: number) => {
     const next = addDays(phoneDay, n)
     if (!days.includes(next)) onWeekChange(addDays(weekStart, 7 * n))
@@ -205,23 +196,25 @@ export function WeekGrid({ people, areas, visits, weekStart, today, timeZone, se
             <thead>
               <tr className="border-b border-border">
                 <th scope="col" className="w-28 px-3 py-2 text-left font-display text-sm uppercase tracking-wide text-muted-foreground">Who</th>
-                {days.map((day) => (
-                  <th key={day} scope="col" aria-current={day === today ? "date" : undefined} className={cn("border-l border-border px-2 py-2 text-left font-display text-sm uppercase tracking-wide", day === today ? "bg-primary/10 text-primary-deep" : "text-muted-foreground")}>
-                    <span className="flex items-center justify-between gap-1">
-                      <span>
-                        {dayLabel(day)}
-                        {day === today && <span className="sr-only">, today</span>}
-                      </span>
-                      {onNewJob && <NewJobOnDay day={day} onNewJob={onNewJob} />}
-                    </span>
-                  </th>
-                ))}
+                {days.map((day) => {
+                  const fill = dayFill(visits, day, people, timeZone)
+                  return (
+                    <th key={day} scope="col" aria-current={day === today ? "date" : undefined} className={cn("border-l border-border px-2 py-2 text-left align-top", day === today ? "bg-primary/10 text-primary-deep" : "text-muted-foreground")}>
+                      <DayHeader label={dayLabel(day)} day={day} today={day === today} fill={fillWords(fill)} towns={townsWords(fill)} onNewJob={onNewJob} />
+                    </th>
+                  )
+                })}
               </tr>
             </thead>
             <tbody>
               {rows.map((person) => (
                 <tr key={person.id} className="border-b border-border last:border-0">
-                  <th scope="row" className="truncate px-3 py-2 text-left align-top font-medium text-foreground">{person.name}</th>
+                  <th scope="row" className="px-3 py-2 text-left align-top font-medium text-foreground">
+                    <span className="flex items-center gap-2">
+                      <span aria-hidden data-slot="person-colour" className={cn("size-2.5 shrink-0 rounded-full", personClass(people.indexOf(person)))} />
+                      <span className="min-w-0 truncate">{person.name}</span>
+                    </span>
+                  </th>
                   {days.map((day) => (
                     <Cell key={day} person={person} day={day} visits={dayVisits(shown, day, person.id, timeZone)} areas={areas} selectedId={selectedId} onSelect={onSelect} onMove={onMove} />
                   ))}
@@ -241,6 +234,7 @@ export function WeekGrid({ people, areas, visits, weekStart, today, timeZone, se
             </Button>
           )}
         </div>
+        <p data-slot="phone-day-fill" className="text-sm text-muted-foreground">{[fillWords(phoneFill), townsWords(phoneFill)].filter(Boolean).join(". ")}</p>
         <div className="mt-2 flex flex-wrap gap-2">{filters}</div>
         {rows.map((person) => {
           const list = dayVisits(shown, phoneDay, person.id, timeZone)

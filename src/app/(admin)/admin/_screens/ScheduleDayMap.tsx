@@ -8,5 +8,5 @@ import { cn } from "@/lib/utils"
 // on the other five pages. Browser only (the map draws into a canvas), with a block of the same size while it loads.
 export const ScheduleDayMap = dynamic(() => import("@/components/blocks/DayMap").then((m) => m.DayMap), {
   ssr: false,
-  loading: () => <Skeleton className={cn("min-h-80 min-w-0 lg:col-span-3")} />,
+  loading: () => <Skeleton className={cn("min-h-80 min-w-0")} />,
 })

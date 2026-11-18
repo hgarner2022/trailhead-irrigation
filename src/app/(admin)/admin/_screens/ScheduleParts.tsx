@@ -3,15 +3,11 @@ import { ChevronLeft, ChevronRight, TriangleAlert } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { SectionHeading } from "@/components/blocks/SectionHeading"
-import { DataGrid } from "@/components/blocks/DataGrid"
 import type { Visit } from "@/lib/admin/types"
 import { KIND_WORDS, TIME_ZONE, shortDate, writtenDate } from "@/lib/admin/format"
 import { addDays } from "@/lib/admin/calendar"
-import { stopColumns } from "./visits-columns"
-import type { VisitRow } from "./visits-model"
 
-// The small pieces of the Schedule screen: the day stepper, the stops of one
-// day in order, the "Moved" card and the line that points at the next week
+// The small pieces of the Schedule screen: the day stepper, the "Moved" card and the line that points at the next week
 // with jobs when this one is empty. Kept out of ScheduleScreen so each file
 // stays short; they hold no state.
 
@@ -33,21 +29,6 @@ export function DayStepper({ day, today, onChange, children }: { day: string; to
       </h2>
       {children && <div className="ml-auto">{children}</div>}
     </div>
-  )
-}
-
-/** The stops of one day in order: the same DataGrid and the same columns as Visits, so the two lists read alike. */
-export function StopGrid({ rows, onOpen }: { rows: VisitRow[]; onOpen: (id: string) => void }) {
-  return (
-    <DataGrid
-      columns={stopColumns}
-      data={rows}
-      getRowId={(r) => r.id}
-      onOpen={(row) => onOpen(row.id)}
-      pageSize={50}
-      emptyTitle="No stops"
-      emptyLine="Nothing is on the calendar for this day."
-    />
   )
 }
 

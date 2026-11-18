@@ -35,16 +35,16 @@ const blocksIn = (el: HTMLElement) => Array.from(el.querySelectorAll<HTMLElement
 describe("WeekGrid", () => {
   it("lays the week out with a row per person, the seven days across and today marked", () => {
     render(<WeekGrid {...base} />)
-    const headers = within(table()).getAllByRole("columnheader").map((h) => h.textContent)
+    const headers = within(table()).getAllByRole("columnheader").map((h) => h.querySelector('[data-slot="day-header"] > span')?.textContent ?? h.textContent)
     expect(headers).toEqual(["Who", "Mon 9", "Tue 10", "Wed 11", "Thu 12, today", "Fri 13", "Sat 14", "Sun 15"])
     expect(within(table()).getByRole("columnheader", { name: /Thu 12/ })).toHaveAttribute("aria-current", "date")
     expect(within(table()).getAllByRole("rowheader").map((h) => h.textContent)).toEqual(["Ryan Garner", "Tech Two"])
     expect(blocksIn(cell("person_truck-1", "2026-11-09"))).toHaveLength(5)
     expect(blocksIn(cell("person_truck-1", "2026-11-13")).map((b) => b.textContent)).toEqual([
-      "David · Firestone · blowout",
-      "Ricky · Firestone · blowout",
-      "Joel · Lafayette · blowout",
-      "Brian · Erie · blowout",
+      "Any time David · Firestone · blowout",
+      "Any time Ricky · Firestone · blowout",
+      "Any time Joel · Lafayette · blowout",
+      "Any time Brian · Erie · blowout",
     ])
     expect(blocksIn(cell("person_truck-2", "2026-11-13"))).toHaveLength(0)
   })
@@ -157,5 +157,24 @@ describe("WeekGrid", () => {
     render(<WeekGrid {...base} people={[]} />)
     expect(screen.queryByRole("table")).toBeNull()
     expect(document.querySelector('[data-slot="empty-state"]')).toHaveTextContent("No people yet")
+  })
+
+  it("gives each person's row its route colour and every day its fill and its towns", () => {
+    render(<WeekGrid {...base} />)
+    const dots = [...document.querySelectorAll<HTMLElement>('[data-slot="person-colour"]')]
+    expect(dots).toHaveLength(2)
+    expect(dots[0]).toHaveClass("bg-primary")
+    expect(dots[1]).toHaveClass("bg-navy")
+    const thursday = within(table()).getByRole("columnheader", { name: /Thu 12/ })
+    expect(thursday.querySelector('[data-slot="day-fill"]')?.textContent).toMatch(/^4 stops, \d+ h( \d+ min)? open$/)
+    expect(thursday.querySelector('[data-slot="day-towns"]')?.textContent).toMatch(/\w+ \d/)
+    expect(within(table()).getByRole("columnheader", { name: /Sun 15/ }).querySelector('[data-slot="day-fill"]')).toHaveTextContent("Day off")
+  })
+
+  it("puts a stop's time before its name: the clock when it has one, Any time when it has none", () => {
+    const one = (id: string, startTime?: string) => ({ id, clientId: id, clientName: id, town: "Erie" as const, kind: "repair" as const, status: "scheduled" as const, startAt: "2026-11-10T16:00:00Z", startTime, isPass: false, jobberUrl: "", personId: "person_truck-1", stopOrder: 1 })
+    render(<WeekGrid {...base} visits={[one("timed", "09:00"), one("loose")]} />)
+    const text = blocksIn(cell("person_truck-1", "2026-11-10")).map((b) => b.querySelector('[data-slot="stop-time"]')?.textContent)
+    expect(text).toEqual(["9:00 am ", "Any time "])
   })
 })

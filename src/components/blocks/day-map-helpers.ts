@@ -71,10 +71,31 @@ export function shadeOf(stops: readonly Stop[]): Point[] {
   return [...hull, hull[0]]
 }
 
+/** A stop's number in its person's route: its stop order, else its place among that person's stops in the order given. */
+export function routeNumbers(stops: readonly Visit[]): Map<string, number> {
+  const next = new Map<string, number>()
+  return new Map(stops.map((s) => {
+    const n = (next.get(s.personId ?? "") ?? 0) + 1
+    next.set(s.personId ?? "", n)
+    return [s.id, s.stopOrder ?? n] as const
+  }))
+}
+
+/** Each person's route, a line through their stops in route order; a person with one stop has no line. */
+export function routesOf(stops: readonly Stop[]): { personId: string; points: Point[] }[] {
+  const numbers = routeNumbers(stops)
+  const byPerson = new Map<string, Stop[]>()
+  for (const s of stops) byPerson.set(s.personId ?? "", [...(byPerson.get(s.personId ?? "") ?? []), s])
+  return [...byPerson]
+    .map(([personId, list]) => ({ personId, points: [...list].sort((a, b) => numbers.get(a.id)! - numbers.get(b.id)!).map((s): Point => [s.lng, s.lat]) }))
+    .filter((r) => r.points.length >= 2)
+}
+
 /** "Map of 4 stops: 1 Percy, Erie, blowout; 2 Alicia, Firestone, blowout." The map's accessible name. */
 export function stopsDescription(stops: readonly Visit[]): string {
   if (stops.length === 0) return "Map with no stops"
-  const list = stops.map((s, i) => `${s.stopOrder ?? i + 1} ${s.clientName}, ${s.town}, ${KIND_WORDS[s.kind]}`).join("; ")
+  const numbers = routeNumbers(stops)
+  const list = stops.map((s) => `${numbers.get(s.id)} ${s.clientName}, ${s.town}, ${KIND_WORDS[s.kind]}`).join("; ")
   return `Map of ${stops.length} stop${stops.length === 1 ? "" : "s"}: ${list}.`
 }
 
