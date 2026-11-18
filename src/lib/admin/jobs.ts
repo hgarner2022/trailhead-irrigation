@@ -7,7 +7,7 @@
  * (`charge`), `customer.card_failed_at`). Money is never read from a flag: the
  * words come from the payment rows through `src/lib/money/words.ts`.
  *
- *   No day yet      unscheduled
+ *   Unscheduled      unscheduled
  *   Scheduled       a day, no start time yet
  *   Routed          a start time is set
  *   Done            marked done, no payment row yet (money: Owed)
@@ -20,7 +20,7 @@
  * marked done. It is shown as a badge beside the state, never as a state.
  *
  * The screens show two pills instead of that one state (owner, 14 Nov: "it needs to be very obvious that money
- * was collected"): WORK (No day yet, Scheduled, Done, Not done with its reason, Cancelled) and MONEY (nothing
+ * was collected"): WORK (Unscheduled, Scheduled, Done, Not done with its reason, Cancelled) and MONEY (nothing
  * until the visit is done, then Paid with how, Owed, Bill sent, Failed). A Scheduled visit whose day has passed stays Scheduled with a "day passed"
  * note; Routed is a start time in the Time column, not a state. `statesOf` derives both from the same row.
  */
@@ -32,7 +32,7 @@ import type { AdminData, AdminInvoice, AdminPayment, JobLine, Pass, PassVisit, S
 export type JobState = "needs-a-day" | "scheduled" | "routed" | "done" | "charged" | "charge-failed" | "cancelled" | "skipped"
 
 export const JOB_WORDS: Record<JobState, string> = {
-  "needs-a-day": "No day yet",
+  "needs-a-day": "Unscheduled",
   scheduled: "Scheduled",
   routed: "Routed",
   done: "Done",
@@ -47,7 +47,7 @@ export const NOT_CLOSED_WORD = "Not closed"
 export type WorkState = "needs-a-day" | "scheduled" | "done" | "not-done" | "cancelled"
 export type MoneyState = "not-yet" | "paid" | "owed" | "bill-sent" | "failed"
 
-export const WORK_WORDS: Record<WorkState, string> = { "needs-a-day": "No day yet", scheduled: "Scheduled", done: "Done", "not-done": "Not done", cancelled: "Cancelled" }
+export const WORK_WORDS: Record<WorkState, string> = { "needs-a-day": "Unscheduled", scheduled: "Scheduled", done: "Done", "not-done": "Not done", cancelled: "Cancelled" }
 export const MONEY_WORDS: Record<MoneyState, string> = { "not-yet": "", paid: "Paid", owed: "Owed", "bill-sent": "Bill sent", failed: "Failed" }
 export { METHOD_WORDS }
 export const REASON_WORDS: Record<string, string> = { "could-not-get-in": "could not get in", "no-water": "no water on", "customer-asked-to-wait": "customer asked to wait", other: "something else" }

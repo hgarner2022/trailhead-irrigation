@@ -182,4 +182,14 @@ describe("chargeVisit without a Stripe card", () => {
     expect(await db.select().from(s.charge).where(eq(s.charge.visitId, p.turnOn))).toHaveLength(0)
     expect((await db.select().from(s.customer).where(eq(s.customer.id, p.customerId)))[0]!.cardFailedAt).toBeNull()
   })
+
+  it("a no-card charge is never silent: Home gets one row with the visit and the pass, once however often the charge is retried", async () => {
+    const p = await activePass()
+    await db.update(s.customer).set({ stripePaymentMethodId: null, stripeCustomerId: null, cardLast4: "4242" }).where(eq(s.customer.id, p.customerId))
+    const { stripe } = stubStripe()
+    expect(await chargeVisit(db, stripe, p.turnOn, opts)).toBe("no-card")
+    expect(await chargeVisit(db, stripe, p.turnOn, opts)).toBe("no-card")
+    const alerts = await db.select().from(s.adminAlert).where(eq(s.adminAlert.key, p.turnOn))
+    expect(alerts).toMatchObject([{ kind: "no-card", passId: p.passId, message: expect.stringMatching(/^No card to charge for .+'s spring turn-on$/), resolvedAt: null }])
+  })
 })

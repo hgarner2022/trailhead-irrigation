@@ -73,8 +73,10 @@ describe("passes.create with renewOf", () => {
 
   it("refuses a second reservation of the same season, a pass with no card on file, and a visitor who has not accepted the terms", async () => {
     await expect(renew(visitor("p1"), "p1")).rejects.toMatchObject({ code: "unprocessable", message: expect.stringContaining("already reserved") })
-    await expect(renew(visitor("p2"), "p2")).rejects.toMatchObject({ code: "unprocessable", message: expect.stringContaining("no card on file") })
     const two = (await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, "p2")))[0]!.customerId
+    // A last four with no Stripe method is not a card.
+    await db.update(s.customer).set({ stripePaymentMethodId: null }).where(eq(s.customer.id, two))
+    await expect(renew(visitor("p2"), "p2")).rejects.toMatchObject({ code: "unprocessable", message: expect.stringContaining("no card on file") })
     await db.update(s.customer).set({ stripePaymentMethodId: "pm_two" }).where(eq(s.customer.id, two))
     await expect(callApi(ctxFor(db, visitor("p2"), NOW), passesCreate, answers({ renewOf: "p2", consent: undefined }))).rejects.toMatchObject({ code: "invalid" })
   })

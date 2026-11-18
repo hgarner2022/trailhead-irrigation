@@ -12,8 +12,8 @@ import type { AreaGroup, OrganizationSettings, Person, ServiceItem } from "@/lib
 
 // Settings Save: the screen holds the whole `OrganizationSettings` and sends it once. This turns the difference
 // from what the API holds into the API's own calls: people.*, areas.* and one settings.update per changed section.
-// The API's current values are read here, never taken from the client. The settings.* handlers write the change
-// log; people edits are not in the server change log yet.
+// The API's current values are read here, never taken from the client. The change log is written by the handlers
+// themselves (settings.update for a section, people.* for a person), so a save logs exactly what it changed.
 
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b)
 const SECTIONS = ["windows", "bufferPercentEarly", "bufferPercentLate", "fallTownOrder", "springTownOrder", "messages", "billing"] as const
@@ -50,6 +50,11 @@ const apiFields = (p: PersonOut) => ({
   name: p.name, initials: p.initials, email: p.email, phone: p.phone, role: p.role, truck: p.truck, jobberUserId: p.jobberUserId,
   workingDays: p.workingDays, capacityByKind: p.capacityByKind, seasonStart: p.seasonStart, seasonEnd: p.seasonEnd,
 })
+/** One people.update, then a check that the row the API read back is the one sent: a save that did not take is an error the screen shows, never "Saved". */
+async function updateOnePerson(ctx: Ctx, p: Person): Promise<void> {
+  const now = await callApi(ctx, peopleUpdate, { id: p.id, ...personFields(p) })
+  if (now.name !== p.name.trim()) throw new ApiError("conflict", `${p.name.trim()} was not saved. Reload the page and try again.`)
+}
 /** people.create takes no nulls: a field the person does not have is left out. */
 const defined = <T extends object>(o: T) => Object.fromEntries(Object.entries(o).filter(([, v]) => v !== null && v !== undefined)) as T
 
@@ -93,8 +98,8 @@ export async function saveSettings(ctx: Ctx, after: OrganizationSettings, servic
   const isOwner = (p: Person) => p.role === "owner"
   const promoted = (p: Person) => isOwner(p) && havePeople.get(p.id)!.role !== "owner"
   for (const p of created.filter(isOwner)) await callApi(ctx, peopleCreate, defined(personFields(p)))
-  for (const p of edited.filter(promoted)) await callApi(ctx, peopleUpdate, { id: p.id, ...personFields(p) })
-  for (const p of edited.filter((x) => !promoted(x))) await callApi(ctx, peopleUpdate, { id: p.id, ...personFields(p) })
+  for (const p of edited.filter(promoted)) await updateOnePerson(ctx, p)
+  for (const p of edited.filter((x) => !promoted(x))) await updateOnePerson(ctx, p)
   for (const p of created.filter((x) => !isOwner(x))) await callApi(ctx, peopleCreate, defined(personFields(p)))
   for (const id of havePeople.keys()) if (!after.people.some((p) => p.id === id)) await callApi(ctx, peopleDeactivate, { id })
 

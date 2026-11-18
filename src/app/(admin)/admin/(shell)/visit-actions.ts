@@ -38,7 +38,7 @@ export const moveVisitTo = async (visitId: string, day: string, time: string | n
     return { day: v.scheduledOn, personId: v.personId, startTime: v.startTime }
   })
 
-/** The undo of a move: back to the day, person and time it had, or to No day yet when it had none. */
+/** The undo of a move: back to the day, person and time it had, or to Unscheduled when it had none. */
 export const putBack = async (visitId: string, was: Where): Promise<ActionOutcome> =>
   act((ctx) =>
     nothing(

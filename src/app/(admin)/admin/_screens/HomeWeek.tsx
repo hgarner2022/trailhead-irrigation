@@ -1,3 +1,4 @@
+import Link from "next/link"
 import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card"
 import { CardTitleHeading } from "@/components/blocks/CardTitleHeading"
 import { JobPill } from "@/components/blocks/JobPill"
@@ -11,7 +12,7 @@ import { stopTime } from "./home-model"
 import type { WeekView } from "./home-week"
 
 // Today (Hannah's first job: "is the week sane"; a card that says "week" over one day was wrong): the next day that has visits, today when it has any, each
-// person's stops in route order under their name, every row opening the visit panel. A person with nothing that day
+// person's stops in route order under their name, every row opening the visit panel and the day line linking to that day on the Schedule. A person with nothing that day
 // is left out and an empty calendar says so once. Server component over a `WeekView`.
 
 function Stop({ visit, today }: { visit: Visit; today: string }) {
@@ -39,7 +40,13 @@ export function HomeWeek({ week, today, className }: { week: WeekView; today: st
     <Card data-slot="home-week" className={className}>
       <CardHeader>
         <CardTitleHeading id="home-week">{week.title}</CardTitleHeading>
-        {week.day && <CardDescription data-slot="home-week-day">{week.heading}</CardDescription>}
+        {week.day && (
+          <CardDescription data-slot="home-week-day">
+            <Link href={`/admin/schedule?day=${week.day}`} className="rounded-sm underline-offset-4 hover:text-navy hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50">
+              {week.heading}
+            </Link>
+          </CardDescription>
+        )}
       </CardHeader>
       <CardContent>
         {week.day === null ? (

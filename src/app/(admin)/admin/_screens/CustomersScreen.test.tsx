@@ -45,10 +45,10 @@ describe("CustomersScreen table", () => {
     expect(row.getByText("Active")).toHaveAttribute("data-slot", "status-pill")
   })
 
-  it("says No day yet and No for a customer whose pass visit has no day, and a day and Yes for one that has", () => {
+  it("says Unscheduled and No for a customer whose pass visit has no day, and a day and Yes for one that has", () => {
     render(<CustomersScreen data={data} today={TODAY} />)
     const needing = within(rowOf(`${andrea.firstName} ${andrea.lastName}`))
-    expect(needing.getByText("No day yet")).toBeInTheDocument()
+    expect(needing.getByText("Unscheduled")).toBeInTheDocument()
     expect(needing.getByText("No")).toBeInTheDocument()
   })
 
@@ -79,7 +79,7 @@ describe("CustomersScreen table", () => {
 describe("CustomersScreen panel", () => {
   it("shows the same data plus the access note, the consent history and the messages", () => {
     render(<CustomersScreen data={data} today={TODAY} defaultSelectedId="c100" />)
-    const panel = within(screen.getByRole("complementary", { name: `${andrea.firstName} ${andrea.lastName}` }))
+    const panel = within(screen.getByRole("dialog", { name: `${andrea.firstName} ${andrea.lastName}` }))
     expect(panel.getByText(`${andrea.address}, ${andrea.town}`)).toBeInTheDocument()
     expect(panel.getByText(andrea.email!)).toBeInTheDocument()
     expect(panel.getByText(formatPhone(andrea.phone))).toBeInTheDocument()

@@ -112,11 +112,13 @@ describe("payments.record", () => {
     expect(await callApi(as(writeKey), paymentsRecord, { jobId: v.jobId, amount: 500, method: "check" })).toMatchObject({ visitId: null, amount: 500 })
   })
 
-  it("refuses a pass visit whose customer has a card, since it is charged to the card", async () => {
+  it("records money handed over for a pass visit whose customer has a card, and refuses while a card charge for it is still going through", async () => {
     await callApi(as(writeKey), visitsMove, { id: "p3-turn-on", personId: "person_truck-1", scheduledOn: "2027-05-05" })
     const [visit] = await db.select().from(s.visit).where(eq(s.visit.id, "p3-turn-on"))
-    await expect(callApi(as(writeKey), paymentsRecord, { jobId: visit!.jobId, visitId: "p3-turn-on", amount: 145, method: "cash" })).rejects.toMatchObject({ code: "unprocessable", message: "A pass visit is charged to the pass's card" })
-    expect(await db.select().from(s.charge).where(eq(s.charge.visitId, "p3-turn-on"))).toEqual([])
+    await db.insert(s.charge).values({ organizationId: ORG, jobId: visit!.jobId, customerId: visit!.customerId, visitId: "p3-turn-on", attempt: 1, amount: 145, method: "card_on_file", status: "pending" })
+    await expect(callApi(as(writeKey), paymentsRecord, { jobId: visit!.jobId, visitId: "p3-turn-on", amount: 145, method: "cash" })).rejects.toMatchObject({ code: "conflict", message: "A card charge for this visit is still going through" })
+    await db.delete(s.charge).where(eq(s.charge.visitId, "p3-turn-on"))
+    expect(await callApi(as(writeKey), paymentsRecord, { jobId: visit!.jobId, visitId: "p3-turn-on", amount: 145, method: "cash" })).toMatchObject({ visitId: "p3-turn-on", amount: 145 })
   })
 
   it("refuses a visit of another job, an unknown job and a read key, and cannot reach another organization's job", async () => {

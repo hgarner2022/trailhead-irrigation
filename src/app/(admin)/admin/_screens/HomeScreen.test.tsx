@@ -15,9 +15,9 @@ const stop = (over: Partial<Visit>): Visit => ({
 })
 
 describe("HomeScreen", () => {
-  it("opens on the four jobs in order: Today, the money line, the map and Needs action", () => {
+  it("opens on the four jobs in order: the money line, Today, the map and Needs action", () => {
     render(<HomeScreen data={data} today={TODAY} />)
-    const order = ["Today", "Money", "Map", "Needs action"].map((name) => screen.getByRole("heading", { name }))
+    const order = ["Money", "Today", "Map", "Needs action"].map((name) => screen.getByRole("heading", { name }))
     order.slice(1).forEach((h, i) => expect(order[i]!.compareDocumentPosition(h) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy())
     expect(screen.getByText(/^Thu, Nov 12 · \d+ visits? in /)).toBeInTheDocument()
     expect(document.querySelector('[data-slot="job-counts"]')).toBeNull()
@@ -49,7 +49,8 @@ describe("HomeScreen", () => {
       stop({ id: "n3", clientName: "Later Lou", startAt: "2027-05-04T15:00:00Z", scheduledOn: "2027-05-04", personId: "person_truck-1" }),
     ]
     render(<HomeScreen data={{ ...data, visits, attention: [] }} today={TODAY} />)
-    expect(screen.getByText("Tue, Apr 27 · 2 visits in Erie and Longmont")).toBeInTheDocument()
+    const dayLine = screen.getByText("Tue, Apr 27 · 2 visits in Erie and Longmont")
+    expect(dayLine.closest("a")).toHaveAttribute("href", "/admin/schedule?day=2027-04-27")
     expect(screen.queryByText("No visits scheduled.")).toBeNull()
     expect(screen.queryByText(/Later Lou/)).toBeNull()
     expect(screen.getByText(/Next Nia/)).toBeInTheDocument()
@@ -67,7 +68,7 @@ describe("HomeScreen", () => {
     const links = money.getAllByRole("link")
     expect(links).toHaveLength(4)
     expect(links.map((l) => l.getAttribute("href"))).toEqual(["/admin/reports", "/admin/visits?money=owed", "/admin/visits?money=failed", "/admin/reports"])
-    expect(links[0]).toHaveAccessibleName(/^Charged this month: \$/)
+    expect(links[0]).toHaveAccessibleName(/^Paid this month: \$/)
     expect(links[3]).toHaveAccessibleName(/^Season total committed: \$/)
   })
 
@@ -77,7 +78,7 @@ describe("HomeScreen", () => {
     const onAction = vi.fn().mockResolvedValue({ ok: true, message: "Marked done." })
     render(
       <UndoToastProvider>
-        <HomeScreen data={{ ...data, attention: [item, { ...item, kind: "unplaced", key: "v2", visitId: "v2", message: "Sam's install has no day yet" }] }} today={TODAY} onAttentionAction={onAction} onDismiss={onDismiss} />
+        <HomeScreen data={{ ...data, attention: [item, { ...item, kind: "unplaced", key: "v2", visitId: "v2", message: "Sam's install is unscheduled" }] }} today={TODAY} onAttentionAction={onAction} onDismiss={onDismiss} />
       </UndoToastProvider>,
     )
     expect(screen.getAllByRole("button", { name: /^Dismiss:/ })).toHaveLength(2)
@@ -90,7 +91,7 @@ describe("HomeScreen", () => {
   })
 
   it("hands a tech the lists with no buttons", () => {
-    render(<HomeScreen data={{ ...data, attention: [{ kind: "unplaced", key: "v2", visitId: "v2", message: "Sam's install has no day yet", since: "2026-11-09T15:00:00Z" }] }} today={TODAY} readOnly />)
+    render(<HomeScreen data={{ ...data, attention: [{ kind: "unplaced", key: "v2", visitId: "v2", message: "Sam's install is unscheduled", since: "2026-11-09T15:00:00Z" }] }} today={TODAY} readOnly />)
     expect(screen.queryByRole("button", { name: /Dismiss/ })).toBeNull()
   })
 })

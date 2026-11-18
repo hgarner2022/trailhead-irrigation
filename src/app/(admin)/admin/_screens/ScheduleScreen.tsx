@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useTransition } from "react"
+import { useMemo, useState, useTransition } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -17,13 +17,14 @@ import type { VisitActions } from "./visit-actions-types"
 import { VisitPanelHost, useOpenVisit } from "./VisitPanelHost"
 import { ScheduleDayMap } from "./ScheduleDayMap"
 import { ScheduleMoveTo } from "./ScheduleMoveTo"
-import { DayStepper, Exceptions, NextJobsLine, StopList } from "./ScheduleParts"
+import { DayStepper, Exceptions, NextJobsLine, StopGrid } from "./ScheduleParts"
+import { rowsOf } from "./visits-model"
 import { exceptionCount, firstJobWeek, firstWorkingDay, moveOutcome, nextJobsWeek, placeVisit, scheduleItems, trayItems, weekContext, type TrayItem } from "./schedule-model"
 import { routePeople } from "@/lib/admin/people"
 
 // Where Ryan lives in season (the scheduling flow, 2026-11-12: one state,
 // no second step): the week by person, a day map beside the day's stops in
-// order, and the "No day yet" list beside the week with every job of an
+// order, and the "Unscheduled" list under the week, full width, with every job of an
 // active pass that has no day. It opens on the first week that has a job; a
 // week with none points at the next week that does. Schedule puts the whole
 // list on the week (the customers who must be there pick their own day and
@@ -46,6 +47,8 @@ export interface ScheduleScreenProps {
   defaultWeek?: string
   /** the visit selected on first render, from `?visit=` */
   defaultSelectedId?: string
+  /** the visit whose panel is open on first render (the catalog) */
+  defaultVisitId?: string
   /** a tech reads the week and changes nothing: no Schedule, Place, Move or drag */
   readOnly?: boolean
   /** Schedule: runs the scheduler for one window; without it the button only moves blocks locally, as in the catalog */
@@ -61,7 +64,7 @@ const WINDOWS = ["turn-on", "inspection", "blowout"] as const
 /** The Schedule with the visit panel: a stop in the week, the day list or the map opens the visit. */
 export function ScheduleScreen(props: ScheduleScreenProps) {
   return (
-    <VisitPanelHost data={props.data} today={props.today} readOnly={props.readOnly} actions={props.visitActions}>
+    <VisitPanelHost data={props.data} today={props.today} readOnly={props.readOnly} actions={props.visitActions} defaultVisitId={props.defaultVisitId}>
       <ScheduleBody {...props} />
     </VisitPanelHost>
   )
@@ -95,7 +98,8 @@ function ScheduleBody({ data, today, defaultTab = "week", defaultDay, defaultWee
   const [problems, setProblems] = useState<Record<string, string>>({})
   const week = weekVisits(visits, weekStart, TIME_ZONE)
   const selected = week.find((v) => v.id === selectedId && v.startAt)
-  const stops = dayVisits(visits, day, undefined, TIME_ZONE)
+  const stops = useMemo(() => dayVisits(visits, day, undefined, TIME_ZONE), [visits, day])
+  const stopRows = useMemo(() => rowsOf(data, stops, today), [data, stops, today])
   const tray = trayItems({ visits, passes: data.passes })
 
   const scheduleAll = () => {
@@ -191,7 +195,7 @@ function ScheduleBody({ data, today, defaultTab = "week", defaultDay, defaultWee
           </TabsList>
           <TabsContent value="week" className="space-y-6">
             {week.length === 0 && <NextJobsLine weekStart={nextJobsWeek(visits, weekStart, TIME_ZONE)} onGo={goToWeek} />}
-            <div className="grid gap-6 xl:grid-cols-[1fr_20rem]">
+            <div className="space-y-6">
               <WeekGrid
                 className="min-w-0"
                 people={people}
@@ -205,9 +209,9 @@ function ScheduleBody({ data, today, defaultTab = "week", defaultDay, defaultWee
                 onMove={readOnly ? undefined : move}
                 onWeekChange={setWeekStart}
               />
-              <Card className="min-w-0 self-start">
+              <Card className="min-w-0">
                 <CardHeader>
-                  <CardTitleHeading>{`No day yet${tray.length ? ` (${tray.length})` : ""}`}</CardTitleHeading>
+                  <CardTitleHeading>{`Unscheduled${tray.length ? ` (${tray.length})` : ""}`}</CardTitleHeading>
                 </CardHeader>
                 <CardContent>
                   <ToScheduleTray items={tray} onPlace={place} readOnly={readOnly} problems={problems} />
@@ -218,16 +222,16 @@ function ScheduleBody({ data, today, defaultTab = "week", defaultDay, defaultWee
           </TabsContent>
           <TabsContent value="day" className="space-y-4">
             <DayStepper day={day} today={todayDay} onChange={changeDay} />
-            <div className="grid gap-6 lg:grid-cols-5">
-              <Card className="min-w-0 lg:col-span-2">
+            <div className="space-y-6">
+              <Card className="min-w-0">
                 <CardHeader>
                   <CardTitleHeading>Stops in order</CardTitleHeading>
                 </CardHeader>
                 <CardContent>
-                  <StopList stops={stops} people={people} today={todayDay} selectedId={selectedId} onSelect={select} />
+                  <StopGrid rows={stopRows} onOpen={select} />
                 </CardContent>
               </Card>
-              <ScheduleDayMap className="min-w-0 lg:col-span-3" stops={stops} people={people} selectedId={selectedId} onSelect={select} />
+              <ScheduleDayMap className="min-w-0" stops={stops} people={people} selectedId={selectedId} onSelect={select} />
             </div>
           </TabsContent>
         </Tabs>

@@ -7,7 +7,6 @@ import { recordEventSafe, whoOf } from "@/lib/events/record"
 import { setVisitLinePrice } from "@/lib/jobs/write-lines"
 import { baseData } from "@/lib/messaging/data"
 import { queueMessage } from "@/lib/messaging/queue"
-import { customerHasCard } from "@/lib/customer/card"
 import { paidDay, recordPaymentRow, visitBalance } from "@/lib/money/record"
 import { jobOwed } from "@/lib/money/words"
 import { kindName } from "@/lib/pass/server/messages"
@@ -56,6 +55,15 @@ async function settleOpenBill(ctx: Ctx, jobId: string, row: { id: string; method
  * a card (it is charged to the card), a visit already paid in full, and an amount above what is still owed on it (refused, not
  * clamped: the record must say what was really handed over, so a stale panel or a double submit writes nothing); `visit.charged_at` is written as the alias; the receipt is queued; the events are emitted.
  */
+/**
+ * Money handed over for a pass visit is recorded whether or not the customer has a card (a check, Venmo or cash for a visit the
+ * card was not charged for); the one thing refused is a card charge Stripe is still working on, which would be paid twice.
+ */
+export async function assertNoCardChargeInFlight(ctx: Pick<Ctx, "db">, visitId: string) {
+  const [pending] = await ctx.db.select({ id: s.charge.id }).from(s.charge).where(and(eq(s.charge.visitId, visitId), eq(s.charge.status, "pending")))
+  if (pending) throw new ApiError("conflict", "A card charge for this visit is still going through")
+}
+
 export async function recordOfficePayment(ctx: Ctx, input: OfficePayment) {
   const [job] = await ctx.db.select().from(s.job).where(and(eq(s.job.id, input.jobId), eq(s.job.organizationId, ctx.organizationId)))
   if (!job) throw notFound("Job")
@@ -66,10 +74,7 @@ export async function recordOfficePayment(ctx: Ctx, input: OfficePayment) {
     if (visit.jobId !== job.id) throw new ApiError("invalid", "That visit is not on this job", [{ path: "visitId", message: "Choose a visit of the job" }])
   }
   if (visit) {
-    if (visit.passId) {
-      const [customer] = await ctx.db.select().from(s.customer).where(and(eq(s.customer.id, job.customerId), eq(s.customer.organizationId, ctx.organizationId)))
-      if (customer && customerHasCard(customer)) throw new ApiError("unprocessable", "A pass visit is charged to the pass's card")
-    }
+    await assertNoCardChargeInFlight(ctx, visit.id)
     const { price, owed } = await visitBalance(ctx.db, ctx.organizationId, visit)
     if (price > 0 && owed === 0) throw new ApiError("conflict", "This visit is already paid")
     if (price > 0 && input.amount > owed) throw new ApiError("unprocessable", `Only $${owed} is still owed on this visit`, [{ path: "amount", message: `At most $${owed}` }])

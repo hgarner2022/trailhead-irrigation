@@ -62,7 +62,7 @@ describe("PassesScreen reads the visit rows", () => {
     render(<PassesScreen data={data} today={TODAY} />)
     const row = within(screen.getByRole("button", { name: fullName(open) }).closest("tr")!)
     expect(row.getByText("May 3")).toBeInTheDocument()
-    expect(row.getAllByText("No day yet").length).toBeGreaterThan(0)
+    expect(row.getAllByText("Unscheduled").length).toBeGreaterThan(0)
     expect(document.body).not.toHaveTextContent(/\b(Early|Mid|Late) (May|October)\b/)
   })
 
@@ -80,7 +80,7 @@ describe("PassesScreen reads the visit rows", () => {
 
   it("notes in the panel that a pending pass is an unpaid attempt, with no buttons to act on a customer who has not bought", () => {
     render(<PassesScreen data={data} today={TODAY} defaultSelectedId={pending.id} actions={actions()} />)
-    const panel = within(screen.getByRole("complementary", { name: fullName(pending) }))
+    const panel = within(screen.getByRole("dialog", { name: fullName(pending) }))
     expect(panel.getByText("Checkout not finished, expires after an hour.")).toBeInTheDocument()
     expect(panel.getByText("Pending")).toBeInTheDocument()
     expect(panel.queryByText("Active")).toBeNull()
@@ -95,7 +95,7 @@ describe("PassesScreen reads the visit rows", () => {
     expect(items[0]).toHaveTextContent("Turn-on")
     expect(items[0]).toHaveTextContent("May 3")
     expect(items[0]).toHaveTextContent("Paid")
-    expect(items[1]).toHaveTextContent("No day yet")
+    expect(items[1]).toHaveTextContent("Unscheduled")
     expect(screen.getByRole("heading", { name: "Visits" })).toBeInTheDocument()
   })
 

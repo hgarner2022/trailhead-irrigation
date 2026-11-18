@@ -7,6 +7,8 @@ import { cleanEmail } from "@/lib/format/contact"
 import { ApiError, notFound } from "../../core/errors"
 import { defineHandler } from "../../core/handler"
 import { Day, Id, idInput } from "../shared"
+import { logSettingsChanges } from "../settings/log"
+import { personLeaves } from "./log"
 
 // A person who works here: the owner, a manager or a tech. The truck is a label on them, and an email
 // lets them sign in. trucks.* (../trucks/handlers.ts) reads and writes these same rows through the
@@ -159,7 +161,9 @@ export const peopleCreate = defineHandler({
   name: "people.create", method: "POST", path: "/people", scope: "admin", status: 201, summary: "Add a person. An email lets them sign in; a truck label puts them on the schedule under it.",
   input: z.object(fields), output: PersonOut,
   async run(ctx, input) {
-    return personOut(await createPerson(ctx, input))
+    const row = await createPerson(ctx, input)
+    await logSettingsChanges(ctx, [{ field: row.name, from: "Not on the team", to: "Added" }])
+    return personOut(row)
   },
 })
 
@@ -167,7 +171,10 @@ export const peopleUpdate = defineHandler({
   name: "people.update", method: "PATCH", path: "/people/{id}", scope: "admin", summary: "Change a person's name, contact, role, truck, Jobber user, working days, capacity or season.",
   input: z.object(changes).extend({ id: idInput.shape.id }), output: PersonOut,
   async run(ctx, { id, ...input }) {
-    return personOut(await updatePerson(ctx, id, input))
+    const before = await loadPerson(ctx, id)
+    const after = await updatePerson(ctx, id, input)
+    await logSettingsChanges(ctx, personLeaves(before, after))
+    return personOut(after)
   },
 })
 
@@ -175,6 +182,8 @@ export const peopleDeactivate = defineHandler({
   name: "people.deactivate", method: "DELETE", path: "/people/{id}", scope: "admin", summary: "Take a person out of service. Their history stays; the scheduler stops using them and they can no longer sign in.",
   input: idInput, output: PersonOut,
   async run(ctx, input) {
-    return personOut(await deactivatePerson(ctx, input.id))
+    const row = await deactivatePerson(ctx, input.id)
+    await logSettingsChanges(ctx, [{ field: row.name, from: "On the team", to: "Removed" }])
+    return personOut(row)
   },
 })

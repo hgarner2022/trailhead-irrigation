@@ -2,6 +2,7 @@ import Link from "next/link"
 import { BadgeCheck, Ban, Banknote, CalendarCheck, CalendarX, CircleDashed, Clock, CreditCard, ReceiptText, type LucideIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { Attention } from "@/lib/admin/types"
+import { visitsOfJob } from "@/lib/admin/links"
 import { EmptyState } from "./EmptyState"
 import { AttentionAction, type ActionResult } from "./needs-attention-action"
 import { relativeTime } from "./needs-attention-time"
@@ -34,6 +35,7 @@ export interface NeedsAttentionProps {
 const KINDS: Record<Attention["kind"], { icon: LucideIcon; tone: string; name: string }> = {
   "new-pass": { icon: BadgeCheck, tone: "bg-success/10 text-success", name: "New pass" },
   "charge-failed": { icon: CreditCard, tone: "bg-warning/10 text-warning", name: "Charge failed" },
+  "no-card": { icon: CreditCard, tone: "bg-warning/10 text-warning", name: "No card" },
   "jobs-failed": { icon: CalendarX, tone: "bg-warning/10 text-warning", name: "Task needs a retry" },
   owed: { icon: Banknote, tone: "bg-warning/10 text-warning", name: "Done, owed" },
   overdue: { icon: ReceiptText, tone: "bg-warning/10 text-warning", name: "Bill overdue" },
@@ -42,14 +44,15 @@ const KINDS: Record<Attention["kind"], { icon: LucideIcon; tone: string; name: s
   "not-closed": { icon: CircleDashed, tone: "bg-stone text-muted-foreground", name: "Jobs not marked done" },
   "pass-cancelled": { icon: Ban, tone: "bg-warning/10 text-warning", name: "Pass cancelled" },
   scheduled: { icon: CalendarCheck, tone: "bg-success/10 text-success", name: "Schedule run" },
-  unplaced: { icon: CalendarX, tone: "bg-warning/10 text-warning", name: "No day yet" },
+  unplaced: { icon: CalendarX, tone: "bg-warning/10 text-warning", name: "Unscheduled" },
 }
 
-/** A visit opens in Visits, a pass in its panel, an overdue bill its customer's panel on Customers (the bill is there), a schedule line in Schedule; the rest have no page of their own. */
+/** A visit opens in Visits, a pass its job's visits on Visits, an overdue bill its customer's panel on Customers (the bill is there), a schedule line in Schedule; the rest have no page of their own. */
 export function attentionHref(item: Attention): string | undefined {
   if (item.kind === "overdue" && item.customerId) return `/admin/customers?customer=${encodeURIComponent(item.customerId)}`
   if (item.visitId) return `/admin/visits?visit=${encodeURIComponent(item.visitId)}`
-  if (item.passId) return `/admin/passes?pass=${encodeURIComponent(item.passId)}`
+  // A pass is a job: its row opens that job's visits (HomeScreen puts the job on a row that names only a pass).
+  if (item.passId) return item.jobId ? visitsOfJob(item.jobId) : "/admin/visits"
   if (item.kind === "unplaced" || item.kind === "not-closed" || item.kind === "scheduled") return "/admin/schedule"
   return undefined
 }
@@ -93,7 +96,7 @@ function Row({ item, now, onAction, onDismiss, readOnly }: { item: Attention; no
 
 export function NeedsAttention({ items, now, onAction, onDismiss, readOnly, className }: NeedsAttentionProps) {
   if (items.length === 0) {
-    return <EmptyState className={className} title="Nothing needs you right now" line="Failed charges, visits with no day yet and visits nobody marked done show up here." />
+    return <EmptyState className={className} title="Nothing needs you right now" line="Failed charges, unscheduled visits and visits nobody marked done show up here." />
   }
   const at = now ?? new Date().toISOString()
   return (

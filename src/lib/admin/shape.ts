@@ -3,8 +3,8 @@
  * Pure: `live.ts` fetches, this shapes, and the tests run it on a seeded
  * database. Calendar days are Mountain time; instants are ISO strings.
  */
-import { zonedToUtc } from "./calendar"
-import { fullName } from "./format"
+import { dayOf, zonedToUtc } from "./calendar"
+import { TIME_ZONE, fullName } from "./format"
 import { causeOf, groupAttention, type QueueAttention } from "./attention-groups"
 import { jobTotal } from "@/lib/jobs/lines"
 import { invoiceOpen, invoiceStatus } from "@/lib/money/invoice"
@@ -52,7 +52,7 @@ export interface MirrorVisit { id: string; clientId: string | null; kind: string
 export interface MirrorJob { id: string; clientId: string | null; jobberUrl: string | null }
 export interface MirrorQuote { id: string; clientName: string | null; town: Town | null; total: number | null; sentAt: Date | null; status: Quote["status"] | null; jobberUrl: string | null }
 export interface MirrorInvoice { id: string; clientName: string | null; total: number | null; issuedAt: Date | null; dueAt: Date | null; status: Invoice["status"] | null; jobberUrl: string | null }
-export interface JobRow { id: string; customerId: string; kind: SoldJob["kind"]; status: SoldJob["status"]; price: number | null; source: SoldJob["source"]; passNumber?: string | null; notes: string | null }
+export interface JobRow { id: string; customerId: string; kind: SoldJob["kind"]; status: SoldJob["status"]; price: number | null; source: SoldJob["source"]; passNumber?: string | null; notes: string | null; createdAt?: Date }
 export interface LineRow { id: string; jobId: string; visitId: string | null; name: string; description: string | null; quantity: number; unitPrice: number; taxable: boolean; cancelledAt: Date | null }
 /** A payment row (`charge`) as live.ts reads it: refunds are negative; `attempt` numbers a visit's tries. */
 export interface PaymentRow { id: string; jobId: string | null; visitId: string | null; amount: number; method: string; status: string; paidOn: string | null; refundsPaymentId: string | null; attempt: number; createdAt: Date }
@@ -339,7 +339,7 @@ export function shapeAdminData(i: ShapeInput): AdminData {
     return {
       id: j.id, customerId: j.customerId, kind: j.kind, status: j.status, source: j.source, ...(bill ? { invoice: bill } : {}), ...(stories ? { timeline: stories.ofJob(j.id) } : {}),
       ...(i.lineRows ? { lines: lines.map((l) => ({ id: l.id, name: l.name, quantity: l.quantity, unitPrice: l.unitPrice, taxable: l.taxable, ...(l.description ? { description: l.description } : {}), ...(l.cancelledAt ? { cancelledAt: iso(l.cancelledAt) } : {}), ...(l.visitId ? { visitId: l.visitId } : {}) })), total: jobTotal(lines), payments, money } : {}),
-      ...(j.price !== null ? { price: j.price } : {}), ...(j.notes ? { notes: j.notes } : {}),
+      ...(j.price !== null ? { price: j.price } : {}), ...(j.notes ? { notes: j.notes } : {}), ...(j.createdAt ? { soldOn: dayOf(iso(j.createdAt), TIME_ZONE) } : {}),
       ...(pass ? { passId: pass.id, passNumber: j.passNumber ?? pass.number } : {}),
       visitIds: i.visits.filter((v) => v.jobId === j.id).map((v) => v.id),
     }
@@ -412,7 +412,7 @@ function visitRows(i: ShapeInput, app: Visit[], all: Visit[], jobs: SoldJob[] = 
   }
   for (const v of all)
     if (appIds.has(v.id) && !v.isPass && v.status === "unscheduled")
-      out.push({ kind: "unplaced", key: v.id, visitId: v.id, message: `${possessive(v.clientName)} ${KIND_WORDS[v.kind] ?? "visit"} has no day yet`, since: i.now.toISOString().replace(".000Z", "Z") })
+      out.push({ kind: "unplaced", key: v.id, visitId: v.id, message: `${possessive(v.clientName)} ${KIND_WORDS[v.kind] ?? "visit"} is unscheduled`, since: i.now.toISOString().replace(".000Z", "Z") })
   return out
 }
 
@@ -425,7 +425,11 @@ export function attention(i: ShapeInput, passes: Pass[], visitRows: Attention[] 
   for (const p of passes) {
     if (p.status !== "cancelled" && p.cardFailedAt) out.push({ kind: "charge-failed", key: `${p.id}@${p.cardFailedAt}`, passId: p.id, message: `The card on ${p.number} didn't go through; ${p.firstName} has the update link`, since: p.cardFailedAt })
   }
-  for (const a of i.alerts ?? []) out.push({ key: a.key, kind: a.kind === "new-pass" || a.kind === "pass-cancelled" || a.kind === "scheduled" || a.kind === "unplaced" ? a.kind : "jobs-failed", ...(a.passId ? { passId: a.passId } : {}), ...(a.kind === "unplaced" && a.key ? { visitId: a.key } : {}), message: a.message, since: iso(a.createdAt) })
+  for (const a of i.alerts ?? []) {
+    // A no-card row goes away once the visit is paid (the money was recorded) or its pass is gone.
+    if (a.kind === "no-card" && (() => { const v = passes.flatMap((p) => p.visits).find((x) => x.id === a.key); return !v || visitPaid(v) })()) continue
+    out.push({ key: a.key, kind: a.kind === "new-pass" || a.kind === "pass-cancelled" || a.kind === "scheduled" || a.kind === "unplaced" || a.kind === "no-card" ? a.kind : "jobs-failed", ...(a.passId ? { passId: a.passId } : {}), ...((a.kind === "unplaced" || a.kind === "no-card") && a.key ? { visitId: a.key } : {}), message: a.message, since: iso(a.createdAt) })
+  }
   for (const q of i.queueProblems) {
     const row: QueueAttention = { kind: "jobs-failed", key: `${q.kind}@${iso(q.updatedAt)}`, message: `A ${q.kind} task ${q.status === "failed" ? "gave up" : "is retrying"}: ${q.lastError ?? "no error recorded"}`, since: iso(q.updatedAt), queueKind: q.kind, ...(q.id ? { queueIds: [q.id] } : {}), cause: causeOf(q.lastError) }
     out.push(row)

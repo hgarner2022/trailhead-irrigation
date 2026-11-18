@@ -129,3 +129,14 @@ describe("the story of a customer, a job and a visit", () => {
     expect(techVisit.timeline!.map((l) => l.what)).not.toContain("$145 paid by cash")
   })
 })
+
+describe("a charge with no card to charge", () => {
+  it("shows a No card row with the visit and the pass while the visit is unpaid, and drops it once the money is recorded", async () => {
+    await db.insert(s.adminAlert).values({ organizationId: ORG, kind: "no-card", key: "p6-turn-on", passId: "p6", message: "No card to charge for Dana's spring turn-on" })
+    const row = (await getLiveAdminData(ctxFor(db, owner))).attention.find((a) => a.kind === "no-card")
+    expect(row).toMatchObject({ kind: "no-card", visitId: "p6-turn-on", passId: "p6", message: "No card to charge for Dana's spring turn-on" })
+    const [visit] = await db.select().from(s.visit).where(eq(s.visit.id, "p6-turn-on"))
+    await db.insert(s.charge).values({ organizationId: ORG, jobId: visit!.jobId, customerId: visit!.customerId, visitId: "p6-turn-on", attempt: 1, amount: visit!.amount, method: "cash", status: "succeeded", paidOn: "2027-05-07" })
+    expect((await getLiveAdminData(ctxFor(db, owner))).attention.some((a) => a.kind === "no-card")).toBe(false)
+  })
+})

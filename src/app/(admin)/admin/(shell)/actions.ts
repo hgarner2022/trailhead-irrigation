@@ -20,6 +20,7 @@ import { webhooksCreate, webhooksDelete, webhooksTest } from "@/api/v1/webhooks/
 import type { YardChanges } from "@/app/(admin)/admin/_screens/visit-actions-types"
 import type { Attention, OrganizationSettings, ServiceItem, TimingPreference } from "@/lib/admin/types"
 import { requireAdmin } from "@/lib/auth/guard"
+import { visitsOfJob } from "@/lib/admin/links"
 import { retryQueueTasks } from "@/lib/admin/queue-retry"
 import { timelineOf, type TimelineLine } from "@/lib/events/timeline"
 import { act, nothing, type ActionOutcome } from "./act"
@@ -129,7 +130,7 @@ export const addNote = async (about: "customer" | "property" | "job" | "visit", 
  */
 export async function attentionAction(item: Attention): Promise<ActionOutcome | { ok: true; data: undefined; message: string }> {
   await requireAdmin("manager")
-  if ((item.kind === "charge-failed" || item.kind === "card-expiring") && item.passId) {
+  if ((item.kind === "charge-failed" || item.kind === "card-expiring" || item.kind === "no-card") && item.passId) {
     const sent = await act((ctx) => callApi(ctx, passesSendCardUpdateLink, { id: item.passId }))
     return sent.ok ? { ok: true, data: undefined, message: "Card update link sent." } : sent
   }
@@ -152,7 +153,7 @@ export async function attentionAction(item: Attention): Promise<ActionOutcome | 
   }
   // A job that is done and owed carries the visit that is owed in `visitId`, so it opens on Visits like any visit row, where the panel's Record the payment (or Send a bill) asks how the money came.
   if (item.visitId) redirect(`/admin/visits?visit=${encodeURIComponent(item.visitId)}`)
-  if (item.passId) redirect(`/admin/passes?pass=${encodeURIComponent(item.passId)}`)
+  if (item.passId) redirect(item.jobId ? visitsOfJob(item.jobId) : "/admin/visits")
   redirect("/admin/schedule")
 }
 

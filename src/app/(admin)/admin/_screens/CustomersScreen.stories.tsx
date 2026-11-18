@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite"
-import { expect, screen } from "storybook/test"
+import { expect, screen, within } from "storybook/test"
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import { withFixtureContact } from "@/lib/admin/fixtures/contact"
 import type { AdminData } from "@/lib/admin/types"
@@ -7,6 +7,9 @@ import { EMPTY_SETTINGS } from "@/lib/admin/empty-settings"
 import { AdminShell } from "@/components/blocks/AdminShell"
 import { CustomersScreen } from "./CustomersScreen"
 import { ANDREA_EVENTS, ANDREA_MESSAGES, storyOf, withTimeline } from "./notes-fixture"
+
+// The panel is a dialog in a portal on the body, outside the story's canvas.
+const body = within(document.body)
 
 // `today` is pinned to 12:56 pm Mountain on Thursday, November 12, 2026, the
 // same moment as the Home story. The snapshot's 375 customers include the
@@ -41,10 +44,10 @@ export const Default: Story = {
 export const PanelOpen: Story = {
   args: { defaultSelectedId: "c100" },
   globals: { viewport: { value: "wide", isRotated: false } },
-  play: async ({ canvas }) => {
-    await expect(await canvas.findByRole("heading", { name: "Visits" })).toBeInTheDocument()
-    await expect(await canvas.findByRole("heading", { name: "Consent history" })).toBeInTheDocument()
-    await expect(await canvas.findByRole("button", { name: "New job" })).toBeInTheDocument()
+  play: async () => {
+    await expect(await body.findByRole("heading", { name: "Visits" })).toBeInTheDocument()
+    await expect(await body.findByRole("heading", { name: "Consent history" })).toBeInTheDocument()
+    await expect(await body.findByRole("button", { name: "New job" })).toBeInTheDocument()
   },
 }
 
@@ -58,10 +61,10 @@ export const PanelPropertyFull: Story = {
     data: withProperties([{ id: "prop-c100", town: "Erie", address: "12 Briggs St", ...yard, zones: 8, controller: "Rachio 3 in the garage", backflowLocation: "north side", gateCode: "4471", mustBeHome: true, accessNote: "Dog loose, close the gate", contactName: "Dana", contactPhone: "+19705550123", notes: "Clay soil by the fence" }]),
   },
   globals: { viewport: { value: "wide", isRotated: false } },
-  play: async ({ canvas }) => {
-    await expect(await canvas.findByRole("heading", { name: "Property" })).toBeInTheDocument()
-    await expect(await canvas.findByText("Gate code 4471")).toBeInTheDocument()
-    await expect(await canvas.findByRole("button", { name: "Edit" })).toBeInTheDocument()
+  play: async () => {
+    await expect(await body.findByRole("heading", { name: "Property" })).toBeInTheDocument()
+    await expect(await body.findByText("Gate code 4471")).toBeInTheDocument()
+    await expect(await body.findByRole("button", { name: "Edit" })).toBeInTheDocument()
   },
 }
 
@@ -69,8 +72,8 @@ export const PanelPropertyFull: Story = {
 export const PanelPropertyEmpty: Story = {
   args: { defaultSelectedId: "c100", data: withProperties([{ id: "prop-c100", town: "Erie", address: "12 Briggs St", ...yard }]) },
   globals: { viewport: { value: "wide", isRotated: false } },
-  play: async ({ canvas }) => {
-    await expect(await canvas.findByText("Nothing on file yet")).toBeInTheDocument()
+  play: async () => {
+    await expect(await body.findByText("Nothing on file yet")).toBeInTheDocument()
   },
 }
 
@@ -80,9 +83,9 @@ const withCard = (card: NonNullable<AdminData["clients"][number]["card"]> | null
 export const PanelCard: Story = {
   args: { defaultSelectedId: "c100", data: withCard({ brand: "visa", last4: "4242", expires: "2028-08" }) },
   globals: { viewport: { value: "wide", isRotated: false } },
-  play: async ({ canvas }) => {
-    await expect(await canvas.findByText("Visa ending 4242, expires 08/28")).toBeInTheDocument()
-    await expect(await canvas.findByRole("button", { name: "Send card link" })).toBeInTheDocument()
+  play: async () => {
+    await expect(await body.findByText("Visa ending 4242, expires 08/28")).toBeInTheDocument()
+    await expect(await body.findByRole("button", { name: "Send card link" })).toBeInTheDocument()
   },
 }
 
@@ -93,9 +96,9 @@ export const PanelNoCard: Story = {
     data: { ...withCard(null), passes: data.passes.map((p) => (p.clientId === "c100" ? { ...p, cardLast4: undefined, cardExpires: undefined } : p)) },
   },
   globals: { viewport: { value: "wide", isRotated: false } },
-  play: async ({ canvas }) => {
-    await expect(await canvas.findByText("No card on file")).toBeInTheDocument()
-    await expect(await canvas.findByRole("button", { name: "Send card link" })).toBeInTheDocument()
+  play: async () => {
+    await expect(await body.findByText("No card on file")).toBeInTheDocument()
+    await expect(await body.findByRole("button", { name: "Send card link" })).toBeInTheDocument()
   },
 }
 
@@ -103,9 +106,9 @@ export const PanelNoCard: Story = {
 export const PanelReadOnly: Story = {
   args: { defaultSelectedId: "c100", readOnly: true },
   globals: { viewport: { value: "wide", isRotated: false } },
-  play: async ({ canvas }) => {
-    await expect(await canvas.findByRole("heading", { name: "Visits" })).toBeInTheDocument()
-    await expect(canvas.queryByRole("button", { name: "New job" })).not.toBeInTheDocument()
+  play: async () => {
+    await expect(await body.findByRole("heading", { name: "Visits" })).toBeInTheDocument()
+    await expect(body.queryByRole("button", { name: "New job" })).not.toBeInTheDocument()
   },
 }
 
@@ -116,10 +119,10 @@ const withStory = (tech = false): AdminData => ({ ...data, clients: withTimeline
 export const PanelNotesAndHistory: Story = {
   args: { data: withStory(), defaultSelectedId: "c100" },
   globals: { viewport: { value: "wide", isRotated: false } },
-  play: async ({ canvas }) => {
-    await expect(await canvas.findByRole("heading", { name: "Notes and history" })).toBeInTheDocument()
-    await expect(await canvas.findByText("Season Pass TH-2027-0001 bought online")).toBeInTheDocument()
-    await expect(await canvas.findByText("Text sent: date set")).toBeInTheDocument()
+  play: async () => {
+    await expect(await body.findByRole("heading", { name: "Notes and history" })).toBeInTheDocument()
+    await expect(await body.findByText("Season Pass TH-2027-0001 bought online")).toBeInTheDocument()
+    await expect(await body.findByText("Text sent: date set")).toBeInTheDocument()
   },
 }
 
@@ -127,9 +130,9 @@ export const PanelNotesAndHistory: Story = {
 export const PanelNotesAndHistoryTech: Story = {
   args: { data: withStory(true), defaultSelectedId: "c100", readOnly: true },
   globals: { viewport: { value: "wide", isRotated: false } },
-  play: async ({ canvas }) => {
-    await expect(await canvas.findByLabelText("Add a note")).toBeInTheDocument()
-    await expect(canvas.queryByText(/Card saved/)).not.toBeInTheDocument()
+  play: async () => {
+    await expect(await body.findByLabelText("Add a note")).toBeInTheDocument()
+    await expect(body.queryByText(/Card saved/)).not.toBeInTheDocument()
   },
 }
 
@@ -145,9 +148,9 @@ export const ToSchedule: Story = {
     // The filter chip lives in the toolbar; the column header of the same name sorts.
     const chips = await canvas.findAllByRole("button", { name: "Scheduled" })
     await userEvent.click(chips.find((b) => b.closest('[data-slot="data-grid-toolbar"]'))!)
-    await userEvent.click(await screen.findByRole("menuitemcheckbox", { name: "No, no day yet" }))
+    await userEvent.click(await screen.findByRole("menuitemcheckbox", { name: "No, unscheduled" }))
     await userEvent.keyboard("{Escape}")
-    await expect((await canvas.findAllByText("No day yet")).length).toBeGreaterThan(1)
+    await expect((await canvas.findAllByText("Unscheduled")).length).toBeGreaterThan(1)
   },
 }
 

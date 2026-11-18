@@ -1,138 +1,136 @@
 "use client"
 
-import { createContext, useCallback, useContext, useEffect, useRef, useState, useSyncExternalStore, type CSSProperties, type ReactNode } from "react"
+import { useCallback, useRef, useSyncExternalStore, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react"
 import { X } from "lucide-react"
+import type { PanelImperativeHandle } from "react-resizable-panels"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable"
 import { Sheet, SheetClose, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 
-// Record detail beside the thing it belongs to (docs/DESIGN.md, Tables). From
-// lg up it is a fixed column on the right that pushes the page narrower, so
-// the row stays visible beside its detail; SidePanelLayout gives the page the
-// matching right padding. Below lg it is the shadcn Sheet: modal and full
-// width, because a phone has no room for both. Escape closes in both modes,
-// focus moves into the panel on open and goes back where it was on close.
+// The one panel every admin screen opens a record in (docs/DESIGN.md, Tables and Uniformity). It is the shadcn Sheet
+// (a modal dialog: scrim, focus trapped and returned, Escape) in both sizes. From lg up the sheet's content is a
+// shadcn ResizablePanelGroup across the window: an empty panel that closes the sheet when clicked, a handle, and the
+// panel itself, 360px to 70% of the window, opening at the width this browser last left it. The page under it never
+// moves, so grids keep their columns. Below lg the panel is the whole sheet and there is no handle. Header, body and
+// footer are the same markup in both sizes; screens put only their content and footer buttons in.
 
 export interface SidePanelProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   title: string
   description?: string
-  /** Width of the laptop column in px; default 480 */
-  width?: number
   children: ReactNode
-  /** Pinned under the scrolling body */
+  /** Pinned under the scrolling body: the primary button first, then the secondary ones */
   footer?: ReactNode
   className?: string
 }
 
 const LG = "(min-width: 1024px)"
-const DEFAULT_WIDTH = 480
+export const MIN_WIDTH = 360
+export const DEFAULT_WIDTH = 480
+export const STEP = 40
+const KEY = "trailhead.side-panel-width"
 // The body scrolls on its own, so it is a named region in the tab order for keyboard scrolling.
-const BODY = "flex-1 overflow-y-auto p-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/50"
+const BODY = "min-w-0 flex-1 overflow-y-auto px-6 py-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/50"
 
 const subscribe = (onChange: () => void) => {
   const query = window.matchMedia(LG)
   query.addEventListener("change", onChange)
   return () => query.removeEventListener("change", onChange)
 }
-/** True from Tailwind's lg breakpoint. False on the server, so a laptop sees the column once hydrated. */
+/** True from Tailwind's lg breakpoint. False on the server, so a laptop sees the drawer once hydrated. */
 const useDesktop = () => useSyncExternalStore(subscribe, () => window.matchMedia(LG).matches, () => false)
 
-type Report = (open: boolean, width: number) => void
-const LayoutContext = createContext<Report | null>(null)
+// The remembered width, read once per open and written when the person lets go. Storage can throw (a private window), so every use is wrapped.
+function storedWidth(): number {
+  try {
+    const value = Number(window.localStorage.getItem(KEY))
+    return Number.isFinite(value) && value >= MIN_WIDTH ? value : DEFAULT_WIDTH
+  } catch {
+    return DEFAULT_WIDTH
+  }
+}
+function rememberWidth(width: number) {
+  try {
+    window.localStorage.setItem(KEY, String(Math.round(width)))
+  } catch {
+    // the width is just not remembered
+  }
+}
 
 /**
- * Wraps a page and the panel that opens beside it. The page gets `lg:pr-(--panel-w)`
- * while the panel is open, so a DataGrid narrows instead of being covered.
+ * Focus goes into the sheet itself on open (not its close button, so nothing lights up until the reader tabs) and back
+ * to whatever had it on close, or to the grid or the page marker when that element is gone.
  */
-export function SidePanelLayout({ panel, children, className }: { panel: ReactNode; children: ReactNode; className?: string }) {
-  const [state, setState] = useState({ open: false, width: DEFAULT_WIDTH })
-  const report = useCallback<Report>((open, width) => setState((s) => (s.open === open && s.width === width ? s : { open, width })), [])
-  return (
-    <LayoutContext.Provider value={report}>
-      <div data-slot="side-panel-layout" tabIndex={-1} className={cn("relative outline-none", className)}>
-        <div
-          data-slot="side-panel-page"
-          style={{ "--panel-w": `${state.width}px` } as CSSProperties}
-          className={cn("transition-[padding] duration-200 ease-out motion-reduce:transition-none", state.open && "lg:pr-(--panel-w)")}
-        >
-          {children}
-        </div>
-        {panel}
-      </div>
-    </LayoutContext.Provider>
-  )
-}
-
-function CloseButton({ onClick }: { onClick?: () => void }) {
-  return (
-    <Button variant="ghost" size="icon" aria-label="Close panel" onClick={onClick} className="-mr-2 -mt-1 size-8 shrink-0">
-      <X className="size-4" aria-hidden />
-    </Button>
-  )
-}
-
-function Column({ open, onOpenChange, title, description, width = DEFAULT_WIDTH, children, footer, className }: SidePanelProps) {
-  const ref = useRef<HTMLElement>(null)
-  const latest = useRef(onOpenChange)
-  useEffect(() => {
-    latest.current = onOpenChange
-  })
-  // Focus lands on the panel on open and goes back to where it was on close,
-  // or to the grid or the layout when that element is gone. Escape closes
-  // unless a menu, listbox or dialog inside the panel is open or something
-  // already handled it.
-  useEffect(() => {
-    if (!open) return
-    const active = document.activeElement
-    const before = active instanceof HTMLElement && active !== document.body ? active : null
-    ref.current?.focus()
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key !== "Escape" || event.defaultPrevented) return
-      if (event.target instanceof Element && event.target.closest('[role="menu"], [role="listbox"], [role="dialog"]')) return
-      latest.current(false)
-    }
-    document.addEventListener("keydown", onKey)
-    return () => {
-      document.removeEventListener("keydown", onKey)
+function useFocusHandoff() {
+  const content = useRef<HTMLDivElement>(null)
+  const before = useRef<HTMLElement | null>(null)
+  return {
+    content,
+    onOpenAutoFocus: (event: Event) => {
+      event.preventDefault()
+      const active = document.activeElement
+      before.current = active instanceof HTMLElement && active !== document.body ? active : null
+      content.current?.focus()
+    },
+    onCloseAutoFocus: (event: Event) => {
+      event.preventDefault()
       const fallback = () => document.querySelector<HTMLElement>('[data-slot="data-grid-table"]') ?? document.querySelector<HTMLElement>('[data-slot="side-panel-layout"]')
-      ;(before?.isConnected ? before : fallback())?.focus()
-    }
-  }, [open])
-  if (!open) return null
+      ;(before.current?.isConnected ? before.current : fallback())?.focus()
+    },
+  }
+}
+
+/** Wraps a page and its panel. It only marks the page, so focus has somewhere to return to when the opener is gone. */
+export function SidePanelLayout({ panel, children, className }: { panel: ReactNode; children: ReactNode; className?: string }) {
   return (
-    <aside
-      ref={ref}
-      tabIndex={-1}
-      role="complementary"
-      aria-label={title}
-      data-slot="side-panel"
-      data-mode="column"
-      style={{ width }}
-      className={cn("fixed inset-y-0 right-0 z-40 flex max-w-full flex-col border-l border-border bg-background shadow-lg outline-none", className)}
-    >
-      <div className="flex items-start gap-3 border-b border-border p-4">
+    <div data-slot="side-panel-layout" tabIndex={-1} className={cn("relative outline-none", className)}>
+      {children}
+      {panel}
+    </div>
+  )
+}
+
+/** One header, one body, one footer: the same in the drawer and the sheet. */
+function Frame({ title, description, children, footer }: Pick<SidePanelProps, "title" | "description" | "children" | "footer">) {
+  return (
+    <>
+      <SheetHeader className="flex-row items-start gap-3 border-b border-border px-6 py-4">
         <div className="min-w-0 flex-1">
-          <h2 className="font-display text-2xl font-semibold leading-tight text-navy">{title}</h2>
-          {description && <p className="mt-1 text-sm text-muted-foreground">{description}</p>}
+          <SheetTitle className="font-display text-2xl font-semibold leading-tight text-navy">{title}</SheetTitle>
+          {description ? <SheetDescription className="mt-1 truncate" title={description}>{description}</SheetDescription> : null}
         </div>
-        <CloseButton onClick={() => onOpenChange(false)} />
-      </div>
+        <SheetClose asChild>
+          <Button variant="ghost" size="icon" aria-label="Close panel" className="-mr-2 -mt-1 size-8 shrink-0">
+            <X className="size-4" aria-hidden />
+          </Button>
+        </SheetClose>
+      </SheetHeader>
       <div role="region" aria-label={`${title} details`} tabIndex={0} className={BODY}>
         {children}
       </div>
-      {footer && <div className="flex flex-wrap items-center gap-2 border-t border-border p-4">{footer}</div>}
-    </aside>
+      {footer ? <SheetFooter className="flex-row flex-wrap items-center gap-2 border-t border-border px-6 py-4">{footer}</SheetFooter> : null}
+    </>
   )
 }
 
-function PhoneSheet({ open, onOpenChange, title, description, children, footer, className }: SidePanelProps) {
-  const content = useRef<HTMLDivElement>(null)
-  // Focus the sheet itself on open, not its close button, so nothing lights up until the reader tabs.
-  const focusSheet = (event: Event) => {
+function Drawer({ open, onOpenChange, title, description, children, footer, className }: SidePanelProps) {
+  const panel = useRef<PanelImperativeHandle>(null)
+  const { content, ...handoff } = useFocusHandoff()
+  const remember = useCallback(() => {
+    const size = panel.current?.getSize().inPixels
+    if (size) rememberWidth(size)
+  }, [])
+  // The panel is on the right, so the left arrow moves its edge left and makes it wider, 40px a press.
+  const onKeyDown = (event: ReactKeyboardEvent<HTMLElement>) => {
+    const delta = event.key === "ArrowLeft" ? STEP : event.key === "ArrowRight" ? -STEP : 0
+    const now = panel.current?.getSize().inPixels
+    if (!delta || !now) return
     event.preventDefault()
-    content.current?.focus()
+    event.stopPropagation()
+    panel.current?.resize(Math.max(MIN_WIDTH, now + delta))
+    remember()
   }
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -141,36 +139,61 @@ function PhoneSheet({ open, onOpenChange, title, description, children, footer, 
         side="right"
         showCloseButton={false}
         data-slot="side-panel"
+        data-mode="drawer"
+        {...handoff}
+        className="w-screen max-w-none gap-0 border-0 bg-transparent p-0 shadow-none outline-none sm:max-w-none"
+      >
+        <ResizablePanelGroup orientation="horizontal" className="h-full">
+          <ResizablePanel id="gap" minSize={0}>
+            <div data-slot="side-panel-gap" aria-hidden className="h-full" onClick={() => onOpenChange(false)} />
+          </ResizablePanel>
+          <ResizableHandle
+            aria-label="Resize panel"
+            onKeyDownCapture={onKeyDown}
+            onPointerUp={remember}
+            className="w-1.5 bg-transparent after:w-3 hover:bg-primary/50 focus-visible:bg-primary focus-visible:ring-0 active:bg-primary"
+          />
+          <ResizablePanel
+            id="panel"
+            panelRef={panel}
+            defaultSize={storedWidth()}
+            minSize={MIN_WIDTH}
+            maxSize="70%"
+            groupResizeBehavior="preserve-pixel-size"
+            className={cn("flex flex-col border-l border-border bg-background shadow-lg", className)}
+          >
+            <Frame title={title} description={description} footer={footer}>
+              {children}
+            </Frame>
+          </ResizablePanel>
+        </ResizablePanelGroup>
+      </SheetContent>
+    </Sheet>
+  )
+}
+
+function PhoneSheet({ open, onOpenChange, title, description, children, footer, className }: SidePanelProps) {
+  const { content, ...handoff } = useFocusHandoff()
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent
+        ref={content}
+        side="right"
+        showCloseButton={false}
+        data-slot="side-panel"
         data-mode="sheet"
-        onOpenAutoFocus={focusSheet}
+        {...handoff}
         className={cn("w-full gap-0 outline-none sm:max-w-none", className)}
         {...(description ? {} : { "aria-describedby": undefined })}
       >
-        <SheetHeader className="flex-row items-start gap-3 border-b border-border">
-          <div className="min-w-0 flex-1">
-            <SheetTitle className="font-display text-2xl font-semibold leading-tight text-navy">{title}</SheetTitle>
-            {description && <SheetDescription className="mt-1">{description}</SheetDescription>}
-          </div>
-          <SheetClose asChild>
-            <CloseButton />
-          </SheetClose>
-        </SheetHeader>
-        <div role="region" aria-label={`${title} details`} tabIndex={0} className={BODY}>
+        <Frame title={title} description={description} footer={footer}>
           {children}
-        </div>
-        {footer && <SheetFooter className="flex-row flex-wrap items-center border-t border-border">{footer}</SheetFooter>}
+        </Frame>
       </SheetContent>
     </Sheet>
   )
 }
 
 export function SidePanel(props: SidePanelProps) {
-  const desktop = useDesktop()
-  const report = useContext(LayoutContext)
-  const { open, width = DEFAULT_WIDTH } = props
-  useEffect(() => {
-    report?.(open, width)
-    return () => report?.(false, width)
-  }, [report, open, width])
-  return desktop ? <Column {...props} /> : <PhoneSheet {...props} />
+  return useDesktop() ? <Drawer {...props} /> : <PhoneSheet {...props} />
 }

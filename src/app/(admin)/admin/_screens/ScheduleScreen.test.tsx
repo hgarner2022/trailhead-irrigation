@@ -60,13 +60,13 @@ describe("ScheduleScreen move control", () => {
 })
 
 describe("ScheduleScreen Schedule", () => {
-  it("schedules every visit in the No day yet list, counting the same list, and says so", async () => {
+  it("schedules every visit in the Unscheduled list, counting the same list, and says so", async () => {
     const info = vi.spyOn(console, "info").mockImplementation(() => undefined)
     render(<ScheduleScreen data={data} today={TODAY} />)
     const rows = within(document.querySelector<HTMLElement>('[data-slot="to-schedule-tray"]')!).getAllByRole("listitem")
     const button = screen.getByRole("button", { name: /^Schedule \d+ visits$/ })
     expect(button).toHaveTextContent(`Schedule ${rows.length} visits`)
-    expect(screen.getByRole("heading", { name: `No day yet (${rows.length})` })).toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: `Unscheduled (${rows.length})` })).toBeInTheDocument()
     await userEvent.click(button)
     expect(info).toHaveBeenCalledWith("schedule", "2026-11-09", expect.any(Array))
     expect(screen.getByRole("status")).toHaveTextContent(`${rows.length} visits scheduled on the week of November 9. The customers get their dates.`)
@@ -148,13 +148,13 @@ describe("ScheduleScreen opens on the work", () => {
   })
 })
 
-describe("ScheduleScreen's No day yet list", () => {
+describe("ScheduleScreen's Unscheduled list", () => {
   const rows = () => within(document.querySelector<HTMLElement>('[data-slot="to-schedule-tray"]')!).getAllByRole("listitem")
   const pending = data.passes.find((p) => p.status === "pending")!
 
-  it("lists only jobs with no day, for active passes, worded No day yet, with Place on each", () => {
+  it("lists only jobs with no day, for active passes, worded Unscheduled, with Place on each", () => {
     render(<ScheduleScreen data={data} today={TODAY} />)
-    expect(screen.getByRole("heading", { name: /^No day yet \(\d+\)$/ })).toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: /^Unscheduled \(\d+\)$/ })).toBeInTheDocument()
     expect(screen.queryByText(/To schedule/)).toBeNull()
     for (const row of rows()) expect(within(row).getByRole("button", { name: /^Place / })).toBeInTheDocument()
     // Every row is a job of an active pass with no day; a pending pass's job is not among them.

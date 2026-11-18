@@ -7,8 +7,8 @@ import { HomeScreen } from "./HomeScreen"
 
 // `today` is pinned to 12:56 pm Mountain on Thursday, November 12, 2026: four
 // minutes after the snapshot's sync, so the header reads "Updated 4 minutes
-// ago". In season, that day has four scheduled blowouts (the first card is "Today"). The quiet November
-// fixture has nothing today or this month: its next visits are three in April, so the first card is "Next up".
+// ago". In season, that day has four scheduled blowouts (the Today card). The quiet November
+// fixture has nothing today or this month: its next visits are three in April, so the day card is "Next up".
 const TODAY = "2026-11-12T19:56:30Z"
 const snap = snapshot as AdminData
 const groupedTexts: Attention = {
@@ -61,7 +61,7 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-/** In season: Today opens on the four blowouts, the money line, the map and a grouped Needs action row. */
+/** In season: the money line first, then Today on the four blowouts (its day line links to the Schedule), the map and a grouped Needs action row. */
 export const InSeason: Story = {
   globals: { viewport: { value: "wide", isRotated: false } },
 }

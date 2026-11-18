@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite"
-import { expect, screen } from "storybook/test"
+import { expect, screen, within } from "storybook/test"
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import type { AdminData, SoldJob } from "@/lib/admin/types"
 import { EMPTY_SETTINGS } from "@/lib/admin/empty-settings"
@@ -7,6 +7,9 @@ import { AdminShell } from "@/components/blocks/AdminShell"
 import { PassesScreen } from "./PassesScreen"
 import { PASS_EVENTS, storyOf } from "./notes-fixture"
 import { noCardPass } from "./visits-fixture"
+
+// The panel is a dialog in a portal on the body, outside the story's canvas.
+const body = within(document.body)
 
 // `today` is pinned to 12:56 pm Mountain on Thursday, November 12, 2026, the
 // same moment as the Home story, so the season line's marker sits before the
@@ -69,8 +72,8 @@ export const PendingFilter: Story = {
 export const PendingPanel: Story = {
   args: { defaultSelectedId: data.passes.find((p) => p.status === "pending")!.id },
   globals: { viewport: { value: "wide", isRotated: false } },
-  play: async ({ canvas }) => {
-    await expect(await canvas.findByText("Checkout not finished, expires after an hour.")).toBeInTheDocument()
+  play: async () => {
+    await expect(await body.findByText("Checkout not finished, expires after an hour.")).toBeInTheDocument()
   },
 }
 
@@ -100,9 +103,9 @@ const withStory = (tech = false): AdminData => ({ ...data, jobs: [{ ...passJob, 
 export const PanelNotesAndHistory: Story = {
   args: { data: withStory(), defaultSelectedId: "p1" },
   globals: { viewport: { value: "wide", isRotated: false } },
-  play: async ({ canvas }) => {
-    await expect(await canvas.findByRole("heading", { name: "Notes and history" })).toBeInTheDocument()
-    await expect(await canvas.findByText("Spring turn-on timing changed from mid May to early May")).toBeInTheDocument()
+  play: async () => {
+    await expect(await body.findByRole("heading", { name: "Notes and history" })).toBeInTheDocument()
+    await expect(await body.findByText("Spring turn-on timing changed from mid May to early May")).toBeInTheDocument()
   },
 }
 
@@ -110,9 +113,9 @@ export const PanelNotesAndHistory: Story = {
 export const PanelNotesAndHistoryTech: Story = {
   args: { data: withStory(true), defaultSelectedId: "p1", readOnly: true },
   globals: { viewport: { value: "wide", isRotated: false } },
-  play: async ({ canvas }) => {
-    await expect(await canvas.findByLabelText("Add a note")).toBeInTheDocument()
-    await expect(canvas.queryByText(/Consent recorded/)).not.toBeInTheDocument()
+  play: async () => {
+    await expect(await body.findByLabelText("Add a note")).toBeInTheDocument()
+    await expect(body.queryByText(/Consent recorded/)).not.toBeInTheDocument()
   },
 }
 
@@ -125,9 +128,9 @@ export const PanelNotesAndHistoryPhone: Story = {
 export const PanelNoCard: Story = {
   args: { data: { ...data, passes: [noCardPass, ...data.passes] }, defaultSelectedId: noCardPass.id },
   globals: { viewport: { value: "wide", isRotated: false } },
-  play: async ({ canvas }) => {
-    await expect(await canvas.findByText("No card yet, collect at the visit")).toBeInTheDocument()
-    await expect(await canvas.findByRole("button", { name: "Send card link" })).toBeInTheDocument()
-    await expect(canvas.queryByRole("button", { name: "Send card update link" })).not.toBeInTheDocument()
+  play: async () => {
+    await expect(await body.findByText("No card yet, collect at the visit")).toBeInTheDocument()
+    await expect(await body.findByRole("button", { name: "Send card link" })).toBeInTheDocument()
+    await expect(body.queryByRole("button", { name: "Send card update link" })).not.toBeInTheDocument()
   },
 }

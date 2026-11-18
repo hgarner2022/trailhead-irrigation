@@ -21,7 +21,7 @@ export type { PassesActions }
 // beside it from its name. A pending pass is an unpaid attempt and says
 // Pending, never Active; the Pending filter finds them. Each visit column
 // and the panel's jobs, charges and season line read the same visit rows.
-// On a laptop the panel pushes the grid narrower; on a phone it covers it as
+// On a laptop the panel is a drawer over the grid; on a phone it covers it as
 // a sheet. Client because the selected pass is state (its id; the pass
 // itself is read from `data.passes`, so a refreshed `data` shows in the open
 // panel); the route's page.tsx supplies `data` and `today`. The bulk actions
@@ -109,15 +109,15 @@ export function PassesScreen({ data, today, defaultSelectedId, readOnly = false,
               footer={
                 canAct ? (
                   <>
-                    <Button variant="outline" disabled={pending} onClick={() => (actions ? run(() => actions.resendConfirmation(pass.id), "Confirmation sent.") : console.info("resend confirmation", [pass.number]))}>
-                      Resend confirmation
-                    </Button>
                     {/* A pass with no card has Send card link on its card line in the panel instead. */}
                     {pass.cardLast4 && (
                       <Button disabled={pending} onClick={() => (actions ? run(() => actions.sendCardUpdateLink(pass.id), "Card update link sent.") : console.info("send card update link", [pass.number]))}>
                         Send card update link
                       </Button>
                     )}
+                    <Button variant="outline" disabled={pending} onClick={() => (actions ? run(() => actions.resendConfirmation(pass.id), "Confirmation sent.") : console.info("resend confirmation", [pass.number]))}>
+                      Resend confirmation
+                    </Button>
                     <Button variant="ghost" className="ml-auto text-destructive hover:text-destructive" onClick={() => setCancelling(true)}>
                       Cancel pass
                     </Button>

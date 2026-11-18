@@ -9,7 +9,7 @@ describe("statusLabel", () => {
     ["pending", "Pending"],
     ["active", "Active"],
     ["paid", "Paid"],
-    ["needs-a-day", "No day yet"],
+    ["needs-a-day", "Unscheduled"],
     ["scheduled", "Scheduled"],
     ["routed", "Routed"],
     ["done", "Done"],

@@ -5,6 +5,7 @@ import { useMemo, useState, useTransition } from "react"
 import { Button } from "@/components/ui/button"
 import { DataGrid } from "@/components/blocks/DataGrid"
 import { PageHeader } from "@/components/blocks/PageHeader"
+import { jobIdOfPass, visitsOfJob } from "@/lib/admin/links"
 import { SidePanel, SidePanelLayout } from "@/components/blocks/SidePanel"
 import type { AdminData } from "@/lib/admin/types"
 import { dayOf } from "@/lib/admin/calendar"
@@ -71,7 +72,7 @@ export function CustomersScreen({ data, today, defaultSelectedId, readOnly = fal
     () => [
       { column: "town", label: "Town", options: TOWNS.map((t) => option(t)) },
       { column: "pass", label: "Pass", options: [option("active", "Active"), option("pending", "Pending"), option("none", "None"), option("cancelled", "Cancelled"), option("lapsed", "Lapsed")] },
-      { column: "nextState", label: "Scheduled", options: (["booked", "to-schedule", "none"] as const).map((s) => option(s, `${SCHEDULED_WORDS[s]}${s === "to-schedule" ? ", no day yet" : s === "none" ? ", nothing ahead" : ""}`)) },
+      { column: "nextState", label: "Scheduled", options: (["booked", "to-schedule", "none"] as const).map((s) => option(s, `${SCHEDULED_WORDS[s]}${s === "to-schedule" ? ", unscheduled" : s === "none" ? ", nothing ahead" : ""}`)) },
       { column: "marketing", label: "Marketing", options: (["yes", "no", "not-asked"] as const).map((m) => option(m, MARKETING_WORDS[m])) },
     ],
     [],
@@ -92,13 +93,13 @@ export function CustomersScreen({ data, today, defaultSelectedId, readOnly = fal
               open={open}
               onOpenChange={setOpen}
               title={row.name}
-              description={row.pass === "none" ? "Customer" : `Season Pass holder`}
+              description="Customer"
               footer={
                 <>
                   {!readOnly && client?.app && <NewJobButton data={data} today={today} actions={visitActions} customerId={row.id} />}
-                  {row.passId && (
+                  {row.passId && jobIdOfPass(data, row.passId) && (
                     <Button variant="outline" className="min-h-11" asChild>
-                      <Link href={`/admin/passes?pass=${encodeURIComponent(row.passId)}`}>Open pass</Link>
+                      <Link href={visitsOfJob(jobIdOfPass(data, row.passId)!)}>{"Open job's visits"}</Link>
                     </Button>
                   )}
                   {offers && (

@@ -136,7 +136,7 @@ export function PaidByChoice({ visit, onChoose, pending, label, allowBill = fals
   )
 }
 
-/** Whether Done asks how the money came: a priced one-off, or a pass visit whose pass has no card (sold by the office, paid at the visit). A pass visit with a card is charged. */
+/** Whether Done asks how the money came: a priced one-off, or a pass visit whose customer has no REAL card (`pass.cardLast4` is only set for a card Stripe holds; an office sale, or a checkout that saved none, pays at the visit). A pass visit with a real card is charged, and offers "Paid another way". */
 export const doneAsksPaidBy = (visit: Pick<Visit, "passId" | "price">, pass: Pick<Pass, "cardLast4"> | undefined): boolean => (visit.price ?? 0) > 0 && (!visit.passId || (pass !== undefined && !pass.cardLast4))
 
 /** Done: a pass visit with a card or a visit with no price closes at once (the card is charged, or nothing is owed yet); a priced one-off, or a pass visit with no card on the pass, asks how it was paid, once. */
@@ -145,6 +145,7 @@ export function DoneForm({ visit, pass, today, actions }: { visit: Visit; pass?:
   const { pending, error, run } = useRunner()
   const toast = useUndoToast()
   const asks = doneAsksPaidBy(visit, pass)
+  const [another, setAnother] = useState(false)
   const done = (paidBy?: PaidByInput) => {
     if (!actions) return console.info("mark done", visit.id, paidBy)
     run(
@@ -163,14 +164,27 @@ export function DoneForm({ visit, pass, today, actions }: { visit: Visit; pass?:
         </label>
         <Input id="done-day" type="date" value={day} max={today} onChange={(e) => setDay(e.target.value)} className="min-h-11" />
       </div>
-      {asks ? (
-        <PaidByChoice visit={visit} pending={pending} onChoose={done} label="Mark done and record payment" allowBill />
+      {asks || another ? (
+        <PaidByChoice visit={visit} pending={pending} onChoose={done} label="Mark done and record payment" allowBill={asks} />
       ) : (
-        <Button type="button" className="mt-2 min-h-11" disabled={pending} onClick={() => done()}>
-          Mark done
-        </Button>
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <Button type="button" className="min-h-11" disabled={pending} onClick={() => done()}>
+            Mark done
+          </Button>
+          {visit.passId && pass?.cardLast4 && (
+            <Button type="button" variant="ghost" className="min-h-11" disabled={pending} onClick={() => setAnother(true)}>
+              Paid another way
+            </Button>
+          )}
+        </div>
       )}
-      <p className="mt-1 text-sm text-muted-foreground">{asks ? "Sends the receipt, which says how it was paid. A bill goes with a pay link instead." : visit.passId ? "Charges the card on the pass and sends the receipt." : ""}</p>
+      <p className="mt-1 text-sm text-muted-foreground">
+        {asks || another
+          ? "Sends the receipt, which says how it was paid. A bill goes with a pay link instead."
+          : visit.passId
+            ? `Charges the card${pass?.cardLast4 ? ` ending ${pass.cardLast4}` : " on the pass"} after this visit and sends the receipt.`
+            : ""}
+      </p>
       <p role="alert" className={`${FORM_STATUS} ${ERROR}`}>
         {error}
       </p>
@@ -178,7 +192,7 @@ export function DoneForm({ visit, pass, today, actions }: { visit: Visit; pass?:
   )
 }
 
-/** Not done: a reason, then it goes back to No day yet; the reason is kept. */
+/** Not done: a reason, then it goes back to Unscheduled; the reason is kept. */
 export function NotDoneForm({ visit, actions }: { visit: Visit; actions?: VisitActions }) {
   const [reason, setReason] = useState<NotDoneReason>("could-not-get-in")
   const [note, setNote] = useState("")

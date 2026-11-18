@@ -42,10 +42,10 @@ describe("NeedsAttention", () => {
     expect(rows().map((r) => r.dataset.kind)).toEqual(["charge-failed", "jobs-failed", "card-expiring", "card-expiring"])
   })
 
-  it("links a row to its pass and leaves a row without one unlinked", () => {
-    render(<NeedsAttention items={items} now={now} />)
+  it("links a row about a pass to Visits, filtered to the pass's job when the row carries it, and leaves a row without one unlinked", () => {
+    render(<NeedsAttention items={items.map((i, n) => (n === 0 ? { ...i, jobId: "job_p3" } : i))} now={now} />)
     const links = screen.getAllByRole("link")
-    expect(links.map((l) => l.getAttribute("href"))).toEqual(["/admin/passes?pass=p3", "/admin/passes?pass=p7", "/admin/passes?pass=p5"])
+    expect(links.map((l) => l.getAttribute("href"))).toEqual(["/admin/visits?job=job_p3", "/admin/visits", "/admin/visits"])
     expect(rows()[2].querySelector("a")).toBeNull()
   })
 
@@ -93,7 +93,7 @@ describe("NeedsAttention", () => {
     render(<NeedsAttention items={[]} now={now} />)
     expect(rows()).toHaveLength(0)
     expect(document.querySelector('[data-slot="empty-state"]')).toHaveTextContent("Nothing needs you right now")
-    expect(screen.getByText("Failed charges, visits with no day yet and visits nobody marked done show up here.")).toBeInTheDocument()
+    expect(screen.getByText("Failed charges, unscheduled visits and visits nobody marked done show up here.")).toBeInTheDocument()
   })
 
   it("shows visits not closed with the dashed circle, a muted icon and a link to the Schedule", () => {

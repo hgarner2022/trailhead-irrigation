@@ -65,7 +65,7 @@ export const SeasonPass: Story = {
   globals: wide,
   play: async () => {
     await expect(await screen.findByText("Spring turn-on $145 · Fall blowout $115 · billed after each visit")).toBeInTheDocument()
-    await expect((await screen.findAllByText("No day yet")).length).toBe(2)
+    await expect((await screen.findAllByText("Unscheduled")).length).toBe(2)
     await expect(await screen.findByRole("button", { name: "Sell pass" })).toBeDisabled()
   },
 }

@@ -10,8 +10,10 @@ import { addDays, areaOf, dayLabel, dayVisits, weekDays, weekOf, weekVisits, wor
 import { EmptyState } from "./EmptyState"
 import { KIND_WORDS } from "@/lib/admin/format"
 
-// The week by person: one row per person on the schedule, Monday to Sunday across, every visit
-// a block in its area's colour, marked when Ryan moved it. A block is a button: click or Enter selects
+// The week by person: one row per person on the schedule, Monday to Sunday across in seven equal columns after a fixed,
+// narrow Who column. The week is never narrower than 56rem: below that the table scrolls sideways inside its own box,
+// and the side panel, an overlay, never changes its width. Every visit is a one-line block ("Hannah · Erie · turn-on",
+// cut with an ellipsis and the full words in its title when the column is tight) with a bar in its area's colour, marked when Ryan moved it. A block is a button: click or Enter selects
 // it, and it can be dragged to another cell, which calls `onMove`; a cell on
 // a day the person does not work refuses the drop. Under `md` the same data
 // is one day at a time with the people stacked, stepped by the day buttons.
@@ -62,15 +64,15 @@ function VisitBlock({ visit, areas, selected, onSelect, draggable }: { visit: Vi
       aria-pressed={selected}
       onClick={() => onSelect(selected ? undefined : visit.id)}
       className={cn(
-        "relative flex w-full items-start gap-1 overflow-hidden rounded-lg border border-border border-l-4 bg-background px-2 py-1.5 text-left text-xs leading-tight transition-colors hover:bg-cream focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
+        "relative flex w-full items-center gap-1 overflow-hidden rounded-lg border border-border border-l-4 bg-background px-2 py-1.5 text-left text-xs leading-tight transition-colors hover:bg-cream focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
         index === -1 ? "border-l-muted" : AREA_BORDERS[index],
         selected && "ring-2 ring-primary/50",
         draggable && "cursor-grab",
       )}
     >
-      <span className="relative min-w-0 flex-1">
-        <span className="block truncate font-medium text-foreground">{visit.clientName}</span>
-        <span className="block truncate text-muted-foreground">{`${visit.town} · ${KIND_WORDS[visit.kind]}`}</span>
+      <span className="relative block min-w-0 flex-1 truncate" title={`${visit.clientName} · ${visit.town} · ${KIND_WORDS[visit.kind]}`}>
+        <span className="font-medium text-foreground">{visit.clientName}</span>
+        <span className="text-muted-foreground">{` · ${visit.town} · ${KIND_WORDS[visit.kind]}`}</span>
       </span>
       {visit.exception && (
         <>
@@ -96,7 +98,7 @@ function Cell({ person, day, visits, areas, selectedId, onSelect, onMove }: { pe
       data-person={person.id}
       onDragOver={working ? (event) => event.preventDefault() : undefined}
       onDrop={working && onMove ? onDrop : undefined}
-      className={cn("h-24 min-w-32 space-y-1 border-l border-border p-1.5 align-top", !working && "bg-stone")}
+      className={cn("h-24 space-y-1 overflow-hidden border-l border-border p-1.5 align-top", !working && "bg-stone")}
     >
       {!working && visits.length === 0 && <span className="sr-only">Not a working day</span>}
       {visits.map((visit) => (
@@ -186,10 +188,10 @@ export function WeekGrid({ people, areas, visits, weekStart, today, timeZone, se
           {filters}
         </Stepper>
         <div role="region" aria-label="Week by person" tabIndex={0} className="mt-3 overflow-x-auto rounded-lg border border-border bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50">
-          <table className="w-full border-collapse text-sm">
+          <table className="w-full min-w-[56rem] table-fixed border-collapse text-sm">
             <thead>
               <tr className="border-b border-border">
-                <th scope="col" className="w-32 px-3 py-2 text-left font-display text-sm uppercase tracking-wide text-muted-foreground">Who</th>
+                <th scope="col" className="w-28 px-3 py-2 text-left font-display text-sm uppercase tracking-wide text-muted-foreground">Who</th>
                 {days.map((day) => (
                   <th key={day} scope="col" aria-current={day === today ? "date" : undefined} className={cn("border-l border-border px-2 py-2 text-left font-display text-sm uppercase tracking-wide", day === today ? "bg-primary/10 text-primary-deep" : "text-muted-foreground")}>
                     {dayLabel(day)}
@@ -201,7 +203,7 @@ export function WeekGrid({ people, areas, visits, weekStart, today, timeZone, se
             <tbody>
               {rows.map((person) => (
                 <tr key={person.id} className="border-b border-border last:border-0">
-                  <th scope="row" className="px-3 py-2 text-left align-top font-medium text-foreground">{person.name}</th>
+                  <th scope="row" className="truncate px-3 py-2 text-left align-top font-medium text-foreground">{person.name}</th>
                   {days.map((day) => (
                     <Cell key={day} person={person} day={day} visits={dayVisits(shown, day, person.id, timeZone)} areas={areas} selectedId={selectedId} onSelect={onSelect} onMove={onMove} />
                   ))}

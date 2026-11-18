@@ -41,10 +41,10 @@ describe("WeekGrid", () => {
     expect(within(table()).getAllByRole("rowheader").map((h) => h.textContent)).toEqual(["Ryan Garner", "Tech Two"])
     expect(blocksIn(cell("person_truck-1", "2026-11-09"))).toHaveLength(5)
     expect(blocksIn(cell("person_truck-1", "2026-11-13")).map((b) => b.textContent)).toEqual([
-      "DavidFirestone · blowout",
-      "RickyFirestone · blowout",
-      "JoelLafayette · blowout",
-      "BrianErie · blowout",
+      "David · Firestone · blowout",
+      "Ricky · Firestone · blowout",
+      "Joel · Lafayette · blowout",
+      "Brian · Erie · blowout",
     ])
     expect(blocksIn(cell("person_truck-2", "2026-11-13"))).toHaveLength(0)
   })

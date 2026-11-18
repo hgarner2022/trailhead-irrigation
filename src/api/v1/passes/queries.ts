@@ -21,7 +21,7 @@ export const passSelect = {
   email: s.customer.email,
   phone: s.customer.phone,
   // The card on file is the customer's.
-  card: { brand: s.customer.cardBrand, last4: s.customer.cardLast4, expires: s.customer.cardExpires, failedAt: s.customer.cardFailedAt },
+  card: { paymentMethodId: s.customer.stripePaymentMethodId, brand: s.customer.cardBrand, last4: s.customer.cardLast4, expires: s.customer.cardExpires, failedAt: s.customer.cardFailedAt },
   town: s.property.town,
   address: s.property.address,
   yard: s.property,
@@ -83,9 +83,10 @@ export function passOut(ctx: Ctx, row: PassRow) {
     blowoutPreference: row.facts.blowoutPreference,
     needsCustomerHome: row.yard.mustBeHome,
     ...(canSeeContact(ctx) ? { accessNote: row.yard.accessNote } : {}),
-    cardBrand: row.card.brand,
-    cardLast4: row.card.last4,
-    cardExpires: row.card.expires,
+    // Only a card Stripe holds is a card: a last four with no payment method reads as no card, so Done asks how it was paid.
+    cardBrand: row.card.paymentMethodId ? row.card.brand : null,
+    cardLast4: row.card.paymentMethodId ? row.card.last4 : null,
+    cardExpires: row.card.paymentMethodId ? row.card.expires : null,
     cardFailedAt: row.card.failedAt?.toISOString() ?? null,
     cancelledAt: row.facts.cancelledAt?.toISOString() ?? null,
     createdAt: p.createdAt.toISOString(),

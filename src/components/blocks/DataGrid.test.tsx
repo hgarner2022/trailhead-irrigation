@@ -72,7 +72,7 @@ describe("DataGrid sorting", () => {
     expect(names.at(-1)).toBe("Zed")
     // Dated visits first, then those that need a day.
     expect(within(bodyRows()[0]).getByText(/^[A-Z][a-z]{2} \d+$/, { selector: "td" })).toBeInTheDocument()
-    expect(within(bodyRows()[0]).queryAllByText("No day yet")).not.toHaveLength(0)
+    expect(within(bodyRows()[0]).queryAllByText("Unscheduled")).not.toHaveLength(0)
   })
 })
 
@@ -267,7 +267,7 @@ describe("DataGrid export", () => {
     expect(blob).toBeDefined()
     const bytes = new Uint8Array(await blob!.arrayBuffer())
     expect([...bytes.slice(0, 3)]).toEqual([0xef, 0xbb, 0xbf])
-    expect(new TextDecoder().decode(bytes)).toBe("Name,Zones,Turn-on,Inspection,Blowout,Status,Charged so far,Next visit\r\nReese,8,May 4,No day yet,No day yet,Active,145,No day yet\r\nReesa,8,No day yet,None,No day yet,Active,0,No day yet\r\n")
+    expect(new TextDecoder().decode(bytes)).toBe("Name,Zones,Turn-on,Inspection,Blowout,Status,Paid so far,Next visit\r\nReese,8,May 4,Unscheduled,Unscheduled,Active,145,Unscheduled\r\nReesa,8,Unscheduled,None,Unscheduled,Active,0,Unscheduled\r\n")
   })
 })
 
