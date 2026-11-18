@@ -13,7 +13,7 @@ Nov 18 2026. A design only; nothing is built until Hannah has read it. Hannah's 
 | date-confirm | "Two weeks out: is Friday still on?" |
 | day-before | "I want to know it is tomorrow and who is coming." |
 | receipt | "I want to know what I paid, for what, at which house, and how." |
-| invoice | "I want to know what I owe, by when, and pay it in a minute." |
+| invoice | "I want to know what I have to pay, by when, and pay it in a minute." |
 | invoice-reminder | "I forgot. Show me the bill again." |
 | card-failed | "Tell me my card didn't go through and let me fix it." |
 | card-expiring | "Tell me before my card stops working." |
@@ -64,7 +64,7 @@ Every email ends with the sign-off "The Trailhead crew" above the footer. Texts 
 | **receipt**, a visit is paid, email | Subject "Receipt: $95 for your fall blowout at 480 Briggs St". Headline "Paid, thank you". "Thank you, Andrea. Your fall blowout at 480 Briggs St is paid." Rows Service, Where, Paid ("$95, Visa ending 4242" or "$95, Venmo"), Paid on. Next-visit line when one exists. Button "View the receipt" when a Stripe link exists. | payment, line name, address, card or method, receipt URL, next visit |
 | **receipt**, a bill is paid, email | Subject "Receipt: $145 for your repair at 412 Ash St". Rows each line, Sales tax if any, Paid, Where, Bill (quiet). Same button. | payment, invoice lines, tax, address |
 | **invoice**, bill sent, text with email fallback | Text: "Trailhead: your bill for the repair is $145, due May 21. Pay here: {payLink} Reply STOP to opt out." Email subject "Your Trailhead bill for the repair at 412 Ash St: $145"; headline "Your bill is ready"; rows lines, tax, Total, Due, Bill; button "Pay $145". | invoice, address, pay link |
-| **invoice-reminder**, office taps Remind, text with email fallback | Text: "Trailhead: a reminder that $145 for the repair is due May 21. Pay here: {payLink} Reply STOP to opt out." Email subject "Your Trailhead bill, $145, is due May 21"; headline "A reminder about your bill"; same rows and button. | as invoice |
+| **invoice-reminder**, office taps Remind, text with email fallback | Text: "Trailhead: a reminder that $145 for the repair is still unpaid, due May 21. Pay here: {payLink} Reply STOP to opt out." Email subject "Your Trailhead bill, $145, is still unpaid"; headline "A reminder about your bill"; same rows and button. | as invoice |
 | **card-failed**, charge didn't go through, email | Subject "The card for your spring turn-on didn't go through". Headline "Your card needs a quick update". Body as in section 3, then "Add a new card and we'll try it right away." Button "Update your card". Small print: "The link is good for 24 hours. Your Trailhead account can make a new one." Link request with no visit: subject "Update the card in your Trailhead account". | visit, address, card, amount, update URL |
 | **card-expiring**, before expiry, email | Subject "Your Visa ending 4242 expires in July 2027". "Hi Andrea, the card we have for your visits expires in July 2027, and $190 of visits are still to come. A new card now keeps them on schedule." Button "Add a new card". | card, state, amount left, update URL |
 | **cancelled**, pass cancelled, email | Subject "Your 2027 Season Pass is cancelled". "Hi Andrea, your 2027 Season Pass is cancelled and your remaining visits are off the schedule. We won't charge you again. If you want a visit later, book online or call (970) 692-7270." Button "Book a visit". No number. | customer, season |
@@ -94,7 +94,7 @@ Today I found no code outside the Settings screens that reads the saved template
 
 New assertions: only purchase-confirmation and renewal may say a pass number or "your pass"; every text is plain ASCII.
 
-**Moves to `docs/UX_WRITING.md`**: the six rules, the glossary rows (Trailhead account, receipt, bill, paid), the text length rule and the subject patterns. Bodies stay in code and tests.
+**Moves to `docs/UX_WRITING.md`**: the six rules, the glossary rows (Trailhead account, receipt, bill, paid, unpaid; Hannah's word, Nov 18, replacing "owed" in messages), the text length rule and the subject patterns. Bodies stay in code and tests.
 
 ## 7. Open questions for Hannah
 
