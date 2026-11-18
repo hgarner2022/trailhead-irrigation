@@ -1,6 +1,6 @@
 # Design: the customer portal, v2
 
-Nov 18 2026. Design only; nothing is built until Hannah has read it. Replaces the screens of `2026-11-18-customer-portal-design.md` (PR #63); keeps its sign-in, Details, receipts and card update. **Built on exactly the decisions of `2026-11-18-customer-portal-architecture.md`** (the architect's, binding): the only new handler is `visits.cancelSelf`, no migration, no new column. Where this design needs more, section 10 says so instead of designing around it. Hannah's words after the live walk: "All the crud functionality, everything is missing… cancel, reschedule. If it's within 24 hours they shouldn't, and maybe they could text Ryan… Visits and jobs is confusing… Arrive between 8 and 10 am: I thought we had done away with that. Make sure all the underlying data also matches." **Settled by Hannah, not open:** inside 24 hours of the visit's day a customer cannot cancel or reschedule; the screen offers Text Ryan and Call Ryan with one line on why. Research came first and shaped everything below; the live findings are folded in at section 6.
+Nov 18 2026. Design only; nothing is built until Hannah has read it. Replaces the screens of `2026-11-18-customer-portal-design.md` (PR #63); keeps its sign-in, Details, receipts and card update. **Built on exactly the decisions of `2026-11-18-customer-portal-architecture.md`** (the architect's, binding): the only new handler is `visits.cancelSelf`, no migration, no new column. The architect answered every ask this design raised; they are folded in below. Hannah's words after the live walk: "All the crud functionality, everything is missing… cancel, reschedule. If it's within 24 hours they shouldn't, and maybe they could text Ryan… Visits and jobs is confusing… Arrive between 8 and 10 am: I thought we had done away with that. Make sure all the underlying data also matches." **Settled by Hannah, not open:** inside 24 hours of the visit's day a customer cannot cancel or reschedule; the screen offers Text Ryan and Call Ryan with one line on why. Research came first and shaped everything below; the live findings are folded in at section 6.
 
 ## 1. Research first, and what it changed
 
@@ -23,7 +23,7 @@ Nov 18 2026. Design only; nothing is built until Hannah has read it. Replaces th
 |---|---|---|---|---|
 | 1 | See what is coming | Home "Next visit"; Visits "Coming up" | yes (`jobs.list`) | none; the timeline is built from it in `account-model.ts` |
 | 2 | Know the window | Visit page: "between 8 and 10 am, with Ryan", only when `windowTold` | **no**: the portal reads the stamped `start_time` | `PortalVisit.windowTold` from the `day-before` `message_log` row (section 5) |
-| 3 | Change the day | Visit page and Home card "Reschedule", pick an offered day, "Move it to Thursday, Apr 30" | partly (`visits.pick`, 2-day count) | `visits.pick` and `visits.areaDays` call `withinCutoff` (24 hours). Five days instead of three is an ask (section 10) |
+| 3 | Change the day | Visit page and Home card "Reschedule", pick an offered day, "Move it to Thursday, Apr 30" | partly (`visits.pick`, 2-day count) | `visits.pick` and `visits.areaDays` call `withinCutoff` (24 hours); `areaDays` takes `count` (default 3, the portal asks 5) and leaves the current day out |
 | 4 | Cancel | "Cancel visit", confirm, "Cancel visit" | **no** for one-offs; pass visits only via `passes.skipVisit` | add `visits.cancelSelf` (the only new handler) |
 | 5 | Pay | Home and visit page banner "Pay now" | yes (`PortalInvoice.payUrl`, `/pay/<id>`) | none |
 | 6 | See what I paid | Visit page "Payments": "Paid Nov 3, card $145" | yes (`PortalPayment`) | none |
@@ -114,15 +114,15 @@ INSIDE 24 HOURS                   | [Cancel visit]               |
 | One-off, the job's only live visit | "Nothing is charged." | visit `cancelled`, line canceled, then the job canceled through `jobs.cancel`'s rules |
 | One-off, job has other visits | "Nothing is charged for this visit. Your other visits stay." | visit `cancelled`, its line canceled |
 | No day yet | same wording; no day is freed | same |
-| The job holds a payment | "Nothing more is charged. A payment is already on this one, so Ryan will contact you about it." | visit canceled, the job stays open (`jobs.cancel` refuses a job with a payment); the Home alert says "has a payment" so Ryan sorts the money |
+| The job holds a payment | "Nothing more is charged. The $145 you already paid stays as it is, and Ryan will contact you about it." (a cancel never moves money) | visit canceled, the job stays open (`jobs.cancel` refuses a job with a payment); the Home row carries "has a payment" so Ryan sorts the money |
 | An unpaid invoice on the job | as the rows above; the invoice stays as it is | none on the invoice |
 | Installation or quoted work | Cancel as above; Reschedule opens Text Ryan, since those days are set with you | as above |
 
-Always one `visit.cancelled` event with who `customer` and the optional reason, a confirmation to the customer and a Home alert; a second call on a canceled visit answers the same. Done work is never canceled by a customer.
+Always one `visit.cancelled` event with who `customer` and the optional reason (a visit has no `cancelled_at`: a cancel is its `status`, and its date is that event's time, which the screens read), a confirmation to the customer and a Home alert; a second call on a canceled visit answers the same. Done work is never canceled by a customer.
 
 After it: "Canceled. We texted you a note. Changed your mind? Book Online." The visit stays in Past as **Canceled** (one customer word for skipped and canceled). An optional reason goes to Ryan only.
 
-**The 24-hour rule (settled).** The cut-off is **24 hours before the start of the visit's day, Mountain time** (midnight Mountain at the start of the day, minus 24 hours), decided in **one function, `withinCutoff(visit, now)`** in `src/lib/portal/change-day.ts`, used by `visits.pick`, `visits.areaDays`, `visits.cancelSelf` and by the screens, so a button and its refusal never disagree. A Tuesday visit is free to change until **Sunday 11:59 pm**. A visit with no day is always changeable. Routing does not move it. After it, the buttons are replaced by **Text Ryan** (`sms:+19706927270?body=` "Hi Ryan, it's Andrea Smith at 12 Elm St about my spring turn-on on Tuesday, April 28.", no ids; the text lands in the two-way thread by phone number) and **Call Ryan** (`tel:`), with the line "Ryan plans his route the day before, so changes this close go through him." The handlers refuse a customer after it with the words the screen shows; staff are not held to it. The line "You can change this until Sunday, April 26, 11:59 pm" needs the cut-off instant itself (section 10). The admin visit panel reads "Customer can change online until Sun, Apr 26, 11:59 pm" or "Closed, texts only".
+**The 24-hour rule (settled).** The cut-off is **24 hours before the start of the visit's day, Mountain time** (midnight Mountain at the start of the day, minus 24 hours), decided in **one function, `withinCutoff(visit, now)`** in `src/lib/portal/change-day.ts`, used by `visits.pick`, `visits.areaDays`, `visits.cancelSelf` and by the screens, so a button and its refusal never disagree. A Tuesday visit is free to change until **Sunday 11:59 pm**. A visit with no day is always changeable. Routing does not move it. After it, the buttons are replaced by **Text Ryan** (`sms:+19706927270?body=` "Hi Ryan, it's Andrea Smith at 12 Elm St about my spring turn-on on Tuesday, April 28.", no ids; the text lands in the two-way thread by phone number) and **Call Ryan** (`tel:`), with the line "Ryan plans his route the day before, so changes this close go through him." The handlers refuse a customer after it with the words the screen shows; staff are not held to it. `cutoffAt(visit)` is exported beside it with the same formula, so the page can say "You can change this until Sunday, April 26, 11:59 pm". The admin visit panel reads "Customer can change online until Sun, Apr 26, 11:59 pm" or "Closed, texts only".
 
 ## 5. The right data
 
@@ -134,7 +134,7 @@ After it: "Canceled. We texted you a note. Changed your mind? Book Online." The 
 | `day-before` row exists | `visit.start_time` and `visit.duration_minutes` through the same `timeWords` the text uses | "Tuesday, April 28, between 8 and 10 am, with Ryan." |
 | Day moved or visit canceled | the old row is for the old day | the sentence of the first row again until a new row exists |
 
-`PortalVisit` gains `windowTold: boolean` and `window: string | null`; `arrivalWindow` runs only when `windowTold`. No column, no migration.
+`PortalVisit` gains `windowTold: boolean` and `window: string | null`; `arrivalWindow` runs only when `windowTold`. No column, no migration. **The words and the data match everywhere:** `loadVisitFacts` nulls `startTime` until the day-before row exists (`dayBeforeMessages` asks for it with a `told` option, since its own row is not written yet), so the `date-set` and `date-moved` texts and the checkout day cards state the day only ("We'll text your window the day before"); the day-before text is the first message that carries a window. A time the office sets by hand reaches the customer the same way, in the day-before text. **Two facts on purpose:** the admin's Routed is the office's own fact (the day's stops were ordered) and may exist before the customer is told; Ryan's Time column keeps the estimate, and the customer's window is only what was told.
 
 **Every field on every screen.** Each reads a column or a derived fact with a row in `docs/DATA_MODEL.md` (named in the last column). A row marked **add** is only in prose there today, and its own row is part of this build.
 
@@ -143,6 +143,7 @@ After it: "Canceled. We texted you a note. Changed your mind? Book Online." The 
 | Header | first name | `customer.first_name` | customer.first_name |
 | Next visit, row, page | day | `visit.scheduled_on`; Done: `visit.completed_on` | visit.scheduled_on, visit.completed_on |
 | | window | `windowTold` (the `message_log` row), then `visit.start_time`, `visit.duration_minutes` | visit.start_time, visit.duration_minutes; `message_log` day-before **add** |
+| Past, canceled | canceled day | the `visit.cancelled` event's `at` (no `cancelled_at` on a visit) | event.at |
 | | who | `visit.person_id` to `person.name`, first name when two words and `windowTold` | visit.person_id, person.name |
 | | service | `visitName(visit.kind)` (the visit's line name) | line_item.name |
 | | Season Pass label | `job.season` not null | job.season |
@@ -168,8 +169,8 @@ After it: "Canceled. We texted you a note. Changed your mind? Book Online." The 
 | 1 | `/account/pass` returns a blank 500 (a visit today) | In the hotfix PR (architecture step 1). Likely cause: a customer call to `visits.areaDays` on a visit inside the old cut-off throws uncaught. The page asks for days only when `withinCutoff` is false and catches a refusal as the Text Ryan state; a test loads it with a visit today | `withinCutoff` |
 | 2 | The day-set text links to `/account/pass` | The texts link to `/account`; the visit page is the target once it exists (`/account/visits/<id>`, signed) | `src/sms/texts.ts` |
 | 3 | An admin who is also a customer is turned away | `requireCustomer` looks the signed-in email up in `customer`; the menu keeps "Open the admin" for staff | `customer.email` |
-| 4 | "Arrive between 8 and 10" with no time given | Section 5 | `message_log` day-before row |
-| 5 | The person shows as "Second" | The architecture's two-word rule does **not** stop this: the live row is "Second truck", two words, so it reads "Second". The person therefore shows only when `windowTold`, and the live row is renamed in Settings › People (one minute, Ryan) | `person.name` |
+| 4 | "Arrive between 8 and 10" with no time given | Section 5, and the date-set and date-moved texts and checkout cards say the day only | `message_log` day-before row |
+| 5 | The person shows as "Second" | The person shows only when `windowTold`; the hotfix PR carries the two-word name rule, and Hannah renames the live row "Second truck" in Settings › People | `person.name` |
 | 6 | "Hi, Hannah" is dead, not at the far right | Account menu at the far right of the viewport: first name, Details, Open the admin (staff), Sign out | `customer.first_name` |
 | 7 | Visits and Jobs confuse; the pass card repeats | Section 3: one timeline; the pass card on Home and Season Pass only | none |
 | 8 | Pass card says done Nov 17, list says April 27, no year | A Done visit shows `completed_on` everywhere; a coming one `scheduled_on`; the year when not this year (hotfix PR) | `visit.completed_on` |
@@ -209,9 +210,10 @@ After it: "Canceled. We texted you a note. Changed your mind? Book Online." The 
 | Part | Change |
 |---|---|
 | Handlers, add | `visits.cancelSelf` in `src/api/v1/portal/` (`customerSelf`; rules in section 4; idempotent). **The only new handler** |
-| Handlers, change | `visits.pick`, `visits.areaDays`, `passes.skipVisit` (customer caller): `withinCutoff` replaces the two-day `beforeCutoff` and `CHANGE_CUTOFF_DAYS`; `requireCustomer` resolves an admin's email to a customer |
-| Side effects | event `visit.cancelled` who customer; `admin_alert` kind `customer-changed`; owner text through the existing `queueStaffMessage`; customer message kind for the cancel confirmation (`queue.ts`, `texts.ts`, `emails/`, `consent.ts`) |
+| Handlers, change | `visits.pick`, `visits.areaDays`, `passes.skipVisit` (customer caller): `withinCutoff` and `cutoffAt` replace the two-day `beforeCutoff` and `CHANGE_CUTOFF_DAYS`; `areaDays` takes `count`; `requireCustomer` resolves an admin's email to a customer |
+| Side effects | event `visit.cancelled` who customer (a reschedule keeps today's `visit.moved` and `visit.scheduled`); `admin_alert` kind `customer-changed`; owner text through the existing `queueStaffMessage`; customer message kind for the cancel confirmation (`queue.ts`, `texts.ts`, `emails/`, `consent.ts`) |
 | Schemas | `PortalVisit.change` becomes `reschedule` and `cancel` (`yes`, `text`, `no`), plus `windowTold` and `window`; `startTime` and `durationMinutes` leave the portal shape |
+| Messages and checkout | `loadVisitFacts` nulls `startTime` until the day-before row exists (`told` option for `dayBeforeMessages`); the checkout day cards drop "between 8 and 10 am" |
 | Model | `portalTimeline(customer)` in `src/lib/portal/timeline.ts` (pure, tested); words only from `src/lib/portal/words.ts` |
 | Routes | `/account/visits/[visitId]`; `/account/visits` the timeline; `/account/jobs*` redirect; Home recomposed; `AccountMenu` |
 | Blocks (pure props, stories at 375 and 1280) | `VisitRow` (gains money and label), `NextVisitCard` (two actions), new `VisitPage`, `RescheduleSheet`, `CancelVisitSheet`, `TextRyan`, `AccountMenu`; retire `JobRow`, `JobScreen`, `JobsScreen` |
@@ -221,24 +223,10 @@ After it: "Canceled. We texted you a note. Changed your mind? Book Online." The 
 
 **Build order** (architecture section 7): 1 the hotfix PR (findings 1, 5, 8, 9, 12 and the header menu). 2 handlers and rules, tests first: `withinCutoff`, `visits.cancelSelf`, `requireCustomer`, `windowTold`. 3 the timeline model and words. 4 the screens, stories at both widths. 5 the cancel confirmation and the Home row. 6 a read-only review, then a live click-through as the test pass holder and as Hannah's own address.
 
-## 10. Where the design asks the architecture for more
-
-| # | Ask | Why | If declined |
-|---|---|---|---|
-| 1 | Export the cut-off **instant** beside `withinCutoff` (`cutoffAt(visit)`, same formula) | The screen says "until Sunday, April 26, 11:59 pm"; a boolean cannot | The line becomes "Changes close the day before" (less exact) |
-| 2 | `visits.areaDays` takes `count` (default 3; the portal asks 5) and leaves the current day out | A move is made for a reason, and three days often miss it | Three days plus "None of these? Text Ryan" |
-| 3 | The `date-set` and `date-moved` texts and the checkout day cards stop stating a window unless the window is told (`loadVisitFacts` nulls `startTime` before the day-before; the cards drop "between 8 and 10 am") | They read the stamped `start_time` (`whenText` in `src/sms/texts.ts`), so the text would still contradict the screen: Hannah's "make sure all the underlying data also matches" | A customer is told "8 to 10 am" at booking and "We'll text your window" on the page |
-| 4 | The admin must not call a stamped visit **Routed** (it reads `start_time`, `src/lib/admin/jobs.ts`) | The admin and the customer would disagree about whether the day is routed | Relabel the admin Time column "Estimate" until the day-before row exists |
-| 5 | A visit has no `cancelled_at`; a cancel is `status` (`visits.cancel` also clears day and person) | The architecture speaks of `visit.cancelled_at`; no migration holds only if the event's `at` is the date | The cancel date is the `visit.cancelled` event time; the design reads it there |
-| 6 | The "office set the time by hand" case cannot be told from `orderDay`'s stamp (no marker; `visits.move` with a time leaves no event field the portal may read) | Without a marker the portal would show the estimate | **Recommended:** drop the by-hand case; the window shows only from the day-before row, which is Hannah's rule anyway |
-| 7 | The two-word person rule shows "Second" for the live row "Second truck" | The rule alone does not fix finding 5 | Show the person only when `windowTold`, and rename the row |
-| 8 | The cancel keeps a job open when it holds a payment, so a paid visit can be canceled with the money held | The confirm step must say so; Ryan needs the "has a payment" flag on the Home row | The design already words it; no change if accepted |
-| 9 | The event for a reschedule: the architecture says `visit.picked`; `visits.pick` writes `visit.moved` or `visit.scheduled` today | The history words follow whichever name wins | Keep today's names |
-
-## 11. Questions for Hannah
+## 10. Questions for Hannah
 
 1. **When a customer cancels a Season Pass visit, is it gone for the season?** Recommended: yes; nothing is charged and Book Online adds one back at the standard price.
-2. **Five days on a reschedule, or three?** Recommended: five (depends on ask 2).
-3. **Should a customer see Ryan's name before the day-before text?** Recommended: no; the name and window arrive together.
+2. **Five days on a reschedule, or three?** Recommended: five.
+3. **If a visit already has a payment on it, may the customer still cancel it online?** Recommended: yes; the visit is canceled, no money moves, the confirm step says what stays paid, and Ryan gets a Home row marked "has a payment" to sort it out.
 4. **A text to Ryan on every customer change?** Recommended: yes for cancels and moves while there is one truck; the Home row always.
 5. **Ask for a reason when a customer cancels?** Recommended: one optional line, seen by Ryan only.
