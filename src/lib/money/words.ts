@@ -42,20 +42,33 @@ export interface JobMoney {
   paid: number
   total: number
   owed: number
-  /** "Paid", "$115 owed", "2 of 3 paid, $115 owed", or "" for a job with no price and no money */
+  /** "Paid", "Bill sent", "$115 owed", "2 of 3 paid, $115 owed", or "" for a job with no price and no money */
   words: string
+  /** the job owes money and an open bill (sent or overdue, not paid, not cancelled) was sent for it; the words read "Bill sent" */
+  billSent: boolean
 }
 
-/** The money summary of a job across its visits; a cancelled visit is not counted, a visit is paid while its own rows net above zero. */
-export function jobMoney(lines: readonly PricedLine[], payments: readonly MoneyPayment[], visits: readonly { id: string; cancelled?: boolean }[]): JobMoney {
+/**
+ * The money summary of a job across its visits; a cancelled visit is not counted. A visit counts as paid by `isPaid`, its own
+ * rows against its price (`price`, from its lines; a part-paid visit is not paid), as every screen reads it. A job that owes
+ * money and has an open `invoice` reads "Bill sent": the customer has the bill, and an overdue one still reads so (Home
+ * carries the overdue row).
+ */
+export function jobMoney(
+  lines: readonly PricedLine[],
+  payments: readonly MoneyPayment[],
+  visits: readonly { id: string; cancelled?: boolean; price?: number | null }[],
+  invoice?: MoneyInvoice,
+): JobMoney {
   const total = jobTotal(lines)
   const paid = paidTotal(payments)
   const owed = Math.max(0, total - paid)
-  if (total === 0 && paid === 0) return { paid, total, owed, words: "" }
-  if (owed === 0) return { paid, total, owed, words: "Paid" }
+  if (total === 0 && paid === 0) return { paid, total, owed, words: "", billSent: false }
+  if (owed === 0) return { paid, total, owed, words: "Paid", billSent: false }
+  if (invoice && !invoice.paidOn && !invoice.cancelledAt) return { paid, total, owed, words: "Bill sent", billSent: true }
   const live = visits.filter((v) => !v.cancelled)
-  const paidVisits = live.filter((v) => paidTotal(payments.filter((p) => p.visitId === v.id)) > 0).length
-  return { paid, total, owed, words: live.length > 1 && paidVisits > 0 ? `${paidVisits} of ${live.length} paid, $${owed} owed` : `$${owed} owed` }
+  const paidVisits = live.filter((v) => isPaid(payments.filter((p) => p.visitId === v.id), v.price)).length
+  return { paid, total, owed, words: live.length > 1 && paidVisits > 0 ? `${paidVisits} of ${live.length} paid, $${owed} owed` : `$${owed} owed`, billSent: false }
 }
 
 export type VisitMoneyState = "not-yet" | "paid" | "failed" | "bill-sent" | "owed"
@@ -69,7 +82,7 @@ export interface MoneyInvoice {
 /**
  * The money pill of one visit: nothing until it is done, then Paid with how, Failed, Bill sent or Owed. Paid takes the whole
  * price (`price`; a part-paid visit is Owed) and still shows once the visit is cancelled or skipped, since the money is held;
- * a cancelled visit with nothing paid says nothing. `invoice` is absent until task 4.3.
+ * a cancelled visit with nothing paid says nothing. `invoice` is the open bill the visit's lines are on, if any.
  */
 export function visitMoney(
   visit: { id: string; done: boolean; cancelled?: boolean; cardFailed?: boolean; price?: number | null },

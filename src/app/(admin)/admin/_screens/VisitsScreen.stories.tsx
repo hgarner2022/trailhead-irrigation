@@ -55,6 +55,48 @@ export const PanelNotDone: Story = { args: { defaultVisitId: "office-not-done" }
 export const PanelOwed: Story = { args: { defaultVisitId: "office-owed" }, globals: wide }
 export const PanelOwedPhone: Story = { args: { defaultVisitId: "office-owed" }, globals: phone }
 
+/** Done and owed: besides Record the payment, the panel offers Send a bill with what it does under it. */
+export const PanelOwedSendBill: Story = {
+  args: { defaultVisitId: "office-owed" },
+  globals: wide,
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByRole("button", { name: "Send a bill" })).toBeInTheDocument()
+    await expect(await canvas.findByText("Texts a pay link, or emails it when there is no mobile.")).toBeInTheDocument()
+  },
+}
+
+/** Done asks how it was paid: Check, Venmo, Cash, and last Send a bill, which texts a pay link instead of recording money. */
+export const PanelDoneSendBill: Story = {
+  args: { defaultVisitId: "office-scheduled" },
+  globals: wide,
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(await canvas.findByLabelText("Send a bill"))
+    await expect(await canvas.findByRole("button", { name: "Mark done and send a bill" })).toBeInTheDocument()
+  },
+}
+
+/** A bill is out: the Money pill says Bill sent, and the panel shows "Bill sent Nov 10, due Nov 24" with Remind and the pay link. */
+export const PanelBillSent: Story = {
+  args: { defaultVisitId: "office-billed" },
+  globals: wide,
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText("Bill sent Nov 10, due Nov 24")).toBeInTheDocument()
+    await expect(await canvas.findByRole("button", { name: "Remind" })).toBeInTheDocument()
+    await expect(await canvas.findByRole("link", { name: "Pay link" })).toBeInTheDocument()
+  },
+}
+export const PanelBillSentPhone: Story = { args: { defaultVisitId: "office-billed" }, globals: phone }
+
+/** A tech sees Bill sent in the pill and no Remind, no pay link and no Send a bill. */
+export const PanelBillSentTech: Story = {
+  args: { defaultVisitId: "office-billed", readOnly: true },
+  globals: wide,
+  play: async ({ canvas }) => {
+    await expect(canvas.queryByRole("button", { name: "Remind" })).not.toBeInTheDocument()
+    await expect(canvas.queryByRole("link", { name: "Pay link" })).not.toBeInTheDocument()
+  },
+}
+
 /** Paid by check: the Money pill says how, and the thread shows the receipt. */
 export const PanelPaid: Story = { args: { defaultVisitId: "office-paid" }, globals: wide }
 

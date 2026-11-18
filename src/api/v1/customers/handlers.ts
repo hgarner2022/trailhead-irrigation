@@ -213,18 +213,21 @@ async function jobsOf(db: Database, customerId: string) {
   const passes = await db.select({ id: s.seasonPass.id, jobId: s.seasonPass.jobId }).from(s.seasonPass).where(inArray(s.seasonPass.jobId, jobs.map((j) => j.id)))
   const lineRows = await db.select().from(s.lineItem).where(inArray(s.lineItem.jobId, jobs.map((j) => j.id))).orderBy(asc(s.lineItem.createdAt), asc(s.lineItem.id))
   const paymentRows = await db.select().from(s.charge).where(inArray(s.charge.jobId, jobs.map((j) => j.id))).orderBy(asc(s.charge.createdAt), asc(s.charge.id))
+  const openBills = await db.select().from(s.invoice).where(and(inArray(s.invoice.jobId, jobs.map((j) => j.id)), isNull(s.invoice.paidOn), isNull(s.invoice.cancelledAt)))
   return jobs.map((j) => {
     const pass = passes.find((p) => p.jobId === j.id)
     const lines = lineRows.filter((l) => l.jobId === j.id)
     const payments = paymentRows.filter((p) => p.jobId === j.id)
     const jobVisits = visits.filter((v) => v.jobId === j.id)
+    const bill = openBills.find((b) => b.jobId === j.id)
     return {
       id: j.id, kind: j.kind, status: j.status, price: j.price, source: j.source, notes: j.notes, createdAt: j.createdAt.toISOString(),
       passId: pass?.id ?? null, passNumber: j.passNumber,
       lines: lines.map((l) => ({ id: l.id, name: l.name, description: l.description, quantity: l.quantity, unitPrice: l.unitPrice, taxable: l.taxable, cancelledAt: l.cancelledAt?.toISOString() ?? null, visitId: l.visitId })),
       total: jobTotal(lines),
       payments: payments.map(paymentOut),
-      money: jobMoney(lines, payments, jobVisits.map((v) => ({ id: v.id, cancelled: v.status === "cancelled" || v.status === "skipped" }))),
+      money: jobMoney(lines, payments, jobVisits.map((v) => ({ id: v.id, cancelled: v.status === "cancelled" || v.status === "skipped", price: lines.some((l) => l.visitId === v.id) ? jobTotal(lines.filter((l) => l.visitId === v.id)) : v.amount })), bill),
+      invoiceId: bill?.id ?? null,
       visits: jobVisits.map((v) => {
         const own = lines.filter((l) => l.visitId === v.id)
         return { id: v.id, kind: v.kind, status: v.status, scheduledOn: v.scheduledOn, amount: own.length ? jobTotal(own) : v.amount }

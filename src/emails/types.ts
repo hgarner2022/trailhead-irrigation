@@ -49,6 +49,23 @@ export interface ReceiptData extends Base {
   nextLine: string
   receiptUrl: string | null
 }
+/** A bill the office sent: what it is for, the frozen lines, the tax, the total, the due day and the pay link. */
+export interface InvoiceData extends Base {
+  invoiceNumber: string
+  /** what the bill is for, as a phrase after "the": "repair", "spring turn-on and fall blowout" */
+  visitName: string
+  /** one row per frozen line; `amount` is the line's total in whole dollars */
+  lines: { name: string; amount: number }[]
+  /** the lines before tax */
+  amount: number
+  /** 0 while no sales tax is collected; the email shows a tax line only when it is above zero */
+  tax: number
+  total: number
+  /** ISO day */
+  dueOn: string
+  /** the signed pay link */
+  payUrl: string
+}
 export interface CardFailedData extends Base {
   passNumber: string
   amount: number | null

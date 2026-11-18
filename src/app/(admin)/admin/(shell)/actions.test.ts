@@ -12,6 +12,7 @@ import { servicesList } from "@/api/v1/services/handlers"
 import { passesList } from "@/api/v1/passes/handlers"
 import { getLiveAdminData } from "@/lib/admin/live"
 import type { OrganizationSettings } from "@/lib/admin/types"
+import { DEFAULT_BILLING } from "@/lib/settings/defaults"
 
 /** A service row as the screen holds it: the nulls the API sends left out. */
 const liveService = (r: { id: string; key: string; name: string; description: string | null; kind: string; taxable: boolean; active: boolean; bookable: boolean; slotMinutes: number; quoteOnly: boolean; price: number | null; includedZones: number | null; extraZonePrice: number | null }) => ({
@@ -143,6 +144,18 @@ describe("schedule", () => {
 })
 
 describe("settings", () => {
+  it("saves the billing settings through settings.update, and leaves them alone when the screen's data carries none", async () => {
+    const before = await settingsOf()
+    expect(before.billing).toEqual({ dueDays: 14, collectsSalesTax: false, salesTaxPercent: 0 })
+    expect((await actions.saveSettings({ ...before, billing: { dueDays: 21, collectsSalesTax: true, salesTaxPercent: 8.8 } })).ok).toBe(true)
+    expect((await settingsOf()).billing).toEqual({ dueDays: 21, collectsSalesTax: true, salesTaxPercent: 8.8 })
+    const { billing: _billing, ...without } = await settingsOf()
+    void _billing
+    expect((await actions.saveSettings(without as OrganizationSettings)).ok).toBe(true)
+    expect((await settingsOf()).billing.dueDays).toBe(21)
+    expect((await actions.saveSettings({ ...before, billing: DEFAULT_BILLING })).ok).toBe(true)
+  })
+
   it("saves the whole screen: a new person, a changed area, a section, and logs who", async () => {
     const before = await settingsOf()
     const after: OrganizationSettings = {

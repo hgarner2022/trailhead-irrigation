@@ -40,14 +40,14 @@ describe("jobMoney", () => {
   const visits = [{ id: "v1" }, { id: "v2" }, { id: "v3" }]
   const lines = [line(145), line(115), line(115)]
   it("says Paid when nothing is owed", () => {
-    expect(jobMoney([line(145)], [pay()], [{ id: "v1" }])).toEqual({ paid: 145, total: 145, owed: 0, words: "Paid" })
+    expect(jobMoney([line(145)], [pay()], [{ id: "v1" }])).toEqual({ paid: 145, total: 145, owed: 0, words: "Paid", billSent: false })
   })
   it("says the number owed when nothing is paid or the job has one visit", () => {
     expect(jobMoney([line(145)], [], [{ id: "v1" }])).toMatchObject({ paid: 0, total: 145, owed: 145, words: "$145 owed" })
     expect(jobMoney([line(145)], [pay({ amount: 100 })], [{ id: "v1" }]).words).toBe("$45 owed")
   })
   it("says how many visits are paid when a job has several and some are", () => {
-    expect(jobMoney(lines, [pay({ visitId: "v1" })], visits)).toEqual({ paid: 145, total: 375, owed: 230, words: "1 of 3 paid, $230 owed" })
+    expect(jobMoney(lines, [pay({ visitId: "v1" })], visits)).toEqual({ paid: 145, total: 375, owed: 230, words: "1 of 3 paid, $230 owed", billSent: false })
     expect(jobMoney([line(145), line(115), line(145)], [pay({ visitId: "v1" }), pay({ id: "q", visitId: "v2", amount: 115 })], visits).words).toBe("2 of 3 paid, $145 owed")
   })
   it("does not count a cancelled visit, and a refunded visit is not paid", () => {
@@ -57,6 +57,23 @@ describe("jobMoney", () => {
   })
   it("says nothing for a job with no price and no payment", () => {
     expect(jobMoney([], [], []).words).toBe("")
+  })
+  it("does not count a part-paid visit as paid once the visits carry their prices", () => {
+    const priced = [{ id: "v1", price: 145 }, { id: "v2", price: 115 }, { id: "v3", price: 115 }]
+    // v1 paid in full, v2 part-paid: one of three paid, not two
+    expect(jobMoney(lines, [pay({ visitId: "v1" }), pay({ id: "q", visitId: "v2", amount: 40 })], priced)).toMatchObject({ paid: 185, owed: 190, words: "1 of 3 paid, $190 owed" })
+    expect(jobMoney(lines, [pay({ visitId: "v2", amount: 40 })], priced).words).toBe("$335 owed")
+    // a visit with no price given still counts any positive payment, as before
+    expect(jobMoney(lines, [pay({ visitId: "v2", amount: 40 })], visits).words).toBe("1 of 3 paid, $335 owed")
+  })
+  it("says Bill sent while the job owes money and a bill is open, even past its due day, and Owed again once the bill is cancelled", () => {
+    expect(jobMoney([line(145)], [], [{ id: "v1" }], {})).toEqual({ paid: 0, total: 145, owed: 145, words: "Bill sent", billSent: true })
+    expect(jobMoney([line(145)], [], [{ id: "v1" }], { paidOn: null, cancelledAt: null }).words).toBe("Bill sent")
+    expect(jobMoney([line(145)], [], [{ id: "v1" }], { cancelledAt: new Date() })).toMatchObject({ words: "$145 owed", billSent: false })
+    expect(jobMoney([line(145)], [], [{ id: "v1" }], { paidOn: "2027-05-01" }).words).toBe("$145 owed")
+  })
+  it("says Paid, not Bill sent, once the job's money has arrived whatever the bill says", () => {
+    expect(jobMoney([line(145)], [pay()], [{ id: "v1" }], {})).toMatchObject({ words: "Paid", billSent: false })
   })
 })
 

@@ -17,6 +17,7 @@ import {
 } from "drizzle-orm/pg-core"
 import type {
   AreaGroup,
+  BillingSettings,
   CapacityKind,
   MarketingChannel,
   OrganizationSettings,
@@ -95,7 +96,8 @@ export interface TwilioHealthRow {
   state: "ok" | "not-set" | "rejected"
   at: string
 }
-export type OrganizationSettingsRow = Omit<OrganizationSettings, "people" | "areas"> & { integrations?: { twilio?: TwilioHealthRow } }
+/** `billing` is optional in the stored row: an organization that has not saved Settings › Billing has none, and readers fall back to the defaults. */
+export type OrganizationSettingsRow = Omit<OrganizationSettings, "people" | "areas" | "billing"> & { billing?: BillingSettings; integrations?: { twilio?: TwilioHealthRow } }
 
 export const organization = pgTable("organization", {
   id: text("id").primaryKey().$defaultFn(newId),
@@ -512,6 +514,58 @@ export const charge = pgTable(
     updatedAt: updatedAt(),
   },
   (t) => [unique("charge_visit_attempt_unique").on(t.visitId, t.attempt), index("charge_job_idx").on(t.jobId)],
+)
+
+/** A line frozen on an invoice: a copy of the job's line at the moment the bill was sent. */
+export interface InvoiceLineRow {
+  name: string
+  description: string | null
+  quantity: number
+  /** whole dollars */
+  unitPrice: number
+  taxable: boolean
+  /** the visit the line was billed after, when it had one */
+  visitId?: string | null
+}
+
+/**
+ * A bill ("Send a bill"): the job's lines frozen as they were, what they came to, the tax on them, and the days it was sent,
+ * due and paid. The number is unique per organization (INV-2026-0001). A job has at most one open bill (not paid, not
+ * cancelled). The Jobber mirror's invoices stay in `jobber_invoice`; this table is only the app's own bills.
+ */
+export const invoice = pgTable(
+  "invoice",
+  {
+    id: id(),
+    organizationId: orgId(),
+    jobId: text("job_id").notNull().references(() => job.id),
+    customerId: text("customer_id").notNull().references(() => customer.id),
+    number: text("number").notNull(),
+    lines: jsonb("lines").$type<InvoiceLineRow[]>().notNull(),
+    /** whole dollars: the lines added up, before tax */
+    amount: integer("amount").notNull(),
+    /** whole dollars; 0 while the organization does not collect sales tax */
+    tax: integer("tax").notNull().default(0),
+    /** whole dollars: `amount` plus `tax`, what is asked for */
+    total: integer("total").notNull(),
+    /** Mountain calendar days */
+    sentOn: day("sent_on").notNull(),
+    dueOn: day("due_on").notNull(),
+    paidOn: day("paid_on"),
+    /** the payment row that settled the bill (no foreign key: the row is in `charge`) */
+    paymentId: text("payment_id"),
+    stripeCheckoutSessionId: text("stripe_checkout_session_id"),
+    stripePaymentIntentId: text("stripe_payment_intent_id"),
+    cancelledAt: ts("cancelled_at"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    uniqueIndex("invoice_org_number_unique").on(t.organizationId, t.number),
+    uniqueIndex("invoice_job_open_unique").on(t.jobId).where(sql`paid_on is null and cancelled_at is null`),
+    index("invoice_org_due_idx").on(t.organizationId, t.dueOn),
+    index("invoice_job_idx").on(t.jobId),
+  ],
 )
 
 /** A change the customer or an admin made to a pass or one of its visits: a preference, a skip, a cancel, an added inspection, a move request. */

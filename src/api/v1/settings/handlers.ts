@@ -5,11 +5,17 @@ import * as s from "@/db/schema"
 import { ApiError } from "../../core/errors"
 import { defineHandler } from "../../core/handler"
 import { afterTimeCursor, cursorPage, page, pageInput, timeCursor } from "../../core/pagination"
+import { DEFAULT_BILLING } from "@/lib/settings/defaults"
 import { byPrincipal, Day, Id, Iso, Town } from "../shared"
 
 const Window = z.object({ kind: z.enum(["turn-on", "inspection", "blowout"]), opensOn: Day, closesOn: Day, leadWeeks: z.number().int().min(0).max(12) })
 const Template = z.object({ key: z.string().min(1).max(60), channel: z.enum(["email", "sms"]), subject: z.string().max(200).optional(), body: z.string().min(1).max(2000), enabled: z.boolean() })
 const percent = z.number().int().min(0).max(100)
+const Billing = z.object({
+  dueDays: z.number().int().min(0).max(120).describe("A bill is due this many days after it is sent."),
+  collectsSalesTax: z.boolean().describe("Whether a bill adds Colorado sales tax to its taxable lines."),
+  salesTaxPercent: z.number().min(0).max(20).describe("Percent; used only while collectsSalesTax is on."),
+})
 
 /** What each section accepts; `settings.update` validates `value` against the section's schema. */
 export const SECTIONS = {
@@ -19,6 +25,7 @@ export const SECTIONS = {
   fallTownOrder: z.array(Town).min(1).max(6),
   springTownOrder: z.array(Town).min(1).max(6),
   messages: z.array(Template).max(40),
+  billing: Billing,
 } as const
 export type Section = keyof typeof SECTIONS
 
@@ -29,6 +36,7 @@ export const SettingsOut = z.object({
   fallTownOrder: z.array(Town),
   springTownOrder: z.array(Town),
   messages: z.array(Template),
+  billing: Billing,
   termsVersion: z.string(),
   confirmed: z.boolean().describe("False while these are the plan's defaults: nobody has saved the settings once."),
 })
@@ -43,7 +51,9 @@ async function isConfirmed(ctx: { db: import("@/db/types").Database; organizatio
   const [saved] = await ctx.db.select({ id: s.settingsChange.id }).from(s.settingsChange).where(eq(s.settingsChange.organizationId, ctx.organizationId)).limit(1)
   return Boolean(saved)
 }
-const settingsOut = (org: typeof s.organization.$inferSelect, confirmed: boolean) => ({ ...org.settings, termsVersion: org.termsVersion, confirmed })
+/** An organization that has never saved Settings › Billing has no `billing` in its row: it reads the defaults (due in 14 days, no sales tax). */
+export const billingOf = (settings: typeof s.organization.$inferSelect.settings) => settings.billing ?? DEFAULT_BILLING
+const settingsOut = (org: typeof s.organization.$inferSelect, confirmed: boolean) => ({ ...org.settings, billing: billingOf(org.settings), termsVersion: org.termsVersion, confirmed })
 
 interface Leaf { field: string; from: string; to: string }
 const clip = (text: string) => (text.length > 400 ? `${text.slice(0, 397)}...` : text)
@@ -79,6 +89,15 @@ export function changedLeaves(section: Section, before: unknown, after: unknown)
     }
     return leaves
   }
+  if (section === "billing") {
+    const a = before as z.infer<typeof Billing>
+    const b = after as z.infer<typeof Billing>
+    const leaves: Leaf[] = []
+    if (a.dueDays !== b.dueDays) leaves.push({ field: "billing.dueDays", from: `${a.dueDays} days`, to: `${b.dueDays} days` })
+    if (a.collectsSalesTax !== b.collectsSalesTax) leaves.push({ field: "billing.collectsSalesTax", from: a.collectsSalesTax ? "on" : "off", to: b.collectsSalesTax ? "on" : "off" })
+    if (a.salesTaxPercent !== b.salesTaxPercent) leaves.push({ field: "billing.salesTaxPercent", from: `${a.salesTaxPercent} percent`, to: `${b.salesTaxPercent} percent` })
+    return leaves
+  }
   const words = (value: unknown) => (Array.isArray(value) ? (value as string[]).join(", ") : `${value} percent`)
   return [{ field: section, from: clip(words(before)), to: clip(words(after)) }]
 }
@@ -102,7 +121,7 @@ export const settingsUpdate = defineHandler({
     if (!parsed.success)
       throw new ApiError("invalid", `The value does not fit ${input.section}`, parsed.error.issues.map((i) => ({ path: ["value", ...i.path].join("."), message: i.message })))
     const org = await load(ctx)
-    const before = org.settings[input.section]
+    const before = input.section === "billing" ? billingOf(org.settings) : org.settings[input.section]
     const leaves = changedLeaves(input.section, before, parsed.data)
     if (leaves.length === 0) return settingsOut(org, await isConfirmed(ctx))
     const settings = { ...org.settings, [input.section]: parsed.data }

@@ -27,6 +27,12 @@ export function shortDay(day: string): string {
   return `${WEEKDAYS[weekday]!.slice(0, 3)}, ${MONTHS[m - 1]!.slice(0, 3)} ${d}`
 }
 
+/** "Dec 1" for a text or a line that names a due day. */
+export function monthDay(day: string): string {
+  const { m, d } = parts(day)
+  return `${MONTHS[m - 1]!.slice(0, 3)} ${d}`
+}
+
 /** "8 to 10 am" for a visit that starts at 08:00: the two-hour window. */
 export function windowText(startTime: string): string {
   const hour = Number(startTime.slice(0, 2))

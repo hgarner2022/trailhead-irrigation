@@ -5,6 +5,8 @@ import * as s from "@/db/schema"
 import { customerHasCard } from "@/lib/customer/card"
 import { visitBalance } from "@/lib/money/record"
 import { enqueue } from "@/lib/queue"
+import { openInvoiceOf } from "../invoices/queries"
+import { sendBill } from "../invoices/send"
 import type { Ctx } from "../../core/context"
 import { ApiError } from "../../core/errors"
 import { defineHandler } from "../../core/handler"
@@ -15,12 +17,14 @@ import { emitEvent } from "../webhooks/deliver"
 import { loadVisit, visitOut } from "./queries"
 import { VisitOut } from "./schemas"
 
-/** How a one-off visit was paid when the money did not come by a card on file. Card now and Send a bill wait for the payment page. */
+/** How the money for a visit was dealt with when it did not come by a card on file: a check, Venmo or cash in hand, or `bill` (Send a bill: Done sends the customer a bill with a pay link instead of recording a payment). */
 const PaidBy = z.object({
-  method: z.enum(["check", "venmo", "cash"]),
+  method: z.enum(["check", "venmo", "cash", "bill"]),
   reference: z.string().trim().max(80).optional(),
   amount: z.number().int().min(1).max(100000).optional().describe("Whole dollars received; only for a visit with no price yet, which then takes this price."),
 })
+/** What `visits.recordPayment` takes: money in hand only, never a bill. */
+const RecordedBy = PaidBy.extend({ method: z.enum(["check", "venmo", "cash"]) })
 
 /** The pass a visit is on, or null for a one-off. */
 async function passOf(ctx: Ctx, visit: typeof s.visit.$inferSelect) {
@@ -37,7 +41,7 @@ async function passCustomerHasCard(ctx: Ctx, pass: typeof s.seasonPass.$inferSel
 }
 
 /** A payment the office was handed (check, Venmo or cash), for a one-off visit or a pass visit whose pass has no card: a succeeded payment row on the visit's job (the one writer under `payments.record`), the visit and its job priced if they were not, and the receipt, which says how it was paid. */
-async function recordPayment(ctx: Ctx, visit: typeof s.visit.$inferSelect, paidBy: z.infer<typeof PaidBy>) {
+async function recordPayment(ctx: Ctx, visit: typeof s.visit.$inferSelect, paidBy: z.infer<typeof RecordedBy>) {
   // A priced visit takes what is still owed on it (the writer refuses more, and refuses a visit already paid); an unpriced one takes the amount said.
   const { price, owed } = await visitBalance(ctx.db, ctx.organizationId, visit)
   if (price > 0 && owed === 0) throw new ApiError("conflict", "This visit is already paid")
@@ -51,7 +55,7 @@ export const visitsMarkClosed = defineHandler({
   method: "POST",
   path: "/visits/{id}/close",
   scope: "admin",
-  summary: "Mark a visit done. A pass visit whose pass has a card is charged to it with no question and the receipt follows. A one-off visit with a price, and a pass visit whose pass has no card (sold by the office, paid at the visit), says how it was paid (check, Venmo or cash, with an optional reference): that is recorded as a succeeded charge and the receipt, which says how it was paid, is sent. `undo: true` reverses a done visit that has no payment on its job; once a payment row exists it is refused and the office refunds from the job.",
+  summary: "Mark a visit done. A pass visit whose pass has a card is charged to it with no question and the receipt follows. A one-off visit with a price, and a pass visit whose pass has no card (sold by the office, paid at the visit), says how it was paid (check, Venmo or cash, with an optional reference): that is recorded as a succeeded charge and the receipt, which says how it was paid, is sent. `paidBy.method` `bill` marks the visit done and sends the customer a bill for the job's done lines (frozen as they are, with a pay link; if other visits of the job are still ahead the bill covers only the done visits' lines) instead of recording a payment. `undo: true` reverses a done visit that has no payment on its job; once a payment row exists it is refused and the office refunds from the job.",
   input: z.object({ id: Id, completedOn: Day.optional().describe("Defaults to today."), paidBy: PaidBy.optional(), undo: z.boolean().optional() }),
   output: VisitOut,
   async run(ctx, input) {
@@ -72,12 +76,19 @@ export const visitsMarkClosed = defineHandler({
     // A pass visit is charged to the pass's card; with no card on the pass (an office sale paid at the visit) the money is asked for like a one-off's.
     const cardOnFile = await passCustomerHasCard(ctx, pass)
     if (!cardOnFile && visit.amount > 0 && !input.paidBy) throw new ApiError("invalid", "Say how it was paid: check, Venmo or cash", [{ path: "paidBy", message: "Choose how the money came" }])
+    const billing = !cardOnFile && input.paidBy?.method === "bill"
+    if (billing) {
+      // Everything a bill can refuse is checked before the visit is marked done, so a refused bill never leaves a visit done with no money asked for.
+      if ((await visitBalance(ctx.db, ctx.organizationId, visit)).price <= 0) throw new ApiError("invalid", "Price the visit before sending a bill", [{ path: "paidBy", message: "This visit has no price yet" }])
+      if (await openInvoiceOf(ctx.db, ctx.organizationId, visit.jobId)) throw new ApiError("conflict", "A bill is already open for this job")
+    }
     const day = input.completedOn ?? today(ctx)
     await ctx.db.update(s.visit).set({ status: "completed", completedOn: day }).where(eq(s.visit.id, visit.id))
     await emitEvent(ctx.db, ctx.organizationId, "visit.done", { visitId: visit.id, completedOn: day })
     // Ryan marking it done is the one human path to a charge without a completion signal; the queue and the charge are idempotent.
     if (cardOnFile) await enqueue(ctx.db, ctx.organizationId, "pass-charge", visit.id, { visitId: visit.id })
-    else if (input.paidBy && (visit.amount > 0 || input.paidBy.amount)) await recordPayment(ctx, visit, input.paidBy)
+    else if (billing) await sendBill(ctx, { jobId: visit.jobId, requireAllDone: false })
+    else if (input.paidBy && input.paidBy.method !== "bill" && (visit.amount > 0 || input.paidBy.amount)) await recordPayment(ctx, visit, { ...input.paidBy, method: input.paidBy.method })
     return visitOut(ctx, await loadVisit(ctx, visit.id))
   },
 })
@@ -88,7 +99,7 @@ export const visitsRecordPayment = defineHandler({
   path: "/visits/{id}/payment",
   scope: "write",
   summary: "Record how a done visit was paid: check, Venmo or cash, with an optional reference. A succeeded charge is written and the receipt, which says how it was paid, is sent. A pass visit whose pass has a card is charged to it and takes no payment here; one whose pass has no card is paid here like a one-off.",
-  input: z.object({ id: Id, ...PaidBy.shape }),
+  input: z.object({ id: Id, ...RecordedBy.shape }),
   output: VisitOut,
   async run(ctx, input) {
     const { visit } = await loadVisit(ctx, input.id)

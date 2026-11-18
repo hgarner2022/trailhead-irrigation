@@ -27,7 +27,7 @@
 import { isPaid, jobMoney as jobMoneyWords, METHOD_WORDS, paidTotal, visitMoney, type MoneyInvoice, type MoneyPayment } from "@/lib/money/words"
 import { addDays, dayOf } from "./calendar"
 import { TIME_ZONE } from "./format"
-import type { AdminData, AdminPayment, JobLine, Pass, PassVisit, SoldJob, Visit, VisitStatus } from "./types"
+import type { AdminData, AdminInvoice, AdminPayment, JobLine, Pass, PassVisit, SoldJob, Visit, VisitStatus } from "./types"
 
 export type JobState = "needs-a-day" | "scheduled" | "routed" | "done" | "charged" | "charge-failed" | "cancelled" | "skipped"
 
@@ -90,7 +90,9 @@ export interface JobRow {
   notDoneReason?: string | null
   /** @deprecated alias for the fixtures, read only when `payments` is absent: how it was paid */
   paidMethod?: string | null
-  /** @deprecated alias for the fixtures: a bill was sent and is not yet paid (live data reads the invoice, task 4.3) */
+  /** the open bill this visit's lines are on (sent or overdue): the money reads Bill sent */
+  invoice?: AdminInvoice
+  /** @deprecated alias for the fixtures: a bill was sent and is not yet paid; live data reads `invoice` */
   billSent?: boolean
 }
 
@@ -135,7 +137,7 @@ export function moneyOf(row: JobRow): { state: MoneyState; label: string } {
   const gone = row.status === "cancelled" || row.status === "skipped"
   const id = row.visitId ?? ""
   const payments = row.payments ?? paymentsOf({ id, chargedAt: row.chargedAt, paidMethod: row.paidMethod, price: row.price })
-  const invoice: MoneyInvoice | undefined = row.billSent ? {} : undefined
+  const invoice: MoneyInvoice | undefined = row.invoice || row.billSent ? {} : undefined
   const money = visitMoney({ id, done: done || paidTotal(payments) > 0, cancelled: gone, cardFailed: Boolean(row.cardFailedAt), price: row.price }, payments, invoice)
   // A failed attempt the caller already knows of (the newest row failed) wins over everything but Paid, even before the visit is done.
   return money.state !== "paid" && !gone && row.chargeFailed ? { state: "failed", label: MONEY_WORDS.failed } : money
@@ -163,13 +165,14 @@ export function statesOf(row: JobRow, today: string): VisitStates {
  * "Paid", "$115 owed" or "1 of 2 paid, $115 owed", empty for a job nothing has priced. Without the job's own lines or payments
  * (the fixtures) the visits' prices and their payments stand in; a cancelled visit is not counted.
  */
-export function jobMoney(job: Pick<SoldJob, "lines" | "payments"> | undefined, visits: Pick<Visit, "id" | "status" | "price" | "chargedAt" | "paidMethod" | "payments">[]): string {
+export function jobMoney(job: Pick<SoldJob, "lines" | "payments" | "invoice"> | undefined, visits: Pick<Visit, "id" | "status" | "price" | "chargedAt" | "paidMethod" | "payments">[]): string {
   const live = visits.filter((v) => v.status !== "cancelled")
   const lines = job?.lines
     ? job.lines.map((l: JobLine) => ({ quantity: l.quantity, unitPrice: l.unitPrice, cancelledAt: l.cancelledAt ? new Date(l.cancelledAt) : null }))
     : live.map((v) => ({ quantity: 1, unitPrice: v.price ?? 0, cancelledAt: null }))
   const payments = job?.payments ?? visits.flatMap((v) => paymentsOf(v))
-  return jobMoneyWords(lines, payments, visits.map((v) => ({ id: v.id, cancelled: v.status === "cancelled" }))).words
+  const prices = visits.map((v) => ({ id: v.id, cancelled: v.status === "cancelled", price: v.price }))
+  return jobMoneyWords(lines, payments, prices, job?.invoice ? {} : undefined).words
 }
 
 /** The job's state and its not-closed flag. `today` is the Mountain calendar day (YYYY-MM-DD). */
@@ -209,6 +212,7 @@ export function visitJob(visit: Visit, today: string, timeZone: string, cardFail
       cardFailedAt,
       notDoneReason: visit.notDoneReason,
       paidMethod: visit.paidMethod,
+      invoice: visit.invoice,
       billSent: visit.billSent,
     },
     today,
@@ -231,6 +235,7 @@ export function passVisitJob(pass: Pick<Pass, "cardFailedAt">, visit: PassVisit,
       cardFailedAt: pass.cardFailedAt,
       notDoneReason: visit.notDoneReason,
       paidMethod: visit.paidMethod,
+      invoice: visit.invoice,
       billSent: visit.billSent,
     },
     today,

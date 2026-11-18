@@ -14,6 +14,7 @@ import type { AdminData } from "@/lib/admin/types"
 import type { VisitActions } from "./visit-actions-types"
 import { CancelVisit, EditForm, ResendButton, TextForm } from "./VisitEditText"
 import { DoneForm, MoveForm, NotDoneForm, PaidByChoice, doneAsksPaidBy } from "./VisitMoveDone"
+import { BillBlock } from "./VisitBill"
 import { Included, JobLines } from "./VisitLines"
 import { useRunner } from "./use-runner"
 import { dayLabel, dayOfVisit, kindLabel, priceWords, timeWords, visitFacts, type VisitFacts } from "./visit-panel-model"
@@ -159,13 +160,19 @@ function Actions({ facts, data, today, actions }: { facts: VisitFacts; data: Adm
             visit={visit}
             pending={pay.pending}
             label="Record payment"
-            onChoose={(paid) => (actions ? pay.run(() => actions.recordPayment(visit.id, paid), undefined, "Payment recorded.") : console.info("record payment", visit.id, paid))}
+            onChoose={(paid) => {
+              const { method } = paid
+              if (method === "bill") return
+              if (actions) pay.run(() => actions.recordPayment(visit.id, { ...paid, method }), undefined, "Payment recorded.")
+              else console.info("record payment", visit.id, paid)
+            }}
           />
           <p role="alert" className={`mt-1 text-sm empty:hidden ${pay.error ? "text-destructive" : "text-muted-foreground"}`}>
             {pay.error || pay.done}
           </p>
         </section>
       )}
+      <BillBlock state={facts.bill} jobId={visit.jobId ?? ""} headingId="visit-bill" actions={actions} />
       {states.work === "scheduled" && <NotDoneForm visit={visit} actions={actions} />}
       {open && <EditForm key={`edit-${visit.id}`} visit={visit} people={routePeople(data.settings.people)} actions={actions} />}
       <TextForm client={client} visitId={visit.id} actions={actions} />

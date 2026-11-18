@@ -9,6 +9,7 @@ import { jobTotal } from "@/lib/jobs/lines"
 import { dayOf } from "@/lib/admin/calendar"
 import { jobMoney, visitJob, windowLabel, type Job } from "@/lib/admin/jobs"
 import { KIND_LABEL, type OfficeKind } from "@/lib/admin/visit-defaults"
+import { billState, type BillState } from "./bill-model"
 import type { AdminData, Client, JobLine, Message, Pass, SoldJob, Visit } from "@/lib/admin/types"
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
@@ -78,6 +79,8 @@ export interface VisitFacts {
   states: Job
   /** the job's money in words, read from its lines and payment rows: "Paid", "$115 owed", "1 of 2 paid, $115 owed"; empty when nothing is priced */
   money: string
+  /** the job's bill: Send a bill when it is done and owes money, or the open bill with Remind */
+  bill: BillState
   /** every message to this customer, with the ones about this visit marked */
   messages: Message[]
 }
@@ -90,6 +93,7 @@ export function visitFacts(data: AdminData, visitId: string, today: string): Vis
   const job = data.jobs?.find((j) => j.id === visit.jobId)
   const pass = data.passes.find((p) => p.id === visit.passId)
   const ids = job?.visitIds ?? (pass ? data.visits.filter((v) => v.passId === pass.id).map((v) => v.id) : [visit.id])
+  const states = visitJob(visit, day, TIME_ZONE, pass?.cardFailedAt)
   const siblings = ids.map((id) => data.visits.find((v) => v.id === id)).filter((v): v is Visit => Boolean(v)).sort((a, b) => (dayOfVisit(a) ?? "9").localeCompare(dayOfVisit(b) ?? "9"))
   return {
     visit,
@@ -100,8 +104,10 @@ export function visitFacts(data: AdminData, visitId: string, today: string): Vis
     price: visitPrice(data, visit),
     priceCancelled: visitCancelled(data, visit),
     siblings,
-    states: visitJob(visit, day, TIME_ZONE, pass?.cardFailedAt),
+    states,
     money: jobMoney(job, siblings),
+    // a job charged to the card on its pass is left to the card (unless the card failed)
+    bill: billState(job, siblings, Boolean(pass?.cardLast4) && states.money !== "failed"),
     messages: data.messages.filter((m) => m.clientId === visit.clientId),
   }
 }

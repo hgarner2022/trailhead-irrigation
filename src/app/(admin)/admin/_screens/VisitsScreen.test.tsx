@@ -63,6 +63,8 @@ const actions = (over: Partial<VisitActions> = {}): VisitActions => ({
   markDone: vi.fn().mockResolvedValue(ok),
   undoDone: vi.fn().mockResolvedValue(ok),
   recordPayment: vi.fn().mockResolvedValue(ok),
+  sendBill: vi.fn().mockResolvedValue(ok),
+  remindBill: vi.fn().mockResolvedValue(ok),
   markNotDone: vi.fn().mockResolvedValue({ ok: true, data: { day: "2026-11-20", personId: "person_truck-1", startTime: null } }),
   edit: vi.fn().mockResolvedValue(ok),
   cancel: vi.fn().mockResolvedValue(ok),
@@ -233,6 +235,74 @@ describe("VisitsScreen", () => {
     )
     await userEvent.click(within(screen.getByRole("complementary")).getByRole("button", { name: "Record payment" }))
     expect(a.recordPayment).toHaveBeenCalledWith("u", { method: "check" })
+  })
+
+  it("Done offers Send a bill as the last choice, with its hint, and sends it as the way it was paid", async () => {
+    const a = actions()
+    renderScreen(a, { defaultVisitId: "a" })
+    const panel = within(screen.getByRole("complementary"))
+    const choices = panel.getAllByRole("radio").map((r) => (r as HTMLInputElement).value)
+    expect(choices).toEqual(["check", "venmo", "cash", "bill"])
+    expect(panel.queryByText("Texts a pay link, or emails it when there is no mobile.", { selector: "p.mt-2" })).toBeNull()
+    await userEvent.click(panel.getByLabelText("Send a bill"))
+    expect(panel.getByText("Texts a pay link, or emails it when there is no mobile.", { selector: "p.mt-2" })).toBeInTheDocument()
+    expect(panel.queryByLabelText("Reference (optional)")).toBeNull()
+    await userEvent.click(panel.getByRole("button", { name: "Mark done and send a bill" }))
+    expect(a.markDone).toHaveBeenCalledWith("a", { paidBy: { method: "bill" } })
+    expect(await screen.findByText(/Marked done\. Bill sent\./)).toBeInTheDocument()
+  })
+
+  it("Record the payment never offers Send a bill", () => {
+    const owed: AdminData = { ...data, visits: [visit({ id: "u", status: "completed", completedOn: "2026-11-10", scheduledOn: "2026-11-10", startAt: "2026-11-10T15:00:00Z" })] }
+    render(
+      <UndoToastProvider>
+        <VisitsScreen data={owed} today={TODAY} actions={actions()} defaultVisitId="u" />
+      </UndoToastProvider>,
+    )
+    expect(within(screen.getByRole("complementary")).queryByLabelText("Send a bill")).toBeNull()
+  })
+
+  it("a done and owed job offers Send a bill, and once sent reads Bill sent with the dates, Remind and the pay link", async () => {
+    const a = actions()
+    const done = visit({ id: "u", jobId: "ju", status: "completed", completedOn: "2026-11-10", scheduledOn: "2026-11-10", startAt: "2026-11-10T15:00:00Z" })
+    const job = { id: "ju", customerId: "cx", kind: "repair" as const, status: "active" as const, source: "office" as const, visitIds: ["u"], total: 145, payments: [], money: { paid: 0, total: 145, owed: 145, words: "$145 owed" } }
+    const owed: AdminData = { ...data, visits: [done], jobs: [job] }
+    const { unmount } = render(
+      <UndoToastProvider>
+        <VisitsScreen data={owed} today={TODAY} actions={a} defaultVisitId="u" />
+      </UndoToastProvider>,
+    )
+    await userEvent.click(within(screen.getByRole("complementary")).getByRole("button", { name: "Send a bill" }))
+    expect(a.sendBill).toHaveBeenCalledWith("ju")
+    unmount()
+
+    const invoice = { id: "inv1", jobId: "ju", number: "INV-2026-0001", amount: 145, tax: 0, total: 145, sentOn: "2026-11-17", dueOn: "2026-12-01", status: "sent" as const, visitIds: ["u"], payUrl: "https://site.test/pay/inv1?token=t" }
+    const billed: AdminData = { ...data, visits: [{ ...done, invoice }], jobs: [{ ...job, invoice, money: { ...job.money, words: "Bill sent", billSent: true } }] }
+    render(
+      <UndoToastProvider>
+        <VisitsScreen data={billed} today={TODAY} actions={a} defaultVisitId="u" />
+      </UndoToastProvider>,
+    )
+    const panel = within(screen.getByRole("complementary"))
+    expect(panel.getByText("Bill sent Nov 17, due Dec 1")).toBeInTheDocument()
+    expect(panel.getByText(/Bill sent\. \$145 owed|\. Bill sent\./)).toBeInTheDocument()
+    expect(panel.queryByRole("button", { name: "Send a bill" })).toBeNull()
+    expect(panel.getByRole("link", { name: "Pay link" })).toHaveAttribute("href", "https://site.test/pay/inv1?token=t")
+    await userEvent.click(panel.getByRole("button", { name: "Remind" }))
+    expect(a.remindBill).toHaveBeenCalledWith("inv1")
+    expect(await panel.findByText("Reminder sent.")).toBeInTheDocument()
+  })
+
+  it("shows a tech the bill's words and neither button nor pay link", () => {
+    const invoice = { id: "inv1", jobId: "ju", number: "INV-2026-0001", amount: 145, tax: 0, total: 145, sentOn: "2026-11-17", dueOn: "2026-12-01", status: "sent" as const, visitIds: ["u"] }
+    const done = visit({ id: "u", jobId: "ju", status: "completed", completedOn: "2026-11-10", scheduledOn: "2026-11-10", startAt: "2026-11-10T15:00:00Z", invoice })
+    const job = { id: "ju", customerId: "cx", kind: "repair" as const, status: "active" as const, source: "office" as const, visitIds: ["u"], total: 145, payments: [], invoice, money: { paid: 0, total: 145, owed: 145, words: "Bill sent", billSent: true } }
+    renderScreen(actions(), { readOnly: true, defaultVisitId: "u", data: { ...data, visits: [done], jobs: [job] } })
+    const panel = within(screen.getByRole("complementary"))
+    expect(panel.queryByRole("button", { name: "Remind" })).toBeNull()
+    expect(panel.queryByRole("link", { name: "Pay link" })).toBeNull()
+    // the pill and the job's money still say it
+    expect(panel.getAllByText(/Bill sent/).length).toBeGreaterThan(0)
   })
 
   it("hands a tech the visit read-only: no New job and no action buttons", () => {

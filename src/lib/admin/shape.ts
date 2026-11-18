@@ -7,10 +7,11 @@ import { zonedToUtc } from "./calendar"
 import { fullName } from "./format"
 import { causeOf, groupAttention, type QueueAttention } from "./attention-groups"
 import { jobTotal } from "@/lib/jobs/lines"
+import { invoiceOpen, invoiceStatus } from "@/lib/money/invoice"
 import { jobMoney as moneyOfJob } from "@/lib/money/words"
 import { NOT_CLOSED_LOOKBACK_DAYS, visitJob, visitPaid } from "./jobs"
 import type {
-  AdminPayment, SoldJob, AdminData, Attention, BusyBlock, Client, Consent, Invoice, Message, MessageKind, MonthTotal, Pass, PassVisit, Quote, SettingsChange,
+  AdminInvoice, AdminPayment, SoldJob, AdminData, Attention, BusyBlock, Client, Consent, Invoice, Message, MessageKind, MonthTotal, Pass, PassVisit, Quote, SettingsChange,
   Person, ServiceItem, AreaGroup, OrganizationSettings, Property, Town, Visit, VisitKind, VisitStatus, Yard,
 } from "./types"
 
@@ -54,6 +55,11 @@ export interface JobRow { id: string; customerId: string; kind: SoldJob["kind"];
 export interface LineRow { id: string; jobId: string; visitId: string | null; name: string; description: string | null; quantity: number; unitPrice: number; taxable: boolean; cancelledAt: Date | null }
 /** A payment row (`charge`) as live.ts reads it: refunds are negative; `attempt` numbers a visit's tries. */
 export interface PaymentRow { id: string; jobId: string | null; visitId: string | null; amount: number; method: string; status: string; paidOn: string | null; refundsPaymentId: string | null; attempt: number; createdAt: Date }
+/** A bill (`invoice`) as live.ts reads it: its frozen lines only as far as the visits they name, and the pay link for a caller that may write. */
+export interface InvoiceRow {
+  id: string; jobId: string; number: string; amount: number; tax: number; total: number; sentOn: string; dueOn: string
+  paidOn: string | null; cancelledAt: Date | null; lines: { visitId?: string | null }[]; payUrl?: string
+}
 export interface QueueProblem { id?: string; kind: string; lastError: string | null; updatedAt: Date; status: string }
 
 /** `key` is what the alert is about: a visit's id for an unplaced visit. */
@@ -92,6 +98,8 @@ export interface ShapeInput {
   lineRows?: LineRow[]
   /** every property of the organization; absent in the fixtures, where the screens build one from the pass */
   propertyRows?: PropertyRow[]
+  /** every bill of the organization; absent in the fixtures. The open ones (sent, overdue) make a job's money read Bill sent */
+  invoiceRows?: InvoiceRow[]
   blocks: BusyBlock[]
   /** every service, inactive ones included; absent in the fixtures */
   services?: ServiceItem[]
@@ -100,6 +108,12 @@ export interface ShapeInput {
 /** What the visit is worth: its own line when the API sent one, else the amount (which already reads the line). */
 const lineAmountOf = (v: Pick<ApiVisit, "id" | "amount" | "lineItems">) => {
   const own = (v.lineItems ?? []).filter((l) => l.visitId === v.id)
+  return own.length ? own.filter((l) => !l.cancelledAt).reduce((sum, l) => sum + l.quantity * l.unitPrice, 0) : v.amount
+}
+
+/** What a visit costs from the job's line rows: its own live lines when it has any, else its `amount`. */
+const visitPriceOf = (v: Pick<ApiVisit, "id" | "amount">, lines: readonly Pick<LineRow, "visitId" | "quantity" | "unitPrice" | "cancelledAt">[]) => {
+  const own = lines.filter((l) => l.visitId === v.id)
   return own.length ? own.filter((l) => !l.cancelledAt).reduce((sum, l) => sum + l.quantity * l.unitPrice, 0) : v.amount
 }
 
@@ -164,6 +178,20 @@ export function shapeAdminData(i: ShapeInput): AdminData {
   const rows: PaymentRow[] = i.paymentRows ?? i.visits.flatMap((v) => (v.payments ?? []).map((p, n) => ({ ...p, attempt: n + 1, createdAt: new Date(p.createdAt ?? 0) })))
   const ordered = [...rows].sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime() || a.id.localeCompare(b.id))
   const paymentsOfVisit = (id: string) => ordered.filter((r) => r.visitId === id).map(paymentOf)
+  // The open bill of each job (a job has at most one): its money reads Bill sent, on the visits its lines were billed after (every visit of the job when its lines name none).
+  const billOf = new Map<string, AdminInvoice>()
+  for (const r of i.invoiceRows ?? []) {
+    if (!invoiceOpen(r)) continue
+    billOf.set(r.jobId, {
+      id: r.id, jobId: r.jobId, number: r.number, amount: r.amount, tax: r.tax, total: r.total, sentOn: r.sentOn, dueOn: r.dueOn,
+      status: invoiceStatus(r, i.today) === "overdue" ? "overdue" : "sent", visitIds: [...new Set(r.lines.map((l) => l.visitId).filter((id): id is string => Boolean(id)))],
+      ...(r.payUrl ? { payUrl: r.payUrl } : {}),
+    })
+  }
+  const billFor = (jobId: string | undefined, visitId: string): AdminInvoice | undefined => {
+    const bill = jobId ? billOf.get(jobId) : undefined
+    return bill && (bill.visitIds.length === 0 || bill.visitIds.includes(visitId)) ? bill : undefined
+  }
   // A pending pass is an unpaid attempt: its visits are never a job anywhere on the Schedule or in the counts.
   const pending = new Set(i.passes.filter((p) => p.status === "pending").map((p) => p.id))
 
@@ -176,7 +204,7 @@ export function shapeAdminData(i: ShapeInput): AdminData {
       ...(v.startTime ? { startTime: v.startTime } : {}), ...(v.completedOn ? { completedOn: v.completedOn } : {}), payments: paymentsOfVisit(v.id),
       ...(failed.has(v.id) ? { chargeFailed: true } : {}), ...(v.status === "skipped" ? { skipped: true } : {}), ...(v.passId ? { passId: v.passId } : {}),
       isPass: v.passId !== null, jobberUrl: "",
-      ...(v.jobId ? { jobId: v.jobId } : {}), ...reasonOf(v), price: lineAmountOf(v), ...(v.durationMinutes ? { minutes: v.durationMinutes } : {}), ...(v.notes ? { notes: v.notes } : {}),
+      ...(v.jobId ? { jobId: v.jobId } : {}), ...(billFor(v.jobId, v.id) ? { invoice: billFor(v.jobId, v.id) } : {}), ...reasonOf(v), price: lineAmountOf(v), ...(v.durationMinutes ? { minutes: v.durationMinutes } : {}), ...(v.notes ? { notes: v.notes } : {}),
       // the person assigned, under the deprecated truck names too (the same values; dropped in step 6)
       ...(v.personName ? { personName: v.personName, truckName: v.personName } : {}),
       ...(v.personId ? { personId: v.personId, truckId: v.personId } : {}),
@@ -246,6 +274,7 @@ export function shapeAdminData(i: ShapeInput): AdminData {
         ...(v.personName ? { personName: v.personName, truckName: v.personName } : {}),
         ...(v.completedOn ? { completedAt: instantOf(v.completedOn, "12:00") } : {}),
         payments: paymentsOfVisit(v.id),
+        ...(billFor(v.jobId, v.id) ? { invoice: billFor(v.jobId, v.id) } : {}),
         ...reasonOf(v),
       }))
     const consent = newestConsent.get(p.customerId)
@@ -277,9 +306,10 @@ export function shapeAdminData(i: ShapeInput): AdminData {
     const mineIds = new Set(mine.map((v) => v.id))
     // The job's own money: rows on the job, and rows on its visits that carry no job id.
     const payments = ordered.filter((r) => r.jobId === j.id || (r.visitId !== null && mineIds.has(r.visitId))).map(paymentOf)
-    const money = moneyOfJob(lines, payments, mine.map((v) => ({ id: v.id, cancelled: v.status === "cancelled" || v.status === "skipped" })))
+    const bill = billOf.get(j.id)
+    const money = moneyOfJob(lines, payments, mine.map((v) => ({ id: v.id, cancelled: v.status === "cancelled" || v.status === "skipped", price: visitPriceOf(v, lines) })), bill ? {} : undefined)
     return {
-      id: j.id, customerId: j.customerId, kind: j.kind, status: j.status, source: j.source,
+      id: j.id, customerId: j.customerId, kind: j.kind, status: j.status, source: j.source, ...(bill ? { invoice: bill } : {}),
       ...(i.lineRows ? { lines: lines.map((l) => ({ id: l.id, name: l.name, quantity: l.quantity, unitPrice: l.unitPrice, taxable: l.taxable, ...(l.description ? { description: l.description } : {}), ...(l.cancelledAt ? { cancelledAt: iso(l.cancelledAt) } : {}), ...(l.visitId ? { visitId: l.visitId } : {}) })), total: jobTotal(lines), payments, money } : {}),
       ...(j.price !== null ? { price: j.price } : {}), ...(j.notes ? { notes: j.notes } : {}),
       ...(pass ? { passId: pass.id, passNumber: j.passNumber ?? pass.number } : {}),

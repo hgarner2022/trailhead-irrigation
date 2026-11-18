@@ -6,6 +6,7 @@ import type { TestDb } from "@/db/test-db"
 import { callApi } from "@/api/core/call"
 import { adminKey, apiDb, ctxFor, ORG, owner, readKey, writeKey } from "@/api/test-helpers"
 import { customersUpdate } from "@/api/v1/customers/handlers"
+import { invoicesCancel, invoicesSend } from "@/api/v1/invoices/handlers"
 import { paymentsRecord, paymentsRefund } from "@/api/v1/payments/handlers"
 import { visitsMove } from "@/api/v1/visits/handlers"
 import { visitsCreate } from "@/api/v1/visits/office"
@@ -186,5 +187,47 @@ describe("the money words, read from the payment rows", () => {
     const live = await getLiveAdminData(ctxFor(db, owner, NOW))
     expect(live.jobs!.find((j) => j.id === first.jobId)).toMatchObject({ money: { paid: 145, total: 290, owed: 145 } })
     expect(live.attention.filter((a) => a.kind === "owed" && a.jobId === first.jobId)).toEqual([expect.objectContaining({ visitId: first.id })])
+  })
+
+  it("reads Bill sent on a done job that has an open bill, still Bill sent when it is overdue, Owed again once it is cancelled", async () => {
+    const write = ctxFor(db, writeKey, NOW)
+    const made = await callApi(write, visitsCreate, { customerId: "c100", kind: "repair", scheduledOn: "2027-05-28", price: 145 })
+    await db.update(s.visit).set({ status: "completed", completedOn: "2027-04-19" }).where(eq(s.visit.id, made.id))
+    const bill = await callApi(write, invoicesSend, { jobId: made.jobId })
+
+    let live = await getLiveAdminData(ctxFor(db, owner, NOW))
+    expect(moneyOf(live, made.id)).toMatchObject({ state: "done", money: "bill-sent", moneyLabel: "Bill sent" })
+    expect(live.visits.find((v) => v.id === made.id)!.invoice).toMatchObject({ id: bill.id, number: bill.number, total: 145, sentOn: "2027-04-20", dueOn: "2027-05-04", status: "sent", payUrl: bill.payUrl })
+    expect(live.jobs!.find((j) => j.id === made.jobId)).toMatchObject({ money: { owed: 145, words: "Bill sent", billSent: true }, invoice: { id: bill.id } })
+
+    // A bill past its due day is still Bill sent (the overdue row is Home's, task 4.5).
+    live = await getLiveAdminData(ctxFor(db, owner, "2027-06-10T15:00:00Z"))
+    expect(live.visits.find((v) => v.id === made.id)!.invoice).toMatchObject({ status: "overdue" })
+    expect(visitJob(live.visits.find((v) => v.id === made.id)!, "2027-06-10", TZ)).toMatchObject({ money: "bill-sent", moneyLabel: "Bill sent" })
+
+    // A read-only key's data never carries the pay link, which is a bearer link.
+    const read = await getLiveAdminData(ctxFor(db, readKey, NOW))
+    expect(read.visits.find((v) => v.id === made.id)!.invoice).not.toHaveProperty("payUrl")
+    expect(JSON.stringify(read)).not.toContain("/pay/")
+
+    await callApi(ctxFor(db, adminKey, NOW), invoicesCancel, { id: bill.id })
+    live = await getLiveAdminData(ctxFor(db, owner, NOW))
+    expect(moneyOf(live, made.id)).toMatchObject({ money: "owed", moneyLabel: "Owed" })
+    expect(live.visits.find((v) => v.id === made.id)).not.toHaveProperty("invoice")
+    expect(live.jobs!.find((j) => j.id === made.jobId)).toMatchObject({ money: { words: "$145 owed", billSent: false } })
+  })
+
+  it("counts only a fully paid visit as paid when it words a job, so a part-paid visit does not read as paid", async () => {
+    const write = ctxFor(db, writeKey, NOW)
+    const first = await callApi(write, visitsCreate, { customerId: "c100", kind: "repair", scheduledOn: "2027-06-01", price: 145 })
+    const second = await callApi(write, visitsCreate, { customerId: "c100", kind: "repair", scheduledOn: "2027-06-02", price: 100 })
+    await db.update(s.visit).set({ jobId: first.jobId }).where(eq(s.visit.id, second.id))
+    await db.update(s.lineItem).set({ jobId: first.jobId }).where(eq(s.lineItem.visitId, second.id))
+    await db.update(s.visit).set({ status: "completed", completedOn: "2027-04-10" }).where(eq(s.visit.id, first.id))
+    await db.update(s.visit).set({ status: "completed", completedOn: "2027-04-11" }).where(eq(s.visit.id, second.id))
+    await callApi(write, paymentsRecord, { jobId: first.jobId, visitId: first.id, amount: 145, method: "cash" })
+    await callApi(write, paymentsRecord, { jobId: first.jobId, visitId: second.id, amount: 40, method: "cash" })
+    const live = await getLiveAdminData(ctxFor(db, owner, NOW))
+    expect(live.jobs!.find((j) => j.id === first.jobId)!.money).toMatchObject({ paid: 185, total: 245, owed: 60, words: "1 of 2 paid, $60 owed" })
   })
 })

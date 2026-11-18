@@ -5,6 +5,7 @@ import type { Ctx } from "@/api/core/context"
 import type { Handler } from "@/api/core/handler"
 import { areasList } from "@/api/v1/areas/handlers"
 import { customersList, gateYard } from "@/api/v1/customers/handlers"
+import { payLinkOf } from "@/api/v1/invoices/queries"
 import { messagesList } from "@/api/v1/messages/handlers"
 import { passesList } from "@/api/v1/passes/handlers"
 import { settingsChangesList, settingsGet } from "@/api/v1/settings/handlers"
@@ -72,7 +73,7 @@ export async function getLiveAdminData(ctx: Ctx): Promise<AdminData> {
 
   const db = ctx.db
   const contact = canSeeContact(ctx)
-  const [consents, links, mClients, mVisits, mJobs, mQuotes, mInvoices, problems, blocks, synced, alerts, charges, dismissed, jobRows, lineRows, propertyRows] = await Promise.all([
+  const [consents, links, mClients, mVisits, mJobs, mQuotes, mInvoices, problems, blocks, synced, alerts, charges, dismissed, jobRows, lineRows, propertyRows, billRows] = await Promise.all([
     db.select({ customerId: s.consent.customerId, termsAcceptedAt: s.consent.termsAcceptedAt, termsVersion: s.consent.termsVersion, marketingOptIn: s.consent.marketingOptIn, marketingChannels: s.consent.marketingChannels, source: s.consent.source, recordedAt: s.consent.recordedAt }).from(s.consent).where(eq(s.consent.organizationId, org)),
     db.select({ id: s.customer.id, jobberClientId: s.customer.jobberClientId }).from(s.customer).where(and(eq(s.customer.organizationId, org), isNotNull(s.customer.jobberClientId))),
     db.select({ id: s.jobberClient.id, firstName: s.jobberClient.firstName, lastName: s.jobberClient.lastName, email: s.jobberClient.email, phone: s.jobberClient.phone, town: s.jobberClient.town, jobberUrl: s.jobberClient.jobberUrl }).from(s.jobberClient).where(eq(s.jobberClient.organizationId, org)),
@@ -91,6 +92,8 @@ export async function getLiveAdminData(ctx: Ctx): Promise<AdminData> {
     db.select({ id: s.job.id, customerId: s.job.customerId, kind: s.job.kind, status: s.job.status, price: s.job.price, source: s.job.source, passNumber: s.job.passNumber, notes: s.job.notes }).from(s.job).where(eq(s.job.organizationId, org)),
     db.select({ id: s.lineItem.id, jobId: s.lineItem.jobId, visitId: s.lineItem.visitId, name: s.lineItem.name, description: s.lineItem.description, quantity: s.lineItem.quantity, unitPrice: s.lineItem.unitPrice, taxable: s.lineItem.taxable, cancelledAt: s.lineItem.cancelledAt }).from(s.lineItem).where(eq(s.lineItem.organizationId, org)).orderBy(asc(s.lineItem.createdAt), asc(s.lineItem.id)),
     db.select().from(s.property).where(eq(s.property.organizationId, org)).orderBy(asc(s.property.createdAt), asc(s.property.id)),
+    // the organization's own bills (not the Jobber mirror's): the open ones make a job's money read Bill sent
+    db.select().from(s.invoice).where(eq(s.invoice.organizationId, org)).orderBy(asc(s.invoice.sentOn), asc(s.invoice.id)),
   ])
 
   return shapeAdminData({
@@ -116,6 +119,8 @@ export async function getLiveAdminData(ctx: Ctx): Promise<AdminData> {
     dismissed,
     jobRows,
     lineRows,
+    // the pay link is a bearer link: only for the write scope, like the gate code (a tech's screens never carry it)
+    invoiceRows: billRows.map((r) => ({ id: r.id, jobId: r.jobId, number: r.number, amount: r.amount, tax: r.tax, total: r.total, sentOn: r.sentOn, dueOn: r.dueOn, paidOn: r.paidOn, cancelledAt: r.cancelledAt, lines: r.lines, ...(contact && payLinkOf(r.id) ? { payUrl: payLinkOf(r.id) } : {}) })),
     // the same gate as `properties`: the street line, gate code, access note and on-site phone only with the write scope
     propertyRows: propertyRows.map((p) => ({
       id: p.id, customerId: p.customerId, town: p.town as Town, zones: p.zones, controller: p.controller, backflowLocation: p.backflowLocation, mustBeHome: p.mustBeHome, contactName: p.contactName, notes: p.notes,

@@ -1,4 +1,4 @@
-import type { AreaGroup, CapacityKind, OrganizationSettings, Town, Truck } from "@/lib/admin/types"
+import type { AreaGroup, BillingSettings, CapacityKind, OrganizationSettings, Town, Truck } from "@/lib/admin/types"
 
 /**
  * What the scheduler runs on until Ryan saves Settings once. Every value here comes from the wiring plan's Answers and
@@ -36,6 +36,9 @@ export const DEFAULT_AREAS: Pick<AreaGroup, "name" | "towns">[] = [
   { name: "Broomfield", towns: ["Broomfield"] },
 ]
 
+/** Bills due in two weeks and no sales tax, until the office saves Settings › Billing (Ryan has not yet said whether he collects Colorado sales tax). */
+export const DEFAULT_BILLING: BillingSettings = { dueDays: 14, collectsSalesTax: false, salesTaxPercent: 0 }
+
 /** The settings an organization starts with for `season`. People and areas are rows, so they are not here. */
 export const defaultSettings = (season: number): Omit<OrganizationSettings, "people" | "areas"> => ({
   windows: defaultWindows(season),
@@ -44,6 +47,7 @@ export const defaultSettings = (season: number): Omit<OrganizationSettings, "peo
   fallTownOrder: DEFAULT_FALL_TOWN_ORDER,
   springTownOrder: DEFAULT_SPRING_TOWN_ORDER,
   messages: [],
+  billing: DEFAULT_BILLING,
 })
 
 /** The text-reminder hour in Mountain time (Answers); the day-before text goes out in the daily run, which sets the real hour. */

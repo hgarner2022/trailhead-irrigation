@@ -36,12 +36,37 @@ export interface AdminPayment {
   refundsPaymentId?: string | null
 }
 
+/**
+ * A bill the office sent (`invoice`): the frozen lines are in the API; the screens need the dates, the amounts and the pay link.
+ * Open while it is sent or overdue; a paid or cancelled bill is not carried here.
+ */
+export interface AdminInvoice {
+  id: string
+  jobId: string
+  number: string
+  /** whole dollars: the lines, the tax on them, and what is asked for */
+  amount: number
+  tax: number
+  total: number
+  /** Mountain calendar days */
+  sentOn: string
+  dueOn: string
+  /** sent, or overdue once the day after `dueOn` has come */
+  status: "sent" | "overdue"
+  /** the visits its lines were billed after; empty when the lines name none, which means every visit of the job */
+  visitIds: string[]
+  /** the customer's pay link; only for the write scope, never for a tech */
+  payUrl?: string
+}
+
 /** A job's money in words, from its lines and its payment rows: `words` is "Paid", "$115 owed" or "2 of 3 paid, $115 owed". */
 export interface SoldJobMoney {
   paid: number
   total: number
   owed: number
   words: string
+  /** the job owes money and has an open bill; the words read Bill sent */
+  billSent?: boolean
 }
 
 export type VisitStatus = "unscheduled" | "scheduled" | "completed" | "cancelled"
@@ -195,7 +220,9 @@ export interface Visit {
   notDoneReason?: string
   /** @deprecated alias for the fixtures, read only when `payments` is absent: how it was paid (card_on_file, card_now, check, venmo, cash) */
   paidMethod?: string
-  /** @deprecated alias for the fixtures: a bill was sent and is not yet paid; live data reads the invoice (task 4.3) */
+  /** the open bill this visit's lines are on; its money reads Bill sent */
+  invoice?: AdminInvoice
+  /** @deprecated alias for the fixtures: a bill was sent and is not yet paid; live data reads `invoice` */
   billSent?: boolean
 }
 
@@ -236,6 +263,8 @@ export interface SoldJob {
   payments?: AdminPayment[]
   /** Paid, or the number owed, read from the lines and the payments; absent in the fixtures */
   money?: SoldJobMoney
+  /** the bill that is open on this job (sent or overdue), if there is one; its money reads Bill sent */
+  invoice?: AdminInvoice
 }
 
 export interface Quote {
@@ -289,6 +318,8 @@ export interface PassVisit {
   notDoneReason?: string
   /** @deprecated alias for the fixtures, read only when `payments` is absent */
   paidMethod?: string
+  /** the open bill this visit's lines are on; its money reads Bill sent */
+  invoice?: AdminInvoice
   /** @deprecated alias for the fixtures: a bill was sent and is not yet paid */
   billSent?: boolean
 }
@@ -397,6 +428,8 @@ export type MessageKind =
   | "day-before"
   | "date-confirm"
   | "receipt"
+  | "invoice"
+  | "invoice-reminder"
   | "card-failed"
   | "card-expiring"
   | "cancelled"
@@ -426,6 +459,16 @@ export interface Message {
   status: "queued" | "sent" | "delivered" | "failed" | "bounced"
 }
 
+/** How bills are due and taxed (Settings › Billing). Sales tax is in the model and off until the office answers. */
+export interface BillingSettings {
+  /** a bill is due this many days after it is sent */
+  dueDays: number
+  /** whether a bill adds Colorado sales tax to its taxable lines */
+  collectsSalesTax: boolean
+  /** percent, one decimal at most; used only while `collectsSalesTax` is on */
+  salesTaxPercent: number
+}
+
 /** Everything the Settings page edits; the scheduler reads it on its next run. */
 export interface OrganizationSettings {
   /** everyone who works here, owners first; the ones with a truck are the schedule's rows */
@@ -441,6 +484,7 @@ export interface OrganizationSettings {
   /** spring runs the other way */
   springTownOrder: Town[]
   messages: MessageTemplate[]
+  billing: BillingSettings
 }
 
 /** One edit to the settings: who, when, which field, and the value before and after, as words. */

@@ -52,6 +52,20 @@ describe("settings", () => {
     await expect(callApi(ctxFor(db, adminKey), settingsUpdate, { section: "springTownOrder", value: ["Denver"] })).rejects.toMatchObject({ code: "invalid" })
     await expect(callApi(ctxFor(db, adminKey), settingsUpdate, { section: "trucks", value: [] })).rejects.toMatchObject({ code: "invalid" })
   })
+  it("reads the billing defaults (due in 14 days, no sales tax) before anyone saves them, then logs one row per changed leaf", async () => {
+    const fresh = await apiDb()
+    expect((await callApi(ctxFor(fresh, readKey), settingsGet, {})).billing).toEqual({ dueDays: 14, collectsSalesTax: false, salesTaxPercent: 0 })
+    const out = await callApi(ctxFor(fresh, adminKey), settingsUpdate, { section: "billing", value: { dueDays: 30, collectsSalesTax: true, salesTaxPercent: 8.8 } })
+    expect(out.billing).toEqual({ dueDays: 30, collectsSalesTax: true, salesTaxPercent: 8.8 })
+    expect((await callApi(ctxFor(fresh, readKey), settingsGet, {})).billing.dueDays).toBe(30)
+    const log = (await callApi(ctxFor(fresh, readKey), settingsChangesList, {})).data
+    expect(log.map((c) => c.field).sort()).toEqual(["billing.collectsSalesTax", "billing.dueDays", "billing.salesTaxPercent"])
+    expect(log.find((c) => c.field === "billing.dueDays")).toMatchObject({ from: "14 days", to: "30 days" })
+    expect(log.find((c) => c.field === "billing.collectsSalesTax")).toMatchObject({ from: "off", to: "on" })
+    await expect(callApi(ctxFor(fresh, adminKey), settingsUpdate, { section: "billing", value: { dueDays: -1, collectsSalesTax: false, salesTaxPercent: 0 } })).rejects.toMatchObject({ code: "invalid" })
+    await expect(callApi(ctxFor(fresh, adminKey), settingsUpdate, { section: "billing", value: { dueDays: 14, collectsSalesTax: true, salesTaxPercent: 90 } })).rejects.toMatchObject({ code: "invalid" })
+    await fresh.close()
+  })
   it("needs the admin scope", async () => {
     await expect(callApi(ctxFor(db, writeKey), settingsUpdate, { section: "bufferPercentLate", value: 5 })).rejects.toMatchObject({ code: "forbidden" })
   })

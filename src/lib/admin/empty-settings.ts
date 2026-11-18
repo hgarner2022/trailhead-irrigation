@@ -10,4 +10,5 @@ export const EMPTY_SETTINGS: OrganizationSettings = {
   fallTownOrder: [],
   springTownOrder: [],
   messages: [],
+  billing: { dueDays: 14, collectsSalesTax: false, salesTaxPercent: 0 },
 }

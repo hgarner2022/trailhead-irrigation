@@ -10,6 +10,7 @@ import { visitsMarkClosed, visitsRecordPayment } from "./money"
 import { visitsCreate, visitsMarkNotDone } from "./office"
 import { paymentsRecord, paymentsRefund } from "../payments/handlers"
 import { newestPayment } from "./queries"
+import { invoicesGet, invoicesList } from "../invoices/handlers"
 
 let db: TestDb
 beforeAll(async () => {
@@ -132,5 +133,61 @@ describe("Done and the money", () => {
     const placed = await callApi(as(writeKey), visitsMove, { id: v.id, personId: "person_truck-1", scheduledOn: "2027-05-12" })
     expect(placed.notDoneReason).toBeNull()
     expect(ORG).toBeTruthy()
+  })
+})
+
+describe("Done with Send a bill", () => {
+  it("marks the visit done and sends a bill for its lines in place of recording a payment", async () => {
+    const v = await callApi(as(writeKey), visitsCreate, { customerId: "c100", kind: "repair", scheduledOn: "2027-05-21", price: 145 })
+    const out = await callApi(as(), visitsMarkClosed, { id: v.id, paidBy: { method: "bill" } })
+    expect(out).toMatchObject({ status: "completed", paymentStatus: "none", payments: [] })
+    expect(await db.select().from(s.charge).where(eq(s.charge.visitId, v.id))).toEqual([])
+    const [bill] = (await callApi(as(readKey), invoicesList, { jobId: v.jobId })).data
+    expect(bill).toMatchObject({ amount: 145, total: 145, status: "sent", paidOn: null, lines: [{ name: "Repair", unitPrice: 145, visitId: v.id }] })
+    const mail = (await db.select().from(s.messageLog)).filter((m) => m.kind === "invoice" && m.key === `invoice-${bill!.id}`)
+    expect(mail).toHaveLength(1)
+    expect((await db.select().from(s.messageLog)).filter((m) => m.visitId === v.id && m.kind === "receipt")).toEqual([])
+    // marking it done again sends nothing more
+    await callApi(as(), visitsMarkClosed, { id: v.id, paidBy: { method: "bill" } })
+    expect((await callApi(as(readKey), invoicesList, { jobId: v.jobId })).data).toHaveLength(1)
+  })
+
+  it("refuses before marking done when the visit has no price or the job already has an open bill, leaving the visit not done", async () => {
+    const unpriced = await callApi(as(writeKey), visitsCreate, { customerId: "c100", kind: "install", scheduledOn: "2027-05-24" })
+    await expect(callApi(as(), visitsMarkClosed, { id: unpriced.id, paidBy: { method: "bill" } })).rejects.toMatchObject({ code: "invalid", message: "Price the visit before sending a bill" })
+    expect((await callApi(as(), visitsGet, { id: unpriced.id })).status).toBe("scheduled")
+    const v = await callApi(as(writeKey), visitsCreate, { customerId: "c100", kind: "repair", scheduledOn: "2027-05-25", price: 145 })
+    const [first] = await db.select().from(s.visit).where(eq(s.visit.id, v.id))
+    await db.insert(s.visit).values({ ...first!, id: `${v.id}-b` })
+    await db.insert(s.lineItem).values({ organizationId: ORG, jobId: v.jobId, visitId: `${v.id}-b`, name: "Repair", quantity: 1, unitPrice: 95 })
+    await callApi(as(), visitsMarkClosed, { id: v.id, paidBy: { method: "bill" } })
+    await expect(callApi(as(), visitsMarkClosed, { id: `${v.id}-b`, paidBy: { method: "bill" } })).rejects.toMatchObject({ code: "conflict", message: "A bill is already open for this job" })
+    expect((await callApi(as(), visitsGet, { id: `${v.id}-b` })).status).toBe("scheduled")
+  })
+
+  it("bills only the done visits' lines while another visit of the job is still ahead", async () => {
+    const v = await callApi(as(writeKey), visitsCreate, { customerId: "c100", kind: "repair", scheduledOn: "2027-05-26", price: 145 })
+    const [first] = await db.select().from(s.visit).where(eq(s.visit.id, v.id))
+    await db.insert(s.visit).values({ ...first!, id: `${v.id}-later` })
+    await db.insert(s.lineItem).values({ organizationId: ORG, jobId: v.jobId, visitId: `${v.id}-later`, name: "Fall blowout", quantity: 1, unitPrice: 95 })
+    await callApi(as(), visitsMarkClosed, { id: v.id, paidBy: { method: "bill" } })
+    const [bill] = (await callApi(as(readKey), invoicesList, { jobId: v.jobId })).data
+    expect(bill).toMatchObject({ amount: 145, total: 145 })
+    expect(bill!.lines.map((l) => l.name)).toEqual(["Repair"])
+    expect((await callApi(as(readKey), invoicesGet, { id: bill!.id })).lines).toHaveLength(1)
+  })
+
+  it("is not a way to record a payment: visits.recordPayment refuses a bill", async () => {
+    const v = await callApi(as(writeKey), visitsCreate, { customerId: "c100", kind: "repair", scheduledOn: "2027-05-27", price: 145 })
+    await db.update(s.visit).set({ status: "completed", completedOn: "2027-05-07" }).where(eq(s.visit.id, v.id))
+    await expect(callApi(as(), visitsRecordPayment, { id: v.id, method: "bill" as never })).rejects.toMatchObject({ code: "invalid" })
+  })
+
+  it("leaves a pass visit that has a card to the card, whatever was chosen", async () => {
+    await callApi(as(writeKey), visitsMove, { id: "p5-turn-on", personId: "person_truck-1", scheduledOn: "2027-05-06" })
+    const [visit] = await db.select().from(s.visit).where(eq(s.visit.id, "p5-turn-on"))
+    await callApi(as(), visitsMarkClosed, { id: "p5-turn-on", paidBy: { method: "bill" } })
+    expect((await callApi(as(readKey), invoicesList, { jobId: visit!.jobId })).data).toEqual([])
+    expect((await db.select().from(s.queueItem).where(eq(s.queueItem.key, "p5-turn-on"))).map((q) => q.kind)).toEqual(["pass-charge"])
   })
 })

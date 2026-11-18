@@ -153,6 +153,14 @@ describe("statesOf: the work pill and the money pill", () => {
     expect(s({ ...done, chargeFailed: true }).money).toBe("failed")
     expect(s({ ...done, cardFailedAt: "2026-11-11T00:00:00Z" }).money).toBe("failed")
     expect(s({ ...done, billSent: true })).toMatchObject({ money: "bill-sent", moneyLabel: "Bill sent" })
+    const invoice = { id: "i1", jobId: "j", number: "INV-2026-0001", amount: 145, tax: 0, total: 145, sentOn: "2026-11-10", dueOn: "2026-11-24", status: "sent" as const, visitIds: [] }
+    expect(s({ ...done, invoice })).toMatchObject({ money: "bill-sent", moneyLabel: "Bill sent" })
+    // an overdue bill still reads Bill sent; Paid and a failed card win over it
+    expect(s({ ...done, invoice: { ...invoice, status: "overdue" } }).money).toBe("bill-sent")
+    expect(s({ ...done, invoice, chargedAt: "2026-11-10T20:00:00Z", paidMethod: "check" }).money).toBe("paid")
+    expect(s({ ...done, invoice, chargeFailed: true }).money).toBe("failed")
+    // a visit that is not done yet reads nothing, whatever bill its job has
+    expect(s({ status: "scheduled", scheduledOn: "2026-11-20", invoice }).money).toBe("not-yet")
   })
   it("reads a failed charge from the customer's card for every done pass visit, whichever pass it is on", () => {
     const done: PassVisit = { kind: "turn-on", window: "May", amount: 145, completedAt: "2026-11-09T17:00:00Z" }

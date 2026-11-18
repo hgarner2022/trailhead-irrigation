@@ -3,6 +3,7 @@ import { JobPill } from "@/components/blocks/JobPill"
 import { MessageThread } from "@/components/blocks/MessageThread"
 import { OpenVisit } from "./VisitPanelHost"
 import { TextForm } from "./VisitEditText"
+import { CustomerBills } from "./VisitBill"
 import type { VisitActions } from "./visit-actions-types"
 import { StatusPill } from "@/components/blocks/StatusPill"
 import type { AdminData, Client, ClientCard, Visit } from "@/lib/admin/types"
@@ -100,6 +101,7 @@ export function CustomerPanelBody({ row, client, data, today, readOnly = false, 
         <Subtitle id="customer-jobs">Visits</Subtitle>
         <Jobs visits={data.visits.filter((v) => v.clientId === row.id)} today={today} />
       </section>
+      {!readOnly && <CustomerBills jobs={(data.jobs ?? []).filter((j) => j.customerId === row.id)} data={data} actions={actions} />}
       {!readOnly && client?.app && <TextForm client={client} actions={actions} />}
       <section aria-labelledby="customer-consent">
         <Subtitle id="customer-consent">Consent history</Subtitle>

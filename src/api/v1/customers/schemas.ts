@@ -71,8 +71,10 @@ export const JobOut = z.object({
     paid: z.number().int().describe("Whole dollars that arrived, refunds taken out."),
     total: z.number().int(),
     owed: z.number().int().describe("Whole dollars still owed, never below zero."),
-    words: z.string().describe('"Paid", "$115 owed", "2 of 3 paid, $115 owed", or empty for a job with no price and no money.'),
-  }).describe("The job's money in words, read from its payment rows."),
+    words: z.string().describe('"Paid", "Bill sent", "$115 owed", "2 of 3 paid, $115 owed", or empty for a job with no price and no money.'),
+    billSent: z.boolean().describe("The job owes money and has an open bill (sent or overdue); the words read Bill sent."),
+  }).describe("The job's money in words, read from its payment rows and its open bill."),
+  invoiceId: Id.nullable().describe("The job's open bill, if there is one (see invoices.get)."),
   visits: z.array(z.object({ id: Id, kind: VisitKind, status: z.string(), scheduledOn: Day.nullable(), amount: z.number().int() })),
 })
 
