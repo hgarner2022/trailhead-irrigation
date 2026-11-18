@@ -82,6 +82,14 @@ const actions = (over: Partial<VisitActions> = {}): VisitActions => ({
   ...over,
 })
 
+/** A footer button that lives under More: open the menu, then pick it. */
+const more = async (name: string | RegExp) => {
+  await userEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "More" }))
+  await userEvent.click(await screen.findByRole("menuitem", { name }))
+}
+/** The newest dialog over the panel: what a footer button opened. */
+const ask = () => within(screen.getAllByRole("dialog").at(-1)!)
+
 const renderScreen = (a: VisitActions | undefined, props: { readOnly?: boolean; defaultVisitId?: string; data?: AdminData } = {}) =>
   render(
     <UndoToastProvider>
@@ -181,15 +189,16 @@ describe("VisitsScreen", () => {
     expect(screen.getByRole("button", { name: "Sam Ortiz" })).toBeInTheDocument()
   })
 
-  it("Move picks a day and a time, acts at once, and offers Undo that puts it back", async () => {
+  it("Move is the footer's primary before the visit's day; it opens one dialog that picks a day and a time, acts at once, and offers Undo that puts it back", async () => {
     const a = actions()
     renderScreen(a, { defaultVisitId: "a" })
-    const panel = within(screen.getByRole("dialog"))
-    expect(panel.getByText("Moves the repair to Fri, Nov 20 and tells Dana.")).toBeInTheDocument()
-    await userEvent.clear(panel.getByLabelText("Day"))
-    await userEvent.type(panel.getByLabelText("Day"), "2026-11-24")
-    await userEvent.selectOptions(panel.getByLabelText("Time"), "09:00")
-    await userEvent.click(panel.getByRole("button", { name: "Move" }))
+    await userEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Move" }))
+    const move = ask()
+    expect(move.getByText("Moves the repair to Fri, Nov 20 and tells Dana.")).toBeInTheDocument()
+    await userEvent.clear(move.getByLabelText("Day"))
+    await userEvent.type(move.getByLabelText("Day"), "2026-11-24")
+    await userEvent.selectOptions(move.getByLabelText("Time"), "09:00")
+    await userEvent.click(move.getByRole("button", { name: "Move" }))
     expect(a.move).toHaveBeenCalledWith("a", "2026-11-24", "09:00")
     await userEvent.click(await screen.findByRole("button", { name: "Undo" }))
     expect(a.putBack).toHaveBeenCalledWith("a", { day: "2026-11-20", personId: "person_truck-1", startTime: null })
@@ -199,6 +208,7 @@ describe("VisitsScreen", () => {
     const a = actions({ move: vi.fn().mockResolvedValue({ ok: false, message: "Truck 1 is full of repair visits on 2026-11-24" }) })
     renderScreen(a, { defaultVisitId: "a" })
     await userEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Move" }))
+    await userEvent.click(ask().getByRole("button", { name: "Move" }))
     expect(await screen.findByText("Truck 1 is full of repair visits on 2026-11-24")).toBeInTheDocument()
   })
 
@@ -223,12 +233,13 @@ describe("VisitsScreen", () => {
   it("a visit whose day is ahead asks \"This visit is scheduled for Friday. Mark it done today?\" before it marks anything", async () => {
     const a = actions()
     renderScreen(a, { defaultVisitId: "a" })
-    await userEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Mark done" }))
-    const ask = within(screen.getAllByRole("dialog").at(-1)!)
-    expect(ask.getByRole("heading", { name: "Mark done today?" })).toBeInTheDocument()
-    expect(ask.getByText("This visit is scheduled for Friday. Mark it done today?")).toBeInTheDocument()
+    // before its day the footer leads with Move and keeps Mark done under More
+    expect(within(screen.getByRole("dialog")).queryByRole("button", { name: "Mark done" })).toBeNull()
+    await more("Mark done")
+    expect(ask().getByRole("heading", { name: "Mark done today?" })).toBeInTheDocument()
+    expect(ask().getByText("This visit is scheduled for Friday. Mark it done today?")).toBeInTheDocument()
     expect(a.markDone).not.toHaveBeenCalled()
-    await userEvent.click(ask.getByRole("button", { name: "Cancel" }))
+    await userEvent.click(ask().getByRole("button", { name: "Cancel" }))
     expect(a.markDone).not.toHaveBeenCalled()
   })
 
@@ -245,30 +256,36 @@ describe("VisitsScreen", () => {
     expect(a.markDone).toHaveBeenCalledWith("q", {})
   })
 
-  it("Not done sends the reason; Cancel asks first and names the visit and the money", async () => {
+  it("Not done is a footer button on the visit's day and sends the reason in one dialog", async () => {
+    const a = actions()
+    const today: AdminData = { ...data, visits: [visit({ id: "t", scheduledOn: "2026-11-12", startAt: "2026-11-12T15:00:00Z" })], jobs: [] }
+    renderScreen(a, { defaultVisitId: "t", data: today })
+    await userEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Not done" }))
+    await userEvent.selectOptions(ask().getByLabelText("Why"), "no-water")
+    await userEvent.click(ask().getByRole("button", { name: "Mark not done" }))
+    expect(a.markNotDone).toHaveBeenCalledWith("t", "no-water", undefined)
+  })
+
+  it("Cancel visit is the destructive ghost; it asks first, names the visit and the money, and reads Keep it", async () => {
     const a = actions()
     renderScreen(a, { defaultVisitId: "a" })
-    const panel = within(screen.getByRole("dialog"))
-    await userEvent.selectOptions(panel.getByLabelText("Why"), "no-water")
-    await userEvent.click(panel.getByRole("button", { name: "Mark not done" }))
-    expect(a.markNotDone).toHaveBeenCalledWith("a", "no-water", undefined)
-    await userEvent.click(panel.getByRole("button", { name: "Cancel this visit" }))
-    const dialog = within(await screen.findByRole("dialog"))
-    expect(dialog.getByText(/Cancel Dana Reed's repair on Fri, Nov 20\?/)).toBeInTheDocument()
-    expect(dialog.getByText(/\$145 will not be charged/)).toBeInTheDocument()
+    await userEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Cancel visit" }))
+    expect(ask().getByText(/Cancel Dana Reed's repair on Fri, Nov 20\?/)).toBeInTheDocument()
+    expect(ask().getByText(/\$145 will not be charged/)).toBeInTheDocument()
+    expect(ask().getByRole("button", { name: "Keep it" })).toBeInTheDocument()
     expect(a.cancel).not.toHaveBeenCalled()
-    await userEvent.click(dialog.getByRole("button", { name: "Cancel visit" }))
+    await userEvent.click(ask().getByRole("button", { name: "Cancel visit" }))
     expect(a.cancel).toHaveBeenCalledWith("a")
   })
 
   it("Send a text calls its action with the words and refuses an empty one", async () => {
     const a = actions()
     renderScreen(a, { defaultVisitId: "a" })
-    const panel = within(screen.getByRole("dialog"))
-    expect(panel.getByRole("button", { name: "Send text" })).toBeDisabled()
-    await userEvent.type(panel.getByLabelText("Text to send"), "Running late.")
-    expect(panel.getByText("13/320")).toBeInTheDocument()
-    await userEvent.click(panel.getByRole("button", { name: "Send text" }))
+    await more("Send a text")
+    expect(ask().getByRole("button", { name: "Send text" })).toBeDisabled()
+    await userEvent.type(ask().getByLabelText("Text to send"), "Running late.")
+    expect(ask().getByText("13/320")).toBeInTheDocument()
+    await userEvent.click(ask().getByRole("button", { name: "Send text" }))
     expect(a.sendText).toHaveBeenCalledWith("cx", "a", "Running late.")
   })
 
@@ -282,7 +299,8 @@ describe("VisitsScreen", () => {
     )
     return userEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Collect $145" }))
   }
-  const collect = () => within(screen.getAllByRole("dialog").at(-1)!)
+  // Beat two is the panel itself now, so what the choices say is read from the one dialog there is.
+  const collect = () => within(screen.getByRole("dialog"))
 
   it("a done and unpaid one-off leads with Collect $145 and asks How is this paid? with Check selected when there is no card", async () => {
     const a = actions()
@@ -360,9 +378,9 @@ describe("VisitsScreen", () => {
     )
     const panel = within(screen.getByRole("dialog"))
     expect(panel.getByRole("button", { name: "Collect $145" })).toBeInTheDocument()
-    for (const name of ["Move", "Mark not done", "Cancel this visit", "Send text"]) expect(panel.queryByRole("button", { name })).toBeNull()
+    for (const name of ["Move", "Not done", "Cancel visit", "Send a text", "Edit"]) expect(panel.queryByRole("button", { name })).toBeNull()
     await userEvent.click(panel.getByRole("button", { name: "Collect $145" }))
-    await userEvent.click(within(screen.getAllByRole("dialog").at(-1)!).getByRole("button", { name: "Record $145 paid" }))
+    await userEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Record $145 paid" }))
     expect(a.recordPayment).toHaveBeenCalledWith("u", { method: "check" })
   })
 
@@ -391,12 +409,13 @@ describe("VisitsScreen", () => {
         <VisitsScreen data={{ ...data, visits: [paid], jobs: [{ ...unpaidJob, payments: paid.payments, money: { paid: 145, total: 145, owed: 0, words: "Paid" } }] }} today={TODAY} actions={a} defaultVisitId="u" />
       </UndoToastProvider>,
     )
-    expect(within(screen.getByRole("dialog")).queryByRole("button", { name: "Undo done" })).toBeNull()
-    await userEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Refund $145" }))
-    const ask = within(screen.getAllByRole("dialog").at(-1)!)
-    expect(ask.getByText(/nothing is deleted/i)).toBeInTheDocument()
+    await userEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "More" }))
+    expect(screen.queryByRole("menuitem", { name: "Undo done" })).toBeNull()
+    await userEvent.click(await screen.findByRole("menuitem", { name: "Refund $145" }))
+    expect(ask().getByText(/nothing is deleted/i)).toBeInTheDocument()
+    expect(ask().getByRole("button", { name: "Keep it" })).toBeInTheDocument()
     expect(a.refundPayment).not.toHaveBeenCalled()
-    await userEvent.click(ask.getByRole("button", { name: "Refund $145" }))
+    await userEvent.click(ask().getByRole("button", { name: "Refund $145" }))
     expect(a.refundPayment).toHaveBeenCalledWith("pay-u")
   })
 
@@ -414,12 +433,12 @@ describe("VisitsScreen", () => {
     const refunded = withCard([doneUnpaid({ payments: [paidRow, { ...paidRow, id: "ref-u", amount: -145, refundsPaymentId: "pay-u" }] })], [{ ...unpaidJob, payments: [paidRow, { ...paidRow, id: "ref-u", amount: -145, refundsPaymentId: "pay-u" }] }])
     const { rerender } = render(screen_(unpaid))
     await userEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Collect $145" }))
-    await userEvent.click(within(screen.getAllByRole("dialog").at(-1)!).getByRole("radio", { name: /^Check/ }))
-    await userEvent.click(within(screen.getAllByRole("dialog").at(-1)!).getByRole("button", { name: "Record $145 paid" }))
-    // the page refreshes with the payment: the dialog stays to say what happened until it is closed
+    await userEvent.click(within(screen.getByRole("dialog")).getByRole("radio", { name: /^Check/ }))
+    await userEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Record $145 paid" }))
+    // the page refreshes with the payment: the panel stays on beat two to say what happened until it is closed
     rerender(screen_(paid))
-    expect(await within(screen.getAllByRole("dialog").at(-1)!).findByText("Paid, check")).toBeInTheDocument()
-    await userEvent.click(within(screen.getAllByRole("dialog").at(-1)!).getAllByRole("button", { name: "Close" }).find((b) => b.getAttribute("data-slot") !== "dialog-close")!)
+    expect(await within(document.querySelector<HTMLElement>('[data-slot="collect-payment"]')!).findByText("Paid, check")).toBeInTheDocument()
+    await userEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Close" }))
     // then a Refund brings the visit back to Done and unpaid
     rerender(screen_(refunded))
     expect(screen.queryByRole("heading", { name: "How is this paid?" })).toBeNull()
@@ -440,7 +459,7 @@ describe("VisitsScreen", () => {
     const refundRow = { ...paidRow, id: "ref-u", amount: -145, refundsPaymentId: "pay-u" }
     const { rerender } = render(mk({ ...data, visits: [doneUnpaid()], jobs: [unpaidJob] }))
     await userEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Collect $145" }))
-    await userEvent.keyboard("{Escape}")
+    await userEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Cancel" }))
     rerender(mk({ ...data, visits: [doneUnpaid({ payments: [paidRow] })], jobs: [{ ...unpaidJob, payments: [paidRow], money: { paid: 145, total: 145, owed: 0, words: "Paid" } }] }))
     rerender(mk({ ...data, visits: [doneUnpaid({ payments: [paidRow, refundRow] })], jobs: [{ ...unpaidJob, payments: [paidRow, refundRow] }] }))
     expect(screen.queryByRole("heading", { name: "How is this paid?" })).toBeNull()
@@ -460,7 +479,7 @@ describe("VisitsScreen", () => {
         <VisitsScreen data={{ ...data, visits: [doneUnpaid()], jobs: [unpaidJob] }} today={TODAY} actions={a} defaultVisitId="u" />
       </UndoToastProvider>,
     )
-    await userEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Undo done" }))
+    await more("Undo done")
     expect(a.undoDone).toHaveBeenCalledWith("u")
   })
 
@@ -500,7 +519,7 @@ describe("VisitsScreen", () => {
     expect(screen.queryByRole("button", { name: "New job" })).toBeNull()
     const panel = within(screen.getByRole("dialog"))
     expect(panel.queryByRole("button", { name: "Move" })).toBeNull()
-    expect(panel.getByText("Customer")).toBeInTheDocument()
+    expect(panel.getByText("Phone")).toBeInTheDocument()
   })
 })
 
@@ -579,7 +598,7 @@ describe("Done and Unpaid on a pass visit", () => {
     const booked: AdminData = { ...visitsData, visits: visitsData.visits.map((v) => (v.id === passVisitId ? { ...v, status: "scheduled" as const, completedOn: undefined, payments: [] } : v)) }
     const a = actions()
     open(passVisitId, booked, a)
-    await userEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Mark done" }))
+    await more("Mark done")
     expect(dialog().getByText(/Nothing is charged/)).toBeInTheDocument()
     expect(within(screen.getByRole("dialog")).queryByText(/Paid another way/)).toBeNull()
     expect(a.chargeCard).not.toHaveBeenCalled()
@@ -613,7 +632,6 @@ describe("Visits filtered to a job (?job=)", () => {
     const panel = within(screen.getByRole("dialog"))
     const line = panel.getByText(/^Season Pass TH-.* · \d{4}$/)
     expect(line.closest("a")).toHaveAttribute("href", `/admin/jobs?job=${job}`)
-    expect(panel.getByRole("link", { name: "Open job" })).toHaveAttribute("href", `/admin/jobs?job=${job}`)
     expect(screen.queryAllByRole("link", { hidden: true }).some((l) => (l.getAttribute("href") ?? "").startsWith("/admin/passes"))).toBe(false)
   })
 })

@@ -1,5 +1,6 @@
 "use client"
 
+import { SectionHeading } from "@/components/blocks/SectionHeading"
 import { Button } from "@/components/ui/button"
 import type { AdminData, AdminInvoice, SoldJob } from "@/lib/admin/types"
 import type { VisitActions } from "./visit-actions-types"
@@ -47,6 +48,7 @@ export function SendBill({ jobId, actions }: { jobId: string; actions?: VisitAct
     <div data-slot="send-bill">
       <Button
         type="button"
+        variant="outline"
         className="min-h-11"
         disabled={pending}
         onClick={() => (actions ? run(() => actions.sendBill(jobId), undefined, "Invoice sent.") : console.info("send an invoice", jobId))}
@@ -81,7 +83,7 @@ export function CustomerBills({ jobs, data, actions }: { jobs: SoldJob[]; data: 
   if (rows.length === 0) return null
   return (
     <section aria-labelledby="customer-bills" data-slot="customer-bills">
-      <h3 id="customer-bills" className="font-display text-lg leading-tight text-navy">Invoices</h3>
+      <SectionHeading id="customer-bills">Invoices</SectionHeading>
       <ul className="mt-2 divide-y divide-border">
         {rows.map(({ job, state }) => (
           <li key={job.id} className="py-3">
@@ -99,9 +101,9 @@ export function BillBlock({ state, jobId, actions, headingId, className }: { sta
   if (!state.invoice && !state.canSend) return null
   return (
     <section aria-labelledby={headingId} className={className}>
-      <h3 id={headingId} className="mb-2 font-display text-lg leading-tight text-navy">
+      <SectionHeading id={headingId} className="mb-2">
         Invoice
-      </h3>
+      </SectionHeading>
       {state.invoice ? <BillSent invoice={state.invoice} actions={actions} /> : <SendBill jobId={jobId} actions={actions} />}
     </section>
   )

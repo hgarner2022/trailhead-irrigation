@@ -47,11 +47,11 @@ export const ReadOnly: Story = {
   },
 }
 
-/** A scheduled one-off: Move, Not done, Edit, Send a text and Cancel this visit in the body; the footer leads with Mark done. */
+/** A scheduled one-off before its day: the footer leads with Move, Edit beside it, Mark done and Send a text under More, and Cancel visit at the far right. */
 export const PanelScheduled: Story = { args: { defaultVisitId: "office-scheduled" }, globals: wide }
 export const PanelScheduledPhone: Story = { args: { defaultVisitId: "office-scheduled" }, globals: phone }
 
-/** A visit with no day: the Move becomes "Give it a day". */
+/** A visit with no day: the footer leads with Place, which opens "Give it a day". */
 export const PanelNeedsADay: Story = { args: { defaultVisitId: "office-needs-day" }, globals: wide }
 
 /** Not done keeps its reason in the pill until the visit has a day again. */
@@ -106,7 +106,7 @@ export const PanelOwedCollectCardPhone: Story = {
   },
 }
 
-/** A tech may collect: the footer has Mark done and Collect but no Refund, and the body none of Move, Edit or Cancel. */
+/** A tech may collect: the footer has Mark done and Collect but no Refund, Move, Edit or Cancel. */
 export const PanelOwedTechCollects: Story = {
   args: { defaultVisitId: "office-owed", readOnly: true, canCollect: true },
   globals: wide,
@@ -121,7 +121,8 @@ export const PanelMarkDoneAhead: Story = {
   args: { defaultVisitId: "office-scheduled" },
   globals: wide,
   play: async ({ userEvent }) => {
-    await userEvent.click(await body.findByRole("button", { name: "Mark done" }))
+    await userEvent.click(await body.findByRole("button", { name: "More" }))
+    await userEvent.click(await body.findByRole("menuitem", { name: "Mark done" }))
     await expect(await body.findByRole("heading", { name: "Mark done today?" })).toBeInTheDocument()
     await expect(await body.findByText(/Nothing is charged/)).toBeInTheDocument()
   },
@@ -130,17 +131,19 @@ export const PanelMarkDoneAheadPhone: Story = {
   args: { defaultVisitId: "office-scheduled" },
   globals: phone,
   play: async ({ userEvent }) => {
-    await userEvent.click(await body.findByRole("button", { name: "Mark done" }))
+    await userEvent.click(await body.findByRole("button", { name: "More" }))
+    await userEvent.click(await body.findByRole("menuitem", { name: "Mark done" }))
     await expect(await body.findByRole("heading", { name: "Mark done today?" })).toBeInTheDocument()
   },
 }
 
-/** Paid by check: a Refund takes it back as a refund row (nothing is deleted), so a mistake can be put right. */
+/** Paid by check: a Refund under More takes it back as a refund row (nothing is deleted), so a mistake can be put right. */
 export const PanelPaidRefund: Story = {
   args: { defaultVisitId: "office-paid" },
   globals: wide,
-  play: async () => {
-    await expect(await body.findByRole("button", { name: /^Refund \$/ })).toBeInTheDocument()
+  play: async ({ userEvent }) => {
+    await userEvent.click(await body.findByRole("button", { name: "More" }))
+    await expect(await body.findByRole("menuitem", { name: /^Refund \$/ })).toBeInTheDocument()
   },
 }
 
