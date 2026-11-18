@@ -122,6 +122,24 @@ describe("seed", () => {
     await seed(db, data, { organizationId: org, admins: ["hannah@example.com", "ryan@example.com"], passes: true, mirror: true })
     expect((await read()).zones).toBe(99)
   })
+  it("gives every seeded pass job its legacy pass id and its sold day (empty for the pending fixture), on insert only", async () => {
+    const read = async () => db.select({ id: s.job.id, legacyPassId: s.job.legacyPassId, soldOn: s.job.soldOn }).from(s.job).where(eq(s.job.organizationId, org)).orderBy(s.job.id)
+    const jobs = await read()
+    expect(jobs).toHaveLength(data.passes.length)
+    for (const pass of data.passes) {
+      const job = jobs.find((j) => j.id === `job_${pass.id}`)!
+      expect(job.legacyPassId, pass.id).toBe(pass.id)
+      if (pass.status === "pending") expect(job.soldOn, pass.id).toBeNull()
+      else expect(job.soldOn, pass.id).toBe(toMountainDay(new Date().toISOString()))
+    }
+    // An office edit survives a re-seed: the insert never overwrites the dates.
+    await db.update(s.job).set({ soldOn: "2027-01-02" }).where(eq(s.job.id, "job_p1"))
+    await db.update(s.job).set({ soldOn: "2027-03-04" }).where(eq(s.job.id, "job_p13"))
+    await seed(db, data, { organizationId: org, admins: ["hannah@example.com", "ryan@example.com"], passes: true, mirror: true })
+    const after = await read()
+    expect(after.find((j) => j.id === "job_p1")!.soldOn).toBe("2027-01-02")
+    expect(after.find((j) => j.id === "job_p13")!.soldOn).toBe("2027-03-04")
+  })
   it("gives every fixture visit its line, with the backfill's id, so a seeded and a migrated database agree", async () => {
     expect(await n(s.lineItem)).toBe(data.passes.reduce((sum, p) => sum + p.visits.length, 0))
     const [line] = await db

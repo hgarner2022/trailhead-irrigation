@@ -182,7 +182,12 @@ async function seedPasses(db: Database, snapshot: AdminData, org: string) {
     const jobId = `job_${pass.id}`
     await db
       .insert(s.job)
-      .values({ id: jobId, organizationId: org, customerId: pass.clientId, propertyId, kind: "pass", source: "checkout", season: pass.season, passNumber: pass.number, status: pass.status === "lapsed" ? "done" : pass.status, price: pass.visits.reduce((n, v) => n + v.amount, 0) })
+      .values({
+        id: jobId, organizationId: org, customerId: pass.clientId, propertyId, kind: "pass", source: "checkout", season: pass.season, passNumber: pass.number, status: pass.status === "lapsed" ? "done" : pass.status, price: pass.visits.reduce((n, v) => n + v.amount, 0),
+        // The old pass id and the sold day, on insert only: the day the job row is made (its created_at), empty for a pending fixture, which is not sold yet (migration 0021's rule).
+        legacyPassId: pass.id,
+        soldOn: pass.status === "pending" ? null : toMountainDay(new Date().toISOString()),
+      })
       .onConflictDoNothing()
     await db
       .insert(s.seasonPass)

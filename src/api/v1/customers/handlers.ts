@@ -235,7 +235,7 @@ async function jobsOf(ctx: Ctx, customerId: string) {
     // The visits the paid bills name, which a payment made on the job as a whole credits first.
     const paidBillVisits = bills.filter((b) => b.jobId === j.id && b.paidOn).flatMap((b) => b.lines.map((l) => l.visitId).filter((id): id is string => Boolean(id)))
     return {
-      id: j.id, kind: j.kind, status: j.status, price: j.price, source: j.source, notes: j.notes, createdAt: j.createdAt.toISOString(),
+      id: j.id, kind: j.kind ?? ("other" as const), status: j.status, price: j.price, source: j.source, notes: j.notes, createdAt: j.createdAt.toISOString(),
       passId: pass?.id ?? null, passNumber: j.passNumber,
       lines: lines.map((l) => ({ id: l.id, name: l.name, description: l.description, quantity: l.quantity, unitPrice: l.unitPrice, taxable: l.taxable, cancelledAt: l.cancelledAt?.toISOString() ?? null, visitId: l.visitId })),
       total: jobTotal(lines),

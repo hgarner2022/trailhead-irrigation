@@ -96,7 +96,7 @@ export async function recordOfficePayment(ctx: Ctx, input: OfficePayment) {
     const passNumber = job.passNumber
     await queueMessage(ctx.db, {
       organizationId: ctx.organizationId, customerId: customer.id, visitId: visit?.id ?? null, kind: "receipt", key: `payment-${row.id}`,
-      data: { ...baseData(readAppUrl(), customer), passNumber: passNumber ?? null, amount: input.amount, visitName: visit ? kindName(visit.kind) : job.kind === "pass" ? "Season Pass" : kindName(job.kind), card: null, paidBy: RECEIVED_BY[input.method], nextLine: "", receiptUrl: null },
+      data: { ...baseData(readAppUrl(), customer), passNumber: passNumber ?? null, amount: input.amount, visitName: visit ? kindName(visit.kind) : job.kind === "pass" ? "Season Pass" : kindName(job.kind ?? "other"), card: null, paidBy: RECEIVED_BY[input.method], nextLine: "", receiptUrl: null },
     })
   }
   await emitEvent(ctx.db, ctx.organizationId, "payment.succeeded", { paymentId: row.id, jobId: job.id, ...(visit ? { visitId: visit.id } : {}), amount: input.amount, method: input.method }, {

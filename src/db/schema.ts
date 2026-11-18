@@ -317,7 +317,8 @@ export const job = pgTable(
     organizationId: orgId(),
     customerId: text("customer_id").notNull().references(() => customer.id),
     propertyId: text("property_id").notNull().references(() => property.id),
-    kind: jobKindEnum("kind").notNull(),
+    /** relaxed to nullable in migration 0021 (step 6): the kind is derived from the job's lines and visits, and `season` says a pass */
+    kind: jobKindEnum("kind"),
     status: jobStatusEnum("status").notNull().default("active"),
     /** whole dollars; null until quoted */
     price: integer("price"),
@@ -328,6 +329,13 @@ export const job = pgTable(
     passNumber: text("pass_number"),
     /** what makes a job a Season Pass (step 3); `season_pass` is an alias table until step 6. The job this pass renews; no foreign key, like `renewed_from_id`. */
     renewsJobId: text("renews_job_id"),
+    /** the id of the `season_pass` row this job replaced; an old pass id keeps opening its job. No foreign key: the table goes in step 6. */
+    legacyPassId: text("legacy_pass_id"),
+    /** the Mountain day the work was sold; empty while a pass is pending or a quote has not been accepted */
+    soldOn: day("sold_on"),
+    /** the Mountain day a quote was sent and the day it was accepted (the quote step builds on them) */
+    quoteSentOn: day("quote_sent_on"),
+    quoteAcceptedOn: day("quote_accepted_on"),
     notes: text("notes"),
     createdAt: createdAt(),
     cancelledAt: ts("cancelled_at"),
@@ -335,6 +343,7 @@ export const job = pgTable(
   },
   (t) => [
     index("job_org_customer_idx").on(t.organizationId, t.customerId),
+    uniqueIndex("job_legacy_pass_id_unique").on(t.legacyPassId).where(sql`legacy_pass_id is not null`),
     uniqueIndex("job_org_pass_number_unique").on(t.organizationId, t.passNumber).where(sql`pass_number is not null`),
     index("job_org_season_idx").on(t.organizationId, t.season),
   ],
@@ -436,6 +445,7 @@ export const visit = pgTable(
   },
   (t) => [
     uniqueIndex("visit_pass_kind_unique").on(t.passId, t.kind).where(sql`${t.passId} is not null`),
+    uniqueIndex("visit_job_pass_kind_unique").on(t.jobId, t.kind).where(sql`${t.kind} in ('turn-on', 'inspection', 'blowout')`),
     index("visit_org_scheduled_idx").on(t.organizationId, t.scheduledOn),
     index("visit_person_day_idx").on(t.personId, t.scheduledOn),
     index("visit_jobber_visit_idx").on(t.jobberVisitId),
@@ -938,6 +948,8 @@ export const adminAlert = pgTable(
     kind: text("kind").notNull(),
     key: text("key").notNull(),
     passId: text("pass_id").references(() => seasonPass.id),
+    /** the job the alert is about (step 6); no foreign key, so a purge of an unpaid pass never trips on it */
+    jobId: text("job_id"),
     message: text("message").notNull(),
     resolvedAt: ts("resolved_at"),
     createdAt: createdAt(),

@@ -148,6 +148,13 @@
       "when": 1794970823318,
       "tag": "0020_event",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1794985862863,
+      "tag": "0021_legacy_expand",
+      "breakpoints": true
     }
   ]
 }

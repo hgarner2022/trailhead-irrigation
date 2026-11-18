@@ -123,7 +123,8 @@ export async function getLiveAdminData(ctx: Ctx): Promise<AdminData> {
     queueProblems: problems,
     alerts,
     dismissed,
-    jobRows,
+    // `job.kind` is nullable since migration 0021 (no existing row is null); task 6.2b replaces it with the derived kind
+    jobRows: jobRows.map((j) => ({ ...j, kind: j.kind ?? ("other" as const) })),
     lineRows,
     // the pay link is a bearer link: only for the write scope, like the gate code (a tech's screens never carry it)
     invoiceRows: billRows.map((r) => ({ id: r.id, jobId: r.jobId, number: r.number, amount: r.amount, tax: r.tax, total: r.total, sentOn: r.sentOn, dueOn: r.dueOn, paidOn: r.paidOn, cancelledAt: r.cancelledAt, lines: r.lines, ...(contact && payLinkOf(r.id) ? { payUrl: payLinkOf(r.id) } : {}) })),

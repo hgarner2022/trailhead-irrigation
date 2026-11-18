@@ -51,6 +51,8 @@ describe("migration 0014: line items backfill", () => {
     // 0015 to 0018 only add the property, card, pass and payment columns the seed now writes; the seed needs them to insert.
     const later = ["0015_property_fields", "0016_customer_card", "0017_job_pass", "0018_payment"].map((name) => all.find((f) => f.startsWith(name))!)
     for (const f of [...all.slice(0, at + 1), ...later]) for (const stmt of migration(f)) if (stmt.trim()) await client.exec(stmt)
+    // The seed also writes the old pass id and the job dates, columns migration 0021 adds; only its job column statements run here.
+    for (const stmt of migration(all.find((f) => f.startsWith("0021_legacy_expand"))!)) if (/^ALTER TABLE "job" ADD COLUMN/.test(stmt.trim())) await client.exec(stmt)
     const org = data.organizationId
     await seed(drizzle(client, { schema }), data, { organizationId: org, admins: [], passes: true })
     // The seed writes the fixture's lines itself; the backfill is for a database that had none.
@@ -270,6 +272,253 @@ describe("migration 0020: the event record", () => {
     // The data statements are the inserts; a second run leaves every row as it was.
     for (const stmt of statements.filter((x) => /^\s*insert into "event"/i.test(x))) await client.exec(stmt)
     expect(await read()).toEqual(rows)
+    await client.close()
+  })
+})
+
+const ORG_SETTINGS = `'{"windows":[],"bufferPercentEarly":0,"bufferPercentLate":0,"fallTownOrder":[],"springTownOrder":[],"messages":[]}'`
+/** A statement without the comment lines that lead it. */
+const bare = (stmt: string) => stmt.replace(/^(\s*--[^\n]*\n)+/, "").trim()
+
+describe("migration 0021: the expand step", () => {
+  async function before() {
+    const client = new PGlite()
+    const all = files()
+    const at = all.findIndex((f) => f.startsWith("0021_legacy_expand"))
+    expect(at).toBeGreaterThan(0)
+    for (const f of all.slice(0, at)) for (const stmt of migration(f)) if (stmt.trim()) await client.exec(stmt)
+    await client.exec(`INSERT INTO organization (id, name, terms_version, settings) VALUES ('o', 'T', '1', ${ORG_SETTINGS}), ('o2', 'Two', '1', ${ORG_SETTINGS})`)
+    await client.exec(`INSERT INTO customer (id, organization_id, first_name) VALUES ('c', 'o', 'A'), ('c2', 'o', 'B'), ('c3', 'o', 'C'), ('c4', 'o', 'D')`)
+    await client.exec(
+      `INSERT INTO property (id, organization_id, customer_id, address, town, created_at) VALUES
+        ('pr', 'o', 'c', '1 Main', 'Erie', '2027-01-01'), ('pr-new', 'o', 'c', '2 Main', 'Erie', '2027-02-01'), ('pr3', 'o', 'c3', '3 Main', 'Erie', now()), ('pr4', 'o', 'c4', '4 Main', 'Erie', now())`,
+    )
+    await client.exec(`INSERT INTO service (id, organization_id, key, name, kind, slot_minutes, price, description, taxable) VALUES ('s-repair', 'o', 'repair', 'Sprinkler repair', 'repair', 60, 145, 'Find it and fix it', true), ('s-aer', 'o', 'aeration', 'Lawn aeration', 'aeration', 60, 100, NULL, false)`)
+    return { client, all, at }
+  }
+
+  it("fills the legacy ids, sold days, alert and message keys, and every straggler a drop would lose, and a re-run changes nothing", async () => {
+    const { client, all, at } = await before()
+    // Two passes: an active one sold at 21:00 on the 4th in Denver, a pending one that is not sold yet.
+    await client.exec(
+      `INSERT INTO job (id, organization_id, customer_id, property_id, kind, status, source, season, pass_number, created_at, notes, updated_at) VALUES
+        ('job_p', 'o', 'c', 'pr', 'pass', 'active', 'checkout', 2027, 'TH-2027-0001', '2027-03-05T04:00:00Z', 'Pays by check', '2027-03-06T12:00:00Z'),
+        ('job_pp', 'o', 'c3', 'pr3', 'pass', 'pending', 'checkout', 2027, 'TH-2027-0002', '2027-03-05T04:00:00Z', NULL, now()),
+        ('job_rep', 'o', 'c', 'pr', 'repair', 'active', 'office', NULL, NULL, '2027-04-10T18:00:00Z', 'Same as visit', '2027-04-11T12:00:00Z'),
+        ('job_chg', 'o', 'c', 'pr', 'repair', 'active', 'office', NULL, NULL, '2027-04-10T18:00:00Z', 'Gate sticks too', now()),
+        ('job_aer', 'o', 'c', 'pr', 'other', 'cancelled', 'office', NULL, NULL, '2027-04-10T18:00:00Z', NULL, now()),
+        ('job_blank', 'o', 'c', 'pr', 'repair', 'active', 'office', NULL, NULL, now(), '   ', now()),
+        ('job_qr_q-have', 'o', 'c4', 'pr4', 'other', 'active', 'site', NULL, NULL, now(), NULL, now()),
+        ('job_b-has', 'o', 'c4', 'pr4', 'repair', 'active', 'office', NULL, NULL, now(), NULL, now())`,
+    )
+    await client.exec(
+      `INSERT INTO season_pass (id, organization_id, job_id, number, season, customer_id, property_id, zones, status) VALUES
+        ('p', 'o', 'job_p', 'TH-2027-0001', 2027, 'c', 'pr', 8, 'active'),
+        ('pp', 'o', 'job_pp', 'TH-2027-0002', 2027, 'c3', 'pr3', 6, 'pending')`,
+    )
+    await client.exec(
+      `INSERT INTO admin_alert (id, organization_id, kind, key, pass_id, message) VALUES
+        ('a1', 'o', 'new-pass', 'p', 'p', 'New Season Pass'),
+        ('a2', 'o', 'card-expiring', 'p@2027-05', 'p', 'Card expiring'),
+        ('a3', 'o', 'new-pass', 'pp', 'pp', 'New Season Pass (taken)'),
+        ('a4', 'o', 'new-pass', 'job_pp', NULL, 'The same alert, already on the job id'),
+        ('a5', 'o', 'other', 'pig', NULL, 'Not a pass id'),
+        ('a6', 'o2', 'new-pass', 'p', NULL, 'Another organization with the same key')`,
+    )
+    await client.exec(
+      `INSERT INTO message_log (id, organization_id, customer_id, channel, kind, key, "to", body) VALUES
+        ('m1', 'o', 'c', 'email', 'purchase-confirmation', 'p', 'a@example.com', 'Thanks'),
+        ('m2', 'o', 'c', 'email', 'cancelled', 'p', 'a@example.com', 'Cancelled'),
+        ('m3', 'o', 'c', 'sms', 'day-before', 'p', '+1', 'Tomorrow'),
+        ('m4', 'o', 'c3', 'email', 'purchase-confirmation', 'pp', 'c@example.com', 'Taken'),
+        ('m5', 'o', 'c3', 'email', 'purchase-confirmation', 'job_pp', 'c@example.com', 'Already on the job id')`,
+    )
+    await client.exec(
+      `INSERT INTO visit (id, organization_id, job_id, pass_id, customer_id, property_id, kind, amount, status, notes, charged_at, stripe_payment_intent_id, service_id, created_at, updated_at) VALUES
+        ('p-turn-on', 'o', 'job_p', 'p', 'c', 'pr', 'turn-on', 145, 'completed', NULL, '2027-04-02T05:30:00Z', 'pi_paid', NULL, '2027-03-05', now()),
+        ('p-blowout', 'o', 'job_p', 'p', 'c', 'pr', 'blowout', 115, 'unscheduled', 'Gate sticks', NULL, NULL, NULL, '2027-03-05', '2027-03-07T12:00:00Z'),
+        ('p-insp', 'o', 'job_p', 'p', 'c', 'pr', 'inspection', 145, 'skipped', '   ', NULL, NULL, NULL, '2027-03-05', '2027-03-08T12:00:00Z')`,
+    )
+    await client.exec(
+      `INSERT INTO visit (id, organization_id, job_id, customer_id, property_id, kind, amount, status, notes, charged_at, stripe_payment_intent_id, service_id, created_at, updated_at) VALUES
+        ('v-rep', 'o', 'job_rep', 'c', 'pr', 'repair', 145, 'unscheduled', 'Same as visit', NULL, NULL, 's-repair', '2027-04-10', '2027-04-11T12:00:00Z'),
+        ('v-chg', 'o', 'job_chg', 'c', 'pr', 'repair', 145, 'completed', 'Gate sticks too', '2027-05-03T05:30:00Z', 'pi_straggler', 's-repair', '2027-04-10', '2027-05-03T12:00:00Z'),
+        ('v-retry', 'o', 'job_chg', 'c', 'pr', 'repair', 90, 'completed', NULL, '2027-05-04T15:00:00Z', 'pi_dup', NULL, '2027-04-11', now()),
+        ('v-aer', 'o', 'job_aer', 'c', 'pr', 'aeration', 100, 'cancelled', NULL, NULL, NULL, 's-aer', '2027-04-10', '2027-04-12T12:00:00Z'),
+        ('v-lined', 'o', 'job_rep', 'c', 'pr', 'repair', 50, 'unscheduled', NULL, NULL, NULL, NULL, '2027-04-12', now()),
+        ('v-free', 'o', 'job_rep', 'c', 'pr', 'repair', 0, 'unscheduled', NULL, NULL, NULL, NULL, '2027-04-13', now())`,
+    )
+    await client.exec(`INSERT INTO line_item (id, organization_id, job_id, visit_id, name, unit_price) VALUES ('line_p-turn-on', 'o', 'job_p', 'p-turn-on', 'Spring turn-on', 145), ('line_custom', 'o', 'job_rep', 'v-lined', 'Custom', 50)`)
+    // job_p's turn-on was charged and has its payment; job_chg's first visit was charged with no row, and its second failed once before succeeding with no row.
+    await client.exec(
+      `INSERT INTO charge (id, organization_id, job_id, customer_id, visit_id, attempt, amount, status, stripe_payment_intent_id, method, paid_on) VALUES
+        ('ch-paid', 'o', 'job_p', 'c', 'p-turn-on', 1, 145, 'succeeded', 'pi_paid', 'card_on_file', '2027-04-01'),
+        ('ch-failed', 'o', 'job_chg', 'c', 'v-retry', 1, 90, 'failed', 'pi_dup', 'card_on_file', NULL)`,
+    )
+    // A note typed since 0020 with its event already written (a note event about the job that carries the visit, as visits.create makes), and a note event that matches a job's note.
+    await client.exec(
+      `INSERT INTO event (id, organization_id, about, about_id, customer_id, job_id, visit_id, kind, detail, who) VALUES
+        ('e-has', 'o', 'job', 'job_rep', 'c', 'job_rep', 'v-rep', 'note', '{"text":"Same as visit "}', 'andrea@example.com')`,
+    )
+    await client.exec(`INSERT INTO booking (id, organization_id, customer_id, property_id, source, status, notes, created_at, updated_at) VALUES ('b-orphan', 'o', 'c4', 'pr4', 'admin', 'booked', 'Call first', '2027-02-02T18:00:00Z', '2027-02-03T18:00:00Z'), ('b-has', 'o', 'c4', 'pr4', 'web', 'booked', NULL, now(), now())`)
+    await client.exec(
+      `INSERT INTO quote_request (id, organization_id, customer_id, property_id, service_id, notes, status, created_at, updated_at) VALUES
+        ('q-new', 'o', 'c', 'pr', 's-repair', 'Valve leaks by the gate', 'new', '2027-03-01T18:00:00Z', '2027-03-01T18:00:00Z'),
+        ('q-quoted', 'o', 'c', NULL, 's-aer', 'Aerate the back lawn', 'quoted', '2027-03-02T18:00:00Z', '2027-03-06T20:00:00Z'),
+        ('q-arch', 'o', 'c2', NULL, NULL, 'Not sure what we need', 'archived', '2027-03-03T18:00:00Z', '2027-03-07T15:00:00Z'),
+        ('q-arch2', 'o', 'c2', NULL, NULL, 'Second ask, same address-less customer', 'new', '2027-03-04T18:00:00Z', '2027-03-04T18:00:00Z'),
+        ('q-have', 'o', 'c4', 'pr4', NULL, 'Already a job', 'new', now(), now())`,
+    )
+
+    const statements = migration(all[at]!).filter((stmt) => stmt.trim())
+    for (const stmt of statements) await client.exec(stmt)
+
+    const q = async <T>(text: string) => (await client.query<T>(text)).rows
+    const jobs = await q<{ id: string; legacy_pass_id: string | null; sold_on: string | null; quote_sent_on: string | null }>(
+      `SELECT id, legacy_pass_id, to_char(sold_on, 'YYYY-MM-DD') AS sold_on, to_char(quote_sent_on, 'YYYY-MM-DD') AS quote_sent_on FROM job WHERE id IN ('job_p', 'job_pp', 'job_rep', 'job_aer') ORDER BY id`,
+    )
+    expect(jobs).toEqual([
+      { id: "job_aer", legacy_pass_id: null, sold_on: "2027-04-10", quote_sent_on: null },
+      { id: "job_p", legacy_pass_id: "p", sold_on: "2027-03-04", quote_sent_on: null },
+      { id: "job_pp", legacy_pass_id: "pp", sold_on: null, quote_sent_on: null },
+      { id: "job_rep", legacy_pass_id: null, sold_on: "2027-04-10", quote_sent_on: null },
+    ])
+
+    // Alerts: the job on each pass alert, the keys rewritten, a key already taken left as it was, another organization untouched.
+    const alerts = await q<{ id: string; key: string; job_id: string | null }>(`SELECT id, key, job_id FROM admin_alert ORDER BY id`)
+    expect(alerts).toEqual([
+      { id: "a1", key: "job_p", job_id: "job_p" },
+      { id: "a2", key: "job_p@2027-05", job_id: "job_p" },
+      { id: "a3", key: "pp", job_id: "job_pp" },
+      { id: "a4", key: "job_pp", job_id: null },
+      { id: "a5", key: "pig", job_id: null },
+      { id: "a6", key: "p", job_id: null },
+    ])
+    const messages = await q<{ id: string; key: string }>(`SELECT id, key FROM message_log ORDER BY id`)
+    expect(messages).toEqual([{ id: "m1", key: "job_p" }, { id: "m2", key: "job_p" }, { id: "m3", key: "p" }, { id: "m4", key: "pp" }, { id: "m5", key: "job_pp" }])
+
+    // Lines: a priced visit with none gets one named in the words of the app, a cancelled or skipped visit's line is cancelled, a lined or free visit gets nothing.
+    const lines = await q<{ id: string; job_id: string; visit_id: string | null; name: string; description: string | null; unit_price: number; taxable: boolean; cancelled: boolean; service_id: string | null }>(
+      `SELECT id, job_id, visit_id, name, description, unit_price, taxable, cancelled_at IS NOT NULL AS cancelled, service_id FROM line_item WHERE id NOT LIKE 'line_job_qr_%' ORDER BY id`,
+    )
+    expect(lines).toEqual([
+      { id: "line_custom", job_id: "job_rep", visit_id: "v-lined", name: "Custom", description: null, unit_price: 50, taxable: false, cancelled: false, service_id: null },
+      { id: "line_p-blowout", job_id: "job_p", visit_id: "p-blowout", name: "Fall blowout", description: null, unit_price: 115, taxable: false, cancelled: false, service_id: null },
+      { id: "line_p-insp", job_id: "job_p", visit_id: "p-insp", name: "Mid-season inspection", description: null, unit_price: 145, taxable: false, cancelled: true, service_id: null },
+      { id: "line_p-turn-on", job_id: "job_p", visit_id: "p-turn-on", name: "Spring turn-on", description: null, unit_price: 145, taxable: false, cancelled: false, service_id: null },
+      { id: "line_v-aer", job_id: "job_aer", visit_id: "v-aer", name: "Lawn aeration", description: null, unit_price: 100, taxable: false, cancelled: true, service_id: "s-aer" },
+      { id: "line_v-chg", job_id: "job_chg", visit_id: "v-chg", name: "Repair", description: "Find it and fix it", unit_price: 145, taxable: true, cancelled: false, service_id: "s-repair" },
+      { id: "line_v-rep", job_id: "job_rep", visit_id: "v-rep", name: "Repair", description: "Find it and fix it", unit_price: 145, taxable: true, cancelled: false, service_id: "s-repair" },
+      { id: "line_v-retry", job_id: "job_chg", visit_id: "v-retry", name: "Repair", description: null, unit_price: 90, taxable: false, cancelled: false, service_id: null },
+    ])
+
+    // Payments: only a charged visit on a job with no succeeded payment; the next free attempt; a payment intent another row holds is not reused.
+    const pay = async () =>
+      q<{ id: string; job_id: string; customer_id: string; visit_id: string; attempt: number; amount: number; status: string; method: string; paid_on: string | null; stripe_payment_intent_id: string | null }>(
+        `SELECT id, job_id, customer_id, visit_id, attempt, amount, status, method, to_char(paid_on, 'YYYY-MM-DD') AS paid_on, stripe_payment_intent_id FROM charge WHERE id LIKE 'ch_legacy_%' ORDER BY id`,
+      )
+    // job_chg has a failed attempt only, so both its charged visits get a row; the second finds attempt 1 taken by the failed one.
+    expect(await pay()).toEqual([
+      { id: "ch_legacy_v-chg", job_id: "job_chg", customer_id: "c", visit_id: "v-chg", attempt: 1, amount: 145, status: "succeeded", method: "card_on_file", paid_on: "2027-05-02", stripe_payment_intent_id: "pi_straggler" },
+      { id: "ch_legacy_v-retry", job_id: "job_chg", customer_id: "c", visit_id: "v-retry", attempt: 2, amount: 90, status: "succeeded", method: "card_on_file", paid_on: "2027-05-04", stripe_payment_intent_id: null },
+    ])
+    expect((await q(`SELECT 1 FROM charge WHERE job_id = 'job_p'`)).length).toBe(1)
+
+    // Bookings: a job for the one with none, none for the one that has one.
+    expect(await q(`SELECT id, kind::text AS kind, status::text AS status, source, notes, sold_on IS NOT NULL AS sold, to_char(sold_on, 'YYYY-MM-DD') = '2027-02-02' AS sold_that_day FROM job WHERE id IN ('job_b-orphan', 'job_b-has') ORDER BY id`)).toEqual([
+      { id: "job_b-has", kind: "repair", status: "active", source: "office", notes: null, sold: true, sold_that_day: false },
+      { id: "job_b-orphan", kind: "other", status: "active", source: "office", notes: "Call first", sold: true, sold_that_day: true },
+    ])
+
+    // Quote requests: a job each, its property, its one unpriced line and its event; nothing for the one that already has a job.
+    const quoteJobs = await q<{ id: string; customer_id: string; property_id: string; kind: string; status: string; price: number | null; source: string; sold_on: string | null; quote_sent_on: string | null; cancelled_at: string | null; created_at: string }>(
+      `SELECT id, customer_id, property_id, kind::text AS kind, status::text AS status, price, source, to_char(sold_on, 'YYYY-MM-DD') AS sold_on, to_char(quote_sent_on, 'YYYY-MM-DD') AS quote_sent_on,
+              to_char(cancelled_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS cancelled_at, to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS created_at
+       FROM job WHERE id LIKE 'job_qr_%' ORDER BY id`,
+    )
+    expect(quoteJobs.map((j) => j.id)).toEqual(["job_qr_q-arch", "job_qr_q-arch2", "job_qr_q-have", "job_qr_q-new", "job_qr_q-quoted"])
+    const job = (id: string) => quoteJobs.find((j) => j.id === id)!
+    expect(job("job_qr_q-new")).toEqual({ id: "job_qr_q-new", customer_id: "c", property_id: "pr", kind: "repair", status: "active", price: null, source: "site", sold_on: null, quote_sent_on: null, cancelled_at: null, created_at: "2027-03-01T18:00:00Z" })
+    // The request names no property: the customer's newest.
+    expect(job("job_qr_q-quoted")).toMatchObject({ property_id: "pr-new", kind: "other", status: "active", sold_on: null, quote_sent_on: "2027-03-06", cancelled_at: null })
+    // A customer with no property at all gets one "Address needed" in Erie, shared by their requests.
+    expect(job("job_qr_q-arch")).toMatchObject({ customer_id: "c2", property_id: "prop_qr_q-arch", status: "cancelled", sold_on: null, quote_sent_on: null, cancelled_at: "2027-03-07T15:00:00Z" })
+    expect(job("job_qr_q-arch2")).toMatchObject({ property_id: "prop_qr_q-arch", status: "active", cancelled_at: null })
+    expect(await q(`SELECT id, customer_id, address, town::text AS town FROM property WHERE address = 'Address needed'`)).toEqual([{ id: "prop_qr_q-arch", customer_id: "c2", address: "Address needed", town: "Erie" }])
+    expect(job("job_qr_q-have")).toMatchObject({ customer_id: "c4", kind: "other" })
+    expect(await q(`SELECT id FROM event WHERE id = 'evt_qr_q-have'`)).toHaveLength(1)
+    const qLines = await q<{ job_id: string; visit_id: string | null; name: string; description: string | null; quantity: number; unit_price: number; taxable: boolean; cancelled: boolean; service_id: string | null }>(
+      `SELECT job_id, visit_id, name, description, quantity, unit_price, taxable, cancelled_at IS NOT NULL AS cancelled, service_id FROM line_item WHERE id LIKE 'line_job_qr_%' ORDER BY id`,
+    )
+    expect(qLines).toEqual([
+      { job_id: "job_qr_q-arch", visit_id: null, name: "Other", description: "Not sure what we need", quantity: 1, unit_price: 0, taxable: false, cancelled: true, service_id: null },
+      { job_id: "job_qr_q-arch2", visit_id: null, name: "Other", description: "Second ask, same address-less customer", quantity: 1, unit_price: 0, taxable: false, cancelled: false, service_id: null },
+      { job_id: "job_qr_q-have", visit_id: null, name: "Other", description: "Already a job", quantity: 1, unit_price: 0, taxable: false, cancelled: false, service_id: null },
+      { job_id: "job_qr_q-new", visit_id: null, name: "Sprinkler repair", description: "Valve leaks by the gate", quantity: 1, unit_price: 0, taxable: true, cancelled: false, service_id: "s-repair" },
+      { job_id: "job_qr_q-quoted", visit_id: null, name: "Lawn aeration", description: "Aerate the back lawn", quantity: 1, unit_price: 0, taxable: false, cancelled: false, service_id: "s-aer" },
+    ])
+    const requested = await q<{ id: string; about: string; about_id: string; customer_id: string; job_id: string; visit_id: string | null; detail: Record<string, unknown>; who: string; at: string }>(
+      `SELECT id, about, about_id, customer_id, job_id, visit_id, detail, who, to_char(at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS at FROM event WHERE kind = 'job.requested' ORDER BY id`,
+    )
+    expect(requested.map((e) => e.id)).toEqual(["evt_qr_q-arch", "evt_qr_q-arch2", "evt_qr_q-have", "evt_qr_q-new", "evt_qr_q-quoted"])
+    expect(requested.find((e) => e.id === "evt_qr_q-new")).toEqual({
+      id: "evt_qr_q-new", about: "job", about_id: "job_qr_q-new", customer_id: "c", job_id: "job_qr_q-new", visit_id: null, detail: { source: "site", notes: "Valve leaks by the gate", serviceId: "s-repair", status: "new" }, who: "system", at: "2027-03-01T18:00:00Z",
+    })
+
+    // Notes: one event per note with none of the same text under its record. The visit with a matching job-level event, the job whose visit holds the same text, a blank note and a job with no note get none.
+    const notes = await q<{ id: string; about: string; about_id: string; job_id: string | null; visit_id: string | null; detail: Record<string, unknown>; who: string; at: string }>(
+      `SELECT id, about, about_id, job_id, visit_id, detail, who, to_char(at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS at FROM event WHERE id LIKE 'evt_note2_%' ORDER BY id`,
+    )
+    expect(notes).toEqual([
+      // a booking job's own note (the booking's notes became the job's)
+      { id: "evt_note2_job_job_b-orphan", about: "job", about_id: "job_b-orphan", job_id: "job_b-orphan", visit_id: null, detail: { text: "Call first" }, who: "system", at: "2027-02-03T18:00:00Z" },
+      { id: "evt_note2_job_job_p", about: "job", about_id: "job_p", job_id: "job_p", visit_id: null, detail: { text: "Pays by check" }, who: "system", at: "2027-03-06T12:00:00Z" },
+      { id: "evt_note2_visit_p-blowout", about: "visit", about_id: "p-blowout", job_id: "job_p", visit_id: "p-blowout", detail: { text: "Gate sticks" }, who: "system", at: "2027-03-07T12:00:00Z" },
+      // job_chg and its visit hold the same text (visits.create writes both): the visit keeps the one event.
+      { id: "evt_note2_visit_v-chg", about: "visit", about_id: "v-chg", job_id: "job_chg", visit_id: "v-chg", detail: { text: "Gate sticks too" }, who: "system", at: "2027-05-03T12:00:00Z" },
+    ])
+
+    // The new columns and the unique index are in place.
+    expect(await q(`SELECT indexname FROM pg_indexes WHERE indexname IN ('job_legacy_pass_id_unique', 'visit_job_pass_kind_unique', 'visit_pass_kind_unique') ORDER BY 1`)).toEqual([
+      { indexname: "job_legacy_pass_id_unique" },
+      { indexname: "visit_job_pass_kind_unique" },
+      { indexname: "visit_pass_kind_unique" },
+    ])
+
+    // The data statements are the ones that update or insert; a second run leaves every table as it was.
+    const snapshotOf = async () => ({
+      jobs: await q(`SELECT * FROM job ORDER BY id`),
+      lines: await q(`SELECT * FROM line_item ORDER BY id`),
+      charges: await q(`SELECT * FROM charge ORDER BY id`),
+      events: await q(`SELECT * FROM event ORDER BY id`),
+      alerts: await q(`SELECT * FROM admin_alert ORDER BY id`),
+      messages: await q(`SELECT * FROM message_log ORDER BY id`),
+      properties: await q(`SELECT * FROM property ORDER BY id`),
+    })
+    const first = await snapshotOf()
+    const data = statements.filter((x) => /^(update|insert into)\s/i.test(bare(x)))
+    expect(data).toHaveLength(14)
+    for (const stmt of data) await client.exec(stmt)
+    expect(await snapshotOf()).toEqual(first)
+    await client.close()
+  })
+
+  it("aborts at the guard when two visits of one pass kind share a job, and makes no unique index", async () => {
+    const { client, all, at } = await before()
+    await client.exec(`INSERT INTO job (id, organization_id, customer_id, property_id, kind, source) VALUES ('j', 'o', 'c', 'pr', 'repair', 'office')`)
+    await client.exec(`INSERT INTO visit (id, organization_id, job_id, customer_id, property_id, kind) VALUES ('v1', 'o', 'j', 'c', 'pr', 'blowout'), ('v2', 'o', 'j', 'c', 'pr', 'blowout'), ('v3', 'o', 'j', 'c', 'pr', 'repair'), ('v4', 'o', 'j', 'c', 'pr', 'repair')`)
+    const statements = migration(all[at]!).filter((stmt) => stmt.trim())
+    const guard = statements.findIndex((x) => /legacy_expand: two visits of one pass kind share a job/.test(x))
+    expect(guard).toBeGreaterThan(0)
+    expect(guard).toBe(statements.length - 2)
+    for (const stmt of statements.slice(0, guard)) await client.exec(stmt)
+    await expect(client.exec(statements[guard]!)).rejects.toThrow(/two visits of one pass kind share a job/)
+    expect((await client.query(`SELECT 1 FROM pg_indexes WHERE indexname = 'visit_job_pass_kind_unique'`)).rows).toHaveLength(0)
+    // The migration is one transaction in production, so the abort leaves nothing behind; here, with the duplicate gone, the same statements finish.
+    await client.exec(`DELETE FROM visit WHERE id = 'v2'`)
+    for (const stmt of statements.slice(guard)) await client.exec(stmt)
+    await expect(client.exec(`INSERT INTO visit (id, organization_id, job_id, customer_id, property_id, kind) VALUES ('v5', 'o', 'j', 'c', 'pr', 'blowout')`)).rejects.toThrow()
+    await client.exec(`INSERT INTO visit (id, organization_id, job_id, customer_id, property_id, kind) VALUES ('v6', 'o', 'j', 'c', 'pr', 'repair')`)
     await client.close()
   })
 })
