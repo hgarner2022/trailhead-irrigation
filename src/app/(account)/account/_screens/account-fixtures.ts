@@ -5,7 +5,7 @@ import type { PortalCustomerType, PortalJobType, PortalVisitType } from "@/api/v
 export const TODAY = "2027-04-14"
 
 const visit = (over: Partial<PortalVisitType> & Pick<PortalVisitType, "id" | "kind" | "name" | "status">): PortalVisitType => ({
-  jobId: "job_pass", scheduledOn: null, startTime: null, durationMinutes: null, window: null, personFirstName: null, mustBeHome: false, notDoneReason: null, change: "no", ...over,
+  jobId: "job_pass", scheduledOn: null, startTime: null, durationMinutes: null, completedOn: null, window: null, personFirstName: null, mustBeHome: false, notDoneReason: null, change: "no", ...over,
 })
 
 const line = (id: string, name: string, unitPrice: number, visitId: string | null = null, cancelledAt: string | null = null) => ({ id, name, description: null, quantity: 1, unitPrice, taxable: false, cancelledAt, visitId })

@@ -1,7 +1,7 @@
 // What the account screens pick out of a customer's jobs, pure: the next visit, the invoices waiting to be paid, the visits coming up and past, and
 // the words on a job row. Everything reads the customer-safe `PortalJob` the API sends (`jobs.list`), never a row of its own.
 import type { PortalJobType, PortalVisitType } from "@/api/v1/portal/schemas"
-import { moneyWord, type MoneyTone } from "@/lib/portal/words"
+import { moneyWord, visitDay, type MoneyTone } from "@/lib/portal/words"
 
 /** A visit with the job it belongs to, for the lists that cross jobs. */
 export interface VisitOfJob {
@@ -15,7 +15,7 @@ const GONE = ["cancelled", "skipped"]
 export const liveVisits = (jobs: readonly PortalJobType[]): VisitOfJob[] =>
   jobs.filter((j) => !j.canceled && j.open).flatMap((job) => job.visits.filter((v) => !GONE.includes(v.status)).map((visit) => ({ visit, job })))
 
-const byDay = (a: VisitOfJob, b: VisitOfJob) => (a.visit.scheduledOn ?? "").localeCompare(b.visit.scheduledOn ?? "") || (a.visit.startTime ?? "").localeCompare(b.visit.startTime ?? "")
+const byDay = (a: VisitOfJob, b: VisitOfJob) => (visitDay(a.visit) ?? "").localeCompare(visitDay(b.visit) ?? "") || (a.visit.startTime ?? "").localeCompare(b.visit.startTime ?? "")
 
 /** The next day on the account: the earliest booked visit from today on; failing that the first visit still waiting for a day; null when there is neither. */
 export function nextVisit(jobs: readonly PortalJobType[], today: string): VisitOfJob | null {

@@ -59,6 +59,7 @@ describe("jobs.list and jobs.get", () => {
     const job = data.find((j) => j.id === v.jobId)!
     expect(job).toMatchObject({ kind: "repair", name: "Repair", passId: null, stage: "done", total: 145, money: { paid: 0, owed: 145, words: "Invoice sent" } })
     expect(job.visits).toMatchObject([{ id: v.id, kind: "repair", name: "Repair", status: "completed", change: "no" }])
+    expect(job.visits[0]!.completedOn).toBe(job.visits[0]!.scheduledOn) // a done visit carries the day it was done
     expect(job.invoices).toMatchObject([{ id: inv.id, status: "sent", total: 145, paidOn: null }])
     expect(job.invoices[0]!.payUrl).toMatch(new RegExp(`^/pay/${inv.id}\\?token=`))
     expect(data.every((j) => j.passId === null)).toBe(true)

@@ -9,13 +9,13 @@ const meta = {
   title: "Blocks/VisitRow",
   component: VisitRow,
   parameters: { layout: "padded" },
-  args: { visit: booked, change: "yes", action: <Button variant="outline">Change my day</Button> },
+  args: { visit: booked, today: "2027-04-14", change: "yes", action: <Button variant="outline">Change my day</Button> },
   render: (args: VisitRowProps) => (
     <ul className="mx-auto max-w-3xl divide-y divide-border">
       <VisitRow {...args} />
-      <VisitRow visit={{ name: "Fall blowout", status: "unscheduled", scheduledOn: null }} canPick action={<Button variant="outline">Pick a day</Button>} />
-      <VisitRow visit={{ name: "Repair", status: "completed", scheduledOn: "2026-11-03", personFirstName: "Ryan" }} />
-      <VisitRow visit={{ name: "Mid-season inspection", status: "skipped", scheduledOn: null }} />
+      <VisitRow today={args.today} visit={{ name: "Fall blowout", status: "unscheduled", scheduledOn: null }} canPick action={<Button variant="outline">Pick a day</Button>} />
+      <VisitRow today={args.today} visit={{ name: "Repair", status: "completed", scheduledOn: "2026-11-03", personFirstName: "Ryan" }} />
+      <VisitRow today={args.today} visit={{ name: "Mid-season inspection", status: "skipped", scheduledOn: null }} />
     </ul>
   ),
 } satisfies Meta<typeof VisitRow>

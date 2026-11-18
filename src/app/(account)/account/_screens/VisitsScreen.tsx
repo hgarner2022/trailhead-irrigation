@@ -16,7 +16,7 @@ export interface VisitsScreenProps {
   onChangeDay?: (visitId: string, day: string) => ActionResult | Promise<ActionResult>
 }
 
-function Section({ id, title, list, empty, days, onChangeDay }: { id: string; title: string; list: VisitOfJob[]; empty: string } & Pick<VisitsScreenProps, "days" | "onChangeDay">) {
+function Section({ id, title, list, empty, today, days, onChangeDay }: { id: string; title: string; list: VisitOfJob[]; empty: string; today: string } & Pick<VisitsScreenProps, "days" | "onChangeDay">) {
   return (
     <section aria-labelledby={id} className="space-y-2">
       <h2 id={id} className="font-display text-2xl font-semibold leading-none text-navy">
@@ -30,6 +30,7 @@ function Section({ id, title, list, empty, days, onChangeDay }: { id: string; ti
               <VisitRow
                 key={visit.id}
                 visit={visit}
+                today={today}
                 canPick={offered.length > 0}
                 change={visit.change}
                 action={visit.change === "yes" ? <ChangeMyDay name={visit.name} visitId={visit.id} currentDay={visit.scheduledOn} days={offered} onPick={onChangeDay} /> : undefined}
@@ -53,8 +54,8 @@ export function VisitsScreen({ jobs, today, days, onChangeDay }: VisitsScreenPro
         <EmptyState icon={CalendarDays} title="No visits yet" line="When we book your work, every visit shows up here with its day and who is coming." />
       ) : (
         <>
-          <Section id="visits-coming" title="Coming up" list={comingUp} empty="Nothing booked right now." days={days} onChangeDay={onChangeDay} />
-          <Section id="visits-past" title="Past" list={past} empty="No past visits yet." />
+          <Section id="visits-coming" title="Coming up" list={comingUp} empty="Nothing booked right now." today={today} days={days} onChangeDay={onChangeDay} />
+          <Section id="visits-past" title="Past" list={past} empty="No past visits yet." today={today} />
         </>
       )}
     </main>

@@ -13,6 +13,7 @@ export const PortalVisit = z.object({
   name: z.string().describe('What the visit is called: "Spring turn-on".'),
   status: VisitStatus,
   scheduledOn: Day.nullable(),
+  completedOn: Day.nullable().describe("The day the visit was marked done; a done visit is read by this day, not the day it was scheduled for."),
   startTime: z.string().nullable().describe("HH:MM; the arrival window opens then."),
   durationMinutes: z.number().int().nullable().describe("How long the arrival window runs; two hours when null."),
   window: z.string().nullable().describe('The month the visit lands in: "May".'),

@@ -29,6 +29,22 @@ export const dueDay = (day: string) => `${monthShort(monthDay(day).month)} ${mon
 /** "November 3, 2026": a sold or paid day in a list. */
 export const fullDay = (day: string) => `${monthName(monthDay(day).month)} ${monthDay(day).day}, ${day.slice(0, 4)}`
 
+export interface VisitDayFacts {
+  status: string
+  scheduledOn: string | null
+  completedOn?: string | null
+}
+
+/** The one day a visit is read by: a done visit by the day it was done (`completed_on`, the day the pass card shows), any other by its scheduled day; null with neither. */
+export const visitDay = (v: VisitDayFacts): string | null => (v.status === "completed" && v.completedOn ? v.completedOn : v.scheduledOn)
+
+/** "Tuesday, May 5" for a visit's day, with the year ("Tuesday, April 27, 2027") when it falls in another year than `today`; null when the visit has no day. Every list and card reads a visit's day through this. */
+export function visitDayWords(v: VisitDayFacts, today: string): string | null {
+  const day = visitDay(v)
+  if (!day) return null
+  return day.slice(0, 4) === today.slice(0, 4) ? longDay(day) : `${longDay(day)}, ${day.slice(0, 4)}`
+}
+
 export const CALL_LINE = `call or text Ryan at ${PHONE_DISPLAY}`
 export const DAY_FAILED = `We couldn't save that day. Try another, or call Ryan at ${PHONE_DISPLAY}.`
 

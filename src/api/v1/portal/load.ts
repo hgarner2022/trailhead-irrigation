@@ -96,6 +96,7 @@ export async function loadPortalJobs(ctx: Ctx, customerId: string, only?: string
         name: visitName(v.kind),
         status: v.status,
         scheduledOn: v.scheduledOn,
+        completedOn: v.completedOn,
         startTime: v.startTime,
         durationMinutes: v.durationMinutes,
         window: v.window,

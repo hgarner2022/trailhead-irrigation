@@ -3,7 +3,7 @@ import { CalendarDays } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { PHONE_DISPLAY, PHONE_TEL } from "@/lib/nav"
-import { arrivalWindow, longDay } from "@/lib/portal/words"
+import { arrivalWindow, visitDayWords } from "@/lib/portal/words"
 import { cn } from "@/lib/utils"
 
 // The first thing on an account's Home: what is coming and who is coming (docs/plans/2026-11-18-customer-portal-design.md, Home, item 2).
@@ -27,6 +27,8 @@ export interface NextVisit {
 
 export interface NextVisitCardProps {
   visit: NextVisit | null
+  /** today's day, so a day in another year shows its year */
+  today: string
   /** "call": the day is within two days, so Change my day becomes the phone number; "yes" and "no" leave the slot as given */
   change?: "yes" | "call" | "no"
   /** what the customer may do about the day: the Change my day or Pick a day buttons */
@@ -40,7 +42,7 @@ function Label() {
   return <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Next visit</p>
 }
 
-export function NextVisitCard({ visit, change = "no", action, canPick = false, className }: NextVisitCardProps) {
+export function NextVisitCard({ visit, today, change = "no", action, canPick = false, className }: NextVisitCardProps) {
   if (!visit) {
     return (
       <Card data-slot="next-visit" data-state="none" className={className}>
@@ -61,7 +63,7 @@ export function NextVisitCard({ visit, change = "no", action, canPick = false, c
     <Card data-slot="next-visit" data-state={booked ? "booked" : canPick ? "pick" : "soon"} className={cn(className)}>
       <CardContent className="space-y-3 p-5">
         <Label />
-        <h2 className="font-display text-3xl leading-tight text-navy">{booked ? longDay(visit.scheduledOn!) : visit.notDoneReason ? "Needs a new day" : canPick ? "Pick a day" : "Day coming soon"}</h2>
+        <h2 className="font-display text-3xl leading-tight text-navy">{booked ? visitDayWords({ status: "scheduled", scheduledOn: visit.scheduledOn }, today) : visit.notDoneReason ? "Needs a new day" : canPick ? "Pick a day" : "Day coming soon"}</h2>
         {!booked && visit.notDoneReason && <p className="text-base text-muted-foreground">{`We couldn't finish this one: ${visit.notDoneReason}.`}</p>}
         {booked && <p className="text-base text-foreground">{window ?? "We'll text you your arrival window the day before."}</p>}
         <p className="text-base text-muted-foreground">{who}</p>

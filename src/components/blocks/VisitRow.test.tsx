@@ -7,7 +7,7 @@ const inList = (ui: React.ReactElement) => render(<ul>{ui}</ul>)
 
 describe("VisitRow", () => {
   it("shows the day, what and who, the window and a Booked pill", () => {
-    inList(<VisitRow visit={booked} />)
+    inList(<VisitRow today="2027-04-14" visit={booked} />)
     expect(screen.getByText("Wednesday, April 28")).toBeInTheDocument()
     expect(screen.getByText("Spring turn-on · Ryan")).toBeInTheDocument()
     expect(screen.getByText("Arrive between 9 and 11 am")).toBeInTheDocument()
@@ -15,23 +15,23 @@ describe("VisitRow", () => {
   })
 
   it("uses the customer's word for each of the other states", () => {
-    const { rerender } = inList(<VisitRow visit={{ ...booked, status: "completed" }} />)
+    const { rerender } = inList(<VisitRow today="2027-04-14" visit={{ ...booked, status: "completed" }} />)
     expect(screen.getByText("Done")).toBeInTheDocument()
-    rerender(<ul><VisitRow visit={{ name: "Fall blowout", status: "unscheduled", scheduledOn: null }} canPick /></ul>)
+    rerender(<ul><VisitRow today="2027-04-14" visit={{ name: "Fall blowout", status: "unscheduled", scheduledOn: null }} canPick /></ul>)
     expect(screen.getByText("Pick a day")).toBeInTheDocument()
-    rerender(<ul><VisitRow visit={{ name: "Fall blowout", status: "unscheduled", scheduledOn: null }} /></ul>)
+    rerender(<ul><VisitRow today="2027-04-14" visit={{ name: "Fall blowout", status: "unscheduled", scheduledOn: null }} /></ul>)
     expect(screen.getByText("Day coming soon")).toBeInTheDocument()
-    rerender(<ul><VisitRow visit={{ name: "Spring turn-on", status: "unscheduled", scheduledOn: null, notDoneReason: "no water on" }} canPick /></ul>)
+    rerender(<ul><VisitRow today="2027-04-14" visit={{ name: "Spring turn-on", status: "unscheduled", scheduledOn: null, notDoneReason: "no water on" }} canPick /></ul>)
     expect(screen.getByText("Needs a new day")).toBeInTheDocument()
     expect(screen.getByText("We couldn't finish this one: no water on.")).toBeInTheDocument()
-    rerender(<ul><VisitRow visit={{ ...booked, status: "cancelled" }} /></ul>)
+    rerender(<ul><VisitRow today="2027-04-14" visit={{ ...booked, status: "cancelled" }} /></ul>)
     expect(screen.getByText("Canceled")).toBeInTheDocument()
   })
 
   it("shows the change control, or the phone number when the day is too close", () => {
-    const { rerender } = inList(<VisitRow visit={booked} change="yes" action={<button>Change my day</button>} />)
+    const { rerender } = inList(<VisitRow today="2027-04-14" visit={booked} change="yes" action={<button>Change my day</button>} />)
     expect(screen.getByRole("button", { name: "Change my day" })).toBeInTheDocument()
-    rerender(<ul><VisitRow visit={booked} change="call" action={<button>Change my day</button>} /></ul>)
+    rerender(<ul><VisitRow today="2027-04-14" visit={booked} change="call" action={<button>Change my day</button>} /></ul>)
     expect(screen.queryByRole("button")).toBeNull()
     expect(screen.getByRole("link", { name: "(970) 692-7270" })).toBeInTheDocument()
   })
