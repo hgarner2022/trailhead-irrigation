@@ -35,6 +35,13 @@ describe("loadPassPage", () => {
     expect(data!.pickDays["turn-on"]?.length).toBeGreaterThan(0)
   })
 
+  it("does not fail when a booked day is inside the two-day cut-off: the visit has no days on offer, so the page says to call", async () => {
+    await db.update(s.visit).set({ status: "scheduled", personId: "person_truck-1", scheduledOn: "2027-04-21", startTime: "08:00" }).where(eq(s.visit.id, "p3-turn-on"))
+    const data = await loadPassPage(ctxFor(db, customerPerson(customerId)))
+    expect(data!.pickDays["turn-on"]).toEqual([])
+    expect(data!.pickDays["blowout"]?.length).toBeGreaterThan(0)
+  })
+
   it("returns null for a customer with no pass and does not show an admin anyone's pass as theirs", async () => {
     expect(await loadPassPage(ctxFor(db, customerPerson("no-pass")))).toBeNull()
     expect(owner.type).toBe("admin")

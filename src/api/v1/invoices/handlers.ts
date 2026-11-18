@@ -3,9 +3,10 @@ import { and, asc, eq, isNull, lt } from "drizzle-orm"
 import { z } from "zod"
 import * as s from "@/db/schema"
 import { invoiceOpen, invoiceStatus } from "@/lib/money/invoice"
-import { ApiError } from "../../core/errors"
+import { ApiError, notFound } from "../../core/errors"
 import { defineHandler } from "../../core/handler"
-import { Id, idInput, today } from "../shared"
+import { selfCustomerId } from "../portal/self"
+import { assertOwnsCustomer, Id, idInput, today } from "../shared"
 import { cancelOpenBill } from "./cancel"
 import { invoiceOut, loadInvoice } from "./queries"
 import { InvoiceOut, PayViewOut } from "./schemas"
@@ -31,11 +32,16 @@ export const invoicesList = defineHandler({
   method: "GET",
   path: "/invoices",
   scope: "read",
-  summary: "List invoices, oldest first, for a job, for a customer, or by status (`overdue` lists every open invoice past its due day).",
+  customerSelf: true,
+  summary: "List invoices, oldest first, for a job, for a customer, or by status (`overdue` lists every open invoice past its due day). A signed-in customer lists only their own, never a voided one, each with the pay link of an open one.",
   input: z.object({ jobId: Id.optional(), customerId: Id.optional(), status: z.enum(["sent", "paid", "overdue", "cancelled"]).optional() }),
   output: z.object({ data: z.array(InvoiceOut) }),
   async run(ctx, input) {
-    if (!input.jobId && !input.customerId && !input.status) throw new ApiError("invalid", "Give a jobId, a customerId or a status", [{ path: "jobId", message: "A job, a customer or a status is needed" }])
+    // A customer's call is always about themselves: whatever customerId they send, the rows are their own and a voided invoice is not one they hold.
+    const own = selfCustomerId(ctx)
+    if (own && input.customerId && input.customerId !== own) throw new ApiError("forbidden", "That record belongs to another customer")
+    const customerId = own ?? input.customerId
+    if (!input.jobId && !customerId && !input.status) throw new ApiError("invalid", "Give a jobId, a customerId or a status", [{ path: "jobId", message: "A job, a customer or a status is needed" }])
     const day = today(ctx)
     const rows = await ctx.db
       .select()
@@ -44,7 +50,8 @@ export const invoicesList = defineHandler({
         and(
           eq(s.invoice.organizationId, ctx.organizationId),
           input.jobId ? eq(s.invoice.jobId, input.jobId) : undefined,
-          input.customerId ? eq(s.invoice.customerId, input.customerId) : undefined,
+          customerId ? eq(s.invoice.customerId, customerId) : undefined,
+          own ? isNull(s.invoice.cancelledAt) : undefined,
           input.status === "overdue" ? and(isNull(s.invoice.paidOn), isNull(s.invoice.cancelledAt), lt(s.invoice.dueOn, day)) : undefined,
         ),
       )
@@ -58,11 +65,15 @@ export const invoicesGet = defineHandler({
   method: "GET",
   path: "/invoices/{id}",
   scope: "read",
-  summary: "One invoice with its frozen lines, amounts, dates and status.",
+  customerSelf: true,
+  summary: "One invoice with its frozen lines, amounts, dates and status. A customer asks only about their own, and never gets a voided one.",
   input: idInput,
   output: InvoiceOut,
   async run(ctx, input) {
-    return invoiceOut(ctx, await loadInvoice(ctx, input.id))
+    const row = await loadInvoice(ctx, input.id)
+    assertOwnsCustomer(ctx, row.customerId)
+    if (selfCustomerId(ctx) && row.cancelledAt) throw notFound("Invoice")
+    return invoiceOut(ctx, row)
   },
 })
 

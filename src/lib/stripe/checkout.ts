@@ -45,6 +45,8 @@ export interface SavedCard {
   /** `YYYY-MM`, which sorts as text against a season's month */
   expires: string
   passId: string | null
+  /** our customer's id, set by a card update opened from the account page (it names no pass) */
+  appCustomerId?: string | null
   purpose: string | null
 }
 
@@ -65,6 +67,7 @@ export async function paymentMethodFromSession(stripe: Stripe, sessionId: string
     last4: method.card.last4,
     expires: `${method.card.exp_year}-${String(method.card.exp_month).padStart(2, "0")}`,
     passId: session.metadata?.passId ?? null,
+    appCustomerId: session.metadata?.customerId ?? null,
     purpose: session.metadata?.purpose ?? null,
   }
 }

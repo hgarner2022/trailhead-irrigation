@@ -11,8 +11,11 @@ import { loadPassRecord } from "@/lib/pass/server/record"
 import { enqueue } from "@/lib/queue"
 import { paymentMethodFromSession } from "./checkout"
 
-/** The hosted setup session behind "update your card": saves a new card on the customer and returns to the card-updated page. Stripe keeps the link live for 24 hours. */
-export async function createCardUpdateSession(stripe: Stripe, input: { passId: string; customerId: string; origin: string }): Promise<{ id: string; url: string }> {
+/**
+ * The hosted setup session behind "update your card": saves a new card on the customer and returns to the card-updated page. Stripe keeps the link live for 24 hours.
+ * A pass names itself (`passId`); the account page names our customer (`appCustomerId`), so a customer with no pass can update the card too.
+ */
+export async function createCardUpdateSession(stripe: Stripe, input: { passId?: string; appCustomerId?: string; customerId: string; origin: string }): Promise<{ id: string; url: string }> {
   const session = await stripe.checkout.sessions.create({
     mode: "setup",
     // The 2026 API versions want a currency and a method type even in setup mode; only a card can be charged off-session later.
@@ -21,7 +24,7 @@ export async function createCardUpdateSession(stripe: Stripe, input: { passId: s
     ui_mode: "hosted_page",
     customer: input.customerId,
     success_url: `${input.origin}/account/pass/card-updated`,
-    metadata: { purpose: "card-update", passId: input.passId },
+    metadata: { purpose: "card-update", ...(input.passId ? { passId: input.passId } : {}), ...(input.appCustomerId ? { customerId: input.appCustomerId } : {}) },
   })
   if (!session.url) throw new Error("Stripe returned no address for the card-update session")
   return { id: session.id, url: session.url }
@@ -34,10 +37,14 @@ export async function createCardUpdateSession(stripe: Stripe, input: { passId: s
  */
 export async function applyCardUpdate(db: Database, stripe: Stripe, sessionId: string, now = new Date(), organizationId?: string): Promise<"applied" | "already-applied"> {
   const card = await paymentMethodFromSession(stripe, sessionId)
-  if (card.purpose !== "card-update" || !card.passId) throw new Error("This session is not a card update")
-  const pass = await loadPassRecord(db, card.passId, organizationId)
-  if (!pass) throw new Error(`Pass ${card.passId} not found`)
-  const org = pass.organizationId
+  if (card.purpose !== "card-update" || !(card.passId || card.appCustomerId)) throw new Error("This session is not a card update")
+  // The owner is the pass's customer, or, for a card update opened from the account page, the customer the session names.
+  const target = card.passId
+    ? await loadPassRecord(db, card.passId, organizationId).then((pass) => (pass ? { id: pass.customerId, organizationId: pass.organizationId } : null))
+    : await db.select({ id: s.customer.id, organizationId: s.customer.organizationId }).from(s.customer).where(and(eq(s.customer.id, card.appCustomerId!), organizationId ? eq(s.customer.organizationId, organizationId) : undefined)).then((rows) => rows[0] ?? null)
+  if (!target) throw new Error(`Customer for ${card.passId ?? card.appCustomerId} not found`)
+  const pass = { customerId: target.id }
+  const org = target.organizationId
   const [owner] = await db.select({ method: s.customer.stripePaymentMethodId }).from(s.customer).where(and(eq(s.customer.id, pass.customerId), eq(s.customer.organizationId, org)))
   const current = owner?.method ?? null
   if (current === card.paymentMethodId) return "already-applied"
