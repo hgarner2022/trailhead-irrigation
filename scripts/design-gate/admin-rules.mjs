@@ -6,7 +6,8 @@
 //   one-primary         a PageHeader holds at most one filled button
 //   panel-body-buttons  no filled button in a record panel's body: only RecordFooter and a sheet's footer carry one
 //   words               "Owed", "Overdue", "Bill", "Cancelled", "Lapsed", "Truck", "This visit is done" never show on a screen
-//   visit-word          "visit" shows only in the job panel and the visit panel
+//   visit-word          "visit" shows only in the job panel, the visit panel and the Schedule's List view
+//   visits-nav          Visits is not a nav item: no "Visits" label, no `visits` section and no "/admin/visits" link (it redirects to the Schedule's List view)
 //   overlays            ui/dialog, ui/sheet and ui/popover are imported only by blocks/
 //   no-table-label      <table> and <label> only inside DataGrid and FormRow
 //   columns             a grid's columns array holds eight columns at most
@@ -22,15 +23,9 @@ export const NEW_BLOCKS = ["RecordPanel", "RecordFooter", "ConfirmDialog", "Spli
  */
 export const ALLOW = {
   // visit: the left column loses Visits (step 2), Home and the Schedule take plain words (step 3), the grids get their final columns (step 9)
-  "(shell)/visits/page.tsx": { "visit-word": "Nov 18 2026, step 2: the Visits page becomes the Schedule's List" },
-  "_screens/VisitsScreen.tsx": { "visit-word": "Nov 18 2026, step 2: the Visits page becomes the Schedule's List" },
-  "_screens/visits-model.ts": { "visit-word": "Nov 18 2026, step 2: the Visits page becomes the Schedule's List" },
   "_screens/HomeScreen.tsx": { "visit-word": "Nov 18 2026, step 3: Home reads Today in plain words" },
   "_screens/home-model.ts": { "visit-word": "Nov 18 2026, step 3: Home reads Today in plain words" },
   "_screens/TodayVisits.tsx": { "visit-word": "Nov 18 2026, step 3: Home reads Today in plain words" },
-  "_screens/ScheduleScreen.tsx": {
-    "one-primary": "Nov 18 2026, step 3: New job becomes the page's one primary and Place all moves under Unscheduled",
-  },
   "_screens/schedule-model.ts": { "visit-word": "Nov 18 2026, step 3: the Schedule says jobs and days" },
   "_screens/RevenueScreen.tsx": { "visit-word": "Nov 18 2026, step 9: Reports reads every job" },
   "_screens/customers-columns.tsx": { "visit-word": "Nov 18 2026, step 9: the final column sets", columns: "Nov 18 2026, step 9: the final column sets (ten today, eight then)" },
@@ -100,14 +95,35 @@ function checkWords(file, text, problems) {
   for (const { s, line } of screenText(text)) for (const [re, what] of BANNED) if (re.test(s)) problems.push(`${file}:${line}: banned word ${what}`)
 }
 
-// The job panel, the visit panel and their parts. VisitsScreen, VisitPanelHost and JobsScreen are pages and hosts, not panels.
-const VISIT_OK = /(^|\/)(JobPanel|JobFooter|JobDialogs|JobCollect|JobLinesSection|JobMoneySection|JobPills|VisitPanel|VisitFooter|VisitEditText|VisitMoveDone|VisitOnMyWay|VisitLines|VisitBill|job-[\w-]+|visit-[\w-]+|use-runner|PanelNotes|PassPanel|NewJob[A-Za-z]*|CustomerJobs|ConfirmDialog|RecordPanel|RecordFooter)\.tsx?$/
+// The job panel, the visit panel and their parts, and the Schedule's List view (the old Visits grid: VisitsList and its columns and model). RecordHost and the screens are hosts, not panels.
+const VISIT_OK = /(^|\/)(JobPanel|JobFooter|JobDialogs|JobCollect|JobLinesSection|JobMoneySection|JobPills|VisitPanel|VisitFooter|VisitEditText|VisitMoveDone|VisitOnMyWay|VisitLines|VisitBill|VisitsList|job-[\w-]+|visits?-[\w-]+|use-runner|PanelNotes|PassPanel|NewJob[A-Za-z]*|CustomerJobs|ConfirmDialog|RecordPanel|RecordFooter)\.tsx?$/
 const VISIT_WORD = /\b[Vv]isits?\b/
 
 function checkVisitWord(file, text, problems) {
   // the API's own docs page names the resources the API has; it is not an admin screen
   if (VISIT_OK.test(file) || /\(admin\)\/developers\//.test(file)) return
   for (const { s, line } of screenText(text)) if (VISIT_WORD.test(s)) problems.push(`${file}:${line}: the word "visit" outside the job and visit panels`)
+}
+
+// Visits left the left column (design section 4): a visit is one trip to the house, its grid is the Schedule's third view and `/admin/visits` only
+// redirects. So no nav item, no section id and no link may name it. Tests and stories are exempt (they are not in `zone`).
+const VISITS_NAV = [
+  [/\blabel:\s*["'`]Visits["'`]/, 'a nav item labelled "Visits"'],
+  [/\bid:\s*["'`]visits["'`][^}\n]*\bhref:/, 'a nav item with the id "visits"'],
+  [/\bAdminSection\b[^;\n]*["'`]visits["'`]/, 'a "visits" section'],
+  [/["'`]\/admin\/visits\b/, 'a link to /admin/visits (use /admin/schedule?view=list)'],
+]
+
+// The customer's own account has a Visits page and says so; this rule is about the admin's navigation.
+const ACCOUNT_SIDE = /(^|\/)(Account[A-Za-z]*|Next[A-Za-z]*Card|Cancel[A-Za-z]*|Reschedule[A-Za-z]*)\.tsx?$/
+
+function checkVisitsNav(file, text, problems) {
+  if (ACCOUNT_SIDE.test(file)) return
+  const src = stripComments(text)
+  for (const [re, what] of VISITS_NAV) {
+    const m = re.exec(src)
+    if (m) problems.push(`${file}:${lineOf(src, m.index)}: Visits is not a nav item: ${what}`)
+  }
 }
 
 function* elements(text, tag) {
@@ -206,6 +222,7 @@ const RULES = [
   ["overlays", checkOverlays],
   ["no-table-label", checkTableLabel],
   ["columns", checkColumns],
+  ["visits-nav", checkVisitsNav],
 ]
 
 /** Runs the screen rules on one file that is in the (admin) tree or blocks/. Allowlisted files report a note, never a failure. */
