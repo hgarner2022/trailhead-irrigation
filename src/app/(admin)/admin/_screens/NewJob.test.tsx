@@ -24,7 +24,7 @@ beforeAll(() => {
 
 function open() {
   const actions = {
-    createVisit: vi.fn(async () => ({ ok: true as const, data: { id: "v1" } })),
+    createVisit: vi.fn(async () => ({ ok: true as const, data: { id: "v1", jobId: "j1" } })),
     sellPass: vi.fn(async () => ({ ok: true as const, data: { id: "p1", number: "TP-1", firstName: "Andrea" } })),
   }
   render(<NewJob data={data} today={TODAY} open onOpenChange={() => undefined} customerId="c100" actions={actions as unknown as VisitActions} />)
@@ -38,6 +38,42 @@ describe("New job", () => {
     const options = [...(screen.getByLabelText("What are we doing?") as HTMLSelectElement).options].map((o) => o.value).filter(Boolean)
     expect(options[0]).toBe("season-pass")
     expect(options).toContain("repair")
+  })
+
+  it("with no day Add job is on, says nothing is sent, and the job is made with no day and no time", async () => {
+    const actions = open()
+    await choose("repair")
+    expect(screen.getByLabelText("Day (optional)")).toHaveValue("")
+    expect(screen.getByRole("button", { name: "Add job" })).toBeEnabled()
+    expect(screen.getByText(/No day yet, nothing is sent/)).toBeInTheDocument()
+    await userEvent.click(screen.getByRole("button", { name: "Add job" }))
+    await waitFor(() => expect(actions.createVisit).toHaveBeenCalledTimes(1))
+    const sent = (actions.createVisit.mock.calls as unknown[][])[0]![0]
+    expect(sent).not.toHaveProperty("scheduledOn")
+    expect(sent).not.toHaveProperty("startTime")
+  })
+
+  it("with a day it says the customer is told, sends the day, and Time stays Any time unless one is picked", async () => {
+    const actions = open()
+    await choose("repair")
+    await userEvent.type(screen.getByLabelText("Day (optional)"), "2026-11-20")
+    expect(screen.getByText(/With a day, the customer is told/)).toBeInTheDocument()
+    await userEvent.click(screen.getByRole("button", { name: "Add job" }))
+    await waitFor(() => expect(actions.createVisit).toHaveBeenCalledTimes(1))
+    const sent = (actions.createVisit.mock.calls as unknown[][])[0]![0]
+    expect(sent).toMatchObject({ scheduledOn: "2026-11-20" })
+    expect(sent).not.toHaveProperty("startTime")
+  })
+
+  it("after Add job hands the new job's and visit's ids to the screen, which opens the record it shows", async () => {
+    const actions = { createVisit: vi.fn(async () => ({ ok: true as const, data: { id: "v9", jobId: "j9" } })), sellPass: vi.fn() }
+    const onCreated = vi.fn()
+    const onOpenChange = vi.fn()
+    render(<NewJob data={data} today={TODAY} open onOpenChange={onOpenChange} customerId="c100" actions={actions as unknown as VisitActions} onCreated={onCreated} />)
+    await choose("repair")
+    await userEvent.click(screen.getByRole("button", { name: "Add job" }))
+    await waitFor(() => expect(onCreated).toHaveBeenCalledWith({ visitId: "v9", jobId: "j9" }))
+    expect(onOpenChange).toHaveBeenCalledWith(false)
   })
 
   it("choosing Repair shows what it includes and $145, then the day and Add job", async () => {
@@ -88,7 +124,7 @@ describe("New job", () => {
     await choose("repair")
     await userEvent.click(screen.getByRole("button", { name: "Add job" }))
     await waitFor(() => expect(actions.createVisit).toHaveBeenCalledTimes(1))
-    expect(actions.createVisit).toHaveBeenCalledWith(expect.objectContaining({ customerId: "c100", serviceKey: "repair", scheduledOn: "2026-11-12", durationMinutes: 120, price: 145 }))
+    expect(actions.createVisit).toHaveBeenCalledWith(expect.objectContaining({ customerId: "c100", serviceKey: "repair", durationMinutes: 120, price: 145 }))
     expect(actions.sellPass).not.toHaveBeenCalled()
   })
 

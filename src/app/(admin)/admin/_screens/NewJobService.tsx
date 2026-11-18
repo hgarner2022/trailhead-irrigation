@@ -12,9 +12,10 @@ import type { NewVisitInput, VisitActions } from "./visit-actions-types"
 import { FORM_STATUS, useRunner } from "./use-runner"
 import { TIME_CHOICES } from "./visit-panel-model"
 
-// The service half of New job: the day up front, then the time, the minutes (the service's own), who, the price (the service's
-// rule, editable) and the notes under "More details". Adding it makes the job and its first visit; with a day and a customer
-// who can be texted, the date goes out.
+// The service half of New job: the day up front (it may stay empty: the job waits on the Schedule's Unscheduled list and
+// nothing is sent), then the time, the minutes (the service's own), who, the price (the service's rule, editable) and the
+// notes under "More details". Adding it makes the job and its first visit; with a day and a customer who can be texted,
+// the date goes out.
 
 /** What the service costs, from its rule: "$145", "$95 up to 6 zones, +$10 a zone", "Free", or "Quote on site". */
 export function servicePriceLine(s: Pick<ServiceItem, "price" | "includedZones" | "extraZonePrice">): string {
@@ -30,12 +31,13 @@ interface Props {
   choice: CustomerChoice
   service: ServiceItem
   actions?: VisitActions
-  onDone: (visitId: string) => void
+  onDone: (made: { id: string; jobId: string }) => void
 }
 
 export function NewJobService({ data, today, choice, service, actions, onDone }: Props) {
   const todayDay = today.slice(0, 10)
-  const [day, setDay] = useState(todayDay)
+  // No day until one is chosen: a job taken by phone can be given its day later, and a day filled in by default booked today by accident.
+  const [day, setDay] = useState("")
   const [time, setTime] = useState("")
   const [minutes, setMinutes] = useState<string | null>(null)
   const [personId, setPersonId] = useState("")
@@ -51,7 +53,7 @@ export function NewJobService({ data, today, choice, service, actions, onDone }:
   const shownPrice = price ?? (ruled !== undefined ? String(ruled) : "")
   const shownMinutes = minutes ?? String(service.slotMinutes)
   const people = routePeople(data.settings.people)
-  const ready = choiceReady(choice, data.clients) && Boolean(day)
+  const ready = choiceReady(choice, data.clients)
 
   const submit = () => {
     const accessLine = choice.isNew && choice.person.access.trim() ? `Access: ${choice.person.access.trim()}` : ""
@@ -59,8 +61,8 @@ export function NewJobService({ data, today, choice, service, actions, onDone }:
     const input: NewVisitInput = {
       ...(choice.isNew ? { newCustomer: newCustomerFrom(choice.person) } : { customerId: choice.chosen }),
       serviceKey: service.key,
-      scheduledOn: day,
-      ...(time ? { startTime: time } : {}),
+      ...(day ? { scheduledOn: day } : {}),
+      ...(day && time ? { startTime: time } : {}),
       durationMinutes: Number(shownMinutes),
       ...(personId ? { personId } : {}),
       ...(shownPrice ? { price: Number(shownPrice) } : {}),
@@ -69,7 +71,7 @@ export function NewJobService({ data, today, choice, service, actions, onDone }:
     if (!actions) return console.info("new job", input)
     run(
       () => actions.createVisit(input),
-      ({ id }) => onDone(id),
+      (made) => onDone(made),
     )
   }
 
@@ -77,7 +79,7 @@ export function NewJobService({ data, today, choice, service, actions, onDone }:
     <>
       <div>
         <label htmlFor="nj-day" className={LABEL}>
-          Day
+          Day (optional)
         </label>
         <Input id="nj-day" type="date" value={day} min={todayDay} onChange={(e) => setDay(e.target.value)} className="min-h-11" />
       </div>
@@ -98,7 +100,7 @@ export function NewJobService({ data, today, choice, service, actions, onDone }:
             <label htmlFor="nj-time" className={LABEL}>
               Time
             </label>
-            <select id="nj-time" value={time} onChange={(e) => setTime(e.target.value)} className={FIELD}>
+            <select id="nj-time" value={time} disabled={!day} onChange={(e) => setTime(e.target.value)} className={FIELD}>
               <option value="">Any time</option>
               {TIME_CHOICES.map((t) => (
                 <option key={t.value} value={t.value}>
@@ -148,7 +150,9 @@ export function NewJobService({ data, today, choice, service, actions, onDone }:
         <p role="alert" className={`${FORM_STATUS} mt-2 text-destructive`}>
           {error}
         </p>
-        <p className="mt-2 text-sm text-muted-foreground">With a day, the customer is told the date by text, or by email with no mobile number.</p>
+        <p className="mt-2 text-sm text-muted-foreground">
+          {day ? "With a day, the customer is told the date by text, or by email with no mobile number." : "No day yet, nothing is sent. The job waits on the Schedule's Unscheduled list."}
+        </p>
       </div>
     </>
   )

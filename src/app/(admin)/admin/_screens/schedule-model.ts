@@ -70,16 +70,17 @@ export function moveOutcome(visits: Visit[], visitId: string, personId: string, 
   return { visits: next, moved: true, message: `Moved ${name} to ${sentenceDay(dayIso)} with ${person.name}.` }
 }
 
-/** A job that needs a day: a visit of an active pass with no day. */
+/** A visit that needs a day: one of an active pass, or the first visit of a one-off job taken with no day. */
 export interface TrayItem {
   id: string
   clientId: string
   clientName: string
   town: Visit["town"]
   kind: Visit["kind"]
-  /** "May", "July", "October" */
+  /** "May", "July", "October"; empty for a one-off job, which has no window */
   window: string
   preference?: TimingPreference
+  /** set for a visit of a Season Pass, absent for a one-off job's visit */
   passId?: string
   /** the customer must be there and picks the day themselves; Schedule leaves it in the list. The tray no longer sets it (a job that needs a day is a job that needs a day), but a caller may. */
   awaitingPick?: boolean
@@ -107,20 +108,28 @@ function passItem(pass: Pass, visit: PassVisit): TrayItem {
   }
 }
 
+/** A one-off job's visit with no day: the office took the call and has not given it a day yet. */
+function oneOffItem(visit: Visit): TrayItem {
+  return { id: visit.id, clientId: visit.clientId, clientName: visit.clientName, town: visit.town, kind: visit.kind, window: "", awaitingPick: visit.awaitingPick, sortKey: "0" }
+}
+
 /**
- * What the "Unscheduled" list shows: the jobs that have no day, for ACTIVE
- * passes only. A job with a day is never here (the state is read off the
- * visit row by `passVisitJob`, the one derivation), a pending pass's jobs
- * never are (an unpaid attempt is not a customer), and neither are open
- * jobs from the calendar feed (the app cannot place them). Earliest window first, earlier
- * preferences before later ones inside a window. A visit the screen has put
- * on the calendar since the data was read is left out by its id.
+ * What the "Unscheduled" list shows: every visit that has no day. The visits of ACTIVE passes (a job with a day is never
+ * here, the state is read off the visit row by `passVisitJob`, the one derivation, and a pending pass's jobs never are: an
+ * unpaid attempt is not a customer) and the visits of one-off jobs the app owns (a call taken with no day). Open jobs
+ * from the calendar feed are left out (the app cannot place them). One-off visits first (a customer is waiting for a
+ * call back), then the earliest window, earlier preferences before later ones inside a window. A visit the screen has
+ * put on the calendar since the data was read is left out by its id.
  */
 export function trayItems(data: Pick<AdminData, "visits" | "passes">): TrayItem[] {
   const placedIds = new Set(data.visits.filter((v) => v.startAt && v.status !== "cancelled").map((v) => v.id))
-  return data.passes
-    .filter((p) => p.status === "active")
-    .flatMap((p) => p.visits.filter((v) => passVisitJob(p, v, "", TIME_ZONE).state === "needs-a-day").map((v) => passItem(p, v)))
+  const oneOffs = data.visits.filter((v) => v.jobId && !v.isPass && !v.passId && v.status === "unscheduled" && !v.startAt).map(oneOffItem)
+  return [
+    ...data.passes
+      .filter((p) => p.status === "active")
+      .flatMap((p) => p.visits.filter((v) => passVisitJob(p, v, "", TIME_ZONE).state === "needs-a-day").map((v) => passItem(p, v))),
+    ...oneOffs,
+  ]
     .filter((item) => !placedIds.has(item.id))
     .sort((a, b) => a.sortKey.localeCompare(b.sortKey) || rank(a.preference) - rank(b.preference) || a.clientName.localeCompare(b.clientName))
 }
@@ -139,9 +148,10 @@ export function nextJobsWeek(visits: Visit[], weekStart: string, timeZone: strin
   return days.length ? weekOf(days.sort()[0], timeZone) : undefined
 }
 
-/** The first day of the visible week the person works, else the Monday. */
-export function firstWorkingDay(person: Person, weekStart: string): string {
-  return weekDays(weekStart).find((day) => worksOn(person, day)) ?? weekStart
+/** The first day of the visible week the person works, else the Monday. With `from` (today), a day already gone is not chosen while a later one in the week is. */
+export function firstWorkingDay(person: Person, weekStart: string, from?: string): string {
+  const days = weekDays(weekStart).filter((day) => worksOn(person, day))
+  return days.find((day) => !from || day >= from) ?? days[0] ?? weekStart
 }
 
 /**

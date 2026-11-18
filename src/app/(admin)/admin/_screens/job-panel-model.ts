@@ -33,6 +33,10 @@ export interface JobFacts {
   canRecord: boolean
   /** a visit can be added: a one-off job that is not canceled */
   canAddVisit: boolean
+  /** a one-off job still being worked (needs a quote, quote sent, open) can be canceled; a Season Pass has Cancel pass, and a Done job is Done */
+  canCancel: boolean
+  /** whole dollars the job holds: its succeeded payments with refunds taken off. Above zero the cancel says to refund first. */
+  held: number
 }
 
 /** Everything the panel shows about one job; undefined when the job is not in `data`. */
@@ -61,6 +65,8 @@ export function jobFacts(data: AdminData, jobId: string, today: string): JobFact
     // money can be taken on any priced one-off job that still owes (a deposit before the work is done); a pass is charged to its card, so only once its money is due
     canRecord: !cancelled && row.owed > 0 && (!isPass || ["owed", "bill-sent", "overdue", "failed"].includes(row.money)),
     canAddVisit: !isPass && !cancelled,
+    canCancel: !isPass && ["needs-a-quote", "quoted", "open"].includes(row.stage),
+    held: payments.filter((p) => p.status === "succeeded").reduce((sum, p) => sum + p.amount, 0),
   }
 }
 

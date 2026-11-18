@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it, vi } from "vitest"
-import { render, screen, within } from "@testing-library/react"
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { UndoToastProvider } from "@/components/blocks/UndoToast"
 import type { JobActions } from "./job-actions-types"
@@ -23,6 +23,7 @@ const jobActions = (over: Partial<JobActions> = {}): JobActions => ({
   cancelLine: vi.fn().mockResolvedValue({ ok: true, data: { jobTotal: 900 } }),
   recordPayment: vi.fn().mockResolvedValue(ok),
   addVisit: vi.fn().mockResolvedValue({ ok: true, data: { id: "new" } }),
+  cancelJob: vi.fn().mockResolvedValue(ok),
   addNote: vi.fn().mockResolvedValue({ ok: true, data: { id: "n-new", at: "2026-11-12T19:57:00Z", actor: "Ryan", what: "Back gate sticks", kind: "event", note: "Back gate sticks" } }),
   pass: {
     resendConfirmation: vi.fn().mockResolvedValue(ok), sendCardUpdateLink: vi.fn().mockResolvedValue(ok), cancel: vi.fn().mockResolvedValue(ok),
@@ -137,8 +138,35 @@ describe("the job panel", () => {
     expect(row).toHaveTextContent("Thu, Nov 19, Ryan Garner")
     expect(row).toHaveTextContent("Scheduled")
     await userEvent.click(row)
-    // the visit panel opens over the job panel: its own Customer section is there
+    // the visit panel replaces the job panel: its own Customer section is there and the job's Lines are gone
     expect(await screen.findByRole("heading", { name: "Customer" })).toBeInTheDocument()
+    await waitFor(() => expect(screen.getAllByRole("dialog")).toHaveLength(1))
+    expect(screen.queryByRole("heading", { name: "Lines" })).toBeNull()
+  })
+
+  it("opening a job while a visit's panel is open closes the visit's: one panel at a time", async () => {
+    view({ defaultJobId: "job-a" })
+    await userEvent.click(panel().getByRole("button", { name: /Repair.*Thu, Nov 19/ }))
+    expect(await screen.findByRole("heading", { name: "Customer" })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole("button", { name: "Ben Cole", hidden: true }))
+    expect(await screen.findByRole("heading", { name: "Lines" })).toBeInTheDocument()
+    await waitFor(() => expect(screen.getAllByRole("dialog")).toHaveLength(1))
+    expect(screen.queryByRole("heading", { name: "Customer" })).toBeNull()
+  })
+
+  it("Add job opens the new job's panel, not the visit's and not a second panel on top", async () => {
+    const createVisit = vi.fn().mockResolvedValue({ ok: true, data: { id: "v-new", jobId: "job-a" } })
+    view({ visitActions: { createVisit } as unknown as VisitActions })
+    await userEvent.click(screen.getByRole("button", { name: "New job" }))
+    const sheet = within(await screen.findByRole("dialog"))
+    await userEvent.type(sheet.getByLabelText("Find a customer"), "Reed")
+    await userEvent.click(await sheet.findByRole("button", { name: /Dana Reed/ }))
+    await userEvent.selectOptions(sheet.getByLabelText("What are we doing?"), "repair")
+    await userEvent.click(sheet.getByRole("button", { name: "Add job" }))
+    await waitFor(() => expect(createVisit).toHaveBeenCalledTimes(1))
+    expect(await screen.findByRole("heading", { name: "Lines" })).toBeInTheDocument()
+    await waitFor(() => expect(screen.getAllByRole("dialog")).toHaveLength(1))
+    expect(screen.queryByRole("heading", { name: "Customer" })).toBeNull()
   })
 
   it("strikes a canceled line through and adds up only the live ones; an unpriced line says Quote later", () => {
@@ -207,5 +235,88 @@ describe("the job panel", () => {
     await userEvent.selectOptions(dialog.getByLabelText("What is the visit for?"), "repair")
     await userEvent.click(dialog.getByRole("button", { name: "Add visit" }))
     expect(actions.addVisit).toHaveBeenCalledWith("job-a", { serviceKey: "repair" })
+  })
+
+  it("cancels a one-off job through a confirm dialog that says what happens, and the dialog closes", async () => {
+    const actions = jobActions()
+    view({ defaultJobId: "job-a", actions })
+    await userEvent.click(panel().getByRole("button", { name: "Cancel job" }))
+    const dialog = within(screen.getAllByRole("dialog").at(-1)!)
+    expect(dialog.getByRole("heading", { name: "Cancel this job?" })).toBeInTheDocument()
+    expect(dialog.getByText(/come off the schedule/)).toBeInTheDocument()
+    await userEvent.click(dialog.getByRole("button", { name: "Keep job" }))
+    expect(actions.cancelJob).not.toHaveBeenCalled()
+    await userEvent.click(panel().getByRole("button", { name: "Cancel job" }))
+    await userEvent.click(within(screen.getAllByRole("dialog").at(-1)!).getByRole("button", { name: "Cancel job" }))
+    await waitFor(() => expect(actions.cancelJob).toHaveBeenCalledWith("job-a"))
+  })
+
+  it("says why in the dialog when the job holds a payment, and offers no way to cancel it", async () => {
+    const actions = jobActions()
+    view({ defaultJobId: "job-install", actions })
+    await userEvent.click(panel().getByRole("button", { name: "Cancel job" }))
+    const dialog = within(screen.getAllByRole("dialog").at(-1)!)
+    expect(dialog.getByText("This job has a payment. Refund it first.")).toBeInTheDocument()
+    expect(dialog.queryByRole("button", { name: "Cancel job" })).toBeNull()
+    expect(actions.cancelJob).not.toHaveBeenCalled()
+  })
+
+  it("shows the API's own refusal inside the dialog", async () => {
+    const actions = jobActions({ cancelJob: vi.fn().mockResolvedValue({ ok: false, message: "This job has a payment. Refund it first." }) })
+    view({ defaultJobId: "job-a", actions })
+    await userEvent.click(panel().getByRole("button", { name: "Cancel job" }))
+    await userEvent.click(within(screen.getAllByRole("dialog").at(-1)!).getByRole("button", { name: "Cancel job" }))
+    expect(await within(screen.getAllByRole("dialog").at(-1)!).findByRole("alert")).toHaveTextContent("This job has a payment. Refund it first.")
+  })
+
+  it("has no Cancel job on a Season Pass (it has Cancel pass), a done job, or for a tech", () => {
+    for (const id of ["job_p-office", "job-d", "job-e"]) {
+      const { unmount } = view({ defaultJobId: id, actions: jobActions() })
+      expect(panel().queryByRole("button", { name: "Cancel job" })).toBeNull()
+      unmount()
+    }
+    view({ defaultJobId: "job-a", readOnly: true, actions: jobActions() })
+    expect(panel().queryByRole("button", { name: "Cancel job" })).toBeNull()
+  })
+
+  // The footer's first button is the next step, and the only filled one (Button's default variant carries bg-primary).
+  const footer = () => document.querySelector<HTMLElement>('[data-slot="sheet-footer"] > :first-child')!
+  const footerButtons = () => [...document.querySelectorAll('[data-slot="sheet-footer"] button, [data-slot="sheet-footer"] a')].map((b) => b.textContent)
+
+  it("a scheduled job leads with Open visit and Record the payment is not the primary while a visit is ahead", async () => {
+    view({ defaultJobId: "job-a", actions: jobActions() })
+    const names = footerButtons()
+    expect(names[0]).toBe("Open visit")
+    expect(footer()).toHaveClass("bg-primary-dark")
+    expect(names).toContain("Record the payment")
+    expect(names.indexOf("Record the payment")).toBeGreaterThan(0)
+    // the primary opens the next visit's panel, in place of the job's
+    await userEvent.click(footer())
+    expect(await screen.findByRole("heading", { name: "Customer" })).toBeInTheDocument()
+    await waitFor(() => expect(screen.getAllByRole("dialog")).toHaveLength(1))
+    expect(screen.queryByRole("heading", { name: "Lines" })).toBeNull()
+  })
+
+  it("a done job that is unpaid leads with Send an invoice and Record the payment is second", () => {
+    view({ defaultJobId: "job-d", actions: jobActions(), visitActions: visitActions() as VisitActions })
+    expect(footerButtons().slice(0, 2)).toEqual(["Send an invoice", "Record the payment"])
+  })
+
+  it("a done job with its invoice out leads with Record the payment", () => {
+    view({ defaultJobId: "job-f", actions: jobActions(), visitActions: visitActions() as VisitActions })
+    expect(footerButtons()[0]).toBe("Record the payment")
+  })
+
+  it("a done and paid job has only Open customer", () => {
+    view({ defaultJobId: "job-e", actions: jobActions() })
+    expect(footerButtons()).toEqual(["Open customer"])
+  })
+
+  it("a job that needs a quote leads with Add a line, which opens the line form (and the section keeps no second button)", async () => {
+    view({ defaultJobId: "job-b", actions: jobActions() })
+    expect(footerButtons()[0]).toBe("Add a line")
+    expect(screen.getAllByRole("button", { name: "Add a line" })).toHaveLength(1)
+    await userEvent.click(footer())
+    expect(await screen.findByLabelText("What was added")).toBeInTheDocument()
   })
 })

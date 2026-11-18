@@ -95,7 +95,7 @@ export interface VisitActions {
   resendConfirmation: (passId: string) => Promise<Outcome>
   /** `passes.sendCardUpdateLink`: the card link by email, from the customer panel's Card line */
   sendCardUpdateLink: (passId: string) => Promise<Outcome>
-  createVisit: (input: NewVisitInput) => Promise<Outcome<{ id: string }>>
+  createVisit: (input: NewVisitInput) => Promise<Outcome<{ id: string; jobId: string }>>
   /** New pass: `passes.sell`, the pass active from the start with no card step */
   sellPass: (input: NewPassInput) => Promise<Outcome<SoldPass>>
 }

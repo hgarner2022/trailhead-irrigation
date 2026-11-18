@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { PANEL_ROW, PanelHeading, PanelList, PanelRowEnd, PanelRowText } from "@/components/blocks/PanelParts"
@@ -144,11 +144,23 @@ export interface JobLinesSectionProps {
   /** a manager of an open one-off job may change the lines; everyone else reads the list */
   editable: boolean
   actions?: JobActions
+  /** the Add a line form is open; the job panel's footer opens it when Add a line is the primary. Left out, the section keeps its own. */
+  adding?: boolean
+  onAddingChange?: (adding: boolean) => void
+  /** the footer carries the Add a line button, so the section does not draw a second one */
+  addInFooter?: boolean
 }
 
-export function JobLinesSection({ jobId, lines, total, tax = 0, data, editable, actions }: JobLinesSectionProps) {
+export function JobLinesSection({ jobId, lines, total, tax = 0, data, editable, actions, adding: addingProp, onAddingChange, addInFooter = false }: JobLinesSectionProps) {
   const [editing, setEditing] = useState<string | null>(null)
-  const [adding, setAdding] = useState(false)
+  const [own, setOwn] = useState(false)
+  const adding = addingProp ?? own
+  const setAdding = onAddingChange ?? setOwn
+  const form = useRef<HTMLDivElement>(null)
+  // The footer's Add a line opens the form below the list: bring it into view.
+  useEffect(() => {
+    if (adding) form.current?.scrollIntoView?.({ block: "nearest" })
+  }, [adding])
   const services = (data.services ?? (SERVICE_LIST as readonly ServiceItem[])).filter((s) => s.active !== false)
   return (
     <section aria-labelledby="job-lines" data-slot="job-lines">
@@ -190,12 +202,16 @@ export function JobLinesSection({ jobId, lines, total, tax = 0, data, editable, 
         <span>Total</span>
         <span className="tabular-nums">{total > 0 ? money(total) : "Quote later"}</span>
       </p>
-      {editable && !adding && (
+      {editable && !adding && !addInFooter && (
         <Button type="button" variant="outline" className="mt-3 min-h-11" onClick={() => setAdding(true)}>
           Add a line
         </Button>
       )}
-      {editable && adding && <AddLine jobId={jobId} services={services} actions={actions} onDone={() => setAdding(false)} />}
+      {editable && adding && (
+        <div ref={form}>
+          <AddLine jobId={jobId} services={services} actions={actions} onDone={() => setAdding(false)} />
+        </div>
+      )}
     </section>
   )
 }

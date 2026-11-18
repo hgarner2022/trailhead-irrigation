@@ -31,6 +31,23 @@ describe("orderDay", () => {
     expect(order.map((id) => by.get(id)!.startTime)).toEqual(["08:00", "08:30", "09:00", "09:30"])
   })
 
+  it("gives a one-off job's visit a stop order and leaves its time alone: none stays none, a time it has stays", async () => {
+    const [job] = await db.select().from(s.job).where(eq(s.job.id, (await db.select().from(s.visit).where(eq(s.visit.kind, "blowout")))[0]!.jobId))
+    const [pass] = await db.select().from(s.visit).where(eq(s.visit.jobId, job!.id))
+    const mk = async (id: string, startTime: string | null) => {
+      const [j] = await db.insert(s.job).values({ organizationId: pass!.organizationId, customerId: pass!.customerId, propertyId: pass!.propertyId, source: "office", soldOn: "2027-10-01" }).returning()
+      await db.insert(s.visit).values({ id, organizationId: pass!.organizationId, jobId: j!.id, customerId: pass!.customerId, propertyId: pass!.propertyId, kind: "repair", status: "scheduled", personId: "person_truck-2", scheduledOn: "2027-10-07", startTime, durationMinutes: 60 })
+    }
+    await mk("oo-any", null)
+    await mk("oo-timed", "13:00")
+    const order = await orderDay(db, { personId: "person_truck-2", day: "2027-10-07" })
+    expect([...order].sort()).toEqual(["oo-any", "oo-timed"])
+    const stored = await db.select().from(s.visit).where(inArray(s.visit.id, order))
+    const by = new Map(stored.map((v) => [v.id, v]))
+    expect(by.get("oo-any")).toMatchObject({ startTime: null, stopOrder: expect.any(Number) })
+    expect(by.get("oo-timed")).toMatchObject({ startTime: "13:00", stopOrder: expect.any(Number) })
+  })
+
   it("leaves a day with nothing on it alone", async () => {
     expect(await orderDay(db, { personId: "person_truck-2", day: "2027-10-06" })).toEqual([])
   })

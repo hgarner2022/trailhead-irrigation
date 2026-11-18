@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useCallback, useMemo, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { DataGrid } from "@/components/blocks/DataGrid"
 import { PageHeader } from "@/components/blocks/PageHeader"
@@ -78,13 +78,18 @@ export function JobsScreen({ data, today, defaultJobId, readOnly = false, action
     setGridKey((k) => k + 1)
   }
   const out = billsOut(rows)
-  const show = (row: JobRow) => {
-    setJobId(row.id)
+  // One panel at a time: a job opening closes the visit panel, and a visit opening (the host's `onShow`) closes the job's.
+  const closeVisit = useRef<(() => void) | null>(null)
+  const closeJob = useCallback(() => setOpen(false), [])
+  const openJob = (id: string) => {
+    closeVisit.current?.()
+    setJobId(id)
     setOpen(true)
   }
+  const show = (row: JobRow) => openJob(row.id)
   return (
     <div data-slot="jobs-screen">
-      <VisitPanelHost data={data} today={today} readOnly={readOnly} actions={visitActions}>
+      <VisitPanelHost data={data} today={today} readOnly={readOnly} actions={visitActions} onShow={closeJob} closeRef={closeVisit}>
         <PageHeader
           title="Jobs"
           context={jobsContext(rows, today)}
@@ -95,7 +100,7 @@ export function JobsScreen({ data, today, defaultJobId, readOnly = false, action
                   {billsChip(out)}
                 </Button>
               )}
-              {!readOnly && <NewJobButton data={data} today={today} actions={visitActions} />}
+              {!readOnly && <NewJobButton data={data} today={today} actions={visitActions} onCreated={({ jobId }) => openJob(jobId)} />}
             </>
           }
         />
