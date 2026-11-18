@@ -44,134 +44,81 @@ Sources are vendor pages I opened on Nov 18 unless marked. "Not found" means the
 
 ## 2. The use cases
 
-Each is a story with what goes in and what must come out. "Decision" points to a question in section 3; nothing here depends on a design choice that is not listed there. Numbers are from Jobber's 2026 data (PR #72) unless marked.
+Each is a story with what goes in and what must come out. Rules Hannah has settled (section 3) shape the outputs. Numbers are from Jobber's 2026 data (PR #72) unless marked.
 
-| # | Story | In | Out | Decisions |
-|---|---|---|---|---|
-| 1 | **A new customer books a Season Pass.** Andrea, Erie, 8 zones, books on Fri Apr 24 | Address and point, zones, today, the two visits' windows (spring turn-on, fall blowout), the days Ryan and anyone else already have | For each of the two visits, a few days, one preselected, each with a reason in plain words ("We're already in Erie that day"). She picks, or accepts. Two visits made with their days; the day-before text will carry the window | 1, 2, 3 |
-| 2 | **A new customer books a spring turn-on.** Same address, no pass | As above, one visit | Same days as story 1 for that date; first one preselected. If Ryan already has three Erie turn-ons on Tue Apr 28, that Tuesday is the first offer (Hannah's rule) | 1, 2, 3 |
-| 3 | **A repair.** A broken head, today is Monday | Address, repair (about 2 hours, 3 a day at most) | The soonest workable days. A repair is urgent: this is where waiting for a neighbour matters least | 1, 12 |
-| 4 | **A fall blowout in the rush.** Wed Oct 7, Erie | Address, blowout (about 30 minutes, 6 to 8 a person a day), a window of Sep 28 to Nov 15, 54 blowouts booked in the peak week | Days in the next 28 days that still have room; as a day fills, the next is offered; if Erie is full for 4 weeks, "These days are full. We'll call you" and a job in Needs a day | 1, 3, 9 |
-| 5 | **A second customer on the same street.** An hour after story 2 | The same, plus Andrea's visit now on Tue Apr 28 | The same Tuesday first, so the day fills by neighbourhood, until it is full | 1, 9 |
-| 6 | **A town with no visits yet.** First Firestone booking of the spring | Address; Ryan has nothing in Firestone | The nearest open days, ideally days Ryan is in a nearby town (Longmont); the first booking seeds a day, the second Firestone customer then sees it with a neighbour | 1 |
-| 7 | **A customer must be home.** Jim; the controller is inside | The same, plus "I need to be there" | The same days. The day-before text gives a window; the question is how narrow | 7 |
-| 8 | **A customer reschedules online.** Andrea moves Tue Apr 28 to another day, 5 days ahead | Her visit, today, the 24-hour rule | The same offer, with her own slot not counted against the day; the old day is freed and its other stops re-ordered; Ryan sees "Andrea moved Tue to Thu". Inside 24 hours: "Text or call Ryan" | 1, 5 |
-| 9 | **A customer cancels.** One-off repair, 3 days ahead | Her visit, the 24-hour rule | Visit cancelled, line cancelled, the day's room returns for the next customer, a Home row for Ryan. Nothing is charged | none |
-| 10 | **Ryan adds a customer by phone.** Mrs Tran calls while he is driving | A name, address, service, a day Ryan prefers | The same offers shown beside his day picker with their reasons, so he can see what the rule would suggest; he can pick any other day and sees what breaks (too long a day, over capacity, outside the dates, a window already told) | 4, 6 |
-| 11 | **Ryan moves a visit** to another day or to the second truck | A visit and a target day and person | The old and new day re-ordered; the customer texted the new day; windows already told to other customers on either day are not changed behind their back | 4, 5 |
-| 12 | **A second truck is added mid-season.** Scott joined on Sep 21 in 2026 | A new person with working days and what they do per day; where they start | Offers count both people; a day can be full for one and open for the other; no existing visit moves | 8, 10 |
-| 13 | **A rain day.** Wed Oct 14, 15 stops, two people | Ryan marks the day rained out | Every visit that day needs a new day; each is offered days by the same rule; customers get the moved-date text with the reason | 9 |
-| 14 | **An address outside the six towns.** Dacono (24 visits to Frederick, Dacono, Boulder and Westminster in 2026) | An address in none of the six | Online: "We don't serve that town yet. Call Ryan" and nothing is saved. By phone: Ryan can still add it | 6 |
-| 15 | **The day before.** 6 pm Mon Apr 27, tomorrow's stops are ordered | The day's stops and their order | Each customer is told a two-hour window from that order. After the text goes out the window is a promise | 5 |
-| 16 | **Ordering Ryan's day.** Tue Apr 28, five stops | The stops, their points, Ryan's start | A stop order, times from 8:00 with service minutes and drive, lunch, and a before-and-after: "Drive 94 min, now 71, saves 23" | 10 |
+| # | Story | In | Out |
+|---|---|---|--- |
+| 1 | **A new customer books a Season Pass.** Andrea, Erie, 8 zones, books on Fri Apr 24 | Address and point, zones, today, the two visits' windows (spring turn-on, fall blowout), the days Ryan and anyone else already have | For each of the two visits, a few days, one preselected, each with a reason in plain words ("We're already in Erie that day"). She picks, or accepts. Two visits made with their days; the day-before text will carry the window |
+| 2 | **A new customer books a spring turn-on.** Same address, no pass | As above, one visit | Same days as story 1 for that date; first one preselected. If Ryan already has three Erie turn-ons on Tue Apr 28, that Tuesday is the first offer (Hannah's rule) |
+| 3 | **A repair.** A broken head, today is Monday | Address, repair (about 2 hours, 3 a day at most) | The soonest workable days, tomorrow at the earliest |
+| 4 | **A fall blowout in the rush.** Wed Oct 7, Erie | Address, blowout (about 30 minutes, 6 to 8 a person a day), a window of Sep 28 to Nov 15, 54 blowouts booked in the peak week | Days in the next 28 days that still have room; as a day fills, the next open day is offered, as far as the window runs (Nov 15); nobody is turned away |
+| 5 | **A second customer on the same street.** An hour after story 2 | The same, plus Andrea's visit now on Tue Apr 28 | The same Tuesday first, so the day fills by neighbourhood, until it is full |
+| 6 | **A town with no visits yet.** First Firestone booking of the spring | Address; Ryan has nothing in Firestone | The nearest open days, ideally days Ryan is in a nearby town (Longmont); the first booking seeds a day, the second Firestone customer then sees it with a neighbour |
+| 7 | **A customer must be home.** Jim; the controller is inside | The same, plus "I need to be there" | The same days. The day-before text gives a window; the question is how narrow |
+| 8 | **A customer reschedules online.** Andrea moves Tue Apr 28 to another day, 5 days ahead | Her visit, today, the 24-hour rule | The same offer, with her own slot not counted against the day; the old day is freed and its other stops re-ordered; Ryan sees "Andrea moved Tue to Thu". Inside 24 hours: "Text or call Ryan" |
+| 9 | **A customer cancels.** One-off repair, 3 days ahead | Her visit, the 24-hour rule | Visit cancelled, line cancelled, the day's room returns for the next customer, a Home row for Ryan. Nothing is charged |
+| 10 | **Ryan adds a customer by phone.** Mrs Tran calls while he is driving | A name, address, service, a day Ryan prefers | The same offers shown beside his day picker with their reasons, so he can see what the rule would suggest; he can pick any other day and sees what breaks (too long a day, over capacity, outside the dates, a window already told) |
+| 11 | **Ryan moves a visit** to another day or to the second truck | A visit and a target day and person | The old and new day re-ordered; the customer texted the new day (split button: "Move and text the customer", or "Move without texting"; silence is yes, but a must-be-home property is asked "Reply YES or pick another day" and shows "Waiting on customer"); windows already told to other customers on either day are not changed behind their back |
+| 12 | **A second truck is added mid-season.** Scott joined on Sep 21 in 2026 | A new person with working days and what they do per day; where they start | Offers count both people; a day can be full for one and open for the other; no existing visit moves |
+| 13 | **A rain day.** Wed Oct 14, 15 stops, two people | Ryan marks the day rained out | Every visit that day needs a new day; each is offered days by the same rule; customers get the moved-date text with the reason |
+| 14 | **An address outside the six towns.** Dacono (24 visits to Frederick, Dacono, Boulder and Westminster in 2026) | An address in none of the six | Online: "We don't serve that town yet. Call Ryan" and nothing is saved. By phone: Ryan can still add it |
+| 15 | **The day before.** 6 pm Mon Apr 27, tomorrow's stops are ordered | The day's stops and their order | Each customer is told a two-hour window from that order. After the text goes out the window is a promise |
+| 16 | **Ordering Ryan's day.** Tue Apr 28, five stops | The stops, their points, Ryan's start | A stop order, times from 8:00 with service minutes and drive, lunch, and a before-and-after: "Drive 94 min, now 71, saves 23" |
 
-## 3. Decisions the design cannot make without Hannah
+## 3. Decisions
 
-Numbers in the options come from Jobber's 2026 data or from a trial replay I ran for this: 466 of the season's customer visits through a draft of the rule. The replay is not in this file; it is saved in the shared notes folder and will be written up with the design.
+### 3.1 Settled with Hannah (taken as given; not re-asked)
 
-**1. How much later than the soonest open day may the day we preselect be?** Today a customer is offered the soonest days. Putting them on a day Ryan is already near saves him days but can make them wait.
+| # | Decision | Hannah's words or source |
+|---|---|---|
+| 1 | **Soonest first.** A customer is offered the soonest open days. Nearness to existing work orders the days within the soon range and breaks ties | "Customer service always comes first... getting them in quickly is priority" |
+| 2 | The earliest day offered is tomorrow, if someone has room | Hannah |
+| 3 | Capacity is counts per kind per person per day, as People holds today (six to eight blowouts a day). Service minutes only order the day and derive arrival windows | Hannah |
+| 4 | When every day is full, keep offering the next open day as far as the service's bookable window runs. No waitlist, nobody turned away | Hannah |
+| 5 | "Near" is three tiers: same town, then within about ten minutes' drive (fixed in code, no setting), then any open day | Hannah |
+| 6 | Order the day runs only when pressed, with Undo. No held-back buffer | Hannah |
+| 7 | Move is a split button: primary "Move and text the customer", caret "Move without texting"; Ryan may add a line. A moved customer need not confirm (silence is yes), except a `must_be_home` property: "Reply YES or pick another day", shown as "Waiting on customer" | Hannah |
+| 8 | Every visit text carries a signed one-visit link that opens the visit signed in, with Reschedule and Cancel | Hannah |
+| 9 | More than one truck is a requirement; a truck is a person on People | Hannah |
+| 10 | No Routes or Seasons settings; the service carries bookable from and to dates | Hannah |
+| 11 | Cancel or reschedule online closes 24 hours before the day; nothing is deleted; a customer picks a day, never a time | earlier rulings |
+
+**How I will build the design from these, so you can stop me:** the offer is the replacement body of the one server door the portal already calls, `visits.areaDays` (and `schedule.offerDays` for a booking that has no visit yet), with the same input and the same list of days, plus an explain field per day ("We're already in Erie that day"). The screens do not change. Drive time starts as a straight-line estimate (the ten-minute tier needs only that). Saturday is whatever People says a person works. A two-hour window for everyone, including a must-be-home customer, unless told otherwise.
+
+### 3.2 What these do not answer: four questions
+
+**Q1. How far past the soonest open day may we reach to find a neighbour day?** Decision 1 says soonest first and nearness orders "within the soon range". The April example: Mon Apr 27 is open and empty, Tue Apr 28 has three Erie turn-ons. The range is how far we may skip.
 
 | Option | A customer | Ryan |
 |---|---|---|
-| A. Always the soonest open day (0 days) | Soonest possible | About 154 driving days a season in the trial, against 166 in 2026: little saved |
-| B. Up to 3 days later | A short wait for a neighbour day | Roughly in between |
-| C. Up to 7 days later (my recommendation) | Offered a later first day than they got in 18 percent of cases, never by 7 days or more | About 130 driving days (22 percent fewer), 3 percent less drive |
-| D. Up to 14 days later | Many wait a week or more for a neighbour | About 110 days, but a third to two fifths of customers wait longer |
+| A. No skipping: nearness only orders the first three open days | Always gets the soonest days | Little clustering; my earlier trial of this arm needed 154 driving days against 166 in 2026 |
+| B. The soonest 5 open weekdays (about one week): offer the three nearest of them (recommended) | At most about 4 days later than the soonest day | More Erie work on the same days |
+| C. The soonest 10 open weekdays (two weeks) | May wait up to two weeks for a neighbour day | Densest |
 
-**2. How are the days shown?**
+(My earlier trial used a different rule with a weekday habit, so its numbers are not these; the full design re-runs it on the rule you choose.)
 
-| Option | A customer | Ryan |
-|---|---|---|
-| A. Date order, the best-fit day preselected and labelled (recommended) | Reads like a calendar; the label says why | Same as C above |
-| B. Best-fit first, then the others | The preselected one is always on top, but dates can jump around | Same |
-| C. Only the best-fit day, with "Show more days" | Fewest choices, least friction | Strongest density; a customer who dislikes it must tap |
-
-**3. How many days at first?**
+**Q2. An address outside the six towns** (Frederick, Dacono, Boulder, Westminster: 24 visits in 2026).
 
 | Option | A customer | Ryan |
 |---|---|---|
-| A. Three, "Show more" up to nine (recommended) | Enough choice, an escape | Offers stay near neighbours |
-| B. Five | More choice | More days with a single stop |
-| C. Three, no more | Simplest | Customers who cannot make them call |
+| A. Online: "We don't serve that town yet. Call Ryan"; nothing is saved. By phone Ryan may still add it, with a warning (recommended) | A phone call | Keeps control of far stops |
+| B. Online: offered days when it is within about ten minutes of a day Ryan already works | Books like anyone | Picks up Frederick and Dacono from Erie days; more far stops |
+| C. Take an email to tell them when we arrive | No day, a promise | A list to work |
 
-**4. When Ryan adds or moves a customer and the day is over capacity, what happens?**
-
-| Option | A customer | Ryan |
-|---|---|---|
-| A. Refused (today) | Never an overlong day | He must free room first |
-| B. Warned, one tick to allow, up to the comfortable number plus 2 (recommended) | Rarely sees a late arrival | His business: he is told what breaks and decides |
-| C. Allowed with no limit | Possible late windows | No friction, no safety |
-
-**5. Once a customer has been texted tomorrow's window, may Ryan move it?**
+**Q3. A rain day: 15 stops lose their day.**
 
 | Option | A customer | Ryan |
 |---|---|---|
-| A. Never; he must call them | The window is kept | Hard when a day goes wrong |
-| B. Yes, and the customer is texted "your window changed to 10 to 12" (recommended) | Told, never surprised | Free to fix the day |
-| C. Yes, silently | May wait at home for nothing | Free, but the promise is broken |
-
-**6. Frederick, Dacono, Boulder and Westminster (24 visits in 2026), and other addresses outside the six towns.**
-
-| Option | A customer | Ryan |
-|---|---|---|
-| A. Online: "Call Ryan", nothing saved; by phone: Ryan may add them (recommended) | A phone call | Keeps full control; warned it is outside |
-| B. Online: offered days if within a set drive of a day Ryan already works | Books like anyone | More small-town work, more far stops |
-| C. Online: take an email to tell them when we arrive | No day, a promise | A list to work |
-
-**7. A customer who must be home.**
-
-| Option | A customer | Ryan |
-|---|---|---|
-| A. A two-hour window like everyone (recommended) | May wait at home two hours | Simplest day |
-| B. A one-hour window, tighter ordering for that stop | Shorter wait | Stops with that rule are harder to fit |
-| C. The customer names a half day (morning or afternoon) | Fits their day | Fewer days offered to them |
-
-**8. Two trucks can both take a customer on a day: who gets them?**
-
-| Option | A customer | Ryan |
-|---|---|---|
-| A. Whoever adds least drive, ties to the owner (recommended) | Unaffected | Routes stay tight |
-| B. Spread evenly | Unaffected | Balanced days, more drive |
-| C. The owner first until full | Unaffected | Second truck gets the leftovers |
-
-**9. A rain day, 15 stops with no day.**
-
-| Option | A customer | Ryan |
-|---|---|---|
-| A. The app proposes each visit's best day; Ryan reviews and presses one button; customers are texted (recommended) | Told once, with the new day and the reason | One review, not 15 calls |
-| B. Each customer is texted to pick a new day | Choice, but 15 replies | Less control of the week |
+| A. The app proposes each visit's soonest nearest day; Ryan reviews and presses one button; each customer is texted the new day and the reason (recommended) | Told once | One review, not 15 calls |
+| B. Each customer is texted to pick | Choice, but 15 replies | Less control of the week |
 | C. Ryan places each by hand | A text each | A long afternoon |
 
-**10. Road drive times when the second truck starts: straight-line estimates, or Google Routes?**
+**Q4. Ryan adds or moves a visit onto a day that is already at its count for that kind.**
 
 | Option | A customer | Ryan |
 |---|---|---|
-| A. Straight line times 1.3 at 40 km/h for good (recommended to begin) | No visible difference | Free; errors on a few hops |
-| B. Google Routes basic, cached; my estimate is under $100 a season and may fit the free 10,000 elements a month | Slightly truer windows | A small bill; check Google's cache terms first |
-| C. A free road engine we host | Same as B | We run a server |
+| A. Refused: he frees room first | Never an overlong day | Blocked mid-call |
+| B. Warned with what breaks, one tick to allow (recommended) | Rarely late | His business: told, then decides. Online offers still never exceed the count |
+| C. Allowed silently | Possibly late | No friction, no safety |
 
-**11. Saturdays (35 of 466 visits in 2026, nearly all April to August).**
-
-| Option | A customer | Ryan |
-|---|---|---|
-| A. Never offered online; Ryan adds them by hand (recommended) | Monday to Friday only | Saturday stays his choice |
-| B. Offered when Ryan turns a Saturday on | More days in a busy week | He opts in week by week |
-| C. Always offered | Most choice | A seven-day week |
-
-**12. How many days does a repair get, and how fast?**
-
-| Option | A customer | Ryan |
-|---|---|---|
-| A. The three soonest workable days, ignoring neighbours (recommended) | Fixed fast | Some single-stop days |
-| B. The same rule as everything else | May wait a few days | Denser |
-
-**13. The most one person does in a day, for the offers** (Ryan's number, not mine). PR #72: Ryan comfortable at 6 blowouts, tops out at 7 or 8; repair up to 3 in a day; turn-on one a day in 2026 was demand, not capacity.
-
-| Option | A customer | Ryan |
-|---|---|---|
-| A. Blowout 6, turn-on 5, inspection 3, repair 3 per person (recommended, from the data) | Days fill a little sooner | Not overloaded |
-| B. His own numbers | Whatever he says | His call |
-
-**Not blocked, decided already:** no Routes or Seasons settings; a customer picks a day, never a time; nothing is deleted; cancel or reschedule online closes 24 hours before; the second truck is a person, not a new table.
-
-**State of this branch.** Parts three to eleven of the brief (the rule, ordering, moving and adding, capacity, drive time, the replay, the Jev seam, data and API, build order) are not in this file. The full draft I had written is saved at `scheduling-engine-full-draft-2026-11-18.md` in the shared notes folder and in git history on this branch (commit before this one); PR #74 still carries that earlier draft.
+**State of this branch.** Sections 3 to 11 of the original brief (the offer rule, ordering, moving and adding, capacity, drive time, the replay of 2026, the Jev seam, data and API, build order) are written after Hannah answers Q1 to Q4. An earlier full draft, written before Hannah's rule "soonest first", is in git history (commit 0f5a80e) and in the shared notes folder; PR #74 still carries it and is out of date.
