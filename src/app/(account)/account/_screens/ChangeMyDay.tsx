@@ -4,7 +4,7 @@ import type { ActionResult } from "../pass/_screens/CancelPassDialog"
 
 // Change my day (or Pick a day) for one visit: the days the scheduler offers, one tap each, then "Moved to Tuesday, May 5. We texted you the new
 // date." with the earlier day struck. It is the pass page's PickDayButtons given a visit instead of a pass kind. When no day is open inside the
-// window it says so and gives the phone number. Server-safe: the buttons carry their own client boundary.
+// window it says so and gives the phone number. Server-safe: the buttons carry their own client boundary, so `onPick` goes through as the server action itself (an inline arrow cannot cross to a client component and is a 500).
 
 export interface ChangeMyDayProps {
   visitId: string
@@ -30,5 +30,5 @@ export function ChangeMyDay({ visitId, name, currentDay, days, onPick }: ChangeM
       </p>
     )
   }
-  return <PickDayButtons kind={visitId} days={days} onPick={onPick && ((id, day) => onPick(id, day))} {...(currentDay ? { foldedLabel: "Change my day", previousDay: currentDay, ...(name ? { foldedAria: `Change my day, ${name}` } : {}) } : {})} />
+  return <PickDayButtons kind={visitId} days={days} onPick={onPick} {...(currentDay ? { foldedLabel: "Change my day", previousDay: currentDay, ...(name ? { foldedAria: `Change my day, ${name}` } : {}) } : {})} />
 }
