@@ -19,6 +19,18 @@ describe("the day-of texts, worded as section 4 of the messages design", () => {
   it("date-moved", () => {
     expect(dateMovedText({ ...base, visit: { ...blowout, day: "2027-10-21" } })).toBe(`Trailhead: your fall blowout moved to Thu, Oct 21, 8 to 10 am. Another day? ${link} ${STOP}`)
   })
+  it("date-moved carries Ryan's line, in plain ASCII, after the words", () => {
+    const moved = { ...blowout, day: "2027-10-21", visitUrl: `${origin}/account/visits/v1?t=abc` }
+    expect(dateMovedText({ ...base, visit: { ...moved, note: "Rain on the 14th \u2014 sorry!" } })).toBe(`Trailhead: your fall blowout moved to Thu, Oct 21, 8 to 10 am. Another day? Rain on the 14th - sorry! Doesn't work? Pick another day: ${moved.visitUrl} ${STOP}`)
+    expect(dateMovedText({ ...base, visit: { ...moved, note: "  Gate will be open  " } })).toContain("Another day? Gate will be open. Doesn't work?")
+    expect(dateMovedText({ ...base, visit: { ...moved, note: "   " } })).not.toContain("  ")
+  })
+  it("date-moved for a property that must be home asks for the YES and still has the signed link", () => {
+    const moved = { ...blowout, day: "2027-10-21", startTime: null, asked: true, visitUrl: `${origin}/account/visits/v1?t=abc` }
+    expect(dateMovedText({ ...base, visit: { ...moved, note: "Rain on the 14th" } })).toBe(`Trailhead: your fall blowout moved to Thu, Oct 21. Rain on the 14th. Reply YES or pick another day: ${moved.visitUrl} ${STOP}`)
+    // asked applies to a move only: the day-before text never asks
+    expect(dayBeforeText({ ...base, visit: moved })).not.toContain("Reply YES")
+  })
   it("date-confirm", () => {
     expect(dateConfirmText({ ...base, visit: blowout })).toBe(`Trailhead: your fall blowout is still Thu, Oct 14, 8 to 10 am. Need another day? ${link} ${STOP}`)
   })

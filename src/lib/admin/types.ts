@@ -206,6 +206,10 @@ export interface Visit {
   property?: Yard
   /** the customer must be there and has not yet picked a day; the visit waits in the tray for them (scheduling flow, 2026-11-12) */
   awaitingPick?: boolean
+  /** a time the customer has been promised (a told window, or a time on a one-off): moving it always texts them, so Move has no "without texting" (`timeBooked`) */
+  timeBooked?: boolean
+  /** Ryan moved it and asked the customer to reply YES (a property that must be home): Waiting on customer until they answer or the office clears it (`waitingVisitIds`); read from events, no column */
+  waiting?: boolean
   /** 1-based position in the person's day; from Jobber's route tool while Jobber is the field display */
   stopOrder?: number
   /** the property's point, geocoded once when the customer is created */

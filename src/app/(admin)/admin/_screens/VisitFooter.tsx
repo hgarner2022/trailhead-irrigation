@@ -10,7 +10,8 @@ import { jobUrl } from "@/lib/admin/links"
 import { dollars } from "@/lib/money/collect"
 import type { AdminData, Pass, Visit } from "@/lib/admin/types"
 import { CancelVisitDialog, EditDialog, TextDialog } from "./VisitEditText"
-import { MoveDialog, NotDoneDialog } from "./VisitMoveDone"
+import { MoveDialog } from "./VisitMove"
+import { NotDoneDialog } from "./VisitMoveDone"
 import { OnMyWay } from "./VisitOnMyWay"
 import { useOpenRecord } from "./RecordHost"
 import type { VisitActions } from "./visit-actions-types"
@@ -35,6 +36,7 @@ const LABELS: Record<BarId, string> = {
   text: "Send a text",
   "on-my-way": "On my way",
   cancel: "Cancel visit",
+  confirmed: "Customer confirmed",
   collect: "Collect the payment",
   "open-job": "Open job",
   "undo-done": "Undo done",
@@ -109,6 +111,10 @@ export function VisitFooter({ facts, people, plan, bar, today, visitDay, pass, a
       () => toast("Marked not done yet. ", async () => void (await actions.markDone(visit.id, visit.completedOn ? { completedOn: visit.completedOn } : {}))),
     )
   }
+  const confirmed = () => {
+    if (!actions) return console.info("customer confirmed", visit.id)
+    run(() => actions.confirmDay(visit.id), () => toast("Marked confirmed. "))
+  }
   const act: Record<BarId, FooterAction> = {
     place: { label: LABELS.place, onClick: () => setOpen("move") },
     move: { label: LABELS.move, onClick: () => setOpen("move") },
@@ -118,6 +124,7 @@ export function VisitFooter({ facts, people, plan, bar, today, visitDay, pass, a
     text: { label: LABELS.text, onClick: () => setOpen("text") },
     "on-my-way": { label: LABELS["on-my-way"], onClick: () => setOpen("on-my-way") },
     cancel: { label: LABELS.cancel, onClick: () => setOpen("cancel") },
+    confirmed: { label: LABELS.confirmed, onClick: confirmed, disabled: pending },
     collect: { label: plan.unpaid > 0 ? `Collect ${dollars(plan.unpaid)}` : LABELS.collect, onClick: onCollect },
     "open-job": host && visit.jobId ? { label: LABELS["open-job"], onClick: () => host.open("job", visit.jobId!) } : { label: LABELS["open-job"], href: visit.jobId ? jobUrl(visit.jobId) : undefined },
     "undo-done": { label: LABELS["undo-done"], onClick: undo, disabled: pending },

@@ -83,6 +83,16 @@ export interface VisitFacts {
   icsUrl: string
   /** the signed link to this visit's page, which opens already signed in as the customer (`visitLinkUrl`); texts carry it, absent in older rows */
   visitUrl?: string
+  /** a one-line note Ryan added when he moved the visit (`visits.move` `note`); only the date-moved messages say it */
+  note?: string
+  /** the visit is at a property that must be home: the date-moved text asks "Reply YES or pick another day" and the visit reads Waiting on customer until they answer */
+  asked?: boolean
+}
+
+/** Ryan's note as a text carries it: plain ASCII (smart quotes and dashes made plain), one line, ending in a full stop. "" when there is none. */
+export function noteLine(note: string | undefined): string {
+  const plain = (note ?? "").replace(/[\u2018\u2019]/g, "'").replace(/[\u201C\u201D]/g, '"').replace(/[\u2013\u2014]/g, "-").replace(/[^\x20-\x7E]/g, " ").replace(/\s+/g, " ").trim()
+  return plain ? (/[.!?]$/.test(plain) ? plain : `${plain}.`) : ""
 }
 
 /** Who is coming, as a sentence subject: the person's first name, else "Ryan and the crew" while the visit has no one. */

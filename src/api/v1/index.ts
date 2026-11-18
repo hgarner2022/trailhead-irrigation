@@ -26,7 +26,7 @@ import { paymentsReceipt } from "./portal/receipt"
 import { scheduleRun, scheduleWeek, scheduleDay, scheduleSlots, scheduleOfferDays } from "./schedule/handlers"
 import { servicesList, servicesCreate, servicesUpdate, servicesDeactivate } from "./services/handlers"
 import { settingsGet, settingsUpdate, settingsChangesList } from "./settings/handlers"
-import { visitsList, visitsGet, visitsMove, visitsStretch, visitsRequestMove, visitsLinkRequest, visitsAreaDays, visitsPick } from "./visits/handlers"
+import { visitsList, visitsGet, visitsMove, visitsConfirm, visitsStretch, visitsRequestMove, visitsLinkRequest, visitsAreaDays, visitsPick } from "./visits/handlers"
 import { visitsMarkClosed } from "./visits/money"
 import { visitsCancel, visitsCreate, visitsMarkNotDone, visitsUpdate } from "./visits/office"
 import { webhooksList, webhooksCreate, webhooksDelete, webhooksTest } from "./webhooks/handlers"
@@ -52,7 +52,7 @@ export const handlers: AnyHandler[] = [
   scheduleRun, scheduleWeek, scheduleDay, scheduleSlots, scheduleOfferDays,
   servicesList, servicesCreate, servicesUpdate, servicesDeactivate,
   settingsGet, settingsUpdate, settingsChangesList,
-  visitsList, visitsGet, visitsMove, visitsMarkClosed, visitsStretch, visitsRequestMove, visitsLinkRequest, visitsAreaDays, visitsPick,
+  visitsList, visitsGet, visitsMove, visitsConfirm, visitsMarkClosed, visitsStretch, visitsRequestMove, visitsLinkRequest, visitsAreaDays, visitsPick,
   visitsCreate, visitsUpdate, visitsMarkNotDone, visitsCancel,
   webhooksList, webhooksCreate, webhooksDelete, webhooksTest,
 ]

@@ -28,8 +28,10 @@ export interface ConfirmDialogProps {
   confirmDisabled?: boolean
   open: boolean
   onOpenChange: (open: boolean) => void
-  /** runs the confirm; answers the API's outcome */
-  onConfirm?: () => Promise<ConfirmOutcome>
+  /** runs the confirm; answers the API's outcome. `variant` is what `renderConfirm` passed (which of a split button's two ways was pressed) */
+  onConfirm?: (variant?: string) => Promise<ConfirmOutcome>
+  /** draws the confirm itself, for a split button (Move): `confirm(variant)` runs `onConfirm(variant)` with the dialog's pending and problem handling; the plain confirm button is not drawn */
+  renderConfirm?: (args: { confirm: (variant?: string) => void; pending: boolean }) => ReactNode
   /** what the catalog logs when there is no action */
   log?: string
   actions?: "confirm" | "none"
@@ -38,16 +40,16 @@ export interface ConfirmDialogProps {
   slot?: string
 }
 
-export function ConfirmDialog({ title, message, blocked, children, confirmLabel, destructive = false, confirmDisabled, open, onOpenChange, onConfirm, log, actions = "confirm", size = "sm", slot }: ConfirmDialogProps) {
+export function ConfirmDialog({ title, message, blocked, children, confirmLabel, destructive = false, confirmDisabled, open, onOpenChange, onConfirm, renderConfirm, log, actions = "confirm", size = "sm", slot }: ConfirmDialogProps) {
   const [pending, start] = useTransition()
   const [problem, setProblem] = useState("")
-  const confirm = () => {
+  const confirm = (variant?: string) => {
     if (!onConfirm) {
       if (log) console.info(log)
       return onOpenChange(false)
     }
     start(async () => {
-      const out = await onConfirm()
+      const out = await onConfirm(variant)
       setProblem(out.ok ? "" : out.message)
       if (out.ok) onOpenChange(false)
     })
@@ -69,8 +71,9 @@ export function ConfirmDialog({ title, message, blocked, children, confirmLabel,
             <Button variant="outline" className="min-h-11" onClick={() => onOpenChange(false)}>
               {destructive || blocked ? "Keep it" : "Cancel"}
             </Button>
-            {!blocked && confirmLabel && (
-              <Button className={cn("min-h-11", destructive && "bg-destructive text-white hover:bg-destructive/90")} onClick={confirm} disabled={pending || confirmDisabled}>
+            {!blocked && renderConfirm && renderConfirm({ confirm, pending: pending || Boolean(confirmDisabled) })}
+            {!blocked && !renderConfirm && confirmLabel && (
+              <Button className={cn("min-h-11", destructive && "bg-destructive text-white hover:bg-destructive/90")} onClick={() => confirm()} disabled={pending || confirmDisabled}>
                 {confirmLabel}
               </Button>
             )}

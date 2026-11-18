@@ -169,7 +169,7 @@ export function VisitPanel({ data, today, visitId, open, onOpenChange, onOpenVis
       title={visit.clientName}
       // The pills carry the state, so the line says only what the visit is and, once it has one, its day.
       subtitle={`${kindLabel(visit)}${visitDay ? `, ${dayLabel(visitDay)}` : ""}`}
-      pills={<StatusPills job={states} />}
+      pills={<StatusPills job={states} waiting={visit.waiting} />}
       facts={collectPlan ? undefined : factsOf(facts)}
       slot="visit-panel"
       notice={

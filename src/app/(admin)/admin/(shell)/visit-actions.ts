@@ -6,7 +6,7 @@ import { ApiError } from "@/api/core/errors"
 import { messagesSend } from "@/api/v1/messages/handlers"
 import { passesSell } from "@/api/v1/passes/sell"
 import { isRoutePerson, peopleList } from "@/api/v1/people/handlers"
-import { visitsGet, visitsMove } from "@/api/v1/visits/handlers"
+import { visitsConfirm, visitsGet, visitsMove } from "@/api/v1/visits/handlers"
 import { invoicesRemind, invoicesSend } from "@/api/v1/invoices/handlers"
 import { paymentsChargeCard, DECLINED } from "@/api/v1/payments/charge"
 import { paymentsRecord, paymentsRefund } from "@/api/v1/payments/handlers"
@@ -15,7 +15,7 @@ import { visitsCancel, visitsCreate, visitsMarkNotDone, visitsUpdate } from "@/a
 import { weekdayOf } from "@/api/v1/shared"
 import { paidTotal } from "@/lib/money/words"
 import type { NotDoneReason } from "@/lib/admin/visit-defaults"
-import type { NewPassInput, SoldPass } from "@/app/(admin)/admin/_screens/visit-actions-types"
+import type { MoveOptions, NewPassInput, SoldPass } from "@/app/(admin)/admin/_screens/visit-actions-types"
 import { act, nothing, type ActionOutcome } from "./act"
 
 // The server actions of the visit panel, the customer panel and New visit. Each one runs a handler through
@@ -26,25 +26,35 @@ export interface Where {
   day: string | null
   personId: string | null
   startTime: string | null
+  /** the move texted the customer, so its Undo texts them again */
+  notified?: boolean
 }
 
-/** Move to a day and a time (null is any time that day), with the visit's own person when they work that weekday, else the first on the schedule who does. */
-export const moveVisitTo = async (visitId: string, day: string, time: string | null): Promise<ActionOutcome<Where>> =>
+/**
+ * Move to a day and a time (null is any time that day), with the person the drop named, else the visit's own person when they work that
+ * weekday, else the first on the schedule who does. `notify` (default true) texts the customer; Ryan's `note` goes in the text. The
+ * answer says whether the move texted, so its Undo texts again (a booked time always texts, and the API refuses a silent move of one).
+ */
+export const moveVisitTo = async (visitId: string, day: string, time: string | null, options: MoveOptions = {}): Promise<ActionOutcome<Where>> =>
   act(async (ctx) => {
     const v = await callApi(ctx, visitsGet, { id: visitId })
     const people = (await callApi(ctx, peopleList, { active: "true" })).data.filter((p) => isRoutePerson(p) && p.workingDays.includes(weekdayOf(day)))
-    const person = people.find((p) => p.id === v.personId) ?? people[0]
+    const person = (options.personId ? people.find((p) => p.id === options.personId) : undefined) ?? people.find((p) => p.id === v.personId) ?? people[0]
     if (!person) throw new ApiError("unprocessable", "No one works that day. Pick another day.")
-    await callApi(ctx, visitsMove, { id: visitId, personId: person.id, scheduledOn: day, ...(time ? { startTime: time } : {}) })
-    return { day: v.scheduledOn, personId: v.personId, startTime: v.startTime }
+    const notify = options.notify ?? true
+    await callApi(ctx, visitsMove, { id: visitId, personId: person.id, scheduledOn: day, ...(time ? { startTime: time } : {}), notify, ...(notify && options.note?.trim() ? { note: options.note.trim() } : {}) })
+    return { day: v.scheduledOn, personId: v.personId, startTime: v.startTime, notified: notify }
   })
+
+/** The Customer confirmed button: `visits.confirm`. */
+export const confirmDay = async (visitId: string): Promise<ActionOutcome> => act((ctx) => nothing(callApi(ctx, visitsConfirm, { id: visitId })))
 
 /** The undo of a move: back to the day, person and time it had, or to Unscheduled when it had none. */
 export const putBack = async (visitId: string, was: Where): Promise<ActionOutcome> =>
   act((ctx) =>
     nothing(
       was.day && was.personId
-        ? callApi(ctx, visitsMove, { id: visitId, personId: was.personId, scheduledOn: was.day, ...(was.startTime ? { startTime: was.startTime } : {}) })
+        ? callApi(ctx, visitsMove, { id: visitId, personId: was.personId, scheduledOn: was.day, ...(was.startTime ? { startTime: was.startTime } : {}), notify: was.notified ?? false })
         : callApi(ctx, visitsUpdate, { id: visitId, unscheduled: true }),
     ),
   )

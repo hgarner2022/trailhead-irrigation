@@ -25,6 +25,12 @@ describe("eventWords: one sentence per kind", () => {
     expect(words("visit.moved", { name: "Spring turn-on", day: "2027-04-22", from: "2027-04-20" })).toBe("Spring turn-on moved from Apr 20 to Apr 22")
     expect(words("visit.moved", {})).toBe("The visit moved")
   })
+  it("a move says whether the customer was texted, and a confirmation is the customer's", () => {
+    expect(words("visit.moved", { name: "Spring turn-on", day: "2027-04-22", from: "2027-04-20", texted: false, quiet: true })).toBe("Spring turn-on moved from Apr 20 to Apr 22, not texted")
+    expect(words("visit.moved", { name: "Spring turn-on", day: "2027-04-22", from: "2027-04-20", texted: true, asked: true })).toBe("Spring turn-on moved from Apr 20 to Apr 22, customer asked to confirm")
+    expect(words("visit.moved", { name: "Spring turn-on", day: "2027-04-22", from: "2027-04-20", texted: true })).toBe("Spring turn-on moved from Apr 20 to Apr 22")
+    expect(words("visit.confirmed", { name: "Spring turn-on", day: "2027-04-22" })).toBe("Spring turn-on confirmed by the customer")
+  })
   it("visit.day-filled and visit.move-requested", () => {
     expect(words("visit.day-filled", { visit: "turn-on", from: "2027-04-20", to: "2027-04-22" })).toBe("Spring turn-on set for Apr 22, the next open day after Apr 20")
     expect(words("visit.move-requested", { preferredWeek: "2027-05-10", note: "Away until then" })).toBe("Move requested for the visit, week of May 10: Away until then")

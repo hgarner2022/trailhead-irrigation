@@ -14,7 +14,7 @@ const job = (row: Partial<JobRow>) => {
   return { state: "scheduled" as const, notClosed: false, ...statesOf(full, TODAY) }
 }
 
-const STATUSES: PillStatus[] = ["pending", "active", "paid", "needs-a-day", "scheduled", "routed", "done", "charged", "charge-failed", "cancelled", "skipped", "owed", "bill-sent", "failed", "overdue", "lapsed"]
+const STATUSES: PillStatus[] = ["pending", "active", "paid", "needs-a-day", "scheduled", "routed", "done", "charged", "charge-failed", "cancelled", "skipped", "owed", "bill-sent", "failed", "overdue", "lapsed", "waiting"]
 
 const meta = {
   title: "Blocks/StatusPill",
@@ -56,10 +56,11 @@ export const VisitStates: Story = {
         ["Done, charge failed", job({ status: "completed", completedOn: "2026-11-10", payments: [{ id: "p", visitId: "v", amount: 145, method: "card_on_file", status: "failed" }] })],
         ["Done, invoice sent", job({ status: "completed", completedOn: "2026-11-10", billSent: true })],
         ["Canceled", job({ status: "cancelled" })],
-      ].map(([name, j]) => (
+        ["Scheduled, waiting on the customer", job({}), true],
+      ].map(([name, j, waiting]) => (
         <li key={name as string} className="flex items-center gap-4">
           <span className="w-48 text-xs text-muted-foreground">{name as string}</span>
-          <StatusPills job={j as ReturnType<typeof job>} />
+          <StatusPills job={j as ReturnType<typeof job>} waiting={waiting === true} />
         </li>
       ))}
     </ul>

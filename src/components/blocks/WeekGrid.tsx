@@ -3,6 +3,7 @@
 import { useState, type DragEvent } from "react"
 import { ChevronLeft, ChevronRight, TriangleAlert, Users } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { StatusPill } from "./StatusPill"
 import { Button } from "@/components/ui/button"
 import { stopTime } from "@/app/(admin)/admin/_screens/home-model"
 import { dayFill, fillWords, townsWords } from "@/lib/admin/day-fill"
@@ -66,23 +67,26 @@ function VisitBlock({ visit, areas, selected, onSelect, draggable }: { visit: Vi
       aria-pressed={selected}
       onClick={() => onSelect(selected ? undefined : visit.id)}
       className={cn(
-        "relative flex w-full items-center gap-1 overflow-hidden rounded-lg border border-border border-l-4 bg-background px-2 py-1.5 text-left text-xs leading-tight transition-colors hover:bg-cream focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
+        "relative flex w-full flex-col items-stretch gap-0.5 overflow-hidden rounded-lg border border-border border-l-4 bg-background px-2 py-1.5 text-left text-xs leading-tight transition-colors hover:bg-cream focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
         areaBorder(index),
         selected && "ring-2 ring-primary/50",
         draggable && "cursor-grab",
       )}
     >
-      <span className="relative block min-w-0 flex-1 truncate" title={`${stopTime(visit)} · ${visit.clientName} · ${visit.town} · ${KIND_WORDS[visit.kind]}`}>
-        <span data-slot="stop-time" className={cn("tabular-nums text-muted-foreground", visit.startTime ? undefined : "sr-only")}>{`${stopTime(visit)} `}</span>
-        <span className="font-medium text-foreground">{visit.clientName}</span>
-        <span className="text-muted-foreground">{` · ${visit.town} · ${KIND_WORDS[visit.kind]}`}</span>
+      <span className="flex w-full items-center gap-1">
+        <span className="relative block min-w-0 flex-1 truncate" title={`${stopTime(visit)} · ${visit.clientName} · ${visit.town} · ${KIND_WORDS[visit.kind]}`}>
+          <span data-slot="stop-time" className={cn("tabular-nums text-muted-foreground", visit.startTime ? undefined : "sr-only")}>{`${stopTime(visit)} `}</span>
+          <span className="font-medium text-foreground">{visit.clientName}</span>
+          <span className="text-muted-foreground">{` · ${visit.town} · ${KIND_WORDS[visit.kind]}`}</span>
+        </span>
+        {visit.exception && (
+          <>
+            <TriangleAlert className="relative size-3.5 shrink-0 text-warning" aria-hidden />
+            <span className="sr-only">, moved</span>
+          </>
+        )}
       </span>
-      {visit.exception && (
-        <>
-          <TriangleAlert className="relative size-3.5 shrink-0 text-warning" aria-hidden />
-          <span className="sr-only">, moved</span>
-        </>
-      )}
+      {visit.waiting && <StatusPill status="waiting" data-pill="waiting" className="h-5 w-fit px-1.5 text-[11px]" />}
     </button>
   )
 }

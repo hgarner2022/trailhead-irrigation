@@ -24,6 +24,7 @@ import { plainRefusal, restoreVisit } from "./place-model"
 import { TEXT_DELAY_SECONDS } from "./use-texting-queue"
 import { ScheduleMoveTo } from "./ScheduleMoveTo"
 import { DayStepper, Exceptions, NextJobsLine } from "./ScheduleParts"
+import { MoveDialog } from "./VisitMove"
 import { dayContext, exceptionCount, firstJobWeek, moveOutcome, nextJobsWeek, weekContext } from "./schedule-model"
 import { routePeople } from "@/lib/admin/people"
 import { initialRecord } from "@/lib/admin/record-url"
@@ -123,6 +124,9 @@ function ScheduleBody({ data, today, defaultTab = "week", defaultDay, defaultWee
     if (id && panel) openVisit?.(id)
   }
   const [announcement, setAnnouncement] = useState("")
+  // a drop on a visit with a promised time, waiting in the Move dialog
+  const [drop, setDrop] = useState<{ visitId: string; personId: string; day: string; message: string } | null>(null)
+  const dropped = drop ? visits.find((v) => v.id === drop.visitId) : undefined
   // Place and Place all show their placements at once and hold the text for a minute; everything below reads the visits with them laid on.
   const placing = usePlacing({ data, visits, setVisits, people, todayDay, onMove, seconds: textDelaySeconds, announce: setAnnouncement, highlight: setSelectedId })
   const shown = placing.shown
@@ -144,6 +148,9 @@ function ScheduleBody({ data, today, defaultTab = "week", defaultDay, defaultWee
     const outcome = moveOutcome(visits, visitId, personId, dayIso, people, TIME_ZONE)
     // a drop where it already is, a day off and an unknown stop are answered here and make no call
     if (!outcome.moved) return setAnnouncement(outcome.message)
+    // A promised time (a time given to the customer, or a day-before text already sent) never moves silently: the drop opens the Move dialog, which texts.
+    const dragged = visits.find((v) => v.id === visitId)
+    if (dragged?.timeBooked) return setDrop({ visitId, personId, day: dayIso, message: outcome.message })
     setVisits(outcome.visits)
     if (onMove) return send(visitId, personId, dayIso, outcome.message)
     setAnnouncement(outcome.message)
@@ -212,6 +219,23 @@ function ScheduleBody({ data, today, defaultTab = "week", defaultDay, defaultWee
           </div>
         )}
         {view === "list" && <VisitsList data={data} today={today} forJob={forJob} defaultFilters={defaultFilters} />}
+        {dropped && drop && (
+          <MoveDialog
+            key={`drop-${drop.visitId}-${drop.personId}-${drop.day}`}
+            visit={dropped}
+            today={todayDay}
+            actions={visitActions}
+            open
+            onOpenChange={(o) => !o && setDrop(null)}
+            target={{ day: drop.day, personId: drop.personId, personName: people.find((p) => p.id === drop.personId)?.name }}
+            onMoved={() => {
+              // without the app's actions (the catalog) the screen shows the visit where it went; with them the refreshed data does
+              if (!visitActions) setVisits(moveOutcome(visits, drop.visitId, drop.personId, drop.day, people, TIME_ZONE).visits)
+              setAnnouncement(drop.message)
+              setDrop(null)
+            }}
+          />
+        )}
         {!readOnly && <NewJob data={data} today={today} open={jobDay !== null} onOpenChange={(o) => !o && setJobDay(null)} actions={visitActions} day={jobDay ?? undefined} />}
       </div>
     </TooltipProvider>

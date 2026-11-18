@@ -8,6 +8,7 @@ import { ScheduleScreen } from "./ScheduleScreen"
 import { VISITS_TODAY, visitsData } from "./visits-fixture"
 import { visitRows } from "./visits-model"
 import type { VisitActions } from "./visit-actions-types"
+import { UndoToastProvider } from "@/components/blocks/UndoToast"
 
 /** The panels read only the actions a button calls; these tests press none. */
 const noActions = {} as VisitActions
@@ -403,6 +404,71 @@ describe("ScheduleScreen Day view, stops per person", () => {
     fireEvent.drop(section("person_truck-1"), { dataTransfer: { getData: () => id } })
     expect(onMove).not.toHaveBeenCalled()
     expect(screen.getByRole("status")).toHaveTextContent("Percy is already with Ryan Garner on Thursday, November 12.")
+  })
+})
+
+describe("ScheduleScreen drag of a promised time", () => {
+  beforeEach(() => window.history.replaceState(null, "", "/admin/schedule"))
+  afterEach(() => window.history.replaceState(null, "", "/admin"))
+  const section = (person: string) => document.querySelector<HTMLElement>(`[data-slot="day-person"][data-person="${person}"]`)!
+  const percyId = data.visits.find((v) => v.clientName === "Percy" && v.startAt?.startsWith("2026-11-12"))!.id
+  const withBooked = (timeBooked: boolean): AdminData => ({ ...data, visits: data.visits.map((v) => (v.id === percyId ? { ...v, timeBooked } : v)) })
+  const actions = (): VisitActions => ({ move: vi.fn().mockResolvedValue({ ok: true, data: { day: "2026-11-12", personId: "person_truck-1", startTime: null, notified: true } }), putBack: vi.fn() } as unknown as VisitActions)
+
+  it("opens the Move dialog for a visit with a booked time instead of moving it, names the person, and texts through the same split button", async () => {
+    const onMove = vi.fn().mockResolvedValue({ ok: true, data: undefined })
+    const a = actions()
+    render(
+      <UndoToastProvider>
+        <ScheduleScreen data={withBooked(true)} today={TODAY} defaultTab="day" defaultDay="2026-11-12" onMove={onMove} visitActions={a} />
+      </UndoToastProvider>,
+    )
+    fireEvent.drop(section("person_truck-2"), { dataTransfer: { getData: () => percyId } })
+    // no silent move: no call, and the stop is still where it was
+    expect(onMove).not.toHaveBeenCalled()
+    expect(within(section("person_truck-1")).getByText("Percy", { exact: false })).toBeInTheDocument()
+    const dialog = within(await screen.findByRole("dialog"))
+    expect(dialog.getByText("With Tech Two.")).toBeInTheDocument()
+    expect(dialog.getByLabelText("Day")).toHaveValue("2026-11-12")
+    await userEvent.click(dialog.getByRole("button", { name: "More ways to move" }))
+    expect(await screen.findByRole("menuitem", { name: "Move without texting" })).toHaveAttribute("aria-disabled", "true")
+    await userEvent.keyboard("{Escape}")
+    await userEvent.click(dialog.getByRole("button", { name: "Move and text the customer" }))
+    await waitFor(() => expect(a.move).toHaveBeenCalledWith(percyId, "2026-11-12", null, { personId: "person_truck-2", notify: true }))
+  })
+
+  it("leaves the dialog without a call when it is dismissed", async () => {
+    const onMove = vi.fn()
+    render(
+      <UndoToastProvider>
+        <ScheduleScreen data={withBooked(true)} today={TODAY} defaultTab="day" defaultDay="2026-11-12" onMove={onMove} visitActions={actions()} />
+      </UndoToastProvider>,
+    )
+    fireEvent.drop(section("person_truck-2"), { dataTransfer: { getData: () => percyId } })
+    await userEvent.click(within(await screen.findByRole("dialog")).getByRole("button", { name: "Cancel" }))
+    expect(screen.queryByRole("dialog")).toBeNull()
+    expect(onMove).not.toHaveBeenCalled()
+  })
+
+  it("moves a visit with no promised time as it always did, with no dialog", async () => {
+    const onMove = vi.fn().mockResolvedValue({ ok: true, data: undefined })
+    render(
+      <UndoToastProvider>
+        <ScheduleScreen data={withBooked(false)} today={TODAY} defaultTab="day" defaultDay="2026-11-12" onMove={onMove} visitActions={actions()} />
+      </UndoToastProvider>,
+    )
+    fireEvent.drop(section("person_truck-2"), { dataTransfer: { getData: () => percyId } })
+    expect(onMove).toHaveBeenCalledWith(percyId, "person_truck-2", "2026-11-12")
+    expect(screen.queryByRole("dialog")).toBeNull()
+  })
+
+  it("draws Waiting on customer on a week block and on a day stop", () => {
+    const waiting: AdminData = { ...data, visits: data.visits.map((v) => (v.id === percyId ? { ...v, waiting: true } : v)) }
+    const { unmount } = render(<ScheduleScreen data={waiting} today={TODAY} />)
+    expect(within(cell("person_truck-1", "2026-11-12")).getByText("Waiting on customer")).toBeInTheDocument()
+    unmount()
+    render(<ScheduleScreen data={waiting} today={TODAY} defaultTab="day" defaultDay="2026-11-12" />)
+    expect(within(section("person_truck-1")).getByText("Waiting on customer")).toBeInTheDocument()
   })
 })
 

@@ -4,9 +4,10 @@ import { desc, eq } from "drizzle-orm"
 import * as s from "@/db/schema"
 import type { TestDb } from "@/db/test-db"
 import { recordEvent } from "@/lib/events/record"
+import { waitingVisitIds } from "@/lib/admin/move-rules"
 import { callApi } from "../../core/call"
 import { adminKey, apiDb, ctxFor, customerPerson, eventsOf, jobIdOfPassId, ORG, readKey, writeKey } from "../../test-helpers"
-import { visitsGet, visitsList, visitsMove, visitsRequestMove, visitsStretch } from "./handlers"
+import { visitsConfirm, visitsGet, visitsList, visitsMove, visitsRequestMove, visitsStretch } from "./handlers"
 import { visitsMarkClosed } from "./money"
 
 let db: TestDb
@@ -155,6 +156,103 @@ describe("visits.move", () => {
     const a = await callApi(ctx, visitsMove, { id: "p12-turn-on", personId: "person_truck-1", scheduledOn: "2027-05-11" })
     const b = await callApi(ctx, visitsMove, { id: "p12-turn-on", personId: "person_truck-1", scheduledOn: "2027-05-11" })
     expect(b).toEqual(a)
+  })
+})
+
+describe("visits.move texts, Ryan's line and Waiting on customer (step 4)", () => {
+  const textsOf = async (visitId: string) => (await db.select().from(s.messageLog)).filter((m) => m.visitId === visitId && m.kind === "date-moved").sort((x, y) => x.createdAt.getTime() - y.createdAt.getTime())
+  const withPhone = async (visitId: string) => {
+    const [v] = await db.select().from(s.visit).where(eq(s.visit.id, visitId))
+    await db.update(s.customer).set({ phone: "303-555-0142" }).where(eq(s.customer.id, v!.customerId))
+    return v!
+  }
+  const place = (id: string, day: string) => move({ id, personId: "person_truck-1", scheduledOn: day })
+
+  it("texts the new day with Ryan's line and the signed one-visit link, and records that it texted", async () => {
+    await withPhone("p9-turn-on")
+    await place("p9-turn-on", "2027-05-24")
+    await move({ id: "p9-turn-on", personId: "person_truck-1", scheduledOn: "2027-05-25", note: "  Rain on Tuesday  " })
+    const text = (await textsOf("p9-turn-on")).at(-1)
+    expect(text!.body).toMatch(/^Trailhead: your spring turn-on moved to Tue, May 25\. Another day\? Rain on Tuesday\. Doesn't work\? Pick another day: https:\/\/site\.test\/account\/visits\/p9-turn-on\?t=/)
+    expect(text!.body).not.toContain("Reply YES")
+    const [ev] = await eventsOf(db, { kind: "visit.moved", aboutId: "p9-turn-on" })
+    expect(ev!.detail).toMatchObject({ texted: true, note: "Rain on Tuesday", day: "2027-05-25" })
+    expect(ev!.detail).not.toHaveProperty("asked")
+  })
+
+  it("moves without texting when nothing was promised: no message, the event says so", async () => {
+    await withPhone("p9-blowout")
+    await place("p9-blowout", "2027-10-05")
+    await move({ id: "p9-blowout", personId: "person_truck-1", scheduledOn: "2027-10-06", notify: false })
+    expect(await textsOf("p9-blowout")).toHaveLength(0)
+    const [ev] = await eventsOf(db, { kind: "visit.moved", aboutId: "p9-blowout" })
+    expect(ev!.detail).toMatchObject({ texted: false, quiet: true })
+    // the note goes in the text, so a note with no text is refused
+    await expect(move({ id: "p9-blowout", personId: "person_truck-1", scheduledOn: "2027-10-07", notify: false, note: "hi" })).rejects.toMatchObject({ code: "invalid" })
+  })
+
+  it("never moves a booked time without texting: a told window, or a time on a one-off", async () => {
+    await withPhone("p4-blowout")
+    await place("p4-blowout", "2027-10-12")
+    // the day-before text went for its present day: the window is told
+    const [v] = await db.select().from(s.visit).where(eq(s.visit.id, "p4-blowout"))
+    await db.insert(s.messageLog).values({ organizationId: ORG, customerId: v!.customerId, visitId: v!.id, kind: "day-before", key: `p4-blowout-${v!.scheduledOn}`, channel: "sms", to: "303-555-0142", subject: null, body: "x", data: {}, status: "sent" })
+    await expect(move({ id: "p4-blowout", personId: "person_truck-1", scheduledOn: "2027-10-13", notify: false })).rejects.toThrow(/booked time, so the customer is always texted/)
+    expect(await textsOf("p4-blowout")).toHaveLength(0)
+    await expect(move({ id: "p4-blowout", personId: "person_truck-1", scheduledOn: "2027-10-13", startTime: "10:00" })).resolves.toMatchObject({ scheduledOn: "2027-10-13", startTime: "10:00" })
+    // a chosen time is in the text: the window and who is coming
+    expect((await textsOf("p4-blowout")).at(-1)!.body).toContain("moved to Wed, Oct 13, 10 am to 12 pm.")
+  })
+
+  it("asks a must-be-home property to reply YES and reads Waiting on customer until a confirmation, a later move or the customer's own pick", async () => {
+    const v = await withPhone("p3-blowout")
+    await db.update(s.property).set({ mustBeHome: true }).where(eq(s.property.id, v.propertyId))
+    await place("p3-blowout", "2027-10-19")
+    await move({ id: "p3-blowout", personId: "person_truck-1", scheduledOn: "2027-10-20", note: "Away on the 19th" })
+    const text = (await textsOf("p3-blowout")).at(-1)
+    expect(text!.body).toMatch(/^Trailhead: your fall blowout moved to Wed, Oct 20\. Away on the 19th\. Reply YES or pick another day: https:\/\/site\.test\/account\/visits\/p3-blowout\?t=/)
+    // `eventsOf` lists oldest first; the rule reads newest first, as the API lists them
+    const waiting = async () => waitingVisitIds((await eventsOf(db, { visitId: "p3-blowout" })).reverse())
+    expect((await waiting()).has("p3-blowout")).toBe(true)
+    // without the text there is nothing to answer
+    await move({ id: "p3-blowout", personId: "person_truck-1", scheduledOn: "2027-10-21", notify: false })
+    expect((await waiting()).has("p3-blowout")).toBe(false)
+    await move({ id: "p3-blowout", personId: "person_truck-1", scheduledOn: "2027-10-22" })
+    expect((await waiting()).has("p3-blowout")).toBe(true)
+    await callApi(ctxFor(db, writeKey), visitsConfirm, { id: "p3-blowout" })
+    expect((await waiting()).has("p3-blowout")).toBe(false)
+    expect(await eventsOf(db, { kind: "visit.confirmed", aboutId: "p3-blowout" })).toMatchObject([{ about: "visit", detail: { day: "2027-10-22" } }])
+  })
+
+  it("does not ask a first placement (a day set, not a move), and Confirm needs a scheduled visit and the write scope", async () => {
+    const v = await withPhone("p2-blowout")
+    await db.update(s.property).set({ mustBeHome: true }).where(eq(s.property.id, v.propertyId))
+    await place("p2-blowout", "2027-10-26")
+    const [ev] = await eventsOf(db, { kind: "visit.scheduled", aboutId: "p2-blowout" })
+    expect(ev!.detail).not.toHaveProperty("asked")
+    await db.update(s.visit).set({ status: "unscheduled", scheduledOn: null, personId: null }).where(eq(s.visit.id, "p7-blowout"))
+    await expect(callApi(ctxFor(db, writeKey), visitsConfirm, { id: "p7-blowout" })).rejects.toMatchObject({ code: "unprocessable" })
+    await expect(callApi(ctxFor(db, readKey), visitsConfirm, { id: "p2-blowout" })).rejects.toMatchObject({ code: "forbidden" })
+  })
+
+  it("asks nobody, and so waits on nobody, when the customer cannot be reached", async () => {
+    const v = await withPhone("p2-inspection")
+    await db.update(s.customer).set({ phone: null, email: null }).where(eq(s.customer.id, v.customerId))
+    await db.update(s.property).set({ mustBeHome: true }).where(eq(s.property.id, v.propertyId))
+    await place("p2-inspection", "2027-07-13")
+    await place("p2-inspection", "2027-07-14")
+    const [ev] = await eventsOf(db, { kind: "visit.moved", aboutId: "p2-inspection" })
+    expect(ev!.detail).toMatchObject({ texted: false })
+    expect(ev!.detail).not.toHaveProperty("asked")
+  })
+
+  it("texts every move Ryan makes, even back to a day it was texted before", async () => {
+    await withPhone("p8-blowout")
+    await place("p8-blowout", "2027-10-27")
+    await place("p8-blowout", "2027-10-28")
+    await place("p8-blowout", "2027-10-27")
+    await place("p8-blowout", "2027-10-28")
+    expect(await textsOf("p8-blowout")).toHaveLength(3)
   })
 })
 

@@ -50,6 +50,12 @@ export function withinCutoff(v: CutoffFacts, now: Date): boolean {
   return v.scheduledOn !== null && now.getTime() >= cutoffAt({ scheduledOn: v.scheduledOn }).getTime()
 }
 
+/**
+ * `withinCutoff` for a caller that holds today's Mountain calendar day and no instant (the admin's screens): the cut-off is a midnight, so
+ * "now is at or after it" is "today is at or after the day before the visit".
+ */
+export const withinCutoffOn = (day: string | null | undefined, today: string): boolean => Boolean(day) && today >= addDays(day!, -1)
+
 /** "Sunday, April 26, 11:59 pm": the last minute a customer may change the visit online. */
 export function cutoffWords(v: { scheduledOn: string }): string {
   const last = addDays(v.scheduledOn, -2)

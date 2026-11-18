@@ -4,6 +4,7 @@ import type { DragEvent } from "react"
 import { Lock, TriangleAlert } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { areaBorder } from "./area-colours"
+import { StatusPill } from "./StatusPill"
 
 // One stop in a person's day on the Schedule's Day view (docs/plans/2026-11-18-admin-holistic-design.md, 5.2): its number in that person's
 // route (the pin on the map carries the same number), its time ("9:00", or "Any time" for a stop with no time; a booked time carries a small lock because
@@ -27,12 +28,14 @@ export interface StopRowProps {
   selected?: boolean
   /** moved by someone other than the app (the week's warning mark) */
   moved?: boolean
+  /** Ryan moved it and asked the customer to reply YES: the neutral "Waiting on customer" pill */
+  waiting?: boolean
   draggable?: boolean
   onOpen: (id: string) => void
   className?: string
 }
 
-export function StopRow({ id, number, time, booked, name, town, service, areaIndex, selected, moved, draggable, onOpen, className }: StopRowProps) {
+export function StopRow({ id, number, time, booked, name, town, service, areaIndex, selected, moved, waiting, draggable, onOpen, className }: StopRowProps) {
   const onDragStart = (event: DragEvent<HTMLButtonElement>) => {
     event.dataTransfer.setData("text/plain", id)
     event.dataTransfer.effectAllowed = "move"
@@ -66,6 +69,7 @@ export function StopRow({ id, number, time, booked, name, town, service, areaInd
           </span>
           <span className="block truncate text-xs text-muted-foreground">{service}</span>
         </span>
+        {waiting && <StatusPill status="waiting" data-pill="waiting" className="shrink-0" />}
         {moved && (
           <>
             <TriangleAlert className="size-4 shrink-0 text-warning" aria-hidden />

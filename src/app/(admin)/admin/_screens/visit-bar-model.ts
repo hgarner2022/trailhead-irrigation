@@ -8,7 +8,7 @@ import type { VisitFacts } from "./visit-panel-model"
 import { dayOfVisit } from "./visit-panel-model"
 import type { VisitFooterPlan } from "./visit-collect-model"
 
-export type BarId = "place" | "move" | "mark-done" | "not-done" | "edit" | "text" | "on-my-way" | "cancel" | "collect" | "open-job" | "undo-done" | "refund"
+export type BarId = "place" | "move" | "mark-done" | "not-done" | "edit" | "text" | "on-my-way" | "cancel" | "confirmed" | "collect" | "open-job" | "undo-done" | "refund"
 
 export interface VisitBar {
   primary?: BarId
@@ -26,9 +26,11 @@ export function visitBar(facts: Pick<VisitFacts, "visit" | "states">, plan: Visi
   const day = dayOfVisit(visit)
   if (states.work === "scheduled") {
     if (!manager) return { ...EMPTY, primary: "mark-done" }
+    // a moved day the customer was asked to confirm (Waiting on customer) is cleared from More once they have said yes
+    const confirmed: BarId[] = visit.waiting ? ["confirmed"] : []
     // before its day the visit is moved first; Mark done stays one menu away
-    if (day && day > today) return { primary: "move", secondary: ["edit"], more: ["mark-done", "text"], destructive: "cancel" }
-    return { primary: "mark-done", secondary: ["move", "not-done"], more: ["edit", "text", ...(day === today ? (["on-my-way"] as BarId[]) : [])], destructive: "cancel" }
+    if (day && day > today) return { primary: "move", secondary: ["edit"], more: [...confirmed, "mark-done", "text"], destructive: "cancel" }
+    return { primary: "mark-done", secondary: ["move", "not-done"], more: [...confirmed, "edit", "text", ...(day === today ? (["on-my-way"] as BarId[]) : [])], destructive: "cancel" }
   }
   if (states.work === "needs-a-day" || states.work === "not-done") return manager ? { primary: "place", secondary: ["edit"], more: ["text"], destructive: "cancel" } : EMPTY
   if (states.work !== "done") return EMPTY

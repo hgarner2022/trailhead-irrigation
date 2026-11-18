@@ -34,7 +34,6 @@ export const ALLOW = {
   "_screens/settings-tabs/fields.tsx": { overlays: "Nov 18 2026, step 6: Settings shell (ConfirmButton becomes ConfirmDialog)" },
   // forms: New job's fields become FormRows with the sheet recipe (step 2); Settings fields with the shell (step 6)
   "_screens/CustomerPicker.tsx": { "no-table-label": "Nov 18 2026, step 2: New job's fields become FormRows" },
-  "_screens/ScheduleMoveTo.tsx": { "no-table-label": "Nov 18 2026, step 4: Move becomes its dialog" },
   "_screens/NewJobPass.tsx": { "no-table-label": "Nov 18 2026, step 2: New job's fields become FormRows" },
   "_screens/NewJobService.tsx": { "no-table-label": "Nov 18 2026, step 2: New job's fields become FormRows" },
 }

@@ -36,7 +36,7 @@ const addNote = () => vi.fn().mockResolvedValue({ ok: true, data: added })
 
 const ok = { ok: true as const, data: undefined }
 const visitActions = (): VisitActions => ({
-  move: vi.fn(), putBack: vi.fn(), markDone: vi.fn(), undoDone: vi.fn(), chargeCard: vi.fn(), recordPayment: vi.fn(), refundPayment: vi.fn(), sendBill: vi.fn(), remindBill: vi.fn(), markNotDone: vi.fn(), edit: vi.fn().mockResolvedValue(ok),
+  move: vi.fn(), confirmDay: vi.fn(), putBack: vi.fn(), markDone: vi.fn(), undoDone: vi.fn(), chargeCard: vi.fn(), recordPayment: vi.fn(), refundPayment: vi.fn(), sendBill: vi.fn(), remindBill: vi.fn(), markNotDone: vi.fn(), edit: vi.fn().mockResolvedValue(ok),
   addNote: addNote(), cancel: vi.fn(), updateProperty: vi.fn(), sendText: vi.fn(), sendOnTheWay: vi.fn(), resendConfirmation: vi.fn(), sendCardUpdateLink: vi.fn(), createVisit: vi.fn(), sellPass: vi.fn(),
 })
 

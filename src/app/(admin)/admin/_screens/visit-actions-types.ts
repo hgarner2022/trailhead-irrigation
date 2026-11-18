@@ -6,6 +6,15 @@ export interface Where {
   day: string | null
   personId: string | null
   startTime: string | null
+  /** the move texted the customer, so its Undo texts them again (a booked time always texts) */
+  notified?: boolean
+}
+
+/** What the Move dialog sends besides the day and the time: a person (from a drop on another row), whether to text, and Ryan's line for the text. */
+export interface MoveOptions {
+  personId?: string
+  notify?: boolean
+  note?: string
 }
 
 /** Money handed over for a done visit: a check, Venmo or cash, the reference (a check number, a handle), and the amount when the visit has no price yet. */
@@ -70,7 +79,9 @@ export interface YardChanges {
  * leaves the buttons doing nothing but log.
  */
 export interface VisitActions {
-  move: (visitId: string, day: string, time: string | null) => Promise<Outcome<Where>>
+  move: (visitId: string, day: string, time: string | null, options?: MoveOptions) => Promise<Outcome<Where>>
+  /** `visits.confirm`: the customer said yes to the moved day (by phone or in person), which ends Waiting on customer */
+  confirmDay: (visitId: string) => Promise<Outcome>
   /** the undo of a move or a not done */
   putBack: (visitId: string, was: Where) => Promise<Outcome>
   /** Mark done, and nothing else: how it is paid is the next step (`chargeCard`, `recordPayment`, `sendBill`, or nothing yet) */
