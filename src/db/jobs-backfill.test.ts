@@ -51,10 +51,17 @@ describe("migration 0014: line items backfill", () => {
     // 0015 to 0018 only add the property, card, pass and payment columns the seed now writes; the seed needs them to insert.
     const later = ["0015_property_fields", "0016_customer_card", "0017_job_pass", "0018_payment"].map((name) => all.find((f) => f.startsWith(name))!)
     for (const f of [...all.slice(0, at + 1), ...later]) for (const stmt of migration(f)) if (stmt.trim()) await client.exec(stmt)
-    // The seed also writes the old pass id and the job dates, columns migration 0021 adds; only its job column statements run here.
-    for (const stmt of migration(all.find((f) => f.startsWith("0021_legacy_expand"))!)) if (/^ALTER TABLE "job" ADD COLUMN/.test(stmt.trim())) await client.exec(stmt)
+    // The seed also writes the old pass id and the job dates, columns migration 0021 adds, and no longer writes `job.kind` (0021 makes it nullable); only those job column statements run here.
+    for (const stmt of migration(all.find((f) => f.startsWith("0021_legacy_expand"))!)) if (/^ALTER TABLE "job" (ADD COLUMN|ALTER COLUMN "kind" DROP NOT NULL)/.test(stmt.trim())) await client.exec(stmt)
     const org = data.organizationId
     await seed(drizzle(client, { schema }), data, { organizationId: org, admins: [], passes: true })
+    // The database here is the one the 0014 backfill ran on, where a pass job carried its kind and a `season_pass` row carried its zones: write them by hand, as the old code did (the seed no longer does).
+    await client.exec(`UPDATE job SET kind = 'pass' WHERE organization_id = '${org}'`)
+    for (const p of data.passes) {
+      await client.exec(
+        `INSERT INTO season_pass (id, organization_id, job_id, number, season, customer_id, property_id, zones, status) VALUES ('${p.id}', '${org}', 'job_${p.id}', '${p.number}', ${p.season}, '${p.clientId}', 'property-${p.clientId}', ${p.zones}, 'active')`,
+      )
+    }
     // The seed writes the fixture's lines itself, and no longer the visit's old amount column; the backfill is for a database that had no lines, whose visits carried their amounts.
     await client.exec(`UPDATE visit SET amount = (SELECT unit_price FROM line_item WHERE line_item.visit_id = visit.id LIMIT 1)`)
     await client.exec(`DELETE FROM line_item`)

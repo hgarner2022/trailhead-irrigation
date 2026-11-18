@@ -38,7 +38,7 @@ describe("seed", () => {
     expect(services.every((v) => typeof v.description === "string" && v.description.length > 0 && !v.description.includes("$"))).toBe(true)
     expect(services.every((v) => v.taxable === false && v.active === true)).toBe(true)
     expect(services.find((v) => v.key === "blowout")?.description).toBe(SERVICE_LIST.find((v) => v.key === "blowout")?.description)
-    expect(await n(s.seasonPass)).toBe(0)
+    expect(await n(s.job)).toBe(0)
     expect(await n(s.jobberClient)).toBe(0)
   })
 
@@ -60,7 +60,7 @@ describe("seed", () => {
 
   it("is idempotent", async () => {
     await seed(db, data, { organizationId: org, admins: ["hannah@example.com", "ryan@example.com"], passes: true, mirror: true })
-    const counts = async () => [await n(s.person), await n(s.service), await n(s.seasonPass), await n(s.visit), await n(s.lineItem), await n(s.consent), await n(s.jobberVisit)]
+    const counts = async () => [await n(s.person), await n(s.service), await n(s.job), await n(s.visit), await n(s.lineItem), await n(s.consent), await n(s.jobberVisit)]
     const people = () => db.select({ id: s.person.id, name: s.person.name, email: s.person.email, role: s.person.role, truck: s.person.truck }).from(s.person).orderBy(s.person.id)
     const first = await counts()
     const firstPeople = await people()
@@ -116,13 +116,15 @@ describe("seed", () => {
   })
 
   it("seeds the fixture passes with visits, consents and the mirror when asked", async () => {
-    expect(await n(s.seasonPass)).toBe(data.passes.length)
+    expect(await n(s.job)).toBe(data.passes.length)
     expect(await n(s.visit)).toBe(data.passes.reduce((sum, p) => sum + p.visits.length, 0))
     expect(await n(s.consent)).toBe(data.passes.filter((p) => p.consent).length)
     expect(await n(s.jobberClient)).toBe(data.clients.length)
-    const [p1] = await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, "p1"))
-    expect(p1.number).toBe("TH-2027-0001")
-    expect(p1.inspection).toBe(true)
+    const [p1] = await db.select().from(s.job).where(eq(s.job.id, "job_p1"))
+    expect(p1.passNumber).toBe("TH-2027-0001")
+    expect(p1.season).toBe(data.passes.find((p) => p.id === "p1")!.season)
+    const inspection = await db.select({ id: s.visit.id }).from(s.visit).where(eq(s.visit.id, "p1-inspection"))
+    expect(inspection).toHaveLength(1)
     const done = await db.select().from(s.visit).where(eq(s.visit.id, "p1-turn-on"))
     expect(done[0].status).toBe("completed")
     expect(done[0].completedOn).toBe("2027-05-03")

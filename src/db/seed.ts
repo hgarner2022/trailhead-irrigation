@@ -169,39 +169,11 @@ async function seedPasses(db: Database, snapshot: AdminData, org: string) {
       .insert(s.job)
       .values({
         id: jobId, organizationId: org, customerId: pass.clientId, propertyId, source: "checkout", season: pass.season, passNumber: pass.number,
-        // `job.kind` is not read or written by the app (the kind is derived); the seed still fills it because the migration tests build databases from before 0021, where it is not null.
-        kind: "pass" as const,
-        // The legacy status too, for the same reason: migration 0021's insert trigger gives a job that has a kind, is not pending and has no sold day today as its sold day, so a pending fixture must say pending (the old code reads it as pending as well).
-        status: pass.status === "pending" ? ("pending" as const) : ("active" as const),
-        // The old pass id and the sold day, on insert only: the day the job row is made (its created_at), empty for a pending fixture, which is not sold yet (migration 0021's rule).
+        // The old pass id and the sold day, on insert only: the day the job row is made (its created_at), empty for a pending fixture (a pending pass is a job with no sold day).
         legacyPassId: pass.id,
         soldOn: pass.status === "pending" ? null : toMountainDay(new Date().toISOString()),
         // A cancelled fixture is cancelled the way every cancelled pass is: `cancelled_at` on its job (what `passStatus` reads).
         cancelledAt: pass.status === "cancelled" ? new Date() : undefined,
-      })
-      .onConflictDoNothing()
-    await db
-      .insert(s.seasonPass)
-      .values({
-        id: pass.id,
-        jobId,
-        organizationId: org,
-        number: pass.number,
-        season: pass.season,
-        customerId: pass.clientId,
-        propertyId,
-        zones: pass.zones,
-        inspection: pass.visits.some((v) => v.kind === "inspection"),
-        turnOnPreference: pass.turnOnPreference,
-        blowoutPreference: pass.blowoutPreference,
-        needsCustomerHome: pass.needsCustomerHome ?? false,
-        accessNote: pass.accessNote,
-        status: pass.status,
-        cardLast4: pass.cardLast4,
-        // A fake Stripe handle beside the last four, so a fixture card counts as a card; it never reaches Stripe (no Stripe customer).
-        stripePaymentMethodId: pass.cardLast4 ? `pm_fixture_${pass.clientId}` : undefined,
-        cardExpires: pass.cardExpires,
-        cardFailedAt: pass.cardFailedAt ? new Date(pass.cardFailedAt) : undefined,
       })
       .onConflictDoNothing()
     await db
@@ -211,7 +183,6 @@ async function seedPasses(db: Database, snapshot: AdminData, org: string) {
           id: `${pass.id}-${v.kind}`,
           organizationId: org,
           jobId,
-          passId: pass.id,
           customerId: pass.clientId,
           propertyId,
           kind: v.kind,
@@ -236,7 +207,6 @@ async function seedPasses(db: Database, snapshot: AdminData, org: string) {
               id: `charge-${pass.id}-${v.kind}-1`,
               organizationId: org,
               jobId,
-              passId: pass.id,
               visitId: `${pass.id}-${v.kind}`,
               customerId: pass.clientId,
               attempt: 1,

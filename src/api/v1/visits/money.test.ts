@@ -49,7 +49,7 @@ describe("Done and the money", () => {
     const out = await callApi(as(), visitsMarkClosed, { id: v.id, paidBy: { method: "check", reference: "1042" } })
     expect(out).toMatchObject({ status: "completed", paidBy: "check", paymentStatus: "paid" })
     const [charge] = await db.select().from(s.charge).where(eq(s.charge.visitId, v.id))
-    expect(charge).toMatchObject({ method: "check", reference: "1042", status: "succeeded", amount: 145, passId: null })
+    expect(charge).toMatchObject({ method: "check", reference: "1042", status: "succeeded", amount: 145 })
     const receipts = (await db.select().from(s.messageLog)).filter((m) => m.visitId === v.id && m.kind === "receipt")
     expect(receipts).toHaveLength(1)
     expect(receipts[0]!.body).toContain("check")
