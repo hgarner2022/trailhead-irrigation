@@ -16,7 +16,7 @@ export const invoicesSend = defineHandler({
   name: "invoices.send",
   method: "POST",
   path: "/invoices",
-  scope: "write",
+  scope: "collect",
   status: 201,
   summary:
     "Send an invoice for a job that is done and still owes money. The job's lines are frozen as they are now, the tax comes from the billing settings, the invoice is due the settings' number of days after today, and one message with the pay link goes to the customer (a text when they have a mobile, an email otherwise). A job with an invoice already open refuses a second one.",

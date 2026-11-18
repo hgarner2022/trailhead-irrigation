@@ -13,7 +13,7 @@ import { taxRuleOf, type TaxRule } from "@/lib/jobs/tax"
 import { stageOf } from "@/lib/jobs/stage"
 import { invoiceOpen, invoiceStatus } from "@/lib/money/invoice"
 import { allocateJobPayments, jobMoney as moneyOfJob, jobOwed } from "@/lib/money/words"
-import { NOT_CLOSED_LOOKBACK_DAYS, visitJob, visitPaid } from "./jobs"
+import { NOT_CLOSED_LOOKBACK_DAYS, visitJob, visitPaid, visitPaidTotal } from "./jobs"
 import { newestNote, storiesOf, type StoryEvent } from "./story"
 import type {
   AdminInvoice, AdminPayment, SoldJob, AdminData, Attention, BusyBlock, Client, Consent, Invoice, Message, MessageKind, MonthTotal, Pass, PassVisit, Quote, SettingsChange,
@@ -395,11 +395,28 @@ function visitRows(i: ShapeInput, app: Visit[], all: Visit[], jobs: SoldJob[] = 
       out.push({ kind: "not-closed", key: v.id, visitId: v.id, message: `${possessive(v.clientName)} ${KIND_WORDS[v.kind] ?? "visit"} on ${shortDay(job.day)} is not marked done`, since: instantOf(job.day, v.startTime ?? null) })
   }
   const appIds = new Set(app.map((v) => v.id))
+  const cardOf = new Map(i.customers.filter((c) => c.card?.last4).map((c) => [c.id, c.card!]))
+  const jobOfVisit = (v: Visit) => jobs.find((j) => j.visitIds.includes(v.id))
+  const unpaidOf = (v: Visit) => Math.max(0, (v.price ?? 0) - visitPaidTotal(v))
   // Done and owed, one row per JOB: booked work whose visits are all done (or canceled) with money still to come, read from the lines and the payment rows
   // (`jobMoney`). A pass is charged to its card on its own, and a failed charge has its own row. The row opens the job's latest done visit that is itself owed (not paid up), else its latest done visit.
   // A job with an open invoice has no owed row: it reads Invoice sent, and its invoice has its own row once it is overdue (below).
+  // A customer with a card on file has no "Done, unpaid" row: the card is charged by a press, and the next morning a visit nobody pressed Charge for gets its own row (below).
+  // A Season Pass is paid visit by visit, so its done unpaid visits each have a row of their own (the key is the visit); other work has one row per job.
+  for (const v of all) {
+    const j = jobOfVisit(v)
+    if (!j || j.kind !== "pass" || !appIds.has(v.id) || v.status !== "completed" || cardOf.has(v.clientId) || j.invoice || visitPaid(v) || unpaidOf(v) <= 0) continue
+    out.push({ kind: "owed", key: v.id, jobId: j.id, visitId: v.id, message: `${possessive(v.clientName)} ${KIND_WORDS[v.kind] ?? "visit"} is done, $${unpaidOf(v)} unpaid`, since: instantOf(v.completedOn ?? i.today, "12:00") })
+  }
+  for (const v of all) {
+    const j = jobOfVisit(v)
+    if (!appIds.has(v.id) || v.status !== "completed" || !cardOf.has(v.clientId) || v.chargeFailed || j?.invoice || j?.status === "cancelled" || visitPaid(v) || unpaidOf(v) <= 0 || (v.completedOn ?? i.today) >= i.today) continue
+    // a card payment that was refunded is not charged again by a button on Home: the visit's panel offers the other ways
+    if ((v.payments ?? []).some((p) => (p.method === "card_on_file" || p.method === "card_now") && p.status === "succeeded" && p.amount > 0)) continue
+    out.push({ kind: "charge-not-pressed", key: v.id, ...(j ? { jobId: j.id } : {}), visitId: v.id, amount: unpaidOf(v), message: `Card not charged for ${possessive(v.clientName.split(" ")[0] ?? v.clientName)} ${KIND_WORDS[v.kind] ?? "visit"}, $${unpaidOf(v)} unpaid`, since: instantOf(v.completedOn!, "12:00") })
+  }
   for (const j of jobs) {
-    if (j.kind === "pass" || !j.money || j.money.owed <= 0 || j.invoice) continue
+    if (j.kind === "pass" || !j.money || j.money.owed <= 0 || j.invoice || cardOf.has(j.customerId)) continue
     const mine = all.filter((v) => j.visitIds.includes(v.id) && appIds.has(v.id) && v.status !== "cancelled")
     const done = mine.filter((v) => v.status === "completed")
     if (!done.length || done.length !== mine.length) continue
@@ -430,6 +447,10 @@ export function attention(i: ShapeInput, passes: Pass[], visitRows: Attention[] 
       out.push({ kind: "pending-pass", key: p.id, passId: p.id, message: `${p.firstName} started ${p.number} and has not paid`, since: p.createdAt })
   for (const p of passes) {
     if (p.status !== "cancelled" && p.cardFailedAt) out.push({ kind: "charge-failed", key: `${p.id}@${p.cardFailedAt}`, passId: p.id, message: `The card on ${p.number} didn't go through; ${p.firstName} has the update link`, since: p.cardFailedAt })
+  }
+  // A card that failed for a customer with no Season Pass (a one-off job): the pass rows above cover a pass holder, and the customer has the card link by email.
+  for (const c of i.customers) {
+    if (!c.hasPass && c.card?.failedAt) out.push({ kind: "charge-failed", key: `${c.id}@${c.card.failedAt}`, customerId: c.id, message: `The card for ${fullName(c.firstName, c.lastName ?? undefined)} didn't go through; ${c.firstName} has the update link`, since: c.card.failedAt })
   }
   for (const a of i.alerts ?? []) {
     // A no-card row goes away once the visit is paid (the money was recorded) or its pass is gone.

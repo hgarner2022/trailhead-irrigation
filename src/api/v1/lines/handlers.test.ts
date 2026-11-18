@@ -104,7 +104,8 @@ describe("lines.update and lines.cancel", () => {
   it("refuses to change a line once its visit is done and paid, and a line on a job paid in full", async () => {
     const v = await callApi(as(), visitsCreate, { customerId: "c100", kind: "repair", price: 145, scheduledOn: nextDay() })
     const [own] = await liveLines(v.jobId)
-    await callApi(as(adminKey), visitsMarkClosed, { id: v.id, paidBy: { method: "cash" } })
+    await callApi(as(adminKey), visitsMarkClosed, { id: v.id })
+    await callApi(as(adminKey), paymentsRecord, { jobId: v.jobId, visitId: v.id, amount: 145, method: "cash" })
     await expect(callApi(as(), linesUpdate, { id: own!.id, unitPrice: 100 })).rejects.toMatchObject({ code: "conflict" })
     await expect(callApi(as(), linesCancel, { id: own!.id })).rejects.toMatchObject({ code: "conflict" })
   })

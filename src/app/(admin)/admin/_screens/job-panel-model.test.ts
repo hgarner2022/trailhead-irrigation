@@ -101,11 +101,11 @@ describe("footerPlan: the next step is the primary", () => {
     expect(footerPlan({ ...unpriced, row: { ...unpriced.row, stage: "open" } }, true)).toEqual({ primary: "open-visit", nextVisitId: "office-needs-day" })
   })
 
-  it("a done job that is unpaid sends the invoice; with an invoice out it takes the payment", () => {
-    expect(footerPlan(facts(ownedJobId), true)).toEqual({ primary: "send-invoice" })
+  it("a done job that is unpaid collects the payment, with or without an invoice out: the invoice and the check are choices inside Collect", () => {
+    expect(footerPlan(facts(ownedJobId), true)).toEqual({ primary: "collect" })
     const billed = facts(billedJobId)
     expect(billed.bill.invoice).toBeDefined()
-    expect(footerPlan(billed, true)).toEqual({ primary: "record" })
+    expect(footerPlan(billed, true)).toEqual({ primary: "collect" })
   })
 
   it("a done and paid job has no primary", () => {

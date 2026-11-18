@@ -9,7 +9,7 @@ import type { JobFacts } from "./job-panel-model"
 import { useOpenVisit } from "./VisitPanelHost"
 
 // The job panel's footer: one filled primary, the next step for this job (`footerPlan`: Add a line for a job waiting on a quote,
-// Open visit while a visit is ahead, Send an invoice for work done and unpaid, Record the payment once an invoice is out), then
+// Open visit while a visit is ahead, Collect $145 for work done and unpaid, which opens How is this paid?), then
 // the other buttons as outlines, Open customer last, and the one destructive ghost button at the far right (Cancel pass or Cancel
 // job). A tech has no buttons but Open customer. Open visit opens that visit's panel in place of this one.
 
@@ -22,8 +22,8 @@ export interface JobFooterProps {
   passOpen: boolean
   pass?: Pass
   pending: boolean
-  onSendBill: () => void
-  onRecord: () => void
+  /** opens How is this paid?: the card, check, Venmo, cash, an invoice */
+  onCollect: () => void
   onAddVisit: () => void
   onAddLine: () => void
   onSendCardUpdateLink: () => void
@@ -32,7 +32,7 @@ export interface JobFooterProps {
   onCancelJob: () => void
 }
 
-export function JobFooter({ facts, plan, canAct, passOpen, pass, pending, onSendBill, onRecord, onAddVisit, onAddLine, onSendCardUpdateLink, onResendConfirmation, onCancelPass, onCancelJob }: JobFooterProps) {
+export function JobFooter({ facts, plan, canAct, passOpen, pass, pending, onCollect, onAddVisit, onAddLine, onSendCardUpdateLink, onResendConfirmation, onCancelPass, onCancelJob }: JobFooterProps) {
   const openVisit = useOpenVisit()
   const { primary } = plan
   // The first button is filled; the rest are outlines.
@@ -56,11 +56,8 @@ export function JobFooter({ facts, plan, canAct, passOpen, pass, pending, onSend
   if (canAct && primary === "add-line") {
     buttons.push({ key: "add-line", node: <Button key="add-line" type="button" className="min-h-11" onClick={onAddLine}>Add a line</Button> })
   }
-  if (canAct && facts.bill.canSend) {
-    buttons.push({ key: "send-invoice", node: <Button key="send-invoice" type="button" variant={variant("send-invoice")} className="min-h-11" disabled={pending} onClick={onSendBill}>Send an invoice</Button> })
-  }
-  if (canAct && facts.canRecord) {
-    buttons.push({ key: "record", node: <Button key="record" type="button" variant={variant("record")} className="min-h-11" onClick={onRecord}>Record the payment</Button> })
+  if (canAct && (facts.bill.canSend || facts.canRecord)) {
+    buttons.push({ key: "collect", node: <Button key="collect" type="button" variant={variant("collect")} className="min-h-11" disabled={pending} onClick={onCollect}>{`Collect $${facts.row.owed.toLocaleString("en-US")}`}</Button> })
   }
   // A Done job is finished: more work for the customer is a new job, so New visit is for a job still being worked.
   if (canAct && facts.canAddVisit && facts.row.stage !== "done") {

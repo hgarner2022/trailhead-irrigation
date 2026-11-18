@@ -111,16 +111,30 @@ describe("the job panel", () => {
     expect(p.getByRole("link", { name: "Open customer" })).toHaveAttribute("href", "/admin/customers?customer=c-ben")
   })
 
-  it("offers Send an invoice and Record the payment on a done job that is unpaid, and Record sends the amount owed", async () => {
+  it("offers one Collect button on a done job that is unpaid; it opens How is this paid? and Record sends the amount owed", async () => {
     const actions = jobActions()
     view({ defaultJobId: "job-d", actions, visitActions: visitActions() as VisitActions })
     const p = panel()
-    expect(p.getByRole("button", { name: "Send an invoice" })).toBeInTheDocument()
-    await userEvent.click(p.getByRole("button", { name: "Record the payment" }))
+    expect(p.queryByRole("button", { name: "Send an invoice" })).toBeNull()
+    expect(p.queryByRole("button", { name: "Record the payment" })).toBeNull()
+    await userEvent.click(p.getByRole("button", { name: "Collect $145" }))
     const dialog = within(screen.getAllByRole("dialog").at(-1)!)
-    await userEvent.type(dialog.getByLabelText("Check number"), "1042")
-    await userEvent.click(dialog.getByRole("button", { name: "Record payment" }))
+    expect(dialog.getByRole("heading", { name: "How is this paid?" })).toBeInTheDocument()
+    expect(dialog.getByRole("radio", { name: /^Send an invoice/ })).toBeInTheDocument()
+    await userEvent.type(dialog.getByLabelText(/Check number/), "1042")
+    await userEvent.click(dialog.getByRole("button", { name: "Record $145 paid" }))
     expect(actions.recordPayment).toHaveBeenCalledWith("job-d", { method: "check", amount: 145, reference: "1042" })
+  })
+
+  it("Send an invoice sits inside How is this paid? and goes only on its own button", async () => {
+    const visits = visitActions()
+    view({ defaultJobId: "job-d", actions: jobActions(), visitActions: visits as VisitActions })
+    await userEvent.click(panel().getByRole("button", { name: "Collect $145" }))
+    const dialog = within(screen.getAllByRole("dialog").at(-1)!)
+    await userEvent.click(dialog.getByRole("radio", { name: /^Send an invoice/ }))
+    expect(visits.sendBill).not.toHaveBeenCalled()
+    await userEvent.click(dialog.getByRole("button", { name: "Send the invoice" }))
+    expect(visits.sendBill).toHaveBeenCalledWith("job-d")
   })
 
   it("lists payments newest first with how they came and the reference, and Paid when nothing is unpaid", async () => {
@@ -128,8 +142,7 @@ describe("the job panel", () => {
     const p = panel()
     expect(p.getByText("Check 1038")).toBeInTheDocument()
     expect(p.getByText("$145 · Paid")).toBeInTheDocument()
-    expect(p.queryByRole("button", { name: "Record the payment" })).toBeNull()
-    expect(p.queryByRole("button", { name: "Send an invoice" })).toBeNull()
+    expect(p.queryByRole("button", { name: /^Collect/ })).toBeNull()
   })
 
   it("lists every visit with its day, who has it and its pills, opening that visit", async () => {
@@ -222,7 +235,7 @@ describe("the job panel", () => {
   it("a tech reads the same job with no buttons, no New job and no line editor", () => {
     view({ defaultJobId: "job-d", readOnly: true, actions: jobActions() })
     const p = panel()
-    for (const name of ["Send an invoice", "Record the payment", "New visit", "Add a line", "Remind"]) expect(p.queryByRole("button", { name })).toBeNull()
+    for (const name of ["Collect $145", "New visit", "Add a line", "Remind"]) expect(p.queryByRole("button", { name })).toBeNull()
     expect(p.getByRole("link", { name: "Open customer" })).toBeInTheDocument()
     expect(screen.queryByRole("button", { name: "New job" })).toBeNull()
   })
@@ -283,13 +296,13 @@ describe("the job panel", () => {
   const footer = () => document.querySelector<HTMLElement>('[data-slot="sheet-footer"] > :first-child')!
   const footerButtons = () => [...document.querySelectorAll('[data-slot="sheet-footer"] button, [data-slot="sheet-footer"] a')].map((b) => b.textContent)
 
-  it("a scheduled job leads with Open visit and Record the payment is not the primary while a visit is ahead", async () => {
+  it("a scheduled job leads with Open visit and Collect is not the primary while a visit is ahead", async () => {
     view({ defaultJobId: "job-a", actions: jobActions() })
     const names = footerButtons()
     expect(names[0]).toBe("Open visit")
     expect(footer()).toHaveClass("bg-primary-dark")
-    expect(names).toContain("Record the payment")
-    expect(names.indexOf("Record the payment")).toBeGreaterThan(0)
+    expect(names.some((n) => n?.startsWith("Collect"))).toBe(true)
+    expect(names.findIndex((n) => n?.startsWith("Collect"))).toBeGreaterThan(0)
     // the primary opens the next visit's panel, in place of the job's
     await userEvent.click(footer())
     expect(await screen.findByRole("heading", { name: "Customer" })).toBeInTheDocument()
@@ -297,14 +310,19 @@ describe("the job panel", () => {
     expect(screen.queryByRole("heading", { name: "Lines" })).toBeNull()
   })
 
-  it("a done job that is unpaid leads with Send an invoice and Record the payment is second", () => {
+  it("a done job that is unpaid leads with Collect $145", () => {
     view({ defaultJobId: "job-d", actions: jobActions(), visitActions: visitActions() as VisitActions })
-    expect(footerButtons().slice(0, 2)).toEqual(["Send an invoice", "Record the payment"])
+    expect(footerButtons()[0]).toBe("Collect $145")
+    expect(footer()).toHaveClass("bg-primary-dark")
   })
 
-  it("a done job with its invoice out leads with Record the payment", () => {
+  it("a done job with its invoice out leads with Collect, and How is this paid? then offers only the money in hand", async () => {
     view({ defaultJobId: "job-f", actions: jobActions(), visitActions: visitActions() as VisitActions })
-    expect(footerButtons()[0]).toBe("Record the payment")
+    expect(footerButtons()[0]).toMatch(/^Collect \$/)
+    await userEvent.click(footer())
+    const dialog = within(screen.getAllByRole("dialog").at(-1)!)
+    expect(dialog.queryByRole("radio", { name: /^Send an invoice/ })).toBeNull()
+    expect(dialog.getByRole("radio", { name: /^Check/ })).toBeInTheDocument()
   })
 
   it("a done and paid job has only Open customer", () => {

@@ -9,7 +9,7 @@ import type { ApiKeyPrincipal, Scope } from "./types"
 
 export const KEY_PREFIX = "th_live_"
 const ALPHABET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
-export const SCOPES: readonly Scope[] = ["read", "write", "admin"]
+export const SCOPES: readonly Scope[] = ["read", "write", "admin", "collect"]
 
 /** SHA-256 over the key, keyed with `API_KEY_PEPPER`. Only this is stored, never the key. */
 export function hashApiKey(raw: string): string {

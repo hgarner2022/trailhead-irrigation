@@ -4,17 +4,18 @@ import * as s from "@/db/schema"
 import { checkApiKey, KEY_PREFIX } from "./api-key"
 import type { PersonPrincipal, Principal, Scope } from "./types"
 
-/** What a person's role may do: an owner or manager everything, a tech `read`. Customers have no scopes; they act on their own records. */
+/** What a person's role may do: an owner or manager everything, a tech `read` and `collect` (Mark done and taking the money). Customers have no scopes; they act on their own records. */
 const ROLE_SCOPES: Record<string, readonly Scope[]> = {
-  owner: ["read", "write", "admin"],
-  admin: ["read", "write", "admin"],
-  manager: ["read", "write", "admin"],
-  tech: ["read"],
+  owner: ["read", "write", "admin", "collect"],
+  admin: ["read", "write", "admin", "collect"],
+  manager: ["read", "write", "admin", "collect"],
+  tech: ["read", "collect"],
 }
 
 export function hasScope(principal: Principal | null | undefined, scope: Scope): boolean {
   if (!principal) return false
-  if (principal.kind === "api-key") return principal.scopes.includes(scope)
+  // A key with `write` or `admin` may collect too; a key made for collecting alone holds `collect`.
+  if (principal.kind === "api-key") return principal.scopes.includes(scope) || (scope === "collect" && (principal.scopes.includes("write") || principal.scopes.includes("admin")))
   if (principal.kind === "public") return false // its one scope, `checkout`, is not a `Scope`: only handlers marked `checkout` admit it
   if (principal.type !== "admin" || !principal.role) return false
   return ROLE_SCOPES[principal.role]?.includes(scope) ?? false

@@ -11,9 +11,10 @@ import { visitJob } from "@/lib/admin/jobs"
 import type { AdminData, Visit } from "@/lib/admin/types"
 import type { JobActions } from "./job-actions-types"
 import { footerPlan } from "./job-footer-model"
-import { jobFacts, type JobFacts } from "./job-panel-model"
+import { jobCollect, jobFacts, type JobFacts } from "./job-panel-model"
 import { JobFooter } from "./JobFooter"
-import { CancelJobDialog, NewVisitDialog, RecordPaymentDialog } from "./JobDialogs"
+import { CancelJobDialog, NewVisitDialog } from "./JobDialogs"
+import { JobCollectDialog } from "./JobCollect"
 import { JobLinesSection } from "./JobLinesSection"
 import { JobMoneySection } from "./JobMoneySection"
 import { MoneyPill, StagePill } from "./JobPills"
@@ -93,7 +94,7 @@ export interface JobPanelProps {
 export function JobPanel({ data, today, jobId, open, onOpenChange, readOnly = false, actions, visitActions }: JobPanelProps) {
   const facts = jobId ? jobFacts(data, jobId, today) : undefined
   const { pending, error, done, run } = useRunner()
-  const [recording, setRecording] = useState(false)
+  const [collecting, setCollecting] = useState(false)
   const [adding, setAdding] = useState(false)
   const [cancelling, setCancelling] = useState(false)
   const [cancellingJob, setCancellingJob] = useState(false)
@@ -102,7 +103,6 @@ export function JobPanel({ data, today, jobId, open, onOpenChange, readOnly = fa
   if (!facts) return null
   const { job, row, pass, bill } = facts
   const say = (call: () => Promise<{ ok: boolean }>, said?: string) => run(call as never, undefined, said ?? "")
-  const sendBill = () => (visitActions ? run(() => visitActions.sendBill(job.id), undefined, "Invoice sent.") : console.info("send an invoice", job.id))
   const canAct = !readOnly
   const passOpen = canAct && pass?.status === "active"
   const plan = footerPlan(facts, canAct)
@@ -120,8 +120,7 @@ export function JobPanel({ data, today, jobId, open, onOpenChange, readOnly = fa
           passOpen={passOpen}
           pass={pass}
           pending={pending}
-          onSendBill={sendBill}
-          onRecord={() => setRecording(true)}
+          onCollect={() => setCollecting(true)}
           onAddVisit={() => setAdding(true)}
           onAddLine={() => setAddingLine(true)}
           onSendCardUpdateLink={() => (actions?.pass ? say(() => actions.pass!.sendCardUpdateLink(pass!.id), "Card update link sent.") : console.info("send card update link", [pass!.number]))}
@@ -178,7 +177,7 @@ export function JobPanel({ data, today, jobId, open, onOpenChange, readOnly = fa
         )}
         <PanelNotes about="job" aboutId={job.id} timeline={job.timeline} addNote={actions?.addNote} />
       </div>
-      {canAct && facts.canRecord && <RecordPaymentDialog jobId={job.id} owed={row.owed} open={recording} onOpenChange={setRecording} actions={actions} />}
+      {canAct && (facts.canRecord || bill.canSend) && <JobCollectDialog facts={facts} {...jobCollect(facts, data)} open={collecting} onOpenChange={setCollecting} actions={actions} visitActions={visitActions} />}
       {canAct && facts.canCancel && <CancelJobDialog jobId={job.id} held={facts.held} open={cancellingJob} onOpenChange={setCancellingJob} onCancel={actions?.cancelJob} />}
       {canAct && facts.canAddVisit && <NewVisitDialog jobId={job.id} data={data} today={today} open={adding} onOpenChange={setAdding} actions={actions} />}
     </SidePanel>

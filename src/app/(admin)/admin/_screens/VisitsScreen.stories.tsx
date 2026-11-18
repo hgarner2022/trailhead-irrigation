@@ -47,7 +47,7 @@ export const ReadOnly: Story = {
   },
 }
 
-/** A scheduled one-off: Move, Done (asks how it was paid), Not done, Edit, Send a text and Cancel this visit. */
+/** A scheduled one-off: Move, Not done, Edit, Send a text and Cancel this visit in the body; the footer leads with Mark done. */
 export const PanelScheduled: Story = { args: { defaultVisitId: "office-scheduled" }, globals: wide }
 export const PanelScheduledPhone: Story = { args: { defaultVisitId: "office-scheduled" }, globals: phone }
 
@@ -57,27 +57,90 @@ export const PanelNeedsADay: Story = { args: { defaultVisitId: "office-needs-day
 /** Not done keeps its reason in the pill until the visit has a day again. */
 export const PanelNotDone: Story = { args: { defaultVisitId: "office-not-done" }, globals: wide }
 
-/** Done and owed: the money pill says Unpaid and the panel offers Record the payment. */
+/** Done and unpaid: the money pill says Unpaid and the footer leads with Collect $145, the next step. */
 export const PanelOwed: Story = { args: { defaultVisitId: "office-owed" }, globals: wide }
 export const PanelOwedPhone: Story = { args: { defaultVisitId: "office-owed" }, globals: phone }
 
-/** Done and owed: besides Record the payment, the panel offers Send an invoice with what it does under it. */
-export const PanelOwedSendBill: Story = {
+/** Collect opens "How is this paid?": Check, Venmo, Cash, Send an invoice, Pay later (no card on file), and Tap to pay greyed. */
+export const PanelOwedCollect: Story = {
   args: { defaultVisitId: "office-owed" },
   globals: wide,
-  play: async () => {
-    await expect(await body.findByRole("button", { name: "Send an invoice" })).toBeInTheDocument()
-    await expect(await body.findByText("Texts a pay link, or emails it when there is no mobile.")).toBeInTheDocument()
+  play: async ({ userEvent }) => {
+    await userEvent.click(await body.findByRole("button", { name: /^Collect \$/ }))
+    await expect(await body.findByRole("heading", { name: "How is this paid?" })).toBeInTheDocument()
+    await expect(await body.findByText("Texts a pay link, due in 14 days")).toBeInTheDocument()
+    await expect(await body.findByLabelText("Pay later")).toBeInTheDocument()
+    await expect(await body.findByLabelText("Tap to pay")).toBeDisabled()
+  },
+}
+export const PanelOwedCollectPhone: Story = {
+  args: { defaultVisitId: "office-owed" },
+  globals: phone,
+  play: async ({ userEvent }) => {
+    await userEvent.click(await body.findByRole("button", { name: /^Collect \$/ }))
+    await expect(await body.findByRole("heading", { name: "How is this paid?" })).toBeInTheDocument()
   },
 }
 
-/** Done asks how it was paid: Check, Venmo, Cash, and last Send an invoice, which texts a pay link instead of recording money. */
-export const PanelDoneSendBill: Story = {
+// Dana Reed's one-off with a Visa on file: the card is the first choice, selected, and a button like the rest.
+const owedVisit = visitsData.visits.find((v) => v.id === "office-owed")!
+const withCard: AdminData = { ...visitsData, clients: visitsData.clients.map((c) => (c.id === owedVisit.clientId ? { ...c, card: { brand: "visa", last4: "4242" } } : c)) }
+
+/** A customer with a card: "Charge the Visa ending 4242 now" is preselected, with Charge $145 under it and no Pay later. Nothing charges until the button. */
+export const PanelOwedCollectCard: Story = {
+  args: { data: withCard, defaultVisitId: "office-owed" },
+  globals: wide,
+  play: async ({ userEvent }) => {
+    await userEvent.click(await body.findByRole("button", { name: /^Collect \$/ }))
+    await expect(await body.findByLabelText("Charge the Visa ending 4242 now")).toBeChecked()
+    await expect(await body.findByRole("button", { name: "Charge $145" })).toBeInTheDocument()
+    await expect(body.queryByLabelText("Pay later")).not.toBeInTheDocument()
+  },
+}
+export const PanelOwedCollectCardPhone: Story = {
+  args: { data: withCard, defaultVisitId: "office-owed" },
+  globals: phone,
+  play: async ({ userEvent }) => {
+    await userEvent.click(await body.findByRole("button", { name: /^Collect \$/ }))
+    await expect(await body.findByRole("button", { name: "Charge $145" })).toBeInTheDocument()
+  },
+}
+
+/** A tech may collect: the footer has Mark done and Collect but no Refund, and the body none of Move, Edit or Cancel. */
+export const PanelOwedTechCollects: Story = {
+  args: { defaultVisitId: "office-owed", readOnly: true, canCollect: true },
+  globals: wide,
+  play: async () => {
+    await expect(await body.findByRole("button", { name: /^Collect \$/ })).toBeInTheDocument()
+    await expect(body.queryByRole("button", { name: "Move" })).not.toBeInTheDocument()
+  },
+}
+
+/** Mark done on a visit whose day is ahead asks first: "This visit is scheduled for Friday. Mark it done today?" Nothing is charged. */
+export const PanelMarkDoneAhead: Story = {
   args: { defaultVisitId: "office-scheduled" },
   globals: wide,
   play: async ({ userEvent }) => {
-    await userEvent.click(await body.findByLabelText("Send an invoice"))
-    await expect(await body.findByRole("button", { name: "Mark done and send an invoice" })).toBeInTheDocument()
+    await userEvent.click(await body.findByRole("button", { name: "Mark done" }))
+    await expect(await body.findByRole("heading", { name: "Mark done today?" })).toBeInTheDocument()
+    await expect(await body.findByText(/Nothing is charged/)).toBeInTheDocument()
+  },
+}
+export const PanelMarkDoneAheadPhone: Story = {
+  args: { defaultVisitId: "office-scheduled" },
+  globals: phone,
+  play: async ({ userEvent }) => {
+    await userEvent.click(await body.findByRole("button", { name: "Mark done" }))
+    await expect(await body.findByRole("heading", { name: "Mark done today?" })).toBeInTheDocument()
+  },
+}
+
+/** Paid by check: a Refund takes it back as a refund row (nothing is deleted), so a mistake can be put right. */
+export const PanelPaidRefund: Story = {
+  args: { defaultVisitId: "office-paid" },
+  globals: wide,
+  play: async () => {
+    await expect(await body.findByRole("button", { name: /^Refund \$/ })).toBeInTheDocument()
   },
 }
 
@@ -112,13 +175,13 @@ export const PanelDayPassed: Story = { args: { defaultVisitId: "office-day-passe
 /** A visit on a Season Pass: the job block shows the pass number, "$290 unpaid" or "1 of 2 paid, $145 unpaid" and the other visits. */
 export const PanelPassVisit: Story = { args: { defaultVisitId: passVisitId }, globals: wide }
 
-/** A visit on a pass the office sold with no card: Done asks how it was paid, like a one-off, instead of charging a card. */
+/** A visit on a pass the office sold with no card: Mark done asks nothing about money; the next step offers the no-card choices, Pay later included. */
 export const PanelPassVisitNoCard: Story = {
   args: { defaultVisitId: noCardVisitId },
   globals: wide,
-  play: async () => {
-    await expect(await body.findByRole("button", { name: "Mark done and record payment" })).toBeInTheDocument()
-    await expect(await body.findByText("Sends the receipt, which says how it was paid. An invoice goes with a pay link instead.")).toBeInTheDocument()
+  play: async ({ userEvent }) => {
+    await userEvent.click(await body.findByRole("button", { name: "Mark done" }))
+    await expect(await body.findByText(/Nothing is charged/)).toBeInTheDocument()
   },
 }
 
@@ -179,31 +242,34 @@ const owedPass = (id: string): AdminData => ({
   visits: visitsData.visits.map((v) => (v.id === id ? { ...v, status: "completed" as const, completedOn: "2026-11-10", scheduledOn: "2026-11-10", startAt: "2026-11-10T15:00:00Z", payments: [] } : v)),
 })
 
-/** The customer has no card: Record the payment (Check, Venmo, Cash) and the row reads "$145 unpaid · no card". */
+/** The customer has no card: Collect opens the no-card choices and the row reads "$145 unpaid · no card". */
 export const PanelOwedPassNoCard: Story = {
   args: { data: owedPass(noCardVisitId), defaultVisitId: noCardVisitId },
   globals: wide,
-  play: async () => {
-    await expect(await body.findByRole("heading", { name: "Record the payment" })).toBeInTheDocument()
-    await expect(await body.findByRole("button", { name: "Record payment" })).toBeInTheDocument()
+  play: async ({ userEvent }) => {
+    await userEvent.click(await body.findByRole("button", { name: /^Collect \$/ }))
+    await expect(await body.findByLabelText("Pay later")).toBeInTheDocument()
   },
 }
 
-/** The customer has a card that was never charged (or declined): the same Record the payment section, never a dead end. */
+/** The customer agreed to the card at checkout: "Charge the card as agreed" is preselected with no Pay later, and Paid another way holds the cash ways. */
 export const PanelOwedPassWithCard: Story = {
   args: { data: owedPass(passVisitId), defaultVisitId: passVisitId },
   globals: wide,
-  play: async () => {
-    await expect(await body.findByRole("heading", { name: "Record the payment" })).toBeInTheDocument()
+  play: async ({ userEvent }) => {
+    await userEvent.click(await body.findByRole("button", { name: /^Collect \$/ }))
+    await expect(await body.findByLabelText("Charge the card as agreed")).toBeChecked()
+    await expect(await body.findByRole("button", { name: "Paid another way" })).toBeInTheDocument()
+    await expect(body.queryByLabelText("Pay later")).not.toBeInTheDocument()
   },
 }
 
-/** Done on a pass visit with a card says it charges the card, and Paid another way asks how the money came. */
+/** Mark done on a pass visit with a card: nothing is charged; the charge is the next step's button. */
 export const PanelDonePassWithCard: Story = {
   args: { data: { ...visitsData, visits: visitsData.visits.map((v) => (v.id === passVisitId ? { ...v, status: "scheduled" as const, completedOn: undefined, payments: [] } : v)) }, defaultVisitId: passVisitId },
   globals: wide,
-  play: async () => {
-    await expect(await body.findByText(/Charges the card ending \d{4} after this visit/)).toBeInTheDocument()
-    await expect(await body.findByRole("button", { name: "Paid another way" })).toBeInTheDocument()
+  play: async ({ userEvent }) => {
+    await userEvent.click(await body.findByRole("button", { name: "Mark done" }))
+    await expect(await body.findByText(/Nothing is charged/)).toBeInTheDocument()
   },
 }

@@ -55,12 +55,12 @@ const JOB_KIND_WORDS: Record<string, string> = { repair: "Repair", install: "Ins
  * The Money cell, one string for the visit: its price until it is Done, then what happened to the money. A cancelled
  * visit with nothing held reads "Canceled"; one nobody has priced reads "Quote later".
  */
-export function moneyText(row: Pick<VisitRow, "work" | "money" | "moneyLabel" | "price"> & { noCard?: boolean }): string {
+export function moneyText(row: Pick<VisitRow, "work" | "money" | "moneyLabel" | "price"> & { noCard?: boolean; cardOnFile?: boolean }): string {
   if (row.work === "cancelled" && row.money === "not-yet") return "Canceled"
   const amount = row.price > 0 ? `$${row.price.toLocaleString("en-US")}` : "Quote later"
   if (row.money === "paid" || row.money === "bill-sent" || row.money === "failed") return `${amount} · ${row.moneyLabel}`
-  // A pass visit whose customer has no card to charge says so, so an owed visit is never a silent one.
-  if (row.money === "owed") return `${row.price > 0 ? `${amount} unpaid` : "Unpaid"}${row.noCard ? " · no card" : ""}`
+  // A pass visit whose customer has no card to charge says so, so an owed visit is never a silent one; with a card on file it says that instead, since a person has still to press Charge.
+  if (row.money === "owed") return `${row.price > 0 ? `${amount} unpaid` : "Unpaid"}${row.noCard ? " · no card" : row.cardOnFile ? " · card on file" : ""}`
   return amount
 }
 
@@ -95,7 +95,7 @@ export function rowsOf(data: AdminData, visits: Visit[], today: string): VisitRo
       ...base,
       workLabel: WORK_WORDS[states.work],
       ...(states.reason ? { reason: REASON_WORDS[states.reason] ?? states.reason } : {}),
-      moneyText: moneyText({ ...base, noCard: Boolean(pass) && !pass?.cardLast4 }),
+      moneyText: moneyText({ ...base, noCard: Boolean(pass) && !pass?.cardLast4, cardOnFile: Boolean(client?.card || pass?.cardLast4) }),
       dayPassed: states.dayPassed,
       jobLabel: pass?.number ?? JOB_KIND_WORDS[job?.kind ?? "other"] ?? "Job",
       customerId: v.clientId,

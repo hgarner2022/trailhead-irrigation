@@ -43,6 +43,11 @@ Always: sentence case, contractions in customer text ("we'll", "didn't"), no em 
 | Past due | an invoice whose due day has passed ("$145 · Past due since Dec 1"); never for a visit | overdue |
 | Voided | an invoice that was canceled and stays on record; the button that does it still says Cancel | cancelled invoice |
 | Unpaid | money still to come on a done job or visit, with the amount ("$115 unpaid", "2 of 3 paid, $115 unpaid"); on Home "Done, unpaid"; Hannah's word, Nov 18 2026 | owed |
+| Mark done | the first beat of a finished visit: the button and the dialog; it writes that the visit happened and nothing else, so it never says charge, paid or receipt; when the visit's day is ahead the dialog asks "This visit is scheduled for Friday. Mark it done today?"; Hannah's flow, Nov 18 2026 | Done and record payment, Complete |
+| How is this paid? | the second beat, opened by Mark done or by the footer's "Collect $145"; its choices in this order: "Charge the Visa ending 4242 now" (a Season Pass visit: "Charge the card as agreed"), Check, Venmo, Cash, Send an invoice, Pay later (only with no card), Tap to pay (greyed, "Not built yet"); its buttons are "Charge $145", "Record $145 paid", "Send the invoice", "Leave it unpaid"; the result reads "Paid, card" and "Receipt emailed to Andrea." | Paid by, Record payment, Collect payment |
+| Card not charged | the Home row for a done visit whose customer has a card and nobody pressed Charge, from the next morning; its button is "Charge $145" | Uncharged, Not billed |
+| Card failed | the Home row (and the panel's "The card didn't go through. Choose another way.") when a card charge did not go through; the customer was already emailed the card link | Charge failed |
+| Refund | taking a recorded check, Venmo or cash payment back: the button "Refund $145", a refund row, nothing deleted | Reverse, Void payment |
 | Quote sent | a job whose quote went out and has not been accepted | Quoted, proposed |
 | Canceled | US spelling, for a visit, job, pass, line and a message; database values keep `cancelled` | Cancelled |
 | Expired | a Season Pass whose season has passed without a renewal | Lapsed |

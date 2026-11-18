@@ -15,85 +15,8 @@ import { servicePriceLine } from "./NewJobService"
 import { FORM_STATUS, useRunner } from "./use-runner"
 import { useOpenVisit } from "./VisitPanelHost"
 
-// The small dialogs the job panel's footer opens: Cancel job (the one confirm dialog, `ConfirmCancel`, the pass's Cancel pass uses it too), Record the payment (money handed over by check, Venmo or cash, for what is
-// owed or less) and New visit (another visit on this job, from the active catalogue). Each is a dialog over the panel that says
+// The small dialogs the job panel's footer opens: Cancel job (the one confirm dialog, `ConfirmCancel`, the pass's Cancel pass uses it too) and New visit (another visit on this job, from the active catalogue). Each is a dialog over the panel that says
 // the API's refusal in place and closes when it goes through.
-
-const METHODS = [
-  { value: "check", label: "Check" },
-  { value: "venmo", label: "Venmo" },
-  { value: "cash", label: "Cash" },
-] as const
-
-type Method = (typeof METHODS)[number]["value"]
-
-interface RecordProps {
-  jobId: string
-  /** whole dollars still unpaid; the amount starts here */
-  owed: number
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  actions?: JobActions
-}
-
-export function RecordPaymentDialog({ jobId, owed, open, onOpenChange, actions }: RecordProps) {
-  const [method, setMethod] = useState<Method>("check")
-  const [reference, setReference] = useState("")
-  const [amount, setAmount] = useState<string | null>(null)
-  const { pending, error, run } = useRunner()
-  const shown = amount ?? String(owed)
-  const record = () => {
-    const input = { method, amount: Number(shown) || 0, ...(reference.trim() ? { reference: reference.trim() } : {}) }
-    if (!actions) return (console.info("record payment", jobId, input), onOpenChange(false))
-    run(() => actions.recordPayment(jobId, input), () => onOpenChange(false))
-  }
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-sm" data-slot="record-payment">
-        <DialogHeader>
-          <DialogTitle className="font-display text-2xl font-semibold text-navy">Record the payment</DialogTitle>
-          <DialogDescription>{`$${owed.toLocaleString("en-US")} is unpaid. A payment that covers it settles any invoice that is out.`}</DialogDescription>
-        </DialogHeader>
-        <fieldset>
-          <legend className={LABEL}>Paid by</legend>
-          <div className="flex flex-wrap gap-2">
-            {METHODS.map((m) => (
-              <label key={m.value} className="flex min-h-11 cursor-pointer items-center gap-2 rounded-lg border border-input px-3 text-sm has-[:checked]:border-primary has-[:checked]:bg-primary/10">
-                <input type="radio" name="job-paid-by" value={m.value} checked={method === m.value} onChange={() => setMethod(m.value)} className="size-4 accent-primary" />
-                {m.label}
-              </label>
-            ))}
-          </div>
-        </fieldset>
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label htmlFor="pay-amount" className={LABEL}>
-              Amount
-            </label>
-            <Input id="pay-amount" inputMode="numeric" value={shown} onChange={(e) => setAmount(e.target.value.replace(/\D/g, ""))} className="min-h-11" />
-          </div>
-          <div>
-            <label htmlFor="pay-ref" className={LABEL}>
-              {method === "check" ? "Check number" : method === "venmo" ? "Venmo handle" : "Note"}
-            </label>
-            <Input id="pay-ref" value={reference} onChange={(e) => setReference(e.target.value)} className="min-h-11" />
-          </div>
-        </div>
-        <p role="alert" className={`${FORM_STATUS} text-destructive`}>
-          {error}
-        </p>
-        <div className="flex gap-2">
-          <Button type="button" className="min-h-11" disabled={pending || !Number(shown)} onClick={record}>
-            Record payment
-          </Button>
-          <Button type="button" variant="outline" className="min-h-11" onClick={() => onOpenChange(false)}>
-            Never mind
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
-  )
-}
 
 interface VisitProps {
   jobId: string

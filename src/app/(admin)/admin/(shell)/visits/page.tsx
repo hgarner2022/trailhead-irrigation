@@ -15,5 +15,5 @@ export default async function VisitsPage({ searchParams }: { searchParams: Promi
   const { visit, money, work, job } = await searchParams
   const defaultFilters = [...filterFrom("money", money, MONEY_OPTIONS), ...filterFrom("work", work, WORK_OPTIONS)]
   const data = await getAdminData("live")
-  return <VisitsScreen data={data} today={new Date().toISOString()} defaultVisitId={visit} jobId={job} defaultFilters={defaultFilters} readOnly={principal.role === "tech"} actions={visitActions} />
+  return <VisitsScreen data={data} today={new Date().toISOString()} defaultVisitId={visit} jobId={job} defaultFilters={defaultFilters} readOnly={principal.role === "tech"} canCollect={principal.role === "tech"} actions={visitActions} />
 }

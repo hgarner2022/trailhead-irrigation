@@ -30,6 +30,14 @@ describe("hasScope", () => {
     expect(hasScope(person("tech"), "write")).toBe(false)
     expect(hasScope(person("tech"), "admin")).toBe(false)
   })
+  it("gives every role the collect scope, a tech included, and a key with write or admin; a read-only key has none", () => {
+    for (const role of ["owner", "admin", "manager", "tech"] as const) expect(hasScope(person(role), "collect")).toBe(true)
+    expect(hasScope({ kind: "api-key", id: "k", organizationId: ORG, scopes: ["read", "write"] }, "collect")).toBe(true)
+    expect(hasScope({ kind: "api-key", id: "k", organizationId: ORG, scopes: ["admin"] }, "collect")).toBe(true)
+    expect(hasScope({ kind: "api-key", id: "k", organizationId: ORG, scopes: ["collect"] }, "collect")).toBe(true)
+    expect(hasScope({ kind: "api-key", id: "k", organizationId: ORG, scopes: ["collect"] }, "write")).toBe(false)
+    expect(hasScope({ kind: "api-key", id: "k", organizationId: ORG, scopes: ["read"] }, "collect")).toBe(false)
+  })
   it("gives a customer and nobody nothing", () => {
     expect(hasScope(person(undefined, "customer"), "read")).toBe(false)
     expect(hasScope(null, "read")).toBe(false)

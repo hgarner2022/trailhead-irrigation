@@ -34,7 +34,8 @@ export interface NeedsAttentionProps {
 
 const KINDS: Record<Attention["kind"], { icon: LucideIcon; tone: string; name: string }> = {
   "new-pass": { icon: BadgeCheck, tone: "bg-success/10 text-success", name: "New pass" },
-  "charge-failed": { icon: CreditCard, tone: "bg-warning/10 text-warning", name: "Charge failed" },
+  "charge-failed": { icon: CreditCard, tone: "bg-warning/10 text-warning", name: "Card failed" },
+  "charge-not-pressed": { icon: CreditCard, tone: "bg-warning/10 text-warning", name: "Card not charged" },
   "no-card": { icon: CreditCard, tone: "bg-warning/10 text-warning", name: "No card" },
   "jobs-failed": { icon: CalendarX, tone: "bg-warning/10 text-warning", name: "Task needs a retry" },
   owed: { icon: Banknote, tone: "bg-warning/10 text-warning", name: "Done, unpaid" },
@@ -51,7 +52,7 @@ const KINDS: Record<Attention["kind"], { icon: LucideIcon; tone: string; name: s
 /** A visit opens in Visits, a pass or an overdue invoice its job on Jobs (the invoice is on the job), a schedule line in Schedule; the rest have no page of their own. */
 export function attentionHref(item: Attention): string | undefined {
   if (item.kind === "overdue" && item.jobId) return jobUrl(item.jobId)
-  if (item.kind === "overdue" && item.customerId) return `/admin/customers?customer=${encodeURIComponent(item.customerId)}`
+  if ((item.kind === "overdue" || item.kind === "charge-failed") && !item.passId && !item.visitId && item.customerId) return `/admin/customers?customer=${encodeURIComponent(item.customerId)}`
   if (item.visitId) return `/admin/visits?visit=${encodeURIComponent(item.visitId)}`
   // A pass is a job: its row opens that job on Jobs (HomeScreen puts the job on a row that names only a pass).
   if (item.passId) return item.jobId ? jobUrl(item.jobId) : "/admin/jobs"
@@ -98,7 +99,7 @@ function Row({ item, now, onAction, onDismiss, readOnly }: { item: Attention; no
 
 export function NeedsAttention({ items, now, onAction, onDismiss, readOnly, className }: NeedsAttentionProps) {
   if (items.length === 0) {
-    return <EmptyState className={className} title="Nothing needs you right now" line="Failed charges, unscheduled visits and visits nobody marked done show up here." />
+    return <EmptyState className={className} title="Nothing needs you." line="Failed cards, jobs with no day and work nobody marked done show up here." />
   }
   const at = now ?? new Date().toISOString()
   return (
