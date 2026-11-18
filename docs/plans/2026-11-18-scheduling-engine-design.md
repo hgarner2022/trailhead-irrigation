@@ -85,7 +85,16 @@ Each is a story with what goes in and what must come out. Rules Hannah has settl
 
 **How I will build the design from these, so you can stop me:** the offer is the replacement body of the one server door the portal already calls, `visits.areaDays` (and `schedule.offerDays` for a booking that has no visit yet), with the same input and the same list of days, plus an explain field per day ("We're already in Erie that day"). The screens do not change. Drive time starts as a straight-line estimate (the ten-minute tier needs only that). Saturday is whatever People says a person works. A two-hour window for everyone, including a must-be-home customer, unless told otherwise.
 
-### 3.2 What these do not answer: four questions
+### 3.2 Settled by the architect, Nov 18 (from Q2 to Q4)
+
+| # | Decision |
+|---|---|
+| 12 | An address outside the six towns: refused online ("We don't serve that town yet. Call Ryan"), nothing saved. Ryan may add it by phone, with a warning |
+| 13 | A rain day: the app proposes each visit's day, Ryan reviews and presses one button, with Undo (the same shape as Order the day); each customer is texted the new day and the reason |
+| 14 | Ryan adds or moves a visit onto a full day: warned with what breaks, one tick to allow. Online offers never exceed the count |
+| 15 | The four assumptions in 3.1 stand: the offer replaces the body of `visits.areaDays` (and `schedule.offerDays`) with an explain field per day; straight-line drive time first; Saturday is what People says; a two-hour window for everyone |
+
+### 3.3 Still open: one question for Hannah
 
 **Q1. How far past the soonest open day may we reach to find a neighbour day?** Decision 1 says soonest first and nearness orders "within the soon range". The April example: Mon Apr 27 is open and empty, Tue Apr 28 has three Erie turn-ons. The range is how far we may skip.
 
@@ -95,30 +104,6 @@ Each is a story with what goes in and what must come out. Rules Hannah has settl
 | B. The soonest 5 open weekdays (about one week): offer the three nearest of them (recommended) | At most about 4 days later than the soonest day | More Erie work on the same days |
 | C. The soonest 10 open weekdays (two weeks) | May wait up to two weeks for a neighbour day | Densest |
 
-(My earlier trial used a different rule with a weekday habit, so its numbers are not these; the full design re-runs it on the rule you choose.)
+(My earlier trial used a different rule with a weekday habit, so its numbers are not these; the full design re-runs it on the rule chosen.)
 
-**Q2. An address outside the six towns** (Frederick, Dacono, Boulder, Westminster: 24 visits in 2026).
-
-| Option | A customer | Ryan |
-|---|---|---|
-| A. Online: "We don't serve that town yet. Call Ryan"; nothing is saved. By phone Ryan may still add it, with a warning (recommended) | A phone call | Keeps control of far stops |
-| B. Online: offered days when it is within about ten minutes of a day Ryan already works | Books like anyone | Picks up Frederick and Dacono from Erie days; more far stops |
-| C. Take an email to tell them when we arrive | No day, a promise | A list to work |
-
-**Q3. A rain day: 15 stops lose their day.**
-
-| Option | A customer | Ryan |
-|---|---|---|
-| A. The app proposes each visit's soonest nearest day; Ryan reviews and presses one button; each customer is texted the new day and the reason (recommended) | Told once | One review, not 15 calls |
-| B. Each customer is texted to pick | Choice, but 15 replies | Less control of the week |
-| C. Ryan places each by hand | A text each | A long afternoon |
-
-**Q4. Ryan adds or moves a visit onto a day that is already at its count for that kind.**
-
-| Option | A customer | Ryan |
-|---|---|---|
-| A. Refused: he frees room first | Never an overlong day | Blocked mid-call |
-| B. Warned with what breaks, one tick to allow (recommended) | Rarely late | His business: told, then decides. Online offers still never exceed the count |
-| C. Allowed silently | Possibly late | No friction, no safety |
-
-**State of this branch.** Sections 3 to 11 of the original brief (the offer rule, ordering, moving and adding, capacity, drive time, the replay of 2026, the Jev seam, data and API, build order) are written after Hannah answers Q1 to Q4. An earlier full draft, written before Hannah's rule "soonest first", is in git history (commit 0f5a80e) and in the shared notes folder; PR #74 still carries it and is out of date.
+**State of this branch.** Sections 3 to 11 of the original brief (the offer rule, ordering, moving and adding, capacity, drive time, the replay of 2026, the Jev seam, data and API, build order) are written after Hannah answers Q1. The earlier full draft, written before the rule "soonest first", is in git history (commit 0f5a80e) and in the shared notes folder.
