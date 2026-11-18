@@ -1,5 +1,6 @@
 import "server-only"
-import { and, asc, desc, eq, inArray, isNull, ne, or, sql } from "drizzle-orm"
+import { and, asc, desc, eq, inArray, isNotNull, isNull, or, sql } from "drizzle-orm"
+import { jobStatusWord } from "@/lib/pass/facts"
 import { z } from "zod"
 import * as s from "@/db/schema"
 import type { Database } from "@/db/types"
@@ -174,7 +175,7 @@ export const customersList = defineHandler({
     const next = await nextFor(ctx, result.data)
     const towns = ids.length ? await ctx.db.select({ customerId: s.property.customerId, town: s.property.town, address: s.property.address }).from(s.property).where(inArray(s.property.customerId, ids)).orderBy(asc(s.property.createdAt)) : []
     const passes = ids.length
-      ? await ctx.db.select({ customerId: s.job.customerId }).from(s.job).where(and(inArray(s.job.customerId, ids), eq(s.job.kind, "pass"), ne(s.job.status, "cancelled"), isNull(s.job.cancelledAt)))
+      ? await ctx.db.select({ customerId: s.job.customerId }).from(s.job).where(and(inArray(s.job.customerId, ids), eq(s.job.organizationId, ctx.organizationId), isNotNull(s.job.season), isNull(s.job.cancelledAt)))
       : []
     return {
       next_cursor: result.next_cursor,
@@ -211,14 +212,13 @@ export const customersGet = defineHandler({
   },
 })
 
-/** A customer's jobs, newest first, each with its visits and, for a pass, its number (the job's own; the `season_pass` row only gives the alias id). */
+/** A customer's jobs, newest first, each with its visits and, for a pass, its number (the job's own); a Season Pass's id is its job's id. */
 async function jobsOf(ctx: Ctx, customerId: string) {
   const db = ctx.db
   const org = ctx.organizationId
   const jobs = await db.select().from(s.job).where(and(eq(s.job.customerId, customerId), eq(s.job.organizationId, org))).orderBy(desc(s.job.createdAt), desc(s.job.id))
   if (!jobs.length) return []
   const visits = await db.select().from(s.visit).where(and(inArray(s.visit.jobId, jobs.map((j) => j.id)), eq(s.visit.organizationId, org))).orderBy(asc(s.visit.scheduledOn), asc(s.visit.createdAt))
-  const passes = await db.select({ id: s.seasonPass.id, jobId: s.seasonPass.jobId }).from(s.seasonPass).where(and(inArray(s.seasonPass.jobId, jobs.map((j) => j.id)), eq(s.seasonPass.organizationId, org)))
   const lineRows = await db.select().from(s.lineItem).where(and(inArray(s.lineItem.jobId, jobs.map((j) => j.id)), eq(s.lineItem.organizationId, org))).orderBy(asc(s.lineItem.createdAt), asc(s.lineItem.id))
   const paymentRows = await db.select().from(s.charge).where(and(inArray(s.charge.jobId, jobs.map((j) => j.id)), eq(s.charge.organizationId, org))).orderBy(asc(s.charge.createdAt), asc(s.charge.id))
   const bills = await db.select().from(s.invoice).where(and(inArray(s.invoice.jobId, jobs.map((j) => j.id)), eq(s.invoice.organizationId, org), isNull(s.invoice.cancelledAt))).orderBy(asc(s.invoice.paidOn), asc(s.invoice.id))
@@ -226,7 +226,6 @@ async function jobsOf(ctx: Ctx, customerId: string) {
   // Each job's newest 10 events (a customer has a few jobs, so one small query each).
   const stories = await Promise.all(jobs.map((j) => recentEvents(ctx, { jobId: j.id }, 10)))
   return jobs.map((j, index) => {
-    const pass = passes.find((p) => p.jobId === j.id)
     const lines = lineRows.filter((l) => l.jobId === j.id)
     const payments = paymentRows.filter((p) => p.jobId === j.id)
     const jobVisits = visits.filter((v) => v.jobId === j.id)
@@ -235,8 +234,9 @@ async function jobsOf(ctx: Ctx, customerId: string) {
     // The visits the paid bills name, which a payment made on the job as a whole credits first.
     const paidBillVisits = bills.filter((b) => b.jobId === j.id && b.paidOn).flatMap((b) => b.lines.map((l) => l.visitId).filter((id): id is string => Boolean(id)))
     return {
-      id: j.id, kind: j.kind ?? ("other" as const), status: j.status, price: j.price, source: j.source, notes: j.notes, createdAt: j.createdAt.toISOString(),
-      passId: pass?.id ?? null, passNumber: j.passNumber,
+      id: j.id, kind: j.kind ?? ("other" as const), status: jobStatusWord(j), price: j.price, source: j.source, notes: j.notes, createdAt: j.createdAt.toISOString(),
+      // a Season Pass is its job: the pass id is the job id
+      passId: j.season !== null ? j.id : null, passNumber: j.passNumber,
       lines: lines.map((l) => ({ id: l.id, name: l.name, description: l.description, quantity: l.quantity, unitPrice: l.unitPrice, taxable: l.taxable, cancelledAt: l.cancelledAt?.toISOString() ?? null, visitId: l.visitId })),
       total: jobTotal(lines),
       payments: payments.map((p) => paymentOut(ctx, p)),

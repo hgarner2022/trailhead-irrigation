@@ -1,5 +1,5 @@
 import "server-only"
-import { and, eq } from "drizzle-orm"
+import { and, eq, isNotNull } from "drizzle-orm"
 import { z } from "zod"
 import * as s from "@/db/schema"
 import { customerHasCard } from "@/lib/customer/card"
@@ -29,15 +29,14 @@ const PaidBy = z.object({
 /** What `visits.recordPayment` takes: money in hand only, never a bill. */
 const RecordedBy = PaidBy.extend({ method: z.enum(["check", "venmo", "cash"]) })
 
-/** The pass a visit is on, or null for a one-off. */
+/** The pass a visit is on (its job, when the job has a season), or null for a one-off. */
 async function passOf(ctx: Ctx, visit: typeof s.visit.$inferSelect) {
-  if (!visit.passId) return null
-  const [pass] = await ctx.db.select().from(s.seasonPass).where(eq(s.seasonPass.id, visit.passId))
+  const [pass] = await ctx.db.select().from(s.job).where(and(eq(s.job.id, visit.jobId), eq(s.job.organizationId, ctx.organizationId), isNotNull(s.job.season)))
   return pass ?? null
 }
 
 /** Whether the pass's customer has a card on file: the card lives on the customer. */
-async function passCustomerHasCard(ctx: Ctx, pass: typeof s.seasonPass.$inferSelect | null): Promise<boolean> {
+async function passCustomerHasCard(ctx: Ctx, pass: typeof s.job.$inferSelect | null): Promise<boolean> {
   if (!pass) return false
   const [customer] = await ctx.db.select().from(s.customer).where(eq(s.customer.id, pass.customerId))
   return customer ? customerHasCard(customer) : false
@@ -73,7 +72,7 @@ export const visitsMarkClosed = defineHandler({
       if (open) await cancelOpenBill(ctx, open)
       await ctx.db.update(s.queueItem).set({ status: "done", lastError: "marked done was undone", doneAt: ctx.now }).where(and(eq(s.queueItem.kind, "pass-charge"), eq(s.queueItem.key, visit.id), eq(s.queueItem.status, "pending")))
       await ctx.db.update(s.visit).set({ status: "scheduled", completedOn: null, chargedAt: null }).where(eq(s.visit.id, visit.id))
-      await recordChange(ctx, { customerId: visit.customerId, passId: visit.passId, visitId: visit.id, kind: "done-undone", detail: { name: visitName(visit.kind) } })
+      await recordChange(ctx, { customerId: visit.customerId, jobId: visit.jobId, visitId: visit.id, kind: "done-undone", detail: { name: visitName(visit.kind) } })
       return visitOut(ctx, await loadVisit(ctx, visit.id))
     }
     if (visit.status === "completed") return visitOut(ctx, await loadVisit(ctx, visit.id))

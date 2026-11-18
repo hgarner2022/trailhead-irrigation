@@ -85,7 +85,7 @@ export async function recordOfficePayment(ctx: Ctx, input: OfficePayment) {
     await setVisitLinePrice(ctx.db, visit, input.amount, ctx.now)
   }
   const row = await recordPaymentRow(ctx.db, {
-    organizationId: ctx.organizationId, jobId: job.id, visitId: visit?.id ?? null, customerId: job.customerId, passId: visit?.passId ?? null,
+    organizationId: ctx.organizationId, jobId: job.id, visitId: visit?.id ?? null, customerId: job.customerId,
     amount: input.amount, method: input.method, reference: input.reference, paidOn: input.paidOn, status: "succeeded", now: ctx.now,
   })
   if (!row) throw new ApiError("conflict", "That payment was already recorded")
@@ -104,6 +104,6 @@ export async function recordOfficePayment(ctx: Ctx, input: OfficePayment) {
     detail: { amount: input.amount, method: input.method, ...(visit ? { name: visitName(visit.kind) } : {}) },
   })
   // The old event name, for subscribers written before payments were rows.
-  if (visit) await emitEvent(ctx.db, ctx.organizationId, "charge.succeeded", { visitId: visit.id, ...(visit.passId ? { passId: visit.passId } : {}), amount: input.amount, method: input.method })
+  if (visit) await emitEvent(ctx.db, ctx.organizationId, "charge.succeeded", { visitId: visit.id, ...(job.season !== null ? { passId: job.id } : {}), amount: input.amount, method: input.method })
   return row
 }

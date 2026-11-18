@@ -16,6 +16,7 @@ import { visitsList } from "@/api/v1/visits/handlers"
 import { today as todayOf } from "@/api/v1/shared"
 import * as s from "@/db/schema"
 import { loadBlocks } from "@/lib/jobber-feed"
+import { jobStatusWord } from "@/lib/pass/facts"
 import { ctxFromSession } from "./api-ctx"
 import { canSeeContact } from "@/api/v1/shared"
 import { failedChargeVisits, shapeAdminData, type ApiCustomer, type ApiMessage, type ApiPass, type ApiVisit } from "./shape"
@@ -87,12 +88,12 @@ export async function getLiveAdminData(ctx: Ctx): Promise<AdminData> {
     db.select({ id: s.queueItem.id, kind: s.queueItem.kind, lastError: s.queueItem.lastError, updatedAt: s.queueItem.updatedAt, status: s.queueItem.status }).from(s.queueItem).where(and(eq(s.queueItem.organizationId, org), isNotNull(s.queueItem.lastError), or(eq(s.queueItem.status, "pending"), eq(s.queueItem.status, "failed")))),
     loadBlocks(db, org, new Date(ctx.now.getTime() - 7 * 86_400_000)),
     db.select({ at: sql<Date | null>`max(${s.jobberClient.syncedAt})` }).from(s.jobberClient).where(eq(s.jobberClient.organizationId, org)),
-    db.select({ kind: s.adminAlert.kind, key: s.adminAlert.key, passId: s.adminAlert.passId, message: s.adminAlert.message, createdAt: s.adminAlert.createdAt }).from(s.adminAlert).where(and(eq(s.adminAlert.organizationId, org), isNull(s.adminAlert.resolvedAt))),
+    db.select({ kind: s.adminAlert.kind, key: s.adminAlert.key, passId: s.adminAlert.jobId, message: s.adminAlert.message, createdAt: s.adminAlert.createdAt }).from(s.adminAlert).where(and(eq(s.adminAlert.organizationId, org), isNull(s.adminAlert.resolvedAt))),
     // every payment row of the organization, oldest first: the money words, the month totals and the owed rows are read from these
     db.select({ id: s.charge.id, jobId: s.charge.jobId, visitId: s.charge.visitId, amount: s.charge.amount, method: s.charge.method, status: s.charge.status, paidOn: s.charge.paidOn, refundsPaymentId: s.charge.refundsPaymentId, reference: s.charge.reference, attempt: s.charge.attempt, createdAt: s.charge.createdAt })
       .from(s.charge).where(eq(s.charge.organizationId, org)).orderBy(asc(s.charge.createdAt), asc(s.charge.id)),
     db.select({ kind: s.adminAlert.kind, key: s.adminAlert.key }).from(s.adminAlert).where(and(eq(s.adminAlert.organizationId, org), isNotNull(s.adminAlert.resolvedAt))),
-    db.select({ id: s.job.id, customerId: s.job.customerId, kind: s.job.kind, status: s.job.status, price: s.job.price, source: s.job.source, passNumber: s.job.passNumber, notes: s.job.notes, createdAt: s.job.createdAt }).from(s.job).where(eq(s.job.organizationId, org)),
+    db.select({ id: s.job.id, customerId: s.job.customerId, kind: s.job.kind, season: s.job.season, soldOn: s.job.soldOn, cancelledAt: s.job.cancelledAt, legacyPassId: s.job.legacyPassId, price: s.job.price, source: s.job.source, passNumber: s.job.passNumber, notes: s.job.notes, createdAt: s.job.createdAt }).from(s.job).where(eq(s.job.organizationId, org)),
     db.select({ id: s.lineItem.id, jobId: s.lineItem.jobId, visitId: s.lineItem.visitId, name: s.lineItem.name, description: s.lineItem.description, quantity: s.lineItem.quantity, unitPrice: s.lineItem.unitPrice, taxable: s.lineItem.taxable, cancelledAt: s.lineItem.cancelledAt }).from(s.lineItem).where(eq(s.lineItem.organizationId, org)).orderBy(asc(s.lineItem.createdAt), asc(s.lineItem.id)),
     db.select().from(s.property).where(eq(s.property.organizationId, org)).orderBy(asc(s.property.createdAt), asc(s.property.id)),
     // the organization's own bills (not the Jobber mirror's): the open ones make a job's money read Bill sent
@@ -124,7 +125,7 @@ export async function getLiveAdminData(ctx: Ctx): Promise<AdminData> {
     alerts,
     dismissed,
     // `job.kind` is nullable since migration 0021 (no existing row is null); task 6.2b replaces it with the derived kind
-    jobRows: jobRows.map((j) => ({ ...j, kind: j.kind ?? ("other" as const) })),
+    jobRows: jobRows.map(({ season, soldOn, cancelledAt, ...j }) => ({ ...j, kind: j.kind ?? ("other" as const), status: jobStatusWord({ season, soldOn, cancelledAt }) })),
     lineRows,
     // the pay link is a bearer link: only for the write scope, like the gate code (a tech's screens never carry it)
     invoiceRows: billRows.map((r) => ({ id: r.id, jobId: r.jobId, number: r.number, amount: r.amount, tax: r.tax, total: r.total, sentOn: r.sentOn, dueOn: r.dueOn, paidOn: r.paidOn, cancelledAt: r.cancelledAt, lines: r.lines, ...(contact && payLinkOf(r.id) ? { payUrl: payLinkOf(r.id) } : {}) })),

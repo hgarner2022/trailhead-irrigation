@@ -25,7 +25,6 @@ export interface PaymentRowInput {
   status: PaymentRow["status"]
   stripePaymentIntentId?: string | null
   receiptUrl?: string | null
-  passId?: string | null
   /** the payment a refund row reverses */
   refundsPaymentId?: string | null
   failureMessage?: string | null
@@ -55,7 +54,6 @@ export async function recordPaymentRow(db: Database, input: PaymentRowInput): Pr
       jobId: input.jobId,
       visitId: input.visitId ?? null,
       customerId: input.customerId,
-      passId: input.passId ?? null,
       attempt,
       amount: input.amount,
       status: input.status,

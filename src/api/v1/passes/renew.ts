@@ -1,5 +1,5 @@
 import "server-only"
-import { and, eq, inArray, isNull } from "drizzle-orm"
+import { and, eq, isNotNull, isNull } from "drizzle-orm"
 import type { z } from "zod"
 import * as s from "@/db/schema"
 import { customerHasCard } from "@/lib/customer/card"
@@ -8,6 +8,7 @@ import { hasScope } from "@/lib/auth/principal"
 import { enqueueGeocode } from "@/lib/geocode"
 import { holdChosenDays } from "@/lib/pass/server/chosen-days"
 import { currentSeason } from "@/lib/pass/season"
+import { resolvePassJob } from "@/lib/pass/server/resolve"
 import { makePassRows } from "@/lib/pass/server/rows"
 import { visitsOnSale } from "@/lib/season-pass"
 import type { Ctx } from "../../core/context"
@@ -26,18 +27,19 @@ import { loadPass, passDetail, recordChange } from "./queries"
  */
 export async function renewPass(ctx: Ctx, input: z.infer<typeof passCreateInput>) {
   const p = ctx.principal
-  const [old] = await ctx.db.select().from(s.seasonPass).where(and(eq(s.seasonPass.id, input.renewOf!), eq(s.seasonPass.organizationId, ctx.organizationId)))
-  const allowed = hasScope(p, "write") || (p.kind === "public" && p.renewPassId === input.renewOf)
+  // The pass being renewed is named by its job id or by the old pass id of a link sent before the move; both open the same job.
+  const old = await resolvePassJob(ctx.db, ctx.organizationId, input.renewOf!)
+  const allowedPass = p.kind === "public" && p.renewPassId ? await resolvePassJob(ctx.db, ctx.organizationId, p.renewPassId) : null
+  const allowed = hasScope(p, "write") || (allowedPass !== null && allowedPass.id === old?.id)
   if (!old || !allowed) throw new ApiError("forbidden", "That pass can't be renewed from here")
-  const [customer] = old ? await ctx.db.select().from(s.customer).where(eq(s.customer.id, old.customerId)) : []
-  const [oldJob] = await ctx.db.select({ season: s.job.season, status: s.job.status }).from(s.job).where(eq(s.job.id, old.jobId))
-  if (oldJob?.status === "pending" || !customer || !customerHasCard(customer) || !customer.stripePaymentMethodId) throw new ApiError("unprocessable", "There's no card on file for that pass. Reserve the new season with a new card instead.")
+  const [customer] = await ctx.db.select().from(s.customer).where(eq(s.customer.id, old.customerId))
+  if (!old.soldOn || !customer || !customerHasCard(customer) || !customer.stripePaymentMethodId) throw new ApiError("unprocessable", "There's no card on file for that pass. Reserve the new season with a new card instead.")
   const day = today(ctx)
-  const season = Math.max(currentSeason(day), (oldJob?.season ?? 0) + 1)
+  const season = Math.max(currentSeason(day), (old.season ?? 0) + 1)
   const [held] = await ctx.db
     .select({ id: s.job.id })
     .from(s.job)
-    .where(and(eq(s.job.customerId, old.customerId), eq(s.job.kind, "pass"), eq(s.job.season, season), inArray(s.job.status, ["active", "pending"]), isNull(s.job.cancelledAt)))
+    .where(and(eq(s.job.organizationId, ctx.organizationId), eq(s.job.customerId, old.customerId), isNotNull(s.job.season), eq(s.job.season, season), isNull(s.job.cancelledAt)))
   if (held) throw new ApiError("unprocessable", `Your ${season} season is already reserved.`)
   const onSale = visitsOnSale(input.inspection, day)
   if (onSale.length === 0) throw new ApiError("unprocessable", "No visits are on sale this season any more")
@@ -46,7 +48,13 @@ export async function renewPass(ctx: Ctx, input: z.infer<typeof passCreateInput>
   const org = ctx.organizationId
   const address = cleanText(input.property.address)
   const [known] = await ctx.db.select().from(s.property).where(and(eq(s.property.customerId, old.customerId), eq(s.property.address, address), eq(s.property.town, input.property.town))).limit(1)
-  const property = known ?? (await ctx.db.insert(s.property).values({ organizationId: org, customerId: old.customerId, address, town: input.property.town }).returning())[0]!
+  // The yard the customer just answered lives on the property: the zones, whether they must be home, the access note (the old pass's yard says it when they give none).
+  const [oldYard] = await ctx.db.select({ accessNote: s.property.accessNote }).from(s.property).where(eq(s.property.id, old.propertyId))
+  const accessNote = input.accessNote ? cleanText(input.accessNote) : (oldYard?.accessNote ?? null)
+  const yard = { zones: input.zones, ...(typeof input.needsCustomerHome === "boolean" ? { mustBeHome: input.needsCustomerHome } : {}), ...(accessNote ? { accessNote } : {}) }
+  const property = known
+    ? (await ctx.db.update(s.property).set({ ...yard, updatedAt: ctx.now }).where(eq(s.property.id, known.id)).returning())[0]!
+    : (await ctx.db.insert(s.property).values({ organizationId: org, customerId: old.customerId, address, town: input.property.town, ...yard }).returning())[0]!
   if (!known) await enqueueGeocode(ctx.db, org, property.id, ctx.now)
 
   const pass = await makePassRows(ctx.db, {
@@ -57,17 +65,16 @@ export async function renewPass(ctx: Ctx, input: z.infer<typeof passCreateInput>
     onSale,
     zones: input.zones,
     inspection: input.inspection,
-    needsCustomerHome: input.needsCustomerHome,
-    accessNote: input.accessNote ? cleanText(input.accessNote) : old.accessNote,
+    turnOnPreference: input.turnOnPreference,
+    blowoutPreference: input.blowoutPreference,
+    // Sold today, on the card the customer already has on file.
     status: "active",
     source: "renewal",
-    renewsJobId: old.jobId,
-    // The card is the customer's already; the new pass only gets the alias columns.
-    card: { stripePaymentMethodId: customer.stripePaymentMethodId, cardBrand: customer.cardBrand, cardLast4: customer.cardLast4, cardExpires: customer.cardExpires },
+    renewsJobId: old.id,
     now: ctx.now,
   })
-  await holdChosenDays(ctx.db, pass.id, input.days.map(chosenDay), input.property.town, season, day)
-  await recordChange(ctx, { customerId: old.customerId, passId: pass.id, kind: "renewed", detail: { source: "renewal", name: "Season Pass", passNumber: pass.number, renewsJobId: old.jobId, from: old.id, season } })
+  await holdChosenDays(ctx.db, pass.jobId, input.days.map(chosenDay), input.property.town, season, day)
+  await recordChange(ctx, { customerId: old.customerId, jobId: pass.id, kind: "renewed", detail: { source: "renewal", name: "Season Pass", passNumber: pass.number, renewsJobId: old.id, from: old.id, season } })
   const c = input.consent
   await finishPurchase(ctx, pass, input.property.town, c ? { marketingOptIn: c.marketingOptIn, marketingChannels: c.marketingChannels } : undefined)
   await emitEvent(ctx.db, org, "pass.bought", { passId: pass.id, number: pass.number })

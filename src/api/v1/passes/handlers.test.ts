@@ -4,7 +4,7 @@ import { and, eq } from "drizzle-orm"
 import * as s from "@/db/schema"
 import type { TestDb } from "@/db/test-db"
 import { callApi } from "../../core/call"
-import { adminKey, apiDb, ctxFor, customerPerson, eventsOf, linesOfPass, readKey, writeKey } from "../../test-helpers"
+import { adminKey, apiDb, ctxFor, customerPerson, eventsOf, jobIdOfPassId, linesOfPass, passJobOf, passViewOf, readKey, writeKey } from "../../test-helpers"
 import { jobTotal } from "@/lib/jobs/lines"
 import { SERVICES } from "@/lib/services"
 import {
@@ -44,16 +44,15 @@ describe("passes.create", () => {
   })
   it("writes the consent it records as a consent event about the pass's job, by the customer, and none when no consent is given", async () => {
     const pass = await create({ customer: { firstName: "Cora", lastName: "Event", email: "cora@example.com" }, consent: { termsAccepted: true, marketingOptIn: true, marketingChannels: ["email"], source: "checkout" } })
-    const [row] = await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, pass.id))
-    expect(await eventsOf(db, { kind: "consent", jobId: row!.jobId })).toMatchObject([{ about: "job", aboutId: row!.jobId, customerId: pass.customerId, who: "api", detail: { marketingOptIn: true, marketingChannels: ["email"], source: "checkout" } }])
-    expect(await eventsOf(db, { jobId: row!.jobId, kind: "job.sold" })).toEqual([])
+    const row = await passViewOf(db, pass.id)
+    expect(await eventsOf(db, { kind: "consent", jobId: row.jobId })).toMatchObject([{ about: "job", aboutId: row.jobId, customerId: pass.customerId, who: "api", detail: { marketingOptIn: true, marketingChannels: ["email"], source: "checkout" } }])
+    expect(await eventsOf(db, { jobId: row.jobId, kind: "job.sold" })).toEqual([])
   })
-  it("makes the pass's job: kind pass, source checkout, the visits point at it and its price is the total", async () => {
+  it("makes the pass's job: its id is the pass id, a season and a number, no sold day yet, the visits point at it and its price is the total", async () => {
     const pass = await create({ customer: { firstName: "Jobby", lastName: "Tester", email: "jobby@example.com" } })
-    const [row] = await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, pass.id))
-    const [job] = await db.select().from(s.job).where(eq(s.job.id, row!.jobId))
-    expect(job).toMatchObject({ kind: "pass", source: "checkout", status: "pending", price: 260, customerId: pass.customerId })
-    const visits = await db.select().from(s.visit).where(eq(s.visit.passId, pass.id))
+    const [job] = await db.select().from(s.job).where(eq(s.job.id, pass.id))
+    expect(job).toMatchObject({ kind: "pass", source: "checkout", season: 2027, passNumber: pass.number, soldOn: null, legacyPassId: null, price: 260, customerId: pass.customerId })
+    const visits = await db.select().from(s.visit).where(eq(s.visit.jobId, job!.id))
     expect(visits).toHaveLength(2)
     expect(visits.every((v) => v.jobId === job!.id)).toBe(true)
   })
@@ -115,7 +114,7 @@ describe("passes.list and passes.get", () => {
     const list = JSON.stringify(await callApi(ctxFor(db, readKey), passesList, { limit: 100 }))
     for (const secret of ["leak@example.com", "Gate code 9999", "stripe", "Elm St", "email"]) expect(list.toLowerCase()).not.toContain(secret.toLowerCase())
     const [leak] = (await db.select().from(s.customer).where(eq(s.customer.email, "leak@example.com")))
-    const [pass] = await db.select().from(s.seasonPass).where(eq(s.seasonPass.customerId, leak!.id))
+    const [pass] = await db.select().from(s.job).where(eq(s.job.customerId, leak!.id))
     const detail = JSON.stringify(await callApi(ctxFor(db, readKey), passesGet, { id: pass!.id }))
     for (const secret of ["leak@example.com", "Gate code 9999", "Elm St"]) expect(detail).not.toContain(secret)
     expect(JSON.stringify(await callApi(ctxFor(db, writeKey), passesGet, { id: pass!.id }))).toContain("leak@example.com")
@@ -125,65 +124,64 @@ describe("passes.list and passes.get", () => {
     const erie = await callApi(ctxFor(db, readKey), passesList, { town: "Erie", season: 2027, limit: 100 })
     expect(erie.data.every((p) => p.town === "Erie")).toBe(true)
     // The season is the job's: moving a pass job to another season moves the pass in the list.
-    const [row] = await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, "p3"))
-    await db.update(s.job).set({ season: 2099 }).where(eq(s.job.id, row!.jobId))
-    expect((await callApi(ctxFor(db, readKey), passesList, { season: 2099 })).data.map((p) => [p.id, p.season])).toEqual([["p3", 2099]])
-    await db.update(s.job).set({ season: row!.season }).where(eq(s.job.id, row!.jobId))
+    const row = await passJobOf(db, "p3")
+    await db.update(s.job).set({ season: 2099 }).where(eq(s.job.id, row.id))
+    expect((await callApi(ctxFor(db, readKey), passesList, { season: 2099 })).data.map((p) => [p.id, p.season])).toEqual([[row.id, 2099]])
+    await db.update(s.job).set({ season: row.season }).where(eq(s.job.id, row.id))
     expect((await callApi(ctxFor(db, readKey), passesList, { preference: "later", limit: 100 })).data.every((p) => p.turnOnPreference === "later" || p.blowoutPreference === "later")).toBe(true)
     await expect(callApi(ctxFor(db, readKey), passesList, { town: "Boulder" })).rejects.toMatchObject({ code: "invalid" })
   })
-  it("reads status from the job: a job cancelled on the job only reads cancelled, a past season reads lapsed", async () => {
-    const [row] = await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, "p3"))
-    const jobId = row!.jobId
+  it("reads status from the job: sold and cancelled are the job's own days, a past season reads lapsed", async () => {
+    const row = await passJobOf(db, "p3")
+    const jobId = row.id
     const statusOf = async (id: string) => (await callApi(ctxFor(db, readKey), passesGet, { id })).status
-    expect(row!.status).toBe("active")
-    // cancelled on the job alone: the alias still says active
-    await db.update(s.job).set({ status: "cancelled", cancelledAt: new Date("2027-03-01T12:00:00Z") }).where(eq(s.job.id, jobId))
-    expect(await statusOf("p3")).toBe("cancelled")
-    expect((await callApi(ctxFor(db, readKey), passesList, { status: "cancelled", limit: 100 })).data.map((p) => p.id)).toContain("p3")
-    expect((await callApi(ctxFor(db, readKey), passesList, { status: "active", limit: 100 })).data.map((p) => p.id)).not.toContain("p3")
-    expect((await callApi(ctxFor(db, readKey), passesGet, { id: "p3" })).cancelledAt).toBe("2027-03-01T12:00:00.000Z")
-    await db.update(s.job).set({ status: "active", cancelledAt: null }).where(eq(s.job.id, jobId))
-    expect(await statusOf("p3")).toBe("active")
+    expect(await statusOf(jobId)).toBe("active")
+    // cancelled on the job alone: `cancelled_at` is the whole fact
+    await db.update(s.job).set({ cancelledAt: new Date("2027-03-01T12:00:00Z") }).where(eq(s.job.id, jobId))
+    expect(await statusOf(jobId)).toBe("cancelled")
+    expect((await callApi(ctxFor(db, readKey), passesList, { status: "cancelled", limit: 100 })).data.map((p) => p.id)).toContain(jobId)
+    expect((await callApi(ctxFor(db, readKey), passesList, { status: "active", limit: 100 })).data.map((p) => p.id)).not.toContain(jobId)
+    expect((await callApi(ctxFor(db, readKey), passesGet, { id: jobId })).cancelledAt).toBe("2027-03-01T12:00:00.000Z")
+    await db.update(s.job).set({ cancelledAt: null }).where(eq(s.job.id, jobId))
+    expect(await statusOf(jobId)).toBe("active")
     // a season before the current one reads lapsed, in the list filter too
     await db.update(s.job).set({ season: 2025 }).where(eq(s.job.id, jobId))
-    expect(await statusOf("p3")).toBe("lapsed")
-    expect((await callApi(ctxFor(db, readKey), passesList, { status: "lapsed", limit: 100 })).data.map((p) => p.id)).toContain("p3")
-    expect((await callApi(ctxFor(db, readKey), passesList, { status: "active", limit: 100 })).data.map((p) => p.id)).not.toContain("p3")
-    await db.update(s.job).set({ season: row!.season }).where(eq(s.job.id, jobId))
-    // a pending job reads pending
-    await db.update(s.job).set({ status: "pending" }).where(eq(s.job.id, jobId))
-    expect(await statusOf("p3")).toBe("pending")
-    await db.update(s.job).set({ status: "active" }).where(eq(s.job.id, jobId))
+    expect(await statusOf(jobId)).toBe("lapsed")
+    expect((await callApi(ctxFor(db, readKey), passesList, { status: "lapsed", limit: 100 })).data.map((p) => p.id)).toContain(jobId)
+    expect((await callApi(ctxFor(db, readKey), passesList, { status: "active", limit: 100 })).data.map((p) => p.id)).not.toContain(jobId)
+    await db.update(s.job).set({ season: row.season }).where(eq(s.job.id, jobId))
+    // a job with no sold day reads pending, and the list filter agrees
+    await db.update(s.job).set({ soldOn: null }).where(eq(s.job.id, jobId))
+    expect(await statusOf(jobId)).toBe("pending")
+    expect((await callApi(ctxFor(db, readKey), passesList, { status: "pending", limit: 100 })).data.map((p) => p.id)).toContain(jobId)
+    await db.update(s.job).set({ soldOn: row.soldOn }).where(eq(s.job.id, jobId))
   })
-  it("reads a pass an older deploy wrote with no number or season on its job from the alias", async () => {
-    const [row] = await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, "p3"))
-    const [job] = await db.select().from(s.job).where(eq(s.job.id, row!.jobId))
-    await db.update(s.job).set({ passNumber: null, season: null }).where(eq(s.job.id, row!.jobId))
-    try {
-      const listed = (await callApi(ctxFor(db, readKey), passesList, { limit: 100 })).data.find((p) => p.id === "p3")
-      expect(listed).toMatchObject({ number: row!.number, season: row!.season })
-      expect(await callApi(ctxFor(db, readKey), passesGet, { id: "p3" })).toMatchObject({ number: row!.number, season: row!.season })
-    } finally {
-      await db.update(s.job).set({ passNumber: job!.passNumber, season: job!.season }).where(eq(s.job.id, row!.jobId))
-    }
+  it("opens a pass by the old pass id its job kept, and says the job's id", async () => {
+    const jobId = await jobIdOfPassId(db, "p3")
+    expect(jobId).not.toBe("p3")
+    expect(await callApi(ctxFor(db, readKey), passesGet, { id: "p3" })).toMatchObject({ id: jobId, number: (await passJobOf(db, "p3")).passNumber })
+    expect(await callApi(ctxFor(db, readKey), passesGet, { id: jobId })).toMatchObject({ id: jobId })
+    // visits of the pass say its job id as their pass id
+    expect((await callApi(ctxFor(db, readKey), passesGet, { id: "p3" })).visits.every((v) => v.passId === jobId)).toBe(true)
+  })
+  it("does not find another organization's pass or a job with no season by any id", async () => {
+    const [repair] = await db.select().from(s.job).where(eq(s.job.kind, "repair")).limit(1)
+    if (repair) await expect(callApi(ctxFor(db, readKey), passesGet, { id: repair.id })).rejects.toMatchObject({ code: "not_found" })
+    await expect(callApi(ctxFor(db, readKey), passesGet, { id: "no-such-pass" })).rejects.toMatchObject({ code: "not_found" })
   })
   it("reads the preferences from the visits and the inspection from the lines", async () => {
-    const [row] = await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, "p3"))
-    await db.update(s.visit).set({ preference: "later" }).where(and(eq(s.visit.passId, "p3"), eq(s.visit.kind, "blowout")))
-    // the alias column disagrees; the visit wins
+    const row = await passJobOf(db, "p3")
+    await db.update(s.visit).set({ preference: "later" }).where(and(eq(s.visit.jobId, row.id), eq(s.visit.kind, "blowout")))
     const had = (await callApi(ctxFor(db, readKey), passesGet, { id: "p3" })).inspection
-    await db.update(s.seasonPass).set({ blowoutPreference: "earlier", inspection: !had }).where(eq(s.seasonPass.id, "p3"))
     const out = await callApi(ctxFor(db, readKey), passesGet, { id: "p3" })
     expect(out.blowoutPreference).toBe("later")
     expect(out.inspection).toBe(had)
-    expect((await callApi(ctxFor(db, readKey), passesList, { preference: "later", limit: 100 })).data.map((p) => p.id)).toContain("p3")
+    expect((await callApi(ctxFor(db, readKey), passesList, { preference: "later", limit: 100 })).data.map((p) => p.id)).toContain(row.id)
     // the line is the fact: flip it and the pass follows
-    const [line] = await db.select().from(s.lineItem).where(and(eq(s.lineItem.jobId, row!.jobId), eq(s.lineItem.name, had ? "Mid-season inspection" : "Spring turn-on")))
+    const [line] = await db.select().from(s.lineItem).where(and(eq(s.lineItem.jobId, row.id), eq(s.lineItem.name, had ? "Mid-season inspection" : "Spring turn-on")))
     await db.update(s.lineItem).set(had ? { cancelledAt: new Date() } : { name: "Mid-season inspection" }).where(eq(s.lineItem.id, line!.id))
     expect((await callApi(ctxFor(db, readKey), passesGet, { id: "p3" })).inspection).toBe(!had)
     await db.update(s.lineItem).set({ name: line!.name, cancelledAt: line!.cancelledAt }).where(eq(s.lineItem.id, line!.id))
-    await db.update(s.seasonPass).set({ blowoutPreference: row!.blowoutPreference, inspection: row!.inspection }).where(eq(s.seasonPass.id, "p3"))
   })
   it("gives a customer only their own pass", async () => {
     await expect(callApi(ctxFor(db, customerPerson("c100")), passesGet, { id: "p1" })).resolves.toMatchObject({ number: "TH-2027-0001" })
@@ -195,17 +193,19 @@ describe("passes.list and passes.get", () => {
 describe("passes.cancel", () => {
   it("is refused to a read key and cancels the unstarted visits only", async () => {
     await expect(callApi(ctxFor(db, readKey), passesCancel, { id: "p1" })).rejects.toMatchObject({ code: "forbidden", status: 403 })
+    const jobId = await jobIdOfPassId(db, "p1")
+    // an old pass id cancels the job, and the answer says the job's id
     const out = await callApi(ctxFor(db, writeKey), passesCancel, { id: "p1", reason: "moving" })
-    expect(out).toEqual({ id: "p1", status: "cancelled", cancelledVisits: 2 })
-    const visits = await db.select().from(s.visit).where(eq(s.visit.passId, "p1"))
+    expect(out).toEqual({ id: jobId, status: "cancelled", cancelledVisits: 2 })
+    expect((await passJobOf(db, "p1")).cancelledAt).not.toBeNull()
+    const visits = await db.select().from(s.visit).where(eq(s.visit.jobId, jobId))
     expect(visits.map((v) => v.status).sort()).toEqual(["cancelled", "cancelled", "completed"])
     expect(await callApi(ctxFor(db, writeKey), passesCancel, { id: "p1" })).toMatchObject({ cancelledVisits: 0 })
     const lines = await linesOfPass(db, "p1")
     expect(lines.map((l) => [l.visitStatus, l.cancelledAt !== null]).sort()).toEqual([["cancelled", true], ["cancelled", true], ["completed", false]])
-    expect(await db.select().from(s.passChange).where(eq(s.passChange.passId, "p1"))).toHaveLength(1)
-    // One event for the one action: the alias row and the emitted webhook name do not make a second.
-    const [p1] = await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, "p1"))
-    expect(await eventsOf(db, { kind: "pass.cancelled", jobId: p1!.jobId })).toMatchObject([{ about: "job", aboutId: p1!.jobId, customerId: p1!.customerId, who: "api", detail: { reason: "moving", visits: 2 } }])
+    // One event for the one action: the emitted webhook name does not make a second.
+    const p1 = await passViewOf(db, "p1")
+    expect(await eventsOf(db, { kind: "pass.cancelled", jobId: p1.jobId })).toMatchObject([{ about: "job", aboutId: p1.jobId, customerId: p1.customerId, who: "api", detail: { reason: "moving", visits: 2 } }])
   })
   it("lets a customer cancel their own pass and no one else's", async () => {
     await expect(callApi(ctxFor(db, customerPerson("c121")), passesCancel, { id: "p3" })).rejects.toMatchObject({ code: "forbidden" })
@@ -217,12 +217,11 @@ describe("passes.updatePreference", () => {
   it("lets a customer change it before the window opens and logs the change", async () => {
     const out = await callApi(ctxFor(db, customerPerson("c140"), "2027-02-01T17:00:00Z"), passesUpdatePreference, { id: "p3", kind: "turn-on", preference: "earlier" })
     expect(out.preference).toBe("earlier")
-    const [pass] = await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, "p3"))
-    expect(pass!.turnOnPreference).toBe("earlier")
+    const pass = await passViewOf(db, "p3")
+    expect(pass.turnOnPreference).toBe("earlier")
     const [visit] = await db.select().from(s.visit).where(eq(s.visit.id, "p3-turn-on"))
     expect(visit!.preference).toBe("earlier")
-    expect(await db.select().from(s.passChange).where(eq(s.passChange.passId, "p3"))).toHaveLength(1)
-    expect(await eventsOf(db, { kind: "pass.preference-changed", jobId: pass!.jobId })).toMatchObject([{ about: "job", aboutId: pass!.jobId, customerId: "c140", visitId: "p3-turn-on", who: "customer", detail: { visit: "turn-on", to: "earlier" } }])
+    expect(await eventsOf(db, { kind: "pass.preference-changed", jobId: pass.jobId })).toMatchObject([{ about: "job", aboutId: pass.jobId, customerId: "c140", visitId: "p3-turn-on", who: "customer", detail: { visit: "turn-on", to: "earlier" } }])
   })
   it("refuses a customer once the window has opened or the visit has a day, but not an admin", async () => {
     await expect(callApi(ctxFor(db, customerPerson("c140"), "2027-05-01T17:00:00Z"), passesUpdatePreference, { id: "p3", kind: "turn-on", preference: "later" })).rejects.toMatchObject({ code: "unprocessable" })
@@ -235,15 +234,14 @@ describe("passes.updatePreference", () => {
 describe("passes.addInspection", () => {
   it("adds the July visit before July 1 and refuses a second time", async () => {
     const out = await callApi(ctxFor(db, customerPerson("c167"), "2027-06-01T17:00:00Z"), passesAddInspection, { id: "p4" })
-    const [seeded] = await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, "p4"))
-    expect(out).toMatchObject({ inspection: true, amount: 145 + Math.max(0, seeded!.zones - 8) * 10 })
+    const seeded = await passViewOf(db, "p4")
+    expect(out).toMatchObject({ inspection: true, amount: 145 + Math.max(0, (seeded.zones ?? 0) - 8) * 10 })
     await expect(callApi(ctxFor(db, customerPerson("c167"), "2027-06-01T17:00:00Z"), passesAddInspection, { id: "p4" })).rejects.toMatchObject({ code: "conflict" })
-    const [pass] = await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, "p4"))
-    expect(pass!.inspection).toBe(true)
+    expect((await passViewOf(db, "p4")).inspection).toBe(true)
     const line = (await linesOfPass(db, "p4")).find((l) => l.visitKind === "inspection")
     expect(line).toMatchObject({ visitId: out.visitId, name: "Mid-season inspection", unitPrice: out.amount, serviceKey: expect.stringMatching(/^inspection-(8|12|16)$/), taxable: false, cancelledAt: null })
     expect(line!.description).toBe(SERVICES[line!.serviceKey!]!.description)
-    expect(await eventsOf(db, { kind: "pass.inspection-added", jobId: seeded!.jobId })).toMatchObject([{ about: "job", aboutId: seeded!.jobId, customerId: "c167", visitId: out.visitId, who: "customer", detail: { amount: out.amount } }])
+    expect(await eventsOf(db, { kind: "pass.inspection-added", jobId: seeded.jobId })).toMatchObject([{ about: "job", aboutId: seeded.jobId, customerId: "c167", visitId: out.visitId, who: "customer", detail: { amount: out.amount } }])
   })
   it("refuses a customer on July 1 but lets an admin while July is open", async () => {
     await expect(callApi(ctxFor(db, customerPerson("c197"), "2027-07-01T17:00:00Z"), passesAddInspection, { id: "p5" })).rejects.toMatchObject({ code: "unprocessable" })
@@ -266,13 +264,13 @@ describe("passes.skipVisit", () => {
   })
   it("takes the skipped visit's line out of the job's total, whatever job.price says", async () => {
     const pass = await create({ customer: { firstName: "Skip", lastName: "Tester", email: "skip@example.com", phone: "303-555-0151" }, inspection: true })
-    const [row] = await db.select({ jobId: s.seasonPass.jobId }).from(s.seasonPass).where(eq(s.seasonPass.id, pass.id))
-    await db.update(s.job).set({ price: 999 }).where(eq(s.job.id, row!.jobId))
+    const row = { jobId: pass.id }
+    await db.update(s.job).set({ price: 999 }).where(eq(s.job.id, row.jobId))
     await callApi(ctxFor(db, writeKey), passesSkipVisit, { id: pass.id, kind: "inspection" })
     const lines = await linesOfPass(db, pass.id)
     expect(lines.map((l) => [l.visitKind, l.cancelledAt instanceof Date])).toEqual([["turn-on", false], ["inspection", true], ["blowout", false]])
     expect(jobTotal(lines)).toBe(145 + 115)
-    expect((await db.select().from(s.job).where(eq(s.job.id, row!.jobId)))[0]!.price).not.toBe(145 + 115)
+    expect((await db.select().from(s.job).where(eq(s.job.id, row.jobId)))[0]!.price).not.toBe(145 + 115)
   })
   it("refuses a completed visit and a customer on another pass", async () => {
     await expect(callApi(ctxFor(db, writeKey), passesSkipVisit, { id: "p1", kind: "turn-on" })).rejects.toMatchObject({ code: "unprocessable" })
@@ -285,8 +283,8 @@ describe("passes.skipVisit", () => {
 describe("passes.resendConfirmation", () => {
   it("queues the purchase confirmation again, each call its own message, with the scope enforced", async () => {
     vi.stubEnv("APP_URL", "https://www.example.com")
-    const [p1] = await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, "p1"))
-    await db.update(s.customer).set({ email: "resend@example.com" }).where(eq(s.customer.id, p1!.customerId))
+    const p1 = await passViewOf(db, "p1")
+    await db.update(s.customer).set({ email: "resend@example.com" }).where(eq(s.customer.id, p1.customerId))
     const before = (await db.select().from(s.messageLog).where(eq(s.messageLog.kind, "purchase-confirmation"))).length
     await callApi(ctxFor(db, writeKey), passesResendConfirmation, { id: "p1" })
     await callApi(ctxFor(db, writeKey), passesResendConfirmation, { id: "p1" })
@@ -310,10 +308,11 @@ describe("passes.activate and passes.sendCardUpdateLink (Stripe stubbed)", () =>
     expect(c!.stripeCustomerId).toBe("cus_act")
     await expect(callApi(ctxFor(db, readKey), passesActivate, { id: pass.id, setupSessionId: "cs_a" })).rejects.toMatchObject({ code: "forbidden" })
     // The checkout's sale is written once, by activation (not again by the second call), with the card the customer saved.
-    const [row] = await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, pass.id))
-    expect(await eventsOf(db, { kind: "job.sold", jobId: row!.jobId })).toMatchObject([{ about: "job", aboutId: row!.jobId, customerId: pass.customerId, who: "api", detail: { source: "website", name: "Season Pass", passNumber: pass.number } }])
+    const row = await passViewOf(db, pass.id)
+    expect(row.soldOn).toBe("2027-04-20")
+    expect(await eventsOf(db, { kind: "job.sold", jobId: row.jobId })).toMatchObject([{ about: "job", aboutId: row.jobId, customerId: pass.customerId, who: "api", detail: { source: "website", name: "Season Pass", passNumber: pass.number } }])
     expect(await eventsOf(db, { kind: "card.saved", customerId: pass.customerId })).toMatchObject([{ about: "customer", aboutId: pass.customerId, who: "api", detail: { brand: "visa", last4: "4242" } }])
-    expect(await eventsOf(db, { kind: "pass.bought", jobId: row!.jobId })).toEqual([])
+    expect(await eventsOf(db, { kind: "pass.bought", jobId: row.jobId })).toEqual([])
   })
   it("queues a card-update email with a fresh link", async () => {
     const pass = await fresh("link@example.com")

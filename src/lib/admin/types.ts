@@ -263,6 +263,8 @@ export interface SoldJob {
   source: "checkout" | "office" | "site" | "renewal"
   notes?: string
   passId?: string
+  /** the id the job's pass had before the pass became the job; an old link or alert key still opens it */
+  legacyPassId?: string
   passNumber?: string
   /** the day the job was sold, "2026-11-03"; absent in the fixtures */
   soldOn?: string

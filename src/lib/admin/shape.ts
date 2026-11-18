@@ -52,7 +52,7 @@ export interface MirrorVisit { id: string; clientId: string | null; kind: string
 export interface MirrorJob { id: string; clientId: string | null; jobberUrl: string | null }
 export interface MirrorQuote { id: string; clientName: string | null; town: Town | null; total: number | null; sentAt: Date | null; status: Quote["status"] | null; jobberUrl: string | null }
 export interface MirrorInvoice { id: string; clientName: string | null; total: number | null; issuedAt: Date | null; dueAt: Date | null; status: Invoice["status"] | null; jobberUrl: string | null }
-export interface JobRow { id: string; customerId: string; kind: SoldJob["kind"]; status: SoldJob["status"]; price: number | null; source: SoldJob["source"]; passNumber?: string | null; notes: string | null; createdAt?: Date }
+export interface JobRow { id: string; customerId: string; kind: SoldJob["kind"]; status: SoldJob["status"]; legacyPassId?: string | null; price: number | null; source: SoldJob["source"]; passNumber?: string | null; notes: string | null; createdAt?: Date }
 export interface LineRow { id: string; jobId: string; visitId: string | null; name: string; description: string | null; quantity: number; unitPrice: number; taxable: boolean; cancelledAt: Date | null }
 /** A payment row (`charge`) as live.ts reads it: refunds are negative; `attempt` numbers a visit's tries. */
 export interface PaymentRow { id: string; jobId: string | null; visitId: string | null; amount: number; method: string; status: string; paidOn: string | null; refundsPaymentId: string | null; reference?: string | null; attempt: number; createdAt: Date }
@@ -341,7 +341,7 @@ export function shapeAdminData(i: ShapeInput): AdminData {
       id: j.id, customerId: j.customerId, kind: j.kind, status: j.status, source: j.source, ...(bill ? { invoice: bill } : {}), ...(stories ? { timeline: stories.ofJob(j.id) } : {}),
       ...(i.lineRows ? { lines: lines.map((l) => ({ id: l.id, name: l.name, quantity: l.quantity, unitPrice: l.unitPrice, taxable: l.taxable, ...(l.description ? { description: l.description } : {}), ...(l.cancelledAt ? { cancelledAt: iso(l.cancelledAt) } : {}), ...(l.visitId ? { visitId: l.visitId } : {}) })), total: jobTotal(lines), payments, money } : {}),
       ...(j.price !== null ? { price: j.price } : {}), ...(j.notes ? { notes: j.notes } : {}), ...(j.createdAt ? { soldOn: dayOf(iso(j.createdAt), TIME_ZONE) } : {}),
-      ...(pass ? { passId: pass.id, passNumber: j.passNumber ?? pass.number } : {}),
+      ...(pass ? { passId: pass.id, passNumber: j.passNumber ?? pass.number } : {}), ...(j.legacyPassId ? { legacyPassId: j.legacyPassId } : {}),
       visitIds: i.visits.filter((v) => v.jobId === j.id).map((v) => v.id),
     }
   })

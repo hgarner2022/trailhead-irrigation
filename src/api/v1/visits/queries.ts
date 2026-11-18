@@ -24,6 +24,8 @@ export const visitSelect = {
   // the visit's own story: its newest 50 events, newest first (staff only: `visitOut` leaves them out for a customer)
   events: visitEventsJson(s.visit.id, s.visit.organizationId),
   visit: s.visit,
+  // a visit is a pass visit when its job is a Season Pass, which is the job with a season
+  isPassVisit: sql<boolean>`exists (select 1 from job pj where pj.id = ${s.visit.jobId} and pj.season is not null)`,
   firstName: s.customer.firstName,
   town: s.property.town,
   lat: s.property.lat,
@@ -95,7 +97,8 @@ export function visitOut(ctx: Ctx, row: VisitJoined): VisitOutType {
   const seeNotes = canSeeContact(ctx)
   return {
     id: v.id,
-    passId: v.passId,
+    // the pass is the job: its id is the job id
+    passId: row.isPassVisit ? v.jobId : null,
     bookingId: v.bookingId,
     jobId: v.jobId,
     customerId: v.customerId,

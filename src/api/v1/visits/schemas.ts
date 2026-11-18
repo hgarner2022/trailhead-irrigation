@@ -31,7 +31,7 @@ export const YardOut = z.object({
 
 export const VisitOut = z.object({
   id: Id,
-  passId: Id.nullable(),
+  passId: Id.nullable().describe("The Season Pass this visit belongs to: the id of its job when the job is a pass, else null."),
   bookingId: Id.nullable().describe("The old booking row; new jobs have none."),
   jobId: Id.describe("The job (the pass or the booked work) this visit belongs to."),
   customerId: Id,

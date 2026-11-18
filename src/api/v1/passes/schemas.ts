@@ -5,7 +5,7 @@ import { VisitOut } from "../visits/schemas"
 import { MAX_ZONES, MIN_ZONES } from "@/lib/season-pass"
 
 export const PassOut = z.object({
-  id: Id,
+  id: Id.describe("The pass's job id. A pass id the old pass table gave out (in a link, a message, a stored key) still opens the same pass, and the answer says the job id."),
   number: z.string().describe("TH-<season>-NNNN."),
   season: z.number().int(),
   customerId: Id,

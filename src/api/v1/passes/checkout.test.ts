@@ -58,8 +58,7 @@ describe("passes.create for the checkout", () => {
     reachable.mockResolvedValue(true)
     const who = { firstName: "Yard", lastName: "Tester", email: "yard@example.com", phone: "3035550105" }
     const first = await create({ customer: who, property: { address: "7 Cedar St", town: "Erie" }, zones: 6, needsCustomerHome: true, accessNote: "Gate code 9" })
-    const [row] = await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, first.id))
-    const props = () => db.select().from(s.property).where(eq(s.property.customerId, row!.customerId))
+    const props = () => db.select().from(s.property).where(eq(s.property.customerId, first.customerId))
     expect(await props()).toMatchObject([{ address: "7 Cedar St", zones: 6, mustBeHome: true, accessNote: "Gate code 9" }])
     await create({ passId: first.id, customer: who, property: { address: "7 Cedar St", town: "Erie" }, zones: 9, accessNote: "No gate now" })
     expect(await props()).toMatchObject([{ zones: 9, mustBeHome: true, accessNote: "No gate now" }])
@@ -68,9 +67,8 @@ describe("passes.create for the checkout", () => {
     reachable.mockResolvedValue(true)
     const who = { firstName: "Keep", lastName: "Tester", email: "keep@example.com", phone: "3035550106" }
     const first = await create({ customer: who, property: { address: "9 Elm St", town: "Erie" }, zones: 6, needsCustomerHome: true, accessNote: "Gate code 4" })
-    const [row] = await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, first.id))
     await create({ passId: first.id, customer: who, property: { address: "9 Elm St", town: "Erie" }, zones: 8 })
-    const [prop] = await db.select().from(s.property).where(eq(s.property.customerId, row!.customerId))
+    const [prop] = await db.select().from(s.property).where(eq(s.property.customerId, first.customerId))
     expect(prop).toMatchObject({ zones: 8, mustBeHome: true, accessNote: "Gate code 4" })
   })
   it("holds one pending pass per email: a second call with its passId updates it", async () => {
@@ -81,8 +79,10 @@ describe("passes.create for the checkout", () => {
     expect(again.number).toBe(first.number)
     expect(again).toMatchObject({ zones: 12, inspection: true })
     expect(again.visits.map((v) => v.kind)).toEqual(["turn-on", "inspection", "blowout"])
-    const rows = await db.select().from(s.visit).where(eq(s.visit.passId, first.id))
+    const rows = await db.select().from(s.visit).where(eq(s.visit.jobId, first.id))
     expect(rows).toHaveLength(3)
+    // the held pass is the same job, rebuilt: one job for the customer
+    expect(await db.select().from(s.job).where(eq(s.job.customerId, first.customerId))).toHaveLength(1)
   })
   it("resumes the same pending pass when the customer comes back without its id, so submit, submit, submit makes one pass", async () => {
     reachable.mockResolvedValue(true)
@@ -97,11 +97,10 @@ describe("passes.create for the checkout", () => {
     await create({ ...body, customer: { firstName: "Stranger", lastName: "Tester", email: "many@example.com", phone: "3035559999" } })
     const [who] = await db.select().from(s.customer).where(eq(s.customer.email, "many@example.com"))
     expect(who).toMatchObject({ firstName: "Many", phone: "+13035550105" })
-    const rows = await db.select().from(s.seasonPass).where(eq(s.seasonPass.customerId, (await db.select().from(s.customer).where(eq(s.customer.email, "many@example.com")))[0]!.id))
+    const rows = await db.select().from(s.job).where(eq(s.job.customerId, (await db.select().from(s.customer).where(eq(s.customer.email, "many@example.com")))[0]!.id))
     expect(rows).toHaveLength(1)
     // an hour later the old one is not resumed and a fresh pending pass starts
-    const [firstRow] = await db.select({ jobId: s.seasonPass.jobId }).from(s.seasonPass).where(eq(s.seasonPass.id, first.id))
-    await db.update(s.job).set({ createdAt: new Date("2026-11-30T00:00:00Z") }).where(eq(s.job.id, firstRow!.jobId))
+    await db.update(s.job).set({ createdAt: new Date("2026-11-30T00:00:00Z") }).where(eq(s.job.id, first.id))
     const later = await create(body)
     expect(later.id).not.toBe(first.id)
   })
@@ -147,30 +146,38 @@ describe("passes.activate for the checkout", () => {
 })
 
 describe("expirePendingPasses", () => {
-  it("removes pending passes older than an hour with their visits and keeps active and recent ones", async () => {
+  it("removes unsold pass jobs older than an hour with their lines, visits, events and alerts, and never a sold pass or a recent one", async () => {
     reachable.mockResolvedValue(true)
     const old = await create({ customer: { firstName: "Old", lastName: "Tester", email: "old@example.com", phone: "3035550108" } })
     const fresh = await create({ customer: { firstName: "Fresh", lastName: "Tester", email: "fresh@example.com", phone: "3035550109" } })
-    const [oldRow] = await db.select({ jobId: s.seasonPass.jobId }).from(s.seasonPass).where(eq(s.seasonPass.id, old.id))
-    // The purge keys on the job's age and status, not the pass alias.
-    await db.update(s.job).set({ createdAt: new Date(Date.now() - 61 * 60_000) }).where(eq(s.job.id, oldRow!.jobId))
-    expect(await db.select().from(s.lineItem).where(eq(s.lineItem.jobId, oldRow!.jobId))).toHaveLength(2)
+    const oldRow = { jobId: old.id }
+    // The purge keys on the job's age and sold day.
+    await db.update(s.job).set({ createdAt: new Date(Date.now() - 61 * 60_000) }).where(eq(s.job.id, oldRow.jobId))
+    expect(await db.select().from(s.lineItem).where(eq(s.lineItem.jobId, oldRow.jobId))).toHaveLength(2)
+    await db.insert(s.adminAlert).values({ organizationId: ORG, kind: "pending-pass", key: old.id, jobId: old.id, message: "never finished" })
+    // A sold pass is never touched, however old its job is (a fixture pass sold at the start of the season).
+    const sold = (await db.select().from(s.job).where(eq(s.job.legacyPassId, "p1")))[0]!
+    await db.update(s.job).set({ createdAt: new Date("2020-01-01T00:00:00Z") }).where(eq(s.job.id, sold.id))
     // The events of a checkout that never finished (a consent, say) are not history: they go with the pass; every other job's stay.
-    const [freshRow] = await db.select({ jobId: s.seasonPass.jobId, customerId: s.seasonPass.customerId }).from(s.seasonPass).where(eq(s.seasonPass.id, fresh.id))
+    const freshRow = { jobId: fresh.id, customerId: fresh.customerId }
     const mine = { organizationId: ORG, about: "job" as const, kind: "consent", who: "customer", detail: {} }
     await db.insert(s.event).values([{ ...mine, aboutId: oldRow!.jobId, jobId: oldRow!.jobId, customerId: "c-old" }, { ...mine, aboutId: freshRow!.jobId, jobId: freshRow!.jobId, customerId: freshRow!.customerId }])
-    const keptElsewhere = (await db.select().from(s.event)).filter((e) => e.jobId !== oldRow!.jobId).length
+    const keptElsewhere = (await db.select().from(s.event)).filter((e) => e.jobId !== oldRow.jobId).length
     const removed = await expirePendingPasses(db, new Date())
-    expect(await eventsOf(db, { jobId: oldRow!.jobId })).toEqual([])
-    expect(await eventsOf(db, { jobId: freshRow!.jobId })).toHaveLength(1)
+    expect(await eventsOf(db, { jobId: oldRow.jobId })).toEqual([])
+    expect(await eventsOf(db, { jobId: freshRow.jobId })).toHaveLength(1)
     expect((await db.select().from(s.event)).length).toBe(keptElsewhere)
-    expect(await db.select().from(s.lineItem).where(eq(s.lineItem.jobId, oldRow!.jobId))).toHaveLength(0)
+    expect(await db.select().from(s.lineItem).where(eq(s.lineItem.jobId, oldRow.jobId))).toHaveLength(0)
+    expect(await db.select().from(s.adminAlert).where(eq(s.adminAlert.jobId, old.id))).toHaveLength(0)
     expect(removed).toBeGreaterThanOrEqual(1)
-    expect(await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, old.id))).toHaveLength(0)
-    expect(await db.select().from(s.job).where(eq(s.job.id, oldRow!.jobId))).toHaveLength(0)
-    expect(await db.select().from(s.visit).where(eq(s.visit.passId, old.id))).toHaveLength(0)
-    expect(await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, fresh.id))).toHaveLength(1)
-    const actives = await db.select().from(s.seasonPass).where(eq(s.seasonPass.status, "active"))
-    expect(actives.length).toBeGreaterThan(0)
+    expect(await db.select().from(s.job).where(eq(s.job.id, oldRow.jobId))).toHaveLength(0)
+    expect(await db.select().from(s.visit).where(eq(s.visit.jobId, old.id))).toHaveLength(0)
+    expect(await db.select().from(s.job).where(eq(s.job.id, fresh.id))).toHaveLength(1)
+    // the sold pass, its visits and its lines are all still there
+    expect(await db.select().from(s.job).where(eq(s.job.id, sold.id))).toHaveLength(1)
+    expect((await db.select().from(s.visit).where(eq(s.visit.jobId, sold.id))).length).toBeGreaterThan(0)
+    expect((await db.select().from(s.lineItem).where(eq(s.lineItem.jobId, sold.id))).length).toBeGreaterThan(0)
+    // a second run has nothing left to remove
+    expect(await expirePendingPasses(db, new Date())).toBe(0)
   })
 })

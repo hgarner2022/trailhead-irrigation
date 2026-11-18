@@ -80,7 +80,7 @@ export const paymentsRefund = defineHandler({
       reference = refund.id
     }
     const row = await recordPaymentRow(ctx.db, {
-      organizationId: ctx.organizationId, jobId: payment.jobId, visitId: payment.visitId, customerId: payment.customerId, passId: payment.passId,
+      organizationId: ctx.organizationId, jobId: payment.jobId, visitId: payment.visitId, customerId: payment.customerId,
       amount: -amount, method: payment.method, reference, status: "succeeded", refundsPaymentId: payment.id, now: ctx.now,
     })
     if (!row) throw new ApiError("conflict", "That refund was already recorded")

@@ -1,24 +1,23 @@
 import { describe, expect, it } from "vitest"
 import { passInspection, passPreferences, passStatus } from "./facts"
 
-const job = (over: Partial<Parameters<typeof passStatus>[0]> = {}) => ({ status: "active" as const, cancelledAt: null, season: 2026, ...over })
+const job = (over: Partial<Parameters<typeof passStatus>[0]> = {}) => ({ soldOn: "2026-05-01" as string | null, cancelledAt: null as Date | null, season: 2026 as number | null, ...over })
 
 describe("passStatus", () => {
-  it("is active for an active job in the season", () => {
+  it("is active for a sold job in the season", () => {
     expect(passStatus(job(), "2026-06-01")).toBe("active")
   })
-  it("is pending for a pending job", () => {
-    expect(passStatus(job({ status: "pending" }), "2026-06-01")).toBe("pending")
+  it("is pending while the job has no sold day", () => {
+    expect(passStatus(job({ soldOn: null }), "2026-06-01")).toBe("pending")
   })
-  it("is cancelled when the job has a cancelledAt or the cancelled status", () => {
+  it("is cancelled when the job has a cancelledAt, sold or not", () => {
     expect(passStatus(job({ cancelledAt: new Date() }), "2026-06-01")).toBe("cancelled")
-    expect(passStatus(job({ status: "cancelled" }), "2026-06-01")).toBe("cancelled")
+    expect(passStatus(job({ soldOn: null, cancelledAt: new Date() }), "2026-06-01")).toBe("cancelled")
   })
   it("is cancelled before it is pending or lapsed", () => {
-    expect(passStatus(job({ status: "pending", cancelledAt: new Date(), season: 2020 }), "2026-06-01")).toBe("cancelled")
+    expect(passStatus(job({ soldOn: null, cancelledAt: new Date(), season: 2020 }), "2026-06-01")).toBe("cancelled")
   })
   it("is lapsed once the season is over", () => {
-    expect(passStatus(job({ status: "done", season: 2025 }), "2026-06-01")).toBe("lapsed")
     expect(passStatus(job({ season: 2025 }), "2026-06-01")).toBe("lapsed")
   })
   it("stays active after November 1 of its own year, so the renewal offer still has an active pass to hang on", () => {

@@ -4,7 +4,7 @@ import { and, eq } from "drizzle-orm"
 import * as s from "@/db/schema"
 import type { TestDb } from "@/db/test-db"
 import { SYSTEM_ID } from "@/api/core/context"
-import { adminKey, apiDb, ctxFor, customerPerson, ORG, owner, readKey, tech } from "@/api/test-helpers"
+import { adminKey, apiDb, ctxFor, customerPerson, ORG, owner, passJobOf, readKey, tech } from "@/api/test-helpers"
 import type { PublicPrincipal } from "@/lib/auth/types"
 import { recordEvent, whoOf } from "./record"
 
@@ -12,8 +12,7 @@ let db: TestDb
 let customerId: string
 beforeAll(async () => {
   db = await apiDb()
-  const [pass] = await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, "p3"))
-  customerId = pass!.customerId
+  customerId = (await passJobOf(db, "p3")).customerId
 })
 afterAll(() => db.close())
 

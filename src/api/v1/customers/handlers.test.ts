@@ -5,7 +5,7 @@ import * as s from "@/db/schema"
 import type { TestDb } from "@/db/test-db"
 import { callApi } from "../../core/call"
 import { recordEvent } from "@/lib/events/record"
-import { adminKey, apiDb, ctxFor, customerPerson, eventsOf, ORG, owner, readKey, writeKey } from "../../test-helpers"
+import { adminKey, apiDb, ctxFor, customerPerson, eventsOf, ORG, owner, passJobOf, readKey, writeKey } from "../../test-helpers"
 import { consentsList, consentsRecord, customersCreate, customersGet, customersList, customersUpdate } from "./handlers"
 
 let db: TestDb
@@ -41,14 +41,17 @@ describe("customers", () => {
     expect(job.lines.find((l) => l.visitId === "p1-turn-on")).toMatchObject({ name: "Spring turn-on" })
     expect(job.total).toBe(job.lines.reduce((sum, l) => sum + l.quantity * l.unitPrice, 0))
   })
-  it("reads a pass job's number from the job, and keeps the pass id as the alias", async () => {
+  it("reads a pass job's number from the job, and its pass id is the job's id", async () => {
     const [v] = await db.select().from(s.visit).where(eq(s.visit.id, "p1-turn-on"))
-    const [pass] = await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, "p1"))
+    const job = await passJobOf(db, "p1")
     const read = async () => (await callApi(ctxFor(db, readKey), customersGet, { id: v!.customerId })).jobs.find((j) => j.id === v!.jobId)!
-    expect(await read()).toMatchObject({ passId: "p1", passNumber: pass!.number })
+    expect(await read()).toMatchObject({ passId: job.id, passNumber: job.passNumber, status: "active" })
     await db.update(s.job).set({ passNumber: "TH-2027-7777" }).where(eq(s.job.id, v!.jobId))
-    expect(await read()).toMatchObject({ passId: "p1", passNumber: "TH-2027-7777" })
-    await db.update(s.job).set({ passNumber: pass!.number }).where(eq(s.job.id, v!.jobId))
+    expect(await read()).toMatchObject({ passId: job.id, passNumber: "TH-2027-7777" })
+    await db.update(s.job).set({ passNumber: job.passNumber }).where(eq(s.job.id, v!.jobId))
+    // a job that is not a Season Pass has no pass id
+    const [other] = await db.select().from(s.job).where(eq(s.job.kind, "repair")).limit(1)
+    if (other) expect((await callApi(ctxFor(db, readKey), customersGet, { id: other.customerId })).jobs.find((j) => j.id === other.id)).toMatchObject({ passId: null })
   })
   it("rejects a bad email, a missing name and a bad town", async () => {
     await expect(callApi(ctxFor(db, writeKey), customersCreate, { firstName: "A", email: "nope" })).rejects.toMatchObject({ code: "invalid" })

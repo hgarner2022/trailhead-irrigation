@@ -52,12 +52,11 @@ export async function applyInvoicePayment(db: Database, stripe: Stripe, organiza
     })
 
   const [customer] = await db.select().from(s.customer).where(and(eq(s.customer.id, invoice.customerId), eq(s.customer.organizationId, organizationId)))
-  // Keep the card: the customer's one card is the one just paid with (the pay page says so), on the pass aliases too.
+  // Keep the card: the customer's one card is the one just paid with (the pay page says so).
   if (customer && method?.card && customer.stripePaymentMethodId !== method.id) {
     const columns = cardColumns({ paymentMethodId: method.id, brand: method.card.brand, last4: method.card.last4, expires: `${method.card.exp_year}-${String(method.card.exp_month).padStart(2, "0")}` })
     const stripeCustomerId = customer.stripeCustomerId ?? (typeof session.customer === "string" ? session.customer : session.customer?.id ?? null)
     await db.update(s.customer).set({ ...(stripeCustomerId ? { stripeCustomerId } : {}), ...columns, updatedAt: now }).where(and(eq(s.customer.id, customer.id), eq(s.customer.organizationId, organizationId)))
-    await db.update(s.seasonPass).set({ ...columns, updatedAt: now }).where(and(eq(s.seasonPass.customerId, customer.id), eq(s.seasonPass.organizationId, organizationId)))
     await recordEventSafe(db, { organizationId, about: "customer", aboutId: customer.id, customerId: customer.id, kind: "card.saved", detail: { brand: method.card.brand, last4: method.card.last4 }, who: "system", at: now })
     if (stripeCustomerId) await stripe.customers.update(stripeCustomerId, { invoice_settings: { default_payment_method: method.id } })
     if (customer.stripePaymentMethodId) await stripe.paymentMethods.detach(customer.stripePaymentMethodId).catch(() => undefined)

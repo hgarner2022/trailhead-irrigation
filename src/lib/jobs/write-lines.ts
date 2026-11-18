@@ -87,10 +87,10 @@ export async function deleteVisitLines(db: Database, visitIds: readonly string[]
   await db.delete(s.lineItem).where(inArray(s.lineItem.visitId, [...visitIds]))
 }
 
-/** The lines of every visit of the passes given (a held pending pass rebuilt, an unpaid pass removed): gone before the visits. */
-export async function deletePassVisitLines(db: Database, passIds: readonly string[]): Promise<void> {
-  if (passIds.length === 0) return
-  const visits = db.select({ id: s.visit.id }).from(s.visit).where(inArray(s.visit.passId, [...passIds]))
+/** The lines of every visit of the jobs given (a held pending pass rebuilt): gone before the visits. */
+export async function deleteJobVisitLines(db: Database, jobIds: readonly string[]): Promise<void> {
+  if (jobIds.length === 0) return
+  const visits = db.select({ id: s.visit.id }).from(s.visit).where(inArray(s.visit.jobId, [...jobIds]))
   await db.delete(s.lineItem).where(inArray(s.lineItem.visitId, visits))
 }
 

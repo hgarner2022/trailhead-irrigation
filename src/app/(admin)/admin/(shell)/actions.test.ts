@@ -3,7 +3,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vites
 import { eq } from "drizzle-orm"
 import * as s from "@/db/schema"
 import type { TestDb } from "@/db/test-db"
-import { apiDb, ctxFor, ORG, owner, tech } from "@/api/test-helpers"
+import { apiDb, ctxFor, ORG, owner, passViewOf, tech } from "@/api/test-helpers"
 import { callApi } from "@/api/core/call"
 import { areasList } from "@/api/v1/areas/handlers"
 import { settingsGet } from "@/api/v1/settings/handlers"
@@ -79,8 +79,7 @@ describe("every action is a manager's", () => {
     await expect(actions.cancelPass("p1")).rejects.toThrow("redirect:/admin/sign-in")
     await expect(actions.runSchedule("turn-on")).rejects.toThrow("redirect:/admin/sign-in")
     await expect(actions.saveSettings(await settingsOf())).rejects.toThrow("redirect:/admin/sign-in")
-    const [pass] = await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, "p1"))
-    expect(pass!.status).not.toBe("cancelled")
+    expect((await passViewOf(db, "p1")).status).not.toBe("cancelled")
   })
 })
 
@@ -89,8 +88,7 @@ describe("passes", () => {
     const out = await actions.changePreference("p1", "turn-on", "later")
     expect(out).toEqual({ ok: true, data: undefined })
     expect(state.revalidated).toContainEqual(["/admin", "layout"])
-    const [pass] = await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, "p1"))
-    expect(pass!.turnOnPreference).toBe("later")
+    expect((await passViewOf(db, "p1")).turnOnPreference).toBe("later")
   })
   it("answers the API's own words when it refuses", async () => {
     const out = await actions.changePreference("no-such-pass", "turn-on", "later")
@@ -102,9 +100,8 @@ describe("passes", () => {
   })
   it("cancels a pass and its unstarted visits", async () => {
     expect(await actions.cancelPass("p2", "Moved away")).toEqual({ ok: true, data: undefined })
-    const [pass] = await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, "p2"))
-    expect(pass!.status).toBe("cancelled")
-    expect((await callApi(ctxFor(db, owner), passesList, { limit: 100 })).data.find((p) => p.id === "p2")!.status).toBe("cancelled")
+    expect((await passViewOf(db, "p2")).status).toBe("cancelled")
+    expect((await callApi(ctxFor(db, owner), passesList, { limit: 100 })).data.find((p) => p.id === "job_p2")!.status).toBe("cancelled")
   })
 })
 

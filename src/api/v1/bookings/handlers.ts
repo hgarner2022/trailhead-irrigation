@@ -50,7 +50,7 @@ export const bookingsCancel = defineHandler({
     // A job's id, or a booking's old id: the backfill made job_<booking id>.
     const [row] = await ctx.db.select().from(s.job).where(and(inArray(s.job.id, [input.id, `job_${input.id}`]), eq(s.job.organizationId, ctx.organizationId)))
     if (!row) throw notFound("Booking")
-    const wasCancelled = row.status === "cancelled" || row.cancelledAt !== null
+    const wasCancelled = row.cancelledAt !== null
     // The visits that still count, read before they change, so each event carries the day it gave up.
     const open = await ctx.db
       .select({ id: s.visit.id, kind: s.visit.kind, scheduledOn: s.visit.scheduledOn, amount: s.visit.amount })

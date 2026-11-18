@@ -70,8 +70,8 @@ describe("properties.update", () => {
     expect(p).not.toHaveProperty("accessNote")
   })
   it("is read by the pass and the visit: zones, must be home and the access note come from the property", async () => {
-    const [pass] = await db.select().from(s.seasonPass).where(eq(s.seasonPass.customerId, "c100"))
-    const [visit] = await db.select().from(s.visit).where(eq(s.visit.passId, pass!.id))
+    const [pass] = await db.select().from(s.job).where(eq(s.job.customerId, "c100"))
+    const [visit] = await db.select().from(s.visit).where(eq(s.visit.jobId, pass!.id))
     const out = await callApi(ctxFor(db, writeKey), passesGet, { id: pass!.id })
     expect(out).toMatchObject({ zones: 10, needsCustomerHome: true, accessNote: "Dog in the yard" })
     const v = await callApi(ctxFor(db, writeKey), visitsGet, { id: visit!.id })
@@ -82,7 +82,7 @@ describe("properties.update", () => {
     expect(r.property).not.toHaveProperty("contactPhone")
   })
   it("reads cleared on the pass: after the access note is cleared, passes.get shows none", async () => {
-    const [pass] = await db.select().from(s.seasonPass).where(eq(s.seasonPass.customerId, "c100"))
+    const [pass] = await db.select().from(s.job).where(eq(s.job.customerId, "c100"))
     await callApi(ctxFor(db, writeKey), propertiesUpdate, { id, accessNote: "", mustBeHome: false })
     const out = await callApi(ctxFor(db, writeKey), passesGet, { id: pass!.id })
     expect(out.accessNote).toBeNull()

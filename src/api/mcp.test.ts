@@ -6,7 +6,7 @@ import type { TestDb } from "@/db/test-db"
 import { createApiKey } from "@/lib/auth/api-key"
 import { handleMcp } from "./mcp"
 import { handlers } from "./v1"
-import { apiDb, ORG, OWNER_EMAIL } from "./test-helpers"
+import { apiDb, ORG, OWNER_EMAIL, passViewOf } from "./test-helpers"
 
 let db: TestDb
 let readSecret: string
@@ -56,8 +56,7 @@ describe("/api/mcp", () => {
     const { body } = await rpc("tools/call", { name: "passes.cancel", arguments: { id: "p5" } })
     expect(body.result.isError).toBe(true)
     expect(JSON.parse(body.result.content[0].text).error.code).toBe("forbidden")
-    const [pass] = await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, "p5"))
-    expect(pass!.status).toBe("active")
+    expect((await passViewOf(db, "p5")).status).toBe("active")
   })
   it("reports bad arguments as an error result", async () => {
     const { body } = await rpc("tools/call", { name: "passes.list", arguments: { town: "Denver" } })

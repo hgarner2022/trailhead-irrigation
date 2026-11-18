@@ -9,6 +9,7 @@ import { queueMessage, queueStaffMessage } from "@/lib/messaging/queue"
 import { passImageUrl } from "@/lib/messaging/tokens"
 import { filledLine } from "@/emails/format"
 import { kindName } from "./messages"
+import { loadPassRecord } from "./record"
 
 export interface PurchaseConsent {
   marketingOptIn: boolean
@@ -31,14 +32,15 @@ export interface PurchaseExtras {
  * layer's job (Phase 12); the email only records what must go.
  */
 export async function recordPurchase(db: Database, passId: string, consent: PurchaseConsent | undefined, origin: string, now: Date, extras: PurchaseExtras = {}): Promise<void> {
+  const pass = await loadPassRecord(db, passId)
+  if (!pass) throw new Error(`Pass ${passId} not found`)
   const [row] = await db
-    .select({ pass: s.seasonPass, customer: s.customer, town: s.property.town })
-    .from(s.seasonPass)
-    .innerJoin(s.customer, eq(s.customer.id, s.seasonPass.customerId))
-    .innerJoin(s.property, eq(s.property.id, s.seasonPass.propertyId))
-    .where(eq(s.seasonPass.id, passId))
+    .select({ customer: s.customer, town: s.property.town })
+    .from(s.customer)
+    .innerJoin(s.property, eq(s.property.id, pass.propertyId))
+    .where(eq(s.customer.id, pass.customerId))
   if (!row) throw new Error(`Pass ${passId} not found`)
-  const { pass, customer } = row
+  const { customer } = row
   const org = pass.organizationId
 
   if (consent) {
@@ -60,24 +62,25 @@ export async function recordPurchase(db: Database, passId: string, consent: Purc
     }
   }
 
-  await enqueue(db, org, "pass-onboard", pass.id, { passId: pass.id }, now)
+  await enqueue(db, org, "pass-onboard", pass.jobId, { passId: pass.jobId }, now)
 
-  await queuePurchaseConfirmation(db, pass.id, origin, pass.id, extras)
-  await queueStaffMessage(db, org, "admin-alert", `new-pass:${pass.id}`, { origin, title: `New Season Pass ${pass.number}`, detail: `${customer.firstName} in ${row.town} bought Season Pass ${pass.number}.`, path: `/admin/visits?job=${encodeURIComponent(pass.jobId)}` })
+  await queuePurchaseConfirmation(db, pass.jobId, origin, pass.jobId, extras)
+  await queueStaffMessage(db, org, "admin-alert", `new-pass:${pass.jobId}`, { origin, title: `New Season Pass ${pass.number}`, detail: `${customer.firstName} in ${row.town} bought Season Pass ${pass.number}.`, path: `/admin/visits?job=${encodeURIComponent(pass.jobId)}` })
 }
 
 /** The purchase confirmation for a pass, with whatever the pass holds today: each visit's day and calendar links, or its window wording, and how the money comes (the card on file, the link to add one, or at each visit). `key` makes it once per purchase; an admin's resend uses a new one. */
 export async function queuePurchaseConfirmation(db: Database, passId: string, origin: string, key: string, extras: PurchaseExtras = {}): Promise<boolean> {
+  const pass = await loadPassRecord(db, passId)
+  if (!pass) throw new Error(`Pass ${passId} not found`)
   const [row] = await db
-    .select({ pass: s.seasonPass, customer: s.customer, town: s.property.town })
-    .from(s.seasonPass)
-    .innerJoin(s.customer, eq(s.customer.id, s.seasonPass.customerId))
-    .innerJoin(s.property, eq(s.property.id, s.seasonPass.propertyId))
-    .where(eq(s.seasonPass.id, passId))
+    .select({ customer: s.customer, town: s.property.town })
+    .from(s.customer)
+    .innerJoin(s.property, eq(s.property.id, pass.propertyId))
+    .where(eq(s.customer.id, pass.customerId))
   if (!row) throw new Error(`Pass ${passId} not found`)
-  const { pass, customer } = row
+  const { customer } = row
   const org = pass.organizationId
-  const visits = await db.select().from(s.visit).where(eq(s.visit.passId, pass.id))
+  const visits = await db.select().from(s.visit).where(eq(s.visit.jobId, pass.jobId))
   const ordered = (["turn-on", "inspection", "blowout"] as const).flatMap((k) => visits.filter((v) => v.kind === k))
   // The days an office sale or a pick had to fill with the next open day: the `visit.day-filled` events of the pass's job, newest first.
   const filled = await db.select().from(s.event).where(and(eq(s.event.organizationId, org), eq(s.event.jobId, pass.jobId), eq(s.event.kind, "visit.day-filled"))).orderBy(desc(s.event.at), desc(s.event.id))
@@ -92,6 +95,6 @@ export async function queuePurchaseConfirmation(db: Database, passId: string, or
   const lines = lineRows.map((l) => ({ name: l.name, amount: l.quantity * l.unitPrice }))
   return queueMessage(db, {
     organizationId: org, customerId: customer.id, kind: "purchase-confirmation", key,
-    data: { ...baseData(origin, customer), passNumber: pass.number, season: pass.season, town: row.town, passImageUrl: passImageUrl(origin, pass.id), visits: held, ...(lines.length ? { lines } : {}), cardLast4: customer.cardLast4, cardUpdateUrl: extras.cardUpdateUrl ?? null },
+    data: { ...baseData(origin, customer), passNumber: pass.number, season: pass.season, town: row.town, passImageUrl: passImageUrl(origin, pass.jobId), visits: held, ...(lines.length ? { lines } : {}), cardLast4: customer.cardLast4, cardUpdateUrl: extras.cardUpdateUrl ?? null },
   })
 }

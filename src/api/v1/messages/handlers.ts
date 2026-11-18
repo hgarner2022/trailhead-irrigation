@@ -1,5 +1,5 @@
 import "server-only"
-import { and, desc, eq, sql } from "drizzle-orm"
+import { and, desc, eq, isNotNull } from "drizzle-orm"
 import { z } from "zod"
 import * as s from "@/db/schema"
 import { randomUUID } from "node:crypto"
@@ -73,20 +73,20 @@ export const messagesSend = defineHandler({
       queued = await queueMessage(ctx.db, { ...base, visitId: visit.id, kind: input.kind, data: { ...baseData(origin, customer), visit: facts } })
     } else {
       const passes = await ctx.db
-        .select({ pass: s.seasonPass, season: s.job.season, number: s.job.passNumber, jobStatus: s.job.status, jobCancelledAt: s.job.cancelledAt })
-        .from(s.seasonPass)
-        .innerJoin(s.job, eq(s.job.id, s.seasonPass.jobId))
-        .where(and(eq(s.seasonPass.customerId, customer.id), eq(s.seasonPass.organizationId, ctx.organizationId)))
-        .orderBy(desc(sql`coalesce(${s.job.season}, ${s.seasonPass.season})`))
-      const found = passes.find((p) => (input.kind === "cancelled" ? p.jobStatus === "cancelled" || p.jobCancelledAt !== null : p.jobStatus !== "pending"))
-      const pass = found?.pass
+        .select({ job: s.job })
+        .from(s.job)
+        .where(and(eq(s.job.customerId, customer.id), eq(s.job.organizationId, ctx.organizationId), isNotNull(s.job.season)))
+        .orderBy(desc(s.job.season))
+      // A pass that is not pending (sold or cancelled) speaks for the customer; a cancelled message needs the cancelled one.
+      const found = passes.find((p) => (input.kind === "cancelled" ? p.job.cancelledAt !== null : p.job.soldOn !== null || p.job.cancelledAt !== null))
+      const pass = found?.job
       if (input.kind === "purchase-confirmation" || input.kind === "cancelled" || input.kind === "renewal") {
         if (!pass) throw new ApiError("unprocessable", "This customer has no pass for that message")
         if (input.kind === "purchase-confirmation") queued = await queuePurchaseConfirmation(ctx.db, pass.id, origin, key)
-        else if (input.kind === "cancelled") queued = await queueMessage(ctx.db, { ...base, kind: "cancelled", data: { ...baseData(origin, customer), passNumber: found?.number ?? pass.number } })
+        else if (input.kind === "cancelled") queued = await queueMessage(ctx.db, { ...base, kind: "cancelled", data: { ...baseData(origin, customer), passNumber: pass.passNumber ?? "" } })
         else {
           const [prop] = await ctx.db.select({ town: s.property.town }).from(s.property).where(eq(s.property.id, pass.propertyId))
-          queued = await queueMessage(ctx.db, { ...base, kind: "renewal", data: { ...baseData(origin, customer), season: (found?.season ?? pass.season) + 1, town: prop?.town ?? "your home", buyUrl: renewUrl(origin, pass.id) } })
+          queued = await queueMessage(ctx.db, { ...base, kind: "renewal", data: { ...baseData(origin, customer), season: (pass.season ?? 0) + 1, town: prop?.town ?? "your home", buyUrl: renewUrl(origin, pass.id) } })
         }
       } else throw new ApiError("unprocessable", "That message goes out on its own event: a receipt after a visit is charged, a card message when a card fails or is removed")
     }

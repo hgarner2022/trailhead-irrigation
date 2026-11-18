@@ -1,6 +1,7 @@
 import "server-only"
 import { and, desc, eq, gte, lte, ne, notInArray } from "drizzle-orm"
 import { passStatus } from "@/lib/pass/facts"
+import { resolvePassJob } from "@/lib/pass/server/resolve"
 import { z } from "zod"
 import * as s from "@/db/schema"
 import type { Ctx } from "../../core/context"
@@ -61,6 +62,8 @@ export const visitsList = defineHandler({
   async run(ctx, input) {
     const filterId = input.personId ?? input.truckId
     const personId = filterId ? await resolvePersonId(ctx, filterId) : undefined
+    // The pass is its job; an id from before the move (the old pass id) names the same job. A pass that is not there matches no visit.
+    const passJobId = input.passId ? ((await resolvePassJob(ctx.db, ctx.organizationId, input.passId))?.id ?? "no-such-pass") : undefined
     const rows = await visitsQuery(ctx.db)
       .where(
         and(
@@ -70,7 +73,7 @@ export const visitsList = defineHandler({
           personId ? eq(s.visit.personId, personId) : undefined,
           input.status ? eq(s.visit.status, input.status) : undefined,
           input.kind ? eq(s.visit.kind, input.kind) : undefined,
-          input.passId ? eq(s.visit.passId, input.passId) : undefined,
+          passJobId ? eq(s.visit.jobId, passJobId) : undefined,
           afterTimeCursor(s.visit.createdAt, s.visit.id, input.cursor),
         ),
       )
@@ -101,7 +104,7 @@ export async function placeVisit(ctx: Ctx, input: { id: string; personId?: strin
     if ((FINAL as readonly string[]).includes(visit.status)) throw new ApiError("unprocessable", `A ${visit.status} visit cannot be moved`)
     const person = await assignee(ctx, input, input.scheduledOn)
     const [org] = await ctx.db.select({ settings: s.organization.settings }).from(s.organization).where(eq(s.organization.id, ctx.organizationId))
-    const window = visit.passId ? org?.settings.windows.find((w) => w.kind === visit.kind) : undefined
+    const window = row.isPassVisit ? org?.settings.windows.find((w) => w.kind === visit.kind) : undefined
     if (window && (input.scheduledOn < window.opensOn.slice(0, 10) || input.scheduledOn > window.closesOn.slice(0, 10)))
       throw new ApiError("unprocessable", `A ${visit.kind} visit must land between ${window.opensOn.slice(0, 10)} and ${window.closesOn.slice(0, 10)}`)
     const others = await visitsQuery(ctx.db).where(
@@ -179,7 +182,7 @@ export const visitsRequestMove = defineHandler({
     const p = ctx.principal
     if (p.kind === "person" && p.type === "customer" && p.customerId !== visit.customerId) throw new ApiError("forbidden", "That visit belongs to another customer")
     if ((FINAL as readonly string[]).includes(visit.status)) throw new ApiError("unprocessable", `A ${visit.status} visit cannot be moved`)
-    await recordChange(ctx, { customerId: visit.customerId, passId: visit.passId, visitId: visit.id, kind: "move-requested", detail: { preferredWeek: input.preferredWeek ?? null, note: input.note ?? null } })
+    await recordChange(ctx, { customerId: visit.customerId, jobId: visit.jobId, visitId: visit.id, kind: "move-requested", detail: { preferredWeek: input.preferredWeek ?? null, note: input.note ?? null } })
     return OK
   },
 })
@@ -207,13 +210,12 @@ async function loadPickable(ctx: Ctx, id: string) {
   const row = await loadVisit(ctx, id)
   const { visit } = row
   assertOwnsCustomer(ctx, visit.customerId)
-  if (!visit.passId) throw new ApiError("unprocessable", "Only a pass visit has days to pick from")
-  const [pass] = await ctx.db.select().from(s.seasonPass).where(eq(s.seasonPass.id, visit.passId))
-  // The pass is open when its job is: the status is read from the job and its visits, never from the alias column.
-  const [job] = pass ? await ctx.db.select({ status: s.job.status, cancelledAt: s.job.cancelledAt, season: s.job.season }).from(s.job).where(eq(s.job.id, pass.jobId)) : []
-  if (!pass || !job || passStatus(job, today(ctx)) !== "active") throw new ApiError("unprocessable", "This pass is not open")
+  if (!row.isPassVisit) throw new ApiError("unprocessable", "Only a pass visit has days to pick from")
+  // The pass is open when its job is: sold, not cancelled, in a season that has not ended (`passStatus`).
+  const [job] = await ctx.db.select({ soldOn: s.job.soldOn, cancelledAt: s.job.cancelledAt, season: s.job.season }).from(s.job).where(eq(s.job.id, visit.jobId))
+  if (!job || passStatus(job, today(ctx)) !== "active") throw new ApiError("unprocessable", "This pass is not open")
   if (!(PICKABLE as readonly string[]).includes(visit.status)) throw new ApiError("unprocessable", `A ${visit.status} visit has no day to pick`)
-  return { row, visit, pass, season: job.season ?? pass.season }
+  return { row, visit, season: job.season ?? 0 }
 }
 
 export const visitsAreaDays = defineHandler({
@@ -247,7 +249,7 @@ export const visitsPick = defineHandler({
     if (!slot) throw new ApiError("unprocessable", "That day is not one of the days on offer; pick another")
     const moved = visit.status === "scheduled"
     await ctx.db.update(s.visit).set({ status: "scheduled", personId: slot.personId, scheduledOn: input.day, startTime: null, stopOrder: null, awaitingPick: false, exception: null, notDoneReason: null }).where(eq(s.visit.id, visit.id))
-    await recordChange(ctx, { customerId: visit.customerId, passId: visit.passId, visitId: visit.id, kind: "day-picked", eventKind: moved ? "visit.moved" : "visit.scheduled", detail: { visit: visit.kind, name: visitName(visit.kind), day: input.day, person: slot.personName, personId: slot.personId, from: moved ? visit.scheduledOn : null } })
+    await recordChange(ctx, { customerId: visit.customerId, jobId: visit.jobId, visitId: visit.id, kind: "day-picked", eventKind: moved ? "visit.moved" : "visit.scheduled", detail: { visit: visit.kind, name: visitName(visit.kind), day: input.day, person: slot.personName, personId: slot.personId, from: moved ? visit.scheduledOn : null } })
     // `recordChange` above writes the event (who is the customer); the outbound webhook does not record it a second time.
     await emitEvent(ctx.db, ctx.organizationId, moved ? "visit.moved" : "visit.scheduled", { visitId: visit.id, ...who(slot.personId), scheduledOn: input.day, from: moved ? { ...who(visit.personId), scheduledOn: visit.scheduledOn } : null })
     await queueDateMessage(ctx.db, visit, moved ? "date-moved" : "date-set", input.day)

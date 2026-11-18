@@ -1,11 +1,10 @@
 // @vitest-environment node
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest"
-import { eq } from "drizzle-orm"
 import * as s from "@/db/schema"
 import type { TestDb } from "@/db/test-db"
 import { makeCtx } from "@/api/core/context"
 import { ApiError } from "@/api/core/errors"
-import { apiDb, eventsOf, ORG } from "@/api/test-helpers"
+import { apiDb, eventsOf, ORG, passViewOf } from "@/api/test-helpers"
 import type { CheckoutSubmission } from "@/app/(checkout)/season-pass/checkout/_screens/checkout-submit"
 import { completeSession, stubStripe } from "@/lib/stripe/test-stripe"
 import { beginCheckoutWith, finishCheckoutWith, logCheckoutFailure, problemOf, recordConsentWith, type CheckoutDeps } from "./checkout"
@@ -50,10 +49,10 @@ describe("beginCheckoutWith", () => {
     const result = await beginCheckoutWith(depsWith(stub.stripe), submission())
     expect(result).toMatchObject({ ok: true, clientSecret: "cs_secret" })
     if (!result.ok) return
-    const [pass] = await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, result.passId))
+    const pass = await passViewOf(db, result.passId)
     expect(pass).toMatchObject({ status: "pending", zones: 8, turnOnPreference: "earlier" })
     const params = stub.calls.sessionCreate.mock.calls[0]![0]
-    expect(params).toMatchObject({ mode: "setup", ui_mode: "embedded_page", redirect_on_completion: "never", customer_email: "eli@example.com", metadata: { purpose: "pass-setup", passId: pass!.id } })
+    expect(params).toMatchObject({ mode: "setup", ui_mode: "embedded_page", redirect_on_completion: "never", customer_email: "eli@example.com", metadata: { purpose: "pass-setup", passId: pass.id } })
     const expiresIn = (params.expires_at as number) - Math.floor(Date.now() / 1000)
     expect(expiresIn).toBeGreaterThan(34 * 60)
     expect(expiresIn).toBeLessThanOrEqual(45 * 60)
@@ -102,20 +101,18 @@ describe("the consent snapshot and an expired session", () => {
   it("records the boxes when the contact step passes, and a webhook-first activation uses them", async () => {
     const begun = await beginCheckoutWith(depsWith(stubStripe().stripe), submission({ email: "snap@example.com", consent: { termsAccepted: true, marketingEmail: true, marketingSms: true } }))
     if (!begun.ok) throw new Error("begin failed")
-    const [change] = await db.select().from(s.passChange).where(eq(s.passChange.passId, begun.passId))
-    expect(change).toMatchObject({ kind: "consent-snapshot", detail: { marketingChannels: ["email", "sms"] } })
     // The snapshot is a `consent` event about the pass's job, by the customer, written when the card form opens.
-    const [row] = await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, begun.passId))
-    expect(await eventsOf(db, { kind: "consent", jobId: row!.jobId })).toMatchObject([{ about: "job", aboutId: row!.jobId, customerId: row!.customerId, who: "customer", detail: { marketingChannels: ["email", "sms"], stage: "chosen" } }])
+    const row = await passViewOf(db, begun.passId)
+    expect(await eventsOf(db, { kind: "consent", jobId: row.jobId })).toMatchObject([{ about: "job", aboutId: row.jobId, customerId: row.customerId, who: "customer", detail: { marketingChannels: ["email", "sms"], stage: "chosen" } }])
     getStripe.mockReturnValue(stubStripe({ sessions: { cs_w: completeSession("cs_w", { purpose: "pass-setup", passId: begun.passId }) } }).stripe)
     const { callApi } = await import("@/api/core/call")
     const { passesActivate } = await import("@/api/v1/passes/handlers")
     const active = await callApi(await depsWith(stubStripe().stripe).ctx(begun.passId), passesActivate, { id: begun.passId, setupSessionId: "cs_w" })
     expect(active.consent).toMatchObject({ source: "checkout", marketingOptIn: true, marketingChannels: ["email", "sms"] })
     // Activation wrote the sale once and the consent row's own event; the snapshot stays as it was.
-    expect(await eventsOf(db, { kind: "job.sold", jobId: row!.jobId })).toMatchObject([{ about: "job", aboutId: row!.jobId, who: "customer", detail: { source: "website" } }])
+    expect(await eventsOf(db, { kind: "job.sold", jobId: row.jobId })).toMatchObject([{ about: "job", aboutId: row.jobId, who: "customer", detail: { source: "website" } }])
     // The snapshot (stage "chosen") and the stored consent row are two events; only the snapshot says "chosen".
-    const consents = await eventsOf(db, { kind: "consent", jobId: row!.jobId })
+    const consents = await eventsOf(db, { kind: "consent", jobId: row.jobId })
     expect(consents).toHaveLength(2)
     expect(consents.map((e) => (e.detail as { stage?: string }).stage)).toEqual(["chosen", undefined])
   })
@@ -125,10 +122,8 @@ describe("the consent snapshot and an expired session", () => {
   it("records nothing without the terms and never throws", async () => {
     const begun = await beginCheckoutWith(depsWith(stubStripe().stripe), submission({ email: "snap2@example.com" }))
     if (!begun.ok) throw new Error("begin failed")
-    const before = await db.select().from(s.passChange).where(eq(s.passChange.passId, begun.passId))
     const events = (await db.select().from(s.event)).length
     await expect(recordConsentWith(depsWith(stubStripe().stripe), begun.passId, { termsAccepted: false, marketingEmail: true, marketingSms: false })).resolves.toBeUndefined()
-    expect(await db.select().from(s.passChange).where(eq(s.passChange.passId, begun.passId))).toHaveLength(before.length)
     expect((await db.select().from(s.event)).length).toBe(events)
   })
   it("names an expired card form so the screen opens a new one", async () => {
