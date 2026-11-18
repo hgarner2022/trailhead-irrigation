@@ -44,6 +44,11 @@ describe("collectPlan", () => {
     expect(collectPlan({ ...base, card, declined: true, isPass: true }).asAgreed).toBe(false)
   })
 
+  it("a card that cannot be charged from here is not offered and does not open Pay later", () => {
+    const p = collectPlan({ ...base, card, cardChargeable: false })
+    expect(values(p.options)).toEqual(["check", "venmo", "cash", "invoice"])
+  })
+
   it("an open invoice leaves only the money in hand; no invoice offered twice", () => {
     expect(values(collectPlan({ ...base, card, invoiceOpen: true }).options)).toEqual(["check", "venmo", "cash"])
   })

@@ -411,6 +411,8 @@ function visitRows(i: ShapeInput, app: Visit[], all: Visit[], jobs: SoldJob[] = 
   for (const v of all) {
     const j = jobOfVisit(v)
     if (!appIds.has(v.id) || v.status !== "completed" || !cardOf.has(v.clientId) || v.chargeFailed || j?.invoice || j?.status === "cancelled" || visitPaid(v) || unpaidOf(v) <= 0 || (v.completedOn ?? i.today) >= i.today) continue
+    // a card payment that was refunded is not charged again by a button on Home: the visit's panel offers the other ways
+    if ((v.payments ?? []).some((p) => (p.method === "card_on_file" || p.method === "card_now") && p.status === "succeeded" && p.amount > 0)) continue
     out.push({ kind: "charge-not-pressed", key: v.id, ...(j ? { jobId: j.id } : {}), visitId: v.id, amount: unpaidOf(v), message: `Charge not pressed for ${possessive(v.clientName.split(" ")[0] ?? v.clientName)} ${KIND_WORDS[v.kind] ?? "visit"}, $${unpaidOf(v)} unpaid`, since: instantOf(v.completedOn!, "12:00") })
   }
   for (const j of jobs) {

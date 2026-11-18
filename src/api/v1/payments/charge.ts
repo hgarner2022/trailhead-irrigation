@@ -10,6 +10,7 @@ import { getStripe } from "@/lib/stripe/client"
 import { ApiError } from "../../core/errors"
 import { defineHandler } from "../../core/handler"
 import { Id } from "../shared"
+import { openInvoiceOf } from "../invoices/queries"
 import { loadVisit } from "../visits/queries"
 import { assertNoCardChargeInFlight } from "./record"
 import { paymentOut } from "./queries"
@@ -38,9 +39,11 @@ export const paymentsChargeCard = defineHandler({
     if (price <= 0) throw new ApiError("invalid", "Price the visit before charging it")
     if (paid >= price) throw new ApiError("conflict", "This visit is already paid")
     if (paid > 0) throw new ApiError("unprocessable", "Part of this visit is paid. Record the rest another way.")
+    if (await openInvoiceOf(ctx.db, ctx.organizationId, visit.jobId)) throw new ApiError("conflict", "An invoice is out for this job. The customer pays it there, or cancel the invoice first.")
     await assertNoCardChargeInFlight(ctx, visit.id)
     const outcome = await chargeVisit(ctx.db, getStripe(), visit.id, { origin: readAppUrl(), now: ctx.now })
     if (outcome === "waiting-for-card") throw new ApiError("conflict", DECLINED)
+    if (outcome === "invoice-open") throw new ApiError("conflict", "An invoice is out for this job. The customer pays it there, or cancel the invoice first.")
     if (outcome === "cancelled-pass") throw new ApiError("unprocessable", "This job is canceled")
     if (outcome !== "charged" && outcome !== "failed") throw new ApiError("conflict", "That visit has nothing to charge")
     const [row] = await ctx.db.select().from(s.charge).where(eq(s.charge.visitId, visit.id)).orderBy(desc(s.charge.attempt)).limit(1)

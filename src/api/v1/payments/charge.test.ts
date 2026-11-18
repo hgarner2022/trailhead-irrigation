@@ -9,6 +9,8 @@ import { visitsMarkClosed } from "../visits/money"
 import { visitsCreate } from "../visits/office"
 import { paymentsChargeCard } from "./charge"
 import { paymentsRecord, paymentsRefund } from "./handlers"
+import { invoicesSend } from "../invoices/handlers"
+import { passCharge } from "@/lib/queue/handlers"
 import { declined, stubStripe } from "@/lib/stripe/test-stripe"
 
 const { getStripe } = vi.hoisted(() => ({ getStripe: vi.fn() }))
@@ -145,6 +147,31 @@ describe("payments.chargeCard", () => {
     // a card update's retry is attempt 3 and works; nothing after the cap retries on its own
     const ok = stubStripe()
     expect(await chargeVisit(db, ok.stripe, v.id, { origin: "https://site.test", afterCardUpdate: true, now: later })).toBe("charged")
+  })
+})
+
+describe("what the review found", () => {
+  it("never charges the card while an invoice is out for the job, and never on a queued item the old Done left behind", async () => {
+    const v = await doneRepair()
+    await callApi(as(), invoicesSend, { jobId: v.jobId })
+    await expect(callApi(as(), paymentsChargeCard, { visitId: v.id })).rejects.toMatchObject({ code: "conflict", message: expect.stringMatching(/invoice is out/) })
+    expect(stripe.calls.paymentIntentsCreate).not.toHaveBeenCalled()
+    // an item queued by the old Done: payload { visitId } alone
+    const w = await doneRepair()
+    await passCharge(db, { payload: { visitId: w.id } } as never)
+    expect(stripe.calls.paymentIntentsCreate).not.toHaveBeenCalled()
+    expect(await rows(w.id)).toEqual([])
+  })
+
+  it("a charge that throws queues its own resume five minutes on, so the visit is never stuck charging", async () => {
+    const v = await doneRepair()
+    stripe = stubStripe({ charge: () => Promise.reject(new Error("socket hang up")) })
+    getStripe.mockReturnValue(stripe.stripe)
+    await expect(callApi(as(), paymentsChargeCard, { visitId: v.id })).rejects.toBeTruthy()
+    const [resume] = await db.select().from(s.queueItem).where(eq(s.queueItem.key, `${v.id}:resume-1`))
+    expect(resume).toMatchObject({ kind: "pass-charge", status: "pending", payload: { visitId: v.id, retry: true } })
+    expect(resume!.runAfter.toISOString()).toBe("2027-05-07T20:05:00.000Z")
+    expect((await rows(v.id)).map((r) => r.status)).toEqual(["pending"])
   })
 })
 

@@ -52,7 +52,10 @@ export function visitFooter(facts: VisitFacts, canAct: boolean, dueDays = 14): V
     isPass: Boolean(visit.passId),
     invoiceOpen: Boolean(bill.invoice),
     canInvoice: bill.canSend,
-    declined: states.money === "failed" || Boolean(visit.chargeFailed),
+    // The visit's own newest card attempt, never the customer's mark: another visit's failed card does not decline this one.
+    declined: Boolean(visit.chargeFailed) || payments[payments.length - 1]?.status === "failed",
+    // A card payment that was refunded (or part-paid visit) is not charged again from here: the other ways are offered.
+    cardChargeable: !payments.some((p) => (p.method === "card_on_file" || p.method === "card_now") && p.status === "succeeded" && p.amount > 0) && unpaid >= facts.price,
     charging: payments.some((p) => p.status === "pending"),
     dueDays,
   })

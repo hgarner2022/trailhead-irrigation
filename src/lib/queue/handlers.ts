@@ -32,6 +32,8 @@ export const geocode: QueueHandler = async (db, item) => {
 /** `pass-charge`: payload `{ visitId, afterCardUpdate?, retry? }`; the retries of a failed charge (after a card update, and the one three days on). A charge is never queued by Done: it starts only from a button. */
 export const passCharge: QueueHandler = async (db, item) => {
   const { visitId, afterCardUpdate, retry } = item.payload as { visitId: string; afterCardUpdate?: boolean; retry?: boolean }
+  // A charge queued by the old Done (payload `{ visitId }` alone) is never run: only a person's press starts a first attempt.
+  if (!afterCardUpdate && !retry) return
   await chargeVisit(db, getStripe(), visitId, { origin: readAppUrl(), afterCardUpdate, retry })
 }
 
