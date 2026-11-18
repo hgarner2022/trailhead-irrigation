@@ -70,6 +70,7 @@ function PersonStops({ person, index, day, stops, areas, selectedId, onSelect, o
               areaIndex={areaIndexOf(v.town, areas)}
               selected={v.id === selectedId}
               moved={Boolean(v.exception)}
+              waiting={v.waiting}
               draggable={Boolean(onMove)}
               onOpen={onSelect}
             />
@@ -102,7 +103,7 @@ export function ScheduleDay({ day, visits, people, areas, timeZone, selectedId, 
                 <h3 className="text-sm font-medium text-navy">No one yet</h3>
                 <ol className="divide-y divide-border overflow-hidden rounded-lg border border-border">
                   {loose.map((v, i) => (
-                    <StopRow key={v.id} id={v.id} number={i + 1} time={stopTime(v)} name={v.clientName} town={v.town} service={KIND_WORDS[v.kind]} areaIndex={areaIndexOf(v.town, areas)} selected={v.id === selectedId} draggable={Boolean(onMove)} onOpen={onSelect} />
+                    <StopRow key={v.id} id={v.id} number={i + 1} time={stopTime(v)} name={v.clientName} town={v.town} service={KIND_WORDS[v.kind]} areaIndex={areaIndexOf(v.town, areas)} selected={v.id === selectedId} waiting={v.waiting} draggable={Boolean(onMove)} onOpen={onSelect} />
                   ))}
                 </ol>
               </section>

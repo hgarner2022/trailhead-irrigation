@@ -132,10 +132,14 @@ export function visitFacts(data: AdminData, visitId: string, today: string): Vis
   }
 }
 
-/** What Move will say it does, before it does it: "Moves the repair to Thu, Oct 14 and tells Dana." */
-export function moveSentence(visit: Visit, day: string, time: string): string {
+/**
+ * What Move will say it does, before it does it: "Moves the repair to Thu, Oct 14, 9:00 am." A visit that already has a day is moved, and whether the customer
+ * is texted is the button's (split) choice; one with no day is given its day and the customer is told: "Sets the repair for Thu, Oct 14 and tells Dana."
+ */
+export function moveSentence(visit: Visit, day: string, time: string, placed = false): string {
   const first = visit.clientName.split(" ")[0]
-  return `Moves the ${kindLabel(visit).toLowerCase()} to ${dayLabel(day)}${time ? `, ${clockLabel(time)}` : ""} and tells ${first}.`
+  const when = `${dayLabel(day)}${time ? `, ${clockLabel(time)}` : ""}`
+  return placed ? `Moves the ${kindLabel(visit).toLowerCase()} to ${when}.` : `Sets the ${kindLabel(visit).toLowerCase()} for ${when} and tells ${first}.`
 }
 
 /** The half-hour starts Move offers, 7:00 am to 5:00 pm. */

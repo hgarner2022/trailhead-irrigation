@@ -16,7 +16,7 @@ import { JOB_WORDS, REASON_WORDS, WORK_WORDS, type Job, type JobState, type Mone
 // is 5.45 and 5.25 (5.02 on stone). The lighter positive and warning inks
 // only reach 4.2 to 4.4 on their tints, which is why they are not used here.
 
-export type PillStatus = PassStatus | JobState | WorkState | MoneyState | "overdue"
+export type PillStatus = PassStatus | JobState | WorkState | MoneyState | "overdue" | "waiting"
 
 const LABELS: Record<PillStatus, string> = {
   ...JOB_WORDS,
@@ -30,6 +30,7 @@ const LABELS: Record<PillStatus, string> = {
   owed: "Unpaid",
   overdue: "Past due",
   lapsed: "Expired",
+  waiting: "Waiting on customer",
 }
 
 const GOOD = "bg-positive/10 text-positive-deep border-positive/30"
@@ -57,6 +58,7 @@ const TONES: Record<PillStatus, string> = {
   owed: WAITING,
   overdue: BAD,
   lapsed: OVER,
+  waiting: WAITING,
 }
 
 /** The word shown for a status: "Past due" for overdue, "Unscheduled" for a job with no day, else the status in sentence case. */
@@ -68,7 +70,7 @@ export interface StatusPillProps {
   label?: string
   className?: string
   /** which of a visit's two pills this is */
-  "data-pill"?: "work" | "money"
+  "data-pill"?: "work" | "money" | "waiting"
 }
 
 export function StatusPill({ status, label, className, ...rest }: StatusPillProps) {
@@ -84,6 +86,8 @@ export function StatusPill({ status, label, className, ...rest }: StatusPillProp
 
 export interface StatusPillsProps {
   job: Job
+  /** Ryan moved the visit and asked the customer to reply YES (a property that must be home): a neutral third pill until they answer or the office clears it */
+  waiting?: boolean
   className?: string
 }
 
@@ -93,10 +97,11 @@ export interface StatusPillsProps {
  * Failed, all read from the payment rows by src/lib/money/words.ts). A Scheduled visit whose day has passed keeps its state and gains
  * a small "day passed" note.
  */
-export function StatusPills({ job, className }: StatusPillsProps) {
+export function StatusPills({ job, waiting, className }: StatusPillsProps) {
   return (
     <span data-slot="job-pill" className={cn("inline-flex flex-wrap items-center gap-1", className)}>
       <StatusPill status={job.work} label={WORK_WORDS[job.work]} data-pill="work" />
+      {waiting && <StatusPill status="waiting" data-pill="waiting" />}
       {job.reason && (
         <span data-slot="not-done-reason" className="text-xs text-muted-foreground">
           {`· ${REASON_WORDS[job.reason] ?? job.reason}`}

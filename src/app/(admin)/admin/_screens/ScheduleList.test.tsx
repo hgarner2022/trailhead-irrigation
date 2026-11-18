@@ -60,6 +60,7 @@ const withLines: AdminData = {
 const ok = { ok: true as const, data: undefined }
 const actions = (over: Partial<VisitActions> = {}): VisitActions => ({
   move: vi.fn().mockResolvedValue({ ok: true, data: { day: "2026-11-20", personId: "person_truck-1", startTime: null } }),
+  confirmDay: vi.fn().mockResolvedValue(ok),
   putBack: vi.fn().mockResolvedValue(ok),
   markDone: vi.fn().mockResolvedValue(ok),
   undoDone: vi.fn().mockResolvedValue(ok),
@@ -194,12 +195,12 @@ describe("VisitsScreen", () => {
     renderScreen(a, { defaultVisitId: "a" })
     await userEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Move" }))
     const move = ask()
-    expect(move.getByText("Moves the repair to Fri, Nov 20 and tells Dana.")).toBeInTheDocument()
+    expect(move.getByText("Moves the repair to Fri, Nov 20.")).toBeInTheDocument()
     await userEvent.clear(move.getByLabelText("Day"))
     await userEvent.type(move.getByLabelText("Day"), "2026-11-24")
     await userEvent.selectOptions(move.getByLabelText("Time"), "09:00")
-    await userEvent.click(move.getByRole("button", { name: "Move" }))
-    expect(a.move).toHaveBeenCalledWith("a", "2026-11-24", "09:00")
+    await userEvent.click(move.getByRole("button", { name: "Move and text the customer" }))
+    expect(a.move).toHaveBeenCalledWith("a", "2026-11-24", "09:00", { notify: true })
     await userEvent.click(await screen.findByRole("button", { name: "Undo" }))
     expect(a.putBack).toHaveBeenCalledWith("a", { day: "2026-11-20", personId: "person_truck-1", startTime: null })
   })
@@ -208,7 +209,7 @@ describe("VisitsScreen", () => {
     const a = actions({ move: vi.fn().mockResolvedValue({ ok: false, message: "Truck 1 is full of repair visits on 2026-11-24" }) })
     renderScreen(a, { defaultVisitId: "a" })
     await userEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Move" }))
-    await userEvent.click(ask().getByRole("button", { name: "Move" }))
+    await userEvent.click(ask().getByRole("button", { name: "Move and text the customer" }))
     expect(await screen.findByText("Truck 1 is full of repair visits on 2026-11-24")).toBeInTheDocument()
   })
 
