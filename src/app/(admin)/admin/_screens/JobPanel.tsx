@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import Link from "next/link"
 import { RECORD_ROW, RecordList, RecordPanel, RecordRowEnd, RecordRowText, type RecordFact } from "@/components/blocks/RecordPanel"
 import { SectionHeading } from "@/components/blocks/SectionHeading"
 import { StatusPills } from "@/components/blocks/StatusPill"
@@ -26,7 +25,7 @@ import { CancelDialog, ChangePassDialog, PassSeasonView } from "./PassPanel"
 import { propertyLines } from "./customers-model"
 import { useRunner } from "./use-runner"
 import type { VisitActions } from "./visit-actions-types"
-import { OpenVisit } from "./VisitPanelHost"
+import { OpenVisit, RecordLink } from "./RecordHost"
 import { dayLabel, dayOfVisit, kindLabel } from "./visit-panel-model"
 
 // The job panel, through the one SidePanel (docs/DESIGN.md, Uniformity): the customer's name and what the job is in the header, the
@@ -92,9 +91,11 @@ export interface JobPanelProps {
   actions?: JobActions
   /** Send an invoice and Remind, the same ones the visit panel uses */
   visitActions?: VisitActions
+  /** the record this one was opened from: the crumb above the title */
+  back?: { label: string; onClick: () => void }
 }
 
-export function JobPanel({ data, today, jobId, open, onOpenChange, readOnly = false, actions, visitActions }: JobPanelProps) {
+export function JobPanel({ data, today, jobId, open, onOpenChange, readOnly = false, actions, visitActions, back }: JobPanelProps) {
   const facts = jobId ? jobFacts(data, jobId, today) : undefined
   const { pending, error, done, run } = useRunner()
   const [adding, setAdding] = useState(false)
@@ -116,7 +117,7 @@ export function JobPanel({ data, today, jobId, open, onOpenChange, readOnly = fa
   // a Done and paid job, a canceled one and a tech have no buttons: no footer strip at all
   const hasFooter = Boolean(bar.primary || bar.secondary.length || bar.more.length || bar.destructive)
   const rec: RecordFact[] = [
-    ["Customer", <Link key="c" href={customerUrl(row.customerId)} className="text-primary-dark underline underline-offset-2">{row.name}</Link>],
+    ["Customer", <RecordLink key="c" kind="customer" id={row.customerId} href={customerUrl(row.customerId)} className="text-primary-dark underline underline-offset-2">{row.name}</RecordLink>],
     ...(row.property ? ([["Property", row.property]] as RecordFact[]) : []),
     ["Total", row.total > 0 ? `$${row.total.toLocaleString("en-US")}` : "Quote later"],
     ...(facts.held > 0 ? ([["Paid", `$${facts.held.toLocaleString("en-US")}`]] as RecordFact[]) : []),
@@ -127,6 +128,7 @@ export function JobPanel({ data, today, jobId, open, onOpenChange, readOnly = fa
     <RecordPanel
       open={open}
       onOpenChange={onOpenChange}
+      back={back}
       title={row.name}
       subtitle={facts.heading}
       pills={

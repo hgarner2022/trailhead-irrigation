@@ -60,7 +60,7 @@ describe("NeedsAttention", () => {
     const owed: Attention = { kind: "owed", key: "job-1", jobId: "job-1", visitId: "v1", message: "Andrea's repair is done, $145 unpaid", since: "2026-11-10T15:04:00Z" }
     render(<NeedsAttention items={[owed]} now={now} />)
     expect(rows()[0]!.querySelector(".sr-only")?.textContent).toBe("Done, unpaid: ")
-    expect(screen.getByRole("link").getAttribute("href")).toBe("/admin/visits?visit=v1")
+    expect(screen.getByRole("link").getAttribute("href")).toBe("/admin/schedule?visit=v1")
     expect(document.querySelector('[data-slot="attention-action"]')?.textContent).toBe("Collect")
     expect(rows()[0]!.dataset.kind).toBe("owed")
     expect(document.body.textContent).not.toMatch(/Unpaid|not paid/)
@@ -71,7 +71,7 @@ describe("NeedsAttention", () => {
     const row: Attention = { kind: "charge-not-pressed", key: "v1", jobId: "job-1", visitId: "v1", amount: 145, message: "Card not charged for Andrea's repair, $145 unpaid", since: "2026-11-17T19:00:00Z" }
     render(<NeedsAttention items={[row]} now={now} onAction={onAction} />)
     expect(rows()[0]!.querySelector(".sr-only")?.textContent).toBe("Card not charged: ")
-    expect(screen.getByRole("link").getAttribute("href")).toBe("/admin/visits?visit=v1")
+    expect(screen.getByRole("link").getAttribute("href")).toBe("/admin/schedule?visit=v1")
     const button = document.querySelector('[data-slot="attention-action"]') as HTMLElement
     expect(button.textContent).toBe("Charge $145")
     expect(onAction).not.toHaveBeenCalled()
@@ -126,15 +126,15 @@ describe("NeedsAttention", () => {
     expect(row.querySelector("a")).toHaveAttribute("href", "/admin/schedule")
   })
 
-  it("links an unplaced visit to that visit on Visits", () => {
+  it("links an unplaced visit to that visit on the Schedule", () => {
     render(<NeedsAttention items={[{ kind: "unplaced", visitId: "v 1", message: "Percy could not be placed.", since: "2026-11-09T17:00:00Z" }]} now={now} />)
-    expect(rows()[0]!.querySelector("a")).toHaveAttribute("href", "/admin/visits?visit=v%201")
+    expect(rows()[0]!.querySelector("a")).toHaveAttribute("href", "/admin/schedule?visit=v%201")
   })
 
   it("shows a customer's own change with its words, opens the visit and offers Open job", () => {
     render(<NeedsAttention items={[{ kind: "customer-changed", key: "v1:cancelled:2027-04-10T15:00:00.000Z", visitId: "v1", message: "Andrea Smith canceled Spring turn-on, Wed, Apr 28, Erie. The day is free.", since: "2026-11-12T17:30:00Z" }]} now={now} onAction={async () => undefined} />)
     expect(screen.getByText("Customer change:")).toBeInTheDocument()
-    expect(screen.getByText("Andrea Smith canceled Spring turn-on, Wed, Apr 28, Erie. The day is free.").closest("a")).toHaveAttribute("href", "/admin/visits?visit=v1")
+    expect(screen.getByText("Andrea Smith canceled Spring turn-on, Wed, Apr 28, Erie. The day is free.").closest("a")).toHaveAttribute("href", "/admin/schedule?visit=v1")
     expect(screen.getByRole("button", { name: /^Open job:/ })).toBeInTheDocument()
   })
 })

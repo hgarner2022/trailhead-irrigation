@@ -1,3 +1,4 @@
+import type { ReactNode } from "react"
 import { ChevronLeft, ChevronRight, TriangleAlert } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
@@ -14,7 +15,7 @@ import type { VisitRow } from "./visits-model"
 // with jobs when this one is empty. Kept out of ScheduleScreen so each file
 // stays short; they hold no state.
 
-export function DayStepper({ day, today, onChange }: { day: string; today: string; onChange: (day: string) => void }) {
+export function DayStepper({ day, today, onChange, children }: { day: string; today: string; onChange: (day: string) => void; children?: ReactNode }) {
   return (
     <div className="flex flex-wrap items-center gap-2">
       <Button variant="outline" size="icon" aria-label="Previous day" onClick={() => onChange(addDays(day, -1))}>
@@ -30,6 +31,7 @@ export function DayStepper({ day, today, onChange }: { day: string; today: strin
         {writtenDate(day)}
         {day === today && <span className="text-muted-foreground"> · today</span>}
       </h2>
+      {children && <div className="ml-auto">{children}</div>}
     </div>
   )
 }

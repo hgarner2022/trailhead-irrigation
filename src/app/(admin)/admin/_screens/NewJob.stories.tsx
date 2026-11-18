@@ -3,7 +3,7 @@ import { expect, screen } from "storybook/test"
 import { AdminShell } from "@/components/blocks/AdminShell"
 import { NewJob, type NewJobInitial } from "./NewJob"
 import { EMPTY_PERSON, type CustomerChoice } from "./CustomerPicker"
-import { VisitPanelHost } from "./VisitPanelHost"
+import { RecordHost } from "./RecordHost"
 import { VISITS_TODAY, visitsData } from "./visits-fixture"
 
 // New job at 12:56 pm Mountain on Thursday, November 12, 2026. Empty is how the sheet opens from the Visits header: a customer and
@@ -25,10 +25,10 @@ const meta = {
   parameters: { layout: "fullscreen" },
   args: { data: visitsData, today: VISITS_TODAY, open: true, onOpenChange: () => undefined },
   render: (args) => (
-    <AdminShell current="visits" user={{ initials: "HG", name: "Hannah" }}>
-      <VisitPanelHost data={visitsData} today={VISITS_TODAY}>
+    <AdminShell current="schedule" user={{ initials: "HG", name: "Hannah" }}>
+      <RecordHost data={visitsData} today={VISITS_TODAY}>
         <NewJob {...args} />
-      </VisitPanelHost>
+      </RecordHost>
     </AdminShell>
   ),
 } satisfies Meta<typeof NewJob>

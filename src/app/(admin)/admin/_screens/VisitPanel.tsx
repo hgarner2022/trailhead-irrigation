@@ -1,6 +1,5 @@
 "use client"
 
-import Link from "next/link"
 import { useState } from "react"
 import { CollectPayment } from "@/components/blocks/CollectPayment"
 import { MessageThread } from "@/components/blocks/MessageThread"
@@ -17,6 +16,7 @@ import { formatPhone } from "@/lib/format/contact"
 import { dollars, type CollectPlan } from "@/lib/money/collect"
 import { propertyLines, yardFromPass } from "./customers-model"
 import { PanelNotes } from "./PanelNotes"
+import { RecordLink } from "./RecordHost"
 import { BillBlock } from "./VisitBill"
 import { VisitFooter } from "./VisitFooter"
 import { Included, JobLines } from "./VisitLines"
@@ -38,9 +38,9 @@ function JobLine({ facts }: { facts: VisitFacts }) {
   const kind = job?.kind === "repair" ? "Repair" : job?.kind === "install" ? "Installation" : "Job"
   const text = pass ? `Season Pass ${pass.number} · ${pass.season}` : `${kind}${job?.soldOn ? ` · sold ${shortDate(job.soldOn, TIME_ZONE)}` : ""}`
   return (
-    <Link data-slot="visit-job-line" href={visit.jobId ? jobUrl(visit.jobId) : customerUrl(visit.clientId)} className="text-primary-dark underline underline-offset-2" title={text}>
-      {text}
-    </Link>
+    <RecordLink kind={visit.jobId ? "job" : "customer"} id={visit.jobId ?? visit.clientId} href={visit.jobId ? jobUrl(visit.jobId) : customerUrl(visit.clientId)} className="text-primary-dark underline underline-offset-2">
+      <span data-slot="visit-job-line" title={text}>{text}</span>
+    </RecordLink>
   )
 }
 
@@ -122,9 +122,11 @@ export interface VisitPanelProps {
   /** a tech who may Mark done and take the money, though the rest of the panel is read-only */
   canCollect?: boolean
   actions?: VisitActions
+  /** the record this one was opened from: the crumb above the title */
+  back?: { label: string; onClick: () => void }
 }
 
-export function VisitPanel({ data, today, visitId, open, onOpenChange, onOpenVisit, readOnly = false, canCollect = false, actions }: VisitPanelProps) {
+export function VisitPanel({ data, today, visitId, open, onOpenChange, onOpenVisit, readOnly = false, canCollect = false, actions, back }: VisitPanelProps) {
   // Beat two ("How is this paid?") keeps the plan it opened with, as state: once the money has arrived the page refreshes and the visit has
   // no plan any more, but the body stays to say what happened until it is closed, and closing it is what keeps it shut. After Mark done the
   // plan arrives with the refresh, so `wantCollect` waits for it once.
@@ -163,6 +165,7 @@ export function VisitPanel({ data, today, visitId, open, onOpenChange, onOpenVis
     <RecordPanel
       open={open}
       onOpenChange={onOpenChange}
+      back={back}
       title={visit.clientName}
       // The pills carry the state, so the line says only what the visit is and, once it has one, its day.
       subtitle={`${kindLabel(visit)}${visitDay ? `, ${dayLabel(visitDay)}` : ""}`}

@@ -5,6 +5,7 @@ import { RecordFooter, type FooterAction } from "@/components/blocks/RecordFoote
 import type { AdminData, Client } from "@/lib/admin/types"
 import type { CustomerRow } from "./customers-model"
 import { NewJob } from "./NewJob"
+import { useOpenRecord } from "./RecordHost"
 import { TextDialog } from "./VisitEditText"
 import type { VisitActions } from "./visit-actions-types"
 
@@ -21,19 +22,22 @@ export interface CustomerFooterProps {
   actions?: VisitActions
   /** the customer's pass job, for Open job */
   jobHref?: string
+  jobId?: string
   offers: boolean
   onOptOut?: () => void
   optOutPending?: boolean
 }
 
-export function CustomerFooter({ row, client, data, today, readOnly, actions, jobHref, offers, onOptOut, optOutPending = false }: CustomerFooterProps) {
+export function CustomerFooter({ row, client, data, today, readOnly, actions, jobHref, jobId, offers, onOptOut, optOutPending = false }: CustomerFooterProps) {
+  const host = useOpenRecord()
+  const openJob = (label: string) => (host && jobId ? { label, onClick: () => host.open("job", jobId) } : { label, href: jobHref })
   const [jobOpen, setJobOpen] = useState(false)
   const [textOpen, setTextOpen] = useState(false)
   // A tech has no buttons but the way up to the job.
-  if (readOnly) return jobHref ? <RecordFooter primary={{ label: "Open job", href: jobHref }} /> : null
+  if (readOnly) return jobHref ? <RecordFooter primary={openJob("Open job")} /> : null
   const canJob = Boolean(client?.app)
   const more: FooterAction[] = [
-    ...(jobHref ? [{ label: "Open job", href: jobHref }] : []),
+    ...(jobHref ? [openJob("Open job")] : []),
     ...(offers ? [{ label: "Send pass offer", onClick: () => console.info("send pass offer", [row.name]) }] : []),
     ...(onOptOut && client?.consent?.marketingOptIn ? [{ label: "Record phone opt-out", onClick: onOptOut, disabled: optOutPending }] : []),
   ]

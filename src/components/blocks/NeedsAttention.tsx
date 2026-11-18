@@ -53,7 +53,7 @@ const KINDS: Record<Attention["kind"], { icon: LucideIcon; tone: string; name: s
 export function attentionHref(item: Attention): string | undefined {
   if (item.kind === "overdue" && item.jobId) return jobUrl(item.jobId)
   if ((item.kind === "overdue" || item.kind === "charge-failed") && !item.passId && !item.visitId && item.customerId) return `/admin/customers?customer=${encodeURIComponent(item.customerId)}`
-  if (item.visitId) return `/admin/visits?visit=${encodeURIComponent(item.visitId)}`
+  if (item.visitId) return `/admin/schedule?visit=${encodeURIComponent(item.visitId)}`
   // A pass is a job: its row opens that job on Jobs (HomeScreen puts the job on a row that names only a pass).
   if (item.passId) return item.jobId ? jobUrl(item.jobId) : "/admin/jobs"
   if (item.kind === "unplaced" || item.kind === "not-closed" || item.kind === "scheduled") return "/admin/schedule"

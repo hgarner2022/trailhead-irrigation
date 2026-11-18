@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite"
 import { expect, within } from "storybook/test"
 import { AdminShell } from "@/components/blocks/AdminShell"
-import { VisitsScreen } from "./VisitsScreen"
+import { VisitsScreen } from "./list-fixture"
 import type { AdminData } from "@/lib/admin/types"
 import { JOE_EVENTS, JOE_MESSAGES, storyOf, withTimeline } from "./notes-fixture"
 import { VISITS_TODAY, noCardVisitId, passVisitId, visitsData } from "./visits-fixture"
@@ -18,7 +18,7 @@ const meta = {
   parameters: { layout: "fullscreen" },
   args: { data: visitsData, today: VISITS_TODAY },
   render: (args) => (
-    <AdminShell current="visits" user={{ initials: "HG", name: "Hannah" }}>
+    <AdminShell current="schedule" user={{ initials: "HG", name: "Hannah" }}>
       <VisitsScreen {...args} />
     </AdminShell>
   ),

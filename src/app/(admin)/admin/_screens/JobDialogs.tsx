@@ -11,7 +11,7 @@ import { FIELD } from "./CustomerPicker"
 import type { Outcome } from "./action-types"
 import type { JobActions } from "./job-actions-types"
 import { servicePriceLine } from "./NewJobService"
-import { useOpenVisit } from "./VisitPanelHost"
+import { useOpenVisit } from "./RecordHost"
 
 // The small dialogs the job panel's footer opens, each the one `ConfirmDialog`: Cancel job (the pass's Cancel pass uses it too) and
 // New visit (another visit on this job, from the active catalogue). Each says the API's refusal in place and closes when it goes through.

@@ -31,16 +31,20 @@ interface Props {
   choice: CustomerChoice
   service: ServiceItem
   actions?: VisitActions
+  /** the day the sheet was opened from, on the Schedule */
+  initialDay?: string
+  /** the person whose row it was opened from */
+  initialPersonId?: string
   onDone: (made: { id: string; jobId: string }) => void
 }
 
-export function NewJobService({ data, today, choice, service, actions, onDone }: Props) {
+export function NewJobService({ data, today, choice, service, actions, initialDay, initialPersonId, onDone }: Props) {
   const todayDay = today.slice(0, 10)
   // No day until one is chosen: a job taken by phone can be given its day later, and a day filled in by default booked today by accident.
-  const [day, setDay] = useState("")
+  const [day, setDay] = useState(initialDay ?? "")
   const [time, setTime] = useState("")
   const [minutes, setMinutes] = useState<string | null>(null)
-  const [personId, setPersonId] = useState("")
+  const [personId, setPersonId] = useState(initialPersonId ?? "")
   const [price, setPrice] = useState<string | null>(null)
   const [notes, setNotes] = useState("")
   const { pending, error, run } = useRunner()

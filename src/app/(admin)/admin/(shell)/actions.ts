@@ -157,7 +157,7 @@ export async function attentionAction(item: Attention): Promise<ActionOutcome | 
     return sent.ok ? { ok: true, data: undefined, message: "Reminder sent." } : sent
   }
   // A job that is done and unpaid carries the visit that is unpaid in `visitId`, so it opens on Visits like any visit row, where the panel's Record the payment (or Send an invoice) asks how the money came.
-  if (item.visitId) redirect(`/admin/visits?visit=${encodeURIComponent(item.visitId)}`)
+  if (item.visitId) redirect(`/admin/schedule?visit=${encodeURIComponent(item.visitId)}`)
   if (item.passId) redirect(item.jobId ? jobUrl(item.jobId) : "/admin/jobs")
   redirect("/admin/schedule")
 }

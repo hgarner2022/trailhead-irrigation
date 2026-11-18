@@ -121,7 +121,7 @@ describe("tileModels", () => {
     // The Jobber mirror's invoices no longer have a tile: the fourth tile counts OUR invoices, and the snapshot has none.
     expect(overdue.label).toBe("Invoices past due, $0")
     expect(overdue.value).toBe("0")
-    expect(overdue.href).toBe("/admin/visits?money=bill-sent")
+    expect(overdue.href).toBe("/admin/schedule?view=list&money=bill-sent")
     expect(overdue.delta).toEqual({ value: null, baseline: "last month", goodWhen: "down" })
   })
 
@@ -131,7 +131,7 @@ describe("tileModels", () => {
     // due Nov 11 and Nov 1 are overdue on Nov 12 (Denver); due Nov 12 is due today, not overdue
     const jobs = [job("1", "2026-11-11", 145), job("2", "2026-11-01", 100), job("3", "2026-11-12", 999), { ...job("4", "2026-11-30", 50), invoice: undefined }]
     const [, , , overdue] = tileModels({ ...data, jobs }, TODAY)
-    expect(overdue).toMatchObject({ label: "Invoices past due, $245", value: "2", href: "/admin/visits?money=bill-sent" })
+    expect(overdue).toMatchObject({ label: "Invoices past due, $245", value: "2", href: "/admin/schedule?view=list&money=bill-sent" })
   })
 
   it("reads $0 and 0 with no data", () => {

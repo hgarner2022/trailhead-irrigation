@@ -1,10 +1,16 @@
-import { beforeAll, describe, expect, it, vi } from "vitest"
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
 import { render, screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import type { AdminData } from "@/lib/admin/types"
 import { weekOf } from "@/lib/admin/calendar"
 import { ScheduleScreen } from "./ScheduleScreen"
+import { VISITS_TODAY, visitsData } from "./visits-fixture"
+import { visitRows } from "./visits-model"
+import type { VisitActions } from "./visit-actions-types"
+
+/** The panels read only the actions a button calls; these tests press none. */
+const noActions = {} as VisitActions
 
 const data = snapshot as AdminData
 const TODAY = "2026-11-12T19:56:30Z"
@@ -210,5 +216,90 @@ describe("ScheduleScreen's Unscheduled list", () => {
     await userEvent.click(within(rows()[0]).getByRole("button", { name: /^Place / }))
     expect(await screen.findByText(/is scheduled with Ryan Garner/, {}, { timeout: 5000 })).toBeInTheDocument()
     expect(rows().length).toBe(before - 1)
+  })
+})
+
+describe("ScheduleScreen views and New job from a day", () => {
+  beforeEach(() => window.history.replaceState(null, "", "/admin/schedule"))
+  afterEach(() => window.history.replaceState(null, "", "/admin"))
+
+  const header = () => within(document.querySelector<HTMLElement>('[data-slot="page-header"]')!)
+  const filled = (root: HTMLElement) => [...root.querySelectorAll("button")].filter((b) => !/border|ghost|underline/.test(b.className) && b.getAttribute("data-variant") !== "outline" && b.getAttribute("data-variant") !== "ghost")
+
+  it("offers Week, Day and List as one choice, Week first", async () => {
+    render(<ScheduleScreen data={data} today={TODAY} />)
+    const group = screen.getByRole("radiogroup", { name: "Schedule view" })
+    expect(within(group).getAllByRole("radio").map((r) => r.textContent)).toEqual(["Week", "Day", "List"])
+    expect(within(group).getByRole("radio", { name: "Week" })).toBeChecked()
+    expect(document.querySelector('[data-slot="week-grid"]')).not.toBeNull()
+    expect(screen.queryByRole("tab")).toBeNull()
+  })
+
+  it("List is the old Visits grid: the same columns and filters, and a row opens the visit in the panel", async () => {
+    render(<ScheduleScreen data={visitsData} today={VISITS_TODAY} visitActions={noActions} />)
+    await userEvent.click(screen.getByRole("radio", { name: "List" }))
+    const list = within(document.querySelector<HTMLElement>('[data-slot="visits-list"]')!)
+    expect(list.getAllByRole("columnheader", { hidden: true }).map((h) => h.textContent)).toEqual(expect.arrayContaining(["Customer", "Town", "Service", "Day", "Time", "Who", "Status", "Money"]))
+    expect(list.getByRole("searchbox", { hidden: true })).toHaveAttribute("placeholder", "Search by name or street")
+    for (const name of ["Status", "Money", "Service", "Who", "Town"]) expect(list.getAllByRole("button", { name: new RegExp(`^${name}`), hidden: true }).length).toBeGreaterThan(0)
+    expect(document.querySelector('[data-slot="week-grid"]')).toBeNull()
+    await userEvent.click(list.getAllByRole("button", { name: visitRows(visitsData, VISITS_TODAY)[0]!.name })[0]!)
+    expect(await screen.findByRole("dialog")).toBeInTheDocument()
+    expect(new URLSearchParams(window.location.search).get("visit")).toBeTruthy()
+    expect(new URLSearchParams(window.location.search).get("view")).toBe("list")
+  })
+
+  it("opens on the List from ?view=list, with the filters it was linked with and one job's visits from ?forJob=", () => {
+    const job = visitsData.visits.find((v) => v.jobId)!.jobId!
+    render(<ScheduleScreen data={visitsData} today={VISITS_TODAY} defaultTab="list" forJob={job} defaultFilters={[{ column: "money", values: ["owed"] }]} />)
+    expect(screen.getByRole("radio", { name: "List" })).toBeChecked()
+    expect(screen.getByRole("link", { name: "Show all" })).toHaveAttribute("href", "/admin/schedule?view=list")
+  })
+
+  it("writes the view, the day and the week into the address, as a replace", async () => {
+    const length = window.history.length
+    render(<ScheduleScreen data={data} today={TODAY} />)
+    expect(new URLSearchParams(window.location.search).get("week")).toBeTruthy()
+    await userEvent.click(screen.getByRole("radio", { name: "Day" }))
+    const day = new URLSearchParams(window.location.search)
+    expect(day.get("view")).toBe("day")
+    expect(day.get("day")).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+    expect(day.get("week")).toBeNull()
+    await userEvent.click(screen.getByRole("radio", { name: "List" }))
+    expect(window.location.search).toBe("?view=list")
+    await userEvent.click(screen.getByRole("radio", { name: "Week" }))
+    expect(new URLSearchParams(window.location.search).get("view")).toBeNull()
+    expect(window.history.length).toBe(length)
+  })
+
+  it("has New job as the one filled button in the header, and the scheduler button beside it is an outline", () => {
+    render(<ScheduleScreen data={data} today={TODAY} />)
+    expect(header().getByRole("button", { name: "New job" })).toBeInTheDocument()
+    expect(filled(document.querySelector<HTMLElement>('[data-slot="page-header"]')!).map((b) => b.textContent)).toEqual(["New job"])
+  })
+
+  it("the Day view's header has New job, which opens the sheet with that day at the top and filled in", async () => {
+    render(<ScheduleScreen data={data} today={TODAY} visitActions={noActions} />)
+    await userEvent.click(screen.getByRole("radio", { name: "Day" }))
+    const day = new URLSearchParams(window.location.search).get("day")!
+    const stepper = document.querySelector<HTMLElement>('[data-slot="schedule-day"]')!
+    await userEvent.click(within(stepper).getByRole("button", { name: "New job" }))
+    const sheet = within(await screen.findByRole("dialog"))
+    expect(sheet.getByText(new Date(`${day}T12:00:00Z`).toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric", timeZone: "UTC" }))).toBeInTheDocument()
+    await userEvent.selectOptions(sheet.getByLabelText("What are we doing?"), "repair")
+    expect(sheet.getByLabelText("Day (optional)")).toHaveValue(day)
+  })
+
+  it("each week column has New job with its own day filled in, and a tech gets none", async () => {
+    const { unmount } = render(<ScheduleScreen data={data} today={TODAY} visitActions={noActions} />)
+    const buttons = [...document.querySelectorAll<HTMLButtonElement>('[data-slot="week-grid-new-job"]')]
+    expect(buttons).toHaveLength(7)
+    expect(buttons[2]).toHaveAccessibleName(/^New job on Wed \d+$/)
+    await userEvent.click(buttons[2]!)
+    const sheet = within(await screen.findByRole("dialog"))
+    expect(sheet.getByText(/^Wednesday, /)).toBeInTheDocument()
+    unmount()
+    render(<ScheduleScreen data={data} today={TODAY} readOnly />)
+    expect(document.querySelector('[data-slot="week-grid-new-job"]')).toBeNull()
   })
 })

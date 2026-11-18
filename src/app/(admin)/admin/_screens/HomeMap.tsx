@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils"
 import type { Person, Visit } from "@/lib/admin/types"
 import { mapStops } from "./home-week"
 import { ScheduleDayMap } from "./ScheduleDayMap"
-import { useOpenVisit } from "./VisitPanelHost"
+import { useOpenVisit } from "./RecordHost"
 
 // The map of today (Hannah: "maybe a map of where your things are"): the same DayMap the Schedule uses, a pin per stop numbered
 // in its person's route and coloured by that person, a visit with no point at its town's centre.

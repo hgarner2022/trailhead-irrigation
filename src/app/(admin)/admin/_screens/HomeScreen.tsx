@@ -6,7 +6,11 @@ import { TodayMoney } from "@/components/blocks/TodayMoney"
 import { formatMoney } from "@/lib/admin/metrics"
 import type { AdminData } from "@/lib/admin/types"
 import type { VisitActions } from "./visit-actions-types"
-import { VisitPanelHost } from "./VisitPanelHost"
+import type { CustomersActions } from "./CustomersScreen"
+import type { JobActions } from "./job-actions-types"
+import { NewJobButton } from "./NewJob"
+import { RecordHost } from "./RecordHost"
+import { initialRecord } from "@/lib/admin/record-url"
 import { greeting, pageContext, todayMoney } from "./home-model"
 import { weekView } from "./home-week"
 import { todayView } from "./today-model"
@@ -33,11 +37,19 @@ export interface HomeScreenProps {
   onAttentionAction?: NeedsAttentionProps["onAction"]
   /** Dismiss on a Needs action row, and its Undo; a server action in the app */
   onDismiss?: NeedsAttentionProps["onDismiss"]
-  /** the visit panel a stop opens; server actions in the app */
+  /** the visit panel a stop opens, and New job; server actions in the app */
   visitActions?: VisitActions
+  /** the job panel a record opens; server actions in the app */
+  jobActions?: JobActions
+  /** the customer panel's marketing opt-out */
+  customerActions?: CustomersActions
+  /** the record open on first render, from `?customer=`, `?job=` or `?visit=` in the address */
+  defaultCustomerId?: string
+  defaultJobId?: string
+  defaultVisitId?: string
 }
 
-export function HomeScreen({ data, today, readOnly = false, onAttentionAction, onDismiss, visitActions }: HomeScreenProps) {
+export function HomeScreen({ data, today, readOnly = false, onAttentionAction, onDismiss, visitActions, jobActions, customerActions, defaultCustomerId, defaultJobId, defaultVisitId }: HomeScreenProps) {
   const view = todayView(data, today)
   const money = todayMoney(data.visits, (v) => visitPrice(data, v), today)
   // With nothing today the screen says when the next visits are, once, as a link to that day.
@@ -46,8 +58,8 @@ export function HomeScreen({ data, today, readOnly = false, onAttentionAction, o
   const attention = data.attention.map((a) => (a.passId && !a.jobId ? { ...a, jobId: jobIdOfPass(data, a.passId) } : a))
   return (
     <div data-slot="home-screen" className="space-y-6">
-      <VisitPanelHost data={data} today={today} readOnly={readOnly} actions={visitActions}>
-        <PageHeader title={greeting(today)} context={pageContext(data, today)} />
+      <RecordHost data={data} today={today} readOnly={readOnly} visitActions={visitActions} jobActions={jobActions} customerActions={customerActions} initial={initialRecord({ customerId: defaultCustomerId, jobId: defaultJobId, visitId: defaultVisitId })}>
+        <PageHeader title={greeting(today)} context={pageContext(data, today)} actions={!readOnly && <NewJobButton data={data} today={today} actions={visitActions} />} />
 
         <TodayMoney
           figures={[
@@ -79,7 +91,7 @@ export function HomeScreen({ data, today, readOnly = false, onAttentionAction, o
             </CardContent>
           </Card>
         </div>
-      </VisitPanelHost>
+      </RecordHost>
     </div>
   )
 }

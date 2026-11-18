@@ -373,13 +373,13 @@ describe("keys, webhooks and consent", () => {
 
 describe("Needs attention", () => {
   it("takes a visit row to that visit in the Schedule", async () => {
-    await expect(actions.attentionAction({ kind: "unplaced", visitId: "v1", message: "x", since: "2027-01-01T00:00:00Z" })).rejects.toThrow("redirect:/admin/visits?visit=v1")
+    await expect(actions.attentionAction({ kind: "unplaced", visitId: "v1", message: "x", since: "2027-01-01T00:00:00Z" })).rejects.toThrow("redirect:/admin/schedule?visit=v1")
     await expect(actions.attentionAction({ kind: "new-pass", passId: "p1", message: "x", since: "2027-01-01T00:00:00Z" })).rejects.toThrow("redirect:/admin/jobs")
     await expect(actions.attentionAction({ kind: "new-pass", passId: "p1", jobId: "job_p1", message: "x", since: "2027-01-01T00:00:00Z" })).rejects.toThrow("redirect:/admin/jobs?job=job_p1")
   })
 
   it("takes a job that is done and unpaid to its done visit, where the panel records the payment", async () => {
-    await expect(actions.attentionAction({ kind: "owed", key: "job-1", jobId: "job-1", visitId: "v9", message: "Andrea's repair is done, $145 unpaid", since: "2027-01-01T00:00:00Z" })).rejects.toThrow("redirect:/admin/visits?visit=v9")
+    await expect(actions.attentionAction({ kind: "owed", key: "job-1", jobId: "job-1", visitId: "v9", message: "Andrea's repair is done, $145 unpaid", since: "2027-01-01T00:00:00Z" })).rejects.toThrow("redirect:/admin/schedule?visit=v9")
   })
 
   it("Remind on an overdue invoice calls invoices.remind; two presses in a day still send one message; a tech cannot press it", async () => {

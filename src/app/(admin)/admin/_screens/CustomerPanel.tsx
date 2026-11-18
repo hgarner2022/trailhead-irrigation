@@ -1,7 +1,7 @@
 import { RecordList, RecordPanel, type RecordFact } from "@/components/blocks/RecordPanel"
 import { SectionHeading } from "@/components/blocks/SectionHeading"
 import { StatusPill, statusLabel } from "@/components/blocks/StatusPill"
-import Link from "next/link"
+import { RecordLink } from "./RecordHost"
 import { jobIdOfPass, jobUrl } from "@/lib/admin/links"
 import { MessageThread } from "@/components/blocks/MessageThread"
 import { CustomerJobsSection } from "./CustomerJobs"
@@ -29,7 +29,7 @@ function JobFact({ row, jobId }: { row: CustomerRow; jobId: string | undefined }
   const pass = row.pass === "none" ? undefined : `Season Pass ${row.passNumber} · ${row.season} · ${statusLabel(row.pass)}`
   const text = row.job ? (row.job.isPass && pass ? pass : row.job.title) : (pass ?? "None")
   const id = row.job?.id ?? jobId
-  return id && text !== "None" ? <Link href={jobUrl(id)} className="text-primary-dark underline underline-offset-2">{text}</Link> : <span>{text}</span>
+  return id && text !== "None" ? <RecordLink kind="job" id={id} href={jobUrl(id)} className="text-primary-dark underline underline-offset-2">{text}</RecordLink> : <span>{text}</span>
 }
 
 /** The facts under the header, in order: Phone, Email, the open Job, Next, Scheduled, Marketing and the Card. The street is the subtitle. */
@@ -102,10 +102,12 @@ export interface CustomerPanelProps {
   onOptOut?: () => void
   /** the opt-out is being recorded: its menu item is off */
   optOutPending?: boolean
+  /** the record this one was opened from: the crumb above the title */
+  back?: { label: string; onClick: () => void }
 }
 
 /** The Customers side panel, a `RecordPanel`: the street under the name, the pass pill, the facts, then the pass (its card over the season line), Jobs (each job once, its visits inside it), Invoices, Property, Notes and history, Consent history and Messages. */
-export function CustomerPanel({ open, onOpenChange, row, client, data, today, readOnly = false, actions, notice, offers = false, onOptOut, optOutPending = false }: CustomerPanelProps) {
+export function CustomerPanel({ open, onOpenChange, row, client, data, today, readOnly = false, actions, notice, offers = false, onOptOut, optOutPending = false, back }: CustomerPanelProps) {
   const day = dayOf(today, TIME_ZONE)
   // The first property is the one shown; a customer with a second one is a later step.
   const property = client ? propertiesOf(client, data.passes)[0] : undefined
@@ -119,13 +121,14 @@ export function CustomerPanel({ open, onOpenChange, row, client, data, today, re
     <RecordPanel
       open={open}
       onOpenChange={onOpenChange}
+      back={back}
       title={row.name}
       subtitle={row.address ? `${row.address}, ${row.town}` : row.town}
       pills={row.pass !== "none" ? <StatusPill status={row.pass} /> : undefined}
       facts={factsOf(row, card, jobId, readOnly, actions)}
       slot="customer-panel"
       notice={notice ? <p role="status" className="text-sm text-muted-foreground">{notice}</p> : undefined}
-      footer={hasFooter ? <CustomerFooter row={row} client={client} data={data} today={today} readOnly={readOnly} actions={actions} jobHref={jobId ? jobUrl(jobId) : undefined} offers={offers} onOptOut={onOptOut} optOutPending={optOutPending} /> : undefined}
+      footer={hasFooter ? <CustomerFooter row={row} client={client} data={data} today={today} readOnly={readOnly} actions={actions} jobHref={jobId ? jobUrl(jobId) : undefined} jobId={jobId} offers={offers} onOptOut={onOptOut} optOutPending={optOutPending} /> : undefined}
     >
       <PassSeasons passes={passes} today={day} />
       <CustomerJobsSection rows={jobRows(data, day).filter((j) => j.customerId === row.id)} data={data} today={day} />

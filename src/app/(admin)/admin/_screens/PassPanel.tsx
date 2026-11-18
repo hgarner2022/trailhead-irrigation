@@ -9,7 +9,7 @@ import type { Pass } from "@/lib/admin/types"
 import type { Outcome } from "./action-types"
 import type { PassesActions } from "./passes-actions"
 import { PENDING_NOTE, cardWords, consentLine, seasonCharges, seasonFacts, seasonVisits } from "./passes-model"
-import { useOpenVisit } from "./VisitPanelHost"
+import { useOpenVisit } from "./RecordHost"
 
 // What the Jobs panel and the Customers panel show for a Season Pass. `PassSeasonView` is the season (the PassSeason block) with
 // the visit rows opening the visit panel of the screen it is on; `ChangePassDialog` is the pass's own buttons (add the July

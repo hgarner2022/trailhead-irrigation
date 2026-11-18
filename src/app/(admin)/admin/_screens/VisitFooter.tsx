@@ -12,6 +12,7 @@ import type { AdminData, Pass, Visit } from "@/lib/admin/types"
 import { CancelVisitDialog, EditDialog, TextDialog } from "./VisitEditText"
 import { MoveDialog, NotDoneDialog } from "./VisitMoveDone"
 import { OnMyWay } from "./VisitOnMyWay"
+import { useOpenRecord } from "./RecordHost"
 import type { VisitActions } from "./visit-actions-types"
 import type { BarId, VisitBar } from "./visit-bar-model"
 import { aheadSentence, type VisitFooterPlan } from "./visit-collect-model"
@@ -99,6 +100,7 @@ export function VisitFooter({ facts, people, plan, bar, today, visitDay, pass, a
   const shown = (which: NonNullable<typeof open>) => ({ open: open === which, onOpenChange: (o: boolean) => setOpen(o ? which : null) })
   const { pending, error, run } = useRunner()
   const toast = useUndoToast()
+  const host = useOpenRecord()
   const refund = plan.refund
   const undo = () => {
     if (!actions) return console.info("undo done", visit.id)
@@ -117,7 +119,7 @@ export function VisitFooter({ facts, people, plan, bar, today, visitDay, pass, a
     "on-my-way": { label: LABELS["on-my-way"], onClick: () => setOpen("on-my-way") },
     cancel: { label: LABELS.cancel, onClick: () => setOpen("cancel") },
     collect: { label: plan.unpaid > 0 ? `Collect ${dollars(plan.unpaid)}` : LABELS.collect, onClick: onCollect },
-    "open-job": { label: LABELS["open-job"], href: visit.jobId ? jobUrl(visit.jobId) : undefined },
+    "open-job": host && visit.jobId ? { label: LABELS["open-job"], onClick: () => host.open("job", visit.jobId!) } : { label: LABELS["open-job"], href: visit.jobId ? jobUrl(visit.jobId) : undefined },
     "undo-done": { label: LABELS["undo-done"], onClick: undo, disabled: pending },
     refund: { label: refund ? `Refund ${dollars(refund.left)}` : LABELS.refund, onClick: () => setOpen("refund") },
   }

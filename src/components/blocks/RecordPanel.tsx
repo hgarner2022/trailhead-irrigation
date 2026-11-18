@@ -68,6 +68,8 @@ export interface RecordPanelProps {
   subtitle?: string
   /** the status pills under the subtitle */
   pills?: ReactNode
+  /** the record this one was opened from, as a crumb above the title that goes back to it */
+  back?: { label: string; onClick: () => void }
   /** the facts directly under the header, in order */
   facts?: readonly RecordFact[]
   /** a line of status or a refusal above the facts */
@@ -80,11 +82,11 @@ export interface RecordPanelProps {
   slot?: string
 }
 
-export function RecordPanel({ open, onOpenChange, title, subtitle, pills, facts, notice, children, footer, slot }: RecordPanelProps) {
+export function RecordPanel({ open, onOpenChange, title, subtitle, pills, back, facts, notice, children, footer, slot }: RecordPanelProps) {
   const [element, setElement] = useState<HTMLElement | null>(null)
   return (
     <FooterSlotContext.Provider value={{ element, setElement }}>
-      <SidePanel open={open} onOpenChange={onOpenChange} title={title} description={subtitle} pills={pills} footer={footer}>
+      <SidePanel open={open} onOpenChange={onOpenChange} title={title} description={subtitle} pills={pills} back={back} footer={footer}>
         <div className="flex flex-col gap-6" data-slot={slot ?? "record-panel"}>
           {notice}
           {facts && facts.length > 0 && <RecordFacts rows={facts} className="mt-0" />}

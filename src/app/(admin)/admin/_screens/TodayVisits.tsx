@@ -8,7 +8,7 @@ import { TodayGroup } from "@/components/blocks/TodayGroup"
 import { TodayVisitRow } from "@/components/blocks/TodayVisitRow"
 import { cn } from "@/lib/utils"
 import type { AreaGroup } from "@/lib/admin/types"
-import { useOpenVisit } from "./VisitPanelHost"
+import { useOpenVisit } from "./RecordHost"
 import type { TodayRow, TodayView } from "./today-model"
 
 // Today's visits (owner, 17 Nov 2026, after Jobber's "Today's appointments": "today's visits in our language"): a By visit /

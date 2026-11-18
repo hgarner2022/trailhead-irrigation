@@ -1,6 +1,5 @@
 "use client"
 
-import Link from "next/link"
 import { RECORD_ROW, RecordList, RecordRowEnd, RecordRowText } from "@/components/blocks/RecordPanel"
 import { SectionHeading } from "@/components/blocks/SectionHeading"
 import { StatusPills } from "@/components/blocks/StatusPill"
@@ -11,7 +10,7 @@ import { jobUrl } from "@/lib/admin/links"
 import type { AdminData, Pass } from "@/lib/admin/types"
 import { MoneyPill, StagePill } from "./JobPills"
 import type { JobRow } from "./jobs-model"
-import { OpenVisit } from "./VisitPanelHost"
+import { OpenVisit, RecordLink } from "./RecordHost"
 import { dayLabel, dayOfVisit, kindLabel } from "./visit-panel-model"
 
 // The customer's jobs, newest sale first (a customer has jobs, a job is done in visits): each row is the job (what it is, its stage
@@ -58,9 +57,9 @@ export function CustomerJobs({ rows, data, today }: { rows: JobRow[]; data: Pick
                     })}
                   </ul>
                 )}
-                <Link href={jobUrl(row.id)} className="mt-1 inline-flex min-h-11 items-center text-sm text-primary-dark underline underline-offset-2">
+                <RecordLink kind="job" id={row.id} href={jobUrl(row.id)} className="mt-1 inline-flex min-h-11 items-center text-sm text-primary-dark underline underline-offset-2">
                   Open job
-                </Link>
+                </RecordLink>
               </div>
             </details>
           </li>
