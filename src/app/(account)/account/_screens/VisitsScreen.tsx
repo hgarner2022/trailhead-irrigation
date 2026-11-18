@@ -32,7 +32,7 @@ function Section({ id, title, list, empty, days, onChangeDay }: { id: string; ti
                 visit={visit}
                 canPick={offered.length > 0}
                 change={visit.change}
-                action={visit.change === "yes" ? <ChangeMyDay visitId={visit.id} currentDay={visit.scheduledOn} days={offered} onPick={onChangeDay} /> : undefined}
+                action={visit.change === "yes" ? <ChangeMyDay name={visit.name} visitId={visit.id} currentDay={visit.scheduledOn} days={offered} onPick={onChangeDay} /> : undefined}
               />
             )
           })}

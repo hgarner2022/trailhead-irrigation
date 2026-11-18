@@ -23,7 +23,7 @@ describe("HomeScreen", () => {
   it("shows the next visit, the pass card and the latest jobs for a pass holder", () => {
     render(<HomeScreen jobs={[passJob, repairJob]} today={TODAY} pass={pass} days={days} />)
     expect(screen.getByRole("heading", { name: "Wednesday, April 28" })).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: "Change my day" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /^Change my day/ })).toBeInTheDocument()
     expect(screen.getByRole("link", { name: "See your pass" })).toHaveAttribute("href", "/account/pass")
     expect(screen.getAllByText("Season Pass 2027").length).toBeGreaterThan(0)
     expect(screen.getByRole("link", { name: "See all jobs" })).toHaveAttribute("href", "/account/jobs")
@@ -47,14 +47,14 @@ describe("HomeScreen", () => {
 
   it("gives the phone number, not Change my day, once the booked day is within two days", () => {
     render(<HomeScreen jobs={[{ ...passJob, visits: passJob.visits.map((v) => (v.id === "v1" ? { ...v, change: "call" as const } : v)) }]} today="2027-04-27" />)
-    expect(screen.queryByRole("button", { name: "Change my day" })).toBeNull()
+    expect(screen.queryByRole("button", { name: /^Change my day/ })).toBeNull()
     expect(screen.getByRole("link", { name: "(970) 692-7270" })).toBeInTheDocument()
   })
 
   it("moves the day through the action and says it was moved", async () => {
     const onChangeDay = vi.fn(async () => ({ ok: true as const }))
     render(<HomeScreen jobs={[passJob]} today={TODAY} days={days} onChangeDay={onChangeDay} />)
-    await userEvent.click(screen.getByRole("button", { name: "Change my day" }))
+    await userEvent.click(screen.getByRole("button", { name: /^Change my day/ }))
     await userEvent.click(screen.getByRole("button", { name: /Thursday/ }))
     expect(onChangeDay).toHaveBeenCalledWith("v1", "2027-04-29")
     expect(await screen.findByText("Moved to Thursday, April 29. We texted you the new date.")).toBeInTheDocument()
@@ -67,7 +67,7 @@ describe("HomeScreen", () => {
 
   it("says a failed move did not go through and offers the phone number", async () => {
     render(<HomeScreen jobs={[passJob]} today={TODAY} days={days} onChangeDay={async () => ({ ok: false as const, message: "We couldn't save that day. Try another, or call Ryan at (970) 692-7270." })} />)
-    await userEvent.click(screen.getByRole("button", { name: "Change my day" }))
+    await userEvent.click(screen.getByRole("button", { name: /^Change my day/ }))
     await userEvent.click(screen.getByRole("button", { name: /Thursday/ }))
     expect(await screen.findByRole("alert")).toHaveTextContent("We couldn't save that day. Try another, or call Ryan at (970) 692-7270.")
   })
@@ -96,16 +96,22 @@ describe("JobsScreen and JobScreen", () => {
     render(<JobScreen job={partPaidJob} today={TODAY} />)
     expect(screen.getByText("Extra head").closest("span")).toHaveClass("line-through")
     expect(screen.getByText("Total")).toBeInTheDocument()
-    expect(screen.getByRole("link", { name: "Receipt" })).toHaveAttribute("href", "/account/receipts/pay_2")
+    expect(screen.getByRole("link", { name: /^Receipt/ })).toHaveAttribute("href", "/account/receipts/pay_2")
     expect(screen.getByText("$65 unpaid")).toBeInTheDocument()
   })
 
   it("links a card payment to its card receipt and shows the open invoice with Pay now", () => {
     const { rerender } = render(<JobScreen job={repairJob} today={TODAY} />)
-    expect(screen.getByRole("link", { name: "Receipt" })).toHaveAttribute("href", "https://pay.stripe.com/receipts/example")
+    expect(screen.getByRole("link", { name: /^Receipt/ })).toHaveAttribute("href", "https://pay.stripe.com/receipts/example")
     rerender(<JobScreen job={invoicedJob} today={TODAY} />)
     expect(screen.getByRole("link", { name: "Pay now" })).toBeInTheDocument()
     expect(screen.getByText("No payments yet.")).toBeInTheDocument()
+  })
+
+  it("shows the sales tax the total carries beyond the lines", () => {
+    render(<JobScreen job={{ ...repairJob, total: 157 }} today={TODAY} />)
+    expect(screen.getByText("Sales tax")).toBeInTheDocument()
+    expect(screen.getByText("$12")).toBeInTheDocument()
   })
 
   it("shows the pass card under a Season Pass job's heading", () => {

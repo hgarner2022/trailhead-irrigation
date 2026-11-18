@@ -8,6 +8,8 @@ import type { ActionResult } from "../pass/_screens/CancelPassDialog"
 
 export interface ChangeMyDayProps {
   visitId: string
+  /** what the visit is, so a list of buttons reads "Change my day, Spring turn-on" to a screen reader */
+  name?: string
   /** the day the visit has now, when it has one: the control is folded behind Change my day and the old day is shown as gone once another is taken */
   currentDay?: string | null
   /** the days on offer, up to three */
@@ -16,7 +18,7 @@ export interface ChangeMyDayProps {
   onPick?: (visitId: string, day: string) => ActionResult | Promise<ActionResult>
 }
 
-export function ChangeMyDay({ visitId, currentDay, days, onPick }: ChangeMyDayProps) {
+export function ChangeMyDay({ visitId, name, currentDay, days, onPick }: ChangeMyDayProps) {
   if (days.length === 0) {
     return (
       <p data-slot="no-open-days" className="text-base text-muted-foreground">
@@ -28,5 +30,5 @@ export function ChangeMyDay({ visitId, currentDay, days, onPick }: ChangeMyDayPr
       </p>
     )
   }
-  return <PickDayButtons kind={visitId} days={days} onPick={onPick && ((id, day) => onPick(id, day))} {...(currentDay ? { foldedLabel: "Change my day", previousDay: currentDay } : {})} />
+  return <PickDayButtons kind={visitId} days={days} onPick={onPick && ((id, day) => onPick(id, day))} {...(currentDay ? { foldedLabel: "Change my day", previousDay: currentDay, ...(name ? { foldedAria: `Change my day, ${name}` } : {}) } : {})} />
 }

@@ -3,17 +3,11 @@ import { and, eq } from "drizzle-orm"
 import { z } from "zod"
 import * as s from "@/db/schema"
 import { ApiError, notFound } from "../../core/errors"
-import type { Ctx } from "../../core/context"
 import { defineHandler } from "../../core/handler"
 import { assertOwnsCustomer, Id, idInput } from "../shared"
 import { loadPortalJobs } from "./load"
+import { selfCustomerId } from "./self"
 import { PortalJob } from "./schemas"
-
-/** The signed-in customer's id, or null for anyone else (a key, an admin). */
-export function selfCustomerId(ctx: Ctx): string | null {
-  const p = ctx.principal
-  return p.kind === "person" && p.type === "customer" && p.customerId ? p.customerId : null
-}
 
 export const jobsList = defineHandler({
   name: "jobs.list",

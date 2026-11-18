@@ -13,7 +13,7 @@ const GONE = ["cancelled", "skipped"]
 
 /** Every visit that is still part of live work: not canceled or skipped, on a job that is not canceled. */
 export const liveVisits = (jobs: readonly PortalJobType[]): VisitOfJob[] =>
-  jobs.filter((j) => !j.canceled).flatMap((job) => job.visits.filter((v) => !GONE.includes(v.status)).map((visit) => ({ visit, job })))
+  jobs.filter((j) => !j.canceled && j.open).flatMap((job) => job.visits.filter((v) => !GONE.includes(v.status)).map((visit) => ({ visit, job })))
 
 const byDay = (a: VisitOfJob, b: VisitOfJob) => (a.visit.scheduledOn ?? "").localeCompare(b.visit.scheduledOn ?? "") || (a.visit.startTime ?? "").localeCompare(b.visit.startTime ?? "")
 
@@ -28,7 +28,7 @@ export function nextVisit(jobs: readonly PortalJobType[], today: string): VisitO
 /** The visits coming up: booked from today on, then the ones waiting for a day. Past: done, canceled, skipped, or a booked day that has gone by, newest first. */
 export function visitLists(jobs: readonly PortalJobType[], today: string): { comingUp: VisitOfJob[]; past: VisitOfJob[] } {
   const all = jobs.flatMap((job) => job.visits.map((visit) => ({ visit, job })))
-  const upcoming = (x: VisitOfJob) => !x.job.canceled && !GONE.includes(x.visit.status) && x.visit.status !== "completed" && (x.visit.status === "unscheduled" || (x.visit.scheduledOn ?? "") >= today)
+  const upcoming = (x: VisitOfJob) => !x.job.canceled && (x.job.open || x.visit.status === "scheduled") && !GONE.includes(x.visit.status) && x.visit.status !== "completed" && (x.visit.status === "unscheduled" || (x.visit.scheduledOn ?? "") >= today)
   const comingUp = all.filter(upcoming).sort((a, b) => (a.visit.scheduledOn ? 0 : 1) - (b.visit.scheduledOn ? 0 : 1) || byDay(a, b))
   const past = all.filter((x) => !upcoming(x)).sort((a, b) => byDay(b, a))
   return { comingUp, past }
@@ -65,4 +65,4 @@ export function visitsLineOf(job: PortalJobType): string | undefined {
 }
 
 /** The ids of the visits whose day the customer may pick or change online, so the page asks `visits.areaDays` for those and no others. */
-export const visitsToOffer = (list: readonly VisitOfJob[], limit = 8): string[] => list.filter((x) => x.visit.change === "yes").slice(0, limit).map((x) => x.visit.id)
+export const visitsToOffer = (list: readonly VisitOfJob[]): string[] => list.filter((x) => x.visit.change === "yes").map((x) => x.visit.id)

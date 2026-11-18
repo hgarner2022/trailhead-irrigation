@@ -44,7 +44,7 @@ export function HomeScreen({ jobs, today, pass, days = {}, onChangeDay }: HomeSc
           visit={next?.visit ?? null}
           change={next?.visit.change}
           canPick={offered.length > 0}
-          action={next && next.visit.change === "yes" ? <ChangeMyDay visitId={next.visit.id} currentDay={next.visit.scheduledOn} days={offered} onPick={onChangeDay} /> : undefined}
+          action={next && next.visit.change === "yes" ? <ChangeMyDay name={next.visit.name} visitId={next.visit.id} currentDay={next.visit.scheduledOn} days={offered} onPick={onChangeDay} /> : undefined}
         />
         {pass && (
           <Card data-slot="home-pass">

@@ -13,7 +13,8 @@ import { passStatus } from "@/lib/pass/facts"
 import { changeFor } from "@/lib/portal/change-day"
 import { firstNameOf } from "@/lib/portal/words"
 import type { Ctx } from "../../core/context"
-import { today } from "../shared"
+import { canSeeContact, today } from "../shared"
+import { selfCustomerId } from "./self"
 import type { PortalJobType } from "./schemas"
 
 const iso = (d: Date | null) => (d ? d.toISOString() : null)
@@ -29,6 +30,8 @@ export const payPath = (invoiceId: string) => `/pay/${invoiceId}?token=${signTok
 export async function loadPortalJobs(ctx: Ctx, customerId: string, only?: string): Promise<PortalJobType[]> {
   const { db, organizationId: org } = ctx
   const day = today(ctx)
+  // Check numbers, card receipt links and the signed pay links are for the customer they belong to and for people who may write, as `paymentOut` and `invoiceOut` read them.
+  const seeMoney = selfCustomerId(ctx) === customerId || canSeeContact(ctx)
   const jobs = await db
     .select()
     .from(s.job)
@@ -80,6 +83,7 @@ export async function loadPortalJobs(ctx: Ctx, customerId: string, only?: string
       passNumber: j.passNumber,
       soldOn: j.soldOn!,
       canceled: Boolean(j.cancelledAt),
+      open: jobOpen,
       stage: stage === "done" ? "done" : stage === "cancelled" ? "cancelled" : "open",
       address: property?.address ?? "",
       lines: lines.map((l) => ({ id: l.id, name: l.name, description: l.description, quantity: l.quantity, unitPrice: l.unitPrice, taxable: l.taxable, cancelledAt: iso(l.cancelledAt), visitId: l.visitId })),
@@ -102,7 +106,7 @@ export async function loadPortalJobs(ctx: Ctx, customerId: string, only?: string
       })),
       payments: payments
         .filter((p) => p.status === "succeeded")
-        .map((p) => ({ id: p.id, visitId: p.visitId, amount: p.amount, method: p.method, reference: p.reference, paidOn: p.paidOn, refundsPaymentId: p.refundsPaymentId, receiptUrl: p.refundsPaymentId ? null : p.receiptUrl })),
+        .map((p) => ({ id: p.id, visitId: p.visitId, amount: p.amount, method: p.method, reference: seeMoney ? p.reference : null, paidOn: p.paidOn, refundsPaymentId: p.refundsPaymentId, receiptUrl: p.refundsPaymentId || !seeMoney ? null : p.receiptUrl })),
       invoices: invoices.map((i) => ({
         id: i.id,
         number: i.number,
@@ -111,7 +115,7 @@ export async function loadPortalJobs(ctx: Ctx, customerId: string, only?: string
         dueOn: i.dueOn,
         paidOn: i.paidOn,
         status: invoiceStatus(i, day) as "sent" | "paid" | "overdue",
-        payUrl: !i.paidOn && owed > 0 ? payPath(i.id) : null,
+        payUrl: seeMoney && !i.paidOn && owed > 0 ? payPath(i.id) : null,
       })),
     }
   })

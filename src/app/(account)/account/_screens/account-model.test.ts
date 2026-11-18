@@ -30,6 +30,15 @@ describe("visitLists", () => {
   })
 })
 
+describe("a pass from a past season", () => {
+  const lapsed = { ...passJob, open: false }
+  it("leaves a leftover visit waiting for a day out of Coming up and out of Next visit", () => {
+    expect(nextVisit([lapsed], "2028-04-01")).toBeNull()
+    expect(visitLists([lapsed], "2028-04-01").comingUp).toEqual([])
+    expect(visitLists([lapsed], "2028-04-01").past.map((x) => x.visit.id).sort()).toEqual(["v1", "v2"])
+  })
+})
+
 describe("openInvoices", () => {
   it("lists the invoices to pay, oldest due day first, each with its pay link", () => {
     const list = openInvoices([invoicedJob, pastDueJob, repairJob])

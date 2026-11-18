@@ -39,6 +39,8 @@ function Title({ id, children }: { id: string; children: string }) {
 export function JobScreen({ job, today, pass, days = {}, onChangeDay }: JobScreenProps) {
   const money = jobMoneyWord(job)
   const [invoice] = openInvoices([job])
+  // The lines are shown before tax, so the Total can be more: the difference is the sales tax the job's total carries.
+  const tax = job.total - job.lines.filter((l) => !l.cancelledAt).reduce((sum, l) => sum + l.quantity * l.unitPrice, 0)
   return (
     <main data-slot="account-job" className="mx-auto max-w-3xl space-y-6 container-padding-x py-8">
       <Link href="/account/jobs" className="text-base font-semibold text-primary-deep underline underline-offset-2">
@@ -81,6 +83,12 @@ export function JobScreen({ job, today, pass, days = {}, onChangeDay }: JobScree
                 <span className={l.cancelledAt ? "text-base text-muted-foreground line-through" : "text-base text-foreground"}>{`$${l.quantity * l.unitPrice}`}</span>
               </li>
             ))}
+            {tax > 0 && (
+              <li className="flex items-baseline justify-between gap-4 py-3">
+                <span className="text-base text-foreground">Sales tax</span>
+                <span className="text-base text-foreground">{`$${tax}`}</span>
+              </li>
+            )}
             <li className="flex items-baseline justify-between gap-4 py-3">
               <span className="text-base font-semibold text-foreground">Total</span>
               <span className="text-base font-semibold text-foreground">{`$${job.total}`}</span>
@@ -104,7 +112,7 @@ export function JobScreen({ job, today, pass, days = {}, onChangeDay }: JobScree
                     visit={v}
                     canPick={offered.length > 0}
                     change={v.change}
-                    action={v.change === "yes" ? <ChangeMyDay visitId={v.id} currentDay={v.scheduledOn} days={offered} onPick={onChangeDay} /> : undefined}
+                    action={v.change === "yes" ? <ChangeMyDay name={v.name} visitId={v.id} currentDay={v.scheduledOn} days={offered} onPick={onChangeDay} /> : undefined}
                   />
                 )
               })}

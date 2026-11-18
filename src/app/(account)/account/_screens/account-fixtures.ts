@@ -11,7 +11,7 @@ const visit = (over: Partial<PortalVisitType> & Pick<PortalVisitType, "id" | "ki
 const line = (id: string, name: string, unitPrice: number, visitId: string | null = null, cancelledAt: string | null = null) => ({ id, name, description: null, quantity: 1, unitPrice, taxable: false, cancelledAt, visitId })
 
 export const passJob: PortalJobType = {
-  id: "job_pass", name: "Season Pass 2027", kind: "pass", passId: "job_pass", season: 2027, passNumber: "TH-2027-0001", soldOn: "2027-03-02", canceled: false, stage: "open", address: "412 Briggs Street",
+  id: "job_pass", name: "Season Pass 2027", kind: "pass", passId: "job_pass", season: 2027, passNumber: "TH-2027-0001", soldOn: "2027-03-02", canceled: false, open: true, stage: "open", address: "412 Briggs Street",
   lines: [line("l1", "Spring turn-on", 120, "v1"), line("l2", "Fall blowout", 120, "v2")],
   total: 240, money: { paid: 0, owed: 240, words: "$240 unpaid" },
   visits: [
@@ -22,7 +22,7 @@ export const passJob: PortalJobType = {
 }
 
 export const repairJob: PortalJobType = {
-  id: "job_repair", name: "Repair", kind: "repair", passId: null, season: null, passNumber: null, soldOn: "2026-11-03", canceled: false, stage: "done", address: "412 Briggs Street",
+  id: "job_repair", name: "Repair", kind: "repair", passId: null, season: null, passNumber: null, soldOn: "2026-11-03", canceled: false, open: true, stage: "done", address: "412 Briggs Street",
   lines: [line("l3", "Repair", 145, "v3")],
   total: 145, money: { paid: 145, owed: 0, words: "Paid" },
   visits: [visit({ id: "v3", jobId: "job_repair", kind: "repair", name: "Repair", status: "completed", scheduledOn: "2026-11-03", personFirstName: "Ryan" })],

@@ -37,8 +37,10 @@ export async function loadPassPage(ctx: Ctx, options: { pickDays?: boolean } = {
   if (options.pickDays !== false && current.status === "active") {
     for (const v of current.visits) {
       if ((v.kind === "turn-on" || v.kind === "blowout") && (v.status === "unscheduled" || v.status === "scheduled")) {
-        const { days } = await callApi(ctx, visitsAreaDays, { id: v.id })
-        if (days.length > 0) pickDays[v.kind] = days
+        // A booked day inside the two-day cut-off (or past) is refused for a customer: no days on offer, and the page says to call.
+        const days = await callApi(ctx, visitsAreaDays, { id: v.id }).then((r) => r.days, () => [])
+        // A booked visit keeps its entry even when empty, so its Change your day says to call; a visit with no day is offered days only when there are some.
+        if (days.length > 0 || v.status === "scheduled") pickDays[v.kind] = days
       }
     }
   }

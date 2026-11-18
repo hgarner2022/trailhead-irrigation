@@ -27,6 +27,7 @@ export function ReceiptLine({ amount, method, paidOn, reference, receiptUrl, pri
       </p>
       {!refund && (
         <a
+          aria-label={`Receipt, ${paymentLine({ amount, method, paidOn })}`}
           href={receiptUrl ?? printHref}
           {...(receiptUrl ? { target: "_blank", rel: "noreferrer" } : {})}
           className="inline-flex items-center gap-1.5 text-base font-semibold text-primary-deep underline underline-offset-2"

@@ -15,7 +15,7 @@ import { defineHandler } from "../../core/handler"
 import { cleanContact, cleanYard } from "../customers/handlers"
 import { customerFields, yardFields } from "../customers/schemas"
 import { Id } from "../shared"
-import { selfCustomerId } from "./jobs"
+import { selfCustomerId } from "./self"
 import { PortalCustomer } from "./schemas"
 
 /** The signed-in customer's id; every call below is for them and for no one else, so a key or an admin is refused. */

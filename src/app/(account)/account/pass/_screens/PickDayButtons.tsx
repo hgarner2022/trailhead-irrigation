@@ -19,11 +19,13 @@ export interface PickDayButtonsProps {
   foldedLabel?: string
   /** the day the visit has now: once another is picked it is shown as gone, and the answer says "Moved to" */
   previousDay?: string
+  /** names the folded button for a screen reader when a list has one per visit: "Change my day, Spring turn-on" */
+  foldedAria?: string
 }
 
 const weekdayOf = (iso: string) => ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][new Date(`${iso}T12:00:00Z`).getUTCDay()]
 
-export function PickDayButtons({ kind, days, onPick, foldedLabel, previousDay }: PickDayButtonsProps) {
+export function PickDayButtons({ kind, days, onPick, foldedLabel, previousDay, foldedAria }: PickDayButtonsProps) {
   const [picked, setPicked] = useState<string | null>(null)
   const [open, setOpen] = useState(!foldedLabel)
   const [error, setError] = useState<string | null>(null)
@@ -48,9 +50,20 @@ export function PickDayButtons({ kind, days, onPick, foldedLabel, previousDay }:
     }
     setPicked(day)
   }
+  if (days.length === 0) {
+    return (
+      <p data-slot="no-days" className="text-base text-muted-foreground">
+        {"We can't offer a new day online right now. Call or text Ryan at "}
+        <a href="tel:9706927270" className="font-semibold text-primary-deep underline underline-offset-2">
+          (970) 692-7270
+        </a>
+        .
+      </p>
+    )
+  }
   if (!open) {
     return (
-      <Button variant="outline" onClick={() => setOpen(true)}>
+      <Button variant="outline" aria-label={foldedAria} onClick={() => setOpen(true)}>
         {foldedLabel}
       </Button>
     )

@@ -55,6 +55,7 @@ export const PortalJob = z.object({
   passNumber: z.string().nullable(),
   soldOn: Day,
   canceled: z.boolean(),
+  open: z.boolean().describe("The job still has work ahead that the customer can act on: sold, not canceled and, for a Season Pass, in its season. A past season's leftover visit is not shown as coming up."),
   stage: z.enum(["open", "done", "cancelled"]),
   address: z.string().describe("The property's street line."),
   lines: z.array(LineOut).describe("What was sold, oldest first; a canceled line is struck through on screen."),

@@ -77,6 +77,21 @@ describe("jobs.list and jobs.get", () => {
     expect(job.invoices).toEqual([])
   })
 
+  it("gives a read-only key no check number, card receipt link or pay link, and refuses it the receipt", async () => {
+    const v = await doneRepair(dana, 60)
+    const pay = await callApi(office(), paymentsRecord, { jobId: v.jobId, visitId: v.id, amount: 20, method: "check", reference: "9911" })
+    const open = await doneRepair(dana, 70)
+    await callApi(office(), invoicesSend, { jobId: open.jobId })
+    const asKey = (await callApi(ctxFor(db, readKey), jobsList, { customerId: dana })).data
+    expect(JSON.stringify(asKey)).not.toContain("9911")
+    expect(JSON.stringify(asKey)).not.toContain("/pay/")
+    const asCustomer = JSON.stringify((await callApi(me(dana), jobsList, {})).data)
+    expect(asCustomer).toContain("9911")
+    expect(asCustomer).toContain("/pay/")
+    await expect(callApi(ctxFor(db, readKey), paymentsReceipt, { id: pay.id })).rejects.toMatchObject({ code: "forbidden" })
+    expect(await callApi(office(), paymentsReceipt, { id: pay.id })).toMatchObject({ reference: "9911" })
+  })
+
   it("lists a pass holder's pass as a job, with its visits and its pass id", async () => {
     const { data } = await callApi(me(andrea), jobsList, {})
     const pass = data.find((j) => j.kind === "pass")!

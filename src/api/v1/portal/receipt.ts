@@ -4,9 +4,10 @@ import * as s from "@/db/schema"
 import { linesOfVisit } from "@/lib/jobs/lines"
 import { fullName } from "@/lib/admin/format"
 import { PHONE_DISPLAY } from "@/lib/nav"
-import { notFound } from "../../core/errors"
 import { defineHandler } from "../../core/handler"
-import { assertOwnsCustomer, idInput } from "../shared"
+import { ApiError, notFound } from "../../core/errors"
+import { assertOwnsCustomer, canSeeContact, idInput } from "../shared"
+import { selfCustomerId } from "./self"
 import { ReceiptOut } from "./schemas"
 
 export const paymentsReceipt = defineHandler({
@@ -22,6 +23,8 @@ export const paymentsReceipt = defineHandler({
     const [pay] = await ctx.db.select().from(s.charge).where(and(eq(s.charge.id, input.id), eq(s.charge.organizationId, ctx.organizationId)))
     if (!pay || pay.status !== "succeeded" || pay.amount <= 0 || pay.refundsPaymentId || !pay.customerId) throw notFound("Receipt")
     assertOwnsCustomer(ctx, pay.customerId)
+    // A receipt carries check numbers and card receipt links: the customer it belongs to and callers who may write, never a read-only key or a tech.
+    if (!selfCustomerId(ctx) && !canSeeContact(ctx)) throw new ApiError("forbidden", "This receipt is for its customer and for people who may write")
     const [org] = await ctx.db.select({ name: s.organization.name }).from(s.organization).where(eq(s.organization.id, ctx.organizationId))
     const [customer] = await ctx.db.select({ firstName: s.customer.firstName, lastName: s.customer.lastName }).from(s.customer).where(eq(s.customer.id, pay.customerId))
     const [job] = pay.jobId ? await ctx.db.select().from(s.job).where(eq(s.job.id, pay.jobId)) : []
