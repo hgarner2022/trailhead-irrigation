@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
-import { CardTitleHeading } from "@/components/blocks/CardTitleHeading"
+import { SectionHeading } from "@/components/blocks/SectionHeading"
 import { MAX_DUE_DAYS, setBilling } from "../settings-billing"
 import type { SettingsState } from "../settings-model"
 import { CommitInput, type Apply } from "./fields"
@@ -16,7 +16,7 @@ export function Billing({ state, apply }: { state: SettingsState; apply: Apply }
   return (
     <Card className="max-w-2xl">
       <CardHeader>
-        <CardTitleHeading>Invoices</CardTitleHeading>
+        <SectionHeading level={2}>Invoices</SectionHeading>
         <p className="text-sm text-muted-foreground">What an invoice says when you press Send an invoice on a job that is done.</p>
       </CardHeader>
       <CardContent className="space-y-6">

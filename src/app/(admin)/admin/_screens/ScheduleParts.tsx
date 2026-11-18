@@ -1,7 +1,7 @@
 import { ChevronLeft, ChevronRight, TriangleAlert } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
-import { CardTitleHeading } from "@/components/blocks/CardTitleHeading"
+import { SectionHeading } from "@/components/blocks/SectionHeading"
 import { DataGrid } from "@/components/blocks/DataGrid"
 import type { Visit } from "@/lib/admin/types"
 import { KIND_WORDS, TIME_ZONE, shortDate, writtenDate } from "@/lib/admin/format"
@@ -58,7 +58,7 @@ export function Exceptions({ visits }: { visits: Visit[] }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitleHeading>Moved</CardTitleHeading>
+        <SectionHeading level={2}>Moved</SectionHeading>
       </CardHeader>
       <CardContent>
         <ul data-slot="schedule-exceptions" className="divide-y divide-border text-sm">

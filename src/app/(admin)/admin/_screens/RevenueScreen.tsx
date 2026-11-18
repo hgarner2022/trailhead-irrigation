@@ -1,5 +1,5 @@
 import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card"
-import { CardTitleHeading } from "@/components/blocks/CardTitleHeading"
+import { SectionHeading } from "@/components/blocks/SectionHeading"
 import { MonthBars } from "@/components/blocks/Chart"
 import { PageHeader } from "@/components/blocks/PageHeader"
 import { StatTile } from "@/components/blocks/StatTile"
@@ -68,7 +68,7 @@ export function RevenueScreen({ data, today, embedded = false }: RevenueScreenPr
 
       <Card>
         <CardHeader>
-          <CardTitleHeading>Revenue by month</CardTitleHeading>
+          <SectionHeading level={2}>Revenue by month</SectionHeading>
           <CardDescription>
             {!series
               ? "Paid invoices by issue month."
@@ -84,7 +84,7 @@ export function RevenueScreen({ data, today, embedded = false }: RevenueScreenPr
 
       <Card>
         <CardHeader>
-          <CardTitleHeading>Upcoming charges</CardTitleHeading>
+          <SectionHeading level={2}>Upcoming charges</SectionHeading>
           <CardDescription>The next pass visits that are booked and not yet charged.</CardDescription>
         </CardHeader>
         <CardContent>
@@ -111,7 +111,7 @@ export function RevenueScreen({ data, today, embedded = false }: RevenueScreenPr
       {hasRenewals(data.passes, season) && (
         <Card>
           <CardHeader>
-            <CardTitleHeading>Renewals</CardTitleHeading>
+            <SectionHeading level={2}>Renewals</SectionHeading>
             <CardDescription>{`Where last season's passes stand for ${season}. Send the offer to the customers you haven't asked yet.`}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-5">

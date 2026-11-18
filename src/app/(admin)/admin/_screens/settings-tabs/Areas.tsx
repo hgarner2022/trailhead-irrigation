@@ -3,7 +3,7 @@
 import { ChevronDown, ChevronUp, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
-import { CardTitleHeading } from "@/components/blocks/CardTitleHeading"
+import { SectionHeading } from "@/components/blocks/SectionHeading"
 import type { Town } from "@/lib/admin/types"
 import { TOWNS, addArea, moveTownInOrder, setAreaName, toggleAreaTown, type SettingsState } from "../settings-model"
 import { CommitInput, type Apply } from "./fields"
@@ -19,7 +19,7 @@ function OrderList({ season, order, apply }: { season: "fall" | "spring"; order:
   return (
     <Card>
       <CardHeader>
-        <CardTitleHeading>{name}</CardTitleHeading>
+        <SectionHeading level={2}>{name}</SectionHeading>
         <p className="text-sm text-muted-foreground">
           {season === "fall" ? "Fall runs north and high first, where the first hard freeze lands." : "Spring runs the other way, south and low first."}
         </p>

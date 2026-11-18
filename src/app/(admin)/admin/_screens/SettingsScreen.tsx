@@ -4,7 +4,7 @@ import { useState, useTransition } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { CardTitleHeading } from "@/components/blocks/CardTitleHeading"
+import { SectionHeading } from "@/components/blocks/SectionHeading"
 import { ChangeLog } from "@/components/blocks/ChangeLog"
 import { PageHeader } from "@/components/blocks/PageHeader"
 import type { AdminData, ServiceItem } from "@/lib/admin/types"
@@ -181,7 +181,7 @@ export function SettingsScreen({ data, today, defaultTab = "people", who = "Hann
       </Tabs>
       <Card>
         <CardHeader>
-          <CardTitleHeading>Change log</CardTitleHeading>
+          <SectionHeading level={2}>Change log</SectionHeading>
         </CardHeader>
         <CardContent>
           <ChangeLog changes={state.changes} />

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { CardTitleHeading } from "@/components/blocks/CardTitleHeading"
+import { SectionHeading } from "@/components/blocks/SectionHeading"
 import { PageHeader } from "@/components/blocks/PageHeader"
 import { ToScheduleTray } from "@/components/blocks/ToScheduleTray"
 import { WeekGrid } from "@/components/blocks/WeekGrid"
@@ -213,7 +213,7 @@ function ScheduleBody({ data, today, defaultTab = "week", defaultDay, defaultWee
               />
               <Card className="min-w-0">
                 <CardHeader>
-                  <CardTitleHeading>{`Unscheduled${tray.length ? ` (${tray.length})` : ""}`}</CardTitleHeading>
+                  <SectionHeading level={2}>{`Unscheduled${tray.length ? ` (${tray.length})` : ""}`}</SectionHeading>
                 </CardHeader>
                 <CardContent>
                   <ToScheduleTray items={tray} onPlace={place} readOnly={readOnly} problems={problems} />
@@ -227,7 +227,7 @@ function ScheduleBody({ data, today, defaultTab = "week", defaultDay, defaultWee
             <div className="space-y-6">
               <Card className="min-w-0">
                 <CardHeader>
-                  <CardTitleHeading>Stops in order</CardTitleHeading>
+                  <SectionHeading level={2}>Stops in order</SectionHeading>
                 </CardHeader>
                 <CardContent>
                   <StopGrid rows={stopRows} onOpen={select} />
