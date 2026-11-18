@@ -7,13 +7,14 @@ import { Input } from "@/components/ui/input"
 import { SERVICE_LIST } from "@/lib/services"
 import { OFFICE_KINDS } from "@/lib/admin/visit-defaults"
 import type { AdminData, ServiceItem } from "@/lib/admin/types"
+import { ConfirmCancel } from "./ConfirmCancel"
 import { FIELD, LABEL } from "./CustomerPicker"
 import type { JobActions } from "./job-actions-types"
 import { servicePriceLine } from "./NewJobService"
 import { FORM_STATUS, useRunner } from "./use-runner"
 import { useOpenVisit } from "./VisitPanelHost"
 
-// The two small forms the job panel's footer opens: Record the payment (money handed over by check, Venmo or cash, for what is
+// The small dialogs the job panel's footer opens: Cancel job (the one confirm dialog, `ConfirmCancel`, the pass's Cancel pass uses it too), Record the payment (money handed over by check, Venmo or cash, for what is
 // owed or less) and New visit (another visit on this job, from the active catalogue). Each is a dialog over the panel that says
 // the API's refusal in place and closes when it goes through.
 
@@ -157,5 +158,22 @@ export function NewVisitDialog({ jobId, data, today, open, onOpenChange, actions
         </div>
       </DialogContent>
     </Dialog>
+  )
+}
+
+/** Cancel job: what happens to the schedule and the money, or why it cannot (the job holds a payment, refund it first). */
+export function CancelJobDialog({ jobId, held, open, onOpenChange, onCancel }: { jobId: string; held: number; open: boolean; onOpenChange: (open: boolean) => void; onCancel?: (jobId: string) => Promise<{ ok: true } | { ok: false; message: string }> }) {
+  return (
+    <ConfirmCancel
+      title="Cancel this job?"
+      message="Its lines are canceled and its visits not done come off the schedule. The customer is not told. Nothing is deleted."
+      blocked={held > 0 ? "This job has a payment. Refund it first." : undefined}
+      keepLabel="Keep job"
+      cancelLabel="Cancel job"
+      open={open}
+      onOpenChange={onOpenChange}
+      onConfirm={onCancel ? () => onCancel(jobId) : undefined}
+      log={`cancel job ${jobId}`}
+    />
   )
 }

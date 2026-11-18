@@ -2,6 +2,7 @@
 
 import "server-only"
 import { callApi } from "@/api/core/call"
+import { jobsCancel } from "@/api/v1/jobs/cancel"
 import { linesAdd, linesCancel, linesUpdate } from "@/api/v1/lines/handlers"
 import { paymentsRecord } from "@/api/v1/payments/handlers"
 import { visitsCreate } from "@/api/v1/visits/office"
@@ -41,4 +42,11 @@ export const addVisit = async (jobId: string, input: { serviceKey: string; sched
   act(async (ctx) => {
     const made = await callApi(ctx, visitsCreate, { jobId, ...input } as never)
     return { id: made.id }
+  })
+
+/** Cancel a one-off job: the job, its lines and every visit not done. Refused, in the API's words, when the job holds a payment. */
+export const cancelJob = async (jobId: string): Promise<ActionOutcome> =>
+  act(async (ctx) => {
+    await callApi(ctx, jobsCancel, { id: jobId })
+    return undefined
   })

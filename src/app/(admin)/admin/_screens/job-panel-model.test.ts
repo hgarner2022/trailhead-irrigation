@@ -31,6 +31,17 @@ describe("jobFacts", () => {
     expect(facts(passJobId)).toMatchObject({ canAddVisit: false })
   })
 
+  it("lets a manager cancel a one-off job that is still being worked, and says what money it holds", () => {
+    // open with a deposit paid, open with nothing paid, a quote still to give
+    expect(facts(cancelledLineJobId)).toMatchObject({ canCancel: true, held: 500 })
+    expect(facts("job-a")).toMatchObject({ canCancel: true, held: 0 })
+    expect(facts("job-b").canCancel).toBe(true)
+    // a Season Pass has Cancel pass; a Done job is Done
+    expect(facts(passJobId).canCancel).toBe(false)
+    expect(facts(ownedJobId).canCancel).toBe(false)
+    expect(facts(paidJobId).canCancel).toBe(false)
+  })
+
   it("offers Send an invoice for a done job that is unpaid and has none out, and shows the invoice that is out", () => {
     expect(facts(ownedJobId).bill.canSend).toBe(true)
     expect(facts(billedJobId).bill).toMatchObject({ canSend: false, invoice: { number: "INV-2026-0001" } })

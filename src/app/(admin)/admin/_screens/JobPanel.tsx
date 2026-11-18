@@ -13,7 +13,7 @@ import { visitJob } from "@/lib/admin/jobs"
 import type { AdminData, Visit } from "@/lib/admin/types"
 import type { JobActions } from "./job-actions-types"
 import { jobFacts, type JobFacts } from "./job-panel-model"
-import { NewVisitDialog, RecordPaymentDialog } from "./JobDialogs"
+import { CancelJobDialog, NewVisitDialog, RecordPaymentDialog } from "./JobDialogs"
 import { JobLinesSection } from "./JobLinesSection"
 import { JobMoneySection } from "./JobMoneySection"
 import { MoneyPill, StagePill } from "./JobPills"
@@ -96,6 +96,7 @@ export function JobPanel({ data, today, jobId, open, onOpenChange, readOnly = fa
   const [recording, setRecording] = useState(false)
   const [adding, setAdding] = useState(false)
   const [cancelling, setCancelling] = useState(false)
+  const [cancellingJob, setCancellingJob] = useState(false)
   if (!facts) return null
   const { job, row, pass, bill } = facts
   const say = (call: () => Promise<{ ok: boolean }>, said?: string) => run(call as never, undefined, said ?? "")
@@ -141,6 +142,11 @@ export function JobPanel({ data, today, jobId, open, onOpenChange, readOnly = fa
           {passOpen && pass && (
             <Button type="button" variant="ghost" className="ml-auto min-h-11 text-destructive hover:text-destructive" onClick={() => setCancelling(true)}>
               Cancel pass
+            </Button>
+          )}
+          {canAct && facts.canCancel && (
+            <Button type="button" variant="ghost" className="ml-auto min-h-11 text-destructive hover:text-destructive" onClick={() => setCancellingJob(true)}>
+              Cancel job
             </Button>
           )}
         </>
@@ -194,6 +200,7 @@ export function JobPanel({ data, today, jobId, open, onOpenChange, readOnly = fa
         <PanelNotes about="job" aboutId={job.id} timeline={job.timeline} addNote={actions?.addNote} />
       </div>
       {canAct && facts.canRecord && <RecordPaymentDialog jobId={job.id} owed={row.owed} open={recording} onOpenChange={setRecording} actions={actions} />}
+      {canAct && facts.canCancel && <CancelJobDialog jobId={job.id} held={facts.held} open={cancellingJob} onOpenChange={setCancellingJob} onCancel={actions?.cancelJob} />}
       {canAct && facts.canAddVisit && <NewVisitDialog jobId={job.id} data={data} today={today} open={adding} onOpenChange={setAdding} actions={actions} />}
     </SidePanel>
   )

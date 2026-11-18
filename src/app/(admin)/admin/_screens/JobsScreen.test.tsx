@@ -23,6 +23,7 @@ const jobActions = (over: Partial<JobActions> = {}): JobActions => ({
   cancelLine: vi.fn().mockResolvedValue({ ok: true, data: { jobTotal: 900 } }),
   recordPayment: vi.fn().mockResolvedValue(ok),
   addVisit: vi.fn().mockResolvedValue({ ok: true, data: { id: "new" } }),
+  cancelJob: vi.fn().mockResolvedValue(ok),
   addNote: vi.fn().mockResolvedValue({ ok: true, data: { id: "n-new", at: "2026-11-12T19:57:00Z", actor: "Ryan", what: "Back gate sticks", kind: "event", note: "Back gate sticks" } }),
   pass: {
     resendConfirmation: vi.fn().mockResolvedValue(ok), sendCardUpdateLink: vi.fn().mockResolvedValue(ok), cancel: vi.fn().mockResolvedValue(ok),
@@ -234,5 +235,47 @@ describe("the job panel", () => {
     await userEvent.selectOptions(dialog.getByLabelText("What is the visit for?"), "repair")
     await userEvent.click(dialog.getByRole("button", { name: "Add visit" }))
     expect(actions.addVisit).toHaveBeenCalledWith("job-a", { serviceKey: "repair" })
+  })
+
+  it("cancels a one-off job through a confirm dialog that says what happens, and the dialog closes", async () => {
+    const actions = jobActions()
+    view({ defaultJobId: "job-a", actions })
+    await userEvent.click(panel().getByRole("button", { name: "Cancel job" }))
+    const dialog = within(screen.getAllByRole("dialog").at(-1)!)
+    expect(dialog.getByRole("heading", { name: "Cancel this job?" })).toBeInTheDocument()
+    expect(dialog.getByText(/come off the schedule/)).toBeInTheDocument()
+    await userEvent.click(dialog.getByRole("button", { name: "Keep job" }))
+    expect(actions.cancelJob).not.toHaveBeenCalled()
+    await userEvent.click(panel().getByRole("button", { name: "Cancel job" }))
+    await userEvent.click(within(screen.getAllByRole("dialog").at(-1)!).getByRole("button", { name: "Cancel job" }))
+    await waitFor(() => expect(actions.cancelJob).toHaveBeenCalledWith("job-a"))
+  })
+
+  it("says why in the dialog when the job holds a payment, and offers no way to cancel it", async () => {
+    const actions = jobActions()
+    view({ defaultJobId: "job-install", actions })
+    await userEvent.click(panel().getByRole("button", { name: "Cancel job" }))
+    const dialog = within(screen.getAllByRole("dialog").at(-1)!)
+    expect(dialog.getByText("This job has a payment. Refund it first.")).toBeInTheDocument()
+    expect(dialog.queryByRole("button", { name: "Cancel job" })).toBeNull()
+    expect(actions.cancelJob).not.toHaveBeenCalled()
+  })
+
+  it("shows the API's own refusal inside the dialog", async () => {
+    const actions = jobActions({ cancelJob: vi.fn().mockResolvedValue({ ok: false, message: "This job has a payment. Refund it first." }) })
+    view({ defaultJobId: "job-a", actions })
+    await userEvent.click(panel().getByRole("button", { name: "Cancel job" }))
+    await userEvent.click(within(screen.getAllByRole("dialog").at(-1)!).getByRole("button", { name: "Cancel job" }))
+    expect(await within(screen.getAllByRole("dialog").at(-1)!).findByRole("alert")).toHaveTextContent("This job has a payment. Refund it first.")
+  })
+
+  it("has no Cancel job on a Season Pass (it has Cancel pass), a done job, or for a tech", () => {
+    for (const id of ["job_p-office", "job-d", "job-e"]) {
+      const { unmount } = view({ defaultJobId: id, actions: jobActions() })
+      expect(panel().queryByRole("button", { name: "Cancel job" })).toBeNull()
+      unmount()
+    }
+    view({ defaultJobId: "job-a", readOnly: true, actions: jobActions() })
+    expect(panel().queryByRole("button", { name: "Cancel job" })).toBeNull()
   })
 })
