@@ -66,6 +66,23 @@ describe("settings", () => {
     await expect(callApi(ctxFor(fresh, adminKey), settingsUpdate, { section: "billing", value: { dueDays: 14, collectsSalesTax: true, salesTaxPercent: 90 } })).rejects.toMatchObject({ code: "invalid" })
     await fresh.close()
   })
+  it("lists the ten messages the office edits before anyone saves one, then logs a changed message by name and refuses words that break a rule", async () => {
+    const fresh = await apiDb()
+    const before = (await callApi(ctxFor(fresh, readKey), settingsGet, {})).messages
+    expect(before).toHaveLength(10)
+    expect(before.map((m) => `${m.key}:${m.channel}`)).toContain("day-before:sms")
+    const edited = before.map((m) => (m.key === "day-before" && m.channel === "sms" ? { ...m, body: "{who} is coming tomorrow, {day}." } : m))
+    const out = await callApi(ctxFor(fresh, adminKey), settingsUpdate, { section: "messages", value: edited })
+    expect(out.messages.find((m) => m.key === "day-before" && m.channel === "sms")!.body).toBe("{who} is coming tomorrow, {day}.")
+    const log = (await callApi(ctxFor(fresh, readKey), settingsChangesList, {})).data
+    expect(log.map((c) => c.field)).toEqual(["messages.day-before.sms.body"])
+    for (const body of ["Come {when}", "See you tomorrow!", "Come \u2014 tomorrow"]) {
+      const error = await callApi(ctxFor(fresh, adminKey), settingsUpdate, { section: "messages", value: before.map((m) => (m.key === "date-set" && m.channel === "email" ? { ...m, body } : m)) }).catch((e: unknown) => e)
+      expect(error).toMatchObject({ code: "invalid" })
+    }
+    await expect(callApi(ctxFor(fresh, adminKey), settingsUpdate, { section: "messages", value: [{ key: "receipt", channel: "email", body: "x", enabled: true }] })).rejects.toMatchObject({ code: "invalid" })
+    await fresh.close()
+  })
   it("needs the admin scope", async () => {
     await expect(callApi(ctxFor(db, writeKey), settingsUpdate, { section: "bufferPercentLate", value: 5 })).rejects.toMatchObject({ code: "forbidden" })
   })
