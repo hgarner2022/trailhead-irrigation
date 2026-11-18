@@ -178,7 +178,7 @@ export function DoneForm({ visit, pass, today, actions }: { visit: Visit; pass?:
   )
 }
 
-/** Not done: a reason, then it goes back to No day yet; the reason is kept. */
+/** Not done: a reason, then it goes back to Unscheduled; the reason is kept. */
 export function NotDoneForm({ visit, actions }: { visit: Visit; actions?: VisitActions }) {
   const [reason, setReason] = useState<NotDoneReason>("could-not-get-in")
   const [note, setNote] = useState("")

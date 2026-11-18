@@ -68,7 +68,7 @@ describe("HomeScreen", () => {
     const links = money.getAllByRole("link")
     expect(links).toHaveLength(4)
     expect(links.map((l) => l.getAttribute("href"))).toEqual(["/admin/reports", "/admin/visits?money=owed", "/admin/visits?money=failed", "/admin/reports"])
-    expect(links[0]).toHaveAccessibleName(/^Charged this month: \$/)
+    expect(links[0]).toHaveAccessibleName(/^Paid this month: \$/)
     expect(links[3]).toHaveAccessibleName(/^Season total committed: \$/)
   })
 
@@ -78,7 +78,7 @@ describe("HomeScreen", () => {
     const onAction = vi.fn().mockResolvedValue({ ok: true, message: "Marked done." })
     render(
       <UndoToastProvider>
-        <HomeScreen data={{ ...data, attention: [item, { ...item, kind: "unplaced", key: "v2", visitId: "v2", message: "Sam's install has no day yet" }] }} today={TODAY} onAttentionAction={onAction} onDismiss={onDismiss} />
+        <HomeScreen data={{ ...data, attention: [item, { ...item, kind: "unplaced", key: "v2", visitId: "v2", message: "Sam's install is unscheduled" }] }} today={TODAY} onAttentionAction={onAction} onDismiss={onDismiss} />
       </UndoToastProvider>,
     )
     expect(screen.getAllByRole("button", { name: /^Dismiss:/ })).toHaveLength(2)
@@ -91,7 +91,7 @@ describe("HomeScreen", () => {
   })
 
   it("hands a tech the lists with no buttons", () => {
-    render(<HomeScreen data={{ ...data, attention: [{ kind: "unplaced", key: "v2", visitId: "v2", message: "Sam's install has no day yet", since: "2026-11-09T15:00:00Z" }] }} today={TODAY} readOnly />)
+    render(<HomeScreen data={{ ...data, attention: [{ kind: "unplaced", key: "v2", visitId: "v2", message: "Sam's install is unscheduled", since: "2026-11-09T15:00:00Z" }] }} today={TODAY} readOnly />)
     expect(screen.queryByRole("button", { name: /Dismiss/ })).toBeNull()
   })
 })

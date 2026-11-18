@@ -6,11 +6,11 @@
  */
 import { TIME_ZONE } from "@/lib/admin/format"
 import { dayOf } from "@/lib/admin/calendar"
-import { MONEY_WORDS, WORK_WORDS, type MoneyState, type WorkState, visitJob } from "@/lib/admin/jobs"
+import { MONEY_WORDS, REASON_WORDS, WORK_WORDS, type MoneyState, type WorkState, visitJob } from "@/lib/admin/jobs"
 import { KIND_LABEL, OFFICE_KINDS } from "@/lib/admin/visit-defaults"
 import type { AdminData, Visit } from "@/lib/admin/types"
 import { personNameOf } from "@/lib/admin/people"
-import { dayOfVisit, kindLabel, priceWords, timeWords, visitPrice } from "./visit-panel-model"
+import { dayOfVisit, kindLabel, timeWords, visitPrice } from "./visit-panel-model"
 
 export interface VisitRow {
   id: string
@@ -28,18 +28,41 @@ export interface VisitRow {
   /** their id, or "none" */
   personId: string
   work: WorkState
+  /** the pill's word: Unscheduled, Scheduled, Done, Not done, Cancelled */
   workLabel: string
+  /** after the pill on a Not done visit: "could not get in" */
+  reason?: string
   money: MoneyState
   moneyLabel: string
+  /** the one Money cell: "$95" until Done, then "$95 · Paid, Venmo", "$95 owed", "$95 · Bill sent", "$95 · Failed"; "Cancelled"; "Quote later" */
+  moneyText: string
   dayPassed: boolean
+  /** whole dollars; what Money sorts by */
   price: number
-  priceLabel: string
-  /** "Pass" or "One-off" */
+  /** "Season Pass" or "One-off" */
   jobType: "pass" | "one-off"
+  /** "TH-2027-0006" for a pass visit, else the job's kind word: "Repair", "Installation" */
+  jobLabel: string
+  customerId: string
   passNumber?: string
   passId?: string
   /** the job the visit belongs to, so Home counts jobs and not visits */
   jobId?: string
+}
+
+/** The job kind as a word for the Job column when the visit is not on a pass. */
+const JOB_KIND_WORDS: Record<string, string> = { repair: "Repair", install: "Installation", other: "Job" }
+
+/**
+ * The Money cell, one string for the visit: its price until it is Done, then what happened to the money. A cancelled
+ * visit with nothing held reads "Cancelled"; one nobody has priced reads "Quote later".
+ */
+export function moneyText(row: Pick<VisitRow, "work" | "money" | "moneyLabel" | "price">): string {
+  if (row.work === "cancelled" && row.money === "not-yet") return "Cancelled"
+  const amount = row.price > 0 ? `$${row.price.toLocaleString("en-US")}` : "Quote later"
+  if (row.money === "paid" || row.money === "bill-sent" || row.money === "failed") return `${amount} · ${row.moneyLabel}`
+  if (row.money === "owed") return row.price > 0 ? `${amount} owed` : "Owed"
+  return amount
 }
 
 const digits = (s: string | undefined) => (s ?? "").replace(/\D/g, "")
@@ -56,10 +79,12 @@ export function visitRows(data: AdminData, today: string): VisitRow[] {
     const client = clients.get(v.clientId)
     const pass = v.passId ? passes.get(v.passId) : undefined
     const states = visitJob(v, day, TIME_ZONE, pass?.cardFailedAt)
+    const job = v.jobId ? data.jobs?.find((j) => j.id === v.jobId) : undefined
+    const base = { work: states.work, money: states.money, moneyLabel: states.moneyLabel, price: visitPrice(data, v) }
     return {
       id: v.id,
       name: v.clientName,
-      search: [v.clientName, client?.address ?? "", client?.phone ?? "", digits(client?.phone)].join(" "),
+      search: [v.clientName, client?.address ?? "", client?.phone ?? "", digits(client?.phone), pass?.number ?? ""].join(" "),
       town: v.town,
       kind: v.kind,
       kindLabel: kindLabel(v),
@@ -67,19 +92,19 @@ export function visitRows(data: AdminData, today: string): VisitRow[] {
       time: timeWords(v),
       who: personNameOf(v, people),
       personId: v.personId ?? "none",
-      work: states.work,
-      workLabel: states.workLabel,
-      money: states.money,
-      moneyLabel: states.moneyLabel,
+      ...base,
+      workLabel: WORK_WORDS[states.work],
+      ...(states.reason ? { reason: REASON_WORDS[states.reason] ?? states.reason } : {}),
+      moneyText: moneyText(base),
       dayPassed: states.dayPassed,
-      price: visitPrice(data, v),
-      priceLabel: priceWords({ price: visitPrice(data, v) }),
       jobType: v.passId ? "pass" : "one-off",
+      jobLabel: pass?.number ?? JOB_KIND_WORDS[job?.kind ?? "other"] ?? "Job",
+      customerId: v.clientId,
       ...(pass ? { passNumber: pass.number, passId: pass.id } : {}),
       ...(v.jobId ? { jobId: v.jobId } : {}),
     }
   })
-  // No day yet first (they are the ones that want a person), then the days in order.
+  // Unscheduled first (they are the ones that want a person), then the days in order.
   return rows.sort((a, b) => (a.day ?? "0").localeCompare(b.day ?? "0") || a.name.localeCompare(b.name))
 }
 
@@ -92,7 +117,7 @@ export function filterFrom(column: string, param: string | undefined, options: {
 }
 export const KIND_OPTIONS = OFFICE_KINDS.map((value) => ({ value, label: KIND_LABEL[value] }))
 export const JOB_TYPE_OPTIONS = [
-  { value: "pass", label: "On a pass" },
+  { value: "pass", label: "Season Pass" },
   { value: "one-off", label: "One-off" },
 ]
 
@@ -110,7 +135,7 @@ export function visitsContext(rows: VisitRow[]): string {
   const needDay = rows.filter((r) => r.work === "needs-a-day" || r.work === "not-done").length
   const owed = jobCount(owedRows(rows))
   const parts = [`${rows.length} ${rows.length === 1 ? "visit" : "visits"} this season.`]
-  if (needDay) parts.push(`${needDay} ${needDay === 1 ? "has" : "have"} no day yet.`)
+  if (needDay) parts.push(`${needDay} unscheduled.`)
   if (owed) parts.push(`${owed} done and owed.`)
   return parts.join(" ")
 }

@@ -12,7 +12,7 @@ import { FORM_STATUS, useRunner } from "./use-runner"
 import { dayLabel } from "./visit-panel-model"
 
 // The pass half of New job (docs/plans/2026-11-16-office-sells-a-pass.md): zones and the July add-on with the prices under
-// them, a day per visit (blank is No day yet), how the money comes, the terms box, Sell pass. The pass is active when the
+// them, a day per visit (blank is Unscheduled), how the money comes, the terms box, Sell pass. The pass is active when the
 // call returns; the sheet closes and the toast says the pass number. The customer block above it is the sheet's.
 
 const NAMES: Record<SeasonPassVisit["key"], string> = { "turn-on": "Spring turn-on", inspection: "July inspection", blowout: "Fall blowout" }
@@ -123,7 +123,7 @@ export function NewJobPass({ data, today, choice, actions, initial = {}, onDone 
                   {NAMES[v.key]}
                 </label>
                 <Input id={`nj-day-${v.key}`} type="date" value={day} min={todayDay} onChange={(e) => setDays({ ...days, [v.key]: e.target.value })} className="min-h-11" />
-                <p className="mt-1 text-sm text-muted-foreground">{day ? dayLabel(day) : "No day yet"}</p>
+                <p className="mt-1 text-sm text-muted-foreground">{day ? dayLabel(day) : "Unscheduled"}</p>
               </div>
             )
           })}

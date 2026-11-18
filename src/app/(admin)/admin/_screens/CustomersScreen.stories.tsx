@@ -115,9 +115,9 @@ export const ToSchedule: Story = {
     // The filter chip lives in the toolbar; the column header of the same name sorts.
     const chips = await canvas.findAllByRole("button", { name: "Scheduled" })
     await userEvent.click(chips.find((b) => b.closest('[data-slot="data-grid-toolbar"]'))!)
-    await userEvent.click(await screen.findByRole("menuitemcheckbox", { name: "No, no day yet" }))
+    await userEvent.click(await screen.findByRole("menuitemcheckbox", { name: "No, unscheduled" }))
     await userEvent.keyboard("{Escape}")
-    await expect((await canvas.findAllByText("No day yet")).length).toBeGreaterThan(1)
+    await expect((await canvas.findAllByText("Unscheduled")).length).toBeGreaterThan(1)
   },
 }
 

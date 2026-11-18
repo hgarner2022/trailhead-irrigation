@@ -32,6 +32,9 @@ Always: sentence case, contractions in customer text ("we'll", "didn't"), no em 
 | truck | what the admin schedules | route, unit |
 | reserved | the pass is bought and the season is held | confirmed, approved, firm, locked in |
 | set, moved | a visit has a day; a day changed | scheduled (customer side), rescheduled, proposed |
+| Unscheduled | a visit with no day (the pill, the filter, the header line "1 unscheduled"); Hannah's word, Nov 17 2026 | no day yet, needs a day, unplaced |
+| Not done | a visit that was tried and came back without a day; the reason follows the pill ("Not done · could not get in") | failed visit, skipped |
+| Paid | money that arrived, by any method ("Paid this month", "Paid so far", "Paid, Venmo") | charged (a Jobber word) |
 | marked done | a visit is finished (admin) | closed, completed (in UI) |
 | "Ryan" | when the person matters: who sets days, who comes | "our team", "a technician" |
 | "we" | Trailhead as a company: emails, texts, charges | "Trailhead will", "the company" |

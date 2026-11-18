@@ -58,7 +58,7 @@ const TONES: Record<PillStatus, string> = {
   lapsed: OVER,
 }
 
-/** The word shown for a status: "Past due" for overdue, "No day yet" for a job with no day, else the status in sentence case. */
+/** The word shown for a status: "Past due" for overdue, "Unscheduled" for a job with no day, else the status in sentence case. */
 export const statusLabel = (status: PillStatus): string => LABELS[status]
 
 export interface StatusPillProps {

@@ -48,11 +48,11 @@ describe("consentLine", () => {
 })
 
 describe("chargeRows", () => {
-  it("reads the booked day and the charge, else No day yet and blank", () => {
+  it("reads the booked day and the charge, else Unscheduled and blank", () => {
     expect(chargeRows(passes[0])).toEqual([
       { kind: "turn-on", name: "Turn-on", when: "May 3", amount: 145, charged: "Paid May 3" },
-      { kind: "inspection", name: "Inspection", when: "No day yet", amount: 145, charged: "" },
-      { kind: "blowout", name: "Blowout", when: "No day yet", amount: 95, charged: "" },
+      { kind: "inspection", name: "Inspection", when: "Unscheduled", amount: 145, charged: "" },
+      { kind: "blowout", name: "Blowout", when: "Unscheduled", amount: 95, charged: "" },
     ])
   })
 
@@ -75,8 +75,8 @@ describe("one source: the day on the table, the panel's charges and its jobs", (
   it("reads the day, and the window once a start time is set, from the visit row", () => {
     expect(visitWhen(dated.visits[0])).toBe("Apr 26, 8 to 10 am")
     expect(visitWhen({ ...dated.visits[0], startTime: undefined })).toBe("Apr 26")
-    expect(visitWhen(dated.visits[1])).toBe("No day yet")
-    expect(visitWhen(undefined)).toBe("No day yet")
+    expect(visitWhen(dated.visits[1])).toBe("Unscheduled")
+    expect(visitWhen(undefined)).toBe("Unscheduled")
   })
 
   it("shows the same words in the charges, the jobs and the table cell", () => {
@@ -84,10 +84,10 @@ describe("one source: the day on the table, the panel's charges and its jobs", (
     expect(jobRows(dated, TODAY)[0].when).toBe("Apr 26, 8 to 10 am")
   })
 
-  it("never shows a timing preference: a pass asking for early May still reads No day yet", () => {
+  it("never shows a timing preference: a pass asking for early May still reads Unscheduled", () => {
     expect(passes[2].turnOnPreference).toBe("earlier")
-    expect(jobRows(passes[2], TODAY)[0].when).toBe("No day yet")
-    expect(chargeRows(passes[2])[0].when).toBe("No day yet")
+    expect(jobRows(passes[2], TODAY)[0].when).toBe("Unscheduled")
+    expect(chargeRows(passes[2])[0].when).toBe("Unscheduled")
   })
 })
 

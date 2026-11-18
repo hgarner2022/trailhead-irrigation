@@ -58,7 +58,7 @@ Stripe and the calendar decide.
 
 | Record | Stored facts | Words on screen |
 |---|---|---|
-| Visit | scheduled_on, completed_on, cancelled_at, not_done_reason | Unscheduled (no day; with a reason when it was Not done), Scheduled (a day), Done (completed_on), Cancelled |
+| Visit | scheduled_on, completed_on, cancelled_at, not_done_reason | Unscheduled (no day), Scheduled (a day), Done (completed_on), Not done (came back without a day, with the reason after it), Cancelled; words chosen by Hannah on Nov 17 2026 to match common field-service practice |
 | Job | its visits, cancelled_at | Open, Done (every visit Done or Cancelled, at least one Done), Cancelled |
 | Payment | status | Succeeded, Failed; a refund is a negative row |
 | Invoice | sent_on, due_on, paid_on | Sent, Paid, Overdue (today past due_on and not paid) |

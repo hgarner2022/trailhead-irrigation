@@ -92,7 +92,7 @@ function VisitBlock({ facts }: { facts: VisitFacts }) {
       <Subtitle id="visit-facts">Visit</Subtitle>
       <Facts
         rows={[
-          ["Day", day ? dayLabel(day) : "No day yet"],
+          ["Day", day ? dayLabel(day) : "Unscheduled"],
           ["Time", timeWords(visit)],
           ["Who", visit.personName ?? ""],
           ["Minutes", String(visit.minutes ?? 60)],
@@ -131,7 +131,7 @@ function JobBlock({ facts, today, onOpenVisit }: { facts: VisitFacts; today: str
             <li key={v.id} className="flex items-center gap-3 py-1">
               <button type="button" onClick={() => onOpenVisit(v.id)} aria-current={v.id === visit.id ? "true" : undefined} className="min-h-11 min-w-0 flex-1 text-left">
                 <span className={v.id === visit.id ? "block font-semibold" : "block font-medium text-primary-dark"}>{kindLabel(v)}</span>
-                <span className="block text-muted-foreground">{dayOfVisit(v) ? dayLabel(dayOfVisit(v)!) : "No day yet"}</span>
+                <span className="block text-muted-foreground">{dayOfVisit(v) ? dayLabel(dayOfVisit(v)!) : "Unscheduled"}</span>
               </button>
               <JobPill job={visitJob(v, day, TIME_ZONE, pass?.cardFailedAt)} />
             </li>
@@ -205,7 +205,8 @@ export function VisitPanel({ data, today, visitId, open, onOpenChange, onOpenVis
       open={open}
       onOpenChange={onOpenChange}
       title={visit.clientName}
-      description={`${kindLabel(visit)}${day ? `, ${dayLabel(day)}` : ", no day yet"}`}
+      // The pill carries the state, so the line says only what the visit is and, once it has one, its day.
+      description={`${kindLabel(visit)}${day ? `, ${dayLabel(day)}` : ""}`}
     >
       <div className="flex flex-col gap-6" data-slot="visit-panel">
         <div className="flex flex-wrap items-center gap-2">

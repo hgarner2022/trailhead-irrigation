@@ -64,7 +64,7 @@ function Jobs({ visits, today }: { visits: Visit[]; today: string }) {
           <OpenVisit id={v.id} className="gap-4 py-1.5">
             <span className="min-w-0 flex-1">
               <span className="block font-medium">{capital(KIND_WORDS[v.kind])}</span>
-              <span className="block text-muted-foreground">{v.startAt ? shortDate(v.startAt, TIME_ZONE) : "No day yet"}</span>
+              <span className="block text-muted-foreground">{v.startAt ? shortDate(v.startAt, TIME_ZONE) : "Unscheduled"}</span>
             </span>
             <JobPill job={visitJob(v, today, TIME_ZONE)} />
           </OpenVisit>
