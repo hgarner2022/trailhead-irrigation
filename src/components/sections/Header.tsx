@@ -163,23 +163,31 @@ export function Header() {
                 <a href={PHONE_TEL} className="text-sm font-semibold text-navy hover:text-primary transition-colors whitespace-nowrap">
                   {PHONE_DISPLAY}
                 </a>
+                <Link href="/account/sign-in" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors whitespace-nowrap">
+                  Sign in
+                </Link>
                 <Link href="/book" className={cn(buttonVariants({ size: "sm" }), "h-9 px-4 text-sm")}>
                   Book Online
                 </Link>
               </div>
             </nav>
 
-            {/* Mobile: logo + hamburger only; the sticky bottom bar carries Call + Book. */}
-            <button
-              type="button"
-              onClick={() => setMobileOpen(true)}
-              className="lg:hidden inline-flex items-center justify-center h-10 w-10 rounded-lg hover:bg-stone"
-              aria-label="Open menu"
-              aria-expanded={mobileOpen}
-              aria-controls="mobile-menu"
-            >
-              <Menu className="h-6 w-6" />
-            </button>
+            {/* Mobile: logo, a quiet Sign in and the hamburger; the sticky bottom bar carries Call + Book. */}
+            <div className="ml-auto flex items-center gap-2 lg:hidden">
+              <Link href="/account/sign-in" className="px-2 py-2 text-sm font-medium text-muted-foreground hover:text-primary">
+                Sign in
+              </Link>
+              <button
+                type="button"
+                onClick={() => setMobileOpen(true)}
+                className="inline-flex items-center justify-center h-10 w-10 rounded-lg hover:bg-stone"
+                aria-label="Open menu"
+                aria-expanded={mobileOpen}
+                aria-controls="mobile-menu"
+              >
+                <Menu className="h-6 w-6" />
+              </button>
+            </div>
           </div>
         </div>
       </header>

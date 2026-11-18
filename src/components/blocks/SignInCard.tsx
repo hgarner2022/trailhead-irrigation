@@ -36,9 +36,9 @@ const COPY = {
     denied: "That email is not on the admin list. Ask Hannah or Ryan to add it.",
   },
   customer: {
-    title: "Sign in to your pass",
-    lead: "Enter the email you bought your Season Pass with and we'll send you a link.",
-    denied: "We can't find a pass under that email. Try the one you bought it with, or call us.",
+    title: "Sign in to your account",
+    lead: "Enter the email we have for you and we'll send you a link.",
+    denied: "We don't have that email. Call Ryan at (970) 692-7270.",
   },
 } as const
 

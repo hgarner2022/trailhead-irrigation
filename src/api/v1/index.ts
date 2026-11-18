@@ -18,6 +18,9 @@ import { passesSell } from "./passes/sell"
 import { paymentsList, paymentsRecord, paymentsRefund } from "./payments/handlers"
 import { peopleList, peopleCreate, peopleUpdate, peopleDeactivate } from "./people/handlers"
 import { propertiesUpdate } from "./properties/handlers"
+import { jobsGet, jobsList } from "./portal/jobs"
+import { customersMe, customersStartCardUpdate, customersUpdateSelf, propertiesUpdateSelf } from "./portal/me"
+import { paymentsReceipt } from "./portal/receipt"
 import { scheduleRun, scheduleWeek, scheduleDay, scheduleSlots, scheduleOfferDays } from "./schedule/handlers"
 import { servicesList, servicesCreate, servicesUpdate, servicesDeactivate } from "./services/handlers"
 import { settingsGet, settingsUpdate, settingsChangesList } from "./settings/handlers"
@@ -32,18 +35,18 @@ export const handlers: AnyHandler[] = [
   apiKeysList, apiKeysCreate, apiKeysRevoke,
   areasList, areasCreate, areasUpdate, areasDelete,
   bookingsCreate, bookingsCancel,
-  customersList, customersGet, customersCreate, customersUpdate, consentsList, consentsRecord,
+  customersList, customersGet, customersCreate, customersUpdate, consentsList, consentsRecord, customersMe, customersUpdateSelf, customersStartCardUpdate,
   eventsList, eventsNote,
   invoicesSend, invoicesList, invoicesGet, invoicesRemind, invoicesCancel, invoicesPayView,
-  jobsCreate, jobsCancel,
+  jobsCreate, jobsCancel, jobsList, jobsGet,
   linesAdd, linesUpdate, linesCancel,
   messagesList, messagesSend,
   mirrorUpsert,
   organizationGet,
   passesList, passesGet, passesCreate, passesSell, passesActivate, passesConsent, passesCancel, passesResendConfirmation, passesSendCardUpdateLink, passesStartCardUpdate, passesUpdatePreference, passesAddInspection, passesSkipVisit,
-  paymentsList, paymentsRecord, paymentsRefund,
+  paymentsList, paymentsRecord, paymentsRefund, paymentsReceipt,
   peopleList, peopleCreate, peopleUpdate, peopleDeactivate,
-  propertiesUpdate,
+  propertiesUpdate, propertiesUpdateSelf,
   scheduleRun, scheduleWeek, scheduleDay, scheduleSlots, scheduleOfferDays,
   servicesList, servicesCreate, servicesUpdate, servicesDeactivate,
   settingsGet, settingsUpdate, settingsChangesList,

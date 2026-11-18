@@ -11,16 +11,21 @@ import type { ActionResult } from "./CancelPassDialog"
 // the wiring phase books the visit; the prototype only swaps the words.
 
 export interface PickDayButtonsProps {
-  kind: "turn-on" | "blowout"
+  /** what the visit is, handed back to `onPick`: the pass page's turn-on or blowout, or any visit the account page moves */
+  kind: string
   days: string[]
-  onPick?: (kind: "turn-on" | "blowout", dayIso: string) => ActionResult | Promise<ActionResult>
+  onPick?: (kind: string, dayIso: string) => ActionResult | Promise<ActionResult>
   /** start folded behind this button; for a customer whose day is already set and may want another */
   foldedLabel?: string
+  /** the day the visit has now: once another is picked it is shown as gone, and the answer says "Moved to" */
+  previousDay?: string
+  /** names the folded button for a screen reader when a list has one per visit: "Change my day, Spring turn-on" */
+  foldedAria?: string
 }
 
 const weekdayOf = (iso: string) => ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][new Date(`${iso}T12:00:00Z`).getUTCDay()]
 
-export function PickDayButtons({ kind, days, onPick, foldedLabel }: PickDayButtonsProps) {
+export function PickDayButtons({ kind, days, onPick, foldedLabel, previousDay, foldedAria }: PickDayButtonsProps) {
   const [picked, setPicked] = useState<string | null>(null)
   const [open, setOpen] = useState(!foldedLabel)
   const [error, setError] = useState<string | null>(null)
@@ -45,18 +50,34 @@ export function PickDayButtons({ kind, days, onPick, foldedLabel }: PickDayButto
     }
     setPicked(day)
   }
+  if (days.length === 0) {
+    return (
+      <p data-slot="no-days" className="text-base text-muted-foreground">
+        {"We can't offer a new day online right now. Call or text Ryan at "}
+        <a href="tel:9706927270" className="font-semibold text-primary-deep underline underline-offset-2">
+          (970) 692-7270
+        </a>
+        .
+      </p>
+    )
+  }
   if (!open) {
     return (
-      <Button variant="outline" onClick={() => setOpen(true)}>
+      <Button variant="outline" aria-label={foldedAria} onClick={() => setOpen(true)}>
         {foldedLabel}
       </Button>
     )
   }
   if (picked) {
     return (
-      <p data-slot="pick-day-done" className="text-base text-foreground">
-        {`You're set for ${weekdayOf(picked)}, ${writtenDate(picked)}. We'll text you the window the day before.`}
-      </p>
+      <div data-slot="pick-day-done" className="space-y-1 text-base text-foreground">
+        {previousDay && (
+          <p className="text-sm text-muted-foreground">
+            <s>{`${weekdayOf(previousDay)}, ${writtenDate(previousDay)}`}</s>
+          </p>
+        )}
+        <p>{previousDay ? `Moved to ${weekdayOf(picked)}, ${writtenDate(picked)}. We texted you the new date.` : `You're set for ${weekdayOf(picked)}, ${writtenDate(picked)}. We'll text you the window the day before.`}</p>
+      </div>
     )
   }
   return (

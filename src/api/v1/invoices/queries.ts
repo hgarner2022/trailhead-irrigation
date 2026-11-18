@@ -21,9 +21,11 @@ export function payLinkOf(invoiceId: string): string | undefined {
   }
 }
 
-/** An invoice as the API shows it. The pay link is a bearer link, so it goes only to a key or person that may write (a tech's read never carries it). */
+/** An invoice as the API shows it. The pay link is a bearer link, so it goes only to a key or person that may write (a tech's read never carries it) and to the customer the invoice is for. */
 export function invoiceOut(ctx: Ctx, r: InvoiceRow): InvoiceOutType {
-  const link = canSeeContact(ctx) ? payLinkOf(r.id) : undefined
+  const p = ctx.principal
+  const theirs = p.kind === "person" && p.type === "customer" && p.customerId === r.customerId
+  const link = canSeeContact(ctx) || theirs ? payLinkOf(r.id) : undefined
   return {
     id: r.id, jobId: r.jobId, customerId: r.customerId, number: r.number, lines: r.lines, amount: r.amount, tax: r.tax, total: r.total,
     sentOn: r.sentOn, dueOn: r.dueOn, paidOn: r.paidOn, paymentId: r.paymentId, cancelledAt: r.cancelledAt ? r.cancelledAt.toISOString() : null,

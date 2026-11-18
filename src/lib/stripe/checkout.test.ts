@@ -22,7 +22,7 @@ describe("createSetupSession", () => {
 describe("paymentMethodFromSession", () => {
   it("reads the saved card", async () => {
     const { stripe } = stubStripe({ sessions: { cs_1: completeSession("cs_1", { passId: "p1", purpose: "pass-setup" }, { last4: "9424", expMonth: 3, expYear: 2029 }) } })
-    expect(await paymentMethodFromSession(stripe, "cs_1")).toEqual({ customerId: "cus_1", paymentMethodId: "pm_new", brand: "visa", last4: "9424", expires: "2029-03", passId: "p1", purpose: "pass-setup" })
+    expect(await paymentMethodFromSession(stripe, "cs_1")).toEqual({ customerId: "cus_1", paymentMethodId: "pm_new", brand: "visa", last4: "9424", expires: "2029-03", passId: "p1", appCustomerId: null, purpose: "pass-setup" })
   })
   it("refuses an unfinished session", async () => {
     const { stripe } = stubStripe({ sessions: { cs_2: { ...completeSession("cs_2", {}), status: "open" } } })
