@@ -11,9 +11,9 @@ import { queuePurchaseConfirmation } from "@/lib/pass/server/purchase"
 import { ApiError } from "../../core/errors"
 import { defineHandler } from "../../core/handler"
 import { afterTimeCursor, cursorPage, page, pageInput, timeCursor } from "../../core/pagination"
-import { canSeeContact, Channel, Id, Iso } from "../shared"
+import { canSeeContact, Channel, Id, Iso, today } from "../shared"
 
-export const MESSAGE_KINDS = ["purchase-confirmation", "date-set", "date-moved", "day-before", "receipt", "card-failed", "cancelled", "renewal", "note"] as const
+export const MESSAGE_KINDS = ["purchase-confirmation", "date-set", "date-moved", "day-before", "on-the-way", "receipt", "card-failed", "cancelled", "renewal", "note"] as const
 
 const MessageOut = z.object({
   id: Id, customerId: Id, visitId: Id.nullable(), channel: Channel, kind: z.string(), subject: z.string().nullable(), body: z.string(),
@@ -64,12 +64,23 @@ export const messagesSend = defineHandler({
       const note = await queueNote(ctx.db, { organizationId: ctx.organizationId, customerId: customer.id, visitId: input.visitId, text: input.text, key })
       if (!note.ok) throw new ApiError("unprocessable", note.reason === "no-phone" ? "This customer has no mobile number to text." : "This customer replied STOP, so no texts can go until they reply START.")
       queued = true
-    } else if (input.kind === "date-set" || input.kind === "date-moved" || input.kind === "day-before") {
+    } else if (input.kind === "date-set" || input.kind === "date-moved" || input.kind === "day-before" || input.kind === "on-the-way") {
       if (!input.visitId) throw new ApiError("invalid", "A visit is needed for this message")
       const [visit] = await ctx.db.select({ id: s.visit.id, customerId: s.visit.customerId }).from(s.visit).where(and(eq(s.visit.id, input.visitId), eq(s.visit.organizationId, ctx.organizationId)))
       if (!visit || visit.customerId !== customer.id) throw new ApiError("not_found", "Visit not found")
       const facts = await loadVisitFacts(ctx.db, visit.id, origin)
       if (!facts) throw new ApiError("unprocessable", "That visit has no day yet")
+      if (input.kind === "on-the-way") {
+        // The "On my way" button: only for a visit that is today, and once per visit per day.
+        if (facts.day !== today(ctx)) throw new ApiError("unprocessable", "On my way is for a visit that is today")
+        const sentKey = `on-the-way-${visit.id}-${facts.day}`
+        const [already] = await ctx.db.select({ id: s.messageLog.id }).from(s.messageLog).where(and(eq(s.messageLog.customerId, customer.id), eq(s.messageLog.key, sentKey)))
+        if (already) throw new ApiError("conflict", "This customer was already told you are on the way today")
+        const sentNow = await queueMessage(ctx.db, { ...base, key: sentKey, visitId: visit.id, kind: input.kind, data: { ...baseData(origin, customer), visit: facts } })
+        if (!sentNow) throw new ApiError("unprocessable", "This customer has no mobile to text, or replied STOP")
+        const [row] = await ctx.db.select().from(s.messageLog).where(and(eq(s.messageLog.customerId, customer.id), eq(s.messageLog.key, sentKey)))
+        return { id: row!.id, customerId: row!.customerId, visitId: row!.visitId, channel: row!.channel, kind: row!.kind, subject: row!.subject, body: row!.body, status: row!.status, sentAt: row!.sentAt?.toISOString() ?? null, createdAt: row!.createdAt.toISOString(), ...(canSeeContact(ctx) ? { to: row!.to } : {}) }
+      }
       queued = await queueMessage(ctx.db, { ...base, visitId: visit.id, kind: input.kind, data: { ...baseData(origin, customer), visit: facts } })
     } else {
       const passes = await ctx.db
@@ -83,7 +94,7 @@ export const messagesSend = defineHandler({
       if (input.kind === "purchase-confirmation" || input.kind === "cancelled" || input.kind === "renewal") {
         if (!pass) throw new ApiError("unprocessable", "This customer has no pass for that message")
         if (input.kind === "purchase-confirmation") queued = await queuePurchaseConfirmation(ctx.db, pass.id, origin, key, { organizationId: ctx.organizationId })
-        else if (input.kind === "cancelled") queued = await queueMessage(ctx.db, { ...base, kind: "cancelled", data: { ...baseData(origin, customer), passNumber: pass.passNumber ?? "" } })
+        else if (input.kind === "cancelled") queued = await queueMessage(ctx.db, { ...base, kind: "cancelled", data: { ...baseData(origin, customer), season: pass.season } })
         else {
           const [prop] = await ctx.db.select({ town: s.property.town }).from(s.property).where(eq(s.property.id, pass.propertyId))
           queued = await queueMessage(ctx.db, { ...base, kind: "renewal", data: { ...baseData(origin, customer), season: (pass.season ?? 0) + 1, town: prop?.town ?? "your home", buyUrl: renewUrl(origin, pass.id) } })

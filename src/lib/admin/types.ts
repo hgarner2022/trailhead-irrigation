@@ -430,6 +430,7 @@ export type MessageKind =
   | "date-set"
   | "date-moved"
   | "day-before"
+  | "on-the-way"
   | "date-confirm"
   | "receipt"
   | "invoice"
@@ -445,9 +446,9 @@ export type MessageKind =
  * one-way, and one per event (Hannah, 2026-11-13): text for timing (date
  * set, date moved, the day-before reminder), email for money and records
  * (confirmation, receipt, card failed, cancelled, renewal); a customer with
- * no mobile gets the timing messages by email. "On my way" is Ryan's own
- * phone, never the app. Any change the customer wants goes through the link
- * in the message to their pass page.
+ * no mobile gets the timing messages by email. "On the way" is a text only, sent
+ * from the visit panel's "On my way" button. Any change the customer wants goes
+ * through the link in the message to their Trailhead account.
  */
 export interface Message {
   id: string

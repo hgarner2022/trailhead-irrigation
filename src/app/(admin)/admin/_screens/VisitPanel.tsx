@@ -18,6 +18,7 @@ import { CancelVisit, EditForm, ResendButton, TextForm } from "./VisitEditText"
 import { DoneForm, MoveForm, NotDoneForm, PaidByChoice } from "./VisitMoveDone"
 import { BillBlock } from "./VisitBill"
 import { PanelNotes } from "./PanelNotes"
+import { OnMyWay } from "./VisitOnMyWay"
 import { Included, JobLines } from "./VisitLines"
 import { useRunner } from "./use-runner"
 import { dayLabel, dayOfVisit, kindLabel, priceWords, timeWords, visitFacts, type VisitFacts } from "./visit-panel-model"
@@ -149,6 +150,7 @@ function Actions({ facts, data, today, actions }: { facts: VisitFacts; data: Adm
   return (
     <div className="flex flex-col gap-6" data-slot="visit-actions">
       {open && <MoveForm key={visit.id + (visit.scheduledOn ?? "")} visit={visit} today={day} actions={actions} />}
+      {states.work === "scheduled" && dayOfVisit(visit) === day && <OnMyWay visit={visit} actions={actions} />}
       {states.work === "scheduled" && <DoneForm visit={visit} pass={pass} today={day} actions={actions} />}
       {owed && (
         <section aria-labelledby="visit-pay">

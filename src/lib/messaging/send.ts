@@ -3,8 +3,10 @@ import { eq } from "drizzle-orm"
 import * as s from "@/db/schema"
 import type { Database } from "@/db/types"
 import { renderEmail } from "@/emails/render"
+import { TEXT_ONLY_KINDS } from "@/sms/texts"
 import { enqueue, MAX_ATTEMPTS } from "@/lib/queue"
 import { currentConsent, mayMessage } from "./consent"
+import { savedTemplates } from "./saved"
 import { sendEmailLogged, type LoggedEmailSender } from "./resend"
 import { recordTwilioHealth } from "./health"
 import { readTwilioEnv, sendTextNow, TwilioRejectedError, type TextSender } from "./twilio"
@@ -27,8 +29,8 @@ const skip = (db: Database, row: MessageRow, reason: string) =>
 
 /** A text that cannot go becomes the same message by email, once: key `<key>~email`, so a replay adds nothing. */
 async function emailInstead(db: Database, row: MessageRow, customer: typeof s.customer.$inferSelect): Promise<void> {
-  if (!customer.email || row.kind === "note") return
-  const rendered = renderEmail(row.kind, row.data)
+  if (!customer.email || row.kind === "note" || TEXT_ONLY_KINDS.includes(row.kind)) return
+  const rendered = renderEmail(row.kind, row.data, await savedTemplates(db, row.organizationId))
   const added = await db
     .insert(s.messageLog)
     .values({ organizationId: row.organizationId, customerId: row.customerId, visitId: row.visitId, channel: "email", kind: row.kind, key: `${row.key}~email`, to: customer.email, subject: rendered?.subject ?? row.subject ?? "A message from Trailhead", body: row.body, data: row.data, status: "queued" })
@@ -67,7 +69,7 @@ export async function sendMessageRow(db: Database, messageId: string, opts: { de
     let providerId: string | null
     if (row.channel === "sms") providerId = (await deps.sms({ to: row.to, body: row.body })).id
     else {
-      const rendered = renderEmail(row.kind, row.data)
+      const rendered = renderEmail(row.kind, row.data, await savedTemplates(db, row.organizationId))
       providerId = (await deps.email({ to: row.to, subject: rendered?.subject ?? row.subject ?? "A message from Trailhead", text: rendered?.text ?? row.body, html: rendered?.html })).id
     }
     if (row.channel === "sms") await recordTwilioHealth(db, row.organizationId, "ok", now)
