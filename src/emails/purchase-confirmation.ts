@@ -1,7 +1,7 @@
 import { googleCalendarUrl } from "./calendar"
 import { ACCOUNT_NAME, ADD_CARD_LINE, BUSINESS, CONFIRM_LINE, RYAN_DOES, atVisitMoneyLine, moneyLine, whenText } from "./format"
 import { jobTable } from "./job-table"
-import { button, emailLayout, esc, facts, heading, paragraph, plainText, EMAIL_COLORS } from "./layout"
+import { blockTitle, button, emailLayout, facts, greetingText, links, paragraph, picture, plainText, ruled } from "./layout"
 import type { PurchaseConfirmationData, RenderedEmail } from "./types"
 
 const dateOf = (v: PurchaseConfirmationData["visits"][number]) => (v.visit ? whenText(v.visit.day, v.visit.startTime) : v.fallback)
@@ -17,30 +17,33 @@ export function purchaseConfirmationEmail(d: PurchaseConfirmationData): Rendered
   // A pass sold by the office: no card and no link means the money comes at each visit; a link means the card is still to be added.
   const addCard = !d.cardLast4 && d.cardUpdateUrl ? d.cardUpdateUrl : null
   const money = !d.cardLast4 && !addCard ? atVisitMoneyLine(d.visits) : moneyLine(d.visits, d.cardLast4)
-  const image = `<p style="margin:0 0 24px"><a href="${esc(d.signInUrl)}"><img src="${esc(d.passImageUrl)}" width="544" alt="Season Pass ${esc(String(d.season))} for ${esc(d.firstName)}, ${esc(d.town)}" style="display:block;width:100%;max-width:544px;height:auto;border:0;border-radius:8px"></a></p>`
-  const rows = d.visits
-    .map((v) => {
-      const calendar = v.visit ? `<p style="margin:10px 0 0">${button(googleCalendarUrl(v.visit), "Add to Google Calendar", "quiet")}${button(v.visit.icsUrl, "Add to Apple or Outlook calendar", "quiet")}</p>` : ""
-      return `<tr><td style="padding:14px 0;border-top:1px solid ${EMAIL_COLORS.border}"><p style="margin:0;font-family:'Barlow Condensed','Arial Narrow',Arial,sans-serif;font-size:22px;line-height:26px;font-weight:600;color:${EMAIL_COLORS.primary}">${esc(capital(v.name))}</p><p style="margin:4px 0 0;font-family:'Source Sans 3',Helvetica,Arial,sans-serif;font-size:17px;line-height:25px;color:${EMAIL_COLORS.text}">${esc(dateOf(v))}</p>${v.note ? `<p style="margin:4px 0 0;font-family:'Source Sans 3',Helvetica,Arial,sans-serif;font-size:17px;line-height:25px;color:${EMAIL_COLORS.text}">${esc(v.note)}</p>` : ""}${v.visit ? `<p style="margin:4px 0 0;font-family:'Source Sans 3',Helvetica,Arial,sans-serif;font-size:15px;line-height:22px;color:${EMAIL_COLORS.text}">${esc(RYAN_DOES[v.kind])}</p>` : ""}${calendar}</td></tr>`
-    })
+  const why = `You are getting this because you bought Season Pass ${d.passNumber}.`
+  const image = picture(d.passImageUrl, `Season Pass ${d.season} for ${d.firstName}, ${d.town}`, d.signInUrl)
+  const blocks = d.visits
+    .map((v) => ruled(blockTitle(capital(v.name)) + paragraph(dateOf(v)) + (v.note ? paragraph(v.note) : "") + (v.visit ? paragraph(RYAN_DOES[v.kind]) : "") + (v.visit ? links([{ href: googleCalendarUrl(v.visit), label: "Add to Google Calendar" }, { href: v.visit.icsUrl, label: "Add to Apple or Outlook calendar" }]) : "")))
     .join("")
   // What was sold, as the one money table: a line to a row and the season total under it; nothing when the pass has no lines.
   const lines = d.lines ?? []
   const sold = lines.length ? jobTable({ facts: [], lines, total: lines.reduce((sum, l) => sum + l.amount, 0), totalLabel: "Season total" }) : null
   const where = d.address ? facts([["Where", d.address]]) : ""
+  // One button: the card to add when there is one to add, else the account.
+  const cta = addCard ? button(addCard, "Add your card") + links([{ href: d.signInUrl, label: `Open your ${ACCOUNT_NAME}` }]) : button(d.signInUrl, `Open your ${ACCOUNT_NAME}`)
   const html = emailLayout({
     origin: d.origin,
-    preheader: `Your Season Pass for ${d.town} is reserved. We haven't charged you today.`,
-    body: [image, heading(`Welcome, ${d.firstName}`), paragraph(intro), `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 4px">${rows}</table>`, where, sold?.html ?? "", paragraph(CONFIRM_LINE), paragraph(money), ...(addCard ? [paragraph(ADD_CARD_LINE), button(addCard, "Add your card")] : []), button(d.signInUrl, `Open your ${ACCOUNT_NAME}`)].join(""),
-    reason: `You are getting this because you bought Season Pass ${d.passNumber}.`,
+    preheader: "We haven't charged you today. Your days and what you pay are below.",
+    title: `Welcome to the ${d.season} season`,
+    greet: { firstName: d.firstName },
+    lead: intro,
+    body: [image, blocks, where, sold?.html ?? "", paragraph(CONFIRM_LINE), paragraph(money), ...(addCard ? [paragraph(ADD_CARD_LINE)] : []), cta].join(""),
+    why,
     signOff: PURCHASE_SIGN_OFF,
   })
   const text = plainText([
-    `Welcome, ${d.firstName}.`, "", intro, "",
+    `Welcome to the ${d.season} season.`, "", ...greetingText(d.firstName), intro, "",
     ...d.visits.flatMap((v) => [`${capital(v.name)}: ${dateOf(v)}`, ...(v.note ? [`  ${v.note}`] : []), ...(v.visit ? [`  ${RYAN_DOES[v.kind]}`] : []), ...(v.visit ? [`  Google Calendar: ${googleCalendarUrl(v.visit)}`, `  Apple or Outlook calendar: ${v.visit.icsUrl}`] : [])]),
     ...(d.address ? [`Where: ${d.address}`] : []),
     ...(sold ? ["", ...sold.text] : []),
     "", CONFIRM_LINE, money, ...(addCard ? [ADD_CARD_LINE, `Add your card: ${addCard}`] : []), "", `Your ${ACCOUNT_NAME}: ${d.signInUrl}`, `Questions: ${BUSINESS.phone}`,
-  ], PURCHASE_SIGN_OFF)
+  ], PURCHASE_SIGN_OFF, why)
   return { subject, text, html }
 }
