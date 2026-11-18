@@ -1,12 +1,10 @@
-import Link from "next/link"
 import { StatusPill } from "@/components/blocks/StatusPill"
 import type { GridColumnDef } from "@/components/blocks/data-grid-table"
-import { visitsOfJob } from "@/lib/admin/links"
 import { dayLabel } from "./visit-panel-model"
 import type { VisitRow } from "./visits-model"
 
 // The Visits grid's columns, in the order the filters use too: Customer (the full name, opens the visit), Town,
-// Service, Day, Time, Who, Status, Money, Job. The first column's value is the search text (name, street, phone, pass
+// Service, Day, Time, Who, Status, Money. The job a visit is on shows in the visit panel, not here. The first column's value is the search text (name, street, phone, pass
 // number) and its cell shows the name. Money is one cell that sorts by the amount while the chip filters by its state.
 
 export const visitColumns: GridColumnDef<VisitRow>[] = [
@@ -43,20 +41,6 @@ export const visitColumns: GridColumnDef<VisitRow>[] = [
     sortFn: (a, b) => (a.original as VisitRow).price - (b.original as VisitRow).price,
     cell: ({ row }) => <span className="whitespace-nowrap tabular-nums">{row.original.moneyText}</span>,
     meta: { align: "right", csv: (r) => (r as VisitRow).moneyText },
-  },
-  {
-    id: "jobType",
-    accessorKey: "jobType",
-    header: "Job",
-    cell: ({ row }) => (
-      <Link
-        href={row.original.jobId ? visitsOfJob(row.original.jobId) : `/admin/customers?customer=${encodeURIComponent(row.original.customerId)}`}
-        className="text-primary-dark underline underline-offset-2"
-      >
-        {row.original.jobLabel}
-      </Link>
-    ),
-    meta: { csv: (r) => (r as VisitRow).jobLabel },
   },
 ]
 

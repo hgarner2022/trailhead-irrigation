@@ -39,8 +39,6 @@ export interface VisitRow {
   dayPassed: boolean
   /** whole dollars; what Money sorts by */
   price: number
-  /** "Season Pass" or "One-off" */
-  jobType: "pass" | "one-off"
   /** "TH-2027-0006" for a pass visit, else the job's kind word: "Repair", "Installation" */
   jobLabel: string
   customerId: string
@@ -86,7 +84,7 @@ export function rowsOf(data: AdminData, visits: Visit[], today: string): VisitRo
     return {
       id: v.id,
       name: v.clientName,
-      search: [v.clientName, client?.address ?? "", client?.phone ?? "", digits(client?.phone), pass?.number ?? ""].join(" "),
+      search: [v.clientName, client?.address ?? "", client?.phone ?? "", digits(client?.phone)].join(" "),
       town: v.town,
       kind: v.kind,
       kindLabel: kindLabel(v),
@@ -99,7 +97,6 @@ export function rowsOf(data: AdminData, visits: Visit[], today: string): VisitRo
       ...(states.reason ? { reason: REASON_WORDS[states.reason] ?? states.reason } : {}),
       moneyText: moneyText({ ...base, noCard: Boolean(pass) && !pass?.cardLast4 }),
       dayPassed: states.dayPassed,
-      jobType: v.passId ? "pass" : "one-off",
       jobLabel: pass?.number ?? JOB_KIND_WORDS[job?.kind ?? "other"] ?? "Job",
       customerId: v.clientId,
       ...(pass ? { passNumber: pass.number, passId: pass.id } : {}),
@@ -122,10 +119,6 @@ export function filterFrom(column: string, param: string | undefined, options: {
   return values.length ? [{ column, values }] : []
 }
 export const KIND_OPTIONS = OFFICE_KINDS.map((value) => ({ value, label: KIND_LABEL[value] }))
-export const JOB_TYPE_OPTIONS = [
-  { value: "pass", label: "Season Pass" },
-  { value: "one-off", label: "One-off" },
-]
 
 /**
  * The rows "done and owed" counts, on Visits' header line and on Home's money line ("Owed on N done jobs"): a Done visit whose

@@ -89,7 +89,7 @@ describe("visits-model", () => {
   it("lists the visits with the two pills, needs-a-day first, and finds one by street or phone", () => {
     const rows = visitRows(data, TODAY)
     expect(rows.map((r) => r.id)).toEqual(["b", "c", "a"])
-    expect(rows[1]).toMatchObject({ work: "done", money: "paid", moneyLabel: "Paid, check", jobType: "one-off" })
+    expect(rows[1]).toMatchObject({ work: "done", money: "paid", moneyLabel: "Paid, check" })
     expect(rows.find((r) => r.id === "a")!.search).toContain("12 Elm St")
     expect(rows.find((r) => r.id === "a")!.search).toContain("3035550111")
   })
@@ -156,7 +156,7 @@ describe("VisitsScreen", () => {
   it("shows the spec's columns and a row per visit, with New job in the header and no Passes button", () => {
     renderScreen(actions())
     const headers = screen.getAllByRole("columnheader").map((h) => h.textContent)
-    expect(headers.filter(Boolean)).toEqual(["Customer", "Town", "Service", "Day", "Time", "Who", "Status", "Money", "Job"])
+    expect(headers.filter(Boolean)).toEqual(["Customer", "Town", "Service", "Day", "Time", "Who", "Status", "Money"])
     expect(headers).not.toContain("Truck")
     expect(screen.getByRole("button", { name: "Dana Reed" })).toBeInTheDocument()
     expect(screen.getAllByRole("cell").some((c) => c.textContent === "Ryan Garner")).toBe(true)
@@ -426,15 +426,20 @@ describe("Visits filtered to a job (?job=)", () => {
     expect(screen.getByRole("link", { name: "Show all visits" })).toHaveAttribute("href", "/admin/visits")
   })
 
-  it("the Job column and the panel's Open job's visits both go to Visits with the job's filter", () => {
+  it("the grid has no Job column or filter; the panel names the job on one line under the pill and links to Visits filtered to it", () => {
     const job = visitsData.visits.find((v) => v.id === noCardVisitId)!.jobId!
     render(
       <UndoToastProvider>
         <VisitsScreen data={visitsData} today={VISITS_TODAY} actions={actions()} defaultVisitId={noCardVisitId} />
       </UndoToastProvider>,
     )
-    const links = screen.getAllByRole("link", { hidden: true }).filter((l) => l.getAttribute("href") === `/admin/visits?job=${job}`)
-    expect(links.length).toBeGreaterThanOrEqual(2)
-    expect(screen.queryAllByRole("link").some((l) => (l.getAttribute("href") ?? "").startsWith("/admin/passes"))).toBe(false)
+    expect(screen.queryAllByRole("columnheader", { hidden: true }).map((h) => h.textContent)).not.toContain("Job")
+    expect(screen.queryByRole("button", { name: "Job", hidden: true })).toBeNull()
+    expect(screen.getByRole("searchbox", { hidden: true })).toHaveAttribute("placeholder", "Search by name or street")
+    const panel = within(screen.getByRole("dialog"))
+    const line = panel.getByText(/^Season Pass TH-.* · \d{4}$/)
+    expect(line.closest("a")).toHaveAttribute("href", expect.stringMatching(/^\/admin\/customers\?customer=/))
+    expect(panel.getByRole("link", { name: "Open job's visits" })).toHaveAttribute("href", `/admin/visits?job=${job}`)
+    expect(screen.queryAllByRole("link", { hidden: true }).some((l) => (l.getAttribute("href") ?? "").startsWith("/admin/passes"))).toBe(false)
   })
 })

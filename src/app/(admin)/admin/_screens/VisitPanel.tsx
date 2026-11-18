@@ -9,7 +9,7 @@ import { MessageThread } from "@/components/blocks/MessageThread"
 import { SidePanel } from "@/components/blocks/SidePanel"
 import { Button } from "@/components/ui/button"
 import { visitJob } from "@/lib/admin/jobs"
-import { TIME_ZONE } from "@/lib/admin/format"
+import { TIME_ZONE, shortDate } from "@/lib/admin/format"
 import { dayOf } from "@/lib/admin/calendar"
 import { formatPhone } from "@/lib/format/contact"
 import type { AdminData } from "@/lib/admin/types"
@@ -27,6 +27,18 @@ import { propertyLines, yardFromPass } from "./customers-model"
 // customer and the visit's kind and day; the two pills; the customer block; the visit block; the job it belongs to
 // (the pass with its number and its other visits, or the booked work); the actions; and the thread, newest first.
 // A tech sees all of it and no buttons. On a laptop it is the drawer over the page; on a phone it is a sheet.
+
+/** The job the visit belongs to, one line: "Season Pass TH-2027-0007 · 2027" or "Repair · sold Nov 3", linking to the customer's panel until the Jobs screen exists. */
+function JobLine({ facts }: { facts: VisitFacts }) {
+  const { pass, job, visit } = facts
+  const kind = job?.kind === "repair" ? "Repair" : job?.kind === "install" ? "Installation" : "Job"
+  const text = pass ? `Season Pass ${pass.number} · ${pass.season}` : `${kind}${job?.soldOn ? ` · sold ${shortDate(job.soldOn, TIME_ZONE)}` : ""}`
+  return (
+    <Link data-slot="visit-job-line" href={`/admin/customers?customer=${encodeURIComponent(visit.clientId)}`} className="min-w-0 truncate text-sm text-primary-dark underline underline-offset-2" title={text}>
+      {text}
+    </Link>
+  )
+}
 
 function CustomerBlock({ facts }: { facts: VisitFacts }) {
   const { client, visit } = facts
@@ -191,8 +203,9 @@ export function VisitPanel({ data, today, visitId, open, onOpenChange, onOpenVis
       description={`${kindLabel(visit)}${day ? `, ${dayLabel(day)}` : ""}`}
     >
       <div className="flex flex-col gap-6" data-slot="visit-panel">
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
           <JobPill job={states} />
+          <JobLine facts={facts} />
         </div>
         <CustomerBlock facts={facts} />
         <AtTheProperty facts={facts} readOnly={readOnly} />

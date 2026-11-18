@@ -10,12 +10,12 @@ import { NewJobButton } from "./NewJob"
 import type { VisitActions } from "./visit-actions-types"
 import { VisitPanelHost, useOpenVisit } from "./VisitPanelHost"
 import { visitColumns } from "./visits-columns"
-import { JOB_TYPE_OPTIONS, KIND_OPTIONS, MONEY_OPTIONS, WORK_OPTIONS, visitRows, visitsContext, type VisitRow } from "./visits-model"
+import { KIND_OPTIONS, MONEY_OPTIONS, WORK_OPTIONS, visitRows, visitsContext, type VisitRow } from "./visits-model"
 import { routePeople } from "@/lib/admin/people"
 
 // Every visit of the season (docs/plans build-1): Customer, Town, Service, Day, Time, Who, Status (the pill, with the
-// reason after a Not done), Money (one cell: the price, then what happened to it) and Job (the pass number or the job's
-// kind). The filters take the same names in the same order; search by name, street or job (pass number); New job in the header; a row opens the visit panel over the
+// reason after a Not done), and Money (one cell: the price, then what happened to it). The filters take the same names in the same order, with no Job
+// column or filter (the job shows in the visit panel); search by name or street; New job in the header; a row opens the visit panel over the
 // grid (a drawer on a laptop, a sheet on a phone). A pass is a filter chip and a link in the Pass column, never a button of its own
 // (owner, 16 Nov: "Passes is a visits, so it could just be part of the filter"). Client because the open visit is
 // state; the route's page.tsx supplies `data`, `today` and the actions.
@@ -49,7 +49,6 @@ function Grid({ rows, data, defaultFilters }: { rows: VisitRow[]; data: AdminDat
       { column: "kind", label: "Service", options: KIND_OPTIONS },
       { column: "personId", label: "Who", options: [...routePeople(data.settings.people).map((p) => ({ value: p.id, label: p.name })), { value: "none", label: "No one yet" }] },
       { column: "town", label: "Town", options: TOWNS.map((t) => ({ value: t, label: t })) },
-      { column: "jobType", label: "Job", options: JOB_TYPE_OPTIONS },
     ],
     [data.settings.people],
   )
@@ -58,7 +57,7 @@ function Grid({ rows, data, defaultFilters }: { rows: VisitRow[]; data: AdminDat
       columns={visitColumns}
       data={rows}
       getRowId={(r) => r.id}
-      search={{ column: "name", placeholder: "Search by name, street or job" }}
+      search={{ column: "name", placeholder: "Search by name or street" }}
       filters={filters}
       onOpen={(row) => open?.(row.id)}
       exportName="visits"

@@ -254,6 +254,8 @@ export interface SoldJob {
   notes?: string
   passId?: string
   passNumber?: string
+  /** the day the job was sold, "2026-11-03"; absent in the fixtures */
+  soldOn?: string
   visitIds: string[]
   /** what was sold, oldest first; the lines are the truth for what the job costs */
   lines?: JobLine[]
