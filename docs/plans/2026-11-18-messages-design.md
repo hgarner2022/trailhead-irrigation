@@ -94,7 +94,7 @@ Today I found no code outside the Settings screens that reads the saved template
 
 New assertions: only purchase-confirmation and renewal may say a pass number or "your pass"; every text is plain ASCII.
 
-**Moves to `docs/UX_WRITING.md`**: the six rules, the glossary rows (Trailhead account, receipt, bill, paid, unpaid; Hannah's word, Nov 18, replacing "owed" in messages), the text length rule and the subject patterns. Bodies stay in code and tests.
+**Moves to `docs/UX_WRITING.md`**: the six rules, the glossary rows (Trailhead account, receipt, bill, paid, unpaid), the text length rule and the subject patterns. Bodies stay in code.
 
 ## 7. Open questions for Hannah
 
