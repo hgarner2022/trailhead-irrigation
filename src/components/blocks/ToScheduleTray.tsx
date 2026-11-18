@@ -15,7 +15,7 @@ import { EmptyState } from "./EmptyState"
 export interface ToScheduleTrayProps {
   items: TrayItem[]
   onPlace?: (item: TrayItem) => void
-  /** Place all: opens the preview; the button is not drawn without it, or with fewer than two jobs a customer is not picking */
+  /** Place all: opens the preview; the button is not drawn without it, or when every job is one a customer is picking */
   onPlaceAll?: () => void
   /** "Another day" under a job nothing has room for: the screen opens the job */
   onAnotherDay?: (item: TrayItem) => void

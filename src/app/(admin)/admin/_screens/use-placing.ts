@@ -5,7 +5,7 @@ import { trayLine } from "@/components/blocks/ToScheduleTray"
 import type { AdminData, Person, Visit } from "@/lib/admin/types"
 import { TIME_ZONE, writtenDate } from "@/lib/admin/format"
 import type { Outcome } from "./action-types"
-import { placeAllPlan, placeDayWords, placed, placeFor, restoreVisit, withPlacements, type PlaceContext, type PlaceResult, type Placement } from "./place-model"
+import { placeAllPlan, placeDayWords, placed, placeFor, plainRefusal, restoreVisit, withPlacements, type PlaceContext, type PlaceResult, type Placement } from "./place-model"
 import { trayItems, type TrayItem } from "./schedule-model"
 import { useTextingQueue } from "./use-texting-queue"
 
@@ -53,9 +53,12 @@ export function usePlacing({ data, visits, setVisits, people, todayDay, onMove, 
   const many = (n: number) => `${n} jobs scheduled. The customers have their dates.`
 
   /** The minute is up: the visits book, the API texts, and a refusal comes back under its row. */
-  const commit = (placements: Placement[]) => {
-    const ids = placements.map((p) => p.item.id)
+  const commit = (all: Placement[]) => {
+    // A job that got a day while the minute ran (the customer picked one, the office moved it) is left as it is: this placement is stale.
+    const placements = all.filter((p) => !server.current.find((v) => v.id === p.item.id)?.startAt)
+    const ids = all.map((p) => p.item.id)
     setPending((p) => p.filter((x) => !ids.includes(x.item.id)))
+    if (placements.length === 0) return
     setVisits((v) => withPlacements(v, placements, TIME_ZONE))
     if (!onMove) {
       for (const p of placements) console.info("place visit", p.item.id, p.personId, p.day)
@@ -63,7 +66,7 @@ export function usePlacing({ data, visits, setVisits, people, todayDay, onMove, 
     }
     start(async () => {
       const outs = await Promise.all(placements.map((p) => onMove(p.item.id, p.personId, p.day)))
-      const refused = placements.flatMap((p, i) => (outs[i]!.ok ? [] : [{ id: p.item.id, message: (outs[i] as { message: string }).message }]))
+      const refused = placements.flatMap((p, i) => (outs[i]!.ok ? [] : [{ id: p.item.id, message: plainRefusal((outs[i] as { message: string }).message) }]))
       if (refused.length) {
         setVisits((v) => refused.reduce((acc, r) => restoreVisit(acc, r.id, server.current), v))
         setProblems((m) => ({ ...m, ...Object.fromEntries(refused.map((r) => [r.id, r.message])) }))
@@ -120,6 +123,8 @@ export function usePlacing({ data, visits, setVisits, people, todayDay, onMove, 
     noRoom,
     strips,
     rows,
+    /** a job whose Place is still inside its minute */
+    isPending: (visitId: string) => pending.some((p) => p.item.id === visitId),
     place,
     previewOpen: plan !== null,
     openPlaceAll: () => setPlan(people.length === 0 ? tray.filter((i) => !i.awaitingPick).map((item) => ({ ok: false as const, item, reason: NO_PEOPLE })) : placeAllPlan(tray, context())),

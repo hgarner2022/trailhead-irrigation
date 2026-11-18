@@ -61,4 +61,16 @@ describe("useTextingQueue", () => {
     held.unmount()
     expect(waiting).toHaveBeenCalledOnce()
   })
+
+  it("has nothing to undo once the minute has fired", () => {
+    const commit = vi.fn()
+    const cancel = vi.fn()
+    const { result } = renderHook(() => useTextingQueue())
+    act(() => result.current.add(["Andrea"], commit, cancel))
+    const id = result.current.batches[0]!.id
+    act(() => void vi.advanceTimersByTime(60_000))
+    act(() => result.current.undo(id))
+    expect(commit).toHaveBeenCalledOnce()
+    expect(cancel).not.toHaveBeenCalled()
+  })
 })

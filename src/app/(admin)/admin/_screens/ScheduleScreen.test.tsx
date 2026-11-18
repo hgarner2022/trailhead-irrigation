@@ -144,7 +144,7 @@ describe("ScheduleScreen with actions", () => {
     await pick(user, "Move to day", "Fri 13")
     await user.click(screen.getByRole("button", { name: "Move" }))
     expect(onMove).toHaveBeenCalledWith(expect.any(String), "person_truck-2", "2026-11-13")
-    expect(await screen.findByText("Truck 2 is full of blowout visits on 2026-11-13", {}, { timeout: 5000 })).toBeInTheDocument()
+    expect(await screen.findByText("Truck 2 is full of blowout jobs on November 13", {}, { timeout: 5000 })).toBeInTheDocument()
     expect(percy(cell("person_truck-1", "2026-11-12"))).toBeInTheDocument()
   })
 
@@ -244,7 +244,7 @@ describe("ScheduleScreen's Unscheduled list", () => {
     const name = within(rows()[0]).getByRole("button", { name: /^Place / }).getAttribute("aria-label")!
     await userEvent.click(within(rows()[0]).getByRole("button", { name: /^Place / }))
     const problem = await within(document.querySelector<HTMLElement>('[data-slot="to-schedule-tray"]')!).findByRole("alert", {}, { timeout: 5000 })
-    expect(problem).toHaveTextContent("A turn-on visit must land between 2027-04-26 and 2027-05-31")
+    expect(problem).toHaveTextContent("A turn-on job must land between April 26 and May 31")
     // It sits under the row of the job that was refused.
     expect(problem.closest("li")).toContainElement(screen.getByRole("button", { name }))
     // Nowhere else: the status line is empty, and the other rows carry nothing.
@@ -389,4 +389,51 @@ describe("ScheduleScreen Day view, stops per person", () => {
     render(<ScheduleScreen data={data} today={TODAY} defaultTab="day" defaultDay="2026-11-12" readOnly onMove={onMove} />)
     expect(within(section("person_truck-1")).getByRole("button", { name: /Percy/ })).not.toHaveAttribute("draggable", "true")
   })
+
+  it("makes no call for a drop on the list the stop is already in", () => {
+    const onMove = vi.fn().mockResolvedValue({ ok: true, data: undefined })
+    render(<ScheduleScreen data={data} today={TODAY} defaultTab="day" defaultDay="2026-11-12" onMove={onMove} />)
+    const id = data.visits.find((v) => v.clientName === "Percy" && v.startAt?.startsWith("2026-11-12"))!.id
+    fireEvent.drop(section("person_truck-1"), { dataTransfer: { getData: () => id } })
+    expect(onMove).not.toHaveBeenCalled()
+    expect(screen.getByRole("status")).toHaveTextContent("Percy is already with Ryan Garner on Thursday, November 12.")
+  })
 })
+
+describe("ScheduleScreen placements that are still inside their minute", () => {
+  beforeEach(() => window.history.replaceState(null, "", "/admin/schedule"))
+  const una = { id: "u1", clientId: "c-u", clientName: "Una Hall", town: "Erie" as const, kind: "repair" as const, status: "unscheduled" as const, isPass: false, jobberUrl: "", jobId: "j-u1" }
+  const one: AdminData = { ...data, passes: [], visits: [una] }
+
+  it("takes no drag of a job waiting to be texted, so it is never moved twice", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    try {
+      const onMove = vi.fn().mockResolvedValue({ ok: true, data: undefined })
+      render(<ScheduleScreen data={one} today={TODAY} defaultWeek="2026-11-09" onMove={onMove} />)
+      await userEvent.click(screen.getByRole("button", { name: /^Place Una Hall/ }))
+      await screen.findByText(/^Texting Una in/)
+      expect(percyLike(cell("person_truck-1", "2026-11-13"))).toBeInTheDocument()
+      fireEvent.drop(cell("person_truck-2", "2026-11-13"), { dataTransfer: { getData: () => "u1" } })
+      expect(onMove).not.toHaveBeenCalled()
+      expect(screen.getByText("That job is waiting to be texted. Undo it, or wait for the minute to pass.")).toBeInTheDocument()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it("leaves a job alone at the minute when it got a day meanwhile", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    try {
+      const onMove = vi.fn().mockResolvedValue({ ok: true, data: undefined })
+      const { rerender } = render(<ScheduleScreen data={one} today={TODAY} defaultWeek="2026-11-09" onMove={onMove} />)
+      await userEvent.click(screen.getByRole("button", { name: /^Place Una Hall/ }))
+      rerender(<ScheduleScreen data={{ ...one, visits: [{ ...una, status: "scheduled" as const, startAt: "2026-11-17T16:00:00Z", scheduledOn: "2026-11-17", personId: "person_truck-2", personName: "Tech Two" }] }} today={TODAY} defaultWeek="2026-11-09" onMove={onMove} />)
+      await vi.advanceTimersByTimeAsync(60_000)
+      expect(onMove).not.toHaveBeenCalled()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+})
+
+const percyLike = (el: HTMLElement) => within(el).getByRole("button", { name: /Una/ })

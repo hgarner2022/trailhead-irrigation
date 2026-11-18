@@ -20,6 +20,7 @@ import { useScheduleAddress } from "./schedule-address"
 import { ScheduleDay } from "./ScheduleDay"
 import { ScheduleUnscheduled, TextingStrips } from "./ScheduleUnscheduled"
 import { usePlacing } from "./use-placing"
+import { plainRefusal, restoreVisit } from "./place-model"
 import { TEXT_DELAY_SECONDS } from "./use-texting-queue"
 import { ScheduleMoveTo } from "./ScheduleMoveTo"
 import { DayStepper, Exceptions, NextJobsLine } from "./ScheduleParts"
@@ -129,18 +130,22 @@ function ScheduleBody({ data, today, defaultTab = "week", defaultDay, defaultWee
   const selected = week.find((v) => v.id === selectedId && v.startAt)
 
   /** Sends the move to the API; the block shows where it is going at once and goes back with the API's words if it is refused. */
-  const send = (visitId: string, personId: string, dayIso: string, before: typeof visits, done: string, refused: (message: string) => void = setAnnouncement) =>
+  const send = (visitId: string, personId: string, dayIso: string, done: string) =>
     startTransition(async () => {
       const out = await onMove!(visitId, personId, dayIso)
       if (out.ok) return setAnnouncement(done)
-      setVisits(before)
-      refused(out.message)
+      // only this job goes back, to the server's row: the rest of the screen's state is not touched
+      setVisits((v) => restoreVisit(v, visitId, data.visits))
+      setAnnouncement(plainRefusal(out.message))
     })
   const move = (visitId: string, personId: string, dayIso: string) => {
+    if (placing.isPending(visitId)) return setAnnouncement("That job is waiting to be texted. Undo it, or wait for the minute to pass.")
     if (!onMove) console.info("move visit", visitId, personId, dayIso)
     const outcome = moveOutcome(visits, visitId, personId, dayIso, people, TIME_ZONE)
-    if (outcome.moved) setVisits(outcome.visits)
-    if (onMove) return send(visitId, personId, dayIso, visits, outcome.moved ? outcome.message : "Moved.")
+    // a drop where it already is, a day off and an unknown stop are answered here and make no call
+    if (!outcome.moved) return setAnnouncement(outcome.message)
+    setVisits(outcome.visits)
+    if (onMove) return send(visitId, personId, dayIso, outcome.message)
     setAnnouncement(outcome.message)
   }
   const goToWeek = (next: string) => {

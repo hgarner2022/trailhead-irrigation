@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import type { AreaGroup, Person, SeasonWindow, Visit } from "@/lib/admin/types"
-import { PLACE_HORIZON_DAYS, placeAllPlan, placeFor, placed, placeDayWords, restoreVisit, withPlacements, type PlaceContext } from "./place-model"
+import { PLACE_HORIZON_DAYS, placeAllPlan, placeFor, placed, placeDayWords, plainRefusal, restoreVisit, withPlacements, type PlaceContext } from "./place-model"
 import type { TrayItem } from "./schedule-model"
 
 const TZ = "America/Denver"
@@ -100,5 +100,12 @@ describe("what the screen shows while the text waits", () => {
 
   it("words a day with its weekday", () => {
     expect(placeDayWords("2026-11-24")).toBe("Tue Nov 24")
+  })
+})
+
+describe("plainRefusal", () => {
+  it("takes the word visit and the ISO dates out of the API's words", () => {
+    expect(plainRefusal("Ryan Garner is full of turn-on visits on 2027-04-26")).toBe("Ryan Garner is full of turn-on jobs on April 26")
+    expect(plainRefusal("A turn-on visit must land between 2027-04-26 and 2027-05-31")).toBe("A turn-on job must land between April 26 and May 31")
   })
 })

@@ -7,7 +7,7 @@ describe("TextingStrip", () => {
   it("says who is about to be texted and in how long, with Undo", async () => {
     const onUndo = vi.fn()
     render(<TextingStrip names={["Andrea"]} secondsLeft={52} onUndo={onUndo} />)
-    expect(screen.getByRole("status")).toHaveTextContent("Texting Andrea in 52 s52 seconds.")
+    expect(screen.getByRole("status")).toHaveTextContent("Texting Andrea in 52 sa minute.")
     await userEvent.click(screen.getByRole("button", { name: "Undo" }))
     expect(onUndo).toHaveBeenCalledOnce()
   })

@@ -59,7 +59,8 @@ export function useTextingQueue(seconds: number = TEXT_DELAY_SECONDS): TextingQu
 
   const undo = useCallback(
     (id: number) => {
-      const batch = live.current.find((b) => b.id === id)
+      // a batch whose minute already fired has no timer left: its commit has run and Undo has nothing to take back
+      const batch = timers.current.has(id) ? live.current.find((b) => b.id === id) : undefined
       if (!batch) return
       drop(id)
       batch.cancel()
@@ -74,7 +75,7 @@ export function useTextingQueue(seconds: number = TEXT_DELAY_SECONDS): TextingQu
     return () => clearInterval(tick)
   }, [batches.length])
 
-  // Leaving the page sends what is waiting.
+  // Leaving the screen (not closing the tab) sends what is waiting.
   useEffect(() => {
     const pending = timers.current
     return () => {

@@ -8,7 +8,7 @@
  */
 import type { AreaGroup, BusyBlock, CapacityKind, Person, SeasonWindow, Visit } from "@/lib/admin/types"
 import { addDays, blockedMinutes, capacityAfterBlocks, dayVisits, worksOn } from "@/lib/admin/calendar"
-import { shortDate } from "@/lib/admin/format"
+import { shortDate, writtenDate } from "@/lib/admin/format"
 import type { TrayItem } from "./schedule-model"
 import { placeVisit } from "./schedule-model"
 
@@ -94,3 +94,11 @@ export function withPlacements(visits: Visit[], pending: Placement[], timeZone: 
 
 /** "Tue Nov 24" for a day key, with the weekday, for the preview and the strip. */
 export const placeDayWords = (day: string): string => `${new Date(`${day}T12:00:00Z`).toLocaleDateString("en-US", { weekday: "short", timeZone: "UTC" })} ${shortDate(day)}`
+
+/** The API's refusal as the Schedule says it: no "visit" and no ISO date ("Ryan Garner is full of turn-on visits on 2027-04-26" reads "Ryan Garner is full of turn-on jobs on April 26"). */
+export function plainRefusal(message: string): string {
+  return message
+    .replace(/\b(\d{4}-\d{2}-\d{2})\b/g, (day) => writtenDate(day))
+    .replace(/\bvisits\b/g, "jobs")
+    .replace(/\bvisit\b/g, "job")
+}
