@@ -7,7 +7,7 @@ import { callApi } from "@/api/core/call"
 import { ApiError } from "@/api/core/errors"
 import { customersStartCardUpdate, customersUpdateSelf, propertiesUpdateSelf } from "@/api/v1/portal/me"
 import { visitsPick } from "@/api/v1/visits/handlers"
-import { ctxFromSession } from "@/lib/admin/api-ctx"
+import { ctxFromAccount } from "@/lib/admin/api-ctx"
 import { DAY_FAILED } from "@/lib/portal/words"
 import { drainAfter } from "@/lib/queue/drain-after"
 
@@ -22,7 +22,7 @@ const SAVE_FAILED = "We couldn't save that. Try again, or call or text Ryan at (
 /** Moves a visit to one of the offered days (or gives a waiting visit its day): the customer is texted the date. */
 export async function changeMyDay(visitId: string, day: string): Promise<Result> {
   try {
-    await callApi(await ctxFromSession(), visitsPick, { id: visitId, day })
+    await callApi(await ctxFromAccount(), visitsPick, { id: visitId, day })
   } catch (error) {
     return failure(error, DAY_FAILED)
   }
@@ -34,7 +34,7 @@ export async function changeMyDay(visitId: string, day: string): Promise<Result>
 /** The customer's own name and mobile. A blank mobile is left as it is. */
 export async function saveContact(fields: { firstName: string; lastName: string; phone: string }): Promise<Result> {
   try {
-    await callApi(await ctxFromSession(), customersUpdateSelf, { firstName: fields.firstName, lastName: fields.lastName, ...(fields.phone.trim() ? { phone: fields.phone.trim() } : {}) })
+    await callApi(await ctxFromAccount(), customersUpdateSelf, { firstName: fields.firstName, lastName: fields.lastName, ...(fields.phone.trim() ? { phone: fields.phone.trim() } : {}) })
   } catch (error) {
     return failure(error, SAVE_FAILED)
   }
@@ -45,7 +45,7 @@ export async function saveContact(fields: { firstName: string; lastName: string;
 /** The yard facts of one of the customer's own properties; an empty box clears the fact. */
 export async function saveYard(propertyId: string, fields: Record<string, unknown>): Promise<Result> {
   try {
-    await callApi(await ctxFromSession(), propertiesUpdateSelf, { id: propertyId, ...fields })
+    await callApi(await ctxFromAccount(), propertiesUpdateSelf, { id: propertyId, ...fields })
   } catch (error) {
     return failure(error, SAVE_FAILED)
   }
@@ -55,7 +55,7 @@ export async function saveYard(propertyId: string, fields: Record<string, unknow
 
 /** Sends the customer to Stripe's hosted page to update the card on file. */
 export async function startCardUpdate(): Promise<void> {
-  const { url } = await callApi(await ctxFromSession(), customersStartCardUpdate, {})
+  const { url } = await callApi(await ctxFromAccount(), customersStartCardUpdate, {})
   drainAfter()
   redirect(url)
 }

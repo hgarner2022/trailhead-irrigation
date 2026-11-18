@@ -6,6 +6,7 @@ import { visitsAreaDays } from "@/api/v1/visits/handlers"
 import { today } from "@/api/v1/shared"
 import { passFromApi } from "@/app/(account)/account/pass/pass-from-api"
 import type { Pass } from "@/lib/admin/types"
+import { windowTold } from "@/lib/portal/window-told"
 
 const SEASONS_SHOWN = 6
 
@@ -30,7 +31,10 @@ export async function loadPassPage(ctx: Ctx, options: { pickDays?: boolean } = {
   const list = await callApi(ctx, passesList, { limit: 50 })
   const held = list.data.filter((p) => p.status !== "pending").sort((a, b) => b.season - a.season).slice(0, SEASONS_SHOWN)
   if (held.length === 0) return null
-  const details = await Promise.all(held.map((p) => callApi(ctx, passesGet, { id: p.id })))
+  const loaded = await Promise.all(held.map((p) => callApi(ctx, passesGet, { id: p.id })))
+  // A window is a message, not a promise: the office's estimated start time reaches the customer only once the day-before text for that day exists.
+  const told = await windowTold(ctx.db, ctx.organizationId, loaded.flatMap((p) => p.visits))
+  const details = loaded.map((p) => ({ ...p, visits: p.visits.map((v) => (told.has(v.id) ? v : { ...v, startTime: null })) }))
   const passes = details.map(passFromApi)
   const current = details[0]!
   const pickDays: PassPageData["pickDays"] = {}

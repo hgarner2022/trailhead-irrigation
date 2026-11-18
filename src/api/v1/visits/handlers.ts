@@ -1,9 +1,8 @@
 import "server-only"
 import { and, desc, eq, gte, lte, ne, notInArray } from "drizzle-orm"
 import { passStatus } from "@/lib/pass/facts"
-import { beforeCutoff, CHANGE_CUTOFF_DAYS } from "@/lib/portal/change-day"
-import { PHONE_DISPLAY } from "@/lib/nav"
-import { hasScope } from "@/lib/auth/principal"
+import { isCustomerCaller, assertBeforeCutoff } from "../portal/cutoff"
+import { alertCustomerChange } from "@/lib/portal/alerts"
 import { resolvePassJob } from "@/lib/pass/server/resolve"
 import { z } from "zod"
 import * as s from "@/db/schema"
@@ -16,7 +15,7 @@ import { queueDateMessage } from "@/lib/scheduling/server/notify"
 import { orderDay } from "@/lib/scheduling/server/order-day"
 import { blockedMinutes, capacityAfterBlocks } from "@/lib/admin/calendar"
 import { loadBlocks } from "@/lib/jobber-feed"
-import { offeredDays, openSlots, personFor } from "@/lib/pass/server/area-days"
+import { MAX_OFFERED, offeredDays, openSlots, personFor } from "@/lib/pass/server/area-days"
 import { visitName } from "@/lib/events/names"
 import { recordEvent, whoOf } from "@/lib/events/record"
 import { emitEvent } from "../webhooks/deliver"
@@ -211,7 +210,7 @@ const PICKABLE = ["unscheduled", "scheduled"] as const
 /**
  * The visit and its open job, for the two calls a customer makes about their own day. Any visit of a kind with a season window (turn-on,
  * inspection, blowout) may be moved, on a pass or on a one-off job; the job must be sold and open (a pass: `passStatus` active). A customer's
- * booked day may change until two days before it (`CHANGE_CUTOFF_DAYS`); office staff are not held to that.
+ * booked day may change until 24 hours before its day (`withinCutoff`, the one rule); office staff are not held to that.
  */
 async function loadPickable(ctx: Ctx, id: string) {
   const row = await loadVisit(ctx, id)
@@ -221,8 +220,7 @@ async function loadPickable(ctx: Ctx, id: string) {
   if (!job) throw notFound("Job")
   if (row.isPassVisit ? passStatus(job, today(ctx)) !== "active" : !job.soldOn || job.cancelledAt) throw new ApiError("unprocessable", row.isPassVisit ? "This pass is not open" : "This job is not open")
   if (!(PICKABLE as readonly string[]).includes(visit.status)) throw new ApiError("unprocessable", `A ${visit.status} visit has no day to pick`)
-  if (visit.status === "scheduled" && visit.scheduledOn && !hasScope(ctx.principal, "write") && !beforeCutoff(visit.scheduledOn, today(ctx)))
-    throw new ApiError("unprocessable", `This day is within ${CHANGE_CUTOFF_DAYS} days, so it can't be changed online. Call or text Ryan at ${PHONE_DISPLAY}.`)
+  assertBeforeCutoff(ctx, visit)
   return { row, visit, season: job.season ?? 0 }
 }
 
@@ -232,12 +230,13 @@ export const visitsAreaDays = defineHandler({
   path: "/visits/{id}/area-days",
   scope: "read",
   customerSelf: true,
-  summary: "The days a visit with a season window (a turn-on, inspection or blowout, on a pass or a one-off job) could take, up to three, each a day someone already works the customer's area or has room: what the pass page offers a customer who must be home. A customer asks only about their own visit, and only until two days before its day.",
-  input: idInput,
+  summary: "The days a visit with a season window (a turn-on, inspection or blowout, on a pass or a one-off job) could take, up to `count` (default three, at most five; the portal's Reschedule asks for five), each a day someone already works the customer's area or has room, in date order and never the visit's present day: what the pass page and Reschedule offer. A customer asks only about their own visit, and only until 24 hours before its day.",
+  input: z.object({ id: Id, count: z.coerce.number().int().min(1).max(MAX_OFFERED).optional().describe("How many days to offer; three when left out.") }),
   output: z.object({ days: z.array(Day) }),
   async run(ctx, input) {
     const { row, visit, season } = await loadPickable(ctx, input.id)
-    return { days: offeredDays(await openSlots(ctx.db, { id: visit.id, organizationId: visit.organizationId, kind: visit.kind, town: row.town }, today(ctx), season)) }
+    const slots = await openSlots(ctx.db, { id: visit.id, organizationId: visit.organizationId, kind: visit.kind, town: row.town }, today(ctx), season)
+    return { days: offeredDays(slots.filter((x) => x.day !== visit.scheduledOn), input.count) }
   },
 })
 
@@ -252,8 +251,8 @@ export const visitsPick = defineHandler({
   output: VisitOut,
   async run(ctx, input) {
     const { row, visit, season } = await loadPickable(ctx, input.id)
-    const slots = await openSlots(ctx.db, { id: visit.id, organizationId: visit.organizationId, kind: visit.kind, town: row.town }, today(ctx), season)
-    const slot = offeredDays(slots).includes(input.day) ? personFor(slots, input.day) : undefined
+    const slots = (await openSlots(ctx.db, { id: visit.id, organizationId: visit.organizationId, kind: visit.kind, town: row.town }, today(ctx), season)).filter((x) => x.day !== visit.scheduledOn)
+    const slot = offeredDays(slots, MAX_OFFERED).includes(input.day) ? personFor(slots, input.day) : undefined
     if (!slot) throw new ApiError("unprocessable", "That day is not one of the days on offer; pick another")
     const moved = visit.status === "scheduled"
     await ctx.db.update(s.visit).set({ status: "scheduled", personId: slot.personId, scheduledOn: input.day, startTime: null, stopOrder: null, awaitingPick: false, exception: null, notDoneReason: null }).where(eq(s.visit.id, visit.id))
@@ -261,6 +260,8 @@ export const visitsPick = defineHandler({
     // `recordChange` above writes the event (who is the customer); the outbound webhook does not record it a second time.
     await emitEvent(ctx.db, ctx.organizationId, moved ? "visit.moved" : "visit.scheduled", { visitId: visit.id, ...who(slot.personId), scheduledOn: input.day, from: moved ? { ...who(visit.personId), scheduledOn: visit.scheduledOn } : null })
     await queueDateMessage(ctx.db, visit, moved ? "date-moved" : "date-set", input.day)
+    // A customer moving their own day is news for Home; Ryan finds it as a row, with who has the visit now.
+    if (moved && isCustomerCaller(ctx)) await alertCustomerChange(ctx, visit, { change: "moved", from: visit.scheduledOn, to: input.day, who: slot.personName })
     return visitOut(ctx, await loadVisit(ctx, visit.id))
   },
 })

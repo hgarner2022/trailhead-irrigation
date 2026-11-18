@@ -1,7 +1,7 @@
 import { ACCOUNT_NAME, BUSINESS, SEE_JOB, SIGN_OFF, dollars, longDay } from "./format"
 import { doneWords, jobTable, linesOf, paidWords } from "./job-table"
 import { button, emailLayout, heading, paragraph, plainText, smallPrint } from "./layout"
-import type { CancelledData, CardExpiringData, CardFailedData, ReceiptData, RenderedEmail, RenewalData } from "./types"
+import type { CancelledData, CardExpiringData, CardFailedData, ReceiptData, RenderedEmail, RenewalData, VisitCancelledData } from "./types"
 
 // The money and account emails, worded as docs/plans/2026-11-18-messages-design.md section 4 writes them: the fact first, the
 // service and the address, one button, "The Trailhead crew" above the footer. Only the purchase confirmation and the renewal
@@ -67,4 +67,17 @@ export function renewalEmail(d: RenewalData): RenderedEmail {
   const how = "You pay after each visit, on the card we have on file."
   const body = paragraph(intro) + paragraph(how) + button(d.buyUrl, `Reserve ${d.season}`)
   return { subject, text: plainText([intro, how, "", `Reserve ${d.season}: ${d.buyUrl}`, "", `To stop these emails, reply to this email and say so, or change it in ${account}: ${d.accountUrl}`], SIGN_OFF), html: wrap(d, intro, `Season Pass ${d.season} is open`, body, "You are getting this because you chose to hear about next season. Reply to stop these emails.") }
+}
+
+/** What a customer reads after canceling a visit: the fact, what is and is not charged, and how to book it again. Transactional; the office does not edit it. */
+export const visitCancelledMoney = (paid: number) => (paid > 0 ? `The ${dollars(paid)} you paid stays as it is, and Ryan will contact you about it.` : "Nothing was charged.")
+
+export function visitCancelledEmail(d: VisitCancelledData): RenderedEmail {
+  const when = d.day ? ` on ${longDay(d.day)}` : ""
+  const subject = `Canceled: your ${d.serviceName}${at(d.address)}`
+  const intro = `Hi ${d.firstName}, your ${d.serviceName}${at(d.address)}${when} is canceled. ${visitCancelledMoney(d.paid)}`
+  const how = `Changed your mind? Book online or call ${BUSINESS.phone}.`
+  const book = `${d.origin}/book`
+  const body = paragraph(intro) + paragraph(how) + button(book, "Book a visit")
+  return { subject, text: plainText([intro, how, "", `Book a visit: ${book}`, `Your ${ACCOUNT_NAME}: ${d.accountUrl}`], SIGN_OFF), html: wrap(d, intro, `Your ${d.serviceName} is canceled`, body, "You are getting this because you canceled a visit in your Trailhead account.") }
 }

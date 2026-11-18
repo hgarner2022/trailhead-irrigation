@@ -3,7 +3,7 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import { EmptyState } from "@/components/blocks/EmptyState"
 import { Button } from "@/components/ui/button"
-import { ctxFromSession } from "@/lib/admin/api-ctx"
+import { ctxFromAccount } from "@/lib/admin/api-ctx"
 import { requireCustomer } from "@/lib/auth/guard"
 import { loadPassPage } from "@/lib/pass/server/pass-page"
 import { Ticket } from "lucide-react"
@@ -18,7 +18,7 @@ export const dynamic = "force-dynamic"
 export default async function PassPage() {
   const principal = await requireCustomer()
   // An admin who opens this page holds no pass of their own; `passes.list` would show them everyone's.
-  const data = principal.type === "customer" ? await loadPassPage(await ctxFromSession()) : null
+  const data = principal.type === "customer" ? await loadPassPage(await ctxFromAccount()) : null
   if (!data) {
     return (
       <main className="flex items-center justify-center bg-cream px-4 py-10">

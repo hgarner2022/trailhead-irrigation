@@ -7,8 +7,10 @@ import { defaultMinutes, type Town } from "@/lib/scheduling/types"
 
 /** The earliest a customer may pick: far enough ahead for the date-set text to be news and the person to be told. */
 export const PICK_LEAD_DAYS = 2
-/** How many days the pass page offers. */
+/** How many days the pass page and the checkout offer. */
 export const OFFERED = 3
+/** The most a screen may ask for (the portal's Reschedule asks for this many); `visits.pick` accepts any day `offeredDays` would give at this count. */
+export const MAX_OFFERED = 5
 
 export interface PickVisit {
   id: string
@@ -60,11 +62,11 @@ export async function openSlots(db: Database, visit: PickVisit, today: string, s
   return out
 }
 
-/** The first `OFFERED` distinct days, area days before empty ones, in date order. */
-export function offeredDays(slots: Slot[]): string[] {
+/** The first `count` (default `OFFERED`) distinct days, area days before empty ones, in date order. */
+export function offeredDays(slots: Slot[], count = OFFERED): string[] {
   const days = [...new Set(slots.filter((x) => x.areaDay).map((x) => x.day))]
-  for (const d of new Set(slots.map((x) => x.day))) if (days.length < OFFERED && !days.includes(d)) days.push(d)
-  return days.slice(0, OFFERED).sort()
+  for (const d of new Set(slots.map((x) => x.day))) if (days.length < count && !days.includes(d)) days.push(d)
+  return days.slice(0, count).sort()
 }
 
 /** The person for a picked day: one already working the area, else the first with room. */

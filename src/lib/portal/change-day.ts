@@ -1,18 +1,22 @@
-// The one rule for a customer changing their own day, pure so the handler that enforces it and the screen that words it read the same
-// facts (docs/plans/2026-11-18-customer-portal-design.md, "The reschedule rule"; Hannah's decision, Nov 18 2026: until two days
-// before the day, then call). A visit with a window (a turn-on, an inspection, a blowout) that is booked or still needs a day, on a job that is sold and not
-// canceled, may be moved to one of the offered days; after the cut-off the screen gives the phone number instead. Staff are not held to it.
+// The one rule for a customer changing their own visit, pure so the handlers that enforce it and the screens that word it read the
+// same facts (docs/plans/2026-11-18-customer-portal-v2-design.md section 4; architecture section 3). Hannah's rule, settled Nov 18 2026:
+// inside 24 hours of the visit's day a customer cannot cancel or reschedule online; the screen offers Text Ryan and Call Ryan.
+// The cut-off is midnight Mountain at the start of the visit's day, minus 24 hours: a Tuesday visit is free to change until Sunday
+// 11:59 pm. A visit with no day is always changeable. Staff are not held to it. `withinCutoff` is the only place this is decided.
+import { writtenDate } from "@/lib/admin/format"
 
-/** A customer may change a booked day until this many days before it. */
-export const CHANGE_CUTOFF_DAYS = 2
+const ZONE = "America/Denver"
 
-/** "yes": Change my day or Pick a day; "call": the day is too close, call Ryan; "no": nothing to change online. */
-export type ChangeState = "yes" | "call" | "no"
+/** "yes": the customer may do it online; "text": too close (or a kind whose days are set with Ryan), text or call Ryan; "no": nothing to do online. */
+export type ChangeState = "yes" | "text" | "no"
 
-export interface ChangeFacts {
-  status: string
+export interface CutoffFacts {
   scheduledOn: string | null
-  /** the visit's kind has a season window in the settings (turn-on, inspection, blowout) */
+}
+
+export interface ChangeFacts extends CutoffFacts {
+  status: string
+  /** the visit's kind has a season window in the settings (turn-on, inspection, blowout), so the customer may be offered other days */
   hasWindow: boolean
   /** the job is sold and not canceled (a pass: open) */
   jobOpen: boolean
@@ -20,12 +24,48 @@ export interface ChangeFacts {
 
 const addDays = (day: string, n: number) => new Date(Date.parse(`${day}T12:00:00Z`) + n * 86_400_000).toISOString().slice(0, 10)
 
-/** Whether a booked day is still far enough off to move online: today is at least `CHANGE_CUTOFF_DAYS` before it. */
-export const beforeCutoff = (scheduledOn: string, today: string): boolean => addDays(today, CHANGE_CUTOFF_DAYS) <= scheduledOn
+const hourIn = new Intl.DateTimeFormat("en-US", { timeZone: ZONE, hour: "numeric", hourCycle: "h23" })
+const dayIn = new Intl.DateTimeFormat("en-CA", { timeZone: ZONE, year: "numeric", month: "2-digit", day: "2-digit" })
 
-export function changeFor(f: ChangeFacts, today: string): ChangeState {
-  if (!f.hasWindow || !f.jobOpen) return "no"
-  if (f.status === "unscheduled") return "yes"
-  if (f.status !== "scheduled") return "no"
-  return f.scheduledOn && !beforeCutoff(f.scheduledOn, today) ? "call" : "yes"
+/** The Mountain calendar day an instant falls on. */
+export const mountainDayOf = (at: Date): string => dayIn.format(at)
+
+/** The instant of 00:00 Mountain on a YYYY-MM-DD day (UTC-6 in daylight time, UTC-7 otherwise). */
+function mountainMidnight(day: string): Date {
+  const base = Date.parse(`${day}T00:00:00Z`)
+  for (const offsetHours of [6, 7]) {
+    const at = new Date(base + offsetHours * 3_600_000)
+    if (mountainDayOf(at) === day && Number(hourIn.format(at)) === 0) return at
+  }
+  return new Date(base + 7 * 3_600_000)
+}
+
+/** The instant after which a customer may no longer change this visit online: 00:00 Mountain on the day before the visit. Undefined for a visit with no day. */
+export function cutoffAt(v: { scheduledOn: string }): Date {
+  return mountainMidnight(addDays(v.scheduledOn, -1))
+}
+
+/** Whether a booked day is inside the 24 hours a customer may not change online. A visit with no day is never inside it. */
+export function withinCutoff(v: CutoffFacts, now: Date): boolean {
+  return v.scheduledOn !== null && now.getTime() >= cutoffAt({ scheduledOn: v.scheduledOn }).getTime()
+}
+
+/** "Sunday, April 26, 11:59 pm": the last minute a customer may change the visit online. */
+export function cutoffWords(v: { scheduledOn: string }): string {
+  const last = addDays(v.scheduledOn, -2)
+  const weekday = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][new Date(`${last}T12:00:00Z`).getUTCDay()]!
+  return `${weekday}, ${writtenDate(last)}, 11:59 pm`
+}
+
+/** What a customer may do with a visit online: reschedule it and cancel it, each yes, text or no. */
+export function changeFor(f: ChangeFacts, now: Date): { reschedule: ChangeState; cancel: ChangeState } {
+  const NONE = { reschedule: "no", cancel: "no" } as const
+  if (!f.jobOpen) return NONE
+  if (f.status !== "unscheduled" && f.status !== "scheduled") return NONE
+  if (f.status === "scheduled" && f.scheduledOn) {
+    // The day has passed and Ryan has not closed it: Booked, with no buttons.
+    if (f.scheduledOn < mountainDayOf(now)) return NONE
+    if (withinCutoff(f, now)) return { reschedule: "text", cancel: "text" }
+  }
+  return { reschedule: f.hasWindow ? "yes" : "text", cancel: "yes" }
 }

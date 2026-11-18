@@ -8,7 +8,7 @@ import { enqueue } from "@/lib/queue"
 import { currentConsent, mayMessage } from "./consent"
 import { isFirstText, savedTemplates } from "./saved"
 
-export type MessageKind = "purchase-confirmation" | "booking-confirmation" | "date-set" | "date-moved" | "day-before" | "date-confirm" | "on-the-way" | "receipt" | "card-failed" | "card-expiring" | "cancelled" | "renewal" | "note" | "invoice" | "invoice-reminder"
+export type MessageKind = "purchase-confirmation" | "booking-confirmation" | "date-set" | "date-moved" | "day-before" | "date-confirm" | "on-the-way" | "receipt" | "card-failed" | "card-expiring" | "cancelled" | "visit-cancelled" | "renewal" | "note" | "invoice" | "invoice-reminder"
 
 /** The kinds that go by text: one channel each, the customer's mobile, and by email instead when there is none or texts are off. */
 const BY_TEXT = new Set<string>(Object.keys(SMS_TEMPLATES))

@@ -6,7 +6,7 @@ import { callApi } from "@/api/core/call"
 import { ApiError } from "@/api/core/errors"
 import { passesAddInspection, passesCancel, passesGet, passesSkipVisit, passesStartCardUpdate, passesUpdatePreference } from "@/api/v1/passes/handlers"
 import { visitsPick } from "@/api/v1/visits/handlers"
-import { ctxFromSession } from "@/lib/admin/api-ctx"
+import { ctxFromAccount } from "@/lib/admin/api-ctx"
 import { drainAfter } from "@/lib/queue/drain-after"
 import type { TimingPreference } from "@/lib/admin/types"
 
@@ -24,7 +24,7 @@ const DAY_FAILED = "We couldn't save that day. Try another, or call Ryan at (970
 /** Ends the pass: unstarted visits come off the schedule, nothing further is charged, the customer is emailed. */
 export async function cancelPass(passId: string): Promise<Result> {
   try {
-    await callApi(await ctxFromSession(), passesCancel, { id: passId })
+    await callApi(await ctxFromAccount(), passesCancel, { id: passId })
   } catch (error) {
     return failure(error, CANCEL_FAILED)
   }
@@ -35,14 +35,14 @@ export async function cancelPass(passId: string): Promise<Result> {
 
 /** Sends the customer to Stripe's hosted page to update the card. */
 export async function startCardUpdate(passId: string): Promise<void> {
-  const { url } = await callApi(await ctxFromSession(), passesStartCardUpdate, { id: passId })
+  const { url } = await callApi(await ctxFromAccount(), passesStartCardUpdate, { id: passId })
   drainAfter()
   redirect(url)
 }
 
 /** Earlier, recommended or later for the turn-on or the blowout, until its day is set. */
 export async function changePreference(passId: string, kind: "turn-on" | "blowout", preference: TimingPreference): Promise<void> {
-  await callApi(await ctxFromSession(), passesUpdatePreference, { id: passId, kind, preference })
+  await callApi(await ctxFromAccount(), passesUpdatePreference, { id: passId, kind, preference })
   drainAfter()
   revalidatePath(PAGE)
 }
@@ -50,7 +50,7 @@ export async function changePreference(passId: string, kind: "turn-on" | "blowou
 /** A customer picks one of the offered days, to set a day or to change it; the visit is placed and the date is texted. */
 export async function pickDay(passId: string, kind: "turn-on" | "blowout", day: string): Promise<Result> {
   try {
-    const ctx = await ctxFromSession()
+    const ctx = await ctxFromAccount()
     const pass = await callApi(ctx, passesGet, { id: passId })
     const visit = pass.visits.find((v) => v.kind === kind)
     if (!visit) return { ok: false, message: "We couldn't find that visit on your pass." }
@@ -65,14 +65,14 @@ export async function pickDay(passId: string, kind: "turn-on" | "blowout", day: 
 
 /** Adds the July inspection while its window is still open. */
 export async function addInspection(passId: string): Promise<void> {
-  await callApi(await ctxFromSession(), passesAddInspection, { id: passId })
+  await callApi(await ctxFromAccount(), passesAddInspection, { id: passId })
   drainAfter()
   revalidatePath(PAGE)
 }
 
 /** Skips one visit that has not happened; it is not charged. */
 export async function skipVisit(passId: string, kind: "turn-on" | "inspection" | "blowout"): Promise<void> {
-  await callApi(await ctxFromSession(), passesSkipVisit, { id: passId, kind })
+  await callApi(await ctxFromAccount(), passesSkipVisit, { id: passId, kind })
   drainAfter()
   revalidatePath(PAGE)
 }

@@ -4,6 +4,7 @@ import * as s from "@/db/schema"
 import type { Database } from "@/db/types"
 import { makeCtx, systemPrincipal, type Ctx } from "@/api/core/context"
 import { ApiError } from "@/api/core/errors"
+import { accountPrincipal } from "@/lib/auth/account-principal"
 import type { PersonPrincipal } from "@/lib/auth/types"
 
 export interface CtxDeps {
@@ -35,6 +36,18 @@ export async function ctxFromSession(deps: CtxDeps = {}): Promise<Ctx> {
   const principal = await (deps.getSession ?? session)()
   if (!principal) throw new ApiError("unauthorized", "Sign in to continue")
   return makeCtx(await db(deps), principal, { now: deps.now?.() })
+}
+
+/**
+ * The context for the customer's account (`/account`): the same as `ctxFromSession`, except that an admin whose email is also a customer's
+ * on file acts as that customer there (`accountPrincipal`). The admin screens keep `ctxFromSession`, so the same person is an admin at
+ * `/admin` and a customer at `/account`.
+ */
+export async function ctxFromAccount(deps: CtxDeps = {}): Promise<Ctx> {
+  const principal = await (deps.getSession ?? session)()
+  if (!principal) throw new ApiError("unauthorized", "Sign in to continue")
+  const database = await db(deps)
+  return makeCtx(database, await accountPrincipal(database, principal), { now: deps.now?.() })
 }
 
 /** The context for queue handlers and crons: a system principal with every scope, logged as `system`. */

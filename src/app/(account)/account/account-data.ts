@@ -7,13 +7,13 @@ import type { PortalCustomerType, PortalJobType } from "@/api/v1/portal/schemas"
 import { today } from "@/api/v1/shared"
 import { visitsAreaDays } from "@/api/v1/visits/handlers"
 import { requireCustomer } from "@/lib/auth/guard"
-import { ctxFromSession } from "@/lib/admin/api-ctx"
+import { ctxFromAccount } from "@/lib/admin/api-ctx"
 import { loadPassPage, type PassPageData } from "@/lib/pass/server/pass-page"
 
 /** The signed-in customer's context, or null for someone who is signed in but is not a customer (an admin reads no one's account here). */
 export async function customerCtx(): Promise<Ctx | null> {
   const principal = await requireCustomer()
-  return principal.type === "customer" ? await ctxFromSession() : null
+  return principal.type === "customer" ? await ctxFromAccount() : null
 }
 
 export interface AccountData {

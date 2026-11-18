@@ -1,14 +1,14 @@
 import { describe, expect, it } from "vitest"
-import { arrivalWindow, customerFacingFirstName, longDay, visitDay, visitDayWords, moneyWord, paymentLine, shortDay, visitPill } from "./words"
+import { windowPhrase, customerFacingFirstName, longDay, visitDay, visitDayWords, moneyWord, paymentLine, shortDay, visitPill } from "./words"
 
-describe("arrivalWindow", () => {
+describe("windowPhrase", () => {
   it("says the window in the customer's words", () => {
-    expect(arrivalWindow("09:00", 120)).toBe("Arrive between 9 and 11 am")
-    expect(arrivalWindow("11:00", null)).toBe("Arrive between 11 am and 1 pm")
-    expect(arrivalWindow("13:30", 120)).toBe("Arrive between 1:30 and 3:30 pm")
+    expect(windowPhrase("09:00")).toBe("between 9 and 11 am")
+    expect(windowPhrase("11:00")).toBe("between 11 am and 1 pm")
+    expect(windowPhrase("13:30")).toBe("between 1:30 and 3:30 pm")
   })
   it("says nothing before a start time is set", () => {
-    expect(arrivalWindow(null)).toBeNull()
+    expect(windowPhrase(null)).toBeNull()
   })
 })
 

@@ -22,8 +22,20 @@ afterAll(() => db.close())
 describe("loadVisitFacts", () => {
   it("carries the person's first name as who", async () => {
     const facts = await loadVisitFacts(db, "p4-turn-on", origin)
-    expect(facts).toMatchObject({ id: "p4-turn-on", name: "spring turn-on", day: "2027-05-05", startTime: "08:00", who: "Ryan" })
+    expect(facts).toMatchObject({ id: "p4-turn-on", name: "spring turn-on", day: "2027-05-05", who: "Ryan" })
     expect(facts).not.toHaveProperty("crew")
+  })
+  it("states the day only until the day-before message exists: a window is a message, not a promise", async () => {
+    // The office's estimate is on the row, and still is not a window the customer was told.
+    expect(await loadVisitFacts(db, "p4-turn-on", origin)).toMatchObject({ startTime: null })
+    // The day-before text itself passes `told`: it is the first message that carries a window.
+    expect(await loadVisitFacts(db, "p4-turn-on", origin, undefined, { told: true })).toMatchObject({ startTime: "08:00" })
+    const [v] = await db.select().from(s.visit).where(eq(s.visit.id, "p4-turn-on"))
+    await db.insert(s.messageLog).values({ organizationId: v!.organizationId, customerId: v!.customerId, visitId: v!.id, channel: "sms", kind: "day-before", key: "p4-turn-on-2027-05-05", to: "303-555-0100", body: "x", status: "queued" })
+    expect(await loadVisitFacts(db, "p4-turn-on", origin)).toMatchObject({ startTime: "08:00" })
+    // a row for the old day is not this day's: a moved visit reads as not told until a new row exists
+    expect(await loadVisitFacts(db, "p4-turn-on", origin, "2027-05-06")).toMatchObject({ day: "2027-05-06", startTime: null })
+    await db.delete(s.messageLog).where(eq(s.messageLog.key, "p4-turn-on-2027-05-05"))
   })
   it("carries the street address alone, and the location the calendar uses with the town", async () => {
     const facts = await loadVisitFacts(db, "p4-turn-on", origin)

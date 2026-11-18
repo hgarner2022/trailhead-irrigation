@@ -3,7 +3,7 @@ import { callApi } from "@/api/core/call"
 import { customersMe } from "@/api/v1/portal/me"
 import { auth } from "@/auth"
 import { AccountNav } from "@/components/blocks/AccountNav"
-import { ctxFromSession } from "@/lib/admin/api-ctx"
+import { ctxFromAccount } from "@/lib/admin/api-ctx"
 import { signOutOfAccount } from "./actions"
 
 // The frame around every signed-in /account page: the header with the five places (Home, Visits, Jobs, Season Pass for someone who has held one,
@@ -13,7 +13,7 @@ import { signOutOfAccount } from "./actions"
 export default async function AccountLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const principal = (await auth())?.principal
   if (principal?.type !== "customer") return children
-  const me = await callApi(await ctxFromSession(), customersMe, {})
+  const me = await callApi(await ctxFromAccount(), customersMe, {})
   return (
     <div className="min-h-svh bg-cream">
       <AccountNav firstName={me.firstName} hasPass={me.hasHeldPass} onSignOut={signOutOfAccount} className="print:hidden" />

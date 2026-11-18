@@ -45,7 +45,19 @@ export function visitDayWords(v: VisitDayFacts, today: string): string | null {
   return day.slice(0, 4) === today.slice(0, 4) ? longDay(day) : `${longDay(day)}, ${day.slice(0, 4)}`
 }
 
-export const CALL_LINE = `call or text Ryan at ${PHONE_DISPLAY}`
+/** "Tue, Apr 28" for a row, with the year ("Tue, Apr 28, 2027") when the day falls in another year than `today`. */
+export const timelineDay = (day: string, today: string): string => (day.slice(0, 4) === today.slice(0, 4) ? shortDay(day) : `${shortDay(day)}, ${day.slice(0, 4)}`)
+
+/** What a visit that is not done costs, on its row and its page: "$145, charged after the visit" (a card is on file) or "$145, paid after the visit". Empty when it is unpriced. */
+export const upcomingMoney = (price: number, hasCard: boolean): string => (price > 0 ? `$${price}, ${hasCard ? "charged" : "paid"} after the visit` : "")
+
+export const CALL_LINE =`call or text Ryan at ${PHONE_DISPLAY}`
+/** What a handler answers a customer who tries to change a visit inside the 24 hours; the screen says the same in `TEXT_RYAN_WHY`. */
+export const CUTOFF_REFUSAL = `This visit is within 24 hours, so it can't be changed online. Text or call Ryan at ${PHONE_DISPLAY}.`
+/** What a handler answers a customer who tries to cancel a visit that is done or otherwise past canceling. */
+export const CANCEL_REFUSED = `This visit can't be canceled online. Text or call Ryan at ${PHONE_DISPLAY}.`
+/** The one line under Text Ryan and Call Ryan: why a change this close goes through him. */
+export const TEXT_RYAN_WHY = "Ryan plans his route the day before, so changes this close go through him."
 export const DAY_FAILED = `We couldn't save that day. Try another, or call Ryan at ${PHONE_DISPLAY}.`
 
 function clock(minutes: number): { hour: number; minute: number; meridiem: "am" | "pm" } {
@@ -55,13 +67,13 @@ function clock(minutes: number): { hour: number; minute: number; meridiem: "am" 
 }
 const part = (c: ReturnType<typeof clock>) => (c.minute ? `${c.hour}:${String(c.minute).padStart(2, "0")}` : `${c.hour}`)
 
-/** "Arrive between 9 and 11 am" from a start "HH:MM" and the minutes the window runs (two hours when the visit has none); null before a start time is set. */
-export function arrivalWindow(startTime: string | null | undefined, minutes?: number | null): string | null {
+/** "between 9 and 11 am" from a start "HH:MM": the two-hour window the day-before text tells (`windowText`), never the visit's length. Null before a start time is set. Shown only once that text exists. */
+export function windowPhrase(startTime: string | null | undefined): string | null {
   const match = startTime?.match(/^(\d{2}):(\d{2})/)
   if (!match) return null
   const start = clock(Number(match[1]) * 60 + Number(match[2]))
-  const end = clock(Number(match[1]) * 60 + Number(match[2]) + (minutes && minutes > 0 ? minutes : 120))
-  return start.meridiem === end.meridiem ? `Arrive between ${part(start)} and ${part(end)} ${end.meridiem}` : `Arrive between ${part(start)} ${start.meridiem} and ${part(end)} ${end.meridiem}`
+  const end = clock(Number(match[1]) * 60 + Number(match[2]) + 120)
+  return start.meridiem === end.meridiem ? `between ${part(start)} and ${part(end)} ${end.meridiem}` : `between ${part(start)} ${start.meridiem} and ${part(end)} ${end.meridiem}`
 }
 
 export type VisitPill = { status: "scheduled" | "done" | "needs-a-day" | "cancelled" | "skipped"; label: string }
@@ -112,3 +124,64 @@ export function paymentLine(p: { amount: number; method: string; paidOn: string 
   const on = p.paidOn ? ` ${dueDay(p.paidOn)}` : ""
   return p.amount < 0 ? `Refunded${on}, ${how} $${-p.amount}` : `Paid${on}, ${how} $${p.amount}`
 }
+
+/** The line that promises a window later: a day is a promise, a window is a message. */
+export const WINDOW_LATER = "We'll text your window the day before."
+
+export interface DayLineFacts extends VisitDayFacts {
+  canceledOn?: string | null
+  windowTold: boolean
+  window: string | null
+  personFirstName: string | null
+  /** days are on offer for a visit with no day */
+  canPick: boolean
+}
+
+/**
+ * The sentence under a visit's title (design section 5): the day alone with "We'll text your window the day before" until the day-before message told it, then the
+ * day with the window and who is coming. Done and canceled visits say so with their day; a visit with no day says it is coming. A customer with neither a mobile nor an
+ * email can never be texted a window, so the line says to call.
+ */
+export function dayLine(v: DayLineFacts, today: string, reachable = true): string {
+  if (v.status === "completed") return `${`Done ${visitDayWords(v, today) ?? ""}`.trim()}.`
+  if (v.status === "cancelled" || v.status === "skipped") return v.canceledOn ? `Canceled ${timelineDay(v.canceledOn, today)}.` : "Canceled."
+  const day = visitDayWords(v, today)
+  if (!day) return v.canPick ? "Pick a day." : "Day coming soon. We'll text you when Ryan has one."
+  if (v.windowTold && v.window) return `${day}, ${v.window}${v.personFirstName ? `, with ${v.personFirstName}` : ""}.`
+  return `${day}. ${reachable ? WINDOW_LATER : "Call Ryan for your window."}`
+}
+
+export interface CancelFacts {
+  /** the visit is on a Season Pass */
+  pass: boolean
+  /** other live visits on its job */
+  otherVisits: number
+  /** whole dollars already paid on its job; a cancel never moves money */
+  paid: number
+}
+
+/** What the Cancel step says before the tap (design section 4): the consequence in one sentence. */
+export function cancelConsequence(f: CancelFacts): string {
+  if (f.paid > 0) return `Nothing more is charged. The $${f.paid} you already paid stays as it is, and Ryan will contact you about it.`
+  if (f.pass) return "Nothing is charged. Your Season Pass stays and this visit comes off it."
+  return f.otherVisits > 0 ? "Nothing is charged for this visit. Your other visits stay." : "Nothing is charged."
+}
+
+/** The facts `cancelConsequence` reads, from the job and visit the API sent. */
+export function cancelFactsOf(job: { season: number | null; visits: readonly { id: string; status: string }[]; payments: readonly { amount: number }[] }, visitId: string): CancelFacts {
+  return {
+    pass: job.season !== null,
+    otherVisits: job.visits.filter((v) => v.id !== visitId && v.status !== "cancelled" && v.status !== "skipped").length,
+    paid: Math.max(0, job.payments.reduce((sum, p) => sum + p.amount, 0)),
+  }
+}
+
+/** What the customer reads once a visit is canceled. */
+export const CANCELED_DONE = "Canceled. We texted you a note."
+export const CANCEL_CHANGED_MIND = "Changed your mind?"
+
+/** The body of the text Text Ryan opens: who, where and what, with no ids. */
+export const textRyanBody = (p: { name: string; address: string; service: string; day: string | null }): string => `Hi Ryan, it's ${p.name} at ${p.address} about my ${p.service.toLowerCase()}${p.day ? ` on ${longDay(p.day)}` : ""}.`
+
+/** The `sms:` link for Text Ryan; the text lands in the two-way thread by phone number. */
+export const textRyanHref = (body: string): string => `sms:+19706927270?&body=${encodeURIComponent(body)}`

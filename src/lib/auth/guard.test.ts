@@ -7,6 +7,10 @@ const redirectMock = vi.fn((to: string) => {
 })
 vi.mock("next/navigation", () => ({ redirect: (to: string) => redirectMock(to) }))
 
+const accountPrincipalMock = vi.fn(async (_db: unknown, p: unknown) => p)
+vi.mock("./account-principal", () => ({ accountPrincipal: (db: unknown, p: unknown) => accountPrincipalMock(db, p) }))
+vi.mock("@/db", () => ({ db: () => ({}) }))
+
 import { requireAdmin, requireCustomer, roleAtLeast } from "./guard"
 
 const person = (type: "admin" | "customer", role?: "owner" | "admin" | "tech") => ({
@@ -43,6 +47,11 @@ describe("requireCustomer", () => {
     expect((await requireCustomer()).type).toBe("customer")
     authMock.mockResolvedValue(person("admin", "owner"))
     expect((await requireCustomer()).type).toBe("admin")
+  })
+  it("hands an admin to accountPrincipal, which may resolve them to the customer record with their email", async () => {
+    accountPrincipalMock.mockResolvedValueOnce({ ...person("customer").principal, customerId: "c-owner" })
+    authMock.mockResolvedValue(person("admin", "owner"))
+    expect(await requireCustomer()).toMatchObject({ type: "customer", customerId: "c-owner" })
   })
   it("redirects a stranger to the account sign-in", async () => {
     authMock.mockResolvedValue({})

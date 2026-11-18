@@ -4,9 +4,10 @@
 // decides by whether the number has had a text before). Plain ASCII, so a part holds 160 characters; the full link makes
 // some texts two parts, which costs less than a short link domain. The middle of the day-of texts and of the invoice
 // reminder is what the office may edit (`bodyOf` in src/emails/editable.ts); everything else here is locked.
+import { visitCancelledMoney } from "@/emails/account-messages"
 import { ACCOUNT_NAME, monthDay, shortDay, windowText } from "@/emails/format"
 import { bodyOf, fillTemplate, type EditableMessage, type Overrides } from "@/emails/editable"
-import type { InvoiceData, VisitData } from "@/emails/types"
+import type { InvoiceData, VisitCancelledData, VisitData } from "@/emails/types"
 
 export const OPT_OUT = "Reply STOP to opt out."
 
@@ -38,9 +39,12 @@ export const invoiceText = (d: InvoiceData, o?: TextOptions) => `Trailhead: your
 export const invoiceReminderText = (d: InvoiceData, o?: TextOptions) =>
   `Trailhead: ${fillTemplate(bodyOf(o?.templates, "invoice-reminder", "sms"), { service: d.visitName, amount: dollarsOf(d.total), due: monthDay(d.dueOn), payLink: d.payUrl })}${tail(o)}`
 
+/** The confirmation after a customer cancels a visit from their account: the fact, what is and is not charged and the account link. Not edited by the office. */
+export const visitCancelledText = (d: VisitCancelledData, o?: TextOptions) => `Trailhead: your ${d.serviceName} at ${d.address}${d.day ? ` on ${shortDay(d.day)}` : ""} is canceled. ${visitCancelledMoney(d.paid)} Your ${ACCOUNT_NAME}: ${d.accountUrl}${tail(o)}`
+
 const dollarsOf = (n: number) => `$${n.toLocaleString("en-US")}`
 
-export const SMS_TEMPLATES = { "date-set": dateSetText, "date-moved": dateMovedText, "day-before": dayBeforeText, "date-confirm": dateConfirmText, "on-the-way": onTheWayText, invoice: invoiceText, "invoice-reminder": invoiceReminderText }
+export const SMS_TEMPLATES = { "date-set": dateSetText, "date-moved": dateMovedText, "day-before": dayBeforeText, "date-confirm": dateConfirmText, "on-the-way": onTheWayText, invoice: invoiceText, "invoice-reminder": invoiceReminderText, "visit-cancelled": visitCancelledText }
 export type SmsKind = keyof typeof SMS_TEMPLATES
 
 /** Kinds with no email twin: a text or nothing (on my way means nothing a day later). */
