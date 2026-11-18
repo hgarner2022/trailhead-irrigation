@@ -17,7 +17,6 @@ Nov 18 2026. Design only; nothing is built until Hannah has read it. It is the o
 | Season Pass sells Nov 1 to Jun 15; the office may book any service any day; no buffer, repairs are their own capacity kind | Section 8 |
 | Move is a split button: "Move and text the customer" (primary), "Move without texting" (caret), an optional line. Silence is yes, except a property that must be home: "Reply YES or pick another day", shown as "Waiting on customer". Every visit text carries a signed one-visit link that opens that visit signed in | Section 5.2 |
 
-
 ## 1. What the best products do, and what we take
 
 Sources are vendor help pages. Where a page was not opened or said nothing, it is marked.
@@ -38,7 +37,6 @@ Not found: a first-party Stripe Dashboard design write-up (the Stripe pages abov
 Trailhead's admin looks like a well-kept trail map, not a spreadsheet: a cream canvas, a quiet navy rail that recedes (Linear's lesson), numbers set large in Barlow Condensed, everything else in calm Source Sans 3. Orange is spent on one thing per screen, the primary action, and on the lit nav item; it is never decoration. Structure comes from whitespace and hairlines, not boxes inside boxes. **A screen must never** show two filled buttons, a pill that repeats its own heading, a word an engineer would say ("webhook", "task gave up", "truck"), a table that only works sideways on a phone, a form that grows inside a panel, or a second panel stacked on the first.
 
 
-
 ## 3. Jobs to be done across the admin
 
 | # | Who | Wants to | Today's screen | What is wrong today | Now |
@@ -49,14 +47,11 @@ Trailhead's admin looks like a well-kept trail map, not a spreadsheet: a cream c
 | 4 | Hannah | Give a job a day, move it | Visits, Schedule | Visits in the nav; no New job on the Schedule; Move texts always | 4, 5.2 |
 | 5 | Ryan | See which days are filling and where | Schedule week | No sense of neighbourhood; one person assumed | 5.2, 6 |
 | 6 | The customer | Pick or change a day | Checkout, `/book`, portal | Three pickers, days from unset area groups | 6 |
-| 7 | Hannah | Know who is calling | Customers | Name-only search; one-off jobs invisible | 5.5 |
-| 8 | Hannah | See what is unpaid and chase it | Home, Jobs | Engineer words; two competing primaries | 7, 10 |
-| 9 | Hannah | See the month | Reports | Passes only | 5.6 |
-| 10 | Hannah | Change a person, service or message | Settings, seven tabs | Three save habits; rejected tabs | 8 |
-| 11 | Ryan | Say when a service may be booked | Seasons, Capacity | Four date fields per season | 8.2 |
-| 12 | Hannah | Add a second truck | People | A login row and a truck row for one person | 8.1 |
-| 13 | A tech | Open the gate, do the work, get paid | Visit panel | Gate code hidden; no money path | 7, 11 |
-| 14 | Anyone | Undo a payment or cancel | A toast | Nothing once it fades; no one-off cancel | 7 |
+| 7 | Hannah | See what is unpaid and chase it | Home, Jobs | Engineer words; two competing primaries | 7, 10 |
+| 8 | Hannah | Change a person, service or message | Settings, seven tabs | Three save habits; rejected tabs | 8 |
+| 9 | Ryan | Say when a service may be booked | Seasons, Capacity | Four date fields per season | 8.2 |
+| 10 | Hannah | Add a second truck | People | A login row and a truck row for one person | 8.1 |
+| 11 | A tech | Open the gate, do the work, get paid | Visit panel | Gate code hidden; no money path | 7, 11 |
 
 ## 4. Navigation and information architecture
 
@@ -279,16 +274,13 @@ Name              Role    Takes visits  Works      Per day      Ryan Garner     
 Ryan Garner       Owner   Yes           Mon-Fri    8 blowouts   ryan@...  Takes visits
 ryan@...                                                         Sam Torres      Tech
 Sam Torres        Tech    Yes           Mon-Fri    8 blowouts   Takes visits
-(a row opens the person's sheet)
-Sheet: Name, Email (sign-in), Phone, Role, Takes visits, Works (day chips),
- Visits a day (turn-on, inspection, blowout, repair, other), On from, until, Remove
 ```
 
 Capacity per kind stays here and drives which days are open; Ryan may still place past it by hand ("Over capacity, place anyway?"). Repairs are their own kind, which is the room held back for them. Jobber user stays under "Advanced" until the Jobber switch.
 
 ### 8.2 Services
 
-One service per row; the 17 catalogue rows fold by kind (zone bands become "up to N zones" plus "each extra zone"). Seasonal services carry optional **Bookable from** and **to** (month and day, repeating yearly; empty means all year; a "to" before the "from" wraps New Year). The pass, the booking flow and Home's reminders read these. The office's New job leaves every service selectable.
+One service per row; the 17 catalogue rows fold by kind (zone bands become "up to N zones" plus "each extra zone"). Seasonal services carry optional **Bookable from** and **to** (month and day, repeating yearly; empty means all year; a "to" before the "from" wraps New Year). The pass, the booking flow and Home's reminders read these. The office's New job leaves every service selectable. A row opens a sheet with the description (no prices), zones, minutes, online, dates, Taxable and Active.
 
 | Column | Meaning |
 |---|---|
@@ -308,7 +300,6 @@ Spring turn-on  $145   8      $10    60  Book a day Apr 15-Jun 15  up to 8 zones
 Fall blowout    $95    6      $10    45  Book a day Sep 28-Nov 15 (a row opens a sheet:
 Sprinkler repair $145  -      -      120 Book a day All year       description, price,
 New system      Quoted -      -      -   We quote   All year        zones, minutes, online,
-Sheet also holds: What's included (no prices), Taxable, Active.      dates, Taxable, Active)
 ```
 
 ### 8.3 Billing, Messages, API keys
@@ -384,8 +375,6 @@ Kept: `AdminShell` (bottom bar with More), `SidePanel`, `WeekGrid`, `DayMap` (ro
 | Jobs | Jobs | No jobs yet. A job is what you sell: a repair, a turn-on, a pass. | New job |
 | Jobs, no match | Jobs | No jobs match. | Clear filters |
 | Customers | Customers | No customers yet. A customer is added when you make a job. | New job |
-| Reports | Reports | Numbers show here once a job is paid. | none |
-| People | People | You are the only person. Add someone who takes visits. | Add person |
 | Load failed | the screen's title | We couldn't load this. Try again, or reload the page. | Try again |
 
 Render order everywhere: loading skeleton, error, empty, content (Stripe).
@@ -409,18 +398,18 @@ Each step leaves the admin whole. The two running builds stay on their branches 
 
 | # | Step | Folds in |
 |---|---|---|
-| 0 | Merge portal v2 and done-and-paid after the fixes in section 13. **PR #75 already covers** `CollectPayment`, Mark done then "How is this paid?" (as two dialogs), `payments.chargeCard`, Card failed and Card not charged on Home, and a check, Venmo or cash refund; it covers none of steps 1 to 9 otherwise | PR #75, portal v2 (number to come); PR #72 kept only as the Jobber-pattern check |
+| 0 | Merge portal v2 and done-and-paid after the fixes in section 13. **PR #75 already covers** `CollectPayment`, Mark done then "How is this paid?" (as two dialogs), `payments.chargeCard`, Card failed and Card not charged on Home, and a check, Venmo or cash refund; it covers none of steps 1 to 9 otherwise | PR #75, PR #76 (portal v2: the 24-hour rule, cancel, the window, the signed link; it covers only the customer side of steps 4 and 6); PR #72 kept only as the Jobber-pattern check |
 | 1 | Foundation: `words.ts` words, `RecordPanel`, `RecordFooter`, `ConfirmDialog`, `SectionHeading`, `FormRow`, `SplitButton`, the gate rules; the three record panels move onto it | hierarchy design 3 and 5; audit item 1 |
 | 2 | Navigation: Visits into Schedule's List, `?customer=` and Back, New job everywhere and on a day, the phone bar with More, Cmd+K | hierarchy design; audit items 2 and 7 |
 | 3 | Schedule and Home for one or many people: person rows, Unscheduled for every job, Place and Place all, drag between rows, the Move dialog (split button, optional line, Waiting on customer), Needs action in place, plain words | audit items 1 and 6; the messages build for the move texts, the "Reply YES" ask and the signed one-visit link |
 | 4 | **Move**: the split button "Move and text the customer" with "Move without texting", the optional line, "Waiting on customer" for a must-be-home property, and the "Reply YES or pick another day" text; replaces the visit panel's inline Move form (PR #75 left it as it was) | the messages build; portal v2's signed one-visit link |
-| 5 | Settings shell, People, Services: `SettingsList`, `SaveBar`, Takes visits, one row per service, bookable from and to, bands folded in the UI (bands stay rows; one edit writes the kind's rows; first check the band prices follow the zones rule); the Areas, Capacity and Seasons tabs and their fields go, with a migration dropping them | status audit; week planning 3 (without Routes) |
+| 5 | Settings shell, People, Services: `SettingsList`, `SaveBar`, Takes visits, one row per service, bookable from and to, bands folded in the UI (bands stay rows; one edit writes the kind's rows; first check the band prices follow the zones rule); the Areas, Capacity and Seasons tabs go; their columns stay until step 6, because the checkout and PR #76's Reschedule still read them | status audit; week planning 3 (without Routes) |
 | 6 | The one rule: `rankDays` behind `schedule.offerDays`; the pass checkout, `/book`, the portal's reschedule, the Place list and New job's chips use it; fill and towns on the Schedule's day headers | week planning 5; online booking 4.4; portal v2 |
 | 7 | Order the day: the button, the strip, Undo, the map per person; a plain drive-time algorithm first, then the routing engine, then Jev | week planning 4 |
 | 8 | Reports on every job; the final column sets; phone card rows | hierarchy design 4 |
 | 9 | Online booking reads the rule and the Services dates (its own plan) | online booking design |
 
-Steps 1 to 4 need no migration. Step 5 adds `bookable_from` and `bookable_to` to the service and drops `area`, the windows, the buffers and the town orders after a check that nothing reads them. Step 6 needs property coordinates on stops (geocoded when the address is saved).
+Steps 1 to 4 need no migration. Step 5 adds `bookable_from` and `bookable_to` to the service. Step 6 drops `area`, the windows, the buffers and the town orders once nothing reads them, and needs property coordinates on stops (geocoded when the address is saved).
 
 **Defaults I chose, for review:** "soon days" are the next two weeks; a stop Ryan placed by hand keeps its person when the day is ordered; the Waiting on customer pill is neutral, not a warning.
 
@@ -443,7 +432,17 @@ Read against this design; each row is the fix to send back before merging. "Acce
 | 9 | "Charge not pressed" is computed at page load from the rows | Accept; it matches "read from facts" and needs no daily run |
 | 10 | The footer is hand-built, not `RecordFooter` | Accept; step 1 moves every footer onto the recipe |
 
-**Portal v2** (customer side: cancel, reschedule, one timeline, the window as a message, signed one-visit links in texts): the PR is not open yet. I will check it for: the signed link opening that visit signed in; the 24-hour rule from one function; `visits.cancelSelf` and the Home alert; the window shown only once the day-before text exists; days offered through `rankDays` rather than a second picker (step 6); a must-be-home customer shown "Waiting on customer" to the office; and that no admin screen gains the word "visit".
+**PR #76, portal v2** (green; 135 files, no migration). Matches the design on: the 24-hour rule from one function, `visits.cancelSelf` with the pass skip and the one-off cancel, the window shown only after the day-before text, five days on Reschedule with the current day left out, an admin's email resolving to its customer, and a signed one-visit link (30 days, bound to the visit and customer) on every visit text.
+
+| # | Divergence | Fix |
+|---|---|---|
+| 11 | Reschedule offers days through `openSlots`, which still reads area groups, and only for kinds with a season window; a repair gets Text Ryan | Accept; step 6 replaces `openSlots` with `rankDays` for every kind. Until then the Areas columns must stay in the database (build order step 5 hides the tab only) |
+| 12 | Days are listed in date order, not soonest first with nearness within the soon days | Accept until step 6; the same function then serves the portal, `/book` and Place |
+| 13 | Check that `openSlots` starts from tomorrow, never today | If it starts today, start from tomorrow; the 24-hour rule already blocks a same-day change |
+| 14 | Ryan is told by a Home row and an email to owner and admins; the architecture's decision is a text to Ryan on every customer cancel or move while there is one truck | Add the text (queued like the other office texts); keep the row and the email |
+| 15 | The Home row is "Customer change" with the button "Open visit"; "visit" may not appear on Home | Button "Open job"; the row opens its record in place (step 3) |
+| 16 | The link opens one visit with no session; the design says "signed in" | Accept: it is the same effect, held to that one visit by `onlyVisitId` and the `visitLink` gate; the portal Home needs a normal sign-in |
+| 17 | Both PRs edit `NeedsAttention.tsx`, `needs-attention-action.tsx`, `visit-panel-model.ts` and `VisitPanel.tsx` | Merge #75 first, rebase #76 on it, and apply fixes 2, 3 and 15 to the one file once |
 
 ## 14. Figma
 
