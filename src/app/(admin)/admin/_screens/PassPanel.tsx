@@ -1,14 +1,13 @@
 "use client"
 
-import { useState, useTransition } from "react"
 import { PanelHeading } from "@/components/blocks/PanelParts"
 import { PassActions } from "@/components/blocks/PassActions"
 import { PassSeason } from "@/components/blocks/PassSeason"
 import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { visitPaid } from "@/lib/admin/jobs"
 import type { Pass } from "@/lib/admin/types"
 import type { Outcome } from "./action-types"
+import { ConfirmCancel } from "./ConfirmCancel"
 import type { PassesActions } from "./passes-actions"
 import { PENDING_NOTE, cardWords, consentLine, seasonCharges, seasonFacts, seasonVisits } from "./passes-model"
 import { useOpenVisit } from "./VisitPanelHost"
@@ -45,39 +44,17 @@ function cancelMoney(pass: Pass): string {
 }
 
 export function CancelDialog({ pass, open, onOpenChange, onCancel }: { pass: Pass; open: boolean; onOpenChange: (open: boolean) => void; onCancel?: (passId: string) => Promise<Outcome> }) {
-  const [pending, start] = useTransition()
-  const [problem, setProblem] = useState("")
-  const cancel = () => {
-    if (!onCancel) {
-      console.info("cancel pass", [pass.number])
-      return onOpenChange(false)
-    }
-    start(async () => {
-      const out = await onCancel(pass.id)
-      setProblem(out.ok ? "" : out.message)
-      if (out.ok) onOpenChange(false)
-    })
-  }
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent showCloseButton={false} className="sm:max-w-sm">
-        <DialogHeader>
-          <DialogTitle className="font-display text-2xl font-semibold text-navy">Cancel this pass?</DialogTitle>
-          <DialogDescription>{cancelMoney(pass)}</DialogDescription>
-        </DialogHeader>
-        <p role="alert" className="text-sm text-destructive empty:hidden">
-          {problem}
-        </p>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Keep pass
-          </Button>
-          <Button onClick={cancel} disabled={pending}>
-            Cancel pass
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <ConfirmCancel
+      title="Cancel this pass?"
+      message={cancelMoney(pass)}
+      keepLabel="Keep pass"
+      cancelLabel="Cancel pass"
+      open={open}
+      onOpenChange={onOpenChange}
+      onConfirm={onCancel ? () => onCancel(pass.id) : undefined}
+      log={`cancel pass ${pass.number}`}
+    />
   )
 }
 

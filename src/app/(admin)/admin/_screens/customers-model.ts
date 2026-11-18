@@ -8,11 +8,12 @@
  * data". The next job is read off the visit rows, never off a preference.
  * Timestamps are read in Mountain time (`TIME_ZONE`).
  */
-import type { AdminData, Client, ClientCard, Pass, PassStatus, Property, Visit, Yard } from "@/lib/admin/types"
+import type { AdminData, Client, ClientCard, Pass, PassStatus, Property, SoldJob, Visit, Yard } from "@/lib/admin/types"
 import { TIME_ZONE, fullName, shortDate } from "@/lib/admin/format"
 import { dayOf } from "@/lib/admin/calendar"
 import { passVisitJob } from "@/lib/admin/jobs"
 import { formatPhone } from "@/lib/format/contact"
+import { jobTitle } from "./jobs-model"
 import { consentLine } from "./passes-model"
 
 export type NextState = "booked" | "to-schedule" | "none"
@@ -35,6 +36,8 @@ export interface CustomerRow {
   passNumber?: string
   /** the pass's season, with `pass` the status */
   season?: number
+  /** the newest open job (any kind: a repair, an installation, the pass), what the Job fact names; none when every job is done or canceled */
+  job?: { id: string; title: string; isPass: boolean }
   nextState: NextState
   /** "Apr 26" when the next job has a day; "Unscheduled" when it has none; "Nothing ahead" */
   next: string
@@ -60,12 +63,29 @@ function passJobs(pass: Pass | undefined, today: string): { day?: string; needsD
   return { day: days[0], needsDay: jobs.some(({ job }) => job.state === "needs-a-day") }
 }
 
-export function customerRow(client: Client, passes: Pass[], visits: Visit[], today: string): CustomerRow {
+/** A job still being worked: a quote is out or waiting, or it is open. A pass nobody has paid for is not a job yet. */
+const isOpenJob = (j: SoldJob) => (j.status === "open" || j.status === "needs-a-quote" || j.status === "quoted") && !(j.kind === "pass" && !j.soldOn)
+
+/** The customer's newest open job: the latest sale first, whatever it is. */
+function newestOpenJob(jobs: SoldJob[]): CustomerRow["job"] {
+  const job = jobs.filter(isOpenJob).sort((a, b) => (b.soldOn ?? "").localeCompare(a.soldOn ?? ""))[0]
+  return job ? { id: job.id, title: jobTitle(job), isPass: job.kind === "pass" } : undefined
+}
+
+/**
+ * One customer's row. The facts count every job the customer has, not only the pass: Job is the newest open job's name, Next
+ * the next visit with a day on any job, Scheduled yes when one is ahead, and Unscheduled when a visit of a pass or of a
+ * one-off job still has no day.
+ */
+export function customerRow(client: Client, passes: Pass[], visits: Visit[], today: string, jobs: SoldJob[] = []): CustomerRow {
   const todayDay = dayOf(today, TIME_ZONE)
   const pass = passes.find((p) => p.clientId === client.id && p.status === "active") ?? passes.find((p) => p.clientId === client.id)
   const mine = passJobs(pass, todayDay)
   const days = [nextBookedDay(visits, todayDay), mine.day].filter((d): d is string => Boolean(d)).sort()
   const day = days[0]
+  // A one-off job's visit with no day (a pass's own are read above): the app owns it, so it has a job.
+  const oneOffWaiting = visits.some((v) => v.jobId && !v.isPass && !v.passId && v.status === "unscheduled" && !v.startAt)
+  const job = newestOpenJob(jobs)
   const base = {
     id: client.id,
     name: fullName(client.firstName, client.lastName),
@@ -76,11 +96,12 @@ export function customerRow(client: Client, passes: Pass[], visits: Visit[], tod
     ...(client.phone ? { phone: client.phone } : {}),
     pass: pass?.status ?? ("none" as const),
     ...(pass ? { passId: pass.id, passNumber: pass.number, season: pass.season } : {}),
+    ...(job ? { job } : {}),
     lastVisitAt: client.lastVisitAt,
     marketing: client.consent ? (client.consent.marketingOptIn ? ("yes" as const) : ("no" as const)) : ("not-asked" as const),
   }
   if (day) return { ...base, nextState: "booked", next: shortDate(day), nextKey: day }
-  if (mine.needsDay) return { ...base, nextState: "to-schedule", next: "Unscheduled" }
+  if (mine.needsDay || oneOffWaiting) return { ...base, nextState: "to-schedule", next: "Unscheduled" }
   return { ...base, nextState: "none", next: "Nothing ahead" }
 }
 
@@ -91,9 +112,11 @@ const byClient = (visits: Visit[]) => {
 }
 
 /** Every customer as a row, in the order given. */
-export function customerRows(data: Pick<AdminData, "clients" | "passes" | "visits">, today: string): CustomerRow[] {
+export function customerRows(data: Pick<AdminData, "clients" | "passes" | "visits" | "jobs">, today: string): CustomerRow[] {
   const visits = byClient(data.visits)
-  return data.clients.map((c) => customerRow(c, data.passes, visits.get(c.id) ?? [], today))
+  const jobs = new Map<string, SoldJob[]>()
+  for (const j of data.jobs ?? []) jobs.set(j.customerId, [...(jobs.get(j.customerId) ?? []), j])
+  return data.clients.map((c) => customerRow(c, data.passes, visits.get(c.id) ?? [], today, jobs.get(c.id) ?? []))
 }
 
 /** "375 customers, 12 with a pass. 10 unscheduled, 3 scheduled ahead." or "No customers yet." */

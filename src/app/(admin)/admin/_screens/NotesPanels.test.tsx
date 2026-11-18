@@ -131,7 +131,7 @@ describe("the customer panel", () => {
 describe("the job panel", () => {
   // Dana's pass, a job of the Jobs screen, carrying the story of Andrea's pass (the events are the catalog's).
   const data = (timeline = true): AdminData => ({ ...jobsData, jobs: jobsData.jobs!.map((j) => (j.id === "job_p-office" && timeline ? { ...j, timeline: storyOf(PASS_EVENTS) } : j)) })
-  const actions = (): JobActions => ({ addLine: vi.fn(), updateLine: vi.fn(), cancelLine: vi.fn(), recordPayment: vi.fn(), addVisit: vi.fn(), addNote: addNote() })
+  const actions = (): JobActions => ({ addLine: vi.fn(), updateLine: vi.fn(), cancelLine: vi.fn(), recordPayment: vi.fn(), addVisit: vi.fn(), cancelJob: vi.fn(), addNote: addNote() })
 
   it("reads the story of the job after Change the pass", () => {
     render(<JobsScreen data={data()} today={JOBS_TODAY} defaultJobId="job_p-office" actions={actions()} />)

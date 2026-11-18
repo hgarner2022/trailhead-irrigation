@@ -115,10 +115,10 @@ export interface NewVisitInput {
   notes?: string
 }
 
-export const createVisit = async (input: NewVisitInput): Promise<ActionOutcome<{ id: string }>> =>
+export const createVisit = async (input: NewVisitInput): Promise<ActionOutcome<{ id: string; jobId: string }>> =>
   act(async (ctx) => {
     const made = await callApi(ctx, visitsCreate, input as never)
-    return { id: made.id }
+    return { id: made.id, jobId: made.jobId }
   })
 
 /** New pass: `passes.sell` makes the job, the active pass, its visits with their days, the consent and the confirmation in one call. */

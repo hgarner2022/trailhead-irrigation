@@ -138,6 +138,7 @@ Every record panel (Customer, Visit, Pass) is made from the same parts, in `Side
 - **Rows.** `PanelRowText` on the left (a title over a muted detail, each one line with an ellipsis and the full words in its title) and one pill or amount on the right (`PanelRowEnd`, never shrinks); every row 44px tall at least with 6px of padding, a hairline between rows. Nothing runs past the panel's edge.
 - **Footer.** One bar under the body with a rule over it and the same padding: the primary button first, then the secondary ones, a destructive ghost button last (Cancel pass, on the right). The Visit panel keeps its actions in its body, in the section they change, until its buttons move to the footer.
 - **Pills.** In a row, on the right; in facts, as the value; never in the header.
+- **One panel at a time.** A screen has one record panel open: opening another record (a visit from a job, a job from the New job sheet) closes the first, never stacks a second over it. The Job panel's footer leads with the next step for the job (Add a line, Open visit, Send an invoice, Record the payment once an invoice is out); a Done and paid job has only Open customer.
 
 ## Navigation
 

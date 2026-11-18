@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import type { Client, Pass, Visit, Yard } from "@/lib/admin/types"
+import type { Client, Pass, SoldJob, Visit, Yard } from "@/lib/admin/types"
 import { cardOf, customerCardWords, consentEntries, customerRow, customerRows, customersContext, propertiesOf, propertyLines, yardFromPass } from "./customers-model"
 
 const TODAY = "2026-11-12T19:56:30Z"
@@ -95,6 +95,52 @@ describe("customerRow", () => {
     const pending = customerRow(client, [{ ...pass, status: "pending" }], [], TODAY)
     expect(pending.pass).toBe("pending")
     expect(pending.nextState).toBe("none")
+  })
+})
+
+describe("a customer with a one-off job and no pass", () => {
+  const nora: Client = { id: "c9", firstName: "Nora", lastName: "Ortiz", town: "Erie", jobberUrl: "", hasPass: false }
+  const repair = (over: Partial<SoldJob> = {}): SoldJob => ({ id: "j-repair", customerId: "c9", kind: "repair", status: "open", source: "office", soldOn: "2026-11-18", visitIds: ["v-repair"], ...over })
+  const repairVisit = (over: Partial<Visit> = {}): Visit => ({ id: "v-repair", clientId: "c9", clientName: "Nora Ortiz", town: "Erie", kind: "repair", status: "scheduled", startAt: "2026-11-20T15:00:00Z", scheduledOn: "2026-11-20", isPass: false, jobberUrl: "", jobId: "j-repair", ...over })
+
+  it("reads Job as the open job's name, Next as its day and Scheduled as yes", () => {
+    const row = customerRow(nora, [], [repairVisit()], TODAY, [repair()])
+    expect(row).toMatchObject({ pass: "none", job: { id: "j-repair", title: "Repair", isPass: false }, nextState: "booked", next: "Nov 20", nextKey: "2026-11-20" })
+  })
+
+  it("reads Unscheduled when the one-off job's visit has no day yet", () => {
+    const row = customerRow(nora, [], [repairVisit({ status: "unscheduled", startAt: undefined, scheduledOn: undefined })], TODAY, [repair()])
+    expect(row).toMatchObject({ job: { title: "Repair" }, nextState: "to-schedule", next: "Unscheduled" })
+    expect(customersContext([row])).toBe("1 customers, 0 with a pass. 1 unscheduled, 0 scheduled ahead.")
+  })
+
+  it("has no Job once the job is done or canceled, and says Nothing ahead", () => {
+    const done = customerRow(nora, [], [repairVisit({ status: "completed" })], TODAY, [repair({ status: "done" })])
+    expect(done).toMatchObject({ nextState: "none", next: "Nothing ahead" })
+    expect(done.job).toBeUndefined()
+    expect(customerRow(nora, [], [], TODAY, [repair({ status: "cancelled" })]).job).toBeUndefined()
+  })
+
+  it("names the newest open job when there are several, and a pass by its number", () => {
+    const older = repair({ id: "j-old", soldOn: "2026-10-01" })
+    const install = repair({ id: "j-install", kind: "install", soldOn: "2026-11-10" })
+    expect(customerRow(nora, [], [], TODAY, [older, install]).job).toEqual({ id: "j-install", title: "Installation", isPass: false })
+    const passJob = repair({ id: "j-pass", kind: "pass", passNumber: "TH-2027-0001", passId: "p1", soldOn: "2026-11-19" })
+    expect(customerRow(client, [pass], [], TODAY, [{ ...passJob, customerId: "c1" }, older]).job).toEqual({ id: "j-pass", title: "Season Pass TH-2027-0001", isPass: true })
+    // A pending pass is an unfinished checkout, not a job.
+    expect(customerRow(client, [], [], TODAY, [{ ...passJob, customerId: "c1", soldOn: undefined }]).job).toBeUndefined()
+  })
+
+  it("counts a one-off beside a pass: the next of any job, and a one-off with no day makes the customer Unscheduled", () => {
+    const row = customerRow(client, [pass], [visit("2027-05-04T05:30:00Z", "turn-on")], TODAY, [])
+    expect(row.nextState).toBe("booked")
+    const waiting = customerRow({ ...client, id: "c9" }, [], [repairVisit({ status: "unscheduled", startAt: undefined })], TODAY, [repair()])
+    expect(waiting.nextState).toBe("to-schedule")
+  })
+
+  it("customerRows hands each customer their own jobs", () => {
+    const rows = customerRows({ clients: [nora, client], passes: [pass], visits: [repairVisit()], jobs: [repair()] }, TODAY)
+    expect(rows.map((r) => [r.id, r.job?.title])).toEqual([["c9", "Repair"], ["c1", undefined]])
   })
 })
 

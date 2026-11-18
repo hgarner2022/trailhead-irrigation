@@ -40,12 +40,14 @@ export interface NewJobProps {
   actions?: VisitActions
   /** what the sheet opens with; the catalog's filled-in stories */
   initial?: NewJobInitial
+  /** after Add job: the screen opens the record it shows (Jobs the new job, Visits the new visit); without it the new visit's panel opens */
+  onCreated?: (made: { visitId: string; jobId: string }) => void
 }
 
 /** The active services the sheet offers: the screen's own, else the site's catalogue. */
 const offered = (data: AdminData): readonly ServiceItem[] => (data.services ?? (SERVICE_LIST as readonly ServiceItem[])).filter((s) => s.active !== false)
 
-export function NewJob({ data, today, open, onOpenChange, customerId, actions, initial = {} }: NewJobProps) {
+export function NewJob({ data, today, open, onOpenChange, customerId, actions, initial = {}, onCreated }: NewJobProps) {
   const openVisit = useOpenVisit()
   const [choice, setChoice] = useState<CustomerChoice>(initial.customer ?? emptyChoice(customerId))
   const [what, setWhat] = useState(initial.choice ?? "")
@@ -101,9 +103,10 @@ export function NewJob({ data, today, open, onOpenChange, customerId, actions, i
               choice={choice}
               service={service}
               actions={actions}
-              onDone={(id) => {
+              onDone={(made) => {
                 done()
-                openVisit?.(id)
+                if (onCreated) onCreated({ visitId: made.id, jobId: made.jobId })
+                else openVisit?.(made.id)
               }}
             />
           )}
@@ -114,14 +117,14 @@ export function NewJob({ data, today, open, onOpenChange, customerId, actions, i
 }
 
 /** The header's and the customer panel's button: opens the sheet. */
-export function NewJobButton({ data, today, actions, customerId, label = "New job", variant = "default" }: Omit<NewJobProps, "open" | "onOpenChange" | "initial"> & { label?: string; variant?: "default" | "outline" }) {
+export function NewJobButton({ data, today, actions, customerId, onCreated, label = "New job", variant = "default" }: Omit<NewJobProps, "open" | "onOpenChange" | "initial"> & { label?: string; variant?: "default" | "outline" }) {
   const [open, setOpen] = useState(false)
   return (
     <>
       <Button type="button" variant={variant} className="min-h-11" onClick={() => setOpen(true)}>
         {label}
       </Button>
-      <NewJob data={data} today={today} open={open} onOpenChange={setOpen} customerId={customerId} actions={actions} />
+      <NewJob data={data} today={today} open={open} onOpenChange={setOpen} customerId={customerId} actions={actions} onCreated={onCreated} />
     </>
   )
 }
