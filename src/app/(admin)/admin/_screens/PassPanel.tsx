@@ -10,10 +10,11 @@ import { PassCard } from "@/components/blocks/PassCard"
 import { SeasonLine } from "@/components/blocks/SeasonLine"
 import { StatusPill } from "@/components/blocks/StatusPill"
 import { visitPaid } from "@/lib/admin/jobs"
-import type { Pass } from "@/lib/admin/types"
+import type { Pass, SoldJob } from "@/lib/admin/types"
 import { formatMoney } from "@/lib/admin/metrics"
 import type { Outcome } from "./action-types"
 import type { PassesActions } from "./passes-actions"
+import { PanelNotes } from "./PanelNotes"
 import { PENDING_NOTE, cardWords, chargeRows, consentLine, jobRows } from "./passes-model"
 
 // The body of the Passes side panel: who and what the pass is, its status
@@ -133,7 +134,7 @@ export function CancelDialog({ pass, open, onOpenChange, onCancel }: { pass: Pas
   )
 }
 
-export function PassDetail({ pass, today, readOnly, actions, run, notice }: { pass: Pass; today: string; readOnly: boolean; actions?: PassesActions; run: (call: () => Promise<Outcome>, done?: string) => void; notice: string }) {
+export function PassDetail({ pass, job, today, readOnly, actions, run, notice }: { pass: Pass; job?: SoldJob; today: string; readOnly: boolean; actions?: PassesActions; run: (call: () => Promise<Outcome>, done?: string) => void; notice: string }) {
   return (
     <div className="flex flex-col gap-6">
       <p role="status" className="text-sm text-muted-foreground empty:hidden">
@@ -194,6 +195,7 @@ export function PassDetail({ pass, today, readOnly, actions, run, notice }: { pa
           )}
         </section>
       )}
+      {job && <PanelNotes about="job" aboutId={job.id} timeline={job.timeline} addNote={actions?.addNote} />}
       {pass.stripeUrl && (
         <div className="flex flex-wrap gap-2">
           <Button asChild variant="outline" size="sm">

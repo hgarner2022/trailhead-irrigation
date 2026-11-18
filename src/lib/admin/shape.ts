@@ -10,6 +10,7 @@ import { jobTotal } from "@/lib/jobs/lines"
 import { invoiceOpen, invoiceStatus } from "@/lib/money/invoice"
 import { allocateJobPayments, jobMoney as moneyOfJob, jobOwed } from "@/lib/money/words"
 import { NOT_CLOSED_LOOKBACK_DAYS, visitJob, visitPaid } from "./jobs"
+import { storiesOf, type StoryEvent } from "./story"
 import type {
   AdminInvoice, AdminPayment, SoldJob, AdminData, Attention, BusyBlock, Client, Consent, Invoice, Message, MessageKind, MonthTotal, Pass, PassVisit, Quote, SettingsChange,
   Person, ServiceItem, AreaGroup, OrganizationSettings, Property, Town, Visit, VisitKind, VisitStatus, Yard,
@@ -100,6 +101,8 @@ export interface ShapeInput {
   propertyRows?: PropertyRow[]
   /** every bill of the organization; absent in the fixtures. The open ones (sent, overdue) make a job's money read Bill sent */
   invoiceRows?: InvoiceRow[]
+  /** the organization's newest events (as a caller may read them): grouped into the story of each customer, job and visit; absent in the fixtures, where no panel shows the block */
+  events?: StoryEvent[]
   blocks: BusyBlock[]
   /** every service, inactive ones included; absent in the fixtures */
   services?: ServiceItem[]
@@ -212,8 +215,9 @@ export function shapeAdminData(i: ShapeInput): AdminData {
     const bill = jobId ? billOf.get(jobId) : undefined
     return bill && (bill.visitIds.length === 0 || bill.visitIds.includes(visitId)) ? bill : undefined
   }
+  const stories = storiesOf(i.events, i.messages)
   // A pending pass is an unpaid attempt: its visits are never a job anywhere on the Schedule or in the counts.
-  const pending = new Set(i.passes.filter((p) => p.status === "pending").map((p) => p.id))
+  const pending =new Set(i.passes.filter((p) => p.status === "pending").map((p) => p.id))
 
   // Visits the app owns (pass and booked), then the mirror's: the calendar feed's visits, and open jobs with no visit.
   const appVisits: Visit[] = i.visits.filter((v) => !(v.passId && pending.has(v.passId))).map((v) => {
@@ -225,6 +229,7 @@ export function shapeAdminData(i: ShapeInput): AdminData {
       ...(failed.has(v.id) ? { chargeFailed: true } : {}), ...(v.status === "skipped" ? { skipped: true } : {}), ...(v.passId ? { passId: v.passId } : {}),
       isPass: v.passId !== null, jobberUrl: "",
       ...(v.jobId ? { jobId: v.jobId } : {}), ...(billFor(v.jobId, v.id) ? { invoice: billFor(v.jobId, v.id) } : {}), ...reasonOf(v), price: lineAmountOf(v), ...(v.durationMinutes ? { minutes: v.durationMinutes } : {}), ...(v.notes ? { notes: v.notes } : {}),
+      ...(stories ? { timeline: stories.ofVisit(v.id) } : {}),
       // the person assigned, under the deprecated truck names too (the same values; dropped in step 6)
       ...(v.personName ? { personName: v.personName, truckName: v.personName } : {}),
       ...(v.personId ? { personId: v.personId, truckId: v.personId } : {}),
@@ -270,6 +275,7 @@ export function shapeAdminData(i: ShapeInput): AdminData {
         ...present("lastName", c.lastName), ...present("email", c.email), ...present("phone", c.phone), ...present("address", c.address),
         ...(c.card?.last4 ? { card: { last4: c.card.last4, ...present("brand", c.card.brand), ...present("expires", c.card.expires), ...present("failedAt", c.card.failedAt) } } : {}),
         ...(i.propertyRows ? { properties: propertiesOf.get(c.id) ?? [] } : {}),
+        ...(stories ? { timeline: stories.ofCustomer(c.id) } : {}),
         ...(lastVisit.has(c.id) ? { lastVisitAt: lastVisit.get(c.id) } : {}), ...(consent ? { consent: consentOf(consent), consentHistory: records.map(consentOf) } : {}),
       }
     }),
@@ -329,7 +335,7 @@ export function shapeAdminData(i: ShapeInput): AdminData {
     const bill = billOf.get(j.id)
     const money = moneyOfJob(lines, payments, mine.map((v) => ({ id: v.id, cancelled: v.status === "cancelled" || v.status === "skipped", price: visitPriceOf(v, lines), done: v.status === "completed", doneOn: v.completedOn })), bill ? {} : undefined, paidBillVisits(j.id))
     return {
-      id: j.id, customerId: j.customerId, kind: j.kind, status: j.status, source: j.source, ...(bill ? { invoice: bill } : {}),
+      id: j.id, customerId: j.customerId, kind: j.kind, status: j.status, source: j.source, ...(bill ? { invoice: bill } : {}), ...(stories ? { timeline: stories.ofJob(j.id) } : {}),
       ...(i.lineRows ? { lines: lines.map((l) => ({ id: l.id, name: l.name, quantity: l.quantity, unitPrice: l.unitPrice, taxable: l.taxable, ...(l.description ? { description: l.description } : {}), ...(l.cancelledAt ? { cancelledAt: iso(l.cancelledAt) } : {}), ...(l.visitId ? { visitId: l.visitId } : {}) })), total: jobTotal(lines), payments, money } : {}),
       ...(j.price !== null ? { price: j.price } : {}), ...(j.notes ? { notes: j.notes } : {}),
       ...(pass ? { passId: pass.id, passNumber: j.passNumber ?? pass.number } : {}),

@@ -25,6 +25,7 @@ const actions = (over: Partial<PassesActions> = {}): PassesActions => ({
   addInspection: vi.fn().mockResolvedValue({ ok: true, data: undefined }),
   changePreference: vi.fn().mockResolvedValue({ ok: true, data: undefined }),
   skip: vi.fn().mockResolvedValue({ ok: true, data: undefined }),
+  addNote: vi.fn().mockResolvedValue({ ok: true, data: { id: "n1", at: "2026-11-12T19:00:00Z", actor: "Ryan", what: "Gate sticks", kind: "event", note: "Gate sticks" } }),
   ...over,
 })
 

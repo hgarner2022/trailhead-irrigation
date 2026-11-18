@@ -6,6 +6,7 @@ import type { Handler } from "@/api/core/handler"
 import { areasList } from "@/api/v1/areas/handlers"
 import { customersList, gateYard } from "@/api/v1/customers/handlers"
 import { payLinkOf } from "@/api/v1/invoices/queries"
+import { loadEvents } from "@/api/v1/events/queries"
 import { messagesList } from "@/api/v1/messages/handlers"
 import { passesList } from "@/api/v1/passes/handlers"
 import { settingsChangesList, settingsGet } from "@/api/v1/settings/handlers"
@@ -29,6 +30,8 @@ const personFromApi = (p: PersonOut): Person => ({
   ...(p.seasonStart ? { seasonStart: p.seasonStart } : {}), ...(p.seasonEnd ? { seasonEnd: p.seasonEnd } : {}),
 })
 const MAX_PAGES = 100
+/** How many of the organization's newest events the panels' stories are built from (decision 8 of the step 5 plan). */
+const EVENT_LOAD = 5000
 
 /** Every page of a paginated list handler, called in process with the caller's own principal. */
 async function all<T>(ctx: Ctx, handler: Handler<never, never>, input: Record<string, unknown> = {}): Promise<T[]> {
@@ -73,7 +76,7 @@ export async function getLiveAdminData(ctx: Ctx): Promise<AdminData> {
 
   const db = ctx.db
   const contact = canSeeContact(ctx)
-  const [consents, links, mClients, mVisits, mJobs, mQuotes, mInvoices, problems, blocks, synced, alerts, charges, dismissed, jobRows, lineRows, propertyRows, billRows] = await Promise.all([
+  const [consents, links, mClients, mVisits, mJobs, mQuotes, mInvoices, problems, blocks, synced, alerts, charges, dismissed, jobRows, lineRows, propertyRows, billRows, events] = await Promise.all([
     db.select({ customerId: s.consent.customerId, termsAcceptedAt: s.consent.termsAcceptedAt, termsVersion: s.consent.termsVersion, marketingOptIn: s.consent.marketingOptIn, marketingChannels: s.consent.marketingChannels, source: s.consent.source, recordedAt: s.consent.recordedAt }).from(s.consent).where(eq(s.consent.organizationId, org)),
     db.select({ id: s.customer.id, jobberClientId: s.customer.jobberClientId }).from(s.customer).where(and(eq(s.customer.organizationId, org), isNotNull(s.customer.jobberClientId))),
     db.select({ id: s.jobberClient.id, firstName: s.jobberClient.firstName, lastName: s.jobberClient.lastName, email: s.jobberClient.email, phone: s.jobberClient.phone, town: s.jobberClient.town, jobberUrl: s.jobberClient.jobberUrl }).from(s.jobberClient).where(eq(s.jobberClient.organizationId, org)),
@@ -94,6 +97,8 @@ export async function getLiveAdminData(ctx: Ctx): Promise<AdminData> {
     db.select().from(s.property).where(eq(s.property.organizationId, org)).orderBy(asc(s.property.createdAt), asc(s.property.id)),
     // the organization's own bills (not the Jobber mirror's): the open ones make a job's money read Bill sent
     db.select().from(s.invoice).where(eq(s.invoice.organizationId, org)).orderBy(asc(s.invoice.sentOn), asc(s.invoice.id)),
+    // the organization's newest events, loaded once like the messages and grouped by customer, job and visit; a caller without the write scope gets only the kinds `techEvent` allows
+    loadEvents(ctx, {}, { limit: EVENT_LOAD }),
   ])
 
   return shapeAdminData({
@@ -126,6 +131,7 @@ export async function getLiveAdminData(ctx: Ctx): Promise<AdminData> {
       id: p.id, customerId: p.customerId, town: p.town as Town, zones: p.zones, controller: p.controller, backflowLocation: p.backflowLocation, mustBeHome: p.mustBeHome, contactName: p.contactName, notes: p.notes,
       address: contact ? p.address : null, gateCode: null, accessNote: null, contactPhone: null, ...gateYard(ctx, p),
     })),
+    events: events.data,
     blocks,
     services: serviceRows.data.map(serviceItem),
   })

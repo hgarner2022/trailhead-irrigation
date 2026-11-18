@@ -4,8 +4,10 @@ import { eq } from "drizzle-orm"
 import * as s from "@/db/schema"
 import type { TestDb } from "@/db/test-db"
 import { callApi } from "@/api/core/call"
-import { apiDb, ctxFor, ORG, owner, readKey } from "@/api/test-helpers"
+import { apiDb, ctxFor, ORG, owner, readKey, tech } from "@/api/test-helpers"
+import { eventsNote } from "@/api/v1/events/handlers"
 import { visitsMove } from "@/api/v1/visits/handlers"
+import { recordEvent } from "@/lib/events/record"
 import snapshot from "./fixtures/snapshot.json"
 import { getLiveAdminData } from "./live"
 import type { AdminData } from "./types"
@@ -97,5 +99,33 @@ describe("a read-only caller", () => {
     const limited = await getLiveAdminData(ctxFor(db, readKey))
     expect(limited.passes.find((p) => p.id === "p1")!.accessNote).toBeUndefined()
     expect(limited.passes).toHaveLength(data.passes.length)
+  })
+})
+
+describe("the story of a customer, a job and a visit", () => {
+  it("carries each record's events and messages as ready lines, a note included, and a tech never reads the money", async () => {
+    const ctx = ctxFor(db, owner)
+    const [v] = await db.select({ id: s.visit.id, jobId: s.visit.jobId, customerId: s.visit.customerId }).from(s.visit).where(eq(s.visit.id, "p4-turn-on"))
+    await callApi(ctx, eventsNote, { about: "visit", aboutId: v!.id, text: "Gate was open.\nDog inside." })
+    await callApi(ctx, eventsNote, { about: "customer", aboutId: v!.customerId, text: "Prefers a call" })
+    await recordEvent(db, { organizationId: ORG, about: "payment", aboutId: "pay-story", customerId: v!.customerId, jobId: v!.jobId, visitId: v!.id, kind: "payment.succeeded", detail: { amount: 145, method: "cash" }, who: "system" })
+    // another organization's event never shows
+    await db.insert(s.organization).values({ id: "org-other", name: "Other", termsVersion: "1", settings: { windows: [], bufferPercentEarly: 0, bufferPercentLate: 0, fallTownOrder: [], springTownOrder: [], messages: [] } })
+    await recordEvent(db, { organizationId: "org-other", about: "visit", aboutId: v!.id, customerId: v!.customerId, jobId: v!.jobId, visitId: v!.id, kind: "note", detail: { text: "Not ours" }, who: "system" })
+
+    const live = await getLiveAdminData(ctx)
+    const visit = live.visits.find((x) => x.id === v!.id)!
+    expect(visit.timeline!.map((l) => l.what)).toEqual(expect.arrayContaining(["Gate was open.\nDog inside.", "$145 paid, cash"]))
+    expect(live.jobs!.find((j) => j.id === v!.jobId)!.timeline!.map((l) => l.what)).toContain("Gate was open.\nDog inside.")
+    const client = live.clients.find((c) => c.id === v!.customerId)!
+    expect(client.timeline!.map((l) => l.what)).toEqual(expect.arrayContaining(["Prefers a call", "Gate was open.\nDog inside."]))
+    expect(JSON.stringify([visit.timeline, client.timeline])).not.toContain("Not ours")
+    // a client read from the Jobber mirror has no customer row to attach a note to, so it has no story and its panel no block
+    expect(live.clients.find((c) => !c.app)?.timeline).toBeUndefined()
+
+    const asTech = await getLiveAdminData(ctxFor(db, tech))
+    const techVisit = asTech.visits.find((x) => x.id === v!.id)!
+    expect(techVisit.timeline!.map((l) => l.what)).toContain("Gate was open.\nDog inside.")
+    expect(techVisit.timeline!.map((l) => l.what)).not.toContain("$145 paid, cash")
   })
 })

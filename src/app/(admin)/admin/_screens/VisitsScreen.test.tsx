@@ -67,6 +67,7 @@ const actions = (over: Partial<VisitActions> = {}): VisitActions => ({
   remindBill: vi.fn().mockResolvedValue(ok),
   markNotDone: vi.fn().mockResolvedValue({ ok: true, data: { day: "2026-11-20", personId: "person_truck-1", startTime: null } }),
   edit: vi.fn().mockResolvedValue(ok),
+  addNote: vi.fn().mockResolvedValue({ ok: true, data: { id: "n1", at: "2026-11-12T19:00:00Z", actor: "Ryan", what: "Gate sticks", kind: "event", note: "Gate sticks" } }),
   cancel: vi.fn().mockResolvedValue(ok),
   sendText: vi.fn().mockResolvedValue(ok),
   resendConfirmation: vi.fn().mockResolvedValue(ok),

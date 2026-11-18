@@ -2,6 +2,8 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite"
 import { expect } from "storybook/test"
 import { AdminShell } from "@/components/blocks/AdminShell"
 import { VisitsScreen } from "./VisitsScreen"
+import type { AdminData } from "@/lib/admin/types"
+import { JOE_EVENTS, JOE_MESSAGES, storyOf, withTimeline } from "./notes-fixture"
 import { VISITS_TODAY, noCardVisitId, passVisitId, visitsData } from "./visits-fixture"
 
 // Visits at 12:56 pm Mountain on Thursday, November 12, 2026: the pass visits of the fixture, a pass the office sold
@@ -140,3 +142,29 @@ export const PanelPropertyTech: Story = {
 
 /** A tech reads the visit and sees no buttons. */
 export const PanelReadOnly: Story = { args: { defaultVisitId: "office-scheduled", readOnly: true }, globals: wide }
+
+// Joe Hart's repair with its story: the sale, the day, a note, done and paid by check, the money and the receipt.
+const withStory = (tech = false): AdminData => ({ ...visitsData, visits: withTimeline(visitsData.visits, "office-paid", storyOf(JOE_EVENTS, JOE_MESSAGES, tech)) })
+
+/** Notes and history under the visit's facts: the add box, then the story newest first, the note with its two lines and the receipt text as the quieter line. */
+export const PanelNotesAndHistory: Story = {
+  args: { data: withStory(), defaultVisitId: "office-paid" },
+  globals: wide,
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByRole("heading", { name: "Notes and history" })).toBeInTheDocument()
+    await expect(await canvas.findByText("Repair marked done, paid by check")).toBeInTheDocument()
+    await expect(await canvas.findByText("$145 paid, check for Repair")).toBeInTheDocument()
+  },
+}
+
+/** A tech reads the story without the money line and still has the add box. */
+export const PanelNotesAndHistoryTech: Story = {
+  args: { data: withStory(true), defaultVisitId: "office-paid", readOnly: true },
+  globals: wide,
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByLabelText("Add a note")).toBeInTheDocument()
+    await expect(canvas.queryByText(/\$145 paid/)).not.toBeInTheDocument()
+  },
+}
+
+export const PanelNotesAndHistoryPhone: Story = { args: { data: withStory(), defaultVisitId: "office-paid" }, globals: phone }

@@ -126,7 +126,7 @@ export function PassesScreen({ data, today, defaultSelectedId, readOnly = false,
                 ) : undefined
               }
             >
-              <PassDetail pass={pass} today={today} readOnly={readOnly} actions={actions} run={run} notice={notice} />
+              <PassDetail pass={pass} job={data.jobs?.find((j) => j.passId === pass.id)} today={today} readOnly={readOnly} actions={actions} run={run} notice={notice} />
             </SidePanel>
           )
         }

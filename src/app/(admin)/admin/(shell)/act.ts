@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache"
 import type { Ctx } from "@/api/core/context"
 import { ApiError } from "@/api/core/errors"
 import { ctxFromSession } from "@/lib/admin/api-ctx"
+import type { AdminRole } from "@/lib/auth/allow"
 import { requireAdmin } from "@/lib/auth/guard"
 import { drainAfter } from "@/lib/queue/drain-after"
 
@@ -24,9 +25,9 @@ export const failure = (error: unknown): { ok: false; message: string } => ({
   message: error instanceof ApiError && error.status < 500 ? error.message : "That did not go through. Try again, or call Ryan if it keeps happening.",
 })
 
-/** The one shape of every action: guard, context, the handler call, the refresh. */
-export async function act<T = undefined>(run: (ctx: Ctx) => Promise<T>): Promise<ActionOutcome<T>> {
-  await requireAdmin("manager")
+/** The one shape of every action: guard, context, the handler call, the refresh. A manager's, unless `minRole` says a tech may too (adding a note). */
+export async function act<T = undefined>(run: (ctx: Ctx) => Promise<T>, minRole: AdminRole = "manager"): Promise<ActionOutcome<T>> {
+  await requireAdmin(minRole)
   try {
     const out = await run(await ctxFromSession())
     revalidatePath("/admin", "layout")
