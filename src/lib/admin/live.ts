@@ -89,7 +89,7 @@ export async function getLiveAdminData(ctx: Ctx): Promise<AdminData> {
     db.select({ at: sql<Date | null>`max(${s.jobberClient.syncedAt})` }).from(s.jobberClient).where(eq(s.jobberClient.organizationId, org)),
     db.select({ kind: s.adminAlert.kind, key: s.adminAlert.key, passId: s.adminAlert.passId, message: s.adminAlert.message, createdAt: s.adminAlert.createdAt }).from(s.adminAlert).where(and(eq(s.adminAlert.organizationId, org), isNull(s.adminAlert.resolvedAt))),
     // every payment row of the organization, oldest first: the money words, the month totals and the owed rows are read from these
-    db.select({ id: s.charge.id, jobId: s.charge.jobId, visitId: s.charge.visitId, amount: s.charge.amount, method: s.charge.method, status: s.charge.status, paidOn: s.charge.paidOn, refundsPaymentId: s.charge.refundsPaymentId, attempt: s.charge.attempt, createdAt: s.charge.createdAt })
+    db.select({ id: s.charge.id, jobId: s.charge.jobId, visitId: s.charge.visitId, amount: s.charge.amount, method: s.charge.method, status: s.charge.status, paidOn: s.charge.paidOn, refundsPaymentId: s.charge.refundsPaymentId, reference: s.charge.reference, attempt: s.charge.attempt, createdAt: s.charge.createdAt })
       .from(s.charge).where(eq(s.charge.organizationId, org)).orderBy(asc(s.charge.createdAt), asc(s.charge.id)),
     db.select({ kind: s.adminAlert.kind, key: s.adminAlert.key }).from(s.adminAlert).where(and(eq(s.adminAlert.organizationId, org), isNotNull(s.adminAlert.resolvedAt))),
     db.select({ id: s.job.id, customerId: s.job.customerId, kind: s.job.kind, status: s.job.status, price: s.job.price, source: s.job.source, passNumber: s.job.passNumber, notes: s.job.notes, createdAt: s.job.createdAt }).from(s.job).where(eq(s.job.organizationId, org)),
@@ -117,7 +117,8 @@ export async function getLiveAdminData(ctx: Ctx): Promise<AdminData> {
     settings: rest as never,
     settingsChanges: changes,
     failedChargeVisitIds: failedChargeVisits(charges),
-    paymentRows: charges,
+    // a check number or a Venmo handle is a contact detail: only for the write scope, like the gate code
+    paymentRows: contact ? charges : charges.map((c) => ({ ...c, reference: null })),
     mirror: { clients: contact ? mClients : mClients.map((c) => ({ id: c.id, firstName: c.firstName, lastName: c.lastName, town: c.town, jobberUrl: c.jobberUrl })), visits: mVisits, jobsWithoutVisit: mJobs, quotes: mQuotes, invoices: mInvoices },
     queueProblems: problems,
     alerts,

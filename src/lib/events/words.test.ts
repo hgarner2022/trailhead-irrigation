@@ -85,6 +85,13 @@ describe("eventWords: one sentence per kind", () => {
     const text = "Gate sticks.\nLift the latch, then pull."
     expect(words("note", { text })).toBe(text)
   })
+  it("job.line-added, job.line-edited, job.line-cancelled", () => {
+    expect(words("job.line-added", { name: "Rotors, 12", quantity: 12, unitPrice: 38 })).toBe("Rotors, 12 added, 12 × $38")
+    expect(words("job.line-added", { name: "Controller", quantity: 1, unitPrice: 300 })).toBe("Controller added, $300")
+    expect(words("job.line-added", { name: "Drip zone", quantity: 1, unitPrice: 0 })).toBe("Drip zone added, quote later")
+    expect(words("job.line-edited", { name: "Controller", quantity: 2, unitPrice: 250 })).toBe("Controller changed, 2 × $250")
+    expect(words("job.line-cancelled", { name: "Drip zone" })).toBe("Drip zone cancelled")
+  })
   it("an unknown kind reads Something changed", () => {
     expect(words("widget.exploded", { anything: 1 })).toBe("Something changed")
   })

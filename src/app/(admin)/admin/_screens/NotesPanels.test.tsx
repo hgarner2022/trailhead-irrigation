@@ -2,13 +2,14 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest"
 import { render, screen, waitFor, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
-import type { AdminData, SoldJob } from "@/lib/admin/types"
+import type { AdminData } from "@/lib/admin/types"
 import { UndoToastProvider } from "@/components/blocks/UndoToast"
 import { CustomersScreen } from "./CustomersScreen"
-import { PassesScreen } from "./PassesScreen"
+import { JobsScreen } from "./JobsScreen"
 import { VisitsScreen } from "./VisitsScreen"
 import { ANDREA_EVENTS, ANDREA_MESSAGES, JOE_EVENTS, JOE_MESSAGES, PASS_EVENTS, storyOf, withTimeline } from "./notes-fixture"
-import type { PassesActions } from "./passes-actions"
+import type { JobActions } from "./job-actions-types"
+import { JOBS_TODAY, jobsData } from "./jobs-fixture"
 import type { VisitActions } from "./visit-actions-types"
 import { VISITS_TODAY, visitsData } from "./visits-fixture"
 
@@ -127,14 +128,13 @@ describe("the customer panel", () => {
   })
 })
 
-describe("the pass panel", () => {
-  const base = snapshot as AdminData
-  const job: SoldJob = { id: "job-p1", customerId: "c100", kind: "pass", status: "active", source: "checkout", passId: "p1", passNumber: "TH-2027-0001", visitIds: [], timeline: storyOf(PASS_EVENTS) }
-  const data: AdminData = { ...base, jobs: [job] }
-  const actions = (): PassesActions => ({ resendConfirmation: vi.fn(), sendCardUpdateLink: vi.fn(), cancel: vi.fn(), addInspection: vi.fn(), changePreference: vi.fn(), skip: vi.fn(), addNote: addNote() })
+describe("the job panel", () => {
+  // Dana's pass, a job of the Jobs screen, carrying the story of Andrea's pass (the events are the catalog's).
+  const data = (timeline = true): AdminData => ({ ...jobsData, jobs: jobsData.jobs!.map((j) => (j.id === "job_p-office" && timeline ? { ...j, timeline: storyOf(PASS_EVENTS) } : j)) })
+  const actions = (): JobActions => ({ addLine: vi.fn(), updateLine: vi.fn(), cancelLine: vi.fn(), recordPayment: vi.fn(), addVisit: vi.fn(), addNote: addNote() })
 
-  it("reads the story of the pass's job after Change the pass", () => {
-    render(<PassesScreen data={data} today={TODAY} defaultSelectedId="p1" actions={actions()} />)
+  it("reads the story of the job after Change the pass", () => {
+    render(<JobsScreen data={data()} today={JOBS_TODAY} defaultJobId="job_p-office" actions={actions()} />)
     expect(lines()[0]).toBe("Nov 10 · Ryan · Andrea would like the first Monday in May if it can be done.")
     expect(lines()).toContain("Nov 8 · the customer · Spring turn-on timing changed from mid May to early May")
     const change = screen.getByRole("heading", { name: "Change the pass" })
@@ -143,14 +143,25 @@ describe("the pass panel", () => {
 
   it("adds a note about the job, for a tech too", async () => {
     const a = actions()
-    render(<PassesScreen data={data} today={TODAY} defaultSelectedId="p1" readOnly actions={a} />)
+    render(<JobsScreen data={data()} today={JOBS_TODAY} defaultJobId="job_p-office" readOnly actions={a} />)
     await userEvent.type(within(block()).getByLabelText("Add a note"), "Back gate sticks")
     await userEvent.click(within(block()).getByRole("button", { name: "Add note" }))
-    expect(a.addNote).toHaveBeenCalledWith("job", "job-p1", "Back gate sticks")
+    expect(a.addNote).toHaveBeenCalledWith("job", "job_p-office", "Back gate sticks")
   })
 
-  it("shows no block for a pass whose job is not loaded", () => {
-    render(<PassesScreen data={base} today={TODAY} defaultSelectedId="p1" actions={actions()} />)
+  it("reads the story of a one-off job too, and keeps the plain note for a job with no story", () => {
+    const oneOff: AdminData = { ...jobsData, jobs: jobsData.jobs!.map((j) => (j.id === "job-install" ? { ...j, timeline: storyOf(JOE_EVENTS, JOE_MESSAGES) } : j)) }
+    const { unmount } = render(<JobsScreen data={oneOff} today={JOBS_TODAY} defaultJobId="job-install" actions={actions()} />)
+    expect(lines().join("\n")).toContain("Repair marked done, paid by check")
+    expect(screen.queryByText("Front yard first, then the strip along the fence.", { selector: "p" })).toBeNull()
+    unmount()
+    render(<JobsScreen data={jobsData} today={JOBS_TODAY} defaultJobId="job-install" actions={actions()} />)
+    expect(screen.getByText("Front yard first, then the strip along the fence.")).toBeInTheDocument()
+    expect(screen.queryByRole("region", { name: "Notes and history" })).toBeNull()
+  })
+
+  it("shows no block for a job whose story is not loaded", () => {
+    render(<JobsScreen data={data(false)} today={JOBS_TODAY} defaultJobId="job_p-office" actions={actions()} />)
     expect(screen.queryByRole("region", { name: "Notes and history" })).toBeNull()
   })
 })

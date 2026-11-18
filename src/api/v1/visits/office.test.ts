@@ -95,6 +95,34 @@ describe("visits.create", () => {
   })
 })
 
+describe("visits.create with a jobId", () => {
+  it("adds a visit and its line to the open job, with the job's customer and property, and makes no new job", async () => {
+    const first = await create({ customerId: "c100", kind: "install" })
+    const jobs = await count(s.job)
+    const second = await create({ jobId: first.jobId, kind: "repair", price: 145 })
+    expect(second).toMatchObject({ jobId: first.jobId, kind: "repair", status: "unscheduled", amount: 145 })
+    expect(await count(s.job)).toBe(jobs)
+    expect(await linesOfJob(db, first.jobId)).toMatchObject([{ visitId: first.id, name: "Installation" }, { visitId: second.id, name: "Repair", unitPrice: 145 }])
+    const [a, b] = await Promise.all([db.select().from(s.visit).where(eq(s.visit.id, first.id)), db.select().from(s.visit).where(eq(s.visit.id, second.id))])
+    expect([b[0]!.customerId, b[0]!.propertyId]).toEqual([a[0]!.customerId, a[0]!.propertyId])
+  })
+  it("refuses a customer beside the job, an unknown job, a cancelled job and a Season Pass, and a refused day takes only the visit back", async () => {
+    const first = await create({ customerId: "c100", kind: "repair", price: 145 })
+    await expect(create({ jobId: first.jobId, customerId: "c100", kind: "repair" })).rejects.toMatchObject({ code: "invalid" })
+    await expect(create({ jobId: "nope", kind: "repair" })).rejects.toMatchObject({ code: "not_found" })
+    const visits = await count(s.visit)
+    const lines = await count(s.lineItem)
+    await expect(create({ jobId: first.jobId, kind: "repair", scheduledOn: "2027-05-08" })).rejects.toMatchObject({ code: expect.any(String) })
+    expect(await count(s.visit)).toBe(visits)
+    expect(await count(s.lineItem)).toBe(lines)
+    expect((await db.select().from(s.job).where(eq(s.job.id, first.jobId))).length).toBe(1)
+    await callApi(as(), visitsCancel, { id: first.id })
+    await expect(create({ jobId: first.jobId, kind: "repair" })).rejects.toMatchObject({ code: "unprocessable" })
+    const [pass] = await db.select().from(s.job).where(eq(s.job.kind, "pass"))
+    if (pass) await expect(create({ jobId: pass.id, kind: "repair" })).rejects.toMatchObject({ code: "unprocessable" })
+  })
+})
+
 describe("visits.create's default assignee", () => {
   it("is the owner before anyone whose name sorts first", async () => {
     const [aaron] = await db.insert(s.person).values({ organizationId: ORG, name: "Aaron Lee", initials: "AL", role: "tech", truck: "Truck 3" }).returning({ id: s.person.id })

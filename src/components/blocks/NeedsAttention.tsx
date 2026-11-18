@@ -2,7 +2,7 @@ import Link from "next/link"
 import { BadgeCheck, Ban, Banknote, CalendarCheck, CalendarX, CircleDashed, Clock, CreditCard, ReceiptText, type LucideIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { Attention } from "@/lib/admin/types"
-import { visitsOfJob } from "@/lib/admin/links"
+import { jobUrl } from "@/lib/admin/links"
 import { EmptyState } from "./EmptyState"
 import { AttentionAction, type ActionResult } from "./needs-attention-action"
 import { relativeTime } from "./needs-attention-time"
@@ -47,12 +47,13 @@ const KINDS: Record<Attention["kind"], { icon: LucideIcon; tone: string; name: s
   unplaced: { icon: CalendarX, tone: "bg-warning/10 text-warning", name: "Unscheduled" },
 }
 
-/** A visit opens in Visits, a pass its job's visits on Visits, an overdue bill its customer's panel on Customers (the bill is there), a schedule line in Schedule; the rest have no page of their own. */
+/** A visit opens in Visits, a pass or an overdue bill its job on Jobs (the bill is on the job), a schedule line in Schedule; the rest have no page of their own. */
 export function attentionHref(item: Attention): string | undefined {
+  if (item.kind === "overdue" && item.jobId) return jobUrl(item.jobId)
   if (item.kind === "overdue" && item.customerId) return `/admin/customers?customer=${encodeURIComponent(item.customerId)}`
   if (item.visitId) return `/admin/visits?visit=${encodeURIComponent(item.visitId)}`
-  // A pass is a job: its row opens that job's visits (HomeScreen puts the job on a row that names only a pass).
-  if (item.passId) return item.jobId ? visitsOfJob(item.jobId) : "/admin/visits"
+  // A pass is a job: its row opens that job on Jobs (HomeScreen puts the job on a row that names only a pass).
+  if (item.passId) return item.jobId ? jobUrl(item.jobId) : "/admin/jobs"
   if (item.kind === "unplaced" || item.kind === "not-closed" || item.kind === "scheduled") return "/admin/schedule"
   return undefined
 }

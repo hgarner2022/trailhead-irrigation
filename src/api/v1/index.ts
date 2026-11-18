@@ -5,6 +5,7 @@ import { apiKeysList, apiKeysCreate, apiKeysRevoke } from "./apikeys/handlers"
 import { areasList, areasCreate, areasUpdate, areasDelete } from "./areas/handlers"
 import { bookingsCreate, bookingsCancel, quoteRequestsCreate, quoteRequestsList } from "./bookings/handlers"
 import { customersList, customersGet, customersCreate, customersUpdate, consentsList, consentsRecord } from "./customers/handlers"
+import { linesAdd, linesUpdate, linesCancel } from "./lines/handlers"
 import { eventsList, eventsNote } from "./events/handlers"
 import { invoicesSend, invoicesList, invoicesGet, invoicesRemind, invoicesCancel, invoicesPayView } from "./invoices/handlers"
 import { mirrorUpsert } from "./mirror/handlers"
@@ -33,6 +34,7 @@ export const handlers: AnyHandler[] = [
   customersList, customersGet, customersCreate, customersUpdate, consentsList, consentsRecord,
   eventsList, eventsNote,
   invoicesSend, invoicesList, invoicesGet, invoicesRemind, invoicesCancel, invoicesPayView,
+  linesAdd, linesUpdate, linesCancel,
   messagesList, messagesSend,
   mirrorUpsert,
   organizationGet,

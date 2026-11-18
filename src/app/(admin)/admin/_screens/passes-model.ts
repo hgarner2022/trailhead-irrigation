@@ -105,3 +105,27 @@ export function chargeRows(pass: Pass): ChargeRow[] {
     charged: visitPaidOn(visit) ? `Paid ${shortDate(visitPaidOn(visit)!, TIME_ZONE)}` : "",
   }))
 }
+
+/** The facts beside the pass card: town, zones, the access note, the pass's status word and, when the job has priced lines, its money in words. */
+export function seasonFacts(pass: Pick<Pass, "town" | "zones" | "accessNote" | "status">, money?: string, withAccess = true): [string, string][] {
+  return [
+    ["Town", pass.town],
+    ["Zones", String(pass.zones)],
+    ...(withAccess && pass.accessNote ? ([["Access", pass.accessNote]] as [string, string][]) : []),
+    ["Status", statusLabel(pass.status)],
+    ...(money ? ([["Money", money]] as [string, string][]) : []),
+  ]
+}
+
+/** One row per visit for the season view: its name, its day and window then who has it, its two pills and the visit row to open. */
+export function seasonVisits(pass: Pass, today: string): { id?: string; name: string; detail?: string; job: Job }[] {
+  return jobRows(pass, today).map((row) => {
+    const who = pass.visits.find((v) => v.id === row.visitId)?.personName
+    const detail = [row.job.state !== "needs-a-day" ? row.when : "", who].filter(Boolean).join(", ")
+    return { ...(row.visitId ? { id: row.visitId } : {}), name: row.name, ...(detail ? { detail } : {}), job: row.job }
+  })
+}
+
+/** The charges list as words: "$145" and "Paid Apr 20". */
+export const seasonCharges = (pass: Pass): { name: string; when: string; amount: string; paid: string }[] =>
+  chargeRows(pass).map((row) => ({ name: row.name, when: row.when, amount: `$${row.amount.toLocaleString("en-US")}`, paid: row.charged }))

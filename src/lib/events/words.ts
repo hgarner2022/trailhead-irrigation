@@ -106,6 +106,15 @@ function soldWords(d: Record<string, unknown>): string {
   return `${name} ${source === "website" || source === "site" ? "booked online" : "added by the office"}`
 }
 
+/** "Rotors, 12 added, 12 × $38", "Drip zone added, quote later": a line of a job and what was done to it. */
+function lineWords(d: Record<string, unknown>, did: string): string {
+  const name = str(d.name) ?? "A line"
+  const price = num(d.unitPrice)
+  const qty = num(d.quantity) ?? 1
+  const tail = price === undefined ? "" : price > 0 ? `, ${qty > 1 ? `${qty} × ` : ""}${money(price)}` : ", quote later"
+  return `${name} ${did}${tail}`
+}
+
 /** The sentence for an event, without the actor. */
 function whatOf(e: EventForWords): string {
   const d = e.detail ?? {}
@@ -113,6 +122,9 @@ function whatOf(e: EventForWords): string {
   switch (e.kind) {
     case "job.sold": return soldWords(d)
     case "job.cancelled": return str(d.reason) ? `Job cancelled, ${d.reason}` : "Job cancelled"
+    case "job.line-added": return lineWords(d, "added")
+    case "job.line-edited": return lineWords(d, "changed")
+    case "job.line-cancelled": return `${str(d.name) ?? "A line"} cancelled`
     case "visit.scheduled": return dayWords(d.day) ? `${name} scheduled for ${dayWords(d.day)}` : `${name} scheduled`
     case "visit.moved": {
       const from = dayWords(d.from)

@@ -21,6 +21,7 @@ vi.mock("@/lib/admin/api-ctx", async () => {
 import HomePage from "./page"
 import SchedulePage from "./schedule/page"
 import PassesPage from "./passes/page"
+import JobsPage from "./jobs/page"
 import ReportsPage from "./reports/page"
 import VisitsPage from "./visits/page"
 import RevenuePage from "./revenue/page"
@@ -57,12 +58,17 @@ describe("the admin pages", () => {
     expect(one).toContain('data-slot="schedule-screen"')
   })
 
-  it("Passes lists the seeded passes and opens the one in ?pass=", async () => {
-    const out = html(await PassesPage(search({})))
-    expect(out).toContain('data-slot="passes-screen"')
-    expect(out).toContain(fixture.passes[0]!.firstName)
-    expect(out).toContain("1 cancelled")
-    expect(html(await PassesPage(search({ pass: "p1" })))).toContain('data-slot="passes-screen"')
+  it("Jobs lists the seeded jobs, a pass by its number, and takes ?job=, ?money= and ?kind=", async () => {
+    const out = html(await JobsPage(search({})))
+    expect(out).toContain('data-slot="jobs-screen"')
+    expect(out).toContain("Season Pass TH-")
+    expect(out).toContain("New job")
+    expect(html(await JobsPage(search({ job: "nope", money: "bill-sent,overdue", kind: "pass", status: "open" })))).toContain('data-slot="jobs-screen"')
+  })
+
+  it("Passes is the Jobs screen now: it redirects, with or without a pass", async () => {
+    await expect(PassesPage(search({}))).rejects.toThrow(/NEXT_REDIRECT/)
+    await expect(PassesPage(search({ pass: "p1" }))).rejects.toThrow(/NEXT_REDIRECT/)
   })
 
   it("Reports holds Home's old numbers and Revenue's content, and /admin/revenue redirects to it", async () => {
@@ -102,7 +108,9 @@ describe("the admin pages", () => {
   it("renders for a tech too, who reads the same data and sees no buttons", async () => {
     state.principal = tech
     try {
-      expect(html(await PassesPage(search({})))).toContain('data-slot="passes-screen"')
+      const jobs = html(await JobsPage(search({})))
+      expect(jobs).toContain('data-slot="jobs-screen"')
+      expect(jobs).not.toContain("New job")
       const settings = html(await SettingsPage())
       expect(settings).toContain("You can read the settings. A manager changes them.")
       expect(settings).not.toContain(">Save<")

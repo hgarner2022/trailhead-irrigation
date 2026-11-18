@@ -6,6 +6,7 @@ import type { AdminData } from "@/lib/admin/types"
 import { EMPTY_SETTINGS } from "@/lib/admin/empty-settings"
 import { AdminShell } from "@/components/blocks/AdminShell"
 import { CustomersScreen } from "./CustomersScreen"
+import { JOBS_TODAY, jobsData } from "./jobs-fixture"
 import { ANDREA_EVENTS, ANDREA_MESSAGES, storyOf, withTimeline } from "./notes-fixture"
 
 // The panel is a dialog in a portal on the body, outside the story's canvas.
@@ -40,12 +41,12 @@ export const Default: Story = {
   globals: { viewport: { value: "wide", isRotated: false } },
 }
 
-/** Andrea's panel open: the same normal data as her row, the access note, her jobs, the consent history and her messages; New job in the footer. */
+/** Andrea's panel open: the same normal data as her row, the access note, her jobs (none in the snapshot), the consent history and her messages; New job in the footer. */
 export const PanelOpen: Story = {
   args: { defaultSelectedId: "c100" },
   globals: { viewport: { value: "wide", isRotated: false } },
   play: async () => {
-    await expect(await body.findByRole("heading", { name: "Visits" })).toBeInTheDocument()
+    await expect(await body.findByRole("heading", { name: "Jobs" })).toBeInTheDocument()
     await expect(await body.findByRole("heading", { name: "Consent history" })).toBeInTheDocument()
     await expect(await body.findByRole("button", { name: "New job" })).toBeInTheDocument()
   },
@@ -165,4 +166,15 @@ export const Tablet: Story = {
 
 export const Phone: Story = {
   globals: { viewport: { value: "phone", isRotated: false } },
+}
+
+/** Dana holds the pass the office sold her: the Season Pass view sits under her facts, then her jobs, each opening to its visits. */
+export const PanelSeasonPass: Story = {
+  args: { data: jobsData, today: JOBS_TODAY, defaultSelectedId: "c-dana" },
+  globals: { viewport: { value: "wide", isRotated: false } },
+  play: async () => {
+    await expect(await body.findByRole("heading", { name: "Season Pass" })).toBeInTheDocument()
+    await expect(await body.findByRole("heading", { name: "Jobs" })).toBeInTheDocument()
+    await expect(await body.findByRole("link", { name: "Season Pass TH-2027-0014 · 2027 · Active" })).toHaveAttribute("href", "/admin/jobs?job=job_p-office")
+  },
 }

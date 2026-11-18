@@ -34,7 +34,7 @@ const rail = () => document.querySelector('[data-slot="sidebar"]')
 const tabbar = () => document.querySelector('[data-slot="admin-tabbar"]')
 
 describe("AdminShell", () => {
-  it("renders the six nav links in the plan's order with the current one marked, the user and the children", () => {
+  it("renders the seven nav links in the plan's order with the current one marked, the user and the children", () => {
     stubViewport(1440)
     render(
       <AdminShell current="visits" user={user}>
@@ -43,8 +43,8 @@ describe("AdminShell", () => {
     )
     const nav = within(rail() as HTMLElement)
     const links = nav.getAllByRole("link")
-    expect(links.map((l) => l.textContent)).toEqual(["Home", "Schedule", "Visits", "Customers", "Reports", "Settings"])
-    expect(links.map((l) => l.getAttribute("href"))).toEqual(["/admin", "/admin/schedule", "/admin/visits", "/admin/customers", "/admin/reports", "/admin/settings"])
+    expect(links.map((l) => l.textContent)).toEqual(["Home", "Schedule", "Jobs", "Visits", "Customers", "Reports", "Settings"])
+    expect(links.map((l) => l.getAttribute("href"))).toEqual(["/admin", "/admin/schedule", "/admin/jobs", "/admin/visits", "/admin/customers", "/admin/reports", "/admin/settings"])
     expect(nav.getByRole("link", { name: "Visits" })).toHaveAttribute("aria-current", "page")
     expect(nav.getByRole("link", { name: "Home" })).not.toHaveAttribute("aria-current")
     expect(screen.getByText("HG")).toBeInTheDocument()
@@ -86,7 +86,7 @@ describe("AdminShell", () => {
     expect(bar).not.toBeNull()
     expect(screen.getByRole("navigation", { name: "Main" })).toBe(bar)
     const links = within(bar).getAllByRole("link")
-    expect(links.map((l) => l.textContent)).toEqual(["Home", "Schedule", "Visits", "Customers", "Reports", "Settings"])
+    expect(links.map((l) => l.textContent)).toEqual(["Home", "Schedule", "Jobs", "Visits", "Customers", "Reports", "Settings"])
     expect(within(bar).getByRole("link", { name: "Settings" })).toHaveAttribute("aria-current", "page")
     expect(screen.getByText("Phone body")).toBeInTheDocument()
     expect(screen.queryByRole("button", { name: /toggle sidebar/i })).toBeNull()
@@ -119,7 +119,8 @@ describe("AdminShell follows the address", () => {
     ["/admin/schedule", "Schedule"],
     ["/admin/schedule?day=2026-11-24", "Schedule"],
     ["/admin/visits", "Visits"],
-    ["/admin/passes", "Visits"],
+    ["/admin/jobs", "Jobs"],
+    ["/admin/passes", "Jobs"],
     ["/admin/customers", "Customers"],
     ["/admin/reports", "Reports"],
     ["/admin/revenue", "Reports"],

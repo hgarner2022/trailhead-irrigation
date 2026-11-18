@@ -1,6 +1,6 @@
 "use client"
 
-import { visitsOfJob } from "@/lib/admin/links"
+import { customerUrl, jobUrl } from "@/lib/admin/links"
 import { PANEL_ROW, PanelFacts, PanelHeading, PanelList, PanelRowEnd, PanelRowText } from "@/components/blocks/PanelParts"
 import Link from "next/link"
 import type { ReactNode } from "react"
@@ -29,13 +29,13 @@ import { propertyLines, yardFromPass } from "./customers-model"
 // (the pass with its number and its other visits, or the booked work); the actions; and the thread, newest first.
 // A tech sees all of it and no buttons. On a laptop it is the drawer over the page; on a phone it is a sheet.
 
-/** The job the visit belongs to, one line: "Season Pass TH-2027-0007 · 2027" or "Repair · sold Nov 3", linking to the customer's panel until the Jobs screen exists. */
+/** The job the visit belongs to, one line: "Season Pass TH-2027-0007 · 2027" or "Repair · sold Nov 3", linking to that job on Jobs: the way up from a visit. */
 function JobLine({ facts }: { facts: VisitFacts }) {
   const { pass, job, visit } = facts
   const kind = job?.kind === "repair" ? "Repair" : job?.kind === "install" ? "Installation" : "Job"
   const text = pass ? `Season Pass ${pass.number} · ${pass.season}` : `${kind}${job?.soldOn ? ` · sold ${shortDate(job.soldOn, TIME_ZONE)}` : ""}`
   return (
-    <Link data-slot="visit-job-line" href={`/admin/customers?customer=${encodeURIComponent(visit.clientId)}`} className="min-w-0 truncate text-sm text-primary-dark underline underline-offset-2" title={text}>
+    <Link data-slot="visit-job-line" href={visit.jobId ? jobUrl(visit.jobId) : customerUrl(visit.clientId)} className="min-w-0 truncate text-sm text-primary-dark underline underline-offset-2" title={text}>
       {text}
     </Link>
   )
@@ -111,11 +111,11 @@ function JobBlock({ facts, today, onOpenVisit }: { facts: VisitFacts; today: str
       <p className="mt-2 text-sm">
         <span className="font-medium">{title}</span>
         {facts.money && <span className="text-muted-foreground">{`. ${facts.money}.`}</span>}
-        {pass && (
+        {(visit.jobId ?? facts.job?.id) && (
           <>
             {" "}
-            <Link href={visitsOfJob(visit.jobId ?? facts.job?.id ?? "")} className="text-primary-dark underline underline-offset-2">
-              {"Open job's visits"}
+            <Link href={jobUrl(visit.jobId ?? facts.job?.id ?? "")} className="text-primary-dark underline underline-offset-2">
+              Open job
             </Link>
           </>
         )}

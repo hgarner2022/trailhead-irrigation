@@ -10,7 +10,9 @@ describe("sectionOf", () => {
   })
   it("lights the section a path is under", () => {
     expect(sectionOf("/admin/schedule")).toBe("schedule")
-    expect(sectionOf("/admin/passes?pass=p1")).toBe("visits")
+    expect(sectionOf("/admin/jobs?job=j1")).toBe("jobs")
+    expect(sectionOf("/admin/passes?pass=p1")).toBe("jobs")
+    expect(sectionOf("/admin/visits")).toBe("visits")
     expect(sectionOf("/admin/revenue")).toBe("reports")
     expect(sectionOf("/admin/customers/abc")).toBe("customers")
     expect(sectionOf("/admin/settings")).toBe("settings")

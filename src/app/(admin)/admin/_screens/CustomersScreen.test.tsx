@@ -5,6 +5,7 @@ import { withFixtureContact } from "@/lib/admin/fixtures/contact"
 import { formatPhone } from "@/lib/format/contact"
 import type { AdminData } from "@/lib/admin/types"
 import { CustomersScreen } from "./CustomersScreen"
+import { JOBS_TODAY, jobsData } from "./jobs-fixture"
 
 // "I need normal data": the table and the panel show the customer as a person, with the contact details the admin
 // session may see, and no word of the old tool.
@@ -87,7 +88,23 @@ describe("CustomersScreen panel", () => {
     expect(panel.getByRole("heading", { name: "Consent history" })).toBeInTheDocument()
     expect(panel.getByText(/Terms 2026-11 accepted Nov 2\./)).toBeInTheDocument()
     expect(panel.getByRole("heading", { name: "Messages" })).toBeInTheDocument()
-    expect(panel.getByRole("heading", { name: "Visits" })).toBeInTheDocument()
+    expect(panel.getByRole("heading", { name: "Jobs" })).toBeInTheDocument()
+  })
+
+  it("shows the Season Pass under the facts with earlier seasons folded, and lists the jobs, each opening to its visits", () => {
+    const pass = jobsData.passes.find((p) => p.id === "p-office")!
+    const earlier = { ...pass, id: "p-2026", number: "TH-2026-0003", season: 2026, status: "lapsed" as const }
+    render(<CustomersScreen data={{ ...jobsData, passes: [...jobsData.passes, earlier] }} today={JOBS_TODAY} defaultSelectedId="c-dana" />)
+    const panel = within(screen.getByRole("dialog", { name: "Dana Reed" }))
+    expect(panel.getByRole("link", { name: "Season Pass TH-2027-0014 · 2027 · Active" })).toHaveAttribute("href", "/admin/jobs?job=job_p-office")
+    expect(panel.getByRole("heading", { name: "Season Pass" })).toBeInTheDocument()
+    const fold = document.querySelector('[data-slot="customer-pass-earlier"]') as HTMLDetailsElement
+    expect(fold).not.toBeNull()
+    expect(fold.open).toBe(false)
+    expect(within(fold).getByText("2026 season")).toBeInTheDocument()
+    const jobs = within(document.querySelector<HTMLElement>('[data-slot="customer-jobs"]')!)
+    expect(jobs.getAllByRole("link", { name: "Open job" })[0]).toHaveAttribute("href", expect.stringMatching(/^\/admin\/jobs\?job=/))
+    expect(jobs.getByText("Season Pass TH-2027-0014")).toBeInTheDocument()
   })
 
   it("has a Bills section for a done job that owes money (Send a bill) and for one with a bill out (Remind and the pay link), and not for a tech", () => {

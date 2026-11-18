@@ -427,7 +427,7 @@ describe("Visits filtered to a job (?job=)", () => {
     expect(screen.getByRole("link", { name: "Show all visits" })).toHaveAttribute("href", "/admin/visits")
   })
 
-  it("the grid has no Job column or filter; the panel names the job on one line under the pill and links to Visits filtered to it", () => {
+  it("the grid has no Job column or filter; the panel names the job on one line under the pill and links to that job on Jobs", () => {
     const job = visitsData.visits.find((v) => v.id === noCardVisitId)!.jobId!
     render(
       <UndoToastProvider>
@@ -439,8 +439,8 @@ describe("Visits filtered to a job (?job=)", () => {
     expect(screen.getByRole("searchbox", { hidden: true })).toHaveAttribute("placeholder", "Search by name or street")
     const panel = within(screen.getByRole("dialog"))
     const line = panel.getByText(/^Season Pass TH-.* · \d{4}$/)
-    expect(line.closest("a")).toHaveAttribute("href", expect.stringMatching(/^\/admin\/customers\?customer=/))
-    expect(panel.getByRole("link", { name: "Open job's visits" })).toHaveAttribute("href", `/admin/visits?job=${job}`)
+    expect(line.closest("a")).toHaveAttribute("href", `/admin/jobs?job=${job}`)
+    expect(panel.getByRole("link", { name: "Open job" })).toHaveAttribute("href", `/admin/jobs?job=${job}`)
     expect(screen.queryAllByRole("link", { hidden: true }).some((l) => (l.getAttribute("href") ?? "").startsWith("/admin/passes"))).toBe(false)
   })
 })

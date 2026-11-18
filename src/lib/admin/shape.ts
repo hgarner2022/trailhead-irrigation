@@ -55,7 +55,7 @@ export interface MirrorInvoice { id: string; clientName: string | null; total: n
 export interface JobRow { id: string; customerId: string; kind: SoldJob["kind"]; status: SoldJob["status"]; price: number | null; source: SoldJob["source"]; passNumber?: string | null; notes: string | null; createdAt?: Date }
 export interface LineRow { id: string; jobId: string; visitId: string | null; name: string; description: string | null; quantity: number; unitPrice: number; taxable: boolean; cancelledAt: Date | null }
 /** A payment row (`charge`) as live.ts reads it: refunds are negative; `attempt` numbers a visit's tries. */
-export interface PaymentRow { id: string; jobId: string | null; visitId: string | null; amount: number; method: string; status: string; paidOn: string | null; refundsPaymentId: string | null; attempt: number; createdAt: Date }
+export interface PaymentRow { id: string; jobId: string | null; visitId: string | null; amount: number; method: string; status: string; paidOn: string | null; refundsPaymentId: string | null; reference?: string | null; attempt: number; createdAt: Date }
 /** A bill (`invoice`) as live.ts reads it: its frozen lines only as far as the visits they name, and the pay link for a caller that may write. */
 export interface InvoiceRow {
   id: string; jobId: string; number: string; amount: number; tax: number; total: number; sentOn: string; dueOn: string
@@ -125,8 +125,9 @@ const visitPriceOf = (v: Pick<ApiVisit, "id" | "amount">, lines: readonly Pick<L
 /** The last not-done's reason. How it was paid is read from the payment rows, never carried on the visit. */
 const reasonOf = (v: Pick<ApiVisit, "notDoneReason">) => (v.notDoneReason ? { notDoneReason: v.notDoneReason } : {})
 
-const paymentOf = (r: Pick<PaymentRow, "id" | "jobId" | "visitId" | "amount" | "method" | "status" | "paidOn" | "refundsPaymentId">): AdminPayment => ({
+const paymentOf = (r: Pick<PaymentRow, "id" | "jobId" | "visitId" | "amount" | "method" | "status" | "paidOn" | "refundsPaymentId"> & { reference?: string | null }): AdminPayment => ({
   id: r.id, jobId: r.jobId, visitId: r.visitId, amount: r.amount, method: r.method, status: r.status, paidOn: r.paidOn, refundsPaymentId: r.refundsPaymentId,
+  ...(r.reference ? { reference: r.reference } : {}),
 })
 
 /** The yard as the screens hold it: a fact nobody set is left out. */

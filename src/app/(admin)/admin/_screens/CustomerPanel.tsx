@@ -1,17 +1,16 @@
-import { PANEL_ROW, PanelFacts, PanelHeading, PanelList, PanelRowEnd, PanelRowText } from "@/components/blocks/PanelParts"
+import { PanelFacts, PanelHeading, PanelList } from "@/components/blocks/PanelParts"
+import { statusLabel } from "@/components/blocks/StatusPill"
 import Link from "next/link"
 import type { ReactNode } from "react"
-import { jobIdOfPass, visitsOfJob } from "@/lib/admin/links"
-import { JobPill } from "@/components/blocks/JobPill"
+import { jobIdOfPass, jobUrl } from "@/lib/admin/links"
 import { MessageThread } from "@/components/blocks/MessageThread"
-import { OpenVisit } from "./VisitPanelHost"
+import { CustomerJobsSection } from "./CustomerJobs"
+import { jobRows } from "./jobs-model"
+import { PassSeasonView } from "./PassPanel"
 import { TextForm } from "./VisitEditText"
 import { CustomerBills } from "./VisitBill"
 import type { VisitActions } from "./visit-actions-types"
-import { StatusPill } from "@/components/blocks/StatusPill"
-import type { AdminData, Client, ClientCard, Visit } from "@/lib/admin/types"
-import { KIND_WORDS, TIME_ZONE, shortDate } from "@/lib/admin/format"
-import { visitJob } from "@/lib/admin/jobs"
+import type { AdminData, Client, ClientCard, Pass } from "@/lib/admin/types"
 import { formatPhone } from "@/lib/format/contact"
 import { PropertyBlock } from "./PropertyFields"
 import { PanelNotes } from "./PanelNotes"
@@ -19,25 +18,20 @@ import { CustomerCardLine } from "./CustomerCardLine"
 import { MARKETING_WORDS, SCHEDULED_WORDS, cardOf, consentEntries, propertiesOf, type CustomerRow } from "./customers-model"
 
 // The body of the Customers side panel: the same normal data as the row,
-// plus the property (the yard: zones, controller, gate code, access note, contact), the jobs, the consent history (append-only, newest
+// the Season Pass (the season view, earlier seasons folded below it), the property (the yard: zones, controller, gate code, access note, contact), the jobs (each opening to its visits), the consent history (append-only, newest
 // first) and every message the app sent. Pure render; CustomersScreen owns
 // which customer is open and the buttons.
-
-const RECENT = 5
-const capital = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
 
 function Facts({ row, card, jobId, readOnly, actions }: { row: CustomerRow; card: ClientCard | undefined; jobId: string | undefined; readOnly: boolean; actions?: VisitActions }) {
   const facts: [string, ReactNode][] = [
     ...(row.address ? ([["Address", `${row.address}, ${row.town}`]] as [string, ReactNode][]) : ([["Town", row.town]] as [string, ReactNode][])),
     ...(row.email ? ([["Email", row.email]] as [string, ReactNode][]) : []),
     ...(row.phone ? ([["Phone", formatPhone(row.phone)]] as [string, ReactNode][]) : []),
-    // One row: the job the customer's pass is, linking to its visits, with the pass's state beside it.
-    ["Job", row.pass === "none" ? "None" : (
-      <span key="job" className="inline-flex flex-wrap items-center gap-x-2 gap-y-1">
-        {jobId ? <Link href={visitsOfJob(jobId)} className="text-primary-dark underline underline-offset-2">{`Season Pass ${row.passNumber} · ${row.season}`}</Link> : <span>{`Season Pass ${row.passNumber} · ${row.season}`}</span>}
-        <StatusPill status={row.pass} />
-      </span>
-    )],
+    // One row: the job the customer's pass is, with its season and state in words, linking to that job on Jobs.
+    ["Job", row.pass === "none" ? "None" : (() => {
+      const text = `Season Pass ${row.passNumber} · ${row.season} · ${statusLabel(row.pass)}`
+      return jobId ? <Link key="job" href={jobUrl(jobId)} className="text-primary-dark underline underline-offset-2">{text}</Link> : <span key="job">{text}</span>
+    })()],
     ["Next", row.next],
     ["Scheduled", SCHEDULED_WORDS[row.nextState]],
     ["Marketing", MARKETING_WORDS[row.marketing]],
@@ -46,23 +40,25 @@ function Facts({ row, card, jobId, readOnly, actions }: { row: CustomerRow; card
   return <PanelFacts rows={facts} className="mt-0" />
 }
 
-/** The customer's visits, the ones that need a day first, then newest first, the last few, each with its two pills; each opens its panel. */
-function Jobs({ visits, today }: { visits: Visit[]; today: string }) {
-  const recent = [...visits].sort((a, b) => (a.startAt ? 1 : 0) - (b.startAt ? 1 : 0) || (b.startAt ?? "").localeCompare(a.startAt ?? "")).slice(0, RECENT)
-  if (recent.length === 0) return <p className="mt-2 text-sm text-muted-foreground">No visits on record.</p>
+/** The customer's pass seasons, newest first: the latest as the Season Pass, each earlier one folded under its year. */
+function PassSeasons({ passes, today }: { passes: Pass[]; today: string }) {
+  const [current, ...earlier] = passes
+  if (!current) return null
   return (
-    <PanelList>
-      {recent.map((v) => (
-        <li key={v.id}>
-          <OpenVisit id={v.id} className={PANEL_ROW}>
-            <PanelRowText title={capital(KIND_WORDS[v.kind])} detail={v.startAt ? shortDate(v.startAt, TIME_ZONE) : undefined} />
-            <PanelRowEnd>
-              <JobPill job={visitJob(v, today, TIME_ZONE)} />
-            </PanelRowEnd>
-          </OpenVisit>
-        </li>
+    <section aria-labelledby="customer-pass-current" data-slot="customer-pass">
+      <PanelHeading id="customer-pass-current">Season Pass</PanelHeading>
+      <div className="mt-3">
+        <PassSeasonView pass={current} today={today} idPrefix="cust-pass-current" withAccess={false} withConsent={false} />
+      </div>
+      {earlier.map((p) => (
+        <details key={p.id} className="mt-4 border-t border-border pt-2" data-slot="customer-pass-earlier">
+          <summary className="flex min-h-11 cursor-pointer items-center font-display text-lg text-navy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50">{`${p.season} season`}</summary>
+          <div className="mt-2">
+            <PassSeasonView pass={p} today={today} idPrefix={`cust-pass-${p.id}`} withAccess={false} withConsent={false} />
+          </div>
+        </details>
       ))}
-    </PanelList>
+    </section>
   )
 }
 
@@ -85,15 +81,15 @@ export function CustomerPanelBody({ row, client, data, today, readOnly = false, 
   // The first property is the one shown; a customer with a second one is a later step.
   const property = client ? propertiesOf(client, data.passes)[0] : undefined
   const card = client ? cardOf(client, data.passes) : undefined
+  // Every pass this customer has paid for, newest season first; an unpaid attempt is not a pass yet.
+  const passes = data.passes.filter((p) => p.clientId === row.id && p.status !== "pending").sort((a, b) => b.season - a.season)
   return (
     <>
       <Facts row={row} card={card} jobId={row.passId ? jobIdOfPass(data, row.passId) : undefined} readOnly={readOnly} actions={actions} />
+      <PassSeasons passes={passes} today={today} />
       {property && <PropertyBlock key={property.id} propertyId={property.id} yard={property} readOnly={readOnly} actions={actions} />}
       <PanelNotes about="customer" aboutId={row.id} timeline={client?.timeline} addNote={actions?.addNote} />
-      <section aria-labelledby="customer-jobs">
-        <PanelHeading id="customer-jobs">Visits</PanelHeading>
-        <Jobs visits={data.visits.filter((v) => v.clientId === row.id)} today={today} />
-      </section>
+      <CustomerJobsSection rows={jobRows(data, today).filter((j) => j.customerId === row.id)} data={data} today={today} />
       {!readOnly && <CustomerBills jobs={(data.jobs ?? []).filter((j) => j.customerId === row.id)} data={data} actions={actions} />}
       {!readOnly && client?.app && <TextForm client={client} actions={actions} />}
       <section aria-labelledby="customer-consent">
