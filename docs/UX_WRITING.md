@@ -35,9 +35,17 @@ Always: sentence case, contractions in customer text ("we'll", "didn't"), no em 
 | Unscheduled | a visit with no day (the pill, the filter, the header line "1 unscheduled"); Hannah's word, Nov 17 2026 | no day yet, needs a day, unplaced |
 | Not done | a visit that was tried and came back without a day; the reason follows the pill ("Not done · could not get in") | failed visit, skipped |
 | Paid | money that arrived, by any method ("Paid this month", "Paid so far", "Paid, Venmo") | charged (a Jobber word) |
-| Past its window | on Home's Today, a visit whose window end has passed and that is not done; the heading counts it ("2 past their window"); Hannah's words, Nov 17 2026 | overdue (a bill word only), late, behind |
+| Past its window | on Home's Today, a visit whose window end has passed and that is not done; the heading counts it ("2 past their window"); Hannah's words, Nov 17 2026 | overdue, late, behind (Past due is an invoice word only) |
 | Ahead today | a visit scheduled today whose window is not over, or that has no window yet ("3 ahead today") | remaining, upcoming, active |
-| Done today | a visit done today, the customer line struck through, the money word at the right: "Paid, Venmo", "$95 owed", "Bill sent" ("4 done today") | completed |
+| Done today | a visit done today, the customer line struck through, the money word at the right: "Paid, Venmo", "$95 unpaid", "Invoice sent" ("4 done today") | completed |
+| Invoice | what we send a customer for work that is done: Sent, Past due, Paid, Voided; the button is "Send an invoice", the Home row "Invoice past due", the header chip "2 invoices out"; Hannah's word, Nov 18 2026 | bill, billing (the Settings tab is the one place "Billing" stays) |
+| Invoice sent | the money word on a job or visit while an invoice is out before its due day ("$145 · Invoice sent, due Dec 1") | Bill sent, awaiting payment |
+| Past due | an invoice whose due day has passed ("$145 · Past due since Dec 1"); never for a visit | overdue |
+| Voided | an invoice that was canceled and stays on record; the button that does it still says Cancel | cancelled invoice |
+| Unpaid | money still to come on a done job or visit, with the amount ("$115 unpaid", "2 of 3 paid, $115 unpaid"); on Home "Done, unpaid"; Hannah's word, Nov 18 2026 | owed |
+| Quote sent | a job whose quote went out and has not been accepted | Quoted, proposed |
+| Canceled | US spelling, for a visit, job, pass, line and a message; database values keep `cancelled` | Cancelled |
+| Expired | a Season Pass whose season has passed without a renewal | Lapsed |
 | marked done | a visit is finished (admin) | closed, completed (in UI) |
 | "Ryan" | when the person matters: who sets days, who comes | "our team", "a technician" |
 | "we" | Trailhead as a company: emails, texts, charges | "Trailhead will", "the company" |
