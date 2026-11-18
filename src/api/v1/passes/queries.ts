@@ -1,4 +1,6 @@
 import { readAppUrl } from "@/lib/env"
+import { aboutOfLegacy, eventKindOfLegacy } from "@/lib/events/kinds"
+import { recordEvent, whoOf } from "@/lib/events/record"
 import { passInspection, passPreferences, passStatus } from "@/lib/pass/facts"
 import { visitCalendarUrl } from "@/lib/messaging/tokens"
 import "server-only"
@@ -126,8 +128,39 @@ export async function passDetail(ctx: Ctx, row: PassRow) {
   }
 }
 
-/** A row in `pass_change`: what changed, by whom. */
+/**
+ * What changed, by whom. Writes the `event` row (the kind translated by `LEGACY_EVENT_KIND`, about the visit, the job or the
+ * customer, with `jobId` and `visitId` filled) and, until step 6, the `pass_change` alias row with its old kind.
+ */
 export async function recordChange(ctx: Ctx, change: { customerId: string; passId?: string | null; visitId?: string; kind: string; detail?: Record<string, unknown> }) {
   const by = ctx.principal.kind === "person" ? ctx.principal.email : `${ctx.principal.kind}:${ctx.principal.id}`
   await ctx.db.insert(s.passChange).values({ organizationId: ctx.organizationId, byPrincipal: by, at: ctx.now, detail: {}, ...change })
+  const jobId = await jobOfChange(ctx, change)
+  const kind = eventKindOfLegacy(change.kind)
+  const about = aboutOfLegacy(kind, { visitId: change.visitId, jobId })
+  await recordEvent(ctx.db, {
+    organizationId: ctx.organizationId,
+    about,
+    aboutId: about === "visit" ? change.visitId! : about === "job" ? jobId! : change.customerId,
+    customerId: change.customerId,
+    jobId,
+    visitId: change.visitId ?? null,
+    kind,
+    detail: change.detail ?? {},
+    who: whoOf(ctx),
+    at: ctx.now,
+  })
+}
+
+/** The job a change belongs to: its pass's job, else its visit's (a one-off has no pass). */
+async function jobOfChange(ctx: Ctx, change: { passId?: string | null; visitId?: string }): Promise<string | null> {
+  if (change.passId) {
+    const [pass] = await ctx.db.select({ jobId: s.seasonPass.jobId }).from(s.seasonPass).where(and(eq(s.seasonPass.id, change.passId), eq(s.seasonPass.organizationId, ctx.organizationId)))
+    if (pass) return pass.jobId
+  }
+  if (change.visitId) {
+    const [visit] = await ctx.db.select({ jobId: s.visit.jobId }).from(s.visit).where(and(eq(s.visit.id, change.visitId), eq(s.visit.organizationId, ctx.organizationId)))
+    if (visit) return visit.jobId
+  }
+  return null
 }

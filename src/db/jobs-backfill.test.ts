@@ -209,3 +209,66 @@ describe("migration 0018: the payment record", () => {
     await client.close()
   })
 })
+
+describe("migration 0020: the event record", () => {
+  it("gives every pass_change row one event with the new kind, its record and its job, makes a note from each non-empty notes column, and a re-run adds nothing", async () => {
+    const client = new PGlite()
+    const all = files()
+    const at = all.findIndex((f) => f.startsWith("0020_event"))
+    expect(at).toBeGreaterThan(0)
+    for (const f of all.slice(0, at)) for (const stmt of migration(f)) if (stmt.trim()) await client.exec(stmt)
+    await client.exec(`INSERT INTO organization (id, name, terms_version, settings) VALUES ('o', 'T', '1', '{"windows":[],"bufferPercentEarly":0,"bufferPercentLate":0,"fallTownOrder":[],"springTownOrder":[],"messages":[]}')`)
+    await client.exec(`INSERT INTO customer (id, organization_id, first_name) VALUES ('c', 'o', 'A')`)
+    await client.exec(`INSERT INTO property (id, organization_id, customer_id, address, town, notes, updated_at) VALUES ('pr', 'o', 'c', '1 Main', 'Erie', 'Dog in the yard', '2027-03-01T12:00:00Z'), ('pr2', 'o', 'c', '2 Main', 'Erie', '  ', now()), ('pr3', 'o', 'c', '3 Main', 'Erie', NULL, now())`)
+    await client.exec(`INSERT INTO job (id, organization_id, customer_id, property_id, kind, source, notes, updated_at) VALUES ('job_p', 'o', 'c', 'pr', 'pass', 'checkout', 'Pays by check', '2027-03-02T12:00:00Z'), ('job_one', 'o', 'c', 'pr', 'repair', 'office', NULL, now())`)
+    await client.exec(`INSERT INTO season_pass (id, organization_id, job_id, number, season, customer_id, property_id, zones, status) VALUES ('p', 'o', 'job_p', 'TH-2027-0001', 2027, 'c', 'pr', 8, 'active')`)
+    await client.exec(
+      `INSERT INTO visit (id, organization_id, job_id, pass_id, customer_id, property_id, kind, amount, notes, updated_at) VALUES
+        ('v1', 'o', 'job_p', 'p', 'c', 'pr', 'turn-on', 145, 'Gate sticks', '2027-03-03T12:00:00Z'),
+        ('v2', 'o', 'job_p', 'p', 'c', 'pr', 'blowout', 115, '   ', now())`,
+    )
+    await client.exec(`INSERT INTO visit (id, organization_id, job_id, customer_id, property_id, kind, amount, notes, updated_at) VALUES ('v3', 'o', 'job_one', 'c', 'pr', 'repair', 145, NULL, now())`)
+    await client.exec(
+      `INSERT INTO pass_change (id, organization_id, customer_id, pass_id, visit_id, kind, detail, by_principal, at) VALUES
+        ('pc1', 'o', 'c', 'p', 'v1', 'day-picked', '{"day":"2027-05-05"}', 'andrea@example.com', '2027-04-01T15:00:00Z'),
+        ('pc2', 'o', 'c', 'p', NULL, 'cancelled', '{"reason":"moving"}', 'owner@example.com', '2027-04-02T15:00:00Z'),
+        ('pc3', 'o', 'c', 'p', NULL, 'renewed', '{"from":"old","season":2027}', 'public', '2027-04-03T15:00:00Z'),
+        ('pc4', 'o', 'c', NULL, 'v3', 'visit-created', '{"kind":"repair"}', 'owner@example.com', '2027-04-04T15:00:00Z'),
+        ('pc5', 'o', 'c', NULL, NULL, 'consent-snapshot', '{"source":"admin"}', 'owner@example.com', '2027-04-05T15:00:00Z'),
+        ('pc6', 'o', 'c', 'p', 'v1', 'sold', '{}', 'owner@example.com', '2027-04-06T15:00:00Z'),
+        ('pc7', 'o', 'c', 'p', 'v2', 'brand-new-kind', '{}', 'api-key:k', '2027-04-07T15:00:00Z'),
+        ('pc8', 'o', 'c', 'p', 'v2', 'skipped', '{"visit":"blowout"}', 'andrea@example.com', '2027-04-08T15:00:00Z')`,
+    )
+    type Row = { id: string; about: string; about_id: string; customer_id: string | null; job_id: string | null; visit_id: string | null; kind: string; detail: Record<string, unknown>; who: string; at: string }
+    const read = async () =>
+      (await client.query<Row>(`SELECT id, about, about_id, customer_id, job_id, visit_id, kind, detail, who, to_char(at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS at FROM event ORDER BY id`)).rows
+    const statements = migration(all[at]!).filter((stmt) => stmt.trim())
+    for (const stmt of statements) await client.exec(stmt)
+
+    const rows = await read()
+    const pc = (n: number) => rows.find((r) => r.id === `evt_pc_pc${n}`)!
+    expect(rows.filter((r) => r.id.startsWith("evt_pc_"))).toHaveLength(8)
+    expect(pc(1)).toEqual({ id: "evt_pc_pc1", about: "visit", about_id: "v1", customer_id: "c", job_id: "job_p", visit_id: "v1", kind: "visit.moved", detail: { day: "2027-05-05" }, who: "andrea@example.com", at: "2027-04-01T15:00:00Z" })
+    expect(pc(2)).toMatchObject({ about: "job", about_id: "job_p", job_id: "job_p", visit_id: null, kind: "pass.cancelled", detail: { reason: "moving" } })
+    expect(pc(3)).toMatchObject({ about: "job", about_id: "job_p", kind: "job.sold", who: "public", detail: { from: "old", season: 2027, source: "renewal" } })
+    // a visit-created row is about its job, not its visit, and still carries the visit; its job comes through the visit
+    expect(pc(4)).toMatchObject({ about: "job", about_id: "job_one", job_id: "job_one", visit_id: "v3", kind: "job.sold" })
+    expect(pc(5)).toMatchObject({ about: "customer", about_id: "c", customer_id: "c", job_id: null, visit_id: null, kind: "consent" })
+    expect(pc(6)).toMatchObject({ about: "job", kind: "job.sold", visit_id: "v1", detail: { source: "office" } })
+    expect(pc(7)).toMatchObject({ about: "job", about_id: "job_p", kind: "brand-new-kind", who: "api-key:k" })
+    expect(pc(8)).toMatchObject({ about: "visit", about_id: "v2", kind: "visit.skipped" })
+
+    const notes = rows.filter((r) => r.kind === "note")
+    expect(notes.map((n) => n.id).sort()).toEqual(["evt_note_job_job_p", "evt_note_property_pr", "evt_note_visit_v1"])
+    expect(notes.find((n) => n.id === "evt_note_visit_v1")).toEqual({ id: "evt_note_visit_v1", about: "visit", about_id: "v1", customer_id: "c", job_id: "job_p", visit_id: "v1", kind: "note", detail: { text: "Gate sticks" }, who: "system", at: "2027-03-03T12:00:00Z" })
+    expect(notes.find((n) => n.id === "evt_note_job_job_p")).toMatchObject({ about: "job", about_id: "job_p", job_id: "job_p", visit_id: null, detail: { text: "Pays by check" }, at: "2027-03-02T12:00:00Z" })
+    expect(notes.find((n) => n.id === "evt_note_property_pr")).toMatchObject({ about: "property", about_id: "pr", customer_id: "c", job_id: null, visit_id: null, detail: { text: "Dog in the yard" }, at: "2027-03-01T12:00:00Z" })
+    expect(rows).toHaveLength(8 + 3)
+    expect((await client.query(`SELECT 1 FROM event WHERE organization_id IS NULL`)).rows).toHaveLength(0)
+
+    // The data statements are the inserts; a second run leaves every row as it was.
+    for (const stmt of statements.filter((x) => /^\s*insert into "event"/i.test(x))) await client.exec(stmt)
+    expect(await read()).toEqual(rows)
+    await client.close()
+  })
+})

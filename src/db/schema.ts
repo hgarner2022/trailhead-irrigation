@@ -587,6 +587,38 @@ export const passChange = pgTable(
   (t) => [index("pass_change_pass_idx").on(t.passId, t.at)],
 )
 
+/**
+ * Every change and every note: one row, about a record, with a name on it. `pass_change` is an alias until step 6.
+ * No foreign keys: `about_id` points at six tables, and `customer_id`, `job_id` and `visit_id` are plain text so a purge never trips on them.
+ */
+export const event = pgTable(
+  "event",
+  {
+    id: text("id").primaryKey().$defaultFn(() => `evt_${crypto.randomUUID()}`),
+    organizationId: orgId(),
+    /** customer, property, job, visit, payment or invoice */
+    about: text("about").notNull(),
+    aboutId: text("about_id").notNull(),
+    customerId: text("customer_id"),
+    jobId: text("job_id"),
+    visitId: text("visit_id"),
+    /** `record.verb`, from `src/lib/events/kinds.ts` */
+    kind: text("kind").notNull(),
+    detail: jsonb("detail").$type<Record<string, unknown>>().notNull().default(sql`'{}'::jsonb`),
+    /** the signed-in person's email, `customer`, `system` or `api` */
+    who: text("who").notNull(),
+    at: ts("at").notNull().defaultNow(),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    index("event_about_idx").on(t.organizationId, t.about, t.aboutId, t.at),
+    index("event_customer_idx").on(t.organizationId, t.customerId, t.at),
+    index("event_job_idx").on(t.organizationId, t.jobId, t.at),
+    index("event_visit_idx").on(t.organizationId, t.visitId, t.at),
+  ],
+)
+
 export const scheduleRun = pgTable(
   "schedule_run",
   {

@@ -141,6 +141,13 @@
       "when": 1794965160953,
       "tag": "0019_invoice",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1794970823318,
+      "tag": "0020_event",
+      "breakpoints": true
     }
   ]
 }
