@@ -78,6 +78,16 @@ describe("every customer email", () => {
     expect(renderEmail("not-closed-crew", DATA["not-closed-crew"])!.html).not.toContain("The Trailhead crew")
     expect(renderEmail("admin-alert", DATA["admin-alert"])!.html).not.toContain("The Trailhead crew")
   })
+  it("rows queued before this wording still render: a receipt with a visit name and no address, a cancel with no season, a purchase with no address", () => {
+    const receipt = renderEmail("receipt", { ...base, passNumber: "TH-2027-0004", amount: 145, visitName: "spring turn-on", card: "Visa ending 4242", nextLine: "", receiptUrl: null })!
+    expect(receipt.subject).toBe("Receipt: $145 for your spring turn-on")
+    expect(receipt.text).toContain("Your spring turn-on is paid.")
+    expect(receipt.text).not.toMatch(/undefined|Where:|Paid on:/)
+    const cancelled = renderEmail("cancelled", { ...base, passNumber: "TH-2027-0004" })!
+    expect(cancelled.subject).toBe("Your Season Pass is canceled")
+    const { address: _address, ...noAddress } = DATA["purchase-confirmation"] as Record<string, unknown>
+    expect(renderEmail("purchase-confirmation", noAddress)!.text).not.toMatch(/undefined|Where:/)
+  })
   it("a row queued before the account link existed still renders, with the account link built from its origin", () => {
     const old = { ...base, visit } as Record<string, unknown>
     delete old.accountUrl

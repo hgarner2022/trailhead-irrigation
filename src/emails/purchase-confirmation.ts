@@ -29,7 +29,7 @@ export function purchaseConfirmationEmail(d: PurchaseConfirmationData): Rendered
   const soldHtml = sold.length
     ? `<p style="margin:0 0 16px;font-family:'Source Sans 3',Helvetica,Arial,sans-serif;font-size:17px;line-height:25px;color:${EMAIL_COLORS.text}">${sold.map(esc).join("<br>")}<br><strong>${esc(total)}</strong></p>`
     : ""
-  const where = facts([["Where", d.address]])
+  const where = d.address ? facts([["Where", d.address]]) : ""
   const html = emailLayout({
     origin: d.origin,
     preheader: `Your Season Pass for ${d.town} is reserved. We haven't charged you today.`,
@@ -40,7 +40,7 @@ export function purchaseConfirmationEmail(d: PurchaseConfirmationData): Rendered
   const text = plainText([
     `Welcome, ${d.firstName}.`, "", intro, "",
     ...d.visits.flatMap((v) => [`${capital(v.name)}: ${dateOf(v)}`, ...(v.note ? [`  ${v.note}`] : []), ...(v.visit ? [`  ${RYAN_DOES[v.kind]}`] : []), ...(v.visit ? [`  Google Calendar: ${googleCalendarUrl(v.visit)}`, `  Apple or Outlook calendar: ${v.visit.icsUrl}`] : [])]),
-    `Where: ${d.address}`,
+    ...(d.address ? [`Where: ${d.address}`] : []),
     ...(sold.length ? ["", ...sold, total] : []),
     "", CONFIRM_LINE, money, ...(addCard ? [ADD_CARD_LINE, `Add your card: ${addCard}`] : []), "", `Your ${ACCOUNT_NAME}: ${d.signInUrl}`, `Questions: ${BUSINESS.phone}`,
   ], PURCHASE_SIGN_OFF)

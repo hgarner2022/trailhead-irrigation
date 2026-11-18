@@ -45,7 +45,7 @@ export const messagesList = defineHandler({
 
 export const messagesSend = defineHandler({
   name: "messages.send", method: "POST", path: "/messages", scope: "write", status: 201,
-  summary: "Send one of the app's messages to a customer, on the channel its kind uses, through the same consent gate as every automatic message: transactional kinds by email always and by text when there is a mobile and no STOP, renewal only with the opt-in. Receipts and card messages go out on their own events and are not sent here.",
+  summary: "Send one of the app's messages to a customer (on-the-way is a text only, for a scheduled visit that is today, once per visit per day), on the channel its kind uses, through the same consent gate as every automatic message: transactional kinds by email always and by text when there is a mobile and no STOP, renewal only with the opt-in. Receipts and card messages go out on their own events and are not sent here.",
   input: z.object({ customerId: Id, kind: z.enum(MESSAGE_KINDS), visitId: Id.optional(), text: z.string().trim().min(1).max(NOTE_MAX).optional().describe("The words of a note: a free-text text to the customer's mobile, up to 320 characters.") }),
   output: MessageOut,
   async run(ctx, input) {
@@ -66,18 +66,22 @@ export const messagesSend = defineHandler({
       queued = true
     } else if (input.kind === "date-set" || input.kind === "date-moved" || input.kind === "day-before" || input.kind === "on-the-way") {
       if (!input.visitId) throw new ApiError("invalid", "A visit is needed for this message")
-      const [visit] = await ctx.db.select({ id: s.visit.id, customerId: s.visit.customerId }).from(s.visit).where(and(eq(s.visit.id, input.visitId), eq(s.visit.organizationId, ctx.organizationId)))
+      const [visit] = await ctx.db.select({ id: s.visit.id, customerId: s.visit.customerId, status: s.visit.status }).from(s.visit).where(and(eq(s.visit.id, input.visitId), eq(s.visit.organizationId, ctx.organizationId)))
       if (!visit || visit.customerId !== customer.id) throw new ApiError("not_found", "Visit not found")
       const facts = await loadVisitFacts(ctx.db, visit.id, origin)
       if (!facts) throw new ApiError("unprocessable", "That visit has no day yet")
       if (input.kind === "on-the-way") {
         // The "On my way" button: only for a visit that is today, and once per visit per day.
+        if (visit.status !== "scheduled") throw new ApiError("unprocessable", "On my way is for a visit that is scheduled, not one that is done or canceled")
         if (facts.day !== today(ctx)) throw new ApiError("unprocessable", "On my way is for a visit that is today")
         const sentKey = `on-the-way-${visit.id}-${facts.day}`
         const [already] = await ctx.db.select({ id: s.messageLog.id }).from(s.messageLog).where(and(eq(s.messageLog.customerId, customer.id), eq(s.messageLog.key, sentKey)))
         if (already) throw new ApiError("conflict", "This customer was already told you are on the way today")
         const sentNow = await queueMessage(ctx.db, { ...base, key: sentKey, visitId: visit.id, kind: input.kind, data: { ...baseData(origin, customer), visit: facts } })
-        if (!sentNow) throw new ApiError("unprocessable", "This customer has no mobile to text, or replied STOP")
+        if (!sentNow) {
+          const [raced] = await ctx.db.select({ id: s.messageLog.id }).from(s.messageLog).where(and(eq(s.messageLog.customerId, customer.id), eq(s.messageLog.key, sentKey)))
+          throw raced ? new ApiError("conflict", "This customer was already told you are on the way today") : new ApiError("unprocessable", "This customer has no mobile to text, or replied STOP")
+        }
         const [row] = await ctx.db.select().from(s.messageLog).where(and(eq(s.messageLog.customerId, customer.id), eq(s.messageLog.key, sentKey)))
         return { id: row!.id, customerId: row!.customerId, visitId: row!.visitId, channel: row!.channel, kind: row!.kind, subject: row!.subject, body: row!.body, status: row!.status, sentAt: row!.sentAt?.toISOString() ?? null, createdAt: row!.createdAt.toISOString(), ...(canSeeContact(ctx) ? { to: row!.to } : {}) }
       }

@@ -22,8 +22,6 @@ export const PLACEHOLDERS = [
 export type PlaceholderName = (typeof PLACEHOLDERS)[number]["name"]
 export const PLACEHOLDER_NAMES: readonly string[] = PLACEHOLDERS.map((p) => p.name)
 
-export const placeholderHelp = () => PLACEHOLDERS.map((p) => `{${p.name}} ${p.about}`).join("; ")
-
 export interface EditableMessage {
   key: "date-set" | "date-moved" | "date-confirm" | "day-before" | "on-the-way" | "invoice-reminder"
   channel: Channel
@@ -33,6 +31,8 @@ export interface EditableMessage {
   body: string
   /** placeholders the words must keep */
   required: PlaceholderName[]
+  /** the placeholders this message fills; any other is refused, since it would go out as literal braces */
+  allowed: PlaceholderName[]
   /** what the sender adds that the office cannot remove, said under the field */
   locked: string
 }
@@ -41,16 +41,16 @@ const TEXT_LOCKED = `Starts with "Trailhead:". Ends with the link to your ${ACCO
 const EMAIL_LOCKED = `Under it: the day, who is coming and where, the calendar buttons, a button to your ${ACCOUNT_NAME}, the sign-off and our address. The subject stays as it is.`
 
 export const EDITABLE_MESSAGES: EditableMessage[] = [
-  { key: "date-set", channel: "sms", name: "Day set, text", body: "your {service} is {day}, {window}. {who} will be there.", required: [], locked: TEXT_LOCKED },
-  { key: "date-set", channel: "email", name: "Day set, email", body: "Hi {firstName}, your {service} is set for {day}.", required: [], locked: EMAIL_LOCKED },
-  { key: "date-moved", channel: "sms", name: "Day moved, text", body: "your {service} moved to {day}, {window}. Another day?", required: [], locked: TEXT_LOCKED },
-  { key: "date-moved", channel: "email", name: "Day moved, email", body: "Hi {firstName}, your {service} moved to {day}.", required: [], locked: EMAIL_LOCKED },
-  { key: "date-confirm", channel: "sms", name: "Two weeks out, text", body: "your {service} is still {day}, {window}. Need another day?", required: [], locked: TEXT_LOCKED },
-  { key: "date-confirm", channel: "email", name: "Two weeks out, email", body: "Hi {firstName}, we're confirming your {service}: {day}.", required: [], locked: `${EMAIL_LOCKED} A line about what Ryan does at the visit follows your sentence.` },
-  { key: "day-before", channel: "sms", name: "Day before, text", body: "{who} is coming tomorrow, {day}, {window}, for your {service}.", required: [], locked: TEXT_LOCKED },
-  { key: "day-before", channel: "email", name: "Day before, email", body: "Hi {firstName}, a reminder that we're coming tomorrow, {day}, for your {service}. {who} will be there.", required: [], locked: EMAIL_LOCKED },
-  { key: "on-the-way", channel: "sms", name: "On the way, text", body: "{who} is on the way to {address} for your {service}.", required: [], locked: TEXT_LOCKED },
-  { key: "invoice-reminder", channel: "sms", name: "Invoice reminder, text", body: "a reminder that {amount} for the {service} is still unpaid, due {due}. Pay here: {payLink}", required: ["amount", "payLink"], locked: 'Starts with "Trailhead:". Ends with "Reply STOP to opt out." on a customer\'s first text.' },
+  { key: "date-set", channel: "sms", name: "Day set, text", body: "your {service} is {day}, {window}. {who} will be there.", required: [], allowed: ["service", "address", "day", "window", "who"], locked: TEXT_LOCKED },
+  { key: "date-set", channel: "email", name: "Day set, email", body: "Hi {firstName}, your {service} is set for {day}.", required: [], allowed: ["firstName", "service", "address", "day", "window", "who"], locked: EMAIL_LOCKED },
+  { key: "date-moved", channel: "sms", name: "Day moved, text", body: "your {service} moved to {day}, {window}. Another day?", required: [], allowed: ["service", "address", "day", "window", "who"], locked: TEXT_LOCKED },
+  { key: "date-moved", channel: "email", name: "Day moved, email", body: "Hi {firstName}, your {service} moved to {day}.", required: [], allowed: ["firstName", "service", "address", "day", "window", "who"], locked: EMAIL_LOCKED },
+  { key: "date-confirm", channel: "sms", name: "Two weeks out, text", body: "your {service} is still {day}, {window}. Need another day?", required: [], allowed: ["service", "address", "day", "window", "who"], locked: TEXT_LOCKED },
+  { key: "date-confirm", channel: "email", name: "Two weeks out, email", body: "Hi {firstName}, we're confirming your {service}: {day}.", required: [], allowed: ["firstName", "service", "address", "day", "window", "who"], locked: `${EMAIL_LOCKED} A line about what Ryan does at the visit follows your sentence.` },
+  { key: "day-before", channel: "sms", name: "Day before, text", body: "{who} is coming tomorrow, {day}, {window}, for your {service}.", required: [], allowed: ["service", "address", "day", "window", "who"], locked: TEXT_LOCKED },
+  { key: "day-before", channel: "email", name: "Day before, email", body: "Hi {firstName}, a reminder that we're coming tomorrow, {day}, for your {service}. {who} will be there.", required: [], allowed: ["firstName", "service", "address", "day", "window", "who"], locked: EMAIL_LOCKED },
+  { key: "on-the-way", channel: "sms", name: "On the way, text", body: "{who} is on the way to {address} for your {service}.", required: [], allowed: ["service", "address", "day", "window", "who"], locked: TEXT_LOCKED },
+  { key: "invoice-reminder", channel: "sms", name: "Invoice reminder, text", body: "a reminder that {amount} for the {service} is still unpaid, due {due}. Pay here: {payLink}", required: ["amount", "payLink"], allowed: ["amount", "service", "due", "payLink"], locked: 'Starts with "Trailhead:". Ends with "Reply STOP to opt out." on a customer\'s first text.' },
 ]
 
 const find = (key: string, channel: Channel) => EDITABLE_MESSAGES.find((m) => m.key === key && m.channel === channel)
@@ -73,7 +73,15 @@ export function templateProblem(key: string, channel: Channel, body: string): st
   if (!message) return "That message is not one the office edits."
   const text = body.trim()
   if (!text) return "Write something for the message."
-  for (const [, name] of text.matchAll(/\{(\w+)\}/g)) if (!PLACEHOLDER_NAMES.includes(name!)) return `We don't know {${name}}.`
+  for (const [, name] of text.matchAll(/\{(\w+)\}/g)) {
+    if (!PLACEHOLDER_NAMES.includes(name!)) return `We don't know {${name}}.`
+    if (!message.allowed.includes(name as PlaceholderName)) return `{${name}} is not filled in the ${message.name.toLowerCase()}.`
+  }
+  if (channel === "sms") {
+    if (/^trailhead\b/i.test(text)) return 'A text already starts with "Trailhead:"; start with what you want to say.'
+    if (/\bSTOP\b/.test(text)) return 'The sender adds "Reply STOP to opt out." on a number\'s first text; leave it out.'
+    if (text.length > 300) return "Keep a text under 300 characters, so it stays within two parts."
+  }
   if (text.includes("—")) return "Take out the long dash (an em dash); use a period or a comma."
   if (text.includes("!")) return "Take out the exclamation mark."
   if (channel === "sms" && /[^\x20-\x7E]/.test(text)) return "A text takes plain letters only: no curly quotes, accents or special dashes."
@@ -81,10 +89,21 @@ export function templateProblem(key: string, channel: Channel, body: string): st
   return null
 }
 
+/** The words the first version of Settings › Messages seeded into the live organization: old drafts nobody edited, never used. */
+const LEGACY_SEEDED = [
+  "Hi {firstName}, thanks for reserving your season with Trailhead. Your turn-on, mid-season check and blowout are on our list, and we will send the day for each one as the season comes around. Your pass and the dates live at your pass page any time you want a look.",
+  "Hi {firstName}, your {visit} is booked for {date}. {who} will be there. If that day does not work, reply to this email and we will find another.",
+  "Trailhead here. {who} will be there tomorrow, {date}, for your {visit}. Please leave the gate unlatched and the controller reachable. Reply STOP to stop texts.",
+  "Trailhead is on the way for your {visit}. We will be there within the hour.",
+  "Hi {firstName}, your {visit} is done and the receipt is attached. The next visit on your pass is the {nextVisit}, and we will send the day when it is set. Thank you for trusting us with the yard.",
+  "Hi {firstName}, your season is wrapped up and next season's passes are open. Renew now and your blowout date and your repair priority carry over. The price stays the same per visit.",
+]
+
 /** What the sender uses: saved words that pass the rules, read in today's placeholders. A broken or foreign row is ignored, so a bad save never breaks a send. */
 export function overridesOf(saved: { key: string; channel: Channel; body: string }[] | undefined): Overrides {
   const out: Overrides = {}
   for (const m of saved ?? []) {
+    if (LEGACY_SEEDED.includes(m.body)) continue
     const body = migratePlaceholders(m.body)
     if (templateProblem(m.key, m.channel, body) === null) out[slot(m.key, m.channel)] = body
   }

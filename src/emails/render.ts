@@ -32,10 +32,15 @@ export const EMAIL_TEMPLATES = {
 
 export type EmailKind = keyof typeof EMAIL_TEMPLATES
 
-/** A row queued before the account page replaced the pass page carries `passUrl`; read it as the account link so it still renders. */
+/** A row queued before this wording carries `passUrl`, and may lack the address, the service or the season; read it so it still renders. */
 function current(data: Record<string, unknown>): Record<string, unknown> {
-  if (data.accountUrl || typeof data.origin !== "string") return data
-  return { ...data, accountUrl: `${data.origin}/account` }
+  if (typeof data.origin !== "string") return data
+  const out: Record<string, unknown> = { ...data }
+  if (!out.accountUrl) out.accountUrl = `${data.origin}/account`
+  // A receipt queued before the service and the address were carried: the visit's name stands in, and the rows that need the rest are left out.
+  if (!out.serviceName && typeof out.visitName === "string" && out.amount !== undefined && out.card !== undefined) out.serviceName = out.visitName
+  if (out.amount !== undefined && out.card !== undefined && !out.serviceName) out.serviceName = "visit"
+  return out
 }
 
 /** Null for a kind with no template or a row with no stored arguments (an older plain-text row): the sender then uses the row's own subject and body. `templates` is what the office saved in Settings › Messages. */

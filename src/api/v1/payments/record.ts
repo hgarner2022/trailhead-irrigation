@@ -94,7 +94,7 @@ export async function recordOfficePayment(ctx: Ctx, input: OfficePayment) {
   const [customer] = await ctx.db.select().from(s.customer).where(and(eq(s.customer.id, job.customerId), eq(s.customer.organizationId, ctx.organizationId)))
   if (customer) {
     // Named for the visit it was paid after; a payment on the job as a whole is named for the job (a Season Pass, else the work it is).
-    const name = visit ? kindName(visit.kind) : job.season !== null ? "Season Pass" : kindName(await loadJobKind(ctx.db, ctx.organizationId, job))
+    const name = visit ? kindName(visit.kind) : job.season !== null ? "season of visits" : kindName(await loadJobKind(ctx.db, ctx.organizationId, job))
     await queueMessage(ctx.db, {
       organizationId: ctx.organizationId, customerId: customer.id, visitId: visit?.id ?? null, kind: "receipt", key: `payment-${row.id}`,
       data: { ...baseData(readAppUrl(), customer), amount: input.amount, serviceName: name, address: await jobAddress(ctx.db, job.id), paidOn: row.paidOn, card: null, paidBy: RECEIVED_BY[input.method], nextLine: "", receiptUrl: null },

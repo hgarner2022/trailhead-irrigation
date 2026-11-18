@@ -44,6 +44,15 @@ describe("templateProblem", () => {
     expect(templateProblem("date-set", "sms", "we’ll be there on {day}")).toMatch(/plain letters/)
     expect(templateProblem("date-set", "email", "Hi {firstName}, we’ll be there on {day}.")).toBeNull()
   })
+  it("refuses a placeholder the message never fills, the locked opening and opt-out typed in, and a text that would run past two parts", () => {
+    expect(templateProblem("date-set", "sms", "Hi {firstName}, your {service} is {day}.")).toBe("{firstName} is not filled in the day set, text.")
+    expect(templateProblem("date-set", "sms", "pay {payLink}")).toMatch(/not filled/)
+    expect(templateProblem("invoice-reminder", "sms", "{amount} for the {service} is due {due}. Pay here: {payLink} and {day}")).toMatch(/\{day\} is not filled/)
+    expect(templateProblem("date-set", "sms", "Trailhead here. See you {day}.")).toMatch(/already starts with/)
+    expect(templateProblem("date-set", "sms", "See you {day}. Reply STOP to stop.")).toMatch(/opt out/)
+    expect(templateProblem("date-set", "sms", `${"x".repeat(301)}`)).toMatch(/under 300/)
+    expect(templateProblem("date-set", "email", "Hi {firstName}, see you {day}. Reply STOP to stop.")).toBeNull()
+  })
   it("makes the invoice reminder keep {amount} and {payLink}", () => {
     expect(templateProblem("invoice-reminder", "sms", "a reminder, pay here: {payLink}")).toBe("Keep {amount} in the invoice reminder, text.")
     expect(templateProblem("invoice-reminder", "sms", "a reminder that {amount} is unpaid")).toBe("Keep {payLink} in the invoice reminder, text.")
@@ -72,6 +81,15 @@ describe("saved templates", () => {
     expect(bodyOf(overrides, "date-set", "sms")).toBe(defaultBody("date-set", "sms"))
     expect(bodyOf(overrides, "date-moved", "email")).toBe("Hi {firstName}, your {service} moved to {day}.")
     expect(Object.keys(overrides)).toHaveLength(2)
+  })
+  it("ignore the six drafts the first version of the screen seeded into the live organization, so the shipped words stay in use", () => {
+    const old = [
+      { key: "date-set", channel: "email" as const, body: "Hi {firstName}, your {visit} is booked for {date}. {who} will be there. If that day does not work, reply to this email and we will find another.", enabled: true },
+      { key: "day-before", channel: "sms" as const, body: "Trailhead here. {who} will be there tomorrow, {date}, for your {visit}. Please leave the gate unlatched and the controller reachable. Reply STOP to stop texts.", enabled: true },
+      { key: "on-the-way", channel: "sms" as const, body: "Trailhead is on the way for your {visit}. We will be there within the hour.", enabled: true },
+    ]
+    expect(overridesOf(old)).toEqual({})
+    expect(messagesWith(old).find((m) => m.key === "date-set" && m.channel === "email")!.body).toBe(defaultBody("date-set", "email"))
   })
   it("fill the list the screen shows: every editable message, saved words on top, nothing else", () => {
     const rows = messagesWith([{ key: "day-before", channel: "sms", body: "{who} is coming {day}.", enabled: true }, { key: "purchase-confirmation", channel: "email", body: "old", enabled: true }])

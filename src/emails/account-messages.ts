@@ -7,6 +7,7 @@ import type { CancelledData, CardExpiringData, CardFailedData, ReceiptData, Rend
 // may say "Season Pass" and its number; everything else speaks of the service ("spring turn-on", "repair").
 
 const wrap = (d: { origin: string }, preheader: string, title: string, body: string, reason: string) => emailLayout({ origin: d.origin, preheader, body: heading(title) + body, reason, signOff: SIGN_OFF })
+const whereRow = (address?: string | null): [string, string][] => (address ? [["Where", address]] : [])
 const at = (address?: string | null) => (address ? ` at ${address}` : "")
 const account = `your ${ACCOUNT_NAME}`
 const lines = (rows: [string, string][]) => rows.map(([k, v]) => `${k}: ${v}`)
@@ -19,8 +20,8 @@ export function receiptEmail(d: ReceiptData): RenderedEmail {
   const subject = `Receipt: ${dollars(d.amount)} for your ${d.serviceName}${at(d.address)}`
   const intro = `Thank you, ${d.firstName}. Your ${d.serviceName}${at(d.address)} is paid.`
   const rows: [string, string][] = d.invoiceNumber
-    ? [...(d.lines ?? []).map((l): [string, string] => [l.name, dollars(l.amount)]), ...((d.tax ?? 0) > 0 ? ([["Sales tax", dollars(d.tax!)]] as [string, string][]) : []), ["Paid", paidHow(d)], ["Where", d.address], ["Invoice", d.invoiceNumber]]
-    : [["Service", d.serviceName], ["Where", d.address], ["Paid", paidHow(d)], ["Paid on", longDay(d.paidOn)]]
+    ? [...(d.lines ?? []).map((l): [string, string] => [l.name, dollars(l.amount)]), ...((d.tax ?? 0) > 0 ? ([["Sales tax", dollars(d.tax!)]] as [string, string][]) : []), ["Paid", paidHow(d)], ...whereRow(d.address), ["Invoice", d.invoiceNumber]]
+    : [["Service", d.serviceName], ...whereRow(d.address), ["Paid", paidHow(d)], ...(d.paidOn ? ([["Paid on", longDay(d.paidOn)]] as [string, string][]) : [])]
   const body = paragraph(intro) + facts(rows) + (d.nextLine ? paragraph(d.nextLine) : "") + (d.receiptUrl ? button(d.receiptUrl, "View the receipt") : "")
   const text = plainText([intro, "", ...lines(rows), ...(d.nextLine ? ["", d.nextLine] : []), ...(d.receiptUrl ? ["", `Your receipt: ${d.receiptUrl}`] : [])], SIGN_OFF)
   return { subject, text, html: wrap(d, intro, "Paid, thank you", body, d.invoiceNumber ? `You are getting this because you paid invoice ${d.invoiceNumber}.` : "You are getting this because you paid for a visit with Trailhead.") }
@@ -43,16 +44,17 @@ export function cardExpiringEmail(d: CardExpiringData): RenderedEmail {
   const intro = `Hi ${d.firstName}, the card we have for your visits ${d.cardState}${d.left > 0 ? `, and ${dollars(d.left)} of visits are still to come` : ""}. A new card now keeps them on schedule.`
   const how = d.updateUrl ? "" : "Reply to this email and we'll help you add a new one."
   const body = paragraph(intro) + (how ? paragraph(how) : "") + (d.updateUrl ? button(d.updateUrl, "Add a new card") : button(d.signInUrl, `Open ${account}`)) + (d.updateUrl ? smallPrint("The link is good for 24 hours.") : "")
-  return { subject, text: plainText([intro, ...(how ? [how] : []), ...(d.updateUrl ? ["", `Add a new card: ${d.updateUrl}`] : ["", `Your ${ACCOUNT_NAME}: ${d.accountUrl}`])], SIGN_OFF), html: wrap(d, intro, "Your card expires soon", body, `You are getting this about the card in ${account}.`) }
+  return { subject, text: plainText([intro, ...(how ? [how] : []), ...(d.updateUrl ? ["", `Add a new card: ${d.updateUrl}`] : ["", `Your ${ACCOUNT_NAME}: ${d.accountUrl}`])], SIGN_OFF), html: wrap(d, intro, d.cardState.includes("expires") ? "Your card expires soon" : "Your card needs replacing", body, `You are getting this about the card in ${account}.`) }
 }
 
 export function cancelledEmail(d: CancelledData): RenderedEmail {
-  const subject = `Your ${d.season} Season Pass is canceled`
-  const intro = `Hi ${d.firstName}, your ${d.season} Season Pass is canceled and your remaining visits are off the schedule. We won't charge you again.`
+  const pass = d.season ? `${d.season} Season Pass` : "Season Pass"
+  const subject = `Your ${pass} is canceled`
+  const intro = `Hi ${d.firstName}, your ${pass} is canceled and your remaining visits are off the schedule. We won't charge you again.`
   const how = `If you want a visit later, book online or call ${BUSINESS.phone}.`
   const book = `${d.origin}/book`
   const body = paragraph(intro) + paragraph(how) + button(book, "Book a visit")
-  return { subject, text: plainText([intro, how, "", `Book a visit: ${book}`], SIGN_OFF), html: wrap(d, intro, "Your Season Pass is canceled", body, `You are getting this because your ${d.season} Season Pass was canceled.`) }
+  return { subject, text: plainText([intro, how, "", `Book a visit: ${book}`], SIGN_OFF), html: wrap(d, intro, "Your Season Pass is canceled", body, `You are getting this because your ${pass} was canceled.`) }
 }
 
 export function renewalEmail(d: RenewalData): RenderedEmail {

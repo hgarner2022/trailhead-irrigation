@@ -22,7 +22,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   const [row] = await database.select({ id: s.visit.id }).from(s.visit).where(eq(s.visit.id, id))
   const facts = row && (await loadVisitFacts(database, id, origin))
   if (!facts) return new Response("Not found", { status: 404 })
-  return new Response(icsFile(facts, new Date(), `${origin}/account/pass`), {
+  return new Response(icsFile(facts, new Date(), `${origin}/account`), {
     headers: { "content-type": "text/calendar; charset=utf-8", "content-disposition": `attachment; filename="trailhead-${facts.day}.ics"`, "cache-control": "private, no-store" },
   })
 }
