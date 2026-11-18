@@ -278,4 +278,45 @@ describe("the job panel", () => {
     view({ defaultJobId: "job-a", readOnly: true, actions: jobActions() })
     expect(panel().queryByRole("button", { name: "Cancel job" })).toBeNull()
   })
+
+  // The footer's first button is the next step, and the only filled one (Button's default variant carries bg-primary).
+  const footer = () => document.querySelector<HTMLElement>('[data-slot="sheet-footer"] > :first-child')!
+  const footerButtons = () => [...document.querySelectorAll('[data-slot="sheet-footer"] button, [data-slot="sheet-footer"] a')].map((b) => b.textContent)
+
+  it("a scheduled job leads with Open visit and Record the payment is not the primary while a visit is ahead", async () => {
+    view({ defaultJobId: "job-a", actions: jobActions() })
+    const names = footerButtons()
+    expect(names[0]).toBe("Open visit")
+    expect(footer()).toHaveClass("bg-primary-dark")
+    expect(names).toContain("Record the payment")
+    expect(names.indexOf("Record the payment")).toBeGreaterThan(0)
+    // the primary opens the next visit's panel, in place of the job's
+    await userEvent.click(footer())
+    expect(await screen.findByRole("heading", { name: "Customer" })).toBeInTheDocument()
+    await waitFor(() => expect(screen.getAllByRole("dialog")).toHaveLength(1))
+    expect(screen.queryByRole("heading", { name: "Lines" })).toBeNull()
+  })
+
+  it("a done job that is unpaid leads with Send an invoice and Record the payment is second", () => {
+    view({ defaultJobId: "job-d", actions: jobActions(), visitActions: visitActions() as VisitActions })
+    expect(footerButtons().slice(0, 2)).toEqual(["Send an invoice", "Record the payment"])
+  })
+
+  it("a done job with its invoice out leads with Record the payment", () => {
+    view({ defaultJobId: "job-f", actions: jobActions(), visitActions: visitActions() as VisitActions })
+    expect(footerButtons()[0]).toBe("Record the payment")
+  })
+
+  it("a done and paid job has only Open customer", () => {
+    view({ defaultJobId: "job-e", actions: jobActions() })
+    expect(footerButtons()).toEqual(["Open customer"])
+  })
+
+  it("a job that needs a quote leads with Add a line, which opens the line form (and the section keeps no second button)", async () => {
+    view({ defaultJobId: "job-b", actions: jobActions() })
+    expect(footerButtons()[0]).toBe("Add a line")
+    expect(screen.getAllByRole("button", { name: "Add a line" })).toHaveLength(1)
+    await userEvent.click(footer())
+    expect(await screen.findByLabelText("What was added")).toBeInTheDocument()
+  })
 })

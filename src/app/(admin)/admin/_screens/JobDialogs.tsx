@@ -9,6 +9,7 @@ import { OFFICE_KINDS } from "@/lib/admin/visit-defaults"
 import type { AdminData, ServiceItem } from "@/lib/admin/types"
 import { ConfirmCancel } from "./ConfirmCancel"
 import { FIELD, LABEL } from "./CustomerPicker"
+import type { Outcome } from "./action-types"
 import type { JobActions } from "./job-actions-types"
 import { servicePriceLine } from "./NewJobService"
 import { FORM_STATUS, useRunner } from "./use-runner"
@@ -162,7 +163,7 @@ export function NewVisitDialog({ jobId, data, today, open, onOpenChange, actions
 }
 
 /** Cancel job: what happens to the schedule and the money, or why it cannot (the job holds a payment, refund it first). */
-export function CancelJobDialog({ jobId, held, open, onOpenChange, onCancel }: { jobId: string; held: number; open: boolean; onOpenChange: (open: boolean) => void; onCancel?: (jobId: string) => Promise<{ ok: true } | { ok: false; message: string }> }) {
+export function CancelJobDialog({ jobId, held, open, onOpenChange, onCancel }: { jobId: string; held: number; open: boolean; onOpenChange: (open: boolean) => void; onCancel?: (jobId: string) => Promise<Outcome> }) {
   return (
     <ConfirmCancel
       title="Cancel this job?"

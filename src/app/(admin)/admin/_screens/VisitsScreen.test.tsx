@@ -351,7 +351,7 @@ describe("New job", () => {
     expect(sheet.getByLabelText("Price")).toHaveValue("145")
     await userEvent.click(sheet.getByRole("button", { name: "Add job" }))
     expect(a.createVisit).toHaveBeenCalledWith(expect.objectContaining({ customerId: "cx", serviceKey: "repair", durationMinutes: 120, price: 145 }))
-    expect(a.createVisit.mock.calls[0]![0]).not.toHaveProperty("scheduledOn")
+    expect(vi.mocked(a.createVisit).mock.calls[0]![0]).not.toHaveProperty("scheduledOn")
   })
 
   it("takes a new customer with name, street and town, and shows the API's refusal", async () => {

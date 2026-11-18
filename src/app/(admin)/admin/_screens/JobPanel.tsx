@@ -12,7 +12,9 @@ import { customerUrl } from "@/lib/admin/links"
 import { visitJob } from "@/lib/admin/jobs"
 import type { AdminData, Visit } from "@/lib/admin/types"
 import type { JobActions } from "./job-actions-types"
+import { footerPlan } from "./job-footer-model"
 import { jobFacts, type JobFacts } from "./job-panel-model"
+import { JobFooter } from "./JobFooter"
 import { CancelJobDialog, NewVisitDialog, RecordPaymentDialog } from "./JobDialogs"
 import { JobLinesSection } from "./JobLinesSection"
 import { JobMoneySection } from "./JobMoneySection"
@@ -97,12 +99,15 @@ export function JobPanel({ data, today, jobId, open, onOpenChange, readOnly = fa
   const [adding, setAdding] = useState(false)
   const [cancelling, setCancelling] = useState(false)
   const [cancellingJob, setCancellingJob] = useState(false)
+  // Add a line is the primary of a job waiting on a quote, so the Lines section's own form is opened from the footer.
+  const [addingLine, setAddingLine] = useState(false)
   if (!facts) return null
   const { job, row, pass, bill } = facts
   const say = (call: () => Promise<{ ok: boolean }>, said?: string) => run(call as never, undefined, said ?? "")
   const sendBill = () => (visitActions ? run(() => visitActions.sendBill(job.id), undefined, "Invoice sent.") : console.info("send an invoice", job.id))
   const canAct = !readOnly
   const passOpen = canAct && pass?.status === "active"
+  const plan = footerPlan(facts, canAct)
   return (
     <SidePanel
       open={open}
@@ -110,46 +115,22 @@ export function JobPanel({ data, today, jobId, open, onOpenChange, readOnly = fa
       title={row.name}
       description={facts.heading}
       footer={
-        <>
-          {canAct && bill.canSend && (
-            <Button type="button" className="min-h-11" disabled={pending} onClick={sendBill}>
-              Send an invoice
-            </Button>
-          )}
-          {canAct && facts.canRecord && (
-            <Button type="button" variant={bill.canSend ? "outline" : "default"} className="min-h-11" onClick={() => setRecording(true)}>
-              Record the payment
-            </Button>
-          )}
-          {canAct && facts.canAddVisit && (
-            <Button type="button" variant="outline" className="min-h-11" onClick={() => setAdding(true)}>
-              New visit
-            </Button>
-          )}
-          {passOpen && pass?.cardLast4 && (
-            <Button type="button" variant="outline" className="min-h-11" disabled={pending} onClick={() => (actions?.pass ? say(() => actions.pass!.sendCardUpdateLink(pass.id), "Card update link sent.") : console.info("send card update link", [pass.number]))}>
-              Send card update link
-            </Button>
-          )}
-          {passOpen && pass && (
-            <Button type="button" variant="outline" className="min-h-11" disabled={pending} onClick={() => (actions?.pass ? say(() => actions.pass!.resendConfirmation(pass.id), "Confirmation sent.") : console.info("resend confirmation", [pass.number]))}>
-              Resend confirmation
-            </Button>
-          )}
-          <Button variant="outline" className="min-h-11" asChild>
-            <Link href={customerUrl(row.customerId)}>Open customer</Link>
-          </Button>
-          {passOpen && pass && (
-            <Button type="button" variant="ghost" className="ml-auto min-h-11 text-destructive hover:text-destructive" onClick={() => setCancelling(true)}>
-              Cancel pass
-            </Button>
-          )}
-          {canAct && facts.canCancel && (
-            <Button type="button" variant="ghost" className="ml-auto min-h-11 text-destructive hover:text-destructive" onClick={() => setCancellingJob(true)}>
-              Cancel job
-            </Button>
-          )}
-        </>
+        <JobFooter
+          facts={facts}
+          plan={plan}
+          canAct={canAct}
+          passOpen={passOpen}
+          pass={pass}
+          pending={pending}
+          onSendBill={sendBill}
+          onRecord={() => setRecording(true)}
+          onAddVisit={() => setAdding(true)}
+          onAddLine={() => setAddingLine(true)}
+          onSendCardUpdateLink={() => (actions?.pass ? say(() => actions.pass!.sendCardUpdateLink(pass!.id), "Card update link sent.") : console.info("send card update link", [pass!.number]))}
+          onResendConfirmation={() => (actions?.pass ? say(() => actions.pass!.resendConfirmation(pass!.id), "Confirmation sent.") : console.info("resend confirmation", [pass!.number]))}
+          onCancelPass={() => setCancelling(true)}
+          onCancelJob={() => setCancellingJob(true)}
+        />
       }
     >
       <div className="flex flex-col gap-6" data-slot="job-panel">
@@ -185,7 +166,7 @@ export function JobPanel({ data, today, jobId, open, onOpenChange, readOnly = fa
           </>
         ) : (
           <>
-            <JobLinesSection jobId={job.id} lines={facts.lines} total={row.total} tax={facts.tax} data={data} editable={canAct && facts.canEditLines} actions={actions} />
+            <JobLinesSection jobId={job.id} lines={facts.lines} total={row.total} tax={facts.tax} data={data} editable={canAct && facts.canEditLines} actions={actions} adding={addingLine} onAddingChange={setAddingLine} addInFooter={plan.primary === "add-line"} />
             <Visits visits={facts.visits} facts={facts} today={today} />
           </>
         )}
