@@ -68,7 +68,8 @@ export const messagesSend = defineHandler({
       if (!input.visitId) throw new ApiError("invalid", "A visit is needed for this message")
       const [visit] = await ctx.db.select({ id: s.visit.id, customerId: s.visit.customerId, status: s.visit.status }).from(s.visit).where(and(eq(s.visit.id, input.visitId), eq(s.visit.organizationId, ctx.organizationId)))
       if (!visit || visit.customerId !== customer.id) throw new ApiError("not_found", "Visit not found")
-      const facts = await loadVisitFacts(ctx.db, visit.id, origin)
+      // On my way names the person (and any window) itself: it is the moment Ryan tells the customer who is coming.
+      const facts = await loadVisitFacts(ctx.db, visit.id, origin, undefined, { told: input.kind === "on-the-way" })
       if (!facts) throw new ApiError("unprocessable", "That visit has no day yet")
       if (input.kind === "on-the-way") {
         // The "On my way" button: only for a visit that is today, and once per visit per day.

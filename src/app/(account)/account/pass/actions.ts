@@ -71,8 +71,14 @@ export async function addInspection(passId: string): Promise<void> {
 }
 
 /** Skips one visit that has not happened; it is not charged. */
-export async function skipVisit(passId: string, kind: "turn-on" | "inspection" | "blowout"): Promise<void> {
-  await callApi(await ctxFromAccount(), passesSkipVisit, { id: passId, kind })
+export async function skipVisit(passId: string, kind: "turn-on" | "inspection" | "blowout"): Promise<{ ok: true } | { ok: false; message: string }> {
+  try {
+    await callApi(await ctxFromAccount(), passesSkipVisit, { id: passId, kind })
+  } catch (error) {
+    // Inside 24 hours the handler refuses a customer with the words that say to text or call Ryan; the dialog shows them.
+    return { ok: false, message: error instanceof ApiError && error.status < 500 ? error.message : "We couldn't skip that visit. Try again, or text Ryan." }
+  }
   drainAfter()
   revalidatePath(PAGE)
+  return { ok: true }
 }

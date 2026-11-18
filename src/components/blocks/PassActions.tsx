@@ -21,7 +21,7 @@ export interface PassActionsProps {
   pass: Pass
   onAddInspection?: (passId: string) => void
   onChangePreference?: (kind: "turn-on" | "blowout", preference: TimingPreference) => void
-  onSkip?: (passId: string, kind: PassVisit["kind"]) => void
+  onSkip?: (passId: string, kind: PassVisit["kind"]) => SkipResult | Promise<SkipResult>
   /** which actions to show; all by default */
   include?: ("inspection" | "preference" | "skip")[]
   /** the customer's words ("my", "you") or the admin's ("the", "the customer") */
@@ -81,19 +81,30 @@ function AddInspectionDialog({ pass, voice, onAdd }: { pass: Pass; voice: "custo
   )
 }
 
-function SkipVisitDialog({ pass, voice, onSkip }: { pass: Pass; voice: "customer" | "admin"; onSkip?: (passId: string, kind: PassVisit["kind"]) => void }) {
+/** What the skip action answers: `ok: false` keeps the dialog open with the handler's words (inside 24 hours a customer is told to text or call Ryan). */
+export type SkipResult = { ok: boolean; message?: string } | void
+
+function SkipVisitDialog({ pass, voice, onSkip }: { pass: Pass; voice: "customer" | "admin"; onSkip?: (passId: string, kind: PassVisit["kind"]) => SkipResult | Promise<SkipResult> }) {
   const choices = pass.visits.filter(canSkip)
   const [chosen, setChosen] = useState<PassVisit["kind"] | null>(null)
   const [done, setDone] = useState<PassVisit["kind"] | null>(null)
-  const skip = () => {
+  const [error, setError] = useState<string | null>(null)
+  const skip = async () => {
     if (!chosen) return
+    setError(null)
+    try {
+      const result = await onSkip?.(pass.id, chosen)
+      if (result && result.ok === false) return setError(result.message ?? "We couldn't skip that visit. Try again, or text Ryan.")
+    } catch {
+      return setError("We couldn't skip that visit. Try again, or text Ryan.")
+    }
     setDone(chosen)
-    onSkip?.(pass.id, chosen)
   }
   const reset = (open: boolean) => {
     if (!open) {
       setChosen(null)
       setDone(null)
+      setError(null)
     }
   }
   const your = voice === "customer" ? "your" : "the"
@@ -152,6 +163,11 @@ function SkipVisitDialog({ pass, voice, onSkip }: { pass: Pass; voice: "customer
                 Skip it
               </Button>
             </DialogFooter>
+            {error && (
+              <p role="alert" className="text-sm text-destructive">
+                {error}
+              </p>
+            )}
           </>
         )}
       </DialogContent>

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { DAY_FAILED, longDay, shortDay } from "@/lib/portal/words"
@@ -35,7 +36,9 @@ export function RescheduleSheet({ service, address, currentDay, days, textHref, 
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [done, setDone] = useState<string | null>(null)
-  const moving = Boolean(currentDay)
+  // read once: after the move `currentDay` is set, but a visit that had no day is still "set", not "moved"
+  const [moving] = useState(Boolean(currentDay))
+  const router = useRouter()
   const title = moving ? "Pick a new day" : "Pick a day"
 
   const submit = async () => {
@@ -54,7 +57,8 @@ export function RescheduleSheet({ service, address, currentDay, days, textHref, 
   }
 
   return (
-    <Dialog>
+    // Once it said Moved, closing it refreshes the page so the new day shows behind it.
+    <Dialog onOpenChange={(open) => { if (!open && done) router.refresh() }}>
       <DialogTrigger asChild>
         <Button className={className}>{moving ? "Reschedule" : "Pick a day"}</Button>
       </DialogTrigger>

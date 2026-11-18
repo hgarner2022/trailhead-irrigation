@@ -39,7 +39,7 @@ export interface PassPageScreenProps {
   /** called when the customer saves a new timing preference for the turn-on or the blowout */
   onChangePreference?: (kind: "turn-on" | "blowout", preference: TimingPreference) => void
   onAddInspection?: (passId: string) => void
-  onSkip?: (passId: string, kind: Pass["visits"][number]["kind"]) => void
+  onSkip?: (passId: string, kind: Pass["visits"][number]["kind"]) => { ok: boolean; message?: string } | void | Promise<{ ok: boolean; message?: string } | void>
   /** the customer picked one of the offered days, to set a day or to change it */
   onPickDay?: (kind: "turn-on" | "blowout", dayIso: string) => ActionResult | Promise<ActionResult>
   /** the customer asked to update the card; the wiring sends them to Stripe's hosted page. Rendered as a form action. */

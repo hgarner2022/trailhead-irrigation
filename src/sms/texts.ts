@@ -25,7 +25,7 @@ const tail = (o?: TextOptions) => (o?.optOut === false ? "" : ` ${OPT_OUT}`)
  * says "Doesn't work? Pick another day:"; on my way says "See your visit:". Without a signed link (an older row) it is the plain account link.
  */
 const visitLinkTail = (key: EditableMessage["key"], visitUrl: string | undefined, accountUrl: string) =>
-  visitUrl ? `${key === "on-the-way" ? "See your visit:" : "Doesn't work? Pick another day:"} ${visitUrl}` : `Your ${ACCOUNT_NAME}: ${accountUrl}`
+  visitUrl ? `${key === "on-the-way" ? "See your visit:" : key === "date-confirm" ? "Pick another day:" : "Doesn't work? Pick another day:"} ${visitUrl}` : `Your ${ACCOUNT_NAME}: ${accountUrl}`
 
 const visitText = (key: EditableMessage["key"], d: VisitData, o?: TextOptions) => {
   const v = d.visit

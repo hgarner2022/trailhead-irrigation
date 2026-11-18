@@ -65,6 +65,14 @@ export function HomeScreen({ customer, jobs, today, pass, days = {}, onReschedul
           <Card data-slot="home-pass" className="self-start">
             <CardContent className="space-y-4 p-5">
               <PassCard pass={pass} priority className="w-full" />
+              {pass.status === "cancelled" && (
+                <p data-slot="pass-canceled" className="text-base text-foreground">
+                  {`Your ${pass.season} Season Pass is canceled. Nothing more will be charged. `}
+                  <a href="/book" className="font-semibold text-primary-deep underline underline-offset-2">
+                    Book Online
+                  </a>
+                </p>
+              )}
               <SeasonLine mode="customer" season={pass.season} visits={pass.visits} preferences={pass} today={today} caption={seasonCaption(pass)} />
               <Button asChild variant="outline">
                 <Link href="/account/pass">See your pass</Link>

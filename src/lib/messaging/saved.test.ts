@@ -27,8 +27,8 @@ afterAll(() => db.close())
 
 const text = async (kind: "date-set" | "day-before" | "on-the-way", key: string, customerId = "c100") => {
   const [customer] = await db.select().from(s.customer).where(eq(s.customer.id, customerId))
-  // the day-before text is the first message that carries a window
-  const facts = (await loadVisitFacts(db, visitId, origin, undefined, { told: kind === "day-before" }))!
+  // the day-before text (and on my way) is the first message that carries a window and names who is coming
+  const facts = (await loadVisitFacts(db, visitId, origin, undefined, { told: kind === "day-before" || kind === "on-the-way" }))!
   const added = await queueMessage(db, { organizationId: ORG, customerId, visitId, kind, key, data: { ...baseData(origin, customer!), visit: facts } })
   const [row] = await db.select().from(s.messageLog).where(and(eq(s.messageLog.customerId, customerId), eq(s.messageLog.key, key)))
   return { added, row }

@@ -37,7 +37,7 @@ export function nextLines(pass: Pass, chosen: readonly { kind: string; day: stri
     // A window is a message, told the day before; the done step states the day and says so.
     const when = `${name}. ${WINDOW_LATER}`
     const wanted = chosen.find((c) => c.kind === v.kind)?.day
-    const google = googleCalendarUrl({ id: v.id ?? v.kind, name: NAME[v.kind], day: v.scheduledOn, startTime: v.startTime ?? null, location: `${pass.town}, CO`, icsUrl: v.calendarUrl ?? "" })
+    const google = googleCalendarUrl({ id: v.id ?? v.kind, name: NAME[v.kind], day: v.scheduledOn, startTime: null, location: `${pass.town}, CO`, icsUrl: v.calendarUrl ?? "" })
     return { key: v.kind, lead: longDay(v.scheduledOn), text: `${when} ${RYAN_DOES[v.kind]}`, ...(wanted && wanted !== v.scheduledOn ? { note: filledLine(wanted, v.scheduledOn) } : {}), calendar: { google, ...(v.calendarUrl ? { ics: v.calendarUrl } : {}) } }
   })
   if (visits.length > 0) {

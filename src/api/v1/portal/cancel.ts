@@ -1,5 +1,5 @@
 import "server-only"
-import { and, eq, notInArray } from "drizzle-orm"
+import { and, eq, inArray, isNull, notInArray, or } from "drizzle-orm"
 import { z } from "zod"
 import * as s from "@/db/schema"
 import { visitName } from "@/lib/events/names"
@@ -49,9 +49,19 @@ export const visitsCancelSelf = defineHandler({
     assertBeforeCutoff(ctx, visit)
 
     const org = ctx.organizationId
-    const held = await heldMoney(ctx.db, org, job.id)
+    // The job's money decides whether the job can be canceled with it (the `jobs.cancel` rule); what the customer and Ryan are told is what is held on this visit: its own
+    // payment rows and any payment made on the job as a whole, never another visit's (a pass visit is charged only after it is done).
+    const jobHeld = await heldMoney(ctx.db, org, job.id)
+    const here = await ctx.db.select({ amount: s.charge.amount }).from(s.charge).where(and(eq(s.charge.organizationId, org), eq(s.charge.jobId, job.id), eq(s.charge.status, "succeeded"), or(eq(s.charge.visitId, visit.id), isNull(s.charge.visitId))))
+    const held = here.reduce((sum, r) => sum + r.amount, 0)
     const status = (isPassVisit ? "skipped" : "cancelled") as (typeof FINAL)[number]
-    await ctx.db.update(s.visit).set({ status, personId: null, scheduledOn: null, startTime: null, stopOrder: null, awaitingPick: false }).where(eq(s.visit.id, visit.id))
+    // The update is conditional on the visit still being open and says whether it won: a second tab or a double submit finds it already canceled and writes nothing more.
+    const won = await ctx.db.update(s.visit).set({ status, personId: null, scheduledOn: null, startTime: null, stopOrder: null, awaitingPick: false }).where(and(eq(s.visit.id, visit.id), inArray(s.visit.status, ["unscheduled", "scheduled"]))).returning({ id: s.visit.id })
+    if (won.length === 0) {
+      const [now] = await ctx.db.select({ status: s.visit.status }).from(s.visit).where(eq(s.visit.id, visit.id))
+      const [j] = await ctx.db.select({ cancelledAt: s.job.cancelledAt }).from(s.job).where(eq(s.job.id, job.id))
+      return { id: visit.id, status: (now?.status === "skipped" ? "skipped" : "cancelled") as (typeof FINAL)[number], jobCancelled: Boolean(j?.cancelledAt) }
+    }
     await cancelVisitLines(ctx.db, [visit.id], ctx.now)
     if (visit.personId && visit.scheduledOn) await orderDay(ctx.db, { personId: visit.personId, day: visit.scheduledOn })
     // A charge asked for but not yet made is left undone, and the visit's "Needs a day" alert resolves with it.
@@ -60,7 +70,7 @@ export const visitsCancelSelf = defineHandler({
 
     // A one-off job whose only live visit this was is canceled with it, by the rules `jobs.cancel` has; one that holds a payment stays open.
     let jobCancelled = false
-    if (!isPassVisit && held <= 0) {
+    if (!isPassVisit && jobHeld <= 0) {
       const left = await ctx.db.select({ id: s.visit.id }).from(s.visit).where(and(eq(s.visit.jobId, job.id), eq(s.visit.organizationId, org), notInArray(s.visit.status, [...FINAL])))
       if (left.length === 0) {
         await cancelJobRows(ctx, job, input.reason)

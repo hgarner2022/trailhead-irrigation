@@ -28,8 +28,8 @@ export async function changeMyDay(visitId: string, day: string): Promise<Result>
   } catch (error) {
     return failure(error, DAY_FAILED)
   }
+  // No revalidate here: the sheet that called this is still showing its answer ("Moved to Thursday"). It refreshes the page when the customer closes it.
   drainAfter()
-  revalidatePath("/account", "layout")
   return { ok: true }
 }
 
@@ -40,8 +40,8 @@ export async function cancelMyVisit(visitId: string, reason: string): Promise<Re
   } catch (error) {
     return failure(error, "We couldn't cancel that.")
   }
+  // No revalidate here: the visit no longer offers Cancel, so a refresh now would unmount the sheet before it said "Canceled". It refreshes when the customer closes it.
   drainAfter()
-  revalidatePath("/account", "layout")
   return { ok: true }
 }
 

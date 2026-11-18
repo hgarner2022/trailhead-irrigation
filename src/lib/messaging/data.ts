@@ -44,7 +44,8 @@ export async function loadVisitFacts(db: Database, visitId: string, origin: stri
     name: kindName(row.visit.kind),
     day: when,
     startTime: told ? row.visit.startTime : null,
-    who: row.personActive ? customerFacingFirstName(row.person) : null,
+    // The person goes with the window (architecture section 4): Ryan names who is coming in the day-before text, not before it.
+    who: told && row.personActive ? customerFacingFirstName(row.person) : null,
     ...(row.gateCode ? { gateCode: row.gateCode } : {}),
     ...(row.contactName ? { contactName: row.contactName } : {}),
     address: row.address,

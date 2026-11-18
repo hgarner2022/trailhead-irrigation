@@ -97,6 +97,29 @@ describe("visits.cancelSelf: a Season Pass visit", () => {
   })
 })
 
+describe("visits.cancelSelf: what is said about money", () => {
+  it("a payment on another visit of the pass is not this visit's: the cancel says nothing was charged and Ryan's row has no payment flag", async () => {
+    await setPass(db, "p3", { status: "active" })
+    await db.update(s.visit).set({ status: "scheduled", scheduledOn: DAY, personId: "person_truck-1" }).where(eq(s.visit.id, "p3-blowout"))
+    const job = await passJobOf(db, "p3")
+    await db.insert(s.charge).values({ id: "paid-spring", organizationId: job.organizationId, jobId: job.id, customerId: andrea, visitId: "p3-turn-on", amount: 120, method: "card_on_file", status: "succeeded", paidOn: "2027-04-25" })
+    await callApi(me(andrea), visitsCancelSelf, { id: "p3-blowout" })
+    const text = (await messagesOf("p3-blowout", "visit-cancelled"))[0]!
+    expect(text.body).toContain("Nothing was charged.")
+    expect(text.body).not.toContain("$120")
+    const alert = (await db.select().from(s.adminAlert)).find((a) => a.key.startsWith("p3-blowout:"))!
+    expect(alert.message).not.toContain("payment")
+  })
+
+  it("a double submit writes one event, one alert and one message", async () => {
+    const v = await bookedRepair(dana)
+    await Promise.all([callApi(me(dana), visitsCancelSelf, { id: v.id }), callApi(me(dana), visitsCancelSelf, { id: v.id })])
+    expect(await eventsOf(db, { visitId: v.id, kind: "visit.cancelled" })).toHaveLength(1)
+    expect((await db.select().from(s.adminAlert)).filter((a) => a.key.startsWith(`${v.id}:`))).toHaveLength(1)
+    expect(await messagesOf(v.id, "visit-cancelled")).toHaveLength(1)
+  })
+})
+
 describe("visits.cancelSelf: a one-off visit", () => {
   it("cancels the visit and its line, then the job when it was the only live visit, and says so everywhere once", async () => {
     const v = await bookedRepair(dana)

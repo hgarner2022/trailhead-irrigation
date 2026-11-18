@@ -79,7 +79,9 @@ describe("every text", () => {
   it("ends every text about a visit with that visit's own signed link: Pick another day on the day texts, See your visit on my way and the cancel note", () => {
     const v = { ...visit, visitUrl: `${origin}/account/visits/v1?t=1900000000.sig` }
     const urlText = `${origin}/account/visits/v1?t=1900000000.sig`
-    for (const t of [dateSetText({ ...base, visit: v }), dateMovedText({ ...base, visit: v }), dateConfirmText({ ...base, visit: v }), dayBeforeText({ ...base, visit: v })]) expect(t).toContain(`Doesn't work? Pick another day: ${urlText}`)
+    for (const t of [dateSetText({ ...base, visit: v }), dateMovedText({ ...base, visit: v }), dayBeforeText({ ...base, visit: v })]) expect(t).toContain(`Doesn't work? Pick another day: ${urlText}`)
+    // the two-week text already asks "Need another day?"
+    expect(dateConfirmText({ ...base, visit: v })).toContain(`Need another day? Pick another day: ${urlText}`)
     expect(onTheWayText({ ...base, visit: v })).toContain(`See your visit: ${urlText}`)
     expect(visitCancelledText({ ...base, serviceName: "spring turn-on", address: "412 Ash St", day: "2027-05-05", paid: 0, visitUrl: urlText })).toContain(`See your visit: ${urlText}`)
     // without a signed link (an older row) it is the plain account link

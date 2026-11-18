@@ -46,9 +46,17 @@ export function VisitControls(props: VisitControlsProps) {
   if (visit.cancel === "text" || (visit.reschedule === "text" && visit.cancel === "no")) return <TextRyan textHref={textHref} />
   if (visit.reschedule === "no" && visit.cancel === "no") return null
   return (
-    <div data-slot="visit-controls" className="flex flex-wrap items-center gap-x-6 gap-y-2">
-      <RescheduleControl {...props} />
-      <CancelControl {...props} />
+    <div data-slot="visit-controls" className="space-y-3">
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+        <RescheduleControl {...props} />
+        <CancelControl {...props} />
+      </div>
+      {visit.reschedule === "text" && (
+        <div className="space-y-2">
+          <p className="text-base text-muted-foreground">Days for this work are set with you.</p>
+          <TextRyan textHref={textHref} why={false} />
+        </div>
+      )}
     </div>
   )
 }

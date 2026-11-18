@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
@@ -32,6 +33,7 @@ export function CancelVisitSheet({ service, dayWords, consequence, textHref, onC
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [done, setDone] = useState(false)
+  const router = useRouter()
 
   const confirm = async () => {
     setError(null)
@@ -48,7 +50,8 @@ export function CancelVisitSheet({ service, dayWords, consequence, textHref, onC
   }
 
   return (
-    <Dialog>
+    // Once it said Canceled, closing it refreshes the page so the visit reads Canceled behind it.
+    <Dialog onOpenChange={(open) => { if (!open && done) router.refresh() }}>
       <DialogTrigger asChild>
         <Button variant="link" className={className ?? "h-auto px-0 py-2 text-destructive"}>
           Cancel visit

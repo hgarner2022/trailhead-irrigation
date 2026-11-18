@@ -22,7 +22,9 @@ afterAll(() => db.close())
 describe("loadVisitFacts", () => {
   it("carries the person's first name as who", async () => {
     const facts = await loadVisitFacts(db, "p4-turn-on", origin)
-    expect(facts).toMatchObject({ id: "p4-turn-on", name: "spring turn-on", day: "2027-05-05", who: "Ryan" })
+    // the person is named with the window, once the day-before text exists
+    expect(facts).toMatchObject({ id: "p4-turn-on", name: "spring turn-on", day: "2027-05-05", who: null })
+    expect(await loadVisitFacts(db, "p4-turn-on", origin, undefined, { told: true })).toMatchObject({ who: "Ryan" })
     expect(facts).not.toHaveProperty("crew")
   })
   it("states the day only until the day-before message exists: a window is a message, not a promise", async () => {
@@ -70,7 +72,8 @@ describe("a person who is a label, not a name", () => {
 
   it.each(["Second truck", "Truck 1", "Second"])("names no one for %s, so a text reads without a name", async (label) => {
     await rename(label)
-    const facts = (await loadVisitFacts(db, "p4-turn-on", origin))!
+    // told: the person is named only with the window; the plain account link (no signed visit link) keeps these strings about the name
+    const facts = { ...(await loadVisitFacts(db, "p4-turn-on", origin, undefined, { told: true }))!, visitUrl: undefined }
     expect(facts.who).toBeNull()
     expect((await visitWhoDay(db, "p4-turn-on")).who).toBeNull()
     const visit = { ...facts, address: "480 Briggs St", name: "fall blowout" }
@@ -89,7 +92,7 @@ describe("a person who is a label, not a name", () => {
 
   it("still names a person with a first and a last name", async () => {
     await rename("Ryan Garner")
-    const visit = (await loadVisitFacts(db, "p4-turn-on", origin))!
+    const visit = { ...(await loadVisitFacts(db, "p4-turn-on", origin, undefined, { told: true }))!, visitUrl: undefined }
     expect(visit.who).toBe("Ryan")
     expect(onTheWayText({ ...base, visit: { ...visit, address: "480 Briggs St", name: "fall blowout" } }, { optOut: false })).toBe(`Trailhead: Ryan is on the way to 480 Briggs St for your fall blowout. Your Trailhead account: ${origin}/account`)
   })

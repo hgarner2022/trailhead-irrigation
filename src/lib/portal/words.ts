@@ -157,6 +157,11 @@ export function dayParts(v: DayLineFacts, today: string, reachable = true): { he
     const heading = v.canPick ? "Pick a day" : "Day coming soon"
     return { heading, detail: v.canPick ? null : "We'll text you when Ryan has one.", sentence: v.canPick ? "Pick a day." : "Day coming soon. We'll text you when Ryan has one." }
   }
+  if (v.windowTold && !v.window) {
+    // The day-before text went out but the visit has no start time (a one-off left at Any time): say who is coming that day, never promise a window again.
+    const note = v.personFirstName ? `${v.personFirstName} will be there that day.` : "We'll be there that day."
+    return { heading: day, detail: note, sentence: `${day}. ${note}` }
+  }
   if (v.windowTold && v.window) {
     const window = `${v.window}${v.personFirstName ? `, with ${v.personFirstName}` : ""}`
     return { heading: day, detail: `${window[0]!.toUpperCase()}${window.slice(1)}.`, sentence: `${day}, ${window}.` }
@@ -185,11 +190,12 @@ export function cancelConsequence(f: CancelFacts): string {
 }
 
 /** The facts `cancelConsequence` reads, from the job and visit the API sent. */
-export function cancelFactsOf(job: { season: number | null; visits: readonly { id: string; status: string }[]; payments: readonly { amount: number }[] }, visitId: string): CancelFacts {
+export function cancelFactsOf(job: { season: number | null; visits: readonly { id: string; status: string }[]; payments: readonly { amount: number; visitId: string | null }[] }, visitId: string): CancelFacts {
   return {
     pass: job.season !== null,
     otherVisits: job.visits.filter((v) => v.id !== visitId && v.status !== "cancelled" && v.status !== "skipped").length,
-    paid: Math.max(0, job.payments.reduce((sum, p) => sum + p.amount, 0)),
+    // what is held on this visit: its own payments and any made on the job as a whole, not another visit's
+    paid: Math.max(0, job.payments.filter((p) => p.visitId === visitId || p.visitId === null).reduce((sum, p) => sum + p.amount, 0)),
   }
 }
 
