@@ -31,7 +31,7 @@ function Lines({ bill }: { bill: PayBill }) {
       ))}
       {bill.tax > 0 && (
         <div className="flex items-baseline justify-between gap-4 py-3">
-          <dt className="text-base text-foreground">Sales tax</dt>
+          <dt className="text-base text-foreground">Tax</dt>
           <dd className="text-base text-foreground tabular-nums">{money(bill.tax)}</dd>
         </div>
       )}

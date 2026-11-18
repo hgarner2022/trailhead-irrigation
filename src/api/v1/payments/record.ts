@@ -9,6 +9,7 @@ import { setVisitLinePrice } from "@/lib/jobs/write-lines"
 import { baseData } from "@/lib/messaging/data"
 import { queueMessage } from "@/lib/messaging/queue"
 import { paidDay, recordPaymentRow, visitBalance } from "@/lib/money/record"
+import { loadTaxRule } from "@/lib/money/tax-rule"
 import { jobOwed } from "@/lib/money/words"
 import { kindName } from "@/lib/pass/server/messages"
 import type { Ctx } from "../../core/context"
@@ -40,7 +41,7 @@ async function settleOpenBill(ctx: Ctx, jobId: string, row: { id: string; method
     ctx.db.select().from(s.lineItem).where(and(eq(s.lineItem.jobId, jobId), eq(s.lineItem.organizationId, org))),
     ctx.db.select().from(s.charge).where(and(eq(s.charge.jobId, jobId), eq(s.charge.organizationId, org))),
   ])
-  if (jobOwed(lines.filter((l) => !l.cancelledAt), payments) > 0) return
+  if (jobOwed(lines.filter((l) => !l.cancelledAt), payments, await loadTaxRule(ctx.db, org)) > 0) return
   const settled = await ctx.db.update(s.invoice).set({ paidOn: paidDay(ctx.now), paymentId: row.id, updatedAt: ctx.now }).where(and(eq(s.invoice.jobId, jobId), eq(s.invoice.organizationId, org), isNull(s.invoice.paidOn), isNull(s.invoice.cancelledAt))).returning({ id: s.invoice.id, number: s.invoice.number, total: s.invoice.total, session: s.invoice.stripeCheckoutSessionId })
   // The card form the customer may still have open is closed too, so the bill is not paid twice.
   for (const b of settled) {

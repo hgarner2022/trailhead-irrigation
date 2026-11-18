@@ -6,6 +6,7 @@
  */
 import { TIME_ZONE } from "@/lib/admin/format"
 import { jobTotal } from "@/lib/jobs/lines"
+import { NO_TAX, type TaxRule } from "@/lib/jobs/tax"
 import { dayOf } from "@/lib/admin/calendar"
 import { jobMoney, visitJob, windowLabel, type Job } from "@/lib/admin/jobs"
 import { KIND_LABEL, type OfficeKind } from "@/lib/admin/visit-defaults"
@@ -52,10 +53,13 @@ export const visitCancelled = (data: Pick<AdminData, "jobs">, visit: Pick<Visit,
   return own.length > 0 && own.every((l) => l.cancelledAt)
 }
 
-/** What the visit is worth: the total of its own lines that are not cancelled when it has any, else `visit.price`. */
-export const visitPrice = (data: Pick<AdminData, "jobs">, visit: Visit): number => {
+/** The sales tax rule the data carries (`AdminData.billing`); the fixtures carry none and nothing is taxed. */
+export const taxRuleOf = (data: Pick<AdminData, "billing">): TaxRule => data.billing ?? NO_TAX
+
+/** What the visit is worth with its sales tax: the total of its own lines that are not cancelled when it has any, else `visit.price`. */
+export const visitPrice = (data: Pick<AdminData, "jobs" | "billing">, visit: Visit): number => {
   const own = ownLines(data, visit)
-  return own.length ? jobTotal(own.map((l) => ({ quantity: l.quantity, unitPrice: l.unitPrice, cancelledAt: l.cancelledAt ? new Date(l.cancelledAt) : null }))) : (visit.price ?? 0)
+  return own.length ? jobTotal(own.map((l) => ({ quantity: l.quantity, unitPrice: l.unitPrice, taxable: l.taxable, cancelledAt: l.cancelledAt ? new Date(l.cancelledAt) : null })), taxRuleOf(data)) : (visit.price ?? 0)
 }
 
 export const priceWords = (visit: Pick<Visit, "price">) => ((visit.price ?? 0) > 0 ? `$${visit.price!.toLocaleString("en-US")}` : "Quote later")
@@ -106,7 +110,7 @@ export function visitFacts(data: AdminData, visitId: string, today: string): Vis
     priceCancelled: visitCancelled(data, visit),
     siblings,
     states,
-    money: jobMoney(job, siblings),
+    money: jobMoney(job, siblings, taxRuleOf(data)),
     // a job charged to the card on its pass is left to the card (unless the card failed)
     bill: billState(job, siblings, Boolean(pass?.cardLast4) && states.money !== "failed"),
     messages: data.messages.filter((m) => m.clientId === visit.clientId),

@@ -1,3 +1,4 @@
+import { NO_TAX } from "@/lib/jobs/tax"
 import { describe, expect, it } from "vitest"
 import snapshot from "./fixtures/snapshot.json"
 import { JOB_WORDS, MONEY_WORDS, NOT_CLOSED_LOOKBACK_DAYS, dayWords, jobCounts, jobMoney, jobOf, moneyOf, paymentsOf, statesOf, passVisitJob, visitJob, visitPaid, visitPaidOn, visitPaidTotal, windowLabel, type JobRow } from "./jobs"
@@ -177,18 +178,18 @@ describe("statesOf: the work pill and the money pill", () => {
     const row = (visitId: string, amount: number, over: Record<string, unknown> = {}) => ({ id: `pay-${visitId}`, visitId, amount, method: "check", status: "succeeded", ...over })
     const lines = [{ id: "l1", name: "Repair", quantity: 1, unitPrice: 145, taxable: false, visitId: "a" }, { id: "l2", name: "Repair", quantity: 1, unitPrice: 145, taxable: false, visitId: "b" }]
     // one of two visits paid
-    expect(jobMoney({ lines, payments: [row("a", 145)] }, [visit("a"), visit("b")])).toBe("1 of 2 paid, $145 owed")
+    expect(jobMoney({ lines, payments: [row("a", 145)] }, [visit("a"), visit("b")], NO_TAX)).toBe("1 of 2 paid, $145 owed")
     // nothing paid yet
-    expect(jobMoney({ lines, payments: [] }, [visit("a"), visit("b")])).toBe("$290 owed")
+    expect(jobMoney({ lines, payments: [] }, [visit("a"), visit("b")], NO_TAX)).toBe("$290 owed")
     // both paid, then a refund of one reopens the number
-    expect(jobMoney({ lines, payments: [row("a", 145), row("b", 145)] }, [visit("a"), visit("b")])).toBe("Paid")
-    expect(jobMoney({ lines, payments: [row("a", 145), row("b", 145), row("b", -145, { id: "refund" })] }, [visit("a"), visit("b")])).toBe("1 of 2 paid, $145 owed")
+    expect(jobMoney({ lines, payments: [row("a", 145), row("b", 145)] }, [visit("a"), visit("b")], NO_TAX)).toBe("Paid")
+    expect(jobMoney({ lines, payments: [row("a", 145), row("b", 145), row("b", -145, { id: "refund" })] }, [visit("a"), visit("b")], NO_TAX)).toBe("1 of 2 paid, $145 owed")
     // a cancelled visit is not counted
-    expect(jobMoney({ lines: [lines[0]!], payments: [row("a", 145)] }, [visit("a"), visit("b", { status: "cancelled" })])).toBe("Paid")
+    expect(jobMoney({ lines: [lines[0]!], payments: [row("a", 145)] }, [visit("a"), visit("b", { status: "cancelled" })], NO_TAX)).toBe("Paid")
     // without the job's lines or payments (the fixtures) the visits stand in, with their own payments
-    expect(jobMoney(undefined, [visit("a", { payments: [row("a", 145)] }), visit("b")])).toBe("1 of 2 paid, $145 owed")
+    expect(jobMoney(undefined, [visit("a", { payments: [row("a", 145)] }), visit("b")], NO_TAX)).toBe("1 of 2 paid, $145 owed")
     // a job nothing has priced says nothing
-    expect(jobMoney({ lines: [], payments: [] }, [visit("a", { price: 0 })])).toBe("")
+    expect(jobMoney({ lines: [], payments: [] }, [visit("a", { price: 0 })], NO_TAX)).toBe("")
   })
 })
 

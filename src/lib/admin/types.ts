@@ -5,6 +5,7 @@
  */
 
 import type { TimelineLine } from "@/lib/events/timeline"
+import type { TaxRule } from "@/lib/jobs/tax"
 
 export type Town =
   | "Erie"
@@ -462,7 +463,7 @@ export interface Message {
   status: "queued" | "sent" | "delivered" | "failed" | "bounced"
 }
 
-/** How bills are due and taxed (Settings › Billing). Sales tax is in the model and off until the office answers. */
+/** How bills are due and taxed (Settings › Billing). With the switch on, sales tax is part of every job's total, its visits' prices and its bill. */
 export interface BillingSettings {
   /** a bill is due this many days after it is sent */
   dueDays: number
@@ -568,6 +569,8 @@ export interface AdminData {
   monthTotals: MonthTotal[]
   attention: Attention[]
   settings: OrganizationSettings
+  /** the sales tax rule (`settings.billing`) every total on a screen carries; absent in the fixtures, where nothing is taxed */
+  billing?: TaxRule
   settingsChanges: SettingsChange[]
   /** every message to or from a customer, newest last */
   messages: Message[]

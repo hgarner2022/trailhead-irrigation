@@ -80,6 +80,26 @@ describe("chargeVisit", () => {
     expect(await chargeVisit(db, stripe, p.turnOn, opts)).toBe("already-charged")
   })
 
+  it("charges a taxable visit's price with its sales tax: $145 and 8% is $157 on the card and in the payment row", async () => {
+    const p = await activePass()
+    const [org] = await db.select().from(s.organization).limit(1)
+    await db.update(s.organization).set({ settings: { ...org!.settings, billing: { dueDays: 14, collectsSalesTax: true, salesTaxPercent: 8 } } }).where(eq(s.organization.id, org!.id))
+    try {
+      await db.update(s.lineItem).set({ taxable: true }).where(eq(s.lineItem.visitId, p.turnOn))
+      const { stripe, calls } = stubStripe()
+      expect(await chargeVisit(db, stripe, p.turnOn, opts)).toBe("charged")
+      expect(calls.paymentIntentsCreate.mock.calls[0]![0]).toMatchObject({ amount: 15700 })
+      const [charge] = await db.select().from(s.charge).where(eq(s.charge.visitId, p.turnOn))
+      expect(charge).toMatchObject({ status: "succeeded", amount: 157 })
+      expect(await chargeVisit(db, stripe, p.turnOn, opts)).toBe("already-charged")
+      // the other visit has no taxable line, so it is charged its plain price
+      expect(await chargeVisit(db, stripe, p.blowout, opts)).toBe("charged")
+      expect(calls.paymentIntentsCreate.mock.calls[1]![0]).toMatchObject({ amount: 11500 })
+    } finally {
+      await db.update(s.organization).set({ settings: org!.settings }).where(eq(s.organization.id, org!.id))
+    }
+  })
+
   it("records a decline, queues card-failed with the update link, flags the pass, and does not retry until the card changes", async () => {
     const p = await activePass()
     const { stripe, calls } = stubStripe({ charge: () => { throw declined("pi_bad") } })

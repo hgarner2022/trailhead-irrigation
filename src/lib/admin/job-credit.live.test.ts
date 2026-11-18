@@ -1,4 +1,5 @@
 // @vitest-environment node
+import { NO_TAX } from "@/lib/jobs/tax"
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest"
 import { eq } from "drizzle-orm"
 import * as s from "@/db/schema"
@@ -33,7 +34,7 @@ const jobOf = async (passId: string) => jobIdOfPassId(db, passId)
 /** The job's visits with what each costs: its own lines' total. */
 const priced = async (jobId: string) => {
   const lines = await linesOfJob(db, jobId)
-  return (await db.select().from(s.visit).where(eq(s.visit.jobId, jobId))).map((v) => ({ ...v, amount: visitPrice(linesOfVisit(lines, v.id)) }))
+  return (await db.select().from(s.visit).where(eq(s.visit.jobId, jobId))).map((v) => ({ ...v, amount: visitPrice(linesOfVisit(lines, v.id), NO_TAX) }))
 }
 const live = () => getLiveAdminData(ctxFor(db, owner, NOW))
 const payOnJob = (jobId: string, customerId: string, amount: number, method: "card_now" | "check" = "card_now") =>
@@ -113,7 +114,7 @@ describe("a payment on the job as a whole, on a one-visit job", () => {
     await expect(callApi(ctxFor(db, writeKey, NOW), paymentsRecord, { jobId: v.jobId, visitId: v.id, amount: 145, method: "cash" })).rejects.toMatchObject({ code: "conflict", message: "This visit is already paid" })
     // The job counts the row once.
     const lines = await db.select().from(s.lineItem).where(eq(s.lineItem.jobId, v.jobId))
-    expect(jobOwed(lines.filter((l) => !l.cancelledAt), await db.select().from(s.charge).where(eq(s.charge.jobId, v.jobId)))).toBe(0)
+    expect(jobOwed(lines.filter((l) => !l.cancelledAt), await db.select().from(s.charge).where(eq(s.charge.jobId, v.jobId)), NO_TAX)).toBe(0)
   })
 
   it("is not paid again once the payment is refunded: the visit reads unpaid and its derived chargedAt is null again", async () => {

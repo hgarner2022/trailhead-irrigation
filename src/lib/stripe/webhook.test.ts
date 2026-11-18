@@ -1,4 +1,5 @@
 // @vitest-environment node
+import { NO_TAX } from "@/lib/jobs/tax"
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest"
 import { eq } from "drizzle-orm"
 import type Stripe from "stripe"
@@ -29,7 +30,7 @@ const send = (stripe: Stripe, e: unknown, secret = WEBHOOK_SECRET) => {
 }
 
 /** What a visit costs: its own lines' total. */
-const priceOf = async (v: { id: string; jobId: string }) => visitPrice(linesOfVisit(await linesOfJob(db, v.jobId), v.id))
+const priceOf = async (v: { id: string; jobId: string }) => visitPrice(linesOfVisit(await linesOfJob(db, v.jobId), v.id), NO_TAX)
 
 let n = 0
 async function pendingPass() {

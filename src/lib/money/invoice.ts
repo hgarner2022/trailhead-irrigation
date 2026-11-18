@@ -1,6 +1,5 @@
 // The invoice, as pure rules: which lines a bill freezes, the tax on them, the status it reads as, and the next number.
 // No database and no React; the handlers in `src/api/v1/invoices/` write the row and the screens read the words.
-import type { BillingSettings } from "@/lib/admin/types"
 
 /** A line as a job holds it, with the fields a bill copies. */
 export interface BillableLine {
@@ -33,15 +32,8 @@ export function invoiceLines(lines: readonly BillableLine[]): InvoiceLine[] {
     .map((l) => ({ name: l.name, description: l.description ?? null, quantity: l.quantity, unitPrice: l.unitPrice, taxable: l.taxable, ...(l.visitId ? { visitId: l.visitId } : {}) }))
 }
 
-/** What the frozen lines come to before tax, whole dollars. */
+/** What the frozen lines come to before tax, whole dollars (`jobSubtotal`); the tax on them is `jobTax` from `src/lib/jobs/tax.ts`, the one rule the job's total reads too. */
 export const invoiceAmount = (lines: readonly Pick<InvoiceLine, "quantity" | "unitPrice">[]): number => lines.reduce((sum, l) => sum + l.quantity * l.unitPrice, 0)
-
-/** The sales tax on the lines: the taxable subtotal times the percent, rounded to the dollar; nothing while the organization does not collect it. */
-export function invoiceTax(lines: readonly Pick<InvoiceLine, "quantity" | "unitPrice" | "taxable">[], billing: BillingSettings): number {
-  if (!billing.collectsSalesTax || billing.salesTaxPercent <= 0) return 0
-  const taxable = lines.filter((l) => l.taxable).reduce((sum, l) => sum + l.quantity * l.unitPrice, 0)
-  return Math.round((taxable * billing.salesTaxPercent) / 100)
-}
 
 export type InvoiceStatus = "sent" | "paid" | "overdue" | "cancelled"
 

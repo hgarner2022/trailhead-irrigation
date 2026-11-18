@@ -4,6 +4,7 @@ import * as s from "@/db/schema"
 import type { Database } from "@/db/types"
 import { mountainDay, addDays } from "@/api/v1/shared"
 import { linesOfVisit, visitPrice } from "@/lib/jobs/lines"
+import { loadTaxRule } from "@/lib/money/tax-rule"
 import { baseData } from "@/lib/messaging/data"
 import { queueMessage } from "@/lib/messaging/queue"
 
@@ -49,11 +50,12 @@ export async function queueCardExpiryMessages(db: Database, makeLink: (input: { 
     const lastDay = lastDayOf(expires)
     if (today < addDays(lastDay, -EXPIRY_LEAD_DAYS) || today > lastDay) continue
     if (lastDay >= `${season}-10-31`) continue
-    const [visits, lines] = await Promise.all([
+    const [rule, visits, lines] = await Promise.all([
+      loadTaxRule(db, job.organizationId),
       db.select({ id: s.visit.id, status: s.visit.status }).from(s.visit).where(inArray(s.visit.jobId, jobIds)),
       db.select().from(s.lineItem).where(and(eq(s.lineItem.organizationId, job.organizationId), inArray(s.lineItem.jobId, jobIds))),
     ])
-    const left = visits.filter((v) => !["completed", "cancelled", "skipped"].includes(v.status)).reduce((sum, v) => sum + visitPrice(linesOfVisit(lines, v.id)), 0)
+    const left = visits.filter((v) => !["completed", "cancelled", "skipped"].includes(v.status)).reduce((sum, v) => sum + visitPrice(linesOfVisit(lines, v.id), rule), 0)
     if (left === 0) continue
     const key = `expiry-${customer.id}-${expires}`
     const link = customer.stripeCustomerId ? await makeLink({ passId: job.id, stripeCustomerId: customer.stripeCustomerId }) : null

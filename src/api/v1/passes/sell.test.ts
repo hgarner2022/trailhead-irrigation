@@ -1,4 +1,5 @@
 // @vitest-environment node
+import { NO_TAX } from "@/lib/jobs/tax"
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest"
 import { and, eq } from "drizzle-orm"
 import * as s from "@/db/schema"
@@ -89,7 +90,7 @@ describe("passes.sell", () => {
     ])
     expect(lines.map((l) => l.description)).toEqual([SERVICES["turn-on-12"]!.description, SERVICES["inspection-12"]!.description, SERVICES.blowout.description])
     expect(lines.map((l) => l.visitId).sort()).toEqual(pass.visits.map((v) => v.id).sort())
-    expect(jobTotal(lines)).toBe(pass.price)
+    expect(jobTotal(lines, NO_TAX)).toBe(pass.price)
     const two = await sell({ newCustomer: newCustomer() })
     expect((await linesOfPass(db, two.id)).map((l) => l.visitKind)).toEqual(["turn-on", "blowout"])
   })

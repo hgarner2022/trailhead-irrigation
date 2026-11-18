@@ -28,7 +28,7 @@ describe("PayScreen", () => {
     expect(screen.getByText("Paid by check, Venmo or cash already? Nothing to do.")).toBeInTheDocument()
     expect(screen.getAllByRole("button")).toHaveLength(1)
     expect(screen.getByRole("button", { name: "Pay $145 by card" })).toBeInTheDocument()
-    expect(screen.queryByText("Sales tax")).toBeNull()
+    expect(screen.queryByText("Tax")).toBeNull()
   })
 
   it("says Was due for an overdue bill and keeps the button", () => {
@@ -43,7 +43,7 @@ describe("PayScreen", () => {
       lines: [{ name: "Repair", description: null, quantity: 1, unitPrice: 145 }, { name: "Extra zones", description: null, quantity: 2, unitPrice: 10 }, { name: "Payments received", description: null, quantity: 1, unitPrice: -45 }],
     }
     render(<PayScreen bill={bill} payAction={ok} />)
-    expect(screen.getByText("Sales tax")).toBeInTheDocument()
+    expect(screen.getByText("Tax")).toBeInTheDocument()
     expect(screen.getByText("$9")).toBeInTheDocument()
     expect(screen.getByText("-$45")).toBeInTheDocument()
     expect(screen.getByText("2 at $10")).toBeInTheDocument()

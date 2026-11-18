@@ -1,8 +1,10 @@
 // The money words, read from the payment rows: pure, no database. A job is Paid when its succeeded payments equal its
 // total and Owed with the number otherwise; a refund is a negative row. The screens (task 4.2) read these, never a flag.
-import { jobTotal, type Line } from "@/lib/jobs/lines"
+import { jobTotal, type PricedLine } from "@/lib/jobs/lines"
+import type { TaxRule } from "@/lib/jobs/tax"
 
 export { jobTotal }
+export { jobSubtotal, jobTax, visitTax, type TaxRule } from "@/lib/jobs/tax"
 
 /** The words for how a payment came, as the pill's suffix and the receipt say them. */
 export const METHOD_WORDS: Record<string, string> = { card_on_file: "card", card_now: "card", check: "check", venmo: "Venmo", cash: "cash", bill: "bill" }
@@ -16,8 +18,6 @@ export interface MoneyPayment {
   status: string
   refundsPaymentId?: string | null
 }
-
-type PricedLine = Pick<Line, "quantity" | "unitPrice" | "cancelledAt">
 
 /** What has arrived: the succeeded rows added up, refunds counting against. */
 export function paidTotal(payments: readonly Pick<MoneyPayment, "amount" | "status">[]): number {
@@ -86,9 +86,9 @@ export function allocateJobPayments<P extends MoneyPayment>(payments: readonly P
   return out
 }
 
-/** What is still owed on a job: its live lines less what arrived, never below zero. */
-export function jobOwed(lines: readonly PricedLine[], payments: readonly Pick<MoneyPayment, "amount" | "status">[]): number {
-  return Math.max(0, jobTotal(lines) - paidTotal(payments))
+/** What is still owed on a job: its live lines with their sales tax (`rule`) less what arrived, never below zero. */
+export function jobOwed(lines: readonly PricedLine[], payments: readonly Pick<MoneyPayment, "amount" | "status">[], rule: TaxRule): number {
+  return Math.max(0, jobTotal(lines, rule) - paidTotal(payments))
 }
 
 export interface JobMoney {
@@ -102,8 +102,9 @@ export interface JobMoney {
 }
 
 /**
- * The money summary of a job across its visits; a cancelled visit is not counted. A visit counts as paid by `isPaid`, its own
- * rows against its price (`price`, from its lines; a part-paid visit is not paid), as every screen reads it. A job that owes
+ * The money summary of a job across its visits; a cancelled visit is not counted. The job's total includes its sales tax (`rule`).
+ * A visit counts as paid by `isPaid`, its own rows against its price (`price`, from its lines with their tax; a part-paid visit
+ * is not paid), as every screen reads it. A job that owes
  * money and has an open `invoice` reads "Bill sent": the customer has the bill, and an overdue one still reads so (Home
  * carries the overdue row).
  */
@@ -111,10 +112,11 @@ export function jobMoney(
   lines: readonly PricedLine[],
   payments: readonly MoneyPayment[],
   visits: readonly { id: string; cancelled?: boolean; price?: number | null; done?: boolean; doneOn?: string | null }[],
+  rule: TaxRule,
   invoice?: MoneyInvoice,
   paidBillVisitIds: readonly string[] = [],
 ): JobMoney {
-  const total = jobTotal(lines)
+  const total = jobTotal(lines, rule)
   const paid = paidTotal(payments)
   const owed = Math.max(0, total - paid)
   if (total === 0 && paid === 0) return { paid, total, owed, words: "", billSent: false }

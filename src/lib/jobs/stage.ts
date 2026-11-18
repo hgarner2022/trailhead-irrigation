@@ -4,7 +4,7 @@
 // Pass, Quoted (a quote sent, none accepted, nothing sold) and Needs a quote (nothing sold and no quote sent, or every line
 // unpriced), else Open. A Season Pass starts Open.
 import type { JobKind } from "./kind"
-import { jobTotal, type Line } from "./lines"
+import { jobSubtotal, type Line } from "./lines"
 
 export type JobStage = "needs-a-quote" | "quoted" | "open" | "done" | "cancelled"
 
@@ -40,8 +40,8 @@ export function stageOf(job: StageFacts): JobStage {
   if (job.kind !== "pass") {
     if (job.quoteSentOn && !job.quoteAcceptedOn && !job.soldOn) return "quoted"
     if (!job.soldOn && !job.quoteSentOn) return "needs-a-quote"
-    // a one-off whose lines are all still unpriced and whose quote nobody accepted
-    if (!job.quoteAcceptedOn && jobTotal(job.lines) === 0) return "needs-a-quote"
+    // a one-off whose lines are all still unpriced (before tax: tax on nothing is nothing) and whose quote nobody accepted
+    if (!job.quoteAcceptedOn && jobSubtotal(job.lines) === 0) return "needs-a-quote"
   }
   return "open"
 }

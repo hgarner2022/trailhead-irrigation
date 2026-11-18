@@ -7,7 +7,8 @@ import { zonedToUtc } from "./calendar"
 import type { YardWire } from "./yard"
 import { fullName } from "./format"
 import { causeOf, groupAttention, type QueueAttention } from "./attention-groups"
-import { jobTotal } from "@/lib/jobs/lines"
+import { jobTotal, visitPrice } from "@/lib/jobs/lines"
+import { taxRuleOf, type TaxRule } from "@/lib/jobs/tax"
 import { stageOf } from "@/lib/jobs/stage"
 import { invoiceOpen, invoiceStatus } from "@/lib/money/invoice"
 import { allocateJobPayments, jobMoney as moneyOfJob, jobOwed } from "@/lib/money/words"
@@ -29,7 +30,7 @@ export interface ApiVisit {
   /** the visit's own payment rows as `visits.list` sends them; `ShapeInput.paymentRows` (the whole organization's) wins when given */
   payments?: { id: string; jobId: string | null; visitId: string | null; amount: number; method: string; status: string; paidOn: string | null; refundsPaymentId: string | null; createdAt?: string }[]
   exception: { kind: "moved-in-jobber"; at: string; note: string } | null; lat: number | null; lng: number | null
-  lineItems?: { id: string; visitId: string | null; quantity: number; unitPrice: number; cancelledAt: string | null }[]
+  lineItems?: { id: string; visitId: string | null; quantity: number; unitPrice: number; taxable: boolean; cancelledAt: string | null }[]
   /** the yard the visit is at; the gate code, access note and contact phone are there only for the write scope */
   property?: YardWire
 }
@@ -107,16 +108,16 @@ export interface ShapeInput {
   services?: ServiceItem[]
 }
 
-/** What the visit is worth: its own line when the API sent one, else the amount (which already reads the line). */
-const lineAmountOf = (v: Pick<ApiVisit, "id" | "amount" | "lineItems">) => {
+/** What the visit is worth with its sales tax: its own line when the API sent one, else the amount (which already reads the line and the tax). */
+const lineAmountOf = (v: Pick<ApiVisit, "id" | "amount" | "lineItems">, rule: TaxRule) => {
   const own = (v.lineItems ?? []).filter((l) => l.visitId === v.id)
-  return own.length ? own.filter((l) => !l.cancelledAt).reduce((sum, l) => sum + l.quantity * l.unitPrice, 0) : v.amount
+  return own.length ? visitPrice(own.map((l) => ({ ...l, cancelledAt: l.cancelledAt ? new Date(l.cancelledAt) : null })), rule) : v.amount
 }
 
-/** What a visit costs from the job's line rows: its own live lines when it has any, else its `amount`. */
-const visitPriceOf = (v: Pick<ApiVisit, "id" | "amount">, lines: readonly Pick<LineRow, "visitId" | "quantity" | "unitPrice" | "cancelledAt">[]) => {
+/** What a visit costs from the job's line rows, with its sales tax: its own live lines when it has any, else its `amount`. */
+const visitPriceOf = (v: Pick<ApiVisit, "id" | "amount">, lines: readonly Pick<LineRow, "visitId" | "quantity" | "unitPrice" | "taxable" | "cancelledAt">[], rule: TaxRule) => {
   const own = lines.filter((l) => l.visitId === v.id)
-  return own.length ? own.filter((l) => !l.cancelledAt).reduce((sum, l) => sum + l.quantity * l.unitPrice, 0) : v.amount
+  return own.length ? visitPrice(own, rule) : v.amount
 }
 
 /** The last not-done's reason. How it was paid is read from the payment rows, never carried on the visit. */
@@ -166,6 +167,8 @@ const consentOf = (c: ConsentRow): Consent => ({
 const WINDOWS: Record<string, string> = { "turn-on": "May", inspection: "July", blowout: "October" }
 
 export function shapeAdminData(i: ShapeInput): AdminData {
+  // The one sales tax rule every total in this shaping carries (Settings › Billing); off while nothing is collected.
+  const rule = taxRuleOf(i.settings.billing)
   const customerOfJobber = new Map([...i.jobberClientOf].map(([customerId, jobberId]) => [jobberId, customerId]))
   const clientId = (jobberId: string | null) => (jobberId ? (customerOfJobber.get(jobberId) ?? jobberId) : "")
   const mirrorClient = new Map(i.mirror.clients.map((c) => [c.id, c]))
@@ -191,7 +194,7 @@ export function shapeAdminData(i: ShapeInput): AdminData {
     const lines = (i.lineRows ?? []).filter((l) => l.jobId === jobId)
     const ids = new Set(mine.map((v) => v.id))
     const rowsOfJob = ordered.filter((r) => r.jobId === jobId || (r.visitId !== null && ids.has(r.visitId))).map(paymentOf)
-    const visitsOfJob = mine.map((v) => ({ id: v.id, done: v.status === "completed", cancelled: v.status === "cancelled" || v.status === "skipped", price: i.lineRows ? visitPriceOf(v, lines) : lineAmountOf(v), doneOn: v.completedOn }))
+    const visitsOfJob = mine.map((v) => ({ id: v.id, done: v.status === "completed", cancelled: v.status === "cancelled" || v.status === "skipped", price: i.lineRows ? visitPriceOf(v, lines, rule) : lineAmountOf(v, rule), doneOn: v.completedOn }))
     for (const [visitId, slices] of allocateJobPayments(rowsOfJob, visitsOfJob, paidBillVisits(jobId))) credit.set(visitId, slices)
   }
   const paymentsOfVisit = (id: string) => [...ordered.filter((r) => r.visitId === id).map(paymentOf), ...(credit.get(id) ?? [])]
@@ -200,7 +203,7 @@ export function shapeAdminData(i: ShapeInput): AdminData {
   const jobOwes = (jobId: string) => {
     if (!i.lineRows) return true
     const ids = new Set(i.visits.filter((v) => v.jobId === jobId).map((v) => v.id))
-    return jobOwed(i.lineRows.filter((l) => l.jobId === jobId), ordered.filter((r) => r.jobId === jobId || (r.visitId !== null && ids.has(r.visitId)))) > 0
+    return jobOwed(i.lineRows.filter((l) => l.jobId === jobId), ordered.filter((r) => r.jobId === jobId || (r.visitId !== null && ids.has(r.visitId))), rule) > 0
   }
   const billOf = new Map<string, AdminInvoice>()
   for (const r of i.invoiceRows ?? []) {
@@ -228,7 +231,7 @@ export function shapeAdminData(i: ShapeInput): AdminData {
       ...(v.startTime ? { startTime: v.startTime } : {}), ...(v.completedOn ? { completedOn: v.completedOn } : {}), payments: paymentsOfVisit(v.id),
       ...(failed.has(v.id) ? { chargeFailed: true } : {}), ...(v.status === "skipped" ? { skipped: true } : {}), ...(v.passId ? { passId: v.passId } : {}),
       isPass: v.passId !== null, jobberUrl: "",
-      ...(v.jobId ? { jobId: v.jobId } : {}), ...(billFor(v.jobId, v.id) ? { invoice: billFor(v.jobId, v.id) } : {}), ...reasonOf(v), price: lineAmountOf(v), ...(v.durationMinutes ? { minutes: v.durationMinutes } : {}), ...(v.notes ? { notes: v.notes } : {}),
+      ...(v.jobId ? { jobId: v.jobId } : {}), ...(billFor(v.jobId, v.id) ? { invoice: billFor(v.jobId, v.id) } : {}), ...reasonOf(v), price: lineAmountOf(v, rule), ...(v.durationMinutes ? { minutes: v.durationMinutes } : {}), ...(v.notes ? { notes: v.notes } : {}),
       ...(stories ? { timeline: stories.ofVisit(v.id) } : {}),
       // the person assigned
       ...(v.personName ? { personName: v.personName } : {}),
@@ -333,14 +336,14 @@ export function shapeAdminData(i: ShapeInput): AdminData {
     // The job's own money: rows on the job, and rows on its visits that carry no job id.
     const payments = ordered.filter((r) => r.jobId === j.id || (r.visitId !== null && mineIds.has(r.visitId))).map(paymentOf)
     const bill = billOf.get(j.id)
-    const money = moneyOfJob(lines, payments, mine.map((v) => ({ id: v.id, cancelled: v.status === "cancelled" || v.status === "skipped", price: visitPriceOf(v, lines), done: v.status === "completed", doneOn: v.completedOn })), bill ? {} : undefined, paidBillVisits(j.id))
+    const money = moneyOfJob(lines, payments, mine.map((v) => ({ id: v.id, cancelled: v.status === "cancelled" || v.status === "skipped", price: visitPriceOf(v, lines, rule), done: v.status === "completed", doneOn: v.completedOn })), rule, bill ? {} : undefined, paidBillVisits(j.id))
     // The stage is read from the facts (`stageOf`); the job has no typed status, price or notes: the price is the lines' total, the notes the newest note event.
     const status = stageOf({ kind: j.kind, cancelledAt: j.cancelledAt, soldOn: j.soldOn, quoteSentOn: j.quoteSentOn, quoteAcceptedOn: j.quoteAcceptedOn, lines, visits: mine })
-    const total = jobTotal(lines)
+    const total = jobTotal(lines, rule)
     const note = newestNote(i.events, "job", j.id)
     return {
       id: j.id, customerId: j.customerId, kind: j.kind, status, source: j.source, ...(bill ? { invoice: bill } : {}), ...(stories ? { timeline: stories.ofJob(j.id) } : {}),
-      ...(i.lineRows ? { lines: lines.map((l) => ({ id: l.id, name: l.name, quantity: l.quantity, unitPrice: l.unitPrice, taxable: l.taxable, ...(l.description ? { description: l.description } : {}), ...(l.cancelledAt ? { cancelledAt: iso(l.cancelledAt) } : {}), ...(l.visitId ? { visitId: l.visitId } : {}) })), total: jobTotal(lines), payments, money } : {}),
+      ...(i.lineRows ? { lines: lines.map((l) => ({ id: l.id, name: l.name, quantity: l.quantity, unitPrice: l.unitPrice, taxable: l.taxable, ...(l.description ? { description: l.description } : {}), ...(l.cancelledAt ? { cancelledAt: iso(l.cancelledAt) } : {}), ...(l.visitId ? { visitId: l.visitId } : {}) })), total, payments, money } : {}),
       ...(total > 0 ? { price: total } : {}), ...(note ? { notes: note } : {}), ...(j.soldOn ? { soldOn: j.soldOn } : {}),
       ...(j.quoteSentOn ? { quoteSentOn: j.quoteSentOn } : {}), ...(j.quoteAcceptedOn ? { quoteAcceptedOn: j.quoteAcceptedOn } : {}),
       ...(pass ? { passId: pass.id, passNumber: j.passNumber ?? pass.number } : {}), ...(j.legacyPassId ? { legacyPassId: j.legacyPassId } : {}),
@@ -350,7 +353,7 @@ export function shapeAdminData(i: ShapeInput): AdminData {
 
   return {
     organizationId: i.organizationId, syncedAt: iso(i.syncedAt), clients, visits, ...(soldJobs ? { jobs: soldJobs } : {}), quotes, invoices, passes,
-    monthTotals: monthTotals({ ...i, paymentRows: rows }), attention: attention(i, passes, visitRows(i, appVisits, visits, soldJobs ?? [])), settings: { ...i.settings, people: i.people, areas: i.areas },
+    monthTotals: monthTotals({ ...i, paymentRows: rows }), attention: attention(i, passes, visitRows(i, appVisits, visits, soldJobs ?? [])), settings: { ...i.settings, people: i.people, areas: i.areas }, billing: rule,
     settingsChanges: i.settingsChanges, messages, blocks: i.blocks, ...(i.services ? { services: i.services } : {}),
   }
 }

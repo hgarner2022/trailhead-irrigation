@@ -10,6 +10,7 @@ import { clearedCardColumns } from "@/lib/customer/card"
 import { visitName } from "@/lib/events/names"
 import { recordEventSafe } from "@/lib/events/record"
 import { linesOfVisit, visitPrice } from "@/lib/jobs/lines"
+import { loadTaxRule } from "@/lib/money/tax-rule"
 import { paidDay } from "@/lib/money/record"
 import { baseData } from "@/lib/messaging/data"
 import { queueMessage } from "@/lib/messaging/queue"
@@ -122,11 +123,12 @@ export async function handleStripeEvent(db: Database, stripe: Stripe, organizati
       if (!row || !customer.email) return
       const link = customer.stripeCustomerId ? (await createCardUpdateSession(stripe, { passId: row.pass.id, customerId: customer.stripeCustomerId, origin })).url : null
       // What the pass has left to charge: the lines of its visits that are not done, cancelled or skipped.
-      const [ahead, lines] = await Promise.all([
+      const [rule, ahead, lines] = await Promise.all([
+        loadTaxRule(db, organizationId),
         db.select({ id: s.visit.id, status: s.visit.status }).from(s.visit).where(eq(s.visit.jobId, row.pass.id)),
         db.select().from(s.lineItem).where(and(eq(s.lineItem.organizationId, organizationId), eq(s.lineItem.jobId, row.pass.id))),
       ])
-      const left = ahead.filter((v) => !["completed", "cancelled", "skipped"].includes(v.status)).reduce((sum, v) => sum + visitPrice(linesOfVisit(lines, v.id)), 0)
+      const left = ahead.filter((v) => !["completed", "cancelled", "skipped"].includes(v.status)).reduce((sum, v) => sum + visitPrice(linesOfVisit(lines, v.id), rule), 0)
       await queueMessage(db, {
         organizationId, customerId: customer.id, kind: "card-expiring", key: `pm-${method.id}`,
         data: { ...baseData(origin, customer), passNumber: row.pass.passNumber ?? "", cardState: "was removed or has expired", left, updateUrl: link },

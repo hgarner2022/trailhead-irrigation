@@ -5,6 +5,7 @@ import type { Database } from "@/db/types"
 import type { Ctx } from "../../core/context"
 import { notFound } from "../../core/errors"
 import { linesOfVisit, visitPrice } from "@/lib/jobs/lines"
+import { taxRuleOf, type TaxRule } from "@/lib/jobs/tax"
 import { loadJobCredit } from "@/lib/money/credit"
 import { isPaid } from "@/lib/money/words"
 import { hasScope } from "@/lib/auth/principal"
@@ -33,6 +34,8 @@ export const visitSelect = {
   address: s.property.address,
   yard: s.property,
   personName: s.person.name,
+  // the organization's sales tax rule (Settings › Billing), so the visit's price carries its tax without a second query
+  taxBilling: sql<Partial<TaxRule> | null>`(select o.settings -> 'billing' from organization o where o.id = ${s.visit.organizationId})`,
   // what was sold on the visit's job: its lines are the truth for what the visit costs
   lines: sql<LineJson[] | null>`(select json_agg(json_build_object('id', l.id, 'name', l.name, 'description', l.description, 'quantity', l.quantity, 'unit_price', l.unit_price, 'taxable', l.taxable, 'cancelled_at', l.cancelled_at, 'visit_id', l.visit_id) order by l.created_at, l.id) from line_item l where l.job_id = ${s.visit.jobId} and l.organization_id = ${s.visit.organizationId})`,
   // the visit's own payment rows, oldest first (the job-level ones are on the job)
@@ -91,8 +94,8 @@ export function visitOut(ctx: Ctx, row: VisitJoined): VisitOutType {
     id: l.id, name: l.name, description: l.description, quantity: l.quantity, unitPrice: l.unit_price, taxable: l.taxable,
     cancelledAt: l.cancelled_at ? isoOf(l.cancelled_at) : null, visitId: l.visit_id,
   }))
-  // What the visit costs is its own non-cancelled lines (a visit with no line costs nothing).
-  const amount = visitPrice(linesOfVisit(lineItems, v.id).map((l) => ({ ...l, cancelledAt: l.cancelledAt ? new Date(l.cancelledAt) : null })))
+  // What the visit costs is its own non-cancelled lines with their sales tax (a visit with no line costs nothing).
+  const amount = visitPrice(linesOfVisit(lineItems, v.id).map((l) => ({ ...l, cancelledAt: l.cancelledAt ? new Date(l.cancelledAt) : null })), taxRuleOf(row.taxBilling))
   const seeNotes = canSeeContact(ctx)
   // The story is staff's: a signed-in customer reading their own pass never gets events, and so no notes.
   const staff = hasScope(ctx.principal, "read")

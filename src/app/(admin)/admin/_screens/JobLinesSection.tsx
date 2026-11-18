@@ -12,7 +12,7 @@ import { FORM_STATUS, useRunner } from "./use-runner"
 import { JobLines } from "./VisitLines"
 
 // The Lines section of the job panel: what was sold, one row each, a cancelled line struck through, an unpriced line saying
-// Quote later, and the total. On an open one-off job a manager changes the price and quantity of a line in place (the total
+// Quote later, a Tax line only when there is sales tax, and the total. On an open one-off job a manager changes the price and quantity of a line in place (the total
 // follows), cancels a line, and adds one from the active catalogue or as a free line. A tech, a pass and a job paid in full
 // see the plain list. Every change goes through `lines.add`, `lines.update` and `lines.cancel`, which refuse what is wrong.
 
@@ -136,15 +136,17 @@ function AddLine({ jobId, services, actions, onDone }: { jobId: string; services
 export interface JobLinesSectionProps {
   jobId: string
   lines: JobLine[]
-  /** whole dollars, cancelled lines left out */
+  /** whole dollars, cancelled lines left out, with the sales tax */
   total: number
+  /** the sales tax in `total`; the Tax line shows only above zero */
+  tax?: number
   data: Pick<AdminData, "services">
   /** a manager of an open one-off job may change the lines; everyone else reads the list */
   editable: boolean
   actions?: JobActions
 }
 
-export function JobLinesSection({ jobId, lines, total, data, editable, actions }: JobLinesSectionProps) {
+export function JobLinesSection({ jobId, lines, total, tax = 0, data, editable, actions }: JobLinesSectionProps) {
   const [editing, setEditing] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
   const services = (data.services ?? (SERVICE_LIST as readonly ServiceItem[])).filter((s) => s.active !== false)
@@ -177,6 +179,12 @@ export function JobLinesSection({ jobId, lines, total, data, editable, actions }
         </PanelList>
       ) : (
         <JobLines lines={lines} visitId="" />
+      )}
+      {tax > 0 && (
+        <p className="mt-2 flex justify-between text-sm" data-slot="job-tax">
+          <span>Tax</span>
+          <span className="tabular-nums">{money(tax)}</span>
+        </p>
       )}
       <p className="mt-2 flex justify-between text-sm font-semibold" data-slot="job-total">
         <span>Total</span>

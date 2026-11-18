@@ -1,4 +1,5 @@
 // @vitest-environment node
+import { NO_TAX } from "@/lib/jobs/tax"
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest"
 import { and, eq, isNotNull } from "drizzle-orm"
 import * as s from "@/db/schema"
@@ -250,12 +251,12 @@ describe("visits.cancel", () => {
     await callApi(as(), visitsMove, { id: "p4-blowout", personId: "person_truck-1", scheduledOn: "2027-10-12" })
     await db.insert(s.queueItem).values({ organizationId: ORG, kind: "pass-charge", key: "p4-blowout", payload: { visitId: "p4-blowout" } })
     const passRow = { jobId: await jobIdOfPassId(db, "p4") }
-    const before = jobTotal(await linesOfJob(db, passRow.jobId))
+    const before = jobTotal(await linesOfJob(db, passRow.jobId), NO_TAX)
     const out = await callApi(as(), visitsCancel, { id: "p4-blowout", reason: "Moving" })
     expect(out).toMatchObject({ status: "cancelled", scheduledOn: null, personId: null })
     const rest = await db.select().from(s.visit).where(eq(s.visit.jobId, passRow.jobId))
     expect(rest.filter((v) => v.status !== "cancelled").length).toBeGreaterThan(0)
-    expect(jobTotal(await linesOfJob(db, passRow.jobId))).toBeLessThan(before)
+    expect(jobTotal(await linesOfJob(db, passRow.jobId), NO_TAX)).toBeLessThan(before)
     expect((await db.select().from(s.queueItem).where(eq(s.queueItem.key, "p4-blowout")))[0]).toMatchObject({ status: "done", lastError: "visit cancelled" })
     expect((await linesOfJob(db, passRow.jobId)).find((l) => l.visitId === "p4-blowout")!.cancelledAt).toBeInstanceOf(Date)
     await expect(callApi(as(), visitsCancel, { id: "p4-blowout" })).rejects.toMatchObject({ code: "unprocessable" })

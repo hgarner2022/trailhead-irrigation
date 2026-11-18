@@ -4,6 +4,9 @@
 // insert them beside the visits; migration 0014 backfills the same names.
 import { passVisits, visitPrice as passVisitPrice, type SeasonPassVisit } from "@/lib/season-pass"
 import { serviceFor, SERVICE_LIST, type ServiceDef, type ServiceKind } from "@/lib/services"
+import { jobSubtotal, jobTax, type TaxLine, type TaxRule } from "./tax"
+
+export { jobSubtotal, jobTax, lineTax, visitTax, type TaxRule } from "./tax"
 
 /** A line as the writers build it and the readers total it; the row adds its ids. */
 export interface Line {
@@ -76,17 +79,20 @@ export function lineTotal(line: Pick<Line, "quantity" | "unitPrice" | "cancelled
   return line.cancelledAt ? 0 : line.quantity * line.unitPrice
 }
 
-/** What the job comes to, cancelled lines left out. */
-export function jobTotal(lines: readonly Pick<Line, "quantity" | "unitPrice" | "cancelledAt">[]): number {
-  return lines.reduce((sum, line) => sum + lineTotal(line), 0)
+/** The lines `jobTotal` and `visitPrice` read: what a line costs, and whether it is taxed. */
+export type PricedLine = TaxLine
+
+/** What the job comes to with its sales tax, cancelled lines left out; `jobSubtotal` is the same before tax. The rule is required so no caller forgets it. */
+export function jobTotal(lines: readonly PricedLine[], rule: TaxRule): number {
+  return jobSubtotal(lines) + jobTax(lines, rule)
 }
 
 /**
- * What a visit costs: `jobTotal` of its own non-cancelled lines (the lines whose `visitId` is the visit, which the caller picks
- * out with `linesOfVisit`). A visit with no line costs nothing; the visit has no price column of its own.
+ * What a visit costs: `jobTotal` (with tax) of its own non-cancelled lines (the lines whose `visitId` is the visit, which the
+ * caller picks out with `linesOfVisit`). A visit with no line costs nothing; the visit has no price column of its own.
  */
-export function visitPrice(lines: readonly Pick<Line, "quantity" | "unitPrice" | "cancelledAt">[]): number {
-  return jobTotal(lines)
+export function visitPrice(lines: readonly PricedLine[], rule: TaxRule): number {
+  return jobTotal(lines, rule)
 }
 
 /** The lines billed after one visit, picked out of a job's lines. */

@@ -70,7 +70,7 @@ export const Cancelled: Story = {
   },
 }
 
-/** Sales tax on and money already paid on the job: the tax line, and the credit line reads "-$45". */
+/** Tax on and money already paid on the job: the tax line, and the credit line reads "-$45". */
 export const TaxAndCredit: Story = {
   args: {
     bill: {
@@ -87,7 +87,7 @@ export const TaxAndCredit: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement)
-    await expect(canvas.getByText("Sales tax")).toBeInTheDocument()
+    await expect(canvas.getByText("Tax")).toBeInTheDocument()
     await expect(canvas.getByText("-$45")).toBeInTheDocument()
     await expect(canvas.getByRole("button", { name: "Pay $224 by card" })).toBeInTheDocument()
   },

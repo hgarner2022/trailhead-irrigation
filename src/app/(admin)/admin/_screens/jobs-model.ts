@@ -11,7 +11,8 @@ import { visitJob } from "@/lib/admin/jobs"
 import type { AdminData, AdminInvoice, Client, SoldJob, SoldJobMoney, Visit } from "@/lib/admin/types"
 import { jobMoney as moneyOfJob } from "@/lib/money/words"
 import { STAGE_WORDS, type JobStage } from "@/lib/jobs/stage"
-import { dayLabel, dayOfVisit } from "./visit-panel-model"
+import type { TaxRule } from "@/lib/jobs/tax"
+import { dayLabel, dayOfVisit, taxRuleOf } from "./visit-panel-model"
 
 export type JobMoneyState = "not-yet" | "paid" | "owed" | "bill-sent" | "overdue" | "failed"
 export type JobKind = SoldJob["kind"]
@@ -78,11 +79,11 @@ export function jobHeading(job: Pick<SoldJob, "kind" | "passNumber" | "lines" | 
 }
 
 /** The job's money as the data carries it, else worked out the same way from its lines and payments (the fixtures carry neither). */
-function moneyOf(job: SoldJob, visits: Visit[]): SoldJobMoney {
+function moneyOf(job: SoldJob, visits: Visit[], rule: TaxRule): SoldJobMoney {
   if (job.money) return job.money
-  const lines = job.lines?.length ? job.lines.map((l) => ({ quantity: l.quantity, unitPrice: l.unitPrice, cancelledAt: l.cancelledAt ? new Date(l.cancelledAt) : null })) : visits.filter((v) => v.status !== "cancelled").map((v) => ({ quantity: 1, unitPrice: v.price ?? 0, cancelledAt: null }))
+  const lines = job.lines?.length ? job.lines.map((l) => ({ quantity: l.quantity, unitPrice: l.unitPrice, taxable: l.taxable, cancelledAt: l.cancelledAt ? new Date(l.cancelledAt) : null })) : visits.filter((v) => v.status !== "cancelled").map((v) => ({ quantity: 1, unitPrice: v.price ?? 0, taxable: false, cancelledAt: null }))
   const payments = job.payments ?? visits.flatMap((v) => v.payments ?? [])
-  return moneyOfJob(lines, payments, visits.map((v) => ({ id: v.id, cancelled: v.status === "cancelled", price: v.price })), job.invoice ? {} : undefined)
+  return moneyOfJob(lines, payments, visits.map((v) => ({ id: v.id, cancelled: v.status === "cancelled", price: v.price })), rule, job.invoice ? {} : undefined)
 }
 
 /** The Money cell for a state: "$145 · Bill sent, due Dec 1", "$145 · Overdue since Dec 1", "$115 owed", "Paid", "Failed". */
@@ -135,7 +136,7 @@ export function jobRows(data: AdminData, today: string): JobRow[] {
       const states = live.map((v) => visitJob(v, day, TIME_ZONE, pass?.cardFailedAt))
       // the job's stage is read from its facts where the data is shaped (`stageOf`): there is no typed status
       const stage = job.status
-      const m = moneyOf(job, visits)
+      const m = moneyOf(job, visits, taxRuleOf(data))
       const state = stateOf(m, job.invoice, states.map((s) => s.money), stage === "cancelled")
       const ahead = live.filter((v) => v.status !== "completed")
       const days = ahead.map(dayOfVisit).filter((d): d is string => Boolean(d) && d! >= day).sort()

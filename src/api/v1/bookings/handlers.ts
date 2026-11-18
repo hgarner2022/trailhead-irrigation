@@ -9,6 +9,7 @@ import { consentInput, customerFields, propertyInput } from "../customers/schema
 import { visitName } from "@/lib/events/names"
 import { recordEvent, whoOf } from "@/lib/events/record"
 import { linesOfVisit, visitPrice } from "@/lib/jobs/lines"
+import { loadTaxRule } from "@/lib/money/tax-rule"
 
 export const bookingsCreate = defineHandler({
   name: "bookings.create",
@@ -56,6 +57,7 @@ export const bookingsCancel = defineHandler({
       .where(and(eq(s.visit.jobId, row.id), eq(s.visit.organizationId, ctx.organizationId), notInArray(s.visit.status, ["completed", "cancelled"])))
     // What each gave up is its own lines' total, read before the lines are cancelled.
     const lines = await ctx.db.select().from(s.lineItem).where(and(eq(s.lineItem.jobId, row.id), eq(s.lineItem.organizationId, ctx.organizationId)))
+    const rule = await loadTaxRule(ctx.db, ctx.organizationId)
     await ctx.db.update(s.job).set({ cancelledAt: ctx.now }).where(eq(s.job.id, row.id))
     // Job-wide, so a line with no visit (a backfilled one-off) goes too; a line already cancelled keeps its time.
     await ctx.db.update(s.lineItem).set({ cancelledAt: ctx.now, updatedAt: ctx.now }).where(and(eq(s.lineItem.jobId, row.id), isNull(s.lineItem.cancelledAt)))
@@ -65,7 +67,7 @@ export const bookingsCancel = defineHandler({
       .where(and(eq(s.visit.jobId, row.id), notInArray(s.visit.status, ["completed", "cancelled"])))
       .returning({ id: s.visit.id })
     for (const v of open.filter((o) => cancelled.some((c) => c.id === o.id)))
-      await recordEvent(ctx.db, { organizationId: ctx.organizationId, about: "visit", aboutId: v.id, customerId: row.customerId, jobId: row.id, visitId: v.id, kind: "visit.cancelled", detail: { name: visitName(v.kind), reason: null, day: v.scheduledOn, amount: visitPrice(linesOfVisit(lines, v.id)) }, who: whoOf(ctx), at: ctx.now })
+      await recordEvent(ctx.db, { organizationId: ctx.organizationId, about: "visit", aboutId: v.id, customerId: row.customerId, jobId: row.id, visitId: v.id, kind: "visit.cancelled", detail: { name: visitName(v.kind), reason: null, day: v.scheduledOn, amount: visitPrice(linesOfVisit(lines, v.id), rule) }, who: whoOf(ctx), at: ctx.now })
     if (!wasCancelled) await recordEvent(ctx.db, { organizationId: ctx.organizationId, about: "job", aboutId: row.id, customerId: row.customerId, jobId: row.id, kind: "job.cancelled", detail: {}, who: whoOf(ctx), at: ctx.now })
     return { id: row.id, status: "cancelled" as const, cancelledVisits: cancelled.length }
   },

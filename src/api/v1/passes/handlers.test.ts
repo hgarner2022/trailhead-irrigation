@@ -1,4 +1,5 @@
 // @vitest-environment node
+import { NO_TAX } from "@/lib/jobs/tax"
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest"
 import { and, eq, isNull } from "drizzle-orm"
 import * as s from "@/db/schema"
@@ -266,11 +267,11 @@ describe("passes.skipVisit", () => {
   it("takes the skipped visit's line out of the job's total and price", async () => {
     const pass = await create({ customer: { firstName: "Skip", lastName: "Tester", email: "skip@example.com", phone: "303-555-0151" }, inspection: true })
     const priceOf = async () => (await callApi(ctxFor(db, writeKey), customersGet, { id: (await db.select().from(s.job).where(eq(s.job.id, pass.id)))[0]!.customerId })).jobs.find((j) => j.id === pass.id)!.price
-    expect(await priceOf()).toBe(jobTotal(await linesOfPass(db, pass.id)))
+    expect(await priceOf()).toBe(jobTotal(await linesOfPass(db, pass.id), NO_TAX))
     await callApi(ctxFor(db, writeKey), passesSkipVisit, { id: pass.id, kind: "inspection" })
     const lines = await linesOfPass(db, pass.id)
     expect(lines.map((l) => [l.visitKind, l.cancelledAt instanceof Date])).toEqual([["turn-on", false], ["inspection", true], ["blowout", false]])
-    expect(jobTotal(lines)).toBe(145 + 115)
+    expect(jobTotal(lines, NO_TAX)).toBe(145 + 115)
     // the job's price is its lines' total: there is no price column to say otherwise
     expect(await priceOf()).toBe(145 + 115)
   })

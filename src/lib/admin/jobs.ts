@@ -24,6 +24,7 @@
  * until the visit is done, then Paid with how, Owed, Bill sent, Failed). A Scheduled visit whose day has passed stays Scheduled with a "day passed"
  * note; Routed is a start time in the Time column, not a state. `statesOf` derives both from the same row.
  */
+import type { TaxRule } from "@/lib/jobs/tax"
 import { isPaid, jobMoney as jobMoneyWords, METHOD_WORDS, paidTotal, visitMoney, type MoneyInvoice, type MoneyPayment } from "@/lib/money/words"
 import { addDays, dayOf } from "./calendar"
 import { TIME_ZONE } from "./format"
@@ -156,14 +157,15 @@ export function statesOf(row: JobRow, today: string): VisitStates {
  * "Paid", "$115 owed" or "1 of 2 paid, $115 owed", empty for a job nothing has priced. Without the job's own lines or payments
  * (the fixtures) the visits' prices and their payments stand in; a cancelled visit is not counted.
  */
-export function jobMoney(job: Pick<SoldJob, "lines" | "payments" | "invoice"> | undefined, visits: Pick<Visit, "id" | "status" | "price" | "payments">[]): string {
+export function jobMoney(job: Pick<SoldJob, "lines" | "payments" | "invoice"> | undefined, visits: Pick<Visit, "id" | "status" | "price" | "payments">[], rule: TaxRule): string {
   const live = visits.filter((v) => v.status !== "cancelled")
   const lines = job?.lines
-    ? job.lines.map((l: JobLine) => ({ quantity: l.quantity, unitPrice: l.unitPrice, cancelledAt: l.cancelledAt ? new Date(l.cancelledAt) : null }))
-    : live.map((v) => ({ quantity: 1, unitPrice: v.price ?? 0, cancelledAt: null }))
+    ? job.lines.map((l: JobLine) => ({ quantity: l.quantity, unitPrice: l.unitPrice, taxable: l.taxable, cancelledAt: l.cancelledAt ? new Date(l.cancelledAt) : null }))
+    // a visit's `price` already carries its tax, so a line made from one is not taxed again
+    : live.map((v) => ({ quantity: 1, unitPrice: v.price ?? 0, taxable: false, cancelledAt: null }))
   const payments = job?.payments ?? visits.flatMap((v) => paymentsOf(v))
   const prices = visits.map((v) => ({ id: v.id, cancelled: v.status === "cancelled", price: v.price }))
-  return jobMoneyWords(lines, payments, prices, job?.invoice ? {} : undefined).words
+  return jobMoneyWords(lines, payments, prices, rule, job?.invoice ? {} : undefined).words
 }
 
 /** The job's state and its not-closed flag. `today` is the Mountain calendar day (YYYY-MM-DD). */

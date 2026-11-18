@@ -18,6 +18,7 @@ import { ConsentOut, consentInput, CustomerDetail, CustomerListItem, CustomerOut
 import { loadJobKinds } from "@/lib/jobs/kind-load"
 import { jobTotal, linesOfVisit, visitPrice } from "@/lib/jobs/lines"
 import { stageOf } from "@/lib/jobs/stage"
+import { loadTaxRule } from "@/lib/money/tax-rule"
 import { jobMoney, jobOwed } from "@/lib/money/words"
 import { paymentOut } from "../payments/queries"
 import { cleanEmail, cleanName, normalizePhone } from "@/lib/format/contact"
@@ -227,17 +228,18 @@ async function jobsOf(ctx: Ctx, customerId: string) {
   // Each job's newest 10 events (a customer has a few jobs, so one small query each).
   const stories = await Promise.all(jobs.map((j) => recentEvents(ctx, { jobId: j.id }, 10)))
   // A job's kind is derived (a pass by its season, else its first line's service, else its first visit) and its notes are its newest note event.
-  const [kinds, notes] = await Promise.all([loadJobKinds(db, org, jobs), newestJobNotes(ctx, jobs.map((j) => j.id))])
+  const [kinds, notes, rule] = await Promise.all([loadJobKinds(db, org, jobs), newestJobNotes(ctx, jobs.map((j) => j.id)), loadTaxRule(db, org)])
   return jobs.map((j, index) => {
     const lines = lineRows.filter((l) => l.jobId === j.id)
     const payments = paymentRows.filter((p) => p.jobId === j.id)
     const jobVisits = visits.filter((v) => v.jobId === j.id)
     // An open bill on a job that owes nothing (money arrived another way) is not carried: the job reads Paid.
-    const bill = jobOwed(lines, payments) > 0 ? openBills.find((b) => b.jobId === j.id) : undefined
+    const bill = jobOwed(lines, payments, rule) > 0 ? openBills.find((b) => b.jobId === j.id) : undefined
     // The visits the paid bills name, which a payment made on the job as a whole credits first.
     const paidBillVisits = bills.filter((b) => b.jobId === j.id && b.paidOn).flatMap((b) => b.lines.map((l) => l.visitId).filter((id): id is string => Boolean(id)))
     const kind = kinds.get(j.id)!
-    const total = jobTotal(lines)
+    // The job's total and each visit's price carry the sales tax, read from the same rule the bill is built with.
+    const total = jobTotal(lines, rule)
     return {
       id: j.id, kind,
       // the stage word, read from the facts (`stageOf`): there is no typed status
@@ -249,9 +251,9 @@ async function jobsOf(ctx: Ctx, customerId: string) {
       lines: lines.map((l) => ({ id: l.id, name: l.name, description: l.description, quantity: l.quantity, unitPrice: l.unitPrice, taxable: l.taxable, cancelledAt: l.cancelledAt?.toISOString() ?? null, visitId: l.visitId })),
       total,
       payments: payments.map((p) => paymentOut(ctx, p)),
-      money: jobMoney(lines, payments, jobVisits.map((v) => ({ id: v.id, cancelled: v.status === "cancelled" || v.status === "skipped", price: visitPrice(linesOfVisit(lines, v.id)), done: v.status === "completed", doneOn: v.completedOn })), bill, paidBillVisits),
+      money: jobMoney(lines, payments, jobVisits.map((v) => ({ id: v.id, cancelled: v.status === "cancelled" || v.status === "skipped", price: visitPrice(linesOfVisit(lines, v.id), rule), done: v.status === "completed", doneOn: v.completedOn })), rule, bill, paidBillVisits),
       invoiceId: bill?.id ?? null,
-      visits: jobVisits.map((v) => ({ id: v.id, kind: v.kind, status: v.status, scheduledOn: v.scheduledOn, amount: visitPrice(linesOfVisit(lines, v.id)) })),
+      visits: jobVisits.map((v) => ({ id: v.id, kind: v.kind, status: v.status, scheduledOn: v.scheduledOn, amount: visitPrice(linesOfVisit(lines, v.id), rule) })),
       events: stories[index]!,
     }
   })

@@ -1,4 +1,5 @@
 // @vitest-environment node
+import { NO_TAX } from "@/lib/jobs/tax"
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest"
 import { eq } from "drizzle-orm"
 import * as s from "@/db/schema"
@@ -37,7 +38,7 @@ afterAll(() => db.close())
 
 describe("getLiveAdminData", () => {
   it("carries every part of AdminData, scoped to the organization", () => {
-    expect(Object.keys(data).sort()).toEqual([...Object.keys(fixture), "blocks", "jobs", "services"].sort())
+    expect(Object.keys(data).sort()).toEqual([...Object.keys(fixture), "billing", "blocks", "jobs", "services"].sort())
     expect(data.services?.map((x) => x.key)).toContain("repair")
     expect(data.organizationId).toBe(ORG)
     expect(Number.isNaN(Date.parse(data.syncedAt))).toBe(false)
@@ -138,7 +139,7 @@ describe("a charge with no card to charge", () => {
     const row = (await getLiveAdminData(ctxFor(db, owner))).attention.find((a) => a.kind === "no-card")
     expect(row).toMatchObject({ kind: "no-card", visitId: "p6-turn-on", passId: "job_p6", message: "No card to charge for Dana's spring turn-on" })
     const [visit] = await db.select().from(s.visit).where(eq(s.visit.id, "p6-turn-on"))
-    await db.insert(s.charge).values({ organizationId: ORG, jobId: visit!.jobId, customerId: visit!.customerId, visitId: "p6-turn-on", attempt: 1, amount: visitPrice(linesOfVisit(await linesOfJob(db, visit!.jobId), visit!.id)), method: "cash", status: "succeeded", paidOn: "2027-05-07" })
+    await db.insert(s.charge).values({ organizationId: ORG, jobId: visit!.jobId, customerId: visit!.customerId, visitId: "p6-turn-on", attempt: 1, amount: visitPrice(linesOfVisit(await linesOfJob(db, visit!.jobId), visit!.id), NO_TAX), method: "cash", status: "succeeded", paidOn: "2027-05-07" })
     expect((await getLiveAdminData(ctxFor(db, owner))).attention.some((a) => a.kind === "no-card")).toBe(false)
   })
 })

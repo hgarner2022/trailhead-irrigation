@@ -179,7 +179,7 @@ export function JobPanel({ data, today, jobId, open, onOpenChange, readOnly = fa
           </>
         ) : (
           <>
-            <JobLinesSection jobId={job.id} lines={facts.lines} total={row.total} data={data} editable={canAct && facts.canEditLines} actions={actions} />
+            <JobLinesSection jobId={job.id} lines={facts.lines} total={row.total} tax={facts.tax} data={data} editable={canAct && facts.canEditLines} actions={actions} />
             <Visits visits={facts.visits} facts={facts} today={today} />
           </>
         )}

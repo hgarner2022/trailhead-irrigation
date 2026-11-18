@@ -6,7 +6,7 @@ import { KIND_MINUTES, NOT_DONE_REASONS, OFFICE_KINDS } from "@/lib/admin/visit-
 import { visitName } from "@/lib/events/names"
 import { recordEvent, whoOf } from "@/lib/events/record"
 import { enqueueGeocode } from "@/lib/geocode"
-import { defaultVisitPrice, LINE_NAMES, lineForVisitKind } from "@/lib/jobs/lines"
+import { defaultVisitPrice, jobSubtotal, LINE_NAMES, lineForVisitKind } from "@/lib/jobs/lines"
 import { cancelVisitLines, deleteVisitLines, insertLines, setVisitLinePrice } from "@/lib/jobs/write-lines"
 import { loadVisitPrice } from "@/lib/money/record"
 import { orderDay } from "@/lib/scheduling/server/order-day"
@@ -79,7 +79,8 @@ export const visitsUpdate = defineHandler({
     const noteText = input.notes && input.notes !== newestNoteText(eventsOfJson(ctx, events)) ? input.notes : undefined
     if (input.price !== undefined) {
       // The visit's price is its line's: this edits the line (making one when the visit has none).
-      const before = await loadVisitPrice(ctx.db, ctx.organizationId, visit.id)
+      // `input.price` is the line's own price, so it is compared with the visit's lines before tax.
+      const before = jobSubtotal(await ctx.db.select().from(s.lineItem).where(and(eq(s.lineItem.organizationId, ctx.organizationId), eq(s.lineItem.visitId, visit.id))))
       await setVisitLinePrice(ctx.db, visit, input.price, ctx.now)
       if (input.price !== before) changed.price = { from: before, to: input.price }
     }

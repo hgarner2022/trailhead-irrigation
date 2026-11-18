@@ -44,6 +44,27 @@ describe("jobFacts", () => {
   })
 })
 
+describe("jobFacts, the sales tax on the lines", () => {
+  const taxed = (rule: { collectsSalesTax: boolean; salesTaxPercent: number } | undefined) => ({
+    ...jobsData,
+    ...(rule ? { billing: rule } : {}),
+    jobs: jobsData.jobs!.map((j) => (j.id === ownedJobId ? { ...j, lines: j.lines!.map((l) => ({ ...l, taxable: true })) } : j)),
+  })
+  const taxOf = (data: typeof jobsData) => jobFacts(data, ownedJobId, JOBS_TODAY)!.tax
+
+  it("has no tax while the data carries no rule, or the switch is off, whatever the lines say", () => {
+    expect(taxOf(taxed(undefined))).toBe(0)
+    expect(taxOf(taxed({ collectsSalesTax: false, salesTaxPercent: 8 }))).toBe(0)
+  })
+
+  it("adds up the tax of the live taxable lines when the switch is on, so the panel can show one Tax line above zero", () => {
+    const live = jobsData.jobs!.find((j) => j.id === ownedJobId)!.lines!.filter((l) => !l.cancelledAt)
+    const expected = live.reduce((sum, l) => sum + Math.round((l.quantity * l.unitPrice * 8) / 100), 0)
+    expect(expected).toBeGreaterThan(0)
+    expect(taxOf(taxed({ collectsSalesTax: true, salesTaxPercent: 8 }))).toBe(expected)
+  })
+})
+
 describe("paymentWords", () => {
   it("says how the money came and its reference, and a refund says so", () => {
     expect(paymentWords({ method: "check", reference: "1042", amount: 145 })).toBe("Check 1042")

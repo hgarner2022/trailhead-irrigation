@@ -4,6 +4,7 @@ import * as s from "@/db/schema"
 import type { Database } from "@/db/types"
 import { loadJobCredit } from "@/lib/money/credit"
 import { visitPrice } from "@/lib/jobs/lines"
+import { loadTaxRule } from "@/lib/money/tax-rule"
 import { paidTotal } from "@/lib/money/words"
 
 type PaymentRow = typeof s.charge.$inferSelect
@@ -71,10 +72,10 @@ export async function recordPaymentRow(db: Database, input: PaymentRowInput): Pr
   return row
 }
 
-/** What one visit costs: its own non-cancelled lines added up (`visitPrice`); a visit with no line costs nothing. */
+/** What one visit costs: its own non-cancelled lines added up with their sales tax (`visitPrice`); a visit with no line costs nothing. */
 export async function loadVisitPrice(db: Database, organizationId: string, visitId: string): Promise<number> {
-  const lines = await db.select().from(s.lineItem).where(and(eq(s.lineItem.organizationId, organizationId), eq(s.lineItem.visitId, visitId)))
-  return visitPrice(lines)
+  const [lines, rule] = await Promise.all([db.select().from(s.lineItem).where(and(eq(s.lineItem.organizationId, organizationId), eq(s.lineItem.visitId, visitId))), loadTaxRule(db, organizationId)])
+  return visitPrice(lines, rule)
 }
 
 /**

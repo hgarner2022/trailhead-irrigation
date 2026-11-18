@@ -4,6 +4,7 @@ import * as s from "@/db/schema"
 import type { Database } from "@/db/types"
 import { recordEvent } from "@/lib/events/record"
 import { linesOfVisit, visitPrice } from "@/lib/jobs/lines"
+import { loadTaxRule } from "@/lib/money/tax-rule"
 import { enqueue } from "@/lib/queue"
 import { baseData, loadVisitFacts } from "@/lib/messaging/data"
 import { queueMessage, queueStaffMessage } from "@/lib/messaging/queue"
@@ -89,11 +90,13 @@ export async function queuePurchaseConfirmation(db: Database, passId: string, or
   const filled = await db.select().from(s.event).where(and(eq(s.event.organizationId, org), eq(s.event.jobId, pass.jobId), eq(s.event.kind, "visit.day-filled"))).orderBy(desc(s.event.at), desc(s.event.id))
   // What was sold, from the pass job's lines (a pass bought before lines existed has none, and the email leaves the list out).
   const lineRows = await db.select().from(s.lineItem).where(and(eq(s.lineItem.jobId, pass.jobId), isNull(s.lineItem.cancelledAt))).orderBy(asc(s.lineItem.createdAt), asc(s.lineItem.id))
+  // A pass's lines are not taxable this step, so each visit's amount is its line's price; the rule is still read so a taxable line would show what is charged.
+  const rule = await loadTaxRule(db, org)
   const held = []
   for (const v of ordered) {
     const facts = v.scheduledOn ? await loadVisitFacts(db, v.id, origin) : null
     const moved = filled.find((c) => c.visitId === v.id)?.detail as { from?: string; to?: string } | undefined
-    held.push({ kind: v.kind, name: kindName(v.kind), amount: visitPrice(linesOfVisit(lineRows, v.id)), visit: facts, fallback: "Ryan sets the day and we text it to you.", ...(moved?.from && v.scheduledOn ? { note: filledLine(moved.from, v.scheduledOn) } : {}) })
+    held.push({ kind: v.kind, name: kindName(v.kind), amount: visitPrice(linesOfVisit(lineRows, v.id), rule), visit: facts, fallback: "Ryan sets the day and we text it to you.", ...(moved?.from && v.scheduledOn ? { note: filledLine(moved.from, v.scheduledOn) } : {}) })
   }
   const lines = lineRows.map((l) => ({ name: l.name, amount: l.quantity * l.unitPrice }))
   return queueMessage(db, {

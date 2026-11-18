@@ -3,6 +3,8 @@ import { and, eq } from "drizzle-orm"
 import { z } from "zod"
 import * as s from "@/db/schema"
 import { addJobLine, cancelLineRow, updateLineRow } from "@/lib/jobs/write-lines"
+import { jobTotal, visitPrice } from "@/lib/jobs/lines"
+import { loadTaxRule } from "@/lib/money/tax-rule"
 import { isPaid, jobOwed } from "@/lib/money/words"
 import type { Ctx } from "../../core/context"
 import { ApiError, notFound } from "../../core/errors"
@@ -13,7 +15,7 @@ import { recordEvent, whoOf } from "@/lib/events/record"
 export const LineOut = z.object({
   id: Id, jobId: Id, visitId: Id.nullable(), name: z.string(), description: z.string().nullable(), quantity: z.number().int(),
   unitPrice: z.number().int().describe("Whole dollars; 0 reads Quote later."), taxable: z.boolean(), cancelledAt: z.string().nullable(),
-  jobTotal: z.number().int().describe("What the job comes to after this change, cancelled lines left out."),
+  jobTotal: z.number().int().describe("What the job comes to after this change, with its sales tax, cancelled lines left out."),
 })
 
 const out = (r: typeof s.lineItem.$inferSelect, jobTotal: number) => ({
@@ -23,7 +25,7 @@ const out = (r: typeof s.lineItem.$inferSelect, jobTotal: number) => ({
 
 async function jobTotalOf(ctx: Ctx, jobId: string): Promise<number> {
   const lines = await ctx.db.select().from(s.lineItem).where(and(eq(s.lineItem.jobId, jobId), eq(s.lineItem.organizationId, ctx.organizationId)))
-  return lines.filter((l) => !l.cancelledAt).reduce((sum, l) => sum + l.quantity * l.unitPrice, 0)
+  return jobTotal(lines, await loadTaxRule(ctx.db, ctx.organizationId))
 }
 
 /** The job a line change is for: it must be in this organization, still open, not a Season Pass (its lines follow its visits) and not paid in full. */
@@ -37,8 +39,8 @@ async function openJob(ctx: Ctx, jobId: string) {
     ctx.db.select().from(s.charge).where(and(eq(s.charge.jobId, job.id), eq(s.charge.organizationId, ctx.organizationId))),
   ])
   const live = lines.filter((l) => !l.cancelledAt)
-  const total = live.reduce((sum, l) => sum + l.quantity * l.unitPrice, 0)
-  if (total > 0 && jobOwed(live, payments) === 0) throw new ApiError("conflict", "This job is paid in full, so its lines cannot change")
+  const rule = await loadTaxRule(ctx.db, ctx.organizationId)
+  if (jobTotal(live, rule) > 0 && jobOwed(live, payments, rule) === 0) throw new ApiError("conflict", "This job is paid in full, so its lines cannot change")
   return { job, lines, payments }
 }
 
@@ -48,7 +50,7 @@ async function assertVisitOpen(ctx: Ctx, line: typeof s.lineItem.$inferSelect, p
   const [visit] = await ctx.db.select().from(s.visit).where(and(eq(s.visit.id, line.visitId), eq(s.visit.organizationId, ctx.organizationId)))
   if (!visit || visit.status !== "completed") return
   const own = payments.filter((p) => p.visitId === visit.id)
-  const price = (await ctx.db.select().from(s.lineItem).where(eq(s.lineItem.visitId, visit.id))).filter((l) => !l.cancelledAt).reduce((sum, l) => sum + l.quantity * l.unitPrice, 0)
+  const price = visitPrice(await ctx.db.select().from(s.lineItem).where(eq(s.lineItem.visitId, visit.id)), await loadTaxRule(ctx.db, ctx.organizationId))
   if (isPaid(own, price)) throw new ApiError("conflict", "That visit is done and paid, so its line cannot change")
 }
 

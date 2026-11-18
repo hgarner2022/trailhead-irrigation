@@ -5,6 +5,7 @@
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import { lineForVisitKind } from "@/lib/jobs/lines"
 import { stageOf } from "@/lib/jobs/stage"
+import { NO_TAX } from "@/lib/jobs/tax"
 import { jobMoney } from "@/lib/money/words"
 import type { AdminData, AdminInvoice, Client, JobLine, Message, Pass, SoldJob, Visit, Yard } from "@/lib/admin/types"
 
@@ -107,7 +108,7 @@ const jobs: SoldJob[] = [...new Set(allVisits.map((v) => v.jobId).filter((id): i
   // The money of an office job is read from its lines, its payment rows and its open bill, as the live data does (a pass is charged to its card and left out).
   const invoice = mine.find((v) => v.invoice)?.invoice
   const payments = mine.flatMap((v) => v.payments ?? [])
-  const money = pass ? undefined : jobMoney(lines.map((l) => ({ quantity: l.quantity, unitPrice: l.unitPrice, cancelledAt: null })), payments, mine.map((v) => ({ id: v.id, price: v.price })), invoice ? {} : undefined)
+  const money = pass ? undefined : jobMoney(lines.map((l) => ({ quantity: l.quantity, unitPrice: l.unitPrice, taxable: l.taxable, cancelledAt: null })), payments, mine.map((v) => ({ id: v.id, price: v.price })), NO_TAX, invoice ? {} : undefined)
   const kind = pass ? "pass" : mine[0]!.kind === "install" ? "install" : "repair"
   // The sold day: the day a pass was bought (its consent's day), nothing for the one-offs (the Jobs fixture sets theirs).
   const soldOn = pass ? (pass.consent?.recordedAt.slice(0, 10) ?? "2026-11-02") : undefined
