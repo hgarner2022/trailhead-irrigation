@@ -46,7 +46,7 @@ const renderVisit = (data: AdminData, actions: VisitActions | undefined, readOnl
       <VisitsScreen data={data} today={VISITS_TODAY} defaultVisitId="office-paid" readOnly={readOnly} actions={actions} />
     </UndoToastProvider>,
   )
-const block = () => within(screen.getByRole("complementary")).getByRole("region", { name: "Notes and history" })
+const block = () => within(screen.getByRole("dialog")).getByRole("region", { name: "Notes and history" })
 const lines = () => within(block()).getAllByRole("listitem").map((li) => li.textContent)
 
 describe("the visit panel", () => {
