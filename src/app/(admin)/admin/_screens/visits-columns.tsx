@@ -58,3 +58,6 @@ export const visitColumns: GridColumnDef<VisitRow>[] = [
     meta: { csv: (r) => (r as VisitRow).jobLabel },
   },
 ]
+
+/** The same columns for the Schedule's stops of one day, without the Day column: every row is that day. A module constant, so the grid keeps its models. */
+export const stopColumns: GridColumnDef<VisitRow>[] = visitColumns.filter((c) => c.id !== "day")

@@ -35,6 +35,7 @@ export const oneOffs: Visit[] = [
   visit({ id: "office-paid", jobId: "job-e", clientId: "c-joe", clientName: "Joe Hart", town: "Longmont", status: "completed", completedOn: "2026-11-09", scheduledOn: "2026-11-09", startAt: "2026-11-09T15:00:00Z", payments: [{ id: "pay-joe", jobId: "job-e", visitId: "office-paid", amount: 145, method: "check", status: "succeeded", paidOn: "2026-11-09" }] }),
   visit({ id: "office-day-passed", jobId: "job-f", clientId: "c-kim", clientName: "Kim Lowe", scheduledOn: "2026-11-09", startAt: "2026-11-09T15:00:00Z" }),
   visit({ id: "office-billed", jobId: "job-g", clientId: "c-ben", clientName: "Ben Cole", town: "Broomfield", status: "completed", completedOn: "2026-11-10", scheduledOn: "2026-11-10", startAt: "2026-11-10T16:00:00Z", payments: [], invoice: BEN_BILL }),
+  visit({ id: "office-cancelled", jobId: "job-h", clientId: "c-joe", clientName: "Joe Hart", town: "Longmont", status: "cancelled", scheduledOn: "2026-11-23", startAt: "2026-11-23T15:00:00Z", payments: [] }),
 ]
 
 const people: Client[] = [

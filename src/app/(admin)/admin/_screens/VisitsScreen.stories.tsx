@@ -24,6 +24,7 @@ type Story = StoryObj<typeof meta>
 const wide = { viewport: { value: "wide", isRotated: false } }
 const phone = { viewport: { value: "phone", isRotated: false } }
 
+/** The grid with a row in each state: Scheduled ($145), Unscheduled and Not done (no day, the reason after the pill), Done and owed, Done and paid ("$145 · Paid, check"), Bill sent, and Cancelled. */
 export const Default: Story = {
   globals: wide,
   play: async ({ canvas }) => {

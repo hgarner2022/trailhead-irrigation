@@ -70,12 +70,13 @@ const digits = (s: string | undefined) => (s ?? "").replace(/\D/g, "")
 /** The visits the app owns: a pass's, or one with a job. Visits read from the Jobber calendar feed are the Schedule's, not a sale. */
 const isOurs = (v: Visit) => v.isPass || Boolean(v.jobId)
 
-export function visitRows(data: AdminData, today: string): VisitRow[] {
+/** The rows for any list of visits, in the order given: the Visits list and the Schedule's day list read the same columns. */
+export function rowsOf(data: AdminData, visits: Visit[], today: string): VisitRow[] {
   const day = dayOf(today, TIME_ZONE)
   const clients = new Map(data.clients.map((c) => [c.id, c]))
   const passes = new Map(data.passes.map((p) => [p.id, p]))
   const people = data.settings.people
-  const rows = data.visits.filter(isOurs).map((v): VisitRow => {
+  return visits.map((v): VisitRow => {
     const client = clients.get(v.clientId)
     const pass = v.passId ? passes.get(v.passId) : undefined
     const states = visitJob(v, day, TIME_ZONE, pass?.cardFailedAt)
@@ -104,6 +105,10 @@ export function visitRows(data: AdminData, today: string): VisitRow[] {
       ...(v.jobId ? { jobId: v.jobId } : {}),
     }
   })
+}
+
+export function visitRows(data: AdminData, today: string): VisitRow[] {
+  const rows = rowsOf(data, data.visits.filter(isOurs), today)
   // Unscheduled first (they are the ones that want a person), then the days in order.
   return rows.sort((a, b) => (a.day ?? "0").localeCompare(b.day ?? "0") || a.name.localeCompare(b.name))
 }
