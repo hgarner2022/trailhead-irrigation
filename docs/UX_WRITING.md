@@ -66,9 +66,26 @@ Written Nov 18 2026 from `docs/plans/2026-11-18-messages-design.md`. The words o
 1. **The fact first.** The subject and the first line say what happened, to which service, at which address: "Fall blowout at 480 Briggs St."
 2. **Sprinklers, not paperwork.** Say turn-on, blowout, zones, lines, yard. The pass number appears only in the purchase confirmation's footer; "Season Pass" is named only by the purchase confirmation, the cancel and the renewal; no other message says a pass number or "your pass".
 3. **Ryan when a person comes, we otherwise.** The person on the visit is named ("Ryan is coming tomorrow"); with no one it reads "We're coming". Never a truck label.
-4. **One link, one button.** Every link to the account reads "your Trailhead account". The button says what happens ("Open your Trailhead account", "Pay $145", "Update your card").
+4. **One link, one button.** An email has one button and it says what happens ("Open your Trailhead account", "Pay $145", "Update your card"). Every other action is a text link under it; the link to a job or receipt reads "See it in your account", and a sentence that names the page says "your Trailhead account".
 5. **Money has three parts.** Amount, what for and where, how it was paid. An invoice number is one quiet row on invoices and their receipts, never in a subject or headline.
 6. **Plain sentences.** Contractions, no fragments, no "not X, it's Y", no lists of nos, no em dashes, no exclamation marks. Every email ends with "The Trailhead crew" above the footer; the purchase confirmation ends with "Less time in the yard. More time on the trail."
+
+### The template every email is built on
+
+One frame in `src/emails/layout.ts`; an email supplies words and picks parts and never writes a size, a colour or a margin. Research and the audit are in `docs/plans/2026-11-18-email-template-design.md`.
+
+| Part | Rule |
+|---|---|
+| Frame | One column, 600px, white card on #F5F5F4, the logo on its white plate (`logo-email.png`) over a 4px orange rule, a cream footer |
+| Type | One web-safe stack (Helvetica Neue, Helvetica, Arial). Four sizes only: 28 the heading, 18 the lead, 16 everything you read, 14 labels, small print and the footer. Secondary text is #57534E |
+| Heading | One `h1`, the fact in a few words; never the customer's name |
+| Greeting | "Hi Andrea," on its own line under the heading, from the first word of the stored first name; "Hi there," when there is no usable name. No greeting on staff emails or the sign-in link. Never "Hi, Andrea," and never a greeting inside the lead. A saved sentence in Settings that opens with "Hi {firstName}," loses that opening at send time |
+| Lead | One sentence, 18px: what happened, to which service, at which address |
+| Facts and money | Fact rows have a 112px label; the money table ends in a bold Total under a navy rule; Subtotal and Sales tax are quiet |
+| Button | One per email: filled orange-dark, 52px tall, 16px bold white. A second action is a text link under it, one per line |
+| Preheader | 20 to 100 characters that add to the subject and the heading; never the lead; the frame pads it |
+| Footer | Business name, address, phone, one why-you-got-this sentence, on every email. Customer emails end "The Trailhead crew" above it |
+| Plain text | Written with the HTML: greeting, lead, facts, the links on their own lines, sign-off, address, phone, the why line |
 
 ### Subject patterns
 
