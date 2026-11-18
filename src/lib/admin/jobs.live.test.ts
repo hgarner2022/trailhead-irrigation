@@ -142,6 +142,10 @@ describe("the customer record the admin reads", () => {
 })
 
 describe("the money words, read from the payment rows", () => {
+  // These one-off jobs are for a customer with no card on file: a customer with a card has no "Done, unpaid" row (see the last describe).
+  beforeAll(async () => {
+    await db.update(s.customer).set({ stripePaymentMethodId: null, stripeCustomerId: null, cardBrand: null, cardLast4: null, cardExpires: null }).where(eq(s.customer.id, "c100"))
+  })
   const moneyOf = (live: AdminData, visitId: string) => visitJob(live.visits.find((v) => v.id === visitId)!, TODAY, TZ)
 
   it("reads Paid, card from the payment row a charged pass visit has, never from a flag", () => {
@@ -286,5 +290,64 @@ describe("the money words, read from the payment rows", () => {
     await callApi(write, paymentsRecord, { jobId: first.jobId, visitId: second.id, amount: 40, method: "cash" })
     const live = await getLiveAdminData(ctxFor(db, owner, NOW))
     expect(live.jobs!.find((j) => j.id === first.jobId)!.money).toMatchObject({ paid: 185, total: 245, owed: 60, words: "1 of 2 paid, $60 unpaid" })
+  })
+})
+
+// Done charges nothing (docs/plans/2026-11-18-done-and-paid-design.md): what Home shows for a done visit nobody has been paid for depends on whether the customer has a card.
+describe("Home after Done: Done, unpaid, and Card not charged", () => {
+  const CARD = { stripePaymentMethodId: "pm_home", stripeCustomerId: "cus_home", cardBrand: "visa", cardLast4: "4242", cardExpires: "2030-08", cardFailedAt: null }
+  const NO_CARD = { stripePaymentMethodId: null, stripeCustomerId: null, cardBrand: null, cardLast4: null, cardExpires: null, cardFailedAt: null }
+  const doneOn = async (day: string, scheduledOn: string) => {
+    const made = await callApi(ctxFor(db, writeKey, NOW), visitsCreate, { customerId: "c100", kind: "repair", scheduledOn, price: 145 })
+    await db.update(s.visit).set({ status: "completed", completedOn: day }).where(eq(s.visit.id, made.id))
+    return made
+  }
+  const rowsFor = async (visitId: string) => (await getLiveAdminData(ctxFor(db, owner, NOW))).attention.filter((a) => a.visitId === visitId && (a.kind === "owed" || a.kind === "charge-not-pressed"))
+
+  it("gives a customer with no card a Done, unpaid row at once, the day it is done", async () => {
+    await db.update(s.customer).set(NO_CARD).where(eq(s.customer.id, "c100"))
+    const made = await doneOn(TODAY, "2027-06-07")
+    expect(await rowsFor(made.id)).toEqual([expect.objectContaining({ kind: "owed", visitId: made.id, message: expect.stringMatching(/repair is done, \$145 unpaid$/) })])
+  })
+
+  it("gives a customer with a card no row on the day it is done, and a Card not charged row the next morning with the amount its button charges", async () => {
+    await db.update(s.customer).set(CARD).where(eq(s.customer.id, "c100"))
+    const today = await doneOn(TODAY, "2027-06-08")
+    expect(await rowsFor(today.id)).toEqual([])
+    const yesterday = await doneOn("2027-04-19", "2027-06-09")
+    expect(await rowsFor(yesterday.id)).toEqual([expect.objectContaining({ kind: "charge-not-pressed", visitId: yesterday.id, jobId: yesterday.jobId, amount: 145, message: expect.stringMatching(/^Card not charged for Andrea's repair, \$145 unpaid$/) })])
+    // paid another way: the row is gone, and nothing was charged
+    await callApi(ctxFor(db, writeKey, NOW), paymentsRecord, { jobId: yesterday.jobId, visitId: yesterday.id, amount: 145, method: "check" })
+    expect(await rowsFor(yesterday.id)).toEqual([])
+  })
+
+  it("has no Card not charged row for a visit whose charge failed (that is Card failed), or whose job has an invoice out", async () => {
+    await db.update(s.customer).set(CARD).where(eq(s.customer.id, "c100"))
+    const failed = await doneOn("2027-04-19", "2027-06-10")
+    await db.insert(s.charge).values({ organizationId: ORG, jobId: failed.jobId, visitId: failed.id, attempt: 1, amount: 145, status: "failed", method: "card_on_file", failureMessage: "declined" })
+    expect(await rowsFor(failed.id)).toEqual([])
+    const billed = await doneOn("2027-04-19", "2027-06-11")
+    await callApi(ctxFor(db, writeKey, NOW), invoicesSend, { jobId: billed.jobId })
+    expect(await rowsFor(billed.id)).toEqual([])
+  })
+
+  it("gives a done Season Pass visit with no card its own Done, unpaid row, and none to a pass whose customer has a card", async () => {
+    const p5 = await passViewOf(db, "p5")
+    await db.update(s.customer).set(NO_CARD).where(eq(s.customer.id, p5.customerId))
+    await db.update(s.visit).set({ status: "completed", completedOn: TODAY }).where(eq(s.visit.id, "p5-turn-on"))
+    expect(await rowsFor("p5-turn-on")).toEqual([expect.objectContaining({ kind: "owed", key: "p5-turn-on", jobId: J("p5") })])
+    await db.update(s.customer).set(CARD).where(eq(s.customer.id, p5.customerId))
+    expect(await rowsFor("p5-turn-on")).toEqual([])
+    await db.update(s.visit).set({ completedOn: "2027-04-18" }).where(eq(s.visit.id, "p5-turn-on"))
+    expect(await rowsFor("p5-turn-on")).toEqual([expect.objectContaining({ kind: "charge-not-pressed", amount: 145 })])
+  })
+
+  it("shows a failed card on a job with no pass as Card failed, for the customer, until the card is fixed", async () => {
+    const made = await callApi(ctxFor(db, writeKey, NOW), visitsCreate, { newCustomer: { firstName: "Nora", lastName: "Vale", email: "nora@example.com", property: { address: "1 Main St", town: "Erie" } }, kind: "repair", scheduledOn: "2027-06-14", price: 145 })
+    await db.update(s.customer).set({ ...CARD, cardFailedAt: new Date("2027-04-19T10:00:00Z") }).where(eq(s.customer.id, made.customerId))
+    const live = await getLiveAdminData(ctxFor(db, owner, NOW))
+    expect(live.attention.filter((a) => a.kind === "charge-failed" && a.customerId === made.customerId)).toEqual([expect.objectContaining({ message: "The card for Nora Vale didn't go through; Nora has the update link" })])
+    await db.update(s.customer).set({ cardFailedAt: null }).where(eq(s.customer.id, made.customerId))
+    expect((await getLiveAdminData(ctxFor(db, owner, NOW))).attention.filter((a) => a.kind === "charge-failed" && a.customerId === made.customerId)).toEqual([])
   })
 })

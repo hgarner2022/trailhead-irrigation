@@ -39,4 +39,5 @@ export interface PublicPrincipal {
 
 export type Principal = PersonPrincipal | ApiKeyPrincipal | PublicPrincipal
 
-export type Scope = "read" | "write" | "admin"
+/** `collect` is the day-to-day money work (Mark done, the Charge button, recording a payment, sending an invoice): a tech holds it, and `write` and `admin` imply it. Refund, cancel, edits and price changes stay `write` and `admin`. */
+export type Scope = "read" | "write" | "admin" | "collect"

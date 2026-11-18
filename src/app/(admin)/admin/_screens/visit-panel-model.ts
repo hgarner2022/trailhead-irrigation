@@ -98,11 +98,13 @@ export function visitFacts(data: AdminData, visitId: string, today: string): Vis
   const job = data.jobs?.find((j) => j.id === visit.jobId)
   const pass = data.passes.find((p) => p.id === visit.passId)
   const ids = job?.visitIds ?? (pass ? data.visits.filter((v) => v.passId === pass.id).map((v) => v.id) : [visit.id])
-  const states = visitJob(visit, day, TIME_ZONE, pass?.cardFailedAt)
+  const client = data.clients.find((c) => c.id === visit.clientId)
+  // The card belongs to the customer: a failed charge shows on a one-off's visit as it does on a pass's.
+  const states = visitJob(visit, day, TIME_ZONE, pass?.cardFailedAt ?? client?.card?.failedAt)
   const siblings = ids.map((id) => data.visits.find((v) => v.id === id)).filter((v): v is Visit => Boolean(v)).sort((a, b) => (dayOfVisit(a) ?? "9").localeCompare(dayOfVisit(b) ?? "9"))
   return {
     visit,
-    client: data.clients.find((c) => c.id === visit.clientId),
+    client,
     pass,
     job,
     line: visitLine(data, visit),

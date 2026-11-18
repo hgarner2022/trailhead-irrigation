@@ -24,6 +24,7 @@ import { jobUrl } from "@/lib/admin/links"
 import { retryQueueTasks } from "@/lib/admin/queue-retry"
 import { timelineOf, type TimelineLine } from "@/lib/events/timeline"
 import { act, nothing, type ActionOutcome } from "./act"
+import { chargeCard } from "./visit-actions"
 import { toApiScopes } from "./key-scopes"
 import { saveSettings as writeSettings } from "./settings-save"
 
@@ -130,6 +131,7 @@ export const addNote = async (about: "customer" | "property" | "job" | "visit", 
  */
 export async function attentionAction(item: Attention): Promise<ActionOutcome | { ok: true; data: undefined; message: string }> {
   await requireAdmin("manager")
+  // A card that failed on a one-off job has no pass to send the link for: the row opens the visit, where the other ways to pay are.
   if ((item.kind === "charge-failed" || item.kind === "card-expiring" || item.kind === "no-card") && item.passId) {
     const sent = await act((ctx) => callApi(ctx, passesSendCardUpdateLink, { id: item.passId }))
     return sent.ok ? { ok: true, data: undefined, message: "Card update link sent." } : sent
@@ -140,11 +142,14 @@ export async function attentionAction(item: Attention): Promise<ActionOutcome | 
     return retried.ok ? { ok: true, data: undefined, message: retried.data === 1 ? "Retrying that task." : `Retrying ${retried.data} tasks.` } : retried
   }
   if (item.kind === "not-closed" && item.visitId) {
-    // A one-off visit with a price is also asked how it was paid, so its row opens the panel instead.
-    const visit = await act((ctx) => callApi(ctx, visitsGet, { id: item.visitId! }))
-    if (visit.ok && !visit.data.passId && visit.data.amount > 0) redirect(`/admin/visits?visit=${encodeURIComponent(item.visitId)}`)
+    // Mark done writes the done fact and nothing else, so it is the same for every visit: how it is paid is the next step, from the visit's panel or Home's Done, unpaid row.
     const done = await act((ctx) => nothing(callApi(ctx, visitsMarkClosed, { id: item.visitId! })))
     return done.ok ? { ok: true, data: undefined, message: "Marked done." } : done
+  }
+  // Card not charged: the row's button is the press. It charges the card on file for what is unpaid on that done visit, once; a decline says so and the customer already has the card link.
+  if (item.kind === "charge-not-pressed" && item.visitId) {
+    const charged = await chargeCard(item.visitId)
+    return charged.ok ? { ok: true, data: undefined, message: "Charged. Receipt emailed." } : charged
   }
   // An overdue invoice: Remind sends the customer one reminder with the pay link (`invoices.remind`, which keys the message by invoice and day, so two presses in a day send one).
   if (item.kind === "overdue" && item.invoiceId) {

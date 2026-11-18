@@ -13,6 +13,7 @@ import { jobTotal } from "@/lib/jobs/lines"
 import { SERVICES } from "@/lib/services"
 import { scheduleOfferDays } from "../schedule/handlers"
 import { paymentsRecord } from "../payments/handlers"
+import { visitsGet } from "../visits/handlers"
 import { visitsMarkClosed } from "../visits/money"
 import { passesGet, passesSendCardUpdateLink, passesStartCardUpdate } from "./handlers"
 import { passesSell } from "./sell"
@@ -175,10 +176,11 @@ describe("passes.sell", () => {
     const pass = await sell({ newCustomer: newCustomer({ property: { address: "4 Oak St", town: "Longmont" } }), zones: 6, days: { "turn-on": offer.days[0]!.day } })
     const visit = pass.visits.find((v) => v.kind === "turn-on")!
     const later = (p = adminKey) => as(p, "2028-05-20T20:00:00Z")
-    await expect(callApi(later(), visitsMarkClosed, { id: visit.id })).rejects.toMatchObject({ code: "invalid", message: expect.stringMatching(/how it was paid/) })
+    await callApi(later(), visitsMarkClosed, { id: visit.id })
     expect(await chargeVisit(db, stub.stripe, visit.id, { origin: "https://site.test" })).toBe("no-card")
     expect(await db.select().from(s.charge).where(eq(s.charge.visitId, visit.id))).toEqual([])
-    const done = await callApi(later(), visitsMarkClosed, { id: visit.id, paidBy: { method: "venmo", reference: "@maya" } })
+    await callApi(later(), paymentsRecord, { jobId: pass.id, visitId: visit.id, amount: 145, method: "venmo", reference: "@maya" })
+    const done = await callApi(later(), visitsGet, { id: visit.id })
     expect(done).toMatchObject({ status: "completed", paidBy: "venmo", paymentStatus: "paid" })
     expect(await db.select().from(s.queueItem).where(and(eq(s.queueItem.kind, "pass-charge"), eq(s.queueItem.key, visit.id)))).toEqual([])
     const [charge] = await db.select().from(s.charge).where(eq(s.charge.visitId, visit.id))

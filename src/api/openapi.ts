@@ -63,7 +63,7 @@ export function openapiDocument(handlers: readonly AnyHandler[] = registry) {
       description: [
         "Everything the Trailhead admin does goes through this API, and so can your agent.",
         "v1 is stable; breaking changes get v2.",
-        "Send `Authorization: Bearer th_live_...` with an API key made in Settings. Scopes: `read`, `write`, `admin`.",
+        "Send `Authorization: Bearer th_live_...` with an API key made in Settings. Scopes: `read`, `write`, `admin`, `collect` (Mark done and taking the money; `write` and `admin` include it).",
         `Rate limit: ${RATE_LIMIT_PER_MINUTE} requests a minute per key. Lists return \`{ data, next_cursor }\`; pass \`next_cursor\` back as \`cursor\`.`,
         "Writes accept an `Idempotency-Key` header. Errors are `{ error: { code, message, issues? } }`.",
         "The same operations are exposed as MCP tools at /api/mcp.",

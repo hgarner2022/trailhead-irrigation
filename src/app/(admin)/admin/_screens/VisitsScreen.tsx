@@ -28,6 +28,8 @@ export interface VisitsScreenProps {
   defaultVisitId?: string
   /** a tech reads the visits and changes nothing: no New job, no buttons in the panel */
   readOnly?: boolean
+  /** a tech who may Mark done and take the money */
+  canCollect?: boolean
   actions?: VisitActions
   /** the Job filter: only this job's visits, from `?job=`; the header says so and links back to every visit */
   jobId?: string
@@ -69,12 +71,12 @@ function Grid({ rows, data, defaultFilters }: { rows: VisitRow[]; data: AdminDat
   )
 }
 
-export function VisitsScreen({ data, today, defaultVisitId, readOnly = false, actions, defaultFilters, jobId }: VisitsScreenProps) {
+export function VisitsScreen({ data, today, defaultVisitId, readOnly = false, canCollect = false, actions, defaultFilters, jobId }: VisitsScreenProps) {
   const all = useMemo(() => visitRows(data, today), [data, today])
   const rows = useMemo(() => (jobId ? all.filter((r) => r.jobId === jobId) : all), [all, jobId])
   return (
     <div data-slot="visits-screen">
-      <VisitPanelHost data={data} today={today} readOnly={readOnly} actions={actions} defaultVisitId={defaultVisitId}>
+      <VisitPanelHost data={data} today={today} readOnly={readOnly} canCollect={canCollect} actions={actions} defaultVisitId={defaultVisitId}>
         <PageHeader
           title="Visits"
           context={jobId ? jobLine(rows) : visitsContext(rows)}

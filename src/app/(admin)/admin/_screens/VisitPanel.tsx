@@ -15,12 +15,14 @@ import { formatPhone } from "@/lib/format/contact"
 import type { AdminData } from "@/lib/admin/types"
 import type { VisitActions } from "./visit-actions-types"
 import { CancelVisit, EditForm, ResendButton, TextForm } from "./VisitEditText"
-import { DoneForm, MoveForm, NotDoneForm, PaidByChoice } from "./VisitMoveDone"
+import { MoveForm, NotDoneForm } from "./VisitMoveDone"
+import { VisitFooter } from "./VisitFooter"
+import { visitFooter } from "./visit-collect-model"
+import { dollars } from "@/lib/money/collect"
 import { BillBlock } from "./VisitBill"
 import { PanelNotes } from "./PanelNotes"
 import { OnMyWay } from "./VisitOnMyWay"
 import { Included, JobLines } from "./VisitLines"
-import { useRunner } from "./use-runner"
 import { dayLabel, dayOfVisit, kindLabel, priceWords, timeWords, visitFacts, type VisitFacts } from "./visit-panel-model"
 import { routePeople } from "@/lib/admin/people"
 import { propertyLines, yardFromPass } from "./customers-model"
@@ -144,34 +146,12 @@ function Actions({ facts, data, today, actions }: { facts: VisitFacts; data: Adm
   const { visit, pass, states, client } = facts
   const day = dayOf(today, TIME_ZONE)
   const open = states.work === "needs-a-day" || states.work === "not-done" || states.work === "scheduled"
-  // Money owed can always be recorded here (check, Venmo or cash), card or no card: a card that was never charged, or never saved, must not leave a done visit with no way to take the money.
-  const owed = states.work === "done" && states.money === "owed"
-  const pay = useRunner()
+  // Mark done and "How is this paid?" live in the footer (`VisitFooter`); the invoice that is out shows here with Remind.
   return (
     <div className="flex flex-col gap-6" data-slot="visit-actions">
       {open && <MoveForm key={visit.id + (visit.scheduledOn ?? "")} visit={visit} today={day} actions={actions} />}
       {states.work === "scheduled" && dayOfVisit(visit) === day && <OnMyWay visit={visit} actions={actions} />}
-      {states.work === "scheduled" && <DoneForm visit={visit} pass={pass} today={day} actions={actions} />}
-      {owed && (
-        <section aria-labelledby="visit-pay">
-          <PanelHeading id="visit-pay">Record the payment</PanelHeading>
-          <PaidByChoice
-            visit={visit}
-            pending={pay.pending}
-            label="Record payment"
-            onChoose={(paid) => {
-              const { method } = paid
-              if (method === "bill") return
-              if (actions) pay.run(() => actions.recordPayment(visit.id, { ...paid, method }), undefined, "Payment recorded.")
-              else console.info("record payment", visit.id, paid)
-            }}
-          />
-          <p role="alert" className={`mt-1 text-sm empty:hidden ${pay.error ? "text-destructive" : "text-muted-foreground"}`}>
-            {pay.error || pay.done}
-          </p>
-        </section>
-      )}
-      <BillBlock state={facts.bill} jobId={visit.jobId ?? ""} headingId="visit-bill" actions={actions} />
+      {facts.bill.invoice && <BillBlock state={facts.bill} jobId={visit.jobId ?? ""} headingId="visit-bill" actions={actions} />}
       {states.work === "scheduled" && <NotDoneForm visit={visit} actions={actions} />}
       {open && <EditForm key={`edit-${visit.id}`} visit={visit} people={routePeople(data.settings.people)} actions={actions} />}
       <TextForm client={client} visitId={visit.id} actions={actions} />
@@ -191,18 +171,23 @@ export interface VisitPanelProps {
   onOpenChange: (open: boolean) => void
   onOpenVisit: (id: string) => void
   readOnly?: boolean
+  /** a tech who may Mark done and take the money, though the rest of the panel is read-only */
+  canCollect?: boolean
   actions?: VisitActions
 }
 
-export function VisitPanel({ data, today, visitId, open, onOpenChange, onOpenVisit, readOnly = false, actions }: VisitPanelProps) {
+export function VisitPanel({ data, today, visitId, open, onOpenChange, onOpenVisit, readOnly = false, canCollect = false, actions }: VisitPanelProps) {
   const facts = visitId ? visitFacts(data, visitId, today) : undefined
   if (!facts) return null
   const { visit, states } = facts
   const day = dayOfVisit(visit)
+  const footer = visitFooter(facts, !readOnly ? "all" : canCollect ? "collect" : "none", data.settings.billing?.dueDays)
+  const hasFooter = Boolean(footer.primary || footer.canUndo || footer.refund)
   return (
     <SidePanel
       open={open}
       onOpenChange={onOpenChange}
+      footer={hasFooter ? <VisitFooter visit={visit} plan={footer} today={dayOf(today, TIME_ZONE)} visitDay={day} firstName={visit.clientName.split(" ")[0] ?? visit.clientName} summary={`${kindLabel(visit)}${footer.unpaid > 0 ? ` · ${dollars(footer.unpaid)} unpaid` : ""}`} actions={actions} /> : undefined}
       title={visit.clientName}
       // The pill carries the state, so the line says only what the visit is and, once it has one, its day.
       description={`${kindLabel(visit)}${day ? `, ${dayLabel(day)}` : ""}`}
