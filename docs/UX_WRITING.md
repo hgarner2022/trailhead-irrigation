@@ -1,6 +1,6 @@
 # UX writing guide
 
-How Trailhead's words work in the checkout, the pass page, texts, emails and the admin. It sits under `CLAUDE.md` "Copy rules" and `docs/DESIGN.md` "Copy"; where they differ, those win. Written Nov 13 2026 from the sources at the bottom.
+How Trailhead's words work in the checkout, the pass page, texts, emails and the admin. It sits under `CLAUDE.md` "Copy rules" and `docs/DESIGN.md` "Copy"; where they differ, those win. Written Nov 13 2026 from the sources at the bottom; the transactional section was added Nov 18 2026.
 
 ## The ten rules
 
@@ -12,7 +12,7 @@ How Trailhead's words work in the checkout, the pass page, texts, emails and the
 6. **"We" for Trailhead, "Ryan" when the person matters, "you" for the customer.** "Ryan sets each day inside the window you picked." Why: it is a two-truck company and Ryan shows up; a face beats a brand.
 7. **Say the date, the amount and the card.** "$145 after the spring turn-on, to the card ending 4242." Never promise a number, day or text that the product does not send. Why: confirmation pages and receipts exist to remove doubt (NN/g, Stripe).
 8. **Put the point first.** Email subject: what happened plus the thing (Your spring turn-on is Tuesday, April 14). First line: the next step. One button per message. Why: subject and preheader decide whether it is read (Stripe).
-9. **Text messages start with the business name, stay under about 160 characters, carry one link, and end with the opt-out line.** "Trailhead: your fall blowout is Tue Oct 14. Calendar and changes: link. Reply STOP to opt out." Why: carriers and Twilio's messaging policy expect the sender named and a way out.
+9. **Text messages start with "Trailhead:", say the fact first, carry one link, and are plain ASCII.** "Trailhead: your fall blowout is Fri, Oct 14, 8 to 10 am. Ryan will be there. Your Trailhead account: link". "Reply STOP to opt out." ends the first text to a phone number and no later one (CTIA asks for the opt-out on the first message; Hannah chose first only, Nov 18 2026). One part holds 160 characters of plain ASCII and 153 each once a text runs to two; an em dash or a curly quote moves it to a shorter encoding. We keep the full link and accept a two-part text where the link forces one, instead of buying a short link domain. Why: carriers and Twilio's messaging policy expect the sender named and a way out.
 10. **Empty and finished states tell the next move.** "No passes yet. Passes appear here as customers reserve their season." Why: a blank panel leaves people unsure whether something broke (NN/g).
 
 Always: sentence case, contractions in customer text ("we'll", "didn't"), no em dashes, no exclamation marks, whole dollars, dates written out where there is room.
@@ -49,6 +49,43 @@ Always: sentence case, contractions in customer text ("we'll", "didn't"), no em 
 | marked done | a visit is finished (admin) | closed, completed (in UI) |
 | "Ryan" | when the person matters: who sets days, who comes | "our team", "a technician" |
 | "we" | Trailhead as a company: emails, texts, charges | "Trailhead will", "the company" |
+| Trailhead account, "your Trailhead account" | the customer's page for their visits, invoices, card and details (`/account`); the one name in every link, button and sentence, held in code as `ACCOUNT_NAME` | pass page, customer portal, dashboard, login |
+| receipt | what we send once money arrives: the amount, what it was for and where, how it was paid | confirmation (that word is for a reserved season or a booked visit) |
+| invoice | what we ask a customer to pay, with its pay link; the number is one quiet row, never in a subject | bill (the customer never reads "bill"; the office screens move to "invoice" with the status words audit) |
+| unpaid, past due | an invoice sent and not paid; "still unpaid", "$145 unpaid"; "past due" once the due day passes | owed, overdue, outstanding |
+| Canceled | US spelling, in every message ("Your 2027 Season Pass is canceled") | cancelled |
+
+## Transactional emails and texts
+
+Written Nov 18 2026 from `docs/plans/2026-11-18-messages-design.md`. The words of every template live in code (`src/emails/*`, `src/sms/texts.ts`), pinned by `src/emails/templates.test.ts` and `src/sms/texts.test.ts`; this section is the voice they are written in.
+
+### The six rules
+
+1. **The fact first.** The subject and the first line say what happened, to which service, at which address: "Fall blowout at 480 Briggs St."
+2. **Sprinklers, not paperwork.** Say turn-on, blowout, zones, lines, yard. The pass number appears only in the purchase confirmation's footer; "Season Pass" is named only by the purchase confirmation, the cancel and the renewal; no other message says a pass number or "your pass".
+3. **Ryan when a person comes, we otherwise.** The person on the visit is named ("Ryan is coming tomorrow"); with no one it reads "We're coming". Never a truck label.
+4. **One link, one button.** Every link to the account reads "your Trailhead account". The button says what happens ("Open your Trailhead account", "Pay $145", "Update your card").
+5. **Money has three parts.** Amount, what for and where, how it was paid. An invoice number is one quiet row on invoices and their receipts, never in a subject or headline.
+6. **Plain sentences.** Contractions, no fragments, no "not X, it's Y", no lists of nos, no em dashes, no exclamation marks. Every email ends with "The Trailhead crew" above the footer; the purchase confirmation ends with "Less time in the yard. More time on the trail."
+
+### Subject patterns
+
+| Message | Subject |
+|---|---|
+| Purchase confirmation | Your 2027 Season Pass is reserved |
+| Booking confirmation | Your sprinkler repair is booked for Tuesday, May 5 |
+| Day set, moved | Your fall blowout is Friday, October 14 / Your fall blowout moved to Friday, October 21 |
+| Day before | Tomorrow: your spring turn-on |
+| Receipt | Receipt: $95 for your fall blowout at 480 Briggs St |
+| Invoice, reminder | Your Trailhead invoice for the repair at 412 Ash St: $145 / Your Trailhead invoice, $145, is still unpaid |
+| Card didn't go through | The card for your spring turn-on didn't go through |
+| Card expiring | Your Visa ending 4242 expires in July 2027 |
+| Canceled | Your 2027 Season Pass is canceled |
+| Renewal | Reserve your 2028 turn-on and blowout |
+
+### What the office may edit
+
+Settings › Messages lists the day-of voice (day set, day moved, two weeks out, day before, on the way) and the invoice reminder text. Receipts, invoices, card, cancel, purchase and renewal carry money and consent wording and are never edited. Placeholders are plain words: `{firstName}`, `{service}`, `{address}`, `{day}`, `{window}`, `{who}`, `{amount}`, `{due}`, `{payLink}`. Under each field the screen shows what the sender always adds (the "Trailhead:" opening, the account link, the opt-out line, the sign-off, the footer). Save refuses an unknown placeholder, an em dash, an exclamation mark, a non-ASCII character in a text, and an invoice reminder without `{amount}` and `{payLink}`.
 
 ## Words we never use
 
