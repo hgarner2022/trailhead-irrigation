@@ -6,10 +6,10 @@ import { BUSINESS } from "@/emails/format"
 import { PayForm, type PayAction } from "./PayForm"
 import { dueWords, lineTotal, money, paidWords, payLabel, type PayBill } from "./pay-model"
 
-// The pay page: one bill, as the customer sees it, on a phone first. The Trailhead badge, "Your bill", the frozen lines, the tax
-// line only when there is tax, the total, the due day and one button that opens Stripe's card form. A paid bill says when and
-// links the receipt; a cancelled one says so. It shows nothing but the bill: no contact details, no other customer, no admin
-// data. Pure render from props (the page loads the bill through `invoices.payView`), server component.
+// The pay page: one invoice, as the customer sees it, on a phone first. The Trailhead badge, "Your invoice", the frozen lines, the tax
+// line only when there is tax, the total, the due day and one button that opens Stripe's card form. A paid invoice says when and
+// links the receipt; a canceled one says so. It shows nothing but the invoice: no contact details, no other customer, no admin
+// data. Pure render from props (the page loads the invoice through `invoices.payView`), server component.
 
 export interface PayScreenProps {
   bill: PayBill
@@ -83,10 +83,10 @@ function Paid({ bill }: { bill: PayBill }) {
   )
 }
 
-function Cancelled() {
+function Canceled() {
   return (
     <div data-slot="pay-cancelled" className="border-y border-border py-6">
-      <p className="text-base font-medium text-foreground">This bill was cancelled.</p>
+      <p className="text-base font-medium text-foreground">This invoice was voided.</p>
       <p className="mt-1 text-sm text-muted-foreground">
         Nothing is due. Questions? Call Ryan at{" "}
         <a href={BUSINESS.phoneTel} className="font-medium text-primary-dark underline underline-offset-2 hover:text-primary-deep">
@@ -104,11 +104,11 @@ export function PayScreen({ bill, payAction }: PayScreenProps) {
       <Card className="h-fit w-full max-w-md">
         <CardContent className="p-5 pt-5 sm:p-8 sm:pt-8">
           <Image src="/images/logo-badge.png" alt="Trailhead Lawn & Irrigation" width={57} height={40} className="h-12 w-auto" priority />
-          <h1 className="mt-5 font-display text-4xl leading-none text-navy">Your bill</h1>
+          <h1 className="mt-5 font-display text-4xl leading-none text-navy">Your invoice</h1>
           <p className="mt-2 mb-6 text-base text-muted-foreground">
-            Hi {bill.firstName}, here is bill {bill.number}.
+            Hi {bill.firstName}, here is invoice {bill.number}.
           </p>
-          {bill.status === "cancelled" ? <Cancelled /> : bill.status === "paid" ? <Paid bill={bill} /> : <Open bill={bill} payAction={payAction} />}
+          {bill.status === "cancelled" ? <Canceled /> : bill.status === "paid" ? <Paid bill={bill} /> : <Open bill={bill} payAction={payAction} />}
         </CardContent>
       </Card>
     </main>

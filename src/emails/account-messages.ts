@@ -4,17 +4,17 @@ import type { CancelledData, CardExpiringData, CardFailedData, ReceiptData, Rend
 
 const wrap = (d: { origin: string }, preheader: string, title: string, body: string, reason: string) => emailLayout({ origin: d.origin, preheader, body: heading(title) + body, reason })
 
-/** The receipt for a bill paid on the pay page: what was received, the bill's lines as a facts table, the card, one quiet button for Stripe's receipt. */
+/** The receipt for an invoice paid on the pay page: what was received, the invoice's lines as a facts table, the card, one quiet button for Stripe's receipt. */
 function billReceiptEmail(d: ReceiptData & { invoiceNumber: string }): RenderedEmail {
-  const subject = `Receipt: ${dollars(d.amount)} for your bill ${d.invoiceNumber}`
-  const intro = `Thank you, ${d.firstName}. We received ${dollars(d.amount)} for your bill ${d.invoiceNumber}.`
+  const subject = `Receipt: ${dollars(d.amount)} for your invoice ${d.invoiceNumber}`
+  const intro = `Thank you, ${d.firstName}. We received ${dollars(d.amount)} for your invoice ${d.invoiceNumber}.`
   const rows: [string, string][] = (d.lines ?? []).map((l) => [l.name, dollars(l.amount)])
   if ((d.tax ?? 0) > 0) rows.push(["Tax", dollars(d.tax!)])
-  rows.push(["Paid", dollars(d.amount)], ["Bill", d.invoiceNumber])
+  rows.push(["Paid", dollars(d.amount)], ["Invoice", d.invoiceNumber])
   if (d.card) rows.push(["Card", d.card])
   const body = paragraph(intro) + facts(rows) + (d.nextLine ? paragraph(d.nextLine) : "") + (d.receiptUrl ? button(d.receiptUrl, "View the receipt", "quiet") : "")
   const text = plainText([intro, "", ...(d.lines ?? []).map((l) => `${l.name}: ${dollars(l.amount)}`), ...((d.tax ?? 0) > 0 ? [`Tax: ${dollars(d.tax!)}`] : []), `Paid: ${dollars(d.amount)}`, ...(d.card ? [`Card: ${d.card}`] : []), ...(d.nextLine ? ["", d.nextLine] : []), ...(d.receiptUrl ? ["", `Your receipt: ${d.receiptUrl}`] : [])])
-  return { subject, text, html: wrap(d, intro, "Thank you", body, `You are getting this because you paid bill ${d.invoiceNumber}.`) }
+  return { subject, text, html: wrap(d, intro, "Thank you", body, `You are getting this because you paid invoice ${d.invoiceNumber}.`) }
 }
 
 export function receiptEmail(d: ReceiptData): RenderedEmail {
@@ -52,11 +52,11 @@ export function cardExpiringEmail(d: CardExpiringData): RenderedEmail {
 }
 
 export function cancelledEmail(d: CancelledData): RenderedEmail {
-  const subject = `Season Pass ${d.passNumber} is cancelled`
-  const intro = `Hi ${d.firstName}, Season Pass ${d.passNumber} is cancelled and your remaining visits are off the schedule. We won't charge you again.`
+  const subject = `Season Pass ${d.passNumber} is canceled`
+  const intro = `Hi ${d.firstName}, Season Pass ${d.passNumber} is canceled and your remaining visits are off the schedule. We won't charge you again.`
   const how = `If you want a visit later, book online or call ${BUSINESS.phone}.`
   const body = paragraph(intro) + paragraph(how) + button(d.signInUrl, "Open your pass page")
-  return { subject, text: plainText([intro, how, "", `Your pass: ${d.passUrl}`]), html: wrap(d, intro, "Your pass is cancelled", body, `You are getting this because Season Pass ${d.passNumber} was cancelled.`) }
+  return { subject, text: plainText([intro, how, "", `Your pass: ${d.passUrl}`]), html: wrap(d, intro, "Your pass is canceled", body, `You are getting this because Season Pass ${d.passNumber} was canceled.`) }
 }
 
 export function renewalEmail(d: RenewalData): RenderedEmail {

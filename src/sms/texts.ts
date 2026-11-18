@@ -1,4 +1,4 @@
-// The text versions, one per kind that goes by text: date-set, date-moved, the day-before reminder, and the bill with its reminder. Each carries the
+// The text versions, one per kind that goes by text: date-set, date-moved, the day-before reminder, and the invoice with its reminder. Each carries the
 // business name, the date (and the window when there is one), a short link and the opt-out line once. Under 160 characters
 // where the day and the link allow it; the day-before with a name on it ("Ryan will be there") runs a few characters over
 // and goes as two parts, which the name is worth.
@@ -16,8 +16,8 @@ export const dateConfirmText = (d: VisitData) => `Trailhead: your ${d.visit.name
 /** "Ryan will be there tomorrow" when the visit has a person, "we come tomorrow" when it has none. */
 export const dayBeforeText = (d: VisitData) => `Trailhead: ${d.visit.who ? `${d.visit.who} will be there` : "we come"} tomorrow, ${when(d)}, for your ${d.visit.name}. Changes: ${link(d)} ${OPT_OUT}`
 
-/** The bill and its reminder: the amount, the due day and the pay link, with the opt-out line once. */
-export const invoiceText = (d: InvoiceData) => `Trailhead: your bill for the ${d.visitName} is $${d.total}, due ${monthDay(d.dueOn)}. Pay here: ${d.payUrl} ${OPT_OUT}`
+/** The invoice and its reminder: the amount, the due day and the pay link, with the opt-out line once. */
+export const invoiceText = (d: InvoiceData) => `Trailhead: your invoice for the ${d.visitName} is $${d.total}, due ${monthDay(d.dueOn)}. Pay here: ${d.payUrl} ${OPT_OUT}`
 export const invoiceReminderText = (d: InvoiceData) => `Trailhead: a reminder that $${d.total} for the ${d.visitName} is due ${monthDay(d.dueOn)}. Pay here: ${d.payUrl} ${OPT_OUT}`
 
 export const SMS_TEMPLATES = { "date-set": dateSetText, "date-moved": dateMovedText, "day-before": dayBeforeText, "date-confirm": dateConfirmText, invoice: invoiceText, "invoice-reminder": invoiceReminderText }

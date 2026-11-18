@@ -42,9 +42,9 @@ export interface ReceiptData extends Base {
   /** how a payment the office recorded came: "check", "Venmo", "cash" */
   paidBy?: string | null
   amount: number
-  /** what the payment was for, as a phrase after "your": "spring turn-on". Absent for a bill paid on the pay page (`invoiceNumber` names it). */
+  /** what the payment was for, as a phrase after "your": "spring turn-on". Absent for an invoice paid on the pay page (`invoiceNumber` names it). */
   visitName?: string
-  /** a bill paid on the pay page: its number, its frozen lines (`amount` is the line's total in whole dollars), the tax on them (0 when none) and its total */
+  /** an invoice paid on the pay page: its number, its frozen lines (`amount` is the line's total in whole dollars), the tax on them (0 when none) and its total */
   invoiceNumber?: string
   lines?: { name: string; amount: number }[]
   tax?: number
@@ -55,10 +55,10 @@ export interface ReceiptData extends Base {
   nextLine: string
   receiptUrl: string | null
 }
-/** A bill the office sent: what it is for, the frozen lines, the tax, the total, the due day and the pay link. */
+/** An invoice the office sent: what it is for, the frozen lines, the tax, the total, the due day and the pay link. */
 export interface InvoiceData extends Base {
   invoiceNumber: string
-  /** what the bill is for, as a phrase after "the": "repair", "spring turn-on and fall blowout" */
+  /** what the invoice is for, as a phrase after "the": "repair", "spring turn-on and fall blowout" */
   visitName: string
   /** one row per frozen line; `amount` is the line's total in whole dollars */
   lines: { name: string; amount: number }[]

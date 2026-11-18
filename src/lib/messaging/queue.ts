@@ -26,7 +26,7 @@ export interface MessageRequest {
 /**
  * The channel a kind of message would go by for this customer, or null when it cannot reach them: a text kind goes to the
  * mobile unless there is none or the customer sent STOP, then by email; a customer with neither gets nothing. The one rule
- * `queueMessage` sends by and `invoices.send` checks before it writes a bill.
+ * `queueMessage` sends by and `invoices.send` checks before it writes an invoice.
  */
 export async function messageChannel(db: Database, customer: Pick<typeof s.customer.$inferSelect, "id" | "phone" | "email">, kind: string): Promise<"sms" | "email" | null> {
   const consent = await currentConsent(db, customer.id)

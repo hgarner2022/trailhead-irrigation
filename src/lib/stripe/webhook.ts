@@ -29,7 +29,7 @@ export async function organizationOfEvent(db: Database, event: Stripe.Event): Pr
   const passId = obj.metadata?.passId
   const invoiceId = obj.metadata?.invoiceId
   if (event.type === "checkout.session.completed" || event.type.startsWith("payment_intent.")) {
-    // A bill's session and its payment intent both carry the invoice id (the pay page sets it on each).
+    // An invoice's session and its payment intent both carry the invoice id (the pay page sets it on each).
     if (invoiceId) {
       const [bill] = await db.select({ org: s.invoice.organizationId }).from(s.invoice).where(eq(s.invoice.id, invoiceId))
       if (bill) return bill.org
@@ -113,7 +113,7 @@ export async function handleStripeEvent(db: Database, stripe: Stripe, organizati
       if (!customer) return
       await db.update(s.customer).set({ ...clearedCardColumns, updatedAt: now }).where(and(eq(s.customer.id, customer.id), ofOrg))
       await recordEventSafe(db, { organizationId, about: "customer", aboutId: customer.id, customerId: customer.id, kind: "card.removed", detail: { brand: customer.cardBrand, last4: customer.cardLast4 }, who: "system", at: now })
-      // The pass that speaks for the customer is their newest active one: a job with a season, sold and not cancelled.
+      // The pass that speaks for the customer is their newest active one: a job with a season, sold and not canceled.
       const [row] = await db
         .select({ pass: s.job })
         .from(s.job)

@@ -28,5 +28,5 @@ export const visitCalendarUrl = (origin: string, visitId: string) => `${origin}/
 /** The link that opens the checkout already filled in for a renewal, with the token that stands in for signing in. It opens the checkout for that one pass and nothing else. New links sign the pass's job id; an old link verifies over the old pass id as it arrives. */
 export const renewUrl = (origin: string, passId: string) => `${origin}/season-pass/checkout?renew=${passId}&token=${signToken("renew-pass", passId)}`
 
-/** The pay link in a bill: the pay page for that one invoice, with the token that stands in for signing in. It opens that bill and nothing else. */
+/** The pay link in an invoice: the pay page for that one invoice, with the token that stands in for signing in. It opens that invoice and nothing else. */
 export const payUrl = (origin: string, invoiceId: string) => `${origin}/pay/${invoiceId}?token=${signToken("invoice-pay", invoiceId)}`

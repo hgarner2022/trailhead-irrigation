@@ -17,7 +17,7 @@ export const completeSession = (id: string, metadata: Record<string, string>, ca
   setup_intent: { payment_method: { id: card.pm ?? "pm_new", card: { brand: card.brand ?? "visa", last4: card.last4 ?? "4242", exp_month: card.expMonth ?? 8, exp_year: card.expYear ?? 2030 } } },
 })
 
-/** A succeeded payment intent as `paymentIntents.retrieve` returns it with the card and the latest charge expanded: what a paid bill's Checkout Session leaves behind. */
+/** A succeeded payment intent as `paymentIntents.retrieve` returns it with the card and the latest charge expanded: what a paid invoice's Checkout Session leaves behind. */
 export const paidIntent = (id: string, card: StubCard = {}, receiptUrl = "https://pay.stripe.test/receipt/bill") => ({
   id,
   status: "succeeded",
@@ -35,7 +35,7 @@ export function stubStripe(over: { sessions?: Record<string, unknown>; intents?:
       if (!s) throw new Error(`no session ${id}`)
       return s
     }),
-    // The payment intent behind a paid bill's session, with the card and the latest charge expanded (`paidIntent`).
+    // The payment intent behind a paid invoice's session, with the card and the latest charge expanded (`paidIntent`).
     paymentIntentsRetrieve: vi.fn(async (id: string) => {
       const i = over.intents?.[id]
       if (!i) throw new Error(`no payment intent ${id}`)
