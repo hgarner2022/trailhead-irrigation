@@ -92,6 +92,25 @@ describe("CustomersScreen panel", () => {
     expect(panel.getByRole("heading", { name: "Jobs" })).toBeInTheDocument()
   })
 
+  it("lists what the app sent in the Messages block with each message's words and the link a text carried, the same MessageThread the visit panel uses", () => {
+    const link = "https://site.test/account"
+    const sent: AdminData = {
+      ...data,
+      messages: [
+        { id: "m-sms", clientId: "c100", channel: "sms", kind: "on-the-way", body: `Trailhead: We're on the way to 480 Briggs St for your fall blowout. Your Trailhead account: ${link}`, at: "2026-11-12T16:00:00Z", status: "delivered" },
+        { id: "m-mail", clientId: "c100", channel: "email", kind: "receipt", body: "Receipt: $95 for your fall blowout at 480 Briggs St", at: "2026-11-11T16:00:00Z", status: "delivered" },
+        { id: "m-other", clientId: "c121", channel: "sms", kind: "date-set", body: "Trailhead: someone else's text", at: "2026-11-10T16:00:00Z", status: "sent" },
+      ],
+    }
+    render(<CustomersScreen data={sent} today={TODAY} defaultSelectedId="c100" />)
+    const panel = within(screen.getByRole("dialog", { name: `${andrea.firstName} ${andrea.lastName}` }))
+    const thread = within(panel.getByRole("heading", { name: "Messages" }).closest("section")!)
+    expect(thread.getByText(`Trailhead: We're on the way to 480 Briggs St for your fall blowout. Your Trailhead account: ${link}`)).toBeInTheDocument()
+    expect(thread.getByText("Receipt: $95 for your fall blowout at 480 Briggs St")).toBeInTheDocument()
+    expect(thread.queryByText(/someone else's text/)).toBeNull()
+    expect(thread.getAllByRole("listitem")).toHaveLength(2)
+  })
+
   it("shows the Season Pass under the facts with earlier seasons folded, and lists the jobs, each opening to its visits", () => {
     const pass = jobsData.passes.find((p) => p.id === "p-office")!
     const earlier = { ...pass, id: "p-2026", number: "TH-2026-0003", season: 2026, status: "lapsed" as const }

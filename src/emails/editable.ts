@@ -14,7 +14,7 @@ export const PLACEHOLDERS = [
   { name: "day", about: 'the day: "Fri, Oct 14" in a text, "Friday, October 14" in an email' },
   { name: "window", about: 'the time: "8 to 10 am"' },
   { name: "who", about: 'the person coming: "Ryan"' },
-  { name: "amount", about: 'what is owed: "$145"' },
+  { name: "amount", about: 'what is unpaid: "$145"' },
   { name: "due", about: 'the day an invoice is due: "May 21"' },
   { name: "payLink", about: "the pay link" },
 ] as const

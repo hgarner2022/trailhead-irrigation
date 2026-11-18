@@ -4,9 +4,9 @@ import * as s from "@/db/schema"
 import type { Database } from "@/db/types"
 import type { Base, VisitFacts } from "@/emails/types"
 import type { EmailLine } from "@/emails/types"
-import { firstNameOf } from "@/lib/admin/people"
 import { jobSubtotal, jobTax, linesOfVisit } from "@/lib/jobs/lines"
 import { loadTaxRule } from "@/lib/money/tax-rule"
+import { customerFacingFirstName } from "@/lib/portal/words"
 import { kindName } from "@/lib/pass/server/messages"
 import { visitCalendarUrl } from "./tokens"
 
@@ -23,8 +23,8 @@ export function baseData(origin: string, customer: { firstName: string; email: s
 /** The visit as the messages know it, on `day` when the caller already knows the new one; null while it has no day. */
 export async function loadVisitFacts(db: Database, visitId: string, origin: string, day?: string): Promise<VisitFacts | null> {
   const [row] = await db
-    // `who` is the person's first name. A person who has left keeps their visits until the office moves them (Settings › People,
-    // Remove), so they are not named.
+    // `who` is the person's first name as a customer reads it (`customerFacingFirstName`: none for a label such as "Second truck").
+    // A person who has left keeps their visits until the office moves them (Settings › People, Remove), so they are not named.
     .select({ visit: s.visit, address: s.property.address, town: s.property.town, gateCode: s.property.gateCode, contactName: s.property.contactName, person: s.person.name, personActive: s.person.active })
     .from(s.visit)
     .innerJoin(s.property, eq(s.property.id, s.visit.propertyId))
@@ -37,7 +37,7 @@ export async function loadVisitFacts(db: Database, visitId: string, origin: stri
     name: kindName(row.visit.kind),
     day: when,
     startTime: row.visit.startTime,
-    who: row.personActive ? firstNameOf(row.person) : null,
+    who: row.personActive ? customerFacingFirstName(row.person) : null,
     ...(row.gateCode ? { gateCode: row.gateCode } : {}),
     ...(row.contactName ? { contactName: row.contactName } : {}),
     address: row.address,
@@ -91,5 +91,5 @@ export async function visitWhoDay(db: Database, visitId: string | null | undefin
   if (!visitId) return { who: null, day: null }
   const [row] = await db.select({ visit: s.visit, person: s.person.name, active: s.person.active }).from(s.visit).leftJoin(s.person, eq(s.person.id, s.visit.personId)).where(eq(s.visit.id, visitId))
   if (!row) return { who: null, day: null }
-  return { who: row.active ? firstNameOf(row.person) : null, day: row.visit.completedOn ?? row.visit.scheduledOn ?? null }
+  return { who: row.active ? customerFacingFirstName(row.person) : null, day: row.visit.completedOn ?? row.visit.scheduledOn ?? null }
 }

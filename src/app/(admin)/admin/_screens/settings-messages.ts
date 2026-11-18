@@ -9,7 +9,7 @@ import { renderEmail } from "@/emails/render"
 import { SMS_TEMPLATES, type SmsKind } from "@/sms/texts"
 import { dayOf } from "@/lib/admin/calendar"
 import { KIND_WORDS, TIME_ZONE } from "@/lib/admin/format"
-import { firstNameOf } from "@/lib/admin/people"
+import { customerFacingFirstName } from "@/lib/portal/words"
 import type { AdminData, MessageTemplate, OrganizationSettings } from "@/lib/admin/types"
 import { record, type Actor, type SettingsState } from "./settings-model"
 
@@ -55,7 +55,7 @@ function sampleVisit(data: AdminData) {
     name: visit ? KIND_WORDS[visit.kind] : "spring turn-on",
     day,
     startTime: visit?.startTime ?? "08:00",
-    who: firstNameOf(person?.name) ?? "Ryan",
+    who: visit ? customerFacingFirstName(person?.name) : "Ryan",
     address,
     location: `${address}, ${visit?.town ?? "Erie"}`,
     icsUrl: "https://www.trailheadirrigation.com/api/visits/sample/calendar.ics",

@@ -80,4 +80,11 @@ describe("previewMessage", () => {
     const p = previewMessage({ ...row("on-the-way", "sms"), body: "{who} is five minutes out, {firstName}." }, data)
     expect(p.text).toMatch(/^Trailhead: Ryan is five minutes out, .+\. Your Trailhead account/)
   })
+  it("previews a visit whose person is a label as the customer will get it, without a name", () => {
+    const visit = data.visits.find((v) => (v.scheduledOn || v.startAt) && v.personId)!
+    const labelled: AdminData = { ...data, settings: { ...data.settings, people: data.settings.people.map((p) => (p.id === visit.personId ? { ...p, name: "Second truck" } : p)) } }
+    const p = previewMessage(row("on-the-way", "sms"), labelled)
+    expect(p.text).toMatch(/^Trailhead: We're on the way to .+ for your .+\. Your Trailhead account/)
+    expect(p.text).not.toContain("Second")
+  })
 })

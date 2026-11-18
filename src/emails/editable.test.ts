@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { EDITABLE_MESSAGES, PLACEHOLDER_NAMES, bodyOf, defaultBody, fillTemplate, messagesWith, migratePlaceholders, overridesOf, templateProblem, textParts } from "./editable"
+import { EDITABLE_MESSAGES, PLACEHOLDERS, PLACEHOLDER_NAMES, bodyOf, defaultBody, fillTemplate, messagesWith, migratePlaceholders, overridesOf, templateProblem, textParts } from "./editable"
 
 const fill = { firstName: "Andrea", service: "fall blowout", address: "480 Briggs St", day: "Fri, Oct 14", window: "8 to 10 am", who: "Ryan" }
 
@@ -16,6 +16,11 @@ describe("the editable messages", () => {
   })
   it("never say truck, bill, owed or overdue", () => {
     for (const m of EDITABLE_MESSAGES) expect(m.body).not.toMatch(/truck|\bbill|owed|overdue|\{(visit|date|truck|nextVisit)\}/i)
+  })
+  it("describe each placeholder in words a person may read: {amount} is what is unpaid, never owed", () => {
+    expect(PLACEHOLDERS.find((p) => p.name === "amount")!.about).toBe('what is unpaid: "$145"')
+    for (const p of PLACEHOLDERS) expect(p.about).not.toMatch(/truck|\bbill|\bowed?\b|overdue/i)
+    for (const m of EDITABLE_MESSAGES) expect(m.locked).not.toMatch(/truck|\bbill|\bowed?\b|overdue/i)
   })
 })
 
