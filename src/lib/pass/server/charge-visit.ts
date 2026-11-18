@@ -41,7 +41,14 @@ export async function chargeVisit(db: Database, stripe: Stripe, visitId: string,
   const [customer] = await db.select().from(s.customer).where(eq(s.customer.id, pass.customerId))
   if (!customer) throw new Error(`Customer ${pass.customerId} not found`)
   // Only a card Stripe can charge counts here: a customer with just a last 4 (a fixture, an old import) never reaches Stripe and never records a failure.
-  if (!customer.stripePaymentMethodId || !customer.stripeCustomerId) return "no-card"
+  if (!customer.stripePaymentMethodId || !customer.stripeCustomerId) {
+    // Never silent: Home gets a row with Send card link, and the visit stays Owed (its money reads "no card") until the money is recorded or a card is added.
+    await db
+      .insert(s.adminAlert)
+      .values({ organizationId: visit.organizationId, kind: "no-card", key: visit.id, passId: pass.id, message: `No card to charge for ${customer.firstName}'s ${kindName(visit.kind)}` })
+      .onConflictDoNothing()
+    return "no-card"
+  }
 
   const [last] = await db.select().from(s.charge).where(eq(s.charge.visitId, visit.id)).orderBy(desc(s.charge.attempt)).limit(1)
   if (last?.status === "succeeded") return "already-charged"

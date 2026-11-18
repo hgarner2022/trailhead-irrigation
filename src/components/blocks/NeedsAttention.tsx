@@ -34,6 +34,7 @@ export interface NeedsAttentionProps {
 const KINDS: Record<Attention["kind"], { icon: LucideIcon; tone: string; name: string }> = {
   "new-pass": { icon: BadgeCheck, tone: "bg-success/10 text-success", name: "New pass" },
   "charge-failed": { icon: CreditCard, tone: "bg-warning/10 text-warning", name: "Charge failed" },
+  "no-card": { icon: CreditCard, tone: "bg-warning/10 text-warning", name: "No card" },
   "jobs-failed": { icon: CalendarX, tone: "bg-warning/10 text-warning", name: "Task needs a retry" },
   owed: { icon: Banknote, tone: "bg-warning/10 text-warning", name: "Done, owed" },
   overdue: { icon: ReceiptText, tone: "bg-warning/10 text-warning", name: "Bill overdue" },

@@ -14,7 +14,7 @@ import { formatPhone } from "@/lib/format/contact"
 import type { AdminData } from "@/lib/admin/types"
 import type { VisitActions } from "./visit-actions-types"
 import { CancelVisit, EditForm, ResendButton, TextForm } from "./VisitEditText"
-import { DoneForm, MoveForm, NotDoneForm, PaidByChoice, doneAsksPaidBy } from "./VisitMoveDone"
+import { DoneForm, MoveForm, NotDoneForm, PaidByChoice } from "./VisitMoveDone"
 import { BillBlock } from "./VisitBill"
 import { Included, JobLines } from "./VisitLines"
 import { useRunner } from "./use-runner"
@@ -127,8 +127,8 @@ function Actions({ facts, data, today, actions }: { facts: VisitFacts; data: Adm
   const { visit, pass, states, client } = facts
   const day = dayOf(today, TIME_ZONE)
   const open = states.work === "needs-a-day" || states.work === "not-done" || states.work === "scheduled"
-  // Money owed is recorded here for a one-off and for a pass visit whose pass has no card; a pass with a card is charged.
-  const owed = states.work === "done" && states.money === "owed" && doneAsksPaidBy(visit, pass)
+  // Money owed can always be recorded here (check, Venmo or cash), card or no card: a card that was never charged, or never saved, must not leave a done visit with no way to take the money.
+  const owed = states.work === "done" && states.money === "owed"
   const pay = useRunner()
   return (
     <div className="flex flex-col gap-6" data-slot="visit-actions">

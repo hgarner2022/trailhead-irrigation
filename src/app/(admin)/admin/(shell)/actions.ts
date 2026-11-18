@@ -120,7 +120,7 @@ export const recordMarketingOptOut = async (customerId: string, note = "Opted ou
  */
 export async function attentionAction(item: Attention): Promise<ActionOutcome | { ok: true; data: undefined; message: string }> {
   await requireAdmin("manager")
-  if ((item.kind === "charge-failed" || item.kind === "card-expiring") && item.passId) {
+  if ((item.kind === "charge-failed" || item.kind === "card-expiring" || item.kind === "no-card") && item.passId) {
     const sent = await act((ctx) => callApi(ctx, passesSendCardUpdateLink, { id: item.passId }))
     return sent.ok ? { ok: true, data: undefined, message: "Card update link sent." } : sent
   }

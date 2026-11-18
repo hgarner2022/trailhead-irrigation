@@ -7,6 +7,7 @@ import { UndoToastProvider } from "@/components/blocks/UndoToast"
 import type { VisitActions } from "./visit-actions-types"
 import { VisitsScreen } from "./VisitsScreen"
 import { moneyText, visitRows, visitsContext } from "./visits-model"
+import { VISITS_TODAY, noCardVisitId, passVisitId, visitsData } from "./visits-fixture"
 
 const base = snapshot as AdminData
 const TODAY = "2026-11-12T19:56:30Z"
@@ -364,5 +365,49 @@ describe("New job", () => {
     await userEvent.click(sheet.getByRole("button", { name: "Add job" }))
     expect(a.createVisit).toHaveBeenCalledWith(expect.objectContaining({ newCustomer: expect.objectContaining({ firstName: "Nora", lastName: "Vale", property: { address: "1 Main St", town: "Erie" } }) }))
     expect(await sheet.findByText("Truck 1 does not work on sundays")).toBeInTheDocument()
+  })
+})
+
+// A pass visit that is Done and Owed, with the customer's card and without: both must show how to take the money.
+describe("Done and Owed on a pass visit", () => {
+  const owedPass = (id: string): AdminData => ({
+    ...visitsData,
+    visits: visitsData.visits.map((v) => (v.id === id ? { ...v, status: "completed" as const, completedOn: "2026-11-10", scheduledOn: "2026-11-10", startAt: "2026-11-10T15:00:00Z", payments: [] } : v)),
+  })
+  const open = (id: string, d: AdminData) =>
+    render(
+      <UndoToastProvider>
+        <VisitsScreen data={d} today={VISITS_TODAY} actions={actions()} defaultVisitId={id} />
+      </UndoToastProvider>,
+    )
+
+  it("offers Record the payment when the customer has no card, and the row says there is no card", () => {
+    const d = owedPass(noCardVisitId)
+    open(noCardVisitId, d)
+    const panel = within(screen.getByRole("dialog"))
+    expect(panel.getByRole("heading", { name: "Record the payment" })).toBeInTheDocument()
+    expect(panel.getByRole("button", { name: "Record payment" })).toBeInTheDocument()
+    expect(visitRows(d, VISITS_TODAY).find((r) => r.id === noCardVisitId)!.moneyText).toMatch(/ owed · no card$/)
+  })
+
+  it("offers Record the payment when the customer has a card too, since a charge that never went through must not leave it stuck", () => {
+    open(passVisitId, owedPass(passVisitId))
+    expect(within(screen.getByRole("dialog")).getByRole("heading", { name: "Record the payment" })).toBeInTheDocument()
+  })
+
+  it("says it charges the card on Done and keeps Paid another way, which asks how", async () => {
+    // The fixture's pass visit, booked and not yet done, on a pass whose customer has a card.
+    const booked: AdminData = { ...visitsData, visits: visitsData.visits.map((v) => (v.id === passVisitId ? { ...v, status: "scheduled" as const, completedOn: undefined, chargedAt: undefined, payments: [] } : v)) }
+    open(passVisitId, booked)
+    const panel = within(screen.getByRole("dialog"))
+    expect(panel.getByText(/Charges the card ending \d{4} after this visit/)).toBeInTheDocument()
+    expect(panel.queryByRole("button", { name: "Mark done and record payment" })).toBeNull()
+    await userEvent.click(panel.getByRole("button", { name: "Paid another way" }))
+    expect(panel.getByRole("button", { name: "Mark done and record payment" })).toBeInTheDocument()
+  })
+
+  it("asks how it was paid on Done when the customer has no card", () => {
+    open(noCardVisitId, visitsData)
+    expect(within(screen.getByRole("dialog")).getByRole("button", { name: "Mark done and record payment" })).toBeInTheDocument()
   })
 })

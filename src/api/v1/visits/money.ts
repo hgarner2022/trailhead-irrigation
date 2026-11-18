@@ -13,7 +13,7 @@ import { ApiError } from "../../core/errors"
 import { defineHandler } from "../../core/handler"
 import { Day, Id, today } from "../shared"
 import { recordChange } from "../passes/queries"
-import { recordOfficePayment } from "../payments/record"
+import { assertNoCardChargeInFlight, recordOfficePayment } from "../payments/record"
 import { emitEvent } from "../webhooks/deliver"
 import { loadVisit, visitOut } from "./queries"
 import { VisitOut } from "./schemas"
@@ -90,7 +90,8 @@ export const visitsMarkClosed = defineHandler({
     await ctx.db.update(s.visit).set({ status: "completed", completedOn: day }).where(eq(s.visit.id, visit.id))
     await emitEvent(ctx.db, ctx.organizationId, "visit.done", { visitId: visit.id, completedOn: day })
     // Ryan marking it done is the one human path to a charge without a completion signal; the queue and the charge are idempotent.
-    if (cardOnFile) await enqueue(ctx.db, ctx.organizationId, "pass-charge", visit.id, { visitId: visit.id })
+    // A real card is charged after Done unless the office was handed the money another way (check, Venmo or cash).
+    if (cardOnFile && (!input.paidBy || input.paidBy.method === "bill")) await enqueue(ctx.db, ctx.organizationId, "pass-charge", visit.id, { visitId: visit.id })
     else if (billing) await sendBill(ctx, { jobId: visit.jobId, requireAllDone: false })
     else if (input.paidBy && input.paidBy.method !== "bill" && (visit.amount > 0 || input.paidBy.amount)) await recordPayment(ctx, visit, { ...input.paidBy, method: input.paidBy.method })
     return visitOut(ctx, await loadVisit(ctx, visit.id))
@@ -102,13 +103,13 @@ export const visitsRecordPayment = defineHandler({
   method: "POST",
   path: "/visits/{id}/payment",
   scope: "write",
-  summary: "Record how a done visit was paid: check, Venmo or cash, with an optional reference. A succeeded charge is written and the receipt, which says how it was paid, is sent. A pass visit whose pass has a card is charged to it and takes no payment here; one whose pass has no card is paid here like a one-off.",
+  summary: "Record how a done visit was paid: check, Venmo or cash, with an optional reference. A succeeded charge is written and the receipt, which says how it was paid, is sent. A pass visit whose pass has a real card is charged to it at Done; money handed over instead (or for a card that failed) is recorded here, like a one-off's.",
   input: z.object({ id: Id, ...RecordedBy.shape }),
   output: VisitOut,
   async run(ctx, input) {
     const { visit } = await loadVisit(ctx, input.id)
     const pass = await passOf(ctx, visit)
-    if (pass && (await passCustomerHasCard(ctx, pass))) throw new ApiError("unprocessable", "A pass visit is charged to the pass's card")
+    await assertNoCardChargeInFlight(ctx, visit.id)
     if (visit.status !== "completed") throw new ApiError("unprocessable", "Mark the visit done first")
     const { id: _id, ...paidBy } = input
     void _id

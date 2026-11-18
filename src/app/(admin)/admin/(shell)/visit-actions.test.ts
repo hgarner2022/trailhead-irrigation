@@ -65,11 +65,10 @@ describe("Record the payment on a done and owed visit", () => {
     expect(rows.map((r) => r.amount).sort()).toEqual([100, 45])
   })
 
-  it("refuses a pass visit whose customer has a card on file", async () => {
+  it("records the money for a pass visit whose customer has a card on file too, so a done visit is never stuck owed", async () => {
     await db.update(s.visit).set({ status: "completed", completedOn: "2027-04-19" }).where(eq(s.visit.id, "p3-turn-on"))
-    const result = await recordPayment("p3-turn-on", { method: "cash" })
-    expect(result).toEqual({ ok: false, message: "A pass visit is charged to the pass's card" })
-    expect(await db.select().from(s.charge).where(eq(s.charge.visitId, "p3-turn-on"))).toEqual([])
+    expect(await recordPayment("p3-turn-on", { method: "cash" })).toMatchObject({ ok: true })
+    expect(await db.select().from(s.charge).where(eq(s.charge.visitId, "p3-turn-on"))).toMatchObject([{ method: "cash", status: "succeeded" }])
   })
 
   it("says to mark the visit done first when it is not", async () => {

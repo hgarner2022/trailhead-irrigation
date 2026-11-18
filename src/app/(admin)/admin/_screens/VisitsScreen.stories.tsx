@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite"
 import { expect, within } from "storybook/test"
 import { AdminShell } from "@/components/blocks/AdminShell"
 import { VisitsScreen } from "./VisitsScreen"
+import type { AdminData } from "@/lib/admin/types"
 import { VISITS_TODAY, noCardVisitId, passVisitId, visitsData } from "./visits-fixture"
 
 // The panel is a dialog in a portal on the body, outside the story's canvas.
@@ -144,3 +145,38 @@ export const PanelPropertyTech: Story = {
 
 /** A tech reads the visit and sees no buttons. */
 export const PanelReadOnly: Story = { args: { defaultVisitId: "office-scheduled", readOnly: true }, globals: wide }
+
+/** A pass visit that is Done and Owed: Done closed it, and either no card could be charged or none was saved. The panel always shows how to take the money. */
+const owedPass = (id: string): AdminData => ({
+  ...visitsData,
+  visits: visitsData.visits.map((v) => (v.id === id ? { ...v, status: "completed" as const, completedOn: "2026-11-10", scheduledOn: "2026-11-10", startAt: "2026-11-10T15:00:00Z", payments: [], chargedAt: undefined } : v)),
+})
+
+/** The customer has no card: Record the payment (Check, Venmo, Cash) and the row reads "$145 owed · no card". */
+export const PanelOwedPassNoCard: Story = {
+  args: { data: owedPass(noCardVisitId), defaultVisitId: noCardVisitId },
+  globals: wide,
+  play: async () => {
+    await expect(await body.findByRole("heading", { name: "Record the payment" })).toBeInTheDocument()
+    await expect(await body.findByRole("button", { name: "Record payment" })).toBeInTheDocument()
+  },
+}
+
+/** The customer has a card that was never charged (or declined): the same Record the payment section, never a dead end. */
+export const PanelOwedPassWithCard: Story = {
+  args: { data: owedPass(passVisitId), defaultVisitId: passVisitId },
+  globals: wide,
+  play: async () => {
+    await expect(await body.findByRole("heading", { name: "Record the payment" })).toBeInTheDocument()
+  },
+}
+
+/** Done on a pass visit with a card says it charges the card, and Paid another way asks how the money came. */
+export const PanelDonePassWithCard: Story = {
+  args: { data: { ...visitsData, visits: visitsData.visits.map((v) => (v.id === passVisitId ? { ...v, status: "scheduled" as const, completedOn: undefined, chargedAt: undefined, payments: [] } : v)) }, defaultVisitId: passVisitId },
+  globals: wide,
+  play: async () => {
+    await expect(await body.findByText(/Charges the card ending \d{4} after this visit/)).toBeInTheDocument()
+    await expect(await body.findByRole("button", { name: "Paid another way" })).toBeInTheDocument()
+  },
+}
