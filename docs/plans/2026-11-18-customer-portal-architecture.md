@@ -28,13 +28,13 @@ A customer never sees notes, events, other customers, staff surnames, voided inv
 
 **The 24-hour rule (Hannah): inside 24 hours of the visit's day a customer cannot cancel or reschedule online; the screen offers Text Ryan and Call Ryan.** Staff are not held to it.
 
-- One function decides it: `withinCutoff(visit, now)` in `src/lib/portal/change-day.ts`, replacing the two-day `beforeCutoff`. The cut-off instant is midnight Mountain time at the start of the visit's day, minus 24 hours. `visits.pick` and the cancel handler refuse past it with the words the screen shows; the screen asks the same function, so the button and the refusal never disagree.
-- **Reschedule** stays `visits.pick`: to one of the offered days, never a typed day. The customer is texted the new day. The event is `visit.picked` with who `customer`.
+- One function decides it: `withinCutoff(visit, now)` in `src/lib/portal/change-day.ts`, replacing the two-day `beforeCutoff`, with `cutoffAt(visit)` beside it (the same formula, as an instant) so a screen can say "until Sunday, April 26, 11:59 pm". The cut-off instant is midnight Mountain time at the start of the visit's day, minus 24 hours. `visits.pick` and the cancel handler refuse past it with the words the screen shows; the screen asks the same function, so the button and the refusal never disagree.
+- **Reschedule** stays `visits.pick`: to one of the offered days, never a typed day. `visits.areaDays` takes `count` (default 3; the portal asks 5) and leaves the current day out. The customer is texted the new day. The event keeps today's names, `visit.moved` or `visit.scheduled`, with who `customer`.
 - **Cancel** is a new handler `visits.cancelSelf` (`customerSelf`, in `src/api/v1/portal/`), the customer's door onto the existing writers:
   - Only the caller's visit; only Unscheduled or Scheduled; never Done, Canceled, Skipped; never inside the cut-off.
   - A Season Pass visit: the pass skip (`passes.skipVisit` rules: the line is cancelled, nothing is charged, the pass stays active).
-  - A one-off visit: `visit.cancelled_at` set and its line cancelled. When it was the job's only live visit the job is cancelled too, through `jobs.cancel`'s rules; a job that holds a payment keeps the job open with the visit cancelled.
-  - An unpaid invoice on the job stays as it is; Done work is never cancelled by a customer.
+  - A one-off visit: the visit's status becomes cancelled (there is no `cancelled_at` column on a visit; the cancel's date is the `visit.cancelled` event's time) and its line is cancelled. When it was the job's only live visit the job is cancelled too, through `jobs.cancel`'s rules; a job that holds a payment keeps the job open with the visit cancelled.
+  - An unpaid invoice on the job stays as it is; Done work is never cancelled by a customer; a cancel never moves money, and the confirm step says what stays paid. The Home row carries "has a payment" when the job holds one.
   - It writes one event, `visit.cancelled` with who `customer` and the reason the customer gave, and queues a confirmation to the customer and an alert for Home ("Hannah cancelled Fri Nov 20, Repair"). Ryan sees it on Home at once and the day frees on the Schedule because the schedule reads facts.
   - Idempotent: a second call on a cancelled visit answers the same result.
 - Both actions carry the customer's words back: the screen shows the handler's message on a refusal, never a second copy of the rule.
@@ -43,8 +43,9 @@ A customer never sees notes, events, other customers, staff surnames, voided inv
 
 - A visit has a day (`scheduled_on`), a start time (`start_time`) and a length. **A customer picks a day, never a time (Hannah, Nov 2026); the window is told the day before.**
 - `orderDay` stacks a Season Pass's visits from 8:00 so the day has an order and a map. That start time is the office's estimate, not a promise, and the portal must not read it as one.
-- The portal shows the window only when the day-before message for that visit exists in `message_log` (kind `day-before`, the row `dayBeforeMessages` writes) or when the office set the time by hand (`visits.edit` or `visits.move` with a time). Until then the visit reads "Tuesday, May 5. We'll text your window the day before." No new column: the message row is the fact that the window was told. `PortalVisit` gains `windowTold: boolean` and `window: string | null`; `arrivalWindow` is only called when `windowTold`.
-- The day-before text and the portal read the same `timeWords`, so they never disagree.
+- The portal shows the window only when the day-before message for that visit exists in `message_log` (kind `day-before`, the row `dayBeforeMessages` writes). There is no by-hand case: the office's stamp cannot be told from the scheduler's, and Hannah's rule is the day-before text. Until then the visit reads "Tuesday, May 5. We'll text your window the day before." No new column: the message row is the fact that the window was told. `PortalVisit` gains `windowTold: boolean` and `window: string | null`; `arrivalWindow` is only called when `windowTold`.
+- The data matches the words everywhere a customer reads: `loadVisitFacts` nulls `startTime` until the day-before row exists, so the date-set and date-moved texts and the checkout's day cards state the day only; the day-before text is the first message that carries a window. The person's first name is shown with the window, not before it.
+- The admin's **Routed** is the office's own fact (the day's stops were ordered) and may exist before the customer is told; Ryan's Time column keeps the estimate. Two surfaces, two facts, on purpose.
 
 ## 5. One timeline, no new tables
 
