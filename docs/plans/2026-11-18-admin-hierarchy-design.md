@@ -6,10 +6,10 @@ It extends `docs/DESIGN.md` (Uniformity, Tables, Navigation). The Done-and-paid 
 
 ## 1. Jobs to be done
 
-- **Customers.** Hannah: "Who is this, what have we done for them, what do they owe?" "How do I reach them?" Name, phone, owes and next visit show before any click.
+- **Customers.** Hannah: "Who is this, what have we done for them, what is unpaid?" "How do I reach them?" Name, phone, unpaid and next visit show before any click.
 - **Jobs.** Hannah: "What did we sell, what is it worth, is it paid, what is left to do?" One row answers all four.
 - **Visits.** Ryan: "What is today, what is next?" "Mark it, next." Day, who and status in one row; Done is one tap.
-- **Customer panel.** "They are on the phone." Phone, owes, next visit and the pass at the top.
+- **Customer panel.** "They are on the phone." Phone, unpaid, next visit and the pass at the top.
 - **Job panel.** "What is this sale, and what gets it paid?" Lines, visits, money, then the next step as the primary button.
 - **Visit panel.** Ryan: "What is the system, what is the code, what did we do last time?" Then Mark done.
 
@@ -17,7 +17,7 @@ It extends `docs/DESIGN.md` (Uniformity, Tables, Navigation). The Done-and-paid 
 
 - **Jobber's job page** runs status and client, then line items, visits, billing, notes ([source](https://help.getjobber.com/en/articles/job-basics/)), with Generate Invoice and More Actions top right and edits per section. We follow the order and the More menu, with buttons in a footer a thumb reaches.
 - **Jobber's visit screen** leads with Complete Visit; "…" holds Delete ([source](https://help.getjobber.com/hc/en-us/articles/360042930793)). We follow: one primary, delete tucked away.
-- **Jobber's mobile client** shows name and balance with call and text icons ([source](https://help.getjobber.com/en/articles/client-information-in-the-jobber-app/)); **Housecall Pro's customer** shows the next three appointments up top ([source](https://help.housecallpro.com/en/articles/9764383-customer-profile-overview)); **ServiceTitan's** has a balance-due row and a More menu ([source](https://help.servicetitan.com/roofing/docs/customer-and-location-records-overview)), and its dispatch flyout links up to the full record ([source](https://help.servicetitan.com/docs/use-the-job-details-flyout-on-the-dispatch-board)). We follow: owes, next and reach-them first.
+- **Jobber's mobile client** shows name and balance with call and text icons ([source](https://help.getjobber.com/en/articles/client-information-in-the-jobber-app/)); **Housecall Pro's customer** shows the next three appointments up top ([source](https://help.housecallpro.com/en/articles/9764383-customer-profile-overview)); **ServiceTitan's** has a balance-due row and a More menu ([source](https://help.servicetitan.com/roofing/docs/customer-and-location-records-overview)), and its dispatch flyout links up to the full record ([source](https://help.servicetitan.com/docs/use-the-job-details-flyout-on-the-dispatch-board)). We follow: unpaid, next and reach-them first.
 - **NN/g: a non-modal side panel suits one record beside its table; over two row actions, use a menu** ([source](https://www.nngroup.com/articles/data-tables/)). **Primary is filled, secondary outlined, tertiary plain** ([source](https://www.nngroup.com/articles/button-states-communicate-interaction/)). **Over two disclosure levels hurt** ([source](https://www.nngroup.com/articles/progressive-disclosure/)), so a footer button opens one dialog, never two.
 - **NN/g on mobile tables: lock the header and first column** ([source](https://www.nngroup.com/articles/mobile-tables/)). It is silent on list rows; card rows are our call (question 3).
 - **Refactoring UI: shrink and lighten labels** ([source](https://www.refactoringui.com/previews/labels-are-a-last-resort)). We use muted labels, medium values.
@@ -34,8 +34,8 @@ One block, `RecordPanel`, on `SidePanel`, used by Customer, Job and Visit. Each 
 
 | Panel | Subtitle | Pills | Facts, in order |
 |---|---|---|---|
-| Customer | street, town | pass status, "Owes $115" | Phone, Email, Next visit (links), Owes, Card, Marketing |
-| Job | "Repair · sold Nov 3" or "Season Pass TH-2027-0007 · 2027" | stage, money | Customer (links), Property, Total, Paid, Owed, Next visit |
+| Customer | street, town | pass status, "$115 unpaid" | Phone, Email, Next visit (links), Unpaid, Card, Marketing |
+| Job | "Repair · sold Nov 3" or "Season Pass TH-2027-0007 · 2027" | stage, money | Customer (links), Property, Total, Paid, Unpaid, Next visit |
 | Visit | "Spring turn-on, Tue Apr 26" | work, money | When, Who, Minutes, Price, Job (links), Customer phone (tap to call) |
 
 **Sections**, one Barlow Condensed 18px heading each, a quiet Edit or Add link at its right:
@@ -52,10 +52,10 @@ One block, `RecordPanel`, on `SidePanel`, used by Customer, Job and Visit. Each 
 |---|---|---|---|---|
 | Visit, Unscheduled or Not done | Give it a day | Edit | Send a text | Cancel visit |
 | Visit, Scheduled | Mark done (Move first before its day) | Move, Not done | Edit, Send a text | Cancel visit |
-| Visit, Done | Owed: Collect $145 (Done-and-paid `CollectPayment`). Paid: none | Open job | Send a text | none |
+| Visit, Done | Unpaid: Collect $145 (Done-and-paid `CollectPayment`). Paid: none | Open job | Send a text | none |
 | Job, Needs a quote | Add a line | New visit | none | Cancel job |
 | Job, Open | New visit | Add a line | Record the payment | Cancel job |
-| Job, Done and Owed | Send a bill | Record the payment | New visit | none |
+| Job, Done and unpaid | Send a bill | Record the payment | New visit | none |
 | Job, Bill sent or Overdue | Remind | Record the payment | Open the pay link | none |
 | Job, Season Pass | Change the pass | Send card link | Resend confirmation, Open in Stripe | Cancel pass |
 | Customer | New job | Send a text, Edit | Send card link, Record phone opt-out, Send pass offer | none |
@@ -70,18 +70,18 @@ A Paid job shows New visit only. Change the pass and Edit become dialogs; Edit c
 LAPTOP: the three panels (480px, over the page)
 +-- Andrea Reyes -------------- X + +-- Andrea Reyes ------------ X + +-- Andrea Reyes ------------ X +
 | 1450 Main St, Erie             | | Season Pass TH-2027-0007 2027  | | Spring turn-on, Tue Apr 26     |
-| [Active] [Owes $115]           | | [Open] [$145 owed]             | | [Scheduled] [$145]             |
+| [Active] [$115 unpaid]         | | [Open] [$145 unpaid]           | | [Scheduled] [$145]             |
 |--------------------------------| | +----------------------------+ | |--------------------------------|
 | Phone      (970) 555-0142      | | |  pass card (432 wide)      | | | When     Tue Apr 26, 8 to 10   |
 | Email      andrea@...          | | +----------------------------+ | | Who      Ryan Garner           |
 | Next visit Apr 26 (link)       | | Customer   Andrea Reyes        | | Minutes  60                    |
-| Owes       $115                | | Property   1450 Main St        | | Price    $145                  |
+| Unpaid     $115                | | Property   1450 Main St        | | Price    $145                  |
 | Card       Visa 4242           | | Total $290  Paid $145          | | Job      Season Pass (link)    |
-| Marketing  Yes                 | | Owed $145  Next  Apr 26        | | Customer (970) 555-0142        |
+| Marketing  Yes                 | | Unpaid $145  Next Apr 26       | | Customer (970) 555-0142        |
 | Property               Edit    | | Lines and total                | | At the property               |
 | Jobs                           | |  Spring turn-on  1 x $145      | |  Zones 8, gate 4410, ...       |
 |  Season Pass  [Active]  >      | |  Fall blowout    1 x $145      | | What is included               |
-|  Repair  [Done] $115 owed  >   | | Visits                         | | Its job   [thumb card]  >      |
+|  Repair [Done] $115 unpaid >   | | Visits                         | | Its job   [thumb card]  >      |
 | Season Pass  [thumb] season    | |  Turn-on  Apr 26  [Scheduled]> | | Notes and history              |
 | Notes and history              | | Money    Paid $145 by card     | |  [Add note]                    |
 | Messages                       | | Notes and history             | |--------------------------------|
@@ -94,9 +94,9 @@ PHONE (375, full sheet; the same order, the footer's primary on its own row)
 +------------------------+ +------------------------+ +------------------------+
 | Andrea Reyes         X | | Andrea Reyes         X | | Andrea Reyes         X |
 | 1450 Main St, Erie     | | Repair, sold Nov 3     | | Spring turn-on, Apr 26 |
-| [Active] [Owes $115]   | | [Done] [$115 owed]     | | [Scheduled] [$145]     |
+| [Active] [$115 unpaid] | | [Done] [$115 unpaid] | | [Scheduled] [$145]     |
 | Phone   (970) 555-0142 | | Customer Andrea  >     | | When  Tue Apr 26, 8-10 |
-| Email   andrea@...     | | Total $115  Owed $115  | | Who   Ryan Garner      |
+| Email   andrea@...     | | Total $115  Unpaid $115| | Who   Ryan Garner      |
 | Next    Apr 26   >     | | Lines and total        | | Job   Repair  >        |
 | ... sections scroll    | | ... sections scroll    | | ... sections scroll    |
 |------------------------| |------------------------| |------------------------|
@@ -111,12 +111,12 @@ All four are `DataGrid`. Widths are spans of 12 in `meta.span`, which the grid w
 
 | Grid | Columns and spans (12) | Hidden by default |
 |---|---|---|
-| Customers | Name 3 (link), Phone 2, Town 1, Pass 2, Owes 1, Next 2, Last visit 1 | Address, Email, Scheduled, Marketing |
+| Customers | Name 3 (link), Phone 2, Town 1, Pass 2, Unpaid 1, Next 2, Last visit 1 | Address, Email, Scheduled, Marketing |
 | Jobs | Customer 3 (link), Job 2, Status 1, Visits 1, Total 1, Money 2, Next 2 | Property, Sold |
 | Visits | Customer 2.5 (link), Town 1, Service 1.5, Day 1, Time 1, Who 1, Status 2, Money 2 | none |
 | Schedule day list | Stop 0.5, Customer 3 (link), Town 1, Service 1.5, Time 1, Who 1, Status 2, Money 2 | none |
 
-Customers has ten columns and Jobs nine today; the cap is eight. Owes is new (the sum of its jobs' owed money).
+Customers has ten columns and Jobs nine today; the cap is eight. Unpaid is new (the sum of its jobs' unpaid money).
 
 - **Link and row:** the first column is the one link and opens the panel; no other cell is a target.
 - **Sort:** every column. Defaults: Customers by name; Jobs bills out first (as built), then newest sold; Visits by day, Unscheduled on top.
@@ -153,4 +153,4 @@ Customers has ten columns and Jobs nine today; the cap is eight. Owes is new (th
 1. Open a record over the screen you are on, or on its own screen? (Over or Own)
 2. Should the pass card be big at the top of a pass job's panel? (Yes or No)
 3. On a phone, lists as card rows (this reverses the 2026-11-12 rule "tables are never turned into cards")? (Cards or Table)
-4. Is Send a bill the job's primary when a done job owes money, with Record the payment second? (Yes or No)
+4. Is Send a bill the job's primary when a done job is unpaid, with Record the payment second? (Yes or No)
