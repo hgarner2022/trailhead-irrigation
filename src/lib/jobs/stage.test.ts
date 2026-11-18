@@ -6,7 +6,7 @@ const job = (over: Partial<StageFacts> = {}): StageFacts => ({ kind: "repair", s
 
 describe("the job stage words", () => {
   it("are the five Hannah chose and no request word", () => {
-    expect(Object.values(STAGE_WORDS)).toEqual(["Needs a quote", "Quoted", "Open", "Done", "Cancelled"])
+    expect(Object.values(STAGE_WORDS)).toEqual(["Needs a quote", "Quote sent", "Open", "Done", "Canceled"])
     expect(JSON.stringify(STAGE_WORDS).toLowerCase()).not.toContain("request")
   })
 })
@@ -24,12 +24,12 @@ describe("stageOf", () => {
   it("a pass is never a quote, even before anything is priced", () => {
     expect(stageOf(job({ kind: "pass", lines: [line(0)] }))).toBe("open")
   })
-  it("Quoted is read from the quote dates once they exist: sent and not accepted", () => {
+  it("Quote sent is read from the quote dates once they exist: sent and not accepted", () => {
     expect(stageOf(job({ kind: "install", soldOn: null, lines: [line(0)], quoteSentOn: "2026-11-10" }))).toBe("quoted")
     expect(stageOf(job({ kind: "install", lines: [line(3000)], quoteSentOn: "2026-11-10", quoteAcceptedOn: "2026-11-12" }))).toBe("open")
     expect(stageOf(job({ kind: "install", lines: [line(0)], quoteSentOn: "2026-11-10", quoteAcceptedOn: "2026-11-12" }))).toBe("open")
   })
-  it("Done when every live visit is done; a skipped or cancelled visit is not work ahead", () => {
+  it("Done when every live visit is done; a skipped or canceled visit is not work ahead", () => {
     expect(stageOf(job({ visits: [{ status: "completed" }] }))).toBe("done")
     expect(stageOf(job({ kind: "pass", visits: [{ status: "completed" }, { status: "cancelled" }, { status: "cancelled", skipped: true }] }))).toBe("done")
     expect(stageOf(job({ kind: "pass", visits: [{ status: "completed" }, { status: "scheduled" }] }))).toBe("open")
@@ -38,13 +38,13 @@ describe("stageOf", () => {
     expect(stageOf(job({ kind: "install", soldOn: null, lines: [line(3000)], visits: [] }))).toBe("needs-a-quote")
     expect(stageOf(job({ kind: "pass", soldOn: null, lines: [line(145)], visits: [{ status: "unscheduled" }] }))).toBe("open")
   })
-  it("a sold job with a quote sent is Open, not Quoted", () => {
+  it("a sold job with a quote sent is Open, not Quote sent", () => {
     expect(stageOf(job({ kind: "install", soldOn: "2026-11-12", lines: [line(3000)], quoteSentOn: "2026-11-10" }))).toBe("open")
   })
   it("a done job is Done even when nobody priced it", () => {
     expect(stageOf(job({ lines: [line(0)], visits: [{ status: "completed" }] }))).toBe("done")
   })
-  it("Cancelled when the job, all its lines or all its visits are", () => {
+  it("Canceled when the job, all its lines or all its visits are", () => {
     expect(stageOf(job({ cancelledAt: new Date() }))).toBe("cancelled")
     expect(stageOf(job({ lines: [line(145, new Date())] }))).toBe("cancelled")
     expect(stageOf(job({ visits: [{ status: "cancelled" }] }))).toBe("cancelled")

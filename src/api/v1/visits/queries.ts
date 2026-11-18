@@ -50,8 +50,8 @@ export const visitsQuery = (db: Database) =>
 export type VisitJoined = Awaited<ReturnType<ReturnType<typeof visitsQuery>["limit"]>>[number] & { credit?: PaymentJson[] }
 
 /**
- * Adds to each visit its share of the payments made on its job as a whole (a bill paid on the pay page), by the one allocation rule
- * (`allocateJobPayments`, read with `loadJobCredit`), so `paymentStatus`, `paidBy` and `jobPaymentShares` say a visit that a bill paid is paid.
+ * Adds to each visit its share of the payments made on its job as a whole (an invoice paid on the pay page), by the one allocation rule
+ * (`allocateJobPayments`, read with `loadJobCredit`), so `paymentStatus`, `paidBy` and `jobPaymentShares` say a visit that an invoice paid is paid.
  * One cheap query when none of the jobs has such a payment.
  */
 export async function withJobCredit<T extends VisitJoined>(db: Database, organizationId: string, rows: T[]): Promise<T[]> {

@@ -94,11 +94,11 @@ describe("payments.record", () => {
     expect(job.money).toMatchObject({ paid: 145, total: 145, owed: 0 })
   })
 
-  it("refuses an amount above what is still owed on the visit, takes the rest after a part payment, and owes again after a refund", async () => {
+  it("refuses an amount above what is still unpaid on the visit, takes the rest after a part payment, and owes again after a refund", async () => {
     const v = await repair()
-    await expect(callApi(as(writeKey), paymentsRecord, { jobId: v.jobId, visitId: v.id, amount: 146, method: "cash" })).rejects.toMatchObject({ code: "unprocessable", message: "Only $145 is still owed on this visit" })
+    await expect(callApi(as(writeKey), paymentsRecord, { jobId: v.jobId, visitId: v.id, amount: 146, method: "cash" })).rejects.toMatchObject({ code: "unprocessable", message: "Only $145 is still unpaid on this visit" })
     const part = await callApi(as(writeKey), paymentsRecord, { jobId: v.jobId, visitId: v.id, amount: 100, method: "cash" })
-    await expect(callApi(as(writeKey), paymentsRecord, { jobId: v.jobId, visitId: v.id, amount: 100, method: "cash" })).rejects.toMatchObject({ code: "unprocessable", message: "Only $45 is still owed on this visit" })
+    await expect(callApi(as(writeKey), paymentsRecord, { jobId: v.jobId, visitId: v.id, amount: 100, method: "cash" })).rejects.toMatchObject({ code: "unprocessable", message: "Only $45 is still unpaid on this visit" })
     await callApi(as(writeKey), paymentsRecord, { jobId: v.jobId, visitId: v.id, amount: 45, method: "check" })
     await expect(callApi(as(writeKey), paymentsRecord, { jobId: v.jobId, visitId: v.id, amount: 1, method: "check" })).rejects.toMatchObject({ code: "conflict" })
     // a refund makes the money owed again, and it can be taken again
@@ -147,7 +147,7 @@ describe("payments.refund", () => {
     expect(refund).toMatchObject({ amount: -145, method: "cash", status: "succeeded", refundsPaymentId: paid.id, jobId: v.jobId, visitId: v.id, customerId: "c100", reference: "wrong job" })
     expect(stripe.calls.refundsCreate).not.toHaveBeenCalled()
     const job = (await callApi(as(readKey), customersGet, { id: "c100" })).jobs.find((j) => j.id === v.jobId)!
-    expect(job.money).toMatchObject({ paid: 0, owed: 145, words: "$145 owed" })
+    expect(job.money).toMatchObject({ paid: 0, owed: 145, words: "$145 unpaid" })
     expect((await callApi(as(readKey), visitsGet, { id: v.id })).chargedAt).toBeNull()
     await expect(callApi(as(), paymentsRefund, { paymentId: paid.id })).rejects.toMatchObject({ code: "conflict" })
     await expect(callApi(as(), paymentsRefund, { paymentId: refund.id })).rejects.toMatchObject({ code: "unprocessable" })

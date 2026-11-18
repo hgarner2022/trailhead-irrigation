@@ -13,7 +13,7 @@ export interface Handler<I extends z.ZodObject = z.ZodObject, O extends z.ZodTyp
   customerSelf?: boolean
   /**
    * the anonymous checkout visitor (`public` principal) may call it; "own-pass" also needs `input.id` to be the pass the visitor is buying;
-   * "own-invoice" is for the pay page: it needs `input.id` to be the bill the visitor's signed link opened, and a visitor with such a link may call nothing else
+   * "own-invoice" is for the pay page: it needs `input.id` to be the invoice the visitor's signed link opened, and a visitor with such a link may call nothing else
    */
   checkout?: true | "own-pass" | "own-invoice"
   /** the output carries a secret shown once: an Idempotency-Key replay is refused instead of storing it */

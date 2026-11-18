@@ -18,7 +18,7 @@ export const invoicesSend = defineHandler({
   scope: "write",
   status: 201,
   summary:
-    "Send a bill for a job that is done and still owes money. The job's lines are frozen as they are now, the tax comes from the billing settings, the bill is due the settings' number of days after today, and one message with the pay link goes to the customer (a text when they have a mobile, an email otherwise). A job with a bill already open refuses a second one.",
+    "Send an invoice for a job that is done and still owes money. The job's lines are frozen as they are now, the tax comes from the billing settings, the invoice is due the settings' number of days after today, and one message with the pay link goes to the customer (a text when they have a mobile, an email otherwise). A job with an invoice already open refuses a second one.",
   input: z.object({ jobId: Id }),
   output: InvoiceOut,
   async run(ctx, input) {
@@ -31,7 +31,7 @@ export const invoicesList = defineHandler({
   method: "GET",
   path: "/invoices",
   scope: "read",
-  summary: "List bills, oldest first, for a job, for a customer, or by status (overdue lists every open bill past its due day).",
+  summary: "List invoices, oldest first, for a job, for a customer, or by status (`overdue` lists every open invoice past its due day).",
   input: z.object({ jobId: Id.optional(), customerId: Id.optional(), status: z.enum(["sent", "paid", "overdue", "cancelled"]).optional() }),
   output: z.object({ data: z.array(InvoiceOut) }),
   async run(ctx, input) {
@@ -58,7 +58,7 @@ export const invoicesGet = defineHandler({
   method: "GET",
   path: "/invoices/{id}",
   scope: "read",
-  summary: "One bill with its frozen lines, amounts, dates and status.",
+  summary: "One invoice with its frozen lines, amounts, dates and status.",
   input: idInput,
   output: InvoiceOut,
   async run(ctx, input) {
@@ -72,7 +72,7 @@ export const invoicesPayView = defineHandler({
   path: "/invoices/{id}/pay-view",
   scope: "read",
   checkout: "own-invoice",
-  summary: "The bill as its customer sees it on the pay page: the frozen lines, the amounts, the due day, whether it is open, paid or cancelled, the customer's first name and, to the visitor of the link only, the card receipt once paid. The pay page calls it as the visitor of the signed link, who may read only the one bill that link opens.",
+  summary: "The invoice as its customer sees it on the pay page: the frozen lines, the amounts, the due day, whether it is open, paid or canceled, the customer's first name and, to the visitor of the link only, the card receipt once paid. The pay page calls it as the visitor of the signed link, who may read only the one invoice that link opens.",
   input: idInput,
   output: PayViewOut,
   async run(ctx, input) {
@@ -92,7 +92,7 @@ export const invoicesRemind = defineHandler({
   method: "POST",
   path: "/invoices/{id}/remind",
   scope: "write",
-  summary: "Send the customer a reminder of an open bill with the pay link. Two presses in one day send one message. A paid or cancelled bill is refused.",
+  summary: "Send the customer a reminder of an open invoice with the pay link. Two presses in one day send one message. A paid or canceled invoice is refused.",
   input: idInput,
   output: InvoiceOut,
   async run(ctx, input) {
@@ -105,15 +105,15 @@ export const invoicesCancel = defineHandler({
   method: "POST",
   path: "/invoices/{id}/cancel",
   scope: "admin",
-  summary: "Cancel a bill that has not been paid. The bill stays on record, marked cancelled, its card form on Stripe is closed, and the job may be billed again. A paid bill is refused: refund the payment instead.",
+  summary: "Cancel an invoice that has not been paid. The invoice stays on record, marked voided, its card form on Stripe is closed, and the job may be invoiced again. A paid invoice is refused: refund the payment instead.",
   input: idInput,
   output: InvoiceOut,
   async run(ctx, input) {
     const row = await loadInvoice(ctx, input.id)
     if (row.cancelledAt) return invoiceOut(ctx, row)
-    if (!invoiceOpen(row)) throw new ApiError("conflict", "This bill is already paid. Refund the payment instead.")
+    if (!invoiceOpen(row)) throw new ApiError("conflict", "This invoice is already paid. Refund the payment instead.")
     const updated = await cancelOpenBill(ctx, row)
-    if (!updated) throw new ApiError("conflict", "This bill was paid a moment ago. Refund the payment instead.")
+    if (!updated) throw new ApiError("conflict", "This invoice was paid a moment ago. Refund the payment instead.")
     return invoiceOut(ctx, updated)
   },
 })

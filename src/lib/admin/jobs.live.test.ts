@@ -37,7 +37,7 @@ const jobsOf = (passId: string) => {
 beforeAll(async () => {
   vi.stubEnv("APP_URL", "https://site.test")
   db = await apiDb()
-  // A bill needs a way to reach the customer.
+  // An invoice needs a way to reach the customer.
   await db.update(s.customer).set({ email: "andrea.test@example.com" }).where(eq(s.customer.id, "c100"))
   // p4: a day with a start time (Routed). p3: marked done, its charge failed once (Charge failed). p6: done, failed, retried and charged.
   await callApi(ctxFor(db, owner, NOW), visitsMove, { id: "p4-turn-on", personId: "person_truck-1", scheduledOn: "2027-05-05", startTime: "09:30" })
@@ -156,12 +156,12 @@ describe("the money words, read from the payment rows", () => {
     const made = await callApi(write, visitsCreate, { customerId: "c100", kind: "repair", scheduledOn: "2027-05-10", price: 145 })
     await db.update(s.visit).set({ status: "completed", completedOn: "2027-04-19" }).where(eq(s.visit.id, made.id))
 
-    // Done with no payment row: the visit says Owed, the job says "$145 owed", and Home has one row for the JOB.
+    // Done with no payment row: the visit says Unpaid, the job says "$145 unpaid", and Home has one row for the JOB.
     let live = await getLiveAdminData(ctxFor(db, owner, NOW))
-    expect(moneyOf(live, made.id)).toMatchObject({ state: "done", money: "owed", moneyLabel: "Owed" })
-    expect(live.jobs!.find((j) => j.id === made.jobId)).toMatchObject({ money: { paid: 0, total: 145, owed: 145, words: "$145 owed" }, payments: [] })
+    expect(moneyOf(live, made.id)).toMatchObject({ state: "done", money: "owed", moneyLabel: "Unpaid" })
+    expect(live.jobs!.find((j) => j.id === made.jobId)).toMatchObject({ money: { paid: 0, total: 145, owed: 145, words: "$145 unpaid" }, payments: [] })
     const rows = live.attention.filter((a) => a.kind === "owed")
-    expect(rows).toEqual([expect.objectContaining({ key: made.jobId, jobId: made.jobId, visitId: made.id, message: expect.stringMatching(/repair is done, \$145 owed$/) })])
+    expect(rows).toEqual([expect.objectContaining({ key: made.jobId, jobId: made.jobId, visitId: made.id, message: expect.stringMatching(/repair is done, \$145 unpaid$/) })])
 
     // A cash payment on the job: Paid, cash; no owed row; the month total counts it on the day it arrived.
     const before = live.monthTotals.find((m) => m.year === 2027 && m.month === 4)?.revenue ?? 0
@@ -173,15 +173,15 @@ describe("the money words, read from the payment rows", () => {
     expect(live.monthTotals.find((m) => m.year === 2027 && m.month === 4)!.revenue).toBe(before + 145)
     expect(live.visits.find((v) => v.id === made.id)!.payments).toMatchObject([{ id: paid.id, method: "cash", paidOn: "2027-04-18" }])
 
-    // A refund is a negative row: the money reads Owed again, and the month total gives it back.
+    // A refund is a negative row: the money reads Unpaid again, and the month total gives it back.
     await callApi(ctxFor(db, adminKey, NOW), paymentsRefund, { paymentId: paid.id })
     live = await getLiveAdminData(ctxFor(db, owner, NOW))
-    expect(moneyOf(live, made.id)).toMatchObject({ money: "owed", moneyLabel: "Owed" })
+    expect(moneyOf(live, made.id)).toMatchObject({ money: "owed", moneyLabel: "Unpaid" })
     expect(live.attention.filter((a) => a.kind === "owed")).toHaveLength(1)
     expect(live.monthTotals.find((m) => m.year === 2027 && m.month === 4)!.revenue).toBe(before)
   })
 
-  it("opens the owed row on the visit that is owed, not on a later one that is already paid", async () => {
+  it("opens the owed row on the visit that is unpaid, not on a later one that is already paid", async () => {
     const write = ctxFor(db, writeKey, NOW)
     const first = await callApi(write, visitsCreate, { customerId: "c100", kind: "repair", scheduledOn: "2027-05-21", price: 145 })
     const second = await callApi(write, visitsCreate, { customerId: "c100", kind: "repair", scheduledOn: "2027-05-24", price: 145 })
@@ -196,31 +196,31 @@ describe("the money words, read from the payment rows", () => {
     expect(live.attention.filter((a) => a.kind === "owed" && a.jobId === first.jobId)).toEqual([expect.objectContaining({ visitId: first.id })])
   })
 
-  it("reads Bill sent on a done job that has an open bill, still Bill sent when it is overdue, Owed again once it is cancelled", async () => {
+  it("reads Invoice sent on a done job that has an open invoice, still Invoice sent when it is overdue, Owed again once it is canceled", async () => {
     const write = ctxFor(db, writeKey, NOW)
     const made = await callApi(write, visitsCreate, { customerId: "c100", kind: "repair", scheduledOn: "2027-05-28", price: 145 })
     await db.update(s.visit).set({ status: "completed", completedOn: "2027-04-19" }).where(eq(s.visit.id, made.id))
     const bill = await callApi(write, invoicesSend, { jobId: made.jobId })
 
     let live = await getLiveAdminData(ctxFor(db, owner, NOW))
-    expect(moneyOf(live, made.id)).toMatchObject({ state: "done", money: "bill-sent", moneyLabel: "Bill sent" })
+    expect(moneyOf(live, made.id)).toMatchObject({ state: "done", money: "bill-sent", moneyLabel: "Invoice sent" })
     expect(live.visits.find((v) => v.id === made.id)!.invoice).toMatchObject({ id: bill.id, number: bill.number, total: 145, sentOn: "2027-04-20", dueOn: "2027-05-04", status: "sent", payUrl: bill.payUrl })
-    expect(live.jobs!.find((j) => j.id === made.jobId)).toMatchObject({ money: { owed: 145, words: "Bill sent", billSent: true }, invoice: { id: bill.id } })
-    // Bill sent and not yet due: the job is on Home nowhere (no owed row, no overdue row).
+    expect(live.jobs!.find((j) => j.id === made.jobId)).toMatchObject({ money: { owed: 145, words: "Invoice sent", billSent: true }, invoice: { id: bill.id } })
+    // Invoice sent and not yet due: the job is on Home nowhere (no owed row, no overdue row).
     expect(live.attention.filter((a) => a.jobId === made.jobId)).toEqual([])
 
-    // On its due day the bill is still not overdue; the day after, it is, and its one row is the bill's, with Remind (the action) and the customer to open.
+    // On its due day the invoice is still not overdue; the day after, it is, and its one row is the invoice's, with Remind (the action) and the customer to open.
     live = await getLiveAdminData(ctxFor(db, owner, "2027-05-04T15:00:00Z"))
     expect(live.attention.filter((a) => a.jobId === made.jobId)).toEqual([])
     live = await getLiveAdminData(ctxFor(db, owner, "2027-06-10T15:00:00Z"))
     expect(live.visits.find((v) => v.id === made.id)!.invoice).toMatchObject({ status: "overdue" })
-    expect(visitJob(live.visits.find((v) => v.id === made.id)!, "2027-06-10", TZ)).toMatchObject({ money: "bill-sent", moneyLabel: "Bill sent" })
+    expect(visitJob(live.visits.find((v) => v.id === made.id)!, "2027-06-10", TZ)).toMatchObject({ money: "bill-sent", moneyLabel: "Invoice sent" })
     expect(live.attention.filter((a) => a.jobId === made.jobId)).toEqual([
       { kind: "overdue", key: `invoice-${bill.id}@2027-05-04`, invoiceId: bill.id, jobId: made.jobId, customerId: "c100", message: expect.stringMatching(/'s bill of \$145 was due May 4$/), since: "2027-05-04T18:00:00Z" },
     ])
-    // The month's tile and the Visits link count it by the bill's total, not twice with its owed number.
+    // The month's tile and the Visits link count it by the invoice's total, not twice with its owed number.
     expect(billsOverdue(live.jobs, "2027-06-10", TZ)).toEqual({ count: 1, total: 145 })
-    // Outstanding counts this job once, at the bill's total, whatever the other jobs of the shared database owe.
+    // Outstanding counts this job once, at the invoice's total, whatever the other jobs of the shared database owe.
     const without = outstanding({ visits: live.visits, jobs: live.jobs!.filter((j) => j.id !== made.jobId) })!
     expect(outstanding(live)).toEqual({ total: without.total + 145, jobs: without.jobs + 1 })
 
@@ -236,15 +236,15 @@ describe("the money words, read from the payment rows", () => {
 
     await callApi(ctxFor(db, adminKey, NOW), invoicesCancel, { id: bill.id })
     live = await getLiveAdminData(ctxFor(db, owner, NOW))
-    expect(moneyOf(live, made.id)).toMatchObject({ money: "owed", moneyLabel: "Owed" })
+    expect(moneyOf(live, made.id)).toMatchObject({ money: "owed", moneyLabel: "Unpaid" })
     expect(live.visits.find((v) => v.id === made.id)).not.toHaveProperty("invoice")
-    expect(live.jobs!.find((j) => j.id === made.jobId)).toMatchObject({ money: { words: "$145 owed", billSent: false } })
-    // Cancelled, the bill's row is gone and the job is Done and Owed on Home again.
+    expect(live.jobs!.find((j) => j.id === made.jobId)).toMatchObject({ money: { words: "$145 unpaid", billSent: false } })
+    // Canceled, the invoice's row is gone and the job is Done and Unpaid on Home again.
     expect(live.attention.filter((a) => a.kind === "owed" && a.jobId === made.jobId)).toHaveLength(1)
     expect(live.attention.filter((a) => a.kind === "overdue" && a.invoiceId === bill.id)).toEqual([])
   })
 
-  it("settles an open bill when the office is paid another way, and no reader counts an open bill whose job owes nothing", async () => {
+  it("settles an open invoice when the office is paid another way, and no reader counts an open invoice whose job owes nothing", async () => {
     const write = ctxFor(db, writeKey, NOW)
     const made = await callApi(write, visitsCreate, { customerId: "c100", kind: "repair", scheduledOn: "2027-06-07", price: 145 })
     await db.update(s.visit).set({ status: "completed", completedOn: "2027-04-19" }).where(eq(s.visit.id, made.id))
@@ -261,7 +261,7 @@ describe("the money words, read from the payment rows", () => {
     expect(live.jobs!.find((j) => j.id === made.jobId)).not.toHaveProperty("invoice")
     expect(overdue(live)).toEqual([])
 
-    // The readers hold even if a bill is left open: its job owes nothing, so it is no bill.
+    // The readers hold even if an invoice is left open: its job owes nothing, so it is no invoice.
     await db.update(s.invoice).set({ paidOn: null, paymentId: null }).where(eq(s.invoice.id, bill.id))
     live = await getLiveAdminData(ctxFor(db, owner, later))
     expect(live.jobs!.find((j) => j.id === made.jobId)).not.toHaveProperty("invoice")
@@ -285,6 +285,6 @@ describe("the money words, read from the payment rows", () => {
     await callApi(write, paymentsRecord, { jobId: first.jobId, visitId: first.id, amount: 145, method: "cash" })
     await callApi(write, paymentsRecord, { jobId: first.jobId, visitId: second.id, amount: 40, method: "cash" })
     const live = await getLiveAdminData(ctxFor(db, owner, NOW))
-    expect(live.jobs!.find((j) => j.id === first.jobId)!.money).toMatchObject({ paid: 185, total: 245, owed: 60, words: "1 of 2 paid, $60 owed" })
+    expect(live.jobs!.find((j) => j.id === first.jobId)!.money).toMatchObject({ paid: 185, total: 245, owed: 60, words: "1 of 2 paid, $60 unpaid" })
   })
 })

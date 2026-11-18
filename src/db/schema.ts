@@ -340,7 +340,7 @@ export const visit = pgTable(
   ],
 )
 
-/** What a job is made of: one row per sold line, copied from the service at sale so a later catalogue edit never rewrites an old job. A pass line names the visit it is billed after. */
+/** What a job is made of: one row per sold line, copied from the service at sale so a later catalogue edit never rewrites an old job. A pass line names the visit it is invoiced after. */
 export const lineItem = pgTable(
   "line_item",
   {
@@ -374,7 +374,7 @@ export const charge = pgTable(
     organizationId: orgId(),
     jobId: text("job_id").references(() => job.id),
     customerId: text("customer_id").references(() => customer.id),
-    /** null for a payment on the job as a whole (a bill paid on the pay page) */
+    /** null for a payment on the job as a whole (an invoice paid on the pay page) */
     visitId: text("visit_id").references(() => visit.id),
     /** the Mountain day the money arrived */
     paidOn: day("paid_on"),
@@ -386,7 +386,7 @@ export const charge = pgTable(
     stripePaymentIntentId: text("stripe_payment_intent_id").unique(),
     failureMessage: text("failure_message"),
     receiptUrl: text("receipt_url"),
-    /** how the money came: the pass's card on file, a card paid now, a check, Venmo or cash the office recorded, or a bill */
+    /** how the money came: the pass's card on file, a card paid now, a check, Venmo or cash the office recorded, or an invoice */
     method: text("method", { enum: ["card_on_file", "card_now", "check", "venmo", "cash", "bill"] }).notNull().default("card_on_file"),
     /** a check number or a Venmo handle, when the office wrote one down */
     reference: text("reference"),
@@ -396,7 +396,7 @@ export const charge = pgTable(
   (t) => [unique("charge_visit_attempt_unique").on(t.visitId, t.attempt), index("charge_job_idx").on(t.jobId)],
 )
 
-/** A line frozen on an invoice: a copy of the job's line at the moment the bill was sent. */
+/** A line frozen on an invoice: a copy of the job's line at the moment the invoice was sent. */
 export interface InvoiceLineRow {
   name: string
   description: string | null
@@ -404,14 +404,14 @@ export interface InvoiceLineRow {
   /** whole dollars */
   unitPrice: number
   taxable: boolean
-  /** the visit the line was billed after, when it had one */
+  /** the visit the line was invoiced after, when it had one */
   visitId?: string | null
 }
 
 /**
- * A bill ("Send a bill"): the job's lines frozen as they were, what they came to, the tax on them, and the days it was sent,
- * due and paid. The number is unique per organization (INV-2026-0001). A job has at most one open bill (not paid, not
- * cancelled). The Jobber mirror's invoices stay in `jobber_invoice`; this table is only the app's own bills.
+ * An invoice ("Send an invoice"): the job's lines frozen as they were, what they came to, the tax on them, and the days it was sent,
+ * due and paid. The number is unique per organization (INV-2026-0001). A job has at most one open invoice (not paid, not
+ * cancelled). The Jobber mirror's invoices stay in `jobber_invoice`; this table is only the app's own invoices.
  */
 export const invoice = pgTable(
   "invoice",
@@ -432,7 +432,7 @@ export const invoice = pgTable(
     sentOn: day("sent_on").notNull(),
     dueOn: day("due_on").notNull(),
     paidOn: day("paid_on"),
-    /** the payment row that settled the bill (no foreign key: the row is in `charge`) */
+    /** the payment row that settled the invoice (no foreign key: the row is in `charge`) */
     paymentId: text("payment_id"),
     stripeCheckoutSessionId: text("stripe_checkout_session_id"),
     stripePaymentIntentId: text("stripe_payment_intent_id"),

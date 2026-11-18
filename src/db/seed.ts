@@ -172,7 +172,7 @@ async function seedPasses(db: Database, snapshot: AdminData, org: string) {
         // The old pass id and the sold day, on insert only: the day the job row is made (its created_at), empty for a pending fixture (a pending pass is a job with no sold day).
         legacyPassId: pass.id,
         soldOn: pass.status === "pending" ? null : toMountainDay(new Date().toISOString()),
-        // A cancelled fixture is cancelled the way every cancelled pass is: `cancelled_at` on its job (what `passStatus` reads).
+        // A cancelled fixture is canceled the way every canceled pass is: `cancelled_at` on its job (what `passStatus` reads).
         cancelledAt: pass.status === "cancelled" ? new Date() : undefined,
       })
       .onConflictDoNothing()

@@ -18,7 +18,7 @@ describe("lineTax", () => {
     expect(lineTax(line(), on(8.8))).toBe(13)
     expect(lineTax(line({ quantity: 2, unitPrice: 50 }), on(4.2))).toBe(4)
   })
-  it("is zero for a line that is not taxable and for a cancelled one", () => {
+  it("is zero for a line that is not taxable and for a canceled one", () => {
     expect(lineTax(line({ taxable: false }), on(8))).toBe(0)
     expect(lineTax(line({ cancelledAt: new Date("2027-05-01T00:00:00Z") }), on(8))).toBe(0)
     expect(lineTax(line({ cancelledAt: "2027-05-01T00:00:00Z" }), on(8))).toBe(0)

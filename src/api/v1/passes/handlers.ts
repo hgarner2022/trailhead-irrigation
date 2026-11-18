@@ -154,7 +154,7 @@ export const passesCreate = defineHandler({
     // starting another: there is no cart to lose, and the hourly limit is then only ever reached by something odd.
     const [resumed] = visitor && known && !held ? await newestPendingPass(ctx.db, org, known.id, ctx.now) : []
     const candidate = held ?? resumed
-    // A pending pass (not sold, not cancelled) of an earlier season is not picked up again: the new season gets its own pass.
+    // A pending pass (not sold, not canceled) of an earlier season is not picked up again: the new season gets its own pass.
     const reused = candidate && !candidate.soldOn && !candidate.cancelledAt && known && candidate.customerId === known.id && candidate.season === season ? candidate : undefined
     if (visitor && !reused && known && (await pendingPassesLastHour(ctx.db, org, known.id, ctx.now)) >= MAX_PENDING_PER_HOUR)
       throw new ApiError("rate_limited", "Too many passes started for this email in the last hour. Try again later or call us.", [{ path: "reason", message: "too-many" }])
@@ -272,7 +272,7 @@ export const passesCancel = defineHandler({
     if (!hasScope(p, "write") && p.kind === "person" && row.email && p.email.toLowerCase() !== row.email.toLowerCase())
       throw new ApiError("forbidden", "That pass belongs to another customer")
     if (row.facts.status === "cancelled") return { id: row.pass.id, status: "cancelled" as const, cancelledVisits: 0 }
-    // The pass is cancelled when its job says so: `cancelled_at` is the whole fact.
+    // The pass is canceled when its job says so: `cancelled_at` is the whole fact.
     await ctx.db.update(s.job).set({ cancelledAt: ctx.now, updatedAt: ctx.now }).where(eq(s.job.id, row.pass.id))
     const cancelled = await ctx.db
       .update(s.visit)

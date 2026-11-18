@@ -1,7 +1,7 @@
 // Season Pass pricing. The pass is the spring turn-on and the fall blowout;
 // the July inspection is an add-on the customer chooses (Hannah, 2026-11-12:
 // "the default be a spring turn on and then a blowout, and they can do an
-// add-on for a summer inspection"). Each visit is billed at its standard
+// add-on for a summer inspection"). Each visit is invoiced at its standard
 // per-zone rate, after the visit. What the customer buys is the reserved
 // blowout date, the schedule kept for them, and one card on file.
 //

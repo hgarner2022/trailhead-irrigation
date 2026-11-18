@@ -30,7 +30,7 @@ export const DEFAULT_AREAS: Pick<AreaGroup, "name" | "towns">[] = [
   { name: "Broomfield", towns: ["Broomfield"] },
 ]
 
-/** Bills due in two weeks and no sales tax, until the office saves Settings › Billing (Ryan has not yet said whether he collects Colorado sales tax). */
+/** Invoices due in two weeks and no sales tax, until the office saves Settings › Billing (Ryan has not yet said whether he collects Colorado sales tax). */
 export const DEFAULT_BILLING: BillingSettings = { dueDays: 14, collectsSalesTax: false, salesTaxPercent: 0 }
 
 /** The settings an organization starts with for `season`. People and areas are rows, so they are not here. */

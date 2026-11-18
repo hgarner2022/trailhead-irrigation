@@ -15,7 +15,7 @@ import { recordEvent, whoOf } from "@/lib/events/record"
 export const LineOut = z.object({
   id: Id, jobId: Id, visitId: Id.nullable(), name: z.string(), description: z.string().nullable(), quantity: z.number().int(),
   unitPrice: z.number().int().describe("Whole dollars; 0 reads Quote later."), taxable: z.boolean(), cancelledAt: z.string().nullable(),
-  jobTotal: z.number().int().describe("What the job comes to after this change, with its sales tax, cancelled lines left out."),
+  jobTotal: z.number().int().describe("What the job comes to after this change, with its sales tax, canceled lines left out."),
 })
 
 const out = (r: typeof s.lineItem.$inferSelect, jobTotal: number) => ({
@@ -32,7 +32,7 @@ async function jobTotalOf(ctx: Ctx, jobId: string): Promise<number> {
 async function openJob(ctx: Ctx, jobId: string) {
   const [job] = await ctx.db.select().from(s.job).where(and(eq(s.job.id, jobId), eq(s.job.organizationId, ctx.organizationId)))
   if (!job) throw notFound("Job")
-  if (job.cancelledAt) throw new ApiError("unprocessable", "This job is cancelled, so its lines cannot change")
+  if (job.cancelledAt) throw new ApiError("unprocessable", "This job is canceled, so its lines cannot change")
   if (job.season !== null || job.passNumber) throw new ApiError("unprocessable", "A Season Pass changes through its own buttons: add an inspection, skip a visit or cancel the pass")
   const [lines, payments] = await Promise.all([
     ctx.db.select().from(s.lineItem).where(and(eq(s.lineItem.jobId, job.id), eq(s.lineItem.organizationId, ctx.organizationId))),
@@ -44,7 +44,7 @@ async function openJob(ctx: Ctx, jobId: string) {
   return { job, lines, payments }
 }
 
-/** A line change is refused once the visit the line is billed after is Done and paid. */
+/** A line change is refused once the visit the line is invoiced after is Done and paid. */
 async function assertVisitOpen(ctx: Ctx, line: typeof s.lineItem.$inferSelect, payments: (typeof s.charge.$inferSelect)[]) {
   if (!line.visitId) return
   const [visit] = await ctx.db.select().from(s.visit).where(and(eq(s.visit.id, line.visitId), eq(s.visit.organizationId, ctx.organizationId)))
@@ -73,7 +73,7 @@ export const linesAdd = defineHandler({
   scope: "write",
   status: 201,
   summary:
-    "Add a line to a job that is still open: priced from a catalogue service (its name, what it includes and its taxable flag are copied at that moment) or a free line with its own name. A price of 0 is a line to quote later. Refused on a cancelled job, on a job paid in full, and on a Season Pass.",
+    "Add a line to a job that is still open: priced from a catalogue service (its name, what it includes and its taxable flag are copied at that moment) or a free line with its own name. A price of 0 is a line to quote later. Refused on a canceled job, on a job paid in full, and on a Season Pass.",
   input: z.object({
       jobId: Id,
       serviceKey: z.string().min(2).max(40).optional().describe("The active catalogue service the line is for; it gives the line its name, description and taxable flag."),
@@ -106,12 +106,12 @@ export const linesUpdate = defineHandler({
   method: "PATCH",
   path: "/lines/{id}",
   scope: "write",
-  summary: "Change a live line's name, quantity or unit price on an open job. Refused on a cancelled line or job, once the line's visit is done and paid, on a job paid in full, and on a Season Pass.",
+  summary: "Change a live line's name, quantity or unit price on an open job. Refused on a canceled line or job, once the line's visit is done and paid, on a job paid in full, and on a Season Pass.",
   input: z.object({ id: Id, name: z.string().trim().min(1).max(120).optional(), quantity: z.number().int().min(1).max(1000).optional(), unitPrice: money.optional() }),
   output: LineOut,
   async run(ctx, { id, ...changes }) {
     const line = await loadLine(ctx, id)
-    if (line.cancelledAt) throw new ApiError("unprocessable", "This line is cancelled, so it cannot change")
+    if (line.cancelledAt) throw new ApiError("unprocessable", "This line is canceled, so it cannot change")
     const { job, payments } = await openJob(ctx, line.jobId)
     await assertVisitOpen(ctx, line, payments)
     const row = Object.values(changes).some((v) => v !== undefined) ? await updateLineRow(ctx.db, line, changes, ctx.now) : line
@@ -125,12 +125,12 @@ export const linesCancel = defineHandler({
   method: "DELETE",
   path: "/lines/{id}",
   scope: "write",
-  summary: "Cancel a line: it counts for nothing from now on and shows struck through. Refused on a line already cancelled, on a cancelled job or one paid in full, once the line's visit is done and paid, and on a Season Pass.",
+  summary: "Cancel a line: it counts for nothing from now on and shows struck through. Refused on a line already canceled, on a canceled job or one paid in full, once the line's visit is done and paid, and on a Season Pass.",
   input: z.object({ id: Id }),
   output: LineOut,
   async run(ctx, { id }) {
     const line = await loadLine(ctx, id)
-    if (line.cancelledAt) throw new ApiError("conflict", "This line is already cancelled")
+    if (line.cancelledAt) throw new ApiError("conflict", "This line is already canceled")
     const { job, payments } = await openJob(ctx, line.jobId)
     await assertVisitOpen(ctx, line, payments)
     const row = await cancelLineRow(ctx.db, line, ctx.now)

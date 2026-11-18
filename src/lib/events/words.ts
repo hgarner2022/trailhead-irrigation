@@ -53,8 +53,8 @@ function cardWords(detail: Record<string, unknown>): string {
 
 /** The visit's name in the sentence: the one the event carries, the kind's line name for a day-filled row, else "the visit". */
 const visitWords = (d: Record<string, unknown>) => str(d.name) ?? (str(d.visit) ? visitName(str(d.visit)!) : "The visit")
-/** "bill INV-2026-0001", or just "bill" when the number was not recorded. */
-const bill = (d: Record<string, unknown>) => (str(d.number) ? `bill ${str(d.number)}` : "bill")
+/** "invoice INV-2026-0001", or just "invoice" when the number was not recorded. */
+const invoiceName = (d: Record<string, unknown>) => (str(d.number) ? `invoice ${str(d.number)}` : "invoice")
 const lower = (s: string) => (s === "The visit" ? "the visit" : s)
 
 const EDIT_LABEL: Record<string, string> = {
@@ -128,10 +128,10 @@ function whatOf(e: EventForWords): string {
   switch (e.kind) {
     case "job.requested": return requestedWords(d)
     case "job.sold": return soldWords(d)
-    case "job.cancelled": return str(d.reason) ? `Job cancelled, ${d.reason}` : "Job cancelled"
+    case "job.cancelled": return str(d.reason) ? `Job canceled, ${d.reason}` : "Job canceled"
     case "job.line-added": return lineWords(d, "added")
     case "job.line-edited": return lineWords(d, "changed")
-    case "job.line-cancelled": return `${str(d.name) ?? "A line"} cancelled`
+    case "job.line-cancelled": return `${str(d.name) ?? "A line"} canceled`
     case "visit.scheduled": return dayWords(d.day) ? `${name} scheduled for ${dayWords(d.day)}` : `${name} scheduled`
     case "visit.moved": {
       const from = dayWords(d.from)
@@ -150,7 +150,7 @@ function whatOf(e: EventForWords): string {
     }
     case "visit.done": {
       const paid = str(d.paidBy)
-      return `${name} marked done${paid ? (paid === "bill" ? ", bill sent" : `, paid by ${methodWords(paid)}`) : ""}`
+      return `${name} marked done${paid ? (paid === "bill" ? ", invoice sent" : `, paid by ${methodWords(paid)}`) : ""}`
     }
     case "visit.undone": return `${name} put back to not done`
     case "visit.not-done": {
@@ -159,13 +159,13 @@ function whatOf(e: EventForWords): string {
       const note = str(d.note)
       return `${name} marked not done${why ? `, ${why.charAt(0).toLowerCase()}${why.slice(1)}` : ""}${note ? `: ${note}` : ""}`
     }
-    case "visit.cancelled": return str(d.reason) ? `${name} cancelled, ${d.reason}` : `${name} cancelled`
+    case "visit.cancelled": return str(d.reason) ? `${name} canceled, ${d.reason}` : `${name} canceled`
     case "visit.skipped": return `${name} skipped`
     case "visit.edited": return editWords(d)
     case "pass.cancelled": {
       const number = str(d.passNumber)
       const reason = str(d.reason)
-      return `Season Pass${number ? ` ${number}` : ""} cancelled${reason ? `, ${reason}` : ""}`
+      return `Season Pass${number ? ` ${number}` : ""} canceled${reason ? `, ${reason}` : ""}`
     }
     case "pass.preference-changed": {
       const kind = str(d.visit)
@@ -197,10 +197,10 @@ function whatOf(e: EventForWords): string {
       const reason = str(d.reason)
       return `${amount ?? "Payment"} refunded${method ? `, ${method}` : ""}${reason ? `, ${reason}` : ""}`
     }
-    case "invoice.sent": return `${cap(bill(d))} sent${dayWords(d.dueOn) ? `, due ${dayWords(d.dueOn)}` : ""}`
-    case "invoice.reminded": return `Reminder sent for ${str(d.number) ? bill(d) : "the bill"}${dayWords(d.dueOn) ? `, due ${dayWords(d.dueOn)}` : ""}`
-    case "invoice.paid": return `${cap(bill(d))} paid${methodWords(d.how) ? `, ${methodWords(d.how)}` : ""}`
-    case "invoice.cancelled": return `${cap(bill(d))} cancelled`
+    case "invoice.sent": return `${cap(invoiceName(d))} sent${dayWords(d.dueOn) ? `, due ${dayWords(d.dueOn)}` : ""}`
+    case "invoice.reminded": return `Reminder sent for ${str(d.number) ? invoiceName(d) : "the invoice"}${dayWords(d.dueOn) ? `, due ${dayWords(d.dueOn)}` : ""}`
+    case "invoice.paid": return `${cap(invoiceName(d))} paid${methodWords(d.how) ? `, ${methodWords(d.how)}` : ""}`
+    case "invoice.cancelled": return `${cap(invoiceName(d))} voided`
     case "card.saved": return `Card saved, ${cardWords(d)}`
     case "card.failed": return `${cap(cardWords(d))} didn't go through`
     case "card.removed": return `Card removed, ${cardWords(d)}`

@@ -37,7 +37,7 @@ export interface PaymentRowInput {
 
 /**
  * The one writer of a payment row (task 4.1): the office's check, Venmo and cash, a refund, the saved card's charge and
- * the bill's payment all insert here, so every row carries its job, customer and the day the money arrived. A visit's
+ * the invoice's payment all insert here, so every row carries its job, customer and the day the money arrived. A visit's
  * rows are numbered by attempt. Returns the row, or undefined when the (visit, attempt) pair or the Stripe payment
  * intent already has one.
  */
@@ -85,7 +85,7 @@ export async function loadVisitPrice(db: Database, organizationId: string, visit
 export async function visitBalance(db: Database, organizationId: string, visit: { id: string; jobId?: string | null }): Promise<{ price: number; paid: number; owed: number }> {
   const price = await loadVisitPrice(db, organizationId, visit.id)
   const rows = await db.select().from(s.charge).where(and(eq(s.charge.organizationId, organizationId), eq(s.charge.visitId, visit.id)))
-  // The visit's share of a payment made on the job as a whole (a bill paid on the pay page) counts as paid, or the office could take the money twice.
+  // The visit's share of a payment made on the job as a whole (an invoice paid on the pay page) counts as paid, or the office could take the money twice.
   const credit = visit.jobId ? (await loadJobCredit(db, organizationId, [visit.jobId])).get(visit.id) ?? [] : []
   const paid = paidTotal(rows) + paidTotal(credit)
   return { price, paid, owed: Math.max(0, price - paid) }

@@ -41,7 +41,7 @@ export const passOnboard: QueueHandler = async (db, item) => {
   await onboardPass(db, passId, item.organizationId)
 }
 
-/** `pass-cancel`: key is the pass's job id (an old pass id still resolves), payload `{ passId }`; raises the Home alert for a cancelled pass. No Jobber call: the routine removes the Jobber jobs (see `cancelPassTask`). */
+/** `pass-cancel`: key is the pass's job id (an old pass id still resolves), payload `{ passId }`; raises the Home alert for a canceled pass. No Jobber call: the routine removes the Jobber jobs (see `cancelPassTask`). */
 export const passCancel: QueueHandler = async (db, item) => {
   const { passId } = item.payload as { passId: string }
   await cancelPassTask(db, passId, item.organizationId)

@@ -233,12 +233,12 @@ async function jobsOf(ctx: Ctx, customerId: string) {
     const lines = lineRows.filter((l) => l.jobId === j.id)
     const payments = paymentRows.filter((p) => p.jobId === j.id)
     const jobVisits = visits.filter((v) => v.jobId === j.id)
-    // An open bill on a job that owes nothing (money arrived another way) is not carried: the job reads Paid.
+    // An open invoice on a job that owes nothing (money arrived another way) is not carried: the job reads Paid.
     const bill = jobOwed(lines, payments, rule) > 0 ? openBills.find((b) => b.jobId === j.id) : undefined
-    // The visits the paid bills name, which a payment made on the job as a whole credits first.
+    // The visits the paid invoices name, which a payment made on the job as a whole credits first.
     const paidBillVisits = bills.filter((b) => b.jobId === j.id && b.paidOn).flatMap((b) => b.lines.map((l) => l.visitId).filter((id): id is string => Boolean(id)))
     const kind = kinds.get(j.id)!
-    // The job's total and each visit's price carry the sales tax, read from the same rule the bill is built with.
+    // The job's total and each visit's price carry the sales tax, read from the same rule the invoice is built with.
     const total = jobTotal(lines, rule)
     return {
       id: j.id, kind,

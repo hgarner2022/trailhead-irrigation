@@ -55,11 +55,11 @@ export const bookingsCancel = defineHandler({
       .select({ id: s.visit.id, kind: s.visit.kind, scheduledOn: s.visit.scheduledOn })
       .from(s.visit)
       .where(and(eq(s.visit.jobId, row.id), eq(s.visit.organizationId, ctx.organizationId), notInArray(s.visit.status, ["completed", "cancelled"])))
-    // What each gave up is its own lines' total, read before the lines are cancelled.
+    // What each gave up is its own lines' total, read before the lines are canceled.
     const lines = await ctx.db.select().from(s.lineItem).where(and(eq(s.lineItem.jobId, row.id), eq(s.lineItem.organizationId, ctx.organizationId)))
     const rule = await loadTaxRule(ctx.db, ctx.organizationId)
     await ctx.db.update(s.job).set({ cancelledAt: ctx.now }).where(eq(s.job.id, row.id))
-    // Job-wide, so a line with no visit (a backfilled one-off) goes too; a line already cancelled keeps its time.
+    // Job-wide, so a line with no visit (a backfilled one-off) goes too; a line already canceled keeps its time.
     await ctx.db.update(s.lineItem).set({ cancelledAt: ctx.now, updatedAt: ctx.now }).where(and(eq(s.lineItem.jobId, row.id), isNull(s.lineItem.cancelledAt)))
     const cancelled = await ctx
       .db.update(s.visit)

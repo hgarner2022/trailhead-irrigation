@@ -17,7 +17,7 @@ import { moneyOf } from "./jobs"
 import { getLiveAdminData } from "./live"
 import { chargedSoFar, committedByMonth } from "./metrics"
 
-// A payment made on the job as a whole (a bill paid on the pay page has no visit) reaches the visit-level words and sums:
+// A payment made on the job as a whole (an invoice paid on the pay page has no visit) reaches the visit-level words and sums:
 // the visits it covers read "Paid, card", the job reads Paid, and no sum counts it twice.
 
 const NOW = "2027-04-20T15:00:00Z"
@@ -25,7 +25,7 @@ let db: TestDb
 beforeAll(async () => {
   vi.stubEnv("APP_URL", "https://site.test")
   db = await apiDb()
-  // A bill needs a way to reach the customer.
+  // An invoice needs a way to reach the customer.
   await db.update(s.customer).set({ email: "andrea.test@example.com" }).where(eq(s.customer.id, "c100"))
 })
 afterAll(() => db.close())
@@ -61,8 +61,8 @@ describe("a payment on the job as a whole, on a job with several visits", () => 
       return moneyOf({ status: "completed", completedOn: "2027-04-10", visitId: id, price: v.amount, payments: v.payments }).label
     }
     expect(word(turnOn.id)).toBe("Paid, card")
-    expect(word(blowout.id)).toBe("Owed")
-    // The job reads the number still owed, from the payment rows once: one visit of two paid.
+    expect(word(blowout.id)).toBe("Unpaid")
+    // The job reads the number still unpaid, from the payment rows once: one visit of two paid.
     expect(after.jobs?.find((j) => j.id === jobId)?.money).toMatchObject({ paid: turnOn.amount })
     // No sum counts the job-level row on top of its credit.
     expect(chargedSoFar(after.passes) - chargedBefore).toBe(turnOn.amount)
@@ -77,7 +77,7 @@ describe("a payment on the job as a whole, on a job with several visits", () => 
     expect(chargedSoFar(paid.passes) - chargedBefore).toBe(turnOn.amount + blowout.amount)
   })
 
-  it("credits the visits a paid bill names before the older ones", async () => {
+  it("credits the visits a paid invoice names before the older ones", async () => {
     const passId = "p6"
     const jobId = await jobOf(passId)
     const pass = await passJobOf(db, passId)

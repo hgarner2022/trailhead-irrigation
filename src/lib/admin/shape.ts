@@ -54,7 +54,7 @@ export interface JobRow { id: string; customerId: string; kind: SoldJob["kind"];
 export interface LineRow { id: string; jobId: string; visitId: string | null; name: string; description: string | null; quantity: number; unitPrice: number; taxable: boolean; cancelledAt: Date | null }
 /** A payment row (`charge`) as live.ts reads it: refunds are negative; `attempt` numbers a visit's tries. */
 export interface PaymentRow { id: string; jobId: string | null; visitId: string | null; amount: number; method: string; status: string; paidOn: string | null; refundsPaymentId: string | null; reference?: string | null; attempt: number; createdAt: Date }
-/** A bill (`invoice`) as live.ts reads it: its frozen lines only as far as the visits they name, and the pay link for a caller that may write. */
+/** An invoice (`invoice`) as live.ts reads it: its frozen lines only as far as the visits they name, and the pay link for a caller that may write. */
 export interface InvoiceRow {
   id: string; jobId: string; number: string; amount: number; tax: number; total: number; sentOn: string; dueOn: string
   paidOn: string | null; cancelledAt: Date | null; lines: { visitId?: string | null }[]; payUrl?: string
@@ -97,7 +97,7 @@ export interface ShapeInput {
   lineRows?: LineRow[]
   /** every property of the organization; absent in the fixtures, where the screens build one from the pass */
   propertyRows?: PropertyRow[]
-  /** every bill of the organization; absent in the fixtures. The open ones (sent, overdue) make a job's money read Bill sent */
+  /** every invoice of the organization; absent in the fixtures. The open ones (sent, overdue) make a job's money read Invoice sent */
   invoiceRows?: InvoiceRow[]
   /** the organization's newest events (as a caller may read them): grouped into the story of each customer, job and visit; absent in the fixtures, where no panel shows the block */
   events?: StoryEvent[]
@@ -183,10 +183,10 @@ export function shapeAdminData(i: ShapeInput): AdminData {
   // The payment rows every money word is read from: the organization's own rows when live.ts loaded them, else what each visit carried; oldest first.
   const rows: PaymentRow[] = i.paymentRows ?? i.visits.flatMap((v) => (v.payments ?? []).map((p, n) => ({ ...p, attempt: n + 1, createdAt: new Date(p.createdAt ?? 0) })))
   const ordered = [...rows].sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime() || a.id.localeCompare(b.id))
-  // The visits the paid bills of each job name, in the order the bills were paid: what a payment on the job as a whole credits first.
+  // The visits the paid invoices of each job name, in the order the invoices were paid: what a payment on the job as a whole credits first.
   const paidBillVisits = (jobId: string) =>
     (i.invoiceRows ?? []).filter((r) => r.jobId === jobId && r.paidOn && !r.cancelledAt).sort((a, b) => (a.paidOn ?? "").localeCompare(b.paidOn ?? "")).flatMap((r) => r.lines.map((l) => l.visitId).filter((id): id is string => Boolean(id)))
-  // A payment on the job as a whole (a bill paid on the pay page) is credited to the job's done visits, so the visit-level words and sums read it
+  // A payment on the job as a whole (an invoice paid on the pay page) is credited to the job's done visits, so the visit-level words and sums read it
   // (`allocateJobPayments`); the job's own money counts the original rows, so nothing is counted twice.
   const credit = new Map<string, AdminPayment[]>()
   for (const jobId of new Set(ordered.filter((r) => r.jobId && !r.visitId && r.status === "succeeded").map((r) => r.jobId!))) {
@@ -198,8 +198,8 @@ export function shapeAdminData(i: ShapeInput): AdminData {
     for (const [visitId, slices] of allocateJobPayments(rowsOfJob, visitsOfJob, paidBillVisits(jobId))) credit.set(visitId, slices)
   }
   const paymentsOfVisit = (id: string) => [...ordered.filter((r) => r.visitId === id).map(paymentOf), ...(credit.get(id) ?? [])]
-  // The open bill of each job (a job has at most one): its money reads Bill sent, on the visits its lines were billed after (every visit of the job when its lines name none).
-  // A bill is carried only while its job still owes money: one left open after the money arrived another way (a check, Venmo or cash) is no bill at all, so Home, Remind and the money lines never dun a customer who has paid.
+  // The open invoice of each job (a job has at most one): its money reads Invoice sent, on the visits its lines were invoiced after (every visit of the job when its lines name none).
+  // An invoice is carried only while its job still owes money: one left open after the money arrived another way (a check, Venmo or cash) is no invoice at all, so Home, Remind and the money lines never dun a customer who has paid.
   const jobOwes = (jobId: string) => {
     if (!i.lineRows) return true
     const ids = new Set(i.visits.filter((v) => v.jobId === jobId).map((v) => v.id))
@@ -395,9 +395,9 @@ function visitRows(i: ShapeInput, app: Visit[], all: Visit[], jobs: SoldJob[] = 
       out.push({ kind: "not-closed", key: v.id, visitId: v.id, message: `${possessive(v.clientName)} ${KIND_WORDS[v.kind] ?? "visit"} on ${shortDay(job.day)} is not marked done`, since: instantOf(job.day, v.startTime ?? null) })
   }
   const appIds = new Set(app.map((v) => v.id))
-  // Done and owed, one row per JOB: booked work whose visits are all done (or cancelled) with money still to come, read from the lines and the payment rows
+  // Done and owed, one row per JOB: booked work whose visits are all done (or canceled) with money still to come, read from the lines and the payment rows
   // (`jobMoney`). A pass is charged to its card on its own, and a failed charge has its own row. The row opens the job's latest done visit that is itself owed (not paid up), else its latest done visit.
-  // A job with an open bill has no owed row: it reads Bill sent, and its bill has its own row once it is overdue (below).
+  // A job with an open invoice has no owed row: it reads Invoice sent, and its invoice has its own row once it is overdue (below).
   for (const j of jobs) {
     if (j.kind === "pass" || !j.money || j.money.owed <= 0 || j.invoice) continue
     const mine = all.filter((v) => j.visitIds.includes(v.id) && appIds.has(v.id) && v.status !== "cancelled")
@@ -406,9 +406,9 @@ function visitRows(i: ShapeInput, app: Visit[], all: Visit[], jobs: SoldJob[] = 
     const latest = (list: Visit[]) => list.reduce((a, b) => ((b.completedOn ?? "") >= (a.completedOn ?? "") ? b : a))
     const unpaid = done.filter((v) => !visitPaid(v))
     const last = latest(unpaid.length ? unpaid : done)
-    out.push({ kind: "owed", key: j.id, jobId: j.id, visitId: last.id, message: `${possessive(last.clientName)} ${KIND_WORDS[last.kind] ?? "visit"} is done, $${j.money.owed} owed`, since: instantOf(last.completedOn ?? i.today, "12:00") })
+    out.push({ kind: "owed", key: j.id, jobId: j.id, visitId: last.id, message: `${possessive(last.clientName)} ${KIND_WORDS[last.kind] ?? "visit"} is done, $${j.money.owed} unpaid`, since: instantOf(last.completedOn ?? i.today, "12:00") })
   }
-  // An overdue bill, one row per bill: open (not paid, not cancelled; `SoldJob.invoice` is only ever an open one) with its due day before today. Remind sends the reminder.
+  // An overdue invoice, one row per invoice: open (not paid, not canceled; `SoldJob.invoice` is only ever an open one) with its due day before today. Remind sends the reminder.
   // The key carries the due day, so a dismissed row is gone for that due day only.
   const names = new Map(i.customers.map((c) => [c.id, fullName(c.firstName, c.lastName ?? undefined)]))
   for (const j of jobs) {

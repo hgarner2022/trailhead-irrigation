@@ -13,8 +13,8 @@ const Window = z.object({ kind: z.enum(["turn-on", "inspection", "blowout"]), op
 const Template = z.object({ key: z.string().min(1).max(60), channel: z.enum(["email", "sms"]), subject: z.string().max(200).optional(), body: z.string().min(1).max(2000), enabled: z.boolean() })
 const percent = z.number().int().min(0).max(100)
 const Billing = z.object({
-  dueDays: z.number().int().min(0).max(120).describe("A bill is due this many days after it is sent."),
-  collectsSalesTax: z.boolean().describe("Whether a bill adds Colorado sales tax to its taxable lines."),
+  dueDays: z.number().int().min(0).max(120).describe("An invoice is due this many days after it is sent."),
+  collectsSalesTax: z.boolean().describe("Whether an invoice adds Colorado sales tax to its taxable lines."),
   salesTaxPercent: z.number().min(0).max(20).describe("Percent; used only while collectsSalesTax is on."),
 })
 

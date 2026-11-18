@@ -25,7 +25,7 @@ describe("invoiceLines", () => {
   })
 })
 
-describe("the tax on a bill's lines (jobTax)", () => {
+describe("the tax on an invoice's lines (jobTax)", () => {
   const lines = [{ quantity: 1, unitPrice: 145, taxable: true }, { quantity: 1, unitPrice: 100, taxable: false }]
   it("is zero while the organization does not collect sales tax, whatever the percent says", () => {
     expect(jobTax(lines, { collectsSalesTax: false, salesTaxPercent: 8.8 })).toBe(0)
@@ -47,12 +47,12 @@ describe("invoiceStatus", () => {
     expect(invoiceStatus({ dueOn: "2027-05-21" }, "2027-05-21")).toBe("sent")
     expect(invoiceStatus({ dueOn: "2027-05-21" }, "2027-05-22")).toBe("overdue")
   })
-  it("reads paid and cancelled before the due day, paid over overdue, cancelled over paid", () => {
+  it("reads paid and canceled before the due day, paid over overdue, cancelled over paid", () => {
     expect(invoiceStatus({ dueOn: "2027-05-21", paidOn: "2027-06-01" }, "2027-07-01")).toBe("paid")
     expect(invoiceStatus({ dueOn: "2027-05-21", cancelledAt: new Date() }, "2027-07-01")).toBe("cancelled")
     expect(invoiceStatus({ dueOn: "2027-05-21", paidOn: "2027-05-01", cancelledAt: new Date() }, "2027-05-02")).toBe("cancelled")
   })
-  it("is open until it is paid or cancelled", () => {
+  it("is open until it is paid or canceled", () => {
     expect(invoiceOpen({})).toBe(true)
     expect(invoiceOpen({ paidOn: "2027-05-01" })).toBe(false)
     expect(invoiceOpen({ cancelledAt: new Date() })).toBe(false)

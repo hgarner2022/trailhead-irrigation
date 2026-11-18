@@ -37,7 +37,7 @@ describe("passes.cancel for a customer", () => {
     await expect(callApi(ctxFor(db, adminKey), passesCancel, { id: "p4" })).resolves.toMatchObject({ status: "cancelled" })
   })
 
-  it("queues the routine's task, the cancelled email and the event; the task raises one Home alert", async () => {
+  it("queues the routine's task, the canceled email and the event; the task raises one Home alert", async () => {
     const id = await setEmail("p5", "p5@example.com")
     await db.insert(s.webhookEndpoint).values({ id: "hook-c", organizationId: ORG, url: "https://hooks.example.com/c", secret: "whsec_c", events: ["pass.cancelled"] })
     await expect(callApi(ctxFor(db, customerPerson(id, "P5@Example.com")), passesCancel, { id: "p5", reason: "moving" })).resolves.toMatchObject({ status: "cancelled" })
@@ -57,7 +57,7 @@ describe("passes.cancel for a customer", () => {
     await drain(db, { "pass-cancel": queueHandlers["pass-cancel"]! })
     const alerts = (await db.select().from(s.adminAlert)).filter((a) => a.jobId === jobId)
     expect(alerts.map((a) => [a.kind, a.key])).toEqual([["pass-cancelled", jobId]])
-    expect(alerts[0]!.message).toMatch(/^Season Pass TH-2027-\d{4} cancelled: .+, .+$/)
+    expect(alerts[0]!.message).toMatch(/^Season Pass TH-2027-\d{4} canceled: .+, .+$/)
   })
 })
 

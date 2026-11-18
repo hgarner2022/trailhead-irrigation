@@ -21,8 +21,8 @@ afterAll(() => db.close())
 
 const me = () => ctxFor(db, customerPerson(customerId, "p3@example.com"))
 
-describe("a cancelled job", () => {
-  it("refuses a pick and the area days once the job is cancelled", async () => {
+describe("a canceled job", () => {
+  it("refuses a pick and the area days once the job is canceled", async () => {
     const job = await passJobOf(db, "p3")
     await db.update(s.job).set({ cancelledAt: new Date("2027-04-01T12:00:00Z") }).where(eq(s.job.id, job.id))
     try {

@@ -32,7 +32,7 @@ describe("runSummary", () => {
 describe("schedule.run", () => {
   let waitingId: string
   it("schedules the visits due, in one step, and leaves a visit waiting for its customer's pick", async () => {
-    // a pass is open when its job is sold and not cancelled
+    // a pass is open when its job is sold and not canceled
     const open = new Set((await db.select().from(s.job).where(and(isNotNull(s.job.season), isNotNull(s.job.soldOn), isNull(s.job.cancelledAt)))).map((j) => j.id))
     const [waiting] = (await unscheduledTurnOns()).filter((v) => open.has(v.jobId) && !v.awaitingPick)
     waitingId = waiting!.id
@@ -105,7 +105,7 @@ describe("schedule.run", () => {
     expect((await db.select().from(s.adminAlert).where(and(eq(s.adminAlert.kind, "unplaced"), eq(s.adminAlert.key, waitingId))))[0]!.resolvedAt).not.toBeNull()
   })
 
-  it("leaves a cancelled job's visits alone", async () => {
+  it("leaves a canceled job's visits alone", async () => {
     const [visit] = await db.select().from(s.visit).where(eq(s.visit.id, waitingId))
     await db.update(s.visit).set({ status: "unscheduled", scheduledOn: null, personId: null, awaitingPick: false }).where(eq(s.visit.id, waitingId))
     await db.update(s.job).set({ cancelledAt: new Date("2027-05-01T12:00:00Z") }).where(eq(s.job.id, visit!.jobId))

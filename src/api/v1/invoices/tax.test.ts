@@ -1,6 +1,6 @@
 // @vitest-environment node
 // Sales tax is part of the job total (step 6, decision 4): with the Billing switch on, a taxable $145 repair owes $157 on every
-// screen, the bill asks for $157, the pay page opens a $157 session, the webhook records $157 and leaves the job Paid, and an
+// screen, the invoice asks for $157, the pay page opens a $157 session, the webhook records $157 and leaves the job Paid, and an
 // office payment may be $157 and no more. With the switch off nothing changes (the rest of the suite).
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest"
 import { eq } from "drizzle-orm"
@@ -60,7 +60,7 @@ describe("a taxable $145 repair with 8% sales tax on", () => {
     const v = await taxedRepair()
     expect((await callApi(as(), visitsGet, { id: v.id })).amount).toBe(157)
     const job = await jobOf(v.jobId)
-    expect(job).toMatchObject({ total: 157, price: 157, visits: [{ amount: 157 }], money: { total: 157, owed: 157, words: "$157 owed" } })
+    expect(job).toMatchObject({ total: 157, price: 157, visits: [{ amount: 157 }], money: { total: 157, owed: 157, words: "$157 unpaid" } })
     expect(job.lines).toMatchObject([{ unitPrice: 145, taxable: true }])
     expect(await visitBalance(db, ORG, v)).toEqual({ price: 157, paid: 0, owed: 157 })
   })
@@ -70,7 +70,7 @@ describe("a taxable $145 repair with 8% sales tax on", () => {
     const bill = await callApi(as(), invoicesSend, { jobId: v.jobId })
     expect(bill).toMatchObject({ amount: 145, tax: 12, total: 157 })
     const message = (await db.select().from(s.messageLog)).find((m) => m.key === `invoice-${bill.id}`)!
-    expect(message).toMatchObject({ subject: "Your bill from Trailhead: $157" })
+    expect(message).toMatchObject({ subject: "Your invoice from Trailhead: $157" })
     expect(message.body).toContain("Tax: $12")
     expect(message.body).not.toContain("Sales tax")
     const visitor = ctxFor(db, { kind: "public", id: "checkout", organizationId: ORG, scopes: ["checkout"], invoiceId: bill.id }, NOW)
@@ -98,34 +98,34 @@ describe("a taxable $145 repair with 8% sales tax on", () => {
 
   it("takes a $157 payment from the office and refuses $158", async () => {
     const v = await taxedRepair()
-    await expect(callApi(as(), paymentsRecord, { jobId: v.jobId, visitId: v.id, amount: 158, method: "cash" })).rejects.toMatchObject({ code: "unprocessable", message: "Only $157 is still owed on this visit" })
+    await expect(callApi(as(), paymentsRecord, { jobId: v.jobId, visitId: v.id, amount: 158, method: "cash" })).rejects.toMatchObject({ code: "unprocessable", message: "Only $157 is still unpaid on this visit" })
     await callApi(as(), paymentsRecord, { jobId: v.jobId, visitId: v.id, amount: 157, method: "cash" })
     expect(await visitBalance(db, ORG, v)).toEqual({ price: 157, paid: 157, owed: 0 })
     expect((await jobOf(v.jobId)).money.words).toBe("Paid")
     await expect(callApi(as(), paymentsRecord, { jobId: v.jobId, visitId: v.id, amount: 1, method: "cash" })).rejects.toMatchObject({ message: "This visit is already paid" })
   })
 
-  it("leaves $57 owed after a $100 check, and the bill for $157 is then refused", async () => {
+  it("leaves $57 unpaid after a $100 check, and the invoice for $157 is then refused", async () => {
     const v = await taxedRepair()
     const bill = await callApi(as(), invoicesSend, { jobId: v.jobId })
     await callApi(as(), paymentsRecord, { jobId: v.jobId, visitId: v.id, amount: 100, method: "check", reference: "1042" })
     expect(await visitBalance(db, ORG, v)).toEqual({ price: 157, paid: 100, owed: 57 })
-    expect((await jobOf(v.jobId)).money).toMatchObject({ paid: 100, owed: 57, words: "Bill sent" })
+    expect((await jobOf(v.jobId)).money).toMatchObject({ paid: 100, owed: 57, words: "Invoice sent" })
     const { stripe, calls } = stubStripe()
     expect(await startBillPayment(db, stripe, { invoiceId: bill.id, token: signToken("invoice-pay", bill.id), origin: "https://site.test", now: new Date(NOW) })).toEqual({
-      ok: false, message: "Part of this bill was paid another way. Please call us for the new amount.",
+      ok: false, message: "Part of this invoice was paid another way. Please call us for the new amount.",
     })
     expect(calls.sessionCreate).not.toHaveBeenCalled()
   })
 
-  it("stays payable at its frozen $157 when the tax rate is edited to 7% after the bill went out and nothing was paid", async () => {
+  it("stays payable at its frozen $157 when the tax rate is edited to 7% after the invoice went out and nothing was paid", async () => {
     const v = await taxedRepair()
     const bill = await callApi(as(), invoicesSend, { jobId: v.jobId })
     expect(bill.total).toBe(157)
     const setRate = (salesTaxPercent: number) => db.update(s.organization).set({ settings: { ...before, billing: { dueDays: 14, collectsSalesTax: true, salesTaxPercent } } }).where(eq(s.organization.id, ORG))
     await setRate(7)
     try {
-      // the job now owes $155 at 7%, less than the bill's $157, but no money arrived: this is not a bill paid another way
+      // the job now owes $155 at 7%, less than the invoice's $157, but no money arrived: this is not an invoice paid another way
       expect((await jobOf(v.jobId)).money.owed).toBeLessThan(157)
       const { stripe, calls } = stubStripe()
       expect(await startBillPayment(db, stripe, { invoiceId: bill.id, token: signToken("invoice-pay", bill.id), origin: "https://site.test", now: new Date(NOW) })).toMatchObject({ ok: true })
@@ -135,7 +135,7 @@ describe("a taxable $145 repair with 8% sales tax on", () => {
     }
   })
 
-  it("bills only what is owed when money was paid on the job first: $57 after a $100 deposit, tax included", async () => {
+  it("bills only what is unpaid when money was paid on the job first: $57 after a $100 deposit, tax included", async () => {
     const v = await taxedRepair()
     await callApi(as(), paymentsRecord, { jobId: v.jobId, amount: 100, method: "check" })
     const bill = await callApi(as(), invoicesSend, { jobId: v.jobId })
@@ -159,7 +159,7 @@ describe("a taxable $145 repair with 8% sales tax on", () => {
     const data = await getLiveAdminData(ctxFor(db, adminKey, NOW))
     expect(data.billing).toEqual({ collectsSalesTax: true, salesTaxPercent: 8 })
     const job = data.jobs!.find((j) => j.id === v.jobId)!
-    expect(job).toMatchObject({ total: 157, price: 157, money: { total: 157, owed: 157, words: "$157 owed" } })
+    expect(job).toMatchObject({ total: 157, price: 157, money: { total: 157, owed: 157, words: "$157 unpaid" } })
     const visit = data.visits.find((x) => x.id === v.id)!
     expect(visit.price).toBe(157)
     expect(screenVisitPrice(data, visit)).toBe(157)

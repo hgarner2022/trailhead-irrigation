@@ -9,9 +9,9 @@ import { allocateJobPayments } from "./words"
 type PaymentRow = typeof s.charge.$inferSelect
 
 /**
- * What the payments made on jobs as a whole (a bill paid on the pay page) credit to each visit of those jobs, read from the
+ * What the payments made on jobs as a whole (an invoice paid on the pay page) credit to each visit of those jobs, read from the
  * database: the slices `allocateJobPayments` makes, as copies of the payment row keyed by the visit they credit. A visit's price is its
- * live lines with their tax (a visit with no line costs nothing); the visits the paid bills name come first. Only the jobs
+ * live lines with their tax (a visit with no line costs nothing); the visits the paid invoices name come first. Only the jobs
  * given are read, and only when one of them has a payment of that kind: the common case is one cheap query.
  */
 export async function loadJobCredit(db: Database, organizationId: string, jobIds: readonly string[]): Promise<Map<string, PaymentRow[]>> {

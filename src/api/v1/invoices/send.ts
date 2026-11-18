@@ -17,7 +17,7 @@ import { addDays, today } from "../shared"
 import { emitEvent } from "../webhooks/deliver"
 import { loadInvoice, openInvoiceOf, type InvoiceRow } from "./queries"
 
-/** What the bill is for, as a phrase after "the": "repair", "repair and spring turn-on", "services" when there are more than two. */
+/** What the invoice is for, as a phrase after "the": "repair", "repair and spring turn-on", "services" when there are more than two. */
 export function billName(lines: readonly Pick<InvoiceLine, "name">[]): string {
   const names = [...new Set(lines.map((l) => l.name.toLowerCase()))]
   return names.length === 1 ? names[0]! : names.length === 2 ? `${names[0]} and ${names[1]}` : "services"
@@ -33,8 +33,8 @@ function billData(origin: string, customer: typeof s.customer.$inferSelect, inv:
 }
 
 /**
- * The visits a paid bill's lines name, which the next bill leaves off. A paid bill whose payment now nets to nothing (refunded in
- * full) bills nothing any more, so its visits can be billed again.
+ * The visits a paid invoice's lines name, which the next invoice leaves off. A paid invoice whose payment now nets to nothing (refunded in
+ * full) invoices nothing any more, so its visits can be invoiced again.
  */
 async function paidVisitIds(ctx: Ctx, jobId: string): Promise<Set<string>> {
   const org = ctx.organizationId
@@ -46,13 +46,13 @@ async function paidVisitIds(ctx: Ctx, jobId: string): Promise<Set<string>> {
 
 export interface SendBill {
   jobId: string
-  /** the job's own bill needs every visit done or cancelled (`invoices.send`); Done with Send a bill bills the done visits' lines while others are still ahead */
+  /** the job's own invoice needs every visit done or canceled (`invoices.send`); Done with Send an invoice invoices the done visits' lines while others are still ahead */
   requireAllDone: boolean
   /** a visit about to be marked done, counted as done by the checks (Done's own pre-check, before the visit's status is written) */
   assumeDone?: string
 }
 
-/** Everything a bill needs, worked out with nothing written: the row to insert and the customer and link its message goes with. */
+/** Everything an invoice needs, worked out with nothing written: the row to insert and the customer and link its message goes with. */
 async function planBill(ctx: Ctx, input: SendBill) {
   const org = ctx.organizationId
   const [job] = await ctx.db.select().from(s.job).where(and(eq(s.job.id, input.jobId), eq(s.job.organizationId, org)))
@@ -67,10 +67,10 @@ async function planBill(ctx: Ctx, input: SendBill) {
   if (!customer || !organization) throw notFound("Customer")
   const live = visits.filter((v) => v.status !== "cancelled" && v.status !== "skipped")
   const done = live.filter((v) => v.status === "completed" || v.id === input.assumeDone)
-  if (done.length === 0 || (input.requireAllDone && done.length !== live.length)) throw new ApiError("unprocessable", "Mark the job done before sending a bill")
-  if (await openInvoiceOf(ctx.db, org, job.id)) throw new ApiError("conflict", "A bill is already open for this job")
+  if (done.length === 0 || (input.requireAllDone && done.length !== live.length)) throw new ApiError("unprocessable", "Mark the job done before sending an invoice")
+  if (await openInvoiceOf(ctx.db, org, job.id)) throw new ApiError("conflict", "An invoice is already open for this job")
   const liveLines = lines.filter((l) => !l.cancelledAt)
-  // The same rule prices the job, its visits and the bill, so the bill's total is what the job owes.
+  // The same rule prices the job, its visits and the invoice, so the invoice's total is what the job owes.
   const billing = billingOf(organization.settings)
   const rule = taxRuleOf(billing)
   const owed = jobOwed(liveLines, payments, rule)
@@ -83,12 +83,12 @@ async function planBill(ctx: Ctx, input: SendBill) {
   const billable = liveLines.filter((l) => (l.visitId ? doneIds.has(l.visitId) && !settled.has(l.visitId) && !paidUp(l.visitId) : input.requireAllDone))
   const frozen = invoiceLines(billable)
   const subtotal = invoiceAmount(frozen)
-  if (subtotal <= 0) throw new ApiError("unprocessable", "There is nothing to bill yet. Price the visit first.")
-  // Money paid on the job that no billed visit explains (a deposit on the job as a whole, part of a visit) comes off the bill: what the billed lines come to with their tax, less what the job owes.
+  if (subtotal <= 0) throw new ApiError("unprocessable", "There is nothing to invoice yet. Price the visit first.")
+  // Money paid on the job that no invoiced visit explains (a deposit on the job as a whole, part of a visit) comes off the invoice: what the invoiced lines come to with their tax, less what the job owes.
   const credit = subtotal + jobTax(billable, rule) - owed
   if (credit > 0) frozen.push({ name: "Payments received", description: null, quantity: 1, unitPrice: -credit, taxable: false })
-  // Checked before anything is written: a bill nobody can be sent, or one with no site address to link to, is never left open.
-  if (!(await messageChannel(ctx.db, customer, "invoice"))) throw new ApiError("unprocessable", "This customer has no mobile or email to send the bill to.")
+  // Checked before anything is written: an invoice nobody can be sent, or one with no site address to link to, is never left open.
+  if (!(await messageChannel(ctx.db, customer, "invoice"))) throw new ApiError("unprocessable", "This customer has no mobile or email to send the invoice to.")
   const origin = readAppUrl()
   const amount = invoiceAmount(frozen)
   const tax = jobTax(frozen, rule)
@@ -97,19 +97,19 @@ async function planBill(ctx: Ctx, input: SendBill) {
   return { job, customer, origin, base, year: Number(day.slice(0, 4)) }
 }
 
-/** Every refusal `sendBill` can make, with nothing written: Done with Send a bill runs it before the visit is marked done. */
+/** Every refusal `sendBill` can make, with nothing written: Done with Send an invoice runs it before the visit is marked done. */
 export async function checkBill(ctx: Ctx, input: SendBill): Promise<void> {
   await planBill(ctx, input)
 }
 
 /**
- * The one writer of a bill, under `invoices.send` and Done with Send a bill: the job's lines are frozen as they are now (a
- * later price edit never changes a bill that was sent), the tax comes from Settings › Billing, it is sent today (Mountain)
+ * The one writer of an invoice, under `invoices.send` and Done with Send an invoice: the job's lines are frozen as they are now (a
+ * later price edit never changes an invoice that was sent), the tax comes from Settings › Billing, it is sent today (Mountain)
  * and due `dueDays` later, and one message goes with the pay link, by text when the customer has a mobile and by email
- * otherwise. The bill covers the done visits' lines that are not already paid (by their own payment rows or by an earlier
- * paid bill that still stands); when other money was paid on the job as a whole, a last line takes it off so the bill asks only for what is owed.
- * The job must be Done, still owe money, have no other open bill (a partly-done job's bill covers only its done lines) and
- * a customer who can be reached. The number counts up from the organization's highest of the year; two bills made at once
+ * otherwise. The invoice covers the done visits' lines that are not already paid (by their own payment rows or by an earlier
+ * paid invoice that still stands); when other money was paid on the job as a whole, a last line takes it off so the invoice asks only for what is unpaid.
+ * The job must be Done, still owe money, have no other open invoice (a partly-done job's invoice covers only its done lines) and
+ * a customer who can be reached. The number counts up from the organization's highest of the year; two invoices made at once
  * race on the unique index and the loser takes the next number, once.
  */
 export async function sendBill(ctx: Ctx, input: SendBill): Promise<InvoiceRow> {
@@ -119,10 +119,10 @@ export async function sendBill(ctx: Ctx, input: SendBill): Promise<InvoiceRow> {
   for (let attempt = 0; attempt < 2 && !row; attempt++) {
     const [max] = await ctx.db.select({ number: s.invoice.number }).from(s.invoice).where(and(eq(s.invoice.organizationId, org), like(s.invoice.number, `INV-${year}-%`))).orderBy(desc(sql`length(${s.invoice.number})`), desc(s.invoice.number)).limit(1)
     ;[row] = await ctx.db.insert(s.invoice).values({ ...base, number: nextInvoiceNumber(year, max?.number) }).onConflictDoNothing().returning()
-    // The unique index on the job's open bill also stops an insert: a bill made at the same moment by someone else.
-    if (!row && (await openInvoiceOf(ctx.db, org, job.id))) throw new ApiError("conflict", "A bill is already open for this job")
+    // The unique index on the job's open invoice also stops an insert: an invoice made at the same moment by someone else.
+    if (!row && (await openInvoiceOf(ctx.db, org, job.id))) throw new ApiError("conflict", "An invoice is already open for this job")
   }
-  if (!row) throw new ApiError("conflict", "Another bill was being made at the same moment. Try again.")
+  if (!row) throw new ApiError("conflict", "Another invoice was being made at the same moment. Try again.")
   await queueMessage(ctx.db, { organizationId: org, customerId: customer.id, kind: "invoice", key: `invoice-${row.id}`, data: billData(origin, customer, row) })
   await emitEvent(ctx.db, org, "invoice.sent", { invoiceId: row.id, number: row.number, jobId: job.id, customerId: customer.id, total: row.total, sentOn: row.sentOn, dueOn: row.dueOn }, {
     about: "invoice", aboutId: row.id, customerId: customer.id, jobId: job.id, who: whoOf(ctx), at: ctx.now,
@@ -132,12 +132,12 @@ export async function sendBill(ctx: Ctx, input: SendBill): Promise<InvoiceRow> {
 }
 
 /**
- * Sends the bill's reminder: one message with the pay link, with the key `invoice-<id>-<today>` so two presses in a day send
- * one. A paid or cancelled bill is refused. Says so when the customer has neither a mobile nor an email to reach.
+ * Sends the invoice's reminder: one message with the pay link, with the key `invoice-<id>-<today>` so two presses in a day send
+ * one. A paid or canceled invoice is refused. Says so when the customer has neither a mobile nor an email to reach.
  */
 export async function remindBill(ctx: Ctx, invoiceId: string): Promise<InvoiceRow> {
   const row = await loadInvoice(ctx, invoiceId)
-  if (!invoiceOpen(row)) throw new ApiError("conflict", row.paidOn ? "This bill is already paid" : "This bill was cancelled")
+  if (!invoiceOpen(row)) throw new ApiError("conflict", row.paidOn ? "This invoice is already paid" : "This invoice was voided")
   const [customer] = await ctx.db.select().from(s.customer).where(and(eq(s.customer.id, row.customerId), eq(s.customer.organizationId, ctx.organizationId)))
   if (!customer) throw notFound("Customer")
   const key = `invoice-${row.id}-${today(ctx)}`

@@ -13,8 +13,8 @@ export const LineOut = z.object({
   quantity: z.number().int(),
   unitPrice: z.number().int().describe("Whole dollars."),
   taxable: z.boolean(),
-  cancelledAt: Iso.nullable().describe("Set once the line is cancelled; a cancelled line counts nothing."),
-  visitId: Id.nullable().describe("The visit the line is billed after; null for a line on the job as a whole."),
+  cancelledAt: Iso.nullable().describe("Set once the line is canceled; a canceled line counts nothing."),
+  visitId: Id.nullable().describe("The visit the line is invoiced after; null for a line on the job as a whole."),
 })
 
 /** The yard the visit is at, as the property holds it: the one field list of `src/lib/admin/yard.ts`. */
@@ -30,10 +30,10 @@ export const VisitOut = z.object({
   kind: VisitKind,
   status: VisitStatus,
   window: z.string().nullable().describe('The month the visit lands in: "May", "July", "October".'),
-  amount: z.number().int().describe("Whole dollars. The visit's own non-cancelled lines added up; a visit with no line costs 0."),
+  amount: z.number().int().describe("Whole dollars. The visit's own non-canceled lines added up; a visit with no line costs 0."),
   lineItems: z.array(LineOut).describe("Every line on the job this visit belongs to, oldest first."),
   payments: z.array(PaymentOut).describe("The visit's own payment rows, oldest first: the money that arrived for it and any refunds."),
-  jobPaymentShares: z.array(PaymentOut).describe("The shares of payments made on the job as a whole (a bill paid on the pay page) that cover this visit, as copies with the id `<paymentId>@<visitId>`; empty for most visits. Add them to `payments` for what has arrived for the visit. They are not rows of their own: refund the payment they name."),
+  jobPaymentShares: z.array(PaymentOut).describe("The shares of payments made on the job as a whole (an invoice paid on the pay page) that cover this visit, as copies with the id `<paymentId>@<visitId>`; empty for most visits. Add them to `payments` for what has arrived for the visit. They are not rows of their own: refund the payment they name."),
   preference: Preference.nullable(),
   awaitingPick: z.boolean().describe("The customer must be there and has not picked a day."),
   personId: Id.nullable().describe("Who the visit is assigned to, once someone has it."),
@@ -45,7 +45,7 @@ export const VisitOut = z.object({
   durationMinutes: z.number().int().nullable(),
   notes: z.string().nullable().describe("The text of the newest note about this visit (its story holds every note); null for a signed-in customer."),
   notDoneReason: z.string().nullable().describe("Why the last attempt did not happen; set by Not done, cleared when the visit gets a day."),
-  paidBy: z.string().nullable().describe("How the visit was paid: card_on_file, card_now, check, venmo, cash or bill; null before a payment."),
+  paidBy: z.string().nullable().describe("How the visit was paid: card_on_file, card_now, check, venmo, cash or invoice; null before a payment."),
   paymentStatus: z.enum(["none", "paid", "pending", "failed"]).describe("The newest charge: none before one exists."),
   stopOrder: z.number().int().nullable(),
   confirmedAt: Iso.nullable(),

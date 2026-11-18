@@ -44,7 +44,7 @@ async function servicesByKey(db: Database, organizationId: string, keys: readonl
 /**
  * Inserts a job's lines. Each takes the organization's service row for its key (none when no service fits), that row's
  * description and taxable flag as they are at the sale (the catalogue's words when the row has none), and the visit it is
- * billed after. A pass sale passes `untaxed`: its lines are never taxable.
+ * invoiced after. A pass sale passes `untaxed`: its lines are never taxable.
  */
 export async function insertLines(db: Database, { organizationId, jobId, now, keepExisting, untaxed }: InsertLinesOptions, lines: readonly VisitLine[]): Promise<void> {
   if (lines.length === 0) return
@@ -71,7 +71,7 @@ export async function insertLines(db: Database, { organizationId, jobId, now, ke
   else await insert
 }
 
-/** A skipped or cancelled visit's line counts for nothing from now on; a line already cancelled keeps its time. */
+/** A skipped or canceled visit's line counts for nothing from now on; a line already canceled keeps its time. */
 export async function cancelVisitLines(db: Database, visitIds: readonly string[], now: Date): Promise<void> {
   if (visitIds.length === 0) return
   await db

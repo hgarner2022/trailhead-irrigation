@@ -31,7 +31,7 @@ export interface PublicPrincipal {
   scopes: ["checkout"]
   /** the pass this visitor is buying (its job id, or the old pass id a browser stored before the move: the guard resolves both); `passes.activate` is allowed only for it */
   passId?: string
-  /** the bill this visitor is paying: set only by server code that checked the signed pay link. With it the visitor may call `own-invoice` handlers for this one bill and nothing else */
+  /** the invoice this visitor is paying: set only by server code that checked the signed pay link. With it the visitor may call `own-invoice` handlers for this one invoice and nothing else */
   invoiceId?: string
   /** the pass this visitor may renew (job id or old pass id, resolved the same way): set only by server code that checked the signed link or the signed-in customer, never from a request */
   renewPassId?: string
