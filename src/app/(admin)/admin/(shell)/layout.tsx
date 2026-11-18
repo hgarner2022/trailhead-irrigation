@@ -3,6 +3,7 @@ import { headers } from "next/headers"
 import { AdminShell } from "@/components/blocks/AdminShell"
 import { signOut } from "@/auth"
 import { requireAdmin } from "@/lib/auth/guard"
+import { searchAdmin } from "./search-action"
 import { sectionOf } from "./section"
 
 /** The frame around every admin page. `/admin/sign-in` is outside this group, so it has no rail. */
@@ -18,7 +19,7 @@ export default async function ShellLayout({ children }: Readonly<{ children: Rea
   }
 
   return (
-    <AdminShell current={sectionOf(pathname)} user={{ initials, name }} onSignOut={onSignOut}>
+    <AdminShell current={sectionOf(pathname)} user={{ initials, name }} onSignOut={onSignOut} onSearch={searchAdmin}>
       {children}
     </AdminShell>
   )
