@@ -36,6 +36,7 @@ export interface EventRecord {
   visitId?: string | null
   who: string
   detail?: Record<string, unknown>
+  at?: Date
 }
 
 /**

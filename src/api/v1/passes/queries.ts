@@ -1,5 +1,5 @@
 import { readAppUrl } from "@/lib/env"
-import { aboutOfLegacy, eventKindOfLegacy } from "@/lib/events/kinds"
+import { aboutOfLegacy, eventKindOfLegacy, type EventKind } from "@/lib/events/kinds"
 import { recordEvent, whoOf } from "@/lib/events/record"
 import { passInspection, passPreferences, passStatus } from "@/lib/pass/facts"
 import { visitCalendarUrl } from "@/lib/messaging/tokens"
@@ -132,11 +132,13 @@ export async function passDetail(ctx: Ctx, row: PassRow) {
  * What changed, by whom. Writes the `event` row (the kind translated by `LEGACY_EVENT_KIND`, about the visit, the job or the
  * customer, with `jobId` and `visitId` filled) and, until step 6, the `pass_change` alias row with its old kind.
  */
-export async function recordChange(ctx: Ctx, change: { customerId: string; passId?: string | null; visitId?: string; kind: string; detail?: Record<string, unknown> }) {
+export async function recordChange(ctx: Ctx, change: { customerId: string; passId?: string | null; visitId?: string; kind: string; detail?: Record<string, unknown>; eventKind?: EventKind }) {
+  const { eventKind, ...row } = change
   const by = ctx.principal.kind === "person" ? ctx.principal.email : `${ctx.principal.kind}:${ctx.principal.id}`
-  await ctx.db.insert(s.passChange).values({ organizationId: ctx.organizationId, byPrincipal: by, at: ctx.now, detail: {}, ...change })
+  await ctx.db.insert(s.passChange).values({ organizationId: ctx.organizationId, byPrincipal: by, at: ctx.now, detail: {}, ...row })
   const jobId = await jobOfChange(ctx, change)
-  const kind = eventKindOfLegacy(change.kind)
+  // `eventKind` names the event when the old kind cannot (a picked day is `visit.scheduled` the first time, `visit.moved` after).
+  const kind = eventKind ?? eventKindOfLegacy(change.kind)
   const about = aboutOfLegacy(kind, { visitId: change.visitId, jobId })
   await recordEvent(ctx.db, {
     organizationId: ctx.organizationId,

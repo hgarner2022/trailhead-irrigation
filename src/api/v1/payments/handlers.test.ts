@@ -5,7 +5,7 @@ import * as s from "@/db/schema"
 import type { TestDb } from "@/db/test-db"
 import { stubStripe } from "@/lib/stripe/test-stripe"
 import { callApi } from "../../core/call"
-import { adminKey, apiDb, ctxFor, key, ORG, readKey, writeKey } from "../../test-helpers"
+import { adminKey, apiDb, ctxFor, eventsOf, key, ORG, readKey, writeKey } from "../../test-helpers"
 import { customersGet } from "../customers/handlers"
 import { visitsCreate } from "../visits/office"
 import { visitsGet, visitsMove } from "../visits/handlers"
@@ -190,5 +190,37 @@ describe("payments.refund", () => {
     await callApi(as(), paymentsRefund, { paymentId: paid!.id })
     await expect(callApi(as(), visitsMarkClosed, { id: v.id, undo: true })).rejects.toMatchObject({ code: "unprocessable" })
     expect((await callApi(as(readKey), visitsGet, { id: v.id })).status).toBe("completed")
+  })
+})
+
+describe("the events a payment writes", () => {
+  it("payments.record writes payment.succeeded about the new row, with the visit's name; the legacy charge.* webhook name writes nothing", async () => {
+    await db.insert(s.webhookEndpoint).values({ id: "wh-pay", organizationId: ORG, url: "https://hooks.test/p", secret: "shh", events: ["payment.succeeded", "charge.succeeded"] })
+    const v = await repair()
+    const row = await callApi(as(writeKey), paymentsRecord, { jobId: v.jobId, visitId: v.id, amount: 145, method: "venmo" })
+    expect(await eventsOf(db, { kind: "payment.succeeded", jobId: v.jobId })).toMatchObject([{ kind: "payment.succeeded", about: "payment", aboutId: row.id, customerId: "c100", visitId: v.id, who: "api", detail: { amount: 145, method: "venmo", name: "Repair" } }])
+    expect((await db.select().from(s.outboundEvent)).map((e) => e.event)).toEqual(expect.arrayContaining(["payment.succeeded", "charge.succeeded"]))
+    // Refused again: still one event.
+    await expect(callApi(as(writeKey), paymentsRecord, { jobId: v.jobId, visitId: v.id, amount: 145, method: "venmo" })).rejects.toMatchObject({ code: "conflict" })
+    expect(await eventsOf(db, { kind: "payment.succeeded", jobId: v.jobId })).toHaveLength(1)
+  })
+  it("a payment on the job as a whole is about the payment with no visit and no name", async () => {
+    const v = await repair()
+    const row = await callApi(as(writeKey), paymentsRecord, { jobId: v.jobId, amount: 100, method: "cash" })
+    const [event] = await eventsOf(db, { kind: "payment.succeeded", jobId: v.jobId })
+    expect(event).toMatchObject({ aboutId: row.id, visitId: null, detail: { amount: 100, method: "cash" } })
+    expect(event!.detail).not.toHaveProperty("name")
+  })
+  it("a rejected payment (a read key, an unknown job) writes none", async () => {
+    const before = (await db.select().from(s.event)).length
+    await expect(callApi(as(readKey), paymentsRecord, { jobId: "nope", amount: 5, method: "cash" })).rejects.toMatchObject({ code: "forbidden" })
+    await expect(callApi(as(writeKey), paymentsRecord, { jobId: "nope", amount: 5, method: "cash" })).rejects.toMatchObject({ code: "not_found" })
+    expect((await db.select().from(s.event)).length).toBe(before)
+  })
+  it("a card refund writes payment.refunded about the refund row", async () => {
+    const v = await repair(200)
+    const [card] = await db.insert(s.charge).values({ organizationId: ORG, jobId: v.jobId, visitId: v.id, customerId: "c100", attempt: 1, amount: 200, status: "succeeded", method: "card_now", paidOn: "2027-05-07", stripePaymentIntentId: "pi_ev_1" }).returning()
+    const refund = await callApi(as(), paymentsRefund, { paymentId: card!.id, amount: 50 })
+    expect(await eventsOf(db, { kind: "payment.refunded", jobId: v.jobId })).toMatchObject([{ about: "payment", aboutId: refund.id, customerId: "c100", visitId: v.id, detail: { amount: 50, method: "card_now", refunds: card!.id } }])
   })
 })

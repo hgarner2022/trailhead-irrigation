@@ -13,6 +13,8 @@ import { orderDay } from "@/lib/scheduling/server/order-day"
 import { blockedMinutes, capacityAfterBlocks } from "@/lib/admin/calendar"
 import { loadBlocks } from "@/lib/jobber-feed"
 import { offeredDays, openSlots, personFor } from "@/lib/pass/server/area-days"
+import { visitName } from "@/lib/events/names"
+import { recordEvent, whoOf } from "@/lib/events/record"
 import { emitEvent } from "../webhooks/deliver"
 import { isRoutePerson, personByAnyId, resolvePersonId } from "../people/handlers"
 import { recordChange } from "../passes/queries"
@@ -125,7 +127,10 @@ export async function placeVisit(ctx: Ctx, input: { id: string; personId?: strin
     if (input.startTime) await ctx.db.update(s.visit).set({ startTime: input.startTime }).where(eq(s.visit.id, visit.id))
     await ctx.db.update(s.adminAlert).set({ resolvedAt: ctx.now }).where(and(eq(s.adminAlert.organizationId, ctx.organizationId), eq(s.adminAlert.kind, "unplaced"), eq(s.adminAlert.key, visit.id)))
     if (visit.scheduledOn !== input.scheduledOn) await queueDateMessage(ctx.db, visit, moved ? "date-moved" : "date-set", input.scheduledOn)
-    await emitEvent(ctx.db, ctx.organizationId, moved ? "visit.moved" : "visit.scheduled", { visitId: visit.id, ...who(person.id), scheduledOn: input.scheduledOn, from: moved ? { ...who(visit.personId), scheduledOn: visit.scheduledOn } : null })
+    await emitEvent(ctx.db, ctx.organizationId, moved ? "visit.moved" : "visit.scheduled", { visitId: visit.id, ...who(person.id), scheduledOn: input.scheduledOn, from: moved ? { ...who(visit.personId), scheduledOn: visit.scheduledOn } : null }, {
+      about: "visit", aboutId: visit.id, customerId: visit.customerId, jobId: visit.jobId, visitId: visit.id, who: whoOf(ctx), at: ctx.now,
+      detail: { name: visitName(visit.kind), day: input.scheduledOn, from: moved ? visit.scheduledOn : null, personId: person.id },
+    })
     return visitOut(ctx, await loadVisit(ctx, visit.id))
 }
 
@@ -154,6 +159,8 @@ export const visitsStretch = defineHandler({
     const { visit } = await loadVisit(ctx, input.id)
     if (visit.status !== "scheduled") throw new ApiError("unprocessable", "Only a scheduled visit can be stretched")
     await ctx.db.update(s.visit).set({ durationMinutes: input.durationMinutes }).where(eq(s.visit.id, visit.id))
+    if (input.durationMinutes !== visit.durationMinutes)
+      await recordEvent(ctx.db, { organizationId: ctx.organizationId, about: "visit", aboutId: visit.id, customerId: visit.customerId, jobId: visit.jobId, visitId: visit.id, kind: "visit.edited", detail: { name: visitName(visit.kind), durationMinutes: { from: visit.durationMinutes, to: input.durationMinutes } }, who: whoOf(ctx), at: ctx.now })
     return visitOut(ctx, await loadVisit(ctx, visit.id))
   },
 })
@@ -240,7 +247,8 @@ export const visitsPick = defineHandler({
     if (!slot) throw new ApiError("unprocessable", "That day is not one of the days on offer; pick another")
     const moved = visit.status === "scheduled"
     await ctx.db.update(s.visit).set({ status: "scheduled", personId: slot.personId, scheduledOn: input.day, startTime: null, stopOrder: null, awaitingPick: false, exception: null, notDoneReason: null }).where(eq(s.visit.id, visit.id))
-    await recordChange(ctx, { customerId: visit.customerId, passId: visit.passId, visitId: visit.id, kind: "day-picked", detail: { visit: visit.kind, day: input.day, person: slot.personName, from: visit.scheduledOn } })
+    await recordChange(ctx, { customerId: visit.customerId, passId: visit.passId, visitId: visit.id, kind: "day-picked", eventKind: moved ? "visit.moved" : "visit.scheduled", detail: { visit: visit.kind, name: visitName(visit.kind), day: input.day, person: slot.personName, personId: slot.personId, from: moved ? visit.scheduledOn : null } })
+    // `recordChange` above writes the event (who is the customer); the outbound webhook does not record it a second time.
     await emitEvent(ctx.db, ctx.organizationId, moved ? "visit.moved" : "visit.scheduled", { visitId: visit.id, ...who(slot.personId), scheduledOn: input.day, from: moved ? { ...who(visit.personId), scheduledOn: visit.scheduledOn } : null })
     await queueDateMessage(ctx.db, visit, moved ? "date-moved" : "date-set", input.day)
     return visitOut(ctx, await loadVisit(ctx, visit.id))

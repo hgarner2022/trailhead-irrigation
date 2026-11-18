@@ -4,7 +4,7 @@ import { eq } from "drizzle-orm"
 import * as s from "@/db/schema"
 import type { TestDb } from "@/db/test-db"
 import { callApi } from "../../core/call"
-import { apiDb, ctxFor, linesOfJob, ORG, readKey, writeKey } from "../../test-helpers"
+import { apiDb, ctxFor, eventsOf, linesOfJob, ORG, readKey, writeKey } from "../../test-helpers"
 import { visitsCreate } from "../visits/office"
 import { bookingsCancel, bookingsCreate, quoteRequestsCreate, quoteRequestsList } from "./handlers"
 
@@ -33,7 +33,14 @@ describe("bookings", () => {
   })
   it("cancels a booking and its unfinished visits", async () => {
     await expect(callApi(ctxFor(db, readKey), bookingsCancel, { id: "b1" })).rejects.toMatchObject({ code: "forbidden" })
+    expect(await eventsOf(db, { jobId: "b1" })).toEqual([])
     expect(await callApi(ctxFor(db, writeKey), bookingsCancel, { id: "b1" })).toEqual({ id: "b1", status: "cancelled", cancelledVisits: 1 })
+    // One `visit.cancelled` for the visit that gave up its day (the finished one stays), and one `job.cancelled`.
+    expect(await eventsOf(db, { kind: "visit.cancelled", jobId: "b1" })).toMatchObject([{ about: "visit", aboutId: "b1-v1", customerId: "c100", visitId: "b1-v1", who: "api", detail: { name: "Repair", day: "2027-05-05" } }])
+    expect(await eventsOf(db, { kind: "job.cancelled", jobId: "b1" })).toMatchObject([{ about: "job", aboutId: "b1", customerId: "c100", visitId: null, who: "api" }])
+    // Cancelling again adds nothing.
+    await callApi(ctxFor(db, writeKey), bookingsCancel, { id: "b1" })
+    expect(await eventsOf(db, { jobId: "b1" })).toHaveLength(2)
     const [v] = await db.select().from(s.visit).where(eq(s.visit.id, "b1-v1"))
     expect(v).toMatchObject({ status: "cancelled", personId: null })
     await expect(callApi(ctxFor(db, writeKey), bookingsCancel, { id: "nope" })).rejects.toMatchObject({ code: "not_found" })

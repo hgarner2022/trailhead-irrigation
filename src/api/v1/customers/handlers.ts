@@ -3,6 +3,8 @@ import { and, asc, desc, eq, inArray, isNull, ne, or, sql } from "drizzle-orm"
 import { z } from "zod"
 import * as s from "@/db/schema"
 import type { Database } from "@/db/types"
+import { changedFields } from "@/lib/events/diff"
+import { recordEvent, whoOf } from "@/lib/events/record"
 import { enqueueGeocode } from "@/lib/geocode"
 import { defineHandler } from "../../core/handler"
 import { ApiError, notFound } from "../../core/errors"
@@ -256,6 +258,7 @@ export const customersCreate = defineHandler({
     const [row] = await ctx.db.insert(s.customer).values({ organizationId: ctx.organizationId, ...fields, ...cleanContact(fields) }).returning()
     const props = property ? await ctx.db.insert(s.property).values({ organizationId: ctx.organizationId, customerId: row!.id, address: property.address, town: property.town, ...cleanYard(property) }).returning() : []
     for (const p of props) await enqueueGeocode(ctx.db, ctx.organizationId, p.id, ctx.now)
+    await recordEvent(ctx.db, { organizationId: ctx.organizationId, about: "customer", aboutId: row!.id, customerId: row!.id, kind: "customer.edited", detail: { created: true, changed: changedFields({}, { firstName: row!.firstName, lastName: row!.lastName, email: row!.email, phone: row!.phone, leadSource: row!.leadSource }) }, who: whoOf(ctx), at: ctx.now })
     return {
       ...customerOut(ctx, row!),
       properties: props.map((p) => propertyOut(ctx, p)),
@@ -274,11 +277,13 @@ export const customersUpdate = defineHandler({
   input: z.object(customerFields).partial().extend({ id: idInput.shape.id }),
   output: CustomerOut,
   async run(ctx, { id, ...changes }) {
-    await getCustomerRow(ctx, id)
+    const before = await getCustomerRow(ctx, id)
     const defined = Object.fromEntries(Object.entries({ ...changes, ...cleanContact(changes) }).filter(([, v]) => v !== undefined))
     const [row] = Object.keys(defined).length
       ? await ctx.db.update(s.customer).set(defined).where(and(eq(s.customer.id, id), eq(s.customer.organizationId, ctx.organizationId))).returning()
-      : [await getCustomerRow(ctx, id)]
+      : [before]
+    const changed = changedFields(before, defined)
+    if (Object.keys(changed).length) await recordEvent(ctx.db, { organizationId: ctx.organizationId, about: "customer", aboutId: id, customerId: id, kind: "customer.edited", detail: { changed }, who: whoOf(ctx), at: ctx.now })
     return customerOut(ctx, row!)
   },
 })
@@ -321,6 +326,7 @@ export const consentsRecord = defineHandler({
         recordedAt: ctx.now,
       })
       .returning()
+    await recordEvent(ctx.db, { organizationId: ctx.organizationId, about: "customer", aboutId: id, customerId: id, kind: "consent", detail: { marketingOptIn: row!.marketingOptIn, marketingChannels: row!.marketingChannels, source: row!.source }, who: whoOf(ctx), at: ctx.now })
     return consentOut(row!)
   },
 })

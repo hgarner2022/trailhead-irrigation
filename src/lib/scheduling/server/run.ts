@@ -5,6 +5,7 @@ import type { Database } from "@/db/types"
 import { who } from "@/api/v1/visits/schemas"
 import { emitEvent } from "@/api/v1/webhooks/deliver"
 import { shortDate } from "@/lib/admin/format"
+import { visitName } from "@/lib/events/names"
 import { currentSeason } from "@/lib/pass/season"
 import { weekOf } from "@/lib/admin/calendar"
 import { scheduleVisits } from "../schedule"
@@ -72,7 +73,10 @@ export async function runSchedule(db: Database, input: { organizationId: string;
   for (const p of result.placed) {
     const r = byId.get(p.visitId)!
     await queueDateMessage(db, r.visit, "date-set", p.day)
-    await emitEvent(db, organizationId, "visit.scheduled", { visitId: p.visitId, ...who(p.personId), scheduledOn: p.day, from: null })
+    await emitEvent(db, organizationId, "visit.scheduled", { visitId: p.visitId, ...who(p.personId), scheduledOn: p.day, from: null }, {
+      about: "visit", aboutId: p.visitId, customerId: r.visit.customerId, jobId: r.visit.jobId, visitId: p.visitId, who: "system", at: now,
+      detail: { name: visitName(r.visit.kind), day: p.day, from: null, personId: p.personId },
+    })
   }
   if (result.waiting.length) await db.update(s.visit).set({ awaitingPick: true }).where(inArray(s.visit.id, result.waiting))
 

@@ -7,6 +7,8 @@ import * as s from "@/db/schema"
 import type { Database } from "@/db/types"
 import { ctxForJob } from "@/lib/admin/api-ctx"
 import { clearedCardColumns } from "@/lib/customer/card"
+import { visitName } from "@/lib/events/names"
+import { recordEvent } from "@/lib/events/record"
 import { paidDay } from "@/lib/money/record"
 import { baseData } from "@/lib/messaging/data"
 import { queueMessage } from "@/lib/messaging/queue"
@@ -93,7 +95,11 @@ export async function handleStripeEvent(db: Database, stripe: Stripe, organizati
           .where(eq(s.charge.id, charge.id))
         if (charge.visitId) await db.update(s.visit).set({ chargedAt: now, stripePaymentIntentId: intent.id, updatedAt: now }).where(eq(s.visit.id, charge.visitId))
       } else if (event.type === "payment_intent.payment_failed" && charge.status === "pending") {
-        await db.update(s.charge).set({ status: "failed", failureMessage: intent.last_payment_error?.message ?? "The payment failed", updatedAt: now }).where(eq(s.charge.id, charge.id))
+        const message = intent.last_payment_error?.message ?? "The payment failed"
+        await db.update(s.charge).set({ status: "failed", failureMessage: message, updatedAt: now }).where(eq(s.charge.id, charge.id))
+        // Only the run that moves the payment from pending to failed writes the event, so a redelivery adds none.
+        const [owner] = charge.visitId ? await db.select({ kind: s.visit.kind, jobId: s.visit.jobId, customerId: s.visit.customerId }).from(s.visit).where(eq(s.visit.id, charge.visitId)) : []
+        await recordEvent(db, { organizationId, about: "payment", aboutId: charge.id, customerId: charge.customerId ?? owner?.customerId, jobId: charge.jobId ?? owner?.jobId, visitId: charge.visitId, kind: "payment.failed", detail: { amount: charge.amount, message, ...(owner ? { name: visitName(owner.kind) } : {}) }, who: "system", at: now })
       }
       return
     }
@@ -120,6 +126,7 @@ export async function handleStripeEvent(db: Database, stripe: Stripe, organizati
       }
       await db.update(s.customer).set({ ...clearedCardColumns, updatedAt: now }).where(and(eq(s.customer.id, customer.id), ofOrg))
       await db.update(s.seasonPass).set({ ...clearedCardColumns, updatedAt: now }).where(aliasOfMethod)
+      await recordEvent(db, { organizationId, about: "customer", aboutId: customer.id, customerId: customer.id, kind: "card.removed", detail: { brand: customer.cardBrand, last4: customer.cardLast4 }, who: "system", at: now })
       // The pass that speaks for the customer is their newest active one.
       const [row] = await db
         .select({ pass: s.seasonPass, number: s.job.passNumber })

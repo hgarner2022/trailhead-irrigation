@@ -5,7 +5,7 @@ import * as s from "@/db/schema"
 import type { TestDb } from "@/db/test-db"
 import { callApi } from "@/api/core/call"
 import { scheduleRun } from "@/api/v1/schedule/handlers"
-import { adminKey, apiDb, ctxFor, ORG } from "@/api/test-helpers"
+import { adminKey, apiDb, ctxFor, eventsOf, ORG } from "@/api/test-helpers"
 import { drain } from "@/lib/queue"
 import { handlers } from "@/lib/queue/handlers"
 import { runSummary } from "./run"
@@ -58,6 +58,14 @@ describe("schedule.run", () => {
       expect(personId).toMatch(/^person_/)
       expect(e.payload).toMatchObject({ personId, truckId: personId, from: null })
     }
+    // The story: one `visit.scheduled` per placed visit, written by the system, none for the visit still waiting for its customer.
+    const story = await eventsOf(db, { kind: "visit.scheduled" })
+    expect(story).toHaveLength(out.placed)
+    for (const e of story) {
+      const visit = rows.find((v) => v.id === e.aboutId)!
+      expect(e).toMatchObject({ about: "visit", visitId: visit.id, customerId: visit.customerId, jobId: visit.jobId, who: "system", detail: { name: "Spring turn-on", day: visit.scheduledOn, from: null, personId: visit.personId } })
+    }
+    expect(story.some((e) => e.aboutId === waitingId)).toBe(false)
   })
 
   it("queues a date-set text for each placed visit and writes the run and its Home line", async () => {
@@ -74,8 +82,10 @@ describe("schedule.run", () => {
 
   it("places nothing the second time", async () => {
     expect(await run()).toEqual({ placed: 0, unplaced: 0 })
+    const stories = (await eventsOf(db, { kind: "visit.scheduled" })).length
     const before = (await db.select().from(s.messageLog)).length
     await run()
+    expect((await eventsOf(db, { kind: "visit.scheduled" })).length).toBe(stories)
     expect((await db.select().from(s.messageLog)).length).toBe(before)
   })
 

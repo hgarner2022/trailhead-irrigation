@@ -6,6 +6,7 @@ import { customerHasCard } from "@/lib/customer/card"
 import { cleanText } from "@/lib/format/contact"
 import { enqueueGeocode } from "@/lib/geocode"
 import { currentSeason } from "@/lib/pass/season"
+import { recordEvent, whoOf } from "@/lib/events/record"
 import { markPassActive } from "@/lib/pass/server/activate"
 import { holdOfficeDays } from "@/lib/pass/server/chosen-days"
 import { makePassRows } from "@/lib/pass/server/rows"
@@ -72,8 +73,9 @@ export const passesSell = defineHandler({
     const pass = await makePassRows(ctx.db, { organizationId: org, customerId: customer.id, propertyId: property.id, season, onSale, zones: input.zones, inspection: input.inspection, accessNote, status: "active", source: "office", now: ctx.now })
     if (input.notes) await ctx.db.update(s.job).set({ notes: input.notes }).where(eq(s.job.id, pass.jobId))
     const heldDays = await holdOfficeDays(ctx.db, pass.id, input.days, property.town, season, day)
-    await markPassActive(ctx.db, pass, null, ctx.now)
-    await recordChange(ctx, { customerId: customer.id, passId: pass.id, kind: "sold", detail: { source: "office", paysBy: input.paysBy, days: heldDays } })
+    await markPassActive(ctx.db, pass, null, ctx.now, whoOf(ctx))
+    await recordChange(ctx, { customerId: customer.id, passId: pass.id, kind: "sold", detail: { source: "office", name: "Season Pass", passNumber: pass.number, paysBy: input.paysBy, days: heldDays } })
+    if (input.notes) await recordEvent(ctx.db, { organizationId: org, about: "job", aboutId: pass.jobId, customerId: customer.id, jobId: pass.jobId, kind: "note", detail: { text: input.notes }, who: whoOf(ctx), at: ctx.now })
 
     // Card on file: the confirmation carries the same link "Send card link" sends, on a Stripe customer made now when the person has none.
     let cardUpdateUrl: string | null = null

@@ -92,7 +92,7 @@ export async function newestPendingPass(db: Database, organizationId: string, cu
 export async function expirePendingPasses(db: Database, now: Date, minutes = PENDING_PASS_MINUTES): Promise<number> {
   const cutoff = new Date(now.getTime() - minutes * 60_000)
   const stale = await db
-    .select({ id: s.job.id })
+    .select({ id: s.job.id, organizationId: s.job.organizationId })
     .from(s.job)
     .where(and(eq(s.job.kind, "pass"), eq(s.job.status, "pending"), isNull(s.job.cancelledAt), lt(s.job.createdAt, cutoff)))
   if (stale.length === 0) return 0
@@ -100,6 +100,8 @@ export async function expirePendingPasses(db: Database, now: Date, minutes = PEN
   const passes = await db.select({ id: s.seasonPass.id }).from(s.seasonPass).where(inArray(s.seasonPass.jobId, jobIds))
   const passIds = passes.map((r) => r.id)
   // Foreign-key order: line_item, visit, pass_change, admin_alert, season_pass, then job.
+  // The events of a checkout that never finished are not history: they go with the pass (the one place anything leaves `event`).
+  await db.delete(s.event).where(and(inArray(s.event.organizationId, [...new Set(stale.map((r) => r.organizationId))]), inArray(s.event.jobId, jobIds)))
   await db.delete(s.lineItem).where(inArray(s.lineItem.jobId, jobIds))
   await db.delete(s.visit).where(inArray(s.visit.jobId, jobIds))
   if (passIds.length > 0) {

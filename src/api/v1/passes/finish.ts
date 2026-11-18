@@ -1,6 +1,7 @@
 import "server-only"
 import { eq } from "drizzle-orm"
 import * as s from "@/db/schema"
+import { whoOf } from "@/lib/events/record"
 import { readAppUrl } from "@/lib/env"
 import { scheduleChosenDays } from "@/lib/pass/server/chosen-days"
 import { recordPurchase, type PurchaseConsent, type PurchaseExtras } from "@/lib/pass/server/purchase"
@@ -18,5 +19,5 @@ export async function finishPurchase(ctx: Ctx, pass: { id: string; customerId: s
   const season = job?.season ?? pass.season
   for (const moved of await scheduleChosenDays(ctx.db, pass.id, town, season, today(ctx)))
     await recordChange(ctx, { customerId: pass.customerId, passId: pass.id, visitId: moved.visitId, kind: "day-filled", detail: { visit: moved.kind, from: moved.from, to: moved.to } })
-  await recordPurchase(ctx.db, pass.id, consent, readAppUrl(), ctx.now, extras)
+  await recordPurchase(ctx.db, pass.id, consent, readAppUrl(), ctx.now, { who: whoOf(ctx), ...extras })
 }

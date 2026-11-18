@@ -2,6 +2,7 @@ import "server-only"
 import { desc, eq } from "drizzle-orm"
 import * as s from "@/db/schema"
 import type { Database } from "@/db/types"
+import { recordEvent } from "@/lib/events/record"
 
 const STOP_WORDS = new Set(["STOP", "STOPALL", "UNSUBSCRIBE", "CANCEL", "END", "QUIT"])
 const START_WORDS = new Set(["START", "YES", "UNSTOP"])
@@ -27,6 +28,7 @@ export async function handleInboundText(db: Database, from: string, body: string
       organizationId: customer.organizationId, customerId: customer.id, termsVersion: newest?.termsVersion ?? null, termsAcceptedAt: newest?.termsAcceptedAt ?? null,
       marketingOptIn: channels.length > 0 && (newest?.marketingOptIn ?? false), marketingChannels: channels, source: "reply", note: label, recordedAt: now,
     })
+    await recordEvent(db, { organizationId: customer.organizationId, about: "customer", aboutId: customer.id, customerId: customer.id, kind: "consent", detail: { marketingOptIn: channels.length > 0 && (newest?.marketingOptIn ?? false), marketingChannels: channels, source: "reply", note: label }, who: "system", at: now })
   }
   return outcome
 }

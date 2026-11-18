@@ -4,7 +4,7 @@ import { desc, eq } from "drizzle-orm"
 import * as s from "@/db/schema"
 import type { TestDb } from "@/db/test-db"
 import { callApi } from "../../core/call"
-import { adminKey, apiDb, ctxFor, customerPerson, ORG, readKey, writeKey } from "../../test-helpers"
+import { adminKey, apiDb, ctxFor, customerPerson, eventsOf, ORG, readKey, writeKey } from "../../test-helpers"
 import { visitsGet, visitsList, visitsMove, visitsRequestMove, visitsStretch } from "./handlers"
 import { visitsMarkClosed } from "./money"
 
@@ -94,6 +94,10 @@ describe("visits.move", () => {
     expect(events.map((e) => e.event)).toContain("visit.scheduled")
     await move({ id: "p3-turn-on", personId: "person_truck-1", scheduledOn: "2027-05-06" })
     expect((await db.select().from(s.outboundEvent)).map((e) => e.event)).toContain("visit.moved")
+    // The story: one event per placement, about the visit, with the job and the customer, by the key that placed it.
+    const [first] = await eventsOf(db, { kind: "visit.scheduled", aboutId: "p3-turn-on" })
+    expect(first).toMatchObject({ about: "visit", aboutId: "p3-turn-on", customerId: expect.any(String), jobId: expect.any(String), visitId: "p3-turn-on", who: "api", detail: { name: "Spring turn-on", day: "2027-05-05", from: null, personId: "person_truck-1" } })
+    expect(await eventsOf(db, { kind: "visit.moved", aboutId: "p3-turn-on" })).toMatchObject([{ detail: { day: "2027-05-06", from: "2027-05-05", personId: "person_truck-1" } }])
   })
   it("names the person and answers the same under the old truck names", async () => {
     const out = await move({ id: "p3-turn-on", personId: "person_truck-1", scheduledOn: "2027-05-07" })
@@ -130,6 +134,11 @@ describe("visits.move", () => {
     await move({ id: "p8-turn-on", personId: "person_truck-2", scheduledOn: "2027-05-12" })
     await expect(move({ id: "p10-turn-on", personId: "person_truck-2", scheduledOn: "2027-05-12" })).rejects.toThrow(/full of turn-on/)
   })
+  it("writes no event for a placement that is refused", async () => {
+    const before = (await eventsOf(db, { visitId: "p11-blowout" })).length
+    await expect(move({ id: "p11-blowout", personId: "person_truck-1", scheduledOn: "2027-05-01" })).rejects.toMatchObject({ code: "unprocessable" })
+    expect(await eventsOf(db, { visitId: "p11-blowout" })).toHaveLength(before)
+  })
   it("refuses a finished visit, an unknown truck, a bad day and a read key", async () => {
     await expect(move({ id: "p1-turn-on", personId: "person_truck-1", scheduledOn: "2027-05-10" })).rejects.toThrow(/completed/)
     await expect(move({ id: "p11-turn-on", personId: "nope", scheduledOn: "2027-05-10" })).rejects.toMatchObject({ code: "not_found" })
@@ -163,7 +172,9 @@ describe("visits.markClosed and visits.stretch", () => {
   })
   it("stretches a scheduled visit in 15-minute steps", async () => {
     expect(await callApi(ctxFor(db, writeKey), visitsStretch, { id: "p4-turn-on", durationMinutes: 120 })).toMatchObject({ durationMinutes: 120 })
+    expect(await eventsOf(db, { kind: "visit.edited", aboutId: "p4-turn-on" })).toMatchObject([{ about: "visit", visitId: "p4-turn-on", who: "api", detail: { name: "Spring turn-on", durationMinutes: { to: 120 } } }])
     await expect(callApi(ctxFor(db, writeKey), visitsStretch, { id: "p4-turn-on", durationMinutes: 100 })).rejects.toMatchObject({ code: "invalid" })
+    expect(await eventsOf(db, { kind: "visit.edited", aboutId: "p4-turn-on" })).toHaveLength(1)
     await expect(callApi(ctxFor(db, writeKey), visitsStretch, { id: "p11-blowout", durationMinutes: 60 })).rejects.toMatchObject({ code: "unprocessable" })
   })
 })
@@ -173,7 +184,9 @@ describe("visits.requestMove", () => {
     await expect(callApi(ctxFor(db, customerPerson("c104")), visitsRequestMove, { id: "p6-blowout", preferredWeek: "2027-10-18", note: "away that week" })).resolves.toEqual({ ok: true })
     const [change] = await db.select().from(s.passChange).where(eq(s.passChange.kind, "move-requested"))
     expect(change).toMatchObject({ passId: "p6", visitId: "p6-blowout", detail: { preferredWeek: "2027-10-18", note: "away that week" } })
+    expect(await eventsOf(db, { kind: "visit.move-requested", aboutId: "p6-blowout" })).toMatchObject([{ about: "visit", customerId: "c104", visitId: "p6-blowout", who: "customer", detail: { preferredWeek: "2027-10-18", note: "away that week" } }])
     await expect(callApi(ctxFor(db, customerPerson("c104")), visitsRequestMove, { id: "p7-blowout" })).rejects.toMatchObject({ code: "forbidden" })
+    expect(await eventsOf(db, { kind: "visit.move-requested", aboutId: "p7-blowout" })).toEqual([])
     await expect(callApi(ctxFor(db, readKey), visitsRequestMove, { id: "p6-blowout" })).rejects.toMatchObject({ code: "forbidden" })
   })
 })

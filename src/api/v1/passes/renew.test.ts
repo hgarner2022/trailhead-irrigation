@@ -5,7 +5,7 @@ import * as s from "@/db/schema"
 import type { TestDb } from "@/db/test-db"
 import type { PublicPrincipal } from "@/lib/auth/types"
 import { callApi } from "../../core/call"
-import { apiDb, ctxFor, linesOfPass, ORG } from "../../test-helpers"
+import { apiDb, ctxFor, eventsOf, linesOfPass, ORG } from "../../test-helpers"
 import { scheduleOfferDays } from "../schedule/handlers"
 import { passesCreate } from "./handlers"
 
@@ -32,8 +32,10 @@ const renew = (principal: PublicPrincipal, passId: string, over: Record<string, 
 
 describe("passes.create with renewOf", () => {
   it("is refused to a visitor who has not been checked as that pass's customer", async () => {
+    const before = (await db.select().from(s.event)).length
     await expect(renew(visitor(), "p1")).rejects.toMatchObject({ code: "forbidden" })
     await expect(renew(visitor("p2"), "p1")).rejects.toMatchObject({ code: "forbidden" })
+    expect((await db.select().from(s.event)).length).toBe(before)
   })
 
   it("makes next season's pass active on the card on file, schedules the picked days and queues the confirmation", async () => {
@@ -51,6 +53,12 @@ describe("passes.create with renewOf", () => {
     expect(mail.find((m) => m.kind === "purchase-confirmation" && m.body.includes("Google Calendar:"))).toBeTruthy()
     expect(mail.find((m) => m.kind === "purchase-confirmation")!.body).toContain("Ryan sets the days that are missing")
     expect((await db.select().from(s.passChange).where(eq(s.passChange.passId, pass.id))).map((c) => c.kind)).toContain("renewed")
+    // One `job.sold` for the renewal, carrying the job it renews; the `pass.bought` webhook name and the activation add no second.
+    const [row] = await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, pass.id))
+    const [old] = await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, "p1"))
+    expect(await eventsOf(db, { kind: "job.sold", jobId: row!.jobId })).toMatchObject([{ about: "job", aboutId: row!.jobId, customerId: pass.customerId, who: "customer", detail: { source: "renewal", renewsJobId: old!.jobId, passNumber: pass.number, season: 2028 } }])
+    expect(await eventsOf(db, { kind: "consent", jobId: row!.jobId })).toMatchObject([{ about: "job", who: "customer", detail: { source: "checkout", marketingOptIn: false } }])
+    expect(await eventsOf(db, { kind: "visit.scheduled", jobId: row!.jobId })).toMatchObject([{ who: "system", detail: { day: pick.day } }])
     const lines = await linesOfPass(db, pass.id)
     expect(lines.map((l) => [l.visitKind, l.unitPrice, l.serviceKey])).toEqual([["turn-on", 145, "turn-on-8"], ["blowout", 95, "blowout"]])
     expect(lines[0]!.visitId).toBe(pass.visits.find((v) => v.kind === "turn-on")!.id)
