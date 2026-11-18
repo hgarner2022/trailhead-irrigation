@@ -161,11 +161,11 @@ describe("schema", () => {
     }
   }
 
-  const peopleSql = sql`select "id", "name", "initials", "email", "role", "truck", "working_days", "legacy_truck_id" from "person" order by "id"`
+  const peopleSql = sql`select "id", "name", "initials", "email", "role", "truck", "working_days" from "person" order by "id"`
   const visitsSql = sql`select "id", "person_id" from "visit" order by "id"`
-  const hannah = { id: "person_a1", name: "Hannah Garner", initials: "HG", email: "hannah@example.com", role: "owner", truck: null, working_days: ["mon", "tue", "wed", "thu", "fri"], legacy_truck_id: null }
+  const hannah = { id: "person_a1", name: "Hannah Garner", initials: "HG", email: "hannah@example.com", role: "owner", truck: null, working_days: ["mon", "tue", "wed", "thu", "fri"] }
   // 0010 names the Truck 2 person "Second truck" (it has already run live); the fixture person is Tech Two, and the live checklist renames the row.
-  const secondTruck = { id: "person_t2", name: "Second truck", initials: "T2", email: null, role: "tech", truck: "Truck 2", working_days: ["tue"], legacy_truck_id: "t2" }
+  const secondTruck = { id: "person_t2", name: "Second truck", initials: "T2", email: null, role: "tech", truck: "Truck 2", working_days: ["tue"] }
 
   // The next two prove the backfill on committed rows, the way a deploy finds them on Neon.
   it("migrations 0010 and 0011 apply to a committed database and backfill people", async () => {
@@ -174,7 +174,7 @@ describe("schema", () => {
       async (run) => {
         expect((await run(peopleSql)).rows).toEqual([
           hannah,
-          { id: "person_t1", name: "Ryan Garner", initials: "RG", email: null, role: "owner", truck: "Truck 1", working_days: ["mon"], legacy_truck_id: "t1" },
+          { id: "person_t1", name: "Ryan Garner", initials: "RG", email: null, role: "owner", truck: "Truck 1", working_days: ["mon"] },
           secondTruck,
         ])
         expect((await run(visitsSql)).rows).toEqual([
@@ -194,7 +194,7 @@ describe("schema", () => {
       async (run) => {
         expect((await run(peopleSql)).rows).toEqual([
           hannah,
-          { id: "person_a2", name: "Ryan Garner", initials: "RG", email: "ryan@example.com", role: "owner", truck: "Truck 1", working_days: ["mon"], legacy_truck_id: "t1" },
+          { id: "person_a2", name: "Ryan Garner", initials: "RG", email: "ryan@example.com", role: "owner", truck: "Truck 1", working_days: ["mon"] },
           secondTruck,
         ])
         const ryans = await run(sql`select count(*)::int as n from "person" where "name" = 'Ryan Garner'`)
@@ -217,8 +217,8 @@ describe("schema", () => {
       async (run) => {
         expect((await run(peopleSql)).rows).toEqual([
           hannah,
-          { id: "person_a2", name: "Ryan Garner", initials: "RG", email: "ryan@example.com", role: "owner", truck: "Truck 1", working_days: ["mon"], legacy_truck_id: "t1" },
-          { id: "person_a3", name: "Aaron Lee", initials: "AL", email: "aaron@example.com", role: "admin", truck: null, working_days: ["mon", "tue", "wed", "thu", "fri"], legacy_truck_id: null },
+          { id: "person_a2", name: "Ryan Garner", initials: "RG", email: "ryan@example.com", role: "owner", truck: "Truck 1", working_days: ["mon"] },
+          { id: "person_a3", name: "Aaron Lee", initials: "AL", email: "aaron@example.com", role: "admin", truck: null, working_days: ["mon", "tue", "wed", "thu", "fri"] },
           secondTruck,
         ])
         expect((await run(visitsSql)).rows).toEqual([
@@ -273,10 +273,10 @@ describe("schema", () => {
     expect(cols.rows.map((r) => r.column_name)).toEqual(expect.arrayContaining(["zones", "controller", "backflow_location", "gate_code", "must_be_home", "access_note", "contact_name", "contact_phone", "notes"]))
   })
 
-  it("holds the old pass id and the three job dates on the job, and a job needs no kind", async () => {
-    const cols = await db.execute(sql`select column_name, is_nullable, data_type from information_schema.columns where table_name = 'job' and column_name in ('legacy_pass_id','sold_on','quote_sent_on','quote_accepted_on','kind')`)
+  it("holds the old pass id and the three job dates on the job, and no kind, status, price or notes", async () => {
+    const cols = await db.execute(sql`select column_name, is_nullable, data_type from information_schema.columns where table_name = 'job' and column_name in ('legacy_pass_id','sold_on','quote_sent_on','quote_accepted_on')`)
     const byName = Object.fromEntries(cols.rows.map((r) => [r.column_name as string, r]))
-    expect(Object.keys(byName).sort()).toEqual(["kind", "legacy_pass_id", "quote_accepted_on", "quote_sent_on", "sold_on"])
+    expect(Object.keys(byName).sort()).toEqual(["legacy_pass_id", "quote_accepted_on", "quote_sent_on", "sold_on"])
     expect(Object.values(byName).every((r) => r.is_nullable === "YES")).toBe(true)
     expect(["sold_on", "quote_sent_on", "quote_accepted_on"].map((n) => byName[n]!.data_type)).toEqual(["date", "date", "date"])
     const base = { organizationId: ORG, customerId: "c1", propertyId: "pr1", source: "site" as const }
@@ -285,8 +285,9 @@ describe("schema", () => {
     await db.insert(s.job).values([{ ...base, id: "jl-3" }, { ...base, id: "jl-4" }])
     const [row] = await db.select({ soldOn: s.job.soldOn }).from(s.job).where(eq(s.job.id, "jl-3"))
     expect(row).toEqual({ soldOn: null })
-    // The column is still in the database (the drops come in the next push) but nothing writes it: a job made by the code has none.
-    expect((await db.execute(sql`select "kind" from "job" where "id" = 'jl-3'`)).rows).toEqual([{ kind: null }])
+    // Migration 0022 dropped the typed columns: a job's kind, stage and price are derived.
+    const typed = await db.execute(sql`select column_name from information_schema.columns where table_name = 'job' and column_name in ('kind', 'status', 'price', 'notes')`)
+    expect(typed.rows).toEqual([])
   })
 
   it("lets a job hold one visit of each pass kind and no more, while any other kind repeats", async () => {

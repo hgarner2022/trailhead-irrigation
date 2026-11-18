@@ -317,18 +317,17 @@ describe("passes.activate and passes.sendCardUpdateLink (Stripe stubbed)", () =>
     expect(await eventsOf(db, { kind: "card.saved", customerId: pass.customerId })).toMatchObject([{ about: "customer", aboutId: pass.customerId, who: "api", detail: { brand: "visa", last4: "4242" } }])
     expect(await eventsOf(db, { kind: "pass.bought", jobId: row.jobId })).toEqual([])
   })
-  it("leaves the legacy columns empty on the migrated database: a pending pass job keeps a null sold day (migration 0021's insert trigger needs a kind, which nothing writes now), and activation sets it", async () => {
+  it("keeps a pending pass job's sold day empty, and activation sets it", async () => {
     vi.stubEnv("APP_URL", "https://site.test")
-    const raw = async (id: string) => (await db.execute(sql`select "kind", "sold_on" from "job" where "id" = ${id}`)).rows[0]
+    const raw = async (id: string) => (await db.execute(sql`select "sold_on" from "job" where "id" = ${id}`)).rows[0]
     const pass = await fresh("legacy-cols@example.com")
-    // Created by the checkout code: no kind, no sold day, and no season_pass row behind it.
-    expect(await raw(pass.id)).toMatchObject({ kind: null, sold_on: null })
-    expect((await db.execute(sql`select count(*)::int as n from "season_pass" where "job_id" = ${pass.id}`)).rows[0]).toMatchObject({ n: 0 })
+    // Created by the checkout code: no sold day yet.
+    expect(await raw(pass.id)).toMatchObject({ sold_on: null })
     const stub = stubStripe({ sessions: { cs_l: completeSession("cs_l", { purpose: "pass-setup", passId: pass.id }, { last4: "4242", customer: "cus_leg" }) } })
     getStripe.mockReturnValue(stub.stripe)
     await callApi(ctxFor(db, writeKey), passesActivate, { id: pass.id, setupSessionId: "cs_l" })
-    // Sold: the day is set by the activation itself, and the kind is still null.
-    expect(await raw(pass.id)).toMatchObject({ kind: null, sold_on: "2027-04-20" })
+    // Sold: the day is set by the activation itself.
+    expect(await raw(pass.id)).toMatchObject({ sold_on: "2027-04-20" })
   })
   it("queues a card-update email with a fresh link", async () => {
     const pass = await fresh("link@example.com")

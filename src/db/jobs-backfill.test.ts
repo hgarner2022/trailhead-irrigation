@@ -513,7 +513,8 @@ describe("migration 0021: the expand step", () => {
 
   it("keeps rows the old code writes in the deploy window correct: sold day, old pass id and cancellation come from triggers", async () => {
     const { client } = await before()
-    for (const f of files().slice(files().findIndex((x) => x.startsWith("0021_legacy_expand")))) for (const stmt of migration(f)) if (stmt.trim()) await client.exec(stmt)
+    // Only 0021 itself: the deploy window is the time between it and 0022, which drops the triggers.
+    for (const stmt of migration(files().find((x) => x.startsWith("0021_legacy_expand"))!)) if (stmt.trim()) await client.exec(stmt)
     const q = async <T>(text: string) => (await client.query<T>(text)).rows
     const today = (await q<{ d: string }>(`SELECT to_char((now() at time zone 'America/Denver')::date, 'YYYY-MM-DD') AS d`))[0]!.d
 
