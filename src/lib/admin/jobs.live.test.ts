@@ -37,8 +37,8 @@ beforeAll(async () => {
   await db.insert(s.charge).values({ organizationId: ORG, passId: "p3", visitId: "p3-turn-on", attempt: 1, amount: 145, status: "failed", failureMessage: "Card declined" })
   await db.update(s.visit).set({ status: "completed", completedOn: "2027-04-19", chargedAt: new Date("2027-04-20T09:00:00Z") }).where(eq(s.visit.id, "p6-turn-on"))
   await db.insert(s.charge).values([
-    { organizationId: ORG, passId: "p6", visitId: "p6-turn-on", attempt: 1, amount: 145, status: "failed" },
-    { organizationId: ORG, passId: "p6", visitId: "p6-turn-on", attempt: 2, amount: 145, status: "succeeded" },
+    { organizationId: ORG, passId: "p6", visitId: "p6-turn-on", attempt: 1, amount: 185, status: "failed" },
+    { organizationId: ORG, passId: "p6", visitId: "p6-turn-on", attempt: 2, amount: 185, status: "succeeded" },
   ])
   // p7: a day that has passed and nobody marked done (Scheduled, with the Not closed flag).
   await db.update(s.visit).set({ status: "scheduled", scheduledOn: "2027-04-15", startTime: null, personId: "person_truck-1" }).where(eq(s.visit.id, "p7-turn-on"))
@@ -171,5 +171,20 @@ describe("the money words, read from the payment rows", () => {
     expect(moneyOf(live, made.id)).toMatchObject({ money: "owed", moneyLabel: "Owed" })
     expect(live.attention.filter((a) => a.kind === "owed")).toHaveLength(1)
     expect(live.monthTotals.find((m) => m.year === 2027 && m.month === 4)!.revenue).toBe(before)
+  })
+
+  it("opens the owed row on the visit that is owed, not on a later one that is already paid", async () => {
+    const write = ctxFor(db, writeKey, NOW)
+    const first = await callApi(write, visitsCreate, { customerId: "c100", kind: "repair", scheduledOn: "2027-05-21", price: 145 })
+    const second = await callApi(write, visitsCreate, { customerId: "c100", kind: "repair", scheduledOn: "2027-05-24", price: 145 })
+    // one job with two done visits: the first unpaid, the second (the later day) paid
+    await db.update(s.visit).set({ jobId: first.jobId }).where(eq(s.visit.id, second.id))
+    await db.update(s.lineItem).set({ jobId: first.jobId }).where(eq(s.lineItem.visitId, second.id))
+    await db.update(s.visit).set({ status: "completed", completedOn: "2027-04-10" }).where(eq(s.visit.id, first.id))
+    await db.update(s.visit).set({ status: "completed", completedOn: "2027-04-17" }).where(eq(s.visit.id, second.id))
+    await callApi(write, paymentsRecord, { jobId: first.jobId, visitId: second.id, amount: 145, method: "cash", paidOn: "2027-04-18" })
+    const live = await getLiveAdminData(ctxFor(db, owner, NOW))
+    expect(live.jobs!.find((j) => j.id === first.jobId)).toMatchObject({ money: { paid: 145, total: 290, owed: 145 } })
+    expect(live.attention.filter((a) => a.kind === "owed" && a.jobId === first.jobId)).toEqual([expect.objectContaining({ visitId: first.id })])
   })
 })

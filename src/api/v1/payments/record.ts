@@ -5,7 +5,8 @@ import { readAppUrl } from "@/lib/env"
 import { setVisitLinePrice } from "@/lib/jobs/write-lines"
 import { baseData } from "@/lib/messaging/data"
 import { queueMessage } from "@/lib/messaging/queue"
-import { recordPaymentRow } from "@/lib/money/record"
+import { customerHasCard } from "@/lib/customer/card"
+import { recordPaymentRow, visitBalance } from "@/lib/money/record"
 import { kindName } from "@/lib/pass/server/messages"
 import type { Ctx } from "../../core/context"
 import { ApiError, notFound } from "../../core/errors"
@@ -27,7 +28,9 @@ export interface OfficePayment {
 /**
  * Money the office was handed (check, Venmo or cash) as a succeeded payment row on the job: the one path under
  * `payments.record` and the Done and `visits.recordPayment` aliases. A visit with no price yet takes the amount as its
- * price (visit, job and line); `visit.charged_at` is written as the alias; the receipt is queued; the events are emitted.
+ * price (visit, job and line). For a visit with a price it refuses what the rows would make wrong: a pass visit whose customer has
+ * a card (it is charged to the card), a visit already paid in full, and an amount above what is still owed on it (refused, not
+ * clamped: the record must say what was really handed over, so a stale panel or a double submit writes nothing); `visit.charged_at` is written as the alias; the receipt is queued; the events are emitted.
  */
 export async function recordOfficePayment(ctx: Ctx, input: OfficePayment) {
   const [job] = await ctx.db.select().from(s.job).where(and(eq(s.job.id, input.jobId), eq(s.job.organizationId, ctx.organizationId)))
@@ -37,6 +40,15 @@ export async function recordOfficePayment(ctx: Ctx, input: OfficePayment) {
     ;[visit] = await ctx.db.select().from(s.visit).where(and(eq(s.visit.id, input.visitId), eq(s.visit.organizationId, ctx.organizationId)))
     if (!visit) throw notFound("Visit")
     if (visit.jobId !== job.id) throw new ApiError("invalid", "That visit is not on this job", [{ path: "visitId", message: "Choose a visit of the job" }])
+  }
+  if (visit) {
+    if (visit.passId) {
+      const [customer] = await ctx.db.select().from(s.customer).where(and(eq(s.customer.id, job.customerId), eq(s.customer.organizationId, ctx.organizationId)))
+      if (customer && customerHasCard(customer)) throw new ApiError("unprocessable", "A pass visit is charged to the pass's card")
+    }
+    const { price, owed } = await visitBalance(ctx.db, ctx.organizationId, visit)
+    if (price > 0 && owed === 0) throw new ApiError("conflict", "This visit is already paid")
+    if (price > 0 && input.amount > owed) throw new ApiError("unprocessable", `Only $${owed} is still owed on this visit`, [{ path: "amount", message: `At most $${owed}` }])
   }
   if (visit && visit.amount === 0) {
     await ctx.db.update(s.visit).set({ amount: input.amount }).where(eq(s.visit.id, visit.id))

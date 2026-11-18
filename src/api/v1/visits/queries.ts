@@ -5,7 +5,7 @@ import type { Database } from "@/db/types"
 import type { Ctx } from "../../core/context"
 import { notFound } from "../../core/errors"
 import { jobTotal } from "@/lib/jobs/lines"
-import { paidTotal } from "@/lib/money/words"
+import { isPaid } from "@/lib/money/words"
 import { canSeeContact } from "../shared"
 import { yardOut } from "../customers/handlers"
 import type { PaymentOutType } from "../payments/schemas"
@@ -42,15 +42,19 @@ export type VisitJoined = Awaited<ReturnType<ReturnType<typeof visitsQuery>["lim
 const isoOf = (at: string) => new Date(/(Z|[+-]\d\d(:?\d\d)?)$/.test(at) ? at : `${at}Z`).toISOString()
 
 /**
- * How the visit was paid and whether it went through, from its newest payment row (a refund row is not a payment of its own:
- * the row it reverses is). `paidBy` is that row's method; `paymentStatus` is "paid" while the visit's rows add up above zero,
- * "failed" or "pending" for a newest row that did not succeed, and "none" with no rows or nothing left paid.
+ * How the visit was paid and whether it went through, from its payment rows (a refund row is not a payment of its own: the row
+ * it reverses is). `paidBy` is the newest payment's method; `paymentStatus` is "paid" while the visit's rows reach its price
+ * (`isPaid`, the rule the screens read, so a newer failed attempt does not hide money that arrived), else "failed" or "pending"
+ * for a newest row that did not succeed, and "none" with no rows, nothing left paid or only part of the price paid.
  */
-export function newestPayment(payments: Pick<PaymentJson, "method" | "status" | "amount" | "refunds_payment_id">[]): { paidBy: string | null; paymentStatus: VisitOutType["paymentStatus"] } {
+export function newestPayment(
+  payments: Pick<PaymentJson, "method" | "status" | "amount" | "refunds_payment_id">[],
+  price?: number | null,
+): { paidBy: string | null; paymentStatus: VisitOutType["paymentStatus"] } {
   const newest = [...payments].reverse().find((p) => !p.refunds_payment_id && p.amount > 0)
   if (!newest) return { paidBy: null, paymentStatus: "none" }
-  const net = paidTotal(payments)
-  return { paidBy: newest.method, paymentStatus: newest.status === "failed" ? "failed" : newest.status === "pending" ? "pending" : net > 0 ? "paid" : "none" }
+  if (isPaid(payments, price)) return { paidBy: newest.method, paymentStatus: "paid" }
+  return { paidBy: newest.method, paymentStatus: newest.status === "failed" ? "failed" : newest.status === "pending" ? "pending" : "none" }
 }
 
 export function visitOut(ctx: Ctx, row: VisitJoined): VisitOutType {
@@ -61,6 +65,8 @@ export function visitOut(ctx: Ctx, row: VisitJoined): VisitOutType {
   }))
   // The visit's own line is what it costs (nothing once cancelled); only a visit with no line of its own keeps the legacy amount.
   const own = lineItems.filter((l) => l.visitId === v.id)
+  const amount = own.length ? jobTotal(own.map((l) => ({ ...l, cancelledAt: l.cancelledAt ? new Date(l.cancelledAt) : null }))) : v.amount
+  const seeNotes = canSeeContact(ctx)
   return {
     id: v.id,
     passId: v.passId,
@@ -72,11 +78,11 @@ export function visitOut(ctx: Ctx, row: VisitJoined): VisitOutType {
     kind: v.kind,
     status: v.status,
     window: v.window,
-    amount: own.length ? jobTotal(own.map((l) => ({ ...l, cancelledAt: l.cancelledAt ? new Date(l.cancelledAt) : null }))) : v.amount,
+    amount,
     lineItems,
     payments: (row.payments ?? []).map((c) => ({
-      id: c.id, jobId: c.job_id, visitId: c.visit_id, customerId: c.customer_id, amount: c.amount, method: c.method, reference: c.reference, status: c.status,
-      paidOn: c.paid_on, receiptUrl: c.receipt_url, refundsPaymentId: c.refunds_payment_id, createdAt: isoOf(c.created_at),
+      id: c.id, jobId: c.job_id, visitId: c.visit_id, customerId: c.customer_id, amount: c.amount, method: c.method, reference: seeNotes ? c.reference : null, status: c.status,
+      paidOn: c.paid_on, receiptUrl: seeNotes ? c.receipt_url : null, refundsPaymentId: c.refunds_payment_id, createdAt: isoOf(c.created_at),
     })),
     preference: v.preference,
     awaitingPick: v.awaitingPick,
@@ -90,7 +96,7 @@ export function visitOut(ctx: Ctx, row: VisitJoined): VisitOutType {
     durationMinutes: v.durationMinutes,
     notes: v.notes,
     notDoneReason: v.notDoneReason,
-    ...newestPayment(row.payments ?? []),
+    ...newestPayment(row.payments ?? [], amount),
     stopOrder: v.stopOrder,
     confirmedAt: v.confirmedAt?.toISOString() ?? null,
     completedOn: v.completedOn,
@@ -99,7 +105,7 @@ export function visitOut(ctx: Ctx, row: VisitJoined): VisitOutType {
     jobberRequestUrl: v.jobberJobUrl,
     lat: row.lat,
     lng: row.lng,
-    ...(canSeeContact(ctx) ? { address: row.address } : {}),
+    ...(seeNotes ? { address: row.address } : {}),
     property: yardOut(ctx, row.yard),
   }
 }

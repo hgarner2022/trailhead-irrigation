@@ -24,6 +24,15 @@ export function paidTotal(payments: readonly Pick<MoneyPayment, "amount" | "stat
   return payments.filter((p) => p.status === "succeeded").reduce((sum, p) => sum + p.amount, 0)
 }
 
+/**
+ * Whether a visit's money is settled: its rows net above zero and, for a priced visit, at least the price. A visit nothing has
+ * priced yet is paid by any positive payment (the payment is its price). The one rule every screen and the API read.
+ */
+export function isPaid(payments: readonly Pick<MoneyPayment, "amount" | "status">[], price?: number | null): boolean {
+  const net = paidTotal(payments)
+  return net > 0 && net >= (price ?? 0)
+}
+
 /** What is still owed on a job: its live lines less what arrived, never below zero. */
 export function jobOwed(lines: readonly PricedLine[], payments: readonly Pick<MoneyPayment, "amount" | "status">[]): number {
   return Math.max(0, jobTotal(lines) - paidTotal(payments))
@@ -57,16 +66,20 @@ export interface MoneyInvoice {
   cancelledAt?: Date | string | null
 }
 
-/** The money pill of one visit: nothing until it is done, then Paid with how, Failed, Bill sent or Owed. `invoice` is absent until task 4.3. */
+/**
+ * The money pill of one visit: nothing until it is done, then Paid with how, Failed, Bill sent or Owed. Paid takes the whole
+ * price (`price`; a part-paid visit is Owed) and still shows once the visit is cancelled or skipped, since the money is held;
+ * a cancelled visit with nothing paid says nothing. `invoice` is absent until task 4.3.
+ */
 export function visitMoney(
-  visit: { id: string; done: boolean; cancelled?: boolean; cardFailed?: boolean },
+  visit: { id: string; done: boolean; cancelled?: boolean; cardFailed?: boolean; price?: number | null },
   payments: readonly MoneyPayment[],
   invoice: MoneyInvoice | undefined,
 ): { state: VisitMoneyState; label: string } {
-  if (visit.cancelled || !visit.done) return { state: "not-yet", label: "" }
   const own = payments.filter((p) => p.visitId === visit.id)
   const succeeded = own.filter((p) => p.status === "succeeded")
-  if (paidTotal(own) > 0) {
+  if (paidTotal(own) <= 0 && (visit.cancelled || !visit.done)) return { state: "not-yet", label: "" }
+  if (isPaid(own, visit.price)) {
     const how = [...succeeded].reverse().find((p) => p.amount > 0)?.method
     const word = how ? METHOD_WORDS[how] : undefined
     return { state: "paid", label: word ? `Paid, ${word}` : "Paid" }

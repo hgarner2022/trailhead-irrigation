@@ -8,7 +8,7 @@ import { fullName } from "./format"
 import { causeOf, groupAttention, type QueueAttention } from "./attention-groups"
 import { jobTotal } from "@/lib/jobs/lines"
 import { jobMoney as moneyOfJob } from "@/lib/money/words"
-import { NOT_CLOSED_LOOKBACK_DAYS, visitJob } from "./jobs"
+import { NOT_CLOSED_LOOKBACK_DAYS, visitJob, visitPaid } from "./jobs"
 import type {
   AdminPayment, SoldJob, AdminData, Attention, BusyBlock, Client, Consent, Invoice, Message, MessageKind, MonthTotal, Pass, PassVisit, Quote, SettingsChange,
   Person, ServiceItem, AreaGroup, OrganizationSettings, Property, Town, Visit, VisitKind, VisitStatus, Yard,
@@ -332,13 +332,15 @@ function visitRows(i: ShapeInput, app: Visit[], all: Visit[], jobs: SoldJob[] = 
   }
   const appIds = new Set(app.map((v) => v.id))
   // Done and owed, one row per JOB: booked work whose visits are all done (or cancelled) with money still to come, read from the lines and the payment rows
-  // (`jobMoney`). A pass is charged to its card on its own, and a failed charge has its own row. The row opens the job's last done visit.
+  // (`jobMoney`). A pass is charged to its card on its own, and a failed charge has its own row. The row opens the job's latest done visit that is itself owed (not paid up), else its latest done visit.
   for (const j of jobs) {
     if (j.kind === "pass" || !j.money || j.money.owed <= 0) continue
     const mine = all.filter((v) => j.visitIds.includes(v.id) && appIds.has(v.id) && v.status !== "cancelled")
     const done = mine.filter((v) => v.status === "completed")
     if (!done.length || done.length !== mine.length) continue
-    const last = done.reduce((a, b) => ((b.completedOn ?? "") >= (a.completedOn ?? "") ? b : a))
+    const latest = (list: Visit[]) => list.reduce((a, b) => ((b.completedOn ?? "") >= (a.completedOn ?? "") ? b : a))
+    const unpaid = done.filter((v) => !visitPaid(v))
+    const last = latest(unpaid.length ? unpaid : done)
     out.push({ kind: "owed", key: j.id, jobId: j.id, visitId: last.id, message: `${possessive(last.clientName)} ${KIND_WORDS[last.kind] ?? "visit"} is done, $${j.money.owed} owed`, since: instantOf(last.completedOn ?? i.today, "12:00") })
   }
   for (const v of all)

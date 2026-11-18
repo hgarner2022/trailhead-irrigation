@@ -3,6 +3,7 @@ import { and, eq } from "drizzle-orm"
 import { z } from "zod"
 import * as s from "@/db/schema"
 import { customerHasCard } from "@/lib/customer/card"
+import { visitBalance } from "@/lib/money/record"
 import { enqueue } from "@/lib/queue"
 import type { Ctx } from "../../core/context"
 import { ApiError } from "../../core/errors"
@@ -37,7 +38,10 @@ async function passCustomerHasCard(ctx: Ctx, pass: typeof s.seasonPass.$inferSel
 
 /** A payment the office was handed (check, Venmo or cash), for a one-off visit or a pass visit whose pass has no card: a succeeded payment row on the visit's job (the one writer under `payments.record`), the visit and its job priced if they were not, and the receipt, which says how it was paid. */
 async function recordPayment(ctx: Ctx, visit: typeof s.visit.$inferSelect, paidBy: z.infer<typeof PaidBy>) {
-  const amount = visit.amount > 0 ? visit.amount : (paidBy.amount ?? 0)
+  // A priced visit takes what is still owed on it (the writer refuses more, and refuses a visit already paid); an unpriced one takes the amount said.
+  const { price, owed } = await visitBalance(ctx.db, ctx.organizationId, visit)
+  if (price > 0 && owed === 0) throw new ApiError("conflict", "This visit is already paid")
+  const amount = price > 0 ? owed : (paidBy.amount ?? 0)
   if (amount <= 0) throw new ApiError("invalid", "Say how much was paid", [{ path: "paidBy.amount", message: "This visit has no price yet" }])
   await recordOfficePayment(ctx, { jobId: visit.jobId, visitId: visit.id, amount, method: paidBy.method, reference: paidBy.reference })
 }
@@ -91,7 +95,6 @@ export const visitsRecordPayment = defineHandler({
     const pass = await passOf(ctx, visit)
     if (pass && (await passCustomerHasCard(ctx, pass))) throw new ApiError("unprocessable", "A pass visit is charged to the pass's card")
     if (visit.status !== "completed") throw new ApiError("unprocessable", "Mark the visit done first")
-    if (visit.chargedAt) throw new ApiError("conflict", "This visit is already paid")
     const { id: _id, ...paidBy } = input
     void _id
     await recordPayment(ctx, visit, paidBy)

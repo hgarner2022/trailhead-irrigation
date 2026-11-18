@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { jobOwed, jobMoney, METHOD_WORDS, paidTotal, visitMoney, type MoneyPayment } from "./words"
+import { isPaid, jobOwed, jobMoney, METHOD_WORDS, paidTotal, visitMoney, type MoneyPayment } from "./words"
 
 const line = (unitPrice: number, cancelledAt: Date | null = null) => ({ quantity: 1, unitPrice, cancelledAt })
 const pay = (over: Partial<MoneyPayment> = {}): MoneyPayment => ({ id: "p", visitId: "v1", amount: 145, method: "cash", status: "succeeded", ...over })
@@ -8,6 +8,21 @@ describe("paidTotal", () => {
   it("adds the succeeded rows, refunds as negatives, and leaves pending and failed rows out", () => {
     expect(paidTotal([pay({ amount: 145 }), pay({ id: "r", amount: -45, refundsPaymentId: "p" }), pay({ amount: 99, status: "failed" }), pay({ amount: 50, status: "pending" })])).toBe(100)
     expect(paidTotal([])).toBe(0)
+  })
+})
+
+describe("isPaid", () => {
+  it("is paid once the rows reach the price, and not before", () => {
+    expect(isPaid([pay({ amount: 145 })], 145)).toBe(true)
+    expect(isPaid([pay({ amount: 100 })], 145)).toBe(false)
+    expect(isPaid([pay({ amount: 100 }), pay({ id: "q", amount: 45 })], 145)).toBe(true)
+    expect(isPaid([pay({ amount: 145 }), pay({ id: "r", amount: -45, refundsPaymentId: "p" })], 145)).toBe(false)
+  })
+  it("takes any positive payment for a visit nothing has priced, and never for nothing paid", () => {
+    expect(isPaid([pay({ amount: 60 })], undefined)).toBe(true)
+    expect(isPaid([pay({ amount: 60 })], 0)).toBe(true)
+    expect(isPaid([], 0)).toBe(false)
+    expect(isPaid([pay({ amount: 145, status: "failed" })], 145)).toBe(false)
   })
 })
 
@@ -64,6 +79,16 @@ describe("visitMoney", () => {
   })
   it("is owed again after the payment is refunded", () => {
     expect(visitMoney(done, [pay(), pay({ id: "r", amount: -145, refundsPaymentId: "p" })], undefined).state).toBe("owed")
+  })
+  it("is owed, not paid, while only part of the price has arrived, and paid once the rest does", () => {
+    expect(visitMoney({ ...done, price: 145 }, [pay({ amount: 100 })], undefined)).toEqual({ state: "owed", label: "Owed" })
+    expect(visitMoney({ ...done, price: 145 }, [pay({ amount: 100 }), pay({ id: "q", amount: 45, method: "check" })], undefined)).toEqual({ state: "paid", label: "Paid, check" })
+    expect(visitMoney({ ...done, price: 145 }, [pay({ amount: 100 })], { paidOn: null, cancelledAt: null }).state).toBe("bill-sent")
+    expect(visitMoney({ ...done, price: 0 }, [pay({ amount: 60 })], undefined).state).toBe("paid")
+  })
+  it("still shows the money on a visit paid and then cancelled or skipped, and nothing when nothing was paid", () => {
+    expect(visitMoney({ id: "v1", done: false, cancelled: true }, [pay({ method: "check" })], undefined)).toEqual({ state: "paid", label: "Paid, check" })
+    expect(visitMoney({ id: "v1", done: true, cancelled: true }, [pay(), pay({ id: "r", amount: -145, refundsPaymentId: "p" })], undefined).state).toBe("not-yet")
   })
 })
 

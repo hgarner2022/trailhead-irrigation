@@ -8,7 +8,7 @@ import { callApi } from "../../core/call"
 import { adminKey, apiDb, ctxFor, key, ORG, readKey, writeKey } from "../../test-helpers"
 import { customersGet } from "../customers/handlers"
 import { visitsCreate } from "../visits/office"
-import { visitsGet } from "../visits/handlers"
+import { visitsGet, visitsMove } from "../visits/handlers"
 import { visitsMarkClosed } from "../visits/money"
 import { paymentsList, paymentsRecord, paymentsRefund } from "./handlers"
 
@@ -49,7 +49,7 @@ describe("payments.record", () => {
     expect(receipts[0]!.body).toContain("check")
     expect((await callApi(as(readKey), paymentsList, { jobId: v.jobId })).data).toEqual([row])
     expect((await callApi(as(readKey), paymentsList, { customerId: "c100" })).data.map((p) => p.id)).toContain(row.id)
-    const out = await callApi(as(readKey), visitsGet, { id: v.id })
+    const out = await callApi(as(writeKey), visitsGet, { id: v.id })
     expect(out.payments).toEqual([row])
     const job = (await callApi(as(readKey), customersGet, { id: "c100" })).jobs.find((j) => j.id === v.jobId)!
     expect(job).toMatchObject({ payments: [row], money: { paid: 145, total: 145, owed: 0, words: "Paid" } })
@@ -65,6 +65,41 @@ describe("payments.record", () => {
     expect(whole).toMatchObject({ visitId: null, jobId: v.jobId, amount: 100 })
     const job = (await callApi(as(readKey), customersGet, { id: "c100" })).jobs.find((j) => j.id === v.jobId)!
     expect(job.money).toMatchObject({ paid: 3300, total: 3200, owed: 0, words: "Paid" })
+  })
+
+  it("refuses a second payment of a visit already paid in full, writing no second row and sending no second receipt", async () => {
+    const v = await repair()
+    await callApi(as(writeKey), paymentsRecord, { jobId: v.jobId, visitId: v.id, amount: 145, method: "check" })
+    await expect(callApi(as(writeKey), paymentsRecord, { jobId: v.jobId, visitId: v.id, amount: 145, method: "check" })).rejects.toMatchObject({ code: "conflict", message: "This visit is already paid" })
+    expect(await db.select().from(s.charge).where(eq(s.charge.visitId, v.id))).toHaveLength(1)
+    expect((await db.select().from(s.messageLog)).filter((m) => m.visitId === v.id && m.kind === "receipt")).toHaveLength(1)
+    const job = (await callApi(as(readKey), customersGet, { id: "c100" })).jobs.find((j) => j.id === v.jobId)!
+    expect(job.money).toMatchObject({ paid: 145, total: 145, owed: 0 })
+  })
+
+  it("refuses an amount above what is still owed on the visit, takes the rest after a part payment, and owes again after a refund", async () => {
+    const v = await repair()
+    await expect(callApi(as(writeKey), paymentsRecord, { jobId: v.jobId, visitId: v.id, amount: 146, method: "cash" })).rejects.toMatchObject({ code: "unprocessable", message: "Only $145 is still owed on this visit" })
+    const part = await callApi(as(writeKey), paymentsRecord, { jobId: v.jobId, visitId: v.id, amount: 100, method: "cash" })
+    await expect(callApi(as(writeKey), paymentsRecord, { jobId: v.jobId, visitId: v.id, amount: 100, method: "cash" })).rejects.toMatchObject({ code: "unprocessable", message: "Only $45 is still owed on this visit" })
+    await callApi(as(writeKey), paymentsRecord, { jobId: v.jobId, visitId: v.id, amount: 45, method: "check" })
+    await expect(callApi(as(writeKey), paymentsRecord, { jobId: v.jobId, visitId: v.id, amount: 1, method: "check" })).rejects.toMatchObject({ code: "conflict" })
+    // a refund makes the money owed again, and it can be taken again
+    await callApi(as(), paymentsRefund, { paymentId: part.id })
+    expect(await callApi(as(writeKey), paymentsRecord, { jobId: v.jobId, visitId: v.id, amount: 100, method: "venmo" })).toMatchObject({ amount: 100 })
+    expect(await db.select().from(s.charge).where(eq(s.charge.visitId, v.id))).toHaveLength(4)
+  })
+
+  it("leaves a payment on the job as a whole, with no visit, to the job's own balance", async () => {
+    const v = await repair()
+    expect(await callApi(as(writeKey), paymentsRecord, { jobId: v.jobId, amount: 500, method: "check" })).toMatchObject({ visitId: null, amount: 500 })
+  })
+
+  it("refuses a pass visit whose customer has a card, since it is charged to the card", async () => {
+    await callApi(as(writeKey), visitsMove, { id: "p3-turn-on", personId: "person_truck-1", scheduledOn: "2027-05-05" })
+    const [visit] = await db.select().from(s.visit).where(eq(s.visit.id, "p3-turn-on"))
+    await expect(callApi(as(writeKey), paymentsRecord, { jobId: visit!.jobId, visitId: "p3-turn-on", amount: 145, method: "cash" })).rejects.toMatchObject({ code: "unprocessable", message: "A pass visit is charged to the pass's card" })
+    expect(await db.select().from(s.charge).where(eq(s.charge.visitId, "p3-turn-on"))).toEqual([])
   })
 
   it("refuses a visit of another job, an unknown job and a read key, and cannot reach another organization's job", async () => {

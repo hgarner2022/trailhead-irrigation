@@ -11,6 +11,7 @@ import { paymentsRecord } from "@/api/v1/payments/handlers"
 import { visitsMarkClosed } from "@/api/v1/visits/money"
 import { visitsCancel, visitsCreate, visitsMarkNotDone, visitsUpdate } from "@/api/v1/visits/office"
 import { weekdayOf } from "@/api/v1/shared"
+import { paidTotal } from "@/lib/money/words"
 import type { NotDoneReason } from "@/lib/admin/visit-defaults"
 import type { NewPassInput, SoldPass } from "@/app/(admin)/admin/_screens/visit-actions-types"
 import { act, nothing, type ActionOutcome } from "./act"
@@ -53,12 +54,19 @@ export const markDone = async (visitId: string, opts: { completedOn?: string; pa
 
 export const undoDone = async (visitId: string): Promise<ActionOutcome> => act((ctx) => nothing(callApi(ctx, visitsMarkClosed, { id: visitId, undo: true })))
 
-/** The Done-and-owed form's Record payment: a payment row on the visit's job through `payments.record`, for what the visit costs (or the amount typed for a visit with no price yet). */
+/**
+ * The Done-and-owed form's Record payment: a payment row on the visit's job through `payments.record`, for what is still owed on the
+ * visit (its price less what has arrived), or the amount typed for a visit with no price yet. A visit already paid says so and writes
+ * nothing, so a double submit or a stale panel cannot post it twice; `payments.record` refuses it again and refuses a pass visit
+ * charged to a card.
+ */
 export const recordPayment = async (visitId: string, paidBy: PaidBy): Promise<ActionOutcome> =>
   act(async (ctx) => {
     const visit = await callApi(ctx, visitsGet, { id: visitId })
     if (visit.status !== "completed") throw new ApiError("unprocessable", "Mark the visit done first")
-    await callApi(ctx, paymentsRecord, { jobId: visit.jobId, visitId, amount: visit.amount > 0 ? visit.amount : (paidBy.amount ?? 0), method: paidBy.method, ...(paidBy.reference ? { reference: paidBy.reference } : {}) })
+    const owed = visit.amount - paidTotal(visit.payments)
+    if (visit.amount > 0 && owed <= 0) throw new ApiError("conflict", "This visit is already paid")
+    await callApi(ctx, paymentsRecord, { jobId: visit.jobId, visitId, amount: visit.amount > 0 ? owed : (paidBy.amount ?? 0), method: paidBy.method, ...(paidBy.reference ? { reference: paidBy.reference } : {}) })
     return undefined
   })
 

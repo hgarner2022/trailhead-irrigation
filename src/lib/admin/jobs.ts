@@ -24,7 +24,7 @@
  * until the visit is done, then Paid with how, Owed, Bill sent, Failed). A Scheduled visit whose day has passed stays Scheduled with a "day passed"
  * note; Routed is a start time in the Time column, not a state. `statesOf` derives both from the same row.
  */
-import { jobMoney as jobMoneyWords, METHOD_WORDS, paidTotal, visitMoney, type MoneyInvoice, type MoneyPayment } from "@/lib/money/words"
+import { isPaid, jobMoney as jobMoneyWords, METHOD_WORDS, paidTotal, visitMoney, type MoneyInvoice, type MoneyPayment } from "@/lib/money/words"
 import { addDays, dayOf } from "./calendar"
 import { TIME_ZONE } from "./format"
 import type { AdminData, AdminPayment, JobLine, Pass, PassVisit, SoldJob, Visit, VisitStatus } from "./types"
@@ -76,6 +76,8 @@ export interface JobRow {
   completedOn?: string | null
   /** the visit this row is, for matching its payment rows; the payments given are the visit's own */
   visitId?: string | null
+  /** what the visit costs, whole dollars (its live lines); the money reads Paid only once the payments reach it. Absent for an unpriced visit. */
+  price?: number
   /** the visit's payment rows (`charge`), refunds as negatives: the money words are read from these */
   payments?: MoneyPayment[]
   /** @deprecated alias for the fixtures, read only when `payments` is absent: a charged day reads as one succeeded card payment */
@@ -109,15 +111,21 @@ export function paymentsOf(v: PaymentSource): MoneyPayment[] {
   return [{ id: "alias", visitId: v.id ?? "", amount: Math.max(1, v.price ?? v.amount ?? 0), method: v.paidMethod ?? "card_on_file", status: "succeeded" }]
 }
 
-/** Money arrived for this visit: its payments add up above zero. */
-export const visitPaid = (v: PaymentSource): boolean => paidTotal(paymentsOf(v)) > 0
+/** The visit's price as the screens hold it: a calendar visit's `price`, a pass visit's `amount`; absent for an unpriced one. */
+const priceOf = (v: PaymentSource): number | undefined => v.price ?? v.amount
+
+/** The visit's money is settled: its payments add up to its price (`isPaid` in `src/lib/money/words.ts`); a part-paid visit is not paid. */
+export const visitPaid = (v: PaymentSource): boolean => isPaid(paymentsOf(v), priceOf(v))
 
 /** What the visit has been paid, whole dollars: its succeeded rows added up, refunds counting against. */
 export const visitPaidTotal = (v: PaymentSource): number => paidTotal(paymentsOf(v))
 
-/** The day the visit's money last arrived: its newest succeeded payment's `paid_on` (a day), or, for a fixture with only the alias, the charged instant. */
+/** The day the visit's money last arrived: its newest succeeded payment's `paid_on` (a day), or, for a fixture with only the alias, the charged instant. Nothing once a refund has left nothing paid. */
 export function visitPaidOn(v: PaymentSource): string | undefined {
-  if (v.payments) return [...v.payments].reverse().find((p) => p.status === "succeeded" && p.amount > 0 && p.paidOn)?.paidOn ?? undefined
+  if (v.payments) {
+    if (paidTotal(v.payments) <= 0) return undefined
+    return [...v.payments].reverse().find((p) => p.status === "succeeded" && p.amount > 0 && p.paidOn)?.paidOn ?? undefined
+  }
   return v.chargedAt ?? undefined
 }
 
@@ -126,9 +134,9 @@ export function moneyOf(row: JobRow): { state: MoneyState; label: string } {
   const done = row.status === "completed" || Boolean(row.completedOn)
   const gone = row.status === "cancelled" || row.status === "skipped"
   const id = row.visitId ?? ""
-  const payments = row.payments ?? paymentsOf({ id, chargedAt: row.chargedAt, paidMethod: row.paidMethod })
+  const payments = row.payments ?? paymentsOf({ id, chargedAt: row.chargedAt, paidMethod: row.paidMethod, price: row.price })
   const invoice: MoneyInvoice | undefined = row.billSent ? {} : undefined
-  const money = visitMoney({ id, done: done || paidTotal(payments) > 0, cancelled: gone, cardFailed: Boolean(row.cardFailedAt) }, payments, invoice)
+  const money = visitMoney({ id, done: done || paidTotal(payments) > 0, cancelled: gone, cardFailed: Boolean(row.cardFailedAt), price: row.price }, payments, invoice)
   // A failed attempt the caller already knows of (the newest row failed) wins over everything but Paid, even before the visit is done.
   return money.state !== "paid" && !gone && row.chargeFailed ? { state: "failed", label: MONEY_WORDS.failed } : money
 }
@@ -194,6 +202,7 @@ export function visitJob(visit: Visit, today: string, timeZone: string, cardFail
       startTime: visit.startTime,
       completedOn: visit.completedOn,
       visitId: visit.id,
+      price: visit.price,
       ...(visit.payments ? { payments: visit.payments } : {}),
       chargedAt: visit.chargedAt,
       chargeFailed: visit.chargeFailed,
@@ -215,6 +224,7 @@ export function passVisitJob(pass: Pick<Pass, "cardFailedAt">, visit: PassVisit,
       startTime: visit.startTime,
       completedOn: visit.completedAt ? dayOf(visit.completedAt, timeZone) : undefined,
       visitId: visit.id,
+      price: visit.amount,
       ...(visit.payments ? { payments: visit.payments } : {}),
       chargedAt: visit.chargedAt,
       chargeFailed: visit.chargeFailed,

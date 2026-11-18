@@ -227,9 +227,29 @@ describe("the money words are read from the payment rows", () => {
     expect(visitPaidTotal({ id: "v", payments: [pay("check"), pay("check", { id: "r", amount: -45 })] })).toBe(100)
   })
 
+  it("reads Owed, not Paid, for a visit with only part of its price, from the pill, the job state and visitPaid", () => {
+    const part = { ...done, price: 145, payments: [pay("check", { amount: 100 })] }
+    expect(moneyOf(part)).toEqual({ state: "owed", label: "Owed" })
+    expect(jobOf(part, TODAY).state).toBe("done")
+    expect(visitPaid({ id: "v", price: 145, payments: [{ ...pay("check", { amount: 100 }) }] })).toBe(false)
+    expect(visitPaid({ id: "v", amount: 145, payments: [{ ...pay("check", { amount: 100 }) }] })).toBe(false)
+    const full = { ...part, payments: [pay("check", { amount: 100 }), pay("cash", { id: "rest", amount: 45 })] }
+    expect(moneyOf(full)).toEqual({ state: "paid", label: "Paid, cash" })
+    expect(visitPaid({ id: "v", price: 145, payments: [pay("check", { amount: 145 })] })).toBe(true)
+    // the old charged flag stands for the whole price
+    expect(moneyOf({ ...done, price: 145, chargedAt: "2026-11-10T20:00:00Z", paidMethod: "check" })).toEqual({ state: "paid", label: "Paid, check" })
+  })
+
+  it("keeps the money on a visit that was paid and then cancelled", () => {
+    expect(moneyOf({ status: "cancelled", visitId: "v", payments: [pay("check")] })).toEqual({ state: "paid", label: "Paid, check" })
+    expect(moneyOf({ status: "cancelled", visitId: "v", payments: [] }).state).toBe("not-yet")
+  })
+
   it("names the day the money last arrived", () => {
     expect(visitPaidOn({ id: "v", payments: [{ ...pay("check"), paidOn: "2026-11-09" }, { ...pay("cash", { id: "later" }), paidOn: "2026-11-11" }] })).toBe("2026-11-11")
     expect(visitPaidOn({ id: "v", payments: [] })).toBeUndefined()
+    // after a full refund nothing arrived: no day, so the pass panel does not print "Paid Nov 9"
+    expect(visitPaidOn({ id: "v", payments: [{ ...pay("check"), paidOn: "2026-11-09" }, { ...pay("check", { id: "refund", amount: -145, refundsPaymentId: "p-check" }), paidOn: "2026-11-10" }] })).toBeUndefined()
     expect(visitPaidOn({ id: "v", chargedAt: "2026-11-10T20:00:00Z" })).toBe("2026-11-10T20:00:00Z")
   })
 })

@@ -4,11 +4,11 @@ import { eq } from "drizzle-orm"
 import * as s from "@/db/schema"
 import type { TestDb } from "@/db/test-db"
 import { callApi } from "../../core/call"
-import { adminKey, apiDb, ctxFor, linesOfJob, ORG, writeKey } from "../../test-helpers"
+import { adminKey, apiDb, ctxFor, linesOfJob, ORG, readKey, writeKey } from "../../test-helpers"
 import { visitsGet, visitsMove } from "./handlers"
 import { visitsMarkClosed, visitsRecordPayment } from "./money"
 import { visitsCreate, visitsMarkNotDone } from "./office"
-import { paymentsRefund } from "../payments/handlers"
+import { paymentsRecord, paymentsRefund } from "../payments/handlers"
 import { newestPayment } from "./queries"
 
 let db: TestDb
@@ -95,6 +95,34 @@ describe("Done and the money", () => {
     expect(newestPayment([row("card_on_file", "pending")])).toEqual({ paidBy: "card_on_file", paymentStatus: "pending" })
     expect(newestPayment([row("check", "succeeded"), row("check", "succeeded", -145, "p")])).toEqual({ paidBy: "check", paymentStatus: "none" })
     expect(newestPayment([row("check", "succeeded"), row("check", "succeeded", -45, "p")])).toEqual({ paidBy: "check", paymentStatus: "paid" })
+  })
+
+  it("agrees with the money pill: money that arrived is paid even when a newer attempt failed, and part of the price is not paid", () => {
+    const row = (method: string, status: string, amount = 145) => ({ method, status, amount, refunds_payment_id: null }) as Parameters<typeof newestPayment>[0][number]
+    expect(newestPayment([row("check", "succeeded"), row("card_on_file", "failed")], 145)).toEqual({ paidBy: "card_on_file", paymentStatus: "paid" })
+    expect(newestPayment([row("check", "succeeded", 100)], 145)).toEqual({ paidBy: "check", paymentStatus: "none" })
+    expect(newestPayment([row("check", "succeeded", 100), row("cash", "succeeded", 45)], 145)).toEqual({ paidBy: "cash", paymentStatus: "paid" })
+  })
+
+  it("keeps the check number and the receipt link for a key that may write and leaves them out for a read key", async () => {
+    const v = await callApi(as(writeKey), visitsCreate, { customerId: "c100", kind: "repair", scheduledOn: "2027-05-19", price: 145 })
+    await callApi(as(), visitsMarkClosed, { id: v.id, paidBy: { method: "check", reference: "1042" } })
+    await db.update(s.charge).set({ receiptUrl: "https://pay.test/r/1" }).where(eq(s.charge.visitId, v.id))
+    expect((await callApi(as(writeKey), visitsGet, { id: v.id })).payments).toMatchObject([{ reference: "1042", receiptUrl: "https://pay.test/r/1" }])
+    expect((await callApi(as(readKey), visitsGet, { id: v.id })).payments).toMatchObject([{ reference: null, receiptUrl: null, method: "check", amount: 145 }])
+  })
+
+  it("reads a part-paid visit as not yet paid, takes the rest, and refuses a second payment of the whole", async () => {
+    const v = await callApi(as(writeKey), visitsCreate, { customerId: "c100", kind: "repair", scheduledOn: "2027-05-20", price: 145 })
+    await db.update(s.visit).set({ status: "completed", completedOn: "2027-05-07" }).where(eq(s.visit.id, v.id))
+    await callApi(as(writeKey), paymentsRecord, { jobId: v.jobId, visitId: v.id, amount: 100, method: "cash" })
+    expect(await callApi(as(), visitsGet, { id: v.id })).toMatchObject({ paymentStatus: "none", paidBy: "cash" })
+    // Record payment on a part-paid visit takes what is still owed
+    const out = await callApi(as(), visitsRecordPayment, { id: v.id, method: "check" })
+    expect(out.payments.map((p) => p.amount)).toEqual([100, 45])
+    expect(out.paymentStatus).toBe("paid")
+    await expect(callApi(as(), visitsRecordPayment, { id: v.id, method: "check" })).rejects.toMatchObject({ code: "conflict", message: "This visit is already paid" })
+    expect(await db.select().from(s.charge).where(eq(s.charge.visitId, v.id))).toHaveLength(2)
   })
 
   it("keeps the reason a visit was not done until it has a day again", async () => {
