@@ -117,6 +117,16 @@ export interface CardExpiringData extends Base {
   left: number
   updateUrl: string | null
 }
+/** A visit the customer canceled from their account: what it was, where, the day it had (null when it had none) and the whole dollars already paid on its job (0 when nothing was paid). */
+export interface VisitCancelledData extends Base {
+  /** as a phrase after "your": "spring turn-on", "repair" */
+  serviceName: string
+  address: string
+  day: string | null
+  paid: number
+  /** the signed link to the visit's page (`visitLinkUrl`) */
+  visitUrl?: string
+}
 export interface CancelledData extends Base {
   season: number
 }

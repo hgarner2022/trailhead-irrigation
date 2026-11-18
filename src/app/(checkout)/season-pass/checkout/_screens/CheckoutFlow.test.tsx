@@ -198,7 +198,9 @@ describe("CheckoutFlow", () => {
     expect(within(turnOn).getAllByRole("radio")[0]).toBeChecked()
     expect(within(turnOn).getAllByRole("radio")[0]).toHaveFocus()
     expect(turnOn).toHaveTextContent("Tuesday, May 4")
-    expect(turnOn).toHaveTextContent("between 8 and 10 am")
+    // a window is a message told the day before: the cards state the day only
+    expect(turnOn).not.toHaveTextContent("between 8 and 10 am")
+    expect(screen.getByText("We'll text your window the day before.")).toBeInTheDocument()
     expect(screen.getByRole("group", { name: "Your July inspection" })).toBeInTheDocument()
     expect(screen.getByText("Change it later from your pass page.")).toBeInTheDocument()
     expect(continueButton()).toBeEnabled()

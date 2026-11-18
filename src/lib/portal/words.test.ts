@@ -1,14 +1,14 @@
 import { describe, expect, it } from "vitest"
-import { arrivalWindow, customerFacingFirstName, longDay, visitDay, visitDayWords, moneyWord, paymentLine, shortDay, visitPill } from "./words"
+import { dayParts, windowPhrase, customerFacingFirstName, longDay, visitDay, visitDayWords, moneyWord, paymentLine, shortDay, visitPill } from "./words"
 
-describe("arrivalWindow", () => {
+describe("windowPhrase", () => {
   it("says the window in the customer's words", () => {
-    expect(arrivalWindow("09:00", 120)).toBe("Arrive between 9 and 11 am")
-    expect(arrivalWindow("11:00", null)).toBe("Arrive between 11 am and 1 pm")
-    expect(arrivalWindow("13:30", 120)).toBe("Arrive between 1:30 and 3:30 pm")
+    expect(windowPhrase("09:00")).toBe("between 9 and 11 am")
+    expect(windowPhrase("11:00")).toBe("between 11 am and 1 pm")
+    expect(windowPhrase("13:30")).toBe("between 1:30 and 3:30 pm")
   })
   it("says nothing before a start time is set", () => {
-    expect(arrivalWindow(null)).toBeNull()
+    expect(windowPhrase(null)).toBeNull()
   })
 })
 
@@ -24,7 +24,7 @@ describe("visitPill", () => {
     expect(visitPill({ status: "scheduled" })).toEqual({ status: "scheduled", label: "Booked" })
     expect(visitPill({ status: "completed" }).label).toBe("Done")
     expect(visitPill({ status: "cancelled" }).label).toBe("Canceled")
-    expect(visitPill({ status: "skipped" }).label).toBe("Skipped")
+    expect(visitPill({ status: "skipped" }).label).toBe("Canceled")
     expect(visitPill({ status: "unscheduled", canPick: true }).label).toBe("Pick a day")
     expect(visitPill({ status: "unscheduled", canPick: false }).label).toBe("Day coming soon")
     expect(visitPill({ status: "unscheduled", notDoneReason: "no water on", canPick: true }).label).toBe("Needs a new day")
@@ -87,5 +87,17 @@ describe("visitDay and visitDayWords", () => {
     expect(visitDayWords({ status: "scheduled", scheduledOn: "2027-04-27", completedOn: null }, "2026-11-18")).toBe("Tuesday, April 27, 2027")
     expect(visitDayWords({ status: "completed", scheduledOn: "2026-11-03", completedOn: "2026-11-03" }, "2027-01-05")).toBe("Tuesday, November 3, 2026")
     expect(visitDayWords({ status: "scheduled", scheduledOn: "2026-11-20", completedOn: null }, "2026-11-18")).toBe("Friday, November 20")
+  })
+})
+
+describe("dayParts", () => {
+  const base = { status: "scheduled", scheduledOn: "2027-05-05", completedOn: null, canceledOn: null, windowTold: false, window: null, personFirstName: null as string | null, canPick: false }
+  it("promises the window until the day-before text told it, then gives it with who is coming", () => {
+    expect(dayParts(base, "2027-04-20").sentence).toBe("Wednesday, May 5. We'll text your window the day before.")
+    expect(dayParts({ ...base, windowTold: true, window: "between 8 and 10 am", personFirstName: "Ryan" }, "2027-04-20")).toMatchObject({ heading: "Wednesday, May 5", detail: "Between 8 and 10 am, with Ryan.", sentence: "Wednesday, May 5, between 8 and 10 am, with Ryan." })
+  })
+  it("told but with no start time (a visit left at Any time) names the day and who, never promises a window again", () => {
+    expect(dayParts({ ...base, windowTold: true, personFirstName: "Ryan" }, "2027-04-20").sentence).toBe("Wednesday, May 5. Ryan will be there that day.")
+    expect(dayParts({ ...base, windowTold: true }, "2027-04-20").sentence).toBe("Wednesday, May 5. We'll be there that day.")
   })
 })

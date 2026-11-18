@@ -20,6 +20,16 @@ describe("gateFor", () => {
     expect(gateFor("/admin/passes", admin)).toEqual({ action: "next" })
     expect(gateFor("/account/pass", admin)).toEqual({ action: "next" })
   })
+  it("lets a visit's own page open with a link's token and no session, and nothing else under /account", () => {
+    expect(gateFor("/account/visits/v1", null, "?t=123.abc")).toEqual({ action: "next" })
+    expect(gateFor("/account/visits/v1", null, "")).toEqual(toSignIn("/account/sign-in"))
+    expect(gateFor("/account/visits", null, "?t=123.abc")).toEqual(toSignIn("/account/sign-in"))
+    expect(gateFor("/account/visits/v1/extra", null, "?t=123.abc")).toEqual(toSignIn("/account/sign-in"))
+    expect(gateFor("/account", null, "?t=123.abc")).toEqual(toSignIn("/account/sign-in"))
+    expect(gateFor("/account/receipts/p1", null, "?t=123.abc")).toEqual(toSignIn("/account/sign-in"))
+    expect(gateFor("/admin/visits", null, "?t=123.abc")).toEqual(toSignIn("/admin/sign-in"))
+  })
+
   it("lets a customer into /account but not a signed-out visitor or a key", () => {
     expect(gateFor("/account/pass", customer)).toEqual({ action: "next" })
     expect(gateFor("/account/pass", null)).toEqual(toSignIn("/account/sign-in"))

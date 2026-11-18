@@ -81,6 +81,8 @@ export interface VisitFacts {
   location: string
   /** the app's signed link to the .ics file */
   icsUrl: string
+  /** the signed link to this visit's page, which opens already signed in as the customer (`visitLinkUrl`); texts carry it, absent in older rows */
+  visitUrl?: string
 }
 
 /** Who is coming, as a sentence subject: the person's first name, else "Ryan and the crew" while the visit has no one. */

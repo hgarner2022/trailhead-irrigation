@@ -6,7 +6,7 @@ import { writtenDate } from "@/lib/admin/format"
 
 export type DayKind = "turn-on" | "inspection" | "blowout"
 
-/** One offered day: the day, the person behind it, where its two-hour window opens and the window in words ("8 to 10 am"). */
+/** One offered day: the day, the person behind it, where its two-hour window opens and the window in words ("8 to 10 am"). A card states the day only: a window is a message, told the day before, never a promise made at checkout. */
 export interface DayOffer {
   day: string
   personId: string
@@ -28,9 +28,6 @@ const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Frida
 
 /** "Tuesday, May 5": the day as it is written on a card and in the done step. */
 export const dayWords = (iso: string) => `${WEEKDAYS[new Date(`${iso}T12:00:00Z`).getUTCDay()]}, ${writtenDate(iso)}`
-
-/** "between 8 and 10 am" from "8 to 10 am". */
-export const windowWords = (window: string) => `between ${window.replace(" to ", " and ")}`
 
 /** The heading over each visit's three cards. */
 export const DAY_HEADINGS: Record<DayKind, string> = { "turn-on": "Your spring turn-on", inspection: "Your July inspection", blowout: "Your fall blowout" }

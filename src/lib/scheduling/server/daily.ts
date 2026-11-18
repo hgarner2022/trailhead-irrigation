@@ -41,7 +41,7 @@ export async function dayBeforeMessages(db: Database, organizationId: string, to
   let queued = 0
   for (const { visit, customer } of rows) {
     const origin = readAppUrl()
-    const facts = await loadVisitFacts(db, visit.id, origin)
+    const facts = await loadVisitFacts(db, visit.id, origin, undefined, { told: true })
     if (!facts) continue
     if (await queueMessage(db, { organizationId, customerId: customer.id, visitId: visit.id, kind: "day-before", key: `${visit.id}-${tomorrow}`, data: { ...baseData(origin, customer), visit: facts } })) queued++
   }

@@ -19,6 +19,7 @@ import { paymentsList, paymentsRecord, paymentsRefund } from "./payments/handler
 import { paymentsChargeCard } from "./payments/charge"
 import { peopleList, peopleCreate, peopleUpdate, peopleDeactivate } from "./people/handlers"
 import { propertiesUpdate } from "./properties/handlers"
+import { visitsCancelSelf } from "./portal/cancel"
 import { jobsGet, jobsList } from "./portal/jobs"
 import { customersMe, customersStartCardUpdate, customersUpdateSelf, propertiesUpdateSelf } from "./portal/me"
 import { paymentsReceipt } from "./portal/receipt"
@@ -39,7 +40,7 @@ export const handlers: AnyHandler[] = [
   customersList, customersGet, customersCreate, customersUpdate, consentsList, consentsRecord, customersMe, customersUpdateSelf, customersStartCardUpdate,
   eventsList, eventsNote,
   invoicesSend, invoicesList, invoicesGet, invoicesRemind, invoicesCancel, invoicesPayView,
-  jobsCreate, jobsCancel, jobsList, jobsGet,
+  jobsCreate, jobsCancel, jobsList, jobsGet, visitsCancelSelf,
   linesAdd, linesUpdate, linesCancel,
   messagesList, messagesSend,
   mirrorUpsert,

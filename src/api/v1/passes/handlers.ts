@@ -7,6 +7,7 @@ import { visitName } from "@/lib/events/names"
 import { enqueueGeocode } from "@/lib/geocode"
 import { linesForPassVisits } from "@/lib/jobs/lines"
 import { cancelVisitLines, deleteJobVisitLines, insertLines } from "@/lib/jobs/write-lines"
+import { assertBeforeCutoff } from "../portal/cutoff"
 import { currentSeason } from "@/lib/pass/season"
 import { SEASON_PASS_ADD_ON, visitPrice, visitsOnSale } from "@/lib/season-pass"
 import { hasScope } from "@/lib/auth/principal"
@@ -400,7 +401,7 @@ export const passesSkipVisit = defineHandler({
   path: "/passes/{id}/skip",
   scope: "write",
   customerSelf: true,
-  summary: "Skip a visit that has not happened. It is not charged and its day, if any, is freed.",
+  summary: "Skip a visit that has not happened. It is not charged and its day, if any, is freed. A customer may skip only until 24 hours before its day; the office may skip any time.",
   input: z.object({ id: Id, kind: PassVisitKind }),
   output: z.object({ id: Id, visitId: Id, status: z.literal("skipped") }),
   async run(ctx, input) {
@@ -409,6 +410,7 @@ export const passesSkipVisit = defineHandler({
     if (!visit) throw new ApiError("unprocessable", `This pass has no ${input.kind} visit`)
     if (visit.status === "skipped") return { id: row.pass.id, visitId: visit.id, status: "skipped" as const }
     if (!(["unscheduled", "scheduled"] as string[]).includes(visit.status)) throw new ApiError("unprocessable", "This visit can no longer be skipped")
+    assertBeforeCutoff(ctx, visit)
     await ctx.db.update(s.visit).set({ status: "skipped", personId: null, scheduledOn: null, startTime: null, stopOrder: null }).where(eq(s.visit.id, visit.id))
     await cancelVisitLines(ctx.db, [visit.id], ctx.now)
     await recordChange(ctx, { customerId: row.pass.customerId, jobId: row.pass.id, visitId: visit.id, kind: "skipped", detail: { name: visitName(visit.kind), visit: input.kind } })

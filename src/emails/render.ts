@@ -1,6 +1,6 @@
 // The registry from a message kind and its arguments to the email (subject, text, HTML). Every kind a customer or the office
 // can get is here; `renderEmail` is what the sender calls at send time, so nothing is rendered until it goes out.
-import { cancelledEmail, cardExpiringEmail, cardFailedEmail, receiptEmail, renewalEmail } from "./account-messages"
+import { cancelledEmail, cardExpiringEmail, cardFailedEmail, receiptEmail, renewalEmail, visitCancelledEmail } from "./account-messages"
 import { adminAlertEmail, bookingConfirmationEmail, notClosedCrewEmail } from "./booking-and-staff"
 import { dateConfirmEmail, dateMovedEmail, dateSetEmail, dayBeforeEmail } from "./date-messages"
 import { invoiceEmail, invoiceReminderEmail } from "./invoice"
@@ -25,6 +25,7 @@ export const EMAIL_TEMPLATES = {
   "card-failed": cardFailedEmail,
   "card-expiring": cardExpiringEmail,
   cancelled: cancelledEmail,
+  "visit-cancelled": visitCancelledEmail,
   renewal: renewalEmail,
   "not-closed-crew": notClosedCrewEmail,
   "admin-alert": adminAlertEmail,

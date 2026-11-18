@@ -66,8 +66,8 @@ export const scheduleRun: QueueHandler = async (db, item) => {
  * payload `{ staff: true, kind, to, data }` sends a note to the office (see `queueStaffMessage`).
  */
 export const message: QueueHandler = async (db, item) => {
-  const payload = item.payload as { messageId?: string; staff?: boolean; kind?: string; to?: string; data?: Record<string, unknown> }
-  if (payload.staff) return sendStaffMessage({ kind: payload.kind!, to: payload.to!, data: payload.data ?? {} })
+  const payload = item.payload as { messageId?: string; staff?: boolean; kind?: string; to?: string; data?: Record<string, unknown>; channel?: "sms"; body?: string }
+  if (payload.staff) return sendStaffMessage({ kind: payload.kind ?? "", to: payload.to!, data: payload.data ?? {}, channel: payload.channel, body: payload.body })
   await sendMessageRow(db, payload.messageId!, { final: item.attempts >= MAX_ATTEMPTS })
 }
 

@@ -28,6 +28,7 @@ const DATA: Record<keyof typeof EMAIL_TEMPLATES, Record<string, unknown>> = {
   "card-failed": { ...base, amount: 145, visitName: "spring turn-on", card: "Visa ending 4242", address: "412 Ash St", updateUrl: "https://billing.stripe.com/s/1" },
   "card-expiring": { ...base, card: "Visa ending 4242", cardState: "expires in July 2027", left: 190, updateUrl: "https://billing.stripe.com/s/2" },
   cancelled: { ...base, season: 2027 },
+  "visit-cancelled": { ...base, serviceName: "spring turn-on", address: "412 Ash St", day: "2027-05-05", paid: 0 },
   renewal: { ...base, season: 2028, town: "Erie", buyUrl: `${origin}/season-pass` },
   "not-closed-crew": { origin, visits: [{ customer: "Andrea", name: "spring turn-on", day: "2027-05-04", town: "Erie" }, { customer: "Ben", name: "fall blowout", day: "2027-10-04", town: "Lafayette" }] },
   "admin-alert": { origin, title: "Season Pass TH-2027-0004 is new", detail: "Andrea in Erie bought a pass.", path: "/admin/passes" },

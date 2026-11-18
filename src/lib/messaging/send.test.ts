@@ -7,7 +7,7 @@ import { apiDb, eventsOf, ORG } from "@/api/test-helpers"
 import { drain } from "@/lib/queue"
 import { handlers } from "@/lib/queue/handlers"
 import { handleInboundText } from "./inbound"
-import { sendMessageRow, type SendDeps } from "./send"
+import { sendMessageRow, sendStaffMessage, type SendDeps } from "./send"
 import { readTwilioHealth } from "./health"
 import { sendTextNow, TwilioRejectedError, twilioSignature, validateTwilioSignature } from "./twilio"
 
@@ -162,5 +162,24 @@ describe("Twilio's signature", () => {
     expect(validateTwilioSignature("https://example.com/api/webhooks/twilio", params, sig, "tok")).toBe(true)
     expect(validateTwilioSignature("https://example.com/api/webhooks/twilio", { ...params, Body: "START" }, sig, "tok")).toBe(false)
     expect(validateTwilioSignature("https://example.com/api/webhooks/twilio", params, null, "tok")).toBe(false)
+  })
+})
+
+describe("a text to the office (queueStaffText)", () => {
+  const deps = (configured: boolean) => {
+    const sms = vi.fn(async () => ({ id: "sid" }))
+    const email = vi.fn(async () => ({ id: "eid" }))
+    return { sms, email, deps: { sms, email, smsConfigured: () => configured } as unknown as SendDeps }
+  }
+  it("goes through the text sender with no opt-out line and no email", async () => {
+    const d = deps(true)
+    await sendStaffMessage({ kind: "", to: "+19705550199", data: {}, channel: "sms", body: "Trailhead: Andrea Smith canceled Spring turn-on." }, d.deps)
+    expect(d.sms).toHaveBeenCalledWith({ to: "+19705550199", body: "Trailhead: Andrea Smith canceled Spring turn-on." })
+    expect(d.email).not.toHaveBeenCalled()
+  })
+  it("is skipped quietly while no text sender is set up, so the Home row and the email remain the record", async () => {
+    const d = deps(false)
+    await expect(sendStaffMessage({ kind: "", to: "+19705550199", data: {}, channel: "sms", body: "x" }, d.deps)).resolves.toBeUndefined()
+    expect(d.sms).not.toHaveBeenCalled()
   })
 })

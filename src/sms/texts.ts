@@ -4,9 +4,10 @@
 // decides by whether the number has had a text before). Plain ASCII, so a part holds 160 characters; the full link makes
 // some texts two parts, which costs less than a short link domain. The middle of the day-of texts and of the invoice
 // reminder is what the office may edit (`bodyOf` in src/emails/editable.ts); everything else here is locked.
+import { visitCancelledMoney } from "@/emails/account-messages"
 import { ACCOUNT_NAME, monthDay, shortDay, windowText } from "@/emails/format"
 import { bodyOf, fillTemplate, type EditableMessage, type Overrides } from "@/emails/editable"
-import type { InvoiceData, VisitData } from "@/emails/types"
+import type { InvoiceData, VisitCancelledData, VisitData } from "@/emails/types"
 
 export const OPT_OUT = "Reply STOP to opt out."
 
@@ -19,10 +20,17 @@ export interface TextOptions {
 
 const tail = (o?: TextOptions) => (o?.optOut === false ? "" : ` ${OPT_OUT}`)
 
+/**
+ * The link every text about a visit ends with: that visit's own page, signed so it opens already signed in. A text that sets or moves the day (or reminds of it)
+ * says "Doesn't work? Pick another day:"; on my way says "See your visit:". Without a signed link (an older row) it is the plain account link.
+ */
+const visitLinkTail = (key: EditableMessage["key"], visitUrl: string | undefined, accountUrl: string) =>
+  visitUrl ? `${key === "on-the-way" ? "See your visit:" : key === "date-confirm" ? "Pick another day:" : "Doesn't work? Pick another day:"} ${visitUrl}` : `Your ${ACCOUNT_NAME}: ${accountUrl}`
+
 const visitText = (key: EditableMessage["key"], d: VisitData, o?: TextOptions) => {
   const v = d.visit
   const middle = fillTemplate(bodyOf(o?.templates, key, "sms"), { service: v.name, address: v.address, day: shortDay(v.day), window: v.startTime ? windowText(v.startTime) : null, who: v.who })
-  return `Trailhead: ${middle} Your ${ACCOUNT_NAME}: ${d.accountUrl}${tail(o)}`
+  return `Trailhead: ${middle} ${visitLinkTail(key, v.visitUrl, d.accountUrl)}${tail(o)}`
 }
 
 export const dateSetText = (d: VisitData, o?: TextOptions) => visitText("date-set", d, o)
@@ -38,9 +46,12 @@ export const invoiceText = (d: InvoiceData, o?: TextOptions) => `Trailhead: your
 export const invoiceReminderText = (d: InvoiceData, o?: TextOptions) =>
   `Trailhead: ${fillTemplate(bodyOf(o?.templates, "invoice-reminder", "sms"), { service: d.visitName, amount: dollarsOf(d.total), due: monthDay(d.dueOn), payLink: d.payUrl })}${tail(o)}`
 
+/** The confirmation after a customer cancels a visit from their account: the fact, what is and is not charged and the account link. Not edited by the office. */
+export const visitCancelledText = (d: VisitCancelledData, o?: TextOptions) => `Trailhead: your ${d.serviceName} at ${d.address}${d.day ? ` on ${shortDay(d.day)}` : ""} is canceled. ${visitCancelledMoney(d.paid)} ${d.visitUrl ? `See your visit: ${d.visitUrl}` : `Your ${ACCOUNT_NAME}: ${d.accountUrl}`}${tail(o)}`
+
 const dollarsOf = (n: number) => `$${n.toLocaleString("en-US")}`
 
-export const SMS_TEMPLATES = { "date-set": dateSetText, "date-moved": dateMovedText, "day-before": dayBeforeText, "date-confirm": dateConfirmText, "on-the-way": onTheWayText, invoice: invoiceText, "invoice-reminder": invoiceReminderText }
+export const SMS_TEMPLATES = { "date-set": dateSetText, "date-moved": dateMovedText, "day-before": dayBeforeText, "date-confirm": dateConfirmText, "on-the-way": onTheWayText, invoice: invoiceText, "invoice-reminder": invoiceReminderText, "visit-cancelled": visitCancelledText }
 export type SmsKind = keyof typeof SMS_TEMPLATES
 
 /** Kinds with no email twin: a text or nothing (on my way means nothing a day later). */

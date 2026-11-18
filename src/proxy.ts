@@ -17,7 +17,7 @@ export async function proxy(request: NextRequest) {
   const secret = process.env.AUTH_SECRET
   const token = secret ? await getToken({ req: request, secret, secureCookie: request.nextUrl.protocol === "https:" }) : null
   const principal = (token?.principal as Principal | undefined) ?? null
-  const gate = gateFor(pathname, principal)
+  const gate = gateFor(pathname, principal, search)
   if (gate.action === "redirect") {
     const url = new URL(gate.to, request.nextUrl)
     url.searchParams.set("next", pathname + search)

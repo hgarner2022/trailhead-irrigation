@@ -10,6 +10,8 @@ export interface PersonPrincipal {
   type: "admin" | "customer"
   role?: AdminRole
   customerId?: string
+  /** set only by server code that verified a visit link (`verifyVisitLink`): this customer may call `visitLink` handlers for this one visit and nothing else */
+  onlyVisitId?: string
 }
 
 /** A bearer key, with exactly the scopes it was given. */

@@ -5,6 +5,9 @@ import { createElement, type ReactNode } from "react"
 
 afterEach(cleanup)
 
+// The sheets refresh the page when they are closed (`useRouter().refresh()`); jsdom has no mounted app router, so unit tests get one that does nothing. The real router runs in Storybook and the app.
+vi.mock("next/navigation", async (importOriginal) => ({ ...(await importOriginal<typeof import("next/navigation")>()), useRouter: () => ({ refresh: () => {}, push: () => {}, replace: () => {}, back: () => {}, forward: () => {}, prefetch: () => {} }) }))
+
 // jsdom has no layout, so react-resizable-panels would treat every pointer-down as a hit on its handle and swallow
 // clicks and typing inside the side panel. Unit tests get plain elements with the same roles and props; the real
 // drag, the arrow keys and the limits are exercised in Chromium by the SidePanel stories (npm run test:stories).

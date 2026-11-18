@@ -60,7 +60,7 @@ export function ReceiptScreen({ receipt }: { receipt: ReceiptOutType }) {
         <PrintButton />
         {receipt.receiptUrl && (
           <a href={receipt.receiptUrl} target="_blank" rel="noreferrer" className="text-base font-semibold text-primary-deep underline underline-offset-2">
-            Card receipt
+            View the card receipt
           </a>
         )}
       </div>

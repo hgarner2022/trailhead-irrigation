@@ -9,9 +9,11 @@ import { signToken } from "@/lib/messaging/tokens"
 import { invoiceStatus } from "@/lib/money/invoice"
 import { loadTaxRule } from "@/lib/money/tax-rule"
 import { jobMoney, jobOwed } from "@/lib/money/words"
+import { portalVisitMoney } from "./visit-money"
 import { passStatus } from "@/lib/pass/facts"
-import { changeFor } from "@/lib/portal/change-day"
-import { customerFacingFirstName } from "@/lib/portal/words"
+import { changeFor, cutoffWords, mountainDayOf } from "@/lib/portal/change-day"
+import { windowTold } from "@/lib/portal/window-told"
+import { customerFacingFirstName, windowPhrase } from "@/lib/portal/words"
 import type { Ctx } from "../../core/context"
 import { canSeeContact, today } from "../shared"
 import { selfCustomerId } from "./self"
@@ -50,6 +52,16 @@ export async function loadPortalJobs(ctx: Ctx, customerId: string, only?: string
     db.select({ settings: s.organization.settings }).from(s.organization).where(eq(s.organization.id, org)),
   ])
   const kinds = await loadJobKinds(db, org, jobs)
+  // A window is a message: it is shown only for a visit whose day-before message exists (architecture section 4).
+  const told = await windowTold(db, org, visits)
+  // A visit has no `cancelled_at`: its cancel's day is the day of the newest cancel or skip event.
+  const goneIds = visits.filter((v) => v.status === "cancelled" || v.status === "skipped").map((v) => v.id)
+  const goneAt = new Map<string, Date>()
+  if (goneIds.length) {
+    const events = await db.select({ visitId: s.event.visitId, at: s.event.at }).from(s.event).where(and(eq(s.event.organizationId, org), inArray(s.event.visitId, goneIds), inArray(s.event.kind, ["visit.cancelled", "visit.skipped"]))).orderBy(asc(s.event.at))
+    for (const e of events) if (e.visitId) goneAt.set(e.visitId, e.at)
+  }
+  const now = ctx.now
   const windowKinds = new Set((orgRow?.settings.windows ?? []).map((w) => w.kind as string))
   const nameOf = new Map(people.map((p) => [p.id, p.name]))
   return jobs.map((j) => {
@@ -70,6 +82,13 @@ export async function loadPortalJobs(ctx: Ctx, customerId: string, only?: string
       open,
       paidInvoiceVisits,
     )
+    const prices = new Map(jobVisits.map((v) => [v.id, v.status === "cancelled" || v.status === "skipped" ? 0 : visitPrice(linesOfVisit(lines, v.id), rule)]))
+    const visitMoney = portalVisitMoney(
+      jobVisits.map((v) => ({ id: v.id, status: v.status, completedOn: v.completedOn, price: prices.get(v.id) ?? 0 })),
+      payments,
+      open ? { dueOn: open.dueOn, status: invoiceStatus(open, day) === "overdue" ? "overdue" : "sent", visitIds: open.lines.map((l) => l.visitId).filter((x): x is string => Boolean(x)) } : undefined,
+      paidInvoiceVisits,
+    )
     const kind = kinds.get(j.id)!
     const stage = stageOf({ kind, cancelledAt: j.cancelledAt, soldOn: j.soldOn, quoteSentOn: j.quoteSentOn, quoteAcceptedOn: j.quoteAcceptedOn, lines, visits: jobVisits })
     const live = lines.find((l) => !l.cancelledAt)
@@ -86,6 +105,7 @@ export async function loadPortalJobs(ctx: Ctx, customerId: string, only?: string
       open: jobOpen,
       stage: stage === "done" ? "done" : stage === "cancelled" ? "cancelled" : "open",
       address: property?.address ?? "",
+      town: property?.town ?? "",
       lines: lines.map((l) => ({ id: l.id, name: l.name, description: l.description, quantity: l.quantity, unitPrice: l.unitPrice, taxable: l.taxable, cancelledAt: iso(l.cancelledAt), visitId: l.visitId })),
       total: jobTotal(lines, rule),
       money: { paid: money.paid, owed: money.owed, words: money.words },
@@ -97,13 +117,18 @@ export async function loadPortalJobs(ctx: Ctx, customerId: string, only?: string
         status: v.status,
         scheduledOn: v.scheduledOn,
         completedOn: v.completedOn,
-        startTime: v.startTime,
-        durationMinutes: v.durationMinutes,
-        window: v.window,
-        personFirstName: customerFacingFirstName(v.personId ? nameOf.get(v.personId) : null),
+        canceledOn: goneAt.has(v.id) ? mountainDayOf(goneAt.get(v.id)!) : null,
+        windowTold: told.has(v.id),
+        window: told.has(v.id) && v.status === "scheduled" ? windowPhrase(v.startTime) : null,
+        month: v.window,
+        // The person is shown with the window: Ryan names who is coming in the day-before text, not before it.
+        personFirstName: told.has(v.id) ? customerFacingFirstName(v.personId ? nameOf.get(v.personId) : null) : null,
+        price: prices.get(v.id) ?? 0,
+        money: visitMoney.get(v.id)!,
         mustBeHome: properties.find((p) => p.id === v.propertyId)?.mustBeHome ?? false,
         notDoneReason: v.status === "unscheduled" ? v.notDoneReason : null,
-        change: changeFor({ status: v.status, scheduledOn: v.scheduledOn, hasWindow: windowKinds.has(v.kind), jobOpen }, day),
+        ...changeFor({ status: v.status, scheduledOn: v.scheduledOn, hasWindow: windowKinds.has(v.kind), jobOpen }, now),
+        cancelsBy: v.status === "scheduled" && v.scheduledOn ? cutoffWords({ scheduledOn: v.scheduledOn }) : null,
       })),
       payments: payments
         .filter((p) => p.status === "succeeded")

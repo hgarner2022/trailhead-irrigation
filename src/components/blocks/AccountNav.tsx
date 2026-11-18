@@ -3,14 +3,13 @@
 import Image from "next/image"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { ChevronDown } from "lucide-react"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
+import { AccountMenu } from "./AccountMenu"
 
-// The customer's account header (docs/plans/2026-11-18-customer-portal-design.md, section 4): the logo, and "Hi, Andrea" as a menu with Sign out pinned
-// to the far right of the header at every width, then the five places, Home · Visits · Jobs · Season Pass (only for someone who has held one) · Details.
-// On a laptop the row sits beside the logo, on a phone under it. The current place is marked with aria-current; `current` overrides the route, which is how the story and the tests pin it.
-// A signed-out visitor sees a quiet Sign in link in the same place, so the header never changes shape.
+// The customer's account header (docs/plans/2026-11-18-customer-portal-v2-design.md, section 3): the logo, the four places, Home · Visits · Season Pass (only for someone who
+// has held one) · Details, and the account menu (the first name, Details, Open the admin for staff, Sign out) pinned to the far right of the header at every width. On a
+// laptop the row sits beside the logo, on a phone under it. The current place is marked with aria-current; `current` overrides the route, which is how the story and the
+// tests pin it. A signed-out visitor sees a quiet Sign in link in the same place, so the header never changes shape.
 
 export interface AccountNavProps {
   /** the customer's first name; left out for a visitor who is not signed in */
@@ -19,6 +18,8 @@ export interface AccountNavProps {
   hasPass?: boolean
   /** the path to mark as current; defaults to the route */
   current?: string
+  /** the signed-in person also works here: the menu offers Open the admin */
+  isStaff?: boolean
   /** the server action that signs the customer out: Sign out in the menu submits a form to it */
   onSignOut?: () => void | Promise<void>
   className?: string
@@ -27,16 +28,15 @@ export interface AccountNavProps {
 const PLACES = [
   { href: "/account", label: "Home" },
   { href: "/account/visits", label: "Visits" },
-  { href: "/account/jobs", label: "Jobs" },
   { href: "/account/pass", label: "Season Pass", needsPass: true },
   { href: "/account/details", label: "Details" },
 ]
 
-/** The place a path belongs to: Home only for `/account` itself, the others by their prefix (a job page is under Jobs). */
+/** The place a path belongs to: Home only for `/account` itself, the others by their prefix (a visit page is under Visits). */
 export const placeOf = (path: string) =>
   PLACES.filter((p) => (p.href === "/account" ? path === p.href : path === p.href || path.startsWith(`${p.href}/`))).sort((a, b) => b.href.length - a.href.length)[0]?.href
 
-export function AccountNav({ firstName, hasPass = false, current, onSignOut, className }: AccountNavProps) {
+export function AccountNav({ firstName, hasPass = false, current, isStaff = false, onSignOut, className }: AccountNavProps) {
   const route = usePathname()
   const here = placeOf(current ?? route ?? "")
   return (
@@ -59,24 +59,7 @@ export function AccountNav({ firstName, hasPass = false, current, onSignOut, cla
                 </Link>
               ))}
             </nav>
-            <div data-slot="account-menu" className="order-2 ml-auto sm:order-none">
-              <DropdownMenu>
-                <DropdownMenuTrigger className="flex items-center gap-1 rounded-lg px-2 py-2 font-display text-xl leading-none text-navy hover:bg-stone">
-                  {`Hi, ${firstName}`}
-                  <ChevronDown aria-hidden className="size-4" />
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <form action={onSignOut}>
-                    {/* keep the menu mounted until the sign-out redirect: closing on select could unmount the form before it submits */}
-                    <DropdownMenuItem asChild onSelect={(e) => e.preventDefault()}>
-                      <button type="submit" className="w-full cursor-pointer text-base">
-                        Sign out
-                      </button>
-                    </DropdownMenuItem>
-                  </form>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
+            <AccountMenu firstName={firstName} isStaff={isStaff} onSignOut={onSignOut} className="order-2 ml-auto sm:order-none" />
           </>
         ) : (
           <Link href="/account/sign-in" className="ml-auto text-base font-semibold text-navy-light hover:text-navy">

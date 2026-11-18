@@ -90,8 +90,10 @@ describe("two weeks before", () => {
     expect(first.dateConfirm).toBe(1)
     expect(rows).toHaveLength(1)
     expect(rows[0]).toMatchObject({ visitId: "p1-turn-on", channel: "sms", key: "date-confirm:p1-turn-on" })
-    expect(rows[0]!.body).toContain("Wed, May 19, 8 to 10 am")
-    expect(rows[0]!.body).toContain("Need another day?")
+    // a window is a message told the day before: two weeks out the text states the day only
+    expect(rows[0]!.body).toContain("Wed, May 19")
+    expect(rows[0]!.body).not.toContain("8 to 10 am")
+    expect(rows[0]!.body).toContain("Need another day? Pick another day: https://site.test/account/visits/p1-turn-on?t=")
     expect(rows[0]!.body).toContain("Reply STOP to opt out.")
   })
 })

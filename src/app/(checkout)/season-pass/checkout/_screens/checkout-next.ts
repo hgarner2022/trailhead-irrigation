@@ -1,5 +1,6 @@
 import { googleCalendarUrl } from "@/emails/calendar"
-import { CONFIRM_LINE, RYAN_DOES, filledLine, longDay, moneyLine, windowText } from "@/emails/format"
+import { CONFIRM_LINE, RYAN_DOES, filledLine, longDay, moneyLine } from "@/emails/format"
+import { WINDOW_LATER } from "@/lib/portal/words"
 import type { Pass } from "@/lib/admin/types"
 
 /** The two calendar buttons under a dated visit: Google's link, and the signed .ics file for Apple and Outlook once the server has one. */
@@ -33,9 +34,10 @@ export function nextLines(pass: Pass, chosen: readonly { kind: string; day: stri
   const lines: NextLine[] = visits.map((v) => {
     const name = capital(NAME[v.kind])
     if (!v.scheduledOn) return { key: v.kind, lead: v.window, text: `${name}. Ryan sets the day and we text it to you.` }
-    const when = v.startTime ? `${name}, between ${windowText(v.startTime).replace(" to ", " and ")}.` : `${name}.`
+    // A window is a message, told the day before; the done step states the day and says so.
+    const when = `${name}. ${WINDOW_LATER}`
     const wanted = chosen.find((c) => c.kind === v.kind)?.day
-    const google = googleCalendarUrl({ id: v.id ?? v.kind, name: NAME[v.kind], day: v.scheduledOn, startTime: v.startTime ?? null, location: `${pass.town}, CO`, icsUrl: v.calendarUrl ?? "" })
+    const google = googleCalendarUrl({ id: v.id ?? v.kind, name: NAME[v.kind], day: v.scheduledOn, startTime: null, location: `${pass.town}, CO`, icsUrl: v.calendarUrl ?? "" })
     return { key: v.kind, lead: longDay(v.scheduledOn), text: `${when} ${RYAN_DOES[v.kind]}`, ...(wanted && wanted !== v.scheduledOn ? { note: filledLine(wanted, v.scheduledOn) } : {}), calendar: { google, ...(v.calendarUrl ? { ics: v.calendarUrl } : {}) } }
   })
   if (visits.length > 0) {

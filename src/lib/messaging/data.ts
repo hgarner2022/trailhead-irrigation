@@ -8,7 +8,8 @@ import { jobSubtotal, jobTax, linesOfVisit } from "@/lib/jobs/lines"
 import { loadTaxRule } from "@/lib/money/tax-rule"
 import { customerFacingFirstName } from "@/lib/portal/words"
 import { kindName } from "@/lib/pass/server/messages"
-import { visitCalendarUrl } from "./tokens"
+import { windowTold } from "@/lib/portal/window-told"
+import { visitCalendarUrl, visitLinkUrl } from "./tokens"
 
 /** What every customer message carries: links built from the site origin, the account link and the sign-in link with the customer's email filled in. */
 export function baseData(origin: string, customer: { firstName: string; email: string | null }): Base {
@@ -20,8 +21,13 @@ export function baseData(origin: string, customer: { firstName: string; email: s
   }
 }
 
-/** The visit as the messages know it, on `day` when the caller already knows the new one; null while it has no day. */
-export async function loadVisitFacts(db: Database, visitId: string, origin: string, day?: string): Promise<VisitFacts | null> {
+/**
+ * The visit as the messages know it, on `day` when the caller already knows the new one; null while it has no day. A window is a
+ * message, not a promise: `startTime` is null until the day-before message for the visit on that day exists, so the date-set and
+ * date-moved texts and the checkout cards state the day only. The day-before message itself passes `told: true` (its own row is
+ * not written yet) and is the first to carry a window.
+ */
+export async function loadVisitFacts(db: Database, visitId: string, origin: string, day?: string, opts?: { told?: boolean }): Promise<VisitFacts | null> {
   const [row] = await db
     // `who` is the person's first name as a customer reads it (`customerFacingFirstName`: none for a label such as "Second truck").
     // A person who has left keeps their visits until the office moves them (Settings › People, Remove), so they are not named.
@@ -32,17 +38,20 @@ export async function loadVisitFacts(db: Database, visitId: string, origin: stri
     .where(eq(s.visit.id, visitId))
   const when = day ?? row?.visit.scheduledOn
   if (!row || !when) return null
+  const told = opts?.told ?? (await windowTold(db, row.visit.organizationId, [{ id: row.visit.id, scheduledOn: when }])).has(row.visit.id)
   return {
     id: row.visit.id,
     name: kindName(row.visit.kind),
     day: when,
-    startTime: row.visit.startTime,
-    who: row.personActive ? customerFacingFirstName(row.person) : null,
+    startTime: told ? row.visit.startTime : null,
+    // The person goes with the window (architecture section 4): Ryan names who is coming in the day-before text, not before it.
+    who: told && row.personActive ? customerFacingFirstName(row.person) : null,
     ...(row.gateCode ? { gateCode: row.gateCode } : {}),
     ...(row.contactName ? { contactName: row.contactName } : {}),
     address: row.address,
     location: `${row.address}, ${row.town}`,
     icsUrl: visitCalendarUrl(origin, row.visit.id),
+    visitUrl: visitLinkUrl(origin, row.visit.id, row.visit.customerId),
   }
 }
 

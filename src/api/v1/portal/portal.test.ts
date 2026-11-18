@@ -10,6 +10,7 @@ import { apiDb, ctxFor, customerPerson, eventsOf, passJobOf, readKey, writeKey }
 import { customersCreate } from "../customers/handlers"
 import { invoicesGet, invoicesList, invoicesSend } from "../invoices/handlers"
 import { paymentsRecord } from "../payments/handlers"
+import { cutoffAt } from "@/lib/portal/change-day"
 import { visitsAreaDays, visitsPick } from "../visits/handlers"
 import { visitsCreate } from "../visits/office"
 import { jobsGet, jobsList } from "./jobs"
@@ -58,7 +59,7 @@ describe("jobs.list and jobs.get", () => {
     const { data } = await callApi(me(dana), jobsList, {})
     const job = data.find((j) => j.id === v.jobId)!
     expect(job).toMatchObject({ kind: "repair", name: "Repair", passId: null, stage: "done", total: 145, money: { paid: 0, owed: 145, words: "Invoice sent" } })
-    expect(job.visits).toMatchObject([{ id: v.id, kind: "repair", name: "Repair", status: "completed", change: "no" }])
+    expect(job.visits).toMatchObject([{ id: v.id, kind: "repair", name: "Repair", status: "completed", reschedule: "no", cancel: "no" }])
     expect(job.visits[0]!.completedOn).toBe(job.visits[0]!.scheduledOn) // a done visit carries the day it was done
     expect(job.invoices).toMatchObject([{ id: inv.id, status: "sent", total: 145, paidOn: null }])
     expect(job.invoices[0]!.payUrl).toMatch(new RegExp(`^/pay/${inv.id}\\?token=`))
@@ -67,6 +68,9 @@ describe("jobs.list and jobs.get", () => {
 
   it("names the person on a visit by first name only when the person has a first and last name; a label like Second truck reads as no one", async () => {
     const v = await doneRepair(dana)
+    // Ryan names who is coming in the day-before text: until that message exists no person is shown.
+    const [row] = await db.select().from(s.visit).where(eq(s.visit.id, v.id))
+    await db.insert(s.messageLog).values({ organizationId: row!.organizationId, customerId: dana, visitId: v.id, channel: "sms", kind: "day-before", key: `${v.id}-${row!.scheduledOn}`, to: "970-555-0142", body: "x", status: "queued" })
     const first = async () => (await callApi(me(dana), jobsList, {})).data.find((j) => j.id === v.jobId)!.visits[0]!.personFirstName
     await db.update(s.person).set({ name: "Second truck" }).where(eq(s.person.id, "person_truck-2"))
     await db.update(s.visit).set({ personId: "person_truck-2" }).where(eq(s.visit.id, v.id))
@@ -198,35 +202,72 @@ describe("customers.me, updateSelf, properties.updateSelf, startCardUpdate", () 
   })
 })
 
-describe("visits.areaDays and visits.pick for a one-off job and the two-day cut-off", () => {
-  it("lets a customer move a booked turn-on on a one-off job until two days before it, then says to call", async () => {
+describe("visits.areaDays and visits.pick for a one-off job and the 24-hour cut-off", () => {
+  it("lets a customer move a booked turn-on on a one-off job until 24 hours before its day, then refuses with the phone number", async () => {
     const v = await callApi(office("2027-04-20T15:00:00Z"), visitsCreate, { customerId: dana, kind: "turn-on", scheduledOn: "2027-05-12", price: 145 })
     const days = (await callApi(me(dana, "2027-04-20T15:00:00Z"), visitsAreaDays, { id: v.id })).days
     expect(days.length).toBeGreaterThan(0)
     const moved = await callApi(me(dana, "2027-04-20T15:00:00Z"), visitsPick, { id: v.id, day: days[0]! })
     expect(moved).toMatchObject({ status: "scheduled", scheduledOn: days[0] })
-    // two days before the day: still allowed; the day before: call
+    // the boundary minute: the last minute before the cut-off still works, the cut-off instant itself does not
     const on = days[0]!
-    const twoBefore = new Date(Date.parse(`${on}T12:00:00Z`) - 2 * 86_400_000).toISOString().slice(0, 10)
-    const oneBefore = new Date(Date.parse(`${on}T12:00:00Z`) - 86_400_000).toISOString().slice(0, 10)
-    await expect(callApi(me(dana, `${twoBefore}T15:00:00Z`), visitsAreaDays, { id: v.id })).resolves.toHaveProperty("days")
-    await expect(callApi(me(dana, `${oneBefore}T15:00:00Z`), visitsAreaDays, { id: v.id })).rejects.toMatchObject({ code: "unprocessable", message: expect.stringContaining("(970) 692-7270") })
-    await expect(callApi(me(dana, `${oneBefore}T15:00:00Z`), visitsPick, { id: v.id, day: days[1] ?? days[0]! })).rejects.toMatchObject({ code: "unprocessable" })
+    const cutoff = cutoffAt({ scheduledOn: on })
+    const before = new Date(cutoff.getTime() - 60_000).toISOString()
+    const after = cutoff.toISOString()
+    await expect(callApi(me(dana, before), visitsAreaDays, { id: v.id })).resolves.toHaveProperty("days")
+    await expect(callApi(me(dana, after), visitsAreaDays, { id: v.id })).rejects.toMatchObject({ code: "unprocessable", message: expect.stringContaining("(970) 692-7270") })
+    await expect(callApi(me(dana, after), visitsPick, { id: v.id, day: days[1] ?? days[0]! })).rejects.toMatchObject({ code: "unprocessable" })
     // the office is not held to the cut-off
-    await expect(callApi(ctxFor(db, writeKey, `${oneBefore}T15:00:00Z`), visitsAreaDays, { id: v.id })).resolves.toHaveProperty("days")
+    await expect(callApi(ctxFor(db, writeKey, after), visitsAreaDays, { id: v.id })).resolves.toHaveProperty("days")
   })
 
-  it("marks the visit changeable in the job, and not once the day is close", async () => {
+  it("offers `count` days (three by default, up to five), never the day the visit is on, and accepts any of them", async () => {
+    const v = await callApi(office("2027-04-20T15:00:00Z"), visitsCreate, { customerId: dana, kind: "turn-on", scheduledOn: "2027-05-12", price: 145 })
+    const three = (await callApi(me(dana, "2027-04-20T15:00:00Z"), visitsAreaDays, { id: v.id })).days
+    const five = (await callApi(me(dana, "2027-04-20T15:00:00Z"), visitsAreaDays, { id: v.id, count: 5 })).days
+    expect(three.length).toBeLessThanOrEqual(3)
+    expect(five.length).toBeGreaterThan(3)
+    expect(five.length).toBeLessThanOrEqual(5)
+    expect(five).toEqual([...five].sort())
+    expect(five).not.toContain("2027-05-12")
+    await expect(callApi(me(dana, "2027-04-20T15:00:00Z"), visitsPick, { id: v.id, day: five[4]! })).resolves.toMatchObject({ scheduledOn: five[4] })
+    await expect(callApi(me(dana, "2027-04-20T15:00:00Z"), visitsAreaDays, { id: v.id, count: 6 })).rejects.toMatchObject({ code: "invalid" })
+  })
+
+  it("never offers today or tomorrow: the earliest day on offer is two days out, so a same-day or next-day change is never offered", async () => {
+    const v = await callApi(office("2027-05-03T15:00:00Z"), visitsCreate, { customerId: dana, kind: "turn-on", scheduledOn: "2027-05-25", price: 145 })
+    const { days } = await callApi(me(dana, "2027-05-03T15:00:00Z"), visitsAreaDays, { id: v.id, count: 5 })
+    expect(days.length).toBeGreaterThan(0)
+    for (const d of days) expect(d >= "2027-05-05").toBe(true)
+  })
+
+  it("marks the visit with what the customer may do: reschedule and cancel, then Text Ryan inside 24 hours, with the last minute to change it", async () => {
     const v = await callApi(office("2027-04-20T15:00:00Z"), visitsCreate, { customerId: dana, kind: "turn-on", scheduledOn: "2027-05-12", price: 145 })
     const early = (await callApi(me(dana, "2027-04-20T15:00:00Z"), jobsGet, { id: v.jobId })).visits[0]!
-    expect(early.change).toBe("yes")
+    expect(early).toMatchObject({ reschedule: "yes", cancel: "yes", cancelsBy: "Monday, May 10, 11:59 pm" })
     const late = (await callApi(me(dana, "2027-05-11T15:00:00Z"), jobsGet, { id: v.jobId })).visits[0]!
-    expect(late.change).toBe("call")
+    expect(late).toMatchObject({ reschedule: "text", cancel: "text" })
   })
 
-  it("keeps a repair, which has no season window, out of online day changes", async () => {
+  it("keeps a repair, which has no season window, out of online day changes but lets the customer cancel it", async () => {
     const v = await callApi(office(), visitsCreate, { customerId: dana, kind: "repair", scheduledOn: nextDay(), price: 145 })
-    expect((await callApi(me(dana), jobsGet, { id: v.jobId })).visits[0]!.change).toBe("no")
+    expect((await callApi(me(dana), jobsGet, { id: v.jobId })).visits[0]!).toMatchObject({ reschedule: "text", cancel: "yes" })
     await expect(callApi(me(dana), visitsPick, { id: v.id, day: "2027-06-21" })).rejects.toMatchObject({ code: "unprocessable" })
+  })
+})
+
+describe("the window is a message: shown only once the day-before message exists", () => {
+  it("hides the office's start time and the person until the day-before row exists, then shows both", async () => {
+    const v = await callApi(office("2027-04-20T15:00:00Z"), visitsCreate, { customerId: dana, kind: "turn-on", scheduledOn: "2027-05-18", startTime: "08:00", price: 145 })
+    const read = async () => (await callApi(me(dana, "2027-04-20T15:00:00Z"), jobsGet, { id: v.jobId })).visits[0]!
+    await db.update(s.visit).set({ personId: "person_truck-1" }).where(eq(s.visit.id, v.id))
+    expect(await read()).toMatchObject({ windowTold: false, window: null, personFirstName: null })
+    expect(JSON.stringify(await read())).not.toContain("08:00")
+    const [row] = await db.select().from(s.visit).where(eq(s.visit.id, v.id))
+    await db.insert(s.messageLog).values({ organizationId: row!.organizationId, customerId: dana, visitId: v.id, channel: "sms", kind: "day-before", key: `${v.id}-2027-05-18`, to: "970-555-0142", body: "x", status: "queued" })
+    expect(await read()).toMatchObject({ windowTold: true, window: "between 8 and 10 am", personFirstName: "Ryan" })
+    // a row for another day is not this day's: a moved visit reads as not told again
+    await db.update(s.visit).set({ scheduledOn: "2027-05-19" }).where(eq(s.visit.id, v.id))
+    expect(await read()).toMatchObject({ windowTold: false, window: null })
   })
 })

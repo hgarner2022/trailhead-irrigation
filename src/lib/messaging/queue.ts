@@ -5,10 +5,11 @@ import type { Database } from "@/db/types"
 import { renderEmail } from "@/emails/render"
 import { OPT_OUT, SMS_TEMPLATES, TEXT_ONLY_KINDS, type SmsKind } from "@/sms/texts"
 import { enqueue } from "@/lib/queue"
+import { normalizePhone } from "@/lib/format/contact"
 import { currentConsent, mayMessage } from "./consent"
 import { isFirstText, savedTemplates } from "./saved"
 
-export type MessageKind = "purchase-confirmation" | "booking-confirmation" | "date-set" | "date-moved" | "day-before" | "date-confirm" | "on-the-way" | "receipt" | "card-failed" | "card-expiring" | "cancelled" | "renewal" | "note" | "invoice" | "invoice-reminder"
+export type MessageKind = "purchase-confirmation" | "booking-confirmation" | "date-set" | "date-moved" | "day-before" | "date-confirm" | "on-the-way" | "receipt" | "card-failed" | "card-expiring" | "cancelled" | "visit-cancelled" | "renewal" | "note" | "invoice" | "invoice-reminder"
 
 /** The kinds that go by text: one channel each, the customer's mobile, and by email instead when there is none or texts are off. */
 const BY_TEXT = new Set<string>(Object.keys(SMS_TEMPLATES))
@@ -80,6 +81,25 @@ export async function queueStaffMessage(db: Database, organizationId: string, ki
   for (const p of staff) {
     if (!p.email) continue
     if (await enqueue(db, organizationId, "message", `${kind}:${key}:${p.email}`, { staff: true, kind, to: p.email, data })) queued++
+  }
+  return queued
+}
+
+/**
+ * A text to the office: one `message` queue item per active owner or admin with a mobile number (a tech hears nothing), sent through the same sender as a customer's
+ * text but with no `message_log` row and no opt-out line (it is a note to staff, not a customer message). `key` makes it once per event and person. Nothing is queued for
+ * a person with no number, and the sender skips it quietly while no text sender is set up, so the Home row and the email remain the record.
+ */
+export async function queueStaffText(db: Database, organizationId: string, key: string, body: string): Promise<number> {
+  const staff = await db
+    .select({ phone: s.person.phone })
+    .from(s.person)
+    .where(and(eq(s.person.organizationId, organizationId), inArray(s.person.role, ["owner", "admin"]), isNotNull(s.person.phone), eq(s.person.active, true)))
+  let queued = 0
+  for (const p of staff) {
+    const to = normalizePhone(p.phone)
+    if (!to) continue
+    if (await enqueue(db, organizationId, "message", `staff-text:${key}:${to}`, { staff: true, channel: "sms", to, body })) queued++
   }
   return queued
 }
