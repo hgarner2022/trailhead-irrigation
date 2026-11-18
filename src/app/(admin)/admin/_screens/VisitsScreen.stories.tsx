@@ -112,7 +112,7 @@ export const PanelPassVisitNoCard: Story = {
   globals: wide,
   play: async ({ canvas }) => {
     await expect(await canvas.findByRole("button", { name: "Mark done and record payment" })).toBeInTheDocument()
-    await expect(await canvas.findByText("Sends the receipt, which says how it was paid.")).toBeInTheDocument()
+    await expect(await canvas.findByText("Sends the receipt, which says how it was paid. A bill goes with a pay link instead.")).toBeInTheDocument()
   },
 }
 
