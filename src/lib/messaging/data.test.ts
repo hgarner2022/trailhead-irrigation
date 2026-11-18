@@ -4,7 +4,9 @@ import { eq } from "drizzle-orm"
 import * as s from "@/db/schema"
 import type { TestDb } from "@/db/test-db"
 import { apiDb } from "@/api/test-helpers"
-import { loadVisitFacts, receiptLines, receiptNumber, visitWhoDay } from "./data"
+import { baseData, loadVisitFacts, receiptLines, receiptNumber, visitWhoDay } from "./data"
+import { dayBeforeText, onTheWayText } from "@/sms/texts"
+import { renderEmail } from "@/emails/render"
 
 const origin = "https://site.test"
 
@@ -44,6 +46,40 @@ describe("loadVisitFacts", () => {
     } finally {
       await db.update(s.person).set({ active: true }).where(eq(s.person.id, "person_truck-1"))
     }
+  })
+})
+
+describe("a person who is a label, not a name", () => {
+  const rename = (name: string) => db.update(s.person).set({ name }).where(eq(s.person.id, "person_truck-1"))
+  const base = baseData(origin, { firstName: "Andrea", email: "andrea@example.com" })
+  afterAll(async () => {
+    await rename("Ryan Garner")
+  })
+
+  it.each(["Second truck", "Truck 1", "Second"])("names no one for %s, so a text reads without a name", async (label) => {
+    await rename(label)
+    const facts = (await loadVisitFacts(db, "p4-turn-on", origin))!
+    expect(facts.who).toBeNull()
+    expect((await visitWhoDay(db, "p4-turn-on")).who).toBeNull()
+    const visit = { ...facts, address: "480 Briggs St", name: "fall blowout" }
+    expect(onTheWayText({ ...base, visit }, { optOut: false })).toBe(`Trailhead: We're on the way to 480 Briggs St for your fall blowout. Your Trailhead account: ${origin}/account`)
+    expect(dayBeforeText({ ...base, visit }, { optOut: false })).toBe(`Trailhead: We're coming tomorrow, Wed, May 5, 8 to 10 am, for your fall blowout. Your Trailhead account: ${origin}/account`)
+  })
+
+  it("names no one in the day-before email either, and says Ryan and the crew in the visit block", async () => {
+    await rename("Second truck")
+    const visit = (await loadVisitFacts(db, "p4-turn-on", origin))!
+    const email = renderEmail("day-before", { ...base, visit })!
+    expect(email.text).toContain("a reminder that we're coming tomorrow")
+    expect(email.text).not.toContain("Second")
+    expect(email.text).toContain("Who is coming: Ryan and the crew")
+  })
+
+  it("still names a person with a first and a last name", async () => {
+    await rename("Ryan Garner")
+    const visit = (await loadVisitFacts(db, "p4-turn-on", origin))!
+    expect(visit.who).toBe("Ryan")
+    expect(onTheWayText({ ...base, visit: { ...visit, address: "480 Briggs St", name: "fall blowout" } }, { optOut: false })).toBe(`Trailhead: Ryan is on the way to 480 Briggs St for your fall blowout. Your Trailhead account: ${origin}/account`)
   })
 })
 
