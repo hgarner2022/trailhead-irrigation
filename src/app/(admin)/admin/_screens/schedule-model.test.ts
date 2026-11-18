@@ -4,7 +4,7 @@ import type { AdminData, Visit } from "@/lib/admin/types"
 import { TIME_ZONE } from "@/lib/admin/format"
 import { dayVisits, weekDays, weekVisits } from "@/lib/admin/calendar"
 import { routePeople } from "@/lib/admin/people"
-import { exceptionCount, firstJobWeek, moveOutcome, moveVisit, nextJobsWeek, weekContext } from "./schedule-model"
+import { dayContext, exceptionCount, firstJobWeek, moveOutcome, moveVisit, nextJobsWeek, weekContext } from "./schedule-model"
 
 const data = snapshot as AdminData
 const people = routePeople(data.settings.people)
@@ -29,6 +29,16 @@ describe("the week's visits", () => {
     expect(weekContext("2026-10-05", weekVisits(data.visits, "2026-10-05", TIME_ZONE))).toBe("Week of Oct 5. 25 visits.")
     expect(weekContext("2027-03-01", [])).toBe("Week of Mar 1. Nothing on the calendar.")
     expect(weekContext(WEEK, week.filter((v) => !v.exception))).toBe(`Week of Nov 9. ${week.length - 2} visits.`)
+  })
+})
+
+describe("dayContext", () => {
+  it("names the day shown and counts that day's visits, not the week's", () => {
+    const thursday = dayVisits(data.visits, "2026-11-12", undefined, TIME_ZONE)
+    expect(dayContext("2026-11-12", thursday)).toBe("Thursday, Nov 12. 4 visits.")
+    expect(dayContext("2026-11-12", thursday.slice(0, 1))).toBe("Thursday, Nov 12. 1 visit.")
+    expect(dayContext("2026-11-14", [])).toBe("Saturday, Nov 14. Nothing on the calendar.")
+    expect(dayContext("2026-11-10", dayVisits(data.visits, "2026-11-10", undefined, TIME_ZONE))).toMatch(/^Tuesday, Nov 10\. \d+ visits, 1 moved\.$/)
   })
 })
 
@@ -107,7 +117,7 @@ describe("moveOutcome", () => {
 })
 
 describe("to schedule tray, placing and scheduling", async () => {
-  const { trayItems, placeVisit, scheduleItems, firstWorkingDay } = await import("./schedule-model")
+  const { trayItems, placeVisit } = await import("./schedule-model")
   const snapshot = (await import("@/lib/admin/fixtures/snapshot.json")).default as import("@/lib/admin/types").AdminData
   const tz = "America/Denver"
 
@@ -122,16 +132,6 @@ describe("to schedule tray, placing and scheduling", async () => {
     expect(items.some((i) => i.passId === cancelled.id)).toBe(false)
     const done = snapshot.passes[0].visits.find((v) => v.completedAt)!
     expect(items.some((i) => i.passId === snapshot.passes[0].id && i.kind === done.kind)).toBe(false)
-  })
-
-  it("Place puts a one-off on the first working day from today, not a day already gone this week", () => {
-    const person = snapshot.settings.people[0]
-    const monday = "2027-05-03"
-    expect(firstWorkingDay(person, monday)).toBe(firstWorkingDay(person, monday, "2027-05-03"))
-    const later = firstWorkingDay(person, monday, "2027-05-05")
-    expect(later >= "2027-05-05").toBe(true)
-    // nothing left in the week: the first working day of the week, not a made-up one
-    expect(firstWorkingDay(person, monday, "2027-12-01")).toBe(firstWorkingDay(person, monday))
   })
 
   it("lists a one-off job's visit with no day (pass or not), first, with no window", () => {
@@ -150,7 +150,7 @@ describe("to schedule tray, placing and scheduling", async () => {
   it("places an item on a person's day as a scheduled visit, last in the day, once", () => {
     const person = snapshot.settings.people[0]
     const item = trayItems(snapshot)[0]
-    const day = firstWorkingDay(person, "2027-05-03")
+    const day = "2027-05-03"
     const placed = placeVisit(snapshot.visits, item, person, day, tz)
     const visit = placed.find((v) => v.id === item.id)!
     expect(visit).toMatchObject({ status: "scheduled", personId: person.id, personName: "Ryan Garner", clientName: item.clientName, kind: item.kind })
@@ -177,20 +177,6 @@ describe("to schedule tray, placing and scheduling", async () => {
   it("uses the visit's own id when the pass carries it, so Place moves the real visit", () => {
     const withIds = { ...snapshot, passes: snapshot.passes.map((p) => ({ ...p, visits: p.visits.map((v) => ({ ...v, id: `${p.id}-${v.kind}` })) })) }
     expect(trayItems(withIds).every((i) => i.id === `${i.passId}-${i.kind}`)).toBe(true)
-  })
-
-  it("schedules every tray item that is not waiting for its customer, round-robin over the people's working days", () => {
-    const items = trayItems(snapshot).map((i, n) => (n % 5 === 0 ? { ...i, awaitingPick: true } : i))
-    const waiting = items.filter((i) => i.awaitingPick)
-    expect(waiting.length).toBeGreaterThan(0)
-    const { visits, placed, waiting: left } = scheduleItems(snapshot.visits, items, snapshot.settings.people, "2027-05-03", tz)
-    expect(placed).toBe(items.length - waiting.length)
-    expect(left).toBe(waiting.length)
-    const after = trayItems({ visits, passes: snapshot.passes })
-    expect(after.map((i) => i.id)).toEqual(waiting.map((i) => i.id))
-    const days = new Set(visits.filter((v) => items.some((i) => i.id === v.id)).map((v) => `${v.personId}:${v.startAt?.slice(0, 10)}`))
-    expect(days.size).toBeGreaterThan(1)
-    expect(scheduleItems(snapshot.visits, items, [], "2027-05-03", tz)).toEqual({ visits: snapshot.visits, placed: 0, waiting: waiting.length })
   })
 })
 

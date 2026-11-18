@@ -63,6 +63,7 @@ function Grid({ rows, defaultFilters }: { rows: JobRow[]; defaultFilters?: JobsS
       exportName="jobs"
       defaultFilters={defaultFilters}
       pageSize={25}
+      noMatchTitle="No jobs match."
       emptyTitle="No jobs yet"
       emptyLine="Jobs appear here as passes are sold and work is booked. Add one with New job."
     />

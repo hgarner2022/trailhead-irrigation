@@ -6,7 +6,6 @@
 //   one-primary         a PageHeader holds at most one filled button
 //   panel-body-buttons  no filled button in a record panel's body: only RecordFooter and a sheet's footer carry one
 //   words               "Owed", "Overdue", "Bill", "Cancelled", "Lapsed", "Truck", "This visit is done" never show on a screen
-//   visit-word          "visit" shows only in the job panel, the visit panel and the Schedule's List view
 //   visits-nav          Visits is not a nav item: no "Visits" label, no `visits` section and no "/admin/visits" link (it redirects to the Schedule's List view)
 //   overlays            ui/dialog, ui/sheet and ui/popover are imported only by blocks/
 //   no-table-label      <table> and <label> only inside DataGrid and FormRow
@@ -22,19 +21,10 @@ export const NEW_BLOCKS = ["RecordPanel", "RecordFooter", "ConfirmDialog", "Spli
  * entry names the step of docs/plans/2026-11-18-admin-holistic-design.md, section 12, that pays it off. Delete the entry when it does.
  */
 export const ALLOW = {
-  // visit: the left column loses Visits (step 2), Home and the Schedule take plain words (step 3), the grids get their final columns (step 9)
-  "_screens/HomeScreen.tsx": { "visit-word": "Nov 18 2026, step 3: Home reads Today in plain words" },
-  "_screens/home-model.ts": { "visit-word": "Nov 18 2026, step 3: Home reads Today in plain words" },
-  "_screens/TodayVisits.tsx": { "visit-word": "Nov 18 2026, step 3: Home reads Today in plain words" },
-  "_screens/schedule-model.ts": { "visit-word": "Nov 18 2026, step 3: the Schedule says jobs and days" },
-  "_screens/RevenueScreen.tsx": { "visit-word": "Nov 18 2026, step 9: Reports reads every job" },
-  "_screens/customers-columns.tsx": { "visit-word": "Nov 18 2026, step 9: the final column sets", columns: "Nov 18 2026, step 9: the final column sets (ten today, eight then)" },
-  "_screens/jobs-columns.tsx": { "visit-word": "Nov 18 2026, step 9: the final column sets", columns: "Nov 18 2026, step 9: the final column sets (nine today, eight then)" },
-  "_screens/jobs-model.ts": { "visit-word": "Nov 18 2026, step 9: the Progress column reads '1 of 2 done'" },
-  "_screens/passes-model.ts": { "visit-word": "Nov 18 2026, step 9: the final words of the Customers panel" },
-  "_screens/settings-model.ts": { "visit-word": "Nov 18 2026, step 6: Settings shell, People and Services" },
-  "_screens/settings-tabs/Capacity.tsx": { "visit-word": "Nov 18 2026, step 6: the Capacity tab goes" },
-  "_screens/settings-tabs/People.tsx": { "visit-word": "Nov 18 2026, step 6: People gets Takes visits and hours", words: "Nov 18 2026, step 6: Takes visits replaces the truck label", "no-table-label": "Nov 18 2026, step 6: People becomes a list with a sheet" },
+  // columns and words: the grids get their final columns (step 9); People gets Takes visits (step 6)
+  "_screens/customers-columns.tsx": { columns: "Nov 18 2026, step 9: the final column sets (ten today, eight then)" },
+  "_screens/jobs-columns.tsx": { columns: "Nov 18 2026, step 9: the final column sets (nine today, eight then)" },
+  "_screens/settings-tabs/People.tsx": { words: "Nov 18 2026, step 6: Takes visits replaces the truck label", "no-table-label": "Nov 18 2026, step 6: People becomes a list with a sheet" },
   // overlays: New job moves onto the sheet recipe (step 2) and Settings onto its shell (step 6)
   "_screens/NewJob.tsx": { overlays: "Nov 18 2026, step 2: New job becomes SidePanel variant sheet", "no-table-label": "Nov 18 2026, step 2: New job's fields become FormRows" },
   "_screens/settings-tabs/ApiKeys.tsx": { overlays: "Nov 18 2026, step 6: Settings shell", "no-table-label": "Nov 18 2026, step 6: Settings shell (FormRow and the list recipe)" },
@@ -44,7 +34,7 @@ export const ALLOW = {
   "_screens/settings-tabs/fields.tsx": { overlays: "Nov 18 2026, step 6: Settings shell (ConfirmButton becomes ConfirmDialog)" },
   // forms: New job's fields become FormRows with the sheet recipe (step 2); Settings fields with the shell (step 6)
   "_screens/CustomerPicker.tsx": { "no-table-label": "Nov 18 2026, step 2: New job's fields become FormRows" },
-  "_screens/ScheduleMoveTo.tsx": { "visit-word": "Nov 18 2026, step 4: Move becomes its dialog", "no-table-label": "Nov 18 2026, step 4: Move becomes its dialog" },
+  "_screens/ScheduleMoveTo.tsx": { "no-table-label": "Nov 18 2026, step 4: Move becomes its dialog" },
   "_screens/NewJobPass.tsx": { "no-table-label": "Nov 18 2026, step 2: New job's fields become FormRows" },
   "_screens/NewJobService.tsx": { "no-table-label": "Nov 18 2026, step 2: New job's fields become FormRows" },
 }
@@ -93,16 +83,6 @@ const BANNED = [
 
 function checkWords(file, text, problems) {
   for (const { s, line } of screenText(text)) for (const [re, what] of BANNED) if (re.test(s)) problems.push(`${file}:${line}: banned word ${what}`)
-}
-
-// The job panel, the visit panel and their parts, and the Schedule's List view (the old Visits grid: VisitsList and its columns and model). RecordHost and the screens are hosts, not panels.
-const VISIT_OK = /(^|\/)(JobPanel|JobFooter|JobDialogs|JobCollect|JobLinesSection|JobMoneySection|JobPills|VisitPanel|VisitFooter|VisitEditText|VisitMoveDone|VisitOnMyWay|VisitLines|VisitBill|VisitsList|job-[\w-]+|visits?-[\w-]+|use-runner|PanelNotes|PassPanel|NewJob[A-Za-z]*|CustomerJobs|ConfirmDialog|RecordPanel|RecordFooter)\.tsx?$/
-const VISIT_WORD = /\b[Vv]isits?\b/
-
-function checkVisitWord(file, text, problems) {
-  // the API's own docs page names the resources the API has; it is not an admin screen
-  if (VISIT_OK.test(file) || /\(admin\)\/developers\//.test(file)) return
-  for (const { s, line } of screenText(text)) if (VISIT_WORD.test(s)) problems.push(`${file}:${line}: the word "visit" outside the job and visit panels`)
 }
 
 // Visits left the left column (design section 4): a visit is one trip to the house, its grid is the Schedule's third view and `/admin/visits` only
@@ -216,7 +196,6 @@ function checkColumns(file, text, problems) {
 
 const RULES = [
   ["words", checkWords],
-  ["visit-word", checkVisitWord],
   ["one-primary", checkOnePrimary],
   ["panel-body-buttons", checkPanelButtons],
   ["overlays", checkOverlays],
@@ -235,7 +214,7 @@ export function checkAdminRules(abs, { file, dirs, fixture, name }, { problems, 
   seen.add(rel)
   for (const [rule, run] of RULES) {
     // blocks are shared with the customer's account; the screen-only rules read the admin tree
-    if (block && ["words", "visit-word", "one-primary", "panel-body-buttons", "columns"].includes(rule) && !/blocks\/(RecordPanel|RecordFooter|ConfirmDialog|SplitButton|MoneyCell|FormRow|SectionHeading|StatusPill|SegmentedControl)\.tsx$/.test(rel)) continue
+    if (block && ["words", "one-primary", "panel-body-buttons", "columns"].includes(rule) && !/blocks\/(RecordPanel|RecordFooter|ConfirmDialog|SplitButton|MoneyCell|FormRow|SectionHeading|StatusPill|SegmentedControl)\.tsx$/.test(rel)) continue
     const found = []
     run(rel, text, found)
     if (found.length === 0) continue

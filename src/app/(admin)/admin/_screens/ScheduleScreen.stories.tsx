@@ -133,3 +133,100 @@ export const NewJobFromTheDay: Story = {
     await expect(sheet.getByText("Thursday, Nov 12")).toBeInTheDocument()
   },
 }
+
+// Step 3 of the admin build (docs/plans/2026-11-18-admin-holistic-design.md, 5.2): the Schedule for one person and for two, at 1280 and at 375.
+// One person is the same snapshot with the second truck taken off the schedule (no label, no row). Two people use the October weeks, when both are out.
+const onePerson: AdminData = { ...data, settings: { ...data.settings, people: data.settings.people.map((p) => (p.id === "person_truck-2" ? { ...p, truck: undefined } : p)) } }
+const noTray: AdminData = { ...data, passes: [], visits: data.visits.filter((v) => v.startAt) }
+const rowNames = (canvas: { getAllByRole: (r: string) => HTMLElement[] }) => canvas.getAllByRole("rowheader").map((h) => h.textContent)
+
+/** One person at 1280: a row, their colour, every day headed by its fill and its towns, the Unscheduled list under it with Place on each row and a quiet Place all. */
+export const OnePersonLaptop: Story = {
+  args: { data: onePerson },
+  globals: { viewport: { value: "laptop", isRotated: false } },
+  play: async ({ canvas }) => {
+    await expect(rowNames(canvas as never)).toEqual(["Ryan Garner"])
+    await expect(await canvas.findByRole("button", { name: /^Place all \d+$/ })).toBeInTheDocument()
+  },
+}
+
+/** One person at 375: one day at a time, the day's fill and towns under its name, the list below. */
+export const OnePersonPhone: Story = {
+  args: { data: onePerson },
+  globals: { viewport: { value: "phone", isRotated: false } },
+}
+
+/** Two people at 1280: a row each in their own colour, and every day's header counts both. */
+export const TwoPeopleLaptop: Story = {
+  args: { defaultWeek: "2026-10-12" },
+  globals: { viewport: { value: "laptop", isRotated: false } },
+  play: async ({ canvas }) => {
+    await expect(rowNames(canvas as never)).toEqual(["Ryan Garner", "Tech Two"])
+    await expect((await canvas.findAllByText(/stops, .* open|stops, full/)).length).toBeGreaterThan(3)
+  },
+}
+
+/** Two people at 375: the day's people stacked, each with their stops. */
+export const TwoPeoplePhone: Story = {
+  args: { defaultWeek: "2026-10-12" },
+  globals: { viewport: { value: "phone", isRotated: false } },
+}
+
+/** The Day view with two people at 1280: each person's numbered stops in their colour beside one map. */
+export const DayTwoPeopleLaptop: Story = {
+  args: { defaultTab: "day", defaultDay: "2026-10-13" },
+  globals: { viewport: { value: "laptop", isRotated: false } },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByRole("region", { name: "Ryan Garner" })).toBeInTheDocument()
+    await expect(await canvas.findByRole("region", { name: "Tech Two" })).toBeInTheDocument()
+  },
+}
+
+export const DayTwoPeoplePhone: Story = {
+  args: { defaultTab: "day", defaultDay: "2026-10-13" },
+  globals: { viewport: { value: "phone", isRotated: false } },
+}
+
+/** The Unscheduled list with every job placed: "Every job has a day." and no Place all. */
+export const UnscheduledEmpty: Story = {
+  args: { data: noTray },
+  globals: { viewport: { value: "laptop", isRotated: false } },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText("Every job has a day.")).toBeInTheDocument()
+    await expect(canvas.queryByRole("button", { name: /^Place all/ })).not.toBeInTheDocument()
+  },
+}
+
+export const UnscheduledEmptyPhone: Story = {
+  args: { data: noTray },
+  globals: { viewport: { value: "phone", isRotated: false } },
+}
+
+/** The Unscheduled list full, one person at 375: the list under the day, Place on each row. */
+export const UnscheduledFullPhone: Story = {
+  args: { data: onePerson },
+  globals: { viewport: { value: "phone", isRotated: false } },
+}
+
+/** Place all opens the preview: who goes on which day with which person, then one button; the customers are texted a minute later. */
+export const PlaceAllPreview: Story = {
+  args: { data: onePerson, textDelaySeconds: 60 },
+  globals: { viewport: { value: "laptop", isRotated: false } },
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(await canvas.findByRole("button", { name: /^Place all \d+$/ }))
+    const dialog = within(await within(document.body).findByRole("dialog"))
+    await expect(dialog.getByRole("heading", { name: /^Place all \d+$/ })).toBeInTheDocument()
+    await expect(dialog.getAllByText(/Ryan Garner$/).length).toBeGreaterThan(0)
+  },
+}
+
+/** Place on one row books it on the screen at once; the customer's text waits a minute under "Texting Andrea in 60 s. Undo". */
+export const PlaceOneWithUndoStrip: Story = {
+  args: { data: onePerson, textDelaySeconds: 60 },
+  globals: { viewport: { value: "laptop", isRotated: false } },
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click((await canvas.findAllByRole("button", { name: /^Place [A-Z]/ }))[0]!)
+    await expect(await canvas.findByText(/^Texting .* in/)).toBeInTheDocument()
+    await expect(await canvas.findByRole("button", { name: "Undo" })).toBeInTheDocument()
+  },
+}

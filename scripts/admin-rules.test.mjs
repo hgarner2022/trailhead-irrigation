@@ -80,43 +80,19 @@ test("an arrow function is not JSX text", () => {
   assert.equal(r.status, 0, r.out)
 })
 
-test("banned words and visit on their own JSX lines are found", () => {
+test("banned words on their own JSX lines are found", () => {
   const bad = run(screen("Thing", `export const T = () => (\n  <Button>\n    Send a Bill\n  </Button>\n)\n`))
   assert.equal(bad.status, 1)
   assert.match(bad.out, /Thing\.tsx:3: banned word Bill/)
-  const visit = run(screen("HomeThing", `export const T = () => (\n  <p>\n    Today's visits\n  </p>\n)\n`))
-  assert.equal(visit.status, 1)
-  assert.match(visit.out, /HomeThing\.tsx:3: the word "visit"/)
 })
 
-test("the pages and hosts named Visit or Job are not the panels", () => {
-  for (const name of ["JobsScreen", "VisitPanelHost"]) {
-    const r = run(screen(name, `export const T = () => <h2>Visits appear here</h2>\n`))
-    assert.equal(r.status, 1, name)
-  }
-})
+// "visit" names a trip and is fine on any screen (Today's visits, Last visit, the Visits column); only a Visits nav item or page is not
 
-// "visit" only in the job and visit panels
-
-test("the word visit on a screen outside the panels fails; inside the visit and job panels it passes", () => {
-  const bad = run(screen("HomeThing", `export const T = () => <h2>Today's visits</h2>\n`))
-  assert.equal(bad.status, 1)
-  assert.match(bad.out, /HomeThing\.tsx:1: the word "visit" outside the job and visit panels/)
-  for (const name of ["VisitPanel", "JobPanel", "VisitFooter", "job-footer-model"]) {
-    const ok = run({ [`app/(admin)/admin/_screens/${name}.tsx`]: `export const T = () => <h2>Today's visits</h2>\n` })
-    assert.equal(ok.status, 0, `${name}: ${ok.out}`)
+test("the word visit is allowed on a screen: a trip is called a visit", () => {
+  for (const name of ["HomeThing", "ScheduleThing", "RevenueScreen", "JobsScreen"]) {
+    const r = run(screen(name, `export const T = () => <h2>Today's visits, Last visit</h2>\n`))
+    assert.equal(r.status, 0, `${name}: ${r.out}`)
   }
-})
-
-test("the word visit passes in the Schedule's List view: VisitsList, the visits columns and the visits model", () => {
-  for (const name of ["VisitsList", "visits-columns", "visits-model"]) {
-    const ok = run({ [`app/(admin)/admin/_screens/${name}.tsx`]: `export const T = () => <h2>Today's visits</h2>\n` })
-    assert.equal(ok.status, 0, `${name}: ${ok.out}`)
-  }
-  // the Schedule itself is not the List: its own text says days and jobs
-  const bad = run(screen("ScheduleThing", `export const T = () => <h2>All visits</h2>\n`))
-  assert.equal(bad.status, 1)
-  assert.match(bad.out, /ScheduleThing\.tsx:1: the word "visit" outside the job and visit panels/)
 })
 
 // Visits is not a nav item
@@ -203,15 +179,15 @@ test("a new block's stories need Default, Empty and Phone", () => {
 // the allowlist
 
 test("an allowlisted file reports a note with its date and step instead of failing", () => {
-  const r = run({ "app/(admin)/admin/_screens/HomeScreen.tsx": `export const T = () => <h2>Today's visits</h2>\n` })
+  const r = run({ "app/(admin)/admin/_screens/settings-tabs/People.tsx": `export const T = () => <><h2>Truck 1</h2><label htmlFor="a">A</label></>\n` })
   assert.equal(r.status, 0, r.out)
-  assert.match(r.out, /HomeScreen\.tsx: visit-word allowed until Nov 18 2026, step 3/)
+  assert.match(r.out, /People\.tsx: words allowed until Nov 18 2026, step 6/)
 })
 
 test("an allowlist entry that no longer matches a violation fails, so the list only shrinks", () => {
-  const r = run({ "app/(admin)/admin/_screens/HomeScreen.tsx": `export const T = () => <h2>Today</h2>\n` })
+  const r = run({ "app/(admin)/admin/_screens/settings-tabs/People.tsx": `export const T = () => <h2>People</h2>\n` })
   assert.equal(r.status, 1)
-  assert.match(r.out, /HomeScreen\.tsx: ALLOW entry for visit-word no longer matches a violation; delete it/)
+  assert.match(r.out, /People\.tsx: ALLOW entry for words no longer matches a violation; delete it/)
 })
 
 test("every allowlist entry names a date and a step of the build order", () => {

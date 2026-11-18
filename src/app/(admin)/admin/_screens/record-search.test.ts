@@ -55,6 +55,15 @@ describe("searchRecords", () => {
     expect(hit?.detail).toMatch(/no day yet$/)
   })
 
+  it("leaves out a canceled visit, so a search never calls it a job with no day yet", () => {
+    const base = jobsData.visits.find((v) => v.startAt)!
+    const gone = { ...base, id: "gone-visit", status: "cancelled" as const }
+    const withGone = { ...jobsData, visits: [...jobsData.visits, gone, { ...gone, id: "gone-undated", startAt: undefined, scheduledOn: undefined }] }
+    const hits = searchRecords(withGone, JOBS_TODAY, base.clientName.toLowerCase())
+    expect(hits.some((h) => h.id === base.id)).toBe(true)
+    expect(hits.some((h) => h.kind === "visit" && (h.id === "gone-visit" || h.id === "gone-undated"))).toBe(false)
+  })
+
   it("caps each kind so the list stays short", () => {
     const hits = searchRecords(jobsData, JOBS_TODAY, "er")
     for (const kind of ["customer", "job", "visit"] as const) expect(hits.filter((h) => h.kind === kind).length).toBeLessThanOrEqual(6)

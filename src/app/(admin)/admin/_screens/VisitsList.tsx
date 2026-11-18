@@ -67,6 +67,7 @@ export function VisitsList({ data, today, forJob, defaultFilters }: VisitsListPr
         exportName="visits"
         defaultFilters={defaultFilters}
         pageSize={25}
+        noMatchTitle="No visits match."
         emptyTitle="No visits yet"
         emptyLine="Visits appear here as passes are sold and work is booked. Add one with New job."
       />

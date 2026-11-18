@@ -59,10 +59,15 @@ export function NewJob({ data, today, open, onOpenChange, customerId, actions, i
   const services = useMemo(() => offered(data), [data])
   const service = services.find((s) => s.key === what)
   const isPass = what === SEASON_PASS
-  const done = () => onOpenChange(false)
+  // Closing the sheet, by Close, Escape or Add job, forgets the chosen service as the customer is forgotten: the next New job starts blank.
+  const change = (next: boolean) => {
+    if (!next) setWhat(initial.choice ?? "")
+    onOpenChange(next)
+  }
+  const done = () => change(false)
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
+    <Sheet open={open} onOpenChange={change}>
       <SheetContent side="right" className="w-full gap-0 sm:max-w-md" data-slot="new-job">
         <SheetHeader className="border-b border-border">
           <SheetTitle className="font-display text-2xl font-semibold text-navy">New job</SheetTitle>

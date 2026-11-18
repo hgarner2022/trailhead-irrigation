@@ -1,15 +1,14 @@
 /**
  * The pure derivations behind ScheduleScreen: the week's visits by person and
  * day, the counts the header reads and its context line, the move reducer
- * the grid's drag-and-drop calls and the Schedule button that places the
- * tray. The calendar itself (`weekOf`, `dayVisits` and the rest) lives in
+ * the grid's drag-and-drop calls and the placement of a tray item (`place-model.ts` chooses where). The calendar itself (`weekOf`, `dayVisits` and the rest) lives in
  * `src/lib/admin/calendar.ts`.
  */
 import type { AdminData, Pass, PassVisit, Person, TimingPreference, Visit } from "@/lib/admin/types"
 import { TIMING_PREFERENCES, TIME_ZONE, fullName, preferenceOf, shortDate, writtenDate } from "@/lib/admin/format"
 import { passVisitJob } from "@/lib/admin/jobs"
 import { visitMonth } from "@/lib/admin/metrics"
-import { addDays, dayOf, dayVisits, sameClockOnDay, weekDays, weekOf, weekdayName, worksOn } from "@/lib/admin/calendar"
+import { addDays, dayOf, dayVisits, sameClockOnDay, weekOf, weekdayName, worksOn } from "@/lib/admin/calendar"
 
 const onCalendar = (v: Visit): v is Visit & { startAt: string } => v.status !== "cancelled" && v.startAt !== undefined
 
@@ -24,6 +23,14 @@ export function weekContext(weekStart: string, visits: Visit[]): string {
 }
 
 
+
+/** "Wednesday, Nov 18. 2 visits." for the Day view's subtitle, with ", 1 moved" when the calendar feed moved one; "Nothing on the calendar." with none. */
+export function dayContext(dayIso: string, visits: Visit[]): string {
+  const when = `${weekdayName(dayIso)}, ${shortDate(dayIso)}`
+  if (visits.length === 0) return `${when}. Nothing on the calendar.`
+  const moved = exceptionCount(visits)
+  return `${when}. ${visits.length} visit${visits.length === 1 ? "" : "s"}${moved ? `, ${moved} moved` : ""}.`
+}
 
 /**
  * The visit on another person or day, keeping its clock time and landing last in
@@ -148,12 +155,6 @@ export function nextJobsWeek(visits: Visit[], weekStart: string, timeZone: strin
   return days.length ? weekOf(days.sort()[0], timeZone) : undefined
 }
 
-/** The first day of the visible week the person works, else the Monday. With `from` (today), a day already gone is not chosen while a later one in the week is. */
-export function firstWorkingDay(person: Person, weekStart: string, from?: string): string {
-  const days = weekDays(weekStart).filter((day) => worksOn(person, day))
-  return days.find((day) => !from || day >= from) ?? days[0] ?? weekStart
-}
-
 /**
  * A tray item placed on a person's day at nine in the morning (Mountain), last
  * in that day's order. Placed is scheduled, and the customer gets the date.
@@ -183,28 +184,3 @@ export function placeVisit(visits: Visit[], item: TrayItem, person: Pick<Person,
   }
   return [...visits, visit]
 }
-
-/**
- * The Schedule button: every tray item that is not waiting for its customer
- * goes onto the visible week, round-robin across the people and the days
- * they work, in tray order. The real scheduler (wiring plan, Phase 10) adds
- * areas, capacity and the customer's preference; this is the prototype's
- * stand-in so the week fills with one press.
- */
-export function scheduleItems(visits: Visit[], items: TrayItem[], people: Person[], weekStart: string, timeZone: string): { visits: Visit[]; placed: number; waiting: number } {
-  const slots = people.flatMap((person) => weekDays(weekStart).filter((day) => worksOn(person, day)).map((day) => ({ person, day })))
-  const waiting = items.filter((i) => i.awaitingPick).length
-  if (slots.length === 0) return { visits, placed: 0, waiting }
-  let next = visits
-  let placed = 0
-  items
-    .filter((i) => !i.awaitingPick)
-    .forEach((item, i) => {
-      const slot = slots[i % slots.length]
-      const before = next
-      next = placeVisit(next, item, slot.person, slot.day, timeZone)
-      if (next !== before) placed += 1
-    })
-  return { visits: next, placed, waiting }
-}
-

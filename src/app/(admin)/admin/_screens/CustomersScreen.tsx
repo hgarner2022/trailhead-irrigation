@@ -76,6 +76,7 @@ function Grid({ rows, offers }: { rows: CustomerRow[]; offers: boolean }) {
       bulkActions={offers ? BULK_ACTIONS : undefined}
       exportName="customers"
       pageSize={25}
+      noMatchTitle="No customers match."
       emptyTitle="No customers yet"
       emptyLine="Customers appear here as passes are sold and work is booked."
     />
