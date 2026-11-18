@@ -183,7 +183,9 @@ export const PanelPassVisitNoCard: Story = {
   args: { defaultVisitId: noCardVisitId },
   globals: wide,
   play: async ({ userEvent }) => {
-    await userEvent.click(await body.findByRole("button", { name: "Mark done" }))
+    // a visit whose day is ahead keeps Mark done under More
+    await userEvent.click(await body.findByRole("button", { name: "More" }))
+    await userEvent.click(await body.findByRole("menuitem", { name: "Mark done" }))
     await expect(await body.findByText(/Nothing is charged/)).toBeInTheDocument()
   },
 }
@@ -272,7 +274,9 @@ export const PanelDonePassWithCard: Story = {
   args: { data: { ...visitsData, visits: visitsData.visits.map((v) => (v.id === passVisitId ? { ...v, status: "scheduled" as const, completedOn: undefined, payments: [] } : v)) }, defaultVisitId: passVisitId },
   globals: wide,
   play: async ({ userEvent }) => {
-    await userEvent.click(await body.findByRole("button", { name: "Mark done" }))
+    // a visit whose day is ahead keeps Mark done under More
+    await userEvent.click(await body.findByRole("button", { name: "More" }))
+    await userEvent.click(await body.findByRole("menuitem", { name: "Mark done" }))
     await expect(await body.findByText(/Nothing is charged/)).toBeInTheDocument()
   },
 }
