@@ -22,16 +22,22 @@ import { MARKETING_WORDS, SCHEDULED_WORDS, cardOf, consentEntries, propertiesOf,
 // first) and every message the app sent. Pure render; CustomersScreen owns
 // which customer is open and the buttons.
 
+/** The Job fact: the newest open job's name ("Repair", "Season Pass TH-2027-0007 · 2027 · Active"), a link to it; None when nothing is open and no pass is on record. */
+function JobFact({ row, jobId }: { row: CustomerRow; jobId: string | undefined }) {
+  const pass = row.pass === "none" ? undefined : `Season Pass ${row.passNumber} · ${row.season} · ${statusLabel(row.pass)}`
+  const text = row.job ? (row.job.isPass && pass ? pass : row.job.title) : (pass ?? "None")
+  const id = row.job?.id ?? jobId
+  return id && text !== "None" ? <Link href={jobUrl(id)} className="text-primary-dark underline underline-offset-2">{text}</Link> : <span>{text}</span>
+}
+
 function Facts({ row, card, jobId, readOnly, actions }: { row: CustomerRow; card: ClientCard | undefined; jobId: string | undefined; readOnly: boolean; actions?: VisitActions }) {
   const facts: [string, ReactNode][] = [
     ...(row.address ? ([["Address", `${row.address}, ${row.town}`]] as [string, ReactNode][]) : ([["Town", row.town]] as [string, ReactNode][])),
     ...(row.email ? ([["Email", row.email]] as [string, ReactNode][]) : []),
     ...(row.phone ? ([["Phone", formatPhone(row.phone)]] as [string, ReactNode][]) : []),
-    // One row: the job the customer's pass is, with its season and state in words, linking to that job on Jobs.
-    ["Job", row.pass === "none" ? "None" : (() => {
-      const text = `Season Pass ${row.passNumber} · ${row.season} · ${statusLabel(row.pass)}`
-      return jobId ? <Link key="job" href={jobUrl(jobId)} className="text-primary-dark underline underline-offset-2">{text}</Link> : <span key="job">{text}</span>
-    })()],
+    // One row: the newest open job, whatever it is (a repair, an installation, the pass), linking to that job on Jobs. A pass reads with its
+    // season and state; with no open job the row falls back to the pass the customer has, else None.
+    ["Job", <JobFact key="job" row={row} jobId={jobId} />],
     ["Next", row.next],
     ["Scheduled", SCHEDULED_WORDS[row.nextState]],
     ["Marketing", MARKETING_WORDS[row.marketing]],

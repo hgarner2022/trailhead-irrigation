@@ -107,6 +107,22 @@ describe("CustomersScreen panel", () => {
     expect(jobs.getByText("Season Pass TH-2027-0014")).toBeInTheDocument()
   })
 
+  it("counts a one-off job for a customer with no pass: Job names it, Next and Scheduled read its day, and the Jobs line has no season", () => {
+    const nora = { id: "c-nora", firstName: "Nora", lastName: "Ortiz", town: "Erie" as const, address: "9 Oak St", jobberUrl: "", hasPass: false, app: true }
+    const visit = { id: "nv", clientId: "c-nora", clientName: "Nora Ortiz", town: "Erie" as const, kind: "repair" as const, status: "scheduled" as const, isPass: false, jobberUrl: "", jobId: "nj", scheduledOn: "2026-11-20", startAt: "2026-11-20T15:00:00Z", price: 145 }
+    const job = { id: "nj", customerId: "c-nora", kind: "repair" as const, status: "open" as const, source: "office" as const, soldOn: "2026-11-18", visitIds: ["nv"], total: 145, lines: [{ id: "nl", name: "Repair", quantity: 1, unitPrice: 145, taxable: false, visitId: "nv" }], payments: [], money: { paid: 0, total: 145, owed: 0, words: "$145" } }
+    const one: AdminData = { ...data, clients: [...data.clients, nora], visits: [...data.visits, visit], jobs: [job] }
+    render(<CustomersScreen data={one} today={TODAY} defaultSelectedId="c-nora" />)
+    const panel = within(screen.getByRole("dialog", { name: "Nora Ortiz" }))
+    const fact = (label: string) => panel.getByText(label, { selector: "dt" }).nextElementSibling as HTMLElement
+    expect(within(fact("Job")).getByRole("link", { name: "Repair" })).toHaveAttribute("href", "/admin/jobs?job=nj")
+    expect(fact("Next")).toHaveTextContent("Nov 20")
+    expect(fact("Scheduled")).toHaveTextContent("Yes")
+    const jobs = within(document.querySelector<HTMLElement>('[data-slot="customer-jobs"]')!)
+    expect(jobs.getByText("Nov 18, office")).toBeInTheDocument()
+    expect(jobs.queryByText(/2026 ·/)).toBeNull()
+  })
+
   it("has a Bills section for a done job that owes money (Send an invoice) and for one with an invoice out (Remind and the pay link), and not for a tech", () => {
     const visit = { id: "bv", clientId: "c100", clientName: "Andrea Dalton", town: "Erie" as const, kind: "repair" as const, status: "completed" as const, isPass: false, jobberUrl: "", jobId: "bj", completedOn: "2026-11-10", scheduledOn: "2026-11-10", startAt: "2026-11-10T15:00:00Z", price: 145 }
     const job = { id: "bj", customerId: "c100", kind: "repair" as const, status: "open" as const, source: "office" as const, visitIds: ["bv"], total: 145, lines: [{ id: "bl", name: "Repair", quantity: 1, unitPrice: 145, taxable: false, visitId: "bv" }], payments: [], money: { paid: 0, total: 145, owed: 145, words: "$145 unpaid" } }

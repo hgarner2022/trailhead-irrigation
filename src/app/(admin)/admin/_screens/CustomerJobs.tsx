@@ -29,7 +29,7 @@ export function CustomerJobs({ rows, data, today }: { rows: JobRow[]; data: Pick
           <li key={row.id}>
             <details className="group py-1.5">
               <summary className="flex min-h-11 cursor-pointer list-none items-center gap-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 [&::-webkit-details-marker]:hidden">
-                <PanelRowText title={row.title} detail={[row.season ? String(row.season) : "", row.soldText].filter(Boolean).join(" · ") || undefined} />
+                <PanelRowText title={row.title} detail={[row.passId ? String(row.season) : "", row.soldText].filter(Boolean).join(" · ") || undefined} />
                 <PanelRowEnd>
                   <span className="inline-flex flex-wrap items-center justify-end gap-1">
                     <StagePill stage={row.stage} />
