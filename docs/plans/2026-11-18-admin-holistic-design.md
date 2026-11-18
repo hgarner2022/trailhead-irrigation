@@ -10,12 +10,12 @@ Nov 18 2026. Design only; nothing is built until Hannah has read it. It is the o
 | Settings is five tabs: People, Services, Billing, Messages, API keys. No seasons, Routes, Areas or Capacity tab | Capacity per kind lives on the person; bookable from and to on the service; nothing else decides which days are offered |
 | More than one truck, Jobber's way: a new truck is a new person with working days and daily capacity by kind | A day is open while anyone has room; New job's Who defaults to "First with room" |
 | One scheduling rule, no setting (section 6): offer the days best for the current schedule | Soonest first, nearness within the soon days; tomorrow is the earliest; when full, keep offering as far as the service's dates run; no waitlist |
-| Capacity is a count per kind per person. Service minutes only order the day and derive the window | Customers pick a day, never a time; the window is told the day before |
-| Order the day runs only when pressed, with Undo | It assigns stops to people and orders them by drive time; Ryan drags a stop between people's rows to override |
+| Capacity is a count per kind per person. Service minutes size the slot a customer books and place untimed stops | A customer picks a day AND an exact time slot (the length of the service, drawn from the open gaps in the day), as Jobber's booking form does. A booked visit has its start time from the booking; the day-before text confirms it. A stop placed by the office with no time stays "Any time" and gets its window in the day-before text |
+| Order the day runs only when pressed, with Undo | It orders only the untimed stops, around the booked times, and assigns them to people; Ryan drags a stop between people's rows to override |
 | Anyone on a truck may take any payment, and a tech sees the gate code and access note for every visit they have had | Section 11 |
 | One Save bar on all Settings; the phone bar is Home, Schedule, Jobs, Customers, More | Sections 4 and 8 |
 | Season Pass sells Nov 1 to Jun 15; the office may book any service any day; no buffer, repairs are their own capacity kind | Section 8 |
-| Move is a split button: "Move and text the customer" (primary), "Move without texting" (caret), an optional line. Silence is yes, except a property that must be home: "Reply YES or pick another day", shown as "Waiting on customer". Every visit text carries a signed one-visit link that opens that visit signed in | Section 5.2 |
+| Move is a split button: "Move and text the customer" (primary), "Move without texting" (caret, off for a booked time, which always texts the customer), an optional line. Silence is yes, except a property that must be home: "Reply YES or pick another day", shown as "Waiting on customer". Every visit text carries a signed one-visit link that opens that visit signed in | Section 5.2 |
 
 ## 1. What the best products do, and what we take
 
@@ -126,17 +126,17 @@ Week, Day and List for one person or several. Every person who takes visits is a
 | Part | Final | Changes |
 |---|---|---|
 | Header | "Schedule", the week; Week, Day, List; arrows and Today; primary New job | New job added |
-| Week | A row per person, seven columns, a one-line stop with its area bar. Each day header shows how full it is ("5 of 8") and the towns already in it ("Erie 3, Lafayette 2") so Ryan sees the day filling by neighbourhood | Fill and towns are new |
-| Day | The day's stops per person in order beside one map; each person's route in their colour, pins numbered per person | Two people; map colour per person |
+| Week | A row per person, seven columns, a one-line stop with its area bar and its time ("9:00 Mia R."; a booked time has a small lock, an untimed stop reads "Any time"). Each day header shows how full it is ("5 of 8") and the towns already in it ("Erie 3, Lafayette 2") so Ryan sees the day filling by neighbourhood | Fill and towns are new |
+| Day | The day's stops per person in time order beside one map; booked times are fixed (lock mark) and the untimed stops sit in the gaps between them; each person's route in their colour, pins numbered per person | Two people; booked times; map colour per person |
 | List | The old Visits grid | Moved here |
-| Unscheduled | Under the week, a row per job with no day; **Place** opens "Tue Nov 24, we're already in Erie that day · Fri Nov 27 · Tue Dec 1 · Another day" (the section 6 ranking, with its reason); one pick places it, picks "First with room" for Who, and texts the customer, with Undo | Includes one-off jobs; ranked days |
+| Unscheduled | Under the week, a row per job with no day; **Place** opens the ranked days, each with its open slots ("Tue Nov 24, we're already in Erie that day: 9:00 · 11:00 · 1:30 · Any time", the section 6 ranking with its reason); one pick books that slot ("Any time" leaves it untimed), picks "First with room" for Who, and texts the customer, with Undo | Includes one-off jobs; ranked days |
 | Place all | A quiet "Place all 3" when the list has rows; same ranking, shows what it did | Was the unexplained "Schedule" |
 | Order the day | Day view only, an outline button; see below | New |
 | Move | Drag a stop to another day or person, or Move in its panel; one dialog, below | New dialog |
 
-**Order the day.** Pressed on a day with two or more stops. It assigns each stop that has no person to the first person with room, then orders every person's stops by drive time, using each service's minutes. A stop Ryan placed by hand on a person stays with that person and is only ordered. A strip appears: "Ordered Tue Nov 24: Ryan 5 stops, 1 h 40 driving. Sam 4 stops, 1 h 10. [Undo]". The list renumbers per person and the map redraws each route in the person's colour. It sends nothing: the order is not a promise; the window is derived from it and told the day before. Today a plain algorithm does it; the routing engine and later Jev sit behind the same button (week-planning section 4). Under two stops the button is off with "Needs two or more stops".
+**Order the day.** Pressed on a day with two or more untimed stops. Booked times never move. It assigns each untimed stop that has no person to the first person with room, then orders every person's untimed stops by drive time into the gaps around the booked ones, using each service's minutes. A stop Ryan placed by hand on a person stays with that person and is only ordered. An untimed stop that fits no gap is listed under the strip: "Doesn't fit today: Jim P., Repair (needs 2 h)". A strip appears: "Ordered Tue Nov 24: Ryan 5 stops, 1 h 40 driving. Sam 4 stops, 1 h 10. [Undo]". The list renumbers per person and the map redraws each route in the person's colour. It sends nothing: an untimed stop's order is not a promise, and its window is derived from it and told in the day-before text; a booked time was promised at booking and is only confirmed then. Today a plain algorithm does it; the routing engine and later Jev sit behind the same button (week-planning section 4). With fewer than two untimed stops the button is off with "Needs two or more untimed stops".
 
-**Move.** Dropping a stop (or choosing Move) opens one dialog: the day, the person, an optional line to the customer. Its button is split: **Move and text the customer** is primary, **Move without texting** is under the caret. A customer need not confirm (silence is yes). A property that must be home gets "Reply YES or pick another day"; the stop shows **Waiting on customer** until they answer. Every visit text carries a signed link that opens that visit signed in.
+**Move.** Dropping a stop (or choosing Move) opens one dialog: the day and, for a booked time, one of the open slots; the person; an optional line to the customer. Its button is split: **Move and text the customer** is primary, **Move without texting** is under the caret and is off for a booked time, which always texts. A customer need not confirm (silence is yes). A property that must be home gets "Reply YES or pick another day"; the stop shows **Waiting on customer** until they answer. Every visit text carries a signed link that opens that visit signed in.
 
 ```
 WEEK, two people                                           PHONE (one day at a time)
@@ -152,19 +152,19 @@ Unscheduled (2)                          [Place all 2]            9-11 Lena K. T
 
 ```
 DAY, Tue Nov 24                         [Order the day]  [New job]
-Ryan  1 8:00 Mia R. Erie    2 9:15 Cy B. Erie   3 10:30 ...        +------------------+
-Sam   1 8:30 Omar S. Lafayette  2 9:40 ...                          | map: Ryan route  |
+Ryan  1 8:00* Mia R. Erie   2 9:15 Cy B. Erie   3 10:30* ...      +------------------+
+Sam   1 8:30 Omar S. Lafayette  2 9:40* ...    (* booked, fixed)    | map: Ryan route  |
 Ordered Tue Nov 24: Ryan 5 stops, 1 h 40 driving. Sam 4...  [Undo]  | in navy, Sam in  |
                                                                      | orange, numbered |
 ```
 
 ### 5.3 New job (sheet)
 
-One sheet from every screen; the same `ServicePicker` the customer sees, in its office variant. Fields in order: Customer (name, street or phone, "New customer" inside it), What are we doing (Season Pass first, then services), Zones (if the price depends on them), Day, Who, Notes, **Add job**.
+One sheet from every screen; the same `ServicePicker` the customer sees, in its office variant. Fields in order: Customer (name, street or phone, "New customer" inside it), What are we doing (Season Pass first, then services), Zones (if the price depends on them), Day and time, Who, Notes, **Add job**.
 
 | Field | Behaviour |
 |---|---|
-| Day | Optional and empty; under it the ranked days as chips ("Tue Nov 24, we're already in Erie that day"); typing any date is allowed, out of season included |
+| Day and time | Optional and empty; under it the ranked days as chips ("Tue Nov 24, we're already in Erie that day"), and on a chosen day the same open slots the customer sees, plus "Any time"; typing any date or time is allowed, out of season included |
 | Who | Defaults to **First with room**; the select lists every person who takes visits |
 | Opened from a day | "Tuesday, Nov 24" at the top, Day set, Who set if opened from a person's row |
 | After Add job | The new job's panel opens in place of the sheet; a job with a day and no Who is texted only once a person is set |
@@ -175,7 +175,7 @@ New job                              X      New job                 X
 Customer  [Andrea Reyes ........]           Customer [Andrea Reyes]
 What      [Sprinkler repair  v ]            What     [Repair v]
 Day       [          ]  Tue Nov 24 (we're   Day      [        ]
-          already in Erie that day) ...     Who      [First with room v]
+          already in Erie) 9:00 11:00 ...   Who      [First with room v]
 Who       [First with room    v]            Notes
 Notes     [.....................]           [ Add job ]
           [ Add job ]
@@ -195,23 +195,25 @@ Header "Reports", no primary. Tiles (`StatTile`, baseline in words): Revenue, Ou
 
 ## 6. The scheduling rule
 
-**One rule, no setting.** Offer the customer the days that fit our current schedule best. A day is *open* for a service when it is tomorrow or later, inside the service's bookable dates, and some person who works that day still has room for that kind. Days are offered **soonest first**; among the soon days (the next two weeks) the ones where we are already in the customer's town come first, then days with a stop within about ten minutes' drive, then any other open day. The first is preselected. When the soon days are full the offer keeps going as far as the service's dates run; there is no waitlist. The customer reads one line under a day that earned its place: "Tuesday, April 28: we're already in Erie that day". A day that is merely open has no line. The customer picks a day, never a time; the window is told the day before. The two weeks and the ten minutes are constants in code.
+**One rule, no setting.** Offer the customer the days that fit our current schedule best. A day is *open* for a service when it is tomorrow or later, inside the service's bookable dates, and some person who works that day still has room for that kind. Days are offered **soonest first**; among the soon days (the next two weeks) the ones where we are already in the customer's town come first, then days with a stop within about ten minutes' drive, then any other open day. The first is preselected. When the soon days are full the offer keeps going as far as the service's dates run; there is no waitlist. The customer reads one line under a day that earned its place: "Tuesday, April 28: we're already in Erie that day". A day that is merely open has no line. The two weeks and the ten minutes are constants in code.
+
+**Then the time.** On the chosen day the customer sees exact start times, as Jobber's booking form does: a slot is a start time in a gap of a working person's day, between the stops already booked, long enough for the service's minutes. The first slot is preselected. Booking writes the start time at once; the day-before text confirms it; the customer sees "Tuesday, April 28, 9:00 am" everywhere, never a window. Capacity per kind still caps the day, and any person with a fitting gap makes a slot open.
 
 | Question | Answer |
 |---|---|
-| Reads | Stops with their property town and coordinates; each person's working days and capacity by kind; the service's kind and bookable dates; the customer's address |
+| Reads | Stops with their property town and coordinates; each person's working days and capacity by kind; the service's kind, minutes and bookable dates; booked start times and the gaps between them; the customer's address |
 | Lives in | `schedule.offerDays`, which exists for pass visits as area days; widened to take a service and an address, and returning `{ day, reason: "same-town" \| "near" \| "open" }` from one pure `rankDays` |
 | Used by | The pass checkout, `/book`, the portal's reschedule (five days, the current one left out), the Schedule's Place list, New job's Day chips |
 | Two trucks | Open means any person has room; the count adds both people's capacity for the kind |
 | First in a town | With nobody in the town yet, the nearest open days are offered and the first booking seeds the town's day |
-| Ryan sees | Each Schedule day's fill and towns (5.2); the Place list shows the same reason in words |
+| Ryan sees | Each Schedule day's fill and towns (5.2); the Place list and New job show the same days and slots, with the reason in words |
 | Later, Jev | Replaces `rankDays` behind the same function and the `schedule.plans` seam; it may reorder the open set, never offer a day outside it; the explanation line stays the customer's wording |
 
 PR #72's Jobber pattern (Erie and Firestone Monday and Friday, the south Tuesday and Thursday, Longmont Wednesday) is only a check that this rule, run on last season's visits, reproduces what Ryan did; it is not a setting.
 
 ## 7. The visit panel and the job panel
 
-Both are `RecordPanel`: header, facts, sections, footer. The facts, sections and footer of `admin-hierarchy-design` section 3 stand, with done-and-paid folded in and "bill" worded "invoice". Pills go under the subtitle; the label column is 112px; one Close. The visit panel names its job in one line and links up to it.
+Both are `RecordPanel`: header, facts, sections, footer. The facts, sections and footer of `admin-hierarchy-design` section 3 stand, with done-and-paid folded in and "bill" worded "invoice". Pills go under the subtitle; the label column is 112px; one Close. The visit panel shows the booked time as its When fact ("Tue Apr 28, 9:00 to 10:00 am", or "Tue Apr 28, any time" for an untimed stop) and names its job in one line and links up to it.
 
 **Visit panel, by state** (primary filled, up to two outline, More, one destructive ghost):
 
@@ -286,7 +288,7 @@ One service per row; the 17 catalogue rows fold by kind (zone bands become "up t
 |---|---|
 | Name | Customer-facing ("Spring turn-on") |
 | Price, Zones, Extra zone | Price for the included zones, how many, and the price per extra zone; "Quoted" for a quote-only service |
-| Minutes | Used only to order the day and derive the window; not capacity |
+| Minutes | The length of the slot a customer books, and how Order the day places an untimed stop; not capacity |
 | Online | Book a day, We quote, Off |
 | Bookable | "Apr 15 to Jun 15" or "All year"; Season Pass "Nov 1 to Jun 15" |
 | Taxable, Active | Switches |
@@ -363,7 +365,7 @@ Kept: `AdminShell` (bottom bar with More), `SidePanel`, `WeekGrid`, `DayMap` (ro
 | Job | Needs a quote, Quote sent, Open, Done, Canceled | lines, dates, visits |
 | Pass | Pending, Active, Expired, Canceled | job and year |
 | Money | Paid (card, Venmo, check, cash), $145 unpaid, Invoice sent due Dec 1, Past due since Dec 1, Failed, Charging, Card not charged | payment rows and invoice |
-| Home | Past its window, Done unpaid, Invoice past due, Card failed, Card not charged, Needs a day, Waiting on customer | facts |
+| Home | Past its window, Done unpaid, Invoice past due, Card failed, Card not charged, Needs a day, Waiting on customer, Any time (an untimed stop) | facts |
 
 **Buttons, one list.** New (the sheet: New job), Add (a small thing on a record: Add a line, Add a note, Add person), Place, Move, Move and text the customer, Move without texting, Order the day, Mark done, Not done, Collect $145 or Charge $145, Record $145 paid, Send an invoice, Remind, Send a text, Send card link, On my way, Edit, Save, Discard, Close, Back, Undo, Export, Clear filters. Destructive: Cancel visit, Cancel job, Cancel pass (a confirm says "Keep it" and the same destructive words). A form's dismiss is "Cancel". Never "Submit", "OK", "Bill", "Schedule" alone.
 
@@ -402,10 +404,10 @@ Each step leaves the admin whole. The two running builds stay on their branches 
 | 1 | Foundation: `words.ts` words, `RecordPanel`, `RecordFooter`, `ConfirmDialog`, `SectionHeading`, `FormRow`, `SplitButton`, the gate rules; the three record panels move onto it | hierarchy design 3 and 5; audit item 1 |
 | 2 | Navigation: Visits into Schedule's List, `?customer=` and Back, New job everywhere and on a day, the phone bar with More, Cmd+K | hierarchy design; audit items 2 and 7 |
 | 3 | Schedule and Home for one or many people: person rows, Unscheduled for every job, Place and Place all, drag between rows, the Move dialog (split button, optional line, Waiting on customer), Needs action in place, plain words | audit items 1 and 6; the messages build for the move texts, the "Reply YES" ask and the signed one-visit link |
-| 4 | **Move**: the split button "Move and text the customer" with "Move without texting", the optional line, "Waiting on customer" for a must-be-home property, and the "Reply YES or pick another day" text; replaces the visit panel's inline Move form (PR #75 left it as it was) | the messages build; portal v2's signed one-visit link |
+| 4 | **Move**: the split button "Move and text the customer" with "Move without texting" (off for a booked time), the day's open slots, the optional line, "Waiting on customer" for a must-be-home property, and the "Reply YES or pick another day" text; replaces the visit panel's inline Move form (PR #75 left it as it was) | the messages build; portal v2's signed one-visit link |
 | 5 | Settings shell, People, Services: `SettingsList`, `SaveBar`, Takes visits, one row per service, bookable from and to, bands folded in the UI (bands stay rows; one edit writes the kind's rows; first check the band prices follow the zones rule); the Areas, Capacity and Seasons tabs go; their columns stay until step 6, because the checkout and PR #76's Reschedule still read them | status audit; week planning 3 (without Routes) |
-| 6 | The one rule: `rankDays` behind `schedule.offerDays`; the pass checkout, `/book`, the portal's reschedule, the Place list and New job's chips use it; fill and towns on the Schedule's day headers | week planning 5; online booking 4.4; portal v2 |
-| 7 | Order the day: the button, the strip, Undo, the map per person; a plain drive-time algorithm first, then the routing engine, then Jev | week planning 4 |
+| 6 | The one rule and the slots: `rankDays` behind `schedule.offerDays`, which now also returns the open slots (gaps by service minutes) and writes `start_time` at booking; the pass checkout, `/book`, the portal's reschedule, the Place list and New job's chips use it; fill and towns on the Schedule's day headers | week planning 5; online booking 4.4; portal v2 |
+| 7 | Order the day around booked times: the button, the strip, Undo, the map per person; a plain drive-time algorithm first, then the routing engine, then Jev | week planning 4 |
 | 8 | Reports on every job; the final column sets; phone card rows | hierarchy design 4 |
 | 9 | Online booking reads the rule and the Services dates (its own plan) | online booking design |
 
@@ -432,7 +434,7 @@ Read against this design; each row is the fix to send back before merging. "Acce
 | 9 | "Charge not pressed" is computed at page load from the rows | Accept; it matches "read from facts" and needs no daily run |
 | 10 | The footer is hand-built, not `RecordFooter` | Accept; step 1 moves every footer onto the recipe |
 
-**PR #76, portal v2** (green; 135 files, no migration). Matches the design on: the 24-hour rule from one function, `visits.cancelSelf` with the pass skip and the one-off cancel, the window shown only after the day-before text, five days on Reschedule with the current day left out, an admin's email resolving to its customer, and a signed one-visit link (30 days, bound to the visit and customer) on every visit text.
+**PR #76, portal v2** (green; 135 files, no migration). Matches the design on: the 24-hour rule from one function, `visits.cancelSelf` with the pass skip and the one-off cancel, five days on Reschedule with the current day left out, an admin's email resolving to its customer, and a signed one-visit link (30 days, bound to the visit and customer) on every visit text.
 
 | # | Divergence | Fix |
 |---|---|---|
@@ -442,8 +444,9 @@ Read against this design; each row is the fix to send back before merging. "Acce
 | 14 | Ryan is told by a Home row and an email to owner and admins; the architecture's decision is a text to Ryan on every customer cancel or move while there is one truck | Add the text (queued like the other office texts); keep the row and the email |
 | 15 | The Home row is "Customer change" with the button "Open visit"; "visit" may not appear on Home | Button "Open job"; the row opens its record in place (step 3) |
 | 16 | The link opens one visit with no session; the design says "signed in" | Accept: it is the same effect, held to that one visit by `onlyVisitId` and the `visitLink` gate; the portal Home needs a normal sign-in |
-| 17 | Both PRs edit `NeedsAttention.tsx`, `needs-attention-action.tsx`, `visit-panel-model.ts` and `VisitPanel.tsx` | Merge #75 first, rebase #76 on it, and apply fixes 2, 3 and 15 to the one file once |
+| 17 | The decision to book an exact time withdrew "window told the day before": #76 nulls `startTime` until the day-before row exists (`loadVisitFacts`), shows "We'll text your window the day before." and `windowTold` and `window`, offers days only, and the checkout day cards state the day only | Follow-up PR after #76 merges: `startTime` is the booked time from the booking, shown on Home, the visit page and the texts; `windowTold` goes; the day-before text confirms the time; Reschedule offers slots as well as days; the customer words drop the "window" line. Untimed stops placed by the office keep the window rule |
+| 18 | Both PRs edit `NeedsAttention.tsx`, `needs-attention-action.tsx`, `visit-panel-model.ts` and `VisitPanel.tsx` | Merge #75 first, rebase #76 on it, and apply fixes 2, 3 and 15 to the one file once. #75's Move form also needs the slot picker (step 4) |
 
 ## 14. Figma
 
-[Trailhead admin: holistic design](https://www.figma.com/design/9TYdPIzdG8MLrHJm4qiUBu) (Hannah's own Figma team). Seven frames on the Trailhead tokens: Today at 1440 and 375 (5.1), the Schedule week for two people with the Place list (5.2), the Day with Order the day and one map for two people (5.2), the New job sheet with Who as "First with room" (5.3), and the visit panel after Mark done at 1440 and 375 (7). They are in Inter standing in for Barlow Condensed and Source Sans 3; flat layouts, not a component library. The fenced wireframes cover the rest.
+[Trailhead admin: holistic design](https://www.figma.com/design/9TYdPIzdG8MLrHJm4qiUBu) (Hannah's own Figma team). Seven frames on the Trailhead tokens: Today at 1440 and 375 (5.1), the Schedule week for two people with the Place list (5.2), the Day with Order the day and one map for two people (5.2), the New job sheet with Who as "First with room" (5.3), and the visit panel after Mark done at 1440 and 375 (7). They are in Inter standing in for Barlow Condensed and Source Sans 3; flat layouts, not a component library. The Day frame marks booked times as fixed; the other frames predate the booked-time rule, so the fenced wireframes (a `*` marks a booked, fixed time) are current. The fenced wireframes cover the rest.
