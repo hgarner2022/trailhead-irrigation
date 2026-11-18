@@ -55,6 +55,16 @@ describe("NeedsAttention", () => {
     expect(screen.getByRole("button", { name: /^Retry: Jobber jobs for pass TH-2027-0007/ })).toBeInTheDocument()
   })
 
+  it("names a job that is done and owed, opens its visit and offers Paid by", () => {
+    const owed: Attention = { kind: "owed", key: "job-1", jobId: "job-1", visitId: "v1", message: "Andrea's repair is done, $145 owed", since: "2026-11-10T15:04:00Z" }
+    render(<NeedsAttention items={[owed]} now={now} />)
+    expect(rows()[0]!.querySelector(".sr-only")?.textContent).toBe("Done, owed: ")
+    expect(screen.getByRole("link").getAttribute("href")).toBe("/admin/visits?visit=v1")
+    expect(document.querySelector('[data-slot="attention-action"]')?.textContent).toBe("Paid by")
+    expect(rows()[0]!.dataset.kind).toBe("owed")
+    expect(document.body.textContent).not.toMatch(/Unpaid|not paid/)
+  })
+
   it("shows the empty state when nothing needs attention", () => {
     render(<NeedsAttention items={[]} now={now} />)
     expect(rows()).toHaveLength(0)

@@ -5,6 +5,7 @@ import type { Database } from "@/db/types"
 import type { Ctx } from "../../core/context"
 import { notFound } from "../../core/errors"
 import { jobTotal } from "@/lib/jobs/lines"
+import { paidTotal } from "@/lib/money/words"
 import { canSeeContact } from "../shared"
 import { yardOut } from "../customers/handlers"
 import type { PaymentOutType } from "../payments/schemas"
@@ -25,13 +26,10 @@ export const visitSelect = {
   address: s.property.address,
   yard: s.property,
   personName: s.person.name,
-  // the newest charge attempt on the visit: how it was paid and whether it went through
-  chargeMethod: sql<string | null>`(select c.method from charge c where c.visit_id = ${s.visit.id} order by c.attempt desc limit 1)`,
   // what was sold on the visit's job: its lines are the truth for what the visit costs
   lines: sql<LineJson[] | null>`(select json_agg(json_build_object('id', l.id, 'name', l.name, 'description', l.description, 'quantity', l.quantity, 'unit_price', l.unit_price, 'taxable', l.taxable, 'cancelled_at', l.cancelled_at, 'visit_id', l.visit_id) order by l.created_at, l.id) from line_item l where l.job_id = ${s.visit.jobId} and l.organization_id = ${s.visit.organizationId})`,
   // the visit's own payment rows, oldest first (the job-level ones are on the job)
   payments: sql<PaymentJson[] | null>`(select json_agg(json_build_object('id', c.id, 'job_id', c.job_id, 'visit_id', c.visit_id, 'customer_id', c.customer_id, 'amount', c.amount, 'method', c.method, 'reference', c.reference, 'status', c.status, 'paid_on', c.paid_on, 'receipt_url', c.receipt_url, 'refunds_payment_id', c.refunds_payment_id, 'created_at', c.created_at) order by c.created_at, c.id) from charge c where c.visit_id = ${s.visit.id})`,
-  chargeStatus: sql<string | null>`(select c.status from charge c where c.visit_id = ${s.visit.id} order by c.attempt desc limit 1)`,
 }
 
 /** Visits with the customer's first name, the property's town and point, and the name of the person assigned. Add `.where(...)` in the caller. */
@@ -42,6 +40,18 @@ export type VisitJoined = Awaited<ReturnType<ReturnType<typeof visitsQuery>["lim
 
 /** A timestamp as Postgres prints it inside JSON, as an ISO string (zone-less text is UTC). */
 const isoOf = (at: string) => new Date(/(Z|[+-]\d\d(:?\d\d)?)$/.test(at) ? at : `${at}Z`).toISOString()
+
+/**
+ * How the visit was paid and whether it went through, from its newest payment row (a refund row is not a payment of its own:
+ * the row it reverses is). `paidBy` is that row's method; `paymentStatus` is "paid" while the visit's rows add up above zero,
+ * "failed" or "pending" for a newest row that did not succeed, and "none" with no rows or nothing left paid.
+ */
+export function newestPayment(payments: Pick<PaymentJson, "method" | "status" | "amount" | "refunds_payment_id">[]): { paidBy: string | null; paymentStatus: VisitOutType["paymentStatus"] } {
+  const newest = [...payments].reverse().find((p) => !p.refunds_payment_id && p.amount > 0)
+  if (!newest) return { paidBy: null, paymentStatus: "none" }
+  const net = paidTotal(payments)
+  return { paidBy: newest.method, paymentStatus: newest.status === "failed" ? "failed" : newest.status === "pending" ? "pending" : net > 0 ? "paid" : "none" }
+}
 
 export function visitOut(ctx: Ctx, row: VisitJoined): VisitOutType {
   const v = row.visit
@@ -80,8 +90,7 @@ export function visitOut(ctx: Ctx, row: VisitJoined): VisitOutType {
     durationMinutes: v.durationMinutes,
     notes: v.notes,
     notDoneReason: v.notDoneReason,
-    paidBy: row.chargeMethod ?? null,
-    paymentStatus: row.chargeStatus === "succeeded" ? "paid" : row.chargeStatus === "failed" ? "failed" : row.chargeStatus === "pending" ? "pending" : "none",
+    ...newestPayment(row.payments ?? []),
     stopOrder: v.stopOrder,
     confirmedAt: v.confirmedAt?.toISOString() ?? null,
     completedOn: v.completedOn,

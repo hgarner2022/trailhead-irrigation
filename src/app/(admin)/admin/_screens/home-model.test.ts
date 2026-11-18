@@ -185,8 +185,13 @@ describe("jobTiles", () => {
   it("counts a done job whose pass card failed, and leaves a pending pass's jobs out", () => {
     const pass = data.passes.find((p) => p.status === "active" && p.visits[0].completedAt)!
     // Marked done and not charged, on a pass whose card failed.
-    const failed = { ...data, visits: [], passes: [{ ...pass, cardFailedAt: "2026-11-10T15:04:00Z", visits: pass.visits.map((v, i) => (i === 0 ? { ...v, chargedAt: undefined } : v)) }] }
+    const failed = { ...data, visits: [], passes: [{ ...pass, cardFailedAt: "2026-11-10T15:04:00Z", visits: pass.visits.map((v, i) => (i === 0 ? { ...v, chargedAt: undefined, payments: [] } : v)) }] }
     expect(jobTiles(failed, TODAY)[1].value).toBe("1")
+    // A failed payment row on the done visit counts too, and a row that went through does not, whatever the old charged flag says.
+    const row = (status: string) => [{ id: "pay-1", visitId: pass.visits[0]!.id ?? "", amount: 145, method: "card_on_file", status }]
+    const withRow = (status: string) => ({ ...data, visits: [], passes: [{ ...pass, visits: pass.visits.map((v, i) => (i === 0 ? { ...v, chargedAt: undefined, payments: row(status) } : v)) }] })
+    expect(jobTiles(withRow("failed"), TODAY)[1].value).toBe("1")
+    expect(jobTiles(withRow("succeeded"), TODAY)[1].value).toBe("0")
     const pendingOnly = { ...data, visits: [], passes: [{ ...pass, status: "pending" as const }] }
     expect(jobTiles(pendingOnly, TODAY).map((t) => t.value)).toEqual(["0", "0", "0", "1"])
   })

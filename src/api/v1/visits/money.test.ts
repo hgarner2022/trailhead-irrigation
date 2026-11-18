@@ -8,6 +8,8 @@ import { adminKey, apiDb, ctxFor, linesOfJob, ORG, writeKey } from "../../test-h
 import { visitsGet, visitsMove } from "./handlers"
 import { visitsMarkClosed, visitsRecordPayment } from "./money"
 import { visitsCreate, visitsMarkNotDone } from "./office"
+import { paymentsRefund } from "../payments/handlers"
+import { newestPayment } from "./queries"
 
 let db: TestDb
 beforeAll(async () => {
@@ -74,6 +76,25 @@ describe("Done and the money", () => {
     expect((await db.select().from(s.job).where(eq(s.job.id, v.jobId)))[0]!.price).toBe(3200)
     await expect(callApi(as(), visitsRecordPayment, { id: v.id, method: "cash" })).rejects.toMatchObject({ code: "conflict" })
     await expect(callApi(as(), visitsRecordPayment, { id: "p3-turn-on", method: "cash" })).rejects.toMatchObject({ code: "unprocessable" })
+  })
+
+  it("reads paidBy and paymentStatus from the newest payment row, and a refund leaves nothing paid", async () => {
+    const v = await callApi(as(writeKey), visitsCreate, { customerId: "c100", kind: "repair", scheduledOn: "2027-05-18", price: 145 })
+    await callApi(as(), visitsMarkClosed, { id: v.id, paidBy: { method: "venmo" } })
+    const [row] = await db.select().from(s.charge).where(eq(s.charge.visitId, v.id))
+    expect(await callApi(as(), visitsGet, { id: v.id })).toMatchObject({ paidBy: "venmo", paymentStatus: "paid" })
+    await callApi(as(), paymentsRefund, { paymentId: row!.id })
+    expect(await callApi(as(), visitsGet, { id: v.id })).toMatchObject({ paidBy: "venmo", paymentStatus: "none" })
+  })
+
+  it("names the newest payment: a retry that went through is paid, a failed or pending row is not", () => {
+    const row = (method: string, status: string, amount = 145, refunds: string | null = null) => ({ method, status, amount, refunds_payment_id: refunds }) as Parameters<typeof newestPayment>[0][number]
+    expect(newestPayment([])).toEqual({ paidBy: null, paymentStatus: "none" })
+    expect(newestPayment([row("card_on_file", "failed"), row("card_on_file", "succeeded")])).toEqual({ paidBy: "card_on_file", paymentStatus: "paid" })
+    expect(newestPayment([row("card_on_file", "failed")])).toEqual({ paidBy: "card_on_file", paymentStatus: "failed" })
+    expect(newestPayment([row("card_on_file", "pending")])).toEqual({ paidBy: "card_on_file", paymentStatus: "pending" })
+    expect(newestPayment([row("check", "succeeded"), row("check", "succeeded", -145, "p")])).toEqual({ paidBy: "check", paymentStatus: "none" })
+    expect(newestPayment([row("check", "succeeded"), row("check", "succeeded", -45, "p")])).toEqual({ paidBy: "check", paymentStatus: "paid" })
   })
 
   it("keeps the reason a visit was not done until it has a day again", async () => {

@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { formatPhone } from "@/lib/format/contact"
+import { visitPaid } from "@/lib/admin/jobs"
 import type { AdminData, Client, Pass, Visit } from "@/lib/admin/types"
 import type { VisitActions } from "./visit-actions-types"
 import { FORM_STATUS, useRunner } from "./use-runner"
@@ -139,7 +140,7 @@ export function ResendButton({ passId, actions }: { passId: string; actions?: Vi
 /** What Cancel this visit says will happen to the money, in words. */
 export function cancelSentence(visit: Visit, pass?: Pass): string {
   const rest = pass ? ` The rest of Season Pass ${pass.number} stays.` : ""
-  const paid = Boolean(visit.chargedAt)
+  const paid = visitPaid(visit)
   const money = paid ? `The ${priceWords(visit)} already collected is not returned here.` : (visit.price ?? 0) > 0 ? `${priceWords(visit)} will not be charged.` : "Nothing will be charged."
   return `${money}${rest}`
 }

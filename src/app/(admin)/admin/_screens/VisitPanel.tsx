@@ -113,7 +113,7 @@ function JobBlock({ facts, today, onOpenVisit }: { facts: VisitFacts; today: str
       <Subtitle id="visit-job">Job</Subtitle>
       <p className="mt-2 text-sm">
         <span className="font-medium">{title}</span>
-        <span className="text-muted-foreground">{`. ${facts.money}.`}</span>
+        {facts.money && <span className="text-muted-foreground">{`. ${facts.money}.`}</span>}
         {pass && (
           <>
             {" "}
@@ -146,7 +146,7 @@ function Actions({ facts, data, today, actions }: { facts: VisitFacts; data: Adm
   const day = dayOf(today, TIME_ZONE)
   const open = states.work === "needs-a-day" || states.work === "not-done" || states.work === "scheduled"
   // Money owed is recorded here for a one-off and for a pass visit whose pass has no card; a pass with a card is charged.
-  const owed = states.work === "done" && states.money === "unpaid" && doneAsksPaidBy(visit, pass)
+  const owed = states.work === "done" && states.money === "owed" && doneAsksPaidBy(visit, pass)
   const pay = useRunner()
   return (
     <div className="flex flex-col gap-6" data-slot="visit-actions">

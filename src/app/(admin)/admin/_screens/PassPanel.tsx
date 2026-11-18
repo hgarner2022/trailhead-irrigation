@@ -9,6 +9,7 @@ import { PassActions } from "@/components/blocks/PassActions"
 import { PassCard } from "@/components/blocks/PassCard"
 import { SeasonLine } from "@/components/blocks/SeasonLine"
 import { StatusPill } from "@/components/blocks/StatusPill"
+import { visitPaid } from "@/lib/admin/jobs"
 import type { Pass } from "@/lib/admin/types"
 import { formatMoney } from "@/lib/admin/metrics"
 import type { Outcome } from "./action-types"
@@ -91,7 +92,7 @@ function Charges({ pass }: { pass: Pass }) {
 
 /** What Cancel the pass says about the money: the visits not yet charged are not charged. */
 function cancelMoney(pass: Pass): string {
-  const left = pass.visits.filter((v) => !v.chargedAt).reduce((sum, v) => sum + v.amount, 0)
+  const left = pass.visits.filter((v) => !visitPaid(v)).reduce((sum, v) => sum + v.amount, 0)
   return `${left > 0 ? `$${left.toLocaleString("en-US")} in visits not yet charged will not be charged.` : "Nothing further is charged."} The remaining visits come off the schedule.`
 }
 

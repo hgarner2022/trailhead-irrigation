@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
-import type { Invoice, PassStatus } from "@/lib/admin/types"
+import type { PassStatus } from "@/lib/admin/types"
 import { JOB_WORDS, type JobState, type MoneyState, type WorkState } from "@/lib/admin/jobs"
 
 // One chip for every status word in the app, coloured by what the status
@@ -15,7 +15,7 @@ import { JOB_WORDS, type JobState, type MoneyState, type WorkState } from "@/lib
 // is 5.45 and 5.25 (5.02 on stone). The lighter positive and warning inks
 // only reach 4.2 to 4.4 on their tints, which is why they are not used here.
 
-export type PillStatus = PassStatus | JobState | WorkState | MoneyState | Invoice["status"]
+export type PillStatus = PassStatus | JobState | WorkState | MoneyState | "overdue"
 
 const LABELS: Record<PillStatus, string> = {
   ...JOB_WORDS,
@@ -26,7 +26,7 @@ const LABELS: Record<PillStatus, string> = {
   pending: "Pending",
   active: "Active",
   paid: "Paid",
-  unpaid: "Unpaid",
+  owed: "Owed",
   overdue: "Past due",
   lapsed: "Lapsed",
 }
@@ -53,7 +53,7 @@ const TONES: Record<PillStatus, string> = {
   pending: WAITING,
   active: GOOD,
   paid: GOOD,
-  unpaid: WAITING,
+  owed: WAITING,
   overdue: BAD,
   lapsed: OVER,
 }

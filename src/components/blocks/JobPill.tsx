@@ -4,7 +4,7 @@ import { StatusPill } from "./StatusPill"
 
 // A visit's two pills (owner, 14 Nov): WORK says what happened to the stop (No day yet, Scheduled, Done, Not done
 // with its reason, Cancelled) and MONEY says whether it was paid (nothing until the visit is done, then Paid with
-// how, Unpaid, Bill sent, Failed), so it is obvious at a glance that money was collected. A Scheduled visit whose day has passed keeps its state and
+// how, Owed, Bill sent, Failed, all read from the payment rows by src/lib/money/words.ts), so it is obvious at a glance that money was collected. A Scheduled visit whose day has passed keeps its state and
 // gains a small "day passed" note. Named JobPill from step zero and kept so no import churns; it renders a
 // visit's states. Pure render, server component.
 

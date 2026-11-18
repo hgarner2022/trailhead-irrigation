@@ -62,11 +62,20 @@ describe("mapStops", () => {
 })
 
 describe("moneyFigures", () => {
-  it("adds up what is owed on done visits and what failed, each linking to the Visits that make it", () => {
+  it("adds up what is owed on done jobs and what failed, each linking to the Visits that make it", () => {
     const done = { status: "completed" as const, completedOn: "2026-11-10", scheduledOn: "2026-11-10", startAt: "2026-11-10T15:00:00Z" }
-    const data: AdminData = { ...base, passes: [], monthTotals: [], visits: [visit({ id: "o1", ...done }), visit({ id: "o2", ...done, price: 100 }), visit({ id: "f1", ...done, price: 60, chargeFailed: true }), visit({ id: "p1", ...done, chargedAt: "2026-11-10T20:00:00Z", paidMethod: "check" })] }
+    const check = (visitId: string) => [{ id: `pay-${visitId}`, visitId, amount: 145, method: "check", status: "succeeded" }]
+    const data: AdminData = {
+      ...base, passes: [], monthTotals: [],
+      visits: [
+        visit({ id: "o1", jobId: "j1", ...done, payments: [] }), visit({ id: "o2", jobId: "j2", ...done, price: 100, payments: [] }),
+        visit({ id: "f1", jobId: "j3", ...done, price: 60, chargeFailed: true, payments: [] }), visit({ id: "p1", jobId: "j4", ...done, payments: check("p1") }),
+        // a second owed visit of an owed job counts the job once
+        visit({ id: "o3", jobId: "j1", ...done, price: 20, payments: [] }),
+      ],
+    }
     const [charged, owed, failed, season] = moneyFigures(data, TODAY)
-    expect(owed).toMatchObject({ label: "Owed on 2 done visits", value: "$245", href: "/admin/visits?money=unpaid,bill-sent" })
+    expect(owed).toMatchObject({ label: "Owed on 2 done jobs", value: "$265", href: "/admin/visits?money=owed" })
     expect(failed).toMatchObject({ label: "Failed charges, 1", value: "$60", href: "/admin/visits?money=failed" })
     expect([charged!.href, season!.href]).toEqual(["/admin/reports", "/admin/reports"])
     expect(season!.value).toBe("$0")
@@ -75,7 +84,8 @@ describe("moneyFigures", () => {
 
 describe("filterFrom", () => {
   it("keeps only real options from a link's list", () => {
-    expect(filterFrom("money", "unpaid,bogus,failed", MONEY_OPTIONS)).toEqual([{ column: "money", values: ["unpaid", "failed"] }])
+    expect(filterFrom("money", "owed,bogus,failed", MONEY_OPTIONS)).toEqual([{ column: "money", values: ["owed", "failed"] }])
+    expect(filterFrom("money", "unpaid", MONEY_OPTIONS)).toEqual([])
     expect(filterFrom("money", undefined, MONEY_OPTIONS)).toEqual([])
   })
 })

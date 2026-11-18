@@ -4,9 +4,11 @@ import { eq } from "drizzle-orm"
 import * as s from "@/db/schema"
 import type { TestDb } from "@/db/test-db"
 import { callApi } from "@/api/core/call"
-import { apiDb, ctxFor, ORG, owner, readKey } from "@/api/test-helpers"
+import { adminKey, apiDb, ctxFor, ORG, owner, readKey, writeKey } from "@/api/test-helpers"
 import { customersUpdate } from "@/api/v1/customers/handlers"
+import { paymentsRecord, paymentsRefund } from "@/api/v1/payments/handlers"
 import { visitsMove } from "@/api/v1/visits/handlers"
+import { visitsCreate } from "@/api/v1/visits/office"
 import { failedChargeVisits } from "./shape"
 import { passVisitJob, visitJob } from "./jobs"
 import { getLiveAdminData } from "./live"
@@ -128,5 +130,46 @@ describe("the customer record the admin reads", () => {
     expect(reese).not.toHaveProperty("phone")
     expect(reese).not.toHaveProperty("address")
     expect(JSON.stringify(read.clients)).not.toContain("@")
+  })
+})
+
+describe("the money words, read from the payment rows", () => {
+  const moneyOf = (live: AdminData, visitId: string) => visitJob(live.visits.find((v) => v.id === visitId)!, TODAY, TZ)
+
+  it("reads Paid, card from the payment row a charged pass visit has, never from a flag", () => {
+    const visit = data.passes.find((p) => p.id === "p1")!.visits[0]!
+    expect(visit.payments).toMatchObject([{ method: "card_on_file", status: "succeeded", amount: 145 }])
+    expect(jobsOf("p1")["turn-on"]).toMatchObject({ state: "charged", money: "paid", moneyLabel: "Paid, card" })
+    expect(visit).not.toHaveProperty("chargedAt")
+  })
+
+  it("keeps a done one-off Owed until a payment row exists, then Paid with how, and Owed again after a refund", async () => {
+    const write = ctxFor(db, writeKey, NOW)
+    const made = await callApi(write, visitsCreate, { customerId: "c100", kind: "repair", scheduledOn: "2027-05-10", price: 145 })
+    await db.update(s.visit).set({ status: "completed", completedOn: "2027-04-19" }).where(eq(s.visit.id, made.id))
+
+    // Done with no payment row: the visit says Owed, the job says "$145 owed", and Home has one row for the JOB.
+    let live = await getLiveAdminData(ctxFor(db, owner, NOW))
+    expect(moneyOf(live, made.id)).toMatchObject({ state: "done", money: "owed", moneyLabel: "Owed" })
+    expect(live.jobs!.find((j) => j.id === made.jobId)).toMatchObject({ money: { paid: 0, total: 145, owed: 145, words: "$145 owed" }, payments: [] })
+    const rows = live.attention.filter((a) => a.kind === "owed")
+    expect(rows).toEqual([expect.objectContaining({ key: made.jobId, jobId: made.jobId, visitId: made.id, message: expect.stringMatching(/repair is done, \$145 owed$/) })])
+
+    // A cash payment on the job: Paid, cash; no owed row; the month total counts it on the day it arrived.
+    const before = live.monthTotals.find((m) => m.year === 2027 && m.month === 4)?.revenue ?? 0
+    const paid = await callApi(write, paymentsRecord, { jobId: made.jobId, visitId: made.id, amount: 145, method: "cash", paidOn: "2027-04-18" })
+    live = await getLiveAdminData(ctxFor(db, owner, NOW))
+    expect(moneyOf(live, made.id)).toMatchObject({ state: "charged", money: "paid", moneyLabel: "Paid, cash" })
+    expect(live.jobs!.find((j) => j.id === made.jobId)).toMatchObject({ money: { paid: 145, owed: 0, words: "Paid" } })
+    expect(live.attention.filter((a) => a.kind === "owed")).toEqual([])
+    expect(live.monthTotals.find((m) => m.year === 2027 && m.month === 4)!.revenue).toBe(before + 145)
+    expect(live.visits.find((v) => v.id === made.id)!.payments).toMatchObject([{ id: paid.id, method: "cash", paidOn: "2027-04-18" }])
+
+    // A refund is a negative row: the money reads Owed again, and the month total gives it back.
+    await callApi(ctxFor(db, adminKey, NOW), paymentsRefund, { paymentId: paid.id })
+    live = await getLiveAdminData(ctxFor(db, owner, NOW))
+    expect(moneyOf(live, made.id)).toMatchObject({ money: "owed", moneyLabel: "Owed" })
+    expect(live.attention.filter((a) => a.kind === "owed")).toHaveLength(1)
+    expect(live.monthTotals.find((m) => m.year === 2027 && m.month === 4)!.revenue).toBe(before)
   })
 })

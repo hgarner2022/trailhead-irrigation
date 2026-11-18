@@ -63,7 +63,8 @@ export function passFromApi(d: z.infer<typeof PassDetail>): Pass {
         ...(v.completedOn
           ? { completedAt: instantOf(v.completedOn, "12:00") }
           : {}),
-        ...(v.chargedAt ? { chargedAt: v.chargedAt } : {}),
+        // the visit's payment rows, from which "Paid" is read; the old charged flag is not carried
+        payments: (v.payments ?? []).map((p) => ({ id: p.id, jobId: p.jobId, visitId: p.visitId, amount: p.amount, method: p.method, status: p.status, paidOn: p.paidOn, refundsPaymentId: p.refundsPaymentId })),
       };
     });
   return {

@@ -28,7 +28,7 @@ const visit = (over: Partial<Visit>): Visit => ({
 const mine: Visit[] = [
   visit({ id: "a", clientName: "Dana Reed" }),
   visit({ id: "b", clientName: "Sam Ortiz", clientId: "cs", kind: "install", status: "unscheduled", scheduledOn: undefined, startAt: undefined, personId: undefined, personName: undefined, price: 0 }),
-  visit({ id: "c", clientName: "Lee Park", clientId: "cl", status: "completed", completedOn: "2026-11-10", scheduledOn: "2026-11-10", startAt: "2026-11-10T15:00:00Z", chargedAt: "2026-11-10T20:00:00Z", paidMethod: "check" }),
+  visit({ id: "c", clientName: "Lee Park", clientId: "cl", status: "completed", completedOn: "2026-11-10", scheduledOn: "2026-11-10", startAt: "2026-11-10T15:00:00Z", payments: [{ id: "pay-c", visitId: "c", amount: 145, method: "check", status: "succeeded", paidOn: "2026-11-10" }] }),
 ]
 const data: AdminData = {
   ...base,
@@ -95,8 +95,8 @@ describe("visits-model", () => {
     const rows = visitRows({ ...data, visits: [...mine, visit({ id: "d", clientName: "Ana Ruiz", clientId: "cl", status: "completed", completedOn: "2026-11-10", scheduledOn: "2026-11-10", startAt: "2026-11-10T15:00:00Z" })] }, TODAY)
     expect(rows.find((r) => r.id === "a")!.moneyLabel).toBe("")
     expect(rows.find((r) => r.id === "b")!.workLabel).toBe("No day yet")
-    expect(rows.find((r) => r.id === "d")!.moneyLabel).toBe("Unpaid")
-    expect(visitsContext(rows)).toBe("4 visits this season. 1 has no day yet. 1 done and not paid.")
+    expect(rows.find((r) => r.id === "d")!.moneyLabel).toBe("Owed")
+    expect(visitsContext(rows)).toBe("4 visits this season. 1 has no day yet. 1 done and owed.")
     expect(visitsContext(visitRows({ ...data, visits: [mine[0]!] }, TODAY))).toBe("1 visit this season.")
   })
 })
@@ -223,12 +223,12 @@ describe("VisitsScreen", () => {
     expect(a.sendText).toHaveBeenCalledWith("cx", "a", "Running late.")
   })
 
-  it("a done, unpaid one-off offers the payment record; a paid one does not", async () => {
+  it("a done and owed one-off offers the payment record", async () => {
     const a = actions()
-    const unpaid: AdminData = { ...data, visits: [visit({ id: "u", status: "completed", completedOn: "2026-11-10", scheduledOn: "2026-11-10", startAt: "2026-11-10T15:00:00Z" })] }
+    const owed: AdminData = { ...data, visits: [visit({ id: "u", status: "completed", completedOn: "2026-11-10", scheduledOn: "2026-11-10", startAt: "2026-11-10T15:00:00Z" })] }
     render(
       <UndoToastProvider>
-        <VisitsScreen data={unpaid} today={TODAY} actions={a} defaultVisitId="u" />
+        <VisitsScreen data={owed} today={TODAY} actions={a} defaultVisitId="u" />
       </UndoToastProvider>,
     )
     await userEvent.click(within(screen.getByRole("complementary")).getByRole("button", { name: "Record payment" }))

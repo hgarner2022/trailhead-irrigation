@@ -50,7 +50,7 @@ describe("consentLine", () => {
 describe("chargeRows", () => {
   it("reads the booked day and the charge, else No day yet and blank", () => {
     expect(chargeRows(passes[0])).toEqual([
-      { kind: "turn-on", name: "Turn-on", when: "May 3", amount: 145, charged: "Charged May 3" },
+      { kind: "turn-on", name: "Turn-on", when: "May 3", amount: 145, charged: "Paid May 3" },
       { kind: "inspection", name: "Inspection", when: "No day yet", amount: 145, charged: "" },
       { kind: "blowout", name: "Blowout", when: "No day yet", amount: 95, charged: "" },
     ])
@@ -59,7 +59,7 @@ describe("chargeRows", () => {
   it("reads a 7 pm Denver booking and charge as that Denver day", () => {
     // 01:00 UTC on July 9 is 7 pm on July 8 in Denver.
     const pass: Pass = { ...passes[2], visits: [{ ...passes[2].visits[1], scheduledAt: "2027-07-09T01:00:00Z", chargedAt: "2027-07-09T01:30:00Z" }] }
-    expect(chargeRows(pass)[0]).toEqual({ kind: "inspection", name: "Inspection", when: "Jul 8", amount: 145, charged: "Charged Jul 8" })
+    expect(chargeRows(pass)[0]).toEqual({ kind: "inspection", name: "Inspection", when: "Jul 8", amount: 145, charged: "Paid Jul 8" })
   })
 
   it("keeps a booked but uncharged visit on its date", () => {

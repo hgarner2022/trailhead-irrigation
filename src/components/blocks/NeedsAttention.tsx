@@ -35,7 +35,7 @@ const KINDS: Record<Attention["kind"], { icon: LucideIcon; tone: string; name: s
   "new-pass": { icon: BadgeCheck, tone: "bg-success/10 text-success", name: "New pass" },
   "charge-failed": { icon: CreditCard, tone: "bg-warning/10 text-warning", name: "Charge failed" },
   "jobs-failed": { icon: CalendarX, tone: "bg-warning/10 text-warning", name: "Task needs a retry" },
-  unpaid: { icon: Banknote, tone: "bg-warning/10 text-warning", name: "Done, not paid" },
+  owed: { icon: Banknote, tone: "bg-warning/10 text-warning", name: "Done, owed" },
   "pending-pass": { icon: Clock, tone: "bg-stone text-muted-foreground", name: "Pass not paid" },
   "card-expiring": { icon: Clock, tone: "bg-stone text-muted-foreground", name: "Card expiring" },
   "not-closed": { icon: CircleDashed, tone: "bg-stone text-muted-foreground", name: "Jobs not marked done" },

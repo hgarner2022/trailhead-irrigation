@@ -94,6 +94,16 @@ describe("earlier seasons", () => {
     expect(earlierSeasons([one2025, current, done2026], current).map((p) => p.season)).toEqual([2026, 2025])
     expect(earlierSeasons([current], current)).toEqual([])
   })
+
+  it("reads the dollars paid from the payment rows, a refund counting against and a visit with no row counting nothing", () => {
+    const current = snapshot.passes[0] as Pass
+    const row = (n: number, amount: number, extra: Record<string, unknown> = {}) => ({ id: `pay-${n}`, amount, method: "card_on_file", status: "succeeded", ...extra })
+    const done = (visit: (typeof current.visits)[number], payments: ReturnType<typeof row>[]) => ({ ...visit, completedAt: "2026-05-03T17:00:00Z", chargedAt: undefined, payments })
+    const season: Pass = { ...current, season: 2026, visits: [done(current.visits[0]!, [row(1, 145)]), done(current.visits[1]!, [row(2, 145), row(3, -45, { refundsPaymentId: "pay-2" })]), done(current.visits[2]!, [])] }
+    expect(seasonSummary(season)).toBe("3 of 3 visits done, $245 paid")
+    // an old charged flag with a rows array that says nothing paid is not money
+    expect(seasonSummary({ ...season, visits: season.visits.map((v) => ({ ...v, chargedAt: "2026-05-03T17:02:00Z", payments: [] })) })).toBe("3 of 3 visits done")
+  })
 })
 
 describe("passHeadline", () => {

@@ -24,8 +24,8 @@ export const oneOffs: Visit[] = [
   visit({ id: "office-scheduled", jobId: "job-a", property: YARD }),
   visit({ id: "office-needs-day", jobId: "job-b", clientId: "c-sam", clientName: "Sam Ortiz", town: "Louisville", kind: "install", status: "unscheduled", scheduledOn: undefined, startAt: undefined, personId: undefined, personName: undefined, price: 0, minutes: 120 }),
   visit({ id: "office-not-done", jobId: "job-c", clientId: "c-lee", clientName: "Lee Park", kind: "repair", status: "unscheduled", scheduledOn: undefined, startAt: undefined, personId: undefined, personName: undefined, notDoneReason: "no-water" }),
-  visit({ id: "office-unpaid", jobId: "job-d", clientId: "c-ana", clientName: "Ana Ruiz", town: "Lafayette", status: "completed", completedOn: "2026-11-10", scheduledOn: "2026-11-10", startAt: "2026-11-10T15:00:00Z" }),
-  visit({ id: "office-paid", jobId: "job-e", clientId: "c-joe", clientName: "Joe Hart", town: "Longmont", status: "completed", completedOn: "2026-11-09", scheduledOn: "2026-11-09", startAt: "2026-11-09T15:00:00Z", chargedAt: "2026-11-09T22:00:00Z", paidMethod: "check" }),
+  visit({ id: "office-owed", jobId: "job-d", clientId: "c-ana", clientName: "Ana Ruiz", town: "Lafayette", status: "completed", completedOn: "2026-11-10", scheduledOn: "2026-11-10", startAt: "2026-11-10T15:00:00Z", payments: [] }),
+  visit({ id: "office-paid", jobId: "job-e", clientId: "c-joe", clientName: "Joe Hart", town: "Longmont", status: "completed", completedOn: "2026-11-09", scheduledOn: "2026-11-09", startAt: "2026-11-09T15:00:00Z", payments: [{ id: "pay-joe", jobId: "job-e", visitId: "office-paid", amount: 145, method: "check", status: "succeeded", paidOn: "2026-11-09" }] }),
   visit({ id: "office-day-passed", jobId: "job-f", clientId: "c-kim", clientName: "Kim Lowe", scheduledOn: "2026-11-09", startAt: "2026-11-09T15:00:00Z" }),
 ]
 

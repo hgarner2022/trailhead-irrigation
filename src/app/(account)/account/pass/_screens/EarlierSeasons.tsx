@@ -1,6 +1,7 @@
 import { ChevronDown } from "lucide-react"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { StatusPill } from "@/components/blocks/StatusPill"
+import { visitPaid } from "@/lib/admin/jobs"
 import type { Pass } from "@/lib/admin/types"
 import { writtenDate } from "@/lib/admin/format"
 import { seasonSummary, visitRow } from "./pass-page-model"
@@ -50,7 +51,7 @@ export function EarlierSeasons({ passes }: EarlierSeasonsProps) {
                         </span>
                         <span className="text-right tabular-nums">
                           <span className="block">{`$${visit.amount}`}</span>
-                          <span className="block text-muted-foreground">{visit.chargedAt ? "Paid" : "Not charged"}</span>
+                          <span className="block text-muted-foreground">{visitPaid(visit) ? "Paid" : visit.completedAt ? "Owed" : "Not charged"}</span>
                         </span>
                       </li>
                     )

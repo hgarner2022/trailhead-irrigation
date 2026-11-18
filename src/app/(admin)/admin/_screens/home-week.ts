@@ -82,12 +82,14 @@ const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`
 export function moneyFigures(data: AdminData, today: string): MoneyFigure[] {
   const { year, month } = monthOf(today)
   const rows = visitRows(data, today)
-  const owed = rows.filter((r) => r.work === "done" && (r.money === "unpaid" || r.money === "bill-sent"))
+  // Owed is read from the payment rows by `visitJob`; a job counts once however many of its visits are owed.
+  const owed = rows.filter((r) => r.work === "done" && r.money === "owed")
+  const owedJobs = new Set(owed.map((r) => r.jobId ?? r.id)).size
   const failed = rows.filter((r) => r.money === "failed")
   const sum = (list: { price: number }[]) => formatMoney(list.reduce((n, r) => n + r.price, 0))
   return [
     { label: "Charged this month", value: formatMoney(monthComparison(data.monthTotals, year, month).current), href: "/admin/reports" },
-    { label: owed.length ? `Owed on ${plural(owed.length, "done visit")}` : "Owed on done visits", value: sum(owed), href: "/admin/visits?money=unpaid,bill-sent" },
+    { label: owedJobs ? `Owed on ${plural(owedJobs, "done job")}` : "Owed on done jobs", value: sum(owed), href: "/admin/visits?money=owed" },
     { label: failed.length ? `Failed charges, ${failed.length}` : "Failed charges", value: sum(failed), href: "/admin/visits?money=failed" },
     { label: "Season total committed", value: formatMoney(committedRevenue(data.passes)), href: "/admin/reports" },
   ]

@@ -76,7 +76,7 @@ export interface VisitFacts {
   /** the job's visits in day order, this one included */
   siblings: Visit[]
   states: Job
-  /** "1 of 2 paid" */
+  /** the job's money in words, read from its lines and payment rows: "Paid", "$115 owed", "1 of 2 paid, $115 owed"; empty when nothing is priced */
   money: string
   /** every message to this customer, with the ones about this visit marked */
   messages: Message[]
@@ -101,7 +101,7 @@ export function visitFacts(data: AdminData, visitId: string, today: string): Vis
     priceCancelled: visitCancelled(data, visit),
     siblings,
     states: visitJob(visit, day, TIME_ZONE, pass?.cardFailedAt),
-    money: jobMoney(siblings.map((v) => visitJob(v, day, TIME_ZONE, pass?.cardFailedAt))),
+    money: jobMoney(job, siblings),
     messages: data.messages.filter((m) => m.clientId === visit.clientId),
   }
 }

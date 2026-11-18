@@ -69,7 +69,7 @@ export const PendingPanel: Story = {
   args: { defaultSelectedId: data.passes.find((p) => p.status === "pending")!.id },
   globals: { viewport: { value: "wide", isRotated: false } },
   play: async ({ canvas }) => {
-    await expect(await canvas.findByText("Unpaid attempt, expires after an hour.")).toBeInTheDocument()
+    await expect(await canvas.findByText("Checkout not finished, expires after an hour.")).toBeInTheDocument()
   },
 }
 

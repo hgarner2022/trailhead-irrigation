@@ -6,7 +6,7 @@
 import type { Pass, PassVisit } from "@/lib/admin/types"
 import { TIME_ZONE, preferenceLabel, preferenceOf, preferencePhrase, writtenDate } from "@/lib/admin/format"
 import { formatMoney } from "@/lib/admin/metrics"
-import { passVisitJob, type JobState } from "@/lib/admin/jobs"
+import { passVisitJob, visitPaidTotal, type JobState } from "@/lib/admin/jobs"
 
 export const VISIT_NAMES: Record<PassVisit["kind"], string> = { "turn-on": "Spring turn-on", inspection: "Mid-season inspection", blowout: "Fall blowout" }
 
@@ -119,7 +119,7 @@ export function pickDayOptions(pass: Pass, kind: "turn-on" | "blowout"): string[
 /** "3 of 3 visits done, $385 paid" for an earlier season; a skipped or cancelled season says how many were done. */
 export function seasonSummary(pass: Pass): string {
   const done = pass.visits.filter((v) => v.completedAt).length
-  const paid = pass.visits.filter((v) => v.chargedAt).reduce((sum, v) => sum + v.amount, 0)
+  const paid = pass.visits.reduce((sum, v) => sum + visitPaidTotal(v), 0)
   const visits = `${done} of ${pass.visits.length} visit${pass.visits.length === 1 ? "" : "s"} done`
   return paid > 0 ? `${visits}, $${paid.toLocaleString("en-US")} paid` : visits
 }

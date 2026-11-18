@@ -7,7 +7,8 @@ import { messagesSend } from "@/api/v1/messages/handlers"
 import { passesSell } from "@/api/v1/passes/sell"
 import { isRoutePerson, peopleList } from "@/api/v1/people/handlers"
 import { visitsGet, visitsMove } from "@/api/v1/visits/handlers"
-import { visitsMarkClosed, visitsRecordPayment } from "@/api/v1/visits/money"
+import { paymentsRecord } from "@/api/v1/payments/handlers"
+import { visitsMarkClosed } from "@/api/v1/visits/money"
 import { visitsCancel, visitsCreate, visitsMarkNotDone, visitsUpdate } from "@/api/v1/visits/office"
 import { weekdayOf } from "@/api/v1/shared"
 import type { NotDoneReason } from "@/lib/admin/visit-defaults"
@@ -52,7 +53,14 @@ export const markDone = async (visitId: string, opts: { completedOn?: string; pa
 
 export const undoDone = async (visitId: string): Promise<ActionOutcome> => act((ctx) => nothing(callApi(ctx, visitsMarkClosed, { id: visitId, undo: true })))
 
-export const recordPayment = async (visitId: string, paidBy: PaidBy): Promise<ActionOutcome> => act((ctx) => nothing(callApi(ctx, visitsRecordPayment, { id: visitId, ...paidBy })))
+/** The Done-and-owed form's Record payment: a payment row on the visit's job through `payments.record`, for what the visit costs (or the amount typed for a visit with no price yet). */
+export const recordPayment = async (visitId: string, paidBy: PaidBy): Promise<ActionOutcome> =>
+  act(async (ctx) => {
+    const visit = await callApi(ctx, visitsGet, { id: visitId })
+    if (visit.status !== "completed") throw new ApiError("unprocessable", "Mark the visit done first")
+    await callApi(ctx, paymentsRecord, { jobId: visit.jobId, visitId, amount: visit.amount > 0 ? visit.amount : (paidBy.amount ?? 0), method: paidBy.method, ...(paidBy.reference ? { reference: paidBy.reference } : {}) })
+    return undefined
+  })
 
 export const markNotDone = async (visitId: string, reason: NotDoneReason, note?: string): Promise<ActionOutcome<Where>> =>
   act(async (ctx) => {

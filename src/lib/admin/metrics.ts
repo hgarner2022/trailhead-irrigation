@@ -7,6 +7,7 @@
  * Mountain day). Months in `visitMonth` and `committedByMonth` still read
  * the prefix; the wiring phase converts stored times to Mountain time.
  */
+import { visitPaid, visitPaidTotal } from "./jobs"
 import type { Invoice, MonthTotal, Pass, PassVisit, Quote, Visit } from "./types"
 
 const MONTHS = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"]
@@ -51,9 +52,9 @@ export function committedRevenue(passes: Pass[]): number {
   return passes.filter(counts).reduce((sum, p) => sum + p.visits.reduce((s, v) => s + v.amount, 0), 0)
 }
 
-/** Amounts already charged on active passes. */
+/** Money already received on active passes, read from the visits' payment rows (a refund counts against). */
 export function chargedSoFar(passes: Pass[]): number {
-  return passes.filter(counts).reduce((sum, p) => sum + p.visits.filter((v) => v.chargedAt).reduce((s, v) => s + v.amount, 0), 0)
+  return passes.filter(counts).reduce((sum, p) => sum + p.visits.reduce((s, v) => s + visitPaidTotal(v), 0), 0)
 }
 
 /** Committed and charged amounts per month for one season, only the months that have visits, in month order. */
@@ -65,7 +66,7 @@ export function committedByMonth(passes: Pass[], season: number): { month: numbe
       if (month === null) continue
       const row = byMonth.get(month) ?? { month, committed: 0, charged: 0 }
       row.committed += visit.amount
-      if (visit.chargedAt) row.charged += visit.amount
+      row.charged += visitPaidTotal(visit)
       byMonth.set(month, row)
     }
   }
@@ -101,7 +102,7 @@ export function upcomingCharges(passes: Pass[], from: string, limit = 10, timeZo
   const fromDay = day(from, timeZone)
   for (const pass of passes.filter(counts)) {
     for (const visit of pass.visits) {
-      if (!visit.scheduledAt || visit.chargedAt || day(visit.scheduledAt, timeZone) < fromDay) continue
+      if (!visit.scheduledAt || visitPaid(visit) || day(visit.scheduledAt, timeZone) < fromDay) continue
       const { firstName, town } = pass
       charges.push({ passId: pass.id, firstName, town, kind: visit.kind, amount: visit.amount, scheduledAt: visit.scheduledAt })
     }

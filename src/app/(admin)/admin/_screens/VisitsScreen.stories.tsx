@@ -51,9 +51,9 @@ export const PanelNeedsADay: Story = { args: { defaultVisitId: "office-needs-day
 /** Not done keeps its reason in the pill until the visit has a day again. */
 export const PanelNotDone: Story = { args: { defaultVisitId: "office-not-done" }, globals: wide }
 
-/** Done and the money has not come: the panel asks how it was paid. */
-export const PanelDoneNotPaid: Story = { args: { defaultVisitId: "office-unpaid" }, globals: wide }
-export const PanelDoneNotPaidPhone: Story = { args: { defaultVisitId: "office-unpaid" }, globals: phone }
+/** Done and owed: the money pill says Owed and the panel offers Record the payment. */
+export const PanelOwed: Story = { args: { defaultVisitId: "office-owed" }, globals: wide }
+export const PanelOwedPhone: Story = { args: { defaultVisitId: "office-owed" }, globals: phone }
 
 /** Paid by check: the Money pill says how, and the thread shows the receipt. */
 export const PanelPaid: Story = { args: { defaultVisitId: "office-paid" }, globals: wide }
@@ -61,7 +61,7 @@ export const PanelPaid: Story = { args: { defaultVisitId: "office-paid" }, globa
 /** The day passed: still Scheduled, with a small note. */
 export const PanelDayPassed: Story = { args: { defaultVisitId: "office-day-passed" }, globals: wide }
 
-/** A visit on a Season Pass: the job block shows the pass number, "n of m paid" and the other visits. */
+/** A visit on a Season Pass: the job block shows the pass number, "$290 owed" or "1 of 2 paid, $145 owed" and the other visits. */
 export const PanelPassVisit: Story = { args: { defaultVisitId: passVisitId }, globals: wide }
 
 /** A visit on a pass the office sold with no card: Done asks how it was paid, like a one-off, instead of charging a card. */

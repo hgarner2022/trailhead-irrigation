@@ -135,6 +135,8 @@ export async function attentionAction(item: Attention): Promise<ActionOutcome | 
     const done = await act((ctx) => nothing(callApi(ctx, visitsMarkClosed, { id: item.visitId! })))
     return done.ok ? { ok: true, data: undefined, message: "Marked done." } : done
   }
+  // A job that is done and owed: its row's one action, "Paid by", opens the job's done visit on Visits, where the panel's Record the payment asks how the money came.
+  if (item.kind === "owed" && item.visitId) redirect(`/admin/visits?visit=${encodeURIComponent(item.visitId)}`)
   if (item.visitId) redirect(`/admin/visits?visit=${encodeURIComponent(item.visitId)}`)
   if (item.passId) redirect(`/admin/passes?pass=${encodeURIComponent(item.passId)}`)
   redirect("/admin/schedule")
