@@ -12,7 +12,7 @@ const STORE = "trailhead.home.today-view"
 // minutes after the snapshot's sync, so the header reads "Updated 4 minutes
 // ago". In season, that day has four scheduled blowouts with no window yet (all Ahead today). `busy` is the same day with eight
 // visits in all three groups: two past their window, three ahead and three done (paid by Venmo, owed, and a invoice sent).
-// The quiet November fixture has nothing today or this month: its next visits are three in April, so every group reads "Nothing here" and the screen links to the next day.
+// The quiet November fixture has nothing today or this month: its next visits are three in April, so the day says nothing is booked, points at the Schedule and links to the next day.
 const TODAY = "2026-11-12T19:56:30Z"
 const snap = snapshot as AdminData
 const groupedTexts: Attention = {
@@ -135,7 +135,7 @@ export const ByPersonPhone: Story = {
   },
 }
 
-/** November, nothing today: every group says Nothing here and one line links to the next day that has visits. */
+/** November, nothing today: "Nothing booked today. Jobs with no day wait on the Schedule." with Open Schedule, and one line linking to the next day that has stops. */
 export const QuietNovember: Story = {
   args: { data: quiet },
   globals: { viewport: { value: "wide", isRotated: false } },
@@ -188,5 +188,39 @@ export const Tablet: Story = {
 }
 
 export const Phone: Story = {
+  globals: { viewport: { value: "phone", isRotated: false } },
+}
+
+const inPlaceRows: Attention[] = [
+  { kind: "not-closed", key: "b1", visitId: "b1", message: "Percy's repair on Nov 9 is not marked done", since: "2026-11-09T15:00:00Z" },
+  { kind: "unplaced", key: "b2", visitId: "b2", message: "Alicia's blowout has no day", since: "2026-11-10T15:00:00Z" },
+]
+
+/** Needs action rows: each opens its record in the panel over Home (the unit tests press one; Storybook's link stub would leave the page), and the button beside it does the one thing. */
+export const NeedsActionRows: Story = {
+  args: { data: { ...busy, attention: inPlaceRows } },
+  globals: { viewport: { value: "laptop", isRotated: false } },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByRole("link", { name: /Percy's repair/ })).toHaveAttribute("href", "/admin/schedule?visit=b1")
+  },
+}
+
+/** With nothing waiting: "Nothing needs you." and no buttons. */
+export const NothingNeedsYou: Story = {
+  args: { data: { ...busy, attention: [] } },
+  globals: { viewport: { value: "laptop", isRotated: false } },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText("Nothing needs you.")).toBeInTheDocument()
+  },
+}
+
+export const NothingNeedsYouPhone: Story = {
+  args: { data: { ...busy, attention: [] } },
+  globals: { viewport: { value: "phone", isRotated: false } },
+}
+
+/** Rows with their buttons on a phone: each row opens its record, the button beside it does the one thing. */
+export const NeedsActionRowsPhone: Story = {
+  args: { data: { ...busy, attention: inPlaceRows } },
   globals: { viewport: { value: "phone", isRotated: false } },
 }

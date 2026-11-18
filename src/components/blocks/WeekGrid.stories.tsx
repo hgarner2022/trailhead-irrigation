@@ -61,6 +61,17 @@ export const TwoPeople: Story = {
   globals: { viewport: { value: "wide", isRotated: false } },
 }
 
+/** One person on the schedule: a single row in their colour, every day's header still counting stops and towns. */
+export const OnePerson: Story = {
+  args: { people: data.settings.people.slice(0, 1), visits: data.visits.filter((v) => v.personId === data.settings.people[0]!.id) },
+  globals: { viewport: { value: "laptop", isRotated: false } },
+}
+
+export const OnePersonPhone: Story = {
+  args: { people: data.settings.people.slice(0, 1), visits: data.visits.filter((v) => v.personId === data.settings.people[0]!.id) },
+  globals: { viewport: { value: "phone", isRotated: false } },
+}
+
 export const Empty: Story = {
   args: { people: [], areas: [] },
 }

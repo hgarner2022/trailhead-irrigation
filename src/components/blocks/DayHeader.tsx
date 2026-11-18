@@ -41,8 +41,8 @@ export function DayHeader({ label, day, today, fill, towns, onNewJob, className 
           </button>
         )}
       </span>
-      <span data-slot="day-fill" className="block text-xs font-normal normal-case tracking-normal text-muted-foreground">{fill}</span>
-      {towns && <span data-slot="day-towns" title={towns} className="block truncate text-xs font-normal normal-case tracking-normal text-muted-foreground">{towns}</span>}
+      <span data-slot="day-fill" className={cn("block text-xs font-normal normal-case tracking-normal", today ? "text-primary-deep" : "text-muted-foreground")}>{fill}</span>
+      {towns && <span data-slot="day-towns" title={towns} className={cn("block truncate text-xs font-normal normal-case tracking-normal", today ? "text-primary-deep" : "text-muted-foreground")}>{towns}</span>}
     </div>
   )
 }

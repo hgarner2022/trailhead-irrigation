@@ -203,15 +203,15 @@ test("a new block's stories need Default, Empty and Phone", () => {
 // the allowlist
 
 test("an allowlisted file reports a note with its date and step instead of failing", () => {
-  const r = run({ "app/(admin)/admin/_screens/HomeScreen.tsx": `export const T = () => <h2>Today's visits</h2>\n` })
+  const r = run({ "app/(admin)/admin/_screens/RevenueScreen.tsx": `export const T = () => <h2>Visits this month</h2>\n` })
   assert.equal(r.status, 0, r.out)
-  assert.match(r.out, /HomeScreen\.tsx: visit-word allowed until Nov 18 2026, step 3/)
+  assert.match(r.out, /RevenueScreen\.tsx: visit-word allowed until Nov 18 2026, step 9/)
 })
 
 test("an allowlist entry that no longer matches a violation fails, so the list only shrinks", () => {
-  const r = run({ "app/(admin)/admin/_screens/HomeScreen.tsx": `export const T = () => <h2>Today</h2>\n` })
+  const r = run({ "app/(admin)/admin/_screens/RevenueScreen.tsx": `export const T = () => <h2>Revenue</h2>\n` })
   assert.equal(r.status, 1)
-  assert.match(r.out, /HomeScreen\.tsx: ALLOW entry for visit-word no longer matches a violation; delete it/)
+  assert.match(r.out, /RevenueScreen\.tsx: ALLOW entry for visit-word no longer matches a violation; delete it/)
 })
 
 test("every allowlist entry names a date and a step of the build order", () => {
