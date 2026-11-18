@@ -50,10 +50,7 @@ Always: sentence case, contractions in customer text ("we'll", "didn't"), no em 
 | "Ryan" | when the person matters: who sets days, who comes | "our team", "a technician" |
 | "we" | Trailhead as a company: emails, texts, charges | "Trailhead will", "the company" |
 | Trailhead account, "your Trailhead account" | the customer's page for their visits, invoices, card and details (`/account`); the one name in every link, button and sentence, held in code as `ACCOUNT_NAME` | pass page, customer portal, dashboard, login |
-| receipt | what we send once money arrives: the amount, what it was for and where, how it was paid | confirmation (that word is for a reserved season or a booked visit) |
-| invoice | what we ask a customer to pay, with its pay link; the number is one quiet row, never in a subject | bill (the customer never reads "bill"; the office screens move to "invoice" with the status words audit) |
-| unpaid, past due | an invoice sent and not paid; "still unpaid", "$145 unpaid"; "past due" once the due day passes | owed, overdue, outstanding |
-| Canceled | US spelling, in every message ("Your 2027 Season Pass is canceled") | cancelled |
+| receipt | what we send once money arrives: the amount, what it was for and where, how it was paid; an invoice number is one quiet row on an invoice and its receipt, never in a subject | confirmation (that word is for a reserved season or a booked visit) |
 
 ## Transactional emails and texts
 
