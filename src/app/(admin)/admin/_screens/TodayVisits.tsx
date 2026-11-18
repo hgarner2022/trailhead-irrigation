@@ -3,7 +3,9 @@
 import Link from "next/link"
 import { useState, useSyncExternalStore } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Button } from "@/components/ui/button"
 import { AREA_SWATCHES } from "@/components/blocks/area-colours"
+import { EmptyState } from "@/components/blocks/EmptyState"
 import { TodayGroup } from "@/components/blocks/TodayGroup"
 import { TodayVisitRow } from "@/components/blocks/TodayVisitRow"
 import { cn } from "@/lib/utils"
@@ -11,22 +13,22 @@ import type { AreaGroup } from "@/lib/admin/types"
 import { useOpenVisit } from "./RecordHost"
 import type { TodayRow, TodayView } from "./today-model"
 
-// Today's visits (owner, 17 Nov 2026, after Jobber's "Today's appointments": "today's visits in our language"): a By visit /
+// Today's jobs (owner, 17 Nov 2026, after Jobber's "Today's appointments": "today's visits in our language"; the words are the design's, section 5.1): a By job /
 // By person toggle over the same rows. By visit is three groups, Past its window, Ahead today and Done today; By person is
 // each person's day under their name and initials, in route order, the number the map pin carries. The choice is kept per
-// browser. Every row opens the visit panel. The area legend sits above the rows because the bar on a row is the area.
+// browser. Every row opens its panel in place. The area legend sits above the rows because the bar on a row is the area.
 // Client component: the toggle, the stored choice and the click.
 
-type View = "visit" | "person"
+type View = "job" | "person"
 const STORE = "trailhead.home.today-view"
 
-// The stored choice is read as an external store, so the server and the first client render both say By visit and the stored choice
+// The stored choice is read as an external store, so the server and the first client render both say By job and the stored choice
 // follows. A change is held in the component as well, so a blocked or private browser still switches for the page.
 function readStored(): View {
   try {
-    return window.localStorage.getItem(STORE) === "person" ? "person" : "visit"
+    return window.localStorage.getItem(STORE) === "person" ? "person" : "job"
   } catch {
-    return "visit"
+    return "job"
   }
 }
 const subscribe = () => () => {}
@@ -52,18 +54,18 @@ function AreaLegend({ areas }: { areas: AreaGroup[] }) {
 export interface TodayVisitsProps {
   view: TodayView
   areas: AreaGroup[]
-  /** the next day with visits when today has none, as a link to it on the Schedule */
+  /** the next day with stops when today has none, as a link to it on the Schedule */
   next?: { day: string; heading: string }
   className?: string
 }
 
 export function TodayVisits({ view, areas, next, className }: TodayVisitsProps) {
   const open = useOpenVisit()
-  const stored = useSyncExternalStore(subscribe, readStored, () => "visit" as View)
+  const stored = useSyncExternalStore(subscribe, readStored, () => "job" as View)
   const [picked, setPicked] = useState<View | undefined>()
   const choice = picked ?? stored
   const change = (value: string) => {
-    const next: View = value === "person" ? "person" : "visit"
+    const next: View = value === "person" ? "person" : "job"
     setPicked(next)
     try {
       window.localStorage.setItem(STORE, next)
@@ -73,12 +75,36 @@ export function TodayVisits({ view, areas, next, className }: TodayVisitsProps) 
   }
   const onOpen = (id: string) => open?.(id)
   const { groups, people } = view
+  if (view.rows.length === 0) {
+    return (
+      <div data-slot="today-visits" className={cn("space-y-2", className)}>
+        <EmptyState
+          title="Nothing booked today."
+          line="Jobs with no day wait on the Schedule."
+          className="py-8"
+          action={
+            <Button asChild variant="outline" className="min-h-11">
+              <Link href="/admin/schedule">Open Schedule</Link>
+            </Button>
+          }
+        />
+        {next && (
+          <p data-slot="today-next" className="text-center text-sm text-muted-foreground">
+            Next up:{" "}
+            <Link href={`/admin/schedule?day=${next.day}`} className="rounded-sm text-foreground underline underline-offset-4 hover:text-navy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50">
+              {next.heading}
+            </Link>
+          </p>
+        )}
+      </div>
+    )
+  }
   return (
     <div data-slot="today-visits" className={cn("space-y-4", className)}>
       <Tabs value={choice} onValueChange={change}>
-        <TabsList aria-label="Group today's visits" className="w-full sm:w-fit">
-          <TabsTrigger value="visit" className="flex-1 sm:flex-none">
-            By visit
+        <TabsList aria-label="Group today's jobs" className="w-full sm:w-fit">
+          <TabsTrigger value="job" className="flex-1 sm:flex-none">
+            By job
           </TabsTrigger>
           <TabsTrigger value="person" className="flex-1 sm:flex-none">
             By person
@@ -87,7 +113,7 @@ export function TodayVisits({ view, areas, next, className }: TodayVisitsProps) 
         <div className="mt-2">
           <AreaLegend areas={areas} />
         </div>
-        <TabsContent value="visit" className="space-y-5">
+        <TabsContent value="job" className="space-y-5">
           {(["past", "ahead", "done"] as const).map((group) => (
             <TodayGroup key={group} group={group} count={groups[group].length}>
               {groups[group].map((row) => (
@@ -102,7 +128,7 @@ export function TodayVisits({ view, areas, next, className }: TodayVisitsProps) 
             <section key={person.personId} data-slot="today-person" aria-labelledby={`today-person-${person.personId}`} className="space-y-2">
               <h3 id={`today-person-${person.personId}`} className="text-sm font-medium text-navy">
                 {person.name}
-                <span className="ml-2 font-normal text-muted-foreground">{person.rows.length === 1 ? "1 visit" : `${person.rows.length} visits`}</span>
+                <span className="ml-2 font-normal text-muted-foreground">{person.rows.length === 1 ? "1 stop" : `${person.rows.length} stops`}</span>
               </h3>
               <ul className="divide-y divide-border overflow-hidden rounded-lg border border-border">
                 {person.rows.map((row) => (
@@ -113,14 +139,6 @@ export function TodayVisits({ view, areas, next, className }: TodayVisitsProps) 
           ))}
         </TabsContent>
       </Tabs>
-      {next && view.rows.length === 0 && (
-        <p data-slot="today-next" className="text-sm text-muted-foreground">
-          Next up:{" "}
-          <Link href={`/admin/schedule?day=${next.day}`} className="rounded-sm text-foreground underline underline-offset-4 hover:text-navy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50">
-            {next.heading}
-          </Link>
-        </p>
-      )}
     </div>
   )
 }

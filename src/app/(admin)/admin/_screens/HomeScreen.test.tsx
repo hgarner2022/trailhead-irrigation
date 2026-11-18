@@ -26,11 +26,13 @@ const withDay = (visits: Visit[]): AdminData => ({ ...data, visits, attention: [
 describe("HomeScreen", () => {
   beforeEach(() => window.localStorage.clear())
 
-  it("opens on the header, the money strip, today's visits, the map and Needs action in that order", () => {
+  it("opens on Today over the date, the money strip, today's jobs, the map and Needs action in that order", () => {
     render(<HomeScreen data={withDay(dayVisits)} today={TODAY} />)
-    const order = ["Today\u2019s money", "Today\u2019s visits", "Map", "Needs action"].map((name) => screen.getByRole("heading", { name }))
+    const order = ["Today\u2019s money", "Today\u2019s jobs", "Map", "Needs action"].map((name) => screen.getByRole("heading", { name }))
     order.slice(1).forEach((h, i) => expect(order[i]!.compareDocumentPosition(h) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy())
-    expect(screen.getByText(/^Thursday, November 12\. Updated/)).toBeInTheDocument()
+    expect(screen.getByRole("heading", { level: 1, name: "Today" })).toBeInTheDocument()
+    expect(screen.getByText("Thursday, November 12")).toBeInTheDocument()
+    expect(screen.queryByText(/Good (morning|afternoon|evening)/)).toBeNull()
     expect(document.querySelector('[data-slot="home-money"]')).toBeNull()
   })
 
@@ -42,7 +44,7 @@ describe("HomeScreen", () => {
     expect(strip.getByRole("link", { name: "View schedule" })).toHaveAttribute("href", "/admin/schedule?day=2026-11-12")
   })
 
-  it("lists today's visits in the three groups, with counts in their headings, and nothing else", () => {
+  it("lists today's jobs in the three groups, with counts in their headings, and nothing else", () => {
     render(<HomeScreen data={withDay(dayVisits)} today={TODAY} />)
     const headings = within(document.querySelector<HTMLElement>('[data-slot="today-visits"]')!).getAllByRole("heading").map((h) => h.textContent)
     expect(headings).toEqual(["1 past its window", "1 ahead today", "2 done today"])
@@ -70,7 +72,7 @@ describe("HomeScreen", () => {
     const { unmount } = render(<HomeScreen data={withDay(dayVisits)} today={TODAY} />)
     await userEvent.click(screen.getByRole("tab", { name: "By person" }))
     const people = Array.from(document.querySelectorAll<HTMLElement>('[data-slot="today-person"]'))
-    expect(people.map((p) => p.querySelector("h3")!.textContent)).toEqual(["Ryan Garner2 visits", "Tech Two2 visits"])
+    expect(people.map((p) => p.querySelector("h3")!.textContent)).toEqual(["Ryan Garner2 stops", "Tech Two2 stops"])
     expect(within(people[0]!).getAllByRole("button").map((b) => b.textContent)).toEqual([expect.stringContaining("Pat"), expect.stringContaining("Lee")])
     expect(Array.from(people[0]!.querySelectorAll('[data-slot="route-number"]')).map((n) => n.textContent)).toEqual(["Stop 1", "Stop 2"])
     expect(window.localStorage.getItem("trailhead.home.today-view")).toBe("person")
@@ -89,11 +91,14 @@ describe("HomeScreen", () => {
     set.mockRestore()
   })
 
-  it("with nothing today leaves every group empty and says when the next visits are, once", () => {
+  it("with nothing booked says so, points at the Schedule, and says when the next jobs are, once", () => {
     const visits = [stop({ id: "n1", clientName: "Next Nia", startAt: "2027-04-27T15:00:00Z", scheduledOn: "2027-04-27", personId: "person_truck-1" })]
     render(<HomeScreen data={withDay(visits)} today={TODAY} />)
-    expect(screen.getAllByText("Nothing here")).toHaveLength(3)
-    expect(screen.getByRole("link", { name: "Tue, Apr 27 · 1 visit in Erie" })).toHaveAttribute("href", "/admin/schedule?day=2027-04-27")
+    expect(screen.getByText("Nothing booked today.")).toBeInTheDocument()
+    expect(screen.getByText("Jobs with no day wait on the Schedule.")).toBeInTheDocument()
+    expect(screen.getByRole("link", { name: "Open Schedule" })).toHaveAttribute("href", "/admin/schedule")
+    expect(screen.queryByRole("tab")).toBeNull()
+    expect(screen.getByRole("link", { name: "Tue, Apr 27 · 1 stop in Erie" })).toHaveAttribute("href", "/admin/schedule?day=2027-04-27")
     expect(screen.queryByText(/Next Nia/)).toBeNull()
   })
 
@@ -123,5 +128,44 @@ describe("HomeScreen", () => {
   it("hands a tech the lists with no buttons", () => {
     render(<HomeScreen data={{ ...data, attention: [{ kind: "unplaced", key: "v2", visitId: "v2", message: "Sam's install is unscheduled", since: "2026-11-09T15:00:00Z" }] }} today={TODAY} readOnly />)
     expect(screen.queryByRole("button", { name: /Dismiss/ })).toBeNull()
+  })
+
+  describe("Needs action opens its record in place", () => {
+    beforeEach(() => {
+      window.history.replaceState(null, "", "/admin")
+      vi.stubGlobal("matchMedia", (query: string) => ({ matches: query === "(min-width: 1024px)", media: query, addEventListener: vi.fn(), removeEventListener: vi.fn() }))
+      vi.stubGlobal("ResizeObserver", class { observe() {} unobserve() {} disconnect() {} })
+    })
+    const row = (item: Attention) => ({ ...data, attention: [item] })
+
+    it("a row about one stop opens that stop's panel over Home, with the address updated, and goes nowhere", async () => {
+      const visit = data.visits.find((v) => v.startAt)!
+      const item: Attention = { kind: "not-closed", key: visit.id, visitId: visit.id, message: "Dana's repair on Nov 9 is not marked done", since: "2026-11-09T15:00:00Z" }
+      render(<HomeScreen data={row(item)} today={TODAY} visitActions={{} as never} />)
+      await userEvent.click(screen.getByRole("link", { name: /Dana's repair/ }))
+      expect(await screen.findByRole("dialog")).toBeInTheDocument()
+      expect(new URLSearchParams(window.location.search).get("visit")).toBe(visit.id)
+      expect(window.location.pathname).toBe("/admin")
+    })
+
+    it("a row about a customer opens the customer's panel, and one about a job opens the job's", async () => {
+      const customer = data.clients[0]!
+      const item: Attention = { kind: "charge-failed", key: "c", customerId: customer.id, message: "The card failed", since: "2026-11-09T15:00:00Z" }
+      const { unmount } = render(<HomeScreen data={row(item)} today={TODAY} visitActions={{} as never} />)
+      await userEvent.click(screen.getByRole("link", { name: /The card failed/ }))
+      await screen.findByRole("dialog")
+      expect(new URLSearchParams(window.location.search).get("customer")).toBe(customer.id)
+      unmount()
+      window.history.replaceState(null, "", "/admin")
+      const job: Attention = { kind: "overdue", key: "j", jobId: "job-1", message: "Invoice is past due", since: "2026-11-09T15:00:00Z" }
+      render(<HomeScreen data={row(job)} today={TODAY} visitActions={{} as never} />)
+      await userEvent.click(screen.getByRole("link", { name: /Invoice is past due/ }))
+      expect(new URLSearchParams(window.location.search).get("job")).toBe("job-1")
+    })
+
+    it("says Nothing needs you with no rows", () => {
+      render(<HomeScreen data={{ ...data, attention: [] }} today={TODAY} />)
+      expect(screen.getByText("Nothing needs you.")).toBeInTheDocument()
+    })
   })
 })

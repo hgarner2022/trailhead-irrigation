@@ -11,7 +11,7 @@ import type { JobActions } from "./job-actions-types"
 import { NewJobButton } from "./NewJob"
 import { RecordHost } from "./RecordHost"
 import { initialRecord } from "@/lib/admin/record-url"
-import { greeting, pageContext, todayMoney } from "./home-model"
+import { longDate, todayMoney } from "./home-model"
 import { weekView } from "./home-week"
 import { todayView } from "./today-model"
 import { visitPrice } from "./visit-panel-model"
@@ -21,9 +21,9 @@ import { routePeople } from "@/lib/admin/people"
 import { jobIdOfPass } from "@/lib/admin/links"
 
 // What Hannah opens to, as Today (17 Nov 2026, after Jobber's "Today's appointments": "a variation of this, today's visits in our
-// language, a little bit more useful"): the header, then the Today money strip (what is on today, what is done, what is ahead,
-// what the done visits owe, and View schedule), then today's visits in three groups or by person beside the map, then Needs action
-// ("what needs me"), grouped by cause, every row with its button and Dismiss. Reports keeps everything else. Pure composition over
+// language, a little bit more useful"; the words are docs/plans/2026-11-18-admin-holistic-design.md, 5.1): the header ("Today" over the date), then the Today money strip (what is on today, what is done, what is ahead,
+// what the done visits owe, and View schedule), then today's jobs in three groups or by person beside the map, then Needs action
+// ("what needs me"), grouped by cause, every row with its button and Dismiss and opening its record in the panel over Home. Reports keeps everything else. Pure composition over
 // `data` and a fixed `today`; the route's page.tsx supplies both. Server component; the rows, the toggle and the map are client
 // code. The map folds under the groups on a phone.
 
@@ -59,7 +59,7 @@ export function HomeScreen({ data, today, readOnly = false, onAttentionAction, o
   return (
     <div data-slot="home-screen" className="space-y-6">
       <RecordHost data={data} today={today} readOnly={readOnly} visitActions={visitActions} jobActions={jobActions} customerActions={customerActions} initial={initialRecord({ customerId: defaultCustomerId, jobId: defaultJobId, visitId: defaultVisitId })}>
-        <PageHeader title={greeting(today)} context={pageContext(data, today)} actions={!readOnly && <NewJobButton data={data} today={today} actions={visitActions} />} />
+        <PageHeader title="Today" context={longDate(today)} actions={!readOnly && <NewJobButton data={data} today={today} actions={visitActions} />} />
 
         <TodayMoney
           figures={[
@@ -75,7 +75,7 @@ export function HomeScreen({ data, today, readOnly = false, onAttentionAction, o
         <div className="grid gap-6 lg:grid-cols-5">
           <Card className="lg:col-span-3 lg:col-start-1 lg:row-start-1">
             <CardHeader>
-              <SectionHeading level={2}>Today&rsquo;s visits</SectionHeading>
+              <SectionHeading level={2}>Today&rsquo;s jobs</SectionHeading>
             </CardHeader>
             <CardContent>
               <TodayVisits view={view} areas={data.settings.areas} next={week?.day ? { day: week.day, heading: week.heading } : undefined} />

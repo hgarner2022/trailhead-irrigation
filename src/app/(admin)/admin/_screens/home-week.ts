@@ -16,7 +16,7 @@ export interface WeekView {
   isToday: boolean
   /** the card's title: "Today" when today has a visit, else "Next up" */
   title: string
-  /** "Mon, Nov 16 · 4 visits in Erie", under the title */
+  /** "Mon, Nov 16 · 4 stops in Erie", under the title */
   heading: string
   /** each person's stops that day in route order, a person with none left out */
   people: PersonDay[]
@@ -49,7 +49,7 @@ export function weekView(data: Pick<AdminData, "visits" | "settings">, today: st
   const people = dayByPerson(data.visits, day, data.settings.people)
   const visits = people.flatMap((p) => p.stops)
   const isToday = day === todayDay
-  const heading = `${dayLabel(day)} · ${visits.length} ${visits.length === 1 ? "visit" : "visits"} in ${townsPhrase(visits.map((v) => v.town))}`
+  const heading = `${dayLabel(day)} · ${visits.length} ${visits.length === 1 ? "stop" : "stops"} in ${townsPhrase(visits.map((v) => v.town))}`
   return { day, isToday, title: isToday ? "Today" : "Next up", heading, people, visits }
 }
 

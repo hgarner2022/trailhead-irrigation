@@ -38,7 +38,7 @@ const wrap = (node: React.ReactNode) => render(<UndoToastProvider>{node}</UndoTo
 /** Each screen with one control that opens a record, and the key that record takes in the address. */
 const SCREENS = [
   { name: "Home", key: "visit", at: "/admin", node: (p: object) => <HomeScreen data={snap} today={TODAY} {...p} />, open: () => userEvent.click(within(document.querySelector<HTMLElement>('[data-slot="today-visit-row"]')!).getByRole("button")) },
-  { name: "Schedule", key: "visit", at: "/admin/schedule", node: (p: object) => <ScheduleScreen data={snap} today={TODAY} {...p} />, open: () => userEvent.click(within(document.querySelector('[data-slot="week-grid-cell"][data-person="person_truck-1"][data-day="2026-11-12"]')!).getByRole("button", { name: /^Percy/ })) },
+  { name: "Schedule", key: "visit", at: "/admin/schedule", node: (p: object) => <ScheduleScreen data={snap} today={TODAY} {...p} />, open: () => userEvent.click(within(document.querySelector('[data-slot="week-grid-cell"][data-person="person_truck-1"][data-day="2026-11-12"]')!).getByRole("button", { name: /Percy/ })) },
   { name: "Jobs", key: "job", at: "/admin/jobs", node: (p: object) => <JobsScreen data={jobsData} today={JOBS_TODAY} {...p} />, open: () => userEvent.click(screen.getAllByRole("button", { name: "Ben Cole" })[0]!) },
   { name: "Customers", key: "customer", at: "/admin/customers", node: (p: object) => <CustomersScreen data={jobsData} today={JOBS_TODAY} {...p} />, open: () => userEvent.click(screen.getAllByRole("button", { name: "Ben Cole" })[0]!) },
 ] as const

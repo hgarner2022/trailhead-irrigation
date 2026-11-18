@@ -197,13 +197,13 @@ export function notClosedAttention(visits: Visit[], today: string, timeZone: str
   return { kind: "not-closed", message: `${n} ${n === 1 ? "job" : "jobs"} from the last two weeks ${n === 1 ? "is" : "are"} not marked done yet.`, since: open[0].startAt! }
 }
 
-/** The second row of tiles on Reports: visits needing a day, charges that did not go through, visits not closed and pending passes, all counted by `jobCounts`. */
+/** The second row of tiles on Reports: jobs needing a day, charges that did not go through, jobs not marked done and pending passes, all counted by `jobCounts`. */
 export function jobTiles(data: Pick<AdminData, "passes" | "visits">, today: string): StatTileProps[] {
   const c = jobCounts(data, dayOf(today, TIME_ZONE), TIME_ZONE)
   return [
-    { label: "Visits needing a day", value: String(c.needsDay), href: "/admin/schedule" },
+    { label: "Jobs needing a day", value: String(c.needsDay), href: "/admin/schedule" },
     { label: "Charges that didn't go through", value: String(c.chargeFailed), href: "/admin/schedule?view=list&money=failed" },
-    { label: "Visits not closed", value: String(c.notClosed), href: "/admin/schedule" },
+    { label: "Jobs not marked done", value: String(c.notClosed), href: "/admin/schedule" },
     { label: "Pending passes, expire after an hour", value: String(c.pendingPasses), href: "/admin/customers" },
   ]
 }

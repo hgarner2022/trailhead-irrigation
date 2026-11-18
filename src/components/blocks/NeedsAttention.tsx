@@ -3,6 +3,8 @@ import { BadgeCheck, Ban, Banknote, CalendarCheck, CalendarX, CircleDashed, Cloc
 import { cn } from "@/lib/utils"
 import type { Attention } from "@/lib/admin/types"
 import { jobUrl } from "@/lib/admin/links"
+import type { RecordKey } from "@/lib/admin/record-url"
+import { RecordLink } from "@/app/(admin)/admin/_screens/RecordHost"
 import { EmptyState } from "./EmptyState"
 import { AttentionAction, type ActionResult } from "./needs-attention-action"
 import { relativeTime } from "./needs-attention-time"
@@ -11,8 +13,8 @@ import { relativeTime } from "./needs-attention-time"
 // did not finish, a card about to expire, jobs from earlier days nobody has marked done, a pass canceled. One row per item with an icon coloured by how urgent the kind
 // is, the message, how long it has been waiting, and ONE action (Retry, Send
 // card link, Reply, ...) so the list can be cleared like an inbox (the
-// review, 2026-11-12). A row with a pass links to that pass in Passes and a row with a
-// visit to that visit in Schedule; the action is `onAction`, a server action in the app, and logs in the catalog. Server
+// review, 2026-11-12). A row about a job, a customer or one stop opens that record in the one panel over the screen (the address updated, Back returns); with no
+// panel to open it in (a bare screen, a new tab) it is a link to the record's page. The action is `onAction`, a server action in the app, and logs in the catalog. Server
 // component; the action button carries its own client boundary.
 
 export interface NeedsAttentionProps {
@@ -46,16 +48,24 @@ const KINDS: Record<Attention["kind"], { icon: LucideIcon; tone: string; name: s
   "pass-cancelled": { icon: Ban, tone: "bg-warning/10 text-warning", name: "Pass canceled" },
   "customer-changed": { icon: UserRound, tone: "bg-warning/10 text-warning", name: "Customer change" },
   scheduled: { icon: CalendarCheck, tone: "bg-success/10 text-success", name: "Schedule run" },
-  unplaced: { icon: CalendarX, tone: "bg-warning/10 text-warning", name: "Unscheduled" },
+  unplaced: { icon: CalendarX, tone: "bg-warning/10 text-warning", name: "Needs a day" },
 }
 
-/** A visit opens in Visits, a pass or an overdue invoice its job on Jobs (the invoice is on the job), a schedule line in Schedule; the rest have no page of their own. */
+/** The record a row is about, and the address of its own page: the row opens that record in the one panel over Home (docs/plans/2026-11-18-admin-holistic-design.md, 5.1) and a link opened in a new tab goes to the page. */
+export function attentionRecord(item: Attention): { kind: RecordKey; id: string; href: string } | undefined {
+  if (item.kind === "overdue" && item.jobId) return { kind: "job", id: item.jobId, href: jobUrl(item.jobId) }
+  if ((item.kind === "overdue" || item.kind === "charge-failed") && !item.passId && !item.visitId && item.customerId) return { kind: "customer", id: item.customerId, href: `/admin/customers?customer=${encodeURIComponent(item.customerId)}` }
+  if (item.visitId) return { kind: "visit", id: item.visitId, href: `/admin/schedule?visit=${encodeURIComponent(item.visitId)}` }
+  // A pass is a job: its row opens that job (HomeScreen puts the job on a row that names only a pass).
+  if (item.passId && item.jobId) return { kind: "job", id: item.jobId, href: jobUrl(item.jobId) }
+  return undefined
+}
+
+/** The page a row goes to: its record's, else the Jobs list for a pass with no job, else the Schedule for the kinds that live there; the rest have no page of their own. */
 export function attentionHref(item: Attention): string | undefined {
-  if (item.kind === "overdue" && item.jobId) return jobUrl(item.jobId)
-  if ((item.kind === "overdue" || item.kind === "charge-failed") && !item.passId && !item.visitId && item.customerId) return `/admin/customers?customer=${encodeURIComponent(item.customerId)}`
-  if (item.visitId) return `/admin/schedule?visit=${encodeURIComponent(item.visitId)}`
-  // A pass is a job: its row opens that job on Jobs (HomeScreen puts the job on a row that names only a pass).
-  if (item.passId) return item.jobId ? jobUrl(item.jobId) : "/admin/jobs"
+  const record = attentionRecord(item)
+  if (record) return record.href
+  if (item.passId) return "/admin/jobs"
   if (item.kind === "unplaced" || item.kind === "not-closed" || item.kind === "scheduled") return "/admin/schedule"
   return undefined
 }
@@ -79,14 +89,17 @@ function Row({ item, now, onAction, onDismiss, readOnly }: { item: Attention; no
     </>
   )
   const href = attentionHref(item)
+  const record = attentionRecord(item)
   const layout = "flex min-w-0 flex-1 items-start gap-3"
+  const link = cn(layout, "-mx-2 min-h-11 rounded-lg px-2 py-1 hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50")
   return (
     <li data-kind={item.kind} className="flex flex-col gap-2 py-3 has-[[data-dismissed]]:hidden sm:flex-row sm:items-center sm:gap-3">
-      {href ? (
-        <Link
-          href={href}
-          className={cn(layout, "-mx-2 rounded-lg px-2 py-1 hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50")}
-        >
+      {record ? (
+        <RecordLink kind={record.kind} id={record.id} href={record.href} className={link}>
+          {body}
+        </RecordLink>
+      ) : href ? (
+        <Link href={href} className={link}>
           {body}
         </Link>
       ) : (

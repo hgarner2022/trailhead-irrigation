@@ -22,11 +22,7 @@ export const NEW_BLOCKS = ["RecordPanel", "RecordFooter", "ConfirmDialog", "Spli
  * entry names the step of docs/plans/2026-11-18-admin-holistic-design.md, section 12, that pays it off. Delete the entry when it does.
  */
 export const ALLOW = {
-  // visit: the left column loses Visits (step 2), Home and the Schedule take plain words (step 3), the grids get their final columns (step 9)
-  "_screens/HomeScreen.tsx": { "visit-word": "Nov 18 2026, step 3: Home reads Today in plain words" },
-  "_screens/home-model.ts": { "visit-word": "Nov 18 2026, step 3: Home reads Today in plain words" },
-  "_screens/TodayVisits.tsx": { "visit-word": "Nov 18 2026, step 3: Home reads Today in plain words" },
-  "_screens/schedule-model.ts": { "visit-word": "Nov 18 2026, step 3: the Schedule says jobs and days" },
+  // visit: the left column lost Visits (step 2), Home and the Schedule took plain words (step 3), the grids get their final columns (step 9)
   "_screens/RevenueScreen.tsx": { "visit-word": "Nov 18 2026, step 9: Reports reads every job" },
   "_screens/customers-columns.tsx": { "visit-word": "Nov 18 2026, step 9: the final column sets", columns: "Nov 18 2026, step 9: the final column sets (ten today, eight then)" },
   "_screens/jobs-columns.tsx": { "visit-word": "Nov 18 2026, step 9: the final column sets", columns: "Nov 18 2026, step 9: the final column sets (nine today, eight then)" },
