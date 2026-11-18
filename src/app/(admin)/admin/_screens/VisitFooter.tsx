@@ -59,7 +59,7 @@ function MarkDoneDialog({ visit, today, visitDay, open, onOpenChange, onDone, ac
             Mark done
           </Button>
           <Button type="button" variant="outline" className="min-h-11" onClick={() => onOpenChange(false)}>
-            Never mind
+            Cancel
           </Button>
         </div>
       </DialogContent>

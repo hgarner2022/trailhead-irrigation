@@ -105,7 +105,7 @@ export function CollectPayment({ plan, summary, firstName, onCharge, onRecord, o
       <fieldset className="flex flex-col gap-2" disabled={busy}>
         <legend className="mb-1 text-sm font-medium text-foreground">How is this paid?</legend>
         {shown.map((o) => (
-          <Choice key={o.value} option={o} checked={picked.value === o.value} disabled={busy} onPick={() => setChoice(o.value)} />
+          <Choice key={o.value} option={o} checked={picked.value === o.value} disabled={busy || Boolean(o.disabled)} onPick={() => setChoice(o.value)} />
         ))}
         <label className={RADIO}>
           <input type="radio" name="pay-choice" disabled aria-label="Tap to pay" className="mt-0.5 size-4 shrink-0" />

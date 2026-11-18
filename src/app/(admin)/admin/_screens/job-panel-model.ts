@@ -96,6 +96,7 @@ export function jobCollect(facts: JobFacts, data: Pick<AdminData, "clients" | "s
     isPass: Boolean(pass),
     invoiceOpen: Boolean(bill.invoice),
     canInvoice: bill.canSend,
+    invoiceAhead: !bill.canSend && !bill.invoice && visits.some((v) => v.status === "scheduled" || v.status === "unscheduled"),
     declined: row.money === "failed",
     charging: facts.payments.some((p) => p.status === "pending"),
     dueDays: data.settings.billing?.dueDays,

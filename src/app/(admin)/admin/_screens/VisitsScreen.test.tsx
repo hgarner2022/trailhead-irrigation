@@ -228,7 +228,7 @@ describe("VisitsScreen", () => {
     expect(ask.getByRole("heading", { name: "Mark done today?" })).toBeInTheDocument()
     expect(ask.getByText("This visit is scheduled for Friday. Mark it done today?")).toBeInTheDocument()
     expect(a.markDone).not.toHaveBeenCalled()
-    await userEvent.click(ask.getByRole("button", { name: "Never mind" }))
+    await userEvent.click(ask.getByRole("button", { name: "Cancel" }))
     expect(a.markDone).not.toHaveBeenCalled()
   })
 
@@ -341,6 +341,46 @@ describe("VisitsScreen", () => {
   it("offers no invoice when the job cannot be invoiced yet", async () => {
     await openUnpaid(actions(), { ...data, visits: [doneUnpaid()], jobs: [] })
     expect(collect().queryByLabelText("Send an invoice", { exact: false })).toBeNull()
+  })
+
+  it("a tech who may collect sees Mark done and Collect, with no Refund, Move, Edit or Cancel", async () => {
+    const a = actions()
+    const paid = doneUnpaid({ payments: [{ id: "pay-u", visitId: "u", amount: 145, method: "check", status: "succeeded", paidOn: "2026-11-10" }] })
+    const { unmount } = render(
+      <UndoToastProvider>
+        <VisitsScreen data={{ ...data, visits: [paid], jobs: [{ ...unpaidJob, payments: paid.payments, money: { paid: 145, total: 145, owed: 0, words: "Paid" } }] }} today={TODAY} actions={a} readOnly canCollect defaultVisitId="u" />
+      </UndoToastProvider>,
+    )
+    expect(within(screen.getByRole("dialog")).queryByRole("button", { name: /^Refund/ })).toBeNull()
+    unmount()
+    render(
+      <UndoToastProvider>
+        <VisitsScreen data={{ ...data, visits: [doneUnpaid()], jobs: [unpaidJob] }} today={TODAY} actions={a} readOnly canCollect defaultVisitId="u" />
+      </UndoToastProvider>,
+    )
+    const panel = within(screen.getByRole("dialog"))
+    expect(panel.getByRole("button", { name: "Collect $145" })).toBeInTheDocument()
+    for (const name of ["Move", "Mark not done", "Cancel this visit", "Send text"]) expect(panel.queryByRole("button", { name })).toBeNull()
+    await userEvent.click(panel.getByRole("button", { name: "Collect $145" }))
+    await userEvent.click(within(screen.getAllByRole("dialog").at(-1)!).getByRole("button", { name: "Record $145 paid" }))
+    expect(a.recordPayment).toHaveBeenCalledWith("u", { method: "check" })
+  })
+
+  it("a tech with no collect right sees no footer button at all", () => {
+    render(
+      <UndoToastProvider>
+        <VisitsScreen data={{ ...data, visits: [doneUnpaid()], jobs: [unpaidJob] }} today={TODAY} actions={actions()} readOnly defaultVisitId="u" />
+      </UndoToastProvider>,
+    )
+    expect(within(screen.getByRole("dialog")).queryByRole("button", { name: /^Collect/ })).toBeNull()
+  })
+
+  it("keeps Send an invoice visible but greyed, with the reason, while other visits of the job are ahead", async () => {
+    const later = visit({ id: "u2", jobId: "ju", scheduledOn: "2026-11-30", startAt: "2026-11-30T15:00:00Z" })
+    await openUnpaid(actions(), { ...data, visits: [doneUnpaid(), later], jobs: [{ ...unpaidJob, visitIds: ["u", "u2"] }] })
+    const invoice = collect().getByRole("radio", { name: /^Send an invoice/ })
+    expect(invoice).toBeDisabled()
+    expect(collect().getByText("Other visits of this job are ahead. Send the invoice after the last one.")).toBeInTheDocument()
   })
 
   it("a paid check can be taken back by a Refund that asks first; nothing is deleted", async () => {

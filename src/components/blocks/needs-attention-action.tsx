@@ -37,7 +37,7 @@ export interface AttentionActionProps {
   onDismiss?: (item: Attention, undo: boolean) => Promise<ActionResult | void>
 }
 
-/** The row's button: a Charge not pressed row names the amount it will charge; a failed card on a job with no pass can only be opened. */
+/** The row's button: a Card not charged row names the amount it will charge; a failed card on a job with no pass can only be opened. */
 export const attentionLabel = (item: Attention): string => (item.kind === "charge-not-pressed" && item.amount ? `Charge $${item.amount.toLocaleString("en-US")}` : item.kind === "charge-failed" && !item.passId ? "Open" : ACTION_LABELS[item.kind])
 
 export function AttentionAction({ item, onAction, onDismiss }: AttentionActionProps) {

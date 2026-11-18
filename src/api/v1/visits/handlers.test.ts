@@ -159,8 +159,8 @@ describe("visits.move", () => {
 })
 
 describe("visits.markClosed and visits.stretch", () => {
-  it("closes a scheduled visit for an admin only", async () => {
-    await expect(callApi(ctxFor(db, writeKey), visitsMarkClosed, { id: "p3-turn-on" })).rejects.toMatchObject({ code: "forbidden" })
+  it("closes a scheduled visit for the collect scope and not for a read key", async () => {
+    await expect(callApi(ctxFor(db, readKey), visitsMarkClosed, { id: "p3-turn-on" })).rejects.toMatchObject({ code: "forbidden" })
     const out = await callApi(ctxFor(db, adminKey, "2027-05-07T20:00:00Z"), visitsMarkClosed, { id: "p3-turn-on" })
     expect(out).toMatchObject({ status: "completed", completedOn: "2027-05-07" })
     await expect(callApi(ctxFor(db, adminKey), visitsMarkClosed, { id: "p11-blowout" })).rejects.toMatchObject({ code: "unprocessable" })

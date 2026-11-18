@@ -38,7 +38,7 @@ export const paymentsRecord = defineHandler({
   name: "payments.record",
   method: "POST",
   path: "/payments",
-  scope: "write",
+  scope: "collect",
   status: 201,
   summary: "Record money the office was handed (check, Venmo or cash) on a job, with the visit it covers when there is one. A visit with no price yet takes the amount as its price. The receipt, which says how it was paid, is queued.",
   input: z.object({

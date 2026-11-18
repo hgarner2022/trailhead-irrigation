@@ -106,6 +106,16 @@ export const PanelOwedCollectCardPhone: Story = {
   },
 }
 
+/** A tech may collect: the footer has Mark done and Collect but no Refund, and the body none of Move, Edit or Cancel. */
+export const PanelOwedTechCollects: Story = {
+  args: { defaultVisitId: "office-owed", readOnly: true, canCollect: true },
+  globals: wide,
+  play: async () => {
+    await expect(await body.findByRole("button", { name: /^Collect \$/ })).toBeInTheDocument()
+    await expect(body.queryByRole("button", { name: "Move" })).not.toBeInTheDocument()
+  },
+}
+
 /** Mark done on a visit whose day is ahead asks first: "This visit is scheduled for Friday. Mark it done today?" Nothing is charged. */
 export const PanelMarkDoneAhead: Story = {
   args: { defaultVisitId: "office-scheduled" },

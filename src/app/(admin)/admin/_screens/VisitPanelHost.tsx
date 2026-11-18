@@ -24,6 +24,8 @@ export interface VisitPanelHostProps {
   today: string
   /** a tech reads the visit and changes nothing */
   readOnly?: boolean
+  /** a tech who may Mark done and take the money (the visit panel's footer), though the rest is read-only */
+  canCollect?: boolean
   actions?: VisitActions
   /** the visit open on first render: `?visit=` on the Visits page, or the catalog */
   defaultVisitId?: string
@@ -34,7 +36,7 @@ export interface VisitPanelHostProps {
   children: ReactNode
 }
 
-export function VisitPanelHost({ data, today, readOnly, actions, defaultVisitId, onShow, closeRef, children }: VisitPanelHostProps) {
+export function VisitPanelHost({ data, today, readOnly, canCollect, actions, defaultVisitId, onShow, closeRef, children }: VisitPanelHostProps) {
   const [visitId, setVisitId] = useState<string | undefined>(defaultVisitId)
   const [open, setOpen] = useState(() => Boolean(defaultVisitId && data.visits.some((v) => v.id === defaultVisitId)))
   const show = useCallback<Open>(
@@ -55,7 +57,7 @@ export function VisitPanelHost({ data, today, readOnly, actions, defaultVisitId,
   const value = useMemo(() => show, [show])
   return (
     <HostContext.Provider value={value}>
-      <SidePanelLayout panel={<VisitPanel data={data} today={today} visitId={visitId} open={open} onOpenChange={setOpen} onOpenVisit={show} readOnly={readOnly} actions={actions} />}>{children}</SidePanelLayout>
+      <SidePanelLayout panel={<VisitPanel data={data} today={today} visitId={visitId} open={open} onOpenChange={setOpen} onOpenVisit={show} readOnly={readOnly} canCollect={canCollect} actions={actions} />}>{children}</SidePanelLayout>
     </HostContext.Provider>
   )
 }

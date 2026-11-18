@@ -31,8 +31,9 @@ export interface VisitFooterPlan {
 /** The unpaid whole dollars of a visit: its price less what its own rows paid. */
 export const unpaidOf = (facts: Pick<VisitFacts, "visit" | "price">): number => Math.max(0, facts.price - paidTotal(facts.visit.payments ?? []))
 
-/** What the footer shows for this visit. A tech never sees it (`canAct` false). */
-export function visitFooter(facts: VisitFacts, canAct: boolean, dueDays = 14): VisitFooterPlan {
+/** What the footer shows for this visit. `all` is an owner, admin or manager; `collect` is a tech, who may Mark done, undo it and take the money but not refund; `none` sees nothing. */
+export function visitFooter(facts: VisitFacts, access: "all" | "collect" | "none", dueDays = 14): VisitFooterPlan {
+  const canAct = access !== "none"
   const { visit, states, client, pass, bill } = facts
   const none: VisitFooterPlan = { primary: null, unpaid: 0, canUndo: false }
   if (!canAct || states.work === "cancelled") return none
@@ -40,7 +41,8 @@ export function visitFooter(facts: VisitFacts, canAct: boolean, dueDays = 14): V
   if (states.work !== "done") return none
   const payments = visit.payments ?? []
   const jobPayments = facts.job?.payments ?? payments
-  const refund = refundable(payments)
+  // Refund is for the people who may change money after the fact (owner, admin, manager), never for a tech who collects.
+  const refund = access === "all" ? refundable(payments) : undefined
   const owes = states.money === "owed" || states.money === "failed" || states.money === "bill-sent"
   const base: VisitFooterPlan = { ...none, canUndo: jobPayments.length === 0, ...(refund ? { refund: { paymentId: refund.payment.id, left: refund.left, method: refund.payment.method } } : {}) }
   if (!owes) return base
@@ -52,6 +54,7 @@ export function visitFooter(facts: VisitFacts, canAct: boolean, dueDays = 14): V
     isPass: Boolean(visit.passId),
     invoiceOpen: Boolean(bill.invoice),
     canInvoice: bill.canSend,
+    invoiceAhead: !bill.canSend && !bill.invoice && facts.siblings.some((v) => v.id !== visit.id && (v.status === "scheduled" || v.status === "unscheduled")),
     // The visit's own newest card attempt, never the customer's mark: another visit's failed card does not decline this one.
     declined: Boolean(visit.chargeFailed) || payments[payments.length - 1]?.status === "failed",
     // A card payment that was refunded (or part-paid visit) is not charged again from here: the other ways are offered.

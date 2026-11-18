@@ -146,7 +146,7 @@ export async function attentionAction(item: Attention): Promise<ActionOutcome | 
     const done = await act((ctx) => nothing(callApi(ctx, visitsMarkClosed, { id: item.visitId! })))
     return done.ok ? { ok: true, data: undefined, message: "Marked done." } : done
   }
-  // Charge not pressed: the row's button is the press. It charges the card on file for what is unpaid on that done visit, once; a decline says so and the customer already has the card link.
+  // Card not charged: the row's button is the press. It charges the card on file for what is unpaid on that done visit, once; a decline says so and the customer already has the card link.
   if (item.kind === "charge-not-pressed" && item.visitId) {
     const charged = await chargeCard(item.visitId)
     return charged.ok ? { ok: true, data: undefined, message: "Charged. Receipt emailed." } : charged

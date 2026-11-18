@@ -4,13 +4,14 @@ import { eq } from "drizzle-orm"
 import * as s from "@/db/schema"
 import type { TestDb } from "@/db/test-db"
 import { callApi } from "../../core/call"
-import { adminKey, apiDb, ctxFor, eventsOf, readKey, writeKey } from "../../test-helpers"
+import { adminKey, apiDb, ctxFor, eventsOf, readKey, tech, writeKey } from "../../test-helpers"
 import { visitsMarkClosed } from "../visits/money"
 import { visitsCreate } from "../visits/office"
 import { paymentsChargeCard } from "./charge"
 import { paymentsRecord, paymentsRefund } from "./handlers"
 import { invoicesSend } from "../invoices/handlers"
 import { passCharge } from "@/lib/queue/handlers"
+import { visitsCancel, visitsUpdate } from "../visits/office"
 import { declined, stubStripe } from "@/lib/stripe/test-stripe"
 
 const { getStripe } = vi.hoisted(() => ({ getStripe: vi.fn() }))
@@ -31,7 +32,7 @@ afterAll(() => db.close())
 
 const as = (p = adminKey) => ctxFor(db, p, "2027-05-07T20:00:00Z")
 // Every visit gets a day of its own (a person is full of repairs after a few on one day), weekdays only.
-const DAYS = ["10", "11", "12", "13", "14", "17", "18", "19", "20", "21", "24", "25", "26", "27", "28"].map((d) => `2027-05-${d}`)
+const DAYS = [...["10", "11", "12", "13", "14", "17", "18", "19", "20", "21", "24", "25", "26", "27", "28"].map((d) => `2027-05-${d}`), ...["01", "02", "03", "04", "07", "08", "09", "10", "11", "14", "15", "16", "17", "18", "21", "22", "23", "24", "25"].map((d) => `2027-06-${d}`)]
 let nextDay = 0
 const day = () => DAYS[nextDay++]!
 const doneRepair = async (price = 145) => {
@@ -98,9 +99,8 @@ describe("payments.chargeCard", () => {
     expect(stripe.calls.paymentIntentsCreate).not.toHaveBeenCalled()
   })
 
-  it("needs the admin scope: a key that may only write or read cannot charge a card", async () => {
+  it("needs the collect scope: a read-only key cannot charge a card", async () => {
     const v = await doneRepair()
-    await expect(callApi(as(writeKey), paymentsChargeCard, { visitId: v.id })).rejects.toMatchObject({ code: "forbidden" })
     await expect(callApi(as(readKey), paymentsChargeCard, { visitId: v.id })).rejects.toMatchObject({ code: "forbidden" })
     expect(await rows(v.id)).toEqual([])
   })
@@ -172,6 +172,30 @@ describe("what the review found", () => {
     expect(resume).toMatchObject({ kind: "pass-charge", status: "pending", payload: { visitId: v.id, retry: true } })
     expect(resume!.runAfter.toISOString()).toBe("2027-05-07T20:05:00.000Z")
     expect((await rows(v.id)).map((r) => r.status)).toEqual(["pending"])
+  })
+})
+
+describe("a tech collects and changes nothing else", () => {
+  const asTech = () => ctxFor(db, tech, "2027-05-07T20:00:00Z")
+  it("may Mark done, undo it, charge the card, record a payment and send an invoice", async () => {
+    const a = await callApi(as(writeKey), visitsCreate, { customerId: "c100", kind: "repair", scheduledOn: day(), price: 145 })
+    expect(await callApi(asTech(), visitsMarkClosed, { id: a.id })).toMatchObject({ status: "completed" })
+    expect(await callApi(asTech(), visitsMarkClosed, { id: a.id, undo: true })).toMatchObject({ status: "scheduled" })
+    await callApi(asTech(), visitsMarkClosed, { id: a.id })
+    expect(await callApi(asTech(), paymentsChargeCard, { visitId: a.id })).toMatchObject({ status: "succeeded", method: "card_on_file" })
+    const b = await doneRepair()
+    expect(await callApi(asTech(), paymentsRecord, { jobId: b.jobId, visitId: b.id, amount: 145, method: "check" })).toMatchObject({ amount: 145, method: "check", reference: null })
+    const c = await doneRepair()
+    expect(await callApi(asTech(), invoicesSend, { jobId: c.jobId })).toMatchObject({ total: 145 })
+  })
+
+  it("may not refund, cancel, edit a visit or change a price", async () => {
+    const v = await doneRepair()
+    const paid = await callApi(as(writeKey), paymentsRecord, { jobId: v.jobId, visitId: v.id, amount: 145, method: "cash" })
+    await expect(callApi(asTech(), paymentsRefund, { paymentId: paid.id })).rejects.toMatchObject({ code: "forbidden" })
+    const open = await callApi(as(writeKey), visitsCreate, { customerId: "c100", kind: "repair", scheduledOn: day(), price: 145 })
+    await expect(callApi(asTech(), visitsCancel, { id: open.id })).rejects.toMatchObject({ code: "forbidden" })
+    await expect(callApi(asTech(), visitsUpdate, { id: open.id, durationMinutes: 30 })).rejects.toMatchObject({ code: "forbidden" })
   })
 })
 

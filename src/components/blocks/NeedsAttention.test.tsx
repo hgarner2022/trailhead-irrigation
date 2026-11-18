@@ -66,11 +66,11 @@ describe("NeedsAttention", () => {
     expect(document.body.textContent).not.toMatch(/Unpaid|not paid/)
   })
 
-  it("names a done visit nobody pressed Charge for, and its button names the amount it charges", async () => {
+  it("names a done visit whose card was not charged, and its button names the amount it charges", async () => {
     const onAction = vi.fn().mockResolvedValue({ ok: true })
-    const row: Attention = { kind: "charge-not-pressed", key: "v1", jobId: "job-1", visitId: "v1", amount: 145, message: "Charge not pressed for Andrea's repair, $145 unpaid", since: "2026-11-17T19:00:00Z" }
+    const row: Attention = { kind: "charge-not-pressed", key: "v1", jobId: "job-1", visitId: "v1", amount: 145, message: "Card not charged for Andrea's repair, $145 unpaid", since: "2026-11-17T19:00:00Z" }
     render(<NeedsAttention items={[row]} now={now} onAction={onAction} />)
-    expect(rows()[0]!.querySelector(".sr-only")?.textContent).toBe("Charge not pressed: ")
+    expect(rows()[0]!.querySelector(".sr-only")?.textContent).toBe("Card not charged: ")
     expect(screen.getByRole("link").getAttribute("href")).toBe("/admin/visits?visit=v1")
     const button = document.querySelector('[data-slot="attention-action"]') as HTMLElement
     expect(button.textContent).toBe("Charge $145")
@@ -112,8 +112,10 @@ describe("NeedsAttention", () => {
   it("shows the empty state when nothing needs attention", () => {
     render(<NeedsAttention items={[]} now={now} />)
     expect(rows()).toHaveLength(0)
-    expect(document.querySelector('[data-slot="empty-state"]')).toHaveTextContent("Nothing needs you right now")
-    expect(screen.getByText("Failed charges, unscheduled visits and visits nobody marked done show up here.")).toBeInTheDocument()
+    expect(document.querySelector('[data-slot="empty-state"]')).toHaveTextContent("Nothing needs you.")
+    expect(document.querySelector('[data-slot="empty-state"]')).toHaveTextContent("Failed cards, jobs with no day and work nobody marked done show up here.")
+    expect(document.querySelector('[data-slot="empty-state"]')?.textContent).not.toMatch(/visit/i)
+    expect(screen.getByText("Failed cards, jobs with no day and work nobody marked done show up here.")).toBeInTheDocument()
   })
 
   it("shows visits not closed with the dashed circle, a muted icon and a link to the Schedule", () => {

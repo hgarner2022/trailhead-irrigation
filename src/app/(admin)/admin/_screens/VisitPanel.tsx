@@ -171,15 +171,17 @@ export interface VisitPanelProps {
   onOpenChange: (open: boolean) => void
   onOpenVisit: (id: string) => void
   readOnly?: boolean
+  /** a tech who may Mark done and take the money, though the rest of the panel is read-only */
+  canCollect?: boolean
   actions?: VisitActions
 }
 
-export function VisitPanel({ data, today, visitId, open, onOpenChange, onOpenVisit, readOnly = false, actions }: VisitPanelProps) {
+export function VisitPanel({ data, today, visitId, open, onOpenChange, onOpenVisit, readOnly = false, canCollect = false, actions }: VisitPanelProps) {
   const facts = visitId ? visitFacts(data, visitId, today) : undefined
   if (!facts) return null
   const { visit, states } = facts
   const day = dayOfVisit(visit)
-  const footer = visitFooter(facts, !readOnly, data.settings.billing?.dueDays)
+  const footer = visitFooter(facts, !readOnly ? "all" : canCollect ? "collect" : "none", data.settings.billing?.dueDays)
   const hasFooter = Boolean(footer.primary || footer.canUndo || footer.refund)
   return (
     <SidePanel

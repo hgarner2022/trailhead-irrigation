@@ -35,7 +35,7 @@ export interface NeedsAttentionProps {
 const KINDS: Record<Attention["kind"], { icon: LucideIcon; tone: string; name: string }> = {
   "new-pass": { icon: BadgeCheck, tone: "bg-success/10 text-success", name: "New pass" },
   "charge-failed": { icon: CreditCard, tone: "bg-warning/10 text-warning", name: "Card failed" },
-  "charge-not-pressed": { icon: CreditCard, tone: "bg-warning/10 text-warning", name: "Charge not pressed" },
+  "charge-not-pressed": { icon: CreditCard, tone: "bg-warning/10 text-warning", name: "Card not charged" },
   "no-card": { icon: CreditCard, tone: "bg-warning/10 text-warning", name: "No card" },
   "jobs-failed": { icon: CalendarX, tone: "bg-warning/10 text-warning", name: "Task needs a retry" },
   owed: { icon: Banknote, tone: "bg-warning/10 text-warning", name: "Done, unpaid" },
@@ -98,7 +98,7 @@ function Row({ item, now, onAction, onDismiss, readOnly }: { item: Attention; no
 
 export function NeedsAttention({ items, now, onAction, onDismiss, readOnly, className }: NeedsAttentionProps) {
   if (items.length === 0) {
-    return <EmptyState className={className} title="Nothing needs you right now" line="Failed charges, unscheduled visits and visits nobody marked done show up here." />
+    return <EmptyState className={className} title="Nothing needs you." line="Failed cards, jobs with no day and work nobody marked done show up here." />
   }
   const at = now ?? new Date().toISOString()
   return (

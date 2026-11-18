@@ -294,7 +294,7 @@ describe("the money words, read from the payment rows", () => {
 })
 
 // Done charges nothing (docs/plans/2026-11-18-done-and-paid-design.md): what Home shows for a done visit nobody has been paid for depends on whether the customer has a card.
-describe("Home after Done: Done, unpaid, and Charge not pressed", () => {
+describe("Home after Done: Done, unpaid, and Card not charged", () => {
   const CARD = { stripePaymentMethodId: "pm_home", stripeCustomerId: "cus_home", cardBrand: "visa", cardLast4: "4242", cardExpires: "2030-08", cardFailedAt: null }
   const NO_CARD = { stripePaymentMethodId: null, stripeCustomerId: null, cardBrand: null, cardLast4: null, cardExpires: null, cardFailedAt: null }
   const doneOn = async (day: string, scheduledOn: string) => {
@@ -310,18 +310,18 @@ describe("Home after Done: Done, unpaid, and Charge not pressed", () => {
     expect(await rowsFor(made.id)).toEqual([expect.objectContaining({ kind: "owed", visitId: made.id, message: expect.stringMatching(/repair is done, \$145 unpaid$/) })])
   })
 
-  it("gives a customer with a card no row on the day it is done, and a Charge not pressed row the next morning with the amount its button charges", async () => {
+  it("gives a customer with a card no row on the day it is done, and a Card not charged row the next morning with the amount its button charges", async () => {
     await db.update(s.customer).set(CARD).where(eq(s.customer.id, "c100"))
     const today = await doneOn(TODAY, "2027-06-08")
     expect(await rowsFor(today.id)).toEqual([])
     const yesterday = await doneOn("2027-04-19", "2027-06-09")
-    expect(await rowsFor(yesterday.id)).toEqual([expect.objectContaining({ kind: "charge-not-pressed", visitId: yesterday.id, jobId: yesterday.jobId, amount: 145, message: expect.stringMatching(/^Charge not pressed for Andrea's repair, \$145 unpaid$/) })])
+    expect(await rowsFor(yesterday.id)).toEqual([expect.objectContaining({ kind: "charge-not-pressed", visitId: yesterday.id, jobId: yesterday.jobId, amount: 145, message: expect.stringMatching(/^Card not charged for Andrea's repair, \$145 unpaid$/) })])
     // paid another way: the row is gone, and nothing was charged
     await callApi(ctxFor(db, writeKey, NOW), paymentsRecord, { jobId: yesterday.jobId, visitId: yesterday.id, amount: 145, method: "check" })
     expect(await rowsFor(yesterday.id)).toEqual([])
   })
 
-  it("has no Charge not pressed row for a visit whose charge failed (that is Card failed), or whose job has an invoice out", async () => {
+  it("has no Card not charged row for a visit whose charge failed (that is Card failed), or whose job has an invoice out", async () => {
     await db.update(s.customer).set(CARD).where(eq(s.customer.id, "c100"))
     const failed = await doneOn("2027-04-19", "2027-06-10")
     await db.insert(s.charge).values({ organizationId: ORG, jobId: failed.jobId, visitId: failed.id, attempt: 1, amount: 145, status: "failed", method: "card_on_file", failureMessage: "declined" })

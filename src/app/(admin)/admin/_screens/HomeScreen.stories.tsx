@@ -153,8 +153,8 @@ export const OwedRow: Story = {
   globals: { viewport: { value: "wide", isRotated: false } },
 }
 
-/** A customer with a card: the day after Done, "Charge not pressed" with the amount on its button. Nothing charges until it is pressed. */
-const notPressedRow: Attention = { kind: "charge-not-pressed", key: "v-np", jobId: "job-np", visitId: "v-np", amount: 145, message: "Charge not pressed for Andrea's repair, $145 unpaid", since: "2026-11-11T19:00:00Z" }
+/** A customer with a card: the day after Done, "Card not charged" with the amount on its button. Nothing charges until it is pressed. */
+const notPressedRow: Attention = { kind: "charge-not-pressed", key: "v-np", jobId: "job-np", visitId: "v-np", amount: 145, message: "Card not charged for Andrea's repair, $145 unpaid", since: "2026-11-11T19:00:00Z" }
 export const ChargeNotPressedRow: Story = {
   args: { data: { ...data, attention: [notPressedRow, ...data.attention] } },
   globals: { viewport: { value: "wide", isRotated: false } },

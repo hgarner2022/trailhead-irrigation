@@ -18,7 +18,7 @@ export const visitsMarkClosed = defineHandler({
   name: "visits.markClosed",
   method: "POST",
   path: "/visits/{id}/close",
-  scope: "admin",
+  scope: "collect",
   summary: "Mark a visit done, and nothing else: no charge, no payment row, no invoice, no message. How it is paid is a separate step, started by its own button: `payments.chargeCard` (the card on file), `payments.record` (check, Venmo or cash), `invoices.send` (a pay link), or nothing yet (it reads Unpaid). `undo: true` reverses a done visit that has no payment row on its job, and cancels the job's open unpaid invoice with it (its card form on Stripe is closed); once a payment row exists it is refused and the office refunds from the job.",
   input: z.object({ id: Id, completedOn: Day.optional().describe("Defaults to today."), undo: z.boolean().optional() }),
   output: VisitOut,

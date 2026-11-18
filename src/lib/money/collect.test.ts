@@ -49,6 +49,16 @@ describe("collectPlan", () => {
     expect(values(p.options)).toEqual(["check", "venmo", "cash", "invoice"])
   })
 
+  it("keeps Send an invoice in its place but greyed, with the reason, while other visits of the job are ahead", () => {
+    const p = collectPlan({ ...base, canInvoice: false, invoiceAhead: true })
+    expect(values(p.options)).toEqual(["check", "venmo", "cash", "invoice", "later"])
+    expect(p.options[3]).toMatchObject({ label: "Send an invoice", disabled: true, line: "Other visits of this job are ahead. Send the invoice after the last one." })
+    expect(p.initial).toBe("check")
+    // nothing greyed when it is simply not available (an open invoice, or no job)
+    expect(values(collectPlan({ ...base, canInvoice: false }).options)).not.toContain("invoice")
+    expect(values(collectPlan({ ...base, canInvoice: false, invoiceAhead: true, invoiceOpen: true }).options)).not.toContain("invoice")
+  })
+
   it("an open invoice leaves only the money in hand; no invoice offered twice", () => {
     expect(values(collectPlan({ ...base, card, invoiceOpen: true }).options)).toEqual(["check", "venmo", "cash"])
   })

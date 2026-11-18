@@ -23,7 +23,7 @@ export const paymentsChargeCard = defineHandler({
   name: "payments.chargeCard",
   method: "POST",
   path: "/payments/charge-card",
-  scope: "admin",
+  scope: "collect",
   summary:
     "Charge the customer's card on file for what is unpaid on a done visit (a Season Pass visit or a one-off), now, because a person pressed the button. Marking a visit done never charges. It writes one payment row: succeeded (the receipt is emailed) or failed (the customer is emailed the card update link at once, the charge is tried again when the card is fixed and once more three days on, then it stops). Refused when the visit is not done, the customer has no card Stripe holds, the visit is already paid or part paid, a charge is still going through, or an earlier attempt failed and the card has not been fixed.",
   input: z.object({ visitId: Id }),

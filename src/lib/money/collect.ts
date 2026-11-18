@@ -13,7 +13,13 @@ export interface PayOption {
   line: string
   /** the button's words, with the amount */
   button: string
+  /** greyed: it cannot be chosen yet, and `line` says why */
+  disabled?: boolean
 }
+
+/** What a greyed Send an invoice says while other visits of the job are ahead. */
+export const INVOICE_AHEAD = "Other visits of this job are ahead. Send the invoice after the last one."
+
 
 export interface CollectInput {
   /** whole dollars still unpaid; 0 for a visit nothing has priced yet */
@@ -26,6 +32,8 @@ export interface CollectInput {
   invoiceOpen: boolean
   /** the job can be invoiced now (done, owes money, nothing open) */
   canInvoice: boolean
+  /** not yet: other visits of the job are still ahead. The invoice choice shows greyed with the reason. */
+  invoiceAhead?: boolean
   /** the newest card attempt for this visit did not go through */
   declined: boolean
   /** a card charge is going through */
@@ -80,7 +88,9 @@ export function collectPlan(i: CollectInput): CollectPlan {
     : []
   const invoice: PayOption[] = i.canInvoice && !i.invoiceOpen && !needsAmount && !asAgreed
     ? [{ value: "invoice", label: "Send an invoice", line: `Texts a pay link, due in ${i.dueDays ?? 14} days`, button: "Send the invoice" }]
-    : []
+    : i.invoiceAhead && !i.invoiceOpen && !needsAmount && !asAgreed
+      ? [{ value: "invoice", label: "Send an invoice", line: INVOICE_AHEAD, button: "Send the invoice", disabled: true }]
+      : []
   const later: PayOption[] = !i.card && !i.invoiceOpen && !i.declined
     ? [{ value: "later", label: "Pay later", line: "Nothing is collected now; it reads Unpaid until a payment or an invoice", button: "Leave it unpaid" }]
     : []
