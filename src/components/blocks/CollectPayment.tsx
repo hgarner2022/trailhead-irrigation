@@ -108,7 +108,7 @@ export function CollectPayment({ plan, summary, firstName, onCharge, onRecord, o
           <Choice key={o.value} option={o} checked={picked.value === o.value} disabled={busy} onPick={() => setChoice(o.value)} />
         ))}
         <label className={RADIO}>
-          <input type="radio" name="pay-choice" disabled className="mt-0.5 size-4 shrink-0" />
+          <input type="radio" name="pay-choice" disabled aria-label="Tap to pay" className="mt-0.5 size-4 shrink-0" />
           <span className="flex min-w-0 flex-col">
             <span className="font-medium text-foreground">Tap to pay</span>
             <span className="text-navy-light">Not built yet</span>
