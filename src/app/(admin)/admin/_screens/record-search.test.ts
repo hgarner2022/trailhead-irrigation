@@ -48,6 +48,13 @@ describe("searchRecords", () => {
     expect(hit!.detail).toMatch(/\b(Mon|Tue|Wed|Thu|Fri|Sat|Sun)\b/)
   })
 
+  it("finds a job with no day yet by its customer, and says so", () => {
+    const undated = jobsData.visits.find((v) => !v.startAt && v.status !== "cancelled")
+    if (!undated) return
+    const hit = searchRecords(jobsData, JOBS_TODAY, undated.clientName.toLowerCase()).find((h) => h.kind === "visit" && h.id === undated.id)
+    expect(hit?.detail).toMatch(/no day yet$/)
+  })
+
   it("caps each kind so the list stays short", () => {
     const hits = searchRecords(jobsData, JOBS_TODAY, "er")
     for (const kind of ["customer", "job", "visit"] as const) expect(hits.filter((h) => h.kind === kind).length).toBeLessThanOrEqual(6)

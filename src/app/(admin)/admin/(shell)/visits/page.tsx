@@ -9,11 +9,12 @@ export const dynamic = "force-dynamic"
 
 export default async function VisitsRedirect({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   await requireAdmin()
+  const raw = await searchParams
   const params = new URLSearchParams({ view: "list" })
-  for (const [key, value] of Object.entries(await searchParams)) {
-    const one = Array.isArray(value) ? value[0] : value
-    if (one === undefined || key === "view") continue
-    params.set(key === "job" ? "forJob" : key, one)
+  // only what the old page took (the visit, its filters and a job to filter to), in a fixed order; an explicit `forJob` beats the old `job`
+  for (const [from, to] of [["visit", "visit"], ["money", "money"], ["work", "work"], ["job", "forJob"], ["forJob", "forJob"]] as const) {
+    const value = Array.isArray(raw[from]) ? raw[from][0] : raw[from]
+    if (value) params.set(to, value)
   }
   redirect(`/admin/schedule?${params.toString()}`)
 }

@@ -87,7 +87,7 @@ function useMedia(query: string): boolean {
 /** The quiet Search button in the top bar: the same box Cmd or Ctrl+K opens, for anyone without the keys. */
 function SearchButton({ onClick, className, iconOnly = false }: { onClick: () => void; className?: string; iconOnly?: boolean }) {
   return (
-    <Button type="button" variant="outline" size={iconOnly ? "icon" : "default"} aria-label="Search" onClick={onClick} className={cn("min-h-9 shrink-0 text-muted-foreground", className)}>
+    <Button type="button" variant="outline" size={iconOnly ? "icon" : "default"} aria-label="Search" onClick={onClick} className={cn("min-h-11 shrink-0 text-muted-foreground", iconOnly && "min-w-11", className)}>
       <Search className="size-4" aria-hidden />
       {!iconOnly && (
         <>
@@ -171,7 +171,7 @@ export function AdminShell({ current: initial, user, switcher, onSignOut, onSear
   // A screen that holds records opens the hit in its panel, in place; Reports and Settings have no panel, so they go to the record's own page.
   const openHit = useCallback(
     (hit: SearchHit) => {
-      if (document.querySelector("[data-record-host]")) openRecordInAddress({ key: hit.kind, id: hit.id })
+      if (document.querySelector("[data-record-host]")) openRecordInAddress({ key: hit.kind, id: hit.id }, { fresh: true })
       else router.push(hit.href)
     },
     [router],

@@ -3,7 +3,8 @@
  * returns to the last record (docs/plans/2026-11-18-admin-holistic-design.md, section 4). One panel is open at a time, so opening one
  * record takes the other two keys off. Other parameters (filters, `?week=`, `?view=`) are kept. Opening pushes an entry; Close goes back
  * to the page the record was opened from. The entry remembers how deep the chain of records is and which record it was opened from, in
- * `history.state` beside what Next keeps there. It writes through the History API, which Next's router follows, and tells the page's
+ * `history.state` beside what Next keeps there. It writes through the History API: it passes only its own keys, never Next's `__NA` marker, so Next's
+ * patched pushState and replaceState copy their internals in and tell the router the new address (a server action's refresh then keeps it). It tells the page's
  * panels with one event, so a screen reads the open record from here and never keeps a second copy. Does nothing on the server.
  */
 export type RecordKey = "customer" | "job" | "visit"
@@ -44,7 +45,7 @@ interface TrailheadState {
   trDepth?: number
   trFrom?: RecordRef
 }
-const stateOf = (): Record<string, unknown> & TrailheadState => (window.history.state && typeof window.history.state === "object" ? window.history.state : {})
+const stateOf = (): TrailheadState => (window.history.state && typeof window.history.state === "object" ? window.history.state : {})
 
 /** The record this one was opened from (the "‹ Andrea Reyes" crumb), when it was opened from another one. */
 export const fromOfAddress = (): RecordRef | undefined => (typeof window === "undefined" ? undefined : stateOf().trFrom)
@@ -59,8 +60,11 @@ function withRecord(ref: RecordRef | undefined): string {
   return `${url.pathname}${url.search}${url.hash}`
 }
 
-/** Puts the record in the address as a new entry, so Back returns to what was open before it. */
-export function openRecordInAddress(ref: RecordRef): void {
+/**
+ * Puts the record in the address as a new entry, so Back returns to what was open before it. `fresh` is for a record chosen from outside the open
+ * one (Cmd+K): it is not opened from the record on screen, so it has no crumb and Close takes the key off in place.
+ */
+export function openRecordInAddress(ref: RecordRef, { fresh = false }: { fresh?: boolean } = {}): void {
   if (typeof window === "undefined") return
   try {
     const next = withRecord(ref)
@@ -72,23 +76,34 @@ export function openRecordInAddress(ref: RecordRef): void {
     const state = stateOf()
     // Steps back to the page the first record was opened from; unknown for a record that arrived by a link, whose Close strips the key instead.
     const depth = current ? (state.trDepth !== undefined ? state.trDepth + 1 : undefined) : 1
-    window.history.pushState({ ...state, trDepth: depth, trFrom: current }, "", next)
+    window.history.pushState(fresh ? { trDepth: undefined, trFrom: undefined } : { trDepth: depth, trFrom: current }, "", next)
   } catch {
     // an address that cannot be written (a sandboxed frame) just stays as it is
   }
   tell()
 }
 
+let closing = false
+
 /** Closes the panel: back to the page the record was opened from, or, for a link that arrived with one, the same page without it. */
 export function closeRecordInAddress(): void {
-  if (typeof window === "undefined" || !recordFromAddress()) return
+  // going back is asynchronous: a second Close (a held Esc, a double click) before it lands would go back again, out of the page
+  if (typeof window === "undefined" || closing || !recordFromAddress()) return
   try {
     const depth = stateOf().trDepth ?? 0
     if (depth > 0) {
+      closing = true
+      const done = () => {
+        closing = false
+        window.removeEventListener("popstate", done)
+      }
+      window.addEventListener("popstate", done)
+      // a refused go (nothing to go back to) never fires popstate
+      setTimeout(done, 1000)
       window.history.go(-depth)
       return
     }
-    window.history.replaceState({ ...stateOf(), trDepth: undefined, trFrom: undefined }, "", withRecord(undefined))
+    window.history.replaceState({ trDepth: undefined, trFrom: undefined }, "", withRecord(undefined))
   } catch {
     // see above
   }
@@ -110,7 +125,7 @@ export function setQueryInUrl(updates: Record<string, string | undefined>): void
       else url.searchParams.set(k, v)
     }
     const next = `${url.pathname}${url.search}${url.hash}`
-    if (next !== here()) window.history.replaceState(window.history.state, "", next)
+    if (next !== here()) window.history.replaceState({ trDepth: stateOf().trDepth, trFrom: stateOf().trFrom }, "", next)
   } catch {
     // see above
   }

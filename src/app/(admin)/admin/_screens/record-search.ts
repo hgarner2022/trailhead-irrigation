@@ -33,8 +33,8 @@ export function searchRecords(data: AdminData, today: string, query: string): Se
     .slice(0, PER_KIND)
     .map((r): SearchHit => ({ kind: "job", id: r.id, title: `${r.name}, ${r.title}`, detail: [r.property, r.stageLabel].filter(Boolean).join(" · "), href: jobUrl(r.id) }))
   const days = visitRows(data, today)
-    .filter((r) => r.day && matches(words, `${r.search} ${r.kindLabel} ${r.passNumber ?? ""}`))
+    .filter((r) => matches(words, `${r.search} ${r.kindLabel} ${r.passNumber ?? ""}`))
     .slice(0, PER_KIND)
-    .map((r): SearchHit => ({ kind: "visit", id: r.id, title: r.name, detail: `${r.kindLabel}, ${dayLabel(r.day!)}`, href: visitUrl(r.id) }))
+    .map((r): SearchHit => ({ kind: "visit", id: r.id, title: r.name, detail: r.day ? `${r.kindLabel}, ${dayLabel(r.day)}` : `${r.kindLabel}, no day yet`, href: visitUrl(r.id) }))
   return [...customers, ...jobs, ...days]
 }

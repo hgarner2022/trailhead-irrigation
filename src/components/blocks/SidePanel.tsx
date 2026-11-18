@@ -107,7 +107,7 @@ function Frame({ title, description, pills, back, children, footer }: Pick<SideP
               type="button"
               data-slot="side-panel-back"
               onClick={back.onClick}
-              className="-ml-1 mb-1 flex min-h-8 max-w-full items-center rounded-sm px-1 text-sm text-primary-dark underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+              className="-ml-1 flex min-h-11 max-w-full items-center rounded-sm px-1 text-sm text-primary-dark underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
             >
               <span aria-hidden>‹&nbsp;</span>
               <span className="truncate">{back.label}</span>

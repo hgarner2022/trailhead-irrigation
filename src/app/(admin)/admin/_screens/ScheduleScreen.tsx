@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState, useTransition } from "react"
+import { useMemo, useState, useTransition } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
@@ -19,13 +19,14 @@ import type { JobActions } from "./job-actions-types"
 import { NewJob, NewJobButton } from "./NewJob"
 import { RecordHost, useOpenVisit } from "./RecordHost"
 import { VisitsList } from "./VisitsList"
+import { useScheduleAddress } from "./schedule-address"
 import { ScheduleDayMap } from "./ScheduleDayMap"
 import { ScheduleMoveTo } from "./ScheduleMoveTo"
 import { DayStepper, Exceptions, NextJobsLine, StopGrid } from "./ScheduleParts"
 import { rowsOf } from "./visits-model"
 import { exceptionCount, firstJobWeek, firstWorkingDay, moveOutcome, nextJobsWeek, placeVisit, scheduleItems, trayItems, weekContext, type TrayItem } from "./schedule-model"
 import { routePeople } from "@/lib/admin/people"
-import { initialRecord, setQueryInUrl } from "@/lib/admin/record-url"
+import { initialRecord } from "@/lib/admin/record-url"
 
 // Where Ryan lives in season (the scheduling flow, 2026-11-12: one state,
 // no second step): the week by person, a day map beside the day's stops in
@@ -121,10 +122,7 @@ function ScheduleBody({ data, today, defaultTab = "week", defaultDay, defaultWee
   const [view, setView] = useState<ScheduleView>(defaultTab)
   // New job from a day: the sheet opens with that day filled in (the day view's header, a week column's "+").
   const [jobDay, setJobDay] = useState<string | null>(null)
-  // The address names the view, the day and the week, so a reload or a shared link opens what is on screen (the open record is kept by RecordHost).
-  useEffect(() => {
-    setQueryInUrl({ view: view === "week" ? undefined : view, day: view === "day" ? day : undefined, week: view === "week" ? weekStart : undefined, ...(view === "list" ? {} : { forJob: undefined }) })
-  }, [view, day, weekStart])
+  useScheduleAddress({ view, day, weekStart, setView, setDay, setWeekStart })
   const [selectedId, setSelectedId] = useState<string | undefined>(defaultSelectedId)
   /** Selecting a stop highlights it everywhere and opens its visit. */
   const select = (id: string | undefined) => {

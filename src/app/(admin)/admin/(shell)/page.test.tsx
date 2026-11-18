@@ -88,6 +88,9 @@ describe("the admin pages", () => {
     expect(await target({ visit: "p3-turn-on" })).toBe("/admin/schedule?view=list&visit=p3-turn-on")
     expect(await target({ money: "owed", work: "done" })).toBe("/admin/schedule?view=list&money=owed&work=done")
     expect(await target({ job: "job_x" })).toBe("/admin/schedule?view=list&forJob=job_x")
+    // only what the old page took, a repeated key is its first value, and an explicit forJob beats the old job
+    expect(await target({ job: "job_x", forJob: "job_y", junk: "1" })).toBe("/admin/schedule?view=list&forJob=job_y")
+    expect(await target({ visit: ["a", "b"] as never })).toBe("/admin/schedule?view=list&visit=a")
   })
 
   it("the Schedule's List view lists the seeded passes' visits, opens the one in ?visit= and keeps New job", async () => {

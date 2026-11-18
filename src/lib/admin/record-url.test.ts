@@ -4,7 +4,7 @@ import { backInAddress, closeRecordInAddress, fromOfAddress, openRecordInAddress
 // The address holds the open record (docs/plans/2026-11-18-admin-holistic-design.md, section 4): opening pushes an entry, Close goes back to
 // the page the person was on, Back returns to the last record, and the other parameters (filters, week, view) ride along untouched.
 
-const settle = () => new Promise((resolve) => setTimeout(resolve, 20))
+const settle = () => new Promise((resolve) => setTimeout(resolve, 150))
 
 beforeEach(() => {
   window.history.replaceState(null, "", "/admin/jobs")
@@ -71,7 +71,44 @@ describe("openRecordInAddress", () => {
   })
 })
 
+describe("what it hands the History API", () => {
+  it("never carries Next's own marker, so Next's patched pushState and replaceState tell its router the new address", () => {
+    window.history.replaceState({ __NA: true, __PRIVATE_NEXTJS_INTERNALS_TREE: ["x"] }, "", "/admin/jobs")
+    const push = vi.spyOn(window.history, "pushState")
+    openRecordInAddress({ key: "job", id: "j1" })
+    expect(push.mock.calls[0]![0]).not.toHaveProperty("__NA")
+    const replace = vi.spyOn(window.history, "replaceState")
+    setQueryInUrl({ view: "list" })
+    expect(replace.mock.calls.at(-1)![0]).not.toHaveProperty("__NA")
+  })
+
+  it("a record chosen from outside the open one (Cmd+K) has no crumb and closes in place", () => {
+    openRecordInAddress({ key: "job", id: "j1" })
+    openRecordInAddress({ key: "customer", id: "c9" }, { fresh: true })
+    expect(fromOfAddress()).toBeUndefined()
+    closeRecordInAddress()
+    expect(recordFromAddress()).toBeUndefined()
+  })
+})
+
 describe("closeRecordInAddress", () => {
+  it("a second Close before the browser has gone back does not go back again, out of the page", async () => {
+    window.history.replaceState(null, "", "/admin/jobs?page=2")
+    openRecordInAddress({ key: "job", id: "j1" })
+    const go = vi.spyOn(window.history, "go")
+    closeRecordInAddress()
+    closeRecordInAddress()
+    closeRecordInAddress()
+    expect(go).toHaveBeenCalledTimes(1)
+    await settle()
+    expect(window.location.search).toBe("?page=2")
+    // and a later Close works again
+    openRecordInAddress({ key: "job", id: "j2" })
+    closeRecordInAddress()
+    expect(go).toHaveBeenCalledTimes(2)
+    await settle()
+  })
+
   it("returns to the page the record was opened from, however many records were chained", async () => {
     openRecordInAddress({ key: "customer", id: "c1" })
     openRecordInAddress({ key: "job", id: "j1" })

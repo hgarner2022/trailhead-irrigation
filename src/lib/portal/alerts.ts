@@ -56,7 +56,7 @@ export async function alertCustomerChange(ctx: Ctx, visit: { id: string; kind: s
     origin: readAppUrl(),
     title: `${full.customerName} ${change.change === "moved" ? "moved" : "canceled"} ${full.service}`,
     detail: message,
-    path: `/admin/visits?visit=${encodeURIComponent(visit.id)}`,
+    path: `/admin/schedule?visit=${encodeURIComponent(visit.id)}`,
   })
   // One text to Ryan on every cancel or move while there is one truck (architecture section 8, question 4); the row and the email stay the record.
   await queueStaffText(ctx.db, ctx.organizationId, `${CUSTOMER_CHANGED}:${key}`, `Trailhead: ${message}`)

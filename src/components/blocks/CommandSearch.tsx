@@ -34,11 +34,11 @@ export function CommandSearch({ open, onOpenChange, onSearch, onOpen, delay = 15
   }
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogHeader className="sr-only">
-        <DialogTitle>Search</DialogTitle>
-        <DialogDescription>Find a customer, a job or a day by name, street, phone or pass number.</DialogDescription>
-      </DialogHeader>
       <DialogContent data-slot="command-search" showCloseButton={false} className="top-[20%] translate-y-0 gap-0 overflow-hidden p-0 sm:max-w-lg">
+        <DialogHeader className="sr-only">
+          <DialogTitle>Search</DialogTitle>
+          <DialogDescription>Find a customer, a job or a day by name, street, phone or pass number.</DialogDescription>
+        </DialogHeader>
         <SearchBox onSearch={onSearch} onPick={pick} delay={delay} />
       </DialogContent>
     </Dialog>

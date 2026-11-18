@@ -30,7 +30,7 @@ beforeAll(() => {
 beforeEach(() => window.history.replaceState(null, "", "/admin"))
 afterEach(() => window.history.replaceState(null, "", "/admin"))
 
-const settle = () => new Promise((resolve) => setTimeout(resolve, 30))
+const settle = () => new Promise((resolve) => setTimeout(resolve, 150))
 const params = () => new URLSearchParams(window.location.search)
 const dialog = () => within(screen.getByRole("dialog"))
 const wrap = (node: React.ReactNode) => render(<UndoToastProvider>{node}</UndoToastProvider>)
@@ -128,6 +128,20 @@ describe("the address never goes stale", () => {
     window.history.back()
     await settle()
     expect(window.location.search).toBe("?view=list&money=owed")
+  })
+})
+
+describe("the Schedule follows Back to the view, day and week the address names", () => {
+  it("Back to an entry that names the Day view shows that day, and Forward returns to the List", async () => {
+    window.history.replaceState(null, "", "/admin/schedule?view=day&day=2026-11-12")
+    window.history.pushState(null, "", "/admin/schedule?view=list")
+    wrap(<ScheduleScreen data={snap} today={TODAY} defaultTab="list" />)
+    expect(screen.getByRole("radio", { name: "List" })).toBeChecked()
+    window.history.back()
+    await waitFor(() => expect(screen.getByRole("radio", { name: "Day" })).toBeChecked())
+    expect(params().get("day")).toBe("2026-11-12")
+    window.history.forward()
+    await waitFor(() => expect(screen.getByRole("radio", { name: "List" })).toBeChecked())
   })
 })
 
