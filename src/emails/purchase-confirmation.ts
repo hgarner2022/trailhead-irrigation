@@ -1,13 +1,15 @@
 import { googleCalendarUrl } from "./calendar"
-import { ADD_CARD_LINE, BUSINESS, CONFIRM_LINE, RYAN_DOES, atVisitMoneyLine, dollars, moneyLine, whenText } from "./format"
-import { button, emailLayout, esc, heading, paragraph, plainText, EMAIL_COLORS } from "./layout"
+import { ACCOUNT_NAME, ADD_CARD_LINE, BUSINESS, CONFIRM_LINE, RYAN_DOES, atVisitMoneyLine, dollars, moneyLine, whenText } from "./format"
+import { button, emailLayout, esc, facts, heading, paragraph, plainText, EMAIL_COLORS } from "./layout"
 import type { PurchaseConfirmationData, RenderedEmail } from "./types"
 
 const dateOf = (v: PurchaseConfirmationData["visits"][number]) => (v.visit ? whenText(v.visit.day, v.visit.startTime) : v.fallback)
+/** The one email whose sign-off is the tagline: the start of the season. */
+const PURCHASE_SIGN_OFF = "Less time in the yard. More time on the trail."
 const capital = (s: string) => `${s.charAt(0).toUpperCase()}${s.slice(1)}`
 
 export function purchaseConfirmationEmail(d: PurchaseConfirmationData): RenderedEmail {
-  const subject = "Your Season Pass is reserved"
+  const subject = `Your ${d.season} Season Pass is reserved`
   // Never "your days are set" while a visit has no day: those are Ryan's to set.
   const allDated = d.visits.every((v) => v.visit)
   const intro = `Your Season Pass for ${d.town} is reserved for ${d.season}. ${allDated ? "Here are your days." : "Ryan sets the days that are missing and we text them to you."}`
@@ -27,17 +29,20 @@ export function purchaseConfirmationEmail(d: PurchaseConfirmationData): Rendered
   const soldHtml = sold.length
     ? `<p style="margin:0 0 16px;font-family:'Source Sans 3',Helvetica,Arial,sans-serif;font-size:17px;line-height:25px;color:${EMAIL_COLORS.text}">${sold.map(esc).join("<br>")}<br><strong>${esc(total)}</strong></p>`
     : ""
+  const where = facts([["Where", d.address]])
   const html = emailLayout({
     origin: d.origin,
     preheader: `Your Season Pass for ${d.town} is reserved. We haven't charged you today.`,
-    body: [image, heading(`Welcome, ${d.firstName}`), paragraph(intro), `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 16px">${rows}</table>`, soldHtml, paragraph(CONFIRM_LINE), paragraph(money), ...(addCard ? [paragraph(ADD_CARD_LINE), button(addCard, "Add your card")] : []), button(d.signInUrl, "Open your pass page")].join(""),
+    body: [image, heading(`Welcome, ${d.firstName}`), paragraph(intro), `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 4px">${rows}</table>`, where, soldHtml, paragraph(CONFIRM_LINE), paragraph(money), ...(addCard ? [paragraph(ADD_CARD_LINE), button(addCard, "Add your card")] : []), button(d.signInUrl, `Open your ${ACCOUNT_NAME}`)].join(""),
     reason: `You are getting this because you bought Season Pass ${d.passNumber}.`,
+    signOff: PURCHASE_SIGN_OFF,
   })
   const text = plainText([
     `Welcome, ${d.firstName}.`, "", intro, "",
     ...d.visits.flatMap((v) => [`${capital(v.name)}: ${dateOf(v)}`, ...(v.note ? [`  ${v.note}`] : []), ...(v.visit ? [`  ${RYAN_DOES[v.kind]}`] : []), ...(v.visit ? [`  Google Calendar: ${googleCalendarUrl(v.visit)}`, `  Apple or Outlook calendar: ${v.visit.icsUrl}`] : [])]),
+    `Where: ${d.address}`,
     ...(sold.length ? ["", ...sold, total] : []),
-    "", CONFIRM_LINE, money, ...(addCard ? [ADD_CARD_LINE, `Add your card: ${addCard}`] : []), "", `Your pass: ${d.signInUrl}`, `Questions: ${BUSINESS.phone}`,
-  ])
+    "", CONFIRM_LINE, money, ...(addCard ? [ADD_CARD_LINE, `Add your card: ${addCard}`] : []), "", `Your ${ACCOUNT_NAME}: ${d.signInUrl}`, `Questions: ${BUSINESS.phone}`,
+  ], PURCHASE_SIGN_OFF)
   return { subject, text, html }
 }

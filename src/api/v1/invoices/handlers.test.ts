@@ -53,19 +53,23 @@ describe("invoices.send", () => {
     expect(verifyToken("invoice-pay", out.id, new URL(out.payUrl!).searchParams.get("token"))).toBe(true)
     const [msg, ...rest] = (await messagesOf("invoice")).filter((m) => m.key === `invoice-${out.id}`)
     expect(rest).toEqual([])
-    expect(msg).toMatchObject({ channel: "email", to: "dana@example.com", status: "queued", subject: "Your invoice from Trailhead: $145" })
+    expect(msg).toMatchObject({ channel: "email", to: "dana@example.com", status: "queued" })
+    expect(msg!.subject).toMatch(/^Your Trailhead invoice for the repair at .+: \$145$/)
     expect(msg!.body).toContain(out.payUrl)
     expect((await eventsOf("invoice.sent")).some((e) => (e.payload as { invoiceId: string }).invoiceId === out.id)).toBe(true)
     expect((await callApi(as(readKey), invoicesGet, { id: out.id })).payUrl).toBeUndefined()
   })
 
   it("texts the pay link when the customer has a mobile", async () => {
-    await db.update(s.customer).set({ phone: "+17205550100" }).where(eq(s.customer.id, "c100"))
+    // Booking the repair texts the day (the number's first text, which carries the opt-out line), so the invoice text after it does not.
+    await db.update(s.customer).set({ phone: "+17205550177" }).where(eq(s.customer.id, "c100"))
     const v = await doneAndOwed()
     const out = await callApi(as(writeKey), invoicesSend, { jobId: v.jobId })
     const msg = (await messagesOf("invoice")).find((m) => m.key === `invoice-${out.id}`)!
-    expect(msg).toMatchObject({ channel: "sms", to: "+17205550100" })
-    expect(msg.body).toBe(`Trailhead: your invoice for the repair is $145, due May 21. Pay here: ${out.payUrl} Reply STOP to opt out.`)
+    expect(msg).toMatchObject({ channel: "sms", to: "+17205550177" })
+    expect(msg.body).toBe(`Trailhead: your invoice for the repair is $145, due May 21. Pay here: ${out.payUrl}`)
+    const first = (await messagesOf("date-set")).find((m) => m.to === "+17205550177")!
+    expect(first.body).toMatch(/Reply STOP to opt out\.$/)
     await db.update(s.customer).set({ phone: null }).where(eq(s.customer.id, "c100"))
   })
 
@@ -237,7 +241,7 @@ describe("invoices.remind", () => {
     await callApi(as(writeKey), invoicesRemind, { id: bill.id })
     const today = (await messagesOf("invoice-reminder")).filter((m) => m.key === `invoice-${bill.id}-2027-05-07`)
     expect(today).toHaveLength(1)
-    expect(today[0]!.subject).toBe("A reminder: your invoice from Trailhead, $145")
+    expect(today[0]!.subject).toBe("Your Trailhead invoice, $145, is still unpaid")
     expect((await eventsOf("invoice.reminded")).filter((e) => (e.payload as { invoiceId: string }).invoiceId === bill.id)).toHaveLength(1)
     await callApi(as(writeKey, "2027-05-08T20:00:00Z"), invoicesRemind, { id: bill.id })
     expect((await messagesOf("invoice-reminder")).filter((m) => m.key.startsWith(`invoice-${bill.id}-`))).toHaveLength(2)

@@ -8,13 +8,13 @@ export interface RenderedEmail {
   html: string
 }
 
-/** What every customer message carries: where links point, who it is for, and the two pass page links. */
+/** What every customer message carries: where links point, who it is for, and the two links to the customer's Trailhead account. */
 export interface Base {
   origin: string
   firstName: string
-  /** the pass page, plain (for a text) */
-  passUrl: string
-  /** the pass page behind the sign-in page with the customer's email filled in, so the button lands signed out people on a pre-filled form */
+  /** the Trailhead account page, plain (for a text) */
+  accountUrl: string
+  /** the account behind the sign-in page with the customer's email filled in, so the button lands signed out people on a pre-filled form */
   signInUrl: string
 }
 
@@ -22,6 +22,8 @@ export interface PurchaseConfirmationData extends Base {
   passNumber: string
   season: number
   town: string
+  /** the street address of the property, for the "Where" row */
+  address: string
   /** the signed URL of the pass card PNG */
   passImageUrl: string
   /** each visit on the pass: its charge, and its day with the window once it has one (else `fallback` says what happens) */
@@ -37,13 +39,15 @@ export interface VisitData extends Base {
   visit: VisitFacts
 }
 export interface ReceiptData extends Base {
-  /** null for a one-off visit that is not on a pass */
-  passNumber: string | null
   /** how a payment the office recorded came: "check", "Venmo", "cash" */
   paidBy?: string | null
   amount: number
-  /** what the payment was for, as a phrase after "your": "spring turn-on". Absent for an invoice paid on the pay page (`invoiceNumber` names it). */
-  visitName?: string
+  /** what the payment was for, as a phrase after "your": "spring turn-on", "repair" */
+  serviceName: string
+  /** the street address of the property */
+  address: string
+  /** ISO day the money arrived */
+  paidOn: string
   /** an invoice paid on the pay page: its number, its frozen lines (`amount` is the line's total in whole dollars), the tax on them (0 when none) and its total */
   invoiceNumber?: string
   lines?: { name: string; amount: number }[]
@@ -60,6 +64,8 @@ export interface InvoiceData extends Base {
   invoiceNumber: string
   /** what the invoice is for, as a phrase after "the": "repair", "spring turn-on and fall blowout" */
   visitName: string
+  /** the street address of the property */
+  address: string
   /** one row per frozen line; `amount` is the line's total in whole dollars */
   lines: { name: string; amount: number }[]
   /** the lines before tax */
@@ -73,14 +79,20 @@ export interface InvoiceData extends Base {
   payUrl: string
 }
 export interface CardFailedData extends Base {
-  passNumber: string
   amount: number | null
   /** null for a link request with no visit behind it */
   visitName: string | null
+  /** "Visa ending 4242", or null when the brand is not known */
+  card: string | null
+  /** the street address of the visit; null for a link request */
+  address: string | null
   updateUrl: string | null
 }
 export interface CardExpiringData extends Base {
-  passNumber: string
+  /** "Visa ending 4242", or null when the brand is not known */
+  card: string | null
+  /** the street address of the property */
+  address?: string | null
   /** why: "expires in July 2027" or "was removed" */
   cardState: string
   /** dollars of visits still to come, 0 for none */
@@ -88,7 +100,7 @@ export interface CardExpiringData extends Base {
   updateUrl: string | null
 }
 export interface CancelledData extends Base {
-  passNumber: string
+  season: number
 }
 export interface RenewalData extends Base {
   season: number

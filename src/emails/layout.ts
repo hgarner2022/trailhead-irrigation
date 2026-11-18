@@ -62,9 +62,11 @@ export interface LayoutInput {
   body: string
   /** one line saying why this email arrived, under the business details */
   reason?: string
+  /** the line above the footer: "The Trailhead crew" on every customer email, none on the office's own */
+  signOff?: string
 }
 
-export function emailLayout({ origin, preheader, body, reason }: LayoutInput): string {
+export function emailLayout({ origin, preheader, body, reason, signOff }: LayoutInput): string {
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><title>${esc(BUSINESS.name)}</title></head>
 <body style="margin:0;padding:0;background:${C.stone}">
@@ -72,12 +74,12 @@ export function emailLayout({ origin, preheader, body, reason }: LayoutInput): s
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${C.stone}"><tr><td align="center" style="padding:24px 12px">
 <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:100%;max-width:600px;background:${C.white};border-radius:8px;overflow:hidden">
 <tr><td style="background:${C.white};padding:18px 28px;border-bottom:4px solid ${C.primary}"><a href="${esc(origin)}" style="text-decoration:none"><img src="${esc(origin)}/images/logo-horizontal-trim.png" alt="${esc(BUSINESS.name)}" height="40" style="display:block;height:40px;width:auto;border:0"></a></td></tr>
-<tr><td style="padding:28px 28px 12px">${body}</td></tr>
+<tr><td style="padding:28px 28px 12px">${body}${signOff ? `<p style="margin:8px 0 16px;font-family:${BODY};font-size:17px;line-height:26px;color:${C.text}">${esc(signOff)}</p>` : ""}</td></tr>
 <tr><td style="background:${C.cream};padding:20px 28px;border-top:1px solid ${C.border}">
 <p style="margin:0 0 6px;font-family:${BODY};font-size:14px;line-height:21px;color:${C.navy};font-weight:700">${esc(BUSINESS.name)}</p>
 <p style="margin:0;font-family:${BODY};font-size:14px;line-height:21px;color:${C.muted}">${esc(BUSINESS.address)}<br><a href="${BUSINESS.phoneTel}" style="color:${C.muted}">${esc(BUSINESS.phone)}</a>${reason ? `<br>${esc(reason)}` : ""}</p>
 </td></tr></table></td></tr></table></body></html>`
 }
 
-/** The plain-text twin of an email: the same lines, then the business footer. */
-export const plainText = (lines: string[]) => [...lines, "", BUSINESS.name, BUSINESS.address, BUSINESS.phone].join("\n")
+/** The plain-text twin of an email: the same lines, the sign-off when there is one, then the business footer. */
+export const plainText = (lines: string[], signOff?: string) => [...lines, ...(signOff ? ["", signOff] : []), "", BUSINESS.name, BUSINESS.address, BUSINESS.phone].join("\n")

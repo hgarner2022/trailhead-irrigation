@@ -91,7 +91,7 @@ describe("two weeks before", () => {
     expect(rows).toHaveLength(1)
     expect(rows[0]).toMatchObject({ visitId: "p1-turn-on", channel: "sms", key: "date-confirm:p1-turn-on" })
     expect(rows[0]!.body).toContain("Wed, May 19, 8 to 10 am")
-    expect(rows[0]!.body).toContain("Need a different day?")
+    expect(rows[0]!.body).toContain("Need another day?")
     expect(rows[0]!.body).toContain("Reply STOP to opt out.")
   })
 })

@@ -184,8 +184,8 @@ describe("passes.sell", () => {
     const [charge] = await db.select().from(s.charge).where(eq(s.charge.visitId, visit.id))
     expect(charge).toMatchObject({ jobId: pass.id, method: "venmo", reference: "@maya", status: "succeeded", amount: 145 })
     const receipt = (await messages(pass.customerId)).find((m) => m.kind === "receipt")!
-    expect(receipt.body).toContain("Venmo")
-    expect(receipt.body).toContain(`Season Pass ${pass.number}`)
+    expect(receipt.body).toContain("Paid: $145, Venmo")
+    expect(receipt.body).not.toContain(pass.number)
     const detail = await callApi(as(), passesGet, { id: pass.id })
     expect(detail.charges).toHaveLength(1)
     expect(detail.cardFailedAt).toBeNull()

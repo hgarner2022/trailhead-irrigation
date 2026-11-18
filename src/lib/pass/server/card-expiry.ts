@@ -5,7 +5,7 @@ import type { Database } from "@/db/types"
 import { mountainDay, addDays } from "@/api/v1/shared"
 import { linesOfVisit, visitPrice } from "@/lib/jobs/lines"
 import { loadTaxRule } from "@/lib/money/tax-rule"
-import { baseData } from "@/lib/messaging/data"
+import { baseData, cardWords } from "@/lib/messaging/data"
 import { queueMessage } from "@/lib/messaging/queue"
 
 export const EXPIRY_LEAD_DAYS = 60
@@ -59,7 +59,7 @@ export async function queueCardExpiryMessages(db: Database, makeLink: (input: { 
     if (left === 0) continue
     const key = `expiry-${customer.id}-${expires}`
     const link = customer.stripeCustomerId ? await makeLink({ passId: job.id, stripeCustomerId: customer.stripeCustomerId }) : null
-    if (await queueMessage(db, { organizationId: job.organizationId, customerId: customer.id, kind: "card-expiring", key, data: { ...baseData(origin, customer), passNumber: job.passNumber ?? "", cardState: `expires in ${expiryWords(expires)}`, left, updateUrl: link } })) queued++
+    if (await queueMessage(db, { organizationId: job.organizationId, customerId: customer.id, kind: "card-expiring", key, data: { ...baseData(origin, customer), card: cardWords(customer), cardState: `expires in ${expiryWords(expires)}`, left, updateUrl: link } })) queued++
   }
   return queued
 }

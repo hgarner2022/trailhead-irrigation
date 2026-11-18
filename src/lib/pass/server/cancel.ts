@@ -42,5 +42,5 @@ export async function cancelPassTask(db: Database, passId: string, organizationI
 export async function queueCancelledEmail(db: Database, passId: string, origin: string, organizationId?: string): Promise<boolean> {
   const { pass, customer } = await loadPass(db, passId, organizationId)
   if (!customer.email) return false
-  return queueMessage(db, { organizationId: pass.organizationId, customerId: customer.id, kind: "cancelled", key: pass.jobId, data: { ...baseData(origin, customer), passNumber: pass.number } })
+  return queueMessage(db, { organizationId: pass.organizationId, customerId: customer.id, kind: "cancelled", key: pass.jobId, data: { ...baseData(origin, customer), season: pass.season } })
 }

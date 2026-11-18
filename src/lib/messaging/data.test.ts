@@ -23,6 +23,12 @@ describe("loadVisitFacts", () => {
     expect(facts).toMatchObject({ id: "p4-turn-on", name: "spring turn-on", day: "2027-05-05", startTime: "08:00", who: "Ryan" })
     expect(facts).not.toHaveProperty("crew")
   })
+  it("carries the street address alone, and the location the calendar uses with the town", async () => {
+    const facts = await loadVisitFacts(db, "p4-turn-on", origin)
+    expect(facts!.address.length).toBeGreaterThan(3)
+    expect(facts!.address).not.toContain(",")
+    expect(facts!.location.startsWith(`${facts!.address}, `)).toBe(true)
+  })
   it("has no who when the visit has no person", async () => {
     const facts = await loadVisitFacts(db, "p4-blowout", origin, "2027-10-05")
     expect(facts).toMatchObject({ id: "p4-blowout", day: "2027-10-05", who: null })

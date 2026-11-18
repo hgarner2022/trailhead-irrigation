@@ -217,7 +217,7 @@ describe("an invoice's Checkout Session completed", () => {
     expect((await callApi(ctxFor(db, adminKey), visitsGet, { id: visit.id })).paymentStatus).toBe("paid")
     const [receipt, ...more] = await receipts("c100", invoice.number)
     expect(more).toEqual([])
-    expect(receipt).toMatchObject({ channel: "email", to: "dana@example.com", key: `payment-${row!.id}`, status: "queued", subject: `Receipt: $145 for your invoice ${invoice.number}` })
+    expect(receipt).toMatchObject({ channel: "email", to: "dana@example.com", key: `payment-${row!.id}`, status: "queued", subject: "Receipt: $145 for your repair at 847 Main St" })
     expect(receipt!.body).toContain("Visa ending 4242")
     expect(receipt!.body).toContain("Repair: $145")
     expect(await paidEvents(invoice.id)).toHaveLength(1)

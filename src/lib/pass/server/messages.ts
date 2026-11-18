@@ -47,13 +47,13 @@ interface NextVisit {
 
 export const longDay = (day: string) => new Date(`${day}T12:00:00Z`).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", timeZone: "UTC" })
 
-/** "Your fall blowout is Tuesday, October 6." or, with no day yet, "Your fall blowout is planned for early October." */
+/** "Your fall blowout is Tuesday, October 6." or, with no day yet, "Your fall blowout is planned for early October."; empty when no visit is left, so a receipt says nothing about a next one. */
 export function nextVisitLine(visits: NextVisit[]): string {
   const order = ["turn-on", "inspection", "blowout"]
   const next = visits
     .filter((v) => order.includes(v.kind) && !["completed", "cancelled", "skipped"].includes(v.status))
     .sort((a, b) => order.indexOf(a.kind) - order.indexOf(b.kind))[0]
-  if (!next) return "That was the last visit on your pass this season."
+  if (!next) return ""
   const name = kindName(next.kind)
   if (next.scheduledOn) return `Your ${name} is ${longDay(next.scheduledOn)}.`
   if (next.preference && (next.kind === "turn-on" || next.kind === "blowout")) return `Your ${name} is planned for ${preferencePhrase(next.kind, next.preference)}. We'll send the day once it is set.`

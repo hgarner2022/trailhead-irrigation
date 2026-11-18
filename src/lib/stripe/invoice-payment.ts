@@ -6,14 +6,14 @@ import * as s from "@/db/schema"
 import type { Database } from "@/db/types"
 import { cardColumns } from "@/lib/customer/card"
 import { recordEventSafe } from "@/lib/events/record"
-import { baseData } from "@/lib/messaging/data"
+import { baseData, brandWords, jobAddress } from "@/lib/messaging/data"
+import { billName } from "@/lib/money/bill-name"
 import { queueMessage } from "@/lib/messaging/queue"
 import { paidDay, recordPaymentRow } from "@/lib/money/record"
 
 export type InvoicePaymentResult = "recorded" | "already-recorded" | "ignored"
 
 /** "Visa ending 4242" from a Stripe card, the way the receipts say it. */
-const cardWords = (card: { brand: string; last4: string }) => `${card.brand.charAt(0).toUpperCase()}${card.brand.slice(1)} ending ${card.last4}`
 
 /**
  * An invoice's Checkout Session completed: writes the payment, marks the invoice paid, keeps the card on the customer and queues the receipt.
@@ -65,8 +65,8 @@ export async function applyInvoicePayment(db: Database, stripe: Stripe, organiza
     await queueMessage(db, {
       organizationId, customerId: customer.id, kind: "receipt", key: `payment-${row.id}`,
       data: {
-        ...baseData(origin, customer), passNumber: null, amount: row.amount, invoiceNumber: invoice.number, lines: invoice.lines.map((l) => ({ name: l.name, amount: l.quantity * l.unitPrice })),
-        tax: invoice.tax, total: invoice.total, card: method?.card ? cardWords(method.card) : null, nextLine: "", receiptUrl,
+        ...baseData(origin, customer), amount: row.amount, serviceName: billName(invoice.lines), address: await jobAddress(db, invoice.jobId), paidOn: paidDay(now), invoiceNumber: invoice.number, lines: invoice.lines.map((l) => ({ name: l.name, amount: l.quantity * l.unitPrice })),
+        tax: invoice.tax, total: invoice.total, card: method?.card ? brandWords(method.card.brand, method.card.last4) : null, nextLine: "", receiptUrl,
       },
     })
   }

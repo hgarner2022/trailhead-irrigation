@@ -77,7 +77,7 @@ export async function queuePurchaseConfirmation(db: Database, passId: string, or
   const pass = await loadPassRecord(db, passId, extras.organizationId)
   if (!pass) throw new Error(`Pass ${passId} not found`)
   const [row] = await db
-    .select({ customer: s.customer, town: s.property.town })
+    .select({ customer: s.customer, town: s.property.town, address: s.property.address })
     .from(s.customer)
     .innerJoin(s.property, eq(s.property.id, pass.propertyId))
     .where(eq(s.customer.id, pass.customerId))
@@ -101,6 +101,6 @@ export async function queuePurchaseConfirmation(db: Database, passId: string, or
   const lines = lineRows.map((l) => ({ name: l.name, amount: l.quantity * l.unitPrice }))
   return queueMessage(db, {
     organizationId: org, customerId: customer.id, kind: "purchase-confirmation", key,
-    data: { ...baseData(origin, customer), passNumber: pass.number, season: pass.season, town: row.town, passImageUrl: passImageUrl(origin, pass.jobId), visits: held, ...(lines.length ? { lines } : {}), cardLast4: customer.cardLast4, cardUpdateUrl: extras.cardUpdateUrl ?? null },
+    data: { ...baseData(origin, customer), passNumber: pass.number, season: pass.season, town: row.town, address: row.address, passImageUrl: passImageUrl(origin, pass.jobId), visits: held, ...(lines.length ? { lines } : {}), cardLast4: customer.cardLast4, cardUpdateUrl: extras.cardUpdateUrl ?? null },
   })
 }

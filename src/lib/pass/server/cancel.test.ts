@@ -30,7 +30,7 @@ describe("cancelPassTask", () => {
 })
 
 describe("queueCancelledEmail", () => {
-  it("queues one email with the pass page link, and a repeat adds nothing", async () => {
+  it("queues one email with the book-a-visit link, and a repeat adds nothing", async () => {
     const { customerId } = await passJobOf(db, "p2")
     await db.update(s.customer).set({ email: "p2@example.com" }).where(eq(s.customer.id, customerId))
     expect(await queueCancelledEmail(db, "p2", "https://site.test")).toBe(true)
@@ -40,6 +40,6 @@ describe("queueCancelledEmail", () => {
     const rows = await db.select().from(s.messageLog).where(eq(s.messageLog.kind, "cancelled"))
     expect(rows).toHaveLength(1)
     expect(rows[0]).toMatchObject({ channel: "email", to: "p2@example.com", status: "queued" })
-    expect(rows[0]!.body).toContain("https://site.test/account/pass")
+    expect(rows[0]!.body).toContain("https://site.test/book")
   })
 })

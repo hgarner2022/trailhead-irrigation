@@ -14,11 +14,14 @@ const wall = (day: string, time: string, plusHours = 0) => {
   return `${compact(day)}T${String(hour).padStart(2, "0")}${time.slice(3, 5)}00`
 }
 
-const title = (v: VisitFacts) => `Trailhead: your ${v.name}`
-const details = (v: VisitFacts) => `${BUSINESS.name} is coming for your ${v.name}. Questions: ${BUSINESS.phone}.`
+/** What a calendar entry needs of a visit: the screens that only know the pass build this much. */
+export type CalendarVisit = Pick<VisitFacts, "id" | "name" | "day" | "startTime" | "location" | "icsUrl">
+
+const title = (v: CalendarVisit) => `Trailhead: your ${v.name}`
+const details = (v: CalendarVisit) => `${BUSINESS.name} is coming for your ${v.name}. Questions: ${BUSINESS.phone}.`
 
 /** The calendar.google.com render link. A visit with a time is two hours long in Mountain time; one without is an all-day event. */
-export function googleCalendarUrl(v: VisitFacts): string {
+export function googleCalendarUrl(v: CalendarVisit): string {
   const dates = v.startTime ? `${wall(v.day, v.startTime)}/${wall(v.day, v.startTime, 2)}` : `${compact(v.day)}/${compact(addOneDay(v.day))}`
   const q = new URLSearchParams({ action: "TEMPLATE", text: title(v), dates, details: details(v), location: v.location })
   if (v.startTime) q.set("ctz", TZ)
@@ -41,12 +44,12 @@ function mountainToUtc(day: string, time: string, plusHours = 0): string {
   return `${compact(day)}T${String(hour).padStart(2, "0")}${String(minute).padStart(2, "0")}00Z`
 }
 
-export function icsFile(v: VisitFacts, stamp: Date, url: string): string {
+export function icsFile(v: CalendarVisit, stamp: Date, url: string): string {
   const when = v.startTime
     ? [`DTSTART:${mountainToUtc(v.day, v.startTime)}`, `DTEND:${mountainToUtc(v.day, v.startTime, 2)}`]
     : [`DTSTART;VALUE=DATE:${compact(v.day)}`, `DTEND;VALUE=DATE:${compact(addOneDay(v.day))}`]
   return [
-    "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Trailhead Lawn & Irrigation//Season Pass//EN", "CALSCALE:GREGORIAN", "METHOD:PUBLISH",
+    "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Trailhead Lawn & Irrigation//Visits//EN", "CALSCALE:GREGORIAN", "METHOD:PUBLISH",
     "BEGIN:VEVENT", `UID:visit-${v.id}@trailheadirrigation.com`, `DTSTAMP:${stamp.toISOString().replace(/[-:]/g, "").replace(/\.\d+Z$/, "Z")}`, ...when,
     `SUMMARY:${escapeIcs(title(v))}`, `LOCATION:${escapeIcs(v.location)}`, `DESCRIPTION:${escapeIcs(details(v))}`, `URL:${url}`,
     "END:VEVENT", "END:VCALENDAR",
