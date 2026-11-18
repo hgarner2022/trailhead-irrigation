@@ -1,6 +1,6 @@
-# Routes, seasons and planning the week
+# Routes, seasons, and the seam for Jev
 
-Design only, Nov 18 2026. Nothing is built; step 6 builds what Hannah settles. It answers her Nov 17 review of Settings and her ask to use an AI model for routing.
+Design only, Nov 18 2026. Nothing is built; step 6 builds what Hannah settles. It answers her Nov 17 review of Settings and her plan for Jev, her AI agent, to schedule and route later. Settings come first and ship first.
 
 ## 1. The job to be done
 
@@ -73,46 +73,59 @@ export const windowFor = (s: Season, year: number): { opensOn: string; closesOn:
 
 **Migration (step 6).** Each `area` row becomes one `RouteDay` with `weekday: null`, so the scheduler and `placeVisit` check behave exactly as today until Ryan sets days; no weekday is guessed. `fallTownOrder` becomes `townOrder.fall`, and `springTownOrder` becomes `"reverse"` when it is the reverse. Each window keeps month and day from this year's row, `leadWeeks` is unchanged, and Home's reminder drops the hidden "plus two" (a behaviour change to confirm). No visit is rewritten; route days are read only when placing or moving. A drag to another weekday warns ("Longmont is usually Wednesday") and still moves.
 
-## 4. Planning the week with a model
+## 4. The seam for Jev
 
-**Plan the week** sits on the Schedule and plans the next seven days.
+Jev is Hannah's AI agent. It plugs into the app through the MCP surface (`src/api/mcp.ts` makes one tool per API handler, scoped by API key), and a plain routing algorithm must be able to use the same seam first.
+
+**(a) Read tools, which exist or are small additions.** `visits.list` and `visits.get` (windows, customer-picked days, must be home), `schedule.week` and `schedule.day`, `people.list` (capacity), and `settings.get` (route days and seasons, in the section 3 shape). New: `schedule.driveTimes`, taking a day's addresses and returning a drive-time matrix in minutes. **Engine: GraphHopper hosted.** It returns road times, bills a known credit formula, and needs no server to run, which Vercel does not give us; Google's API is the alternative, and OSRM is free only if Ryan hosts a container.
+
+**(b) The one write.** `schedule.plans.create` takes visit, day and order assignments plus a plain-words line per day ("Tuesday: Longmont, nine stops, about two hours driving; Jim moved to Thursday because he must be home; two Firestone blowouts wait for next week, the day was full"). It stores a draft and moves nothing. It checks every assignment and returns rejected ones with the rule broken, so Jev can fix them. A new key scope, `write-plans`, allows this tool and nothing else, because the sample "Appy agent" key holds `write-schedule`, which also lets a caller use `visits.move`. Jev's key gets `read` and `write-plans`.
+
+**(c) What Ryan sees.** The Schedule's week grid with the plan laid in (dotted edge), the explanation under each day, drag to change, and two buttons: Accept plan and Throw away. Accept writes each assignment through `visits.move` and records one `plan.accepted` event carrying the explanation.
 
 ```
-Schedule  Week of Nov 2     [Plan the week]            [Throw away] [Accept plan]
+Schedule  Week of Nov 2      [Throw away] [Accept plan]
           Mon   Tue            Wed   Thu         Fri
- Ryan     ...   Longmont (9)   ...   Erie (8)    ...    (plan shown with a dotted edge)
+ Ryan     ...   Longmont (9)   ...   Erie (8)    ...    (plan has a dotted edge)
  Tue: Longmont, nine stops, about two hours driving. Jim moved to Thu: he must be home.
- Left for next week: two Firestone blowouts. The day was full.
+ Needs your call: Ann Lee (picked Tue) would fit Wed.  [ ] Move her
 ```
 
-**Given.** Open visits (town, kind, window, preference, customer-picked day, must be home, minutes), people with working days and capacity left, route days, season order, Jobber blocks, a drive-time matrix from the routing engine, and the free National Weather Service forecast.
+**(d) Hard rules the app enforces on Accept.** Windows, capacity and route days are checked again by the code `visits.move` already runs (`placeVisit`); a failing assignment is listed, never forced. A change Ryan drags by hand is his: it still obeys windows and capacity but only warns on route days. A customer-picked day moves only when Ryan ticks it. Jev never messages a customer: its key has no `send-messages` scope, and the app queues the usual date-moved texts after Accept.
 
-**Tools.** Read only: `get_day`, `get_visit`, `drive_minutes` (a routing call) and `check_plan` (a dry run of the hard rules). One write: `submit_plan`, which stores a draft of visit, day and order assignments. It writes no visit.
+**(e) Rain.** Ryan marks a day rained out, and a plan is made again for the rest of the week from the same tools. The day's visits are open again; the rest follows (c) and (d).
 
-**Returns.** The plan, a plain-words line per day, a "left for next week" list with reasons, and "needs your call" items, such as a customer-picked day the plan wants to change.
+**(f) Build order.**
 
-**Review.** The existing week grid shows the plan laid in. Ryan drags to change it, throws it away, or taps Accept. Accept sends each change through `visits.move` (`placeVisit`), so every hard rule runs again; a change that fails is listed, not forced. The usual date-moved texts queue and one event is recorded.
+1. **Order the day.** Routing-engine ordering of each day's stops replaces the straight-line `orderStops`. No model.
+2. **The plan seam, used by a plain algorithm.** The existing scheduler plans the week and calls `schedule.plans.create`. The grid, Accept, the event and the rules are proven before any model.
+3. **Jev.**
 
-**Re-plan after rain.** Ryan marks a day rained out and runs the same action on the rest of the week; the day's visits join the open pile.
+**Cost when Jev runs on Claude (estimate, to measure).** Assuming Claude Sonnet 5.5 at medium effort ($2 in, $10 out per million tokens): a 150-visit October week is about 10,000 tokens of context, five tool turns (about 40,000 input in total) and 10,000 output, roughly $0.20 and 30 to 90 seconds. Opus 5.5 ($4, $20) is about $0.35. With six nearby towns, a plain algorithm does most of the work; a model earns its place on rained-out weeks, customer-picked collisions and the explanation.
 
-**What stays deterministic.** Windows, capacity, buffer, working days, one group per truck-day and route days are hard rules in code, and the routing engine does the arithmetic. The model chooses among legal options and explains them; it cannot allow an illegal one.
+**Common practice.** Zones as rules: ServiceTitan. Engine orders stops, person confirms: Jobber. Review before anything lands: ServiceTitan Assist mode. Rain day moves a day: LawnPro.
 
-**Guardrails.** It never messages a customer and never changes a customer-picked day, only flags it. Every plan logs `plan.created` (explanation, model, tokens, cost); Accept logs `plan.accepted`. A plan can be thrown away.
+## 5. Online booking: what the customer picks
 
-**Cost (estimate, to measure).** I assume Claude Sonnet 5.5 at medium effort ($2 in, $10 out per million tokens). A 150-visit October week is about 10,000 tokens of context, five tool turns (about 40,000 input in total) and 10,000 output: roughly $0.20 and 30 to 90 seconds; Opus 5.5 ($4, $20) about $0.35. Eight weeks stay under $10 a season, plus the routing engine.
+One flow replaces the Season Pass checkout and the Jobber-backed `/book` page, built after step 6. `/book` keeps its URL, since every Book Online button and `book_click` points there; the Jobber page goes at the exit.
 
-**Honest limit.** With six nearby towns, the deterministic scheduler plus a drive-time matrix does most of the work. The model earns its place on rained-out weeks, customer-picked collisions, thin days and the written explanation.
+```
+Service   Address   Day   You   Card
+( ) Season Pass          ( ) Sprinkler repair visit  $145
+( ) Spring turn-on       ( ) New system: we'll call you
+Days for Erie (Tuesdays):  (o) Tue Apr 28  ( ) Tue May 5  ( ) Tue May 12
+```
 
-**Build order.**
+1. **Service.** The active catalogue from `src/lib/services.ts`: name, what is included, price.
+2. **Address.** The existing Places step; its town drives the rest.
+3. **Day.** The next three route days for the town (section 3), inside the service's window, with room for that kind of visit (the `schedule.offerDays` pattern). The first is selected.
+4. **Contact, then card,** then the job and its visit are made with the customer's day kept.
 
-1. **Step one, no model.** Replace the straight-line `orderStops` with road drive times from a routing engine (GraphHopper hosted; Google the alternative; OSRM only to host a container).
-2. **Step two.** The model planner, behind the Plan the week button.
+**No route day for the town:** offer the next three days anyone has room, as today. **Next three full:** look further ahead inside the window; if the window ends first, say "These days are full. We'll call you," and make the job in Needs a day. **Quoted services** (installation, larger repair, lights) skip days and card: contact and notes, "We'll call you," and a job in Needs a quote.
 
-**Common practice.** Route days as rules: ServiceTitan zones. Engine orders stops, person confirms: Jobber. Review before anything lands: ServiceTitan Assist. Rain day moves a day: LawnPro. Dates roll yearly: LawnPro off seasons. Engine does the arithmetic: Google, GraphHopper.
-
-## 5. Open questions for Hannah
+## 6. Open questions for Hannah
 
 1. Which weekday for each of the three groups (three words)?
 2. Is Broomfield with Louisville and Lafayette, or its own day as today (with or alone)?
-3. Is about 30 cents per plan fine to run whenever Ryan taps (yes or no)?
-4. After a rain-out, may the plan offer to move a customer-picked day, flagged and unticked (yes or no)?
+3. May Jev offer to move a customer-picked day, flagged and unticked (yes or no)?
+4. When a town's days are full, look ahead how many weeks (a number)?
