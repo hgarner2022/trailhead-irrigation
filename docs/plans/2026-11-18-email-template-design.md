@@ -4,6 +4,10 @@ Written Nov 18 2026. PR 1 of two. This PR is the research, the audit and the des
 
 Hannah's ask, in her words: "audit all of our transactional emails. Research best practices, font size, how to structure things, what needs to be included. I'm seeing different font sizes, different theming, 'Hi, Hannah,' this, that. It's not formatted correctly... we need a template moving forward, and move all our transactional emails into it. Goal is professional, beautiful, very well-branded, clear language, easy to read."
 
+## Status (PR 2, Nov 18 2026)
+
+Built. `src/emails/layout.ts` is the one frame and all 17 emails render through it. Hannah's decisions: the greeting is "Hi Andrea," on its own line ("Hi there," with no usable name, none on staff emails or the sign-in link); a saved Settings sentence that opens with its own greeting loses it at send time and in the preview; the receipt lead is "Thank you. ..." and the purchase heading is "Welcome to the 2027 season"; one web-safe font stack; the account link reads "See it in your account". Where the build differs from the spec below: the sign-in email now carries the sign-off and a why line; the purchase confirmation puts the Season Pass card after the lead, not before the heading; the logo is `public/images/logo-email.png`, the horizontal logo flattened on an opaque white plate with 8px of margin.
+
 ## What the two samples look like
 
 The receipt and the day-before email on the proposed template, at 600px (desktop) and at 375px (phone). The words are the shipped words; only the frame, the sizes and the greeting line change.
