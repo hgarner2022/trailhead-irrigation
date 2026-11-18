@@ -30,7 +30,7 @@ select
   x."visit_id",
   x."new_kind",
   case x."kind" when 'renewed' then x."detail" || '{"source":"renewal"}'::jsonb when 'sold' then x."detail" || '{"source":"office"}'::jsonb else x."detail" end,
-  x."by_principal",
+  case when x."by_principal" like 'public:%' then 'customer' when x."by_principal" = 'api-key:system' then 'system' when x."by_principal" like 'api-key:%' then 'api' else x."by_principal" end,
   x."at",
   x."created_at",
   x."updated_at"
@@ -68,6 +68,7 @@ insert into "event" ("id", "organization_id", "about", "about_id", "customer_id"
 select 'evt_note_job_' || j."id", j."organization_id", 'job', j."id", j."customer_id", j."id", null, 'note', jsonb_build_object('text', j."notes"), 'system', j."updated_at"
 from "job" j
 where j."notes" is not null and trim(j."notes") <> ''
+  and not exists (select 1 from "visit" v where v."job_id" = j."id" and v."notes" = j."notes")
 on conflict ("id") do nothing;--> statement-breakpoint
 insert into "event" ("id", "organization_id", "about", "about_id", "customer_id", "job_id", "visit_id", "kind", "detail", "who", "at")
 select 'evt_note_property_' || p."id", p."organization_id", 'property', p."id", p."customer_id", null, null, 'note', jsonb_build_object('text', p."notes"), 'system', p."updated_at"

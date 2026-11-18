@@ -50,3 +50,16 @@ export function whoOf(ctx: Pick<Ctx, "principal">): string {
   if (p.kind === "public") return "customer"
   return p.id === SYSTEM_ID ? "system" : "api"
 }
+
+/**
+ * `recordEvent` for the money and webhook paths: a payment, a card change or a webhook delivery must never be lost or
+ * fail because its story line could not be written. A failure is logged in one line and returns null.
+ */
+export async function recordEventSafe(db: Database, event: NewEvent): Promise<string | null> {
+  try {
+    return await recordEvent(db, event)
+  } catch (error) {
+    console.error(`event ${event.kind} was not recorded: ${error instanceof Error ? error.message : String(error)}`)
+    return null
+  }
+}

@@ -153,6 +153,10 @@ describe("handleStripeEvent", () => {
     expect(c!.status).toBe("succeeded")
     const [after] = await db.select().from(s.visit).where(eq(s.visit.id, v!.id))
     expect(after!.chargedAt).not.toBeNull()
+    // Completing the pending row writes payment.succeeded once; a redelivery finds it succeeded and adds none.
+    expect(await eventsOf(db, { kind: "payment.succeeded", visitId: v!.id })).toMatchObject([{ about: "payment", aboutId: c!.id, visitId: v!.id, who: "system", detail: { amount: v!.amount, name: "Spring turn-on" } }])
+    await handleStripeEvent(db, stripe, v!.organizationId, event("evt_pi", "payment_intent.succeeded", { id: "pi_late" }) as unknown as Stripe.Event, "https://site.test")
+    expect(await eventsOf(db, { kind: "payment.succeeded", visitId: v!.id })).toHaveLength(1)
   })
 })
 

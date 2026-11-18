@@ -4,7 +4,7 @@ import { and, eq, sql } from "drizzle-orm"
 import type { Database } from "@/db/types"
 import * as s from "@/db/schema"
 import type { EventAbout, EventKind } from "@/lib/events/kinds"
-import { recordEvent } from "@/lib/events/record"
+import { recordEventSafe } from "@/lib/events/record"
 
 export const EVENTS = [
   "pass.bought",
@@ -46,7 +46,7 @@ export interface EventRecord {
  */
 export async function emitEvent(db: Database, organizationId: string, event: EventName, payload: Record<string, unknown>, record?: EventRecord): Promise<number> {
   // An outbound name is not always an `EventKind` (pass.bought, charge.*): the row keeps the name it was delivered under.
-  if (record) await recordEvent(db, { organizationId, ...record, kind: event as EventKind })
+  if (record) await recordEventSafe(db, { organizationId, ...record, kind: event as EventKind })
   const endpoints = await db
     .select({ id: s.webhookEndpoint.id })
     .from(s.webhookEndpoint)

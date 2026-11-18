@@ -17,7 +17,7 @@ import { recordChange } from "./queries"
 export async function finishPurchase(ctx: Ctx, pass: { id: string; customerId: string; jobId: string; season: number }, town: string, consent: PurchaseConsent | undefined, extras: PurchaseExtras = {}): Promise<void> {
   const [job] = await ctx.db.select({ season: s.job.season }).from(s.job).where(eq(s.job.id, pass.jobId))
   const season = job?.season ?? pass.season
-  for (const moved of await scheduleChosenDays(ctx.db, pass.id, town, season, today(ctx)))
+  for (const moved of await scheduleChosenDays(ctx.db, pass.id, town, season, today(ctx), ctx.now))
     await recordChange(ctx, { customerId: pass.customerId, passId: pass.id, visitId: moved.visitId, kind: "day-filled", detail: { visit: moved.kind, from: moved.from, to: moved.to } })
   await recordPurchase(ctx.db, pass.id, consent, readAppUrl(), ctx.now, { who: whoOf(ctx), ...extras })
 }

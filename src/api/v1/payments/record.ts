@@ -3,7 +3,7 @@ import { and, eq, isNull } from "drizzle-orm"
 import * as s from "@/db/schema"
 import { readAppUrl } from "@/lib/env"
 import { visitName } from "@/lib/events/names"
-import { recordEvent, whoOf } from "@/lib/events/record"
+import { recordEventSafe, whoOf } from "@/lib/events/record"
 import { setVisitLinePrice } from "@/lib/jobs/write-lines"
 import { baseData } from "@/lib/messaging/data"
 import { queueMessage } from "@/lib/messaging/queue"
@@ -45,7 +45,7 @@ async function settleOpenBill(ctx: Ctx, jobId: string, row: { id: string; method
   // The card form the customer may still have open is closed too, so the bill is not paid twice.
   for (const b of settled) {
     await expireCheckoutSession(b.session)
-    await recordEvent(ctx.db, { organizationId: org, about: "invoice", aboutId: b.id, customerId, jobId, kind: "invoice.paid", detail: { number: b.number, total: b.total, how: row.method }, who: whoOf(ctx), at: ctx.now })
+    await recordEventSafe(ctx.db, { organizationId: org, about: "invoice", aboutId: b.id, customerId, jobId, kind: "invoice.paid", detail: { number: b.number, total: b.total, how: row.method }, who: whoOf(ctx), at: ctx.now })
   }
 }
 

@@ -4,7 +4,7 @@ import type Stripe from "stripe"
 import { emitEvent } from "@/api/v1/webhooks/deliver"
 import * as s from "@/db/schema"
 import { visitName } from "@/lib/events/names"
-import { recordEvent } from "@/lib/events/record"
+import { recordEventSafe } from "@/lib/events/record"
 import type { Database } from "@/db/types"
 import { chargeOffSession } from "@/lib/stripe/charge"
 import { createCardUpdateSession } from "@/lib/stripe/card-update"
@@ -83,14 +83,12 @@ export async function chargeVisit(db: Database, stripe: Stripe, visitId: string,
     }
     await emitEvent(db, visit.organizationId, "charge.succeeded", { visitId: visit.id, passId: pass.id, amount: visit.amount, attempt })
     // The outbound name stays `charge.succeeded`; the story says `payment.succeeded`, about the payment row.
-    if (paid) await recordEvent(db, { organizationId: visit.organizationId, about: "payment", aboutId: paid.id, customerId: customer.id, jobId: visit.jobId, visitId: visit.id, kind: "payment.succeeded", detail: { amount: visit.amount, method: "card_on_file", name: visitName(visit.kind) }, who: "system", at: now })
+    if (paid) await recordEventSafe(db, { organizationId: visit.organizationId, about: "payment", aboutId: paid.id, customerId: customer.id, jobId: visit.jobId, visitId: visit.id, kind: "payment.succeeded", detail: { amount: visit.amount, method: "card_on_file", name: visitName(visit.kind) }, who: "system", at: now })
     return "charged"
   }
 
   const [failedRow] = await db.update(s.charge).set({ status: "failed", stripePaymentIntentId: result.paymentIntentId, failureMessage: result.message, updatedAt: now }).where(where).returning({ id: s.charge.id })
   await db.update(s.customer).set({ cardFailedAt: now, updatedAt: now }).where(eq(s.customer.id, customer.id))
-  if (failedRow) await recordEvent(db, { organizationId: visit.organizationId, about: "payment", aboutId: failedRow.id, customerId: customer.id, jobId: visit.jobId, visitId: visit.id, kind: "payment.failed", detail: { amount: visit.amount, message: result.message, name: visitName(visit.kind) }, who: "system", at: now })
-  await recordEvent(db, { organizationId: visit.organizationId, about: "customer", aboutId: customer.id, customerId: customer.id, kind: "card.failed", detail: { brand: customer.cardBrand, last4: customer.cardLast4 }, who: "system", at: now })
   await db.update(s.seasonPass).set({ cardFailedAt: now, updatedAt: now }).where(eq(s.seasonPass.id, pass.id))
   if (to) {
     const link = customer.stripeCustomerId ? (await createCardUpdateSession(stripe, { passId: pass.id, customerId: customer.stripeCustomerId, origin: opts.origin })).url : null
@@ -99,6 +97,8 @@ export async function chargeVisit(db: Database, stripe: Stripe, visitId: string,
       data: { ...baseData(opts.origin, customer), passNumber: pass.number, amount: visit.amount, visitName: kindName(visit.kind), updateUrl: link },
     })
   }
+  if (failedRow) await recordEventSafe(db, { organizationId: visit.organizationId, about: "payment", aboutId: failedRow.id, customerId: customer.id, jobId: visit.jobId, visitId: visit.id, kind: "payment.failed", detail: { amount: visit.amount, message: result.message, name: visitName(visit.kind) }, who: "system", at: now })
+  await recordEventSafe(db, { organizationId: visit.organizationId, about: "customer", aboutId: customer.id, customerId: customer.id, kind: "card.failed", detail: { brand: customer.cardBrand, last4: customer.cardLast4 }, who: "system", at: now })
   await queueStaffMessage(db, visit.organizationId, "admin-alert", `card-failed:${visit.id}:${attempt}`, { origin: opts.origin, title: `Card declined for ${customer.firstName}`, detail: `${customer.firstName}'s card was declined for ${dollars(visit.amount)} after the ${kindName(visit.kind)} on Season Pass ${pass.number}.`, path: "/admin/passes" })
   await emitEvent(db, visit.organizationId, "charge.failed", { visitId: visit.id, passId: pass.id, amount: visit.amount, attempt, message: result.message })
   return "failed"

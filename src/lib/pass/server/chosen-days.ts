@@ -94,7 +94,7 @@ export function nextOpen(slots: Slot[], chosenDay: string): Slot | undefined {
  * since, on the next open day. The touched days are ordered. A visit with no held day stays for the scheduler; one that is
  * already scheduled is left alone, so the webhook and the page both calling this changes nothing the second time.
  */
-export async function scheduleChosenDays(db: Database, passId: string, town: string, season: number, today: string): Promise<ShiftedDay[]> {
+export async function scheduleChosenDays(db: Database, passId: string, town: string, season: number, today: string, now = new Date()): Promise<ShiftedDay[]> {
   const visits = await db.select().from(s.visit).where(and(eq(s.visit.passId, passId), eq(s.visit.status, "unscheduled")))
   const shifted: ShiftedDay[] = []
   const touched = new Map<string, { personId: string; day: string }>()
@@ -112,7 +112,7 @@ export async function scheduleChosenDays(db: Database, passId: string, town: str
     touched.set(`${slot.personId}|${slot.day}`, { personId: slot.personId, day: slot.day })
     if (!stillOpen) shifted.push({ visitId: v.id, kind: v.kind, from: v.scheduledOn, to: slot.day })
     await emitEvent(db, v.organizationId, "visit.scheduled", { visitId: v.id, ...who(slot.personId), scheduledOn: slot.day, from: null }, {
-      about: "visit", aboutId: v.id, customerId: v.customerId, jobId: v.jobId, visitId: v.id, who: "system",
+      about: "visit", aboutId: v.id, customerId: v.customerId, jobId: v.jobId, visitId: v.id, who: "system", at: now,
       detail: { name: visitName(v.kind), day: slot.day, from: null, personId: slot.personId },
     })
   }

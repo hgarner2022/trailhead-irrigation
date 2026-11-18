@@ -260,7 +260,7 @@ export const passesConsent = defineHandler({
   async run(ctx, input) {
     const row = await loadPass(ctx, input.id)
     if (row.facts.status !== "pending") return OK
-    await recordChange(ctx, { customerId: row.pass.customerId, passId: row.pass.id, kind: CONSENT_SNAPSHOT, detail: input.consent })
+    await recordChange(ctx, { customerId: row.pass.customerId, passId: row.pass.id, kind: CONSENT_SNAPSHOT, detail: { ...input.consent, stage: "chosen" } })
     return OK
   },
 })

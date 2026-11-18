@@ -5,7 +5,7 @@ import { emitEvent } from "@/api/v1/webhooks/deliver"
 import * as s from "@/db/schema"
 import type { Database } from "@/db/types"
 import { cardColumns } from "@/lib/customer/card"
-import { recordEvent } from "@/lib/events/record"
+import { recordEventSafe } from "@/lib/events/record"
 import { baseData } from "@/lib/messaging/data"
 import { queueMessage } from "@/lib/messaging/queue"
 import { paidDay, recordPaymentRow } from "@/lib/money/record"
@@ -58,7 +58,7 @@ export async function applyInvoicePayment(db: Database, stripe: Stripe, organiza
     const stripeCustomerId = customer.stripeCustomerId ?? (typeof session.customer === "string" ? session.customer : session.customer?.id ?? null)
     await db.update(s.customer).set({ ...(stripeCustomerId ? { stripeCustomerId } : {}), ...columns, updatedAt: now }).where(and(eq(s.customer.id, customer.id), eq(s.customer.organizationId, organizationId)))
     await db.update(s.seasonPass).set({ ...columns, updatedAt: now }).where(and(eq(s.seasonPass.customerId, customer.id), eq(s.seasonPass.organizationId, organizationId)))
-    await recordEvent(db, { organizationId, about: "customer", aboutId: customer.id, customerId: customer.id, kind: "card.saved", detail: { brand: method.card.brand, last4: method.card.last4 }, who: "system", at: now })
+    await recordEventSafe(db, { organizationId, about: "customer", aboutId: customer.id, customerId: customer.id, kind: "card.saved", detail: { brand: method.card.brand, last4: method.card.last4 }, who: "system", at: now })
     if (stripeCustomerId) await stripe.customers.update(stripeCustomerId, { invoice_settings: { default_payment_method: method.id } })
     if (customer.stripePaymentMethodId) await stripe.paymentMethods.detach(customer.stripePaymentMethodId).catch(() => undefined)
   }
@@ -76,7 +76,7 @@ export async function applyInvoicePayment(db: Database, stripe: Stripe, organiza
   if (!invoice.cancelledAt) {
     // Only the run that marks the bill paid writes `invoice.paid`, so a redelivered event adds none.
     const settled = await db.update(s.invoice).set({ paidOn: paidDay(now), paymentId: row.id, stripePaymentIntentId: intentId, updatedAt: now }).where(and(eq(s.invoice.id, invoice.id), eq(s.invoice.organizationId, organizationId), isNull(s.invoice.paidOn), isNull(s.invoice.cancelledAt))).returning({ id: s.invoice.id })
-    if (settled.length) await recordEvent(db, { organizationId, about: "invoice", aboutId: invoice.id, customerId: invoice.customerId, jobId: invoice.jobId, kind: "invoice.paid", detail: { number: invoice.number, total: invoice.total, how: "card_now" }, who: "system", at: now })
+    if (settled.length) await recordEventSafe(db, { organizationId, about: "invoice", aboutId: invoice.id, customerId: invoice.customerId, jobId: invoice.jobId, kind: "invoice.paid", detail: { number: invoice.number, total: invoice.total, how: "card_now" }, who: "system", at: now })
   }
   return inserted ? "recorded" : "already-recorded"
 }

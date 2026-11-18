@@ -224,6 +224,8 @@ describe("visits.cancel", () => {
     await callApi(as(), visitsCancel, { id: v.id })
     expect((await db.select().from(s.job).where(eq(s.job.id, v.jobId)))[0]).toMatchObject({ status: "cancelled" })
     expect((await linesOfJob(db, v.jobId))[0]!.cancelledAt).toBeInstanceOf(Date)
+    // The emptied job is cancelled by a `job.cancelled` event of its own, beside the visit's.
+    expect(await eventsOf(db, { kind: "job.cancelled", jobId: v.jobId })).toMatchObject([{ about: "job", aboutId: v.jobId, customerId: "c100", visitId: null }])
     await expect(callApi(as(readKey), visitsCancel, { id: v.id })).rejects.toMatchObject({ code: "forbidden" })
   })
 })

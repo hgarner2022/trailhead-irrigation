@@ -136,7 +136,10 @@ export const visitsCancel = defineHandler({
     if (visit.passId) await syncPassJob(ctx.db, visit.passId)
     else {
       const left = await ctx.db.select({ id: s.visit.id }).from(s.visit).where(and(eq(s.visit.jobId, visit.jobId), notInArray(s.visit.status, ["cancelled", "skipped"])))
-      if (left.length === 0) await ctx.db.update(s.job).set({ status: "cancelled", cancelledAt: ctx.now }).where(eq(s.job.id, visit.jobId))
+      if (left.length === 0) {
+        await ctx.db.update(s.job).set({ status: "cancelled", cancelledAt: ctx.now }).where(eq(s.job.id, visit.jobId))
+        await recordEvent(ctx.db, { organizationId: ctx.organizationId, about: "job", aboutId: visit.jobId, customerId: visit.customerId, jobId: visit.jobId, kind: "job.cancelled", detail: {}, who: whoOf(ctx), at: ctx.now })
+      }
     }
     await recordChange(ctx, { customerId: visit.customerId, passId: visit.passId, visitId: visit.id, kind: "visit-cancelled", detail: { name: visitName(visit.kind), reason: input.reason ?? null, day: visit.scheduledOn, amount: visit.amount } })
     return visitOut(ctx, await loadVisit(ctx, visit.id))

@@ -224,3 +224,25 @@ describe("the events a payment writes", () => {
     expect(await eventsOf(db, { kind: "payment.refunded", jobId: v.jobId })).toMatchObject([{ about: "payment", aboutId: refund.id, customerId: "c100", visitId: v.id, detail: { amount: 50, method: "card_now", refunds: card!.id } }])
   })
 })
+
+describe("the story never breaks a payment", () => {
+  it("still records the payment when the event insert throws, and logs one line", async () => {
+    const v = await repair()
+    const real = db.insert.bind(db) as (table: unknown) => unknown
+    const insert = vi.spyOn(db, "insert").mockImplementation(((table: unknown) => {
+      if (table === s.event) throw new Error("event table down")
+      return real(table)
+    }) as never)
+    const log = vi.spyOn(console, "error").mockImplementation(() => undefined)
+    try {
+      const row = await callApi(as(writeKey), paymentsRecord, { jobId: v.jobId, visitId: v.id, amount: 145, method: "cash" })
+      expect(row).toMatchObject({ visitId: v.id, amount: 145, method: "cash", status: "succeeded" })
+      expect(log).toHaveBeenCalledWith(expect.stringContaining("payment.succeeded was not recorded"))
+    } finally {
+      insert.mockRestore()
+      log.mockRestore()
+    }
+    expect((await db.select().from(s.charge).where(eq(s.charge.visitId, v.id))).filter((c) => c.status === "succeeded")).toHaveLength(1)
+    expect(await eventsOf(db, { kind: "payment.succeeded", visitId: v.id })).toHaveLength(0)
+  })
+})

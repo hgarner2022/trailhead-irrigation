@@ -4,7 +4,7 @@ import type Stripe from "stripe"
 import * as s from "@/db/schema"
 import type { Database } from "@/db/types"
 import { cardColumns } from "@/lib/customer/card"
-import { recordEvent } from "@/lib/events/record"
+import { recordEventSafe } from "@/lib/events/record"
 import { enqueue } from "@/lib/queue"
 import { paymentMethodFromSession } from "./checkout"
 
@@ -43,7 +43,7 @@ export async function applyCardUpdate(db: Database, stripe: Stripe, sessionId: s
   await db.update(s.customer).set({ stripeCustomerId: card.customerId, ...columns, updatedAt: now }).where(and(eq(s.customer.id, pass.customerId), eq(s.customer.organizationId, org)))
   await db.update(s.seasonPass).set({ ...columns, updatedAt: now }).where(mineOf(pass.customerId))
   // Written after the "already stored" check above, so a second delivery for the same session adds none.
-  await recordEvent(db, { organizationId: org, about: "customer", aboutId: pass.customerId, customerId: pass.customerId, kind: "card.saved", detail: { brand: card.brand, last4: card.last4 }, who: "system", at: now })
+  await recordEventSafe(db, { organizationId: org, about: "customer", aboutId: pass.customerId, customerId: pass.customerId, kind: "card.saved", detail: { brand: card.brand, last4: card.last4 }, who: "system", at: now })
   await stripe.customers.update(card.customerId, { invoice_settings: { default_payment_method: card.paymentMethodId } })
   if (current) await stripe.paymentMethods.detach(current).catch(() => undefined)
   const passIds = (await db.select({ id: s.seasonPass.id }).from(s.seasonPass).where(mineOf(pass.customerId))).map((p) => p.id)
