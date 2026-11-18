@@ -64,7 +64,7 @@ export async function recordPurchase(db: Database, passId: string, consent: Purc
   await enqueue(db, org, "pass-onboard", pass.id, { passId: pass.id }, now)
 
   await queuePurchaseConfirmation(db, pass.id, origin, pass.id, extras)
-  await queueStaffMessage(db, org, "admin-alert", `new-pass:${pass.id}`, { origin, title: `New Season Pass ${pass.number}`, detail: `${customer.firstName} in ${row.town} bought Season Pass ${pass.number}.`, path: "/admin/passes" })
+  await queueStaffMessage(db, org, "admin-alert", `new-pass:${pass.id}`, { origin, title: `New Season Pass ${pass.number}`, detail: `${customer.firstName} in ${row.town} bought Season Pass ${pass.number}.`, path: `/admin/visits?job=${encodeURIComponent(pass.jobId)}` })
 }
 
 /** The purchase confirmation for a pass, with whatever the pass holds today: each visit's day and calendar links, or its window wording, and how the money comes (the card on file, the link to add one, or at each visit). `key` makes it once per purchase; an admin's resend uses a new one. */

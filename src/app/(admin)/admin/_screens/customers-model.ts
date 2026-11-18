@@ -31,6 +31,8 @@ export interface CustomerRow {
   /** the pass status, or "none" */
   pass: PassStatus | "none"
   passId?: string
+  /** the pass's number, "TH-2027-0007" */
+  passNumber?: string
   /** the pass's season, with `pass` the status */
   season?: number
   nextState: NextState
@@ -73,7 +75,7 @@ export function customerRow(client: Client, passes: Pass[], visits: Visit[], tod
     ...(client.email ? { email: client.email } : {}),
     ...(client.phone ? { phone: client.phone } : {}),
     pass: pass?.status ?? ("none" as const),
-    ...(pass ? { passId: pass.id, season: pass.season } : {}),
+    ...(pass ? { passId: pass.id, passNumber: pass.number, season: pass.season } : {}),
     lastVisitAt: client.lastVisitAt,
     marketing: client.consent ? (client.consent.marketingOptIn ? ("yes" as const) : ("no" as const)) : ("not-asked" as const),
   }

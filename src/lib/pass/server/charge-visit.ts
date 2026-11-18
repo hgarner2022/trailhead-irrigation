@@ -100,7 +100,7 @@ export async function chargeVisit(db: Database, stripe: Stripe, visitId: string,
       data: { ...baseData(opts.origin, customer), passNumber: pass.number, amount: visit.amount, visitName: kindName(visit.kind), updateUrl: link },
     })
   }
-  await queueStaffMessage(db, visit.organizationId, "admin-alert", `card-failed:${visit.id}:${attempt}`, { origin: opts.origin, title: `Card declined for ${customer.firstName}`, detail: `${customer.firstName}'s card was declined for ${dollars(visit.amount)} after the ${kindName(visit.kind)} on Season Pass ${pass.number}.`, path: "/admin/passes" })
+  await queueStaffMessage(db, visit.organizationId, "admin-alert", `card-failed:${visit.id}:${attempt}`, { origin: opts.origin, title: `Card declined for ${customer.firstName}`, detail: `${customer.firstName}'s card was declined for ${dollars(visit.amount)} after the ${kindName(visit.kind)} on Season Pass ${pass.number}.`, path: `/admin/visits?visit=${encodeURIComponent(visit.id)}` })
   await emitEvent(db, visit.organizationId, "charge.failed", { visitId: visit.id, passId: pass.id, amount: visit.amount, attempt, message: result.message })
   return "failed"
 }

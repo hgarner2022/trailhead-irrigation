@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { StatusPill } from "@/components/blocks/StatusPill"
 import type { GridColumnDef } from "@/components/blocks/data-grid-table"
+import { visitsOfJob } from "@/lib/admin/links"
 import { dayLabel } from "./visit-panel-model"
 import type { VisitRow } from "./visits-model"
 
@@ -49,7 +50,7 @@ export const visitColumns: GridColumnDef<VisitRow>[] = [
     header: "Job",
     cell: ({ row }) => (
       <Link
-        href={row.original.passId ? `/admin/passes?pass=${encodeURIComponent(row.original.passId)}` : `/admin/customers?customer=${encodeURIComponent(row.original.customerId)}`}
+        href={row.original.jobId ? visitsOfJob(row.original.jobId) : `/admin/customers?customer=${encodeURIComponent(row.original.customerId)}`}
         className="text-primary-dark underline underline-offset-2"
       >
         {row.original.jobLabel}

@@ -1,6 +1,8 @@
 "use client"
 
+import Link from "next/link"
 import { useMemo } from "react"
+import { Button } from "@/components/ui/button"
 import { DataGrid } from "@/components/blocks/DataGrid"
 import { PageHeader } from "@/components/blocks/PageHeader"
 import type { AdminData } from "@/lib/admin/types"
@@ -27,11 +29,16 @@ export interface VisitsScreenProps {
   /** a tech reads the visits and changes nothing: no New job, no buttons in the panel */
   readOnly?: boolean
   actions?: VisitActions
+  /** the Job filter: only this job's visits, from `?job=`; the header says so and links back to every visit */
+  jobId?: string
   /** filter chips set on first render: Home's money line links here with the visits its figure counts */
   defaultFilters?: { column: string; values: string[] }[]
 }
 
 const TOWNS = ["Erie", "Longmont", "Louisville", "Lafayette", "Firestone", "Broomfield"]
+
+/** The header line when Visits is filtered to one job: which job and how many visits. */
+const jobLine = (rows: VisitRow[]) => `${rows.length === 0 ? "No visits on that job." : `${rows[0]!.jobLabel}: ${rows.length} ${rows.length === 1 ? "visit" : "visits"}.`}`
 
 function Grid({ rows, data, defaultFilters }: { rows: VisitRow[]; data: AdminData; defaultFilters?: VisitsScreenProps["defaultFilters"] }) {
   const open = useOpenVisit()
@@ -63,16 +70,24 @@ function Grid({ rows, data, defaultFilters }: { rows: VisitRow[]; data: AdminDat
   )
 }
 
-export function VisitsScreen({ data, today, defaultVisitId, readOnly = false, actions, defaultFilters }: VisitsScreenProps) {
-  const rows = useMemo(() => visitRows(data, today), [data, today])
+export function VisitsScreen({ data, today, defaultVisitId, readOnly = false, actions, defaultFilters, jobId }: VisitsScreenProps) {
+  const all = useMemo(() => visitRows(data, today), [data, today])
+  const rows = useMemo(() => (jobId ? all.filter((r) => r.jobId === jobId) : all), [all, jobId])
   return (
     <div data-slot="visits-screen">
       <VisitPanelHost data={data} today={today} readOnly={readOnly} actions={actions} defaultVisitId={defaultVisitId}>
         <PageHeader
           title="Visits"
-          context={visitsContext(rows)}
+          context={jobId ? jobLine(rows) : visitsContext(rows)}
           actions={
-            !readOnly && <NewJobButton data={data} today={today} actions={actions} />
+            <>
+              {jobId && (
+                <Button variant="outline" asChild>
+                  <Link href="/admin/visits">Show all visits</Link>
+                </Button>
+              )}
+              {!readOnly && <NewJobButton data={data} today={today} actions={actions} />}
+            </>
           }
         />
         <Grid rows={rows} data={data} defaultFilters={defaultFilters} />

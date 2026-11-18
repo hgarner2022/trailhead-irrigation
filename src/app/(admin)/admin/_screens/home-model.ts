@@ -128,7 +128,7 @@ export function tileModels(data: AdminData, today: string): StatTileProps[] {
     {
       label: "Passes sold",
       value: String(active),
-      href: "/admin/passes",
+      href: "/admin/customers",
     },
     {
       label: `Quotes awaiting, ${formatMoney(quotes.total)}`,
@@ -200,9 +200,9 @@ export function jobTiles(data: Pick<AdminData, "passes" | "visits">, today: stri
   const c = jobCounts(data, dayOf(today, TIME_ZONE), TIME_ZONE)
   return [
     { label: "Visits needing a day", value: String(c.needsDay), href: "/admin/schedule" },
-    { label: "Charges that didn't go through", value: String(c.chargeFailed), href: "/admin/passes" },
+    { label: "Charges that didn't go through", value: String(c.chargeFailed), href: "/admin/visits?money=failed" },
     { label: "Visits not closed", value: String(c.notClosed), href: "/admin/schedule" },
-    { label: "Pending passes, expire after an hour", value: String(c.pendingPasses), href: "/admin/passes" },
+    { label: "Pending passes, expire after an hour", value: String(c.pendingPasses), href: "/admin/customers" },
   ]
 }
 

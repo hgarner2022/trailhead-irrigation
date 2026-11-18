@@ -411,3 +411,30 @@ describe("Done and Owed on a pass visit", () => {
     expect(within(screen.getByRole("dialog")).getByRole("button", { name: "Mark done and record payment" })).toBeInTheDocument()
   })
 })
+
+describe("Visits filtered to a job (?job=)", () => {
+  it("shows only that job's visits, says which job in the header, and links back to every visit", () => {
+    const job = visitsData.visits.find((v) => v.id === noCardVisitId)!.jobId!
+    const mine = visitRows(visitsData, VISITS_TODAY).filter((r) => r.jobId === job)
+    render(
+      <UndoToastProvider>
+        <VisitsScreen data={visitsData} today={VISITS_TODAY} actions={actions()} jobId={job} />
+      </UndoToastProvider>,
+    )
+    expect(screen.getAllByRole("row")).toHaveLength(mine.length + 1)
+    expect(document.querySelector('[data-slot="page-context"]')).toHaveTextContent(`${mine[0]!.jobLabel}: ${mine.length} visit`)
+    expect(screen.getByRole("link", { name: "Show all visits" })).toHaveAttribute("href", "/admin/visits")
+  })
+
+  it("the Job column and the panel's Open job's visits both go to Visits with the job's filter", () => {
+    const job = visitsData.visits.find((v) => v.id === noCardVisitId)!.jobId!
+    render(
+      <UndoToastProvider>
+        <VisitsScreen data={visitsData} today={VISITS_TODAY} actions={actions()} defaultVisitId={noCardVisitId} />
+      </UndoToastProvider>,
+    )
+    const links = screen.getAllByRole("link", { hidden: true }).filter((l) => l.getAttribute("href") === `/admin/visits?job=${job}`)
+    expect(links.length).toBeGreaterThanOrEqual(2)
+    expect(screen.queryAllByRole("link").some((l) => (l.getAttribute("href") ?? "").startsWith("/admin/passes"))).toBe(false)
+  })
+})

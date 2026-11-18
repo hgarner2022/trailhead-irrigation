@@ -1,5 +1,6 @@
 "use client"
 
+import { visitsOfJob } from "@/lib/admin/links"
 import { PANEL_ROW, PanelFacts, PanelHeading, PanelList, PanelRowEnd, PanelRowText } from "@/components/blocks/PanelParts"
 import Link from "next/link"
 import type { ReactNode } from "react"
@@ -98,8 +99,8 @@ function JobBlock({ facts, today, onOpenVisit }: { facts: VisitFacts; today: str
         {pass && (
           <>
             {" "}
-            <Link href={`/admin/passes?pass=${encodeURIComponent(pass.id)}`} className="text-primary-dark underline underline-offset-2">
-              Open pass
+            <Link href={visitsOfJob(visit.jobId ?? facts.job?.id ?? "")} className="text-primary-dark underline underline-offset-2">
+              {"Open job's visits"}
             </Link>
           </>
         )}

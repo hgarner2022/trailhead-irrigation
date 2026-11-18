@@ -11,6 +11,7 @@ import { HomeMap } from "./HomeMap"
 import { HomeMoney } from "./HomeMoney"
 import { HomeWeek } from "./HomeWeek"
 import { routePeople } from "@/lib/admin/people"
+import { jobIdOfPass } from "@/lib/admin/links"
 
 // What Hannah opens to, her four jobs on one screen (docs/plans/2026-11-14-jobs-to-be-done.md): the money line
 // ("how is the money"), then Today or Next up ("is the week sane"), the map of that day, and Needs action
@@ -34,6 +35,8 @@ export interface HomeScreenProps {
 
 export function HomeScreen({ data, today, readOnly = false, onAttentionAction, onDismiss, visitActions }: HomeScreenProps) {
   const week = weekView(data, today)
+  // A row that names only a pass opens that pass's job on Visits, so it carries the job.
+  const attention = data.attention.map((a) => (a.passId && !a.jobId ? { ...a, jobId: jobIdOfPass(data, a.passId) } : a))
   return (
     <div data-slot="home-screen" className="space-y-6">
       <VisitPanelHost data={data} today={today} readOnly={readOnly} actions={visitActions}>
@@ -48,7 +51,7 @@ export function HomeScreen({ data, today, readOnly = false, onAttentionAction, o
               <CardTitleHeading>Needs action</CardTitleHeading>
             </CardHeader>
             <CardContent>
-              <NeedsAttention items={data.attention} now={today} onAction={readOnly ? undefined : onAttentionAction} onDismiss={readOnly ? undefined : onDismiss} readOnly={readOnly} />
+              <NeedsAttention items={attention} now={today} onAction={readOnly ? undefined : onAttentionAction} onDismiss={readOnly ? undefined : onDismiss} readOnly={readOnly} />
             </CardContent>
           </Card>
         </div>
