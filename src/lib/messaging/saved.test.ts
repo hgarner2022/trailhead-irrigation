@@ -87,11 +87,12 @@ describe("the words the office saved", () => {
       const sent: { text?: string }[] = []
       const deps: SendDeps = { email: async (m) => { sent.push(m); return { id: "re_1" } }, sms: async () => ({ id: "SM" }), smsConfigured: () => true }
       expect(await sendMessageRow(db, email[0]!.id, { deps })).toBe("sent")
-      expect(sent[0]!.text).toMatch(/Hi Andrea, your .+ is set for Wednesday, May 5\./)
+      expect(sent[0]!.text).toMatch(/Hi Andrea,\n\nYour .+ is set for Wednesday, May 5\./)
+      expect(sent[0]!.text!.match(/Hi /g)).toHaveLength(1)
       // a saved day-before email that breaks a rule is ignored, so the shipped words go out
       const broken = await db.insert(s.messageLog).values({ organizationId: ORG, customerId: "c100", visitId, kind: "day-before", key: "e-broken", channel: "email", to: "andrea@example.com", subject: "x", body: "x", data: row!.data, status: "queued" }).returning()
       await sendMessageRow(db, broken[0]!.id, { deps })
-      expect(sent[1]!.text).toContain("a reminder that we're coming tomorrow")
+      expect(sent[1]!.text).toContain("A reminder that we're coming tomorrow")
     } finally {
       await db.update(s.organization).set({ settings: org!.settings }).where(eq(s.organization.id, ORG))
     }

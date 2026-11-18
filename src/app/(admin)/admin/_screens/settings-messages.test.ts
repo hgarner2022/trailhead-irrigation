@@ -72,7 +72,9 @@ describe("previewMessage", () => {
     const edited = { ...row("date-set", "email"), body: "Hi {firstName}, you are on the list for {day}." }
     const p = previewMessage(edited, data)
     expect(p.subject).toMatch(/^Your .+ is .+/)
-    expect(p.text).toContain("you are on the list for")
+    expect(p.text).toContain("Hi ")
+    expect(p.text).toContain("You are on the list for")
+    expect(p.text.match(/Hi /g)).toHaveLength(1)
     expect(p.text).toContain("The Trailhead crew")
     expect(p.parts).toBeNull()
   })

@@ -38,17 +38,17 @@ export interface EditableMessage {
 }
 
 const TEXT_LOCKED = `Starts with "Trailhead:". Ends with the link to your ${ACCOUNT_NAME} and, on a customer's first text, "Reply STOP to opt out."`
-const EMAIL_LOCKED = `Under it: the day, who is coming and where, the calendar buttons, a button to your ${ACCOUNT_NAME}, the sign-off and our address. The subject stays as it is.`
+const EMAIL_LOCKED = `Above it: the greeting ("Hi Andrea,"). Under it: the day, who is coming and where, the calendar links, a button to your ${ACCOUNT_NAME}, the sign-off and our address. The subject stays as it is.`
 
 export const EDITABLE_MESSAGES: EditableMessage[] = [
   { key: "date-set", channel: "sms", name: "Day set, text", body: "your {service} is {day}, {window}. {who} will be there.", required: [], allowed: ["service", "address", "day", "window", "who"], locked: TEXT_LOCKED },
-  { key: "date-set", channel: "email", name: "Day set, email", body: "Hi {firstName}, your {service} is set for {day}.", required: [], allowed: ["firstName", "service", "address", "day", "window", "who"], locked: EMAIL_LOCKED },
+  { key: "date-set", channel: "email", name: "Day set, email", body: "Your {service} is set for {day}.", required: [], allowed: ["firstName", "service", "address", "day", "window", "who"], locked: EMAIL_LOCKED },
   { key: "date-moved", channel: "sms", name: "Day moved, text", body: "your {service} moved to {day}, {window}. Another day?", required: [], allowed: ["service", "address", "day", "window", "who"], locked: TEXT_LOCKED },
-  { key: "date-moved", channel: "email", name: "Day moved, email", body: "Hi {firstName}, your {service} moved to {day}.", required: [], allowed: ["firstName", "service", "address", "day", "window", "who"], locked: EMAIL_LOCKED },
+  { key: "date-moved", channel: "email", name: "Day moved, email", body: "Your {service} moved to {day}.", required: [], allowed: ["firstName", "service", "address", "day", "window", "who"], locked: EMAIL_LOCKED },
   { key: "date-confirm", channel: "sms", name: "Two weeks out, text", body: "your {service} is still {day}, {window}. Need another day?", required: [], allowed: ["service", "address", "day", "window", "who"], locked: TEXT_LOCKED },
-  { key: "date-confirm", channel: "email", name: "Two weeks out, email", body: "Hi {firstName}, we're confirming your {service}: {day}.", required: [], allowed: ["firstName", "service", "address", "day", "window", "who"], locked: `${EMAIL_LOCKED} A line about what Ryan does at the visit follows your sentence.` },
+  { key: "date-confirm", channel: "email", name: "Two weeks out, email", body: "We're confirming your {service}: {day}.", required: [], allowed: ["firstName", "service", "address", "day", "window", "who"], locked: `${EMAIL_LOCKED} A line about what Ryan does at the visit follows your sentence.` },
   { key: "day-before", channel: "sms", name: "Day before, text", body: "{who} is coming tomorrow, {day}, {window}, for your {service}.", required: [], allowed: ["service", "address", "day", "window", "who"], locked: TEXT_LOCKED },
-  { key: "day-before", channel: "email", name: "Day before, email", body: "Hi {firstName}, a reminder that we're coming tomorrow, {day}, for your {service}. {who} will be there.", required: [], allowed: ["firstName", "service", "address", "day", "window", "who"], locked: EMAIL_LOCKED },
+  { key: "day-before", channel: "email", name: "Day before, email", body: "A reminder that we're coming tomorrow, {day}, for your {service}. {who} will be there.", required: [], allowed: ["firstName", "service", "address", "day", "window", "who"], locked: EMAIL_LOCKED },
   { key: "on-the-way", channel: "sms", name: "On the way, text", body: "{who} is on the way to {address} for your {service}.", required: [], allowed: ["service", "address", "day", "window", "who"], locked: TEXT_LOCKED },
   { key: "invoice-reminder", channel: "sms", name: "Invoice reminder, text", body: "a reminder that {amount} for the {service} is still unpaid, due {due}. Pay here: {payLink}", required: ["amount", "payLink"], allowed: ["amount", "service", "due", "payLink"], locked: 'Starts with "Trailhead:". Ends with "Reply STOP to opt out." on a customer\'s first text.' },
 ]
@@ -109,6 +109,14 @@ export function overridesOf(saved: { key: string; channel: Channel; body: string
   }
   return out
 }
+
+/** The greeting is its own line under the heading ("Hi Andrea,"), so a saved sentence that opens with its own ("Hi {firstName},", "Hi, {firstName},", "Hello {firstName}") loses that opening at send time and in the Settings preview. Empty when nothing else was written. */
+export function withoutGreeting(body: string): string {
+  return body.replace(/^\s*(?:hi|hello|hey)\b,?\s*\{firstName\}\s*[,:.-]?\s*/i, "").trim()
+}
+
+/** A sentence that lost its opening starts with a capital again. */
+export const capitalFirst = (text: string) => `${text.charAt(0).toUpperCase()}${text.slice(1)}`
 
 export const bodyOf = (overrides: Overrides | undefined, key: EditableMessage["key"], channel: Channel) => overrides?.[slot(key, channel)] ?? defaultBody(key, channel)
 

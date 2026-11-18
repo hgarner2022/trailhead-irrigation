@@ -31,7 +31,7 @@ describe("fillTemplate", () => {
   it("reads 'We're' for an empty who, leaves out the sentence that says who will be there, and drops an empty window", () => {
     expect(fillTemplate(defaultBody("day-before", "sms"), { ...fill, who: null })).toBe("We're coming tomorrow, Fri, Oct 14, 8 to 10 am, for your fall blowout.")
     expect(fillTemplate(defaultBody("date-set", "sms"), { ...fill, who: null, window: null })).toBe("your fall blowout is Fri, Oct 14.")
-    expect(fillTemplate(defaultBody("day-before", "email"), { ...fill, who: null, day: "Friday, October 14" })).toBe("Hi Andrea, a reminder that we're coming tomorrow, Friday, October 14, for your fall blowout.")
+    expect(fillTemplate(defaultBody("day-before", "email"), { ...fill, who: null, day: "Friday, October 14" })).toBe("A reminder that we're coming tomorrow, Friday, October 14, for your fall blowout.")
   })
   it("leaves a placeholder it does not know as written", () => {
     expect(fillTemplate("Your {truck} day, {firstName}.", fill)).toBe("Your {truck} day, Andrea.")
