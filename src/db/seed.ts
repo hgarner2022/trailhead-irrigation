@@ -183,7 +183,9 @@ async function seedPasses(db: Database, snapshot: AdminData, org: string) {
     await db
       .insert(s.job)
       .values({
-        id: jobId, organizationId: org, customerId: pass.clientId, propertyId, kind: "pass", source: "checkout", season: pass.season, passNumber: pass.number, status: pass.status === "lapsed" ? "done" : pass.status, price: pass.visits.reduce((n, v) => n + v.amount, 0),
+        id: jobId, organizationId: org, customerId: pass.clientId, propertyId, source: "checkout", season: pass.season, passNumber: pass.number,
+        // `job.kind` is not read or written by the app (the kind is derived); the seed still fills it because the migration tests build databases from before 0021, where it is not null.
+        kind: "pass" as const,
         // The old pass id and the sold day, on insert only: the day the job row is made (its created_at), empty for a pending fixture, which is not sold yet (migration 0021's rule).
         legacyPassId: pass.id,
         soldOn: pass.status === "pending" ? null : toMountainDay(new Date().toISOString()),
@@ -227,35 +229,36 @@ async function seedPasses(db: Database, snapshot: AdminData, org: string) {
           propertyId,
           kind: v.kind,
           window: v.window,
-          amount: v.amount,
           status: v.completedAt ? ("completed" as const) : v.scheduledAt ? ("scheduled" as const) : ("unscheduled" as const),
           preference: v.kind === "turn-on" ? pass.turnOnPreference : v.kind === "blowout" ? pass.blowoutPreference : undefined,
           scheduledOn: v.scheduledAt ? toMountainDay(v.scheduledAt) : undefined,
           startTime: v.startTime,
           completedOn: v.completedAt ? toMountainDay(v.completedAt) : undefined,
-          chargedAt: v.chargedAt ? new Date(v.chargedAt) : undefined,
         })),
       )
       .onConflictDoNothing()
-    // A visit the snapshot shows as charged gets the one succeeded payment row a real charge would have written, on insert only: a database that already holds a real attempt for the visit keeps it.
-    const charged = pass.visits.filter((v) => v.chargedAt)
+    // A visit the snapshot shows as charged carries one succeeded payment: it is written as the row a real charge would have, on insert only (a database that already holds a real attempt for the visit keeps it).
+    const charged = pass.visits.filter((v) => v.payments?.some((p) => p.status === "succeeded" && p.amount > 0))
     if (charged.length)
       await db
         .insert(s.charge)
         .values(
-          charged.map((v) => ({
-            id: `charge-${pass.id}-${v.kind}-1`,
-            organizationId: org,
-            jobId,
-            passId: pass.id,
-            visitId: `${pass.id}-${v.kind}`,
-            customerId: pass.clientId,
-            attempt: 1,
-            amount: v.amount,
-            status: "succeeded" as const,
-            method: "card_on_file" as const,
-            paidOn: toMountainDay(v.chargedAt!),
-          })),
+          charged.map((v) => {
+            const paid = v.payments!.find((p) => p.status === "succeeded" && p.amount > 0)!
+            return {
+              id: `charge-${pass.id}-${v.kind}-1`,
+              organizationId: org,
+              jobId,
+              passId: pass.id,
+              visitId: `${pass.id}-${v.kind}`,
+              customerId: pass.clientId,
+              attempt: 1,
+              amount: paid.amount,
+              status: "succeeded" as const,
+              method: (paid.method as "card_on_file") ?? "card_on_file",
+              paidOn: paid.paidOn ?? toMountainDay(v.completedAt ?? new Date().toISOString()),
+            }
+          }),
         )
         .onConflictDoNothing()
     // The job's line per visit, with the id migration 0014's backfill gives the same visit (`line_<visit id>`), so a re-run of the backfill adds nothing to a seeded database.

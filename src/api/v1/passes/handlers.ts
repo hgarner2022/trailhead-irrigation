@@ -18,7 +18,6 @@ import { cleanEmail, cleanName, cleanText, normalizePhone } from "@/lib/format/c
 import { queuePurchaseConfirmation } from "@/lib/pass/server/purchase"
 import { insertPassVisits, makePassRows, WINDOW_LABEL } from "@/lib/pass/server/rows"
 import { loadPassRecord, type PassRecord } from "@/lib/pass/server/record"
-import { refreshPassJobPrice } from "@/lib/pass/server/job"
 import { CONSENT_SNAPSHOT, consentSnapshot } from "@/lib/pass/server/consent-snapshot"
 import { outOfAreaMessage } from "@/lib/places"
 import { queueCardUpdateLink } from "@/lib/pass/server/card-link"
@@ -281,7 +280,6 @@ export const passesCancel = defineHandler({
       .where(and(eq(s.visit.jobId, row.pass.id), notInArray(s.visit.status, ["completed", "cancelled"])))
       .returning({ id: s.visit.id })
     await cancelVisitLines(ctx.db, cancelled.map((v) => v.id), ctx.now)
-    await refreshPassJobPrice(ctx.db, row.pass.id)
     await recordChange(ctx, { customerId: row.pass.customerId, jobId: row.pass.id, kind: "cancelled", detail: { reason: input.reason ?? null, visits: cancelled.length, passNumber: row.job.passNumber ?? "" } })
     await enqueue(ctx.db, ctx.organizationId, "pass-cancel", row.pass.id, { passId: row.pass.id })
     await queueCancelledEmail(ctx.db, row.pass.id, readAppUrl())
@@ -387,11 +385,10 @@ export const passesAddInspection = defineHandler({
     const amount = visitPrice(SEASON_PASS_ADD_ON, zones)
     const [visit] = await ctx.db
       .insert(s.visit)
-      .values({ organizationId: ctx.organizationId, jobId: row.pass.id, customerId: row.pass.customerId, propertyId: row.pass.propertyId, kind: "inspection", window: WINDOW_LABEL.inspection, amount })
+      .values({ organizationId: ctx.organizationId, jobId: row.pass.id, customerId: row.pass.customerId, propertyId: row.pass.propertyId, kind: "inspection", window: WINDOW_LABEL.inspection })
       .returning({ id: s.visit.id })
     const lines = linesForPassVisits([SEASON_PASS_ADD_ON], zones).map((line) => ({ ...line, visitId: visit!.id }))
     await insertLines(ctx.db, { organizationId: ctx.organizationId, jobId: row.pass.id, now: ctx.now }, lines)
-    await refreshPassJobPrice(ctx.db, row.pass.id)
     await recordChange(ctx, { customerId: row.pass.customerId, jobId: row.pass.id, visitId: visit!.id, kind: "inspection-added", detail: { amount } })
     return { id: row.pass.id, inspection: true as const, visitId: visit!.id, amount }
   },
@@ -414,7 +411,6 @@ export const passesSkipVisit = defineHandler({
     if (!(["unscheduled", "scheduled"] as string[]).includes(visit.status)) throw new ApiError("unprocessable", "This visit can no longer be skipped")
     await ctx.db.update(s.visit).set({ status: "skipped", personId: null, scheduledOn: null, startTime: null, stopOrder: null }).where(eq(s.visit.id, visit.id))
     await cancelVisitLines(ctx.db, [visit.id], ctx.now)
-    await ctx.db.update(s.job).set({ price: sql`greatest(coalesce(${s.job.price}, 0) - ${visit.amount}, 0)` }).where(eq(s.job.id, visit.jobId))
     await recordChange(ctx, { customerId: row.pass.customerId, jobId: row.pass.id, visitId: visit.id, kind: "skipped", detail: { name: visitName(visit.kind), visit: input.kind } })
     return { id: row.pass.id, visitId: visit.id, status: "skipped" as const }
   },

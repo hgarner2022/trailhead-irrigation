@@ -5,7 +5,8 @@ import * as s from "@/db/schema"
 import type { Database } from "@/db/types"
 import { cardColumns } from "@/lib/customer/card"
 import { recordEventSafe } from "@/lib/events/record"
-import { paidTotal } from "@/lib/money/words"
+import { loadVisitPrice } from "@/lib/money/record"
+import { isPaid } from "@/lib/money/words"
 import { loadPassRecord } from "@/lib/pass/server/record"
 import { enqueue } from "@/lib/queue"
 import { paymentMethodFromSession } from "./checkout"
@@ -53,9 +54,11 @@ export async function applyCardUpdate(db: Database, stripe: Stripe, sessionId: s
     .where(and(eq(s.charge.organizationId, org), inArray(s.charge.jobId, jobIds), eq(s.charge.status, "failed"), isNotNull(s.charge.visitId)))
     .orderBy(desc(s.charge.createdAt))
   for (const visitId of new Set(failed.map((f) => f.visitId!))) {
-    // A visit paid since (the office recorded a check, or a bill was paid) is not charged again: its payment rows say so.
+    // Only a visit that is Done and not paid is charged again: one paid since (the office recorded a check, or a bill was paid) says so in its payment rows.
+    const [visit] = await db.select({ status: s.visit.status }).from(s.visit).where(and(eq(s.visit.id, visitId), eq(s.visit.organizationId, org)))
+    if (visit?.status !== "completed") continue
     const rows = await db.select({ amount: s.charge.amount, status: s.charge.status }).from(s.charge).where(eq(s.charge.visitId, visitId))
-    if (paidTotal(rows) > 0) continue
+    if (isPaid(rows, await loadVisitPrice(db, org, visitId))) continue
     await enqueue(db, org, "pass-charge", `${visitId}:card-${sessionId}`, { visitId, afterCardUpdate: true })
   }
   return "applied"

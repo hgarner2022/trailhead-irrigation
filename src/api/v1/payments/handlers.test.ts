@@ -39,11 +39,11 @@ beforeEach(() => {
 })
 
 describe("payments.record", () => {
-  it("writes a succeeded row on the job with the day it arrived, the visit's charged_at alias and the receipt, and lists it by job and by customer", async () => {
+  it("writes a succeeded row on the job with the day it arrived, the visit's derived chargedAt and the receipt, and lists it by job and by customer", async () => {
     const v = await repair()
     const row = await callApi(as(writeKey), paymentsRecord, { jobId: v.jobId, visitId: v.id, amount: 145, method: "check", reference: "1042" })
     expect(row).toMatchObject({ jobId: v.jobId, visitId: v.id, customerId: "c100", amount: 145, method: "check", reference: "1042", status: "succeeded", paidOn: "2027-05-07", refundsPaymentId: null })
-    expect((await db.select().from(s.visit).where(eq(s.visit.id, v.id)))[0]!.chargedAt).toBeInstanceOf(Date)
+    expect((await callApi(as(readKey), visitsGet, { id: v.id })).chargedAt).not.toBeNull()
     const receipts = (await db.select().from(s.messageLog)).filter((m) => m.visitId === v.id && m.kind === "receipt")
     expect(receipts).toHaveLength(1)
     expect(receipts[0]!.body).toContain("check")
@@ -77,7 +77,7 @@ describe("payments.record", () => {
     const row = await callApi(as(writeKey), paymentsRecord, { jobId: v.jobId, visitId: v.id, amount: 3200, method: "venmo", paidOn: "2027-05-05" })
     expect(row.paidOn).toBe("2027-05-05")
     expect((await db.select().from(s.lineItem).where(eq(s.lineItem.visitId, v.id)))[0]!.unitPrice).toBe(3200)
-    expect((await db.select().from(s.job).where(eq(s.job.id, v.jobId)))[0]!.price).toBe(3200)
+    expect((await callApi(as(readKey), customersGet, { id: "c100" })).jobs.find((j) => j.id === v.jobId)!.price).toBe(3200)
     const whole = await callApi(as(writeKey), paymentsRecord, { jobId: v.jobId, amount: 100, method: "cash" })
     expect(whole).toMatchObject({ visitId: null, jobId: v.jobId, amount: 100 })
     const job = (await callApi(as(readKey), customersGet, { id: "c100" })).jobs.find((j) => j.id === v.jobId)!
@@ -148,7 +148,7 @@ describe("payments.refund", () => {
     expect(stripe.calls.refundsCreate).not.toHaveBeenCalled()
     const job = (await callApi(as(readKey), customersGet, { id: "c100" })).jobs.find((j) => j.id === v.jobId)!
     expect(job.money).toMatchObject({ paid: 0, owed: 145, words: "$145 owed" })
-    expect((await db.select().from(s.visit).where(eq(s.visit.id, v.id)))[0]!.chargedAt).toBeNull()
+    expect((await callApi(as(readKey), visitsGet, { id: v.id })).chargedAt).toBeNull()
     await expect(callApi(as(), paymentsRefund, { paymentId: paid.id })).rejects.toMatchObject({ code: "conflict" })
     await expect(callApi(as(), paymentsRefund, { paymentId: refund.id })).rejects.toMatchObject({ code: "unprocessable" })
   })

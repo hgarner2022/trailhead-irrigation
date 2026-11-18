@@ -4,7 +4,8 @@ import { eq } from "drizzle-orm"
 import * as s from "@/db/schema"
 import type { TestDb } from "@/db/test-db"
 import { callApi } from "@/api/core/call"
-import { apiDb, ctxFor, jobIdOfPassId, ORG, owner, passViewOf, readKey, setPass, tech } from "@/api/test-helpers"
+import { apiDb, ctxFor, jobIdOfPassId, linesOfJob, ORG, owner, passViewOf, readKey, setPass, tech } from "@/api/test-helpers"
+import { linesOfVisit, visitPrice } from "@/lib/jobs/lines"
 import { eventsNote } from "@/api/v1/events/handlers"
 import { visitsMove } from "@/api/v1/visits/handlers"
 import { recordEvent } from "@/lib/events/record"
@@ -137,7 +138,7 @@ describe("a charge with no card to charge", () => {
     const row = (await getLiveAdminData(ctxFor(db, owner))).attention.find((a) => a.kind === "no-card")
     expect(row).toMatchObject({ kind: "no-card", visitId: "p6-turn-on", passId: "job_p6", message: "No card to charge for Dana's spring turn-on" })
     const [visit] = await db.select().from(s.visit).where(eq(s.visit.id, "p6-turn-on"))
-    await db.insert(s.charge).values({ organizationId: ORG, jobId: visit!.jobId, customerId: visit!.customerId, visitId: "p6-turn-on", attempt: 1, amount: visit!.amount, method: "cash", status: "succeeded", paidOn: "2027-05-07" })
+    await db.insert(s.charge).values({ organizationId: ORG, jobId: visit!.jobId, customerId: visit!.customerId, visitId: "p6-turn-on", attempt: 1, amount: visitPrice(linesOfVisit(await linesOfJob(db, visit!.jobId), visit!.id)), method: "cash", status: "succeeded", paidOn: "2027-05-07" })
     expect((await getLiveAdminData(ctxFor(db, owner))).attention.some((a) => a.kind === "no-card")).toBe(false)
   })
 })

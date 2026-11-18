@@ -3,14 +3,15 @@
  * Pure: `live.ts` fetches, this shapes, and the tests run it on a seeded
  * database. Calendar days are Mountain time; instants are ISO strings.
  */
-import { dayOf, zonedToUtc } from "./calendar"
-import { TIME_ZONE, fullName } from "./format"
+import { zonedToUtc } from "./calendar"
+import { fullName } from "./format"
 import { causeOf, groupAttention, type QueueAttention } from "./attention-groups"
 import { jobTotal } from "@/lib/jobs/lines"
+import { stageOf } from "@/lib/jobs/stage"
 import { invoiceOpen, invoiceStatus } from "@/lib/money/invoice"
 import { allocateJobPayments, jobMoney as moneyOfJob, jobOwed } from "@/lib/money/words"
 import { NOT_CLOSED_LOOKBACK_DAYS, visitJob, visitPaid } from "./jobs"
-import { storiesOf, type StoryEvent } from "./story"
+import { newestNote, storiesOf, type StoryEvent } from "./story"
 import type {
   AdminInvoice, AdminPayment, SoldJob, AdminData, Attention, BusyBlock, Client, Consent, Invoice, Message, MessageKind, MonthTotal, Pass, PassVisit, Quote, SettingsChange,
   Person, ServiceItem, AreaGroup, OrganizationSettings, Property, Town, Visit, VisitKind, VisitStatus, Yard,
@@ -24,8 +25,6 @@ export interface ApiVisit {
   id: string; jobId?: string; notes?: string | null; passId: string | null; bookingId: string | null; customerId: string; firstName: string; town: Town; kind: string; status: string
   window: string | null; amount: number; preference: string | null; awaitingPick: boolean; personId: string | null; personName?: string | null; scheduledOn: string | null
   notDoneReason?: string | null; paidBy?: string | null; paymentStatus?: string; startTime: string | null; durationMinutes?: number | null; stopOrder: number | null; completedOn: string | null
-  /** @deprecated the old charge flag; the screens read the payment rows, never this */
-  chargedAt?: string | null
   /** the visit's own payment rows as `visits.list` sends them; `ShapeInput.paymentRows` (the whole organization's) wins when given */
   payments?: { id: string; jobId: string | null; visitId: string | null; amount: number; method: string; status: string; paidOn: string | null; refundsPaymentId: string | null; createdAt?: string }[]
   exception: { kind: "moved-in-jobber"; at: string; note: string } | null; lat: number | null; lng: number | null
@@ -52,7 +51,8 @@ export interface MirrorVisit { id: string; clientId: string | null; kind: string
 export interface MirrorJob { id: string; clientId: string | null; jobberUrl: string | null }
 export interface MirrorQuote { id: string; clientName: string | null; town: Town | null; total: number | null; sentAt: Date | null; status: Quote["status"] | null; jobberUrl: string | null }
 export interface MirrorInvoice { id: string; clientName: string | null; total: number | null; issuedAt: Date | null; dueAt: Date | null; status: Invoice["status"] | null; jobberUrl: string | null }
-export interface JobRow { id: string; customerId: string; kind: SoldJob["kind"]; status: SoldJob["status"]; legacyPassId?: string | null; price: number | null; source: SoldJob["source"]; passNumber?: string | null; notes: string | null; createdAt?: Date }
+/** A `job` row as live.ts reads it. `kind` is the derived kind (`loadJobKinds`); the stage, price and notes are worked out here from the lines, the visits and the events. */
+export interface JobRow { id: string; customerId: string; kind: SoldJob["kind"]; legacyPassId?: string | null; source: SoldJob["source"]; passNumber?: string | null; soldOn: string | null; quoteSentOn: string | null; quoteAcceptedOn: string | null; cancelledAt: Date | null; createdAt?: Date }
 export interface LineRow { id: string; jobId: string; visitId: string | null; name: string; description: string | null; quantity: number; unitPrice: number; taxable: boolean; cancelledAt: Date | null }
 /** A payment row (`charge`) as live.ts reads it: refunds are negative; `attempt` numbers a visit's tries. */
 export interface PaymentRow { id: string; jobId: string | null; visitId: string | null; amount: number; method: string; status: string; paidOn: string | null; refundsPaymentId: string | null; reference?: string | null; attempt: number; createdAt: Date }
@@ -337,10 +337,15 @@ export function shapeAdminData(i: ShapeInput): AdminData {
     const payments = ordered.filter((r) => r.jobId === j.id || (r.visitId !== null && mineIds.has(r.visitId))).map(paymentOf)
     const bill = billOf.get(j.id)
     const money = moneyOfJob(lines, payments, mine.map((v) => ({ id: v.id, cancelled: v.status === "cancelled" || v.status === "skipped", price: visitPriceOf(v, lines), done: v.status === "completed", doneOn: v.completedOn })), bill ? {} : undefined, paidBillVisits(j.id))
+    // The stage is read from the facts (`stageOf`); the job has no typed status, price or notes: the price is the lines' total, the notes the newest note event.
+    const status = stageOf({ kind: j.kind, cancelledAt: j.cancelledAt, soldOn: j.soldOn, quoteSentOn: j.quoteSentOn, quoteAcceptedOn: j.quoteAcceptedOn, lines, visits: mine })
+    const total = jobTotal(lines)
+    const note = newestNote(i.events, "job", j.id)
     return {
-      id: j.id, customerId: j.customerId, kind: j.kind, status: j.status, source: j.source, ...(bill ? { invoice: bill } : {}), ...(stories ? { timeline: stories.ofJob(j.id) } : {}),
+      id: j.id, customerId: j.customerId, kind: j.kind, status, source: j.source, ...(bill ? { invoice: bill } : {}), ...(stories ? { timeline: stories.ofJob(j.id) } : {}),
       ...(i.lineRows ? { lines: lines.map((l) => ({ id: l.id, name: l.name, quantity: l.quantity, unitPrice: l.unitPrice, taxable: l.taxable, ...(l.description ? { description: l.description } : {}), ...(l.cancelledAt ? { cancelledAt: iso(l.cancelledAt) } : {}), ...(l.visitId ? { visitId: l.visitId } : {}) })), total: jobTotal(lines), payments, money } : {}),
-      ...(j.price !== null ? { price: j.price } : {}), ...(j.notes ? { notes: j.notes } : {}), ...(j.createdAt ? { soldOn: dayOf(iso(j.createdAt), TIME_ZONE) } : {}),
+      ...(total > 0 ? { price: total } : {}), ...(note ? { notes: note } : {}), ...(j.soldOn ? { soldOn: j.soldOn } : {}),
+      ...(j.quoteSentOn ? { quoteSentOn: j.quoteSentOn } : {}), ...(j.quoteAcceptedOn ? { quoteAcceptedOn: j.quoteAcceptedOn } : {}),
       ...(pass ? { passId: pass.id, passNumber: j.passNumber ?? pass.number } : {}), ...(j.legacyPassId ? { legacyPassId: j.legacyPassId } : {}),
       visitIds: i.visits.filter((v) => v.jobId === j.id).map((v) => v.id),
     }

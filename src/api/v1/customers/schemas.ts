@@ -58,10 +58,10 @@ export const CustomerOut = z.object({
 export const JobOut = z.object({
   id: Id,
   kind: z.enum(["pass", "repair", "install", "other"]),
-  status: z.enum(["pending", "active", "done", "cancelled"]),
-  price: z.number().int().nullable().describe("Whole dollars; null until quoted."),
+  status: z.enum(["needs-a-quote", "quoted", "open", "done", "cancelled"]).describe("The job's stage, read from its facts (never typed): cancelled, done when every live visit is, then for work that is not a Season Pass quoted or needs-a-quote, else open."),
+  price: z.number().int().nullable().describe("Whole dollars: the job total (its lines added up), null while it is 0."),
   source: z.enum(["checkout", "office", "site", "renewal"]),
-  notes: z.string().nullable(),
+  notes: z.string().nullable().describe("The text of the newest note about the job (its story holds every note)."),
   createdAt: Iso,
   passId: Id.nullable(),
   passNumber: z.string().nullable(),

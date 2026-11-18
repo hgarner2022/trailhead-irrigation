@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
-import { eq } from "drizzle-orm"
+import { eq, isNull } from "drizzle-orm"
 import * as s from "@/db/schema"
 import type { TestDb } from "@/db/test-db"
 import { callApi } from "../../core/call"
@@ -45,12 +45,12 @@ describe("customers", () => {
     const [v] = await db.select().from(s.visit).where(eq(s.visit.id, "p1-turn-on"))
     const job = await passJobOf(db, "p1")
     const read = async () => (await callApi(ctxFor(db, readKey), customersGet, { id: v!.customerId })).jobs.find((j) => j.id === v!.jobId)!
-    expect(await read()).toMatchObject({ passId: job.id, passNumber: job.passNumber, status: "active" })
+    expect(await read()).toMatchObject({ passId: job.id, passNumber: job.passNumber, status: "open", kind: "pass" })
     await db.update(s.job).set({ passNumber: "TH-2027-7777" }).where(eq(s.job.id, v!.jobId))
     expect(await read()).toMatchObject({ passId: job.id, passNumber: "TH-2027-7777" })
     await db.update(s.job).set({ passNumber: job.passNumber }).where(eq(s.job.id, v!.jobId))
     // a job that is not a Season Pass has no pass id
-    const [other] = await db.select().from(s.job).where(eq(s.job.kind, "repair")).limit(1)
+    const [other] = await db.select().from(s.job).where(isNull(s.job.season)).limit(1)
     if (other) expect((await callApi(ctxFor(db, readKey), customersGet, { id: other.customerId })).jobs.find((j) => j.id === other.id)).toMatchObject({ passId: null })
   })
   it("rejects a bad email, a missing name and a bad town", async () => {

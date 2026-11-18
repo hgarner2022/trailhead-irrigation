@@ -8,6 +8,7 @@ import { adminKey, apiDb, ctxFor, readKey, writeKey } from "../../test-helpers"
 import { customersGet } from "../customers/handlers"
 import { passesSell } from "../passes/sell"
 import { paymentsRecord } from "../payments/handlers"
+import { visitsGet } from "../visits/handlers"
 import { visitsCancel, visitsCreate } from "../visits/office"
 import { visitsMarkClosed } from "../visits/money"
 import { linesAdd, linesCancel, linesUpdate } from "./handlers"
@@ -78,12 +79,12 @@ describe("lines.add", () => {
 })
 
 describe("lines.update and lines.cancel", () => {
-  it("reprices and renames a live line, and a visit's own line keeps the visit's amount in step", async () => {
+  it("reprices and renames a live line, and the visit's price is its line's", async () => {
     const v = await callApi(as(), visitsCreate, { customerId: "c100", kind: "repair", price: 145 })
     const [own] = await liveLines(v.jobId)
     const out = await callApi(as(), linesUpdate, { id: own!.id, unitPrice: 160, quantity: 2, name: "Repair, two heads" })
     expect(out).toMatchObject({ name: "Repair, two heads", quantity: 2, unitPrice: 160, jobTotal: 320 })
-    expect((await db.select().from(s.visit).where(eq(s.visit.id, v.id)))[0]!.amount).toBe(320)
+    expect((await callApi(as(), visitsGet, { id: v.id })).amount).toBe(320)
     // nothing given changes nothing
     expect(await callApi(as(), linesUpdate, { id: own!.id })).toMatchObject({ unitPrice: 160, jobTotal: 320 })
   })

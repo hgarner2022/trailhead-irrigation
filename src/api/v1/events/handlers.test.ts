@@ -6,6 +6,7 @@ import type { TestDb } from "@/db/test-db"
 import { recordEvent } from "@/lib/events/record"
 import { callApi } from "../../core/call"
 import { adminKey, apiDb, ctxFor, customerPerson, eventsOf, ORG, owner, readKey, tech, writeKey } from "../../test-helpers"
+import { customersGet } from "../customers/handlers"
 import { passesGet } from "../passes/handlers"
 import { visitsGet } from "../visits/handlers"
 import { eventsList, eventsNote } from "./handlers"
@@ -42,7 +43,9 @@ beforeAll(async () => {
 afterAll(() => db.close())
 
 const list = (input: Record<string, unknown>, principal: Parameters<typeof ctxFor>[1] = readKey) => callApi(ctxFor(db, principal), eventsList, input)
-const note = (input: Record<string, unknown>, principal: Parameters<typeof ctxFor>[1] = adminKey) => callApi(ctxFor(db, principal), eventsNote, input)
+// each note is a minute after the last, so "the newest note" is never a tie
+let tick = 0
+const note = (input: Record<string, unknown>, principal: Parameters<typeof ctxFor>[1] = adminKey) => callApi(ctxFor(db, principal, new Date(Date.UTC(2027, 3, 20, 15, tick++)).toISOString()), eventsNote, input)
 
 describe("events.list", () => {
   it("lists a customer's story newest first with the name of who did it, and never another organization's rows", async () => {
@@ -118,18 +121,19 @@ describe("events.note", () => {
     expect(out).toMatchObject({ about: "customer", aboutId: customerId, customerId, jobId: null, visitId: null, kind: "note", detail: { text: "Call before coming" }, who: "api", whoName: null, at: "2027-04-20T15:00:00.000Z" })
     expect(await storedNote("customer", customerId)).toMatchObject({ id: out.id, customerId, who: "api", detail: { text: "Call before coming" } })
   })
-  it("adds a note about a visit: the event with its job and customer, and the visit's notes alias", async () => {
+  it("adds a note about a visit: the event with its job and customer, and the visit's notes read the newest one", async () => {
     const out = await note({ about: "visit", aboutId: visitId, text: "Gate sticks" }, owner)
     expect(out).toMatchObject({ about: "visit", aboutId: visitId, customerId, jobId, visitId, who: owner.email, whoName: "Owner", detail: { text: "Gate sticks" } })
     expect(await storedNote("visit", visitId)).toMatchObject({ id: out.id, jobId, visitId })
-    const [visit] = await db.select().from(s.visit).where(eq(s.visit.id, visitId))
-    expect(visit!.notes).toBe("Gate sticks")
+    expect((await callApi(ctxFor(db, writeKey), visitsGet, { id: visitId })).notes).toBe("Gate sticks")
   })
-  it("adds a note about a job: the event with its customer, and the job's notes alias", async () => {
+  it("adds a note about a job: the event with its customer, and the job's notes read the newest one", async () => {
     const out = await note({ about: "job", aboutId: jobId, text: "Paid at the door" })
     expect(out).toMatchObject({ about: "job", aboutId: jobId, customerId, jobId, visitId: null })
-    const [job] = await db.select().from(s.job).where(eq(s.job.id, jobId))
-    expect(job!.notes).toBe("Paid at the door")
+    const read = async () => (await callApi(ctxFor(db, writeKey), customersGet, { id: customerId })).jobs.find((j) => j.id === jobId)!.notes
+    expect(await read()).toBe("Paid at the door")
+    await note({ about: "job", aboutId: jobId, text: "Left the gate open" })
+    expect(await read()).toBe("Left the gate open")
   })
   it("adds a note about a property without touching the property's standing notes", async () => {
     await db.update(s.property).set({ notes: "Sprinkler heads along the fence" }).where(eq(s.property.id, propertyId))

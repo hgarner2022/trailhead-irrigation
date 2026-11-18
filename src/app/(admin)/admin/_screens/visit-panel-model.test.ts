@@ -30,7 +30,7 @@ describe("visitFacts money", () => {
   const world = (payments: ReturnType<typeof row>[], visits: Visit[]): AdminData =>
     ({
       clients: [], passes: [], messages: [], visits,
-      jobs: [{ id: "j1", customerId: "c", kind: "repair", status: "active", source: "office", visitIds: visits.map((v) => v.id), lines: visits.map((v) => ({ id: `l-${v.id}`, name: "Repair", quantity: 1, unitPrice: 145, taxable: false, visitId: v.id })), payments }],
+      jobs: [{ id: "j1", customerId: "c", kind: "repair", status: "open", source: "office", visitIds: visits.map((v) => v.id), lines: visits.map((v) => ({ id: `l-${v.id}`, name: "Repair", quantity: 1, unitPrice: 145, taxable: false, visitId: v.id })), payments }],
     }) as unknown as AdminData
   const a = mk("a")
   const b = mk("b", { status: "scheduled", completedOn: undefined, scheduledOn: "2026-11-20" })

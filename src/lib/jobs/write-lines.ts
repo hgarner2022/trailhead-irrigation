@@ -118,23 +118,15 @@ export async function addJobLine(db: Database, line: NewJobLine): Promise<typeof
   return row!
 }
 
-/** Changes a line's name, quantity or unit price; a field left out stays. A visit's own line keeps the visit's amount alias in step. */
-export async function updateLineRow(db: Database, line: { id: string; visitId: string | null }, changes: { name?: string; quantity?: number; unitPrice?: number }, now: Date): Promise<typeof s.lineItem.$inferSelect> {
+/** Changes a line's name, quantity or unit price; a field left out stays. A visit's price is its lines', so nothing else follows. */
+export async function updateLineRow(db: Database, line: { id: string }, changes: { name?: string; quantity?: number; unitPrice?: number }, now: Date): Promise<typeof s.lineItem.$inferSelect> {
   const set = Object.fromEntries(Object.entries(changes).filter(([, v]) => v !== undefined))
   const [row] = await db.update(s.lineItem).set({ ...set, updatedAt: now }).where(eq(s.lineItem.id, line.id)).returning()
-  if (line.visitId) await syncVisitAmount(db, line.visitId)
   return row!
 }
 
-/** Cancels one line: it counts for nothing from now on, and a visit's amount alias follows. */
-export async function cancelLineRow(db: Database, line: { id: string; visitId: string | null }, now: Date): Promise<typeof s.lineItem.$inferSelect> {
+/** Cancels one line: it counts for nothing from now on. */
+export async function cancelLineRow(db: Database, line: { id: string }, now: Date): Promise<typeof s.lineItem.$inferSelect> {
   const [row] = await db.update(s.lineItem).set({ cancelledAt: now, updatedAt: now }).where(eq(s.lineItem.id, line.id)).returning()
-  if (line.visitId) await syncVisitAmount(db, line.visitId)
   return row!
-}
-
-/** `visit.amount` is an alias of the visit's own live lines until step 6. */
-async function syncVisitAmount(db: Database, visitId: string): Promise<void> {
-  const lines = await db.select().from(s.lineItem).where(and(eq(s.lineItem.visitId, visitId), isNull(s.lineItem.cancelledAt)))
-  await db.update(s.visit).set({ amount: lines.reduce((sum, l) => sum + l.quantity * l.unitPrice, 0) }).where(eq(s.visit.id, visitId))
 }

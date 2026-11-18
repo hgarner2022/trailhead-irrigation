@@ -3,6 +3,7 @@ import { and, asc, desc, eq, gte, isNull } from "drizzle-orm"
 import * as s from "@/db/schema"
 import type { Database } from "@/db/types"
 import { recordEvent } from "@/lib/events/record"
+import { linesOfVisit, visitPrice } from "@/lib/jobs/lines"
 import { enqueue } from "@/lib/queue"
 import { baseData, loadVisitFacts } from "@/lib/messaging/data"
 import { queueMessage, queueStaffMessage } from "@/lib/messaging/queue"
@@ -84,14 +85,14 @@ export async function queuePurchaseConfirmation(db: Database, passId: string, or
   const ordered = (["turn-on", "inspection", "blowout"] as const).flatMap((k) => visits.filter((v) => v.kind === k))
   // The days an office sale or a pick had to fill with the next open day: the `visit.day-filled` events of the pass's job, newest first.
   const filled = await db.select().from(s.event).where(and(eq(s.event.organizationId, org), eq(s.event.jobId, pass.jobId), eq(s.event.kind, "visit.day-filled"))).orderBy(desc(s.event.at), desc(s.event.id))
+  // What was sold, from the pass job's lines (a pass bought before lines existed has none, and the email leaves the list out).
+  const lineRows = await db.select().from(s.lineItem).where(and(eq(s.lineItem.jobId, pass.jobId), isNull(s.lineItem.cancelledAt))).orderBy(asc(s.lineItem.createdAt), asc(s.lineItem.id))
   const held = []
   for (const v of ordered) {
     const facts = v.scheduledOn ? await loadVisitFacts(db, v.id, origin) : null
     const moved = filled.find((c) => c.visitId === v.id)?.detail as { from?: string; to?: string } | undefined
-    held.push({ kind: v.kind, name: kindName(v.kind), amount: v.amount, visit: facts, fallback: "Ryan sets the day and we text it to you.", ...(moved?.from && v.scheduledOn ? { note: filledLine(moved.from, v.scheduledOn) } : {}) })
+    held.push({ kind: v.kind, name: kindName(v.kind), amount: visitPrice(linesOfVisit(lineRows, v.id)), visit: facts, fallback: "Ryan sets the day and we text it to you.", ...(moved?.from && v.scheduledOn ? { note: filledLine(moved.from, v.scheduledOn) } : {}) })
   }
-  // What was sold, from the pass job's lines (a pass bought before lines existed has none, and the email leaves the list out).
-  const lineRows = await db.select().from(s.lineItem).where(and(eq(s.lineItem.jobId, pass.jobId), isNull(s.lineItem.cancelledAt))).orderBy(asc(s.lineItem.createdAt), asc(s.lineItem.id))
   const lines = lineRows.map((l) => ({ name: l.name, amount: l.quantity * l.unitPrice }))
   return queueMessage(db, {
     organizationId: org, customerId: customer.id, kind: "purchase-confirmation", key,

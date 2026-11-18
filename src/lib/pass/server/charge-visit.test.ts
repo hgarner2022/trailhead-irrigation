@@ -5,6 +5,7 @@ import * as s from "@/db/schema"
 import type { TestDb } from "@/db/test-db"
 import { callApi } from "@/api/core/call"
 import { passesCreate } from "@/api/v1/passes/handlers"
+import { visitsGet } from "@/api/v1/visits/handlers"
 import { apiDb, ctxFor, eventsOf, setPass, writeKey } from "@/api/test-helpers"
 import { applyCardUpdate } from "@/lib/stripe/card-update"
 import { completeSession, declined, stubStripe } from "@/lib/stripe/test-stripe"
@@ -39,11 +40,10 @@ describe("chargeVisit", () => {
     const { stripe, calls } = stubStripe()
     expect(await chargeVisit(db, stripe, p.turnOn, opts)).toBe("charged")
     expect(calls.paymentIntentsCreate.mock.calls[0]![0]).toMatchObject({ amount: 14500, customer: "cus_1", payment_method: "pm_old" })
-    const [visit] = await db.select().from(s.visit).where(eq(s.visit.id, p.turnOn))
-    expect(visit!.stripePaymentIntentId).toMatch(/^pi_ok_/)
-    expect(visit!.chargedAt).toEqual(NOW)
     const [charge] = await db.select().from(s.charge).where(eq(s.charge.visitId, p.turnOn))
-    expect(charge).toMatchObject({ attempt: 1, status: "succeeded", amount: 145, receiptUrl: "https://pay.stripe.test/receipt/1" })
+    expect(charge).toMatchObject({ attempt: 1, status: "succeeded", amount: 145, receiptUrl: "https://pay.stripe.test/receipt/1", stripePaymentIntentId: expect.stringMatching(/^pi_ok_/) })
+    // the visit reads as charged from its payment row: the time the row was written, never a column on the visit
+    expect((await callApi(ctxFor(db, writeKey), visitsGet, { id: p.turnOn })).chargedAt).not.toBeNull()
     const [mail] = await messages(p.customerId)
     expect(mail).toMatchObject({ kind: "receipt", channel: "email", status: "queued", visitId: p.turnOn })
     expect(mail!.to).toMatch(/^maya\d+@example.com$/)
@@ -67,6 +67,17 @@ describe("chargeVisit", () => {
     expect(await eventsOf(db, { kind: "payment.succeeded", visitId: p.turnOn })).toHaveLength(1)
     expect(calls.paymentIntentsCreate).toHaveBeenCalledTimes(1)
     expect(await messages(p.customerId)).toHaveLength(1)
+  })
+
+  it("charges the visit's price as its line stands now: a line edited after Done is charged at its new price, and the visit is paid once the rows reach it", async () => {
+    const p = await activePass()
+    await db.update(s.lineItem).set({ unitPrice: 200 }).where(eq(s.lineItem.visitId, p.turnOn))
+    const { stripe, calls } = stubStripe()
+    expect(await chargeVisit(db, stripe, p.turnOn, opts)).toBe("charged")
+    expect(calls.paymentIntentsCreate.mock.calls[0]![0]).toMatchObject({ amount: 20000 })
+    const [charge] = await db.select().from(s.charge).where(eq(s.charge.visitId, p.turnOn))
+    expect(charge).toMatchObject({ status: "succeeded", amount: 200 })
+    expect(await chargeVisit(db, stripe, p.turnOn, opts)).toBe("already-charged")
   })
 
   it("records a decline, queues card-failed with the update link, flags the pass, and does not retry until the card changes", async () => {
@@ -122,6 +133,8 @@ describe("applyCardUpdate", () => {
     const p = await activePass()
     const failing = stubStripe({ charge: () => { throw declined() } })
     await chargeVisit(db, failing.stripe, p.turnOn, opts)
+    // the retry is only for a visit that is Done and not paid
+    await db.update(s.visit).set({ status: "completed", completedOn: "2027-05-06" }).where(eq(s.visit.id, p.turnOn))
     const sessions = { cs_up: completeSession("cs_up", { purpose: "card-update", passId: p.passId }, { pm: "pm_new", last4: "1111", expYear: 2031, expMonth: 1 }) }
     const { stripe, calls } = stubStripe({ sessions })
     expect(await applyCardUpdate(db, stripe, "cs_up", NOW)).toBe("applied")
@@ -160,6 +173,7 @@ describe("applyCardUpdate across passes", () => {
     await setPass(db, second.id, { status: "active" })
     const otherVisit = second.visits.find((v) => v.kind === "turn-on")!.id
     await chargeVisit(db, stubStripe({ charge: () => { throw declined() } }).stripe, otherVisit, opts)
+    await db.update(s.visit).set({ status: "completed", completedOn: "2027-05-06" }).where(eq(s.visit.id, otherVisit))
     const { stripe } = stubStripe({ sessions: { cs_two: completeSession("cs_two", { purpose: "card-update", passId: p.passId }, { pm: "pm_new2", last4: "9999" }) } })
     expect(await applyCardUpdate(db, stripe, "cs_two", NOW)).toBe("applied")
     expect(await db.select().from(s.job).where(eq(s.job.customerId, p.customerId))).toHaveLength(2)

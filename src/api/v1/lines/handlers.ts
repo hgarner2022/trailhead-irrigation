@@ -31,7 +31,7 @@ async function openJob(ctx: Ctx, jobId: string) {
   const [job] = await ctx.db.select().from(s.job).where(and(eq(s.job.id, jobId), eq(s.job.organizationId, ctx.organizationId)))
   if (!job) throw notFound("Job")
   if (job.cancelledAt) throw new ApiError("unprocessable", "This job is cancelled, so its lines cannot change")
-  if (job.kind === "pass" || job.passNumber) throw new ApiError("unprocessable", "A Season Pass changes through its own buttons: add an inspection, skip a visit or cancel the pass")
+  if (job.season !== null || job.passNumber) throw new ApiError("unprocessable", "A Season Pass changes through its own buttons: add an inspection, skip a visit or cancel the pass")
   const [lines, payments] = await Promise.all([
     ctx.db.select().from(s.lineItem).where(and(eq(s.lineItem.jobId, job.id), eq(s.lineItem.organizationId, ctx.organizationId))),
     ctx.db.select().from(s.charge).where(and(eq(s.charge.jobId, job.id), eq(s.charge.organizationId, ctx.organizationId))),

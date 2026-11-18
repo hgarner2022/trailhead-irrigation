@@ -36,7 +36,7 @@ const NOTE_ABOUT = ["customer", "property", "job", "visit"] as const
 
 export const eventsNote = defineHandler({
   name: "events.note", method: "POST", path: "/events/note", scope: "read", status: 201,
-  summary: "Add a note to a customer, a property, a job or a visit. A note is an event of kind note and shows in the story; it is never sent to the customer. A tech may add one; a read-only key may not. A note on a visit or a job is also kept as that record's notes field (the newest note), a note on a property is not (the property's notes are a standing fact, edited with the property).",
+  summary: "Add a note to a customer, a property, a job or a visit. A note is an event of kind note and shows in the story; it is never sent to the customer. A tech may add one; a read-only key may not. The text of the newest note about a visit or a job is what that record's `notes` reads (there is no notes column); a note on a property is not that (the property's notes are a standing fact, edited with the property).",
   input: z.object({
     about: z.enum(NOTE_ABOUT),
     aboutId: Id,
@@ -73,9 +73,6 @@ export const eventsNote = defineHandler({
     }
     const who = whoOf(ctx)
     const id = await recordEvent(ctx.db, { organizationId: org, about: input.about, aboutId: input.aboutId, customerId, jobId, visitId, kind: "note", detail: { text: input.text }, who, at: ctx.now })
-    // The alias of the newest note, until step 6 drops the columns. A property's notes stay what they are: a fact about the yard, not a log.
-    if (input.about === "visit") await ctx.db.update(s.visit).set({ notes: input.text }).where(and(eq(s.visit.id, input.aboutId), eq(s.visit.organizationId, org)))
-    if (input.about === "job") await ctx.db.update(s.job).set({ notes: input.text }).where(and(eq(s.job.id, input.aboutId), eq(s.job.organizationId, org)))
     const [row] = await ctx.db.select().from(s.event).where(and(eq(s.event.id, id), eq(s.event.organizationId, org)))
     return eventOut(ctx, row!, await whoNameOf(ctx, who))!
   },

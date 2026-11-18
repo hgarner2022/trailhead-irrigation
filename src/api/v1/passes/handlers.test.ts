@@ -1,11 +1,12 @@
 // @vitest-environment node
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest"
-import { and, eq } from "drizzle-orm"
+import { and, eq, isNull } from "drizzle-orm"
 import * as s from "@/db/schema"
 import type { TestDb } from "@/db/test-db"
 import { callApi } from "../../core/call"
 import { adminKey, apiDb, ctxFor, customerPerson, eventsOf, jobIdOfPassId, linesOfPass, passJobOf, passViewOf, readKey, writeKey } from "../../test-helpers"
 import { jobTotal } from "@/lib/jobs/lines"
+import { customersGet } from "../customers/handlers"
 import { SERVICES } from "@/lib/services"
 import {
   passesActivate, passesAddInspection, passesCancel, passesCreate, passesGet, passesList, passesResendConfirmation,
@@ -51,7 +52,7 @@ describe("passes.create", () => {
   it("makes the pass's job: its id is the pass id, a season and a number, no sold day yet, the visits point at it and its price is the total", async () => {
     const pass = await create({ customer: { firstName: "Jobby", lastName: "Tester", email: "jobby@example.com" } })
     const [job] = await db.select().from(s.job).where(eq(s.job.id, pass.id))
-    expect(job).toMatchObject({ kind: "pass", source: "checkout", season: 2027, passNumber: pass.number, soldOn: null, legacyPassId: null, price: 260, customerId: pass.customerId })
+    expect(job).toMatchObject({ source: "checkout", season: 2027, passNumber: pass.number, soldOn: null, legacyPassId: null, customerId: pass.customerId })
     const visits = await db.select().from(s.visit).where(eq(s.visit.jobId, job!.id))
     expect(visits).toHaveLength(2)
     expect(visits.every((v) => v.jobId === job!.id)).toBe(true)
@@ -165,7 +166,7 @@ describe("passes.list and passes.get", () => {
     expect((await callApi(ctxFor(db, readKey), passesGet, { id: "p3" })).visits.every((v) => v.passId === jobId)).toBe(true)
   })
   it("does not find another organization's pass or a job with no season by any id", async () => {
-    const [repair] = await db.select().from(s.job).where(eq(s.job.kind, "repair")).limit(1)
+    const [repair] = await db.select().from(s.job).where(isNull(s.job.season)).limit(1)
     if (repair) await expect(callApi(ctxFor(db, readKey), passesGet, { id: repair.id })).rejects.toMatchObject({ code: "not_found" })
     await expect(callApi(ctxFor(db, readKey), passesGet, { id: "no-such-pass" })).rejects.toMatchObject({ code: "not_found" })
   })
@@ -262,15 +263,16 @@ describe("passes.skipVisit", () => {
     expect(await eventsOf(db, { kind: "visit.skipped", visitId: "p6-blowout" })).toMatchObject([{ about: "visit", aboutId: "p6-blowout", customerId: "c104", who: "customer", detail: { name: "Fall blowout", visit: "blowout" } }])
     expect(await eventsOf(db, { kind: "visit.skipped", visitId: "p6-turn-on" })).toMatchObject([{ who: "api", detail: { name: "Spring turn-on" } }])
   })
-  it("takes the skipped visit's line out of the job's total, whatever job.price says", async () => {
+  it("takes the skipped visit's line out of the job's total and price", async () => {
     const pass = await create({ customer: { firstName: "Skip", lastName: "Tester", email: "skip@example.com", phone: "303-555-0151" }, inspection: true })
-    const row = { jobId: pass.id }
-    await db.update(s.job).set({ price: 999 }).where(eq(s.job.id, row.jobId))
+    const priceOf = async () => (await callApi(ctxFor(db, writeKey), customersGet, { id: (await db.select().from(s.job).where(eq(s.job.id, pass.id)))[0]!.customerId })).jobs.find((j) => j.id === pass.id)!.price
+    expect(await priceOf()).toBe(jobTotal(await linesOfPass(db, pass.id)))
     await callApi(ctxFor(db, writeKey), passesSkipVisit, { id: pass.id, kind: "inspection" })
     const lines = await linesOfPass(db, pass.id)
     expect(lines.map((l) => [l.visitKind, l.cancelledAt instanceof Date])).toEqual([["turn-on", false], ["inspection", true], ["blowout", false]])
     expect(jobTotal(lines)).toBe(145 + 115)
-    expect((await db.select().from(s.job).where(eq(s.job.id, row.jobId)))[0]!.price).not.toBe(145 + 115)
+    // the job's price is its lines' total: there is no price column to say otherwise
+    expect(await priceOf()).toBe(145 + 115)
   })
   it("refuses a completed visit and a customer on another pass", async () => {
     await expect(callApi(ctxFor(db, writeKey), passesSkipVisit, { id: "p1", kind: "turn-on" })).rejects.toMatchObject({ code: "unprocessable" })

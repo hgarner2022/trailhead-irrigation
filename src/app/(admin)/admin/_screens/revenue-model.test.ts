@@ -99,7 +99,7 @@ describe("renewals", () => {
 describe("outstanding", () => {
   const visit = (id: string, over: Partial<AdminData["visits"][number]> = {}) => ({ id, clientId: "c", clientName: "Dana Reed", town: "Erie" as const, kind: "repair" as const, status: "completed" as const, isPass: false, jobberUrl: "", ...over })
   const money = (owed: number) => ({ paid: 0, total: owed, owed, words: `$${owed} owed` })
-  const job = (id: string, visitIds: string[], over: Partial<NonNullable<AdminData["jobs"]>[number]> = {}) => ({ id, customerId: "c", kind: "repair" as const, status: "active" as const, source: "office" as const, visitIds, money: money(145), ...over })
+  const job = (id: string, visitIds: string[], over: Partial<NonNullable<AdminData["jobs"]>[number]> = {}) => ({ id, customerId: "c", kind: "repair" as const, status: "open" as const, source: "office" as const, visitIds, money: money(145), ...over })
   const bill = (jobId: string, total: number) => ({ id: `inv-${jobId}`, jobId, number: "INV-2026-0001", amount: total, tax: 0, total, sentOn: "2026-11-01", dueOn: "2026-11-15", status: "sent" as const, visitIds: [] })
 
   it("is nothing to say without the sold jobs", () => {

@@ -11,7 +11,8 @@ import { adminKey, apiDb, ctxFor, eventsOf, linesOfPass, ORG, readKey, writeKey 
 import { jobTotal } from "@/lib/jobs/lines"
 import { SERVICES } from "@/lib/services"
 import { scheduleOfferDays } from "../schedule/handlers"
-import { visitsMarkClosed, visitsRecordPayment } from "../visits/money"
+import { paymentsRecord } from "../payments/handlers"
+import { visitsMarkClosed } from "../visits/money"
 import { passesGet, passesSendCardUpdateLink, passesStartCardUpdate } from "./handlers"
 import { passesSell } from "./sell"
 
@@ -45,7 +46,7 @@ describe("passes.sell", () => {
     const row = { jobId: pass.id }
     const [job] = await db.select().from(s.job).where(eq(s.job.id, row.jobId))
     // an office sale is sold today: the job's sold day is set with the rows
-    expect(job).toMatchObject({ kind: "pass", source: "office", soldOn: "2027-11-10", price: 260, notes: "Took it by phone", season: 2028, passNumber: pass.number, renewsJobId: null, legacyPassId: null })
+    expect(job).toMatchObject({ source: "office", soldOn: "2027-11-10", season: 2028, passNumber: pass.number, renewsJobId: null, legacyPassId: null })
     const queued = await db.select().from(s.queueItem).where(and(eq(s.queueItem.kind, "pass-onboard"), eq(s.queueItem.key, pass.id)))
     expect(queued).toHaveLength(1)
     const mail = await messages("c100")
@@ -176,6 +177,6 @@ describe("passes.sell", () => {
     expect(detail.cardFailedAt).toBeNull()
     expect(stub.calls.paymentIntentsCreate).not.toHaveBeenCalled()
     // A later payment on the pass visit is recorded here too, never sent to a card.
-    await expect(callApi(later(), visitsRecordPayment, { id: visit.id, method: "cash" })).rejects.toMatchObject({ code: "conflict" })
+    await expect(callApi(later(), paymentsRecord, { jobId: pass.id, visitId: visit.id, amount: 145, method: "cash" })).rejects.toMatchObject({ code: "conflict" })
   })
 })

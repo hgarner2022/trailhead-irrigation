@@ -16,7 +16,7 @@ import { visitsList } from "@/api/v1/visits/handlers"
 import { today as todayOf } from "@/api/v1/shared"
 import * as s from "@/db/schema"
 import { loadBlocks } from "@/lib/jobber-feed"
-import { jobStatusWord } from "@/lib/pass/facts"
+import { loadJobKinds } from "@/lib/jobs/kind-load"
 import { ctxFromSession } from "./api-ctx"
 import { canSeeContact } from "@/api/v1/shared"
 import { failedChargeVisits, shapeAdminData, type ApiCustomer, type ApiMessage, type ApiPass, type ApiVisit } from "./shape"
@@ -93,7 +93,7 @@ export async function getLiveAdminData(ctx: Ctx): Promise<AdminData> {
     db.select({ id: s.charge.id, jobId: s.charge.jobId, visitId: s.charge.visitId, amount: s.charge.amount, method: s.charge.method, status: s.charge.status, paidOn: s.charge.paidOn, refundsPaymentId: s.charge.refundsPaymentId, reference: s.charge.reference, attempt: s.charge.attempt, createdAt: s.charge.createdAt })
       .from(s.charge).where(eq(s.charge.organizationId, org)).orderBy(asc(s.charge.createdAt), asc(s.charge.id)),
     db.select({ kind: s.adminAlert.kind, key: s.adminAlert.key }).from(s.adminAlert).where(and(eq(s.adminAlert.organizationId, org), isNotNull(s.adminAlert.resolvedAt))),
-    db.select({ id: s.job.id, customerId: s.job.customerId, kind: s.job.kind, season: s.job.season, soldOn: s.job.soldOn, cancelledAt: s.job.cancelledAt, legacyPassId: s.job.legacyPassId, price: s.job.price, source: s.job.source, passNumber: s.job.passNumber, notes: s.job.notes, createdAt: s.job.createdAt }).from(s.job).where(eq(s.job.organizationId, org)),
+    db.select({ id: s.job.id, customerId: s.job.customerId, season: s.job.season, soldOn: s.job.soldOn, quoteSentOn: s.job.quoteSentOn, quoteAcceptedOn: s.job.quoteAcceptedOn, cancelledAt: s.job.cancelledAt, legacyPassId: s.job.legacyPassId, source: s.job.source, passNumber: s.job.passNumber, createdAt: s.job.createdAt }).from(s.job).where(eq(s.job.organizationId, org)),
     db.select({ id: s.lineItem.id, jobId: s.lineItem.jobId, visitId: s.lineItem.visitId, name: s.lineItem.name, description: s.lineItem.description, quantity: s.lineItem.quantity, unitPrice: s.lineItem.unitPrice, taxable: s.lineItem.taxable, cancelledAt: s.lineItem.cancelledAt }).from(s.lineItem).where(eq(s.lineItem.organizationId, org)).orderBy(asc(s.lineItem.createdAt), asc(s.lineItem.id)),
     db.select().from(s.property).where(eq(s.property.organizationId, org)).orderBy(asc(s.property.createdAt), asc(s.property.id)),
     // the organization's own bills (not the Jobber mirror's): the open ones make a job's money read Bill sent
@@ -101,6 +101,8 @@ export async function getLiveAdminData(ctx: Ctx): Promise<AdminData> {
     // the organization's newest events, loaded once like the messages and grouped by customer, job and visit; a caller without the write scope gets only the kinds `techEvent` allows
     loadEvents(ctx, {}, { limit: EVENT_LOAD }),
   ])
+
+  const kinds = await loadJobKinds(db, org, jobRows)
 
   return shapeAdminData({
     organizationId: org,
@@ -124,8 +126,8 @@ export async function getLiveAdminData(ctx: Ctx): Promise<AdminData> {
     queueProblems: problems,
     alerts,
     dismissed,
-    // `job.kind` is nullable since migration 0021 (no existing row is null); task 6.2b replaces it with the derived kind
-    jobRows: jobRows.map(({ season, soldOn, cancelledAt, ...j }) => ({ ...j, kind: j.kind ?? ("other" as const), status: jobStatusWord({ season, soldOn, cancelledAt }) })),
+    // a job's kind is derived (a pass by its season, else its first line's service, else its first visit); its stage, price and notes are worked out in the shaping
+    jobRows: jobRows.map((j) => ({ id: j.id, customerId: j.customerId, kind: kinds.get(j.id)!, legacyPassId: j.legacyPassId, source: j.source, passNumber: j.passNumber, soldOn: j.soldOn, quoteSentOn: j.quoteSentOn, quoteAcceptedOn: j.quoteAcceptedOn, cancelledAt: j.cancelledAt, createdAt: j.createdAt })),
     lineRows,
     // the pay link is a bearer link: only for the write scope, like the gate code (a tech's screens never carry it)
     invoiceRows: billRows.map((r) => ({ id: r.id, jobId: r.jobId, number: r.number, amount: r.amount, tax: r.tax, total: r.total, sentOn: r.sentOn, dueOn: r.dueOn, paidOn: r.paidOn, cancelledAt: r.cancelledAt, lines: r.lines, ...(contact && payLinkOf(r.id) ? { payUrl: payLinkOf(r.id) } : {}) })),

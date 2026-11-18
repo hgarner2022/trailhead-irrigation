@@ -98,8 +98,8 @@ const withOutstanding: AdminData = {
     { id: "v-owed", clientId: "c300", clientName: "Morgan Hale", town: "Louisville", kind: "repair", status: "completed", isPass: false, jobberUrl: "", jobId: "job-owed", completedOn: "2026-11-10" },
   ],
   jobs: [
-    { id: "job-billed", customerId: "c100", kind: "repair", status: "active", source: "office", visitIds: ["v-billed"], money: { paid: 0, total: 145, owed: 145, words: "Bill sent", billSent: true }, invoice: { id: "inv-1", jobId: "job-billed", number: "INV-2026-0007", amount: 160, tax: 0, total: 160, sentOn: "2026-10-22", dueOn: "2026-11-05", status: "overdue", visitIds: ["v-billed"] } },
-    { id: "job-owed", customerId: "c300", kind: "repair", status: "active", source: "office", visitIds: ["v-owed"], money: { paid: 0, total: 145, owed: 145, words: "$145 owed" } },
+    { id: "job-billed", customerId: "c100", kind: "repair", status: "open", source: "office", visitIds: ["v-billed"], money: { paid: 0, total: 145, owed: 145, words: "Bill sent", billSent: true }, invoice: { id: "inv-1", jobId: "job-billed", number: "INV-2026-0007", amount: 160, tax: 0, total: 160, sentOn: "2026-10-22", dueOn: "2026-11-05", status: "overdue", visitIds: ["v-billed"] } },
+    { id: "job-owed", customerId: "c300", kind: "repair", status: "open", source: "office", visitIds: ["v-owed"], money: { paid: 0, total: 145, owed: 145, words: "$145 owed" } },
   ],
 }
 export const Outstanding: Story = {

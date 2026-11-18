@@ -43,7 +43,7 @@ beforeAll(async () => {
   await callApi(ctxFor(db, owner, NOW), visitsMove, { id: "p4-turn-on", personId: "person_truck-1", scheduledOn: "2027-05-05", startTime: "09:30" })
   await db.update(s.visit).set({ status: "completed", completedOn: "2027-04-19" }).where(eq(s.visit.id, "p3-turn-on"))
   await db.insert(s.charge).values({ organizationId: ORG, jobId: J("p3"), visitId: "p3-turn-on", attempt: 1, amount: 145, status: "failed", failureMessage: "Card declined" })
-  await db.update(s.visit).set({ status: "completed", completedOn: "2027-04-19", chargedAt: new Date("2027-04-20T09:00:00Z") }).where(eq(s.visit.id, "p6-turn-on"))
+  await db.update(s.visit).set({ status: "completed", completedOn: "2027-04-19" }).where(eq(s.visit.id, "p6-turn-on"))
   await db.insert(s.charge).values([
     { organizationId: ORG, jobId: J("p6"), visitId: "p6-turn-on", attempt: 1, amount: 185, status: "failed" },
     { organizationId: ORG, jobId: J("p6"), visitId: "p6-turn-on", attempt: 2, amount: 185, status: "succeeded" },
@@ -53,7 +53,7 @@ beforeAll(async () => {
   // p8: a pass whose card failed after a visit was marked done, and the card never retried.
   const p8 = await passViewOf(db, "p8")
   await db.update(s.customer).set({ cardFailedAt: new Date("2027-04-19T10:00:00Z") }).where(eq(s.customer.id, p8.customerId))
-  await db.update(s.visit).set({ status: "completed", completedOn: "2027-04-18", chargedAt: null }).where(eq(s.visit.id, "p8-turn-on"))
+  await db.update(s.visit).set({ status: "completed", completedOn: "2027-04-18" }).where(eq(s.visit.id, "p8-turn-on"))
   await callApi(ctxFor(db, owner, NOW), customersUpdate, { id: "c121", lastName: "garner" })
   data = await getLiveAdminData(ctxFor(db, owner, NOW))
 })

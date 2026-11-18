@@ -176,7 +176,7 @@ export const PanelNotesAndHistoryPhone: Story = { args: { data: withStory(), def
 /** A pass visit that is Done and Owed: Done closed it, and either no card could be charged or none was saved. The panel always shows how to take the money. */
 const owedPass = (id: string): AdminData => ({
   ...visitsData,
-  visits: visitsData.visits.map((v) => (v.id === id ? { ...v, status: "completed" as const, completedOn: "2026-11-10", scheduledOn: "2026-11-10", startAt: "2026-11-10T15:00:00Z", payments: [], chargedAt: undefined } : v)),
+  visits: visitsData.visits.map((v) => (v.id === id ? { ...v, status: "completed" as const, completedOn: "2026-11-10", scheduledOn: "2026-11-10", startAt: "2026-11-10T15:00:00Z", payments: [] } : v)),
 })
 
 /** The customer has no card: Record the payment (Check, Venmo, Cash) and the row reads "$145 owed · no card". */
@@ -200,7 +200,7 @@ export const PanelOwedPassWithCard: Story = {
 
 /** Done on a pass visit with a card says it charges the card, and Paid another way asks how the money came. */
 export const PanelDonePassWithCard: Story = {
-  args: { data: { ...visitsData, visits: visitsData.visits.map((v) => (v.id === passVisitId ? { ...v, status: "scheduled" as const, completedOn: undefined, chargedAt: undefined, payments: [] } : v)) }, defaultVisitId: passVisitId },
+  args: { data: { ...visitsData, visits: visitsData.visits.map((v) => (v.id === passVisitId ? { ...v, status: "scheduled" as const, completedOn: undefined, payments: [] } : v)) }, defaultVisitId: passVisitId },
   globals: wide,
   play: async () => {
     await expect(await body.findByText(/Charges the card ending \d{4} after this visit/)).toBeInTheDocument()

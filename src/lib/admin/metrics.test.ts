@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import type { Invoice, MonthTotal, Pass, PassVisit, Quote, Visit } from "./types"
+import type { MonthTotal, Pass, PassVisit, Quote, Visit } from "./types"
 import {
   chargedSoFar,
   committedByMonth,
@@ -31,6 +31,9 @@ function pass(over: Partial<Pass> & { visits: PassVisit[] }): Pass {
   }
 }
 
+/** A charged visit carries one succeeded card payment, the way a real charge leaves it. */
+const charged = (amount: number, paidOn: string): Pick<PassVisit, "payments"> => ({ payments: [{ id: `pay-${paidOn}`, amount, method: "card_on_file", status: "succeeded", paidOn }] })
+
 const turnOn: PassVisit = { kind: "turn-on", window: "May", amount: 145 }
 const inspection: PassVisit = { kind: "inspection", window: "July", amount: 145 }
 const blowout: PassVisit = { kind: "blowout", window: "October", amount: 95 }
@@ -41,7 +44,7 @@ const cancelled = pass({
   firstName: "Nick",
   status: "cancelled",
   visits: [
-    { ...turnOn, amount: 1000, chargedAt: "2027-04-01T00:00:00Z" },
+    { ...turnOn, amount: 1000, ...charged(1000, "2027-04-01") },
     { ...inspection, amount: 1000 },
     { ...blowout, amount: 1000 },
   ],
@@ -51,7 +54,7 @@ const lapsed = pass({
   firstName: "Lee",
   status: "lapsed",
   visits: [
-    { ...turnOn, amount: 1000, scheduledAt: "2027-04-02T16:00:00Z", chargedAt: "2027-04-02T17:00:00Z" },
+    { ...turnOn, amount: 1000, scheduledAt: "2027-04-02T16:00:00Z", ...charged(1000, "2027-04-02") },
     { ...inspection, amount: 1000, scheduledAt: "2027-07-02T16:00:00Z" },
     { ...blowout, amount: 1000, scheduledAt: "2027-10-02T16:00:00Z" },
   ],
@@ -70,7 +73,7 @@ describe("chargedSoFar", () => {
   it("sums only the charged visits of active passes", () => {
     const partlyCharged = pass({
       id: "p4",
-      visits: [{ ...turnOn, chargedAt: "2027-04-20T17:12:00Z" }, inspection, blowout],
+      visits: [{ ...turnOn, ...charged(145, "2027-04-20") }, inspection, blowout],
     })
     expect(chargedSoFar([partlyCharged, cancelled])).toBe(145)
   })
@@ -87,7 +90,7 @@ describe("chargedSoFar", () => {
     })
     expect(chargedSoFar([p])).toBe(245)
     // rows win over the old flag: a flag with an empty rows array is nothing received
-    expect(chargedSoFar([pass({ id: "p4c", visits: [{ ...turnOn, chargedAt: "2027-04-20T17:12:00Z", payments: [] }] })])).toBe(0)
+    expect(chargedSoFar([pass({ id: "p4c", visits: [{ ...turnOn, payments: [] }] })])).toBe(0)
     expect(committedByMonth([p], 2027)).toEqual([
       { month: 5, committed: 145, charged: 145 },
       { month: 7, committed: 145, charged: 100 },
@@ -124,7 +127,7 @@ describe("committedByMonth", () => {
     const p = pass({
       id: "p5",
       visits: [
-        { ...turnOn, chargedAt: "2027-04-20T17:12:00Z" },
+        { ...turnOn, ...charged(145, "2027-04-20") },
         inspection,
         { ...blowout, scheduledAt: "2027-10-05T15:00:00Z" },
       ],
@@ -197,7 +200,7 @@ describe("upcomingCharges", () => {
     firstName: "Dana",
     town: "Longmont",
     visits: [
-      { ...turnOn, scheduledAt: "2027-04-20T16:00:00Z", chargedAt: "2027-04-20T17:00:00Z" },
+      { ...turnOn, scheduledAt: "2027-04-20T16:00:00Z", ...charged(145, "2027-04-20") },
       { ...inspection, scheduledAt: "2027-07-14T16:00:00Z" },
       { ...blowout, scheduledAt: "2027-10-05T16:00:00Z" },
     ],
@@ -242,25 +245,26 @@ describe("quotesAwaiting", () => {
 })
 
 describe("invoicesOverdue", () => {
-  const invoice = (status: Invoice["status"], dueAt: string, total: number): Invoice => ({
-    id: `i${total}`, clientName: "A", total, issuedAt: "2026-10-01", dueAt, status, jobberUrl: "",
-  })
+  // our own bills (the `invoice` table): open while neither paid nor cancelled
+  const bill = (total: number, dueOn: string, over: { paidOn?: string | null; cancelledAt?: Date | null } = {}) => ({ total, dueOn, ...over })
   const list = [
-    invoice("unpaid", "2026-11-01", 100),
-    invoice("overdue", "2026-11-11T00:00:00Z", 50),
-    invoice("unpaid", "2026-11-12", 999), // due today is not yet overdue
-    invoice("paid", "2026-10-01", 999),
+    bill(100, "2026-11-01"),
+    bill(50, "2026-11-11"),
+    bill(999, "2026-11-12"), // due today is not yet overdue
+    bill(999, "2026-10-01", { paidOn: "2026-10-05" }), // paid
+    bill(999, "2026-10-01", { cancelledAt: new Date("2026-10-02T12:00:00Z") }), // cancelled
   ]
-  it("counts unpaid invoices whose due date has passed", () => {
+  it("counts our open bills whose due day has passed, by their totals", () => {
     expect(invoicesOverdue(list, "2026-11-12")).toEqual({ count: 2, total: 150 })
   })
-  it("accepts a full timestamp for today", () => {
-    expect(invoicesOverdue(list, "2026-11-12T18:30:00Z")).toEqual({ count: 2, total: 150 })
+  it("counts nothing for no bills", () => {
+    expect(invoicesOverdue([], "2026-11-12")).toEqual({ count: 0, total: 0 })
   })
-  it("reads the boundary day in a time zone when one is given", () => {
-    // 2026-11-13T02:00Z is still Thursday the 12th in Denver, so the invoice due on the 12th is not yet overdue there.
-    expect(invoicesOverdue(list, "2026-11-13T02:00:00Z")).toEqual({ count: 3, total: 1149 })
-    expect(invoicesOverdue(list, "2026-11-13T02:00:00Z", "America/Denver")).toEqual({ count: 2, total: 150 })
+  it("reads today as the day it is in Denver: a late evening instant is still that Mountain day", () => {
+    // 2026-11-13T02:00Z is still Thursday the 12th in Denver, so the bill due on the 12th is not yet overdue there.
+    expect(invoicesOverdue(list, "2026-11-13T02:00:00Z")).toEqual({ count: 2, total: 150 })
+    // the same instant read as a UTC day, the 13th, would count it
+    expect(invoicesOverdue(list, "2026-11-13T02:00:00Z", "UTC")).toEqual({ count: 3, total: 1149 })
   })
 })
 

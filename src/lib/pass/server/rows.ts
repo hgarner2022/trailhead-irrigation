@@ -6,8 +6,8 @@ import { mountainDay } from "@/api/v1/shared"
 import { linesForPassVisits } from "@/lib/jobs/lines"
 import { insertLines } from "@/lib/jobs/write-lines"
 import { nextPassNumber } from "@/lib/pass/number"
-import { visitPrice, type SeasonPassVisit } from "@/lib/season-pass"
-import { createPassJob, refreshPassJobPrice } from "./job"
+import type { SeasonPassVisit } from "@/lib/season-pass"
+import { createPassJob } from "./job"
 import { passRecordOf, type PassRecord } from "./record"
 
 export const WINDOW_LABEL = { "turn-on": "May", inspection: "July", blowout: "October" } as const
@@ -83,7 +83,6 @@ export async function insertPassVisits(db: Database, pass: PassVisitsFor, onSale
         propertyId: pass.propertyId,
         kind: v.key,
         window: WINDOW_LABEL[v.key],
-        amount: visitPrice(v, pass.zones),
         status: "unscheduled" as const,
         preference: v.key === "turn-on" ? pass.turnOnPreference : v.key === "blowout" ? pass.blowoutPreference : undefined,
         // needsCustomerHome is a note for Ryan; no visit waits for the customer to pick.
@@ -94,5 +93,4 @@ export async function insertPassVisits(db: Database, pass: PassVisitsFor, onSale
   // One visit per pass kind on a job (the visit_job_pass_kind_unique index enforces it), so the kind finds the visit.
   const lines = linesForPassVisits(onSale, pass.zones).map((line) => ({ ...line, visitId: made.find((v) => v.kind === line.visitKind)!.id }))
   await insertLines(db, { organizationId: pass.organizationId, jobId: pass.jobId, now }, lines)
-  await refreshPassJobPrice(db, pass.jobId)
 }

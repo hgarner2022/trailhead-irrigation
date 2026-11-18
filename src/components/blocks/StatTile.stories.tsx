@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite"
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
-import type { Invoice, Pass, Quote } from "@/lib/admin/types"
+import type { Pass, Quote } from "@/lib/admin/types"
 import { committedRevenue, formatMoney, invoicesOverdue, monthComparison, quotesAwaiting } from "@/lib/admin/metrics"
 import { StatTile } from "./StatTile"
 
@@ -11,7 +11,8 @@ const october = monthComparison(snapshot.monthTotals, 2026, 10)
 const november = monthComparison(snapshot.monthTotals, 2026, 11)
 const passes = snapshot.passes as Pass[]
 const quotes = quotesAwaiting(snapshot.quotes as Quote[])
-const overdue = invoicesOverdue(snapshot.invoices as Invoice[], snapshot.syncedAt)
+// Our own bills (the invoice table), open and past their due day: two invented ones, since the snapshot holds only the Jobber mirror's invoices.
+const overdue = invoicesOverdue([{ total: 145, dueOn: "2026-11-03" }, { total: 310, dueOn: "2026-11-08" }, { total: 95, dueOn: "2026-11-20" }], snapshot.syncedAt)
 const activePasses = passes.filter((p) => p.status === "active").length
 
 const thisYear = [3331, 5663, 12448, 11392, 7299, 13247, 18365, 3245, 0, 0, 0, 0]

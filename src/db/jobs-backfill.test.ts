@@ -55,7 +55,8 @@ describe("migration 0014: line items backfill", () => {
     for (const stmt of migration(all.find((f) => f.startsWith("0021_legacy_expand"))!)) if (/^ALTER TABLE "job" ADD COLUMN/.test(stmt.trim())) await client.exec(stmt)
     const org = data.organizationId
     await seed(drizzle(client, { schema }), data, { organizationId: org, admins: [], passes: true })
-    // The seed writes the fixture's lines itself; the backfill is for a database that had none.
+    // The seed writes the fixture's lines itself, and no longer the visit's old amount column; the backfill is for a database that had no lines, whose visits carried their amounts.
+    await client.exec(`UPDATE visit SET amount = (SELECT unit_price FROM line_item WHERE line_item.visit_id = visit.id LIMIT 1)`)
     await client.exec(`DELETE FROM line_item`)
     const visits = data.passes.reduce((sum, p) => sum + p.visits.length, 0)
     await client.exec(`UPDATE visit SET status = 'skipped' WHERE id = 'p9-blowout'`)

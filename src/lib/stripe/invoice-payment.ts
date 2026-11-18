@@ -61,8 +61,6 @@ export async function applyInvoicePayment(db: Database, stripe: Stripe, organiza
     if (stripeCustomerId) await stripe.customers.update(stripeCustomerId, { invoice_settings: { default_payment_method: method.id } })
     if (customer.stripePaymentMethodId) await stripe.paymentMethods.detach(customer.stripePaymentMethodId).catch(() => undefined)
   }
-  // The legacy alias: the job's done visits read as charged until step 6 drops the column (the screens read the payment rows).
-  await db.update(s.visit).set({ chargedAt: now, updatedAt: now }).where(and(eq(s.visit.jobId, invoice.jobId), eq(s.visit.organizationId, organizationId), eq(s.visit.status, "completed"), isNull(s.visit.chargedAt)))
   if (customer) {
     await queueMessage(db, {
       organizationId, customerId: customer.id, kind: "receipt", key: `payment-${row.id}`,

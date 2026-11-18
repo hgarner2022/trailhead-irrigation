@@ -113,8 +113,6 @@ describe("notes", () => {
     expect(state.revalidated).toContainEqual(["/admin", "layout"])
     const [row] = await db.select().from(s.event).where(eq(s.event.kind, "note"))
     expect(row).toMatchObject({ about: "visit", aboutId: "p4-turn-on", who: owner.email, detail: { text: "Gate was open, dog inside" } })
-    const [visit] = await db.select().from(s.visit).where(eq(s.visit.id, "p4-turn-on"))
-    expect(visit!.notes).toBe("Gate was open, dog inside")
   })
   it("lets a tech add a note, the one action a tech may take", async () => {
     state.principal = tech

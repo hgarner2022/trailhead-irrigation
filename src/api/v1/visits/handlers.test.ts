@@ -48,9 +48,8 @@ describe("visits carry the job's lines", () => {
     expect(own.description).toContain("controller programming")
     expect(got.amount).toBe(own.quantity * own.unitPrice)
   })
-  it("reads the amount from the line, not the stored amount, and takes a cancelled line to nothing", async () => {
+  it("a visit's price is its line's, and a cancelled line takes it to nothing", async () => {
     const [line] = await db.select().from(s.lineItem).where(eq(s.lineItem.visitId, "p1-blowout"))
-    await db.update(s.visit).set({ amount: 1 }).where(eq(s.visit.id, "p1-blowout"))
     try {
       expect((await callApi(ctxFor(db, readKey), visitsGet, { id: "p1-blowout" })).amount).toBe(line!.quantity * line!.unitPrice)
       await db.update(s.lineItem).set({ cancelledAt: new Date() }).where(eq(s.lineItem.id, line!.id))
@@ -61,12 +60,11 @@ describe("visits carry the job's lines", () => {
       await db.update(s.lineItem).set({ cancelledAt: null }).where(eq(s.lineItem.id, line!.id))
     }
   })
-  it("keeps the stored amount for a visit with no line of its own", async () => {
+  it("a visit with no line of its own costs nothing", async () => {
     const [line] = await db.select().from(s.lineItem).where(eq(s.lineItem.visitId, "p1-inspection"))
     await db.update(s.lineItem).set({ visitId: null }).where(eq(s.lineItem.id, line!.id))
     try {
-      const [v] = await db.select().from(s.visit).where(eq(s.visit.id, "p1-inspection"))
-      expect((await callApi(ctxFor(db, readKey), visitsGet, { id: "p1-inspection" })).amount).toBe(v!.amount)
+      expect((await callApi(ctxFor(db, readKey), visitsGet, { id: "p1-inspection" })).amount).toBe(0)
     } finally {
       await db.update(s.lineItem).set({ visitId: "p1-inspection" }).where(eq(s.lineItem.id, line!.id))
     }

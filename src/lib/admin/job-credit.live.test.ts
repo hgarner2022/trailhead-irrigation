@@ -4,7 +4,8 @@ import { eq } from "drizzle-orm"
 import * as s from "@/db/schema"
 import type { TestDb } from "@/db/test-db"
 import { callApi } from "@/api/core/call"
-import { adminKey, apiDb, ctxFor, jobIdOfPassId, ORG, owner, passJobOf, writeKey } from "@/api/test-helpers"
+import { adminKey, apiDb, ctxFor, jobIdOfPassId, linesOfJob, ORG, owner, passJobOf, writeKey } from "@/api/test-helpers"
+import { linesOfVisit, visitPrice } from "@/lib/jobs/lines"
 import { invoicesSend } from "@/api/v1/invoices/handlers"
 import { paymentsRecord, paymentsRefund } from "@/api/v1/payments/handlers"
 import { visitsGet } from "@/api/v1/visits/handlers"
@@ -29,6 +30,11 @@ beforeAll(async () => {
 afterAll(() => db.close())
 
 const jobOf = async (passId: string) => jobIdOfPassId(db, passId)
+/** The job's visits with what each costs: its own lines' total. */
+const priced = async (jobId: string) => {
+  const lines = await linesOfJob(db, jobId)
+  return (await db.select().from(s.visit).where(eq(s.visit.jobId, jobId))).map((v) => ({ ...v, amount: visitPrice(linesOfVisit(lines, v.id)) }))
+}
 const live = () => getLiveAdminData(ctxFor(db, owner, NOW))
 const payOnJob = (jobId: string, customerId: string, amount: number, method: "card_now" | "check" = "card_now") =>
   db.insert(s.charge).values({ organizationId: ORG, jobId, customerId, visitId: null, amount, status: "succeeded", method, paidOn: "2027-04-20" }).returning().then((r) => r[0]!)
@@ -38,7 +44,7 @@ describe("a payment on the job as a whole, on a job with several visits", () => 
     const passId = "p4"
     const jobId = await jobOf(passId)
     const customerId = (await passJobOf(db, passId)).customerId
-    const visits = await db.select().from(s.visit).where(eq(s.visit.jobId, jobId))
+    const visits = await priced(jobId)
     const turnOn = visits.find((v) => v.kind === "turn-on")!
     const blowout = visits.find((v) => v.kind === "blowout")!
     await db.update(s.visit).set({ status: "completed", completedOn: "2027-04-10" }).where(eq(s.visit.id, turnOn.id))
@@ -75,11 +81,11 @@ describe("a payment on the job as a whole, on a job with several visits", () => 
     const jobId = await jobOf(passId)
     const pass = await passJobOf(db, passId)
     await db.delete(s.charge).where(eq(s.charge.jobId, jobId))
-    const visits = await db.select().from(s.visit).where(eq(s.visit.jobId, jobId))
+    const visits = await priced(jobId)
     const turnOn = visits.find((v) => v.kind === "turn-on")!
     const blowout = visits.find((v) => v.kind === "blowout")!
-    await db.update(s.visit).set({ status: "completed", completedOn: "2027-04-01", chargedAt: null }).where(eq(s.visit.id, turnOn.id))
-    await db.update(s.visit).set({ status: "completed", completedOn: "2027-04-09", chargedAt: null }).where(eq(s.visit.id, blowout.id))
+    await db.update(s.visit).set({ status: "completed", completedOn: "2027-04-01"}).where(eq(s.visit.id, turnOn.id))
+    await db.update(s.visit).set({ status: "completed", completedOn: "2027-04-09"}).where(eq(s.visit.id, blowout.id))
     const payment = await payOnJob(jobId, pass.customerId, blowout.amount)
     await db.insert(s.invoice).values({
       organizationId: ORG, jobId, customerId: pass.customerId, number: "INV-2027-9001", amount: blowout.amount, total: blowout.amount, sentOn: "2027-04-09", dueOn: "2027-04-23", paidOn: "2027-04-20", paymentId: payment.id,
@@ -110,13 +116,13 @@ describe("a payment on the job as a whole, on a one-visit job", () => {
     expect(jobOwed(lines.filter((l) => !l.cancelledAt), await db.select().from(s.charge).where(eq(s.charge.jobId, v.jobId)))).toBe(0)
   })
 
-  it("is not paid again once the payment is refunded: the visit reads unpaid and the done visits are no longer stamped charged", async () => {
+  it("is not paid again once the payment is refunded: the visit reads unpaid and its derived chargedAt is null again", async () => {
     const v = await callApi(ctxFor(db, writeKey, "2027-05-07T20:00:00Z"), visitsCreate, { customerId: "c100", kind: "repair", scheduledOn: "2027-06-10", price: 145 })
-    await db.update(s.visit).set({ status: "completed", completedOn: "2027-05-07", chargedAt: new Date(NOW) }).where(eq(s.visit.id, v.id))
+    await db.update(s.visit).set({ status: "completed", completedOn: "2027-05-07" }).where(eq(s.visit.id, v.id))
     const row = await payOnJob(v.jobId, "c100", 145, "check")
     await callApi(ctxFor(db, adminKey, NOW), paymentsRefund, { paymentId: row.id })
     const got = await callApi(ctxFor(db, writeKey, NOW), visitsGet, { id: v.id })
     expect(got).toMatchObject({ paymentStatus: "none", jobPaymentShares: [] })
-    expect((await db.select().from(s.visit).where(eq(s.visit.id, v.id)))[0]!.chargedAt).toBeNull()
+    expect(got.chargedAt).toBeNull()
   })
 })

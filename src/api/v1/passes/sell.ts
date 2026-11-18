@@ -71,7 +71,6 @@ export const passesSell = defineHandler({
 
     // Sold today: the job's `sold_on` is set with the rows, and the access note the office typed is already on the new property.
     const pass = await makePassRows(ctx.db, { organizationId: org, customerId: customer.id, propertyId: property.id, season, onSale, zones: input.zones, inspection: input.inspection, status: "active", source: "office", now: ctx.now })
-    if (input.notes) await ctx.db.update(s.job).set({ notes: input.notes }).where(eq(s.job.id, pass.jobId))
     const heldDays = await holdOfficeDays(ctx.db, pass.jobId, input.days, property.town, season, day)
     await emitEvent(ctx.db, org, "pass.bought", { passId: pass.id, number: pass.number })
     await recordChange(ctx, { customerId: customer.id, jobId: pass.id, kind: "sold", detail: { source: "office", name: "Season Pass", passNumber: pass.number, paysBy: input.paysBy, days: heldDays } })

@@ -143,12 +143,12 @@ describe("seed", () => {
   it("gives every fixture visit its line, with the backfill's id, so a seeded and a migrated database agree", async () => {
     expect(await n(s.lineItem)).toBe(data.passes.reduce((sum, p) => sum + p.visits.length, 0))
     const [line] = await db
-      .select({ line: s.lineItem, serviceKey: s.service.key, amount: s.visit.amount })
+      .select({ line: s.lineItem, serviceKey: s.service.key })
       .from(s.lineItem)
       .leftJoin(s.service, eq(s.service.id, s.lineItem.serviceId))
       .innerJoin(s.visit, eq(s.visit.id, s.lineItem.visitId))
       .where(eq(s.lineItem.id, "line_p2-turn-on"))
-    expect(line).toMatchObject({ serviceKey: "turn-on-8", line: { jobId: "job_p2", visitId: "p2-turn-on", name: "Spring turn-on", unitPrice: line!.amount, quantity: 1, taxable: false, cancelledAt: null, description: SERVICE_LIST.find((v) => v.key === "turn-on-8")!.description } })
+    expect(line).toMatchObject({ serviceKey: "turn-on-8", line: { jobId: "job_p2", visitId: "p2-turn-on", name: "Spring turn-on", unitPrice: data.passes.find((p) => p.id === "p2")!.visits.find((v) => v.kind === "turn-on")!.amount, quantity: 1, taxable: false, cancelledAt: null, description: SERVICE_LIST.find((v) => v.key === "turn-on-8")!.description } })
   })
 })
 

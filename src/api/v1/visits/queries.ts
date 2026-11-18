@@ -4,11 +4,11 @@ import * as s from "@/db/schema"
 import type { Database } from "@/db/types"
 import type { Ctx } from "../../core/context"
 import { notFound } from "../../core/errors"
-import { jobTotal } from "@/lib/jobs/lines"
+import { linesOfVisit, visitPrice } from "@/lib/jobs/lines"
 import { loadJobCredit } from "@/lib/money/credit"
 import { isPaid } from "@/lib/money/words"
 import { hasScope } from "@/lib/auth/principal"
-import { eventsOfJson, visitEventsJson } from "../events/queries"
+import { eventsOfJson, newestNoteText, visitEventsJson } from "../events/queries"
 import { canSeeContact } from "../shared"
 import { yardOut } from "../customers/handlers"
 import type { PaymentOutType } from "../payments/schemas"
@@ -91,10 +91,16 @@ export function visitOut(ctx: Ctx, row: VisitJoined): VisitOutType {
     id: l.id, name: l.name, description: l.description, quantity: l.quantity, unitPrice: l.unit_price, taxable: l.taxable,
     cancelledAt: l.cancelled_at ? isoOf(l.cancelled_at) : null, visitId: l.visit_id,
   }))
-  // The visit's own line is what it costs (nothing once cancelled); only a visit with no line of its own keeps the legacy amount.
-  const own = lineItems.filter((l) => l.visitId === v.id)
-  const amount = own.length ? jobTotal(own.map((l) => ({ ...l, cancelledAt: l.cancelledAt ? new Date(l.cancelledAt) : null }))) : v.amount
+  // What the visit costs is its own non-cancelled lines (a visit with no line costs nothing).
+  const amount = visitPrice(linesOfVisit(lineItems, v.id).map((l) => ({ ...l, cancelledAt: l.cancelledAt ? new Date(l.cancelledAt) : null })))
   const seeNotes = canSeeContact(ctx)
+  // The story is staff's: a signed-in customer reading their own pass never gets events, and so no notes.
+  const staff = hasScope(ctx.principal, "read")
+  const events = staff ? eventsOfJson(ctx, row.events) : []
+  const allPayments = [...(row.payments ?? []), ...(row.credit ?? [])]
+  // Derived, never stored: the time of the newest payment that arrived, once the visit is paid in full (a refund that leaves it unpaid clears it).
+  const arrived = allPayments.filter((p) => p.status === "succeeded" && p.amount > 0).map((p) => isoOf(p.created_at)).sort()
+  const chargedAt = isPaid(allPayments, amount) ? (arrived[arrived.length - 1] ?? null) : null
   return {
     id: v.id,
     // the pass is the job: its id is the job id
@@ -120,22 +126,22 @@ export function visitOut(ctx: Ctx, row: VisitJoined): VisitOutType {
     scheduledOn: v.scheduledOn,
     startTime: v.startTime,
     durationMinutes: v.durationMinutes,
-    // notes are staff's (a tech's note lands here as the alias): a signed-in customer never reads them
-    notes: hasScope(ctx.principal, "read") ? v.notes : null,
+    // the text of the newest note event about the visit (a tech's note too); a signed-in customer never reads them
+    notes: newestNoteText(events),
     notDoneReason: v.notDoneReason,
     jobPaymentShares: (row.credit ?? []).map(paymentJsonOut(seeNotes)),
     ...newestPayment([...(row.payments ?? []), ...(row.credit ?? [])], amount),
     stopOrder: v.stopOrder,
     confirmedAt: v.confirmedAt?.toISOString() ?? null,
     completedOn: v.completedOn,
-    chargedAt: v.chargedAt?.toISOString() ?? null,
+    chargedAt,
     exception: v.exception ?? null,
     jobberRequestUrl: v.jobberJobUrl,
     lat: row.lat,
     lng: row.lng,
     ...(seeNotes ? { address: row.address } : {}),
     // events are staff's: a signed-in customer reading their own pass never gets them
-    ...(hasScope(ctx.principal, "read") ? { events: eventsOfJson(ctx, row.events) } : {}),
+    ...(staff ? { events } : {}),
     property: yardOut(ctx, row.yard),
   }
 }

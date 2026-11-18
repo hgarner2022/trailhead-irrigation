@@ -10,7 +10,7 @@ const bars = [
 ]
 
 const visits: PassVisit[] = [
-  { kind: "turn-on", window: "May", amount: 145, scheduledAt: "2027-05-03T16:00:00Z", completedAt: "2027-05-03T17:10:00Z", chargedAt: "2027-05-03T17:12:00Z" },
+  { kind: "turn-on", window: "May", amount: 145, scheduledAt: "2027-05-03T16:00:00Z", completedAt: "2027-05-03T17:10:00Z", payments: [{ id: "pay-1", amount: 145, method: "card_on_file", status: "succeeded", paidOn: "2027-05-03" }] },
   { kind: "inspection", window: "July", amount: 145, scheduledAt: "2027-07-14T15:00:00Z" },
   { kind: "blowout", window: "October", amount: 115 },
 ]
@@ -117,7 +117,7 @@ describe("SeasonLine in customer mode", () => {
   })
 
   it("drops the preference once a visit is done", () => {
-    const done = visits.map((v) => ({ ...v, completedAt: "2027-10-12T16:00:00Z", chargedAt: "2027-10-12T16:30:00Z" }))
+    const done = visits.map((v) => ({ ...v, completedAt: "2027-10-12T16:00:00Z", payments: [{ id: `pay-${v.kind}`, amount: v.amount, method: "card_on_file", status: "succeeded", paidOn: "2027-10-12" }] }))
     const { container } = render(<SeasonLine season={2027} mode="customer" visits={done} preferences={preferences} today="2027-11-01" />)
     expect(slots(container, "season-dot").map((d) => d.dataset.state)).toEqual(["completed", "completed", "completed"])
     expect(slots(container, "season-dot")[2].dataset.preferred).toBeUndefined()

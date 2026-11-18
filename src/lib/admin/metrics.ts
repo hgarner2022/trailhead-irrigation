@@ -7,8 +7,9 @@
  * Mountain day). Months in `visitMonth` and `committedByMonth` still read
  * the prefix; the wiring phase converts stored times to Mountain time.
  */
+import { invoiceOpen } from "@/lib/money/invoice"
 import { visitPaid, visitPaidTotal } from "./jobs"
-import type { Invoice, MonthTotal, Pass, PassVisit, Quote, SoldJob, Visit } from "./types"
+import type { MonthTotal, Pass, PassVisit, Quote, SoldJob, Visit } from "./types"
 
 const MONTHS = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"]
 const MONTH_BY_NAME = new Map(MONTHS.flatMap((name, i) => [[name, i + 1], [name.slice(0, 3), i + 1]]))
@@ -126,10 +127,14 @@ export function billsOverdue(jobs: SoldJob[] | undefined, today: string, timeZon
   return countAndTotal((jobs ?? []).flatMap((j) => (j.invoice && (j.money?.owed ?? 1) > 0 && j.invoice.dueOn < todayDay ? [j.invoice] : [])))
 }
 
-/** The Jobber mirror's unpaid invoices whose due day is before `today` (no tile reads it since step 4; it goes with the mirror in step 6). `timeZone` sets which calendar day `today` and the due dates fall on. */
-export function invoicesOverdue(invoices: Invoice[], today: string, timeZone?: string): { count: number; total: number } {
+/**
+ * Our own bills (the `invoice` table) that are open (not paid, not cancelled) and whose `due_on` is before today, counted once per
+ * bill, by the bill's total. `today` is a Mountain calendar day or an instant, read as the day it is in `timeZone` (Denver unless
+ * said otherwise); `dueOn` is already a Mountain calendar day. The Jobber mirror's invoices are not read.
+ */
+export function invoicesOverdue(invoices: readonly { total: number; dueOn: string; paidOn?: string | null; cancelledAt?: Date | string | null }[], today: string, timeZone = "America/Denver"): { count: number; total: number } {
   const todayDay = day(today, timeZone)
-  return countAndTotal(invoices.filter((i) => i.status !== "paid" && day(i.dueAt, timeZone) < todayDay))
+  return countAndTotal(invoices.filter((i) => invoiceOpen(i) && i.dueOn < todayDay))
 }
 
 /** Visits that are still on for that calendar day, earliest first. `timeZone` sets which calendar day a visit falls on. */

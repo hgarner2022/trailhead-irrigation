@@ -7,6 +7,8 @@ import { bookedWhen, cardAction, cardLine, earlierSeasons, expiry, passHeadline,
 // passes[2] has no visit yet, with the turn-on preferred earlier.
 const pass = snapshot.passes[0] as Pass
 const fresh = snapshot.passes[2] as Pass
+/** A charged visit carries one succeeded card payment, the way a real charge leaves it. */
+const paid = (v: { amount: number }, paidOn: string) => ({ payments: [{ id: `pay-${paidOn}`, amount: v.amount, method: "card_on_file", status: "succeeded", paidOn }] })
 const scheduled: Pass = { ...pass, visits: pass.visits.map((v) => (v.kind === "inspection" ? { ...v, scheduledAt: "2027-07-13T15:00:00Z" } : v)) }
 const allDone: Pass = {
   ...pass,
@@ -39,7 +41,7 @@ describe("visit rows", () => {
     expect(words).not.toContain("Scheduled")
     expect(words).not.toContain("Completed")
     expect(words).not.toContain("Reserved")
-    expect(visitRows({ ...pass, visits: pass.visits.map((v) => ({ ...v, completedAt: undefined, scheduledAt: undefined, scheduledOn: undefined, chargedAt: undefined })) })[0].label).toBe("Preferred")
+    expect(visitRows({ ...pass, visits: pass.visits.map((v) => ({ ...v, completedAt: undefined, scheduledAt: undefined, scheduledOn: undefined, payments: undefined })) })[0].label).toBe("Preferred")
     expect(visitRows(allDone).map((r) => r.label)).toEqual(["Done", "Done", "Done"])
   })
 })
@@ -87,8 +89,8 @@ describe("season caption", () => {
 describe("earlier seasons", () => {
   it("summarises a season by visits done and dollars paid, and lists earlier seasons newest first without the current one", () => {
     const current = snapshot.passes[0] as Pass
-    const done2026: Pass = { ...current, id: "a", season: 2026, visits: current.visits.map((v) => ({ ...v, completedAt: "2026-05-03T17:00:00Z", chargedAt: "2026-05-03T17:02:00Z" })) }
-    const one2025: Pass = { ...current, id: "b", season: 2025, visits: current.visits.map((v, i) => (i === 0 ? { ...v, completedAt: "2025-05-03T17:00:00Z", chargedAt: "2025-05-03T17:02:00Z" } : { ...v, completedAt: undefined, chargedAt: undefined })) }
+    const done2026: Pass = { ...current, id: "a", season: 2026, visits: current.visits.map((v) => ({ ...v, completedAt: "2026-05-03T17:00:00Z", ...paid(v, "2026-05-03") })) }
+    const one2025: Pass = { ...current, id: "b", season: 2025, visits: current.visits.map((v, i) => (i === 0 ? { ...v, completedAt: "2025-05-03T17:00:00Z", ...paid(v, "2025-05-03") } : { ...v, completedAt: undefined, payments: undefined })) }
     expect(seasonSummary(done2026)).toBe(`3 of 3 visits done, $${done2026.visits.reduce((sum, v) => sum + v.amount, 0)} paid`)
     expect(seasonSummary(one2025)).toBe(`1 of 3 visits done, $${current.visits[0].amount} paid`)
     expect(earlierSeasons([one2025, current, done2026], current).map((p) => p.season)).toEqual([2026, 2025])
@@ -98,11 +100,11 @@ describe("earlier seasons", () => {
   it("reads the dollars paid from the payment rows, a refund counting against and a visit with no row counting nothing", () => {
     const current = snapshot.passes[0] as Pass
     const row = (n: number, amount: number, extra: Record<string, unknown> = {}) => ({ id: `pay-${n}`, amount, method: "card_on_file", status: "succeeded", ...extra })
-    const done = (visit: (typeof current.visits)[number], payments: ReturnType<typeof row>[]) => ({ ...visit, completedAt: "2026-05-03T17:00:00Z", chargedAt: undefined, payments })
+    const done = (visit: (typeof current.visits)[number], payments: ReturnType<typeof row>[]) => ({ ...visit, completedAt: "2026-05-03T17:00:00Z", payments })
     const season: Pass = { ...current, season: 2026, visits: [done(current.visits[0]!, [row(1, 145)]), done(current.visits[1]!, [row(2, 145), row(3, -45, { refundsPaymentId: "pay-2" })]), done(current.visits[2]!, [])] }
     expect(seasonSummary(season)).toBe("3 of 3 visits done, $245 paid")
-    // an old charged flag with a rows array that says nothing paid is not money
-    expect(seasonSummary({ ...season, visits: season.visits.map((v) => ({ ...v, chargedAt: "2026-05-03T17:02:00Z", payments: [] })) })).toBe("3 of 3 visits done")
+    // a rows array that says nothing paid is not money
+    expect(seasonSummary({ ...season, visits: season.visits.map((v) => ({ ...v, payments: [] })) })).toBe("3 of 3 visits done")
   })
 })
 

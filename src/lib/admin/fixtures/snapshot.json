@@ -16212,9 +16212,20 @@
           "kind": "turn-on",
           "window": "May",
           "amount": 145,
+          "id": "p1-turn-on",
           "scheduledAt": "2027-05-03T16:00:00Z",
           "completedAt": "2027-05-03T17:10:00Z",
-          "chargedAt": "2027-05-03T17:12:00Z",
+          "payments": [
+            {
+              "id": "pay-p1-turn-on",
+              "jobId": "job_p1",
+              "visitId": "p1-turn-on",
+              "amount": 145,
+              "method": "card_on_file",
+              "status": "succeeded",
+              "paidOn": "2027-05-03"
+            }
+          ],
           "scheduledOn": "2027-05-03"
         },
         {
@@ -16263,9 +16274,20 @@
           "kind": "turn-on",
           "window": "May",
           "amount": 145,
+          "id": "p2-turn-on",
           "scheduledAt": "2027-05-04T16:00:00Z",
           "completedAt": "2027-05-04T17:10:00Z",
-          "chargedAt": "2027-05-04T17:12:00Z",
+          "payments": [
+            {
+              "id": "pay-p2-turn-on",
+              "jobId": "job_p2",
+              "visitId": "p2-turn-on",
+              "amount": 145,
+              "method": "card_on_file",
+              "status": "succeeded",
+              "paidOn": "2027-05-04"
+            }
+          ],
           "scheduledOn": "2027-05-04"
         },
         {

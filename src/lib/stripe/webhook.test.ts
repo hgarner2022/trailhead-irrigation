@@ -7,8 +7,10 @@ import type { TestDb } from "@/db/test-db"
 import { callApi } from "@/api/core/call"
 import { invoicesCancel, invoicesSend } from "@/api/v1/invoices/handlers"
 import { passesCreate } from "@/api/v1/passes/handlers"
+import { visitsGet } from "@/api/v1/visits/handlers"
 import { visitsCreate } from "@/api/v1/visits/office"
-import { adminKey, apiDb, ctxFor, eventsOf, ORG, passJobOf, passViewOf, setPass, writeKey } from "@/api/test-helpers"
+import { adminKey, apiDb, ctxFor, eventsOf, linesOfJob, ORG, passJobOf, passViewOf, setPass, writeKey } from "@/api/test-helpers"
+import { linesOfVisit, visitPrice } from "@/lib/jobs/lines"
 import { drain } from "@/lib/queue"
 import { handleStripeEvent, organizationOfEvent, receiveStripeEvent } from "./webhook"
 import { completeSession, paidIntent, signer, stubStripe, WEBHOOK_SECRET } from "./test-stripe"
@@ -25,6 +27,9 @@ const send = (stripe: Stripe, e: unknown, secret = WEBHOOK_SECRET) => {
   const body = JSON.stringify(e)
   return receiveStripeEvent(db, stripe, WEBHOOK_SECRET, body, signer.generateTestHeaderString({ payload: body, secret }))
 }
+
+/** What a visit costs: its own lines' total. */
+const priceOf = async (v: { id: string; jobId: string }) => visitPrice(linesOfVisit(await linesOfJob(db, v.jobId), v.id))
 
 let n = 0
 async function pendingPass() {
@@ -140,28 +145,28 @@ describe("handleStripeEvent", () => {
   it("on payment_intent.payment_failed marks a pending charge failed and writes payment.failed once, however often it is delivered", async () => {
     const p = await pendingPass()
     const [v] = await db.select().from(s.visit).where(eq(s.visit.jobId, p.passId))
-    await db.insert(s.charge).values({ organizationId: v!.organizationId, jobId: v!.jobId, customerId: p.customerId, visitId: v!.id, attempt: 1, amount: v!.amount, status: "pending", stripePaymentIntentId: "pi_declined" })
+    await db.insert(s.charge).values({ organizationId: v!.organizationId, jobId: v!.jobId, customerId: p.customerId, visitId: v!.id, attempt: 1, amount: await priceOf(v!), status: "pending", stripePaymentIntentId: "pi_declined" })
     const { stripe } = stubStripe()
     const failed = event("evt_pf", "payment_intent.payment_failed", { id: "pi_declined", last_payment_error: { message: "Your card was declined." } }) as unknown as Stripe.Event
     await handleStripeEvent(db, stripe, v!.organizationId, failed, "https://site.test")
     await handleStripeEvent(db, stripe, v!.organizationId, failed, "https://site.test")
     const [c] = await db.select().from(s.charge).where(eq(s.charge.stripePaymentIntentId, "pi_declined"))
     expect(c).toMatchObject({ status: "failed", failureMessage: "Your card was declined." })
-    expect(await eventsOf(db, { kind: "payment.failed", jobId: v!.jobId })).toMatchObject([{ about: "payment", aboutId: c!.id, customerId: p.customerId, visitId: v!.id, who: "system", detail: { amount: v!.amount, message: "Your card was declined.", name: "Spring turn-on" } }])
+    expect(await eventsOf(db, { kind: "payment.failed", jobId: v!.jobId })).toMatchObject([{ about: "payment", aboutId: c!.id, customerId: p.customerId, visitId: v!.id, who: "system", detail: { amount: await priceOf(v!), message: "Your card was declined.", name: "Spring turn-on" } }])
   })
 
   it("reconciles a payment_intent.succeeded for a charge that was left pending", async () => {
     const p = await pendingPass()
     const [v] = await db.select().from(s.visit).where(eq(s.visit.jobId, p.passId))
-    await db.insert(s.charge).values({ organizationId: v!.organizationId, jobId: v!.jobId, visitId: v!.id, attempt: 1, amount: v!.amount, status: "pending", stripePaymentIntentId: "pi_late" })
+    await db.insert(s.charge).values({ organizationId: v!.organizationId, jobId: v!.jobId, visitId: v!.id, attempt: 1, amount: await priceOf(v!), status: "pending", stripePaymentIntentId: "pi_late" })
     const { stripe } = stubStripe()
     await handleStripeEvent(db, stripe, v!.organizationId, event("evt_pi", "payment_intent.succeeded", { id: "pi_late" }) as unknown as Stripe.Event, "https://site.test")
     const [c] = await db.select().from(s.charge).where(eq(s.charge.stripePaymentIntentId, "pi_late"))
     expect(c!.status).toBe("succeeded")
-    const [after] = await db.select().from(s.visit).where(eq(s.visit.id, v!.id))
-    expect(after!.chargedAt).not.toBeNull()
+    // the visit reads as charged from the payment row that now went through (derived, no column)
+    expect((await callApi(ctxFor(db, adminKey), visitsGet, { id: v!.id })).chargedAt).not.toBeNull()
     // Completing the pending row writes payment.succeeded once; a redelivery finds it succeeded and adds none.
-    expect(await eventsOf(db, { kind: "payment.succeeded", visitId: v!.id })).toMatchObject([{ about: "payment", aboutId: c!.id, visitId: v!.id, who: "system", detail: { amount: v!.amount, name: "Spring turn-on" } }])
+    expect(await eventsOf(db, { kind: "payment.succeeded", visitId: v!.id })).toMatchObject([{ about: "payment", aboutId: c!.id, visitId: v!.id, who: "system", detail: { amount: await priceOf(v!), name: "Spring turn-on" } }])
     await handleStripeEvent(db, stripe, v!.organizationId, event("evt_pi", "payment_intent.succeeded", { id: "pi_late" }) as unknown as Stripe.Event, "https://site.test")
     expect(await eventsOf(db, { kind: "payment.succeeded", visitId: v!.id })).toHaveLength(1)
   })
@@ -207,8 +212,8 @@ describe("a bill's Checkout Session completed", () => {
     const [owner] = await db.select().from(s.customer).where(eq(s.customer.id, "c100"))
     expect(owner).toMatchObject({ stripePaymentMethodId: "pm_bill_a", cardBrand: "visa", cardLast4: "4242", cardExpires: "2030-08", cardFailedAt: null })
     expect(calls.customersUpdate).toHaveBeenCalledWith("cus_dana", { invoice_settings: { default_payment_method: "pm_bill_a" } })
-    const [done] = await db.select().from(s.visit).where(eq(s.visit.id, visit.id))
-    expect(done!.chargedAt).not.toBeNull()
+    // the job's done visit reads as paid from the bill's payment, with no stamp on the visit
+    expect((await callApi(ctxFor(db, adminKey), visitsGet, { id: visit.id })).paymentStatus).toBe("paid")
     const [receipt, ...more] = await receipts("c100", invoice.number)
     expect(more).toEqual([])
     expect(receipt).toMatchObject({ channel: "email", to: "dana@example.com", key: `payment-${row!.id}`, status: "queued", subject: `Receipt: $145 for your bill ${invoice.number}` })

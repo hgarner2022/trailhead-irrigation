@@ -3,6 +3,7 @@ import { and, desc, eq } from "drizzle-orm"
 import * as s from "@/db/schema"
 import type { Database } from "@/db/types"
 import { loadJobCredit } from "@/lib/money/credit"
+import { visitPrice } from "@/lib/jobs/lines"
 import { paidTotal } from "@/lib/money/words"
 
 type PaymentRow = typeof s.charge.$inferSelect
@@ -70,13 +71,18 @@ export async function recordPaymentRow(db: Database, input: PaymentRowInput): Pr
   return row
 }
 
+/** What one visit costs: its own non-cancelled lines added up (`visitPrice`); a visit with no line costs nothing. */
+export async function loadVisitPrice(db: Database, organizationId: string, visitId: string): Promise<number> {
+  const lines = await db.select().from(s.lineItem).where(and(eq(s.lineItem.organizationId, organizationId), eq(s.lineItem.visitId, visitId)))
+  return visitPrice(lines)
+}
+
 /**
- * What one visit costs and what has arrived: its live lines (the legacy `visit.amount` only for a visit with no line), and its
- * succeeded rows added up with refunds counting against, plus its share of the payments made on the job as a whole. `owed` is never below zero. A visit nothing has priced has `price` 0.
+ * What one visit costs and what has arrived: its live lines, and its succeeded rows added up with refunds counting against, plus its
+ * share of the payments made on the job as a whole. `owed` is never below zero. A visit nothing has priced has `price` 0.
  */
-export async function visitBalance(db: Database, organizationId: string, visit: { id: string; amount: number; jobId?: string | null }): Promise<{ price: number; paid: number; owed: number }> {
-  const lines = await db.select().from(s.lineItem).where(and(eq(s.lineItem.organizationId, organizationId), eq(s.lineItem.visitId, visit.id)))
-  const price = lines.length ? lines.filter((l) => !l.cancelledAt).reduce((sum, l) => sum + l.quantity * l.unitPrice, 0) : visit.amount
+export async function visitBalance(db: Database, organizationId: string, visit: { id: string; jobId?: string | null }): Promise<{ price: number; paid: number; owed: number }> {
+  const price = await loadVisitPrice(db, organizationId, visit.id)
   const rows = await db.select().from(s.charge).where(and(eq(s.charge.organizationId, organizationId), eq(s.charge.visitId, visit.id)))
   // The visit's share of a payment made on the job as a whole (a bill paid on the pay page) counts as paid, or the office could take the money twice.
   const credit = visit.jobId ? (await loadJobCredit(db, organizationId, [visit.jobId])).get(visit.id) ?? [] : []

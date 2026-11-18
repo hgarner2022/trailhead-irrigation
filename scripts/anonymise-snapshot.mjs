@@ -296,7 +296,9 @@ const passes = chosen.map((client, n) => {
   if (n < 2) {
     visitsForPass[0].scheduledAt = `2027-05-0${3 + n}T16:00:00Z`
     visitsForPass[0].completedAt = `2027-05-0${3 + n}T17:10:00Z`
-    visitsForPass[0].chargedAt = `2027-05-0${3 + n}T17:12:00Z`
+    // charged: the visit has its id and one succeeded card payment on its job, the way a real charge writes it
+    visitsForPass[0].id = `p${i}-turn-on`
+    visitsForPass[0].payments = [{ id: `pay-p${i}-turn-on`, jobId: `job_p${i}`, visitId: `p${i}-turn-on`, amount: visitsForPass[0].amount, method: "card_on_file", status: "succeeded", paidOn: `2027-05-0${3 + n}` }]
   }
   return {
     id: `p${i}`,

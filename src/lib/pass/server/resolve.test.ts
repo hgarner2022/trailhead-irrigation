@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
-import { eq } from "drizzle-orm"
+import { eq, isNotNull } from "drizzle-orm"
 import * as s from "@/db/schema"
 import type { TestDb } from "@/db/test-db"
 import { apiDb, ORG, passJobOf } from "@/api/test-helpers"
@@ -28,9 +28,9 @@ describe("resolvePassJob", () => {
   })
 
   it("does not find a job that has no season, by its id or by an old id written on it", async () => {
-    const [repair] = await db.select().from(s.job).where(eq(s.job.kind, "pass"))
+    const [repair] = await db.select().from(s.job).where(isNotNull(s.job.season))
     const customerId = repair!.customerId
-    await db.insert(s.job).values({ id: "job-repair-x", organizationId: ORG, customerId, propertyId: repair!.propertyId, kind: "repair", source: "office", legacyPassId: "old-repair-x" })
+    await db.insert(s.job).values({ id: "job-repair-x", organizationId: ORG, customerId, propertyId: repair!.propertyId, source: "office", legacyPassId: "old-repair-x" })
     expect(await resolvePassJob(db, ORG, "job-repair-x")).toBeNull()
     expect(await resolvePassJob(db, ORG, "old-repair-x")).toBeNull()
     expect(await resolvePassJobAnywhere(db, "job-repair-x")).toBeNull()

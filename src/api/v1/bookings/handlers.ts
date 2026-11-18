@@ -10,6 +10,7 @@ import { consentInput, customerFields, propertyInput } from "../customers/schema
 import { getCustomerRow } from "../customers/handlers"
 import { visitName } from "@/lib/events/names"
 import { recordEvent, whoOf } from "@/lib/events/record"
+import { linesOfVisit, visitPrice } from "@/lib/jobs/lines"
 import { emitEvent } from "../webhooks/deliver"
 
 export const bookingsCreate = defineHandler({
@@ -53,10 +54,12 @@ export const bookingsCancel = defineHandler({
     const wasCancelled = row.cancelledAt !== null
     // The visits that still count, read before they change, so each event carries the day it gave up.
     const open = await ctx.db
-      .select({ id: s.visit.id, kind: s.visit.kind, scheduledOn: s.visit.scheduledOn, amount: s.visit.amount })
+      .select({ id: s.visit.id, kind: s.visit.kind, scheduledOn: s.visit.scheduledOn })
       .from(s.visit)
       .where(and(eq(s.visit.jobId, row.id), eq(s.visit.organizationId, ctx.organizationId), notInArray(s.visit.status, ["completed", "cancelled"])))
-    await ctx.db.update(s.job).set({ status: "cancelled", cancelledAt: ctx.now }).where(eq(s.job.id, row.id))
+    // What each gave up is its own lines' total, read before the lines are cancelled.
+    const lines = await ctx.db.select().from(s.lineItem).where(and(eq(s.lineItem.jobId, row.id), eq(s.lineItem.organizationId, ctx.organizationId)))
+    await ctx.db.update(s.job).set({ cancelledAt: ctx.now }).where(eq(s.job.id, row.id))
     // Job-wide, so a line with no visit (a backfilled one-off) goes too; a line already cancelled keeps its time.
     await ctx.db.update(s.lineItem).set({ cancelledAt: ctx.now, updatedAt: ctx.now }).where(and(eq(s.lineItem.jobId, row.id), isNull(s.lineItem.cancelledAt)))
     const cancelled = await ctx
@@ -65,7 +68,7 @@ export const bookingsCancel = defineHandler({
       .where(and(eq(s.visit.jobId, row.id), notInArray(s.visit.status, ["completed", "cancelled"])))
       .returning({ id: s.visit.id })
     for (const v of open.filter((o) => cancelled.some((c) => c.id === o.id)))
-      await recordEvent(ctx.db, { organizationId: ctx.organizationId, about: "visit", aboutId: v.id, customerId: row.customerId, jobId: row.id, visitId: v.id, kind: "visit.cancelled", detail: { name: visitName(v.kind), reason: null, day: v.scheduledOn, amount: v.amount }, who: whoOf(ctx), at: ctx.now })
+      await recordEvent(ctx.db, { organizationId: ctx.organizationId, about: "visit", aboutId: v.id, customerId: row.customerId, jobId: row.id, visitId: v.id, kind: "visit.cancelled", detail: { name: visitName(v.kind), reason: null, day: v.scheduledOn, amount: visitPrice(linesOfVisit(lines, v.id)) }, who: whoOf(ctx), at: ctx.now })
     if (!wasCancelled) await recordEvent(ctx.db, { organizationId: ctx.organizationId, about: "job", aboutId: row.id, customerId: row.customerId, jobId: row.id, kind: "job.cancelled", detail: {}, who: whoOf(ctx), at: ctx.now })
     return { id: row.id, status: "cancelled" as const, cancelledVisits: cancelled.length }
   },

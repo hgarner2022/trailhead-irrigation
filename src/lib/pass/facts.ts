@@ -28,16 +28,6 @@ export function passStatus(job: PassJobFacts, today: string): PassStatusValue {
   return "active"
 }
 
-/**
- * The status word a job still carries on screen and in the API: cancelled by `cancelled_at`, pending while a Season Pass has no sold
- * day, else active. Read from the facts; the job has no status column of its own to read.
- */
-export function jobStatusWord(job: { season: number | null; soldOn: string | null; cancelledAt: Date | null }): "pending" | "active" | "cancelled" {
-  if (job.cancelledAt) return "cancelled"
-  if (job.season !== null && !job.soldOn) return "pending"
-  return "active"
-}
-
 /** The July inspection is on the pass when a live line is the inspection, by its name or by the band it was priced from. */
 export function passInspection(lines: readonly { name: string; serviceId: string | null; cancelledAt: Date | null }[]): boolean {
   return lines.some((l) => !l.cancelledAt && (l.name === LINE_NAMES.inspection || (l.serviceId?.startsWith("inspection-") ?? false)))

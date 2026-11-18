@@ -90,4 +90,4 @@ The routine's behaviour is this page. Change the prompt here first, then paste t
 
 ## Paying invoices (Phase 7)
 
-The app charges the pass card itself and nothing in code calls Jobber. When the routine runs, it also reads the charged visits (`charged_at` set) from `/api/v1/visits` and marks the matching Jobber invoice paid. Match on the visit's Jobber job or invoice id when the visit has one, otherwise on the client and the visit date. Mark an invoice paid once and skip any invoice that is already paid.
+The app charges the pass card itself and nothing in code calls Jobber. When the routine runs, it also reads the paid visits (`chargedAt` not null: the time the newest payment arrived, set only while the visit is paid in full, so a refund clears it; it is worked out from the payment rows, never stored) from `/api/v1/visits` and marks the matching Jobber invoice paid. Payments are recorded through `payments.record` (`POST /payments`); `visits.recordPayment` no longer exists. Match on the visit's Jobber job or invoice id when the visit has one, otherwise on the client and the visit date. Mark an invoice paid once and skip any invoice that is already paid.

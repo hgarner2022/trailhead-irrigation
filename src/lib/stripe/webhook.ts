@@ -9,6 +9,7 @@ import { ctxForJob } from "@/lib/admin/api-ctx"
 import { clearedCardColumns } from "@/lib/customer/card"
 import { visitName } from "@/lib/events/names"
 import { recordEventSafe } from "@/lib/events/record"
+import { linesOfVisit, visitPrice } from "@/lib/jobs/lines"
 import { paidDay } from "@/lib/money/record"
 import { baseData } from "@/lib/messaging/data"
 import { queueMessage } from "@/lib/messaging/queue"
@@ -92,7 +93,6 @@ export async function handleStripeEvent(db: Database, stripe: Stripe, organizati
           .update(s.charge)
           .set({ status: "succeeded", failureMessage: null, paidOn: paidDay(now), jobId: charge.jobId ?? visit?.jobId ?? null, customerId: charge.customerId ?? visit?.customerId ?? null, updatedAt: now })
           .where(eq(s.charge.id, charge.id))
-        if (charge.visitId) await db.update(s.visit).set({ chargedAt: now, stripePaymentIntentId: intent.id, updatedAt: now }).where(eq(s.visit.id, charge.visitId))
         // Only the run that completes the pending row writes the event, so a redelivery adds none.
         await recordEventSafe(db, { organizationId, about: "payment", aboutId: charge.id, customerId: charge.customerId ?? visit?.customerId, jobId: charge.jobId ?? visit?.jobId, visitId: charge.visitId, kind: "payment.succeeded", detail: { amount: charge.amount, method: charge.method, ...(visit ? { name: visitName(visit.kind) } : {}) }, who: "system", at: now })
       } else if (event.type === "payment_intent.payment_failed" && charge.status === "pending") {
@@ -121,8 +121,12 @@ export async function handleStripeEvent(db: Database, stripe: Stripe, organizati
         .limit(1)
       if (!row || !customer.email) return
       const link = customer.stripeCustomerId ? (await createCardUpdateSession(stripe, { passId: row.pass.id, customerId: customer.stripeCustomerId, origin })).url : null
-      const owed = await db.select({ amount: s.visit.amount, status: s.visit.status }).from(s.visit).where(eq(s.visit.jobId, row.pass.id))
-      const left = owed.filter((v) => !["completed", "cancelled", "skipped"].includes(v.status)).reduce((sum, v) => sum + v.amount, 0)
+      // What the pass has left to charge: the lines of its visits that are not done, cancelled or skipped.
+      const [ahead, lines] = await Promise.all([
+        db.select({ id: s.visit.id, status: s.visit.status }).from(s.visit).where(eq(s.visit.jobId, row.pass.id)),
+        db.select().from(s.lineItem).where(and(eq(s.lineItem.organizationId, organizationId), eq(s.lineItem.jobId, row.pass.id))),
+      ])
+      const left = ahead.filter((v) => !["completed", "cancelled", "skipped"].includes(v.status)).reduce((sum, v) => sum + visitPrice(linesOfVisit(lines, v.id)), 0)
       await queueMessage(db, {
         organizationId, customerId: customer.id, kind: "card-expiring", key: `pm-${method.id}`,
         data: { ...baseData(origin, customer), passNumber: row.pass.passNumber ?? "", cardState: "was removed or has expired", left, updateUrl: link },

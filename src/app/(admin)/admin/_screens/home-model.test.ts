@@ -127,7 +127,7 @@ describe("tileModels", () => {
 
   it("counts our open bills past their due day, once each, by the bill's total", () => {
     const bill = (id: string, dueOn: string, total: number) => ({ id, jobId: `job-${id}`, number: `INV-2026-000${id}`, amount: total, tax: 0, total, sentOn: "2026-11-01", dueOn, status: "sent" as const, visitIds: [] })
-    const job = (id: string, dueOn: string, total: number) => ({ id: `job-${id}`, customerId: "c", kind: "repair" as const, status: "active" as const, source: "office" as const, visitIds: [], invoice: bill(id, dueOn, total) })
+    const job = (id: string, dueOn: string, total: number) => ({ id: `job-${id}`, customerId: "c", kind: "repair" as const, status: "open" as const, source: "office" as const, visitIds: [], invoice: bill(id, dueOn, total) })
     // due Nov 11 and Nov 1 are overdue on Nov 12 (Denver); due Nov 12 is due today, not overdue
     const jobs = [job("1", "2026-11-11", 145), job("2", "2026-11-01", 100), job("3", "2026-11-12", 999), { ...job("4", "2026-11-30", 50), invoice: undefined }]
     const [, , , overdue] = tileModels({ ...data, jobs }, TODAY)
@@ -196,11 +196,11 @@ describe("jobTiles", () => {
   it("counts a done job whose pass card failed, and leaves a pending pass's jobs out", () => {
     const pass = data.passes.find((p) => p.status === "active" && p.visits[0].completedAt)!
     // Marked done and not charged, on a pass whose card failed.
-    const failed = { ...data, visits: [], passes: [{ ...pass, cardFailedAt: "2026-11-10T15:04:00Z", visits: pass.visits.map((v, i) => (i === 0 ? { ...v, chargedAt: undefined, payments: [] } : v)) }] }
+    const failed = { ...data, visits: [], passes: [{ ...pass, cardFailedAt: "2026-11-10T15:04:00Z", visits: pass.visits.map((v, i) => (i === 0 ? { ...v, payments: [] } : v)) }] }
     expect(jobTiles(failed, TODAY)[1].value).toBe("1")
-    // A failed payment row on the done visit counts too, and a row that went through does not, whatever the old charged flag says.
+    // A failed payment row on the done visit counts too, and a row that went through does not.
     const row = (status: string) => [{ id: "pay-1", visitId: pass.visits[0]!.id ?? "", amount: 145, method: "card_on_file", status }]
-    const withRow = (status: string) => ({ ...data, visits: [], passes: [{ ...pass, visits: pass.visits.map((v, i) => (i === 0 ? { ...v, chargedAt: undefined, payments: row(status) } : v)) }] })
+    const withRow = (status: string) => ({ ...data, visits: [], passes: [{ ...pass, visits: pass.visits.map((v, i) => (i === 0 ? { ...v, payments: row(status) } : v)) }] })
     expect(jobTiles(withRow("failed"), TODAY)[1].value).toBe("1")
     expect(jobTiles(withRow("succeeded"), TODAY)[1].value).toBe("0")
     const pendingOnly = { ...data, visits: [], passes: [{ ...pass, status: "pending" as const }] }

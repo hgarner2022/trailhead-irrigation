@@ -118,12 +118,14 @@ export async function passDetail(ctx: Ctx, row: PassRow) {
   const charges = await ctx.db.select().from(s.charge).where(and(eq(s.charge.organizationId, ctx.organizationId), eq(s.charge.jobId, row.pass.id))).orderBy(desc(s.charge.createdAt))
   const consent = await latestConsent(ctx.db, row.pass.customerId)
   const contact = canSeeContact(ctx)
+  const out = visits.map((v) => ({ ...visitOut(ctx, v), calendarUrl: calendarLink(v.visit) }))
   return {
     ...passOut(ctx, row),
-    visits: visits.map((v) => ({ ...visitOut(ctx, v), calendarUrl: calendarLink(v.visit) })),
+    visits: out,
     charges: charges.filter((c): c is typeof c & { visitId: string } => c.visitId !== null).map((c) => ({ id: c.id, visitId: c.visitId, attempt: c.attempt, amount: c.amount, status: c.status, failureMessage: c.failureMessage, createdAt: c.createdAt.toISOString() })),
     consent: consent ? consentOut(consent) : null,
-    price: visits.filter((v) => v.visit.status !== "cancelled").reduce((sum, v) => sum + v.visit.amount, 0),
+    // the pass's price is its visits' lines, the ones not cancelled
+    price: out.filter((v) => v.status !== "cancelled").reduce((sum, v) => sum + v.amount, 0),
     ...(contact
       ? { customer: { id: row.pass.customerId, firstName: row.firstName, lastName: row.lastName, email: row.email, phone: row.phone }, address: row.address }
       : {}),

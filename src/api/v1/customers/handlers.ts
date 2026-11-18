@@ -1,11 +1,10 @@
 import "server-only"
 import { and, asc, desc, eq, inArray, isNotNull, isNull, or, sql } from "drizzle-orm"
-import { jobStatusWord } from "@/lib/pass/facts"
 import { z } from "zod"
 import * as s from "@/db/schema"
 import type { Database } from "@/db/types"
 import { changedFields } from "@/lib/events/diff"
-import { recentEvents } from "../events/queries"
+import { newestJobNotes, recentEvents } from "../events/queries"
 import { recordEvent, whoOf } from "@/lib/events/record"
 import { enqueueGeocode } from "@/lib/geocode"
 import { defineHandler } from "../../core/handler"
@@ -16,7 +15,9 @@ import { canSeeContact, idInput, iso, today } from "../shared"
 import { hasScope } from "@/lib/auth/principal"
 import { customerHasCard } from "@/lib/customer/card"
 import { ConsentOut, consentInput, CustomerDetail, CustomerListItem, CustomerOut, customerFields, propertyInput } from "./schemas"
-import { jobTotal } from "@/lib/jobs/lines"
+import { loadJobKinds } from "@/lib/jobs/kind-load"
+import { jobTotal, linesOfVisit, visitPrice } from "@/lib/jobs/lines"
+import { stageOf } from "@/lib/jobs/stage"
 import { jobMoney, jobOwed } from "@/lib/money/words"
 import { paymentOut } from "../payments/queries"
 import { cleanEmail, cleanName, normalizePhone } from "@/lib/format/contact"
@@ -225,6 +226,8 @@ async function jobsOf(ctx: Ctx, customerId: string) {
   const openBills = bills.filter((b) => !b.paidOn)
   // Each job's newest 10 events (a customer has a few jobs, so one small query each).
   const stories = await Promise.all(jobs.map((j) => recentEvents(ctx, { jobId: j.id }, 10)))
+  // A job's kind is derived (a pass by its season, else its first line's service, else its first visit) and its notes are its newest note event.
+  const [kinds, notes] = await Promise.all([loadJobKinds(db, org, jobs), newestJobNotes(ctx, jobs.map((j) => j.id))])
   return jobs.map((j, index) => {
     const lines = lineRows.filter((l) => l.jobId === j.id)
     const payments = paymentRows.filter((p) => p.jobId === j.id)
@@ -233,19 +236,22 @@ async function jobsOf(ctx: Ctx, customerId: string) {
     const bill = jobOwed(lines, payments) > 0 ? openBills.find((b) => b.jobId === j.id) : undefined
     // The visits the paid bills name, which a payment made on the job as a whole credits first.
     const paidBillVisits = bills.filter((b) => b.jobId === j.id && b.paidOn).flatMap((b) => b.lines.map((l) => l.visitId).filter((id): id is string => Boolean(id)))
+    const kind = kinds.get(j.id)!
+    const total = jobTotal(lines)
     return {
-      id: j.id, kind: j.kind ?? ("other" as const), status: jobStatusWord(j), price: j.price, source: j.source, notes: j.notes, createdAt: j.createdAt.toISOString(),
+      id: j.id, kind,
+      // the stage word, read from the facts (`stageOf`): there is no typed status
+      status: stageOf({ kind, cancelledAt: j.cancelledAt, soldOn: j.soldOn, quoteSentOn: j.quoteSentOn, quoteAcceptedOn: j.quoteAcceptedOn, lines, visits: jobVisits }),
+      // the job's price is its total, null while it is 0
+      price: total > 0 ? total : null, source: j.source, notes: notes.get(j.id) ?? null, createdAt: j.createdAt.toISOString(),
       // a Season Pass is its job: the pass id is the job id
       passId: j.season !== null ? j.id : null, passNumber: j.passNumber,
       lines: lines.map((l) => ({ id: l.id, name: l.name, description: l.description, quantity: l.quantity, unitPrice: l.unitPrice, taxable: l.taxable, cancelledAt: l.cancelledAt?.toISOString() ?? null, visitId: l.visitId })),
-      total: jobTotal(lines),
+      total,
       payments: payments.map((p) => paymentOut(ctx, p)),
-      money: jobMoney(lines, payments, jobVisits.map((v) => ({ id: v.id, cancelled: v.status === "cancelled" || v.status === "skipped", price: lines.some((l) => l.visitId === v.id) ? jobTotal(lines.filter((l) => l.visitId === v.id)) : v.amount, done: v.status === "completed", doneOn: v.completedOn })), bill, paidBillVisits),
+      money: jobMoney(lines, payments, jobVisits.map((v) => ({ id: v.id, cancelled: v.status === "cancelled" || v.status === "skipped", price: visitPrice(linesOfVisit(lines, v.id)), done: v.status === "completed", doneOn: v.completedOn })), bill, paidBillVisits),
       invoiceId: bill?.id ?? null,
-      visits: jobVisits.map((v) => {
-        const own = lines.filter((l) => l.visitId === v.id)
-        return { id: v.id, kind: v.kind, status: v.status, scheduledOn: v.scheduledOn, amount: own.length ? jobTotal(own) : v.amount }
-      }),
+      visits: jobVisits.map((v) => ({ id: v.id, kind: v.kind, status: v.status, scheduledOn: v.scheduledOn, amount: visitPrice(linesOfVisit(lines, v.id)) })),
       events: stories[index]!,
     }
   })

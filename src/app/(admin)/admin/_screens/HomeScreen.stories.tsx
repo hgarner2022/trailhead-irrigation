@@ -160,7 +160,7 @@ export const OverdueBill: Story = {
   args: {
     data: {
       ...data,
-      jobs: [{ id: "job-billed", customerId: "c-andrea", kind: "repair", status: "active", source: "office", visitIds: [], invoice: overdueBill }],
+      jobs: [{ id: "job-billed", customerId: "c-andrea", kind: "repair", status: "open", source: "office", visitIds: [], invoice: overdueBill }],
       attention: [overdueRow, ...data.attention],
     },
   },

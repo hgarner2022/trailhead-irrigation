@@ -192,10 +192,8 @@ export interface Visit {
   scheduledOn?: string
   startTime?: string
   completedOn?: string
-  /** @deprecated alias for the fixtures: a charged day with no `payments` reads as one succeeded card payment; live data never sets it, the payment rows are the truth */
-  chargedAt?: string
   chargeFailed?: boolean
-  /** the visit's own payment rows, oldest first; absent in the fixtures */
+  /** the visit's own payment rows, oldest first (a charged visit has one succeeded row); absent in the fixtures for a visit nothing was paid for */
   payments?: AdminPayment[]
   /** the visit was skipped (the admin shows Skipped; `status` stays cancelled for the calendar) */
   skipped?: boolean
@@ -226,8 +224,6 @@ export interface Visit {
   truckName?: string
   /** why the last attempt did not happen, until the visit gets a day again */
   notDoneReason?: string
-  /** @deprecated alias for the fixtures, read only when `payments` is absent: how it was paid (card_on_file, card_now, check, venmo, cash) */
-  paidMethod?: string
   /** the open bill this visit's lines are on; its money reads Bill sent */
   invoice?: AdminInvoice
   /** @deprecated alias for the fixtures: a bill was sent and is not yet paid; live data reads `invoice` */
@@ -256,18 +252,24 @@ export interface SoldJob {
   /** the job's story (its events: the sale, the visits, the pass, the notes), newest first; absent in the fixtures */
   timeline?: TimelineLine[]
   customerId: string
+  /** derived (`jobKindOf`): a Season Pass is the job with a season, other work takes its first line's service kind */
   kind: "pass" | "repair" | "install" | "other"
-  status: "pending" | "active" | "done" | "cancelled"
-  /** whole dollars; absent until quoted */
+  /** the job's stage, read from its facts (`stageOf`): never typed */
+  status: "needs-a-quote" | "quoted" | "open" | "done" | "cancelled"
+  /** whole dollars: the job total, absent while it is 0 */
   price?: number
   source: "checkout" | "office" | "site" | "renewal"
+  /** the text of the newest note event about the job */
   notes?: string
   passId?: string
   /** the id the job's pass had before the pass became the job; an old link or alert key still opens it */
   legacyPassId?: string
   passNumber?: string
-  /** the day the job was sold, "2026-11-03"; absent in the fixtures */
+  /** the Mountain day the job was sold (`sold_on`), "2026-11-03"; absent while a pass is pending or a quote has not been accepted */
   soldOn?: string
+  /** the days a quote went out and was accepted, when they have */
+  quoteSentOn?: string
+  quoteAcceptedOn?: string
   visitIds: string[]
   /** what was sold, oldest first; the lines are the truth for what the job costs */
   lines?: JobLine[]
@@ -325,13 +327,9 @@ export interface PassVisit {
   amount: number
   /** what the visit includes, from the service at the sale (the visit's line) */
   description?: string
-  /** @deprecated alias for the fixtures, read only when `payments` is absent: see `Visit.chargedAt` */
-  chargedAt?: string
-  /** the visit's own payment rows, oldest first; absent in the fixtures */
+  /** the visit's own payment rows, oldest first (a charged visit has one succeeded row); absent in the fixtures for a visit nothing was paid for */
   payments?: AdminPayment[]
   notDoneReason?: string
-  /** @deprecated alias for the fixtures, read only when `payments` is absent */
-  paidMethod?: string
   /** the open bill this visit's lines are on; its money reads Bill sent */
   invoice?: AdminInvoice
   /** @deprecated alias for the fixtures: a bill was sent and is not yet paid */

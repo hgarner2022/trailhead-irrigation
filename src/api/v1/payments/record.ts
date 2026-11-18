@@ -4,6 +4,7 @@ import * as s from "@/db/schema"
 import { readAppUrl } from "@/lib/env"
 import { visitName } from "@/lib/events/names"
 import { recordEventSafe, whoOf } from "@/lib/events/record"
+import { loadJobKind } from "@/lib/jobs/kind-load"
 import { setVisitLinePrice } from "@/lib/jobs/write-lines"
 import { baseData } from "@/lib/messaging/data"
 import { queueMessage } from "@/lib/messaging/queue"
@@ -50,10 +51,10 @@ async function settleOpenBill(ctx: Ctx, jobId: string, row: { id: string; method
 
 /**
  * Money the office was handed (check, Venmo or cash) as a succeeded payment row on the job: the one path under
- * `payments.record` and the Done and `visits.recordPayment` aliases. A visit with no price yet takes the amount as its
- * price (visit, job and line). For a visit with a price it refuses what the rows would make wrong: a pass visit whose customer has
- * a card (it is charged to the card), a visit already paid in full, and an amount above what is still owed on it (refused, not
- * clamped: the record must say what was really handed over, so a stale panel or a double submit writes nothing); `visit.charged_at` is written as the alias; the receipt is queued; the events are emitted.
+ * `payments.record` and Done's "paid by" choices. A visit with no price yet takes the amount as its
+ * price (its line). For a visit with a price it refuses what the rows would make wrong: a visit already paid in full, and an amount
+ * above what is still owed on it (refused, not clamped: the record must say what was really handed over, so a stale panel or a
+ * double submit writes nothing); the receipt is queued; the events are emitted.
  */
 /**
  * Money handed over for a pass visit is recorded whether or not the customer has a card (a check, Venmo or cash for a visit the
@@ -73,30 +74,30 @@ export async function recordOfficePayment(ctx: Ctx, input: OfficePayment) {
     if (!visit) throw notFound("Visit")
     if (visit.jobId !== job.id) throw new ApiError("invalid", "That visit is not on this job", [{ path: "visitId", message: "Choose a visit of the job" }])
   }
+  let unpriced = false
   if (visit) {
     await assertNoCardChargeInFlight(ctx, visit.id)
     const { price, owed } = await visitBalance(ctx.db, ctx.organizationId, visit)
     if (price > 0 && owed === 0) throw new ApiError("conflict", "This visit is already paid")
     if (price > 0 && input.amount > owed) throw new ApiError("unprocessable", `Only $${owed} is still owed on this visit`, [{ path: "amount", message: `At most $${owed}` }])
+    unpriced = price === 0
   }
-  if (visit && visit.amount === 0) {
-    await ctx.db.update(s.visit).set({ amount: input.amount }).where(eq(s.visit.id, visit.id))
-    await ctx.db.update(s.job).set({ price: input.amount }).where(eq(s.job.id, job.id))
-    await setVisitLinePrice(ctx.db, visit, input.amount, ctx.now)
-  }
+  // A visit nothing has priced takes the amount as its price: its line is priced (or made), and the job's total follows from its lines.
+  if (visit && unpriced) await setVisitLinePrice(ctx.db, visit, input.amount, ctx.now)
   const row = await recordPaymentRow(ctx.db, {
     organizationId: ctx.organizationId, jobId: job.id, visitId: visit?.id ?? null, customerId: job.customerId,
     amount: input.amount, method: input.method, reference: input.reference, paidOn: input.paidOn, status: "succeeded", now: ctx.now,
   })
   if (!row) throw new ApiError("conflict", "That payment was already recorded")
-  if (visit) await ctx.db.update(s.visit).set({ chargedAt: ctx.now }).where(eq(s.visit.id, visit.id))
   await settleOpenBill(ctx, job.id, row, job.customerId)
   const [customer] = await ctx.db.select().from(s.customer).where(and(eq(s.customer.id, job.customerId), eq(s.customer.organizationId, ctx.organizationId)))
   if (customer) {
     const passNumber = job.passNumber
+    // Named for the visit it was paid after; a payment on the job as a whole is named for the job (a Season Pass, else the work it is).
+    const name = visit ? kindName(visit.kind) : job.season !== null ? "Season Pass" : kindName(await loadJobKind(ctx.db, ctx.organizationId, job))
     await queueMessage(ctx.db, {
       organizationId: ctx.organizationId, customerId: customer.id, visitId: visit?.id ?? null, kind: "receipt", key: `payment-${row.id}`,
-      data: { ...baseData(readAppUrl(), customer), passNumber: passNumber ?? null, amount: input.amount, visitName: visit ? kindName(visit.kind) : job.kind === "pass" ? "Season Pass" : kindName(job.kind ?? "other"), card: null, paidBy: RECEIVED_BY[input.method], nextLine: "", receiptUrl: null },
+      data: { ...baseData(readAppUrl(), customer), passNumber: passNumber ?? null, amount: input.amount, visitName: name, card: null, paidBy: RECEIVED_BY[input.method], nextLine: "", receiptUrl: null },
     })
   }
   await emitEvent(ctx.db, ctx.organizationId, "payment.succeeded", { paymentId: row.id, jobId: job.id, ...(visit ? { visitId: visit.id } : {}), amount: input.amount, method: input.method }, {
