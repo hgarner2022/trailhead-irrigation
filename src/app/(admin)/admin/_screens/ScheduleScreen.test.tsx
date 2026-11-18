@@ -178,7 +178,7 @@ describe("ScheduleScreen opens on the work", () => {
 
   it("opens on the first week that has a job, not on an empty November week", () => {
     render(<ScheduleScreen data={spring} today={TODAY} />)
-    expect(screen.getByText(/^Week of Apr 26\. 1 stop\.$/)).toBeInTheDocument()
+    expect(screen.getByText(/^Week of Apr 26\. 1 visit\.$/)).toBeInTheDocument()
     expect(screen.queryByText(/Next jobs/)).toBeNull()
   })
 
@@ -188,7 +188,7 @@ describe("ScheduleScreen opens on the work", () => {
     const line = document.querySelector<HTMLElement>('[data-slot="next-jobs"]')!
     expect(line).toHaveTextContent("Next jobs: week of Apr 26")
     await userEvent.click(within(line).getByRole("button", { name: "week of Apr 26" }))
-    expect(screen.getByText(/^Week of Apr 26\. 1 stop\.$/)).toBeInTheDocument()
+    expect(screen.getByText(/^Week of Apr 26\. 1 visit\.$/)).toBeInTheDocument()
     expect(document.querySelector('[data-slot="next-jobs"]')).toBeNull()
   })
 
@@ -353,6 +353,12 @@ describe("ScheduleScreen Day view, stops per person", () => {
   beforeEach(() => window.history.replaceState(null, "", "/admin/schedule"))
   afterEach(() => window.history.replaceState(null, "", "/admin"))
   const section = (person: string) => document.querySelector<HTMLElement>(`[data-slot="day-person"][data-person="${person}"]`)!
+
+  it("names the day shown in the subtitle, not the week", () => {
+    render(<ScheduleScreen data={data} today={TODAY} defaultTab="day" defaultDay="2026-11-12" />)
+    expect(screen.getByText("Thursday, Nov 12. 4 visits.")).toBeInTheDocument()
+    expect(screen.queryByText(/^Week of/)).toBeNull()
+  })
 
   it("lists each person's stops in order with their number and time, under the day's fill", () => {
     render(<ScheduleScreen data={data} today={TODAY} defaultTab="day" defaultDay="2026-11-12" />)

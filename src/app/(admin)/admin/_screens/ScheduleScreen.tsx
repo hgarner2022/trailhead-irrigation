@@ -8,7 +8,7 @@ import { PageHeader } from "@/components/blocks/PageHeader"
 import { WeekGrid } from "@/components/blocks/WeekGrid"
 import type { AdminData } from "@/lib/admin/types"
 import { TIME_ZONE, writtenDate } from "@/lib/admin/format"
-import { dayOf, weekOf, weekVisits } from "@/lib/admin/calendar"
+import { dayOf, dayVisits, weekOf, weekVisits } from "@/lib/admin/calendar"
 import type { Outcome } from "./action-types"
 import type { VisitActions } from "./visit-actions-types"
 import type { CustomersActions } from "./CustomersScreen"
@@ -24,7 +24,7 @@ import { plainRefusal, restoreVisit } from "./place-model"
 import { TEXT_DELAY_SECONDS } from "./use-texting-queue"
 import { ScheduleMoveTo } from "./ScheduleMoveTo"
 import { DayStepper, Exceptions, NextJobsLine } from "./ScheduleParts"
-import { exceptionCount, firstJobWeek, moveOutcome, nextJobsWeek, weekContext } from "./schedule-model"
+import { dayContext, exceptionCount, firstJobWeek, moveOutcome, nextJobsWeek, weekContext } from "./schedule-model"
 import { routePeople } from "@/lib/admin/people"
 import { initialRecord } from "@/lib/admin/record-url"
 
@@ -160,7 +160,7 @@ function ScheduleBody({ data, today, defaultTab = "week", defaultDay, defaultWee
   return (
     <TooltipProvider>
       <div data-slot="schedule-screen" className="space-y-6">
-        <PageHeader title="Schedule" context={view === "list" ? undefined : weekContext(weekStart, week)} actions={readOnly ? undefined : <NewJobButton data={data} today={today} actions={visitActions} />} />
+        <PageHeader title="Schedule" context={view === "list" ? undefined : view === "day" ? dayContext(day, dayVisits(shown, day, undefined, TIME_ZONE)) : weekContext(weekStart, week)} actions={readOnly ? undefined : <NewJobButton data={data} today={today} actions={visitActions} />} />
         {selected && !readOnly && !panel && <ScheduleMoveTo key={`${selected.id}-${selected.personId}-${selected.startAt}`} visit={selected} people={people} weekStart={weekStart} timeZone={TIME_ZONE} onMove={move} />}
         <p role="status" className="text-sm text-muted-foreground empty:sr-only">
           {announcement}

@@ -1,3 +1,4 @@
+import { useState } from "react"
 import { beforeAll, describe, expect, it, vi } from "vitest"
 import { render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
@@ -38,6 +39,25 @@ describe("New job", () => {
     const options = [...(screen.getByLabelText("What are we doing?") as HTMLSelectElement).options].map((o) => o.value).filter(Boolean)
     expect(options[0]).toBe("season-pass")
     expect(options).toContain("repair")
+  })
+
+  it("forgets the chosen service when it closes, so the next New job starts blank", async () => {
+    function Host() {
+      const [isOpen, setOpen] = useState(true)
+      return (
+        <>
+          <button onClick={() => setOpen(true)}>Again</button>
+          <NewJob data={data} today={TODAY} open={isOpen} onOpenChange={setOpen} customerId="c100" actions={{} as VisitActions} />
+        </>
+      )
+    }
+    render(<Host />)
+    await choose("repair")
+    expect((screen.getByLabelText("What are we doing?") as HTMLSelectElement).value).toBe("repair")
+    await userEvent.keyboard("{Escape}")
+    await waitFor(() => expect(screen.queryByLabelText("What are we doing?")).toBeNull())
+    await userEvent.click(screen.getByRole("button", { name: "Again" }))
+    expect((screen.getByLabelText("What are we doing?") as HTMLSelectElement).value).toBe("")
   })
 
   it("with no day Add job is on, says nothing is sent, and the job is made with no day and no time", async () => {

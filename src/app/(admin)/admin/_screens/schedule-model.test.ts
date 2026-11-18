@@ -4,7 +4,7 @@ import type { AdminData, Visit } from "@/lib/admin/types"
 import { TIME_ZONE } from "@/lib/admin/format"
 import { dayVisits, weekDays, weekVisits } from "@/lib/admin/calendar"
 import { routePeople } from "@/lib/admin/people"
-import { exceptionCount, firstJobWeek, moveOutcome, moveVisit, nextJobsWeek, weekContext } from "./schedule-model"
+import { dayContext, exceptionCount, firstJobWeek, moveOutcome, moveVisit, nextJobsWeek, weekContext } from "./schedule-model"
 
 const data = snapshot as AdminData
 const people = routePeople(data.settings.people)
@@ -25,10 +25,20 @@ describe("the week's visits", () => {
   it("counts the moved visits and writes the context line", () => {
     const week = weekVisits(data.visits, WEEK, TIME_ZONE)
     expect(exceptionCount(week)).toBe(2)
-    expect(weekContext(WEEK, week)).toBe(`Week of Nov 9. ${week.length} stops, 2 moved.`)
-    expect(weekContext("2026-10-05", weekVisits(data.visits, "2026-10-05", TIME_ZONE))).toBe("Week of Oct 5. 25 stops.")
+    expect(weekContext(WEEK, week)).toBe(`Week of Nov 9. ${week.length} visits, 2 moved.`)
+    expect(weekContext("2026-10-05", weekVisits(data.visits, "2026-10-05", TIME_ZONE))).toBe("Week of Oct 5. 25 visits.")
     expect(weekContext("2027-03-01", [])).toBe("Week of Mar 1. Nothing on the calendar.")
-    expect(weekContext(WEEK, week.filter((v) => !v.exception))).toBe(`Week of Nov 9. ${week.length - 2} stops.`)
+    expect(weekContext(WEEK, week.filter((v) => !v.exception))).toBe(`Week of Nov 9. ${week.length - 2} visits.`)
+  })
+})
+
+describe("dayContext", () => {
+  it("names the day shown and counts that day's visits, not the week's", () => {
+    const thursday = dayVisits(data.visits, "2026-11-12", undefined, TIME_ZONE)
+    expect(dayContext("2026-11-12", thursday)).toBe("Thursday, Nov 12. 4 visits.")
+    expect(dayContext("2026-11-12", thursday.slice(0, 1))).toBe("Thursday, Nov 12. 1 visit.")
+    expect(dayContext("2026-11-14", [])).toBe("Saturday, Nov 14. Nothing on the calendar.")
+    expect(dayContext("2026-11-10", dayVisits(data.visits, "2026-11-10", undefined, TIME_ZONE))).toMatch(/^Tuesday, Nov 10\. \d+ visits, 1 moved\.$/)
   })
 })
 

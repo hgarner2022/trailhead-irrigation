@@ -43,6 +43,8 @@ export interface DataGridProps<T extends RowData> {
   pageSize?: number
   emptyTitle?: string
   emptyLine?: string
+  /** What the grid says when rows exist but the search and filters hide every one: "No jobs match." with Clear filters (docs/plans/2026-11-18-admin-holistic-design.md, section 10) */
+  noMatchTitle?: string
   /** Skeleton rows under the real header; the toolbar is disabled */
   loading?: boolean
   /** Row ids selected on first render; read once, later changes are ignored */
@@ -99,6 +101,7 @@ export function DataGrid<T extends RowData>({
   pageSize = 25,
   emptyTitle = "Nothing here yet",
   emptyLine = "Rows appear as data arrives.",
+  noMatchTitle = "Nothing matches.",
   loading = false,
   defaultSelectedIds,
   defaultFilters,
@@ -195,8 +198,19 @@ export function DataGrid<T extends RowData>({
             ) : rows.length === 0 ? (
               <TableRow className="bg-background hover:bg-background">
                 <TableCell colSpan={visibleCount} className="py-12 text-center whitespace-normal">
-                  <p className="font-display text-xl text-navy">{emptyTitle}</p>
-                  <p className="mt-1 text-sm text-muted-foreground">{emptyLine}</p>
+                  {data.length > 0 ? (
+                    <>
+                      <p className="font-display text-xl text-navy">{noMatchTitle}</p>
+                      <Button variant="outline" className="mt-4 min-h-11" onClick={() => table.setColumnFilters([])}>
+                        Clear filters
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <p className="font-display text-xl text-navy">{emptyTitle}</p>
+                      <p className="mt-1 text-sm text-muted-foreground">{emptyLine}</p>
+                    </>
+                  )}
                 </TableCell>
               </TableRow>
             ) : (

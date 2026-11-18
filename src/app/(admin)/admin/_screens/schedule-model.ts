@@ -14,15 +14,23 @@ const onCalendar = (v: Visit): v is Visit & { startAt: string } => v.status !== 
 
 export const exceptionCount = (visits: Visit[]): number => visits.filter((v) => v.exception).length
 
-/** "Week of Nov 9. 12 stops, 2 moved." or "Week of Nov 9. 25 stops."; "Nothing on the calendar." with no visits. */
+/** "Week of Nov 9. 12 visits, 2 moved." or "Week of Nov 9. 25 visits."; "Nothing on the calendar." with no visits. */
 export function weekContext(weekStart: string, visits: Visit[]): string {
   if (visits.length === 0) return `Week of ${shortDate(weekStart)}. Nothing on the calendar.`
-  const count = `${visits.length} stop${visits.length === 1 ? "" : "s"}`
+  const count = `${visits.length} visit${visits.length === 1 ? "" : "s"}`
   const moved = exceptionCount(visits)
   return `Week of ${shortDate(weekStart)}. ${count}${moved ? `, ${moved} moved` : ""}.`
 }
 
 
+
+/** "Wednesday, Nov 18. 2 visits." for the Day view's subtitle, with ", 1 moved" when the calendar feed moved one; "Nothing on the calendar." with none. */
+export function dayContext(dayIso: string, visits: Visit[]): string {
+  const when = `${weekdayName(dayIso)}, ${shortDate(dayIso)}`
+  if (visits.length === 0) return `${when}. Nothing on the calendar.`
+  const moved = exceptionCount(visits)
+  return `${when}. ${visits.length} visit${visits.length === 1 ? "" : "s"}${moved ? `, ${moved} moved` : ""}.`
+}
 
 /**
  * The visit on another person or day, keeping its clock time and landing last in
@@ -58,8 +66,8 @@ const sentenceDay = (dayIso: string) => `${weekdayName(dayIso)}, ${writtenDate(d
 export function moveOutcome(visits: Visit[], visitId: string, personId: string, dayIso: string, people: Person[], timeZone: string): MoveOutcome {
   const visit = visits.find((v) => v.id === visitId)
   const person = people.find((p) => p.id === personId)
-  if (!visit || !person) return { visits, moved: false, message: "We couldn't find that stop or person." }
-  if (!onCalendar(visit)) return { visits, moved: false, message: "That stop has no day to move from." }
+  if (!visit || !person) return { visits, moved: false, message: "We couldn't find that visit or person." }
+  if (!onCalendar(visit)) return { visits, moved: false, message: "That visit has no day to move from." }
   const name = visit.clientName
   if (!worksOn(person, dayIso)) {
     return { visits, moved: false, message: `${person.name} does not work ${weekdayName(dayIso)}, so ${name} stays on ${sentenceDay(dayOf(visit.startAt, timeZone))}.` }

@@ -104,12 +104,14 @@ describe("DataGrid search and filters", () => {
     expect(toolbar().getByRole("button", { name: "Town" })).toHaveAttribute("data-active", "false")
   })
 
-  it("shows the empty state when nothing matches", async () => {
+  it("says nothing matches, with Clear filters, when rows exist and the search hides every one, and not the empty state", async () => {
     const user = userEvent.setup()
-    renderPasses({ emptyTitle: "No passes match", emptyLine: "Clear a filter or search for another name." })
+    renderPasses({ noMatchTitle: "No passes match.", emptyTitle: "No passes yet" })
     await user.type(screen.getByRole("searchbox"), "zzz")
-    expect(screen.getByText("No passes match")).toBeInTheDocument()
-    expect(screen.getByText("Clear a filter or search for another name.")).toBeInTheDocument()
+    expect(screen.getByText("No passes match.")).toBeInTheDocument()
+    expect(screen.queryByText("No passes yet")).toBeNull()
+    await user.click(screen.getByRole("button", { name: "Clear filters" }))
+    expect(bodyRows().length).toBeGreaterThan(0)
   })
 
   it("uses the default empty copy with no rows at all", () => {

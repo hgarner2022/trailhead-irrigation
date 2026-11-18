@@ -32,8 +32,9 @@ export function searchRecords(data: AdminData, today: string, query: string): Se
     .filter((r) => matches(words, `${r.search} ${r.title} ${r.kindLabel}`))
     .slice(0, PER_KIND)
     .map((r): SearchHit => ({ kind: "job", id: r.id, title: `${r.name}, ${r.title}`, detail: [r.property, r.stageLabel].filter(Boolean).join(" · "), href: jobUrl(r.id) }))
+  // A canceled or skipped visit is not work: it is left out, so a search never offers a day that is gone or calls it "no day yet".
   const days = visitRows(data, today)
-    .filter((r) => matches(words, `${r.search} ${r.kindLabel} ${r.passNumber ?? ""}`))
+    .filter((r) => r.work !== "cancelled" && matches(words, `${r.search} ${r.kindLabel} ${r.passNumber ?? ""}`))
     .slice(0, PER_KIND)
     .map((r): SearchHit => ({ kind: "visit", id: r.id, title: r.name, detail: r.day ? `${r.kindLabel}, ${dayLabel(r.day)}` : `${r.kindLabel}, no day yet`, href: visitUrl(r.id) }))
   return [...customers, ...jobs, ...days]
