@@ -58,7 +58,7 @@ export const CUTOFF_REFUSAL = `This visit is within 24 hours, so it can't be cha
 export const CANCEL_REFUSED = `This visit can't be canceled online. Text or call Ryan at ${PHONE_DISPLAY}.`
 /** The one line under Text Ryan and Call Ryan: why a change this close goes through him. */
 export const TEXT_RYAN_WHY = "Ryan plans his route the day before, so changes this close go through him."
-export const DAY_FAILED = `We couldn't save that day. Try another, or call Ryan at ${PHONE_DISPLAY}.`
+export const DAY_FAILED = "We couldn't save that day."
 
 function clock(minutes: number): { hour: number; minute: number; meridiem: "am" | "pm" } {
   const m = ((minutes % 1440) + 1440) % 1440
@@ -138,18 +138,34 @@ export interface DayLineFacts extends VisitDayFacts {
 }
 
 /**
- * The sentence under a visit's title (design section 5): the day alone with "We'll text your window the day before" until the day-before message told it, then the
- * day with the window and who is coming. Done and canceled visits say so with their day; a visit with no day says it is coming. A customer with neither a mobile nor an
- * email can never be texted a window, so the line says to call.
+ * A visit's day in two parts (design section 5), for a card with a heading and a line under it and for the one sentence on the visit page. A booked visit is its day with
+ * "We'll text your window the day before." until the day-before message told the window, then its day with the window and who is coming. Done and canceled visits say so
+ * with their day; a visit with no day says it is coming. A customer with neither a mobile nor an email can never be texted a window, so the line says to call.
  */
-export function dayLine(v: DayLineFacts, today: string, reachable = true): string {
-  if (v.status === "completed") return `${`Done ${visitDayWords(v, today) ?? ""}`.trim()}.`
-  if (v.status === "cancelled" || v.status === "skipped") return v.canceledOn ? `Canceled ${timelineDay(v.canceledOn, today)}.` : "Canceled."
+export function dayParts(v: DayLineFacts, today: string, reachable = true): { heading: string; detail: string | null; sentence: string } {
+  if (v.status === "completed") {
+    const heading = `Done ${visitDayWords(v, today) ?? ""}`.trim()
+    return { heading, detail: null, sentence: `${heading}.` }
+  }
+  if (v.status === "cancelled" || v.status === "skipped") {
+    const heading = v.canceledOn ? `Canceled ${timelineDay(v.canceledOn, today)}` : "Canceled"
+    return { heading, detail: null, sentence: `${heading}.` }
+  }
   const day = visitDayWords(v, today)
-  if (!day) return v.canPick ? "Pick a day." : "Day coming soon. We'll text you when Ryan has one."
-  if (v.windowTold && v.window) return `${day}, ${v.window}${v.personFirstName ? `, with ${v.personFirstName}` : ""}.`
-  return `${day}. ${reachable ? WINDOW_LATER : "Call Ryan for your window."}`
+  if (!day) {
+    const heading = v.canPick ? "Pick a day" : "Day coming soon"
+    return { heading, detail: v.canPick ? null : "We'll text you when Ryan has one.", sentence: v.canPick ? "Pick a day." : "Day coming soon. We'll text you when Ryan has one." }
+  }
+  if (v.windowTold && v.window) {
+    const window = `${v.window}${v.personFirstName ? `, with ${v.personFirstName}` : ""}`
+    return { heading: day, detail: `${window[0]!.toUpperCase()}${window.slice(1)}.`, sentence: `${day}, ${window}.` }
+  }
+  const note = reachable ? WINDOW_LATER : "Call Ryan for your window."
+  return { heading: day, detail: note, sentence: `${day}. ${note}` }
 }
+
+/** The one sentence under a visit's title on its page. */
+export const dayLine = (v: DayLineFacts, today: string, reachable = true): string => dayParts(v, today, reachable).sentence
 
 export interface CancelFacts {
   /** the visit is on a Season Pass */
@@ -179,6 +195,8 @@ export function cancelFactsOf(job: { season: number | null; visits: readonly { i
 /** What the customer reads once a visit is canceled. */
 export const CANCELED_DONE = "Canceled. We texted you a note."
 export const CANCEL_CHANGED_MIND = "Changed your mind?"
+/** After "Text Ryan": until our own booking is live a canceled visit is added back by text (architecture section 8); once it is, this becomes Book Online. */
+export const ADD_IT_BACK = "to add it back."
 
 /** The body of the text Text Ryan opens: who, where and what, with no ids. */
 export const textRyanBody = (p: { name: string; address: string; service: string; day: string | null }): string => `Hi Ryan, it's ${p.name} at ${p.address} about my ${p.service.toLowerCase()}${p.day ? ` on ${longDay(p.day)}` : ""}.`
