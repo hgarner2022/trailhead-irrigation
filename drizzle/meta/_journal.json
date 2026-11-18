@@ -155,6 +155,13 @@
       "when": 1794985862863,
       "tag": "0021_legacy_expand",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1794999169496,
+      "tag": "0022_legacy_drop",
+      "breakpoints": true
     }
   ]
 }

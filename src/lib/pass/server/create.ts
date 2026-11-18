@@ -105,10 +105,6 @@ export async function expirePendingPasses(db: Database, now: Date, minutes = PEN
       and(
         unsold,
         lt(s.job.createdAt, cutoff),
-        // A pending pass the OLD live code made in the deploy window also has a `season_pass` row, and `season_pass.job_id` has a
-        // non-cascading foreign key to `job` until push B, so deleting that job would throw. The 0021 trigger sets `legacy_pass_id`
-        // on every job that has a `season_pass` row, so those jobs are skipped here. This filter goes after push B drops `season_pass`.
-        isNull(s.job.legacyPassId),
         // A pass whose sold day was lost (a crash after payment, an old-code write) is still sold: a `job.sold` event or a succeeded payment keeps it.
         sql`not exists (select 1 from ${s.event} where ${s.event.jobId} = ${s.job.id} and ${s.event.kind} = 'job.sold')`,
         sql`not exists (select 1 from ${s.charge} where ${s.charge.jobId} = ${s.job.id} and ${s.charge.status} = 'succeeded')`,

@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest"
-import { eq, inArray, sql } from "drizzle-orm"
+import { eq, inArray } from "drizzle-orm"
 import * as s from "@/db/schema"
 import type { TestDb } from "@/db/test-db"
 import type { PublicPrincipal } from "@/lib/auth/types"
@@ -203,18 +203,5 @@ describe("expirePendingPasses", () => {
     await db.insert(s.charge).values({ organizationId: ORG, jobId: paid.id, customerId: paid.customerId, attempt: 1, amount: 145, status: "succeeded", method: "card_on_file" })
     expect(await expirePendingPasses(db, new Date())).toBe(0)
     expect(await db.select().from(s.job).where(inArray(s.job.id, [sold.id, paid.id]))).toHaveLength(2)
-  })
-
-  it("skips a stale pending job the old code still has a season_pass row for, and does not throw on its foreign key", async () => {
-    reachable.mockResolvedValue(true)
-    const made = await create({ customer: { firstName: "Legacy", lastName: "Tester", email: "legacy@example.com", phone: "3035550112" } })
-    const [job] = await db.select().from(s.job).where(eq(s.job.id, made.id))
-    // What the old live code leaves in the deploy window: a season_pass row whose job_id points at the job (non-cascading foreign key).
-    await db.execute(sql`insert into season_pass (id, organization_id, number, season, customer_id, property_id, zones, job_id) values ('sp_legacy_1', ${ORG}, 'SP-LEGACY-1', ${job!.season}, ${job!.customerId}, ${job!.propertyId}, 8, ${job!.id})`)
-    await db.update(s.job).set({ createdAt: new Date(Date.now() - 61 * 60_000) }).where(eq(s.job.id, made.id))
-    // The 0021 trigger gave the job the old pass id, which is what the purge reads.
-    expect((await db.select().from(s.job).where(eq(s.job.id, made.id)))[0]!.legacyPassId).toBe("sp_legacy_1")
-    await expect(expirePendingPasses(db, new Date())).resolves.toBe(0)
-    expect(await db.select().from(s.job).where(eq(s.job.id, made.id))).toHaveLength(1)
   })
 })
