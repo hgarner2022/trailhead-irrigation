@@ -31,6 +31,9 @@ export const SIZES = { heading: 28, lead: 18, body: 16, small: 14 } as const
 
 export const esc = (value: string) => value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;")
 
+/** Outlook for Windows drops margin on a table, so the space after one is a row of its own. */
+const spacer = (px: number, cols = 1) => `<tr><td${cols > 1 ? ` colspan="${cols}"` : ""} height="${px}" style="height:${px}px;font-size:1px;line-height:1px">&nbsp;</td></tr>`
+
 const type = (size: number, line: number, color: string, extra = "") => `font-family:${FONT};font-size:${size}px;line-height:${line}px;color:${color};${extra}`
 
 // ---- the greeting -------------------------------------------------------------------------------------------------------
@@ -38,12 +41,14 @@ const type = (size: number, line: number, color: string, extra = "") => `font-fa
 /**
  * The name a greeting uses. The first word of what was stored (a full name is trimmed to its first name); a name typed all in
  * lower case or all in capitals gets its first letter capitalised and the rest lower ("andrea", "ANDREA" read "Andrea"), while
- * "McKay" and "O'Brien" stay as typed. A blank value, or one that is an email address or has a digit in it, is not a name: null.
+ * "McKay" and "O'Brien" stay as typed. A blank value, or one that is not made of letters (an email address, a digit, "N/A"), is not a name: null. Initials of three letters or fewer ("AJ") stay as typed.
  */
 export function greetingName(firstName: string | null | undefined): string | null {
-  const word = firstName?.trim().split(/\s+/)[0] ?? ""
-  if (!word || /[@\d]/.test(word)) return null
-  return word === word.toLowerCase() || word === word.toUpperCase() ? `${word.charAt(0).toUpperCase()}${word.slice(1).toLowerCase()}` : word
+  const word = (firstName?.trim().split(/\s+/)[0] ?? "").replace(/[,.;:]+$/, "")
+  if (!/^\p{L}[\p{L}'’-]*$/u.test(word)) return null
+  // initials ("AJ", "DJ") stay as typed; a longer name typed all in lower case or all in capitals is capitalised
+  const shouted = word === word.toUpperCase() && word.length > 3
+  return shouted || word === word.toLowerCase() ? `${word.charAt(0).toUpperCase()}${word.slice(1).toLowerCase()}` : word
 }
 
 /** "Hi Andrea,"; "Hi there," when no usable name is stored. The one greeting every customer email carries, on its own line under the heading. */
@@ -66,14 +71,14 @@ export const lead = (text: string) => `<p style="margin:0 0 24px;${type(SIZES.le
 export const paragraph = (text: string) => `<p style="margin:0 0 16px;${type(SIZES.body, 24, C.text)}">${esc(text)}</p>`
 
 /** 14px quiet text, only where a fact needs it ("The link is good for 24 hours."). */
-export const smallPrint = (text: string) => `<p style="margin:0 0 24px;${type(SIZES.small, 21, C.quiet)}">${esc(text)}</p>`
+export const smallPrint = (text: string) => `<p style="margin:0 0 24px;${type(SIZES.small, 21, C.quiet, "overflow-wrap:anywhere;word-break:break-word")}">${esc(text)}</p>`
 
 /**
  * The one button of an email: a one-cell table so Outlook paints it, 52px tall (16px of padding round a 20px line), a filled
  * orange-dark cell with white 16px bold text at 5.0:1. Left-aligned; full width on a phone where the media query runs.
  */
 export function button(href: string, label: string): string {
-  return `<table role="presentation" class="cta" cellpadding="0" cellspacing="0" style="margin:8px 0 16px"><tr><td style="border-radius:8px;background:${C.primary};mso-padding-alt:16px 32px"><a href="${esc(href)}" style="display:inline-block;min-width:112px;padding:16px 32px;${type(SIZES.body, 20, C.white, "font-weight:700;text-decoration:none;text-align:center")}">${esc(label)}</a></td></tr></table>`
+  return `<table role="presentation" class="cta" cellpadding="0" cellspacing="0">${spacer(8)}<tr><td style="border-radius:8px;background:${C.primary};mso-padding-alt:16px 32px"><a href="${esc(href)}" style="display:inline-block;min-width:112px;padding:16px 32px;${type(SIZES.body, 20, C.white, "font-weight:700;text-decoration:none;text-align:center")}">${esc(label)}</a></td></tr>${spacer(16)}</table>`
 }
 
 /** Secondary actions under the button: text links, one per line. */
@@ -87,7 +92,7 @@ export function facts(rows: [string, string][]): string {
   const cells = rows
     .map(([k, v]) => `<tr><td class="k" width="112" style="width:112px;padding:10px 12px 10px 0;border-top:1px solid ${C.border};${type(SIZES.small, 24, C.quiet, "vertical-align:top")}">${esc(k)}</td><td class="v" style="padding:10px 0;border-top:1px solid ${C.border};${type(SIZES.body, 24, C.text, "vertical-align:top")}">${esc(v)}</td></tr>`)
     .join("")
-  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px">${cells}</table>`
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0">${cells}${spacer(24, 2)}</table>`
 }
 
 /** One row of the money table: a name (with an optional 14px detail under it) and an amount on the right. `quiet` for Subtotal and Sales tax. */
@@ -105,7 +110,7 @@ export function moneyTable(rows: MoneyRow[], total: [string, string]): string {
     .map((r) => `<tr><td style="padding:12px 12px 12px 0;border-top:1px solid ${C.border};${cell(r.quiet, "vertical-align:top")}">${esc(r.label)}${r.detail ? `<br><span style="${type(SIZES.small, 21, C.quiet)}">${esc(r.detail)}</span>` : ""}</td><td align="right" style="padding:12px 0;border-top:1px solid ${C.border};${cell(r.quiet, "vertical-align:top;white-space:nowrap")}">${esc(r.value)}</td></tr>`)
     .join("")
   const strong = `border-top:2px solid ${C.navy};${type(SIZES.body, 24, C.text, "font-weight:700")}`
-  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px">${body}<tr><td style="padding:12px 12px 12px 0;${strong}">${esc(total[0])}</td><td align="right" style="padding:12px 0;${strong}">${esc(total[1])}</td></tr></table>`
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0">${body}<tr><td style="padding:12px 12px 12px 0;${strong}">${esc(total[0])}</td><td align="right" style="padding:12px 0;${strong}">${esc(total[1])}</td></tr>${spacer(24, 2)}</table>`
 }
 
 /** A block under a thin rule (one visit on the purchase confirmation): its parts are the ordinary ones above. */
@@ -121,7 +126,7 @@ export const blockTitle = (text: string) => `<p style="margin:0 0 4px;${type(SIZ
 
 export interface LayoutInput {
   origin: string
-  /** the grey line an inbox shows beside the subject: 40 to 90 characters that add to the subject and the heading, never the lead; the frame pads it */
+  /** the grey line an inbox shows beside the subject: 20 to 100 characters that add to the subject and the heading, never the lead; the frame pads it */
   preheader: string
   /** the h1: the fact in a few words */
   title: string

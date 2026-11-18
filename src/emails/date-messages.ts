@@ -1,6 +1,6 @@
 import { SIGN_OFF, RYAN_DOES, longDay, whoIsComing, windowText } from "./format"
 import { bodyOf, capitalFirst, defaultBody, fillTemplate, withoutGreeting, type EditableMessage, type Overrides } from "./editable"
-import { emailLayout, greetingText, nameOrThere, plainText } from "./layout"
+import { emailLayout, greetingName, greetingText, plainText } from "./layout"
 import { visitBody, visitLines } from "./visit-block"
 import type { RenderedEmail, VisitData } from "./types"
 
@@ -16,8 +16,11 @@ const WHY = "You are getting this because Trailhead is coming to your property."
 /** The editable first sentence, filled from the visit. A saved sentence that opens with its own greeting loses it: the greeting is its own line. */
 const intro = (key: EditableMessage["key"], d: VisitData, o?: Opts) => {
   const v = d.visit
-  const body = withoutGreeting(bodyOf(o?.templates, key, "email")) || defaultBody(key, "email")
-  return capitalFirst(fillTemplate(body, { firstName: nameOrThere(d.firstName), service: v.name, address: v.address, day: longDay(v.day), window: v.startTime ? windowText(v.startTime) : null, who: v.who }))
+  let body = withoutGreeting(bodyOf(o?.templates, key, "email")) || defaultBody(key, "email")
+  const name = greetingName(d.firstName)
+  // With no usable name a saved "{firstName}, your ..." or "Thanks, {firstName}." loses the placeholder and its comma, never reads "there, your ..."
+  if (!name) body = body.replace(/,?\s*\{firstName\}\s*([,.])?/g, (_m, p: string | undefined) => (p === "." ? "." : "")).trim() || defaultBody(key, "email")
+  return capitalFirst(fillTemplate(body, { firstName: name ?? "", service: v.name, address: v.address, day: longDay(v.day), window: v.startTime ? windowText(v.startTime) : null, who: v.who }))
 }
 
 function build(d: VisitData, subject: string, title: string, sentence: string, preheader: string): RenderedEmail {

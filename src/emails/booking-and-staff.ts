@@ -30,7 +30,7 @@ export function notClosedCrewEmail(d: NotClosedCrewData): RenderedEmail {
     preheader: n === 1 ? "Open Home to mark it done." : "Open Home to mark them done.",
     title: "Not marked done",
     lead: intro,
-    body: facts(d.visits.map((v) => [`${v.customer}, ${v.town}`, `${v.name}, ${longDay(v.day)}`])) + button(`${d.origin}/admin`, "Open Home"),
+    body: facts(d.visits.map((v) => [v.name, `${v.customer}, ${v.town}, ${longDay(v.day)}`])) + button(`${d.origin}/admin`, "Open Home"),
     why: CREW_WHY,
   })
   return { subject, text: plainText([intro, "", ...lines, "", `Home: ${d.origin}/admin`], undefined, CREW_WHY), html }

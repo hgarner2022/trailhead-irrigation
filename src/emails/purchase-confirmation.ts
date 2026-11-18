@@ -1,7 +1,7 @@
 import { googleCalendarUrl } from "./calendar"
 import { ACCOUNT_NAME, ADD_CARD_LINE, BUSINESS, CONFIRM_LINE, RYAN_DOES, atVisitMoneyLine, moneyLine, whenText } from "./format"
 import { jobTable } from "./job-table"
-import { blockTitle, button, emailLayout, facts, greetingText, links, paragraph, picture, plainText, ruled } from "./layout"
+import { greetingName, blockTitle, button, emailLayout, facts, greetingText, links, paragraph, picture, plainText, ruled } from "./layout"
 import type { PurchaseConfirmationData, RenderedEmail } from "./types"
 
 const dateOf = (v: PurchaseConfirmationData["visits"][number]) => (v.visit ? whenText(v.visit.day, v.visit.startTime) : v.fallback)
@@ -18,7 +18,7 @@ export function purchaseConfirmationEmail(d: PurchaseConfirmationData): Rendered
   const addCard = !d.cardLast4 && d.cardUpdateUrl ? d.cardUpdateUrl : null
   const money = !d.cardLast4 && !addCard ? atVisitMoneyLine(d.visits) : moneyLine(d.visits, d.cardLast4)
   const why = `You are getting this because you bought Season Pass ${d.passNumber}.`
-  const image = picture(d.passImageUrl, `Season Pass ${d.season} for ${d.firstName}, ${d.town}`, d.signInUrl)
+  const image = picture(d.passImageUrl, `Season Pass ${d.season}${greetingName(d.firstName) ? ` for ${greetingName(d.firstName)}` : ""}, ${d.town}`, d.signInUrl)
   const blocks = d.visits
     .map((v) => ruled(blockTitle(capital(v.name)) + paragraph(dateOf(v)) + (v.note ? paragraph(v.note) : "") + (v.visit ? paragraph(RYAN_DOES[v.kind]) : "") + (v.visit ? links([{ href: googleCalendarUrl(v.visit), label: "Add to Google Calendar" }, { href: v.visit.icsUrl, label: "Add to Apple or Outlook calendar" }]) : "")))
     .join("")

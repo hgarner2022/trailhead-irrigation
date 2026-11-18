@@ -402,7 +402,13 @@ describe("the greeting", () => {
     expect(greetingLine("O'Brien")).toBe("Hi O'Brien,")
   })
   it("falls back to 'Hi there,' for an empty value, an email address or anything with a digit", () => {
-    for (const bad of ["", "   ", null, undefined, "andrea@example.com", "412"]) expect(greetingLine(bad)).toBe("Hi there,")
+    for (const bad of ["", "   ", null, undefined, "andrea@example.com", "412", "N/A", "-", ","]) expect(greetingLine(bad)).toBe("Hi there,")
+  })
+  it("keeps initials as typed, drops trailing punctuation, and keeps accented and hyphenated names", () => {
+    expect(greetingLine("AJ")).toBe("Hi AJ,")
+    expect(greetingLine("Andrea,")).toBe("Hi Andrea,")
+    expect(greetingLine("Zoë")).toBe("Hi Zoë,")
+    expect(greetingLine("Mary-Jo")).toBe("Hi Mary-Jo,")
   })
   it("is one line under the heading on a customer email, and nothing sits in front of it but the heading", () => {
     const { html } = renderEmail("receipt", DATA.receipt)!
@@ -494,6 +500,76 @@ describe("every email is on the one template", () => {
     expect(text).not.toContain("Hi,")
     expect(text).toContain("The Trailhead crew")
     expect(html).toContain("The Trailhead crew")
+  })
+})
+
+describe("the branches of each email keep to the template", () => {
+  const one = (html: string) => {
+    expect(html.match(/<h1\b/g)).toHaveLength(1)
+    expect(html.match(/class="cta"/g)).toHaveLength(1)
+    expect(html).not.toMatch(/undefined|null|NaN/)
+  }
+  it("a purchase with a card still to add has one button (Add your card) and the account as a text link", () => {
+    const { html } = renderEmail("purchase-confirmation", { ...DATA["purchase-confirmation"], cardLast4: null, cardUpdateUrl: "https://billing.stripe.com/s/9" })!
+    one(html)
+    expect(html).toContain(">Add your card<")
+    expect(html).toMatch(/underline">Open your Trailhead account/)
+    const none = renderEmail("purchase-confirmation", { ...DATA["purchase-confirmation"], cardLast4: null, cardUpdateUrl: null })!.html
+    one(none)
+    expect(none).toContain(">Open your Trailhead account<")
+  })
+  it("card emails with no update link still have one button, the greeting and the why line", () => {
+    for (const kind of ["card-failed", "card-expiring"] as const) {
+      const r = renderEmail(kind, { ...DATA[kind], updateUrl: null })!
+      one(r.html)
+      expect(r.html).toContain(">Open your Trailhead account<")
+      expect(r.text).toContain("Hi Andrea,")
+      expect(r.text).toContain("You are getting this about the card")
+    }
+  })
+  it("a day email with no time and no person still has one button, a greeting and both calendar links", () => {
+    for (const kind of ["date-set", "date-moved", "day-before", "date-confirm", "booking-confirmation"] as const) {
+      const r = renderEmail(kind, { ...base, serviceName: "repair", visit: { ...visit, startTime: null, who: null } })!
+      one(r.html)
+      expect(r.html).toContain("Add to Google Calendar")
+      expect(r.text).toMatch(/^Hi Andrea,$/m)
+      expect(r.text).not.toMatch(/  |\.\s*\. /)
+    }
+  })
+  it("a receipt with no lines, no day and no receipt link has one button and its footer", () => {
+    const r = renderEmail("receipt", { ...base, amount: 145, serviceName: "repair", address: "412 Ash St", paidOn: "2027-05-05", card: null, paidBy: "cash", nextLine: "", receiptUrl: null })!
+    one(r.html)
+    expect(r.html).not.toContain("View the receipt")
+    expect(r.text).toContain("You are getting this because a visit of yours was completed.")
+  })
+  it("a saved sentence that names the customer with no name stored never reads 'there, ...'", () => {
+    for (const saved of ["{firstName}, your {service} is set for {day}.", "Thanks, {firstName}. Your {service} is set for {day}."]) {
+      const r = renderEmail("date-set", { ...base, firstName: "", visit }, { "date-set:email": saved })!
+      expect(r.text).toContain("Hi there,\n\n")
+      expect(r.text).not.toMatch(/There,|there, your|Thanks, there/)
+      expect(r.text).toMatch(/Your spring turn-on is set for Wednesday, May 5\.|Thanks\. Your spring turn-on is set for Wednesday, May 5\./)
+    }
+  })
+  it("escapes an address or a name with quotes and ampersands in the facts, the picture alt and the lead", () => {
+    const address = 'A & "B" <St>'
+    const r = renderEmail("purchase-confirmation", { ...DATA["purchase-confirmation"], address, firstName: 'An"dr<ea' })!
+    expect(r.html).toContain("A &amp; &quot;B&quot; &lt;St&gt;")
+    expect(r.html).not.toContain("<St>")
+    expect(r.html).not.toContain('"B"')
+    const inv = renderEmail("invoice", { ...DATA.invoice, address })!
+    expect(inv.html).toContain("A &amp; &quot;B&quot; &lt;St&gt;")
+  })
+  it("a long sign-in link wraps inside the card instead of running past it", () => {
+    const r = signInEmail({ url: `${origin}/api/auth/callback/resend?token=${"a".repeat(200)}&callbackUrl=${encodeURIComponent(`${origin}/account`)}`, host: "www.trailheadirrigation.com" })
+    expect(r.html).toContain("overflow-wrap:anywhere")
+  })
+  it("the plain-text twin of every email carries the HTML's one button link (or the account it opens)", () => {
+    const kinds = [...(Object.keys(DATA) as (keyof typeof DATA)[]), "sign-in" as const]
+    for (const k of kinds) {
+      const r = k === "sign-in" ? signInEmail({ url: `${origin}/account/sign-in/verify?token=abc&b=c`, host: "www.trailheadirrigation.com" }) : renderEmail(k, DATA[k])!
+      const href = r.html.match(/class="cta"[\s\S]*?<a href="([^"]+)"/)![1]!.replace(/&amp;/g, "&")
+      expect(r.text.includes(href) || (href.startsWith(`${origin}/account`) && r.text.includes(`${origin}/account`))).toBe(true)
+    }
   })
 })
 
