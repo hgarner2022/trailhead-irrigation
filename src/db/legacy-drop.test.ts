@@ -30,6 +30,18 @@ async function through0021() {
   return { client, drop: migration(all[at]!) }
 }
 
+/** A repair statement (the idempotent update / insert-into copies of migration 0021 at the head of 0022), as opposed to a guard (DO block), a trigger drop or a schema drop. */
+const isRepair = (stmt: string) => /^(update|insert into) /i.test(stmt.replace(/^(\s*--[^\n]*\n)+/, "").trim())
+const repairOf = (drop: string[]) => drop.filter(isRepair)
+const withoutRepair = (drop: string[]) => drop.filter((stmt) => !isRepair(stmt))
+const kindOf = (stmt: string) => {
+  const text = stmt.replace(/^(\s*--[^\n]*\n)+/, "").trim()
+  if (isRepair(stmt)) return "repair"
+  if (/^DO \$\$/.test(text)) return "guard"
+  if (/^DROP (TRIGGER|FUNCTION)/.test(text)) return "trigger"
+  return "drop"
+}
+
 /** The way drizzle's migrator runs a migration: every statement in one transaction, rolled back whole when one throws. */
 async function applyInOneTransaction(client: PGlite, statements: string[]) {
   await client.exec("BEGIN")
@@ -85,6 +97,9 @@ async function cleanData(client: PGlite) {
   await x(`UPDATE visit SET truck_id = 'truck-1', booking_id = 'b1' WHERE id = 'v-rep'`)
   await x(`INSERT INTO quote_request (id, organization_id, customer_id, property_id, notes, status) VALUES ('q1', 'o', 'c3', 'pr3', 'Valve leaks', 'new')`)
   await x(`INSERT INTO job (id, organization_id, customer_id, property_id, kind, status, source) VALUES ('job_qr_q1', 'o', 'c3', 'pr3', 'other', 'active', 'site')`)
+  // The unpriced line and the job.requested event migration 0021 made for the quote job.
+  await x(`INSERT INTO line_item (id, organization_id, job_id, visit_id, name, unit_price) VALUES ('line_job_qr_q1', 'o', 'job_qr_q1', NULL, 'Other', 0)`)
+  await x(`INSERT INTO event (id, organization_id, about, about_id, customer_id, job_id, visit_id, kind, detail, who, at) VALUES ('evt_qr_q1', 'o', 'job', 'job_qr_q1', 'c3', 'job_qr_q1', NULL, 'job.requested', '{}', 'system', '2027-03-01T10:00:00Z')`)
   // Guards 5 and 6: events. evt_pc_pc1 is the copy migration 0020 made; pc2 is a row written since step 5, whose event recordChange wrote 3 seconds away.
   await x(
     `INSERT INTO pass_change (id, organization_id, customer_id, pass_id, visit_id, kind, by_principal, at) VALUES
@@ -121,7 +136,27 @@ const rowsOf = async (client: PGlite) => ({
 })
 
 describe("migration 0022: the drops", () => {
-  it("drops the triggers first and then every legacy table, column, foreign key, index and enum, and nothing else", async () => {
+  it("repairs, then guards, then drops the triggers, and only then every foreign key, index, column, table and enum", async () => {
+    const { drop } = await through0021()
+    const kinds = drop.map(kindOf)
+    const first = (k: ReturnType<typeof kindOf>) => kinds.indexOf(k)
+    const last = (k: ReturnType<typeof kindOf>) => kinds.lastIndexOf(k)
+    expect(kinds.filter((k) => k === "trigger")).toHaveLength(8)
+    expect(first("repair")).toBe(0)
+    expect(last("repair")).toBeLessThan(first("guard"))
+    // The triggers go after the last guard (so their lock is held shortly) and before the first foreign key, index or column drop (they read the dropped columns).
+    expect(last("guard")).toBeLessThan(first("trigger"))
+    expect(last("trigger")).toBeLessThan(first("drop"))
+    expect(kinds.slice(first("trigger"), last("trigger") + 1).every((k) => k === "trigger")).toBe(true)
+    expect(first("drop")).toBe(last("trigger") + 1)
+    expect(kinds.slice(first("drop")).every((k) => k === "drop")).toBe(true)
+    // Four DROP TRIGGER and four DROP FUNCTION, triggers before the functions they run.
+    const triggerStatements = drop.filter((_, i) => kinds[i] === "trigger").map((s) => s.replace(/^(\s*--[^\n]*\n)+/, "").trim())
+    expect(triggerStatements.slice(0, 4).every((s) => s.startsWith("DROP TRIGGER"))).toBe(true)
+    expect(triggerStatements.slice(4).every((s) => s.startsWith("DROP FUNCTION"))).toBe(true)
+  })
+
+  it("drops the triggers and then every legacy table, column, foreign key, index and enum, and nothing else", async () => {
     const { client, drop } = await through0021()
     await cleanData(client)
     const before = await state(client)
@@ -162,8 +197,8 @@ describe("migration 0022: the drops", () => {
     expect(rows.job).toHaveLength(5)
     expect(rows.visit).toHaveLength(4)
     expect(rows.charge).toHaveLength(3)
-    expect(rows.line).toHaveLength(3)
-    expect(rows.event).toHaveLength(4)
+    expect(rows.line).toHaveLength(4)
+    expect(rows.event).toHaveLength(5)
     expect(rows.job.find((j) => (j as { id: string }).id === "job_p")).toMatchObject({ legacy_pass_id: "p", season: 2027, pass_number: "TH-2027-0001" })
     // The kept uniqueness still holds and a job can be made without the dropped columns.
     await expect(client.exec(`INSERT INTO visit (id, organization_id, job_id, customer_id, property_id, kind) VALUES ('dup', 'o', 'job_p', 'c', 'pr', 'blowout')`)).rejects.toThrow()
@@ -179,7 +214,128 @@ describe("migration 0022: the drops", () => {
     await client.close()
   })
 
-  // One test per guard: clean data, one thing broken, the migration throws with the guard's words and rolls back whole.
+  it("repairs nothing on clean data, and running the repair statements twice changes nothing", async () => {
+    const { client, drop } = await through0021()
+    await cleanData(client)
+    const repair = repairOf(drop)
+    expect(repair.length).toBeGreaterThan(8)
+    const rows = await rowsOf(client)
+    for (const stmt of repair) await client.exec(stmt)
+    expect(await rowsOf(client)).toEqual(rows)
+    for (const stmt of repair) await client.exec(stmt)
+    expect(await rowsOf(client)).toEqual(rows)
+    await client.close()
+  })
+
+  it("repairs the gaps the old code leaves in the deploy window, then passes every guard and drops", async () => {
+    const { client, drop } = await through0021()
+    await cleanData(client)
+    const x = (sql: string) => client.exec(sql)
+    // A pass without its job's old pass id, a sold job without its day, a charged visit and a priced visit without their payment and line,
+    // a straggler visit note, a booking without its job, and a quote request without its job, line and event.
+    await x(`UPDATE job SET legacy_pass_id = NULL WHERE id = 'job_p'`)
+    await x(`UPDATE job SET sold_on = NULL WHERE id = 'job_rep'`)
+    await x(`DELETE FROM charge WHERE id = 'ch-rep'`)
+    await x(`DELETE FROM line_item WHERE id = 'line_v-rep'`)
+    await x(`UPDATE visit SET notes = 'Call first' WHERE id = 'p-turn-on'`)
+    await x(`DELETE FROM event WHERE id = 'evt_note_visit_p-blowout'`)
+    await x(`DELETE FROM job WHERE id = 'job_b1'`)
+    await x(`DELETE FROM event WHERE id = 'evt_qr_q1'`)
+    await x(`DELETE FROM line_item WHERE id = 'line_job_qr_q1'`)
+    await x(`DELETE FROM job WHERE id = 'job_qr_q1'`)
+    // Without the repair the guards would abort on every one of these.
+    await expect(applyInOneTransaction(client, withoutRepair(drop))).rejects.toThrow(/legacy_drop guard 1:/)
+
+    await applyInOneTransaction(client, drop)
+
+    const ids = async (sql: string) => (await client.query<{ id: string }>(sql)).rows.map((r) => r.id)
+    expect((await client.query<{ legacy_pass_id: string }>(`SELECT legacy_pass_id FROM job WHERE id = 'job_p'`)).rows[0]!.legacy_pass_id).toBe("p")
+    expect((await client.query<{ sold_on: string | null }>(`SELECT sold_on FROM job WHERE id = 'job_rep'`)).rows[0]!.sold_on).not.toBeNull()
+    expect(await ids(`SELECT id FROM charge WHERE id = 'ch_legacy_v-rep' AND job_id = 'job_rep' AND status = 'succeeded' AND amount = 145`)).toEqual(["ch_legacy_v-rep"])
+    expect(await ids(`SELECT id FROM line_item WHERE id = 'line_v-rep' AND visit_id = 'v-rep'`)).toEqual(["line_v-rep"])
+    expect(await ids(`SELECT id FROM event WHERE kind = 'note' AND visit_id IN ('p-turn-on', 'p-blowout') ORDER BY id`)).toEqual(["evt_note2_visit_p-blowout", "evt_note2_visit_p-turn-on"])
+    expect(await ids(`SELECT id FROM job WHERE id IN ('job_b1', 'job_qr_q1') ORDER BY id`)).toEqual(["job_b1", "job_qr_q1"])
+    expect(await ids(`SELECT id FROM line_item WHERE id = 'line_job_qr_q1'`)).toEqual(["line_job_qr_q1"])
+    expect(await ids(`SELECT id FROM event WHERE id = 'evt_qr_q1' AND kind = 'job.requested'`)).toEqual(["evt_qr_q1"])
+    expect((await state(client)).tables).not.toContain("season_pass")
+    await client.close()
+  })
+
+  // The repair cannot fix these (the row the repair would write is blocked by an id of the same name), so the full migration, repair included, still aborts.
+  const unrepairable: { name: string; break: string; message: RegExp }[] = [
+    { name: "guard 1: a season_pass row whose job remembers some other pass", break: `UPDATE job SET legacy_pass_id = 'someone-else' WHERE id = 'job_p'`, message: /legacy_drop guard 1: 1 season_pass row\(s\) have no job whose legacy_pass_id equals their id/ },
+    {
+      name: "guard 1b: a cancelled season_pass whose job has no cancelled_at",
+      break: `UPDATE season_pass SET status = 'cancelled' WHERE id = 'p'`,
+      message: /legacy_drop guard 1b: 1 cancelled season_pass row\(s\) have a job with no cancelled_at/,
+    },
+    {
+      name: "guard 1c: an active season_pass whose job has no sold_on",
+      break: `UPDATE job SET status = 'pending', sold_on = NULL WHERE id = 'job_p'`,
+      message: /legacy_drop guard 1c: 1 active season_pass row\(s\) have a job with no sold_on/,
+    },
+    {
+      name: "guard 2: a charged visit whose payment row is blocked by a failed attempt of the same id",
+      break: `DELETE FROM charge WHERE id = 'ch-rep'; INSERT INTO charge (id, organization_id, job_id, customer_id, visit_id, attempt, amount, status) VALUES ('ch_legacy_v-rep', 'o', 'job_rep', 'c2', 'v-rep', 1, 145, 'failed')`,
+      message: /legacy_drop guard 2: 1 charged visit\(s\) have no succeeded payment on their job/,
+    },
+    {
+      name: "guard 2: a priced visit whose line id is taken by a line on no visit",
+      break: `INSERT INTO visit (id, organization_id, job_id, customer_id, property_id, kind, amount) VALUES ('v-noline', 'o', 'job_rep', 'c2', 'pr2', 'repair', 50); INSERT INTO line_item (id, organization_id, job_id, visit_id, name, unit_price) VALUES ('line_v-noline', 'o', 'job_rep', NULL, 'Repair', 50)`,
+      message: /legacy_drop guard 2: 1 priced visit\(s\) have no line item/,
+    },
+    {
+      name: "guard 6: a visit note whose note event id is taken by another kind of event",
+      break: `UPDATE visit SET notes = 'Call first' WHERE id = 'p-turn-on'; INSERT INTO event (id, organization_id, about, about_id, customer_id, job_id, visit_id, kind, detail, who, at) VALUES ('evt_note2_visit_p-turn-on', 'o', 'visit', 'p-turn-on', 'c', 'job_p', 'p-turn-on', 'visit.edited', '{}', 'system', '2027-03-05T12:00:00Z')`,
+      message: /legacy_drop guard 6: 1 visit note\(s\) have no note event with their text/,
+    },
+    {
+      name: "guard 6: a job note whose note event id is taken by another kind of event",
+      break: `UPDATE job SET notes = 'Dog in the yard' WHERE id = 'job_rep'; INSERT INTO event (id, organization_id, about, about_id, customer_id, job_id, visit_id, kind, detail, who, at) VALUES ('evt_note2_job_job_rep', 'o', 'job', 'job_rep', 'c2', 'job_rep', NULL, 'job.edited', '{}', 'system', '2027-03-05T12:00:00Z')`,
+      message: /legacy_drop guard 6: 1 job note\(s\) have no note event with their text/,
+    },
+  ]
+  for (const guard of unrepairable) {
+    it(`aborts with the repair in place: ${guard.name}`, async () => {
+      const { client, drop } = await through0021()
+      await cleanData(client)
+      await client.exec(guard.break)
+      const before = await state(client)
+      const rows = await rowsOf(client)
+      await expect(applyInOneTransaction(client, drop)).rejects.toThrow(guard.message)
+      expect(await state(client)).toEqual(before)
+      expect(await rowsOf(client)).toEqual(rows)
+      await client.close()
+    })
+  }
+
+  it("lets a cancelled season_pass through when its job is cancelled too", async () => {
+    const { client, drop } = await through0021()
+    await cleanData(client)
+    // The 0021 update trigger cancels the job when the pass gets a cancelled_at.
+    await client.exec(`UPDATE season_pass SET status = 'cancelled', cancelled_at = now() WHERE id = 'p'`)
+    await applyInOneTransaction(client, drop)
+    expect((await client.query<{ cancelled_at: string | null }>(`SELECT cancelled_at FROM job WHERE id = 'job_p'`)).rows[0]!.cancelled_at).not.toBeNull()
+    await client.close()
+  })
+
+  it("matches a pass_change row to an event up to thirty seconds away, and not forty-five", async () => {
+    const ok = await through0021()
+    await cleanData(ok.client)
+    await ok.client.exec(`INSERT INTO pass_change (id, organization_id, customer_id, pass_id, kind, by_principal, at) VALUES ('pc-slow', 'o', 'c', 'p', 'cancelled', 'ryan@example.com', '2027-04-05T15:00:00Z')`)
+    await ok.client.exec(`INSERT INTO event (id, organization_id, about, about_id, customer_id, job_id, visit_id, kind, detail, who, at) VALUES ('evt_slow', 'o', 'job', 'job_p', 'c', 'job_p', NULL, 'pass.cancelled', '{}', 'ryan@example.com', '2027-04-05T15:00:20Z')`)
+    await applyInOneTransaction(ok.client, ok.drop)
+    await ok.client.close()
+
+    const late = await through0021()
+    await cleanData(late.client)
+    await late.client.exec(`INSERT INTO pass_change (id, organization_id, customer_id, pass_id, kind, by_principal, at) VALUES ('pc-slow', 'o', 'c', 'p', 'cancelled', 'ryan@example.com', '2027-04-05T15:00:00Z')`)
+    await late.client.exec(`INSERT INTO event (id, organization_id, about, about_id, customer_id, job_id, visit_id, kind, detail, who, at) VALUES ('evt_slow', 'o', 'job', 'job_p', 'c', 'job_p', NULL, 'pass.cancelled', '{}', 'ryan@example.com', '2027-04-05T15:00:45Z')`)
+    await expect(applyInOneTransaction(late.client, late.drop)).rejects.toThrow(/legacy_drop guard 5: 1 pass_change row\(s\) have no matching event/)
+    await late.client.close()
+  })
+
+  // One test per guard: clean data, one thing broken, the migration (without its repair statements, which would fix most of these first) throws with the guard's words and rolls back whole.
   const guards: { name: string; break: string; message: RegExp }[] = [
     { name: "guard 1: a season_pass row whose job does not remember its id", break: `UPDATE job SET legacy_pass_id = NULL WHERE id = 'job_p'`, message: /legacy_drop guard 1: 1 season_pass row\(s\) have no job whose legacy_pass_id equals their id/ },
     { name: "guard 2: a charged visit with no succeeded payment on its job", break: `DELETE FROM charge WHERE id = 'ch-rep'`, message: /legacy_drop guard 2: 1 charged visit\(s\) have no succeeded payment on their job/ },
@@ -194,7 +350,7 @@ describe("migration 0022: the drops", () => {
       message: /legacy_drop guard 2: 1 priced visit\(s\) have no line item/,
     },
     { name: "guard 3: a booking with no job", break: `UPDATE job SET id = 'job_gone' WHERE id = 'job_b1'`, message: /legacy_drop guard 3: 1 booking\(s\) have no job with id job_<booking id>/ },
-    { name: "guard 3: a quote request with no job", break: `UPDATE job SET id = 'job_gone' WHERE id = 'job_qr_q1'`, message: /legacy_drop guard 3: 1 quote request\(s\) have no job with id job_qr_<request id>/ },
+    { name: "guard 3: a quote request with no job", break: `DELETE FROM line_item WHERE id = 'line_job_qr_q1'; DELETE FROM event WHERE id = 'evt_qr_q1'; UPDATE job SET id = 'job_gone' WHERE id = 'job_qr_q1'`, message: /legacy_drop guard 3: 1 quote request\(s\) have no job with id job_qr_<request id>/ },
     { name: "guard 4: an admin user with no person", break: `UPDATE person SET email = 'someone-else@example.com' WHERE id = 'person_admin1'`, message: /legacy_drop guard 4: 1 admin user\(s\) have no person with their email in their organization/ },
     {
       name: "guard 4: an admin user whose person is in another organization",
@@ -218,7 +374,7 @@ describe("migration 0022: the drops", () => {
       await client.exec(guard.break)
       const before = await state(client)
       const rows = await rowsOf(client)
-      await expect(applyInOneTransaction(client, drop)).rejects.toThrow(guard.message)
+      await expect(applyInOneTransaction(client, withoutRepair(drop))).rejects.toThrow(guard.message)
       // Nothing was dropped: every legacy table, column, trigger, function and type is still there, and so is every other thing.
       const after = await state(client)
       expect(after).toEqual(before)
