@@ -18,7 +18,7 @@ type OwnLine = {
   cancelledAt: string | null;
 };
 
-/** The visit's own lines from the job's lines the API sends with it: the ones billed after this visit and not cancelled. */
+/** The visit's own lines from the job's lines the API sends with it: the ones invoiced after this visit and not canceled. */
 const ownLines = (v: { id: string; lineItems?: OwnLine[] }) =>
   v.lineItems?.filter((l) => l.visitId === v.id && !l.cancelledAt) ?? [];
 

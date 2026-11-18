@@ -39,7 +39,7 @@ export async function chargeVisit(db: Database, stripe: Stripe, visitId: string,
   // Paid already means succeeded payment rows that reach the price (the card on file, or the office recording a check, Venmo or cash), never a stamp on the visit.
   const own = await db.select({ amount: s.charge.amount, status: s.charge.status }).from(s.charge).where(eq(s.charge.visitId, visit.id))
   if (isPaid(own, price)) return "already-charged"
-  // A visit whose lines are all cancelled (or priced at nothing) owes nothing: no Stripe call, no payment row, no email.
+  // A visit whose lines are all canceled (or priced at nothing) owes nothing: no Stripe call, no payment row, no email.
   if (price <= 0) return "nothing-owed"
   // A visit the office cancelled is never charged, even if a charge was queued before.
   if (visit.status === "cancelled" || visit.status === "skipped") return "cancelled-pass"
@@ -52,7 +52,7 @@ export async function chargeVisit(db: Database, stripe: Stripe, visitId: string,
   const passNumber = pass.passNumber ?? ""
   // Only a card Stripe can charge counts here: a customer with just a last 4 (a fixture, an old import) never reaches Stripe and never records a failure.
   if (!customer.stripePaymentMethodId || !customer.stripeCustomerId) {
-    // Never silent: Home gets a row with Send card link, and the visit stays Owed (its money reads "no card") until the money is recorded or a card is added.
+    // Never silent: Home gets a row with Send card link, and the visit stays Unpaid (its money reads "no card") until the money is recorded or a card is added.
     await db
       .insert(s.adminAlert)
       .values({ organizationId: visit.organizationId, kind: "no-card", key: visit.id, jobId: pass.id, message: `No card to charge for ${customer.firstName}'s ${kindName(visit.kind)}` })

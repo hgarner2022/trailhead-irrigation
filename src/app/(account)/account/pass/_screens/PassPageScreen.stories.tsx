@@ -56,7 +56,7 @@ export const AllDone: Story = {
   globals: { viewport: { value: "wide", isRotated: false } },
 }
 
-export const Cancelled: Story = {
+export const Canceled: Story = {
   args: { pass: cancelled },
   globals: { viewport: { value: "wide", isRotated: false } },
 }
@@ -67,7 +67,7 @@ export const Cancelling: Story = {
   play: async ({ canvas, userEvent, args }) => {
     await userEvent.click(await canvas.findByRole("button", { name: "Cancel my pass" }))
     await userEvent.click(await screen.findByRole("button", { name: "Cancel my pass" }))
-    await expect(await screen.findByRole("dialog", { name: "Your pass is cancelled." })).toBeInTheDocument()
+    await expect(await screen.findByRole("dialog", { name: "Your pass is canceled." })).toBeInTheDocument()
     await expect(args.onCancel).toHaveBeenCalledTimes(1)
   },
 }

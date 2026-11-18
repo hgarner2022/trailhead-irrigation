@@ -52,7 +52,7 @@ function describeVisit(visit: PassVisit, pass: Pass): string | null {
 
 function describe(pass: Pass): string {
   const head = `Season Pass ${pass.season} for ${pass.firstName}, ${pass.town}`
-  if (pass.status === "cancelled") return `${head}, cancelled`
+  if (pass.status === "cancelled") return `${head}, canceled`
   const visits = pass.visits.filter((v) => v.kind !== "inspection").map((v) => describeVisit(v, pass)).filter((s) => s !== null)
   return [head, ...visits].join(", ")
 }
@@ -169,7 +169,7 @@ export function PassCard({ pass, size = "full", art = "flat", interactive = true
           </div>
           {cancelled && (
             <span className="absolute bottom-2.5 left-2.5 rounded-full bg-navy/85 px-2 py-0.5 text-[10px] uppercase leading-tight tracking-wide text-white">
-              Cancelled
+              Canceled
             </span>
           )}
         </>
@@ -201,7 +201,7 @@ export function PassCard({ pass, size = "full", art = "flat", interactive = true
             className="absolute inset-x-0 bottom-0 flex items-center gap-4 bg-navy/85 px-5 py-2.5 text-white backdrop-blur-sm @max-[440px]:gap-2 @max-[440px]:px-4 @max-[440px]:py-2"
           >
             {cancelled ? (
-              <span className="text-sm font-medium">Cancelled</span>
+              <span className="text-sm font-medium">Canceled</span>
             ) : (
               <div className={cn("grid min-w-0 flex-1 gap-3 @max-[440px]:gap-2", pass.visits.length > 2 ? "grid-cols-3" : "grid-cols-2")}>
                 {pass.visits.map((visit) => (

@@ -51,7 +51,7 @@ export function EarlierSeasons({ passes }: EarlierSeasonsProps) {
                         </span>
                         <span className="text-right tabular-nums">
                           <span className="block">{`$${visit.amount}`}</span>
-                          <span className="block text-muted-foreground">{visitPaid(visit) ? "Paid" : visit.completedAt ? "Owed" : "Not charged"}</span>
+                          <span className="block text-muted-foreground">{visitPaid(visit) ? "Paid" : visit.completedAt ? "Unpaid" : "Not charged"}</span>
                         </span>
                       </li>
                     )

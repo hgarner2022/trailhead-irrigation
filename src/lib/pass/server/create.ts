@@ -93,7 +93,7 @@ export async function newestPendingPass(db: Database, organizationId: string, cu
 }
 
 /**
- * Removes the pass jobs nobody paid for within the hour (a season, no sold day, not cancelled) with their lines, visits, events and
+ * Removes the pass jobs nobody paid for within the hour (a season, no sold day, not canceled) with their lines, visits, events and
  * alerts. A sold pass has a sold day, a `job.sold` event or a succeeded payment and is never touched here. Returns how many. Customers and properties stay.
  */
 export async function expirePendingPasses(db: Database, now: Date, minutes = PENDING_PASS_MINUTES): Promise<number> {

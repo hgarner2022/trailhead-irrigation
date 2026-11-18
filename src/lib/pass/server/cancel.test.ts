@@ -13,7 +13,7 @@ beforeAll(async () => {
 afterAll(() => db.close())
 
 describe("cancelPassTask", () => {
-  it("raises one Home alert for a cancelled pass and none for a pass still open", async () => {
+  it("raises one Home alert for a canceled pass and none for a pass still open", async () => {
     expect(await cancelPassTask(db, "p1")).toBe(false)
     await setPass(db, "p1", { status: "cancelled" })
     expect(await cancelPassTask(db, "p1")).toBe(true)
@@ -22,10 +22,10 @@ describe("cancelPassTask", () => {
     const alerts = await db.select().from(s.adminAlert).where(eq(s.adminAlert.jobId, jobId))
     expect(alerts).toHaveLength(1)
     expect(alerts[0]).toMatchObject({ kind: "pass-cancelled", key: jobId })
-    expect(alerts[0]!.message).toMatch(/^Season Pass TH-\d{4}-\d{4} cancelled: \w+, \w+$/)
+    expect(alerts[0]!.message).toMatch(/^Season Pass TH-\d{4}-\d{4} canceled: \w+, \w+$/)
   })
   it("words the alert with the number, first name and town", () => {
-    expect(cancelledMessage("TH-2027-0004", "Andrea", "Erie")).toBe("Season Pass TH-2027-0004 cancelled: Andrea, Erie")
+    expect(cancelledMessage("TH-2027-0004", "Andrea", "Erie")).toBe("Season Pass TH-2027-0004 canceled: Andrea, Erie")
   })
 })
 

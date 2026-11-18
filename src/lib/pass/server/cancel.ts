@@ -6,8 +6,8 @@ import { baseData } from "@/lib/messaging/data"
 import { queueMessage } from "@/lib/messaging/queue"
 import { loadPassRecord } from "./record"
 
-/** The Home line for a cancelled pass: "Season Pass TH-2027-0004 cancelled: Andrea, Erie". */
-export const cancelledMessage = (number: string, firstName: string, town: string) => `Season Pass ${number} cancelled: ${firstName}, ${town}`
+/** The Home line for a canceled pass: "Season Pass TH-2027-0004 cancelled: Andrea, Erie". */
+export const cancelledMessage = (number: string, firstName: string, town: string) => `Season Pass ${number} canceled: ${firstName}, ${town}`
 
 async function loadPass(db: Database, passId: string, organizationId?: string) {
   const pass = await loadPassRecord(db, passId, organizationId)

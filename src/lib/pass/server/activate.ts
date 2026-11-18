@@ -27,13 +27,13 @@ async function saveCard(db: Database, pass: PassRecord, card: SavedCard, now: Da
 
 /**
  * Turns a pending pass sold: claims the sale with one atomic update (`sold_on` is set only where it is still empty), so a page and
- * Stripe's webhook racing to activate one pass produce one winner. Only the winner sends `pass.bought` and gets `true`; a cancelled
+ * Stripe's webhook racing to activate one pass produce one winner. Only the winner sends `pass.bought` and gets `true`; a canceled
  * pass is refused. Saving the card is safe to repeat and runs for the loser too: if the process died after the claim, the retry
  * loses the claim and must still finish the card. The part of activation that has nothing to do with Stripe, so the checkout shares
  * it with anything that activates a held pass.
  */
 export async function markPassActive(db: Database, pass: PassRecord, card: SavedCard | null, now = new Date(), who = "system"): Promise<boolean> {
-  if (pass.cancelledAt) throw new Error("This pass was cancelled")
+  if (pass.cancelledAt) throw new Error("This pass was canceled")
   const claimed = await db
     .update(s.job)
     .set({ soldOn: mountainDay(now), updatedAt: now })
@@ -41,7 +41,7 @@ export async function markPassActive(db: Database, pass: PassRecord, card: Saved
     .returning({ id: s.job.id })
   if (claimed.length === 0) {
     const [job] = await db.select({ cancelledAt: s.job.cancelledAt }).from(s.job).where(eq(s.job.id, pass.jobId))
-    if (job?.cancelledAt) throw new Error("This pass was cancelled")
+    if (job?.cancelledAt) throw new Error("This pass was canceled")
     // The claim was made before (a crash after it, or a racing call): finish what the winner may not have.
     if (card) await saveCard(db, pass, card, now, who)
     return false
@@ -75,7 +75,7 @@ export async function activatePass(db: Database, stripe: Stripe, passId: string,
   // The session's metadata may still carry an old pass id; both name the same job when this is the right card step.
   const named = card.passId ? await resolvePassJobAnywhere(db, card.passId) : null
   if (!named || named.id !== pass.jobId) throw new Error("This card step belongs to a different pass")
-  if (pass.cancelledAt) throw new Error("This pass was cancelled")
+  if (pass.cancelledAt) throw new Error("This pass was canceled")
   const [owner] = await db.select({ method: s.customer.stripePaymentMethodId }).from(s.customer).where(eq(s.customer.id, pass.customerId))
   if (pass.soldOn && owner?.method === card.paymentMethodId && (await hasSaleEvent(db, pass))) return "already-active"
   await db.update(s.customer).set({ stripeCustomerId: card.customerId, updatedAt: now }).where(eq(s.customer.id, pass.customerId))
