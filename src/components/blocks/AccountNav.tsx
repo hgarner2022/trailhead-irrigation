@@ -67,7 +67,8 @@ export function AccountNav({ firstName, hasPass = false, current, onSignOut, cla
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <form action={onSignOut}>
-                    <DropdownMenuItem asChild>
+                    {/* keep the menu mounted until the sign-out redirect: closing on select could unmount the form before it submits */}
+                    <DropdownMenuItem asChild onSelect={(e) => e.preventDefault()}>
                       <button type="submit" className="w-full cursor-pointer text-base">
                         Sign out
                       </button>
