@@ -12,7 +12,9 @@ import type { StatTileProps } from "@/components/blocks/StatTile"
 import type { AdminData, Attention, MonthTotal, OrganizationSettings, SeasonWindow, Visit } from "@/lib/admin/types"
 import { TIME_ZONE, monthDay, monthShort } from "@/lib/admin/format"
 import { addDays, dayOf } from "@/lib/admin/calendar"
-import { NOT_CLOSED_LOOKBACK_DAYS, jobCounts, visitJob } from "@/lib/admin/jobs"
+import { NOT_CLOSED_LOOKBACK_DAYS, jobCounts, paymentsOf, visitJob } from "@/lib/admin/jobs"
+import { paidTotal } from "@/lib/money/words"
+import { isOnToday, type TodayMoney } from "./today-model"
 import { billsOverdue, chargedSoFar, committedRevenue, formatMoney, monthComparison, quotesAwaiting, visitsOn } from "@/lib/admin/metrics"
 
 /** The season the Home line shows. The snapshot's passes are all 2027; the wiring phase derives this from the passes on hand. */
@@ -231,4 +233,21 @@ export function dayByPerson(visits: Visit[], dayIso: string, people: { id: strin
 /** The time a stop shows: its start ("8:00 am") when the route has one, else "Any time". */
 export function stopTime(visit: Pick<Visit, "startAt" | "startTime">): string {
   return visit.startTime && visit.startAt ? clockTime(visit.startAt) : "Any time"
+}
+
+/**
+ * The four figures on Today's strip, whole dollars. Each visit counts at the price of its own lines (`priceOf`, `visitPrice`
+ * over the job's lines). Today is every visit on the day (scheduled for it, or done on it), Done those done today, Ahead the rest
+ * not yet done. Owed is what today's done visits still owe, read from their succeeded payment rows (`paymentsOf`, refunds
+ * counting against, a part-paid visit owing the rest): a visit whose bill is sent or whose charge failed still owes it, a paid
+ * one owes nothing, a cancelled or skipped visit is on no figure.
+ */
+export function todayMoney(visits: Visit[], priceOf: (v: Visit) => number, today: string): TodayMoney {
+  const day = dayOf(today, TIME_ZONE)
+  const on = visits.filter((v) => isOnToday(v, day))
+  const isDone = (v: Visit) => visitJob(v, day, TIME_ZONE).work === "done"
+  const done = on.filter(isDone)
+  const sum = (list: Visit[]) => list.reduce((n, v) => n + priceOf(v), 0)
+  const owed = done.reduce((n, v) => n + Math.max(0, priceOf(v) - paidTotal(paymentsOf(v))), 0)
+  return { today: sum(on), done: sum(done), ahead: sum(on.filter((v) => !isDone(v))), owed }
 }

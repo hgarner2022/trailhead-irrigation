@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import type { AdminData, Visit } from "@/lib/admin/types"
-import { mapStops, moneyFigures, townsPhrase, weekView } from "./home-week"
+import { mapStops, townsPhrase, weekView } from "./home-week"
 import { filterFrom, MONEY_OPTIONS, visitRows, visitsContext } from "./visits-model"
 
 const base = snapshot as AdminData
@@ -61,28 +61,7 @@ describe("mapStops", () => {
   })
 })
 
-describe("moneyFigures", () => {
-  it("adds up what is owed on done jobs and what failed, each linking to the Visits that make it", () => {
-    const done = { status: "completed" as const, completedOn: "2026-11-10", scheduledOn: "2026-11-10", startAt: "2026-11-10T15:00:00Z" }
-    const check = (visitId: string) => [{ id: `pay-${visitId}`, visitId, amount: 145, method: "check", status: "succeeded" }]
-    const data: AdminData = {
-      ...base, passes: [], monthTotals: [],
-      visits: [
-        visit({ id: "o1", jobId: "j1", ...done, payments: [] }), visit({ id: "o2", jobId: "j2", ...done, price: 100, payments: [] }),
-        visit({ id: "f1", jobId: "j3", ...done, price: 60, chargeFailed: true, payments: [] }), visit({ id: "p1", jobId: "j4", ...done, payments: check("p1") }),
-        // a second owed visit of an owed job counts the job once
-        visit({ id: "o3", jobId: "j1", ...done, price: 20, payments: [] }),
-      ],
-    }
-    const [charged, owed, failed, season] = moneyFigures(data, TODAY)
-    expect(owed).toMatchObject({ label: "Owed on 2 done jobs", value: "$265", href: "/admin/visits?money=owed" })
-    expect(failed).toMatchObject({ label: "Failed charges, 1", value: "$60", href: "/admin/visits?money=failed" })
-    expect([charged!.href, season!.href]).toEqual(["/admin/reports", "/admin/reports"])
-    expect(season!.value).toBe("$0")
-  })
-})
-
-describe("the money line and the Visits header count the same words", () => {
+describe("the Visits header reads Bill sent apart from Owed", () => {
   const done = { status: "completed" as const, completedOn: "2026-11-10", scheduledOn: "2026-11-10", startAt: "2026-11-10T15:00:00Z" }
   const bill = { id: "inv1", jobId: "j2", number: "INV-2026-0001", amount: 100, tax: 0, total: 100, sentOn: "2026-11-01", dueOn: "2026-11-08", status: "overdue" as const, visitIds: [] }
   const job = (id: string, over: Partial<NonNullable<AdminData["jobs"]>[number]> = {}) => ({ id, customerId: "c", kind: "repair" as const, status: "active" as const, source: "office" as const, visitIds: [], ...over })
@@ -96,22 +75,13 @@ describe("the money line and the Visits header count the same words", () => {
     jobs: [job("j1", { visitIds: ["o1"] }), job("j2", { visitIds: ["b1"], invoice: bill })],
   }
 
-  it("adds N bills overdue to the money line while a bill is past due, linking to the Bill sent filter, and not otherwise", () => {
-    const figures = moneyFigures(data, TODAY)
-    expect(figures).toHaveLength(5)
-    expect(figures[4]).toMatchObject({ label: "1 bill overdue", value: "$100", href: "/admin/visits?money=bill-sent" })
-    expect(moneyFigures({ ...data, jobs: [job("j1", { visitIds: ["o1"] }), job("j2", { visitIds: ["b1"], invoice: { ...bill, dueOn: "2026-11-12", status: "sent" } })] }, TODAY)).toHaveLength(4)
-    expect(moneyFigures({ ...data, jobs: undefined }, TODAY)).toHaveLength(4)
-  })
-
-  it("counts Owed only on both: a Bill sent visit is in neither figure", () => {
+  it("counts Owed only in the header: a Bill sent visit is not in it", () => {
     const rows = visitRows(data, TODAY)
     expect(rows.find((r) => r.id === "b1")).toMatchObject({ money: "bill-sent", moneyLabel: "Bill sent" })
-    expect(moneyFigures(data, TODAY)[1]).toMatchObject({ label: "Owed on 1 done job", value: "$145" })
     expect(visitsContext(rows)).toBe("2 visits this season. 1 done and owed.")
   })
 
-  it("lets the Visits list be filtered to Bill sent from Home's link", () => {
+  it("lets the Visits list be filtered to Bill sent from a link", () => {
     expect(filterFrom("money", "bill-sent", MONEY_OPTIONS)).toEqual([{ column: "money", values: ["bill-sent"] }])
   })
 })

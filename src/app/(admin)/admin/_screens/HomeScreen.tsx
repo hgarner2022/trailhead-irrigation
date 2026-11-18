@@ -2,22 +2,26 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { CardTitleHeading } from "@/components/blocks/CardTitleHeading"
 import { NeedsAttention, type NeedsAttentionProps } from "@/components/blocks/NeedsAttention"
 import { PageHeader } from "@/components/blocks/PageHeader"
+import { TodayMoney } from "@/components/blocks/TodayMoney"
+import { formatMoney } from "@/lib/admin/metrics"
 import type { AdminData } from "@/lib/admin/types"
 import type { VisitActions } from "./visit-actions-types"
 import { VisitPanelHost } from "./VisitPanelHost"
-import { greeting, pageContext } from "./home-model"
-import { moneyFigures, weekView } from "./home-week"
+import { greeting, pageContext, todayMoney } from "./home-model"
+import { weekView } from "./home-week"
+import { todayView } from "./today-model"
+import { visitPrice } from "./visit-panel-model"
 import { HomeMap } from "./HomeMap"
-import { HomeMoney } from "./HomeMoney"
-import { HomeWeek } from "./HomeWeek"
+import { TodayVisits } from "./TodayVisits"
 import { routePeople } from "@/lib/admin/people"
 import { jobIdOfPass } from "@/lib/admin/links"
 
-// What Hannah opens to, her four jobs on one screen (docs/plans/2026-11-14-jobs-to-be-done.md): the money line
-// ("how is the money"), then Today or Next up ("is the week sane"), the map of that day, and Needs action
-// ("what needs me"), grouped by cause, every row with its button and Dismiss. Reports keeps everything else. Pure
-// composition over `data` and a fixed `today`; the route's page.tsx supplies both. Server component; the row
-// buttons and the map are client code. On a laptop the map sits beside the money line and the day (the money first, Hannah, Nov 17 2026).
+// What Hannah opens to, as Today (17 Nov 2026, after Jobber's "Today's appointments": "a variation of this, today's visits in our
+// language, a little bit more useful"): the header, then the Today money strip (what is on today, what is done, what is ahead,
+// what the done visits owe, and View schedule), then today's visits in three groups or by person beside the map, then Needs action
+// ("what needs me"), grouped by cause, every row with its button and Dismiss. Reports keeps everything else. Pure composition over
+// `data` and a fixed `today`; the route's page.tsx supplies both. Server component; the rows, the toggle and the map are client
+// code. The map folds under the groups on a phone.
 
 export interface HomeScreenProps {
   data: AdminData
@@ -34,7 +38,10 @@ export interface HomeScreenProps {
 }
 
 export function HomeScreen({ data, today, readOnly = false, onAttentionAction, onDismiss, visitActions }: HomeScreenProps) {
-  const week = weekView(data, today)
+  const view = todayView(data, today)
+  const money = todayMoney(data.visits, (v) => visitPrice(data, v), today)
+  // With nothing today the screen says when the next visits are, once, as a link to that day.
+  const week = view.rows.length === 0 ? weekView(data, today) : null
   // A row that names only a pass opens that pass's job on Visits, so it carries the job.
   const attention = data.attention.map((a) => (a.passId && !a.jobId ? { ...a, jobId: jobIdOfPass(data, a.passId) } : a))
   return (
@@ -42,11 +49,28 @@ export function HomeScreen({ data, today, readOnly = false, onAttentionAction, o
       <VisitPanelHost data={data} today={today} readOnly={readOnly} actions={visitActions}>
         <PageHeader title={greeting(today)} context={pageContext(data, today)} />
 
+        <TodayMoney
+          figures={[
+            { label: "Today", value: formatMoney(money.today) },
+            { label: "Done", value: formatMoney(money.done) },
+            { label: "Ahead", value: formatMoney(money.ahead) },
+            { label: "Owed", value: formatMoney(money.owed) },
+          ]}
+          scheduleHref={`/admin/schedule?day=${view.day}`}
+          className="mb-6"
+        />
+
         <div className="grid gap-6 lg:grid-cols-5">
-          <HomeMoney figures={moneyFigures(data, today)} className="lg:col-span-3 lg:col-start-1 lg:row-start-1" />
-          <HomeWeek week={week} today={today} className="lg:col-span-3 lg:col-start-1 lg:row-start-2" />
-          <HomeMap visits={week.visits} people={routePeople(data.settings.people)} className="lg:col-span-2 lg:col-start-4 lg:row-span-2 lg:row-start-1" />
-          <Card className="lg:col-span-5 lg:row-start-3">
+          <Card className="lg:col-span-3 lg:col-start-1 lg:row-start-1">
+            <CardHeader>
+              <CardTitleHeading>Today&rsquo;s visits</CardTitleHeading>
+            </CardHeader>
+            <CardContent>
+              <TodayVisits view={view} areas={data.settings.areas} next={week?.day ? { day: week.day, heading: week.heading } : undefined} />
+            </CardContent>
+          </Card>
+          <HomeMap visits={view.stops} people={routePeople(data.settings.people)} className="lg:col-span-2 lg:col-start-4 lg:row-start-1" />
+          <Card className="lg:col-span-5 lg:row-start-2">
             <CardHeader>
               <CardTitleHeading>Needs action</CardTitleHeading>
             </CardHeader>

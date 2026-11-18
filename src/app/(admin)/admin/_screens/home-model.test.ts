@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest"
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
-import type { AdminData } from "@/lib/admin/types"
+import type { AdminData, Visit } from "@/lib/admin/types"
 import { EMPTY_SETTINGS } from "@/lib/admin/empty-settings"
 import { TIME_ZONE } from "@/lib/admin/format"
 import { visitsOn } from "@/lib/admin/metrics"
-import { clockTime, dayHeading, greeting, jobTiles, longDate, monthOf, NOT_CLOSED_LOOKBACK_DAYS, notClosedAttention, notClosedCount, pageContext, seasonDescription, sparklineOf, tileModels, tomorrowOf, upcomingWindow, updatedAgo, windowTitle } from "./home-model"
+import { clockTime, dayHeading, greeting, jobTiles, longDate, monthOf, NOT_CLOSED_LOOKBACK_DAYS, notClosedAttention, notClosedCount, pageContext, seasonDescription, sparklineOf, tileModels, todayMoney, tomorrowOf, upcomingWindow, updatedAgo, windowTitle } from "./home-model"
 
 const data = snapshot as AdminData
 // 12:56 pm in Denver, four minutes after the snapshot's sync.
@@ -240,5 +240,54 @@ describe("notClosedCount", () => {
     const row = notClosedAttention([visit("b", "2026-11-11T23:00:00Z"), visit("a", "2026-11-09T17:00:00Z")], now, TIME_ZONE)
     expect(row).toEqual({ kind: "not-closed", message: "2 jobs from the last two weeks are not marked done yet.", since: "2026-11-09T17:00:00Z" })
     expect(notClosedAttention([visit("a", "2026-11-09T17:00:00Z")], now, TIME_ZONE)?.message).toBe("1 job from the last two weeks is not marked done yet.")
+  })
+})
+
+describe("todayMoney", () => {
+  const day = "2026-11-12"
+  const pay = (visitId: string, amount: number, status = "succeeded") => ({ id: `p-${visitId}-${amount}`, visitId, amount, method: "check", status })
+  const v = (over: Partial<Visit>): Visit => ({
+    id: "x", clientId: "c", clientName: "Dana Reed", town: "Erie", kind: "repair", status: "scheduled", isPass: false, jobberUrl: "", jobId: "j",
+    scheduledOn: day, startAt: "2026-11-12T15:00:00Z", price: 100, payments: [], ...over,
+  })
+  const done = (over: Partial<Visit>) => v({ status: "completed", completedOn: day, ...over })
+  const priceOf = (x: Visit) => x.price ?? 0
+  const NOW = "2026-11-12T19:56:30Z"
+
+  it("adds today, done and ahead from the visits' own prices, leaving out another day's, a cancelled one and a skipped one", () => {
+    const money = todayMoney(
+      [
+        done({ id: "d1", price: 145 }),
+        v({ id: "a1", price: 95 }),
+        v({ id: "a2", price: 50 }),
+        v({ id: "gone", status: "cancelled", price: 999 }),
+        v({ id: "skipped", skipped: true, price: 999 }),
+        v({ id: "other", scheduledOn: "2026-11-13", startAt: "2026-11-13T15:00:00Z", price: 999 }),
+        done({ id: "earlier", completedOn: "2026-11-10", price: 999 }),
+      ],
+      priceOf,
+      NOW,
+    )
+    expect(money).toMatchObject({ today: 290, done: 145, ahead: 145 })
+  })
+
+  it("owes what the done visits have not been paid, a part payment owing the rest and a failed payment counting for nothing", () => {
+    const money = todayMoney(
+      [
+        done({ id: "paid", price: 145, payments: [pay("paid", 145)] }),
+        done({ id: "owes", price: 100 }),
+        done({ id: "part", price: 100, payments: [pay("part", 40)] }),
+        done({ id: "failed", price: 60, payments: [pay("failed", 60, "failed")] }),
+        v({ id: "ahead", price: 500 }),
+      ],
+      priceOf,
+      NOW,
+    )
+    expect(money.owed).toBe(100 + 60 + 60)
+    expect(money.done).toBe(145 + 100 + 100 + 60)
+  })
+
+  it("is all zero on an empty day", () => {
+    expect(todayMoney([], priceOf, NOW)).toEqual({ today: 0, done: 0, ahead: 0, owed: 0 })
   })
 })
