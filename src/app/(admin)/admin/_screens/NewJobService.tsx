@@ -31,7 +31,7 @@ interface Props {
   choice: CustomerChoice
   service: ServiceItem
   actions?: VisitActions
-  onDone: (visitId: string) => void
+  onDone: (made: { id: string; jobId: string }) => void
 }
 
 export function NewJobService({ data, today, choice, service, actions, onDone }: Props) {
@@ -71,7 +71,7 @@ export function NewJobService({ data, today, choice, service, actions, onDone }:
     if (!actions) return console.info("new job", input)
     run(
       () => actions.createVisit(input),
-      ({ id }) => onDone(id),
+      (made) => onDone(made),
     )
   }
 

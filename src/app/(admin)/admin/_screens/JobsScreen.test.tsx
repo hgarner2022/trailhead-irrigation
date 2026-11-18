@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it, vi } from "vitest"
-import { render, screen, within } from "@testing-library/react"
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { UndoToastProvider } from "@/components/blocks/UndoToast"
 import type { JobActions } from "./job-actions-types"
@@ -137,8 +137,35 @@ describe("the job panel", () => {
     expect(row).toHaveTextContent("Thu, Nov 19, Ryan Garner")
     expect(row).toHaveTextContent("Scheduled")
     await userEvent.click(row)
-    // the visit panel opens over the job panel: its own Customer section is there
+    // the visit panel replaces the job panel: its own Customer section is there and the job's Lines are gone
     expect(await screen.findByRole("heading", { name: "Customer" })).toBeInTheDocument()
+    await waitFor(() => expect(screen.getAllByRole("dialog")).toHaveLength(1))
+    expect(screen.queryByRole("heading", { name: "Lines" })).toBeNull()
+  })
+
+  it("opening a job while a visit's panel is open closes the visit's: one panel at a time", async () => {
+    view({ defaultJobId: "job-a" })
+    await userEvent.click(panel().getByRole("button", { name: /Repair.*Thu, Nov 19/ }))
+    expect(await screen.findByRole("heading", { name: "Customer" })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole("button", { name: "Ben Cole", hidden: true }))
+    expect(await screen.findByRole("heading", { name: "Lines" })).toBeInTheDocument()
+    await waitFor(() => expect(screen.getAllByRole("dialog")).toHaveLength(1))
+    expect(screen.queryByRole("heading", { name: "Customer" })).toBeNull()
+  })
+
+  it("Add job opens the new job's panel, not the visit's and not a second panel on top", async () => {
+    const createVisit = vi.fn().mockResolvedValue({ ok: true, data: { id: "v-new", jobId: "job-a" } })
+    view({ visitActions: { createVisit } as unknown as VisitActions })
+    await userEvent.click(screen.getByRole("button", { name: "New job" }))
+    const sheet = within(await screen.findByRole("dialog"))
+    await userEvent.type(sheet.getByLabelText("Find a customer"), "Reed")
+    await userEvent.click(await sheet.findByRole("button", { name: /Dana Reed/ }))
+    await userEvent.selectOptions(sheet.getByLabelText("What are we doing?"), "repair")
+    await userEvent.click(sheet.getByRole("button", { name: "Add job" }))
+    await waitFor(() => expect(createVisit).toHaveBeenCalledTimes(1))
+    expect(await screen.findByRole("heading", { name: "Lines" })).toBeInTheDocument()
+    await waitFor(() => expect(screen.getAllByRole("dialog")).toHaveLength(1))
+    expect(screen.queryByRole("heading", { name: "Customer" })).toBeNull()
   })
 
   it("strikes a canceled line through and adds up only the live ones; an unpriced line says Quote later", () => {

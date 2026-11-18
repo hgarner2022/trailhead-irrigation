@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react"
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type MutableRefObject, type ReactNode } from "react"
 import { SidePanelLayout } from "@/components/blocks/SidePanel"
 import type { AdminData } from "@/lib/admin/types"
 import type { VisitActions } from "./visit-actions-types"
@@ -10,7 +10,9 @@ import { VisitPanel } from "./VisitPanel"
 // Wraps a screen so any row on it can open the visit panel in place: Home's stops, the Visits list, the
 // Schedule's stops, the pass panel's visits and the customer panel's visits all call `useOpenVisit()`. Without a
 // host (a bare screen in a test) `OpenVisit` is a plain link to the Visits page with the panel open. The id is
-// kept while the panel closes so the sheet slides out with its content. Client component.
+// kept while the panel closes so the sheet slides out with its content. One panel at a time per screen: a screen that has its
+// own record panel (Jobs, Customers) passes `onShow`, called when a visit opens so that panel closes, and `closeRef`, which the
+// host fills with a function that closes the visit panel, so opening a record of its own closes the visit. Client component.
 
 type Open = (visitId: string) => void
 const HostContext = createContext<Open | null>(null)
@@ -25,16 +27,31 @@ export interface VisitPanelHostProps {
   actions?: VisitActions
   /** the visit open on first render: `?visit=` on the Visits page, or the catalog */
   defaultVisitId?: string
+  /** called when a visit's panel opens: the screen closes its own record panel, so only one is open */
+  onShow?: () => void
+  /** filled with a function that closes the visit panel: the screen calls it when it opens a record of its own */
+  closeRef?: MutableRefObject<(() => void) | null>
   children: ReactNode
 }
 
-export function VisitPanelHost({ data, today, readOnly, actions, defaultVisitId, children }: VisitPanelHostProps) {
+export function VisitPanelHost({ data, today, readOnly, actions, defaultVisitId, onShow, closeRef, children }: VisitPanelHostProps) {
   const [visitId, setVisitId] = useState<string | undefined>(defaultVisitId)
   const [open, setOpen] = useState(() => Boolean(defaultVisitId && data.visits.some((v) => v.id === defaultVisitId)))
-  const show = useCallback<Open>((id) => {
-    setVisitId(id)
-    setOpen(true)
-  }, [])
+  const show = useCallback<Open>(
+    (id) => {
+      onShow?.()
+      setVisitId(id)
+      setOpen(true)
+    },
+    [onShow],
+  )
+  useEffect(() => {
+    if (!closeRef) return
+    closeRef.current = () => setOpen(false)
+    return () => {
+      closeRef.current = null
+    }
+  }, [closeRef])
   const value = useMemo(() => show, [show])
   return (
     <HostContext.Provider value={value}>

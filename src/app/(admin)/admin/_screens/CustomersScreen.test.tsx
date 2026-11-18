@@ -1,5 +1,6 @@
 import { beforeAll, describe, expect, it, vi } from "vitest"
-import { render, screen, within } from "@testing-library/react"
+import { render, screen, waitFor, within } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import { withFixtureContact } from "@/lib/admin/fixtures/contact"
 import { formatPhone } from "@/lib/format/contact"
@@ -105,6 +106,17 @@ describe("CustomersScreen panel", () => {
     const jobs = within(document.querySelector<HTMLElement>('[data-slot="customer-jobs"]')!)
     expect(jobs.getAllByRole("link", { name: "Open job" })[0]).toHaveAttribute("href", expect.stringMatching(/^\/admin\/jobs\?job=/))
     expect(jobs.getByText("Season Pass TH-2027-0014")).toBeInTheDocument()
+  })
+
+  it("opening a visit from the customer's jobs replaces the customer panel: one panel at a time", async () => {
+    render(<CustomersScreen data={jobsData} today={JOBS_TODAY} defaultSelectedId="c-dana" />)
+    expect(screen.getAllByRole("dialog")).toHaveLength(1)
+    const fold = document.querySelector<HTMLElement>('[data-slot="customer-jobs-list"] details')!
+    await userEvent.click(within(fold).getAllByText(/./)[0]!)
+    await userEvent.click(within(fold).getAllByRole("button")[0]!)
+    expect(await screen.findByRole("heading", { name: "Customer" })).toBeInTheDocument()
+    await waitFor(() => expect(screen.getAllByRole("dialog")).toHaveLength(1))
+    expect(screen.queryByRole("heading", { name: "Consent history" })).toBeNull()
   })
 
   it("counts a one-off job for a customer with no pass: Job names it, Next and Scheduled read its day, and the Jobs line has no season", () => {

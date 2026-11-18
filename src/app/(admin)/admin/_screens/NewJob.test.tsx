@@ -24,7 +24,7 @@ beforeAll(() => {
 
 function open() {
   const actions = {
-    createVisit: vi.fn(async () => ({ ok: true as const, data: { id: "v1" } })),
+    createVisit: vi.fn(async () => ({ ok: true as const, data: { id: "v1", jobId: "j1" } })),
     sellPass: vi.fn(async () => ({ ok: true as const, data: { id: "p1", number: "TP-1", firstName: "Andrea" } })),
   }
   render(<NewJob data={data} today={TODAY} open onOpenChange={() => undefined} customerId="c100" actions={actions as unknown as VisitActions} />)
@@ -63,6 +63,17 @@ describe("New job", () => {
     const sent = (actions.createVisit.mock.calls as unknown[][])[0]![0]
     expect(sent).toMatchObject({ scheduledOn: "2026-11-20" })
     expect(sent).not.toHaveProperty("startTime")
+  })
+
+  it("after Add job hands the new job's and visit's ids to the screen, which opens the record it shows", async () => {
+    const actions = { createVisit: vi.fn(async () => ({ ok: true as const, data: { id: "v9", jobId: "j9" } })), sellPass: vi.fn() }
+    const onCreated = vi.fn()
+    const onOpenChange = vi.fn()
+    render(<NewJob data={data} today={TODAY} open onOpenChange={onOpenChange} customerId="c100" actions={actions as unknown as VisitActions} onCreated={onCreated} />)
+    await choose("repair")
+    await userEvent.click(screen.getByRole("button", { name: "Add job" }))
+    await waitFor(() => expect(onCreated).toHaveBeenCalledWith({ visitId: "v9", jobId: "j9" }))
+    expect(onOpenChange).toHaveBeenCalledWith(false)
   })
 
   it("choosing Repair shows what it includes and $145, then the day and Add job", async () => {
