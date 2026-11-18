@@ -32,7 +32,7 @@ export interface CollectPaymentProps {
   className?: string
 }
 
-const RADIO = "flex min-h-14 cursor-pointer items-start gap-3 rounded-lg border border-input px-3 py-2 text-sm has-[:checked]:border-primary has-[:checked]:bg-primary/10 has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-60"
+const RADIO = "flex min-h-14 cursor-pointer items-start gap-3 rounded-lg border border-input px-3 py-2 text-sm has-[:checked]:border-primary has-[:checked]:bg-primary/10 has-[:disabled]:cursor-not-allowed has-[:disabled]:border-dashed"
 
 function Choice({ option, checked, disabled, onPick }: { option: PayOption; checked: boolean; disabled: boolean; onPick: () => void }) {
   const title = useId()
@@ -44,7 +44,7 @@ function Choice({ option, checked, disabled, onPick }: { option: PayOption; chec
         <span id={title} className="font-medium text-foreground">
           {option.label}
         </span>
-        <span id={line} className="text-muted-foreground">
+        <span id={line} className="text-navy-light">
           {option.line}
         </span>
       </span>
@@ -63,6 +63,8 @@ export function CollectPayment({ plan, summary, firstName, onCharge, onRecord, o
   const shown = [...plan.options, ...(more ? plan.anotherWay : [])]
   const picked = shown.find((o) => o.value === choice) ?? shown[0]!
   const busy = pending || plan.charging
+  // While the card is being charged the panel says so, from the press or from a charge already going through.
+  const charging = plan.charging || (pending && picked.value === "card")
   const handed = picked.value === "check" || picked.value === "venmo" || picked.value === "cash"
   const settle = (answer: Answer, done: { title: string; line: string }) => {
     if (answer.ok) setResult(done)
@@ -95,7 +97,7 @@ export function CollectPayment({ plan, summary, firstName, onCharge, onRecord, o
   return (
     <div data-slot="collect-payment" className={cn("flex flex-col gap-3", className)}>
       <p className="text-sm text-muted-foreground">{summary}</p>
-      {plan.charging && plan.cardWords && (
+      {charging && plan.cardWords && (
         <p role="status" className="text-sm font-medium">
           {chargingWords(plan.amount, plan.cardWords)}
         </p>
@@ -109,7 +111,7 @@ export function CollectPayment({ plan, summary, firstName, onCharge, onRecord, o
           <input type="radio" name="pay-choice" disabled className="mt-0.5 size-4 shrink-0" />
           <span className="flex min-w-0 flex-col">
             <span className="font-medium text-foreground">Tap to pay</span>
-            <span className="text-muted-foreground">Not built yet</span>
+            <span className="text-navy-light">Not built yet</span>
           </span>
         </label>
       </fieldset>

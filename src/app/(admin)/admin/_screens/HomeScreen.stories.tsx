@@ -146,11 +146,22 @@ export const QuietNovemberPhone: Story = {
   globals: { viewport: { value: "phone", isRotated: false } },
 }
 
-/** A job that is done and unpaid: one row for the job, "Done, unpaid", with the number in the message and a Paid by button that opens its visit. */
+/** A job that is done and unpaid: one row for the job, "Done, unpaid", with the number in the message and a Collect button that opens its visit, where How is this paid? is the next step. */
 const owedRow: Attention = { kind: "owed", key: "job-owed", jobId: "job-owed", visitId: "owed-visit", message: "Andrea's repair is done, $145 unpaid", since: "2026-11-10T22:00:00Z" }
 export const OwedRow: Story = {
   args: { data: { ...data, attention: [owedRow, ...data.attention] } },
   globals: { viewport: { value: "wide", isRotated: false } },
+}
+
+/** A customer with a card: the day after Done, "Charge not pressed" with the amount on its button. Nothing charges until it is pressed. */
+const notPressedRow: Attention = { kind: "charge-not-pressed", key: "v-np", jobId: "job-np", visitId: "v-np", amount: 145, message: "Charge not pressed for Andrea's repair, $145 unpaid", since: "2026-11-11T19:00:00Z" }
+export const ChargeNotPressedRow: Story = {
+  args: { data: { ...data, attention: [notPressedRow, ...data.attention] } },
+  globals: { viewport: { value: "wide", isRotated: false } },
+}
+export const ChargeNotPressedRowPhone: Story = {
+  args: { data: { ...data, attention: [notPressedRow, ...data.attention] } },
+  globals: { viewport: { value: "phone", isRotated: false } },
 }
 
 /** An invoice past its due day: the money line gains "1 invoice past due" and Needs action has the invoice's one row, "Invoice past due", with Remind. The job, which reads Invoice sent, has no owed row. */

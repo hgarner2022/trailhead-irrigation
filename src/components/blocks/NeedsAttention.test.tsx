@@ -29,7 +29,7 @@ describe("NeedsAttention", () => {
   it("names the kind for a screen reader before the message", () => {
     render(<NeedsAttention items={items} now={now} />)
     const hidden = rows().map((r) => r.querySelector(".sr-only")?.textContent)
-    expect(hidden).toEqual(["Charge failed: ", "Task needs a retry: ", "Card expiring: ", "Card expiring: "])
+    expect(hidden).toEqual(["Card failed: ", "Task needs a retry: ", "Card expiring: ", "Card expiring: "])
   })
 
   it("colours the icon circle by kind", () => {
@@ -56,14 +56,34 @@ describe("NeedsAttention", () => {
     expect(screen.getByRole("button", { name: /^Retry: Jobber jobs for pass TH-2027-0007/ })).toBeInTheDocument()
   })
 
-  it("names a job that is done and unpaid, opens its visit and offers Paid by", () => {
+  it("names a job that is done and unpaid, opens its visit and offers Collect", () => {
     const owed: Attention = { kind: "owed", key: "job-1", jobId: "job-1", visitId: "v1", message: "Andrea's repair is done, $145 unpaid", since: "2026-11-10T15:04:00Z" }
     render(<NeedsAttention items={[owed]} now={now} />)
     expect(rows()[0]!.querySelector(".sr-only")?.textContent).toBe("Done, unpaid: ")
     expect(screen.getByRole("link").getAttribute("href")).toBe("/admin/visits?visit=v1")
-    expect(document.querySelector('[data-slot="attention-action"]')?.textContent).toBe("Paid by")
+    expect(document.querySelector('[data-slot="attention-action"]')?.textContent).toBe("Collect")
     expect(rows()[0]!.dataset.kind).toBe("owed")
     expect(document.body.textContent).not.toMatch(/Unpaid|not paid/)
+  })
+
+  it("names a done visit nobody pressed Charge for, and its button names the amount it charges", async () => {
+    const onAction = vi.fn().mockResolvedValue({ ok: true })
+    const row: Attention = { kind: "charge-not-pressed", key: "v1", jobId: "job-1", visitId: "v1", amount: 145, message: "Charge not pressed for Andrea's repair, $145 unpaid", since: "2026-11-17T19:00:00Z" }
+    render(<NeedsAttention items={[row]} now={now} onAction={onAction} />)
+    expect(rows()[0]!.querySelector(".sr-only")?.textContent).toBe("Charge not pressed: ")
+    expect(screen.getByRole("link").getAttribute("href")).toBe("/admin/visits?visit=v1")
+    const button = document.querySelector('[data-slot="attention-action"]') as HTMLElement
+    expect(button.textContent).toBe("Charge $145")
+    expect(onAction).not.toHaveBeenCalled()
+    await userEvent.click(button)
+    expect(onAction).toHaveBeenCalledWith(row)
+  })
+
+  it("a failed card on a job with no pass opens the customer, since the card link already went by email", () => {
+    const row: Attention = { kind: "charge-failed", key: "c1@t", customerId: "c 1", message: "The card for Nora Vale didn't go through; Nora has the update link", since: "2026-11-17T19:00:00Z" }
+    render(<NeedsAttention items={[row]} now={now} />)
+    expect(screen.getByRole("link").getAttribute("href")).toBe("/admin/customers?customer=c%201")
+    expect((document.querySelector('[data-slot="attention-action"]') as HTMLElement).textContent).toBe("Open")
   })
 
   it("names an overdue invoice, opens its job and offers Remind; a tech reads it with no button", () => {

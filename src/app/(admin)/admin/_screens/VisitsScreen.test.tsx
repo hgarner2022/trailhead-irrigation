@@ -118,6 +118,7 @@ describe("moneyText", () => {
     expect(moneyText(row({ work: "done", money: "paid", moneyLabel: "Paid, Venmo" }))).toBe("$95 · Paid, Venmo")
     expect(moneyText(row({ work: "done", money: "paid", moneyLabel: "Paid, card" }))).toBe("$95 · Paid, card")
     expect(moneyText(row({ work: "done", money: "owed", moneyLabel: "Unpaid" }))).toBe("$95 unpaid")
+    expect(moneyText({ ...row({ work: "done", money: "owed", moneyLabel: "Unpaid" }), cardOnFile: true })).toBe("$95 unpaid · card on file")
     expect(moneyText(row({ work: "done", money: "bill-sent", moneyLabel: "Invoice sent" }))).toBe("$95 · Invoice sent")
     expect(moneyText(row({ work: "done", money: "failed", moneyLabel: "Failed" }))).toBe("$95 · Failed")
   })

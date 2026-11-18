@@ -64,13 +64,14 @@ export const ReadOnly: Story = {
   },
 }
 
-/** Done and owed: Send an invoice and Record the payment in the footer, the amount owed in Money. */
+/** Done and owed: one primary, Collect $145, in the footer; it opens How is this paid?, where the invoice is a choice. */
 export const PanelOwed: Story = {
   args: { defaultJobId: ownedJobId },
   globals: wide,
-  play: async () => {
-    await expect(await body.findByRole("button", { name: "Send an invoice" })).toBeInTheDocument()
-    await expect(await body.findByRole("button", { name: "Record the payment" })).toBeInTheDocument()
+  play: async ({ userEvent }) => {
+    await userEvent.click(await body.findByRole("button", { name: /^Collect \$/ }))
+    await expect(await body.findByRole("heading", { name: "How is this paid?" })).toBeInTheDocument()
+    await expect(await body.findByLabelText("Send an invoice")).toBeInTheDocument()
   },
 }
 export const PanelOwedPhone: Story = { args: { defaultJobId: ownedJobId }, globals: phone }
@@ -128,7 +129,7 @@ export const PanelReadOnly: Story = {
   args: { defaultJobId: ownedJobId, readOnly: true },
   globals: wide,
   play: async () => {
-    await expect(body.queryByRole("button", { name: "Send an invoice" })).not.toBeInTheDocument()
+    await expect(body.queryByRole("button", { name: /^Collect/ })).not.toBeInTheDocument()
     await expect(body.queryByRole("button", { name: "Add a line" })).not.toBeInTheDocument()
   },
 }

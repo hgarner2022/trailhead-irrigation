@@ -188,8 +188,10 @@ describe("Done with Send an invoice", () => {
     const [first] = await db.select().from(s.visit).where(eq(s.visit.id, v.id))
     await db.insert(s.visit).values({ ...first!, id: `${v.id}-b` })
     await db.insert(s.lineItem).values({ organizationId: ORG, jobId: v.jobId, visitId: `${v.id}-b`, name: "Repair", quantity: 1, unitPrice: 95 })
-    await donePaid(v.id, { method: "bill" })
-    await expect(donePaid(`${v.id}-b`, { method: "bill" })).rejects.toMatchObject({ code: "conflict", message: "An invoice is already open for this job" })
+    await callApi(as(), visitsMarkClosed, { id: v.id })
+    await callApi(as(), visitsMarkClosed, { id: `${v.id}-b` })
+    await callApi(as(), invoicesSend, { jobId: v.jobId })
+    await expect(callApi(as(), invoicesSend, { jobId: v.jobId })).rejects.toMatchObject({ code: "conflict", message: "An invoice is already open for this job" })
     expect((await callApi(as(), visitsGet, { id: `${v.id}-b` })).status).toBe("completed")
   })
 

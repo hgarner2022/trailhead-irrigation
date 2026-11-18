@@ -32,6 +32,8 @@ export interface CollectInput {
   charging: boolean
   /** the day an invoice falls due, in days */
   dueDays?: number
+  /** false when a card is on file but cannot be charged from here (a job with several unpaid visits: each visit is charged from its own panel); no card choice, and still no Pay later */
+  cardChargeable?: boolean
 }
 
 export interface CollectPlan {
@@ -70,7 +72,7 @@ const handed = (value: "check" | "venmo" | "cash", amount: number): PayOption =>
 export function collectPlan(i: CollectInput): CollectPlan {
   const needsAmount = i.amount <= 0
   const cardWords = i.card ? cardWordsOf(i.card) : undefined
-  const useCard = Boolean(i.card) && !i.declined && !i.invoiceOpen && !needsAmount
+  const useCard = Boolean(i.card) && i.cardChargeable !== false && !i.declined && !i.invoiceOpen && !needsAmount
   const ways = (["check", "venmo", "cash"] as const).map((v) => handed(v, i.amount))
   const asAgreed = useCard && i.isPass
   const card: PayOption[] = useCard

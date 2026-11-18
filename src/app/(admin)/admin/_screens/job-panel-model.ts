@@ -6,6 +6,7 @@
 import type { AdminData, AdminPayment, Client, JobLine, Pass, SoldJob, Visit, Yard } from "@/lib/admin/types"
 import { jobTax } from "@/lib/jobs/tax"
 import { METHOD_WORDS } from "@/lib/money/words"
+import { collectPlan, type CollectPlan } from "@/lib/money/collect"
 import { billState, type BillState } from "./bill-model"
 import { jobHeading, jobRows, type JobRow } from "./jobs-model"
 import { propertiesOf } from "./customers-model"
@@ -75,4 +76,29 @@ export function paymentWords(p: Pick<AdminPayment, "method" | "reference" | "amo
   const how = METHOD_WORDS[p.method] ?? p.method
   const label = how.charAt(0).toUpperCase() + how.slice(1)
   return `${p.amount < 0 ? "Refund, " : ""}${label}${p.reference ? ` ${p.reference}` : ""}`
+}
+
+/**
+ * What How is this paid? offers for a job (the same choices as a visit's, `collectPlan`). A card on file is offered only when exactly one done
+ * visit is unpaid: that visit is the one charged (`visitId`); with several, each is charged from its own panel and neither the card nor Pay
+ * later is offered here.
+ */
+export function jobCollect(facts: JobFacts, data: Pick<AdminData, "clients" | "settings">): { plan: CollectPlan; visitId?: string } {
+  const { row, pass, bill, visits } = facts
+  const client = data.clients.find((c) => c.id === row.customerId)
+  const card = client?.card ?? (pass?.cardLast4 ? { last4: pass.cardLast4 } : undefined)
+  const unpaid = visits.filter((v) => v.status === "completed" && !(v.payments ?? []).some((p) => p.status === "succeeded" && p.amount > 0 && !p.refundsPaymentId && p.amount >= (v.price ?? 0)))
+  const single = unpaid.length === 1 ? unpaid[0] : undefined
+  const plan = collectPlan({
+    amount: row.owed,
+    ...(card ? { card: { brand: "brand" in card ? card.brand : undefined, last4: card.last4 } } : {}),
+    cardChargeable: Boolean(single),
+    isPass: Boolean(pass),
+    invoiceOpen: Boolean(bill.invoice),
+    canInvoice: bill.canSend,
+    declined: row.money === "failed",
+    charging: facts.payments.some((p) => p.status === "pending"),
+    dueDays: data.settings.billing?.dueDays,
+  })
+  return { plan, visitId: single?.id }
 }
