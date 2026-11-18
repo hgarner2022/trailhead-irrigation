@@ -49,7 +49,7 @@ describe("the visit panel", () => {
     renderVisit(visitsWithStory(), visitActions())
     expect(lines()).toEqual([
       "Nov 9 · Trailhead · Email sent: receipt",
-      "Nov 9 · Ryan · $145 paid, check for Repair",
+      "Nov 9 · Ryan · $145 paid by check, Repair",
       "Nov 9 · Ryan · Repair marked done, paid by check",
       "Nov 6 · Ryan · Joe works nights, so text instead of calling.\nThe valve box is by the mailbox.",
       "Nov 5 · Ryan · Repair scheduled for Nov 9",

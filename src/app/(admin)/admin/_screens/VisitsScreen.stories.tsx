@@ -153,7 +153,7 @@ export const PanelNotesAndHistory: Story = {
   play: async ({ canvas }) => {
     await expect(await canvas.findByRole("heading", { name: "Notes and history" })).toBeInTheDocument()
     await expect(await canvas.findByText("Repair marked done, paid by check")).toBeInTheDocument()
-    await expect(await canvas.findByText("$145 paid, check for Repair")).toBeInTheDocument()
+    await expect(await canvas.findByText("$145 paid by check, Repair")).toBeInTheDocument()
   },
 }
 

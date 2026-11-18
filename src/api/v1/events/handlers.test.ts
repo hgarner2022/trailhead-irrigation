@@ -93,6 +93,12 @@ describe("events.list", () => {
       expect(out.data.find((e) => e.kind === "job.sold")!.detail).toEqual({ source: "website", name: "Season Pass", passNumber: "TH-2027-0001" })
     }
   })
+  it("never gives a tech a colleague's email as who: the name, with whoName kept", async () => {
+    const out = await list({ customerId }, tech)
+    expect(JSON.stringify(out)).not.toContain(owner.email)
+    expect(out.data.find((e) => e.kind === "note")).toMatchObject({ who: "Owner", whoName: "Owner" })
+    expect((await list({ customerId }, writeKey)).data.find((e) => e.kind === "note")).toMatchObject({ who: owner.email })
+  })
   it("fills a tech's page with kinds they may read, not with ones that are then dropped", async () => {
     const first = await list({ customerId, limit: 2 }, tech)
     expect(first.data.map((e) => e.kind)).toEqual(["visit.moved", "visit.done"])
@@ -140,7 +146,9 @@ describe("events.note", () => {
 
   it("lets a tech add a note, and a tech reads it back", async () => {
     const out = await note({ about: "visit", aboutId: visitId, text: "Left a door hanger" }, tech)
-    expect(out).toMatchObject({ kind: "note", who: tech.email, detail: { text: "Left a door hanger" } })
+    expect(out).toMatchObject({ kind: "note", who: "Trailhead", detail: { text: "Left a door hanger" } })
+    // the stored row keeps the real email; only what a tech reads is blanked
+    expect(await eventsOf(db, { kind: "note", about: "visit", aboutId: visitId })).toEqual(expect.arrayContaining([expect.objectContaining({ id: out.id, who: tech.email })]))
     expect((await list({ visitId }, tech)).data.map((e) => e.detail.text).filter(Boolean)).toContain("Left a door hanger")
   })
   it("refuses a read-only key, a customer and a call with no text, too much text or no record", async () => {
@@ -170,11 +178,28 @@ describe("events on the other handlers", () => {
     const asTech = await callApi(ctxFor(db, tech), visitsGet, { id: visitId })
     expect(asTech.events!.map((e) => e.kind)).not.toContain("payment.succeeded")
     expect(JSON.stringify(asTech.events)).not.toContain("vm-9")
+    expect(JSON.stringify(asTech.events)).not.toContain(owner.email)
   })
   it("a signed-in customer reading their own pass gets no events at all", async () => {
     const pass = await callApi(ctxFor(db, customerPerson("c100")), passesGet, { id: "p1" })
     expect(pass.visits.length).toBeGreaterThan(0)
     for (const v of pass.visits) expect(v).not.toHaveProperty("events")
-    expect(JSON.stringify(pass)).not.toContain("Gate sticks")
+  })
+  it("a tech's note reaches no customer: the visit's notes alias and the yard's notes read null on the customer's own pass", async () => {
+    await db.update(s.property).set({ notes: "Staff only: dog in the yard" }).where(eq(s.property.id, propertyId))
+    // the very next call after the note, so a later write cannot overwrite the alias before the assertion
+    await note({ about: "visit", aboutId: visitId, text: "Gate sticks, tech only" }, tech)
+    const mine = await callApi(ctxFor(db, customerPerson(customerId)), passesGet, { id: "p1" })
+    const turnOn = mine.visits.find((v) => v.id === visitId)!
+    expect(turnOn.notes).toBeNull()
+    for (const v of mine.visits) {
+      expect(v.notes).toBeNull()
+      expect(v.property.notes).toBeNull()
+    }
+    expect(JSON.stringify(mine)).not.toContain("Gate sticks")
+    expect(JSON.stringify(mine)).not.toContain("dog in the yard")
+    const staff = await callApi(ctxFor(db, writeKey), passesGet, { id: "p1" })
+    expect(staff.visits.find((v) => v.id === visitId)!.notes).toBe("Gate sticks, tech only")
+    expect(staff.visits.find((v) => v.id === visitId)!.property.notes).toBe("Staff only: dog in the yard")
   })
 })

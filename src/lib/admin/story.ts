@@ -1,6 +1,6 @@
 // The story of a customer, a job and a visit as the panels read it: the organization's events (loaded once by live.ts) grouped by
 // the record they belong to, with the messages merged in for a customer and a visit. Pure: `shape.ts` calls it, the tests call it.
-import { timelineOf, type TimelineEvent, type TimelineLine, type TimelineMessage } from "@/lib/events/timeline"
+import { TECH_HIDDEN_MESSAGE_KINDS, timelineOf, type TimelineEvent, type TimelineLine, type TimelineMessage } from "@/lib/events/timeline"
 
 /** An event with the three records it belongs to (the fields of `EventOut` the grouping needs). */
 export interface StoryEvent extends TimelineEvent {
@@ -22,7 +22,10 @@ const group = <T>(rows: readonly T[], key: (row: T) => string | null): Map<strin
   const by = new Map<string, T[]>()
   for (const row of rows) {
     const k = key(row)
-    if (k) by.set(k, [...(by.get(k) ?? []), row])
+    if (!k) continue
+    const bucket = by.get(k)
+    if (bucket) bucket.push(row)
+    else by.set(k, [row])
   }
   return by
 }
@@ -36,9 +39,18 @@ export interface Stories {
   ofVisit: (visitId: string) => TimelineLine[]
 }
 
-/** The three lookups, or undefined when no events were loaded (the fixtures), so a screen without them shows no block. */
-export function storiesOf(events: readonly StoryEvent[] | undefined, messages: readonly StoryMessage[]): Stories | undefined {
+/** An email is never shown to a tech: an event whose person has no name reads "a colleague". */
+const withoutEmail = (e: StoryEvent): StoryEvent => (e.who.includes("@") && !e.whoName ? { ...e, who: "colleague" } : e)
+
+/**
+ * The three lookups, or undefined when no events were loaded (the fixtures), so a screen without them shows no block. For a tech
+ * (`tech: true`, no write scope) the messages about money (receipt, bill, bill reminder, card trouble) are left out and no actor is an email.
+ */
+export function storiesOf(events: readonly StoryEvent[] | undefined, allMessages: readonly StoryMessage[], options: { tech?: boolean } = {}): Stories | undefined {
   if (!events) return undefined
+  const tech = options.tech === true
+  const messages = tech ? allMessages.filter((m) => !TECH_HIDDEN_MESSAGE_KINDS.has(m.kind)) : allMessages
+  if (tech) events = events.map(withoutEmail)
   const byCustomer = group(events, (e) => e.customerId)
   const byJob = group(events, (e) => e.jobId)
   const byVisit = group(events, (e) => e.visitId)

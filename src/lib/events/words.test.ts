@@ -28,7 +28,7 @@ describe("eventWords: one sentence per kind", () => {
     expect(words("visit.done", { name: "Spring turn-on", completedOn: "2027-04-22", paidBy: "venmo" })).toBe("Spring turn-on marked done, paid by Venmo")
     expect(words("visit.done", { name: "Spring turn-on", completedOn: "2027-04-22" })).toBe("Spring turn-on marked done")
     expect(words("visit.done", { name: "Fall blowout", paidBy: "bill" })).toBe("Fall blowout marked done, bill sent")
-    expect(words("visit.undone", { name: "Spring turn-on" })).toBe("Spring turn-on marked done was undone")
+    expect(words("visit.undone", { name: "Spring turn-on" })).toBe("Spring turn-on put back to not done")
   })
   it("visit.not-done, visit.cancelled and visit.skipped", () => {
     expect(words("visit.not-done", { name: "Spring turn-on", reason: "no-water", note: "Main valve off" })).toBe("Spring turn-on marked not done, no water on: Main valve off")
@@ -55,8 +55,11 @@ describe("eventWords: one sentence per kind", () => {
     expect(words("consent", { marketingOptIn: true, marketingChannels: ["email"], stage: "chosen" })).toBe("Marketing choices noted")
   })
   it("payment.succeeded, payment.failed (never the word failed), payment.refunded", () => {
-    expect(words("payment.succeeded", { amount: 145, method: "venmo", name: "Spring turn-on" })).toBe("$145 paid, Venmo for Spring turn-on")
-    expect(words("payment.succeeded", { amount: 1450, method: "card_on_file" })).toBe("$1,450 paid, card")
+    expect(words("payment.succeeded", { amount: 145, method: "venmo", name: "Spring turn-on" })).toBe("$145 paid by Venmo, Spring turn-on")
+    expect(words("payment.succeeded", { amount: 145, method: "check", name: "Repair" })).toBe("$145 paid by check, Repair")
+    expect(words("payment.succeeded", { amount: 145, method: "card_now" })).toBe("$145 paid by card")
+    expect(words("payment.succeeded", { amount: 145, name: "Repair" })).toBe("$145 paid for Repair")
+    expect(words("payment.succeeded", { amount: 1450, method: "card_on_file" })).toBe("$1,450 paid by card")
     expect(words("payment.failed", { amount: 145, message: "Your card was declined.", name: "Spring turn-on" })).toBe("$145 payment for Spring turn-on didn't go through")
     expect(words("payment.refunded", { amount: 145, method: "venmo", refunds: "ch_1" })).toBe("$145 refunded, Venmo")
   })
@@ -120,7 +123,13 @@ describe("techEvent", () => {
   })
   it("strips amount, price, total, reference, gate, access and contact fields from the detail it keeps, and changes nothing else", () => {
     const event = { id: "e1", kind: "visit.edited", who: "ryan@example.com", detail: { name: "Spring turn-on", price: { from: 145, to: 160 }, amount: 145, total: 290, reference: "chk 1", gateCode: "1234", accessNote: true, contactPhone: "303", email: "a@x.com", phone: "303", durationMinutes: { from: 60, to: 90 } } }
-    expect(techEvent(event)).toEqual({ id: "e1", kind: "visit.edited", who: "ryan@example.com", detail: { name: "Spring turn-on", durationMinutes: { from: 60, to: 90 } } })
+    expect(techEvent(event)).toEqual({ id: "e1", kind: "visit.edited", who: "Trailhead", detail: { name: "Spring turn-on", durationMinutes: { from: 60, to: 90 } } })
     expect(event.detail.price).toBeDefined()
+  })
+  it("never lets an email through as who: the person's name when they have one, else Trailhead; the customer, system and api stay", () => {
+    const base = { kind: "note", detail: { text: "x" } }
+    expect(techEvent({ ...base, who: "ryan@example.com", whoName: "Ryan Garner" })).toMatchObject({ who: "Ryan Garner", whoName: "Ryan Garner" })
+    expect(techEvent({ ...base, who: "ryan@example.com", whoName: null })).toMatchObject({ who: "Trailhead", whoName: null })
+    for (const who of ["customer", "system", "api"]) expect(techEvent({ ...base, who })).toMatchObject({ who })
   })
 })

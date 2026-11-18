@@ -56,4 +56,25 @@ describe("storiesOf", () => {
   it("is undefined when no events were loaded, so a screen without them shows no block", () => {
     expect(storiesOf(undefined, messages)).toBeUndefined()
   })
+
+  it("gives a tech no message about money and never an email as the actor", () => {
+    const mixed: StoryMessage[] = [
+      message("m-day", "2026-11-07T10:00:00Z"),
+      ...["receipt", "invoice", "invoice-reminder", "card-failed", "card-expiring"].map((kind, n) => message(`m-${kind}`, `2026-11-08T1${n}:00:00Z`, { kind })),
+    ]
+    const staffEvents: StoryEvent[] = [
+      event("e-named", "2026-11-03T10:00:00Z"),
+      event("e-nameless", "2026-11-04T10:00:00Z", { who: "pat@example.com", whoName: null }),
+      event("e-system", "2026-11-05T10:00:00Z", { who: "system", whoName: null }),
+    ]
+    const asStaff = storiesOf(staffEvents, mixed)!.ofCustomer("c1")
+    expect(asStaff.map((l) => l.id)).toContain("m-receipt")
+    expect(asStaff.find((l) => l.id === "e-nameless")!.actor).toBe("Pat")
+    const asTech = storiesOf(staffEvents, mixed, { tech: true })!.ofCustomer("c1")
+    expect(asTech.map((l) => l.id)).toEqual(["m-day", "e-system", "e-nameless", "e-named"])
+    expect(asTech.find((l) => l.id === "e-nameless")!.actor).toBe("a colleague")
+    expect(asTech.find((l) => l.id === "e-named")!.actor).toBe("Ryan")
+    expect(asTech.find((l) => l.id === "e-system")!.actor).toBe("Trailhead")
+    expect(JSON.stringify(asTech)).not.toContain("@")
+  })
 })

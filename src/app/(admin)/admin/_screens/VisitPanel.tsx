@@ -98,8 +98,9 @@ function VisitBlock({ facts }: { facts: VisitFacts }) {
           ["Who", visit.personName ?? ""],
           ["Minutes", String(visit.minutes ?? 60)],
           ["Price", facts.priceCancelled ? "Cancelled" : priceWords({ price: facts.price })],
-          // Notes are in the Notes and history block; the plain row is only for a visit that carries no story (the catalog's fixtures).
-          ...(visit.notes && !visit.timeline ? ([["Notes", visit.notes]] as [string, ReactNode][]) : []),
+          // Notes are in the Notes and history block; the plain row stays for a visit whose story is missing (the catalog's fixtures) or
+          // empty (an old record past the events the page loads), so a note a person typed never disappears from the panel.
+          ...(visit.notes && !visit.timeline?.length ?([["Notes", visit.notes]] as [string, ReactNode][]) : []),
         ]}
       />
       <p className="mt-2 text-sm text-muted-foreground empty:hidden">{facts.states.dayPassed ? `The day passed on ${dayLabel(day!)}. Mark it done or move it.` : ""}</p>

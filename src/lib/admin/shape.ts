@@ -103,6 +103,8 @@ export interface ShapeInput {
   invoiceRows?: InvoiceRow[]
   /** the organization's newest events (as a caller may read them): grouped into the story of each customer, job and visit; absent in the fixtures, where no panel shows the block */
   events?: StoryEvent[]
+  /** the caller has no write scope (a tech): their stories drop the messages about money and show no email */
+  techView?: boolean
   blocks: BusyBlock[]
   /** every service, inactive ones included; absent in the fixtures */
   services?: ServiceItem[]
@@ -215,9 +217,9 @@ export function shapeAdminData(i: ShapeInput): AdminData {
     const bill = jobId ? billOf.get(jobId) : undefined
     return bill && (bill.visitIds.length === 0 || bill.visitIds.includes(visitId)) ? bill : undefined
   }
-  const stories = storiesOf(i.events, i.messages)
+  const stories = storiesOf(i.events, i.messages, { tech: i.techView })
   // A pending pass is an unpaid attempt: its visits are never a job anywhere on the Schedule or in the counts.
-  const pending =new Set(i.passes.filter((p) => p.status === "pending").map((p) => p.id))
+  const pending = new Set(i.passes.filter((p) => p.status === "pending").map((p) => p.id))
 
   // Visits the app owns (pass and booked), then the mirror's: the calendar feed's visits, and open jobs with no visit.
   const appVisits: Visit[] = i.visits.filter((v) => !(v.passId && pending.has(v.passId))).map((v) => {

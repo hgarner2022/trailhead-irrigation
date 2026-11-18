@@ -115,7 +115,7 @@ describe("the story of a customer, a job and a visit", () => {
 
     const live = await getLiveAdminData(ctx)
     const visit = live.visits.find((x) => x.id === v!.id)!
-    expect(visit.timeline!.map((l) => l.what)).toEqual(expect.arrayContaining(["Gate was open.\nDog inside.", "$145 paid, cash"]))
+    expect(visit.timeline!.map((l) => l.what)).toEqual(expect.arrayContaining(["Gate was open.\nDog inside.", "$145 paid by cash"]))
     expect(live.jobs!.find((j) => j.id === v!.jobId)!.timeline!.map((l) => l.what)).toContain("Gate was open.\nDog inside.")
     const client = live.clients.find((c) => c.id === v!.customerId)!
     expect(client.timeline!.map((l) => l.what)).toEqual(expect.arrayContaining(["Prefers a call", "Gate was open.\nDog inside."]))
@@ -126,6 +126,6 @@ describe("the story of a customer, a job and a visit", () => {
     const asTech = await getLiveAdminData(ctxFor(db, tech))
     const techVisit = asTech.visits.find((x) => x.id === v!.id)!
     expect(techVisit.timeline!.map((l) => l.what)).toContain("Gate was open.\nDog inside.")
-    expect(techVisit.timeline!.map((l) => l.what)).not.toContain("$145 paid, cash")
+    expect(techVisit.timeline!.map((l) => l.what)).not.toContain("$145 paid by cash")
   })
 })

@@ -47,8 +47,11 @@ export const MESSAGE_KIND_WORDS: Record<string, string> = {
   "card-expiring": "card expiring",
   cancelled: "cancellation",
   renewal: "renewal",
-  note: "note",
+  note: "message from the office",
 }
+
+/** The kinds of message a tech never reads in a story: they say what was billed or that a card needs attention. */
+export const TECH_HIDDEN_MESSAGE_KINDS: ReadonlySet<string> = new Set(["receipt", "invoice", "invoice-reminder", "card-failed", "card-expiring"])
 
 const iso = (d: Date | string) => (d instanceof Date ? d.toISOString() : new Date(d).toISOString())
 
@@ -56,7 +59,7 @@ function messageLine(m: TimelineMessage): TimelineLine {
   const kind = MESSAGE_KIND_WORDS[m.kind] ?? m.kind.replace(/-/g, " ")
   const channel = m.channel === "sms" ? "Text" : "Email"
   const inbound = m.direction === "in"
-  const verb = inbound ? "received" : m.status === "failed" || m.status === "bounced" ? "didn't go through" : m.status === "queued" ? "queued" : m.status === "skipped" ? "not sent" : "sent"
+  const verb = inbound ? "received" : m.status === "failed" || m.status === "bounced" ? "not delivered" : m.status === "queued" ? "queued" : m.status === "skipped" ? "not sent" : "sent"
   return {
     id: m.id,
     at: iso(m.sentAt ?? m.createdAt),

@@ -117,7 +117,8 @@ export function visitOut(ctx: Ctx, row: VisitJoined): VisitOutType {
     scheduledOn: v.scheduledOn,
     startTime: v.startTime,
     durationMinutes: v.durationMinutes,
-    notes: v.notes,
+    // notes are staff's (a tech's note lands here as the alias): a signed-in customer never reads them
+    notes: hasScope(ctx.principal, "read") ? v.notes : null,
     notDoneReason: v.notDoneReason,
     jobPaymentShares: (row.credit ?? []).map(paymentJsonOut(seeNotes)),
     ...newestPayment([...(row.payments ?? []), ...(row.credit ?? [])], amount),

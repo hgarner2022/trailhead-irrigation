@@ -132,6 +132,7 @@ export async function getLiveAdminData(ctx: Ctx): Promise<AdminData> {
       address: contact ? p.address : null, gateCode: null, accessNote: null, contactPhone: null, ...gateYard(ctx, p),
     })),
     events: events.data,
+    techView: !contact,
     blocks,
     services: serviceRows.data.map(serviceItem),
   })

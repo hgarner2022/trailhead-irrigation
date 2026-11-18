@@ -133,7 +133,7 @@ function whatOf(e: EventForWords): string {
       const paid = str(d.paidBy)
       return `${name} marked done${paid ? (paid === "bill" ? ", bill sent" : `, paid by ${methodWords(paid)}`) : ""}`
     }
-    case "visit.undone": return `${name} marked done was undone`
+    case "visit.undone": return `${name} put back to not done`
     case "visit.not-done": {
       const reason = str(d.reason)
       const why = reason ? (NOT_DONE_LABEL[reason as NotDoneReason] ?? reason) : undefined
@@ -163,7 +163,9 @@ function whatOf(e: EventForWords): string {
       const amount = money(num(d.amount))
       const method = methodWords(d.method)
       const forName = str(d.name)
-      return `${amount ?? "Payment"} paid${method ? `, ${method}` : ""}${forName ? ` for ${forName}` : ""}`
+      // "$145 paid by check, Repair": the line name follows the method; without a method it reads "$145 paid for Repair"
+      const by = method && method !== "bill" ? ` by ${method}` : ""
+      return `${amount ?? "Payment"} paid${by}${forName ? (by ? `, ${forName}` : ` for ${forName}`) : ""}`
     }
     case "payment.failed": {
       const amount = money(num(d.amount))
@@ -201,6 +203,7 @@ function whatOf(e: EventForWords): string {
 export function whoWords(who: string, whoName?: string | null): string {
   if (who === "customer") return "the customer"
   if (who === "system" || who === "api") return "Trailhead"
+  if (who === "colleague") return "a colleague" // a tech's story, where a person with no name is never an email
   const first = whoName?.trim().split(/\s+/)[0]
   if (first) return first
   const local = who.split("@")[0] ?? who
@@ -221,11 +224,14 @@ const TECH_STRIPPED = ["amount", "price", "total", "reference", "gateCode", "acc
 
 /**
  * An event as a tech may read it: null for a kind they do not see (`payment.*`, `invoice.*`, `card.*`, `consent`,
- * `customer.edited`, `property.edited`, anything unknown), and for the rest the detail without money, gate, access or contact fields.
+ * `customer.edited`, `property.edited`, anything unknown), and for the rest the detail without money, gate, access or contact
+ * fields and a `who` that is never an email.
  */
-export function techEvent<T extends { kind: string; detail: Record<string, unknown> }>(event: T): T | null {
+export function techEvent<T extends { kind: string; detail: Record<string, unknown>; who?: string; whoName?: string | null }>(event: T): T | null {
   if (!TECH_KIND.test(event.kind)) return null
   const detail = { ...event.detail }
   for (const key of TECH_STRIPPED) delete detail[key]
-  return { ...event, detail }
+  // a colleague's email is theirs: a tech reads the person's name (`whoName` stays), or "Trailhead" when the person has none
+  const who = event.who?.includes("@") ? (event.whoName?.trim() || "Trailhead") : event.who
+  return { ...event, detail, ...(who === undefined ? {} : { who }) }
 }

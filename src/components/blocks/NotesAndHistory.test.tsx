@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest"
 import { render, screen, waitFor, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import type { TimelineLine } from "@/lib/events/timeline"
-import { NotesAndHistory, type NoteOutcome } from "./NotesAndHistory"
+import { NotesAndHistory, lineDate, type NoteOutcome } from "./NotesAndHistory"
 
 const lines: TimelineLine[] = [
   { id: "e3", at: "2026-11-17T18:00:00Z", actor: "Ryan", what: "Spring turn-on marked done, paid by Venmo", kind: "event" },
@@ -66,7 +66,7 @@ describe("NotesAndHistory", () => {
     await waitFor(() => expect(items()[0]!.textContent).toBe("Nov 18 · Ryan · Back gate sticks"))
     expect(items()).toHaveLength(5)
     expect(screen.getByLabelText("Add a note")).toHaveValue("")
-    expect(screen.getByRole("button", { name: "Add note" })).toBeDisabled()
+    expect(await screen.findByRole("button", { name: "Add note" })).toBeDisabled()
   })
 
   it("does not show a note twice once the page brings it back in its lines", async () => {
@@ -87,5 +87,36 @@ describe("NotesAndHistory", () => {
     expect(screen.getByLabelText("Add a note")).toHaveValue("Back gate sticks")
     expect(items()).toHaveLength(4)
     expect(document.body.textContent).not.toMatch(/error|failed/i)
+  })
+
+  it("keeps the text and says it did not go through when the call itself throws", async () => {
+    const onAddNote = vi.fn(async (): Promise<NoteOutcome> => {
+      throw new Error("network down")
+    })
+    render(<NotesAndHistory lines={lines} onAddNote={onAddNote} />)
+    await userEvent.type(screen.getByLabelText("Add a note"), "Back gate sticks")
+    await userEvent.click(screen.getByRole("button", { name: "Add note" }))
+    expect(await screen.findByRole("alert")).toHaveTextContent("That didn't go through. Try again.")
+    expect(screen.getByLabelText("Add a note")).toHaveValue("Back gate sticks")
+    expect(screen.getByRole("button", { name: "Add note" })).toBeEnabled()
+    expect(items()).toHaveLength(4)
+  })
+
+  it("announces a note that went in, quietly, and clears the announcement on the next edit", async () => {
+    render(<NotesAndHistory lines={lines} onAddNote={never} />)
+    await userEvent.type(screen.getByLabelText("Add a note"), "Back gate sticks")
+    await userEvent.click(screen.getByRole("button", { name: "Add note" }))
+    expect(await screen.findByRole("status")).toHaveTextContent("Note added")
+    await userEvent.type(screen.getByLabelText("Add a note"), "x")
+    expect(screen.getByRole("status")).toBeEmptyDOMElement()
+  })
+
+  it("writes the year on a line that is not from this year, and only then", () => {
+    const old: TimelineLine = { id: "e0", at: "2025-11-09T20:00:00Z", actor: "Ryan", what: "Spring turn-on marked done", kind: "event" }
+    render(<NotesAndHistory lines={[...lines, old]} now={new Date("2026-11-20T12:00:00Z")} onAddNote={never} />)
+    expect(items()[0]!.textContent).toBe("Nov 17 · Ryan · Spring turn-on marked done, paid by Venmo")
+    expect(items().at(-1)!.textContent).toBe("Nov 9, 2025 · Ryan · Spring turn-on marked done")
+    expect(lineDate("2026-12-31T23:30:00Z", new Date("2026-01-02T12:00:00Z"))).toBe("Dec 31")
+    expect(lineDate("2027-01-02T12:00:00Z", new Date("2026-12-31T12:00:00Z"))).toBe("Jan 2, 2027")
   })
 })

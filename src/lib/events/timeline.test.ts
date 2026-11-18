@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { timelineOf } from "./timeline"
+import { TECH_HIDDEN_MESSAGE_KINDS, timelineOf } from "./timeline"
 
 const event = (id: string, at: string, kind: string, detail: Record<string, unknown> = {}, who = "ryan@example.com") => ({ id, at, kind, detail, who, whoName: who === "ryan@example.com" ? "Ryan Garner" : null })
 const message = (id: string, kind: string, channel: "sms" | "email", extra: Record<string, unknown> = {}) => ({ id, kind, channel, status: "sent", createdAt: "2027-04-20T12:00:00Z", ...extra })
@@ -38,9 +38,15 @@ describe("timelineOf", () => {
     expect(lines.map((l) => l.what).sort()).toEqual(expect.arrayContaining(["Email sent: purchase confirmation", "Email sent: bill reminder", "Email sent: something new"]))
     for (const l of lines) expect(l.what).not.toMatch(/failed|—/)
   })
-  it("says a message that did not go through, in those words", () => {
-    expect(timelineOf([], [message("m1", "receipt", "email", { status: "failed" })])[0]!.what).toBe("Email didn't go through: receipt")
-    expect(timelineOf([], [message("m1", "receipt", "email", { status: "bounced" })])[0]!.what).toBe("Email didn't go through: receipt")
+  it("calls the office's one-off text a message from the office", () => {
+    expect(timelineOf([], [message("m1", "note", "sms")])[0]!.what).toBe("Text sent: message from the office")
+  })
+  it("says a message that bounced is not delivered, never that it did not go through", () => {
+    expect(timelineOf([], [message("m1", "receipt", "email", { status: "failed" })])[0]!.what).toBe("Email not delivered: receipt")
+    expect(timelineOf([], [message("m1", "receipt", "email", { status: "bounced" })])[0]!.what).toBe("Email not delivered: receipt")
+  })
+  it("lists the message kinds a tech never reads", () => {
+    expect([...TECH_HIDDEN_MESSAGE_KINDS].sort()).toEqual(["card-expiring", "card-failed", "invoice", "invoice-reminder", "receipt"])
   })
   it("is empty with nothing in it", () => {
     expect(timelineOf([], [])).toEqual([])

@@ -8,7 +8,7 @@ import { requireAdmin } from "@/lib/auth/guard"
 import { drainAfter } from "@/lib/queue/drain-after"
 
 // The one shape of every admin server action (not itself a "use server" file: these helpers are not actions).
-// Every action is a manager's (a tech reads and sees no buttons), runs the same API handler the HTTPS route runs,
+// Every action is a manager's unless it passes a lower `minRole` (a tech reads and sees no buttons, but may add a note), runs the same API handler the HTTPS route runs,
 // through `callApi` with the signed-in person's own context, and refreshes every admin page. None takes an
 // identity from the client, and what it queued (a text, a charge, a receipt) is sent right after the response. An action answers `{ ok: true, data }` or `{ ok: false, message }` with the API's own
 // words, so a screen can say why and put things back; only a sign-in problem throws, as the guard redirects.

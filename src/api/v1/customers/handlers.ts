@@ -12,6 +12,7 @@ import { ApiError, notFound } from "../../core/errors"
 import type { Ctx } from "../../core/context"
 import { afterTimeCursor, cursorPage, page, pageInput, timeCursor } from "../../core/pagination"
 import { canSeeContact, idInput, iso, today } from "../shared"
+import { hasScope } from "@/lib/auth/principal"
 import { customerHasCard } from "@/lib/customer/card"
 import { ConsentOut, consentInput, CustomerDetail, CustomerListItem, CustomerOut, customerFields, propertyInput } from "./schemas"
 import { jobTotal } from "@/lib/jobs/lines"
@@ -56,7 +57,8 @@ export const yardOut = (ctx: Ctx, p: PropertyRow) => ({
   backflowLocation: p.backflowLocation,
   mustBeHome: p.mustBeHome,
   contactName: p.contactName,
-  notes: p.notes,
+  // property notes are staff's: a signed-in customer reading their own pass never gets them
+  notes: hasScope(ctx.principal, "read") ? p.notes : null,
   ...gateYard(ctx, p),
 })
 

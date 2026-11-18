@@ -18,21 +18,33 @@ export type NoteOutcome = { ok: true; line?: TimelineLine } | { ok: false; messa
 
 export const NOTE_MAX = 2000
 
+/** The words under the button when the call itself throws (a dropped connection, a server that did not answer). */
+export const NOTE_PROBLEM = "That didn't go through. Try again."
+
+/** "Nov 9", and "Nov 9, 2026" only when the line is not from this year, so an old record never reads as this year's. */
+export function lineDate(at: string, now: Date = new Date()): string {
+  const yearOf = (d: Date) => new Intl.DateTimeFormat("en-US", { year: "numeric", timeZone: TIME_ZONE }).format(d)
+  const year = yearOf(new Date(at))
+  return year === yearOf(now) ? shortDate(at, TIME_ZONE) : `${shortDate(at, TIME_ZONE)}, ${year}`
+}
+
 export interface NotesAndHistoryProps {
   /** the story, newest first */
   lines: TimelineLine[]
   onAddNote: (text: string) => Promise<NoteOutcome>
+  /** today, for the year on an older line; the clock when left out */
+  now?: Date
   className?: string
 }
 
 const kindOf = (line: TimelineLine) => (line.kind === "message" ? "message" : line.note !== undefined ? "note" : "event")
 
-function Line({ line }: { line: TimelineLine }) {
+function Line({ line, now }: { line: TimelineLine; now?: Date }) {
   const kind = kindOf(line)
   return (
     <li data-kind={kind} className={cn("py-2.5 text-sm", kind === "note" && "border-l-2 border-primary pl-3", kind === "message" && "text-muted-foreground")}>
       <span className="text-muted-foreground">
-        <time dateTime={line.at}>{shortDate(line.at, TIME_ZONE)}</time>
+        <time dateTime={line.at}>{lineDate(line.at, now)}</time>
         {` · ${line.actor} · `}
       </span>
       <span data-slot={kind === "note" ? "note-text" : undefined} className={cn("break-words", kind === "note" && "whitespace-pre-wrap font-medium")}>
@@ -42,10 +54,11 @@ function Line({ line }: { line: TimelineLine }) {
   )
 }
 
-export function NotesAndHistory({ lines, onAddNote, className }: NotesAndHistoryProps) {
+export function NotesAndHistory({ lines, onAddNote, now, className }: NotesAndHistoryProps) {
   const id = useId()
   const [text, setText] = useState("")
   const [problem, setProblem] = useState("")
+  const [notice, setNotice] = useState("")
   const [added, setAdded] = useState<TimelineLine[]>([])
   const [pending, start] = useTransition()
   // A note just added shows at the top until the page brings it back in `lines`.
@@ -56,12 +69,19 @@ export function NotesAndHistory({ lines, onAddNote, className }: NotesAndHistory
     const note = text.trim()
     if (!note || pending) return
     setProblem("")
+    setNotice("")
     start(async () => {
-      const out = await onAddNote(note)
-      if (out.ok) {
-        setText("")
-        if (out.line) setAdded((rows) => [out.line!, ...rows])
-      } else setProblem(out.message)
+      try {
+        const out = await onAddNote(note)
+        if (out.ok) {
+          setText("")
+          setNotice("Note added")
+          if (out.line) setAdded((rows) => [out.line!, ...rows])
+        } else setProblem(out.message)
+      } catch {
+        // the typed text stays, so nothing a person wrote is lost to a dropped call
+        setProblem(NOTE_PROBLEM)
+      }
     })
   }
 
@@ -74,12 +94,15 @@ export function NotesAndHistory({ lines, onAddNote, className }: NotesAndHistory
         <label htmlFor={`${id}-note`} className="mb-1 block text-sm font-medium text-foreground">
           Add a note
         </label>
-        <Textarea id={`${id}-note`} value={text} maxLength={NOTE_MAX} rows={3} onChange={(e) => setText(e.target.value)} />
+        <Textarea id={`${id}-note`} value={text} maxLength={NOTE_MAX} rows={3} onChange={(e) => { setText(e.target.value); setNotice("") }} />
         <Button type="submit" variant="outline" className="mt-2 min-h-11" disabled={pending || !text.trim()}>
           {pending ? "Adding" : "Add note"}
         </Button>
         <p role="alert" className="mt-1 text-sm text-destructive empty:hidden">
           {problem}
+        </p>
+        <p role="status" className="mt-1 text-sm text-muted-foreground empty:hidden">
+          {notice}
         </p>
       </form>
       {shown.length === 0 ? (
@@ -87,7 +110,7 @@ export function NotesAndHistory({ lines, onAddNote, className }: NotesAndHistory
       ) : (
         <ol className="mt-3 divide-y divide-border">
           {shown.map((line) => (
-            <Line key={line.id} line={line} />
+            <Line key={line.id} line={line} now={now} />
           ))}
         </ol>
       )}
