@@ -47,12 +47,29 @@ describe("payments.record", () => {
     const receipts = (await db.select().from(s.messageLog)).filter((m) => m.visitId === v.id && m.kind === "receipt")
     expect(receipts).toHaveLength(1)
     expect(receipts[0]!.body).toContain("check")
-    expect((await callApi(as(readKey), paymentsList, { jobId: v.jobId })).data).toEqual([row])
+    // a read key sees the money but not the check number or a receipt link
+    const asRead = { ...row, reference: null, receiptUrl: null }
+    expect((await callApi(as(readKey), paymentsList, { jobId: v.jobId })).data).toEqual([asRead])
+    expect((await callApi(as(writeKey), paymentsList, { jobId: v.jobId })).data).toEqual([row])
     expect((await callApi(as(readKey), paymentsList, { customerId: "c100" })).data.map((p) => p.id)).toContain(row.id)
     const out = await callApi(as(writeKey), visitsGet, { id: v.id })
     expect(out.payments).toEqual([row])
     const job = (await callApi(as(readKey), customersGet, { id: "c100" })).jobs.find((j) => j.id === v.jobId)!
-    expect(job).toMatchObject({ payments: [row], money: { paid: 145, total: 145, owed: 0, words: "Paid" } })
+    expect(job).toMatchObject({ payments: [asRead], money: { paid: 145, total: 145, owed: 0, words: "Paid" } })
+    const writeJob = (await callApi(as(writeKey), customersGet, { id: "c100" })).jobs.find((j) => j.id === v.jobId)!
+    expect(writeJob.payments).toEqual([row])
+  })
+
+  it("keeps the reference and the card receipt from a read key, on every way the payment is read", async () => {
+    const v = await repair()
+    const row = await callApi(as(writeKey), paymentsRecord, { jobId: v.jobId, visitId: v.id, amount: 145, method: "venmo", reference: "@dana" })
+    await db.update(s.charge).set({ receiptUrl: "https://pay.stripe.test/receipt/secret" }).where(eq(s.charge.id, row.id))
+    const listed = (await callApi(as(readKey), paymentsList, { customerId: "c100" })).data.find((p) => p.id === row.id)!
+    expect(listed).toMatchObject({ amount: 145, method: "venmo", reference: null, receiptUrl: null })
+    expect((await callApi(as(writeKey), paymentsList, { customerId: "c100" })).data.find((p) => p.id === row.id)).toMatchObject({ reference: "@dana", receiptUrl: "https://pay.stripe.test/receipt/secret" })
+    const job = (await callApi(as(readKey), customersGet, { id: "c100" })).jobs.find((j) => j.id === v.jobId)!
+    expect(job.payments).toMatchObject([{ reference: null, receiptUrl: null }])
+    expect(JSON.stringify(await callApi(as(readKey), customersGet, { id: "c100" }))).not.toMatch(/@dana|receipt\/secret/)
   })
 
   it("takes the day it is given, prices an unpriced visit's line, and records a payment on the job as a whole", async () => {

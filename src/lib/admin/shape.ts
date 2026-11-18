@@ -8,7 +8,7 @@ import { fullName } from "./format"
 import { causeOf, groupAttention, type QueueAttention } from "./attention-groups"
 import { jobTotal } from "@/lib/jobs/lines"
 import { invoiceOpen, invoiceStatus } from "@/lib/money/invoice"
-import { allocateJobPayments, jobMoney as moneyOfJob } from "@/lib/money/words"
+import { allocateJobPayments, jobMoney as moneyOfJob, jobOwed } from "@/lib/money/words"
 import { NOT_CLOSED_LOOKBACK_DAYS, visitJob, visitPaid } from "./jobs"
 import type {
   AdminInvoice, AdminPayment, SoldJob, AdminData, Attention, BusyBlock, Client, Consent, Invoice, Message, MessageKind, MonthTotal, Pass, PassVisit, Quote, SettingsChange,
@@ -193,9 +193,15 @@ export function shapeAdminData(i: ShapeInput): AdminData {
   }
   const paymentsOfVisit = (id: string) => [...ordered.filter((r) => r.visitId === id).map(paymentOf), ...(credit.get(id) ?? [])]
   // The open bill of each job (a job has at most one): its money reads Bill sent, on the visits its lines were billed after (every visit of the job when its lines name none).
+  // A bill is carried only while its job still owes money: one left open after the money arrived another way (a check, Venmo or cash) is no bill at all, so Home, Remind and the money lines never dun a customer who has paid.
+  const jobOwes = (jobId: string) => {
+    if (!i.lineRows) return true
+    const ids = new Set(i.visits.filter((v) => v.jobId === jobId).map((v) => v.id))
+    return jobOwed(i.lineRows.filter((l) => l.jobId === jobId), ordered.filter((r) => r.jobId === jobId || (r.visitId !== null && ids.has(r.visitId)))) > 0
+  }
   const billOf = new Map<string, AdminInvoice>()
   for (const r of i.invoiceRows ?? []) {
-    if (!invoiceOpen(r)) continue
+    if (!invoiceOpen(r) || !jobOwes(r.jobId)) continue
     billOf.set(r.jobId, {
       id: r.id, jobId: r.jobId, number: r.number, amount: r.amount, tax: r.tax, total: r.total, sentOn: r.sentOn, dueOn: r.dueOn,
       status: invoiceStatus(r, i.today) === "overdue" ? "overdue" : "sent", visitIds: [...new Set(r.lines.map((l) => l.visitId).filter((id): id is string => Boolean(id)))],
@@ -392,7 +398,7 @@ function visitRows(i: ShapeInput, app: Visit[], all: Visit[], jobs: SoldJob[] = 
   // The key carries the due day, so a dismissed row is gone for that due day only.
   const names = new Map(i.customers.map((c) => [c.id, fullName(c.firstName, c.lastName ?? undefined)]))
   for (const j of jobs) {
-    const bill = j.invoice
+    const bill = j.money && j.money.owed <= 0 ? undefined : j.invoice
     if (!bill || bill.dueOn >= i.today) continue
     out.push({ kind: "overdue", key: `invoice-${bill.id}@${bill.dueOn}`, invoiceId: bill.id, jobId: j.id, customerId: j.customerId, message: `${possessive(names.get(j.customerId) ?? "A customer")} bill of $${bill.total} was due ${shortDay(bill.dueOn)}`, since: instantOf(bill.dueOn, "12:00") })
   }

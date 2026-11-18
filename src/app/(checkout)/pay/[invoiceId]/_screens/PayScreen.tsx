@@ -21,13 +21,12 @@ function Lines({ bill }: { bill: PayBill }) {
   return (
     <dl data-slot="pay-lines" className="divide-y divide-border border-y border-border">
       {bill.lines.map((line, i) => (
-        <div key={`${line.name}-${i}`} className="flex items-start justify-between gap-4 py-3">
-          <div className="min-w-0">
-            <dt className="text-base font-medium text-foreground">{line.name}</dt>
-            {line.description && <dd className="mt-0.5 text-sm text-muted-foreground">{line.description}</dd>}
-            {line.quantity > 1 && <dd className="mt-0.5 text-sm text-muted-foreground">{line.quantity} at {money(line.unitPrice)}</dd>}
-          </div>
-          <dd className="shrink-0 text-base text-foreground tabular-nums">{money(lineTotal(line))}</dd>
+        // One wrapper per line with the dt and every dd as its direct children (a dl's groups may not nest a second div), laid out on a grid: the name and the price on the first row, the description and "N at $X" under the name.
+        <div key={`${line.name}-${i}`} className="grid grid-cols-[1fr_auto] gap-x-4 py-3">
+          <dt className="col-start-1 row-start-1 min-w-0 text-base font-medium text-foreground">{line.name}</dt>
+          <dd className="col-start-2 row-start-1 text-base text-foreground tabular-nums">{money(lineTotal(line))}</dd>
+          {line.description && <dd className="col-start-1 mt-0.5 text-sm text-muted-foreground">{line.description}</dd>}
+          {line.quantity > 1 && <dd className="col-start-1 mt-0.5 text-sm text-muted-foreground">{line.quantity} at {money(line.unitPrice)}</dd>}
         </div>
       ))}
       {bill.tax > 0 && (

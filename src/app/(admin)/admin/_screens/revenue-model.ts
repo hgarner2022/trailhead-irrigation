@@ -73,7 +73,7 @@ export function outstanding(data: Pick<AdminData, "jobs" | "visits">): { total: 
   let total = 0
   let count = 0
   for (const job of data.jobs) {
-    if (job.invoice) {
+    if (job.invoice && (job.money?.owed ?? 1) > 0) {
       total += job.invoice.total
       count += 1
       continue

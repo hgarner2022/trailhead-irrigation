@@ -28,7 +28,7 @@ export const paymentsList = defineHandler({
       .from(s.charge)
       .where(and(eq(s.charge.organizationId, ctx.organizationId), input.jobId ? eq(s.charge.jobId, input.jobId) : undefined, input.customerId ? eq(s.charge.customerId, input.customerId) : undefined))
       .orderBy(asc(s.charge.createdAt), asc(s.charge.id))
-    return { data: rows.map(paymentOut) }
+    return { data: rows.map((r) => paymentOut(ctx, r)) }
   },
 })
 
@@ -49,7 +49,7 @@ export const paymentsRecord = defineHandler({
   }),
   output: PaymentOut,
   async run(ctx, input) {
-    return paymentOut(await recordOfficePayment(ctx, input))
+    return paymentOut(ctx, await recordOfficePayment(ctx, input))
   },
 })
 
@@ -92,6 +92,6 @@ export const paymentsRefund = defineHandler({
       if (paidTotal(all) <= 0) await ctx.db.update(s.visit).set({ chargedAt: null }).where(and(eq(s.visit.jobId, payment.jobId), eq(s.visit.organizationId, ctx.organizationId)))
     }
     await emitEvent(ctx.db, ctx.organizationId, "payment.refunded", { paymentId: payment.id, refundId: row.id, jobId: payment.jobId, amount, method: payment.method, ...(input.reason ? { reason: input.reason } : {}) })
-    return paymentOut(row)
+    return paymentOut(ctx, row)
   },
 })

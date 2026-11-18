@@ -51,6 +51,27 @@ describe("PayScreen", () => {
     expect(screen.getByRole("button", { name: "Pay $224 by card" })).toBeInTheDocument()
   })
 
+  it("keeps every dt and dd directly in the dl or in one div group of it, the structure axe's definition-list rules ask for", () => {
+    const bill: PayBill = {
+      ...sent, tax: 9, total: 224,
+      lines: [{ name: "Repair", description: "One hour on site.", quantity: 2, unitPrice: 145 }, { name: "Payments received", description: null, quantity: 1, unitPrice: -45 }],
+    }
+    const { container } = render(<PayScreen bill={bill} payAction={ok} />)
+    const list = container.querySelector("dl")!
+    const terms = [...list.querySelectorAll("dt, dd")]
+    expect(terms.length).toBe(2 + 1 + 1 + 2 + 2)
+    for (const el of terms) {
+      const parent = el.parentElement!
+      expect(parent === list || parent.parentElement === list).toBe(true)
+    }
+    // a group holds exactly one dt, and a dd is never alone in its group
+    for (const group of list.children) {
+      expect(group.querySelectorAll(":scope > dt")).toHaveLength(1)
+      expect(group.querySelectorAll(":scope > dd").length).toBeGreaterThanOrEqual(1)
+      expect(group.querySelector("div")).toBeNull()
+    }
+  })
+
   it("shows a paid bill with the date and the receipt, and no button", () => {
     render(<PayScreen bill={{ ...sent, status: "paid", paidOn: "2026-11-20", receiptUrl: "https://pay.stripe.test/r/1" }} payAction={ok} />)
     expect(screen.getByText("Paid Nov 20, thank you")).toBeInTheDocument()

@@ -35,6 +35,8 @@ const jobsOf = (passId: string) => {
 beforeAll(async () => {
   vi.stubEnv("APP_URL", "https://site.test")
   db = await apiDb()
+  // A bill needs a way to reach the customer.
+  await db.update(s.customer).set({ email: "andrea.test@example.com" }).where(eq(s.customer.id, "c100"))
   // p4: a day with a start time (Routed). p3: marked done, its charge failed once (Charge failed). p6: done, failed, retried and charged.
   await callApi(ctxFor(db, owner, NOW), visitsMove, { id: "p4-turn-on", personId: "person_truck-1", scheduledOn: "2027-05-05", startTime: "09:30" })
   await db.update(s.visit).set({ status: "completed", completedOn: "2027-04-19" }).where(eq(s.visit.id, "p3-turn-on"))
@@ -238,6 +240,36 @@ describe("the money words, read from the payment rows", () => {
     // Cancelled, the bill's row is gone and the job is Done and Owed on Home again.
     expect(live.attention.filter((a) => a.kind === "owed" && a.jobId === made.jobId)).toHaveLength(1)
     expect(live.attention.filter((a) => a.kind === "overdue" && a.invoiceId === bill.id)).toEqual([])
+  })
+
+  it("settles an open bill when the office is paid another way, and no reader counts an open bill whose job owes nothing", async () => {
+    const write = ctxFor(db, writeKey, NOW)
+    const made = await callApi(write, visitsCreate, { customerId: "c100", kind: "repair", scheduledOn: "2027-06-07", price: 145 })
+    await db.update(s.visit).set({ status: "completed", completedOn: "2027-04-19" }).where(eq(s.visit.id, made.id))
+    const bill = await callApi(write, invoicesSend, { jobId: made.jobId })
+    const later = "2027-06-10T15:00:00Z"
+    const overdue = (live: AdminData) => live.attention.filter((a) => a.jobId === made.jobId)
+    expect(overdue(await getLiveAdminData(ctxFor(db, owner, later)))).toHaveLength(1)
+
+    await callApi(write, paymentsRecord, { jobId: made.jobId, visitId: made.id, amount: 145, method: "check" })
+    const [settled] = await db.select().from(s.invoice).where(eq(s.invoice.id, bill.id))
+    expect(settled).toMatchObject({ paidOn: "2027-04-20", cancelledAt: null })
+    let live = await getLiveAdminData(ctxFor(db, owner, later))
+    expect(live.jobs!.find((j) => j.id === made.jobId)).toMatchObject({ money: { owed: 0, words: "Paid" } })
+    expect(live.jobs!.find((j) => j.id === made.jobId)).not.toHaveProperty("invoice")
+    expect(overdue(live)).toEqual([])
+
+    // The readers hold even if a bill is left open: its job owes nothing, so it is no bill.
+    await db.update(s.invoice).set({ paidOn: null, paymentId: null }).where(eq(s.invoice.id, bill.id))
+    live = await getLiveAdminData(ctxFor(db, owner, later))
+    expect(live.jobs!.find((j) => j.id === made.jobId)).not.toHaveProperty("invoice")
+    expect(overdue(live)).toEqual([])
+    expect(live.visits.find((v) => v.id === made.id)).not.toHaveProperty("invoice")
+    const [count, total] = [billsOverdue(live.jobs, "2027-06-10", TZ), outstanding(live)]
+    const without = outstanding({ visits: live.visits, jobs: live.jobs!.filter((j) => j.id !== made.jobId) })!
+    expect(total).toEqual(without)
+    expect(count.count).toBe(billsOverdue(live.jobs!.filter((j) => j.id !== made.jobId), "2027-06-10", TZ).count)
+    await db.update(s.invoice).set({ paidOn: "2027-04-20", paymentId: settled!.paymentId }).where(eq(s.invoice.id, bill.id))
   })
 
   it("counts only a fully paid visit as paid when it words a job, so a part-paid visit does not read as paid", async () => {

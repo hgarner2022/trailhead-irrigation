@@ -6,7 +6,8 @@ import { customerHasCard } from "@/lib/customer/card"
 import { visitBalance } from "@/lib/money/record"
 import { enqueue } from "@/lib/queue"
 import { openInvoiceOf } from "../invoices/queries"
-import { sendBill } from "../invoices/send"
+import { cancelOpenBill } from "../invoices/cancel"
+import { checkBill, sendBill } from "../invoices/send"
 import type { Ctx } from "../../core/context"
 import { ApiError } from "../../core/errors"
 import { defineHandler } from "../../core/handler"
@@ -55,7 +56,7 @@ export const visitsMarkClosed = defineHandler({
   method: "POST",
   path: "/visits/{id}/close",
   scope: "admin",
-  summary: "Mark a visit done. A pass visit whose pass has a card is charged to it with no question and the receipt follows. A one-off visit with a price, and a pass visit whose pass has no card (sold by the office, paid at the visit), says how it was paid (check, Venmo or cash, with an optional reference): that is recorded as a succeeded charge and the receipt, which says how it was paid, is sent. `paidBy.method` `bill` marks the visit done and sends the customer a bill for the job's done lines (frozen as they are, with a pay link; if other visits of the job are still ahead the bill covers only the done visits' lines) instead of recording a payment. `undo: true` reverses a done visit that has no payment on its job; once a payment row exists it is refused and the office refunds from the job.",
+  summary: "Mark a visit done. A pass visit whose pass has a card is charged to it with no question and the receipt follows. A one-off visit with a price, and a pass visit whose pass has no card (sold by the office, paid at the visit), says how it was paid (check, Venmo or cash, with an optional reference): that is recorded as a succeeded charge and the receipt, which says how it was paid, is sent. `paidBy.method` `bill` marks the visit done and sends the customer a bill for the job's done lines (frozen as they are, with a pay link; if other visits of the job are still ahead the bill covers only the done visits' lines) instead of recording a payment. `undo: true` reverses a done visit that has no payment on its job and cancels the job's open unpaid bill with it (its card form on Stripe is closed); once a payment row exists it is refused and the office refunds from the job.",
   input: z.object({ id: Id, completedOn: Day.optional().describe("Defaults to today."), paidBy: PaidBy.optional(), undo: z.boolean().optional() }),
   output: VisitOut,
   async run(ctx, input) {
@@ -65,6 +66,9 @@ export const visitsMarkClosed = defineHandler({
       // Nothing is ever deleted: once the job has a payment row, the office refunds it from the job and the visit stays Done.
       const [paid] = await ctx.db.select({ id: s.charge.id }).from(s.charge).where(and(eq(s.charge.organizationId, ctx.organizationId), eq(s.charge.jobId, visit.jobId))).limit(1)
       if (paid) throw new ApiError("unprocessable", "A payment was recorded. Refund it from the job first.")
+      // A bill sent by Done is for a visit that is done: undoing the Done takes the unpaid bill back (it stays on record, cancelled, and its card form is closed).
+      const open = await openInvoiceOf(ctx.db, ctx.organizationId, visit.jobId)
+      if (open) await cancelOpenBill(ctx, open)
       await ctx.db.update(s.queueItem).set({ status: "done", lastError: "marked done was undone", doneAt: ctx.now }).where(and(eq(s.queueItem.kind, "pass-charge"), eq(s.queueItem.key, visit.id), eq(s.queueItem.status, "pending")))
       await ctx.db.update(s.visit).set({ status: "scheduled", completedOn: null, chargedAt: null }).where(eq(s.visit.id, visit.id))
       await recordChange(ctx, { customerId: visit.customerId, passId: visit.passId, visitId: visit.id, kind: "done-undone", detail: {} })
@@ -78,9 +82,9 @@ export const visitsMarkClosed = defineHandler({
     if (!cardOnFile && visit.amount > 0 && !input.paidBy) throw new ApiError("invalid", "Say how it was paid: check, Venmo or cash", [{ path: "paidBy", message: "Choose how the money came" }])
     const billing = !cardOnFile && input.paidBy?.method === "bill"
     if (billing) {
-      // Everything a bill can refuse is checked before the visit is marked done, so a refused bill never leaves a visit done with no money asked for.
+      // Every refusal `sendBill` can make (no price, a bill already open, already paid, nothing to bill, no way to reach the customer, no site address) is checked here, with this visit counted as done, before the visit's status is written: a refused bill changes nothing.
       if ((await visitBalance(ctx.db, ctx.organizationId, visit)).price <= 0) throw new ApiError("invalid", "Price the visit before sending a bill", [{ path: "paidBy", message: "This visit has no price yet" }])
-      if (await openInvoiceOf(ctx.db, ctx.organizationId, visit.jobId)) throw new ApiError("conflict", "A bill is already open for this job")
+      await checkBill(ctx, { jobId: visit.jobId, requireAllDone: false, assumeDone: visit.id })
     }
     const day = input.completedOn ?? today(ctx)
     await ctx.db.update(s.visit).set({ status: "completed", completedOn: day }).where(eq(s.visit.id, visit.id))

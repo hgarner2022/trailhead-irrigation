@@ -82,7 +82,7 @@ export async function handleStripeEvent(db: Database, stripe: Stripe, organizati
     case "payment_intent.succeeded":
     case "payment_intent.payment_failed": {
       const intent = event.data.object
-      const [charge] = await db.select().from(s.charge).where(eq(s.charge.stripePaymentIntentId, intent.id))
+      const [charge] = await db.select().from(s.charge).where(and(eq(s.charge.stripePaymentIntentId, intent.id), eq(s.charge.organizationId, organizationId)))
       if (!charge) return
       if (event.type === "payment_intent.succeeded" && charge.status !== "succeeded") {
         // A row written before payments carried their job (a pending attempt from the old charge) is completed from its visit; paid_on is the day the money arrived.

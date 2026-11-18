@@ -123,7 +123,7 @@ export function quotesAwaiting(quotes: Quote[]): { count: number; total: number 
  */
 export function billsOverdue(jobs: SoldJob[] | undefined, today: string, timeZone?: string): { count: number; total: number } {
   const todayDay = day(today, timeZone)
-  return countAndTotal((jobs ?? []).flatMap((j) => (j.invoice && j.invoice.dueOn < todayDay ? [j.invoice] : [])))
+  return countAndTotal((jobs ?? []).flatMap((j) => (j.invoice && (j.money?.owed ?? 1) > 0 && j.invoice.dueOn < todayDay ? [j.invoice] : [])))
 }
 
 /** The Jobber mirror's unpaid invoices whose due day is before `today` (no tile reads it since step 4; it goes with the mirror in step 6). `timeZone` sets which calendar day `today` and the due dates fall on. */

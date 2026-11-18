@@ -1,15 +1,17 @@
 import "server-only"
-import { and, eq } from "drizzle-orm"
+import { and, eq, isNull } from "drizzle-orm"
 import * as s from "@/db/schema"
 import { readAppUrl } from "@/lib/env"
 import { setVisitLinePrice } from "@/lib/jobs/write-lines"
 import { baseData } from "@/lib/messaging/data"
 import { queueMessage } from "@/lib/messaging/queue"
 import { customerHasCard } from "@/lib/customer/card"
-import { recordPaymentRow, visitBalance } from "@/lib/money/record"
+import { paidDay, recordPaymentRow, visitBalance } from "@/lib/money/record"
+import { jobOwed } from "@/lib/money/words"
 import { kindName } from "@/lib/pass/server/messages"
 import type { Ctx } from "../../core/context"
 import { ApiError, notFound } from "../../core/errors"
+import { expireCheckoutSession } from "../invoices/cancel"
 import { emitEvent } from "../webhooks/deliver"
 
 export const RECEIVED_BY = { check: "check", venmo: "Venmo", cash: "cash" } as const
@@ -23,6 +25,23 @@ export interface OfficePayment {
   method: ReceivedBy
   reference?: string | null
   paidOn?: string
+}
+
+/**
+ * Money that covers the job settles its open bill: when the rows now owe nothing, the bill's paid day is the day the money arrived (today,
+ * Mountain) and its payment is this row, so Home, Remind, the pay page and the money lines stop treating it as owed. Only the job's own
+ * open bill, only while it is unpaid and not cancelled; a part payment leaves the bill open (the pay page then refuses it, and the office sends a new one).
+ */
+async function settleOpenBill(ctx: Ctx, jobId: string, row: { id: string }) {
+  const org = ctx.organizationId
+  const [lines, payments] = await Promise.all([
+    ctx.db.select().from(s.lineItem).where(and(eq(s.lineItem.jobId, jobId), eq(s.lineItem.organizationId, org))),
+    ctx.db.select().from(s.charge).where(and(eq(s.charge.jobId, jobId), eq(s.charge.organizationId, org))),
+  ])
+  if (jobOwed(lines.filter((l) => !l.cancelledAt), payments) > 0) return
+  const settled = await ctx.db.update(s.invoice).set({ paidOn: paidDay(ctx.now), paymentId: row.id, updatedAt: ctx.now }).where(and(eq(s.invoice.jobId, jobId), eq(s.invoice.organizationId, org), isNull(s.invoice.paidOn), isNull(s.invoice.cancelledAt))).returning({ session: s.invoice.stripeCheckoutSessionId })
+  // The card form the customer may still have open is closed too, so the bill is not paid twice.
+  for (const b of settled) await expireCheckoutSession(b.session)
 }
 
 /**
@@ -61,7 +80,8 @@ export async function recordOfficePayment(ctx: Ctx, input: OfficePayment) {
   })
   if (!row) throw new ApiError("conflict", "That payment was already recorded")
   if (visit) await ctx.db.update(s.visit).set({ chargedAt: ctx.now }).where(eq(s.visit.id, visit.id))
-  const [customer] = await ctx.db.select().from(s.customer).where(eq(s.customer.id, job.customerId))
+  await settleOpenBill(ctx, job.id, row)
+  const [customer] = await ctx.db.select().from(s.customer).where(and(eq(s.customer.id, job.customerId), eq(s.customer.organizationId, ctx.organizationId)))
   if (customer) {
     const passNumber = job.passNumber
     await queueMessage(ctx.db, {

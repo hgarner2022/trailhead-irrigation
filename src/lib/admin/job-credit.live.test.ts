@@ -23,6 +23,8 @@ let db: TestDb
 beforeAll(async () => {
   vi.stubEnv("APP_URL", "https://site.test")
   db = await apiDb()
+  // A bill needs a way to reach the customer.
+  await db.update(s.customer).set({ email: "andrea.test@example.com" }).where(eq(s.customer.id, "c100"))
 })
 afterAll(() => db.close())
 

@@ -41,6 +41,7 @@ export function stubStripe(over: { sessions?: Record<string, unknown>; intents?:
       if (!i) throw new Error(`no payment intent ${id}`)
       return i
     }),
+    sessionExpire: vi.fn(async (id: string) => ({ id, status: "expired" })),
     customersUpdate: vi.fn(async () => ({})),
     customersCreate: vi.fn(async () => ({ id: `cus_new_${calls.customersCreate.mock.calls.length}` })),
     detach: vi.fn(async () => ({})),
@@ -50,7 +51,7 @@ export function stubStripe(over: { sessions?: Record<string, unknown>; intents?:
     ),
   }
   const stripe = {
-    checkout: { sessions: { create: calls.sessionCreate, retrieve: calls.sessionRetrieve } },
+    checkout: { sessions: { create: calls.sessionCreate, retrieve: calls.sessionRetrieve, expire: calls.sessionExpire } },
     customers: { update: calls.customersUpdate, create: calls.customersCreate },
     paymentMethods: { detach: calls.detach },
     paymentIntents: { create: calls.paymentIntentsCreate, retrieve: calls.paymentIntentsRetrieve },

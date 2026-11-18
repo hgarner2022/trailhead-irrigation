@@ -1,14 +1,24 @@
 // @vitest-environment node
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest"
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
 import { and, eq } from "drizzle-orm"
 import * as s from "@/db/schema"
 import type { TestDb } from "@/db/test-db"
 import { verifyToken } from "@/lib/messaging/tokens"
+import { stubStripe } from "@/lib/stripe/test-stripe"
 import { callApi } from "../../core/call"
 import { adminKey, apiDb, ctxFor, key, ORG, readKey, writeKey } from "../../test-helpers"
-import { paymentsRecord } from "../payments/handlers"
+import { paymentsRecord, paymentsRefund } from "../payments/handlers"
 import { visitsCreate } from "../visits/office"
-import { invoicesCancel, invoicesGet, invoicesList, invoicesRemind, invoicesSend } from "./handlers"
+import { invoicesCancel, invoicesGet, invoicesList, invoicesPayView, invoicesRemind, invoicesSend } from "./handlers"
+
+const { getStripe } = vi.hoisted(() => ({ getStripe: vi.fn() }))
+vi.mock("@/lib/stripe/client", async (original) => ({ ...(await original<typeof import("@/lib/stripe/client")>()), getStripe }))
+
+let stripe: ReturnType<typeof stubStripe>
+beforeEach(() => {
+  stripe = stubStripe()
+  getStripe.mockReturnValue(stripe.stripe)
+})
 
 let db: TestDb
 beforeAll(async () => {
@@ -137,6 +147,88 @@ describe("invoices.send", () => {
   })
 })
 
+describe("invoices.send, what it checks before it writes", () => {
+  it("refuses a customer with no mobile and no email, and writes no bill", async () => {
+    const v = await doneAndOwed()
+    await db.update(s.customer).set({ email: null, phone: null }).where(eq(s.customer.id, "c100"))
+    await expect(callApi(as(writeKey), invoicesSend, { jobId: v.jobId })).rejects.toMatchObject({ code: "unprocessable", message: "This customer has no mobile or email to send the bill to." })
+    expect(await db.select().from(s.invoice).where(eq(s.invoice.jobId, v.jobId))).toEqual([])
+    // texts stopped and no email is also nobody to reach
+    await db.update(s.customer).set({ phone: "+17205550100" }).where(eq(s.customer.id, "c100"))
+    await db.insert(s.consent).values({ id: "stop-1", organizationId: ORG, customerId: "c100", source: "reply", note: "STOP", marketingOptIn: false, marketingChannels: [], recordedAt: new Date("2027-05-01T00:00:00Z") })
+    await expect(callApi(as(writeKey), invoicesSend, { jobId: v.jobId })).rejects.toMatchObject({ message: "This customer has no mobile or email to send the bill to." })
+    expect(await db.select().from(s.invoice).where(eq(s.invoice.jobId, v.jobId))).toEqual([])
+    await db.delete(s.consent).where(eq(s.consent.id, "stop-1"))
+    await db.update(s.customer).set({ email: "dana@example.com", phone: null }).where(eq(s.customer.id, "c100"))
+  })
+
+  it("refuses with the site address missing before any bill is written", async () => {
+    const v = await doneAndOwed()
+    vi.stubEnv("APP_URL", "")
+    await expect(callApi(as(writeKey), invoicesSend, { jobId: v.jobId })).rejects.toThrow(/APP_URL is not set/)
+    vi.stubEnv("APP_URL", "https://site.test")
+    expect(await db.select().from(s.invoice).where(eq(s.invoice.jobId, v.jobId))).toEqual([])
+    expect(await callApi(as(writeKey), invoicesSend, { jobId: v.jobId })).toMatchObject({ jobId: v.jobId })
+  })
+
+  it("bills a visit again after its paid bill was refunded in full", async () => {
+    const v = await doneAndOwed()
+    const first = await callApi(as(writeKey), invoicesSend, { jobId: v.jobId })
+    // the bill is paid on the pay page (a payment on the job as a whole), then refunded in full
+    const [pay] = await db.insert(s.charge).values({ organizationId: ORG, jobId: v.jobId, customerId: "c100", attempt: 1, amount: 145, method: "card_now", status: "succeeded", stripePaymentIntentId: `pi_${first.id}`, paidOn: "2027-05-07" }).returning()
+    await db.update(s.invoice).set({ paidOn: "2027-05-07", paymentId: pay!.id }).where(eq(s.invoice.id, first.id))
+    await callApi(as(), paymentsRefund, { paymentId: pay!.id })
+    const again = await callApi(as(writeKey), invoicesSend, { jobId: v.jobId })
+    expect(again).toMatchObject({ amount: 145, total: 145, status: "sent" })
+    expect(again.lines).toMatchObject([{ name: "Repair", unitPrice: 145, visitId: v.id }])
+  })
+})
+
+describe("invoices.payView", () => {
+  it("gives the card receipt only to the visitor of the signed link, never to a key", async () => {
+    const v = await doneAndOwed()
+    const bill = await callApi(as(writeKey), invoicesSend, { jobId: v.jobId })
+    const [pay] = await db.insert(s.charge).values({ organizationId: ORG, jobId: v.jobId, customerId: "c100", attempt: 1, amount: 145, method: "card_now", status: "succeeded", receiptUrl: "https://pay.stripe.test/receipt/r1", paidOn: "2027-05-07" }).returning()
+    await db.update(s.invoice).set({ paidOn: "2027-05-07", paymentId: pay!.id }).where(eq(s.invoice.id, bill.id))
+    expect((await callApi(as(readKey), invoicesPayView, { id: bill.id })).receiptUrl).toBeNull()
+    expect((await callApi(as(), invoicesPayView, { id: bill.id })).receiptUrl).toBeNull()
+    const visitor = ctxFor(db, { kind: "public", id: "checkout", organizationId: ORG, scopes: ["checkout"], invoiceId: bill.id }, "2027-05-07T20:00:00Z")
+    expect((await callApi(visitor, invoicesPayView, { id: bill.id })).receiptUrl).toBe("https://pay.stripe.test/receipt/r1")
+  })
+})
+
+describe("a bill and money that arrives another way", () => {
+  it("is settled by an office payment that covers the job: paid on the day, with that payment, and its card form closed", async () => {
+    const v = await doneAndOwed()
+    const bill = await callApi(as(writeKey), invoicesSend, { jobId: v.jobId })
+    await db.update(s.invoice).set({ stripeCheckoutSessionId: "cs_open" }).where(eq(s.invoice.id, bill.id))
+    const row = await callApi(as(writeKey), paymentsRecord, { jobId: v.jobId, visitId: v.id, amount: 145, method: "check", reference: "1042" })
+    expect(await callApi(as(writeKey), invoicesGet, { id: bill.id })).toMatchObject({ status: "paid", paidOn: "2027-05-07", paymentId: row.id })
+    expect(stripe.calls.sessionExpire).toHaveBeenCalledWith("cs_open")
+    await expect(callApi(as(writeKey), invoicesRemind, { id: bill.id })).rejects.toMatchObject({ code: "conflict", message: "This bill is already paid" })
+    expect((await callApi(as(readKey), invoicesList, { status: "overdue" })).data.map((i) => i.id)).not.toContain(bill.id)
+  })
+
+  it("is left open by a part payment, and the pay page then refuses the old amount", async () => {
+    const v = await doneAndOwed(200)
+    const bill = await callApi(as(writeKey), invoicesSend, { jobId: v.jobId })
+    await callApi(as(writeKey), paymentsRecord, { jobId: v.jobId, visitId: v.id, amount: 50, method: "cash" })
+    expect(await callApi(as(writeKey), invoicesGet, { id: bill.id })).toMatchObject({ status: "sent", paidOn: null })
+    const { startBillPayment } = await import("@/lib/stripe/invoice-checkout")
+    const { signToken } = await import("@/lib/messaging/tokens")
+    expect(await startBillPayment(db, stripe.stripe, { invoiceId: bill.id, token: signToken("invoice-pay", bill.id), origin: "https://site.test" })).toEqual({ ok: false, message: "Part of this bill was paid another way. Please call us for the new amount." })
+    expect(stripe.calls.sessionCreate).not.toHaveBeenCalled()
+  })
+
+  it("stays cancelled when money arrives later", async () => {
+    const v = await doneAndOwed()
+    const bill = await callApi(as(writeKey), invoicesSend, { jobId: v.jobId })
+    await callApi(as(), invoicesCancel, { id: bill.id })
+    await callApi(as(writeKey), paymentsRecord, { jobId: v.jobId, visitId: v.id, amount: 145, method: "cash" })
+    expect(await callApi(as(writeKey), invoicesGet, { id: bill.id })).toMatchObject({ status: "cancelled", paidOn: null })
+  })
+})
+
 describe("invoices.remind", () => {
   it("sends one reminder a day however many times it is pressed, and a new one the next day", async () => {
     const v = await doneAndOwed()
@@ -167,9 +259,9 @@ describe("invoices.remind", () => {
   })
 
   it("says so when the customer has no mobile or email", async () => {
-    await db.update(s.customer).set({ email: null }).where(eq(s.customer.id, "c100"))
     const v = await doneAndOwed()
     const bill = await callApi(as(writeKey), invoicesSend, { jobId: v.jobId })
+    await db.update(s.customer).set({ email: null }).where(eq(s.customer.id, "c100"))
     await expect(callApi(as(writeKey), invoicesRemind, { id: bill.id })).rejects.toMatchObject({ code: "unprocessable", message: expect.stringMatching(/no mobile or email/) })
     await db.update(s.customer).set({ email: "dana@example.com" }).where(eq(s.customer.id, "c100"))
   })
@@ -187,6 +279,25 @@ describe("invoices.cancel, list and get", () => {
     await db.update(s.invoice).set({ paidOn: "2027-05-09" }).where(eq(s.invoice.id, again.id))
     await expect(callApi(as(), invoicesCancel, { id: again.id })).rejects.toMatchObject({ code: "conflict" })
     await expect(callApi(as(), invoicesCancel, { id: "nope" })).rejects.toMatchObject({ code: "not_found" })
+  })
+
+  it("closes the bill's open card form on Stripe when it cancels, and still cancels when Stripe fails", async () => {
+    const v = await doneAndOwed()
+    const bill = await callApi(as(writeKey), invoicesSend, { jobId: v.jobId })
+    await db.update(s.invoice).set({ stripeCheckoutSessionId: "cs_cancel" }).where(eq(s.invoice.id, bill.id))
+    await callApi(as(), invoicesCancel, { id: bill.id })
+    expect(stripe.calls.sessionExpire).toHaveBeenCalledWith("cs_cancel")
+    const w = await doneAndOwed()
+    const second = await callApi(as(writeKey), invoicesSend, { jobId: w.jobId })
+    await db.update(s.invoice).set({ stripeCheckoutSessionId: "cs_broken" }).where(eq(s.invoice.id, second.id))
+    stripe.calls.sessionExpire.mockRejectedValueOnce(new Error("session already expired"))
+    expect(await callApi(as(), invoicesCancel, { id: second.id })).toMatchObject({ status: "cancelled" })
+    // a bill that never opened a card form calls nothing
+    const x = await doneAndOwed()
+    const third = await callApi(as(writeKey), invoicesSend, { jobId: x.jobId })
+    stripe.calls.sessionExpire.mockClear()
+    await callApi(as(), invoicesCancel, { id: third.id })
+    expect(stripe.calls.sessionExpire).not.toHaveBeenCalled()
   })
 
   it("lists by job, by customer and by overdue, and needs one filter", async () => {

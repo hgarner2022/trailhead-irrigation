@@ -24,23 +24,35 @@ export interface MessageRequest {
 }
 
 /**
+ * The channel a kind of message would go by for this customer, or null when it cannot reach them: a text kind goes to the
+ * mobile unless there is none or the customer sent STOP, then by email; a customer with neither gets nothing. The one rule
+ * `queueMessage` sends by and `invoices.send` checks before it writes a bill.
+ */
+export async function messageChannel(db: Database, customer: Pick<typeof s.customer.$inferSelect, "id" | "phone" | "email">, kind: string): Promise<"sms" | "email" | null> {
+  const consent = await currentConsent(db, customer.id)
+  const hasPhone = Boolean(customer.phone)
+  if (BY_TEXT.has(kind) && customer.phone && mayMessage(consent, kind, "sms", hasPhone)) return "sms"
+  if (customer.email && mayMessage(consent, kind, "email", hasPhone)) return "email"
+  return null
+}
+
+/**
  * Records one message for a customer on the channel its kind uses, through the consent gate, and queues the send. A text kind
  * goes to the customer's mobile; with no mobile, or after a STOP, the same message goes by email. Returns whether a row was added.
  */
 export async function queueMessage(db: Database, req: MessageRequest): Promise<boolean> {
   const [customer] = await db.select().from(s.customer).where(eq(s.customer.id, req.customerId))
   if (!customer || customer.organizationId !== req.organizationId) return false
-  const consent = await currentConsent(db, customer.id)
-  const hasPhone = Boolean(customer.phone)
+  const channel = await messageChannel(db, customer, req.kind)
   const common = { organizationId: req.organizationId, customerId: customer.id, visitId: req.visitId ?? null, kind: req.kind, key: req.key, data: req.data, status: "queued" as const }
 
   let values: typeof s.messageLog.$inferInsert | null = null
-  if (BY_TEXT.has(req.kind) && customer.phone && mayMessage(consent, req.kind, "sms", hasPhone)) {
-    values = { ...common, channel: "sms", to: customer.phone, subject: null, body: SMS_TEMPLATES[req.kind as SmsKind](req.data as never) }
-  } else if (customer.email && mayMessage(consent, req.kind, "email", hasPhone)) {
+  if (channel === "sms") {
+    values = { ...common, channel: "sms", to: customer.phone!, subject: null, body: SMS_TEMPLATES[req.kind as SmsKind](req.data as never) }
+  } else if (channel === "email") {
     const rendered = renderEmail(req.kind, req.data)
     if (!rendered) throw new Error(`No email template for ${req.kind}`)
-    values = { ...common, channel: "email", to: customer.email, subject: rendered.subject, body: rendered.text }
+    values = { ...common, channel: "email", to: customer.email!, subject: rendered.subject, body: rendered.text }
   }
   if (!values) return false
   const [added] = await db.insert(s.messageLog).values(values).onConflictDoNothing().returning({ id: s.messageLog.id })
