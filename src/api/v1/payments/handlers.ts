@@ -2,6 +2,8 @@ import "server-only"
 import { and, asc, eq } from "drizzle-orm"
 import { z } from "zod"
 import * as s from "@/db/schema"
+import { visitName } from "@/lib/events/names"
+import { whoOf } from "@/lib/events/record"
 import { recordPaymentRow } from "@/lib/money/record"
 import { paidTotal } from "@/lib/money/words"
 import { getStripe, toCents } from "@/lib/stripe/client"
@@ -91,7 +93,11 @@ export const paymentsRefund = defineHandler({
       const all = await ctx.db.select().from(s.charge).where(and(eq(s.charge.jobId, payment.jobId), eq(s.charge.organizationId, ctx.organizationId)))
       if (paidTotal(all) <= 0) await ctx.db.update(s.visit).set({ chargedAt: null }).where(and(eq(s.visit.jobId, payment.jobId), eq(s.visit.organizationId, ctx.organizationId)))
     }
-    await emitEvent(ctx.db, ctx.organizationId, "payment.refunded", { paymentId: payment.id, refundId: row.id, jobId: payment.jobId, amount, method: payment.method, ...(input.reason ? { reason: input.reason } : {}) })
+    const [owner] = payment.visitId ? await ctx.db.select({ kind: s.visit.kind }).from(s.visit).where(and(eq(s.visit.id, payment.visitId), eq(s.visit.organizationId, ctx.organizationId))) : []
+    await emitEvent(ctx.db, ctx.organizationId, "payment.refunded", { paymentId: payment.id, refundId: row.id, jobId: payment.jobId, amount, method: payment.method, ...(input.reason ? { reason: input.reason } : {}) }, {
+      about: "payment", aboutId: row.id, customerId: payment.customerId, jobId: payment.jobId, visitId: payment.visitId, who: whoOf(ctx), at: ctx.now,
+      detail: { amount, method: payment.method, refunds: payment.id, ...(input.reason ? { reason: input.reason } : {}), ...(owner ? { name: visitName(owner.kind) } : {}) },
+    })
     return paymentOut(ctx, row)
   },
 })

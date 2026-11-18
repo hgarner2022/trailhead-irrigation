@@ -2,6 +2,8 @@ import "server-only"
 import { and, eq, isNull } from "drizzle-orm"
 import * as s from "@/db/schema"
 import { readAppUrl } from "@/lib/env"
+import { visitName } from "@/lib/events/names"
+import { recordEventSafe, whoOf } from "@/lib/events/record"
 import { setVisitLinePrice } from "@/lib/jobs/write-lines"
 import { baseData } from "@/lib/messaging/data"
 import { queueMessage } from "@/lib/messaging/queue"
@@ -31,16 +33,19 @@ export interface OfficePayment {
  * Mountain) and its payment is this row, so Home, Remind, the pay page and the money lines stop treating it as owed. Only the job's own
  * open bill, only while it is unpaid and not cancelled; a part payment leaves the bill open (the pay page then refuses it, and the office sends a new one).
  */
-async function settleOpenBill(ctx: Ctx, jobId: string, row: { id: string }) {
+async function settleOpenBill(ctx: Ctx, jobId: string, row: { id: string; method: string }, customerId: string) {
   const org = ctx.organizationId
   const [lines, payments] = await Promise.all([
     ctx.db.select().from(s.lineItem).where(and(eq(s.lineItem.jobId, jobId), eq(s.lineItem.organizationId, org))),
     ctx.db.select().from(s.charge).where(and(eq(s.charge.jobId, jobId), eq(s.charge.organizationId, org))),
   ])
   if (jobOwed(lines.filter((l) => !l.cancelledAt), payments) > 0) return
-  const settled = await ctx.db.update(s.invoice).set({ paidOn: paidDay(ctx.now), paymentId: row.id, updatedAt: ctx.now }).where(and(eq(s.invoice.jobId, jobId), eq(s.invoice.organizationId, org), isNull(s.invoice.paidOn), isNull(s.invoice.cancelledAt))).returning({ session: s.invoice.stripeCheckoutSessionId })
+  const settled = await ctx.db.update(s.invoice).set({ paidOn: paidDay(ctx.now), paymentId: row.id, updatedAt: ctx.now }).where(and(eq(s.invoice.jobId, jobId), eq(s.invoice.organizationId, org), isNull(s.invoice.paidOn), isNull(s.invoice.cancelledAt))).returning({ id: s.invoice.id, number: s.invoice.number, total: s.invoice.total, session: s.invoice.stripeCheckoutSessionId })
   // The card form the customer may still have open is closed too, so the bill is not paid twice.
-  for (const b of settled) await expireCheckoutSession(b.session)
+  for (const b of settled) {
+    await expireCheckoutSession(b.session)
+    await recordEventSafe(ctx.db, { organizationId: org, about: "invoice", aboutId: b.id, customerId, jobId, kind: "invoice.paid", detail: { number: b.number, total: b.total, how: row.method }, who: whoOf(ctx), at: ctx.now })
+  }
 }
 
 /**
@@ -85,7 +90,7 @@ export async function recordOfficePayment(ctx: Ctx, input: OfficePayment) {
   })
   if (!row) throw new ApiError("conflict", "That payment was already recorded")
   if (visit) await ctx.db.update(s.visit).set({ chargedAt: ctx.now }).where(eq(s.visit.id, visit.id))
-  await settleOpenBill(ctx, job.id, row)
+  await settleOpenBill(ctx, job.id, row, job.customerId)
   const [customer] = await ctx.db.select().from(s.customer).where(and(eq(s.customer.id, job.customerId), eq(s.customer.organizationId, ctx.organizationId)))
   if (customer) {
     const passNumber = job.passNumber
@@ -94,7 +99,10 @@ export async function recordOfficePayment(ctx: Ctx, input: OfficePayment) {
       data: { ...baseData(readAppUrl(), customer), passNumber: passNumber ?? null, amount: input.amount, visitName: visit ? kindName(visit.kind) : job.kind === "pass" ? "Season Pass" : kindName(job.kind), card: null, paidBy: RECEIVED_BY[input.method], nextLine: "", receiptUrl: null },
     })
   }
-  await emitEvent(ctx.db, ctx.organizationId, "payment.succeeded", { paymentId: row.id, jobId: job.id, ...(visit ? { visitId: visit.id } : {}), amount: input.amount, method: input.method })
+  await emitEvent(ctx.db, ctx.organizationId, "payment.succeeded", { paymentId: row.id, jobId: job.id, ...(visit ? { visitId: visit.id } : {}), amount: input.amount, method: input.method }, {
+    about: "payment", aboutId: row.id, customerId: job.customerId, jobId: job.id, visitId: visit?.id ?? null, who: whoOf(ctx), at: ctx.now,
+    detail: { amount: input.amount, method: input.method, ...(visit ? { name: visitName(visit.kind) } : {}) },
+  })
   // The old event name, for subscribers written before payments were rows.
   if (visit) await emitEvent(ctx.db, ctx.organizationId, "charge.succeeded", { visitId: visit.id, ...(visit.passId ? { passId: visit.passId } : {}), amount: input.amount, method: input.method })
   return row

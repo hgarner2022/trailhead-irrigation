@@ -8,7 +8,7 @@ import type { Ctx } from "../../core/context"
 import { ApiError, notFound } from "../../core/errors"
 import { defineHandler } from "../../core/handler"
 import { Id, iso } from "../shared"
-import { recordChange } from "../passes/queries"
+import { recordEvent, whoOf } from "@/lib/events/record"
 
 export const LineOut = z.object({
   id: Id, jobId: Id, visitId: Id.nullable(), name: z.string(), description: z.string().nullable(), quantity: z.number().int(),
@@ -60,6 +60,10 @@ async function loadLine(ctx: Ctx, id: string) {
 
 const money = z.number().int().min(0).max(100_000)
 
+/** A change to a line is one event about its job: the story of the job reads "Rotors, 12 added, 12 × $38". */
+const lineEvent = (ctx: Ctx, job: typeof s.job.$inferSelect, kind: "job.line-added" | "job.line-edited" | "job.line-cancelled", detail: Record<string, unknown>) =>
+  recordEvent(ctx.db, { organizationId: ctx.organizationId, about: "job", aboutId: job.id, customerId: job.customerId, jobId: job.id, kind, detail, who: whoOf(ctx), at: ctx.now })
+
 export const linesAdd = defineHandler({
   name: "lines.add",
   method: "POST",
@@ -90,7 +94,7 @@ export const linesAdd = defineHandler({
       organizationId: ctx.organizationId, jobId: job.id, name: service?.name ?? input.name!, description: service?.description ?? input.description ?? null, quantity: input.quantity,
       unitPrice: input.unitPrice ?? service?.price ?? 0, taxable: input.taxable ?? service?.taxable ?? false, serviceId: service?.id ?? null, now: ctx.now,
     })
-    await recordChange(ctx, { customerId: job.customerId, kind: "line-added", detail: { job: job.id, line: row.id, name: row.name, quantity: row.quantity, unitPrice: row.unitPrice } })
+    await lineEvent(ctx, job, "job.line-added", { line: row.id, name: row.name, quantity: row.quantity, unitPrice: row.unitPrice })
     return out(row, await jobTotalOf(ctx, job.id))
   },
 })
@@ -109,7 +113,7 @@ export const linesUpdate = defineHandler({
     const { job, payments } = await openJob(ctx, line.jobId)
     await assertVisitOpen(ctx, line, payments)
     const row = Object.values(changes).some((v) => v !== undefined) ? await updateLineRow(ctx.db, line, changes, ctx.now) : line
-    if (row !== line) await recordChange(ctx, { customerId: job.customerId, kind: "line-edited", detail: { job: job.id, line: id, changes } })
+    if (row !== line) await lineEvent(ctx, job, "job.line-edited", { line: id, name: row.name, quantity: row.quantity, unitPrice: row.unitPrice, changed: Object.keys(changes).filter((k) => changes[k as keyof typeof changes] !== undefined) })
     return out(row, await jobTotalOf(ctx, job.id))
   },
 })
@@ -128,7 +132,7 @@ export const linesCancel = defineHandler({
     const { job, payments } = await openJob(ctx, line.jobId)
     await assertVisitOpen(ctx, line, payments)
     const row = await cancelLineRow(ctx.db, line, ctx.now)
-    await recordChange(ctx, { customerId: job.customerId, kind: "line-cancelled", detail: { job: job.id, line: id, name: line.name } })
+    await lineEvent(ctx, job, "job.line-cancelled", { line: id, name: line.name })
     return out(row, await jobTotalOf(ctx, job.id))
   },
 })

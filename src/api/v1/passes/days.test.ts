@@ -6,7 +6,7 @@ import type { TestDb } from "@/db/test-db"
 import type { PublicPrincipal } from "@/lib/auth/types"
 import { completeSession, stubStripe } from "@/lib/stripe/test-stripe"
 import { callApi } from "../../core/call"
-import { apiDb, ctxFor, ORG } from "../../test-helpers"
+import { apiDb, ctxFor, eventsOf, ORG } from "../../test-helpers"
 import { scheduleOfferDays } from "../schedule/handlers"
 import { passesActivate, passesCreate } from "./handlers"
 
@@ -52,6 +52,17 @@ describe("the days picked at checkout", () => {
     expect(await db.select().from(s.passChange).where(eq(s.passChange.passId, pass.id))).not.toContainEqual(expect.objectContaining({ kind: "day-filled" }))
     await activate(pass.id, "cs_d1")
     expect((await db.select().from(s.visit).where(eq(s.visit.passId, pass.id))).filter((v) => v.status === "scheduled")).toHaveLength(2)
+    // The story of that checkout: one sale, the card, the consent, and a `visit.scheduled` for each held day, none doubled by the second activation.
+    const [row] = await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, pass.id))
+    expect(await eventsOf(db, { kind: "job.sold", jobId: row!.jobId })).toMatchObject([{ about: "job", aboutId: row!.jobId, customerId: pass.customerId, who: "customer", detail: { source: "website", passNumber: pass.number } }])
+    expect(await eventsOf(db, { kind: "card.saved", customerId: pass.customerId })).toMatchObject([{ about: "customer", who: "customer", detail: { last4: "4242" } }])
+    expect(await eventsOf(db, { kind: "consent", jobId: row!.jobId })).toMatchObject([{ about: "job", who: "customer", detail: { source: "checkout" } }])
+    const scheduled = await eventsOf(db, { kind: "visit.scheduled", jobId: row!.jobId })
+    expect(scheduled).toHaveLength(2)
+    expect(scheduled).toEqual(expect.arrayContaining([
+      expect.objectContaining({ about: "visit", who: "system", detail: { name: "Spring turn-on", day: turnOn.day, from: null, personId: turnOn.personId } }),
+      expect.objectContaining({ about: "visit", who: "system", detail: { name: "Fall blowout", day: blowout.day, from: null, personId: blowout.personId } }),
+    ]))
   })
 
   it("hold the same day when the person is given as `truckId` with the legacy truck id, and the scheduled event names the person both ways", async () => {
@@ -91,6 +102,7 @@ describe("the days picked at checkout", () => {
     expect(visit.scheduledOn! > pick.day).toBe(true)
     const changes = await db.select().from(s.passChange).where(eq(s.passChange.passId, pass.id))
     expect(changes.find((c) => c.kind === "day-filled")?.detail).toMatchObject({ visit: "turn-on", from: pick.day, to: visit.scheduledOn })
+    expect(await eventsOf(db, { kind: "visit.day-filled", visitId: visit.id })).toMatchObject([{ about: "visit", aboutId: visit.id, customerId: pass.customerId, who: "customer", detail: { visit: "turn-on", from: pick.day, to: visit.scheduledOn } }])
     const mail = (await db.select().from(s.messageLog).where(eq(s.messageLog.customerId, pass.customerId)))[0]!
     expect(mail.body).toContain("filled up")
   })

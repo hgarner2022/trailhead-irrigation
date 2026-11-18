@@ -37,6 +37,17 @@ describe("lines.add", () => {
     expect(row!.serviceId).toBe(service!.id)
   })
 
+  it("writes the job's story: one event for each line added, changed and cancelled, who did it and what it was", async () => {
+    const v = await install()
+    const line = await callApi(as(), linesAdd, { jobId: v.jobId, name: "Sensor", quantity: 2, unitPrice: 50 })
+    await callApi(as(), linesUpdate, { id: line.id, unitPrice: 60 })
+    await callApi(as(), linesCancel, { id: line.id })
+    const events = (await db.select().from(s.event).where(eq(s.event.jobId, v.jobId))).filter((e) => e.kind.startsWith("job.line-"))
+    expect(events.map((e) => e.kind)).toEqual(["job.line-added", "job.line-edited", "job.line-cancelled"])
+    expect(events[0]).toMatchObject({ about: "job", aboutId: v.jobId, customerId: "c100", who: expect.any(String), detail: { name: "Sensor", quantity: 2, unitPrice: 50 } })
+    expect(events[1]!.detail).toMatchObject({ unitPrice: 60, changed: ["unitPrice"] })
+  })
+
   it("a price of 0 is a line to quote later and the job's total stays as it was", async () => {
     const v = await install()
     const line = await callApi(as(), linesAdd, { jobId: v.jobId, name: "Drip zone" })

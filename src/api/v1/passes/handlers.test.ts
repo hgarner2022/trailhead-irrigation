@@ -4,7 +4,7 @@ import { and, eq } from "drizzle-orm"
 import * as s from "@/db/schema"
 import type { TestDb } from "@/db/test-db"
 import { callApi } from "../../core/call"
-import { adminKey, apiDb, ctxFor, customerPerson, linesOfPass, readKey, writeKey } from "../../test-helpers"
+import { adminKey, apiDb, ctxFor, customerPerson, eventsOf, linesOfPass, readKey, writeKey } from "../../test-helpers"
 import { jobTotal } from "@/lib/jobs/lines"
 import { SERVICES } from "@/lib/services"
 import {
@@ -41,6 +41,12 @@ describe("passes.create", () => {
     expect(pass.visits.map((v) => [v.kind, v.amount, v.window, v.status])).toEqual([["turn-on", 145, "May", "unscheduled"], ["blowout", 115, "October", "unscheduled"]])
     expect(pass.consent).toMatchObject({ termsVersion: "2026-11", marketingOptIn: false, source: "checkout" })
     expect(pass.customer?.email).toBe("maya@example.com")
+  })
+  it("writes the consent it records as a consent event about the pass's job, by the customer, and none when no consent is given", async () => {
+    const pass = await create({ customer: { firstName: "Cora", lastName: "Event", email: "cora@example.com" }, consent: { termsAccepted: true, marketingOptIn: true, marketingChannels: ["email"], source: "checkout" } })
+    const [row] = await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, pass.id))
+    expect(await eventsOf(db, { kind: "consent", jobId: row!.jobId })).toMatchObject([{ about: "job", aboutId: row!.jobId, customerId: pass.customerId, who: "api", detail: { marketingOptIn: true, marketingChannels: ["email"], source: "checkout" } }])
+    expect(await eventsOf(db, { jobId: row!.jobId, kind: "job.sold" })).toEqual([])
   })
   it("makes the pass's job: kind pass, source checkout, the visits point at it and its price is the total", async () => {
     const pass = await create({ customer: { firstName: "Jobby", lastName: "Tester", email: "jobby@example.com" } })
@@ -197,6 +203,9 @@ describe("passes.cancel", () => {
     const lines = await linesOfPass(db, "p1")
     expect(lines.map((l) => [l.visitStatus, l.cancelledAt !== null]).sort()).toEqual([["cancelled", true], ["cancelled", true], ["completed", false]])
     expect(await db.select().from(s.passChange).where(eq(s.passChange.passId, "p1"))).toHaveLength(1)
+    // One event for the one action: the alias row and the emitted webhook name do not make a second.
+    const [p1] = await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, "p1"))
+    expect(await eventsOf(db, { kind: "pass.cancelled", jobId: p1!.jobId })).toMatchObject([{ about: "job", aboutId: p1!.jobId, customerId: p1!.customerId, who: "api", detail: { reason: "moving", visits: 2 } }])
   })
   it("lets a customer cancel their own pass and no one else's", async () => {
     await expect(callApi(ctxFor(db, customerPerson("c121")), passesCancel, { id: "p3" })).rejects.toMatchObject({ code: "forbidden" })
@@ -213,6 +222,7 @@ describe("passes.updatePreference", () => {
     const [visit] = await db.select().from(s.visit).where(eq(s.visit.id, "p3-turn-on"))
     expect(visit!.preference).toBe("earlier")
     expect(await db.select().from(s.passChange).where(eq(s.passChange.passId, "p3"))).toHaveLength(1)
+    expect(await eventsOf(db, { kind: "pass.preference-changed", jobId: pass!.jobId })).toMatchObject([{ about: "job", aboutId: pass!.jobId, customerId: "c140", visitId: "p3-turn-on", who: "customer", detail: { visit: "turn-on", to: "earlier" } }])
   })
   it("refuses a customer once the window has opened or the visit has a day, but not an admin", async () => {
     await expect(callApi(ctxFor(db, customerPerson("c140"), "2027-05-01T17:00:00Z"), passesUpdatePreference, { id: "p3", kind: "turn-on", preference: "later" })).rejects.toMatchObject({ code: "unprocessable" })
@@ -233,6 +243,7 @@ describe("passes.addInspection", () => {
     const line = (await linesOfPass(db, "p4")).find((l) => l.visitKind === "inspection")
     expect(line).toMatchObject({ visitId: out.visitId, name: "Mid-season inspection", unitPrice: out.amount, serviceKey: expect.stringMatching(/^inspection-(8|12|16)$/), taxable: false, cancelledAt: null })
     expect(line!.description).toBe(SERVICES[line!.serviceKey!]!.description)
+    expect(await eventsOf(db, { kind: "pass.inspection-added", jobId: seeded!.jobId })).toMatchObject([{ about: "job", aboutId: seeded!.jobId, customerId: "c167", visitId: out.visitId, who: "customer", detail: { amount: out.amount } }])
   })
   it("refuses a customer on July 1 but lets an admin while July is open", async () => {
     await expect(callApi(ctxFor(db, customerPerson("c197"), "2027-07-01T17:00:00Z"), passesAddInspection, { id: "p5" })).rejects.toMatchObject({ code: "unprocessable" })
@@ -250,6 +261,8 @@ describe("passes.skipVisit", () => {
     expect(visit).toMatchObject({ status: "skipped", scheduledOn: null, personId: null })
     const lines = await linesOfPass(db, "p6")
     expect(lines.filter((l) => l.cancelledAt).map((l) => l.visitKind).sort()).toEqual(["blowout", "turn-on"])
+    expect(await eventsOf(db, { kind: "visit.skipped", visitId: "p6-blowout" })).toMatchObject([{ about: "visit", aboutId: "p6-blowout", customerId: "c104", who: "customer", detail: { name: "Fall blowout", visit: "blowout" } }])
+    expect(await eventsOf(db, { kind: "visit.skipped", visitId: "p6-turn-on" })).toMatchObject([{ who: "api", detail: { name: "Spring turn-on" } }])
   })
   it("takes the skipped visit's line out of the job's total, whatever job.price says", async () => {
     const pass = await create({ customer: { firstName: "Skip", lastName: "Tester", email: "skip@example.com", phone: "303-555-0151" }, inspection: true })
@@ -264,6 +277,8 @@ describe("passes.skipVisit", () => {
   it("refuses a completed visit and a customer on another pass", async () => {
     await expect(callApi(ctxFor(db, writeKey), passesSkipVisit, { id: "p1", kind: "turn-on" })).rejects.toMatchObject({ code: "unprocessable" })
     await expect(callApi(ctxFor(db, customerPerson("c104")), passesSkipVisit, { id: "p7", kind: "blowout" })).rejects.toMatchObject({ code: "forbidden" })
+    expect(await eventsOf(db, { kind: "visit.skipped", visitId: "p1-turn-on" })).toEqual([])
+    expect(await eventsOf(db, { kind: "visit.skipped", visitId: "p7-blowout" })).toEqual([])
   })
 })
 
@@ -294,6 +309,11 @@ describe("passes.activate and passes.sendCardUpdateLink (Stripe stubbed)", () =>
     const [c] = await db.select().from(s.customer).where(eq(s.customer.id, pass.customer!.id))
     expect(c!.stripeCustomerId).toBe("cus_act")
     await expect(callApi(ctxFor(db, readKey), passesActivate, { id: pass.id, setupSessionId: "cs_a" })).rejects.toMatchObject({ code: "forbidden" })
+    // The checkout's sale is written once, by activation (not again by the second call), with the card the customer saved.
+    const [row] = await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, pass.id))
+    expect(await eventsOf(db, { kind: "job.sold", jobId: row!.jobId })).toMatchObject([{ about: "job", aboutId: row!.jobId, customerId: pass.customerId, who: "api", detail: { source: "website", name: "Season Pass", passNumber: pass.number } }])
+    expect(await eventsOf(db, { kind: "card.saved", customerId: pass.customerId })).toMatchObject([{ about: "customer", aboutId: pass.customerId, who: "api", detail: { brand: "visa", last4: "4242" } }])
+    expect(await eventsOf(db, { kind: "pass.bought", jobId: row!.jobId })).toEqual([])
   })
   it("queues a card-update email with a fresh link", async () => {
     const pass = await fresh("link@example.com")

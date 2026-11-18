@@ -3,7 +3,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest"
 import { and, eq } from "drizzle-orm"
 import * as s from "@/db/schema"
 import type { TestDb } from "@/db/test-db"
-import { apiDb, ORG } from "@/api/test-helpers"
+import { apiDb, eventsOf, ORG } from "@/api/test-helpers"
 import { drain } from "@/lib/queue"
 import { handlers } from "@/lib/queue/handlers"
 import { handleInboundText } from "./inbound"
@@ -147,6 +147,11 @@ describe("inbound STOP and START", () => {
     expect((await currentConsent(db, phoneCustomer)).smsStopped).toBe(true)
     expect(await handleInboundText(db, phone, "START")).toBe("start")
     expect((await currentConsent(db, phoneCustomer)).smsStopped).toBe(false)
+    // Each consent row a reply appends is a `consent` event about the customer, by the system: STOP, then START; the replay and the stray text write none.
+    expect(await eventsOf(db, { kind: "consent", customerId: phoneCustomer })).toMatchObject([
+      { about: "customer", aboutId: phoneCustomer, jobId: null, who: "system", detail: { source: "reply", note: "STOP", marketingChannels: expect.not.arrayContaining(["sms"]) } },
+      { about: "customer", who: "system", detail: { source: "reply", note: "START" } },
+    ])
   })
 })
 

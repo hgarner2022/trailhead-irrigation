@@ -7,6 +7,7 @@ import { EMPTY_SETTINGS } from "@/lib/admin/empty-settings"
 import { AdminShell } from "@/components/blocks/AdminShell"
 import { CustomersScreen } from "./CustomersScreen"
 import { JOBS_TODAY, jobsData } from "./jobs-fixture"
+import { ANDREA_EVENTS, ANDREA_MESSAGES, storyOf, withTimeline } from "./notes-fixture"
 
 // The panel is a dialog in a portal on the body, outside the story's canvas.
 const body = within(document.body)
@@ -110,6 +111,35 @@ export const PanelReadOnly: Story = {
     await expect(await body.findByRole("heading", { name: "Visits" })).toBeInTheDocument()
     await expect(body.queryByRole("button", { name: "New job" })).not.toBeInTheDocument()
   },
+}
+
+// Andrea's story: her pass bought online, her card and choices, a note and the two messages she was sent.
+const withStory = (tech = false): AdminData => ({ ...data, clients: withTimeline(data.clients, "c100", storyOf(ANDREA_EVENTS, ANDREA_MESSAGES, tech)) })
+
+/** Notes and history after the Property block: the add box, then everything that happened to Andrea with the texts and emails merged in. */
+export const PanelNotesAndHistory: Story = {
+  args: { data: withStory(), defaultSelectedId: "c100" },
+  globals: { viewport: { value: "wide", isRotated: false } },
+  play: async () => {
+    await expect(await body.findByRole("heading", { name: "Notes and history" })).toBeInTheDocument()
+    await expect(await body.findByText("Season Pass TH-2027-0001 bought online")).toBeInTheDocument()
+    await expect(await body.findByText("Text sent: date set")).toBeInTheDocument()
+  },
+}
+
+/** A tech reads the story without the consent, card and contact lines and still has the add box. */
+export const PanelNotesAndHistoryTech: Story = {
+  args: { data: withStory(true), defaultSelectedId: "c100", readOnly: true },
+  globals: { viewport: { value: "wide", isRotated: false } },
+  play: async () => {
+    await expect(await body.findByLabelText("Add a note")).toBeInTheDocument()
+    await expect(body.queryByText(/Card saved/)).not.toBeInTheDocument()
+  },
+}
+
+export const PanelNotesAndHistoryPhone: Story = {
+  args: { data: withStory(), defaultSelectedId: "c100" },
+  globals: { viewport: { value: "phone", isRotated: false } },
 }
 
 /** Only the customers whose next job still needs a day. */

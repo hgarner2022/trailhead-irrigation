@@ -3,6 +3,8 @@ import { expect, within } from "storybook/test"
 import { AdminShell } from "@/components/blocks/AdminShell"
 import { JobsScreen } from "./JobsScreen"
 import { BILLS_OUT } from "./jobs-model"
+import { PASS_EVENTS, JOE_EVENTS, JOE_MESSAGES, storyOf } from "./notes-fixture"
+import type { AdminData } from "@/lib/admin/types"
 import { JOBS_TODAY, billedJobId, cancelledLineJobId, jobsData, overdueJobId, ownedJobId, paidJobId, passJobId, quoteJobId } from "./jobs-fixture"
 
 // The panel is a dialog in a portal on the body, outside the story's canvas.
@@ -131,3 +133,33 @@ export const PanelReadOnly: Story = {
   },
 }
 export const PanelReadOnlyPhone: Story = { args: { defaultJobId: cancelledLineJobId, readOnly: true }, globals: phone }
+
+// Notes and history: a pass job carrying Andrea's pass story, and a one-off job carrying Joe Hart's repair.
+const withStory = (jobId: string, events: Parameters<typeof storyOf>[0], messages: Parameters<typeof storyOf>[1], tech = false): AdminData => ({
+  ...jobsData,
+  jobs: jobsData.jobs!.map((j) => (j.id === jobId ? { ...j, timeline: storyOf(events, messages, tech) } : j)),
+})
+
+/** Notes and history after Change the pass: the story of the pass's job, newest first, with the add box above it. */
+export const PanelNotesAndHistory: Story = {
+  args: { data: withStory(passJobId, PASS_EVENTS, []), defaultJobId: passJobId },
+  globals: wide,
+  play: async () => {
+    await expect(await body.findByRole("heading", { name: "Notes and history" })).toBeInTheDocument()
+    await expect(await body.findByText("Spring turn-on timing changed from mid May to early May")).toBeInTheDocument()
+  },
+}
+
+/** A one-off job's story: the sale, the day, a note, done and the money, and the add box. */
+export const PanelNotesAndHistoryOneOff: Story = { args: { data: withStory(paidJobId, JOE_EVENTS, JOE_MESSAGES), defaultJobId: paidJobId }, globals: wide }
+
+/** A tech reads the story without the money and still has the add box, though the pass buttons are gone. */
+export const PanelNotesAndHistoryTech: Story = {
+  args: { data: withStory(passJobId, PASS_EVENTS, [], true), defaultJobId: passJobId, readOnly: true },
+  globals: wide,
+  play: async () => {
+    await expect(await body.findByLabelText("Add a note")).toBeInTheDocument()
+    await expect(body.queryByText(/Consent recorded/)).not.toBeInTheDocument()
+  },
+}
+export const PanelNotesAndHistoryPhone: Story = { args: { data: withStory(passJobId, PASS_EVENTS, []), defaultJobId: passJobId }, globals: phone }

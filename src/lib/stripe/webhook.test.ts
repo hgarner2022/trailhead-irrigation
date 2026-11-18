@@ -8,7 +8,7 @@ import { callApi } from "@/api/core/call"
 import { invoicesCancel, invoicesSend } from "@/api/v1/invoices/handlers"
 import { passesCreate } from "@/api/v1/passes/handlers"
 import { visitsCreate } from "@/api/v1/visits/office"
-import { adminKey, apiDb, ctxFor, ORG, writeKey } from "@/api/test-helpers"
+import { adminKey, apiDb, ctxFor, eventsOf, ORG, writeKey } from "@/api/test-helpers"
 import { drain } from "@/lib/queue"
 import { handleStripeEvent, organizationOfEvent, receiveStripeEvent } from "./webhook"
 import { completeSession, paidIntent, signer, stubStripe, WEBHOOK_SECRET } from "./test-stripe"
@@ -96,6 +96,8 @@ describe("handleStripeEvent", () => {
     expect(rows[0]).toMatchObject({ kind: "card-expiring", channel: "email", status: "queued" })
     await handleStripeEvent(db, stripe, pass!.organizationId, detached("evt_d2", "pm_gone"), "https://site.test")
     expect(await db.select().from(s.messageLog).where(eq(s.messageLog.customerId, p.customerId))).toHaveLength(1)
+    // One `card.removed` about the customer, by the system; the repeat finds no card and adds none.
+    expect(await eventsOf(db, { kind: "card.removed", customerId: p.customerId })).toMatchObject([{ about: "customer", aboutId: p.customerId, jobId: null, who: "system", detail: { brand: "visa", last4: "4242" } }])
   })
 
   it("finds the customer by their payment method when only the customer holds it, and by the pass alias when only the pass does", async () => {
@@ -125,6 +127,20 @@ describe("handleStripeEvent", () => {
     expect((await db.select().from(s.customer).where(eq(s.customer.id, p.customerId)))[0]).toMatchObject({ stripePaymentMethodId: "pm_fresh", cardLast4: "1111", cardBrand: "visa", cardExpires: "2031-01" })
     expect((await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, p.passId)))[0]).toMatchObject({ stripePaymentMethodId: null, cardLast4: null })
     expect(await db.select().from(s.messageLog).where(eq(s.messageLog.customerId, p.customerId))).toHaveLength(0)
+    expect(await eventsOf(db, { kind: "card.removed", customerId: p.customerId })).toEqual([])
+  })
+
+  it("on payment_intent.payment_failed marks a pending charge failed and writes payment.failed once, however often it is delivered", async () => {
+    const p = await pendingPass()
+    const [v] = await db.select().from(s.visit).where(eq(s.visit.passId, p.passId))
+    await db.insert(s.charge).values({ organizationId: v!.organizationId, passId: p.passId, jobId: v!.jobId, customerId: p.customerId, visitId: v!.id, attempt: 1, amount: v!.amount, status: "pending", stripePaymentIntentId: "pi_declined" })
+    const { stripe } = stubStripe()
+    const failed = event("evt_pf", "payment_intent.payment_failed", { id: "pi_declined", last_payment_error: { message: "Your card was declined." } }) as unknown as Stripe.Event
+    await handleStripeEvent(db, stripe, v!.organizationId, failed, "https://site.test")
+    await handleStripeEvent(db, stripe, v!.organizationId, failed, "https://site.test")
+    const [c] = await db.select().from(s.charge).where(eq(s.charge.stripePaymentIntentId, "pi_declined"))
+    expect(c).toMatchObject({ status: "failed", failureMessage: "Your card was declined." })
+    expect(await eventsOf(db, { kind: "payment.failed", jobId: v!.jobId })).toMatchObject([{ about: "payment", aboutId: c!.id, customerId: p.customerId, visitId: v!.id, who: "system", detail: { amount: v!.amount, message: "Your card was declined.", name: "Spring turn-on" } }])
   })
 
   it("reconciles a payment_intent.succeeded for a charge that was left pending", async () => {
@@ -137,6 +153,10 @@ describe("handleStripeEvent", () => {
     expect(c!.status).toBe("succeeded")
     const [after] = await db.select().from(s.visit).where(eq(s.visit.id, v!.id))
     expect(after!.chargedAt).not.toBeNull()
+    // Completing the pending row writes payment.succeeded once; a redelivery finds it succeeded and adds none.
+    expect(await eventsOf(db, { kind: "payment.succeeded", visitId: v!.id })).toMatchObject([{ about: "payment", aboutId: c!.id, visitId: v!.id, who: "system", detail: { amount: v!.amount, name: "Spring turn-on" } }])
+    await handleStripeEvent(db, stripe, v!.organizationId, event("evt_pi", "payment_intent.succeeded", { id: "pi_late" }) as unknown as Stripe.Event, "https://site.test")
+    expect(await eventsOf(db, { kind: "payment.succeeded", visitId: v!.id })).toHaveLength(1)
   })
 })
 
@@ -188,6 +208,10 @@ describe("a bill's Checkout Session completed", () => {
     expect(receipt!.body).toContain("Visa ending 4242")
     expect(receipt!.body).toContain("Repair: $145")
     expect(await paidEvents(invoice.id)).toHaveLength(1)
+    // The story of the payment: the payment row, the bill it settled, and the card it kept, each by the system.
+    expect(await eventsOf(db, { kind: "payment.succeeded", jobId: visit.jobId })).toMatchObject([{ about: "payment", aboutId: row!.id, customerId: "c100", visitId: null, who: "system", detail: { amount: 145, method: "card_now", invoiceNumber: invoice.number } }])
+    expect(await eventsOf(db, { kind: "invoice.paid", jobId: visit.jobId })).toMatchObject([{ about: "invoice", aboutId: invoice.id, customerId: "c100", who: "system", detail: { number: invoice.number, total: 145, how: "card_now" } }])
+    expect((await eventsOf(db, { kind: "card.saved", customerId: "c100" })).filter((e) => (e.detail as { last4: string }).last4 === "4242").length).toBeGreaterThan(0)
   })
 
   it("adds nothing when the same event, or another event for the same session, arrives again", async () => {
@@ -208,6 +232,10 @@ describe("a bill's Checkout Session completed", () => {
     await drain(db, { "stripe-webhook": (d, item) => handleStripeEvent(d, stripe, item.organizationId, (item.payload as { event: Stripe.Event }).event, "https://site.test") })
     expect(await rowsOf(visit.jobId)).toHaveLength(1)
     expect(await receipts("c100", invoice.number)).toHaveLength(1)
+    // A redelivered Stripe event adds no second event of any kind.
+    expect(await eventsOf(db, { kind: "payment.succeeded", jobId: visit.jobId })).toHaveLength(1)
+    expect(await eventsOf(db, { kind: "invoice.paid", jobId: visit.jobId })).toHaveLength(1)
+    expect(await eventsOf(db, { jobId: visit.jobId, about: "invoice" }).then((r) => r.map((e) => e.kind).sort())).toEqual(["invoice.paid", "invoice.sent"])
   })
 
   it("finishes a half-done run: a payment row with the bill still unpaid gets the rest, once", async () => {
@@ -220,6 +248,8 @@ describe("a bill's Checkout Session completed", () => {
     expect(await receipts("c100", invoice.number)).toHaveLength(1)
     // No second payment.succeeded: the run that wrote the row owns that event.
     expect(await paidEvents(invoice.id)).toHaveLength(0)
+    expect(await eventsOf(db, { kind: "payment.succeeded", jobId: visit.jobId })).toEqual([])
+    expect(await eventsOf(db, { kind: "invoice.paid", jobId: visit.jobId })).toHaveLength(1)
   })
 
   it("records a payment that arrives for a cancelled bill, leaves the bill cancelled and never twice", async () => {
@@ -234,6 +264,10 @@ describe("a bill's Checkout Session completed", () => {
     expect(after!.cancelledAt).not.toBeNull()
     expect(after).toMatchObject({ paidOn: null, paymentId: null })
     expect(await receipts("c100", invoice.number)).toHaveLength(1)
+    // The money is real, so the payment is in the story; the bill was cancelled and is never reported paid.
+    expect(await eventsOf(db, { kind: "payment.succeeded", jobId: visit.jobId })).toHaveLength(1)
+    expect(await eventsOf(db, { kind: "invoice.paid", jobId: visit.jobId })).toEqual([])
+    expect(await eventsOf(db, { kind: "invoice.cancelled", jobId: visit.jobId })).toHaveLength(1)
   })
 
   it("ignores a session that is not paid, one with no bill, and another organization's bill", async () => {
@@ -244,6 +278,7 @@ describe("a bill's Checkout Session completed", () => {
     await handleStripeEvent(db, stripe, "another-org", completed("evt_e3", session("cs_e3", invoice.id, "pi_bill_e")), "https://site.test", new Date(NOW))
     expect(await rowsOf(visit.jobId)).toHaveLength(0)
     expect((await db.select().from(s.invoice).where(eq(s.invoice.id, invoice.id)))[0]!.paidOn).toBeNull()
+    expect(await eventsOf(db, { jobId: visit.jobId, about: "payment" })).toEqual([])
   })
 
   it("keeps the card the customer holds when it is the one just used, and replaces and detaches an old one", async () => {

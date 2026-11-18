@@ -1,7 +1,8 @@
 import "server-only"
-import { and, asc, eq, gte, isNull } from "drizzle-orm"
+import { and, asc, desc, eq, gte, isNull } from "drizzle-orm"
 import * as s from "@/db/schema"
 import type { Database } from "@/db/types"
+import { recordEvent } from "@/lib/events/record"
 import { enqueue } from "@/lib/queue"
 import { baseData, loadVisitFacts } from "@/lib/messaging/data"
 import { queueMessage, queueStaffMessage } from "@/lib/messaging/queue"
@@ -19,6 +20,8 @@ export interface PurchaseConsent {
 export interface PurchaseExtras {
   /** the fresh card link an office sale paid by card carries in its confirmation, so the customer adds the card from the email */
   cardUpdateUrl?: string | null
+  /** who the purchase's consent event is written as: the person or the customer behind the call; `system` when nothing says (a queue task) */
+  who?: string
 }
 
 /**
@@ -48,17 +51,13 @@ export async function recordPurchase(db: Database, passId: string, consent: Purc
       .from(s.consent)
       .where(and(eq(s.consent.customerId, customer.id), eq(s.consent.source, source), gte(s.consent.recordedAt, pass.createdAt)))
       .limit(1)
-    if (!already)
-      await db.insert(s.consent).values({
-        organizationId: org,
-        customerId: customer.id,
-        termsVersion: terms?.v,
-        termsAcceptedAt: now,
-        marketingOptIn: consent.marketingOptIn && channels.length > 0,
-        marketingChannels: consent.marketingOptIn ? channels : [],
-        source,
-        recordedAt: now,
-      })
+    if (!already) {
+      const marketingOptIn = consent.marketingOptIn && channels.length > 0
+      const marketingChannels = consent.marketingOptIn ? channels : []
+      await db.insert(s.consent).values({ organizationId: org, customerId: customer.id, termsVersion: terms?.v, termsAcceptedAt: now, marketingOptIn, marketingChannels, source, recordedAt: now })
+      // Written with the row, inside the same once-per-pass branch, so a repeat adds neither.
+      await recordEvent(db, { organizationId: org, about: "job", aboutId: pass.jobId, customerId: customer.id, jobId: pass.jobId, kind: "consent", detail: { marketingOptIn, marketingChannels, source }, who: extras.who ?? "system", at: now })
+    }
   }
 
   await enqueue(db, org, "pass-onboard", pass.id, { passId: pass.id }, now)
@@ -80,7 +79,8 @@ export async function queuePurchaseConfirmation(db: Database, passId: string, or
   const org = pass.organizationId
   const visits = await db.select().from(s.visit).where(eq(s.visit.passId, pass.id))
   const ordered = (["turn-on", "inspection", "blowout"] as const).flatMap((k) => visits.filter((v) => v.kind === k))
-  const filled = await db.select().from(s.passChange).where(and(eq(s.passChange.passId, pass.id), eq(s.passChange.kind, "day-filled")))
+  // The days an office sale or a pick had to fill with the next open day: the `visit.day-filled` events of the pass's job, newest first.
+  const filled = await db.select().from(s.event).where(and(eq(s.event.organizationId, org), eq(s.event.jobId, pass.jobId), eq(s.event.kind, "visit.day-filled"))).orderBy(desc(s.event.at), desc(s.event.id))
   const held = []
   for (const v of ordered) {
     const facts = v.scheduledOn ? await loadVisitFacts(db, v.id, origin) : null

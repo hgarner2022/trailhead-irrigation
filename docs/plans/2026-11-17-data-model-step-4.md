@@ -98,4 +98,6 @@ Design: `docs/plans/2026-11-16-data-model-design.md`, sections "Lifecycles: read
 
 ## After step 4
 
+Step 5 (event replaces `pass_change` for every record; notes are events) is planned and built in `docs/plans/2026-11-18-data-model-step-5.md`.
+
 Step 5 (event replaces `pass_change` for every record; notes are events) and step 6 (the legacy tables and columns go: `season_pass`, `truck`, `area`, `booking`, `quote_request`, `pass_change`, `admin_user`, `visit.charged_at`, `visit.amount`, `job.price`, `job.kind`, `pass_id` foreign keys re-pointed to `job_id`; the Jobber mirror at the exit) each get their own plan file.

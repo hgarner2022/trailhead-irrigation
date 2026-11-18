@@ -7,7 +7,7 @@ import type { Principal, PublicPrincipal } from "@/lib/auth/types"
 import { chargeVisit } from "@/lib/pass/server/charge-visit"
 import { stubStripe } from "@/lib/stripe/test-stripe"
 import { callApi } from "../../core/call"
-import { adminKey, apiDb, ctxFor, linesOfPass, ORG, readKey, writeKey } from "../../test-helpers"
+import { adminKey, apiDb, ctxFor, eventsOf, linesOfPass, ORG, readKey, writeKey } from "../../test-helpers"
 import { jobTotal } from "@/lib/jobs/lines"
 import { SERVICES } from "@/lib/services"
 import { scheduleOfferDays } from "../schedule/handlers"
@@ -56,6 +56,18 @@ describe("passes.sell", () => {
     expect(confirmation.body).toMatch(/Spring turn-on.* · \$\d+/)
     expect(confirmation.body).toContain("Season total · $")
     expect((await db.select().from(s.passChange).where(eq(s.passChange.passId, pass.id))).map((c) => c.kind)).toEqual(["sold"])
+    // One sale, one `job.sold` (the activation inside a sale writes none of its own), then the note and the consent it recorded.
+    expect(await eventsOf(db, { kind: "job.sold", jobId: row!.jobId })).toMatchObject([{ about: "job", aboutId: row!.jobId, customerId: "c100", who: "api", detail: { source: "office", name: "Season Pass", passNumber: pass.number, paysBy: "at-visit" } }])
+    expect(await eventsOf(db, { kind: "note", jobId: row!.jobId })).toMatchObject([{ about: "job", aboutId: row!.jobId, customerId: "c100", detail: { text: "Took it by phone" } }])
+    expect(await eventsOf(db, { kind: "consent", jobId: row!.jobId })).toMatchObject([{ about: "job", customerId: "c100", who: "api", detail: { source: "admin", marketingOptIn: false } }])
+    expect(await eventsOf(db, { kind: "card.saved", customerId: "c100" })).toEqual([])
+  })
+
+  it("writes no event when the sale is refused", async () => {
+    const before = (await db.select().from(s.event)).length
+    await expect(sell({ customerId: "c100", email: "andrea@example.com" })).rejects.toMatchObject({ code: "unprocessable" })
+    await expect(sell({ customerId: "c100" }, readKey)).rejects.toMatchObject({ code: "forbidden" })
+    expect((await db.select().from(s.event)).length).toBe(before)
   })
 
   it("writes the zones sold on an existing customer's property", async () => {
@@ -113,6 +125,9 @@ describe("passes.sell", () => {
     expect(blowout).toMatchObject({ status: "scheduled", scheduledOn: "2028-10-02" })
     const changes = await db.select().from(s.passChange).where(eq(s.passChange.passId, pass.id))
     expect(changes.find((c) => c.kind === "day-filled")).toMatchObject({ visitId: blowout.id, detail: { visit: "blowout", from: "2028-10-01", to: "2028-10-02" } })
+    expect(await eventsOf(db, { kind: "visit.day-filled", visitId: blowout.id })).toMatchObject([{ about: "visit", aboutId: blowout.id, customerId: pass.customerId, who: "api", detail: { visit: "blowout", from: "2028-10-01", to: "2028-10-02" } }])
+    // The held days become scheduled visits written by the system, one event each.
+    expect(await eventsOf(db, { kind: "visit.scheduled", visitId: blowout.id })).toMatchObject([{ about: "visit", who: "system", detail: { name: "Fall blowout", day: "2028-10-02", from: null } }])
     const confirmation = (await messages(pass.customerId)).find((m) => m.kind === "purchase-confirmation")!
     expect(confirmation.body).toContain("Your first choice, Sunday, October 1, filled up, so we put it on Monday, October 2.")
     expect(confirmation.body).toContain("Google Calendar:")

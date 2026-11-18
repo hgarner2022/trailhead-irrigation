@@ -4,6 +4,8 @@
  * shapes. Dates are ISO strings. Money is whole dollars.
  */
 
+import type { TimelineLine } from "@/lib/events/timeline"
+
 export type Town =
   | "Erie"
   | "Longmont"
@@ -126,6 +128,8 @@ export interface Property extends Yard {
 
 export interface Client {
   id: string
+  /** the customer's story (events and messages), newest first; set for a customer of the app, absent in the fixtures */
+  timeline?: TimelineLine[]
   firstName: string
   /** absent for customers the app has not asked a last name */
   lastName?: string
@@ -172,6 +176,8 @@ export interface VisitException {
 
 export interface Visit {
   id: string
+  /** the visit's story (its events and its messages), newest first; set for a visit of the app, absent in the fixtures */
+  timeline?: TimelineLine[]
   clientId: string
   /** the customer's full name where the app has it */
   clientName: string
@@ -247,6 +253,8 @@ export interface JobLine {
 /** The sold work a visit belongs to: a Season Pass (kind pass) or booked work. A visit is the stop; a job is what was sold. */
 export interface SoldJob {
   id: string
+  /** the job's story (its events: the sale, the visits, the pass, the notes), newest first; absent in the fixtures */
+  timeline?: TimelineLine[]
   customerId: string
   kind: "pass" | "repair" | "install" | "other"
   status: "pending" | "active" | "done" | "cancelled"

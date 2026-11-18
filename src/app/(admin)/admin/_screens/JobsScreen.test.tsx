@@ -23,6 +23,7 @@ const jobActions = (over: Partial<JobActions> = {}): JobActions => ({
   cancelLine: vi.fn().mockResolvedValue({ ok: true, data: { jobTotal: 900 } }),
   recordPayment: vi.fn().mockResolvedValue(ok),
   addVisit: vi.fn().mockResolvedValue({ ok: true, data: { id: "new" } }),
+  addNote: vi.fn().mockResolvedValue({ ok: true, data: { id: "n-new", at: "2026-11-12T19:57:00Z", actor: "Ryan", what: "Back gate sticks", kind: "event", note: "Back gate sticks" } }),
   pass: {
     resendConfirmation: vi.fn().mockResolvedValue(ok), sendCardUpdateLink: vi.fn().mockResolvedValue(ok), cancel: vi.fn().mockResolvedValue(ok),
     addInspection: vi.fn().mockResolvedValue(ok), changePreference: vi.fn().mockResolvedValue(ok), skip: vi.fn().mockResolvedValue(ok),

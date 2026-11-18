@@ -6,6 +6,7 @@ import { callApi } from "@/api/core/call"
 import { alertsDismiss } from "@/api/v1/alerts/handlers"
 import { apiKeysCreate, apiKeysRevoke } from "@/api/v1/apikeys/handlers"
 import { consentsRecord } from "@/api/v1/customers/handlers"
+import { eventsNote } from "@/api/v1/events/handlers"
 import { invoicesRemind } from "@/api/v1/invoices/handlers"
 import { propertiesUpdate } from "@/api/v1/properties/handlers"
 import { passesAddInspection, passesCancel, passesResendConfirmation, passesSendCardUpdateLink, passesSkipVisit, passesUpdatePreference } from "@/api/v1/passes/handlers"
@@ -21,6 +22,7 @@ import type { Attention, OrganizationSettings, ServiceItem, TimingPreference } f
 import { requireAdmin } from "@/lib/auth/guard"
 import { jobUrl } from "@/lib/admin/links"
 import { retryQueueTasks } from "@/lib/admin/queue-retry"
+import { timelineOf, type TimelineLine } from "@/lib/events/timeline"
 import { act, nothing, type ActionOutcome } from "./act"
 import { toApiScopes } from "./key-scopes"
 import { saveSettings as writeSettings } from "./settings-save"
@@ -111,6 +113,13 @@ export const testWebhook = async (id: string) =>
 /** A customer who asked by phone not to get marketing: appended as the newest consent record, source `admin`. */
 export const recordMarketingOptOut = async (customerId: string, note = "Opted out by phone") =>
   act((ctx) => nothing(callApi(ctx, consentsRecord, { id: customerId, marketingOptIn: false, marketingChannels: [], source: "admin", note })))
+
+/**
+ * The Notes and history block's Add note: `events.note` as the signed-in person. A tech may add one (the only action here that is
+ * not a manager's), and the answer is the note as a line of the story, so the block shows it before the page has refreshed.
+ */
+export const addNote = async (about: "customer" | "property" | "job" | "visit", aboutId: string, text: string): Promise<ActionOutcome<TimelineLine>> =>
+  act(async (ctx) => timelineOf([await callApi(ctx, eventsNote, { about, aboutId, text })], [])[0]!, "tech")
 
 // Home --------------------------------------------------------------------------------------------------------------
 

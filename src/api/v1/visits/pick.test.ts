@@ -4,7 +4,7 @@ import { eq } from "drizzle-orm"
 import * as s from "@/db/schema"
 import type { TestDb } from "@/db/test-db"
 import { callApi } from "../../core/call"
-import { apiDb, ctxFor, customerPerson } from "../../test-helpers"
+import { apiDb, ctxFor, customerPerson, eventsOf } from "../../test-helpers"
 import { passesGet } from "../passes/handlers"
 import { visitsAreaDays, visitsPick } from "./handlers"
 
@@ -66,12 +66,16 @@ describe("visits.areaDays and visits.pick", () => {
     texts = (await db.select().from(s.messageLog)).filter((m) => m.visitId === "p3-turn-on")
     expect(texts.map((m) => m.kind).sort()).toEqual(["date-moved", "date-set"])
     expect((await db.select().from(s.passChange).where(eq(s.passChange.visitId, "p3-turn-on"))).map((c) => c.kind)).toContain("day-picked")
+    // One event per pick, written by the customer: `visit.scheduled` the first time, `visit.moved` once the visit had a day (never both for one action).
+    expect(await eventsOf(db, { visitId: "p3-turn-on", kind: "visit.scheduled" })).toMatchObject([{ about: "visit", aboutId: "p3-turn-on", customerId, who: "customer", detail: { name: "Spring turn-on", day: days[0], from: null, personId: expect.any(String) } }])
+    expect(await eventsOf(db, { visitId: "p3-turn-on", kind: "visit.moved" })).toMatchObject([{ who: "customer", detail: { day: second, from: days[0] } }])
   })
 
   it("refuses a day that was not offered, and another customer's visit", async () => {
     await expect(callApi(me(), visitsPick, { id: "p3-turn-on", day: "2027-05-02" })).rejects.toMatchObject({ code: "unprocessable" })
     await expect(callApi(me(), visitsPick, { id: "p3-turn-on", day: "2027-09-01" })).rejects.toMatchObject({ code: "unprocessable" })
     await expect(callApi(ctxFor(db, customerPerson("someone-else")), visitsAreaDays, { id: "p3-turn-on" })).rejects.toMatchObject({ code: "forbidden" })
+    expect(await eventsOf(db, { visitId: "p3-turn-on" })).toHaveLength(2)
   })
 
   it("offers the same choice whether or not the pass is marked as needing the customer home", async () => {

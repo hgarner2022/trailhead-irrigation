@@ -2,6 +2,7 @@ import "server-only"
 import { and, desc, eq, isNull, like, sql } from "drizzle-orm"
 import * as s from "@/db/schema"
 import { readAppUrl } from "@/lib/env"
+import { whoOf } from "@/lib/events/record"
 import { baseData } from "@/lib/messaging/data"
 import { messageChannel, queueMessage } from "@/lib/messaging/queue"
 import { payUrl } from "@/lib/messaging/tokens"
@@ -119,7 +120,10 @@ export async function sendBill(ctx: Ctx, input: SendBill): Promise<InvoiceRow> {
   }
   if (!row) throw new ApiError("conflict", "Another bill was being made at the same moment. Try again.")
   await queueMessage(ctx.db, { organizationId: org, customerId: customer.id, kind: "invoice", key: `invoice-${row.id}`, data: billData(origin, customer, row) })
-  await emitEvent(ctx.db, org, "invoice.sent", { invoiceId: row.id, number: row.number, jobId: job.id, customerId: customer.id, total: row.total, sentOn: row.sentOn, dueOn: row.dueOn })
+  await emitEvent(ctx.db, org, "invoice.sent", { invoiceId: row.id, number: row.number, jobId: job.id, customerId: customer.id, total: row.total, sentOn: row.sentOn, dueOn: row.dueOn }, {
+    about: "invoice", aboutId: row.id, customerId: customer.id, jobId: job.id, who: whoOf(ctx), at: ctx.now,
+    detail: { number: row.number, total: row.total, dueOn: row.dueOn },
+  })
   return row
 }
 
@@ -139,6 +143,9 @@ export async function remindBill(ctx: Ctx, invoiceId: string): Promise<InvoiceRo
     if (!sent) throw new ApiError("unprocessable", `${customer.firstName} has no mobile or email to send the reminder to`)
     return row
   }
-  await emitEvent(ctx.db, ctx.organizationId, "invoice.reminded", { invoiceId: row.id, number: row.number, jobId: row.jobId, customerId: customer.id, total: row.total, dueOn: row.dueOn })
+  await emitEvent(ctx.db, ctx.organizationId, "invoice.reminded", { invoiceId: row.id, number: row.number, jobId: row.jobId, customerId: customer.id, total: row.total, dueOn: row.dueOn }, {
+    about: "invoice", aboutId: row.id, customerId: customer.id, jobId: row.jobId, who: whoOf(ctx), at: ctx.now,
+    detail: { number: row.number, total: row.total, dueOn: row.dueOn },
+  })
   return row
 }

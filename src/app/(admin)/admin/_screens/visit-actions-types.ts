@@ -1,5 +1,5 @@
 import type { NotDoneReason } from "@/lib/admin/visit-defaults"
-import type { Outcome } from "./action-types"
+import type { AddNote, Outcome } from "./action-types"
 
 /** Where a visit was before a routine action, so Undo can put it back. */
 export interface Where {
@@ -84,7 +84,10 @@ export interface VisitActions {
   /** `invoices.remind`: the reminder of an open bill (two presses in a day send one) */
   remindBill: (invoiceId: string) => Promise<Outcome>
   markNotDone: (visitId: string, reason: NotDoneReason, note?: string) => Promise<Outcome<Where>>
-  edit: (visitId: string, changes: { durationMinutes?: number; personId?: string; notes?: string; accessNote?: string }) => Promise<Outcome>
+  /** the Edit form's fields; notes are added (`addNote`), never rewritten here */
+  edit: (visitId: string, changes: { durationMinutes?: number; personId?: string; accessNote?: string }) => Promise<Outcome>
+  /** `events.note`: a note on a customer, job or visit, from the Notes and history block; a tech may add one */
+  addNote: AddNote
   cancel: (visitId: string, reason?: string) => Promise<Outcome>
   /** `properties.update`: the yard's nine facts, from the customer panel's Property block */
   updateProperty: (propertyId: string, changes: YardChanges) => Promise<Outcome>

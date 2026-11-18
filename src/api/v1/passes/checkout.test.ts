@@ -7,7 +7,7 @@ import type { PublicPrincipal } from "@/lib/auth/types"
 import { expirePendingPasses } from "@/lib/pass/server/create"
 import { completeSession, stubStripe } from "@/lib/stripe/test-stripe"
 import { callApi } from "../../core/call"
-import { apiDb, ctxFor, ORG } from "../../test-helpers"
+import { apiDb, ctxFor, eventsOf, ORG } from "../../test-helpers"
 import { bookingsCreate } from "../bookings/handlers"
 import { scheduleSlots } from "../schedule/handlers"
 import { passesActivate, passesCreate, passesList } from "./handlers"
@@ -155,7 +155,15 @@ describe("expirePendingPasses", () => {
     // The purge keys on the job's age and status, not the pass alias.
     await db.update(s.job).set({ createdAt: new Date(Date.now() - 61 * 60_000) }).where(eq(s.job.id, oldRow!.jobId))
     expect(await db.select().from(s.lineItem).where(eq(s.lineItem.jobId, oldRow!.jobId))).toHaveLength(2)
+    // The events of a checkout that never finished (a consent, say) are not history: they go with the pass; every other job's stay.
+    const [freshRow] = await db.select({ jobId: s.seasonPass.jobId, customerId: s.seasonPass.customerId }).from(s.seasonPass).where(eq(s.seasonPass.id, fresh.id))
+    const mine = { organizationId: ORG, about: "job" as const, kind: "consent", who: "customer", detail: {} }
+    await db.insert(s.event).values([{ ...mine, aboutId: oldRow!.jobId, jobId: oldRow!.jobId, customerId: "c-old" }, { ...mine, aboutId: freshRow!.jobId, jobId: freshRow!.jobId, customerId: freshRow!.customerId }])
+    const keptElsewhere = (await db.select().from(s.event)).filter((e) => e.jobId !== oldRow!.jobId).length
     const removed = await expirePendingPasses(db, new Date())
+    expect(await eventsOf(db, { jobId: oldRow!.jobId })).toEqual([])
+    expect(await eventsOf(db, { jobId: freshRow!.jobId })).toHaveLength(1)
+    expect((await db.select().from(s.event)).length).toBe(keptElsewhere)
     expect(await db.select().from(s.lineItem).where(eq(s.lineItem.jobId, oldRow!.jobId))).toHaveLength(0)
     expect(removed).toBeGreaterThanOrEqual(1)
     expect(await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, old.id))).toHaveLength(0)

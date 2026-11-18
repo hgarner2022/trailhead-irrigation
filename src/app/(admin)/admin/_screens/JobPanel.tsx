@@ -17,6 +17,7 @@ import { NewVisitDialog, RecordPaymentDialog } from "./JobDialogs"
 import { JobLinesSection } from "./JobLinesSection"
 import { JobMoneySection } from "./JobMoneySection"
 import { MoneyPill, StagePill } from "./JobPills"
+import { PanelNotes } from "./PanelNotes"
 import { CancelDialog, PassChange, PassSeasonView } from "./PassPanel"
 import { propertyLines } from "./customers-model"
 import { useRunner } from "./use-runner"
@@ -26,8 +27,8 @@ import { dayLabel, dayOfVisit, kindLabel } from "./visit-panel-model"
 
 // The job panel, through the one SidePanel (docs/DESIGN.md, Uniformity): the customer's name and what the job is in the header, the
 // stage and money pills, then Property, Lines, Visits, Money and Notes (a Season Pass shows its season in place of Lines and
-// Visits, with its own buttons), and the footer's actions. A tech sees all of it and no buttons. Notes and history waits for the
-// `events.*` handlers, which are not in the API yet.
+// Visits, with its own buttons), and the footer's actions. A tech sees all of it and no buttons. Notes and history is the story
+// of the job (`events.*`) with an Add note that a tech may use too.
 
 function Property({ facts, readOnly }: { facts: JobFacts; readOnly: boolean }) {
   const lines = propertyLines(facts.yard, { canSeeContact: !readOnly })
@@ -183,12 +184,14 @@ export function JobPanel({ data, today, jobId, open, onOpenChange, readOnly = fa
           </>
         )}
         <JobMoneySection row={row} payments={facts.payments} bill={bill} actions={canAct ? visitActions : undefined} />
-        {job.notes && (
+        {/* Notes are in the Notes and history block; the plain row stays for a job whose story is missing (the catalog's fixtures), so a note typed at the sale never disappears. */}
+        {job.notes && !job.timeline && (
           <section aria-labelledby="job-notes" data-slot="job-notes">
             <PanelHeading id="job-notes">Notes</PanelHeading>
             <p className="mt-2 whitespace-pre-line text-sm">{job.notes}</p>
           </section>
         )}
+        <PanelNotes about="job" aboutId={job.id} timeline={job.timeline} addNote={actions?.addNote} />
       </div>
       {canAct && facts.canRecord && <RecordPaymentDialog jobId={job.id} owed={row.owed} open={recording} onOpenChange={setRecording} actions={actions} />}
       {canAct && facts.canAddVisit && <NewVisitDialog jobId={job.id} data={data} today={today} open={adding} onOpenChange={setAdding} actions={actions} />}

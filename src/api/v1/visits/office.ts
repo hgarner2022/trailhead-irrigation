@@ -3,6 +3,8 @@ import { and, eq, inArray, notInArray } from "drizzle-orm"
 import { z } from "zod"
 import * as s from "@/db/schema"
 import { KIND_MINUTES, NOT_DONE_REASONS, OFFICE_KINDS } from "@/lib/admin/visit-defaults"
+import { visitName } from "@/lib/events/names"
+import { recordEvent, whoOf } from "@/lib/events/record"
 import { enqueueGeocode } from "@/lib/geocode"
 import { defaultVisitPrice, LINE_NAMES, lineForVisitKind } from "@/lib/jobs/lines"
 import { cancelVisitLines, deleteVisitLines, insertLines, setVisitLinePrice } from "@/lib/jobs/write-lines"
@@ -42,7 +44,7 @@ export const visitsMarkNotDone = defineHandler({
     if (input.reason === "other" && !input.note) throw new ApiError("invalid", "Say what happened when the reason is something else", [{ path: "note", message: "Add a short note" }])
     await ctx.db.update(s.visit).set({ status: "unscheduled", personId: null, scheduledOn: null, startTime: null, stopOrder: null, awaitingPick: false, notDoneReason: input.reason }).where(eq(s.visit.id, visit.id))
     if (visit.personId && visit.scheduledOn) await orderDay(ctx.db, { personId: visit.personId, day: visit.scheduledOn })
-    await recordChange(ctx, { customerId: visit.customerId, passId: visit.passId, visitId: visit.id, kind: "not-done", detail: { reason: input.reason, note: input.note ?? null, day: visit.scheduledOn, personId: visit.personId } })
+    await recordChange(ctx, { customerId: visit.customerId, passId: visit.passId, visitId: visit.id, kind: "not-done", detail: { name: visitName(visit.kind), reason: input.reason, note: input.note ?? null, day: visit.scheduledOn, personId: visit.personId } })
     return visitOut(ctx, await loadVisit(ctx, visit.id))
   },
 })
@@ -72,10 +74,9 @@ export const visitsUpdate = defineHandler({
       set.durationMinutes = input.durationMinutes
       changed.durationMinutes = { from: visit.durationMinutes, to: input.durationMinutes }
     }
-    if (input.notes !== undefined && (input.notes || null) !== visit.notes) {
-      set.notes = input.notes || null
-      changed.notes = true
-    }
+    // Notes are added, not edited: new text is a `note` event (written below) and the column keeps the newest text as an alias.
+    const noteText = input.notes !== undefined && (input.notes || null) !== visit.notes ? input.notes : undefined
+    if (noteText !== undefined) set.notes = noteText || null
     if (input.price !== undefined) {
       await setVisitLinePrice(ctx.db, visit, input.price, ctx.now)
       if (input.price !== visit.amount) {
@@ -110,7 +111,8 @@ export const visitsUpdate = defineHandler({
     }
     if (Object.keys(set).length) await ctx.db.update(s.visit).set(set).where(eq(s.visit.id, visit.id))
     for (const r of reorder) await orderDay(ctx.db, r)
-    if (Object.keys(changed).length) await recordChange(ctx, { customerId: visit.customerId, passId: visit.passId, visitId: visit.id, kind: "visit-edited", detail: changed })
+    if (noteText) await recordEvent(ctx.db, { organizationId: ctx.organizationId, about: "visit", aboutId: visit.id, customerId: visit.customerId, jobId: visit.jobId, visitId: visit.id, kind: "note", detail: { text: noteText }, who: whoOf(ctx), at: ctx.now })
+    if (Object.keys(changed).length) await recordChange(ctx, { customerId: visit.customerId, passId: visit.passId, visitId: visit.id, kind: "visit-edited", detail: { name: visitName(visit.kind), ...changed } })
     return visitOut(ctx, await loadVisit(ctx, visit.id))
   },
 })
@@ -134,9 +136,12 @@ export const visitsCancel = defineHandler({
     if (visit.passId) await syncPassJob(ctx.db, visit.passId)
     else {
       const left = await ctx.db.select({ id: s.visit.id }).from(s.visit).where(and(eq(s.visit.jobId, visit.jobId), notInArray(s.visit.status, ["cancelled", "skipped"])))
-      if (left.length === 0) await ctx.db.update(s.job).set({ status: "cancelled", cancelledAt: ctx.now }).where(eq(s.job.id, visit.jobId))
+      if (left.length === 0) {
+        await ctx.db.update(s.job).set({ status: "cancelled", cancelledAt: ctx.now }).where(eq(s.job.id, visit.jobId))
+        await recordEvent(ctx.db, { organizationId: ctx.organizationId, about: "job", aboutId: visit.jobId, customerId: visit.customerId, jobId: visit.jobId, kind: "job.cancelled", detail: {}, who: whoOf(ctx), at: ctx.now })
+      }
     }
-    await recordChange(ctx, { customerId: visit.customerId, passId: visit.passId, visitId: visit.id, kind: "visit-cancelled", detail: { reason: input.reason ?? null, day: visit.scheduledOn, amount: visit.amount } })
+    await recordChange(ctx, { customerId: visit.customerId, passId: visit.passId, visitId: visit.id, kind: "visit-cancelled", detail: { name: visitName(visit.kind), reason: input.reason ?? null, day: visit.scheduledOn, amount: visit.amount } })
     return visitOut(ctx, await loadVisit(ctx, visit.id))
   },
 })
@@ -225,7 +230,8 @@ export const visitsCreate = defineHandler({
       .insert(s.visit)
       .values({ organizationId: org, jobId: job!.id, customerId, propertyId, kind, amount: price ?? 0, status: "unscheduled", durationMinutes: input.durationMinutes ?? service?.slotMinutes ?? KIND_MINUTES[kind as (typeof OFFICE_KINDS)[number]], notes: input.notes || null })
       .returning({ id: s.visit.id })
-    await insertLines(ctx.db, { organizationId: org, jobId: job!.id, now: ctx.now }, [{ ...(service ? { name: LINE_NAMES[service.kind] ?? service.name, description: service.description, quantity: 1, unitPrice: price ?? 0, taxable: service.taxable, serviceKey: service.key, visitKind: kind } : lineForVisitKind(kind, price ?? 0)), visitId: made!.id }])
+    const line = service ? { name: LINE_NAMES[service.kind] ?? service.name, description: service.description, quantity: 1, unitPrice: price ?? 0, taxable: service.taxable, serviceKey: service.key, visitKind: kind } : lineForVisitKind(kind, price ?? 0)
+    await insertLines(ctx.db, { organizationId: org, jobId: job!.id, now: ctx.now }, [{ ...line, visitId: made!.id }])
     if (input.scheduledOn) {
       try {
         await placeVisit(ctx, { id: made!.id, personId: personId!, scheduledOn: input.scheduledOn, startTime: input.startTime })
@@ -242,7 +248,8 @@ export const visitsCreate = defineHandler({
         throw error
       }
     }
-    await recordChange(ctx, { customerId, visitId: made!.id, kind: "visit-created", detail: { job: job!.id, kind, day: input.scheduledOn ?? null } })
+    await recordChange(ctx, { customerId, visitId: made!.id, kind: "visit-created", detail: { job: job!.id, source: "office", name: line.name, kind, day: input.scheduledOn ?? null } })
+    if (input.notes) await recordEvent(ctx.db, { organizationId: org, about: "job", aboutId: job!.id, customerId, jobId: job!.id, visitId: made!.id, kind: "note", detail: { text: input.notes }, who: whoOf(ctx), at: ctx.now })
     return visitOut(ctx, await loadVisit(ctx, made!.id))
   },
 })

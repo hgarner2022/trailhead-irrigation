@@ -13,6 +13,7 @@ import type { VisitActions } from "./visit-actions-types"
 import type { AdminData, Client, ClientCard, Pass } from "@/lib/admin/types"
 import { formatPhone } from "@/lib/format/contact"
 import { PropertyBlock } from "./PropertyFields"
+import { PanelNotes } from "./PanelNotes"
 import { CustomerCardLine } from "./CustomerCardLine"
 import { MARKETING_WORDS, SCHEDULED_WORDS, cardOf, consentEntries, propertiesOf, type CustomerRow } from "./customers-model"
 
@@ -87,6 +88,7 @@ export function CustomerPanelBody({ row, client, data, today, readOnly = false, 
       <Facts row={row} card={card} jobId={row.passId ? jobIdOfPass(data, row.passId) : undefined} readOnly={readOnly} actions={actions} />
       <PassSeasons passes={passes} today={today} />
       {property && <PropertyBlock key={property.id} propertyId={property.id} yard={property} readOnly={readOnly} actions={actions} />}
+      <PanelNotes about="customer" aboutId={row.id} timeline={client?.timeline} addNote={actions?.addNote} />
       <CustomerJobsSection rows={jobRows(data, today).filter((j) => j.customerId === row.id)} data={data} today={today} />
       {!readOnly && <CustomerBills jobs={(data.jobs ?? []).filter((j) => j.customerId === row.id)} data={data} actions={actions} />}
       {!readOnly && client?.app && <TextForm client={client} actions={actions} />}

@@ -2,6 +2,8 @@ import "server-only"
 import { and, desc, eq, exists, gte, isNotNull, isNull, lt, notInArray, or, sql } from "drizzle-orm"
 import { z } from "zod"
 import * as s from "@/db/schema"
+import { recordEvent, whoOf } from "@/lib/events/record"
+import { visitName } from "@/lib/events/names"
 import { enqueueGeocode } from "@/lib/geocode"
 import { linesForPassVisits } from "@/lib/jobs/lines"
 import { cancelVisitLines, deletePassVisitLines, insertLines } from "@/lib/jobs/write-lines"
@@ -208,7 +210,7 @@ export const passesCreate = defineHandler({
     } else {
       pass = await makePassRows(ctx.db, { organizationId: org, customerId: customerRow.id, season, onSale, ...fields, status: "pending", source: "checkout", now: ctx.now })
     }
-    if (input.consent)
+    if (input.consent) {
       await ctx.db.insert(s.consent).values({
         organizationId: org,
         customerId: customerRow.id,
@@ -220,6 +222,8 @@ export const passesCreate = defineHandler({
         recordedAt: ctx.now,
         note: input.consent.note,
       })
+      await recordEvent(ctx.db, { organizationId: org, about: "job", aboutId: pass.jobId, customerId: customerRow.id, jobId: pass.jobId, kind: "consent", detail: { marketingOptIn: input.consent.marketingOptIn, marketingChannels: input.consent.marketingChannels, source: input.consent.source }, who: whoOf(ctx), at: ctx.now })
+    }
     await holdChosenDays(ctx.db, pass.id, input.days.map(chosenDay), input.property.town, season, day)
     return passDetail(ctx, await loadPass(ctx, pass.id))
   },
@@ -236,7 +240,7 @@ export const passesActivate = defineHandler({
   output: PassDetail,
   async run(ctx, input) {
     const row = await loadPass(ctx, input.id)
-    await activatePass(ctx.db, getStripe(), row.pass.id, input.setupSessionId, ctx.now)
+    await activatePass(ctx.db, getStripe(), row.pass.id, input.setupSessionId, ctx.now, whoOf(ctx))
     // The boxes in the request win; without them (the webhook activated first) the snapshot from when the card form opened stands in.
     const consent = input.consent ?? (await consentSnapshot(ctx.db, row.pass.id))
     await finishPurchase(ctx, row.pass, row.town, consent)
@@ -256,7 +260,7 @@ export const passesConsent = defineHandler({
   async run(ctx, input) {
     const row = await loadPass(ctx, input.id)
     if (row.facts.status !== "pending") return OK
-    await recordChange(ctx, { customerId: row.pass.customerId, passId: row.pass.id, kind: CONSENT_SNAPSHOT, detail: input.consent })
+    await recordChange(ctx, { customerId: row.pass.customerId, passId: row.pass.id, kind: CONSENT_SNAPSHOT, detail: { ...input.consent, stage: "chosen" } })
     return OK
   },
 })
@@ -287,7 +291,7 @@ export const passesCancel = defineHandler({
       .where(and(eq(s.visit.passId, row.pass.id), notInArray(s.visit.status, ["completed", "cancelled"])))
       .returning({ id: s.visit.id })
     await cancelVisitLines(ctx.db, cancelled.map((v) => v.id), ctx.now)
-    await recordChange(ctx, { customerId: row.pass.customerId, passId: row.pass.id, kind: "cancelled", detail: { reason: input.reason ?? null, visits: cancelled.length } })
+    await recordChange(ctx, { customerId: row.pass.customerId, passId: row.pass.id, kind: "cancelled", detail: { reason: input.reason ?? null, visits: cancelled.length, passNumber: row.pass.number } })
     await enqueue(ctx.db, ctx.organizationId, "pass-cancel", row.pass.id, { passId: row.pass.id })
     await queueCancelledEmail(ctx.db, row.pass.id, readAppUrl())
     await emitEvent(ctx.db, ctx.organizationId, "pass.cancelled", { passId: row.pass.id, number: row.pass.number, visits: cancelled.length })
@@ -425,7 +429,7 @@ export const passesSkipVisit = defineHandler({
     await ctx.db.update(s.visit).set({ status: "skipped", personId: null, scheduledOn: null, startTime: null, stopOrder: null }).where(eq(s.visit.id, visit.id))
     await cancelVisitLines(ctx.db, [visit.id], ctx.now)
     await ctx.db.update(s.job).set({ price: sql`greatest(coalesce(${s.job.price}, 0) - ${visit.amount}, 0)` }).where(eq(s.job.id, visit.jobId))
-    await recordChange(ctx, { customerId: row.pass.customerId, passId: row.pass.id, visitId: visit.id, kind: "skipped", detail: { visit: input.kind } })
+    await recordChange(ctx, { customerId: row.pass.customerId, passId: row.pass.id, visitId: visit.id, kind: "skipped", detail: { name: visitName(visit.kind), visit: input.kind } })
     return { id: row.pass.id, visitId: visit.id, status: "skipped" as const }
   },
 })

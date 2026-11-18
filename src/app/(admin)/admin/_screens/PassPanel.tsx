@@ -82,7 +82,7 @@ export function CancelDialog({ pass, open, onOpenChange, onCancel }: { pass: Pas
 }
 
 /** "Change the pass": add the July inspection, change a timing preference while the visit has no day, skip a visit; and the link to the pass in Stripe. */
-export function PassChange({ pass, actions, run }: { pass: Pass; actions?: PassesActions; run: (call: () => Promise<Outcome>, done?: string) => void }) {
+export function PassChange({ pass, actions, run }: { pass: Pass; actions?: Omit<PassesActions, "addNote">; run: (call: () => Promise<Outcome>, done?: string) => void }) {
   if (pass.status === "pending") return null
   return (
     <>

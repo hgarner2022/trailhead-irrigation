@@ -3,6 +3,8 @@ import { createHmac } from "node:crypto"
 import { and, eq, sql } from "drizzle-orm"
 import type { Database } from "@/db/types"
 import * as s from "@/db/schema"
+import type { EventAbout, EventKind } from "@/lib/events/kinds"
+import { recordEventSafe } from "@/lib/events/record"
 
 export const EVENTS = [
   "pass.bought",
@@ -25,8 +27,26 @@ export type EventName = (typeof EVENTS)[number]
 /** Base64 HMAC-SHA256 of the body with the endpoint's secret, the scheme Jobber uses. */
 export const signBody = (body: string, secret: string) => createHmac("sha256", secret).update(body).digest("base64")
 
-/** One `outbound_event` per active endpoint subscribed to the event, each queued for delivery. Returns how many. */
-export async function emitEvent(db: Database, organizationId: string, event: EventName, payload: Record<string, unknown>): Promise<number> {
+/** The record an outbound event is about: given to `emitEvent`, it is also written to `event`, once, whether or not an endpoint listens. */
+export interface EventRecord {
+  about: EventAbout
+  aboutId: string
+  customerId?: string | null
+  jobId?: string | null
+  visitId?: string | null
+  who: string
+  detail?: Record<string, unknown>
+  at?: Date
+}
+
+/**
+ * One `outbound_event` per active endpoint subscribed to the event, each queued for delivery. Returns how many.
+ * With `record` it also writes the `event` row (kind = the event name); without it no row is written, so a site that
+ * already records the same action through `recordChange` does not write it twice.
+ */
+export async function emitEvent(db: Database, organizationId: string, event: EventName, payload: Record<string, unknown>, record?: EventRecord): Promise<number> {
+  // An outbound name is not always an `EventKind` (pass.bought, charge.*): the row keeps the name it was delivered under.
+  if (record) await recordEventSafe(db, { organizationId, ...record, kind: event as EventKind })
   const endpoints = await db
     .select({ id: s.webhookEndpoint.id })
     .from(s.webhookEndpoint)

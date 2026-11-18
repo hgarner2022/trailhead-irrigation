@@ -1,6 +1,6 @@
 // Test helper (no server-only: tests import it): a seeded in-memory organization and the principals the handler tests call as.
 import { vi } from "vitest"
-import { eq } from "drizzle-orm"
+import { and, asc, eq } from "drizzle-orm"
 import * as s from "@/db/schema"
 import { seed } from "@/db/seed"
 import { testDb, type TestDb } from "@/db/test-db"
@@ -51,4 +51,17 @@ export async function linesOfJob(db: TestDb, jobId: string) {
 export async function linesOfPass(db: TestDb, passId: string) {
   const [pass] = await db.select({ jobId: s.seasonPass.jobId }).from(s.seasonPass).where(eq(s.seasonPass.id, passId))
   return linesOfJob(db, pass!.jobId)
+}
+
+/** The events matching every given column, in the order they were written (tests only; `at` is the handler's fixed test clock, so two events of one call tie on it). */
+export async function eventsOf(db: TestDb, where: { kind?: string; about?: string; aboutId?: string; customerId?: string; jobId?: string; visitId?: string }) {
+  const filters = [
+    where.kind ? eq(s.event.kind, where.kind) : undefined,
+    where.about ? eq(s.event.about, where.about as "customer") : undefined,
+    where.aboutId ? eq(s.event.aboutId, where.aboutId) : undefined,
+    where.customerId ? eq(s.event.customerId, where.customerId) : undefined,
+    where.jobId ? eq(s.event.jobId, where.jobId) : undefined,
+    where.visitId ? eq(s.event.visitId, where.visitId) : undefined,
+  ]
+  return db.select().from(s.event).where(and(eq(s.event.organizationId, ORG), ...filters)).orderBy(asc(s.event.createdAt), asc(s.event.id))
 }

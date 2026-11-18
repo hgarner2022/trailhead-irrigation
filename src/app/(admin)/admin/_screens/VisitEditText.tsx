@@ -12,8 +12,8 @@ import type { VisitActions } from "./visit-actions-types"
 import { FORM_STATUS, useRunner } from "./use-runner"
 import { dayLabel, dayOfVisit, kindLabel, priceWords } from "./visit-panel-model"
 
-// Edit, Send a text, Resend confirmation and Cancel this visit: the visit panel's quieter actions. Edit and Send
-// are forms with a button; Cancel asks first and names the visit and the money (it is the one action here that
+// Edit (minutes, who, access note: notes are added in the Notes and history block, never rewritten here), Send a text, Resend
+// confirmation and Cancel this visit: the visit panel's quieter actions. Edit and Send are forms with a button; Cancel asks first and names the visit and the money (it is the one action here that
 // cannot be taken back). A refusal shows in the API's words under the control. Client component.
 
 const FIELD = "min-h-11 w-full rounded-lg border border-input bg-background px-3 text-sm"
@@ -23,14 +23,12 @@ export const TEXT_MAX = 320
 export function EditForm({ visit, people, actions }: { visit: Visit; people: AdminData["settings"]["people"]; actions?: VisitActions }) {
   const [minutes, setMinutes] = useState(String(visit.minutes ?? 60))
   const [personId, setPersonId] = useState(visit.personId ?? "")
-  const [notes, setNotes] = useState(visit.notes ?? "")
   const [access, setAccess] = useState(visit.property?.accessNote ?? "")
   const { pending, error, done, run } = useRunner()
   const save = () => {
     const changes = {
       ...(Number(minutes) !== (visit.minutes ?? 60) ? { durationMinutes: Number(minutes) } : {}),
       ...(personId && personId !== visit.personId ? { personId } : {}),
-      ...(notes !== (visit.notes ?? "") ? { notes } : {}),
       ...(access !== (visit.property?.accessNote ?? "") ? { accessNote: access } : {}),
     }
     if (!actions) return console.info("edit", visit.id, changes)
@@ -73,12 +71,6 @@ export function EditForm({ visit, people, actions }: { visit: Visit; people: Adm
           Access note
         </label>
         <Input id="edit-access" value={access} onChange={(e) => setAccess(e.target.value)} placeholder="Gate code, dog, where the controller is" className="min-h-11" />
-      </div>
-      <div className="mt-3">
-        <label htmlFor="edit-notes" className={LABEL}>
-          Notes
-        </label>
-        <Textarea id="edit-notes" value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} />
       </div>
       <Button type="button" variant="outline" className="mt-2 min-h-11" disabled={pending} onClick={save}>
         Save changes
