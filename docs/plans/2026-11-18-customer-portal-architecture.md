@@ -65,3 +65,15 @@ A customer's cancel or reschedule is a Home row until dismissed, a line in the v
 4. The screens from the v2 design, stories at both widths.
 5. The messages: cancel confirmation, the alert.
 6. A read-only review, then a live click-through as the test pass holder and as Hannah's own address, before Hannah is told to look.
+
+## 8. The five portal questions, decided (Nov 18 2026)
+
+Hannah: "yes to the recommendations, go research and make sure they are correct, you are the architect." Checked against the design's research (section 2 of the v2 design) and the model; all five stand, one with a refinement.
+
+| # | Question | Decision | Why it holds |
+|---|---|---|---|
+| 1 | A cancelled Season Pass visit | Gone for the season; nothing is charged (the pass is billed per visit after each visit, so there is nothing to refund); the customer can add one back at the standard price. **Until our own booking is live, the done screen says "Text Ryan to add it back"; once it is, "Book Online".** | Price parity is a fact of the pass; a skipped visit is already how the office handles it |
+| 2 | Days offered on a reschedule | Five, the current day left out | Square and Calendly offer more than three; five spans two route weeks for a town with one day |
+| 3 | Cancel a visit that already holds a payment | Allowed; no money moves; the confirm step says what stays paid; Ryan's Home row carries "has a payment" | A cancel is never a refund; the refund is Ryan's decision, from the panel |
+| 4 | Tell Ryan | A text on every customer cancel or move while there is one truck, and the Home row always | One person, one phone; the row is the record |
+| 5 | A reason on cancel | One optional line, read by Ryan only | Never required, never shown back to the customer |
