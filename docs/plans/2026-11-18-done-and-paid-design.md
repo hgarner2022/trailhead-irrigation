@@ -12,10 +12,10 @@ This replaces the Nov 14 line "One tap: Done. The charge and the receipt happen"
 
 - **Jobber:** completing a visit and Collect payment are separate screens. Collect charges a saved or typed card, or the reader; cash and check are records that charge nothing. [Collect payment](https://help.getjobber.com/en/articles/how-to-collect-payment-on-an-invoice/)
 - **Jobber** charges on completion only where "Get paid automatically" is on, tries once, never retries, and tells only the admin on failure. [Automatic payments](https://help.getjobber.com/en/articles/automatic-payments/)
-- **Housecall Pro:** after the job you send an invoice or collect on the spot, and Tap to Pay makes the phone the terminal. [Payment processing](https://www.housecallpro.com/features/payment-processing/) It emails the customer when a service plan card fails. [Recurring payments](https://www.housecallpro.com/resources/recurring-service-agreement-payments/)
+- **Housecall Pro:** after the job you send an invoice or collect on the spot; Tap to Pay makes the phone the terminal. [Payment processing](https://www.housecallpro.com/features/payment-processing/) It emails the customer when a service plan card fails. [Recurring payments](https://www.housecallpro.com/resources/recurring-service-agreement-payments/)
 - **ServiceTitan:** collect the balance before closing the job, then email the invoice. [Handoffs](https://help.servicetitan.com/docs/manage-job-documentation-and-handoffs-1)
 - **Stripe:** failed cards retry automatically (default up to 8 tries in 2 weeks) and dunning emails carry an update link. [Automatic collection](https://docs.stripe.com/invoicing/automatic-collection)
-- **Stripe Terminal:** Tap to Pay on iPhone needs a native app, not a web page. [Tap to Pay](https://docs.stripe.com/terminal/payments/setup-reader/tap-to-pay)
+- **Stripe Terminal:** Tap to Pay on iPhone needs a native app. [Tap to Pay](https://docs.stripe.com/terminal/payments/setup-reader/tap-to-pay)
 
 **Money follows ServiceTitan and Jobber's Collect screen: its own step, started by a button.** A failed card follows Stripe and Housecall Pro: email the customer at once, retry, tell staff in parallel; Jobber's no-retry way is not follunpaid. Housecall and ServiceTitan details are from search summaries.
 
@@ -40,7 +40,7 @@ The visit panel stays open between beats.
 LAPTOP, visit panel                        after Mark done (customer has a card)
 +------------------------------+          +------------------------------+
 | Andrea Reyes   [Scheduled]   |          | Andrea Reyes   [Done] [$145] |
-| Spring turn-on · $145        |          | Spring turn-on · $145 unpaid   |
+| Spring turn-on · $145        |          | Spring turn-on · $145 unpaid |
 | Mark done                    |  press   | How is this paid?            |
 | Done on [Nov 18]             |  ----->  | (o) Charge the Visa ending   |
 | [ Mark done ]                |          |     4242 now                 |
@@ -57,7 +57,7 @@ LAPTOP, visit panel                        after Mark done (customer has a card)
 PHONE, beat two (rows 56px, one button pinned at the bottom)
 +--------------------------+
 | < Andrea Reyes           |
-| Done  ·  $145 unpaid       |
+| Done  ·  $145 unpaid     |
 | How is this paid?        |
 | [x Charge the Visa 4242] |
 | [ Check ] [ Venmo ]      |
@@ -68,7 +68,7 @@ PHONE, beat two (rows 56px, one button pinned at the bottom)
 
 **Season Pass.** The card was agreed at checkout, so beat two reads "Charge the card as agreed", preselected, with no Pay later. A quiet "Paid another way" still opens Check, Venmo and Cash for money handed over at the door. A pass sold by the office with no card gets the no-card choices, Pay later included.
 
-**During and after.** While it runs, choices and button are disabled with "Charging $145 to the Visa ending 4242". After: the money word ("Paid, card") and "Receipt emailed to Andrea."
+**During and after.** While it runs: "Charging $145 to the Visa ending 4242", choices disabled. After: "Paid, card" and "Receipt emailed to Andrea."
 
 **A card that doesn't go through is automated; nothing waits on Ryan.**
 1. The panel says "The card didn't go through. Choose another way."
@@ -93,7 +93,7 @@ PHONE, beat two (rows 56px, one button pinned at the bottom)
 
 ## 5. Statuses against the data model
 
-Every cell is read from facts by `src/lib/money/words.ts` (`visitMoney`, `jobMoney`) and the locked lifecycle table (payment Succeeded or Failed, a refund a negative row; invoice Sent, Paid, Overdue). Check, Venmo and cash are one row: only the word differs. The money word is "Unpaid", Hannah's word, Nov 18 (it reverses step 4's retirement of the word); Housecall Pro's help calls a finished, unpaid job an "unpaid invoice", and QuickBooks receives it as one ([Housecall Pro](https://help.housecallpro.com/articles/996013-when-do-invoices-get-pushed-to-quickbooks)). I did not confirm QuickBooks' own status label.
+Every cell is read from facts by `src/lib/money/words.ts` (`visitMoney`, `jobMoney`) and the locked lifecycle table (payment Succeeded or Failed, a refund a negative row; invoice Sent, Paid, Overdue). Check, Venmo and cash are one row: only the word differs. The money word is "Unpaid" (Hannah, Nov 18). Housecall Pro's help calls a finished, unpaid job an "unpaid invoice" sent to QuickBooks ([source](https://help.housecallpro.com/articles/996013-when-do-invoices-get-pushed-to-quickbooks)); QuickBooks' own label is unconfirmed.
 
 | Outcome | Visit | Payment row | Invoice | Job money | Today / Home | Customer gets |
 |---|---|---|---|---|---|---|
@@ -126,9 +126,9 @@ Every cell is read from facts by `src/lib/money/words.ts` (`visitMoney`, `jobMon
 
 - **Lifecycle table:** every state is a payment row or an invoice date; words come from `words.ts`. Nothing is typed.
 - **Season Pass checkout:** it promises "We charge the card after each visit" (`checkout-summary.tsx:39`) and the site says "once the visit is done" (`season-pass/page.tsx:49`). The charge is one press right after Done; the morning row keeps the promise.
-- **Today's Done today group:** a done visit stays there with its money word; no new group.
-- **Receipt and card-failed messages:** both unchanged, sent by the charge result, never by Done.
-- **Customer portal:** the pass page reads the same rows (Paid, Unpaid, the bill's link), so an unpressed charge shows Unpaid, which is true.
+- **Today's Done today group:** a done visit stays there with its money word.
+- **Receipt and card-failed messages:** unchanged, sent by the charge result, never by Done.
+- **Customer portal:** the pass page reads the same rows (Paid, Unpaid, the bill's link).
 - **Jobber's Collect payment:** a separate screen where a charge is a button and cash or check a record; ours matches, card first.
 - **ServiceTitan:** it advises collecting before closing. We collect right after Done on the same panel, since Done also moves the schedule; the morning row stands in for its nudge.
 
@@ -142,12 +142,12 @@ Every cell is read from facts by `src/lib/money/words.ts` (`visitMoney`, `jobMon
 | `payments.chargeCard` | does not exist | New. Charges what is unpaid; refuses no real card, already paid, or a charge in flight. |
 | `chargeVisit` | `charge-visit.ts:39` refuses a visit with no pass | Takes any job with a real card; schedules the day-3 retry. |
 | `pass-charge` queue | enqueued by Done | Triggered by the button; retries after a card update or on day 3. |
-| Words, stories | `docs/UX_WRITING.md` | Add the new words; "Owed" becomes "Unpaid" in `words.ts`, `NeedsAttention.tsx:40` ("Done, unpaid") and Home's "Unpaid on done jobs". Stories `blocks-collectpayment--default-card`, `--pass-as-agreed`, `--no-card`, `--charging`, `--didnt-go-through`, `--phone`. |
+| Words, stories | `docs/UX_WRITING.md` | Add the new words; "Owed" becomes "Unpaid" in `words.ts`, `NeedsAttention.tsx:40` and Home's "Unpaid on done jobs". Stories `blocks-collectpayment--default-card`, `--pass-as-agreed`, `--no-card`, `--charging`, `--didnt-go-through`, `--phone`. |
 
 No new tables.
 
 ## 8. Decided and still open
 
-Hannah decided, Nov 18: the card is the default; a pass always charges it; a failed card is automated; Pay later shows at once. Still open, one word each:
+Still open, one word each:
 1. Add a derived "Refunded" word so a refund does not read Unpaid (B)? (yes or no)
 2. Keep "Paid another way" on a Season Pass visit that has a card? (yes or no)
