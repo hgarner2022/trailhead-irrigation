@@ -1,43 +1,52 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite"
-import { renderEmail } from "./render"
+import { EMAIL_FIXTURES, EMAIL_LABELS, SIGN_IN_FIXTURE } from "./fixtures"
+import { renderEmail, type EmailKind } from "./render"
+import { signInEmail } from "./sign-in"
 
-// The real HTML of the receipt and the invoice, built by the same renderer the sender uses and shown in a frame the way an
-// inbox shows it, so the line-item table, the totals and the buttons can be looked at. Nothing is sent: the data is made up.
+// The real HTML of every email, built by the same renderer the sender uses and shown in a frame the way an inbox shows it,
+// at a desktop width and at a phone width. Nothing is sent: the data is made up (`fixtures.ts`).
 
-const origin = "https://www.trailheadirrigation.com"
-const base = { origin, firstName: "Andrea", accountUrl: `${origin}/account`, signInUrl: `${origin}/account/sign-in?email=andrea%40example.com` }
-const lines = [
-  { name: "Repair", amount: 145, quantity: 1, unitPrice: 145 },
-  { name: "Extra zones", amount: 20, quantity: 2, unitPrice: 10 },
-]
-
-const receipt = renderEmail("receipt", {
-  ...base, serviceName: "repair", address: "480 Briggs St", paidOn: "2027-05-05", card: "Visa ending 4242", amount: 178, who: "Ryan", day: "2027-05-05", number: "R-1A2B3C4D",
-  lines, subtotal: 165, tax: 13, total: 178, nextLine: "Your fall blowout is planned for early October.", receiptUrl: "https://pay.stripe.com/r/1",
-})!
-const invoice = renderEmail("invoice", {
-  ...base, invoiceNumber: "INV-2027-0001", visitName: "repair", address: "480 Briggs St", who: "Ryan", day: "2027-05-04", lines, amount: 178, subtotal: 165, tax: 13, total: 178, dueOn: "2027-05-21", payUrl: `${origin}/pay/inv1?token=abc`,
-})!
-
-function EmailFrame({ subject, html }: { subject: string; html: string }) {
+function EmailFrame({ subject, html, width }: { subject: string; html: string; width: number }) {
   return (
-    <figure className="mx-auto max-w-2xl">
+    <figure className="mx-auto" style={{ maxWidth: width + 2 }}>
       <figcaption className="mb-2 text-sm text-muted-foreground">Subject: {subject}</figcaption>
-      <iframe title={subject} srcDoc={html} className="h-[900px] w-full rounded-lg border border-border bg-white" />
+      <iframe title={subject} srcDoc={html} style={{ width }} className="h-[1100px] rounded-lg border border-border bg-white" />
     </figure>
   )
 }
 
 const meta = {
-  title: "Emails/Customer emails",
+  title: "Emails/All emails",
   component: EmailFrame,
   parameters: { layout: "padded" },
 } satisfies Meta<typeof EmailFrame>
 export default meta
 type Story = StoryObj<typeof meta>
 
-/** A paid visit: where, who and when, the receipt number, each line, the totals, what was paid and one link to the account. */
-export const Receipt: Story = { args: { subject: receipt.subject, html: receipt.html } }
+const rendered = (kind: EmailKind) => renderEmail(kind, EMAIL_FIXTURES[kind])!
+const story = (kind: EmailKind, width = 640): Story => ({ name: EMAIL_LABELS[kind], args: { subject: rendered(kind).subject, html: rendered(kind).html, width } })
 
+export const PurchaseConfirmation = story("purchase-confirmation")
+export const BookingConfirmation = story("booking-confirmation")
+export const DaySet = story("date-set")
+export const DayMoved = story("date-moved")
+export const DayBefore = story("day-before")
+export const TwoWeeksOut = story("date-confirm")
+/** A paid visit: where, who and when, the receipt number, each line, the totals, what was paid and one link to the account. */
+export const Receipt = story("receipt")
 /** An invoice: the same table, the amount due, the due day and one Pay button. */
-export const Invoice: Story = { args: { subject: invoice.subject, html: invoice.html } }
+export const Invoice = story("invoice")
+export const InvoiceReminder = story("invoice-reminder")
+export const CardFailed = story("card-failed")
+export const CardExpiring = story("card-expiring")
+export const SeasonPassCanceled = story("cancelled")
+export const VisitCanceled = story("visit-cancelled")
+export const Renewal = story("renewal")
+export const NotMarkedDone = story("not-closed-crew")
+export const AdminAlert = story("admin-alert")
+
+const signIn = signInEmail(SIGN_IN_FIXTURE)
+export const SignIn: Story = { name: EMAIL_LABELS["sign-in"], args: { subject: signIn.subject, html: signIn.html, width: 640 } }
+
+/** The receipt on a phone: the same HTML at 375 pixels. */
+export const ReceiptOnAPhone: Story = { name: "Receipt on a phone", args: { subject: rendered("receipt").subject, html: rendered("receipt").html, width: 375 } }
