@@ -5,7 +5,7 @@ import * as s from "@/db/schema"
 import type { TestDb } from "@/db/test-db"
 import { makeCtx } from "@/api/core/context"
 import { ApiError } from "@/api/core/errors"
-import { apiDb, ORG } from "@/api/test-helpers"
+import { apiDb, eventsOf, ORG } from "@/api/test-helpers"
 import type { CheckoutSubmission } from "@/app/(checkout)/season-pass/checkout/_screens/checkout-submit"
 import { completeSession, stubStripe } from "@/lib/stripe/test-stripe"
 import { beginCheckoutWith, finishCheckoutWith, logCheckoutFailure, problemOf, recordConsentWith, type CheckoutDeps } from "./checkout"
@@ -104,11 +104,20 @@ describe("the consent snapshot and an expired session", () => {
     if (!begun.ok) throw new Error("begin failed")
     const [change] = await db.select().from(s.passChange).where(eq(s.passChange.passId, begun.passId))
     expect(change).toMatchObject({ kind: "consent-snapshot", detail: { marketingChannels: ["email", "sms"] } })
+    // The snapshot is a `consent` event about the pass's job, by the customer, written when the card form opens.
+    const [row] = await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, begun.passId))
+    expect(await eventsOf(db, { kind: "consent", jobId: row!.jobId })).toMatchObject([{ about: "job", aboutId: row!.jobId, customerId: row!.customerId, who: "customer", detail: { marketingChannels: ["email", "sms"], stage: "chosen" } }])
     getStripe.mockReturnValue(stubStripe({ sessions: { cs_w: completeSession("cs_w", { purpose: "pass-setup", passId: begun.passId }) } }).stripe)
     const { callApi } = await import("@/api/core/call")
     const { passesActivate } = await import("@/api/v1/passes/handlers")
     const active = await callApi(await depsWith(stubStripe().stripe).ctx(begun.passId), passesActivate, { id: begun.passId, setupSessionId: "cs_w" })
     expect(active.consent).toMatchObject({ source: "checkout", marketingOptIn: true, marketingChannels: ["email", "sms"] })
+    // Activation wrote the sale once and the consent row's own event; the snapshot stays as it was.
+    expect(await eventsOf(db, { kind: "job.sold", jobId: row!.jobId })).toMatchObject([{ about: "job", aboutId: row!.jobId, who: "customer", detail: { source: "website" } }])
+    // The snapshot (stage "chosen") and the stored consent row are two events; only the snapshot says "chosen".
+    const consents = await eventsOf(db, { kind: "consent", jobId: row!.jobId })
+    expect(consents).toHaveLength(2)
+    expect(consents.map((e) => (e.detail as { stage?: string }).stage)).toEqual(["chosen", undefined])
   })
   it("makes no pass when the terms are not accepted", async () => {
     expect(await beginCheckoutWith(depsWith(stubStripe().stripe), submission({ email: "noterms@example.com", consent: { termsAccepted: false, marketingEmail: false, marketingSms: false } }))).toMatchObject({ ok: false, problem: "invalid" })
@@ -117,8 +126,10 @@ describe("the consent snapshot and an expired session", () => {
     const begun = await beginCheckoutWith(depsWith(stubStripe().stripe), submission({ email: "snap2@example.com" }))
     if (!begun.ok) throw new Error("begin failed")
     const before = await db.select().from(s.passChange).where(eq(s.passChange.passId, begun.passId))
+    const events = (await db.select().from(s.event)).length
     await expect(recordConsentWith(depsWith(stubStripe().stripe), begun.passId, { termsAccepted: false, marketingEmail: true, marketingSms: false })).resolves.toBeUndefined()
     expect(await db.select().from(s.passChange).where(eq(s.passChange.passId, begun.passId))).toHaveLength(before.length)
+    expect((await db.select().from(s.event)).length).toBe(events)
   })
   it("names an expired card form so the screen opens a new one", async () => {
     const begun = await beginCheckoutWith(depsWith(stubStripe().stripe), submission({ email: "exp@example.com" }))

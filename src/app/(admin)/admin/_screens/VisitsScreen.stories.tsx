@@ -3,6 +3,7 @@ import { expect, within } from "storybook/test"
 import { AdminShell } from "@/components/blocks/AdminShell"
 import { VisitsScreen } from "./VisitsScreen"
 import type { AdminData } from "@/lib/admin/types"
+import { JOE_EVENTS, JOE_MESSAGES, storyOf, withTimeline } from "./notes-fixture"
 import { VISITS_TODAY, noCardVisitId, passVisitId, visitsData } from "./visits-fixture"
 
 // The panel is a dialog in a portal on the body, outside the story's canvas.
@@ -145,6 +146,32 @@ export const PanelPropertyTech: Story = {
 
 /** A tech reads the visit and sees no buttons. */
 export const PanelReadOnly: Story = { args: { defaultVisitId: "office-scheduled", readOnly: true }, globals: wide }
+
+// Joe Hart's repair with its story: the sale, the day, a note, done and paid by check, the money and the receipt.
+const withStory = (tech = false): AdminData => ({ ...visitsData, visits: withTimeline(visitsData.visits, "office-paid", storyOf(JOE_EVENTS, JOE_MESSAGES, tech)) })
+
+/** Notes and history under the visit's facts: the add box, then the story newest first, the note with its two lines and the receipt text as the quieter line. */
+export const PanelNotesAndHistory: Story = {
+  args: { data: withStory(), defaultVisitId: "office-paid" },
+  globals: wide,
+  play: async () => {
+    await expect(await body.findByRole("heading", { name: "Notes and history" })).toBeInTheDocument()
+    await expect(await body.findByText("Repair marked done, paid by check")).toBeInTheDocument()
+    await expect(await body.findByText("$145 paid by check, Repair")).toBeInTheDocument()
+  },
+}
+
+/** A tech reads the story without the money line and still has the add box. */
+export const PanelNotesAndHistoryTech: Story = {
+  args: { data: withStory(true), defaultVisitId: "office-paid", readOnly: true },
+  globals: wide,
+  play: async () => {
+    await expect(await body.findByLabelText("Add a note")).toBeInTheDocument()
+    await expect(body.queryByText(/\$145 paid/)).not.toBeInTheDocument()
+  },
+}
+
+export const PanelNotesAndHistoryPhone: Story = { args: { data: withStory(), defaultVisitId: "office-paid" }, globals: phone }
 
 /** A pass visit that is Done and Owed: Done closed it, and either no card could be charged or none was saved. The panel always shows how to take the money. */
 const owedPass = (id: string): AdminData => ({

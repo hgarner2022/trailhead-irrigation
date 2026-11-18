@@ -3,11 +3,12 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest"
 import { eq } from "drizzle-orm"
 import * as s from "@/db/schema"
 import type { TestDb } from "@/db/test-db"
+import type { Principal } from "@/lib/auth/types"
 import { callApi } from "../../core/call"
 import { alertsDismiss } from "../alerts/handlers"
 import { customersGet } from "../customers/handlers"
 import { messagesSend } from "../messages/handlers"
-import { adminKey, apiDb, ctxFor, linesOfJob, ORG, readKey, writeKey } from "../../test-helpers"
+import { adminKey, apiDb, ctxFor, eventsOf, linesOfJob, ORG, owner, readKey, writeKey } from "../../test-helpers"
 import { SERVICES } from "@/lib/services"
 import { visitsCancel, visitsCreate, visitsMarkNotDone, visitsUpdate } from "./office"
 import { visitsMove } from "./handlers"
@@ -20,7 +21,8 @@ beforeAll(async () => {
 })
 afterAll(() => db.close())
 
-const as = (p = writeKey) => ctxFor(db, p)
+const OWNER_WHO = "owner@example.com"
+const as = (p: Principal = writeKey) => ctxFor(db, p)
 const create = (input: Record<string, unknown>, p = writeKey) => callApi(as(p), visitsCreate, input)
 const count = async (t: typeof s.job | typeof s.customer | typeof s.visit | typeof s.lineItem) => (await db.select().from(t)).length
 
@@ -222,6 +224,8 @@ describe("visits.cancel", () => {
     await callApi(as(), visitsCancel, { id: v.id })
     expect((await db.select().from(s.job).where(eq(s.job.id, v.jobId)))[0]).toMatchObject({ status: "cancelled" })
     expect((await linesOfJob(db, v.jobId))[0]!.cancelledAt).toBeInstanceOf(Date)
+    // The emptied job is cancelled by a `job.cancelled` event of its own, beside the visit's.
+    expect(await eventsOf(db, { kind: "job.cancelled", jobId: v.jobId })).toMatchObject([{ about: "job", aboutId: v.jobId, customerId: "c100", visitId: null }])
     await expect(callApi(as(readKey), visitsCancel, { id: v.id })).rejects.toMatchObject({ code: "forbidden" })
   })
 })
@@ -255,5 +259,58 @@ describe("messages.send kind note", () => {
     await expect(callApi(as(), messagesSend, { customerId: "c-nophone", kind: "note", text: "Hi" })).rejects.toThrow(/no mobile number/)
     await db.insert(s.consent).values({ organizationId: ORG, customerId: "c100", source: "reply", note: "STOP" })
     await expect(callApi(as(), messagesSend, { customerId: "c100", kind: "note", text: "Hi" })).rejects.toThrow(/replied STOP/)
+  })
+})
+
+describe("the events office actions write", () => {
+  it("visits.create writes job.sold about its job (the one-off, source office) and one note when notes are given", async () => {
+    const v = await create({ customerId: "c100", kind: "repair", scheduledOn: "2027-05-13", price: 145, notes: "Zone 3 sticks" })
+    const [sold] = await eventsOf(db, { kind: "job.sold", jobId: v.jobId })
+    expect(sold).toMatchObject({ about: "job", aboutId: v.jobId, customerId: "c100", visitId: v.id, who: "api", detail: { source: "office", name: "Repair", kind: "repair", day: "2027-05-13" } })
+    expect(await eventsOf(db, { kind: "note", jobId: v.jobId })).toMatchObject([{ about: "job", aboutId: v.jobId, customerId: "c100", visitId: v.id, detail: { text: "Zone 3 sticks" } }])
+    const quiet = await create({ customerId: "c100", kind: "repair" })
+    expect(await eventsOf(db, { kind: "note", jobId: quiet.jobId })).toEqual([])
+  })
+  it("a refused visits.create writes nothing", async () => {
+    const before = (await db.select().from(s.event)).length
+    await expect(create({ customerId: "c100", kind: "repair", scheduledOn: "2027-05-14", notes: "x", personId: "nope" })).rejects.toBeTruthy()
+    expect((await db.select().from(s.event)).length).toBe(before)
+  })
+  it("visits.update with notes writes a note event and the notes alias, and no notes key on visit.edited", async () => {
+    const v = await create({ customerId: "c100", kind: "repair", scheduledOn: "2027-05-14" })
+    await callApi(as(owner), visitsUpdate, { id: v.id, notes: "Bring a valve", durationMinutes: 150 })
+    const [note] = await eventsOf(db, { kind: "note", visitId: v.id })
+    expect(note).toMatchObject({ about: "visit", aboutId: v.id, customerId: "c100", jobId: v.jobId, who: OWNER_WHO, detail: { text: "Bring a valve" } })
+    expect((await db.select().from(s.visit).where(eq(s.visit.id, v.id)))[0]!.notes).toBe("Bring a valve")
+    const [edited] = await eventsOf(db, { kind: "visit.edited", visitId: v.id })
+    expect(edited).toMatchObject({ about: "visit", who: OWNER_WHO, detail: { name: "Repair", durationMinutes: { from: 120, to: 150 } } })
+    expect(edited!.detail).not.toHaveProperty("notes")
+    // A notes-only edit is only a note; clearing the notes empties the alias and writes no note.
+    await callApi(as(owner), visitsUpdate, { id: v.id, notes: "Second thought" })
+    expect(await eventsOf(db, { kind: "note", visitId: v.id })).toHaveLength(2)
+    expect(await eventsOf(db, { kind: "visit.edited", visitId: v.id })).toHaveLength(1)
+    await callApi(as(owner), visitsUpdate, { id: v.id, notes: "" })
+    expect(await eventsOf(db, { kind: "note", visitId: v.id })).toHaveLength(2)
+    await expect(callApi(as(readKey), visitsUpdate, { id: v.id, notes: "no" })).rejects.toMatchObject({ code: "forbidden" })
+    expect(await eventsOf(db, { kind: "note", visitId: v.id })).toHaveLength(2)
+  })
+  it("visits.update writes visit.edited with the price change and the line name", async () => {
+    const v = await create({ customerId: "c100", kind: "repair", price: 145 })
+    await callApi(as(owner), visitsUpdate, { id: v.id, price: 220 })
+    expect(await eventsOf(db, { kind: "visit.edited", visitId: v.id })).toMatchObject([{ about: "visit", detail: { name: "Repair", price: { from: 145, to: 220 } } }])
+  })
+  it("visits.markNotDone writes visit.not-done with the reason, the day and the person, and a refused call writes none", async () => {
+    const v = await create({ customerId: "c100", kind: "repair", scheduledOn: "2027-05-17" })
+    await expect(callApi(as(), visitsMarkNotDone, { id: v.id, reason: "other" })).rejects.toMatchObject({ code: "invalid" })
+    expect(await eventsOf(db, { kind: "visit.not-done", visitId: v.id })).toEqual([])
+    await callApi(as(owner), visitsMarkNotDone, { id: v.id, reason: "no-water", note: "Main off" })
+    expect(await eventsOf(db, { kind: "visit.not-done", visitId: v.id })).toMatchObject([{ about: "visit", aboutId: v.id, customerId: "c100", jobId: v.jobId, who: OWNER_WHO, detail: { name: "Repair", reason: "no-water", note: "Main off", day: "2027-05-17", personId: "person_truck-1" } }])
+  })
+  it("visits.cancel writes visit.cancelled with the reason, the day and the amount", async () => {
+    const v = await create({ customerId: "c100", kind: "repair", scheduledOn: "2027-05-18", price: 145 })
+    await callApi(as(owner), visitsCancel, { id: v.id, reason: "Fixed it themselves" })
+    expect(await eventsOf(db, { kind: "visit.cancelled", visitId: v.id })).toMatchObject([{ about: "visit", aboutId: v.id, customerId: "c100", jobId: v.jobId, who: OWNER_WHO, detail: { name: "Repair", reason: "Fixed it themselves", day: "2027-05-18", amount: 145 } }])
+    await expect(callApi(as(owner), visitsCancel, { id: v.id })).rejects.toMatchObject({ code: "unprocessable" })
+    expect(await eventsOf(db, { kind: "visit.cancelled", visitId: v.id })).toHaveLength(1)
   })
 })

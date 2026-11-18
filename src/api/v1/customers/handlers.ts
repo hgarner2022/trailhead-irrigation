@@ -3,12 +3,16 @@ import { and, asc, desc, eq, inArray, isNull, ne, or, sql } from "drizzle-orm"
 import { z } from "zod"
 import * as s from "@/db/schema"
 import type { Database } from "@/db/types"
+import { changedFields } from "@/lib/events/diff"
+import { recentEvents } from "../events/queries"
+import { recordEvent, whoOf } from "@/lib/events/record"
 import { enqueueGeocode } from "@/lib/geocode"
 import { defineHandler } from "../../core/handler"
 import { ApiError, notFound } from "../../core/errors"
 import type { Ctx } from "../../core/context"
 import { afterTimeCursor, cursorPage, page, pageInput, timeCursor } from "../../core/pagination"
 import { canSeeContact, idInput, iso, today } from "../shared"
+import { hasScope } from "@/lib/auth/principal"
 import { customerHasCard } from "@/lib/customer/card"
 import { ConsentOut, consentInput, CustomerDetail, CustomerListItem, CustomerOut, customerFields, propertyInput } from "./schemas"
 import { jobTotal } from "@/lib/jobs/lines"
@@ -53,7 +57,8 @@ export const yardOut = (ctx: Ctx, p: PropertyRow) => ({
   backflowLocation: p.backflowLocation,
   mustBeHome: p.mustBeHome,
   contactName: p.contactName,
-  notes: p.notes,
+  // property notes are staff's: a signed-in customer reading their own pass never gets them
+  notes: hasScope(ctx.principal, "read") ? p.notes : null,
   ...gateYard(ctx, p),
 })
 
@@ -201,6 +206,7 @@ export const customersGet = defineHandler({
       properties: props.map((p) => propertyOut(ctx, p)),
       consent: consent ? consentOut(consent) : null,
       jobs: await jobsOf(ctx, row.id),
+      events: await recentEvents(ctx, { customerId: row.id }, 50),
     }
   },
 })
@@ -217,7 +223,9 @@ async function jobsOf(ctx: Ctx, customerId: string) {
   const paymentRows = await db.select().from(s.charge).where(and(inArray(s.charge.jobId, jobs.map((j) => j.id)), eq(s.charge.organizationId, org))).orderBy(asc(s.charge.createdAt), asc(s.charge.id))
   const bills = await db.select().from(s.invoice).where(and(inArray(s.invoice.jobId, jobs.map((j) => j.id)), eq(s.invoice.organizationId, org), isNull(s.invoice.cancelledAt))).orderBy(asc(s.invoice.paidOn), asc(s.invoice.id))
   const openBills = bills.filter((b) => !b.paidOn)
-  return jobs.map((j) => {
+  // Each job's newest 10 events (a customer has a few jobs, so one small query each).
+  const stories = await Promise.all(jobs.map((j) => recentEvents(ctx, { jobId: j.id }, 10)))
+  return jobs.map((j, index) => {
     const pass = passes.find((p) => p.jobId === j.id)
     const lines = lineRows.filter((l) => l.jobId === j.id)
     const payments = paymentRows.filter((p) => p.jobId === j.id)
@@ -238,6 +246,7 @@ async function jobsOf(ctx: Ctx, customerId: string) {
         const own = lines.filter((l) => l.visitId === v.id)
         return { id: v.id, kind: v.kind, status: v.status, scheduledOn: v.scheduledOn, amount: own.length ? jobTotal(own) : v.amount }
       }),
+      events: stories[index]!,
     }
   })
 }
@@ -256,11 +265,13 @@ export const customersCreate = defineHandler({
     const [row] = await ctx.db.insert(s.customer).values({ organizationId: ctx.organizationId, ...fields, ...cleanContact(fields) }).returning()
     const props = property ? await ctx.db.insert(s.property).values({ organizationId: ctx.organizationId, customerId: row!.id, address: property.address, town: property.town, ...cleanYard(property) }).returning() : []
     for (const p of props) await enqueueGeocode(ctx.db, ctx.organizationId, p.id, ctx.now)
+    await recordEvent(ctx.db, { organizationId: ctx.organizationId, about: "customer", aboutId: row!.id, customerId: row!.id, kind: "customer.edited", detail: { created: true, changed: changedFields({}, { firstName: row!.firstName, lastName: row!.lastName, email: row!.email, phone: row!.phone, leadSource: row!.leadSource }) }, who: whoOf(ctx), at: ctx.now })
     return {
       ...customerOut(ctx, row!),
       properties: props.map((p) => propertyOut(ctx, p)),
       consent: null,
       jobs: [],
+      events: await recentEvents(ctx, { customerId: row!.id }, 50),
     }
   },
 })
@@ -274,11 +285,13 @@ export const customersUpdate = defineHandler({
   input: z.object(customerFields).partial().extend({ id: idInput.shape.id }),
   output: CustomerOut,
   async run(ctx, { id, ...changes }) {
-    await getCustomerRow(ctx, id)
+    const before = await getCustomerRow(ctx, id)
     const defined = Object.fromEntries(Object.entries({ ...changes, ...cleanContact(changes) }).filter(([, v]) => v !== undefined))
     const [row] = Object.keys(defined).length
       ? await ctx.db.update(s.customer).set(defined).where(and(eq(s.customer.id, id), eq(s.customer.organizationId, ctx.organizationId))).returning()
-      : [await getCustomerRow(ctx, id)]
+      : [before]
+    const changed = changedFields(before, defined)
+    if (Object.keys(changed).length) await recordEvent(ctx.db, { organizationId: ctx.organizationId, about: "customer", aboutId: id, customerId: id, kind: "customer.edited", detail: { changed }, who: whoOf(ctx), at: ctx.now })
     return customerOut(ctx, row!)
   },
 })
@@ -321,6 +334,7 @@ export const consentsRecord = defineHandler({
         recordedAt: ctx.now,
       })
       .returning()
+    await recordEvent(ctx.db, { organizationId: ctx.organizationId, about: "customer", aboutId: id, customerId: id, kind: "consent", detail: { marketingOptIn: row!.marketingOptIn, marketingChannels: row!.marketingChannels, source: row!.source }, who: whoOf(ctx), at: ctx.now })
     return consentOut(row!)
   },
 })

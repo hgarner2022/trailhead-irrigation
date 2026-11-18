@@ -4,7 +4,7 @@ import { eq } from "drizzle-orm"
 import * as s from "@/db/schema"
 import type { TestDb } from "@/db/test-db"
 import { callApi } from "../../core/call"
-import { apiDb, ctxFor, ORG, readKey, writeKey } from "../../test-helpers"
+import { apiDb, ctxFor, eventsOf, ORG, owner, readKey, writeKey } from "../../test-helpers"
 import { customersGet } from "../customers/handlers"
 import { passesGet } from "../passes/handlers"
 import { visitsGet } from "../visits/handlers"
@@ -24,6 +24,13 @@ describe("properties.update", () => {
     expect(out).toMatchObject({ id, customerId: "c100", zones: 10, controller: "Rachio 3", backflowLocation: "Garage", gateCode: "1234", mustBeHome: true, accessNote: "Dog in the yard", contactName: "Jim Hart", notes: "Clay soil" })
     const again = await callApi(ctxFor(db, writeKey), propertiesUpdate, { id, notes: "  " })
     expect(again).toMatchObject({ zones: 10, controller: "Rachio 3", notes: null })
+    const edits = await eventsOf(db, { kind: "property.edited", aboutId: id })
+    expect(edits).toHaveLength(2)
+    expect(edits[0]).toMatchObject({ about: "property", aboutId: id, customerId: "c100", jobId: null, who: "api", detail: { changed: { zones: { to: 10 }, controller: { from: null, to: "Rachio 3" }, gateCode: { to: "1234" }, mustBeHome: { to: true } } } })
+    expect(edits[1]).toMatchObject({ detail: { changed: { notes: { from: "Clay soil", to: null } } } })
+    // A call that changes nothing, by a person, writes no event.
+    await callApi(ctxFor(db, owner), propertiesUpdate, { id, zones: 10 })
+    expect(await eventsOf(db, { kind: "property.edited", aboutId: id })).toHaveLength(2)
   })
   it("cleans the contact phone like the customer's", async () => {
     const out = await callApi(ctxFor(db, writeKey), propertiesUpdate, { id, contactPhone: "(970) 555 0199" })
@@ -33,6 +40,7 @@ describe("properties.update", () => {
   })
   it("refuses zones outside 1 to 16", async () => {
     await expect(callApi(ctxFor(db, writeKey), propertiesUpdate, { id, zones: 0 })).rejects.toMatchObject({ code: "invalid" })
+    expect((await eventsOf(db, { kind: "property.edited", aboutId: id })).every((e) => !JSON.stringify(e.detail).includes('"to":0'))).toBe(true)
     await expect(callApi(ctxFor(db, writeKey), propertiesUpdate, { id, zones: 17 })).rejects.toMatchObject({ code: "invalid" })
   })
   it("refuses an on-site phone that is not a phone number, and keeps the property as it was", async () => {

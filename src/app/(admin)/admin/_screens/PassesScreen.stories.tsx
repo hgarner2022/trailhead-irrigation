@@ -1,10 +1,11 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite"
 import { expect, screen, within } from "storybook/test"
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
-import type { AdminData } from "@/lib/admin/types"
+import type { AdminData, SoldJob } from "@/lib/admin/types"
 import { EMPTY_SETTINGS } from "@/lib/admin/empty-settings"
 import { AdminShell } from "@/components/blocks/AdminShell"
 import { PassesScreen } from "./PassesScreen"
+import { PASS_EVENTS, storyOf } from "./notes-fixture"
 import { noCardPass } from "./visits-fixture"
 
 // The panel is a dialog in a portal on the body, outside the story's canvas.
@@ -91,6 +92,35 @@ export const Phone: Story = {
 
 export const PhonePanel: Story = {
   args: { defaultSelectedId: data.passes[0].id },
+  globals: { viewport: { value: "phone", isRotated: false } },
+}
+
+// Andrea's pass as a job with its story: the sale, her choices, the early May timing she asked for and a note.
+const passJob: SoldJob = { id: "job-p1", customerId: "c100", kind: "pass", status: "active", source: "checkout", passId: "p1", passNumber: "TH-2027-0001", visitIds: [] }
+const withStory = (tech = false): AdminData => ({ ...data, jobs: [{ ...passJob, timeline: storyOf(PASS_EVENTS, [], tech) }] })
+
+/** Notes and history after Change the pass: the story of the pass's job, newest first, with the add box above it. */
+export const PanelNotesAndHistory: Story = {
+  args: { data: withStory(), defaultSelectedId: "p1" },
+  globals: { viewport: { value: "wide", isRotated: false } },
+  play: async () => {
+    await expect(await body.findByRole("heading", { name: "Notes and history" })).toBeInTheDocument()
+    await expect(await body.findByText("Spring turn-on timing changed from mid May to early May")).toBeInTheDocument()
+  },
+}
+
+/** A tech reads the story without the consent line and still has the add box, though the pass buttons are gone. */
+export const PanelNotesAndHistoryTech: Story = {
+  args: { data: withStory(true), defaultSelectedId: "p1", readOnly: true },
+  globals: { viewport: { value: "wide", isRotated: false } },
+  play: async () => {
+    await expect(await body.findByLabelText("Add a note")).toBeInTheDocument()
+    await expect(body.queryByText(/Consent recorded/)).not.toBeInTheDocument()
+  },
+}
+
+export const PanelNotesAndHistoryPhone: Story = {
+  args: { data: withStory(), defaultSelectedId: "p1" },
   globals: { viewport: { value: "phone", isRotated: false } },
 }
 

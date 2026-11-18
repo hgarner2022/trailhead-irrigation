@@ -6,7 +6,7 @@ import type { TestDb } from "@/db/test-db"
 import { verifyToken } from "@/lib/messaging/tokens"
 import { stubStripe } from "@/lib/stripe/test-stripe"
 import { callApi } from "../../core/call"
-import { adminKey, apiDb, ctxFor, key, ORG, readKey, writeKey } from "../../test-helpers"
+import { adminKey, apiDb, ctxFor, eventsOf as storyOf, key, ORG, readKey, writeKey } from "../../test-helpers"
 import { paymentsRecord, paymentsRefund } from "../payments/handlers"
 import { visitsCreate } from "../visits/office"
 import { invoicesCancel, invoicesGet, invoicesList, invoicesPayView, invoicesRemind, invoicesSend } from "./handlers"
@@ -325,5 +325,26 @@ describe("invoices.cancel, list and get", () => {
     await expect(callApi(ctxFor(db, other), invoicesSend, { jobId: v.jobId })).rejects.toMatchObject({ code: "not_found" })
     expect((await callApi(ctxFor(db, other), invoicesList, { jobId: v.jobId })).data).toEqual([])
     expect(await db.select().from(s.invoice).where(and(eq(s.invoice.organizationId, "org-l")))).toEqual([])
+  })
+})
+
+describe("the events a bill writes", () => {
+  it("send writes invoice.sent, a reminder writes invoice.reminded once a day, and a cancel writes invoice.cancelled once", async () => {
+    const v = await doneAndOwed()
+    const bill = await callApi(as(writeKey), invoicesSend, { jobId: v.jobId })
+    expect(await storyOf(db, { kind: "invoice.sent", aboutId: bill.id })).toMatchObject([{ about: "invoice", customerId: "c100", jobId: v.jobId, who: "api", detail: { number: bill.number, total: 145, dueOn: "2027-05-21" } }])
+    await callApi(as(writeKey), invoicesRemind, { id: bill.id })
+    await callApi(as(writeKey), invoicesRemind, { id: bill.id })
+    expect(await storyOf(db, { kind: "invoice.reminded", aboutId: bill.id })).toMatchObject([{ about: "invoice", customerId: "c100", jobId: v.jobId, detail: { number: bill.number, total: 145 } }])
+    await expect(callApi(as(readKey), invoicesCancel, { id: bill.id })).rejects.toMatchObject({ code: "forbidden" })
+    expect(await storyOf(db, { kind: "invoice.cancelled", aboutId: bill.id })).toEqual([])
+    await callApi(as(), invoicesCancel, { id: bill.id })
+    await callApi(as(), invoicesCancel, { id: bill.id })
+    expect(await storyOf(db, { kind: "invoice.cancelled", aboutId: bill.id })).toMatchObject([{ about: "invoice", customerId: "c100", jobId: v.jobId, who: "api", detail: { number: bill.number, total: 145 } }])
+  })
+  it("a refused send writes nothing", async () => {
+    const v = await repair()
+    await expect(callApi(as(writeKey), invoicesSend, { jobId: v.jobId })).rejects.toBeTruthy()
+    expect(await storyOf(db, { kind: "invoice.sent", jobId: v.jobId })).toEqual([])
   })
 })

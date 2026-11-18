@@ -1,0 +1,55 @@
+// @vitest-environment node
+import { afterAll, beforeAll, describe, expect, it } from "vitest"
+import { eq } from "drizzle-orm"
+import * as s from "@/db/schema"
+import type { TestDb } from "@/db/test-db"
+import { apiDb, ctxFor, ORG, owner } from "../../test-helpers"
+import { recordChange } from "./queries"
+
+let db: TestDb
+let customerId: string
+let jobId: string
+beforeAll(async () => {
+  db = await apiDb()
+  const [pass] = await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, "p3"))
+  customerId = pass!.customerId
+  jobId = pass!.jobId
+})
+afterAll(() => db.close())
+
+const events = (kind: string) => db.select().from(s.event).where(eq(s.event.kind, kind))
+
+describe("recordChange", () => {
+  it("writes the pass_change alias row with its old kind and one event with the mapped kind, about the visit", async () => {
+    await recordChange(ctxFor(db, owner), { customerId, passId: "p3", visitId: "p3-turn-on", kind: "day-picked", detail: { day: "2027-05-05" } })
+    const [alias] = await db.select().from(s.passChange).where(eq(s.passChange.kind, "day-picked"))
+    expect(alias).toMatchObject({ passId: "p3", visitId: "p3-turn-on", byPrincipal: "owner@example.com", detail: { day: "2027-05-05" } })
+    const rows = await events("visit.moved")
+    expect(rows).toHaveLength(1)
+    expect(rows[0]).toMatchObject({ organizationId: ORG, about: "visit", aboutId: "p3-turn-on", customerId, jobId, visitId: "p3-turn-on", who: "owner@example.com", detail: { day: "2027-05-05" } })
+    expect(rows[0]!.at.toISOString()).toBe("2027-04-20T15:00:00.000Z")
+  })
+
+  it("is about the pass's job when the new kind is not a visit kind, even with a visit", async () => {
+    await recordChange(ctxFor(db, owner), { customerId, passId: "p3", visitId: "p3-turn-on", kind: "visit-created", detail: { source: "office" } })
+    expect(await events("job.sold")).toMatchObject([{ about: "job", aboutId: jobId, jobId, visitId: "p3-turn-on" }])
+    await recordChange(ctxFor(db, owner), { customerId, passId: "p3", kind: "cancelled", detail: { reason: "moving" } })
+    expect(await events("pass.cancelled")).toMatchObject([{ about: "job", aboutId: jobId, jobId, visitId: null }])
+  })
+
+  it("finds the job through the visit when there is no pass (a one-off), and falls back to the customer with neither", async () => {
+    const [oneOff] = await db.select().from(s.visit).where(eq(s.visit.id, "p3-blowout"))
+    await db.update(s.visit).set({ passId: null }).where(eq(s.visit.id, "p3-blowout"))
+    await recordChange(ctxFor(db, owner), { customerId, visitId: "p3-blowout", kind: "visit-edited", detail: { changed: ["price"] } })
+    expect(await events("visit.edited")).toMatchObject([{ about: "visit", aboutId: "p3-blowout", jobId: oneOff!.jobId }])
+    await recordChange(ctxFor(db, owner), { customerId, kind: "consent-snapshot", detail: { source: "admin" } })
+    expect(await events("consent")).toMatchObject([{ about: "customer", aboutId: customerId, jobId: null, visitId: null }])
+  })
+
+  it("copies a kind it does not know unchanged, and records who the system principal is", async () => {
+    await recordChange(ctxFor(db, { kind: "api-key", id: "system", organizationId: ORG, scopes: ["read", "write", "admin"] }), { customerId, passId: "p3", kind: "brand-new-kind" })
+    expect(await events("brand-new-kind")).toMatchObject([{ about: "job", who: "system" }])
+    const [alias] = await db.select().from(s.passChange).where(eq(s.passChange.kind, "brand-new-kind"))
+    expect(alias!.byPrincipal).toBe("api-key:system")
+  })
+})

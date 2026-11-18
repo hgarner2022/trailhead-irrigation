@@ -27,6 +27,21 @@ describe("emitEvent", () => {
     expect(queue[0]!.payload).toEqual({ eventId: events[0]!.id })
     expect(await emitEvent(db, ORG, "charge.failed", {})).toBe(0)
   })
+
+  it("writes no event row without the record argument", async () => {
+    const before = (await db.select().from(s.event)).length
+    await emitEvent(db, ORG, "visit.done", { visitId: "v0" })
+    expect(await db.select().from(s.event)).toHaveLength(before)
+  })
+
+  it("writes one event row, named for the webhook event, when it is given the record it is about, even with no endpoint listening", async () => {
+    const before = (await db.select().from(s.event)).length
+    const delivered = await emitEvent(db, ORG, "invoice.sent", { number: "INV-1" }, { about: "invoice", aboutId: "inv-1", customerId: "c-1", jobId: "j-1", who: "owner@example.com", detail: { number: "INV-1" } })
+    expect(delivered).toBe(0)
+    const rows = await db.select().from(s.event)
+    expect(rows).toHaveLength(before + 1)
+    expect(rows.find((r) => r.aboutId === "inv-1")).toMatchObject({ organizationId: ORG, about: "invoice", kind: "invoice.sent", customerId: "c-1", jobId: "j-1", visitId: null, who: "owner@example.com", detail: { number: "INV-1" } })
+  })
 })
 
 describe("deliverEvent", () => {

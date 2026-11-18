@@ -1,4 +1,5 @@
 import { z } from "zod"
+import { EventOut } from "../events/schemas"
 import { PaymentOut } from "../payments/schemas"
 import { Day, Id, Iso, Preference, Town, VisitKind, VisitStatus } from "../shared"
 
@@ -65,6 +66,7 @@ export const VisitOut = z.object({
   lat: z.number().nullable(),
   lng: z.number().nullable(),
   address: z.string().optional().describe("Only for callers with the write scope."),
+  events: z.array(EventOut).optional().describe("The visit's story: its newest 50 events and notes, newest first (events.list has the rest). Left out for a signed-in customer, who never reads events."),
   property: YardOut.describe("What is true about the yard: zones, controller, backflow, gate code, who must be home, the access note, the on-site contact, property notes."),
 })
 export type VisitOutType = z.infer<typeof VisitOut>

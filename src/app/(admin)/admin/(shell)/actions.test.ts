@@ -108,6 +108,34 @@ describe("passes", () => {
   })
 })
 
+describe("notes", () => {
+  it("adds a note through events.note, answers it as a line of the story and refreshes the admin pages", async () => {
+    const out = await actions.addNote("visit", "p4-turn-on", "Gate was open, dog inside")
+    expect(out).toMatchObject({ ok: true, data: { kind: "event", what: "Gate was open, dog inside", note: "Gate was open, dog inside" } })
+    expect(calls("events.")).toEqual(["events.note"])
+    expect(state.revalidated).toContainEqual(["/admin", "layout"])
+    const [row] = await db.select().from(s.event).where(eq(s.event.kind, "note"))
+    expect(row).toMatchObject({ about: "visit", aboutId: "p4-turn-on", who: owner.email, detail: { text: "Gate was open, dog inside" } })
+    const [visit] = await db.select().from(s.visit).where(eq(s.visit.id, "p4-turn-on"))
+    expect(visit!.notes).toBe("Gate was open, dog inside")
+  })
+  it("lets a tech add a note, the one action a tech may take", async () => {
+    state.principal = tech
+    const out = await actions.addNote("customer", "c100", "Prefers a call before noon")
+    expect(out).toMatchObject({ ok: true, data: { what: "Prefers a call before noon" } })
+    const rows = await db.select().from(s.event).where(eq(s.event.about, "customer"))
+    expect(rows.find((r) => r.who === tech.email)).toMatchObject({ kind: "note", aboutId: "c100", customerId: "c100" })
+  })
+  it("answers the API's words when it refuses", async () => {
+    const missing = await actions.addNote("visit", "no-such-visit", "Hello")
+    expect(missing).toMatchObject({ ok: false })
+    expect((missing as { message: string }).message).toMatch(/not found/i)
+    const long = await actions.addNote("visit", "p4-turn-on", "x".repeat(2001))
+    expect(long).toMatchObject({ ok: false })
+    expect((long as { message: string }).message).toBeTruthy()
+  })
+})
+
 describe("property", () => {
   it("writes the yard through properties.update and the live data reads it back", async () => {
     const [prop] = await db.select().from(s.property).where(eq(s.property.customerId, "c100"))

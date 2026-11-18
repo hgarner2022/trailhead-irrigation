@@ -5,7 +5,7 @@ import * as s from "@/db/schema"
 import type { TestDb } from "@/db/test-db"
 import { callApi } from "@/api/core/call"
 import { passesCreate } from "@/api/v1/passes/handlers"
-import { apiDb, ctxFor, writeKey } from "@/api/test-helpers"
+import { apiDb, ctxFor, eventsOf, writeKey } from "@/api/test-helpers"
 import { applyCardUpdate } from "@/lib/stripe/card-update"
 import { completeSession, declined, stubStripe } from "@/lib/stripe/test-stripe"
 import { chargeVisit } from "./charge-visit"
@@ -52,6 +52,10 @@ describe("chargeVisit", () => {
     const [owner] = await db.select().from(s.customer).where(eq(s.customer.id, p.customerId))
     expect(owner!.cardFailedAt).toBeNull()
     expect(mail!.body).toContain("Your fall blowout is planned for mid October")
+    // The card-on-file charge is `payment.succeeded` in the story (the outbound webhook keeps its old `charge.succeeded` name).
+    const [paidRow] = await db.select().from(s.charge).where(eq(s.charge.visitId, p.turnOn))
+    expect(await eventsOf(db, { kind: "payment.succeeded", visitId: p.turnOn })).toMatchObject([{ about: "payment", aboutId: paidRow!.id, customerId: p.customerId, visitId: p.turnOn, who: "system", detail: { amount: 145, method: "card_on_file", name: "Spring turn-on" } }])
+    expect(await eventsOf(db, { kind: "charge.succeeded", visitId: p.turnOn })).toEqual([])
   })
 
   it("is done when already charged: no second charge, no second receipt", async () => {
@@ -59,6 +63,7 @@ describe("chargeVisit", () => {
     const { stripe, calls } = stubStripe()
     await chargeVisit(db, stripe, p.turnOn, opts)
     expect(await chargeVisit(db, stripe, p.turnOn, opts)).toBe("already-charged")
+    expect(await eventsOf(db, { kind: "payment.succeeded", visitId: p.turnOn })).toHaveLength(1)
     expect(calls.paymentIntentsCreate).toHaveBeenCalledTimes(1)
     expect(await messages(p.customerId)).toHaveLength(1)
   })
@@ -79,6 +84,10 @@ describe("chargeVisit", () => {
     expect(calls.sessionCreate.mock.calls[0]![0]).toMatchObject({ mode: "setup", customer: "cus_1", success_url: "https://site.test/account/pass/card-updated", metadata: { purpose: "card-update", passId: p.passId } })
     expect(await chargeVisit(db, stripe, p.turnOn, opts)).toBe("waiting-for-card")
     expect(calls.paymentIntentsCreate).toHaveBeenCalledTimes(1)
+    // A decline: `payment.failed` about the payment row and `card.failed` about the customer, once, however often it waits.
+    expect(await eventsOf(db, { kind: "payment.failed", visitId: p.turnOn })).toMatchObject([{ about: "payment", aboutId: charge!.id, customerId: p.customerId, who: "system", detail: { amount: 145, message: "Your card was declined.", name: "Spring turn-on" } }])
+    expect(await eventsOf(db, { kind: "card.failed", customerId: p.customerId })).toMatchObject([{ about: "customer", aboutId: p.customerId, who: "system", detail: { brand: "visa", last4: "4242" } }])
+    expect(await eventsOf(db, { kind: "payment.succeeded", visitId: p.turnOn })).toEqual([])
   })
 
   it("charges the customer's payment method, not the pass alias, and a customer with no card is not charged", async () => {
@@ -118,6 +127,8 @@ describe("applyCardUpdate", () => {
     const { stripe, calls } = stubStripe({ sessions })
     expect(await applyCardUpdate(db, stripe, "cs_up", NOW)).toBe("applied")
     expect(await applyCardUpdate(db, stripe, "cs_up", NOW)).toBe("already-applied")
+    // The new card is one `card.saved` about the customer; the second delivery of the same session writes none.
+    expect(await eventsOf(db, { kind: "card.saved", customerId: p.customerId })).toMatchObject([{ about: "customer", aboutId: p.customerId, jobId: null, who: "system", detail: { brand: "visa", last4: "1111" } }])
     expect(calls.detach).toHaveBeenCalledWith("pm_old")
     expect(calls.customersUpdate).toHaveBeenCalledTimes(1)
     const [pass] = await db.select().from(s.seasonPass).where(eq(s.seasonPass.id, p.passId))
@@ -136,6 +147,7 @@ describe("applyCardUpdate", () => {
     const p = await activePass()
     const { stripe } = stubStripe({ sessions: { cs_x: completeSession("cs_x", { purpose: "pass-setup", passId: p.passId }) } })
     await expect(applyCardUpdate(db, stripe, "cs_x", NOW)).rejects.toThrow("not a card update")
+    expect(await eventsOf(db, { kind: "card.saved", customerId: p.customerId })).toEqual([])
   })
 })
 

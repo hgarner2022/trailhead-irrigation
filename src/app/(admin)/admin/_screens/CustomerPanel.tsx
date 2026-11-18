@@ -14,6 +14,7 @@ import { KIND_WORDS, TIME_ZONE, shortDate } from "@/lib/admin/format"
 import { visitJob } from "@/lib/admin/jobs"
 import { formatPhone } from "@/lib/format/contact"
 import { PropertyBlock } from "./PropertyFields"
+import { PanelNotes } from "./PanelNotes"
 import { CustomerCardLine } from "./CustomerCardLine"
 import { MARKETING_WORDS, SCHEDULED_WORDS, cardOf, consentEntries, propertiesOf, type CustomerRow } from "./customers-model"
 
@@ -88,6 +89,7 @@ export function CustomerPanelBody({ row, client, data, today, readOnly = false, 
     <>
       <Facts row={row} card={card} jobId={row.passId ? jobIdOfPass(data, row.passId) : undefined} readOnly={readOnly} actions={actions} />
       {property && <PropertyBlock key={property.id} propertyId={property.id} yard={property} readOnly={readOnly} actions={actions} />}
+      <PanelNotes about="customer" aboutId={row.id} timeline={client?.timeline} addNote={actions?.addNote} />
       <section aria-labelledby="customer-jobs">
         <PanelHeading id="customer-jobs">Visits</PanelHeading>
         <Jobs visits={data.visits.filter((v) => v.clientId === row.id)} today={today} />

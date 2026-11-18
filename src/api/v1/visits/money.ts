@@ -3,6 +3,8 @@ import { and, eq } from "drizzle-orm"
 import { z } from "zod"
 import * as s from "@/db/schema"
 import { customerHasCard } from "@/lib/customer/card"
+import { visitName } from "@/lib/events/names"
+import { whoOf } from "@/lib/events/record"
 import { visitBalance } from "@/lib/money/record"
 import { enqueue } from "@/lib/queue"
 import { openInvoiceOf } from "../invoices/queries"
@@ -71,7 +73,7 @@ export const visitsMarkClosed = defineHandler({
       if (open) await cancelOpenBill(ctx, open)
       await ctx.db.update(s.queueItem).set({ status: "done", lastError: "marked done was undone", doneAt: ctx.now }).where(and(eq(s.queueItem.kind, "pass-charge"), eq(s.queueItem.key, visit.id), eq(s.queueItem.status, "pending")))
       await ctx.db.update(s.visit).set({ status: "scheduled", completedOn: null, chargedAt: null }).where(eq(s.visit.id, visit.id))
-      await recordChange(ctx, { customerId: visit.customerId, passId: visit.passId, visitId: visit.id, kind: "done-undone", detail: {} })
+      await recordChange(ctx, { customerId: visit.customerId, passId: visit.passId, visitId: visit.id, kind: "done-undone", detail: { name: visitName(visit.kind) } })
       return visitOut(ctx, await loadVisit(ctx, visit.id))
     }
     if (visit.status === "completed") return visitOut(ctx, await loadVisit(ctx, visit.id))
@@ -88,7 +90,10 @@ export const visitsMarkClosed = defineHandler({
     }
     const day = input.completedOn ?? today(ctx)
     await ctx.db.update(s.visit).set({ status: "completed", completedOn: day }).where(eq(s.visit.id, visit.id))
-    await emitEvent(ctx.db, ctx.organizationId, "visit.done", { visitId: visit.id, completedOn: day })
+    await emitEvent(ctx.db, ctx.organizationId, "visit.done", { visitId: visit.id, completedOn: day }, {
+      about: "visit", aboutId: visit.id, customerId: visit.customerId, jobId: visit.jobId, visitId: visit.id, who: whoOf(ctx), at: ctx.now,
+      detail: { name: visitName(visit.kind), completedOn: day, ...(!cardOnFile && input.paidBy ? { paidBy: input.paidBy.method } : {}) },
+    })
     // Ryan marking it done is the one human path to a charge without a completion signal; the queue and the charge are idempotent.
     // A real card is charged after Done unless the office was handed the money another way (check, Venmo or cash).
     if (cardOnFile && (!input.paidBy || input.paidBy.method === "bill")) await enqueue(ctx.db, ctx.organizationId, "pass-charge", visit.id, { visitId: visit.id })

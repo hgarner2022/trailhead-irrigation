@@ -67,7 +67,7 @@ export async function renewPass(ctx: Ctx, input: z.infer<typeof passCreateInput>
     now: ctx.now,
   })
   await holdChosenDays(ctx.db, pass.id, input.days.map(chosenDay), input.property.town, season, day)
-  await recordChange(ctx, { customerId: old.customerId, passId: pass.id, kind: "renewed", detail: { from: old.id, season } })
+  await recordChange(ctx, { customerId: old.customerId, passId: pass.id, kind: "renewed", detail: { source: "renewal", name: "Season Pass", passNumber: pass.number, renewsJobId: old.jobId, from: old.id, season } })
   const c = input.consent
   await finishPurchase(ctx, pass, input.property.town, c ? { marketingOptIn: c.marketingOptIn, marketingChannels: c.marketingChannels } : undefined)
   await emitEvent(ctx.db, org, "pass.bought", { passId: pass.id, number: pass.number })

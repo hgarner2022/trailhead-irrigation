@@ -17,6 +17,7 @@ import type { VisitActions } from "./visit-actions-types"
 import { CancelVisit, EditForm, ResendButton, TextForm } from "./VisitEditText"
 import { DoneForm, MoveForm, NotDoneForm, PaidByChoice } from "./VisitMoveDone"
 import { BillBlock } from "./VisitBill"
+import { PanelNotes } from "./PanelNotes"
 import { Included, JobLines } from "./VisitLines"
 import { useRunner } from "./use-runner"
 import { dayLabel, dayOfVisit, kindLabel, priceWords, timeWords, visitFacts, type VisitFacts } from "./visit-panel-model"
@@ -90,7 +91,9 @@ function VisitBlock({ facts }: { facts: VisitFacts }) {
           ["Who", visit.personName ?? ""],
           ["Minutes", String(visit.minutes ?? 60)],
           ["Price", facts.priceCancelled ? "Cancelled" : priceWords({ price: facts.price })],
-          ...(visit.notes ? ([["Notes", visit.notes]] as [string, ReactNode][]) : []),
+          // Notes are in the Notes and history block; the plain row stays for a visit whose story is missing (the catalog's fixtures) or
+          // empty (an old record past the events the page loads), so a note a person typed never disappears from the panel.
+          ...(visit.notes && !visit.timeline?.length ?([["Notes", visit.notes]] as [string, ReactNode][]) : []),
         ]}
       />
       <p className="mt-2 text-sm text-muted-foreground empty:hidden">{facts.states.dayPassed ? `The day passed on ${dayLabel(day!)}. Mark it done or move it.` : ""}</p>
@@ -211,6 +214,7 @@ export function VisitPanel({ data, today, visitId, open, onOpenChange, onOpenVis
         <AtTheProperty facts={facts} readOnly={readOnly} />
         <VisitBlock facts={facts} />
         {facts.line?.description ? <Included text={facts.line.description} /> : null}
+        <PanelNotes about="visit" aboutId={visit.id} timeline={visit.timeline} addNote={actions?.addNote} />
         <JobBlock facts={facts} today={today} onOpenVisit={onOpenVisit} />
         {!readOnly && <Actions facts={facts} data={data} today={today} actions={actions} />}
         <section aria-labelledby="visit-thread">

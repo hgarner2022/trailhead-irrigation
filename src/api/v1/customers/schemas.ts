@@ -1,5 +1,6 @@
 import { z } from "zod"
 import { Channel, Day, Id, Iso, Preference, Town, VisitKind } from "../shared"
+import { EventOut } from "../events/schemas"
 import { PaymentOut } from "../payments/schemas"
 import { LineOut } from "../visits/schemas"
 
@@ -76,10 +77,11 @@ export const JobOut = z.object({
   }).describe("The job's money in words, read from its payment rows and its open bill."),
   invoiceId: Id.nullable().describe("The job's open bill, if there is one (see invoices.get)."),
   visits: z.array(z.object({ id: Id, kind: VisitKind, status: z.string(), scheduledOn: Day.nullable(), amount: z.number().int() })),
+  events: z.array(EventOut).describe("The job's story: its newest 10 events and notes, newest first (events.list has the rest)."),
 })
 
 export const CustomerListItem = CustomerOut.extend({ town: Town.nullable(), address: z.string().nullable().optional().describe("The first property's street line. Only for callers with the write scope."), hasPass: z.boolean(), next: NextOut })
-export const CustomerDetail = CustomerOut.extend({ properties: z.array(PropertyOut), consent: ConsentOut.nullable(), jobs: z.array(JobOut), preference: Preference.optional() }).omit({ preference: true })
+export const CustomerDetail = CustomerOut.extend({ properties: z.array(PropertyOut), consent: ConsentOut.nullable(), jobs: z.array(JobOut), events: z.array(EventOut).describe("The customer's story: their newest 50 events and notes, newest first (events.list has the rest)."), preference: Preference.optional() }).omit({ preference: true })
 
 /** A text field of the yard: trimmed, and an empty answer is stored as null. */
 const yardText = (max: number) => z.string().max(max).transform((v) => v.trim() || null).nullable().optional()

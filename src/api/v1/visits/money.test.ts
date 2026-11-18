@@ -4,7 +4,7 @@ import { eq } from "drizzle-orm"
 import * as s from "@/db/schema"
 import type { TestDb } from "@/db/test-db"
 import { callApi } from "../../core/call"
-import { adminKey, apiDb, ctxFor, linesOfJob, ORG, readKey, writeKey } from "../../test-helpers"
+import { adminKey, apiDb, ctxFor, eventsOf, linesOfJob, ORG, readKey, writeKey } from "../../test-helpers"
 import { visitsGet, visitsMove } from "./handlers"
 import { visitsMarkClosed, visitsRecordPayment } from "./money"
 import { visitsCreate, visitsMarkNotDone } from "./office"
@@ -244,5 +244,57 @@ describe("Done with Send a bill", () => {
     await callApi(as(), visitsMarkClosed, { id: "p6-turn-on", paidBy: { method: "check", reference: "1042" } })
     expect((await db.select().from(s.queueItem).where(eq(s.queueItem.key, "p6-turn-on"))).map((q) => q.kind)).toEqual([])
     expect(await db.select().from(s.charge).where(eq(s.charge.visitId, "p6-turn-on"))).toMatchObject([{ method: "check", status: "succeeded" }])
+  })
+})
+
+describe("the events Done and the money write", () => {
+  const repairOn = (day: string) => callApi(as(writeKey), visitsCreate, { customerId: "c100", kind: "repair", scheduledOn: day, price: 145 })
+  it("Done with a check writes visit.done (with how it was paid) and payment.succeeded about the payment row, once", async () => {
+    const v = await repairOn("2027-07-06")
+    await callApi(as(), visitsMarkClosed, { id: v.id, paidBy: { method: "check", reference: "1043" } })
+    const [row] = await db.select().from(s.charge).where(eq(s.charge.visitId, v.id))
+    expect(await eventsOf(db, { kind: "visit.done", visitId: v.id })).toMatchObject([{ about: "visit", aboutId: v.id, customerId: "c100", jobId: v.jobId, who: "api", detail: { name: "Repair", completedOn: "2027-05-07", paidBy: "check" } }])
+    expect(await eventsOf(db, { kind: "payment.succeeded", jobId: v.jobId })).toMatchObject([{ about: "payment", aboutId: row!.id, customerId: "c100", visitId: v.id, who: "api", detail: { amount: 145, method: "check", name: "Repair" } }])
+    // Closing it again, or recording the same money again, changes nothing.
+    await callApi(as(), visitsMarkClosed, { id: v.id })
+    await expect(callApi(as(), visitsRecordPayment, { id: v.id, method: "check" })).rejects.toMatchObject({ code: "conflict" })
+    expect(await eventsOf(db, { kind: "visit.done", visitId: v.id })).toHaveLength(1)
+    expect(await eventsOf(db, { kind: "payment.succeeded", jobId: v.jobId })).toHaveLength(1)
+  })
+  it("a refused Done writes no event", async () => {
+    const v = await repairOn("2027-07-07")
+    await expect(callApi(as(), visitsMarkClosed, { id: v.id })).rejects.toMatchObject({ code: "invalid" })
+    expect(await eventsOf(db, { visitId: v.id, kind: "visit.done" })).toEqual([])
+  })
+  it("undoing a Done writes visit.undone", async () => {
+    const v = await repairOn("2027-07-08")
+    await db.update(s.visit).set({ status: "completed", completedOn: "2027-05-07" }).where(eq(s.visit.id, v.id))
+    await callApi(as(), visitsMarkClosed, { id: v.id, undo: true })
+    expect(await eventsOf(db, { kind: "visit.undone", visitId: v.id })).toMatchObject([{ about: "visit", aboutId: v.id, customerId: "c100", jobId: v.jobId, detail: { name: "Repair" } }])
+  })
+  it("a refund writes payment.refunded about the refund row, naming the payment it reverses; a refused refund writes none", async () => {
+    const v = await repairOn("2027-07-09")
+    await callApi(as(), visitsMarkClosed, { id: v.id, paidBy: { method: "venmo" } })
+    const [paid] = await db.select().from(s.charge).where(eq(s.charge.visitId, v.id))
+    await callApi(as(), paymentsRefund, { paymentId: paid!.id, amount: 45, reason: "Goodwill" })
+    const [refund] = await db.select().from(s.charge).where(eq(s.charge.refundsPaymentId, paid!.id))
+    expect(await eventsOf(db, { kind: "payment.refunded", jobId: v.jobId })).toMatchObject([{ about: "payment", aboutId: refund!.id, customerId: "c100", visitId: v.id, who: "api", detail: { amount: 45, method: "venmo", refunds: paid!.id, reason: "Goodwill", name: "Repair" } }])
+    await expect(callApi(as(), paymentsRefund, { paymentId: paid!.id, amount: 500 })).rejects.toMatchObject({ code: "unprocessable" })
+    expect(await eventsOf(db, { kind: "payment.refunded", jobId: v.jobId })).toHaveLength(1)
+  })
+  it("money that covers an open bill writes invoice.paid beside payment.succeeded, and undoing Done writes invoice.cancelled for an unpaid bill", async () => {
+    const v = await callApi(as(writeKey), visitsCreate, { customerId: "c100", kind: "repair", scheduledOn: "2027-06-14", price: 145 })
+    await callApi(as(), visitsMarkClosed, { id: v.id, paidBy: { method: "bill" } })
+    const [bill] = await db.select().from(s.invoice).where(eq(s.invoice.jobId, v.jobId))
+    expect(await eventsOf(db, { kind: "invoice.sent", jobId: v.jobId })).toMatchObject([{ about: "invoice", aboutId: bill!.id, customerId: "c100", who: "api", detail: { number: bill!.number, total: 145, dueOn: bill!.dueOn } }])
+    await callApi(as(writeKey), paymentsRecord, { jobId: v.jobId, visitId: v.id, amount: 145, method: "cash" })
+    expect(await eventsOf(db, { kind: "invoice.paid", jobId: v.jobId })).toMatchObject([{ about: "invoice", aboutId: bill!.id, customerId: "c100", who: "api", detail: { number: bill!.number, total: 145, how: "cash" } }])
+
+    const w = await callApi(as(writeKey), visitsCreate, { customerId: "c100", kind: "repair", scheduledOn: "2027-06-15", price: 145 })
+    await callApi(as(), visitsMarkClosed, { id: w.id, paidBy: { method: "bill" } })
+    const [open] = await db.select().from(s.invoice).where(eq(s.invoice.jobId, w.jobId))
+    await callApi(as(), visitsMarkClosed, { id: w.id, undo: true })
+    expect(await eventsOf(db, { kind: "invoice.cancelled", jobId: w.jobId })).toMatchObject([{ about: "invoice", aboutId: open!.id, customerId: "c100", detail: { number: open!.number, total: 145 } }])
+    expect(await eventsOf(db, { kind: "invoice.paid", jobId: w.jobId })).toEqual([])
   })
 })
