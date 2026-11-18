@@ -1,5 +1,5 @@
 import { googleCalendarUrl } from "./calendar"
-import { ACCOUNT_NAME, ADD_CARD_LINE, BUSINESS, CONFIRM_LINE, RYAN_DOES, atVisitMoneyLine, dollars, moneyLine, whenText } from "./format"
+import { ACCOUNT_NAME, ADD_CARD_LINE, BUSINESS, CONFIRM_LINE, RYAN_DOES, atVisitMoneyLine, moneyLine, whenText } from "./format"
 import { jobTable } from "./job-table"
 import { button, emailLayout, esc, facts, heading, paragraph, plainText, EMAIL_COLORS } from "./layout"
 import type { PurchaseConfirmationData, RenderedEmail } from "./types"

@@ -56,8 +56,8 @@ describe("passes.sell", () => {
     expect(confirmation.body).toContain("Ryan sets the days that are missing")
     expect(confirmation.body).toContain("by check, Venmo or cash at the visit")
     expect(confirmation.body).not.toContain("card ending")
-    expect(confirmation.body).toMatch(/Spring turn-on.* · \$\d+/)
-    expect(confirmation.body).toContain("Season total · $")
+    expect(confirmation.body).toMatch(/Spring turn-on: \$\d+\n/)
+    expect(confirmation.body).toContain("Season total: $")
     // One sale, one `job.sold` (the activation inside a sale writes none of its own), then the note and the consent it recorded.
     expect(await eventsOf(db, { kind: "job.sold", jobId: row.jobId })).toMatchObject([{ about: "job", aboutId: row.jobId, customerId: "c100", who: "api", detail: { source: "office", name: "Season Pass", passNumber: pass.number, paysBy: "at-visit" } }])
     expect(await eventsOf(db, { kind: "note", jobId: row.jobId })).toMatchObject([{ about: "job", aboutId: row.jobId, customerId: "c100", detail: { text: "Took it by phone" } }])

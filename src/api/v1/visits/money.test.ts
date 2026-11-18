@@ -52,7 +52,7 @@ describe("Done and the money", () => {
     expect(charge).toMatchObject({ method: "check", reference: "1042", status: "succeeded", amount: 145 })
     const receipts = (await db.select().from(s.messageLog)).filter((m) => m.visitId === v.id && m.kind === "receipt")
     expect(receipts).toHaveLength(1)
-    expect(receipts[0]!.body).toContain("check")
+    expect(receipts[0]!.body).toContain("Paid: $145, Check")
     expect((await callApi(as(), visitsGet, { id: v.id })).paidBy).toBe("check")
   })
 
