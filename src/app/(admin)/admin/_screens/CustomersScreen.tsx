@@ -53,7 +53,7 @@ export function CustomersScreen({ data, today, defaultSelectedId, readOnly = fal
   const [open, setOpen] = useState(() => rows.some((r) => r.id === defaultSelectedId))
   const row = rows.find((r) => r.id === selectedId)
   const client = data.clients.find((c) => c.id === selectedId)
-  const [, start] = useTransition()
+  const [pending, start] = useTransition()
   const [notice, setNotice] = useState("")
   const optOut = (customerId: string) =>
     start(async () => {
@@ -99,6 +99,7 @@ export function CustomersScreen({ data, today, defaultSelectedId, readOnly = fal
               notice={notice}
               offers={offers}
               onOptOut={actions && !readOnly ? () => optOut(row.id) : undefined}
+              optOutPending={pending}
             />
           )
         }

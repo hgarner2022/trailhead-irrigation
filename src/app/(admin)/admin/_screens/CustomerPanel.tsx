@@ -100,10 +100,12 @@ export interface CustomerPanelProps {
   offers?: boolean
   /** "Record phone opt-out" in More, for a customer who opted in to marketing; absent when it cannot be done */
   onOptOut?: () => void
+  /** the opt-out is being recorded: its menu item is off */
+  optOutPending?: boolean
 }
 
 /** The Customers side panel, a `RecordPanel`: the street under the name, the pass pill, the facts, then the pass, Property, Notes and history, Jobs, Invoices, Consent history and Messages. */
-export function CustomerPanel({ open, onOpenChange, row, client, data, today, readOnly = false, actions, notice, offers = false, onOptOut }: CustomerPanelProps) {
+export function CustomerPanel({ open, onOpenChange, row, client, data, today, readOnly = false, actions, notice, offers = false, onOptOut, optOutPending = false }: CustomerPanelProps) {
   const day = dayOf(today, TIME_ZONE)
   // The first property is the one shown; a customer with a second one is a later step.
   const property = client ? propertiesOf(client, data.passes)[0] : undefined
@@ -111,6 +113,8 @@ export function CustomerPanel({ open, onOpenChange, row, client, data, today, re
   // Every pass this customer has paid for, newest season first; an unpaid attempt is not a pass yet.
   const passes = data.passes.filter((p) => p.clientId === row.id && p.status !== "pending").sort((a, b) => b.season - a.season)
   const jobId = row.passId ? jobIdOfPass(data, row.passId) : undefined
+  // no buttons for this person and customer: no footer strip at all
+  const hasFooter = readOnly ? Boolean(jobId) : Boolean(client?.app || jobId || offers || (onOptOut && client?.consent?.marketingOptIn))
   return (
     <RecordPanel
       open={open}
@@ -121,7 +125,7 @@ export function CustomerPanel({ open, onOpenChange, row, client, data, today, re
       facts={factsOf(row, card, jobId, readOnly, actions)}
       slot="customer-panel"
       notice={notice ? <p role="status" className="text-sm text-muted-foreground">{notice}</p> : undefined}
-      footer={<CustomerFooter row={row} client={client} data={data} today={today} readOnly={readOnly} actions={actions} jobHref={jobId ? jobUrl(jobId) : undefined} offers={offers} onOptOut={onOptOut} />}
+      footer={hasFooter ? <CustomerFooter row={row} client={client} data={data} today={today} readOnly={readOnly} actions={actions} jobHref={jobId ? jobUrl(jobId) : undefined} offers={offers} onOptOut={onOptOut} optOutPending={optOutPending} /> : undefined}
     >
       <PassSeasons passes={passes} today={day} />
       {property && <PropertyBlock key={property.id} propertyId={property.id} yard={property} readOnly={readOnly} actions={actions} />}

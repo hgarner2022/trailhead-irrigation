@@ -23,13 +23,12 @@ export const NEW_BLOCKS = ["RecordPanel", "RecordFooter", "ConfirmDialog", "Spli
 export const ALLOW = {
   // visit: the left column loses Visits (step 2), Home and the Schedule take plain words (step 3), the grids get their final columns (step 9)
   "(shell)/visits/page.tsx": { "visit-word": "Nov 18 2026, step 2: the Visits page becomes the Schedule's List" },
+  "_screens/VisitsScreen.tsx": { "visit-word": "Nov 18 2026, step 2: the Visits page becomes the Schedule's List" },
   "_screens/visits-model.ts": { "visit-word": "Nov 18 2026, step 2: the Visits page becomes the Schedule's List" },
   "_screens/HomeScreen.tsx": { "visit-word": "Nov 18 2026, step 3: Home reads Today in plain words" },
   "_screens/home-model.ts": { "visit-word": "Nov 18 2026, step 3: Home reads Today in plain words" },
   "_screens/TodayVisits.tsx": { "visit-word": "Nov 18 2026, step 3: Home reads Today in plain words" },
-  "_screens/ScheduleMoveTo.tsx": { "visit-word": "Nov 18 2026, step 4: Move becomes its dialog" },
   "_screens/ScheduleScreen.tsx": {
-    "visit-word": "Nov 18 2026, step 3: the Schedule says jobs and days",
     "one-primary": "Nov 18 2026, step 3: New job becomes the page's one primary and Place all moves under Unscheduled",
   },
   "_screens/schedule-model.ts": { "visit-word": "Nov 18 2026, step 3: the Schedule says jobs and days" },
@@ -37,19 +36,22 @@ export const ALLOW = {
   "_screens/customers-columns.tsx": { "visit-word": "Nov 18 2026, step 9: the final column sets", columns: "Nov 18 2026, step 9: the final column sets (ten today, eight then)" },
   "_screens/jobs-columns.tsx": { "visit-word": "Nov 18 2026, step 9: the final column sets", columns: "Nov 18 2026, step 9: the final column sets (nine today, eight then)" },
   "_screens/jobs-model.ts": { "visit-word": "Nov 18 2026, step 9: the Progress column reads '1 of 2 done'" },
-  "_screens/passes-model.ts": { "visit-word": "Nov 18 2026, step 2: the pass card's words in the Customers panel" },
+  "_screens/passes-model.ts": { "visit-word": "Nov 18 2026, step 9: the final words of the Customers panel" },
   "_screens/settings-model.ts": { "visit-word": "Nov 18 2026, step 6: Settings shell, People and Services" },
   "_screens/settings-tabs/Capacity.tsx": { "visit-word": "Nov 18 2026, step 6: the Capacity tab goes" },
-  "_screens/settings-tabs/People.tsx": { "visit-word": "Nov 18 2026, step 6: People gets Takes visits and hours", words: "Nov 18 2026, step 6: Takes visits replaces the truck label" },
-  // overlays: New job moves onto the sheet recipe (step 3) and Settings onto its shell (step 6)
-  "_screens/NewJob.tsx": { overlays: "Nov 18 2026, step 3: New job becomes SidePanel variant sheet", "no-table-label": "Nov 18 2026, step 3: New job's fields become FormRows" },
-  "_screens/settings-tabs/ApiKeys.tsx": { overlays: "Nov 18 2026, step 6: Settings shell" },
+  "_screens/settings-tabs/People.tsx": { "visit-word": "Nov 18 2026, step 6: People gets Takes visits and hours", words: "Nov 18 2026, step 6: Takes visits replaces the truck label", "no-table-label": "Nov 18 2026, step 6: People becomes a list with a sheet" },
+  // overlays: New job moves onto the sheet recipe (step 2) and Settings onto its shell (step 6)
+  "_screens/NewJob.tsx": { overlays: "Nov 18 2026, step 2: New job becomes SidePanel variant sheet", "no-table-label": "Nov 18 2026, step 2: New job's fields become FormRows" },
+  "_screens/settings-tabs/ApiKeys.tsx": { overlays: "Nov 18 2026, step 6: Settings shell", "no-table-label": "Nov 18 2026, step 6: Settings shell (FormRow and the list recipe)" },
+  "_screens/settings-tabs/Billing.tsx": { "no-table-label": "Nov 18 2026, step 6: Settings shell (FormRow)" },
+  "_screens/settings-tabs/Services.tsx": { "no-table-label": "Nov 18 2026, step 6: Services becomes a list with a sheet" },
   "_screens/settings-tabs/Messages.tsx": { overlays: "Nov 18 2026, step 6: Settings shell" },
   "_screens/settings-tabs/fields.tsx": { overlays: "Nov 18 2026, step 6: Settings shell (ConfirmButton becomes ConfirmDialog)" },
-  // forms: New job's fields become FormRows with the sheet recipe (step 3); Settings fields with the shell (step 6)
-  "_screens/CustomerPicker.tsx": { "no-table-label": "Nov 18 2026, step 3: New job's fields become FormRows" },
-  "_screens/NewJobPass.tsx": { "no-table-label": "Nov 18 2026, step 3: New job's fields become FormRows" },
-  "_screens/NewJobService.tsx": { "no-table-label": "Nov 18 2026, step 3: New job's fields become FormRows" },
+  // forms: New job's fields become FormRows with the sheet recipe (step 2); Settings fields with the shell (step 6)
+  "_screens/CustomerPicker.tsx": { "no-table-label": "Nov 18 2026, step 2: New job's fields become FormRows" },
+  "_screens/ScheduleMoveTo.tsx": { "visit-word": "Nov 18 2026, step 4: Move becomes its dialog", "no-table-label": "Nov 18 2026, step 4: Move becomes its dialog" },
+  "_screens/NewJobPass.tsx": { "no-table-label": "Nov 18 2026, step 2: New job's fields become FormRows" },
+  "_screens/NewJobService.tsx": { "no-table-label": "Nov 18 2026, step 2: New job's fields become FormRows" },
 }
 
 /** Source text with comments blanked (same length, so line numbers hold). */
@@ -75,10 +77,12 @@ export function* screenText(text) {
     if (/\bconsole\.\w+\(/.test(src.slice(lineStart, m.index))) continue
     yield { s, line: lineOf(src, m.index) }
   }
-  // JSX text between two tags; code that only looks like it (an arrow, a generic, a type) has operators in it and is left out
-  for (const m of src.matchAll(/(?<![=\-])>([^<>{}\n]*[A-Za-z][^<>{}\n]*)</g)) {
+  // JSX text between two tags, on one line or on its own lines; code that only looks like it (an arrow, a generic, a type) has operators in it and is left out
+  for (const m of src.matchAll(/(?<![=\-])>([^<>{}]*[A-Za-z][^<>{}]*)</g)) {
     const text = m[1].replace(/&\w+;/g, " ")
-    if (!/[|=()[\]"`;?]/.test(text)) yield { s: text, line: lineOf(src, m.index) }
+    if (/[|=()[\]"`;?]/.test(text)) continue
+    const lead = m[1].length - m[1].trimStart().length
+    yield { s: text.trim(), line: lineOf(src, m.index + 1 + lead) }
   }
 }
 
@@ -96,7 +100,8 @@ function checkWords(file, text, problems) {
   for (const { s, line } of screenText(text)) for (const [re, what] of BANNED) if (re.test(s)) problems.push(`${file}:${line}: banned word ${what}`)
 }
 
-const VISIT_OK = /(^|\/)(Job[A-Za-z]*|Visit[A-Za-z]*|job-[\w-]+|visit-[\w-]+|use-runner|PanelNotes|PassPanel|NewJob[A-Za-z]*|CustomerJobs|ConfirmDialog|RecordPanel|RecordFooter)\.tsx?$/
+// The job panel, the visit panel and their parts. VisitsScreen, VisitPanelHost and JobsScreen are pages and hosts, not panels.
+const VISIT_OK = /(^|\/)(JobPanel|JobFooter|JobDialogs|JobCollect|JobLinesSection|JobMoneySection|JobPills|VisitPanel|VisitFooter|VisitEditText|VisitMoveDone|VisitOnMyWay|VisitLines|VisitBill|job-[\w-]+|visit-[\w-]+|use-runner|PanelNotes|PassPanel|NewJob[A-Za-z]*|CustomerJobs|ConfirmDialog|RecordPanel|RecordFooter)\.tsx?$/
 const VISIT_WORD = /\b[Vv]isits?\b/
 
 function checkVisitWord(file, text, problems) {
@@ -163,12 +168,12 @@ function checkOverlays(file, text, problems) {
 
 // Chart keeps the visually hidden data table that makes a chart readable aloud; WeekGrid is the calendar of days, one of the blocks section 9 keeps;
 // CancelVisitSheet and RescheduleSheet are the customer's account, which is not part of this system (section 9, "Kept").
-const TABLE_OK = /(^|\/)(DataGrid|data-grid-[\w-]+|FormRow|Chart|WeekGrid|CancelVisitSheet|RescheduleSheet)\.tsx$/
+const TABLE_OK = /(^|\/)(DataGrid|data-grid-[\w-]+|FormRow|Chart|WeekGrid|CancelVisitSheet|RescheduleSheet|NextVisitCard|SignInCard)\.tsx$/
 
 function checkTableLabel(file, text, problems) {
   if (TABLE_OK.test(file)) return
   const src = stripComments(text)
-  for (const m of src.matchAll(/<(table|label)\b/g)) problems.push(`${file}:${lineOf(src, m.index)}: <${m[1]}> outside DataGrid and FormRow`)
+  for (const m of src.matchAll(/<(table|label|Table|Label)\b/g)) problems.push(`${file}:${lineOf(src, m.index)}: <${m[1]}> outside DataGrid and FormRow`)
 }
 
 const MAX_COLUMNS = 8
@@ -210,6 +215,7 @@ export function checkAdminRules(abs, { file, dirs, fixture, name }, { problems, 
   if ((!admin && !block) || fixture || !/\.tsx?$/.test(name)) return
   const text = readFileSync(abs, "utf8")
   const rel = file.split("\\").join("/")
+  seen.add(rel)
   for (const [rule, run] of RULES) {
     // blocks are shared with the customer's account; the screen-only rules read the admin tree
     if (block && ["words", "visit-word", "one-primary", "panel-body-buttons", "columns"].includes(rule) && !/blocks\/(RecordPanel|RecordFooter|ConfirmDialog|SplitButton|MoneyCell|FormRow|SectionHeading|StatusPill|SegmentedControl)\.tsx$/.test(rel)) continue
@@ -222,9 +228,24 @@ export function checkAdminRules(abs, { file, dirs, fixture, name }, { problems, 
   }
 }
 
+const used = new Set()
+const seen = new Set()
+
 function allowed(rel, rule) {
-  for (const [suffix, rules] of Object.entries(ALLOW)) if (rel.endsWith(suffix) && rules[rule]) return rules[rule]
+  for (const [suffix, rules] of Object.entries(ALLOW))
+    if (rel.endsWith(suffix) && rules[rule]) {
+      used.add(`${suffix}|${rule}`)
+      return rules[rule]
+    }
   return undefined
+}
+
+/** The list only shrinks: an entry whose file no longer fails its rule is stale and fails the gate until it is deleted. */
+export function checkStaleAllow(_srcRoot, { problems }) {
+  for (const [suffix, rules] of Object.entries(ALLOW)) {
+    if (![...seen].some((f) => f.endsWith(suffix))) continue
+    for (const rule of Object.keys(rules)) if (!used.has(`${suffix}|${rule}`)) problems.push(`${suffix}: ALLOW entry for ${rule} no longer matches a violation; delete it`)
+  }
 }
 
 /** Each new block's stories file has Default, Empty and Phone. */

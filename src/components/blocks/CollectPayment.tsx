@@ -143,7 +143,7 @@ export function CollectPayment({ plan, summary, firstName, onCharge, onRecord, o
         {problem}
       </p>
       {place(
-        <Button type="button" className={cn("min-h-11", !slot && "w-full sm:w-auto sm:self-start")} disabled={busy || (handed && plan.needsAmount && !Number(amount))} onClick={press}>
+        <Button type="button" className={cn("min-h-11 w-full sm:w-auto", !slot && "sm:self-start")} disabled={busy || (handed && plan.needsAmount && !Number(amount))} onClick={press}>
           {picked.button}
         </Button>,
       )}

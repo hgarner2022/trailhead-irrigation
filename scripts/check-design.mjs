@@ -16,7 +16,7 @@ import { checkImports, checkServerImports } from "./design-gate/imports.mjs"
 import { checkStory } from "./design-gate/stories.mjs"
 import { loadExcludedUi, MarketingCss } from "./design-gate/marketing-css.mjs"
 import { checkFileSize } from "./design-gate/file-size.mjs"
-import { checkAdminRules, checkNewBlockStories } from "./design-gate/admin-rules.mjs"
+import { checkAdminRules, checkNewBlockStories, checkStaleAllow } from "./design-gate/admin-rules.mjs"
 
 const argv = process.argv.slice(2)
 const root = argv.includes("--dir") ? argv[argv.indexOf("--dir") + 1] : "src"
@@ -49,6 +49,7 @@ for (const abs of walk(root)) {
   checkAdminRules(abs, info, report)
 }
 checkNewBlockStories(root, report)
+checkStaleAllow(root, report)
 if (marketingCss) marketingCss.checkCoverage(report)
 
 for (const n of report.notes) console.log(n)

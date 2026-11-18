@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { useState, type ReactNode } from "react"
+import { useState } from "react"
 import { CollectPayment } from "@/components/blocks/CollectPayment"
 import { MessageThread } from "@/components/blocks/MessageThread"
 import { RECORD_ROW, RecordFacts, RecordList, RecordPanel, RecordRowEnd, RecordRowText, type RecordFact } from "@/components/blocks/RecordPanel"
@@ -179,6 +179,7 @@ export function VisitPanel({ data, today, visitId, open, onOpenChange, onOpenVis
       footer={
         hasFooter ? (
           <VisitFooter
+            key={visit.id}
             facts={facts}
             people={routePeople(data.settings.people)}
             plan={plan}

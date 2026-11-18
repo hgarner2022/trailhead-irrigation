@@ -111,6 +111,8 @@ export function JobPanel({ data, today, jobId, open, onOpenChange, readOnly = fa
   const passOpen = canAct && pass?.status === "active"
   const plan = footerPlan(facts, canAct)
   const bar = jobBar(facts, plan, canAct, pass, passOpen)
+  // a Done and paid job, a canceled one and a tech have no buttons: no footer strip at all
+  const hasFooter = Boolean(bar.primary || bar.secondary.length || bar.more.length || bar.destructive)
   const rec: RecordFact[] = [
     ["Customer", <Link key="c" href={customerUrl(row.customerId)} className="text-primary-dark underline underline-offset-2">{row.name}</Link>],
     ["Total", row.total > 0 ? `$${row.total.toLocaleString("en-US")}` : "Quote later"],
@@ -142,6 +144,7 @@ export function JobPanel({ data, today, jobId, open, onOpenChange, readOnly = fa
         </>
       }
       footer={
+        hasFooter ? (
         <JobFooter
           facts={facts}
           bar={bar}
@@ -156,6 +159,7 @@ export function JobPanel({ data, today, jobId, open, onOpenChange, readOnly = fa
           onCancelPass={() => setCancelling(true)}
           onCancelJob={() => setCancellingJob(true)}
         />
+        ) : undefined
       }
     >
       <Property facts={facts} readOnly={readOnly} />

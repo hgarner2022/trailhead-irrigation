@@ -23,9 +23,10 @@ export interface CustomerFooterProps {
   jobHref?: string
   offers: boolean
   onOptOut?: () => void
+  optOutPending?: boolean
 }
 
-export function CustomerFooter({ row, client, data, today, readOnly, actions, jobHref, offers, onOptOut }: CustomerFooterProps) {
+export function CustomerFooter({ row, client, data, today, readOnly, actions, jobHref, offers, onOptOut, optOutPending = false }: CustomerFooterProps) {
   const [jobOpen, setJobOpen] = useState(false)
   const [textOpen, setTextOpen] = useState(false)
   // A tech has no buttons but the way up to the job.
@@ -34,7 +35,7 @@ export function CustomerFooter({ row, client, data, today, readOnly, actions, jo
   const more: FooterAction[] = [
     ...(jobHref ? [{ label: "Open job", href: jobHref }] : []),
     ...(offers ? [{ label: "Send pass offer", onClick: () => console.info("send pass offer", [row.name]) }] : []),
-    ...(onOptOut && client?.consent?.marketingOptIn ? [{ label: "Record phone opt-out", onClick: onOptOut }] : []),
+    ...(onOptOut && client?.consent?.marketingOptIn ? [{ label: "Record phone opt-out", onClick: onOptOut, disabled: optOutPending }] : []),
   ]
   return (
     <>

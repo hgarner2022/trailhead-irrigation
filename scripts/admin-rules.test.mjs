@@ -80,6 +80,22 @@ test("an arrow function is not JSX text", () => {
   assert.equal(r.status, 0, r.out)
 })
 
+test("banned words and visit on their own JSX lines are found", () => {
+  const bad = run(screen("Thing", `export const T = () => (\n  <Button>\n    Send a Bill\n  </Button>\n)\n`))
+  assert.equal(bad.status, 1)
+  assert.match(bad.out, /Thing\.tsx:3: banned word Bill/)
+  const visit = run(screen("HomeThing", `export const T = () => (\n  <p>\n    Today's visits\n  </p>\n)\n`))
+  assert.equal(visit.status, 1)
+  assert.match(visit.out, /HomeThing\.tsx:3: the word "visit"/)
+})
+
+test("the pages and hosts named Visit or Job are not the panels", () => {
+  for (const name of ["JobsScreen", "VisitPanelHost"]) {
+    const r = run(screen(name, `export const T = () => <h2>Visits appear here</h2>\n`))
+    assert.equal(r.status, 1, name)
+  }
+})
+
 // "visit" only in the job and visit panels
 
 test("the word visit on a screen outside the panels fails; inside the visit and job panels it passes", () => {
@@ -117,6 +133,7 @@ test("<table> and <label> in a screen fail; inside DataGrid and FormRow they pas
   assert.match(label.out, /Thing\.tsx:1: <label> outside DataGrid and FormRow/)
   const table = run(screen("Thing", `export const T = () => <table />\n`))
   assert.equal(table.status, 1)
+  for (const tag of ["Label", "Table"]) assert.equal(run(screen("Thing", `export const T = () => <${tag} />\n`)).status, 1, tag)
   const ok = run({
     "components/blocks/FormRow.tsx": `export const F = () => <label htmlFor="a">A</label>\n`,
     "components/blocks/FormRow.stories.tsx": STORY,
@@ -154,6 +171,12 @@ test("an allowlisted file reports a note with its date and step instead of faili
   const r = run({ "app/(admin)/admin/_screens/HomeScreen.tsx": `export const T = () => <h2>Today's visits</h2>\n` })
   assert.equal(r.status, 0, r.out)
   assert.match(r.out, /HomeScreen\.tsx: visit-word allowed until Nov 18 2026, step 3/)
+})
+
+test("an allowlist entry that no longer matches a violation fails, so the list only shrinks", () => {
+  const r = run({ "app/(admin)/admin/_screens/HomeScreen.tsx": `export const T = () => <h2>Today</h2>\n` })
+  assert.equal(r.status, 1)
+  assert.match(r.out, /HomeScreen\.tsx: ALLOW entry for visit-word no longer matches a violation; delete it/)
 })
 
 test("every allowlist entry names a date and a step of the build order", () => {

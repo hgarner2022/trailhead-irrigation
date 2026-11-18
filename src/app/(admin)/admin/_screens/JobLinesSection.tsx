@@ -11,7 +11,7 @@ import { SERVICE_LIST } from "@/lib/services"
 import type { AdminData, JobLine, ServiceItem } from "@/lib/admin/types"
 import { FIELD } from "./CustomerPicker"
 import type { JobActions } from "./job-actions-types"
-import { FORM_STATUS, useRunner } from "./use-runner"
+import { FORM_STATUS } from "./use-runner"
 import { JobLines } from "./VisitLines"
 
 // The Lines section of the job panel: what was sold, one row each, a canceled line struck through, an unpriced line saying
@@ -30,6 +30,7 @@ function EditLineDialog({ line, actions, open, onOpenChange }: { line: JobLine; 
   const [quantity, setQuantity] = useState(String(line.quantity))
   const [price, setPrice] = useState(String(line.unitPrice))
   const [problem, setProblem] = useState("")
+  const [cancelling, setCancelling] = useState(false)
   const save = async () => {
     const changes = { quantity: Math.max(1, Number(quantity) || 1), unitPrice: Number(price) || 0 }
     if (!actions) return (console.info("update line", line.id, changes), { ok: true as const })
@@ -37,7 +38,9 @@ function EditLineDialog({ line, actions, open, onOpenChange }: { line: JobLine; 
   }
   const cancel = async () => {
     if (!actions) return (console.info("cancel line", line.id), onOpenChange(false))
+    setCancelling(true)
     const out = await actions.cancelLine(line.id)
+    setCancelling(false)
     if (out.ok) onOpenChange(false)
     else setProblem(out.message)
   }
@@ -51,7 +54,7 @@ function EditLineDialog({ line, actions, open, onOpenChange }: { line: JobLine; 
           <Input inputMode="numeric" value={price} placeholder="Quote later" onChange={(e) => setPrice(e.target.value.replace(/\D/g, ""))} className="min-h-11" />
         </FormRow>
       </div>
-      <Button type="button" variant="ghost" className="min-h-11 self-start text-destructive hover:text-destructive" onClick={cancel}>
+      <Button type="button" variant="ghost" className="min-h-11 self-start text-destructive hover:text-destructive" disabled={cancelling} onClick={cancel}>
         Cancel line
       </Button>
       <p role="alert" className={`${FORM_STATUS} text-destructive`}>
@@ -175,7 +178,7 @@ export function JobLinesSection({ jobId, lines, total, tax = 0, data, editable, 
           Add a line
         </Button>
       )}
-      {editable && <AddLineDialog jobId={jobId} services={services} actions={actions} open={adding} onOpenChange={setAdding} />}
+      {editable && <AddLineDialog key={String(adding)} jobId={jobId} services={services} actions={actions} open={adding} onOpenChange={setAdding} />}
     </section>
   )
 }
