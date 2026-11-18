@@ -110,9 +110,9 @@ export const yardOf = (y: ApiYard): Yard => ({
 
 const toKind = (k: string): VisitKind => (k === "turn-on" || k === "inspection" || k === "blowout" || k === "repair" || k === "install" ? k : "other")
 /** The visits whose newest charge attempt failed: a retry that went through clears the earlier failure. */
-export function failedChargeVisits(rows: { visitId: string; attempt: number; status: string }[]): string[] {
+export function failedChargeVisits(rows: { visitId: string | null; attempt: number; status: string }[]): string[] {
   const newest = new Map<string, { attempt: number; status: string }>()
-  for (const r of rows) if (r.attempt > (newest.get(r.visitId)?.attempt ?? 0)) newest.set(r.visitId, r)
+  for (const r of rows) if (r.visitId && r.attempt > (newest.get(r.visitId)?.attempt ?? 0)) newest.set(r.visitId, r)
   return [...newest].filter(([, r]) => r.status === "failed").map(([id]) => id)
 }
 

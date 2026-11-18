@@ -479,13 +479,25 @@ export const quoteRequest = pgTable(
   (t) => [index("quote_request_org_idx").on(t.organizationId)],
 )
 
+/**
+ * The payment record: one row per dollar movement on a job. A refund is a negative amount pointing at the payment it
+ * reverses (`refunds_payment_id`). `pass_id` and the visit-level columns are aliases until step 6; `job_id` and
+ * `customer_id` are nullable in the schema only until then (migration 0018 fills every existing row).
+ */
 export const charge = pgTable(
   "charge",
   {
     id: id(),
     organizationId: orgId(),
     passId: text("pass_id").references(() => seasonPass.id),
-    visitId: text("visit_id").notNull().references(() => visit.id),
+    jobId: text("job_id").references(() => job.id),
+    customerId: text("customer_id").references(() => customer.id),
+    /** null for a payment on the job as a whole (a bill paid on the pay page) */
+    visitId: text("visit_id").references(() => visit.id),
+    /** the Mountain day the money arrived */
+    paidOn: day("paid_on"),
+    /** the payment a refund row reverses (no foreign key: the row is in this table) */
+    refundsPaymentId: text("refunds_payment_id"),
     attempt: integer("attempt").notNull().default(1),
     amount: integer("amount").notNull(),
     status: chargeStatusEnum("status").notNull().default("pending"),
@@ -499,7 +511,7 @@ export const charge = pgTable(
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
-  (t) => [unique("charge_visit_attempt_unique").on(t.visitId, t.attempt)],
+  (t) => [unique("charge_visit_attempt_unique").on(t.visitId, t.attempt), index("charge_job_idx").on(t.jobId)],
 )
 
 /** A change the customer or an admin made to a pass or one of its visits: a preference, a skip, a cancel, an added inspection, a move request. */

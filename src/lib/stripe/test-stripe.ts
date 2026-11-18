@@ -29,6 +29,7 @@ export function stubStripe(over: { sessions?: Record<string, unknown>; charge?: 
     customersUpdate: vi.fn(async () => ({})),
     customersCreate: vi.fn(async () => ({ id: `cus_new_${calls.customersCreate.mock.calls.length}` })),
     detach: vi.fn(async () => ({})),
+    refundsCreate: vi.fn(async (params: Record<string, unknown>) => ({ id: `re_${calls.refundsCreate.mock.calls.length}`, status: "succeeded", ...params })),
     paymentIntentsCreate: vi.fn<(params: Record<string, unknown>, options: { idempotencyKey: string }) => Promise<unknown>>(async () =>
       over.charge ? over.charge() : { id: `pi_ok_${++intents}`, status: "succeeded", latest_charge: { receipt_url: "https://pay.stripe.test/receipt/1" } },
     ),
@@ -38,6 +39,7 @@ export function stubStripe(over: { sessions?: Record<string, unknown>; charge?: 
     customers: { update: calls.customersUpdate, create: calls.customersCreate },
     paymentMethods: { detach: calls.detach },
     paymentIntents: { create: calls.paymentIntentsCreate },
+    refunds: { create: calls.refundsCreate },
     webhooks: signer,
   } as unknown as Stripe
   return { stripe, calls }

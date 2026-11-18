@@ -117,7 +117,7 @@ export async function passDetail(ctx: Ctx, row: PassRow) {
   return {
     ...passOut(ctx, row),
     visits: visits.map((v) => ({ ...visitOut(ctx, v), calendarUrl: calendarLink(v.visit) })),
-    charges: charges.map((c) => ({ id: c.id, visitId: c.visitId, attempt: c.attempt, amount: c.amount, status: c.status, failureMessage: c.failureMessage, createdAt: c.createdAt.toISOString() })),
+    charges: charges.filter((c): c is typeof c & { visitId: string } => c.visitId !== null).map((c) => ({ id: c.id, visitId: c.visitId, attempt: c.attempt, amount: c.amount, status: c.status, failureMessage: c.failureMessage, createdAt: c.createdAt.toISOString() })),
     consent: consent ? consentOut(consent) : null,
     price: visits.filter((v) => v.visit.status !== "cancelled").reduce((sum, v) => sum + v.visit.amount, 0),
     ...(contact

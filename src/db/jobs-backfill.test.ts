@@ -48,8 +48,8 @@ describe("migration 0014: line items backfill", () => {
     const all = files()
     const at = all.findIndex((f) => f.startsWith("0014_line_items"))
     expect(at).toBeGreaterThan(0)
-    // 0015 to 0017 only add the property, card and pass columns the seed now writes; the seed needs them to insert.
-    const later = ["0015_property_fields", "0016_customer_card", "0017_job_pass"].map((name) => all.find((f) => f.startsWith(name))!)
+    // 0015 to 0018 only add the property, card, pass and payment columns the seed now writes; the seed needs them to insert.
+    const later = ["0015_property_fields", "0016_customer_card", "0017_job_pass", "0018_payment"].map((name) => all.find((f) => f.startsWith(name))!)
     for (const f of [...all.slice(0, at + 1), ...later]) for (const stmt of migration(f)) if (stmt.trim()) await client.exec(stmt)
     const org = data.organizationId
     await seed(drizzle(client, { schema }), data, { organizationId: org, admins: [], passes: true })
@@ -167,6 +167,44 @@ describe("migration 0017: the pass on the job", () => {
     ])
     // The data statements are the ones that update; a second run leaves every row as it was.
     for (const stmt of statements.filter((x) => /^\s*update "job"/i.test(x))) await client.exec(stmt)
+    expect(await read()).toEqual(after)
+    await client.close()
+  })
+})
+
+describe("migration 0018: the payment record", () => {
+  it("gives a charge row its visit's job, customer and the completed day, and a re-run changes nothing", async () => {
+    const client = new PGlite()
+    const all = files()
+    const at = all.findIndex((f) => f.startsWith("0018_payment"))
+    expect(at).toBeGreaterThan(0)
+    for (const f of all.slice(0, at)) for (const stmt of migration(f)) if (stmt.trim()) await client.exec(stmt)
+    await client.exec(`INSERT INTO organization (id, name, terms_version, settings) VALUES ('o', 'T', '1', '{"windows":[],"bufferPercentEarly":0,"bufferPercentLate":0,"fallTownOrder":[],"springTownOrder":[],"messages":[]}')`)
+    await client.exec(`INSERT INTO customer (id, organization_id, first_name) VALUES ('c', 'o', 'A')`)
+    await client.exec(`INSERT INTO property (id, organization_id, customer_id, address, town) VALUES ('pr', 'o', 'c', '1 Main', 'Erie')`)
+    await client.exec(`INSERT INTO job (id, organization_id, customer_id, property_id, kind, source) VALUES ('j1', 'o', 'c', 'pr', 'repair', 'office'), ('j2', 'o', 'c', 'pr', 'repair', 'office')`)
+    await client.exec(
+      `INSERT INTO visit (id, organization_id, job_id, customer_id, property_id, kind, amount, status, completed_on) VALUES
+        ('v1', 'o', 'j1', 'c', 'pr', 'repair', 145, 'completed', '2027-04-02'),
+        ('v2', 'o', 'j2', 'c', 'pr', 'repair', 145, 'unscheduled', NULL)`,
+    )
+    // v2 has no completed day: the day the row was made, in Denver, stands in (23:30 Mountain on the 5th is 05:30 UTC on the 6th).
+    await client.exec(
+      `INSERT INTO charge (id, organization_id, visit_id, attempt, amount, status, method, created_at) VALUES
+        ('ch1', 'o', 'v1', 1, 145, 'succeeded', 'cash', '2027-04-03T15:00:00Z'),
+        ('ch2', 'o', 'v2', 1, 145, 'failed', 'card_on_file', '2027-05-06T05:30:00Z')`,
+    )
+    type Row = { id: string; job_id: string | null; customer_id: string | null; paid_on: string | null }
+    const read = async () => (await client.query<Row>(`SELECT id, job_id, customer_id, to_char(paid_on, 'YYYY-MM-DD') AS paid_on FROM charge ORDER BY id`)).rows
+    const statements = migration(all[at]!).filter((x) => /^\s*update "charge"/i.test(x))
+    expect(statements).toHaveLength(1)
+    for (const stmt of migration(all[at]!)) if (stmt.trim()) await client.exec(stmt)
+    const after = await read()
+    expect(after).toEqual([
+      { id: "ch1", job_id: "j1", customer_id: "c", paid_on: "2027-04-02" },
+      { id: "ch2", job_id: "j2", customer_id: "c", paid_on: "2027-05-05" },
+    ])
+    for (const stmt of statements) await client.exec(stmt)
     expect(await read()).toEqual(after)
     await client.close()
   })

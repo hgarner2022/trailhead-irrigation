@@ -12,6 +12,8 @@ export const EVENTS = [
   "visit.done",
   "charge.succeeded",
   "charge.failed",
+  "payment.succeeded",
+  "payment.refunded",
   "booking.created",
   "request.received",
   "webhook.test",

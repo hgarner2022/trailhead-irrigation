@@ -12,6 +12,8 @@ import { canSeeContact, idInput, iso, today } from "../shared"
 import { customerHasCard } from "@/lib/customer/card"
 import { ConsentOut, consentInput, CustomerDetail, CustomerListItem, CustomerOut, customerFields, propertyInput } from "./schemas"
 import { jobTotal } from "@/lib/jobs/lines"
+import { jobMoney } from "@/lib/money/words"
+import { paymentOut } from "../payments/queries"
 import { cleanEmail, cleanName, normalizePhone } from "@/lib/format/contact"
 
 type CustomerRow = typeof s.customer.$inferSelect
@@ -210,15 +212,20 @@ async function jobsOf(db: Database, customerId: string) {
   const visits = await db.select().from(s.visit).where(inArray(s.visit.jobId, jobs.map((j) => j.id))).orderBy(asc(s.visit.scheduledOn), asc(s.visit.createdAt))
   const passes = await db.select({ id: s.seasonPass.id, jobId: s.seasonPass.jobId }).from(s.seasonPass).where(inArray(s.seasonPass.jobId, jobs.map((j) => j.id)))
   const lineRows = await db.select().from(s.lineItem).where(inArray(s.lineItem.jobId, jobs.map((j) => j.id))).orderBy(asc(s.lineItem.createdAt), asc(s.lineItem.id))
+  const paymentRows = await db.select().from(s.charge).where(inArray(s.charge.jobId, jobs.map((j) => j.id))).orderBy(asc(s.charge.createdAt), asc(s.charge.id))
   return jobs.map((j) => {
     const pass = passes.find((p) => p.jobId === j.id)
     const lines = lineRows.filter((l) => l.jobId === j.id)
+    const payments = paymentRows.filter((p) => p.jobId === j.id)
+    const jobVisits = visits.filter((v) => v.jobId === j.id)
     return {
       id: j.id, kind: j.kind, status: j.status, price: j.price, source: j.source, notes: j.notes, createdAt: j.createdAt.toISOString(),
       passId: pass?.id ?? null, passNumber: j.passNumber,
       lines: lines.map((l) => ({ id: l.id, name: l.name, description: l.description, quantity: l.quantity, unitPrice: l.unitPrice, taxable: l.taxable, cancelledAt: l.cancelledAt?.toISOString() ?? null, visitId: l.visitId })),
       total: jobTotal(lines),
-      visits: visits.filter((v) => v.jobId === j.id).map((v) => {
+      payments: payments.map(paymentOut),
+      money: jobMoney(lines, payments, jobVisits.map((v) => ({ id: v.id, cancelled: v.status === "cancelled" || v.status === "skipped" }))),
+      visits: jobVisits.map((v) => {
         const own = lines.filter((l) => l.visitId === v.id)
         return { id: v.id, kind: v.kind, status: v.status, scheduledOn: v.scheduledOn, amount: own.length ? jobTotal(own) : v.amount }
       }),

@@ -68,6 +68,17 @@ describe("schema", () => {
     await db.insert(s.job).values([{ ...base, id: "jp-4" }, { ...base, id: "jp-5" }])
   })
 
+  it("holds a payment on the job: a job-level payment has no visit, a refund points at its payment", async () => {
+    await db.insert(s.charge).values({ id: "pay-1", organizationId: ORG, jobId: "j2", customerId: "c1", amount: 145, status: "succeeded", method: "cash", paidOn: "2027-04-02" })
+    await db.insert(s.charge).values({ id: "pay-2", organizationId: ORG, jobId: "j2", customerId: "c1", amount: -145, status: "succeeded", method: "cash", paidOn: "2027-04-03", refundsPaymentId: "pay-1" })
+    await reject(db.insert(s.charge).values({ organizationId: ORG, jobId: "nope", customerId: "c1", amount: 1 }))
+    await reject(db.insert(s.charge).values({ organizationId: ORG, jobId: "j2", customerId: "nope", amount: 1 }))
+    const cols = await db.execute(sql`select column_name from information_schema.columns where table_name = 'charge' and column_name in ('job_id','customer_id','paid_on','refunds_payment_id')`)
+    expect(cols.rows).toHaveLength(4)
+    const idx = await db.execute(sql`select indexname from pg_indexes where tablename = 'charge' and indexname = 'charge_job_idx'`)
+    expect(idx.rows).toHaveLength(1)
+  })
+
   it("keeps queue_item unique on (kind, key)", async () => {
     await db.insert(s.queueItem).values({ organizationId: ORG, kind: "stripe-webhook", key: "evt_1" })
     await reject(db.insert(s.queueItem).values({ organizationId: ORG, kind: "stripe-webhook", key: "evt_1" }))

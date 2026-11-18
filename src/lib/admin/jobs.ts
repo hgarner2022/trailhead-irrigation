@@ -23,6 +23,7 @@
  * until the visit is done, then Paid with how, Unpaid, Bill sent, Failed). A Scheduled visit whose day has passed stays Scheduled with a "day passed"
  * note; Routed is a start time in the Time column, not a state. `statesOf` derives both from the same row.
  */
+import { METHOD_WORDS } from "@/lib/money/words"
 import { addDays, dayOf } from "./calendar"
 import { TIME_ZONE } from "./format"
 import type { AdminData, Pass, PassVisit, Visit, VisitStatus } from "./types"
@@ -47,8 +48,7 @@ export type MoneyState = "not-yet" | "paid" | "unpaid" | "bill-sent" | "failed"
 
 export const WORK_WORDS: Record<WorkState, string> = { "needs-a-day": "No day yet", scheduled: "Scheduled", done: "Done", "not-done": "Not done", cancelled: "Cancelled" }
 export const MONEY_WORDS: Record<MoneyState, string> = { "not-yet": "", paid: "Paid", unpaid: "Unpaid", "bill-sent": "Bill sent", failed: "Failed" }
-/** The words for how a payment came, as the pill's suffix and the receipt say them. */
-export const METHOD_WORDS: Record<string, string> = { card_on_file: "card", card_now: "card", check: "check", venmo: "Venmo", cash: "cash", bill: "bill" }
+export { METHOD_WORDS }
 export const REASON_WORDS: Record<string, string> = { "could-not-get-in": "could not get in", "no-water": "no water on", "customer-asked-to-wait": "customer asked to wait", other: "something else" }
 
 /** What the two pills and the small note say about one visit. */

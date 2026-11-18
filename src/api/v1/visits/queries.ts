@@ -7,10 +7,14 @@ import { notFound } from "../../core/errors"
 import { jobTotal } from "@/lib/jobs/lines"
 import { canSeeContact } from "../shared"
 import { yardOut } from "../customers/handlers"
+import type { PaymentOutType } from "../payments/schemas"
 import type { VisitOutType } from "./schemas"
 
 /** The job's lines as the database hands them: one JSON array per visit, oldest first. */
 interface LineJson { id: string; name: string; description: string | null; quantity: number; unit_price: number; taxable: boolean; cancelled_at: string | null; visit_id: string | null }
+
+/** A payment row as the database hands it inside JSON. */
+interface PaymentJson { id: string; job_id: string | null; visit_id: string | null; customer_id: string | null; amount: number; method: PaymentOutType["method"]; reference: string | null; status: PaymentOutType["status"]; paid_on: string | null; receipt_url: string | null; refunds_payment_id: string | null; created_at: string }
 
 export const visitSelect = {
   visit: s.visit,
@@ -25,6 +29,8 @@ export const visitSelect = {
   chargeMethod: sql<string | null>`(select c.method from charge c where c.visit_id = ${s.visit.id} order by c.attempt desc limit 1)`,
   // what was sold on the visit's job: its lines are the truth for what the visit costs
   lines: sql<LineJson[] | null>`(select json_agg(json_build_object('id', l.id, 'name', l.name, 'description', l.description, 'quantity', l.quantity, 'unit_price', l.unit_price, 'taxable', l.taxable, 'cancelled_at', l.cancelled_at, 'visit_id', l.visit_id) order by l.created_at, l.id) from line_item l where l.job_id = ${s.visit.jobId} and l.organization_id = ${s.visit.organizationId})`,
+  // the visit's own payment rows, oldest first (the job-level ones are on the job)
+  payments: sql<PaymentJson[] | null>`(select json_agg(json_build_object('id', c.id, 'job_id', c.job_id, 'visit_id', c.visit_id, 'customer_id', c.customer_id, 'amount', c.amount, 'method', c.method, 'reference', c.reference, 'status', c.status, 'paid_on', c.paid_on, 'receipt_url', c.receipt_url, 'refunds_payment_id', c.refunds_payment_id, 'created_at', c.created_at) order by c.created_at, c.id) from charge c where c.visit_id = ${s.visit.id})`,
   chargeStatus: sql<string | null>`(select c.status from charge c where c.visit_id = ${s.visit.id} order by c.attempt desc limit 1)`,
 }
 
@@ -58,6 +64,10 @@ export function visitOut(ctx: Ctx, row: VisitJoined): VisitOutType {
     window: v.window,
     amount: own.length ? jobTotal(own.map((l) => ({ ...l, cancelledAt: l.cancelledAt ? new Date(l.cancelledAt) : null }))) : v.amount,
     lineItems,
+    payments: (row.payments ?? []).map((c) => ({
+      id: c.id, jobId: c.job_id, visitId: c.visit_id, customerId: c.customer_id, amount: c.amount, method: c.method, reference: c.reference, status: c.status,
+      paidOn: c.paid_on, receiptUrl: c.receipt_url, refundsPaymentId: c.refunds_payment_id, createdAt: isoOf(c.created_at),
+    })),
     preference: v.preference,
     awaitingPick: v.awaitingPick,
     personId: v.personId,

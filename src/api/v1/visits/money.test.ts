@@ -42,13 +42,21 @@ describe("Done and the money", () => {
     expect((await callApi(as(), visitsGet, { id: v.id })).paidBy).toBe("check")
   })
 
-  it("undoes a recorded payment and the done", async () => {
-    const v = await repair()
-    await callApi(as(), visitsMarkClosed, { id: v.id, paidBy: { method: "cash" } })
-    const back = await callApi(as(), visitsMarkClosed, { id: v.id, undo: true })
-    expect(back).toMatchObject({ status: "scheduled", paymentStatus: "none", completedOn: null })
-    expect(await db.select().from(s.charge).where(eq(s.charge.visitId, v.id))).toEqual([])
-    await expect(callApi(as(), visitsMarkClosed, { id: v.id, undo: true })).rejects.toMatchObject({ code: "unprocessable" })
+  it("undoes a Done that has no payment, and refuses once a payment row exists, deleting nothing", async () => {
+    const none = await repair()
+    await callApi(as(), visitsMarkClosed, { id: none.id, paidBy: { method: "cash" } })
+    const [row] = await db.select().from(s.charge).where(eq(s.charge.visitId, none.id))
+    expect(row).toMatchObject({ jobId: none.jobId, customerId: "c100", paidOn: "2027-05-07", status: "succeeded", method: "cash" })
+    await expect(callApi(as(), visitsMarkClosed, { id: none.id, undo: true })).rejects.toMatchObject({ code: "unprocessable", message: "A payment was recorded. Refund it from the job first." })
+    expect(await db.select().from(s.charge).where(eq(s.charge.visitId, none.id))).toEqual([row])
+    expect(await callApi(as(), visitsGet, { id: none.id })).toMatchObject({ status: "completed", paymentStatus: "paid", payments: [{ id: row!.id, amount: 145, method: "cash" }] })
+
+    const unpaid = await repair()
+    // Done with the money still to come (a bill, or an office that has not been paid yet): no payment row, so the undo is allowed.
+    await db.update(s.visit).set({ status: "completed", completedOn: "2027-05-07" }).where(eq(s.visit.id, unpaid.id))
+    const back = await callApi(as(), visitsMarkClosed, { id: unpaid.id, undo: true })
+    expect(back).toMatchObject({ status: "scheduled", paymentStatus: "none", completedOn: null, payments: [] })
+    await expect(callApi(as(), visitsMarkClosed, { id: unpaid.id, undo: true })).rejects.toMatchObject({ code: "unprocessable" })
   })
 
   it("prices the visit's line from a payment handed over when an unpriced install is closed", async () => {
