@@ -1,8 +1,15 @@
-import { describe, expect, it, vi } from "vitest"
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest"
 import { render, screen, waitFor, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import type { TimelineLine } from "@/lib/events/timeline"
 import { NotesAndHistory, lineDate, type NoteOutcome } from "./NotesAndHistory"
+
+// The fixtures are dated 2026; a line shows its year only when it is not this year, so the clock is pinned (Date only, timers stay real).
+beforeAll(() => {
+  vi.useFakeTimers({ toFake: ["Date"] })
+  vi.setSystemTime(new Date("2026-11-18T19:00:00Z"))
+})
+afterAll(() => vi.useRealTimers())
 
 const lines: TimelineLine[] = [
   { id: "e3", at: "2026-11-17T18:00:00Z", actor: "Ryan", what: "Spring turn-on marked done, paid by Venmo", kind: "event" },

@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it, vi } from "vitest"
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest"
 import { render, screen, waitFor, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
@@ -16,6 +16,9 @@ import { VISITS_TODAY, visitsData } from "./visits-fixture"
 // calls the panel's addNote with that record, and the same block for a tech. The block's own behaviour is in its test.
 
 beforeAll(() => {
+  // The fixtures are dated 2026; a line shows its year only when it is not this year, so the clock is pinned (Date only).
+  vi.useFakeTimers({ toFake: ["Date"] })
+  vi.setSystemTime(new Date("2026-11-18T19:00:00Z"))
   Element.prototype.hasPointerCapture ??= () => false
   Element.prototype.setPointerCapture ??= () => undefined
   Element.prototype.releasePointerCapture ??= () => undefined
@@ -23,6 +26,8 @@ beforeAll(() => {
   vi.stubGlobal("ResizeObserver", class { observe() {} unobserve() {} disconnect() {} })
   vi.stubGlobal("matchMedia", (query: string) => ({ matches: query === "(min-width: 1024px)", media: query, addEventListener: vi.fn(), removeEventListener: vi.fn() }))
 })
+
+afterAll(() => vi.useRealTimers())
 
 const TODAY = "2026-11-12T19:56:30Z"
 const added = { id: "n-new", at: "2026-11-12T19:57:00Z", actor: "Ryan", what: "Back gate sticks", kind: "event" as const, note: "Back gate sticks" }
