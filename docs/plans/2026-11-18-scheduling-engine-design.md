@@ -49,7 +49,7 @@ Each is a story with what goes in and what must come out. Rules Hannah has settl
 
 | # | Story | In | Out |
 |---|---|---|---|
-| 1 | **A new customer books a Season Pass.** Andrea, Erie, 8 zones, books on Fri Apr 24 | Address and point, zones, today, each visit's bookable dates, every booked visit with its time | For each of the two visits, a few days, one preselected, each with a line ("We're already in Erie that day"), and on the chosen day the open start times. She picks a day and a time; both visits are made with those times. The day-before text confirms each |
+| 1 | **A new customer books a Season Pass.** Andrea, Erie, 8 zones, books on Fri Apr 24 | Address and point, zones, today, each visit's bookable dates, every booked visit with its time, blocked time | For each of the two visits, a few days, one preselected, each with a line ("We're already in Erie that day"), and on the chosen day the open start times. She picks a day and a time; both visits are made with those times. The day-before text confirms each |
 | 2 | **A new customer books a spring turn-on.** Same address, no pass | As above, one visit of 60 minutes | The same, for that date. If Ryan already has three Erie turn-ons on Tue Apr 28, that Tuesday is the first day offered, with the few start times left on it (Hannah's rule) |
 | 3 | **A repair.** A broken head, today is Monday | Address, repair (120 minutes, 3 a day at most) | The earliest open day first, then the two nearest; each day's open 2-hour slots. Tomorrow at the earliest |
 | 4 | **A fall blowout in the rush.** Wed Oct 7, Erie | Address, blowout (30 minutes, 6 to 8 a person a day), bookable Sep 28 to Nov 15, 54 blowouts booked in the peak week | Days with a slot and room, soonest five, nearest three; as a day fills the next open day is offered, as far as Nov 15; nobody is turned away |
@@ -57,13 +57,13 @@ Each is a story with what goes in and what must come out. Rules Hannah has settl
 | 6 | **A town with no visits yet.** First Firestone booking of the spring | Address; Ryan has nothing in Firestone | The soonest open days and their times; the first booking seeds a day; the second Firestone customer then sees it with a neighbour |
 | 7 | **A customer must be home.** Jim; the controller is inside | The same, plus "I need to be there" | The same days and times; he picks a time that suits him, and that is the promise |
 | 8 | **A customer reschedules online.** Andrea moves Tue Apr 28 4:30 pm | Her visit, today, the 24-hour rule | The same offer with her own slot excluded, so her old time can be offered again; she picks a new day and time; the old day is freed and Ryan sees "Andrea moved Tue to Thu". Inside 24 hours: "Text or call Ryan" |
-| 9 | **A customer cancels.** One-off repair, 3 days ahead | Her visit, the 24-hour rule | Visit cancelled, line cancelled, her slot opens for the next customer, a Home row. Nothing is charged |
+| 9 | **A customer cancels.** One-off repair, 3 days ahead | Her visit; the cut-off at the booked start minus 24 hours | Visit cancelled, line cancelled, her slot opens for the next customer, a Home row. Nothing is charged. A 9 am cancel of a 4:30 pm visit is allowed (the lock starts at 4:30 pm the day before) |
 | 10 | **Ryan adds a customer by phone.** Mrs Tran calls while he is driving | Name, address, service, a day and time she wants | The open slots shown beside his day picker with their lines; he can pick any time, or "Any time" (no booked time), and sees what breaks (overlap, no room for the drive, over the count, outside the dates) |
 | 11 | **Ryan moves a visit** to another day, time or person | A visit and a target day, time and person | The old and new day updated; a move of a booked time always texts the customer (a visit with no booked time keeps "Move without texting"); a must-be-home property is asked "Reply YES or pick another day" |
 | 12 | **A second truck is added mid-season.** Scott joined on Sep 21 in 2026 | A new person with working days, hours and counts | Slots open for either person; no existing visit moves |
 | 13 | **A rain day.** Wed Oct 14, 15 stops, two people | Ryan marks the day rained out | Each visit gets a proposed new day and the open time nearest its old time; one button, texts, Undo |
 | 14 | **An address outside the six towns.** Dacono (24 visits in 2026 to Frederick, Dacono, Boulder, Westminster) | An address in none of the six | Online: "We don't serve that town yet. Call Ryan", nothing saved. By phone Ryan can add it with a warning |
-| 15 | **The day before.** 6 pm Mon Apr 27 | Tomorrow's booked visits | Each customer gets a text that confirms the booked time ("Ryan is coming tomorrow at 4:30 pm"); a visit with no booked time gets the day only |
+| 15 | **The day before.** 6 pm Mon Apr 27 | Tomorrow's visits | A booked visit: a text with the booked time and a window around it ("Ryan is coming tomorrow at 10:00, between 10 and 10:30"); an untimed visit: the day and its window from the order ("between 1 and 3 pm") |
 | 16 | **Ordering Ryan's day.** Tue Apr 28 with three booked times and two "Any time" visits | The stops, their points, Ryan's start | Booked times stay; the untimed stops are ordered into the gaps; before and after with drive minutes saved; Undo |
 
 ## 3. Decisions
@@ -74,7 +74,7 @@ Each is a story with what goes in and what must come out. Rules Hannah has settl
 |---|---|---|
 | 1 | **Soonest first.** A customer is offered the soonest open days. Nearness to existing work orders the days within the soon range and breaks ties | "Customer service always comes first... getting them in quickly is priority" |
 | 2 | The earliest day offered is tomorrow, if someone has room | Hannah |
-| 3 | Capacity is counts per kind per person per day, as People holds today (six to eight blowouts a day). Service minutes set the slot length and whether a slot fits between booked visits, never how many visits a person may take | Hannah |
+| 3 | **Capacity is derived from hours and lengths:** a day is open for a kind while the person has the minutes (hours minus booked minutes minus the drive gaps) for a slot of that service's length; the typed count per kind on People stays only as a cap, so six to eight blowouts is a ceiling, not the rule. Service minutes also set the slot length | Hannah, as tightened by the architect |
 | 4 | When every day is full, keep offering the next open day as far as the service's bookable window runs. No waitlist, nobody turned away | Hannah |
 | 5 | "Near" is three tiers: same town, then within about ten minutes' drive (fixed in code, no setting), then any open day | Hannah |
 | 6 | Order the day runs only when pressed, with Undo. No held-back buffer | Hannah |
@@ -101,7 +101,11 @@ Each is a story with what goes in and what must come out. Rules Hannah has settl
 |---|---|
 | 16 | The soon range is the soonest five working days (days with an open slot). Offer the three of those nearest to existing work, the first preselected. A repair is always offered the earliest open day first |
 | 17 | **A customer picks a day and a start time** from the open slots of that day, as on Jobber's live booking form (slots such as "12:00 PM to 12:30 PM" the length of the service, drawn from the open gaps around existing appointments). The booked time is the promise | Hannah, via the parent session, Nov 18 |
-| 18 | The booked time is written to `visit.start_time` at booking. Order the day keeps booked times fixed and orders only untimed stops around them. A move of a booked time always texts the customer. The day-before text confirms the booked time; the "we'll text your window" rule is gone | Hannah, via the parent session |
+| 18 | The booked time is written to `visit.start_time` at booking. Order the day keeps booked times fixed and orders only untimed stops around them. A move of a booked time always texts the customer. **The day-before text keeps a window around a booked exact start** ("between 10 and 10:30") and gives an untimed stop its window (section 5) | Hannah, via the parent session; architect |
+| 19 | **The 24-hour cut-off counts from the booked start time** (for an untimed visit, midnight at the start of its day), in Mountain time. A slot booked inside that lock is allowed, and the booking screen says before the customer confirms that it can no longer be changed online (call or text Ryan) | architect |
+| 20 | **Block time** on the Schedule (a person, a span, an optional note) writes `busy_block`; `slotsFor` reads it, so a blocked span offers no slot | architect |
+| 21 | Hours are per person on People (`day_start`, `day_end`), default **09:00 to 17:00**; Ryan may change them. The 2026 data (afternoons in spring and summer) is evidence for what he may set, not the default | Hannah; architect |
+| 22 | Each new column goes out as its own additive migration push with its `docs/DATA_MODEL.md` row, never bundled with a drop. `area` is dropped only after the Settings step hides its tab, with the guard-before-drop pattern of data-model step 6. The preselected slot is a suggestion the customer must tap; the app never submits for them | architect's review of #74 |
 
 ## 4. The offer rule
 
@@ -113,9 +117,10 @@ The offer returns days, and for each day the open start times. Days are ranked s
 |---|---|---|
 | Customer point and town | the address from Places, geocoded; the town centre if no point | `property.lat/lng`, `mapPoint` |
 | Service S | `kind`, `bookable_from`, `bookable_to` (new, section 11); length in minutes = the visit's service minutes | `service`, `slot_minutes` |
-| People | `working_days`, `capacity_by_kind`, `day_start`, `day_end` (new: hours, default 08:00 to 17:00) | `person` |
+| People | `working_days`, `capacity_by_kind`, `day_start`, `day_end` (new: hours, default 09:00 to 17:00) | `person` |
 | Booked visits | `person_id`, `scheduled_on`, `start_time` (null: "Any time"), `duration_minutes`, kind, property point; status not cancelled or skipped | `visit` |
-| Blocked time | a block on the person's day (Jobber feed until the exit) | `busy_block` |
+| Blocked time | a span on the person's day: "Block time" on the Schedule (person, span, optional note) writes `busy_block`; the Jobber feed writes the same table until the exit | `busy_block` |
+| Held slots | a slot held for a customer mid-booking counts as booked (section 4.4) | pending `visit` |
 | `FIRST` / `LAST` | tomorrow (no earlier than `bookable_from`) / `bookable_to`, or 56 days for a service with no dates | decisions 2, 4 |
 | `GRID` | slots start every 30 minutes from `day_start` | Jobber's form shows 30-minute starts |
 | `SOON`, `SHOWN` | 5 open days, 3 offered; "Show more" gives the next five days ranked the same way | decision 16 |
@@ -128,8 +133,9 @@ The offer returns days, and for each day the open start times. Days are ranked s
 ```
 slotsFor(S, point, day, exceptVisitId?) -> Slot[]
   for person p who works the weekday:
-    timed = visits on (p, day) with start_time, except exceptVisitId, sorted by start
-    if count(visits of S.kind on (p, day)) >= capacity_by_kind[p][S.kind]: continue   # counts (decision 3)
+    timed = visits on (p, day) with start_time (held slots included), except exceptVisitId, sorted by start
+    if count(visits of S.kind on (p, day)) >= capacity_by_kind[p][S.kind]: continue   # the typed count is a cap only (decision 3)
+    # capacity itself is derived: a slot exists only while hours minus booked minutes minus gaps leave room (the tests below)
     for start in p.day_start, p.day_start + GRID, ... while start + S.minutes <= p.day_end:
       end = start + S.minutes
       if overlaps(any timed visit) or overlaps(blocked time):              continue
@@ -189,6 +195,16 @@ Offered: **Tue Apr 28** preselected ("We're already in Erie that day.", best tim
 
 **Customer D, Firestone.** Nobody in Firestone and Longmont is 30 minutes off: all tier 2, so the soonest three: Mon Apr 27 (12:00), Tue Apr 28 (one slot, 5:00), Wed Apr 29 (one slot, 5:00). The first booking seeds Monday.
 
+### 4.4 Choosing and holding a slot (the screen and the race)
+
+**One screen, not two.** Day cards, then only the selected day's times, on the same screen (Jobber's own form does the same, step 07 in `docs/research/jobber-booking-2026-11-18/`). The preselected day is marked and selected; its best time is marked "Best fit" but **not selected**; Continue stays off until a time is tapped (decision 22). Up to four times show, with "More times", so a phone shows a handful of buttons, not twelve. A Season Pass shows one such block per visit. A slot inside the 24-hour lock carries the line "Inside 24 hours, so you won't be able to change it online. Call or text Ryan to change it." before Continue (decision 19).
+
+**Holding the slot.** When the customer taps Continue on a time, the slot is held for 10 minutes: a pending job and visit (as the Season Pass's pending row, no new column) carrying the day and `start_time`, which `slotsFor` counts as booked, so no one else is offered it. The screen says "We're holding 4:30 pm for 10 minutes." The hourly purge that removes unpaid pending rows removes a held slot after 10 minutes by `created_at` (the purge exists for passes at one hour; the 10 minutes is the one change). If the hold has expired when the customer pays or confirms, they go back to the time step with the times that are left; **the app never rebooks them silently on another time or day**. A Season Pass holds both visits' slots in one transaction, or neither.
+
+**A customer with no email or phone** cannot receive the day-before text; the booking screen requires one of them (the phone is already required for the checkout), and an office visit for such a customer shows "No way to reach them" on Ryan's day.
+
+**Points for nearness.** A typed address with no Places point is geocoded on the server when it is saved; the town centre is only a labelled fallback ("Town-level"). Stage 1 backfills a point for every existing property once, as `geocodeProperty` already does for new ones, so a returning customer's reschedule and Ryan's phone adds are street-level too.
+
 ## 5. Ordering the day
 
 **When.** Only when Ryan presses Order the day (Schedule day, or Home's Today), with Undo (decision 6). Nothing re-orders on its own.
@@ -196,9 +212,9 @@ Offered: **Tue Apr 28** preselected ("We're already in Erie that day.", best tim
 | Step | Rule |
 |---|---|
 | Fixed | Every visit with a `start_time` (a booked time) is fixed: ordering never moves it (decision 18). There is no told window and no pin table; "booked" is the pin |
-| Untimed | Visits with no `start_time` ("Any time", added by the office) are ordered into the gaps between booked visits: for each gap in time order, repeatedly take the nearest untimed stop that fits with `gap(drive)` on both sides; stops that fit nowhere are listed |
+| Untimed | Visits with no `start_time` ("Any time", added by the office) are ordered into the gaps between booked visits: for each gap in time order, repeatedly take the nearest untimed stop that fits with `gap(drive)` on both sides. **Stops that fit nowhere are listed under "Doesn't fit today"** with the reason, not forced |
 | Order | Within a gap, nearest neighbour from the previous booked stop, then 2-opt on that gap. Deterministic |
-| Times | Untimed stops get `stop_order` only. They get no `start_time`; their customers are told the day, not a time, until Ryan gives one |
+| Times | Untimed stops get `stop_order` only, and no `start_time`. The day-before text gives each its **window from the order**: the ETA stacked along the order, rounded down to 30 minutes, to two hours later ("between 1 and 3 pm"). A **booked** visit's window is its start to 30 minutes after ("between 10 and 10:30"). One table, the same as the admin design |
 | Start | The person's start point (`person.start_lat/lng`, else the shop in Erie); the first booked or untimed stop is reached from it |
 | Lunch | None is imposed; a booked day has what the customers booked. If Ryan wants lunch he blocks the time |
 | End | `day_end`. A day that runs past it is flagged "Ends 5:40 pm", not refused |
@@ -218,7 +234,7 @@ After Apply:  "Ordered Tuesday. Undo"
 
 Apply writes `stop_order` on untimed visits and one `visit.ordered` event per visit that changed with its old order and a batch id; Undo reads the batch and restores every value, if no visit on the day has changed since.
 
-**Two people on a day.** An untimed stop goes to the person whose gap fits it with the least drive; a sweep by angle is used only when two people share a town and both have untimed stops (stage 6). **When a real solver is worth it:** not at 20 stops (nearest neighbour plus 2-opt is within a few percent of optimal and runs in milliseconds; the delivery slot research says the feasibility check must too, [Truden et al.](https://arxiv.org/pdf/2010.00385)); it earns its place with three or more people on a day. A hosted one costs: Routific $150 a month for 1,000 orders; we do not need it yet.
+**Two people on a day.** Order the day is one person's day until assignment arrives; stage 3 ships it per person with the "Doesn't fit today" list, and stage 6 adds one press that assigns untimed stops to the person whose gap fits with the least drive (a sweep by angle when two people share a town). **When a real solver is worth it:** not at 20 stops (nearest neighbour plus 2-opt is within a few percent of optimal and runs in milliseconds; the delivery slot research says the feasibility check must too, [Truden et al.](https://arxiv.org/pdf/2010.00385)); it earns its place with three or more people on a day. A hosted one costs: Routific $150 a month for 1,000 orders; we do not need it yet.
 
 ## 6. Moving, adding and cancelling
 
@@ -227,14 +243,14 @@ Apply writes `stop_order` on untimed visits and one `visit.ordered` event per vi
 | Customer picks or reschedules (`visits.pick`, from the signed link or the portal) | Offer re-run with the visit's own slot excluded; she picks a day and time from the open slots; `start_time` is written; her old time opens for others | Home row "Andrea moved Tue 4:30 pm to Thu 2:30 pm" |
 | Customer cancels (`visits.cancelSelf`, closes 24 hours before) | Visit cancelled; her slot opens because slots are computed from the booked visits | The freed time on the Schedule; Home row |
 | Ryan adds by phone (`visits.create`) | The open slots are shown beside his day picker with their lines; he can pick any day and time, or "Any time" | The conflict list for a time the rule would not offer |
-| Ryan moves a visit (`visits.move` with `startTime`) | A visit with a booked time: **Move and text the customer** is the only action and always texts, with the old and new time and an optional line from Ryan. A visit with no booked time keeps the split button | The conflict list |
+| Ryan moves a visit (`visits.move` with `startTime`) | A visit with a booked time: **Move and text the customer** is the only action and always texts, with the old and new time and an optional line from Ryan. A visit with no booked time keeps the split button. A move that leaves the customer's booked time inside the lock still texts them | The conflict list |
 | A moved customer | Silence is yes. A `must_be_home` property is asked "Reply YES or pick another day"; the visit shows **Waiting on customer** until a `visit.confirmed` or `visit.picked` event follows the move | Waiting on customer on the visit and the Home row |
-| Rain day | Ryan marks a person's day; each visit is proposed the soonest, nearest day (the rained-out day and past days excluded) and the open slot nearest its old time of day | A list of who moves where, one button **Move all and text**, then Undo (the same shape as Order the day) |
+| Rain day | Proposals keep the time of day where open; Apply texts each with the reason; Undo restores and sends a correction text; a moved visit's pick link is open past the cut-off until they answer |
 | Second truck | A new person with hours; slots open for either; no visit moves | People tab |
 
 **Waiting on customer is read from facts:** a `visit.moved` event with `detail.asked: true` and no later `visit.confirmed` or `visit.picked`. The inbound text handler writes `visit.confirmed` on "YES".
 
-**The booked-time rule.** Nothing the engine does changes a `start_time`; only a customer pick, or Ryan's move, does, and either texts the customer. The day-before run only confirms ("Ryan is coming tomorrow at 4:30 pm"); a visit with no booked time gets the day.
+**The booked-time rule.** Nothing the engine does changes a `start_time`; only a customer pick, or Ryan's move, does, and either texts the customer. The day-before run confirms the booked time and gives its window ("between 10 and 10:30"); an untimed visit gets the day and the window from the order. **The cut-off** is the booked start minus 24 hours (untimed: midnight at the start of its day), computed in Mountain time from the day and `start_time`; `start_time` is text `HH:MM` and does not carry the offset, so the instant is built with the day's own zone rules (Nov 1 and Mar 8 are the days it changes).
 
 **Conflicts Ryan sees** (a warning with one tick to allow, decision 14; online offers never break any of them):
 
@@ -251,14 +267,16 @@ Apply writes `stop_order` on untimed visits and one `visit.ordered` event per vi
 
 ## 7. Capacity and hours
 
+**Capacity is derived** (decision 3): a day is open for a kind while some person has the minutes for a slot of that service's length, and the typed count is below its cap.
+
 | Test | Rule | Source |
 |---|---|---|
-| Count | `count(kind on (person, day)) < capacity_by_kind[person][kind]` | `person.capacity_by_kind` (decision 3) |
-| Hours | the slot lies inside `day_start` to `day_end` of a person who works the weekday | `person.working_days`, `day_start/end` |
-| Fit | no overlap, and `gap(drive)` to the booked neighbours; untimed minutes still fit | section 4.2 |
-| Open | no block that day | `busy_block` |
+| Minutes | a slot of the service's length fits between the person's `day_start` and `day_end`, the booked visits (held slots included) and `gap(drive)` to each neighbour, with the untimed visits' minutes still fitting | `person.day_start/end`, `visit.duration_minutes`, section 4.2 |
+| Cap | `count(kind on (person, day)) < capacity_by_kind[person][kind]`, the typed number kept as a ceiling | `person.capacity_by_kind` |
+| Working day | the person works the weekday | `person.working_days` |
+| Open | no blocked time: "Block time" writes `busy_block`, and the slot rule reads it | `busy_block` |
 
-No buffer is held back (decision 6). A day is full for a kind when it has no open slot for that kind's minutes; a town is never "full" (decision 4: the offer walks to `LAST`). **Hours matter now and the data is clear:** Ryan's 2026 visits start between 12:00 and 17:00 in spring and summer (median 14:00) and earlier in the fall rush (10th percentile start 09:00 in September and 10:00 in October); a default of 08:00 to 17:00 would offer mornings he did not work. Hours are Ryan's to set on People. Counts: PR #72 shows one person comfortable at 6 blowouts, topping out at 7 or 8, repairs 3 a day, turn-ons never above 1 a day in 2026; the schema defaults (turn-on 8, inspection 8, blowout 10, repair 4) are higher than that. I recommend blowout 6, turn-on 5, inspection 3, repair 3. Fall peak: 54 blowouts in a week; one person at 6 a day holds 30, two hold 60.
+No buffer is held back (decision 6). A day is full for a kind when no slot of its length is open; a town is never "full" (decision 4: the offer walks to `LAST`). **Hours** default to 09:00 to 17:00 per person (decision 21) and Ryan may change them on People. The 2026 data shows what he may want: visits start between 12:00 and 17:00 in spring and summer (median 14:00) and earlier in the fall rush (10th percentile start 09:00 in September and 10:00 in October). **The cap:** PR #72 shows one person comfortable at 6 blowouts, topping out at 7 or 8, repairs 3 a day, turn-ons never above 1 a day in 2026; because minutes now limit the day, the cap can be Hannah's "six to eight": recommended blowout 8, turn-on 5, inspection 3, repair 3. Fall peak: 54 blowouts in a week; one person at 8 a day holds 40 and 30-minute blowouts fit in a day by minutes, two hold 80.
 
 ## 8. Drive time
 
@@ -301,7 +319,7 @@ No buffer is held back (decision 6). A day is full for a kind when it has no ope
 | Limit | Effect |
 |---|---|
 | **Ryan's real schedule is not feasible by this rule.** 37 consecutive pairs of actual visits overlap in time (31 person-days), and 70 of the 300 pairs have no room for the drive. Jobber lets him book that; the rule refuses it | The rule needs more days than he used. This is the main reason it loses on days, and the 25 percent cushion adds to it |
-| Hours are my assumption. Real starts cluster 12:00 to 17:00, so afternoon slots fill and morning slots stay open | Different hours change the day count a lot; Ryan sets them |
+| Hours are my assumption (11:00 to 18:00 April to September, 08:00 to 18:00 October and November), not the 09:00 to 17:00 default now settled; the replay was not re-run on it. Real starts cluster 12:00 to 17:00, so afternoon slots fill and morning slots stay open | Different hours change the day count a lot; Ryan sets them |
 | The preselected arm piles each customer on the earliest day at a time chosen by drive, not by preference; the closest arm is nearer the truth | Neither knows how many customers accept a suggestion |
 | Untimed office visits, rain, cancels, Saturdays (35 of 466) and calendar blocks are not modelled | Real days will differ |
 | Street-level points; 81 visits use a town centre | Distances under half a kilometre are noise |
@@ -327,9 +345,11 @@ Records never change shape. Jev reads `visit`, `person`, `property`, `service` a
 |---|---|---|
 | `visits.areaDays` | unchanged (`id`) plus optional `page` | `days` stays (day strings, so the portal builds today); adds `offers: [{ day, label, tier, preselected, slots: [{ start, end, personId, personName, addedMinutes, label }] }]` |
 | `schedule.offerDays` | `town`, `kind`, `season`, `zones` kept; adds `serviceKey`, `lat`, `lng`, `visitId?`, `page` | `days[]` gain `label`, `tier`, `preselected` and `slots`; the 3-day spread goes |
-| `visits.pick` | adds `start: "HH:MM"` (optional until the screens ship, then required for a customer) | accepts any day with an open slot at that start, re-checked at write (the slot may have just been taken: the next best on that day is returned with a message); writes `start_time` and `duration_minutes`; the event stores what was offered |
+| `visits.pick` | adds `start: "HH:MM"` (optional until the screens ship, then required for a customer) | accepts a day with an open slot at that start, re-checked at write against held slots; **a lost race is never resolved silently**: it answers "that time was just taken" with the times still open on that day, and the customer chooses again; writes `start_time` and `duration_minutes`; answers `lockedOnline: true` when the slot is inside 24 hours; the event stores what was offered |
 | `visits.move`, `visits.create` | `startTime` already exists; adds `confirm?: true`, `notify: "text" \| "none"` (not `none` for a booked time), `note?` | return `warnings[]` for soft conflicts; with `confirm: true` they are written |
-| `visits.cancelSelf`, `visits.cancel` | unchanged | free the slot; nothing is stored, since slots are computed |
+| `visits.cancelSelf`, `visits.cancel` | `cancelSelf` is refused inside 24 hours of the booked start (decision 19) | free the slot; nothing is stored, since slots are computed |
+| `schedule.hold` (new, checkout scope) | `{ days: [{ visitKey, day, start }] }` for one booking | holds every slot in one transaction or none, returns the expiry (10 minutes); a second call from the same booking renews it |
+| `schedule.blockTime` (new, write scope) | `{ personId, startAt, endAt, note? }` | writes `busy_block`; `schedule.unblockTime` deletes only a block the office wrote |
 | `schedule.orderDay` (new) | `{ personId, day, apply?, undoBatch? }` | preview: before, after, drive minutes saved, booked times kept; `apply` writes untimed `stop_order` and returns a batch id; `undoBatch` restores |
 | `schedule.rainOut` (new) | `{ personId, day, apply?, undoBatch? }` | the same shape: proposed moves with times, one apply with texts, then Undo |
 
@@ -337,11 +357,11 @@ Records never change shape. Jev reads `visit`, `person`, `property`, `service` a
 
 | Column | Row for `docs/DATA_MODEL.md` |
 |---|---|
-| `service.bookable_from`, `service.bookable_to` | text `MM-DD`, nullable (both null: all year). Set in Settings › Services. Read by the offer, the booking picker's "Opens Apr 25", the move warning. Replaces `settings.windows` and the Seasons tab (decision 10) |
-| `person.day_start`, `person.day_end` | text `HH:MM`, default `08:00` and `17:00`. Ryan's hours; set on People. Read by `slotsFor`, the move warning "works until 5:00 pm". One pair for every working day; per-weekday hours are a later widening if Ryan works different days differently |
+| `service.bookable_from`, `service.bookable_to` (own migration push) | text `MM-DD`, nullable (both null: all year). Set in Settings › Services. Read by the offer, the booking picker's "Opens Apr 25", the move warning. Replaces `settings.windows` and the Seasons tab (decision 10) |
+| `person.day_start`, `person.day_end` | text `HH:MM`, default `09:00` and `17:00`. Ryan's hours; set on People. Read by `slotsFor`, the move warning "works until 5:00 pm". One pair for every working day; per-weekday hours are a later widening. Own migration push |
 | `person.start_lat`, `person.start_lng` | real, nullable; where the day begins (a second truck's driveway). Null: the shop in Erie. Read by Order the day. Stage 6 |
 
-`visit.start_time` and `visit.duration_minutes` already exist; booking now writes both. `area` and its four settings are dropped after stage 1. The booked time is `visit.start_time`; there is no told-window state.
+`visit.start_time` and `visit.duration_minutes` already exist; booking now writes both. A held slot is a pending job and visit, so no column. `busy_block` gets a `source` of office for "Block time" rows if the table has none (check at build). `area` and its four settings are dropped only after the Settings step hides their tab, with the guard-before-drop pattern. The booked time is `visit.start_time`; there is no told-window state.
 
 **Events** (new kinds in `src/lib/events/kinds.ts`, with words): `visit.scheduled` and `visit.moved` detail gain `start`, `offered: [{ day, tier, slots }]`, `rank`; `visit.moved` gains `asked: true` and `reason: "rain"` where they apply; `visit.confirmed` (reply YES); `visit.ordered` (old order and batch id).
 
@@ -355,7 +375,14 @@ Records never change shape. Jev reads `visit`, `person`, `property`, `service` a
 | Quiet town | Firestone gets the three soonest days |
 | Reschedule | The visit's own slot is excluded; the old time reopens |
 | Cancel frees | After `visits.cancelSelf`, the slot is offered again |
-| Pick race | Two customers pick the last slot: the second gets "that time was just taken" and the next best |
+| Pick race | Two customers pick the last slot: the second is told it was just taken and sees the times left, never a silent rebook; the first holds it for 10 minutes |
+| Hold expiry | After 10 minutes the held slot is offered again and the first customer, on paying, is sent back to the time step |
+| Cut-off | A 9 am cancel of a 4:30 pm visit the next day is allowed; at 4:31 pm the day before it is refused; an untimed visit locks at midnight of its day; a slot booked inside the lock shows the notice |
+| Block time | A blocked span offers no slot; deleting it reopens them; Jobber-feed and office blocks both read |
+| Two people, one slot | Both people free at 2:30: one slot is offered, the person already working that day first; booking it leaves the other's 2:30 open |
+| Pass, one of two slots taken | The hold takes both slots or neither; if one is gone the customer returns to that step with the other still held |
+| Daylight saving | The cut-off for a 4:30 pm visit on Nov 2 and Mar 9 is still 24 hours of elapsed time before, built in Mountain time, not by subtracting from text |
+| No way to reach | A customer with no email and no phone is refused at booking and flagged on an office add |
 | Ryan adds by phone | An overlap and a too-short gap return warnings; `confirm` writes |
 | Move a booked time | `notify: "none"` is refused; the text names old and new time; a must-be-home visit shows Waiting on customer until `visit.confirmed` |
 | Order the day | Booked `start_time`s unchanged; untimed stops fit the gaps; Undo restores |
@@ -364,7 +391,7 @@ Records never change shape. Jev reads `visit`, `person`, `property`, `service` a
 | Fall rush | 54 blowouts in a week with two people at 6 a day fit; the next are offered in week three |
 | Outside the six towns | `{ outside: true }`, nothing saved |
 | No slot before `LAST` | "We'll call you", a job in Needs a day |
-| Day-before run | Confirms the booked time; a visit with no time gets the day |
+| Day-before run | A booked 10:00 visit gets "between 10 and 10:30"; an untimed visit gets the day and its window from the order; both cases covered |
 | Matrix down | A stub that throws: offers return `estimated`; nothing is blocked |
 | Replay | The simulation on an anonymised fixture of points and times, no names: 181 days within 5 |
 
@@ -372,19 +399,20 @@ Records never change shape. Jev reads `visit`, `person`, `property`, `service` a
 
 | Step | Ships |
 |---|---|
-| 1 | `offer.ts` and `offerFor`; `visits.areaDays` and `schedule.offerDays` return `offers` with `slots` and labels (screens still use `days`); `service.bookable_from/to`; `person.day_start/end` on People; the April tests; `area` dropped |
-| 2 | The time step on the checkout and the portal: customers pick a day and a time; `visits.pick` takes `start`; booked times written; the day-before text confirms the time |
-| 3 | Order the day: preview, Apply, Undo, untimed visits ordered into the gaps |
+| 1 | `offer.ts` and `offerFor`; `visits.areaDays` and `schedule.offerDays` return `offers` with `slots` and labels (screens still use `days`); the one-time backfill of points for existing properties; each new column (`service.bookable_from/to`, then `person.day_start/end`) in its own additive push with its DATA_MODEL row; the April tests |
+| 2 | The day-and-time screen on the checkout and the portal (day cards, that day's times, best time marked not selected, Continue off until tapped), `schedule.hold`, `visits.pick` taking `start`, booked times written, the 24-hour lock notice, the day-before text with its window |
+| 3 | Order the day for one person's day: preview, Apply, Undo, untimed visits ordered into the gaps, "Doesn't fit today"; Block time on the Schedule |
 | 4 | The Move split button (always texts for a booked time), the conflict list, Waiting on customer, YES replies |
-| 5 | Rain-out review |
-| 6 | Second truck: `person.start_lat/lng`, the sweep assignment |
+| 5 | Rain-out review (the proposal list is the confirm; Undo sends a correction) |
+| 6 | Second truck: `person.start_lat/lng`, one press assigns untimed stops across people; then, only after the Settings step hides the Areas tab, `area` is dropped with a guard |
 | 7 | Road times: Google matrix and the `drive_time` cache, OSRM if caching is not allowed |
 | 8 | The Jev plan seam |
 
 **Open, in order of how much they matter:**
 
-1. **Ryan's hours.** Real starts cluster 12:00 to 17:00 in spring and summer. Which hours should online slots use, per weekday and season? Default 08:00 to 17:00 would offer mornings he did not work.
-2. **The rule is stricter than how Ryan worked.** His 2026 schedule has overlapping visits and no drive room on 107 of 300 pairs; the rule needs about 9 percent more driving days than he used (181 against 166). Keep the strict gap with a 25 percent cushion, or loosen it (cushion 0, floor 5 minutes)? Recommended: keep, and measure a season.
-3. **Nearness is small either way** (3 percent of drive between stops against Jobber-style soonest days). Keep it as set, and measure real bookings before adding anything that trades soonest-first for density.
-4. **Blowout count on People: 6 or 8?** Recommended 6, Ryan adding to 8 by hand with a warning.
+1. **The rule is stricter than how Ryan worked.** His 2026 schedule has overlapping visits and no drive room on 107 of 300 pairs; the rule needs about 9 percent more driving days than he used (181 against 166, on assumed hours). The architect's ruling stands: keep the strict gap with the 25 percent cushion, since a booked time is a promise. Measure a season.
+2. **Nearness is small either way** (3 percent of drive between stops against Jobber-style soonest days). Keep it as set, and measure real bookings before adding anything that trades soonest-first for density.
+3. **Blowout cap on People: 8?** Minutes now limit the day, so the cap can be Hannah's "six to eight". Recommended 8; Ryan can change it.
+4. **The replay on 09:00 to 17:00.** It used other assumed hours; a re-run on the settled default is a cheap check before step 1.
 5. **Google may not allow caching of route times.** Check before stage 7; OSRM is the fallback.
+6. **`busy_block` source.** Confirm at build whether the table can carry office rows, or needs a `source` column (its own additive push).
