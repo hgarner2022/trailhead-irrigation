@@ -1,4 +1,4 @@
-import { longDay, whenText, whoIsComing } from "./format"
+import { SIGN_OFF, longDay, whenText, whoIsComing } from "./format"
 import { button, emailLayout, facts, heading, paragraph, plainText } from "./layout"
 import { visitBody, visitLines } from "./visit-block"
 import type { AdminAlertData, BookingConfirmationData, NotClosedCrewData, RenderedEmail } from "./types"
@@ -6,11 +6,11 @@ import type { AdminAlertData, BookingConfirmationData, NotClosedCrewData, Render
 export function bookingConfirmationEmail(d: BookingConfirmationData): RenderedEmail {
   const v = d.visit
   const subject = `Your ${d.serviceName} is booked for ${longDay(v.day)}`
-  const intro = `Hi ${d.firstName}, ${whoIsComing(v)} will be there ${whenText(v.day, v.startTime)}. We text the day before.`
+  const intro = `Hi ${d.firstName}, ${whoIsComing(v)} will be there ${whenText(v.day, v.startTime)}. We text you the day before.`
   return {
     subject,
-    text: plainText(["Your visit is booked.", "", ...visitLines(d, v, intro)]),
-    html: emailLayout({ origin: d.origin, preheader: `Your ${d.serviceName}: ${longDay(v.day)}.`, body: heading("Your visit is booked") + visitBody(d, v, intro), reason: "You are getting this because you booked a visit with Trailhead." }),
+    text: plainText([`Your ${v.name} is booked.`, "", ...visitLines(d, v, intro)], SIGN_OFF),
+    html: emailLayout({ origin: d.origin, preheader: `Your ${d.serviceName}: ${longDay(v.day)}.`, body: heading(`Your ${v.name} is booked`) + visitBody(d, v, intro), reason: "You are getting this because you booked a visit with Trailhead.", signOff: SIGN_OFF }),
   }
 }
 

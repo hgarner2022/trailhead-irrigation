@@ -23,6 +23,7 @@ export const KIND_NAMES: Record<MessageKind, string> = {
   "date-moved": "Date moved",
   "day-before": "Reminder",
   "date-confirm": "Two-week confirmation",
+  "on-the-way": "On the way",
   receipt: "Receipt",
   invoice: "Invoice",
   "invoice-reminder": "Invoice reminder",

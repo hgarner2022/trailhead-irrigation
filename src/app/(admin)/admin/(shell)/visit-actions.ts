@@ -92,6 +92,14 @@ export const cancelVisit = async (visitId: string, reason?: string): Promise<Act
 export const sendText = async (customerId: string, visitId: string | undefined, text: string): Promise<ActionOutcome> =>
   act((ctx) => nothing(callApi(ctx, messagesSend, { customerId, kind: "note", text, ...(visitId ? { visitId } : {}) })))
 
+/** The "On my way" button: the on-the-way text for a visit that is today, once per visit per day; the API answers why when it cannot go. */
+export const sendOnTheWay = async (visitId: string): Promise<ActionOutcome> =>
+  act(async (ctx) => {
+    const v = await callApi(ctx, visitsGet, { id: visitId })
+    await callApi(ctx, messagesSend, { customerId: v.customerId, kind: "on-the-way", visitId })
+    return undefined
+  })
+
 export interface NewVisitInput {
   customerId?: string
   newCustomer?: { firstName: string; lastName: string; email?: string; phone?: string; property: { address: string; town: string } }

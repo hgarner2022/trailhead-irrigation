@@ -48,7 +48,10 @@ describe("chargeVisit", () => {
     expect(mail).toMatchObject({ kind: "receipt", channel: "email", status: "queued", visitId: p.turnOn })
     expect(mail!.to).toMatch(/^maya\d+@example.com$/)
     expect(mail!.body).toContain("$145")
-    expect(mail!.body).toContain("visa card ending 4242")
+    expect(mail!.body).toContain("Paid: $145, Visa ending 4242")
+    expect(mail!.body).toMatch(/Where: .+\n(Done: .+\n)?Receipt: R-[0-9A-F]{8}\n/)
+    expect(mail!.body).toContain("Subtotal: $145\nTotal: $145\n")
+    expect(mail!.body).not.toMatch(/Season Pass|TH-\d{4}/)
     // A success clears the customer's failure mark.
     const [owner] = await db.select().from(s.customer).where(eq(s.customer.id, p.customerId))
     expect(owner!.cardFailedAt).toBeNull()

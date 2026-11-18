@@ -3,8 +3,8 @@ import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import type { AdminData, ServiceItem } from "@/lib/admin/types"
 import { SERVICE_LIST } from "@/lib/services"
 import {
-  setServiceField, addArea, createKey, revokeKey, secretFor, sampleFor, SAMPLE_KEYS, channelWord, clip, daysWords, fillMessage, messageName, moveTownInOrder, setAreaName, setBuffer,
-  setMessage, setWindow, toggleAreaTown, type SettingsState,
+  setServiceField, addArea, createKey, revokeKey, secretFor, SAMPLE_KEYS, clip, daysWords, moveTownInOrder, setAreaName, setBuffer,
+  setWindow, toggleAreaTown, type SettingsState,
 } from "./settings-model"
 import { addPerson, removePerson, setCapacity, setPersonName, setPersonRole, setPersonText, setSeason, toggleWorkingDay } from "./settings-people"
 
@@ -22,11 +22,7 @@ describe("words", () => {
     expect(daysWords([])).toBe("None")
   })
 
-  it("names messages and channels and clips long values", () => {
-    expect(messageName("purchase-confirmation")).toBe("Purchase confirmation")
-    expect(messageName("on-the-way")).toBe("On the way")
-    expect(channelWord("sms")).toBe("Text")
-    expect(channelWord("email")).toBe("Email")
+  it("clips long values", () => {
     expect(clip("short")).toBe("short")
     expect(clip("x".repeat(80))).toBe(`${"x".repeat(59)}…`)
     expect(clip("x".repeat(60))).toBe("x".repeat(60))
@@ -187,35 +183,6 @@ describe("capacity and windows", () => {
 
 })
 
-describe("messages", () => {
-  it("switches a template on, edits its subject and body, and logs each", () => {
-    const on = setMessage(state, "renewal", "enabled", true, actor)
-    expect(on.settings.messages[5].enabled).toBe(true)
-    expect(last(on)).toMatchObject({ field: "Renewal (email)", from: "Off", to: "On" })
-    const subject = setMessage(on, "renewal", "subject", "Keep your dates", actor)
-    expect(last(subject)).toMatchObject({ field: "Renewal subject", from: "Keep your spot for next season", to: "Keep your dates" })
-    const body = setMessage(subject, "day-before", "body", "See you tomorrow.", actor)
-    expect(body.settings.messages[2].body).toBe("See you tomorrow.")
-    expect(last(body).from.length).toBeLessThanOrEqual(60)
-    expect(last(body).to).toBe("See you tomorrow.")
-    expect(body.changes).toHaveLength(3)
-    expect(setMessage(state, "nope", "enabled", true, actor)).toBe(state)
-  })
-
-  it("fills a template from the sample and leaves unknown placeholders", () => {
-    const sample = { firstName: "Andrea", visit: "turn-on", date: "May 3", who: "Ryan", nextVisit: "inspection" }
-    expect(fillMessage("Hi {firstName}, your {visit} is booked for {date}. {who} will be there. Next: {nextVisit}. {other}", sample)).toBe(
-      "Hi Andrea, your turn-on is booked for May 3. Ryan will be there. Next: inspection. {other}",
-    )
-    // a stored template that still says {truck} keeps the word as written
-    expect(fillMessage("Your street is on our {truck} day.", sample)).toBe("Your street is on our {truck} day.")
-    expect(fillMessage(data.settings.messages[1].body, sample)).not.toMatch(/\{/)
-    const dayBefore = data.settings.messages.find((m) => m.key === "day-before")!
-    expect(dayBefore.body).toContain("{who}")
-    expect(fillMessage(dayBefore.body, sample)).toContain("Ryan will be there")
-  })
-})
-
 describe("the log", () => {
   it("gives every change its own id and keeps the earlier ones", () => {
     let s = state
@@ -259,15 +226,6 @@ describe("more people, areas and keys", () => {
     expect(revoked.keys).toHaveLength(3)
     expect(last(revoked).to).toBe("3 (Billing agent revoked)")
     expect(revokeKey(state, "nope", actor)).toBe(state)
-  })
-})
-
-describe("sampleFor", () => {
-  it("reads the first pass and the first scheduled visit", () => {
-    expect(sampleFor(data)).toEqual({ firstName: "Andrea", visit: "inspection", date: "April 8", who: "Ryan", nextVisit: "inspection" })
-  })
-  it("falls back when there is nothing", () => {
-    expect(sampleFor({ ...data, passes: [], visits: [] })).toMatchObject({ firstName: "Alex", visit: "visit", who: "Ryan" })
   })
 })
 

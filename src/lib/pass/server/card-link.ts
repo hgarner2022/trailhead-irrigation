@@ -6,7 +6,7 @@ import type { Database } from "@/db/types"
 import { ApiError } from "@/api/core/errors"
 import { createCardUpdateSession } from "@/lib/stripe/card-update"
 import { ensureStripeCustomer } from "@/lib/stripe/customer"
-import { baseData } from "@/lib/messaging/data"
+import { baseData, cardWords } from "@/lib/messaging/data"
 import { queueMessage } from "@/lib/messaging/queue"
 import { loadPassRecord } from "./record"
 
@@ -20,6 +20,6 @@ export async function queueCardUpdateLink(db: Database, stripe: Stripe, organiza
   const session = await createCardUpdateSession(stripe, { passId: pass.jobId, customerId: await ensureStripeCustomer(db, stripe, customer.id), origin })
   await queueMessage(db, {
     organizationId, customerId: customer.id, kind: "card-failed", key: `link-${session.id}`,
-    data: { ...baseData(origin, customer), passNumber: pass.number, amount: null, visitName: null, updateUrl: session.url },
+    data: { ...baseData(origin, customer), amount: null, visitName: null, card: cardWords(customer), address: null, updateUrl: session.url },
   })
 }

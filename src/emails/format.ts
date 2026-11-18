@@ -1,5 +1,14 @@
 // Pure wording helpers shared by the email and text templates. No imports, so a template stays a pure function.
 
+/** What every message calls the customer's page: the one name in every link, button and sentence (`your ${ACCOUNT_NAME}`). The portal design (docs/plans/2026-11-18-customer-portal-design.md) set it. */
+export const ACCOUNT_NAME = "Trailhead account"
+
+/** The one link every money email carries to the customer's page. */
+export const SEE_JOB = `See this job in your ${ACCOUNT_NAME}`
+
+/** The line above the footer of every customer email. */
+export const SIGN_OFF = "The Trailhead crew"
+
 export const BUSINESS = {
   name: "Trailhead Lawn & Irrigation",
   address: "137 Morgan Circle North, Erie, CO 80516",
@@ -20,6 +29,9 @@ export function longDay(day: string): string {
   const { m, d, weekday } = parts(day)
   return `${WEEKDAYS[weekday]}, ${MONTHS[m - 1]} ${d}`
 }
+
+/** "Friday, November 20, with Ryan"; just the day when no one has the visit. */
+export const whoWithDay = (day: string, who: string | null | undefined) => `${longDay(day)}${who ? `, with ${who}` : ""}`
 
 /** "Tue, May 5" for a text. */
 export function shortDay(day: string): string {
@@ -63,6 +75,8 @@ export interface VisitFacts {
   /** the property's gate code and on-site contact, when it has them; no template says them yet (step 3 writes them into the facts only) */
   gateCode?: string
   contactName?: string
+  /** the street address alone ("412 Ash St"), for a sentence that says where */
+  address: string
   /** street address and town, for the calendar's location */
   location: string
   /** the app's signed link to the .ics file */
@@ -95,7 +109,7 @@ export function atVisitMoneyLine(visits: { name: string; amount: number }[]): st
 }
 
 /** The line under the money line when the card is still to be added: the office sold the pass and emailed the link. */
-export const ADD_CARD_LINE = "Add your card from the link below and we charge it after each visit. The link is good for 24 hours; your pass page can make a new one any time."
+export const ADD_CARD_LINE = `Add your card from the link below and we charge it after each visit. The link is good for 24 hours; your ${ACCOUNT_NAME} can make a new one any time.`
 
 /** The line for a visit whose chosen day filled up before the card was saved. */
 export const filledLine = (from: string, to: string) => `Your first choice, ${longDay(from)}, filled up, so we put it on ${longDay(to)}.`

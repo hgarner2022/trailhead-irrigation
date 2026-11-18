@@ -9,6 +9,7 @@ import { LAST_OWNER, peopleCreate, peopleDeactivate, peopleList, peopleUpdate, t
 import { emailProblem } from "@/lib/email-check"
 import { TEXT_MAX, hasAnotherOwner } from "@/lib/admin/people"
 import type { AreaGroup, OrganizationSettings, Person, ServiceItem } from "@/lib/admin/types"
+import { messageProblems } from "../_screens/settings-messages"
 
 // Settings Save: the screen holds the whole `OrganizationSettings` and sends it once. This turns the difference
 // from what the API holds into the API's own calls: people.*, areas.* and one settings.update per changed section.
@@ -30,6 +31,7 @@ export function settingsProblems(after: OrganizationSettings): string[] {
     for (const [field, max] of Object.entries(TEXT_MAX) as [keyof typeof TEXT_MAX, number][])
       if ((p[field] ?? "").length > max) problems.push(`${who}'s ${field === "jobberUserId" ? "Jobber user" : field} is longer than ${max} characters.`)
   }
+  problems.push(...messageProblems(after))
   for (const a of after.areas) if (a.towns.length === 0) problems.push(`Pick at least one town for ${a.name} before saving.`)
   const seen = new Map<string, string>()
   for (const a of after.areas)

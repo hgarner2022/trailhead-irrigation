@@ -4,12 +4,13 @@ import { cancelledEmail, cardExpiringEmail, cardFailedEmail, receiptEmail, renew
 import { adminAlertEmail, bookingConfirmationEmail, notClosedCrewEmail } from "./booking-and-staff"
 import { dateConfirmEmail, dateMovedEmail, dateSetEmail, dayBeforeEmail } from "./date-messages"
 import { invoiceEmail, invoiceReminderEmail } from "./invoice"
+import type { Overrides } from "./editable"
 import { purchaseConfirmationEmail } from "./purchase-confirmation"
 import type { RenderedEmail } from "./types"
 
 export type { RenderedEmail }
 
-type Template = (data: never) => RenderedEmail
+type Template = (data: never, options?: { templates?: Overrides }) => RenderedEmail
 
 export const EMAIL_TEMPLATES = {
   "purchase-confirmation": purchaseConfirmationEmail,
@@ -31,8 +32,19 @@ export const EMAIL_TEMPLATES = {
 
 export type EmailKind = keyof typeof EMAIL_TEMPLATES
 
-/** Null for a kind with no template or a row with no stored arguments (an older plain-text row): the sender then uses the row's own subject and body. */
-export function renderEmail(kind: string, data: Record<string, unknown> | null): RenderedEmail | null {
+/** A row queued before this wording carries `passUrl`, and may lack the address, the service or the season; read it so it still renders. */
+function current(data: Record<string, unknown>): Record<string, unknown> {
+  if (typeof data.origin !== "string") return data
+  const out: Record<string, unknown> = { ...data }
+  if (!out.accountUrl) out.accountUrl = `${data.origin}/account`
+  // A receipt queued before the service and the address were carried: the visit's name stands in, and the rows that need the rest are left out.
+  if (!out.serviceName && typeof out.visitName === "string" && out.amount !== undefined && out.card !== undefined) out.serviceName = out.visitName
+  if (out.amount !== undefined && out.card !== undefined && !out.serviceName) out.serviceName = "visit"
+  return out
+}
+
+/** Null for a kind with no template or a row with no stored arguments (an older plain-text row): the sender then uses the row's own subject and body. `templates` is what the office saved in Settings › Messages. */
+export function renderEmail(kind: string, data: Record<string, unknown> | null, templates?: Overrides): RenderedEmail | null {
   const template = (EMAIL_TEMPLATES as Record<string, Template | undefined>)[kind]
-  return template && data ? template(data as never) : null
+  return template && data ? template(current(data) as never, { templates }) : null
 }

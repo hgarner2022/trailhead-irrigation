@@ -3,13 +3,11 @@
  * them: each returns the new settings and the change log with one more
  * entry (who, when, the field in words, the value before and after as
  * words). An edit that changes nothing returns the state it was given.
- * Also the words for weekdays and visit kinds, and the preview that fills a
- * message template. The People tab's reducers are in settings-people.ts.
+ * Also the words for weekdays and visit kinds. The People tab's reducers are
+ * in settings-people.ts and the Messages tab's in settings-messages.ts.
  */
-import type { AdminData, AreaGroup, CapacityKind, MessageTemplate, OrganizationSettings, SeasonWindow, ServiceItem, SettingsChange, Town, Weekday } from "@/lib/admin/types"
+import type { AreaGroup, CapacityKind, OrganizationSettings, SeasonWindow, ServiceItem, SettingsChange, Town, Weekday } from "@/lib/admin/types"
 import { WEEKDAYS } from "@/lib/admin/calendar"
-import { KIND_WORDS, TIME_ZONE, writtenDate } from "@/lib/admin/format"
-import { firstNameOf } from "@/lib/admin/people"
 
 /** One API key as the list shows it; the secret is shown once at creation and never kept. */
 export interface ApiKey {
@@ -70,9 +68,6 @@ export function daysWords(days: Weekday[]): string {
 
 export const KIND_PLURALS: Record<CapacityKind, string> = { "turn-on": "turn-ons", inspection: "inspections", blowout: "blowouts", repair: "repairs", other: "other visits" }
 export const WINDOW_NAMES: Record<SeasonWindow["kind"], string> = { "turn-on": "Turn-on window", inspection: "Inspection window", blowout: "Blowout window" }
-/** "Purchase confirmation" from "purchase-confirmation". */
-export const messageName = (key: string) => key.charAt(0).toUpperCase() + key.slice(1).replace(/-/g, " ")
-export const channelWord = (channel: MessageTemplate["channel"]) => (channel === "sms" ? "Text" : "Email")
 
 /** The limits the reducers enforce; the number inputs read the same ones. */
 export const MAX_CAPACITY = 50
@@ -156,15 +151,6 @@ export function setWindow(state: SettingsState, kind: SeasonWindow["kind"], fiel
   const words = { opensOn: "opens", closesOn: "closes", leadWeeks: "lead weeks" }[field]
   const windows = state.settings.windows.map((w) => (w.kind === kind ? { ...w, [field]: value } : w))
   return record(state, actor, `${WINDOW_NAMES[kind]} ${words}`, String(season[field]), String(value), { ...state.settings, windows })
-}
-
-export function setMessage(state: SettingsState, key: string, field: "subject" | "body" | "enabled", value: string | boolean, actor: Actor): SettingsState {
-  const message = state.settings.messages.find((m) => m.key === key)
-  if (!message) return state
-  const messages = state.settings.messages.map((m) => (m.key === key ? { ...m, [field]: value } : m))
-  const words = (v: string | boolean | undefined) => (typeof v === "boolean" ? (v ? "On" : "Off") : (v ?? ""))
-  const name = field === "enabled" ? `${messageName(key)} (${channelWord(message.channel).toLowerCase()})` : `${messageName(key)} ${field}`
-  return record(state, actor, name, words(message[field]), words(value), { ...state.settings, messages })
 }
 
 /** A new empty area group at the end of the list. */
@@ -255,31 +241,3 @@ export function setServiceField(state: SettingsState, key: string, field: Servic
   return record({ ...state, services }, actor, `${service.name} ${SERVICE_WORDS[field]}`, show(service), show(next), state.settings)
 }
 
-/** What the preview fills the template's placeholders with. */
-export interface Sample {
-  firstName: string
-  visit: string
-  date: string
-  /** the first name of the person on the visit */
-  who: string
-  nextVisit: string
-}
-
-/** The template with every {placeholder} filled from the sample; an unknown placeholder stays as written. */
-export function fillMessage(body: string, sample: Sample): string {
-  return body.replace(/\{(\w+)\}/g, (match, key: string) => (key in sample ? sample[key as keyof Sample] : match))
-}
-
-/** The preview's sample: the first pass's first name, the first scheduled visit someone has, that person's first name, and the pass's next visit; plain stand-ins when the data is empty. */
-export function sampleFor(data: AdminData): Sample {
-  const pass = data.passes[0]
-  const visit = data.visits.find((v) => v.startAt && v.personId)
-  const person = visit ? data.settings.people.find((p) => p.id === visit.personId) : undefined
-  return {
-    firstName: pass?.firstName ?? "Alex",
-    visit: visit ? KIND_WORDS[visit.kind] : "visit",
-    date: visit?.startAt ? writtenDate(visit.startAt, TIME_ZONE) : "a day we will confirm",
-    who: firstNameOf(person?.name) ?? "Ryan",
-    nextVisit: pass?.visits[1] ? KIND_WORDS[pass.visits[1].kind] : "next visit",
-  }
-}

@@ -1,3 +1,4 @@
+import { templateProblem } from "@/emails/editable"
 import { it, expect } from "vitest"
 import snapshot from "./snapshot.json"
 import type { AdminData } from "../types"
@@ -60,7 +61,7 @@ const TOWN_CENTRES: Record<string, [number, number]> = {
 }
 const denverDay = (iso: string) => new Intl.DateTimeFormat("en-CA", { timeZone: "America/Denver", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(iso))
 
-it("settings carry two people with a truck each, three areas, three 2027 windows, the orders, the buffers and six messages", () => {
+it("settings carry two people with a truck each, three areas, three 2027 windows, the orders, the buffers and the ten messages the office edits", () => {
   const { settings: s } = snapshot as AdminData
   expect(s.people.map((p) => [p.id, p.name, p.initials, p.role, p.truck])).toEqual([
     ["person_truck-1", "Ryan Garner", "RG", "owner", "Truck 1"],
@@ -84,15 +85,14 @@ it("settings carry two people with a truck each, three areas, three 2027 windows
   expect(s.bufferPercentLate).toBe(12)
   expect(s.fallTownOrder).toEqual(["Firestone", "Erie", "Longmont", "Broomfield", "Louisville", "Lafayette"])
   expect(s.springTownOrder).toEqual([...s.fallTownOrder].reverse())
-  expect(s.messages.map((m) => m.key)).toEqual(["purchase-confirmation", "date-set", "day-before", "on-the-way", "receipt", "renewal"])
+  expect(s.messages.map((m) => `${m.key}:${m.channel}`)).toEqual(["date-set:sms", "date-set:email", "date-moved:sms", "date-moved:email", "date-confirm:sms", "date-confirm:email", "day-before:sms", "day-before:email", "on-the-way:sms", "invoice-reminder:sms"])
   for (const m of s.messages) {
     expect(["email", "sms"]).toContain(m.channel)
     expect(m.body.length).toBeGreaterThan(20)
     expect(m.body).not.toMatch(/—|Yes!/)
-    if (m.channel === "email") expect(m.subject).toBeTruthy()
-    else expect(m.subject).toBeUndefined()
+    expect(m.subject).toBeUndefined()
+    expect(templateProblem(m.key, m.channel, m.body)).toBeNull()
   }
-  expect(s.messages.some((m) => !m.enabled)).toBe(true)
 })
 
 it("four settings changes, each with who, when, field, from and to", () => {

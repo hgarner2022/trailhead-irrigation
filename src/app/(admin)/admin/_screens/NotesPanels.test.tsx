@@ -37,7 +37,7 @@ const addNote = () => vi.fn().mockResolvedValue({ ok: true, data: added })
 const ok = { ok: true as const, data: undefined }
 const visitActions = (): VisitActions => ({
   move: vi.fn(), putBack: vi.fn(), markDone: vi.fn(), undoDone: vi.fn(), recordPayment: vi.fn(), sendBill: vi.fn(), remindBill: vi.fn(), markNotDone: vi.fn(), edit: vi.fn().mockResolvedValue(ok),
-  addNote: addNote(), cancel: vi.fn(), updateProperty: vi.fn(), sendText: vi.fn(), resendConfirmation: vi.fn(), sendCardUpdateLink: vi.fn(), createVisit: vi.fn(), sellPass: vi.fn(),
+  addNote: addNote(), cancel: vi.fn(), updateProperty: vi.fn(), sendText: vi.fn(), sendOnTheWay: vi.fn(), resendConfirmation: vi.fn(), sendCardUpdateLink: vi.fn(), createVisit: vi.fn(), sellPass: vi.fn(),
 })
 
 const visitsWithStory = (tech = false): AdminData => ({ ...visitsData, visits: withTimeline(visitsData.visits, "office-paid", storyOf(JOE_EVENTS, JOE_MESSAGES, tech)) })

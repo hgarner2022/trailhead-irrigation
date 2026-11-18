@@ -58,7 +58,7 @@ describe("visits.areaDays and visits.pick", () => {
     let texts = (await db.select().from(s.messageLog)).filter((m) => m.visitId === "p3-turn-on")
     expect(texts).toHaveLength(1)
     expect(texts[0]).toMatchObject({ channel: "sms", kind: "date-set", to: "303-555-0100", status: "queued" })
-    expect(texts[0]!.body).toContain("https://site.test/account/pass")
+    expect(texts[0]!.body).toContain("Your Trailhead account: https://site.test/account")
     const second = (await callApi(me(), visitsAreaDays, { id: "p3-turn-on" })).days.find((d) => d !== days[0])
     await callApi(me(), visitsPick, { id: "p3-turn-on", day: second! })
     texts = (await db.select().from(s.messageLog)).filter((m) => m.visitId === "p3-turn-on")

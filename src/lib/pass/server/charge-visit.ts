@@ -8,7 +8,7 @@ import { recordEventSafe } from "@/lib/events/record"
 import type { Database } from "@/db/types"
 import { chargeOffSession } from "@/lib/stripe/charge"
 import { createCardUpdateSession } from "@/lib/stripe/card-update"
-import { baseData } from "@/lib/messaging/data"
+import { baseData, cardWords, jobAddress, receiptLines, receiptNumber, visitWhoDay } from "@/lib/messaging/data"
 import { loadVisitPrice, paidDay, recordPaymentRow } from "@/lib/money/record"
 import { isPaid } from "@/lib/money/words"
 import { queueMessage, queueStaffMessage } from "@/lib/messaging/queue"
@@ -88,10 +88,9 @@ export async function chargeVisit(db: Database, stripe: Stripe, visitId: string,
     await db.update(s.customer).set({ cardFailedAt: null, updatedAt: now }).where(eq(s.customer.id, customer.id))
     if (to) {
       const visits = await db.select().from(s.visit).where(eq(s.visit.jobId, pass.id))
-      const card = customer.cardBrand && customer.cardLast4 ? `${customer.cardBrand} card ending ${customer.cardLast4}` : ""
       await queueMessage(db, {
         organizationId: visit.organizationId, customerId: customer.id, visitId: visit.id, kind: "receipt", key: `visit-${visit.id}`,
-        data: { ...baseData(opts.origin, customer), passNumber, amount: price, visitName: kindName(visit.kind), card: card || null, nextLine: nextVisitLine(visits.filter((v) => v.id !== visit.id)), receiptUrl: result.receiptUrl ?? null },
+        data: { ...baseData(opts.origin, customer), amount: price, serviceName: kindName(visit.kind), address: await jobAddress(db, visit.jobId), paidOn: paidDay(now), ...(await visitWhoDay(db, visit.id)), ...(await receiptLines(db, visit.organizationId, visit.jobId, visit.id)), ...(paid ? { number: receiptNumber(paid.id) } : {}), card: cardWords(customer), nextLine: nextVisitLine(visits.filter((v) => v.id !== visit.id)), receiptUrl: result.receiptUrl ?? null },
       })
     }
     await emitEvent(db, visit.organizationId, "charge.succeeded", { visitId: visit.id, passId: pass.id, amount: price, attempt })
@@ -106,7 +105,7 @@ export async function chargeVisit(db: Database, stripe: Stripe, visitId: string,
     const link = customer.stripeCustomerId ? (await createCardUpdateSession(stripe, { passId: pass.id, customerId: customer.stripeCustomerId, origin: opts.origin })).url : null
     await queueMessage(db, {
       organizationId: visit.organizationId, customerId: customer.id, visitId: visit.id, kind: "card-failed", key: `visit-${visit.id}-${attempt}`,
-      data: { ...baseData(opts.origin, customer), passNumber, amount: price, visitName: kindName(visit.kind), updateUrl: link },
+      data: { ...baseData(opts.origin, customer), amount: price, visitName: kindName(visit.kind), card: cardWords(customer), address: await jobAddress(db, visit.jobId), updateUrl: link },
     })
   }
   if (failedRow) await recordEventSafe(db, { organizationId: visit.organizationId, about: "payment", aboutId: failedRow.id, customerId: customer.id, jobId: visit.jobId, visitId: visit.id, kind: "payment.failed", detail: { amount: price, message: result.message, name: visitName(visit.kind) }, who: "system", at: now })

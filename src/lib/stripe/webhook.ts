@@ -12,7 +12,7 @@ import { recordEventSafe } from "@/lib/events/record"
 import { linesOfVisit, visitPrice } from "@/lib/jobs/lines"
 import { loadTaxRule } from "@/lib/money/tax-rule"
 import { paidDay } from "@/lib/money/record"
-import { baseData } from "@/lib/messaging/data"
+import { baseData, cardWords } from "@/lib/messaging/data"
 import { queueMessage } from "@/lib/messaging/queue"
 import { resolvePassJobAnywhere } from "@/lib/pass/server/resolve"
 import { enqueue } from "@/lib/queue"
@@ -131,7 +131,7 @@ export async function handleStripeEvent(db: Database, stripe: Stripe, organizati
       const left = ahead.filter((v) => !["completed", "cancelled", "skipped"].includes(v.status)).reduce((sum, v) => sum + visitPrice(linesOfVisit(lines, v.id), rule), 0)
       await queueMessage(db, {
         organizationId, customerId: customer.id, kind: "card-expiring", key: `pm-${method.id}`,
-        data: { ...baseData(origin, customer), passNumber: row.pass.passNumber ?? "", cardState: "was removed or has expired", left, updateUrl: link },
+        data: { ...baseData(origin, customer), card: cardWords(customer), cardState: "was removed or has expired", left, updateUrl: link },
       })
       return
     }

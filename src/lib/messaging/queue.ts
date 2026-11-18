@@ -3,11 +3,12 @@ import { and, eq, inArray, isNotNull } from "drizzle-orm"
 import * as s from "@/db/schema"
 import type { Database } from "@/db/types"
 import { renderEmail } from "@/emails/render"
-import { SMS_TEMPLATES, type SmsKind } from "@/sms/texts"
+import { OPT_OUT, SMS_TEMPLATES, TEXT_ONLY_KINDS, type SmsKind } from "@/sms/texts"
 import { enqueue } from "@/lib/queue"
 import { currentConsent, mayMessage } from "./consent"
+import { isFirstText, savedTemplates } from "./saved"
 
-export type MessageKind = "purchase-confirmation" | "booking-confirmation" | "date-set" | "date-moved" | "day-before" | "date-confirm" | "receipt" | "card-failed" | "card-expiring" | "cancelled" | "renewal" | "note" | "invoice" | "invoice-reminder"
+export type MessageKind = "purchase-confirmation" | "booking-confirmation" | "date-set" | "date-moved" | "day-before" | "date-confirm" | "on-the-way" | "receipt" | "card-failed" | "card-expiring" | "cancelled" | "renewal" | "note" | "invoice" | "invoice-reminder"
 
 /** The kinds that go by text: one channel each, the customer's mobile, and by email instead when there is none or texts are off. */
 const BY_TEXT = new Set<string>(Object.keys(SMS_TEMPLATES))
@@ -32,7 +33,7 @@ export async function messageChannel(db: Database, customer: Pick<typeof s.custo
   const consent = await currentConsent(db, customer.id)
   const hasPhone = Boolean(customer.phone)
   if (BY_TEXT.has(kind) && customer.phone && mayMessage(consent, kind, "sms", hasPhone)) return "sms"
-  if (customer.email && mayMessage(consent, kind, "email", hasPhone)) return "email"
+  if (customer.email && !TEXT_ONLY_KINDS.includes(kind) && mayMessage(consent, kind, "email", hasPhone)) return "email"
   return null
 }
 
@@ -48,9 +49,10 @@ export async function queueMessage(db: Database, req: MessageRequest): Promise<b
 
   let values: typeof s.messageLog.$inferInsert | null = null
   if (channel === "sms") {
-    values = { ...common, channel: "sms", to: customer.phone!, subject: null, body: SMS_TEMPLATES[req.kind as SmsKind](req.data as never) }
+    const optOut = await isFirstText(db, req.organizationId, customer.phone!)
+    values = { ...common, channel: "sms", to: customer.phone!, subject: null, body: SMS_TEMPLATES[req.kind as SmsKind](req.data as never, { optOut, templates: await savedTemplates(db, req.organizationId) }) }
   } else if (channel === "email") {
-    const rendered = renderEmail(req.kind, req.data)
+    const rendered = renderEmail(req.kind, req.data, await savedTemplates(db, req.organizationId))
     if (!rendered) throw new Error(`No email template for ${req.kind}`)
     values = { ...common, channel: "email", to: customer.email!, subject: rendered.subject, body: rendered.text }
   }
@@ -94,7 +96,7 @@ export async function queueNote(db: Database, req: { organizationId: string; cus
   if (!customer.phone) return { ok: false, reason: "no-phone" }
   const consent = await currentConsent(db, customer.id)
   if (!mayMessage(consent, "note", "sms", true)) return { ok: false, reason: "stopped" }
-  const body = `Trailhead: ${req.text.trim()} Reply STOP to opt out.`
+  const body = `Trailhead: ${req.text.trim()}${(await isFirstText(db, req.organizationId, customer.phone)) ? ` ${OPT_OUT}` : ""}`
   const [added] = await db
     .insert(s.messageLog)
     .values({ organizationId: req.organizationId, customerId: customer.id, visitId: req.visitId ?? null, channel: "sms", kind: "note", key: req.key, to: customer.phone, subject: null, body, data: null, status: "queued" })

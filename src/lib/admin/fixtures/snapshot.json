@@ -15984,44 +15984,64 @@
     ],
     "messages": [
       {
-        "key": "purchase-confirmation",
-        "channel": "email",
-        "subject": "Your Season Pass is set",
-        "body": "Hi {firstName}, thanks for reserving your season with Trailhead. Your turn-on, mid-season check and blowout are on our list, and we will send the day for each one as the season comes around. Your pass and the dates live at your pass page any time you want a look.",
+        "key": "date-set",
+        "channel": "sms",
+        "body": "your {service} is {day}, {window}. {who} will be there.",
         "enabled": true
       },
       {
         "key": "date-set",
         "channel": "email",
-        "subject": "Your {visit} is booked for {date}",
-        "body": "Hi {firstName}, your {visit} is booked for {date}. {who} will be there. If that day does not work, reply to this email and we will find another.",
+        "body": "Hi {firstName}, your {service} is set for {day}.",
+        "enabled": true
+      },
+      {
+        "key": "date-moved",
+        "channel": "sms",
+        "body": "your {service} moved to {day}, {window}. Another day?",
+        "enabled": true
+      },
+      {
+        "key": "date-moved",
+        "channel": "email",
+        "body": "Hi {firstName}, your {service} moved to {day}.",
+        "enabled": true
+      },
+      {
+        "key": "date-confirm",
+        "channel": "sms",
+        "body": "your {service} is still {day}, {window}. Need another day?",
+        "enabled": true
+      },
+      {
+        "key": "date-confirm",
+        "channel": "email",
+        "body": "Hi {firstName}, we're confirming your {service}: {day}.",
         "enabled": true
       },
       {
         "key": "day-before",
         "channel": "sms",
-        "body": "Trailhead here. {who} will be there tomorrow, {date}, for your {visit}. Please leave the gate unlatched and the controller reachable. Reply STOP to stop texts.",
+        "body": "{who} is coming tomorrow, {day}, {window}, for your {service}.",
+        "enabled": true
+      },
+      {
+        "key": "day-before",
+        "channel": "email",
+        "body": "Hi {firstName}, a reminder that we're coming tomorrow, {day}, for your {service}. {who} will be there.",
         "enabled": true
       },
       {
         "key": "on-the-way",
         "channel": "sms",
-        "body": "Trailhead is on the way for your {visit}. We will be there within the hour.",
+        "body": "{who} is on the way to {address} for your {service}.",
         "enabled": true
       },
       {
-        "key": "receipt",
-        "channel": "email",
-        "subject": "Your {visit} is done",
-        "body": "Hi {firstName}, your {visit} is done and the receipt is attached. The next visit on your pass is the {nextVisit}, and we will send the day when it is set. Thank you for trusting us with the yard.",
+        "key": "invoice-reminder",
+        "channel": "sms",
+        "body": "a reminder that {amount} for the {service} is still unpaid, due {due}. Pay here: {payLink}",
         "enabled": true
-      },
-      {
-        "key": "renewal",
-        "channel": "email",
-        "subject": "Keep your spot for next season",
-        "body": "Hi {firstName}, your season is wrapped up and next season's passes are open. Renew now and your blowout date and your repair priority carry over. The price stays the same per visit.",
-        "enabled": false
       }
     ]
   },

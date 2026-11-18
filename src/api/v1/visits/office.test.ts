@@ -322,9 +322,13 @@ describe("alerts.dismiss", () => {
 
 describe("messages.send kind note", () => {
   it("queues a text with the opt-out line, and refuses with the reason in words", async () => {
-    const out = await callApi(as(), messagesSend, { customerId: "c100", kind: "note", text: "Running 20 minutes late." })
+    // The first text a number gets carries the opt-out line; a later one does not.
+    await db.insert(s.customer).values({ id: "c-first-text", organizationId: ORG, firstName: "Fern", phone: "+17205550166" })
+    const out = await callApi(as(), messagesSend, { customerId: "c-first-text", kind: "note", text: "Running 20 minutes late." })
     expect(out).toMatchObject({ channel: "sms", kind: "note", status: "queued" })
     expect(out.body).toBe("Trailhead: Running 20 minutes late. Reply STOP to opt out.")
+    const again = await callApi(as(), messagesSend, { customerId: "c-first-text", kind: "note", text: "Five minutes out." })
+    expect(again.body).toBe("Trailhead: Five minutes out.")
     await expect(callApi(as(), messagesSend, { customerId: "c100", kind: "note" })).rejects.toMatchObject({ code: "invalid" })
     await expect(callApi(as(), messagesSend, { customerId: "c100", kind: "note", text: "x".repeat(321) })).rejects.toMatchObject({ code: "invalid" })
     await expect(callApi(as(readKey), messagesSend, { customerId: "c100", kind: "note", text: "Hi" })).rejects.toMatchObject({ code: "forbidden" })

@@ -56,6 +56,26 @@ describe("messages.send", () => {
     expect((await db.select().from(s.messageLog).where(eq(s.messageLog.kind, "cancelled")))).toHaveLength(2)
   })
 
+  it("sends on the way for a visit that is today, once per visit per day, as a text only", async () => {
+    const { eq } = await import("drizzle-orm")
+    await db.update(s.customer).set({ phone: "+17205550155", email: "andrea@example.com" }).where(eq(s.customer.id, "c100"))
+    const [v] = await db.select().from(s.visit).where(eq(s.visit.customerId, "c100"))
+    await db.update(s.visit).set({ status: "scheduled", scheduledOn: "2027-05-05", startTime: "08:00", personId: "person_truck-1" }).where(eq(s.visit.id, v!.id))
+    const today = (day: string) => ctxFor(db, writeKey, `${day}T18:00:00Z`)
+    await expect(callApi(today("2027-05-04"), messagesSend, { customerId: "c100", kind: "on-the-way", visitId: v!.id })).rejects.toMatchObject({ code: "unprocessable", message: "On my way is for a visit that is today" })
+    await expect(callApi(today("2027-05-05"), messagesSend, { customerId: "c100", kind: "on-the-way" })).rejects.toMatchObject({ code: "invalid" })
+    await expect(callApi(ctxFor(db, readKey), messagesSend, { customerId: "c100", kind: "on-the-way", visitId: v!.id })).rejects.toMatchObject({ code: "forbidden" })
+    await db.update(s.visit).set({ status: "cancelled" }).where(eq(s.visit.id, v!.id))
+    await expect(callApi(today("2027-05-05"), messagesSend, { customerId: "c100", kind: "on-the-way", visitId: v!.id })).rejects.toMatchObject({ code: "unprocessable" })
+    await db.update(s.visit).set({ status: "scheduled" }).where(eq(s.visit.id, v!.id))
+    const sent = await callApi(today("2027-05-05"), messagesSend, { customerId: "c100", kind: "on-the-way", visitId: v!.id })
+    expect(sent).toMatchObject({ channel: "sms", kind: "on-the-way", status: "queued", visitId: v!.id, to: "+17205550155" })
+    expect(sent.body).toMatch(/^Trailhead: Ryan is on the way to .+ for your .+\. Your Trailhead account: https:\/\/www\.example\.com\/account/)
+    expect(await db.select().from(s.queueItem).where(eq(s.queueItem.key, sent.id))).toHaveLength(1)
+    await expect(callApi(today("2027-05-05"), messagesSend, { customerId: "c100", kind: "on-the-way", visitId: v!.id })).rejects.toMatchObject({ code: "conflict" })
+    expect((await db.select().from(s.messageLog).where(eq(s.messageLog.kind, "on-the-way")))).toHaveLength(1)
+  })
+
   it("will not send a renewal to a customer without the opt-in", async () => {
     await db.insert(s.consent).values({ organizationId: ORG, customerId: "c100", marketingOptIn: false, marketingChannels: [], source: "checkout" })
     await expect(callApi(ctxFor(db, writeKey), messagesSend, { customerId: "c100", kind: "renewal" })).rejects.toMatchObject({ code: "unprocessable" })

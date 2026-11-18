@@ -5,6 +5,7 @@ import * as s from "@/db/schema"
 import { ApiError } from "../../core/errors"
 import { defineHandler } from "../../core/handler"
 import { afterTimeCursor, cursorPage, page, pageInput, timeCursor } from "../../core/pagination"
+import { messagesWith, templateProblem } from "@/emails/editable"
 import { DEFAULT_BILLING } from "@/lib/settings/defaults"
 import { Day, Id, Iso, Town } from "../shared"
 import { logSettingsChanges, type Leaf } from "./log"
@@ -25,7 +26,13 @@ export const SECTIONS = {
   bufferPercentLate: percent,
   fallTownOrder: z.array(Town).min(1).max(6),
   springTownOrder: z.array(Town).min(1).max(6),
-  messages: z.array(Template).max(40),
+  // Only the day-of voice and the invoice reminder text are the office's; the words must pass the same rules the screen checks.
+  messages: z.array(Template).max(40).superRefine((rows, ctx) => {
+    rows.forEach((m, i) => {
+      const problem = templateProblem(m.key, m.channel, m.body)
+      if (problem) ctx.addIssue({ code: "custom", path: [i, "body"], message: problem })
+    })
+  }),
   billing: Billing,
 } as const
 export type Section = keyof typeof SECTIONS
@@ -54,7 +61,8 @@ async function isConfirmed(ctx: { db: import("@/db/types").Database; organizatio
 }
 /** An organization that has never saved Settings › Billing has no `billing` in its row: it reads the defaults (due in 14 days, no sales tax). */
 export const billingOf = (settings: typeof s.organization.$inferSelect.settings) => settings.billing ?? DEFAULT_BILLING
-const settingsOut = (org: typeof s.organization.$inferSelect, confirmed: boolean) => ({ ...org.settings, billing: billingOf(org.settings), termsVersion: org.termsVersion, confirmed })
+/** The settings as the API reads them: billing and messages fall back to what ships (every message the office may edit, with what it saved on top). */
+const settingsOut = (org: typeof s.organization.$inferSelect, confirmed: boolean) => ({ ...org.settings, billing: billingOf(org.settings), messages: messagesWith(org.settings.messages), termsVersion: org.termsVersion, confirmed })
 
 const clip = (text: string) => (text.length > 400 ? `${text.slice(0, 397)}...` : text)
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b)
@@ -77,14 +85,15 @@ export function changedLeaves(section: Section, before: unknown, after: unknown)
     return leaves
   }
   if (section === "messages") {
-    const was = new Map((before as z.infer<typeof Template>[]).map((m) => [m.key, m]))
-    const now = new Map((after as z.infer<typeof Template>[]).map((m) => [m.key, m]))
+    const slot = (m: z.infer<typeof Template>) => `${m.key}.${m.channel}`
+    const was = new Map((before as z.infer<typeof Template>[]).map((m) => [slot(m), m]))
+    const now = new Map((after as z.infer<typeof Template>[]).map((m) => [slot(m), m]))
     const leaves: Leaf[] = []
     for (const key of new Set([...was.keys(), ...now.keys()])) {
       const a = was.get(key)
       const b = now.get(key)
       if (!a || !b) { leaves.push({ field: `messages.${key}`, from: a ? "on file" : "none", to: b ? "on file" : "none" }); continue }
-      for (const prop of ["channel", "subject", "body", "enabled"] as const)
+      for (const prop of ["subject", "body", "enabled"] as const)
         if (a[prop] !== b[prop]) leaves.push({ field: `messages.${key}.${prop}`, from: clip(prop === "enabled" ? (a[prop] ? "on" : "off") : String(a[prop] ?? "")), to: clip(prop === "enabled" ? (b[prop] ? "on" : "off") : String(b[prop] ?? "")) })
     }
     return leaves
@@ -121,7 +130,7 @@ export const settingsUpdate = defineHandler({
     if (!parsed.success)
       throw new ApiError("invalid", `The value does not fit ${input.section}`, parsed.error.issues.map((i) => ({ path: ["value", ...i.path].join("."), message: i.message })))
     const org = await load(ctx)
-    const before = input.section === "billing" ? billingOf(org.settings) : org.settings[input.section]
+    const before = input.section === "billing" ? billingOf(org.settings) : input.section === "messages" ? messagesWith(org.settings.messages) : org.settings[input.section]
     const leaves = changedLeaves(input.section, before, parsed.data)
     if (leaves.length === 0) return settingsOut(org, await isConfirmed(ctx))
     const settings = { ...org.settings, [input.section]: parsed.data }

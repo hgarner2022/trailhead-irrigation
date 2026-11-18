@@ -92,6 +92,8 @@ export interface VisitActions {
   /** `properties.update`: the yard's nine facts, from the customer panel's Property block */
   updateProperty: (propertyId: string, changes: YardChanges) => Promise<Outcome>
   sendText: (customerId: string, visitId: string | undefined, text: string) => Promise<Outcome>
+  /** `messages.send` kind on-the-way: "Ryan is on the way to 412 Ash St", for a visit that is today, once per visit per day */
+  sendOnTheWay: (visitId: string) => Promise<Outcome>
   resendConfirmation: (passId: string) => Promise<Outcome>
   /** `passes.sendCardUpdateLink`: the card link by email, from the customer panel's Card line */
   sendCardUpdateLink: (passId: string) => Promise<Outcome>
