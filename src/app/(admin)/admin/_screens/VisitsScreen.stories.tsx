@@ -5,7 +5,7 @@ import { VisitsScreen } from "./VisitsScreen"
 import { VISITS_TODAY, noCardVisitId, passVisitId, visitsData } from "./visits-fixture"
 
 // Visits at 12:56 pm Mountain on Thursday, November 12, 2026: the pass visits of the fixture, a pass the office sold
-// with no card, and six one-off visits, one in each state. The header carries New job; a tech sees none. The panel stories open one visit beside the list (a sheet on a phone).
+// with no card, and six one-off visits, one in each state. The header carries New job; a tech sees none. The panel stories open one visit over the list (a drawer on a laptop, a sheet on a phone).
 
 const meta = {
   title: "Screens/Visits",

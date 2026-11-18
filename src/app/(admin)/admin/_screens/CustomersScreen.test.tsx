@@ -79,7 +79,7 @@ describe("CustomersScreen table", () => {
 describe("CustomersScreen panel", () => {
   it("shows the same data plus the access note, the consent history and the messages", () => {
     render(<CustomersScreen data={data} today={TODAY} defaultSelectedId="c100" />)
-    const panel = within(screen.getByRole("complementary", { name: `${andrea.firstName} ${andrea.lastName}` }))
+    const panel = within(screen.getByRole("dialog", { name: `${andrea.firstName} ${andrea.lastName}` }))
     expect(panel.getByText(`${andrea.address}, ${andrea.town}`)).toBeInTheDocument()
     expect(panel.getByText(andrea.email!)).toBeInTheDocument()
     expect(panel.getByText(formatPhone(andrea.phone))).toBeInTheDocument()

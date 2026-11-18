@@ -24,7 +24,7 @@ import { propertyLines, yardFromPass } from "./customers-model"
 // The visit panel (Build 1): from Visits, Home, Schedule, the pass panel and the customer panel. Header with the
 // customer and the visit's kind and day; the two pills; the customer block; the visit block; the job it belongs to
 // (the pass with its number and its other visits, or the booked work); the actions; and the thread, newest first.
-// A tech sees all of it and no buttons. On a laptop it is the column beside the page; on a phone it is a sheet.
+// A tech sees all of it and no buttons. On a laptop it is the drawer over the page; on a phone it is a sheet.
 
 function Subtitle({ id, children }: { id: string; children: ReactNode }) {
   return (

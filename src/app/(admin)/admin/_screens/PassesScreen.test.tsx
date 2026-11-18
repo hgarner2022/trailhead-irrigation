@@ -79,7 +79,7 @@ describe("PassesScreen reads the visit rows", () => {
 
   it("notes in the panel that a pending pass is an unpaid attempt, with no buttons to act on a customer who has not bought", () => {
     render(<PassesScreen data={data} today={TODAY} defaultSelectedId={pending.id} actions={actions()} />)
-    const panel = within(screen.getByRole("complementary", { name: fullName(pending) }))
+    const panel = within(screen.getByRole("dialog", { name: fullName(pending) }))
     expect(panel.getByText("Checkout not finished, expires after an hour.")).toBeInTheDocument()
     expect(panel.getByText("Pending")).toBeInTheDocument()
     expect(panel.queryByText("Active")).toBeNull()

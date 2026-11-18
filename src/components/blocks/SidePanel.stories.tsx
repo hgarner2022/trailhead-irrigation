@@ -1,6 +1,6 @@
 import { useState } from "react"
 import type { Meta, StoryObj } from "@storybook/nextjs-vite"
-import { fn } from "storybook/test"
+import { expect, fn } from "storybook/test"
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import type { Pass, PassVisit } from "@/lib/admin/types"
 import { Button } from "@/components/ui/button"
@@ -10,8 +10,9 @@ import { passColumns } from "./data-grid-columns"
 import { StatusPill, statusLabel } from "./StatusPill"
 import { SidePanel, SidePanelLayout } from "./SidePanel"
 
-// The real use: the Passes grid as the page, the pass opening beside it from
-// its name. Open by default so the panel is on screen without a click. The
+// The real use: the Passes grid as the page, the pass opening over it from its
+// name. The panel floats over the grid with a scrim, and the grid keeps its
+// columns. Open by default so the panel is on screen without a click. The
 // grid's columns and data are module constants, so they are stable.
 const passes = snapshot.passes as Pass[]
 const option = (value: string, label = value) => ({ value, label })
@@ -55,7 +56,7 @@ function PassDetail({ pass }: { pass: Pass }) {
   )
 }
 
-function BesideGridDemo() {
+function OverGridDemo() {
   const [pass, setPass] = useState(passes[0])
   const [open, setOpen] = useState(true)
   return (
@@ -132,19 +133,42 @@ const meta = {
   title: "Blocks/SidePanel",
   component: SidePanel,
   parameters: { layout: "fullscreen" },
+  // Every story starts from the default width, not one an earlier story remembered.
+  beforeEach: () => {
+    try {
+      window.localStorage.removeItem("trailhead.side-panel-width")
+    } catch {
+      // storage is blocked: nothing was remembered
+    }
+  },
   // Every story renders its own demo; these args only satisfy the required props.
   args: { open: true, onOpenChange: fn(), title: "Andrea", children: null },
 } satisfies Meta<typeof SidePanel>
 export default meta
 type Story = StoryObj<typeof meta>
 
-export const BesideGrid: Story = {
-  render: () => <BesideGridDemo />,
+/** On a laptop: the drawer floats over the Passes grid, a scrim covers the rest and the grid keeps its columns. */
+export const OpenOnLaptop: Story = {
+  globals: { viewport: { value: "wide", isRotated: false } },
+  render: () => <OverGridDemo />,
 }
 
-export const Phone: Story = {
+/** The width is changed from the handle's keyboard: three steps of 40px to the left make the drawer 120px wider. */
+export const OpenResized: Story = {
+  globals: { viewport: { value: "wide", isRotated: false } },
+  render: () => <OverGridDemo />,
+  play: async ({ canvas, userEvent }) => {
+    const handle = await canvas.findByRole("separator", { name: "Resize panel" })
+    handle.focus()
+    await userEvent.keyboard("{ArrowLeft}{ArrowLeft}{ArrowLeft}")
+    await expect(handle).toHaveAttribute("aria-valuenow", "600")
+  },
+}
+
+/** On a phone the panel is a full width sheet with no handle. */
+export const OpenOnPhone: Story = {
   globals: { viewport: { value: "phone", isRotated: false } },
-  render: () => <BesideGridDemo />,
+  render: () => <OverGridDemo />,
 }
 
 export const LongContent: Story = {

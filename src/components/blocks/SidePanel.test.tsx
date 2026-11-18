@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, afterEach, beforeAll } from "vitest"
-import { render, screen, fireEvent, act } from "@testing-library/react"
+import { describe, it, expect, vi, afterEach, beforeAll, beforeEach } from "vitest"
+import { render, screen, fireEvent } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { SidePanel, SidePanelLayout } from "./SidePanel"
@@ -11,7 +11,7 @@ beforeAll(() => {
   Element.prototype.scrollIntoView = () => {}
 })
 
-// Tailwind's lg breakpoint, the point where the panel stops covering the page and pushes it instead.
+// Tailwind's lg breakpoint, the point where the full width sheet becomes a drawer over the page.
 const LG = "(min-width: 1024px)"
 
 /** Stubs matchMedia so the lg query answers `desktop`; every other query is false. */
@@ -74,15 +74,25 @@ describe("SidePanel on a phone", () => {
 })
 
 describe("SidePanel on a laptop", () => {
-  it("opens as a non-modal column beside the page", () => {
+  it("opens as a modal drawer over the page with its title as the name", () => {
     stubViewport(true)
     render(<Panel description="Season Pass 2027" />)
-    const column = screen.getByRole("complementary", { name: "Andrea" })
-    expect(column).toHaveAttribute("data-slot", "side-panel")
-    expect(column).toHaveAttribute("data-mode", "column")
-    expect(column).toHaveStyle({ width: "480px" })
+    const drawer = screen.getByRole("dialog", { name: "Andrea" })
+    expect(drawer).toHaveAttribute("data-slot", "side-panel")
+    expect(drawer).toHaveAttribute("data-mode", "drawer")
+    expect(drawer).toHaveAttribute("aria-modal", "true")
+    expect(drawer).toHaveClass("fixed")
+    expect(drawer).toHaveStyle({ width: "480px" })
     expect(screen.getByText("Season Pass 2027")).toBeInTheDocument()
-    expect(screen.queryByRole("dialog")).not.toBeInTheDocument()
+    expect(screen.queryByRole("complementary")).not.toBeInTheDocument()
+  })
+
+  it("closes when the scrim is clicked", () => {
+    stubViewport(true)
+    const onOpenChange = vi.fn()
+    render(<Panel onOpenChange={onOpenChange} />)
+    fireEvent.click(document.querySelector('[data-slot="side-panel-scrim"]')!)
+    expect(onOpenChange).toHaveBeenCalledWith(false)
   })
 
   it("takes focus on open and gives it back on close", () => {
@@ -91,7 +101,7 @@ describe("SidePanel on a laptop", () => {
     document.body.appendChild(outside)
     outside.focus()
     const { rerender } = render(<Panel />)
-    expect(document.activeElement).toBe(screen.getByRole("complementary"))
+    expect(document.activeElement).toBe(screen.getByRole("dialog"))
     rerender(<Panel open={false} />)
     expect(screen.queryByRole("complementary")).not.toBeInTheDocument()
     expect(document.activeElement).toBe(outside)
@@ -161,7 +171,7 @@ describe("SidePanel on a laptop", () => {
         </div>
       </SidePanelLayout>,
     )
-    expect(document.activeElement).toBe(screen.getByRole("complementary"))
+    expect(document.activeElement).toBe(screen.getByRole("dialog"))
     opener.remove()
     rerender(
       <SidePanelLayout panel={<Panel open={false} />}>
@@ -183,57 +193,100 @@ describe("SidePanel on a laptop", () => {
     )
     expect(document.activeElement).toBe(document.querySelector('[data-slot="side-panel-layout"]'))
   })
-
-  it("honours a custom width", () => {
-    stubViewport(true)
-    render(
-      <SidePanel open onOpenChange={() => {}} title="Wide" width={560}>
-        <p>Body</p>
-      </SidePanel>,
-    )
-    expect(screen.getByRole("complementary")).toHaveStyle({ width: "560px" })
-  })
 })
 
 describe("SidePanelLayout", () => {
-  const page = () => document.querySelector<HTMLElement>('[data-slot="side-panel-page"]') as HTMLElement
-
-  it("pads the page for the panel only while it is open", async () => {
+  it("leaves the page alone while the panel is open", () => {
     stubViewport(true)
-    const { rerender } = render(
-      <SidePanelLayout panel={<Panel open={false} />}>
-        <p>The grid</p>
-      </SidePanelLayout>,
-    )
-    expect(page()).not.toHaveClass("lg:pr-(--panel-w)")
-    await act(async () => rerender(
+    render(
       <SidePanelLayout panel={<Panel open />}>
         <p>The grid</p>
       </SidePanelLayout>,
-    ))
-    expect(page()).toHaveClass("lg:pr-(--panel-w)")
-    expect(page().style.getPropertyValue("--panel-w")).toBe("480px")
-    await act(async () => rerender(
-      <SidePanelLayout panel={<Panel open={false} />}>
-        <p>The grid</p>
-      </SidePanelLayout>,
-    ))
-    expect(page()).not.toHaveClass("lg:pr-(--panel-w)")
+    )
+    const layout = document.querySelector<HTMLElement>('[data-slot="side-panel-layout"]')!
+    expect(layout.className).not.toMatch(/pr-|--panel-w/)
+    expect(layout.innerHTML).not.toContain("--panel-w")
+    expect(screen.getByText("The grid")).toBeInTheDocument()
+  })
+})
+
+describe("SidePanel resizing", () => {
+  const handle = () => screen.getByRole("separator", { name: "Resize panel" })
+  const KEY = "trailhead.side-panel-width"
+  const keys = (key: string) => fireEvent.keyDown(handle(), { key })
+
+  beforeEach(() => {
+    window.localStorage.clear()
+    vi.stubGlobal("innerWidth", 1280)
+  })
+  afterEach(() => window.localStorage.clear())
+
+  it("has a keyboard operable handle with a name and a value", () => {
+    stubViewport(true)
+    render(<Panel />)
+    expect(handle()).toHaveAttribute("tabindex", "0")
+    expect(handle()).toHaveAttribute("aria-valuenow", "480")
+    expect(handle()).toHaveAttribute("aria-valuemin", "360")
+    expect(handle()).toHaveAttribute("aria-valuemax", "896")
   })
 
-  it("reads the panel's width into the padding", () => {
+  it("widens with the left arrow and narrows with the right in 40px steps, and remembers the width", () => {
     stubViewport(true)
-    render(
-      <SidePanelLayout
-        panel={
-          <SidePanel open onOpenChange={() => {}} title="Wide" width={560}>
-            <p>Body</p>
-          </SidePanel>
-        }
-      >
-        <p>The grid</p>
-      </SidePanelLayout>,
-    )
-    expect(page().style.getPropertyValue("--panel-w")).toBe("560px")
+    render(<Panel />)
+    keys("ArrowLeft")
+    expect(screen.getByRole("dialog")).toHaveStyle({ width: "520px" })
+    keys("ArrowLeft")
+    keys("ArrowRight")
+    expect(handle()).toHaveAttribute("aria-valuenow", "520")
+    expect(window.localStorage.getItem(KEY)).toBe("520")
+  })
+
+  it("stops at 360px and at 70% of the window", () => {
+    stubViewport(true)
+    render(<Panel />)
+    for (let i = 0; i < 10; i++) keys("ArrowRight")
+    expect(handle()).toHaveAttribute("aria-valuenow", "360")
+    for (let i = 0; i < 30; i++) keys("ArrowLeft")
+    expect(handle()).toHaveAttribute("aria-valuenow", "896")
+  })
+
+  it("follows a drag of the handle and remembers where it ended", () => {
+    stubViewport(true)
+    render(<Panel />)
+    fireEvent.pointerDown(handle(), { pointerId: 1, clientX: 800 })
+    fireEvent.pointerMove(handle(), { pointerId: 1, clientX: 600 })
+    expect(screen.getByRole("dialog")).toHaveStyle({ width: "680px" })
+    expect(window.localStorage.getItem(KEY)).toBeNull()
+    fireEvent.pointerUp(handle(), { pointerId: 1, clientX: 600 })
+    expect(window.localStorage.getItem(KEY)).toBe("680")
+  })
+
+  it("opens at the remembered width", () => {
+    stubViewport(true)
+    window.localStorage.setItem(KEY, "600")
+    render(<Panel />)
+    expect(screen.getByRole("dialog")).toHaveStyle({ width: "600px" })
+  })
+
+  it("still works when localStorage throws", () => {
+    stubViewport(true)
+    const get = vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
+      throw new Error("blocked")
+    })
+    const set = vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw new Error("blocked")
+    })
+    render(<Panel />)
+    keys("ArrowLeft")
+    expect(handle()).toHaveAttribute("aria-valuenow", "520")
+    get.mockRestore()
+    set.mockRestore()
+  })
+
+  it("has no handle on a phone", () => {
+    stubViewport(false)
+    render(<Panel />)
+    expect(screen.queryByRole("separator")).not.toBeInTheDocument()
+    expect(screen.getByRole("dialog")).toHaveAttribute("data-mode", "sheet")
   })
 })

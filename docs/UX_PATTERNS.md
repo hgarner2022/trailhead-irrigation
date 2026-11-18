@@ -23,7 +23,7 @@ Written Nov 13 2026 for the admin, the day view, New job, the pass page and the 
 
 ## The job panel
 
-1. **The panel opens beside the table on a laptop and as a sheet on a phone, and the row stays visible.** Why: context is kept while acting on one row. (Already in `SidePanel`.) [4][13]
+1. **The panel opens as a drawer over the page on a laptop (resizable, the page under it unmoved) and as a sheet on a phone.** Why: the page keeps its layout while acting on one row, and the panel is closed in one move (Escape, the scrim or Close). (Already in `SidePanel`.) [4][13]
 2. **One filled button, the next likely action for that state.** Needs a day: Move. Scheduled: Done. Others are outlined. Why: one primary per surface (build 1, principle 2). [13]
 3. **Order inside: who and where, then the job, then the thread, then the actions in a pinned footer.** Why: Housecall Pro shows customer, address, then notes, in that order. [9]
 4. **Before an action, one sentence says what will happen: "Moves the blowout to Thu, Oct 14 and texts Dana."** Why: specific wording beats "Are you sure?". [2]
