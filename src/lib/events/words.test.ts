@@ -26,7 +26,7 @@ describe("eventWords: one sentence per kind", () => {
     expect(words("visit.moved", {})).toBe("The visit moved")
   })
   it("a move says whether the customer was texted, and a confirmation is the customer's", () => {
-    expect(words("visit.moved", { name: "Spring turn-on", day: "2027-04-22", from: "2027-04-20", texted: false })).toBe("Spring turn-on moved from Apr 20 to Apr 22, not texted")
+    expect(words("visit.moved", { name: "Spring turn-on", day: "2027-04-22", from: "2027-04-20", texted: false, quiet: true })).toBe("Spring turn-on moved from Apr 20 to Apr 22, not texted")
     expect(words("visit.moved", { name: "Spring turn-on", day: "2027-04-22", from: "2027-04-20", texted: true, asked: true })).toBe("Spring turn-on moved from Apr 20 to Apr 22, customer asked to confirm")
     expect(words("visit.moved", { name: "Spring turn-on", day: "2027-04-22", from: "2027-04-20", texted: true })).toBe("Spring turn-on moved from Apr 20 to Apr 22")
     expect(words("visit.confirmed", { name: "Spring turn-on", day: "2027-04-22" })).toBe("Spring turn-on confirmed by the customer")

@@ -30,11 +30,11 @@ const visitLinkTail = (key: EditableMessage["key"], visitUrl: string | undefined
 const visitText = (key: EditableMessage["key"], d: VisitData, o?: TextOptions) => {
   const v = d.visit
   // A move Ryan made says his line after the words, and for a property that must be home asks for the YES instead of "Another day?" (and the link says the same: reply or pick).
-  const asked = key === "date-moved" && v.asked === true
+  const asked = key === "date-moved" && v.asked === true && Boolean(v.visitUrl)
   let middle = fillTemplate(bodyOf(o?.templates, key, "sms"), { service: v.name, address: v.address, day: shortDay(v.day), window: v.startTime ? windowText(v.startTime) : null, who: v.who })
   if (asked) middle = middle.replace(/\s*Another day\?\s*$/, "")
   const note = key === "date-moved" ? noteLine(v.note) : ""
-  return `Trailhead: ${middle}${note ? ` ${note}` : ""} ${visitLinkTail(key, v.visitUrl, d.accountUrl, asked && Boolean(v.visitUrl))}${tail(o)}`
+  return `Trailhead: ${middle}${note ? ` ${note}` : ""} ${visitLinkTail(key, v.visitUrl, d.accountUrl, asked)}${tail(o)}`
 }
 
 export const dateSetText = (d: VisitData, o?: TextOptions) => visitText("date-set", d, o)

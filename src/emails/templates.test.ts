@@ -605,3 +605,13 @@ describe("a rendered file to look at", () => {
     writeFileSync(".local-data/wiring/messages/date-set.html", local(renderEmail("date-set", DATA["date-set"])!.html))
   })
 })
+
+describe("the date-moved email for a move Ryan made", () => {
+  it("says his line and, for a property that must be home, asks them to confirm", () => {
+    const moved = renderEmail("date-moved", { ...base, visit: { ...visit, note: "Rain on Tuesday", asked: true } })!
+    expect(moved.text).toContain("Rain on Tuesday.")
+    expect(moved.text).toContain("please confirm that day works")
+    const plain = renderEmail("date-moved", { ...base, visit })!
+    expect(plain.text).not.toContain("please confirm")
+  })
+})

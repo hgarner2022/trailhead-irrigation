@@ -142,15 +142,17 @@ export async function placeVisit(ctx: Ctx, input: { id: string; personId?: strin
     // The text: a new day, or a new time on a booked visit. A property that must be home is asked "Reply YES or pick another day" and reads Waiting on customer until they answer.
     const changed = visit.scheduledOn !== input.scheduledOn || (moved && booked && (input.startTime ?? null) !== visit.startTime)
     const [yard] = await ctx.db.select({ mustBeHome: s.property.mustBeHome }).from(s.property).where(eq(s.property.id, visit.propertyId))
-    const asked = notify && changed && moved && Boolean(yard?.mustBeHome)
+    const wantsAnswer = notify && changed && moved && Boolean(yard?.mustBeHome)
     const note = input.note?.trim() || undefined
     const texted = notify && changed
-      ? await queueDateMessage(ctx.db, visit, moved ? "date-moved" : "date-set", input.scheduledOn, moved ? { key: `moved-${visit.id}-${randomUUID()}`, note, asked, told: Boolean(input.startTime) } : {})
+      ? await queueDateMessage(ctx.db, visit, moved ? "date-moved" : "date-set", input.scheduledOn, moved ? { key: `moved-${visit.id}-${randomUUID()}`, note, asked: wantsAnswer, told: Boolean(input.startTime) } : {})
       : false
+    // Waiting on customer only when the ask went out: a customer who could not be reached was asked nothing
+    const asked = wantsAnswer && texted
     await emitEvent(ctx.db, ctx.organizationId, moved ? "visit.moved" : "visit.scheduled", { visitId: visit.id, ...who(person.id), scheduledOn: input.scheduledOn, from: moved ? { ...who(visit.personId), scheduledOn: visit.scheduledOn } : null }, {
       about: "visit", aboutId: visit.id, customerId: visit.customerId, jobId: visit.jobId, visitId: visit.id, who: whoOf(ctx), at: ctx.now,
       // `asked` is the fact Waiting on customer is read from (no column): a later move, a customer's own pick or `visit.confirmed` ends it
-      detail: { name: visitName(visit.kind), day: input.scheduledOn, from: moved ? visit.scheduledOn : null, personId: person.id, texted, ...(asked ? { asked: true } : {}), ...(note ? { note } : {}), ...(input.startTime ? { startTime: input.startTime } : {}) },
+      detail: { name: visitName(visit.kind), day: input.scheduledOn, from: moved ? visit.scheduledOn : null, personId: person.id, texted, ...(notify ? {} : { quiet: true }), ...(asked ? { asked: true } : {}), ...(note ? { note } : {}), ...(input.startTime ? { startTime: input.startTime } : {}) },
     })
     return visitOut(ctx, await loadVisit(ctx, visit.id))
 }
@@ -164,7 +166,7 @@ export const visitsMove = defineHandler({
   input: z.object({
     id: Id, personId: Id.optional(), truckId: PersonIdAlias, scheduledOn: Day, startTime: z.string().regex(/^\d{2}:\d{2}$/).optional(),
     notify: z.boolean().optional().describe("Text the customer the new day (and time). Default true; false is refused for a visit with a booked time (a told window, or a time on a one-off), which always texts."),
-    note: z.string().trim().max(140).optional().describe("One line from Ryan, said in the text after the new day. Only with `notify`."),
+    note: z.string().trim().max(140).optional().describe("One line from Ryan, said in the text after the new day. Only with `notify`, and only on a move (a first placement ignores it)."),
   }),
   output: VisitOut,
   async run(ctx, input) {

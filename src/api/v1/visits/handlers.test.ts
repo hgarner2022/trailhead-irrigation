@@ -186,7 +186,7 @@ describe("visits.move texts, Ryan's line and Waiting on customer (step 4)", () =
     await move({ id: "p9-blowout", personId: "person_truck-1", scheduledOn: "2027-10-06", notify: false })
     expect(await textsOf("p9-blowout")).toHaveLength(0)
     const [ev] = await eventsOf(db, { kind: "visit.moved", aboutId: "p9-blowout" })
-    expect(ev!.detail).toMatchObject({ texted: false })
+    expect(ev!.detail).toMatchObject({ texted: false, quiet: true })
     // the note goes in the text, so a note with no text is refused
     await expect(move({ id: "p9-blowout", personId: "person_truck-1", scheduledOn: "2027-10-07", notify: false, note: "hi" })).rejects.toMatchObject({ code: "invalid" })
   })
@@ -233,6 +233,17 @@ describe("visits.move texts, Ryan's line and Waiting on customer (step 4)", () =
     await db.update(s.visit).set({ status: "unscheduled", scheduledOn: null, personId: null }).where(eq(s.visit.id, "p7-blowout"))
     await expect(callApi(ctxFor(db, writeKey), visitsConfirm, { id: "p7-blowout" })).rejects.toMatchObject({ code: "unprocessable" })
     await expect(callApi(ctxFor(db, readKey), visitsConfirm, { id: "p2-blowout" })).rejects.toMatchObject({ code: "forbidden" })
+  })
+
+  it("asks nobody, and so waits on nobody, when the customer cannot be reached", async () => {
+    const v = await withPhone("p2-inspection")
+    await db.update(s.customer).set({ phone: null, email: null }).where(eq(s.customer.id, v.customerId))
+    await db.update(s.property).set({ mustBeHome: true }).where(eq(s.property.id, v.propertyId))
+    await place("p2-inspection", "2027-07-13")
+    await place("p2-inspection", "2027-07-14")
+    const [ev] = await eventsOf(db, { kind: "visit.moved", aboutId: "p2-inspection" })
+    expect(ev!.detail).toMatchObject({ texted: false })
+    expect(ev!.detail).not.toHaveProperty("asked")
   })
 
   it("texts every move Ryan makes, even back to a day it was texted before", async () => {
