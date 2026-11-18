@@ -48,5 +48,22 @@ export const AdminAlert = story("admin-alert")
 const signIn = signInEmail(SIGN_IN_FIXTURE)
 export const SignIn: Story = { name: EMAIL_LABELS["sign-in"], args: { subject: signIn.subject, html: signIn.html, width: 640 } }
 
-/** The receipt on a phone: the same HTML at 375 pixels. */
-export const ReceiptOnAPhone: Story = { name: "Receipt on a phone", args: { subject: rendered("receipt").subject, html: rendered("receipt").html, width: 375 } }
+// The same HTML at 375 pixels, one story per email: the facts stack, the button runs the width and the heading wraps.
+const phone = (kind: EmailKind): Story => ({ name: `${EMAIL_LABELS[kind]} on a phone`, args: { subject: rendered(kind).subject, html: rendered(kind).html, width: 375 } })
+export const PurchaseConfirmationOnAPhone = phone("purchase-confirmation")
+export const BookingConfirmationOnAPhone = phone("booking-confirmation")
+export const DaySetOnAPhone = phone("date-set")
+export const DayMovedOnAPhone = phone("date-moved")
+export const DayBeforeOnAPhone = phone("day-before")
+export const TwoWeeksOutOnAPhone = phone("date-confirm")
+export const ReceiptOnAPhone = phone("receipt")
+export const InvoiceOnAPhone = phone("invoice")
+export const InvoiceReminderOnAPhone = phone("invoice-reminder")
+export const CardFailedOnAPhone = phone("card-failed")
+export const CardExpiringOnAPhone = phone("card-expiring")
+export const SeasonPassCanceledOnAPhone = phone("cancelled")
+export const VisitCanceledOnAPhone = phone("visit-cancelled")
+export const RenewalOnAPhone = phone("renewal")
+export const NotMarkedDoneOnAPhone = phone("not-closed-crew")
+export const AdminAlertOnAPhone = phone("admin-alert")
+export const SignInOnAPhone: Story = { name: `${EMAIL_LABELS["sign-in"]} on a phone`, args: { subject: signIn.subject, html: signIn.html, width: 375 } }
