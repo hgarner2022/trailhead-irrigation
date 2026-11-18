@@ -64,6 +64,18 @@ describe("jobs.list and jobs.get", () => {
     expect(data.every((j) => j.passId === null)).toBe(true)
   })
 
+  it("names the person on a visit by first name only when the person has a first and last name; a label like Second truck reads as no one", async () => {
+    const v = await doneRepair(dana)
+    const first = async () => (await callApi(me(dana), jobsList, {})).data.find((j) => j.id === v.jobId)!.visits[0]!.personFirstName
+    await db.update(s.person).set({ name: "Second truck" }).where(eq(s.person.id, "person_truck-2"))
+    await db.update(s.visit).set({ personId: "person_truck-2" }).where(eq(s.visit.id, v.id))
+    expect(await first()).toBeNull()
+    await db.update(s.person).set({ name: "Second" }).where(eq(s.person.id, "person_truck-2"))
+    expect(await first()).toBeNull()
+    await db.update(s.person).set({ name: "Sam Okafor" }).where(eq(s.person.id, "person_truck-2"))
+    expect(await first()).toBe("Sam")
+  })
+
   it("never carries a note, an event, a Jobber link, a surname or a voided invoice", async () => {
     const v = await doneRepair(dana)
     await db.insert(s.event).values({ id: "evt-note", organizationId: v.customerId ? (await db.select().from(s.customer).where(eq(s.customer.id, dana)))[0]!.organizationId : "", about: "job", aboutId: v.jobId, customerId: dana, jobId: v.jobId, kind: "note", detail: { text: "gate sticks, owner is grumpy" }, who: "ryan@example.com" })

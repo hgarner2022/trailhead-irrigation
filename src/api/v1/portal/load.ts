@@ -11,7 +11,7 @@ import { loadTaxRule } from "@/lib/money/tax-rule"
 import { jobMoney, jobOwed } from "@/lib/money/words"
 import { passStatus } from "@/lib/pass/facts"
 import { changeFor } from "@/lib/portal/change-day"
-import { firstNameOf } from "@/lib/portal/words"
+import { customerFacingFirstName } from "@/lib/portal/words"
 import type { Ctx } from "../../core/context"
 import { canSeeContact, today } from "../shared"
 import { selfCustomerId } from "./self"
@@ -99,7 +99,7 @@ export async function loadPortalJobs(ctx: Ctx, customerId: string, only?: string
         startTime: v.startTime,
         durationMinutes: v.durationMinutes,
         window: v.window,
-        personFirstName: firstNameOf(v.personId ? nameOf.get(v.personId) : null),
+        personFirstName: customerFacingFirstName(v.personId ? nameOf.get(v.personId) : null),
         mustBeHome: properties.find((p) => p.id === v.propertyId)?.mustBeHome ?? false,
         notDoneReason: v.status === "unscheduled" ? v.notDoneReason : null,
         change: changeFor({ status: v.status, scheduledOn: v.scheduledOn, hasWindow: windowKinds.has(v.kind), jobOpen }, day),

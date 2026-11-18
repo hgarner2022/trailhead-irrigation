@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { arrivalWindow, longDay, moneyWord, paymentLine, shortDay, visitPill } from "./words"
+import { arrivalWindow, customerFacingFirstName, longDay, moneyWord, paymentLine, shortDay, visitPill } from "./words"
 
 describe("arrivalWindow", () => {
   it("says the window in the customer's words", () => {
@@ -46,5 +46,26 @@ describe("paymentLine", () => {
     expect(paymentLine({ amount: 145, method: "card_on_file", paidOn: "2027-11-03" })).toBe("Paid Nov 3, card $145")
     expect(paymentLine({ amount: 80, method: "check", paidOn: null })).toBe("Paid, check $80")
     expect(paymentLine({ amount: -145, method: "card_on_file", paidOn: "2027-11-05" })).toBe("Refunded Nov 5, card $145")
+  })
+})
+
+describe("customerFacingFirstName", () => {
+  it("is the first name of a person with a first and a last name", () => {
+    expect(customerFacingFirstName("Ryan Garner")).toBe("Ryan")
+    expect(customerFacingFirstName("  Tech   Two ")).toBe("Tech")
+  })
+  it("is nothing for a one-word name, so the visit reads without a person", () => {
+    expect(customerFacingFirstName("Second")).toBeNull()
+    expect(customerFacingFirstName("Ryan")).toBeNull()
+  })
+  it("is nothing for a label such as a truck, however many words it has", () => {
+    expect(customerFacingFirstName("Second truck")).toBeNull()
+    expect(customerFacingFirstName("Truck 2")).toBeNull()
+    expect(customerFacingFirstName("Crew TRUCK one")).toBeNull()
+  })
+  it("is nothing for no person or a blank name", () => {
+    expect(customerFacingFirstName(null)).toBeNull()
+    expect(customerFacingFirstName(undefined)).toBeNull()
+    expect(customerFacingFirstName("   ")).toBeNull()
   })
 })

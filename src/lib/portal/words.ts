@@ -7,6 +7,16 @@ import { PHONE_DISPLAY } from "@/lib/nav"
 
 export { firstNameOf }
 
+/**
+ * The name a customer reads beside a visit: the first name of a person who has a first and a last name ("Ryan Garner" gives "Ryan"). A one-word name or a label such as
+ * "Second truck" (a truck's leftover name, not a person) gives null, and the visit is shown without a person. Customers see first names only.
+ */
+export function customerFacingFirstName(name: string | null | undefined): string | null {
+  const words = name?.trim().split(/\s+/).filter(Boolean) ?? []
+  if (words.length < 2 || /truck/i.test(name!)) return null
+  return firstNameOf(name)
+}
+
 const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
 export const weekdayName = (day: string) => WEEKDAYS[new Date(`${day}T12:00:00Z`).getUTCDay()]!
 
