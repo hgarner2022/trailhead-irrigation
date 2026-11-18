@@ -1,5 +1,5 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
-import { render, screen, within } from "@testing-library/react"
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import type { AdminData } from "@/lib/admin/types"
@@ -27,7 +27,7 @@ beforeAll(() => {
 })
 
 const cell = (person: string, day: string) => document.querySelector<HTMLElement>(`[data-slot="week-grid-cell"][data-person="${person}"][data-day="${day}"]`)!
-const percy = (el: HTMLElement) => within(el).getByRole("button", { name: /^Percy/ })
+const percy = (el: HTMLElement) => within(el).getByRole("button", { name: /Percy/ })
 
 async function pick(user: ReturnType<typeof userEvent.setup>, trigger: string, option: string) {
   await user.click(screen.getByRole("combobox", { name: trigger }))
@@ -65,18 +65,72 @@ describe("ScheduleScreen move control", () => {
   })
 })
 
-describe("ScheduleScreen Schedule", () => {
-  it("schedules every visit in the Unscheduled list, counting the same list, and says so", async () => {
+describe("ScheduleScreen Place all", () => {
+  const trayRows = () => within(document.querySelector<HTMLElement>('[data-slot="to-schedule-tray"]')!).getAllByRole("listitem")
+
+  it("is a quiet button above the Unscheduled list that counts the same list, and the header has no Schedule button", async () => {
     const info = vi.spyOn(console, "info").mockImplementation(() => undefined)
-    render(<ScheduleScreen data={data} today={TODAY} />)
-    const rows = within(document.querySelector<HTMLElement>('[data-slot="to-schedule-tray"]')!).getAllByRole("listitem")
-    const button = screen.getByRole("button", { name: /^Schedule \d+ visits$/ })
-    expect(button).toHaveTextContent(`Schedule ${rows.length} visits`)
+    render(<ScheduleScreen data={data} today={TODAY} textDelaySeconds={0} />)
+    const rows = trayRows()
+    expect(screen.queryByRole("button", { name: /^Schedule/ })).toBeNull()
     expect(screen.getByRole("heading", { name: `Unscheduled (${rows.length})` })).toBeInTheDocument()
-    await userEvent.click(button)
-    expect(info).toHaveBeenCalledWith("schedule", "2026-11-09", expect.any(Array))
-    expect(screen.getByRole("status")).toHaveTextContent(`${rows.length} visits scheduled on the week of November 9. The customers get their dates.`)
-    expect(screen.getByRole("button", { name: "Schedule" })).toBeDisabled()
+    const all = screen.getByRole("button", { name: `Place all ${rows.length}` })
+    expect(document.querySelector('[data-slot="page-header"]')).not.toContainElement(all)
+    await userEvent.click(all)
+    const dialog = within(await screen.findByRole("dialog"))
+    expect(dialog.getByRole("heading", { name: /^Place all \d+$/ })).toBeInTheDocument()
+    expect(dialog.getAllByRole("listitem").length).toBe(rows.length)
+    await userEvent.click(dialog.getByRole("button", { name: /^Place( all)? \d+$/ }))
+    expect(info).toHaveBeenCalledWith("place visit", expect.any(String), expect.any(String), expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/))
+    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent(/jobs? scheduled|is scheduled with/))
+  })
+
+  it("holds the texts for a minute under one strip, and Undo inside the minute sends nothing and puts the jobs back", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    try {
+      const onMove = vi.fn().mockResolvedValue({ ok: true, data: undefined })
+      render(<ScheduleScreen data={data} today={TODAY} onMove={onMove} />)
+      const before = trayRows().length
+      await userEvent.click(screen.getByRole("button", { name: `Place all ${before}` }))
+      await userEvent.click(within(await screen.findByRole("dialog")).getByRole("button", { name: /^Place( all)? \d+$/ }))
+      const strip = await screen.findByText(/^Texting \d+ customers in/)
+      expect(strip.closest('[data-slot="texting-strip"]')).toHaveTextContent("60 s")
+      expect(document.querySelector('[data-slot="to-schedule-tray"]')).toBeNull()
+      expect(onMove).not.toHaveBeenCalled()
+      await userEvent.click(screen.getByRole("button", { name: "Undo" }))
+      expect(trayRows()).toHaveLength(before)
+      await vi.advanceTimersByTimeAsync(120_000)
+      expect(onMove).not.toHaveBeenCalled()
+      expect(screen.getByRole("status")).toHaveTextContent("Nothing was sent. The job is back on the list.")
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it("sends every move through the API once the minute is up, to the person first with room", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    try {
+      const onMove = vi.fn().mockResolvedValue({ ok: true, data: undefined })
+      render(<ScheduleScreen data={data} today={TODAY} onMove={onMove} />)
+      const before = trayRows().length
+      await userEvent.click(screen.getByRole("button", { name: `Place all ${before}` }))
+      await userEvent.click(within(await screen.findByRole("dialog")).getByRole("button", { name: /^Place( all)? \d+$/ }))
+      await vi.advanceTimersByTimeAsync(60_000)
+      expect(onMove.mock.calls.length).toBeGreaterThan(0)
+      expect(onMove.mock.calls[0]).toEqual([expect.any(String), "person_truck-1", expect.stringMatching(/^2027-/)])
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it("says No open day, with Another day, for a job whose window nothing has room in, and keeps it on the list", async () => {
+    const closed = { ...data, settings: { ...data.settings, windows: data.settings.windows.map((w) => ({ ...w, opensOn: "2026-10-01", closesOn: "2026-10-31" })) } }
+    render(<ScheduleScreen data={closed} today={TODAY} textDelaySeconds={0} />)
+    const before = trayRows().length
+    await userEvent.click(within(trayRows()[0]!).getByRole("button", { name: /^Place / }))
+    expect(within(trayRows()[0]!).getByText(/^No open day before Oct 31\. Pick a day yourself\.$/)).toBeInTheDocument()
+    expect(within(trayRows()[0]!).getByRole("button", { name: "Another day" })).toBeInTheDocument()
+    expect(trayRows()).toHaveLength(before)
   })
 })
 
@@ -106,20 +160,11 @@ describe("ScheduleScreen with actions", () => {
     expect(percy(cell("person_truck-2", "2026-11-13"))).toBeInTheDocument()
   })
 
-  it("runs the scheduler once per window in the tray and adds up what it placed", async () => {
-    const onSchedule = vi.fn().mockResolvedValue({ ok: true, data: { placed: 2, unplaced: 1 } })
-    render(<ScheduleScreen data={data} today={TODAY} onSchedule={onSchedule} />)
-    await userEvent.click(screen.getByRole("button", { name: /^Schedule \d+ visits$/ }))
-    const windows = onSchedule.mock.calls.map((c) => c[0])
-    expect(new Set(windows).size).toBe(windows.length)
-    expect(windows.every((w) => ["turn-on", "inspection", "blowout"].includes(w))).toBe(true)
-    expect(await screen.findByText(/visits? scheduled\. The customers get their dates\. \d+ couldn't be placed\. Home lists them\./, {}, { timeout: 5000 })).toBeInTheDocument()
-  })
-
   it("shows a tech no Schedule, Place or Move controls", async () => {
     render(<ScheduleScreen data={data} today={TODAY} readOnly onMove={vi.fn()} />)
     expect(screen.queryByRole("button", { name: /^Schedule/ })).toBeNull()
     expect(screen.queryByRole("button", { name: /^Place / })).toBeNull()
+    expect(screen.queryByRole("button", { name: /^Place all/ })).toBeNull()
     await userEvent.click(percy(cell("person_truck-1", "2026-11-12")))
     expect(screen.queryByRole("region", { name: "Move the selected visit" })).toBeNull()
   })
@@ -133,7 +178,7 @@ describe("ScheduleScreen opens on the work", () => {
 
   it("opens on the first week that has a job, not on an empty November week", () => {
     render(<ScheduleScreen data={spring} today={TODAY} />)
-    expect(screen.getByText(/^Week of Apr 26\. 1 visit\.$/)).toBeInTheDocument()
+    expect(screen.getByText(/^Week of Apr 26\. 1 stop\.$/)).toBeInTheDocument()
     expect(screen.queryByText(/Next jobs/)).toBeNull()
   })
 
@@ -143,7 +188,7 @@ describe("ScheduleScreen opens on the work", () => {
     const line = document.querySelector<HTMLElement>('[data-slot="next-jobs"]')!
     expect(line).toHaveTextContent("Next jobs: week of Apr 26")
     await userEvent.click(within(line).getByRole("button", { name: "week of Apr 26" }))
-    expect(screen.getByText(/^Week of Apr 26\. 1 visit\.$/)).toBeInTheDocument()
+    expect(screen.getByText(/^Week of Apr 26\. 1 stop\.$/)).toBeInTheDocument()
     expect(document.querySelector('[data-slot="next-jobs"]')).toBeNull()
   })
 
@@ -176,9 +221,9 @@ describe("ScheduleScreen's Unscheduled list", () => {
     expect(document.body).not.toHaveTextContent(/jobber/i)
   })
 
-  it("counts the same list on the Schedule button as it lists", () => {
+  it("counts the same list on Place all as it lists", () => {
     render(<ScheduleScreen data={data} today={TODAY} />)
-    expect(screen.getByRole("button", { name: `Schedule ${rows().length} visits` })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: `Place all ${rows().length}` })).toBeInTheDocument()
   })
 
   it("leaves a job out once it has a day, and shows nothing of a pending pass's jobs on the week either", () => {
@@ -195,7 +240,7 @@ describe("ScheduleScreen's Unscheduled list", () => {
 
   it("shows a refused Place's sentence under that row only, in the API's words", async () => {
     const onMove = vi.fn().mockResolvedValue({ ok: false, message: "A turn-on visit must land between 2027-04-26 and 2027-05-31" })
-    render(<ScheduleScreen data={data} today={TODAY} onMove={onMove} />)
+    render(<ScheduleScreen data={data} today={TODAY} onMove={onMove} textDelaySeconds={0} />)
     const name = within(rows()[0]).getByRole("button", { name: /^Place / }).getAttribute("aria-label")!
     await userEvent.click(within(rows()[0]).getByRole("button", { name: /^Place / }))
     const problem = await within(document.querySelector<HTMLElement>('[data-slot="to-schedule-tray"]')!).findByRole("alert", {}, { timeout: 5000 })
@@ -211,7 +256,7 @@ describe("ScheduleScreen's Unscheduled list", () => {
 
   it("places the job the API accepts and takes it out of the list", async () => {
     const onMove = vi.fn().mockResolvedValue({ ok: true, data: undefined })
-    render(<ScheduleScreen data={data} today={TODAY} onMove={onMove} />)
+    render(<ScheduleScreen data={data} today={TODAY} onMove={onMove} textDelaySeconds={0} />)
     const before = rows().length
     await userEvent.click(within(rows()[0]).getByRole("button", { name: /^Place / }))
     expect(await screen.findByText(/is scheduled with Ryan Garner/, {}, { timeout: 5000 })).toBeInTheDocument()
@@ -272,7 +317,7 @@ describe("ScheduleScreen views and New job from a day", () => {
     expect(window.history.length).toBe(length)
   })
 
-  it("has New job as the one filled button in the header, and the scheduler button beside it is an outline", () => {
+  it("has New job as the one filled button in the header, and nothing else beside it", () => {
     render(<ScheduleScreen data={data} today={TODAY} />)
     expect(header().getByRole("button", { name: "New job" })).toBeInTheDocument()
     expect(filled(document.querySelector<HTMLElement>('[data-slot="page-header"]')!).map((b) => b.textContent)).toEqual(["New job"])
@@ -301,5 +346,47 @@ describe("ScheduleScreen views and New job from a day", () => {
     unmount()
     render(<ScheduleScreen data={data} today={TODAY} readOnly />)
     expect(document.querySelector('[data-slot="week-grid-new-job"]')).toBeNull()
+  })
+})
+
+describe("ScheduleScreen Day view, stops per person", () => {
+  beforeEach(() => window.history.replaceState(null, "", "/admin/schedule"))
+  afterEach(() => window.history.replaceState(null, "", "/admin"))
+  const section = (person: string) => document.querySelector<HTMLElement>(`[data-slot="day-person"][data-person="${person}"]`)!
+
+  it("lists each person's stops in order with their number and time, under the day's fill", () => {
+    render(<ScheduleScreen data={data} today={TODAY} defaultTab="day" defaultDay="2026-11-12" />)
+    expect(screen.getAllByRole("region", { name: /^(Ryan Garner|Tech Two)$/ })).toHaveLength(2)
+    const ryan = within(section("person_truck-1"))
+    expect(ryan.getByRole("heading", { name: /Ryan Garner/ })).toHaveTextContent("4 stops")
+    expect(ryan.getAllByRole("listitem").map((li) => li.querySelector('[data-slot="stop-number"]')?.textContent)).toEqual(["Stop 1", "Stop 2", "Stop 3", "Stop 4"])
+    expect(ryan.getByText("Percy", { exact: false })).toBeInTheDocument()
+    expect(within(section("person_truck-2")).getByText("No stops.")).toBeInTheDocument()
+    expect(document.querySelector('[data-slot="schedule-day-view"] [data-slot="day-fill"]')?.textContent).toMatch(/^4 stops, .* open\./)
+    expect(document.querySelector('[data-slot="day-map"]')).not.toBeNull()
+  })
+
+  it("moves a stop dropped on another person's list to that person on this day, through the Move path", async () => {
+    const onMove = vi.fn().mockResolvedValue({ ok: true, data: undefined })
+    render(<ScheduleScreen data={data} today={TODAY} defaultTab="day" defaultDay="2026-11-12" onMove={onMove} />)
+    const percy = within(section("person_truck-1")).getByRole("button", { name: /Percy/ })
+    const id = data.visits.find((v) => v.clientName === "Percy" && v.startAt?.startsWith("2026-11-12"))!.id
+    expect(percy).toHaveAttribute("draggable", "true")
+    fireEvent.drop(section("person_truck-2"), { dataTransfer: { getData: () => id } })
+    expect(onMove).toHaveBeenCalledWith(id, "person_truck-2", "2026-11-12")
+    expect(await screen.findByText(/^Moved Percy to Thursday, November 12 with Tech Two\.$/)).toBeInTheDocument()
+    expect(within(section("person_truck-2")).getByRole("button", { name: /Percy/ })).toBeInTheDocument()
+  })
+
+  it("refuses a drop on a person's day off, and a tech cannot drag at all", () => {
+    const onMove = vi.fn()
+    const { unmount } = render(<ScheduleScreen data={data} today={TODAY} defaultTab="day" defaultDay="2026-11-15" onMove={onMove} />)
+    const id = data.visits.find((v) => v.startAt?.startsWith("2026-11-12"))!.id
+    expect(within(section("person_truck-1")).getByText("Not a working day.")).toBeInTheDocument()
+    fireEvent.drop(section("person_truck-1"), { dataTransfer: { getData: () => id } })
+    expect(onMove).not.toHaveBeenCalled()
+    unmount()
+    render(<ScheduleScreen data={data} today={TODAY} defaultTab="day" defaultDay="2026-11-12" readOnly onMove={onMove} />)
+    expect(within(section("person_truck-1")).getByRole("button", { name: /Percy/ })).not.toHaveAttribute("draggable", "true")
   })
 })

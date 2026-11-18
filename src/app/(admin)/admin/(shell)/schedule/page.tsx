@@ -6,7 +6,7 @@ import { ScheduleScreen, type ScheduleView } from "@/app/(admin)/admin/_screens/
 import { MONEY_OPTIONS, WORK_OPTIONS, filterFrom } from "@/app/(admin)/admin/_screens/visits-model"
 import { getAdminData } from "@/lib/admin/data"
 import { requireAdmin } from "@/lib/auth/guard"
-import { moveVisit, recordMarketingOptOut, runSchedule } from "../actions"
+import { moveVisit, recordMarketingOptOut } from "../actions"
 
 export const metadata: Metadata = { title: "Schedule" }
 /** `?week=` and `?day=` are typed by hand or by an old link; anything that is not a calendar day is ignored. */
@@ -48,7 +48,6 @@ export default async function SchedulePage({ searchParams }: { searchParams: Pro
       defaultFilters={defaultFilters}
       readOnly={tech}
       canCollect={tech}
-      onSchedule={runSchedule}
       onMove={moveVisit}
       visitActions={visitActions}
       jobActions={jobActions}

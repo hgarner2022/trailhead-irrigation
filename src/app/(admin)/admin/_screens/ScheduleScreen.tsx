@@ -2,16 +2,13 @@
 
 import { useMemo, useState, useTransition } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { SectionHeading } from "@/components/blocks/SectionHeading"
+import { TooltipProvider } from "@/components/ui/tooltip"
 import { SegmentedControl } from "@/components/blocks/SegmentedControl"
 import { PageHeader } from "@/components/blocks/PageHeader"
-import { ToScheduleTray } from "@/components/blocks/ToScheduleTray"
 import { WeekGrid } from "@/components/blocks/WeekGrid"
 import type { AdminData } from "@/lib/admin/types"
 import { TIME_ZONE, writtenDate } from "@/lib/admin/format"
-import { dayOf, dayVisits, weekOf, weekVisits } from "@/lib/admin/calendar"
+import { dayOf, weekOf, weekVisits } from "@/lib/admin/calendar"
 import type { Outcome } from "./action-types"
 import type { VisitActions } from "./visit-actions-types"
 import type { CustomersActions } from "./CustomersScreen"
@@ -20,26 +17,23 @@ import { NewJob, NewJobButton } from "./NewJob"
 import { RecordHost, useOpenVisit } from "./RecordHost"
 import { VisitsList } from "./VisitsList"
 import { useScheduleAddress } from "./schedule-address"
-import { ScheduleDayMap } from "./ScheduleDayMap"
+import { ScheduleDay } from "./ScheduleDay"
+import { ScheduleUnscheduled, TextingStrips } from "./ScheduleUnscheduled"
+import { usePlacing } from "./use-placing"
+import { TEXT_DELAY_SECONDS } from "./use-texting-queue"
 import { ScheduleMoveTo } from "./ScheduleMoveTo"
-import { DayStepper, Exceptions, NextJobsLine, StopGrid } from "./ScheduleParts"
-import { rowsOf } from "./visits-model"
-import { exceptionCount, firstJobWeek, firstWorkingDay, moveOutcome, nextJobsWeek, placeVisit, scheduleItems, trayItems, weekContext, type TrayItem } from "./schedule-model"
+import { DayStepper, Exceptions, NextJobsLine } from "./ScheduleParts"
+import { exceptionCount, firstJobWeek, moveOutcome, nextJobsWeek, weekContext } from "./schedule-model"
 import { routePeople } from "@/lib/admin/people"
 import { initialRecord } from "@/lib/admin/record-url"
 
-// Where Ryan lives in season (the scheduling flow, 2026-11-12: one state,
-// no second step): the week by person, a day map beside the day's stops in
-// order, and the "Unscheduled" list under the week, full width, with every job of an
-// active pass that has no day. It opens on the first week that has a job; a
-// week with none points at the next week that does. Schedule puts the whole
-// list on the week (the customers who must be there pick their own day and
-// stay in it until they do); Place puts one; drag moves one. Placed is
-// scheduled, and the customer gets the date. A refused Place or move says
-// why, in the API's words, under the row or in the status line and nowhere
-// else. Selecting a stop in the grid, the list or the map highlights the same
-// visit. Client because the week, the day, the tab, the selection and the
-// moves are state; the route's page.tsx supplies `data` and `today`.
+// Where Ryan lives in season (docs/plans/2026-11-18-admin-holistic-design.md, 5.2): the week with a row per person on the schedule (each with their route colour, each
+// day headed by how full it is and which towns are in it), the Day view's stops per person beside one map, and the "Unscheduled" list under the week with every
+// job that has no day, a pass's or a one-off's. Place puts one job on the next open day with the first person who has room and Place all puts the list, after a
+// preview; the customer's text waits a minute under a strip and Undo inside it sends nothing (`usePlacing`). Drag a stop to another day or another person and it
+// goes through the same Move the visit panel uses, and the customer is texted. A refused Place or move says why, in the API's words, under the row or in the
+// status line and nowhere else. Selecting a stop in the grid, the list or the map highlights the same visit. Client because the week, the day, the tab, the selection
+// and the moves are state; the route's page.tsx supplies `data` and `today`.
 
 export interface ScheduleScreenProps {
   data: AdminData
@@ -64,15 +58,15 @@ export interface ScheduleScreenProps {
   canCollect?: boolean
   /** a tech reads the week and changes nothing: no Schedule, Place, Move or drag */
   readOnly?: boolean
-  /** Schedule: runs the scheduler for one window; without it the button only moves blocks locally, as in the catalog */
-  onSchedule?: (window: "turn-on" | "inspection" | "blowout") => Promise<Outcome<{ placed: number; unplaced: number }>>
-  /** Place and drag: give a visit to a person on a day; a refusal's words show and the block snaps back */
+  /** Place, Place all and drag: give a visit to a person on a day (the API's Move, which texts the date); a refusal's words show and the block snaps back */
   onMove?: (visitId: string, personId: string, dayIso: string) => Promise<Outcome>
   /** the visit panel a stop opens, and New job; server actions in the app */
   visitActions?: VisitActions
   /** the job panel and the customer panel, for a record opened from a visit */
   jobActions?: JobActions
   customerActions?: CustomersActions
+  /** the seconds a Place's text waits under the strip; 60 in the app, 0 books at once (the tests) */
+  textDelaySeconds?: number
 }
 
 export type ScheduleView = "week" | "day" | "list"
@@ -81,8 +75,6 @@ const VIEWS = [
   { value: "day", label: "Day" },
   { value: "list", label: "List" },
 ] as const
-
-const WINDOWS = ["turn-on", "inspection", "blowout"] as const
 
 /** The Schedule with the visit panel: a stop in the week, the day list or the map opens the visit. */
 export function ScheduleScreen(props: ScheduleScreenProps) {
@@ -102,7 +94,7 @@ export function ScheduleScreen(props: ScheduleScreenProps) {
   )
 }
 
-function ScheduleBody({ data, today, defaultTab = "week", defaultDay, defaultWeek, defaultSelectedId, forJob, defaultFilters, readOnly = false, onSchedule, onMove, visitActions }: ScheduleScreenProps) {
+function ScheduleBody({ data, today, defaultTab = "week", defaultDay, defaultWeek, defaultSelectedId, forJob, defaultFilters, readOnly = false, onMove, visitActions, textDelaySeconds = TEXT_DELAY_SECONDS }: ScheduleScreenProps) {
   // With the visit panel wired (the app), a stop opens it and its Move replaces the strip above the week; without it (the catalog) the strip stays.
   const panel = Boolean(visitActions)
   const openVisit = useOpenVisit()
@@ -111,7 +103,7 @@ function ScheduleBody({ data, today, defaultTab = "week", defaultDay, defaultWee
   const people = routePeople(data.settings.people)
   const [visits, setVisits] = useState(data.visits)
   const [seen, setSeen] = useState(data.visits)
-  const [pending, startTransition] = useTransition()
+  const [, startTransition] = useTransition()
   // A refreshed `data` (after an action) replaces what the screen holds.
   if (data.visits !== seen) {
     setSeen(data.visits)
@@ -130,40 +122,12 @@ function ScheduleBody({ data, today, defaultTab = "week", defaultDay, defaultWee
     if (id && panel) openVisit?.(id)
   }
   const [announcement, setAnnouncement] = useState("")
-  /** why a Place was refused, by the job's id, shown under its row */
-  const [problems, setProblems] = useState<Record<string, string>>({})
-  const week = weekVisits(visits, weekStart, TIME_ZONE)
+  // Place and Place all show their placements at once and hold the text for a minute; everything below reads the visits with them laid on.
+  const placing = usePlacing({ data, visits, setVisits, people, todayDay, onMove, seconds: textDelaySeconds, announce: setAnnouncement, highlight: setSelectedId })
+  const shown = placing.shown
+  const week = weekVisits(shown, weekStart, TIME_ZONE)
   const selected = week.find((v) => v.id === selectedId && v.startAt)
-  const stops = useMemo(() => dayVisits(visits, day, undefined, TIME_ZONE), [visits, day])
-  const stopRows = useMemo(() => rowsOf(data, stops, today), [data, stops, today])
-  const tray = trayItems({ visits, passes: data.passes })
-  // The Schedule button runs the scheduler, which places a pass's visits by window; a one-off job's visit is placed from its row.
-  const passTray = tray.filter((i) => i.passId)
 
-  const scheduleAll = () => {
-    if (onSchedule) {
-      // The scheduler works one window at a time; a list can hold more than one.
-      const windows = [...new Set(passTray.filter((i) => !i.awaitingPick && WINDOWS.includes(i.kind as never)).map((i) => i.kind as (typeof WINDOWS)[number]))]
-      startTransition(async () => {
-        let placed = 0
-        let unplaced = 0
-        for (const window of windows) {
-          const out = await onSchedule(window)
-          if (!out.ok) return setAnnouncement(out.message)
-          placed += out.data.placed
-          unplaced += out.data.unplaced
-        }
-        const left = unplaced ? ` ${unplaced} couldn't be placed. Home lists them.` : ""
-        setAnnouncement(`${placed} ${placed === 1 ? "visit" : "visits"} scheduled. The customers get their dates.${left}`)
-      })
-      return
-    }
-    console.info("schedule", weekStart, passTray.filter((i) => !i.awaitingPick).map((i) => i.id))
-    const outcome = scheduleItems(visits, passTray, people, weekStart, TIME_ZONE)
-    setVisits(outcome.visits)
-    const waiting = outcome.waiting ? ` ${outcome.waiting} ${outcome.waiting === 1 ? "customer picks their own day and stays" : "customers pick their own days and stay"} in the list.` : ""
-    setAnnouncement(`${outcome.placed} ${outcome.placed === 1 ? "visit" : "visits"} scheduled on the week of ${writtenDate(weekStart)}. The customers get their dates.${waiting}`)
-  }
   /** Sends the move to the API; the block shows where it is going at once and goes back with the API's words if it is refused. */
   const send = (visitId: string, personId: string, dayIso: string, before: typeof visits, done: string, refused: (message: string) => void = setAnnouncement) =>
     startTransition(async () => {
@@ -179,19 +143,6 @@ function ScheduleBody({ data, today, defaultTab = "week", defaultDay, defaultWee
     if (onMove) return send(visitId, personId, dayIso, visits, outcome.moved ? outcome.message : "Moved.")
     setAnnouncement(outcome.message)
   }
-  const place = (item: TrayItem) => {
-    const person = people[0]
-    if (!person) return
-    const dayIso = firstWorkingDay(person, weekStart, todayDay)
-    if (!onMove) console.info("place visit", item.id, person.id, dayIso)
-    const before = visits
-    setProblems((p) => Object.fromEntries(Object.entries(p).filter(([id]) => id !== item.id)))
-    setVisits((v) => placeVisit(v, item, person, dayIso, TIME_ZONE))
-    setSelectedId(item.id)
-    const done = `${item.clientName} is scheduled with ${person.name} for ${writtenDate(dayIso)}, and we'll send the date. Drag it if another day is better.`
-    if (onMove) return send(item.id, person.id, dayIso, before, done, (message) => setProblems((p) => ({ ...p, [item.id]: message })))
-    setAnnouncement(done)
-  }
   const goToWeek = (next: string) => {
     setWeekStart(next)
     setDay(next)
@@ -204,43 +155,22 @@ function ScheduleBody({ data, today, defaultTab = "week", defaultDay, defaultWee
   return (
     <TooltipProvider>
       <div data-slot="schedule-screen" className="space-y-6">
-        <PageHeader
-          title="Schedule"
-          context={view === "list" ? undefined : weekContext(weekStart, week)}
-          actions={
-            readOnly ? undefined : (
-              <>
-                {passTray.length > 0 ? (
-                  <Button variant="outline" className="min-h-11" onClick={scheduleAll} disabled={pending}>{`Schedule ${passTray.length} ${passTray.length === 1 ? "visit" : "visits"}`}</Button>
-                ) : (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span tabIndex={0} className="inline-flex rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50">
-                        <Button variant="outline" className="min-h-11" disabled>Schedule</Button>
-                      </span>
-                    </TooltipTrigger>
-                    <TooltipContent>{tray.length ? "Give each job its day from the list" : "Nothing is waiting for a day"}</TooltipContent>
-                  </Tooltip>
-                )}
-                <NewJobButton data={data} today={today} actions={visitActions} />
-              </>
-            )
-          }
-        />
+        <PageHeader title="Schedule" context={view === "list" ? undefined : weekContext(weekStart, week)} actions={readOnly ? undefined : <NewJobButton data={data} today={today} actions={visitActions} />} />
         {selected && !readOnly && !panel && <ScheduleMoveTo key={`${selected.id}-${selected.personId}-${selected.startAt}`} visit={selected} people={people} weekStart={weekStart} timeZone={TIME_ZONE} onMove={move} />}
         <p role="status" className="text-sm text-muted-foreground empty:sr-only">
           {announcement}
         </p>
+        <TextingStrips strips={placing.strips} />
         <SegmentedControl label="Schedule view" options={VIEWS} value={view} onChange={(v) => setView(v as ScheduleView)} />
         {view === "week" && (
           <div data-slot="schedule-week" className="space-y-6">
-            {week.length === 0 && <NextJobsLine weekStart={nextJobsWeek(visits, weekStart, TIME_ZONE)} onGo={goToWeek} />}
+            {week.length === 0 && <NextJobsLine weekStart={nextJobsWeek(shown, weekStart, TIME_ZONE)} onGo={goToWeek} />}
             <div className="space-y-6">
               <WeekGrid
                 className="min-w-0"
                 people={people}
                 areas={areas}
-                visits={visits}
+                visits={shown}
                 weekStart={weekStart}
                 today={todayDay}
                 timeZone={TIME_ZONE}
@@ -250,14 +180,16 @@ function ScheduleBody({ data, today, defaultTab = "week", defaultDay, defaultWee
                 onWeekChange={setWeekStart}
                 onNewJob={readOnly ? undefined : setJobDay}
               />
-              <Card className="min-w-0">
-                <CardHeader>
-                  <SectionHeading level={2}>{`Unscheduled${tray.length ? ` (${tray.length})` : ""}`}</SectionHeading>
-                </CardHeader>
-                <CardContent>
-                  <ToScheduleTray items={tray} onPlace={place} readOnly={readOnly} problems={problems} />
-                </CardContent>
-              </Card>
+              <ScheduleUnscheduled
+                items={placing.tray}
+                readOnly={readOnly}
+                problems={placing.problems}
+                noRoom={placing.noRoom}
+                onPlace={placing.place}
+                onPlaceAll={placing.openPlaceAll}
+                onAnotherDay={(item) => select(item.id)}
+                preview={{ open: placing.previewOpen, rows: placing.rows, onOpenChange: (o) => !o && placing.closePlaceAll(), onConfirm: placing.confirmPlaceAll }}
+              />
             </div>
             {exceptionCount(week) > 0 && <Exceptions visits={week} />}
           </div>
@@ -271,17 +203,7 @@ function ScheduleBody({ data, today, defaultTab = "week", defaultDay, defaultWee
                 </Button>
               )}
             </DayStepper>
-            <div className="space-y-6">
-              <Card className="min-w-0">
-                <CardHeader>
-                  <SectionHeading level={2}>Stops in order</SectionHeading>
-                </CardHeader>
-                <CardContent>
-                  <StopGrid rows={stopRows} onOpen={select} />
-                </CardContent>
-              </Card>
-              <ScheduleDayMap className="min-w-0" stops={stops} people={people} selectedId={selectedId} onSelect={select} />
-            </div>
+            <ScheduleDay day={day} visits={shown} people={people} areas={areas} timeZone={TIME_ZONE} selectedId={selectedId} onSelect={select} onMove={readOnly ? undefined : move} />
           </div>
         )}
         {view === "list" && <VisitsList data={data} today={today} forJob={forJob} defaultFilters={defaultFilters} />}
