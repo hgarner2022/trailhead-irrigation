@@ -139,6 +139,10 @@ Every record panel (Customer, Visit, Pass) is made from the same parts, in `Side
 - **Footer.** One bar under the body with a rule over it and the same padding: the primary button first, then the secondary ones, a destructive ghost button last (Cancel pass, on the right). The Visit panel keeps its actions in its body, in the section they change, until its buttons move to the footer.
 - **Pills.** In a row, on the right; in facts, as the value; never in the header.
 
+## Navigation
+
+The left column is the whole app: Home, Schedule, Visits, Customers, Reports, Settings, and the lit item follows the address on every page (`AdminShell` reads `usePathname()`). Every link, button and row target lands on one of those pages with the record found there: a visit opens its panel on Visits (`?visit=`), a customer on Customers (`?customer=`), a job's visits on Visits filtered to the job (`?job=`, "Open job's visits"; the header says which job and offers "Show all visits"), a day on Schedule (`?day=`). Nothing links to `/admin/passes`, which stays only until the Jobs screen retires it. The allow-list lives in `ADMIN_ROUTES` (`src/lib/admin/links.ts`) and `nav-audit.test.tsx` fails when any screen, with its panel open, links outside it. The customer panel names the pass once, as a "Job" row ("Season Pass TH-2027-0007 · 2027" with its state beside it).
+
 ## Schedule week
 
 The week is Monday to Sunday in seven equal columns after a fixed, narrow Who column and never narrower than 56rem; a narrower window scrolls the week sideways inside its own box. The side panel is an overlay, so the week never reflows when it opens. A stop is one line, "Hannah · Erie · turn-on", with the area's colour bar on its left. The Unscheduled list sits under the week at full width, a heading and one row per visit with Place on the right.
