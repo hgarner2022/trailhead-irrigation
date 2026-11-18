@@ -116,7 +116,8 @@ export function CollectPayment({ plan, summary, firstName, onCharge, onRecord, o
         </p>
       )}
       <fieldset className="flex flex-col gap-2" disabled={busy}>
-        <legend className="mb-1 text-sm font-medium text-foreground">How is this paid?</legend>
+        {/* In a panel the panel's own heading says it, so the legend is for a screen reader only. */}
+        <legend className={cn("mb-1 text-sm font-medium text-foreground", slot && "sr-only")}>How is this paid?</legend>
         {shown.map((o) => (
           <Choice key={o.value} option={o} checked={picked.value === o.value} disabled={busy || Boolean(o.disabled)} onPick={() => setChoice(o.value)} />
         ))}
