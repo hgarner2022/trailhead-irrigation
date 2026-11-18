@@ -25,7 +25,7 @@ describe("clock and window", () => {
 
 describe("which visits are on today", () => {
   const day = "2026-11-12"
-  it("takes a visit scheduled for the day and one done on it, never a cancelled or skipped one or another day's", () => {
+  it("takes a visit scheduled for the day and one done on it, never a canceled or skipped one or another day's", () => {
     expect(isOnToday(visit({}), day)).toBe(true)
     expect(isOnToday(done({ scheduledOn: "2026-11-10", startAt: "2026-11-10T15:00:00Z" }), day)).toBe(true)
     expect(isOnToday(done({ completedOn: "2026-11-10" }), day)).toBe(false)
@@ -55,7 +55,7 @@ describe("the three groups", () => {
     expect(ids(v.groups.ahead).sort()).toEqual(["anytime", "edge-ahead", "later"])
   })
 
-  it("shows only what was done today in Done today, and leaves out a cancelled visit and an older done one", () => {
+  it("shows only what was done today in Done today, and leaves out a canceled visit and an older done one", () => {
     expect(ids(v.groups.done)).toEqual(["finished"])
     expect(ids(v.rows).sort()).toEqual(["anytime", "edge-ahead", "edge-past", "finished", "later", "past"])
   })
@@ -67,16 +67,16 @@ describe("the three groups", () => {
   it("words the window and the done money in the screen's words", () => {
     expect(v.rows.find((r) => r.id === "past")).toMatchObject({ window: "8 to 10 am", firstName: "Dana", service: "Repair", group: "past", moneyWord: "" })
     expect(v.rows.find((r) => r.id === "anytime")!.window).toBe("Any time")
-    expect(v.rows.find((r) => r.id === "finished")).toMatchObject({ money: "owed", moneyWord: "$145 owed" })
+    expect(v.rows.find((r) => r.id === "finished")).toMatchObject({ money: "owed", moneyWord: "$145 unpaid" })
   })
 })
 
 describe("the money word on a done row", () => {
-  it("says how it was paid, the number owed, or the bill's word", () => {
+  it("says how it was paid, the number owed, or the invoice's word", () => {
     expect(moneyWordOf("paid", "Paid, Venmo", 95)).toBe("Paid, Venmo")
-    expect(moneyWordOf("owed", "Owed", 95)).toBe("$95 owed")
-    expect(moneyWordOf("owed", "Owed", 0)).toBe("Owed")
-    expect(moneyWordOf("bill-sent", "Bill sent", 95)).toBe("Bill sent")
+    expect(moneyWordOf("owed", "Unpaid", 95)).toBe("$95 unpaid")
+    expect(moneyWordOf("owed", "Unpaid", 0)).toBe("Unpaid")
+    expect(moneyWordOf("bill-sent", "Invoice sent", 95)).toBe("Invoice sent")
     expect(moneyWordOf("not-yet", "", 95)).toBe("")
   })
 

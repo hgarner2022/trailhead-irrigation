@@ -71,7 +71,7 @@ export function CustomersScreen({ data, today, defaultSelectedId, readOnly = fal
   const filters = useMemo(
     () => [
       { column: "town", label: "Town", options: TOWNS.map((t) => option(t)) },
-      { column: "pass", label: "Pass", options: [option("active", "Active"), option("pending", "Pending"), option("none", "None"), option("cancelled", "Cancelled"), option("lapsed", "Lapsed")] },
+      { column: "pass", label: "Pass", options: [option("active", "Active"), option("pending", "Pending"), option("none", "None"), option("cancelled", "Canceled"), option("lapsed", "Expired")] },
       { column: "nextState", label: "Scheduled", options: (["booked", "to-schedule", "none"] as const).map((s) => option(s, `${SCHEDULED_WORDS[s]}${s === "to-schedule" ? ", unscheduled" : s === "none" ? ", nothing ahead" : ""}`)) },
       { column: "marketing", label: "Marketing", options: (["yes", "no", "not-asked"] as const).map((m) => option(m, MARKETING_WORDS[m])) },
     ],

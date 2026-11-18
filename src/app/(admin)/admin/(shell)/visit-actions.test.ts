@@ -35,7 +35,7 @@ afterAll(() => {
 
 const handlers = () => vi.mocked(callApi).mock.calls.map(([, handler]) => (handler as { name: string }).name)
 
-describe("Record the payment on a done and owed visit", () => {
+describe("Record the payment on a done and unpaid visit", () => {
   it("posts payments.record with the visit's job and what the visit costs, and the row names the day and the way it came", async () => {
     const made = await callApi(ctxFor(db, owner), visitsCreate, { customerId: "c100", kind: "repair", scheduledOn: "2027-05-10", price: 145 })
     await db.update(s.visit).set({ status: "completed", completedOn: "2027-04-19" }).where(eq(s.visit.id, made.id))
@@ -56,7 +56,7 @@ describe("Record the payment on a done and owed visit", () => {
     expect(await db.select().from(s.charge).where(eq(s.charge.visitId, made.id))).toHaveLength(1)
   })
 
-  it("records what is still owed on a part-paid visit, not the whole price again", async () => {
+  it("records what is still unpaid on a part-paid visit, not the whole price again", async () => {
     const made = await callApi(ctxFor(db, owner), visitsCreate, { customerId: "c100", kind: "repair", scheduledOn: "2027-05-13", price: 145 })
     await db.update(s.visit).set({ status: "completed", completedOn: "2027-04-19" }).where(eq(s.visit.id, made.id))
     await db.insert(s.charge).values({ organizationId: ORG, jobId: made.jobId, visitId: made.id, customerId: "c100", attempt: 1, amount: 100, status: "succeeded", method: "cash", paidOn: "2027-04-19" })

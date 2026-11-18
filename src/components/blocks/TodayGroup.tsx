@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils"
 
 // One of Today's three groups (owner, 17 Nov 2026): a heading with the count in it, "2 past their window", "3 ahead today",
 // "4 done today", then its rows, or "Nothing here" in muted text when the group is empty. Rows are the children, `TodayVisitRow`s.
-// The words are the only ones this screen uses for a visit's standing (never Overdue, Active, Remaining or Completed). Pure render.
+// The words are the only ones this screen uses for a visit's standing (never Past due, Active, Remaining or Completed). Pure render.
 
 export type TodayGroupWords = "past" | "ahead" | "done"
 

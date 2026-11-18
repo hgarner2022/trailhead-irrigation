@@ -6,8 +6,8 @@ import { BillSent } from "./VisitBill"
 import type { JobRow } from "./jobs-model"
 import { paymentWords } from "./job-panel-model"
 
-// The Money section of the job panel: where the job stands in the words of `src/lib/money/words.ts` (Paid, "$115 owed", Bill
-// sent, Overdue, Failed), every payment newest first with how it came and its reference, and the open bill with when it was
+// The Money section of the job panel: where the job stands in the words of `src/lib/money/words.ts` (Paid, "$115 unpaid", Invoice
+// sent, Past due, Failed), every payment newest first with how it came and its reference, and the open invoice with when it was
 // sent and is due, its pay link and Remind. A tech's data carries no references and no pay link, so none shows for them.
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]

@@ -1,9 +1,9 @@
 /**
  * The pure derivations behind JobsScreen: one row per job (a Season Pass, or a one-off: repair, installation, other)
  * with who it is for, where, when it was sold and how, how far its visits have got, what it comes to, its stage
- * (`src/lib/jobs/stage.ts`) and its money in the words of `src/lib/money/words.ts`: Paid, "$115 owed", Bill sent, Overdue
- * and Failed. Everything is read from `AdminData`; a bill reads "$145 · Bill sent, due Dec 1" and, once the due day has
- * gone, "$145 · Overdue since Dec 1". The rows are ordered with the bills that are out first, the oldest due day on top.
+ * (`src/lib/jobs/stage.ts`) and its money in the words of `src/lib/money/words.ts`: Paid, "$115 unpaid", Invoice sent, Past due
+ * and Failed. Everything is read from `AdminData`; an invoice reads "$145 · Invoice sent, due Dec 1" and, once the due day has
+ * gone, "$145 · Past due since Dec 1". The rows are ordered with the invoices that are out first, the oldest due day on top.
  */
 import { TIME_ZONE } from "@/lib/admin/format"
 import { dayOf } from "@/lib/admin/calendar"
@@ -51,7 +51,7 @@ export interface JobRow {
   /** the one Money cell */
   moneyText: string
   owed: number
-  /** the due day of the open bill, "2026-12-01", when one is out */
+  /** the due day of the open invoice, "2026-12-01", when one is out */
   billDue?: string
   /** the day the next visit has ("2026-11-19"), when one does */
   nextDay?: string
@@ -86,7 +86,7 @@ function moneyOf(job: SoldJob, visits: Visit[], rule: TaxRule): SoldJobMoney {
   return moneyOfJob(lines, payments, visits.map((v) => ({ id: v.id, cancelled: v.status === "cancelled", price: v.price })), rule, job.invoice ? {} : undefined)
 }
 
-/** The Money cell for a state: "$145 · Bill sent, due Dec 1", "$145 · Overdue since Dec 1", "$115 owed", "Paid", "Failed". */
+/** The Money cell for a state: "$145 · Invoice sent, due Dec 1", "$145 · Past due since Dec 1", "$115 unpaid", "Paid", "Failed". */
 export function moneyCell(state: JobMoneyState, m: Pick<SoldJobMoney, "total" | "owed" | "words"> & { paid?: number }, invoice?: Pick<AdminInvoice, "total" | "sentOn" | "dueOn" | "status">): string {
   switch (state) {
     case "paid":
@@ -94,9 +94,9 @@ export function moneyCell(state: JobMoneyState, m: Pick<SoldJobMoney, "total" | 
     case "owed":
       return m.words
     case "bill-sent":
-      return `${dollars(invoice?.total ?? m.owed)} · Bill sent${invoice ? `, due ${monthDay(invoice.dueOn)}` : ""}`
+      return `${dollars(invoice?.total ?? m.owed)} · Invoice sent${invoice ? `, due ${monthDay(invoice.dueOn)}` : ""}`
     case "overdue":
-      return `${dollars(invoice?.total ?? m.owed)} · Overdue since ${invoice ? monthDay(invoice.dueOn) : "its due day"}`
+      return `${dollars(invoice?.total ?? m.owed)} · Past due since ${invoice ? monthDay(invoice.dueOn) : "its due day"}`
     case "failed":
       return `${dollars(m.owed)} · Failed`
     default:
@@ -105,7 +105,7 @@ export function moneyCell(state: JobMoneyState, m: Pick<SoldJobMoney, "total" | 
   }
 }
 
-/** The money state of a job: Paid, an open bill, Failed, Owed once a done visit is unpaid, else nothing is due yet. */
+/** The money state of a job: Paid, an open invoice, Failed, Unpaid once a done visit is unpaid, else nothing is due yet. */
 function stateOf(m: SoldJobMoney, invoice: AdminInvoice | undefined, visitMoneys: string[], cancelled: boolean): JobMoneyState {
   if (m.total > 0 && m.owed === 0) return "paid"
   if (cancelled) return m.paid > 0 ? "paid" : "not-yet"
@@ -165,7 +165,7 @@ export function jobRows(data: AdminData, today: string): JobRow[] {
         stage,
         stageLabel: STAGE_WORDS[stage],
         money: state,
-        // a cancelled job with nothing held has no money to say
+        // a canceled job with nothing held has no money to say
         moneyText: stage === "cancelled" && state === "not-yet" ? "" : moneyCell(state, m, job.invoice),
         owed: m.owed,
         ...(job.invoice ? { billDue: job.invoice.dueOn } : {}),
@@ -173,18 +173,18 @@ export function jobRows(data: AdminData, today: string): JobRow[] {
         nextText: days[0] ? dayLabel(days[0]) : ahead.length ? "Unscheduled" : "None",
       }
     })
-  // The bills that are out come first, the oldest due day on top; then the newest sale.
+  // The invoices that are out come first, the oldest due day on top; then the newest sale.
   return rows.sort((a, b) => Number(Boolean(b.billDue)) - Number(Boolean(a.billDue)) || (a.billDue ?? "").localeCompare(b.billDue ?? "") || (b.soldOn ?? "").localeCompare(a.soldOn ?? "") || a.name.localeCompare(b.name))
 }
 
 export const STAGE_OPTIONS = (Object.keys(STAGE_WORDS) as JobStage[]).map((value) => ({ value, label: STAGE_WORDS[value] }))
-export const MONEY_STATE_WORDS: Record<Exclude<JobMoneyState, "not-yet">, string> = { owed: "Owed", "bill-sent": "Bill sent", overdue: "Overdue", paid: "Paid", failed: "Failed" }
+export const MONEY_STATE_WORDS: Record<Exclude<JobMoneyState, "not-yet">, string> = { owed: "Unpaid", "bill-sent": "Invoice sent", overdue: "Past due", paid: "Paid", failed: "Failed" }
 export const MONEY_OPTIONS = (Object.keys(MONEY_STATE_WORDS) as (keyof typeof MONEY_STATE_WORDS)[]).map((value) => ({ value, label: MONEY_STATE_WORDS[value] }))
 export const KIND_OPTIONS = (Object.keys(KIND_WORDS_JOB) as JobKind[]).map((value) => ({ value, label: KIND_WORDS_JOB[value] }))
 /** The seasons the rows are from, newest first, as Season filter options. */
 export const seasonOptions = (rows: JobRow[]) => [...new Set(rows.map((r) => r.season))].sort((a, b) => b - a).map((s) => ({ value: String(s), label: String(s) }))
 
-/** The Money values the "bills out" chip applies: a bill sent and a bill past its due day. */
+/** The Money values the "invoices out" chip applies: a invoice sent and an invoice past its due day. */
 export const BILLS_OUT: JobMoneyState[] = ["bill-sent", "overdue"]
 export const billsOut = (rows: JobRow[]): number => rows.filter((r) => BILLS_OUT.includes(r.money)).length
 export const owedJobs = (rows: JobRow[]): number => rows.filter((r) => r.money === "owed").length
@@ -192,7 +192,7 @@ export const owedJobs = (rows: JobRow[]): number => rows.filter((r) => r.money =
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`
 
 /**
- * The header line: "12 jobs this season. 3 owed. 1 needs a quote."; the bills out are the chip beside it. This season is the
+ * The header line: "12 jobs this season. 3 unpaid. 1 needs a quote."; the invoices out are the chip beside it. This season is the
  * calendar year `today` is in and any season after it (a pass sold in November for the next year is already this season's work).
  */
 export function jobsContext(rows: JobRow[], today: string): string {
@@ -200,14 +200,14 @@ export function jobsContext(rows: JobRow[], today: string): string {
   const year = Number(today.slice(0, 4))
   const parts = [`${plural(rows.filter((r) => r.season >= year).length, "job", "jobs")} this season.`]
   const owed = owedJobs(rows)
-  if (owed) parts.push(`${owed} owed.`)
+  if (owed) parts.push(`${owed} unpaid.`)
   const quotes = rows.filter((r) => r.stage === "needs-a-quote").length
   if (quotes) parts.push(`${quotes} ${quotes === 1 ? "needs a quote" : "need a quote"}.`)
   return parts.join(" ")
 }
 
-/** The chip's words: "2 bills out". */
-export const billsChip = (n: number): string => `${n} ${n === 1 ? "bill" : "bills"} out`
+/** The chip's words: "2 invoices out". */
+export const billsChip = (n: number): string => `${n} ${n === 1 ? "invoice" : "invoices"} out`
 
 /** A link's `?money=bill-sent,overdue` or `?kind=repair`: the listed values that are real options, or no chip. */
 export function filterFrom(column: string, param: string | undefined, options: { value: string }[]): { column: string; values: string[] }[] {

@@ -98,7 +98,7 @@ describe("renewals", () => {
 
 describe("outstanding", () => {
   const visit = (id: string, over: Partial<AdminData["visits"][number]> = {}) => ({ id, clientId: "c", clientName: "Dana Reed", town: "Erie" as const, kind: "repair" as const, status: "completed" as const, isPass: false, jobberUrl: "", ...over })
-  const money = (owed: number) => ({ paid: 0, total: owed, owed, words: `$${owed} owed` })
+  const money = (owed: number) => ({ paid: 0, total: owed, owed, words: `$${owed} unpaid` })
   const job = (id: string, visitIds: string[], over: Partial<NonNullable<AdminData["jobs"]>[number]> = {}) => ({ id, customerId: "c", kind: "repair" as const, status: "open" as const, source: "office" as const, visitIds, money: money(145), ...over })
   const bill = (jobId: string, total: number) => ({ id: `inv-${jobId}`, jobId, number: "INV-2026-0001", amount: total, tax: 0, total, sentOn: "2026-11-01", dueOn: "2026-11-15", status: "sent" as const, visitIds: [] })
 
@@ -106,11 +106,11 @@ describe("outstanding", () => {
     expect(outstanding({ jobs: undefined, visits: [] })).toBeUndefined()
   })
 
-  it("adds open bills at their total and Done and Owed jobs at what they owe, each job once", () => {
+  it("adds open invoices at their total and Done and Owed jobs at what they owe, each job once", () => {
     const visits = [visit("a"), visit("b"), visit("c", { status: "scheduled" }), visit("d"), visit("e")]
     const jobs = [
-      job("ja", ["a"]), // done and owed: $145
-      job("jb", ["b"], { invoice: bill("jb", 160), money: money(145) }), // billed: the bill's $160, not $145 and not both
+      job("ja", ["a"]), // done and unpaid: $145
+      job("jb", ["b"], { invoice: bill("jb", 160), money: money(145) }), // billed: the invoice's $160, not $145 and not both
       job("jc", ["c"]), // not done: nothing yet
       job("jd", ["d"], { kind: "pass" }), // a pass is charged on its own
       job("je", ["e"], { money: { paid: 145, total: 145, owed: 0, words: "Paid" } }), // paid
@@ -118,7 +118,7 @@ describe("outstanding", () => {
     expect(outstanding({ jobs, visits })).toEqual({ total: 305, jobs: 2 })
   })
 
-  it("counts a bill on a part-done job by the bill's total alone, leaving the lines still ahead out", () => {
+  it("counts an invoice on a part-done job by the invoice's total alone, leaving the lines still ahead out", () => {
     const visits = [visit("a"), visit("b", { status: "scheduled" })]
     const jobs = [job("ja", ["a", "b"], { invoice: bill("ja", 100), money: money(245) })]
     expect(outstanding({ jobs, visits })).toEqual({ total: 100, jobs: 1 })

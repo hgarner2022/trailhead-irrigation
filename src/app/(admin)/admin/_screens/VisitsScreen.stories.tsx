@@ -29,7 +29,7 @@ type Story = StoryObj<typeof meta>
 const wide = { viewport: { value: "wide", isRotated: false } }
 const phone = { viewport: { value: "phone", isRotated: false } }
 
-/** The grid with a row in each state: Scheduled ($145), Unscheduled and Not done (no day, the reason after the pill), Done and owed, Done and paid ("$145 · Paid, check"), Bill sent, and Cancelled. */
+/** The grid with a row in each state: Scheduled ($145), Unscheduled and Not done (no day, the reason after the pill), Done and owed, Done and paid ("$145 · Paid, check"), Invoice sent, and Canceled. */
 export const Default: Story = {
   globals: wide,
   play: async ({ canvas }) => {
@@ -57,43 +57,43 @@ export const PanelNeedsADay: Story = { args: { defaultVisitId: "office-needs-day
 /** Not done keeps its reason in the pill until the visit has a day again. */
 export const PanelNotDone: Story = { args: { defaultVisitId: "office-not-done" }, globals: wide }
 
-/** Done and owed: the money pill says Owed and the panel offers Record the payment. */
+/** Done and owed: the money pill says Unpaid and the panel offers Record the payment. */
 export const PanelOwed: Story = { args: { defaultVisitId: "office-owed" }, globals: wide }
 export const PanelOwedPhone: Story = { args: { defaultVisitId: "office-owed" }, globals: phone }
 
-/** Done and owed: besides Record the payment, the panel offers Send a bill with what it does under it. */
+/** Done and owed: besides Record the payment, the panel offers Send an invoice with what it does under it. */
 export const PanelOwedSendBill: Story = {
   args: { defaultVisitId: "office-owed" },
   globals: wide,
   play: async () => {
-    await expect(await body.findByRole("button", { name: "Send a bill" })).toBeInTheDocument()
+    await expect(await body.findByRole("button", { name: "Send an invoice" })).toBeInTheDocument()
     await expect(await body.findByText("Texts a pay link, or emails it when there is no mobile.")).toBeInTheDocument()
   },
 }
 
-/** Done asks how it was paid: Check, Venmo, Cash, and last Send a bill, which texts a pay link instead of recording money. */
+/** Done asks how it was paid: Check, Venmo, Cash, and last Send an invoice, which texts a pay link instead of recording money. */
 export const PanelDoneSendBill: Story = {
   args: { defaultVisitId: "office-scheduled" },
   globals: wide,
   play: async ({ userEvent }) => {
-    await userEvent.click(await body.findByLabelText("Send a bill"))
-    await expect(await body.findByRole("button", { name: "Mark done and send a bill" })).toBeInTheDocument()
+    await userEvent.click(await body.findByLabelText("Send an invoice"))
+    await expect(await body.findByRole("button", { name: "Mark done and send an invoice" })).toBeInTheDocument()
   },
 }
 
-/** A bill is out: the Money pill says Bill sent, and the panel shows "Bill sent Nov 10, due Nov 24" with Remind and the pay link. */
+/** An invoice is out: the Money pill says Invoice sent, and the panel shows "Invoice sent Nov 10, due Nov 24" with Remind and the pay link. */
 export const PanelBillSent: Story = {
   args: { defaultVisitId: "office-billed" },
   globals: wide,
   play: async () => {
-    await expect(await body.findByText("Bill sent Nov 10, due Nov 24")).toBeInTheDocument()
+    await expect(await body.findByText("Invoice sent Nov 10, due Nov 24")).toBeInTheDocument()
     await expect(await body.findByRole("button", { name: "Remind" })).toBeInTheDocument()
     await expect(await body.findByRole("link", { name: "Pay link" })).toBeInTheDocument()
   },
 }
 export const PanelBillSentPhone: Story = { args: { defaultVisitId: "office-billed" }, globals: phone }
 
-/** A tech sees Bill sent in the pill and no Remind, no pay link and no Send a bill. */
+/** A tech sees Invoice sent in the pill and no Remind, no pay link and no Send an invoice. */
 export const PanelBillSentTech: Story = {
   args: { defaultVisitId: "office-billed", readOnly: true },
   globals: wide,
@@ -109,7 +109,7 @@ export const PanelPaid: Story = { args: { defaultVisitId: "office-paid" }, globa
 /** The day passed: still Scheduled, with a small note. */
 export const PanelDayPassed: Story = { args: { defaultVisitId: "office-day-passed" }, globals: wide }
 
-/** A visit on a Season Pass: the job block shows the pass number, "$290 owed" or "1 of 2 paid, $145 owed" and the other visits. */
+/** A visit on a Season Pass: the job block shows the pass number, "$290 unpaid" or "1 of 2 paid, $145 unpaid" and the other visits. */
 export const PanelPassVisit: Story = { args: { defaultVisitId: passVisitId }, globals: wide }
 
 /** A visit on a pass the office sold with no card: Done asks how it was paid, like a one-off, instead of charging a card. */
@@ -118,7 +118,7 @@ export const PanelPassVisitNoCard: Story = {
   globals: wide,
   play: async () => {
     await expect(await body.findByRole("button", { name: "Mark done and record payment" })).toBeInTheDocument()
-    await expect(await body.findByText("Sends the receipt, which says how it was paid. A bill goes with a pay link instead.")).toBeInTheDocument()
+    await expect(await body.findByText("Sends the receipt, which says how it was paid. An invoice goes with a pay link instead.")).toBeInTheDocument()
   },
 }
 
@@ -173,13 +173,13 @@ export const PanelNotesAndHistoryTech: Story = {
 
 export const PanelNotesAndHistoryPhone: Story = { args: { data: withStory(), defaultVisitId: "office-paid" }, globals: phone }
 
-/** A pass visit that is Done and Owed: Done closed it, and either no card could be charged or none was saved. The panel always shows how to take the money. */
+/** A pass visit that is Done and Unpaid: Done closed it, and either no card could be charged or none was saved. The panel always shows how to take the money. */
 const owedPass = (id: string): AdminData => ({
   ...visitsData,
   visits: visitsData.visits.map((v) => (v.id === id ? { ...v, status: "completed" as const, completedOn: "2026-11-10", scheduledOn: "2026-11-10", startAt: "2026-11-10T15:00:00Z", payments: [] } : v)),
 })
 
-/** The customer has no card: Record the payment (Check, Venmo, Cash) and the row reads "$145 owed · no card". */
+/** The customer has no card: Record the payment (Check, Venmo, Cash) and the row reads "$145 unpaid · no card". */
 export const PanelOwedPassNoCard: Story = {
   args: { data: owedPass(noCardVisitId), defaultVisitId: noCardVisitId },
   globals: wide,

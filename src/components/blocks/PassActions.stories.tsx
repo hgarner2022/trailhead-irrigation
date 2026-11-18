@@ -47,6 +47,6 @@ export const SkipVisit: Story = {
 }
 
 /** A cancelled pass has no actions. */
-export const Cancelled: Story = {
+export const Canceled: Story = {
   args: { pass: { ...twoVisits, status: "cancelled" } },
 }

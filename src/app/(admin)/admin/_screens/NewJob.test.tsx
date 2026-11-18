@@ -129,20 +129,20 @@ describe("Pays by for a customer who has a card", () => {
 })
 
 describe("servicePriceLine", () => {
-  it("reads the rule: a flat price, a base with per-zone, free, or quoted", () => {
+  it("reads the rule: a flat price, a base with per-zone, free, or quote on site", () => {
     expect(servicePriceLine(SERVICES.repair!)).toBe("$145")
     expect(servicePriceLine(SERVICES.blowout!)).toBe("$95 up to 6 zones, +$10 a zone")
     expect(servicePriceLine(SERVICES.consult!)).toBe("Free")
-    expect(servicePriceLine(SERVICES.install!)).toBe("Quoted on site")
+    expect(servicePriceLine(SERVICES.install!)).toBe("Quote on site")
   })
 })
 
 describe("priceLine", () => {
   it("reads the visits on sale at the pass's zones from src/lib/season-pass.ts, with the July inspection when ticked", () => {
-    expect(priceLine(8, false, "2026-11-12")).toBe("Spring turn-on $145 · Fall blowout $115 · billed after each visit")
-    expect(priceLine(6, false, "2026-11-12")).toBe("Spring turn-on $145 · Fall blowout $95 · billed after each visit")
-    expect(priceLine(10, true, "2026-11-12")).toBe("Spring turn-on $165 · July inspection $165 · Fall blowout $135 · billed after each visit")
-    expect(priceLine(6, true, "2027-06-15")).toBe("July inspection $145 · Fall blowout $95 · billed after each visit")
+    expect(priceLine(8, false, "2026-11-12")).toBe("Spring turn-on $145 · Fall blowout $115 · invoiced after each visit")
+    expect(priceLine(6, false, "2026-11-12")).toBe("Spring turn-on $145 · Fall blowout $95 · invoiced after each visit")
+    expect(priceLine(10, true, "2026-11-12")).toBe("Spring turn-on $165 · July inspection $165 · Fall blowout $135 · invoiced after each visit")
+    expect(priceLine(6, true, "2027-06-15")).toBe("July inspection $145 · Fall blowout $95 · invoiced after each visit")
   })
 })
 

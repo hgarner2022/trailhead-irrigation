@@ -113,7 +113,7 @@ export function seasonDescription(data: Pick<AdminData, "passes">): string {
   return `${SEASON_LINE}. ${formatMoney(committedRevenue(data.passes))} on ${passes}, ${formatMoney(chargedSoFar(data.passes))} charged so far.`
 }
 
-/** The four tiles Home opens with, in order: revenue this month, passes sold, quotes awaiting, our bills overdue (the Jobber mirror's invoices no longer have a tile). */
+/** The four tiles Home opens with, in order: revenue this month, passes sold, quotes awaiting, our invoices past due (the Jobber mirror's invoices no longer have a tile). */
 export function tileModels(data: AdminData, today: string): StatTileProps[] {
   const { year, month, name } = monthOf(today)
   const revenue = monthComparison(data.monthTotals, year, month)
@@ -137,7 +137,7 @@ export function tileModels(data: AdminData, today: string): StatTileProps[] {
       value: String(quotes.count),
     },
     {
-      label: `Bills overdue, ${formatMoney(overdue.total)}`,
+      label: `Invoices past due, ${formatMoney(overdue.total)}`,
       value: String(overdue.count),
       href: "/admin/visits?money=bill-sent",
       delta: { value: null, baseline: "last month", goodWhen: "down" },
@@ -238,9 +238,9 @@ export function stopTime(visit: Pick<Visit, "startAt" | "startTime">): string {
 /**
  * The four figures on Today's strip, whole dollars. Each visit counts at the price of its own lines (`priceOf`, `visitPrice`
  * over the job's lines). Today is every visit on the day (scheduled for it, or done on it), Done those done today, Ahead the rest
- * not yet done. Owed is what today's done visits still owe, read from their succeeded payment rows (`paymentsOf`, refunds
- * counting against, a part-paid visit owing the rest): a visit whose bill is sent or whose charge failed still owes it, a paid
- * one owes nothing, a cancelled or skipped visit is on no figure.
+ * not yet done. Unpaid is what today's done visits still owe, read from their succeeded payment rows (`paymentsOf`, refunds
+ * counting against, a part-paid visit owing the rest): a visit whose invoice is sent or whose charge failed still owes it, a paid
+ * one owes nothing, a canceled or skipped visit is on no figure.
  */
 export function todayMoney(visits: Visit[], priceOf: (v: Visit) => number, today: string): TodayMoney {
   const day = dayOf(today, TIME_ZONE)

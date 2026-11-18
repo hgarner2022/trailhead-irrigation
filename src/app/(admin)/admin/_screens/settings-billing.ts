@@ -1,5 +1,5 @@
 /**
- * The Billing tab's reducer (see settings-model.ts for the shape): how many days a bill is due after it is sent, whether bills
+ * The Billing tab's reducer (see settings-model.ts for the shape): how many days an invoice is due after it is sent, whether invoices
  * carry Colorado sales tax, and the percent. Sales tax is in the model and off until the office answers. Each edit is logged
  * in words; a value the API would refuse is refused here and the field snaps back.
  */
@@ -10,7 +10,7 @@ export type BillingField = keyof BillingSettings
 export const MAX_DUE_DAYS = 120
 export const MAX_TAX_PERCENT = 20
 
-const NAMES: Record<BillingField, string> = { dueDays: "Bills are due in", collectsSalesTax: "Collect Colorado sales tax", salesTaxPercent: "Sales tax percent" }
+const NAMES: Record<BillingField, string> = { dueDays: "Invoices are due in", collectsSalesTax: "Collect Colorado sales tax", salesTaxPercent: "Sales tax percent" }
 const show = (field: BillingField, v: number | boolean) => (field === "collectsSalesTax" ? (v ? "On" : "Off") : field === "dueDays" ? `${v} days` : `${v}%`)
 
 /** The percent as it is typed: digits with at most two decimals; blank and anything else is no number. */

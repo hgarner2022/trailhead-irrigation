@@ -74,8 +74,8 @@ const METHODS: { value: PaidByInput["method"]; label: string }[] = [
   { value: "venmo", label: "Venmo" },
   { value: "cash", label: "Cash" },
 ]
-/** Send a bill is the last choice, only where Done can send one (not in Record the payment, which takes money in hand). */
-const BILL_METHOD = { value: "bill", label: "Send a bill" } as const
+/** Send an invoice is the last choice, only where Done can send one (not in Record the payment, which takes money in hand). */
+const BILL_METHOD = { value: "bill", label: "Send an invoice" } as const
 
 /** The optional reference (a check number, a Venmo handle) and, for a visit with no price yet, the amount that came. */
 function ReceivedDetails({ method, unpriced, reference, setReference, amount, setAmount }: { method: PaidByInput["method"]; unpriced: boolean; reference: string; setReference: (v: string) => void; amount: string; setAmount: (v: string) => void }) {
@@ -101,7 +101,7 @@ function ReceivedDetails({ method, unpriced, reference, setReference, amount, se
 
 /**
  * How the money came, once: Check, Venmo or Cash, an optional reference, and the amount when the visit has no price yet. With
- * `allowBill` the last choice is Send a bill, which texts a pay link (or emails it when there is no mobile) instead of recording money.
+ * `allowBill` the last choice is Send an invoice, which texts a pay link (or emails it when there is no mobile) instead of recording money.
  */
 export function PaidByChoice({ visit, onChoose, pending, label, allowBill = false }: { visit: Visit; onChoose: (paid: PaidByInput) => void; pending: boolean; label: string; allowBill?: boolean }) {
   const [method, setMethod] = useState<PaidByInput["method"]>("check")
@@ -130,7 +130,7 @@ export function PaidByChoice({ visit, onChoose, pending, label, allowBill = fals
         disabled={pending}
         onClick={() => onChoose(method === "bill" ? { method } : { method, ...(reference.trim() ? { reference: reference.trim() } : {}), ...(unpriced && amount ? { amount: Number(amount) } : {}) })}
       >
-        {method === "bill" ? "Mark done and send a bill" : label}
+        {method === "bill" ? "Mark done and send an invoice" : label}
       </Button>
     </fieldset>
   )
@@ -139,7 +139,7 @@ export function PaidByChoice({ visit, onChoose, pending, label, allowBill = fals
 /** Whether Done asks how the money came: a priced one-off, or a pass visit whose customer has no REAL card (`pass.cardLast4` is only set for a card Stripe holds; an office sale, or a checkout that saved none, pays at the visit). A pass visit with a real card is charged, and offers "Paid another way". */
 export const doneAsksPaidBy = (visit: Pick<Visit, "passId" | "price">, pass: Pick<Pass, "cardLast4"> | undefined): boolean => (visit.price ?? 0) > 0 && (!visit.passId || (pass !== undefined && !pass.cardLast4))
 
-/** Done: a pass visit with a card or a visit with no price closes at once (the card is charged, or nothing is owed yet); a priced one-off, or a pass visit with no card on the pass, asks how it was paid, once. */
+/** Done: a pass visit with a card or a visit with no price closes at once (the card is charged, or nothing is unpaid yet); a priced one-off, or a pass visit with no card on the pass, asks how it was paid, once. */
 export function DoneForm({ visit, pass, today, actions }: { visit: Visit; pass?: Pass; today: string; actions?: VisitActions }) {
   const [day, setDay] = useState(today)
   const { pending, error, run } = useRunner()
@@ -150,7 +150,7 @@ export function DoneForm({ visit, pass, today, actions }: { visit: Visit; pass?:
     if (!actions) return console.info("mark done", visit.id, paidBy)
     run(
       () => actions.markDone(visit.id, { ...(day !== today ? { completedOn: day } : {}), ...(paidBy ? { paidBy } : {}) }),
-      () => toast(paidBy?.method === "bill" ? "Marked done. Bill sent. " : paidBy ? "Marked done and paid. " : "Marked done. ", async () => void (await actions.undoDone(visit.id))),
+      () => toast(paidBy?.method === "bill" ? "Marked done. Invoice sent. " : paidBy ? "Marked done and paid. " : "Marked done. ", async () => void (await actions.undoDone(visit.id))),
     )
   }
   return (
@@ -180,7 +180,7 @@ export function DoneForm({ visit, pass, today, actions }: { visit: Visit; pass?:
       )}
       <p className="mt-1 text-sm text-muted-foreground">
         {asks || another
-          ? "Sends the receipt, which says how it was paid. A bill goes with a pay link instead."
+          ? "Sends the receipt, which says how it was paid. An invoice goes with a pay link instead."
           : visit.passId
             ? `Charges the card${pass?.cardLast4 ? ` ending ${pass.cardLast4}` : " on the pass"} after this visit and sends the receipt.`
             : ""}

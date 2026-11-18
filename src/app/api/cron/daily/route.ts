@@ -26,7 +26,7 @@ function authorised(request: Request): boolean {
  * `/api/cron/feed`, `/api/cron/schedule` and `/api/cron/drain` do on their own: read every person's Jobber calendar feed,
  * run the daily scheduling pass (unclosed visits, day-before texts, due Schedule runs, the crew note), expire unpaid
  * checkouts, queue the card-expiring emails (sixty days ahead), then drain the queue so all of it happens now. Nothing here
- * touches bills: an overdue bill sits on Home until someone presses Remind (`invoices.remind`), so no reminder goes out on its own. The three routes stay for running one part by hand with the
+ * touches invoices: an overdue invoice sits on Home until someone presses Remind (`invoices.remind`), so no reminder goes out on its own. The three routes stay for running one part by hand with the
  * secret. `vercel.json` runs this at 11:00 UTC, 5 am in Colorado.
  */
 export async function GET(request: Request) {

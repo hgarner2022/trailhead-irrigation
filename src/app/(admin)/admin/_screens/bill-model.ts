@@ -1,25 +1,25 @@
 /**
- * The bill as the panels show it: whether a job can be billed, and the one line that says a bill is out. Pure; read from the
- * job's open bill (`SoldJob.invoice`), its money and its visits, never typed by hand.
+ * The invoice as the panels show it: whether a job can be invoiced, and the one line that says an invoice is out. Pure; read from the
+ * job's open invoice (`SoldJob.invoice`), its money and its visits, never typed by hand.
  */
 import type { AdminInvoice, SoldJob, Visit } from "@/lib/admin/types"
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 const monthDay = (day: string) => `${MONTHS[Number(day.slice(5, 7)) - 1]} ${Number(day.slice(8, 10))}`
 
-/** "Bill sent Nov 17, due Dec 1", with ", overdue" once the day after the due day has come. */
+/** "Invoice sent Nov 17, due Dec 1", with ", overdue" once the day after the due day has come. */
 export const billWords = (invoice: Pick<AdminInvoice, "sentOn" | "dueOn" | "status">): string =>
-  `Bill sent ${monthDay(invoice.sentOn)}, due ${monthDay(invoice.dueOn)}${invoice.status === "overdue" ? ", overdue" : ""}`
+  `Invoice sent ${monthDay(invoice.sentOn)}, due ${monthDay(invoice.dueOn)}${invoice.status === "overdue" ? ", past due" : ""}`
 
 export interface BillState {
-  /** the job's open bill, if there is one */
+  /** the job's open invoice, if there is one */
   invoice?: AdminInvoice
-  /** the job is Done, still owes money and has no open bill: Send a bill is offered */
+  /** the job is Done, still owes money and has no open invoice: Send an invoice is offered */
   canSend: boolean
 }
 
 /**
- * A job's bill state. Send a bill is for a job whose every live visit is done, that still owes money, with no bill open. A
+ * A job's invoice state. Send an invoice is for a job whose every live visit is done, that still owes money, with no invoice open. A
  * job charged to a card on file is left to the card (`chargedToCard`: its pass has a card that has not failed), which the
  * caller works out from the pass.
  */

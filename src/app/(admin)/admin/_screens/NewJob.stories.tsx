@@ -64,7 +64,7 @@ export const SeasonPass: Story = {
   args: { customerId: "c-dana", initial: { choice: "season-pass" } },
   globals: wide,
   play: async () => {
-    await expect(await screen.findByText("Spring turn-on $145 · Fall blowout $115 · billed after each visit")).toBeInTheDocument()
+    await expect(await screen.findByText("Spring turn-on $145 · Fall blowout $115 · invoiced after each visit")).toBeInTheDocument()
     await expect((await screen.findAllByText("Unscheduled")).length).toBe(2)
     await expect(await screen.findByRole("button", { name: "Sell pass" })).toBeDisabled()
   },
@@ -76,7 +76,7 @@ export const SeasonPassFilledIn: Story = {
   args: { initial: filled },
   globals: wide,
   play: async () => {
-    await expect(await screen.findByText("Spring turn-on $165 · July inspection $165 · Fall blowout $135 · billed after each visit")).toBeInTheDocument()
+    await expect(await screen.findByText("Spring turn-on $165 · July inspection $165 · Fall blowout $135 · invoiced after each visit")).toBeInTheDocument()
     await expect(await screen.findByText("Tue, May 4")).toBeInTheDocument()
     await expect(await screen.findByRole("button", { name: "Sell pass" })).toBeEnabled()
   },

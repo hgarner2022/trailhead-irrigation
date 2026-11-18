@@ -16,10 +16,10 @@ describe("statusLabel", () => {
     ["charged", "Charged"],
     ["charge-failed", "Charge failed"],
     ["skipped", "Skipped"],
-    ["owed", "Owed"],
+    ["owed", "Unpaid"],
     ["overdue", "Past due"],
-    ["cancelled", "Cancelled"],
-    ["lapsed", "Lapsed"],
+    ["cancelled", "Canceled"],
+    ["lapsed", "Expired"],
   ])("labels %s as %s", (status, label) => {
     expect(statusLabel(status)).toBe(label)
   })

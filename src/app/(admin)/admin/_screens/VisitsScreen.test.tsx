@@ -99,8 +99,8 @@ describe("visits-model", () => {
     const rows = visitRows({ ...data, visits: [...mine, visit({ id: "d", clientName: "Ana Ruiz", clientId: "cl", status: "completed", completedOn: "2026-11-10", scheduledOn: "2026-11-10", startAt: "2026-11-10T15:00:00Z" })] }, TODAY)
     expect(rows.find((r) => r.id === "a")!.moneyLabel).toBe("")
     expect(rows.find((r) => r.id === "b")!.workLabel).toBe("Unscheduled")
-    expect(rows.find((r) => r.id === "d")!.moneyLabel).toBe("Owed")
-    expect(visitsContext(rows)).toBe("4 visits this season. 1 unscheduled. 1 done and owed.")
+    expect(rows.find((r) => r.id === "d")!.moneyLabel).toBe("Unpaid")
+    expect(visitsContext(rows)).toBe("4 visits this season. 1 unscheduled. 1 done and unpaid.")
     expect(visitsContext(visitRows({ ...data, visits: [mine[0]!] }, TODAY))).toBe("1 visit this season.")
   })
 })
@@ -114,12 +114,12 @@ describe("moneyText", () => {
   it("says what happened to the money after Done", () => {
     expect(moneyText(row({ work: "done", money: "paid", moneyLabel: "Paid, Venmo" }))).toBe("$95 · Paid, Venmo")
     expect(moneyText(row({ work: "done", money: "paid", moneyLabel: "Paid, card" }))).toBe("$95 · Paid, card")
-    expect(moneyText(row({ work: "done", money: "owed", moneyLabel: "Owed" }))).toBe("$95 owed")
-    expect(moneyText(row({ work: "done", money: "bill-sent", moneyLabel: "Bill sent" }))).toBe("$95 · Bill sent")
+    expect(moneyText(row({ work: "done", money: "owed", moneyLabel: "Unpaid" }))).toBe("$95 unpaid")
+    expect(moneyText(row({ work: "done", money: "bill-sent", moneyLabel: "Invoice sent" }))).toBe("$95 · Invoice sent")
     expect(moneyText(row({ work: "done", money: "failed", moneyLabel: "Failed" }))).toBe("$95 · Failed")
   })
-  it("reads Cancelled for a cancelled visit with nothing held and Quote later for an unpriced one", () => {
-    expect(moneyText(row({ work: "cancelled" }))).toBe("Cancelled")
+  it("reads Canceled for a canceled visit with nothing held and Quote later for an unpriced one", () => {
+    expect(moneyText(row({ work: "cancelled" }))).toBe("Canceled")
     expect(moneyText(row({ price: 0 }))).toBe("Quote later")
   })
 })
@@ -139,11 +139,11 @@ describe("VisitsScreen", () => {
     expect(screen.getAllByRole("cell").some((c) => c.textContent === "Quote later")).toBe(true)
   })
 
-  it("lists the job's lines in the panel, strikes the cancelled one, and shows what's included", () => {
+  it("lists the job's lines in the panel, strikes the canceled one, and shows what's included", () => {
     renderScreen(actions(), { data: withLines, defaultVisitId: "a" })
     const panel = within(screen.getByRole("dialog"))
     const lines = within(panel.getByRole("list", { name: "What was sold" })).getAllByRole("listitem")
-    expect(lines.map((l) => l.textContent)).toEqual(["Spring turn-on, 8 zones · $160", "Extra head · cancelled"])
+    expect(lines.map((l) => l.textContent)).toEqual(["Spring turn-on, 8 zones · $160", "Extra head · canceled"])
     expect(lines[1]).toHaveClass("line-through")
     expect(panel.getByRole("heading", { name: "What's included" })).toBeInTheDocument()
     expect(panel.getByText(TURN_ON_TEXT)).toBeInTheDocument()
@@ -247,7 +247,7 @@ describe("VisitsScreen", () => {
     expect(a.sendText).toHaveBeenCalledWith("cx", "a", "Running late.")
   })
 
-  it("a done and owed one-off offers the payment record", async () => {
+  it("a done and unpaid one-off offers the payment record", async () => {
     const a = actions()
     const owed: AdminData = { ...data, visits: [visit({ id: "u", status: "completed", completedOn: "2026-11-10", scheduledOn: "2026-11-10", startAt: "2026-11-10T15:00:00Z" })] }
     render(
@@ -259,72 +259,72 @@ describe("VisitsScreen", () => {
     expect(a.recordPayment).toHaveBeenCalledWith("u", { method: "check" })
   })
 
-  it("Done offers Send a bill as the last choice, with its hint, and sends it as the way it was paid", async () => {
+  it("Done offers Send an invoice as the last choice, with its hint, and sends it as the way it was paid", async () => {
     const a = actions()
     renderScreen(a, { defaultVisitId: "a" })
     const panel = within(screen.getByRole("dialog"))
     const choices = panel.getAllByRole("radio").map((r) => (r as HTMLInputElement).value)
     expect(choices).toEqual(["check", "venmo", "cash", "bill"])
     expect(panel.queryByText("Texts a pay link, or emails it when there is no mobile.", { selector: "p.mt-2" })).toBeNull()
-    await userEvent.click(panel.getByLabelText("Send a bill"))
+    await userEvent.click(panel.getByLabelText("Send an invoice"))
     expect(panel.getByText("Texts a pay link, or emails it when there is no mobile.", { selector: "p.mt-2" })).toBeInTheDocument()
     expect(panel.queryByLabelText("Reference (optional)")).toBeNull()
-    await userEvent.click(panel.getByRole("button", { name: "Mark done and send a bill" }))
+    await userEvent.click(panel.getByRole("button", { name: "Mark done and send an invoice" }))
     expect(a.markDone).toHaveBeenCalledWith("a", { paidBy: { method: "bill" } })
-    expect(await screen.findByText(/Marked done\. Bill sent\./)).toBeInTheDocument()
+    expect(await screen.findByText(/Marked done\. Invoice sent\./)).toBeInTheDocument()
   })
 
-  it("Record the payment never offers Send a bill", () => {
+  it("Record the payment never offers Send an invoice", () => {
     const owed: AdminData = { ...data, visits: [visit({ id: "u", status: "completed", completedOn: "2026-11-10", scheduledOn: "2026-11-10", startAt: "2026-11-10T15:00:00Z" })] }
     render(
       <UndoToastProvider>
         <VisitsScreen data={owed} today={TODAY} actions={actions()} defaultVisitId="u" />
       </UndoToastProvider>,
     )
-    expect(within(screen.getByRole("dialog")).queryByLabelText("Send a bill")).toBeNull()
+    expect(within(screen.getByRole("dialog")).queryByLabelText("Send an invoice")).toBeNull()
   })
 
-  it("a done and owed job offers Send a bill, and once sent reads Bill sent with the dates, Remind and the pay link", async () => {
+  it("a done and unpaid job offers Send an invoice, and once sent reads Invoice sent with the dates, Remind and the pay link", async () => {
     const a = actions()
     const done = visit({ id: "u", jobId: "ju", status: "completed", completedOn: "2026-11-10", scheduledOn: "2026-11-10", startAt: "2026-11-10T15:00:00Z" })
-    const job = { id: "ju", customerId: "cx", kind: "repair" as const, status: "open" as const, source: "office" as const, visitIds: ["u"], total: 145, payments: [], money: { paid: 0, total: 145, owed: 145, words: "$145 owed" } }
+    const job = { id: "ju", customerId: "cx", kind: "repair" as const, status: "open" as const, source: "office" as const, visitIds: ["u"], total: 145, payments: [], money: { paid: 0, total: 145, owed: 145, words: "$145 unpaid" } }
     const owed: AdminData = { ...data, visits: [done], jobs: [job] }
     const { unmount } = render(
       <UndoToastProvider>
         <VisitsScreen data={owed} today={TODAY} actions={a} defaultVisitId="u" />
       </UndoToastProvider>,
     )
-    await userEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Send a bill" }))
+    await userEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Send an invoice" }))
     expect(a.sendBill).toHaveBeenCalledWith("ju")
     unmount()
 
     const invoice = { id: "inv1", jobId: "ju", number: "INV-2026-0001", amount: 145, tax: 0, total: 145, sentOn: "2026-11-17", dueOn: "2026-12-01", status: "sent" as const, visitIds: ["u"], payUrl: "https://site.test/pay/inv1?token=t" }
-    const billed: AdminData = { ...data, visits: [{ ...done, invoice }], jobs: [{ ...job, invoice, money: { ...job.money, words: "Bill sent", billSent: true } }] }
+    const billed: AdminData = { ...data, visits: [{ ...done, invoice }], jobs: [{ ...job, invoice, money: { ...job.money, words: "Invoice sent", billSent: true } }] }
     render(
       <UndoToastProvider>
         <VisitsScreen data={billed} today={TODAY} actions={a} defaultVisitId="u" />
       </UndoToastProvider>,
     )
     const panel = within(screen.getByRole("dialog"))
-    expect(panel.getByText("Bill sent Nov 17, due Dec 1")).toBeInTheDocument()
-    expect(panel.getByText(/Bill sent\. \$145 owed|\. Bill sent\./)).toBeInTheDocument()
-    expect(panel.queryByRole("button", { name: "Send a bill" })).toBeNull()
+    expect(panel.getByText("Invoice sent Nov 17, due Dec 1")).toBeInTheDocument()
+    expect(panel.getByText(/Invoice sent\. \$145 unpaid|\. Invoice sent\./)).toBeInTheDocument()
+    expect(panel.queryByRole("button", { name: "Send an invoice" })).toBeNull()
     expect(panel.getByRole("link", { name: "Pay link" })).toHaveAttribute("href", "https://site.test/pay/inv1?token=t")
     await userEvent.click(panel.getByRole("button", { name: "Remind" }))
     expect(a.remindBill).toHaveBeenCalledWith("inv1")
     expect(await panel.findByText("Reminder sent.")).toBeInTheDocument()
   })
 
-  it("shows a tech the bill's words and neither button nor pay link", () => {
+  it("shows a tech the invoice's words and neither button nor pay link", () => {
     const invoice = { id: "inv1", jobId: "ju", number: "INV-2026-0001", amount: 145, tax: 0, total: 145, sentOn: "2026-11-17", dueOn: "2026-12-01", status: "sent" as const, visitIds: ["u"] }
     const done = visit({ id: "u", jobId: "ju", status: "completed", completedOn: "2026-11-10", scheduledOn: "2026-11-10", startAt: "2026-11-10T15:00:00Z", invoice })
-    const job = { id: "ju", customerId: "cx", kind: "repair" as const, status: "open" as const, source: "office" as const, visitIds: ["u"], total: 145, payments: [], invoice, money: { paid: 0, total: 145, owed: 145, words: "Bill sent", billSent: true } }
+    const job = { id: "ju", customerId: "cx", kind: "repair" as const, status: "open" as const, source: "office" as const, visitIds: ["u"], total: 145, payments: [], invoice, money: { paid: 0, total: 145, owed: 145, words: "Invoice sent", billSent: true } }
     renderScreen(actions(), { readOnly: true, defaultVisitId: "u", data: { ...data, visits: [done], jobs: [job] } })
     const panel = within(screen.getByRole("dialog"))
     expect(panel.queryByRole("button", { name: "Remind" })).toBeNull()
     expect(panel.queryByRole("link", { name: "Pay link" })).toBeNull()
     // the pill and the job's money still say it
-    expect(panel.getAllByText(/Bill sent/).length).toBeGreaterThan(0)
+    expect(panel.getAllByText(/Invoice sent/).length).toBeGreaterThan(0)
   })
 
   it("hands a tech the visit read-only: no New job and no action buttons", () => {
@@ -369,7 +369,7 @@ describe("New job", () => {
   })
 })
 
-// A pass visit that is Done and Owed, with the customer's card and without: both must show how to take the money.
+// A pass visit that is Done and Unpaid, with the customer's card and without: both must show how to take the money.
 describe("Done and Owed on a pass visit", () => {
   const owedPass = (id: string): AdminData => ({
     ...visitsData,
@@ -388,7 +388,7 @@ describe("Done and Owed on a pass visit", () => {
     const panel = within(screen.getByRole("dialog"))
     expect(panel.getByRole("heading", { name: "Record the payment" })).toBeInTheDocument()
     expect(panel.getByRole("button", { name: "Record payment" })).toBeInTheDocument()
-    expect(visitRows(d, VISITS_TODAY).find((r) => r.id === noCardVisitId)!.moneyText).toMatch(/ owed · no card$/)
+    expect(visitRows(d, VISITS_TODAY).find((r) => r.id === noCardVisitId)!.moneyText).toMatch(/ unpaid · no card$/)
   })
 
   it("offers Record the payment when the customer has a card too, since a charge that never went through must not leave it stuck", () => {

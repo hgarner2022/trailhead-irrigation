@@ -27,7 +27,7 @@ type Method = (typeof METHODS)[number]["value"]
 
 interface RecordProps {
   jobId: string
-  /** whole dollars still owed; the amount starts here */
+  /** whole dollars still unpaid; the amount starts here */
   owed: number
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -50,7 +50,7 @@ export function RecordPaymentDialog({ jobId, owed, open, onOpenChange, actions }
       <DialogContent className="sm:max-w-sm" data-slot="record-payment">
         <DialogHeader>
           <DialogTitle className="font-display text-2xl font-semibold text-navy">Record the payment</DialogTitle>
-          <DialogDescription>{`$${owed.toLocaleString("en-US")} is owed. A payment that covers it settles any bill that is out.`}</DialogDescription>
+          <DialogDescription>{`$${owed.toLocaleString("en-US")} is unpaid. A payment that covers it settles any invoice that is out.`}</DialogDescription>
         </DialogHeader>
         <fieldset>
           <legend className={LABEL}>Paid by</legend>

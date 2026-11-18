@@ -17,7 +17,7 @@ import { VisitPanelHost } from "./VisitPanelHost"
 // Every job of the season: a Season Pass or a one-off (repair, installation, other), one row each, on the one data grid. A
 // customer has jobs and a job is done in visits (docs/DESIGN.md), so this is the parent of Visits: Customer, Job, Property, Sold,
 // Status, Visits, Total, Money and Next; filters for Status, Money, Job and Season; search by name, street or pass number; Export
-// like the others; New job in the header. The bills that are out come first, and "N bills out" in the header applies the Money
+// like the others; New job in the header. The invoices that are out come first, and "N invoices out" in the header applies the Money
 // filter that shows them. A row opens the job panel over the grid (a drawer on a laptop, a sheet on a phone); a visit in the panel
 // opens the visit panel. Client because the open job is state; the route's page.tsx supplies `data`, `today` and the actions.
 
@@ -31,7 +31,7 @@ export interface JobsScreenProps {
   readOnly?: boolean
   /** the job panel's lines, payments, new visit and the pass's buttons; server actions in the app */
   actions?: JobActions
-  /** Send a bill, Remind and the visit panel's own actions; server actions in the app */
+  /** Send an invoice, Remind and the visit panel's own actions; server actions in the app */
   visitActions?: VisitActions
   /** filter chips set on first render: Home's money line links here with the jobs its figure counts */
   defaultFilters?: { column: string; values: string[] }[]
@@ -68,7 +68,7 @@ export function JobsScreen({ data, today, defaultJobId, readOnly = false, action
   const rows = useMemo(() => jobRows(data, today), [data, today])
   const [jobId, setJobId] = useState<string | undefined>(defaultJobId)
   const [open, setOpen] = useState(() => rows.some((r) => r.id === defaultJobId))
-  // The grid reads its filters once, so the "bills out" chip starts it over: with the Money filter set to the two bill states, or
+  // The grid reads its filters once, so the "invoices out" chip starts it over: with the Money filter set to the two invoice states, or
   // with none when pressed again.
   const [applied, setApplied] = useState(defaultFilters)
   const [gridKey, setGridKey] = useState(0)

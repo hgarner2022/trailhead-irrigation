@@ -16,9 +16,9 @@ import { TIME_CHOICES } from "./visit-panel-model"
 // rule, editable) and the notes under "More details". Adding it makes the job and its first visit; with a day and a customer
 // who can be texted, the date goes out.
 
-/** What the service costs, from its rule: "$145", "$95 up to 6 zones, +$10 a zone", "Free", or "Quoted on site". */
+/** What the service costs, from its rule: "$145", "$95 up to 6 zones, +$10 a zone", "Free", or "Quote on site". */
 export function servicePriceLine(s: Pick<ServiceItem, "price" | "includedZones" | "extraZonePrice">): string {
-  if (s.price === undefined) return "Quoted on site"
+  if (s.price === undefined) return "Quote on site"
   if (s.price === 0) return "Free"
   if (s.includedZones && s.extraZonePrice) return `$${s.price} up to ${s.includedZones} zones, +$${s.extraZonePrice} a zone`
   return `$${s.price}`

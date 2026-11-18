@@ -21,7 +21,7 @@ describe("jobFacts", () => {
     expect(facts(passJobId).canEditLines).toBe(false)
   })
 
-  it("offers Record the payment while something is owed and a visit on a one-off job", () => {
+  it("offers Record the payment while something is unpaid and a visit on a one-off job", () => {
     expect(facts(ownedJobId)).toMatchObject({ canRecord: true, canAddVisit: true })
     expect(facts(billedJobId).canRecord).toBe(true)
     // a deposit can be taken before the work is done; a pass is charged to its card, so not before its money is due
@@ -31,7 +31,7 @@ describe("jobFacts", () => {
     expect(facts(passJobId)).toMatchObject({ canAddVisit: false })
   })
 
-  it("offers Send a bill for a done job that is owed and has none out, and shows the bill that is out", () => {
+  it("offers Send an invoice for a done job that is unpaid and has none out, and shows the invoice that is out", () => {
     expect(facts(ownedJobId).bill.canSend).toBe(true)
     expect(facts(billedJobId).bill).toMatchObject({ canSend: false, invoice: { number: "INV-2026-0001" } })
     expect(facts(paidJobId).bill.canSend).toBe(false)

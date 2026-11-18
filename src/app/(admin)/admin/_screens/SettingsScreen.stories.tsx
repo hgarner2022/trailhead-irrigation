@@ -49,7 +49,7 @@ export const ServicesPhone: Story = {
   globals: { viewport: { value: "phone", isRotated: false } },
 }
 
-/** The Billing tab: bills are due in 14 days and sales tax is off, so the percent is not asked for. */
+/** The Billing tab: invoices are due in 14 days and sales tax is off, so the percent is not asked for. */
 export const Billing: Story = {
   args: { defaultTab: "billing" },
   globals: { viewport: { value: "wide", isRotated: false } },

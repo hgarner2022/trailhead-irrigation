@@ -38,7 +38,7 @@ describe("HomeScreen", () => {
     render(<HomeScreen data={withDay(dayVisits)} today={TODAY} />)
     const strip = within(document.querySelector<HTMLElement>('[data-slot="today-money"]')!)
     const figure = (label: string) => strip.getByRole("group", { name: label }).querySelector('[data-slot="stat-value"]')!.textContent
-    expect([figure("Today"), figure("Done"), figure("Ahead"), figure("Owed")]).toEqual(["$485", "$245", "$240", "$145"])
+    expect([figure("Today"), figure("Done"), figure("Ahead"), figure("Unpaid")]).toEqual(["$485", "$245", "$240", "$145"])
     expect(strip.getByRole("link", { name: "View schedule" })).toHaveAttribute("href", "/admin/schedule?day=2026-11-12")
   })
 
@@ -47,7 +47,7 @@ describe("HomeScreen", () => {
     const headings = within(document.querySelector<HTMLElement>('[data-slot="today-visits"]')!).getAllByRole("heading").map((h) => h.textContent)
     expect(headings).toEqual(["1 past its window", "1 ahead today", "2 done today"])
     expect(GROUPS.length).toBe(3)
-    expect(screen.queryByText(/Overdue|Active|Remaining|Completed/)).toBeNull()
+    expect(screen.queryByText(/Past due|Active|Remaining|Completed/)).toBeNull()
     const past = within(document.querySelector<HTMLElement>('[data-group="past"]')!)
     expect(past.getByRole("button", { name: /8 to 10 am.*Pat.*Erie.*Repair/ })).toBeInTheDocument()
   })
@@ -57,7 +57,7 @@ describe("HomeScreen", () => {
     const done = within(document.querySelector<HTMLElement>('[data-group="done"]')!)
     expect(done.getByText("Fay").closest("span.line-through")).not.toBeNull()
     expect(done.getByText("Paid, Venmo")).toBeInTheDocument()
-    expect(done.getByText("$145 owed")).toBeInTheDocument()
+    expect(done.getByText("$145 unpaid")).toBeInTheDocument()
   })
 
   it("says Nothing here in a group with no visit", () => {

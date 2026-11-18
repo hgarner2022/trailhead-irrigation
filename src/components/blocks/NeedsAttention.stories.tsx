@@ -25,11 +25,11 @@ export const Default: Story = {
 
 /** The row Home adds at render time for visits from earlier days nobody has marked done. */
 export const WithNotClosed: Story = {
-  args: { items: [...items, { kind: "not-closed", message: "3 visits from before today are not marked done yet.", since: "2026-11-09T17:00:00Z" }, { kind: "pass-cancelled", passId: "p4", message: "A pass was cancelled and its Jobber jobs could not be cancelled by the API; remove them by hand", since: "2026-11-12T14:30:00Z" }] },
+  args: { items: [...items, { kind: "not-closed", message: "3 visits from before today are not marked done yet.", since: "2026-11-09T17:00:00Z" }, { kind: "pass-cancelled", passId: "p4", message: "A pass was canceled and its Jobber jobs could not be canceled by the API; remove them by hand", since: "2026-11-12T14:30:00Z" }] },
   render: (args) => narrow(<NeedsAttention {...args} />),
 }
 
-/** A bill past its due day: "Bill overdue", the customer's name and the due day in the message, the row opens the customer, and Remind sends one reminder with the pay link. */
+/** An invoice past its due day: "Invoice past due", the customer's name and the due day in the message, the row opens the customer, and Remind sends one reminder with the pay link. */
 export const WithOverdueBill: Story = {
   args: { items: [{ kind: "overdue", key: "invoice-inv1@2026-11-05", invoiceId: "inv1", jobId: "job-1", customerId: "c-andrea", message: "Andrea Reyes's bill of $145 was due Nov 5", since: "2026-11-05T19:00:00Z" }, ...items] },
   render: (args) => narrow(<NeedsAttention {...args} />),

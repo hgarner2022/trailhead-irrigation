@@ -62,9 +62,9 @@ export function upcomingRows(passes: Pass[], today: string, limit = 10): Upcomin
 }
 
 /**
- * What customers owe us right now, for the Revenue screen's "Outstanding": every open bill at its total, plus every booked job
- * (not a pass, which is charged to its card on its own) whose visits are all done or cancelled and that still owes money, at what
- * it still owes. A job counts once: with an open bill it is the bill's total and its owed number is not added on top; a bill for a
+ * What customers owe us right now, for the Revenue screen's "Outstanding": every open invoice at its total, plus every booked job
+ * (not a pass, which is charged to its card on its own) whose visits are all done or canceled and that still owes money, at what
+ * it still owes. A job counts once: with an open invoice it is the invoice's total and its owed number is not added on top; an invoice for a
  * part-done job asks only for the done lines, so the lines still ahead are not outstanding. Nothing without the sold jobs (the fixtures).
  */
 export function outstanding(data: Pick<AdminData, "jobs" | "visits">): { total: number; jobs: number } | undefined {
@@ -97,7 +97,7 @@ export interface Renewals {
   renewed: Pass[]
   /** earlier-season passes that lapsed, their client without a new pass */
   lapsed: Pass[]
-  /** earlier-season passes, active or cancelled, their client without a new pass: the ones to send the offer to */
+  /** earlier-season passes, active or canceled, their client without a new pass: the ones to send the offer to */
   notYetAsked: Pass[]
 }
 

@@ -117,11 +117,11 @@ export function RevenueScreen({ data, today, embedded = false }: RevenueScreenPr
           <CardContent className="space-y-5">
             <div className="flex flex-wrap gap-x-12 gap-y-4">
               <Count label="Renewed" value={pipeline.renewed.length} />
-              <Count label="Lapsed" value={pipeline.lapsed.length} />
+              <Count label="Expired" value={pipeline.lapsed.length} />
               <Count label="Not yet asked" value={pipeline.notYetAsked.length} />
             </div>
             {pipeline.notYetAsked.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Everyone from last season has renewed or lapsed.</p>
+              <p className="text-sm text-muted-foreground">Everyone from last season has renewed or expired.</p>
             ) : (
               <ul className="divide-y divide-border">
                 {pipeline.notYetAsked.map((pass) => (

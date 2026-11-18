@@ -118,20 +118,20 @@ describe("tileModels", () => {
     expect(quotes.value).toBe("16")
     expect(quotes.href).toBeUndefined()
 
-    // The Jobber mirror's invoices no longer have a tile: the fourth tile counts OUR bills, and the snapshot has none.
-    expect(overdue.label).toBe("Bills overdue, $0")
+    // The Jobber mirror's invoices no longer have a tile: the fourth tile counts OUR invoices, and the snapshot has none.
+    expect(overdue.label).toBe("Invoices past due, $0")
     expect(overdue.value).toBe("0")
     expect(overdue.href).toBe("/admin/visits?money=bill-sent")
     expect(overdue.delta).toEqual({ value: null, baseline: "last month", goodWhen: "down" })
   })
 
-  it("counts our open bills past their due day, once each, by the bill's total", () => {
+  it("counts our open invoices past their due day, once each, by the invoice's total", () => {
     const bill = (id: string, dueOn: string, total: number) => ({ id, jobId: `job-${id}`, number: `INV-2026-000${id}`, amount: total, tax: 0, total, sentOn: "2026-11-01", dueOn, status: "sent" as const, visitIds: [] })
     const job = (id: string, dueOn: string, total: number) => ({ id: `job-${id}`, customerId: "c", kind: "repair" as const, status: "open" as const, source: "office" as const, visitIds: [], invoice: bill(id, dueOn, total) })
     // due Nov 11 and Nov 1 are overdue on Nov 12 (Denver); due Nov 12 is due today, not overdue
     const jobs = [job("1", "2026-11-11", 145), job("2", "2026-11-01", 100), job("3", "2026-11-12", 999), { ...job("4", "2026-11-30", 50), invoice: undefined }]
     const [, , , overdue] = tileModels({ ...data, jobs }, TODAY)
-    expect(overdue).toMatchObject({ label: "Bills overdue, $245", value: "2", href: "/admin/visits?money=bill-sent" })
+    expect(overdue).toMatchObject({ label: "Invoices past due, $245", value: "2", href: "/admin/visits?money=bill-sent" })
   })
 
   it("reads $0 and 0 with no data", () => {
@@ -254,7 +254,7 @@ describe("todayMoney", () => {
   const priceOf = (x: Visit) => x.price ?? 0
   const NOW = "2026-11-12T19:56:30Z"
 
-  it("adds today, done and ahead from the visits' own prices, leaving out another day's, a cancelled one and a skipped one", () => {
+  it("adds today, done and ahead from the visits' own prices, leaving out another day's, a canceled one and a skipped one", () => {
     const money = todayMoney(
       [
         done({ id: "d1", price: 145 }),

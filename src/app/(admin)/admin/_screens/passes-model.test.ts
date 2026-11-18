@@ -8,12 +8,12 @@ const TODAY = "2026-11-12T19:56:30Z"
 
 describe("passesContext", () => {
   it("counts the statuses that occur and names the season", () => {
-    expect(passesContext(passes)).toBe("11 active, 1 pending, 1 cancelled. 2027 season.")
+    expect(passesContext(passes)).toBe("11 active, 1 pending, 1 canceled. 2027 season.")
   })
 
   it("names every status present, in order, and only those", () => {
     const lapsed: Pass = { ...passes[0], id: "x", status: "lapsed" }
-    expect(passesContext([lapsed, ...passes])).toBe("11 active, 1 pending, 1 cancelled, 1 lapsed. 2027 season.")
+    expect(passesContext([lapsed, ...passes])).toBe("11 active, 1 pending, 1 canceled, 1 expired. 2027 season.")
     expect(passesContext([passes[0]])).toBe("1 active. 2027 season.")
   })
 
@@ -135,7 +135,7 @@ describe("the season view's rows", () => {
   it("lists the facts beside the card, with the access note and the money only when asked for", () => {
     const pass = { ...passes[0]!, accessNote: "Dog loose", status: "active" as const }
     expect(seasonFacts(pass).map(([k]) => k)).toEqual(["Town", "Zones", "Access", "Status"])
-    expect(seasonFacts(pass, "$145 owed").at(-1)).toEqual(["Money", "$145 owed"])
+    expect(seasonFacts(pass, "$145 unpaid").at(-1)).toEqual(["Money", "$145 unpaid"])
     expect(seasonFacts(pass, undefined, false).map(([k]) => k)).toEqual(["Town", "Zones", "Status"])
   })
 

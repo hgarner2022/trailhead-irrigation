@@ -21,14 +21,14 @@ const LABELS: Record<PillStatus, string> = {
   ...JOB_WORDS,
   "not-done": "Not done",
   "not-yet": "",
-  "bill-sent": "Bill sent",
+  "bill-sent": "Invoice sent",
   failed: "Failed",
   pending: "Pending",
   active: "Active",
   paid: "Paid",
-  owed: "Owed",
+  owed: "Unpaid",
   overdue: "Past due",
-  lapsed: "Lapsed",
+  lapsed: "Expired",
 }
 
 const GOOD = "bg-positive/10 text-positive-deep border-positive/30"

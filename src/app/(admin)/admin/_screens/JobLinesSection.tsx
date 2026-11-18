@@ -11,7 +11,7 @@ import type { JobActions } from "./job-actions-types"
 import { FORM_STATUS, useRunner } from "./use-runner"
 import { JobLines } from "./VisitLines"
 
-// The Lines section of the job panel: what was sold, one row each, a cancelled line struck through, an unpriced line saying
+// The Lines section of the job panel: what was sold, one row each, a canceled line struck through, an unpriced line saying
 // Quote later, a Tax line only when there is sales tax, and the total. On an open one-off job a manager changes the price and quantity of a line in place (the total
 // follows), cancels a line, and adds one from the active catalogue or as a free line. A tech, a pass and a job paid in full
 // see the plain list. Every change goes through `lines.add`, `lines.update` and `lines.cancel`, which refuse what is wrong.
@@ -163,7 +163,7 @@ export function JobLinesSection({ jobId, lines, total, tax = 0, data, editable, 
                 <EditLine line={line} actions={actions} onDone={() => setEditing(null)} />
               ) : (
                 <div className={`flex min-h-11 items-center ${PANEL_ROW} ${line.cancelledAt ? "text-muted-foreground line-through" : ""}`}>
-                  <PanelRowText title={line.name} detail={line.cancelledAt ? "cancelled" : lineDetail(line)} />
+                  <PanelRowText title={line.name} detail={line.cancelledAt ? "canceled" : lineDetail(line)} />
                   <PanelRowEnd>
                     <span className="tabular-nums">{line.unitPrice > 0 ? money(line.quantity * line.unitPrice) : ""}</span>
                   </PanelRowEnd>

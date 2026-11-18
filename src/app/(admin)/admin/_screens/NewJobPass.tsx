@@ -29,9 +29,9 @@ export function cardOnFileLine(card: { brand?: string; last4: string }): string 
   return `${brand} ending ${card.last4} is on file and is charged after each visit`
 }
 
-/** "Spring turn-on $145 · Fall blowout $95 · billed after each visit", with the July inspection between them when it is ticked. */
+/** "Spring turn-on $145 · Fall blowout $95 · invoiced after each visit", with the July inspection between them when it is ticked. */
 export function priceLine(zones: number, inspection: boolean, today: string): string {
-  return [...visitsOnSale(inspection, today).map((v) => `${NAMES[v.key]} $${visitPrice(v, zones)}`), "billed after each visit"].join(" · ")
+  return [...visitsOnSale(inspection, today).map((v) => `${NAMES[v.key]} $${visitPrice(v, zones)}`), "invoiced after each visit"].join(" · ")
 }
 
 export interface NewPassInitial {

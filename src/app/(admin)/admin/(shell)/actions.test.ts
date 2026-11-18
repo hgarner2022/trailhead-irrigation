@@ -162,7 +162,7 @@ describe("schedule", () => {
     expect(out.ok).toBe(true)
     if (out.ok) expect(out.data.placed + out.data.unplaced).toBeGreaterThanOrEqual(0)
   })
-  it("refuses to close a visit that was cancelled", async () => {
+  it("refuses to close a visit that was canceled", async () => {
     await db.update(s.visit).set({ status: "cancelled" }).where(eq(s.visit.id, "p4-blowout"))
     expect(await actions.markVisitClosed("p4-blowout")).toMatchObject({ ok: false, message: expect.stringMatching(/cannot be closed/) })
   })
@@ -378,11 +378,11 @@ describe("Needs attention", () => {
     await expect(actions.attentionAction({ kind: "new-pass", passId: "p1", jobId: "job_p1", message: "x", since: "2027-01-01T00:00:00Z" })).rejects.toThrow("redirect:/admin/jobs?job=job_p1")
   })
 
-  it("takes a job that is done and owed to its done visit, where the panel records the payment", async () => {
-    await expect(actions.attentionAction({ kind: "owed", key: "job-1", jobId: "job-1", visitId: "v9", message: "Andrea's repair is done, $145 owed", since: "2027-01-01T00:00:00Z" })).rejects.toThrow("redirect:/admin/visits?visit=v9")
+  it("takes a job that is done and unpaid to its done visit, where the panel records the payment", async () => {
+    await expect(actions.attentionAction({ kind: "owed", key: "job-1", jobId: "job-1", visitId: "v9", message: "Andrea's repair is done, $145 unpaid", since: "2027-01-01T00:00:00Z" })).rejects.toThrow("redirect:/admin/visits?visit=v9")
   })
 
-  it("Remind on an overdue bill calls invoices.remind; two presses in a day still send one message; a tech cannot press it", async () => {
+  it("Remind on an overdue invoice calls invoices.remind; two presses in a day still send one message; a tech cannot press it", async () => {
     await db.update(s.customer).set({ email: "dana@example.com" }).where(eq(s.customer.id, "c100"))
     const ctx = ctxFor(db, owner)
     const made = await callApi(ctx, visitsCreate, { customerId: "c100", kind: "repair", scheduledOn: "2027-05-28", price: 145 })
@@ -402,14 +402,14 @@ describe("Needs attention", () => {
     expect((await db.select().from(s.messageLog)).filter((m) => m.kind === "invoice-reminder" && m.key?.startsWith(`invoice-${bill.id}`))).toHaveLength(1)
   })
 
-  it("answers the API's words when the bill is already paid, and Dismiss clears the row by its bill-and-due-day key", async () => {
+  it("answers the API's words when the invoice is already paid, and Dismiss clears the row by its bill-and-due-day key", async () => {
     const ctx = ctxFor(db, owner)
     const made = await callApi(ctx, visitsCreate, { customerId: "c100", kind: "repair", scheduledOn: "2027-06-01", price: 60 })
     await db.update(s.visit).set({ status: "completed", completedOn: "2027-04-19" }).where(eq(s.visit.id, made.id))
     const bill = await callApi(ctx, invoicesSend, { jobId: made.jobId })
     await db.update(s.invoice).set({ paidOn: "2027-04-20" }).where(eq(s.invoice.id, bill.id))
     const row = { kind: "overdue" as const, key: `invoice-${bill.id}@${bill.dueOn}`, invoiceId: bill.id, customerId: "c100", message: "x", since: "2027-05-04T18:00:00Z" }
-    expect(await actions.attentionAction(row)).toMatchObject({ ok: false, message: "This bill is already paid" })
+    expect(await actions.attentionAction(row)).toMatchObject({ ok: false, message: "This invoice is already paid" })
     expect(await actions.dismissAttention(row)).toEqual({ ok: true, data: undefined })
     const [gone] = await db.select().from(s.adminAlert).where(eq(s.adminAlert.key, row.key))
     expect(gone).toMatchObject({ kind: "overdue", message: "Dismissed" })

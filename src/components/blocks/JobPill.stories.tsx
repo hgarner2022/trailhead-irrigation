@@ -30,14 +30,14 @@ export const AllStates: Story = {
         ["Unscheduled", job({ status: "unscheduled", scheduledOn: null })],
         ["Scheduled", job({})],
         ["Not done, no water on", job({ status: "unscheduled", scheduledOn: null, notDoneReason: "no-water" })],
-        ["Done, owed", job({ status: "completed", completedOn: "2026-11-10", scheduledOn: "2026-11-10", payments: [] })],
+        ["Done, unpaid", job({ status: "completed", completedOn: "2026-11-10", scheduledOn: "2026-11-10", payments: [] })],
         ["Done, paid by card", job({ status: "completed", completedOn: "2026-11-10", payments: [paid("card_on_file")] })],
         ["Done, paid by check", job({ status: "completed", completedOn: "2026-11-10", payments: [paid("check")] })],
         ["Done, paid by Venmo", job({ status: "completed", completedOn: "2026-11-10", payments: [paid("venmo")] })],
         ["Done, paid in cash", job({ status: "completed", completedOn: "2026-11-10", payments: [paid("cash")] })],
         ["Done, charge failed", job({ status: "completed", completedOn: "2026-11-10", payments: [{ id: "p", visitId: "v", amount: 145, method: "card_on_file", status: "failed" }] })],
-        ["Done, bill sent", job({ status: "completed", completedOn: "2026-11-10", billSent: true })],
-        ["Cancelled", job({ status: "cancelled" })],
+        ["Done, invoice sent", job({ status: "completed", completedOn: "2026-11-10", billSent: true })],
+        ["Canceled", job({ status: "cancelled" })],
       ].map(([name, j]) => (
         <li key={name as string} className="flex items-center gap-4">
           <span className="w-48 text-xs text-muted-foreground">{name as string}</span>
@@ -48,12 +48,12 @@ export const AllStates: Story = {
   ),
 }
 
-/** A done visit with no payment row says Owed. */
+/** A done visit with no payment row says Unpaid. */
 export const Owed: Story = {
   args: { job: job({ status: "completed", completedOn: "2026-11-10", scheduledOn: "2026-11-10", payments: [] }) },
   play: async ({ canvas }) => {
     await expect(canvas.getByText("Done")).toBeInTheDocument()
-    await expect(canvas.getByText("Owed")).toBeInTheDocument()
+    await expect(canvas.getByText("Unpaid")).toBeInTheDocument()
   },
 }
 
