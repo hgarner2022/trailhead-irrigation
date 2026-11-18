@@ -16,7 +16,7 @@ export function OnMyWay({ visit, actions }: { visit: Visit; actions?: VisitActio
       <h3 id="visit-on-my-way" className="font-display text-lg text-navy">
         On my way
       </h3>
-      <p className="mt-1 text-sm text-muted-foreground">Texts the customer that you are coming. They can send one per visit per day.</p>
+      <p className="mt-1 text-sm text-muted-foreground">Texts the customer that you are coming. You can send one per visit per day.</p>
       <Button type="button" variant="outline" className="mt-2 min-h-11" disabled={pending} onClick={() => (actions ? run(() => actions.sendOnTheWay(visit.id), undefined, "Text sent.") : console.info("on my way", visit.id))}>
         On my way
       </Button>
