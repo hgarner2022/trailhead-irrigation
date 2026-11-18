@@ -4,6 +4,7 @@ import { z } from "zod"
 import * as s from "@/db/schema"
 import type { Database } from "@/db/types"
 import { changedFields } from "@/lib/events/diff"
+import { recentEvents } from "../events/queries"
 import { recordEvent, whoOf } from "@/lib/events/record"
 import { enqueueGeocode } from "@/lib/geocode"
 import { defineHandler } from "../../core/handler"
@@ -203,6 +204,7 @@ export const customersGet = defineHandler({
       properties: props.map((p) => propertyOut(ctx, p)),
       consent: consent ? consentOut(consent) : null,
       jobs: await jobsOf(ctx, row.id),
+      events: await recentEvents(ctx, { customerId: row.id }, 50),
     }
   },
 })
@@ -219,7 +221,9 @@ async function jobsOf(ctx: Ctx, customerId: string) {
   const paymentRows = await db.select().from(s.charge).where(and(inArray(s.charge.jobId, jobs.map((j) => j.id)), eq(s.charge.organizationId, org))).orderBy(asc(s.charge.createdAt), asc(s.charge.id))
   const bills = await db.select().from(s.invoice).where(and(inArray(s.invoice.jobId, jobs.map((j) => j.id)), eq(s.invoice.organizationId, org), isNull(s.invoice.cancelledAt))).orderBy(asc(s.invoice.paidOn), asc(s.invoice.id))
   const openBills = bills.filter((b) => !b.paidOn)
-  return jobs.map((j) => {
+  // Each job's newest 10 events (a customer has a few jobs, so one small query each).
+  const stories = await Promise.all(jobs.map((j) => recentEvents(ctx, { jobId: j.id }, 10)))
+  return jobs.map((j, index) => {
     const pass = passes.find((p) => p.jobId === j.id)
     const lines = lineRows.filter((l) => l.jobId === j.id)
     const payments = paymentRows.filter((p) => p.jobId === j.id)
@@ -240,6 +244,7 @@ async function jobsOf(ctx: Ctx, customerId: string) {
         const own = lines.filter((l) => l.visitId === v.id)
         return { id: v.id, kind: v.kind, status: v.status, scheduledOn: v.scheduledOn, amount: own.length ? jobTotal(own) : v.amount }
       }),
+      events: stories[index]!,
     }
   })
 }
@@ -264,6 +269,7 @@ export const customersCreate = defineHandler({
       properties: props.map((p) => propertyOut(ctx, p)),
       consent: null,
       jobs: [],
+      events: await recentEvents(ctx, { customerId: row!.id }, 50),
     }
   },
 })

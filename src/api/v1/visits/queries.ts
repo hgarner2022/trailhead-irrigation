@@ -7,6 +7,8 @@ import { notFound } from "../../core/errors"
 import { jobTotal } from "@/lib/jobs/lines"
 import { loadJobCredit } from "@/lib/money/credit"
 import { isPaid } from "@/lib/money/words"
+import { hasScope } from "@/lib/auth/principal"
+import { eventsOfJson, visitEventsJson } from "../events/queries"
 import { canSeeContact } from "../shared"
 import { yardOut } from "../customers/handlers"
 import type { PaymentOutType } from "../payments/schemas"
@@ -19,6 +21,8 @@ interface LineJson { id: string; name: string; description: string | null; quant
 interface PaymentJson { id: string; job_id: string | null; visit_id: string | null; customer_id: string | null; amount: number; method: PaymentOutType["method"]; reference: string | null; status: PaymentOutType["status"]; paid_on: string | null; receipt_url: string | null; refunds_payment_id: string | null; created_at: string }
 
 export const visitSelect = {
+  // the visit's own story: its newest 50 events, newest first (staff only: `visitOut` leaves them out for a customer)
+  events: visitEventsJson(s.visit.id, s.visit.organizationId),
   visit: s.visit,
   firstName: s.customer.firstName,
   town: s.property.town,
@@ -126,6 +130,8 @@ export function visitOut(ctx: Ctx, row: VisitJoined): VisitOutType {
     lat: row.lat,
     lng: row.lng,
     ...(seeNotes ? { address: row.address } : {}),
+    // events are staff's: a signed-in customer reading their own pass never gets them
+    ...(hasScope(ctx.principal, "read") ? { events: eventsOfJson(ctx, row.events) } : {}),
     property: yardOut(ctx, row.yard),
   }
 }

@@ -3,6 +3,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest"
 import { desc, eq } from "drizzle-orm"
 import * as s from "@/db/schema"
 import type { TestDb } from "@/db/test-db"
+import { recordEvent } from "@/lib/events/record"
 import { callApi } from "../../core/call"
 import { adminKey, apiDb, ctxFor, customerPerson, eventsOf, ORG, readKey, writeKey } from "../../test-helpers"
 import { visitsGet, visitsList, visitsMove, visitsRequestMove, visitsStretch } from "./handlers"
@@ -198,5 +199,19 @@ describe("visits.list by person, after the moves", () => {
     expect((await callApi(ctxFor(db, readKey), visitsList, { truckId: "truck-1" })).data.map((v) => v.id)).toEqual(byPerson)
     expect((await callApi(ctxFor(db, readKey), visitsList, { truckId: "person_truck-1" })).data.map((v) => v.id)).toEqual(byPerson)
     await expect(callApi(ctxFor(db, readKey), visitsList, { truckId: "nope" })).rejects.toMatchObject({ code: "not_found" })
+  })
+})
+
+describe("visit events", () => {
+  it("carries the visit's newest 50 events, newest first, and none from another visit", async () => {
+    const [v] = await db.select().from(s.visit).where(eq(s.visit.id, "p1-turn-on"))
+    for (let i = 0; i < 55; i++) await recordEvent(db, { organizationId: ORG, about: "visit", aboutId: v!.id, customerId: v!.customerId, jobId: v!.jobId, visitId: v!.id, kind: "note", detail: { text: `visit note ${i}` }, who: "system", at: new Date(Date.UTC(2027, 5, 1, 12, i)) })
+    await recordEvent(db, { organizationId: ORG, about: "visit", aboutId: "p1-blowout", customerId: v!.customerId, jobId: v!.jobId, visitId: "p1-blowout", kind: "note", detail: { text: "another visit" }, who: "system", at: new Date(Date.UTC(2027, 6, 1)) })
+    const got = await callApi(ctxFor(db, readKey), visitsGet, { id: v!.id })
+    expect(got.events).toHaveLength(50)
+    expect(got.events![0]!.detail).toEqual({ text: "visit note 54" })
+    expect(JSON.stringify(got.events)).not.toContain("another visit")
+    const listed = (await callApi(ctxFor(db, readKey), visitsList, { passId: "p1" })).data.find((x) => x.id === v!.id)!
+    expect(listed.events).toHaveLength(50)
   })
 })
