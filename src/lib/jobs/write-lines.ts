@@ -93,3 +93,48 @@ export async function deletePassVisitLines(db: Database, passIds: readonly strin
   const visits = db.select({ id: s.visit.id }).from(s.visit).where(inArray(s.visit.passId, [...passIds]))
   await db.delete(s.lineItem).where(inArray(s.lineItem.visitId, visits))
 }
+
+/** What `addJobLine` takes: a line the office types or picks from the catalogue, for a job that is already sold. */
+export interface NewJobLine {
+  organizationId: string
+  jobId: string
+  name: string
+  description?: string | null
+  quantity: number
+  unitPrice: number
+  taxable: boolean
+  /** the catalogue service the line was picked from */
+  serviceId?: string | null
+  now: Date
+}
+
+/** Adds one line to a sold job (no visit: it is on the job as a whole) and answers the row. */
+export async function addJobLine(db: Database, line: NewJobLine): Promise<typeof s.lineItem.$inferSelect> {
+  const { now, ...rest } = line
+  const [row] = await db
+    .insert(s.lineItem)
+    .values({ ...rest, description: rest.description ?? null, serviceId: rest.serviceId ?? null, visitId: null, createdAt: now, updatedAt: now })
+    .returning()
+  return row!
+}
+
+/** Changes a line's name, quantity or unit price; a field left out stays. A visit's own line keeps the visit's amount alias in step. */
+export async function updateLineRow(db: Database, line: { id: string; visitId: string | null }, changes: { name?: string; quantity?: number; unitPrice?: number }, now: Date): Promise<typeof s.lineItem.$inferSelect> {
+  const set = Object.fromEntries(Object.entries(changes).filter(([, v]) => v !== undefined))
+  const [row] = await db.update(s.lineItem).set({ ...set, updatedAt: now }).where(eq(s.lineItem.id, line.id)).returning()
+  if (line.visitId) await syncVisitAmount(db, line.visitId)
+  return row!
+}
+
+/** Cancels one line: it counts for nothing from now on, and a visit's amount alias follows. */
+export async function cancelLineRow(db: Database, line: { id: string; visitId: string | null }, now: Date): Promise<typeof s.lineItem.$inferSelect> {
+  const [row] = await db.update(s.lineItem).set({ cancelledAt: now, updatedAt: now }).where(eq(s.lineItem.id, line.id)).returning()
+  if (line.visitId) await syncVisitAmount(db, line.visitId)
+  return row!
+}
+
+/** `visit.amount` is an alias of the visit's own live lines until step 6. */
+async function syncVisitAmount(db: Database, visitId: string): Promise<void> {
+  const lines = await db.select().from(s.lineItem).where(and(eq(s.lineItem.visitId, visitId), isNull(s.lineItem.cancelledAt)))
+  await db.update(s.visit).set({ amount: lines.reduce((sum, l) => sum + l.quantity * l.unitPrice, 0) }).where(eq(s.visit.id, visitId))
+}

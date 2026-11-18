@@ -151,6 +151,7 @@ export const visitsCreate = defineHandler({
   status: 201,
   summary: "Add a visit for work taken by phone: makes the job (kind repair, install or other, source office), its first visit and the job's one line from the service of that kind. Give an existing customer or a new one. With a day it goes through the same rules as a move and the customer is texted the date; with none it waits as Needs a day. Minutes default from the kind, the price from the service when it has a fixed one (a repair visit), the person from the first on the schedule (the owner, else by name).",
   input: z.object({
+    jobId: Id.optional().describe("Add the visit to this open job (its customer and property are the job's) instead of making a new job; a Season Pass takes no visit this way."),
     customerId: Id.optional(),
     propertyId: Id.optional().describe("One of the customer's properties; the first when left out."),
     newCustomer: NewCustomer.optional(),
@@ -166,7 +167,8 @@ export const visitsCreate = defineHandler({
   }),
   output: VisitOut,
   async run(ctx, input) {
-    if (!input.customerId === !input.newCustomer) throw new ApiError("invalid", "Choose an existing customer or add a new one", [{ path: "customerId", message: "Give a customer or a newCustomer, not both" }])
+    if (input.jobId && (input.customerId || input.newCustomer || input.propertyId)) throw new ApiError("invalid", "A visit added to a job is for that job's customer", [{ path: "jobId", message: "Leave the customer out when you give a jobId" }])
+    if (!input.jobId && !input.customerId === !input.newCustomer) throw new ApiError("invalid", "Choose an existing customer or add a new one", [{ path: "customerId", message: "Give a customer or a newCustomer, not both" }])
     if (!input.kind && !input.serviceKey) throw new ApiError("invalid", "Choose what the job is for", [{ path: "serviceKey", message: "Give a serviceKey or a kind" }])
     if (input.startTime && !input.scheduledOn) throw new ApiError("invalid", "Choose a day for that time", [{ path: "scheduledOn", message: "A time needs a day" }])
     const org = ctx.organizationId
@@ -180,7 +182,15 @@ export const visitsCreate = defineHandler({
     let customerId = input.customerId!
     let propertyId: string
     let created: { customerId: string; propertyId: string } | null = null
-    if (input.newCustomer) {
+    let existingJob: typeof s.job.$inferSelect | undefined
+    if (input.jobId) {
+      ;[existingJob] = await ctx.db.select().from(s.job).where(and(eq(s.job.id, input.jobId), eq(s.job.organizationId, org)))
+      if (!existingJob) throw notFound("Job")
+      if (existingJob.status === "cancelled" || existingJob.cancelledAt) throw new ApiError("unprocessable", "This job is cancelled, so it takes no more visits")
+      if (existingJob.kind === "pass" || existingJob.passNumber) throw new ApiError("unprocessable", "A Season Pass gets its visits from the pass: add an inspection to it")
+      customerId = existingJob.customerId
+      propertyId = existingJob.propertyId
+    } else if (input.newCustomer) {
       const { property, accessNote, ...fields } = input.newCustomer
       const [c] = await ctx.db.insert(s.customer).values({ organizationId: org, ...fields, ...cleanContact(fields), leadSource: "office" }).returning()
       const [p] = await ctx.db.insert(s.property).values({ organizationId: org, customerId: c!.id, address: property.address, town: property.town, ...cleanYard(property), ...(accessNote ? { accessNote: cleanText(accessNote) } : {}) }).returning()
@@ -205,10 +215,12 @@ export const visitsCreate = defineHandler({
     // The price is the office's, else the service's fixed price (a repair visit), else none until quoted.
     const kind = service ? service.kind : input.kind!
     const price = input.price ?? (service ? (service.price ?? undefined) : defaultVisitPrice(kind as (typeof OFFICE_KINDS)[number]))
-    const [job] = await ctx.db
-      .insert(s.job)
-      .values({ organizationId: org, customerId, propertyId, kind: kind === "repair" || kind === "install" ? kind : "other", status: "active", price: price ?? null, source: "office", notes: input.notes || null })
-      .returning()
+    const [job] = existingJob
+      ? [existingJob]
+      : await ctx.db
+          .insert(s.job)
+          .values({ organizationId: org, customerId, propertyId, kind: kind === "repair" || kind === "install" ? kind : "other", status: "active", price: price ?? null, source: "office", notes: input.notes || null })
+          .returning()
     const [made] = await ctx.db
       .insert(s.visit)
       .values({ organizationId: org, jobId: job!.id, customerId, propertyId, kind, amount: price ?? 0, status: "unscheduled", durationMinutes: input.durationMinutes ?? service?.slotMinutes ?? KIND_MINUTES[kind as (typeof OFFICE_KINDS)[number]], notes: input.notes || null })
@@ -221,7 +233,7 @@ export const visitsCreate = defineHandler({
         // A refused day leaves nothing behind: the line, the visit, its job and a customer made for it are taken back.
         await deleteVisitLines(ctx.db, [made!.id])
         await ctx.db.delete(s.visit).where(eq(s.visit.id, made!.id))
-        await ctx.db.delete(s.job).where(eq(s.job.id, job!.id))
+        if (!existingJob) await ctx.db.delete(s.job).where(eq(s.job.id, job!.id))
         if (created) {
           await ctx.db.delete(s.queueItem).where(and(eq(s.queueItem.kind, "geocode"), inArray(s.queueItem.key, [created.propertyId])))
           await ctx.db.delete(s.property).where(eq(s.property.id, created.propertyId))

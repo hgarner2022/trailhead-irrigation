@@ -34,6 +34,8 @@ export interface AdminPayment {
   /** the Mountain day the money arrived */
   paidOn?: string | null
   refundsPaymentId?: string | null
+  /** a check number or a Venmo handle; only for the write scope, never for a tech */
+  reference?: string | null
 }
 
 /**
