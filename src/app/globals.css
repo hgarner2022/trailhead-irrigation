@@ -27,6 +27,7 @@
 @source not "../components/ui/dropdown-menu.tsx";
 @source not "../components/ui/label.tsx";
 @source not "../components/ui/popover.tsx";
+@source not "../components/ui/resizable.tsx";
 @source not "../components/ui/scroll-area.tsx";
 @source not "../components/ui/select.tsx";
 @source not "../components/ui/sheet.tsx";
