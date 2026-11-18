@@ -35,10 +35,10 @@ const dated = {
 } as Pass
 
 describe("nextLines", () => {
-  it("gives each visit its day, window and what Ryan does, then the confirmation timeline and the money line with the card", () => {
+  it("gives each visit its day, the window promise and what Ryan does, then the confirmation timeline and the money line with the card", () => {
     const lines = nextLines(dated)
     expect(lines.map((l) => [l.key, l.lead])).toEqual([["turn-on", "Tuesday, May 4"], ["blowout", "Tuesday, October 5"], ["confirm", "Before each visit"], ["charge", "What you pay"]])
-    expect(lines[0]!.text).toBe("Spring turn-on, between 8 and 10 am. Ryan turns the water on, runs every zone and checks the heads.")
+    expect(lines[0]!.text).toBe("Spring turn-on. We'll text your window the day before. Ryan turns the water on, runs every zone and checks the heads.")
     expect(lines[0]!.calendar?.google).toMatch(/^https:\/\/calendar\.google\.com\//)
     expect(lines[0]!.calendar?.ics).toBe("https://site.test/cal/1.ics")
     expect(lines[1]!.calendar?.ics).toBeUndefined()

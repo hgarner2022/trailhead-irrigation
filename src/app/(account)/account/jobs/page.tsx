@@ -1,16 +1,6 @@
-import "server-only"
-import type { Metadata } from "next"
-import { customerCtx, loadAccount } from "../account-data"
-import { JobsScreen } from "../_screens/JobsScreen"
-import { NotACustomer } from "../_screens/NotACustomer"
+import { redirect } from "next/navigation"
 
-export const metadata: Metadata = { title: "Jobs" }
-export const dynamic = "force-dynamic"
-
-/** Jobs: one row per job the customer has had, newest first. */
-export default async function JobsPage() {
-  const ctx = await customerCtx()
-  if (!ctx) return <NotACustomer />
-  const { jobs } = await loadAccount(ctx)
-  return <JobsScreen jobs={jobs} />
+/** The Jobs list is gone: a customer has visits. The old address goes to the Visits timeline. */
+export default function JobsPage(): never {
+  redirect("/account/visits")
 }

@@ -1,63 +1,55 @@
-import type { ReactNode } from "react"
-import { PHONE_DISPLAY, PHONE_TEL } from "@/lib/nav"
-import { arrivalWindow, visitDayWords, visitPill } from "@/lib/portal/words"
+import Link from "next/link"
+import type { MoneyTone, VisitPill } from "@/lib/portal/words"
+import { cn } from "@/lib/utils"
 import { StatusPill } from "./StatusPill"
 
-// One visit as a customer reads it, in a list on the Visits screen and on a job: the day (or what the day is waiting on), what the visit is and
-// who has it, and one pill in the customer's words (Booked, Done, Pick a day, Day coming soon, Needs a new day, Canceled, Skipped). The row can
-// carry the control that changes the day as a slot, or the phone number once the day is within two days. Pure props, server-safe.
-
-export interface VisitRowFacts {
-  name: string
-  status: string
-  scheduledOn: string | null
-  /** the day a done visit was done; it is read by this day, not by the scheduled one */
-  completedOn?: string | null
-  startTime?: string | null
-  durationMinutes?: number | null
-  personFirstName?: string | null
-  notDoneReason?: string | null
-}
+// One visit as a customer reads it in the timeline (docs/plans/2026-11-18-customer-portal-v2-design.md, section 3): the day (with the year when it is not this year), what the
+// visit is with a small Season Pass label, the street when the customer has two properties, who is coming once the window was told, the money word, and one pill in
+// the customer's words. The row is one link to the visit page; a paid visit adds a Receipt link beside it. Pure props, server-safe; `portalTimeline` makes them.
 
 export interface VisitRowProps {
-  visit: VisitRowFacts
-  /** today's day, so a day in another year shows its year */
-  today: string
-  /** days are on offer for a visit with no day */
-  canPick?: boolean
-  /** "call": the day is within two days, show the phone number; otherwise `action` is shown when there is one */
-  change?: "yes" | "call" | "no"
-  /** Change my day or Pick a day */
-  action?: ReactNode
+  /** the visit page */
+  href: string
+  /** "Tue, Apr 28" or "Day coming soon" */
+  dayWords: string
+  service: string
+  /** "Season Pass 2027" */
+  label?: string | null
+  /** the street, only when the customer has more than one property */
+  street?: string | null
+  /** the first name of who is coming, only once the window was told */
+  who?: string | null
+  /** "$145, charged after the visit", "$145 · Paid", "$115 unpaid" */
+  money?: string
+  tone?: MoneyTone
+  pill: VisitPill
+  /** the printable receipt of a paid visit */
+  receiptHref?: string | null
 }
 
-export function VisitRow({ visit, today, canPick = false, change = "no", action }: VisitRowProps) {
-  const pill = visitPill({ status: visit.status, notDoneReason: visit.notDoneReason, canPick })
-  const gone = visit.status === "cancelled" || visit.status === "skipped"
-  const day = visitDayWords(visit, today) ?? "No day yet"
-  const window = visit.status === "scheduled" ? arrivalWindow(visit.startTime, visit.durationMinutes) : null
+const TONES: Record<MoneyTone, string> = { paid: "text-positive-deep", unpaid: "text-foreground", "invoice-sent": "text-foreground", "past-due": "text-destructive", none: "text-muted-foreground" }
+
+export function VisitRow({ href, dayWords, service, label, street, who, money, tone = "none", pill, receiptHref }: VisitRowProps) {
+  const gone = pill.status === "cancelled" || pill.status === "skipped"
   return (
-    <li data-slot="visit-row" data-status={pill.status} className="space-y-3 py-4">
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-        <div className="min-w-0 flex-1">
-          <p className={gone ? "text-base font-semibold text-muted-foreground line-through" : "text-base font-semibold text-foreground"}>{day}</p>
-          <p className="text-base text-muted-foreground">{[visit.name, visit.personFirstName].filter(Boolean).join(" · ")}</p>
-          {window && <p className="text-sm text-muted-foreground">{window}</p>}
-          {visit.notDoneReason && visit.status === "unscheduled" && <p className="text-sm text-muted-foreground">{`We couldn't finish this one: ${visit.notDoneReason}.`}</p>}
-        </div>
-        <StatusPill status={pill.status} label={pill.label} />
-      </div>
-      {change === "call" ? (
-        <p className="text-sm text-muted-foreground">
-          {"To change this day, call or text Ryan at "}
-          <a href={PHONE_TEL} className="font-semibold text-primary-deep underline underline-offset-2">
-            {PHONE_DISPLAY}
-          </a>
-          .
+    <li data-slot="visit-row" data-status={pill.status} className="flex items-start gap-4 py-4">
+      <Link href={href} className="min-w-0 flex-1 space-y-1 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50">
+        <p className={cn("text-base font-semibold", gone ? "text-muted-foreground line-through" : "text-foreground")}>{dayWords}</p>
+        <p className="flex flex-wrap items-center gap-x-2 text-base text-foreground">
+          <span>{[service, who].filter(Boolean).join(" · ")}</span>
+          {label && <span className="rounded-full border border-border bg-stone px-2 py-0.5 text-xs font-semibold text-navy-light">{label}</span>}
         </p>
-      ) : (
-        action
-      )}
+        {street && <p className="text-sm text-muted-foreground">{street}</p>}
+        {money && <p className={cn("text-sm", TONES[tone])}>{money}</p>}
+      </Link>
+      <div className="flex shrink-0 flex-col items-end gap-2">
+        <StatusPill status={pill.status} label={pill.label} />
+        {receiptHref && (
+          <Link href={receiptHref} className="text-sm font-semibold text-primary-deep underline underline-offset-2">
+            Receipt
+          </Link>
+        )}
+      </div>
     </li>
   )
 }

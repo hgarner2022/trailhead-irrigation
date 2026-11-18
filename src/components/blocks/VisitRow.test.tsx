@@ -1,38 +1,40 @@
 import { render, screen } from "@testing-library/react"
 import { describe, expect, it } from "vitest"
-import { VisitRow } from "./VisitRow"
+import { VisitRow, type VisitRowProps } from "./VisitRow"
 
-const booked = { name: "Spring turn-on", status: "scheduled", scheduledOn: "2027-04-28", startTime: "09:00", durationMinutes: 120, personFirstName: "Ryan" }
+const booked: VisitRowProps = { href: "/account/visits/v1", dayWords: "Wed, Apr 28", service: "Spring turn-on", pill: { status: "scheduled", label: "Booked" }, money: "$120, charged after the visit" }
 const inList = (ui: React.ReactElement) => render(<ul>{ui}</ul>)
 
 describe("VisitRow", () => {
-  it("shows the day, what and who, the window and a Booked pill", () => {
-    inList(<VisitRow today="2027-04-14" visit={booked} />)
-    expect(screen.getByText("Wednesday, April 28")).toBeInTheDocument()
-    expect(screen.getByText("Spring turn-on · Ryan")).toBeInTheDocument()
-    expect(screen.getByText("Arrive between 9 and 11 am")).toBeInTheDocument()
+  it("is one link to the visit page with the day, the service, the money word and a Booked pill", () => {
+    inList(<VisitRow {...booked} />)
+    expect(screen.getByRole("link", { name: /Wed, Apr 28/ })).toHaveAttribute("href", "/account/visits/v1")
+    expect(screen.getByText("Spring turn-on")).toBeInTheDocument()
+    expect(screen.getByText("$120, charged after the visit")).toBeInTheDocument()
     expect(screen.getByText("Booked")).toBeInTheDocument()
   })
 
-  it("uses the customer's word for each of the other states", () => {
-    const { rerender } = inList(<VisitRow today="2027-04-14" visit={{ ...booked, status: "completed" }} />)
+  it("carries the Season Pass label, the street and who is coming when it is given them", () => {
+    inList(<VisitRow {...booked} label="Season Pass 2027" street="412 Briggs Street" who="Ryan" />)
+    expect(screen.getByText("Season Pass 2027")).toBeInTheDocument()
+    expect(screen.getByText("412 Briggs Street")).toBeInTheDocument()
+    expect(screen.getByText("Spring turn-on · Ryan")).toBeInTheDocument()
+  })
+
+  it("adds a Receipt link beside a paid visit that opens our printable page", () => {
+    inList(<VisitRow {...booked} dayWords="Tue, Nov 3, 2026" service="Repair" pill={{ status: "done", label: "Done" }} money="$145 · Paid" tone="paid" receiptHref="/account/receipts/pay_1" />)
+    expect(screen.getByRole("link", { name: "Receipt" })).toHaveAttribute("href", "/account/receipts/pay_1")
     expect(screen.getByText("Done")).toBeInTheDocument()
-    rerender(<ul><VisitRow today="2027-04-14" visit={{ name: "Fall blowout", status: "unscheduled", scheduledOn: null }} canPick /></ul>)
-    expect(screen.getByText("Pick a day")).toBeInTheDocument()
-    rerender(<ul><VisitRow today="2027-04-14" visit={{ name: "Fall blowout", status: "unscheduled", scheduledOn: null }} /></ul>)
-    expect(screen.getByText("Day coming soon")).toBeInTheDocument()
-    rerender(<ul><VisitRow today="2027-04-14" visit={{ name: "Spring turn-on", status: "unscheduled", scheduledOn: null, notDoneReason: "no water on" }} canPick /></ul>)
-    expect(screen.getByText("Needs a new day")).toBeInTheDocument()
-    expect(screen.getByText("We couldn't finish this one: no water on.")).toBeInTheDocument()
-    rerender(<ul><VisitRow today="2027-04-14" visit={{ ...booked, status: "cancelled" }} /></ul>)
+  })
+
+  it("strikes the day of a canceled visit and uses the customer's one word for it", () => {
+    inList(<VisitRow {...booked} money="" pill={{ status: "cancelled", label: "Canceled" }} />)
+    expect(screen.getByText("Wed, Apr 28")).toHaveClass("line-through")
     expect(screen.getByText("Canceled")).toBeInTheDocument()
   })
 
-  it("shows the change control, or the phone number when the day is too close", () => {
-    const { rerender } = inList(<VisitRow today="2027-04-14" visit={booked} change="yes" action={<button>Change my day</button>} />)
-    expect(screen.getByRole("button", { name: "Change my day" })).toBeInTheDocument()
-    rerender(<ul><VisitRow today="2027-04-14" visit={booked} change="call" action={<button>Change my day</button>} /></ul>)
-    expect(screen.queryByRole("button")).toBeNull()
-    expect(screen.getByRole("link", { name: "(970) 692-7270" })).toBeInTheDocument()
+  it("says Day coming soon for a visit with no day", () => {
+    inList(<VisitRow {...booked} dayWords="Day coming soon" pill={{ status: "needs-a-day", label: "Day coming soon" }} />)
+    expect(screen.getAllByText("Day coming soon")).toHaveLength(2)
   })
 })

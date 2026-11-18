@@ -6,6 +6,7 @@ import { signOut } from "@/auth"
 import { callApi } from "@/api/core/call"
 import { ApiError } from "@/api/core/errors"
 import { customersStartCardUpdate, customersUpdateSelf, propertiesUpdateSelf } from "@/api/v1/portal/me"
+import { visitsCancelSelf } from "@/api/v1/portal/cancel"
 import { visitsPick } from "@/api/v1/visits/handlers"
 import { ctxFromAccount } from "@/lib/admin/api-ctx"
 import { DAY_FAILED } from "@/lib/portal/words"
@@ -25,6 +26,18 @@ export async function changeMyDay(visitId: string, day: string): Promise<Result>
     await callApi(await ctxFromAccount(), visitsPick, { id: visitId, day })
   } catch (error) {
     return failure(error, DAY_FAILED)
+  }
+  drainAfter()
+  revalidatePath("/account", "layout")
+  return { ok: true }
+}
+
+/** Cancels a visit that has not happened, with the customer's optional reason: a Season Pass visit is skipped (nothing charged), a one-off is canceled. The customer is texted a note. */
+export async function cancelMyVisit(visitId: string, reason: string): Promise<Result> {
+  try {
+    await callApi(await ctxFromAccount(), visitsCancelSelf, { id: visitId, ...(reason.trim() ? { reason: reason.trim() } : {}) })
+  } catch (error) {
+    return failure(error, "We couldn't cancel that.")
   }
   drainAfter()
   revalidatePath("/account", "layout")

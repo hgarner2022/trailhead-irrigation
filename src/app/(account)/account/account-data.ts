@@ -30,14 +30,14 @@ export async function loadAccount(ctx: Ctx): Promise<AccountData> {
 }
 
 /**
- * The days `visits.areaDays` offers for each visit given, by visit id. A visit with nothing open (or one the rule refuses, such as a day inside
- * two days) simply has no entry, so the screen says there are no open days or shows the phone number.
+ * The days `visits.areaDays` offers for each visit given, by visit id, up to five each (Reschedule's list). A visit with nothing open (or one the 24-hour rule
+ * refuses) has an empty list, so the sheet says there are no open days and offers Text Ryan.
  */
-export async function loadDays(ctx: Ctx, visitIds: readonly string[]): Promise<Record<string, string[]>> {
+export async function loadDays(ctx: Ctx, visitIds: readonly string[], count = 5): Promise<Record<string, string[]>> {
   const entries = await Promise.all(
     visitIds.map(async (id) => {
       try {
-        return [id, (await callApi(ctx, visitsAreaDays, { id })).days] as const
+        return [id, (await callApi(ctx, visitsAreaDays, { id, count })).days] as const
       } catch {
         return [id, []] as const
       }

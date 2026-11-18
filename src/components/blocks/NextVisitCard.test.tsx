@@ -1,44 +1,39 @@
 import { render, screen } from "@testing-library/react"
 import { describe, expect, it } from "vitest"
-import { NextVisitCard } from "./NextVisitCard"
+import { NextVisitCard, type NextVisitProps } from "./NextVisitCard"
 
-const booked = { name: "Spring turn-on", scheduledOn: "2027-04-28", startTime: "09:00", durationMinutes: 120, personFirstName: "Ryan", mustBeHome: true }
+const booked: NextVisitProps = { heading: "Wednesday, April 28", detail: "We'll text your window the day before.", service: "Spring turn-on", where: "412 Briggs Street, Erie", label: "Season Pass 2027", mustBeHome: true, href: "/account/visits/v1" }
 
 describe("NextVisitCard", () => {
-  it("shows the day, the arrival window, who is coming, what, and Must be home", () => {
-    render(<NextVisitCard today="2027-04-14" visit={booked} change="yes" action={<button>Change my day</button>} />)
+  it("shows the day, the sentence about the window, what and where, the pass label and Someone must be home", () => {
+    render(<NextVisitCard visit={{ ...booked, actions: <button>Reschedule</button> }} />)
     expect(screen.getByRole("heading", { name: "Wednesday, April 28" })).toBeInTheDocument()
-    expect(screen.getByText("Arrive between 9 and 11 am")).toBeInTheDocument()
-    expect(screen.getByText("Ryan · Spring turn-on")).toBeInTheDocument()
-    expect(screen.getByText("Must be home")).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: "Change my day" })).toBeInTheDocument()
+    expect(screen.getByRole("link", { name: "Wednesday, April 28" })).toHaveAttribute("href", "/account/visits/v1")
+    expect(screen.getByText("We'll text your window the day before.")).toBeInTheDocument()
+    expect(screen.getByText("Spring turn-on · 412 Briggs Street, Erie")).toBeInTheDocument()
+    expect(screen.getByText("Season Pass 2027")).toBeInTheDocument()
+    expect(screen.getByText("Someone must be home")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Reschedule" })).toBeInTheDocument()
   })
 
-  it("leaves Must be home out when the property does not say so", () => {
-    render(<NextVisitCard today="2027-04-14" visit={{ ...booked, mustBeHome: false }} />)
-    expect(screen.queryByText("Must be home")).toBeNull()
+  it("leaves Someone must be home out when the property does not say so", () => {
+    render(<NextVisitCard visit={{ ...booked, mustBeHome: false }} />)
+    expect(screen.queryByText("Someone must be home")).toBeNull()
   })
 
-  it("gives the phone number instead of the button once the day is within two days", () => {
-    render(<NextVisitCard today="2027-04-14" visit={booked} change="call" action={<button>Change my day</button>} />)
-    expect(screen.queryByRole("button", { name: "Change my day" })).toBeNull()
-    expect(screen.getByRole("link", { name: "(970) 692-7270" })).toHaveAttribute("href", "tel:9706927270")
+  it("says the window and who is coming once it was told", () => {
+    render(<NextVisitCard visit={{ ...booked, detail: "Between 8 and 10 am, with Ryan." }} />)
+    expect(screen.getByText("Between 8 and 10 am, with Ryan.")).toBeInTheDocument()
   })
 
-  it("says Pick a day, Day coming soon or Needs a new day for a visit with no day", () => {
-    const open = { ...booked, scheduledOn: null, startTime: null }
-    const { rerender } = render(<NextVisitCard today="2027-04-14" visit={open} canPick />)
-    expect(screen.getByRole("heading", { name: "Pick a day" })).toBeInTheDocument()
-    rerender(<NextVisitCard today="2027-04-14" visit={open} canPick={false} />)
-    expect(screen.getByRole("heading", { name: "Day coming soon" })).toBeInTheDocument()
-    rerender(<NextVisitCard today="2027-04-14" visit={{ ...open, notDoneReason: "no water on" }} canPick />)
-    expect(screen.getByRole("heading", { name: "Needs a new day" })).toBeInTheDocument()
-    expect(screen.getByText("We couldn't finish this one: no water on.")).toBeInTheDocument()
-  })
-
-  it("says Nothing booked with Book Online when there is no visit", () => {
-    render(<NextVisitCard today="2027-04-14" visit={null} />)
-    expect(screen.getByRole("heading", { name: "Nothing booked" })).toBeInTheDocument()
+  it("says Nothing booked right now with Book Online when there is no visit", () => {
+    render(<NextVisitCard visit={null} />)
+    expect(screen.getByRole("heading", { name: "Nothing booked right now." })).toBeInTheDocument()
     expect(screen.getByRole("link", { name: "Book Online" })).toHaveAttribute("href", "/book")
+  })
+
+  it("is top-aligned in its grid, never stretched to a neighbour", () => {
+    render(<NextVisitCard visit={booked} />)
+    expect(document.querySelector("[data-slot=next-visit]")).toHaveClass("self-start")
   })
 })
