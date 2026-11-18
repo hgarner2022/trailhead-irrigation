@@ -94,12 +94,14 @@ export interface JobPanelProps {
 export function JobPanel({ data, today, jobId, open, onOpenChange, readOnly = false, actions, visitActions }: JobPanelProps) {
   const facts = jobId ? jobFacts(data, jobId, today) : undefined
   const { pending, error, done, run } = useRunner()
-  const [collecting, setCollecting] = useState(false)
   const [adding, setAdding] = useState(false)
   const [cancelling, setCancelling] = useState(false)
   const [cancellingJob, setCancellingJob] = useState(false)
   // Add a line is the primary of a job waiting on a quote, so the Lines section's own form is opened from the footer.
   const [addingLine, setAddingLine] = useState(false)
+  // The Collect dialog keeps what it opened with, as state, like the visit panel's: after the money arrives the job no longer offers Collect,
+  // but the dialog stays to say what happened until it is closed, and a later Refund must not bring it back by itself.
+  const [collect, setCollect] = useState<{ facts: JobFacts; plan: ReturnType<typeof jobCollect> } | null>(null)
   if (!facts) return null
   const { job, row, pass, bill } = facts
   const say = (call: () => Promise<{ ok: boolean }>, said?: string) => run(call as never, undefined, said ?? "")
@@ -120,7 +122,7 @@ export function JobPanel({ data, today, jobId, open, onOpenChange, readOnly = fa
           passOpen={passOpen}
           pass={pass}
           pending={pending}
-          onCollect={() => setCollecting(true)}
+          onCollect={() => setCollect({ facts, plan: jobCollect(facts, data) })}
           onAddVisit={() => setAdding(true)}
           onAddLine={() => setAddingLine(true)}
           onSendCardUpdateLink={() => (actions?.pass ? say(() => actions.pass!.sendCardUpdateLink(pass!.id), "Card update link sent.") : console.info("send card update link", [pass!.number]))}
@@ -177,7 +179,7 @@ export function JobPanel({ data, today, jobId, open, onOpenChange, readOnly = fa
         )}
         <PanelNotes about="job" aboutId={job.id} timeline={job.timeline} addNote={actions?.addNote} />
       </div>
-      {canAct && (facts.canRecord || bill.canSend) && <JobCollectDialog facts={facts} {...jobCollect(facts, data)} open={collecting} onOpenChange={setCollecting} actions={actions} visitActions={visitActions} />}
+      {collect && <JobCollectDialog facts={collect.facts} {...collect.plan} open onOpenChange={(o) => !o && setCollect(null)} actions={actions} visitActions={visitActions} />}
       {canAct && facts.canCancel && <CancelJobDialog jobId={job.id} held={facts.held} open={cancellingJob} onOpenChange={setCancellingJob} onCancel={actions?.cancelJob} />}
       {canAct && facts.canAddVisit && <NewVisitDialog jobId={job.id} data={data} today={today} open={adding} onOpenChange={setAdding} actions={actions} />}
     </SidePanel>
