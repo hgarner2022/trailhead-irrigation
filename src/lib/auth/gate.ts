@@ -13,8 +13,10 @@ const under = (pathname: string, root: string) => pathname === root || pathname.
  * `/account/*` needs any signed-in person, everything else passes. An
  * API-key principal is never a person, so it opens neither.
  */
-export function gateFor(pathname: string, principal: Principal | null | undefined): Gate {
+export function gateFor(pathname: string, principal: Principal | null | undefined, search = ""): Gate {
   if (isSignIn(pathname)) return { action: "next" }
+  // The link in a text about a visit opens that one visit's page without a session: `/account/visits/<id>?t=`. Only that page, and the page verifies the token itself (`verifyVisitLink`).
+  if (/^\/account\/visits\/[^/]+$/.test(pathname) && new URLSearchParams(search).has("t")) return { action: "next" }
   const person = principal?.kind === "person" ? principal : null
   if (under(pathname, "/admin")) {
     return person?.type === "admin" ? { action: "next" } : { action: "redirect", to: "/admin/sign-in" }

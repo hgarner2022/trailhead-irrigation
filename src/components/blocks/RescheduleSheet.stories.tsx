@@ -31,7 +31,7 @@ export const NoOpenDaysPhone: Story = { ...phone, args: { days: [] }, play: open
 /** The move was refused: the handler's own words stay in the sheet. */
 export const RefusedPhone: Story = {
   ...phone,
-  args: { onPick: async () => ({ ok: false as const, message: "That day is not one of the days on offer; pick another" }) },
+  args: { onPick: fn(async (_day: string): Promise<{ ok: boolean; message?: string }> => ({ ok: false, message: "That day is not one of the days on offer; pick another" })) },
   play: async (ctx) => {
     await open(ctx)
     await userEvent.click(within(document.body).getByRole("button", { name: /^Move it to/ }))

@@ -72,7 +72,7 @@ describe("schedule.run", () => {
   it("queues a date-set text for each placed visit and writes the run and its Home line", async () => {
     const texts = (await db.select().from(s.messageLog)).filter((m) => m.kind === "date-set" && m.channel === "sms")
     expect(texts.length).toBeGreaterThan(0)
-    expect(texts.every((m) => m.status === "queued" && m.body.includes("Your Trailhead account: https://site.test/account"))).toBe(true)
+    expect(texts.every((m) => m.status === "queued" && m.body.includes("Doesn't work? Pick another day: https://site.test/account/visits/"))).toBe(true)
     expect(texts.some((m) => m.visitId === waitingId)).toBe(false)
     const [row] = await db.select().from(s.scheduleRun).where(eq(s.scheduleRun.organizationId, ORG))
     expect(row).toMatchObject({ window: "turn-on", season: 2027, ranBy: "api-key:k-read-write-admin" })

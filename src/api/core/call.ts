@@ -21,6 +21,8 @@ function allowed(ctx: Ctx, handler: Handler): boolean {
   if (visitor.kind === "public") return visitor.invoiceId ? handler.checkout === "own-invoice" : Boolean(handler.checkout)
   if (hasScope(ctx.principal, handler.scope)) return true
   const p = ctx.principal
+  // A customer who came in by one visit's link reaches only the handlers marked for that, and `callApi` checks the id below.
+  if (p.kind === "person" && p.onlyVisitId) return Boolean(handler.visitLink && p.type === "customer" && p.customerId)
   return Boolean(handler.customerSelf && p.kind === "person" && p.type === "customer" && p.customerId)
 }
 
@@ -78,6 +80,7 @@ export async function callApi<I extends z.ZodObject, O extends z.ZodType>(
     }
     if (visitor.kind === "public" && handler.checkout === "own-invoice" && (!visitor.invoiceId || (parsed.data as { id?: string }).id !== visitor.invoiceId))
       throw new ApiError("forbidden", "This call is only for the invoice being paid")
+    if (visitor.kind === "person" && visitor.onlyVisitId && (parsed.data as { id?: string }).id !== visitor.onlyVisitId) throw new ApiError("forbidden", "This link opens one visit only")
     await checkRate(ctx, parsed.data)
     const run = async () => handler.output.parse(await handler.run(ctx, parsed.data)) as z.infer<O>
     if (ctx.idempotencyKey && WRITES.has(handler.method))

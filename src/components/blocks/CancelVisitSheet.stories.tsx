@@ -39,7 +39,7 @@ export const CanceledPhone: Story = {
 }
 export const RefusedPhone: Story = {
   ...phone,
-  args: { onCancel: async () => ({ ok: false as const, message: "This visit is within 24 hours, so it can't be changed online. Text or call Ryan at (970) 692-7270." }) },
+  args: { onCancel: fn(async (_reason: string): Promise<{ ok: boolean; message?: string }> => ({ ok: false, message: "This visit is within 24 hours, so it can't be changed online. Text or call Ryan at (970) 692-7270." })) },
   play: async (ctx) => {
     await open(ctx)
     await userEvent.click(within(document.body).getAllByRole("button", { name: "Cancel visit" }).at(-1)!)

@@ -9,6 +9,7 @@ import { customersStartCardUpdate, customersUpdateSelf, propertiesUpdateSelf } f
 import { visitsCancelSelf } from "@/api/v1/portal/cancel"
 import { visitsPick } from "@/api/v1/visits/handlers"
 import { ctxFromAccount } from "@/lib/admin/api-ctx"
+import { visitLinkCtx } from "./account-data"
 import { DAY_FAILED } from "@/lib/portal/words"
 import { drainAfter } from "@/lib/queue/drain-after"
 
@@ -41,6 +42,32 @@ export async function cancelMyVisit(visitId: string, reason: string): Promise<Re
   }
   drainAfter()
   revalidatePath("/account", "layout")
+  return { ok: true }
+}
+
+/** Reschedule from a text's link: the same call as `changeMyDay`, as the link's customer for that one visit. The token rides bound into the action, never read from the page. */
+export async function changeMyDayByLink(token: string, visitId: string, day: string): Promise<Result> {
+  const ctx = await visitLinkCtx(visitId, token)
+  if (!ctx) return { ok: false, message: "This link didn't work. Use the link in your text." }
+  try {
+    await callApi(ctx, visitsPick, { id: visitId, day })
+  } catch (error) {
+    return failure(error, DAY_FAILED)
+  }
+  drainAfter()
+  return { ok: true }
+}
+
+/** Cancel from a text's link: the same call as `cancelMyVisit`, for that one visit. */
+export async function cancelMyVisitByLink(token: string, visitId: string, reason: string): Promise<Result> {
+  const ctx = await visitLinkCtx(visitId, token)
+  if (!ctx) return { ok: false, message: "This link didn't work. Use the link in your text." }
+  try {
+    await callApi(ctx, visitsCancelSelf, { id: visitId, ...(reason.trim() ? { reason: reason.trim() } : {}) })
+  } catch (error) {
+    return failure(error, "We couldn't cancel that.")
+  }
+  drainAfter()
   return { ok: true }
 }
 

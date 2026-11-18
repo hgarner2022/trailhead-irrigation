@@ -41,7 +41,7 @@ describe("the first text to a number", () => {
     expect(first.row!.body).toMatch(/Reply STOP to opt out\.$/)
     expect(await isFirstText(db, ORG, PHONE)).toBe(false)
     const second = await text("day-before", "t-second")
-    expect(second.row!.body).toMatch(/^Trailhead: Ryan is coming tomorrow, Wed, May 5, 8 to 10 am, for your .+\. Your Trailhead account: https:\/\/site\.test\/account$/)
+    expect(second.row!.body).toMatch(/^Trailhead: Ryan is coming tomorrow, Wed, May 5, 8 to 10 am, for your .+\. Doesn't work\? Pick another day: https:\/\/site\.test\/account\/visits\/[^ ]+\?t=\d+\.[A-Za-z0-9_-]+$/)
     expect(second.row!.body).not.toContain("STOP")
   })
   it("is not spoiled by a text that never reached the phone", async () => {
@@ -60,7 +60,7 @@ describe("the on-the-way text", () => {
   it("names the person and the address and links to the account", async () => {
     const { row } = await text("on-the-way", "otw-1")
     expect(row).toMatchObject({ channel: "sms", kind: "on-the-way" })
-    expect(row!.body).toMatch(/^Trailhead: Ryan is on the way to .+ for your .+\. Your Trailhead account: https:\/\/site\.test\/account$/)
+    expect(row!.body).toMatch(/^Trailhead: Ryan is on the way to .+ for your .+\. See your visit: https:\/\/site\.test\/account\/visits\/[^ ]+\?t=\d+\.[A-Za-z0-9_-]+$/)
   })
   it("is a text or nothing: a customer with no mobile gets no email", async () => {
     const { added } = await text("on-the-way", "otw-2", EMAIL_ONLY)
@@ -81,7 +81,7 @@ describe("the words the office saved", () => {
     try {
       expect(Object.keys(await savedTemplates(db, ORG)).sort()).toEqual(["date-set:email", "day-before:sms"])
       const { row } = await text("day-before", "t-saved")
-      expect(row!.body).toMatch(/^Trailhead: Ryan is coming tomorrow for your .+ at .+\. Your Trailhead account: /)
+      expect(row!.body).toMatch(/^Trailhead: Ryan is coming tomorrow for your .+ at .+\. Doesn't work\? Pick another day: /)
       // the email goes through the sender, which reads the saved words at send time
       const email = await db.insert(s.messageLog).values({ organizationId: ORG, customerId: "c100", visitId, kind: "date-set", key: "e-saved", channel: "email", to: "andrea@example.com", subject: "x", body: "x", data: row!.data, status: "queued" }).returning()
       const sent: { text?: string }[] = []

@@ -26,7 +26,7 @@ function mine(ctx: Ctx): string {
 }
 
 /** The customer, their properties with every yard fact they know best (never the office's property notes), and the card on file. */
-async function view(ctx: Ctx, customerId: string) {
+export async function view(ctx: Ctx, customerId: string) {
   const [row] = await ctx.db.select().from(s.customer).where(and(eq(s.customer.id, customerId), eq(s.customer.organizationId, ctx.organizationId)))
   if (!row) throw notFound("Customer")
   const properties = await ctx.db.select().from(s.property).where(and(eq(s.property.customerId, customerId), eq(s.property.organizationId, ctx.organizationId))).orderBy(s.property.createdAt, s.property.id)

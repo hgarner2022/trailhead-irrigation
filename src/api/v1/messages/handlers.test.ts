@@ -70,7 +70,7 @@ describe("messages.send", () => {
     await db.update(s.visit).set({ status: "scheduled" }).where(eq(s.visit.id, v!.id))
     const sent = await callApi(today("2027-05-05"), messagesSend, { customerId: "c100", kind: "on-the-way", visitId: v!.id })
     expect(sent).toMatchObject({ channel: "sms", kind: "on-the-way", status: "queued", visitId: v!.id, to: "+17205550155" })
-    expect(sent.body).toMatch(/^Trailhead: Ryan is on the way to .+ for your .+\. Your Trailhead account: https:\/\/www\.example\.com\/account/)
+    expect(sent.body).toMatch(/^Trailhead: Ryan is on the way to .+ for your .+\. See your visit: https:\/\/www\.example\.com\/account\/visits\/[^ ]+\?t=\d+\./)
     expect(await db.select().from(s.queueItem).where(eq(s.queueItem.key, sent.id))).toHaveLength(1)
     await expect(callApi(today("2027-05-05"), messagesSend, { customerId: "c100", kind: "on-the-way", visitId: v!.id })).rejects.toMatchObject({ code: "conflict" })
     expect((await db.select().from(s.messageLog).where(eq(s.messageLog.kind, "on-the-way")))).toHaveLength(1)

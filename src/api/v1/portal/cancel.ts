@@ -6,6 +6,7 @@ import { visitName } from "@/lib/events/names"
 import { readAppUrl } from "@/lib/env"
 import { cancelVisitLines } from "@/lib/jobs/write-lines"
 import { baseData } from "@/lib/messaging/data"
+import { visitLinkUrl } from "@/lib/messaging/tokens"
 import { queueMessage } from "@/lib/messaging/queue"
 import { kindName } from "@/lib/pass/server/messages"
 import { passStatus } from "@/lib/pass/facts"
@@ -29,6 +30,7 @@ export const visitsCancelSelf = defineHandler({
   path: "/visits/{id}/cancel-self",
   scope: "write",
   customerSelf: true,
+  visitLink: true,
   summary:
     "A customer cancels their own visit that has not happened (no day yet, or booked), until 24 hours before its day. A Season Pass visit becomes the pass skip (skipped, its line canceled, the pass stays, nothing is charged); a one-off visit is canceled with its line, and the job is canceled with it (the `jobs.cancel` rules) when it was the job's only live visit and the job holds no payment. A cancel never moves money: a job that holds a payment stays open and the office is told. Writes one `visit.cancelled` event by the customer (with their optional reason), texts the customer a confirmation, raises a Home alert and emails the owner. A second call answers the same. Only a signed-in customer, only their own visit.",
   input: z.object({ id: Id, reason: z.string().trim().max(300).optional().describe("Why, in the customer's words; Ryan reads it, the customer's screens never show it back.") }),
@@ -72,7 +74,7 @@ export const visitsCancelSelf = defineHandler({
     const origin = readAppUrl()
     const [customer] = await ctx.db.select().from(s.customer).where(eq(s.customer.id, visit.customerId))
     if (customer) {
-      await queueMessage(ctx.db, { organizationId: org, customerId: customer.id, visitId: visit.id, kind: "visit-cancelled", key: visit.id, data: { ...baseData(origin, customer), serviceName: kindName(visit.kind), address: row.address, day: visit.scheduledOn, paid: Math.max(held, 0) } })
+      await queueMessage(ctx.db, { organizationId: org, customerId: customer.id, visitId: visit.id, kind: "visit-cancelled", key: visit.id, data: { ...baseData(origin, customer), serviceName: kindName(visit.kind), address: row.address, day: visit.scheduledOn, paid: Math.max(held, 0), visitUrl: visitLinkUrl(origin, visit.id, visit.customerId) } })
     }
     await alertCustomerChange(ctx, visit, { change: "cancelled", from: visit.scheduledOn, hasPayment: held > 0 })
     return { id: visit.id, status, jobCancelled }

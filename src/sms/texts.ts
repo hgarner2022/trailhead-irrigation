@@ -20,10 +20,17 @@ export interface TextOptions {
 
 const tail = (o?: TextOptions) => (o?.optOut === false ? "" : ` ${OPT_OUT}`)
 
+/**
+ * The link every text about a visit ends with: that visit's own page, signed so it opens already signed in. A text that sets or moves the day (or reminds of it)
+ * says "Doesn't work? Pick another day:"; on my way says "See your visit:". Without a signed link (an older row) it is the plain account link.
+ */
+const visitLinkTail = (key: EditableMessage["key"], visitUrl: string | undefined, accountUrl: string) =>
+  visitUrl ? `${key === "on-the-way" ? "See your visit:" : "Doesn't work? Pick another day:"} ${visitUrl}` : `Your ${ACCOUNT_NAME}: ${accountUrl}`
+
 const visitText = (key: EditableMessage["key"], d: VisitData, o?: TextOptions) => {
   const v = d.visit
   const middle = fillTemplate(bodyOf(o?.templates, key, "sms"), { service: v.name, address: v.address, day: shortDay(v.day), window: v.startTime ? windowText(v.startTime) : null, who: v.who })
-  return `Trailhead: ${middle} Your ${ACCOUNT_NAME}: ${d.accountUrl}${tail(o)}`
+  return `Trailhead: ${middle} ${visitLinkTail(key, v.visitUrl, d.accountUrl)}${tail(o)}`
 }
 
 export const dateSetText = (d: VisitData, o?: TextOptions) => visitText("date-set", d, o)
@@ -40,7 +47,7 @@ export const invoiceReminderText = (d: InvoiceData, o?: TextOptions) =>
   `Trailhead: ${fillTemplate(bodyOf(o?.templates, "invoice-reminder", "sms"), { service: d.visitName, amount: dollarsOf(d.total), due: monthDay(d.dueOn), payLink: d.payUrl })}${tail(o)}`
 
 /** The confirmation after a customer cancels a visit from their account: the fact, what is and is not charged and the account link. Not edited by the office. */
-export const visitCancelledText = (d: VisitCancelledData, o?: TextOptions) => `Trailhead: your ${d.serviceName} at ${d.address}${d.day ? ` on ${shortDay(d.day)}` : ""} is canceled. ${visitCancelledMoney(d.paid)} Your ${ACCOUNT_NAME}: ${d.accountUrl}${tail(o)}`
+export const visitCancelledText = (d: VisitCancelledData, o?: TextOptions) => `Trailhead: your ${d.serviceName} at ${d.address}${d.day ? ` on ${shortDay(d.day)}` : ""} is canceled. ${visitCancelledMoney(d.paid)} ${d.visitUrl ? `See your visit: ${d.visitUrl}` : `Your ${ACCOUNT_NAME}: ${d.accountUrl}`}${tail(o)}`
 
 const dollarsOf = (n: number) => `$${n.toLocaleString("en-US")}`
 

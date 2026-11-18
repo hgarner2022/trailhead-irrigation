@@ -124,6 +124,8 @@ export interface VisitCancelledData extends Base {
   address: string
   day: string | null
   paid: number
+  /** the signed link to the visit's page (`visitLinkUrl`) */
+  visitUrl?: string
 }
 export interface CancelledData extends Base {
   season: number

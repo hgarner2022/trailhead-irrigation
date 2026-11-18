@@ -11,6 +11,8 @@ export interface Handler<I extends z.ZodObject = z.ZodObject, O extends z.ZodTyp
   scope: Scope
   /** a signed-in customer may also call it; the handler must then check the record is theirs */
   customerSelf?: boolean
+  /** a customer who holds one visit's signed link (a text's link, no sign-in) may call it too, for that one visit: `input.id` must be that visit */
+  visitLink?: true
   /**
    * the anonymous checkout visitor (`public` principal) may call it; "own-pass" also needs `input.id` to be the pass the visitor is buying;
    * "own-invoice" is for the pay page: it needs `input.id` to be the invoice the visitor's signed link opened, and a visitor with such a link may call nothing else

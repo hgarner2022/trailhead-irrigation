@@ -9,7 +9,7 @@ import { loadTaxRule } from "@/lib/money/tax-rule"
 import { customerFacingFirstName } from "@/lib/portal/words"
 import { kindName } from "@/lib/pass/server/messages"
 import { windowTold } from "@/lib/portal/window-told"
-import { visitCalendarUrl } from "./tokens"
+import { visitCalendarUrl, visitLinkUrl } from "./tokens"
 
 /** What every customer message carries: links built from the site origin, the account link and the sign-in link with the customer's email filled in. */
 export function baseData(origin: string, customer: { firstName: string; email: string | null }): Base {
@@ -50,6 +50,7 @@ export async function loadVisitFacts(db: Database, visitId: string, origin: stri
     address: row.address,
     location: `${row.address}, ${row.town}`,
     icsUrl: visitCalendarUrl(origin, row.visit.id),
+    visitUrl: visitLinkUrl(origin, row.visit.id, row.visit.customerId),
   }
 }
 
