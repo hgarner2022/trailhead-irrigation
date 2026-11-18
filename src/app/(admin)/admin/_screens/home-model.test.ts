@@ -112,7 +112,7 @@ describe("tileModels", () => {
 
     expect(passes.label).toBe("Passes sold")
     expect(passes.value).toBe("11")
-    expect(passes.href).toBe("/admin/passes")
+    expect(passes.href).toBe("/admin/customers")
 
     expect(quotes.label).toBe("Quotes awaiting, $33,100")
     expect(quotes.value).toBe("16")

@@ -5,6 +5,7 @@ import { useMemo, useState, useTransition } from "react"
 import { Button } from "@/components/ui/button"
 import { DataGrid } from "@/components/blocks/DataGrid"
 import { PageHeader } from "@/components/blocks/PageHeader"
+import { jobIdOfPass, visitsOfJob } from "@/lib/admin/links"
 import { SidePanel, SidePanelLayout } from "@/components/blocks/SidePanel"
 import type { AdminData } from "@/lib/admin/types"
 import { dayOf } from "@/lib/admin/calendar"
@@ -92,13 +93,13 @@ export function CustomersScreen({ data, today, defaultSelectedId, readOnly = fal
               open={open}
               onOpenChange={setOpen}
               title={row.name}
-              description={row.pass === "none" ? "Customer" : `Season Pass holder`}
+              description="Customer"
               footer={
                 <>
                   {!readOnly && client?.app && <NewJobButton data={data} today={today} actions={visitActions} customerId={row.id} />}
-                  {row.passId && (
+                  {row.passId && jobIdOfPass(data, row.passId) && (
                     <Button variant="outline" className="min-h-11" asChild>
-                      <Link href={`/admin/passes?pass=${encodeURIComponent(row.passId)}`}>Open pass</Link>
+                      <Link href={visitsOfJob(jobIdOfPass(data, row.passId)!)}>{"Open job's visits"}</Link>
                     </Button>
                   )}
                   {offers && (

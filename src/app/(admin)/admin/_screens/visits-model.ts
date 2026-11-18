@@ -39,8 +39,6 @@ export interface VisitRow {
   dayPassed: boolean
   /** whole dollars; what Money sorts by */
   price: number
-  /** "Season Pass" or "One-off" */
-  jobType: "pass" | "one-off"
   /** "TH-2027-0006" for a pass visit, else the job's kind word: "Repair", "Installation" */
   jobLabel: string
   customerId: string
@@ -57,11 +55,12 @@ const JOB_KIND_WORDS: Record<string, string> = { repair: "Repair", install: "Ins
  * The Money cell, one string for the visit: its price until it is Done, then what happened to the money. A cancelled
  * visit with nothing held reads "Cancelled"; one nobody has priced reads "Quote later".
  */
-export function moneyText(row: Pick<VisitRow, "work" | "money" | "moneyLabel" | "price">): string {
+export function moneyText(row: Pick<VisitRow, "work" | "money" | "moneyLabel" | "price"> & { noCard?: boolean }): string {
   if (row.work === "cancelled" && row.money === "not-yet") return "Cancelled"
   const amount = row.price > 0 ? `$${row.price.toLocaleString("en-US")}` : "Quote later"
   if (row.money === "paid" || row.money === "bill-sent" || row.money === "failed") return `${amount} · ${row.moneyLabel}`
-  if (row.money === "owed") return row.price > 0 ? `${amount} owed` : "Owed"
+  // A pass visit whose customer has no card to charge says so, so an owed visit is never a silent one.
+  if (row.money === "owed") return `${row.price > 0 ? `${amount} owed` : "Owed"}${row.noCard ? " · no card" : ""}`
   return amount
 }
 
@@ -85,7 +84,7 @@ export function rowsOf(data: AdminData, visits: Visit[], today: string): VisitRo
     return {
       id: v.id,
       name: v.clientName,
-      search: [v.clientName, client?.address ?? "", client?.phone ?? "", digits(client?.phone), pass?.number ?? ""].join(" "),
+      search: [v.clientName, client?.address ?? "", client?.phone ?? "", digits(client?.phone)].join(" "),
       town: v.town,
       kind: v.kind,
       kindLabel: kindLabel(v),
@@ -96,9 +95,8 @@ export function rowsOf(data: AdminData, visits: Visit[], today: string): VisitRo
       ...base,
       workLabel: WORK_WORDS[states.work],
       ...(states.reason ? { reason: REASON_WORDS[states.reason] ?? states.reason } : {}),
-      moneyText: moneyText(base),
+      moneyText: moneyText({ ...base, noCard: Boolean(pass) && !pass?.cardLast4 }),
       dayPassed: states.dayPassed,
-      jobType: v.passId ? "pass" : "one-off",
       jobLabel: pass?.number ?? JOB_KIND_WORDS[job?.kind ?? "other"] ?? "Job",
       customerId: v.clientId,
       ...(pass ? { passNumber: pass.number, passId: pass.id } : {}),
@@ -121,10 +119,6 @@ export function filterFrom(column: string, param: string | undefined, options: {
   return values.length ? [{ column, values }] : []
 }
 export const KIND_OPTIONS = OFFICE_KINDS.map((value) => ({ value, label: KIND_LABEL[value] }))
-export const JOB_TYPE_OPTIONS = [
-  { value: "pass", label: "Season Pass" },
-  { value: "one-off", label: "One-off" },
-]
 
 /**
  * The rows "done and owed" counts, on Visits' header line and on Home's money line ("Owed on N done jobs"): a Done visit whose

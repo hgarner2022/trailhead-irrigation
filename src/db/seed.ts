@@ -168,6 +168,8 @@ async function seedPasses(db: Database, snapshot: AdminData, org: string) {
       .values({ id: pass.clientId, organizationId: org, firstName: client?.firstName ?? pass.firstName, lastName: client?.lastName ?? pass.lastName,
         // The card on file is the customer's: the snapshot pass's, on insert only (an edited customer keeps theirs).
         cardLast4: pass.cardLast4,
+        // A fake Stripe handle beside the last four, so a fixture card counts as a card; it never reaches Stripe (no Stripe customer).
+        stripePaymentMethodId: pass.cardLast4 ? `pm_fixture_${pass.clientId}` : undefined,
         cardExpires: pass.cardExpires,
         cardFailedAt: pass.cardFailedAt ? new Date(pass.cardFailedAt) : undefined,
       })
@@ -200,6 +202,8 @@ async function seedPasses(db: Database, snapshot: AdminData, org: string) {
         accessNote: pass.accessNote,
         status: pass.status,
         cardLast4: pass.cardLast4,
+        // A fake Stripe handle beside the last four, so a fixture card counts as a card; it never reaches Stripe (no Stripe customer).
+        stripePaymentMethodId: pass.cardLast4 ? `pm_fixture_${pass.clientId}` : undefined,
         cardExpires: pass.cardExpires,
         cardFailedAt: pass.cardFailedAt ? new Date(pass.cardFailedAt) : undefined,
       })

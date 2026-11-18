@@ -351,7 +351,8 @@ describe("keys, webhooks and consent", () => {
 describe("Needs attention", () => {
   it("takes a visit row to that visit in the Schedule", async () => {
     await expect(actions.attentionAction({ kind: "unplaced", visitId: "v1", message: "x", since: "2027-01-01T00:00:00Z" })).rejects.toThrow("redirect:/admin/visits?visit=v1")
-    await expect(actions.attentionAction({ kind: "new-pass", passId: "p1", message: "x", since: "2027-01-01T00:00:00Z" })).rejects.toThrow("redirect:/admin/passes?pass=p1")
+    await expect(actions.attentionAction({ kind: "new-pass", passId: "p1", message: "x", since: "2027-01-01T00:00:00Z" })).rejects.toThrow("redirect:/admin/visits")
+    await expect(actions.attentionAction({ kind: "new-pass", passId: "p1", jobId: "job_p1", message: "x", since: "2027-01-01T00:00:00Z" })).rejects.toThrow("redirect:/admin/visits?job=job_p1")
   })
 
   it("takes a job that is done and owed to its done visit, where the panel records the payment", async () => {

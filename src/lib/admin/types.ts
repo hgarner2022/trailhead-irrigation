@@ -254,6 +254,8 @@ export interface SoldJob {
   notes?: string
   passId?: string
   passNumber?: string
+  /** the day the job was sold, "2026-11-03"; absent in the fixtures */
+  soldOn?: string
   visitIds: string[]
   /** what was sold, oldest first; the lines are the truth for what the job costs */
   lines?: JobLine[]
@@ -509,7 +511,7 @@ export interface BusyBlock {
 export interface Attention {
   /** what Dismiss records with `kind`: a stored alert's key, or the pass, visit or task the row is worked out from */
   key?: string
-  kind: "new-pass" | "pending-pass" | "owed" | "overdue" | "charge-failed" | "jobs-failed" | "card-expiring" | "not-closed" | "pass-cancelled" | "scheduled" | "unplaced"
+  kind: "new-pass" | "pending-pass" | "owed" | "overdue" | "charge-failed" | "no-card" | "jobs-failed" | "card-expiring" | "not-closed" | "pass-cancelled" | "scheduled" | "unplaced"
   passId?: string
   /** the visit an unplaced alert is about; Home links to it on the Schedule. An owed row names the job's done visit, which opens its panel */
   visitId?: string

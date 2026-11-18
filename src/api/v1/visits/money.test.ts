@@ -86,7 +86,12 @@ describe("Done and the money", () => {
     expect(out).toMatchObject({ amount: 3200, paidBy: "venmo", paymentStatus: "paid" })
     expect((await db.select().from(s.job).where(eq(s.job.id, v.jobId)))[0]!.price).toBe(3200)
     await expect(callApi(as(), visitsRecordPayment, { id: v.id, method: "cash" })).rejects.toMatchObject({ code: "conflict" })
-    await expect(callApi(as(), visitsRecordPayment, { id: "p3-turn-on", method: "cash" })).rejects.toMatchObject({ code: "unprocessable" })
+    // A pass visit is paid here too, card or no card: money handed over is never refused for a card.
+    expect(await callApi(as(), visitsRecordPayment, { id: "p3-turn-on", method: "cash" })).toMatchObject({ paidBy: "cash", paymentStatus: "paid" })
+    // ...unless a card charge for it is still going through, which would be paid twice.
+    await db.insert(s.charge).values({ organizationId: ORG, jobId: "job_p7", customerId: (await db.select().from(s.visit).where(eq(s.visit.id, "p7-turn-on")))[0]!.customerId, visitId: "p7-turn-on", attempt: 1, amount: 145, method: "card_on_file", status: "pending" })
+    await db.update(s.visit).set({ status: "completed", completedOn: "2027-05-08" }).where(eq(s.visit.id, "p7-turn-on"))
+    await expect(callApi(as(), visitsRecordPayment, { id: "p7-turn-on", method: "cash" })).rejects.toMatchObject({ code: "conflict", message: "A card charge for this visit is still going through" })
   })
 
   it("reads paidBy and paymentStatus from the newest payment row, and a refund leaves nothing paid", async () => {
@@ -232,5 +237,12 @@ describe("Done with Send a bill", () => {
     await callApi(as(), visitsMarkClosed, { id: "p5-turn-on", paidBy: { method: "bill" } })
     expect((await callApi(as(readKey), invoicesList, { jobId: visit!.jobId })).data).toEqual([])
     expect((await db.select().from(s.queueItem).where(eq(s.queueItem.key, "p5-turn-on"))).map((q) => q.kind)).toEqual(["pass-charge"])
+  })
+
+  it("records money handed over for a pass visit with a card instead of charging it, when Done says it was paid another way", async () => {
+    await callApi(as(writeKey), visitsMove, { id: "p6-turn-on", personId: "person_truck-1", scheduledOn: "2027-05-13" })
+    await callApi(as(), visitsMarkClosed, { id: "p6-turn-on", paidBy: { method: "check", reference: "1042" } })
+    expect((await db.select().from(s.queueItem).where(eq(s.queueItem.key, "p6-turn-on"))).map((q) => q.kind)).toEqual([])
+    expect(await db.select().from(s.charge).where(eq(s.charge.visitId, "p6-turn-on"))).toMatchObject([{ method: "check", status: "succeeded" }])
   })
 })

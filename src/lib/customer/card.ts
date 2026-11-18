@@ -1,10 +1,11 @@
 /**
- * Whether a customer has a card to charge after each visit: one card per customer, kept on the customer row. A pass may have none:
- * the office sold it and the customer pays at each visit (check, Venmo or cash) or adds a card from a link later. The checkout's
- * `passes.activate` stores both the Stripe handle and the card's last four; the seeded fixtures carry only the last four, so
- * either says "a card".
+ * Whether a customer has a real card to charge after each visit: one card per customer, kept on the customer row, and real means
+ * Stripe holds a payment method for it (`stripePaymentMethodId`). A last four alone is not a card (a checkout that saved no
+ * method, an old import): nothing can be charged, so the visit is paid like a one-off's. A pass may have none: the office sold
+ * it and the customer pays at each visit (check, Venmo or cash) or adds a card from a link later. The fixtures carry a fake
+ * method id beside the last four.
  */
-export const customerHasCard = (customer: { stripePaymentMethodId?: string | null; cardLast4?: string | null }): boolean => Boolean(customer.stripePaymentMethodId || customer.cardLast4)
+export const customerHasCard = (customer: { stripePaymentMethodId?: string | null; cardLast4?: string | null }): boolean => Boolean(customer.stripePaymentMethodId)
 
 /** The card columns a saved card writes, on the customer and on every pass alias; a null card clears them (and, for a saved one, the failure mark). */
 export type CardColumns = { stripePaymentMethodId: string | null; cardBrand: string | null; cardLast4: string | null; cardExpires: string | null }

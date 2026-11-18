@@ -7,6 +7,7 @@ import { UndoToastProvider } from "@/components/blocks/UndoToast"
 import type { VisitActions } from "./visit-actions-types"
 import { VisitsScreen } from "./VisitsScreen"
 import { moneyText, visitRows, visitsContext } from "./visits-model"
+import { VISITS_TODAY, noCardVisitId, passVisitId, visitsData } from "./visits-fixture"
 
 const base = snapshot as AdminData
 const TODAY = "2026-11-12T19:56:30Z"
@@ -88,7 +89,7 @@ describe("visits-model", () => {
   it("lists the visits with the two pills, needs-a-day first, and finds one by street or phone", () => {
     const rows = visitRows(data, TODAY)
     expect(rows.map((r) => r.id)).toEqual(["b", "c", "a"])
-    expect(rows[1]).toMatchObject({ work: "done", money: "paid", moneyLabel: "Paid, check", jobType: "one-off" })
+    expect(rows[1]).toMatchObject({ work: "done", money: "paid", moneyLabel: "Paid, check" })
     expect(rows.find((r) => r.id === "a")!.search).toContain("12 Elm St")
     expect(rows.find((r) => r.id === "a")!.search).toContain("3035550111")
   })
@@ -155,7 +156,7 @@ describe("VisitsScreen", () => {
   it("shows the spec's columns and a row per visit, with New job in the header and no Passes button", () => {
     renderScreen(actions())
     const headers = screen.getAllByRole("columnheader").map((h) => h.textContent)
-    expect(headers.filter(Boolean)).toEqual(["Customer", "Town", "Service", "Day", "Time", "Who", "Status", "Money", "Job"])
+    expect(headers.filter(Boolean)).toEqual(["Customer", "Town", "Service", "Day", "Time", "Who", "Status", "Money"])
     expect(headers).not.toContain("Truck")
     expect(screen.getByRole("button", { name: "Dana Reed" })).toBeInTheDocument()
     expect(screen.getAllByRole("cell").some((c) => c.textContent === "Ryan Garner")).toBe(true)
@@ -364,5 +365,81 @@ describe("New job", () => {
     await userEvent.click(sheet.getByRole("button", { name: "Add job" }))
     expect(a.createVisit).toHaveBeenCalledWith(expect.objectContaining({ newCustomer: expect.objectContaining({ firstName: "Nora", lastName: "Vale", property: { address: "1 Main St", town: "Erie" } }) }))
     expect(await sheet.findByText("Truck 1 does not work on sundays")).toBeInTheDocument()
+  })
+})
+
+// A pass visit that is Done and Owed, with the customer's card and without: both must show how to take the money.
+describe("Done and Owed on a pass visit", () => {
+  const owedPass = (id: string): AdminData => ({
+    ...visitsData,
+    visits: visitsData.visits.map((v) => (v.id === id ? { ...v, status: "completed" as const, completedOn: "2026-11-10", scheduledOn: "2026-11-10", startAt: "2026-11-10T15:00:00Z", payments: [] } : v)),
+  })
+  const open = (id: string, d: AdminData) =>
+    render(
+      <UndoToastProvider>
+        <VisitsScreen data={d} today={VISITS_TODAY} actions={actions()} defaultVisitId={id} />
+      </UndoToastProvider>,
+    )
+
+  it("offers Record the payment when the customer has no card, and the row says there is no card", () => {
+    const d = owedPass(noCardVisitId)
+    open(noCardVisitId, d)
+    const panel = within(screen.getByRole("dialog"))
+    expect(panel.getByRole("heading", { name: "Record the payment" })).toBeInTheDocument()
+    expect(panel.getByRole("button", { name: "Record payment" })).toBeInTheDocument()
+    expect(visitRows(d, VISITS_TODAY).find((r) => r.id === noCardVisitId)!.moneyText).toMatch(/ owed · no card$/)
+  })
+
+  it("offers Record the payment when the customer has a card too, since a charge that never went through must not leave it stuck", () => {
+    open(passVisitId, owedPass(passVisitId))
+    expect(within(screen.getByRole("dialog")).getByRole("heading", { name: "Record the payment" })).toBeInTheDocument()
+  })
+
+  it("says it charges the card on Done and keeps Paid another way, which asks how", async () => {
+    // The fixture's pass visit, booked and not yet done, on a pass whose customer has a card.
+    const booked: AdminData = { ...visitsData, visits: visitsData.visits.map((v) => (v.id === passVisitId ? { ...v, status: "scheduled" as const, completedOn: undefined, chargedAt: undefined, payments: [] } : v)) }
+    open(passVisitId, booked)
+    const panel = within(screen.getByRole("dialog"))
+    expect(panel.getByText(/Charges the card ending \d{4} after this visit/)).toBeInTheDocument()
+    expect(panel.queryByRole("button", { name: "Mark done and record payment" })).toBeNull()
+    await userEvent.click(panel.getByRole("button", { name: "Paid another way" }))
+    expect(panel.getByRole("button", { name: "Mark done and record payment" })).toBeInTheDocument()
+  })
+
+  it("asks how it was paid on Done when the customer has no card", () => {
+    open(noCardVisitId, visitsData)
+    expect(within(screen.getByRole("dialog")).getByRole("button", { name: "Mark done and record payment" })).toBeInTheDocument()
+  })
+})
+
+describe("Visits filtered to a job (?job=)", () => {
+  it("shows only that job's visits, says which job in the header, and links back to every visit", () => {
+    const job = visitsData.visits.find((v) => v.id === noCardVisitId)!.jobId!
+    const mine = visitRows(visitsData, VISITS_TODAY).filter((r) => r.jobId === job)
+    render(
+      <UndoToastProvider>
+        <VisitsScreen data={visitsData} today={VISITS_TODAY} actions={actions()} jobId={job} />
+      </UndoToastProvider>,
+    )
+    expect(screen.getAllByRole("row")).toHaveLength(mine.length + 1)
+    expect(document.querySelector('[data-slot="page-context"]')).toHaveTextContent(`${mine[0]!.jobLabel}: ${mine.length} visit`)
+    expect(screen.getByRole("link", { name: "Show all visits" })).toHaveAttribute("href", "/admin/visits")
+  })
+
+  it("the grid has no Job column or filter; the panel names the job on one line under the pill and links to Visits filtered to it", () => {
+    const job = visitsData.visits.find((v) => v.id === noCardVisitId)!.jobId!
+    render(
+      <UndoToastProvider>
+        <VisitsScreen data={visitsData} today={VISITS_TODAY} actions={actions()} defaultVisitId={noCardVisitId} />
+      </UndoToastProvider>,
+    )
+    expect(screen.queryAllByRole("columnheader", { hidden: true }).map((h) => h.textContent)).not.toContain("Job")
+    expect(screen.queryByRole("button", { name: "Job", hidden: true })).toBeNull()
+    expect(screen.getByRole("searchbox", { hidden: true })).toHaveAttribute("placeholder", "Search by name or street")
+    const panel = within(screen.getByRole("dialog"))
+    const line = panel.getByText(/^Season Pass TH-.* · \d{4}$/)
+    expect(line.closest("a")).toHaveAttribute("href", expect.stringMatching(/^\/admin\/customers\?customer=/))
+    expect(panel.getByRole("link", { name: "Open job's visits" })).toHaveAttribute("href", `/admin/visits?job=${job}`)
+    expect(screen.queryAllByRole("link", { hidden: true }).some((l) => (l.getAttribute("href") ?? "").startsWith("/admin/passes"))).toBe(false)
   })
 })

@@ -17,6 +17,7 @@ export const ACTION_LABELS: Record<Attention["kind"], string> = {
   owed: "Paid by",
   overdue: "Remind",
   "charge-failed": "Send card link",
+  "no-card": "Send card link",
   "jobs-failed": "Retry",
   "card-expiring": "Send card link",
   "not-closed": "Mark done",

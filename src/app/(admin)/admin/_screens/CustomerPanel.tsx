@@ -1,5 +1,7 @@
 import { PANEL_ROW, PanelFacts, PanelHeading, PanelList, PanelRowEnd, PanelRowText } from "@/components/blocks/PanelParts"
+import Link from "next/link"
 import type { ReactNode } from "react"
+import { jobIdOfPass, visitsOfJob } from "@/lib/admin/links"
 import { JobPill } from "@/components/blocks/JobPill"
 import { MessageThread } from "@/components/blocks/MessageThread"
 import { OpenVisit } from "./VisitPanelHost"
@@ -23,12 +25,18 @@ import { MARKETING_WORDS, SCHEDULED_WORDS, cardOf, consentEntries, propertiesOf,
 const RECENT = 5
 const capital = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
 
-function Facts({ row, card, readOnly, actions }: { row: CustomerRow; card: ClientCard | undefined; readOnly: boolean; actions?: VisitActions }) {
+function Facts({ row, card, jobId, readOnly, actions }: { row: CustomerRow; card: ClientCard | undefined; jobId: string | undefined; readOnly: boolean; actions?: VisitActions }) {
   const facts: [string, ReactNode][] = [
     ...(row.address ? ([["Address", `${row.address}, ${row.town}`]] as [string, ReactNode][]) : ([["Town", row.town]] as [string, ReactNode][])),
     ...(row.email ? ([["Email", row.email]] as [string, ReactNode][]) : []),
     ...(row.phone ? ([["Phone", formatPhone(row.phone)]] as [string, ReactNode][]) : []),
-    ["Pass", row.pass === "none" ? "None" : <span key="pass" className="inline-flex items-center gap-2"><span className="tabular-nums">{row.season}</span><StatusPill status={row.pass} /></span>],
+    // One row: the job the customer's pass is, linking to its visits, with the pass's state beside it.
+    ["Job", row.pass === "none" ? "None" : (
+      <span key="job" className="inline-flex flex-wrap items-center gap-x-2 gap-y-1">
+        {jobId ? <Link href={visitsOfJob(jobId)} className="text-primary-dark underline underline-offset-2">{`Season Pass ${row.passNumber} · ${row.season}`}</Link> : <span>{`Season Pass ${row.passNumber} · ${row.season}`}</span>}
+        <StatusPill status={row.pass} />
+      </span>
+    )],
     ["Next", row.next],
     ["Scheduled", SCHEDULED_WORDS[row.nextState]],
     ["Marketing", MARKETING_WORDS[row.marketing]],
@@ -78,7 +86,7 @@ export function CustomerPanelBody({ row, client, data, today, readOnly = false, 
   const card = client ? cardOf(client, data.passes) : undefined
   return (
     <>
-      <Facts row={row} card={card} readOnly={readOnly} actions={actions} />
+      <Facts row={row} card={card} jobId={row.passId ? jobIdOfPass(data, row.passId) : undefined} readOnly={readOnly} actions={actions} />
       {property && <PropertyBlock key={property.id} propertyId={property.id} yard={property} readOnly={readOnly} actions={actions} />}
       <section aria-labelledby="customer-jobs">
         <PanelHeading id="customer-jobs">Visits</PanelHeading>

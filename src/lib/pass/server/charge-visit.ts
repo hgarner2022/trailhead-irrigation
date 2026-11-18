@@ -41,7 +41,14 @@ export async function chargeVisit(db: Database, stripe: Stripe, visitId: string,
   const [customer] = await db.select().from(s.customer).where(eq(s.customer.id, pass.customerId))
   if (!customer) throw new Error(`Customer ${pass.customerId} not found`)
   // Only a card Stripe can charge counts here: a customer with just a last 4 (a fixture, an old import) never reaches Stripe and never records a failure.
-  if (!customer.stripePaymentMethodId || !customer.stripeCustomerId) return "no-card"
+  if (!customer.stripePaymentMethodId || !customer.stripeCustomerId) {
+    // Never silent: Home gets a row with Send card link, and the visit stays Owed (its money reads "no card") until the money is recorded or a card is added.
+    await db
+      .insert(s.adminAlert)
+      .values({ organizationId: visit.organizationId, kind: "no-card", key: visit.id, passId: pass.id, message: `No card to charge for ${customer.firstName}'s ${kindName(visit.kind)}` })
+      .onConflictDoNothing()
+    return "no-card"
+  }
 
   const [last] = await db.select().from(s.charge).where(eq(s.charge.visitId, visit.id)).orderBy(desc(s.charge.attempt)).limit(1)
   if (last?.status === "succeeded") return "already-charged"
@@ -93,7 +100,7 @@ export async function chargeVisit(db: Database, stripe: Stripe, visitId: string,
       data: { ...baseData(opts.origin, customer), passNumber: pass.number, amount: visit.amount, visitName: kindName(visit.kind), updateUrl: link },
     })
   }
-  await queueStaffMessage(db, visit.organizationId, "admin-alert", `card-failed:${visit.id}:${attempt}`, { origin: opts.origin, title: `Card declined for ${customer.firstName}`, detail: `${customer.firstName}'s card was declined for ${dollars(visit.amount)} after the ${kindName(visit.kind)} on Season Pass ${pass.number}.`, path: "/admin/passes" })
+  await queueStaffMessage(db, visit.organizationId, "admin-alert", `card-failed:${visit.id}:${attempt}`, { origin: opts.origin, title: `Card declined for ${customer.firstName}`, detail: `${customer.firstName}'s card was declined for ${dollars(visit.amount)} after the ${kindName(visit.kind)} on Season Pass ${pass.number}.`, path: `/admin/visits?visit=${encodeURIComponent(visit.id)}` })
   await emitEvent(db, visit.organizationId, "charge.failed", { visitId: visit.id, passId: pass.id, amount: visit.amount, attempt, message: result.message })
   return "failed"
 }
