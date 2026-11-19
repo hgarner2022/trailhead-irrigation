@@ -4,6 +4,7 @@ import { z } from "zod"
 import * as s from "@/db/schema"
 import { randomUUID } from "node:crypto"
 import { readAppUrl } from "@/lib/env"
+import { refreshDelivery } from "@/lib/messaging/delivery-refresh"
 import { baseData, loadVisitFacts } from "@/lib/messaging/data"
 import { NOTE_MAX, queueMessage, queueNote } from "@/lib/messaging/queue"
 import { renewUrl } from "@/lib/messaging/tokens"
@@ -46,6 +47,18 @@ export const messagesList = defineHandler({
         sentAt: m.sentAt?.toISOString() ?? null, createdAt: m.createdAt.toISOString(), deliveryStatus: m.deliveryStatus, ...(canSeeContact(ctx) ? { to: m.to, deliveryError: m.deliveryError } : {}),
       })),
     }
+  },
+})
+
+const RefreshedOut = z.object({ id: Id, status: z.string().describe("Twilio's status for the text now: queued, sending, sent, delivered, undelivered or failed."), errorCode: z.string().nullable() })
+
+export const messagesRefreshDelivery = defineHandler({
+  name: "messages.refreshDelivery", method: "POST", path: "/messages/refresh-delivery", scope: "write",
+  summary: "Ask Twilio what became of the newest texts that have no final delivery report (none yet, or only queued, sending or sent) and store the answers, the same way a delivery report from Twilio is stored. A text that came back undelivered or failed raises its Home row. Answers each text checked.",
+  input: z.object({ limit: z.number().int().min(1).max(200).default(50).describe("How many of the newest texts to check.") }),
+  output: z.array(RefreshedOut),
+  async run(ctx, input) {
+    return refreshDelivery(ctx.db, { organizationId: ctx.organizationId, limit: input.limit, now: ctx.now })
   },
 })
 

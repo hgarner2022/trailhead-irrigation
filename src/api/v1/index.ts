@@ -11,7 +11,7 @@ import { linesAdd, linesUpdate, linesCancel } from "./lines/handlers"
 import { eventsList, eventsNote } from "./events/handlers"
 import { invoicesSend, invoicesList, invoicesGet, invoicesRemind, invoicesCancel, invoicesPayView } from "./invoices/handlers"
 import { mirrorUpsert } from "./mirror/handlers"
-import { messagesList, messagesSend } from "./messages/handlers"
+import { messagesList, messagesRefreshDelivery, messagesSend } from "./messages/handlers"
 import { organizationGet } from "./organization/handlers"
 import { passesList, passesGet, passesCreate, passesActivate, passesConsent, passesCancel, passesResendConfirmation, passesSendCardUpdateLink, passesStartCardUpdate, passesUpdatePreference, passesAddInspection, passesSkipVisit } from "./passes/handlers"
 import { passesSell } from "./passes/sell"
@@ -42,7 +42,7 @@ export const handlers: AnyHandler[] = [
   invoicesSend, invoicesList, invoicesGet, invoicesRemind, invoicesCancel, invoicesPayView,
   jobsCreate, jobsCancel, jobsList, jobsGet, visitsCancelSelf,
   linesAdd, linesUpdate, linesCancel,
-  messagesList, messagesSend,
+  messagesList, messagesRefreshDelivery, messagesSend,
   mirrorUpsert,
   organizationGet,
   passesList, passesGet, passesCreate, passesSell, passesActivate, passesConsent, passesCancel, passesResendConfirmation, passesSendCardUpdateLink, passesStartCardUpdate, passesUpdatePreference, passesAddInspection, passesSkipVisit,
