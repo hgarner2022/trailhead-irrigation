@@ -1,29 +1,31 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite"
-import { expect } from "storybook/test"
-import { StatusPill } from "./StatusPill"
 import { SummaryBand } from "./SummaryBand"
 
 const meta = {
   title: "Blocks/SummaryBand",
   component: SummaryBand,
   parameters: { layout: "padded" },
+  globals: { viewport: { value: "laptop", isRotated: false } },
+  decorators: [(Story) => <div className="bg-cream p-6"><Story /></div>],
   args: {
     items: [
-      { label: "When", value: "Wednesday, April 28 at 10:30 am" },
-      { label: "Who", value: "Ryan" },
-      { label: "Where", value: "412 Briggs Street, Erie" },
-      { label: "Money", value: <StatusPill status="owed" label="$145 unpaid" /> },
+      { label: "When", value: "Tue, Nov 24", sub: "Any time" },
+      { label: "Who", value: "Ryan Garner" },
+      { label: "Where", value: "480 Briggs St", sub: "Erie" },
+      { label: "Total", value: "$145", sub: "Invoice sent, due Dec 2" },
     ],
   },
-  decorators: [(Story) => <div className="max-w-3xl bg-stone p-4"><Story /></div>],
 } satisfies Meta<typeof SummaryBand>
 export default meta
 type Story = StoryObj<typeof meta>
 
-/** The key facts of a record in one white card: labels quiet, values in weight, a badge for money. */
-export const Default: Story = {
-  play: async ({ canvas }) => {
-    await expect(canvas.getByText("Wednesday, April 28 at 10:30 am")).toBeInTheDocument()
-  },
+/** Four facts across, label small and grey over the value, hairlines between. */
+export const Default: Story = {}
+
+/** Past due is the one red cell. */
+export const PastDue: Story = {
+  args: { items: [{ label: "When", value: "Tue, Nov 3", sub: "Done at 11:20 am" }, { label: "Who", value: "Ryan Garner" }, { label: "Where", value: "51 Shadow Ln", sub: "Erie" }, { label: "Total", value: "$145", sub: "Past due since Nov 17", tone: "alert" }] },
 }
+
+/** On a phone the cells are two by two. */
 export const Phone: Story = { globals: { viewport: { value: "phone", isRotated: false } } }

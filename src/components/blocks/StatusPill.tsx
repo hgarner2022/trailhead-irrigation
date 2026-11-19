@@ -3,11 +3,11 @@ import { Badge } from "@/components/ui/badge"
 import type { PassStatus } from "@/lib/admin/types"
 import { JOB_WORDS, REASON_WORDS, WORK_WORDS, type Job, type JobState, type MoneyState, type WorkState } from "@/lib/admin/jobs"
 
-// The only status chip in the app, a badge system of tint, dot and word (Mailchimp-style, in our tokens: docs/plans/2026-11-19-customer-side-polish-research.md, section 1e), (docs/DESIGN.md, "The recipe"), coloured by what the status
+// The only status chip in the app (docs/DESIGN.md, "The recipe"), coloured by what the status
 // means for the business (docs/DESIGN.md, Copy): good outcomes green, a
 // booked visit orange, past due red, and the quiet states grey. The label is
 // the plain word in sentence case. It sits under a panel's subtitle or at a row's right, never in a grid cell.
-// `StatusPills` is a visit's two pills (it absorbed JobPill). Pure render, server component.
+// A pill is a tint, a dot in the ink colour and the word (the Mailchimp badge, docs/plans/2026-11-19-admin-page-layout-research.md). `StatusPills` is a visit's two pills (it absorbed JobPill). Pure render, server component.
 //
 // The coloured pills sit on a 10% tint with an ink dark enough for 12px text
 // (4.5:1 or better). Measured over white and over cream: positive-deep
@@ -69,16 +69,18 @@ export interface StatusPillProps {
   /** Another word for the same status, in the status's colour: the customer's pass page says "Reserved" and "Booked" where the admin says "Not scheduled" and "Scheduled". */
   label?: string
   className?: string
+  /** `lg` (14px) is for the badge beside a page's title; every other place is `sm` */
+  size?: "sm" | "lg"
   /** which of a visit's two pills this is */
   "data-pill"?: "work" | "money" | "waiting"
 }
 
-export function StatusPill({ status, label, className, ...rest }: StatusPillProps) {
+export function StatusPill({ status, label, size = "sm", className, ...rest }: StatusPillProps) {
   const word = label ?? statusLabel(status)
   // "not-yet" has no word: nothing is due yet, so nothing is drawn
   if (!word) return null
   return (
-    <Badge {...rest} data-slot="status-pill" data-status={status} variant="outline" className={cn("gap-1.5 whitespace-nowrap", TONES[status], className)}>
+    <Badge {...rest} data-slot="status-pill" data-status={status} data-size={size} variant="outline" className={cn("gap-1.5 whitespace-nowrap rounded-full", size === "lg" && "px-3 py-1 text-sm", TONES[status], className)}>
       <span aria-hidden data-slot="status-dot" className="size-1.5 shrink-0 rounded-full bg-current" />
       {word}
     </Badge>

@@ -13,8 +13,19 @@ import { FooterSlotContext } from "./record-slot"
 
 export type RecordFact = [label: string, value: ReactNode]
 
-/** A label and its value per line; the label column is 112px, the value is medium weight and free to wrap. */
-export function RecordFacts({ rows, className }: { rows: readonly RecordFact[]; className?: string }) {
+/** A label and its value per line; the label column is 112px, the label grey and the value medium weight and free to wrap. `divided` puts a hairline between the rows (the aside cards and the invoice panel). */
+export function RecordFacts({ rows, className, divided }: { rows: readonly RecordFact[]; className?: string; divided?: boolean }) {
+  if (divided)
+    return (
+      <dl data-slot="record-facts" data-divided="true" className={cn("divide-y divide-border text-sm", className)}>
+        {rows.map(([term, value]) => (
+          <div key={term} className="grid grid-cols-[112px_minmax(0,1fr)] gap-x-4 py-2.5 first:pt-0 last:pb-0">
+            <dt className="text-muted-foreground">{term}</dt>
+            <dd className="min-w-0 break-words font-medium">{value}</dd>
+          </div>
+        ))}
+      </dl>
+    )
   return (
     <dl data-slot="record-facts" className={cn("mt-2 grid grid-cols-[112px_minmax(0,1fr)] gap-x-4 gap-y-2 text-sm", className)}>
       {rows.map(([term, value]) => (

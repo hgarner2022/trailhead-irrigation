@@ -160,15 +160,15 @@ export function DataGrid<T extends RowData>({
         data-scrollable={scrollable}
         data-more={more}
         className={cn(
-          "group relative overflow-hidden rounded-lg border border-border bg-background outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
+          "group relative overflow-hidden rounded-lg border border-border bg-background shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
           "after:pointer-events-none after:absolute after:inset-y-0 after:right-0 after:z-30 after:w-10 after:bg-linear-to-r after:from-transparent after:to-background after:opacity-0 after:transition-opacity after:content-[''] data-[more=true]:after:opacity-100",
           "[&>[data-slot=table-container]]:max-h-[70vh] [&>[data-slot=table-container]]:overflow-auto",
         )}
       >
         <Table>
-          <TableHeader className="sticky top-0 z-20 bg-background">
+          <TableHeader className="sticky top-0 z-20 bg-stone">
             {table.getHeaderGroups().map((group) => (
-              <TableRow key={group.id} className="bg-background hover:bg-background">
+              <TableRow key={group.id} className="bg-stone hover:bg-stone">
                 {group.headers.map((header) => {
                   const column = header.column
                   const sorted = column.getIsSorted()
