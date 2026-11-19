@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import type { Message } from "@/lib/admin/types"
 import { SchedulePicker, type Pick } from "./SchedulePicker"
 import { JobPage } from "./JobPage"
-import { reminderBody } from "./customer-confirm"
+import { reminderBody } from "./confirm-copy"
 import { CollectBlock, factsOfJob } from "./JobPageParts"
 import { jobPageOf, paidBilling, paymentNote, refundNote, refundedBilling, type JobPageData, type JobState } from "./job-fixtures"
 

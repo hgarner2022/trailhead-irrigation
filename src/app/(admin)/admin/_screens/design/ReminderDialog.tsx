@@ -5,14 +5,14 @@ import Link from "next/link"
 import { ConfirmDialog } from "@/components/blocks/ConfirmDialog"
 import { FormRow } from "@/components/blocks/FormRow"
 import { Textarea } from "@/components/ui/textarea"
-import { REMINDER_LINE_MAX, reminderBody, reminderCopy, type Contact } from "./customer-confirm"
+import { REMINDER_LINE_MAX, reminderBody, reminderCopy, type Reach } from "./confirm-copy"
 
 // "Send a payment reminder" (Hannah, Nov 19 2026): the dialog names the channel from the customer's contact preference, shows exactly what goes
 // out as a preview the office cannot edit, and allows one optional "Add a line" (140 characters) after it. The wording itself is edited in
 // Settings, the quiet link under the preview. There is no "without notifying" caret: the reminder is the notification. Pure props.
 
 export interface ReminderDialogProps {
-  who: Contact
+  who: Reach
   invoice: { number: string; amount: string; service: string; dueOn: string; pastDue?: boolean }
   onClose: () => void
   onSend: (o: { line: string }) => void
@@ -20,7 +20,7 @@ export interface ReminderDialogProps {
 
 export function ReminderDialog({ who, invoice, onClose, onSend }: ReminderDialogProps) {
   const [line, setLine] = useState("")
-  const copy = reminderCopy(who, { number: invoice.number, amount: invoice.amount })
+  const copy = reminderCopy(who, { number: invoice.number })
   const body = reminderBody(who, { amount: invoice.amount, service: invoice.service, dueOn: invoice.dueOn, pastDue: invoice.pastDue, line })
   return (
     <ConfirmDialog open onOpenChange={(o) => !o && onClose()} title={copy.title} message={copy.message} confirmLabel={copy.confirmLabel} size="md" slot="reminder-dialog" onConfirm={async () => (onSend({ line: line.trim() }), { ok: true })}>

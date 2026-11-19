@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite"
 import { AdminShell } from "@/components/blocks/AdminShell"
 import { CustomerPage, type CustomerDialog } from "./CustomerPage"
+import { expectTablesFitTheirCards } from "./fit-the-card"
 import { STATE_NOTES, customerPageOf, type CustomerState } from "./customer-fixtures"
 
 // The customer page on the job page's frame, at 1280 (Laptop) and 375 (Phone): a pass holder with an open repair and an unpaid invoice, a
@@ -23,7 +24,7 @@ type Story = StoryObj<typeof meta>
 
 const laptop = { viewport: { value: "laptop", isRotated: false } }
 const phone = { viewport: { value: "phone", isRotated: false } }
-const story = (state: CustomerState, globals: typeof laptop, initialDialog?: CustomerDialog): Story => ({ args: { customer: customerPageOf(state), initialDialog }, globals, parameters: { docs: { description: { story: STATE_NOTES[state] } } } })
+const story = (state: CustomerState, globals: typeof laptop, initialDialog?: CustomerDialog): Story => ({ args: { customer: customerPageOf(state), initialDialog }, globals, parameters: { docs: { description: { story: STATE_NOTES[state] } } }, ...(globals === laptop && !initialDialog ? { play: ({ canvasElement }) => expectTablesFitTheirCards(canvasElement) } : {}) })
 
 export const PassHolderUnpaid: Story = story("pass-holder", laptop)
 export const PassHolderUnpaidPhone: Story = story("pass-holder", phone)

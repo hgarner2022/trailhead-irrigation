@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite"
 import { AdminShell } from "@/components/blocks/AdminShell"
 import { InvoicePage } from "./InvoicePanel"
 import { InvoicesPage } from "./InvoicesPage"
+import { expectTablesFitTheirCards } from "./fit-the-card"
 import { INVOICE_NOTES, INVOICE_ROWS, invoicePageOf, type InvoiceFixture } from "./invoice-fixtures"
 
 // Invoices, the primary nav item, and the invoice as a page of its own, each at 1280 (Laptop) and 375 (Phone): the list with its four tiles
@@ -26,9 +27,9 @@ export const ListPhone: Story = { globals: phone, render: () => shell(<InvoicesP
 /** Ryan sees no invoices yet and is told how one gets made. */
 export const ListEmpty: Story = { globals: laptop, render: () => shell(<InvoicesPage rows={[]} />) }
 /** The filters hide every row: "No invoices match." with Clear filters. */
-export const ListNoMatch: Story = { globals: laptop, render: () => shell(<InvoicesPage rows={INVOICE_ROWS} initialStatus="canceled" initialQuery="Holloway" />) }
+export const ListNoMatch: Story = { globals: laptop, render: () => shell(<InvoicesPage rows={INVOICE_ROWS} initialFilters={[{ column: "status", values: ["canceled"] }, { column: "who", values: ["Hannah Garner"] }]} />) }
 
-const page = (which: InvoiceFixture, globals: typeof laptop, initialDialog?: "remind" | "collect" | "cancel"): Story => ({ globals, parameters: { docs: { description: { story: INVOICE_NOTES[which] } } }, render: () => shell(<InvoicePage invoice={invoicePageOf(which)} initialDialog={initialDialog} />) })
+const page = (which: InvoiceFixture, globals: typeof laptop, initialDialog?: "remind" | "collect" | "cancel"): Story => ({ globals, parameters: { docs: { description: { story: INVOICE_NOTES[which] } } }, ...(globals === laptop && !initialDialog ? { play: ({ canvasElement }: { canvasElement: HTMLElement }) => expectTablesFitTheirCards(canvasElement) } : {}), render: () => shell(<InvoicePage invoice={invoicePageOf(which)} initialDialog={initialDialog} />) })
 
 export const InvoiceSent: Story = page("sent", laptop)
 export const InvoiceSentPhone: Story = page("sent", phone)
