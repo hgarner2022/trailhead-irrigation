@@ -25,12 +25,19 @@ describe("customer page", () => {
     expect(screen.getAllByRole("link", { name: "(970) 555-0123" })[0]).toHaveAttribute("href", "tel:+19705550123")
   })
 
+  it("puts Charge beside Send a text when something is unpaid", () => {
+    render(<CustomerPage customer={customerPageOf("pass-holder")} />)
+    const bar = document.querySelector("[data-slot=record-footer]") as HTMLElement
+    expect(within(bar).getByRole("button", { name: "Charge $145" })).toBeInTheDocument()
+    expect(within(bar).getByRole("button", { name: "Send a text" })).toBeInTheDocument()
+  })
+
   it("links a renewal back to last season and last season forward to the renewal", () => {
     render(<CustomerPage customer={customerPageOf("two-seasons")} />)
     expect(screen.getByText(/Renewed from/)).toBeInTheDocument()
     expect(screen.getAllByRole("link", { name: "Season Pass 2026, TH-2026-0003" }).length).toBeGreaterThan(1)
     expect(screen.getByRole("link", { name: "TH-2027-0011" })).toBeInTheDocument()
-    expect(screen.getByText("Active, renewed")).toBeInTheDocument()
+    expect(screen.getByText("Season Pass 2027, renewed")).toBeInTheDocument()
   })
 
   it("sells a pass to a one-off customer and reserves the next season for a lapsed one", () => {

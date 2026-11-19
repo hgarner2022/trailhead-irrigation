@@ -113,7 +113,7 @@ export function customerPageOf(state: CustomerState): CustomerPageData {
     case "pass-holder":
       return base({
         pills: [{ status: "active", label: "Season Pass 2027" }, { status: "owed", label: "Unpaid $145" }],
-        band: { next: { value: "Thu, Nov 19", sub: "2:30 pm, Ryan" }, unpaid: { value: "$145", sub: "Invoice sent, due Dec 2" }, pass: { value: "2027", sub: "Active" }, card: { value: "Visa 4242", sub: "Expires 08/28" } },
+        band: { next: { value: "Thu, Nov 19", sub: "2:30 pm, Ryan" }, unpaid: { value: "$145", sub: "Invoice sent, due Dec 2" }, pass: { value: "Season Pass 2027, active", sub: "TH-2027-0008" }, card: { value: "Visa 4242", sub: "Expires 08/28" } },
         unpaid: "$145",
         jobs: [REPAIR, PASS_JOB(2027, "TH-2027-0008", "May 3, 2027", "scheduled", "Charged after each visit"), REPAIR_OLD, FALL],
         invoices: [INV_OPEN, INV_PAID],
@@ -133,7 +133,7 @@ export function customerPageOf(state: CustomerState): CustomerPageData {
         address: ["212 Main St", "Lafayette, CO"],
         subtitle: "Customer since Mar 2026 · 212 Main St, Lafayette",
         pills: [{ status: "active", label: "Season Pass 2027" }],
-        band: { next: { value: "Mon, May 3", sub: "Any time, Ryan" }, unpaid: { value: "$0", sub: "Nothing unpaid" }, pass: { value: "2027", sub: "Active, renewed" }, card: { value: "Visa 1881", sub: "Expires 02/29" } },
+        band: { next: { value: "Mon, May 3", sub: "Any time, Ryan" }, unpaid: { value: "$0", sub: "Nothing unpaid" }, pass: { value: "Season Pass 2027, renewed", sub: "TH-2027-0011" }, card: { value: "Visa 1881", sub: "Expires 02/29" } },
         cardLast4: "1881",
         jobs: [PASS_JOB(2027, "TH-2027-0011", "May 3, 2027", "scheduled", "Charged after each visit"), PASS_JOB(2026, "TH-2026-0003", "Oct 14, 2026", "done", "Paid, card")],
         invoices: [],
@@ -170,7 +170,7 @@ export function customerPageOf(state: CustomerState): CustomerPageData {
         address: ["9 Pine Ct", "Louisville, CO"],
         subtitle: "Customer since Mar 2026 · 9 Pine Ct, Louisville",
         pills: [{ status: "lapsed", label: "Season Pass 2026 ended" }],
-        band: { next: { value: "None", sub: "Nothing scheduled" }, unpaid: { value: "$0", sub: "Nothing unpaid" }, pass: { value: "2026", sub: "Expired, not renewed" }, card: { value: "Visa 0042", sub: "Expires 09/27" } },
+        band: { next: { value: "None", sub: "Nothing scheduled" }, unpaid: { value: "$0", sub: "Nothing unpaid" }, pass: { value: "Season Pass 2026, expired", sub: "Not renewed" }, card: { value: "Visa 0042", sub: "Expires 09/27" } },
         cardLast4: "0042",
         jobs: [PASS_JOB(2026, "TH-2026-0007", "Oct 20, 2026", "done", "Paid, card")],
         invoices: [],
@@ -199,7 +199,7 @@ export function customerPageOf(state: CustomerState): CustomerPageData {
         address: ["58 Harper Dr", "Broomfield, CO"],
         subtitle: "Customer since Apr 2026 · 58 Harper Dr, Broomfield",
         pills: [{ status: "active", label: "Season Pass 2027" }, { status: "waiting", label: "Card expires Dec 2026" }],
-        band: { next: { value: "Mon, May 3", sub: "Any time, Ryan" }, unpaid: { value: "$0", sub: "Nothing unpaid" }, pass: { value: "2027", sub: "Active" }, card: { value: "Visa 3310", sub: "Expires 12/26, next month" } },
+        band: { next: { value: "Mon, May 3", sub: "Any time, Ryan" }, unpaid: { value: "$0", sub: "Nothing unpaid" }, pass: { value: "Season Pass 2027, active", sub: "TH-2027-0014" }, card: { value: "Visa 3310", sub: "Expires 12/26, next month" } },
         cardLast4: "3310",
         jobs: [PASS_JOB(2027, "TH-2027-0014", "May 3, 2027", "scheduled", "Charged after each visit")],
         invoices: [],
@@ -211,8 +211,8 @@ export function customerPageOf(state: CustomerState): CustomerPageData {
 }
 
 export const STATE_NOTES: Record<CustomerState, string> = {
-  "pass-holder": "Ryan sees a Season Pass holder with a repair on Thursday and an unpaid invoice. The one primary action is New job; Unpaid $145 is a badge beside the name.",
-  "two-seasons": "Ryan sees the 2027 pass renewed from 2026: the Season Pass card links back to TH-2026-0003, the folded earlier season links forward to TH-2027-0011, and the band reads 2027, Active, renewed.",
+  "pass-holder": "Ryan sees a Season Pass holder with a repair on Thursday and an unpaid invoice. The one primary action is New job; Unpaid $145 is a badge beside the name and Charge $145 sits beside Send a text.",
+  "two-seasons": "Ryan sees the 2027 pass renewed from 2026: the Season Pass card links back to TH-2026-0003, the folded earlier season links forward to TH-2027-0011, and the band reads Season Pass 2027, renewed.",
   "one-off": "Ryan sees a customer who has only had a repair. The aside offers Get a Season Pass.",
   "reserve-next": "Ryan sees a customer whose 2026 pass ended and was not renewed. The aside offers Reserve next season.",
   "nothing-yet": "Ryan sees a customer with no work yet. Every empty card invites the first job.",
