@@ -6,6 +6,7 @@ import { dateConfirmEmail, dateMovedEmail, dateSetEmail, dayBeforeEmail } from "
 import { invoiceEmail, invoiceReminderEmail } from "./invoice"
 import type { Overrides } from "./editable"
 import { purchaseConfirmationEmail } from "./purchase-confirmation"
+import { plainEmail, type PlainData } from "./plain"
 import type { RenderedEmail } from "./types"
 
 export type { RenderedEmail }
@@ -47,5 +48,7 @@ function current(data: Record<string, unknown>): Record<string, unknown> {
 /** Null for a kind with no template or a row with no stored arguments (an older plain-text row): the sender then uses the row's own subject and body. `templates` is what the office saved in Settings › Messages. */
 export function renderEmail(kind: string, data: Record<string, unknown> | null, templates?: Overrides): RenderedEmail | null {
   const template = (EMAIL_TEMPLATES as Record<string, Template | undefined>)[kind]
+  // A text with no email twin (on my way, the office's free text) that went by email while texts were paused carries its own words.
+  if (!template && data && typeof data.plainBody === "string") return plainEmail(data as unknown as PlainData)
   return template && data ? template(current(data) as never, { templates }) : null
 }

@@ -11,6 +11,7 @@ import { CustomerPanelHost } from "./CustomerPanelHost"
 import type { JobActions } from "./job-actions-types"
 import { JobPanel } from "./JobPanel"
 import { recordLabel } from "./record-label"
+import { NumberBlockedProvider, TextsPausedProvider } from "./texts-paused"
 import { useRecordInAddress, type OpenRecord } from "./use-record"
 import type { VisitActions } from "./visit-actions-types"
 import { VisitPanel } from "./VisitPanel"
@@ -75,9 +76,13 @@ export function RecordHost({ data, today, readOnly, canCollect, visitActions, jo
     ) : null
   return (
     <HostContext.Provider value={host}>
-      <div data-record-host="" className="contents">
-        <SidePanelLayout panel={panel}>{children}</SidePanelLayout>
-      </div>
+      <TextsPausedProvider value={Boolean(data.textsPaused)}>
+        <NumberBlockedProvider value={Boolean(data.numberBlocked)}>
+          <div data-record-host="" className="contents">
+            <SidePanelLayout panel={panel}>{children}</SidePanelLayout>
+          </div>
+        </NumberBlockedProvider>
+      </TextsPausedProvider>
     </HostContext.Provider>
   )
 }

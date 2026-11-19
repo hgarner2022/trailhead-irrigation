@@ -56,6 +56,13 @@ describe("eventWords: one sentence per kind", () => {
     expect(eventWords({ kind: "visit.cancelled", detail: { name: "Spring turn-on" }, who: "customer" }).text).toBe("the customer: Spring turn-on canceled from the account")
     expect(words("visit.skipped", { name: "Mid-season inspection" })).toBe("Mid-season inspection skipped")
   })
+  it("visit.photo_added and visit.photo_removed read as one photo or a counted run", () => {
+    expect(words("visit.photo_added", { name: "Repair" })).toBe("added a photo")
+    expect(words("visit.photo_added", { name: "Repair", count: 2 })).toBe("added 2 photos")
+    expect(words("visit.photo_removed", {})).toBe("removed a photo")
+    expect(eventWords({ kind: "visit.photo_added", detail: {}, who: "ryan@example.com" }, "Ryan Garner").text).toBe("Ryan: added a photo")
+    expect(eventWords({ kind: "visit.photo_added", detail: {}, who: "customer" }).actor).toBe("the customer")
+  })
   it("visit.edited reads the flat detail", () => {
     expect(words("visit.edited", { name: "Spring turn-on", durationMinutes: { from: 60, to: 90 }, price: { from: 145, to: 160 } })).toBe("Spring turn-on edited: length 60 to 90 minutes, price $145 to $160")
     expect(words("visit.edited", { name: "Spring turn-on", unscheduled: { from: "2027-04-22" }, accessNote: true })).toBe("Spring turn-on edited: day taken back, access note changed")

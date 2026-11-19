@@ -122,6 +122,7 @@ export async function expirePendingPasses(db: Database, now: Date, minutes = PEN
   // One unit: a failure at any step leaves every row where it was, never a job with its visits and lines already gone.
   await atomically(db, (d) => [
     d.delete(s.event).where(and(inArray(s.event.organizationId, orgs), inArray(s.event.jobId, jobIds))),
+    d.delete(s.photo).where(and(inArray(s.photo.organizationId, orgs), inArray(s.photo.jobId, jobIds))),
     d.delete(s.lineItem).where(inArray(s.lineItem.jobId, jobIds)),
     d.delete(s.visit).where(inArray(s.visit.jobId, jobIds)),
     d.delete(s.adminAlert).where(and(inArray(s.adminAlert.organizationId, orgs), inArray(s.adminAlert.jobId, jobIds))),
