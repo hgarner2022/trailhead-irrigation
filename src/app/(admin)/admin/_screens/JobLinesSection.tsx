@@ -22,6 +22,16 @@ import { JobLines } from "./VisitLines"
 const money = (n: number) => `$${n.toLocaleString("en-US")}`
 const FREE = "free"
 
+/** What a canceled job's canceled lines were worth, whole dollars: shown struck through where the total would be, so "Quote later" stays the word for lines nobody has priced. */
+export const canceledAmount = (lines: readonly Pick<JobLine, "quantity" | "unitPrice" | "cancelledAt">[]): number => lines.filter((l) => l.cancelledAt).reduce((sum, l) => sum + l.quantity * l.unitPrice, 0)
+
+/** The Total of a job: its figure, else the struck-through amount of its canceled lines, else Quote later (nothing priced). */
+export function TotalWords({ total, lines }: { total: number; lines: readonly Pick<JobLine, "quantity" | "unitPrice" | "cancelledAt">[] }) {
+  if (total > 0) return <>{money(total)}</>
+  const was = canceledAmount(lines)
+  return was > 0 ? <del data-slot="total-canceled" className="text-muted-foreground">{money(was)}</del> : <>Quote later</>
+}
+
 /** "2 × $38": the line's quantity and price, or Quote later when nothing has priced it. */
 export const lineDetail = (line: Pick<JobLine, "quantity" | "unitPrice">): string => (line.unitPrice > 0 ? `${line.quantity} × ${money(line.unitPrice)}` : "Quote later")
 
@@ -171,7 +181,7 @@ export function JobLinesSection({ jobId, lines, total, tax = 0, data, editable, 
       )}
       <p className="mt-2 flex justify-between text-sm font-semibold" data-slot="job-total">
         <span>Total</span>
-        <span className="tabular-nums">{total > 0 ? money(total) : "Quote later"}</span>
+        <span className="tabular-nums"><TotalWords total={total} lines={lines} /></span>
       </p>
       {editable && !adding && !addInFooter && (
         <Button type="button" variant="outline" className="mt-3 min-h-11" onClick={() => setAdding(true)}>

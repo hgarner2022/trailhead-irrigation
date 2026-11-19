@@ -21,4 +21,16 @@ describe("JobLinesSection", () => {
     expect(screen.queryByText("Tax")).toBeNull()
     expect(screen.getByText("Total")).toBeInTheDocument()
   })
+
+  it("shows a canceled job's canceled amount struck through, and Quote later only for lines nobody priced", () => {
+    const gone = [{ ...lines[0]!, cancelledAt: "2026-11-18T10:00:00Z" }]
+    const { unmount } = render(<JobLinesSection jobId="j1" lines={gone} total={0} data={{}} editable={false} />)
+    const total = screen.getByText("Total").closest("p")!
+    expect(total).toHaveTextContent("Total$145")
+    expect(total.querySelector("del")).toHaveTextContent("$145")
+    expect(total).not.toHaveTextContent("Quote later")
+    unmount()
+    render(<JobLinesSection jobId="j1" lines={[{ ...lines[0]!, unitPrice: 0 }]} total={0} data={{}} editable={false} />)
+    expect(screen.getByText("Total").closest("p")).toHaveTextContent("Quote later")
+  })
 })
