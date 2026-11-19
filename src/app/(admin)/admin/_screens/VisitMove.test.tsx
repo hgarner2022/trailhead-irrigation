@@ -85,6 +85,15 @@ describe("the Move dialog", () => {
     expect(await screen.findByRole("menuitem", { name: "Move without texting" })).toHaveAttribute("aria-disabled", "true")
   })
 
+  it("is greyed out once a time is chosen, with 'A chosen time is always told.' (the API refuses a silent chosen time)", async () => {
+    const dialog = await open(visit(), actions())
+    expect(dialog.queryByText("A chosen time is always told.")).toBeNull()
+    await userEvent.selectOptions(dialog.getByLabelText("Time"), "09:00")
+    expect(dialog.getByText("A chosen time is always told.")).toBeInTheDocument()
+    await caret(dialog)
+    expect(await screen.findByRole("menuitem", { name: "Move without texting" })).toHaveAttribute("aria-disabled", "true")
+  })
+
   it("is greyed out for a visit with a booked time, with the reason in the dialog; the booked time is offered back", async () => {
     const a = actions()
     const dialog = await open(visit({ timeBooked: true, startTime: "09:30", startAt: "2026-11-24T16:30:00Z" }), a)

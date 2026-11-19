@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest"
+import { eq } from "drizzle-orm"
 import * as s from "@/db/schema"
 import type { TestDb } from "@/db/test-db"
 import { callApi } from "../../core/call"
@@ -31,6 +32,17 @@ describe("messages.list", () => {
     expect(first.data).toHaveLength(2)
     expect((await callApi(ctxFor(db, readKey), messagesList, { limit: 2, cursor: first.next_cursor! })).data).toHaveLength(1)
     await expect(callApi(ctxFor(db, readKey), messagesList, { limit: 500 })).rejects.toMatchObject({ code: "invalid" })
+  })
+  it("names the job an invoice text is about, from its invoice (the text is queued on the job, not a visit)", async () => {
+    const [job] = await db.select().from(s.job).where(eq(s.job.customerId, "c100"))
+    const [inv] = await db.insert(s.invoice).values({ organizationId: ORG, jobId: job!.id, customerId: "c100", number: "INV-2027-9100", amount: 145, total: 145, sentOn: "2027-05-07", dueOn: "2027-05-21", lines: [] }).returning()
+    await db.insert(s.messageLog).values([
+      { organizationId: ORG, customerId: "c100", kind: "invoice", key: `invoice-${inv!.id}`, channel: "sms", to: "+13035550142", body: "Your invoice", status: "sent" },
+      { organizationId: ORG, customerId: "c100", kind: "invoice-reminder", key: `invoice-${inv!.id}-2027-05-10`, channel: "sms", to: "+13035550142", body: "A reminder", status: "sent" },
+    ])
+    const write = await callApi(ctxFor(db, writeKey), messagesList, { customerId: "c100" })
+    expect(write.data.filter((m) => m.kind === "invoice" || m.kind === "invoice-reminder").map((m) => m.jobId)).toEqual([job!.id, job!.id])
+    expect(write.data.find((m) => m.kind === "date-set")!.jobId).toBeNull()
   })
 })
 

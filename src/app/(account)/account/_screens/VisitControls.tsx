@@ -53,7 +53,7 @@ export function VisitControls(props: VisitControlsProps) {
       </div>
       {visit.reschedule === "text" && (
         <div className="space-y-2">
-          <p className="text-base text-muted-foreground">Days for this work are set with you.</p>
+          <p className="text-base text-muted-foreground">To pick another day, text Ryan.</p>
           <TextRyan textHref={textHref} why={false} />
         </div>
       )}

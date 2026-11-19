@@ -436,6 +436,8 @@ export interface MessageTemplate {
 
 export type MessageKind =
   | "purchase-confirmation"
+  | "booking-confirmation"
+  | "visit-cancelled"
   | "date-set"
   | "date-moved"
   | "day-before"
@@ -463,6 +465,8 @@ export interface Message {
   id: string
   clientId: string
   passId?: string
+  /** the job an invoice message is about (an invoice text is queued on the job, not a visit) */
+  jobId?: string
   /** the visit the message was about, when it was about one */
   visitId?: string
   channel: "email" | "sms"

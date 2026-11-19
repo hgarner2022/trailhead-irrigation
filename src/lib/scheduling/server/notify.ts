@@ -17,6 +17,8 @@ export interface DateMessageOptions {
   note?: string
   asked?: boolean
   told?: boolean
+  /** the day did not change, only the time: the text says "still Mon, Nov 23, now 9 to 11 am" */
+  sameDay?: boolean
 }
 
 export async function queueDateMessage(db: Database, visit: { id: string; organizationId: string; customerId: string; kind: string }, kind: "date-set" | "date-moved", day: string, opts: DateMessageOptions = {}): Promise<boolean> {
@@ -25,6 +27,6 @@ export async function queueDateMessage(db: Database, visit: { id: string; organi
   const origin = readAppUrl()
   const facts = await loadVisitFacts(db, visit.id, origin, day, opts.told ? { told: true } : undefined)
   if (!facts) return false
-  const visitFacts = { ...facts, ...(opts.note ? { note: opts.note } : {}), ...(opts.asked ? { asked: true } : {}) }
+  const visitFacts = { ...facts, ...(opts.note ? { note: opts.note } : {}), ...(opts.asked ? { asked: true } : {}), ...(opts.sameDay ? { sameDay: true } : {}) }
   return queueMessage(db, { organizationId: visit.organizationId, customerId: customer.id, visitId: visit.id, kind, key: opts.key ?? `${visit.id}-${day}`, data: { ...baseData(origin, customer), visit: visitFacts } })
 }

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite"
-import { expect, screen, within } from "storybook/test"
+import { expect, screen, userEvent, within } from "storybook/test"
 import type { Visit } from "@/lib/admin/types"
 import { MoveDialog } from "./VisitMove"
 
@@ -46,6 +46,15 @@ export const NothingChanged: Story = {
 /** A time was promised: the customer is always texted, so "Move without texting" is greyed under the caret. */
 export const BookedTime: Story = {
   args: { visit: visit({ timeBooked: true, startTime: "09:30", startAt: "2026-11-20T16:30:00Z" }) },
+}
+
+/** A time chosen in the dialog is a promise the customer must hear: "Move without texting" is greyed and the line says why. */
+export const ChosenTime: Story = {
+  play: async () => {
+    const dialog = await screen.findByRole("dialog")
+    await userEvent.selectOptions(within(dialog).getByLabelText("Time"), "09:00")
+    await expect(within(dialog).getByText("A chosen time is always told.")).toBeInTheDocument()
+  },
 }
 
 /** A property that must be home: the text asks them to reply YES or pick another day, and the visit reads Waiting on customer. */

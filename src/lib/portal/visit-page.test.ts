@@ -32,6 +32,11 @@ describe("visitPageOf", () => {
     expect(page(passJob, "v1", { ...andrea, phone: null, email: null }).dayLine).toBe("Wednesday, April 28. Call Ryan for your window.")
   })
 
+  it("a repair (days set with Ryan): the line says cancel online, never change, so it agrees with the buttons", () => {
+    const job = { ...passJob, visits: passJob.visits.map((v) => (v.id === "v1" ? { ...v, reschedule: "text" as const, cancel: "yes" as const } : v)) }
+    expect(page(job, "v1").changeLine).toBe("You can cancel this online until Monday, April 26, 11:59 pm.")
+  })
+
   it("inside 24 hours: no change line, the buttons say text", () => {
     expect(page(passJobInsideCutoff, "v1")).toMatchObject({ reschedule: "text", cancel: "text", changeLine: null })
   })

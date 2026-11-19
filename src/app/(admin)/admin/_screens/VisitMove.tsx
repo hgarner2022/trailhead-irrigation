@@ -56,6 +56,8 @@ export function MoveDialog({ visit, today, actions, open, onOpenChange, target, 
   const unchanged = placed && day === current && time === startTime && (!target?.personId || target.personId === visit.personId)
   // the customer can no longer change a day online from the day before it: the old day, or the new one, is inside that window
   const locked = placed && (withinCutoffOn(current, today) || withinCutoffOn(day, today))
+  // a time Ryan picks (one that differs from the visit's own) is a promise: the API refuses it with no text, so the quiet move waits
+  const chosen = time !== "" && time !== (visit.startTime ?? "")
   const asks = placed && Boolean(visit.property?.mustBeHome)
 
   const move = async (variant?: string) => {
@@ -86,7 +88,7 @@ export function MoveDialog({ visit, today, actions, open, onOpenChange, target, 
                 menuLabel="More ways to move"
                 disabled={pending || !day || unchanged}
                 onClick={() => confirm("text")}
-                menu={[{ label: "Move without texting", disabled: booked || note.trim() !== "", onSelect: () => confirm("quiet") }]}
+                menu={[{ label: "Move without texting", disabled: booked || chosen || note.trim() !== "", onSelect: () => confirm("quiet") }]}
               />
             )
           : undefined
@@ -114,6 +116,7 @@ export function MoveDialog({ visit, today, actions, open, onOpenChange, target, 
         </FormRow>
       )}
       {booked && placed && <p data-slot="move-note" className="text-sm text-muted-foreground">{`${first} was given a time, so the customer is always texted when it moves.`}</p>}
+      {chosen && placed && !booked && <p data-slot="move-chosen" className="text-sm text-muted-foreground">A chosen time is always told.</p>}
       {asks && <p data-slot="move-asks" className="text-sm text-muted-foreground">{`${first} needs to be home, so the text asks them to reply YES or pick another day. The visit reads Waiting on customer until they answer.`}</p>}
       {locked && (
         <p role="status" data-slot="move-lock" className="rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-sm text-foreground">

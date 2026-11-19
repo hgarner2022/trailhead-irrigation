@@ -83,7 +83,7 @@ export function VisitPage({ model: m, rescheduleSlot, cancelSlot, calendarSlot }
           {m.reschedule !== "yes" && m.cancel === "yes" && (
             <div className="space-y-3">
               <div>{cancelSlot}</div>
-              <p className="text-base text-muted-foreground">Days for this work are set with you.</p>
+              <p className="text-base text-muted-foreground">To pick another day, text Ryan.</p>
               <TextRyan textHref={m.textHref} why={false} />
             </div>
           )}
