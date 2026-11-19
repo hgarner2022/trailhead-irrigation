@@ -7,7 +7,7 @@ import { PageHeader } from "@/components/blocks/PageHeader"
 import type { AdminData } from "@/lib/admin/types"
 import type { JobActions } from "./job-actions-types"
 import { jobColumns, jobCard } from "./jobs-columns"
-import { BILLS_OUT, KIND_OPTIONS, MONEY_OPTIONS, STAGE_OPTIONS, billsChip, billsOut, jobRows, jobsContext, seasonOptions, type JobRow } from "./jobs-model"
+import { BILLS_OUT, MONEY_OPTIONS, STAGE_OPTIONS, billsChip, billsOut, jobRows, jobsContext, seasonOptions, serviceOptions, type JobRow } from "./jobs-model"
 import { NewJobButton } from "./NewJob"
 import type { VisitActions } from "./visit-actions-types"
 import { RecordHost, useOpenRecord } from "./RecordHost"
@@ -41,16 +41,16 @@ export interface JobsScreenProps {
   defaultFilters?: { column: string; values: string[] }[]
 }
 
-function Grid({ rows, defaultFilters }: { rows: JobRow[]; defaultFilters?: JobsScreenProps["defaultFilters"] }) {
+function Grid({ rows, services, defaultFilters }: { rows: JobRow[]; services: AdminData["services"]; defaultFilters?: JobsScreenProps["defaultFilters"] }) {
   const host = useOpenRecord()
   const filters = useMemo(
     () => [
       { column: "stage", label: "Status", options: STAGE_OPTIONS },
       { column: "money", label: "Money", options: MONEY_OPTIONS },
-      { column: "kind", label: "Job", options: KIND_OPTIONS },
+      { column: "kind", label: "Job", options: serviceOptions(services, rows) },
       { column: "season", label: "Season", options: seasonOptions(rows) },
     ],
-    [rows],
+    [rows, services],
   )
   return (
     <DataGrid
@@ -100,7 +100,7 @@ export function JobsScreen({ data, today, defaultJobId, defaultVisitId, readOnly
             </>
           }
         />
-        <Grid key={gridKey} rows={rows} defaultFilters={applied} />
+        <Grid key={gridKey} rows={rows} services={data.services} defaultFilters={applied} />
       </RecordHost>
     </div>
   )
