@@ -105,6 +105,8 @@ export interface VisitActions {
   cancel: (visitId: string, reason?: string) => Promise<Outcome>
   /** `properties.update`: the yard's nine facts, from the customer panel's Property block */
   updateProperty: (propertyId: string, changes: YardChanges) => Promise<Outcome>
+  /** `messages.refreshDelivery`: ask Twilio what became of the newest texts, from the Messages block's Check delivery button; answers how many were checked */
+  checkDelivery?: () => Promise<Outcome<number>>
   sendText: (customerId: string, visitId: string | undefined, text: string) => Promise<Outcome>
   /** `messages.send` kind on-the-way: "Ryan is on the way to 412 Ash St", for a visit that is today, once per visit per day */
   sendOnTheWay: (visitId: string) => Promise<Outcome>

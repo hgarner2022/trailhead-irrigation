@@ -3,6 +3,7 @@ import { SectionHeading } from "@/components/blocks/SectionHeading"
 import { StatusPill, statusLabel } from "@/components/blocks/StatusPill"
 import { RecordLink } from "./RecordHost"
 import { jobIdOfPass, jobUrl } from "@/lib/admin/links"
+import { CheckDeliveryButton } from "@/components/blocks/CheckDeliveryButton"
 import { MessageThread } from "@/components/blocks/MessageThread"
 import { CustomerJobsSection } from "./CustomerJobs"
 import { jobRows } from "./jobs-model"
@@ -142,7 +143,7 @@ export function CustomerPanel({ open, onOpenChange, row, client, data, today, re
         <ConsentHistory client={client} />
       </section>
       <section aria-labelledby="customer-messages">
-        <SectionHeading id="customer-messages">Messages</SectionHeading>
+        <SectionHeading id="customer-messages" action={!readOnly ? <CheckDeliveryButton onCheck={actions?.checkDelivery} /> : undefined}>Messages</SectionHeading>
         <MessageThread messages={data.messages.filter((m) => m.clientId === row.id)} newestFirst className="mt-3" />
       </section>
     </RecordPanel>

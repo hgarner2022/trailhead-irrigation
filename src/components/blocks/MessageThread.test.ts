@@ -16,4 +16,14 @@ describe("the Messages block labels", () => {
   it("reads a customer's cancel text as Visit canceled", () => {
     expect(messageMeta({ id: "m", clientId: "c", channel: "sms", kind: "visit-cancelled", body: "x", at: "2026-11-10T19:00:00Z", status: "sent" })).toMatch(/^Visit canceled · text · /)
   })
+  it("reads a text as Sent until Twilio reports it, then Delivered or Not delivered with the reason", () => {
+    const text = { id: "m", clientId: "c", channel: "sms" as const, kind: "date-set" as const, body: "x", at: "2026-11-10T19:00:00Z", status: "sent" as const }
+    expect(messageMeta(text)).toMatch(/ · Sent$/)
+    expect(messageMeta({ ...text, deliveryStatus: "sending" })).toMatch(/ · Sent$/)
+    expect(messageMeta({ ...text, deliveryStatus: "delivered" })).toMatch(/ · Delivered$/)
+    expect(messageMeta({ ...text, deliveryStatus: "undelivered", deliveryError: "30007" })).toMatch(/ · Not delivered: Filtered by the carrier$/)
+  })
+  it("never puts a delivery word on an email", () => {
+    expect(messageMeta({ id: "m", clientId: "c", channel: "email", kind: "receipt", body: "x", at: "2026-11-10T19:00:00Z", status: "sent", deliveryStatus: "delivered" })).toMatch(/ · Sent$/)
+  })
 })

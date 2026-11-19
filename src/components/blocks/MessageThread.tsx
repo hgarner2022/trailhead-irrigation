@@ -1,5 +1,6 @@
 import type { Message, MessageKind } from "@/lib/admin/types"
 import { TIME_ZONE, shortDate } from "@/lib/admin/format"
+import { deliveryLine, deliveryWords } from "@/lib/messaging/delivery"
 import { cn } from "@/lib/utils"
 import { EmptyState } from "./EmptyState"
 import { MessageSquare } from "lucide-react"
@@ -48,8 +49,16 @@ const TROUBLE: Message["status"][] = ["failed", "bounced"]
 
 /** "Reminder · text · May 2 · Delivered". */
 export function messageMeta(message: Message): string {
-  return `${KIND_NAMES[message.kind]} · ${message.channel === "sms" ? "text" : "email"} · ${shortDate(message.at, TIME_ZONE)} · ${STATUS_WORDS[message.status]}`
+  return `${KIND_NAMES[message.kind]} · ${message.channel === "sms" ? "text" : "email"} · ${shortDate(message.at, TIME_ZONE)} · ${statusWords(message)}`
 }
+
+/** "Sent" until Twilio reports a text, then "Delivered", or "Not delivered: Filtered by the carrier". */
+function statusWords(message: Message): string {
+  if (message.channel === "sms" && message.status === "sent") return deliveryLine(message.deliveryStatus, message.deliveryError)
+  return STATUS_WORDS[message.status]
+}
+
+const isTrouble = (message: Message): boolean => TROUBLE.includes(message.status) || (message.channel === "sms" && message.status === "sent" && deliveryWords(message.deliveryStatus, message.deliveryError).trouble)
 
 const byTime = (a: Message, b: Message) => a.at.localeCompare(b.at)
 
@@ -61,7 +70,7 @@ export function MessageThread({ messages, newestFirst = false, className }: Mess
   return (
     <ol data-slot="message-thread" className={cn("flex flex-col gap-3", className)}>
       {ordered.map((message) => {
-        const trouble = TROUBLE.includes(message.status)
+        const trouble = isTrouble(message)
         return (
           <li key={message.id} data-status={message.status} className="flex max-w-[85%] flex-col items-end gap-1 self-end">
             <p className="rounded-lg bg-navy px-3 py-2 text-sm text-white">{message.body}</p>

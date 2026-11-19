@@ -57,6 +57,16 @@ describe("NeedsAttention", () => {
     expect(screen.getByRole("button", { name: /^Retry: Jobber jobs for pass TH-2027-0007/ })).toBeInTheDocument()
   })
 
+  it("opens the visit of a text that was not delivered, or the customer when it had none", () => {
+    const withVisit: Attention = { kind: "text-undelivered", key: "v1:c100:m1", visitId: "v1", message: "Text not delivered: Hannah, date set. Filtered by the carrier.", since: "2026-11-10T15:04:00Z" }
+    const without: Attention = { kind: "text-undelivered", key: "-:c100:m2", customerId: "c100", message: "Text not delivered: Hannah, receipt. Unknown number.", since: "2026-11-10T15:05:00Z" }
+    render(<NeedsAttention items={[withVisit, without]} now={now} />)
+    expect(Array.from(document.querySelectorAll('[data-slot="attention-action"]')).map((b) => b.textContent)).toEqual(["Open visit", "Open customer"])
+    expect(screen.getAllByRole("link")[0]!.getAttribute("href")).toBe("/admin/schedule?visit=v1")
+    expect(screen.getAllByRole("link")[1]!.getAttribute("href")).toBe("/admin/customers?customer=c100")
+    expect(rows()[0]!.dataset.kind).toBe("text-undelivered")
+  })
+
   it("names a job that is done and unpaid, opens its visit and offers Collect", () => {
     const owed: Attention = { kind: "owed", key: "job-1", jobId: "job-1", visitId: "v1", message: "Andrea's repair is done, $145 unpaid", since: "2026-11-10T15:04:00Z" }
     render(<NeedsAttention items={[owed]} now={now} />)
