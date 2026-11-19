@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { BookingSummary, type SummaryPart } from "@/components/blocks/BookingSummary"
 import { FlowShell } from "@/components/blocks/FlowShell"
 import { ServicePicker } from "@/components/blocks/ServicePicker"
@@ -41,11 +41,25 @@ export interface BookingFlowProps {
   pass?: Pass
   places?: PlaceProvider
   onDone?: () => void
+  /** told on every step change with where the flow is; the clickable flow story reads it for its strip and texts */
+  onStep?: (info: BookingProgress) => void
+}
+
+export interface BookingProgress {
+  step: BookingStep
+  steps: BookingStep[]
+  quote: boolean
+  service: ServiceEntry | null
+  address: string
+  town: string | null
+  firstName: string
+  email: string
+  pick: DayTimePick | undefined
 }
 
 const PASS_VISITS = [{ key: "turn-on", heading: "Your spring turn-on" }, { key: "blowout", heading: "Your fall blowout" }] as const
 
-export function BookingFlow({ entries = SERVICES, today = "2027-04-14", initial = {}, offersFor = (_k, m, t) => fixtureDayTimes(m, t ?? "Erie"), cardFailure, pass, places = fixturePlaces, onDone }: BookingFlowProps) {
+export function BookingFlow({ entries = SERVICES, today = "2027-04-14", initial = {}, offersFor = (_k, m, t) => fixtureDayTimes(m, t ?? "Erie"), cardFailure, pass, places = fixturePlaces, onDone, onStep }: BookingFlowProps) {
   const [fields, dispatch] = useCheckoutState({ today, ...initial.fields })
   const [quote, setQuote] = useState(initial.quote ?? false)
   const list = quote ? QUOTE_SERVICES : entries
@@ -73,6 +87,10 @@ export function BookingFlow({ entries = SERVICES, today = "2027-04-14", initial 
   const valid = canContinue(step, answers)
   const at = steps.indexOf(step)
   const done = step === "done"
+  useEffect(() => {
+    onStep?.({ step, steps, quote, service, address: fields.place?.line1 ?? fields.address, town, firstName: fields.firstName, email: fields.email, pick: heldPicks.visit })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, serviceKey, quote])
 
   const next = () => {
     if (!valid) return setAttempted(true)
