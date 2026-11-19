@@ -62,7 +62,9 @@ async function updateOnePerson(ctx: Ctx, p: Person): Promise<void> {
 /** people.create takes no nulls: a field the person does not have is left out. */
 const defined = <T extends object>(o: T) => Object.fromEntries(Object.entries(o).filter(([, v]) => v !== null && v !== undefined)) as T
 
-const SERVICE_FIELDS = ["name", "description", "price", "includedZones", "extraZonePrice", "slotMinutes", "taxable", "active"] as const
+const SERVICE_FIELDS = ["name", "description", "price", "includedZones", "extraZonePrice", "slotMinutes", "taxable", "active", "bookable", "quoteOnly", "bookableFrom", "bookableTo"] as const
+/** The fields a service can have cleared: the screen holds null for them and the API takes null. */
+const CLEARABLE = new Set<string>(["description", "bookableFrom", "bookableTo"])
 
 /**
  * The catalogue's edits, one services.update per changed service with only the fields that changed. The rows to
@@ -78,9 +80,9 @@ async function saveServices(ctx: Ctx, after: ServiceItem[]): Promise<void> {
     const changes: Record<string, unknown> = {}
     for (const field of SERVICE_FIELDS) {
       const was = row[field]
-      const now = field === "description" ? (edited.description ?? null) : edited[field]
+      const now = CLEARABLE.has(field) ? (edited[field] ?? null) : edited[field]
       if (now === undefined || now === null) {
-        if (field === "description" && was !== null) changes.description = null
+        if (CLEARABLE.has(field) && (was ?? null) !== null) changes[field] = null
       } else if (was !== now) changes[field] = now
     }
     if (Object.keys(changes).length) await callApi(ctx, servicesUpdate, { id: row.id, ...changes })

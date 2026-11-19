@@ -11,6 +11,7 @@
  */
 import type { CapacityKind, OrganizationSettings, ServiceItem, SettingsChange, Weekday } from "@/lib/admin/types"
 import { WEEKDAYS } from "@/lib/admin/calendar"
+import { isMonthDay } from "@/lib/services-window"
 
 /** One API key as the list shows it; the secret is shown once at creation and never kept. */
 export interface ApiKey {
@@ -120,10 +121,15 @@ export function revokeKey(state: SettingsState, keyId: string, actor: Actor): Se
 }
 
 /** The service fields the Services tab edits. */
-export type ServiceField = "name" | "description" | "price" | "includedZones" | "extraZonePrice" | "slotMinutes" | "taxable" | "active"
-const SERVICE_WORDS: Record<ServiceField, string> = {
+export type ServiceField = "name" | "description" | "price" | "includedZones" | "extraZonePrice" | "slotMinutes" | "taxable" | "active" | "online" | "bookableFrom" | "bookableTo"
+export const SERVICE_WORDS: Record<ServiceField, string> = {
   name: "name", description: "what's included", price: "price", includedZones: "included zones", extraZonePrice: "per extra zone", slotMinutes: "minutes", taxable: "taxable", active: "active",
+  online: "online", bookableFrom: "bookable from", bookableTo: "bookable to",
 }
+/** How a service is offered online: a day to book, a quote, or off. The two flags behind it are `bookable` and `quoteOnly`. */
+export type Online = "book" | "quote" | "off"
+export const ONLINE_WORDS: Record<Online, string> = { book: "Book a day", quote: "We quote", off: "Off" }
+export const onlineOf = (s: ServiceItem): Online => (s.quoteOnly ? "quote" : s.bookable === false ? "off" : "book")
 /** A service with a per-zone rule carries a price for each zone past the included ones; one without has no zone cells. */
 export const hasZoneRule = (s: ServiceItem) => s.extraZonePrice !== undefined
 /** A quote-only service with no price stays without one. */
@@ -137,11 +143,13 @@ const wholeIn = (v: unknown, min: number, max: number): v is number => typeof v 
  * (prices live on the service) and any number outside the API's range is refused as it would be at Save. The zone
  * fields change only on a service with a per-zone rule, the price only when the service has one to change.
  */
-export function setServiceField(state: SettingsState, key: string, field: ServiceField, raw: string | number | boolean, actor: Actor): SettingsState {
+export function setServiceField(state: SettingsState, key: string, field: ServiceField, raw: string | number | boolean | null, actor: Actor): SettingsState {
   const service = state.services.find((s) => s.key === key)
   if (!service) return state
   const next: ServiceItem = { ...service }
   const show = (s: ServiceItem): string => {
+    if (field === "online") return ONLINE_WORDS[onlineOf(s)]
+    if (field === "bookableFrom" || field === "bookableTo") return s[field] || "All year"
     const v = field === "active" ? (s.active ?? true) : field === "taxable" ? (s.taxable ?? false) : s[field]
     if (v === undefined || v === null || v === "") return "None"
     if (typeof v === "boolean") return v ? "Yes" : "No"
@@ -156,11 +164,19 @@ export function setServiceField(state: SettingsState, key: string, field: Servic
       if (text.length > 1000 || text.includes("$")) return state
       next.description = text || null
     }
+  } else if (field === "online") {
+    if (raw !== "book" && raw !== "quote" && raw !== "off") return state
+    next.bookable = raw === "book"
+    next.quoteOnly = raw === "quote"
+  } else if (field === "bookableFrom" || field === "bookableTo") {
+    const v = raw === null || String(raw).trim() === "" ? null : String(raw).trim()
+    if (v !== null && !isMonthDay(v)) return state
+    next[field] = v
   } else if (field === "taxable" || field === "active") {
     if (typeof raw !== "boolean") return state
     next[field] = raw
   } else {
-    const n = typeof raw === "string" ? (raw.trim() === "" ? NaN : Number(raw)) : raw
+    const n = typeof raw === "string" ? (raw.trim() === "" ? NaN : Number(raw)) : raw === null ? NaN : raw
     if (field === "price" ? !priceIsFixed(service) || !wholeIn(n, 0, 100_000) : false) return state
     if (field === "slotMinutes" ? !wholeIn(n, 15, 480) || n % 15 !== 0 : false) return state
     if (field === "includedZones" ? !hasZoneRule(service) || !wholeIn(n, 1, 16) : false) return state

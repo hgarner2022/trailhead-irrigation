@@ -10,6 +10,7 @@ import { runSchedule } from "@/lib/scheduling/server/run"
 import { loadBlocks } from "@/lib/jobber-feed"
 import { openSlots, spreadDays } from "@/lib/pass/server/area-days"
 import { windowText } from "@/emails/format"
+import { inBookableWindow, windowWords } from "@/lib/services-window"
 import { listPeople, resolvePersonId, Role, routePeople } from "../people/handlers"
 import { PersonIdAlias } from "../visits/handlers"
 import { visitOut, visitsQuery, withJobCredit } from "../visits/queries"
@@ -135,6 +136,9 @@ export const scheduleSlots = defineHandler({
     const areaOf = (town: string) => areas.find((a) => a.towns.includes(town as never))?.id ?? town
     const first = addDays(input.from ?? today(ctx), input.from ? 0 : 1)
     const last = addDays(first, input.days - 1)
+    // A service carries the span of the year its visits may fall in (Settings > Services); a stretch with no day in it has nothing to offer.
+    if (!Array.from({ length: input.days }, (_, i) => addDays(first, i)).some((d) => inBookableWindow(service, d)))
+      throw new ApiError("unprocessable", `${service.name} days are ${windowWords(service)}; none of ${first} to ${last} fall in it`)
     const booked = await visitsQuery(ctx.db).where(and(eq(s.visit.organizationId, ctx.organizationId), gte(s.visit.scheduledOn, first), lte(s.visit.scheduledOn, last), notInArray(s.visit.status, ["cancelled", "skipped"])))
     const kind = capacityKind(service.kind)
     // Busy time from each person's Jobber calendar feed shrinks their day (all-day blocks close it).
@@ -142,6 +146,7 @@ export const scheduleSlots = defineHandler({
     const data: { day: string; personId: string; personName: string; remaining: number; slotMinutes: number }[] = []
     for (let i = 0; i < input.days; i++) {
       const day = addDays(first, i)
+      if (!inBookableWindow(service, day)) continue
       for (const person of people) {
         if (!person.workingDays.includes(weekdayOf(day))) continue
         const mine = booked.filter((b) => b.visit.personId === person.id && b.visit.scheduledOn === day)

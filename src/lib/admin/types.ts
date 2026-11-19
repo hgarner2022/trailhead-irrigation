@@ -565,6 +565,9 @@ export interface ServiceItem {
   extraZonePrice?: number
   slotMinutes: number
   quoteOnly: boolean
+  /** the span of the year a visit's day may fall in, "MM-DD" each, repeating yearly; both empty is all year (`src/lib/services-window.ts`) */
+  bookableFrom?: string | null
+  bookableTo?: string | null
 }
 
 export interface AdminData {

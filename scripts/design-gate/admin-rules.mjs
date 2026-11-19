@@ -28,7 +28,6 @@ export const ALLOW = {
   "_screens/NewJob.tsx": { overlays: "Nov 18 2026, step 2: New job becomes SidePanel variant sheet", "no-table-label": "Nov 18 2026, step 2: New job's fields become FormRows" },
   "_screens/settings-tabs/ApiKeys.tsx": { overlays: "Nov 18 2026, step 6: Settings shell", "no-table-label": "Nov 18 2026, step 6: Settings shell (FormRow and the list recipe)" },
   "_screens/settings-tabs/Billing.tsx": { "no-table-label": "Nov 18 2026, step 6: Settings shell (FormRow)" },
-  "_screens/settings-tabs/Services.tsx": { "no-table-label": "Nov 18 2026, step 6: Services becomes a list with a sheet" },
   "_screens/settings-tabs/Messages.tsx": { overlays: "Nov 18 2026, step 6: Settings shell" },
   "_screens/settings-tabs/fields.tsx": { overlays: "Nov 18 2026, step 6: Settings shell (ConfirmButton becomes ConfirmDialog)" },
   // forms: New job's fields become FormRows with the sheet recipe (step 2); Settings fields with the shell (step 6)

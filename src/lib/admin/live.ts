@@ -49,8 +49,8 @@ async function all<T>(ctx: Ctx, handler: Handler<never, never>, input: Record<st
   return rows
 }
 
-const serviceItem = (r: { id: string; taxable: boolean; active: boolean; bookable: boolean; key: string; name: string; description: string | null; kind: string; minZones: number | null; maxZones: number | null; includedZones: number | null; price: number | null; extraZonePrice: number | null; slotMinutes: number; quoteOnly: boolean }): ServiceItem => ({
-  id: r.id, taxable: r.taxable, active: r.active, bookable: r.bookable, key: r.key, name: r.name, description: r.description, kind: r.kind, slotMinutes: r.slotMinutes, quoteOnly: r.quoteOnly,
+const serviceItem = (r: { id: string; taxable: boolean; active: boolean; bookable: boolean; key: string; name: string; description: string | null; kind: string; minZones: number | null; maxZones: number | null; includedZones: number | null; price: number | null; extraZonePrice: number | null; slotMinutes: number; quoteOnly: boolean; bookableFrom: string | null; bookableTo: string | null }): ServiceItem => ({
+  id: r.id, taxable: r.taxable, active: r.active, bookable: r.bookable, key: r.key, name: r.name, description: r.description, kind: r.kind, slotMinutes: r.slotMinutes, quoteOnly: r.quoteOnly, bookableFrom: r.bookableFrom, bookableTo: r.bookableTo,
   ...(r.minZones !== null ? { minZones: r.minZones } : {}), ...(r.maxZones !== null ? { maxZones: r.maxZones } : {}), ...(r.includedZones !== null ? { includedZones: r.includedZones } : {}),
   ...(r.price !== null ? { price: r.price } : {}), ...(r.extraZonePrice !== null ? { extraZonePrice: r.extraZonePrice } : {}),
 })
