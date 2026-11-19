@@ -475,6 +475,10 @@ export interface Message {
   body: string
   at: string
   status: "queued" | "sent" | "delivered" | "failed" | "bounced"
+  /** Twilio's last delivery report for a text; absent until one arrives (the words are `deliveryWords`) */
+  deliveryStatus?: string
+  /** Twilio's error code on an undelivered or failed report */
+  deliveryError?: string
 }
 
 /** How invoices are due and taxed (Settings › Billing). With the switch on, sales tax is part of every job's total, its visits' prices and its invoice. */

@@ -18,6 +18,8 @@ export const MESSAGE_KINDS = ["purchase-confirmation", "date-set", "date-moved",
 const MessageOut = z.object({
   id: Id, customerId: Id, visitId: Id.nullable(), jobId: Id.nullable().optional().describe("The job an invoice message is about (an invoice text is queued on the job, not a visit); null for any other message."), channel: Channel, kind: z.string(), subject: z.string().nullable(), body: z.string(),
   status: z.enum(["queued", "sent", "delivered", "failed", "bounced", "skipped"]), sentAt: Iso.nullable(), createdAt: Iso,
+  deliveryStatus: z.string().nullable().optional().describe("Twilio's last delivery report for a text (queued, sending, sent, delivered, undelivered, failed); null until one arrives and for an email."),
+  deliveryError: z.string().nullable().optional().describe("Twilio's error code when the report is undelivered or failed. Only for callers with the write scope."),
   to: z.string().optional().describe("The address or number it went to. Only for callers with the write scope."),
 })
 
@@ -41,7 +43,7 @@ export const messagesList = defineHandler({
       next_cursor: result.next_cursor,
       data: result.data.map((m) => ({
         id: m.id, customerId: m.customerId, visitId: m.visitId, jobId: jobOf(m), channel: m.channel, kind: m.kind, subject: m.subject, body: m.body, status: m.status,
-        sentAt: m.sentAt?.toISOString() ?? null, createdAt: m.createdAt.toISOString(), ...(canSeeContact(ctx) ? { to: m.to } : {}),
+        sentAt: m.sentAt?.toISOString() ?? null, createdAt: m.createdAt.toISOString(), deliveryStatus: m.deliveryStatus, ...(canSeeContact(ctx) ? { to: m.to, deliveryError: m.deliveryError } : {}),
       })),
     }
   },
