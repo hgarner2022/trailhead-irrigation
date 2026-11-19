@@ -83,7 +83,10 @@ describe("photos.add", () => {
   })
 
   it("lets a tech add to a visit they had, and refuses a visit another person had", async () => {
-    expect((await add(tech, visitA)).addedBy).toBe(tech.email)
+    // a tech is never shown an email, not even their own: `addedBy` reads `staff`, and `canRemove` says it is theirs to take back
+    expect(await add(tech, visitA)).toMatchObject({ addedBy: "staff", canRemove: true })
+    const [row] = await db.select().from(s.photo).where(eq(s.photo.addedBy, tech.email))
+    expect(row).toBeDefined()
     await expect(add(tech, visitB)).rejects.toMatchObject({ code: "forbidden" })
     await expect(add(otherTech, visitA)).rejects.toMatchObject({ code: "forbidden" })
   })
@@ -177,10 +180,11 @@ describe("photos.list and photos.listForJob", () => {
     stub()
     await db.delete(s.photo).where(eq(s.photo.visitId, visitA))
     await db.update(s.visit).set({ status: "scheduled" }).where(eq(s.visit.id, visitA))
-    hiddenStaff = (await add(owner, visitA)).id
-    staffPhoto = (await add(owner, visitA)).id
+    // each a minute after the last, so "oldest first" is never a tie
+    hiddenStaff = (await add(owner, visitA, put(visitA), "2027-04-20T15:01:00Z")).id
+    staffPhoto = (await add(owner, visitA, put(visitA), "2027-04-20T15:02:00Z")).id
     await callApi(ctxFor(db, owner), photosUpdate, { id: staffPhoto, shownToCustomer: true })
-    customerPhoto = (await add(customerPerson(customerId), visitA)).id
+    customerPhoto = (await add(customerPerson(customerId), visitA, put(visitA), "2027-04-20T15:03:00Z")).id
   })
 
   it("gives staff every photo oldest first, with the name of who added it", async () => {
