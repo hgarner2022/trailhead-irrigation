@@ -32,7 +32,20 @@ export interface PillData {
   label?: string
 }
 
+export interface PastVisit {
+  id: string
+  /** "Oct 14, 2026" */
+  date: string
+  service: string
+  who: string
+  /** the note left on that visit, a tech's or the office's */
+  note?: string
+}
+
 export interface JobPageData {
+  /** the customer's earlier visits at this property, newest first (three shown); `pastTotal` is how many there are in all */
+  pastVisits: PastVisit[]
+  pastTotal: number
   customer: string
   phone: { text: string; href: string }
   subtitle: string
@@ -63,7 +76,12 @@ const LINE: LineItem[] = [{ name: "Repair", description: "A visit to find the pr
 const CARD: [string, string] = ["Card on file", "Visa ending 4242"]
 const ADDED = (id: string, at = "2026-11-18T16:10:00Z"): TimelineLine => ({ id, at, actor: "Ryan", what: "Added the job", kind: "event" })
 const msg = (id: string, at: string, channel: "email" | "sms", kind: Message["kind"], body: string, jobId = "job-1"): Message => ({ id, clientId: "c-1", jobId, channel, kind, body, at, status: "delivered" })
-const base: Omit<JobPageData, "when" | "pills" | "footer" | "billing" | "totals" | "notes" | "messages"> = { customer: "Andrea Dalton", phone: PHONE, subtitle: "Sprinkler repair visit · Added Nov 18", where: WHERE, lines: LINE }
+const PAST: PastVisit[] = [
+  { id: "pv1", date: "Oct 14, 2026", service: "Fall blowout", who: "Ryan", note: "Blew out all 8 zones. Zone 5 head by the fence is cracked; replace next spring." },
+  { id: "pv2", date: "Apr 28, 2026", service: "Spring turn-on", who: "Ryan", note: "Backflow valve is behind the green box on the south side. Controller battery replaced." },
+  { id: "pv3", date: "Jul 9, 2025", service: "Repair", who: "Tech Two", note: "Replaced a broken rotor in zone 3. Customer asked for a quote on drip lines for the garden bed." },
+]
+const base: Omit<JobPageData, "when" | "pills" | "footer" | "billing" | "totals" | "notes" | "messages"> = { pastVisits: PAST, pastTotal: 7, customer: "Andrea Dalton", phone: PHONE, subtitle: "Sprinkler repair visit · Added Nov 18", where: WHERE, lines: LINE }
 const owedTotals: LineTotal[] = [["Total", "$145", "strong"], ["Paid", "$0"], ["Unpaid", "$145", "alert"]]
 const openTotals: LineTotal[] = [["Total", "$145", "strong"], ["Paid", "$0"]]
 const waiting = { summary: [["Total", "$145"], CARD] as [string, string][], rows: [], emptyLine: "Nothing to bill until the trip is done." }
@@ -86,7 +104,7 @@ function buildJob(state: JobState): JobPageData {
   const scheduledMsgs = [msg("m1", "2026-11-18T16:30:00Z", "sms", "date-set", "Trailhead: your repair is Tue, Nov 24.")]
   switch (state) {
     case "unscheduled":
-      return { ...base, pills: [{ status: "needs-a-day" }], when: day("No day yet", "Any time").map((r) => (r[0] === "Who" ? ["Who", "No one yet"] : r)), billing: waiting, totals: openTotals, notes: [ADDED("n1")], messages: [], footer: { primary: act("Schedule"), secondary: [act("Mark done"), act("Send a text")], more: more("Edit", "Add a note"), destructive: act("Cancel job") } }
+      return { ...base, pastVisits: [], pastTotal: 0, pills: [{ status: "needs-a-day" }], when: day("No day yet", "Any time").map((r) => (r[0] === "Who" ? ["Who", "No one yet"] : r)), billing: waiting, totals: openTotals, notes: [ADDED("n1")], messages: [], footer: { primary: act("Schedule"), secondary: [act("Mark done"), act("Send a text")], more: more("Edit", "Add a note"), destructive: act("Cancel job") } }
     case "scheduled":
       return { ...base, pills: [{ status: "scheduled" }], when: day("Tue, Nov 24", "Any time"), billing: waiting, totals: openTotals, notes: [ADDED("n1"), { id: "n2", at: "2026-11-18T16:30:00Z", actor: "Ryan", what: "Set the day to Tue, Nov 24", kind: "event" }], messages: scheduledMsgs, footer: { primary: act("Move"), secondary: [act("Mark done"), act("Send a text")], more: more("Edit", "Add a note"), destructive: act("Cancel job") } }
     case "on-the-way":

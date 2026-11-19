@@ -11,6 +11,8 @@ export interface ConfirmCopy {
   body?: string
   confirmLabel: string
   destructive?: boolean
+  /** a checkbox, checked by default, that adds a part to what goes out: the sentence reads `with` when checked and `without` when not */
+  reportOption?: { label: string; with: string; without: string }
 }
 
 export interface ConfirmFacts {
@@ -45,7 +47,7 @@ export function collectConfirm(way: string, f: ConfirmFacts, reference = ""): Co
     case "cash":
       return { title: "Record the cash", message: `Record ${f.amount} in cash. ${f.first} gets a receipt by email.`, confirmLabel: "Record the cash" }
     case "invoice":
-      return { title: "Send the invoice", message: `Send the invoice for ${f.amount} by text to ${f.phone}, due ${f.dueOn}.`, confirmLabel: "Send the invoice" }
+      return { title: "Send the invoice", message: `Send the invoice for ${f.amount} by text to ${f.phone}, due ${f.dueOn}.`, confirmLabel: "Send the invoice", reportOption: { label: "Include the visit report (the checklist and photos)", with: `Send the invoice for ${f.amount} by text to ${f.phone}, due ${f.dueOn}, with the visit report.`, without: `Send the invoice for ${f.amount} by text to ${f.phone}, due ${f.dueOn}.` } }
     default:
       return null
   }

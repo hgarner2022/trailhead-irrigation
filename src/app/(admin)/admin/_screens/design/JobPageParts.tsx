@@ -20,7 +20,7 @@ import { StatusPill, statusLabel, type PillStatus } from "@/components/blocks/St
 import type { SummaryItem } from "@/components/blocks/SummaryBand"
 import type { Message } from "@/lib/admin/types"
 import type { TimelineLine } from "@/lib/events/timeline"
-import { NOW, noop, noteOk, type FooterPlan, type JobPageData, type PillData } from "./job-fixtures"
+import { NOW, noop, noteOk, type FooterPlan, type JobPageData, type PastVisit, type PillData } from "./job-fixtures"
 
 // The cards the one-trip, Season Pass and return-trip job pages share, so a card reads the same on every job (the rules are in
 // docs/plans/2026-11-19-admin-page-layout-research.md): the badges for the header, the summary band's four cells, the aside (Customer,
@@ -107,7 +107,34 @@ export function bandOfJob(job: JobPageData): SummaryItem[] {
 }
 
 /** The aside: the customer with phone and address, the property's facts, then Notes and history. */
-export function Aside({ customer, phone, where, notes }: { customer: string; phone: { text: string; href: string }; where: readonly RecordFact[]; notes: TimelineLine[] }) {
+/** Past visits at this property: the earlier visits newest first, each the date, the service, who and the note left on it; three shown, "See all N" opens the customer. */
+export function PastVisitsCard({ street, visits, total }: { street: string; visits: PastVisit[]; total: number }) {
+  return (
+    <SectionCard title={`Past visits at ${street}`} id="past-h">
+      {visits.length === 0 ? (
+        <p className="text-sm text-muted-foreground">First visit here.</p>
+      ) : (
+        <>
+          <ul className="divide-y divide-border">
+            {visits.slice(0, 3).map((v) => (
+              <li key={v.id} data-slot="past-visit" className="py-3 first:pt-0 last:pb-0">
+                <p className="text-sm font-semibold text-foreground">{v.service} <span className="font-normal text-muted-foreground">· {v.date} · {v.who}</span></p>
+                {v.note && <p className="mt-1 text-sm text-foreground">{v.note}</p>}
+              </li>
+            ))}
+          </ul>
+          {total > 3 && (
+            <Link href="/admin/customers" className="mt-3 inline-flex min-h-11 items-center rounded-sm text-sm font-medium text-primary-dark underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50">
+              See all {total}
+            </Link>
+          )}
+        </>
+      )}
+    </SectionCard>
+  )
+}
+
+export function Aside({ customer, phone, where, notes, pastVisits, pastTotal }: { customer: string; phone: { text: string; href: string }; where: readonly RecordFact[]; notes: TimelineLine[]; pastVisits?: PastVisit[]; pastTotal?: number }) {
   const [street, town] = split(row(where, "Address"))
   const facts = where.filter(([k]) => k !== "Address")
   return (
@@ -118,6 +145,7 @@ export function Aside({ customer, phone, where, notes }: { customer: string; pho
           <RecordFacts divided rows={facts} />
         </SectionCard>
       )}
+      {pastVisits && <PastVisitsCard street={street} visits={pastVisits} total={pastTotal ?? pastVisits.length} />}
       <SectionCard title="Notes and history" id="notes-h">
         <NotesAndHistory bare lines={notes} onAddNote={noteOk} now={NOW} />
       </SectionCard>

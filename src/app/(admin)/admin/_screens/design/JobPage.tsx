@@ -22,7 +22,7 @@ export function JobPage({ job }: { job: JobPageData }) {
       badges={<Badges pills={job.pills} note={job.pillNote} />}
       notice={job.notice ? <Notice>{job.notice}</Notice> : undefined}
       band={<SummaryBand items={bandOfJob(job)} />}
-      aside={<Aside customer={job.customer} phone={job.phone} where={job.where} notes={job.notes} />}
+      aside={<Aside customer={job.customer} phone={job.phone} where={job.where} notes={job.notes} pastVisits={job.pastVisits} pastTotal={job.pastTotal} />}
       actions={hasFooter(job.footer) ? <Actions plan={job.footer} facts={factsOfJob(job)} /> : undefined}
     >
       <SectionCard title="What's included" id="included-h" action={canceled ? undefined : <EditLink />}>
