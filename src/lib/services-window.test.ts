@@ -1,5 +1,26 @@
 import { describe, expect, it } from "vitest"
-import { inBookableWindow, isMonthDay, monthDayOfDate, monthDayWords, windowDatesFor, windowWords } from "./services-window"
+import { inBookableWindow, isMonthDay, monthDayOfDate, monthDayWords, windowAt, windowDatesFor, windowsAt, windowWords } from "./services-window"
+
+describe("windowAt", () => {
+  const blowout = { opensOn: "2026-10-01", closesOn: "2026-11-15", leadWeeks: 4 }
+  it("keeps the saved year for a day in it and reads the same span in any other year", () => {
+    expect(windowAt(blowout, "2026-10-20")).toEqual({ opensOn: "2026-10-01", closesOn: "2026-11-15" })
+    expect(windowAt(blowout, "2027-10-20")).toEqual({ opensOn: "2027-10-01", closesOn: "2027-11-15" })
+    expect(windowAt(blowout, "2025-10-20")).toEqual({ opensOn: "2025-10-01", closesOn: "2025-11-15" })
+  })
+  it("reads the next season to open for a day after the window has closed", () => {
+    expect(windowAt(blowout, "2026-12-01")).toEqual({ opensOn: "2027-10-01", closesOn: "2027-11-15" })
+    expect(windowAt(blowout, "2027-05-05")).toEqual({ opensOn: "2027-10-01", closesOn: "2027-11-15" })
+  })
+  it("wraps New Year like a service span: a window that closes the next year keeps that distance", () => {
+    const winter = { opensOn: "2026-11-01", closesOn: "2027-06-15" }
+    expect(windowAt(winter, "2028-02-01")).toEqual({ opensOn: "2027-11-01", closesOn: "2028-06-15" })
+    expect(windowAt(winter, "2028-11-20")).toEqual({ opensOn: "2028-11-01", closesOn: "2029-06-15" })
+  })
+  it("keeps the other fields of every window", () => {
+    expect(windowsAt([blowout], "2027-10-02")).toEqual([{ ...blowout, opensOn: "2027-10-01", closesOn: "2027-11-15" }])
+  })
+})
 
 describe("isMonthDay", () => {
   it("accepts a real month and day and refuses the rest, February 29 included", () => {

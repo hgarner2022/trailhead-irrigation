@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest"
-import { eq, inArray } from "drizzle-orm"
+import { eq, inArray, sql } from "drizzle-orm"
 import * as s from "@/db/schema"
 import type { TestDb } from "@/db/test-db"
 import type { PublicPrincipal } from "@/lib/auth/types"
@@ -37,7 +37,7 @@ describe("the public checkout principal", () => {
   it("is refused on every handler except the four checkout ones", async () => {
     reachable.mockResolvedValue(true)
     await expect(callApi(ctxFor(db, visitor(), NOW), passesList, {})).rejects.toMatchObject({ code: "forbidden" })
-    await expect(callApi(ctxFor(db, visitor(), NOW), scheduleSlots, { service: "turn-on-8", town: "Erie" })).resolves.toHaveProperty("data")
+    await expect(callApi(ctxFor(db, visitor(), NOW), scheduleSlots, { service: "turn-on-8", town: "Erie", from: "2027-05-05", days: 3 })).resolves.toHaveProperty("data")
     await expect(callApi(ctxFor(db, visitor(), NOW), bookingsCreate, {})).rejects.toMatchObject({ code: "invalid" })
     await expect(create()).resolves.toMatchObject({ status: "pending" })
   })
@@ -191,6 +191,36 @@ describe("expirePendingPasses", () => {
     expect((await db.select().from(s.lineItem).where(eq(s.lineItem.jobId, sold.id))).length).toBeGreaterThan(0)
     // a second run has nothing left to remove
     expect(await expirePendingPasses(db, new Date())).toBe(0)
+  })
+
+  it("leaves every row where it was when a step fails midway, and never picks a job that holds a payment attempt", async () => {
+    reachable.mockResolvedValue(true)
+    const a = await create({ customer: { firstName: "Mid", lastName: "Tester", email: "mid@example.com", phone: "3035550112" } })
+    const b = await create({ customer: { firstName: "Failed", lastName: "Tester", email: "failed@example.com", phone: "3035550113" } })
+    const old = new Date(Date.now() - 61 * 60_000)
+    for (const p of [a, b]) await db.update(s.job).set({ createdAt: old }).where(eq(s.job.id, p.id))
+    // a failed card attempt is a payment record: its job is kept, not purged
+    await db.insert(s.charge).values({ organizationId: ORG, jobId: b.id, customerId: b.customerId, attempt: 1, amount: 145, status: "failed", method: "card_on_file" })
+    const before = async () => ({
+      lines: (await db.select().from(s.lineItem).where(eq(s.lineItem.jobId, a.id))).length,
+      visits: (await db.select().from(s.visit).where(eq(s.visit.jobId, a.id))).length,
+      jobs: (await db.select().from(s.job).where(inArray(s.job.id, [a.id, b.id]))).length,
+    })
+    const was = await before()
+    expect(was.lines).toBeGreaterThan(0)
+    // the last step (deleting the job) fails
+    await db.execute(sql`create function trailhead_boom() returns trigger as $$ begin raise exception 'boom'; end $$ language plpgsql`)
+    await db.execute(sql`create trigger trailhead_boom before delete on job for each row execute function trailhead_boom()`)
+    try {
+      await expect(expirePendingPasses(db, new Date())).rejects.toThrow()
+      expect(await before()).toEqual(was)
+    } finally {
+      await db.execute(sql`drop trigger trailhead_boom on job`)
+      await db.execute(sql`drop function trailhead_boom()`)
+    }
+    expect(await expirePendingPasses(db, new Date())).toBe(1)
+    expect(await db.select().from(s.job).where(eq(s.job.id, b.id))).toHaveLength(1)
+    expect(await db.select().from(s.job).where(eq(s.job.id, a.id))).toHaveLength(0)
   })
 
   it("keeps a pass with no sold day that has a job.sold event or a succeeded payment", async () => {

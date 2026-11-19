@@ -157,6 +157,45 @@ describe("VisitScreen", () => {
     expect(screen.getByText("You can change this until Monday, April 26, 11:59 pm.")).toBeInTheDocument()
   })
 
+  describe("Photos", () => {
+    const item = (id: string, over: Record<string, unknown> = {}) => ({ id, visitId: "v1", jobId: "j1", customerId: "c1", url: `/api/photos/${id}`, contentType: "image/jpeg", bytes: 1000, addedBy: "customer", addedByName: null, byCustomer: true, shownToCustomer: true, canRemove: true, createdAt: "2027-04-20T17:00:00Z", ...over })
+    const photos = (over: Record<string, unknown> = {}) => ({ items: [item("photo_1"), item("photo_2", { addedBy: "staff", byCustomer: false, canRemove: false })], configured: true, onAdd: vi.fn(), onRemove: vi.fn().mockResolvedValue({ ok: true }), ...over })
+
+    it("shows the customer's own photo and Ryan's marked one, with Add photo and Remove on their own only", () => {
+      render(<VisitScreen customer={andrea} job={passJob} visitId="v1" today={TODAY} photos={photos() as never} />)
+      const section = screen.getByRole("heading", { name: "Photos" }).closest("section")!
+      expect(section.querySelectorAll('[data-slot="photo"]')).toHaveLength(2)
+      expect(within(section).getAllByRole("button", { name: "Remove" })).toHaveLength(1)
+      expect(within(section).getByRole("button", { name: "Add photo" })).toBeInTheDocument()
+      expect(within(section).queryByRole("checkbox")).toBeNull()
+      expect(within(section).getByText(/Trailhead · /)).toBeInTheDocument()
+      expect(section.textContent).not.toContain("@")
+    })
+
+    it("offers no photos section when the screen is not given any", () => {
+      render(<VisitScreen customer={andrea} job={passJob} visitId="v1" today={TODAY} />)
+      expect(screen.queryByRole("heading", { name: "Photos" })).toBeNull()
+    })
+
+    it("keeps the photos of a canceled visit and offers no Add photo", () => {
+      render(<VisitScreen customer={andrea} job={passJobCanceledVisit} visitId="v1" today={TODAY} photos={photos() as never} />)
+      expect(screen.getByRole("heading", { name: "Photos" })).toBeInTheDocument()
+      expect(screen.queryByRole("button", { name: "Add photo" })).toBeNull()
+    })
+
+    it("has no Remove for a visit opened by a text's link", () => {
+      render(<VisitScreen customer={andrea} job={passJob} visitId="v1" today={TODAY} photos={photos({ onRemove: undefined, link: "tok.en" }) as never} />)
+      expect(screen.queryByRole("button", { name: "Remove" })).toBeNull()
+      expect(screen.getByRole("button", { name: "Add photo" })).toBeInTheDocument()
+    })
+
+    it("says photos are not set up without the store's token", () => {
+      render(<VisitScreen customer={andrea} job={passJob} visitId="v1" today={TODAY} photos={photos({ configured: false }) as never} />)
+      expect(screen.getByText("Photos are not set up yet.")).toBeInTheDocument()
+      expect(screen.queryByRole("button", { name: "Add photo" })).toBeNull()
+    })
+  })
+
   it("names the window and who is coming once it was told", () => {
     render(<VisitScreen customer={andrea} job={passJobWindowTold} visitId="v1" today={TODAY} days={days.v1} />)
     expect(screen.getByText("Wednesday, April 28, between 8 and 10 am, with Ryan.")).toBeInTheDocument()

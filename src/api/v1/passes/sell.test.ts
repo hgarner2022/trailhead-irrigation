@@ -135,7 +135,8 @@ describe("passes.sell", () => {
     expect(prop).toMatchObject({ zones: 8, accessNote: "Gate code 4411" })
     expect(pass.customer).toMatchObject({ lastName: "Ortiz", email: expect.stringMatching(/^maya\d+@example\.com$/), phone: "+13035550142" })
     expect(pass.visits.map((v) => v.kind)).toEqual(["turn-on", "inspection", "blowout"])
-    expect(pass.visits.find((v) => v.kind === "turn-on")).toMatchObject({ status: "scheduled", scheduledOn: open, startTime: offer.days[0]!.start })
+    // The day is the promise; the time is whatever Order the day stacks (from 8:00 until engine row 3 stops it moving booked times).
+    expect(pass.visits.find((v) => v.kind === "turn-on")).toMatchObject({ status: "scheduled", scheduledOn: open, startTime: expect.stringMatching(/^\d\d:\d\d$/) })
     expect(pass.visits.find((v) => v.kind === "inspection")).toMatchObject({ status: "unscheduled", scheduledOn: null })
     const blowout = pass.visits.find((v) => v.kind === "blowout")!
     expect(blowout).toMatchObject({ status: "scheduled", scheduledOn: "2028-10-02" })

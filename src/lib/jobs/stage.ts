@@ -5,6 +5,7 @@
 // unpriced), else Open. A Season Pass starts Open.
 import type { JobKind } from "./kind"
 import { jobSubtotal, type Line } from "./lines"
+import { paidTotal } from "@/lib/money/words"
 
 export type JobStage = "needs-a-quote" | "quoted" | "open" | "done" | "cancelled"
 
@@ -26,6 +27,8 @@ export interface StageFacts {
   lines: readonly Pick<Line, "quantity" | "unitPrice" | "cancelledAt">[]
   /** every visit of the job; a canceled or skipped one is not work ahead */
   visits: readonly { status: string; skipped?: boolean }[]
+  /** the job's payment rows (succeeded ones count, refunds against them); a job that holds money with no live visit is Done, not Canceled */
+  payments?: readonly { amount: number; status: string }[]
   /** the day a quote went out and the day the customer accepted it (`quote_sent_on`, `quote_accepted_on`) */
   quoteSentOn?: string | null
   quoteAcceptedOn?: string | null
@@ -35,7 +38,12 @@ export interface StageFacts {
 export function stageOf(job: StageFacts): JobStage {
   const live = job.visits.filter((v) => v.status !== "cancelled" && v.status !== "skipped" && !v.skipped)
   const allLinesCancelled = job.lines.length > 0 && job.lines.every((l) => l.cancelledAt)
-  if (job.cancelledAt || allLinesCancelled || (job.visits.length > 0 && live.length === 0)) return "cancelled"
+  if (job.cancelledAt) return "cancelled"
+  // A customer's cancel keeps a job that holds money open (`cancelSelf` never moves money): the work was paid for, so with no live visit it reads
+  // Done, never Canceled. The office cannot cancel such a job (`jobs.cancel` refuses it), so `cancelledAt` is never set on one.
+  const paidFor = paidTotal(job.payments ?? []) > 0
+  if (paidFor && (allLinesCancelled || (job.visits.length > 0 && live.length === 0))) return "done"
+  if (allLinesCancelled || (job.visits.length > 0 && live.length === 0)) return "cancelled"
   if (live.length > 0 && live.every((v) => v.status === "completed")) return "done"
   if (job.kind !== "pass") {
     if (job.quoteSentOn && !job.quoteAcceptedOn && !job.soldOn) return "quoted"

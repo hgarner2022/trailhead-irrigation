@@ -190,6 +190,13 @@
       "when": 1795053617241,
       "tag": "0026_message_delivery",
       "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1795053677241,
+      "tag": "0027_photo",
+      "breakpoints": true
     }
   ]
 }

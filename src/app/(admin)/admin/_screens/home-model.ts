@@ -14,6 +14,7 @@ import { TIME_ZONE, monthDay, monthShort } from "@/lib/admin/format"
 import { addDays, dayOf } from "@/lib/admin/calendar"
 import { NOT_CLOSED_LOOKBACK_DAYS, jobCounts, paymentsOf, visitJob } from "@/lib/admin/jobs"
 import { paidTotal } from "@/lib/money/words"
+import { windowsAt } from "@/lib/services-window"
 import { isOnToday, type TodayMoney } from "./today-model"
 import { billsOverdue, chargedSoFar, committedRevenue, formatMoney, monthComparison, quotesAwaiting, visitsOn } from "@/lib/admin/metrics"
 
@@ -157,7 +158,8 @@ const dayNumber = (dayIso: string) => Date.UTC(Number(dayIso.slice(0, 4)), Numbe
  */
 export function upcomingWindow(settings: Pick<OrganizationSettings, "windows">, today: string): SeasonWindow | null {
   const todayDay = dayNumber(dayOf(today, TIME_ZONE))
-  const soon = settings.windows
+  // read year-agnostic (`windowAt`): a window saved for 2026 is next fall's too
+  const soon = windowsAt(settings.windows, dayOf(today, TIME_ZONE))
     .filter((w) => {
       const away = dayNumber(w.opensOn) - todayDay
       return away >= 0 && away <= (w.leadWeeks + 2) * 7

@@ -10,6 +10,18 @@ describe("Home's row for a customer's own change", () => {
   })
 })
 
+describe("Home's row for paused texts", () => {
+  it("keeps its own kind (not a task that needs a retry) and the alert's words", () => {
+    const message = "Texts are paused until the number is registered with the carriers (Twilio error 30034). Every text goes by email instead."
+    const rows = attention(input([{ kind: "texts-paused", key: "paused", message, passId: null, createdAt: new Date("2027-04-10T15:00:00Z") }]), [])
+    expect(rows).toEqual([{ key: "paused", kind: "texts-paused", message, since: "2027-04-10T15:00:00Z" }])
+  })
+  it("stays off Home once the office dismissed it", () => {
+    const i = { ...input([{ kind: "texts-paused", key: "paused", message: "m", passId: null, createdAt: new Date("2027-04-10T15:00:00Z") }]), dismissed: [{ kind: "texts-paused", key: "paused" }] } as unknown as ShapeInput
+    expect(attention(i, [])).toEqual([])
+  })
+})
+
 describe("Home's row for a text that was not delivered", () => {
   const alert = (key: string) => ({ kind: "text-undelivered", key, message: "Text not delivered: Hannah, date set. Filtered by the carrier.", createdAt: new Date("2027-04-10T15:00:00Z") })
   it("opens the visit when the message had one", () => {

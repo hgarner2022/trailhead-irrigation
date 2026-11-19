@@ -7,6 +7,7 @@ import { readAppUrl } from "@/lib/env"
 import { refreshDelivery } from "@/lib/messaging/delivery-refresh"
 import { baseData, loadVisitFacts } from "@/lib/messaging/data"
 import { NOTE_MAX, queueMessage, queueNote } from "@/lib/messaging/queue"
+import { textsPaused } from "@/lib/messaging/paused"
 import { renewUrl } from "@/lib/messaging/tokens"
 import { queuePurchaseConfirmation } from "@/lib/pass/server/purchase"
 import { ApiError } from "../../core/errors"
@@ -81,7 +82,7 @@ export const messagesSend = defineHandler({
         if (!v || v.customerId !== customer.id) throw new ApiError("not_found", "Visit not found")
       }
       const note = await queueNote(ctx.db, { organizationId: ctx.organizationId, customerId: customer.id, visitId: input.visitId, text: input.text, key })
-      if (!note.ok) throw new ApiError("unprocessable", note.reason === "no-phone" ? "This customer has no mobile number to text." : "This customer replied STOP, so no texts can go until they reply START.")
+      if (!note.ok) throw new ApiError("unprocessable", note.reason === "no-phone" ? "This customer has no mobile number to text." : note.reason === "paused-no-email" ? "Texts are paused and this customer has no email." : "This customer replied STOP, so no texts can go until they reply START.")
       queued = true
     } else if (input.kind === "date-set" || input.kind === "date-moved" || input.kind === "day-before" || input.kind === "on-the-way") {
       if (!input.visitId) throw new ApiError("invalid", "A visit is needed for this message")
@@ -99,8 +100,8 @@ export const messagesSend = defineHandler({
         if (already) throw new ApiError("conflict", "This customer was already told you are on the way today")
         const sentNow = await queueMessage(ctx.db, { ...base, key: sentKey, visitId: visit.id, kind: input.kind, data: { ...baseData(origin, customer), visit: facts } })
         if (!sentNow) {
-          const [raced] = await ctx.db.select({ id: s.messageLog.id }).from(s.messageLog).where(and(eq(s.messageLog.customerId, customer.id), eq(s.messageLog.key, sentKey)))
-          throw raced ? new ApiError("conflict", "This customer was already told you are on the way today") : new ApiError("unprocessable", "This customer has no mobile to text, or replied STOP")
+          const [raced] = await ctx.db.select({ id: s.messageLog.id, status: s.messageLog.status }).from(s.messageLog).where(and(eq(s.messageLog.customerId, customer.id), eq(s.messageLog.key, sentKey)))
+          throw raced?.status === "skipped" && textsPaused() ? new ApiError("unprocessable", "Texts are paused and this customer has no email.") : raced ? new ApiError("conflict", "This customer was already told you are on the way today") : new ApiError("unprocessable", "This customer has no mobile to text, or replied STOP")
         }
         const [row] = await ctx.db.select().from(s.messageLog).where(and(eq(s.messageLog.customerId, customer.id), eq(s.messageLog.key, sentKey)))
         return { id: row!.id, customerId: row!.customerId, visitId: row!.visitId, channel: row!.channel, kind: row!.kind, subject: row!.subject, body: row!.body, status: row!.status, sentAt: row!.sentAt?.toISOString() ?? null, createdAt: row!.createdAt.toISOString(), ...(canSeeContact(ctx) ? { to: row!.to } : {}) }

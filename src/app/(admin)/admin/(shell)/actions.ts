@@ -25,6 +25,7 @@ import { jobUrl } from "@/lib/admin/links"
 import { retryQueueTasks } from "@/lib/admin/queue-retry"
 import { timelineOf, type TimelineLine } from "@/lib/events/timeline"
 import { act, nothing, type ActionOutcome } from "./act"
+import { NUMBER_ROW_KEY } from "@/lib/admin/undelivered"
 import { chargeCard } from "./visit-actions"
 import { toApiScopes } from "./key-scopes"
 import { saveSettings as writeSettings } from "./settings-save"
@@ -161,6 +162,8 @@ export async function attentionAction(item: Attention): Promise<ActionOutcome | 
     const sent = await act((ctx) => nothing(callApi(ctx, invoicesRemind, { id: item.invoiceId! })))
     return sent.ok ? { ok: true, data: undefined, message: "Reminder sent." } : sent
   }
+  // Texts are paused: the row is a notice, and Settings (Messages) is where it is explained.
+  if (item.kind === "texts-paused" || (item.kind === "text-undelivered" && item.key === NUMBER_ROW_KEY)) redirect("/admin/settings")
   // A job that is done and unpaid carries the visit that is unpaid in `visitId`, so it opens on Visits like any visit row, where the panel's Record the payment (or Send an invoice) asks how the money came.
   if (item.visitId) redirect(`/admin/schedule?visit=${encodeURIComponent(item.visitId)}`)
   if (item.passId) redirect(item.jobId ? jobUrl(item.jobId) : "/admin/jobs")

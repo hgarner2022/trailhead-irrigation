@@ -1,4 +1,4 @@
-import type { AddNote, Outcome } from "./action-types"
+import type { AddNote, Outcome, PhotoActions } from "./action-types"
 import type { PassesActions } from "./passes-actions"
 
 /** A line as Add a line sends it: a catalogue service (its name, what it includes and its taxable flag are copied) or a free line with a name. */
@@ -29,6 +29,8 @@ export interface JobActions {
   cancelJob: (jobId: string) => Promise<Outcome>
   /** `events.note` on the job, from the Notes and history block; a tech may add one */
   addNote: AddNote
+  /** the Photos block's actions for each visit's photos on the job panel */
+  photos?: PhotoActions
   /** the pass's own buttons, for a Season Pass job */
   pass?: Omit<PassesActions, "addNote">
 }

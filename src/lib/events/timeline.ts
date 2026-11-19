@@ -77,10 +77,37 @@ function messageLine(m: TimelineMessage): TimelineLine {
   }
 }
 
+/** A run of photos added (or removed) by one person within this many minutes of each other reads as one line: "Ryan added 2 photos". */
+export const PHOTO_RUN_MINUTES = 10
+
+/**
+ * Folds each run of `visit.photo_added` (and of `visit.photo_removed`) events about one visit by one person, each within ten minutes of the one
+ * before, into its newest event with `detail.count` set. Every other event passes through untouched.
+ */
+export function foldPhotoRuns<T extends TimelineEvent & { visitId?: string | null }>(events: readonly T[]): T[] {
+  const photo = (e: T) => e.kind === "visit.photo_added" || e.kind === "visit.photo_removed"
+  const rest = events.filter((e) => !photo(e))
+  const ordered = events.filter(photo).sort((a, b) => (a.at < b.at ? -1 : a.at > b.at ? 1 : a.id < b.id ? -1 : 1))
+  const runs: T[][] = []
+  for (const e of ordered) {
+    const run = runs.find((r) => {
+      const last = r[r.length - 1]!
+      return last.kind === e.kind && last.who === e.who && last.visitId === e.visitId && new Date(e.at).getTime() - new Date(last.at).getTime() <= PHOTO_RUN_MINUTES * 60_000
+    })
+    if (run) run.push(e)
+    else runs.push([e])
+  }
+  const folded = runs.map((r) => {
+    const newest = r[r.length - 1]!
+    return r.length === 1 ? newest : { ...newest, detail: { ...newest.detail, count: r.length } }
+  })
+  return [...rest, ...folded]
+}
+
 /** Events and messages as one list of lines, newest first; a tie on the time goes by id, so the order never changes between reads. */
 export function timelineOf(events: readonly TimelineEvent[], messages: readonly TimelineMessage[]): TimelineLine[] {
   const lines: TimelineLine[] = [
-    ...events.map((e): TimelineLine => {
+    ...foldPhotoRuns(events as readonly (TimelineEvent & { visitId?: string | null })[]).map((e): TimelineLine => {
       const { actor, what } = eventWords(e, e.whoName)
       return { id: e.id, at: iso(e.at), actor, what, kind: "event", ...(e.kind === "note" ? { note: what } : {}) }
     }),

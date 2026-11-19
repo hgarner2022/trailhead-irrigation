@@ -89,7 +89,7 @@ export async function loadPortalJobs(ctx: Ctx, customerId: string, only?: string
       paidInvoiceVisits,
     )
     const kind = kinds.get(j.id)!
-    const stage = stageOf({ kind, cancelledAt: j.cancelledAt, soldOn: j.soldOn, quoteSentOn: j.quoteSentOn, quoteAcceptedOn: j.quoteAcceptedOn, lines, visits: jobVisits })
+    const stage = stageOf({ kind, cancelledAt: j.cancelledAt, soldOn: j.soldOn, quoteSentOn: j.quoteSentOn, quoteAcceptedOn: j.quoteAcceptedOn, lines, visits: jobVisits, payments })
     const live = lines.find((l) => !l.cancelledAt)
     const jobOpen = j.season !== null ? passStatus(j, day) === "active" : !j.cancelledAt
     return {

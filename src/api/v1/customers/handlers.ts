@@ -243,7 +243,7 @@ async function jobsOf(ctx: Ctx, customerId: string) {
     return {
       id: j.id, kind,
       // the stage word, read from the facts (`stageOf`): there is no typed status
-      status: stageOf({ kind, cancelledAt: j.cancelledAt, soldOn: j.soldOn, quoteSentOn: j.quoteSentOn, quoteAcceptedOn: j.quoteAcceptedOn, lines, visits: jobVisits }),
+      status: stageOf({ kind, cancelledAt: j.cancelledAt, soldOn: j.soldOn, quoteSentOn: j.quoteSentOn, quoteAcceptedOn: j.quoteAcceptedOn, lines, visits: jobVisits, payments }),
       // the job's price is its total, null while it is 0
       price: total > 0 ? total : null, source: j.source, notes: notes.get(j.id) ?? null, createdAt: j.createdAt.toISOString(),
       // a Season Pass is its job: the pass id is the job id

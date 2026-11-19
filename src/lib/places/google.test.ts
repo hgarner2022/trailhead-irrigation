@@ -47,6 +47,7 @@ describe("parseSecondaryText", () => {
       suggestionFromDetails({
         id: "ChIJa",
         formattedAddress: "9 Elm St, Erie, CO 80516, USA",
+        location: { latitude: 40.05, longitude: -105.05 },
         addressComponents: [
           { longText: "9", shortText: "9", types: ["street_number"] },
           { longText: "Elm Street", shortText: "Elm St", types: ["route"] },
@@ -55,7 +56,7 @@ describe("parseSecondaryText", () => {
           { longText: "80516", shortText: "80516", types: ["postal_code"] },
         ],
       }),
-    ).toEqual({ id: "ChIJa", label: "9 Elm Street, Vista Ridge, CO 80516", line1: "9 Elm Street", town: "Vista Ridge", state: "CO", zip: "80516" })
+    ).toEqual({ id: "ChIJa", label: "9 Elm Street, Vista Ridge, CO 80516", line1: "9 Elm Street", town: "Vista Ridge", state: "CO", zip: "80516", lat: 40.05, lng: -105.05 })
   })
 })
 

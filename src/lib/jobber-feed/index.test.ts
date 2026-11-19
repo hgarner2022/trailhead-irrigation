@@ -33,8 +33,8 @@ describe("toBlocks", () => {
     const blocks = toBlocks(RYAN, parseIcs(ics))
     const training = blocks.filter((b) => b.id.includes("visit-1004"))
     expect(training.map((b) => [b.startAt.toISOString(), b.endAt.toISOString()])).toEqual([
-      ["2027-05-10T13:00:00.000Z", "2027-05-10T23:00:00.000Z"],
-      ["2027-05-11T13:00:00.000Z", "2027-05-11T23:00:00.000Z"],
+      ["2027-05-10T15:00:00.000Z", "2027-05-10T23:00:00.000Z"],
+      ["2027-05-11T15:00:00.000Z", "2027-05-11T23:00:00.000Z"],
     ])
     expect(blocks).toHaveLength(5)
     expect(blocks.every((b) => b.personId === RYAN && b.id.startsWith(`feed:${RYAN}:`))).toBe(true)
@@ -96,13 +96,13 @@ describe("syncPersonFeed", () => {
 describe("busy time in capacity", () => {
   it("blocks a full working day for an all-day event and part of one for a timed event", async () => {
     const blocks = await loadBlocks(db, org, new Date("2027-05-01T00:00:00Z"))
-    expect(blockedMinutes(blocks, RYAN, "2027-05-06", "America/Denver")).toBe(600)
+    expect(blockedMinutes(blocks, RYAN, "2027-05-06", "America/Denver")).toBe(480)
     // After the re-run: the moved repair starts 11:00 Mountain with an end before its start, so it lasts the default hour; the install is 13:30 to 14:30 Mountain.
     expect(blockedMinutes(blocks, RYAN, "2027-05-05", "America/Denver")).toBe(120)
     expect(blockedMinutes(blocks, "person_truck-2", "2027-05-06", "America/Denver")).toBe(0)
     expect(capacityAfterBlocks(8, 0)).toBe(8)
-    expect(capacityAfterBlocks(8, 600)).toBe(0)
-    expect(capacityAfterBlocks(8, 150)).toBe(6)
+    expect(capacityAfterBlocks(8, 480)).toBe(0)
+    expect(capacityAfterBlocks(8, 150)).toBe(5)
   })
   it("reads an old busy row, `feed:<truck key>:<uid>`, as the person `person_<key>`'s, and a row nobody owns is left out", async () => {
     await db.insert(s.jobberVisit).values([
@@ -120,7 +120,11 @@ describe("busy time in capacity", () => {
     const t1 = (day: string) => out.data.find((d) => d.day === day && d.personId === RYAN)
     expect(t1("2027-05-06")).toBeUndefined()
     expect(out.data.find((d) => d.day === "2027-05-06" && d.personId === "person_truck-2")).toBeDefined()
-    expect(t1("2027-05-05")?.remaining).toBeLessThan(8)
+    // Ryan's repair is blocked 11:00 to 12:00 Mountain and the install 1:30 to 2:30 pm: no start overlaps them, the rest of the day stays open.
+    const starts = t1("2027-05-05")!.starts
+    for (const blocked of ["11:00", "11:30", "13:30", "14:00"]) expect(starts).not.toContain(blocked)
+    expect(starts).toContain("09:00")
+    expect(t1("2027-05-05")!.remaining).toBe(starts.length)
   })
 })
 

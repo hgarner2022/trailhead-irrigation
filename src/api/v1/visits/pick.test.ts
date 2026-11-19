@@ -35,20 +35,28 @@ describe("a canceled job", () => {
 })
 
 describe("visits.areaDays and visits.pick", () => {
-  it("offers up to three days inside the window, none earlier than two days out", async () => {
+  it("offers up to three days inside the window, none earlier than tomorrow, with a label, one preselected and open starts", async () => {
     const { days } = await callApi(me(), visitsAreaDays, { id: "p3-turn-on" })
     expect(days.length).toBeGreaterThan(0)
     expect(days.length).toBeLessThanOrEqual(3)
     expect(days).toEqual([...days].sort())
     for (const d of days) {
-      expect(d >= "2027-04-22").toBe(true)
+      expect(d >= "2027-04-21").toBe(true)
       expect(d <= "2027-05-31").toBe(true)
       expect([0, 6]).not.toContain(new Date(`${d}T12:00:00Z`).getUTCDay())
+    }
+    const { offers } = await callApi(me(), visitsAreaDays, { id: "p3-turn-on" })
+    expect(offers.map((o) => o.day)).toEqual(days)
+    expect(offers.filter((o) => o.best)).toHaveLength(1)
+    for (const o of offers) {
+      expect(o.slots.length).toBeGreaterThan(0)
+      expect(o.slots[0]).toMatchObject({ personName: expect.any(String), end: expect.stringMatching(/^\d\d:\d\d$/) })
     }
   })
 
   it("books the picked day with a person, texts the date, and texts again when the day changes", async () => {
-    const { days } = await callApi(me(), visitsAreaDays, { id: "p3-turn-on" })
+    // Tomorrow is offered but is inside the 24-hour rule once picked, so this test picks the first day that can still be changed.
+    const days = (await callApi(me(), visitsAreaDays, { id: "p3-turn-on", count: 5 })).days.filter((d) => d >= "2027-04-22")
     const out = await callApi(me(), visitsPick, { id: "p3-turn-on", day: days[0]! })
     expect(out).toMatchObject({ status: "scheduled", scheduledOn: days[0], awaitingPick: false })
     expect(out.personName).toMatch(/^(Ryan Garner|Tech Two)$/)
@@ -59,7 +67,7 @@ describe("visits.areaDays and visits.pick", () => {
     expect(texts).toHaveLength(1)
     expect(texts[0]).toMatchObject({ channel: "sms", kind: "date-set", to: "303-555-0100", status: "queued" })
     expect(texts[0]!.body).toMatch(/Doesn't work\? Pick another day: https:\/\/site\.test\/account\/visits\/p3-turn-on\?t=\d+\.[A-Za-z0-9_-]+/)
-    const second = (await callApi(me(), visitsAreaDays, { id: "p3-turn-on" })).days.find((d) => d !== days[0])
+    const second = (await callApi(me(), visitsAreaDays, { id: "p3-turn-on", count: 5 })).days.find((d) => d !== days[0] && d >= "2027-04-22")
     await callApi(me(), visitsPick, { id: "p3-turn-on", day: second! })
     texts = (await db.select().from(s.messageLog)).filter((m) => m.visitId === "p3-turn-on")
     expect(texts.map((m) => m.kind).sort()).toEqual(["date-moved", "date-set"])
@@ -77,7 +85,7 @@ describe("visits.areaDays and visits.pick", () => {
 
   it("offers the same choice whether or not the pass is marked as needing the customer home", async () => {
     await setPass(db, "p3", { needsCustomerHome: false })
-    const { days } = await callApi(me(), visitsAreaDays, { id: "p3-turn-on" })
+    const days = (await callApi(me(), visitsAreaDays, { id: "p3-turn-on", count: 5 })).days.filter((d) => d >= "2027-04-22")
     expect(days.length).toBeGreaterThan(0)
     await expect(callApi(me(), visitsPick, { id: "p3-turn-on", day: days[0]! })).resolves.toMatchObject({ status: "scheduled", scheduledOn: days[0] })
     await setPass(db, "p3", { needsCustomerHome: true })

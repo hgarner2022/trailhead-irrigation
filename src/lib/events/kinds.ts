@@ -23,6 +23,8 @@ export const EVENT_KINDS = [
   "visit.cancelled",
   "visit.skipped",
   "visit.edited",
+  "visit.photo_added",
+  "visit.photo_removed",
   "pass.cancelled",
   "pass.preference-changed",
   "pass.inspection-added",
