@@ -28,7 +28,7 @@ export function InvoiceBanner({ jobName, total, dueOn, status, payHref, classNam
       className={cn("flex flex-wrap items-center justify-between gap-x-6 gap-y-3 rounded-lg border px-4 py-3", late ? "border-destructive/30 bg-destructive/10" : "border-primary/30 bg-primary/10", className)}
     >
       <p className="min-w-0 text-base font-semibold text-foreground">{late ? `${jobName}: $${total} unpaid, past due since ${dueDay(dueOn)}` : `${jobName}: $${total} unpaid, due ${dueDay(dueOn)}`}</p>
-      <Button asChild>
+      <Button asChild variant="outline" className="bg-background">
         <a href={payHref}>Pay now</a>
       </Button>
     </section>

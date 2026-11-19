@@ -1,14 +1,14 @@
 import { describe, expect, it } from "vitest"
-import { dayParts, windowPhrase, customerFacingFirstName, longDay, visitDay, visitDayWords, moneyWord, paymentLine, shortDay, visitPill } from "./words"
+import { dayParts, timePhrase, customerFacingFirstName, longDay, visitDay, visitDayWords, moneyWord, paymentLine, shortDay, visitPill } from "./words"
 
-describe("windowPhrase", () => {
-  it("says the window in the customer's words", () => {
-    expect(windowPhrase("09:00")).toBe("between 9 and 11 am")
-    expect(windowPhrase("11:00")).toBe("between 11 am and 1 pm")
-    expect(windowPhrase("13:30")).toBe("between 1:30 and 3:30 pm")
+describe("timePhrase", () => {
+  it("says the one exact time in the customer's words, never a window", () => {
+    expect(timePhrase("09:00")).toBe("9:00 am")
+    expect(timePhrase("13:30")).toBe("1:30 pm")
+    expect(timePhrase("00:15")).toBe("12:15 am")
   })
-  it("says nothing before a start time is set", () => {
-    expect(windowPhrase(null)).toBeNull()
+  it("is null before a start time is set", () => {
+    expect(timePhrase(null)).toBeNull()
   })
 })
 
@@ -92,11 +92,11 @@ describe("visitDay and visitDayWords", () => {
 
 describe("dayParts", () => {
   const base = { status: "scheduled", scheduledOn: "2027-05-05", completedOn: null, canceledOn: null, windowTold: false, window: null, personFirstName: null as string | null, canPick: false }
-  it("promises the window until the day-before text told it, then gives it with who is coming", () => {
-    expect(dayParts(base, "2027-04-20").sentence).toBe("Wednesday, May 5. We'll text your window the day before.")
-    expect(dayParts({ ...base, windowTold: true, window: "between 8 and 10 am", personFirstName: "Ryan" }, "2027-04-20")).toMatchObject({ heading: "Wednesday, May 5", detail: "Between 8 and 10 am, with Ryan.", sentence: "Wednesday, May 5, between 8 and 10 am, with Ryan." })
+  it("gives the exact time once there is one, and until then the day with the day-before promise", () => {
+    expect(dayParts(base, "2027-04-20").sentence).toBe("Wednesday, May 5. We'll text you the time the day before.")
+    expect(dayParts({ ...base, windowTold: true, window: "8:00 am", personFirstName: "Ryan" }, "2027-04-20")).toMatchObject({ heading: "Wednesday, May 5 at 8:00 am", detail: "Ryan is coming.", sentence: "Wednesday, May 5 at 8:00 am. Ryan is coming." })
   })
-  it("told but with no start time (a visit left at Any time) names the day and who, never promises a window again", () => {
+  it("told but with no start time (a visit left at Any time) names the day and who, never promises a time again", () => {
     expect(dayParts({ ...base, windowTold: true, personFirstName: "Ryan" }, "2027-04-20").sentence).toBe("Wednesday, May 5. Ryan will be there that day.")
     expect(dayParts({ ...base, windowTold: true }, "2027-04-20").sentence).toBe("Wednesday, May 5. We'll be there that day.")
   })

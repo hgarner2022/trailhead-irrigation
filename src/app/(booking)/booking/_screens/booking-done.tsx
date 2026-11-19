@@ -4,7 +4,7 @@ import Link from "next/link"
 import { AddToCalendarLinks } from "@/components/blocks/AddToCalendarLinks"
 import { BookedCard } from "@/components/blocks/BookedCard"
 import { Button } from "@/components/ui/button"
-import { arrivalWindow, clock12, type DayTimePick } from "@/lib/booking/day-time"
+import { clock12, type DayTimePick } from "@/lib/booking/day-time"
 import { QUOTE_DONE } from "@/lib/booking/services"
 import { longDay } from "@/lib/portal/words"
 
@@ -73,15 +73,14 @@ export function BookingDone({ service, where, email, pick, card, price, onDone }
       </div>
     )
   }
-  const window = arrivalWindow(pick.start)
   return (
     <div>
       <h2 className="mb-5 font-display text-4xl leading-none text-navy">{`Your ${service.toLowerCase()} is booked.`}</h2>
-      <BookedCard service={service} day={longDay(pick.day)} time={clock12(pick.start)} window={window} where={where} />
+      <BookedCard service={service} day={longDay(pick.day)} time={clock12(pick.start)} where={where} />
       <Trail
         lines={[
           { key: "now", lead: "Now", text: "We emailed your booking." },
-          { key: "before", lead: longDay(dayBefore(pick.day)), text: `A text confirms your time. Ryan arrives ${window}.` },
+          { key: "before", lead: longDay(dayBefore(pick.day)), text: `Ryan is coming at ${clock12(pick.start)}. A text reminds you.` },
           { key: "after", lead: "After the visit", text: card && price ? `${price} to the ${card}, and your receipt by email.` : "Ryan asks how you'd like to pay, and your receipt arrives by email." },
         ]}
       />

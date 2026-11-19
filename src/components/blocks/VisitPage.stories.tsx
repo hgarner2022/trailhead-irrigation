@@ -11,9 +11,9 @@ const base: VisitPageModel = {
   service: "Spring turn-on",
   label: "Season Pass 2027",
   pill: { status: "scheduled", label: "Booked" },
-  dayLine: "Wednesday, April 28. We'll text your window the day before.",
+  dayLine: "Wednesday, April 28. We'll text you the time the day before.",
   dayHeading: "Wednesday, April 28",
-  dayDetail: "We'll text your window the day before.",
+  dayDetail: "We'll text you the time the day before.",
   where: "412 Briggs Street, Erie",
   mustBeHome: true,
   included: "8 zones, start up, check each head",
@@ -53,7 +53,7 @@ const done = { pill: { status: "done" as const, label: "Done" }, reschedule: "no
 export const BookedPhone: Story = { ...phone }
 export const BookedLaptop: Story = { ...laptop }
 /** The day-before text went out: the window and who is coming. */
-export const WindowToldPhone: Story = { ...phone, args: { model: { ...base, dayLine: "Wednesday, April 28, between 8 and 10 am, with Ryan.", dayDetail: "Between 8 and 10 am, with Ryan." } } }
+export const WindowToldPhone: Story = { ...phone, args: { model: { ...base, dayLine: "Wednesday, April 28 at 8:00 am. Ryan is coming.", dayDetail: "Ryan is coming." } } }
 /** Inside 24 hours: Text Ryan and Call Ryan, with why. */
 export const InsideCutoffPhone: Story = { ...phone, args: { model: { ...base, reschedule: "text", cancel: "text", changeLine: null } } }
 export const InsideCutoffLaptop: Story = { ...laptop, args: { model: { ...base, reschedule: "text", cancel: "text", changeLine: null } } }

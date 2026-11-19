@@ -7,7 +7,7 @@ import { ctxFromAccount } from "@/lib/admin/api-ctx"
 import { accountPrincipal } from "@/lib/auth/account-principal"
 import { signOutOfAccount } from "./actions"
 
-// The frame around every signed-in /account page: the header with the four places (Home, Visits, Season Pass for someone who has held one, Details). The sign-in pages and the card-saved page come to someone with no session, so they get no header. The header stays off the paper when a
+// The frame around every signed-in /account page: the header with the three places (Home, Visits, Season Pass) and the account menu (Details, Sign out). The sign-in pages and the card-saved page come to someone with no session, so they get no header. The header stays off the paper when a
 // receipt is printed.
 
 export default async function AccountLayout({ children }: Readonly<{ children: React.ReactNode }>) {
@@ -18,8 +18,8 @@ export default async function AccountLayout({ children }: Readonly<{ children: R
   if (asCustomer.type !== "customer") return children
   const me = await callApi(await ctxFromAccount(), customersMe, {})
   return (
-    <div className="min-h-svh bg-cream">
-      <AccountNav firstName={me.firstName} hasPass={me.hasHeldPass} isStaff={principal.type === "admin"} onSignOut={signOutOfAccount} className="print:hidden" />
+    <div className="min-h-svh bg-stone">
+      <AccountNav firstName={me.firstName} isStaff={principal.type === "admin"} onSignOut={signOutOfAccount} className="print:hidden" />
       {children}
     </div>
   )

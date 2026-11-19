@@ -30,7 +30,7 @@ describe("daily", () => {
     expect((await db.select().from(s.visit).where(eq(s.visit.id, "p4-turn-on")))[0]!.status).toBe("scheduled")
   })
 
-  it("texts tomorrow's customers the day before with their window, and emails the one with no phone", async () => {
+  it("texts tomorrow's customers the day before with their time, and emails the one with no phone", async () => {
     const [p4] = await db.select().from(s.visit).where(eq(s.visit.id, "p4-turn-on"))
     const [p7] = await db.select().from(s.visit).where(eq(s.visit.id, "p7-turn-on"))
     await db.update(s.customer).set({ phone: "303-555-0104", email: "a@example.com" }).where(eq(s.customer.id, p4!.customerId))
@@ -40,8 +40,8 @@ describe("daily", () => {
     const rows = await messages("day-before")
     const four = rows.find((m) => m.visitId === "p4-turn-on")!
     expect(four).toMatchObject({ channel: "sms", to: "303-555-0104" })
-    expect(four.body).toContain("Thu, May 6")
-    expect(four.body).toContain("8 to 10 am")
+    expect(four.body).toContain("tomorrow at ")
+    expect(four.body).toContain("8:00 am")
     expect(rows.find((m) => m.visitId === "p7-turn-on")).toMatchObject({ channel: "email", to: "b@example.com" })
     expect(rows.every((m) => m.visitId !== "p3-turn-on")).toBe(true)
   })
@@ -92,7 +92,7 @@ describe("two weeks before", () => {
     expect(rows[0]).toMatchObject({ visitId: "p1-turn-on", channel: "sms", key: "date-confirm:p1-turn-on" })
     // a window is a message told the day before: two weeks out the text states the day only
     expect(rows[0]!.body).toContain("Wed, May 19")
-    expect(rows[0]!.body).not.toContain("8 to 10 am")
+    expect(rows[0]!.body).not.toContain("8:00 am")
     expect(rows[0]!.body).toContain("Last day to change online: ")
     expect(rows[0]!.body).toContain("Reply STOP to opt out.")
   })

@@ -51,21 +51,19 @@ export function monthDay(day: string): string {
   return `${MONTHS[m - 1]!.slice(0, 3)} ${d}`
 }
 
-/** "8 to 10 am" for a visit that starts at 08:00: the two-hour window. */
-export function windowText(startTime: string): string {
+/** "8:00 am": the exact start of a visit, never a window or a span. */
+export function timeText(startTime: string): string {
   const hour = Number(startTime.slice(0, 2))
-  const end = hour + 2
-  const word = (h: number) => `${h % 12 === 0 ? 12 : h % 12}`
-  const ampm = (h: number) => (h >= 12 ? "pm" : "am")
-  return ampm(hour) === ampm(end) ? `${word(hour)} to ${word(end)} ${ampm(end)}` : `${word(hour)} ${ampm(hour)} to ${word(end)} ${ampm(end)}`
+  const minute = startTime.slice(3, 5)
+  return `${hour % 12 === 0 ? 12 : hour % 12}:${minute} ${hour >= 12 ? "pm" : "am"}`
 }
 
 /** "$1,234"; a credit reads "-$45", never "$-45". */
 export const dollars = (n: number) => (n < 0 ? `-$${(-n).toLocaleString("en-US")}` : `$${n.toLocaleString("en-US")}`)
 
-/** "Tuesday, May 5, between 8 and 10 am" or just the day when no time is set. */
+/** "Tuesday, May 5 at 8:00 am" or just the day when no time is set. */
 export function whenText(day: string, startTime: string | null): string {
-  return startTime ? `${longDay(day)}, between ${windowText(startTime).replace(" to ", " and ")}` : longDay(day)
+  return startTime ? `${longDay(day)} at ${timeText(startTime)}` : longDay(day)
 }
 
 /** The visit as the messages know it. `name` reads in a sentence ("spring turn-on"). */
@@ -93,7 +91,7 @@ export interface VisitFacts {
   note?: string
   /** the visit is at a property that must be home: the date-moved text asks "Reply YES or pick another day" and the visit reads Waiting on customer until they answer */
   asked?: boolean
-  /** a move that kept the day and gave or changed the time: the date-moved messages say "still {day}, now {window}" */
+  /** a move that kept the day and gave or changed the time: the date-moved messages say "still {day}, now at {time}" */
   sameDay?: boolean
 }
 

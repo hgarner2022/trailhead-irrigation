@@ -42,6 +42,7 @@ export function RescheduleSheet({ service, address, currentDay, days, textHref, 
   const timed = offers !== undefined
   const [chosen, setChosen] = useState<string | undefined>(days[0])
   const [slot, setSlot] = useState<DayTimePick>({ day: offers ? startDay(offers) : null, start: null })
+  const [more, setMore] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [done, setDone] = useState<string | null>(null)
@@ -76,7 +77,7 @@ export function RescheduleSheet({ service, address, currentDay, days, textHref, 
           <>
             <DialogHeader>
               <DialogTitle className="font-display text-2xl text-navy">{moving ? `Moved to ${done}.` : `You're set for ${done}.`}</DialogTitle>
-              <DialogDescription className="text-base">{timed ? "We texted you the new time." : moving ? "We texted you the new day." : "We texted you the day. We'll text your window the day before."}</DialogDescription>
+              <DialogDescription className="text-base">{timed ? "We texted you the new time." : moving ? "We texted you the new day." : "We texted you the day. We'll text you the time the day before."}</DialogDescription>
             </DialogHeader>
             <DialogFooter>
               <DialogClose asChild>
@@ -104,12 +105,17 @@ export function RescheduleSheet({ service, address, currentDay, days, textHref, 
                 ) : (
                 <fieldset className="space-y-2">
                   <legend className="sr-only">Open days</legend>
-                  {days.map((day) => (
+                  {(more ? days : days.slice(0, 3)).map((day) => (
                     <label key={day} className={cn("flex cursor-pointer items-center gap-3 rounded-lg border px-4 py-3 text-base", chosen === day ? "border-primary-dark bg-primary/5" : "border-border")}>
                       <input type="radio" name="day" value={day} checked={chosen === day} onChange={() => setChosen(day)} className="size-4 accent-primary-dark" />
                       <span className="font-semibold text-foreground">{shortDay(day)}</span>
                     </label>
                   ))}
+                  {!more && days.length > 3 && (
+                    <button type="button" onClick={() => setMore(true)} className="inline-flex min-h-11 cursor-pointer items-center text-base font-semibold text-primary-deep underline underline-offset-2">
+                      Show more days
+                    </button>
+                  )}
                 </fieldset>
                 )}
                 <p className="text-base text-muted-foreground">

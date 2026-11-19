@@ -21,7 +21,7 @@ const tall = (el: HTMLElement) => /\bmin-h-11\b/.test(el.className)
 
 describe("44px tap targets on the account", () => {
   it("the header: the logo, every place and the signed-out Sign in link", () => {
-    const { unmount } = render(<AccountNav firstName="Andrea" hasPass current="/account" />)
+    const { unmount } = render(<AccountNav firstName="Andrea" current="/account" />)
     expect(tall(screen.getByRole("link", { name: /Trailhead Lawn & Irrigation, your account/ }))).toBe(true)
     for (const name of ["Home", "Visits", "Season Pass", "Details"]) expect(tall(screen.getByRole("link", { name }))).toBe(true)
     unmount()

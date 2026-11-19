@@ -1,16 +1,12 @@
 import { describe, expect, it } from "vitest"
 import { SERVICES, QUOTE_SERVICES } from "./services"
-import { arrivalWindow, clock12, dayAtTime, fixtureDayTimes, startDay } from "./day-time"
+import { clock12, dayAtTime, fixtureDayTimes, startDay } from "./day-time"
 
 describe("day and time words", () => {
   it("writes a start on a 12 hour clock", () => {
     expect(clock12("09:00")).toBe("9:00 am")
     expect(clock12("12:30")).toBe("12:30 pm")
     expect(clock12("16:00")).toBe("4:00 pm")
-  })
-  it("says the half hour a booked arrival falls in", () => {
-    expect(arrivalWindow("10:30")).toBe("between 10:30 and 11:00 am")
-    expect(arrivalWindow("11:45")).toBe("between 11:45 am and 12:15 pm")
   })
   it("joins a day and a time", () => {
     expect(dayAtTime("2027-04-20", "10:30")).toBe("Tuesday, April 20 at 10:30 am")

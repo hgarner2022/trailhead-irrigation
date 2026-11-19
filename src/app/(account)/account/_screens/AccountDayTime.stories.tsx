@@ -27,7 +27,7 @@ const meta = {
   decorators: [
     (Story) => (
       <div className="min-h-svh bg-cream">
-        <AccountNav firstName="Andrea" hasPass current="/account" />
+        <AccountNav firstName="Andrea" current="/account" />
         <Story />
       </div>
     ),

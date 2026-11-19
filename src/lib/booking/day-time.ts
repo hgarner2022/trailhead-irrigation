@@ -35,18 +35,10 @@ export function clock12(start: string): string {
   return `${h! % 12 === 0 ? 12 : h! % 12}:${String(m).padStart(2, "0")} ${h! < 12 ? "am" : "pm"}`
 }
 
-const minutesOf = (start: string) => Number(start.slice(0, 2)) * 60 + Number(start.slice(3, 5))
 const hhmm = (minutes: number) => `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`
 
 /** "Tuesday, April 28 at 10:00 am". */
 export const dayAtTime = (day: string, start: string) => `${longDay(day)} at ${clock12(start)}`
-
-/** The half hour a booked arrival falls in, as the day-before text tells it: "between 10:00 and 10:30 am". */
-export function arrivalWindow(start: string): string {
-  const [from, fromHalf] = clock12(start).split(" ")
-  const [to, toHalf] = clock12(hhmm(minutesOf(start) + 30)).split(" ")
-  return fromHalf === toHalf ? `between ${from} and ${to} ${toHalf}` : `between ${from} ${fromHalf} and ${to} ${toHalf}`
-}
 
 /** The day to start selected: the best one, else the soonest. */
 export const startDay = (offers: readonly DayTimeOffer[]): string | null => (offers.find((o) => o.best) ?? offers[0])?.day ?? null

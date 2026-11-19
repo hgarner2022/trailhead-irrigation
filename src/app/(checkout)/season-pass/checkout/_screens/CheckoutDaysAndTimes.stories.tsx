@@ -7,7 +7,7 @@ import { DayTimeGroups } from "@/app/(booking)/booking/_screens/booking-day"
 
 // The Season Pass checkout's "your days" step revised to a day AND a time for each of its two visits (docs/plans/2026-11-18-scheduling-engine-design.md section 2, story 1). It is the booking flow's
 // day-and-time step, once per visit, so the two ask the same question the same way: the best day selected on each, its times under it, the best time marked and none selected, Continue off until a
-// time is tapped on both. The old three day cards with "We'll text your window the day before." are replaced; the day-before text now confirms the booked time. A fixture harness stands in for the flow.
+// time is tapped on both. The old three day cards with "We'll text you the time the day before." are replaced; the day-before text now confirms the booked time. A fixture harness stands in for the flow.
 const turnOn = fixtureDayTimes(60)
 const blowout = fixtureDayTimes(30).map((o, i) => ({ ...o, day: ["2027-10-05", "2027-10-07", "2027-10-12", "2027-10-14", "2027-10-19"][i]! }))
 

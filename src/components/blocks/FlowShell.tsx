@@ -34,7 +34,7 @@ const COLUMN = "mx-auto w-full max-w-2xl container-padding-x"
 
 export function FlowShell({ question, step, total, children, summary, onBack, onNext, nextLabel = "Continue", nextDisabled, hint, busy, wide, done, className }: FlowShellProps) {
   return (
-    <div data-slot="flow-shell" data-step={step} className={cn("relative isolate min-h-svh bg-cream text-foreground", className)}>
+    <div data-slot="flow-shell" data-step={step} className={cn("relative isolate min-h-svh bg-stone text-foreground", className)}>
       <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
         <Image src="/images/trail-mountain-meadow.jpg" alt="" fill sizes="100vw" quality={40} className="object-cover opacity-[0.07]" />
       </div>
@@ -52,12 +52,14 @@ export function FlowShell({ question, step, total, children, summary, onBack, on
       </header>
       <section className="flex min-h-svh flex-col outline-none">
         <div className={cn(COLUMN, "flex flex-1 flex-col justify-center pt-24 pb-8", wide && "lg:max-w-3xl")}>
-          {summary && <div className="mb-5">{summary}</div>}
+          {summary && <div className="mb-4">{summary}</div>}
+          <div data-slot="flow-surface" className="rounded-lg border border-border bg-background p-4 shadow-sm sm:p-8">
           <h1 className={done ? "text-xs font-semibold uppercase tracking-wide text-primary-dark" : "font-display text-4xl leading-[1.05] text-navy lg:text-5xl"}>{question}</h1>
-          <div className={done ? "mt-5" : "mt-8"}>{children}</div>
+          <div className={done ? "mt-4" : "mt-8"}>{children}</div>
+          </div>
         </div>
         {!done && (
-          <div data-slot="flow-actions" className="sticky bottom-0 z-10 max-sm:border-t max-sm:border-border/60 max-sm:bg-cream/95 max-sm:backdrop-blur-sm">
+          <div data-slot="flow-actions" className="sticky bottom-0 z-10 max-sm:border-t max-sm:border-border/60 max-sm:bg-stone/95 max-sm:backdrop-blur-sm">
             <div className={cn(COLUMN, "flex items-center justify-between gap-3 pb-8 max-sm:pt-3 max-sm:pb-[max(1rem,env(safe-area-inset-bottom))]", wide && "lg:max-w-3xl")}>
               {step > 1 ? (
                 <Button variant="ghost" size="lg" onClick={onBack}>
