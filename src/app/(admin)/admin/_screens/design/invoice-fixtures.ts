@@ -3,7 +3,7 @@ import type { RecordFact } from "@/components/blocks/RecordPanel"
 import type { PillStatus } from "@/components/blocks/StatusPill"
 import type { Message } from "@/lib/admin/types"
 import type { TimelineLine } from "@/lib/events/timeline"
-import type { Contact } from "./customer-confirm"
+import type { Reach } from "./confirm-copy"
 import type { CustomerPaymentRow } from "./customer-fixtures"
 
 // Design fixtures for the Invoices object (docs/plans/2026-11-18-invoice-workflow-research.md): the list and the invoice page. Today is
@@ -115,7 +115,7 @@ export interface InvoicePageData {
   id: string
   number: string
   status: InvoiceStatus
-  customer: { id: string; name: string; contact: Contact; phone: { text: string; href: string }; street: string; town: string }
+  customer: { id: string; name: string; contact: Required<Reach>; phone: { text: string; href: string }; street: string; town: string }
   job: { id: string; name: string; status: PillStatus; statusLabel: string; next: string; total: string }
   property: RecordFact[]
   amount: string
@@ -138,7 +138,7 @@ export interface InvoicePageData {
 const msg = (id: string, at: string, channel: "sms" | "email", kind: Message["kind"], body: string, status: Message["status"] = "delivered"): Message => ({ id, clientId: "c-1", jobId: "job-1", channel, kind, body, at, status })
 const note = (id: string, at: string, what: string, actor = "Ryan"): TimelineLine => ({ id, at, actor, what, kind: "event" })
 const PROPERTY: RecordFact[] = [["Zones", "8"], ["Controller", "Rachio 3, garage"], ["Gate code", "4417"], ["Must be home", "No"]]
-const BELL = { id: "c-i42", name: "Marcus Bell", contact: { first: "Marcus", channel: "text", phone: "(970) 555-0188", email: "marcus.bell@example.com" } as Contact, phone: { text: "(970) 555-0188", href: "tel:+19705550188" }, street: "91 Main St", town: "Longmont, CO" }
+const BELL = { id: "c-i42", name: "Marcus Bell", contact: { first: "Marcus", channel: "text", phone: "(970) 555-0188", email: "marcus.bell@example.com" } as Required<Reach>, phone: { text: "(970) 555-0188", href: "tel:+19705550188" }, street: "91 Main St", town: "Longmont, CO" }
 const stripe = "https://dashboard.stripe.com/payments/pi_demo"
 const repairLines: LineItem[] = [{ name: "Repair", description: "A visit to find the problem and fix what we can that day.", amount: "$145" }]
 const owed = (total: string, tax = "$0", subtotal = total): LineTotal[] => [["Subtotal", subtotal], ["Tax", tax], ["Total", total, "strong"], ["Paid", "$0"], ["Unpaid", total, "alert"]]

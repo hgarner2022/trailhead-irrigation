@@ -20,9 +20,10 @@ import { CustomerBilling } from "./CustomerBilling"
 import { CollectDialog, CopyDialog, EditDetailsDialog, MergeDialog, contactOf } from "./CustomerDialogs"
 import { MessagesTable, JobsTable } from "./CustomerTables"
 import { AddressChip, JobChip } from "./RecordChips"
-import { cardLinkCopy, deleteCustomerCopy, mergeCopy, refundCopy } from "./customer-confirm"
+import { cardLinkCopy, deleteCustomerCopy, mergeCopy, refundCopy } from "./confirm-copy"
 import type { CustomerPageData, PassArea, SeasonLink } from "./customer-fixtures"
 import { MessageDialog } from "./MessageDialog"
+import { ReminderDialog } from "./ReminderDialog"
 import { NOW, noteOk } from "./job-fixtures"
 
 // The customer page (Hannah: "update the customer layout to look like this"), on the page frame of the job page and the rules of
@@ -34,7 +35,7 @@ import { NOW, noteOk } from "./job-fixtures"
 // with the effect and the customer's channel; a result is a toast, never a message in a section. Pure props, nothing wired.
 
 const LINK = "rounded-sm text-primary-dark underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
-export type CustomerDialog = "message" | "collect" | "card-link" | "refund" | "edit" | "merge" | "delete" | null
+export type CustomerDialog = "message" | "collect" | "card-link" | "refund" | "remind" | "edit" | "merge" | "delete" | null
 
 const scrollTo = (id: string) => () => {
   const el = document.getElementById(id)
@@ -120,6 +121,8 @@ export interface CustomerPageProps {
 
 export function CustomerPage({ customer: d, initialDialog = null }: CustomerPageProps) {
   const [dialog, setDialog] = useState<CustomerDialog>(initialDialog)
+  // the payment or invoice row a refund or a reminder was opened from
+  const [row, setRow] = useState<{ number?: string; amount: string; how?: string; due?: string; pastDue?: boolean } | null>(null)
   const toast = useToast()
   const c = contactOf(d)
   const close = () => setDialog(null)
@@ -128,7 +131,8 @@ export function CustomerPage({ customer: d, initialDialog = null }: CustomerPage
   const unpaid = d.unpaid !== undefined
   const secondary: [FooterAction] | [FooterAction, FooterAction] = unpaid ? [act("Send a message", open("message")), act("Collect payment", open("collect"))] : [act("Send a message", open("message"))]
   const more = [act("Edit details", open("edit")), act("Send card link", open("card-link")), act("Merge", open("merge"))]
-  const pay = d.billing.payments[0]
+  const pay = row ?? (d.billing.payments[0] ? { amount: d.billing.payments[0].amount, how: d.billing.payments[0].how.split(" ")[0]!.toLowerCase() } : undefined)
+  const inv = row?.number ? row : d.openInvoice ? { number: d.openInvoice.number, amount: d.openInvoice.amount, due: d.openInvoice.due, pastDue: false } : undefined
   const sentVia = d.contact.channel === "text" ? "texted" : "emailed"
   const quiet = (variant?: string) => variant === "quiet"
   return (
@@ -154,7 +158,7 @@ export function CustomerPage({ customer: d, initialDialog = null }: CustomerPage
               />
             </SectionCard>
             <SectionCard title="Property" id="property-h" action={<button type="button" onClick={open("edit")} className={`min-h-11 ${LINK}`}>Edit</button>}>
-              <RecordFacts divided rows={[["Address", <AddressChip key="a" customerId={d.id} street={`${d.address[0]}, ${d.address[1]}`} />], ...d.property]} />
+              <RecordFacts divided rows={[["Address", <AddressChip key="a" customerId={d.id} street={d.address[0]} />], ...d.property]} />
             </SectionCard>
             <SectionCard title="Consent" id="consent-h">
               <p className="text-sm font-medium">{d.consent}</p>
@@ -170,13 +174,13 @@ export function CustomerPage({ customer: d, initialDialog = null }: CustomerPage
           )}
         </SectionCard>
         <SeasonPassCard d={d} />
-        <CustomerBilling billing={d.billing} customerName={d.name} onUpdateCard={open("card-link")} onRefund={open("refund")} />
+        <CustomerBilling billing={d.billing} customerName={d.name} onUpdateCard={open("card-link")} onRefund={(r) => (setRow({ amount: r.amount, how: r.methodLabel.split(" ")[0]!.toLowerCase() }), setDialog("refund"))} onRemind={(r) => (setRow({ number: r.number, amount: r.amount, due: r.due, pastDue: r.status === "overdue" }), setDialog("remind"))} />
         <SectionCard title="Messages" id="messages-h" flush>
           <MessagesTable messages={d.messages} to={{ sms: d.contact.phone.text, email: d.contact.email }} />
         </SectionCard>
         {d.photos.length > 0 && (
           <SectionCard title="Photos" id="photos-h">
-            <Photos photos={d.photos} audience="staff" bare canShow={false} camera={false} heading="Photos from the customer" />
+            <Photos photos={d.photos} audience="staff" customerName={d.firstName} bare canShow={false} camera={false} heading="Photos from the customer" />
           </SectionCard>
         )}
         <SectionCard title="Notes and history" id="notes-h">
@@ -189,7 +193,8 @@ export function CustomerPage({ customer: d, initialDialog = null }: CustomerPage
       )}
       {dialog === "collect" && <CollectDialog who={c} amount={Number((d.unpaid ?? "$0").replace(/\D/g, ""))} card={d.billing.card} invoice={d.openInvoice} onClose={close} />}
       {dialog === "card-link" && <CopyDialog copy={cardLinkCopy(c)} onClose={close} onDone={() => toast(`Card link ${sentVia} to ${d.firstName}`)} />}
-      {dialog === "refund" && pay && <CopyDialog copy={refundCopy(c, pay.amount, pay.how.split(" ")[0]!.toLowerCase())} onClose={close} onDone={(v) => toast(quiet(v) ? `Refunded ${pay.amount}. ${d.firstName} was not notified.` : `Refunded ${pay.amount}. ${d.firstName} was ${sentVia} a notice.`)} />}
+      {dialog === "refund" && pay && <CopyDialog copy={refundCopy(c, pay.amount, pay.how ?? "card")} onClose={close} onDone={(v) => toast(quiet(v) ? `Refunded ${pay.amount}. ${d.firstName} was not notified.` : `Refunded ${pay.amount}. ${d.firstName} was ${sentVia} a notice.`)} />}
+      {dialog === "remind" && inv && <ReminderDialog who={c} invoice={{ number: inv.number!, amount: inv.amount, service: "job", dueOn: inv.due ?? "", pastDue: inv.pastDue }} onClose={close} onSend={() => toast(`Reminder ${sentVia} to ${d.firstName}`)} />}
       {dialog === "edit" && <EditDetailsDialog d={d} onClose={close} onDone={() => toast("Details saved")} />}
       {dialog === "merge" && <MergeDialog d={d} others={["Andrea Daltons (duplicate)", "A. Dalton"]} copy={(o) => mergeCopy(d.name, o)} onClose={close} onDone={(o) => toast(`Merged ${o} into ${d.name}`)} />}
       {dialog === "delete" && <CopyDialog copy={deleteCustomerCopy(d.name)} onClose={close} onDone={() => toast(`Deleted ${d.name}`)} />}

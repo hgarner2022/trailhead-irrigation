@@ -35,6 +35,10 @@ export interface PaymentRowData {
   amount: string
   /** who recorded it: "Ryan", or "Andrea, online" */
   by: string
+  /** the check number or the Venmo handle, as the quiet line under the method in place of `by` ("@andrea-d", "#2210") */
+  reference?: string
+  /** a customer's page names the job each payment was for: its chip, on a quiet line under the method */
+  job?: React.ReactNode
   /** a refund row: negative, grey, status Refunded; it has no buttons but Receipt */
   refund?: boolean
   failed?: boolean
@@ -59,8 +63,8 @@ export interface InvoiceRowData {
   statusLabel?: string
   /** the invoice's own page: `/admin/invoices?invoice=<id>` */
   href?: string
-  /** a quiet line under the number: "Includes the visit report" */
-  note?: string
+  /** a quiet line under the number: "Includes the visit report", or on a customer's page the job's chip */
+  note?: React.ReactNode
   /** Remind is offered while the invoice is out and unpaid */
   canRemind?: boolean
 }
@@ -129,6 +133,7 @@ function PaymentActions({ row, onRefund }: { row: PaymentRowData; onRefund?: (ro
 function PaymentLine({ row, onRefund }: { row: PaymentRowData; onRefund?: (row: PaymentRowData) => void }) {
   return (
     <span className="flex flex-wrap items-center gap-x-4">
+      {row.job && <span className="block w-full">{row.job}</span>}
       <Link href={row.receiptHref} className={LINK}>
         Receipt
       </Link>
@@ -146,6 +151,11 @@ function PaymentLine({ row, onRefund }: { row: PaymentRowData; onRefund?: (row: 
       )}
     </span>
   )
+}
+
+/** The job chip under the method on a laptop; on a phone it moves to the line under the card (a card is one button). */
+function MethodJob({ job }: { job: React.ReactNode }) {
+  return useMedia("(max-width: 767px)") ? null : <span className="block">{job}</span>
 }
 
 /** A laptop row's buttons are icons with tooltips; a phone card's are a quiet text line under it. */
@@ -172,7 +182,8 @@ export function PaymentTable({ rows, onRefund }: { rows: PaymentRowData[]; onRef
               <Icon className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden />
               <span className="min-w-0">
                 <span className="block whitespace-normal">{row.original.refund ? `Refund of ${row.original.methodLabel}` : row.original.methodLabel}</span>
-                <span className="block text-xs text-muted-foreground">{row.original.by}</span>
+                <span className="block text-xs text-muted-foreground">{row.original.reference ?? row.original.by}</span>
+                {row.original.job && <MethodJob job={row.original.job} />}
               </span>
             </span>
           )
@@ -227,7 +238,7 @@ export function InvoiceTable({ rows, onRemind }: { rows: InvoiceRowData[]; onRem
       },
       { id: "label", accessorKey: "number", header: "Invoice number", cell: ({ row }) => <span>{row.original.number}</span> },
       { id: "amount", accessorKey: "amount", header: "Amount", meta: { align: "right" } },
-      { id: "dates", accessorFn: (r) => `${r.sent} ${r.due}`, header: "Sent and due", cell: ({ row }) => `Sent ${row.original.sent}, due ${row.original.due}` },
+      { id: "dates", accessorFn: (r) => `${r.sent} ${r.due}`, header: "Sent and due", cell: ({ row: { original: r } }) => <span className="block">Sent {r.sent}<span className="block text-xs text-muted-foreground">due {r.due}</span></span> },
       { id: "status", accessorFn: (r) => r.statusLabel ?? r.status, header: "Status", cell: ({ row }) => <StatusPill status={row.original.status} label={row.original.statusLabel} /> },
       {
         id: "actions",

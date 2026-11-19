@@ -1,9 +1,10 @@
 "use client"
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { Calendar, CheckCircle2, Receipt, Send } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { DataTable, type DataTableColumn } from "@/components/blocks/DataTable"
+import { DataGrid, type GridColumnDef } from "@/components/blocks/DataGrid"
+import type { GridCardSlots } from "@/components/blocks/DataGridCard"
 import { LineItemList } from "@/components/blocks/LineItemList"
 import { NotesAndHistory } from "@/components/blocks/NotesAndHistory"
 import { RecordFooter, type FooterAction } from "@/components/blocks/RecordFooter"
@@ -17,7 +18,7 @@ import { CollectDialog, CopyDialog } from "./CustomerDialogs"
 import { MessagesTable, PaymentsTable } from "./CustomerTables"
 import { AddressChip, CustomerChip, JobChip, paymentHref } from "./RecordChips"
 import { ReminderDialog } from "./ReminderDialog"
-import { cancelInvoiceCopy, resendInvoiceCopy } from "./customer-confirm"
+import { cancelInvoiceCopy, resendInvoiceCopy } from "./confirm-copy"
 import { INVOICE_PILL, type InvoicePageData, type ReminderRow } from "./invoice-fixtures"
 import { NOW, noteOk } from "./job-fixtures"
 
@@ -37,14 +38,16 @@ export interface InvoicePageProps {
   initialDialog?: Dialog
 }
 
+const REMINDER_COLUMNS: GridColumnDef<ReminderRow>[] = [
+  { id: "sent", accessorKey: "sortAt", header: "Sent", meta: { bare: true }, cell: ({ row }) => row.original.sentOn },
+  { id: "how", accessorKey: "how", header: "How" },
+  { id: "to", accessorKey: "to", header: "To" },
+  { id: "words", accessorKey: "words", header: "Status" },
+]
+const REMINDER_CARD: GridCardSlots = { title: "sent", line: ["how"], when: ["to", "words"] }
+
 function RemindersCard({ d, rows, paused, onPause }: { d: InvoicePageData; rows: ReminderRow[]; paused: boolean; onPause: () => void }) {
   const done = d.status === "paid" || d.status === "canceled"
-  const columns: DataTableColumn<ReminderRow>[] = [
-    { id: "sent", header: "Sent", cell: (r) => r.sentOn },
-    { id: "how", header: "How", cell: (r) => r.how },
-    { id: "to", header: "To", cell: (r) => r.to },
-    { id: "status", header: "Status", cell: (r) => r.words },
-  ]
   const line = done ? (d.status === "paid" ? "No more reminders: it is paid." : "No reminders: it is canceled.") : paused ? "Scheduled reminders are paused." : d.schedule ? `Next reminder: ${d.schedule.next}` : "No reminder is scheduled."
   return (
     <SectionCard title="Reminders" id="reminders-h" flush>
@@ -58,18 +61,7 @@ function RemindersCard({ d, rows, paused, onPause }: { d: InvoicePageData; rows:
       </div>
       {rows.length > 0 ? (
         <div className="border-t border-border">
-          <DataTable
-            label="Reminders"
-            columns={columns}
-            rows={rows}
-            getKey={(r) => r.id}
-            card={(r) => (
-              <div className="flex flex-col gap-0.5 text-sm">
-                <span className="font-medium">{r.sentOn}, {r.how}</span>
-                <span className="text-muted-foreground">{r.to} · {r.words}</span>
-              </div>
-            )}
-          />
+          <DataGrid columns={REMINDER_COLUMNS} card={REMINDER_CARD} data={rows} getRowId={(r) => r.id} toolbar={false} pageSize={10} emptyTitle="No reminders yet" emptyLine="Every reminder sent for this invoice shows here." />
         </div>
       ) : (
         <p className="border-t border-border px-5 py-4 text-sm text-muted-foreground">No reminders sent yet. They show here with how they went out.</p>
@@ -91,8 +83,8 @@ export function InvoicePage({ invoice, initialDialog = null }: InvoicePageProps)
   const act = (label: string, onClick: () => void, disabled?: boolean): FooterAction => ({ label, onClick, disabled })
   const pill = INVOICE_PILL[status]
   const paidNow = state.paid ? { label: "Today", paymentId: "p-new" } : d.paidOn
-  const payments = state.paid ? [{ id: "p-new", receipt: "R-1100", date: "Nov 18", sortDay: "2026-11-18", jobId: d.job.id, jobName: d.job.name, how: "Card", amount: d.amount, stripeUrl: "https://dashboard.stripe.com/payments/pi_new" }, ...d.payments] : d.payments
-  const reminders = [...state.extra, ...d.reminders]
+  const payments = useMemo(() => (state.paid ? [{ id: "p-new", receipt: "R-1100", date: "Nov 18", sortDay: "2026-11-18", jobId: d.job.id, jobName: d.job.name, how: "Card", amount: d.amount, stripeUrl: "https://dashboard.stripe.com/payments/pi_new" }, ...d.payments] : d.payments), [state.paid, d])
+  const reminders = useMemo(() => [...state.extra, ...d.reminders], [state.extra, d.reminders])
   const unpaid = state.paid || !out ? "$0" : d.unpaid
   const totals = state.paid ? d.totals.map(([k, v, e]) => (k === "Paid" ? ([k, d.amount, e] as const) : k === "Unpaid" ? ([k, "$0", undefined] as const) : ([k, v, e] as const))) : d.totals
 
@@ -147,7 +139,7 @@ export function InvoicePage({ invoice, initialDialog = null }: InvoicePageProps)
               </div>
             </SectionCard>
             <SectionCard title="Property" id="property-h">
-              <RecordFacts divided rows={[["Address", <AddressChip key="a" customerId={d.customer.id} street={`${d.customer.street}, ${d.customer.town}`} />], ...d.property]} />
+              <RecordFacts divided rows={[["Address", <AddressChip key="a" customerId={d.customer.id} street={d.customer.street} />], ...d.property]} />
             </SectionCard>
           </>
         }
@@ -156,7 +148,7 @@ export function InvoicePage({ invoice, initialDialog = null }: InvoicePageProps)
           <LineItemList lines={d.lines} totals={totals} />
         </SectionCard>
         <SectionCard title="Payments" id="payments-h" flush>
-          {payments.length ? <PaymentsTable rows={payments} customer={d.customer.name} omitJob /> : <p className="px-5 py-4 text-sm text-muted-foreground">No payments yet. A payment shows here with its receipt, and settles the invoice.</p>}
+          {payments.length ? <PaymentsTable rows={payments} customer={d.customer.name} cardWords={d.card ? `${d.card.brand} ending ${d.card.last4}` : undefined} omitJob /> : <p className="px-5 py-4 text-sm text-muted-foreground">No payments yet. A payment shows here with its receipt, and settles the invoice.</p>}
         </SectionCard>
         <RemindersCard d={{ ...d, status }} rows={reminders} paused={state.paused} onPause={() => (setState((s) => ({ ...s, paused: !s.paused })), toast(state.paused ? "Scheduled reminders resumed" : "Scheduled reminders paused"))} />
         <SectionCard title="Messages" id="messages-h" flush>

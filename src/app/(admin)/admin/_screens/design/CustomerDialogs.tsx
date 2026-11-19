@@ -8,16 +8,16 @@ import { SplitButton } from "@/components/blocks/SplitButton"
 import { useToast } from "@/components/blocks/Toast"
 import { Input } from "@/components/ui/input"
 import { collectPlan, dollars } from "@/lib/money/collect"
-import { collectCopy, type Contact, type Copy } from "./customer-confirm"
+import { collectConfirm, type ConfirmCopy, type Reach } from "./confirm-copy"
 import type { CustomerPageData } from "./customer-fixtures"
 
 // The dialogs behind the customer page's buttons. A button that reaches the customer or their money opens one of these first; each states its
 // exact effect and the customer's own channel, and a result is a toast, never a message left in a section. Pure props: nothing is sent.
 
-export const contactOf = (d: Pick<CustomerPageData, "firstName" | "contact">): Contact => ({ first: d.firstName, channel: d.contact.channel, phone: d.contact.phone.text, email: d.contact.email })
+export const contactOf = (d: Pick<CustomerPageData, "firstName" | "contact">): Reach => ({ first: d.firstName, channel: d.contact.channel, phone: d.contact.phone.text, email: d.contact.email })
 
 /** A confirmation from its `Copy`: with a quiet twin the confirm is a split button whose caret opens below. */
-export function CopyDialog({ copy, onClose, onDone, children, size }: { copy: Copy; onClose: () => void; onDone: (variant?: string) => void; children?: ReactNode; size?: "sm" | "md" }) {
+export function CopyDialog({ copy, onClose, onDone, children, size }: { copy: ConfirmCopy; onClose: () => void; onDone: (variant?: string) => void; children?: ReactNode; size?: "sm" | "md" }) {
   return (
     <ConfirmDialog
       open
@@ -38,7 +38,7 @@ export function CopyDialog({ copy, onClose, onDone, children, size }: { copy: Co
 }
 
 export interface CollectDialogProps {
-  who: Contact
+  who: Reach
   amount: number
   card?: { brand: string; last4: string }
   /** the invoice that is out, if any: recording a payment settles it and closes its pay link */
@@ -68,7 +68,7 @@ export function CollectDialog({ who, amount, card, invoice, onClose, onPaid }: C
         onSettled={() => (onPaid?.(), onClose())}
         notNow
         buttonLabel={(o) => (o.value === "card" ? `Charge ${dollars(amount)} to the ${plan.cardWords}` : "Continue")}
-        confirmFor={(o, reference) => collectCopy(o.value, who, { amount: dollars(amount), cardWords: plan.cardWords, reference, invoiceNumber: invoice?.number, dueOn: "14 days from today" })}
+        confirmFor={(o, reference) => collectConfirm(o.value, { ...who, service: "job", amount: dollars(amount), address: "", dueOn: "14 days from today", cardWords: plan.cardWords, invoiceOpen: Boolean(invoice), invoiceNumber: invoice?.number }, reference)}
       />
     </ConfirmDialog>
   )
@@ -95,7 +95,7 @@ export function EditDetailsDialog({ d, onClose, onDone }: { d: CustomerPageData;
   )
 }
 
-export function MergeDialog({ d, others, copy, onClose, onDone }: { d: CustomerPageData; others: readonly string[]; copy: (other: string) => Copy; onClose: () => void; onDone: (other: string) => void }) {
+export function MergeDialog({ d, others, copy, onClose, onDone }: { d: CustomerPageData; others: readonly string[]; copy: (other: string) => ConfirmCopy; onClose: () => void; onDone: (other: string) => void }) {
   const [other, setOther] = useState(others[0] ?? "")
   const c = copy(other)
   return (

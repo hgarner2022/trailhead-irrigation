@@ -50,8 +50,12 @@ const PAY_LINK = "trailheadirrigation.com/pay/1042"
 export const reminderText = (f: ConfirmFacts, line = ""): string =>
   `Trailhead: a reminder that your ${f.amount} invoice for the ${f.service} ${f.pastDue ? "was due" : "is due"} ${f.dueOn}. Pay here: ${PAY_LINK}${line.trim() ? ` ${line.trim()}` : ""}`
 
-/** What a payment does besides the money: the receipt, and the open invoice it settles. */
-const afterPaying = (f: ConfirmFacts) => `${f.first} gets a receipt by email${f.invoiceOpen ? ", the open invoice is settled and its pay link closes" : ""}.`
+/** Who a message reaches and how: the customer's contact preference. Every `ConfirmFacts` is one. */
+export type Reach = Pick<ConfirmFacts, "first" | "channel" | "phone" | "email">
+
+/** "by text at (970) 555-0123" or "by email at andrea@example.com": the customer's own channel. */
+export const via = (c: Reach): string => (c.channel === "email" ? `by email at ${c.email ?? "the address on file"}` : `by text at ${c.phone}`)
+const notify = (c: Reach) => `and notify the customer ${via(c)}`
 
 /** The toast after the money has gone through or the invoice has gone out: the page already shows the new state in Billing. */
 export function doneToast(way: string, f: ConfirmFacts): string {
@@ -65,23 +69,69 @@ export function doneToast(way: string, f: ConfirmFacts): string {
   }
 }
 
+/**
+ * The confirmation for each way of paying. A card charge or a recorded payment sends a receipt, so each states the customer's channel and has
+ * a `quiet` twin under the caret ("without notifying"); recording a payment against an open invoice also settles it and closes its pay link.
+ * Sending the invoice is itself the notification, so it has no twin.
+ */
 export function collectConfirm(way: string, f: ConfirmFacts, reference = ""): ConfirmCopy | null {
   const ref = reference.trim()
+  const settles = f.invoiceOpen ? ` ${f.invoiceNumber ? `Invoice ${f.invoiceNumber}` : "The open invoice"} is settled and its pay link stops working.` : ""
+  const sentence = (what: string) => `${what} ${notify(f)} a receipt.${settles}`
   switch (way) {
     case "card":
-      return { title: `Charge ${f.amount}`, message: `Charge ${f.amount} to the ${f.cardWords ?? "card on file"}. ${afterPaying(f)}`, confirmLabel: `Charge ${f.amount}` }
+      return { title: `Charge ${f.amount}`, message: sentence(`Charge ${f.amount} to the ${f.cardWords ?? "card on file"}`), confirmLabel: `Charge ${f.amount}`, quiet: "Charge without notifying" }
     case "check":
-      return { title: "Record the check", message: `Record a ${f.amount} check${ref ? `, number ${ref}` : ""}. ${afterPaying(f)}`, confirmLabel: "Record the payment" }
+      return { title: "Record the payment", message: sentence(`Record a ${f.amount} check${ref ? `, number ${ref}` : ""}`), confirmLabel: "Record the payment", quiet: "Record without notifying" }
     case "venmo":
-      return { title: "Record the Venmo payment", message: `Record a ${f.amount} Venmo payment${ref ? ` from ${ref}` : ""}. ${afterPaying(f)}`, confirmLabel: "Record the payment" }
+      return { title: "Record the payment", message: sentence(`Record a ${f.amount} Venmo payment${ref ? ` from ${ref}` : ""}`), confirmLabel: "Record the payment", quiet: "Record without notifying" }
     case "cash":
-      return { title: "Record the cash", message: `Record ${f.amount} in cash. ${afterPaying(f)}`, confirmLabel: "Record the payment" }
+      return { title: "Record the payment", message: sentence(`Record ${f.amount} in cash`), confirmLabel: "Record the payment", quiet: "Record without notifying" }
     case "invoice":
-      return { title: "Send the invoice", message: `Send the invoice for ${f.amount} ${f.channel === "email" ? `by email to ${f.email ?? "the customer"}` : `by text to ${f.phone}`}, due ${f.dueOn}.`, confirmLabel: "Send the invoice", reportOption: { label: "Include the visit report (the checklist and photos)", with: `Send the invoice for ${f.amount} ${f.channel === "email" ? `by email to ${f.email ?? "the customer"}` : `by text to ${f.phone}`}, due ${f.dueOn}, with the visit report.`, without: `Send the invoice for ${f.amount} ${f.channel === "email" ? `by email to ${f.email ?? "the customer"}` : `by text to ${f.phone}`}, due ${f.dueOn}.` } }
+      return { title: "Send the invoice", message: `Send the invoice for ${f.amount} ${via(f)}, due ${f.dueOn}.`, confirmLabel: "Send the invoice", reportOption: { label: "Include the visit report (the checklist and photos)", with: `Send the invoice for ${f.amount} ${via(f)}, due ${f.dueOn}, with the visit report.`, without: `Send the invoice for ${f.amount} ${via(f)}, due ${f.dueOn}.` } }
     default:
       return null
   }
 }
+
+export const REMINDER_LINE_MAX = 140
+
+/** The text or email a reminder sends, word for word, by the customer's channel. */
+export const reminderBody = (c: Reach, o: { amount: string; service: string; dueOn: string; pastDue?: boolean; line?: string }): string => {
+  const sentence = `a reminder that your ${o.amount} invoice for the ${o.service} ${o.pastDue ? "was due" : "is due"} ${o.dueOn}.`
+  const extra = o.line?.trim() ? ` ${o.line.trim()}` : ""
+  return c.channel === "email" ? `Hi ${c.first}, ${sentence}${extra} Pay online: ${PAY_LINK}\n\nThe Trailhead crew` : `Trailhead: ${sentence}${extra} Pay here: ${PAY_LINK}`
+}
+
+export const reminderCopy = (c: Reach, o: { number: string }): ConfirmCopy => ({
+  title: "Send a payment reminder",
+  message: `Send the customer this reminder for invoice ${o.number} ${via(c)}. Nothing else changes.`,
+  confirmLabel: "Send the reminder",
+})
+
+export const cardLinkCopy = (c: Reach): ConfirmCopy => ({ title: "Send the card link", message: `Send the customer a link to add a card ${via(c)}. The link is the notification.`, confirmLabel: "Send the link" })
+
+export const refundCopy = (c: Reach, amount: string, how: string): ConfirmCopy => ({
+  title: `Refund ${amount}`,
+  message: `Record a ${amount} refund of the ${how} payment ${notify(c)} that it was refunded. A refund is a record of its own: the payment stays and nothing is deleted.`,
+  confirmLabel: `Refund ${amount}`,
+  quiet: "Refund without notifying",
+  destructive: true,
+})
+
+export const resendInvoiceCopy = (c: Reach, o: { number: string; amount: string }): ConfirmCopy => ({ title: "Resend the invoice", message: `Send invoice ${o.number} for ${o.amount} to the customer again ${via(c)}, with the same pay link.`, confirmLabel: "Resend the invoice" })
+
+export const cancelInvoiceCopy = (c: Reach, o: { number: string }): ConfirmCopy => ({
+  title: "Cancel invoice",
+  message: `Cancel invoice ${o.number} and close its pay link ${notify(c)} that it is canceled. The invoice stays on record as Canceled and the job is unpaid again.`,
+  confirmLabel: "Cancel invoice",
+  quiet: "Cancel without notifying",
+  destructive: true,
+})
+
+export const deleteCustomerCopy = (name: string): ConfirmCopy => ({ title: "Delete customer", message: `Delete ${name}? Nothing has happened for this customer: no jobs, no messages, no payments. This cannot be undone.`, confirmLabel: "Delete customer", destructive: true })
+
+export const mergeCopy = (name: string, other: string): ConfirmCopy => ({ title: "Merge customers", message: `Move every job, invoice, payment and message of ${other} onto ${name}, then remove ${other}. Nobody is notified. This cannot be undone.`, confirmLabel: "Merge customers", destructive: true })
 
 /** The confirmation behind each footer button that reaches the customer or their money, by the button's label. */
 export function footerConfirms(f: ConfirmFacts): Record<string, ConfirmCopy> {

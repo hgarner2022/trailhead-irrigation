@@ -24,7 +24,7 @@ describe("Invoices page", () => {
     expect(sortInvoiceRows(INVOICE_ROWS)[0]!.number).toBe("INV-2026-0035")
   })
 
-  it("lists every invoice with the invoice, customer and job as chips and the row's actions", () => {
+  it("lists every invoice with the invoice, customer and job as chips and the row's actions on one line", () => {
     render(<InvoicesPage rows={INVOICE_ROWS} />)
     expect(screen.getAllByRole("row")).toHaveLength(10)
     const first = screen.getAllByRole("row")[1]!
@@ -32,22 +32,21 @@ describe("Invoices page", () => {
     expect(within(first).getByRole("link", { name: /Customer: Joe Alvarez/ })).toBeInTheDocument()
     expect(within(first).getByRole("link", { name: /Job: Sprinkler repair/ })).toBeInTheDocument()
     expect(within(first).getByText("Past due", { selector: "[data-slot=status-pill]" })).toBeInTheDocument()
-    for (const name of ["Remind", "Collect payment", "Open"]) expect(within(first).getByRole("button", { name })).toBeInTheDocument()
+    for (const name of ["Remind", "Collect payment"]) expect(within(first).getByRole("button", { name })).toBeInTheDocument()
+    expect(within(first).getByRole("link", { name: "Open invoice" })).toHaveAttribute("href", expect.stringContaining("invoice=i35"))
+    expect(within(first).getByRole("button", { name: "Remind" }).parentElement).toHaveClass("flex-nowrap")
     const paid = screen.getAllByRole("row").find((r) => r.textContent?.includes("INV-2026-0040"))!
     expect(within(paid).queryByRole("button", { name: "Remind" })).toBeNull()
-    expect(within(paid).getByRole("button", { name: "Open" })).toBeInTheDocument()
-    expect(screen.queryByRole("button", { name: "Columns" })).toBeNull()
+    expect(within(paid).getByRole("link", { name: "Open invoice" })).toBeInTheDocument()
   })
 
-  it("filters from a tile, from Status and from search, and says when nothing matches", () => {
+  it("has one toolbar row, Status and Who chips and a search, and filters from a tile", () => {
     render(<InvoicesPage rows={INVOICE_ROWS} />)
+    expect(screen.getAllByRole("button", { name: "Status" }).length).toBeGreaterThan(0)
+    expect(screen.getAllByRole("button", { name: "Who" }).length).toBeGreaterThan(0)
     fireEvent.click(screen.getByRole("button", { name: /Past due/ }))
     expect(screen.getAllByRole("row")).toHaveLength(3)
-    fireEvent.change(screen.getByLabelText("Status"), { target: { value: "paid" } })
-    expect(screen.getAllByRole("row")).toHaveLength(4)
-    fireEvent.change(screen.getByLabelText("Search invoices"), { target: { value: "cedar" } })
-    expect(screen.getAllByRole("row")).toHaveLength(2)
-    fireEvent.change(screen.getByLabelText("Search invoices"), { target: { value: "zzz" } })
+    fireEvent.change(screen.getByRole("searchbox", { name: "Search by number, name or street" }), { target: { value: "zzz" } })
     expect(screen.getByText("No invoices match.")).toBeInTheDocument()
   })
 
@@ -122,8 +121,11 @@ describe("Invoice page", () => {
     })
   })
 
-  it("makes the band's tiles links and leaves Paid on plain while unpaid", () => {
+  it("makes the band's tiles links and leaves Paid on plain, with no chevron, while unpaid", () => {
     render(<InvoicePage invoice={invoicePageOf("sent")} />)
+    const paidOn = Array.from(document.querySelectorAll("[data-slot=summary-cell]")).find((c) => c.textContent?.includes("Paid on"))!
+    expect(paidOn).not.toHaveAttribute("data-link")
+    expect(paidOn.querySelector("svg.lucide-chevron-right")).toBeNull()
     expect(document.querySelectorAll("[data-slot=summary-cell][data-link]")).toHaveLength(3)
     const { unmount } = render(<InvoicePage invoice={invoicePageOf("paid-card")} />)
     expect(screen.getAllByRole("link", { name: /Paid on/ }).length).toBe(1)
@@ -136,7 +138,7 @@ describe("Invoice page", () => {
     expect(screen.getByText("$9")).toBeInTheDocument()
     unmount()
     render(<InvoicePage invoice={invoicePageOf("paid-card")} />)
-    expect(screen.getByText("Card, kept on file")).toBeInTheDocument()
+    expect(screen.getByText(/Visa ending 4242, kept on file/)).toBeInTheDocument()
     expect(screen.getAllByRole("link", { name: /Open in Stripe/ }).length).toBeGreaterThan(0)
   })
 

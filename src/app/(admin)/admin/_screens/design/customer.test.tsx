@@ -58,7 +58,7 @@ describe("customer page", () => {
     expect(jobs.getAllByRole("row")).toHaveLength(6)
     expect(jobs.queryByRole("button", { name: "Columns" })).toBeNull()
     expect(jobs.getByRole("link", { name: /Day: May 3, 2027/ })).toHaveAttribute("href", expect.stringContaining("/admin/schedule?day=2027-05-03"))
-    expect(jobs.getAllByRole("link", { name: /Person: Ryan Garner/ }).length).toBeGreaterThan(0)
+    expect(jobs.getAllByRole("link", { name: /Person: Ryan/ }).length).toBeGreaterThan(0)
     expect(jobs.getByText("Paid, Venmo")).toBeInTheDocument()
     expect(jobs.getByText("Charged after each visit")).toBeInTheDocument()
     const first = jobs.getAllByRole("row")[1]!
@@ -66,10 +66,13 @@ describe("customer page", () => {
     expect(sortJobs(customerPageOf("pass-holder").jobs).map((j) => j.open)).toEqual([true, true, false, false, false])
   })
 
-  it("opens a job when its row is pressed, but not when a chip inside is", () => {
+  it("is the embedded grid: no Columns control and no search, the job chip is the row's link, and a day never wraps", () => {
     render(<CustomerPage customer={customerPageOf("pass-holder")} />)
-    const row = within(sectionOf("Jobs")).getAllByRole("row")[2]!
-    expect(row).toHaveAttribute("tabindex", "0")
+    const jobs = within(sectionOf("Jobs"))
+    expect(jobs.queryByRole("button", { name: "Columns" })).toBeNull()
+    expect(jobs.queryByRole("searchbox")).toBeNull()
+    expect(jobs.getAllByRole("link", { name: /Job: Sprinkler repair/ })[0]).toHaveAttribute("href", expect.stringContaining("/admin/jobs?job="))
+    expect(document.querySelector("[data-slot=data-grid-table] th")).not.toHaveClass("bg-stone")
   })
 
   it("says Paid in full or the unpaid amount in Billing, with Total, Paid, Unpaid and the card", () => {
@@ -78,7 +81,7 @@ describe("customer page", () => {
     expect(billing.getByText("$145 unpaid")).toBeInTheDocument()
     for (const label of ["Total", "Paid", "Unpaid", "Card on file"]) expect(billing.getAllByText(label).length).toBeGreaterThan(0)
     expect(billing.getByText(/Visa ending 4242, expires 08\/28/)).toBeInTheDocument()
-    expect(billing.getAllByRole("link", { name: /Open in Stripe/ }).length).toBeGreaterThan(0)
+    expect(billing.getAllByRole("link", { name: /Open in Stripe/ }).length).toBeGreaterThan(1)
     expect(billing.getByRole("button", { name: "Update card" })).toBeInTheDocument()
     unmount()
     render(<CustomerPage customer={customerPageOf("one-off")} />)
@@ -129,6 +132,15 @@ describe("customer page", () => {
     render(<CustomerPage customer={customerPageOf("two-seasons")} initialDialog="card-link" />)
     expect(screen.getByText(/by email at dale\.whitaker@example\.com/)).toBeInTheDocument()
     expect(screen.queryByRole("button", { name: "More ways" })).toBeNull()
+  })
+
+  it("shows the payments as the job page's table: the date, the method with its handle as a quiet line, the amount, a status and icon buttons", () => {
+    render(<CustomerPage customer={customerPageOf("pass-holder")} />)
+    const pay = within(document.querySelector("[data-slot=payment-table]") as HTMLElement)
+    expect(pay.getByText("@andrea-d")).toBeInTheDocument()
+    expect(pay.getAllByRole("link", { name: "Receipt" }).length).toBe(2)
+    expect(pay.getAllByRole("link", { name: /Open in Stripe/ }).length).toBe(1)
+    expect(pay.getAllByRole("link", { name: /Job:/ }).length).toBe(2)
   })
 
   it("holds no result message in any section", () => {
