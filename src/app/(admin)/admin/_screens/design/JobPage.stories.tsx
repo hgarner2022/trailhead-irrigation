@@ -36,13 +36,13 @@ export const ScheduledAheadPhone: Story = story("scheduled", phone)
 export const Today: Story = story("today", laptop)
 export const TodayPhone: Story = story("today", phone)
 
-/** Ryan sees the Today badge and On my way sent. The one primary action is Start, which confirms nothing. */
+/** After Send on On my way: Active since 9:12 am under the time. The one primary action is Mark done. */
 export const OnTheWay: Story = story("on-the-way", laptop)
 export const OnTheWayPhone: Story = story("on-the-way", phone)
 
-/** Ryan sees In progress with the start time and the checklist half done. The one primary action is Mark done. */
-export const InProgress: Story = story("in-progress", laptop)
-export const InProgressPhone: Story = story("in-progress", phone)
+/** Active since 9:12 am with the checklist half done. The one primary action is Mark done. */
+export const Active: Story = story("active", laptop)
+export const ActivePhone: Story = story("active", phone)
 
 /** Ryan sees a trip whose day passed with no Mark done. The one primary action is Mark done, with Skip beside it. */
 export const Late: Story = story("late", laptop)

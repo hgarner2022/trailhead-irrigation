@@ -55,7 +55,7 @@ export function collectConfirm(way: string, f: ConfirmFacts, reference = ""): Co
 export function footerConfirms(f: ConfirmFacts): Record<string, ConfirmCopy> {
   return {
     Move: { title: "Move the visit", message: `Move the ${f.service} to Wed, Nov 25 at 9:00 am and text ${f.first} the new day.`, confirmLabel: "Move the visit" },
-    "On my way": { title: "Send On my way", message: `Text ${f.first} at ${f.phone} that Ryan is on the way to ${f.address}. Nothing is charged.`, confirmLabel: "Send the text" },
+    "On my way": { title: "Send On my way", message: `Text ${f.first} that Ryan is on the way to ${f.address}.`, confirmLabel: "Send" },
     "Send a payment reminder": {
       title: "Send a payment reminder",
       message: `Send this text to ${f.first} at ${f.phone}.`,

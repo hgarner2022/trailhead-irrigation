@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { useState, type ReactNode } from "react"
 import { Calendar, MapPin, Receipt, UserRound } from "lucide-react"
 import { AsideCard } from "@/components/blocks/AsideCard"
@@ -37,6 +38,16 @@ export const EditLink = ({ label = "Edit" }: { label?: string }) => (
   </button>
 )
 
+/** A record's name as a link: orange with the hover underline, the kind read first by a screen reader. `RecordChip` replaces it when that block lands. */
+export function NameLink({ name, kind, href }: { name: string; kind: string; href: string }) {
+  return (
+    <Link href={href} className="rounded-sm text-primary-dark underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50">
+      <span className="sr-only">{kind}: </span>
+      {name}
+    </Link>
+  )
+}
+
 /** The status badges beside the title, large, with a muted note after them ("day passed"). */
 export function Badges({ pills, note }: { pills: PillData[]; note?: string }) {
   return (
@@ -62,7 +73,7 @@ const split = (address: string | undefined): [string, string | undefined] => {
 }
 
 export interface BandInput {
-  when: { label: string; value: string; sub?: string }
+  when: { label: string; value: string; sub?: string; activeSince?: string }
   who: string
   address?: string
   total: string
@@ -76,8 +87,8 @@ export function bandItems(b: BandInput): SummaryItem[] {
   const [street, town] = split(b.address)
   const money = moneyWord(b.pills, b.statusText, b.canceled)
   return [
-    { label: b.when.label, value: b.when.value, sub: b.when.sub, icon: Calendar },
-    { label: "Who", value: b.who, icon: UserRound },
+    { label: b.when.label, value: b.when.value, sub: b.when.activeSince ? <><span className="block">{b.when.sub}</span><span className="block font-medium text-navy">{b.when.activeSince}</span></> : b.when.sub, icon: Calendar },
+    { label: "Who", value: /^No one/.test(b.who) ? b.who : <NameLink kind="Person" name={b.who} href="/admin/settings?tab=people" />, icon: UserRound },
     { label: "Where", value: street, sub: town, icon: MapPin },
     { label: "Total", value: b.total, sub: money.sub, tone: money.alert ? "alert" : "plain", icon: Receipt },
   ]
@@ -85,7 +96,7 @@ export function bandItems(b: BandInput): SummaryItem[] {
 
 export function bandOfJob(job: JobPageData): SummaryItem[] {
   return bandItems({
-    when: { label: "When", value: row(job.when, "Day") ?? "None", sub: row(job.when, "Time") },
+    when: { label: "When", value: row(job.when, "Day") ?? "None", sub: row(job.when, "Time"), activeSince: job.activeSince },
     who: row(job.when, "Who") ?? "No one",
     address: row(job.where, "Address"),
     total: job.billing.summary.find(([k]) => k === "Total")?.[1] ?? "$0",

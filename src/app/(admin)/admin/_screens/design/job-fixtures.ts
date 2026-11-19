@@ -15,8 +15,8 @@ export const NOW = new Date("2026-11-18T18:00:00Z")
 export const noop = () => undefined
 export const noteOk = async () => ({ ok: true as const })
 
-export type JobState = "unscheduled" | "scheduled" | "today" | "on-the-way" | "in-progress" | "late" | "done-unpaid" | "done-paid" | "invoice-sent" | "past-due" | "canceled"
-export const JOB_STATES: readonly JobState[] = ["unscheduled", "scheduled", "today", "on-the-way", "in-progress", "late", "done-unpaid", "done-paid", "invoice-sent", "past-due", "canceled"]
+export type JobState = "unscheduled" | "scheduled" | "today" | "on-the-way" | "active" | "late" | "done-unpaid" | "done-paid" | "invoice-sent" | "past-due" | "canceled"
+export const JOB_STATES: readonly JobState[] = ["unscheduled", "scheduled", "today", "on-the-way", "active", "late", "done-unpaid", "done-paid", "invoice-sent", "past-due", "canceled"]
 
 export interface FooterPlan {
   primary?: FooterAction
@@ -39,6 +39,8 @@ export interface JobPageData {
   pills: PillData[]
   /** muted words next to the pills: "day passed" */
   pillNote?: string
+  /** the band's When cell, under the time: "Active since 9:12 am" */
+  activeSince?: string
   notice?: string
   when: RecordFact[]
   where: RecordFact[]
@@ -73,7 +75,7 @@ const input = { amount: 145, isPass: false, invoiceOpen: false, canInvoice: true
 const PAID_NOTES: TimelineLine[] = [{ id: "n3", at: "2026-11-18T17:50:00Z", actor: "Ryan", what: "Marked done and recorded $145, Venmo", kind: "event" }]
 const invoice = (sent: string, due: string, history: string, id = "i1"): BillingRowData => ({ id, kind: "invoice", title: `Invoice 1042 · $145 · due ${due}`, detail: `Invoice sent ${sent}. ${history}`, onOpen: noop })
 
-const CHECKLIST: Record<JobState, number | null> = { unscheduled: 0, scheduled: 0, today: 0, "on-the-way": 0, "in-progress": 2, late: 0, "done-unpaid": 5, "done-paid": 5, "invoice-sent": 5, "past-due": 5, canceled: null }
+const CHECKLIST: Record<JobState, number | null> = { unscheduled: 0, scheduled: 0, today: 0, "on-the-way": 0, "active": 2, late: 0, "done-unpaid": 5, "done-paid": 5, "invoice-sent": 5, "past-due": 5, canceled: null }
 
 export function jobPageOf(state: JobState): JobPageData {
   const n = CHECKLIST[state]
@@ -88,11 +90,11 @@ function buildJob(state: JobState): JobPageData {
     case "scheduled":
       return { ...base, pills: [{ status: "scheduled" }], when: day("Tue, Nov 24", "Any time"), billing: waiting, totals: openTotals, notes: [ADDED("n1"), { id: "n2", at: "2026-11-18T16:30:00Z", actor: "Ryan", what: "Set the day to Tue, Nov 24", kind: "event" }], messages: scheduledMsgs, footer: { primary: act("Move"), secondary: [act("Mark done"), act("Send a text")], more: more("Edit", "Add a note"), destructive: act("Cancel job") } }
     case "on-the-way":
-      return { ...buildJob("today"), pillNote: "On my way sent 8:40 am", footer: { primary: act("Start"), secondary: [act("Mark done"), act("Send a text")], more: more("Move", "Edit", "Add a note"), destructive: act("Cancel job") } }
-    case "in-progress":
-      return { ...buildJob("today"), pills: [{ status: "in-progress" }], pillNote: "Started 9:12 am", footer: { primary: act("Mark done"), secondary: [act("Send a text")], more: more("Move", "Edit", "Add a note"), destructive: act("Cancel job") } }
+      return { ...buildJob("today"), pills: [{ status: "job-active" }], activeSince: "Active since 9:12 am", pillNote: "On my way sent 9:12 am", footer: { primary: act("Mark done"), secondary: [act("Send a text")], more: more("Move", "Edit", "Add a note"), destructive: act("Cancel job") } }
+    case "active":
+      return { ...buildJob("today"), pills: [{ status: "job-active" }], activeSince: "Active since 9:12 am", pillNote: "On my way sent 9:12 am", footer: { primary: act("Mark done"), secondary: [act("Send a text")], more: more("Move", "Edit", "Add a note"), destructive: act("Cancel job") } }
     case "today":
-      return { ...base, pills: [{ status: "today" }], when: day("Today, Wed Nov 18", "9:00 am"), billing: waiting, totals: openTotals, notes: [ADDED("n1")], messages: [...scheduledMsgs, msg("m2", "2026-11-17T23:00:00Z", "sms", "day-before", "Trailhead: your repair is tomorrow, Wed, Nov 18 at 9:00 am.")], footer: { primary: act("On my way"), secondary: [act("Mark done"), act("Send a text")], more: more("Move", "Edit", "Add a note"), destructive: act("Cancel job") } }
+      return { ...base, pills: [{ status: "today" }], when: day("Today, Wed Nov 18", "9:00 am"), billing: waiting, totals: openTotals, notes: [ADDED("n1")], messages: [...scheduledMsgs, msg("m2", "2026-11-17T23:00:00Z", "sms", "day-before", "Trailhead: your repair is tomorrow, Wed, Nov 18 at 9:00 am.")], footer: { primary: act("On my way"), secondary: [act("Mark done"), act("Send a text")], more: more("Start without texting", "Move", "Edit", "Add a note"), destructive: act("Cancel job") } }
     case "late":
       return { ...base, pills: [{ status: "scheduled" }], pillNote: "day passed", notice: "This trip was Mon, Nov 16 and was never marked done. Mark done or Skip.", when: day("Mon, Nov 16", "Any time"), billing: waiting, totals: openTotals, notes: [ADDED("n1", "2026-11-10T16:10:00Z")], messages: scheduledMsgs, footer: { primary: act("Mark done"), secondary: [act("Skip"), act("Move")], more: more("Send a text", "Edit"), destructive: act("Cancel job") } }
     case "done-unpaid":
@@ -111,9 +113,9 @@ function buildJob(state: JobState): JobPageData {
 export const STATE_NOTES: Record<JobState, string> = {
   unscheduled: "Ryan sees a repair with no day. The one primary action is Schedule.",
   scheduled: "Ryan sees the day, who and Any time. The one primary action is Move; Mark done is one tap beside it.",
-  today: "Ryan sees today with the time the customer was told. The one primary action is On my way, then Mark done.",
-  "on-the-way": "Ryan sees the Today badge and On my way sent 8:40 am. The one primary action is Start; pressing it confirms nothing, since no customer is told.",
-  "in-progress": "Ryan sees In progress, Started 9:12 am, and the checklist half done. The one primary action is Mark done.",
+  today: "Ryan sees today with the time the customer was told. The one primary action is On my way: it opens its confirmation (Text Andrea that Ryan is on the way to 480 Briggs St.) and on Send the job becomes Active and Mark done takes over. More has Start without texting for a customer with no mobile.",
+  "on-the-way": "Ryan pressed On my way and sent the text, so the job is Active since 9:12 am, in the band under the time. The one primary action is Mark done, which leads to How is this paid?.",
+  "active": "Ryan sees Active since 9:12 am and the checklist half done. The one primary action is Mark done.",
   late: "Ryan sees a trip whose day passed with no Mark done. The one primary action is Mark done, with Skip beside it.",
   "done-unpaid": "Ryan sees How is this paid? right on the page, card selected. The one button, Charge $145 to the Visa ending 4242, sits under the options with a quiet Not now; the header has no primary while that block is open.",
   "done-paid": "Ryan sees Billing read Paid, Venmo. There is no primary action; the quiet ones are under More.",
