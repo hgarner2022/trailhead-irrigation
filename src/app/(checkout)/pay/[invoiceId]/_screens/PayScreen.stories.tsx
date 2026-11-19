@@ -3,6 +3,7 @@ import { expect, fn, userEvent, within } from "storybook/test"
 import { PayScreen } from "./PayScreen"
 import type { PayAction } from "./PayForm"
 import type { PayBill } from "./pay-model"
+import { REPORT_FIXTURE } from "@/emails/fixtures"
 
 // The pay page for one invoice: Andrea's repair, $145, sent Nov 17 and due Dec 1. Sent, overdue, paid and canceled are the four
 // states an invoice is read as; the sales tax line and the credit line show on their own stories.
@@ -26,6 +27,9 @@ const meta = {
 } satisfies Meta<typeof PayScreen>
 export default meta
 type Story = StoryObj<typeof meta>
+
+/** Sent with the visit report: What we did under the lines, the checklist, the notes and the photos. */
+export const SentWithVisitReport: Story = { args: { bill: { ...sent, report: REPORT_FIXTURE } } }
 
 /** Sent: the lines, the total, "Due Dec 1", the one button and the two lines around it. */
 export const Sent: Story = {
