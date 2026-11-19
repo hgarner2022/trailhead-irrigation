@@ -4,9 +4,12 @@
  * entry (who, when, the field in words, the value before and after as
  * words). An edit that changes nothing returns the state it was given.
  * Also the words for weekdays and visit kinds. The People tab's reducers are
- * in settings-people.ts and the Messages tab's in settings-messages.ts.
+ * in settings-people.ts, the Messages tab's in settings-messages.ts and the
+ * Billing tab's in settings-billing.ts. The area and capacity-window reducers left
+ * with their tabs (step 6): the columns they wrote stay in the database until the
+ * engine step reads or drops them.
  */
-import type { AreaGroup, CapacityKind, OrganizationSettings, SeasonWindow, ServiceItem, SettingsChange, Town, Weekday } from "@/lib/admin/types"
+import type { CapacityKind, OrganizationSettings, ServiceItem, SettingsChange, Weekday } from "@/lib/admin/types"
 import { WEEKDAYS } from "@/lib/admin/calendar"
 
 /** One API key as the list shows it; the secret is shown once at creation and never kept. */
@@ -52,9 +55,7 @@ export interface Actor {
   at: string
 }
 
-export const TOWNS: readonly Town[] = ["Erie", "Longmont", "Louisville", "Lafayette", "Firestone", "Broomfield"]
 export const CAPACITY_KINDS: readonly CapacityKind[] = ["turn-on", "inspection", "blowout", "repair", "other"]
-export const WINDOW_KINDS: readonly SeasonWindow["kind"][] = ["turn-on", "inspection", "blowout"]
 
 const DAY_WORDS: Record<Weekday, string> = { mon: "Mon", tue: "Tue", wed: "Wed", thu: "Thu", fri: "Fri", sat: "Sat", sun: "Sun" }
 /** "Mon to Fri" for a run, "Mon, Wed, Fri" otherwise, "None" for no days. */
@@ -67,12 +68,9 @@ export function daysWords(days: Weekday[]): string {
 }
 
 export const KIND_PLURALS: Record<CapacityKind, string> = { "turn-on": "turn-ons", inspection: "inspections", blowout: "blowouts", repair: "repairs", other: "other visits" }
-export const WINDOW_NAMES: Record<SeasonWindow["kind"], string> = { "turn-on": "Turn-on window", inspection: "Inspection window", blowout: "Blowout window" }
 
 /** The limits the reducers enforce; the number inputs read the same ones. */
 export const MAX_CAPACITY = 50
-export const MAX_LEAD_WEEKS = 12
-export const MAX_FIRM_DAYS = 30
 
 /** True for YYYY-MM-DD that is a real calendar day (not Feb 30, not month 13). */
 export function isRealDate(value: string): boolean {
@@ -91,73 +89,6 @@ export function record(state: SettingsState, actor: Actor, field: string, from: 
   if (from === to) return state
   const change: SettingsChange = { id: `sc${state.changes.length + 1}-${actor.at}`, at: actor.at, who: actor.who, field, from: clip(from), to: clip(to) }
   return { ...state, settings, changes: [...state.changes, change] }
-}
-
-const areaOf = (state: SettingsState, id: string) => state.settings.areas.find((a) => a.id === id)
-const replaceArea = (s: OrganizationSettings, area: AreaGroup) => ({ ...s, areas: s.areas.map((a) => (a.id === area.id ? area : a)) })
-
-export function setAreaName(state: SettingsState, areaId: string, raw: string, actor: Actor): SettingsState {
-  const area = areaOf(state, areaId)
-  const name = raw.trim()
-  if (!area || !name) return state
-  return record(state, actor, `${area.name} name`, area.name, name, replaceArea(state.settings, { ...area, name }))
-}
-
-/** The town joins the area, leaving whichever area had it; pressing a town the area already has takes it out, so a town is in at most one area. */
-export function toggleAreaTown(state: SettingsState, areaId: string, town: Town, actor: Actor): SettingsState {
-  const area = areaOf(state, areaId)
-  if (!area) return state
-  const had = area.towns.includes(town)
-  const areas = state.settings.areas.map((a) => {
-    if (a.id === areaId) return { ...a, towns: had ? a.towns.filter((t) => t !== town) : [...a.towns, town] }
-    return a.towns.includes(town) ? { ...a, towns: a.towns.filter((t) => t !== town) } : a
-  })
-  const after = areas.find((a) => a.id === areaId)!
-  const from = had ? undefined : state.settings.areas.find((a) => a.id !== areaId && a.towns.includes(town))
-  const to = `${after.towns.join(", ") || "None"}${from ? ` (moved from ${from.name})` : ""}`
-  return record(state, actor, `${area.name} towns`, area.towns.join(", ") || "None", to, { ...state.settings, areas })
-}
-
-/** The town one step up or down the fall or spring order; at an end it stays and nothing is logged. */
-export function moveTownInOrder(state: SettingsState, season: "fall" | "spring", town: Town, direction: "up" | "down", actor: Actor): SettingsState {
-  const key = season === "fall" ? "fallTownOrder" : "springTownOrder"
-  const order = [...state.settings[key]]
-  const i = order.indexOf(town)
-  const j = direction === "up" ? i - 1 : i + 1
-  if (i === -1 || j < 0 || j >= order.length) return state
-  ;[order[i], order[j]] = [order[j], order[i]]
-  const name = season === "fall" ? "Fall order" : "Spring order"
-  return record(state, actor, name, state.settings[key].join(", "), order.join(", "), { ...state.settings, [key]: order })
-}
-
-export function setBuffer(state: SettingsState, which: "early" | "late", percent: number, actor: Actor): SettingsState {
-  if (!Number.isInteger(percent) || percent < 0 || percent > 100) return state
-  const key = which === "early" ? "bufferPercentEarly" : "bufferPercentLate"
-  const name = which === "early" ? "Buffer, first two weeks" : "Buffer, after the first two weeks"
-  return record(state, actor, name, `${state.settings[key]}%`, `${percent}%`, { ...state.settings, [key]: percent })
-}
-
-export function setWindow(state: SettingsState, kind: SeasonWindow["kind"], field: "opensOn" | "closesOn" | "leadWeeks", value: string | number, actor: Actor): SettingsState {
-  const season = state.settings.windows.find((w) => w.kind === kind)
-  if (!season) return state
-  if (field === "leadWeeks") {
-    if (!Number.isInteger(value) || Number(value) < 0 || Number(value) > MAX_LEAD_WEEKS) return state
-  } else {
-    if (!isRealDate(String(value))) return state
-    const opens = field === "opensOn" ? String(value) : season.opensOn
-    const closes = field === "closesOn" ? String(value) : season.closesOn
-    if (opens > closes) return state
-  }
-  const words = { opensOn: "opens", closesOn: "closes", leadWeeks: "lead weeks" }[field]
-  const windows = state.settings.windows.map((w) => (w.kind === kind ? { ...w, [field]: value } : w))
-  return record(state, actor, `${WINDOW_NAMES[kind]} ${words}`, String(season[field]), String(value), { ...state.settings, windows })
-}
-
-/** A new empty area group at the end of the list. */
-export function addArea(state: SettingsState, actor: Actor): SettingsState {
-  const n = state.settings.areas.length + 1
-  const area: AreaGroup = { id: `area-${n}-${actor.at}`, name: `Area ${n}`, towns: [] }
-  return record(state, actor, "Areas", String(n - 1), String(n), { ...state.settings, areas: [...state.settings.areas, area] })
 }
 
 /**

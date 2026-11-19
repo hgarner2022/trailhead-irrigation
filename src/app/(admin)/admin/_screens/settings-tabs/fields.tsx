@@ -22,6 +22,9 @@ export interface CommitInputProps {
   max?: number
   className?: string
   describedBy?: string
+  /** a FormRow puts its id and description on its one child */
+  id?: string
+  "aria-describedby"?: string
 }
 
 /**
@@ -35,7 +38,7 @@ export interface CommitInputProps {
  * back to the `value` prop, and when the prop did change the draft follows it
  * in the same render. The field keeps focus throughout; it is never remounted.
  */
-export function CommitInput({ value, label, onCommit, type = "text", min, max, className, describedBy }: CommitInputProps) {
+export function CommitInput({ value, label, onCommit, type = "text", min, max, className, describedBy, id, "aria-describedby": described }: CommitInputProps) {
   const [draft, setDraft] = useState(String(value))
   const [seen, setSeen] = useState(value)
   if (value !== seen) {
@@ -51,8 +54,9 @@ export function CommitInput({ value, label, onCommit, type = "text", min, max, c
   }
   return (
     <Input
+      id={id}
       aria-label={label}
-      aria-describedby={describedBy}
+      aria-describedby={describedBy ?? described}
       type={type}
       min={min}
       max={max}
@@ -73,7 +77,7 @@ export function CommitInput({ value, label, onCommit, type = "text", min, max, c
  * field), so the reducer decides what a blank means; a text the reducer refuses comes back the same way, because
  * the draft is set back to `value` after every commit.
  */
-export function CommitTextarea({ value, label, onCommit, rows = 4 }: { value: string; label: string; onCommit: (raw: string) => void; rows?: number }) {
+export function CommitTextarea({ value, label, onCommit, rows = 4, id, "aria-describedby": described }: { value: string; label: string; onCommit: (raw: string) => void; rows?: number; id?: string; "aria-describedby"?: string }) {
   const [draft, setDraft] = useState(value)
   const [seen, setSeen] = useState(value)
   if (value !== seen) {
@@ -82,7 +86,9 @@ export function CommitTextarea({ value, label, onCommit, rows = 4 }: { value: st
   }
   return (
     <Textarea
+      id={id}
       aria-label={label}
+      aria-describedby={described}
       rows={rows}
       value={draft}
       className="min-h-20"

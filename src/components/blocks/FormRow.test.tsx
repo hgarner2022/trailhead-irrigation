@@ -42,4 +42,17 @@ describe("FormRow", () => {
     )
     expect(screen.getByText("Text to send")).toHaveClass("sr-only")
   })
+
+  it("lays the label out in a 112px column from md up, with the hint and error under the control, when inline", () => {
+    render(
+      <FormRow label="Hours" inline hint="From and to" error="Too early">
+        <Input />
+      </FormRow>,
+    )
+    const row = document.querySelector('[data-slot="form-row"]')!
+    expect(row.className).toContain("md:grid-cols-[112px_minmax(0,1fr)]")
+    expect(screen.getByText("From and to").className).toContain("md:col-start-2")
+    expect(screen.getByRole("alert").className).toContain("md:col-start-2")
+    expect(screen.getByLabelText("Hours")).toBeInTheDocument()
+  })
 })
