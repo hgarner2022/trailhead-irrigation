@@ -1,23 +1,26 @@
 import type { ReactNode } from "react"
+import { AsideCard } from "@/components/blocks/AsideCard"
 import { BillingSection, type BillingRowData } from "@/components/blocks/BillingSection"
 import { CollectPayment } from "@/components/blocks/CollectPayment"
 import { MessageThread } from "@/components/blocks/MessageThread"
 import { MoneyCell } from "@/components/blocks/MoneyCell"
 import { NotesAndHistory } from "@/components/blocks/NotesAndHistory"
 import { RecordFooter } from "@/components/blocks/RecordFooter"
-import { SectionHeading } from "@/components/blocks/SectionHeading"
-import { StatusPill } from "@/components/blocks/StatusPill"
+import { RecordFacts, type RecordFact } from "@/components/blocks/RecordPanel"
+import { SectionCard } from "@/components/blocks/SectionCard"
+import { StatusPill, statusLabel, type PillStatus } from "@/components/blocks/StatusPill"
+import type { SummaryItem } from "@/components/blocks/SummaryBand"
 import type { Message } from "@/lib/admin/types"
 import type { TimelineLine } from "@/lib/events/timeline"
 import { NOW, noop, noteOk, type FooterPlan, type JobPageData, type PillData } from "./job-fixtures"
 
-// The sections the one-trip, Season Pass and return-trip job pages share, so a section reads the same on every job: the two-column pair
-// (left and right from `lg`, stacked on a phone, the same gutter as the page's When and Where), the pills, Billing with beat two inline,
-// Notes and history, Messages, and the footer bar. Pure props over the design fixtures.
+// The cards the one-trip, Season Pass and return-trip job pages share, so a card reads the same on every job (the rules are in
+// docs/plans/2026-11-19-admin-page-layout-research.md): the badges for the header, the summary band's four cells, the aside (Customer,
+// Property, Notes and history), Billing with beat two inline, Messages, and the header's actions. Pure props over the design fixtures.
 
-export function Pair({ children }: { children: ReactNode }) {
-  return <div className="grid gap-6 lg:grid-cols-2 lg:gap-12">{children}</div>
-}
+const MONEY: PillStatus[] = ["paid", "owed", "bill-sent", "overdue", "failed", "charge-failed"]
+const ALERT: PillStatus[] = ["overdue", "failed", "charge-failed"]
+const row = (rows: readonly RecordFact[], label: string) => rows.find(([k]) => k === label)?.[1] as string | undefined
 
 export const EditLink = ({ label = "Edit" }: { label?: string }) => (
   <button type="button" onClick={noop} className="min-h-11 rounded-sm text-primary-dark underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50">
@@ -25,54 +28,116 @@ export const EditLink = ({ label = "Edit" }: { label?: string }) => (
   </button>
 )
 
-export function Pills({ pills, note }: { pills: PillData[]; note?: string }) {
+/** The status badges beside the title, large, with a muted note after them ("day passed"). */
+export function Badges({ pills, note }: { pills: PillData[]; note?: string }) {
   return (
-    <span className="inline-flex flex-wrap items-center gap-1">
-      {pills.map((p) => <StatusPill key={p.status} status={p.status} label={p.label} />)}
-      {note && <span className="text-xs text-muted-foreground">{note}</span>}
-    </span>
+    <>
+      {pills.map((p) => <StatusPill key={p.status} status={p.status} label={p.label} size="lg" />)}
+      {note && <span className="text-sm text-muted-foreground">{note}</span>}
+    </>
   )
 }
 
-export function Billing({ data }: { data: Pick<JobPageData, "billing" | "collect"> }) {
+/** The money cell's line under the total: the job's own money word, from the billing status or the money badge. */
+function moneyWord(pills: PillData[], statusText: string | undefined, canceled: boolean): { sub: string; alert: boolean } {
+  const pill = pills.find((p) => MONEY.includes(p.status))
+  const alert = Boolean(pill && ALERT.includes(pill.status))
+  if (statusText) return { sub: statusText, alert }
+  if (pill) return { sub: pill.label ?? statusLabel(pill.status), alert }
+  return { sub: canceled ? "Canceled" : "Not billed yet", alert: false }
+}
+
+const split = (address: string | undefined): [string, string | undefined] => {
+  const [street, ...rest] = (address ?? "").split(", ")
+  return [street || "No address", rest.join(", ") || undefined]
+}
+
+export interface BandInput {
+  when: { label: string; value: string; sub?: string }
+  who: string
+  address?: string
+  total: string
+  pills: PillData[]
+  statusText?: string
+  canceled: boolean
+}
+
+/** The summary band: When (or Next visit), Who, Where and Total with its money word. Four cells, always. */
+export function bandItems(b: BandInput): SummaryItem[] {
+  const [street, town] = split(b.address)
+  const money = moneyWord(b.pills, b.statusText, b.canceled)
+  return [
+    { label: b.when.label, value: b.when.value, sub: b.when.sub },
+    { label: "Who", value: b.who },
+    { label: "Where", value: street, sub: town },
+    { label: "Total", value: b.total, sub: money.sub, tone: money.alert ? "alert" : "plain" },
+  ]
+}
+
+export function bandOfJob(job: JobPageData): SummaryItem[] {
+  return bandItems({
+    when: { label: "When", value: row(job.when, "Day") ?? "None", sub: row(job.when, "Time") },
+    who: row(job.when, "Who") ?? "No one",
+    address: row(job.where, "Address"),
+    total: job.billing.summary.find(([k]) => k === "Total")?.[1] ?? "$0",
+    pills: job.pills,
+    statusText: job.billing.status?.text,
+    canceled: job.pills.some((p) => p.status === "cancelled"),
+  })
+}
+
+/** The aside: the customer with phone and address, the property's facts, then Notes and history. */
+export function Aside({ customer, phone, where, notes }: { customer: string; phone: { text: string; href: string }; where: readonly RecordFact[]; notes: TimelineLine[] }) {
+  const [street, town] = split(row(where, "Address"))
+  const facts = where.filter(([k]) => k !== "Address")
+  return (
+    <>
+      <AsideCard name={customer} href="/admin/customers" phone={phone} address={[street, town ? `${town}, CO` : ""].filter(Boolean)} />
+      {facts.length > 0 && (
+        <SectionCard title="Property" id="property-h" action={<EditLink />}>
+          <RecordFacts divided rows={facts} />
+        </SectionCard>
+      )}
+      <SectionCard title="Notes and history" id="notes-h">
+        <NotesAndHistory bare lines={notes} onAddNote={noteOk} now={NOW} />
+      </SectionCard>
+    </>
+  )
+}
+
+export function BillingCard({ data }: { data: Pick<JobPageData, "billing" | "collect"> }) {
   const { billing, collect } = data
   const summary = billing.summary.map(([k, v]) => [k, v] as [string, string])
   const status = billing.status
   return (
-    <section aria-labelledby="billing-h">
-      <SectionHeading level={2} size="section" id="billing-h">Billing</SectionHeading>
+    <SectionCard title="Billing" id="billing-h">
       {collect && (
-        <div className="mt-2 rounded-lg border border-border bg-card p-4">
+        <div className="mb-4 rounded-lg bg-stone p-4">
           <CollectPayment plan={collect.plan} summary={collect.summary} firstName="Andrea" onCharge={noteOk} onRecord={noteOk} onInvoice={noteOk} onLater={noop} onClose={noop} />
         </div>
       )}
-      {status && <p className="mt-2 text-sm font-medium"><MoneyCell text={status.text} tone={status.tone} /></p>}
+      {status && <p className="mb-2 text-sm font-medium"><MoneyCell text={status.text} tone={status.tone} /></p>}
       <BillingSection summary={summary} rows={billing.rows as BillingRowData[]} emptyLine={billing.emptyLine} />
-    </section>
+    </SectionCard>
   )
 }
 
-export function History({ notes, messages }: { notes: TimelineLine[]; messages: Message[] }) {
+export function MessagesCard({ messages }: { messages: Message[] }) {
   return (
-    <Pair>
-      <section aria-label="Notes and history">
-        <NotesAndHistory lines={notes} onAddNote={noteOk} now={NOW} />
-      </section>
-      <section aria-labelledby="messages-h">
-        <SectionHeading level={2} size="section" id="messages-h">Messages</SectionHeading>
-        <div className="mt-2"><MessageThread messages={messages} newestFirst /></div>
-      </section>
-    </Pair>
+    <SectionCard title="Messages" id="messages-h">
+      <MessageThread messages={messages} newestFirst />
+    </SectionCard>
   )
 }
 
-/** A page with no buttons has no footer bar. */
+/** A page with no buttons has no actions region. */
 export const hasFooter = (plan: FooterPlan): boolean => Boolean(plan.primary || plan.secondary || plan.more?.length || plan.destructive || plan.slot)
 
-export function Footer({ plan }: { plan: FooterPlan }) {
-  return <RecordFooter primary={plan.primary} secondary={plan.secondary} more={plan.more} destructive={plan.destructive} slot={plan.slot} />
+/** The header's actions: the primary, up to two outlines, More with the destructive one last inside it. */
+export function Actions({ plan }: { plan: FooterPlan }) {
+  return <RecordFooter primary={plan.primary} secondary={plan.secondary} more={plan.more} destructive={plan.destructive} destructiveInMenu slot={plan.slot} />
 }
 
 export function Notice({ children }: { children: ReactNode }) {
-  return <p role="status" className="rounded-lg border border-border bg-stone px-4 py-3 text-sm font-medium">{children}</p>
+  return <p role="status" className="rounded-lg border border-border bg-card px-5 py-3 text-sm font-medium shadow-sm">{children}</p>
 }

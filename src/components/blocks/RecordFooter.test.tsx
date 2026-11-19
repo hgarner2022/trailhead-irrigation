@@ -49,4 +49,13 @@ describe("RecordFooter", () => {
     )
     expect(setElement).toHaveBeenCalledWith(document.querySelector('[data-slot="record-footer-slot"]'))
   })
+
+  it("moves the destructive action last into More, in red, with destructiveInMenu", async () => {
+    render(<RecordFooter primary={{ label: "Move", onClick: noop }} more={[{ label: "Edit", onClick: noop }]} destructive={{ label: "Cancel job", onClick: noop }} destructiveInMenu />)
+    expect(screen.queryByRole("button", { name: "Cancel job" })).toBeNull()
+    await userEvent.click(screen.getByRole("button", { name: "More" }))
+    const items = screen.getAllByRole("menuitem")
+    expect(items.map((i) => i.textContent)).toEqual(["Edit", "Cancel job"])
+    expect(items[1]).toHaveClass("text-destructive")
+  })
 })

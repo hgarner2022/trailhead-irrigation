@@ -51,7 +51,7 @@ export function InvoicesPage({ rows, paidThisMonth = "$1,230", daysToGetPaid = "
   return (
     <div data-slot="invoices-page">
       <PageHeader title="Invoices" context={rows.length ? `${out} out, ${money(OWED)} unpaid.` : "No invoices yet."} actions={<Button type="button" className="min-h-11">New invoice</Button>} />
-      <div data-slot="invoice-tiles" className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div data-slot="invoice-tiles" className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatTile label="Unpaid" value={rows.length ? money(OWED) : "$0"} />
         <StatTile label="Past due" value={rows.length ? money(PAST_DUE) : "$0"} />
         <StatTile label="Paid this month" value={rows.length ? paidThisMonth : "$0"} />

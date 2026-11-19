@@ -4,9 +4,10 @@ import { BillingSection } from "@/components/blocks/BillingSection"
 import { LineItemList } from "@/components/blocks/LineItemList"
 import { MessageThread } from "@/components/blocks/MessageThread"
 import { RecordFooter } from "@/components/blocks/RecordFooter"
-import { RecordPanel } from "@/components/blocks/RecordPanel"
+import { RecordFacts, RecordPanel } from "@/components/blocks/RecordPanel"
 import { SectionHeading } from "@/components/blocks/SectionHeading"
 import { StatusPill, type PillStatus } from "@/components/blocks/StatusPill"
+import { SummaryBand } from "@/components/blocks/SummaryBand"
 import { INVOICE_WORDS, type InvoiceDetail, type InvoiceStatus } from "./invoice-fixtures"
 
 // The invoice, opened from a Billing row, a job or the Invoices grid (docs/plans/2026-11-19-job-object-design.md): the number as the title,
@@ -36,17 +37,27 @@ export function InvoicePanel({ invoice, open = true }: InvoicePanelProps) {
       onOpenChange={() => undefined}
       title={`Invoice ${invoice.number}`}
       subtitle={`${invoice.customer} · ${invoice.job}`}
-      pills={<StatusPill status={TONE[invoice.status]} label={INVOICE_WORDS[invoice.status]} />}
-      facts={[
-        ["Customer", link(invoice.customer)],
-        ["Job", link(invoice.job)],
-        ["Sent", invoice.sent],
-        ["Due", invoice.due],
-        ["Terms", invoice.terms],
-        ["Reminders", invoice.reminders],
-      ]}
+      pills={<StatusPill status={TONE[invoice.status]} label={INVOICE_WORDS[invoice.status]} size="lg" />}
       footer={hasFooter ? <RecordFooter primary={f.primary} secondary={f.secondary} more={f.more} destructive={f.destructive} /> : undefined}
     >
+      <SummaryBand
+        items={[
+          { label: "Total", value: invoice.totals.find(([k]) => k === "Total")?.[1] ?? "$0" },
+          { label: "Due", value: invoice.due },
+          { label: "Balance", value: invoice.totals.find(([k]) => k === "Balance" || k === "Unpaid")?.[1] ?? "$0", tone: invoice.status === "past-due" ? "alert" : "plain" },
+        ]}
+        className="grid-cols-3 lg:grid-cols-3 [&_dd]:text-xl"
+      />
+      <RecordFacts
+        divided
+        rows={[
+          ["Customer", link(invoice.customer)],
+          ["Job", link(invoice.job)],
+          ["Sent", invoice.sent],
+          ["Terms", invoice.terms],
+          ["Reminders", invoice.reminders],
+        ]}
+      />
       <section aria-labelledby="inv-lines">
         <SectionHeading id="inv-lines">Lines</SectionHeading>
         <LineItemList lines={invoice.lines} totals={invoice.totals} />

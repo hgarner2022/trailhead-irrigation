@@ -1,5 +1,5 @@
 import type { FooterAction } from "@/components/blocks/RecordFooter"
-import type { RecordPageColumn } from "@/components/blocks/RecordPage"
+import type { RecordFact } from "@/components/blocks/RecordPanel"
 import type { BillingRowData } from "@/components/blocks/BillingSection"
 import type { LineItem, LineTotal } from "@/components/blocks/LineItemList"
 import type { Message, Pass } from "@/lib/admin/types"
@@ -9,6 +9,12 @@ import { noop, type FooterPlan, type PillData } from "./job-fixtures"
 
 // Design fixtures for a job with more than one trip: Andrea's Season Pass (Spring turn-on, Fall blowout) in four states, and a repair that
 // needed a return trip. Money words are `words.ts`'s: "$145, charged after the visit", "Paid, card". No wiring.
+
+/** a headed list of facts; the page reads the Where column's address and property facts */
+export interface RecordPageColumn {
+  heading: string
+  rows: readonly RecordFact[]
+}
 
 export interface TripData {
   id: string

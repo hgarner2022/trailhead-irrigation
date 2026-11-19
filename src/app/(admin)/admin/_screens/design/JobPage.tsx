@@ -1,34 +1,34 @@
 import { LineItemList } from "@/components/blocks/LineItemList"
 import { RecordPage } from "@/components/blocks/RecordPage"
-import { SectionHeading } from "@/components/blocks/SectionHeading"
+import { SectionCard } from "@/components/blocks/SectionCard"
+import { SummaryBand } from "@/components/blocks/SummaryBand"
 import type { JobPageData } from "./job-fixtures"
-import { Billing, EditLink, Footer, hasFooter, History, Notice, Pair, Pills } from "./JobPageParts"
+import { Actions, Aside, Badges, BillingCard, EditLink, MessagesCard, Notice, bandOfJob, hasFooter } from "./JobPageParts"
 
-// The job page for a one-trip job (docs/plans/2026-11-19-job-object-design.md): the customer is the title, the facts sit in two columns
-// (When: day, time, who; Where: address, gate code, must be home, access note), then What's included beside Billing, then Notes and history
-// beside Messages. The visit is on the page, not behind it. The footer holds the one primary; in Done and unpaid beat two ("How is this
-// paid?") is in Billing and its button is in the footer. Pure props, nothing wired.
+// The job page for a one-trip job (docs/plans/2026-11-19-job-object-design.md) on the page frame of
+// docs/plans/2026-11-19-admin-page-layout-research.md: the header (customer, status badges beside it, the actions at the top right), the
+// summary band (When, Who, Where, Total with its money word), then the main column (What's included, Billing, Messages) and the aside
+// (Customer, Property, Notes and history), each a card on the cream page. The visit is on the page, not behind it. In Done and unpaid
+// beat two ("How is this paid?") is in Billing and its button is in the header's actions. Pure props, nothing wired.
 
 export function JobPage({ job }: { job: JobPageData }) {
+  const canceled = job.pills[0].status === "cancelled"
   return (
     <RecordPage
       crumb={{ label: "Jobs", href: "/admin/jobs" }}
       title={job.customer}
       subtitle={job.subtitle}
-      pills={<Pills pills={job.pills} note={job.pillNote} />}
-      phone={job.phone}
+      badges={<Badges pills={job.pills} note={job.pillNote} />}
       notice={job.notice ? <Notice>{job.notice}</Notice> : undefined}
-      columns={[{ heading: "When", rows: job.when }, { heading: "Where", rows: job.where }]}
-      footer={hasFooter(job.footer) ? <Footer plan={job.footer} /> : undefined}
+      band={<SummaryBand items={bandOfJob(job)} />}
+      aside={<Aside customer={job.customer} phone={job.phone} where={job.where} notes={job.notes} />}
+      actions={hasFooter(job.footer) ? <Actions plan={job.footer} /> : undefined}
     >
-      <Pair>
-        <section aria-labelledby="included-h">
-          <SectionHeading level={2} size="section" id="included-h" action={job.pills[0].status === "cancelled" ? undefined : <EditLink />}>What&apos;s included</SectionHeading>
-          <LineItemList lines={job.lines} totals={job.totals} />
-        </section>
-        <Billing data={job} />
-      </Pair>
-      <History notes={job.notes} messages={job.messages} />
+      <SectionCard title="What's included" id="included-h" action={canceled ? undefined : <EditLink />}>
+        <LineItemList lines={job.lines} totals={job.totals} />
+      </SectionCard>
+      <BillingCard data={job} />
+      <MessagesCard messages={job.messages} />
     </RecordPage>
   )
 }
