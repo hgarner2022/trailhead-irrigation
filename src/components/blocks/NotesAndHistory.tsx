@@ -36,6 +36,8 @@ export interface NotesAndHistoryProps {
   onAddNote: (text: string) => Promise<NoteOutcome>
   /** today, for the year on an older line; the clock when left out */
   now?: Date
+  /** inside a `SectionCard` that already carries the title: draw no heading of its own */
+  bare?: boolean
   className?: string
 }
 
@@ -56,7 +58,7 @@ function Line({ line, now }: { line: TimelineLine; now?: Date }) {
   )
 }
 
-export function NotesAndHistory({ lines, onAddNote, now, className }: NotesAndHistoryProps) {
+export function NotesAndHistory({ lines, onAddNote, now, bare, className }: NotesAndHistoryProps) {
   const id = useId()
   const [text, setText] = useState("")
   const [problem, setProblem] = useState("")
@@ -88,9 +90,9 @@ export function NotesAndHistory({ lines, onAddNote, now, className }: NotesAndHi
   }
 
   return (
-    <section aria-labelledby={`${id}-heading`} data-slot="notes-and-history" className={className}>
-      <SectionHeading id={`${id}-heading`}>Notes and history</SectionHeading>
-      <form onSubmit={submit} className="mt-2">
+    <section aria-labelledby={bare ? undefined : `${id}-heading`} data-slot="notes-and-history" className={className}>
+      {!bare && <SectionHeading id={`${id}-heading`}>Notes and history</SectionHeading>}
+      <form onSubmit={submit} className={bare ? undefined : "mt-2"}>
         <FormRow label="Add a note">
           <Textarea value={text} maxLength={NOTE_MAX} rows={3} onChange={(e) => { setText(e.target.value); setNotice("") }} />
         </FormRow>

@@ -7,7 +7,7 @@ import { JOB_WORDS, REASON_WORDS, WORK_WORDS, type Job, type JobState, type Mone
 // means for the business (docs/DESIGN.md, Copy): good outcomes green, a
 // booked visit orange, past due red, and the quiet states grey. The label is
 // the plain word in sentence case. It sits under a panel's subtitle or at a row's right, never in a grid cell.
-// `StatusPills` is a visit's two pills (it absorbed JobPill). Pure render, server component.
+// A pill is a tint, a dot in the ink colour and the word (the Mailchimp badge, docs/plans/2026-11-19-admin-page-layout-research.md). `StatusPills` is a visit's two pills (it absorbed JobPill). Pure render, server component.
 //
 // The coloured pills sit on a 10% tint with an ink dark enough for 12px text
 // (4.5:1 or better). Measured over white and over cream: positive-deep
@@ -16,7 +16,7 @@ import { JOB_WORDS, REASON_WORDS, WORK_WORDS, type Job, type JobState, type Mone
 // is 5.45 and 5.25 (5.02 on stone). The lighter positive and warning inks
 // only reach 4.2 to 4.4 on their tints, which is why they are not used here.
 
-export type PillStatus = PassStatus | JobState | WorkState | MoneyState | "overdue" | "waiting"
+export type PillStatus = PassStatus | JobState | WorkState | MoneyState | "overdue" | "waiting" | "today" | "in-progress"
 
 const LABELS: Record<PillStatus, string> = {
   ...JOB_WORDS,
@@ -31,6 +31,8 @@ const LABELS: Record<PillStatus, string> = {
   overdue: "Past due",
   lapsed: "Expired",
   waiting: "Waiting on customer",
+  today: "Today",
+  "in-progress": "In progress",
 }
 
 const GOOD = "bg-positive/10 text-positive-deep border-positive/30"
@@ -38,6 +40,9 @@ const BOOKED = "bg-primary/10 text-primary-deep border-primary/30"
 const WAITING = "bg-stone text-foreground border-border"
 const BAD = "bg-destructive/10 text-destructive border-destructive/30"
 const OVER = "bg-stone text-muted-foreground border-border"
+// Today is the info tone (a navy tint); In progress is the progress tone, solid navy, because it is the one thing happening right now
+const INFO = "bg-navy/10 text-navy border-navy/30"
+const PROGRESS = "bg-navy text-white border-navy"
 
 const TONES: Record<PillStatus, string> = {
   "needs-a-day": WAITING,
@@ -59,6 +64,8 @@ const TONES: Record<PillStatus, string> = {
   overdue: BAD,
   lapsed: OVER,
   waiting: WAITING,
+  today: INFO,
+  "in-progress": PROGRESS,
 }
 
 /** The word shown for a status: "Past due" for overdue, "Unscheduled" for a job with no day, else the status in sentence case. */
@@ -69,16 +76,19 @@ export interface StatusPillProps {
   /** Another word for the same status, in the status's colour: the customer's pass page says "Reserved" and "Booked" where the admin says "Not scheduled" and "Scheduled". */
   label?: string
   className?: string
+  /** `lg` (14px) is for the badge beside a page's title; every other place is `sm` */
+  size?: "sm" | "lg"
   /** which of a visit's two pills this is */
   "data-pill"?: "work" | "money" | "waiting"
 }
 
-export function StatusPill({ status, label, className, ...rest }: StatusPillProps) {
+export function StatusPill({ status, label, size = "sm", className, ...rest }: StatusPillProps) {
   const word = label ?? statusLabel(status)
   // "not-yet" has no word: nothing is due yet, so nothing is drawn
   if (!word) return null
   return (
-    <Badge {...rest} data-slot="status-pill" data-status={status} variant="outline" className={cn("whitespace-nowrap", TONES[status], className)}>
+    <Badge {...rest} data-slot="status-pill" data-status={status} data-size={size} variant="outline" className={cn("gap-1.5 whitespace-nowrap rounded-full", size === "lg" && "px-3 py-1 text-sm", TONES[status], className)}>
+      <span aria-hidden data-slot="status-dot" className="size-1.5 shrink-0 rounded-full bg-current" />
       {word}
     </Badge>
   )

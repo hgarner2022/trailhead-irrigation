@@ -13,8 +13,19 @@ import { FooterSlotContext } from "./record-slot"
 
 export type RecordFact = [label: string, value: ReactNode]
 
-/** A label and its value per line; the label column is 112px, the value is medium weight and free to wrap. */
-export function RecordFacts({ rows, className }: { rows: readonly RecordFact[]; className?: string }) {
+/** A label and its value per line; the label column is 112px, the label grey and the value medium weight and free to wrap. `divided` puts a hairline between the rows (the aside cards and the invoice panel). */
+export function RecordFacts({ rows, className, divided }: { rows: readonly RecordFact[]; className?: string; divided?: boolean }) {
+  if (divided)
+    return (
+      <dl data-slot="record-facts" data-divided="true" className={cn("divide-y divide-border text-sm", className)}>
+        {rows.map(([term, value]) => (
+          <div key={term} className="grid grid-cols-[112px_minmax(0,1fr)] gap-x-4 py-2.5 first:pt-0 last:pb-0">
+            <dt className="text-muted-foreground">{term}</dt>
+            <dd className="min-w-0 break-words font-medium">{value}</dd>
+          </div>
+        ))}
+      </dl>
+    )
   return (
     <dl data-slot="record-facts" className={cn("mt-2 grid grid-cols-[112px_minmax(0,1fr)] gap-x-4 gap-y-2 text-sm", className)}>
       {rows.map(([term, value]) => (
@@ -40,14 +51,14 @@ export function RecordList({ children, className, ...rest }: { children: ReactNo
 export const RECORD_ROW = "min-h-11 gap-3 py-1.5"
 
 /** The left of a row: a title over a detail, each on one line with an ellipsis. */
-export function RecordRowText({ title, detail, strong }: { title: string; detail?: string; strong?: boolean }) {
+export function RecordRowText({ title, detail, strong, wrap }: { title: string; detail?: string; strong?: boolean; wrap?: boolean }) {
   return (
     <span className="block min-w-0 flex-1">
       <span className={cn("block truncate", strong ? "font-semibold" : "font-medium")} title={title}>
         {title}
       </span>
       {detail ? (
-        <span className="block truncate text-muted-foreground" title={detail}>
+        <span className={cn("block text-muted-foreground", !wrap && "truncate")} title={detail}>
           {detail}
         </span>
       ) : null}
