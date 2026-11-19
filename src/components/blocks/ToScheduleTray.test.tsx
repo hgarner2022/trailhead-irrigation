@@ -22,6 +22,8 @@ describe("ToScheduleTray", () => {
     expect(onPlace).toHaveBeenCalledWith(items[1])
     await userEvent.click(screen.getByRole("button", { name: "Schedule all 2" }))
     expect(onPlaceAll).toHaveBeenCalledOnce()
+    // Schedule all is an outline button, not a text link
+    expect(screen.getByRole("button", { name: "Schedule all 2" })).toHaveClass("border", "border-border")
     expect(screen.getByText("Customer picks the day")).toBeInTheDocument()
   })
 

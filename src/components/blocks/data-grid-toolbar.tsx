@@ -191,7 +191,7 @@ function ExportButton<T extends RowData>({ table, exportName, disabled }: Pick<T
     downloadCsv(exportName, rowsToCsv(header, records))
   }
   return (
-    <Button variant="outline" size="sm" className="h-9 text-sm" disabled={disabled} onClick={save}>
+    <Button variant="outline" size="sm" className="h-9 text-sm" disabled={disabled || rows.length === 0} onClick={save}>
       <Download className="size-3.5" aria-hidden />
       Export {rows.length} {rows.length === 1 ? "row" : "rows"}
     </Button>

@@ -33,6 +33,13 @@ const cell = (person: string, day: string) => document.querySelector<HTMLElement
 const blocksIn = (el: HTMLElement) => Array.from(el.querySelectorAll<HTMLElement>('[data-slot="week-grid-visit"]'))
 
 describe("WeekGrid", () => {
+  it("lets a block's name wrap instead of cutting it off", () => {
+    render(<WeekGrid {...base} />)
+    const names = document.querySelectorAll<HTMLElement>('[data-slot="week-grid-visit"] .font-medium')
+    expect(names.length).toBeGreaterThan(0)
+    for (const name of names) expect(name.parentElement!.className).not.toMatch(/\btruncate\b/)
+  })
+
   it("lays the week out with a row per person, the seven days across and today marked", () => {
     render(<WeekGrid {...base} />)
     const headers = within(table()).getAllByRole("columnheader").map((h) => h.querySelector('[data-slot="day-header"] > span')?.textContent ?? h.textContent)

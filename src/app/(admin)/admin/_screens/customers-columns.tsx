@@ -55,6 +55,13 @@ export const customerColumns: GridColumnDef<CustomerRow>[] = [
     meta: { csv: (row) => SCHEDULED_WORDS[(row as CustomerRow).nextState] },
   },
   {
+    id: "unpaid",
+    accessorKey: "unpaid",
+    header: "Unpaid",
+    cell: ({ getValue }) => ((getValue() as number) > 0 ? <span className="tabular-nums">{`$${(getValue() as number).toLocaleString("en-US")}`}</span> : muted("$0")),
+    meta: { csv: (row) => String((row as CustomerRow).unpaid) },
+  },
+  {
     id: "lastVisitAt",
     accessorKey: "lastVisitAt",
     header: "Last visit",

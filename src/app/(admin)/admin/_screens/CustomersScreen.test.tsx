@@ -31,9 +31,9 @@ const headers = () => screen.getAllByRole("columnheader").map((h) => h.textConte
 const rowOf = (name: string) => screen.getByRole("button", { name }).closest("tr")!
 
 describe("CustomersScreen table", () => {
-  it("has the columns Name, Address, Town, Email, Phone, Pass, Next, Scheduled, Last visit and Marketing", () => {
+  it("has the columns Name, Address, Town, Email, Phone, Pass, Next, Scheduled, Unpaid and Last visit, and Marketing is not in the default view", () => {
     render(<CustomersScreen data={data} today={TODAY} />)
-    expect(headers().filter(Boolean)).toEqual(["Name", "Address", "Town", "Email", "Phone", "Pass", "Next", "Scheduled", "Last visit", "Marketing"])
+    expect(headers().filter(Boolean)).toEqual(["Name", "Address", "Town", "Email", "Phone", "Pass", "Next", "Scheduled", "Unpaid", "Last visit"])
   })
 
   it("shows the full name, the street, the email and the phone as it prints", () => {

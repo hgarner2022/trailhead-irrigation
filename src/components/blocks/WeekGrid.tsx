@@ -74,7 +74,7 @@ function VisitBlock({ visit, areas, selected, onSelect, draggable }: { visit: Vi
       )}
     >
       <span className="flex w-full items-center gap-1">
-        <span className="relative block min-w-0 flex-1 truncate" title={`${stopTime(visit)} · ${visit.clientName} · ${visit.town} · ${KIND_WORDS[visit.kind]}`}>
+        <span className="relative block min-w-0 flex-1 break-words" title={`${stopTime(visit)} · ${visit.clientName} · ${visit.town} · ${KIND_WORDS[visit.kind]}`}>
           <span data-slot="stop-time" className={cn("tabular-nums text-muted-foreground", visit.startTime ? undefined : "sr-only")}>{`${stopTime(visit)} `}</span>
           <span className="font-medium text-foreground">{visit.clientName}</span>
           <span className="text-muted-foreground">{` · ${visit.town} · ${KIND_WORDS[visit.kind]}`}</span>

@@ -75,6 +75,7 @@ function Grid({ rows, offers }: { rows: CustomerRow[]; offers: boolean }) {
       onOpen={(row) => host?.open("customer", row.id)}
       bulkActions={offers ? BULK_ACTIONS : undefined}
       exportName="customers"
+      hiddenColumns={["marketing"]}
       pageSize={25}
       noMatchTitle="No customers match."
       emptyTitle="No customers yet"
