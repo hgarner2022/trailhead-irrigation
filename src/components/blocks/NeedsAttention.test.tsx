@@ -156,3 +156,32 @@ describe("NeedsAttention", () => {
     expect(attentionLabel({ kind: "new-pass", passId: "p1", jobId: "j1", message: "m", since: "2026-11-12T17:30:00Z" })).toBe("Open job")
   })
 })
+
+describe("the paused texts row", () => {
+  const item = { kind: "texts-paused" as const, key: "paused", message: "Texts are paused until the number is registered with the carriers (Twilio error 30034). Every text goes by email instead.", since: "2026-11-12T17:30:00Z" }
+  it("says the whole sentence, names itself, opens Settings and can be dismissed", () => {
+    render(<NeedsAttention items={[item]} now={now} onAction={async () => undefined} />)
+    expect(screen.getByText(item.message)).toBeInTheDocument()
+    expect(screen.getByText("Texts paused:")).toBeInTheDocument()
+    expect(attentionLabel(item)).toBe("Open Settings")
+    expect(screen.getByRole("button", { name: /^Dismiss:/ })).toBeInTheDocument()
+  })
+})
+
+describe("the one row about the sending number", () => {
+  const member = { kind: "text-undelivered" as const, key: "v1:c1:m1", message: "m", since: "2026-11-12T17:30:00Z" }
+  const summary = { kind: "text-undelivered" as const, key: "number-not-registered", message: "20 texts not delivered since Nov 18: the number is not registered for business texting yet", since: "2026-11-12T17:30:00Z", members: [member, { ...member, key: "v2:c2:m2" }] }
+  it("opens Settings, and Dismiss clears every text it stands for", async () => {
+    const onDismiss = vi.fn(async () => ({ ok: true as const }))
+    render(<NeedsAttention items={[summary]} now={now} onAction={async () => undefined} onDismiss={onDismiss} />)
+    expect(attentionLabel(summary)).toBe("Open Settings")
+    expect(screen.getByText(summary.message)).toBeInTheDocument()
+    await userEvent.click(screen.getByRole("button", { name: /^Dismiss:/ }))
+    expect(onDismiss).toHaveBeenCalledTimes(2)
+    expect(onDismiss).toHaveBeenCalledWith(expect.objectContaining({ key: "v1:c1:m1" }), false)
+    expect(onDismiss).toHaveBeenCalledWith(expect.objectContaining({ key: "v2:c2:m2" }), false)
+  })
+  it("leaves a single text's own row as Open", () => {
+    expect(attentionLabel({ ...member, visitId: "v1" })).toBe("Open visit")
+  })
+})
