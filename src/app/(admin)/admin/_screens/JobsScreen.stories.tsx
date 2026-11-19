@@ -47,10 +47,20 @@ export const Phone: Story = { globals: phone }
 export const JobFilterOpen: Story = {
   globals: wide,
   play: async ({ canvas, userEvent }) => {
-    await userEvent.click(await canvas.findByRole("button", { name: "Job" }))
-    await expect(await body.findByRole("menuitemcheckbox", { name: "Season Pass" })).toBeInTheDocument()
-    await expect(await body.findByRole("menuitemcheckbox", { name: "Spring turn-on & system check" })).toBeInTheDocument()
-    await expect(await body.findByRole("menuitemcheckbox", { name: "Core aeration" })).toBeInTheDocument()
+    // "Job" is also a column header, so take the one that opens a menu: the filter chip.
+    const chips = await canvas.findAllByRole("button", { name: "Job" })
+    const chip = chips.find((b) => b.getAttribute("aria-haspopup") === "menu")
+    if (!chip) throw new Error("No Job filter chip")
+    await userEvent.click(chip)
+    const names = (await body.findAllByRole("menuitemcheckbox")).map((i) => i.textContent?.trim())
+    await expect(names.slice(0, 5)).toEqual([
+      "Season Pass",
+      "Sprinkler repair visit",
+      "Spring turn-on & system check",
+      "Fall blowout & winterization",
+      "Mid-season inspection & tune-up",
+    ])
+    await expect(names).toContain("Core aeration")
   },
 }
 
