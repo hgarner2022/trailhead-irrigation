@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 // this visit and Cancel the pass ask first. An action with no reverse (a pass sold: cancelling it is its own
 // dialog) shows the same toast with no Undo. `useUndoToast()` is a no-op outside the provider (a bare screen in
 // a test), so a screen never needs the shell to render. The toast is portalled to the body, above the side panel's
-// scrim (z-60 over its z-50), marked live and given pointer events, so it stays clickable and read out while a panel is
+// scrim (z-60 over its z-50), sits at the TOP of the screen so it never covers a record panel footer (the next step after Mark done is a footer button), marked live and given pointer events, so it stays clickable and read out while a panel is
 // open. Client component.
 
 export const UNDO_SECONDS = 10
@@ -51,7 +51,7 @@ export function UndoToastProvider({ children, seconds = UNDO_SECONDS }: { childr
           aria-live="polite"
           style={{ pointerEvents: "auto" }}
           data-slot="undo-toast"
-          className="fixed inset-x-4 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-[60] mx-auto flex max-w-md items-center gap-3 rounded-lg bg-navy px-4 py-2 text-sm text-white shadow-lg md:inset-x-auto md:bottom-6 md:left-1/2 md:-translate-x-1/2"
+          className="fixed inset-x-4 top-[calc(0.75rem+env(safe-area-inset-top))] z-[60] mx-auto flex max-w-md items-center gap-3 rounded-lg bg-navy px-4 py-2 text-sm text-white shadow-lg md:inset-x-auto md:left-1/2 md:-translate-x-1/2"
         >
           <span className="min-w-0 flex-1">{toast.message}</span>
           {toast.undo && (
