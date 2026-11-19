@@ -57,6 +57,7 @@ export interface PhotosProps {
 }
 
 const caption = (p: PhotoItem, audience: "staff" | "customer") => {
+  if (p.addedAtBooking) return audience === "customer" ? "You · Added when booked" : "Customer · Added when booked"
   const first = (p.addedByName ?? p.addedBy.split("@")[0] ?? "Staff").split(/\s+/)[0] ?? "Staff"
   const who = audience === "customer" ? (p.byCustomer ? "You" : "Trailhead") : p.byCustomer ? "Customer" : `${first.charAt(0).toUpperCase()}${first.slice(1)}`
   return `${who} · ${shortDate(p.createdAt, TIME_ZONE)}`

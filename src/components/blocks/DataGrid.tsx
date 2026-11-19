@@ -57,6 +57,8 @@ export interface DataGridProps<T extends RowData> {
   defaultFilters?: { column: string; values: string[] }[]
   /** Which columns go on the row's card below `md`; without it the table scrolls sideways there */
   card?: GridCardSlots
+  /** false: no toolbar (search, filters, Columns, export) above the table; a small table inside a card, like a job's Payments and Invoices, has nothing to search. Default true */
+  toolbar?: boolean
   className?: string
 }
 
@@ -113,6 +115,7 @@ export function DataGrid<T extends RowData>({
   defaultFilters,
   hiddenColumns,
   card,
+  toolbar = true,
   className,
 }: DataGridProps<T>) {
   const phone = useMedia("(max-width: 767px)")
@@ -148,7 +151,7 @@ export function DataGrid<T extends RowData>({
 
   return (
     <div data-slot="data-grid" className={cn("flex flex-col gap-3", className)}>
-      <DataGridToolbar table={table} nameId={nameId} search={search} filters={filters} exportName={exportName} disabled={loading} />
+      {toolbar && <DataGridToolbar table={table} nameId={nameId} search={search} filters={filters} exportName={exportName} disabled={loading} />}
       {!loading && hasSelect && <DataGridBulkBar table={table} actions={bulkActions} />}
       {asCards && card ? (
         <DataGridCards table={table} rows={rows} slots={card} nameId={nameId} loading={loading} empty={{ hasData: data.length > 0, emptyTitle, emptyLine, noMatchTitle }} onOpen={onOpen} />
@@ -236,7 +239,7 @@ export function DataGrid<T extends RowData>({
                     const href = column.id === nameId ? column.columnDef.meta?.href?.(row.original as object) : undefined
                     return (
                       <TableCell key={cell.id} className={cn(freeze(column.id), right && "text-right tabular-nums")}>
-                        {column.id !== nameId ? (
+                        {column.id !== nameId || column.columnDef.meta?.bare ? (
                           <table.FlexRender cell={cell} />
                         ) : href ? (
                           <a href={href} className={LINK}>

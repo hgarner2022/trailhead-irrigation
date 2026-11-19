@@ -56,7 +56,19 @@ export const DoneUnpaidPhone: Story = story("done-unpaid", phone)
 export const DonePaid: Story = story("done-paid", laptop)
 export const DonePaidPhone: Story = story("done-paid", phone)
 
-/** Ryan sees the invoice as a Billing row, Invoice sent, due Dec 2. The one primary action is Remind. */
+/** Paid by check: the green line "Paid in full. $145 paid by check #1042 on Nov 18, recorded by Ryan", the facts, and a Payments row with Receipt and Refund under More. */
+export const PaidByCheck: Story = story("paid-check", laptop)
+export const PaidByCheckPhone: Story = story("paid-check", phone)
+
+/** Paid by card: the Payments row also offers Open in Stripe with the external-link icon. */
+export const PaidByCard: Story = story("paid-card", laptop)
+export const PaidByCardPhone: Story = story("paid-card", phone)
+
+/** Refunded: a grey line, the refund as its own negative grey row under the payment, the job Unpaid again with Collect payment as the primary. */
+export const Refunded: Story = story("refunded", laptop)
+export const RefundedPhone: Story = story("refunded", phone)
+
+/** Ryan sees the invoice in an Invoices table, Invoice sent, with Remind and Open invoice beside it. The primary is Send a payment reminder, with Collect payment beside it. */
 export const InvoiceSent: Story = story("invoice-sent", laptop)
 export const InvoiceSentPhone: Story = story("invoice-sent", phone)
 
