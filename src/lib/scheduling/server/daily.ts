@@ -5,6 +5,7 @@ import type { Database } from "@/db/types"
 import { mountainDay, addDays } from "@/api/v1/shared"
 import { weekOf } from "@/lib/admin/calendar"
 import { readAppUrl } from "@/lib/env"
+import { windowAt } from "@/lib/services-window"
 import { currentSeason } from "@/lib/pass/season"
 import { kindName } from "@/lib/pass/server/messages"
 import { baseData, loadVisitFacts } from "@/lib/messaging/data"
@@ -70,7 +71,9 @@ export async function queueDueRuns(db: Database, organizationId: string, today: 
   const [org] = await db.select({ settings: s.organization.settings }).from(s.organization).where(eq(s.organization.id, organizationId))
   const runs = await db.select({ season: s.scheduleRun.season, window: s.scheduleRun.window }).from(s.scheduleRun).where(eq(s.scheduleRun.organizationId, organizationId))
   let queued = 0
-  for (const w of org?.settings.windows ?? []) {
+  for (const saved of org?.settings.windows ?? []) {
+    // read year-agnostic (`windowAt`): the saved window carries a year nothing rolls, so it is this season's, or the next one to open
+    const w = { ...saved, ...windowAt(saved, today) }
     const season = Number(w.opensOn.slice(0, 4)) || currentSeason(today)
     const due = today >= addDays(w.opensOn.slice(0, 10), -w.leadWeeks * 7) && today <= w.closesOn.slice(0, 10)
     if (!due || runs.some((r) => r.window === w.kind && r.season === season)) continue

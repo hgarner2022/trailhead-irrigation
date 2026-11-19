@@ -61,3 +61,32 @@ export function windowDatesFor(w: BookableWindow, existing: { opensOn: string } 
   const year = known ?? (dated(thisYear, from) >= today ? thisYear : thisYear + 1)
   return { opensOn: dated(year, from), closesOn: dated(year + (to < from ? 1 : 0), to) }
 }
+
+/** A scheduling window as it is saved: whole dates, each carrying a year nothing rolls. */
+export interface DatedWindow {
+  opensOn: string
+  closesOn: string
+}
+
+/**
+ * The window read year-agnostic: only its month-days count, and a window that closes in a later year than it opens (it wraps New Year, like the
+ * span above) keeps that distance. Returns the same span in the season that holds `day`, else the next one to open after it. A window saved as
+ * 2026-10-01 to 2026-11-15 therefore reads 2027-10-01 to 2027-11-15 for a day in 2027, so next season's pass visits are placed and the daily run
+ * keeps running. Until step 7b replaces `settings.windows` with each service's own span, every reader of `opensOn` and `closesOn` goes through
+ * this. Dates stay "YYYY-MM-DD".
+ */
+export function windowAt(w: DatedWindow, day: string): DatedWindow {
+  const opens = w.opensOn.slice(0, 10)
+  const closes = w.closesOn.slice(0, 10)
+  const span = Number(closes.slice(0, 4)) - Number(opens.slice(0, 4))
+  const year = Number(day.slice(0, 4))
+  // the season opened last year (a wrapping one still open), this year's, then next year's: the first that has not closed before `day`
+  for (const open of [year - 1, year, year + 1]) {
+    const range = { opensOn: dated(open, opens.slice(5)), closesOn: dated(open + span, closes.slice(5)) }
+    if (range.closesOn >= day) return range
+  }
+  return { opensOn: dated(year + 1, opens.slice(5)), closesOn: dated(year + 1 + span, closes.slice(5)) }
+}
+
+/** `windows` with every one read at `day` (see `windowAt`), keeping its other fields. */
+export const windowsAt = <W extends DatedWindow>(windows: readonly W[], day: string): W[] => windows.map((w) => ({ ...w, ...windowAt(w, day) }))

@@ -9,6 +9,7 @@
 import type { AreaGroup, BusyBlock, CapacityKind, Person, SeasonWindow, Visit } from "@/lib/admin/types"
 import { addDays, blockedMinutes, capacityAfterBlocks, dayVisits, worksOn } from "@/lib/admin/calendar"
 import { shortDate, writtenDate } from "@/lib/admin/format"
+import { windowAt } from "@/lib/services-window"
 import type { TrayItem } from "./schedule-model"
 import { placeVisit } from "./schedule-model"
 
@@ -40,7 +41,11 @@ const capacityKind = (kind: Visit["kind"]): CapacityKind => (kind === "turn-on" 
 const areaIdOf = (areas: AreaGroup[], town: Visit["town"]) => areas.find((a) => a.towns.includes(town))?.id ?? town
 
 /** The season window a pass's visit must land in; a one-off job's visit has none. */
-const windowOf = (item: TrayItem, windows: SeasonWindow[]) => (item.passId ? windows.find((w) => w.kind === item.kind) : undefined)
+const windowOf = (item: TrayItem, windows: SeasonWindow[], today: string) => {
+  const found = item.passId ? windows.find((w) => w.kind === item.kind) : undefined
+  // read year-agnostic: the saved window carries a year nothing rolls, so it is the season holding (or next after) tomorrow
+  return found ? windowAt(found, addDays(today, 1)) : undefined
+}
 
 function hasRoom(person: Person, day: string, item: TrayItem, ctx: PlaceContext): boolean {
   if (!worksOn(person, day)) return false
@@ -55,7 +60,7 @@ function hasRoom(person: Person, day: string, item: TrayItem, ctx: PlaceContext)
 
 /** Where the job goes: the next open day, the first person (in the schedule's order) with room; or why there is none. */
 export function placeFor(item: TrayItem, ctx: PlaceContext): PlaceResult {
-  const window = windowOf(item, ctx.windows)
+  const window = windowOf(item, ctx.windows, ctx.today)
   const first = addDays(ctx.today, 1)
   const from = window && window.opensOn.slice(0, 10) > first ? window.opensOn.slice(0, 10) : first
   const last = window ? window.closesOn.slice(0, 10) : addDays(ctx.today, PLACE_HORIZON_DAYS)
