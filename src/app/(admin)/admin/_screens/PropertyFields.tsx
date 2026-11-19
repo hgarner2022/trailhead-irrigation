@@ -95,7 +95,7 @@ export function PropertyFields({ propertyId, yard, actions, onDone, onCancel }: 
       {text("backflowLocation", "Backflow", "North side of the house")}
       {text("gateCode", "Gate code")}
       <FormRow label="Must be home" htmlFor="property-must-be-home">
-        <input id="property-must-be-home" type="checkbox" checked={draft.mustBeHome} onChange={(e) => set("mustBeHome", e.target.checked)} className="size-5 accent-primary" />
+        <input id="property-must-be-home" type="checkbox" checked={draft.mustBeHome} onChange={(e) => set("mustBeHome", e.target.checked)} className="size-11 accent-primary md:size-5" />
       </FormRow>
       {area("accessNote", "Access note", "Gate code, dog, where the controller is")}
       <div className="grid grid-cols-2 gap-3">

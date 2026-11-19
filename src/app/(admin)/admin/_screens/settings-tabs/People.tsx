@@ -12,7 +12,7 @@ import { EmptyState } from "@/components/blocks/EmptyState"
 import type { CapacityKind, PersonRole, Weekday } from "@/lib/admin/types"
 import { KIND_PLURALS, type SettingsState } from "../settings-model"
 import { addPerson, removePerson, setCapacity, setPersonName, setPersonRole, setPersonText, setSeason, toggleWorkingDay } from "../settings-people"
-import { CommitInput, ConfirmButton, type Apply } from "./fields"
+import { CommitInput, ConfirmButton, TAP_TARGET, type Apply } from "./fields"
 
 // People are rows: who works here, how to reach them, what they are (owner,
 // admin, tech), the truck they drive (a person with no truck is not on the
@@ -88,7 +88,7 @@ export function People({ state, apply }: { state: SettingsState; apply: Apply })
                         const id = `${person.id}-${day}`
                         return (
                           <div key={day} className="flex flex-col items-center gap-1.5">
-                            <Checkbox id={id} checked={person.workingDays.includes(day)} onCheckedChange={() => apply((s, a) => toggleWorkingDay(s, person.id, day, a))} />
+                            <Checkbox id={id} className={TAP_TARGET} checked={person.workingDays.includes(day)} onCheckedChange={() => apply((s, a) => toggleWorkingDay(s, person.id, day, a))} />
                             <Label htmlFor={id} className="text-xs font-normal text-muted-foreground">
                               {DAY_WORDS[day]}
                               <span className="sr-only">{` for ${person.name}`}</span>

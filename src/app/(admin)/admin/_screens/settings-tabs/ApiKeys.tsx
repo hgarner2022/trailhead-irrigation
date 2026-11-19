@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { EmptyState } from "@/components/blocks/EmptyState"
 import { TIME_ZONE, shortDate } from "@/lib/admin/format"
 import { API_SCOPES, SCOPE_WORDS, revokeKey, type ApiScope, type SettingsState } from "../settings-model"
-import { ConfirmButton, type Apply } from "./fields"
+import { ConfirmButton, TAP_TARGET, type Apply } from "./fields"
 
 // Keys for the open API: an agent or another system connects with one, scoped
 // to what it may do. Create shows the key once, in the dialog, with a copy
@@ -64,6 +64,7 @@ function CreateKey({ onCreate }: { onCreate: OnCreateKey }) {
                 <div key={scope} className="flex items-center gap-2">
                   <Checkbox
                     id={`scope-${scope}`}
+                    className={TAP_TARGET}
                     checked={scopes.includes(scope)}
                     onCheckedChange={(v) => setScopes((cur) => (v === true ? [...cur, scope] : cur.filter((s) => s !== scope)))}
                   />

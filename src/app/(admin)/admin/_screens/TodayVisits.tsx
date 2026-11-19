@@ -102,7 +102,7 @@ export function TodayVisits({ view, areas, next, className }: TodayVisitsProps) 
   return (
     <div data-slot="today-visits" className={cn("space-y-4", className)}>
       <Tabs value={choice} onValueChange={change}>
-        <TabsList aria-label="Group today's jobs" className="w-full sm:w-fit">
+        <TabsList aria-label="Group today's jobs" className="w-full sm:w-fit group-data-[orientation=horizontal]/tabs:h-11 md:group-data-[orientation=horizontal]/tabs:h-9">
           <TabsTrigger value="job" className="flex-1 sm:flex-none">
             By job
           </TabsTrigger>

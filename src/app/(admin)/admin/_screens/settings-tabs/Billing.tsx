@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label"
 import { SectionHeading } from "@/components/blocks/SectionHeading"
 import { MAX_DUE_DAYS, setBilling } from "../settings-billing"
 import type { SettingsState } from "../settings-model"
-import { CommitInput, type Apply } from "./fields"
+import { CommitInput, TAP_TARGET, type Apply } from "./fields"
 
 // How an invoice is due and taxed: the days after it is sent, and whether it carries Colorado sales tax. Sales tax is off until the
 // office says it collects it; the percent is asked for only then. Which lines are taxed is set per service (the Services tab).
@@ -32,7 +32,7 @@ export function Billing({ state, apply }: { state: SettingsState; apply: Apply }
         </div>
         <div className="space-y-1.5">
           <div className="flex items-center gap-2">
-            <Checkbox id="billing-tax" checked={collectsSalesTax} aria-describedby="billing-tax-hint" onCheckedChange={(v) => apply((s, a) => setBilling(s, "collectsSalesTax", v === true, a))} />
+            <Checkbox id="billing-tax" className={TAP_TARGET} checked={collectsSalesTax} aria-describedby="billing-tax-hint" onCheckedChange={(v) => apply((s, a) => setBilling(s, "collectsSalesTax", v === true, a))} />
             <Label htmlFor="billing-tax" className="font-normal">
               Collect Colorado sales tax
             </Label>

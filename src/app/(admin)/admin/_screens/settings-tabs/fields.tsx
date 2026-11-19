@@ -7,6 +7,9 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import type { Actor, SettingsState } from "../settings-model"
 
+/** A 16px box (a checkbox) gets a 44px hit area below `md` without growing: an invisible pseudo-element around it. */
+export const TAP_TARGET = "relative after:absolute after:-inset-3.5 md:after:hidden"
+
 /** What a tab calls to change the settings: a reducer and its arguments are applied and logged by the screen. */
 export type Apply = (change: (state: SettingsState, actor: Actor) => SettingsState) => void
 
@@ -105,7 +108,7 @@ export function ConfirmButton({ label, title, description, confirm, onConfirm }:
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="sm" aria-label={label}>
+        <Button variant="ghost" size="sm" aria-label={label} className="min-h-11 md:min-h-0">
           {label.split(" ")[0]}
         </Button>
       </DialogTrigger>
