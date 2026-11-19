@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils"
 // A record named inside a line of text, as a link (Hannah, Nov 19 2026: in "Past visits" the service is that job and the person is a
 // person, and both should look like what they are). A small chip: the kind's icon, the name, a hairline and the cream hover of a row; the
 // name is the link and a screen reader hears the kind first ("Job: Fall blowout"). `kind` picks the icon and the words (job, person, customer, invoice, receipt, visit, property, day): every record name on any screen is one.
-// The name wraps and is never cut with an ellipsis, so a short name is whole on a phone. Pure render, server component.
+// The name wraps between words and is never cut with an ellipsis or inside a word. Pure render, server component.
 
 export type RecordChipKind = "job" | "person" | "customer" | "invoice" | "receipt" | "visit" | "property" | "day"
 
@@ -16,10 +16,12 @@ export interface RecordChipProps {
   kind: RecordChipKind
   name: string
   href: string
+  /** the short form shown below `md` ("Today" for "Today, Wed Nov 18"); the name from `md` up. A chip never breaks inside a word, so a narrow place gives the short form */
+  short?: string
   className?: string
 }
 
-export function RecordChip({ kind, name, href, className }: RecordChipProps) {
+export function RecordChip({ kind, name, href, short, className }: RecordChipProps) {
   const Icon = ICONS[kind]
   return (
     <Link
@@ -30,7 +32,14 @@ export function RecordChip({ kind, name, href, className }: RecordChipProps) {
     >
       <Icon className="mt-[3px] size-3.5 shrink-0 text-muted-foreground" aria-hidden />
       <span className="sr-only">{KIND_WORDS[kind]}: </span>
-      <span className="min-w-0 break-words">{name}</span>
+      {short ? (
+        <>
+          <span className="min-w-0 whitespace-normal break-normal md:hidden">{short}</span>
+          <span className="hidden min-w-0 whitespace-normal break-normal md:inline">{name}</span>
+        </>
+      ) : (
+        <span className="min-w-0 whitespace-normal break-normal">{name}</span>
+      )}
     </Link>
   )
 }

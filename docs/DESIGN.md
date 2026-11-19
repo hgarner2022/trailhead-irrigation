@@ -54,7 +54,8 @@ Every colour the app uses is a token in `src/app/globals.css`, inside the `@them
 | `--color-popover-foreground` | `#1E293B` | Charcoal | Text in a popover |
 | `--color-destructive` | `#B91C1C` | Red | Cancel and delete actions, error text, the failed status |
 | `--color-destructive-foreground` | `#FFFFFF` | White | Text on a destructive button |
-| `--color-warning` | `#B45309` | Primary dark | Past due, needs attention, a delta that is bad for the business |
+| `--color-warning` | `#A16207` | Gold (not the brand orange: a different hue) | Waiting on a person: Unpaid, Needs a day, Invoice sent, Not done; the tint is `bg-warning/14`, the dot and border `warning`, and a gold banner or warning icon |
+| `--color-warning-ink` | `#854D0E` | Dark gold | Ink for 12px text on the warning tint, as in the Unpaid, Needs a day and Invoice sent pills and the Billing status line: 5.70:1 on `bg-warning/14` over white, 5.49 over cream, 5.24 over stone |
 | `--color-positive` | `#15803D` | Readable green, about 5:1 on white | Paid, confirmed, a delta that is good for the business; it is used as text, which is why it is darker than `--color-success`. 4.8:1 on cream, so it is for text on white or cream only. |
 | `--color-positive-deep` | `#166534` | Darker green | Ink for 12px text on the positive tint, as in the active, paid and completed status pills: 6.2:1 on `bg-positive/10` over white, 6.0 over cream |
 | `--color-input` | `#E7E5E4` | Border | Input and select borders |
@@ -154,7 +155,7 @@ Every admin screen is built from these blocks; a screen holds no markup of its o
 | Footer bar | One primary, up to two outline, More, one destructive ghost; acts with Undo or opens one dialog. On a record page it is the header's actions (`destructiveInMenu`: the destructive one goes last inside More, in red) | `RecordFooter` |
 | Dialog | One question, 400px; a destructive confirm reads "Keep it" and the verb ("Cancel visit"); never over a dialog; its body holds the one field or choice | `ConfirmDialog` |
 | Split button | A primary action with a caret for its quieter twin (Move) | `SplitButton` |
-| Pill | The only status chip, coloured by what the status means (green for good outcomes, orange for booked, red for Past due and Failed, grey for the quiet ones); under a panel's subtitle or at a row's right. The four-tone recast of section 9 (Past due as warning, Canceled as destructive) and pills out of grid cells wait for the Jobs and Visits column work, step 9 | `StatusPill` (`StatusPills` for a visit's two). Every pill is a 10% tint, a dot in the ink colour and the word; `size="lg"` (14px) only beside a page's title; a label or tag is a neutral grey chip with no dot and never a status colour |
+| Pill | The only status chip, coloured by what the status means (green for outcomes: Done, Paid, Active; navy for booked and today: Scheduled, Today, and solid navy for the job that is Active now; gold for waiting on a person: Needs a day, Unpaid, Invoice sent, Not done, Pending, Waiting on customer; red for Past due, Failed and Charge failed; grey for the quiet ones: Canceled, Skipped, Expired, Not yet). Brand orange is never a status colour; under a panel's subtitle or at a row's right. The four-tone recast of section 9 (Past due as warning, Canceled as destructive) and pills out of grid cells wait for the Jobs and Visits column work, step 9 | `StatusPill` (`StatusPills` for a visit's two). Every pill is a 10% tint, a dot in the ink colour and the word; `size="lg"` (14px) only beside a page's title; a label or tag is a neutral grey chip with no dot and never a status colour |
 | Money word | Plain text from `src/lib/money/words.ts`; the alert colour (`text-destructive`) only for Past due and Failed | `MoneyCell` |
 | Empty state | Title, one line, at most one button; a "No match" variant with Clear filters | `EmptyState` |
 | Form row | Label above, hint under, error under, 44px control; the only place a `<label>` is written | `FormRow` |
@@ -211,6 +212,18 @@ There are two chart shapes and no others: grouped bars by month, with this year 
 Colour highlights; it never encodes magnitude. A bar is orange because it is this year, not because it is big. Tooltips carry the exact numbers, formatted the same way as the tiles.
 
 Stat tiles always name their comparison baseline in words, for example "vs October 2025", never with a bare arrow. The delta is coloured by whether the movement is good for the business, `positive` or `warning`, not by whether the number went up or down. More past due invoices is up and bad; fewer is down and good.
+
+### Status colours
+
+Approved by Hannah, Nov 19 2026 (`docs/plans/2026-11-19-status-colours-research.md`). One table, applied by `StatusPill` and by the status line at the top of a job's Billing.
+
+| Tone | Statuses | Tint and ink | Text contrast on the tint (white / cream / stone) |
+|---|---|---|---|
+| Green | Done, Charged, Paid, Active | `bg-positive/10`, `positive-deep` | 6.23 / 5.99 / 5.74 |
+| Navy | Scheduled, Routed, Today (solid navy for the job that is Active now) | `bg-navy/10`, `navy` | 10.4 / 9.9 / 9.5 |
+| Gold | Needs a day, Pending, Unpaid, Invoice sent, Not done, Waiting on customer | `bg-warning/14`, `warning-ink` | 5.70 / 5.49 / 5.24 |
+| Red | Past due, Failed, Charge failed | `bg-destructive/10`, `destructive` | 5.45 / 5.25 / 5.02 |
+| Grey | Canceled, Skipped, Expired, Not yet, Refunded | `bg-stone`, `muted-foreground` | 4.59 on stone |
 
 ## Copy
 

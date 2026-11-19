@@ -21,9 +21,9 @@ export function SummaryBand({ items, className }: { items: readonly SummaryItem[
   return (
     <div data-slot="summary-band" role="group" aria-label="Summary" className={cn("grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-border bg-border shadow-sm lg:grid-cols-4", className)}>
       {items.map(({ icon: Icon, ...item }) => (
-        <div key={item.label} data-slot="summary-cell" className="flex min-w-0 items-start gap-3 bg-card px-5 py-4">
+        <div key={item.label} data-slot="summary-cell" className="flex min-w-0 items-start gap-3 bg-card px-4 py-4 sm:px-5">
           {Icon && (
-            <span data-slot="summary-icon" aria-hidden className="flex size-9 shrink-0 items-center justify-center rounded-full border border-border bg-cream text-primary-dark">
+            <span data-slot="summary-icon" aria-hidden className="hidden size-9 sm:flex shrink-0 items-center justify-center rounded-full border border-border bg-cream text-primary-dark">
               <Icon className="size-[18px]" />
             </span>
           )}

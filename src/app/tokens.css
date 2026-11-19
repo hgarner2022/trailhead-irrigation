@@ -36,7 +36,8 @@
   --color-popover-foreground: #1E293B;
   --color-destructive: #B91C1C;
   --color-destructive-foreground: #FFFFFF;
-  --color-warning: #B45309;              /* = primary-dark */
+  --color-warning: #A16207;              /* gold, a different hue from the brand orange: waiting on a person (Unpaid, Needs a day, Invoice sent); never the brand */
+  --color-warning-ink: #854D0E;          /* ink for 12px text on the warning tint (bg-warning/14): 5.70 over white, 5.49 over cream, 5.24 over stone */
   --color-positive: #15803D;             /* readable green, about 5:1 on white; used as text */
   --color-positive-deep: #166534;        /* ink for text on the positive tint; 6.2:1 on bg-positive/10 */
   --color-input: #E7E5E4;                /* = border */

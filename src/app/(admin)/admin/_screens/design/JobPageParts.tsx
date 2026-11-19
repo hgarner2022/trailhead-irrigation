@@ -68,6 +68,9 @@ export function dayHref(label: string): string | undefined {
   return `/admin/schedule?day=${m[3] ?? "2026"}-${String(month + 1).padStart(2, "0")}-${m[2]!.padStart(2, "0")}`
 }
 
+/** "Today, Wed Nov 18" is "Today" and "Tue, Nov 24" is "Nov 24" on a phone. */
+const shortDay = (label: string) => (label.startsWith("Today") ? "Today" : label.replace(/^[A-Z][a-z]{2}, /, ""))
+
 const split = (address: string | undefined): [string, string | undefined] => {
   const [street, ...rest] = (address ?? "").split(", ")
   return [street || "No address", rest.join(", ") || undefined]
@@ -88,9 +91,9 @@ export function bandItems(b: BandInput): SummaryItem[] {
   const [street, town] = split(b.address)
   const money = moneyWord(b.pills, b.statusText, b.canceled)
   return [
-    { label: b.when.label, value: dayHref(b.when.value) ? <RecordChip kind="day" name={b.when.value} href={dayHref(b.when.value)!} /> : b.when.value, sub: b.when.activeSince ? <><span className="block">{b.when.sub}</span><span className="block font-medium text-navy">{b.when.activeSince}</span></> : b.when.sub, icon: Calendar },
-    { label: "Who", value: /^No one/.test(b.who) ? b.who : <RecordChip kind="person" name={b.who} href="/admin/settings?tab=people" />, icon: UserRound },
-    { label: "Where", value: street === "No address" ? street : <RecordChip kind="property" name={street} href="/admin/customers" />, sub: town, icon: MapPin },
+    { label: b.when.label, value: dayHref(b.when.value) ? <RecordChip kind="day" name={b.when.value} short={shortDay(b.when.value)} href={dayHref(b.when.value)!} className="flex w-fit max-w-full" /> : b.when.value, sub: b.when.activeSince ? <><span className="block">{b.when.sub}</span><span className="block font-medium text-navy">{b.when.activeSince}</span></> : b.when.sub, icon: Calendar },
+    { label: "Who", value: /^No one/.test(b.who) ? b.who : <RecordChip kind="person" name={b.who} short={b.who.split(" ")[0]} href="/admin/settings?tab=people" className="flex w-fit max-w-full" />, icon: UserRound },
+    { label: "Where", value: street === "No address" ? street : <RecordChip kind="property" name={street} href="/admin/customers" className="flex w-fit max-w-full" />, sub: town, icon: MapPin },
     { label: "Total", value: b.total, sub: money.sub, tone: money.alert ? "alert" : "plain", icon: Receipt },
   ]
 }

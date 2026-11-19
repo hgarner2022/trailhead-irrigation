@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite"
+import { expect } from "storybook/test"
 import { AdminShell } from "@/components/blocks/AdminShell"
 import { JobPage } from "./JobPage"
 import { STATE_NOTES, jobPageOf, type JobState } from "./job-fixtures"
@@ -43,6 +44,19 @@ export const OnTheWayPhone: Story = story("on-the-way", phone)
 /** Active since 9:12 am with the checklist half done. The one primary action is Mark done. */
 export const Active: Story = story("active", laptop)
 export const ActivePhone: Story = story("active", phone)
+
+/** At 375 each band chip is whole on its own line ("Today", "Ryan", "480 Briggs St") and none is taller than two lines. */
+export const BandChipsPhone: Story = {
+  ...story("today", phone),
+  play: async ({ canvasElement }) => {
+    const chips = canvasElement.querySelectorAll<HTMLElement>("[data-slot=summary-cell] [data-slot=record-chip]")
+    await expect(chips.length).toBeGreaterThan(0)
+    for (const chip of chips) {
+      const line = parseFloat(getComputedStyle(chip).lineHeight) || 20
+      await expect(chip.getBoundingClientRect().height).toBeLessThanOrEqual(line * 2 + 12)
+    }
+  },
+}
 
 /** Ryan sees a trip whose day passed with no Mark done. The one primary action is Mark done, with Skip beside it. */
 export const Late: Story = story("late", laptop)

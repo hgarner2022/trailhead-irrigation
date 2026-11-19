@@ -14,7 +14,8 @@ import { JOB_WORDS, REASON_WORDS, WORK_WORDS, type Job, type JobState, type Mone
 // #166534 on bg-positive/10 is 6.23 and 5.99; primary-deep #92400E on
 // bg-primary/10 is 6.36 and 6.13; destructive #B91C1C on bg-destructive/10
 // is 5.45 and 5.25 (5.02 on stone). The lighter positive and warning inks
-// only reach 4.2 to 4.4 on their tints, which is why they are not used here.
+// only reach 4.2 to 4.4 on their tints, which is why they are not used here. Gold: warning-ink #854D0E on bg-warning/14 (gold #A16207 at 14%) is
+// 5.70 over white, 5.49 over cream and 5.24 over stone; navy #2B3544 on bg-navy/10 is 10.4, 9.9 and 9.5.
 
 export type PillStatus = PassStatus | JobState | WorkState | MoneyState | "overdue" | "waiting" | "today" | "job-active"
 
@@ -36,34 +37,35 @@ const LABELS: Record<PillStatus, string> = {
 }
 
 const GOOD = "bg-positive/10 text-positive-deep border-positive/30"
-const BOOKED = "bg-primary/10 text-primary-deep border-primary/30"
-const WAITING = "bg-stone text-foreground border-border"
+const GOLD = "bg-warning/14 text-warning-ink border-warning/40"
 const BAD = "bg-destructive/10 text-destructive border-destructive/30"
 const OVER = "bg-stone text-muted-foreground border-border"
-// Today is the info tone (a navy tint); Active (On my way sent, not yet done) is the progress tone, solid navy, because it is the one thing happening right now
+// Booked and Today are the info tone (a navy tint: all is well, nothing to do until the day); Active (On my way sent, not yet done) is the progress tone, solid navy, because it is the one thing happening right now
 const INFO = "bg-navy/10 text-navy border-navy/30"
 const PROGRESS = "bg-navy text-white border-navy"
 
+// Brand orange is never a status colour (Hannah, Nov 19 2026; docs/plans/2026-11-19-status-colours-research.md): orange is for actions.
+// Green is an outcome (done, paid), navy is booked or happening, gold is waiting on a person, red is wrong, grey is over or not started.
 const TONES: Record<PillStatus, string> = {
-  "needs-a-day": WAITING,
-  scheduled: BOOKED,
-  routed: BOOKED,
+  "needs-a-day": GOLD,
+  scheduled: INFO,
+  routed: INFO,
   done: GOOD,
   charged: GOOD,
   "charge-failed": BAD,
-  "not-done": WAITING,
+  "not-done": GOLD,
   "not-yet": OVER,
-  "bill-sent": BOOKED,
+  "bill-sent": GOLD,
   failed: BAD,
   cancelled: OVER,
   skipped: OVER,
-  pending: WAITING,
+  pending: GOLD,
   active: GOOD,
   paid: GOOD,
-  owed: WAITING,
+  owed: GOLD,
   overdue: BAD,
   lapsed: OVER,
-  waiting: WAITING,
+  waiting: GOLD,
   today: INFO,
   "job-active": PROGRESS,
 }
