@@ -46,10 +46,10 @@ describe("HomeScreen", () => {
 
   it("leads with the invoice to pay and names it past due once the day has gone", () => {
     const { rerender } = render(<HomeScreen customer={andrea} jobs={[invoicedJob]} today={TODAY} />)
-    expect(screen.getByText("Invoice sent: Repair, $115, due Dec 1")).toBeInTheDocument()
+    expect(screen.getByText("Repair: $115 unpaid, due Dec 1")).toBeInTheDocument()
     expect(screen.getByRole("link", { name: "Pay now" })).toHaveAttribute("href", "/pay/inv_1?token=abc")
     rerender(<HomeScreen customer={andrea} jobs={[pastDueJob]} today={TODAY} />)
-    expect(screen.getByText("Past due since Apr 1: Repair, $115")).toBeInTheDocument()
+    expect(screen.getByText("Repair: $115 unpaid, past due since Apr 1")).toBeInTheDocument()
   })
 
   it("works for a customer with one-off visits and no pass: no pass card, nothing booked right now", () => {
