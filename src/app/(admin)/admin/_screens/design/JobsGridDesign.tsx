@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import { DataGrid, type GridColumnDef } from "@/components/blocks/DataGrid"
 import type { GridCardSlots } from "@/components/blocks/DataGridCard"
 import { RecordChip } from "@/components/blocks/RecordChip"
+import { recordHref } from "@/components/blocks/record-preview-model"
 import { MoneyCell } from "@/components/blocks/MoneyCell"
 import { PageHeader } from "@/components/blocks/PageHeader"
 import { StatusPill, type PillStatus } from "@/components/blocks/StatusPill"
@@ -47,9 +48,9 @@ const money = (n: number) => `$${n.toLocaleString("en-US")}`
 export const jobGridColumns: GridColumnDef<GridJob>[] = [
   { id: "name", accessorFn: (r) => `${r.name} ${r.property} ${r.title}`, header: "Customer", cell: ({ row }) => row.original.name, meta: { csv: (r) => (r as GridJob).name } },
   { id: "service", accessorKey: "service", header: "Job", cell: ({ row }) => row.original.title, meta: { csv: (r) => (r as GridJob).title } },
-  { id: "property", accessorKey: "property", header: "Property", cell: ({ row }) => (row.original.property ? <RecordChip kind="property" name={row.original.property} href="/admin/customers" /> : null) },
+  { id: "property", accessorKey: "property", header: "Property", cell: ({ row }) => (row.original.property ? <RecordChip kind="property" name={row.original.property} href="/admin/customers" className="text-sm font-medium md:min-h-8" /> : null) },
   { id: "stage", accessorKey: "stage", header: "Status", cell: ({ row }) => <StatusPill status={GRID_TONE[row.original.stage]} label={GRID_WORDS[row.original.stage]} data-pill="work" />, meta: { csv: (r) => GRID_WORDS[(r as GridJob).stage] } },
-  { id: "who", accessorKey: "who", header: "Who", cell: ({ row }) => (row.original.who && !/^No one/.test(row.original.who) ? <RecordChip kind="person" name={row.original.who} href="/admin/settings?tab=people" /> : row.original.who) },
+  { id: "who", accessorKey: "who", header: "Who", cell: ({ row }) => (row.original.who && !/^No one/.test(row.original.who) ? <RecordChip kind="person" name={row.original.who} href={recordHref.person()} className="text-sm font-medium md:min-h-8" /> : row.original.who) },
   { id: "season", accessorKey: "season", header: "Season" },
   { id: "visits", accessorKey: "visits", header: "Visits" },
   { id: "total", accessorKey: "total", header: "Total", cell: ({ row }) => (row.original.stage === "cancelled" ? null : <MoneyCell end text={row.original.total > 0 ? money(row.original.total) : "Quote later"} />), meta: { align: "right", csv: (r) => String((r as GridJob).total) } },

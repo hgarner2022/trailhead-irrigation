@@ -50,9 +50,6 @@ const PAY_LINK = "trailheadirrigation.com/pay/1042"
 export const reminderText = (f: ConfirmFacts, line = ""): string =>
   `Trailhead: a reminder that your ${f.amount} invoice for the ${f.service} ${f.pastDue ? "was due" : "is due"} ${f.dueOn}. Pay here: ${PAY_LINK}${line.trim() ? ` ${line.trim()}` : ""}`
 
-/** The most the office may add after the reminder's words. */
-export const REMINDER_LINE_MAX = 140
-
 /** What a payment does besides the money: the receipt, and the open invoice it settles. */
 const afterPaying = (f: ConfirmFacts) => `${f.first} gets a receipt by email${f.invoiceOpen ? ", the open invoice is settled and its pay link closes" : ""}.`
 

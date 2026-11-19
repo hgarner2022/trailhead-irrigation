@@ -45,15 +45,17 @@ export const OnTheWayPhone: Story = story("on-the-way", phone)
 export const Active: Story = story("active", laptop)
 export const ActivePhone: Story = story("active", phone)
 
-/** At 375 each band chip is whole on its own line ("Today", "Ryan", "480 Briggs St") and none is taller than two lines. */
-export const BandChipsPhone: Story = {
+/** At 375 the four band tiles are links with their values whole: none is wider than its tile and none wraps past two lines. */
+export const BandTilesPhone: Story = {
   ...story("today", phone),
   play: async ({ canvasElement }) => {
-    const chips = canvasElement.querySelectorAll<HTMLElement>("[data-slot=summary-cell] [data-slot=record-chip]")
-    await expect(chips.length).toBeGreaterThan(0)
-    for (const chip of chips) {
-      const line = parseFloat(getComputedStyle(chip).lineHeight) || 20
-      await expect(chip.getBoundingClientRect().height).toBeLessThanOrEqual(line * 2 + 12)
+    const cells = canvasElement.querySelectorAll<HTMLElement>("[data-slot=summary-cell]")
+    await expect(cells.length).toBe(4)
+    for (const cell of cells) {
+      await expect(cell.scrollWidth).toBeLessThanOrEqual(cell.clientWidth)
+      const value = cell.querySelector<HTMLElement>("p:nth-of-type(2)")!
+      const line = parseFloat(getComputedStyle(value).lineHeight) || 24
+      await expect(value.getBoundingClientRect().height).toBeLessThanOrEqual(line * 2 + 4)
     }
   },
 }

@@ -220,7 +220,7 @@ export function InvoiceTable({ rows, onRemind }: { rows: InvoiceRowData[]; onRem
         meta: { bare: true },
         cell: ({ row }) => (
           <span className="flex min-w-0 flex-col items-start gap-0.5">
-            <RecordChip kind="invoice" name={row.original.number} href={row.original.href ?? `/admin/invoices?invoice=${row.original.id}`} />
+            <RecordChip kind="invoice" name={row.original.number} href={row.original.href ?? `/admin/invoices?invoice=${row.original.id}`} className="text-sm font-medium md:min-h-8" />
             {row.original.note && <span className="whitespace-normal text-xs text-muted-foreground">{row.original.note}</span>}
           </span>
         ),

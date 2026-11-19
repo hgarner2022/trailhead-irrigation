@@ -8,6 +8,8 @@ import { CollectPayment } from "@/components/blocks/CollectPayment"
 import { dollars } from "@/lib/money/collect"
 import { MessageTable } from "@/components/blocks/MessageTable"
 import { RecordChip } from "@/components/blocks/RecordChip"
+import { recordHref } from "@/components/blocks/record-preview-model"
+import { propertyHref } from "./RecordChips"
 import { useToast } from "@/components/blocks/Toast"
 import { NotesAndHistory } from "@/components/blocks/NotesAndHistory"
 import { ConfirmDialog } from "@/components/blocks/ConfirmDialog"
@@ -65,11 +67,8 @@ export function dayHref(label: string): string | undefined {
   const m = /([A-Z][a-z]{2}) (\d{1,2})(?:, (\d{4}))?\b/.exec(label)
   const month = m ? MONTHS.indexOf(m[1]!) : -1
   if (!m || month < 0) return undefined
-  return `/admin/schedule?day=${m[3] ?? "2026"}-${String(month + 1).padStart(2, "0")}-${m[2]!.padStart(2, "0")}`
+  return recordHref.day(`${m[3] ?? "2026"}-${String(month + 1).padStart(2, "0")}-${m[2]!.padStart(2, "0")}`)
 }
-
-/** "Today, Wed Nov 18" is "Today" and "Tue, Nov 24" is "Nov 24" on a phone. */
-const shortDay = (label: string) => (label.startsWith("Today") ? "Today" : label.replace(/^[A-Z][a-z]{2}, /, ""))
 
 const split = (address: string | undefined): [string, string | undefined] => {
   const [street, ...rest] = (address ?? "").split(", ")
@@ -84,19 +83,28 @@ export interface BandInput {
   pills: PillData[]
   statusText?: string
   canceled: boolean
+  customerId?: string
+  /** an invoice is out: the Total tile opens it */
+  invoiceId?: string
 }
 
 /** The summary band: When (or Next visit), Who, Where and Total with its money word. Four cells, always. */
 export function bandItems(b: BandInput): SummaryItem[] {
   const [street, town] = split(b.address)
   const money = moneyWord(b.pills, b.statusText, b.canceled)
+  const whenHref = dayHref(b.when.value)
+  const hasWho = !/^No one/.test(b.who)
+  const billing = !b.canceled && b.total !== "$0"
   return [
-    { label: b.when.label, value: dayHref(b.when.value) ? <RecordChip kind="day" name={b.when.value} short={shortDay(b.when.value)} href={dayHref(b.when.value)!} className="flex w-fit max-w-full" /> : b.when.value, sub: b.when.activeSince ? <><span className="block">{b.when.sub}</span><span className="block font-medium text-navy">{b.when.activeSince}</span></> : b.when.sub, icon: Calendar },
-    { label: "Who", value: /^No one/.test(b.who) ? b.who : <RecordChip kind="person" name={b.who} short={b.who.split(" ")[0]} href="/admin/settings?tab=people" className="flex w-fit max-w-full" />, icon: UserRound },
-    { label: "Where", value: street === "No address" ? street : <RecordChip kind="property" name={street} href="/admin/customers" className="flex w-fit max-w-full" />, sub: town, icon: MapPin },
-    { label: "Total", value: b.total, sub: money.sub, tone: money.alert ? "alert" : "plain", icon: Receipt },
+    { label: b.when.label, value: b.when.value, sub: b.when.activeSince ? <><span className="block">{b.when.sub}</span><span className="block font-medium text-navy">{b.when.activeSince}</span></> : b.when.sub, icon: Calendar, ...(whenHref ? { href: whenHref } : {}) },
+    { label: "Who", value: b.who, icon: UserRound, ...(hasWho ? { href: recordHref.person() } : {}) },
+    { label: "Where", value: street, sub: town, icon: MapPin, ...(street === "No address" ? {} : { href: propertyHref(b.customerId ?? "c-1") }) },
+    { label: "Total", value: b.total, sub: money.sub, tone: money.alert ? "alert" : "plain", icon: Receipt, ...(!billing ? {} : b.invoiceId ? { href: recordHref.invoice(b.invoiceId) } : { onClick: scrollToBilling }) },
   ]
 }
+
+/** The Total tile with no invoice out scrolls to Billing on the same page. */
+const scrollToBilling = () => document.getElementById("billing-h")?.scrollIntoView({ behavior: "smooth", block: "start" })
 
 export function bandOfJob(job: JobPageData): SummaryItem[] {
   return bandItems({
@@ -107,10 +115,14 @@ export function bandOfJob(job: JobPageData): SummaryItem[] {
     pills: job.pills,
     statusText: job.billing.status?.text,
     canceled: job.pills.some((p) => p.status === "cancelled"),
+    invoiceId: job.billing.invoices?.find((i) => i.status !== "paid")?.href?.split("invoice=")[1],
   })
 }
 
 /** The aside: the customer with phone and address, the property's facts, then Notes and history. */
+/** A chip in a line of text is 14px medium (the customer page's table size). */
+const CHIP = "text-sm font-medium md:min-h-8"
+
 /** Past visits at this property: the earlier visits newest first, each the date, the service, who and the note left on it; three shown, "See all N" opens the customer. */
 export function PastVisitsCard({ street, visits, total }: { street: string; visits: PastVisit[]; total: number }) {
   return (
@@ -123,9 +135,9 @@ export function PastVisitsCard({ street, visits, total }: { street: string; visi
             {visits.slice(0, 3).map((v) => (
               <li key={v.id} data-slot="past-visit" className="py-3 first:pt-0 last:pb-0">
                 <p className="flex flex-wrap items-center gap-2 text-sm">
-                  <RecordChip kind="job" name={v.service} href={`/admin/jobs/${v.jobId}`} />
-                  <RecordChip kind="day" name={v.date} href={dayHref(v.date) ?? "/admin/schedule"} />
-                  <RecordChip kind="person" name={v.who} href="/admin/settings?tab=people" />
+                  <RecordChip kind="job" name={v.service} href={recordHref.job(v.jobId)} className={CHIP} />
+                  <RecordChip kind="day" name={v.date} href={dayHref(v.date) ?? recordHref.day("2026-01-01")} className={CHIP} />
+                  <RecordChip kind="person" name={v.who} href={recordHref.person()} className={CHIP} />
                 </p>
                 {v.note && <p className="mt-1 text-sm text-foreground">{v.note}</p>}
               </li>

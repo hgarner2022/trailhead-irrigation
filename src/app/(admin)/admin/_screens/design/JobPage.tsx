@@ -45,7 +45,14 @@ export function JobPage({ job, onDo, onMessage, intercept = [], handlers }: { jo
       <JobPhotos photos={job.photos} first={job.customer.split(" ")[0]!} visitDone={job.pills.some((p) => p.status === "done")} canceled={canceled} />
       <BillingCard data={job} onRemind={() => setDialog("remind")} onRefund={() => setDialog("refund")} />
       <MessagesCard messages={job.messages} />
-      {dialog === "remind" && <ReminderDialog facts={facts} onClose={() => setDialog(null)} onSend={(line) => onDo?.("Send a payment reminder", line)} />}
+      {dialog === "remind" && (
+        <ReminderDialog
+          who={{ first: facts.first, channel: facts.channel ?? "text", phone: facts.phone, email: facts.email ?? "" }}
+          invoice={{ number: job.billing.invoices?.[0]?.number ?? "INV-2026-0001", amount: facts.amount, service: facts.service, dueOn: facts.dueOn, pastDue: facts.pastDue }}
+          onClose={() => setDialog(null)}
+          onSend={({ line }) => onDo?.("Send a payment reminder", line)}
+        />
+      )}
       {dialog === "refund" && (
         <ConfirmDialog open onOpenChange={(o) => !o && setDialog(null)} title={refund.title} message={refund.message} confirmLabel={refund.confirmLabel} destructive slot="action-confirm" onConfirm={async () => (onDo?.("Refund $145"), { ok: true })} />
       )}

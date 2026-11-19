@@ -28,6 +28,7 @@ import { sectionOf } from "./admin-section"
 import { AdminTabBar } from "./AdminTabBar"
 import { useMedia } from "./use-media"
 import { CommandSearch } from "./CommandSearch"
+import { ToastProvider } from "./Toast"
 import { UndoToastProvider } from "./UndoToast"
 import { AdminAccountMenu } from "./AdminAccountMenu"
 import { TopBar } from "./TopBar"
@@ -177,7 +178,7 @@ export function AdminShell({ current: initial, user, switcher, onSignOut, onSear
         />
         <div className={cn(GUTTER, "w-full max-w-7xl pt-4 md:pt-6", phone ? "pb-[calc(5rem+env(safe-area-inset-bottom))]" : "pb-8")}>
           <AdminBarContext.Provider value={bar}>
-            <UndoToastProvider>{children}</UndoToastProvider>
+            <UndoToastProvider><ToastProvider>{children}</ToastProvider></UndoToastProvider>
           </AdminBarContext.Provider>
         </div>
       </SidebarInset>

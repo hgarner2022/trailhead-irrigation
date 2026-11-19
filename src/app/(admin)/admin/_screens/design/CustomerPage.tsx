@@ -1,146 +1,77 @@
 "use client"
 
-import { useState, type ReactNode } from "react"
+import { useState } from "react"
 import Link from "next/link"
 import { CalendarDays, CreditCard, Receipt, Ticket } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
-import { ConfirmDialog } from "@/components/blocks/ConfirmDialog"
-import { DataGrid, type GridColumnDef } from "@/components/blocks/DataGrid"
 import { EmptyState } from "@/components/blocks/EmptyState"
-import { FormRow } from "@/components/blocks/FormRow"
-import { MessagesTable } from "@/components/blocks/MessagesTable"
-import { MoneyCell } from "@/components/blocks/MoneyCell"
 import { NotesAndHistory } from "@/components/blocks/NotesAndHistory"
 import { PassSeason } from "@/components/blocks/PassSeason"
+import { Photos } from "@/components/blocks/Photos"
 import { RecordFooter, type FooterAction } from "@/components/blocks/RecordFooter"
 import { RecordPage } from "@/components/blocks/RecordPage"
 import { RecordFacts } from "@/components/blocks/RecordPanel"
 import { SectionCard } from "@/components/blocks/SectionCard"
 import { StatusPill } from "@/components/blocks/StatusPill"
 import { SummaryBand, type SummaryItem } from "@/components/blocks/SummaryBand"
-import { NOW, noop, noteOk } from "./job-fixtures"
-import type { CustomerInvoiceRow, CustomerJobRow, CustomerPageData, PassArea, SeasonLink } from "./customer-fixtures"
+import { recordHref } from "@/components/blocks/record-preview-model"
+import { useToast } from "@/components/blocks/Toast"
+import { CustomerBilling } from "./CustomerBilling"
+import { CollectDialog, CopyDialog, EditDetailsDialog, MergeDialog, contactOf } from "./CustomerDialogs"
+import { MessagesTable, JobsTable } from "./CustomerTables"
+import { AddressChip, JobChip } from "./RecordChips"
+import { cardLinkCopy, deleteCustomerCopy, mergeCopy, refundCopy } from "./customer-confirm"
+import type { CustomerPageData, PassArea, SeasonLink } from "./customer-fixtures"
+import { MessageDialog } from "./MessageDialog"
+import { NOW, noteOk } from "./job-fixtures"
 
 // The customer page (Hannah: "update the customer layout to look like this"), on the page frame of the job page and the rules of
-// docs/plans/2026-11-19-admin-page-layout-research.md. Header: the name, the badges (a pass holder's pass, "Unpaid $145") and the actions
-// at the top right (New job, with Send a text and Call as outlines, More). The summary band: Next visit, Unpaid, Season Pass, Card on file,
-// each with an icon in a cream circle. Main column: Jobs, Invoices, Messages (a table, emails and texts together), Notes and history.
-// Aside: Contact, Property, the Season Pass card (the seasons as a chain: renewed from last year's, renewed as next year's) or the card that
-// sells one, Consent. Send a text, Charge and Send an invoice each open a dialog that says what it does. A record's name is always a link
-// (a plain orange link here until a RecordChip block exists). Pure props, nothing wired.
+// docs/plans/2026-11-19-admin-page-layout-research.md and her rules of Nov 19 2026. Header: the name, the badges, and the actions at the top
+// right: New job (primary), Send a message, Collect payment when anything is unpaid, More (Edit details, Send card link, Merge, and Delete only
+// while nothing has happened). The summary band: Next visit, Unpaid, Season Pass, Card on file, each a link to what it summarises and a plain
+// cell when it has nothing behind it. Main column: Jobs, Season Pass, Billing, Messages, Photos, Notes and history. Aside: Contact (with how
+// to reach them), Property, Consent. Every record named is a chip. Every action that reaches the customer or their money confirms in a dialog
+// with the effect and the customer's channel; a result is a toast, never a message in a section. Pure props, nothing wired.
 
 const LINK = "rounded-sm text-primary-dark underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+export type CustomerDialog = "message" | "collect" | "card-link" | "refund" | "edit" | "merge" | "delete" | null
 
-/** A record named in a sentence or a cell: always a link. */
-export const RecordLinkText = ({ href, children }: { href: string; children: ReactNode }) => (
-  <Link href={href} className={LINK}>
-    {children}
-  </Link>
-)
-
-const EditLink = () => (
-  <button type="button" onClick={noop} className={`min-h-11 ${LINK}`}>
-    Edit
-  </button>
-)
-
-type Dialog = "text" | "charge" | "invoice" | null
-
-const jobColumns: GridColumnDef<CustomerJobRow>[] = [
-  { id: "title", accessorKey: "title", header: "Job", cell: ({ row }) => row.original.title },
-  { id: "day", accessorKey: "day", header: "Day" },
-  { id: "status", accessorKey: "status", header: "Status", cell: ({ row }) => <StatusPill status={row.original.status} /> },
-  { id: "billing", accessorKey: "billing", header: "Billing", cell: ({ row }) => <MoneyCell text={row.original.billing || null} tone="plain" />, meta: { csv: (r) => (r as CustomerJobRow).billing } },
-]
-const invoiceColumns: GridColumnDef<CustomerInvoiceRow>[] = [
-  { id: "number", accessorKey: "number", header: "Invoice", cell: ({ row }) => row.original.number },
-  { id: "due", accessorKey: "due", header: "Due" },
-  { id: "status", accessorKey: "status", header: "Status", cell: ({ row }) => <StatusPill status={row.original.status} /> },
-  { id: "total", accessorKey: "total", header: "Total", meta: { align: "right" } },
-  { id: "balance", accessorKey: "balance", header: "Balance", meta: { align: "right" } },
-]
-
-function JobsCard({ rows, onNewJob }: { rows: CustomerJobRow[]; onNewJob: () => void }) {
-  return (
-    <SectionCard title="Jobs" id="jobs-h" flush>
-      {rows.length ? (
-        <DataGrid columns={jobColumns} data={rows} getRowId={(r) => r.id} onOpen={noop} card={{ title: "title", when: ["day"], state: "status", money: "billing" }} pageSize={10} />
-      ) : (
-        <EmptyState title="No jobs yet" line="Start with a repair, a spring turn-on or a Season Pass. The job and its days show here." action={<Button type="button" variant="outline" className="min-h-11" onClick={onNewJob}>New job</Button>} />
-      )}
-    </SectionCard>
-  )
+const scrollTo = (id: string) => () => {
+  const el = document.getElementById(id)
+  el?.scrollIntoView({ behavior: "smooth", block: "center" })
 }
 
-function InvoicesCard({ rows }: { rows: CustomerInvoiceRow[] }) {
-  return (
-    <SectionCard title="Invoices" id="invoices-h" flush>
-      {rows.length ? (
-        <DataGrid columns={invoiceColumns} data={rows} getRowId={(r) => r.id} onOpen={noop} card={{ title: "number", when: ["due"], state: "status", money: "balance" }} pageSize={10} />
-      ) : (
-        <EmptyState title="No invoices yet" line="An invoice shows here when a job is done and sent to be paid." />
-      )}
-    </SectionCard>
-  )
+export function bandOf(d: CustomerPageData): SummaryItem[] {
+  const { next, unpaid, pass, card } = d.band
+  const hasUnpaid = d.unpaid !== undefined
+  const jobHref = (id?: string) => (id ? recordHref.job(id) : undefined)
+  return [
+    { label: "Next visit", value: next.value, sub: next.sub, icon: CalendarDays, href: jobHref(next.jobId) },
+    { label: "Unpaid", value: unpaid.value, sub: unpaid.sub, tone: unpaid.alert ? "alert" : "plain", icon: Receipt, ...(unpaid.invoiceId ? { href: recordHref.invoice(unpaid.invoiceId) } : hasUnpaid ? { onClick: scrollTo("billing-h") } : {}) },
+    { label: "Season Pass", value: pass.value, sub: pass.sub, icon: Ticket, href: jobHref(pass.jobId) },
+    { label: "Card on file", value: card.value, sub: card.sub, icon: CreditCard, ...(d.billing.card ? { onClick: scrollTo("card-row") } : {}) },
+  ]
 }
 
-function ContactCard({ d }: { d: CustomerPageData }) {
-  return (
-    <SectionCard title="Contact" id="contact-h" action={<EditLink />}>
-      <RecordFacts
-        divided
-        rows={[
-          ["Phone", <a key="p" href={d.phone.href} className={LINK}>{d.phone.text}</a>],
-          ["Email", <a key="e" href={`mailto:${d.email}`} className={`${LINK} break-all`}>{d.email}</a>],
-          ["Address", `${d.address[0]}, ${d.address[1]}`],
-        ]}
-      />
-    </SectionCard>
-  )
-}
+const seasonChip = (s: SeasonLink, customer: string) => <JobChip id={s.jobId} name={`Season Pass ${s.season}, ${s.number}`} customer={customer} status="done" />
 
-const seasonName = (s: SeasonLink) => `Season Pass ${s.season}, ${s.number}`
-const jobHref = (number: string) => `/admin/jobs?pass=${number}`
-
-function PassCardBlock({ area, onSell }: { area: PassArea; onSell: () => void }) {
-  return (
-    <SectionCard title="Season Pass" id="pass-h">
-      {area.kind === "pass" ? (
-        <div className="flex flex-col gap-4">
-          <PassSeason variant="customer" idPrefix="cust-pass" pass={area.pass} today={NOW.toISOString()} facts={area.facts} card={area.card} visits={[]} charges={[]} className="sm:[&>div:first-child]:flex-col" />
-          {area.renewedFrom && (
-            <p className="text-sm">
-              <span className="text-muted-foreground">Renewed from </span>
-              <RecordLinkText href={jobHref(area.renewedFrom.number)}>{seasonName(area.renewedFrom)}</RecordLinkText>
-            </p>
-          )}
-          <Earlier area={area} />
-        </div>
-      ) : (
-        <div className="flex flex-col items-start gap-3">
-          <p className="text-sm text-muted-foreground">{area.line}</p>
-          <Button type="button" variant="outline" className="min-h-11" onClick={onSell}>{area.label}</Button>
-          <Earlier area={area} />
-        </div>
-      )}
-    </SectionCard>
-  )
-}
-
-/** Earlier seasons, folded: each a record link, with where it went ("Renewed as TH-2027-0011"). */
-function Earlier({ area }: { area: PassArea }) {
+function Earlier({ area, customer }: { area: PassArea; customer: string }) {
   if (!area.earlier.length) return null
   return (
-    <details className="group text-sm">
+    <details className="text-sm">
       <summary className="min-h-11 cursor-pointer content-center font-medium text-muted-foreground">Earlier seasons ({area.earlier.length})</summary>
-      <ul className="flex flex-col gap-2 pb-1">
+      <ul className="flex flex-col gap-1 pb-1">
         {area.earlier.map((e) => (
-          <li key={e.number} className="flex flex-wrap items-baseline justify-between gap-x-3">
-            <RecordLinkText href={jobHref(e.number)}>{seasonName(e)}</RecordLinkText>
-            <span className="text-muted-foreground">
+          <li key={e.number} className="flex flex-wrap items-center justify-between gap-x-3">
+            {seasonChip(e, customer)}
+            <span className="flex flex-wrap items-center gap-x-1 text-muted-foreground">
               {e.state}
-              {e.renewedAs && <>, renewed as <RecordLinkText href={jobHref(e.renewedAs)}>{e.renewedAs}</RecordLinkText></>}
+              {e.renewedAs && (
+                <>
+                  <span>, renewed as</span>
+                  {seasonChip(e.renewedAs, customer)}
+                </>
+              )}
             </span>
           </li>
         ))}
@@ -149,33 +80,57 @@ function Earlier({ area }: { area: PassArea }) {
   )
 }
 
-export function bandOf(d: CustomerPageData): SummaryItem[] {
-  const { next, unpaid, pass, card } = d.band
-  return [
-    { label: "Next visit", value: next.value, sub: next.sub, icon: CalendarDays },
-    { label: "Unpaid", value: unpaid.value, sub: unpaid.sub, tone: unpaid.alert ? "alert" : "plain", icon: Receipt },
-    { label: "Season Pass", value: pass.value, sub: pass.sub, icon: Ticket },
-    { label: "Card on file", value: card.value, sub: card.sub, icon: CreditCard },
-  ]
+function SeasonPassCard({ d }: { d: CustomerPageData }) {
+  const { area } = d
+  return (
+    <SectionCard title="Season Pass" id="pass-h">
+      {area.kind === "pass" ? (
+        <div className="flex flex-col gap-3">
+          <PassSeason variant="customer" idPrefix="cust-pass" pass={area.pass} today={NOW.toISOString()} facts={area.facts} card={area.card} visits={[]} charges={[]} className="sm:[&>div:first-child]:flex-col" />
+          {area.renewedFrom && (
+            <p className="flex flex-wrap items-center gap-x-2 text-sm text-muted-foreground">
+              Renewed from {seasonChip(area.renewedFrom, d.name)}
+            </p>
+          )}
+          {area.renewedAs && (
+            <p className="flex flex-wrap items-center gap-x-2 text-sm text-muted-foreground">
+              Renewed as {seasonChip(area.renewedAs, d.name)}
+            </p>
+          )}
+          <Earlier area={area} customer={d.name} />
+        </div>
+      ) : (
+        <div className="flex flex-col items-start gap-3">
+          <p className="text-sm text-muted-foreground">{area.line}</p>
+          <Button asChild variant="outline" className="min-h-11">
+            <Link href={`/admin/jobs?new=1&customer=${d.id}&service=season-pass`}>{area.label}</Link>
+          </Button>
+          <Earlier area={area} customer={d.name} />
+        </div>
+      )}
+    </SectionCard>
+  )
 }
 
 export interface CustomerPageProps {
   customer: CustomerPageData
-  /** which dialog is open on first render (the Send a text story) */
-  initialDialog?: Dialog
+  /** the dialog open on first render (the stories that show one) */
+  initialDialog?: CustomerDialog
 }
 
 export function CustomerPage({ customer: d, initialDialog = null }: CustomerPageProps) {
-  const [dialog, setDialog] = useState<Dialog>(initialDialog)
-  const [text, setText] = useState("")
-  const open = (which: Dialog) => () => setDialog(which)
-  const act = (label: string, onClick: () => void = noop): FooterAction => ({ label, onClick })
-  const call: FooterAction = { label: "Call", href: d.phone.href }
-  const pay = d.unpaid ? (d.cardLast4 ? act(`Charge ${d.unpaid}`, open("charge")) : act("Send an invoice", open("invoice"))) : undefined
-  // Unpaid puts Charge (card on file) or Send an invoice beside Send a text; Call then waits under More.
-  const secondary: [FooterAction] | [FooterAction, FooterAction] = pay ? [act("Send a text", open("text")), pay] : [act("Send a text", open("text")), call]
-  const more: FooterAction[] = [...(pay ? [call] : []), ...(d.unpaid && d.cardLast4 ? [act("Send an invoice", open("invoice"))] : []), act("Add a note"), act("Edit")]
-  const close = (v: boolean) => !v && setDialog(null)
+  const [dialog, setDialog] = useState<CustomerDialog>(initialDialog)
+  const toast = useToast()
+  const c = contactOf(d)
+  const close = () => setDialog(null)
+  const open = (which: CustomerDialog) => () => setDialog(which)
+  const act = (label: string, onClick: () => void): FooterAction => ({ label, onClick })
+  const unpaid = d.unpaid !== undefined
+  const secondary: [FooterAction] | [FooterAction, FooterAction] = unpaid ? [act("Send a message", open("message")), act("Collect payment", open("collect"))] : [act("Send a message", open("message"))]
+  const more = [act("Edit details", open("edit")), act("Send card link", open("card-link")), act("Merge", open("merge"))]
+  const pay = d.billing.payments[0]
+  const sentVia = d.contact.channel === "text" ? "texted" : "emailed"
+  const quiet = (variant?: string) => variant === "quiet"
   return (
     <>
       <RecordPage
@@ -185,59 +140,59 @@ export function CustomerPage({ customer: d, initialDialog = null }: CustomerPage
         badges={d.pills.map((p) => <StatusPill key={p.label ?? p.status} status={p.status} label={p.label} size="lg" />)}
         band={<SummaryBand items={bandOf(d)} />}
         asideLabel="About this customer"
-        actions={<RecordFooter primary={act("New job")} secondary={secondary} more={more} destructiveInMenu />}
+        actions={<RecordFooter primary={{ label: "New job", href: `/admin/jobs?new=1&customer=${d.id}` }} secondary={secondary} more={more} destructive={d.untouched ? act("Delete customer", open("delete")) : undefined} destructiveInMenu />}
         aside={
           <>
-            <ContactCard d={d} />
-            <SectionCard title="Property" id="property-h" action={<EditLink />}>
-              <RecordFacts divided rows={d.property} />
+            <SectionCard title="Contact" id="contact-h" action={<button type="button" onClick={open("edit")} className={`min-h-11 ${LINK}`}>Edit</button>}>
+              <RecordFacts
+                divided
+                rows={[
+                  ["Phone", <a key="p" href={d.contact.phone.href} className={`${LINK} inline-flex min-h-11 items-center`}>{d.contact.phone.text}</a>],
+                  ["Email", <a key="e" href={`mailto:${d.contact.email}`} className={`${LINK} inline-flex min-h-11 items-center break-all`}>{d.contact.email}</a>],
+                  ["Contact by", d.contact.channel === "text" ? "Text" : "Email"],
+                ]}
+              />
             </SectionCard>
-            <PassCardBlock area={d.area} onSell={noop} />
+            <SectionCard title="Property" id="property-h" action={<button type="button" onClick={open("edit")} className={`min-h-11 ${LINK}`}>Edit</button>}>
+              <RecordFacts divided rows={[["Address", <AddressChip key="a" customerId={d.id} street={`${d.address[0]}, ${d.address[1]}`} />], ...d.property]} />
+            </SectionCard>
             <SectionCard title="Consent" id="consent-h">
               <p className="text-sm font-medium">{d.consent}</p>
             </SectionCard>
           </>
         }
       >
-        <JobsCard rows={d.jobs} onNewJob={noop} />
-        <InvoicesCard rows={d.invoices} />
-        <SectionCard title="Messages" id="messages-h" flush>
-          <MessagesTable messages={d.messages} phone={d.phone.text} email={d.email} />
+        <SectionCard title="Jobs" id="jobs-h" flush>
+          {d.jobs.length ? (
+            <JobsTable rows={d.jobs} customer={d.name} />
+          ) : (
+            <EmptyState title="No jobs yet" line="Start with a repair, a spring turn-on or a Season Pass. The job and its days show here." action={<Button asChild variant="outline" className="min-h-11"><Link href={`/admin/jobs?new=1&customer=${d.id}`}>New job</Link></Button>} />
+          )}
         </SectionCard>
+        <SeasonPassCard d={d} />
+        <CustomerBilling billing={d.billing} customerName={d.name} onUpdateCard={open("card-link")} onRefund={open("refund")} />
+        <SectionCard title="Messages" id="messages-h" flush>
+          <MessagesTable messages={d.messages} to={{ sms: d.contact.phone.text, email: d.contact.email }} />
+        </SectionCard>
+        {d.photos.length > 0 && (
+          <SectionCard title="Photos" id="photos-h">
+            <Photos photos={d.photos} audience="staff" bare canShow={false} camera={false} heading="Photos from the customer" />
+          </SectionCard>
+        )}
         <SectionCard title="Notes and history" id="notes-h">
           <NotesAndHistory bare lines={d.notes} onAddNote={noteOk} now={NOW} />
         </SectionCard>
       </RecordPage>
 
-      <ConfirmDialog
-        open={dialog === "text"}
-        onOpenChange={close}
-        title={`Send ${d.firstName} a text`}
-        message={`Sends this text to ${d.phone.text} now, from Trailhead's number. ${d.firstName} sees it on her phone and it is saved under Messages.`}
-        confirmLabel="Send text"
-        confirmDisabled={!text.trim()}
-        onConfirm={noteOk}
-      >
-        <FormRow label="Text">
-          <Textarea value={text} onChange={(e) => setText(e.target.value)} rows={3} placeholder="Trailhead: Ryan is running 20 minutes late." />
-        </FormRow>
-      </ConfirmDialog>
-      <ConfirmDialog
-        open={dialog === "charge"}
-        onOpenChange={close}
-        title={`Charge ${d.unpaid ?? ""}`}
-        message={`Charges ${d.unpaid ?? ""} to the Visa ending ${d.cardLast4 ?? ""} now and emails ${d.firstName} a receipt. A charge is undone only with a refund.`}
-        confirmLabel={`Charge ${d.unpaid ?? ""}`}
-        onConfirm={noteOk}
-      />
-      <ConfirmDialog
-        open={dialog === "invoice"}
-        onOpenChange={close}
-        title="Send an invoice"
-        message={`Texts ${d.firstName} one link to pay ${d.unpaid ?? ""}. The invoice is due 14 days from today. A reminder goes only when you press Remind.`}
-        confirmLabel="Send invoice"
-        onConfirm={noteOk}
-      />
+      {dialog === "message" && (
+        <MessageDialog facts={{ first: d.firstName, channel: d.contact.channel, email: d.contact.email, phone: d.contact.phone.text, service: "job", amount: d.unpaid ?? "$0", address: d.address[0], dueOn: "", customer: d.name }} onClose={close} onSend={(m) => toast(`${m.channel === "text" ? "Text sent" : "Email sent"} to ${d.firstName}`)} />
+      )}
+      {dialog === "collect" && <CollectDialog who={c} amount={Number((d.unpaid ?? "$0").replace(/\D/g, ""))} card={d.billing.card} invoice={d.openInvoice} onClose={close} />}
+      {dialog === "card-link" && <CopyDialog copy={cardLinkCopy(c)} onClose={close} onDone={() => toast(`Card link ${sentVia} to ${d.firstName}`)} />}
+      {dialog === "refund" && pay && <CopyDialog copy={refundCopy(c, pay.amount, pay.how.split(" ")[0]!.toLowerCase())} onClose={close} onDone={(v) => toast(quiet(v) ? `Refunded ${pay.amount}. ${d.firstName} was not notified.` : `Refunded ${pay.amount}. ${d.firstName} was ${sentVia} a notice.`)} />}
+      {dialog === "edit" && <EditDetailsDialog d={d} onClose={close} onDone={() => toast("Details saved")} />}
+      {dialog === "merge" && <MergeDialog d={d} others={["Andrea Daltons (duplicate)", "A. Dalton"]} copy={(o) => mergeCopy(d.name, o)} onClose={close} onDone={(o) => toast(`Merged ${o} into ${d.name}`)} />}
+      {dialog === "delete" && <CopyDialog copy={deleteCustomerCopy(d.name)} onClose={close} onDone={() => toast(`Deleted ${d.name}`)} />}
     </>
   )
 }

@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import type { Message } from "@/lib/admin/types"
 import { SchedulePicker, type Pick } from "./SchedulePicker"
 import { JobPage } from "./JobPage"
-import { reminderText } from "./confirm-copy"
+import { reminderBody } from "./customer-confirm"
 import { CollectBlock, factsOfJob } from "./JobPageParts"
 import { jobPageOf, paidBilling, paymentNote, refundNote, refundedBilling, type JobPageData, type JobState } from "./job-fixtures"
 
@@ -129,7 +129,7 @@ export function JobFlow({ channel = "text" }: { channel?: "text" | "email" }) {
     else if (label === "On my way") dispatch({ type: "active", text: variant !== "quiet" })
     else if (label === "Delete job") dispatch({ type: "reset" })
     else if (label === "Cancel job") dispatch({ type: "cancel", text: variant !== "quiet" })
-    else if (label === "Send a payment reminder") dispatch({ type: "message", message: say("sms", "invoice-reminder", `${reminderText(factsOfJob(view), variant)}`) })
+    else if (label === "Send a payment reminder") dispatch({ type: "message", message: say("sms", "invoice-reminder", reminderBody({ first: "Andrea", channel: "text", phone: "(970) 555-0123", email: "andrea.dalton@example.com" }, { amount: "$145", service: "repair", dueOn: "Dec 2", line: variant })) })
   }
   return (
     <ToastProvider>
