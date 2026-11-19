@@ -72,11 +72,11 @@ export function invoiceOf(status: InvoiceStatus | "sent-reminded"): InvoiceDetai
   switch (status) {
     case "sent":
     case "sent-reminded":
-      return { ...base, status: "sent", reminders: `${REMINDERS}. Next Nov 29.`, totals: owed, payments: [], remindedToday: status === "sent-reminded", footer: { primary: act(status === "sent-reminded" ? "Reminded today" : "Remind", status === "sent-reminded"), secondary: [act("Record the payment")], more: OUT_MORE, destructive: act("Cancel invoice") } }
+      return { ...base, status: "sent", reminders: `${REMINDERS}. Next Nov 29.`, totals: owed, payments: [], remindedToday: status === "sent-reminded", footer: { primary: act(status === "sent-reminded" ? "Reminded today" : "Send a payment reminder", status === "sent-reminded"), secondary: [act("Record the payment")], more: OUT_MORE, destructive: act("Cancel invoice") } }
     case "past-due":
-      return { ...base, number: "1038", customer: "Reese Holloway", sent: "Nov 3", due: "Nov 17", status, reminders: `${REMINDERS}. Next Nov 24.`, totals: owed, payments: [], messages: [msg("m2", "2026-11-17T17:00:00Z", "invoice-reminder", "sms", "Trailhead: invoice 1038, $145, is due today."), ...base.messages], footer: { primary: act("Remind"), secondary: [act("Record the payment")], more: OUT_MORE, destructive: act("Cancel invoice") } }
+      return { ...base, number: "1038", customer: "Reese Holloway", sent: "Nov 3", due: "Nov 17", status, reminders: `${REMINDERS}. Next Nov 24.`, totals: owed, payments: [], messages: [msg("m2", "2026-11-17T17:00:00Z", "invoice-reminder", "sms", "Trailhead: invoice 1038, $145, is due today."), ...base.messages], footer: { primary: act("Send a payment reminder"), secondary: [act("Record the payment")], more: OUT_MORE, destructive: act("Cancel invoice") } }
     case "part-paid":
-      return { ...base, number: "1041", customer: "Lena Park", status, reminders: `${REMINDERS}. Next Nov 28.`, lines: [{ name: "Repair", description: "One visit.", amount: "$145" }, { name: "Valve replacement", description: "A new zone valve.", amount: "$85" }], totals: [["Subtotal", "$230"], ["Tax", "$0"], ["Total", "$230", "strong"], ["Paid", "$145"], ["Balance", "$85", "alert"]], payments: [{ id: "p1", kind: "payment", title: "Check", detail: "Nov 20 · check 2210", amount: "$145" }], footer: { primary: act("Remind"), secondary: [act("Record the payment")], more: OUT_MORE, destructive: act("Cancel invoice") } }
+      return { ...base, number: "1041", customer: "Lena Park", status, reminders: `${REMINDERS}. Next Nov 28.`, lines: [{ name: "Repair", description: "One visit.", amount: "$145" }, { name: "Valve replacement", description: "A new zone valve.", amount: "$85" }], totals: [["Subtotal", "$230"], ["Tax", "$0"], ["Total", "$230", "strong"], ["Paid", "$145"], ["Balance", "$85", "alert"]], payments: [{ id: "p1", kind: "payment", title: "Check", detail: "Nov 20 · check 2210", amount: "$145" }], footer: { primary: act("Send a payment reminder"), secondary: [act("Record the payment")], more: OUT_MORE, destructive: act("Cancel invoice") } }
     case "paid":
       return { ...base, status, reminders: "No more reminders, it is paid.", totals: [["Subtotal", "$145"], ["Tax", "$0"], ["Total", "$145", "strong"], ["Paid", "$145"], ["Balance", "$0"]], payments: [{ id: "p2", kind: "payment", title: "Card", detail: "Nov 19 · from the pay link", amount: "$145" }], messages: [msg("m3", "2026-11-19T15:01:00Z", "receipt", "email", "Receipt: $145 for your repair at 91 Main St"), ...base.messages], footer: { more: QUIET } }
     case "voided":
@@ -85,10 +85,10 @@ export function invoiceOf(status: InvoiceStatus | "sent-reminded"): InvoiceDetai
 }
 
 export const INVOICE_NOTES: Record<InvoiceStatus | "sent-reminded", string> = {
-  sent: "Ryan sees a sent invoice with its reminder schedule and the next reminder date. The one primary action is Remind.",
+  sent: "Ryan sees a sent invoice with its reminder schedule and the next reminder date. The one primary action is Send a payment reminder.",
   "sent-reminded": "Ryan sees Reminded today, greyed until tomorrow. The one primary action waits; Record the payment is still there.",
-  "past-due": "Ryan sees Past due in red, the reminders already sent and the next one. The one primary action is Remind.",
-  "part-paid": "Ryan sees a check recorded by hand and the balance still open. The one primary action is Remind.",
+  "past-due": "Ryan sees Past due in red, the reminders already sent and the next one. The one primary action is Send a payment reminder.",
+  "part-paid": "Ryan sees a check recorded by hand and the balance still open. The one primary action is Send a payment reminder.",
   paid: "Ryan sees Paid with the payment and the receipt text. There is no primary action; the quiet ones are under More.",
   voided: "Ryan sees a voided invoice kept on record with nothing owed. There is no primary action.",
 }

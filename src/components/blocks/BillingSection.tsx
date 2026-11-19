@@ -42,7 +42,7 @@ export function BillingSection({ summary, rows, emptyLine = "Nothing to bill yet
           {rows.map((r) => {
             const inner = (
               <>
-                <RecordRowText title={r.title} detail={r.detail} />
+                <RecordRowText title={r.title} detail={r.detail} wrap={r.kind === "invoice"} />
                 <RecordRowEnd>{r.end ?? (r.amount ? <MoneyCell text={r.amount} tone={r.tone} /> : null)}</RecordRowEnd>
               </>
             )

@@ -53,12 +53,12 @@ export function messageMeta(message: Message): string {
 }
 
 /** "Sent" until Twilio reports a text, then "Delivered", or "Not delivered: Filtered by the carrier". */
-function statusWords(message: Message): string {
+export function statusWords(message: Message): string {
   if (message.channel === "sms" && message.status === "sent") return deliveryLine(message.deliveryStatus, message.deliveryError)
   return STATUS_WORDS[message.status]
 }
 
-const isTrouble = (message: Message): boolean => TROUBLE.includes(message.status) || (message.channel === "sms" && message.status === "sent" && deliveryWords(message.deliveryStatus, message.deliveryError).trouble)
+export const isTrouble = (message: Message): boolean => TROUBLE.includes(message.status) || (message.channel === "sms" && message.status === "sent" && deliveryWords(message.deliveryStatus, message.deliveryError).trouble)
 
 const byTime = (a: Message, b: Message) => a.at.localeCompare(b.at)
 

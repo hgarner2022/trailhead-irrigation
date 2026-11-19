@@ -16,7 +16,7 @@ import { JOB_WORDS, REASON_WORDS, WORK_WORDS, type Job, type JobState, type Mone
 // is 5.45 and 5.25 (5.02 on stone). The lighter positive and warning inks
 // only reach 4.2 to 4.4 on their tints, which is why they are not used here.
 
-export type PillStatus = PassStatus | JobState | WorkState | MoneyState | "overdue" | "waiting"
+export type PillStatus = PassStatus | JobState | WorkState | MoneyState | "overdue" | "waiting" | "today" | "in-progress"
 
 const LABELS: Record<PillStatus, string> = {
   ...JOB_WORDS,
@@ -31,6 +31,8 @@ const LABELS: Record<PillStatus, string> = {
   overdue: "Past due",
   lapsed: "Expired",
   waiting: "Waiting on customer",
+  today: "Today",
+  "in-progress": "In progress",
 }
 
 const GOOD = "bg-positive/10 text-positive-deep border-positive/30"
@@ -38,6 +40,9 @@ const BOOKED = "bg-primary/10 text-primary-deep border-primary/30"
 const WAITING = "bg-stone text-foreground border-border"
 const BAD = "bg-destructive/10 text-destructive border-destructive/30"
 const OVER = "bg-stone text-muted-foreground border-border"
+// Today is the info tone (a navy tint); In progress is the progress tone, solid navy, because it is the one thing happening right now
+const INFO = "bg-navy/10 text-navy border-navy/30"
+const PROGRESS = "bg-navy text-white border-navy"
 
 const TONES: Record<PillStatus, string> = {
   "needs-a-day": WAITING,
@@ -59,6 +64,8 @@ const TONES: Record<PillStatus, string> = {
   overdue: BAD,
   lapsed: OVER,
   waiting: WAITING,
+  today: INFO,
+  "in-progress": PROGRESS,
 }
 
 /** The word shown for a status: "Past due" for overdue, "Unscheduled" for a job with no day, else the status in sentence case. */
