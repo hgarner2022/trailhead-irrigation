@@ -79,16 +79,19 @@ export async function loadOfferInputs(db: Database, req: OfferRequest): Promise<
 
   const people = await routePeople({ db, organizationId: org })
   const rows = await db
-    .select({ id: s.visit.id, personId: s.visit.personId, day: s.visit.scheduledOn, start: s.visit.startTime, minutes: s.visit.durationMinutes, kind: s.visit.kind, town: s.property.town, lat: s.property.lat, lng: s.property.lng })
+    .select({ id: s.visit.id, personId: s.visit.personId, day: s.visit.scheduledOn, start: s.visit.startTime, minutes: s.visit.durationMinutes, kind: s.visit.kind, town: s.property.town, lat: s.property.lat, lng: s.property.lng, season: s.job.season })
     .from(s.visit)
     .innerJoin(s.property, eq(s.property.id, s.visit.propertyId))
+    .innerJoin(s.job, eq(s.job.id, s.visit.jobId))
     .where(and(eq(s.visit.organizationId, org), gte(s.visit.scheduledOn, first), lte(s.visit.scheduledOn, last), notInArray(s.visit.status, ["cancelled", "skipped"])))
   const booked: BookedVisit[] = rows
     .filter((r) => r.personId && r.day && r.id !== req.visitId)
-    .map((r) => ({ personId: r.personId!, day: r.day!, start: r.start, minutes: r.minutes ?? defaultMinutes(r.kind), kind: r.kind, town: r.town, point: r.lat !== null && r.lng !== null ? { lat: r.lat, lng: r.lng } : null }))
+    // A Season Pass visit's start time is only the stack its day was ordered in (`timeBooked`, src/lib/admin/move-rules.ts): it is busy
+    // time with no place in the day until a booked time is written (engine row 2). A one-off's start time is a time someone picked.
+    .map((r) => ({ personId: r.personId!, day: r.day!, start: r.season === null ? r.start : null, minutes: r.minutes ?? defaultMinutes(r.kind), kind: r.kind, town: r.town, point: r.lat !== null && r.lng !== null ? { lat: r.lat, lng: r.lng } : null }))
   const blocks = await loadBlocks(db, org, new Date(`${addDays(first, -1)}T00:00:00Z`), new Date(`${addDays(last, 2)}T00:00:00Z`))
 
-  const offerPeople: OfferPerson[] = people.map((p) => ({ id: p.id, workingDays: p.workingDays, hoursStart: p.hoursStart, hoursEnd: p.hoursEnd, capsByKind: p.capacityByKind, active: p.active }))
+  const offerPeople: OfferPerson[] = people.map((p) => ({ id: p.id, workingDays: p.workingDays, hoursStart: p.hoursStart, hoursEnd: p.hoursEnd, capsByKind: p.capacityByKind, active: p.active, from: p.seasonStart?.slice(0, 10) ?? null, to: p.seasonEnd?.slice(0, 10) ?? null }))
   return {
     today,
     service: { minutes, kind: req.kind, bookableFrom: service?.bookableFrom ?? null, bookableTo: service?.bookableTo ?? null },

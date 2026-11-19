@@ -43,6 +43,9 @@ export interface OfferPerson {
   /** the typed count per capacity kind, a ceiling only; a kind not listed has no ceiling */
   capsByKind: Partial<Record<string, number>>
   active?: boolean
+  /** the days this person works the season, "YYYY-MM-DD" inclusive; open ended when missing */
+  from?: string | null
+  to?: string | null
 }
 
 export interface BookedVisit extends OfferLocus {
@@ -197,6 +200,7 @@ function daySlots(input: OfferInputs, day: string): OfferSlot[] {
   const byStart = new Map<string, { slot: OfferSlot; working: boolean; order: number }>()
   input.people.forEach((person, order) => {
     if (person.active === false || !person.workingDays.includes(weekday)) return
+    if ((person.from && day < person.from) || (person.to && day > person.to)) return
     const mine = input.booked.filter((v) => v.personId === person.id && v.day === day)
     const blocked = input.blocked.filter((b) => b.personId === person.id && b.day === day)
     for (const slot of personSlots(input, person, day, mine, blocked)) {

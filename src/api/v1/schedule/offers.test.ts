@@ -55,6 +55,9 @@ beforeAll(async () => {
     const r = distinct[i]!
     await db.update(s.property).set({ town: b.town, lat: b.at?.lat ?? null, lng: b.at?.lng ?? null }).where(eq(s.property.id, r.propertyId))
     await db.update(s.visit).set({ status: "scheduled", personId: RYAN, scheduledOn: b.day, startTime: b.start, durationMinutes: b.minutes, kind: b.kind }).where(eq(s.visit.id, r.id))
+    // A one-off's start time is a booked time; a Season Pass visit's is only the stack its day was ordered in, so these become one-offs.
+    const [row] = await db.select({ jobId: s.visit.jobId }).from(s.visit).where(eq(s.visit.id, r.id))
+    await db.update(s.job).set({ season: null }).where(eq(s.job.id, row!.jobId))
   }
 })
 afterAll(() => db.close())
