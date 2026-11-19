@@ -43,6 +43,27 @@ export const Default: Story = {
 }
 export const Phone: Story = { globals: phone }
 
+/** The Job filter open: Season Pass, then every service by its catalogue name (no band), then Other when a job has custom work. */
+export const JobFilterOpen: Story = {
+  globals: wide,
+  play: async ({ canvas, userEvent }) => {
+    // "Job" is also a column header, so take the one that opens a menu: the filter chip.
+    const chips = await canvas.findAllByRole("button", { name: "Job" })
+    const chip = chips.find((b) => b.getAttribute("aria-haspopup") === "menu")
+    if (!chip) throw new Error("No Job filter chip")
+    await userEvent.click(chip)
+    const names = (await body.findAllByRole("menuitemcheckbox")).map((i) => i.textContent?.trim())
+    await expect(names.slice(0, 5)).toEqual([
+      "Season Pass",
+      "Sprinkler repair visit",
+      "Spring turn-on & system check",
+      "Fall blowout & winterization",
+      "Mid-season inspection & tune-up",
+    ])
+    await expect(names).toContain("Core aeration")
+  },
+}
+
 /** No jobs yet. */
 export const Empty: Story = {
   args: { data: { ...jobsData, jobs: [], visits: [], passes: [] } },
