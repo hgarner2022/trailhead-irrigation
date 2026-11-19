@@ -1,6 +1,7 @@
 import { beforeAll, describe, it, expect, vi } from "vitest"
 import { fireEvent, render, screen, within } from "@testing-library/react"
 import { JobPage } from "./JobPage"
+import { ReminderDialog } from "./ReminderDialog"
 import { JobPagePass, JobPageReturnTrip } from "./JobPageTrips"
 import { JOB_STATES, jobPageOf } from "./job-fixtures"
 import { PASS_STATES, passPageOf, returnTripOf } from "./trip-fixtures"
@@ -86,7 +87,7 @@ describe("job page, one trip", () => {
     expect(within(dialog).getByText(/Edit the wording in Settings/)).toBeInTheDocument()
     expect(within(dialog).queryByRole("button", { name: /without notifying|More ways/i })).toBeNull()
     fireEvent.change(within(dialog).getByLabelText(/Add a line/), { target: { value: "Thank you!" } })
-    expect(within(dialog).getByText(/Thank you! Pay here: trailheadirrigation.com\/pay\/1042/)).toBeInTheDocument()
+    expect(within(dialog).getByText(/Thank you! Pay here: trailheadirrigation.com\/pay\/INV-2026-0001/)).toBeInTheDocument()
     expect(within(dialog).getByLabelText(/Add a line/)).toHaveAttribute("maxlength", "140")
   })
 
@@ -101,7 +102,7 @@ describe("job page, one trip", () => {
     expect(chip).toHaveAttribute("href", "/admin/invoices?invoice=inv-1")
     expect(chip).toHaveTextContent("INV-2026-0001")
     expect(screen.getByText("Includes the visit report")).toBeInTheDocument()
-    expect(document.body.textContent).not.toContain("trailheadirrigation.com/pay/1042 ")
+    expect(document.body.textContent).not.toContain("trailheadirrigation.com/pay/INV-2026-0001 ")
   })
 
   it("groups Photos as From Andrea above Ours, with the booking photo marked and no box or Remove on the customer's", () => {
@@ -112,6 +113,26 @@ describe("job page, one trip", () => {
     const theirs = document.querySelector("[aria-labelledby=photos-h] [data-slot=photos]") as HTMLElement
     expect(within(theirs).queryByRole("checkbox")).toBeNull()
     expect(within(theirs).queryByRole("button", { name: "Remove" })).toBeNull()
+  })
+
+  it("lets the reminder go by text, email or both, with the subject and the invoice's own pay link, and greys a channel with no address", () => {
+    render(<ReminderDialog who={{ first: "Marcus", channel: "text", phone: "(970) 555-0123", email: "" }} invoice={{ number: "INV-2026-0035", amount: "$145", service: "sprinkler repair", dueOn: "Nov 12" }} onClose={() => undefined} onSend={() => undefined} />)
+    const email = screen.getByRole("radio", { name: "Email" })
+    expect(email).toHaveAttribute("aria-disabled", "true")
+    expect(screen.getByRole("radio", { name: "Text" })).toHaveAttribute("aria-checked", "true")
+    expect(document.querySelector("[data-channel=text]")).toHaveTextContent("trailheadirrigation.com/pay/INV-2026-0035")
+    expect(document.querySelector("[data-channel=email]")).toBeNull()
+  })
+
+  it("shows the email's subject over its first lines when Email is chosen", () => {
+    render(<ReminderDialog who={{ first: "Marcus", channel: "email", phone: "(970) 555-0123", email: "marcus@example.com" }} invoice={{ number: "INV-2026-0035", amount: "$145", service: "sprinkler repair", dueOn: "Nov 12" }} onClose={() => undefined} onSend={() => undefined} />)
+    expect(screen.getByText("Reminder: $145 invoice for your sprinkler repair, due Nov 12")).toBeInTheDocument()
+    expect(document.body.textContent).toContain("by email at marcus@example.com")
+    fireEvent.click(screen.getByRole("radio", { name: "Both" }))
+    expect(document.body.textContent).toContain("by text and email")
+    expect(document.querySelector("[data-channel=text]")).not.toBeNull()
+    expect(document.querySelector("[data-channel=email]")).not.toBeNull()
+    expect(document.body.textContent).not.toContain("1042")
   })
 
   it("names the job and the person in Past visits as chips that link", () => {

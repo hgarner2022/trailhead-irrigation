@@ -31,7 +31,7 @@ describe("confirmation words", () => {
   })
 
   it("shows the exact reminder text, with was due once it is past due and never the word overdue", () => {
-    expect(reminderText({ ...F, pastDue: true })).toBe("Trailhead: a reminder that your $145 invoice for the repair was due Dec 3. Pay here: trailheadirrigation.com/pay/1042")
+    expect(reminderText({ ...F, pastDue: true })).toBe("Trailhead: a reminder that your $145 invoice for the repair was due Dec 3. Pay here: trailheadirrigation.com/pay/INV-2026-0001")
     expect(reminderText(F)).toContain("is due Dec 3")
     const c = footerConfirms(F)["Send a payment reminder"]!
     expect(c.confirmLabel).toBe("Send the reminder")

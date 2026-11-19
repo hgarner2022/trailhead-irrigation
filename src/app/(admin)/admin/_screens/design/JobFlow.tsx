@@ -55,7 +55,7 @@ function reduce(f: Flow, a: Act): Flow {
     case "done": return { ...f, stage: "done" }
     case "refund": return { ...f, refunded: true, extra: [...f.extra, say("email", "note", "Your $145 payment was refunded.")] }
     case "paid": return { ...f, stage: "paid", paidBy: a.by, ref: a.ref, hadInvoice: f.stage === "invoice", refunded: false, extra: [...f.extra, say("email", "receipt", "Receipt: $145 for your repair at 480 Briggs St")] }
-    case "invoice": return { ...f, stage: "invoice", report: a.report, extra: [...f.extra, say("sms", "invoice", `Trailhead: invoice for your repair, $145, due Dec 2. Pay here: trailheadirrigation.com/pay/1042${a.report ? " Your visit report is attached." : ""}`)] }
+    case "invoice": return { ...f, stage: "invoice", report: a.report, extra: [...f.extra, say("sms", "invoice", `Trailhead: invoice for your repair, $145, due Dec 2. Pay here: trailheadirrigation.com/pay/INV-2026-0001${a.report ? " Your visit report is attached." : ""}`)] }
     case "cancel": return { ...f, stage: "canceled", extra: !a.text ? f.extra : [...f.extra, say("sms", "visit-cancelled", "Trailhead: your repair is canceled. Nothing was charged.")] }
     case "message": return { ...f, extra: [...f.extra, a.message] }
   }
@@ -129,7 +129,7 @@ export function JobFlow({ channel = "text" }: { channel?: "text" | "email" }) {
     else if (label === "On my way") dispatch({ type: "active", text: variant !== "quiet" })
     else if (label === "Delete job") dispatch({ type: "reset" })
     else if (label === "Cancel job") dispatch({ type: "cancel", text: variant !== "quiet" })
-    else if (label === "Send a payment reminder") dispatch({ type: "message", message: say("sms", "invoice-reminder", reminderBody({ first: "Andrea", channel: "text", phone: "(970) 555-0123", email: "andrea.dalton@example.com" }, { amount: "$145", service: "repair", dueOn: "Dec 2", line: variant })) })
+    else if (label === "Send a payment reminder") dispatch({ type: "message", message: say("sms", "invoice-reminder", reminderBody({ first: "Andrea", channel: "text", phone: "(970) 555-0123", email: "andrea.dalton@example.com" }, { amount: "$145", service: "repair", dueOn: "Dec 2", line: variant, number: "INV-2026-0001" })) })
   }
   return (
     <ToastProvider>

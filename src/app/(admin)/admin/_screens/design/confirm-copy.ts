@@ -45,10 +45,11 @@ export interface ConfirmFacts {
   invoiceOpen?: boolean
 }
 
-const PAY_LINK = "trailheadirrigation.com/pay/1042"
+/** The invoice's own pay link: the page is named by the invoice, never by another job's number. */
+export const payLink = (invoiceNumber = "INV-2026-0001") => `trailheadirrigation.com/pay/${invoiceNumber}`
 
 export const reminderText = (f: ConfirmFacts, line = ""): string =>
-  `Trailhead: a reminder that your ${f.amount} invoice for the ${f.service} ${f.pastDue ? "was due" : "is due"} ${f.dueOn}. Pay here: ${PAY_LINK}${line.trim() ? ` ${line.trim()}` : ""}`
+  `Trailhead: a reminder that your ${f.amount} invoice for the ${f.service} ${f.pastDue ? "was due" : "is due"} ${f.dueOn}. Pay here: ${payLink(f.invoiceNumber)}${line.trim() ? ` ${line.trim()}` : ""}`
 
 /** Who a message reaches and how: the customer's contact preference. Every `ConfirmFacts` is one. */
 export type Reach = Pick<ConfirmFacts, "first" | "channel" | "phone" | "email">
@@ -97,11 +98,14 @@ export function collectConfirm(way: string, f: ConfirmFacts, reference = ""): Co
 export const REMINDER_LINE_MAX = 140
 
 /** The text or email a reminder sends, word for word, by the customer's channel. */
-export const reminderBody = (c: Reach, o: { amount: string; service: string; dueOn: string; pastDue?: boolean; line?: string }): string => {
+export const reminderBody = (c: Reach, o: { amount: string; service: string; dueOn: string; pastDue?: boolean; line?: string; number?: string }): string => {
   const sentence = `a reminder that your ${o.amount} invoice for the ${o.service} ${o.pastDue ? "was due" : "is due"} ${o.dueOn}.`
   const extra = o.line?.trim() ? ` ${o.line.trim()}` : ""
-  return c.channel === "email" ? `Hi ${c.first}, ${sentence}${extra} Pay online: ${PAY_LINK}\n\nThe Trailhead crew` : `Trailhead: ${sentence}${extra} Pay here: ${PAY_LINK}`
+  return c.channel === "email" ? `Hi ${c.first}, ${sentence}${extra} Pay online: ${payLink(o.number)}\n\nThe Trailhead crew` : `Trailhead: ${sentence}${extra} Pay here: ${payLink(o.number)}`
 }
+
+/** The email's subject line: "Reminder: $145 invoice for your sprinkler repair, due Nov 12". */
+export const reminderSubject = (o: { amount: string; service: string; dueOn: string; pastDue?: boolean }): string => `Reminder: ${o.amount} invoice for your ${o.service}, ${o.pastDue ? "past due since" : "due"} ${o.dueOn}`
 
 export const reminderCopy = (c: Reach, o: { number: string }): ConfirmCopy => ({
   title: "Send a payment reminder",
