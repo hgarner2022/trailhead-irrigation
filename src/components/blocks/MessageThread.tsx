@@ -19,6 +19,8 @@ export interface MessageThreadProps {
 
 export const KIND_NAMES: Record<MessageKind, string> = {
   "purchase-confirmation": "Confirmation",
+  "booking-confirmation": "Booking confirmation",
+  "visit-cancelled": "Visit canceled",
   "date-set": "Date set",
   "date-moved": "Date moved",
   "day-before": "Reminder",

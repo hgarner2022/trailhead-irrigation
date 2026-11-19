@@ -16,6 +16,7 @@ const WHY = "You are getting this because Trailhead is coming to your property."
 /** The editable first sentence, filled from the visit. A saved sentence that opens with its own greeting loses it: the greeting is its own line. */
 const intro = (key: EditableMessage["key"], d: VisitData, o?: Opts) => {
   const v = d.visit
+  if (key === "date-moved" && v.sameDay === true && v.startTime) return `Your ${v.name} is still ${longDay(v.day)}, now ${windowText(v.startTime)}.`
   let body = withoutGreeting(bodyOf(o?.templates, key, "email")) || defaultBody(key, "email")
   const name = greetingName(d.firstName)
   // With no usable name a saved "{firstName}, your ..." or "Thanks, {firstName}." loses the placeholder and its comma, never reads "there, your ..."
@@ -38,7 +39,9 @@ export const dateSetEmail = (d: VisitData, o?: Opts): RenderedEmail =>
 const movedSentence = (d: VisitData, o?: Opts) => [intro("date-moved", d, o), noteLine(d.visit.note), d.visit.asked ? "Someone needs to be home, so please confirm that day works, or pick another day in your Trailhead account." : ""].filter(Boolean).join(" ")
 
 export const dateMovedEmail = (d: VisitData, o?: Opts): RenderedEmail =>
-  build(d, `Your ${d.visit.name} moved to ${longDay(d.visit.day)}`, `Your ${d.visit.name} moved`, movedSentence(d, o), "Add the new day to your calendar below, or pick another day in your Trailhead account.")
+  d.visit.sameDay === true && d.visit.startTime
+    ? build(d, `Your ${d.visit.name} now has a time`, `Your ${d.visit.name} has a time`, movedSentence(d, o), "Add the time to your calendar below, or pick another day in your Trailhead account.")
+    : build(d, `Your ${d.visit.name} moved to ${longDay(d.visit.day)}`, `Your ${d.visit.name} moved`, movedSentence(d, o), "Add the new day to your calendar below, or pick another day in your Trailhead account.")
 
 const ryanDoes = (name: string) => (name.includes("inspection") ? RYAN_DOES.inspection : name.includes("blowout") ? RYAN_DOES.blowout : RYAN_DOES["turn-on"])
 

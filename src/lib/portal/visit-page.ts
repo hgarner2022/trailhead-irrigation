@@ -82,7 +82,7 @@ export function visitPageOf(job: PortalJobType, visit: PortalVisitType, customer
     reschedule: visit.reschedule,
     cancel: visit.cancel,
     canCalendar: visit.status === "scheduled" && Boolean(visit.scheduledOn),
-    changeLine: visit.status === "scheduled" && visit.cancelsBy && (visit.reschedule === "yes" || visit.cancel === "yes") ? `You can change this until ${visit.cancelsBy}.` : null,
+    changeLine: visit.status === "scheduled" && visit.cancelsBy && (visit.reschedule === "yes" || visit.cancel === "yes") ? `You can ${visit.reschedule === "yes" ? "change" : "cancel"} this${visit.reschedule === "yes" ? "" : " online"} until ${visit.cancelsBy}.` : null,
     textBody: body,
     textHref: textRyanHref(body),
   }

@@ -4,6 +4,7 @@
 import { monthDay, monthShort, preferencePhrase } from "@/lib/admin/format"
 import { NOT_DONE_LABEL, type NotDoneReason } from "@/lib/admin/visit-defaults"
 import { METHOD_WORDS } from "@/lib/money/words"
+import { windowText } from "@/emails/format"
 import { visitName } from "./names"
 
 /** What the words need of an event: its kind, what it recorded and who did it (the same fields as `EventOut`). */
@@ -34,6 +35,21 @@ function dayWords(v: unknown): string | undefined {
   if (!s || !/^\d{4}-\d{2}-\d{2}/.test(s)) return undefined
   const { month, day } = monthDay(s)
   return `${monthShort(month)} ${day}`
+}
+
+/** "Mon, Nov 23" from a YYYY-MM-DD day (the weekday read in UTC, so no zone shifts it). */
+function weekdayDay(v: unknown): string | undefined {
+  const s = str(v)
+  const base = dayWords(s)
+  if (!s || !base) return undefined
+  const wd = new Date(`${s.slice(0, 10)}T00:00:00Z`).toLocaleDateString("en-US", { weekday: "short", timeZone: "UTC" })
+  return `${wd}, ${base}`
+}
+
+/** ", 9 to 11 am" when the event carries a time Ryan chose ("HH:MM"), else "". */
+const timeTail = (v: unknown) => {
+  const s = str(v)
+  return s && /^\d{2}:\d{2}$/.test(s) ? `, ${windowText(s)}` : ""
 }
 
 const methodWords = (v: unknown) => {
@@ -122,7 +138,7 @@ function lineWords(d: Record<string, unknown>, did: string): string {
 }
 
 /** The sentence for an event, without the actor. */
-function whatOf(e: EventForWords): string {
+function whatOf(e: EventForWords, whoName?: string | null): string {
   const d = e.detail ?? {}
   const name = visitWords(d)
   switch (e.kind) {
@@ -137,11 +153,19 @@ function whatOf(e: EventForWords): string {
       const from = dayWords(d.from)
       const to = dayWords(d.day)
       const by = e.who === "customer" ? ", from the account" : ""
+      const at = timeTail(d.startTime)
       // an office move says whether the customer was texted, and asked to reply YES; a move with no `texted` fact (an older row, the customer's own) says nothing
       const told = d.quiet === true ? ", not texted" : d.asked === true ? ", customer asked to confirm" : ""
-      return `${from && to ? `${name} moved from ${from} to ${to}` : to ? `${name} moved to ${to}` : `${name} moved`}${by}${told}`
+      // the same day with a time Ryan gave: "Repair given a time, Mon, Nov 23, 9 to 11 am"
+      if (d.sameDay === true && at && weekdayDay(d.day)) return `${name} given a time, ${weekdayDay(d.day)}${at}${told}`
+      return `${from && to ? `${name} moved from ${from} to ${to}${at}` : to ? `${name} moved to ${to}${at}` : `${name} moved`}${by}${told}`
     }
-    case "visit.confirmed": return `${name} confirmed by the customer`
+    case "visit.confirmed": {
+      // marked by staff (a phone YES): the person's name, never an email prefix; only the customer's own YES reads "confirmed by the customer"
+      if (e.who === "customer") return `${name} confirmed by the customer`
+      const by = whoName?.trim()
+      return `Customer confirmed, marked by ${by || "the office"}`
+    }
     case "visit.day-filled": {
       const from = dayWords(d.from)
       const to = dayWords(d.to)
@@ -238,7 +262,7 @@ export function whoWords(who: string, whoName?: string | null): string {
 /** The words of an event: who did it, what happened, and both together. Any kind it does not know reads "Something changed". */
 export function eventWords(event: EventForWords, whoName?: string | null): EventWords {
   const actor = whoWords(event.who, whoName)
-  const what = whatOf(event)
+  const what = whatOf(event, whoName)
   return { actor, what, text: `${actor}: ${what}` }
 }
 

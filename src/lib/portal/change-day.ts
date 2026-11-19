@@ -83,3 +83,6 @@ export function changeFor(f: ChangeFacts, now: Date): { reschedule: ChangeState;
   }
   return { reschedule: f.hasWindow ? "yes" : "text", cancel: "yes" }
 }
+
+/** Whether a customer may pick another day online for a kind of visit: only the kinds with a season window in the settings (turn-on, inspection, blowout) have self-serve days until the slots step. The one derivation the account and the admin both read. */
+export const hasSelfServeDays = (kind: string, windows: ReadonlyArray<{ kind: string }>): boolean => windows.some((w) => w.kind === kind)

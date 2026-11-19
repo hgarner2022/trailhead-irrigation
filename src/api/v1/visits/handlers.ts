@@ -111,6 +111,7 @@ export async function placeVisit(ctx: Ctx, input: { id: string; personId?: strin
     // A booked time (a told window, or a time on a one-off) always texts the customer when it moves: nothing promised moves silently.
     const booked = timeBooked({ isPass: row.isPassVisit, startTime: visit.startTime, windowTold: visit.scheduledOn ? (await windowTold(ctx.db, ctx.organizationId, [{ id: visit.id, scheduledOn: visit.scheduledOn }])).has(visit.id) : false })
     if (!notify && visit.status === "scheduled" && booked) throw new ApiError("unprocessable", "This visit has a booked time, so the customer is always texted. Move it and text them.")
+    if (!notify && visit.status === "scheduled" && input.startTime && input.startTime !== visit.startTime) throw new ApiError("unprocessable", "A time you choose is always told to the customer. Move it and text them.")
     if ((FINAL as readonly string[]).includes(visit.status)) throw new ApiError("unprocessable", `A ${visit.status} visit cannot be moved`)
     const person = await assignee(ctx, input, input.scheduledOn)
     const [org] = await ctx.db.select({ settings: s.organization.settings }).from(s.organization).where(eq(s.organization.id, ctx.organizationId))
@@ -140,19 +141,23 @@ export async function placeVisit(ctx: Ctx, input: { id: string; personId?: strin
     if (input.startTime) await ctx.db.update(s.visit).set({ startTime: input.startTime }).where(eq(s.visit.id, visit.id))
     await ctx.db.update(s.adminAlert).set({ resolvedAt: ctx.now }).where(and(eq(s.adminAlert.organizationId, ctx.organizationId), eq(s.adminAlert.kind, "unplaced"), eq(s.adminAlert.key, visit.id)))
     // The text: a new day, or a new time on a booked visit. A property that must be home is asked "Reply YES or pick another day" and reads Waiting on customer until they answer.
-    const changed = visit.scheduledOn !== input.scheduledOn || (moved && booked && (input.startTime ?? null) !== visit.startTime)
+    // A time Ryan chooses is a promise the customer hears (the text carries the window and who is coming), on any kind, booked or not.
+    const dayChanged = visit.scheduledOn !== input.scheduledOn
+    const timeGiven = Boolean(input.startTime) && input.startTime !== visit.startTime
+    const changed = dayChanged || timeGiven || (moved && booked && (input.startTime ?? null) !== visit.startTime)
+    const sameDayTime = moved && !dayChanged && timeGiven
     const [yard] = await ctx.db.select({ mustBeHome: s.property.mustBeHome }).from(s.property).where(eq(s.property.id, visit.propertyId))
     const wantsAnswer = notify && changed && moved && Boolean(yard?.mustBeHome)
     const note = input.note?.trim() || undefined
     const texted = notify && changed
-      ? await queueDateMessage(ctx.db, visit, moved ? "date-moved" : "date-set", input.scheduledOn, moved ? { key: `moved-${visit.id}-${randomUUID()}`, note, asked: wantsAnswer, told: Boolean(input.startTime) } : {})
+      ? await queueDateMessage(ctx.db, visit, moved ? "date-moved" : "date-set", input.scheduledOn, moved ? { key: `moved-${visit.id}-${randomUUID()}`, note, asked: wantsAnswer, told: Boolean(input.startTime), sameDay: sameDayTime } : {})
       : false
     // Waiting on customer only when the ask went out: a customer who could not be reached was asked nothing
     const asked = wantsAnswer && texted
     await emitEvent(ctx.db, ctx.organizationId, moved ? "visit.moved" : "visit.scheduled", { visitId: visit.id, ...who(person.id), scheduledOn: input.scheduledOn, from: moved ? { ...who(visit.personId), scheduledOn: visit.scheduledOn } : null }, {
       about: "visit", aboutId: visit.id, customerId: visit.customerId, jobId: visit.jobId, visitId: visit.id, who: whoOf(ctx), at: ctx.now,
       // `asked` is the fact Waiting on customer is read from (no column): a later move, a customer's own pick or `visit.confirmed` ends it
-      detail: { name: visitName(visit.kind), day: input.scheduledOn, from: moved ? visit.scheduledOn : null, personId: person.id, texted, ...(notify ? {} : { quiet: true }), ...(asked ? { asked: true } : {}), ...(note ? { note } : {}), ...(input.startTime ? { startTime: input.startTime } : {}) },
+      detail: { name: visitName(visit.kind), day: input.scheduledOn, from: moved ? visit.scheduledOn : null, personId: person.id, texted, ...(notify ? {} : { quiet: true }), ...(asked ? { asked: true } : {}), ...(note ? { note } : {}), ...(input.startTime ? { startTime: input.startTime } : {}), ...(sameDayTime ? { sameDay: true } : {}) },
     })
     return visitOut(ctx, await loadVisit(ctx, visit.id))
 }

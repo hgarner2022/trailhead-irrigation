@@ -44,8 +44,10 @@ const visitText = (key: EditableMessage["key"], d: VisitData, o?: TextOptions) =
   const v = d.visit
   // A move Ryan made says his line after the words, and for a property that must be home asks for the YES instead of "Another day?" (and the link says the same: reply or pick).
   const asked = key === "date-moved" && v.asked === true && Boolean(v.visitUrl)
-  let middle = fillTemplate(bodyOf(o?.templates, key, "sms"), { service: v.name, address: v.address, day: shortDay(v.day), window: v.startTime ? windowText(v.startTime) : null, who: v.who })
-  if (asked) middle = middle.replace(/\s*Another day\?\s*$/, "")
+  // The day stayed and Ryan gave a time: one locked sentence that says the time (the editable "moved to" words would call the same day a move).
+  const sameDay = key === "date-moved" && v.sameDay === true && Boolean(v.startTime)
+  let middle = sameDay && v.startTime ? `your ${v.name} is still ${shortDay(v.day)}, now ${windowText(v.startTime)}.` : fillTemplate(bodyOf(o?.templates, key, "sms"), { service: v.name, address: v.address, day: shortDay(v.day), window: v.startTime ? windowText(v.startTime) : null, who: v.who })
+  if (asked && !sameDay) middle = middle.replace(/\s*Another day\?\s*$/, "")
   const note = key === "date-moved" ? noteLine(v.note) : ""
   return `Trailhead: ${middle}${note ? ` ${note}` : ""} ${visitLinkTail(key, v, d.accountUrl, asked)}${tail(o)}`
 }

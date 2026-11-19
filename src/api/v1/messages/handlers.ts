@@ -1,5 +1,5 @@
 import "server-only"
-import { and, desc, eq, isNotNull } from "drizzle-orm"
+import { and, desc, eq, inArray, isNotNull } from "drizzle-orm"
 import { z } from "zod"
 import * as s from "@/db/schema"
 import { randomUUID } from "node:crypto"
@@ -16,7 +16,7 @@ import { canSeeContact, Channel, Id, Iso, today } from "../shared"
 export const MESSAGE_KINDS = ["purchase-confirmation", "date-set", "date-moved", "day-before", "on-the-way", "receipt", "card-failed", "cancelled", "renewal", "note"] as const
 
 const MessageOut = z.object({
-  id: Id, customerId: Id, visitId: Id.nullable(), channel: Channel, kind: z.string(), subject: z.string().nullable(), body: z.string(),
+  id: Id, customerId: Id, visitId: Id.nullable(), jobId: Id.nullable().optional().describe("The job an invoice message is about (an invoice text is queued on the job, not a visit); null for any other message."), channel: Channel, kind: z.string(), subject: z.string().nullable(), body: z.string(),
   status: z.enum(["queued", "sent", "delivered", "failed", "bounced", "skipped"]), sentAt: Iso.nullable(), createdAt: Iso,
   to: z.string().optional().describe("The address or number it went to. Only for callers with the write scope."),
 })
@@ -33,10 +33,14 @@ export const messagesList = defineHandler({
       .orderBy(desc(s.messageLog.createdAt), desc(s.messageLog.id))
       .limit(input.limit + 1)
     const result = cursorPage(rows, input.limit, timeCursor)
+    // An invoice text is queued on the job (its key is invoice-<id>, with a day on a reminder), so the job comes from the invoice.
+    const invoiceKinds = result.data.filter((m) => m.kind === "invoice" || m.kind === "invoice-reminder")
+    const invoices = invoiceKinds.length ? await ctx.db.select({ id: s.invoice.id, jobId: s.invoice.jobId }).from(s.invoice).where(and(eq(s.invoice.organizationId, ctx.organizationId), inArray(s.invoice.customerId, [...new Set(invoiceKinds.map((m) => m.customerId))]))) : []
+    const jobOf = (m: { kind: string; key: string }) => (m.kind === "invoice" || m.kind === "invoice-reminder" ? (invoices.find((i) => m.key === `invoice-${i.id}` || m.key.startsWith(`invoice-${i.id}-`))?.jobId ?? null) : null)
     return {
       next_cursor: result.next_cursor,
       data: result.data.map((m) => ({
-        id: m.id, customerId: m.customerId, visitId: m.visitId, channel: m.channel, kind: m.kind, subject: m.subject, body: m.body, status: m.status,
+        id: m.id, customerId: m.customerId, visitId: m.visitId, jobId: jobOf(m), channel: m.channel, kind: m.kind, subject: m.subject, body: m.body, status: m.status,
         sentAt: m.sentAt?.toISOString() ?? null, createdAt: m.createdAt.toISOString(), ...(canSeeContact(ctx) ? { to: m.to } : {}),
       })),
     }
