@@ -188,7 +188,9 @@ function whatOf(e: EventForWords): string {
       const forName = str(d.name)
       // "$145 paid by check, Repair": the line name follows the method; without a method it reads "$145 paid for Repair"
       const by = method && method !== "bill" ? ` by ${method}` : ""
-      return `${amount ?? "Payment"} paid${by}${forName ? (by ? `, ${forName}` : ` for ${forName}`) : ""}`
+      // A one-off invoice paid by card says whether the customer chose to keep the card (Stripe's save box): "$145 paid by card, kept on file".
+      const kept = d.method === "card_now" && d.cardKept === true ? ", kept on file" : ""
+      return `${amount ?? "Payment"} paid${by}${kept}${forName ? (by ? `, ${forName}` : ` for ${forName}`) : ""}`
     }
     case "payment.failed": {
       const amount = money(num(d.amount))
