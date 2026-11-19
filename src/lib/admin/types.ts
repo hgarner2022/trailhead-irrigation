@@ -433,6 +433,8 @@ export interface MessageTemplate {
 
 export type MessageKind =
   | "purchase-confirmation"
+  | "booking-confirmation"
+  | "visit-cancelled"
   | "date-set"
   | "date-moved"
   | "day-before"
