@@ -20,7 +20,7 @@ function Dialog({ copy }: { copy: ConfirmCopy }) {
 const meta = {
   title: "Design/Confirmations",
   component: Dialog,
-  parameters: { layout: "fullscreen" },
+  parameters: { layout: "fullscreen", docs: { description: { component: "Every customer-facing action confirms in a dialog that states the exact effect and the channel from the contact preference. Open one to read its words and the without-notifying path." } } },
   globals: { viewport: { value: "laptop", isRotated: false } },
   args: { copy: FOOTER["Cancel job"]! },
 } satisfies Meta<typeof Dialog>
@@ -30,23 +30,23 @@ type Story = StoryObj<typeof meta>
 const story = (copy: ConfirmCopy | null): Story => ({ args: { copy: copy! } })
 
 /** "Charge $145 to the Visa ending 4242. Andrea gets a receipt by email." */
-export const ChargeCard: Story = story(collectConfirm("card", FACTS))
+export const ChargeCard: Story = { ...story(collectConfirm("card", FACTS)), name: "Charge card" }
 /** "Record a $145 check, number 1042. Andrea gets a receipt by email." */
-export const RecordCheck: Story = story(collectConfirm("check", FACTS, "1042"))
-export const RecordVenmo: Story = story(collectConfirm("venmo", FACTS, "@andrea-d"))
-export const RecordCash: Story = story(collectConfirm("cash", FACTS))
+export const RecordCheck: Story = { ...story(collectConfirm("check", FACTS, "1042")), name: "Record check" }
+export const RecordVenmo: Story = { ...story(collectConfirm("venmo", FACTS, "@andrea-d")), name: "Record venmo" }
+export const RecordCash: Story = { ...story(collectConfirm("cash", FACTS)), name: "Record cash" }
 /** "Send the invoice for $145 by text to (970) 555-0123, due Dec 2." */
-export const SendInvoice: Story = story(collectConfirm("invoice", FACTS))
+export const SendInvoice: Story = { ...story(collectConfirm("invoice", FACTS)), name: "Send invoice" }
 /** The exact text that goes out, with the number it goes to. */
-export const PaymentReminderDue: Story = story(footerConfirms(FACTS)["Send a payment reminder"]!)
-export const PaymentReminderPastDue: Story = story(footerConfirms({ ...FACTS, dueOn: "Nov 17", pastDue: true })["Send a payment reminder"]!)
-export const MoveVisit: Story = story(FOOTER.Move!)
-export const OnMyWay: Story = story(FOOTER["On my way"]!)
+export const PaymentReminderDue: Story = { ...story(footerConfirms(FACTS)["Send a payment reminder"]!), name: "Payment reminder due" }
+export const PaymentReminderPastDue: Story = { ...story(footerConfirms({ ...FACTS, dueOn: "Nov 17", pastDue: true })["Send a payment reminder"]!), name: "Payment reminder past due" }
+export const MoveVisit: Story = { ...story(FOOTER.Move!), name: "Move visit" }
+export const OnMyWay: Story = { ...story(FOOTER["On my way"]!), name: "On my way" }
 /** The same check while an invoice is out: the receipt, and the open invoice is settled and its pay link closes. */
-export const RecordCheckSettlesInvoice: Story = story(collectConfirm("check", { ...FACTS, invoiceOpen: true }, "1042"))
-export const Refund: Story = story(FOOTER["Refund $145"]!)
-export const SendCardLink: Story = story(FOOTER["Send card link"]!)
+export const RecordCheckSettlesInvoice: Story = { ...story(collectConfirm("check", { ...FACTS, invoiceOpen: true }, "1042")), name: "Record check settles invoice" }
+export const Refund: Story = { ...story(FOOTER["Refund $145"]!), name: "Refund" }
+export const SendCardLink: Story = { ...story(FOOTER["Send card link"]!), name: "Send card link" }
 /** "Cancel this job. Andrea gets a text that the repair is canceled. Nothing is charged." */
-export const CancelJob: Story = story(FOOTER["Cancel job"]!)
-export const CancelPass: Story = story(FOOTER["Cancel pass"]!)
-export const CancelJobPhone: Story = { ...story(FOOTER["Cancel job"]!), globals: { viewport: { value: "phone", isRotated: false } } }
+export const CancelJob: Story = { ...story(FOOTER["Cancel job"]!), name: "Cancel job" }
+export const CancelPass: Story = { ...story(FOOTER["Cancel pass"]!), name: "Cancel pass" }
+export const CancelJobPhone: Story = { name: "Cancel job phone", ...story(FOOTER["Cancel job"]!), globals: { viewport: { value: "phone", isRotated: false } } }

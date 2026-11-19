@@ -39,7 +39,7 @@ const preview: Preview = {
             "Confirmations",
             "Navigation",
             "Jobs grid",
-            "Customer side",
+            "Customer side: booking, account, texts",
           ],
           "Screens",
           "Emails",
