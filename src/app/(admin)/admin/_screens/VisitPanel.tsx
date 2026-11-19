@@ -15,7 +15,9 @@ import type { AdminData } from "@/lib/admin/types"
 import { formatPhone } from "@/lib/format/contact"
 import { dollars, type CollectPlan } from "@/lib/money/collect"
 import { propertyLines, yardFromPass } from "./customers-model"
+import { photosAddedWords } from "@/components/blocks/Photos"
 import { PanelNotes } from "./PanelNotes"
+import { VisitPhotos } from "./PanelPhotos"
 import { RecordLink } from "./RecordHost"
 import { BillBlock } from "./VisitBill"
 import { VisitFooter } from "./VisitFooter"
@@ -159,6 +161,8 @@ export function VisitPanel({ data, today, visitId, open, onOpenChange, onOpenVis
     setSettled(false)
     setCollectPlan(plan.plan ?? null)
   }
+  // beat two says how many photos staff added on the visit ("2 photos added"), when any
+  const staffPhotos = (data.photos ?? []).filter((p) => p.visitId === visit.id && !p.byCustomer).length
   const log = (what: string) => async () => (console.info(what, visit.id), { ok: true as const })
   const notes = [facts.customerChange, states.dayPassed && visitDay ? `The day passed on ${dayLabel(visitDay)}. Mark it done or move it.` : ""].filter(Boolean)
   return (
@@ -203,6 +207,11 @@ export function VisitPanel({ data, today, visitId, open, onOpenChange, onOpenVis
       {collectPlan ? (
         <div data-slot="collect-dialog">
           <SectionHeading id="visit-collect">How is this paid?</SectionHeading>
+          {photosAddedWords(staffPhotos) && (
+            <p data-slot="photos-added" className="mt-1 text-sm text-muted-foreground">
+              {photosAddedWords(staffPhotos)}
+            </p>
+          )}
           <CollectPayment
             className="mt-3"
             plan={collectPlan}
@@ -220,6 +229,7 @@ export function VisitPanel({ data, today, visitId, open, onOpenChange, onOpenVis
         <>
           <AtTheProperty facts={facts} readOnly={readOnly} />
           {facts.line?.description ? <Included text={facts.line.description} /> : null}
+          <VisitPhotos data={data} visitId={visit.id} visitDone={visit.status === "completed"} readOnly={readOnly} actions={actions?.photos} />
           <PanelNotes about="visit" aboutId={visit.id} timeline={visit.timeline} addNote={actions?.addNote} />
           {/* The plain row stays for a visit whose story is missing (the catalog's fixtures) or empty, so a note a person typed never disappears. */}
           {visit.notes && !visit.timeline?.length ? <RecordFacts rows={[["Notes", visit.notes]]} /> : null}

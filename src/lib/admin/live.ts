@@ -7,6 +7,8 @@ import { areasList } from "@/api/v1/areas/handlers"
 import { customersList, gateYard } from "@/api/v1/customers/handlers"
 import { payLinkOf } from "@/api/v1/invoices/queries"
 import { loadEvents } from "@/api/v1/events/queries"
+import { loadAdminPhotos } from "@/api/v1/photos/access"
+import { photosConfigured } from "@/lib/photos/store"
 import { windowTold } from "@/lib/portal/window-told"
 import { messagesList } from "@/api/v1/messages/handlers"
 import { passesList } from "@/api/v1/passes/handlers"
@@ -104,6 +106,7 @@ export async function getLiveAdminData(ctx: Ctx): Promise<AdminData> {
     loadEvents(ctx, {}, { limit: EVENT_LOAD }),
   ])
 
+  const photos = await loadAdminPhotos(ctx)
   const kinds = await loadJobKinds(db, org, jobRows)
   // which visits have had their window told (the day-before text for their present day), so Move knows a time is booked
   const told = await windowTold(db, org, visits.map((v) => ({ id: v.id, scheduledOn: v.scheduledOn })))
@@ -142,6 +145,8 @@ export async function getLiveAdminData(ctx: Ctx): Promise<AdminData> {
     })),
     events: events.data,
     windowToldIds: [...told],
+    photos,
+    photosConfigured: photosConfigured(),
     techView: !contact,
     blocks,
     services: serviceRows.data.map(serviceItem),

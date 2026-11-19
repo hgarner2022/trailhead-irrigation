@@ -1,5 +1,5 @@
 import "server-only"
-import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm"
+import { and, asc, desc, eq, inArray, isNull, sql } from "drizzle-orm"
 import * as s from "@/db/schema"
 import { hasScope } from "@/lib/auth/principal"
 import { whoOf } from "@/lib/events/record"
@@ -105,6 +105,26 @@ export async function photoRowsOf(ctx: Ctx, where: { visitIds?: string[]; jobId?
     .orderBy(asc(s.photo.createdAt), asc(s.photo.id))
 }
 
+/**
+ * The photos the admin screens carry (`AdminData.photos`), oldest first: the organization's newest `limit` for staff and a read key, and for a tech
+ * only the visits they have had. Called by `live.ts` with the caller's own context, so it is the same rule as `photos.list`.
+ */
+export async function loadAdminPhotos(ctx: Ctx, limit = 3000): Promise<PhotoOutType[]> {
+  const p = ctx.principal
+  if (p.kind === "public" || (p.kind === "person" && p.type === "customer")) return []
+  const mine = isTech(ctx) && p.kind === "person"
+    ? sql`${s.photo.visitId} in (select v.id from visit v join person pe on pe.id = v.person_id where v.organization_id = ${ctx.organizationId} and lower(pe.email) = lower(${p.email}))`
+    : isTech(ctx) ? sql`false` : undefined
+  if (!isTech(ctx) && !hasScope(p, "read")) return []
+  const rows = await ctx.db
+    .select()
+    .from(s.photo)
+    .where(and(eq(s.photo.organizationId, ctx.organizationId), isNull(s.photo.deletedAt), mine))
+    .orderBy(desc(s.photo.createdAt), desc(s.photo.id))
+    .limit(limit)
+  return shapePhotos(ctx, rows.reverse(), new Map())
+}
+
 /** The names of the people behind some staff `added_by` emails, in one query. */
 async function namesOf(ctx: Ctx, emails: string[]): Promise<Map<string, string>> {
   const out = new Map<string, string>()
@@ -130,7 +150,8 @@ export async function shapePhotos(ctx: Ctx, rows: PhotoRow[], visits: Map<string
     url: `/api/photos/${r.id}`,
     contentType: r.contentType,
     bytes: r.bytes,
-    addedBy: customer ? (r.addedBy === "customer" ? "customer" : "staff") : r.addedBy,
+    // a customer is told `staff`, and a caller without the write scope (a tech) never reads a colleague's email, as `techEvent` does for the story
+    addedBy: customer ? (r.addedBy === "customer" ? "customer" : "staff") : !hasScope(ctx.principal, "write") && r.addedBy.includes("@") ? "staff" : r.addedBy,
     addedByName: customer ? null : (names.get(r.addedBy.toLowerCase()) ?? null),
     byCustomer: r.addedBy === "customer",
     shownToCustomer: r.shownToCustomer,

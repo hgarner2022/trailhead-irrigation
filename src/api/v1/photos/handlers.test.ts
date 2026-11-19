@@ -20,6 +20,7 @@ vi.mock("@vercel/blob", () => ({
 import { callApi } from "../../core/call"
 import { adminKey, apiDb, ctxFor, customerPerson, eventsOf, ORG, owner, readKey, tech, writeKey } from "../../test-helpers"
 import { photosAdd, photosList, photosListForJob, photosRemove, photosUpdate } from "./handlers"
+import { loadAdminPhotos } from "./access"
 import { authorizeUpload, findReadablePhoto } from "./authorize"
 
 let db: TestDb
@@ -283,6 +284,25 @@ describe("photos.remove", () => {
   it("does not know a photo of another organization", async () => {
     const p = await add(owner, visitA)
     await expect(callApi(ctxFor(db, { ...owner, organizationId: OTHER }), photosRemove, { id: p.id })).rejects.toMatchObject({ code: "not_found" })
+  })
+})
+
+describe("the admin's photos (loadAdminPhotos)", () => {
+  it("gives staff every photo of the organization oldest first, a tech only the visits they had with no colleague's email, and a customer or the anonymous visitor none", async () => {
+    const ctx = (p: Parameters<typeof ctxFor>[1]) => ctxFor(db, p)
+    const staff = await loadAdminPhotos(ctx(owner))
+    const visitsSeen = new Set(staff.map((p) => p.visitId))
+    expect(visitsSeen.has(visitA) && visitsSeen.has(visitB)).toBe(true)
+    expect(staff.map((p) => p.createdAt)).toEqual([...staff.map((p) => p.createdAt)].sort())
+    expect(staff.some((p) => p.addedBy === owner.email)).toBe(true)
+    const mine = await loadAdminPhotos(ctx(tech))
+    expect(new Set(mine.map((p) => p.visitId))).toEqual(new Set([visitA]))
+    expect(mine.every((p) => !p.addedBy.includes("@"))).toBe(true)
+    expect((await loadAdminPhotos(ctx(otherTech))).every((p) => p.visitId === visitB)).toBe(true)
+    expect(await loadAdminPhotos(ctx(customerPerson(customerId)))).toEqual([])
+    expect(await loadAdminPhotos(ctx({ kind: "public", id: "checkout", organizationId: ORG, scopes: ["checkout"] }))).toEqual([])
+    expect((await loadAdminPhotos(ctx(readKey))).length).toBe(staff.length)
+    expect(await loadAdminPhotos(ctx({ ...owner, organizationId: OTHER }))).toEqual([])
   })
 })
 
