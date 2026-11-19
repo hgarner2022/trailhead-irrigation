@@ -8,6 +8,7 @@ import { TIME_ZONE } from "@/lib/admin/format"
 import { jobTotal } from "@/lib/jobs/lines"
 import { NO_TAX, type TaxRule } from "@/lib/jobs/tax"
 import { dayOf } from "@/lib/admin/calendar"
+import { visitDayOf } from "@/lib/admin/visit-day"
 import { cutoffShortWords, hasSelfServeDays, withinCutoff } from "@/lib/portal/change-day"
 import { jobMoney, visitJob, windowLabel, type Job } from "@/lib/admin/jobs"
 import { KIND_LABEL, type OfficeKind } from "@/lib/admin/visit-defaults"
@@ -31,8 +32,8 @@ export function clockLabel(time: string): string {
 
 export const kindLabel = (visit: Pick<Visit, "kind">) => KIND_LABEL[visit.kind as OfficeKind] ?? "Visit"
 
-/** The day a visit has, or nothing. */
-export const dayOfVisit = (visit: Visit): string | undefined => visit.scheduledOn ?? (visit.startAt ? dayOf(visit.startAt, TIME_ZONE) : undefined)
+/** The day a visit has, or nothing: a done visit by the day it was done, any other by its scheduled day (`visitDayOf`). */
+export const dayOfVisit = (visit: Visit): string | undefined => visitDayOf(visit)
 
 /** "Any time" or the window the start time opens, "8 to 10 am"; empty before a day is set. */
 export function timeWords(visit: Visit): string {
