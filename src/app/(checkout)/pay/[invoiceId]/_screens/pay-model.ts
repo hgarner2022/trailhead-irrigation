@@ -12,6 +12,8 @@ export interface PayBill {
   paidOn: string | null
   status: "sent" | "paid" | "overdue" | "cancelled"
   receiptUrl: string | null
+  /** the visit report, present when the invoice's `include_report` is on (the checklist and photos already belong to the visit) */
+  report?: import("@/emails/visit-report").VisitReportData
 }
 
 /** "$1,234"; a credit (the line that takes off money already paid) reads "-$45". */
@@ -20,8 +22,8 @@ export const money = (n: number) => (n < 0 ? `-$${(-n).toLocaleString("en-US")}`
 /** A line's total: quantity times price. */
 export const lineTotal = (l: PayBill["lines"][number]) => l.quantity * l.unitPrice
 
-/** The line under the total: "Due Dec 1", or "Was due Dec 1" once the day has passed. */
-export const dueWords = (bill: Pick<PayBill, "dueOn" | "status">) => `${bill.status === "overdue" ? "Was due" : "Due"} ${monthDay(bill.dueOn)}`
+/** The line under the total: "Due Dec 1", or "Past due since Dec 1" once the day has passed. */
+export const dueWords = (bill: Pick<PayBill, "dueOn" | "status">) => `${bill.status === "overdue" ? "Past due since" : "Due"} ${monthDay(bill.dueOn)}`
 
 /** "Paid Nov 20, thank you". */
 export const paidWords = (bill: Pick<PayBill, "paidOn">) => (bill.paidOn ? `Paid ${monthDay(bill.paidOn)}, thank you` : "Paid, thank you")

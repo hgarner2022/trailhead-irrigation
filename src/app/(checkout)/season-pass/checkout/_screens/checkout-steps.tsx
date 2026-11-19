@@ -49,7 +49,8 @@ export function Helper({ children }: { children: ReactNode }) {
   return <p className="mt-6 text-base text-muted-foreground">{children}</p>
 }
 
-export function ZonesStep({ state, set }: StepProps) {
+/** `summary` replaces the Season Pass price block under the chips: the booking flow shows one service's price and says when it is charged. */
+export function ZonesStep({ state, set, summary }: StepProps & { summary?: ReactNode }) {
   return (
     <>
       <div role="group" aria-label="Zones" className="flex flex-wrap gap-2">
@@ -74,6 +75,8 @@ export function ZonesStep({ state, set }: StepProps) {
           )
         })}
       </div>
+      {summary ?? (
+        <>
       <p data-slot="checkout-price" className="mt-10 font-display text-5xl leading-none text-navy tabular-nums">
         {formatMoney(priceOnSale(state.zones, state.inspection, state.today))}
       </p>
@@ -83,6 +86,8 @@ export function ZonesStep({ state, set }: StepProps) {
       </p>
       {!visitsOnSale(state.inspection, state.today).some((v) => v.key === "turn-on") && (
         <p data-slot="checkout-season-note" className="mt-3 text-sm text-muted-foreground">The spring turn-on has passed for this year. Your pass covers the visits still ahead.</p>
+      )}
+        </>
       )}
       <Helper>The price starts at six zones or fewer. Not sure how many you have? Count the stations on your controller, or we&apos;ll confirm on the first visit.</Helper>
     </>
@@ -98,7 +103,7 @@ const CONTACT = [
   { key: "phone", label: "Phone", type: "tel", autoComplete: "tel", inputMode: "tel" },
 ] as const
 
-export function ContactStep({ state, set, attempted }: StepProps & { attempted: boolean }) {
+export function ContactStep({ state, set, attempted, terms }: StepProps & { attempted: boolean; terms?: "pass" | "booking" | "none" }) {
   const id = useId()
   const [touched, setTouched] = useState<Set<string>>(() => new Set())
   return (
@@ -147,7 +152,7 @@ export function ContactStep({ state, set, attempted }: StepProps & { attempted: 
         )
       })}
     </div>
-    <ConsentBoxes state={state} set={set} attempted={attempted} />
+    <ConsentBoxes state={state} set={set} attempted={attempted} terms={terms} />
     </>
   )
 }

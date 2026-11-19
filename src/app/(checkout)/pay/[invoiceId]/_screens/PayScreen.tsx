@@ -40,6 +40,40 @@ function Lines({ bill }: { bill: PayBill }) {
   )
 }
 
+function Report({ bill }: { bill: PayBill }) {
+  const r = bill.report
+  if (!r) return null
+  return (
+    <section data-slot="pay-report" aria-labelledby="pay-report-h" className="mt-6">
+      <h2 id="pay-report-h" className="font-display text-xl text-navy">What we did</h2>
+      <ul className="mt-2 divide-y divide-border border-y border-border">
+        {r.items.map((i) => (
+          <li key={i.label} className="flex gap-3 py-2.5">
+            <CheckCircle2 aria-hidden className={i.done ? "mt-0.5 size-5 shrink-0 text-positive" : "mt-0.5 size-5 shrink-0 text-muted-foreground/40"} />
+            <span className="min-w-0 text-base text-foreground">
+              <span className="sr-only">{i.done ? "Done: " : "Not done: "}</span>
+              {i.label}
+              {i.note && <span className="block text-sm text-muted-foreground">{i.note}</span>}
+            </span>
+          </li>
+        ))}
+      </ul>
+      {r.notes.map((n) => <p key={n} className="mt-3 text-base text-foreground">{n}</p>)}
+      {r.photos.length > 0 && (
+        <ul className="mt-4 grid grid-cols-2 gap-3">
+          {r.photos.map((p) => (
+            <li key={p.url}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={p.url} alt={`Photo: ${p.caption}`} className="aspect-[4/3] w-full rounded-lg border border-border object-cover" />
+              <p className="mt-1 text-sm text-muted-foreground">{p.caption}</p>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  )
+}
+
 function Total({ bill }: { bill: PayBill }) {
   return (
     <div data-slot="pay-total" className="mt-4 flex items-baseline justify-between gap-4">
@@ -53,6 +87,7 @@ function Open({ bill, payAction }: PayScreenProps) {
   return (
     <>
       <Lines bill={bill} />
+      <Report bill={bill} />
       <Total bill={bill} />
       <p data-slot="pay-due" className={bill.status === "overdue" ? "mt-1 text-right text-sm font-medium text-warning" : "mt-1 text-right text-sm text-muted-foreground"}>
         {dueWords(bill)}

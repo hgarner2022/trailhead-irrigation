@@ -4,13 +4,12 @@ import { useCallback, useEffect, useMemo, useState, type CSSProperties, type Rea
 import Image from "next/image"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { LogOut, Search } from "lucide-react"
+import { Search } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarHeader,
@@ -29,7 +28,10 @@ import { sectionOf } from "./admin-section"
 import { AdminTabBar } from "./AdminTabBar"
 import { useMedia } from "./use-media"
 import { CommandSearch } from "./CommandSearch"
+import { ToastProvider } from "./Toast"
 import { UndoToastProvider } from "./UndoToast"
+import { AdminAccountMenu } from "./AdminAccountMenu"
+import { TopBar } from "./TopBar"
 
 // The frame every admin screen sits in (docs/DESIGN.md, Spacing): the navy
 // rail on a laptop, collapsed to icons under 1024px, and a bottom tab bar
@@ -38,7 +40,7 @@ import { UndoToastProvider } from "./UndoToast"
 // the tab bar come and go with the breakpoint but the inset around the
 // children stays mounted, so a resize never resets the screen. The links are
 // next/link (plain anchors in the catalog). The switcher slot above
-// the items stays empty until a second branch exists. Sign out calls `onSignOut`, a server action in the
+// the items stays empty until a second branch exists. The top bar is `TopBar`: Search then the account menu (`AdminAccountMenu`) at the far right; Sign out is there and not in the rail or More. `onSignOut` is a server action in the
 // layout, and does nothing in the catalog. The bottom bar (`AdminTabBar`) is Home, Schedule, Jobs, Customers and More, and pads for
 // `env(safe-area-inset-bottom)`, which the admin root layout enables with `viewport.viewportFit = "cover"`. Cmd or Ctrl+K and the Search
 // button open `CommandSearch` when `onSearch` is given; a hit opens in place on a screen with a record host and on its own page elsewhere.
@@ -54,6 +56,11 @@ export interface AdminShellProps {
   onSignOut?: () => void | Promise<void>
   /** Cmd or Ctrl+K and the Search button: finds customers, jobs and days by name, street, phone or pass number; the search is off without it (the catalog) */
   onSearch?: (query: string) => Promise<SearchHit[]>
+  /** the account menu's optional rows; a row with no address is not drawn */
+  profileHref?: string
+  helpHref?: string
+  /** set when the signed-in email is also a customer's: Open as customer */
+  customerHref?: string
   /** whether the rail starts expanded on a laptop; under 1024px it starts collapsed either way */
   defaultOpen?: boolean
   children: ReactNode
@@ -80,7 +87,7 @@ function SearchButton({ onClick, className, iconOnly = false }: { onClick: () =>
   )
 }
 
-function Rail({ current, user, switcher, onSignOut }: Pick<AdminShellProps, "current" | "user" | "switcher" | "onSignOut">) {
+function Rail({ current, switcher }: Pick<AdminShellProps, "current" | "switcher">) {
   return (
     <Sidebar collapsible="icon" className="motion-reduce:transition-none">
       <SidebarHeader>
@@ -112,24 +119,11 @@ function Rail({ current, user, switcher, onSignOut }: Pick<AdminShellProps, "cur
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton type="button" tooltip="Sign out" aria-label={`Sign out ${user.name}`} onClick={() => void onSignOut?.()}>
-              <span aria-hidden className="flex size-4 shrink-0 items-center justify-center rounded-full bg-sidebar-accent text-[10px] font-semibold">
-                {user.initials}
-              </span>
-              <span>Sign out</span>
-              <LogOut className="ml-auto" />
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarFooter>
     </Sidebar>
   )
 }
 
-export function AdminShell({ current: initial, user, switcher, onSignOut, onSearch, defaultOpen = true, children }: AdminShellProps) {
+export function AdminShell({ current: initial, user, switcher, onSignOut, onSearch, profileHref, helpHref, customerHref, defaultOpen = true, children }: AdminShellProps) {
   // The rail follows the address, not the server's first render: the layout stays mounted while the reader moves between
   // pages, so a section chosen once on the server would stay lit (Home on every page). Outside the app, in the catalog, `current` is used.
   const pathname = usePathname()
@@ -166,34 +160,29 @@ export function AdminShell({ current: initial, user, switcher, onSignOut, onSear
   // The bar's two slots, held in state so PageHeader renders into them once they mount.
   const [titleSlot, setTitleSlot] = useState<HTMLElement | null>(null)
   const [actionsSlot, setActionsSlot] = useState<HTMLElement | null>(null)
-  const bar = useMemo(() => ({ mode: phone ? ("inline" as const) : ("bar" as const), title: titleSlot, actions: actionsSlot }), [phone, titleSlot, actionsSlot])
+  const [primarySlot, setPrimarySlot] = useState<HTMLElement | null>(null)
+  const bar = useMemo(() => ({ mode: phone ? ("inline" as const) : ("bar" as const), title: titleSlot, actions: actionsSlot, primary: primarySlot }), [phone, titleSlot, actionsSlot, primarySlot])
   return (
     <SidebarProvider data-slot="admin-shell" data-phone={phone || undefined} open={open} onOpenChange={setChoice} style={RAIL_WIDTH}>
-      {phone ? null : <Rail current={current} user={user} switcher={switcher} onSignOut={onSignOut} />}
+      {phone ? null : <Rail current={current} switcher={switcher} />}
       <SidebarInset className="min-h-svh min-w-0 bg-cream">
-        <div data-slot="admin-bar" className={cn(GUTTER, "sticky top-0 z-20 flex h-14 shrink-0 items-center gap-3 border-b border-border bg-cream")}>
-          {phone ? (
-            <>
-              <Image src={LOGO} alt="Trailhead" width={51} height={36} className="h-9 w-auto shrink-0" />
-              {switcher !== undefined && <div data-slot="admin-switcher">{switcher}</div>}
-              {onSearch && <SearchButton onClick={() => setSearching(true)} className="ml-auto" iconOnly />}
-            </>
-          ) : (
-            <>
-              <SidebarTrigger className="-ml-2 shrink-0 text-navy" />
-              <div ref={setTitleSlot} data-slot="admin-bar-title" className="flex min-w-0 flex-1 items-baseline gap-3" />
-              <div ref={setActionsSlot} data-slot="admin-bar-actions" className="flex shrink-0 items-center gap-2" />
-              {onSearch && <SearchButton onClick={() => setSearching(true)} />}
-            </>
-          )}
-        </div>
+        <TopBar
+          phone={phone}
+          leading={<SidebarTrigger className="-ml-2 shrink-0 text-navy" />}
+          titleRef={setTitleSlot}
+          actionsRef={setActionsSlot}
+          primaryRef={setPrimarySlot}
+          switcher={switcher}
+          search={onSearch ? <SearchButton onClick={() => setSearching(true)} iconOnly={phone} /> : undefined}
+          account={<AdminAccountMenu user={user} compact={phone} profileHref={profileHref} helpHref={helpHref} customerHref={customerHref} onSignOut={onSignOut} />}
+        />
         <div className={cn(GUTTER, "w-full max-w-7xl pt-4 md:pt-6", phone ? "pb-[calc(5rem+env(safe-area-inset-bottom))]" : "pb-8")}>
           <AdminBarContext.Provider value={bar}>
-            <UndoToastProvider>{children}</UndoToastProvider>
+            <UndoToastProvider><ToastProvider>{children}</ToastProvider></UndoToastProvider>
           </AdminBarContext.Provider>
         </div>
       </SidebarInset>
-      {phone && <AdminTabBar current={current} user={user} onSignOut={onSignOut} />}
+      {phone && <AdminTabBar current={current} />}
       {onSearch && <CommandSearch open={searching} onOpenChange={setSearching} onSearch={onSearch} onOpen={openHit} />}
     </SidebarProvider>
   )

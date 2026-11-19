@@ -63,3 +63,21 @@ export const EMAIL_LABELS: Record<EmailKind | "sign-in", string> = {
   "admin-alert": "Admin alert",
   "sign-in": "Sign in link",
 }
+
+/** The visit report of the invoice story: the repair's checklist, the crew's notes and four photos (placeholders from the site's own images). */
+export const REPORT_FIXTURE: import("./visit-report").VisitReportData = {
+  items: [
+    { label: "Walk the zones", done: true },
+    { label: "Find the leak", done: true, note: "Cracked head in zone 5, by the fence." },
+    { label: "Fix what we can", done: true },
+    { label: "Set the controller", done: true },
+    { label: "Walk the customer through it", done: false, note: "Andrea was out; Ryan left the schedule on the controller." },
+  ],
+  notes: ["Replaced the zone 5 head and the broken rotor in zone 3. Everything runs clean. Worth a look at the garden bed for drip next spring."],
+  photos: [
+    { url: `${ORIGIN}/images/sprinkler-head.jpg`, caption: "The cracked zone 5 head" },
+    { url: `${ORIGIN}/images/sprinkler-repair.jpg`, caption: "New head in place" },
+    { url: `${ORIGIN}/images/sprinkler-spray-head-lawn.jpg`, caption: "Zone 5 running" },
+    { url: `${ORIGIN}/images/sprinkler-golden-hour.jpg`, caption: "The front lawn after the visit" },
+  ],
+}

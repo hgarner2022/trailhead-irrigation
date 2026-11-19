@@ -8,7 +8,7 @@ import { addDays, byPrincipal, Day, Id, Town, today, VisitKind } from "../shared
 import { runSchedule } from "@/lib/scheduling/server/run"
 import { loadOffers, loadOpenDays, namedOffers } from "@/lib/scheduling/server/offers"
 import { OfferOut } from "./offers"
-import { windowText } from "@/emails/format"
+import { timeText } from "@/emails/format"
 import { OFFERED } from "@/lib/pass/server/area-days"
 import { inBookableWindow, windowWords } from "@/lib/services-window"
 import { listPeople, resolvePersonId, Role, routePeople } from "../people/handlers"
@@ -163,12 +163,12 @@ export const scheduleOfferDays = defineHandler({
   summary: "The best open days for one pass visit that does not exist yet, for the checkout's \"Your days\" step, from the one offer rule (docs/plans/2026-11-18-scheduling-engine-design.md, section 4): tomorrow at the earliest, the service's bookable dates, a gap of the service's length inside someone's hours under their cap, soonest days first with nearness to the customer's town (and street, when `lat` and `lng` are given) ordering them. `days` keeps its old shape (the day, the person who would take it, the start of the best open time and the two-hour window around it) in date order; `offers` adds each day's label, the one to preselect and every open start time. Fewer open days gives fewer days; none gives an empty list.",
   input: z.object({ town: Town, kind: PassKind, season: z.coerce.number().int().min(2026).max(2100), zones: z.coerce.number().int().min(1).max(16), lat: z.coerce.number().min(-90).max(90).optional(), lng: z.coerce.number().min(-180).max(180).optional(), count: z.coerce.number().int().min(1).max(5).optional() }),
   output: z.object({
-    days: z.array(z.object({ day: Day, ...slotPerson, start: z.string().describe("HH:MM, Mountain."), window: z.string().describe("The two-hour window, \"8 to 10 am\".") })),
+    days: z.array(z.object({ day: Day, ...slotPerson, start: z.string().describe("HH:MM, Mountain."), window: z.string().describe("The exact start, \"8:00 am\".") })),
     offers: z.array(OfferOut),
   }),
   async run(ctx, input) {
     const point = input.lat !== undefined && input.lng !== undefined ? { lat: input.lat, lng: input.lng } : null
     const offers = await namedOffers(ctx.db, ctx.organizationId, await loadOffers(ctx.db, { organizationId: ctx.organizationId, kind: input.kind, town: input.town, point, zones: input.zones, season: input.season, today: today(ctx), count: input.count ?? OFFERED }))
-    return { days: offers.map((o) => ({ day: o.day, personId: o.slots[0]!.personId, personName: o.slots[0]!.personName, start: o.slots[0]!.start, window: windowText(o.slots[0]!.start) })), offers }
+    return { days: offers.map((o) => ({ day: o.day, personId: o.slots[0]!.personId, personName: o.slots[0]!.personName, start: o.slots[0]!.start, window: timeText(o.slots[0]!.start) })), offers }
   },
 })

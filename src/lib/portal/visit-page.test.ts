@@ -11,7 +11,7 @@ describe("visitPageOf", () => {
     expect(m).toMatchObject({
       service: "Spring turn-on",
       label: "Season Pass 2027",
-      dayLine: "Wednesday, April 28. We'll text your window the day before.",
+      dayLine: "Wednesday, April 28. We'll text you the time the day before.",
       where: "412 Briggs Street, Erie",
       mustBeHome: true,
       included: "8 zones, start up, check each head",
@@ -25,11 +25,11 @@ describe("visitPageOf", () => {
   })
 
   it("once the window was told: the window and who is coming", () => {
-    expect(page(passJobWindowTold, "v1").dayLine).toBe("Wednesday, April 28, between 8 and 10 am, with Ryan.")
+    expect(page(passJobWindowTold, "v1").dayLine).toBe("Wednesday, April 28 at 8:00 am. Ryan is coming.")
   })
 
   it("never states a window from nothing: a customer with no phone and no email is told to call for it", () => {
-    expect(page(passJob, "v1", { ...andrea, phone: null, email: null }).dayLine).toBe("Wednesday, April 28. Call Ryan for your window.")
+    expect(page(passJob, "v1", { ...andrea, phone: null, email: null }).dayLine).toBe("Wednesday, April 28. Call Ryan for the time.")
   })
 
   it("a repair (days set with Ryan): the line says cancel online, never change, so it agrees with the buttons", () => {

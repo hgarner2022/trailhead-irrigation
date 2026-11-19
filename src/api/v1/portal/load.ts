@@ -13,7 +13,7 @@ import { portalVisitMoney } from "./visit-money"
 import { passStatus } from "@/lib/pass/facts"
 import { changeFor, cutoffWords, hasSelfServeDays, mountainDayOf } from "@/lib/portal/change-day"
 import { windowTold } from "@/lib/portal/window-told"
-import { customerFacingFirstName, windowPhrase } from "@/lib/portal/words"
+import { customerFacingFirstName, timePhrase } from "@/lib/portal/words"
 import type { Ctx } from "../../core/context"
 import { canSeeContact, today } from "../shared"
 import { selfCustomerId } from "./self"
@@ -118,7 +118,7 @@ export async function loadPortalJobs(ctx: Ctx, customerId: string, only?: string
         completedOn: v.completedOn,
         canceledOn: goneAt.has(v.id) ? mountainDayOf(goneAt.get(v.id)!) : null,
         windowTold: told.has(v.id),
-        window: told.has(v.id) && v.status === "scheduled" ? windowPhrase(v.startTime) : null,
+        window: told.has(v.id) && v.status === "scheduled" ? timePhrase(v.startTime) : null,
         month: v.window,
         // The person is shown with the window: Ryan names who is coming in the day-before text, not before it.
         personFirstName: told.has(v.id) ? customerFacingFirstName(v.personId ? nameOf.get(v.personId) : null) : null,

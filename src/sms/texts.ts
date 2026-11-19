@@ -6,7 +6,7 @@
 // reminder is what the office may edit (`bodyOf` in src/emails/editable.ts); everything else here is locked.
 import { visitCancelledMoney } from "@/emails/account-messages"
 import { cutoffAt, mountainDayOf } from "@/lib/portal/change-day"
-import { ACCOUNT_NAME, TEXT_RYAN_LINE, monthDay, noteLine, shortDay, windowText } from "@/emails/format"
+import { ACCOUNT_NAME, TEXT_RYAN_LINE, monthDay, noteLine, shortDay, timeText } from "@/emails/format"
 import { bodyOf, fillTemplate, type EditableMessage, type Overrides } from "@/emails/editable"
 import type { InvoiceData, VisitCancelledData, VisitData } from "@/emails/types"
 
@@ -46,7 +46,7 @@ const visitText = (key: EditableMessage["key"], d: VisitData, o?: TextOptions) =
   const asked = key === "date-moved" && v.asked === true && Boolean(v.visitUrl)
   // The day stayed and Ryan gave a time: one locked sentence that says the time (the editable "moved to" words would call the same day a move).
   const sameDay = key === "date-moved" && v.sameDay === true && Boolean(v.startTime)
-  let middle = sameDay && v.startTime ? `your ${v.name} is still ${shortDay(v.day)}, now ${windowText(v.startTime)}.` : fillTemplate(bodyOf(o?.templates, key, "sms"), { service: v.name, address: v.address, day: shortDay(v.day), window: v.startTime ? windowText(v.startTime) : null, who: v.who })
+  let middle = sameDay && v.startTime ? `your ${v.name} is still ${shortDay(v.day)}, now at ${timeText(v.startTime)}.` : fillTemplate(bodyOf(o?.templates, key, "sms"), { service: v.name, address: v.address, day: shortDay(v.day), time: v.startTime ? timeText(v.startTime) : null, who: v.who })
   if (asked && !sameDay) middle = middle.replace(/\s*Another day\?\s*$/, "")
   const note = key === "date-moved" ? noteLine(v.note) : ""
   return `Trailhead: ${middle}${note ? ` ${note}` : ""} ${visitLinkTail(key, v, d.accountUrl, asked)}${tail(o)}`

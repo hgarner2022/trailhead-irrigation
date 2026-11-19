@@ -109,13 +109,13 @@ describe("NotesAndHistory", () => {
     expect(items()).toHaveLength(4)
   })
 
-  it("announces a note that went in, quietly, and clears the announcement on the next edit", async () => {
+  it("leaves no result message in the section: a note that went in is a toast and the box clears", async () => {
     render(<NotesAndHistory lines={lines} onAddNote={never} />)
     await userEvent.type(screen.getByLabelText("Add a note"), "Back gate sticks")
     await userEvent.click(screen.getByRole("button", { name: "Add note" }))
-    expect(await screen.findByRole("status")).toHaveTextContent("Note added")
-    await userEvent.type(screen.getByLabelText("Add a note"), "x")
-    expect(screen.getByRole("status")).toBeEmptyDOMElement()
+    await waitFor(() => expect(screen.getByLabelText("Add a note")).toHaveValue(""))
+    expect(screen.queryByRole("status")).toBeNull()
+    expect(screen.queryByText("Note added")).toBeNull()
   })
 
   it("writes the year on a line that is not from this year, and only then", () => {

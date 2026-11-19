@@ -1,6 +1,7 @@
 import { SEE_JOB, SIGN_OFF, dollars, longDay } from "./format"
 import { doneWords, jobTable } from "./job-table"
 import { button, emailLayout, greetingText, links, plainText } from "./layout"
+import { visitReport } from "./visit-report"
 import type { InvoiceData, RenderedEmail } from "./types"
 
 // The invoice and its reminder: where and when, the invoice number, the job's lines with Subtotal, Sales tax (only when a line is
@@ -13,9 +14,10 @@ function render(d: InvoiceData, subject: string, title: string, intro: string): 
     lines: d.lines, subtotal: d.amount, tax: d.tax, total: d.total,
     after: [["Amount due", dollars(d.total)], ["Due", longDay(d.dueOn)]],
   })
-  const body = table.html + button(d.payUrl, `Pay ${dollars(d.total)}`) + links([{ href: d.signInUrl, label: SEE_JOB }])
+  const report = d.report ? visitReport(d.report) : null
+  const body = table.html + (report?.html ?? "") + button(d.payUrl, `Pay ${dollars(d.total)}`) + links([{ href: d.signInUrl, label: SEE_JOB }])
   const why = `You are getting this about invoice ${d.invoiceNumber} for your ${d.visitName}.`
-  const text = plainText([...greetingText(d.firstName), intro, "", ...table.text, "", `Pay here: ${d.payUrl}`, `${SEE_JOB}: ${d.accountUrl}`], SIGN_OFF, why)
+  const text = plainText([...greetingText(d.firstName), intro, "", ...table.text, "", ...(report ? report.text : []), `Pay here: ${d.payUrl}`, `${SEE_JOB}: ${d.accountUrl}`], SIGN_OFF, why)
   return { subject, text, html: emailLayout({ origin: d.origin, preheader: `Due ${longDay(d.dueOn)}. Pay online, or see the job in your account.`, title, greet: { firstName: d.firstName }, lead: intro, body, why, signOff: SIGN_OFF }) }
 }
 

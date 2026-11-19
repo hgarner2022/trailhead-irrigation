@@ -5,6 +5,7 @@ import { VisitRow } from "@/components/blocks/VisitRow"
 import { Button } from "@/components/ui/button"
 import type { PortalCustomerType, PortalJobType } from "@/api/v1/portal/schemas"
 import { portalTimeline, type TimelineRow } from "@/lib/portal/timeline"
+import { rowDayWithTime, type BookedTimes } from "@/lib/portal/booked-time"
 import { cn } from "@/lib/utils"
 
 // Visits: the one timeline (docs/plans/2026-11-18-customer-portal-v2-design.md, section 3). "Coming up" then "Past", one row per visit with its day, what it is, the Season Pass
@@ -17,19 +18,21 @@ export interface VisitsScreenProps {
   today: string
   /** the street the list is limited to; absent for all of them */
   street?: string | null
+  /** with slots: the booked start of each visit ("10:30"), shown after its day */
+  times?: BookedTimes
 }
 
-const rowOf = (r: TimelineRow) => (
-  <VisitRow key={r.id} href={r.href} dayWords={r.dayWords} service={r.service} label={r.label} street={r.street} who={r.who} money={r.money} tone={r.tone} pill={r.pill} receiptHref={r.receiptId ? `/account/receipts/${r.receiptId}` : null} />
+export const rowOf = (r: TimelineRow, times?: BookedTimes) => (
+  <VisitRow key={r.id} href={r.href} dayWords={r.visit.status === "scheduled" ? rowDayWithTime(r.dayWords, times?.[r.id]) : r.dayWords} service={r.service} label={r.label} street={r.street} who={r.who} money={r.money} tone={r.tone} pill={r.pill} receiptHref={r.receiptId ? `/account/receipts/${r.receiptId}` : null} />
 )
 
-function Section({ id, title, rows, empty }: { id: string; title: string; rows: TimelineRow[]; empty: string }) {
+function Section({ id, title, rows, empty, times }: { id: string; title: string; rows: TimelineRow[]; empty: string; times?: BookedTimes }) {
   return (
-    <section aria-labelledby={id} className="space-y-2">
+    <section aria-labelledby={id} className="space-y-4">
       <h2 id={id} className="font-display text-2xl font-semibold leading-none text-navy">
         {title}
       </h2>
-      {rows.length ? <ul className="divide-y divide-border rounded-lg border border-border bg-background px-4">{rows.map(rowOf)}</ul> : <p className="text-base text-muted-foreground">{empty}</p>}
+      {rows.length ? <ul className="divide-y divide-border rounded-lg border border-border bg-card px-4 shadow-sm sm:px-6">{rows.map((r) => rowOf(r, times))}</ul> : <p className="text-base text-muted-foreground">{empty}</p>}
     </section>
   )
 }
@@ -51,7 +54,7 @@ function StreetFilter({ streets, street }: { streets: string[]; street?: string 
   )
 }
 
-export function VisitsScreen({ customer, jobs, today, street }: VisitsScreenProps) {
+export function VisitsScreen({ customer, jobs, today, street, times }: VisitsScreenProps) {
   const all = portalTimeline(customer, jobs, today)
   const keep = (r: TimelineRow) => !street || r.job.address === street
   const upcoming = all.upcoming.filter(keep)
@@ -73,7 +76,7 @@ export function VisitsScreen({ customer, jobs, today, street }: VisitsScreenProp
         />
       ) : (
         <>
-          <Section id="visits-coming" title="Coming up" rows={upcoming} empty="Nothing booked right now." />
+          <Section id="visits-coming" title="Coming up" rows={upcoming} empty="Nothing booked right now." times={times} />
           <Section id="visits-past" title="Past" rows={past} empty="No past visits yet." />
         </>
       )}

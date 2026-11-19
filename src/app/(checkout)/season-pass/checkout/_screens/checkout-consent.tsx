@@ -29,12 +29,12 @@ const MARKETING = [
 ] as const
 
 /** The consent boxes that end the contact step, so Continue is the moment of acceptance: the terms, required, then email and text marketing, each off until ticked. */
-export function ConsentBoxes({ state, set, attempted }: StepProps & { attempted: boolean }) {
+export function ConsentBoxes({ state, set, attempted, terms = "pass" }: StepProps & { attempted: boolean; /** which terms the required box names: the Season Pass's, a one-off booking's, or none (a quote request) */ terms?: "pass" | "booking" | "none" }) {
   const id = useId()
   const problem = attempted && !state.termsAccepted
   return (
     <div data-slot="checkout-consent" className="mt-8 grid gap-5">
-      <div>
+      {terms !== "none" && <div>
         <div className="flex items-start gap-3">
           <Checkbox
             id={`${id}-terms`}
@@ -46,7 +46,7 @@ export function ConsentBoxes({ state, set, attempted }: StepProps & { attempted:
             className="mt-1 size-5"
           />
           <Label htmlFor={`${id}-terms`} className="inline text-base font-normal leading-snug text-foreground">
-            I accept the <TermsLink href={SEASON_PASS_TERMS_HREF}>Season Pass terms</TermsLink> and the <TermsLink href="/terms">Trailhead terms of service</TermsLink>
+            I accept the {terms === "booking" ? <TermsLink href="/terms#booking">booking terms</TermsLink> : <TermsLink href={SEASON_PASS_TERMS_HREF}>Season Pass terms</TermsLink>} and the <TermsLink href="/terms">Trailhead terms of service</TermsLink>
           </Label>
         </div>
         {problem && (
@@ -54,7 +54,7 @@ export function ConsentBoxes({ state, set, attempted }: StepProps & { attempted:
             {CONSENT_PROBLEM}
           </p>
         )}
-      </div>
+      </div>}
       {MARKETING.map((box) => (
         <div key={box.key} className="flex items-start gap-3">
           <Checkbox

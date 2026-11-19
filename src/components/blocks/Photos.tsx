@@ -45,6 +45,8 @@ export interface PhotosProps {
   /** open the camera on a phone rather than the library; staff in the field want it, a customer picking an old photo does not */
   camera?: boolean
   heading?: string
+  /** the customer's first name, for the staff caption of their own photos ("Andrea · Nov 17"); "Customer" when left out */
+  customerName?: string
   /** no heading of its own: the job panel puts one heading over a group per visit, and this block is labelled by `heading` for a reader of the screen */
   bare?: boolean
   /** staff who may show a photo to the customer (a manager); a tech sees the photos and has no box. Default true */
@@ -56,13 +58,14 @@ export interface PhotosProps {
   className?: string
 }
 
-const caption = (p: PhotoItem, audience: "staff" | "customer") => {
+const caption = (p: PhotoItem, audience: "staff" | "customer", customerName = "Customer") => {
+  if (p.addedAtBooking) return `${audience === "customer" ? "You" : customerName} · Added when booked`
   const first = (p.addedByName ?? p.addedBy.split("@")[0] ?? "Staff").split(/\s+/)[0] ?? "Staff"
-  const who = audience === "customer" ? (p.byCustomer ? "You" : "Trailhead") : p.byCustomer ? "Customer" : `${first.charAt(0).toUpperCase()}${first.slice(1)}`
+  const who = audience === "customer" ? (p.byCustomer ? "You" : "Trailhead") : p.byCustomer ? customerName : `${first.charAt(0).toUpperCase()}${first.slice(1)}`
   return `${who} · ${shortDate(p.createdAt, TIME_ZONE)}`
 }
 
-function Tile({ photo, audience, canShow, onShow, onRemove, onAsk }: { photo: PhotoItem; audience: "staff" | "customer"; canShow: boolean; onShow?: PhotosProps["onShow"]; onRemove?: PhotosProps["onRemove"]; onAsk: (p: PhotoItem) => void }) {
+function Tile({ photo, audience, customerName, canShow, onShow, onRemove, onAsk }: { photo: PhotoItem; audience: "staff" | "customer"; customerName?: string; canShow: boolean; onShow?: PhotosProps["onShow"]; onRemove?: PhotosProps["onRemove"]; onAsk: (p: PhotoItem) => void }) {
   const box = useId()
   const [problem, setProblem] = useState("")
   const [shown, setShown] = useState(photo.shownToCustomer)
@@ -84,19 +87,18 @@ function Tile({ photo, audience, canShow, onShow, onRemove, onAsk }: { photo: Ph
   }
   return (
     <li data-slot="photo" data-photo-id={photo.id} className="flex min-w-0 flex-col gap-1.5">
-      <a href={photo.url} target="_blank" rel="noopener" aria-label={`Open photo, ${caption(photo, audience)}`} className="block overflow-hidden rounded-lg border border-border bg-stone">
+      <a href={photo.url} target="_blank" rel="noopener" aria-label={`Open photo, ${caption(photo, audience, customerName)}`} className="block overflow-hidden rounded-lg border border-border bg-stone">
         {/* A plain img on purpose: the picture is behind a sign-in, and next/image's optimizer fetches without the visitor's cookie. */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={photo.url} alt={`Photo added ${caption(photo, audience)}`} loading="lazy" className="aspect-square w-full object-cover" />
+        <img src={photo.url} alt={`Photo added ${caption(photo, audience, customerName)}`} loading="lazy" className="aspect-square w-full object-cover" />
       </a>
-      <p className="text-xs text-muted-foreground">{caption(photo, audience)}</p>
+      <p className="text-xs text-muted-foreground">{caption(photo, audience, customerName)}</p>
       {staffOwn && (
         <div className="flex min-h-11 items-center gap-2 text-sm">
           <input id={box} type="checkbox" checked={shown} onChange={(e) => void toggle(e.target.checked)} aria-labelledby={`${box}-text`} className="size-5 shrink-0 accent-primary" />
           <span id={`${box}-text`}>Show to customer</span>
         </div>
       )}
-      {audience === "staff" && photo.byCustomer && <p className="text-xs text-muted-foreground">Added by the customer</p>}
       {photo.canRemove && onRemove && (
         <Button type="button" variant="ghost" size="sm" className="min-h-11 self-start px-2 text-muted-foreground" onClick={() => onAsk(photo)}>
           Remove
@@ -141,7 +143,7 @@ function PendingTile({ item, onRetry, onDismiss }: { item: PendingPhoto; onRetry
   )
 }
 
-export function Photos({ photos, audience = "staff", configured = true, onAdd, onShow, onRemove, camera = audience === "staff", heading = "Photos", bare = false, canShow = true, visitDone, initialPending = [], className }: PhotosProps) {
+export function Photos({ photos, audience = "staff", configured = true, onAdd, onShow, onRemove, camera = audience === "staff", heading = "Photos", customerName, bare = false, canShow = true, visitDone, initialPending = [], className }: PhotosProps) {
   const id = useId()
   const input = useRef<HTMLInputElement>(null)
   const [pending, setPending] = useState<PendingPhoto[]>(initialPending)
@@ -203,7 +205,7 @@ export function Photos({ photos, audience = "staff", configured = true, onAdd, o
           ) : (
             <ul className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-4">
               {shown.map((p) => (
-                <Tile key={p.id} photo={p} audience={audience} canShow={canShow} onShow={onShow} onRemove={onRemove} onAsk={setAsked} />
+                <Tile key={p.id} photo={p} audience={audience} customerName={customerName} canShow={canShow} onShow={onShow} onRemove={onRemove} onAsk={setAsked} />
               ))}
               {pending.map((item) => (
                 <PendingTile key={item.key} item={item} onRetry={retry} onDismiss={(key) => setPending((rows) => rows.filter((r) => r.key !== key))} />

@@ -1,17 +1,18 @@
 import type { ReactNode } from "react"
 import Link from "next/link"
-import { Check, Home, MapPin } from "lucide-react"
+import { Check, Home } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { ADD_IT_BACK, CANCEL_CHANGED_MIND } from "@/lib/portal/words"
 import type { VisitPageModel } from "@/lib/portal/visit-page"
 import { InvoiceBanner } from "./InvoiceBanner"
-import { StatusPill } from "./StatusPill"
+import { StatusPill, type PillStatus } from "./StatusPill"
+import { SummaryBand } from "./SummaryBand"
 import { TextRyan } from "./TextRyan"
 
-// One visit's page (docs/plans/2026-11-18-customer-portal-v2-design.md, section 4): the invoice waiting if there is one, the service with its pill, the day sentence (the
-// day alone until the day-before text told the window), where, someone must be home, what is included, what it costs or what was paid with each receipt, and then what the
-// customer may do: Reschedule, Cancel visit and Add to calendar before the 24-hour cut-off with the last minute said in words, Text Ryan and Call Ryan after it. The
+// One visit's page, laid out like a record page (docs/plans/2026-11-19-customer-side-polish-research.md, section 1e): the invoice waiting if there is one, the title with its status
+// badge and Reschedule as the one primary action at the top right, a summary band of the key facts (when with its exact time, who, where, the money badge), one white card for
+// what is included, what it costs and the receipts, then Cancel visit and Add to calendar before the 24-hour cut-off with the last minute said in words, Text Ryan and Call Ryan after it. The
 // buttons that act are slots the screen fills (they carry the server actions); everything else is text from the model. Pure props, server-safe.
 
 export interface VisitPageProps {
@@ -22,6 +23,8 @@ export interface VisitPageProps {
   /** the Photos section (a client block that carries the upload and the server actions); left out where photos are not offered */
   photosSlot?: ReactNode
 }
+
+const moneyStatus: Record<VisitPageModel["money"]["tone"], PillStatus> = { paid: "paid", unpaid: "owed", "invoice-sent": "bill-sent", "past-due": "overdue", none: "not-yet" }
 
 function Fact({ icon: Icon, children }: { icon: typeof Home; children: ReactNode }) {
   return (
@@ -35,35 +38,46 @@ function Fact({ icon: Icon, children }: { icon: typeof Home; children: ReactNode
 export function VisitPage({ model: m, rescheduleSlot, cancelSlot, calendarSlot, photosSlot }: VisitPageProps) {
   const inside = m.reschedule === "text" && m.cancel === "text"
   return (
-    <main data-slot="account-visit" className="mx-auto max-w-3xl space-y-6 container-padding-x py-8">
+    <main data-slot="account-visit" className="mx-auto max-w-3xl space-y-6 container-padding-x py-8 sm:py-12">
       <Link href="/account/visits" className="inline-flex min-h-11 items-center text-base font-semibold text-primary-deep underline underline-offset-2">
         Visits
       </Link>
       {m.invoice && <InvoiceBanner jobName={m.service} total={m.invoice.total} dueOn={m.invoice.dueOn} status={m.invoice.status} payHref={m.invoice.payHref} />}
-      <header className="space-y-2">
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-          <h1 className="font-display text-[1.75rem] font-semibold leading-none text-navy">{m.service}</h1>
-          {m.label && <span className="rounded-full border border-border bg-stone px-2 py-0.5 text-xs font-semibold text-navy-light">{m.label}</span>}
-          <StatusPill status={m.pill.status} label={m.pill.label} />
+      <header className="flex flex-wrap items-start justify-between gap-x-6 gap-y-4">
+        <div className="min-w-0 space-y-2">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+            <h1 className="font-display text-3xl font-semibold leading-none text-navy">{m.service}</h1>
+            <StatusPill status={m.pill.status} label={m.pill.label} />
+          </div>
+          {m.label && <p className="text-sm font-semibold text-navy-light">{m.label}</p>}
         </div>
-        <p data-slot="day-line" className="text-lg text-foreground">
-          {m.dayLine}
-        </p>
+        {m.reschedule === "yes" && <div data-slot="visit-primary">{rescheduleSlot}</div>}
       </header>
+      <SummaryBand
+        items={[
+          { label: "When", value: m.dayHeading },
+          ...(m.who ? [{ label: "Who", value: m.who }] : []),
+          { label: "Where", value: m.where },
+          ...(m.money.label ? [{ label: "Money", value: <StatusPill status={moneyStatus[m.money.tone]} label={m.money.label} /> }] : []),
+        ]}
+      />
+      {m.dayDetail && !m.who && (
+        <p data-slot="day-line" className="text-base text-foreground">
+          {m.dayDetail}
+        </p>
+      )}
       <Card>
-        <CardContent className="space-y-3 p-5">
-          <Fact icon={MapPin}>{m.where}</Fact>
+        <CardContent className="space-y-3 p-4 sm:p-6">
           {m.mustBeHome && <Fact icon={Home}>Someone must be home</Fact>}
           {m.included && (
-            <div className="space-y-1 pt-1">
+            <div className="space-y-1">
               <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">{"What's included"}</h2>
               <p className="text-base text-foreground">{m.included}</p>
             </div>
           )}
-          {m.priceLine && <p className="pt-1 text-base text-foreground">{m.priceLine}</p>}
-          {m.money.label && <p className="pt-1 text-base font-semibold text-foreground">{m.money.label}</p>}
+          {m.priceLine && <p className="text-base text-foreground">{m.priceLine}</p>}
           {m.receipts.length > 0 && (
-            <ul className="space-y-1 pt-1">
+            <ul className="space-y-1">
               {m.receipts.map((r) => (
                 <li key={r.id} className="flex flex-wrap items-baseline justify-between gap-x-4 text-base text-foreground">
                   <span className="inline-flex items-center gap-2">
@@ -82,7 +96,7 @@ export function VisitPage({ model: m, rescheduleSlot, cancelSlot, calendarSlot, 
       {photosSlot}
       {(m.reschedule !== "no" || m.cancel !== "no") && (
         <section aria-label="Change this visit" data-slot="visit-actions" data-state={inside ? "text" : "online"} className="space-y-3">
-          {m.reschedule === "yes" && <div className="flex flex-wrap items-center gap-x-6 gap-y-2">{rescheduleSlot}{m.cancel === "yes" && cancelSlot}</div>}
+          {m.reschedule === "yes" && m.cancel === "yes" && <div>{cancelSlot}</div>}
           {m.reschedule !== "yes" && m.cancel === "yes" && (
             <div className="space-y-3">
               <div>{cancelSlot}</div>

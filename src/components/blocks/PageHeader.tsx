@@ -17,6 +17,8 @@ export interface PageHeaderProps {
   title: string
   context?: string
   actions?: ReactNode
+  /** the page's one primary ("+ New job"): on a phone it stays in the sticky top bar; on a laptop it sits with the actions */
+  primary?: ReactNode
   className?: string
 }
 
@@ -33,17 +35,26 @@ function Title({ title, context }: Pick<PageHeaderProps, "title" | "context">) {
   )
 }
 
-export function PageHeader({ title, context, actions, className }: PageHeaderProps) {
+export function PageHeader({ title, context, actions, primary, className }: PageHeaderProps) {
   const bar = useAdminBar()
+  const both = primary ? (
+    <>
+      {actions}
+      {primary}
+    </>
+  ) : (
+    actions
+  )
   if (bar?.mode === "bar") {
     // The slots exist once the shell has mounted; until then nothing is drawn.
     return (
       <>
         {bar.title && createPortal(<Title title={title} context={context} />, bar.title)}
-        {bar.actions && actions ? createPortal(actions, bar.actions) : null}
+        {bar.actions && both ? createPortal(both, bar.actions) : null}
       </>
     )
   }
+  const phoneSlot = bar?.mode === "inline" && primary ? bar.primary : null
   return (
     <header data-slot="page-header" className={cn("mb-6 flex flex-wrap items-start justify-between gap-x-6 gap-y-3", className)}>
       <div className="min-w-0">
@@ -54,7 +65,8 @@ export function PageHeader({ title, context, actions, className }: PageHeaderPro
           </p>
         )}
       </div>
-      {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
+      {phoneSlot && createPortal(primary, phoneSlot)}
+      {(phoneSlot ? actions : both) && <div className="flex flex-wrap gap-2">{phoneSlot ? actions : both}</div>}
     </header>
   )
 }

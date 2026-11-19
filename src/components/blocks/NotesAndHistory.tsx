@@ -3,6 +3,7 @@
 import { useId, useState, useTransition, type FormEvent } from "react"
 import { FormRow } from "./FormRow"
 import { SectionHeading } from "./SectionHeading"
+import { useUndoToast } from "./UndoToast"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { TIME_ZONE, shortDate } from "@/lib/admin/format"
@@ -36,6 +37,8 @@ export interface NotesAndHistoryProps {
   onAddNote: (text: string) => Promise<NoteOutcome>
   /** today, for the year on an older line; the clock when left out */
   now?: Date
+  /** inside a `SectionCard` that already carries the title: draw no heading of its own */
+  bare?: boolean
   className?: string
 }
 
@@ -56,11 +59,11 @@ function Line({ line, now }: { line: TimelineLine; now?: Date }) {
   )
 }
 
-export function NotesAndHistory({ lines, onAddNote, now, className }: NotesAndHistoryProps) {
+export function NotesAndHistory({ lines, onAddNote, now, bare, className }: NotesAndHistoryProps) {
   const id = useId()
   const [text, setText] = useState("")
   const [problem, setProblem] = useState("")
-  const [notice, setNotice] = useState("")
+  const toast = useUndoToast()
   const [added, setAdded] = useState<TimelineLine[]>([])
   const [pending, start] = useTransition()
   // A note just added shows at the top until the page brings it back in `lines`.
@@ -71,13 +74,12 @@ export function NotesAndHistory({ lines, onAddNote, now, className }: NotesAndHi
     const note = text.trim()
     if (!note || pending) return
     setProblem("")
-    setNotice("")
     start(async () => {
       try {
         const out = await onAddNote(note)
         if (out.ok) {
           setText("")
-          setNotice("Note added")
+          toast("Note added")
           if (out.line) setAdded((rows) => [out.line!, ...rows])
         } else setProblem(out.message)
       } catch {
@@ -88,20 +90,17 @@ export function NotesAndHistory({ lines, onAddNote, now, className }: NotesAndHi
   }
 
   return (
-    <section aria-labelledby={`${id}-heading`} data-slot="notes-and-history" className={className}>
-      <SectionHeading id={`${id}-heading`}>Notes and history</SectionHeading>
-      <form onSubmit={submit} className="mt-2">
+    <section aria-labelledby={bare ? undefined : `${id}-heading`} data-slot="notes-and-history" className={className}>
+      {!bare && <SectionHeading id={`${id}-heading`}>Notes and history</SectionHeading>}
+      <form onSubmit={submit} className={bare ? undefined : "mt-2"}>
         <FormRow label="Add a note">
-          <Textarea value={text} maxLength={NOTE_MAX} rows={3} onChange={(e) => { setText(e.target.value); setNotice("") }} />
+          <Textarea value={text} maxLength={NOTE_MAX} rows={3} onChange={(e) => setText(e.target.value)} />
         </FormRow>
         <Button type="submit" variant="outline" className="mt-2 min-h-11" disabled={pending || !text.trim()}>
           {pending ? "Adding" : "Add note"}
         </Button>
         <p role="alert" className="mt-1 text-sm text-destructive empty:hidden">
           {problem}
-        </p>
-        <p role="status" className="mt-1 text-sm text-muted-foreground empty:hidden">
-          {notice}
         </p>
       </form>
       {shown.length === 0 ? (

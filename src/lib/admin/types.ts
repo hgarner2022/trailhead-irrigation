@@ -532,7 +532,7 @@ export interface BusyBlock {
 export interface Attention {
   /** what Dismiss records with `kind`: a stored alert's key, or the pass, visit or task the row is worked out from */
   key?: string
-  kind: "new-pass" | "pending-pass" | "owed" | "charge-not-pressed" | "overdue" | "charge-failed" | "no-card" | "jobs-failed" | "card-expiring" | "not-closed" | "pass-cancelled" | "scheduled" | "unplaced" | "customer-changed" | "text-undelivered" | "texts-paused"
+  kind: "new-pass" | "pending-pass" | "owed" | "charge-not-pressed" | "overdue" | "charge-failed" | "no-card" | "jobs-failed" | "card-expiring" | "not-closed" | "pass-cancelled" | "scheduled" | "unplaced" | "customer-changed" | "text-undelivered" | "texts-paused" | "quote-request"
   passId?: string
   /** the visit an unplaced alert is about; Home links to it on the Schedule. An owed row names the job's done visit, which opens its panel */
   visitId?: string
