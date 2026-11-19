@@ -161,6 +161,10 @@ Every admin screen is built from these blocks; a screen holds no markup of its o
 | Section heading | Barlow Condensed 18px navy (`level` 2 and `size="card"` for the title of a card on a screen) | `SectionHeading` |
 | View control | Week, Day, List; By job, By person | `SegmentedControl` |
 | Collect | Beat two and the job's dialog | `CollectPayment` |
+| Record page | A record that is a page of its own (the job): the panel's header, facts and sections, with the facts in two columns from `lg` (When, Where) and the footer bar sticking to the bottom; same parts as the panel, never a second layout for the same record | `RecordPage` |
+| Trip row | One trip to the house as a row of a job with more than one: service over "Tue, Apr 14 · Ryan · Any time", pills and the money word at the right, Move and Mark done as outline buttons under the text; in a `RecordList` | `TripRow` |
+| Billing section | The body of a job's or customer's Billing: Total, Paid, Unpaid in the facts, then one row per invoice (opens the invoice) and per payment (quiet text) | `BillingSection` |
+| Line items | Name over description with the price at the right, then Subtotal, Tax, Total, Paid, Balance; a job's "What's included" and an invoice's frozen lines | `LineItemList` |
 
 Retired in step 1: `PanelParts` (now `RecordPanel`), `PanelHeading` and `CardTitleHeading` (now `SectionHeading`), `JobPill` (now `StatusPills`), `ConfirmCancel` (now `ConfirmDialog`), the three hand-built footers. A screen keeps `AdminShell`, `SidePanel`, `WeekGrid`, `DayMap`, `StatTile`, `Chart`, `NotesAndHistory`, `ChangeLog`, `NeedsAttention`, `UndoToast`, `AddressSearch` and the pass blocks.
 
