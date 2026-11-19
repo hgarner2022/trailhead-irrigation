@@ -94,6 +94,11 @@ describe("job page, one trip", () => {
     expect(within(dialog).getByLabelText(/Add a line/)).toHaveAttribute("maxlength", "140")
   })
 
+  it("draws no toolbar element above the Messages table", () => {
+    render(<JobPage job={jobPageOf("scheduled")} />)
+    expect(document.querySelector("[aria-labelledby=messages-h] [data-slot=data-grid-toolbar]")).toBeNull()
+  })
+
   it("links the invoice number to its page as a chip and keeps the visit-report note", () => {
     render(<JobPage job={jobPageOf("invoice-sent")} />)
     const chip = document.querySelector("[data-slot=invoice-table] [data-slot=record-chip]") as HTMLElement

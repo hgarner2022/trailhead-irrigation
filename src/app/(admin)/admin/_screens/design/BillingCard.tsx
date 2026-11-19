@@ -19,7 +19,7 @@ import type { BillingData, JobPageData } from "./job-fixtures"
 
 const TONE = {
   paid: "border-positive/30 bg-positive/10 text-positive-deep",
-  unpaid: "border-border bg-stone text-foreground",
+  unpaid: "border-warning/40 bg-warning/14 text-warning-ink",
   pastdue: "border-destructive/30 bg-destructive/10 text-destructive",
   refunded: "border-border bg-stone text-muted-foreground",
 } as const
