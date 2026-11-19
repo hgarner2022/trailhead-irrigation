@@ -2,7 +2,9 @@
 
 import { RecordFooter, type FooterAction } from "@/components/blocks/RecordFooter"
 import type { Pass } from "@/lib/admin/types"
+import { useMedia } from "@/components/blocks/use-media"
 import type { JobBar, JobBarId } from "./job-footer-model"
+import { phoneBar } from "./job-footer-phone"
 import type { JobFacts } from "./job-panel-model"
 import { useOpenVisit } from "./RecordHost"
 
@@ -29,8 +31,11 @@ export interface JobFooterProps {
   onCancelJob: () => void
 }
 
-export function JobFooter({ facts, bar, nextVisitId, pass, pending, onCollect, onAddVisit, onAddLine, onChangePass, onSendCardUpdateLink, onResendConfirmation, onCancelPass, onCancelJob }: JobFooterProps) {
+export function JobFooter({ facts, bar: laptopBar, nextVisitId, pass, pending, onCollect, onAddVisit, onAddLine, onChangePass, onSendCardUpdateLink, onResendConfirmation, onCancelPass, onCancelJob }: JobFooterProps) {
   const openVisit = useOpenVisit()
+  // below md the footer is the primary and More (the outlines and the cancel go under More); the laptop's footer is unchanged
+  const phone = useMedia("(max-width: 767px)")
+  const bar = phone ? phoneBar(laptopBar) : laptopBar
   const act: Record<JobBarId, FooterAction> = {
     "add-line": { label: "Add a line", onClick: onAddLine },
     "open-visit": openVisit && nextVisitId ? { label: "Open visit", onClick: () => openVisit(nextVisitId) } : { label: "Open visit", href: nextVisitId ? `/admin/schedule?visit=${encodeURIComponent(nextVisitId)}` : undefined },

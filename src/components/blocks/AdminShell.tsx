@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useState, useSyncExternalStore, type CSSProperties, type ReactNode } from "react"
+import { useCallback, useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
@@ -27,6 +27,7 @@ import { AdminBarContext } from "./admin-bar"
 import { NAV } from "./admin-nav"
 import { sectionOf } from "./admin-section"
 import { AdminTabBar } from "./AdminTabBar"
+import { useMedia } from "./use-media"
 import { CommandSearch } from "./CommandSearch"
 import { UndoToastProvider } from "./UndoToast"
 
@@ -63,26 +64,6 @@ const RAIL_WIDTH = { "--sidebar-width": "15rem" } as CSSProperties
 const GUTTER = "px-4 md:px-6"
 // The badge is 813 by 573; the width props keep its shape so next/image never squashes it.
 const LOGO = "/images/logo-badge.png"
-
-// One subscribe function per query, so useSyncExternalStore keeps its listener across renders.
-const subscribers = new Map<string, (onChange: () => void) => () => void>()
-const subscribeTo = (query: string) => {
-  let subscribe = subscribers.get(query)
-  if (!subscribe) {
-    subscribe = (onChange) => {
-      const mql = window.matchMedia(query)
-      mql.addEventListener("change", onChange)
-      return () => mql.removeEventListener("change", onChange)
-    }
-    subscribers.set(query, subscribe)
-  }
-  return subscribe
-}
-
-/** A media query as a store: current on the client, `false` on the server. The Sidebar primitive keeps its own `useIsMobile` for its sheet. */
-function useMedia(query: string): boolean {
-  return useSyncExternalStore(subscribeTo(query), () => window.matchMedia(query).matches, () => false)
-}
 
 /** The quiet Search button in the top bar: the same box Cmd or Ctrl+K opens, for anyone without the keys. */
 function SearchButton({ onClick, className, iconOnly = false }: { onClick: () => void; className?: string; iconOnly?: boolean }) {
