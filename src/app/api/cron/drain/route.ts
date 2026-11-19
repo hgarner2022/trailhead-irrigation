@@ -2,6 +2,7 @@ import "server-only"
 import { timingSafeEqual } from "node:crypto"
 import { db } from "@/db"
 import { readCronSecret } from "@/lib/env"
+import { enqueueMissingGeocodes } from "@/lib/geocode"
 import { expirePendingPasses } from "@/lib/pass/server/create"
 import { drain } from "@/lib/queue"
 import { handlers } from "@/lib/queue/handlers"
@@ -27,6 +28,13 @@ export async function GET(request: Request) {
   } catch {
     console.error("cron: purge of unpaid checkouts failed")
   }
+  // Properties with no point yet get a lookup queued (50 a pass); a failure here never stops the drain either.
+  let geocoding = 0
+  try {
+    geocoding = await enqueueMissingGeocodes(database, new Date())
+  } catch {
+    console.error("cron: queuing property lookups failed")
+  }
   const result = await drain(database, handlers)
-  return Response.json({ expired, ...result })
+  return Response.json({ expired, geocoding, ...result })
 }
