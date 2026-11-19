@@ -10,7 +10,7 @@ import { SchedulePicker, type Pick } from "./SchedulePicker"
 import { JobPage } from "./JobPage"
 import { reminderText } from "./confirm-copy"
 import { CollectBlock, factsOfJob } from "./JobPageParts"
-import { jobPageOf, paidBilling, refundedBilling, type JobPageData, type JobState } from "./job-fixtures"
+import { jobPageOf, paidBilling, paymentNote, refundNote, refundedBilling, type JobPageData, type JobState } from "./job-fixtures"
 
 // The clickable job flow (Hannah, Nov 19 2026: "I want a clickable prototype in Storybook that I can go through all this"): JobPage over a
 // small reducer and the fixtures, no API. Every button does what it would do: Schedule and Move pick a day and time, On my way confirms and
@@ -76,7 +76,9 @@ function viewOf(f: Flow): JobPageData {
   const out: JobPageData = { ...job, when: when as JobPageData["when"], messages: f.stage === "unscheduled" ? f.extra : messages }
   if (f.stage === "paid" && f.paidBy) {
     const by = f.paidBy as "card" | "check" | "venmo" | "cash"
-    if (f.refunded) return { ...jobPageOf("refunded"), messages: out.messages, billing: refundedBilling(by, f.ref) }
+    const rest = (ids: string[]) => jobPageOf("refunded").notes.filter((n) => !ids.includes(n.id))
+    if (f.refunded) return { ...jobPageOf("refunded"), messages: out.messages, billing: refundedBilling(by, f.ref), notes: [refundNote(by, f.ref), paymentNote(by, f.ref), ...rest(["n3", "n7"])] }
+    out.notes = [paymentNote(by, f.ref), ...job.notes.filter((n) => n.id !== "n3")]
     out.pills = [{ status: "done" }, { status: "paid", label: `Paid, ${PAID_WORD[by]}` }]
     out.billing = paidBilling(by, f.ref, f.hadInvoice)
   }

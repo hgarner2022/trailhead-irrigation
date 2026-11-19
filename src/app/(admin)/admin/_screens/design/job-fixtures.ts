@@ -56,7 +56,8 @@ export interface BillingData {
   rows: BillingRowData[]
   emptyLine?: string
   status?: { text: string; tone?: "past-due" }
-  paidLine?: { tone: "paid" | "refunded"; title: string; text: string }
+  /** the one status line at the top of Billing, in every state: paid (green), unpaid (waiting grey), past due (red), refunded (grey). `{invoice}` in `text` is the invoice's chip. */
+  paidLine?: { tone: "paid" | "unpaid" | "pastdue" | "refunded"; title: string; text: string; invoice?: { name: string; href: string } }
   payments?: PaymentRowData[]
   invoices?: InvoiceRowData[]
 }
@@ -137,11 +138,11 @@ export function paidBilling(by: PaymentMethod, ref?: string, settledInvoice = fa
 }
 
 /** A paid job that was refunded: the refund is its own negative row in grey and the payment stays; the job is Unpaid again. */
-export function refundedBilling(by: PaymentMethod = "check", ref = "#1042"): BillingData {
+export function refundedBilling(by: PaymentMethod = "card", ref?: string): BillingData {
   return {
     summary: [["Total", "$145"], ["Paid", "$0"], ["Unpaid", "$145"], CARD],
     rows: [],
-    paidLine: { tone: "refunded", title: "Refunded", text: "$145 refunded on Nov 19, recorded by Ryan. The payment stays in the list." },
+    paidLine: { tone: "refunded", title: "Refunded", text: `$145 refunded ${by === "card" ? "to the card" : `(${asWords(by, ref)})`} on Nov 19, recorded by Ryan. The payment stays in the list.` },
     payments: [
       { id: "r1", at: "2026-11-19T15:00:00Z", method: by, methodLabel: methodLabel(by, ref), amount: "-$145", by: "Ryan", refund: true, receiptHref: "/account/receipts/r1" },
       { ...paymentRow(by, ref), canRefund: false },
@@ -149,7 +150,13 @@ export function refundedBilling(by: PaymentMethod = "check", ref = "#1042"): Bil
   }
 }
 
-const PAID_NOTES: TimelineLine[] = [{ id: "n3", at: "2026-11-18T17:50:00Z", actor: "Ryan", what: "Marked done and recorded $145, Venmo", kind: "event" }]
+/** The history line of a payment, in the words of the payment itself. */
+export const paymentNote = (by: PaymentMethod, ref?: string): TimelineLine => ({
+  id: "n3", at: "2026-11-18T17:50:00Z", actor: "Ryan", kind: "event",
+  what: by === "card" ? "Charged $145 to Visa ending 4242" : by === "check" ? `Recorded a $145 check${ref ? `, ${withRef(ref)}` : ""}` : by === "venmo" ? `Recorded a $145 Venmo payment${ref ? `, ${withRef(ref)}` : ""}` : "Recorded $145 in cash",
+})
+export const refundNote = (by: PaymentMethod, ref?: string): TimelineLine => ({ id: "n7", at: "2026-11-19T15:00:00Z", actor: "Ryan", kind: "event", what: by === "card" ? "Refunded $145 to the card" : `Refunded $145, ${asWords(by, ref)}` })
+const MARKED_DONE: TimelineLine = { id: "n2d", at: "2026-11-18T16:40:00Z", actor: "Ryan", what: "Marked done", kind: "event" }
 
 const CHECKLIST: Record<JobState, number | null> = { unscheduled: 0, scheduled: 0, today: 0, "on-the-way": 0, "active": 2, late: 0, "done-unpaid": 5, "done-paid": 5, "paid-check": 5, "paid-card": 5, refunded: 5, "invoice-sent": 5, "past-due": 5, canceled: null }
 
@@ -197,19 +204,19 @@ function buildJob(state: JobState): JobPageData {
     case "late":
       return { ...base, pills: [{ status: "scheduled" }], pillNote: "day passed", notice: "This trip was Mon, Nov 16 and was never marked done. Mark done or Skip.", when: day("Mon, Nov 16", "Any time"), billing: waiting, totals: openTotals, notes: [ADDED("n1", "2026-11-10T16:10:00Z")], messages: scheduledMsgs, footer: { primary: act("Mark done"), secondary: [act("Skip"), act("Move")], more: more("Send a message", "Edit"), destructive: act("Cancel job") } }
     case "done-unpaid":
-      return { ...base, pills: [{ status: "done" }, { status: "owed" }], when: day("Today, Wed Nov 18", "Done at 9:40 am"), billing: { summary: [["Total", "$145"], ["Paid", "$0"], ["Unpaid", "$145"], CARD], rows: [], emptyLine: "No invoice or payment yet." }, totals: owedTotals, collect: { plan: collectPlan({ ...input, card: visa }), summary: "Repair · $145 unpaid" }, notes: [{ id: "n3", at: "2026-11-18T16:40:00Z", actor: "Ryan", what: "Marked done", kind: "event" }, ADDED("n1")], messages: scheduledMsgs, footer: { primary: act("Collect payment"), secondary: [act("Send a message")], more: more("Undo done", "Edit") } }
+      return { ...base, pills: [{ status: "done" }, { status: "owed" }], when: day("Today, Wed Nov 18", "Done at 9:40 am"), billing: { summary: [["Total", "$145"], ["Paid", "$0"], ["Unpaid", "$145"], CARD], rows: [], paidLine: { tone: "unpaid", title: "$145 unpaid", text: "No invoice yet." } }, totals: owedTotals, collect: { plan: collectPlan({ ...input, card: visa }), summary: "Repair · $145 unpaid" }, notes: [{ id: "n3", at: "2026-11-18T16:40:00Z", actor: "Ryan", what: "Marked done", kind: "event" }, ADDED("n1")], messages: scheduledMsgs, footer: { primary: act("Collect payment"), secondary: [act("Send a message")], more: more("Undo done", "Edit") } }
     case "done-paid":
-      return { ...base, pills: [{ status: "done" }, { status: "paid", label: "Paid, Venmo" }], when: day("Today, Wed Nov 18", "Done at 9:40 am"), billing: paidBilling("venmo", "@andrea-d"), totals: [["Total", "$145", "strong"], ["Paid", "$145"], ["Unpaid", "$0"]], notes: [...PAID_NOTES, ADDED("n1")], messages: [...scheduledMsgs, msg("m3", "2026-11-18T17:51:00Z", "email", "receipt", "Receipt: $145 for your repair at 480 Briggs St")], footer: { more: more("Refund $145", "Send a message", "Undo done") } }
+      return { ...base, pills: [{ status: "done" }, { status: "paid", label: "Paid, Venmo" }], when: day("Today, Wed Nov 18", "Done at 9:40 am"), billing: paidBilling("venmo", "@andrea-d"), totals: [["Total", "$145", "strong"], ["Paid", "$145"], ["Unpaid", "$0"]], notes: [paymentNote("venmo", "@andrea-d"), MARKED_DONE, ADDED("n1")], messages: [...scheduledMsgs, msg("m3", "2026-11-18T17:51:00Z", "email", "receipt", "Receipt: $145 for your repair at 480 Briggs St")], footer: { more: more("Refund $145", "Send a message", "Undo done") } }
     case "paid-check":
-      return { ...buildJob("done-paid"), pills: [{ status: "done" }, { status: "paid", label: "Paid, Check" }], billing: paidBilling("check", "#1042") }
+      return { ...buildJob("done-paid"), pills: [{ status: "done" }, { status: "paid", label: "Paid, Check" }], billing: paidBilling("check", "#1042"), notes: [paymentNote("check", "#1042"), MARKED_DONE, ADDED("n1")] }
     case "paid-card":
-      return { ...buildJob("done-paid"), pills: [{ status: "done" }, { status: "paid", label: "Paid, Card" }], billing: paidBilling("card") }
+      return { ...buildJob("done-paid"), pills: [{ status: "done" }, { status: "paid", label: "Paid, Card" }], billing: paidBilling("card"), notes: [paymentNote("card"), MARKED_DONE, ADDED("n1")] }
     case "refunded":
-      return { ...buildJob("done-unpaid"), billing: refundedBilling(), collect: { plan: collectPlan({ ...input, card: visa }), summary: "Repair · $145 unpaid" }, notes: [{ id: "n7", at: "2026-11-19T15:00:00Z", actor: "Ryan", what: "Refunded $145, check #1042", kind: "event" }, ...PAID_NOTES, ADDED("n1")] }
+      return { ...buildJob("done-unpaid"), billing: refundedBilling(), collect: { plan: collectPlan({ ...input, card: visa }), summary: "Repair · $145 unpaid" }, notes: [refundNote("card"), paymentNote("card"), MARKED_DONE, ADDED("n1")] }
     case "invoice-sent":
-      return { ...base, pills: [{ status: "done" }, { status: "bill-sent" }], when: day("Today, Wed Nov 18", "Done at 9:40 am"), billing: { summary: [["Total", "$145"], ["Paid", "$0"], ["Unpaid", "$145"]], rows: [], invoices: [{ ...invoiceRow("Nov 18", "Dec 2", "bill-sent"), note: "Includes the visit report" }] }, collect: { plan: collectPlan({ ...input, card: visa, canInvoice: false }), summary: "Repair · $145 unpaid" }, totals: owedTotals, notes: [{ id: "n4", at: "2026-11-18T17:55:00Z", actor: "Ryan", what: "Sent invoice INV-2026-0001, due Dec 2", kind: "event" }, ADDED("n1")], messages: [...scheduledMsgs, msg("m4", "2026-11-18T17:55:00Z", "sms", "invoice", "Trailhead: invoice for your repair, $145, due Dec 2.")], footer: { primary: act("Send a payment reminder"), secondary: [act("Collect payment")], more: more("Send a message", "Undo done") } }
+      return { ...base, pills: [{ status: "done" }, { status: "bill-sent" }], when: day("Today, Wed Nov 18", "Done at 9:40 am"), billing: { summary: [["Total", "$145"], ["Paid", "$0"], ["Unpaid", "$145"]], rows: [], paidLine: { tone: "unpaid", title: "$145 unpaid", text: "Invoice {invoice} sent Nov 18, due Dec 2.", invoice: { name: "INV-2026-0001", href: "/admin/invoices?invoice=inv-1" } }, invoices: [{ ...invoiceRow("Nov 18", "Dec 2", "bill-sent"), note: "Includes the visit report" }] }, collect: { plan: collectPlan({ ...input, card: visa, canInvoice: false }), summary: "Repair · $145 unpaid" }, totals: owedTotals, notes: [{ id: "n4", at: "2026-11-18T17:55:00Z", actor: "Ryan", what: "Sent invoice INV-2026-0001, due Dec 2", kind: "event" }, ADDED("n1")], messages: [...scheduledMsgs, msg("m4", "2026-11-18T17:55:00Z", "sms", "invoice", "Trailhead: invoice for your repair, $145, due Dec 2.")], footer: { primary: act("Send a payment reminder"), secondary: [act("Collect payment")], more: more("Send a message", "Undo done") } }
     case "past-due":
-      return { ...base, pills: [{ status: "done" }, { status: "overdue" }], when: day("Tue, Nov 3", "Done at 11:20 am"), billing: { summary: [["Total", "$145"], ["Paid", "$0"], ["Unpaid", "$145"]], rows: [], status: { text: "Past due since Nov 17", tone: "past-due" }, invoices: [invoiceRow("Nov 3", "Nov 17", "overdue")] }, collect: { plan: collectPlan({ ...input, card: visa, canInvoice: false }), summary: "Repair · $145 unpaid" }, totals: owedTotals, notes: [{ id: "n5", at: "2026-11-10T17:00:00Z", actor: "Ryan", what: "Reminded Andrea about invoice INV-2026-0001", kind: "event" }, ADDED("n1", "2026-11-02T16:10:00Z")], messages: [msg("m5", "2026-11-10T17:00:00Z", "sms", "invoice-reminder", "Trailhead: a reminder that invoice 1042, $145, is due Nov 17."), msg("m4", "2026-11-03T20:00:00Z", "sms", "invoice", "Trailhead: invoice for your repair, $145, due Nov 17.")], footer: { primary: act("Send a payment reminder"), secondary: [act("Collect payment")], more: more("Send a message") } }
+      return { ...base, pills: [{ status: "done" }, { status: "overdue" }], when: day("Tue, Nov 3", "Done at 11:20 am"), billing: { summary: [["Total", "$145"], ["Paid", "$0"], ["Unpaid", "$145"]], rows: [], status: { text: "Past due since Nov 17", tone: "past-due" }, paidLine: { tone: "pastdue", title: "Past due since Nov 17", text: "$145 unpaid. Invoice {invoice} sent Nov 3.", invoice: { name: "INV-2026-0001", href: "/admin/invoices?invoice=inv-1" } }, invoices: [invoiceRow("Nov 3", "Nov 17", "overdue")] }, collect: { plan: collectPlan({ ...input, card: visa, canInvoice: false }), summary: "Repair · $145 unpaid" }, totals: owedTotals, notes: [{ id: "n5", at: "2026-11-10T17:00:00Z", actor: "Ryan", what: "Reminded Andrea about invoice INV-2026-0001", kind: "event" }, ADDED("n1", "2026-11-02T16:10:00Z")], messages: [msg("m5", "2026-11-10T17:00:00Z", "sms", "invoice-reminder", "Trailhead: a reminder that invoice 1042, $145, is due Nov 17."), msg("m4", "2026-11-03T20:00:00Z", "sms", "invoice", "Trailhead: invoice for your repair, $145, due Nov 17.")], footer: { primary: act("Send a payment reminder"), secondary: [act("Collect payment")], more: more("Send a message") } }
     case "canceled":
       return { ...base, pills: [{ status: "cancelled" }], notice: "Canceled Nov 17. Nothing is owed.", when: [["Day", "None"], ["Who", "No one"]], billing: { summary: [], rows: [], emptyLine: "Nothing was billed." }, lines: [{ ...LINE[0], canceled: true }], totals: [], notes: [{ id: "n6", at: "2026-11-17T20:00:00Z", actor: "Ryan", what: "Canceled the job", kind: "event" }, ADDED("n1", "2026-11-12T16:10:00Z")], messages: [msg("m6", "2026-11-17T20:00:00Z", "email", "visit-cancelled", "Your repair on Tue, Nov 24 is canceled")], footer: {} }
   }

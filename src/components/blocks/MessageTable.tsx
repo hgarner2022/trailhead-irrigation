@@ -22,6 +22,8 @@ export interface MessageTableProps {
   to: { sms: string; email: string }
   /** a side panel: no To column */
   compact?: boolean
+  /** false on a record page, where an embedded table has no Columns or export toolbar. Default true */
+  toolbar?: boolean
 }
 
 interface Row {
@@ -75,7 +77,7 @@ const COLUMNS: GridColumnDef<Row>[] = [
 /** On a phone: the day, the kind, the first line, the channel, and the status. */
 const CARD: GridCardSlots = { title: "date", line: ["message"], state: "status", when: ["channel"] }
 
-export function MessageTable({ messages, to, compact }: MessageTableProps) {
+export function MessageTable({ messages, to, compact, toolbar = true }: MessageTableProps) {
   const [open, setOpen] = useState<Row | null>(null)
   const rows = useMemo<Row[]>(
     () =>
@@ -104,6 +106,7 @@ export function MessageTable({ messages, to, compact }: MessageTableProps) {
         getRowId={(r) => r.id}
         onOpen={setOpen}
         hiddenColumns={compact ? ["to"] : undefined}
+        toolbar={toolbar}
         pageSize={10}
         emptyTitle="No messages yet"
         emptyLine="Every email and text the app sends this customer shows here."

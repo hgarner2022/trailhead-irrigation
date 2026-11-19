@@ -34,7 +34,7 @@ export const Default: Story = {
     await expect(await canvas.findByRole("heading", { name: "Photos" })).toBeInTheDocument()
     await expect(canvas.getAllByRole("checkbox", { name: "Show to customer" })).toHaveLength(2)
     await expect(canvas.getByRole("button", { name: "Add photo" })).toBeInTheDocument()
-    await expect(canvas.getByText("Added by the customer")).toBeInTheDocument()
+    await expect(canvas.getByText(/^Customer · /)).toBeInTheDocument()
   },
 }
 
