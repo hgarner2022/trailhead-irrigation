@@ -125,11 +125,12 @@ describe("ScheduleScreen Schedule all", () => {
   })
 
   it("says No open day, with Another day, for a job whose window nothing has room in, and keeps it on the list", async () => {
-    const closed = { ...data, settings: { ...data.settings, windows: data.settings.windows.map((w) => ({ ...w, opensOn: "2026-10-01", closesOn: "2026-10-31" })) } }
+    // windows are read year-agnostic, so a past one is next year's: the window here is the next two days and nobody works them
+    const closed = { ...data, settings: { ...data.settings, windows: data.settings.windows.map((w) => ({ ...w, opensOn: "2026-11-14", closesOn: "2026-11-15" })), people: data.settings.people.map((p) => ({ ...p, workingDays: [] })) } }
     render(<ScheduleScreen data={closed} today={TODAY} textDelaySeconds={0} />)
     const before = trayRows().length
     await userEvent.click(within(trayRows()[0]!).getByRole("button", { name: /^Schedule / }))
-    expect(within(trayRows()[0]!).getByText(/^No open day before Oct 31\. Pick a day yourself\.$/)).toBeInTheDocument()
+    expect(within(trayRows()[0]!).getByText(/^No open day before Nov 15\. Pick a day yourself\.$/)).toBeInTheDocument()
     expect(within(trayRows()[0]!).getByRole("button", { name: "Another day" })).toBeInTheDocument()
     expect(trayRows()).toHaveLength(before)
   })
