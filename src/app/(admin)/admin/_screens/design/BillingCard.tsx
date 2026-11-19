@@ -32,7 +32,7 @@ function SettledLine({ line }: { line: NonNullable<BillingData["paidLine"]> }) {
       <Icon className="mt-0.5 size-4 shrink-0" aria-hidden />
       <span>
         <span className="font-semibold">{line.title}.</span> {before}
-        {line.invoice && <RecordChip kind="invoice" name={line.invoice.name} href={line.invoice.href} className="text-sm font-medium md:min-h-8" />}
+        {line.invoice && <RecordChip kind="invoice" name={line.invoice.name} href={line.invoice.href} className="text-sm font-medium text-current! md:min-h-8" />}
         {after}
       </span>
     </p>

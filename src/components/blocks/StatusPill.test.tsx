@@ -38,7 +38,7 @@ describe("StatusPill", () => {
     render(<StatusPill status="needs-a-day" label="Reserved" />)
     expect(pill()).toHaveTextContent("Reserved")
     expect(pill()).toHaveAttribute("data-status", "needs-a-day")
-    expect(pill()).toHaveClass("bg-stone")
+    expect(pill()).toHaveClass("bg-warning/14")
   })
 
   it.each<[PillStatus, string]>([
@@ -46,12 +46,13 @@ describe("StatusPill", () => {
     ["paid", "text-positive-deep"],
     ["done", "text-positive-deep"],
     ["charged", "text-positive-deep"],
-    ["scheduled", "text-primary-deep"],
-    ["routed", "text-primary-deep"],
+    ["scheduled", "text-navy"],
+    ["routed", "text-navy"],
+    ["bill-sent", "text-warning-ink"],
     ["charge-failed", "text-destructive"],
-    ["pending", "text-foreground"],
-    ["owed", "text-foreground"],
-    ["needs-a-day", "text-foreground"],
+    ["pending", "text-warning-ink"],
+    ["owed", "text-warning-ink"],
+    ["needs-a-day", "text-warning-ink"],
     ["overdue", "text-destructive"],
     ["cancelled", "text-muted-foreground"],
     ["lapsed", "text-muted-foreground"],
@@ -62,7 +63,8 @@ describe("StatusPill", () => {
 
   it.each<[PillStatus, string, string]>([
     ["paid", "bg-positive/10", "border-positive/30"],
-    ["scheduled", "bg-primary/10", "border-primary/30"],
+    ["scheduled", "bg-navy/10", "border-navy/30"],
+    ["owed", "bg-warning/14", "border-warning/40"],
     ["overdue", "bg-destructive/10", "border-destructive/30"],
   ])("tints the coloured %s pill with its border", (status, tint, border) => {
     render(<StatusPill status={status} />)

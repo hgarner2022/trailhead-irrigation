@@ -118,7 +118,7 @@ describe("job page, one trip", () => {
     render(<JobPage job={jobPageOf("scheduled")} />)
     const past = screen.getAllByText("Fall blowout").map((e) => e.closest("[data-slot=record-chip]")).find(Boolean) as HTMLElement
     expect(past).toHaveAttribute("data-kind", "job")
-    expect(past).toHaveAttribute("href", expect.stringContaining("/admin/jobs/"))
+    expect(past).toHaveAttribute("href", expect.stringContaining("/admin/jobs?job="))
     expect(document.querySelectorAll("[data-slot=past-visit] [data-kind=person]").length).toBeGreaterThan(0)
   })
 
