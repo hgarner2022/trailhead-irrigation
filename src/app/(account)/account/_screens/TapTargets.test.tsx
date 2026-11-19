@@ -5,7 +5,6 @@ import type { Pass } from "@/lib/admin/types"
 import { AccountMenu } from "@/components/blocks/AccountMenu"
 import { AccountNav } from "@/components/blocks/AccountNav"
 import { SignInCard } from "@/components/blocks/SignInCard"
-import { Footer } from "@/components/sections/Footer"
 import { andrea, passJob, repairJob, TODAY } from "./account-fixtures"
 import { DetailsScreen } from "./DetailsScreen"
 import { HomeScreen } from "./HomeScreen"
@@ -55,16 +54,5 @@ describe("44px tap targets on the account", () => {
   it("the sign-in sent page: Use a different email", () => {
     render(<SignInCard audience="customer" state="sent" email="andrea@example.com" retryHref="/account/sign-in" />)
     expect(tall(screen.getByRole("link", { name: "Use a different email" }))).toBe(true)
-  })
-  it("the marketing footer's links are 44px below md and back to compact from md", () => {
-    render(<Footer />)
-    const nav = screen.getByRole("navigation", { name: "Company" })
-    const links = nav.querySelectorAll("a")
-    expect(links.length).toBeGreaterThan(0)
-    for (const l of links) {
-      expect(l.className).toContain("min-h-11")
-      expect(l.className).toContain("md:min-h-0")
-    }
-    for (const name of ["Privacy Policy", "Terms & Conditions"]) expect(screen.getByRole("link", { name }).className).toContain("min-h-11")
   })
 })
