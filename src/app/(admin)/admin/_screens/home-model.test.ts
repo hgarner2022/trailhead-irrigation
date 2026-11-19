@@ -135,11 +135,11 @@ describe("tileModels", () => {
   })
 
   it("reads $0 and 0 with no data", () => {
-    const [revenue, passes, quotes, overdue] = tileModels(empty, TODAY)
+    // no quotes yet, so no Quotes awaiting tile
+    const [revenue, passes, overdue] = tileModels(empty, TODAY)
     expect(revenue.value).toBe("$0")
     expect(revenue.sparkline).toBeUndefined()
     expect(passes.value).toBe("0")
-    expect(quotes.value).toBe("0")
     expect(overdue.value).toBe("0")
   })
 
@@ -182,10 +182,18 @@ describe("upcomingWindow", () => {
   })
 })
 
+describe("tileModels without quotes", () => {
+  it("hides Quotes awaiting until quotes exist, leaving three tiles", () => {
+    const labels = (d: typeof data) => tileModels(d, TODAY).map((t) => t.label)
+    expect(labels({ ...data, quotes: [] })).toEqual(["Revenue this month", "Passes sold", "Invoices past due, $0"])
+    expect(labels(data).some((l) => l.startsWith("Quotes awaiting"))).toBe(true)
+  })
+})
+
 describe("jobTiles", () => {
   it("counts the four things from the same derivations the screens use", () => {
     const [needsDay, chargeFailed, notClosed, pending] = jobTiles(data, TODAY)
-    expect([needsDay.label, chargeFailed.label, notClosed.label, pending.label]).toEqual(["Unscheduled jobs", "Charges that didn't go through", "Jobs not marked done", "Pending passes, expire after an hour"])
+    expect([needsDay.label, chargeFailed.label, notClosed.label, pending.label]).toEqual(["Unscheduled jobs", "Charges that didn't go through", "Jobs not marked done", "Passes not yet paid"])
     // Jobs of active passes with no day; the pending pass's jobs are not among them.
     const active = data.passes.filter((p) => p.status === "active")
     expect(needsDay.value).toBe(String(active.flatMap((p) => p.visits).filter((v) => !v.scheduledAt && !v.completedAt).length))
