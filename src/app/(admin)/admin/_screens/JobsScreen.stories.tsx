@@ -47,10 +47,10 @@ export const Phone: Story = { globals: phone }
 export const JobFilterOpen: Story = {
   globals: wide,
   play: async ({ canvas, userEvent }) => {
-    await userEvent.click(await canvas.findByRole("button", { name: /^Job/ }))
-    await expect(await body.findByText("Season Pass")).toBeInTheDocument()
-    await expect(await body.findByText("Spring turn-on & system check")).toBeInTheDocument()
-    await expect(await body.findByText("Core aeration")).toBeInTheDocument()
+    await userEvent.click(await canvas.findByRole("button", { name: "Job" }))
+    await expect(await body.findByRole("menuitemcheckbox", { name: "Season Pass" })).toBeInTheDocument()
+    await expect(await body.findByRole("menuitemcheckbox", { name: "Spring turn-on & system check" })).toBeInTheDocument()
+    await expect(await body.findByRole("menuitemcheckbox", { name: "Core aeration" })).toBeInTheDocument()
   },
 }
 
