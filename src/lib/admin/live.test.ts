@@ -39,7 +39,10 @@ afterAll(() => db.close())
 
 describe("getLiveAdminData", () => {
   it("carries every part of AdminData, scoped to the organization", () => {
-    expect(Object.keys(data).sort()).toEqual([...Object.keys(fixture), "billing", "blocks", "jobs", "services"].sort())
+    expect(Object.keys(data).sort()).toEqual([...Object.keys(fixture), "billing", "blocks", "jobs", "photos", "photosConfigured", "services"].sort())
+    // no photos yet, and the store's token is not set in the tests, so the Photos section would say "Photos are not set up yet."
+    expect(data.photos).toEqual([])
+    expect(data.photosConfigured).toBe(false)
     expect(data.services?.map((x) => x.key)).toContain("repair")
     expect(data.organizationId).toBe(ORG)
     expect(Number.isNaN(Date.parse(data.syncedAt))).toBe(false)
