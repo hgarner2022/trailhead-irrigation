@@ -10,18 +10,18 @@ const link = `Your Trailhead account: ${origin}/account`
 const STOP = "Reply STOP to opt out."
 
 describe("the day-of texts, worded as section 4 of the messages design", () => {
-  it("date-set names the day, the window and who is coming", () => {
-    expect(dateSetText({ ...base, visit: blowout })).toBe(`Trailhead: your fall blowout is Thu, Oct 14, 8 to 10 am. Ryan will be there. ${link} ${STOP}`)
+  it("date-set names the day, the exact time and who is coming", () => {
+    expect(dateSetText({ ...base, visit: blowout })).toBe(`Trailhead: your fall blowout is Thu, Oct 14 at 8:00 am. Ryan will be there. ${link} ${STOP}`)
   })
-  it("date-set says nothing about who when the visit has no one, and drops the window when there is none", () => {
+  it("date-set says nothing about who when the visit has no one, and drops the time when there is none", () => {
     expect(dateSetText({ ...base, visit: { ...blowout, who: null, startTime: null } })).toBe(`Trailhead: your fall blowout is Thu, Oct 14. ${link} ${STOP}`)
   })
   it("date-moved", () => {
-    expect(dateMovedText({ ...base, visit: { ...blowout, day: "2027-10-21" } })).toBe(`Trailhead: your fall blowout moved to Thu, Oct 21, 8 to 10 am. ${link} ${STOP}`)
+    expect(dateMovedText({ ...base, visit: { ...blowout, day: "2027-10-21" } })).toBe(`Trailhead: your fall blowout moved to Thu, Oct 21 at 8:00 am. ${link} ${STOP}`)
   })
   it("date-moved carries Ryan's line, in plain ASCII, after the words", () => {
     const moved = { ...blowout, day: "2027-10-21", visitUrl: `${origin}/account/visits/v1?t=abc` }
-    expect(dateMovedText({ ...base, visit: { ...moved, note: "Rain on the 14th \u2014 sorry!" } })).toBe(`Trailhead: your fall blowout moved to Thu, Oct 21, 8 to 10 am. Rain on the 14th - sorry! Doesn't work? Pick another day: ${moved.visitUrl} ${STOP}`)
+    expect(dateMovedText({ ...base, visit: { ...moved, note: "Rain on the 14th \u2014 sorry!" } })).toBe(`Trailhead: your fall blowout moved to Thu, Oct 21 at 8:00 am. Rain on the 14th - sorry! Doesn't work? Pick another day: ${moved.visitUrl} ${STOP}`)
     expect(dateMovedText({ ...base, visit: { ...moved, note: "  Gate will be open  " } })).toContain("Gate will be open. Doesn't work?")
     expect(dateMovedText({ ...base, visit: { ...moved, note: "   " } })).not.toContain("  ")
   })
@@ -32,16 +32,16 @@ describe("the day-of texts, worded as section 4 of the messages design", () => {
     expect(dayBeforeText({ ...base, visit: moved })).not.toContain("Reply YES")
   })
   it("date-confirm", () => {
-    expect(dateConfirmText({ ...base, visit: blowout })).toBe(`Trailhead: your fall blowout is still Thu, Oct 14, 8 to 10 am. ${link} ${STOP}`)
+    expect(dateConfirmText({ ...base, visit: blowout })).toBe(`Trailhead: your fall blowout is still Thu, Oct 14 at 8:00 am. ${link} ${STOP}`)
   })
   it("day-before names who is coming, never a truck", () => {
     const t = dayBeforeText({ ...base, visit })
-    expect(t).toBe(`Trailhead: Ryan is coming tomorrow, Wed, May 5, 8 to 10 am, for your spring turn-on. Need to change it? Text Ryan at (970) 692-7270. ${link} ${STOP}`)
+    expect(t).toBe(`Trailhead: Ryan is coming tomorrow at 8:00 am for your spring turn-on. Need to change it? Text Ryan at (970) 692-7270. ${link} ${STOP}`)
     expect(t).not.toMatch(/truck/i)
   })
   it("day-before says we're coming when the visit has no person, with nothing left dangling", () => {
     const t = dayBeforeText({ ...base, visit: { ...visit, who: null } })
-    expect(t).toBe(`Trailhead: We're coming tomorrow, Wed, May 5, 8 to 10 am, for your spring turn-on. Need to change it? Text Ryan at (970) 692-7270. ${link} ${STOP}`)
+    expect(t).toBe(`Trailhead: We're coming tomorrow at 8:00 am for your spring turn-on. Need to change it? Text Ryan at (970) 692-7270. ${link} ${STOP}`)
     expect(t).not.toMatch(/will be there|  |, ,/)
   })
   it("on the way names the person and the address", () => {
@@ -49,7 +49,7 @@ describe("the day-of texts, worded as section 4 of the messages design", () => {
     expect(onTheWayText({ ...base, visit: { ...visit, who: null } })).toBe(`Trailhead: We're on the way to 412 Ash St for your spring turn-on. ${link} ${STOP}`)
   })
   it("leaves the opt-out line off a number that has had a text before", () => {
-    expect(dayBeforeText({ ...base, visit }, { optOut: false })).toBe(`Trailhead: Ryan is coming tomorrow, Wed, May 5, 8 to 10 am, for your spring turn-on. Need to change it? Text Ryan at (970) 692-7270. ${link}`)
+    expect(dayBeforeText({ ...base, visit }, { optOut: false })).toBe(`Trailhead: Ryan is coming tomorrow at 8:00 am for your spring turn-on. Need to change it? Text Ryan at (970) 692-7270. ${link}`)
     expect(dateSetText({ ...base, visit }, { optOut: true }).match(/STOP/g)).toHaveLength(1)
   })
   it("uses the words the office saved, filled the same way", () => {
@@ -111,7 +111,7 @@ describe("every text", () => {
       }
     }
     // the shipped moved and two-weeks-out bodies end in a statement; the one ask is the link line
-    expect(dateMovedText({ ...base, visit: signed })).toContain("8 to 10 am. Doesn't work? Pick another day:")
+    expect(dateMovedText({ ...base, visit: signed })).toContain("8:00 am. Doesn't work? Pick another day:")
     expect(dateConfirmText({ ...base, visit: signed })).not.toContain("Need another day?")
   })
   it("names the account in the words of the portal design", () => {

@@ -15986,7 +15986,7 @@
       {
         "key": "date-set",
         "channel": "sms",
-        "body": "your {service} is {day}, {window}. {who} will be there.",
+        "body": "your {service} is {day} at {time}. {who} will be there.",
         "enabled": true
       },
       {
@@ -15998,7 +15998,7 @@
       {
         "key": "date-moved",
         "channel": "sms",
-        "body": "your {service} moved to {day}, {window}. Another day?",
+        "body": "your {service} moved to {day} at {time}. Another day?",
         "enabled": true
       },
       {
@@ -16010,7 +16010,7 @@
       {
         "key": "date-confirm",
         "channel": "sms",
-        "body": "your {service} is still {day}, {window}. Need another day?",
+        "body": "your {service} is still {day} at {time}. Need another day?",
         "enabled": true
       },
       {
@@ -16022,7 +16022,7 @@
       {
         "key": "day-before",
         "channel": "sms",
-        "body": "{who} is coming tomorrow, {day}, {window}, for your {service}.",
+        "body": "{who} is coming tomorrow at {time} for your {service}.",
         "enabled": true
       },
       {

@@ -25,7 +25,7 @@ export const passJob: PortalJobType = {
 }
 
 /** The turn-on once the day-before text went out (the day before, so inside the 24 hours): the window and who is coming are told, and Text Ryan replaces the buttons. */
-export const passJobWindowTold: PortalJobType = { ...passJob, visits: [{ ...passJob.visits[0]!, windowTold: true, window: "between 8 and 10 am", personFirstName: "Ryan", reschedule: "text", cancel: "text", cancelsBy: null }, passJob.visits[1]!] }
+export const passJobWindowTold: PortalJobType = { ...passJob, visits: [{ ...passJob.visits[0]!, windowTold: true, window: "8:00 am", personFirstName: "Ryan", reschedule: "text", cancel: "text", cancelsBy: null }, passJob.visits[1]!] }
 
 /** The turn-on is inside 24 hours: Text Ryan and Call Ryan replace Reschedule and Cancel. */
 export const passJobInsideCutoff: PortalJobType = { ...passJob, visits: [{ ...passJob.visits[0]!, reschedule: "text", cancel: "text", cancelsBy: null }, passJob.visits[1]!] }

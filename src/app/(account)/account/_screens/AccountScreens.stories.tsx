@@ -28,7 +28,7 @@ const meta = {
   decorators: [
     (Story, { args }) => (
       <div className="min-h-svh bg-cream">
-        <AccountNav firstName={(args as { hasPass?: boolean }).hasPass === false ? "Dana" : "Andrea"} hasPass={(args as { hasPass?: boolean }).hasPass !== false} current="/account" />
+        <AccountNav firstName={(args as { hasPass?: boolean }).hasPass === false ? "Dana" : "Andrea"} current="/account" />
         <Story />
       </div>
     ),

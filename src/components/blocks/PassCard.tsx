@@ -35,9 +35,9 @@ export interface PassCardProps {
   className?: string
 }
 
-const ART = { flat: "/images/pass-card-art.webp", holo: "/images/pass-card-art-holo.webp" }
+export const CARD_ART = { flat: "/images/pass-card-art.webp", holo: "/images/pass-card-art-holo.webp" }
 const VISIT_NAMES: Record<PassVisit["kind"], string> = { "turn-on": "Turn-on", inspection: "Inspection", blowout: "Blowout" }
-const REST_STYLE = { "--sheen-x": SHEEN_REST.x, "--sheen-y": SHEEN_REST.y } as CSSProperties
+export const REST_STYLE = { "--sheen-x": SHEEN_REST.x, "--sheen-y": SHEEN_REST.y } as CSSProperties
 const never = () => () => {}
 const lower = (s: string) => s.charAt(0).toLowerCase() + s.slice(1)
 
@@ -93,7 +93,7 @@ function VisitCell({ visit, pass }: { visit: PassVisit; pass: Pass }) {
   )
 }
 
-function Sheen({ art, live }: { art: "flat" | "holo"; live: boolean }) {
+export function Sheen({ art, live }: { art: "flat" | "holo"; live: boolean }) {
   return (
     <div
       data-slot="pass-card-sheen"
@@ -112,14 +112,12 @@ function Sheen({ art, live }: { art: "flat" | "holo"; live: boolean }) {
   )
 }
 
-export function PassCard({ pass, size = "full", art = "flat", interactive = true, priority = false, className }: PassCardProps) {
+/** The live sheen both faces of the card share: the pointer on a laptop, the tilt on a phone, easing back to rest; `live` false leaves it static. */
+export function useSheen(live: boolean) {
   const ref = useRef<HTMLElement>(null)
   // iOS gates the tilt sensor behind a tap; null means not asked yet.
   const gated = useSyncExternalStore(never, canRequestTilt, () => false)
   const [granted, setGranted] = useState<boolean | null>(null)
-  const cancelled = pass.status === "cancelled"
-  const live = interactive && size === "full" && !cancelled
-
   useEffect(() => {
     const el = ref.current
     if (!el || !live || reducedMotion()) return
@@ -132,8 +130,13 @@ export function PassCard({ pass, size = "full", art = "flat", interactive = true
       writer.cancel()
     }
   }, [live, gated, granted])
+  return { ref, gated, granted, askTilt: async () => setGranted(await requestTilt()) }
+}
 
-  const askTilt = async () => setGranted(await requestTilt())
+export function PassCard({ pass, size = "full", art = "flat", interactive = true, priority = false, className }: PassCardProps) {
+  const cancelled = pass.status === "cancelled"
+  const live = interactive && size === "full" && !cancelled
+  const { ref, gated, granted, askTilt } = useSheen(live)
 
   return (
     <article
@@ -151,7 +154,7 @@ export function PassCard({ pass, size = "full", art = "flat", interactive = true
       )}
     >
       <Image
-        src={ART[art]}
+        src={CARD_ART[art]}
         alt=""
         fill
         priority={priority}

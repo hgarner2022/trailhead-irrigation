@@ -40,11 +40,11 @@ export const Sent: Story = {
   },
 }
 
-/** Past the due day: "Was due Dec 1", in the warning colour; the button is the same. */
+/** Past the due day: "Past due since Dec 1", in the warning colour; the button is the same. */
 export const PastDue: Story = {
   args: { bill: { ...sent, status: "overdue" } },
   play: async ({ canvasElement }) => {
-    await expect(within(canvasElement).getByText("Was due Dec 1")).toBeInTheDocument()
+    await expect(within(canvasElement).getByText("Past due since Dec 1")).toBeInTheDocument()
     await expect(within(canvasElement).getByRole("button", { name: "Pay $145 by card" })).toBeInTheDocument()
   },
 }

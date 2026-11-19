@@ -61,7 +61,7 @@ export function DaysStep({ state, offers: loaded, set, renewal, attempted = fals
         )
       })}
       <p className="text-base text-muted-foreground">Change it later from your pass page.</p>
-      <p className="text-base text-muted-foreground">{"We'll text your window the day before."}</p>
+      <p className="text-base text-muted-foreground">{"We'll text you the time the day before."}</p>
       {renewal && <RenewalExtras state={state} set={set} renewal={renewal} attempted={attempted} />}
     </div>
   )

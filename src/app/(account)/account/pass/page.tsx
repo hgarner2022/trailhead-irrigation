@@ -1,12 +1,9 @@
 import "server-only"
 import type { Metadata } from "next"
-import Link from "next/link"
-import { EmptyState } from "@/components/blocks/EmptyState"
-import { Button } from "@/components/ui/button"
+import { PassSellCard } from "@/components/blocks/PassSellCard"
 import { ctxFromAccount } from "@/lib/admin/api-ctx"
 import { requireCustomer } from "@/lib/auth/guard"
 import { loadPassPage } from "@/lib/pass/server/pass-page"
-import { Ticket } from "lucide-react"
 import { addInspection, cancelPass, changePreference, pickDay, skipVisit, startCardUpdate } from "./actions"
 import { PassPageScreen } from "./_screens/PassPageScreen"
 
@@ -21,13 +18,8 @@ export default async function PassPage() {
   const data = principal.type === "customer" ? await loadPassPage(await ctxFromAccount()) : null
   if (!data) {
     return (
-      <main className="flex items-center justify-center bg-cream px-4 py-10">
-        <div data-slot="pass-empty" className="w-full max-w-md space-y-4">
-          <EmptyState icon={Ticket} title="No Season Pass on this account yet" line="Look at what the pass includes, or reserve one for next season." className="py-6" />
-          <Button asChild>
-            <Link href="/season-pass">See the Season Pass</Link>
-          </Button>
-        </div>
+      <main data-slot="pass-empty" className="mx-auto max-w-xl container-padding-x py-8 sm:py-12">
+        <PassSellCard />
       </main>
     )
   }

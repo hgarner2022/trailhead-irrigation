@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 
 // The account menu at the far right of the account header (docs/plans/2026-11-18-customer-portal-v2-design.md, section 3): the customer's first name, no "Hi,", and under it
-// Details, "Open the admin" for staff, and Sign out. Pure props; `onSignOut` is the server action the Sign out form submits.
+// "Open the admin" for staff and Sign out; Details is a tab, so the menu never repeats it. Pure props; `onSignOut` is the server action the Sign out form submits.
 
 export interface AccountMenuProps {
   firstName: string
@@ -26,11 +26,6 @@ export function AccountMenu({ firstName, isStaff = false, onSignOut, className }
           <ChevronDown aria-hidden className="size-4" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem asChild>
-            <Link href="/account/details" className="cursor-pointer text-base">
-              Details
-            </Link>
-          </DropdownMenuItem>
           {isStaff && (
             <DropdownMenuItem asChild>
               <Link href="/admin" className="cursor-pointer text-base">

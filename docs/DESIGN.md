@@ -161,6 +161,10 @@ Every admin screen is built from these blocks; a screen holds no markup of its o
 | Section heading | Barlow Condensed 18px navy (`level` 2 and `size="card"` for the title of a card on a screen) | `SectionHeading` |
 | View control | Week, Day, List; By job, By person | `SegmentedControl` |
 | Collect | Beat two and the job's dialog | `CollectPayment` |
+| Service list (customer) | One large radio card per service we book online, the Season Pass first, a closed service shown with its opening day, and one link under the list, "Need a quote? Request one"; services we quote are never in it; the request path lists them with no prices | `ServicePicker` |
+| Day and time (customer) | Three day cards with the best selected and "Show more days" to five, then only that day's start times as chips; the best marked "Best fit", none selected until tapped, Continue off until one is; "These days are full. We'll call you to find one." when none; used by booking, the Season Pass days (once per visit) and Reschedule | `DayTimePicker` |
+| Flow frame (customer) | Progress line, logo, Call Ryan, the question, the body, a sticky Back and Continue (off with a hint); the summary line over later steps with Change links | `FlowShell`, `BookingSummary` |
+| Booked card (customer) | The confirmation: badge, service, day, booked time, the half hour Ryan arrives in, the street; the Season Pass keeps `PassCard` | `BookedCard` |
 
 Retired in step 1: `PanelParts` (now `RecordPanel`), `PanelHeading` and `CardTitleHeading` (now `SectionHeading`), `JobPill` (now `StatusPills`), `ConfirmCancel` (now `ConfirmDialog`), the three hand-built footers. A screen keeps `AdminShell`, `SidePanel`, `WeekGrid`, `DayMap`, `StatTile`, `Chart`, `NotesAndHistory`, `ChangeLog`, `NeedsAttention`, `UndoToast`, `AddressSearch` and the pass blocks.
 

@@ -12,7 +12,7 @@ export const PLACEHOLDERS = [
   { name: "service", about: 'what is being done: "fall blowout"' },
   { name: "address", about: "the street address" },
   { name: "day", about: 'the day: "Fri, Oct 14" in a text, "Friday, October 14" in an email' },
-  { name: "window", about: 'the time: "8 to 10 am"' },
+  { name: "time", about: 'the exact start: "8:00 am"' },
   { name: "who", about: 'the person coming: "Ryan"' },
   { name: "amount", about: 'what is unpaid: "$145"' },
   { name: "due", about: 'the day an invoice is due: "May 21"' },
@@ -41,15 +41,15 @@ const TEXT_LOCKED = `Starts with "Trailhead:". Ends with the link to your ${ACCO
 const EMAIL_LOCKED = `Above it: the greeting ("Hi Andrea,"). Under it: the day, who is coming and where, the calendar links, a button to your ${ACCOUNT_NAME}, the sign-off and our address. The subject stays as it is.`
 
 export const EDITABLE_MESSAGES: EditableMessage[] = [
-  { key: "date-set", channel: "sms", name: "Day set, text", body: "your {service} is {day}, {window}. {who} will be there.", required: [], allowed: ["service", "address", "day", "window", "who"], locked: TEXT_LOCKED },
-  { key: "date-set", channel: "email", name: "Day set, email", body: "Your {service} is set for {day}.", required: [], allowed: ["firstName", "service", "address", "day", "window", "who"], locked: EMAIL_LOCKED },
-  { key: "date-moved", channel: "sms", name: "Day moved, text", body: "your {service} moved to {day}, {window}.", required: [], allowed: ["service", "address", "day", "window", "who"], locked: TEXT_LOCKED },
-  { key: "date-moved", channel: "email", name: "Day moved, email", body: "Your {service} moved to {day}.", required: [], allowed: ["firstName", "service", "address", "day", "window", "who"], locked: EMAIL_LOCKED },
-  { key: "date-confirm", channel: "sms", name: "Two weeks out, text", body: "your {service} is still {day}, {window}.", required: [], allowed: ["service", "address", "day", "window", "who"], locked: TEXT_LOCKED },
-  { key: "date-confirm", channel: "email", name: "Two weeks out, email", body: "We're confirming your {service}: {day}.", required: [], allowed: ["firstName", "service", "address", "day", "window", "who"], locked: `${EMAIL_LOCKED} A line about what Ryan does at the visit follows your sentence.` },
-  { key: "day-before", channel: "sms", name: "Day before, text", body: "{who} is coming tomorrow, {day}, {window}, for your {service}.", required: [], allowed: ["service", "address", "day", "window", "who"], locked: TEXT_LOCKED },
-  { key: "day-before", channel: "email", name: "Day before, email", body: "{who} is coming tomorrow, {day}, for your {service}.", required: [], allowed: ["firstName", "service", "address", "day", "window", "who"], locked: EMAIL_LOCKED },
-  { key: "on-the-way", channel: "sms", name: "On the way, text", body: "{who} is on the way to {address} for your {service}.", required: [], allowed: ["service", "address", "day", "window", "who"], locked: TEXT_LOCKED },
+  { key: "date-set", channel: "sms", name: "Day set, text", body: "your {service} is {day} at {time}. {who} will be there.", required: [], allowed: ["service", "address", "day", "time", "who"], locked: TEXT_LOCKED },
+  { key: "date-set", channel: "email", name: "Day set, email", body: "Your {service} is set for {day}.", required: [], allowed: ["firstName", "service", "address", "day", "time", "who"], locked: EMAIL_LOCKED },
+  { key: "date-moved", channel: "sms", name: "Day moved, text", body: "your {service} moved to {day} at {time}.", required: [], allowed: ["service", "address", "day", "time", "who"], locked: TEXT_LOCKED },
+  { key: "date-moved", channel: "email", name: "Day moved, email", body: "Your {service} moved to {day}.", required: [], allowed: ["firstName", "service", "address", "day", "time", "who"], locked: EMAIL_LOCKED },
+  { key: "date-confirm", channel: "sms", name: "Two weeks out, text", body: "your {service} is still {day} at {time}.", required: [], allowed: ["service", "address", "day", "time", "who"], locked: TEXT_LOCKED },
+  { key: "date-confirm", channel: "email", name: "Two weeks out, email", body: "We're confirming your {service}: {day}.", required: [], allowed: ["firstName", "service", "address", "day", "time", "who"], locked: `${EMAIL_LOCKED} A line about what Ryan does at the visit follows your sentence.` },
+  { key: "day-before", channel: "sms", name: "Day before, text", body: "{who} is coming tomorrow at {time} for your {service}.", required: [], allowed: ["service", "address", "day", "time", "who"], locked: TEXT_LOCKED },
+  { key: "day-before", channel: "email", name: "Day before, email", body: "{who} is coming tomorrow at {time} for your {service}.", required: [], allowed: ["firstName", "service", "address", "day", "time", "who"], locked: EMAIL_LOCKED },
+  { key: "on-the-way", channel: "sms", name: "On the way, text", body: "{who} is on the way to {address} for your {service}.", required: [], allowed: ["service", "address", "day", "time", "who"], locked: TEXT_LOCKED },
   { key: "invoice-reminder", channel: "sms", name: "Invoice reminder, text", body: "a reminder that {amount} for the {service} is still unpaid, due {due}. Pay here: {payLink}", required: ["amount", "payLink"], allowed: ["amount", "service", "due", "payLink"], locked: 'Starts with "Trailhead:". Ends with "Reply STOP to opt out." on a customer\'s first text.' },
 ]
 
@@ -131,7 +131,7 @@ export interface Fill {
   service?: string
   address?: string
   day?: string
-  window?: string | null
+  time?: string | null
   who?: string | null
   amount?: string
   due?: string
@@ -144,7 +144,7 @@ function tidy(text: string): string {
 
 /**
  * The template with its placeholders filled. With no one on the visit, "{who} is" reads "We're" and a sentence that says
- * "{who} will be" is left out; with no window the ", {window}" goes. A placeholder it does not know stays as written.
+ * "{who} will be" is left out; with no time the " at {time}" goes. A placeholder it does not know stays as written.
  */
 export function fillTemplate(body: string, fill: Fill): string {
   let text = body
@@ -152,7 +152,7 @@ export function fillTemplate(body: string, fill: Fill): string {
     text = text.split(/(?<=[.?])\s+/).filter((sentence) => !sentence.includes("{who} will be")).join(" ")
     text = text.replaceAll("{who} is", "We're").replaceAll("{who}", "we")
   }
-  text = fill.window ? text : text.replace(/,?\s*\{window\}/g, "")
+  text = fill.time ? text : text.replace(/\s*at \{time\}/g, "").replace(/,?\s*\{time\}/g, "")
   const values: Record<string, string | null | undefined> = { ...fill }
   text = text.replace(/\{(\w+)\}/g, (match, name: string) => (name in values && values[name] != null ? (values[name] as string) : match))
   return tidy(text)

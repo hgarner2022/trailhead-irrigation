@@ -106,12 +106,12 @@ describe("wording per kind", () => {
     const { html, text, subject } = get("purchase-confirmation")
     expect(subject).toBe("Your 2027 Season Pass is reserved")
     expect(html).toContain("Welcome to the 2027 season")
-    expect(html.indexOf("/api/pass-image/p1?token=t")).toBeLessThan(html.indexOf("Wednesday, May 5, between 8 and 10 am"))
+    expect(html.indexOf("/api/pass-image/p1?token=t")).toBeLessThan(html.indexOf("Wednesday, May 5 at 8:00 am"))
     expect(html.indexOf("Add to Google Calendar")).toBeLessThan(html.indexOf("Open your Trailhead account"))
-    expect(html.indexOf("Wednesday, May 5, between 8 and 10 am")).toBeLessThan(html.indexOf(">Where<"))
+    expect(html.indexOf("Wednesday, May 5 at 8:00 am")).toBeLessThan(html.indexOf(">Where<"))
     expect(html).toContain("Add to Apple or Outlook calendar")
     expect(html).toContain("/api/visits/v1/calendar.ics?token=abc")
-    expect(text).toContain("Spring turn-on: Wednesday, May 5, between 8 and 10 am")
+    expect(text).toContain("Spring turn-on: Wednesday, May 5 at 8:00 am")
     expect(text).toContain("Where: 412 Ash St")
     expect(text).toContain("Fall blowout: Ryan sets the day and we text it to you.")
     expect(text).toContain("Ryan sets the days that are missing and we text them to you.")
@@ -124,7 +124,7 @@ describe("wording per kind", () => {
   it("purchase-confirmation with every visit dated says so, shows what Ryan does, and says when a day filled up", () => {
     const { html, text } = renderEmail("purchase-confirmation", TWO_DAYS)!
     expect(text).toContain("Here are your days.")
-    expect(text).toContain("Fall blowout: Tuesday, October 5, between 8 and 10 am")
+    expect(text).toContain("Fall blowout: Tuesday, October 5 at 8:00 am")
     expect(text).toContain("Your first choice, Friday, October 1, filled up, so we put it on Tuesday, October 5.")
     expect(text).toContain("Ryan blows the water out of every line before the first hard freeze.")
     expect(html.match(/Add to Google Calendar/g)).toHaveLength(2)
@@ -140,11 +140,11 @@ describe("wording per kind", () => {
     expect(html.indexOf("Season total")).toBeLessThan(html.indexOf("Open your Trailhead account"))
     expect(renderEmail("purchase-confirmation", TWO_DAYS)!.text).not.toContain("Season total")
   })
-  it.each(["date-set", "date-moved", "day-before", "date-confirm", "booking-confirmation"] as const)("%s has the day, the two-hour window, who is coming, where, both calendar links and a button to the account", (kind) => {
+  it.each(["date-set", "date-moved", "day-before", "date-confirm", "booking-confirmation"] as const)("%s has the day, the exact time, who is coming, where, both calendar links and a button to the account", (kind) => {
     const { html, text } = get(kind)
     for (const part of [html, text]) {
       expect(part).toContain("Wednesday, May 5")
-      expect(part).toContain("between 8 and 10 am")
+      expect(part).toContain("8:00 am")
       expect(part).toContain("Ryan")
       expect(part).toContain("412 Ash St, Erie")
       expect(part).not.toMatch(/truck/i)
@@ -190,11 +190,11 @@ describe("wording per kind", () => {
   })
   it("day-before names who is coming when the visit has a person, and leaves the sentence out when it has none", () => {
     const named = renderEmail("day-before", { ...base, visit: { ...visit, who: "Ryan" } })!
-    expect(named.text).toContain("Hi Andrea,\n\nRyan is coming tomorrow, Wednesday, May 5, for your spring turn-on.")
+    expect(named.text).toContain("Hi Andrea,\n\nRyan is coming tomorrow at 8:00 am for your spring turn-on.")
     expect(named.text).not.toContain("A reminder that")
-    expect(named.html).toContain("Ryan is coming tomorrow, Wednesday, May 5, for your spring turn-on.")
+    expect(named.html).toContain("Ryan is coming tomorrow at 8:00 am for your spring turn-on.")
     const nobody = renderEmail("day-before", { ...base, visit: { ...visit, who: null } })!
-    expect(nobody.text).toContain("We're coming tomorrow, Wednesday, May 5, for your spring turn-on.")
+    expect(nobody.text).toContain("We're coming tomorrow at 8:00 am for your spring turn-on.")
     expect(nobody.text).not.toMatch(/will be there|\.\s*\. |  /)
   })
   it("ignores a stored `crew` key in message data queued before the label went: nothing says a truck", () => {
@@ -229,8 +229,8 @@ describe("wording per kind", () => {
     const { subject, text, html } = renderEmail("booking-confirmation", repair)!
     expect(subject).toBe("Your sprinkler repair is booked for Wednesday, May 5")
     expect(html).toContain("Your repair is booked")
-    expect(text).toContain("Hi Andrea,\n\nRyan will be there Wednesday, May 5, between 8 and 10 am. We text you the day before.")
-    expect(get("booking-confirmation").text).toContain("Ryan and the crew will be there Wednesday, May 5, between 8 and 10 am")
+    expect(text).toContain("Hi Andrea,\n\nRyan will be there Wednesday, May 5 at 8:00 am. We text you a reminder the day before.")
+    expect(get("booking-confirmation").text).toContain("Ryan and the crew will be there Wednesday, May 5 at 8:00 am")
     for (const label of ["Day", "Who is coming", "Where"]) expect(text).toContain(`${label}: `)
   })
   it("the receipt for a visit carries what was bought: where, who did it and when, the receipt number, each line, the totals, what was paid and one link to the account", () => {

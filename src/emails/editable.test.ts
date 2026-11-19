@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 import { EDITABLE_MESSAGES, PLACEHOLDERS, PLACEHOLDER_NAMES, bodyOf, defaultBody, fillTemplate, messagesWith, migratePlaceholders, overridesOf, templateProblem, textParts } from "./editable"
 
-const fill = { firstName: "Andrea", service: "fall blowout", address: "480 Briggs St", day: "Fri, Oct 14", window: "8 to 10 am", who: "Ryan" }
+const fill = { firstName: "Andrea", service: "fall blowout", address: "480 Briggs St", day: "Fri, Oct 14", time: "8:00 am", who: "Ryan" }
 
 describe("the editable messages", () => {
   it("are the day-of voice and the invoice reminder text, each with the shipped words and a rule-free default", () => {
@@ -11,7 +11,7 @@ describe("the editable messages", () => {
     for (const m of EDITABLE_MESSAGES) expect(templateProblem(m.key, m.channel, m.body)).toBeNull()
   })
   it("use only the placeholders the screen lists, which are the plain words", () => {
-    expect(PLACEHOLDER_NAMES).toEqual(["firstName", "service", "address", "day", "window", "who", "amount", "due", "payLink"])
+    expect(PLACEHOLDER_NAMES).toEqual(["firstName", "service", "address", "day", "time", "who", "amount", "due", "payLink"])
     for (const m of EDITABLE_MESSAGES) for (const [, name] of m.body.matchAll(/\{(\w+)\}/g)) expect(PLACEHOLDER_NAMES).toContain(name)
   })
   it("never say truck, bill, owed or overdue", () => {
@@ -26,12 +26,12 @@ describe("the editable messages", () => {
 
 describe("fillTemplate", () => {
   it("fills every placeholder", () => {
-    expect(fillTemplate(defaultBody("day-before", "sms"), fill)).toBe("Ryan is coming tomorrow, Fri, Oct 14, 8 to 10 am, for your fall blowout.")
+    expect(fillTemplate(defaultBody("day-before", "sms"), fill)).toBe("Ryan is coming tomorrow at 8:00 am for your fall blowout.")
   })
-  it("reads 'We're' for an empty who, leaves out the sentence that says who will be there, and drops an empty window", () => {
-    expect(fillTemplate(defaultBody("day-before", "sms"), { ...fill, who: null })).toBe("We're coming tomorrow, Fri, Oct 14, 8 to 10 am, for your fall blowout.")
-    expect(fillTemplate(defaultBody("date-set", "sms"), { ...fill, who: null, window: null })).toBe("your fall blowout is Fri, Oct 14.")
-    expect(fillTemplate(defaultBody("day-before", "email"), { ...fill, who: null, day: "Friday, October 14" })).toBe("We're coming tomorrow, Friday, October 14, for your fall blowout.")
+  it("reads 'We're' for an empty who, leaves out the sentence that says who will be there, and drops an empty time", () => {
+    expect(fillTemplate(defaultBody("day-before", "sms"), { ...fill, who: null })).toBe("We're coming tomorrow at 8:00 am for your fall blowout.")
+    expect(fillTemplate(defaultBody("date-set", "sms"), { ...fill, who: null, time: null })).toBe("your fall blowout is Fri, Oct 14.")
+    expect(fillTemplate(defaultBody("day-before", "email"), { ...fill, who: null, day: "Friday, October 14" })).toBe("We're coming tomorrow at 8:00 am for your fall blowout.")
   })
   it("leaves a placeholder it does not know as written", () => {
     expect(fillTemplate("Your {truck} day, {firstName}.", fill)).toBe("Your {truck} day, Andrea.")

@@ -1,4 +1,4 @@
-import { SIGN_OFF, RYAN_DOES, longDay, noteLine, whoIsComing, windowText } from "./format"
+import { SIGN_OFF, RYAN_DOES, longDay, noteLine, whoIsComing, timeText } from "./format"
 import { bodyOf, capitalFirst, defaultBody, fillTemplate, withoutGreeting, type EditableMessage, type Overrides } from "./editable"
 import { emailLayout, greetingName, greetingText, plainText } from "./layout"
 import { visitBody, visitLines } from "./visit-block"
@@ -16,12 +16,12 @@ const WHY = "You are getting this because Trailhead is coming to your property."
 /** The editable first sentence, filled from the visit. A saved sentence that opens with its own greeting loses it: the greeting is its own line. */
 const intro = (key: EditableMessage["key"], d: VisitData, o?: Opts) => {
   const v = d.visit
-  if (key === "date-moved" && v.sameDay === true && v.startTime) return `Your ${v.name} is still ${longDay(v.day)}, now ${windowText(v.startTime)}.`
+  if (key === "date-moved" && v.sameDay === true && v.startTime) return `Your ${v.name} is still ${longDay(v.day)}, now at ${timeText(v.startTime)}.`
   let body = withoutGreeting(bodyOf(o?.templates, key, "email")) || defaultBody(key, "email")
   const name = greetingName(d.firstName)
   // With no usable name a saved "{firstName}, your ..." or "Thanks, {firstName}." loses the placeholder and its comma, never reads "there, your ..."
   if (!name) body = body.replace(/,?\s*\{firstName\}\s*([,.])?/g, (_m, p: string | undefined) => (p === "." ? "." : "")).trim() || defaultBody(key, "email")
-  return capitalFirst(fillTemplate(body, { firstName: name ?? "", service: v.name, address: v.address, day: longDay(v.day), window: v.startTime ? windowText(v.startTime) : null, who: v.who }))
+  return capitalFirst(fillTemplate(body, { firstName: name ?? "", service: v.name, address: v.address, day: longDay(v.day), time: v.startTime ? timeText(v.startTime) : null, who: v.who }))
 }
 
 function build(d: VisitData, subject: string, title: string, sentence: string, preheader: string, o: { late?: boolean } = {}): RenderedEmail {
@@ -49,4 +49,4 @@ export const dateConfirmEmail = (d: VisitData, o?: Opts): RenderedEmail =>
   build(d, `Your ${d.visit.name} is ${longDay(d.visit.day)}`, `Your ${d.visit.name} is in two weeks`, `${intro("date-confirm", d, o)} ${ryanDoes(d.visit.name)}`, "We remind you again the day before. Pick another day in your Trailhead account if you need to.")
 
 export const dayBeforeEmail = (d: VisitData, o?: Opts): RenderedEmail =>
-  build(d, `Tomorrow: your ${d.visit.name}`, `We're coming tomorrow`, intro("day-before", d, o), d.visit.startTime ? `${whoIsComing(d.visit)} will be there between ${windowText(d.visit.startTime).replace(" to ", " and ")}.` : "We text you if anything changes.", { late: true })
+  build(d, `Tomorrow: your ${d.visit.name}`, `We're coming tomorrow`, intro("day-before", d, o), d.visit.startTime ? `${whoIsComing(d.visit)} will be there at ${timeText(d.visit.startTime)}.` : "We text you if anything changes.", { late: true })

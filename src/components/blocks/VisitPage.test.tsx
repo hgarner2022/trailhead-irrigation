@@ -7,9 +7,9 @@ const base: VisitPageModel = {
   service: "Spring turn-on",
   label: "Season Pass 2027",
   pill: { status: "scheduled", label: "Booked" },
-  dayLine: "Wednesday, April 28. We'll text your window the day before.",
+  dayLine: "Wednesday, April 28. We'll text you the time the day before.",
   dayHeading: "Wednesday, April 28",
-  dayDetail: "We'll text your window the day before.",
+  dayDetail: "We'll text you the time the day before.",
   where: "412 Briggs Street, Erie",
   mustBeHome: true,
   included: "8 zones, start up, check each head",
@@ -38,12 +38,13 @@ describe("VisitPage photos", () => {
 })
 
 describe("VisitPage", () => {
-  it("before the cut-off: the day and the window promise, where, what is included, the price, the buttons and the last minute to change it", () => {
+  it("before the cut-off: the summary band with the day and where, the time promise, what is included, the price, the buttons and the last minute to change it", () => {
     render(<VisitPage model={base} {...slots} />)
     expect(screen.getByRole("heading", { level: 1, name: "Spring turn-on" })).toBeInTheDocument()
     expect(screen.getByText("Season Pass 2027")).toBeInTheDocument()
     expect(screen.getByText("Booked")).toBeInTheDocument()
-    expect(screen.getByText("Wednesday, April 28. We'll text your window the day before.")).toBeInTheDocument()
+    expect(screen.getByText("Wednesday, April 28")).toBeInTheDocument()
+    expect(screen.getByText("We'll text you the time the day before.")).toBeInTheDocument()
     expect(screen.getByText("412 Briggs Street, Erie")).toBeInTheDocument()
     expect(screen.getByText("Someone must be home")).toBeInTheDocument()
     expect(screen.getByText("8 zones, start up, check each head")).toBeInTheDocument()
