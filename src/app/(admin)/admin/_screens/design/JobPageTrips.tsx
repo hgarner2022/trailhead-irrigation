@@ -1,3 +1,6 @@
+"use client"
+
+import { useState } from "react"
 import { LineItemList } from "@/components/blocks/LineItemList"
 import { PassCard } from "@/components/blocks/PassCard"
 import { RecordList } from "@/components/blocks/RecordPanel"
@@ -10,7 +13,8 @@ import type { MultiTripData, TripData } from "./trip-fixtures"
 import { PHONE_LINK } from "./trip-fixtures"
 import Link from "next/link"
 import { BillingCard } from "./BillingCard"
-import { Actions, Aside, Badges, CONTACT, EditLink, MessagesCard, Notice, bandItems, hasFooter } from "./JobPageParts"
+import { Actions, Aside, Badges, CONTACT, EditLink, MessagesCard, Notice, bandItems, hasFooter, type CollectHandlers } from "./JobPageParts"
+import { TripBody } from "./TripBody"
 import type { ConfirmFacts } from "./confirm-copy"
 
 // A job with more than one trip (docs/plans/2026-11-19-job-object-design.md): a Season Pass, or a repair with a return trip, on the same page
@@ -18,7 +22,7 @@ import type { ConfirmFacts } from "./confirm-copy"
 // column starts with a Visits card, one `TripRow` per trip with its own badge, money word and Move or Mark done on the row, so nothing opens
 // behind the page. A Season Pass shows its card beside the lines; a repair shows its lines. Pure props.
 
-const isOpen = (t: TripData) => !t.pills.some((p) => p.status === "done" || p.status === "cancelled")
+const isOpen = (t: TripData) => (t.trip ? t.trip.state !== "charged" && t.trip.state !== "canceled" : !t.pills.some((p) => p.status === "done" || p.status === "cancelled"))
 
 function bandOf(data: MultiTripData) {
   const next = data.trips.find(isOpen)
@@ -37,10 +41,23 @@ function bandOf(data: MultiTripData) {
 }
 
 function factsOf(data: MultiTripData): ConfirmFacts {
-  return { first: "Andrea", service: data.pass ? "Season Pass" : "repair", amount: "$145", phone: CONTACT.sms, address: "480 Briggs St", cardWords: "Visa ending 4242", dueOn: "Dec 2" }
+  return { first: "Andrea", service: data.pass ? "Season Pass" : "repair", amount: "$145", channel: "text", email: "andrea.dalton@example.com", phone: CONTACT.sms, address: "480 Briggs St", cardWords: "Visa ending 4242", dueOn: "Dec 2" }
 }
 
-function TripsPage({ data }: { data: MultiTripData }) {
+export interface TripsPageProps {
+  data: MultiTripData
+  /** a button on one trip (its label and variant), by trip id: the clickable flow listens here */
+  onTripDo?: (tripId: string, label: string, variant?: string) => void
+  /** the "How is this paid?" handlers of one trip */
+  tripHandlers?: (tripId: string) => CollectHandlers
+  onDo?: (label: string, variant?: string) => void
+  /** the trip that is open to begin with; the next trip ahead when left out */
+  defaultOpen?: string
+}
+
+export function TripsPage({ data, onTripDo, tripHandlers, onDo, defaultOpen }: TripsPageProps) {
+  // one trip open at a time; the next trip ahead is open to begin with
+  const [openId, setOpenId] = useState<string | null>(() => defaultOpen ?? (data.trips.find(isOpen) ?? data.trips[0])?.id ?? null)
   const facts = factsOf(data)
   const where = data.columns.find((c) => c.heading === "Where")?.rows ?? []
   return (
@@ -52,12 +69,22 @@ function TripsPage({ data }: { data: MultiTripData }) {
       notice={data.notice ? <Notice>{data.notice}</Notice> : undefined}
       band={<SummaryBand items={bandOf(data)} />}
       aside={<Aside customer="Andrea Dalton" phone={PHONE_LINK} where={where} notes={data.notes} />}
-      actions={hasFooter(data.footer) ? <Actions plan={data.footer} facts={facts} /> : undefined}
+      actions={hasFooter(data.footer) ? <Actions plan={data.footer} facts={facts} onDo={onDo} /> : undefined}
     >
       <SectionCard title={data.tripsHeading} id="trips-h" flush>
         <RecordList className="mt-0 px-5">
           {data.trips.map((t) => (
-            <TripRow key={t.id} title={t.title} detail={t.detail} pills={t.pills.map((p) => <StatusPill key={p.status} status={p.status} label={p.label} />)} money={t.money} actions={t.actions} />
+            <TripRow
+              key={t.id}
+              title={t.title}
+              detail={t.detail}
+              pills={t.pills.map((p) => <StatusPill key={p.status} status={p.status} label={p.label} />)}
+              money={t.money}
+              actions={t.actions}
+              {...(t.trip ? { open: openId === t.id, onToggle: () => setOpenId((id) => (id === t.id ? null : t.id)) } : {})}
+            >
+              {t.trip && openId === t.id && <TripBody trip={t} onDo={onTripDo && ((label, variant) => onTripDo(t.id, label, variant))} handlers={tripHandlers?.(t.id)} />}
+            </TripRow>
           ))}
         </RecordList>
       </SectionCard>
@@ -84,7 +111,7 @@ function TripsPage({ data }: { data: MultiTripData }) {
 }
 
 /** The Season Pass job: one job titled with its number, its two trips as rows. */
-export const JobPagePass = ({ data }: { data: MultiTripData }) => <TripsPage data={data} />
+export const JobPagePass = ({ data, defaultOpen }: { data: MultiTripData; defaultOpen?: string }) => <TripsPage data={data} defaultOpen={defaultOpen} />
 
 /** A repair whose first trip is done and whose return trip is scheduled. */
 export const JobPageReturnTrip = ({ data }: { data: MultiTripData }) => <TripsPage data={data} />

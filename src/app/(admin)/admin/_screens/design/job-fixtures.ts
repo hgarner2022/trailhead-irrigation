@@ -111,7 +111,7 @@ const openTotals: LineTotal[] = [["Total", "$145", "strong"], ["Paid", "$0"]]
 const waiting = { summary: [["Total", "$145"], CARD] as [string, string][], rows: [], emptyLine: "Nothing to bill until the trip is done." }
 const day = (d: string, t: string): RecordFact[] => [["Day", d], ["Time", t], ["Who", WHO]]
 const more = (...labels: string[]) => labels.map(act)
-const visa = { brand: "visa", last4: "4242" }
+export const visa = { brand: "visa", last4: "4242" }
 const input = { amount: 145, isPass: false, invoiceOpen: false, canInvoice: true, declined: false, charging: false }
 
 const withRef = (ref?: string) => (ref ? (ref.startsWith("#") || ref.startsWith("@") ? ref : `#${ref}`) : "")
@@ -162,8 +162,8 @@ const CHECKLIST: Record<JobState, number | null> = { unscheduled: 0, scheduled: 
 
 const SKY = ["darkseagreen", "tan", "lightsteelblue", "rosybrown"]
 const pic = (n: number) => `data:image/svg+xml;utf8,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400"><rect width="400" height="400" fill="${SKY[n % SKY.length]}"/><circle cx="200" cy="170" r="70" fill="white" fill-opacity="0.5"/><rect y="290" width="400" height="110" fill="black" fill-opacity="0.35"/></svg>`)}`
-const photo = (n: number, over: Partial<PhotoItem>): PhotoItem => ({ id: `ph${n}`, visitId: "v1", jobId: "job-1", customerId: "c-1", url: pic(n), contentType: "image/jpeg", bytes: 2_000_000, addedBy: "ryan@trailheadirrigation.com", addedByName: "Ryan Garner", byCustomer: false, shownToCustomer: false, canRemove: true, createdAt: "2026-11-18T17:00:00Z", ...over })
-const FROM_ANDREA = { addedBy: "customer", addedByName: null, byCustomer: true, shownToCustomer: true, canRemove: false }
+export const photo = (n: number, over: Partial<PhotoItem>): PhotoItem => ({ id: `ph${n}`, visitId: "v1", jobId: "job-1", customerId: "c-1", url: pic(n), contentType: "image/jpeg", bytes: 2_000_000, addedBy: "ryan@trailheadirrigation.com", addedByName: "Ryan Garner", byCustomer: false, shownToCustomer: false, canRemove: true, createdAt: "2026-11-18T17:00:00Z", ...over })
+export const FROM_ANDREA = { addedBy: "customer", addedByName: null, byCustomer: true, shownToCustomer: true, canRemove: false }
 
 /** Two photos from the customer on every job with a visit (one sent when she booked, one from the text's link), and the crew's own once the work has started. */
 function photosOf(state: JobState): PhotoItem[] {

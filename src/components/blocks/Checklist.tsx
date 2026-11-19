@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
 import { SectionCard } from "./SectionCard"
+import { SectionHeading } from "./SectionHeading"
 
 // The crew's checklist on a job page (Hannah, Nov 19 2026: "do this... we can fill that in later with notes and the ability to upload
 // pictures"): the service's items, each with a checkbox, an optional note and an Add photo on the item, and the progress in the card
@@ -25,6 +26,8 @@ export interface ChecklistProps {
   items: readonly ChecklistItem[]
   /** called with the new list whenever a box, a note or a photo changes; the prototype keeps its own copy */
   onChange?: (items: ChecklistItem[]) => void
+  /** inside a section that is already a card (a Season Pass trip that opens in place): the title is a quiet heading, not a card of its own */
+  bare?: boolean
   className?: string
 }
 
@@ -57,25 +60,33 @@ function Item({ item, onToggle, onNote, onPhoto }: { item: ChecklistItem; onTogg
   )
 }
 
-export function Checklist({ items: initial, onChange, className }: ChecklistProps) {
+export function Checklist({ items: initial, onChange, bare, className }: ChecklistProps) {
   const [items, setItems] = useState<ChecklistItem[]>([...initial])
   const set = (next: ChecklistItem[]) => {
     setItems(next)
     onChange?.(next)
   }
   const done = items.filter((i) => i.done).length
+  const title = items.length ? `Checklist · ${done} of ${items.length}` : "Checklist"
+  const content = items.length === 0 ? (
+    <p className="text-sm text-muted-foreground">No checklist for this service yet. Set one up in Settings › Services.</p>
+  ) : (
+    <ul className="divide-y divide-border">
+      {items.map((item) => (
+        <Item key={item.id} item={item} onToggle={() => set(items.map((i) => (i.id === item.id ? { ...i, done: !i.done } : i)))} onNote={(note) => set(items.map((i) => (i.id === item.id ? { ...i, note } : i)))} onPhoto={() => set(items.map((x) => (x.id === item.id ? { ...x, photos: (x.photos ?? 0) + 1 } : x)))} />
+      ))}
+    </ul>
+  )
+  if (bare)
+    return (
+      <div data-slot="checklist" className={cn("flex flex-col gap-2", className)}>
+        <SectionHeading>{title}</SectionHeading>
+        {content}
+      </div>
+    )
   return (
-    <SectionCard title={items.length ? `Checklist · ${done} of ${items.length}` : "Checklist"} id="checklist-h" className={className}>
-      {items.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No checklist for this service yet. Set one up in Settings › Services.</p>
-      ) : (
-        <ul className="divide-y divide-border">
-          {items.map((item) => (
-            <Item key={item.id} item={item} onToggle={() => set(items.map((i) => (i.id === item.id ? { ...i, done: !i.done } : i)))} onNote={(note) => set(items.map((i) => (i.id === item.id ? { ...i, note } : i)))}  onPhoto={() => set(items.map((x) => (x.id === item.id ? { ...x, photos: (x.photos ?? 0) + 1 } : x)))}
-              />
-          ))}
-        </ul>
-      )}
+    <SectionCard title={title} id="checklist-h" className={className}>
+      {content}
     </SectionCard>
   )
 }

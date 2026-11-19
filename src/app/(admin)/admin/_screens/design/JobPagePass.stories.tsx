@@ -22,7 +22,7 @@ type Story = StoryObj<typeof meta>
 
 const laptop = { viewport: { value: "laptop", isRotated: false } }
 const phone = { viewport: { value: "phone", isRotated: false } }
-const pass = (state: PassState, globals: typeof laptop): Story => ({ args: { data: passPageOf(state) }, globals })
+const pass = (state: PassState, globals: typeof laptop, defaultOpen?: string): Story => ({ args: { data: passPageOf(state), defaultOpen }, globals })
 const back = (globals: typeof laptop): Story => ({
   args: { data: returnTripOf() },
   globals,
@@ -33,17 +33,21 @@ const back = (globals: typeof laptop): Story => ({
   ),
 })
 
-/** Ryan sees both visits ahead, each with Move and Mark done on its row and "$145, charged after the visit" under the pill. There is no primary action; the work is on the rows. */
+/** Both visits ahead. Each row opens in place, one at a time, and the first is open: When and Who as chips, the trip's actions (Move is the primary), its checklist from the spring turn-on template, its photos (From Andrea, Ours), its notes, and "Charged after this visit" under the pill. */
 export const BothAhead: Story = pass("ahead", laptop)
 export const BothAheadPhone: Story = pass("ahead", phone)
 
-/** Ryan sees the spring turn-on Paid, card, and the fall blowout still ahead. The one action is on the fall row: Mark done. */
+/** The spring turn-on is Paid, card, and the fall blowout is ahead and open by itself. The Payments table has one row, the spring charge. */
 export const OneDone: Story = pass("one-done", laptop)
 export const OneDonePhone: Story = pass("one-done", phone)
 
-/** Ryan sees both visits done and paid and the season total settled. No buttons except More. */
-export const BothDone: Story = pass("both-done", laptop)
-export const BothDonePhone: Story = pass("both-done", phone)
+/** The spring turn-on charged, with its trip open: the finished checklist, the photos from the visit, the history with the charge, and no actions but More. */
+export const OneDoneFirstOpen: Story = pass("one-done", laptop, "t1")
+export const OneDoneFirstOpenPhone: Story = pass("one-done", phone, "t1")
+
+/** Both visits done and charged and the season settled: a green Paid in full line over two Payments rows. The first trip is open. */
+export const BothDone: Story = pass("both-done", laptop, "t1")
+export const BothDonePhone: Story = pass("both-done", phone, "t1")
 
 /** Ryan sees a canceled pass and nothing more to charge. No buttons. */
 export const PassCanceled: Story = pass("canceled", laptop)

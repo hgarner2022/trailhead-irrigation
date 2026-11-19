@@ -1,10 +1,11 @@
 import { beforeAll, describe, it, expect, vi } from "vitest"
-import { fireEvent, render, screen, within } from "@testing-library/react"
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react"
 import { JobPage } from "./JobPage"
 import { ReminderDialog } from "./ReminderDialog"
+import { PassFlow } from "./PassFlow"
 import { JobPagePass, JobPageReturnTrip } from "./JobPageTrips"
 import { JOB_STATES, jobPageOf } from "./job-fixtures"
-import { PASS_STATES, passPageOf, returnTripOf } from "./trip-fixtures"
+import { FALL, PASS_STATES, SPRING, passPageOf, returnTripOf, tripOf } from "./trip-fixtures"
 
 // The design screens render in every state, with one primary action where the design says there is one.
 
@@ -164,14 +165,75 @@ describe("job page, more than one trip", () => {
     })
   }
 
-  it("puts Move and Mark done on each trip still ahead", () => {
+  it("opens one trip at a time, the next ahead first, into its checklist, photos, notes and actions", () => {
     render(<JobPagePass data={passPageOf("ahead")} />)
-    expect(screen.getAllByRole("button", { name: "Move" })).toHaveLength(2)
-    expect(screen.getAllByRole("button", { name: "Mark done" })).toHaveLength(2)
+    const rows = document.querySelectorAll<HTMLElement>("[data-slot=trip-row]")
+    expect(rows[0]).toHaveAttribute("data-open", "true")
+    expect(rows[1]).toHaveAttribute("data-open", "false")
+    const body = rows[0]!.querySelector("[data-slot=trip-body]") as HTMLElement
+    for (const step of ["Pressure test", "Run every zone", "Set the controller", "Note broken heads"]) expect(within(body).getByText(step)).toBeInTheDocument()
+    expect(within(body).getByText("From Andrea")).toBeInTheDocument()
+    expect(within(body).getByText("Ours")).toBeInTheDocument()
+    expect(within(body).getByText("Notes and history")).toBeInTheDocument()
+    expect(within(body).getByRole("button", { name: "Move" })).toBeInTheDocument()
+    expect(within(body).getByRole("link", { name: /Person: Ryan Garner/ })).toBeInTheDocument()
+    fireEvent.click(within(rows[1]!).getByRole("button", { name: /Fall blowout/ }))
+    expect(rows[0]).toHaveAttribute("data-open", "false")
+    expect(rows[1]).toHaveAttribute("data-open", "true")
+    expect(within(rows[1]!).getByText("Drain the backflow")).toBeInTheDocument()
+  })
+
+  it("says Charged after this visit before and Paid, card after, with one Payments row per charged trip", () => {
+    const { unmount } = render(<JobPagePass data={passPageOf("ahead")} />)
+    expect(screen.getAllByText("Charged after this visit").length).toBeGreaterThan(0)
+    expect(document.querySelector("[data-slot=payment-table]")).toBeNull()
+    unmount()
+    render(<JobPagePass data={passPageOf("one-done")} defaultOpen="t1" />)
+    expect(document.querySelectorAll("[data-slot=payment-table] tbody tr")).toHaveLength(1)
+    expect(screen.getAllByText("Paid, card").length).toBeGreaterThan(0)
+  })
+
+  it("asks How is this paid? on a done trip with the card as agreed chosen", () => {
+    render(<JobPagePass data={{ ...passPageOf("ahead"), trips: [tripOf(SPRING, "t1", "done"), tripOf(FALL, "t2", "scheduled")] }} />)
+    fireEvent.click(screen.getByRole("button", { name: "Collect payment" }))
+    const dialog = screen.getByRole("dialog")
+    expect(within(dialog).getByRole("radio", { name: /Charge the card as agreed/ })).toBeChecked()
+  })
+
+  it("keeps the pass's own actions in the header", () => {
+    render(<JobPagePass data={passPageOf("ahead")} />)
+    const head = document.querySelector("[data-slot=record-page-actions]") as HTMLElement
+    expect(within(head).getByRole("button", { name: "Change the pass" })).toBeInTheDocument()
+    expect(within(head).getByRole("button", { name: "Add July" })).toBeInTheDocument()
   })
 
   it("renders a repair with a return trip as two rows", () => {
     const { container } = render(<JobPageReturnTrip data={returnTripOf()} />)
     expect(container.querySelectorAll("[data-slot=trip-row]")).toHaveLength(2)
   })
+})
+
+describe("Season Pass flow", () => {
+  it("takes trip 1 from Scheduled to Charged, then opens trip 2", async () => {
+    render(<PassFlow />)
+    const press = (name: string | RegExp) => fireEvent.click(screen.getByRole("button", { name }))
+    const confirm = async (name: string | RegExp) => fireEvent.click(await within(await screen.findByRole("dialog")).findByRole("button", { name }))
+    press("Move")
+    await confirm("Move the visit")
+    await waitFor(() => expect(document.querySelector("[data-slot=trip-row]")).toHaveTextContent("Today"))
+    await screen.findByRole("button", { name: "On my way" })
+    press("On my way")
+    await confirm("Send and start")
+    await waitFor(() => expect(screen.getAllByRole("button", { name: "Mark done" }).length).toBeGreaterThan(0))
+    press("Mark done")
+    await confirm("Mark done")
+    await screen.findAllByText(/How is this paid/i)
+    const dialog = screen.getByRole("dialog")
+    fireEvent.click(within(dialog).getByRole("button", { name: /^Charge \$145/ }))
+    fireEvent.click(await within(await screen.findByRole("dialog", { name: /Charge \$145/ })).findByRole("button", { name: "Charge $145" }))
+    expect(await screen.findByRole("status")).toHaveTextContent("Charged $145")
+    const rows = document.querySelectorAll("[data-slot=trip-row]")
+    expect(rows[0]).toHaveTextContent("Paid, card")
+    expect(rows[1]).toHaveAttribute("data-open", "true")
+  }, 20000)
 })
