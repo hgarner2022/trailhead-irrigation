@@ -58,7 +58,7 @@ export const TooBigLaptop: Story = { args: { initialPending: tooBig }, ...laptop
 
 /** The customer's own view: their photo and the staff photos marked for them; Remove only on their own, no box. */
 export const CustomerView: Story = {
-  args: { audience: "customer", photos: [photo(2, { addedBy: "staff", addedByName: null }), photo(3, { addedBy: "customer", addedByName: null, byCustomer: true, shownToCustomer: true, canRemove: true })], onShow: undefined },
+  args: { audience: "customer", photos: [photo(2, { addedBy: "staff", addedByName: null, canRemove: false }), photo(3, { addedBy: "customer", addedByName: null, byCustomer: true, shownToCustomer: true, canRemove: true })], onShow: undefined },
   ...phone,
   play: async ({ canvas }) => {
     await expect(canvas.queryByRole("checkbox")).not.toBeInTheDocument()

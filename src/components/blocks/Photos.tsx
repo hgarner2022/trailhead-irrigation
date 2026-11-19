@@ -123,7 +123,7 @@ function PendingTile({ item, onRetry, onDismiss }: { item: PendingPhoto; onRetry
             Uploading
           </p>
         )}
-        <p className="max-w-full truncate text-xs text-muted-foreground">{item.name}</p>
+        <p className={cn("max-w-full truncate text-xs", failed ? "text-foreground" : "text-muted-foreground")}>{item.name}</p>
       </div>
       {failed && (
         <div className="flex gap-1">
