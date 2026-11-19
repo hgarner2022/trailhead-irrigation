@@ -26,6 +26,17 @@ const base: VisitPageModel = {
 }
 const slots = { rescheduleSlot: <button>Reschedule</button>, cancelSlot: <button>Cancel visit</button>, calendarSlot: <a href="/cal">Add to calendar</a> }
 
+describe("VisitPage photos", () => {
+  it("puts the photos section after the facts and before the buttons that change the visit, and nothing when none is given", () => {
+    const { rerender } = render(<VisitPage model={base} {...slots} photosSlot={<section aria-label="Photos">photos here</section>} />)
+    const text = document.body.textContent ?? ""
+    expect(text.indexOf("photos here")).toBeGreaterThan(text.indexOf("$120, charged to the Visa ending 4242 after the visit"))
+    expect(text.indexOf("photos here")).toBeLessThan(text.indexOf("You can change this until"))
+    rerender(<VisitPage model={base} {...slots} />)
+    expect(screen.queryByText("photos here")).toBeNull()
+  })
+})
+
 describe("VisitPage", () => {
   it("before the cut-off: the day and the window promise, where, what is included, the price, the buttons and the last minute to change it", () => {
     render(<VisitPage model={base} {...slots} />)

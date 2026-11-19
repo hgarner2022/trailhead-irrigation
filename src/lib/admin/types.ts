@@ -6,6 +6,7 @@
 
 import type { TimelineLine } from "@/lib/events/timeline"
 import type { TaxRule } from "@/lib/jobs/tax"
+import type { PhotoItem } from "@/lib/photos/types"
 
 export type Town =
   | "Erie"
@@ -601,6 +602,10 @@ export interface AdminData {
   blocks?: BusyBlock[]
   /** every service in the catalogue, by key, inactive ones included; absent in the fixtures */
   services?: ServiceItem[]
+  /** the photos the caller may see, oldest first (a tech's only for the visits they had); the panels group them by visit; absent in the fixtures */
+  photos?: PhotoItem[]
+  /** whether the photo store is connected; false says "Photos are not set up yet."; absent means connected */
+  photosConfigured?: boolean
   /** `TEXTS_PAUSED` is on: every text goes by email until the number is registered with the carriers (Twilio error 30034); absent in the fixtures */
   textsPaused?: boolean
   /** the latest delivery reports say the sending number is blocked (Twilio 30034 or 30032), switch or no switch; absent in the fixtures */

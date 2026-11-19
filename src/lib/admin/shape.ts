@@ -3,6 +3,7 @@
  * Pure: `live.ts` fetches, this shapes, and the tests run it on a seeded
  * database. Calendar days are Mountain time; instants are ISO strings.
  */
+import type { PhotoItem } from "@/lib/photos/types"
 import { lastVisitAt } from "./last-visit"
 import { zonedToUtc } from "./calendar"
 import type { YardWire } from "./yard"
@@ -111,6 +112,10 @@ export interface ShapeInput {
   blocks: BusyBlock[]
   /** every service, inactive ones included; absent in the fixtures */
   services?: ServiceItem[]
+  /** the photos the caller may see (a tech's only for the visits they had), oldest first; absent in the fixtures */
+  photos?: PhotoItem[]
+  /** whether the photo store is connected; absent in the fixtures (read as connected) */
+  photosConfigured?: boolean
 }
 
 /** What the visit is worth with its sales tax: its own line when the API sent one, else the amount (which already reads the line and the tax). */
@@ -367,6 +372,7 @@ export function shapeAdminData(i: ShapeInput): AdminData {
     organizationId: i.organizationId, syncedAt: iso(i.syncedAt), clients, visits, ...(soldJobs ? { jobs: soldJobs } : {}), quotes, invoices, passes,
     monthTotals: monthTotals({ ...i, paymentRows: rows }), attention: attention(i, passes, visitRows(i, appVisits, visits, soldJobs ?? [])), settings: { ...i.settings, people: i.people, areas: i.areas }, billing: rule,
     settingsChanges: i.settingsChanges, messages, blocks: i.blocks, ...(i.services ? { services: i.services } : {}),
+    ...(i.photos ? { photos: i.photos } : {}), ...(i.photosConfigured !== undefined ? { photosConfigured: i.photosConfigured } : {}),
   }
 }
 
