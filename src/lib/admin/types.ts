@@ -531,7 +531,7 @@ export interface BusyBlock {
 export interface Attention {
   /** what Dismiss records with `kind`: a stored alert's key, or the pass, visit or task the row is worked out from */
   key?: string
-  kind: "new-pass" | "pending-pass" | "owed" | "charge-not-pressed" | "overdue" | "charge-failed" | "no-card" | "jobs-failed" | "card-expiring" | "not-closed" | "pass-cancelled" | "scheduled" | "unplaced" | "customer-changed" | "text-undelivered"
+  kind: "new-pass" | "pending-pass" | "owed" | "charge-not-pressed" | "overdue" | "charge-failed" | "no-card" | "jobs-failed" | "card-expiring" | "not-closed" | "pass-cancelled" | "scheduled" | "unplaced" | "customer-changed" | "text-undelivered" | "texts-paused"
   passId?: string
   /** the visit an unplaced alert is about; Home links to it on the Schedule. An owed row names the job's done visit, which opens its panel */
   visitId?: string
@@ -601,4 +601,8 @@ export interface AdminData {
   blocks?: BusyBlock[]
   /** every service in the catalogue, by key, inactive ones included; absent in the fixtures */
   services?: ServiceItem[]
+  /** `TEXTS_PAUSED` is on: every text goes by email until the number is registered with the carriers (Twilio error 30034); absent in the fixtures */
+  textsPaused?: boolean
+  /** the latest delivery reports say the sending number is blocked (Twilio 30034 or 30032), switch or no switch; absent in the fixtures */
+  numberBlocked?: boolean
 }

@@ -6,6 +6,7 @@ import { renderEmail } from "@/emails/render"
 import { TEXT_ONLY_KINDS } from "@/sms/texts"
 import { enqueue, MAX_ATTEMPTS } from "@/lib/queue"
 import { currentConsent, mayMessage } from "./consent"
+import { PAUSED_NO_EMAIL, textsPaused } from "./paused"
 import { savedTemplates } from "./saved"
 import { sendEmailLogged, type LoggedEmailSender } from "./resend"
 import { recordTwilioHealth } from "./health"
@@ -56,6 +57,12 @@ export async function sendMessageRow(db: Database, messageId: string, opts: { de
   if (!mayMessage(consent, row.kind, row.channel, Boolean(customer.phone))) {
     await skip(db, row, "no-consent")
     if (row.channel === "sms" && !consent.smsStopped) await emailInstead(db, row, customer)
+    return "skipped"
+  }
+  // A text queued before texts were paused never reaches Twilio: it is kept as not sent and the same message goes by email.
+  if (row.channel === "sms" && textsPaused()) {
+    await skip(db, row, customer.email ? "texts paused" : PAUSED_NO_EMAIL)
+    await emailInstead(db, row, customer)
     return "skipped"
   }
   if (row.channel === "sms" && !deps.smsConfigured()) {

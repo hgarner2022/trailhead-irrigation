@@ -7,6 +7,8 @@ import { areasList } from "@/api/v1/areas/handlers"
 import { customersList, gateYard } from "@/api/v1/customers/handlers"
 import { payLinkOf } from "@/api/v1/invoices/queries"
 import { loadEvents } from "@/api/v1/events/queries"
+import { textsPaused } from "@/lib/messaging/paused"
+import { numberBlocked } from "./undelivered"
 import { windowTold } from "@/lib/portal/window-told"
 import { messagesList } from "@/api/v1/messages/handlers"
 import { passesList } from "@/api/v1/passes/handlers"
@@ -108,7 +110,7 @@ export async function getLiveAdminData(ctx: Ctx): Promise<AdminData> {
   // which visits have had their window told (the day-before text for their present day), so Move knows a time is booked
   const told = await windowTold(db, org, visits.map((v) => ({ id: v.id, scheduledOn: v.scheduledOn })))
 
-  return shapeAdminData({
+  const shaped = shapeAdminData({
     organizationId: org,
     now: ctx.now,
     today: todayOf(ctx),
@@ -146,6 +148,7 @@ export async function getLiveAdminData(ctx: Ctx): Promise<AdminData> {
     blocks,
     services: serviceRows.data.map(serviceItem),
   })
+  return { ...shaped, ...(textsPaused() ? { textsPaused: true } : {}), ...(numberBlocked(messages) ? { numberBlocked: true } : {}) }
 }
 
 /** The live branch of `getAdminData`: the signed-in person's own context. */

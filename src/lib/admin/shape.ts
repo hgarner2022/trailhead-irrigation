@@ -16,6 +16,7 @@ import { allocateJobPayments, jobMoney as moneyOfJob, jobOwed } from "@/lib/mone
 import { NOT_CLOSED_LOOKBACK_DAYS, visitJob, visitPaid, visitPaidTotal } from "./jobs"
 import { timeBooked, waitingVisitIds } from "./move-rules"
 import { newestNote, storiesOf, type StoryEvent } from "./story"
+import { groupUndelivered, NUMBER_CODES, type UndeliveredAttention } from "./undelivered"
 import type {
   AdminInvoice, AdminPayment, SoldJob, AdminData, Attention, BusyBlock, Client, Consent, Invoice, Message, MessageKind, MonthTotal, Pass, PassVisit, Quote, SettingsChange,
   Person, ServiceItem, AreaGroup, OrganizationSettings, Property, Town, Visit, VisitKind, VisitStatus, Yard,
@@ -474,10 +475,13 @@ export function attention(i: ShapeInput, passes: Pass[], visitRows: Attention[] 
     // A text Twilio reported undelivered: the key is `<visit id or "->:<customer id>:<message id>`, so the row opens that visit, or the customer when the message had none.
     if (a.kind === "text-undelivered") {
       const [visitId, customerId] = (a.key ?? "").split(":")
-      out.push({ key: a.key, kind: "text-undelivered", ...(visitId && visitId !== "-" ? { visitId } : customerId ? { customerId } : {}), message: a.message, since: iso(a.createdAt) })
+      // The text itself says why (its delivery error) and when it went: the row reads its age from that, and groupUndelivered merges rows of one cause.
+      const sent = (i.messages ?? []).find((m) => m.id === (a.key ?? "").split(":")[2])
+      const row: UndeliveredAttention = { key: a.key, kind: "text-undelivered", ...(visitId && visitId !== "-" ? { visitId } : customerId ? { customerId } : {}), message: a.message, since: iso(a.createdAt), undelivered: { messageId: sent?.id ?? "", customerId: customerId ?? "", code: sent?.deliveryError ?? (/not registered for business texting/.test(a.message) ? NUMBER_CODES[0]! : null), sentAt: sent?.sentAt ?? iso(a.createdAt) } }
+      out.push(row)
       continue
     }
-    out.push({ key: a.key, kind: a.kind === "new-pass" || a.kind === "pass-cancelled" || a.kind === "scheduled" || a.kind === "unplaced" || a.kind === "no-card" ? a.kind : "jobs-failed", ...(a.passId ? { passId: a.passId } : {}), ...((a.kind === "unplaced" || a.kind === "no-card") && a.key ? { visitId: a.key } : {}), message: a.message, since: iso(a.createdAt) })
+    out.push({ key: a.key, kind: a.kind === "new-pass" || a.kind === "pass-cancelled" || a.kind === "scheduled" || a.kind === "unplaced" || a.kind === "no-card" || a.kind === "texts-paused" ? a.kind : "jobs-failed", ...(a.passId ? { passId: a.passId } : {}), ...((a.kind === "unplaced" || a.kind === "no-card") && a.key ? { visitId: a.key } : {}), message: a.message, since: iso(a.createdAt) })
   }
   for (const q of i.queueProblems) {
     const row: QueueAttention = { kind: "jobs-failed", key: `${q.kind}@${iso(q.updatedAt)}`, message: `A ${q.kind} task ${q.status === "failed" ? "gave up" : "is retrying"}: ${q.lastError ?? "no error recorded"}`, since: iso(q.updatedAt), queueKind: q.kind, ...(q.id ? { queueIds: [q.id] } : {}), cause: causeOf(q.lastError) }
@@ -498,7 +502,7 @@ export function attention(i: ShapeInput, passes: Pass[], visitRows: Attention[] 
   const gone = new Set((i.dismissed ?? []).map((d) => `${d.kind}:${d.key}`))
   const shown = out.filter((a) => !(a.key && gone.has(`${a.kind}:${a.key}`))).sort((a, b) => b.since.localeCompare(a.since))
   // One row per kind and cause for queue failures; the working `cause` stays out of what the screens get.
-  return groupAttention(shown).map((a) => {
+  return groupAttention(groupUndelivered(shown)).map((a) => {
     const { cause: _cause, ...rest } = a as Attention & { cause?: unknown }
     return rest
   })
