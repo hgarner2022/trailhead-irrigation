@@ -42,7 +42,7 @@ export interface ApiPass {
   accessNote?: string | null; cardLast4: string | null; cardExpires: string | null; cardFailedAt: string | null; cancelledAt: string | null; createdAt?: string
 }
 export interface ApiCustomer { id: string; firstName: string; lastName?: string | null; email?: string | null; phone?: string | null; address?: string | null; town: Town | null; hasPass: boolean; card?: { brand: string | null; last4: string | null; expires: string | null; failedAt: string | null } | null }
-export interface ApiMessage { id: string; customerId: string; visitId: string | null; jobId?: string | null; channel: "email" | "sms"; kind: string; subject: string | null; body: string; status: Message["status"]; sentAt: string | null; createdAt: string }
+export interface ApiMessage { id: string; customerId: string; visitId: string | null; jobId?: string | null; channel: "email" | "sms"; kind: string; subject: string | null; body: string; status: Message["status"]; sentAt: string | null; createdAt: string; deliveryStatus?: string | null; deliveryError?: string | null }
 /** A `property` row as live.ts reads it; the street line, gate code, access note and phone are already null for a caller without the write scope. */
 export interface PropertyRow extends YardWire { id: string; customerId: string; address: string | null; town: Town }
 export interface ConsentRow { customerId: string; termsAcceptedAt: Date | null; termsVersion: string | null; marketingOptIn: boolean; marketingChannels: ("email" | "sms")[]; source: string; recordedAt: Date }
@@ -335,7 +335,7 @@ export function shapeAdminData(i: ShapeInput): AdminData {
   const messages: Message[] = i.messages
     .map((m): Message => {
       const passId = m.visitId ? (i.visits.find((v) => v.id === m.visitId)?.passId ?? undefined) : undefined
-      return { id: m.id, clientId: m.customerId, ...(passId ? { passId } : {}), ...(m.visitId ? { visitId: m.visitId } : {}), ...(m.jobId ? { jobId: m.jobId } : {}), channel: m.channel, kind: m.kind as MessageKind, body: m.channel === "email" ? (m.subject ?? m.body) : m.body, at: m.sentAt ?? m.createdAt, status: m.status }
+      return { id: m.id, clientId: m.customerId, ...(passId ? { passId } : {}), ...(m.visitId ? { visitId: m.visitId } : {}), ...(m.jobId ? { jobId: m.jobId } : {}), channel: m.channel, kind: m.kind as MessageKind, body: m.channel === "email" ? (m.subject ?? m.body) : m.body, at: m.sentAt ?? m.createdAt, status: m.status, ...(m.deliveryStatus ? { deliveryStatus: m.deliveryStatus } : {}), ...(m.deliveryError ? { deliveryError: m.deliveryError } : {}) }
     })
     .sort((a, b) => a.at.localeCompare(b.at))
 
@@ -469,6 +469,12 @@ export function attention(i: ShapeInput, passes: Pass[], visitRows: Attention[] 
     // A change a customer made from their account names its visit in the key (`<visit id>:cancelled:<time>`), so the row opens that visit.
     if (a.kind === "customer-changed") {
       out.push({ key: a.key, kind: "customer-changed", visitId: (a.key ?? "").split(":")[0]!, message: a.message, since: iso(a.createdAt) })
+      continue
+    }
+    // A text Twilio reported undelivered: the key is `<visit id or "->:<customer id>:<message id>`, so the row opens that visit, or the customer when the message had none.
+    if (a.kind === "text-undelivered") {
+      const [visitId, customerId] = (a.key ?? "").split(":")
+      out.push({ key: a.key, kind: "text-undelivered", ...(visitId && visitId !== "-" ? { visitId } : customerId ? { customerId } : {}), message: a.message, since: iso(a.createdAt) })
       continue
     }
     out.push({ key: a.key, kind: a.kind === "new-pass" || a.kind === "pass-cancelled" || a.kind === "scheduled" || a.kind === "unplaced" || a.kind === "no-card" || a.kind === "texts-paused" ? a.kind : "jobs-failed", ...(a.passId ? { passId: a.passId } : {}), ...((a.kind === "unplaced" || a.kind === "no-card") && a.key ? { visitId: a.key } : {}), message: a.message, since: iso(a.createdAt) })

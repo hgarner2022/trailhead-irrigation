@@ -2,6 +2,7 @@ import "server-only"
 import { timingSafeEqual } from "node:crypto"
 import { db } from "@/db"
 import { readCronSecret } from "@/lib/env"
+import { refreshDeliveryAll } from "@/lib/messaging/delivery-refresh"
 import { expirePendingPasses } from "@/lib/pass/server/create"
 import { syncTextsPausedAlert } from "@/lib/messaging/paused"
 import { drain } from "@/lib/queue"
@@ -35,5 +36,12 @@ export async function GET(request: Request) {
     console.error("cron: texts-paused row failed")
   }
   const result = await drain(database, handlers)
-  return Response.json({ expired, ...result })
+  // Ask Twilio about texts with no final delivery report once a pass; an error here never fails the drain.
+  let deliveryChecked = 0
+  try {
+    deliveryChecked = await refreshDeliveryAll(database)
+  } catch {
+    console.error("cron: delivery check failed")
+  }
+  return Response.json({ expired, deliveryChecked, ...result })
 }

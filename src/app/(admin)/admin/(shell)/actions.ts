@@ -3,6 +3,7 @@
 import "server-only"
 import { redirect } from "next/navigation"
 import { callApi } from "@/api/core/call"
+import { messagesRefreshDelivery } from "@/api/v1/messages/handlers"
 import { alertsDismiss } from "@/api/v1/alerts/handlers"
 import { apiKeysCreate, apiKeysRevoke } from "@/api/v1/apikeys/handlers"
 import { consentsRecord } from "@/api/v1/customers/handlers"
@@ -48,6 +49,10 @@ export const skipVisit = async (passId: string, kind: "turn-on" | "inspection" |
 
 /** The Property block's Save: the yard's nine facts, written on the property through `properties.update`. */
 export const updateProperty = async (propertyId: string, changes: YardChanges) => act((ctx) => nothing(callApi(ctx, propertiesUpdate, { id: propertyId, ...changes })))
+
+/** The Messages block's Check delivery: asks Twilio about the newest texts with no final report and answers how many it checked. Anyone who may collect may press it. */
+export const checkDelivery = async (): Promise<ActionOutcome<number>> =>
+  act(async (ctx) => (await callApi(ctx, messagesRefreshDelivery, { limit: 50 })).length)
 
 // Schedule ----------------------------------------------------------------------------------------------------------
 

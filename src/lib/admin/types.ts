@@ -475,6 +475,10 @@ export interface Message {
   body: string
   at: string
   status: "queued" | "sent" | "delivered" | "failed" | "bounced"
+  /** Twilio's last delivery report for a text; absent until one arrives (the words are `deliveryWords`) */
+  deliveryStatus?: string
+  /** Twilio's error code on an undelivered or failed report */
+  deliveryError?: string
 }
 
 /** How invoices are due and taxed (Settings › Billing). With the switch on, sales tax is part of every job's total, its visits' prices and its invoice. */
@@ -527,7 +531,7 @@ export interface BusyBlock {
 export interface Attention {
   /** what Dismiss records with `kind`: a stored alert's key, or the pass, visit or task the row is worked out from */
   key?: string
-  kind: "new-pass" | "pending-pass" | "owed" | "charge-not-pressed" | "overdue" | "charge-failed" | "no-card" | "jobs-failed" | "card-expiring" | "not-closed" | "pass-cancelled" | "scheduled" | "unplaced" | "customer-changed" | "texts-paused"
+  kind: "new-pass" | "pending-pass" | "owed" | "charge-not-pressed" | "overdue" | "charge-failed" | "no-card" | "jobs-failed" | "card-expiring" | "not-closed" | "pass-cancelled" | "scheduled" | "unplaced" | "customer-changed" | "text-undelivered" | "texts-paused"
   passId?: string
   /** the visit an unplaced alert is about; Home links to it on the Schedule. An owed row names the job's done visit, which opens its panel */
   visitId?: string

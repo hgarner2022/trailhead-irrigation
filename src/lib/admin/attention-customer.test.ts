@@ -19,5 +19,12 @@ describe("Home's row for paused texts", () => {
   it("stays off Home once the office dismissed it", () => {
     const i = { ...input([{ kind: "texts-paused", key: "paused", message: "m", passId: null, createdAt: new Date("2027-04-10T15:00:00Z") }]), dismissed: [{ kind: "texts-paused", key: "paused" }] } as unknown as ShapeInput
     expect(attention(i, [])).toEqual([])
+describe("Home's row for a text that was not delivered", () => {
+  const alert = (key: string) => ({ kind: "text-undelivered", key, message: "Text not delivered: Hannah, date set. Filtered by the carrier.", createdAt: new Date("2027-04-10T15:00:00Z") })
+  it("opens the visit when the message had one", () => {
+    expect(attention(input([alert("visit-1:c100:m1")]), [])).toEqual([{ key: "visit-1:c100:m1", kind: "text-undelivered", visitId: "visit-1", message: "Text not delivered: Hannah, date set. Filtered by the carrier.", since: "2027-04-10T15:00:00Z" }])
+  })
+  it("opens the customer when the message had no visit", () => {
+    expect(attention(input([alert("-:c100:m2")]), [])).toEqual([{ key: "-:c100:m2", kind: "text-undelivered", customerId: "c100", message: "Text not delivered: Hannah, date set. Filtered by the carrier.", since: "2027-04-10T15:00:00Z" }])
   })
 })

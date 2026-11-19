@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { CollectPayment } from "@/components/blocks/CollectPayment"
+import { CheckDeliveryButton } from "@/components/blocks/CheckDeliveryButton"
 import { MessageThread } from "@/components/blocks/MessageThread"
 import { RECORD_ROW, RecordFacts, RecordList, RecordPanel, RecordRowEnd, RecordRowText, type RecordFact } from "@/components/blocks/RecordPanel"
 import { SectionHeading } from "@/components/blocks/SectionHeading"
@@ -226,7 +227,7 @@ export function VisitPanel({ data, today, visitId, open, onOpenChange, onOpenVis
           <JobBlock facts={facts} today={today} onOpenVisit={onOpenVisit} />
           {!readOnly && facts.bill.invoice && <BillBlock state={facts.bill} jobId={visit.jobId ?? ""} headingId="visit-bill" actions={actions} />}
           <section aria-labelledby="visit-thread">
-            <SectionHeading id="visit-thread">Messages</SectionHeading>
+            <SectionHeading id="visit-thread" action={!readOnly ? <CheckDeliveryButton onCheck={actions?.checkDelivery} /> : undefined}>Messages</SectionHeading>
             <MessageThread messages={facts.messages} newestFirst className="mt-3" />
           </section>
         </>
