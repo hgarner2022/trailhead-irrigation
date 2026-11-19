@@ -50,4 +50,16 @@ describe("stageOf", () => {
     expect(stageOf(job({ visits: [{ status: "cancelled" }] }))).toBe("cancelled")
     expect(stageOf(job({ kind: "pass", visits: [{ status: "cancelled", skipped: true }] }))).toBe("cancelled")
   })
+
+  it("reads a job that holds a payment with no live visit as Done (a customer's cancel keeps it open), unless the office canceled it", () => {
+    const paid = [{ amount: 145, status: "succeeded" }]
+    expect(stageOf(job({ visits: [{ status: "cancelled" }], payments: paid }))).toBe("done")
+    expect(stageOf(job({ lines: [line(145, new Date())], visits: [{ status: "cancelled" }], payments: paid }))).toBe("done")
+    expect(stageOf(job({ visits: [{ status: "cancelled" }], cancelledAt: new Date(), payments: paid }))).toBe("cancelled")
+    // refunded in full, failed or pending money is not money held
+    expect(stageOf(job({ visits: [{ status: "cancelled" }], payments: [...paid, { amount: -145, status: "succeeded" }] }))).toBe("cancelled")
+    expect(stageOf(job({ visits: [{ status: "cancelled" }], payments: [{ amount: 145, status: "failed" }] }))).toBe("cancelled")
+    // a visit still ahead keeps it Open
+    expect(stageOf(job({ payments: paid }))).toBe("open")
+  })
 })
