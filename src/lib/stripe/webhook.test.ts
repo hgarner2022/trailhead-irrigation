@@ -200,9 +200,9 @@ describe("an invoice's Checkout Session completed", () => {
     await db.insert(s.webhookEndpoint).values({ id: "wh-pay", organizationId: ORG, url: "https://hooks.test/pay", secret: "shh", events: ["payment.succeeded"] })
   })
 
-  it("writes the payment, marks the invoice paid, keeps the card on the customer, stamps the visits and queues the receipt", async () => {
+  it("writes the payment, marks the invoice paid, keeps the card on the customer when the box was ticked, stamps the visits and queues the receipt", async () => {
     const { visit, invoice } = await sentBill()
-    const { stripe, calls } = stubStripe({ intents: { pi_bill_a: paidIntent("pi_bill_a", { pm: "pm_bill_a", customer: "cus_dana" }, "https://pay.stripe.test/receipt/a") } })
+    const { stripe, calls } = stubStripe({ intents: { pi_bill_a: paidIntent("pi_bill_a", { pm: "pm_bill_a", customer: "cus_dana", keep: true }, "https://pay.stripe.test/receipt/a") } })
     await handleStripeEvent(db, stripe, ORG, completed("evt_bill_a", session("cs_bill_a", invoice.id, "pi_bill_a")), "https://site.test", new Date(NOW))
 
     const [row, ...rest] = await rowsOf(visit.jobId)
@@ -222,9 +222,43 @@ describe("an invoice's Checkout Session completed", () => {
     expect(receipt!.body).toContain("Repair: $145")
     expect(await paidEvents(invoice.id)).toHaveLength(1)
     // The story of the payment: the payment row, the invoice it settled, and the card it kept, each by the system.
-    expect(await eventsOf(db, { kind: "payment.succeeded", jobId: visit.jobId })).toMatchObject([{ about: "payment", aboutId: row!.id, customerId: "c100", visitId: null, who: "system", detail: { amount: 145, method: "card_now", invoiceNumber: invoice.number } }])
+    expect(await eventsOf(db, { kind: "payment.succeeded", jobId: visit.jobId })).toMatchObject([{ about: "payment", aboutId: row!.id, customerId: "c100", visitId: null, who: "system", detail: { amount: 145, method: "card_now", invoiceNumber: invoice.number, cardKept: true } }])
     expect(await eventsOf(db, { kind: "invoice.paid", jobId: visit.jobId })).toMatchObject([{ about: "invoice", aboutId: invoice.id, customerId: "c100", who: "system", detail: { number: invoice.number, total: 145, how: "card_now" } }])
     expect((await eventsOf(db, { kind: "card.saved", customerId: "c100" })).filter((e) => (e.detail as { last4: string }).last4 === "4242").length).toBeGreaterThan(0)
+  })
+
+  it("keeps the card when either Stripe signal says the box was ticked, and only then", async () => {
+    // Signal 1 alone: the intent carries setup_future_usage.
+    const a = await sentBill()
+    const intentA = paidIntent("pi_keep_a", { pm: "pm_keep_a", customer: "cus_dana" }) as Record<string, unknown>
+    intentA.setup_future_usage = "off_session"
+    const sa = stubStripe({ intents: { pi_keep_a: intentA } })
+    await handleStripeEvent(db, sa.stripe, ORG, completed("evt_keep_a", session("cs_keep_a", a.invoice.id, "pi_keep_a")), "https://site.test", new Date(NOW))
+    expect((await db.select().from(s.customer).where(eq(s.customer.id, "c100")))[0]!.stripePaymentMethodId).toBe("pm_keep_a")
+    expect(await eventsOf(db, { kind: "payment.succeeded", jobId: a.visit.jobId })).toMatchObject([{ detail: { cardKept: true } }])
+    // Signal 2 alone: the payment method is attached to the Stripe customer.
+    const b = await sentBill()
+    const intentB = paidIntent("pi_keep_b", { pm: "pm_keep_b", customer: "cus_dana" }) as { payment_method: Record<string, unknown> }
+    intentB.payment_method.customer = "cus_dana"
+    const sb = stubStripe({ intents: { pi_keep_b: intentB } })
+    await handleStripeEvent(db, sb.stripe, ORG, completed("evt_keep_b", session("cs_keep_b", b.invoice.id, "pi_keep_b")), "https://site.test", new Date(NOW))
+    expect((await db.select().from(s.customer).where(eq(s.customer.id, "c100")))[0]!.stripePaymentMethodId).toBe("pm_keep_b")
+    expect(await eventsOf(db, { kind: "payment.succeeded", jobId: b.visit.jobId })).toMatchObject([{ detail: { cardKept: true } }])
+  })
+
+  it("declined: pays the invoice, queues the receipt, records cardKept false and leaves the card already on file alone", async () => {
+    await db.update(s.customer).set({ stripePaymentMethodId: "pm_before", cardBrand: "mastercard", cardLast4: "4444", cardExpires: "2031-01" }).where(eq(s.customer.id, "c100"))
+    const savedBefore = (await eventsOf(db, { kind: "card.saved", customerId: "c100" })).length
+    const { visit, invoice } = await sentBill()
+    const { stripe, calls } = stubStripe({ intents: { pi_decl: paidIntent("pi_decl", { pm: "pm_decl", customer: "cus_dana" }) } })
+    await handleStripeEvent(db, stripe, ORG, completed("evt_decl", session("cs_decl", invoice.id, "pi_decl")), "https://site.test", new Date(NOW))
+    expect((await rowsOf(visit.jobId))[0]).toMatchObject({ method: "card_now", status: "succeeded", amount: 145 })
+    expect((await db.select().from(s.invoice).where(eq(s.invoice.id, invoice.id)))[0]!.paidOn).toBe("2027-05-10")
+    expect(await receipts("c100", invoice.number)).toHaveLength(1)
+    expect((await db.select().from(s.customer).where(eq(s.customer.id, "c100")))[0]).toMatchObject({ stripePaymentMethodId: "pm_before", cardBrand: "mastercard", cardLast4: "4444" })
+    expect(calls.customersUpdate).not.toHaveBeenCalled()
+    expect(await eventsOf(db, { kind: "payment.succeeded", jobId: visit.jobId })).toMatchObject([{ detail: { cardKept: false } }])
+    expect(await eventsOf(db, { kind: "card.saved", customerId: "c100" })).toHaveLength(savedBefore)
   })
 
   it("adds nothing when the same event, or another event for the same session, arrives again", async () => {
@@ -297,12 +331,12 @@ describe("an invoice's Checkout Session completed", () => {
   it("keeps the card the customer holds when it is the one just used, and replaces and detaches an old one", async () => {
     await db.update(s.customer).set({ stripePaymentMethodId: "pm_same", cardLast4: "4242" }).where(eq(s.customer.id, "c100"))
     const a = await sentBill()
-    const same = stubStripe({ intents: { pi_same: paidIntent("pi_same", { pm: "pm_same", customer: "cus_dana" }) } })
+    const same = stubStripe({ intents: { pi_same: paidIntent("pi_same", { pm: "pm_same", customer: "cus_dana", keep: true }) } })
     await handleStripeEvent(db, same.stripe, ORG, completed("evt_same", session("cs_same", a.invoice.id, "pi_same")), "https://site.test", new Date(NOW))
     expect(same.calls.customersUpdate).not.toHaveBeenCalled()
     expect(same.calls.detach).not.toHaveBeenCalled()
     const b = await sentBill()
-    const fresh = stubStripe({ intents: { pi_fresh: paidIntent("pi_fresh", { pm: "pm_fresh", last4: "1111", customer: "cus_dana" }) } })
+    const fresh = stubStripe({ intents: { pi_fresh: paidIntent("pi_fresh", { pm: "pm_fresh", last4: "1111", customer: "cus_dana", keep: true }) } })
     await handleStripeEvent(db, fresh.stripe, ORG, completed("evt_fresh", session("cs_fresh", b.invoice.id, "pi_fresh")), "https://site.test", new Date(NOW))
     expect(fresh.calls.detach).toHaveBeenCalledWith("pm_same")
     expect((await db.select().from(s.customer).where(eq(s.customer.id, "c100")))[0]).toMatchObject({ stripePaymentMethodId: "pm_fresh", cardLast4: "1111" })

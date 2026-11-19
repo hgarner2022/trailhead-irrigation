@@ -6,7 +6,7 @@ import { vi } from "vitest"
 export const WEBHOOK_SECRET = "whsec_test_secret"
 export const signer = new Stripe("sk_test_stub").webhooks
 
-export interface StubCard { brand?: string; last4?: string; expMonth?: number; expYear?: number; pm?: string; customer?: string }
+export interface StubCard { brand?: string; last4?: string; expMonth?: number; expYear?: number; pm?: string; customer?: string; keep?: boolean }
 
 /** A complete setup session as `checkout.sessions.retrieve` returns it with the card expanded. */
 export const completeSession = (id: string, metadata: Record<string, string>, card: StubCard = {}) => ({
@@ -20,10 +20,12 @@ export const completeSession = (id: string, metadata: Record<string, string>, ca
 /** A succeeded payment intent as `paymentIntents.retrieve` returns it with the card and the latest charge expanded: what a paid invoice's Checkout Session leaves behind. */
 export const paidIntent = (id: string, card: StubCard = {}, receiptUrl = "https://pay.stripe.test/receipt/bill") => ({
   id,
+  // `keep`: the customer ticked Stripe's save box, so the intent carries setup_future_usage and the card is attached to the customer.
+  setup_future_usage: card.keep ? "off_session" : null,
   status: "succeeded",
   customer: card.customer ?? "cus_1",
   latest_charge: { id: `ch_${id}`, receipt_url: receiptUrl },
-  payment_method: { id: card.pm ?? "pm_bill", type: "card", card: { brand: card.brand ?? "visa", last4: card.last4 ?? "4242", exp_month: card.expMonth ?? 8, exp_year: card.expYear ?? 2030 } },
+  payment_method: { id: card.pm ?? "pm_bill", type: "card", customer: card.keep ? (card.customer ?? "cus_1") : null, card: { brand: card.brand ?? "visa", last4: card.last4 ?? "4242", exp_month: card.expMonth ?? 8, exp_year: card.expYear ?? 2030 } },
 })
 
 let intents = 0
