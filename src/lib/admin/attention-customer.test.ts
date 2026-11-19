@@ -9,3 +9,13 @@ describe("Home's row for a customer's own change", () => {
     expect(rows).toEqual([{ key: "visit-1:cancelled:2027-04-10T15:00:00.000Z", kind: "customer-changed", visitId: "visit-1", message: "Andrea Smith canceled Spring turn-on, Wed, Apr 28, Erie. The day is free.", since: "2027-04-10T15:00:00Z" }])
   })
 })
+
+describe("Home's row for a text that was not delivered", () => {
+  const alert = (key: string) => ({ kind: "text-undelivered", key, message: "Text not delivered: Hannah, date set. Filtered by the carrier.", createdAt: new Date("2027-04-10T15:00:00Z") })
+  it("opens the visit when the message had one", () => {
+    expect(attention(input([alert("visit-1:c100:m1")]), [])).toEqual([{ key: "visit-1:c100:m1", kind: "text-undelivered", visitId: "visit-1", message: "Text not delivered: Hannah, date set. Filtered by the carrier.", since: "2027-04-10T15:00:00Z" }])
+  })
+  it("opens the customer when the message had no visit", () => {
+    expect(attention(input([alert("-:c100:m2")]), [])).toEqual([{ key: "-:c100:m2", kind: "text-undelivered", customerId: "c100", message: "Text not delivered: Hannah, date set. Filtered by the carrier.", since: "2027-04-10T15:00:00Z" }])
+  })
+})

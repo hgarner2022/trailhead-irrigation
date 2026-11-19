@@ -471,6 +471,12 @@ export function attention(i: ShapeInput, passes: Pass[], visitRows: Attention[] 
       out.push({ key: a.key, kind: "customer-changed", visitId: (a.key ?? "").split(":")[0]!, message: a.message, since: iso(a.createdAt) })
       continue
     }
+    // A text Twilio reported undelivered: the key is `<visit id or "->:<customer id>:<message id>`, so the row opens that visit, or the customer when the message had none.
+    if (a.kind === "text-undelivered") {
+      const [visitId, customerId] = (a.key ?? "").split(":")
+      out.push({ key: a.key, kind: "text-undelivered", ...(visitId && visitId !== "-" ? { visitId } : customerId ? { customerId } : {}), message: a.message, since: iso(a.createdAt) })
+      continue
+    }
     out.push({ key: a.key, kind: a.kind === "new-pass" || a.kind === "pass-cancelled" || a.kind === "scheduled" || a.kind === "unplaced" || a.kind === "no-card" ? a.kind : "jobs-failed", ...(a.passId ? { passId: a.passId } : {}), ...((a.kind === "unplaced" || a.kind === "no-card") && a.key ? { visitId: a.key } : {}), message: a.message, since: iso(a.createdAt) })
   }
   for (const q of i.queueProblems) {

@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { BadgeCheck, Ban, Banknote, CalendarCheck, CalendarX, CircleDashed, Clock, CreditCard, ReceiptText, UserRound, type LucideIcon } from "lucide-react"
+import { BadgeCheck, Ban, Banknote, CalendarCheck, CalendarX, CircleDashed, Clock, CreditCard, MessageSquare, ReceiptText, UserRound, type LucideIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { Attention } from "@/lib/admin/types"
 import { jobUrl } from "@/lib/admin/links"
@@ -47,6 +47,7 @@ const KINDS: Record<Attention["kind"], { icon: LucideIcon; tone: string; name: s
   "not-closed": { icon: CircleDashed, tone: "bg-stone text-muted-foreground", name: "Jobs not marked done" },
   "pass-cancelled": { icon: Ban, tone: "bg-warning/10 text-warning", name: "Pass canceled" },
   "customer-changed": { icon: UserRound, tone: "bg-warning/10 text-warning", name: "Customer change" },
+  "text-undelivered": { icon: MessageSquare, tone: "bg-warning/10 text-warning", name: "Text problem" },
   scheduled: { icon: CalendarCheck, tone: "bg-success/10 text-success", name: "Schedule run" },
   unplaced: { icon: CalendarX, tone: "bg-warning/10 text-warning", name: "Unscheduled" },
 }
@@ -54,7 +55,7 @@ const KINDS: Record<Attention["kind"], { icon: LucideIcon; tone: string; name: s
 /** The record a row is about, and the address of its own page: the row opens that record in the one panel over Home (docs/plans/2026-11-18-admin-holistic-design.md, 5.1) and a link opened in a new tab goes to the page. */
 export function attentionRecord(item: Attention): { kind: RecordKey; id: string; href: string } | undefined {
   if (item.kind === "overdue" && item.jobId) return { kind: "job", id: item.jobId, href: jobUrl(item.jobId) }
-  if ((item.kind === "overdue" || item.kind === "charge-failed") && !item.passId && !item.visitId && item.customerId) return { kind: "customer", id: item.customerId, href: `/admin/customers?customer=${encodeURIComponent(item.customerId)}` }
+  if ((item.kind === "overdue" || item.kind === "charge-failed" || item.kind === "text-undelivered") && !item.passId && !item.visitId && item.customerId) return { kind: "customer", id: item.customerId, href: `/admin/customers?customer=${encodeURIComponent(item.customerId)}` }
   if (item.visitId) return { kind: "visit", id: item.visitId, href: `/admin/schedule?visit=${encodeURIComponent(item.visitId)}` }
   // A pass is a job: its row opens that job (HomeScreen puts the job on a row that names only a pass).
   if (item.passId && item.jobId) return { kind: "job", id: item.jobId, href: jobUrl(item.jobId) }
