@@ -1,5 +1,6 @@
 "use client"
 
+import { useTextsPaused } from "./texts-paused"
 import { ConfirmDialog } from "@/components/blocks/ConfirmDialog"
 import type { Visit } from "@/lib/admin/types"
 import type { VisitActions } from "./visit-actions-types"
@@ -9,12 +10,13 @@ import type { VisitActions } from "./visit-actions-types"
 // cannot go (no mobile, replied STOP, already sent). One `ConfirmDialog`. Client component.
 
 export function OnMyWay({ visit, actions, open, onOpenChange }: { visit: Visit; actions?: VisitActions; open: boolean; onOpenChange: (open: boolean) => void }) {
+  const paused = useTextsPaused()
   return (
     <ConfirmDialog
       slot="visit-on-my-way"
       title="On my way"
-      message="Texts the customer that you are coming. You can send one per visit per day."
-      confirmLabel="Send text"
+      message={paused ? "Texts are paused. This goes by email, if the customer has one. You can send one per visit per day." : "Texts the customer that you are coming. You can send one per visit per day."}
+      confirmLabel={paused ? "Send email" : "Send text"}
       open={open}
       onOpenChange={onOpenChange}
       onConfirm={actions ? () => actions.sendOnTheWay(visit.id) : undefined}

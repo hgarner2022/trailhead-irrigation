@@ -597,4 +597,6 @@ export interface AdminData {
   blocks?: BusyBlock[]
   /** every service in the catalogue, by key, inactive ones included; absent in the fixtures */
   services?: ServiceItem[]
+  /** `TEXTS_PAUSED` is on: every text goes by email until the number is registered with the carriers (Twilio error 30034); absent in the fixtures */
+  textsPaused?: boolean
 }

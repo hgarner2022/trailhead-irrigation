@@ -10,6 +10,7 @@ import { visitPaid } from "@/lib/admin/jobs"
 import type { AdminData, Client, Pass, Visit } from "@/lib/admin/types"
 import { FIELD } from "./CustomerPicker"
 import type { VisitActions } from "./visit-actions-types"
+import { pausedLine, useTextsPaused } from "./texts-paused"
 import { dayLabel, dayOfVisit, kindLabel, priceWords } from "./visit-panel-model"
 
 // Edit (minutes, who, access note: notes are added in the Notes and history block, never rewritten here), Send a text and Cancel visit:
@@ -72,17 +73,20 @@ export function textConsentLine(client: Pick<Client, "phone"> | undefined): stri
   return client?.phone ? `Goes by text to ${formatPhone(client.phone)}, with the opt-out line added. Replies of STOP are honored.` : "This customer has no mobile number, so a text cannot go."
 }
 
-export function TextDialog({ client, visitId, actions, open, onOpenChange }: { client: Pick<Client, "id" | "phone"> | undefined; visitId?: string; actions?: VisitActions } & Shown) {
+export function TextDialog({ client, visitId, actions, open, onOpenChange }: { client: Pick<Client, "id" | "phone" | "email"> | undefined; visitId?: string; actions?: VisitActions } & Shown) {
   const [text, setText] = useState("")
+  const paused = useTextsPaused()
+  // While texts are paused the words go by email, so what matters is the address, not the mobile.
+  const canSend = paused ? Boolean(client?.email) : Boolean(client?.phone)
   const send = async () => {
-    if (!client) return { ok: false as const, message: "This customer has no mobile number, so a text cannot go." }
+    if (!client) return { ok: false as const, message: paused ? pausedLine(undefined) : "This customer has no mobile number, so a text cannot go." }
     if (!actions) return (console.info("send text", client.id, text), { ok: true as const })
     const out = await actions.sendText(client.id, visitId, text.trim())
     if (out.ok) setText("")
     return out
   }
   return (
-    <ConfirmDialog slot="visit-text" title="Send a text" message={textConsentLine(client)} confirmLabel="Send text" confirmDisabled={!text.trim() || !client?.phone} open={open} onOpenChange={onOpenChange} onConfirm={send}>
+    <ConfirmDialog slot="visit-text" title="Send a text" message={paused ? pausedLine(client) : textConsentLine(client)} confirmLabel={paused ? "Send email" : "Send text"} confirmDisabled={!text.trim() || !canSend} open={open} onOpenChange={onOpenChange} onConfirm={send}>
       <FormRow label="Text to send" hideLabel hint={`${text.length}/${TEXT_MAX}`}>
         <Textarea value={text} maxLength={TEXT_MAX} rows={3} onChange={(e) => setText(e.target.value)} placeholder="Running 20 minutes late." />
       </FormRow>
