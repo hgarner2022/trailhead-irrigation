@@ -27,6 +27,8 @@ export interface RecordPageProps {
   band?: ReactNode
   /** the aside's cards: Customer, Property, Notes and history */
   aside?: ReactNode
+  /** the aside's accessible name; "About this job" by default */
+  asideLabel?: string
   /** a `RecordFooter` with `destructiveInMenu`; nothing when the page has no buttons */
   actions?: ReactNode
   /** the main column's `SectionCard`s */
@@ -34,7 +36,7 @@ export interface RecordPageProps {
   className?: string
 }
 
-export function RecordPage({ title, subtitle, badges, crumb, notice, band, aside, actions, children, className }: RecordPageProps) {
+export function RecordPage({ title, subtitle, badges, crumb, notice, band, aside, asideLabel = "About this job", actions, children, className }: RecordPageProps) {
   const [element, setElement] = useState<HTMLElement | null>(null)
   return (
     <FooterSlotContext.Provider value={{ element, setElement }}>
@@ -76,7 +78,7 @@ export function RecordPage({ title, subtitle, badges, crumb, notice, band, aside
             {children}
           </div>
           {aside && (
-            <aside data-slot="record-page-aside" aria-label="About this job" className="flex min-w-0 flex-col gap-4">
+            <aside data-slot="record-page-aside" aria-label={asideLabel} className="flex min-w-0 flex-col gap-4">
               {aside}
             </aside>
           )}
