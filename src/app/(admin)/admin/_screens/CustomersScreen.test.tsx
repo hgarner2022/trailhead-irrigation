@@ -92,6 +92,16 @@ describe("CustomersScreen panel", () => {
     expect(panel.getByRole("heading", { name: "Jobs" })).toBeInTheDocument()
   })
 
+  it("makes the phone a tel link, adds Call beside Send a text, and gives the facts Last visit", () => {
+    const live: AdminData = { ...data, clients: data.clients.map((c) => ({ ...c, app: true })) }
+    render(<CustomersScreen data={live} today={TODAY} defaultSelectedId="c100" />)
+    const panel = within(screen.getByRole("dialog", { name: `${andrea.firstName} ${andrea.lastName}` }))
+    expect(panel.getByRole("link", { name: formatPhone(andrea.phone) })).toHaveAttribute("href", `tel:${andrea.phone}`)
+    expect(panel.getByRole("link", { name: "Call" })).toHaveAttribute("href", `tel:${andrea.phone}`)
+    expect(panel.getByRole("button", { name: "Send a text" })).toBeInTheDocument()
+    expect(panel.getByText("Last visit")).toBeInTheDocument()
+  })
+
   it("lists what the app sent in the Messages block with each message's words and the link a text carried, the same MessageThread the visit panel uses", () => {
     const link = "https://site.test/account"
     const sent: AdminData = {

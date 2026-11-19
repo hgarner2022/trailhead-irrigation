@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest"
 import type { Client, Pass, SoldJob, Visit, Yard } from "@/lib/admin/types"
-import { cardOf, customerCardWords, consentEntries, customerRow, customerRows, customersContext, propertiesOf, propertyLines, yardFromPass } from "./customers-model"
+import { cardOf, customerCardWords, consentEntries, customerRow, customerRows, customersContext, propertiesOf, propertyLines, unpaidOf, yardFromPass } from "./customers-model"
 
 const TODAY = "2026-11-12T19:56:30Z"
 const client: Client = {
@@ -141,6 +141,14 @@ describe("a customer with a one-off job and no pass", () => {
   it("customerRows hands each customer their own jobs", () => {
     const rows = customerRows({ clients: [nora, client], passes: [pass], visits: [repairVisit()], jobs: [repair()] }, TODAY)
     expect(rows.map((r) => [r.id, r.job?.title])).toEqual([["c9", "Repair"], ["c1", undefined]])
+  })
+})
+
+describe("unpaidOf", () => {
+  const job = (status: SoldJob["status"], owed: number, words: string) => ({ id: "j", status, money: { paid: 0, total: owed, owed, words } }) as unknown as SoldJob
+  it("adds what is owed on done work and leaves out canceled jobs and a pass's charges that are not yet due", () => {
+    expect(unpaidOf([job("done", 115, "$115 unpaid"), job("open", 45, "$45 unpaid"), job("cancelled", 145, "$145 unpaid"), job("open", 280, "$280, charged after each visit")])).toBe(160)
+    expect(unpaidOf([])).toBe(0)
   })
 })
 

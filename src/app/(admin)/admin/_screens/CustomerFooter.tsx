@@ -43,7 +43,7 @@ export function CustomerFooter({ row, client, data, today, readOnly, actions, jo
   ]
   return (
     <>
-      <RecordFooter primary={canJob ? { label: "New job", onClick: () => setJobOpen(true) } : undefined} secondary={canJob ? [{ label: "Send a text", onClick: () => setTextOpen(true) }] : undefined} more={more} />
+      <RecordFooter primary={canJob ? { label: "New job", onClick: () => setJobOpen(true) } : undefined} secondary={canJob ? (row.phone ? [{ label: "Send a text", onClick: () => setTextOpen(true) }, { label: "Call", href: `tel:${row.phone}` }] : [{ label: "Send a text", onClick: () => setTextOpen(true) }]) : undefined} more={more} />
       {canJob && <NewJob data={data} today={today} open={jobOpen} onOpenChange={setJobOpen} customerId={row.id} actions={actions} />}
       {canJob && <TextDialog client={client} actions={actions} open={textOpen} onOpenChange={setTextOpen} />}
     </>
