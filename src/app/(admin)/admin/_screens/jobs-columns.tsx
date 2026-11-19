@@ -12,8 +12,8 @@ import type { JobRow } from "./jobs-model"
 
 export const jobColumns: GridColumnDef<JobRow>[] = [
   { id: "name", accessorFn: (r) => r.search, header: "Customer", cell: ({ row }) => row.original.name, meta: { csv: (r) => (r as JobRow).name } },
-  // The chip filters by kind (pass, repair, installation, other) while the cell says what the job is.
-  { id: "kind", accessorKey: "kind", header: "Job", cell: ({ row }) => row.original.title, meta: { csv: (r) => (r as JobRow).title } },
+  // The chip filters by the service (pass, a catalogue service's key, other) while the cell says what the job is.
+  { id: "kind", accessorKey: "service", header: "Job", cell: ({ row }) => row.original.title, meta: { csv: (r) => (r as JobRow).title } },
   { id: "property", accessorKey: "property", header: "Property", cell: ({ getValue }) => (getValue() as string) || null },
   {
     // The Season chip filters by the season; a click on the header sorts by the day it was sold.
