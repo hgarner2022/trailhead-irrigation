@@ -68,9 +68,9 @@ export function MoveDialog({ visit, today, actions, open, onOpenChange, target, 
   return (
     <ConfirmDialog
       slot="visit-move"
-      title={placed ? "Move" : "Give it a day"}
+      title={placed ? "Move" : "Schedule"}
       message={day ? moveSentence(visit, day, time, placed) : undefined}
-      confirmLabel={placed ? undefined : "Set the day"}
+      confirmLabel={placed ? undefined : "Schedule"}
       confirmDisabled={!day}
       open={open}
       onOpenChange={onOpenChange}

@@ -97,7 +97,7 @@ describe("jobs.cancel, the schedule", () => {
   it("resolves the Home alert of a visit that is gone and orders the person's day again", async () => {
     const a = await make({ scheduledOn: "2027-06-28" })
     const b = await make({ scheduledOn: "2027-06-28" })
-    await db.insert(s.adminAlert).values({ organizationId: ORG, kind: "unplaced", key: a.id, jobId: a.jobId, message: "Needs a day" })
+    await db.insert(s.adminAlert).values({ organizationId: ORG, kind: "unplaced", key: a.id, jobId: a.jobId, message: "Unscheduled" })
     await callApi(as(), jobsCancel, { id: a.jobId })
     const [other] = await db.select().from(s.visit).where(eq(s.visit.id, b.id))
     expect(other).toMatchObject({ status: "scheduled", stopOrder: 1 })

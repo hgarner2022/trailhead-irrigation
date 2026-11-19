@@ -127,7 +127,8 @@ export function visitFacts(data: AdminData, visitId: string, today: string): Vis
     money: jobMoney(job, siblings, ruleOfData(data)),
     // a job charged to the card on its pass is left to the card (unless the card failed)
     bill: billState(job, siblings, Boolean(pass?.cardLast4) && states.money !== "failed"),
-    messages: data.messages.filter((m) => m.clientId === visit.clientId),
+    // only what was sent about this visit; the customer panel keeps the customer-wide list
+    messages: data.messages.filter((m) => m.visitId === visit.id),
     customerChange: customerChangeLine(visit, states.work === "scheduled", day),
   }
 }

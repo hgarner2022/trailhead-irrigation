@@ -126,18 +126,18 @@ describe("the Move dialog", () => {
     expect(await screen.findByText(/always texted/)).toBeInTheDocument()
   })
 
-  it("a visit with no day is given one with a plain 'Set the day' that texts the date, as before", async () => {
+  it("a visit with no day is given one with a plain 'Schedule' that texts the date, as before", async () => {
     const a = actions()
     render(
       <UndoToastProvider>
         <VisitsScreen data={dataOf(visit({ status: "unscheduled", scheduledOn: undefined, startAt: undefined, personId: undefined, personName: undefined }))} today={TODAY} actions={a} defaultVisitId="a" />
       </UndoToastProvider>,
     )
-    await userEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Place" }))
+    await userEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Schedule" }))
     const dialog = within(screen.getAllByRole("dialog").at(-1)!)
     expect(dialog.queryByRole("button", { name: "More ways to move" })).toBeNull()
     expect(dialog.queryByLabelText("A line for the text")).toBeNull()
-    await userEvent.click(dialog.getByRole("button", { name: "Set the day" }))
+    await userEvent.click(dialog.getByRole("button", { name: "Schedule" }))
     expect(a.move).toHaveBeenCalledWith("a", expect.any(String), null, { notify: true })
   })
 })

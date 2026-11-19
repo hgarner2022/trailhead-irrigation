@@ -28,7 +28,7 @@ import { kindLabel, type VisitFacts } from "./visit-panel-model"
 // catalog) the buttons only log.
 
 const LABELS: Record<BarId, string> = {
-  place: "Place",
+  place: "Schedule",
   move: "Move",
   "mark-done": "Mark done",
   "not-done": "Not done",

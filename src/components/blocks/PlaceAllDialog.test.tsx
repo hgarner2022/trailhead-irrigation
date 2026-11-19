@@ -13,23 +13,23 @@ describe("PlaceAllDialog", () => {
     const onConfirm = vi.fn()
     render(<PlaceAllDialog rows={rows} open onOpenChange={() => {}} onConfirm={onConfirm} />)
     const dialog = within(screen.getByRole("dialog"))
-    expect(dialog.getByRole("heading", { name: "Place all 2" })).toBeInTheDocument()
+    expect(dialog.getByRole("heading", { name: "Schedule all 2" })).toBeInTheDocument()
     expect(dialog.getByText("Andrea Reyes, Erie · Repair")).toBeInTheDocument()
     expect(dialog.getByText("Tue Nov 24, Ryan Garner")).toBeInTheDocument()
     expect(dialog.getByText(/a minute after you confirm/)).toBeInTheDocument()
-    await userEvent.click(dialog.getByRole("button", { name: "Place all 2" }))
+    await userEvent.click(dialog.getByRole("button", { name: "Schedule all 2" }))
     expect(onConfirm).toHaveBeenCalledOnce()
   })
 
   it("counts only the jobs with a day in the button and says why the others wait", () => {
     render(<PlaceAllDialog rows={[...rows, { id: "c", who: "Cy Bell, Lafayette", what: "Repair", problem: "No open day before Jun 15. Pick a day yourself." }]} open onOpenChange={() => {}} onConfirm={() => {}} />)
     const dialog = within(screen.getByRole("dialog"))
-    expect(dialog.getByRole("button", { name: "Place 2" })).toBeEnabled()
+    expect(dialog.getByRole("button", { name: "Schedule 2" })).toBeEnabled()
     expect(dialog.getByText("No open day before Jun 15. Pick a day yourself.")).toBeInTheDocument()
   })
 
   it("cannot confirm when nothing has room", () => {
     render(<PlaceAllDialog rows={[{ id: "c", who: "Cy Bell, Lafayette", what: "Repair", problem: "No open day before Jun 15. Pick a day yourself." }]} open onOpenChange={() => {}} onConfirm={() => {}} />)
-    expect(screen.getByRole("button", { name: "Place 0" })).toBeDisabled()
+    expect(screen.getByRole("button", { name: "Schedule 0" })).toBeDisabled()
   })
 })

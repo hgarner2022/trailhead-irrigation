@@ -31,7 +31,7 @@ type Story = StoryObj<typeof meta>
 /** A visit a week out: the day, the time and one optional line. */
 export const Default: Story = {}
 
-/** The visit has no day yet: "Give it a day", one plain button, the date text goes as it always did. */
+/** The visit has no day yet: "Schedule", one plain button, the date text goes as it always did. */
 export const Empty: Story = { args: { visit: visit({ status: "unscheduled", scheduledOn: undefined, startAt: undefined, personId: undefined, personName: undefined }) } }
 
 /** A time was promised: the customer is always texted, so "Move without texting" is greyed under the caret. */

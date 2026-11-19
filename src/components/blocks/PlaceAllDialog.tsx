@@ -28,12 +28,12 @@ export interface PlaceAllDialogProps {
 
 export function PlaceAllDialog({ rows, open, onOpenChange, onConfirm }: PlaceAllDialogProps) {
   const fits = rows.filter((r) => r.where).length
-  const label = fits === rows.length ? `Place all ${fits}` : `Place ${fits}`
+  const label = fits === rows.length ? `Schedule all ${fits}` : `Schedule ${fits}`
   return (
     <ConfirmDialog
       slot="place-all-dialog"
       size="md"
-      title={`Place all ${rows.length}`}
+      title={`Schedule all ${rows.length}`}
       message="Each job goes on the next open day, with the first person who has room. The customers are texted a minute after you confirm, and Undo inside the minute sends nothing."
       confirmLabel={label}
       confirmDisabled={fits === 0}
@@ -41,7 +41,7 @@ export function PlaceAllDialog({ rows, open, onOpenChange, onConfirm }: PlaceAll
       onOpenChange={onOpenChange}
       onConfirm={async () => (onConfirm(), { ok: true })}
     >
-      <ul data-slot="place-all-rows" tabIndex={0} aria-label="Jobs to place" className="max-h-72 divide-y divide-border overflow-y-auto rounded-lg border border-border text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50">
+      <ul data-slot="place-all-rows" tabIndex={0} aria-label="Jobs to schedule" className="max-h-72 divide-y divide-border overflow-y-auto rounded-lg border border-border text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50">
         {rows.map((row) => (
           <li key={row.id} className="px-3 py-2">
             <span className="block truncate text-foreground">{`${row.who} · ${row.what}`}</span>

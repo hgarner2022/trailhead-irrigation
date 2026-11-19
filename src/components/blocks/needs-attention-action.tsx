@@ -25,7 +25,7 @@ export const ACTION_LABELS: Record<Attention["kind"], string> = {
   "pass-cancelled": "Open",
   "customer-changed": "Open job",
   scheduled: "Open Schedule",
-  unplaced: "Place",
+  unplaced: "Schedule",
 }
 
 /** What a server action answers: done, or the words to show. */

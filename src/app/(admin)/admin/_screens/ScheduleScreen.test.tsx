@@ -66,22 +66,22 @@ describe("ScheduleScreen move control", () => {
   })
 })
 
-describe("ScheduleScreen Place all", () => {
+describe("ScheduleScreen Schedule all", () => {
   const trayRows = () => within(document.querySelector<HTMLElement>('[data-slot="to-schedule-tray"]')!).getAllByRole("listitem")
 
   it("is a quiet button above the Unscheduled list that counts the same list, and the header has no Schedule button", async () => {
     const info = vi.spyOn(console, "info").mockImplementation(() => undefined)
     render(<ScheduleScreen data={data} today={TODAY} textDelaySeconds={0} />)
     const rows = trayRows()
-    expect(screen.queryByRole("button", { name: /^Schedule/ })).toBeNull()
+    expect(screen.queryByRole("button", { name: "Schedule" })).toBeNull()
     expect(screen.getByRole("heading", { name: `Unscheduled (${rows.length})` })).toBeInTheDocument()
-    const all = screen.getByRole("button", { name: `Place all ${rows.length}` })
+    const all = screen.getByRole("button", { name: `Schedule all ${rows.length}` })
     expect(document.querySelector('[data-slot="page-header"]')).not.toContainElement(all)
     await userEvent.click(all)
     const dialog = within(await screen.findByRole("dialog"))
-    expect(dialog.getByRole("heading", { name: /^Place all \d+$/ })).toBeInTheDocument()
+    expect(dialog.getByRole("heading", { name: /^Schedule all \d+$/ })).toBeInTheDocument()
     expect(dialog.getAllByRole("listitem").length).toBe(rows.length)
-    await userEvent.click(dialog.getByRole("button", { name: /^Place( all)? \d+$/ }))
+    await userEvent.click(dialog.getByRole("button", { name: /^Schedule( all)? \d+$/ }))
     expect(info).toHaveBeenCalledWith("place visit", expect.any(String), expect.any(String), expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/))
     await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent(/jobs? scheduled|is scheduled with/))
   })
@@ -92,8 +92,8 @@ describe("ScheduleScreen Place all", () => {
       const onMove = vi.fn().mockResolvedValue({ ok: true, data: undefined })
       render(<ScheduleScreen data={data} today={TODAY} onMove={onMove} />)
       const before = trayRows().length
-      await userEvent.click(screen.getByRole("button", { name: `Place all ${before}` }))
-      await userEvent.click(within(await screen.findByRole("dialog")).getByRole("button", { name: /^Place( all)? \d+$/ }))
+      await userEvent.click(screen.getByRole("button", { name: `Schedule all ${before}` }))
+      await userEvent.click(within(await screen.findByRole("dialog")).getByRole("button", { name: /^Schedule( all)? \d+$/ }))
       const strip = await screen.findByText(/^Texting \d+ customers in/)
       expect(strip.closest('[data-slot="texting-strip"]')).toHaveTextContent("60 s")
       expect(document.querySelector('[data-slot="to-schedule-tray"]')).toBeNull()
@@ -114,8 +114,8 @@ describe("ScheduleScreen Place all", () => {
       const onMove = vi.fn().mockResolvedValue({ ok: true, data: undefined })
       render(<ScheduleScreen data={data} today={TODAY} onMove={onMove} />)
       const before = trayRows().length
-      await userEvent.click(screen.getByRole("button", { name: `Place all ${before}` }))
-      await userEvent.click(within(await screen.findByRole("dialog")).getByRole("button", { name: /^Place( all)? \d+$/ }))
+      await userEvent.click(screen.getByRole("button", { name: `Schedule all ${before}` }))
+      await userEvent.click(within(await screen.findByRole("dialog")).getByRole("button", { name: /^Schedule( all)? \d+$/ }))
       await vi.advanceTimersByTimeAsync(60_000)
       expect(onMove.mock.calls.length).toBeGreaterThan(0)
       expect(onMove.mock.calls[0]).toEqual([expect.any(String), "person_truck-1", expect.stringMatching(/^2027-/)])
@@ -128,7 +128,7 @@ describe("ScheduleScreen Place all", () => {
     const closed = { ...data, settings: { ...data.settings, windows: data.settings.windows.map((w) => ({ ...w, opensOn: "2026-10-01", closesOn: "2026-10-31" })) } }
     render(<ScheduleScreen data={closed} today={TODAY} textDelaySeconds={0} />)
     const before = trayRows().length
-    await userEvent.click(within(trayRows()[0]!).getByRole("button", { name: /^Place / }))
+    await userEvent.click(within(trayRows()[0]!).getByRole("button", { name: /^Schedule / }))
     expect(within(trayRows()[0]!).getByText(/^No open day before Oct 31\. Pick a day yourself\.$/)).toBeInTheDocument()
     expect(within(trayRows()[0]!).getByRole("button", { name: "Another day" })).toBeInTheDocument()
     expect(trayRows()).toHaveLength(before)
@@ -163,9 +163,9 @@ describe("ScheduleScreen with actions", () => {
 
   it("shows a tech no Schedule, Place or Move controls", async () => {
     render(<ScheduleScreen data={data} today={TODAY} readOnly onMove={vi.fn()} />)
-    expect(screen.queryByRole("button", { name: /^Schedule/ })).toBeNull()
-    expect(screen.queryByRole("button", { name: /^Place / })).toBeNull()
-    expect(screen.queryByRole("button", { name: /^Place all/ })).toBeNull()
+    expect(screen.queryByRole("button", { name: "Schedule" })).toBeNull()
+    expect(screen.queryByRole("button", { name: /^Schedule / })).toBeNull()
+    expect(screen.queryByRole("button", { name: /^Schedule all/ })).toBeNull()
     await userEvent.click(percy(cell("person_truck-1", "2026-11-12")))
     expect(screen.queryByRole("region", { name: "Move the selected visit" })).toBeNull()
   })
@@ -208,7 +208,7 @@ describe("ScheduleScreen's Unscheduled list", () => {
     render(<ScheduleScreen data={data} today={TODAY} />)
     expect(screen.getByRole("heading", { name: /^Unscheduled \(\d+\)$/ })).toBeInTheDocument()
     expect(screen.queryByText(/To schedule/)).toBeNull()
-    for (const row of rows()) expect(within(row).getByRole("button", { name: /^Place / })).toBeInTheDocument()
+    for (const row of rows()) expect(within(row).getByRole("button", { name: /^Schedule / })).toBeInTheDocument()
     // Every row is a job of an active pass with no day; a pending pass's job is not among them.
     const active = data.passes.filter((p) => p.status === "active")
     const noDay = active.flatMap((p) => p.visits.filter((v) => !v.scheduledAt && !v.completedAt))
@@ -222,9 +222,9 @@ describe("ScheduleScreen's Unscheduled list", () => {
     expect(document.body).not.toHaveTextContent(/jobber/i)
   })
 
-  it("counts the same list on Place all as it lists", () => {
+  it("counts the same list on Schedule all as it lists", () => {
     render(<ScheduleScreen data={data} today={TODAY} />)
-    expect(screen.getByRole("button", { name: `Place all ${rows().length}` })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: `Schedule all ${rows().length}` })).toBeInTheDocument()
   })
 
   it("leaves a job out once it has a day, and shows nothing of a pending pass's jobs on the week either", () => {
@@ -242,8 +242,8 @@ describe("ScheduleScreen's Unscheduled list", () => {
   it("shows a refused Place's sentence under that row only, in the API's words", async () => {
     const onMove = vi.fn().mockResolvedValue({ ok: false, message: "A turn-on visit must land between 2027-04-26 and 2027-05-31" })
     render(<ScheduleScreen data={data} today={TODAY} onMove={onMove} textDelaySeconds={0} />)
-    const name = within(rows()[0]).getByRole("button", { name: /^Place / }).getAttribute("aria-label")!
-    await userEvent.click(within(rows()[0]).getByRole("button", { name: /^Place / }))
+    const name = within(rows()[0]).getByRole("button", { name: /^Schedule / }).getAttribute("aria-label")!
+    await userEvent.click(within(rows()[0]).getByRole("button", { name: /^Schedule / }))
     const problem = await within(document.querySelector<HTMLElement>('[data-slot="to-schedule-tray"]')!).findByRole("alert", {}, { timeout: 5000 })
     expect(problem).toHaveTextContent("A turn-on job must land between April 26 and May 31")
     // It sits under the row of the job that was refused.
@@ -259,7 +259,7 @@ describe("ScheduleScreen's Unscheduled list", () => {
     const onMove = vi.fn().mockResolvedValue({ ok: true, data: undefined })
     render(<ScheduleScreen data={data} today={TODAY} onMove={onMove} textDelaySeconds={0} />)
     const before = rows().length
-    await userEvent.click(within(rows()[0]).getByRole("button", { name: /^Place / }))
+    await userEvent.click(within(rows()[0]).getByRole("button", { name: /^Schedule / }))
     expect(await screen.findByText(/is scheduled with Ryan Garner/, {}, { timeout: 5000 })).toBeInTheDocument()
     expect(rows().length).toBe(before - 1)
   })
@@ -482,7 +482,7 @@ describe("ScheduleScreen placements that are still inside their minute", () => {
     try {
       const onMove = vi.fn().mockResolvedValue({ ok: true, data: undefined })
       render(<ScheduleScreen data={one} today={TODAY} defaultWeek="2026-11-09" onMove={onMove} />)
-      await userEvent.click(screen.getByRole("button", { name: /^Place Una Hall/ }))
+      await userEvent.click(screen.getByRole("button", { name: /^Schedule Una Hall/ }))
       await screen.findByText(/^Texting Una in/)
       expect(percyLike(cell("person_truck-1", "2026-11-13"))).toBeInTheDocument()
       fireEvent.drop(cell("person_truck-2", "2026-11-13"), { dataTransfer: { getData: () => "u1" } })
@@ -498,7 +498,7 @@ describe("ScheduleScreen placements that are still inside their minute", () => {
     try {
       const onMove = vi.fn().mockResolvedValue({ ok: true, data: undefined })
       const { rerender } = render(<ScheduleScreen data={one} today={TODAY} defaultWeek="2026-11-09" onMove={onMove} />)
-      await userEvent.click(screen.getByRole("button", { name: /^Place Una Hall/ }))
+      await userEvent.click(screen.getByRole("button", { name: /^Schedule Una Hall/ }))
       rerender(<ScheduleScreen data={{ ...one, visits: [{ ...una, status: "scheduled" as const, startAt: "2026-11-17T16:00:00Z", scheduledOn: "2026-11-17", personId: "person_truck-2", personName: "Tech Two" }] }} today={TODAY} defaultWeek="2026-11-09" onMove={onMove} />)
       await vi.advanceTimersByTimeAsync(60_000)
       expect(onMove).not.toHaveBeenCalled()

@@ -48,7 +48,7 @@ const KINDS: Record<Attention["kind"], { icon: LucideIcon; tone: string; name: s
   "pass-cancelled": { icon: Ban, tone: "bg-warning/10 text-warning", name: "Pass canceled" },
   "customer-changed": { icon: UserRound, tone: "bg-warning/10 text-warning", name: "Customer change" },
   scheduled: { icon: CalendarCheck, tone: "bg-success/10 text-success", name: "Schedule run" },
-  unplaced: { icon: CalendarX, tone: "bg-warning/10 text-warning", name: "Needs a day" },
+  unplaced: { icon: CalendarX, tone: "bg-warning/10 text-warning", name: "Unscheduled" },
 }
 
 /** The record a row is about, and the address of its own page: the row opens that record in the one panel over Home (docs/plans/2026-11-18-admin-holistic-design.md, 5.1) and a link opened in a new tab goes to the page. */

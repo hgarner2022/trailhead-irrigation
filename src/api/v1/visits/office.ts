@@ -36,7 +36,7 @@ export const visitsMarkNotDone = defineHandler({
   method: "POST",
   path: "/visits/{id}/not-done",
   scope: "write",
-  summary: "The visit was not done. The reason is kept on the change log; the visit goes back to Needs a day, the person's day is ordered again, and nothing is charged.",
+  summary: "The visit was not done. The reason is kept on the change log; the visit goes back to Unscheduled, the person's day is ordered again, and nothing is charged.",
   input: z.object({ id: Id, reason: z.enum(NOT_DONE_REASONS), note: z.string().trim().max(300).optional() }),
   output: VisitOut,
   async run(ctx, input) {
@@ -64,7 +64,7 @@ export const visitsUpdate = defineHandler({
     truckId: PersonIdAlias,
     notes: z.string().trim().max(1000).optional().describe("Adds a note to the visit's story (an event of kind note); a note is never edited or cleared, and the text of the newest one is what `notes` reads."),
     accessNote: z.string().trim().max(500).optional().describe("Lands on the visit's property: gate code, dog, where the controller is."),
-    unscheduled: z.literal(true).optional().describe("Take the visit back to Needs a day: the undo of giving it a day."),
+    unscheduled: z.literal(true).optional().describe("Take the visit back to Unscheduled: the undo of giving it a day."),
   }),
   output: VisitOut,
   async run(ctx, input) {
@@ -154,7 +154,7 @@ export const visitsCreate = defineHandler({
   path: "/visits",
   scope: "write",
   status: 201,
-  summary: "Add a visit for work taken by phone: makes the job (kind repair, install or other, source office), its first visit and the job's one line from the service of that kind. Give an existing customer or a new one. With a day it goes through the same rules as a move and the customer is texted the date; with none it waits as Needs a day. Minutes default from the kind, the price from the service when it has a fixed one (a repair visit), the person from the first on the schedule (the owner, else by name).",
+  summary: "Add a visit for work taken by phone: makes the job (kind repair, install or other, source office), its first visit and the job's one line from the service of that kind. Give an existing customer or a new one. With a day it goes through the same rules as a move and the customer is texted the date; with none it waits as Unscheduled. Minutes default from the kind, the price from the service when it has a fixed one (a repair visit), the person from the first on the schedule (the owner, else by name).",
   input: z.object({
     jobId: Id.optional().describe("Add the visit to this open job (its customer and property are the job's) instead of making a new job; a Season Pass takes no visit this way."),
     customerId: Id.optional(),

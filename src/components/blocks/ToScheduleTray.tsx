@@ -43,7 +43,7 @@ export function ToScheduleTray({ items, onPlace, onPlaceAll, onAnotherDay, noRoo
       {onPlaceAll && !readOnly && placeable > 0 && (
         <div className="mb-2 flex justify-end">
           <Button type="button" size="sm" variant="ghost" className="min-h-11 text-primary-dark hover:text-primary-deep" onClick={onPlaceAll}>
-            {`Place all ${placeable}`}
+            {`Schedule all ${placeable}`}
           </Button>
         </div>
       )}
@@ -58,8 +58,8 @@ export function ToScheduleTray({ items, onPlace, onPlaceAll, onAnotherDay, noRoo
               {item.awaitingPick ? (
                 <span data-slot="tray-waiting" className="shrink-0 text-xs font-medium text-primary-deep">Customer picks the day</span>
               ) : readOnly ? null : (
-                <Button size="sm" variant="outline" aria-label={`Place ${item.clientName}, ${trayLine(item).toLowerCase()}`} onClick={() => onPlace?.(item)}>
-                  Place
+                <Button size="sm" variant="outline" aria-label={`Schedule ${item.clientName}, ${trayLine(item).toLowerCase()}`} onClick={() => onPlace?.(item)}>
+                  Schedule
                 </Button>
               )}
             </div>
