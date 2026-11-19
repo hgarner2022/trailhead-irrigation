@@ -21,6 +21,8 @@ const preview: Preview = {
       },
     },
     layout: "fullscreen",
+    // The review groups first: the prototypes Hannah reviews, then the screens, then the library.
+    options: { storySort: { order: ["Design", ["Job page, one trip", "Job page, Season Pass and return trip", "Customer", "Invoices and Billing", "Navigation"], "Screens", "Emails", "Blocks", "UI"] } },
     // Accessibility violations fail story tests (npm run test:stories).
     a11y: { test: "error" },
   },
