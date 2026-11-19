@@ -169,6 +169,13 @@
       "when": 1795053437241,
       "tag": "0023_step6_hours_dates",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1795053497241,
+      "tag": "0024_backfill_bookable_from_windows",
+      "breakpoints": true
     }
   ]
 }

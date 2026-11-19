@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { inBookableWindow, isMonthDay, monthDayWords, windowWords } from "./services-window"
+import { inBookableWindow, isMonthDay, monthDayOfDate, monthDayWords, windowDatesFor, windowWords } from "./services-window"
 
 describe("isMonthDay", () => {
   it("accepts a real month and day and refuses the rest, February 29 included", () => {
@@ -50,5 +50,25 @@ describe("inBookableWindow", () => {
     expect(inBookableWindow({ bookableFrom: "09-28" }, "2026-12-31")).toBe(true)
     expect(inBookableWindow({ bookableTo: "10-31" }, "2027-01-01")).toBe(true)
     expect(inBookableWindow({ bookableTo: "10-31" }, "2027-11-01")).toBe(false)
+  })
+})
+
+describe("windowDatesFor and monthDayOfDate", () => {
+  it("reads the month and day of a whole date", () => {
+    expect(monthDayOfDate("2027-10-01")).toBe("10-01")
+    for (const bad of ["", "10-01", "2027-13-01", "2027-02-30"]) expect(monthDayOfDate(bad)).toBeNull()
+  })
+  it("keeps the window's year, wraps New Year into the next, opens an empty end and clamps February 29", () => {
+    const has = { opensOn: "2027-10-01" }
+    expect(windowDatesFor({ bookableFrom: "10-05", bookableTo: "11-20" }, has, "2026-11-18")).toEqual({ opensOn: "2027-10-05", closesOn: "2027-11-20" })
+    expect(windowDatesFor({ bookableFrom: "11-01", bookableTo: "03-15" }, has, "2026-11-18")).toEqual({ opensOn: "2027-11-01", closesOn: "2028-03-15" })
+    expect(windowDatesFor({ bookableFrom: "10-01", bookableTo: null }, has, "2026-11-18")).toEqual({ opensOn: "2027-10-01", closesOn: "2027-12-31" })
+    expect(windowDatesFor({ bookableFrom: null, bookableTo: "06-15" }, has, "2026-11-18")).toEqual({ opensOn: "2027-01-01", closesOn: "2027-06-15" })
+    expect(windowDatesFor({}, has, "2026-11-18")).toEqual({ opensOn: "2027-01-01", closesOn: "2027-12-31" })
+    expect(windowDatesFor({ bookableFrom: "02-29", bookableTo: "03-31" }, has, "2026-11-18")).toEqual({ opensOn: "2027-02-28", closesOn: "2027-03-31" })
+  })
+  it("with no window opens on the next occurrence of the start", () => {
+    expect(windowDatesFor({ bookableFrom: "05-01", bookableTo: "05-31" }, undefined, "2026-11-18")).toEqual({ opensOn: "2027-05-01", closesOn: "2027-05-31" })
+    expect(windowDatesFor({ bookableFrom: "12-01", bookableTo: "12-20" }, undefined, "2026-11-18")).toEqual({ opensOn: "2026-12-01", closesOn: "2026-12-20" })
   })
 })

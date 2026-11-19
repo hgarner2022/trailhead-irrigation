@@ -40,3 +40,24 @@ export function inBookableWindow(w: BookableWindow, day: string): boolean {
   const md = day.slice(5, 10)
   return from <= to ? md >= from && md <= to : md >= from || md <= to
 }
+
+/** "MM-DD" from a window's "YYYY-MM-DD"; null when it is not a date. */
+export const monthDayOfDate = (date: string): string | null => (/^\d{4}-\d{2}-\d{2}$/.test(date) && isMonthDay(date.slice(5)) ? date.slice(5) : null)
+
+const isLeap = (y: number) => (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0
+const dated = (year: number, md: string) => `${year}-${md === "02-29" && !isLeap(year) ? "02-28" : md}`
+
+/**
+ * The scheduling window (`settings.windows.<kind>`, whole dates) that says the same as a service's "MM-DD" span, until the engine reads
+ * the span itself (step 7). An empty end is open ("from" alone runs to Dec 31, "to" alone starts Jan 1, neither is all year). The window
+ * keeps the year it has (`existing.opensOn`); one that wraps New Year closes the next year. With no window yet it opens on the next
+ * occurrence of the start from `today` ("YYYY-MM-DD").
+ */
+export function windowDatesFor(w: BookableWindow, existing: { opensOn: string } | undefined, today: string): { opensOn: string; closesOn: string } {
+  const from = w.bookableFrom ?? "01-01"
+  const to = w.bookableTo ?? "12-31"
+  const known = existing && /^\d{4}-/.test(existing.opensOn) ? Number(existing.opensOn.slice(0, 4)) : null
+  const thisYear = Number(today.slice(0, 4))
+  const year = known ?? (dated(thisYear, from) >= today ? thisYear : thisYear + 1)
+  return { opensOn: dated(year, from), closesOn: dated(year + (to < from ? 1 : 0), to) }
+}
