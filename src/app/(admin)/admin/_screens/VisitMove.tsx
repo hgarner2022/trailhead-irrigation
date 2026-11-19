@@ -45,12 +45,15 @@ export function MoveDialog({ visit, today, actions, open, onOpenChange, target, 
   const placed = Boolean(dayOfVisit(visit))
   const [day, setDay] = useState(target?.day ?? dayOfVisit(visit) ?? dayAfter(today))
   // A pass visit's start time is only the stack its day was ordered in: it is offered back as a time only when it was booked.
-  const [time, setTime] = useState(visit.timeBooked ? (visit.startTime ?? "") : "")
+  const startTime = visit.timeBooked ? (visit.startTime ?? "") : ""
+  const [time, setTime] = useState(startTime)
   const [note, setNote] = useState("")
   const toast = useUndoToast()
   const first = visit.clientName.split(" ")[0]
   const booked = Boolean(visit.timeBooked)
   const current = dayOfVisit(visit)
+  // a move that changes nothing is a no-op: both buttons wait until the day, the time or the person differs from the visit's
+  const unchanged = placed && day === current && time === startTime && (!target?.personId || target.personId === visit.personId)
   // the customer can no longer change a day online from the day before it: the old day, or the new one, is inside that window
   const locked = placed && (withinCutoffOn(current, today) || withinCutoffOn(day, today))
   const asks = placed && Boolean(visit.property?.mustBeHome)
@@ -81,7 +84,7 @@ export function MoveDialog({ visit, today, actions, open, onOpenChange, target, 
               <SplitButton
                 label="Move and text the customer"
                 menuLabel="More ways to move"
-                disabled={pending || !day}
+                disabled={pending || !day || unchanged}
                 onClick={() => confirm("text")}
                 menu={[{ label: "Move without texting", disabled: booked || note.trim() !== "", onSelect: () => confirm("quiet") }]}
               />

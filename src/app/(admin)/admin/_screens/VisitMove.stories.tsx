@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite"
-import { expect, screen } from "storybook/test"
+import { expect, screen, within } from "storybook/test"
 import type { Visit } from "@/lib/admin/types"
 import { MoveDialog } from "./VisitMove"
 
@@ -33,6 +33,15 @@ export const Default: Story = {}
 
 /** The visit has no day yet: "Schedule", one plain button, the date text goes as it always did. */
 export const Empty: Story = { args: { visit: visit({ status: "unscheduled", scheduledOn: undefined, startAt: undefined, personId: undefined, personName: undefined }) } }
+
+/** Nothing changed yet: both Move buttons wait, so a move to the same day and time never texts the customer. */
+export const NothingChanged: Story = {
+  play: async () => {
+    const dialog = await screen.findByRole("dialog")
+    await expect(within(dialog).getByRole("button", { name: "Move and text the customer" })).toBeDisabled()
+    await expect(within(dialog).getByRole("button", { name: "More ways to move" })).toBeDisabled()
+  },
+}
 
 /** A time was promised: the customer is always texted, so "Move without texting" is greyed under the caret. */
 export const BookedTime: Story = {
