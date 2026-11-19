@@ -149,14 +149,13 @@ function Earlier({ area }: { area: PassArea }) {
   )
 }
 
-const ICON = "size-4"
 export function bandOf(d: CustomerPageData): SummaryItem[] {
   const { next, unpaid, pass, card } = d.band
   return [
-    { label: "Next visit", value: next.value, sub: next.sub, icon: <CalendarDays className={ICON} /> },
-    { label: "Unpaid", value: unpaid.value, sub: unpaid.sub, tone: unpaid.alert ? "alert" : "plain", icon: <Receipt className={ICON} /> },
-    { label: "Season Pass", value: pass.value, sub: pass.sub, icon: <Ticket className={ICON} /> },
-    { label: "Card on file", value: card.value, sub: card.sub, icon: <CreditCard className={ICON} /> },
+    { label: "Next visit", value: next.value, sub: next.sub, icon: CalendarDays },
+    { label: "Unpaid", value: unpaid.value, sub: unpaid.sub, tone: unpaid.alert ? "alert" : "plain", icon: Receipt },
+    { label: "Season Pass", value: pass.value, sub: pass.sub, icon: Ticket },
+    { label: "Card on file", value: card.value, sub: card.sub, icon: CreditCard },
   ]
 }
 
@@ -171,12 +170,11 @@ export function CustomerPage({ customer: d, initialDialog = null }: CustomerPage
   const [text, setText] = useState("")
   const open = (which: Dialog) => () => setDialog(which)
   const act = (label: string, onClick: () => void = noop): FooterAction => ({ label, onClick })
-  const more: FooterAction[] = [
-    ...(d.unpaid && d.cardLast4 ? [act(`Charge ${d.unpaid} to the card`, open("charge"))] : []),
-    ...(d.unpaid ? [act("Send an invoice", open("invoice"))] : []),
-    act("Add a note"),
-    act("Edit"),
-  ]
+  const call: FooterAction = { label: "Call", href: d.phone.href }
+  const pay = d.unpaid ? (d.cardLast4 ? act(`Charge ${d.unpaid}`, open("charge")) : act("Send an invoice", open("invoice"))) : undefined
+  // Unpaid puts Charge (card on file) or Send an invoice beside Send a text; Call then waits under More.
+  const secondary: [FooterAction] | [FooterAction, FooterAction] = pay ? [act("Send a text", open("text")), pay] : [act("Send a text", open("text")), call]
+  const more: FooterAction[] = [...(pay ? [call] : []), ...(d.unpaid && d.cardLast4 ? [act("Send an invoice", open("invoice"))] : []), act("Add a note"), act("Edit")]
   const close = (v: boolean) => !v && setDialog(null)
   return (
     <>
@@ -187,7 +185,7 @@ export function CustomerPage({ customer: d, initialDialog = null }: CustomerPage
         badges={d.pills.map((p) => <StatusPill key={p.label ?? p.status} status={p.status} label={p.label} size="lg" />)}
         band={<SummaryBand items={bandOf(d)} />}
         asideLabel="About this customer"
-        actions={<RecordFooter primary={act("New job")} secondary={[act("Send a text", open("text")), { label: "Call", href: d.phone.href }]} more={more} destructiveInMenu />}
+        actions={<RecordFooter primary={act("New job")} secondary={secondary} more={more} destructiveInMenu />}
         aside={
           <>
             <ContactCard d={d} />
