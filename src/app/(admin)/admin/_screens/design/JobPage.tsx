@@ -21,7 +21,7 @@ import { ReminderDialog } from "./ReminderDialog"
 // Collect payment opens "How is this paid?" in a dialog, Billing is a state (facts, Payments, Invoices) that never holds a result message,
 // and the payment reminder and a refund each confirm in their own dialog, from the header or from a table row. Pure props, nothing wired.
 
-export function JobPage({ job, onDo, onMessage, intercept = [], handlers }: { job: JobPageData; onDo?: (label: string, variant?: string) => void; onMessage?: (m: { channel: "text" | "email"; body: string }) => void; intercept?: string[]; handlers?: CollectHandlers }) {
+export function JobPage({ job, onDo, onMessage, intercept = [], handlers }: { job: JobPageData; onDo?: (label: string, variant?: string, how?: string) => void; onMessage?: (m: { channel: "text" | "email"; body: string }) => void; intercept?: string[]; handlers?: CollectHandlers }) {
   const [dialog, setDialog] = useState<"remind" | "refund" | null>(null)
   const canceled = job.pills[0].status === "cancelled"
   const facts = factsOfJob(job)
@@ -50,7 +50,7 @@ export function JobPage({ job, onDo, onMessage, intercept = [], handlers }: { jo
           who={{ first: facts.first, channel: facts.channel ?? "text", phone: facts.phone, email: facts.email ?? "" }}
           invoice={{ number: job.billing.invoices?.[0]?.number ?? "INV-2026-0001", amount: facts.amount, service: facts.service, dueOn: facts.dueOn, pastDue: facts.pastDue }}
           onClose={() => setDialog(null)}
-          onSend={({ line }) => onDo?.("Send a payment reminder", line)}
+          onSend={({ line, channel }) => onDo?.("Send a payment reminder", line, channel)}
         />
       )}
       {dialog === "refund" && (
