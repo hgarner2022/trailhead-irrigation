@@ -486,6 +486,36 @@ export const event = pgTable(
   ],
 )
 
+/**
+ * A photo on a visit (docs/DATA_MODEL.md, photo): the file lives in the private Vercel Blob store under `blob_key`, never at a public address, and is read
+ * only through `/api/photos/<id>`, which checks who is asking. A soft delete sets `deleted_at`; the file is removed from the store at the same time.
+ */
+export const photo = pgTable(
+  "photo",
+  {
+    id: text("id").primaryKey().$defaultFn(() => `photo_${crypto.randomUUID()}`),
+    organizationId: orgId(),
+    visitId: text("visit_id").notNull().references(() => visit.id),
+    jobId: text("job_id").notNull().references(() => job.id),
+    customerId: text("customer_id").notNull().references(() => customer.id),
+    /** the pathname in the private store, `photos/<visit id>/<name>-<random>` */
+    blobKey: text("blob_key").notNull(),
+    contentType: text("content_type").notNull(),
+    bytes: integer("bytes").notNull(),
+    /** who added it, as `event.who` is: the signed-in person's email, `customer`, or a person id */
+    addedBy: text("added_by").notNull(),
+    /** a customer's own photo is always theirs to see (true); a staff photo is shown to the customer only when this is true and the visit is Done */
+    shownToCustomer: boolean("shown_to_customer").notNull().default(false),
+    createdAt: createdAt(),
+    deletedAt: ts("deleted_at"),
+  },
+  (t) => [
+    index("photo_visit_idx").on(t.organizationId, t.visitId, t.createdAt),
+    index("photo_job_idx").on(t.organizationId, t.jobId, t.createdAt),
+    uniqueIndex("photo_blob_key_unique").on(t.blobKey),
+  ],
+)
+
 export const scheduleRun = pgTable(
   "schedule_run",
   {

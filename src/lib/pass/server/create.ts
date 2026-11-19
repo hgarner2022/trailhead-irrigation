@@ -116,6 +116,7 @@ export async function expirePendingPasses(db: Database, now: Date, minutes = PEN
   // Foreign-key order: events, lines, visits, alerts, then the job.
   // The events of a checkout that never finished are not history: they go with the pass (the one place anything leaves `event`).
   await db.delete(s.event).where(and(inArray(s.event.organizationId, orgs), inArray(s.event.jobId, jobIds)))
+  await db.delete(s.photo).where(and(inArray(s.photo.organizationId, orgs), inArray(s.photo.jobId, jobIds)))
   await db.delete(s.lineItem).where(inArray(s.lineItem.jobId, jobIds))
   await db.delete(s.visit).where(inArray(s.visit.jobId, jobIds))
   await db.delete(s.adminAlert).where(and(inArray(s.adminAlert.organizationId, orgs), inArray(s.adminAlert.jobId, jobIds)))
