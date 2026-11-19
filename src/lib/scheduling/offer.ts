@@ -128,7 +128,7 @@ interface Timed {
 }
 
 /** Open slots of one person on one day, each with the added drive and the neighbour that set it. Pure. */
-function personSlots(input: OfferInputs, person: OfferPerson, day: string, mine: BookedVisit[], blocked: BlockedSpan[]): (OfferSlot & { near: OfferLocus | null })[] {
+function personSlots(input: OfferInputs, person: OfferPerson, day: string, mine: BookedVisit[], blocked: BlockedSpan[]): OfferSlot[] {
   const minutes = input.service.minutes
   const dayStart = minutesOf(person.hoursStart ?? DEFAULT_HOURS.start)
   const dayEnd = minutesOf(person.hoursEnd ?? DEFAULT_HOURS.end)
@@ -155,7 +155,7 @@ function personSlots(input: OfferInputs, person: OfferPerson, day: string, mine:
   if (freeAfterSlot < 0) return []
 
   const stops: OfferLocus[] = mine.map((v) => v)
-  const out: (OfferSlot & { near: OfferLocus | null })[] = []
+  const out: OfferSlot[] = []
   for (let start = dayStart; start + minutes <= dayEnd; start += GRID_MINUTES) {
     const end = start + minutes
     if (spans.some(([a, z]) => start < z && end > a)) continue
@@ -184,7 +184,7 @@ function personSlots(input: OfferInputs, person: OfferPerson, day: string, mine:
       added = 0
     }
     const label = nearest ? (nearest.at.town === input.property.town ? `Next to another ${input.property.town} visit.` : nearest.d <= NEAR_MINUTES ? "Close to another visit." : null) : null
-    out.push({ start: clock(start), end: clock(end), personId: person.id, added: round1(Math.max(0, added)), label, near: nearest?.at ?? null })
+    out.push({ start: clock(start), end: clock(end), personId: person.id, added: round1(Math.max(0, added)), label })
   }
   return out
 }
@@ -197,7 +197,7 @@ function daySlots(input: OfferInputs, day: string): OfferSlot[] {
     if (person.active === false || !person.workingDays.includes(weekday)) return
     const mine = input.booked.filter((v) => v.personId === person.id && v.day === day)
     const blocked = input.blocked.filter((b) => b.personId === person.id && b.day === day)
-    for (const { near: _near, ...slot } of personSlots(input, person, day, mine, blocked)) {
+    for (const slot of personSlots(input, person, day, mine, blocked)) {
       const have = byStart.get(slot.start)
       const working = mine.length > 0
       const better = !have || (working && !have.working) || (working === have.working && (slot.added < have.slot.added || (slot.added === have.slot.added && order < have.order)))
