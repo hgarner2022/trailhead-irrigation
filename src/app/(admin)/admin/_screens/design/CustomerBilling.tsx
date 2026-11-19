@@ -29,7 +29,7 @@ export function CustomerBilling({ rows = CUSTOMER_ROWS, open = true }: { rows?: 
       title="Andrea Dalton"
       subtitle="480 Briggs St, Erie"
       facts={[["Phone", "(970) 555-0123"], ["Card", "Visa ending 4242"]]}
-      footer={<RecordFooter primary={{ label: "New job", onClick: noop }} secondary={[{ label: "Send a text", onClick: noop }]} more={[{ label: "Edit", onClick: noop }]} />}
+      footer={<RecordFooter primary={{ label: "New job", onClick: noop }} secondary={[{ label: "Send a message", onClick: noop }]} more={[{ label: "Edit", onClick: noop }]} />}
     >
       <section aria-labelledby="cust-billing">
         <SectionHeading id="cust-billing">Billing</SectionHeading>

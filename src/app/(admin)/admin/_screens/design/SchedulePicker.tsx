@@ -48,7 +48,7 @@ export function slotsOf(day: Day, person: string, minutes: number, town = "Erie"
 
 export interface Pick { day: string; time: string; person: string }
 
-export function SchedulePicker({ minutes = 60, firstName, onChange }: { minutes?: number; firstName: string; onChange: (p: Pick) => void }) {
+export function SchedulePicker({ minutes = 60, firstName, channel = "text", onChange }: { minutes?: number; firstName: string; channel?: "text" | "email"; onChange: (p: Pick) => void }) {
   const [more, setMore] = useState(false)
   const [custom, setCustom] = useState<Day | null>(null)
   const [dayKey, setDayKey] = useState("d24")
@@ -84,7 +84,7 @@ export function SchedulePicker({ minutes = 60, firstName, onChange }: { minutes?
 
       <PersonAndTimes day={day} person={person} setPerson={(p) => (setPerson(p), setAt("any"), emit(day, p, "any"))} stops={stops} starts={starts} best={best} at={at} minutes={minutes} pick={(t) => (setAt(t), emit(day, person, t))} />
 
-      <p className="text-muted-foreground">{firstName} gets a text with the day and time.</p>
+      <p className="text-muted-foreground">{firstName} gets {channel === "email" ? "an email" : "a text"} with the day and time.</p>
     </div>
   )
 }

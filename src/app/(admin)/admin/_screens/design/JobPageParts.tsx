@@ -11,6 +11,8 @@ import { MessageTable } from "@/components/blocks/MessageTable"
 import { MoneyCell } from "@/components/blocks/MoneyCell"
 import { NotesAndHistory } from "@/components/blocks/NotesAndHistory"
 import { ConfirmDialog } from "@/components/blocks/ConfirmDialog"
+import { FormRow } from "@/components/blocks/FormRow"
+import { SplitButton } from "@/components/blocks/SplitButton"
 import { RecordFooter, type FooterAction } from "@/components/blocks/RecordFooter"
 import { collectConfirm, footerConfirms, type ConfirmCopy, type ConfirmFacts } from "./confirm-copy"
 import { RecordFacts, type RecordFact } from "@/components/blocks/RecordPanel"
@@ -20,6 +22,7 @@ import { StatusPill, statusLabel, type PillStatus } from "@/components/blocks/St
 import type { SummaryItem } from "@/components/blocks/SummaryBand"
 import type { Message } from "@/lib/admin/types"
 import type { TimelineLine } from "@/lib/events/timeline"
+import { MessageDialog } from "./MessageDialog"
 import { NOW, noop, noteOk, type FooterPlan, type JobPageData, type PastVisit, type PillData } from "./job-fixtures"
 
 // The cards the one-trip, Season Pass and return-trip job pages share, so a card reads the same on every job (the rules are in
@@ -158,6 +161,16 @@ export interface CollectHandlers {
   onRecord?: (input: { method: string; reference?: string }) => Promise<{ ok: true }>
   onInvoice?: (o?: { report: boolean }) => Promise<{ ok: true }>
   onClose?: () => void
+  onLater?: () => void
+}
+
+/** How is this paid?, the same choice block in Billing and in the dialog that follows Mark done. */
+export function CollectBlock({ collect, facts, handlers, bare }: { collect: NonNullable<JobPageData["collect"]>; facts: ConfirmFacts; handlers?: CollectHandlers; bare?: boolean }) {
+  return (
+    <div className={bare ? "" : "mb-4 rounded-lg bg-stone p-4"}>
+      <CollectPayment plan={collect.plan} summary={collect.summary} firstName="Andrea" onCharge={handlers?.onCharge ?? noteOk} onRecord={handlers?.onRecord ?? noteOk} onInvoice={handlers?.onInvoice ?? noteOk} onLater={handlers?.onLater ?? noop} onClose={handlers?.onClose ?? noop} notNow confirmFor={(o, ref) => collectConfirm(o.value, facts, ref)} buttonLabel={(o) => (o.value === "card" ? `Charge ${dollars(collect.plan.amount)} to the ${collect.plan.cardWords}` : PAY_WORDS[o.value] ?? o.button)} />
+    </div>
+  )
 }
 
 export function BillingCard({ data, facts, handlers }: { data: Pick<JobPageData, "billing" | "collect">; facts: ConfirmFacts; handlers?: CollectHandlers }) {
@@ -166,11 +179,7 @@ export function BillingCard({ data, facts, handlers }: { data: Pick<JobPageData,
   const status = billing.status
   return (
     <SectionCard title="Billing" id="billing-h">
-      {collect && (
-        <div className="mb-4 rounded-lg bg-stone p-4">
-          <CollectPayment plan={collect.plan} summary={collect.summary} firstName="Andrea" onCharge={handlers?.onCharge ?? noteOk} onRecord={handlers?.onRecord ?? noteOk} onInvoice={handlers?.onInvoice ?? noteOk} onLater={noop} onClose={handlers?.onClose ?? noop} notNow confirmFor={(o, ref) => collectConfirm(o.value, facts, ref)} buttonLabel={(o) => (o.value === "card" ? `Charge ${dollars(collect.plan.amount)} to the ${collect.plan.cardWords}` : PAY_WORDS[o.value] ?? o.button)} />
-        </div>
-      )}
+      {collect && <CollectBlock collect={collect} facts={facts} handlers={handlers} />}
       {status && <p className="mb-2 text-sm font-medium"><MoneyCell text={status.text} tone={status.tone} /></p>}
       <BillingSection summary={summary} rows={billing.rows as BillingRowData[]} emptyLine={billing.emptyLine} />
     </SectionCard>
@@ -196,6 +205,10 @@ export function factsOfJob(job: JobPageData): ConfirmFacts {
   return {
     first: job.customer.split(" ")[0]!,
     customer: job.customer,
+    channel: job.contact?.channel ?? "text",
+    email: job.contact?.email ?? "andrea.dalton@example.com",
+    firstText: !job.messages.some((m) => m.channel === "sms"),
+    late: job.pillNote === "day passed",
     service: "repair",
     amount: job.billing.summary.find(([k]) => k === "Total")?.[1] ?? "$145",
     phone: CONTACT.sms,
@@ -207,13 +220,16 @@ export function factsOfJob(job: JobPageData): ConfirmFacts {
 }
 
 /** The header's actions: the primary, up to two outlines, More with the destructive one last inside it. A button that reaches the customer or their money opens its confirmation first (a customer-facing action always confirms and states its effect). */
-export function Actions({ plan, facts, onDo, intercept = [] }: { plan: FooterPlan; facts: ConfirmFacts; onDo?: (label: string) => void; intercept?: string[] }) {
+export function Actions({ plan, facts, onDo, onMessage, intercept = [] }: { plan: FooterPlan; facts: ConfirmFacts; onDo?: (label: string, variant?: string) => void; onMessage?: (m: { channel: "text" | "email"; body: string }) => void; intercept?: string[] }) {
+  const [composing, setComposing] = useState(false)
+  const [doneDay, setDoneDay] = useState<string>("")
   const [asking, setAsking] = useState<(ConfirmCopy & { label?: string }) | null>(null)
   const confirms = footerConfirms(facts)
   const wrap = (a: FooterAction): FooterAction => {
     if (a.disabled) return a
+    if (a.label === "Send a message") return { ...a, onClick: () => setComposing(true) }
     if (intercept.includes(a.label)) return { ...a, onClick: () => onDo?.(a.label) }
-    if (confirms[a.label]) return { ...a, onClick: () => setAsking({ ...confirms[a.label]!, label: a.label }) }
+    if (confirms[a.label]) return { ...a, onClick: () => (setDoneDay(confirms[a.label]!.doneOn?.[0] ?? ""), setAsking({ ...confirms[a.label]!, label: a.label })) }
     return onDo ? { ...a, onClick: () => onDo(a.label) } : a
   }
   return (
@@ -227,13 +243,29 @@ export function Actions({ plan, facts, onDo, intercept = [] }: { plan: FooterPla
         slot={plan.slot}
       />
       {asking && (
-        <ConfirmDialog open onOpenChange={(o) => !o && setAsking(null)} title={asking.title} message={asking.message} confirmLabel={asking.confirmLabel} destructive={asking.destructive} slot="action-confirm" onConfirm={async () => {
-          if (asking.label) onDo?.(asking.label)
-          return { ok: true }
-        }}>
+        <ConfirmDialog
+          open
+          onOpenChange={(o) => !o && setAsking(null)}
+          title={asking.title}
+          message={asking.message}
+          confirmLabel={asking.confirmLabel}
+          destructive={asking.destructive}
+          slot="action-confirm"
+          onConfirm={async (variant) => {
+            if (asking.label) onDo?.(asking.label, variant)
+            return { ok: true }
+          }}
+          renderConfirm={asking.quiet ? ({ confirm, pending }) => <SplitButton label={asking.confirmLabel ?? "Confirm"} onClick={() => confirm("send")} disabled={pending} menuLabel="More ways" menu={[{ label: asking.quiet!, onSelect: () => confirm("quiet") }]} /> : undefined}
+        >
           {asking.body && <p className="whitespace-pre-wrap rounded-lg bg-stone p-3 text-sm">{asking.body}</p>}
+          {asking.doneOn && (
+            <FormRow label="Done on">
+              <select value={doneDay} onChange={(e) => setDoneDay(e.target.value)} className="min-h-11 rounded-lg border border-input bg-background px-3 text-sm">{asking.doneOn.map((d) => <option key={d}>{d}</option>)}</select>
+            </FormRow>
+          )}
         </ConfirmDialog>
       )}
+      {composing && <MessageDialog facts={facts} onClose={() => setComposing(false)} onSend={(m) => onMessage?.(m)} />}
     </>
   )
 }
