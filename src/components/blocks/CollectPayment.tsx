@@ -191,10 +191,10 @@ export function CollectPayment({ plan, summary, firstName, onCharge, onRecord, o
           }}
         >
           {asking.reportOption && (
-            <label className="flex min-h-11 cursor-pointer items-center gap-3 text-sm font-medium">
-              <input type="checkbox" checked={report} onChange={(e) => setReport(e.target.checked)} className="size-5 shrink-0 accent-primary" />
-              {asking.reportOption.label}
-            </label>
+            <div className="flex min-h-11 items-center gap-3 text-sm font-medium">
+              <input id="collect-report" type="checkbox" checked={report} onChange={(e) => setReport(e.target.checked)} aria-labelledby="collect-report-l" className="size-5 shrink-0 cursor-pointer accent-primary" />
+              <span id="collect-report-l" className="cursor-pointer" onClick={() => setReport((r) => !r)}>{asking.reportOption.label}</span>
+            </div>
           )}
         </ConfirmDialog>
       )}

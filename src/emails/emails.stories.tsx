@@ -2,6 +2,9 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite"
 import { EMAIL_FIXTURES, EMAIL_LABELS, SIGN_IN_FIXTURE } from "./fixtures"
 import { renderEmail, type EmailKind } from "./render"
 import { signInEmail } from "./sign-in"
+import { invoiceEmail } from "./invoice"
+import type { InvoiceData } from "./types"
+import { REPORT_FIXTURE } from "./fixtures"
 
 // The real HTML of every email, built by the same renderer the sender uses and shown in a frame the way an inbox shows it,
 // at a desktop width and at a phone width. Nothing is sent: the data is made up (`fixtures.ts`).
@@ -36,6 +39,10 @@ export const TwoWeeksOut = story("date-confirm")
 export const Receipt = story("receipt")
 /** An invoice: the same table, the amount due, the due day and one Pay button. */
 export const Invoice = story("invoice")
+/** The invoice with the visit report: What we did under the lines, the checklist, the crew's notes and the photos in a grid. */
+const withReport = invoiceEmail({ ...(EMAIL_FIXTURES.invoice as unknown as InvoiceData), report: REPORT_FIXTURE })
+export const InvoiceWithVisitReport: Story = { name: "Invoice with the visit report", args: { subject: withReport.subject, html: withReport.html, width: 640 } }
+export const InvoiceWithVisitReportOnAPhone: Story = { name: "Invoice with the visit report on a phone", args: { subject: withReport.subject, html: withReport.html, width: 375 } }
 export const InvoiceReminder = story("invoice-reminder")
 export const CardFailed = story("card-failed")
 export const CardExpiring = story("card-expiring")

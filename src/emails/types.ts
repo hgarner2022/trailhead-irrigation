@@ -95,6 +95,8 @@ export interface InvoiceData extends Base {
   dueOn: string
   /** the signed pay link */
   payUrl: string
+  /** the visit report (checklist, notes, photos), present when the invoice's `include_report` is on */
+  report?: import("./visit-report").VisitReportData
 }
 export interface CardFailedData extends Base {
   amount: number | null

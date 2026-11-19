@@ -12,6 +12,8 @@ export interface PayBill {
   paidOn: string | null
   status: "sent" | "paid" | "overdue" | "cancelled"
   receiptUrl: string | null
+  /** the visit report, present when the invoice's `include_report` is on (the checklist and photos already belong to the visit) */
+  report?: import("@/emails/visit-report").VisitReportData
 }
 
 /** "$1,234"; a credit (the line that takes off money already paid) reads "-$45". */
