@@ -162,7 +162,7 @@ describe("SettingsScreen messages and keys on the list", () => {
     expect(screen.getByRole("heading", { name: "Appy agent" })).toBeInTheDocument()
     await user.click(screen.getByRole("button", { name: "Revoke Appy agent" }))
     await user.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Revoke key" }))
-    expect(screen.queryByRole("heading", { name: "Appy agent" })).toBeNull()
+    await waitFor(() => expect(screen.queryByRole("heading", { name: "Appy agent" })).toBeNull())
     expect(log().getByText("API keys")).toBeInTheDocument()
     // a revoked key acts at once: it is never an unsaved change
     expect(screen.queryByRole("button", { name: "Save" })).toBeNull()
