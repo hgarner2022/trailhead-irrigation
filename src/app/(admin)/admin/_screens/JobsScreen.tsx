@@ -6,7 +6,7 @@ import { DataGrid } from "@/components/blocks/DataGrid"
 import { PageHeader } from "@/components/blocks/PageHeader"
 import type { AdminData } from "@/lib/admin/types"
 import type { JobActions } from "./job-actions-types"
-import { jobColumns } from "./jobs-columns"
+import { jobColumns, jobCard } from "./jobs-columns"
 import { BILLS_OUT, KIND_OPTIONS, MONEY_OPTIONS, STAGE_OPTIONS, billsChip, billsOut, jobRows, jobsContext, seasonOptions, type JobRow } from "./jobs-model"
 import { NewJobButton } from "./NewJob"
 import type { VisitActions } from "./visit-actions-types"
@@ -55,6 +55,7 @@ function Grid({ rows, defaultFilters }: { rows: JobRow[]; defaultFilters?: JobsS
   return (
     <DataGrid
       columns={jobColumns}
+      card={jobCard}
       data={rows}
       getRowId={(r) => r.id}
       search={{ column: "name", placeholder: "Search by name, street or pass number" }}

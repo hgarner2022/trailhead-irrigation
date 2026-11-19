@@ -1,5 +1,6 @@
 import { StatusPill } from "@/components/blocks/StatusPill"
 import type { GridColumnDef } from "@/components/blocks/data-grid-table"
+import type { GridCardSlots } from "@/components/blocks/DataGridCard"
 import { dayLabel } from "./visit-panel-model"
 import type { VisitRow } from "./visits-model"
 
@@ -46,3 +47,6 @@ export const visitColumns: GridColumnDef<VisitRow>[] = [
 
 /** The same columns for the Schedule's stops of one day, without the Day column: every row is that day. A module constant, so the grid keeps its models. */
 export const stopColumns: GridColumnDef<VisitRow>[] = visitColumns.filter((c) => c.id !== "day")
+
+/** The Schedule's List on a phone: the customer, the service, the status, the day, time and who has it, and the money at the right. */
+export const visitCard: GridCardSlots = { title: "name", line: ["kind"], state: "work", when: ["day", "time", "personId"], money: "money" }

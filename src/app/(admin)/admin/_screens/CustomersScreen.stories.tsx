@@ -178,3 +178,6 @@ export const PanelSeasonPass: Story = {
     await expect(await body.findByRole("link", { name: "Season Pass TH-2027-0014 · 2027 · Active" })).toHaveAttribute("href", "/admin/jobs?job=job_p-office")
   },
 }
+
+/** No customers yet, on a phone. */
+export const EmptyPhone: Story = { args: { data: nothingYet }, globals: { viewport: { value: "phone", isRotated: false } } }

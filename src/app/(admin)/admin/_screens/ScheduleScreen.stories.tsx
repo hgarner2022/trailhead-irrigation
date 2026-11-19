@@ -242,3 +242,15 @@ export const PlaceOneWithUndoStrip: Story = {
     await expect(await canvas.findByRole("button", { name: "Undo" })).toBeInTheDocument()
   },
 }
+
+/** The List view on a phone: each visit is one card with the customer, service, status, day, time, who and the money word. */
+export const ListPhone: Story = {
+  args: { defaultTab: "list" },
+  globals: { viewport: { value: "phone", isRotated: false } },
+}
+
+/** The List view on a phone with no visits yet. */
+export const ListEmptyPhone: Story = {
+  args: { defaultTab: "list", data: nothingYet },
+  globals: { viewport: { value: "phone", isRotated: false } },
+}

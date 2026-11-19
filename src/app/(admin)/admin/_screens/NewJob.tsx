@@ -8,12 +8,14 @@ import type { AdminData, ServiceItem } from "@/lib/admin/types"
 import { CustomerPicker, FIELD, LABEL, emptyChoice, type CustomerChoice } from "./CustomerPicker"
 import { NewJobPass, type NewPassInitial } from "./NewJobPass"
 import { NewJobService, servicePriceLine } from "./NewJobService"
+import { bandFor, serviceGroupId, serviceGroups, zoneCountOf } from "./new-job-model"
 import type { VisitActions } from "./visit-actions-types"
 import { useOpenRecord } from "./RecordHost"
 
 // New job: one sheet for everything the office sells by phone or at the door. The customer, then "What are we doing?": the
 // Season Pass first, then the active services, each with what the visit includes and its price from the rule under the
-// select. A pass goes through `sellPass` (zones, days, how they pay); anything else through `createVisit` with the service's
+// select; the service is one entry however many zone bands the catalogue has (new-job-model.ts), and the zones box picks the band.
+// A pass goes through `sellPass` (zones, days, how they pay); anything else through `createVisit` with the service's
 // key. The customer block is shared (CustomerPicker.tsx). The services come from the screen's data (`data.services`, the
 // active ones from `services.list`); the catalog's fixtures carry none and read the site's own list.
 
@@ -55,13 +57,20 @@ const offered = (data: AdminData): readonly ServiceItem[] => (data.services ?? (
 export function NewJob({ data, today, open, onOpenChange, customerId, actions, initial = {}, onCreated, day }: NewJobProps) {
   const host = useOpenRecord()
   const [choice, setChoice] = useState<CustomerChoice>(initial.customer ?? emptyChoice(customerId))
-  const [what, setWhat] = useState(initial.choice ?? "")
-  const services = useMemo(() => offered(data), [data])
-  const service = services.find((s) => s.key === what)
+  const startWith = initial.choice === SEASON_PASS ? SEASON_PASS : initial.choice ? serviceGroupId(initial.choice) : ""
+  const [what, setWhat] = useState(startWith)
+  const [zones, setZones] = useState<string | null>(null)
+  const groups = useMemo(() => serviceGroups(offered(data)), [data])
+  const group = groups.find((g) => g.id === what)
+  // The zones box picks the band; the sheet keeps the exact band row so `createVisit` gets its key.
+  const service = group ? bandFor(group, zoneCountOf(zones ?? "", group)) : undefined
   const isPass = what === SEASON_PASS
   // Closing the sheet, by Close, Escape or Add job, forgets the chosen service as the customer is forgotten: the next New job starts blank.
   const change = (next: boolean) => {
-    if (!next) setWhat(initial.choice ?? "")
+    if (!next) {
+      setWhat(startWith)
+      setZones(null)
+    }
     onOpenChange(next)
   }
   const done = () => change(false)
@@ -85,14 +94,17 @@ export function NewJob({ data, today, open, onOpenChange, customerId, actions, i
             <label htmlFor="nj-what" className={LABEL}>
               What are we doing?
             </label>
-            <select id="nj-what" value={what} onChange={(e) => setWhat(e.target.value)} className={FIELD}>
+            <select id="nj-what" value={what} onChange={(e) => {
+                setWhat(e.target.value)
+                setZones(null)
+              }} className={FIELD}>
               <option value="" disabled>
                 Choose one
               </option>
               <option value={SEASON_PASS}>Season Pass</option>
-              {services.map((s) => (
-                <option key={s.key} value={s.key}>
-                  {s.name}
+              {groups.map((g) => (
+                <option key={g.id} value={g.id}>
+                  {g.name}
                 </option>
               ))}
             </select>
@@ -110,9 +122,12 @@ export function NewJob({ data, today, open, onOpenChange, customerId, actions, i
           </div>
 
           {isPass && <NewJobPass data={data} today={today} choice={choice} actions={actions} initial={initial.pass} onDone={done} />}
-          {service && (
+          {group && service && (
             <NewJobService
-              key={service.key}
+              key={group.id}
+              group={group}
+              zones={zones}
+              onZones={setZones}
               data={data}
               today={today}
               choice={choice}

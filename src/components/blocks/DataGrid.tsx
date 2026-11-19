@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { DataGridBulkBar, DataGridToolbar, type GridBulkAction, type GridFilter, type GridSearch } from "./data-grid-toolbar"
+import { DataGridCards, type GridCardSlots } from "./DataGridCard"
+import { useMedia } from "./use-media"
 import { SELECT_COLUMN, columnId, gridFeatures, useScrollCue, withFilterFns, type GridColumnDef } from "./data-grid-table"
 
 // The one table of the app (docs/DESIGN.md, Tables): shadcn's TanStack data
@@ -18,8 +20,8 @@ import { SELECT_COLUMN, columnId, gridFeatures, useScrollCue, withFilterFns, typ
 // cannot be hidden or moved. The checkbox selects; nothing else on the row is
 // a target. The header is sticky inside the grid's own scroller, the checkbox
 // and name columns stay frozen on the left, and the right edge fades while
-// there is more table to the right. On a phone it is the same table, never a
-// stack of cards.
+// there is more table to the right. Below `md` a screen that declares `card` slots
+// shows each row as one card instead (DataGridCard.tsx); search, filters, count and empty states are the same.
 
 export type { GridColumnDef } from "./data-grid-table"
 
@@ -53,6 +55,8 @@ export interface DataGridProps<T extends RowData> {
   hiddenColumns?: string[]
   /** Filter chips already set on first render (a link from Home); read once, like `defaultSelectedIds` */
   defaultFilters?: { column: string; values: string[] }[]
+  /** Which columns go on the row's card below `md`; without it the table scrolls sideways there */
+  card?: GridCardSlots
   className?: string
 }
 
@@ -108,8 +112,11 @@ export function DataGrid<T extends RowData>({
   defaultSelectedIds,
   defaultFilters,
   hiddenColumns,
+  card,
   className,
 }: DataGridProps<T>) {
+  const phone = useMedia("(max-width: 767px)")
+  const asCards = Boolean(card) && phone
   const searchColumn = search?.column
   const chipKey = filters.map((f) => f.column).join(",")
   const hasSelect = bulkActions.length > 0
@@ -143,6 +150,9 @@ export function DataGrid<T extends RowData>({
     <div data-slot="data-grid" className={cn("flex flex-col gap-3", className)}>
       <DataGridToolbar table={table} nameId={nameId} search={search} filters={filters} exportName={exportName} disabled={loading} />
       {!loading && hasSelect && <DataGridBulkBar table={table} actions={bulkActions} />}
+      {asCards && card ? (
+        <DataGridCards table={table} rows={rows} slots={card} nameId={nameId} loading={loading} empty={{ hasData: data.length > 0, emptyTitle, emptyLine, noMatchTitle }} onOpen={onOpen} />
+      ) : (
       <div
         ref={wrap}
         tabIndex={-1}
@@ -246,6 +256,7 @@ export function DataGrid<T extends RowData>({
           </TableBody>
         </Table>
       </div>
+      )}
       {!loading && table.getPageCount() > 1 && (
         <div data-slot="data-grid-pager" className="flex items-center justify-between gap-3 text-sm text-muted-foreground">
           <p>{`Showing ${from} to ${to} of ${total}`}</p>

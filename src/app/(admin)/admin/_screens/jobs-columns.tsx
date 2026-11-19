@@ -1,4 +1,5 @@
 import type { GridColumnDef } from "@/components/blocks/data-grid-table"
+import type { GridCardSlots } from "@/components/blocks/DataGridCard"
 import { MoneyCell } from "@/components/blocks/MoneyCell"
 import { StagePill } from "./JobPills"
 import type { JobRow } from "./jobs-model"
@@ -56,3 +57,6 @@ export const jobColumns: GridColumnDef<JobRow>[] = [
     meta: { csv: (r) => (r as JobRow).nextText },
   },
 ]
+
+/** Jobs on a phone: the customer, what the job is, where it stands, the next day, and the money word at the right. */
+export const jobCard: GridCardSlots = { title: "name", line: ["kind"], state: "stage", when: ["next"], money: "money" }

@@ -11,17 +11,18 @@ import { FIELD, LABEL, choiceReady, newCustomerFrom, type CustomerChoice } from 
 import type { NewVisitInput, VisitActions } from "./visit-actions-types"
 import { FORM_STATUS, useRunner } from "./use-runner"
 import { TIME_CHOICES } from "./visit-panel-model"
+import { asksZones, defaultZones, zoneCountOf, type ServiceGroup } from "./new-job-model"
 
 // The service half of New job: the day up front (it may stay empty: the job waits on the Schedule's Unscheduled list and
 // nothing is sent), then the time, the minutes (the service's own), who, the price (the service's rule, editable) and the
 // notes under "More details". Adding it makes the job and its first visit; with a day and a customer who can be texted,
-// the date goes out.
+// the date goes out. The service is one entry; `service` is the band the zones box lands on, and its key is what is sent.
 
-/** What the service costs, from its rule: "$145", "$95 up to 6 zones, +$10 a zone", "Free", or "Quote on site". */
+/** What the service costs, from its rule: "$145", "$95 up to 6 zones, then $10 a zone", "Free", or "Quote on site". */
 export function servicePriceLine(s: Pick<ServiceItem, "price" | "includedZones" | "extraZonePrice">): string {
   if (s.price === undefined) return "Quote on site"
   if (s.price === 0) return "Free"
-  if (s.includedZones && s.extraZonePrice) return `$${s.price} up to ${s.includedZones} zones, +$${s.extraZonePrice} a zone`
+  if (s.includedZones && s.extraZonePrice) return `$${s.price} up to ${s.includedZones} zones, then $${s.extraZonePrice} a zone`
   return `$${s.price}`
 }
 
@@ -29,14 +30,20 @@ interface Props {
   data: AdminData
   today: string
   choice: CustomerChoice
+  /** the service as one entry, with its bands */
+  group: ServiceGroup
+  /** the band the zones land on */
   service: ServiceItem
+  /** what is typed in the zones box (null until touched), kept by the sheet so the price line under the picker follows it */
+  zones: string | null
+  onZones: (zones: string) => void
   actions?: VisitActions
   /** the day the sheet was opened from, on the Schedule */
   initialDay?: string
   onDone: (made: { id: string; jobId: string }) => void
 }
 
-export function NewJobService({ data, today, choice, service, actions, initialDay, onDone }: Props) {
+export function NewJobService({ data, today, choice, group, service, zones, onZones, actions, initialDay, onDone }: Props) {
   const todayDay = today.slice(0, 10)
   // No day until one is chosen: a job taken by phone can be given its day later, and a day filled in by default booked today by accident.
   const [day, setDay] = useState(initialDay ?? "")
@@ -46,11 +53,10 @@ export function NewJobService({ data, today, choice, service, actions, initialDa
   const [price, setPrice] = useState<string | null>(null)
   const [notes, setNotes] = useState("")
   const { pending, error, run } = useRunner()
-  // A service with a per-zone rule asks for the zones so the prefilled price follows them; the zones go no further than this box.
-  const banded = service.includedZones !== undefined
-  const [zones, setZones] = useState<string | null>(null)
-  const shownZones = zones ?? String(service.includedZones ?? "")
-  const zoneCount = Math.min(16, Math.max(1, Number(shownZones) || service.includedZones || 1))
+  // A service with bands or a per-zone rule asks for the zones: they pick the band and the prefilled price follows them; the zones go no further than this box.
+  const banded = asksZones(group)
+  const shownZones = zones ?? String(defaultZones(group))
+  const zoneCount = zoneCountOf(shownZones, group)
   const ruled = banded ? serviceCost(service, zoneCount) : service.price
   const shownPrice = price ?? (ruled !== undefined ? String(ruled) : "")
   const shownMinutes = minutes ?? String(service.slotMinutes)
@@ -91,7 +97,7 @@ export function NewJobService({ data, today, choice, service, actions, initialDa
           <label htmlFor="nj-zones" className={LABEL}>
             Zones
           </label>
-          <Input id="nj-zones" type="number" min={1} max={16} inputMode="numeric" value={shownZones} onChange={(e) => setZones(e.target.value)} className="min-h-11" />
+          <Input id="nj-zones" type="number" min={1} max={16} inputMode="numeric" value={shownZones} onChange={(e) => onZones(e.target.value)} className="min-h-11" />
         </div>
       )}
 

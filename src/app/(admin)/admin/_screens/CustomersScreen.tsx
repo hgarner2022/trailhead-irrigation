@@ -10,7 +10,7 @@ import { RecordHost, useOpenRecord } from "./RecordHost"
 import { initialRecord } from "@/lib/admin/record-url"
 import type { JobActions } from "./job-actions-types"
 import type { VisitActions } from "./visit-actions-types"
-import { customerColumns } from "./customers-columns"
+import { customerColumns, customerCard } from "./customers-columns"
 import { MARKETING_WORDS, SCHEDULED_WORDS, customerRows, customersContext, type CustomerRow } from "./customers-model"
 
 // Everyone Trailhead has worked for, with the pass layered on: the one data
@@ -68,6 +68,7 @@ function Grid({ rows, offers }: { rows: CustomerRow[]; offers: boolean }) {
   return (
     <DataGrid
       columns={customerColumns}
+      card={customerCard}
       data={rows}
       getRowId={(r) => r.id}
       search={{ column: "name", placeholder: "Search by name" }}

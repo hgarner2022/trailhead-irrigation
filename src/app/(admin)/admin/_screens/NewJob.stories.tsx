@@ -59,6 +59,17 @@ export const Repair: Story = {
 }
 export const RepairPhone: Story = { args: { customerId: "c-dana", initial: { choice: "repair" } }, globals: phone }
 
+/** One entry per service: the Spring turn-on with its zones box at 8 and "$145 up to 8 zones, then $10 a zone" under it; the zones pick the band. */
+export const SpringTurnOn: Story = {
+  args: { customerId: "c-dana", initial: { choice: "turn-on" } },
+  globals: wide,
+  play: async () => {
+    await expect(await screen.findByText("$145 up to 8 zones, then $10 a zone")).toBeInTheDocument()
+    await expect(await screen.findByLabelText("Zones")).toHaveValue(8)
+  },
+}
+export const SpringTurnOnPhone: Story = { args: { customerId: "c-dana", initial: { choice: "turn-on" } }, globals: phone }
+
 /** The pass chosen: eight zones, no day yet on either visit, card on file, the terms box empty, Sell pass disabled. */
 export const SeasonPass: Story = {
   args: { customerId: "c-dana", initial: { choice: "season-pass" } },

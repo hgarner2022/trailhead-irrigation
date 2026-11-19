@@ -1,5 +1,6 @@
 import { StatusPill } from "@/components/blocks/StatusPill"
 import type { GridColumnDef } from "@/components/blocks/data-grid-table"
+import type { GridCardSlots } from "@/components/blocks/DataGridCard"
 import { TIME_ZONE, shortDate } from "@/lib/admin/format"
 import { formatPhone } from "@/lib/format/contact"
 import { MARKETING_WORDS, SCHEDULED_WORDS, type CustomerRow } from "./customers-model"
@@ -74,3 +75,6 @@ export const customerColumns: GridColumnDef<CustomerRow>[] = [
   },
   { id: "marketing", accessorKey: "marketing", header: "Marketing", cell: ({ getValue }) => MARKETING_WORDS[getValue() as CustomerRow["marketing"]], meta: { csv: (row) => MARKETING_WORDS[(row as CustomerRow).marketing] } },
 ]
+
+/** Customers on a phone: the name, the street, the next day, and what is unpaid at the right. */
+export const customerCard: GridCardSlots = { title: "name", line: ["address"], when: ["nextKey"], money: "unpaid" }

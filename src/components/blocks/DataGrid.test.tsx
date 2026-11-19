@@ -325,3 +325,49 @@ describe("DataGrid loading and pages", () => {
     expect(screen.queryByRole("button", { name: "Next" })).not.toBeInTheDocument()
   })
 })
+
+describe("DataGrid cards below md", () => {
+  const phone = (matches: boolean) => vi.stubGlobal("matchMedia", (query: string) => ({ matches, media: query, addEventListener: () => {}, removeEventListener: () => {} }))
+  const card = { title: "name", line: ["town"], state: "status", when: ["nextVisit"], money: "charged" }
+  afterEach(() => phone(false))
+
+  it("renders each row as one card with the declared columns and opens the row from the whole card", async () => {
+    phone(true)
+    const onOpen = vi.fn()
+    const user = userEvent.setup()
+    renderPasses({ card, bulkActions: [], onOpen })
+    expect(screen.queryByRole("table")).not.toBeInTheDocument()
+    const cards = document.querySelectorAll<HTMLElement>('[data-slot="data-grid-card"]')
+    expect(cards).toHaveLength(passes.length)
+    expect(cards[0]).toHaveTextContent("Andrea")
+    await user.click(cards[0])
+    expect(onOpen).toHaveBeenCalledWith(passes[0])
+  })
+
+  it("keeps search and the no-match state with Clear filters", async () => {
+    phone(true)
+    const user = userEvent.setup()
+    renderPasses({ card, bulkActions: [] })
+    await user.type(screen.getByPlaceholderText("Search by name"), "zzzz")
+    expect(screen.getByText("Nothing matches.")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Clear filters" })).toBeInTheDocument()
+  })
+
+  it("says the empty title when there are no rows at all", () => {
+    phone(true)
+    renderPasses({ card, bulkActions: [], data: [], emptyTitle: "No passes yet" })
+    expect(screen.getByText("No passes yet")).toBeInTheDocument()
+  })
+
+  it("stays a table at md and up", () => {
+    phone(false)
+    renderPasses({ card, bulkActions: [] })
+    expect(screen.getByRole("table")).toBeInTheDocument()
+  })
+
+  it("stays a table on a phone when no card is declared", () => {
+    phone(true)
+    renderPasses({ bulkActions: [] })
+    expect(screen.getByRole("table")).toBeInTheDocument()
+  })
+})
