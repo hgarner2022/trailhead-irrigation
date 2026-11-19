@@ -98,7 +98,7 @@ export function passPageOf(state: PassState, renewal?: MultiTripData["renewal"])
 export function returnTripOf(): MultiTripData {
   return {
     title: "Andrea Dalton",
-    subtitle: "Sprinkler repair visit, 2 trips · Added Nov 12",
+    subtitle: "Sprinkler repair, 2 trips · Added Nov 12",
     pills: [{ status: "scheduled" }, { status: "owed", label: "$85 unpaid" }],
     columns: [{ heading: "Where", rows: WHERE }, { heading: "Who", rows: [["Phone", "(970) 555-0123"], ["Who", "Ryan Garner"], ["Card on file", "Visa ending 4242"]] }],
     tripsHeading: "Visits",

@@ -105,7 +105,7 @@ const PAST: PastVisit[] = [
   { id: "pv2", jobId: "job-pv2", date: "Apr 28, 2026", service: "Spring turn-on", who: "Ryan", note: "Backflow valve is behind the green box on the south side. Controller battery replaced." },
   { id: "pv3", jobId: "job-pv3", date: "Jul 9, 2025", service: "Repair", who: "Tech Two", note: "Replaced a broken rotor in zone 3. Customer asked for a quote on drip lines for the garden bed." },
 ]
-const base: Omit<JobPageData, "when" | "pills" | "footer" | "billing" | "totals" | "notes" | "messages"> = { photos: [], pastVisits: PAST, pastTotal: 7, customer: "Andrea Dalton", phone: PHONE, subtitle: "Sprinkler repair visit · Added Nov 18", where: WHERE, lines: LINE }
+const base: Omit<JobPageData, "when" | "pills" | "footer" | "billing" | "totals" | "notes" | "messages"> = { photos: [], pastVisits: PAST, pastTotal: 7, customer: "Andrea Dalton", phone: PHONE, subtitle: "Sprinkler repair · Added Nov 18", where: WHERE, lines: LINE }
 const owedTotals: LineTotal[] = [["Total", "$145", "strong"], ["Paid", "$0"], ["Unpaid", "$145", "alert"]]
 const openTotals: LineTotal[] = [["Total", "$145", "strong"], ["Paid", "$0"]]
 const waiting = { summary: [["Total", "$145"], CARD] as [string, string][], rows: [], emptyLine: "Nothing to bill until the trip is done." }

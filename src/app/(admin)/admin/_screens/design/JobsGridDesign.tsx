@@ -21,7 +21,6 @@ export type GridStatus = "today" | "active" | "unscheduled" | "scheduled" | "lat
 export const GRID_WORDS: Record<GridStatus, string> = { today: "Today", active: "Active", unscheduled: "Unscheduled", scheduled: "Scheduled", late: "Late", done: "Done", cancelled: "Canceled" }
 const GRID_TONE: Record<GridStatus, PillStatus> = { today: "today", active: "job-active", unscheduled: "needs-a-day", scheduled: "scheduled", late: "overdue", done: "done", cancelled: "cancelled" }
 export const WHO_OPTIONS = ["Ryan Garner", "Hannah Garner", "No one yet"].map((w) => ({ value: w, label: w }))
-export const SEASON_OPTIONS = ["2027", "2026"].map((w) => ({ value: w, label: w }))
 
 export interface GridJob {
   id: string
@@ -47,11 +46,12 @@ const money = (n: number) => `$${n.toLocaleString("en-US")}`
 
 export const jobGridColumns: GridColumnDef<GridJob>[] = [
   { id: "name", accessorFn: (r) => `${r.name} ${r.property} ${r.title}`, header: "Customer", cell: ({ row }) => row.original.name, meta: { csv: (r) => (r as GridJob).name } },
-  { id: "service", accessorKey: "service", header: "Job", cell: ({ row }) => row.original.title, meta: { csv: (r) => (r as GridJob).title } },
+  { id: "service", accessorKey: "service", header: "Job", cell: ({ row }) => <RecordChip kind="job" name={row.original.title} href={recordHref.job(row.original.id)} className="text-sm font-medium md:min-h-8" />, meta: { csv: (r) => (r as GridJob).title } },
+  /** the job's plain name for the phone card, which is itself one button and cannot hold a chip; the table shows the chip instead */
+  { id: "jobName", accessorKey: "title", header: "Job name" },
   { id: "property", accessorKey: "property", header: "Property", cell: ({ row }) => (row.original.property ? <RecordChip kind="property" name={row.original.property} href="/admin/customers" className="text-sm font-medium md:min-h-8" /> : null) },
   { id: "stage", accessorKey: "stage", header: "Status", cell: ({ row }) => <StatusPill status={GRID_TONE[row.original.stage]} label={GRID_WORDS[row.original.stage]} data-pill="work" />, meta: { csv: (r) => GRID_WORDS[(r as GridJob).stage] } },
   { id: "who", accessorKey: "who", header: "Who", cell: ({ row }) => (row.original.who && !/^No one/.test(row.original.who) ? <RecordChip kind="person" name={row.original.who} href={recordHref.person()} className="text-sm font-medium md:min-h-8" /> : row.original.who) },
-  { id: "season", accessorKey: "season", header: "Season" },
   { id: "visits", accessorKey: "visits", header: "Visits" },
   { id: "total", accessorKey: "total", header: "Total", cell: ({ row }) => (row.original.stage === "cancelled" ? null : <MoneyCell end text={row.original.total > 0 ? money(row.original.total) : "Quote later"} />), meta: { align: "right", csv: (r) => String((r as GridJob).total) } },
   { id: "billing", accessorFn: (r) => r.billingState ?? "", header: "Billing", cell: ({ row }) => <MoneyCell text={row.original.billing || null} tone={row.original.billingState === "overdue" ? "past-due" : "plain"} />, meta: { csv: (r) => (r as GridJob).billing } },
@@ -59,9 +59,9 @@ export const jobGridColumns: GridColumnDef<GridJob>[] = [
 ]
 
 /** On a phone: the customer, the service, where it stands, the next day, and the billing word at the right. */
-export const jobGridCard: GridCardSlots = { title: "name", line: ["service"], state: "stage", when: ["next"], money: "billing" }
+export const jobGridCard: GridCardSlots = { title: "name", line: ["jobName"], state: "stage", when: ["next"], money: "billing" }
 
-export const SERVICE_OPTIONS = ["Season Pass", "Spring turn-on", "Fall blowout", "Sprinkler repair visit", "New sprinkler system installation", "Core aeration", "Christmas lights"].map((s) => ({ value: s, label: s }))
+export const SERVICE_OPTIONS = ["Season Pass", "Spring turn-on", "Fall blowout", "Sprinkler repair", "New sprinkler system installation", "Core aeration", "Christmas lights"].map((s) => ({ value: s, label: s }))
 
 export interface JobsGridDesignProps {
   rows: GridJob[]
@@ -82,12 +82,11 @@ export function JobsGridDesign({ rows, defaultFilters }: JobsGridDesignProps) {
         filters={[
           { column: "stage", label: "Status", options: (Object.keys(GRID_WORDS) as GridStatus[]).map((value) => ({ value, label: GRID_WORDS[value] })) },
           { column: "who", label: "Who", options: WHO_OPTIONS },
-          { column: "season", label: "Season", options: SEASON_OPTIONS },
           { column: "billing", label: "Billing", options: (Object.keys(BILLING_WORDS) as BillingState[]).map((value) => ({ value, label: BILLING_WORDS[value] })) },
           { column: "service", label: "Job", options: SERVICE_OPTIONS },
         ]}
         defaultFilters={defaultFilters}
-        hiddenColumns={["who", "season"]}
+        hiddenColumns={["who", "jobName"]}
         onOpen={() => undefined}
         exportName="jobs"
         pageSize={25}
