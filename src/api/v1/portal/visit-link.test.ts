@@ -67,7 +67,9 @@ describe("what a visit link may call", () => {
     const v = await callApi(office(), visitsCreate, { customerId: dana, kind: "turn-on", scheduledOn: "2027-06-09", price: 145 })
     const { days } = await callApi(asLink(dana, v.id), visitsAreaDays, { id: v.id, count: 5 })
     expect(days.length).toBeGreaterThan(0)
-    await expect(callApi(asLink(dana, v.id), visitsPick, { id: v.id, day: days[0]! })).resolves.toMatchObject({ status: "scheduled", scheduledOn: days[0] })
+    // Tomorrow is on offer, but a visit picked for it is inside the 24-hour rule and could not be cancelled online after; take the first day beyond that.
+    const day = days.find((d) => d >= "2027-05-22")!
+    await expect(callApi(asLink(dana, v.id), visitsPick, { id: v.id, day })).resolves.toMatchObject({ status: "scheduled", scheduledOn: day })
     await expect(callApi(asLink(dana, v.id), visitsCancelSelf, { id: v.id })).resolves.toMatchObject({ id: v.id, status: "cancelled" })
   })
 

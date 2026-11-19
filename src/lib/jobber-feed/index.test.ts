@@ -120,7 +120,11 @@ describe("busy time in capacity", () => {
     const t1 = (day: string) => out.data.find((d) => d.day === day && d.personId === RYAN)
     expect(t1("2027-05-06")).toBeUndefined()
     expect(out.data.find((d) => d.day === "2027-05-06" && d.personId === "person_truck-2")).toBeDefined()
-    expect(t1("2027-05-05")?.remaining).toBeLessThan(8)
+    // Ryan's repair is blocked 11:00 to 12:00 Mountain and the install 1:30 to 2:30 pm: no start overlaps them, the rest of the day stays open.
+    const starts = t1("2027-05-05")!.starts
+    for (const blocked of ["11:00", "11:30", "13:30", "14:00"]) expect(starts).not.toContain(blocked)
+    expect(starts).toContain("09:00")
+    expect(t1("2027-05-05")!.remaining).toBe(starts.length)
   })
 })
 

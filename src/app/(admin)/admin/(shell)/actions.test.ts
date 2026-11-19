@@ -17,8 +17,9 @@ import type { OrganizationSettings } from "@/lib/admin/types"
 import { DEFAULT_BILLING } from "@/lib/settings/defaults"
 
 /** A service row as the screen holds it: the nulls the API sends left out. */
-const liveService = (r: { id: string; key: string; name: string; description: string | null; kind: string; taxable: boolean; active: boolean; bookable: boolean; slotMinutes: number; quoteOnly: boolean; price: number | null; includedZones: number | null; extraZonePrice: number | null }) => ({
+const liveService = (r: { id: string; key: string; name: string; description: string | null; kind: string; taxable: boolean; active: boolean; bookable: boolean; slotMinutes: number; quoteOnly: boolean; price: number | null; includedZones: number | null; extraZonePrice: number | null; bookableFrom: string | null; bookableTo: string | null }) => ({
   id: r.id, key: r.key, name: r.name, description: r.description, kind: r.kind, taxable: r.taxable, active: r.active, bookable: r.bookable, slotMinutes: r.slotMinutes, quoteOnly: r.quoteOnly,
+  ...(r.bookableFrom ? { bookableFrom: r.bookableFrom } : {}), ...(r.bookableTo ? { bookableTo: r.bookableTo } : {}),
   ...(r.price !== null ? { price: r.price } : {}), ...(r.includedZones !== null ? { includedZones: r.includedZones } : {}), ...(r.extraZonePrice !== null ? { extraZonePrice: r.extraZonePrice } : {}),
 })
 
