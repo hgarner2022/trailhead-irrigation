@@ -246,6 +246,23 @@ describe("visits.move texts, Ryan's line and Waiting on customer (step 4)", () =
     expect(ev!.detail).not.toHaveProperty("asked")
   })
 
+  it("texts a time Ryan gives on the same day: the text says the time and the history names it", async () => {
+    await withPhone("p8-turn-on")
+    await place("p8-turn-on", "2027-05-24")
+    const before = (await textsOf("p8-turn-on")).length
+    // refused silently: a chosen time is always told
+    await expect(move({ id: "p8-turn-on", personId: "person_truck-1", scheduledOn: "2027-05-24", startTime: "09:00", notify: false })).rejects.toThrow(/always told/)
+    await move({ id: "p8-turn-on", personId: "person_truck-1", scheduledOn: "2027-05-24", startTime: "09:00" })
+    const texts = await textsOf("p8-turn-on")
+    expect(texts).toHaveLength(before + 1)
+    expect(texts.at(-1)!.body).toMatch(/^Trailhead: your spring turn-on is still Mon, May 24, now 9 to 11 am\. /)
+    const evs = await eventsOf(db, { kind: "visit.moved", aboutId: "p8-turn-on" })
+    expect(evs.at(-1)!.detail).toMatchObject({ texted: true, sameDay: true, startTime: "09:00", day: "2027-05-24" })
+    // the same time again is nothing new: no second text
+    await move({ id: "p8-turn-on", personId: "person_truck-1", scheduledOn: "2027-05-24", startTime: "09:00" })
+    expect(await textsOf("p8-turn-on")).toHaveLength(before + 1)
+  })
+
   it("texts every move Ryan makes, even back to a day it was texted before", async () => {
     await withPhone("p8-blowout")
     await place("p8-blowout", "2027-10-27")

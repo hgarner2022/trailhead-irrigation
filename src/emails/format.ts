@@ -93,6 +93,8 @@ export interface VisitFacts {
   note?: string
   /** the visit is at a property that must be home: the date-moved text asks "Reply YES or pick another day" and the visit reads Waiting on customer until they answer */
   asked?: boolean
+  /** a move that kept the day and gave or changed the time: the date-moved messages say "still {day}, now {window}" */
+  sameDay?: boolean
 }
 
 /** Ryan's note as a text carries it: plain ASCII (smart quotes and dashes made plain), one line, ending in a full stop. "" when there is none. */
