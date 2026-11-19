@@ -23,7 +23,7 @@ import { Included, JobLines } from "./VisitLines"
 import type { VisitActions } from "./visit-actions-types"
 import { visitBar } from "./visit-bar-model"
 import { visitFooter } from "./visit-collect-model"
-import { dayLabel, dayOfVisit, kindLabel, priceWords, timeWords, visitFacts, type VisitFacts } from "./visit-panel-model"
+import { dayLabel, dayOfVisit, kindLabel, priceWords, timeWords, visitFacts, whenCanceled, type VisitFacts } from "./visit-panel-model"
 
 // The visit panel, a `RecordPanel` (docs/plans/2026-11-18-admin-holistic-design.md, section 7): from Visits, Home, Schedule, the pass panel and
 // the customer panel. The header names the customer and what the visit is, with its two pills under the subtitle; the facts are When, Who,
@@ -48,7 +48,7 @@ function JobLine({ facts }: { facts: VisitFacts }) {
 function factsOf(facts: VisitFacts): RecordFact[] {
   const { client, visit } = facts
   const day = dayOfVisit(visit)
-  const when = day ? `${dayLabel(day)}, ${timeWords(visit).replace(/^Any time/, "any time")}` : "Unscheduled"
+  const when = visit.status === "cancelled" ? whenCanceled(visit) : day ? `${dayLabel(day)}, ${timeWords(visit).replace(/^Any time/, "any time")}` : "Unscheduled"
   return [
     ["When", when],
     ["Who", visit.personName ?? ""],

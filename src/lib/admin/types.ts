@@ -210,6 +210,8 @@ export interface Visit {
   timeBooked?: boolean
   /** Ryan moved it and asked the customer to reply YES (a property that must be home): Waiting on customer until they answer or the office clears it (`waitingVisitIds`); read from events, no column */
   waiting?: boolean
+  /** a canceled visit's day before the cancel cleared it (YYYY-MM-DD), read from the `visit.cancelled` event; absent when it never had one */
+  cancelledWas?: string
   /** 1-based position in the person's day; from Jobber's route tool while Jobber is the field display */
   stopOrder?: number
   /** the property's point, geocoded once when the customer is created */
