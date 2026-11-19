@@ -7,4 +7,8 @@ export interface SearchHit {
   title: string
   detail: string
   href: string
+  /** a customer's phone and email, so two people with one name are told apart */
+  contact?: string
+  /** the last line of a group that has more than it shows: it goes to the full list instead of opening a record */
+  seeAll?: boolean
 }

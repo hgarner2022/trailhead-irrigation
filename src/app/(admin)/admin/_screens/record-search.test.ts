@@ -64,8 +64,33 @@ describe("searchRecords", () => {
     expect(hits.some((h) => h.kind === "visit" && (h.id === "gone-visit" || h.id === "gone-undated"))).toBe(false)
   })
 
-  it("caps each kind so the list stays short", () => {
+  it("caps customers at six and jobs and days at three each, with a See all line when there are more", () => {
     const hits = searchRecords(jobsData, JOBS_TODAY, "er")
-    for (const kind of ["customer", "job", "visit"] as const) expect(hits.filter((h) => h.kind === kind).length).toBeLessThanOrEqual(6)
+    expect(hits.filter((h) => h.kind === "customer").length).toBeLessThanOrEqual(6)
+    for (const kind of ["job", "visit"] as const) {
+      const rows = hits.filter((h) => h.kind === kind)
+      expect(rows.filter((h) => !h.seeAll).length).toBeLessThanOrEqual(3)
+      if (rows.some((h) => h.seeAll)) {
+        expect(rows.at(-1)).toMatchObject({ seeAll: true, title: expect.stringMatching(/^See all \d+ (jobs|days)$/) })
+        expect(rows).toHaveLength(4)
+      }
+    }
+  })
+
+  it("says See all N with the true count, and links to the full list", () => {
+    const base = jobsData.visits.find((v) => v.startAt)!
+    const many = { ...jobsData, visits: [...jobsData.visits, ...[1, 2, 3, 4, 5].map((n) => ({ ...base, id: `extra-${n}` }))] }
+    const hits = searchRecords(many, JOBS_TODAY, base.clientName.toLowerCase())
+    const all = hits.find((h) => h.kind === "visit" && h.seeAll)!
+    expect(all.href).toBe("/admin/schedule?view=list")
+    expect(all.title).toMatch(/^See all \d+ days$/)
+    expect(Number(all.title.match(/\d+/)![0])).toBeGreaterThan(3)
+  })
+
+  it("shows a customer's phone and email under the name, so two of one name are told apart", () => {
+    const withBoth = jobsData.clients.find((c) => c.phone && c.email)!
+    const hit = searchRecords(jobsData, JOBS_TODAY, withBoth.email!.toLowerCase()).find((h) => h.kind === "customer" && h.id === withBoth.id)!
+    expect(hit.contact).toContain(withBoth.email!)
+    expect(hit.contact).toMatch(/\(\d{3}\) \d{3}-\d{4}/)
   })
 })

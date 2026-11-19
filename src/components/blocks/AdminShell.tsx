@@ -171,7 +171,9 @@ export function AdminShell({ current: initial, user, switcher, onSignOut, onSear
   // A screen that holds records opens the hit in its panel, in place; Reports and Settings have no panel, so they go to the record's own page.
   const openHit = useCallback(
     (hit: SearchHit) => {
-      if (document.querySelector("[data-record-host]")) openRecordInAddress({ key: hit.kind, id: hit.id }, { fresh: true })
+      // "See all N" goes to the full list; a record opens in place
+      if (hit.seeAll) router.push(hit.href)
+      else if (document.querySelector("[data-record-host]")) openRecordInAddress({ key: hit.kind, id: hit.id }, { fresh: true })
       else router.push(hit.href)
     },
     [router],
