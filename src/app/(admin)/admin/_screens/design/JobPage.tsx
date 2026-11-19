@@ -23,7 +23,7 @@ export function JobPage({ job }: { job: JobPageData }) {
     >
       <Pair>
         <section aria-labelledby="included-h">
-          <SectionHeading id="included-h" action={job.pills[0].status === "cancelled" ? undefined : <EditLink />}>What&apos;s included</SectionHeading>
+          <SectionHeading level={2} size="section" id="included-h" action={job.pills[0].status === "cancelled" ? undefined : <EditLink />}>What&apos;s included</SectionHeading>
           <LineItemList lines={job.lines} totals={job.totals} />
         </section>
         <Billing data={job} />

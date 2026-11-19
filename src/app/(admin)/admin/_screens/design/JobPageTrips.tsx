@@ -18,7 +18,7 @@ import { EditLink, Footer, hasFooter, History, Notice, Pair, Pills } from "./Job
 function Trips({ data }: { data: MultiTripData }) {
   return (
     <section aria-labelledby="trips-h">
-      <SectionHeading id="trips-h">{data.tripsHeading}</SectionHeading>
+      <SectionHeading level={2} size="section" id="trips-h">{data.tripsHeading}</SectionHeading>
       <RecordList>
         {data.trips.map((t) => (
           <TripRow key={t.id} title={t.title} detail={t.detail} pills={t.pills.map((p) => <StatusPill key={p.status} status={p.status} label={p.label} />)} money={t.money} actions={t.actions} />
@@ -38,7 +38,7 @@ function Body({ data }: { data: MultiTripData }) {
           <section aria-label="Pass card"><PassCard pass={data.pass} size="full" interactive={false} className="max-w-full" /></section>
         ) : (
           <section aria-labelledby="included-h">
-            <SectionHeading id="included-h" action={<EditLink />}>What&apos;s included</SectionHeading>
+            <SectionHeading level={2} size="section" id="included-h" action={<EditLink />}>What&apos;s included</SectionHeading>
             <LineItemList lines={data.lines} totals={data.totals} />
           </section>
         )}
@@ -46,12 +46,12 @@ function Body({ data }: { data: MultiTripData }) {
       <Pair>
         {data.pass && (
           <section aria-labelledby="included-h">
-            <SectionHeading id="included-h">What&apos;s included</SectionHeading>
+            <SectionHeading level={2} size="section" id="included-h">What&apos;s included</SectionHeading>
             <LineItemList lines={data.lines} totals={data.totals} />
           </section>
         )}
         <section aria-labelledby="billing-h">
-          <SectionHeading id="billing-h">Billing</SectionHeading>
+          <SectionHeading level={2} size="section" id="billing-h">Billing</SectionHeading>
           <BillingSection summary={summary} rows={data.billing.rows} emptyLine={data.billing.emptyLine} />
         </section>
       </Pair>

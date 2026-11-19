@@ -72,7 +72,7 @@ export function RecordPage({ title, subtitle, pills, phone, crumb, notice, colum
             <div data-slot="record-page-columns" className="grid gap-6 lg:grid-cols-2 lg:gap-12">
               {columns.map((c) => (
                 <section key={c.heading} aria-label={c.heading}>
-                  <SectionHeading>{c.heading}</SectionHeading>
+                  <SectionHeading level={2} size="section">{c.heading}</SectionHeading>
                   <RecordFacts rows={c.rows} />
                 </section>
               ))}

@@ -40,7 +40,7 @@ export function Billing({ data }: { data: Pick<JobPageData, "billing" | "collect
   const status = billing.status
   return (
     <section aria-labelledby="billing-h">
-      <SectionHeading id="billing-h">Billing</SectionHeading>
+      <SectionHeading level={2} size="section" id="billing-h">Billing</SectionHeading>
       {collect && (
         <div className="mt-2 rounded-lg border border-border bg-card p-4">
           <CollectPayment plan={collect.plan} summary={collect.summary} firstName="Andrea" onCharge={noteOk} onRecord={noteOk} onInvoice={noteOk} onLater={noop} onClose={noop} />
@@ -59,7 +59,7 @@ export function History({ notes, messages }: { notes: TimelineLine[]; messages: 
         <NotesAndHistory lines={notes} onAddNote={noteOk} now={NOW} />
       </section>
       <section aria-labelledby="messages-h">
-        <SectionHeading id="messages-h">Messages</SectionHeading>
+        <SectionHeading level={2} size="section" id="messages-h">Messages</SectionHeading>
         <div className="mt-2"><MessageThread messages={messages} newestFirst /></div>
       </section>
     </Pair>
