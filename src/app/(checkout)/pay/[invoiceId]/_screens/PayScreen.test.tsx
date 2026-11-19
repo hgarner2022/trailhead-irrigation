@@ -80,6 +80,19 @@ describe("PayScreen", () => {
     expect(screen.queryByText(/We keep the card/)).toBeNull()
   })
 
+  it("a paid invoice always offers the receipt and the account, even before Stripe has a card receipt", () => {
+    render(<PayScreen bill={{ ...sent, status: "paid", paidOn: "2026-11-20", receiptUrl: null }} payAction={ok} />)
+    expect(screen.getByRole("link", { name: "View the receipt" })).toHaveAttribute("href", "/account/visits")
+    expect(screen.getByRole("link", { name: "Open your Trailhead account" })).toHaveAttribute("href", "/account")
+  })
+
+  it("a voided invoice says Text Ryan if you have a question, with the phone", () => {
+    render(<PayScreen bill={{ ...sent, status: "cancelled" }} payAction={ok} />)
+    expect(screen.getByText(/if you have a question, at/)).toBeInTheDocument()
+    expect(screen.getByRole("link", { name: "Text Ryan" }).getAttribute("href")).toMatch(/^sms:\+19706927270/)
+    expect(screen.getByRole("link", { name: "(970) 692-7270" })).toHaveAttribute("href", "tel:9706927270")
+  })
+
   it("shows a canceled invoice with one sentence and no button", () => {
     render(<PayScreen bill={{ ...sent, status: "cancelled" }} payAction={ok} />)
     expect(screen.getByText("This invoice was voided.")).toBeInTheDocument()

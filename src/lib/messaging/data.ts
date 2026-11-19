@@ -77,7 +77,7 @@ export async function jobAddress(db: Database, jobId: string): Promise<string> {
 }
 
 /** The receipt's own number, the payment id's short form: "R-1A2B3C4D". */
-export const receiptNumber = (paymentId: string) => `R-${paymentId.replace(/-/g, "").slice(0, 8).toUpperCase()}`
+export { receiptNumber } from "@/emails/format"
 
 /** An invoice's or a receipt's line as an email shows it. */
 export const emailLine = (l: { name: string; quantity: number; unitPrice: number }): EmailLine => ({ name: l.name, quantity: l.quantity, unitPrice: l.unitPrice, amount: l.quantity * l.unitPrice })

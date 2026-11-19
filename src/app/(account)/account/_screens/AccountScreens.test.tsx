@@ -217,7 +217,11 @@ describe("ReceiptScreen", () => {
   it("prints who paid, for what, how and when", () => {
     render(<ReceiptScreen receipt={{ id: "pay_2", business: { name: "Trailhead Lawn & Irrigation LLC", phone: "(970) 692-7270" }, customerName: "Andrea Lopez", address: "412 Briggs Street", jobName: "Repair", lines: [{ name: "Repair", quantity: 1, unitPrice: 145 }], amount: 80, method: "check", reference: "1043", paidOn: "2027-02-12", receiptUrl: null }} />)
     expect(screen.getByText("Paid February 12, 2027")).toBeInTheDocument()
-    expect(screen.getByText("Check, 1043")).toBeInTheDocument()
+    expect(screen.getByText("Check")).toBeInTheDocument()
+    expect(screen.getByText("Check number")).toBeInTheDocument()
+    expect(screen.getByText("1043")).toBeInTheDocument()
+    expect(screen.getByText("Receipt number")).toBeInTheDocument()
+    expect(screen.getByText("R-PAY_2")).toBeInTheDocument()
     expect(screen.getByText("$80")).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Print" })).toBeInTheDocument()
   })
