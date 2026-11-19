@@ -153,8 +153,11 @@ describe("wording per kind", () => {
     expect(html).toContain("Add to Apple or Outlook calendar")
     expect(html).toContain("calendar.google.com/calendar/render?action=TEMPLATE")
     expect(html).toContain("/api/visits/v1/calendar.ics?token=abc")
-    expect(html).toContain("/account/sign-in?email=")
-    expect(html).toContain("Open your Trailhead account")
+    // an older row with no signed link falls back to the account; the day-before email is past the cut-off and carries Text Ryan instead
+    if (kind !== "day-before") {
+      expect(html).toContain("/account/sign-in?email=")
+      expect(html).toContain("Open your Trailhead account")
+    }
     if (kind !== "day-before") expect(text).toContain(`Change your day or anything else in your Trailhead account: ${origin}/account`)
   })
   it("the day-before email is past the online cut-off: it says Text Ryan with the phone as a tel link, and never offers another day", () => {
@@ -164,8 +167,26 @@ describe("wording per kind", () => {
     expect(text).toContain("Need to change it? Text Ryan at (970) 692-7270.")
     for (const part of [html, text]) expect(part).not.toMatch(/different day|another day|Change your day/i)
     expect(html).not.toContain("pick another day")
+    expect(html).toContain('href="sms:9706927270"')
+    expect(html).toContain(">Text Ryan</a>")
+    expect(html).not.toContain("Change this visit")
     // the earlier emails still offer the change online
     expect(get("date-confirm").text).toContain("Change your day or anything else")
+  })
+  it.each(["date-set", "date-moved", "date-confirm", "booking-confirmation"] as const)("%s links to the signed one-visit page as Change this visit, with the last day to change online", (kind) => {
+    const signed = { ...visit, who: "Ryan", visitUrl: `${origin}/account/visits/v1?t=1900000000.sig` }
+    const { html, text } = renderEmail(kind, { ...DATA[kind], visit: signed })!
+    expect(html).toContain(`href="${origin}/account/visits/v1?t=1900000000.sig"`)
+    expect(html).toContain("Change this visit")
+    expect(html).toContain("Last day to change online: Mon, May 3.")
+    expect(html).not.toContain("/account/sign-in?email=")
+    expect(text).toContain(`Change this visit (last day to change online: Mon, May 3): ${origin}/account/visits/v1?t=1900000000.sig`)
+  })
+  it("the day-before email shows the visit link only as a plain See your visit line, never as Change this visit", () => {
+    const signed = { ...visit, visitUrl: `${origin}/account/visits/v1?t=1900000000.sig` }
+    const { html, text } = renderEmail("day-before", { ...base, visit: signed })!
+    expect(html).not.toContain("Change this visit")
+    expect(text).toContain(`Need to change it? Text Ryan at (970) 692-7270. See your visit: ${origin}/account/visits/v1?t=1900000000.sig`)
   })
   it("day-before names who is coming when the visit has a person, and leaves the sentence out when it has none", () => {
     const named = renderEmail("day-before", { ...base, visit: { ...visit, who: "Ryan" } })!
@@ -578,7 +599,8 @@ describe("the branches of each email keep to the template", () => {
     for (const k of kinds) {
       const r = k === "sign-in" ? signInEmail({ url: `${origin}/account/sign-in/verify?token=abc&b=c`, host: "www.trailheadirrigation.com" }) : renderEmail(k, DATA[k])!
       const href = r.html.match(/class="cta"[\s\S]*?<a href="([^"]+)"/)![1]!.replace(/&amp;/g, "&")
-      expect(r.text.includes(href) || (href.startsWith(`${origin}/account`) && r.text.includes(`${origin}/account`))).toBe(true)
+      // a Text Ryan button (sms:) is the phone number in the twin
+      expect(r.text.includes(href) || (href.startsWith(`${origin}/account`) && r.text.includes(`${origin}/account`)) || (href.startsWith("sms:") && r.text.includes("(970) 692-7270"))).toBe(true)
     }
   })
 })
