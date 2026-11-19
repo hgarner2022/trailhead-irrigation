@@ -8,8 +8,11 @@
 import { TIME_ZONE } from "@/lib/admin/format"
 import { dayOf } from "@/lib/admin/calendar"
 import { visitJob } from "@/lib/admin/jobs"
-import type { AdminData, AdminInvoice, Client, SoldJob, SoldJobMoney, Visit } from "@/lib/admin/types"
+import type { AdminData, AdminInvoice, Client, ServiceItem, SoldJob, SoldJobMoney, Visit } from "@/lib/admin/types"
 import { jobMoney as moneyOfJob } from "@/lib/money/words"
+import { LINE_NAMES } from "@/lib/jobs/lines"
+import { SERVICE_LIST, type ServiceKind } from "@/lib/services"
+import { serviceGroups, type ServiceGroup } from "./new-job-model"
 import { STAGE_WORDS, type JobStage } from "@/lib/jobs/stage"
 import type { TaxRule } from "@/lib/jobs/tax"
 import { dayLabel, dayOfVisit, ruleOfData } from "./visit-panel-model"
@@ -26,6 +29,8 @@ export interface JobRow {
   customerId: string
   kind: JobKind
   kindLabel: string
+  /** the Job filter's value: "pass", a catalogue service's group key ("repair", "turn-on", "blowout"), or "other" for a custom job */
+  service: string
   /** "Season Pass TH-2027-0007", "Repair", "Installation", or the first line's name for other work */
   title: string
   passId?: string
@@ -70,6 +75,37 @@ export function jobTitle(job: Pick<SoldJob, "kind" | "passNumber" | "lines">): s
   if (job.kind === "pass") return `Season Pass ${job.passNumber ?? ""}`.trim()
   if (job.kind === "other") return job.lines?.find((l) => !l.cancelledAt)?.name ?? KIND_WORDS_JOB.other
   return KIND_WORDS_JOB[job.kind]
+}
+
+const norm = (s: string) => s.trim().toLowerCase()
+const BAND = /,\s*(?:up to \d+|\d+ to \d+) zones$/i
+
+/** The names a service's lines go by: its catalogue name, each band's name, and the short line name the sales write ("Repair", "Spring turn-on"). */
+function namesOf(group: ServiceGroup): string[] {
+  const first = group.bands[0]
+  const own = first && group.id === first.kind ? LINE_NAMES[first.kind as ServiceKind] : undefined
+  return [group.name, ...group.bands.flatMap((b) => [b.name, b.name.replace(BAND, "")]), ...(own ? [own] : [])].map(norm)
+}
+
+/**
+ * The service a job is: a Season Pass, else the catalogue service its first live line names (a banded service matches any of its
+ * bands), else, for repair or installation work whose lines are custom (Ryan priced it after the walk), the kind the job already
+ * has, else "other". `groups` is the catalogue's one-entry-per-service list.
+ */
+export function jobService(job: Pick<SoldJob, "kind" | "lines">, groups: readonly ServiceGroup[]): string {
+  if (job.kind === "pass") return "pass"
+  const line = job.lines?.find((l) => !l.cancelledAt)
+  const hit = line ? groups.find((g) => namesOf(g).includes(norm(line.name))) : undefined
+  if (hit) return hit.id
+  if (job.kind === "repair" || job.kind === "install") return job.kind
+  return "other"
+}
+
+/** The Job filter's entries: Season Pass, every active catalogue service by its name, then Other only when a job names none. */
+export function serviceOptions(services: readonly ServiceItem[] | undefined, rows: readonly Pick<JobRow, "service">[]): { value: string; label: string }[] {
+  const groups = serviceGroups((services ?? (SERVICE_LIST as readonly ServiceItem[])).filter((s) => s.active !== false)).filter((g) => g.id !== "pass")
+  const options = [{ value: "pass", label: "Season Pass" }, ...groups.map((g) => ({ value: g.id, label: g.name }))]
+  return rows.some((r) => r.service === "other") ? [...options, { value: "other", label: "Other" }] : options
 }
 
 /** The job's panel line under the customer's name: "Season Pass TH-2027-0007 · 2027" or "Repair · sold Nov 3". */
@@ -124,6 +160,7 @@ export function jobRows(data: AdminData, today: string): JobRow[] {
   const day = dayOf(today, TIME_ZONE)
   const clients = new Map(data.clients.map((c) => [c.id, c]))
   const passes = new Map(data.passes.map((p) => [p.id, p]))
+  const groups = serviceGroups(data.services ?? (SERVICE_LIST as readonly ServiceItem[]))
   const rows = (data.jobs ?? [])
     // a pass that is not sold yet (the checkout's card step is not finished) is an unfinished checkout, not a job
     .filter((j) => !(j.kind === "pass" && !j.soldOn))
@@ -149,6 +186,7 @@ export function jobRows(data: AdminData, today: string): JobRow[] {
         customerId: job.customerId,
         kind: job.kind,
         kindLabel: KIND_WORDS_JOB[job.kind],
+        service: jobService(job, groups),
         title: jobTitle(job),
         ...(job.passId ? { passId: job.passId } : {}),
         ...(job.passNumber ? { passNumber: job.passNumber } : {}),
@@ -180,7 +218,6 @@ export function jobRows(data: AdminData, today: string): JobRow[] {
 export const STAGE_OPTIONS = (Object.keys(STAGE_WORDS) as JobStage[]).map((value) => ({ value, label: STAGE_WORDS[value] }))
 export const MONEY_STATE_WORDS: Record<Exclude<JobMoneyState, "not-yet">, string> = { owed: "Unpaid", "bill-sent": "Invoice sent", overdue: "Past due", paid: "Paid", failed: "Failed" }
 export const MONEY_OPTIONS = (Object.keys(MONEY_STATE_WORDS) as (keyof typeof MONEY_STATE_WORDS)[]).map((value) => ({ value, label: MONEY_STATE_WORDS[value] }))
-export const KIND_OPTIONS = (Object.keys(KIND_WORDS_JOB) as JobKind[]).map((value) => ({ value, label: KIND_WORDS_JOB[value] }))
 /** The seasons the rows are from, newest first, as Season filter options. */
 export const seasonOptions = (rows: JobRow[]) => [...new Set(rows.map((r) => r.season))].sort((a, b) => b - a).map((s) => ({ value: String(s), label: String(s) }))
 
