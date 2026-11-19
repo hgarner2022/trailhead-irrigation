@@ -1,5 +1,6 @@
 // The story of a customer, a job or a visit: its events and its messages in one list, newest first. Pure: nothing is copied
 // into `event`, and a message never shows its body here (the Messages block keeps the bodies).
+import { deliveryWords } from "@/lib/messaging/delivery"
 import { eventWords, type EventForWords } from "./words"
 
 /** An event as the timeline reads it (the fields of `EventOut`). */
@@ -15,6 +16,9 @@ export interface TimelineMessage {
   channel: "email" | "sms"
   kind: string
   status: string
+  /** Twilio's last delivery report for a text, when one has arrived */
+  deliveryStatus?: string | null
+  deliveryError?: string | null
   direction?: string
   sentAt?: Date | string | null
   createdAt: Date | string
@@ -61,11 +65,14 @@ function messageLine(m: TimelineMessage): TimelineLine {
   const channel = m.channel === "sms" ? "Text" : "Email"
   const inbound = m.direction === "in"
   const verb = inbound ? "received" : m.status === "failed" || m.status === "bounced" ? "not delivered" : m.status === "queued" ? "queued" : m.status === "skipped" ? "not sent" : "sent"
+  // A text Twilio accepted reads "sent" until its delivery report arrives, then "delivered", or "not delivered" with the reason.
+  const delivery = !inbound && m.channel === "sms" && verb === "sent" ? deliveryWords(m.deliveryStatus, m.deliveryError) : null
+  const said = delivery ? delivery.label.toLowerCase() : verb
   return {
     id: m.id,
     at: iso(m.sentAt ?? m.createdAt),
     actor: inbound ? "the customer" : "Trailhead",
-    what: `${channel} ${verb}: ${kind}`,
+    what: `${channel} ${said}: ${kind}${delivery?.reason ? `. ${delivery.reason}.` : ""}`,
     kind: "message",
   }
 }

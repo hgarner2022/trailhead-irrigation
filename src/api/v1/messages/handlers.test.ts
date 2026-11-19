@@ -27,6 +27,15 @@ describe("messages.list", () => {
     const write = await callApi(ctxFor(db, writeKey), messagesList, { customerId: "c100" })
     expect(write.data.map((m) => m.to).sort()).toEqual(["+13035550142", "andrea@example.com"])
   })
+  it("carries the delivery report, and the error code only for a write key", async () => {
+    await db.insert(s.messageLog).values({ organizationId: ORG, customerId: "c121", kind: "date-set", key: "dr1", channel: "sms", to: "+13035550199", body: "x", status: "sent", deliveryStatus: "undelivered", deliveryError: "30007" })
+    const read = (await callApi(ctxFor(db, readKey), messagesList, { customerId: "c121" })).data.find((m) => m.kind === "date-set")!
+    expect(read).toMatchObject({ deliveryStatus: "undelivered" })
+    expect(read.deliveryError).toBeUndefined()
+    const write = (await callApi(ctxFor(db, writeKey), messagesList, { customerId: "c121" })).data.find((m) => m.kind === "date-set")!
+    expect(write).toMatchObject({ deliveryStatus: "undelivered", deliveryError: "30007" })
+    await db.delete(s.messageLog).where(eq(s.messageLog.key, "dr1"))
+  })
   it("pages and rejects a bad limit", async () => {
     const first = await callApi(ctxFor(db, readKey), messagesList, { limit: 2 })
     expect(first.data).toHaveLength(2)

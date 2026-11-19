@@ -96,6 +96,20 @@ describe("sendMessageRow", () => {
     vi.unstubAllEnvs()
   })
 
+  it("asks Twilio to report each text's delivery to the status route", async () => {
+    vi.stubEnv("TWILIO_ACCOUNT_SID", "ACtest")
+    vi.stubEnv("TWILIO_AUTH_TOKEN", "tok")
+    vi.stubEnv("TWILIO_FROM", "+13035550000")
+    vi.stubEnv("APP_URL", "https://trail.test")
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify({ sid: "SMx" }), { status: 201 }))
+    vi.stubGlobal("fetch", fetchMock)
+    expect(await sendTextNow({ to: phone, body: "hi" })).toEqual({ id: "SMx" })
+    const init = (fetchMock.mock.calls[0] as unknown as [string, { body: URLSearchParams }])[1]
+    expect(init.body.get("StatusCallback")).toBe("https://trail.test/api/webhooks/twilio/status")
+    vi.unstubAllGlobals()
+    vi.unstubAllEnvs()
+  })
+
   it("still retries a text on a 500: the row stays queued and the error is thrown", async () => {
     const d = deps({ sms: vi.fn(async () => { throw new Error("Twilio failed: Server error") }) })
     const r = await row("sms", "day-before", "t5")
