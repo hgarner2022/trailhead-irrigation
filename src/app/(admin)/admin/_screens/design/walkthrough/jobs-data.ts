@@ -1,0 +1,131 @@
+import type { GridJob, GridStatus, BillingState } from "../JobsGridDesign"
+import { type JobPageData, type JobState, jobPageOf } from "../job-fixtures"
+import { money } from "../invoice-fixtures"
+import { passPageOf, type MultiTripData } from "../trip-fixtures"
+
+// The walkthrough's jobs (see data.ts for the world): the Jobs grid's rows and the page each one opens.
+
+export const REAL_CUSTOMERS = ["andrea", "marcus", "dale"] as const
+export type RealCustomer = (typeof REAL_CUSTOMERS)[number]
+const slug = (name: string) => name.toLowerCase().replace(/[^a-z]+/g, "-").replace(/^-|-$/g, "")
+export const customerIdOf = (name: string) => (name === "Andrea Dalton" ? "andrea" : name === "Marcus Bell" ? "marcus" : name === "Dale Whitaker" ? "dale" : `other-${slug(name)}`)
+export const isRealCustomer = (id: string): id is RealCustomer => (REAL_CUSTOMERS as readonly string[]).includes(id)
+
+// ---------------------------------------------------------------------------------------------------------------- jobs
+
+const RYAN = "Ryan Garner"
+const HANNAH = "Hannah Garner"
+const NOONE = "No one yet"
+const g = (id: string, name: string, service: string, title: string, property: string, stage: GridStatus, visits: string, total: number, billingState: BillingState | null, billing: string, next: string, who: string, season = ""): GridJob => ({ id, name, service, title, property, stage, visits, total, billingState, billing, next, who, season })
+
+export const GRID_ROWS: GridJob[] = [
+  g("andrea-repair", "Andrea Dalton", "Sprinkler repair", "Sprinkler repair visit", "480 Briggs St, Erie", "unscheduled", "0 of 1 done", 145, null, "", "Unscheduled", NOONE),
+  g("pass-2027", "Andrea Dalton", "Season Pass", "Season Pass TH-2027-0008", "480 Briggs St, Erie", "scheduled", "0 of 2 done", 260, null, "", "Mon, May 3", RYAN, "2027"),
+  g("andrea-repair-nov12", "Andrea Dalton", "Sprinkler repair", "Sprinkler repair visit", "480 Briggs St, Erie", "done", "1 of 1 done", 145, "bill-sent", "Invoice sent, due Dec 2", "None", RYAN, "2026"),
+  g("pass-2026", "Andrea Dalton", "Season Pass", "Season Pass TH-2026-0021", "480 Briggs St, Erie", "done", "2 of 2 done", 260, "paid", "Paid, card", "None", RYAN, "2026"),
+  g("marcus-repair", "Marcus Bell", "Sprinkler repair", "Sprinkler repair visit", "91 Main St, Longmont", "done", "1 of 1 done", 145, "overdue", "Past due since Nov 12", "None", RYAN, "2026"),
+  g("dale-pass-2027", "Dale Whitaker", "Season Pass", "Season Pass TH-2027-0011", "212 Main St, Lafayette", "scheduled", "0 of 2 done", 210, null, "", "Mon, May 3", RYAN, "2027"),
+  g("dale-pass-2026", "Dale Whitaker", "Season Pass", "Season Pass TH-2026-0003", "212 Main St, Lafayette", "done", "2 of 2 done", 210, "paid", "Paid, card", "None", RYAN, "2026"),
+  g("g-reese", "Reese Holloway", "Fall blowout", "Fall blowout", "51 Shadow Ln, Firestone", "done", "1 of 1 done", 124, "overdue", "Past due since Nov 17", "None", RYAN, "2026"),
+  g("g-joe", "Joe Alvarez", "Sprinkler repair", "Sprinkler repair visit", "22 Pine St, Louisville", "done", "1 of 1 done", 145, "overdue", "Past due since Nov 12", "None", HANNAH),
+  g("g-lena", "Lena Park", "Sprinkler repair visit", "Valve replacement", "7 Oak Ct, Lafayette", "done", "1 of 1 done", 230, "bill-sent", "Invoice sent, due Nov 25", "None", RYAN),
+  g("g-greg", "Greg Olsen", "Fall blowout", "Fall blowout", "5 Birch Ln, Erie", "done", "1 of 1 done", 115, "bill-sent", "Invoice sent, due Nov 30", "None", HANNAH),
+  g("g-sam", "Sam Ortiz", "Sprinkler repair", "Sprinkler repair visit", "14 Aspen Dr, Firestone", "today", "0 of 1 done", 145, null, "", "Today", RYAN),
+  g("g-dana", "Dana Cho", "Fall blowout", "Fall blowout", "18 Cedar Way, Erie", "done", "1 of 1 done", 115, "paid", "Paid, card", "None", RYAN, "2026"),
+  g("g-priya", "Priya Shah", "Sprinkler repair", "Sprinkler repair visit", "330 Elm Dr, Lafayette", "done", "1 of 1 done", 145, "paid", "Paid, check", "None", HANNAH),
+  g("g-tom", "Tom Becker", "Sprinkler repair", "Sprinkler repair visit", "600 Hill Rd, Broomfield", "cancelled", "0 of 1 done", 145, null, "", "None", NOONE),
+  g("g-tom-install", "Tom Becker", "New sprinkler system installation", "New sprinkler system installation", "600 Hill Rd, Broomfield", "unscheduled", "0 of 1 done", 0, null, "", "Unscheduled", NOONE),
+  g("g-lena-lights", "Lena Park", "Christmas lights", "Christmas lights", "7 Oak Ct, Lafayette", "unscheduled", "0 of 1 done", 600, null, "", "Unscheduled", NOONE),
+  g("g-ana", "Ana Ruiz", "Sprinkler repair", "Sprinkler repair visit", "9 Laurel St, Louisville", "late", "0 of 1 done", 145, null, "", "Mon, Nov 16", RYAN),
+]
+
+/** The invoice a job's page names: the fixtures all say INV-2026-0001 at /admin/invoices?invoice=inv-1, so each page is rewritten to its own invoice. */
+export const INVOICE_OF_JOB: Record<string, { id: string; number: string }> = {
+  "andrea-repair": { id: "inv-1", number: "INV-2026-0001" },
+  "andrea-repair-nov12": { id: "inv-42", number: "INV-2026-0042" },
+  "marcus-repair": { id: "inv-35", number: "INV-2026-0035" },
+  "g-reese": { id: "inv-38", number: "INV-2026-0038" },
+  "g-joe": { id: "inv-35-joe", number: "INV-2026-0036" },
+  "g-lena": { id: "inv-41", number: "INV-2026-0041" },
+  "g-greg": { id: "inv-44", number: "INV-2026-0044" },
+  "g-priya": { id: "inv-40", number: "INV-2026-0040" },
+  "g-dana": { id: "inv-33", number: "INV-2026-0033" },
+  "g-sam": { id: "inv-29", number: "INV-2026-0029" },
+  "g-tom": { id: "inv-21", number: "INV-2026-0021" },
+}
+const OLD = "INV-2026-0001"
+/** Jobs made in the prototype (New job, Sell pass): they join the grid until Start over. */
+const EXTRA: GridJob[] = []
+export const allRows = (): GridJob[] => [...GRID_ROWS, ...EXTRA]
+export const registerJob = (row: GridJob) => void EXTRA.push(row)
+export const resetExtras = () => void (EXTRA.length = 0)
+export const rowOf = (id: string) => allRows().find((r) => r.id === id)
+export const customerOfJob = (id: string) => customerIdOf(rowOf(id)?.name ?? "")
+
+export type JobView = { kind: "flow" } | { kind: "page"; data: JobPageData } | { kind: "trips"; data: MultiTripData } | { kind: "dale"; row: GridJob } | { kind: "none" }
+
+const STATE_OF = (r: GridJob): JobState => {
+  if (r.stage === "done") return r.billingState === "paid" ? "done-paid" : r.billingState === "overdue" ? "past-due" : r.billingState === "bill-sent" ? "invoice-sent" : "done-unpaid"
+  if (r.stage === "cancelled") return "canceled"
+  if (r.stage === "active") return "active"
+  return r.stage as JobState
+}
+
+const CONTACTS: Record<string, { text: string; href: string; email: string }> = {
+  andrea: { text: "(970) 555-0123", href: "tel:+19705550123", email: "andrea.dalton@example.com" },
+  marcus: { text: "(970) 555-0188", href: "tel:+19705550188", email: "marcus.bell@example.com" },
+}
+export const contactOf = (name: string) => {
+  const id = customerIdOf(name)
+  return CONTACTS[id] ?? { text: "(970) 555-0123", href: "tel:+19705550123", email: `${name.toLowerCase().replace(/\s+/g, ".")}@example.com` }
+}
+
+/** The page of one job: the flow for Andrea's repair, the trips page for her passes, the fixture state for the rest, re-skinned to the row. */
+export function jobView(id: string): JobView {
+  const row = rowOf(id)
+  if (!row) return { kind: "none" }
+  if (id === "andrea-repair") return { kind: "flow" }
+  if (id === "pass-2027") return { kind: "trips", data: { ...passPageOf("ahead", { kind: "from", number: "TH-2026-0021" }) } }
+  if (id === "pass-2026") {
+    const d = passPageOf("both-done", { kind: "as", number: "TH-2027-0008" })
+    return { kind: "trips", data: { ...d, title: "Season Pass TH-2026-0021", subtitle: "Andrea Dalton · Sold Mar 2, website", notes: d.notes.map((n) => ({ ...n, what: n.what.replace("TH-2027-0008", "TH-2026-0021") })), messages: d.messages.map((m) => ({ ...m, body: m.body.replace("TH-2027-0008", "TH-2026-0021") })) } }
+  }
+  if (id.startsWith("dale-pass")) return { kind: "dale", row }
+  const c = contactOf(row.name)
+  const data = jobPageOf(STATE_OF(row))
+  const [street, town] = row.property.split(", ")
+  const where: JobPageData["where"] = data.where.map((f) => (f[0] === "Address" ? ["Address", `${street}, ${town}`] : f))
+  const isAndrea = row.name === "Andrea Dalton"
+  const first = row.name.split(" ")[0]!
+  const inv = INVOICE_OF_JOB[id]
+  const swap = (s: string) => {
+    const named = isAndrea ? s : s.replaceAll("Andrea", first).replace("480 Briggs St", street!)
+    return inv ? named.replaceAll(OLD, inv.number) : named
+  }
+  const link = inv ? `/admin/invoices?invoice=${inv.id}` : ""
+  const billing = inv
+    ? {
+        ...data.billing,
+        paidLine: data.billing.paidLine && { ...data.billing.paidLine, invoice: data.billing.paidLine.invoice && { name: inv.number, href: link } },
+        invoices: data.billing.invoices?.map((i) => ({ ...i, number: inv.number, href: link })),
+      }
+    : data.billing
+  return {
+    kind: "page",
+    data: {
+      ...data,
+      customer: row.name,
+      phone: { text: c.text, href: c.href },
+      where,
+      billing,
+      subtitle: `${row.title} · Added Nov ${id === "andrea-repair-nov12" ? 9 : 12}`,
+      pastVisits: isAndrea ? data.pastVisits : [],
+      pastTotal: isAndrea ? data.pastTotal : 0,
+      contact: { channel: "text", email: c.email },
+      notes: data.notes.map((n) => ({ ...n, what: swap(n.what) })),
+      messages: data.messages.map((m) => ({ ...m, body: swap(m.body) })),
+      lines: data.lines.map((l) => (row.service === "Fall blowout" ? { ...l, name: "Fall blowout", amount: money(row.total) } : l)),
+    },
+  }
+}
+

@@ -21,8 +21,33 @@ const preview: Preview = {
       },
     },
     layout: "fullscreen",
-    // The review groups first: the prototypes Hannah reviews, then the screens, then the library.
-    options: { storySort: { order: ["Design", ["Job page, one trip", "Job page, Season Pass and return trip", "Customer", "Invoices and Billing", "Navigation"], "Screens", "Emails", "Blocks", "UI"] } },
+    // The two Start here walkthroughs first (Hannah, Nov 19), then the catalogue stories under them, then the screens, emails and the library.
+    options: {
+      storySort: {
+        order: [
+          "Design",
+          [
+            "Start here: the admin, clickable",
+            ["Docs", "Laptop", "Phone", "From home", "From search"],
+            "Start here: the customer, clickable",
+            ["Docs", "Phone", "Laptop"],
+            "Job flow (clickable)",
+            "Job page, one trip",
+            "Job page, Season Pass and return trip",
+            "Customer page",
+            "Invoices",
+            "Confirmations",
+            "Navigation",
+            "Jobs grid",
+            "Customer side: booking, account, texts",
+          ],
+          "Screens",
+          "Emails",
+          "Blocks",
+          "UI",
+        ],
+      },
+    },
     // Accessibility violations fail story tests (npm run test:stories).
     a11y: { test: "error" },
   },

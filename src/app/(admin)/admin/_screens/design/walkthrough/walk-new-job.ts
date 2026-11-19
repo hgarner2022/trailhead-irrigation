@@ -1,0 +1,56 @@
+import type { AdminData, Client } from "@/lib/admin/types"
+import { SERVICE_LIST } from "@/lib/services"
+import type { GridJob } from "../JobsGridDesign"
+import { visitsData, VISITS_TODAY } from "../../visits-fixture"
+import type { NewPassInput, NewVisitInput, VisitActions } from "../../visit-actions-types"
+import { registerJob } from "./jobs-data"
+
+// What the real New job sheet (`_screens/NewJob.tsx`) needs, as fixtures: the walkthrough's three customers for the type-ahead, the site's service
+// catalogue, the people for Who, and two server actions stubbed to make a row in the prototype's Jobs grid. A new job is Unscheduled (or Scheduled
+// when a day was chosen) and opens its own page; a sold pass is a Season Pass row.
+
+export const WALK_TODAY = VISITS_TODAY
+
+const client = (id: string, firstName: string, lastName: string, address: string, town: Client["town"], phone: string, email: string, hasPass: boolean): Client => ({ id, firstName, lastName, address, town, phone, email, jobberUrl: "", hasPass, app: true })
+export const WALK_CLIENTS: Client[] = [
+  client("andrea", "Andrea", "Dalton", "480 Briggs St", "Erie", "(970) 555-0123", "andrea.dalton@example.com", true),
+  client("marcus", "Marcus", "Bell", "91 Main St", "Longmont", "(970) 555-0188", "marcus.bell@example.com", false),
+  client("dale", "Dale", "Whitaker", "212 Main St", "Lafayette", "(970) 555-0140", "dale.whitaker@example.com", true),
+]
+
+/** The sheet's data: the repo's fixture (settings, people, services) with this world's customers. */
+export const WALK_DATA: AdminData = { ...visitsData, clients: WALK_CLIENTS }
+
+const DAY = new Intl.DateTimeFormat("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" })
+let seq = 0
+
+function whoFor(customerId?: string, fresh?: NewVisitInput["newCustomer"]) {
+  if (fresh) return { name: `${fresh.firstName} ${fresh.lastName}`.trim(), property: `${fresh.property.address}, ${fresh.property.town}` }
+  const c = WALK_CLIENTS.find((x) => x.id === customerId)
+  return { name: c ? `${c.firstName} ${c.lastName}` : "New customer", property: c ? `${c.address}, ${c.town}` : "" }
+}
+
+/** The two actions the sheet calls: they make a row and answer its id, as the API would. */
+export function makeNewJobActions(onMade: () => void): VisitActions {
+  const actions = {
+    createVisit: async (input: NewVisitInput) => {
+      const service = SERVICE_LIST.find((s) => s.key === input.serviceKey)
+      const { name, property } = whoFor(input.customerId, input.newCustomer)
+      const id = `new-${++seq}`
+      const title = service?.name ?? "Job"
+      const row: GridJob = { id, name, service: service?.name ?? "Sprinkler repair visit", title, property, stage: input.scheduledOn ? "scheduled" : "unscheduled", who: "No one yet", season: "", visits: "0 of 1 done", total: input.price ?? 0, billingState: null, billing: "", next: input.scheduledOn ? DAY.format(new Date(`${input.scheduledOn}T12:00:00Z`)) : "Unscheduled" }
+      registerJob(row)
+      onMade()
+      return { ok: true as const, data: { id: `v-${id}`, jobId: id } }
+    },
+    sellPass: async (input: NewPassInput) => {
+      const { name, property } = whoFor(input.customerId, input.newCustomer)
+      const id = `new-${++seq}`
+      const number = `TH-2027-${String(100 + seq).padStart(4, "0")}`
+      registerJob({ id, name, service: "Season Pass", title: `Season Pass ${number}`, property, stage: "scheduled", who: "No one yet", season: "2027", visits: "0 of 2 done", total: input.zones <= 8 ? 260 : 260 + (input.zones - 8) * 20, billingState: null, billing: "", next: "Unscheduled" })
+      onMade()
+      return { ok: true as const, data: { id, number, firstName: name.split(" ")[0] ?? "" } }
+    },
+  }
+  return actions as unknown as VisitActions
+}
