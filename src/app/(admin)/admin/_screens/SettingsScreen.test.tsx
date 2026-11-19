@@ -122,18 +122,44 @@ describe("SettingsScreen fields", () => {
     expect(log().queryByText("Ryan Garner most blowouts per day")).toBeNull()
   })
 
-  it("sets the hours and puts a time back when the day would end before it starts", () => {
-    render(<SettingsScreen data={data} today={TODAY} />)
+  it("sets the hours, and says live that the day ends before it starts and turns Save off until it is fixed", async () => {
+    const user = userEvent.setup()
+    render(<SettingsScreen data={data} today={TODAY} actions={{ save: vi.fn(), createKey: vi.fn(), revokeKey: vi.fn() }} />)
     const start = screen.getByLabelText("Tech Two day starts")
     const end = screen.getByLabelText("Tech Two day ends")
     fireEvent.change(start, { target: { value: "17:30" } })
     fireEvent.blur(start)
-    expect(start).toHaveValue("09:00")
-    expect(log().queryByText("Tech Two hours")).toBeNull()
-    fireEvent.change(end, { target: { value: "15:30" } })
+    expect(start).toHaveValue("17:30")
+    expect(screen.getByText("Tech Two: End must be after the start")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Save" })).toBeDisabled()
+    fireEvent.change(end, { target: { value: "18:30" } })
     fireEvent.blur(end)
-    expect(end).toHaveValue("15:30")
-    expect(log().getByText("Tech Two hours")).toBeInTheDocument()
+    expect(screen.queryByText(/End must be after the start/)).toBeNull()
+    expect(screen.getByRole("button", { name: "Save" })).toBeEnabled()
+    expect(log().getAllByText("Tech Two hours")).toHaveLength(2)
+    await user.click(screen.getByRole("button", { name: "Discard" }))
+  })
+
+  it("opens People on a phone when it is pressed first, and Settings comes back", async () => {
+    const user = userEvent.setup()
+    render(<SettingsScreen data={data} today={TODAY} />)
+    const list = screen.getByRole("tablist")
+    const content = screen.getByRole("button", { name: "Back to Settings from People" }).parentElement!
+    expect(content.className).toContain("max-md:hidden")
+    await user.click(screen.getByRole("tab", { name: "People" }))
+    expect(list.className).toContain("max-md:hidden")
+    expect(content.className).not.toContain("max-md:hidden")
+    await user.click(screen.getByRole("button", { name: "Back to Settings from People" }))
+    expect(list.className).not.toContain("max-md:hidden")
+  })
+
+  it("has the word truck nowhere on the People tab, and says a second person is a new row", () => {
+    render(<SettingsScreen data={data} today={TODAY} />)
+    // the change log below keeps the words it was written in; everything above it is the tab's own
+    const tab = screen.getByRole("tabpanel").cloneNode(true) as HTMLElement
+    tab.querySelector('[data-slot="change-log"]')?.remove()
+    expect(tab.textContent).not.toMatch(/truck/i)
+    expect(tab.textContent).toContain("A second person on the Schedule is a new row: a name, an email, Takes visits, days and hours.")
   })
 })
 

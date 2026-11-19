@@ -102,3 +102,24 @@ export const Unsaved: Story = {
     await expect(await canvas.findByText("1 unsaved change")).toBeInTheDocument()
   },
 }
+
+/** On a phone, People is the first entry and opens like the others (it is already the selected one on a laptop). */
+export const PhonePeopleOpens: Story = {
+  globals: { viewport: { value: "phone", isRotated: false } },
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(await canvas.findByRole("tab", { name: "People" }))
+    await expect(await canvas.findByRole("button", { name: "Back to Settings from People" })).toBeVisible()
+  },
+}
+
+/** A day that ends before it starts is named at once under the count, and Save is off. */
+export const HoursProblem: Story = {
+  globals: { viewport: { value: "laptop", isRotated: false } },
+  play: async ({ canvas, userEvent }) => {
+    const start = await canvas.findByLabelText("Tech Two day starts")
+    await userEvent.clear(start)
+    await userEvent.type(start, "18:00{Enter}")
+    await expect(await canvas.findByText("Tech Two: End must be after the start")).toBeInTheDocument()
+    await expect(canvas.getByRole("button", { name: "Save" })).toBeDisabled()
+  },
+}

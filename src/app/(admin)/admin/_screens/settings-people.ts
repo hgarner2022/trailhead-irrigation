@@ -92,8 +92,9 @@ export function setTakesVisits(state: SettingsState, personId: string, takes: bo
 }
 
 /**
- * One end of the working day, "HH:MM". Both ends are checked as they will stand: a day ends after it starts, so an end at or before
- * the start (or a start at or after the end) is refused. A blank puts the end back to its 09:00 or 17:00 default.
+ * One end of the working day, "HH:MM". A value that is not a time is refused. An end at or before the start is kept so the screen can
+ * say so at once (`peopleProblems`, in the SaveBar, with Save off) instead of snapping the field back. A blank puts the end back to
+ * its 09:00 or 17:00 default.
  */
 export function setHours(state: SettingsState, personId: string, field: "hoursStart" | "hoursEnd", raw: string, actor: Actor): SettingsState {
   const person = personOf(state, personId)
@@ -103,8 +104,6 @@ export function setHours(state: SettingsState, personId: string, field: "hoursSt
   const next = { ...person }
   if (value) next[field] = value
   else delete next[field]
-  const now = hoursOf(next)
-  if (!hoursInOrder(now.start, now.end)) return state
   return record(state, actor, `${person.name} hours`, hoursWords(person), hoursWords(next), replacePerson(state.settings, next))
 }
 
@@ -138,3 +137,10 @@ export function addPerson(state: SettingsState, actor: Actor): SettingsState {
   }
   return record(state, actor, "People", String(n - 1), String(n), { ...state.settings, people: [...state.settings.people, person] })
 }
+
+/** What would stop a save of the people, in words, shown live in the SaveBar. */
+export const peopleProblems = (settings: Pick<OrganizationSettings, "people">): string[] =>
+  settings.people.flatMap((p) => {
+    const h = hoursOf(p)
+    return hoursInOrder(h.start, h.end) ? [] : [`${p.name}: End must be after the start`]
+  })
