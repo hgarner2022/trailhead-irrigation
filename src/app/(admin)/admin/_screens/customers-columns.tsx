@@ -77,4 +77,4 @@ export const customerColumns: GridColumnDef<CustomerRow>[] = [
 ]
 
 /** Customers on a phone: the name, the street, the next day, and what is unpaid at the right. */
-export const customerCard: GridCardSlots = { title: "name", line: ["address"], when: ["nextKey"], money: "unpaid" }
+export const customerCard: GridCardSlots = { title: "name", line: ["address"], state: "pass", when: ["nextKey"], money: "unpaid" }
