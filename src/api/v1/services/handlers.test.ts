@@ -4,7 +4,7 @@ import { eq } from "drizzle-orm"
 import * as s from "@/db/schema"
 import type { TestDb } from "@/db/test-db"
 import { callApi } from "../../core/call"
-import { adminKey, apiDb, ctxFor, readKey, writeKey } from "../../test-helpers"
+import { adminKey, apiDb, ctxFor, ORG, readKey, writeKey } from "../../test-helpers"
 import { servicesCreate, servicesDeactivate, servicesList, servicesUpdate } from "./handlers"
 
 let db: TestDb
@@ -84,6 +84,24 @@ describe("services", () => {
     await expect(callApi(ctxFor(db, adminKey), servicesCreate, { ...input, key: "Bad Key" })).rejects.toMatchObject({ code: "invalid" })
     await expect(callApi(ctxFor(db, adminKey), servicesCreate, { ...input, key: "neg", price: -5 })).rejects.toMatchObject({ code: "invalid" })
     await expect(callApi(ctxFor(db, adminKey), servicesCreate, { ...input, key: "odd", slotMinutes: 50 })).rejects.toMatchObject({ code: "invalid" })
+  })
+  it("takes the dates a service may be booked in, as month and day, clears them with null, and refuses a day that does not exist", async () => {
+    const made = await callApi(ctxFor(db, adminKey), servicesCreate, { ...input, key: "dated" })
+    expect(made).toMatchObject({ bookableFrom: null, bookableTo: null })
+    expect(await callApi(ctxFor(db, adminKey), servicesUpdate, { id: made.id, bookableFrom: "04-15", bookableTo: "06-15" })).toMatchObject({ bookableFrom: "04-15", bookableTo: "06-15" })
+    // a field left out keeps its value; null clears it
+    expect(await callApi(ctxFor(db, adminKey), servicesUpdate, { id: made.id, bookableTo: null })).toMatchObject({ bookableFrom: "04-15", bookableTo: null })
+    for (const bad of ["04-31", "13-01", "April 15", "2027-04-15"]) await expect(callApi(ctxFor(db, adminKey), servicesUpdate, { id: made.id, bookableFrom: bad })).rejects.toMatchObject({ code: "invalid" })
+    await expect(callApi(ctxFor(db, writeKey), servicesUpdate, { id: made.id, bookableFrom: "05-01" })).rejects.toMatchObject({ code: "forbidden" })
+  })
+  it("writes a change log row per changed field, in the screen's words, by the caller", async () => {
+    const made = await callApi(ctxFor(db, adminKey), servicesCreate, { ...input, key: "logged", name: "Logged check" })
+    await callApi(ctxFor(db, adminKey), servicesUpdate, { id: made.id, price: 105, bookableFrom: "09-28", quoteOnly: true, bookable: false })
+    await callApi(ctxFor(db, adminKey), servicesUpdate, { id: made.id, price: 105 })
+    const rows = await db.select().from(s.settingsChange).where(eq(s.settingsChange.organizationId, ORG))
+    const mine = rows.filter((r) => r.field.startsWith("Logged check ")).map((r) => [r.field, r.fromValue, r.toValue])
+    expect(mine).toEqual(expect.arrayContaining([["Logged check price", "$95", "$105"], ["Logged check bookable from", "All year", "09-28"], ["Logged check online", "Book a day", "We quote"]]))
+    expect(mine.filter(([f]) => f === "Logged check price")).toHaveLength(1)
   })
   it("honours an Idempotency-Key", async () => {
     const ctx = { ...ctxFor(db, adminKey), idempotencyKey: "svc-1" }

@@ -19,10 +19,12 @@ export interface FormRowProps {
   error?: string
   /** a label that is read but not drawn, for a control whose purpose is clear from the row it sits in */
   hideLabel?: boolean
+  /** the record recipe's fact layout from `md` up: the label in a 112px column at the left of the control, the hint and error under the control; above the label as usual on a phone */
+  inline?: boolean
   className?: string
 }
 
-export function FormRow({ label, children, htmlFor, hint, error, hideLabel, className }: FormRowProps) {
+export function FormRow({ label, children, htmlFor, hint, error, hideLabel, inline, className }: FormRowProps) {
   const made = useId()
   const id = htmlFor ?? made
   const hintId = `${id}-hint`
@@ -34,18 +36,18 @@ export function FormRow({ label, children, htmlFor, hint, error, hideLabel, clas
       ? cloneElement(only as ReactElement<Record<string, unknown>>, { id, "aria-describedby": described, ...(error ? { "aria-invalid": true } : {}) })
       : children
   return (
-    <div data-slot="form-row" className={cn("flex min-w-0 flex-col gap-1", className)}>
-      <label htmlFor={id} className={cn("text-sm font-medium text-foreground", hideLabel && "sr-only")}>
+    <div data-slot="form-row" className={cn("flex min-w-0 flex-col gap-1", inline && "md:grid md:grid-cols-[112px_minmax(0,1fr)] md:items-start md:gap-x-3", className)}>
+      <label htmlFor={id} className={cn("text-sm font-medium text-foreground", inline && "md:pt-2.5", hideLabel && "sr-only")}>
         {label}
       </label>
       {control}
       {hint && (
-        <p id={hintId} className="text-sm text-muted-foreground">
+        <p id={hintId} className={cn("text-sm text-muted-foreground", inline && "md:col-start-2")}>
           {hint}
         </p>
       )}
       {error && (
-        <p id={errorId} role="alert" className="text-sm text-destructive">
+        <p id={errorId} role="alert" className={cn("text-sm text-destructive", inline && "md:col-start-2")}>
           {error}
         </p>
       )}

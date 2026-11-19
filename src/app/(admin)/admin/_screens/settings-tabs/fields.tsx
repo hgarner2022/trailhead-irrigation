@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { ConfirmDialog } from "@/components/blocks/ConfirmDialog"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import type { Actor, SettingsState } from "../settings-model"
@@ -17,11 +17,14 @@ export interface CommitInputProps {
   value: string | number
   label: string
   onCommit: (raw: string) => void
-  type?: "text" | "number" | "date"
+  type?: "text" | "number" | "date" | "time"
   min?: number
   max?: number
   className?: string
   describedBy?: string
+  /** a FormRow puts its id and description on its one child */
+  id?: string
+  "aria-describedby"?: string
 }
 
 /**
@@ -35,7 +38,7 @@ export interface CommitInputProps {
  * back to the `value` prop, and when the prop did change the draft follows it
  * in the same render. The field keeps focus throughout; it is never remounted.
  */
-export function CommitInput({ value, label, onCommit, type = "text", min, max, className, describedBy }: CommitInputProps) {
+export function CommitInput({ value, label, onCommit, type = "text", min, max, className, describedBy, id, "aria-describedby": described }: CommitInputProps) {
   const [draft, setDraft] = useState(String(value))
   const [seen, setSeen] = useState(value)
   if (value !== seen) {
@@ -51,8 +54,9 @@ export function CommitInput({ value, label, onCommit, type = "text", min, max, c
   }
   return (
     <Input
+      id={id}
       aria-label={label}
-      aria-describedby={describedBy}
+      aria-describedby={describedBy ?? described}
       type={type}
       min={min}
       max={max}
@@ -73,7 +77,7 @@ export function CommitInput({ value, label, onCommit, type = "text", min, max, c
  * field), so the reducer decides what a blank means; a text the reducer refuses comes back the same way, because
  * the draft is set back to `value` after every commit.
  */
-export function CommitTextarea({ value, label, onCommit, rows = 4 }: { value: string; label: string; onCommit: (raw: string) => void; rows?: number }) {
+export function CommitTextarea({ value, label, onCommit, rows = 4, id, "aria-describedby": described }: { value: string; label: string; onCommit: (raw: string) => void; rows?: number; id?: string; "aria-describedby"?: string }) {
   const [draft, setDraft] = useState(value)
   const [seen, setSeen] = useState(value)
   if (value !== seen) {
@@ -82,7 +86,9 @@ export function CommitTextarea({ value, label, onCommit, rows = 4 }: { value: st
   }
   return (
     <Textarea
+      id={id}
       aria-label={label}
+      aria-describedby={described}
       rows={rows}
       value={draft}
       className="min-h-20"
@@ -103,29 +109,26 @@ export interface ConfirmButtonProps {
   onConfirm: () => void
 }
 
-/** A ghost button that asks before it acts: a dialog with the consequence in words and a Cancel beside the confirm. */
+/** A ghost button that asks before it acts: the one ConfirmDialog, the consequence in words, "Keep it" beside the confirm. */
 export function ConfirmButton({ label, title, description, confirm, onConfirm }: ConfirmButtonProps) {
+  const [open, setOpen] = useState(false)
   return (
-    <Dialog>
-      <DialogTrigger asChild>
-        <Button variant="ghost" size="sm" aria-label={label} className="min-h-11 md:min-h-0">
-          {label.split(" ")[0]}
-        </Button>
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
-          <DialogDescription>{description}</DialogDescription>
-        </DialogHeader>
-        <DialogFooter>
-          <DialogClose asChild>
-            <Button variant="outline">Cancel</Button>
-          </DialogClose>
-          <DialogClose asChild>
-            <Button onClick={onConfirm}>{confirm}</Button>
-          </DialogClose>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <>
+      <Button variant="ghost" size="sm" aria-label={label} className="min-h-11 md:min-h-0" onClick={() => setOpen(true)}>
+        {label.split(" ")[0]}
+      </Button>
+      <ConfirmDialog
+        title={title}
+        message={description}
+        confirmLabel={confirm}
+        destructive
+        open={open}
+        onOpenChange={setOpen}
+        onConfirm={async () => {
+          onConfirm()
+          return { ok: true }
+        }}
+      />
+    </>
   )
 }

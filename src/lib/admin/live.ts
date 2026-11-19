@@ -30,6 +30,7 @@ const personFromApi = (p: PersonOut): Person => ({
   id: p.id, name: p.name, initials: p.initials, role: p.role, workingDays: p.workingDays, capacityByKind: p.capacityByKind,
   ...(p.email ? { email: p.email } : {}), ...(p.phone ? { phone: p.phone } : {}), ...(p.truck ? { truck: p.truck } : {}), ...(p.jobberUserId ? { jobberUserId: p.jobberUserId } : {}),
   ...(p.seasonStart ? { seasonStart: p.seasonStart } : {}), ...(p.seasonEnd ? { seasonEnd: p.seasonEnd } : {}),
+  ...(p.hoursStart ? { hoursStart: p.hoursStart } : {}), ...(p.hoursEnd ? { hoursEnd: p.hoursEnd } : {}),
 })
 const MAX_PAGES = 100
 /** How many of the organization's newest events the panels' stories are built from (decision 8 of the step 5 plan). */
@@ -48,8 +49,8 @@ async function all<T>(ctx: Ctx, handler: Handler<never, never>, input: Record<st
   return rows
 }
 
-const serviceItem = (r: { id: string; taxable: boolean; active: boolean; bookable: boolean; key: string; name: string; description: string | null; kind: string; minZones: number | null; maxZones: number | null; includedZones: number | null; price: number | null; extraZonePrice: number | null; slotMinutes: number; quoteOnly: boolean }): ServiceItem => ({
-  id: r.id, taxable: r.taxable, active: r.active, bookable: r.bookable, key: r.key, name: r.name, description: r.description, kind: r.kind, slotMinutes: r.slotMinutes, quoteOnly: r.quoteOnly,
+const serviceItem = (r: { id: string; taxable: boolean; active: boolean; bookable: boolean; key: string; name: string; description: string | null; kind: string; minZones: number | null; maxZones: number | null; includedZones: number | null; price: number | null; extraZonePrice: number | null; slotMinutes: number; quoteOnly: boolean; bookableFrom: string | null; bookableTo: string | null }): ServiceItem => ({
+  id: r.id, taxable: r.taxable, active: r.active, bookable: r.bookable, key: r.key, name: r.name, description: r.description, kind: r.kind, slotMinutes: r.slotMinutes, quoteOnly: r.quoteOnly, bookableFrom: r.bookableFrom, bookableTo: r.bookableTo,
   ...(r.minZones !== null ? { minZones: r.minZones } : {}), ...(r.maxZones !== null ? { maxZones: r.maxZones } : {}), ...(r.includedZones !== null ? { includedZones: r.includedZones } : {}),
   ...(r.price !== null ? { price: r.price } : {}), ...(r.extraZonePrice !== null ? { extraZonePrice: r.extraZonePrice } : {}),
 })

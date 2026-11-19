@@ -22,13 +22,15 @@ describe("44px tap targets below md", () => {
   it("the Settings tabs are 44px tall on a phone and the laptop's height from md", () => {
     render(<SettingsScreen data={data} today={TODAY} />)
     const list = screen.getByRole("tablist", { name: "Settings sections" })
-    expect(list.className).toContain("group-data-[orientation=horizontal]/tabs:h-11")
-    expect(list.className).toContain("md:group-data-[orientation=horizontal]/tabs:h-9")
+    for (const tab of within(list).getAllByRole("tab")) {
+      expect(tab.className).toContain("h-14")
+      expect(tab.className).toContain("md:h-10")
+    }
   })
 
   it("a Settings checkbox has a 44px hit area below md that goes away from md", () => {
     render(<SettingsScreen data={data} today={TODAY} />)
-    const row = within(screen.getByRole("table")).getAllByRole("row")[1]!
+    const row = screen.getAllByRole("listitem")[0]!
     const box = row.querySelector<HTMLElement>('[data-slot="checkbox"]')!
     expect(box.className).toContain("after:-inset-3.5")
     expect(box.className).toContain("md:after:hidden")
@@ -36,7 +38,7 @@ describe("44px tap targets below md", () => {
 
   it("a Settings row's Remove-style button is 44px tall on a phone", () => {
     render(<SettingsScreen data={data} today={TODAY} />)
-    const buttons = within(screen.getByRole("table")).getAllByRole("button").filter((b) => b.getAttribute("aria-label")?.match(/^(Remove|Deactivate)/))
+    const buttons = screen.getAllByRole("button").filter((b) => b.getAttribute("aria-label")?.match(/^(Remove|Deactivate)/))
     expect(buttons.length).toBeGreaterThan(0)
     for (const b of buttons) expect(b.className).toContain("min-h-11")
   })

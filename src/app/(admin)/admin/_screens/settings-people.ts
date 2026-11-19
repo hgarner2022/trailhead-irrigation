@@ -1,13 +1,15 @@
 /**
  * The People tab's reducers (see settings-model.ts for the shape): the name,
- * the contact and truck fields, the role, the season, the working days, the
- * capacities, and a person joining or leaving the list. The last owner can
+ * the contact fields, the role, whether the person takes visits (the schedule
+ * label), the working days, the hours, the most of each kind per day, and a
+ * person joining or leaving the list. The season reducer stays for the engine
+ * step; the screen no longer shows it. The last owner can
  * neither leave nor stop being an owner, the same rule the API keeps.
  */
 import type { CapacityKind, OrganizationSettings, Person, PersonRole, Weekday } from "@/lib/admin/types"
 import { WEEKDAYS } from "@/lib/admin/calendar"
 import { emailProblem } from "@/lib/email-check"
-import { ROLE_WORDS, TEXT_MAX, hasAnotherOwner, initialsOf } from "@/lib/admin/people"
+import { HHMM, ROLE_WORDS, TEXT_MAX, hasAnotherOwner, hoursInOrder, hoursOf, hoursWords, initialsOf } from "@/lib/admin/people"
 import { KIND_PLURALS, MAX_CAPACITY, daysWords, isRealDate, record, type Actor, type SettingsState } from "./settings-model"
 
 const replacePerson = (s: OrganizationSettings, person: Person) => ({ ...s, people: s.people.map((p) => (p.id === person.id ? person : p)) })
@@ -25,7 +27,7 @@ export function setPersonName(state: SettingsState, personId: string, raw: strin
 
 /** The text fields a person has besides the name; a blank clears the field. */
 export type PersonText = "email" | "phone" | "truck" | "jobberUserId"
-const TEXT_WORDS: Record<PersonText, string> = { email: "email", phone: "phone", truck: "truck", jobberUserId: "Jobber user" }
+const TEXT_WORDS: Record<PersonText, string> = { email: "email", phone: "phone", truck: "schedule label", jobberUserId: "Jobber user" }
 
 /** A value too long for the API, or an email that is not shaped like one, is refused as the API would refuse it at Save. */
 export function setPersonText(state: SettingsState, personId: string, field: PersonText, raw: string, actor: Actor): SettingsState {
@@ -75,11 +77,42 @@ export function toggleWorkingDay(state: SettingsState, personId: string, day: We
   return record(state, actor, `${person.name} working days`, daysWords(person.workingDays), daysWords(workingDays), replacePerson(state.settings, { ...person, workingDays }))
 }
 
+/**
+ * Whether the person is a row on the Schedule. Today that is whether they carry a schedule label (the truck column), so turning it on
+ * gives them one, their own name, and turning it off takes it away; the label itself is only edited under Advanced. The visits they
+ * already hold keep their day.
+ */
+export function setTakesVisits(state: SettingsState, personId: string, takes: boolean, actor: Actor): SettingsState {
+  const person = personOf(state, personId)
+  if (!person || Boolean(person.truck) === takes) return state
+  const next = { ...person }
+  if (takes) next.truck = person.name.trim().slice(0, TEXT_MAX.truck)
+  else delete next.truck
+  return record(state, actor, `${person.name} takes visits`, takes ? "No" : "Yes", takes ? "Yes" : "No", replacePerson(state.settings, next))
+}
+
+/**
+ * One end of the working day, "HH:MM". Both ends are checked as they will stand: a day ends after it starts, so an end at or before
+ * the start (or a start at or after the end) is refused. A blank puts the end back to its 09:00 or 17:00 default.
+ */
+export function setHours(state: SettingsState, personId: string, field: "hoursStart" | "hoursEnd", raw: string, actor: Actor): SettingsState {
+  const person = personOf(state, personId)
+  if (!person) return state
+  const value = raw.trim()
+  if (value && !HHMM.test(value)) return state
+  const next = { ...person }
+  if (value) next[field] = value
+  else delete next[field]
+  const now = hoursOf(next)
+  if (!hoursInOrder(now.start, now.end)) return state
+  return record(state, actor, `${person.name} hours`, hoursWords(person), hoursWords(next), replacePerson(state.settings, next))
+}
+
 export function setCapacity(state: SettingsState, personId: string, kind: CapacityKind, n: number, actor: Actor): SettingsState {
   const person = personOf(state, personId)
   if (!person || !Number.isInteger(n) || n < 0 || n > MAX_CAPACITY) return state
   const capacityByKind = { ...person.capacityByKind, [kind]: n }
-  return record(state, actor, `${person.name} ${KIND_PLURALS[kind]} per day`, String(person.capacityByKind[kind]), String(n), replacePerson(state.settings, { ...person, capacityByKind }))
+  return record(state, actor, `${person.name} most ${KIND_PLURALS[kind]} per day`, String(person.capacityByKind[kind]), String(n), replacePerson(state.settings, { ...person, capacityByKind }))
 }
 
 /** The person leaves the list (Save takes them out of service); their visits are not touched here, the next schedule run no longer gives them any. The last owner stays. */

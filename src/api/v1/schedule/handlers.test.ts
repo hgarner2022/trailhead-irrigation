@@ -64,6 +64,35 @@ describe("schedule.slots", () => {
   })
 })
 
+describe("schedule.slots on a service's dates", () => {
+  const dates = (from: string | null, to: string | null) => db.update(s.service).set({ bookableFrom: from, bookableTo: to }).where(eq(s.service.key, "blowout"))
+  const days = async (from: string, count: number) => [...new Set((await callApi(ctxFor(db, readKey), scheduleSlots, { service: "blowout", town: "Erie", from, days: count })).data.map((d) => d.day))]
+  it("offers no day outside the span and refuses a stretch with none in it", async () => {
+    await dates("09-28", "11-15")
+    try {
+      await expect(callApi(ctxFor(db, readKey), scheduleSlots, { service: "blowout", town: "Erie", from: "2027-05-05", days: 3 })).rejects.toMatchObject({ code: "unprocessable", message: expect.stringContaining("Sep 28 to Nov 15") })
+      // a stretch that starts the day before the span opens offers only the days inside it
+      const open = await days("2027-09-27", 4)
+      expect(open).not.toContain("2027-09-27")
+      expect(open.every((d) => d >= "2027-09-28")).toBe(true)
+      expect(open.length).toBeGreaterThan(0)
+      expect((await days("2027-11-14", 4)).every((d) => d <= "2027-11-15")).toBe(true)
+    } finally {
+      await dates(null, null)
+    }
+  })
+  it("wraps New Year when the end is before the start, and offers every day with no dates", async () => {
+    await dates("11-01", "06-15")
+    try {
+      expect((await days("2027-05-05", 3)).length).toBeGreaterThan(0)
+      await expect(callApi(ctxFor(db, readKey), scheduleSlots, { service: "blowout", town: "Erie", from: "2027-07-05", days: 3 })).rejects.toMatchObject({ code: "unprocessable" })
+    } finally {
+      await dates(null, null)
+    }
+    expect((await days("2027-07-05", 3)).length).toBeGreaterThan(0)
+  })
+})
+
 describe("schedule.slots on an inactive service", () => {
   it("refuses it even when bookable is still set", async () => {
     await db.update(s.service).set({ active: false }).where(eq(s.service.key, "turn-on-8"))

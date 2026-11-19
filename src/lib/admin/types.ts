@@ -404,6 +404,9 @@ export interface Person {
   /** ISO dates; the season they work, when it is shorter than the year */
   seasonStart?: string
   seasonEnd?: string
+  /** the weekly working hours, "HH:MM"; absent reads as 09:00 to 17:00 (`hoursOf`) */
+  hoursStart?: string
+  hoursEnd?: string
 }
 
 /** The towns a person works on one day: one town or two or three that sit together. */
@@ -566,6 +569,9 @@ export interface ServiceItem {
   extraZonePrice?: number
   slotMinutes: number
   quoteOnly: boolean
+  /** the span of the year a visit's day may fall in, "MM-DD" each, repeating yearly; both empty is all year (`src/lib/services-window.ts`) */
+  bookableFrom?: string | null
+  bookableTo?: string | null
 }
 
 export interface AdminData {

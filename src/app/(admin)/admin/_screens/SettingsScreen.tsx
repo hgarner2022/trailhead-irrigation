@@ -2,34 +2,35 @@
 
 import { useState, useTransition } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
+import { ChevronLeft, ChevronRight } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { SectionHeading } from "@/components/blocks/SectionHeading"
-import { ChangeLog } from "@/components/blocks/ChangeLog"
+import { SaveBar } from "@/components/blocks/SaveBar"
+import { cn } from "@/lib/utils"
 import { PageHeader } from "@/components/blocks/PageHeader"
 import type { AdminData, ServiceItem } from "@/lib/admin/types"
 import { DEFAULT_BILLING } from "@/lib/settings/defaults"
 import { SERVICE_LIST } from "@/lib/services"
 import type { Outcome } from "./action-types"
 import { SAMPLE_KEYS, createKey, type Actor, type ApiKey, type ApiScope, type SettingsState } from "./settings-model"
-import { Areas } from "./settings-tabs/Areas"
 import { Billing } from "./settings-tabs/Billing"
 import { ApiKeys } from "./settings-tabs/ApiKeys"
-import { Capacity } from "./settings-tabs/Capacity"
+import { messageProblems } from "./settings-messages"
 import { Messages } from "./settings-tabs/Messages"
 import { People } from "./settings-tabs/People"
 import { Services } from "./settings-tabs/Services"
 import type { Apply } from "./settings-tabs/fields"
 
 // Where Ryan and Hannah set the rules the scheduler and the messages follow:
-// the people, the services, billing, area groups and town order, capacity and season windows, the
-// customer messages and the API keys. Every edit goes through a reducer in
-// settings-model.ts that also writes the change log under the tabs. Client
-// because the tabs, the edits and the saved line are state; Save only logs
-// in the prototype. The route's page.tsx supplies `data` and `today`; the
-// log's times count up from `today` so a render is the same each time.
+// the people, the services, billing, the customer messages and the API keys (step 6 took the Areas and
+// Capacity and windows tabs off the screen; their columns stay in the database until the engine step).
+// The five entries are a list at the left (on a phone a list that drills into one entry, with a way
+// back). Every edit goes through a reducer that also writes the change log; nothing saves while typing:
+// the first change shows the SaveBar with the count of changed fields, Discard and Save. Client
+// because the entry, the edits and the saved line are state; Save only logs in the prototype. The
+// route's page.tsx supplies `data` and `today`; the log's times count up from `today` so a render
+// is the same each time.
 
-export type SettingsTab = "people" | "services" | "billing" | "areas" | "capacity" | "messages" | "keys"
+export type SettingsTab = "people" | "services" | "billing" | "messages" | "keys"
 
 export interface SettingsScreenProps {
   data: AdminData
@@ -57,25 +58,28 @@ const TABS: { value: SettingsTab; label: string }[] = [
   { value: "people", label: "People" },
   { value: "services", label: "Services" },
   { value: "billing", label: "Billing" },
-  { value: "areas", label: "Areas" },
-  { value: "capacity", label: "Capacity and windows" },
   { value: "messages", label: "Messages" },
   { value: "keys", label: "API keys" },
 ]
 
-export function SettingsScreen({ data, today, defaultTab = "people", who = "Hannah", keys, readOnly = false, actions }: SettingsScreenProps) {
+export function SettingsScreen({ data, today, defaultTab, who = "Hannah", keys, readOnly = false, actions }: SettingsScreenProps) {
   // The fixtures carry no billing settings: they read the defaults, as an organization that never saved the tab does.
   const fresh = (): SettingsState => ({ settings: { ...data.settings, billing: data.settings.billing ?? DEFAULT_BILLING }, changes: data.settingsChanges, keys: keys ?? SAMPLE_KEYS, services: [...(data.services ?? SERVICE_LIST)] })
   const [state, setState] = useState<SettingsState>(fresh)
+  // How many log lines were there when the screen last matched the server: the lines after them are the unsaved changes.
+  const [baseline, setBaseline] = useState(data.settingsChanges.length)
   const [seen, setSeen] = useState({ settings: data.settings, keys, services: data.services })
   const [pending, start] = useTransition()
   const [message, setMessage] = useState("")
+  const [failed, setFailed] = useState(false)
+  // null: on a phone the list of entries; from a laptop up the first entry is open either way.
+  const [tab, setTab] = useState<SettingsTab | null>(defaultTab ?? null)
   // What the server holds, after Save or a key change refreshed the page, replaces what the screen holds.
   if (data.settings !== seen.settings || keys !== seen.keys || data.services !== seen.services) {
     setSeen({ settings: data.settings, keys, services: data.services })
     setState(fresh())
+    setBaseline(data.settingsChanges.length)
   }
-  const [savedAtCount, setSavedAtCount] = useState<number>()
   const actorFor = (s: SettingsState): Actor => ({ who, at: new Date(Date.parse(today) + s.changes.length * 1000).toISOString() })
 
   const apply: Apply = (change) => {
@@ -86,6 +90,7 @@ export function SettingsScreen({ data, today, defaultTab = "people", who = "Hann
     if (actions)
       return actions.createKey(name, scopes).then((out) => {
         if (out.ok) return out.data.key
+        setFailed(true)
         setMessage(out.message)
         return null
       })
@@ -99,94 +104,89 @@ export function SettingsScreen({ data, today, defaultTab = "people", who = "Hann
     start(async () => {
       const out = await actions.revokeKey(keyId)
       if (out.ok) return
+      setFailed(true)
       setMessage(out.message)
       setState(fresh())
     })
   }
+  // Keys are created and revoked at once, not by Save, so their log lines are never "unsaved".
+  const unsaved = new Set(state.changes.slice(baseline).filter((c) => c.field !== "API keys").map((c) => c.field)).size
+  const problems = messageProblems(state.settings)
+  const discard = () => {
+    setState(fresh())
+    setBaseline(data.settingsChanges.length)
+    setMessage("")
+  }
   const save = () => {
     if (!actions) {
       console.info("save settings", state.settings)
-      return setSavedAtCount(state.changes.length)
+      setBaseline(state.changes.length)
+      setFailed(false)
+      return setMessage("Saved just now")
     }
     start(async () => {
       const out = await actions.save(state.settings, state.services)
+      setFailed(!out.ok)
+      if (out.ok) setBaseline(state.changes.length)
       setMessage(out.ok ? "Saved just now" : out.message)
     })
   }
-  const saved = savedAtCount === state.changes.length
+  const open = tab ?? "people"
+  const label = TABS.find((x) => x.value === open)!.label
 
   return (
     <div data-slot="settings-screen" className="space-y-6">
-      <PageHeader
-        title="Settings"
-        context={readOnly ? "You can read the settings. A manager changes them." : "Changes apply from the next schedule run."}
-        actions={
-          readOnly ? undefined : (
-            <>
-              <p role="status" className="self-center text-sm text-muted-foreground">
-                {message || (!actions && saved ? "Saved just now" : "")}
-              </p>
-              <Button onClick={save} disabled={pending}>
-                Save
-              </Button>
-            </>
-          )
-        }
-      />
-      <Tabs defaultValue={defaultTab}>
-        <div className="max-w-full overflow-x-auto">
-          <TabsList aria-label="Settings sections" className="group-data-[orientation=horizontal]/tabs:h-11 md:group-data-[orientation=horizontal]/tabs:h-9">
-            {TABS.map((t) => (
-              <TabsTrigger key={t.value} value={t.value} className="shrink-0 whitespace-nowrap">
-                {t.label}
-              </TabsTrigger>
-            ))}
-          </TabsList>
+      <PageHeader title="Settings" context={readOnly ? "You can read the settings. A manager changes them." : "Changes apply from the next schedule run."} />
+      <Tabs value={open} onValueChange={(v) => setTab(v as SettingsTab)} orientation="vertical" className="flex-col gap-6 md:flex-row md:items-start md:gap-8">
+        <TabsList
+          variant="line"
+          aria-label="Settings sections"
+          className={cn("w-full gap-0 rounded-lg border border-border bg-card p-0 md:sticky md:top-20 md:w-52 md:shrink-0 md:border-0 md:bg-transparent", tab !== null && "max-md:hidden")}
+        >
+          {TABS.map((x) => (
+            <TabsTrigger
+              key={x.value}
+              value={x.value}
+              className="h-14 flex-none justify-between rounded-none border-b border-border px-4 text-base last:border-b-0 data-[state=active]:font-semibold md:h-10 md:justify-start md:rounded-md md:border-0 md:px-3 md:text-sm md:data-[state=active]:bg-stone"
+            >
+              {x.label}
+              <ChevronRight className="size-4 text-muted-foreground md:hidden" aria-hidden />
+            </TabsTrigger>
+          ))}
+        </TabsList>
+        <div className={cn("min-w-0 flex-1 space-y-4", tab === null && "max-md:hidden")}>
+          <Button variant="ghost" size="sm" className="-ml-2 min-h-11 md:hidden" onClick={() => setTab(null)} aria-label={`Back to Settings from ${label}`}>
+            <ChevronLeft className="size-4" aria-hidden />
+            Settings
+          </Button>
+          <TabsContent value="people">
+            <fieldset disabled={readOnly} className="min-w-0">
+              <People state={state} apply={apply} />
+            </fieldset>
+          </TabsContent>
+          <TabsContent value="services">
+            <fieldset disabled={readOnly} className="min-w-0">
+              <Services state={state} apply={apply} />
+            </fieldset>
+          </TabsContent>
+          <TabsContent value="billing">
+            <fieldset disabled={readOnly} className="min-w-0">
+              <Billing state={state} apply={apply} />
+            </fieldset>
+          </TabsContent>
+          <TabsContent value="messages">
+            <fieldset disabled={readOnly} className="min-w-0">
+              <Messages state={state} apply={apply} data={{ ...data, settings: state.settings }} />
+            </fieldset>
+          </TabsContent>
+          <TabsContent value="keys">
+            <fieldset disabled={readOnly} className="min-w-0">
+              <ApiKeys state={state} apply={apply} onCreate={onCreate} onRevoke={onRevoke} />
+            </fieldset>
+          </TabsContent>
+          {!readOnly && <SaveBar count={unsaved} problems={problems} pending={pending} message={message} failed={failed} onSave={save} onDiscard={discard} />}
         </div>
-        <TabsContent value="people">
-          <fieldset disabled={readOnly} className="min-w-0">
-            <People state={state} apply={apply} />
-          </fieldset>
-        </TabsContent>
-        <TabsContent value="services">
-          <fieldset disabled={readOnly} className="min-w-0">
-            <Services state={state} apply={apply} />
-          </fieldset>
-        </TabsContent>
-        <TabsContent value="billing">
-          <fieldset disabled={readOnly} className="min-w-0">
-            <Billing state={state} apply={apply} />
-          </fieldset>
-        </TabsContent>
-        <TabsContent value="areas">
-          <fieldset disabled={readOnly} className="min-w-0">
-            <Areas state={state} apply={apply} />
-          </fieldset>
-        </TabsContent>
-        <TabsContent value="capacity">
-          <fieldset disabled={readOnly} className="min-w-0">
-            <Capacity state={state} apply={apply} />
-          </fieldset>
-        </TabsContent>
-        <TabsContent value="messages">
-          <fieldset disabled={readOnly} className="min-w-0">
-            <Messages state={state} apply={apply} data={{ ...data, settings: state.settings }} />
-          </fieldset>
-        </TabsContent>
-        <TabsContent value="keys">
-          <fieldset disabled={readOnly} className="min-w-0">
-            <ApiKeys state={state} apply={apply} onCreate={onCreate} onRevoke={onRevoke} />
-          </fieldset>
-        </TabsContent>
       </Tabs>
-      <Card>
-        <CardHeader>
-          <SectionHeading level={2}>Change log</SectionHeading>
-        </CardHeader>
-        <CardContent>
-          <ChangeLog changes={state.changes} />
-        </CardContent>
-      </Card>
     </div>
   )
 }

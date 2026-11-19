@@ -1,14 +1,15 @@
 /**
  * How full a day is, for the Schedule's day headers (docs/plans/2026-11-18-admin-holistic-design.md, 5.2): the stops in it, the
  * time still open and the towns already in it, so Ryan sees the day filling by neighbourhood. Derived on read from the visits and
- * the people; nothing is stored. Open time is each working person's day (9 to 5 until People carries hours, step 6) less the
- * minutes the day's visits take. Pure.
+ * the people; nothing is stored. Open time is the hours of each person who works the day (their own, 09:00 to 17:00 when none
+ * are saved) less the minutes the day's visits take. Pure.
  */
 import type { Person, Town, Visit } from "./types"
 import { dayVisits, worksOn } from "./calendar"
 import { defaultMinutes } from "@/lib/scheduling/types"
+import { hoursMinutes } from "./people"
 
-/** A person's working day in minutes: 9 to 5. Step 6 reads it from the person. */
+/** The length of the default working day in minutes: 9 to 5, what a person with no saved hours works. */
 export const DEFAULT_DAY_MINUTES = 8 * 60
 
 export interface DayFill {
@@ -21,14 +22,16 @@ export interface DayFill {
   towns: { town: Town; count: number }[]
 }
 
-export function dayFill(visits: Visit[], day: string, people: Pick<Person, "workingDays" | "seasonStart" | "seasonEnd">[], timeZone: string): DayFill {
+export function dayFill(visits: Visit[], day: string, people: Pick<Person, "workingDays" | "seasonStart" | "seasonEnd" | "hoursStart" | "hoursEnd">[], timeZone: string): DayFill {
   const stops = dayVisits(visits, day, undefined, timeZone)
-  const working = people.filter((p) => worksOn(p, day) && (!p.seasonStart || day >= p.seasonStart.slice(0, 10)) && (!p.seasonEnd || day <= p.seasonEnd.slice(0, 10))).length
+  const present = people.filter((p) => worksOn(p, day) && (!p.seasonStart || day >= p.seasonStart.slice(0, 10)) && (!p.seasonEnd || day <= p.seasonEnd.slice(0, 10)))
+  const working = present.length
+  const available = present.reduce((n, p) => n + hoursMinutes(p), 0)
   const booked = stops.reduce((n, v) => n + (v.minutes ?? defaultMinutes(v.kind)), 0)
   const counts = new Map<Town, number>()
   for (const v of stops) counts.set(v.town, (counts.get(v.town) ?? 0) + 1)
   const towns = [...counts].map(([town, count]) => ({ town, count })).sort((a, b) => b.count - a.count || a.town.localeCompare(b.town))
-  return { stops: stops.length, working, openMinutes: Math.max(0, working * DEFAULT_DAY_MINUTES - booked), towns }
+  return { stops: stops.length, working, openMinutes: Math.max(0, available - booked), towns }
 }
 
 /** "3 h", "45 min", "3 h 30 min". */

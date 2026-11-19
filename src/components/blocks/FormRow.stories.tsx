@@ -25,3 +25,9 @@ export const Empty: Story = {
 }
 
 export const Phone: Story = { globals: PHONE }
+
+/** From a laptop up, the recipe's fact layout: the label in a 112px column beside the control, the hint under the control. */
+export const Inline: Story = {
+  args: { inline: true },
+  decorators: [(Story) => <div className="max-w-xl"><Story /></div>],
+}
