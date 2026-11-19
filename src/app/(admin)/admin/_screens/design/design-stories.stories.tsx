@@ -32,7 +32,7 @@ const JOBS: GridJob[] = [
 
 /** Ryan sees every job with a Billing column (Past due, Invoice sent, Unpaid, Paid) and the Job filter listing the services. Open a row for its page. */
 export const JobsGrid: Story = { name: "Jobs grid", globals: laptop, render: () => shell(<JobsGridDesign rows={JOBS} />) }
-export const JobsGridPhone: Story = { name: "Jobs grid phone", globals: phone, render: () => shell(<JobsGridDesign rows={JOBS} />) }
+export const JobsGridPhone: Story = { name: "Jobs grid, phone", globals: phone, render: () => shell(<JobsGridDesign rows={JOBS} />) }
 /** No jobs yet: the empty state says how to add one. */
 export const JobsGridEmpty: Story = { name: "Jobs grid empty", globals: laptop, render: () => shell(<JobsGridDesign rows={[]} />) }
 /** The filters hide every row: "No jobs match." with Clear filters. */

@@ -21,7 +21,7 @@ export interface TextFacts {
   town: string
   firstName: string
 }
-export const DEFAULT_FACTS: TextFacts = { service: "sprinkler repair", day: "2027-04-20", start: "10:30", street: "480 Briggs St", town: "Erie", firstName: "Andrea" }
+export const DEFAULT_FACTS: TextFacts = { service: "spring turn-on", day: "2027-04-28", start: "10:30", street: "412 Briggs Street", town: "Erie", firstName: "Andrea" }
 
 const visitOf = (f: TextFacts): VisitData["visit"] => ({
   id: "v1", name: f.service, day: f.day, startTime: f.start, who: "Ryan", address: f.street, location: `${f.street}, ${f.town}`,

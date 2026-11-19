@@ -49,4 +49,4 @@ export const SendCardLink: Story = { ...story(FOOTER["Send card link"]!), name: 
 /** "Cancel this job. Andrea gets a text that the repair is canceled. Nothing is charged." */
 export const CancelJob: Story = { ...story(FOOTER["Cancel job"]!), name: "Cancel job" }
 export const CancelPass: Story = { ...story(FOOTER["Cancel pass"]!), name: "Cancel pass" }
-export const CancelJobPhone: Story = { name: "Cancel job phone", ...story(FOOTER["Cancel job"]!), globals: { viewport: { value: "phone", isRotated: false } } }
+export const CancelJobPhone: Story = { name: "Cancel job, phone", ...story(FOOTER["Cancel job"]!), globals: { viewport: { value: "phone", isRotated: false } } }

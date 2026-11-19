@@ -46,8 +46,8 @@ export const Laptop: Story = {
     const confirm = await body.findAllByRole("button", { name: "Send the invoice" })
     await userEvent.click(confirm[confirm.length - 1]!)
     // Billing names the invoice: it opens inside the prototype
-    await userEvent.click((await c.findAllByRole("link", { name: /INV-2026-0001/ }))[0]!)
-    await waitFor(() => expect(route(canvasElement)).toBe("invoice:inv-1"))
+    await userEvent.click((await c.findAllByRole("link", { name: /INV-2026-0042/ }))[0]!)
+    await waitFor(() => expect(route(canvasElement)).toBe("invoice:inv-42"))
     // the customer opens from its chip
     await userEvent.click((await c.findAllByRole("link", { name: /Andrea Dalton/ }))[0]!)
     await waitFor(() => expect(route(canvasElement)).toBe("customer:andrea"))

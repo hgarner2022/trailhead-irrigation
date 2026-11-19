@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite"
+import { expect, userEvent, within } from "storybook/test"
 import { AdminShell } from "@/components/blocks/AdminShell"
 import { JobFlow } from "./JobFlow"
 import { PassFlow } from "./PassFlow"
@@ -30,4 +31,20 @@ const SHELL = (node: React.ReactNode) => <AdminShell current="jobs" user={{ init
 
 /** The Season Pass branch: trip 1 goes Scheduled, Today, Active, Done and Charged ("Charge the card as agreed" chosen), then trip 2 is next ahead and opens by itself. */
 export const SeasonPass: Story = { name: "Season Pass", render: () => SHELL(<PassFlow />), globals: { viewport: { value: "laptop", isRotated: false } } }
-export const SeasonPassPhone: Story = { name: "Season Pass phone", render: () => SHELL(<PassFlow />), globals: { viewport: { value: "phone", isRotated: false } } }
+export const SeasonPassPhone: Story = { name: "Season Pass, phone", render: () => SHELL(<PassFlow />), globals: { viewport: { value: "phone", isRotated: false } } }
+
+/** A customer who wants both: every notice is two rows in Messages, a text and an email, never only a text. */
+export const BothChannels: Story = {
+  name: "Both channels",
+  globals: { viewport: { value: "laptop", isRotated: false } },
+  render: () => <AdminShell current="jobs" user={{ initials: "HG", name: "Hannah" }}><JobFlow channel="both" /></AdminShell>,
+  play: async ({ canvasElement }) => {
+    const body = within(document.body)
+    const c = within(canvasElement)
+    await userEvent.click(await c.findByRole("button", { name: "Schedule" }))
+    await userEvent.click(await body.findByRole("button", { name: /Schedule and notify the customer/ }))
+    const rows = await c.findAllByText("Date set")
+    await expect(rows).toHaveLength(2)
+    await expect(await c.findAllByText("Email")).not.toHaveLength(0)
+  },
+}

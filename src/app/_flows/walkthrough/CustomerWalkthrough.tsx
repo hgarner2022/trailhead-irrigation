@@ -1,6 +1,6 @@
 "use client"
 
-import { useReducer, useState, type MouseEvent, type ReactNode } from "react"
+import { useEffect, useReducer, useRef, useState, type MouseEvent, type ReactNode } from "react"
 import { AccountNav } from "@/components/blocks/AccountNav"
 import { Button } from "@/components/ui/button"
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
@@ -76,6 +76,18 @@ function Run({ start, onStartOver }: { start: Where; onStartOver: () => void }) 
   const [bookRun, setBookRun] = useState(0)
   const [notice, setNotice] = useState<string | null>(null)
   const [passDay, setPassDay] = useState<"april" | "november">("april")
+  // The booking's header and progress bar are fixed to the top of the window; the Flow strip is too, so they are moved down by the strip's own height (it wraps on a phone).
+  const screen = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const el = screen.current
+    const strip = el?.closest("[data-slot=flow-frame]")?.querySelector("nav[aria-label=Flow]")
+    if (!el || !strip) return
+    const set = () => el.style.setProperty("--strip-h", `${strip.getBoundingClientRect().height}px`)
+    set()
+    const ro = new ResizeObserver(set)
+    ro.observe(strip)
+    return () => ro.disconnect()
+  }, [])
 
   const facts: TextFacts = booked ? { service: booked.service.toLowerCase(), day: booked.day, start: booked.start, street: booked.street, town: booked.town, firstName: booked.firstName } : DEFAULT_FACTS
   const pref = booked?.channel ?? channel
@@ -224,9 +236,6 @@ function Run({ start, onStartOver }: { start: Where; onStartOver: () => void }) 
   }
   const jumpBar = (
     <div className="flex flex-col gap-2">
-      {nextStep && (
-        <Button type="button" onClick={() => jump(nextStep.key)}>{`Next: ${nextStep.label}`}</Button>
-      )}
       <div className="flex flex-wrap gap-1.5" role="group" aria-label="Jump to a step">
         {STEPS.map((x) => (
           <Button key={x.key} type="button" size="sm" variant={x.key === current ? "secondary" : "ghost"} onClick={() => jump(x.key)}>{x.label}</Button>
@@ -245,15 +254,22 @@ function Run({ start, onStartOver }: { start: Where; onStartOver: () => void }) 
       onLink={open}
       actions={jumpBar}
       notice={
-        notice && (
-          <p role="status" className="flex items-center justify-between gap-3 bg-navy px-4 py-2 text-sm text-white">
-            {notice}
-            <button type="button" className="underline" onClick={() => setNotice(null)}>Dismiss</button>
+        <div data-slot="walkthrough-next" className="flex items-center justify-between gap-3 border-b border-border bg-stone px-4 py-2 text-sm">
+          <p role="status" className="min-w-0 flex-1 text-foreground">
+            {notice ? (
+              <>
+                {notice}{" "}
+                <button type="button" className="underline" onClick={() => setNotice(null)}>Dismiss</button>
+              </>
+            ) : (
+              "Click through the screen, or go on."
+            )}
           </p>
-        )
+          {nextStep && <Button type="button" size="sm" className="shrink-0" onClick={() => jump(nextStep.key)}>{`Next: ${nextStep.label}`}</Button>}
+        </div>
       }
     >
-      <div data-slot="flow-screen" data-where={where} data-page={where === "account" ? accountPage : undefined} onClickCapture={catchLinks}>
+      <div ref={screen} data-slot="flow-screen" className="[&_[data-slot=flow-shell]>header]:top-[calc(var(--strip-h,0px)+0.25rem)] [&_[data-slot=flow-shell]_[role=progressbar]]:top-[var(--strip-h,0px)]" data-where={where} data-page={where === "account" ? accountPage : undefined} onClickCapture={catchLinks}>
         {body}
       </div>
     </FlowFrame>

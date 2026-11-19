@@ -35,23 +35,23 @@ const back = (globals: typeof laptop): Story => ({
 
 /** Both visits ahead. Each row opens in place, one at a time, and the first is open: When and Who as chips, the trip's actions (Move is the primary), its checklist from the spring turn-on template, its photos (From Andrea, Ours), its notes, and "Charged after this visit" under the pill. */
 export const BothAhead: Story = { ...pass("ahead", laptop), name: "Both ahead" }
-export const BothAheadPhone: Story = { ...pass("ahead", phone), name: "Both ahead phone" }
+export const BothAheadPhone: Story = { ...pass("ahead", phone), name: "Both ahead, phone" }
 
 /** The spring turn-on is Paid, card, and the fall blowout is ahead and open by itself. The Payments table has one row, the spring charge. */
 export const OneDone: Story = { ...pass("one-done", laptop), name: "One done" }
-export const OneDonePhone: Story = { ...pass("one-done", phone), name: "One done phone" }
+export const OneDonePhone: Story = { ...pass("one-done", phone), name: "One done, phone" }
 
 /** The spring turn-on charged, with its trip open: the finished checklist, the photos from the visit, the history with the charge, and no actions but More. */
 export const OneDoneFirstOpen: Story = { ...pass("one-done", laptop, "t1"), name: "One done, first trip open" }
-export const OneDoneFirstOpenPhone: Story = { ...pass("one-done", phone, "t1"), name: "One done, first trip open phone" }
+export const OneDoneFirstOpenPhone: Story = { ...pass("one-done", phone, "t1"), name: "One done, first trip open, phone" }
 
 /** Both visits done and charged and the season settled: a green Paid in full line over two Payments rows. The first trip is open. */
 export const BothDone: Story = { ...pass("both-done", laptop, "t1"), name: "Both done" }
-export const BothDonePhone: Story = { ...pass("both-done", phone, "t1"), name: "Both done phone" }
+export const BothDonePhone: Story = { ...pass("both-done", phone, "t1"), name: "Both done, phone" }
 
 /** Ryan sees a canceled pass and nothing more to charge. No buttons. */
 export const PassCanceled: Story = { ...pass("canceled", laptop), name: "Pass canceled" }
-export const PassCanceledPhone: Story = { ...pass("canceled", phone), name: "Pass canceled phone" }
+export const PassCanceledPhone: Story = { ...pass("canceled", phone), name: "Pass canceled, phone" }
 
 const renewedFrom: Story = { args: { data: passPageOf("ahead", { kind: "from", number: "TH-2026-0003" }) } }
 const renewedAs: Story = { args: { data: { ...passPageOf("both-done", { kind: "as", number: "TH-2027-0008" }), title: "Season Pass TH-2026-0003" } } }
@@ -64,4 +64,4 @@ export const RenewedAs: Story = { name: "Renewed as", ...renewedAs, globals: lap
 
 /** Ryan sees a repair with its first trip done and paid and a return trip scheduled, as two rows. The action is Mark done on the second row. */
 export const ReturnTrip: Story = { ...back(laptop), name: "Return trip" }
-export const ReturnTripPhone: Story = { ...back(phone), name: "Return trip phone" }
+export const ReturnTripPhone: Story = { ...back(phone), name: "Return trip, phone" }

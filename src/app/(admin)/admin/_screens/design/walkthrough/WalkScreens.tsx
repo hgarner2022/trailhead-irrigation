@@ -130,16 +130,9 @@ export function RouteScreen({ route, rows, onOpenJob, onOpenCustomer, onNew }: {
       return <InvoicesPage rows={INVOICES} />
     case "job": {
       const v = jobView(route.id ?? "")
-      if (v.kind === "flow") return <JobFlow />
-      if (v.kind === "trips") return <JobPagePass data={v.data} />
+      if (v.kind === "flow") return <JobFlow embedded invoice={{ id: "inv-42", number: "INV-2026-0042" }} />
+      if (v.kind === "trips") return <JobPagePass data={v.data} customer={v.customer} />
       if (v.kind === "page") return <StaticJob id={route.id!} />
-      if (v.kind === "dale")
-        return (
-          <Placeholder title={v.row.title} line="The pass page is shown on Andrea Dalton's Season Pass. Dale's pass is the same page with his name and card.">
-            <RecordChip kind="customer" name="Dale Whitaker" href={recordHref.customer("dale")} />
-            <RecordChip kind="job" name="Andrea Dalton, Season Pass TH-2027-0008" href={recordHref.job("pass-2027")} />
-          </Placeholder>
-        )
       return <NotFound what="That job" />
     }
     case "customer": {

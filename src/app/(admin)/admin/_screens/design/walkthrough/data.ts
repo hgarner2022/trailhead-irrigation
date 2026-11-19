@@ -25,7 +25,7 @@ export function customerPage(id: string): CustomerPageData | null {
       id: "andrea",
       band: { ...d.band, next: { value: "Mon, May 3", sub: "Any time, Ryan", jobId: "p2027" } },
       jobs: d.jobs
-        .filter((j) => j.id !== "j2" && j.id !== "j0")
+        .filter((j) => j.id !== "j2" && j.id !== "j0" && j.id !== "j3")
         .map((j) => (j.id === "j1" ? { ...j, status: "needs-a-day" as const, statusLabel: "Unscheduled", day: undefined, who: undefined, sortDay: "2026-11-18" } : j))
         .concat([{ id: "j2", name: "Season Pass 2026", open: false, sortDay: "2026-10-12", day: { iso: "2026-10-12", label: "Oct 12, 2026", time: "Any time", stops: 4 }, who: RYAN, status: "done", statusLabel: "Done", money: { word: "Paid, card" } }]),
       area: d.area.kind === "pass" ? { ...d.area, renewedFrom: { season: 2026, number: "TH-2026-0021", jobId: "j2" }, earlier: [{ season: 2026, number: "TH-2026-0021", jobId: "j2", state: "Done", renewedAs: { season: 2027, number: "TH-2027-0008", jobId: "p2027" } }] } : d.area,
@@ -79,15 +79,12 @@ const OTHER_JOB: Record<string, string> = { i38: "g-reese", i35: "g-joe", i41: "
 const row = (id: string, n: string, customer: string, street: string, jobName: string, amount: number, sentOn: string, dueOn: string, status: InvoiceListRow["status"], who: string, over: Partial<InvoiceListRow> = {}): InvoiceListRow => ({ id, number: `INV-2026-${n}`, customerId: customerIdOf(customer), customer, street, jobId: "", jobName, amount, balance: status === "sent" || status === "past-due" ? amount : 0, sentOn, dueOn, status, who, ...over })
 
 export const INVOICES: InvoiceListRow[] = [
-  row("inv-42", "0042", "Andrea Dalton", "480 Briggs St", "Sprinkler repair", 145, "2026-11-12", "2026-12-02", "sent", RYAN, { jobId: "andrea-repair-nov12" }),
+  row("inv-42", "0042", "Andrea Dalton", "480 Briggs St", "Sprinkler repair", 145, "2026-11-12", "2026-12-02", "sent", RYAN, { jobId: "andrea-repair" }),
   row("inv-31", "0031", "Andrea Dalton", "480 Briggs St", "Spring turn-on", 145, "2026-04-14", "2026-04-28", "paid", RYAN, { jobId: "pass-2026", paidOn: "2026-04-20" }),
   row("inv-35", "0035", "Marcus Bell", "91 Main St", "Sprinkler repair", 145, "2026-10-29", "2026-11-12", "past-due", RYAN, { jobId: "marcus-repair" }),
   ...INVOICE_ROWS.filter((r) => !["i42", "i35"].includes(r.id)).map((r) => ({ ...r, id: `inv-${r.number.slice(-2)}`, customerId: customerIdOf(r.customer), jobId: OTHER_JOB[r.id] ?? "" })),
   { ...INVOICE_ROWS.find((r) => r.id === "i35")!, id: "inv-35-joe", number: "INV-2026-0036", customerId: "other-joe-alvarez", jobId: "g-joe", dueOn: "2026-11-12", sentOn: "2026-10-29" },
 ]
-
-/** The invoice the job flow ends on (Billed): not in the list until the flow has made it, but its page opens. */
-const FLOW_INVOICE = row("inv-1", "0001", "Andrea Dalton", "480 Briggs St", "Sprinkler repair", 145, "2026-11-18", "2026-12-02", "sent", RYAN, { jobId: "andrea-repair" })
 
 const swapAll = (text: string, pairs: readonly (readonly [string, string])[]) => pairs.reduce((s, [a, b]) => (a && s.includes(a) ? s.replaceAll(a, b) : s), text)
 const FIXTURE_OF: Record<InvoiceListRow["status"], InvoiceFixture> = { sent: "sent", "past-due": "past-due", paid: "paid-card", canceled: "canceled" }
@@ -97,7 +94,7 @@ function rowOfStreet(street: string) {
 }
 
 export function invoicePage(id: string): InvoicePageData | null {
-  const r = [...INVOICES, FLOW_INVOICE].find((x) => x.id === id)
+  const r = INVOICES.find((x) => x.id === id)
   if (!r) return null
   const base = invoicePageOf(FIXTURE_OF[r.status])
   const c = contactOf(r.customer)
@@ -142,9 +139,9 @@ export function invoicePage(id: string): InvoicePageData | null {
 
 // ------------------------------------------------------------------------------------------------------------ resolving links
 
-const COMMON_JOB: Record<string, string> = { "TH-2027-0008": "pass-2027", "TH-2026-0021": "pass-2026", "TH-2027-0011": "dale-pass-2027", "TH-2026-0003": "dale-pass-2026", "job-pv1": "pass-2026", "job-pv2": "pass-2026", "job-pv3": "andrea-repair-nov12", "job-1": "andrea-repair" }
+const COMMON_JOB: Record<string, string> = { "TH-2027-0008": "pass-2027", "TH-2026-0021": "pass-2026", "TH-2027-0011": "dale-pass-2027", "TH-2026-0003": "dale-pass-2026", "job-pv1": "pass-2026", "job-pv2": "pass-2026", "job-pv3": "andrea-repair", "job-1": "andrea-repair" }
 const OWNER_JOB: Record<string, Record<string, string>> = {
-  andrea: { p2027: "pass-2027", j1: "andrea-repair", j3: "andrea-repair-nov12", j2: "pass-2026", j0: "pass-2026" },
+  andrea: { p2027: "pass-2027", j1: "andrea-repair", j3: "andrea-repair", j2: "pass-2026", j0: "pass-2026" },
   dale: { p2027: "dale-pass-2027", p2026: "dale-pass-2026" },
   marcus: { j1: "marcus-repair" },
 }
@@ -171,7 +168,7 @@ export function resolveRoute(route: Route, owner?: string): Route {
 
 export function knownRoute(route: Route): boolean {
   if (route.screen === "job") return Boolean(rowOf(route.id ?? ""))
-  if (route.screen === "invoice") return route.id === "inv-1" || INVOICES.some((i) => i.id === route.id)
+  if (route.screen === "invoice") return INVOICES.some((i) => i.id === route.id)
   if (route.screen === "customer") return Boolean(route.id && (isRealCustomer(route.id) || otherCustomer(route.id)))
   return true
 }
@@ -180,7 +177,7 @@ export function knownRoute(route: Route): boolean {
 export function ownerOf(route: Route): string | undefined {
   if (route.screen === "customer") return route.id
   if (route.screen === "job") return customerOfJob(route.id ?? "")
-  if (route.screen === "invoice") return route.id === "inv-1" ? "andrea" : INVOICES.find((i) => i.id === route.id)?.customerId
+  if (route.screen === "invoice") return INVOICES.find((i) => i.id === route.id)?.customerId
   return undefined
 }
 
@@ -191,7 +188,7 @@ export function nameOfRoute(route: Route): string | undefined {
     const r = rowOf(route.id ?? "")
     return r ? (r.service === "Season Pass" ? r.title : r.name) : undefined
   }
-  if (route.screen === "invoice") return route.id === "inv-1" ? "INV-2026-0001" : INVOICES.find((i) => i.id === route.id)?.number
+  if (route.screen === "invoice") return INVOICES.find((i) => i.id === route.id)?.number
   return undefined
 }
 

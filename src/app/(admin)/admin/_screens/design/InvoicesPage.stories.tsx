@@ -23,7 +23,7 @@ const shell = (children: React.ReactNode) => (
 
 /** Ryan sees four tiles and every invoice, past due first, with Remind and Collect payment on the rows that are unpaid. Each tile filters the table. */
 export const List: Story = { name: "List", globals: laptop, render: () => shell(<InvoicesPage rows={INVOICE_ROWS} />) }
-export const ListPhone: Story = { name: "List phone", globals: phone, render: () => shell(<InvoicesPage rows={INVOICE_ROWS} />) }
+export const ListPhone: Story = { name: "List, phone", globals: phone, render: () => shell(<InvoicesPage rows={INVOICE_ROWS} />) }
 /** Ryan sees no invoices yet and is told how one gets made. */
 export const ListEmpty: Story = { name: "List empty", globals: laptop, render: () => shell(<InvoicesPage rows={[]} />) }
 /** The filters hide every row: "No invoices match." with Clear filters. */
@@ -32,18 +32,18 @@ export const ListNoMatch: Story = { name: "List no match", globals: laptop, rend
 const page = (which: InvoiceFixture, globals: typeof laptop, initialDialog?: "remind" | "collect" | "cancel"): Story => ({ globals, parameters: { docs: { description: { story: INVOICE_NOTES[which] } } }, ...(globals === laptop && !initialDialog ? { play: ({ canvasElement }: { canvasElement: HTMLElement }) => expectTablesFitTheirCards(canvasElement) } : {}), render: () => shell(<InvoicePage invoice={invoicePageOf(which)} initialDialog={initialDialog} />) })
 
 export const InvoiceSent: Story = { ...page("sent", laptop), name: "Invoice sent" }
-export const InvoiceSentPhone: Story = { ...page("sent", phone), name: "Invoice sent phone" }
+export const InvoiceSentPhone: Story = { ...page("sent", phone), name: "Invoice sent, phone" }
 export const InvoicePastDue: Story = { ...page("past-due", laptop), name: "Invoice past due" }
-export const InvoicePastDuePhone: Story = { ...page("past-due", phone), name: "Invoice past due phone" }
+export const InvoicePastDuePhone: Story = { ...page("past-due", phone), name: "Invoice past due, phone" }
 export const InvoicePaidByCard: Story = { ...page("paid-card", laptop), name: "Invoice paid by card" }
-export const InvoicePaidByCardPhone: Story = { ...page("paid-card", phone), name: "Invoice paid by card phone" }
+export const InvoicePaidByCardPhone: Story = { ...page("paid-card", phone), name: "Invoice paid by card, phone" }
 export const InvoicePaidByCheck: Story = { ...page("paid-check", laptop), name: "Invoice paid by check" }
-export const InvoicePaidByCheckPhone: Story = { ...page("paid-check", phone), name: "Invoice paid by check phone" }
+export const InvoicePaidByCheckPhone: Story = { ...page("paid-check", phone), name: "Invoice paid by check, phone" }
 export const InvoiceCanceled: Story = { ...page("canceled", laptop), name: "Invoice canceled" }
-export const InvoiceCanceledPhone: Story = { ...page("canceled", phone), name: "Invoice canceled phone" }
+export const InvoiceCanceledPhone: Story = { ...page("canceled", phone), name: "Invoice canceled, phone" }
 
 /** The reminder dialog: the channel from the customer's preference, a preview that cannot be edited, one optional line and a link to the wording in Settings. No caret. */
 export const ReminderDialogOpen: Story = { ...page("sent", laptop, "remind"), name: "Reminder dialog open" }
-export const ReminderDialogOpenPhone: Story = { ...page("sent", phone, "remind"), name: "Reminder dialog open phone" }
+export const ReminderDialogOpenPhone: Story = { ...page("sent", phone, "remind"), name: "Reminder dialog open, phone" }
 /** Cancel invoice is destructive and has Cancel without notifying under the caret. */
 export const CancelInvoiceDialog: Story = { ...page("past-due", laptop, "cancel"), name: "Cancel invoice dialog" }

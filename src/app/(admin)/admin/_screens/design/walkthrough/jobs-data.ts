@@ -2,6 +2,7 @@ import type { GridJob, GridStatus, BillingState } from "../JobsGridDesign"
 import { type JobPageData, type JobState, jobPageOf } from "../job-fixtures"
 import { money } from "../invoice-fixtures"
 import { passPageOf, type MultiTripData } from "../trip-fixtures"
+import type { PageCustomer } from "../JobPageTrips"
 
 // The walkthrough's jobs (see data.ts for the world): the Jobs grid's rows and the page each one opens.
 
@@ -21,7 +22,6 @@ const g = (id: string, name: string, service: string, title: string, property: s
 export const GRID_ROWS: GridJob[] = [
   g("andrea-repair", "Andrea Dalton", "Sprinkler repair", "Sprinkler repair visit", "480 Briggs St, Erie", "unscheduled", "0 of 1 done", 145, null, "", "Unscheduled", NOONE),
   g("pass-2027", "Andrea Dalton", "Season Pass", "Season Pass TH-2027-0008", "480 Briggs St, Erie", "scheduled", "0 of 2 done", 260, null, "", "Mon, May 3", RYAN, "2027"),
-  g("andrea-repair-nov12", "Andrea Dalton", "Sprinkler repair", "Sprinkler repair visit", "480 Briggs St, Erie", "done", "1 of 1 done", 145, "bill-sent", "Invoice sent, due Dec 2", "None", RYAN, "2026"),
   g("pass-2026", "Andrea Dalton", "Season Pass", "Season Pass TH-2026-0021", "480 Briggs St, Erie", "done", "2 of 2 done", 260, "paid", "Paid, card", "None", RYAN, "2026"),
   g("marcus-repair", "Marcus Bell", "Sprinkler repair", "Sprinkler repair visit", "91 Main St, Longmont", "done", "1 of 1 done", 145, "overdue", "Past due since Nov 12", "None", RYAN, "2026"),
   g("dale-pass-2027", "Dale Whitaker", "Season Pass", "Season Pass TH-2027-0011", "212 Main St, Lafayette", "scheduled", "0 of 2 done", 210, null, "", "Mon, May 3", RYAN, "2027"),
@@ -41,8 +41,7 @@ export const GRID_ROWS: GridJob[] = [
 
 /** The invoice a job's page names: the fixtures all say INV-2026-0001 at /admin/invoices?invoice=inv-1, so each page is rewritten to its own invoice. */
 export const INVOICE_OF_JOB: Record<string, { id: string; number: string }> = {
-  "andrea-repair": { id: "inv-1", number: "INV-2026-0001" },
-  "andrea-repair-nov12": { id: "inv-42", number: "INV-2026-0042" },
+  "andrea-repair": { id: "inv-42", number: "INV-2026-0042" },
   "marcus-repair": { id: "inv-35", number: "INV-2026-0035" },
   "g-reese": { id: "inv-38", number: "INV-2026-0038" },
   "g-joe": { id: "inv-35-joe", number: "INV-2026-0036" },
@@ -62,7 +61,7 @@ export const resetExtras = () => void (EXTRA.length = 0)
 export const rowOf = (id: string) => allRows().find((r) => r.id === id)
 export const customerOfJob = (id: string) => customerIdOf(rowOf(id)?.name ?? "")
 
-export type JobView = { kind: "flow" } | { kind: "page"; data: JobPageData } | { kind: "trips"; data: MultiTripData } | { kind: "dale"; row: GridJob } | { kind: "none" }
+export type JobView = { kind: "flow" } | { kind: "page"; data: JobPageData } | { kind: "trips"; data: MultiTripData; customer?: PageCustomer } | { kind: "none" }
 
 const STATE_OF = (r: GridJob): JobState => {
   if (r.stage === "done") return r.billingState === "paid" ? "done-paid" : r.billingState === "overdue" ? "past-due" : r.billingState === "bill-sent" ? "invoice-sent" : "done-unpaid"
@@ -80,17 +79,40 @@ export const contactOf = (name: string) => {
   return CONTACTS[id] ?? { text: "(970) 555-0123", href: "tel:+19705550123", email: `${name.toLowerCase().replace(/\s+/g, ".")}@example.com` }
 }
 
+const cheaper = (t: string) => t.replaceAll("$260", "$210").replaceAll("$145", "$95")
+/** Dale Whitaker's Season Pass pages: the pass fixture with his number, address, six zones, card and prices ($95 and $115). */
+function dalePass(next: boolean): MultiTripData {
+  const d = next ? passPageOf("ahead", { kind: "from", number: "TH-2026-0003" }) : passPageOf("both-done", { kind: "as", number: "TH-2027-0011" })
+  const number = next ? "TH-2027-0011" : "TH-2026-0003"
+  const swap = (t: string) => t.replaceAll("TH-2027-0008", number).replaceAll("Andrea", "Dale")
+  return {
+    ...d,
+    title: `Season Pass ${number}`,
+    subtitle: next ? "Dale Whitaker · Renewed Nov 3, website" : "Dale Whitaker · Sold Mar 2, website",
+    columns: d.columns.map((c) => ({
+      ...c,
+      rows: c.rows.map((r) => (r[0] === "Address" ? ["Address", "212 Main St, Lafayette"] : r[0] === "Zones" ? ["Zones", "6"] : r[0] === "Gate code" ? ["Gate code", "None"] : r[0] === "Card" ? ["Card", "Visa ending 1881"] : r)),
+    })),
+    lines: d.lines.map((l) => ({ ...l, amount: cheaper(l.amount) })),
+    totals: d.totals.map(([k, v, e]) => [k, cheaper(v), e] as (typeof d.totals)[number]),
+    billing: { ...d.billing, summary: d.billing.summary.map(([k, v]) => [k, cheaper(swap(v))] as [string, string]), rows: d.billing.rows.map((r) => ({ ...r, amount: cheaper(r.amount ?? ""), detail: r.detail && cheaper(r.detail) })) },
+    notes: d.notes.map((n) => ({ ...n, what: swap(n.what) })),
+    messages: d.messages.map((m) => ({ ...m, body: swap(m.body) })),
+    pass: d.pass && { ...d.pass, number, firstName: "Dale", lastName: "Whitaker", zones: 6 },
+  }
+}
+
 /** The page of one job: the flow for Andrea's repair, the trips page for her passes, the fixture state for the rest, re-skinned to the row. */
 export function jobView(id: string): JobView {
   const row = rowOf(id)
   if (!row) return { kind: "none" }
   if (id === "andrea-repair") return { kind: "flow" }
-  if (id === "pass-2027") return { kind: "trips", data: { ...passPageOf("ahead", { kind: "from", number: "TH-2026-0021" }) } }
+  if (id === "pass-2027") return { kind: "trips", data: passPageOf("ahead", { kind: "from", number: "TH-2026-0021" }) }
   if (id === "pass-2026") {
     const d = passPageOf("both-done", { kind: "as", number: "TH-2027-0008" })
     return { kind: "trips", data: { ...d, title: "Season Pass TH-2026-0021", subtitle: "Andrea Dalton · Sold Mar 2, website", notes: d.notes.map((n) => ({ ...n, what: n.what.replace("TH-2027-0008", "TH-2026-0021") })), messages: d.messages.map((m) => ({ ...m, body: m.body.replace("TH-2027-0008", "TH-2026-0021") })) } }
   }
-  if (id.startsWith("dale-pass")) return { kind: "dale", row }
+  if (id.startsWith("dale-pass")) return { kind: "trips", data: dalePass(id === "dale-pass-2027"), customer: { name: "Dale Whitaker", phone: { text: "(970) 555-0140", href: "tel:+19705550140" } } }
   const c = contactOf(row.name)
   const data = jobPageOf(STATE_OF(row))
   const [street, town] = row.property.split(", ")
@@ -118,7 +140,7 @@ export function jobView(id: string): JobView {
       phone: { text: c.text, href: c.href },
       where,
       billing,
-      subtitle: `${row.title} · Added Nov ${id === "andrea-repair-nov12" ? 9 : 12}`,
+      subtitle: `${row.title} · Added Nov 12`,
       pastVisits: isAndrea ? data.pastVisits : [],
       pastTotal: isAndrea ? data.pastTotal : 0,
       contact: { channel: "text", email: c.email },
