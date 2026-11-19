@@ -17,8 +17,10 @@ import { ApiKeys } from "./settings-tabs/ApiKeys"
 import { messageProblems } from "./settings-messages"
 import { Messages } from "./settings-tabs/Messages"
 import { People } from "./settings-tabs/People"
+import { peopleProblems } from "./settings-people"
 import { Services } from "./settings-tabs/Services"
 import type { Apply } from "./settings-tabs/fields"
+import { changeWords, pendingLines } from "./settings-tabs/change-words"
 
 // Where Ryan and Hannah set the rules the scheduler and the messages follow:
 // the people, the services, billing, the customer messages and the API keys (step 6 took the Areas and
@@ -110,8 +112,13 @@ export function SettingsScreen({ data, today, defaultTab, who = "Hannah", keys, 
     })
   }
   // Keys are created and revoked at once, not by Save, so their log lines are never "unsaved".
-  const unsaved = new Set(state.changes.slice(baseline).filter((c) => c.field !== "API keys").map((c) => c.field)).size
-  const problems = messageProblems(state.settings)
+  const waiting = state.changes.slice(baseline).filter((c) => c.field !== "API keys")
+  const lines = pendingLines(waiting)
+  const unsaved = lines.length
+  // The log holds what is saved, in words; the edits Save has not written yet are listed in the SaveBar instead.
+  const savedChanges = state.changes.filter((c, i) => i < baseline || c.field === "API keys").map(changeWords)
+  const shown: SettingsState = { ...state, changes: savedChanges }
+  const problems = [...peopleProblems(state.settings), ...messageProblems(state.settings)]
   const discard = () => {
     setState(fresh())
     setBaseline(data.settingsChanges.length)
@@ -147,6 +154,8 @@ export function SettingsScreen({ data, today, defaultTab, who = "Hannah", keys, 
             <TabsTrigger
               key={x.value}
               value={x.value}
+              // Radix fires onValueChange only for a new value; on a phone the already-selected first entry must still drill in.
+              onClick={() => setTab(x.value)}
               className="h-14 flex-none justify-between rounded-none border-b border-border px-4 text-base last:border-b-0 data-[state=active]:font-semibold md:h-10 md:justify-start md:rounded-md md:border-0 md:px-3 md:text-sm md:data-[state=active]:bg-stone"
             >
               {x.label}
@@ -161,30 +170,30 @@ export function SettingsScreen({ data, today, defaultTab, who = "Hannah", keys, 
           </Button>
           <TabsContent value="people">
             <fieldset disabled={readOnly} className="min-w-0">
-              <People state={state} apply={apply} />
+              <People state={shown} apply={apply} />
             </fieldset>
           </TabsContent>
           <TabsContent value="services">
             <fieldset disabled={readOnly} className="min-w-0">
-              <Services state={state} apply={apply} />
+              <Services state={shown} apply={apply} />
             </fieldset>
           </TabsContent>
           <TabsContent value="billing">
             <fieldset disabled={readOnly} className="min-w-0">
-              <Billing state={state} apply={apply} />
+              <Billing state={shown} apply={apply} />
             </fieldset>
           </TabsContent>
           <TabsContent value="messages">
             <fieldset disabled={readOnly} className="min-w-0">
-              <Messages state={state} apply={apply} data={{ ...data, settings: state.settings }} />
+              <Messages state={shown} apply={apply} data={{ ...data, settings: state.settings }} />
             </fieldset>
           </TabsContent>
           <TabsContent value="keys">
             <fieldset disabled={readOnly} className="min-w-0">
-              <ApiKeys state={state} apply={apply} onCreate={onCreate} onRevoke={onRevoke} />
+              <ApiKeys state={shown} apply={apply} onCreate={onCreate} onRevoke={onRevoke} />
             </fieldset>
           </TabsContent>
-          {!readOnly && <SaveBar count={unsaved} problems={problems} pending={pending} message={message} failed={failed} onSave={save} onDiscard={discard} />}
+          {!readOnly && <SaveBar count={unsaved} lines={lines} problems={problems} pending={pending} message={message} failed={failed} onSave={save} onDiscard={discard} />}
         </div>
       </Tabs>
     </div>

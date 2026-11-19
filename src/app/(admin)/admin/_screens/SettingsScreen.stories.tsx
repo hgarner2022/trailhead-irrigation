@@ -102,3 +102,49 @@ export const Unsaved: Story = {
     await expect(await canvas.findByText("1 unsaved change")).toBeInTheDocument()
   },
 }
+
+/** On a phone, People is the first entry and opens like the others (it is already the selected one on a laptop). */
+export const PhonePeopleOpens: Story = {
+  globals: { viewport: { value: "phone", isRotated: false } },
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(await canvas.findByRole("tab", { name: "People" }))
+    await expect(await canvas.findByRole("button", { name: "Back to Settings from People" })).toBeVisible()
+  },
+}
+
+/** A day that ends before it starts is named at once under the count, and Save is off. */
+export const HoursProblem: Story = {
+  globals: { viewport: { value: "laptop", isRotated: false } },
+  play: async ({ canvas, userEvent }) => {
+    const start = await canvas.findByLabelText("Tech Two day starts")
+    await userEvent.clear(start)
+    await userEvent.type(start, "18:00{Enter}")
+    await expect(await canvas.findByText("Tech Two: End must be after the start")).toBeInTheDocument()
+    await expect(canvas.getByRole("button", { name: "Save" })).toBeDisabled()
+  },
+}
+
+/** An unsaved edit is listed in the save bar in words, and is not in the Changes log until Save. */
+export const UnsavedLine: Story = {
+  globals: { viewport: { value: "laptop", isRotated: false } },
+  play: async ({ canvas, userEvent }) => {
+    const field = await canvas.findByRole("spinbutton", { name: "Ryan Garner most repairs per day" })
+    await userEvent.clear(field)
+    await userEvent.type(field, "5{Enter}")
+    await expect(await canvas.findByText(/^Ryan Garner most repairs per day from \d+ to 5$/)).toBeInTheDocument()
+  },
+}
+
+/** The log words the API's raw window keys ("Fall blowout first bookable day from Oct 5 to Oct 1"). */
+export const WindowLines: Story = {
+  args: {
+    data: {
+      ...data,
+      settingsChanges: [
+        { id: "w1", at: "2026-11-10T16:00:00Z", who: "Hannah", field: "windows.blowout.opensOn", from: "2027-10-05", to: "2027-10-01" },
+        { id: "w2", at: "2026-11-10T16:00:01Z", who: "Hannah", field: "windows.blowout.closesOn", from: "2027-11-15", to: "2027-11-01" },
+      ],
+    },
+  },
+  globals: { viewport: { value: "laptop", isRotated: false } },
+}

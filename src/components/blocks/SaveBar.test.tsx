@@ -52,4 +52,13 @@ describe("SaveBar", () => {
     window.dispatchEvent(stay)
     expect(stay.defaultPrevented).toBe(false)
   })
+
+  it("lists the unsaved edits in words under the count, and folds a long list into 'and N more'", () => {
+    const { rerender } = render(<SaveBar count={1} lines={["Ryan Garner most repairs per day from 4 to 5"]} onSave={() => {}} onDiscard={() => {}} />)
+    expect(screen.getByRole("status")).toHaveTextContent("1 unsaved change")
+    expect(screen.getByRole("list", { name: "Unsaved changes" })).toHaveTextContent("Ryan Garner most repairs per day from 4 to 5")
+    rerender(<SaveBar count={7} lines={Array.from({ length: 7 }, (_, i) => `Setting ${i + 1} from a to b`)} onSave={() => {}} onDiscard={() => {}} />)
+    expect(screen.getAllByRole("listitem")).toHaveLength(6)
+    expect(screen.getByText("and 2 more")).toBeInTheDocument()
+  })
 })

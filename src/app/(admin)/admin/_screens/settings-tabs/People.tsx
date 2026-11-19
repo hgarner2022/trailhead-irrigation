@@ -109,7 +109,7 @@ export function People({ state, apply }: { state: SettingsState; apply: Apply })
     <SettingsList
       title="People"
       changes={state.changes}
-      description="Who works here and how they are scheduled. A new truck is a new person: a name, an email, Takes visits, days and hours."
+      description="Who works here and how they are scheduled. A second person on the Schedule is a new row: a name, an email, Takes visits, days and hours."
       action={
         <Button variant="outline" onClick={() => apply((s, a) => addPerson(s, a))}>
           <Plus className="size-4" aria-hidden />

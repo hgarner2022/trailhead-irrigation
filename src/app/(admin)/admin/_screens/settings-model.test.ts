@@ -5,7 +5,7 @@ import { SERVICE_LIST } from "@/lib/services"
 import {
   setServiceField, createKey, revokeKey, secretFor, SAMPLE_KEYS, clip, daysWords, type SettingsState,
 } from "./settings-model"
-import { addPerson, removePerson, setCapacity, setHours, setPersonName, setTakesVisits, setPersonRole, setPersonText, setSeason, toggleWorkingDay } from "./settings-people"
+import { addPerson, removePerson, setCapacity, setHours, setPersonName, setTakesVisits, setPersonRole, setPersonText, setSeason, peopleProblems, toggleWorkingDay } from "./settings-people"
 
 const data = snapshot as AdminData
 const state: SettingsState = { settings: data.settings, changes: [], keys: SAMPLE_KEYS, services: SERVICE_LIST as ServiceItem[] }
@@ -138,12 +138,16 @@ describe("hours and takes visits", () => {
     expect(last(both)).toMatchObject({ from: "07:30 to 17:00", to: "07:30 to 15:00" })
   })
 
-  it("refuses a time that is not HH:MM and a day that would end before it starts", () => {
+  it("refuses a time that is not HH:MM, keeps a day that ends before it starts and reports it as a problem", () => {
     expect(setHours(state, "person_truck-2", "hoursStart", "7am", actor)).toBe(state)
-    expect(setHours(state, "person_truck-2", "hoursStart", "17:00", actor)).toBe(state)
-    expect(setHours(state, "person_truck-2", "hoursEnd", "09:00", actor)).toBe(state)
-    expect(setHours(state, "person_truck-2", "hoursEnd", "08:00", actor)).toBe(state)
     expect(setHours(state, "nope", "hoursEnd", "15:00", actor)).toBe(state)
+    expect(peopleProblems(state.settings)).toEqual([])
+    for (const [field, v] of [["hoursStart", "17:00"], ["hoursEnd", "09:00"], ["hoursEnd", "08:00"]] as const) {
+      const bad = setHours(state, "person_truck-2", field, v, actor)
+      expect(bad).not.toBe(state)
+      expect(peopleProblems(bad.settings)).toEqual(["Tech Two: End must be after the start"])
+      expect(peopleProblems(setHours(bad, "person_truck-2", field, "", actor).settings)).toEqual([])
+    }
   })
 
   it("puts a day back to its default with a blank, logging nothing when it already was", () => {

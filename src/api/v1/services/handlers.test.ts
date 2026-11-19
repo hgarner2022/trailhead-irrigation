@@ -103,6 +103,34 @@ describe("services", () => {
     expect(mine).toEqual(expect.arrayContaining([["Logged check price", "$95", "$105"], ["Logged check bookable from", "All year", "09-28"], ["Logged check online", "Book a day", "We quote"]]))
     expect(mine.filter(([f]) => f === "Logged check price")).toHaveLength(1)
   })
+  it("mirrors a seasonal service's dates into settings.windows for its kind, keeps the window's year and logs only the service's lines", async () => {
+    const windows = async () => (await db.select({ settings: s.organization.settings }).from(s.organization).where(eq(s.organization.id, ORG)))[0]!.settings.windows
+    const was = (await windows()).find((w) => w.kind === "blowout")!
+    const year = Number(was.opensOn.slice(0, 4))
+    const others = (await windows()).filter((w) => w.kind !== "blowout")
+    const blowout = (await callApi(ctxFor(db, adminKey), servicesList, {})).data.find((x) => x.key === "blowout")!
+    await callApi(ctxFor(db, adminKey), servicesUpdate, { id: blowout.id, bookableFrom: "10-05", bookableTo: "11-20" })
+    const now = (await windows()).find((w) => w.kind === "blowout")!
+    expect(now).toEqual({ ...was, opensOn: `${year}-10-05`, closesOn: `${year}-11-20` })
+    expect((await windows()).filter((w) => w.kind !== "blowout")).toEqual(others)
+    // a span that wraps New Year closes the next year; a missing end is open to December 31
+    await callApi(ctxFor(db, adminKey), servicesUpdate, { id: blowout.id, bookableFrom: "11-01", bookableTo: "03-15" })
+    expect((await windows()).find((w) => w.kind === "blowout")).toMatchObject({ opensOn: `${year}-11-01`, closesOn: `${year + 1}-03-15` })
+    await callApi(ctxFor(db, adminKey), servicesUpdate, { id: blowout.id, bookableFrom: "10-01", bookableTo: null })
+    expect((await windows()).find((w) => w.kind === "blowout")).toMatchObject({ opensOn: `${year}-10-01`, closesOn: `${year}-12-31` })
+    // an edit that leaves the dates out does not touch the window
+    await callApi(ctxFor(db, adminKey), servicesUpdate, { id: blowout.id, price: 95 })
+    expect((await windows()).find((w) => w.kind === "blowout")).toMatchObject({ opensOn: `${year}-10-01`, closesOn: `${year}-12-31` })
+    const rows = await db.select().from(s.settingsChange).where(eq(s.settingsChange.organizationId, ORG))
+    expect(rows.some((r) => r.field.startsWith("windows."))).toBe(false)
+    expect(rows.filter((r) => r.field === `${blowout.name} bookable from`).length).toBeGreaterThan(0)
+  })
+  it("leaves the windows alone for a service that is not seasonal", async () => {
+    const before = (await db.select({ settings: s.organization.settings }).from(s.organization).where(eq(s.organization.id, ORG)))[0]!.settings.windows
+    const made = await callApi(ctxFor(db, adminKey), servicesCreate, { ...input, key: "no-window" })
+    await callApi(ctxFor(db, adminKey), servicesUpdate, { id: made.id, bookableFrom: "02-01", bookableTo: "02-20" })
+    expect((await db.select({ settings: s.organization.settings }).from(s.organization).where(eq(s.organization.id, ORG)))[0]!.settings.windows).toEqual(before)
+  })
   it("honours an Idempotency-Key", async () => {
     const ctx = { ...ctxFor(db, adminKey), idempotencyKey: "svc-1" }
     const a = await callApi(ctx, servicesCreate, { ...input, key: "once-only" })

@@ -4,7 +4,8 @@ import { z } from "zod"
 import * as s from "@/db/schema"
 import { ApiError, notFound } from "../../core/errors"
 import { defineHandler } from "../../core/handler"
-import { isMonthDay } from "@/lib/services-window"
+import { isMonthDay, windowDatesFor } from "@/lib/services-window"
+import { DEFAULT_LEAD_WEEKS } from "@/lib/settings/defaults"
 import { Id, idInput, VisitKind } from "../shared"
 import { logSettingsChanges } from "../settings/log"
 import { serviceLeaves } from "./log"
@@ -39,6 +40,23 @@ async function load(ctx: Ctx, id: string) {
   const [row] = await ctx.db.select().from(s.service).where(and(eq(s.service.id, id), eq(s.service.organizationId, ctx.organizationId)))
   if (!row) throw notFound("Service")
   return row
+}
+
+/**
+ * Until the engine reads the service's own dates (step 7), the scheduling windows (`settings.windows.<kind>`: schedule.*, openSlots, the
+ * checkout and Reschedule) are what the customer meets, so the dates the office sets on a service are written there too. The write is not
+ * logged on its own: the service's "bookable from" and "bookable to" lines are the one record of it.
+ */
+async function mirrorWindow(ctx: Ctx & { now: Date }, service: typeof s.service.$inferSelect) {
+  const kind = service.kind
+  if (kind !== "turn-on" && kind !== "inspection" && kind !== "blowout") return
+  const [org] = await ctx.db.select({ settings: s.organization.settings }).from(s.organization).where(eq(s.organization.id, ctx.organizationId))
+  if (!org) return
+  const windows = org.settings.windows ?? []
+  const existing = windows.find((w) => w.kind === kind)
+  const dates = windowDatesFor(service, existing, ctx.now.toISOString().slice(0, 10))
+  const next = existing ? windows.map((w) => (w.kind === kind ? { ...w, ...dates } : w)) : [...windows, { kind, ...dates, leadWeeks: DEFAULT_LEAD_WEEKS[kind] }]
+  await ctx.db.update(s.organization).set({ settings: { ...org.settings, windows: next } }).where(eq(s.organization.id, ctx.organizationId))
 }
 
 export const servicesList = defineHandler({
@@ -86,6 +104,7 @@ export const servicesUpdate = defineHandler({
     if (defined.active === false) defined.bookable = false
     if (Object.keys(defined).length) await ctx.db.update(s.service).set(defined).where(eq(s.service.id, id))
     const after = await load(ctx, id)
+    if ("bookableFrom" in defined || "bookableTo" in defined) await mirrorWindow(ctx, after)
     await logSettingsChanges(ctx, serviceLeaves(before, after))
     return out(after)
   },
