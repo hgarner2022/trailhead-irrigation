@@ -137,6 +137,47 @@ describe("SettingsScreen fields", () => {
   })
 })
 
+describe("SettingsScreen messages and keys on the list", () => {
+  it("previews a message in a dialog that Close puts away, and shows why words that break a rule are not saved", async () => {
+    const user = userEvent.setup()
+    render(<SettingsScreen data={data} today={TODAY} defaultTab="messages" />)
+    const first = screen.getAllByRole("button", { name: /^Preview / })[0]!
+    await user.click(first)
+    expect(within(screen.getByRole("dialog")).getByText(/Exactly as sent|The email as a customer reads it/)).toBeInTheDocument()
+    await user.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Close" }))
+    expect(screen.queryByRole("dialog")).toBeNull()
+    const words = screen.getAllByRole("textbox")[0]!
+    await user.clear(words)
+    await user.type(words, "Hello {{nope}")
+    await user.tab()
+    expect(await screen.findByRole("alert")).toHaveTextContent("We don't know {nope}.")
+    expect(screen.queryByRole("button", { name: "Save" })).toBeNull()
+  })
+
+  it("asks before revoking a key, and Keep it leaves the key alone", async () => {
+    const user = userEvent.setup()
+    render(<SettingsScreen data={data} today={TODAY} defaultTab="keys" />)
+    await user.click(screen.getByRole("button", { name: "Revoke Appy agent" }))
+    await user.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Keep it" }))
+    expect(screen.getByRole("heading", { name: "Appy agent" })).toBeInTheDocument()
+    await user.click(screen.getByRole("button", { name: "Revoke Appy agent" }))
+    await user.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Revoke key" }))
+    expect(screen.queryByRole("heading", { name: "Appy agent" })).toBeNull()
+    expect(log().getByText("API keys")).toBeInTheDocument()
+    // a revoked key acts at once: it is never an unsaved change
+    expect(screen.queryByRole("button", { name: "Save" })).toBeNull()
+  })
+
+  it("draws one change log under every entry, never two", async () => {
+    const user = userEvent.setup()
+    render(<SettingsScreen data={data} today={TODAY} />)
+    for (const name of ["People", "Services", "Billing", "Messages", "API keys"]) {
+      await user.click(screen.getByRole("tab", { name }))
+      expect(document.querySelectorAll('[data-slot="change-log"]')).toHaveLength(1)
+    }
+  })
+})
+
 describe("SettingsScreen API keys", () => {
   it("shows the new key once and closes only with Done", async () => {
     const user = userEvent.setup()

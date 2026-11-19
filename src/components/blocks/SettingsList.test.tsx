@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest"
 import { render, screen, within } from "@testing-library/react"
 import { Input } from "@/components/ui/input"
 import { FormRow } from "./FormRow"
-import { SettingsList } from "./SettingsList"
+import { SettingsFact, SettingsList } from "./SettingsList"
 
 const rows = [
   { id: "a", title: "Ryan Garner", subtitle: "ryan@example.com", children: <FormRow label="Name" inline><Input defaultValue="Ryan Garner" /></FormRow> },
@@ -39,6 +39,13 @@ describe("SettingsList", () => {
     expect(screen.getByText("Sam Torres role")).toBeInTheDocument()
     rerender(<SettingsList title="People" rows={rows} />)
     expect(screen.queryByRole("heading", { name: "Changes" })).toBeNull()
+  })
+
+  it("draws a fact with no control as a label beside its value", () => {
+    render(<SettingsFact label="Last used">Never</SettingsFact>)
+    expect(screen.getByText("Last used")).toBeInTheDocument()
+    expect(screen.getByText("Never")).toBeInTheDocument()
+    expect(document.querySelector("label")).toBeNull()
   })
 
   it("runs the facts in one column when a row asks", () => {

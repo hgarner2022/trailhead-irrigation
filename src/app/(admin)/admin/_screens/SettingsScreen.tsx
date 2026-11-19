@@ -2,13 +2,10 @@
 
 import { useState, useTransition } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { SaveBar } from "@/components/blocks/SaveBar"
 import { cn } from "@/lib/utils"
-import { SectionHeading } from "@/components/blocks/SectionHeading"
-import { ChangeLog } from "@/components/blocks/ChangeLog"
 import { PageHeader } from "@/components/blocks/PageHeader"
 import type { AdminData, ServiceItem } from "@/lib/admin/types"
 import { DEFAULT_BILLING } from "@/lib/settings/defaults"
@@ -188,14 +185,6 @@ export function SettingsScreen({ data, today, defaultTab, who = "Hannah", keys, 
             </fieldset>
           </TabsContent>
           {!readOnly && <SaveBar count={unsaved} problems={problems} pending={pending} message={message} failed={failed} onSave={save} onDiscard={discard} />}
-          <Card>
-            <CardHeader>
-              <SectionHeading level={2}>Change log</SectionHeading>
-            </CardHeader>
-            <CardContent>
-              <ChangeLog changes={state.changes} />
-            </CardContent>
-          </Card>
         </div>
       </Tabs>
     </div>

@@ -80,3 +80,13 @@ export function SettingsList({ title, description, action, rows, empty, changes,
     </section>
   )
 }
+
+/** A fact with no control to edit it (a key's first characters, when it was last used): the label in the 112px column, the value beside it. */
+export function SettingsFact({ label, children, className }: { label: string; children: ReactNode; className?: string }) {
+  return (
+    <div data-slot="settings-fact" className={cn("flex min-w-0 flex-col gap-1 md:grid md:grid-cols-[112px_minmax(0,1fr)] md:items-start md:gap-x-3", className)}>
+      <span className="text-sm font-medium text-foreground">{label}</span>
+      <div className="min-w-0 text-sm text-foreground">{children}</div>
+    </div>
+  )
+}

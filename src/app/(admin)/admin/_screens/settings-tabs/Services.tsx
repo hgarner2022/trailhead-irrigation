@@ -107,6 +107,7 @@ export function Services({ state, apply }: { state: SettingsState; apply: Apply 
   return (
     <SettingsList
       title="Services"
+      changes={state.changes}
       description="What each visit includes, costs and holds on the schedule. A service with zone bands is one row; an edit changes every band."
       empty={{ title: "No services yet", line: "Services come from the catalogue the site sells; none have been loaded." }}
       rows={groups.map((group) => ({

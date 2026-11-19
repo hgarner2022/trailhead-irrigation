@@ -1,9 +1,8 @@
 "use client"
 
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Label } from "@/components/ui/label"
-import { SectionHeading } from "@/components/blocks/SectionHeading"
+import { FormRow } from "@/components/blocks/FormRow"
+import { SettingsList } from "@/components/blocks/SettingsList"
 import { MAX_DUE_DAYS, setBilling } from "../settings-billing"
 import type { SettingsState } from "../settings-model"
 import { CommitInput, TAP_TARGET, type Apply } from "./fields"
@@ -14,46 +13,35 @@ import { CommitInput, TAP_TARGET, type Apply } from "./fields"
 export function Billing({ state, apply }: { state: SettingsState; apply: Apply }) {
   const { dueDays, collectsSalesTax, salesTaxPercent } = state.settings.billing
   return (
-    <Card className="max-w-2xl">
-      <CardHeader>
-        <SectionHeading level={2}>Invoices</SectionHeading>
-        <p className="text-sm text-muted-foreground">What an invoice says when you press Send an invoice on a job that is done.</p>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="space-y-1.5">
-          <div className="flex flex-wrap items-center gap-2 text-sm font-medium text-foreground">
-            <span>Invoices are due in</span>
-            <CommitInput type="number" min={0} max={MAX_DUE_DAYS} label="Days until an invoice is due" className="w-24" describedBy="billing-due-hint" value={dueDays} onCommit={(v) => apply((s, a) => setBilling(s, "dueDays", Number(v), a))} />
-            <span>days</span>
-          </div>
-          <p id="billing-due-hint" className="text-sm text-muted-foreground">
-            Counted from the day the invoice is sent.
-          </p>
-        </div>
-        <div className="space-y-1.5">
-          <div className="flex items-center gap-2">
-            <Checkbox id="billing-tax" className={TAP_TARGET} checked={collectsSalesTax} aria-describedby="billing-tax-hint" onCheckedChange={(v) => apply((s, a) => setBilling(s, "collectsSalesTax", v === true, a))} />
-            <Label htmlFor="billing-tax" className="font-normal">
-              Collect Colorado sales tax
-            </Label>
-          </div>
-          <p id="billing-tax-hint" className="text-sm text-muted-foreground">
-            An invoice adds the tax to its taxable lines. Off, no invoice shows a tax line.
-          </p>
-        </div>
-        {collectsSalesTax && (
-          <div className="space-y-1.5">
-            <p className="text-sm font-medium text-foreground">Sales tax percent</p>
-            <div className="flex items-center gap-2">
-              <CommitInput label="Sales tax percent" className="w-24" describedBy="billing-percent-hint" value={String(salesTaxPercent)} onCommit={(v) => apply((s, a) => setBilling(s, "salesTaxPercent", v, a))} />
-              <span className="text-sm text-muted-foreground">%</span>
-            </div>
-            <p id="billing-percent-hint" className="text-sm text-muted-foreground">
-              Up to two decimals, like 8.8. The tax is rounded to the dollar on each invoice.
-            </p>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+    <SettingsList
+      title="Billing"
+      description="What an invoice says when you press Send an invoice on a job that is done."
+      changes={state.changes}
+      rows={[
+        {
+          id: "invoices",
+          title: "Invoices",
+          single: true,
+          children: (
+            <>
+              <FormRow label="Due in" inline htmlFor="billing-due" hint="Days, counted from the day the invoice is sent.">
+                <CommitInput id="billing-due" type="number" min={0} max={MAX_DUE_DAYS} label="Days until an invoice is due" className="w-28" value={dueDays} onCommit={(v) => apply((s, a) => setBilling(s, "dueDays", Number(v), a))} />
+              </FormRow>
+              <FormRow label="Sales tax" inline hint="An invoice adds the tax to its taxable lines. Off, no invoice shows a tax line.">
+                <Checkbox className={`mt-2.5 ${TAP_TARGET}`} aria-label="Collect Colorado sales tax" checked={collectsSalesTax} onCheckedChange={(v) => apply((s, a) => setBilling(s, "collectsSalesTax", v === true, a))} />
+              </FormRow>
+              {collectsSalesTax && (
+                <FormRow label="Percent" inline htmlFor="billing-percent" hint="Up to two decimals, like 8.8. The tax is rounded to the dollar on each line.">
+                  <div className="flex items-center gap-2">
+                    <CommitInput id="billing-percent" label="Sales tax percent" className="w-28" value={String(salesTaxPercent)} onCommit={(v) => apply((s, a) => setBilling(s, "salesTaxPercent", v, a))} />
+                    <span className="text-sm text-muted-foreground">%</span>
+                  </div>
+                </FormRow>
+              )}
+            </>
+          ),
+        },
+      ]}
+    />
   )
 }
