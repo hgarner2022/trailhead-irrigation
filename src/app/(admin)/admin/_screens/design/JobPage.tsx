@@ -4,7 +4,7 @@ import { RecordPage } from "@/components/blocks/RecordPage"
 import { SectionCard } from "@/components/blocks/SectionCard"
 import { SummaryBand } from "@/components/blocks/SummaryBand"
 import type { JobPageData } from "./job-fixtures"
-import { Actions, Aside, Badges, BillingCard, EditLink, MessagesCard, Notice, bandOfJob, factsOfJob, hasFooter } from "./JobPageParts"
+import { Actions, Aside, type CollectHandlers, Badges, BillingCard, EditLink, MessagesCard, Notice, bandOfJob, factsOfJob, hasFooter } from "./JobPageParts"
 
 // The job page for a one-trip job (docs/plans/2026-11-19-job-object-design.md) on the page frame of
 // docs/plans/2026-11-19-admin-page-layout-research.md: the header (customer, status badges beside it, the actions at the top right), the
@@ -12,7 +12,7 @@ import { Actions, Aside, Badges, BillingCard, EditLink, MessagesCard, Notice, ba
 // (Customer, Property, Notes and history), each a card on the cream page. The visit is on the page, not behind it. In Done and unpaid
 // beat two ("How is this paid?") is in Billing and its button is in the header's actions. Pure props, nothing wired.
 
-export function JobPage({ job }: { job: JobPageData }) {
+export function JobPage({ job, onDo, intercept, handlers }: { job: JobPageData; onDo?: (label: string) => void; intercept?: string[]; handlers?: CollectHandlers }) {
   const canceled = job.pills[0].status === "cancelled"
   return (
     <RecordPage
@@ -22,14 +22,14 @@ export function JobPage({ job }: { job: JobPageData }) {
       badges={<Badges pills={job.pills} note={job.pillNote} />}
       notice={job.notice ? <Notice>{job.notice}</Notice> : undefined}
       band={<SummaryBand items={bandOfJob(job)} />}
-      aside={<Aside customer={job.customer} phone={job.phone} where={job.where} notes={job.notes} />}
-      actions={hasFooter(job.footer) ? <Actions plan={job.footer} facts={factsOfJob(job)} /> : undefined}
+      aside={<Aside customer={job.customer} phone={job.phone} where={job.where} notes={job.notes} pastVisits={job.pastVisits} pastTotal={job.pastTotal} />}
+      actions={hasFooter(job.footer) ? <Actions plan={job.footer} facts={factsOfJob(job)} onDo={onDo} intercept={intercept} /> : undefined}
     >
       <SectionCard title="What's included" id="included-h" action={canceled ? undefined : <EditLink />}>
         <LineItemList lines={job.lines} totals={job.totals} />
       </SectionCard>
       {job.checklist && <Checklist items={job.checklist} />}
-      <BillingCard data={job} facts={factsOfJob(job)} />
+      <BillingCard data={job} facts={factsOfJob(job)} handlers={handlers} />
       <MessagesCard messages={job.messages} />
     </RecordPage>
   )

@@ -15,9 +15,9 @@ import { StatusPill, type PillStatus } from "@/components/blocks/StatusPill"
 export type BillingState = "owed" | "bill-sent" | "overdue" | "paid"
 export const BILLING_WORDS: Record<BillingState, string> = { owed: "Unpaid", "bill-sent": "Invoice sent", overdue: "Past due", paid: "Paid" }
 
-export type GridStatus = "today" | "unscheduled" | "scheduled" | "late" | "done" | "cancelled"
-export const GRID_WORDS: Record<GridStatus, string> = { today: "Today", unscheduled: "Unscheduled", scheduled: "Scheduled", late: "Late", done: "Done", cancelled: "Canceled" }
-const GRID_TONE: Record<GridStatus, PillStatus> = { today: "today", unscheduled: "needs-a-day", scheduled: "scheduled", late: "overdue", done: "done", cancelled: "cancelled" }
+export type GridStatus = "today" | "active" | "unscheduled" | "scheduled" | "late" | "done" | "cancelled"
+export const GRID_WORDS: Record<GridStatus, string> = { today: "Today", active: "Active", unscheduled: "Unscheduled", scheduled: "Scheduled", late: "Late", done: "Done", cancelled: "Canceled" }
+const GRID_TONE: Record<GridStatus, PillStatus> = { today: "today", active: "job-active", unscheduled: "needs-a-day", scheduled: "scheduled", late: "overdue", done: "done", cancelled: "cancelled" }
 export const WHO_OPTIONS = ["Ryan Garner", "Hannah Garner", "No one yet"].map((w) => ({ value: w, label: w }))
 export const SEASON_OPTIONS = ["2027", "2026"].map((w) => ({ value: w, label: w }))
 

@@ -11,6 +11,8 @@ export interface ConfirmCopy {
   body?: string
   confirmLabel: string
   destructive?: boolean
+  /** a checkbox, checked by default, that adds a part to what goes out: the sentence reads `with` when checked and `without` when not */
+  reportOption?: { label: string; with: string; without: string }
 }
 
 export interface ConfirmFacts {
@@ -45,7 +47,7 @@ export function collectConfirm(way: string, f: ConfirmFacts, reference = ""): Co
     case "cash":
       return { title: "Record the cash", message: `Record ${f.amount} in cash. ${f.first} gets a receipt by email.`, confirmLabel: "Record the cash" }
     case "invoice":
-      return { title: "Send the invoice", message: `Send the invoice for ${f.amount} by text to ${f.phone}, due ${f.dueOn}.`, confirmLabel: "Send the invoice" }
+      return { title: "Send the invoice", message: `Send the invoice for ${f.amount} by text to ${f.phone}, due ${f.dueOn}.`, confirmLabel: "Send the invoice", reportOption: { label: "Include the visit report (the checklist and photos)", with: `Send the invoice for ${f.amount} by text to ${f.phone}, due ${f.dueOn}, with the visit report.`, without: `Send the invoice for ${f.amount} by text to ${f.phone}, due ${f.dueOn}.` } }
     default:
       return null
   }
@@ -55,7 +57,7 @@ export function collectConfirm(way: string, f: ConfirmFacts, reference = ""): Co
 export function footerConfirms(f: ConfirmFacts): Record<string, ConfirmCopy> {
   return {
     Move: { title: "Move the visit", message: `Move the ${f.service} to Wed, Nov 25 at 9:00 am and text ${f.first} the new day.`, confirmLabel: "Move the visit" },
-    "On my way": { title: "Send On my way", message: `Text ${f.first} at ${f.phone} that Ryan is on the way to ${f.address}. Nothing is charged.`, confirmLabel: "Send the text" },
+    "On my way": { title: "Send On my way", message: `Text ${f.first} that Ryan is on the way to ${f.address}.`, confirmLabel: "Send" },
     "Send a payment reminder": {
       title: "Send a payment reminder",
       message: `Send this text to ${f.first} at ${f.phone}.`,

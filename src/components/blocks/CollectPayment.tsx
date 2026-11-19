@@ -30,14 +30,14 @@ export interface CollectPaymentProps {
   /** the Record button: `payments.record` */
   onRecord: (input: { method: "check" | "venmo" | "cash"; reference?: string; amount?: number }) => Promise<Answer>
   /** Send the invoice: `invoices.send` */
-  onInvoice: () => Promise<Answer>
+  onInvoice: (options?: { report: boolean }) => Promise<Answer>
   /** Leave it unpaid: nothing is written */
   onLater: () => void
   onClose: () => void
   /** the words on the one button for the chosen way; the plan's own when left out */
   buttonLabel?: (picked: PayOption) => string
   /** the words of the confirmation the button opens (what happens, to whom, how much); no dialog when left out or when it answers null */
-  confirmFor?: (picked: PayOption, reference: string) => { title: string; message: string; confirmLabel: string } | null
+  confirmFor?: (picked: PayOption, reference: string) => AskCopy | null
   /** a quiet "Not now" beside the button: leaves the job Done and unpaid, writes nothing */
   notNow?: boolean
   /** called once the money has gone through (or the invoice has), so a panel can drop its Cancel and leave the one Close */
@@ -65,6 +65,14 @@ function Choice({ option, checked, disabled, onPick }: { option: PayOption; chec
   )
 }
 
+/** The words of a confirmation; `reportOption` adds the visit-report checkbox (checked by default) and the two sentences it switches between. */
+export interface AskCopy {
+  title: string
+  message: string
+  confirmLabel: string
+  reportOption?: { label: string; with: string; without: string }
+}
+
 export function CollectPayment({ plan, summary, firstName, onCharge, onRecord, onInvoice, onLater, onClose, buttonLabel, notNow, confirmFor, onSettled, className }: CollectPaymentProps) {
   const [choice, setChoice] = useState<PayChoice>(plan.initial)
   const [more, setMore] = useState(false)
@@ -73,7 +81,8 @@ export function CollectPayment({ plan, summary, firstName, onCharge, onRecord, o
   const [problem, setProblem] = useState(plan.declined ? "The card didn't go through. Choose another way." : "")
   const [result, setResult] = useState<{ title: string; line: string } | null>(null)
   const [pending, start] = useTransition()
-  const [asking, setAsking] = useState<{ title: string; message: string; confirmLabel: string } | null>(null)
+  const [asking, setAsking] = useState<AskCopy | null>(null)
+  const [report, setReport] = useState(true)
   const shown = [...plan.options, ...(more ? plan.anotherWay : [])]
   const picked = shown.find((o) => o.value === choice) ?? shown[0]!
   const busy = pending || plan.charging
@@ -99,7 +108,7 @@ export function CollectPayment({ plan, summary, firstName, onCharge, onRecord, o
   const run = () => {
     start(async () => {
       if (picked.value === "card") settle(await onCharge(), { title: paidWords("card_on_file"), line: receiptLine(firstName) })
-      else if (picked.value === "invoice") settle(await onInvoice(), { title: "Invoice sent", line: `A pay link went to ${firstName}.` })
+      else if (picked.value === "invoice") settle(await onInvoice({ report }), { title: "Invoice sent", line: `A pay link went to ${firstName}.` })
       else if (handed) {
         const method = picked.value as "check" | "venmo" | "cash"
         settle(await onRecord({ method, ...(reference.trim() ? { reference: reference.trim() } : {}), ...(plan.needsAmount && amount ? { amount: Number(amount) } : {}) }), { title: paidWords(method), line: receiptLine(firstName) })
@@ -172,7 +181,7 @@ export function CollectPayment({ plan, summary, firstName, onCharge, onRecord, o
           open
           onOpenChange={(o) => !o && setAsking(null)}
           title={asking.title}
-          message={asking.message}
+          message={asking.reportOption ? (report ? asking.reportOption.with : asking.reportOption.without) : asking.message}
           confirmLabel={asking.confirmLabel}
           slot="collect-confirm"
           onConfirm={async () => {
@@ -180,7 +189,14 @@ export function CollectPayment({ plan, summary, firstName, onCharge, onRecord, o
             run()
             return { ok: true }
           }}
-        />
+        >
+          {asking.reportOption && (
+            <label className="flex min-h-11 cursor-pointer items-center gap-3 text-sm font-medium">
+              <input type="checkbox" checked={report} onChange={(e) => setReport(e.target.checked)} className="size-5 shrink-0 accent-primary" />
+              {asking.reportOption.label}
+            </label>
+          )}
+        </ConfirmDialog>
       )}
     </div>
   )

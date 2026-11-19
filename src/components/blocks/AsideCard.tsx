@@ -35,6 +35,7 @@ export function AsideCard({ name, href, phone, address, title = "Customer" }: As
         </span>
         {href ? (
           <Link href={href} className={`${LINK} min-h-11 content-center text-base font-semibold`}>
+            <span className="sr-only">Customer: </span>
             {name}
           </Link>
         ) : (

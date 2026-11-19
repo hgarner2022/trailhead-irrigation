@@ -19,7 +19,7 @@ beforeAll(() => {
 })
 
 describe("job page, one trip", () => {
-  const PRIMARY: Record<string, string | null> = { unscheduled: "Schedule", scheduled: "Move", today: "On my way", late: "Mark done", "invoice-sent": "Send a payment reminder", "past-due": "Send a payment reminder", "on-the-way": "Start", "in-progress": "Mark done", "done-paid": null, canceled: null }
+  const PRIMARY: Record<string, string | null> = { unscheduled: "Schedule", scheduled: "Move", today: "On my way", late: "Mark done", "invoice-sent": "Send a payment reminder", "past-due": "Send a payment reminder", "on-the-way": "Mark done", active: "Mark done", "done-paid": null, canceled: null }
   for (const state of JOB_STATES) {
     it(`renders ${state} with the customer as the title`, () => {
       render(<JobPage job={jobPageOf(state)} />)

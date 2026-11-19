@@ -17,6 +17,8 @@ export interface ChecklistItem {
   label: string
   done: boolean
   note?: string
+  /** placeholders for uploaded photos (the prototype adds one per press of Add photo) */
+  photos?: number
 }
 
 export interface ChecklistProps {
@@ -26,7 +28,7 @@ export interface ChecklistProps {
   className?: string
 }
 
-function Item({ item, onToggle, onNote }: { item: ChecklistItem; onToggle: () => void; onNote: (note: string) => void }) {
+function Item({ item, onToggle, onNote, onPhoto }: { item: ChecklistItem; onToggle: () => void; onNote: (note: string) => void; onPhoto: () => void }) {
   const id = useId()
   const [noting, setNoting] = useState(Boolean(item.note))
   return (
@@ -39,10 +41,17 @@ function Item({ item, onToggle, onNote }: { item: ChecklistItem; onToggle: () =>
         <Button type="button" variant="ghost" className="min-h-11 px-2 text-muted-foreground" aria-label={`Add a note to ${item.label}`} onClick={() => setNoting((n) => !n)}>
           <StickyNote className="size-4" aria-hidden />
         </Button>
-        <Button type="button" variant="ghost" className="min-h-11 px-2 text-muted-foreground" aria-label={`Add a photo to ${item.label}`}>
+        <Button type="button" variant="ghost" className="min-h-11 px-2 text-muted-foreground" aria-label={`Add a photo to ${item.label}`} onClick={onPhoto}>
           <Camera className="size-4" aria-hidden />
         </Button>
       </div>
+      {(item.photos ?? 0) > 0 && (
+        <ul className="mt-2 flex gap-2" aria-label={`Photos for ${item.label}`}>
+          {Array.from({ length: item.photos! }, (_, n) => (
+            <li key={n} className="flex size-14 items-center justify-center rounded-lg border border-border bg-stone text-xs text-muted-foreground">Photo {n + 1}</li>
+          ))}
+        </ul>
+      )}
       {noting && <Textarea value={item.note ?? ""} rows={2} aria-label={`Note for ${item.label}`} placeholder="Add a note" className="mt-2" onChange={(e) => onNote(e.target.value)} />}
     </li>
   )
@@ -62,7 +71,8 @@ export function Checklist({ items: initial, onChange, className }: ChecklistProp
       ) : (
         <ul className="divide-y divide-border">
           {items.map((item) => (
-            <Item key={item.id} item={item} onToggle={() => set(items.map((i) => (i.id === item.id ? { ...i, done: !i.done } : i)))} onNote={(note) => set(items.map((i) => (i.id === item.id ? { ...i, note } : i)))} />
+            <Item key={item.id} item={item} onToggle={() => set(items.map((i) => (i.id === item.id ? { ...i, done: !i.done } : i)))} onNote={(note) => set(items.map((i) => (i.id === item.id ? { ...i, note } : i)))}  onPhoto={() => set(items.map((x) => (x.id === item.id ? { ...x, photos: (x.photos ?? 0) + 1 } : x)))}
+              />
           ))}
         </ul>
       )}
