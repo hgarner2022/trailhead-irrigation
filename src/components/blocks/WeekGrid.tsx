@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, type DragEvent } from "react"
-import { ChevronLeft, ChevronRight, TriangleAlert, Users } from "lucide-react"
+import { Check, ChevronLeft, ChevronRight, TriangleAlert, Users } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { StatusPill } from "./StatusPill"
 import { Button } from "@/components/ui/button"
@@ -14,6 +14,7 @@ import type { AreaGroup, Person, Visit } from "@/lib/admin/types"
 import { addDays, dayLabel, dayVisits, weekDays, weekOf, weekVisits, worksOn } from "@/lib/admin/calendar"
 import { EmptyState } from "./EmptyState"
 import { areaBorder, areaIndexOf, areaSwatch } from "./area-colours"
+import { doneNote, isDone } from "./done-note"
 import { KIND_WORDS } from "@/lib/admin/format"
 
 // The week by person: one row per person on the schedule, Monday to Sunday across in seven equal columns after a fixed,
@@ -54,6 +55,8 @@ const areaIndex = (visit: Visit, areas: AreaGroup[]) => areaIndexOf(visit.town, 
 
 function VisitBlock({ visit, areas, selected, onSelect, draggable }: { visit: Visit; areas: AreaGroup[]; selected: boolean; onSelect: (id: string | undefined) => void; draggable: boolean }) {
   const index = areaIndex(visit, areas)
+  const done = isDone(visit)
+  const early = doneNote(visit)
   const onDragStart = (event: DragEvent<HTMLButtonElement>) => {
     event.dataTransfer.setData("text/plain", visit.id)
     event.dataTransfer.effectAllowed = "move"
@@ -71,6 +74,7 @@ function VisitBlock({ visit, areas, selected, onSelect, draggable }: { visit: Vi
         areaBorder(index),
         selected && "ring-2 ring-primary/50",
         draggable && "cursor-grab",
+        done && "bg-stone/60 text-muted-foreground",
       )}
     >
       <span className="flex w-full items-center gap-1">
@@ -79,6 +83,12 @@ function VisitBlock({ visit, areas, selected, onSelect, draggable }: { visit: Vi
           <span className="font-medium text-foreground">{visit.clientName}</span>
           <span className="text-muted-foreground">{` · ${visit.town} · ${KIND_WORDS[visit.kind]}`}</span>
         </span>
+        {done && (
+          <>
+            <Check data-slot="done-mark" className="relative size-3.5 shrink-0 text-success" aria-hidden />
+            <span className="sr-only">, done</span>
+          </>
+        )}
         {visit.exception && (
           <>
             <TriangleAlert className="relative size-3.5 shrink-0 text-warning" aria-hidden />
@@ -86,6 +96,7 @@ function VisitBlock({ visit, areas, selected, onSelect, draggable }: { visit: Vi
           </>
         )}
       </span>
+      {early && <span data-slot="done-note" className="text-[11px] font-medium text-muted-foreground">{early}</span>}
       {visit.waiting && <StatusPill status="waiting" data-pill="waiting" className="h-5 w-fit px-1.5 text-[11px]" />}
     </button>
   )

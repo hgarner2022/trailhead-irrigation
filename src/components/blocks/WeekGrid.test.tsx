@@ -33,6 +33,17 @@ const cell = (person: string, day: string) => document.querySelector<HTMLElement
 const blocksIn = (el: HTMLElement) => Array.from(el.querySelectorAll<HTMLElement>('[data-slot="week-grid-visit"]'))
 
 describe("WeekGrid", () => {
+  it("draws a done visit with a check, lighter, and says Done early when it was done before its day", () => {
+    const one = (id: string, completedOn: string) => ({ id, clientId: id, clientName: id, town: "Erie" as const, kind: "repair" as const, status: "completed" as const, startAt: "2026-11-13T16:00:00Z", scheduledOn: "2026-11-13", completedOn, isPass: false, jobberUrl: "", personId: "person_truck-1", stopOrder: 1 })
+    const early = one("early", "2026-11-12")
+    const same = one("same-day", "2026-11-13")
+    render(<WeekGrid {...base} visits={[early, same]} />)
+    const blocks = Array.from(document.querySelectorAll<HTMLElement>('[data-slot="week-grid-visit"]'))
+    expect(blocks.filter((b) => b.querySelector('[data-slot="done-mark"]'))).toHaveLength(2)
+    expect(blocks.every((b) => b.className.includes("bg-stone/60"))).toBe(true)
+    expect(Array.from(document.querySelectorAll('[data-slot="done-note"]')).map((n) => n.textContent)).toEqual(["Done early"])
+  })
+
   it("lets a block's name wrap instead of cutting it off", () => {
     render(<WeekGrid {...base} />)
     const names = document.querySelectorAll<HTMLElement>('[data-slot="week-grid-visit"] .font-medium')
