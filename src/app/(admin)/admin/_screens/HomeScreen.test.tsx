@@ -118,7 +118,7 @@ describe("HomeScreen", () => {
     )
     expect(screen.getAllByRole("button", { name: /^Dismiss:/ })).toHaveLength(2)
     expect(screen.getByRole("button", { name: /^Mark done:/ })).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: /^Schedule:/ })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /^Open visit:/ })).toBeInTheDocument()
     await userEvent.click(screen.getByRole("button", { name: /^Dismiss: Dana/ }))
     expect(onDismiss).toHaveBeenCalledWith(item, false)
     await userEvent.click(await screen.findByRole("button", { name: "Undo" }))
