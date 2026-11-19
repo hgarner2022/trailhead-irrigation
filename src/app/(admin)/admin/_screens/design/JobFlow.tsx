@@ -2,9 +2,11 @@
 
 import { useReducer, useRef, useState } from "react"
 import { ConfirmDialog } from "@/components/blocks/ConfirmDialog"
+import { SplitButton } from "@/components/blocks/SplitButton"
 import { FormRow } from "@/components/blocks/FormRow"
 import { Button } from "@/components/ui/button"
 import type { Message } from "@/lib/admin/types"
+import { SchedulePicker, type Pick } from "./SchedulePicker"
 import { JobPage } from "./JobPage"
 import { jobPageOf, type JobPageData, type JobState } from "./job-fixtures"
 
@@ -26,7 +28,7 @@ interface Flow {
 }
 type Act =
   | { type: "reset" }
-  | { type: "schedule"; day: string; time: string }
+  | { type: "schedule"; day: string; time: string; text: boolean }
   | { type: "active"; text: boolean }
   | { type: "done" }
   | { type: "paid"; by: string; ref?: string }
@@ -37,14 +39,12 @@ type Act =
 const START: Flow = { stage: "unscheduled", day: "", time: "Any time", extra: [] }
 const FIXTURE: Record<Stage, JobState> = { unscheduled: "unscheduled", scheduled: "scheduled", today: "today", active: "on-the-way", done: "done-unpaid", paid: "done-paid", invoice: "invoice-sent", canceled: "canceled" }
 const TODAY = "Today, Wed Nov 18"
-const DAYS = [TODAY, "Tue, Nov 24", "Wed, Nov 25"]
-const TIMES = ["Any time", "8:00 am", "9:00 am", "1:00 pm"]
 const STEPS: [string, Stage[]][] = [["Schedule", ["unscheduled"]], ["Scheduled", ["scheduled"]], ["Today", ["today"]], ["Active", ["active"]], ["Done", ["done"]], ["Billed", ["paid", "invoice"]]]
 
 function reduce(f: Flow, a: Act): Flow {
   switch (a.type) {
     case "reset": return START
-    case "schedule": return { ...f, day: a.day, time: a.time, stage: a.day === TODAY ? "today" : "scheduled", extra: [...f.extra, say("sms", a.day === TODAY ? "day-before" : "date-set", `Trailhead: your repair is ${a.day === TODAY ? "today" : a.day}${a.time === "Any time" ? "" : ` at ${a.time}`}.`)] }
+    case "schedule": return { ...f, day: a.day, time: a.time, stage: a.day === TODAY ? "today" : "scheduled", extra: !a.text ? f.extra : [...f.extra, say("sms", a.day === TODAY ? "day-before" : "date-set", `Trailhead: your repair is ${a.day === TODAY ? "today" : a.day}${a.time === "Any time" ? "" : ` at ${a.time}`}.`)] }
     case "active": return { ...f, stage: "active", extra: a.text ? [...f.extra, say("sms", "on-the-way", "Trailhead: Ryan is on the way to 480 Briggs St.")] : f.extra }
     case "done": return { ...f, stage: "done" }
     case "paid": return { ...f, stage: "paid", paidBy: a.by, ref: a.ref, extra: [...f.extra, say("email", "receipt", "Receipt: $145 for your repair at 480 Briggs St")] }
@@ -99,15 +99,14 @@ type Ask = "schedule" | "done" | "record" | null
 export function JobFlow() {
   const [f, dispatch] = useReducer(reduce, START)
   const [ask, setAsk] = useState<Ask>(null)
-  const [day, setDay] = useState(DAYS[1]!)
-  const [time, setTime] = useState(TIMES[0]!)
+  const [pick, setPick] = useState<Pick>({ day: "Tue, Nov 24", time: "Any time", person: "Ryan Garner" })
   const [doneOn, setDoneOn] = useState(TODAY)
   const [check, setCheck] = useState("1042")
   const view = viewOf(f)
   const paying = useRef<{ by: string; ref?: string } | null>(null)
   const invoiceReport = useRef<boolean | null>(null)
   const onDo = (label: string) => {
-    if (label === "Schedule" || label === "Move") { setDay(f.day || DAYS[1]!); setAsk("schedule") }
+    if (label === "Schedule" || label === "Move") { setPick({ day: "Tue, Nov 24", time: "Any time", person: "Ryan Garner" }); setAsk("schedule") }
     else if (label === "Mark done") setAsk("done")
     else if (label === "Record the payment") setAsk("record")
     else if (label === "On my way") dispatch({ type: "active", text: true })
@@ -130,11 +129,19 @@ export function JobFlow() {
         }}
       />
       {ask === "schedule" && (
-        <ConfirmDialog open onOpenChange={(o) => !o && setAsk(null)} title={f.stage === "unscheduled" ? "Schedule the job" : "Move the job"} message={`Set the day and time. ${view.customer.split(" ")[0]} gets a text with the new day.`} confirmLabel="Save and text" slot="flow-schedule" onConfirm={async () => (dispatch({ type: "schedule", day, time }), { ok: true })}>
-          <div className="flex flex-col gap-3">
-            <FormRow label="Day"><select value={day} onChange={(e) => setDay(e.target.value)} className="min-h-11 rounded-lg border border-input bg-background px-3 text-sm">{DAYS.map((d) => <option key={d}>{d}</option>)}</select></FormRow>
-            <FormRow label="Time"><select value={time} onChange={(e) => setTime(e.target.value)} className="min-h-11 rounded-lg border border-input bg-background px-3 text-sm">{TIMES.map((t) => <option key={t}>{t}</option>)}</select></FormRow>
-          </div>
+        <ConfirmDialog
+          open
+          size="md"
+          onOpenChange={(o) => !o && setAsk(null)}
+          title={f.stage === "unscheduled" ? "Schedule the job" : "Move the job"}
+          slot="flow-schedule"
+          onConfirm={async (variant) => (dispatch({ type: "schedule", day: pick.day, time: pick.time, text: variant !== "quiet" }), { ok: true })}
+          renderConfirm={({ confirm, pending }) => {
+            const verb = f.stage === "unscheduled" ? "Schedule" : "Move"
+            return <SplitButton label={`${verb} and text the customer`} onClick={() => confirm("text")} disabled={pending} menuLabel={`More ways to ${verb.toLowerCase()}`} menu={[{ label: `${verb} without texting`, disabled: pick.time !== "Any time", onSelect: () => confirm("quiet") }]} />
+          }}
+        >
+          <SchedulePicker firstName={view.customer.split(" ")[0]!} onChange={setPick} />
         </ConfirmDialog>
       )}
       {ask === "done" && (
