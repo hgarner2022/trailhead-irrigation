@@ -19,6 +19,10 @@ beforeAll(() => {
 
 const log = () => within(document.querySelector('[data-slot="change-log"]') as HTMLElement)
 
+/** What Save has not written yet: the SaveBar's list, not the log. */
+const pending = () => within(document.querySelector('[data-slot="save-bar-lines"]') as HTMLElement)
+const starts = (field: string) => new RegExp(`^${field.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")} from `)
+
 const rowOf = (name: string) => within(screen.getByRole("heading", { level: 3, name }).closest("li") as HTMLElement)
 
 describe("SettingsScreen shell", () => {
@@ -90,7 +94,7 @@ describe("SettingsScreen people", () => {
     render(<SettingsScreen data={data} today={TODAY} />)
     await user.click(screen.getByRole("checkbox", { name: "Tech Two takes visits" }))
     expect(screen.getByRole("checkbox", { name: "Tech Two takes visits" })).not.toBeChecked()
-    expect(log().getByText("Tech Two takes visits")).toBeInTheDocument()
+    expect(pending().getByText(starts("Tech Two takes visits"))).toBeInTheDocument()
     expect(screen.getByLabelText("Tech Two schedule label")).toHaveValue("")
   })
 })
@@ -105,7 +109,7 @@ describe("SettingsScreen fields", () => {
     const after = screen.getByRole("textbox", { name: "Blowout truck name" })
     expect(after).toHaveValue("Blowout truck")
     expect(after).toHaveFocus()
-    expect(log().getByText("Tech Two name")).toBeInTheDocument()
+    expect(pending().getByText(starts("Tech Two name"))).toBeInTheDocument()
   })
 
   it("puts the old value back when a field is blank or out of range", async () => {
@@ -119,7 +123,7 @@ describe("SettingsScreen fields", () => {
     await user.clear(name)
     await user.tab()
     expect(name).toHaveValue("Ryan Garner")
-    expect(log().queryByText("Ryan Garner most blowouts per day")).toBeNull()
+    expect(screen.queryByText(/Ryan Garner most blowouts per day/)).toBeNull()
   })
 
   it("sets the hours, and says live that the day ends before it starts and turns Save off until it is fixed", async () => {
@@ -136,7 +140,7 @@ describe("SettingsScreen fields", () => {
     fireEvent.blur(end)
     expect(screen.queryByText(/End must be after the start/)).toBeNull()
     expect(screen.getByRole("button", { name: "Save" })).toBeEnabled()
-    expect(log().getAllByText("Tech Two hours")).toHaveLength(2)
+    expect(pending().getAllByText(starts("Tech Two hours"))).toHaveLength(1)
     await user.click(screen.getByRole("button", { name: "Discard" }))
   })
 
@@ -160,6 +164,38 @@ describe("SettingsScreen fields", () => {
     tab.querySelector('[data-slot="change-log"]')?.remove()
     expect(tab.textContent).not.toMatch(/truck/i)
     expect(tab.textContent).toContain("A second person on the Schedule is a new row: a name, an email, Takes visits, days and hours.")
+  })
+})
+
+describe("SettingsScreen change log words", () => {
+  it("words the API's raw window keys in the log, in the Services tab's words", () => {
+    const raw = [
+      { id: "r1", at: "2026-11-10T16:00:00Z", who: "Hannah", field: "windows.blowout.opensOn", from: "2027-10-05", to: "2027-10-01" },
+      { id: "r2", at: "2026-11-10T16:00:01Z", who: "Hannah", field: "windows.blowout.closesOn", from: "2027-11-15", to: "2027-11-01" },
+      { id: "r3", at: "2026-11-10T16:00:02Z", who: "Hannah", field: "billing.dueDays", from: "14 days", to: "30 days" },
+    ]
+    render(<SettingsScreen data={{ ...data, settingsChanges: raw }} today={TODAY} />)
+    expect(log().getByText("Fall blowout first bookable day")).toBeInTheDocument()
+    expect(log().getByText("Fall blowout last bookable day")).toBeInTheDocument()
+    expect(log().getByText("Billing due days")).toBeInTheDocument()
+    expect(document.querySelector('[data-slot="change-log"]')!.textContent).not.toMatch(/windows\.|opensOn|2027-/)
+  })
+
+  it("shows an unsaved change in the SaveBar, not as a line in the saved log, and moves it into the log after Save", async () => {
+    const user = userEvent.setup()
+    const save = vi.fn(async () => ({ ok: true as const, data: undefined }))
+    render(<SettingsScreen data={data} today={TODAY} actions={{ save, createKey: vi.fn(), revokeKey: vi.fn() }} />)
+    const lines = data.settingsChanges.length
+    const field = screen.getByRole("spinbutton", { name: "Ryan Garner most repairs per day" })
+    await user.clear(field)
+    await user.type(field, "5{Enter}")
+    expect(screen.getByRole("status")).toHaveTextContent("1 unsaved change")
+    expect(within(screen.getByRole("list", { name: "Unsaved changes" })).getByText(/^Ryan Garner most repairs per day from \d+ to 5$/)).toBeInTheDocument()
+    expect(log().queryByText("Ryan Garner most repairs per day")).toBeNull()
+    expect(document.querySelectorAll('[data-slot="change-log"] li')).toHaveLength(lines)
+    await user.click(screen.getByRole("button", { name: "Save" }))
+    await waitFor(() => expect(log().getByText("Ryan Garner most repairs per day")).toBeInTheDocument())
+    expect(screen.queryByRole("list", { name: "Unsaved changes" })).toBeNull()
   })
 })
 
@@ -299,7 +335,7 @@ describe("SettingsScreen services", () => {
     await user.clear(price)
     await user.type(price, "155{Enter}")
     expect(screen.getByRole("spinbutton", { name: "Spring turn-on & system check price" })).toHaveValue(155)
-    expect(log().getAllByText("Spring turn-on & system check price")).toHaveLength(1)
+    expect(pending().getAllByText(starts("Spring turn-on & system check price"))).toHaveLength(1)
     await user.click(screen.getByRole("button", { name: "Save" }))
     await waitFor(() => expect(save).toHaveBeenCalled())
     const sent = save.mock.calls[0]![1] as { key: string; price: number }[]
@@ -316,7 +352,7 @@ describe("SettingsScreen services", () => {
     await user.type(screen.getByRole("spinbutton", { name: "Fall blowout & winterization bookable from day" }), "28{Enter}")
     await user.selectOptions(screen.getByRole("combobox", { name: "Fall blowout & winterization bookable to month" }), "11")
     expect(rowOf("Fall blowout & winterization").getByText(/Sep 28 to Nov 1/)).toBeInTheDocument()
-    expect(log().getAllByText("Fall blowout & winterization bookable from").length).toBe(2)
+    expect(pending().getAllByText(starts("Fall blowout & winterization bookable from")).length).toBe(1)
     await user.click(screen.getByRole("button", { name: "Save" }))
     await waitFor(() => expect(save).toHaveBeenCalled())
     expect((save.mock.calls[0]![1] as { key: string; bookableFrom: string; bookableTo: string }[]).find((s) => s.key === "blowout")).toMatchObject({ bookableFrom: "09-28", bookableTo: "11-01" })
@@ -329,7 +365,7 @@ describe("SettingsScreen services", () => {
     const user = await open()
     await user.selectOptions(screen.getByRole("combobox", { name: "Sprinkler repair visit online" }), "quote")
     expect(screen.getByRole("combobox", { name: "Sprinkler repair visit online" })).toHaveValue("quote")
-    expect(log().getByText("Sprinkler repair visit online")).toBeInTheDocument()
+    expect(pending().getByText(starts("Sprinkler repair visit online"))).toBeInTheDocument()
   })
 
   it("saves an edited description through the action with the services, and logs one line", async () => {
@@ -341,7 +377,7 @@ describe("SettingsScreen services", () => {
     await user.type(text, "Find the fault and fix it.")
     await user.tab()
     expect(screen.getByRole("textbox", { name: "Sprinkler repair visit what's included" })).toHaveValue("Find the fault and fix it.")
-    expect(log().getByText("Sprinkler repair visit what's included")).toBeInTheDocument()
+    expect(pending().getByText(starts("Sprinkler repair visit what's included"))).toBeInTheDocument()
     await user.click(screen.getByRole("button", { name: "Save" }))
     await waitFor(() => expect(save).toHaveBeenCalled())
     const sent = save.mock.calls[0]![1] as { key: string; description: string }[]
@@ -376,8 +412,8 @@ describe("SettingsScreen services", () => {
     const days = screen.getByRole("spinbutton", { name: "Days until an invoice is due" })
     await user.clear(days)
     await user.type(days, "30{Enter}")
-    expect(log().getByText("Collect Colorado sales tax")).toBeInTheDocument()
-    expect(log().getByText("Sales tax percent")).toBeInTheDocument()
+    expect(pending().getByText(starts("Collect Colorado sales tax"))).toBeInTheDocument()
+    expect(pending().getByText(starts("Sales tax percent"))).toBeInTheDocument()
     await user.click(screen.getByRole("button", { name: "Save" }))
     await waitFor(() => expect(save).toHaveBeenCalled())
     expect((save.mock.calls[0]![0] as AdminData["settings"]).billing).toEqual({ dueDays: 30, collectsSalesTax: true, salesTaxPercent: 8.8 })

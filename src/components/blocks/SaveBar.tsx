@@ -13,6 +13,8 @@ import { cn } from "@/lib/utils"
 export interface SaveBarProps {
   /** how many fields changed since the last save */
   count: number
+  /** the unsaved edits in words ("Ryan Garner most repairs per day from 4 to 5"), listed under the count; they are not in the log until Save */
+  lines?: string[]
   /** what would stop a save, in words; Save is off while there are any */
   problems?: string[]
   pending?: boolean
@@ -25,7 +27,10 @@ export interface SaveBarProps {
   className?: string
 }
 
-export function SaveBar({ count, problems = [], pending = false, message, failed = false, onSave, onDiscard, className }: SaveBarProps) {
+/** More than this many lines fold into "and N more". */
+const MAX_LINES = 5
+
+export function SaveBar({ count, lines = [], problems = [], pending = false, message, failed = false, onSave, onDiscard, className }: SaveBarProps) {
   useEffect(() => {
     if (count === 0) return
     const ask = (e: BeforeUnloadEvent) => e.preventDefault()
@@ -52,6 +57,14 @@ export function SaveBar({ count, problems = [], pending = false, message, failed
           </div>
         )}
       </div>
+      {count > 0 && lines.length > 0 && (
+        <ul data-slot="save-bar-lines" aria-label="Unsaved changes" className="mt-2 space-y-0.5 text-sm text-muted-foreground">
+          {lines.slice(0, MAX_LINES).map((l) => (
+            <li key={l}>{l}</li>
+          ))}
+          {lines.length > MAX_LINES && <li>{`and ${lines.length - MAX_LINES} more`}</li>}
+        </ul>
+      )}
       {problems.length > 0 && (
         <ul className="mt-2 space-y-0.5 text-sm text-destructive">
           {problems.map((p) => (

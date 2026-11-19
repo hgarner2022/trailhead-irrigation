@@ -123,3 +123,28 @@ export const HoursProblem: Story = {
     await expect(canvas.getByRole("button", { name: "Save" })).toBeDisabled()
   },
 }
+
+/** An unsaved edit is listed in the save bar in words, and is not in the Changes log until Save. */
+export const UnsavedLine: Story = {
+  globals: { viewport: { value: "laptop", isRotated: false } },
+  play: async ({ canvas, userEvent }) => {
+    const field = await canvas.findByRole("spinbutton", { name: "Ryan Garner most repairs per day" })
+    await userEvent.clear(field)
+    await userEvent.type(field, "5{Enter}")
+    await expect(await canvas.findByText(/^Ryan Garner most repairs per day from \d+ to 5$/)).toBeInTheDocument()
+  },
+}
+
+/** The log words the API's raw window keys ("Fall blowout first bookable day from Oct 5 to Oct 1"). */
+export const WindowLines: Story = {
+  args: {
+    data: {
+      ...data,
+      settingsChanges: [
+        { id: "w1", at: "2026-11-10T16:00:00Z", who: "Hannah", field: "windows.blowout.opensOn", from: "2027-10-05", to: "2027-10-01" },
+        { id: "w2", at: "2026-11-10T16:00:01Z", who: "Hannah", field: "windows.blowout.closesOn", from: "2027-11-15", to: "2027-11-01" },
+      ],
+    },
+  },
+  globals: { viewport: { value: "laptop", isRotated: false } },
+}

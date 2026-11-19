@@ -22,6 +22,12 @@ export const Default: Story = {}
 /** Nothing changed and nothing said: no bar. After a save it says "Saved just now". */
 export const Empty: Story = { args: { count: 0, message: "Saved just now" } }
 
+/** The unsaved edits are listed under the count in words; they are not in the log until Save. */
+export const Lines: Story = { args: { count: 1, lines: ["Ryan Garner most repairs per day from 4 to 5"] } }
+
+/** More than five fold into "and N more". */
+export const ManyLines: Story = { args: { count: 7, lines: Array.from({ length: 7 }, (_, i) => `Setting ${i + 1} from a to b`) } }
+
 /** A problem turns Save off and says why under the count. */
 export const Problems: Story = { args: { count: 1, problems: ["Give every person a name before saving."] } }
 
