@@ -66,6 +66,22 @@ describe("people", () => {
     expect(await callApi(ctxFor(db, adminKey), peopleUpdate, { id: ryan.id, calendarFeedUrl: null, truck: "Truck 1" })).toMatchObject({ hasCalendarFeed: false, truck: "Truck 1" })
     await expect(callApi(ctxFor(db, adminKey), peopleUpdate, { id: "missing", name: "x" })).rejects.toMatchObject({ code: "not_found" })
   })
+  it("stores the hours, reads null as 09:00 to 17:00 elsewhere, and refuses a day that ends before it starts", async () => {
+    const made = await callApi(ctxFor(db, adminKey), peopleCreate, { name: "Hours Tech", hoursStart: "07:00", hoursEnd: "15:30" })
+    expect(made).toMatchObject({ hoursStart: "07:00", hoursEnd: "15:30" })
+    const later = await callApi(ctxFor(db, adminKey), peopleUpdate, { id: made.id, hoursStart: "08:00" })
+    expect(later).toMatchObject({ hoursStart: "08:00", hoursEnd: "15:30" })
+    // The other end is read as it stands: a start at 16:00 is after the 15:30 end.
+    await expect(callApi(ctxFor(db, adminKey), peopleUpdate, { id: made.id, hoursStart: "16:00" })).rejects.toMatchObject({ code: "unprocessable" })
+    await expect(callApi(ctxFor(db, adminKey), peopleUpdate, { id: made.id, hoursEnd: "08:00" })).rejects.toMatchObject({ code: "unprocessable" })
+    await expect(callApi(ctxFor(db, adminKey), peopleUpdate, { id: made.id, hoursEnd: "5pm" })).rejects.toMatchObject({ code: "invalid" })
+    // null clears one back to its default: a 07:00 start with the default 17:00 end is fine, a 18:00 start against it is not.
+    expect(await callApi(ctxFor(db, adminKey), peopleUpdate, { id: made.id, hoursStart: null, hoursEnd: null })).toMatchObject({ hoursStart: null, hoursEnd: null })
+    await expect(callApi(ctxFor(db, adminKey), peopleUpdate, { id: made.id, hoursStart: "18:00" })).rejects.toMatchObject({ code: "unprocessable" })
+    const plain = await callApi(ctxFor(db, adminKey), peopleCreate, { name: "Default Hours" })
+    expect(plain).toMatchObject({ hoursStart: null, hoursEnd: null })
+    await expect(callApi(ctxFor(db, adminKey), peopleCreate, { name: "Night Owl", hoursStart: "18:00" })).rejects.toMatchObject({ code: "unprocessable" })
+  })
   it("lets an owner step down while another owner stays, and refuses to demote the only one", async () => {
     const [first, second] = (await callApi(ctxFor(db, readKey), peopleList, { active: "true" })).data.filter((p) => p.role === "owner")
     expect((await callApi(ctxFor(db, adminKey), peopleUpdate, { id: second!.id, role: "admin" })).role).toBe("admin")

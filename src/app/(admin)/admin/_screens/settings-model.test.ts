@@ -3,10 +3,9 @@ import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import type { AdminData, ServiceItem } from "@/lib/admin/types"
 import { SERVICE_LIST } from "@/lib/services"
 import {
-  setServiceField, addArea, createKey, revokeKey, secretFor, SAMPLE_KEYS, clip, daysWords, moveTownInOrder, setAreaName, setBuffer,
-  setWindow, toggleAreaTown, type SettingsState,
+  setServiceField, createKey, revokeKey, secretFor, SAMPLE_KEYS, clip, daysWords, type SettingsState,
 } from "./settings-model"
-import { addPerson, removePerson, setCapacity, setPersonName, setPersonRole, setPersonText, setSeason, toggleWorkingDay } from "./settings-people"
+import { addPerson, removePerson, setCapacity, setHours, setPersonName, setTakesVisits, setPersonRole, setPersonText, setSeason, toggleWorkingDay } from "./settings-people"
 
 const data = snapshot as AdminData
 const state: SettingsState = { settings: data.settings, changes: [], keys: SAMPLE_KEYS, services: SERVICE_LIST as ServiceItem[] }
@@ -59,7 +58,7 @@ describe("people", () => {
     const next = setCapacity(state, "person_truck-1", "blowout", 12, actor)
     expect(next.settings.people[0].capacityByKind.blowout).toBe(12)
     expect(next.settings.people[0].capacityByKind.repair).toBe(4)
-    expect(last(next)).toMatchObject({ field: "Ryan Garner blowouts per day", from: "10", to: "12" })
+    expect(last(next)).toMatchObject({ field: "Ryan Garner most blowouts per day", from: "10", to: "12" })
     expect(setCapacity(state, "person_truck-1", "blowout", 1.5, actor)).toBe(state)
     expect(setCapacity(state, "person_truck-1", "blowout", -1, actor)).toBe(state)
     expect(setCapacity(state, "person_truck-1", "blowout", 10, actor)).toBe(state)
@@ -102,7 +101,7 @@ describe("people", () => {
     expect(last(cleared)).toMatchObject({ field: "Tech Two email", from: "sam@example.com", to: "None" })
     const noTruck = setPersonText(state, "person_truck-2", "truck", "", actor)
     expect(noTruck.settings.people[1].truck).toBeUndefined()
-    expect(last(noTruck)).toMatchObject({ field: "Tech Two truck", from: "Truck 2", to: "None" })
+    expect(last(noTruck)).toMatchObject({ field: "Tech Two schedule label", from: "Truck 2", to: "None" })
     expect(setPersonText(state, "person_truck-2", "phone", "", actor)).toBe(state)
   })
 
@@ -130,70 +129,57 @@ describe("people", () => {
   })
 })
 
-describe("areas", () => {
-  it("moves a town into an area and out of the one that had it", () => {
-    const next = toggleAreaTown(state, "area-longmont", "Firestone", actor)
-    expect(next.settings.areas.map((a) => a.towns)).toEqual([["Erie"], ["Longmont", "Firestone"], ["Louisville", "Lafayette", "Broomfield"]])
-    expect(last(next)).toMatchObject({ field: "Longmont towns", from: "Longmont", to: "Longmont, Firestone (moved from Erie and Firestone)" })
-    const out = toggleAreaTown(next, "area-longmont", "Longmont", actor)
-    expect(out.settings.areas[1].towns).toEqual(["Firestone"])
-    const none = toggleAreaTown(out, "area-longmont", "Firestone", actor)
-    expect(none.settings.areas[1].towns).toEqual([])
-    expect(last(none).to).toBe("None")
+describe("hours and takes visits", () => {
+  it("shows 09:00 to 17:00 for a person with no saved hours and logs the range", () => {
+    const next = setHours(state, "person_truck-2", "hoursStart", "07:30", actor)
+    expect(next.settings.people[1].hoursStart).toBe("07:30")
+    expect(last(next)).toMatchObject({ field: "Tech Two hours", from: "09:00 to 17:00", to: "07:30 to 17:00" })
+    const both = setHours(next, "person_truck-2", "hoursEnd", "15:00", actor)
+    expect(last(both)).toMatchObject({ from: "07:30 to 17:00", to: "07:30 to 15:00" })
   })
 
-  it("renames an area", () => {
-    const next = setAreaName(state, "area-north", "North", actor)
-    expect(next.settings.areas[0].name).toBe("North")
-    expect(last(next)).toMatchObject({ field: "Erie and Firestone name", to: "North" })
+  it("refuses a time that is not HH:MM and a day that would end before it starts", () => {
+    expect(setHours(state, "person_truck-2", "hoursStart", "7am", actor)).toBe(state)
+    expect(setHours(state, "person_truck-2", "hoursStart", "17:00", actor)).toBe(state)
+    expect(setHours(state, "person_truck-2", "hoursEnd", "09:00", actor)).toBe(state)
+    expect(setHours(state, "person_truck-2", "hoursEnd", "08:00", actor)).toBe(state)
+    expect(setHours(state, "nope", "hoursEnd", "15:00", actor)).toBe(state)
   })
 
-  it("moves a town up or down the season order and stays put at the ends", () => {
-    const next = moveTownInOrder(state, "fall", "Longmont", "up", actor)
-    expect(next.settings.fallTownOrder).toEqual(["Firestone", "Longmont", "Erie", "Broomfield", "Louisville", "Lafayette"])
-    expect(next.settings.springTownOrder).toEqual(state.settings.springTownOrder)
-    expect(last(next)).toMatchObject({ field: "Fall order", to: "Firestone, Longmont, Erie, Broomfield, Louisville, Lafayette" })
-    expect(moveTownInOrder(state, "fall", "Firestone", "up", actor)).toBe(state)
-    expect(moveTownInOrder(state, "spring", "Firestone", "down", actor)).toBe(state)
-    const spring = moveTownInOrder(state, "spring", "Lafayette", "down", actor)
-    expect(spring.settings.springTownOrder.slice(0, 2)).toEqual(["Louisville", "Lafayette"])
-    expect(last(spring).field).toBe("Spring order")
-  })
-})
-
-describe("capacity and windows", () => {
-  it("sets the buffers within 0 to 100", () => {
-    const next = setBuffer(state, "early", 25, actor)
-    expect(next.settings.bufferPercentEarly).toBe(25)
-    expect(last(next)).toMatchObject({ field: "Buffer, first two weeks", from: "20%", to: "25%" })
-    expect(setBuffer(state, "late", 101, actor)).toBe(state)
-    expect(last(setBuffer(state, "late", 15, actor)).field).toBe("Buffer, after the first two weeks")
+  it("puts a day back to its default with a blank, logging nothing when it already was", () => {
+    const set = setHours(state, "person_truck-2", "hoursEnd", "15:00", actor)
+    const back = setHours(set, "person_truck-2", "hoursEnd", "", actor)
+    expect(back.settings.people[1].hoursEnd).toBeUndefined()
+    expect(setHours(state, "person_truck-2", "hoursEnd", "", actor)).toBe(state)
+    // typing the default is no change: nothing is logged
+    expect(setHours(state, "person_truck-2", "hoursEnd", "17:00", actor)).toBe(state)
   })
 
-  it("sets a window's dates and lead weeks, refusing a bad date", () => {
-    const next = setWindow(state, "blowout", "opensOn", "2027-10-04", actor)
-    expect(next.settings.windows[2].opensOn).toBe("2027-10-04")
-    expect(last(next)).toMatchObject({ field: "Blowout window opens", from: "2027-10-01", to: "2027-10-04" })
-    expect(setWindow(state, "blowout", "opensOn", "October 4", actor)).toBe(state)
-    const lead = setWindow(state, "turn-on", "leadWeeks", 6, actor)
-    expect(lead.settings.windows[0].leadWeeks).toBe(6)
-    expect(last(lead)).toMatchObject({ field: "Turn-on window lead weeks", from: "4", to: "6" })
-    expect(setWindow(state, "turn-on", "leadWeeks", 2.5, actor)).toBe(state)
+  it("turns Takes visits on with a label of their own name and off by removing it", () => {
+    const added = addPerson(state, actor)
+    const id = added.settings.people[2].id
+    const on = setTakesVisits(added, id, true, actor)
+    expect(on.settings.people[2].truck).toBe("New person")
+    expect(last(on)).toMatchObject({ field: "New person takes visits", from: "No", to: "Yes" })
+    expect(setTakesVisits(on, id, true, actor)).toBe(on)
+    const off = setTakesVisits(on, id, false, actor)
+    expect(off.settings.people[2].truck).toBeUndefined()
+    expect(last(off)).toMatchObject({ from: "Yes", to: "No" })
+    expect(setTakesVisits(state, "nope", true, actor)).toBe(state)
   })
-
 })
 
 describe("the log", () => {
   it("gives every change its own id and keeps the earlier ones", () => {
     let s = state
-    s = setBuffer(s, "early", 25, actor)
-    s = setBuffer(s, "early", 30, { who: "Ryan", at: "2026-11-12T20:00:00Z" })
-    expect(s.changes.map((c) => [c.who, c.from, c.to])).toEqual([["Hannah", "20%", "25%"], ["Ryan", "25%", "30%"]])
+    s = setCapacity(s, "person_truck-1", "repair", 5, actor)
+    s = setCapacity(s, "person_truck-1", "repair", 6, { who: "Ryan", at: "2026-11-12T20:00:00Z" })
+    expect(s.changes.map((c) => [c.who, c.from, c.to])).toEqual([["Hannah", "4", "5"], ["Ryan", "5", "6"]])
     expect(new Set(s.changes.map((c) => c.id)).size).toBe(2)
   })
 })
 
-describe("more people, areas and keys", () => {
+describe("more people and keys", () => {
   it("sets the Jobber user and removes a person, logging both, and keeps the last owner", () => {
     const user = setPersonText(state, "person_truck-1", "jobberUserId", "jobber-user-9", actor)
     expect(user.settings.people[0].jobberUserId).toBe("jobber-user-9")
@@ -203,12 +189,6 @@ describe("more people, areas and keys", () => {
     expect(last(gone)).toMatchObject({ field: "People", from: "2 (Tech Two included)", to: "1 (Tech Two removed)" })
     expect(removePerson(state, "nope", actor)).toBe(state)
     expect(removePerson(state, "person_truck-1", actor)).toBe(state)
-  })
-
-  it("adds an empty area", () => {
-    const next = addArea(state, actor)
-    expect(next.settings.areas).toHaveLength(4)
-    expect(next.settings.areas[3]).toMatchObject({ name: "Area 4", towns: [] })
   })
 
   it("creates a key once and revokes it", () => {
@@ -230,36 +210,14 @@ describe("more people, areas and keys", () => {
 })
 
 describe("validation", () => {
-  it("refuses a date that is not on the calendar and a window that closes before it opens", () => {
-    expect(setWindow(state, "blowout", "opensOn", "2027-02-30", actor)).toBe(state)
-    expect(setWindow(state, "blowout", "opensOn", "2027-13-01", actor)).toBe(state)
-    expect(setWindow(state, "blowout", "opensOn", "2027-11-01", actor)).toBe(state) // closes Oct 31
-    expect(setWindow(state, "blowout", "closesOn", "2027-09-30", actor)).toBe(state) // opens Oct 1
-    expect(setWindow(state, "blowout", "opensOn", "2027-10-31", actor).settings.windows[2].opensOn).toBe("2027-10-31")
-    expect(setWindow(state, "blowout", "closesOn", "2027-10-01", actor).settings.windows[2].closesOn).toBe("2027-10-01")
-  })
-
-  it("caps lead weeks at 12 and capacity at 50", () => {
-    expect(setWindow(state, "turn-on", "leadWeeks", 13, actor)).toBe(state)
-    expect(setWindow(state, "turn-on", "leadWeeks", 12, actor).settings.windows[0].leadWeeks).toBe(12)
+  it("caps capacity at 50", () => {
     expect(setCapacity(state, "person_truck-1", "blowout", 51, actor)).toBe(state)
     expect(setCapacity(state, "person_truck-1", "blowout", 50, actor).settings.people[0].capacityByKind.blowout).toBe(50)
-    expect(setBuffer(state, "early", 100, actor).settings.bufferPercentEarly).toBe(100)
-    expect(setBuffer(state, "early", -1, actor)).toBe(state)
   })
 
   it("trims names and refuses an empty one", () => {
     expect(setPersonName(state, "person_truck-2", "  Blowout truck  ", actor).settings.people[1].name).toBe("Blowout truck")
     expect(setPersonName(state, "person_truck-2", "   ", actor)).toBe(state)
-    expect(setAreaName(state, "area-north", "  North ", actor).settings.areas[0].name).toBe("North")
-    expect(setAreaName(state, "area-north", "", actor)).toBe(state)
-  })
-
-  it("says where a town came from when it moves between areas", () => {
-    const next = toggleAreaTown(state, "area-longmont", "Erie", actor)
-    expect(last(next).to).toBe("Longmont, Erie (moved from Erie and Firestone)")
-    const plain = toggleAreaTown(next, "area-longmont", "Erie", actor)
-    expect(last(plain).to).toBe("Longmont")
   })
 })
 

@@ -1,5 +1,5 @@
 import "server-only"
-import { ROLE_WORDS } from "@/lib/admin/people"
+import { ROLE_WORDS, hoursWords } from "@/lib/admin/people"
 import type { Leaf } from "../settings/log"
 import type { PersonRow } from "./handlers"
 
@@ -20,10 +20,13 @@ export function personLeaves(before: PersonRow, after: PersonRow): Leaf[] {
   add("email", text(before.email), text(after.email))
   add("phone", text(before.phone), text(after.phone))
   add("role", ROLE_WORDS[before.role], ROLE_WORDS[after.role])
-  add("truck", text(before.truck), text(after.truck))
+  // A truck label is how a person is on the schedule: the log says that, and the label only when it is edited in place.
+  if (Boolean(before.truck) !== Boolean(after.truck)) add("takes visits", before.truck ? "Yes" : "No", after.truck ? "Yes" : "No")
+  else add("schedule label", text(before.truck), text(after.truck))
   add("Jobber user", text(before.jobberUserId), text(after.jobberUserId))
   add("working days", before.workingDays.map((d) => DAYS[d]).join(", "), after.workingDays.map((d) => DAYS[d]).join(", "))
-  for (const kind of Object.keys(KINDS) as (keyof typeof KINDS)[]) add(`${KINDS[kind]} per day`, String(before.capacityByKind[kind]), String(after.capacityByKind[kind]))
+  add("hours", hoursWords(before), hoursWords(after))
+  for (const kind of Object.keys(KINDS) as (keyof typeof KINDS)[]) add(`most ${KINDS[kind]} per day`, String(before.capacityByKind[kind]), String(after.capacityByKind[kind]))
   add("season from", before.seasonStart || "All year", after.seasonStart || "All year")
   add("season to", before.seasonEnd || "All year", after.seasonEnd || "All year")
   return leaves

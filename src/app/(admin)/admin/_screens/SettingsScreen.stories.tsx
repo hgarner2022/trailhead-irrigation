@@ -32,15 +32,15 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-/** The People tab: everyone who works here, owners first, with their role, truck, days, capacities and season. */
+/** The People tab: everyone who works here, owners first, with their role, days, hours and most per day. */
 export const People: Story = {
-  globals: { viewport: { value: "wide", isRotated: false } },
+  globals: { viewport: { value: "laptop", isRotated: false } },
 }
 
 /** The Services tab: the catalogue with what each visit includes, the price rule, minutes, taxable and active. */
 export const Services: Story = {
   args: { defaultTab: "services" },
-  globals: { viewport: { value: "wide", isRotated: false } },
+  globals: { viewport: { value: "laptop", isRotated: false } },
 }
 
 /** On a phone the Services table scrolls inside its card, the description box keeping its width. */
@@ -52,46 +52,53 @@ export const ServicesPhone: Story = {
 /** The Billing tab: invoices are due in 14 days and sales tax is off, so the percent is not asked for. */
 export const Billing: Story = {
   args: { defaultTab: "billing" },
-  globals: { viewport: { value: "wide", isRotated: false } },
+  globals: { viewport: { value: "laptop", isRotated: false } },
 }
 
 /** Sales tax switched on: the percent field appears. */
 export const BillingWithSalesTax: Story = {
   args: { defaultTab: "billing" },
-  globals: { viewport: { value: "wide", isRotated: false } },
+  globals: { viewport: { value: "laptop", isRotated: false } },
   play: async ({ canvas, userEvent }) => {
     await userEvent.click(await canvas.findByRole("checkbox", { name: "Collect Colorado sales tax" }))
     await expect(await canvas.findByRole("textbox", { name: "Sales tax percent" })).toBeInTheDocument()
   },
 }
 
-export const Areas: Story = {
-  args: { defaultTab: "areas" },
-  globals: { viewport: { value: "wide", isRotated: false } },
-}
-
-export const CapacityAndWindows: Story = {
-  args: { defaultTab: "capacity" },
-  globals: { viewport: { value: "wide", isRotated: false } },
-}
-
 export const Messages: Story = {
   args: { defaultTab: "messages" },
-  globals: { viewport: { value: "wide", isRotated: false } },
+  globals: { viewport: { value: "laptop", isRotated: false } },
 }
 
 export const ApiKeys: Story = {
   args: { defaultTab: "keys" },
-  globals: { viewport: { value: "wide", isRotated: false } },
+  globals: { viewport: { value: "laptop", isRotated: false } },
 }
 
 /** Seven changes already logged, newest first under the tabs. */
 export const WithChanges: Story = {
   args: { data: { ...data, settingsChanges: [...data.settingsChanges, ...more] } },
-  globals: { viewport: { value: "wide", isRotated: false } },
+  globals: { viewport: { value: "laptop", isRotated: false } },
 }
 
-/** On a phone the tab list scrolls sideways and the People table scrolls inside its card. */
+/** On a phone Settings is a list of its five entries; pressing one opens it with a way back. */
 export const Phone: Story = {
   globals: { viewport: { value: "phone", isRotated: false } },
+}
+
+/** On a phone, one entry open: People, with "Settings" to go back. */
+export const PhoneEntry: Story = {
+  args: { defaultTab: "people" },
+  globals: { viewport: { value: "phone", isRotated: false } },
+}
+
+/** The first change shows the save bar: the count, Discard and Save. */
+export const Unsaved: Story = {
+  globals: { viewport: { value: "laptop", isRotated: false } },
+  play: async ({ canvas, userEvent }) => {
+    const name = await canvas.findByRole("textbox", { name: "Tech Two name" })
+    await userEvent.clear(name)
+    await userEvent.type(name, "Blowout truck{Enter}")
+    await expect(await canvas.findByText("1 unsaved change")).toBeInTheDocument()
+  },
 }

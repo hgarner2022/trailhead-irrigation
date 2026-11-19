@@ -72,7 +72,7 @@ export const saveSettings = async (settings: OrganizationSettings, services?: Se
 /** One person's fields as people.create takes them; on update every one is optional and a text field takes null to clear it. */
 type PersonFields = {
   name: string; initials?: string; email?: string; phone?: string; role?: "owner" | "admin" | "tech"; truck?: string; jobberUserId?: string; calendarFeedUrl?: string | null
-  workingDays?: string[]; capacityByKind?: Record<string, number>; seasonStart?: string; seasonEnd?: string
+  workingDays?: string[]; capacityByKind?: Record<string, number>; seasonStart?: string; seasonEnd?: string; hoursStart?: string; hoursEnd?: string
 }
 type PersonChanges = { [K in keyof PersonFields]?: PersonFields[K] | null }
 export const createPerson = async (input: PersonFields) => act((ctx) => nothing(callApi(ctx, peopleCreate, input)))

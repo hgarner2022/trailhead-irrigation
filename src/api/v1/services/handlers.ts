@@ -4,7 +4,10 @@ import { z } from "zod"
 import * as s from "@/db/schema"
 import { ApiError, notFound } from "../../core/errors"
 import { defineHandler } from "../../core/handler"
+import { isMonthDay } from "@/lib/services-window"
 import { Id, idInput, VisitKind } from "../shared"
+import { logSettingsChanges } from "../settings/log"
+import { serviceLeaves } from "./log"
 
 export const ServiceOut = z.object({
   id: Id, key: z.string(), name: z.string(), description: z.string().nullable().describe("What the visit includes, with no price in it."),
@@ -12,6 +15,8 @@ export const ServiceOut = z.object({
   minZones: z.number().int().nullable(), maxZones: z.number().int().nullable(), includedZones: z.number().int().nullable(),
   price: z.number().int().nullable().describe("Whole dollars; null when the service is quoted."),
   extraZonePrice: z.number().int().nullable(), slotMinutes: z.number().int(), quoteOnly: z.boolean(),
+  bookableFrom: z.string().nullable().describe("The first day of the span a visit may fall in, \"MM-DD\", repeating every year; null with bookableTo null is all year."),
+  bookableTo: z.string().nullable().describe("The last day of the span, \"MM-DD\"; before bookableFrom wraps New Year."),
 })
 // No `.default()` here: zod 4 keeps a default through `.partial()`, so a default on a shared field would reset it on every PATCH that left it out. The create input adds the defaults.
 const fields = {
@@ -21,11 +26,12 @@ const fields = {
   minZones: z.number().int().min(1).max(16).optional(), maxZones: z.number().int().min(1).max(16).optional(), includedZones: z.number().int().min(1).max(16).optional(),
   price: z.number().int().min(0).max(100_000).optional(), extraZonePrice: z.number().int().min(0).max(1000).optional(),
   slotMinutes: z.number().int().min(15).max(480).multipleOf(15), quoteOnly: z.boolean(),
+  bookableFrom: z.string().refine(isMonthDay, "Use a month and day like 04-15").nullable().optional(), bookableTo: z.string().refine(isMonthDay, "Use a month and day like 04-15").nullable().optional(),
 }
 const createInput = z.object({ ...fields, bookable: fields.bookable.default(true), taxable: fields.taxable.default(false), active: fields.active.default(true), quoteOnly: fields.quoteOnly.default(false) })
 const out = (r: typeof s.service.$inferSelect) => ({
   id: r.id, key: r.key, name: r.name, description: r.description, kind: r.kind, bookable: r.bookable, taxable: r.taxable, active: r.active,
-  minZones: r.minZones, maxZones: r.maxZones, includedZones: r.includedZones, price: r.price, extraZonePrice: r.extraZonePrice, slotMinutes: r.slotMinutes, quoteOnly: r.quoteOnly,
+  minZones: r.minZones, maxZones: r.maxZones, includedZones: r.includedZones, price: r.price, extraZonePrice: r.extraZonePrice, slotMinutes: r.slotMinutes, quoteOnly: r.quoteOnly, bookableFrom: r.bookableFrom, bookableTo: r.bookableTo,
 })
 type Ctx = { db: import("@/db/types").Database; organizationId: string }
 
@@ -70,16 +76,18 @@ export const servicesCreate = defineHandler({
 })
 
 export const servicesUpdate = defineHandler({
-  name: "services.update", method: "PATCH", path: "/services/{id}", scope: "admin", summary: "Change a service's name, what it includes, price, zone band, slot length, taxable or active. The key does not change; fields left out keep their values.",
+  name: "services.update", method: "PATCH", path: "/services/{id}", scope: "admin", summary: "Change a service's name, what it includes, price, zone band, slot length, online booking, the dates it may be booked in, taxable or active. The key does not change; fields left out keep their values.",
   input: z.object(fields).omit({ key: true }).partial().extend({ id: idInput.shape.id }), output: ServiceOut,
   async run(ctx, { id, ...changes }) {
-    await load(ctx, id)
+    const before = await load(ctx, id)
     // Only a field left out is dropped; null reaches the UPDATE and clears the description.
     const defined: Record<string, unknown> = Object.fromEntries(Object.entries(changes).filter(([, v]) => v !== undefined))
     // Deactivating also closes online booking, as services.deactivate does; reactivating leaves bookable as it is.
     if (defined.active === false) defined.bookable = false
     if (Object.keys(defined).length) await ctx.db.update(s.service).set(defined).where(eq(s.service.id, id))
-    return out(await load(ctx, id))
+    const after = await load(ctx, id)
+    await logSettingsChanges(ctx, serviceLeaves(before, after))
+    return out(after)
   },
 })
 

@@ -13,26 +13,20 @@
 //   new-block-stories   each new block's stories file has Default, Empty and Phone
 import { existsSync, readFileSync } from "node:fs"
 
-/** The nine blocks step 1 adds; each needs Default, Empty and Phone stories. */
-export const NEW_BLOCKS = ["RecordPanel", "RecordFooter", "ConfirmDialog", "SplitButton", "MoneyCell", "FormRow", "SectionHeading", "StatusPill", "SegmentedControl"]
+/** The nine blocks step 1 adds, and step 6's SettingsList and SaveBar; each needs Default, Empty and Phone stories. */
+export const NEW_BLOCKS = ["RecordPanel", "RecordFooter", "ConfirmDialog", "SplitButton", "MoneyCell", "FormRow", "SectionHeading", "StatusPill", "SegmentedControl", "SettingsList", "SaveBar"]
 
 /**
  * file (path suffix) -> { rule: "date, the build-order step that removes it" }. A file in here still fails the rule; it is the debt, and each
  * entry names the step of docs/plans/2026-11-18-admin-holistic-design.md, section 12, that pays it off. Delete the entry when it does.
  */
 export const ALLOW = {
-  // columns and words: the grids get their final columns (step 9); People gets Takes visits (step 6)
+  // columns and words: the grids get their final columns (step 9)
   "_screens/customers-columns.tsx": { columns: "Nov 18 2026, step 9: the final column sets (ten today, eight then)" },
   "_screens/jobs-columns.tsx": { columns: "Nov 18 2026, step 9: the final column sets (nine today, eight then)" },
-  "_screens/settings-tabs/People.tsx": { words: "Nov 18 2026, step 6: Takes visits replaces the truck label", "no-table-label": "Nov 18 2026, step 6: People becomes a list with a sheet" },
-  // overlays: New job moves onto the sheet recipe (step 2) and Settings onto its shell (step 6)
+  // overlays: New job moves onto the sheet recipe (step 2)
   "_screens/NewJob.tsx": { overlays: "Nov 18 2026, step 2: New job becomes SidePanel variant sheet", "no-table-label": "Nov 18 2026, step 2: New job's fields become FormRows" },
-  "_screens/settings-tabs/ApiKeys.tsx": { overlays: "Nov 18 2026, step 6: Settings shell", "no-table-label": "Nov 18 2026, step 6: Settings shell (FormRow and the list recipe)" },
-  "_screens/settings-tabs/Billing.tsx": { "no-table-label": "Nov 18 2026, step 6: Settings shell (FormRow)" },
-  "_screens/settings-tabs/Services.tsx": { "no-table-label": "Nov 18 2026, step 6: Services becomes a list with a sheet" },
-  "_screens/settings-tabs/Messages.tsx": { overlays: "Nov 18 2026, step 6: Settings shell" },
-  "_screens/settings-tabs/fields.tsx": { overlays: "Nov 18 2026, step 6: Settings shell (ConfirmButton becomes ConfirmDialog)" },
-  // forms: New job's fields become FormRows with the sheet recipe (step 2); Settings fields with the shell (step 6)
+  // forms: New job's fields become FormRows with the sheet recipe (step 2)
   "_screens/CustomerPicker.tsx": { "no-table-label": "Nov 18 2026, step 2: New job's fields become FormRows" },
   "_screens/NewJobPass.tsx": { "no-table-label": "Nov 18 2026, step 2: New job's fields become FormRows" },
   "_screens/NewJobService.tsx": { "no-table-label": "Nov 18 2026, step 2: New job's fields become FormRows" },

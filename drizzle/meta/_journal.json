@@ -162,6 +162,13 @@
       "when": 1794999169496,
       "tag": "0022_legacy_drop",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1795053437241,
+      "tag": "0023_step6_hours_dates",
+      "breakpoints": true
     }
   ]
 }
