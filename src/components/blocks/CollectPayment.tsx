@@ -3,6 +3,7 @@
 import { useId, useState, useTransition, type ReactNode } from "react"
 import { createPortal } from "react-dom"
 import { Button } from "@/components/ui/button"
+import { ConfirmDialog } from "./ConfirmDialog"
 import { Input } from "@/components/ui/input"
 import { chargingWords, paidWords, receiptLine, type CollectPlan, type PayChoice, type PayOption } from "@/lib/money/collect"
 import { cn } from "@/lib/utils"
@@ -33,6 +34,12 @@ export interface CollectPaymentProps {
   /** Leave it unpaid: nothing is written */
   onLater: () => void
   onClose: () => void
+  /** the words on the one button for the chosen way; the plan's own when left out */
+  buttonLabel?: (picked: PayOption) => string
+  /** the words of the confirmation the button opens (what happens, to whom, how much); no dialog when left out or when it answers null */
+  confirmFor?: (picked: PayOption, reference: string) => { title: string; message: string; confirmLabel: string } | null
+  /** a quiet "Not now" beside the button: leaves the job Done and unpaid, writes nothing */
+  notNow?: boolean
   /** called once the money has gone through (or the invoice has), so a panel can drop its Cancel and leave the one Close */
   onSettled?: () => void
   className?: string
@@ -58,7 +65,7 @@ function Choice({ option, checked, disabled, onPick }: { option: PayOption; chec
   )
 }
 
-export function CollectPayment({ plan, summary, firstName, onCharge, onRecord, onInvoice, onLater, onClose, onSettled, className }: CollectPaymentProps) {
+export function CollectPayment({ plan, summary, firstName, onCharge, onRecord, onInvoice, onLater, onClose, buttonLabel, notNow, confirmFor, onSettled, className }: CollectPaymentProps) {
   const [choice, setChoice] = useState<PayChoice>(plan.initial)
   const [more, setMore] = useState(false)
   const [reference, setReference] = useState("")
@@ -66,6 +73,7 @@ export function CollectPayment({ plan, summary, firstName, onCharge, onRecord, o
   const [problem, setProblem] = useState(plan.declined ? "The card didn't go through. Choose another way." : "")
   const [result, setResult] = useState<{ title: string; line: string } | null>(null)
   const [pending, start] = useTransition()
+  const [asking, setAsking] = useState<{ title: string; message: string; confirmLabel: string } | null>(null)
   const shown = [...plan.options, ...(more ? plan.anotherWay : [])]
   const picked = shown.find((o) => o.value === choice) ?? shown[0]!
   const busy = pending || plan.charging
@@ -84,6 +92,11 @@ export function CollectPayment({ plan, summary, firstName, onCharge, onRecord, o
   const press = () => {
     setProblem("")
     if (picked.value === "later") return onLater()
+    const ask = confirmFor?.(picked, reference)
+    if (ask) return setAsking(ask)
+    run()
+  }
+  const run = () => {
     start(async () => {
       if (picked.value === "card") settle(await onCharge(), { title: paidWords("card_on_file"), line: receiptLine(firstName) })
       else if (picked.value === "invoice") settle(await onInvoice(), { title: "Invoice sent", line: `A pay link went to ${firstName}.` })
@@ -143,9 +156,31 @@ export function CollectPayment({ plan, summary, firstName, onCharge, onRecord, o
         {problem}
       </p>
       {place(
-        <Button type="button" className={cn("min-h-11 w-full sm:w-auto", !slot && "sm:self-start")} disabled={busy || (handed && plan.needsAmount && !Number(amount))} onClick={press}>
-          {picked.button}
-        </Button>,
+        <div className={cn("flex flex-wrap items-center gap-2", !slot && "w-full")}>
+          <Button type="button" className="min-h-11 w-full sm:w-auto" disabled={busy || (handed && plan.needsAmount && !Number(amount))} onClick={press}>
+            {buttonLabel ? buttonLabel(picked) : picked.button}
+          </Button>
+          {notNow && picked.value !== "later" && (
+            <Button type="button" variant="ghost" className="min-h-11 text-muted-foreground" disabled={busy} onClick={onLater}>
+              Not now
+            </Button>
+          )}
+        </div>,
+      )}
+      {asking && (
+        <ConfirmDialog
+          open
+          onOpenChange={(o) => !o && setAsking(null)}
+          title={asking.title}
+          message={asking.message}
+          confirmLabel={asking.confirmLabel}
+          slot="collect-confirm"
+          onConfirm={async () => {
+            setAsking(null)
+            run()
+            return { ok: true }
+          }}
+        />
       )}
     </div>
   )

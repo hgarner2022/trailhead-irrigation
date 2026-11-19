@@ -4,6 +4,7 @@ import { SectionCard } from "./SectionCard"
 import { SummaryBand } from "./SummaryBand"
 import { AsideCard } from "./AsideCard"
 import { RecordFacts } from "./RecordPanel"
+import { Calendar } from "lucide-react"
 import { StatusPill } from "./StatusPill"
 
 describe("SectionCard", () => {
@@ -28,6 +29,13 @@ describe("SummaryBand", () => {
     expect(screen.getByText("When")).toBeInTheDocument()
     expect(screen.getByText("$145")).toHaveClass("text-destructive")
     expect(screen.getByText("Tue, Nov 24")).toHaveClass("text-navy")
+  })
+
+  it("draws an icon in a cream circle only for a cell that has one", () => {
+    const { container } = render(<SummaryBand items={[{ label: "When", value: "Tue", icon: Calendar }, { label: "Who", value: "Ryan" }]} />)
+    const icons = container.querySelectorAll("[data-slot=summary-icon]")
+    expect(icons).toHaveLength(1)
+    expect(icons[0]).toHaveClass("rounded-full", "bg-cream")
   })
 })
 

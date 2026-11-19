@@ -8,7 +8,9 @@ import { SummaryBand } from "@/components/blocks/SummaryBand"
 import { TripRow } from "@/components/blocks/TripRow"
 import type { MultiTripData, TripData } from "./trip-fixtures"
 import { PHONE_LINK } from "./trip-fixtures"
-import { Actions, Aside, Badges, BillingCard, EditLink, MessagesCard, Notice, bandItems, hasFooter } from "./JobPageParts"
+import Link from "next/link"
+import { Actions, Aside, Badges, BillingCard, CONTACT, EditLink, MessagesCard, Notice, bandItems, hasFooter } from "./JobPageParts"
+import type { ConfirmFacts } from "./confirm-copy"
 
 // A job with more than one trip (docs/plans/2026-11-19-job-object-design.md): a Season Pass, or a repair with a return trip, on the same page
 // frame as the one-trip job (docs/plans/2026-11-19-admin-page-layout-research.md). The band reads Next visit, Who, Where, Total; the main
@@ -33,7 +35,12 @@ function bandOf(data: MultiTripData) {
   })
 }
 
+function factsOf(data: MultiTripData): ConfirmFacts {
+  return { first: "Andrea", service: data.pass ? "Season Pass" : "repair", amount: "$145", phone: CONTACT.sms, address: "480 Briggs St", cardWords: "Visa ending 4242", dueOn: "Dec 2" }
+}
+
 function TripsPage({ data }: { data: MultiTripData }) {
+  const facts = factsOf(data)
   const where = data.columns.find((c) => c.heading === "Where")?.rows ?? []
   return (
     <RecordPage
@@ -44,7 +51,7 @@ function TripsPage({ data }: { data: MultiTripData }) {
       notice={data.notice ? <Notice>{data.notice}</Notice> : undefined}
       band={<SummaryBand items={bandOf(data)} />}
       aside={<Aside customer="Andrea Dalton" phone={PHONE_LINK} where={where} notes={data.notes} />}
-      actions={hasFooter(data.footer) ? <Actions plan={data.footer} /> : undefined}
+      actions={hasFooter(data.footer) ? <Actions plan={data.footer} facts={facts} /> : undefined}
     >
       <SectionCard title={data.tripsHeading} id="trips-h" flush>
         <RecordList className="mt-0 px-5">
@@ -56,12 +63,20 @@ function TripsPage({ data }: { data: MultiTripData }) {
       {data.pass && (
         <SectionCard title="Season Pass" id="pass-h">
           <PassCard pass={data.pass} size="full" interactive={false} className="max-w-full" />
+          {data.renewal && (
+            <p data-slot="pass-renewal" className="mt-3 text-sm">
+              {data.renewal.kind === "from" ? "Renewed from " : "Renewed as "}
+              <Link href={`/admin/jobs?job=${data.renewal.number}`} className="rounded-sm font-medium text-primary-dark underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50">
+                {data.renewal.number}
+              </Link>
+            </p>
+          )}
         </SectionCard>
       )}
       <SectionCard title="What's included" id="included-h" action={data.pass || data.pills.some((p) => p.status === "cancelled") ? undefined : <EditLink />}>
         <LineItemList lines={data.lines} totals={data.totals} />
       </SectionCard>
-      <BillingCard data={{ billing: data.billing }} />
+      <BillingCard data={{ billing: data.billing }} facts={facts} />
       <MessagesCard messages={data.messages} />
     </RecordPage>
   )

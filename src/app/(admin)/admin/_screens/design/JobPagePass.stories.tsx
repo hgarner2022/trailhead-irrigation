@@ -49,6 +49,15 @@ export const BothDonePhone: Story = pass("both-done", phone)
 export const PassCanceled: Story = pass("canceled", laptop)
 export const PassCanceledPhone: Story = pass("canceled", phone)
 
+const renewedFrom: Story = { args: { data: passPageOf("ahead", { kind: "from", number: "TH-2026-0003" }) } }
+const renewedAs: Story = { args: { data: { ...passPageOf("both-done", { kind: "as", number: "TH-2027-0008" }), title: "Season Pass TH-2026-0003" } } }
+
+/** Ryan sees "Renewed from TH-2026-0003" under the pass card, a link to last season's pass. */
+export const RenewedFrom: Story = { ...renewedFrom, globals: laptop }
+
+/** Ryan sees "Renewed as TH-2027-0008" on last season's pass once the renewal exists, a link to the new one. */
+export const RenewedAs: Story = { ...renewedAs, globals: laptop }
+
 /** Ryan sees a repair with its first trip done and paid and a return trip scheduled, as two rows. The action is Mark done on the second row. */
 export const ReturnTrip: Story = back(laptop)
 export const ReturnTripPhone: Story = back(phone)

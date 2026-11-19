@@ -51,14 +51,14 @@ export function RecordList({ children, className, ...rest }: { children: ReactNo
 export const RECORD_ROW = "min-h-11 gap-3 py-1.5"
 
 /** The left of a row: a title over a detail, each on one line with an ellipsis. */
-export function RecordRowText({ title, detail, strong }: { title: string; detail?: string; strong?: boolean }) {
+export function RecordRowText({ title, detail, strong, wrap }: { title: string; detail?: string; strong?: boolean; wrap?: boolean }) {
   return (
     <span className="block min-w-0 flex-1">
       <span className={cn("block truncate", strong ? "font-semibold" : "font-medium")} title={title}>
         {title}
       </span>
       {detail ? (
-        <span className="block truncate text-muted-foreground" title={detail}>
+        <span className={cn("block text-muted-foreground", !wrap && "truncate")} title={detail}>
           {detail}
         </span>
       ) : null}
