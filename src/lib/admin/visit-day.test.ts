@@ -29,6 +29,16 @@ describe("visitDayOf", () => {
   })
 })
 
+describe("one day-hours truth", () => {
+  it("reads the scheduler's default workday from the people's default hours, 9 to 5", async () => {
+    const { WORKDAY, WORKDAY_MINUTES } = await import("./calendar")
+    const { DEFAULT_HOURS, hoursMinutes } = await import("./people")
+    expect(WORKDAY).toEqual({ startHour: 9, endHour: 17 })
+    expect(WORKDAY.startHour * 60).toBe(Number(DEFAULT_HOURS.start.slice(0, 2)) * 60)
+    expect(WORKDAY_MINUTES).toBe(hoursMinutes({}))
+  })
+})
+
 describe("wasScheduledDay", () => {
   it("is the scheduled day only when a done visit was done on another day", () => {
     expect(wasScheduledDay(done())).toBe("2026-11-20")

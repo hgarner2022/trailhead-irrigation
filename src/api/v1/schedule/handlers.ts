@@ -6,6 +6,7 @@ import { ApiError, notFound } from "../../core/errors"
 import { defineHandler } from "../../core/handler"
 import { addDays, byPrincipal, capacityKind, Day, Id, Town, today, VisitKind, weekdayOf } from "../shared"
 import { blockedMinutes, capacityAfterBlocks } from "@/lib/admin/calendar"
+import { hoursOf } from "@/lib/admin/people"
 import { runSchedule } from "@/lib/scheduling/server/run"
 import { loadBlocks } from "@/lib/jobber-feed"
 import { openSlots, spreadDays } from "@/lib/pass/server/area-days"
@@ -173,8 +174,10 @@ export const scheduleOfferDays = defineHandler({
   output: z.object({ days: z.array(z.object({ day: Day, ...slotPerson, start: z.string().describe("HH:MM, Mountain."), window: z.string().describe("The two-hour window, \"8 to 10 am\".") })) }),
   async run(ctx, input) {
     const slots = await openSlots(ctx.db, { id: "", organizationId: ctx.organizationId, kind: input.kind, town: input.town }, today(ctx), input.season)
-    // Ordering a day starts its first stop at FIRST_STOP (8:00), so no window opens earlier than that.
-    const opens = (start: string) => (start < "08:00" ? "08:00" : start)
-    return { days: spreadDays(slots).map((x) => ({ day: x.day, personId: x.personId, personName: x.personName, start: opens(x.start), window: windowText(opens(x.start)) })) }
+    // Ordering a day starts its first stop when the person's day starts (`hoursOf`), so no window opens earlier than that.
+    const people = await ctx.db.select({ id: s.person.id, hoursStart: s.person.hoursStart, hoursEnd: s.person.hoursEnd }).from(s.person).where(eq(s.person.organizationId, ctx.organizationId))
+    const startOf = new Map(people.map((p) => [p.id, hoursOf(p).start]))
+    const opens = (personId: string, start: string) => { const first = startOf.get(personId) ?? hoursOf({}).start; return start < first ? first : start }
+    return { days: spreadDays(slots).map((x) => ({ day: x.day, personId: x.personId, personName: x.personName, start: opens(x.personId, x.start), window: windowText(opens(x.personId, x.start)) })) }
   },
 })
