@@ -93,7 +93,7 @@ describe("two weeks before", () => {
     // a window is a message told the day before: two weeks out the text states the day only
     expect(rows[0]!.body).toContain("Wed, May 19")
     expect(rows[0]!.body).not.toContain("8 to 10 am")
-    expect(rows[0]!.body).toContain("Need another day? Pick another day: https://site.test/account/visits/p1-turn-on?t=")
+    expect(rows[0]!.body).toContain("Last day to change online: ")
     expect(rows[0]!.body).toContain("Reply STOP to opt out.")
   })
 })
