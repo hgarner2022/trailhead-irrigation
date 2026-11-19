@@ -91,7 +91,7 @@ export function HomeScreen({ customer, jobs, today, pass, days = {}, onReschedul
               <VisitRow key={r.id} href={r.href} dayWords={r.dayWords} service={r.service} label={r.label} street={r.street} who={r.who} money={r.money} tone={r.tone} pill={r.pill} receiptHref={r.receiptId ? `/account/receipts/${r.receiptId}` : null} />
             ))}
           </ul>
-          <Link href="/account/visits" className="inline-block text-base font-semibold text-primary-deep underline underline-offset-2">
+          <Link href="/account/visits" className="inline-flex min-h-11 items-center text-base font-semibold text-primary-deep underline underline-offset-2">
             See all visits
           </Link>
         </section>

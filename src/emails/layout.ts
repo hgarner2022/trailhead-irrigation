@@ -70,6 +70,9 @@ export const lead = (text: string) => `<p style="margin:0 0 24px;${type(SIZES.le
 /** A 16px paragraph: a note before the button, never after it. */
 export const paragraph = (text: string) => `<p style="margin:0 0 16px;${type(SIZES.body, 24, C.text)}">${esc(text)}</p>`
 
+/** A paragraph that carries markup the caller already escaped (a phone link inside a sentence). */
+export const paragraphHtml = (inner: string) => `<p style="margin:0 0 16px;${type(SIZES.body, 24, C.text)}">${inner}</p>`
+
 /** 14px quiet text, only where a fact needs it ("The link is good for 24 hours."). */
 export const smallPrint = (text: string) => `<p style="margin:0 0 24px;${type(SIZES.small, 21, C.quiet, "overflow-wrap:anywhere;word-break:break-word")}">${esc(text)}</p>`
 

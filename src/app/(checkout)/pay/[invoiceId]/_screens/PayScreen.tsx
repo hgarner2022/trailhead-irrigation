@@ -3,6 +3,7 @@ import { CheckCircle2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { BUSINESS } from "@/emails/format"
+import { textRyanHref } from "@/lib/portal/words"
 import { PayForm, type PayAction } from "./PayForm"
 import { dueWords, lineTotal, money, paidWords, payLabel, type PayBill } from "./pay-model"
 
@@ -74,22 +75,29 @@ function Paid({ bill }: { bill: PayBill }) {
         <CheckCircle2 className="size-5 shrink-0 text-positive" aria-hidden />
         {paidWords(bill)}
       </p>
-      {bill.receiptUrl && (
-        <Button asChild variant="outline" size="lg" className="mt-4 w-full">
-          <a href={bill.receiptUrl}>View the receipt</a>
-        </Button>
-      )}
+      {/* The receipt right here (UX audit row 13): the card receipt once Stripe has one, else the customer's visits, where every receipt is. */}
+      <Button asChild variant="outline" size="lg" className="mt-4 w-full">
+        <a href={bill.receiptUrl ?? "/account/visits"}>View the receipt</a>
+      </Button>
+      <Button asChild variant="ghost" size="lg" className="mt-2 w-full">
+        <a href="/account">Open your Trailhead account</a>
+      </Button>
     </>
   )
 }
 
 function Canceled() {
+  const link = "font-medium text-primary-dark underline underline-offset-2 hover:text-primary-deep"
   return (
     <div data-slot="pay-cancelled" className="border-y border-border py-6">
       <p className="text-base font-medium text-foreground">This invoice was voided.</p>
       <p className="mt-1 text-sm text-muted-foreground">
-        Nothing is due. Questions? Call Ryan at{" "}
-        <a href={BUSINESS.phoneTel} className="font-medium text-primary-dark underline underline-offset-2 hover:text-primary-deep">
+        {"Nothing is due. "}
+        <a href={textRyanHref("Hi Ryan, I have a question about a voided invoice.")} className={link}>
+          Text Ryan
+        </a>
+        {" if you have a question, at "}
+        <a href={BUSINESS.phoneTel} className={link}>
           {BUSINESS.phone}
         </a>
         .

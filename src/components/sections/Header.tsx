@@ -7,6 +7,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useEffect, useId, useRef, useState } from "react"
 import { Menu, X, ChevronDown } from "lucide-react"
+import { AccountLink } from "@/components/sections/AccountLink"
 import { SeasonalPill } from "@/components/sections/SeasonalPill"
 import {
   CITY_LINKS,
@@ -163,9 +164,7 @@ export function Header() {
                 <a href={PHONE_TEL} className="text-sm font-semibold text-navy hover:text-primary transition-colors whitespace-nowrap">
                   {PHONE_DISPLAY}
                 </a>
-                <Link href="/account/sign-in" className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors whitespace-nowrap">
-                  Sign in
-                </Link>
+                <AccountLink className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors whitespace-nowrap" />
                 <Link href="/book" className={cn(buttonVariants({ size: "sm" }), "h-9 px-4 text-sm")}>
                   Book Online
                 </Link>
@@ -174,9 +173,7 @@ export function Header() {
 
             {/* Mobile: logo, a quiet Sign in and the hamburger; the sticky bottom bar carries Call + Book. */}
             <div className="ml-auto flex items-center gap-2 lg:hidden">
-              <Link href="/account/sign-in" className="px-2 py-2 text-sm font-medium text-muted-foreground hover:text-primary">
-                Sign in
-              </Link>
+              <AccountLink className="inline-flex min-h-11 items-center px-2 text-sm font-medium text-muted-foreground hover:text-primary" />
               <button
                 type="button"
                 onClick={() => setMobileOpen(true)}

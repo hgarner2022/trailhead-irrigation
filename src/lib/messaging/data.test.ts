@@ -78,14 +78,14 @@ describe("a person who is a label, not a name", () => {
     expect((await visitWhoDay(db, "p4-turn-on")).who).toBeNull()
     const visit = { ...facts, address: "480 Briggs St", name: "fall blowout" }
     expect(onTheWayText({ ...base, visit }, { optOut: false })).toBe(`Trailhead: We're on the way to 480 Briggs St for your fall blowout. Your Trailhead account: ${origin}/account`)
-    expect(dayBeforeText({ ...base, visit }, { optOut: false })).toBe(`Trailhead: We're coming tomorrow, Wed, May 5, 8 to 10 am, for your fall blowout. Your Trailhead account: ${origin}/account`)
+    expect(dayBeforeText({ ...base, visit }, { optOut: false })).toBe(`Trailhead: We're coming tomorrow, Wed, May 5, 8 to 10 am, for your fall blowout. Need to change it? Text Ryan at (970) 692-7270. Your Trailhead account: ${origin}/account`)
   })
 
   it("names no one in the day-before email either, and says Ryan and the crew in the visit block", async () => {
     await rename("Second truck")
     const visit = (await loadVisitFacts(db, "p4-turn-on", origin))!
     const email = renderEmail("day-before", { ...base, visit })!
-    expect(email.text).toContain("A reminder that we're coming tomorrow")
+    expect(email.text).toContain("We're coming tomorrow")
     expect(email.text).not.toContain("Second")
     expect(email.text).toContain("Who is coming: Ryan and the crew")
   })

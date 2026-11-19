@@ -1,6 +1,7 @@
 import Image from "next/image"
 import { Card, CardContent } from "@/components/ui/card"
 import type { ReceiptOutType } from "@/api/v1/portal/schemas"
+import { receiptNumber } from "@/emails/format"
 import { fullDay, METHOD_PHRASE } from "@/lib/portal/words"
 import { PrintButton } from "./PrintButton"
 
@@ -9,6 +10,7 @@ import { PrintButton } from "./PrintButton"
 
 export function ReceiptScreen({ receipt }: { receipt: ReceiptOutType }) {
   const how = METHOD_PHRASE[receipt.method] ?? receipt.method
+  const isCheck = receipt.method === "check"
   return (
     <main data-slot="account-receipt" className="mx-auto max-w-xl space-y-4 container-padding-x py-8 print:max-w-none print:p-0">
       <Card className="print:border-0 print:shadow-none">
@@ -21,6 +23,9 @@ export function ReceiptScreen({ receipt }: { receipt: ReceiptOutType }) {
             <Image src="/images/logo-badge.png" alt="Trailhead Lawn & Irrigation" width={57} height={40} className="h-10 w-auto" />
           </div>
           <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-[8rem_1fr]">
+            {/* the same number the receipt email carries, so a customer quoting it to Ryan matches both */}
+            <dt className="text-sm font-medium text-muted-foreground">Receipt number</dt>
+            <dd data-slot="receipt-number" className="text-base text-foreground">{receiptNumber(receipt.id)}</dd>
             <dt className="text-sm font-medium text-muted-foreground">From</dt>
             <dd className="text-base text-foreground">{`${receipt.business.name}, ${receipt.business.phone}`}</dd>
             <dt className="text-sm font-medium text-muted-foreground">Paid by</dt>
@@ -38,7 +43,13 @@ export function ReceiptScreen({ receipt }: { receipt: ReceiptOutType }) {
               </>
             )}
             <dt className="text-sm font-medium text-muted-foreground">How</dt>
-            <dd className="text-base text-foreground">{receipt.reference ? `${how[0]!.toUpperCase()}${how.slice(1)}, ${receipt.reference}` : `${how[0]!.toUpperCase()}${how.slice(1)}`}</dd>
+            <dd className="text-base text-foreground">{receipt.reference && !isCheck ? `${how[0]!.toUpperCase()}${how.slice(1)}, ${receipt.reference}` : `${how[0]!.toUpperCase()}${how.slice(1)}`}</dd>
+            {isCheck && receipt.reference && (
+              <>
+                <dt className="text-sm font-medium text-muted-foreground">Check number</dt>
+                <dd className="text-base text-foreground">{receipt.reference}</dd>
+              </>
+            )}
           </dl>
           {receipt.lines.length > 0 && (
             <ul className="divide-y divide-border border-y border-border">

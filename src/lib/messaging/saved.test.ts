@@ -41,7 +41,7 @@ describe("the first text to a number", () => {
     expect(first.row!.body).toMatch(/Reply STOP to opt out\.$/)
     expect(await isFirstText(db, ORG, PHONE)).toBe(false)
     const second = await text("day-before", "t-second")
-    expect(second.row!.body).toMatch(/^Trailhead: Ryan is coming tomorrow, Wed, May 5, 8 to 10 am, for your .+\. Doesn't work\? Pick another day: https:\/\/site\.test\/account\/visits\/[^ ]+\?t=\d+\.[A-Za-z0-9_-]+$/)
+    expect(second.row!.body).toMatch(/^Trailhead: Ryan is coming tomorrow, Wed, May 5, 8 to 10 am, for your .+\. Need to change it\? Text Ryan at \(970\) 692-7270\. See your visit: https:\/\/site\.test\/account\/visits\/[^ ]+\?t=\d+\.[A-Za-z0-9_-]+$/)
     expect(second.row!.body).not.toContain("STOP")
   })
   it("is not spoiled by a text that never reached the phone", async () => {
@@ -81,7 +81,7 @@ describe("the words the office saved", () => {
     try {
       expect(Object.keys(await savedTemplates(db, ORG)).sort()).toEqual(["date-set:email", "day-before:sms"])
       const { row } = await text("day-before", "t-saved")
-      expect(row!.body).toMatch(/^Trailhead: Ryan is coming tomorrow for your .+ at .+\. Doesn't work\? Pick another day: /)
+      expect(row!.body).toMatch(/^Trailhead: Ryan is coming tomorrow for your .+ at .+\. Need to change it\? Text Ryan at \(970\) 692-7270\. See your visit: /)
       // the email goes through the sender, which reads the saved words at send time
       const email = await db.insert(s.messageLog).values({ organizationId: ORG, customerId: "c100", visitId, kind: "date-set", key: "e-saved", channel: "email", to: "andrea@example.com", subject: "x", body: "x", data: row!.data, status: "queued" }).returning()
       const sent: { text?: string }[] = []
@@ -92,7 +92,7 @@ describe("the words the office saved", () => {
       // a saved day-before email that breaks a rule is ignored, so the shipped words go out
       const broken = await db.insert(s.messageLog).values({ organizationId: ORG, customerId: "c100", visitId, kind: "day-before", key: "e-broken", channel: "email", to: "andrea@example.com", subject: "x", body: "x", data: row!.data, status: "queued" }).returning()
       await sendMessageRow(db, broken[0]!.id, { deps })
-      expect(sent[1]!.text).toContain("A reminder that we're coming tomorrow")
+      expect(sent[1]!.text).toContain("We're coming tomorrow")
     } finally {
       await db.update(s.organization).set({ settings: org!.settings }).where(eq(s.organization.id, ORG))
     }

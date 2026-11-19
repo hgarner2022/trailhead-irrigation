@@ -3,6 +3,12 @@
 /** What every message calls the customer's page: the one name in every link, button and sentence (`your ${ACCOUNT_NAME}`). The portal design (docs/plans/2026-11-18-customer-portal-design.md) set it. */
 export const ACCOUNT_NAME = "Trailhead account"
 
+/** The change line of the day-before text and email: that day the online cut-off has passed, so the customer is sent to Ryan, never to "pick another day". */
+export const TEXT_RYAN_LINE = "Need to change it? Text Ryan at (970) 692-7270."
+
+/** The receipt's own number, the payment id's short form: "R-1A2B3C4D". The receipt email and the receipt page in the account both carry it. */
+export const receiptNumber = (paymentId: string) => `R-${paymentId.replace(/-/g, "").slice(0, 8).toUpperCase()}`
+
 /** The one link every money email carries to the customer's page. Hannah, Nov 18 2026: short enough for one line on a phone. */
 export const SEE_JOB = "See it in your account"
 

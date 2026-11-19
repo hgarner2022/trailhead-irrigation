@@ -13,6 +13,11 @@ export function safeNext(base: SignInBase, next: string | null | undefined): str
 /** Where a sign-in lands with no `next`: the admin's Home, the customer's pass page (`/account` itself has no page). */
 const HOME: Record<SignInBase, string> = { "/admin": "/admin", "/account": "/account/pass" }
 
+/** Where a customer who is already signed in goes from /account/sign-in: the page `next` names inside /account, else their account's Home. */
+export function signedInLanding(next: string | null | undefined): string {
+  return next && (next === "/account" || next.startsWith("/account/")) && !next.includes("//") && !next.includes("\\") ? next : "/account"
+}
+
 function query(params: Record<string, string>) {
   return new URLSearchParams(params).toString()
 }

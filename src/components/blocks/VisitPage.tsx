@@ -1,7 +1,9 @@
 import type { ReactNode } from "react"
 import Link from "next/link"
 import { Check, Home, MapPin } from "lucide-react"
+import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import { ADD_IT_BACK, CANCEL_CHANGED_MIND } from "@/lib/portal/words"
 import type { VisitPageModel } from "@/lib/portal/visit-page"
 import { InvoiceBanner } from "./InvoiceBanner"
 import { StatusPill } from "./StatusPill"
@@ -32,7 +34,7 @@ export function VisitPage({ model: m, rescheduleSlot, cancelSlot, calendarSlot }
   const inside = m.reschedule === "text" && m.cancel === "text"
   return (
     <main data-slot="account-visit" className="mx-auto max-w-3xl space-y-6 container-padding-x py-8">
-      <Link href="/account/visits" className="inline-block text-base font-semibold text-primary-deep underline underline-offset-2">
+      <Link href="/account/visits" className="inline-flex min-h-11 items-center text-base font-semibold text-primary-deep underline underline-offset-2">
         Visits
       </Link>
       {m.invoice && <InvoiceBanner jobName={m.service} total={m.invoice.total} dueOn={m.invoice.dueOn} status={m.invoice.status} payHref={m.invoice.payHref} />}
@@ -66,7 +68,7 @@ export function VisitPage({ model: m, rescheduleSlot, cancelSlot, calendarSlot }
                     <Check aria-hidden className="size-4 text-positive" />
                     {r.words}
                   </span>
-                  <Link href={r.href} className="font-semibold text-primary-deep underline underline-offset-2">
+                  <Link href={r.href} className="inline-flex min-h-11 items-center font-semibold text-primary-deep underline underline-offset-2">
                     Receipt
                   </Link>
                 </li>
@@ -92,6 +94,21 @@ export function VisitPage({ model: m, rescheduleSlot, cancelSlot, calendarSlot }
         </section>
       )}
       {m.canCalendar && m.reschedule === "no" && m.cancel === "no" && <div>{calendarSlot}</div>}
+      {(m.pill.status === "cancelled" || m.pill.status === "skipped") && (
+        // The cancel email's words: after a cancel the customer asks how to undo it or book again.
+        <section aria-label="Book again" data-slot="visit-canceled-next" className="space-y-3">
+          <p className="text-base text-foreground">
+            {`${CANCEL_CHANGED_MIND} `}
+            <a href={m.textHref} className="-my-3 inline-block py-3 font-semibold text-primary-deep underline underline-offset-2">
+              Text Ryan
+            </a>
+            {` ${ADD_IT_BACK}`}
+          </p>
+          <Button asChild>
+            <a href="/book">Book Online</a>
+          </Button>
+        </section>
+      )}
     </main>
   )
 }
