@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite"
+import { expect, within } from "storybook/test"
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import type { Attention } from "@/lib/admin/types"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -35,7 +36,7 @@ export const WithOverdueBill: Story = {
   render: (args) => narrow(<NeedsAttention {...args} />),
 }
 
-/** A customer changed their own visit from the account: the row says who, what and when, a payment is flagged, and Open job opens it. */
+/** A customer changed their own visit from the account: the row says who, what and when, a payment is flagged, and Open visit opens it (a row about a job says Open job, one about a customer Open customer). */
 export const WithCustomerChanges: Story = {
   args: {
     items: [
@@ -45,6 +46,9 @@ export const WithCustomerChanges: Story = {
     ],
   },
   render: (args) => narrow(<NeedsAttention {...args} />),
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).getAllByRole("button", { name: /^Open visit:/ })).toHaveLength(3)
+  },
 }
 
 export const Empty: Story = {

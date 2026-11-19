@@ -23,22 +23,32 @@ export function HomeMap({ visits, people, className }: { visits: Visit[]; people
     setSelectedId(id)
     if (id) open?.(id)
   }
+  // every stop done (or none booked): a blank map with no pins reads as broken, so the card says it instead
+  const left = stops.some((v) => v.status !== "completed")
   return (
     <Card data-slot="home-map" className={className}>
       <CardHeader>
         <SectionHeading level={2}>Map</SectionHeading>
       </CardHeader>
       <CardContent className="space-y-3">
-        <ScheduleDayMap className="h-80 min-w-0 lg:h-96" stops={stops} people={people} selectedId={selectedId} onSelect={select} />
-        <ul data-slot="home-map-legend" aria-label="People on the map" className="flex flex-wrap gap-x-5 gap-y-1.5 text-xs text-muted-foreground">
-          {people.map((person, i) => (
-            <li key={person.id} className="flex items-center gap-1.5">
-              <span aria-hidden className={cn("size-2.5 rounded-full", PERSON_CLASSES[i % PERSON_CLASSES.length])} />
-              {person.name}
-            </li>
-          ))}
-          <li>Numbers are the order of each person&rsquo;s day.</li>
-        </ul>
+        {left ? (
+          <>
+            <ScheduleDayMap className="h-80 min-w-0 lg:h-96" stops={stops} people={people} selectedId={selectedId} onSelect={select} />
+            <ul data-slot="home-map-legend" aria-label="People on the map" className="flex flex-wrap gap-x-5 gap-y-1.5 text-xs text-muted-foreground">
+              {people.map((person, i) => (
+                <li key={person.id} className="flex items-center gap-1.5">
+                  <span aria-hidden className={cn("size-2.5 rounded-full", PERSON_CLASSES[i % PERSON_CLASSES.length])} />
+                  {person.name}
+                </li>
+              ))}
+              <li>Numbers are the order of each person&rsquo;s day.</li>
+            </ul>
+          </>
+        ) : (
+          <p data-slot="home-map-empty" className="flex h-40 items-center justify-center rounded-lg border border-dashed border-border bg-cream text-sm text-muted-foreground">
+            No stops left today
+          </p>
+        )}
       </CardContent>
     </Card>
   )

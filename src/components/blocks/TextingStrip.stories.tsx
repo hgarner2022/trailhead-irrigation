@@ -15,5 +15,5 @@ type Story = StoryObj<typeof meta>
 /** One customer, the full minute: Undo inside it sends nothing. */
 export const One: Story = {}
 
-/** Place all: the count of customers, not a list of names. */
+/** Schedule all: the count of customers, not a list of names. */
 export const Many: Story = { args: { names: ["Andrea", "Jim", "Cy"], secondsLeft: 41 } }

@@ -157,7 +157,7 @@ export function statesOf(row: JobRow, today: string): VisitStates {
  * "Paid", "$115 unpaid" or "1 of 2 paid, $115 unpaid", empty for a job nothing has priced. Without the job's own lines or payments
  * (the fixtures) the visits' prices and their payments stand in; a canceled visit is not counted.
  */
-export function jobMoney(job: Pick<SoldJob, "lines" | "payments" | "invoice"> | undefined, visits: Pick<Visit, "id" | "status" | "price" | "payments">[], rule: TaxRule): string {
+export function jobMoney(job: (Pick<SoldJob, "lines" | "payments" | "invoice"> & { passId?: string | null }) | undefined, visits: Pick<Visit, "id" | "status" | "price" | "payments">[], rule: TaxRule): string {
   const live = visits.filter((v) => v.status !== "cancelled")
   const lines = job?.lines
     ? job.lines.map((l: JobLine) => ({ quantity: l.quantity, unitPrice: l.unitPrice, taxable: l.taxable, cancelledAt: l.cancelledAt ? new Date(l.cancelledAt) : null }))
@@ -165,7 +165,9 @@ export function jobMoney(job: Pick<SoldJob, "lines" | "payments" | "invoice"> | 
     : live.map((v) => ({ quantity: 1, unitPrice: v.price ?? 0, taxable: false, cancelledAt: null }))
   const payments = job?.payments ?? visits.flatMap((v) => paymentsOf(v))
   const prices = visits.map((v) => ({ id: v.id, cancelled: v.status === "cancelled", price: v.price }))
-  return jobMoneyWords(lines, payments, prices, rule, job?.invoice ? {} : undefined).words
+  // a Season Pass is charged after each visit: its words are not "unpaid" until a visit is done and unpaid
+  const pass = job?.passId ? { doneVisitIds: visits.filter((v) => v.status === "completed").map((v) => v.id) } : undefined
+  return jobMoneyWords(lines, payments, prices, rule, job?.invoice ? {} : undefined, [], pass).words
 }
 
 /** The job's state and its not-closed flag. `today` is the Mountain calendar day (YYYY-MM-DD). */

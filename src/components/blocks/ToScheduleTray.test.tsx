@@ -7,25 +7,27 @@ import { ToScheduleTray } from "./ToScheduleTray"
 const item = (id: string, over: Partial<TrayItem> = {}): TrayItem => ({ id, clientId: id, clientName: `Customer ${id}`, town: "Erie", kind: "repair", window: "", sortKey: "0", ...over })
 
 describe("ToScheduleTray", () => {
-  it("says every job has a day when the list is empty, and draws no Place all", () => {
+  it("says every job has a day when the list is empty, and draws no Schedule all", () => {
     render(<ToScheduleTray items={[]} onPlaceAll={() => {}} />)
     expect(screen.getByText("Every job has a day.")).toBeInTheDocument()
     expect(screen.queryByRole("button")).toBeNull()
   })
 
-  it("Place on a row places that job, and a quiet Place all counts the jobs a customer is not picking", async () => {
+  it("Place on a row places that job, and a quiet Schedule all counts the jobs a customer is not picking", async () => {
     const onPlace = vi.fn()
     const onPlaceAll = vi.fn()
     const items = [item("a"), item("b"), item("w", { awaitingPick: true })]
     render(<ToScheduleTray items={items} onPlace={onPlace} onPlaceAll={onPlaceAll} />)
-    await userEvent.click(screen.getByRole("button", { name: "Place Customer b, repair" }))
+    await userEvent.click(screen.getByRole("button", { name: "Schedule Customer b, repair" }))
     expect(onPlace).toHaveBeenCalledWith(items[1])
-    await userEvent.click(screen.getByRole("button", { name: "Place all 2" }))
+    await userEvent.click(screen.getByRole("button", { name: "Schedule all 2" }))
     expect(onPlaceAll).toHaveBeenCalledOnce()
+    // Schedule all is an outline button, not a text link
+    expect(screen.getByRole("button", { name: "Schedule all 2" })).toHaveClass("border", "border-border")
     expect(screen.getByText("Customer picks the day")).toBeInTheDocument()
   })
 
-  it("shows no Place or Place all to a tech", () => {
+  it("shows no Schedule or Schedule all to a tech", () => {
     render(<ToScheduleTray items={[item("a")]} onPlace={() => {}} onPlaceAll={() => {}} readOnly />)
     expect(screen.queryByRole("button")).toBeNull()
   })

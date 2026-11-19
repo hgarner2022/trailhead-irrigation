@@ -5,7 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { EmptyState } from "@/components/blocks/EmptyState"
 import type { ServiceItem } from "@/lib/admin/types"
 import { hasZoneRule, priceIsFixed, setServiceField, type ServiceField, type SettingsState } from "../settings-model"
-import { CommitInput, CommitTextarea, type Apply } from "./fields"
+import { CommitInput, CommitTextarea, TAP_TARGET, type Apply } from "./fields"
 
 // The catalogue is rows: what each service is called, what the visit includes (the text the New job sheet and the
 // pass page show, with no price in it), the price and the zone rule, the minutes the visit holds on the schedule,
@@ -67,10 +67,10 @@ function ServiceRow({ service, set }: { service: ServiceItem; set: (key: string,
         <CommitInput type="number" min={15} max={480} label={`${name} minutes`} value={service.slotMinutes} onCommit={(v) => set(key, "slotMinutes", Number(v))} />
       </TableCell>
       <TableCell className="align-top">
-        <Checkbox className="mt-2.5" aria-label={`${name} taxable`} checked={service.taxable ?? false} onCheckedChange={(v) => set(key, "taxable", v === true)} />
+        <Checkbox className={`mt-2.5 ${TAP_TARGET}`} aria-label={`${name} taxable`} checked={service.taxable ?? false} onCheckedChange={(v) => set(key, "taxable", v === true)} />
       </TableCell>
       <TableCell className="align-top">
-        <Checkbox className="mt-2.5" aria-label={`${name} active`} checked={service.active ?? true} onCheckedChange={(v) => set(key, "active", v === true)} />
+        <Checkbox className={`mt-2.5 ${TAP_TARGET}`} aria-label={`${name} active`} checked={service.active ?? true} onCheckedChange={(v) => set(key, "active", v === true)} />
       </TableCell>
     </TableRow>
   )

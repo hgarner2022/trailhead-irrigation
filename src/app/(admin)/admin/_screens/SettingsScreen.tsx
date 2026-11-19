@@ -135,7 +135,7 @@ export function SettingsScreen({ data, today, defaultTab = "people", who = "Hann
       />
       <Tabs defaultValue={defaultTab}>
         <div className="max-w-full overflow-x-auto">
-          <TabsList aria-label="Settings sections">
+          <TabsList aria-label="Settings sections" className="group-data-[orientation=horizontal]/tabs:h-11 md:group-data-[orientation=horizontal]/tabs:h-9">
             {TABS.map((t) => (
               <TabsTrigger key={t.value} value={t.value} className="shrink-0 whitespace-nowrap">
                 {t.label}

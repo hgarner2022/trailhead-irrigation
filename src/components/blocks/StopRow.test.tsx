@@ -24,6 +24,14 @@ describe("StopRow", () => {
     expect(document.querySelector('[data-slot="stop-time"] svg')).not.toBeNull()
   })
 
+  it("draws a done stop lighter with a check, and says Done early beside the service", () => {
+    render(<ul><StopRow {...base} done doneNote="Done early" /></ul>)
+    expect(document.querySelector('[data-slot="done-mark"]')).not.toBeNull()
+    expect(screen.getByRole("button")).toHaveTextContent(", done")
+    expect(screen.getByRole("button")).toHaveTextContent("Spring turn-on · Done early")
+    expect(row()).toHaveClass("bg-stone/60")
+  })
+
   it("marks a moved stop and a selected one", () => {
     render(<ul><StopRow {...base} moved selected /></ul>)
     expect(screen.getByRole("button")).toHaveTextContent(", moved")

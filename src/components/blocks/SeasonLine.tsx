@@ -180,11 +180,10 @@ export function SeasonLine(props: SeasonLineProps) {
       </div>
       <div className="grid grid-cols-8 pt-1.5">
         {SEASON_MONTHS.map((month, i) => (
-          <div key={month} data-slot="season-month" className="relative text-center font-display text-xs uppercase tracking-wide text-muted-foreground">
+          <div key={month} data-slot="season-month" className="relative text-center font-display text-[11px] uppercase tracking-normal text-muted-foreground @sm:text-xs @sm:tracking-wide">
             <span aria-hidden className="absolute left-0 -top-1.5 h-1.5 w-px bg-border" />
             {i === SEASON_MONTHS.length - 1 && <span aria-hidden className="absolute right-0 -top-1.5 h-1.5 w-px bg-border" />}
-            <span className="@max-[400px]:hidden">{monthShort(month)}</span>
-            <span className="hidden @max-[400px]:inline">{monthShort(month)[0]}</span>
+            {monthShort(month)}
           </div>
         ))}
       </div>

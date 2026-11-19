@@ -16,7 +16,7 @@ import { jobCollect, jobFacts, type JobFacts } from "./job-panel-model"
 import { JobFooter } from "./JobFooter"
 import { CancelJobDialog, NewVisitDialog } from "./JobDialogs"
 import { JobCollectDialog } from "./JobCollect"
-import { JobLinesSection } from "./JobLinesSection"
+import { JobLinesSection, TotalWords } from "./JobLinesSection"
 import { JobMoneySection } from "./JobMoneySection"
 import { StatusPill } from "@/components/blocks/StatusPill"
 import { MoneyPill, StagePill } from "./JobPills"
@@ -119,7 +119,7 @@ export function JobPanel({ data, today, jobId, open, onOpenChange, readOnly = fa
   const rec: RecordFact[] = [
     ["Customer", <RecordLink key="c" kind="customer" id={row.customerId} href={customerUrl(row.customerId)} className="text-primary-dark underline underline-offset-2">{row.name}</RecordLink>],
     ...(row.property ? ([["Property", row.property]] as RecordFact[]) : []),
-    ["Total", row.total > 0 ? `$${row.total.toLocaleString("en-US")}` : "Quote later"],
+    ["Total", <TotalWords key="total" total={row.total} lines={facts.lines} />],
     ...(facts.held > 0 ? ([["Paid", `$${facts.held.toLocaleString("en-US")}`]] as RecordFact[]) : []),
     ...(row.owed > 0 ? ([["Unpaid", `$${row.owed.toLocaleString("en-US")}`]] as RecordFact[]) : []),
     ["Next", row.nextText],

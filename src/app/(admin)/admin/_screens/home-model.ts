@@ -113,7 +113,7 @@ export function seasonDescription(data: Pick<AdminData, "passes">): string {
   return `${SEASON_LINE}. ${formatMoney(committedRevenue(data.passes))} on ${passes}, ${formatMoney(chargedSoFar(data.passes))} charged so far.`
 }
 
-/** The four tiles Home opens with, in order: revenue this month, passes sold, quotes awaiting, our invoices past due (the Jobber mirror's invoices no longer have a tile). */
+/** The tiles Reports opens with, in order: revenue this month, passes sold, quotes awaiting (only once quotes exist), our invoices past due (the Jobber mirror's invoices no longer have a tile). */
 export function tileModels(data: AdminData, today: string): StatTileProps[] {
   const { year, month, name } = monthOf(today)
   const revenue = monthComparison(data.monthTotals, year, month)
@@ -132,10 +132,13 @@ export function tileModels(data: AdminData, today: string): StatTileProps[] {
       value: String(active),
       href: "/admin/customers",
     },
-    {
-      label: `Quotes awaiting, ${formatMoney(quotes.total)}`,
-      value: String(quotes.count),
-    },
+    // Quotes are a feature the app has not built: the tile waits until quotes exist
+    ...(data.quotes?.length
+      ? [{
+          label: `Quotes awaiting, ${formatMoney(quotes.total)}`,
+          value: String(quotes.count),
+        }]
+      : []),
     {
       label: `Invoices past due, ${formatMoney(overdue.total)}`,
       value: String(overdue.count),
@@ -201,10 +204,10 @@ export function notClosedAttention(visits: Visit[], today: string, timeZone: str
 export function jobTiles(data: Pick<AdminData, "passes" | "visits">, today: string): StatTileProps[] {
   const c = jobCounts(data, dayOf(today, TIME_ZONE), TIME_ZONE)
   return [
-    { label: "Jobs needing a day", value: String(c.needsDay), href: "/admin/schedule" },
+    { label: "Unscheduled jobs", value: String(c.needsDay), href: "/admin/schedule" },
     { label: "Charges that didn't go through", value: String(c.chargeFailed), href: "/admin/schedule?view=list&money=failed" },
     { label: "Jobs not marked done", value: String(c.notClosed), href: "/admin/schedule" },
-    { label: "Pending passes, expire after an hour", value: String(c.pendingPasses), href: "/admin/customers" },
+    { label: "Passes not yet paid", value: String(c.pendingPasses), href: "/admin/customers" },
   ]
 }
 

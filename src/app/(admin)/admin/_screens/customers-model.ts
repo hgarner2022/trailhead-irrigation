@@ -44,6 +44,8 @@ export interface CustomerRow {
   /** the next job's day, for sorting; nothing when it has none */
   nextKey?: string
   lastVisitAt?: string
+  /** whole dollars the customer owes now: the unpaid of every job, a Season Pass's charges that are not yet due left out (the words of `jobMoney`) */
+  unpaid: number
   marketing: MarketingState
 }
 
@@ -77,6 +79,11 @@ function newestOpenJob(jobs: SoldJob[]): CustomerRow["job"] {
  * the next visit with a day on any job, Scheduled yes when one is ahead, and Unscheduled when a visit of a pass or of a
  * one-off job still has no day.
  */
+/** What the customer owes now: a canceled job holds nothing, and a pass's later visits are charged to the card after each visit, so neither counts (Home's Unpaid says the same). */
+export function unpaidOf(jobs: readonly SoldJob[]): number {
+  return jobs.reduce((sum, j) => (j.status === "cancelled" || !j.money || j.money.words.endsWith("charged after each visit") ? sum : sum + j.money.owed), 0)
+}
+
 export function customerRow(client: Client, passes: Pass[], visits: Visit[], today: string, jobs: SoldJob[] = []): CustomerRow {
   const todayDay = dayOf(today, TIME_ZONE)
   const pass = passes.find((p) => p.clientId === client.id && p.status === "active") ?? passes.find((p) => p.clientId === client.id)
@@ -98,6 +105,7 @@ export function customerRow(client: Client, passes: Pass[], visits: Visit[], tod
     ...(pass ? { passId: pass.id, passNumber: pass.number, season: pass.season } : {}),
     ...(job ? { job } : {}),
     lastVisitAt: client.lastVisitAt,
+    unpaid: unpaidOf(jobs),
     marketing: client.consent ? (client.consent.marketingOptIn ? ("yes" as const) : ("no" as const)) : ("not-asked" as const),
   }
   if (day) return { ...base, nextState: "booked", next: shortDate(day), nextKey: day }

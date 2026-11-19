@@ -9,6 +9,7 @@ import { apiDb, ctxFor, jobIdOfPassId, linesOfJob, ORG, owner, passViewOf, readK
 import { linesOfVisit, visitPrice } from "@/lib/jobs/lines"
 import { eventsNote } from "@/api/v1/events/handlers"
 import { visitsConfirm, visitsMove } from "@/api/v1/visits/handlers"
+import { visitsCancel } from "@/api/v1/visits/office"
 import { recordEvent } from "@/lib/events/record"
 import snapshot from "./fixtures/snapshot.json"
 import { getLiveAdminData } from "./live"
@@ -159,6 +160,8 @@ describe("Move's two facts on a visit (step 4)", () => {
     const ctx = ctxFor(db, owner)
     const [v] = await db.select().from(s.visit).where(eq(s.visit.id, "p9-blowout"))
     await db.update(s.property).set({ mustBeHome: true }).where(eq(s.property.id, v!.propertyId))
+    // the snapshot keeps no contact details, so this customer could not be reached and Waiting on customer (only when the ask went out) would never show: give them a mobile
+    await db.update(s.customer).set({ phone: "+13035550142" }).where(eq(s.customer.id, v!.customerId))
     // each action at its own minute: the story is ordered by time
     const at = (minute: number) => ctxFor(db, owner, `2027-04-20T16:${String(minute).padStart(2, "0")}:00Z`)
     await callApi(at(1), visitsMove, { id: "p9-blowout", personId: "person_truck-1", scheduledOn: "2027-10-05" })
@@ -173,5 +176,18 @@ describe("Move's two facts on a visit (step 4)", () => {
     expect(await read()).not.toHaveProperty("waiting")
     // a tech's read has the same facts (the events they may read include visit.*)
     expect((await getLiveAdminData(ctxFor(db, tech))).visits.find((x) => x.id === "p9-blowout")).toMatchObject({ timeBooked: true })
+  })
+})
+
+describe("a canceled visit", () => {
+  it("keeps the day it had, read from the cancel event, so the panel can say 'Canceled, was ...'", async () => {
+    const ctx = ctxFor(db, owner)
+    const [before] = await db.select().from(s.visit).where(eq(s.visit.id, "p9-blowout"))
+    const day = before!.scheduledOn
+    expect(day).toBeTruthy()
+    await callApi(ctx, visitsCancel, { id: "p9-blowout" })
+    const after = (await getLiveAdminData(ctx)).visits.find((x) => x.id === "p9-blowout")!
+    expect(after).toMatchObject({ status: "cancelled", cancelledWas: day })
+    expect(after).not.toHaveProperty("scheduledOn")
   })
 })

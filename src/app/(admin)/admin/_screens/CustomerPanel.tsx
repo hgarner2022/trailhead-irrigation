@@ -12,7 +12,7 @@ import { CustomerBills } from "./VisitBill"
 import type { VisitActions } from "./visit-actions-types"
 import type { AdminData, Client, ClientCard, Pass } from "@/lib/admin/types"
 import { dayOf } from "@/lib/admin/calendar"
-import { TIME_ZONE } from "@/lib/admin/format"
+import { TIME_ZONE, shortDate } from "@/lib/admin/format"
 import { formatPhone } from "@/lib/format/contact"
 import { PropertyBlock } from "./PropertyFields"
 import { PanelNotes } from "./PanelNotes"
@@ -35,13 +35,15 @@ function JobFact({ row, jobId }: { row: CustomerRow; jobId: string | undefined }
 /** The facts under the header, in order: Phone, Email, the open Job, Next, Scheduled, Marketing and the Card. The street is the subtitle. */
 function factsOf(row: CustomerRow, card: ClientCard | undefined, jobId: string | undefined, readOnly: boolean, actions?: VisitActions): RecordFact[] {
   return [
-    ...(row.phone ? ([["Phone", formatPhone(row.phone)]] as RecordFact[]) : []),
+    ...(row.phone ? ([["Phone", <a key="phone" className="text-primary-dark underline underline-offset-2" href={`tel:${row.phone}`}>{formatPhone(row.phone)}</a>]] as RecordFact[]) : []),
     ...(row.email ? ([["Email", row.email]] as RecordFact[]) : []),
     // One row: the newest open job, whatever it is (a repair, an installation, the pass), linking to that job on Jobs. A pass reads with its
     // season and state; with no open job the row falls back to the pass the customer has, else None.
     ["Job", <JobFact key="job" row={row} jobId={jobId} />],
     ["Next", row.next],
     ["Scheduled", SCHEDULED_WORDS[row.nextState]],
+    ["Last visit", row.lastVisitAt ? shortDate(row.lastVisitAt, TIME_ZONE) : "None"],
+    ...(row.unpaid > 0 ? ([["Unpaid", `$${row.unpaid.toLocaleString("en-US")}`]] as RecordFact[]) : []),
     ["Card", <CustomerCardLine key="card" card={card} passId={row.passId} readOnly={readOnly} actions={actions} />],
     ["Marketing", MARKETING_WORDS[row.marketing]],
   ]

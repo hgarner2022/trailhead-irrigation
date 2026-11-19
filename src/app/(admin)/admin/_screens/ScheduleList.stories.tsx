@@ -51,7 +51,7 @@ export const ReadOnly: Story = {
 export const PanelScheduled: Story = { args: { defaultVisitId: "office-scheduled" }, globals: wide }
 export const PanelScheduledPhone: Story = { args: { defaultVisitId: "office-scheduled" }, globals: phone }
 
-/** A visit with no day: the footer leads with Place, which opens "Give it a day". */
+/** A visit with no day: the footer leads with Schedule, which opens "Schedule". */
 export const PanelNeedsADay: Story = { args: { defaultVisitId: "office-needs-day" }, globals: wide }
 
 /** Not done keeps its reason in the pill until the visit has a day again. */

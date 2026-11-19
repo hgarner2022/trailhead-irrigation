@@ -102,6 +102,9 @@ export function customerChangeLine(visit: Pick<Visit, "scheduledOn" | "startAt">
   return withinCutoff({ scheduledOn: day }, now) ? "Closed, texts only" : `Customer can change online until ${cutoffShortWords({ scheduledOn: day })}`
 }
 
+/** A canceled visit's When: "Canceled, was Fri, Apr 30", or "Canceled" when it never had a day. Never "Unscheduled", which reads as work that needs a day. */
+export const whenCanceled = (visit: Pick<Visit, "cancelledWas">): string => (visit.cancelledWas ? `Canceled, was ${dayLabel(visit.cancelledWas)}` : "Canceled")
+
 /** Everything the panel shows about one visit; undefined when the visit is not in `data`. */
 export function visitFacts(data: AdminData, visitId: string, today: string): VisitFacts | undefined {
   const visit = data.visits.find((v) => v.id === visitId)
@@ -127,7 +130,8 @@ export function visitFacts(data: AdminData, visitId: string, today: string): Vis
     money: jobMoney(job, siblings, ruleOfData(data)),
     // a job charged to the card on its pass is left to the card (unless the card failed)
     bill: billState(job, siblings, Boolean(pass?.cardLast4) && states.money !== "failed"),
-    messages: data.messages.filter((m) => m.clientId === visit.clientId),
+    // only what was sent about this visit; the customer panel keeps the customer-wide list
+    messages: data.messages.filter((m) => m.visitId === visit.id),
     customerChange: customerChangeLine(visit, states.work === "scheduled", day),
   }
 }

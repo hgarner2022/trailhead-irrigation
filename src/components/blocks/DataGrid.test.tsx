@@ -114,6 +114,25 @@ describe("DataGrid search and filters", () => {
     expect(bodyRows().length).toBeGreaterThan(0)
   })
 
+  it("turns Export off at zero rows and back on when a row shows again", async () => {
+    const user = userEvent.setup()
+    renderPasses({ exportName: "passes" })
+    expect(screen.getByRole("button", { name: "Export 12 rows" })).toBeEnabled()
+    await user.type(screen.getByRole("searchbox"), "zzz")
+    expect(screen.getByRole("button", { name: "Export 0 rows" })).toBeDisabled()
+    await user.clear(screen.getByRole("searchbox"))
+    expect(screen.getByRole("button", { name: "Export 12 rows" })).toBeEnabled()
+  })
+
+  it("leaves hiddenColumns out of the first view, and the Columns menu brings one back", async () => {
+    const user = userEvent.setup()
+    renderPasses({ hiddenColumns: ["town"] })
+    expect(screen.queryByRole("columnheader", { name: /Town/ })).toBeNull()
+    await user.click(screen.getByRole("button", { name: "Columns" }))
+    await user.click(await screen.findByRole("menuitemcheckbox", { name: "Town" }))
+    expect(screen.getByRole("columnheader", { name: /Town/ })).toBeInTheDocument()
+  })
+
   it("uses the default empty copy with no rows at all", () => {
     renderPasses({ data: [] })
     expect(screen.getByText("Nothing here yet")).toBeInTheDocument()

@@ -31,9 +31,9 @@ const headers = () => screen.getAllByRole("columnheader").map((h) => h.textConte
 const rowOf = (name: string) => screen.getByRole("button", { name }).closest("tr")!
 
 describe("CustomersScreen table", () => {
-  it("has the columns Name, Address, Town, Email, Phone, Pass, Next, Scheduled, Last visit and Marketing", () => {
+  it("has the columns Name, Address, Town, Email, Phone, Pass, Next, Scheduled, Unpaid and Last visit, and Marketing is not in the default view", () => {
     render(<CustomersScreen data={data} today={TODAY} />)
-    expect(headers().filter(Boolean)).toEqual(["Name", "Address", "Town", "Email", "Phone", "Pass", "Next", "Scheduled", "Last visit", "Marketing"])
+    expect(headers().filter(Boolean)).toEqual(["Name", "Address", "Town", "Email", "Phone", "Pass", "Next", "Scheduled", "Unpaid", "Last visit"])
   })
 
   it("shows the full name, the street, the email and the phone as it prints", () => {
@@ -90,6 +90,16 @@ describe("CustomersScreen panel", () => {
     expect(panel.getByText(/Terms 2026-11 accepted Nov 2\./)).toBeInTheDocument()
     expect(panel.getByRole("heading", { name: "Messages" })).toBeInTheDocument()
     expect(panel.getByRole("heading", { name: "Jobs" })).toBeInTheDocument()
+  })
+
+  it("makes the phone a tel link, adds Call beside Send a text, and gives the facts Last visit", () => {
+    const live: AdminData = { ...data, clients: data.clients.map((c) => ({ ...c, app: true })) }
+    render(<CustomersScreen data={live} today={TODAY} defaultSelectedId="c100" />)
+    const panel = within(screen.getByRole("dialog", { name: `${andrea.firstName} ${andrea.lastName}` }))
+    expect(panel.getByRole("link", { name: formatPhone(andrea.phone) })).toHaveAttribute("href", `tel:${andrea.phone}`)
+    expect(panel.getByRole("link", { name: "Call" })).toHaveAttribute("href", `tel:${andrea.phone}`)
+    expect(panel.getByRole("button", { name: "Send a text" })).toBeInTheDocument()
+    expect(panel.getByText("Last visit")).toBeInTheDocument()
   })
 
   it("lists what the app sent in the Messages block with each message's words and the link a text carried, the same MessageThread the visit panel uses", () => {

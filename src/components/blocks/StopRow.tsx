@@ -1,7 +1,7 @@
 "use client"
 
 import type { DragEvent } from "react"
-import { Lock, TriangleAlert } from "lucide-react"
+import { Check, Lock, TriangleAlert } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { areaBorder } from "./area-colours"
 import { StatusPill } from "./StatusPill"
@@ -30,18 +30,22 @@ export interface StopRowProps {
   moved?: boolean
   /** Ryan moved it and asked the customer to reply YES: the neutral "Waiting on customer" pill */
   waiting?: boolean
+  /** the visit is done: drawn lighter with a check */
+  done?: boolean
+  /** "Done early" or "Done late": the done day is not the scheduled day */
+  doneNote?: string
   draggable?: boolean
   onOpen: (id: string) => void
   className?: string
 }
 
-export function StopRow({ id, number, time, booked, name, town, service, areaIndex, selected, moved, waiting, draggable, onOpen, className }: StopRowProps) {
+export function StopRow({ id, number, time, booked, name, town, service, areaIndex, selected, moved, waiting, done, doneNote, draggable, onOpen, className }: StopRowProps) {
   const onDragStart = (event: DragEvent<HTMLButtonElement>) => {
     event.dataTransfer.setData("text/plain", id)
     event.dataTransfer.effectAllowed = "move"
   }
   return (
-    <li data-slot="stop-row" className={cn("border-l-4 bg-card", areaBorder(areaIndex), selected && "ring-2 ring-inset ring-primary/50", className)}>
+    <li data-slot="stop-row" className={cn("border-l-4 bg-card", areaBorder(areaIndex), done && "bg-stone/60 text-muted-foreground", selected && "ring-2 ring-inset ring-primary/50", className)}>
       <button
         type="button"
         draggable={draggable}
@@ -67,8 +71,14 @@ export function StopRow({ id, number, time, booked, name, town, service, areaInd
             {name}
             <span className="text-muted-foreground"> · {town}</span>
           </span>
-          <span className="block truncate text-xs text-muted-foreground">{service}</span>
+          <span className="block truncate text-xs text-muted-foreground">{doneNote ? `${service} · ${doneNote}` : service}</span>
         </span>
+        {done && (
+          <>
+            <Check data-slot="done-mark" className="size-4 shrink-0 text-success" aria-hidden />
+            <span className="sr-only">, done</span>
+          </>
+        )}
         {waiting && <StatusPill status="waiting" data-pill="waiting" className="shrink-0" />}
         {moved && (
           <>

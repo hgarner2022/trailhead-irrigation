@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it, vi } from "vitest"
-import { render, screen, within } from "@testing-library/react"
+import { fireEvent, render, screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import type { AdminData, Visit } from "@/lib/admin/types"
@@ -52,6 +52,7 @@ const open = async (v: Visit, a: VisitActions) => {
   await userEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Move" }))
   return within(screen.getAllByRole("dialog").at(-1)!)
 }
+const newDay = (dialog: ReturnType<typeof within>, day = "2026-11-25") => fireEvent.change(dialog.getByLabelText("Day"), { target: { value: day } })
 const caret = (dialog: ReturnType<typeof within>) => userEvent.click(dialog.getByRole("button", { name: "More ways to move" }))
 
 describe("the Move dialog", () => {
@@ -60,18 +61,20 @@ describe("the Move dialog", () => {
     const dialog = await open(visit(), a)
     expect(dialog.getByLabelText("Day")).toBeInTheDocument()
     expect(dialog.getByLabelText("Time")).toBeInTheDocument()
+    newDay(dialog)
     await userEvent.type(dialog.getByLabelText("A line for the text"), "Rain on Tuesday")
     await userEvent.click(dialog.getByRole("button", { name: "Move and text the customer" }))
-    expect(a.move).toHaveBeenCalledWith("a", "2026-11-24", null, { notify: true, note: "Rain on Tuesday" })
-    expect(await screen.findByText(/Moved to Tue, Nov 24\./)).toBeInTheDocument()
+    expect(a.move).toHaveBeenCalledWith("a", "2026-11-25", null, { notify: true, note: "Rain on Tuesday" })
+    expect(await screen.findByText(/Moved to Wed, Nov 25\./)).toBeInTheDocument()
   })
 
   it("'Move without texting' sits under the caret and sends notify false, with no line; the toast says no text was sent", async () => {
     const a = actions()
     const dialog = await open(visit(), a)
+    newDay(dialog)
     await caret(dialog)
     await userEvent.click(await screen.findByRole("menuitem", { name: "Move without texting" }))
-    expect(a.move).toHaveBeenCalledWith("a", "2026-11-24", null, { notify: false })
+    expect(a.move).toHaveBeenCalledWith("a", "2026-11-25", null, { notify: false })
     expect(await screen.findByText(/no text sent/)).toBeInTheDocument()
   })
 
@@ -90,8 +93,9 @@ describe("the Move dialog", () => {
     await caret(dialog)
     expect(await screen.findByRole("menuitem", { name: "Move without texting" })).toHaveAttribute("aria-disabled", "true")
     await userEvent.keyboard("{Escape}")
+    newDay(dialog)
     await userEvent.click(dialog.getByRole("button", { name: "Move and text the customer" }))
-    expect(a.move).toHaveBeenCalledWith("a", "2026-11-24", "09:30", { notify: true })
+    expect(a.move).toHaveBeenCalledWith("a", "2026-11-25", "09:30", { notify: true })
   })
 
   it("does not offer a pass visit's stacked start time back as a time: that was never promised", async () => {
@@ -108,10 +112,26 @@ describe("the Move dialog", () => {
     // today is Thursday Nov 12 (Mountain); a visit on Fri Nov 13 is past the cut-off
     const a = actions()
     const dialog = await open(visit({ scheduledOn: "2026-11-13", startAt: "2026-11-13T15:00:00Z" }), a)
+    newDay(dialog, "2026-11-14")
     expect(dialog.getByRole("status")).toHaveTextContent("inside Dana's 24-hour window")
     await userEvent.click(dialog.getByRole("button", { name: "Move and text the customer" }))
     expect(a.move).toHaveBeenCalled()
     // a visit a week out has no warning
+  })
+
+  it("keeps both Move buttons off until the day or the time differs from the visit's, so a no-op never texts", async () => {
+    const a = actions()
+    const dialog = await open(visit({ timeBooked: true, startTime: "09:30", startAt: "2026-11-24T16:30:00Z" }), a)
+    expect(dialog.getByRole("button", { name: "Move and text the customer" })).toBeDisabled()
+    expect(dialog.getByRole("button", { name: "More ways to move" })).toBeDisabled()
+    newDay(dialog)
+    expect(dialog.getByRole("button", { name: "Move and text the customer" })).toBeEnabled()
+    expect(dialog.getByRole("button", { name: "More ways to move" })).toBeEnabled()
+    newDay(dialog, "2026-11-24")
+    expect(dialog.getByRole("button", { name: "Move and text the customer" })).toBeDisabled()
+    await userEvent.selectOptions(dialog.getByLabelText("Time"), "10:00")
+    expect(dialog.getByRole("button", { name: "Move and text the customer" })).toBeEnabled()
+    expect(a.move).not.toHaveBeenCalled()
   })
 
   it("has no warning for a day a week out", async () => {
@@ -122,22 +142,23 @@ describe("the Move dialog", () => {
   it("shows the API's refusal in the dialog", async () => {
     const a = actions({ move: vi.fn().mockResolvedValue({ ok: false, message: "This visit has a booked time, so the customer is always texted. Move it and text them." }) })
     const dialog = await open(visit(), a)
+    newDay(dialog)
     await userEvent.click(dialog.getByRole("button", { name: "Move and text the customer" }))
     expect(await screen.findByText(/always texted/)).toBeInTheDocument()
   })
 
-  it("a visit with no day is given one with a plain 'Set the day' that texts the date, as before", async () => {
+  it("a visit with no day is given one with a plain 'Schedule' that texts the date, as before", async () => {
     const a = actions()
     render(
       <UndoToastProvider>
         <VisitsScreen data={dataOf(visit({ status: "unscheduled", scheduledOn: undefined, startAt: undefined, personId: undefined, personName: undefined }))} today={TODAY} actions={a} defaultVisitId="a" />
       </UndoToastProvider>,
     )
-    await userEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Place" }))
+    await userEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Schedule" }))
     const dialog = within(screen.getAllByRole("dialog").at(-1)!)
     expect(dialog.queryByRole("button", { name: "More ways to move" })).toBeNull()
     expect(dialog.queryByLabelText("A line for the text")).toBeNull()
-    await userEvent.click(dialog.getByRole("button", { name: "Set the day" }))
+    await userEvent.click(dialog.getByRole("button", { name: "Schedule" }))
     expect(a.move).toHaveBeenCalledWith("a", expect.any(String), null, { notify: true })
   })
 })

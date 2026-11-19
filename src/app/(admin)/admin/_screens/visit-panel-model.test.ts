@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import type { AdminData, JobLine, Visit } from "@/lib/admin/types"
-import { customerChangeLine, visitCancelled, visitFacts, visitPrice } from "./visit-panel-model"
+import { customerChangeLine, visitCancelled, visitFacts, visitPrice, whenCanceled } from "./visit-panel-model"
 
 const visit = { id: "v1", jobId: "j1", price: 145 } as Visit
 const line = (id: string, unitPrice: number, over: Partial<JobLine> = {}): JobLine => ({ id, name: "Repair", quantity: 1, unitPrice, taxable: false, visitId: "v1", ...over })
@@ -45,6 +45,22 @@ describe("visitFacts money", () => {
   it("says Paid once the rows cover the job, and the number owed again after a refund", () => {
     expect(visitFacts(world([row("a", 145)], [a]), "a", TODAY)!.money).toBe("Paid")
     expect(visitFacts(world([row("a", 145), row("a", -145, { refundsPaymentId: "pay-a-145" })], [a]), "a", TODAY)!.money).toBe("$145 unpaid")
+  })
+})
+
+describe("whenCanceled", () => {
+  it("says the day a canceled visit had, and just Canceled when it never had one, never Unscheduled", () => {
+    expect(whenCanceled({ cancelledWas: "2027-04-30" })).toBe("Canceled, was Fri, Apr 30")
+    expect(whenCanceled({})).toBe("Canceled")
+  })
+})
+
+describe("visitFacts messages", () => {
+  it("lists only the messages about that visit, not every message the customer has", () => {
+    const v = { id: "a", clientId: "c", clientName: "Dana Reed", town: "Erie", kind: "repair", status: "scheduled", isPass: false, jobberUrl: "", price: 145 } as unknown as Visit
+    const msg = (id: string, visitId?: string) => ({ id, clientId: "c", ...(visitId ? { visitId } : {}), channel: "sms", kind: "date-set", body: id, at: "2026-11-10T10:00:00Z", status: "sent" })
+    const d = { clients: [], passes: [], visits: [v], jobs: [], messages: [msg("m1", "a"), msg("m2", "other"), msg("m3")] } as unknown as AdminData
+    expect(visitFacts(d, "a", "2026-11-12T19:56:30Z")!.messages.map((m) => m.id)).toEqual(["m1"])
   })
 })
 

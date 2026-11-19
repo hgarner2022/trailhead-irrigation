@@ -81,11 +81,18 @@ function SearchBox({ onSearch, onPick, delay }: { onSearch: CommandSearchProps["
             <CommandGroup key={kind} heading={heading}>
               {rows.map((hit) => (
                 <CommandItem key={`${kind}-${hit.id}`} value={`${kind}-${hit.id}`} onSelect={() => onPick(hit)} className="min-h-11">
-                  <Icon className="text-muted-foreground" aria-hidden />
-                  <span className="min-w-0">
-                    <span className="block truncate font-medium text-foreground">{hit.title}</span>
-                    {hit.detail && <span className="block truncate text-xs text-muted-foreground">{hit.detail}</span>}
-                  </span>
+                  {hit.seeAll ? (
+                    <span data-slot="search-see-all" className="min-w-0 truncate text-sm font-medium text-primary-dark">{hit.title}</span>
+                  ) : (
+                    <>
+                      <Icon className="text-muted-foreground" aria-hidden />
+                      <span className="min-w-0">
+                        <span className="block truncate font-medium text-foreground">{hit.title}</span>
+                        {hit.detail && <span className="block truncate text-xs text-muted-foreground">{hit.detail}</span>}
+                        {hit.contact && <span className="block truncate text-xs text-muted-foreground">{hit.contact}</span>}
+                      </span>
+                    </>
+                  )}
                 </CommandItem>
               ))}
             </CommandGroup>

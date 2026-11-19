@@ -225,6 +225,9 @@ export function shapeAdminData(i: ShapeInput): AdminData {
   const stories = storiesOf(i.events, i.messages, { tech: i.techView })
   const told = new Set(i.windowToldIds)
   const waiting = waitingVisitIds(i.events)
+  // the day a canceled visit had: a cancel clears the visit's day, so the `visit.cancelled` event's `day` is where it is read (events list newest first)
+  const wasDay = new Map<string, string>()
+  for (const e of i.events ?? []) if (e.kind === "visit.cancelled" && e.visitId && typeof e.detail?.day === "string" && !wasDay.has(e.visitId)) wasDay.set(e.visitId, e.detail.day)
   // A pending pass is an unpaid attempt: its visits are never a job anywhere on the Schedule or in the counts.
   const pending = new Set(i.passes.filter((p) => p.status === "pending").map((p) => p.id))
 
@@ -245,6 +248,7 @@ export function shapeAdminData(i: ShapeInput): AdminData {
       ...(v.awaitingPick ? { awaitingPick: true } : {}),
       ...(timeBooked({ isPass: v.passId !== null, startTime: v.startTime, windowTold: told.has(v.id) }) ? { timeBooked: true } : {}),
       ...(waiting.has(v.id) && v.status === "scheduled" ? { waiting: true } : {}),
+      ...(v.status === "cancelled" && wasDay.has(v.id) ? { cancelledWas: wasDay.get(v.id) } : {}),
       ...(v.property ? { property: yardOf(v.property) } : {}),
       ...(v.stopOrder !== null ? { stopOrder: v.stopOrder } : {}),
       ...point,

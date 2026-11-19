@@ -25,7 +25,7 @@ export const ACTION_LABELS: Record<Attention["kind"], string> = {
   "pass-cancelled": "Open",
   "customer-changed": "Open job",
   scheduled: "Open Schedule",
-  unplaced: "Place",
+  unplaced: "Schedule",
 }
 
 /** What a server action answers: done, or the words to show. */
@@ -39,7 +39,17 @@ export interface AttentionActionProps {
 }
 
 /** The row's button: a Card not charged row names the amount it will charge; a failed card on a job with no pass can only be opened. */
-export const attentionLabel = (item: Attention): string => (item.kind === "charge-not-pressed" && item.amount ? `Charge $${item.amount.toLocaleString("en-US")}` : item.kind === "charge-failed" && !item.passId ? "Open" : ACTION_LABELS[item.kind])
+export const attentionLabel = (item: Attention): string => {
+  if (item.kind === "charge-not-pressed" && item.amount) return `Charge $${item.amount.toLocaleString("en-US")}`
+  const base = item.kind === "charge-failed" && !item.passId ? "Open" : ACTION_LABELS[item.kind]
+  // a button names what it opens: the visit, the job or the customer the row is about (the choice `attentionRecord` makes in NeedsAttention.tsx)
+  if (base === "Open" || base === "Open job") {
+    if (item.visitId) return "Open visit"
+    if (item.jobId || item.passId) return "Open job"
+    if (item.customerId) return "Open customer"
+  }
+  return base
+}
 
 export function AttentionAction({ item, onAction, onDismiss }: AttentionActionProps) {
   const label = attentionLabel(item)

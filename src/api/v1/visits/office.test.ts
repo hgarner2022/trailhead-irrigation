@@ -65,7 +65,7 @@ describe("visits.create", () => {
     expect(await linesOfJob(db, out.jobId)).toMatchObject([{ visitId: out.id, unitPrice: 145, serviceKey: "repair" }])
     expect((await callApi(as(readKey), customersGet, { id: "c100" })).jobs.find((j) => j.id === out.jobId)).toMatchObject({ price: 145, kind: "repair", status: "open" })
   })
-  it("with no day waits as Needs a day, minutes from the kind, price left blank", async () => {
+  it("with no day waits as Unscheduled, minutes from the kind, price left blank", async () => {
     const out = await create({ newCustomer: { firstName: "nora", lastName: "ortiz", email: "Nora@Example.com", phone: "303-555-0177", property: { address: "9 Oak St", town: "Erie" } }, kind: "install" })
     expect(out).toMatchObject({ status: "unscheduled", scheduledOn: null, personId: null, durationMinutes: 120, firstName: "Nora", amount: 0 })
     const [job] = await db.select().from(s.job).where(eq(s.job.id, out.jobId))
@@ -185,7 +185,7 @@ describe("visits.create's default assignee", () => {
 })
 
 describe("visits.markNotDone", () => {
-  it("sends a scheduled visit back to Needs a day and keeps the reason", async () => {
+  it("sends a scheduled visit back to Unscheduled and keeps the reason", async () => {
     const v = await create({ customerId: "c100", kind: "repair", scheduledOn: "2027-05-06" })
     await expect(callApi(as(), visitsMarkNotDone, { id: v.id, reason: "other" })).rejects.toMatchObject({ code: "invalid" })
     await expect(callApi(as(readKey), visitsMarkNotDone, { id: v.id, reason: "no-water" })).rejects.toMatchObject({ code: "forbidden" })
@@ -267,7 +267,7 @@ describe("visits.update price", () => {
 })
 
 describe("visits.update unscheduled", () => {
-  it("takes a placed visit back to Needs a day, and refuses one with no day", async () => {
+  it("takes a placed visit back to Unscheduled, and refuses one with no day", async () => {
     const v = await create({ customerId: "c100", kind: "repair", scheduledOn: "2027-05-12" })
     const out = await callApi(as(), visitsUpdate, { id: v.id, unscheduled: true })
     expect(out).toMatchObject({ status: "unscheduled", scheduledOn: null, personId: null })

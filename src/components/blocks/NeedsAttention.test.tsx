@@ -3,6 +3,7 @@ import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import type { Attention } from "@/lib/admin/types"
 import { NeedsAttention } from "./NeedsAttention"
+import { attentionLabel } from "./needs-attention-action"
 
 const now = "2026-11-12T18:00:00Z"
 const items: Attention[] = [
@@ -83,7 +84,7 @@ describe("NeedsAttention", () => {
     const row: Attention = { kind: "charge-failed", key: "c1@t", customerId: "c 1", message: "The card for Nora Vale didn't go through; Nora has the update link", since: "2026-11-17T19:00:00Z" }
     render(<NeedsAttention items={[row]} now={now} />)
     expect(screen.getByRole("link").getAttribute("href")).toBe("/admin/customers?customer=c%201")
-    expect((document.querySelector('[data-slot="attention-action"]') as HTMLElement).textContent).toBe("Open")
+    expect((document.querySelector('[data-slot="attention-action"]') as HTMLElement).textContent).toBe("Open customer")
   })
 
   it("names an overdue invoice, opens its job and offers Remind; a tech reads it with no button", () => {
@@ -131,10 +132,17 @@ describe("NeedsAttention", () => {
     expect(rows()[0]!.querySelector("a")).toHaveAttribute("href", "/admin/schedule?visit=v%201")
   })
 
-  it("shows a customer's own change with its words, opens the visit and offers Open job", () => {
+  it("shows a customer's own change with its words, opens the visit and offers Open visit", () => {
     render(<NeedsAttention items={[{ kind: "customer-changed", key: "v1:cancelled:2027-04-10T15:00:00.000Z", visitId: "v1", message: "Andrea Smith canceled Spring turn-on, Wed, Apr 28, Erie. The day is free.", since: "2026-11-12T17:30:00Z" }]} now={now} onAction={async () => undefined} />)
     expect(screen.getByText("Customer change:")).toBeInTheDocument()
     expect(screen.getByText("Andrea Smith canceled Spring turn-on, Wed, Apr 28, Erie. The day is free.").closest("a")).toHaveAttribute("href", "/admin/schedule?visit=v1")
-    expect(screen.getByRole("button", { name: /^Open job:/ })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: /^Open visit:/ })).toBeInTheDocument()
+  })
+
+  it("a button names what it opens: a visit, a job or a customer", () => {
+    expect(attentionLabel({ kind: "customer-changed", visitId: "v1", message: "m", since: "2026-11-12T17:30:00Z" })).toBe("Open visit")
+    expect(attentionLabel({ kind: "customer-changed", jobId: "j1", message: "m", since: "2026-11-12T17:30:00Z" })).toBe("Open job")
+    expect(attentionLabel({ kind: "customer-changed", customerId: "c1", message: "m", since: "2026-11-12T17:30:00Z" })).toBe("Open customer")
+    expect(attentionLabel({ kind: "new-pass", passId: "p1", jobId: "j1", message: "m", since: "2026-11-12T17:30:00Z" })).toBe("Open job")
   })
 })

@@ -17,10 +17,10 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-/** The snapshot's pass visits with no day, earliest window first, a Place on each row and a quiet Place all above them. */
+/** The snapshot's pass visits with no day, earliest window first, a Place on each row and a quiet Schedule all above them. */
 export const Default: Story = {}
 
-/** Every job has a day: the words of the design, no Place all. */
+/** Every job has a day: the words of the design, no Schedule all. */
 export const Empty: Story = {
   args: { items: [] },
 }
@@ -35,7 +35,7 @@ export const Refused: Story = {
   args: { problems: { [trayItems(data)[0]!.id]: "Ryan Garner is full of turn-on visits on 2027-04-26" } },
 }
 
-/** A tech reads the list: no Place, no Place all. */
+/** A tech reads the list: no Place, no Schedule all. */
 export const ReadOnly: Story = {
   args: { readOnly: true },
 }

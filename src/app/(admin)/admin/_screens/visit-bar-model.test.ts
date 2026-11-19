@@ -10,7 +10,7 @@ const facts = (work: string, over: Partial<Visit> = {}): Pick<VisitFacts, "visit
   ({ visit: { id: "v", jobId: "j", scheduledOn: "2026-11-12", ...over } as Visit, states: { work } as VisitFacts["states"] })
 
 describe("visitBar", () => {
-  it("leads with Place for a visit with no day, Edit beside it, Send a text under More and Cancel visit at the far right", () => {
+  it("leads with Schedule for a visit with no day, Edit beside it, Send a text under More and Cancel visit at the far right", () => {
     expect(visitBar(facts("needs-a-day", { scheduledOn: undefined }), noPlan, "all", TODAY)).toEqual({ primary: "place", secondary: ["edit"], more: ["text"], destructive: "cancel" })
     expect(visitBar(facts("not-done", { scheduledOn: undefined }), noPlan, "all", TODAY).primary).toBe("place")
   })
