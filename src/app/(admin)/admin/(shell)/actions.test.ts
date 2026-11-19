@@ -210,6 +210,17 @@ describe("settings", () => {
     expect((await settingsOf()).people.find((p) => p.id === third.id)).toMatchObject({ role: "admin" })
     expect((await callApi(ctxFor(db, owner), peopleList, { active: "true" })).data.find((p) => p.id === third.id)).toMatchObject({ email: null, canSignIn: false })
   })
+  it("saves a person's hours through people.update with a change log row in words, and refuses a day that ends before it starts", async () => {
+    const now = await settingsOf()
+    const third = now.people.find((p) => p.name === "Third Tech")!
+    expect((await actions.saveSettings({ ...now, people: now.people.map((p) => (p.id === third.id ? { ...p, hoursStart: "07:00", hoursEnd: "15:30" } : p)) })).ok).toBe(true)
+    expect((await settingsOf()).people.find((p) => p.id === third.id)).toMatchObject({ hoursStart: "07:00", hoursEnd: "15:30" })
+    const changes = await db.select().from(s.settingsChange).where(eq(s.settingsChange.organizationId, ORG))
+    expect(changes.some((c) => c.field === "Third Tech hours" && c.fromValue === "09:00 to 17:00" && c.toValue === "07:00 to 15:30")).toBe(true)
+    const bad = await actions.saveSettings({ ...now, people: now.people.map((p) => (p.id === third.id ? { ...p, hoursStart: "16:00", hoursEnd: "15:30" } : p)) })
+    expect(bad).toMatchObject({ ok: false, message: "Third Tech's day ends after it starts." })
+    expect((await actions.saveSettings({ ...now, people: now.people.map((p) => (p.id === third.id ? { ...p, hoursStart: undefined, hoursEnd: undefined } : p)) })).ok).toBe(true)
+  })
   it("takes a removed person out of service and leaves them out of the data, and keeps the last owner", async () => {
     const now = await settingsOf()
     const gone = now.people.find((p) => p.name === "Third Tech")!

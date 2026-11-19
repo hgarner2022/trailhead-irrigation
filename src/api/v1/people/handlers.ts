@@ -2,7 +2,7 @@ import "server-only"
 import { and, asc, eq, ne, sql } from "drizzle-orm"
 import { z } from "zod"
 import * as s from "@/db/schema"
-import { initialsOf } from "@/lib/admin/people"
+import { HHMM, hoursInOrder, hoursOf, initialsOf } from "@/lib/admin/people"
 import { cleanEmail } from "@/lib/format/contact"
 import { ApiError, notFound } from "../../core/errors"
 import { defineHandler } from "../../core/handler"
@@ -27,7 +27,9 @@ export const PersonOut = z.object({
   jobberUserId: z.string().nullable(),
   hasCalendarFeed: z.boolean().describe("Whether the person reads a Jobber calendar feed for busy time. The URL itself is private and never returned."),
   workingDays: z.array(Weekday), capacityByKind: Capacity.describe("Visits of each kind that fit in the person's day."),
-  seasonStart: Day.nullable(), seasonEnd: Day.nullable(), active: z.boolean(),
+  seasonStart: Day.nullable(), seasonEnd: Day.nullable(),
+  hoursStart: z.string().nullable().describe("The weekly working hours, \"HH:MM\"; null reads as 09:00."), hoursEnd: z.string().nullable().describe("The end of the working day, \"HH:MM\"; null reads as 17:00."),
+  active: z.boolean(),
   canSignIn: z.boolean().describe("True when the person has an email and is active."),
 })
 export type PersonOut = z.infer<typeof PersonOut>
@@ -42,18 +44,19 @@ const Truck = z.string().trim().min(1).max(40).describe("The truck they usually 
 const JobberUserId = z.string().max(80)
 const CalendarFeedUrl = z.string().url().max(500).nullable().describe("The person's Jobber calendar subscription (iCal) URL; null clears it.")
 const WorkingDays = z.array(Weekday).min(1)
+const Hours = z.string().regex(HHMM, "Use a time like 09:00")
 const fields = {
   name: Name, initials: Initials.optional(),
   email: Email.optional().describe("Lets the person sign in; unique in the organization, ignoring case."),
   phone: Phone.optional(), role: Role.default("tech"), truck: Truck.optional(), jobberUserId: JobberUserId.optional(), calendarFeedUrl: CalendarFeedUrl.optional(),
   workingDays: WorkingDays.default(WEEKDAYS_DEFAULT), capacityByKind: Capacity.default(CAPACITY_DEFAULT),
-  seasonStart: Day.optional(), seasonEnd: Day.optional(),
+  seasonStart: Day.optional(), seasonEnd: Day.optional(), hoursStart: Hours.optional(), hoursEnd: Hours.optional(),
 }
 const changes = {
   name: Name.optional(), initials: Initials.optional(),
   email: Email.nullable().optional(), phone: Phone.nullable().optional(), role: Role.optional(), truck: Truck.nullable().optional(), jobberUserId: JobberUserId.nullable().optional(), calendarFeedUrl: CalendarFeedUrl.optional(),
   workingDays: WorkingDays.optional(), capacityByKind: Capacity.optional(),
-  seasonStart: Day.nullable().optional(), seasonEnd: Day.nullable().optional(),
+  seasonStart: Day.nullable().optional(), seasonEnd: Day.nullable().optional(), hoursStart: Hours.nullable().optional(), hoursEnd: Hours.nullable().optional(),
 }
 
 export type PersonRow = typeof s.person.$inferSelect
@@ -62,7 +65,7 @@ type Ctx = { db: import("@/db/types").Database; organizationId: string }
 export const personOut = (r: PersonRow): PersonOut => ({
   id: r.id, name: r.name, initials: r.initials, email: r.email, phone: r.phone, role: r.role, truck: r.truck, jobberUserId: r.jobberUserId,
   hasCalendarFeed: Boolean(r.calendarFeedUrl), workingDays: r.workingDays, capacityByKind: r.capacityByKind,
-  seasonStart: r.seasonStart, seasonEnd: r.seasonEnd, active: r.active, canSignIn: r.email !== null && r.active,
+  seasonStart: r.seasonStart, seasonEnd: r.seasonEnd, hoursStart: r.hoursStart, hoursEnd: r.hoursEnd, active: r.active, canSignIn: r.email !== null && r.active,
 })
 
 export { initialsOf }
@@ -120,7 +123,11 @@ async function assertEmailFree(ctx: Ctx, email: string, exceptId?: string) {
   if (taken) throw new ApiError("conflict", `That email already belongs to ${taken.name}`)
 }
 
+/** The words for hours that end before they start (or not at all), the screen's own too. */
+export const HOURS_ORDER = "A day ends after it starts."
+
 export async function createPerson(ctx: Ctx, input: z.infer<z.ZodObject<typeof fields>>): Promise<PersonRow> {
+  if (!hoursInOrder(input.hoursStart ?? hoursOf({}).start, input.hoursEnd ?? hoursOf({}).end)) throw new ApiError("unprocessable", HOURS_ORDER)
   if (input.email) await assertEmailFree(ctx, input.email)
   const [row] = await ctx.db.insert(s.person).values({ organizationId: ctx.organizationId, ...input, initials: input.initials ?? initialsOf(input.name) }).returning()
   return row!
@@ -137,6 +144,9 @@ export async function updatePerson(ctx: Ctx, id: string, input: z.infer<z.ZodObj
   const person = await loadPerson(ctx, id)
   if (input.role !== undefined && input.role !== "owner") await assertAnotherOwner(ctx, person)
   if (input.email) await assertEmailFree(ctx, input.email, id)
+  // The hours are checked as they will stand: a null clears one back to its 09:00 or 17:00.
+  const now = hoursOf({ hoursStart: input.hoursStart === undefined ? person.hoursStart : input.hoursStart, hoursEnd: input.hoursEnd === undefined ? person.hoursEnd : input.hoursEnd })
+  if ((input.hoursStart !== undefined || input.hoursEnd !== undefined) && !hoursInOrder(now.start, now.end)) throw new ApiError("unprocessable", HOURS_ORDER)
   const defined = Object.fromEntries(Object.entries(input).filter(([, v]) => v !== undefined))
   if (Object.keys(defined).length) await ctx.db.update(s.person).set(defined).where(eq(s.person.id, id))
   return loadPerson(ctx, id)
@@ -169,7 +179,7 @@ export const peopleCreate = defineHandler({
 })
 
 export const peopleUpdate = defineHandler({
-  name: "people.update", method: "PATCH", path: "/people/{id}", scope: "admin", summary: "Change a person's name, contact, role, truck, Jobber user, working days, capacity or season.",
+  name: "people.update", method: "PATCH", path: "/people/{id}", scope: "admin", summary: "Change a person's name, contact, role, truck, Jobber user, working days, hours, most per day by kind or season.",
   input: z.object(changes).extend({ id: idInput.shape.id }), output: PersonOut,
   async run(ctx, { id, ...input }) {
     const before = await loadPerson(ctx, id)

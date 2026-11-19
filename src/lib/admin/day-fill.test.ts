@@ -33,6 +33,18 @@ describe("dayFill", () => {
     expect(dayFill([], "2026-11-24", [{ ...weekdays, seasonStart: "2027-03-01" }], TZ).working).toBe(0)
   })
 
+  it("reads each working person's own hours, 09:00 to 17:00 when none are saved", () => {
+    const early = { ...weekdays, hoursStart: "07:00", hoursEnd: "15:30" }
+    const half = { ...weekdays, hoursStart: "09:00", hoursEnd: "13:00" }
+    const fill = dayFill([visit("a", "Erie")], "2026-11-24", [early, half, weekdays], TZ)
+    expect(fill.working).toBe(3)
+    expect(fill.openMinutes).toBe(8.5 * 60 + 4 * 60 + DEFAULT_DAY_MINUTES - 60)
+    // a person who does not work the day adds nothing, whatever their hours
+    expect(dayFill([], "2026-11-28", [early], TZ).openMinutes).toBe(0)
+    // hours that end before they start are worth nothing rather than a negative day
+    expect(dayFill([], "2026-11-24", [{ ...weekdays, hoursStart: "17:00", hoursEnd: "09:00" }], TZ).openMinutes).toBe(0)
+  })
+
   it("says Day off when no one works it and No stops when someone does", () => {
     expect(fillWords(dayFill([], "2026-11-28", [weekdays], TZ))).toBe("Day off")
     expect(fillWords(dayFill([], "2026-11-24", [weekdays], TZ))).toBe("No stops")

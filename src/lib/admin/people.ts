@@ -12,6 +12,28 @@ export const ROLES: readonly PersonRole[] = ["owner", "admin", "tech"]
 export const onRoute = (p: Pick<Person, "truck">): boolean => Boolean(p.truck)
 export const routePeople = <P extends Pick<Person, "truck">>(people: readonly P[]): P[] => people.filter(onRoute)
 
+/** What carries hours: a person as the screens hold them (absent) or as the database does (null). */
+export type HoursFields = { hoursStart?: string | null; hoursEnd?: string | null }
+/** The hours a person works when none are saved: 9 to 5. */
+export const DEFAULT_HOURS = { start: "09:00", end: "17:00" } as const
+/** "HH:MM", 00:00 to 23:59; what the hours columns hold. */
+export const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/
+const minuteOfDay = (hhmm: string) => Number(hhmm.slice(0, 2)) * 60 + Number(hhmm.slice(3, 5))
+/** A person's working hours, the saved ones or 09:00 to 17:00. */
+export const hoursOf = (p: HoursFields): { start: string; end: string } => ({ start: p.hoursStart ?? DEFAULT_HOURS.start, end: p.hoursEnd ?? DEFAULT_HOURS.end })
+/** The length of a person's working day in minutes; never below zero. */
+export function hoursMinutes(p: HoursFields): number {
+  const { start, end } = hoursOf(p)
+  return Math.max(0, minuteOfDay(end) - minuteOfDay(start))
+}
+/** "09:00 to 17:00", as the change log and the screen say hours. */
+export const hoursWords = (p: HoursFields): string => {
+  const { start, end } = hoursOf(p)
+  return `${start} to ${end}`
+}
+/** True when `end` is later than `start`; both "HH:MM". */
+export const hoursInOrder = (start: string, end: string): boolean => HHMM.test(start) && HHMM.test(end) && minuteOfDay(end) > minuteOfDay(start)
+
 /** "Ryan" from "Ryan Garner"; null for no person or a blank name, so a message says nothing about who rather than half a sentence. */
 export function firstNameOf(name: string | null | undefined): string | null {
   const first = name?.trim().split(/\s+/)[0]

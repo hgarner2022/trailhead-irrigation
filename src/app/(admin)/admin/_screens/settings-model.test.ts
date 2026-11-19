@@ -5,7 +5,7 @@ import { SERVICE_LIST } from "@/lib/services"
 import {
   setServiceField, createKey, revokeKey, secretFor, SAMPLE_KEYS, clip, daysWords, type SettingsState,
 } from "./settings-model"
-import { addPerson, removePerson, setCapacity, setPersonName, setPersonRole, setPersonText, setSeason, toggleWorkingDay } from "./settings-people"
+import { addPerson, removePerson, setCapacity, setHours, setPersonName, setTakesVisits, setPersonRole, setPersonText, setSeason, toggleWorkingDay } from "./settings-people"
 
 const data = snapshot as AdminData
 const state: SettingsState = { settings: data.settings, changes: [], keys: SAMPLE_KEYS, services: SERVICE_LIST as ServiceItem[] }
@@ -58,7 +58,7 @@ describe("people", () => {
     const next = setCapacity(state, "person_truck-1", "blowout", 12, actor)
     expect(next.settings.people[0].capacityByKind.blowout).toBe(12)
     expect(next.settings.people[0].capacityByKind.repair).toBe(4)
-    expect(last(next)).toMatchObject({ field: "Ryan Garner blowouts per day", from: "10", to: "12" })
+    expect(last(next)).toMatchObject({ field: "Ryan Garner most blowouts per day", from: "10", to: "12" })
     expect(setCapacity(state, "person_truck-1", "blowout", 1.5, actor)).toBe(state)
     expect(setCapacity(state, "person_truck-1", "blowout", -1, actor)).toBe(state)
     expect(setCapacity(state, "person_truck-1", "blowout", 10, actor)).toBe(state)
@@ -101,7 +101,7 @@ describe("people", () => {
     expect(last(cleared)).toMatchObject({ field: "Tech Two email", from: "sam@example.com", to: "None" })
     const noTruck = setPersonText(state, "person_truck-2", "truck", "", actor)
     expect(noTruck.settings.people[1].truck).toBeUndefined()
-    expect(last(noTruck)).toMatchObject({ field: "Tech Two truck", from: "Truck 2", to: "None" })
+    expect(last(noTruck)).toMatchObject({ field: "Tech Two schedule label", from: "Truck 2", to: "None" })
     expect(setPersonText(state, "person_truck-2", "phone", "", actor)).toBe(state)
   })
 
@@ -126,6 +126,46 @@ describe("people", () => {
     const cleared = setSeason(to, "person_truck-2", "seasonStart", "", actor)
     expect(cleared.settings.people[1].seasonStart).toBeUndefined()
     expect(last(cleared)).toMatchObject({ field: "Tech Two season from", to: "All year" })
+  })
+})
+
+describe("hours and takes visits", () => {
+  it("shows 09:00 to 17:00 for a person with no saved hours and logs the range", () => {
+    const next = setHours(state, "person_truck-2", "hoursStart", "07:30", actor)
+    expect(next.settings.people[1].hoursStart).toBe("07:30")
+    expect(last(next)).toMatchObject({ field: "Tech Two hours", from: "09:00 to 17:00", to: "07:30 to 17:00" })
+    const both = setHours(next, "person_truck-2", "hoursEnd", "15:00", actor)
+    expect(last(both)).toMatchObject({ from: "07:30 to 17:00", to: "07:30 to 15:00" })
+  })
+
+  it("refuses a time that is not HH:MM and a day that would end before it starts", () => {
+    expect(setHours(state, "person_truck-2", "hoursStart", "7am", actor)).toBe(state)
+    expect(setHours(state, "person_truck-2", "hoursStart", "17:00", actor)).toBe(state)
+    expect(setHours(state, "person_truck-2", "hoursEnd", "09:00", actor)).toBe(state)
+    expect(setHours(state, "person_truck-2", "hoursEnd", "08:00", actor)).toBe(state)
+    expect(setHours(state, "nope", "hoursEnd", "15:00", actor)).toBe(state)
+  })
+
+  it("puts a day back to its default with a blank, logging nothing when it already was", () => {
+    const set = setHours(state, "person_truck-2", "hoursEnd", "15:00", actor)
+    const back = setHours(set, "person_truck-2", "hoursEnd", "", actor)
+    expect(back.settings.people[1].hoursEnd).toBeUndefined()
+    expect(setHours(state, "person_truck-2", "hoursEnd", "", actor)).toBe(state)
+    // typing the default is no change: nothing is logged
+    expect(setHours(state, "person_truck-2", "hoursEnd", "17:00", actor)).toBe(state)
+  })
+
+  it("turns Takes visits on with a label of their own name and off by removing it", () => {
+    const added = addPerson(state, actor)
+    const id = added.settings.people[2].id
+    const on = setTakesVisits(added, id, true, actor)
+    expect(on.settings.people[2].truck).toBe("New person")
+    expect(last(on)).toMatchObject({ field: "New person takes visits", from: "No", to: "Yes" })
+    expect(setTakesVisits(on, id, true, actor)).toBe(on)
+    const off = setTakesVisits(on, id, false, actor)
+    expect(off.settings.people[2].truck).toBeUndefined()
+    expect(last(off)).toMatchObject({ from: "Yes", to: "No" })
+    expect(setTakesVisits(state, "nope", true, actor)).toBe(state)
   })
 })
 

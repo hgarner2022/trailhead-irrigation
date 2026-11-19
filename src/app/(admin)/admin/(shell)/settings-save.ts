@@ -7,7 +7,7 @@ import { settingsGet, settingsUpdate } from "@/api/v1/settings/handlers"
 import { servicesList, servicesUpdate } from "@/api/v1/services/handlers"
 import { LAST_OWNER, peopleCreate, peopleDeactivate, peopleList, peopleUpdate, type PersonOut } from "@/api/v1/people/handlers"
 import { emailProblem } from "@/lib/email-check"
-import { TEXT_MAX, hasAnotherOwner } from "@/lib/admin/people"
+import { TEXT_MAX, hasAnotherOwner, hoursInOrder, hoursOf } from "@/lib/admin/people"
 import type { AreaGroup, OrganizationSettings, Person, ServiceItem } from "@/lib/admin/types"
 import { messageProblems } from "../_screens/settings-messages"
 
@@ -28,6 +28,7 @@ export function settingsProblems(after: OrganizationSettings): string[] {
     if (!p.name.trim()) problems.push("Give every person a name before saving.")
     if (p.email && emailProblem(p.email)) problems.push(`${who}'s email doesn't look complete.`)
     if (p.workingDays.length === 0) problems.push(`Give ${who} at least one working day.`)
+    if (!hoursInOrder(hoursOf(p).start, hoursOf(p).end)) problems.push(`${who}'s day ends after it starts.`)
     for (const [field, max] of Object.entries(TEXT_MAX) as [keyof typeof TEXT_MAX, number][])
       if ((p[field] ?? "").length > max) problems.push(`${who}'s ${field === "jobberUserId" ? "Jobber user" : field} is longer than ${max} characters.`)
   }
@@ -47,10 +48,11 @@ export function settingsProblems(after: OrganizationSettings): string[] {
 const personFields = (p: Person) => ({
   name: p.name, initials: p.initials, email: p.email ?? null, phone: p.phone ?? null, role: p.role, truck: p.truck ?? null, jobberUserId: p.jobberUserId ?? null,
   workingDays: p.workingDays, capacityByKind: p.capacityByKind, seasonStart: p.seasonStart ?? null, seasonEnd: p.seasonEnd ?? null,
+  hoursStart: p.hoursStart ?? null, hoursEnd: p.hoursEnd ?? null,
 })
 const apiFields = (p: PersonOut) => ({
   name: p.name, initials: p.initials, email: p.email, phone: p.phone, role: p.role, truck: p.truck, jobberUserId: p.jobberUserId,
-  workingDays: p.workingDays, capacityByKind: p.capacityByKind, seasonStart: p.seasonStart, seasonEnd: p.seasonEnd,
+  workingDays: p.workingDays, capacityByKind: p.capacityByKind, seasonStart: p.seasonStart, seasonEnd: p.seasonEnd, hoursStart: p.hoursStart, hoursEnd: p.hoursEnd,
 })
 /** One people.update, then a check that the row the API read back is the one sent: a save that did not take is an error the screen shows, never "Saved". */
 async function updateOnePerson(ctx: Ctx, p: Person): Promise<void> {

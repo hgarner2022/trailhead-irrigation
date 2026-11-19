@@ -21,10 +21,9 @@ export const NEW_BLOCKS = ["RecordPanel", "RecordFooter", "ConfirmDialog", "Spli
  * entry names the step of docs/plans/2026-11-18-admin-holistic-design.md, section 12, that pays it off. Delete the entry when it does.
  */
 export const ALLOW = {
-  // columns and words: the grids get their final columns (step 9); People gets Takes visits (step 6)
+  // columns and words: the grids get their final columns (step 9)
   "_screens/customers-columns.tsx": { columns: "Nov 18 2026, step 9: the final column sets (ten today, eight then)" },
   "_screens/jobs-columns.tsx": { columns: "Nov 18 2026, step 9: the final column sets (nine today, eight then)" },
-  "_screens/settings-tabs/People.tsx": { words: "Nov 18 2026, step 6: Takes visits replaces the truck label", "no-table-label": "Nov 18 2026, step 6: People becomes a list with a sheet" },
   // overlays: New job moves onto the sheet recipe (step 2) and Settings onto its shell (step 6)
   "_screens/NewJob.tsx": { overlays: "Nov 18 2026, step 2: New job becomes SidePanel variant sheet", "no-table-label": "Nov 18 2026, step 2: New job's fields become FormRows" },
   "_screens/settings-tabs/ApiKeys.tsx": { overlays: "Nov 18 2026, step 6: Settings shell", "no-table-label": "Nov 18 2026, step 6: Settings shell (FormRow and the list recipe)" },

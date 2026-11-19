@@ -30,6 +30,7 @@ const personFromApi = (p: PersonOut): Person => ({
   id: p.id, name: p.name, initials: p.initials, role: p.role, workingDays: p.workingDays, capacityByKind: p.capacityByKind,
   ...(p.email ? { email: p.email } : {}), ...(p.phone ? { phone: p.phone } : {}), ...(p.truck ? { truck: p.truck } : {}), ...(p.jobberUserId ? { jobberUserId: p.jobberUserId } : {}),
   ...(p.seasonStart ? { seasonStart: p.seasonStart } : {}), ...(p.seasonEnd ? { seasonEnd: p.seasonEnd } : {}),
+  ...(p.hoursStart ? { hoursStart: p.hoursStart } : {}), ...(p.hoursEnd ? { hoursEnd: p.hoursEnd } : {}),
 })
 const MAX_PAGES = 100
 /** How many of the organization's newest events the panels' stories are built from (decision 8 of the step 5 plan). */

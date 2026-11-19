@@ -137,6 +137,9 @@ export const person = pgTable(
     capacityByKind: jsonb("capacity_by_kind").$type<Record<CapacityKind, number>>().notNull().default({ "turn-on": 8, inspection: 8, blowout: 10, repair: 4, other: 2 }),
     seasonStart: text("season_start"),
     seasonEnd: text("season_end"),
+    /** the weekly working hours, "HH:MM"; null reads as 09:00 to 17:00 (docs/DATA_MODEL.md, person) */
+    hoursStart: text("hours_start"),
+    hoursEnd: text("hours_end"),
     active: boolean("active").notNull().default(true),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
@@ -181,6 +184,9 @@ export const service = pgTable(
     price: integer("price"),
     extraZonePrice: integer("extra_zone_price"),
     slotMinutes: integer("slot_minutes").notNull(),
+    /** the span of the year a visit's day may fall in, "MM-DD" repeating yearly; both null is all year, a "to" before the "from" wraps New Year */
+    bookableFrom: text("bookable_from"),
+    bookableTo: text("bookable_to"),
     quoteOnly: boolean("quote_only").notNull().default(false),
     jobberProductId: text("jobber_product_id"),
     createdAt: createdAt(),

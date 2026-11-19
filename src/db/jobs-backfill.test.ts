@@ -48,8 +48,8 @@ describe("migration 0014: line items backfill", () => {
     const all = files()
     const at = all.findIndex((f) => f.startsWith("0014_line_items"))
     expect(at).toBeGreaterThan(0)
-    // 0015 to 0018 only add the property, card, pass and payment columns the seed now writes; the seed needs them to insert.
-    const later = ["0015_property_fields", "0016_customer_card", "0017_job_pass", "0018_payment"].map((name) => all.find((f) => f.startsWith(name))!)
+    // 0015 to 0018 only add the property, card, pass and payment columns the seed now writes, and 0023 the person hours it writes; the seed needs them to insert.
+    const later = ["0015_property_fields", "0016_customer_card", "0017_job_pass", "0018_payment", "0023_step6_hours_dates"].map((name) => all.find((f) => f.startsWith(name))!)
     for (const f of [...all.slice(0, at + 1), ...later]) for (const stmt of migration(f)) if (stmt.trim()) await client.exec(stmt)
     // The seed also writes the old pass id and the job dates, columns migration 0021 adds, and no longer writes `job.kind` (0021 makes it nullable); only those job column statements run here.
     for (const stmt of migration(all.find((f) => f.startsWith("0021_legacy_expand"))!)) if (/^ALTER TABLE "job" (ADD COLUMN|ALTER COLUMN "kind" DROP NOT NULL)/.test(stmt.trim())) await client.exec(stmt)

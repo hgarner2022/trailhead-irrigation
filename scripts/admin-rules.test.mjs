@@ -179,15 +179,16 @@ test("a new block's stories need Default, Empty and Phone", () => {
 // the allowlist
 
 test("an allowlisted file reports a note with its date and step instead of failing", () => {
-  const r = run({ "app/(admin)/admin/_screens/settings-tabs/People.tsx": `export const T = () => <><h2>Truck 1</h2><label htmlFor="a">A</label></>\n` })
+  const cols = (n) => `export const cols: GridColumnDef<Row>[] = [\n${Array.from({ length: n }, (_, i) => `  { id: "c${i}", header: "C${i}" },`).join("\n")}\n]\n`
+  const r = run({ "app/(admin)/admin/_screens/jobs-columns.tsx": cols(9) })
   assert.equal(r.status, 0, r.out)
-  assert.match(r.out, /People\.tsx: words allowed until Nov 18 2026, step 6/)
+  assert.match(r.out, /jobs-columns\.tsx: columns allowed until Nov 18 2026, step 9/)
 })
 
 test("an allowlist entry that no longer matches a violation fails, so the list only shrinks", () => {
-  const r = run({ "app/(admin)/admin/_screens/settings-tabs/People.tsx": `export const T = () => <h2>People</h2>\n` })
+  const r = run({ "app/(admin)/admin/_screens/jobs-columns.tsx": `export const T = () => <h2>Jobs</h2>\n` })
   assert.equal(r.status, 1)
-  assert.match(r.out, /People\.tsx: ALLOW entry for words no longer matches a violation; delete it/)
+  assert.match(r.out, /jobs-columns\.tsx: ALLOW entry for columns no longer matches a violation; delete it/)
 })
 
 test("every allowlist entry names a date and a step of the build order", () => {

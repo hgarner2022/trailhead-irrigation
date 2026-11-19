@@ -17,7 +17,7 @@ export interface CommitInputProps {
   value: string | number
   label: string
   onCommit: (raw: string) => void
-  type?: "text" | "number" | "date"
+  type?: "text" | "number" | "date" | "time"
   min?: number
   max?: number
   className?: string
