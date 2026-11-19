@@ -41,6 +41,7 @@ export const visitsMarkClosed = defineHandler({
     if (visit.status === "completed") return visitOut(ctx, await loadVisit(ctx, visit.id))
     if (!(["scheduled", "not-closed"] as string[]).includes(visit.status)) throw new ApiError("unprocessable", `A ${visit.status} visit cannot be closed`)
     const day = input.completedOn ?? today(ctx)
+    if (day > today(ctx)) throw new ApiError("unprocessable", "Done on can't be in the future.")
     await ctx.db.update(s.visit).set({ status: "completed", completedOn: day }).where(eq(s.visit.id, visit.id))
     await emitEvent(ctx.db, ctx.organizationId, "visit.done", { visitId: visit.id, completedOn: day }, {
       about: "visit", aboutId: visit.id, customerId: visit.customerId, jobId: visit.jobId, visitId: visit.id, who: whoOf(ctx), at: ctx.now,
