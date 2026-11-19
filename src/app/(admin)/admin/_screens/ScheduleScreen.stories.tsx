@@ -228,7 +228,7 @@ export const PlaceAllPreview: Story = {
     await userEvent.click(await canvas.findByRole("button", { name: /^Schedule all \d+$/ }))
     const dialog = within(await within(document.body).findByRole("dialog"))
     await expect(dialog.getByRole("heading", { name: /^Schedule all \d+$/ })).toBeInTheDocument()
-    await expect(dialog.getAllByText(/Ryan Garner$/).length).toBeGreaterThan(0)
+    await expect(dialog.getAllByText(/Ryan Garner · Any time$/).length).toBeGreaterThan(0)
   },
 }
 
