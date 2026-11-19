@@ -115,6 +115,7 @@ export function jobMoney(
   rule: TaxRule,
   invoice?: MoneyInvoice,
   paidBillVisitIds: readonly string[] = [],
+  pass?: { doneVisitIds: readonly string[] },
 ): JobMoney {
   const total = jobTotal(lines, rule)
   const paid = paidTotal(payments)
@@ -126,6 +127,10 @@ export function jobMoney(
   // A visit is paid by its own rows and by its share of the payments made on the job as a whole (`allocateJobPayments`).
   const credit = allocateJobPayments(payments, live.map((v) => ({ id: v.id, done: Boolean(v.done), price: v.price ?? 0, doneOn: v.doneOn })), paidBillVisitIds)
   const paidVisits = live.filter((v) => isPaid([...payments.filter((p) => p.visitId === v.id), ...(credit.get(v.id) ?? [])], v.price)).length
+  // A Season Pass is charged to its card after each visit: until a visit is done and unpaid nothing is owed yet, so it is not "unpaid".
+  if (pass && !live.some((v) => pass.doneVisitIds.includes(v.id) && !isPaid([...payments.filter((p) => p.visitId === v.id), ...(credit.get(v.id) ?? [])], v.price))) {
+    return { paid, total, owed, words: `$${owed}, charged after each visit`, billSent: false }
+  }
   return { paid, total, owed, words: live.length > 1 && paidVisits > 0 ? `${paidVisits} of ${live.length} paid, $${owed} unpaid` : `$${owed} unpaid`, billSent: false }
 }
 

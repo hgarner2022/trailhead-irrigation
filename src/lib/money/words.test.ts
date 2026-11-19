@@ -74,6 +74,22 @@ describe("allocateJobPayments", () => {
   })
 })
 
+describe("jobMoney for a Season Pass", () => {
+  const visits = [{ id: "v1", price: 140 }, { id: "v2", price: 140 }]
+  const pass = (doneVisitIds: string[]) => ({ doneVisitIds })
+  it("is charged after each visit, not unpaid, until a visit is done", () => {
+    expect(jobMoney([line(140), line(140)], [], visits, NO_TAX, undefined, [], pass([])).words).toBe("$280, charged after each visit")
+  })
+  it("reads unpaid once a done visit has not been paid, and charged-after again once it is", () => {
+    expect(jobMoney([line(140), line(140)], [], visits.map((v) => ({ ...v, done: v.id === "v1" })), NO_TAX, undefined, [], pass(["v1"])).words).toBe("$280 unpaid")
+    expect(jobMoney([line(140), line(140)], [pay({ amount: 140 })], visits.map((v) => ({ ...v, done: v.id === "v1" })), NO_TAX, undefined, [], pass(["v1"])).words).toBe("$140, charged after each visit")
+  })
+  it("leaves a job that is not a pass as it was, and Paid and Invoice sent as they were", () => {
+    expect(jobMoney([line(280)], [], [{ id: "v1" }], NO_TAX).words).toBe("$280 unpaid")
+    expect(jobMoney([line(140)], [pay({ amount: 140 })], [{ id: "v1", price: 140 }], NO_TAX, undefined, [], pass(["v1"])).words).toBe("Paid")
+  })
+})
+
 describe("jobMoney", () => {
   const visits = [{ id: "v1" }, { id: "v2" }, { id: "v3" }]
   const lines = [line(145), line(115), line(115)]

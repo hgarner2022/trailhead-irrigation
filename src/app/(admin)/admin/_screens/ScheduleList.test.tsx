@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it, vi } from "vitest"
-import { render, screen, within } from "@testing-library/react"
+import { fireEvent, render, screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import type { AdminData, Visit } from "@/lib/admin/types"
@@ -209,6 +209,7 @@ describe("VisitsScreen", () => {
     const a = actions({ move: vi.fn().mockResolvedValue({ ok: false, message: "Truck 1 is full of repair visits on 2026-11-24" }) })
     renderScreen(a, { defaultVisitId: "a" })
     await userEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Move" }))
+    fireEvent.change(ask().getByLabelText("Day"), { target: { value: "2026-11-25" } })
     await userEvent.click(ask().getByRole("button", { name: "Move and text the customer" }))
     expect(await screen.findByText("Truck 1 is full of repair visits on 2026-11-24")).toBeInTheDocument()
   })

@@ -251,7 +251,7 @@ async function jobsOf(ctx: Ctx, customerId: string) {
       lines: lines.map((l) => ({ id: l.id, name: l.name, description: l.description, quantity: l.quantity, unitPrice: l.unitPrice, taxable: l.taxable, cancelledAt: l.cancelledAt?.toISOString() ?? null, visitId: l.visitId })),
       total,
       payments: payments.map((p) => paymentOut(ctx, p)),
-      money: jobMoney(lines, payments, jobVisits.map((v) => ({ id: v.id, cancelled: v.status === "cancelled" || v.status === "skipped", price: visitPrice(linesOfVisit(lines, v.id), rule), done: v.status === "completed", doneOn: v.completedOn })), rule, bill, paidBillVisits),
+      money: jobMoney(lines, payments, jobVisits.map((v) => ({ id: v.id, cancelled: v.status === "cancelled" || v.status === "skipped", price: visitPrice(linesOfVisit(lines, v.id), rule), done: v.status === "completed", doneOn: v.completedOn })), rule, bill, paidBillVisits, j.season !== null ? { doneVisitIds: jobVisits.filter((v) => v.status === "completed").map((v) => v.id) } : undefined),
       invoiceId: bill?.id ?? null,
       visits: jobVisits.map((v) => ({ id: v.id, kind: v.kind, status: v.status, scheduledOn: v.scheduledOn, amount: visitPrice(linesOfVisit(lines, v.id), rule) })),
       events: stories[index]!,
