@@ -91,7 +91,7 @@ describe("GET /api/places", () => {
     vi.stubEnv("GOOGLE_PLACES_KEY", "k")
     const fetchFn = vi.fn(async (url: string, init: RequestInit) => {
       expect(url).toBe("https://places.googleapis.com/v1/places/ChIJbriggs")
-      expect(init.headers).toMatchObject({ "X-Goog-Api-Key": "k", "X-Goog-FieldMask": "id,formattedAddress,addressComponents", Referer: "https://www.trailheadirrigation.com/" })
+      expect(init.headers).toMatchObject({ "X-Goog-Api-Key": "k", "X-Goog-FieldMask": "id,formattedAddress,addressComponents,location", Referer: "https://www.trailheadirrigation.com/" })
       return json(details)
     })
     vi.stubGlobal("fetch", fetchFn)

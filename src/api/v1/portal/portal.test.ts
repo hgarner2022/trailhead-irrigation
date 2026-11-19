@@ -234,11 +234,11 @@ describe("visits.areaDays and visits.pick for a one-off job and the 24-hour cut-
     await expect(callApi(me(dana, "2027-04-20T15:00:00Z"), visitsAreaDays, { id: v.id, count: 6 })).rejects.toMatchObject({ code: "invalid" })
   })
 
-  it("never offers today or tomorrow: the earliest day on offer is two days out, so a same-day or next-day change is never offered", async () => {
+  it("never offers today: the earliest day on offer is tomorrow (settled), and a visit moved there is then inside the 24-hour rule", async () => {
     const v = await callApi(office("2027-05-03T15:00:00Z"), visitsCreate, { customerId: dana, kind: "turn-on", scheduledOn: "2027-05-25", price: 145 })
     const { days } = await callApi(me(dana, "2027-05-03T15:00:00Z"), visitsAreaDays, { id: v.id, count: 5 })
     expect(days.length).toBeGreaterThan(0)
-    for (const d of days) expect(d >= "2027-05-05").toBe(true)
+    for (const d of days) expect(d >= "2027-05-04").toBe(true)
   })
 
   it("marks the visit with what the customer may do: reschedule and cancel, then Text Ryan inside 24 hours, with the last minute to change it", async () => {

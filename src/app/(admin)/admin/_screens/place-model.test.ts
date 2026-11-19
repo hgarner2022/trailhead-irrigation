@@ -36,7 +36,7 @@ describe("placeFor: the next open day, the first person with room", () => {
     expect(next).toMatchObject({ ok: true, placement: { personId: "p1", day: "2026-11-16" } })
   })
 
-  it("skips a day off, and a day that person works another area group", () => {
+  it("skips a day off, and a day that person is full of that kind (a Louisville repair fills Ryan's one repair a day)", () => {
     const sat = placeFor(item("a"), ctx({ people: [person("p1", "Ryan Garner", { workingDays: ["sat"] })] }))
     expect(sat).toMatchObject({ ok: true, placement: { day: "2026-11-14" } })
     const south = onDay("x", "p1", "2026-11-13", { town: "Louisville" })
@@ -54,7 +54,7 @@ describe("placeFor: the next open day, the first person with room", () => {
     const none = placeFor(item("a"), ctx({ people: [person("p1", "Ryan Garner", { capacityByKind: caps({ repair: 0 }) })] }))
     expect(none.ok).toBe(false)
     expect((none as { reason: string }).reason).toMatch(/^No open day before .+\. Pick a day yourself\.$/)
-    expect(PLACE_HORIZON_DAYS).toBe(180)
+    expect(PLACE_HORIZON_DAYS).toBe(56)
   })
 
   it("keeps a person to the season they work, and leaves a canceled visit out of the count", () => {
@@ -66,6 +66,22 @@ describe("placeFor: the next open day, the first person with room", () => {
 
   it("answers for no one on the schedule", () => {
     expect(placeFor(item("a"), ctx({ people: [] })).ok).toBe(false)
+  })
+})
+
+describe("placeFor: the offer rule's preselected day", () => {
+  it("prefers the day that already has work in the customer's town over the soonest day, within the soonest five", () => {
+    const wedErie = onDay("x", "p1", "2026-11-18", { town: "Erie", kind: "turn-on" })
+    const r = placeFor(item("a", { kind: "blowout" }), ctx({ visits: [wedErie] }))
+    expect(r).toMatchObject({ ok: true, placement: { personId: "p1", day: "2026-11-18" } })
+    // a repair is always offered the earliest open day first, the rule's own exception
+    expect(placeFor(item("b"), ctx({ visits: [wedErie] }))).toMatchObject({ ok: true, placement: { day: "2026-11-13" } })
+  })
+
+  it("a day too short for the job is not offered: the hours are the person's own", () => {
+    const short = person("p1", "Ryan Garner", { hoursStart: "09:00", hoursEnd: "10:00" })
+    // a two-hour repair never fits a one-hour day: no day at all
+    expect(placeFor(item("a"), ctx({ people: [short] })).ok).toBe(false)
   })
 })
 

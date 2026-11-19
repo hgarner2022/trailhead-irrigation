@@ -20,6 +20,9 @@ export interface PlaceSuggestion {
   state: string
   /** empty on a Google suggestion until its details answer, and on a typed address with no zip */
   zip: string
+  /** the point Google's details give (WGS84); absent on a typed address and on a suggestion before its details */
+  lat?: number
+  lng?: number
 }
 
 export type PlaceProvider = (query: string, signal?: AbortSignal) => Promise<PlaceSuggestion[]>

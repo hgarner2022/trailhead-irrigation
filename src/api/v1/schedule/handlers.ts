@@ -4,13 +4,12 @@ import { z } from "zod"
 import * as s from "@/db/schema"
 import { ApiError, notFound } from "../../core/errors"
 import { defineHandler } from "../../core/handler"
-import { addDays, byPrincipal, capacityKind, Day, Id, Town, today, VisitKind, weekdayOf } from "../shared"
-import { blockedMinutes, capacityAfterBlocks } from "@/lib/admin/calendar"
-import { hoursOf } from "@/lib/admin/people"
+import { addDays, byPrincipal, Day, Id, Town, today, VisitKind } from "../shared"
 import { runSchedule } from "@/lib/scheduling/server/run"
-import { loadBlocks } from "@/lib/jobber-feed"
-import { openSlots, spreadDays } from "@/lib/pass/server/area-days"
+import { loadOffers, loadOpenDays, namedOffers } from "@/lib/scheduling/server/offers"
+import { OfferOut } from "./offers"
 import { windowText } from "@/emails/format"
+import { OFFERED } from "@/lib/pass/server/area-days"
 import { inBookableWindow, windowWords } from "@/lib/services-window"
 import { listPeople, resolvePersonId, Role, routePeople } from "../people/handlers"
 import { PersonIdAlias } from "../visits/handlers"
@@ -123,38 +122,30 @@ export const scheduleSlots = defineHandler({
   path: "/schedule/slots",
   scope: "read",
   checkout: true,
-  summary: "Open days for a service, zone count and town, from tomorrow, per person: they work the weekday, have room for the kind after the busy time on their Jobber calendar, and are not already in another area that day.",
+  summary: "Open days for a service, zone count and town, from tomorrow, per person, from the one offer rule (docs/plans/2026-11-18-scheduling-engine-design.md, section 4): they work the weekday, have a gap of the service's length inside their hours after the drive cushion to the visits already booked and the busy time on their Jobber calendar, and are under their count for the kind. `starts` is that person's open start times (every half hour); `remaining` is how many.",
   input: z.object({ service: z.string().min(1).describe("A service key, e.g. `turn-on-8`."), zones: z.coerce.number().int().min(1).max(16).optional(), town: Town, from: Day.optional(), days: z.coerce.number().int().min(1).max(60).default(14) }),
-  output: z.object({ data: z.array(z.object({ day: Day, ...slotPerson, remaining: z.number().int(), slotMinutes: z.number().int() })) }),
+  output: z.object({ data: z.array(z.object({ day: Day, ...slotPerson, remaining: z.number().int(), slotMinutes: z.number().int(), starts: z.array(z.string()) })) }),
   async run(ctx, input) {
     const [service] = await ctx.db.select().from(s.service).where(and(eq(s.service.organizationId, ctx.organizationId), eq(s.service.key, input.service)))
     if (!service) throw notFound("Service")
     if (!service.active || !service.bookable || service.quoteOnly) throw new ApiError("unprocessable", "This service is not booked online")
     if (input.zones !== undefined && ((service.minZones && input.zones < service.minZones) || (service.maxZones && input.zones > service.maxZones)))
       throw new ApiError("unprocessable", `This service covers ${service.minZones} to ${service.maxZones} zones`)
-    const people = await routePeople(ctx)
-    const areas = await ctx.db.select().from(s.area).where(eq(s.area.organizationId, ctx.organizationId))
-    const areaOf = (town: string) => areas.find((a) => a.towns.includes(town as never))?.id ?? town
     const first = addDays(input.from ?? today(ctx), input.from ? 0 : 1)
     const last = addDays(first, input.days - 1)
     // A service carries the span of the year its visits may fall in (Settings > Services); a stretch with no day in it has nothing to offer.
     if (!Array.from({ length: input.days }, (_, i) => addDays(first, i)).some((d) => inBookableWindow(service, d)))
       throw new ApiError("unprocessable", `${service.name} days are ${windowWords(service)}; none of ${first} to ${last} fall in it`)
-    const booked = await visitsQuery(ctx.db).where(and(eq(s.visit.organizationId, ctx.organizationId), gte(s.visit.scheduledOn, first), lte(s.visit.scheduledOn, last), notInArray(s.visit.status, ["cancelled", "skipped"])))
-    const kind = capacityKind(service.kind)
-    // Busy time from each person's Jobber calendar feed shrinks their day (all-day blocks close it).
-    const blocks = await loadBlocks(ctx.db, ctx.organizationId, new Date(`${first}T00:00:00Z`), new Date(`${addDays(last, 1)}T23:59:59Z`))
-    const data: { day: string; personId: string; personName: string; remaining: number; slotMinutes: number }[] = []
-    for (let i = 0; i < input.days; i++) {
-      const day = addDays(first, i)
-      if (!inBookableWindow(service, day)) continue
-      for (const person of people) {
-        if (!person.workingDays.includes(weekdayOf(day))) continue
-        const mine = booked.filter((b) => b.visit.personId === person.id && b.visit.scheduledOn === day)
-        if (mine.some((b) => areaOf(b.town) !== areaOf(input.town))) continue
-        const capacity = capacityAfterBlocks(person.capacityByKind[kind], blockedMinutes(blocks, person.id, day, "America/Denver"))
-        const remaining = capacity - mine.filter((b) => capacityKind(b.visit.kind) === kind).length
-        if (remaining > 0) data.push({ day, personId: person.id, personName: person.name, remaining, slotMinutes: service.slotMinutes })
+    // The one offer rule: each open day in the range, per person who has a gap of the service's length, with that person's open starts.
+    const { open } = await loadOpenDays(ctx.db, { organizationId: ctx.organizationId, kind: service.kind, serviceKey: service.key, town: input.town, zones: input.zones, today: [today(ctx), addDays(first, -1)].sort().at(-1)! }, 120)
+    const names = new Map((await routePeople(ctx)).map((p) => [p.id, p.name]))
+    const data: { day: string; personId: string; personName: string; remaining: number; slotMinutes: number; starts: string[] }[] = []
+    for (const o of open) {
+      if (o.day < first || o.day > last) continue
+      const persons = [...new Set(o.slots.map((x) => x.personId))]
+      for (const personId of persons) {
+        const starts = o.slots.filter((x) => x.personId === personId).map((x) => x.start).sort()
+        data.push({ day: o.day, personId, personName: names.get(personId) ?? "", remaining: starts.length, slotMinutes: service.slotMinutes, starts })
       }
     }
     return { data }
@@ -169,15 +160,15 @@ export const scheduleOfferDays = defineHandler({
   path: "/schedule/offer-days",
   scope: "read",
   checkout: true,
-  summary: "The three best open days for one pass visit that does not exist yet, for the checkout's \"Your days\" step: the town's open days inside the visit's window for that season, under capacity in visits and minutes after the busy time on the Jobber calendar, spread out as the earliest open day, one near the middle and the last. Each has the day, the person who would take it and the two-hour arrival window from the slot grid. Fewer open days gives fewer days; none gives an empty list.",
-  input: z.object({ town: Town, kind: PassKind, season: z.coerce.number().int().min(2026).max(2100), zones: z.coerce.number().int().min(1).max(16) }),
-  output: z.object({ days: z.array(z.object({ day: Day, ...slotPerson, start: z.string().describe("HH:MM, Mountain."), window: z.string().describe("The two-hour window, \"8 to 10 am\".") })) }),
+  summary: "The best open days for one pass visit that does not exist yet, for the checkout's \"Your days\" step, from the one offer rule (docs/plans/2026-11-18-scheduling-engine-design.md, section 4): tomorrow at the earliest, the service's bookable dates, a gap of the service's length inside someone's hours under their cap, soonest days first with nearness to the customer's town (and street, when `lat` and `lng` are given) ordering them. `days` keeps its old shape (the day, the person who would take it, the start of the best open time and the two-hour window around it) in date order; `offers` adds each day's label, the one to preselect and every open start time. Fewer open days gives fewer days; none gives an empty list.",
+  input: z.object({ town: Town, kind: PassKind, season: z.coerce.number().int().min(2026).max(2100), zones: z.coerce.number().int().min(1).max(16), lat: z.coerce.number().min(-90).max(90).optional(), lng: z.coerce.number().min(-180).max(180).optional(), count: z.coerce.number().int().min(1).max(5).optional() }),
+  output: z.object({
+    days: z.array(z.object({ day: Day, ...slotPerson, start: z.string().describe("HH:MM, Mountain."), window: z.string().describe("The two-hour window, \"8 to 10 am\".") })),
+    offers: z.array(OfferOut),
+  }),
   async run(ctx, input) {
-    const slots = await openSlots(ctx.db, { id: "", organizationId: ctx.organizationId, kind: input.kind, town: input.town }, today(ctx), input.season)
-    // Ordering a day starts its first stop when the person's day starts (`hoursOf`), so no window opens earlier than that.
-    const people = await ctx.db.select({ id: s.person.id, hoursStart: s.person.hoursStart, hoursEnd: s.person.hoursEnd }).from(s.person).where(eq(s.person.organizationId, ctx.organizationId))
-    const startOf = new Map(people.map((p) => [p.id, hoursOf(p).start]))
-    const opens = (personId: string, start: string) => { const first = startOf.get(personId) ?? hoursOf({}).start; return start < first ? first : start }
-    return { days: spreadDays(slots).map((x) => ({ day: x.day, personId: x.personId, personName: x.personName, start: opens(x.personId, x.start), window: windowText(opens(x.personId, x.start)) })) }
+    const point = input.lat !== undefined && input.lng !== undefined ? { lat: input.lat, lng: input.lng } : null
+    const offers = await namedOffers(ctx.db, ctx.organizationId, await loadOffers(ctx.db, { organizationId: ctx.organizationId, kind: input.kind, town: input.town, point, zones: input.zones, season: input.season, today: today(ctx), count: input.count ?? OFFERED }))
+    return { days: offers.map((o) => ({ day: o.day, personId: o.slots[0]!.personId, personName: o.slots[0]!.personName, start: o.slots[0]!.start, window: windowText(o.slots[0]!.start) })), offers }
   },
 })

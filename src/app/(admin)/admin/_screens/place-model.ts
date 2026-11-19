@@ -1,25 +1,27 @@
 /**
- * Place and Place all, pure (docs/plans/2026-11-18-admin-holistic-design.md, 5.2 and 6). One rule, no setting: a job with no day
- * goes on the next open day, to the first person with room. A day is open for a job when it is tomorrow or later, inside the
- * job's season window (a pass's visit; a one-off has none), the person works that weekday and that season, and has room for the
- * kind (the capacity the visit's own API call checks: `capacityByKind` less the busy time) and works no other area group that day.
- * The week-planning engine's ranking (same town first, then near) is step 7; until then a day is only open or not and the
- * visit takes "Any time". The API refuses a placement that breaks a hard rule, so this plan only chooses where to try.
+ * Place and Place all, pure (docs/plans/2026-11-18-admin-holistic-design.md, 5.2 and 6). One rule, no setting: the scheduling engine's
+ * offer rule (`offerFor`, docs/plans/2026-11-18-scheduling-engine-design.md, section 4) run for the job, and its preselected day
+ * (the soonest open days, nearness to work already on the road ordering them, tomorrow the earliest) goes to the person whose open
+ * slot adds the least drive. A pass's visit keeps to its season window; a one-off has none. The job stays "Any time": no slot is
+ * written here. The API refuses a placement that breaks a hard rule, so this plan only chooses where to try.
  */
-import type { AreaGroup, BusyBlock, CapacityKind, Person, SeasonWindow, Visit } from "@/lib/admin/types"
-import { addDays, blockedMinutes, capacityAfterBlocks, dayVisits, worksOn } from "@/lib/admin/calendar"
+import type { BusyBlock, Person, SeasonWindow, Visit } from "@/lib/admin/types"
+import { addDays, dayOf } from "@/lib/admin/calendar"
 import { shortDate, writtenDate } from "@/lib/admin/format"
-import { windowAt } from "@/lib/services-window"
+import { HORIZON_DAYS, offerFor, type BookedVisit, type BlockedSpan } from "@/lib/scheduling/offer"
+import { defaultMinutes } from "@/lib/scheduling/types"
+import { monthDayOfDate, windowAt } from "@/lib/services-window"
 import type { TrayItem } from "./schedule-model"
 import { placeVisit } from "./schedule-model"
 
-/** How far past today a job with no window of its own is looked for: a season. */
-export const PLACE_HORIZON_DAYS = 180
+/** How far past today a job with no window of its own is looked for: the offer rule's horizon. */
+export const PLACE_HORIZON_DAYS = HORIZON_DAYS
 
 export interface PlaceContext {
   visits: Visit[]
   people: Person[]
-  areas: AreaGroup[]
+  /** kept for callers that still pass them; the offer rule has no areas */
+  areas?: unknown
   windows: SeasonWindow[]
   blocks?: BusyBlock[]
   /** the calendar day today is; the first day offered is the day after */
@@ -37,9 +39,6 @@ export interface Placement {
 
 export type PlaceResult = { ok: true; item: TrayItem; placement: Placement } | { ok: false; item: TrayItem; reason: string }
 
-const capacityKind = (kind: Visit["kind"]): CapacityKind => (kind === "turn-on" || kind === "inspection" || kind === "blowout" || kind === "repair" ? kind : "other")
-const areaIdOf = (areas: AreaGroup[], town: Visit["town"]) => areas.find((a) => a.towns.includes(town))?.id ?? town
-
 /** The season window a pass's visit must land in; a one-off job's visit has none. */
 const windowOf = (item: TrayItem, windows: SeasonWindow[], today: string) => {
   const found = item.passId ? windows.find((w) => w.kind === item.kind) : undefined
@@ -47,27 +46,51 @@ const windowOf = (item: TrayItem, windows: SeasonWindow[], today: string) => {
   return found ? windowAt(found, addDays(today, 1)) : undefined
 }
 
-function hasRoom(person: Person, day: string, item: TrayItem, ctx: PlaceContext): boolean {
-  if (!worksOn(person, day)) return false
-  if (person.seasonStart && day < person.seasonStart.slice(0, 10)) return false
-  if (person.seasonEnd && day > person.seasonEnd.slice(0, 10)) return false
-  const others = dayVisits(ctx.visits, day, person.id, ctx.timeZone).filter((v) => v.id !== item.id)
-  const kind = capacityKind(item.kind)
-  const room = capacityAfterBlocks(person.capacityByKind[kind] ?? 0, blockedMinutes(ctx.blocks ?? [], person.id, day, ctx.timeZone))
-  if (others.filter((v) => capacityKind(v.kind) === kind).length >= room) return false
-  return others.every((v) => areaIdOf(ctx.areas, v.town) === areaIdOf(ctx.areas, item.town))
+/** A calendar block as the busy spans of the days it touches (Mountain, to the minute). */
+function spansOf(blocks: BusyBlock[], timeZone: string): BlockedSpan[] {
+  const clock = new Intl.DateTimeFormat("en-GB", { timeZone, hourCycle: "h23", hour: "2-digit", minute: "2-digit" })
+  const out: BlockedSpan[] = []
+  for (const b of blocks) {
+    const a = dayOf(b.startAt, timeZone)
+    const z = dayOf(b.endAt, timeZone)
+    for (let day = a; day <= z; day = addDays(day, 1)) {
+      out.push({ personId: b.personId, day, start: day === a ? clock.format(new Date(b.startAt)) : "00:00", end: day === z ? clock.format(new Date(b.endAt)) : "24:00" })
+    }
+  }
+  return out
 }
 
-/** Where the job goes: the next open day, the first person (in the schedule's order) with room; or why there is none. */
+/** Where the job goes: the offer rule's preselected day with the person whose slot adds the least drive; or why there is none. */
 export function placeFor(item: TrayItem, ctx: PlaceContext): PlaceResult {
   const window = windowOf(item, ctx.windows, ctx.today)
   const first = addDays(ctx.today, 1)
   const from = window && window.opensOn.slice(0, 10) > first ? window.opensOn.slice(0, 10) : first
   const last = window ? window.closesOn.slice(0, 10) : addDays(ctx.today, PLACE_HORIZON_DAYS)
-  for (let day = from; day <= last; day = addDays(day, 1)) {
-    const person = ctx.people.find((p) => hasRoom(p, day, item, ctx))
-    if (person) return { ok: true, item, placement: { item, personId: person.id, personName: person.name, day } }
-  }
+  const own = ctx.visits.find((v) => v.id === item.id)
+  const booked: BookedVisit[] = ctx.visits
+    .filter((v) => v.id !== item.id && v.status !== "cancelled" && v.startAt && v.personId)
+    .map((v) => ({
+      personId: v.personId!,
+      day: dayOf(v.startAt!, ctx.timeZone),
+      // a pass visit's start is only the stack its day was ordered in: busy time with no place
+      start: !v.isPass && v.startTime ? v.startTime : null,
+      minutes: v.minutes ?? defaultMinutes(v.kind),
+      kind: v.kind,
+      town: v.town,
+      point: v.lat !== undefined && v.lng !== undefined ? { lat: v.lat, lng: v.lng } : null,
+    }))
+  const offers = offerFor({
+    today: addDays(from, -1) > ctx.today ? addDays(from, -1) : ctx.today,
+    service: { minutes: own?.minutes ?? defaultMinutes(item.kind), kind: item.kind, bookableFrom: window ? monthDayOfDate(window.opensOn.slice(0, 10)) : null, bookableTo: window ? monthDayOfDate(window.closesOn.slice(0, 10)) : null },
+    property: { town: item.town, point: own?.lat !== undefined && own?.lng !== undefined ? { lat: own.lat, lng: own.lng } : null },
+    people: ctx.people.map((p) => ({ id: p.id, workingDays: p.workingDays, hoursStart: p.hoursStart, hoursEnd: p.hoursEnd, capsByKind: p.capacityByKind, from: p.seasonStart?.slice(0, 10) || null, to: p.seasonEnd?.slice(0, 10) || null })),
+    booked,
+    blocked: spansOf(ctx.blocks ?? [], ctx.timeZone),
+  }).filter((o) => o.day >= from && o.day <= last)
+  const best = offers.find((o) => o.best) ?? offers[0]
+  const slot = best?.slots[0]
+  const person = slot ? ctx.people.find((p) => p.id === slot.personId) : undefined
+  if (best && person) return { ok: true, item, placement: { item, personId: person.id, personName: person.name, day: best.day } }
   return { ok: false, item, reason: `No open day before ${shortDate(last)}. Pick a day yourself.` }
 }
 

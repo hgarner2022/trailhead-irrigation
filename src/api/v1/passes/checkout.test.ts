@@ -37,7 +37,7 @@ describe("the public checkout principal", () => {
   it("is refused on every handler except the four checkout ones", async () => {
     reachable.mockResolvedValue(true)
     await expect(callApi(ctxFor(db, visitor(), NOW), passesList, {})).rejects.toMatchObject({ code: "forbidden" })
-    await expect(callApi(ctxFor(db, visitor(), NOW), scheduleSlots, { service: "turn-on-8", town: "Erie" })).resolves.toHaveProperty("data")
+    await expect(callApi(ctxFor(db, visitor(), NOW), scheduleSlots, { service: "turn-on-8", town: "Erie", from: "2027-05-05", days: 3 })).resolves.toHaveProperty("data")
     await expect(callApi(ctxFor(db, visitor(), NOW), bookingsCreate, {})).rejects.toMatchObject({ code: "invalid" })
     await expect(create()).resolves.toMatchObject({ status: "pending" })
   })

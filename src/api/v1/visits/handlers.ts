@@ -19,7 +19,9 @@ import { windowAt } from "@/lib/services-window"
 import { orderDay } from "@/lib/scheduling/server/order-day"
 import { blockedMinutes, capacityAfterBlocks } from "@/lib/admin/calendar"
 import { loadBlocks } from "@/lib/jobber-feed"
-import { MAX_OFFERED, offeredDays, openSlots, personFor } from "@/lib/pass/server/area-days"
+import { MAX_OFFERED } from "@/lib/pass/server/area-days"
+import { loadOffers, namedOffers } from "@/lib/scheduling/server/offers"
+import { OfferOut } from "../schedule/offers"
 import { visitName } from "@/lib/events/names"
 import { recordEvent, whoOf } from "@/lib/events/record"
 import { emitEvent } from "../webhooks/deliver"
@@ -277,13 +279,13 @@ export const visitsAreaDays = defineHandler({
   scope: "read",
   customerSelf: true,
   visitLink: true,
-  summary: "The days a visit with a season window (a turn-on, inspection or blowout, on a pass or a one-off job) could take, up to `count` (default three, at most five; the portal's Reschedule asks for five), each a day someone already works the customer's area or has room, in date order and never the visit's present day: what the pass page and Reschedule offer. A customer asks only about their own visit, and only until 24 hours before its day.",
-  input: z.object({ id: Id, count: z.coerce.number().int().min(1).max(MAX_OFFERED).optional().describe("How many days to offer; three when left out.") }),
-  output: z.object({ days: z.array(Day) }),
+  summary: "The days a visit with a season window (a turn-on, inspection or blowout, on a pass or a one-off job) could take, from the one offer rule (docs/plans/2026-11-18-scheduling-engine-design.md, section 4): tomorrow at the earliest, the service's bookable dates, a gap of the service's length in someone's hours, soonest days first with nearness to work already on the road ordering them. Up to `count` (default three, at most five; the portal's Reschedule asks for five), never the visit's present day. `days` is the dates in order; `offers` adds each day's label, whether it is the one to preselect, and the open start times with the person each belongs to. A customer asks only about their own visit, and only until 24 hours before its day.",
+  input: z.object({ id: Id, count: z.coerce.number().int().min(1).max(MAX_OFFERED).optional().describe("How many days to offer; three when left out."), page: z.coerce.number().int().min(0).max(10).optional().describe("0 is the soonest five days; 1 the next five, ranked the same way.") }),
+  output: z.object({ days: z.array(Day), offers: z.array(OfferOut) }),
   async run(ctx, input) {
     const { row, visit, season } = await loadPickable(ctx, input.id)
-    const slots = await openSlots(ctx.db, { id: visit.id, organizationId: visit.organizationId, kind: visit.kind, town: row.town }, today(ctx), season)
-    return { days: offeredDays(slots.filter((x) => x.day !== visit.scheduledOn), input.count) }
+    const offers = await namedOffers(ctx.db, visit.organizationId, await loadOffers(ctx.db, { organizationId: visit.organizationId, kind: visit.kind, town: row.town, visitId: visit.id, season, today: today(ctx), count: input.count, page: input.page, excludeDays: visit.scheduledOn ? [visit.scheduledOn] : [] }))
+    return { days: offers.map((o) => o.day), offers }
   },
 })
 
@@ -299,9 +301,11 @@ export const visitsPick = defineHandler({
   output: VisitOut,
   async run(ctx, input) {
     const { row, visit, season } = await loadPickable(ctx, input.id)
-    const slots = (await openSlots(ctx.db, { id: visit.id, organizationId: visit.organizationId, kind: visit.kind, town: row.town }, today(ctx), season)).filter((x) => x.day !== visit.scheduledOn)
-    const slot = offeredDays(slots, MAX_OFFERED).includes(input.day) ? personFor(slots, input.day) : undefined
-    if (!slot) throw new ApiError("unprocessable", "That day is not one of the days on offer; pick another")
+    const offers = await namedOffers(ctx.db, visit.organizationId, await loadOffers(ctx.db, { organizationId: visit.organizationId, kind: visit.kind, town: row.town, visitId: visit.id, season, today: today(ctx), count: MAX_OFFERED, excludeDays: visit.scheduledOn ? [visit.scheduledOn] : [] }))
+    // The person is the one whose slot adds the least drive that day; no time is written in this step (a day is the promise).
+    const best = offers.find((o) => o.day === input.day)?.slots[0]
+    if (!best) throw new ApiError("unprocessable", "That day is not one of the days on offer; pick another")
+    const slot = { personId: best.personId, personName: best.personName }
     const moved = visit.status === "scheduled"
     await ctx.db.update(s.visit).set({ status: "scheduled", personId: slot.personId, scheduledOn: input.day, startTime: null, stopOrder: null, awaitingPick: false, exception: null, notDoneReason: null }).where(eq(s.visit.id, visit.id))
     await recordChange(ctx, { customerId: visit.customerId, jobId: visit.jobId, visitId: visit.id, kind: "day-picked", eventKind: moved ? "visit.moved" : "visit.scheduled", detail: { visit: visit.kind, name: visitName(visit.kind), day: input.day, person: slot.personName, personId: slot.personId, from: moved ? visit.scheduledOn : null } })

@@ -1,5 +1,5 @@
 import "server-only"
-import { and, desc, eq } from "drizzle-orm"
+import { and, asc, desc, eq, isNull } from "drizzle-orm"
 import * as s from "@/db/schema"
 import type { Database } from "@/db/types"
 import { TOWN_CENTRES } from "@/components/blocks/day-map-helpers"
@@ -14,11 +14,12 @@ export const addressQuery = (p: { address: string; town: string }) => `${p.addre
  * Geocode a property once and keep the answer forever: a property with `geocoded_at` set is never looked up again (a miss is
  * cached too, as a null pair, and the map draws it at the town centre with a hollow pin). Returns the point, or null.
  */
-export async function geocodeProperty(db: Database, propertyId: string, deps: NominatimDeps & { now?: Date } = {}) {
+export async function geocodeProperty(db: Database, propertyId: string, deps: NominatimDeps & { now?: Date; places?: (query: string) => Promise<{ lat: number; lng: number } | null> } = {}) {
   const [p] = await db.select().from(s.property).where(eq(s.property.id, propertyId))
   if (!p) return null
   if (p.geocodedAt) return p.lat !== null && p.lng !== null ? { lat: p.lat, lng: p.lng } : null
-  const point = await searchAddress(addressQuery(p), deps)
+  // Google Places first when the site has its key (street-level, the same service the address box uses); Nominatim otherwise or on a miss.
+  const point = (deps.places ? await deps.places(addressQuery(p)) : null) ?? (await searchAddress(addressQuery(p), deps))
   await db.update(s.property).set({ lat: point?.lat ?? null, lng: point?.lng ?? null, geocodedAt: deps.now ?? new Date() }).where(eq(s.property.id, propertyId))
   return point
 }
@@ -31,6 +32,22 @@ export async function enqueueGeocode(db: Database, organizationId: string, prope
     .where(and(eq(s.queueItem.kind, "geocode"), eq(s.queueItem.status, "pending"))).orderBy(desc(s.queueItem.runAfter)).limit(1)
   const runAfter = new Date(Math.max(now.getTime(), last ? last.runAfter.getTime() + 1000 : 0))
   return enqueue(db, organizationId, "geocode", propertyId, { propertyId }, runAfter)
+}
+
+/** The most properties one cron pass queues for a first lookup. */
+export const GEOCODE_BACKFILL_LIMIT = 50
+
+/**
+ * Queue a lookup for properties nobody has looked up yet (older ones, and any whose enqueue was lost), oldest first, at most
+ * `GEOCODE_BACKFILL_LIMIT` a pass. Idempotent: `enqueueGeocode` skips a looked-up property and the queue's own key dedupes a
+ * pending one. Returns how many it queued.
+ */
+export async function enqueueMissingGeocodes(db: Database, now = new Date(), limit = GEOCODE_BACKFILL_LIMIT) {
+  const missing = await db.select({ id: s.property.id, organizationId: s.property.organizationId }).from(s.property)
+    .where(isNull(s.property.geocodedAt)).orderBy(asc(s.property.createdAt), asc(s.property.id)).limit(limit)
+  let queued = 0
+  for (const p of missing) if (await enqueueGeocode(db, p.organizationId, p.id, now)) queued++
+  return queued
 }
 
 /** Where the map draws a visit: its own point, else the town's centre (the map's own `TOWN_CENTRES`). `exact` is false for the fallback. */
