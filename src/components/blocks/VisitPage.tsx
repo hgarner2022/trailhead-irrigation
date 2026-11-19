@@ -19,6 +19,8 @@ export interface VisitPageProps {
   rescheduleSlot?: ReactNode
   cancelSlot?: ReactNode
   calendarSlot?: ReactNode
+  /** the Photos section (a client block that carries the upload and the server actions); left out where photos are not offered */
+  photosSlot?: ReactNode
 }
 
 function Fact({ icon: Icon, children }: { icon: typeof Home; children: ReactNode }) {
@@ -30,7 +32,7 @@ function Fact({ icon: Icon, children }: { icon: typeof Home; children: ReactNode
   )
 }
 
-export function VisitPage({ model: m, rescheduleSlot, cancelSlot, calendarSlot }: VisitPageProps) {
+export function VisitPage({ model: m, rescheduleSlot, cancelSlot, calendarSlot, photosSlot }: VisitPageProps) {
   const inside = m.reschedule === "text" && m.cancel === "text"
   return (
     <main data-slot="account-visit" className="mx-auto max-w-3xl space-y-6 container-padding-x py-8">
@@ -77,6 +79,7 @@ export function VisitPage({ model: m, rescheduleSlot, cancelSlot, calendarSlot }
           )}
         </CardContent>
       </Card>
+      {photosSlot}
       {(m.reschedule !== "no" || m.cancel !== "no") && (
         <section aria-label="Change this visit" data-slot="visit-actions" data-state={inside ? "text" : "online"} className="space-y-3">
           {m.reschedule === "yes" && <div className="flex flex-wrap items-center gap-x-6 gap-y-2">{rescheduleSlot}{m.cancel === "yes" && cancelSlot}</div>}

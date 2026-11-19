@@ -12,7 +12,9 @@ import { auth } from "@/auth"
 import { googleCalendarUrl } from "@/emails/calendar"
 import { readAppUrl } from "@/lib/env"
 import { visitCalendarUrl } from "@/lib/messaging/tokens"
-import { cancelMyVisit, cancelMyVisitByLink, changeMyDay, changeMyDayByLink } from "../../actions"
+import { photosList } from "@/api/v1/photos/handlers"
+import { photosConfigured } from "@/lib/photos/store"
+import { addMyPhoto, addMyPhotoByLink, cancelMyVisit, cancelMyVisitByLink, changeMyDay, changeMyDayByLink, removeMyPhoto } from "../../actions"
 import { customerCtx, loadAccount, loadDays, visitLinkCtx } from "../../account-data"
 import { NotACustomer } from "../../_screens/NotACustomer"
 import { VisitScreen } from "../../_screens/VisitScreen"
@@ -69,9 +71,15 @@ export default async function VisitPage({ params, searchParams }: { params: Prom
       : undefined
   const onReschedule = byLink ? changeMyDayByLink.bind(null, t!) : changeMyDay
   const onCancel = byLink ? cancelMyVisitByLink.bind(null, t!) : cancelMyVisit
+  // This customer's photos of the visit (their own, and Ryan's marked ones once it is Done), through the same rules as everything else; a link-held
+  // customer adds through the link and has no Remove (the link opens this one visit only).
+  // A picture's address carries the link's token for a customer with no session (the serving route reads it from the query and checks it against this visit).
+  const withToken = (url: string) => (byLink ? `${url}?t=${encodeURIComponent(t!)}` : url)
+  const photoItems = await callApi(here, photosList, { id: visitId }).then((r) => r.data.map((p) => ({ ...p, url: withToken(p.url) })), () => [])
+  const photos = { items: photoItems, configured: photosConfigured(), onAdd: byLink ? addMyPhotoByLink.bind(null, t!) : addMyPhoto, ...(byLink ? { link: t! } : { onRemove: removeMyPhoto }) }
   return (
     <>
-      <VisitScreen customer={customer} job={job} visitId={visitId} today={today} days={days} calendar={calendar} onReschedule={onReschedule} onCancel={onCancel} />
+      <VisitScreen customer={customer} job={job} visitId={visitId} today={today} days={days} calendar={calendar} photos={photos} onReschedule={onReschedule} onCancel={onCancel} />
       {byLink && (
         <p className="mx-auto max-w-3xl container-padding-x pb-8 text-base">
           <Link href="/account" className="font-semibold text-primary-deep underline underline-offset-2">
