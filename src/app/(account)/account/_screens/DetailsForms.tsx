@@ -31,11 +31,11 @@ function useSave(onSave: () => Promise<SaveResult> | SaveResult | undefined) {
   return { pending, note, save }
 }
 
-function Footer({ pending, note }: { pending: boolean; note: { ok: boolean; text: string } | null }) {
+function Footer({ pending, note, label }: { pending: boolean; note: { ok: boolean; text: string } | null; label: string }) {
   return (
     <div className="flex flex-wrap items-center gap-4">
       <Button type="submit" disabled={pending}>
-        {pending ? "Saving" : "Save"}
+        {pending ? "Saving" : label}
       </Button>
       {note && (
         <p role={note.ok ? "status" : "alert"} className={note.ok ? "text-base text-positive-deep" : "text-base text-destructive"}>
@@ -65,7 +65,7 @@ export function ContactForm({ customer, onSave }: { customer: Pick<PortalCustome
         <Input label="Last name" value={lastName} onChange={(e) => setLast(e.target.value)} autoComplete="family-name" />
       </div>
       <Input label="Mobile" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} autoComplete="tel" />
-      <Footer pending={pending} note={note} />
+      <Footer pending={pending} note={note} label="Save your details" />
     </form>
   )
 }
@@ -94,21 +94,31 @@ export function YardForm({ property, onSave }: { property: Property; onSave?: (i
     >
       <div className="grid gap-4 sm:grid-cols-2">
         <Input id={id("zones")} label="Zones" type="number" min={1} max={16} inputMode="numeric" value={zones} onChange={(e) => setZones(e.target.value)} />
-        <Input id={id("controller")} label="Controller" value={controller} onChange={(e) => setController(e.target.value)} />
-        <Input id={id("backflow")} label="Backflow location" value={backflow} onChange={(e) => setBackflow(e.target.value)} />
+        <div className="space-y-1.5">
+          <Input id={id("controller")} label="Controller" value={controller} onChange={(e) => setController(e.target.value)} aria-describedby={id("controller-hint")} />
+          <p id={id("controller-hint")} className="text-sm text-muted-foreground">
+            For example, Rachio 3 or Hunter Pro-C.
+          </p>
+        </div>
+        <div className="space-y-1.5">
+          <Input id={id("backflow")} label="Backflow location" value={backflow} onChange={(e) => setBackflow(e.target.value)} aria-describedby={id("backflow-hint")} />
+          <p id={id("backflow-hint")} className="text-sm text-muted-foreground">
+            For example, left of the garage, or by the front hose bib.
+          </p>
+        </div>
         <Input id={id("gate")} label="Gate code" value={gateCode} onChange={(e) => setGateCode(e.target.value)} />
       </div>
       {/* the whole row is the label, so the tap target is 44px tall, not the 16px box */}
       <Label htmlFor={id("home")} data-slot="must-be-home" className="flex min-h-11 w-full cursor-pointer items-center gap-3 text-base">
         <Checkbox id={id("home")} checked={mustBeHome} onCheckedChange={(v) => setMustBeHome(v === true)} />
-        Someone must be home for our visits
+        Tell Ryan someone needs to be home
       </Label>
       <Textarea id={id("note")} label="Access note" rows={3} value={accessNote} onChange={(e) => setAccessNote(e.target.value)} />
       <div className="grid gap-4 sm:grid-cols-2">
         <Input id={id("contact")} label="On-site contact" value={contactName} onChange={(e) => setContactName(e.target.value)} />
         <Input id={id("contact-phone")} label="Contact phone" type="tel" value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} />
       </div>
-      <Footer pending={pending} note={note} />
+      <Footer pending={pending} note={note} label="Save yard notes" />
     </form>
   )
 }

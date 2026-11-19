@@ -190,10 +190,11 @@ describe("wording per kind", () => {
   })
   it("day-before names who is coming when the visit has a person, and leaves the sentence out when it has none", () => {
     const named = renderEmail("day-before", { ...base, visit: { ...visit, who: "Ryan" } })!
-    expect(named.text).toContain("Hi Andrea,\n\nA reminder that we're coming tomorrow, Wednesday, May 5, for your spring turn-on. Ryan will be there.")
-    expect(named.html).toContain("Ryan will be there.")
+    expect(named.text).toContain("Hi Andrea,\n\nRyan is coming tomorrow, Wednesday, May 5, for your spring turn-on.")
+    expect(named.text).not.toContain("A reminder that")
+    expect(named.html).toContain("Ryan is coming tomorrow, Wednesday, May 5, for your spring turn-on.")
     const nobody = renderEmail("day-before", { ...base, visit: { ...visit, who: null } })!
-    expect(nobody.text).toContain("we're coming tomorrow, Wednesday, May 5, for your spring turn-on.")
+    expect(nobody.text).toContain("We're coming tomorrow, Wednesday, May 5, for your spring turn-on.")
     expect(nobody.text).not.toMatch(/will be there|\.\s*\. |  /)
   })
   it("ignores a stored `crew` key in message data queued before the label went: nothing says a truck", () => {

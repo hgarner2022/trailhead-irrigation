@@ -207,7 +207,7 @@ describe("DetailsScreen", () => {
     render(<DetailsScreen customer={andrea} onSaveContact={onSaveContact} />)
     await userEvent.clear(screen.getByLabelText("Mobile"))
     await userEvent.type(screen.getByLabelText("Mobile"), "9705550100")
-    await userEvent.click(within(document.querySelector("[data-slot=contact-form]") as HTMLElement).getByRole("button", { name: "Save" }))
+    await userEvent.click(within(document.querySelector("[data-slot=contact-form]") as HTMLElement).getByRole("button", { name: "Save your details" }))
     expect(onSaveContact).toHaveBeenCalledWith({ firstName: "Andrea", lastName: "Lopez", phone: "9705550100" })
     expect(await screen.findByText("Saved.")).toBeInTheDocument()
   })

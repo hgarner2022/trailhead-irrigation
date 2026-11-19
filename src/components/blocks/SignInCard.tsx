@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { maskEmail } from "@/lib/auth/mask-email"
 import { cn } from "@/lib/utils"
 
 // The sign-in card for /admin/sign-in and /account/sign-in (docs/DESIGN.md,
@@ -24,6 +25,8 @@ export interface SignInCardProps {
   action?: (formData: FormData) => void | Promise<void>
   /** where "Use a different email" goes in the sent state */
   retryHref?: string
+  /** the server action behind "Send it again" in the sent state; without one, or without an address, the button is not shown */
+  resendAction?: (formData: FormData) => void | Promise<void>
   className?: string
 }
 
@@ -42,7 +45,7 @@ const COPY = {
   },
 } as const
 
-export function SignInCard({ audience, state = "form", email = "", action, retryHref, className }: SignInCardProps) {
+export function SignInCard({ audience, state = "form", email = "", action, retryHref, resendAction, className }: SignInCardProps) {
   const copy = COPY[audience]
   const sent = state === "sent"
   const error = state === "denied" ? copy.denied : state === "failed" ? FAILED : null
@@ -55,9 +58,18 @@ export function SignInCard({ audience, state = "form", email = "", action, retry
             <div className="flex flex-col gap-3" role="status">
               <h1 className="font-display text-3xl font-semibold text-navy">Check your email</h1>
               <p className="text-sm text-foreground">
-                We sent a sign-in link to {email ? <strong className="break-all font-semibold">{email}</strong> : "your email"}.
+                We sent a sign-in link to {email ? <strong data-slot="sent-to" className="break-all font-semibold">{maskEmail(email)}</strong> : "your email"}.
               </p>
+              <p className="text-sm text-muted-foreground">It comes from Trailhead. If you don&apos;t see it in a minute, look in your spam folder.</p>
               <p className="text-sm text-muted-foreground">The link works one time and expires in 10 minutes.</p>
+              {email && resendAction && (
+                <form action={resendAction}>
+                  <input type="hidden" name="email" value={email} />
+                  <Button type="submit" variant="outline" size="lg" className="w-full">
+                    Send it again
+                  </Button>
+                </form>
+              )}
               {retryHref && (
                 <a href={retryHref} className="inline-flex min-h-11 items-center text-sm font-medium text-primary-dark underline-offset-4 hover:underline">
                   Use a different email

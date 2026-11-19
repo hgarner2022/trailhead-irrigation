@@ -19,13 +19,23 @@ describe("SignInCard", () => {
     expect(screen.getByRole("alert")).toHaveTextContent("not on the admin list")
     expect(screen.getByLabelText("Email")).toHaveAttribute("aria-invalid", "true")
   })
-  it("shows the sent note with the address and the ten minutes", () => {
+  it("shows the sent note with the masked address, a spam hint and the ten minutes", () => {
     render(<SignInCard audience="customer" state="sent" email="andrea@example.com" retryHref="/account/sign-in" />)
     expect(screen.getByRole("heading", { level: 1, name: "Check your email" })).toBeInTheDocument()
-    expect(screen.getByText("andrea@example.com")).toBeInTheDocument()
+    expect(screen.getByText("a***@example.com")).toBeInTheDocument()
+    expect(screen.queryByText("andrea@example.com")).toBeNull()
+    expect(screen.getByText(/look in your spam folder/)).toBeInTheDocument()
     expect(screen.getByText("The link works one time and expires in 10 minutes.")).toBeInTheDocument()
     expect(screen.queryByRole("button")).toBeNull()
     expect(screen.getByRole("link", { name: "Use a different email" })).toHaveAttribute("href", "/account/sign-in")
+  })
+  it("offers Send it again, carrying the address, only when it has both the address and the action", () => {
+    const { container, unmount } = render(<SignInCard audience="customer" state="sent" email="andrea@example.com" resendAction={async () => {}} />)
+    expect(screen.getByRole("button", { name: "Send it again" })).toBeInTheDocument()
+    expect(container.querySelector('input[type="hidden"][name="email"]')).toHaveAttribute("value", "andrea@example.com")
+    unmount()
+    render(<SignInCard audience="customer" state="sent" resendAction={async () => {}} />)
+    expect(screen.queryByRole("button", { name: "Send it again" })).toBeNull()
   })
 })
 

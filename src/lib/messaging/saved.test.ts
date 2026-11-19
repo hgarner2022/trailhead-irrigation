@@ -92,7 +92,7 @@ describe("the words the office saved", () => {
       // a saved day-before email that breaks a rule is ignored, so the shipped words go out
       const broken = await db.insert(s.messageLog).values({ organizationId: ORG, customerId: "c100", visitId, kind: "day-before", key: "e-broken", channel: "email", to: "andrea@example.com", subject: "x", body: "x", data: row!.data, status: "queued" }).returning()
       await sendMessageRow(db, broken[0]!.id, { deps })
-      expect(sent[1]!.text).toContain("A reminder that we're coming tomorrow")
+      expect(sent[1]!.text).toContain("We're coming tomorrow")
     } finally {
       await db.update(s.organization).set({ settings: org!.settings }).where(eq(s.organization.id, ORG))
     }

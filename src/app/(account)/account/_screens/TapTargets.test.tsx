@@ -48,7 +48,7 @@ describe("44px tap targets on the account", () => {
   it("Details: the text us links sit in a padded hit area and the must-be-home row is one 44px label", () => {
     render(<DetailsScreen customer={andrea} />)
     for (const l of screen.getAllByRole("link", { name: "text us" })) expect(l.className).toMatch(/\bpy-3\b/)
-    const row = screen.getByText("Someone must be home for our visits").closest("label")!
+    const row = screen.getByText("Tell Ryan someone needs to be home").closest("label")!
     expect(tall(row)).toBe(true)
     expect(row.querySelector("button[role=checkbox]")).not.toBeNull()
   })

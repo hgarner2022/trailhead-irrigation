@@ -85,7 +85,7 @@ describe("a person who is a label, not a name", () => {
     await rename("Second truck")
     const visit = (await loadVisitFacts(db, "p4-turn-on", origin))!
     const email = renderEmail("day-before", { ...base, visit })!
-    expect(email.text).toContain("A reminder that we're coming tomorrow")
+    expect(email.text).toContain("We're coming tomorrow")
     expect(email.text).not.toContain("Second")
     expect(email.text).toContain("Who is coming: Ryan and the crew")
   })
