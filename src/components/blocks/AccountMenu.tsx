@@ -21,7 +21,7 @@ export function AccountMenu({ firstName, isStaff = false, onSignOut, className }
     <div data-slot="account-menu" className={cn(className)}>
       {/* not modal: the trigger stays reachable while the menu is open, and axe does not flag the page behind it as aria-hidden with a focusable trigger */}
       <DropdownMenu modal={false}>
-        <DropdownMenuTrigger className="flex items-center gap-1 rounded-lg px-2 py-2 font-display text-xl leading-none text-navy hover:bg-stone">
+        <DropdownMenuTrigger className="flex min-h-11 items-center gap-1 rounded-lg px-2 py-2 font-display text-xl leading-none text-navy hover:bg-stone">
           {firstName}
           <ChevronDown aria-hidden className="size-4" />
         </DropdownMenuTrigger>

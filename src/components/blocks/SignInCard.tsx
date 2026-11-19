@@ -59,7 +59,7 @@ export function SignInCard({ audience, state = "form", email = "", action, retry
               </p>
               <p className="text-sm text-muted-foreground">The link works one time and expires in 10 minutes.</p>
               {retryHref && (
-                <a href={retryHref} className="text-sm font-medium text-primary-dark underline-offset-4 hover:underline">
+                <a href={retryHref} className="inline-flex min-h-11 items-center text-sm font-medium text-primary-dark underline-offset-4 hover:underline">
                   Use a different email
                 </a>
               )}

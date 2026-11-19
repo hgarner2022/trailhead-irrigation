@@ -45,7 +45,7 @@ export function VisitRow({ href, dayWords, service, label, street, who, money, t
       <div className="flex shrink-0 flex-col items-end gap-2">
         <StatusPill status={pill.status} label={pill.label} />
         {receiptHref && (
-          <Link href={receiptHref} className="text-sm font-semibold text-primary-deep underline underline-offset-2">
+          <Link href={receiptHref} className="inline-flex min-h-11 items-center text-sm font-semibold text-primary-deep underline underline-offset-2">
             Receipt
           </Link>
         )}

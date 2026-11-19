@@ -42,7 +42,7 @@ export function AccountNav({ firstName, hasPass = false, current, isStaff = fals
   return (
     <header data-slot="account-nav" className={cn("border-b border-border bg-background", className)}>
       <div className="flex flex-wrap items-center gap-x-8 gap-y-2 container-padding-x py-3">
-        <Link href="/account" className="flex items-center gap-3" aria-label="Trailhead Lawn & Irrigation, your account">
+        <Link href="/account" className="flex min-h-11 items-center gap-3" aria-label="Trailhead Lawn & Irrigation, your account">
           <Image src="/images/logo-badge.png" alt="" width={51} height={36} className="h-9 w-auto" />
         </Link>
         {firstName ? (
@@ -53,7 +53,7 @@ export function AccountNav({ firstName, hasPass = false, current, isStaff = fals
                   key={p.href}
                   href={p.href}
                   aria-current={here === p.href ? "page" : undefined}
-                  className={cn("whitespace-nowrap rounded-lg px-3 py-2 text-base font-semibold", here === p.href ? "bg-primary/10 text-primary-deep" : "text-navy-light hover:bg-stone")}
+                  className={cn("inline-flex min-h-11 items-center whitespace-nowrap rounded-lg px-3 py-2 text-base font-semibold", here === p.href ? "bg-primary/10 text-primary-deep" : "text-navy-light hover:bg-stone")}
                 >
                   {p.label}
                 </Link>
@@ -62,7 +62,7 @@ export function AccountNav({ firstName, hasPass = false, current, isStaff = fals
             <AccountMenu firstName={firstName} isStaff={isStaff} onSignOut={onSignOut} className="order-2 ml-auto sm:order-none" />
           </>
         ) : (
-          <Link href="/account/sign-in" className="ml-auto text-base font-semibold text-navy-light hover:text-navy">
+          <Link href="/account/sign-in" className="ml-auto inline-flex min-h-11 items-center text-base font-semibold text-navy-light hover:text-navy">
             Sign in
           </Link>
         )}

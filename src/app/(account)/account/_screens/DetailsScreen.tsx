@@ -45,7 +45,7 @@ export function DetailsScreen({ customer, onSaveContact, onSaveYard, onUpdateCar
             <p className="text-base text-foreground">{customer.email ?? "No email on file"}</p>
             <p className="text-sm text-muted-foreground">
               {"To change your email, "}
-              <a href={`sms:${PHONE_TEL.replace("tel:", "")}`} className="font-semibold text-primary-deep underline underline-offset-2">
+              <a href={`sms:${PHONE_TEL.replace("tel:", "")}`} className="-my-3 inline-block py-3 font-semibold text-primary-deep underline underline-offset-2">
                 text us
               </a>
               {` at ${PHONE_DISPLAY}.`}
@@ -61,7 +61,7 @@ export function DetailsScreen({ customer, onSaveContact, onSaveYard, onUpdateCar
             <p className="text-base text-foreground">{`${p.address}, ${p.town}`}</p>
             <p className="text-sm text-muted-foreground">
               {"To change the address, "}
-              <a href={`sms:${PHONE_TEL.replace("tel:", "")}`} className="font-semibold text-primary-deep underline underline-offset-2">
+              <a href={`sms:${PHONE_TEL.replace("tel:", "")}`} className="-my-3 inline-block py-3 font-semibold text-primary-deep underline underline-offset-2">
                 text us
               </a>
               .

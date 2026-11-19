@@ -32,7 +32,7 @@ export function VisitPage({ model: m, rescheduleSlot, cancelSlot, calendarSlot }
   const inside = m.reschedule === "text" && m.cancel === "text"
   return (
     <main data-slot="account-visit" className="mx-auto max-w-3xl space-y-6 container-padding-x py-8">
-      <Link href="/account/visits" className="inline-block text-base font-semibold text-primary-deep underline underline-offset-2">
+      <Link href="/account/visits" className="inline-flex min-h-11 items-center text-base font-semibold text-primary-deep underline underline-offset-2">
         Visits
       </Link>
       {m.invoice && <InvoiceBanner jobName={m.service} total={m.invoice.total} dueOn={m.invoice.dueOn} status={m.invoice.status} payHref={m.invoice.payHref} />}
@@ -66,7 +66,7 @@ export function VisitPage({ model: m, rescheduleSlot, cancelSlot, calendarSlot }
                     <Check aria-hidden className="size-4 text-positive" />
                     {r.words}
                   </span>
-                  <Link href={r.href} className="font-semibold text-primary-deep underline underline-offset-2">
+                  <Link href={r.href} className="inline-flex min-h-11 items-center font-semibold text-primary-deep underline underline-offset-2">
                     Receipt
                   </Link>
                 </li>

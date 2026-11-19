@@ -19,12 +19,12 @@ function FooterLinks({ heading, links }: { heading: string; links: { label: stri
   return (
     <div className="flex flex-col gap-3">
       <h3 className="font-semibold text-sm uppercase tracking-wider text-white/50">{heading}</h3>
-      <nav className="flex flex-col gap-2" aria-label={heading}>
+      <nav className="flex flex-col gap-0 md:gap-2" aria-label={heading}>
         {links.map((link) => (
           <Link
             key={`${heading}-${link.label}`}
             href={link.href}
-            className="text-sm text-white/70 hover:text-primary-light transition-colors w-fit"
+            className="flex min-h-11 w-fit items-center text-sm text-white/70 hover:text-primary-light transition-colors md:min-h-0"
           >
             {link.label}
           </Link>
@@ -49,12 +49,12 @@ export function Footer() {
               <p className="text-sm text-white/70 max-w-xs">
                 Sprinkler installation, repair and winterization. Locally owned and owner-operated in Erie, CO.
               </p>
-              <div className="flex flex-col gap-2.5 mt-2">
-                <a href={PHONE_TEL} className="flex items-center gap-2 text-sm text-white/70 hover:text-primary-light transition-colors">
+              <div className="flex flex-col gap-0 md:gap-2.5 mt-2">
+                <a href={PHONE_TEL} className="flex min-h-11 items-center gap-2 md:min-h-0 text-sm text-white/70 hover:text-primary-light transition-colors">
                   <Phone className="h-4 w-4 shrink-0" />
                   {PHONE_DISPLAY}
                 </a>
-                <a href="mailto:ryan@trailheadirrigation.com" className="flex items-center gap-2 text-sm text-white/70 hover:text-primary-light transition-colors">
+                <a href="mailto:ryan@trailheadirrigation.com" className="flex min-h-11 items-center gap-2 md:min-h-0 text-sm text-white/70 hover:text-primary-light transition-colors">
                   <Mail className="h-4 w-4 shrink-0" />
                   ryan@trailheadirrigation.com
                 </a>
@@ -77,11 +77,11 @@ export function Footer() {
               &copy; {new Date().getFullYear()} Trailhead Lawn & Irrigation LLC. All rights reserved.
             </p>
             <nav aria-label="Legal" className="flex items-center gap-4">
-              <Link href="/privacy" className="hover:text-primary-light transition-colors">
+              <Link href="/privacy" className="inline-flex min-h-11 items-center hover:text-primary-light transition-colors md:min-h-0">
                 Privacy Policy
               </Link>
               <span aria-hidden="true">&middot;</span>
-              <Link href="/terms" className="hover:text-primary-light transition-colors">
+              <Link href="/terms" className="inline-flex min-h-11 items-center hover:text-primary-light transition-colors md:min-h-0">
                 Terms & Conditions
               </Link>
             </nav>

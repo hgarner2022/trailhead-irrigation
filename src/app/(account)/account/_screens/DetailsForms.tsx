@@ -98,12 +98,11 @@ export function YardForm({ property, onSave }: { property: Property; onSave?: (i
         <Input id={id("backflow")} label="Backflow location" value={backflow} onChange={(e) => setBackflow(e.target.value)} />
         <Input id={id("gate")} label="Gate code" value={gateCode} onChange={(e) => setGateCode(e.target.value)} />
       </div>
-      <div className="flex items-center gap-3">
+      {/* the whole row is the label, so the tap target is 44px tall, not the 16px box */}
+      <Label htmlFor={id("home")} data-slot="must-be-home" className="flex min-h-11 w-full cursor-pointer items-center gap-3 text-base">
         <Checkbox id={id("home")} checked={mustBeHome} onCheckedChange={(v) => setMustBeHome(v === true)} />
-        <Label htmlFor={id("home")} className="text-base">
-          Someone must be home for our visits
-        </Label>
-      </div>
+        Someone must be home for our visits
+      </Label>
       <Textarea id={id("note")} label="Access note" rows={3} value={accessNote} onChange={(e) => setAccessNote(e.target.value)} />
       <div className="grid gap-4 sm:grid-cols-2">
         <Input id={id("contact")} label="On-site contact" value={contactName} onChange={(e) => setContactName(e.target.value)} />
