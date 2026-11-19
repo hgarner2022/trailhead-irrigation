@@ -19,24 +19,24 @@ const NOONE = "No one yet"
 const g = (id: string, name: string, service: string, title: string, property: string, stage: GridStatus, visits: string, total: number, billingState: BillingState | null, billing: string, next: string, who: string, season = ""): GridJob => ({ id, name, service, title, property, stage, visits, total, billingState, billing, next, who, season })
 
 export const GRID_ROWS: GridJob[] = [
-  g("andrea-repair", "Andrea Dalton", "Sprinkler repair visit", "Sprinkler repair visit", "480 Briggs St, Erie", "unscheduled", "0 of 1 done", 145, null, "", "Unscheduled", NOONE),
+  g("andrea-repair", "Andrea Dalton", "Sprinkler repair", "Sprinkler repair visit", "480 Briggs St, Erie", "unscheduled", "0 of 1 done", 145, null, "", "Unscheduled", NOONE),
   g("pass-2027", "Andrea Dalton", "Season Pass", "Season Pass TH-2027-0008", "480 Briggs St, Erie", "scheduled", "0 of 2 done", 260, null, "", "Mon, May 3", RYAN, "2027"),
-  g("andrea-repair-nov12", "Andrea Dalton", "Sprinkler repair visit", "Sprinkler repair visit", "480 Briggs St, Erie", "done", "1 of 1 done", 145, "bill-sent", "Invoice sent, due Dec 2", "None", RYAN, "2026"),
+  g("andrea-repair-nov12", "Andrea Dalton", "Sprinkler repair", "Sprinkler repair visit", "480 Briggs St, Erie", "done", "1 of 1 done", 145, "bill-sent", "Invoice sent, due Dec 2", "None", RYAN, "2026"),
   g("pass-2026", "Andrea Dalton", "Season Pass", "Season Pass TH-2026-0021", "480 Briggs St, Erie", "done", "2 of 2 done", 260, "paid", "Paid, card", "None", RYAN, "2026"),
-  g("marcus-repair", "Marcus Bell", "Sprinkler repair visit", "Sprinkler repair visit", "91 Main St, Longmont", "done", "1 of 1 done", 145, "overdue", "Past due since Nov 12", "None", RYAN, "2026"),
+  g("marcus-repair", "Marcus Bell", "Sprinkler repair", "Sprinkler repair visit", "91 Main St, Longmont", "done", "1 of 1 done", 145, "overdue", "Past due since Nov 12", "None", RYAN, "2026"),
   g("dale-pass-2027", "Dale Whitaker", "Season Pass", "Season Pass TH-2027-0011", "212 Main St, Lafayette", "scheduled", "0 of 2 done", 210, null, "", "Mon, May 3", RYAN, "2027"),
   g("dale-pass-2026", "Dale Whitaker", "Season Pass", "Season Pass TH-2026-0003", "212 Main St, Lafayette", "done", "2 of 2 done", 210, "paid", "Paid, card", "None", RYAN, "2026"),
   g("g-reese", "Reese Holloway", "Fall blowout", "Fall blowout", "51 Shadow Ln, Firestone", "done", "1 of 1 done", 124, "overdue", "Past due since Nov 17", "None", RYAN, "2026"),
-  g("g-joe", "Joe Alvarez", "Sprinkler repair visit", "Sprinkler repair visit", "22 Pine St, Louisville", "done", "1 of 1 done", 145, "overdue", "Past due since Nov 12", "None", HANNAH),
+  g("g-joe", "Joe Alvarez", "Sprinkler repair", "Sprinkler repair visit", "22 Pine St, Louisville", "done", "1 of 1 done", 145, "overdue", "Past due since Nov 12", "None", HANNAH),
   g("g-lena", "Lena Park", "Sprinkler repair visit", "Valve replacement", "7 Oak Ct, Lafayette", "done", "1 of 1 done", 230, "bill-sent", "Invoice sent, due Nov 25", "None", RYAN),
   g("g-greg", "Greg Olsen", "Fall blowout", "Fall blowout", "5 Birch Ln, Erie", "done", "1 of 1 done", 115, "bill-sent", "Invoice sent, due Nov 30", "None", HANNAH),
-  g("g-sam", "Sam Ortiz", "Sprinkler repair visit", "Sprinkler repair visit", "14 Aspen Dr, Firestone", "today", "0 of 1 done", 145, null, "", "Today", RYAN),
+  g("g-sam", "Sam Ortiz", "Sprinkler repair", "Sprinkler repair visit", "14 Aspen Dr, Firestone", "today", "0 of 1 done", 145, null, "", "Today", RYAN),
   g("g-dana", "Dana Cho", "Fall blowout", "Fall blowout", "18 Cedar Way, Erie", "done", "1 of 1 done", 115, "paid", "Paid, card", "None", RYAN, "2026"),
-  g("g-priya", "Priya Shah", "Sprinkler repair visit", "Sprinkler repair visit", "330 Elm Dr, Lafayette", "done", "1 of 1 done", 145, "paid", "Paid, check", "None", HANNAH),
-  g("g-tom", "Tom Becker", "Sprinkler repair visit", "Sprinkler repair visit", "600 Hill Rd, Broomfield", "cancelled", "0 of 1 done", 145, null, "", "None", NOONE),
+  g("g-priya", "Priya Shah", "Sprinkler repair", "Sprinkler repair visit", "330 Elm Dr, Lafayette", "done", "1 of 1 done", 145, "paid", "Paid, check", "None", HANNAH),
+  g("g-tom", "Tom Becker", "Sprinkler repair", "Sprinkler repair visit", "600 Hill Rd, Broomfield", "cancelled", "0 of 1 done", 145, null, "", "None", NOONE),
   g("g-tom-install", "Tom Becker", "New sprinkler system installation", "New sprinkler system installation", "600 Hill Rd, Broomfield", "unscheduled", "0 of 1 done", 0, null, "", "Unscheduled", NOONE),
   g("g-lena-lights", "Lena Park", "Christmas lights", "Christmas lights", "7 Oak Ct, Lafayette", "unscheduled", "0 of 1 done", 600, null, "", "Unscheduled", NOONE),
-  g("g-ana", "Ana Ruiz", "Sprinkler repair visit", "Sprinkler repair visit", "9 Laurel St, Louisville", "late", "0 of 1 done", 145, null, "", "Mon, Nov 16", RYAN),
+  g("g-ana", "Ana Ruiz", "Sprinkler repair", "Sprinkler repair visit", "9 Laurel St, Louisville", "late", "0 of 1 done", 145, null, "", "Mon, Nov 16", RYAN),
 ]
 
 /** The invoice a job's page names: the fixtures all say INV-2026-0001 at /admin/invoices?invoice=inv-1, so each page is rewritten to its own invoice. */

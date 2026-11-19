@@ -16,7 +16,7 @@ import { InvoicesPage } from "../InvoicesPage"
 import { JobFlow } from "../JobFlow"
 import { JobPage } from "../JobPage"
 import { JobPagePass } from "../JobPageTrips"
-import { BILLING_WORDS, GRID_WORDS, SEASON_OPTIONS, SERVICE_OPTIONS, WHO_OPTIONS, jobGridCard, jobGridColumns, type BillingState, type GridJob, type GridStatus } from "../JobsGridDesign"
+import { BILLING_WORDS, GRID_WORDS, SERVICE_OPTIONS, WHO_OPTIONS, jobGridCard, jobGridColumns, type BillingState, type GridJob, type GridStatus } from "../JobsGridDesign"
 import { CUSTOMER_ROWS, customerIdOf, INVOICES, customerPage, invoicePage, jobView, otherCustomer, type CustomerListRow } from "./data"
 import snapshot from "@/lib/admin/fixtures/snapshot.json"
 import type { AdminData } from "@/lib/admin/types"
@@ -56,11 +56,10 @@ export function WalkJobsGrid({ rows, onOpen, onNew }: { rows: GridJob[]; onOpen:
         filters={[
           { column: "stage", label: "Status", options: (Object.keys(GRID_WORDS) as GridStatus[]).map((value) => ({ value, label: GRID_WORDS[value] })) },
           { column: "who", label: "Who", options: WHO_OPTIONS },
-          { column: "season", label: "Season", options: SEASON_OPTIONS },
           { column: "billing", label: "Billing", options: (Object.keys(BILLING_WORDS) as BillingState[]).map((value) => ({ value, label: BILLING_WORDS[value] })) },
           { column: "service", label: "Job", options: SERVICE_OPTIONS },
         ]}
-        hiddenColumns={["who", "season"]}
+        hiddenColumns={["who", "jobName"]}
         onOpen={(r) => onOpen(r.id)}
         exportName="jobs"
         pageSize={25}
