@@ -62,6 +62,12 @@ describe("visitFacts messages", () => {
     const d = { clients: [], passes: [], visits: [v], jobs: [], messages: [msg("m1", "a"), msg("m2", "other"), msg("m3")] } as unknown as AdminData
     expect(visitFacts(d, "a", "2026-11-12T19:56:30Z")!.messages.map((m) => m.id)).toEqual(["m1"])
   })
+  it("adds the invoice texts of the visit's job (an invoice is queued on the job, not the visit) and no other job's", () => {
+    const v = { id: "a", clientId: "c", clientName: "Dana Reed", town: "Erie", kind: "repair", status: "completed", isPass: false, jobberUrl: "", price: 145, jobId: "j1" } as unknown as Visit
+    const msg = (id: string, kind: string, over: Record<string, unknown> = {}) => ({ id, clientId: "c", channel: "sms", kind, body: id, at: "2026-11-10T10:00:00Z", status: "sent", ...over })
+    const d = { clients: [], passes: [], visits: [v], jobs: [], messages: [msg("m1", "date-set", { visitId: "a" }), msg("inv", "invoice", { jobId: "j1" }), msg("rem", "invoice-reminder", { jobId: "j1" }), msg("other", "invoice", { jobId: "j2" }), msg("job-note", "note", { jobId: "j1" })] } as unknown as AdminData
+    expect(visitFacts(d, "a", "2026-11-12T19:56:30Z")!.messages.map((m) => m.id)).toEqual(["m1", "inv", "rem"])
+  })
 })
 
 describe("customerChangeLine (the 24-hour rule as the office reads it)", () => {

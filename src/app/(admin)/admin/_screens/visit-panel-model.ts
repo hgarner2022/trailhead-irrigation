@@ -130,8 +130,8 @@ export function visitFacts(data: AdminData, visitId: string, today: string): Vis
     money: jobMoney(job, siblings, ruleOfData(data)),
     // a job charged to the card on its pass is left to the card (unless the card failed)
     bill: billState(job, siblings, Boolean(pass?.cardLast4) && states.money !== "failed"),
-    // only what was sent about this visit; the customer panel keeps the customer-wide list
-    messages: data.messages.filter((m) => m.visitId === visit.id),
+    // what was sent about this visit, plus the invoice texts of its job (an invoice is queued on the job, not a visit); the customer panel keeps the customer-wide list
+    messages: data.messages.filter((m) => m.visitId === visit.id || (Boolean(m.jobId) && m.jobId === visit.jobId && (m.kind === "invoice" || m.kind === "invoice-reminder"))),
     customerChange: customerChangeLine(visit, states.work === "scheduled", day, hasSelfServeDays(visit.kind, data.settings?.windows ?? [])),
   }
 }
