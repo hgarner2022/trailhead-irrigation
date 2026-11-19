@@ -8,7 +8,7 @@ import { TIME_ZONE } from "@/lib/admin/format"
 import { jobTotal } from "@/lib/jobs/lines"
 import { NO_TAX, type TaxRule } from "@/lib/jobs/tax"
 import { dayOf } from "@/lib/admin/calendar"
-import { cutoffShortWords, withinCutoff } from "@/lib/portal/change-day"
+import { cutoffShortWords, hasSelfServeDays, withinCutoff } from "@/lib/portal/change-day"
 import { jobMoney, visitJob, windowLabel, type Job } from "@/lib/admin/jobs"
 import { KIND_LABEL, type OfficeKind } from "@/lib/admin/visit-defaults"
 import { billState, type BillState } from "./bill-model"
@@ -94,12 +94,12 @@ export interface VisitFacts {
 }
 
 /** The line under a booked visit about the customer's own changes (the 24-hour rule, `withinCutoff`): open until its last minute, then closed and texts only. */
-export function customerChangeLine(visit: Pick<Visit, "scheduledOn" | "startAt">, booked: boolean, today: string): string | null {
+export function customerChangeLine(visit: Pick<Visit, "scheduledOn" | "startAt">, booked: boolean, today: string, selfServeDays = true): string | null {
   const day = dayOfVisit(visit as Visit)
   if (!booked || !day) return null
   // Noon on the Mountain day `today` falls on the same Mountain day in both daylight and standard time.
   const now = new Date(`${today.slice(0, 10)}T19:00:00Z`)
-  return withinCutoff({ scheduledOn: day }, now) ? "Closed, texts only" : `Customer can change online until ${cutoffShortWords({ scheduledOn: day })}`
+  return withinCutoff({ scheduledOn: day }, now) ? "Closed, texts only" : `Customer can ${selfServeDays ? "change" : "cancel"} online until ${cutoffShortWords({ scheduledOn: day })}`
 }
 
 /** A canceled visit's When: "Canceled, was Fri, Apr 30", or "Canceled" when it never had a day. Never "Unscheduled", which reads as work that needs a day. */
@@ -132,7 +132,7 @@ export function visitFacts(data: AdminData, visitId: string, today: string): Vis
     bill: billState(job, siblings, Boolean(pass?.cardLast4) && states.money !== "failed"),
     // only what was sent about this visit; the customer panel keeps the customer-wide list
     messages: data.messages.filter((m) => m.visitId === visit.id),
-    customerChange: customerChangeLine(visit, states.work === "scheduled", day),
+    customerChange: customerChangeLine(visit, states.work === "scheduled", day, hasSelfServeDays(visit.kind, data.settings?.windows ?? [])),
   }
 }
 

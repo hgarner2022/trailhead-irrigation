@@ -57,7 +57,7 @@ describe("VisitPage", () => {
     render(<VisitPage model={{ ...base, reschedule: "text" }} {...slots} />)
     expect(screen.getByRole("button", { name: "Cancel visit" })).toBeInTheDocument()
     expect(screen.queryByRole("button", { name: "Reschedule" })).toBeNull()
-    expect(screen.getByText("Days for this work are set with you.")).toBeInTheDocument()
+    expect(screen.getByText("To pick another day, text Ryan.")).toBeInTheDocument()
     expect(screen.getByRole("link", { name: "Text Ryan" })).toBeInTheDocument()
   })
 

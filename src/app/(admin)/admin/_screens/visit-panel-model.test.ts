@@ -69,6 +69,8 @@ describe("customerChangeLine (the 24-hour rule as the office reads it)", () => {
   it("says what the customer's account allows until the last minute, then Closed, texts only", () => {
     expect(customerChangeLine(booked, true, "2027-04-20")).toBe("Customer can change online until Mon, Apr 26, 11:59 pm")
     expect(customerChangeLine(booked, true, "2027-04-26")).toBe("Customer can change online until Mon, Apr 26, 11:59 pm")
+    // a kind with no self-serve days (a repair, until the slots step): the account offers Cancel only, and the line says so
+    expect(customerChangeLine(booked, true, "2027-04-20", false)).toBe("Customer can cancel online until Mon, Apr 26, 11:59 pm")
     expect(customerChangeLine(booked, true, "2027-04-27")).toBe("Closed, texts only")
     expect(customerChangeLine(booked, true, "2027-04-28")).toBe("Closed, texts only")
   })

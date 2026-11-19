@@ -11,7 +11,7 @@ import { loadTaxRule } from "@/lib/money/tax-rule"
 import { jobMoney, jobOwed } from "@/lib/money/words"
 import { portalVisitMoney } from "./visit-money"
 import { passStatus } from "@/lib/pass/facts"
-import { changeFor, cutoffWords, mountainDayOf } from "@/lib/portal/change-day"
+import { changeFor, cutoffWords, hasSelfServeDays, mountainDayOf } from "@/lib/portal/change-day"
 import { windowTold } from "@/lib/portal/window-told"
 import { customerFacingFirstName, windowPhrase } from "@/lib/portal/words"
 import type { Ctx } from "../../core/context"
@@ -62,7 +62,6 @@ export async function loadPortalJobs(ctx: Ctx, customerId: string, only?: string
     for (const e of events) if (e.visitId) goneAt.set(e.visitId, e.at)
   }
   const now = ctx.now
-  const windowKinds = new Set((orgRow?.settings.windows ?? []).map((w) => w.kind as string))
   const nameOf = new Map(people.map((p) => [p.id, p.name]))
   return jobs.map((j) => {
     const lines = lineRows.filter((l) => l.jobId === j.id)
@@ -127,7 +126,7 @@ export async function loadPortalJobs(ctx: Ctx, customerId: string, only?: string
         money: visitMoney.get(v.id)!,
         mustBeHome: properties.find((p) => p.id === v.propertyId)?.mustBeHome ?? false,
         notDoneReason: v.status === "unscheduled" ? v.notDoneReason : null,
-        ...changeFor({ status: v.status, scheduledOn: v.scheduledOn, hasWindow: windowKinds.has(v.kind), jobOpen }, now),
+        ...changeFor({ status: v.status, scheduledOn: v.scheduledOn, hasWindow: hasSelfServeDays(v.kind, orgRow?.settings.windows ?? []), jobOpen }, now),
         cancelsBy: v.status === "scheduled" && v.scheduledOn ? cutoffWords({ scheduledOn: v.scheduledOn }) : null,
       })),
       payments: payments
