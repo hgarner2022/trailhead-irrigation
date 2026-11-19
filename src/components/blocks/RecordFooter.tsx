@@ -27,6 +27,8 @@ export interface RecordFooterProps {
   secondary?: [FooterAction] | [FooterAction, FooterAction]
   more?: readonly FooterAction[]
   destructive?: FooterAction
+  /** the destructive action goes last in the More menu, in red, instead of a ghost button (the page header's actions, where room is short) */
+  destructiveInMenu?: boolean
   /** the primary is drawn by the panel's body (beat two): leave a place for it */
   slot?: boolean
   className?: string
@@ -54,14 +56,15 @@ function Act({ action, variant, className }: { action: FooterAction; variant: "d
   )
 }
 
-export function RecordFooter({ primary, secondary, more = [], destructive, slot, className }: RecordFooterProps) {
+export function RecordFooter({ primary, secondary, more = [], destructive, destructiveInMenu, slot, className }: RecordFooterProps) {
   const holder = useContext(FooterSlotContext)
+  const inMenu = Boolean(destructiveInMenu && destructive)
   return (
     <div data-slot="record-footer" className={cn("flex w-full flex-wrap items-center gap-2", className)}>
       {primary && <Act action={primary} variant="default" className="w-full sm:w-auto" />}
       {slot && <span ref={holder?.setElement} data-slot="record-footer-slot" className="contents" />}
       {secondary?.slice(0, 2).map((a) => <Act key={a.label} action={a} variant="outline" />)}
-      {more.length > 0 && (
+      {(more.length > 0 || inMenu) && (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button type="button" variant="outline" className="min-h-11">
@@ -87,10 +90,15 @@ export function RecordFooter({ primary, secondary, more = [], destructive, slot,
                 </DropdownMenuItem>
               ),
             )}
+            {inMenu && destructive && (
+              <DropdownMenuItem disabled={destructive.disabled} onSelect={destructive.onClick} className="min-h-11 text-destructive focus:text-destructive">
+                {destructive.label}
+              </DropdownMenuItem>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
       )}
-      {destructive && <Act action={destructive} variant="ghost" className="ml-auto text-destructive hover:text-destructive" />}
+      {destructive && !inMenu && <Act action={destructive} variant="ghost" className="ml-auto text-destructive hover:text-destructive" />}
     </div>
   )
 }

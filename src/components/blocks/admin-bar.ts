@@ -14,6 +14,8 @@ export interface AdminBar {
   mode: "bar" | "inline"
   title: HTMLElement | null
   actions: HTMLElement | null
+  /** the phone bar's slot for the page's one primary */
+  primary?: HTMLElement | null
 }
 
 export const AdminBarContext = createContext<AdminBar | null>(null)

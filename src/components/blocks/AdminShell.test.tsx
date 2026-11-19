@@ -59,8 +59,9 @@ describe("AdminShell", () => {
     expect(nav.queryByRole("link", { name: "Visits" })).toBeNull()
     expect(nav.getByRole("link", { name: "Schedule" })).toHaveAttribute("aria-current", "page")
     expect(nav.getByRole("link", { name: "Home" })).not.toHaveAttribute("aria-current")
-    expect(screen.getByText("HG")).toBeInTheDocument()
-    expect(nav.getByRole("button", { name: "Sign out Hannah" })).toBeInTheDocument()
+    // Sign out left the rail: it is in the account menu at the far right of the top bar
+    expect(nav.queryByRole("button", { name: /Sign out/ })).toBeNull()
+    expect(screen.getByRole("button", { name: "Account, Hannah" })).toBeInTheDocument()
     expect(screen.getByText("Screen body")).toBeInTheDocument()
     expect(screen.getByRole("button", { name: /toggle sidebar/i })).toBeInTheDocument()
     expect(tabbar()).toBeNull()
@@ -105,11 +106,10 @@ describe("AdminShell", () => {
     expect(screen.queryByRole("button", { name: /toggle sidebar/i })).toBeNull()
   })
 
-  it("More holds Reports, Settings and Sign out, and lights while Reports or Settings is the screen", async () => {
+  it("More holds Reports and Settings only, and lights while Reports or Settings is the screen", async () => {
     stubViewport(375)
-    const onSignOut = vi.fn()
     render(
-      <AdminShell current="settings" user={user} onSignOut={onSignOut}>
+      <AdminShell current="settings" user={user}>
         <p>Phone body</p>
       </AdminShell>,
     )
@@ -117,11 +117,13 @@ describe("AdminShell", () => {
     expect(more).toHaveAttribute("aria-current", "page")
     await userEvent.click(more)
     const menu = within(await screen.findByRole("menu"))
-    expect(menu.getAllByRole("menuitem").map((i) => i.textContent)).toEqual(["Reports", "Settings", "Sign out"])
+    expect(menu.getAllByRole("menuitem").map((i) => i.textContent)).toEqual(["Reports", "Settings"])
     expect(menu.getByRole("menuitem", { name: "Reports" })).toHaveAttribute("href", "/admin/reports")
     expect(menu.getByRole("menuitem", { name: "Settings" })).toHaveAttribute("href", "/admin/settings")
-    await userEvent.click(menu.getByRole("menuitem", { name: /Sign out/ }))
-    expect(onSignOut).toHaveBeenCalledTimes(1)
+    await userEvent.keyboard("{Escape}")
+    // Sign out is in the account menu, on a phone too
+    await userEvent.click(screen.getByRole("button", { name: "Account, Hannah" }))
+    expect(await screen.findByRole("menuitem", { name: "Sign out" })).toBeInTheDocument()
   })
 
   it("renders the switcher slot only when given", () => {
