@@ -31,9 +31,9 @@ describe("PayScreen", () => {
     expect(screen.queryByText("Tax")).toBeNull()
   })
 
-  it("says Was due for an overdue invoice and keeps the button", () => {
+  it("says Past due since for an overdue invoice and keeps the button", () => {
     render(<PayScreen bill={{ ...sent, status: "overdue" }} payAction={ok} />)
-    expect(screen.getByText("Was due Dec 1")).toBeInTheDocument()
+    expect(screen.getByText("Past due since Dec 1")).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Pay $145 by card" })).toBeInTheDocument()
   })
 
@@ -117,7 +117,7 @@ describe("PayScreen", () => {
 describe("pay-model words", () => {
   it("words the due day, the paid day and the button", () => {
     expect(dueWords({ dueOn: "2026-12-01", status: "sent" })).toBe("Due Dec 1")
-    expect(dueWords({ dueOn: "2026-12-01", status: "overdue" })).toBe("Was due Dec 1")
+    expect(dueWords({ dueOn: "2026-12-01", status: "overdue" })).toBe("Past due since Dec 1")
     expect(paidWords({ paidOn: "2026-11-20" })).toBe("Paid Nov 20, thank you")
     expect(payLabel({ total: 1234 })).toBe("Pay $1,234 by card")
   })

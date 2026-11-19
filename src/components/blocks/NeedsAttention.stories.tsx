@@ -52,6 +52,22 @@ export const WithCustomerChanges: Story = {
   },
 }
 
+/**
+ * A website request for a quote (a service we do not book online) lands on Home as one row with the received date; Open customer opens the customer. The quote itself, a draft with its
+ * received date, has no model yet (a later research item), so the row stands in for it.
+ */
+export const WithQuoteRequest: Story = {
+  args: {
+    items: [{ kind: "quote-request", key: "req:c9", customerId: "c9", message: "Quote request: Andrea Reyes, installation, received Nov 19.", since: "2026-11-19T15:00:00Z" }],
+    now: "2026-11-19T16:00:00Z",
+  },
+  render: (args) => narrow(<NeedsAttention {...args} />),
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).getByText("Quote request: Andrea Reyes, installation, received Nov 19.")).toBeInTheDocument()
+    await expect(within(canvasElement).getByRole("button", { name: /^Open customer/ })).toBeInTheDocument()
+  },
+}
+
 export const Empty: Story = {
   args: { items: [] },
   render: (args) => narrow(<NeedsAttention {...args} />),

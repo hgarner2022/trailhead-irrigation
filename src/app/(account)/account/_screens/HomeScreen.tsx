@@ -3,6 +3,7 @@ import { InvoiceBanner } from "@/components/blocks/InvoiceBanner"
 import { NextVisitCard } from "@/components/blocks/NextVisitCard"
 import { PassCard } from "@/components/blocks/PassCard"
 import { SeasonLine } from "@/components/blocks/SeasonLine"
+import { SectionHeading } from "@/components/blocks/SectionHeading"
 import { VisitRow } from "@/components/blocks/VisitRow"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -10,6 +11,8 @@ import type { PortalCustomerType, PortalJobType } from "@/api/v1/portal/schemas"
 import type { Pass } from "@/lib/admin/types"
 import { nextRow, portalTimeline } from "@/lib/portal/timeline"
 import { visitPageOf } from "@/lib/portal/visit-page"
+import { withBookedTime, type BookedTimes } from "@/lib/portal/booked-time"
+import type { DayTimeOffer } from "@/lib/booking/day-time"
 import { seasonCaption } from "../pass/_screens/pass-page-model"
 import { openInvoices } from "./account-model"
 import { VisitControls, type VisitActions } from "./VisitControls"
@@ -28,22 +31,33 @@ export interface HomeScreenProps extends VisitActions {
   pass?: Pass | null
   /** the days `visits.areaDays` offers for the visits the customer may reschedule, by visit id, up to five each */
   days?: Record<string, string[]>
+  /** with slots: the booked start of each visit ("10:30"), and the open days with their start times for the next visit's Reschedule */
+  times?: BookedTimes
+  offers?: Record<string, readonly DayTimeOffer[]>
 }
 
-export function HomeScreen({ customer, jobs, today, pass, days = {}, onReschedule, onCancel }: HomeScreenProps) {
+export function HomeScreen({ customer, jobs, today, pass, days = {}, times, offers, onReschedule, onRescheduleTime, onCancel }: HomeScreenProps) {
   const invoices = openInvoices(jobs)
   const timeline = portalTimeline(customer, jobs, today)
   const next = nextRow(timeline)
-  const model = next ? visitPageOf(next.job, next.visit, customer, today) : null
+  const start = next ? times?.[next.id] : undefined
+  const model = next ? withBookedTime(visitPageOf(next.job, next.visit, customer, today), start, { scheduled: next.visit.status === "scheduled", who: next.visit.personFirstName, told: next.visit.windowTold }) : null
   const recent = timeline.past.slice(0, 3)
   return (
     <main data-slot="account-home" className="mx-auto max-w-5xl space-y-8 container-padding-x py-8">
       <h1 className="sr-only">Your Trailhead account</h1>
       <div className="grid items-start gap-6 lg:grid-cols-2">
         <div className="space-y-6">
-          {invoices.map((i) => (
-            <InvoiceBanner key={i.id} jobName={i.jobName} total={i.total} dueOn={i.dueOn} status={i.status} payHref={i.payHref} />
-          ))}
+          {invoices.length > 0 && (
+            <section aria-labelledby="home-invoices" data-slot="home-invoices" className="space-y-2">
+              <SectionHeading id="home-invoices" level={2}>
+                {invoices.length > 1 ? "Invoices" : "Invoice"}
+              </SectionHeading>
+              {invoices.map((i) => (
+                <InvoiceBanner key={i.id} jobName={i.jobName} total={i.total} dueOn={i.dueOn} status={i.status} payHref={i.payHref} />
+              ))}
+            </section>
+          )}
           <NextVisitCard
             visit={
               next && model
@@ -55,7 +69,7 @@ export function HomeScreen({ customer, jobs, today, pass, days = {}, onReschedul
                     label: next.label,
                     mustBeHome: next.visit.mustBeHome,
                     href: next.href,
-                    actions: <VisitControls job={next.job} visit={next.visit} today={today} days={days[next.id]} textHref={model.textHref} onReschedule={onReschedule} onCancel={onCancel} />,
+                    actions: <VisitControls job={next.job} visit={next.visit} today={today} days={days[next.id]} offers={offers?.[next.id]} currentStart={start} textHref={model.textHref} onReschedule={onReschedule} onRescheduleTime={onRescheduleTime} onCancel={onCancel} />,
                   }
                 : null
             }
