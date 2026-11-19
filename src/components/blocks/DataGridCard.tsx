@@ -23,6 +23,8 @@ export interface GridCardSlots {
   when?: string[]
   /** the money word, at the right of the card */
   money?: string
+  /** a column drawn under the card as its quiet action line (links and buttons cannot sit inside the card's own button) */
+  actions?: string
 }
 
 type Row<T extends RowData> = ReturnType<GridTable<T>["getRowModel"]>["rows"][number]
@@ -108,6 +110,7 @@ export function DataGridCards<T extends RowData>({ table, rows, slots, nameId, l
               </span>
               {slots.money && <span className="shrink-0 text-right text-sm tabular-nums">{cell(slots.money)}</span>}
             </button>
+            {slots.actions && <div data-slot="data-grid-card-actions" className="px-4">{cell(slots.actions)}</div>}
           </li>
         )
       })}

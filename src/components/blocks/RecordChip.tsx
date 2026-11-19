@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils"
 // A record named inside a line of text, as a link (Hannah, Nov 19 2026: in "Past visits" the service is that job and the person is a
 // person, and both should look like what they are). A small chip: the kind's icon, the name, a hairline and the cream hover of a row; the
 // name is the link and a screen reader hears the kind first ("Job: Fall blowout"). `kind` picks the icon and the words (job, person, customer, invoice, receipt, visit, property, day): every record name on any screen is one.
-// Pure render, server component.
+// The name wraps and is never cut with an ellipsis, so a short name is whole on a phone. Pure render, server component.
 
 export type RecordChipKind = "job" | "person" | "customer" | "invoice" | "receipt" | "visit" | "property" | "day"
 
@@ -26,11 +26,11 @@ export function RecordChip({ kind, name, href, className }: RecordChipProps) {
       href={href}
       data-slot="record-chip"
       data-kind={kind}
-      className={cn("inline-flex min-h-6 max-w-full items-center gap-1 rounded-full border border-border bg-stone px-2 py-0.5 align-middle text-sm font-medium text-primary-dark hover:bg-row-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50", className)}
+      className={cn("inline-flex min-h-6 max-w-full items-start gap-1 rounded-full border border-border bg-stone px-2 py-0.5 align-middle text-sm font-medium text-primary-dark hover:bg-row-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50", className)}
     >
-      <Icon className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
+      <Icon className="mt-[3px] size-3.5 shrink-0 text-muted-foreground" aria-hidden />
       <span className="sr-only">{KIND_WORDS[kind]}: </span>
-      <span className="truncate">{name}</span>
+      <span className="min-w-0 break-words">{name}</span>
     </Link>
   )
 }

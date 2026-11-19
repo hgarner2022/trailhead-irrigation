@@ -37,7 +37,7 @@ describe("Photos", () => {
   it("shows who took each photo and a Show to customer box only on staff's own photos", () => {
     render(<Photos photos={[photo(1), photo(2, { addedBy: "customer", addedByName: null, byCustomer: true, canRemove: false })]} />)
     expect(screen.getAllByRole("checkbox")).toHaveLength(1)
-    expect(screen.getByText("Added by the customer")).toBeTruthy()
+    expect(screen.getByText(/^Customer · /)).toBeTruthy()
     expect(screen.getByText(/Ryan · Nov 17/)).toBeTruthy()
   })
 

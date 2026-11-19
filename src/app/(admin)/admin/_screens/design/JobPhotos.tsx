@@ -22,7 +22,7 @@ export function JobPhotos({ photos, first, visitDone, canceled }: { photos: Phot
         {theirs.length > 0 && (
           <div className="flex flex-col gap-2">
             <SectionHeading id="photos-theirs-h">{`From ${first}`}</SectionHeading>
-            <Photos bare heading={`From ${first}`} photos={theirs} audience="staff" className="[&_ul]:mt-0" />
+            <Photos bare heading={`From ${first}`} customerName={first} photos={theirs} audience="staff" className="[&_ul]:mt-0" />
           </div>
         )}
         {!canceled && (

@@ -35,7 +35,7 @@ describe("job page, one trip", () => {
   it("opens How is this paid? from the one Collect payment button, card first, and holds no result card in Billing", () => {
     render(<JobPage job={jobPageOf("done-unpaid")} />)
     expect(screen.queryByText(/How is this paid/i)).toBeNull()
-    expect(screen.getByText("No invoice or payment yet.")).toBeInTheDocument()
+    expect(document.querySelector("[data-slot=settled-line]")).toHaveTextContent("$145 unpaid. No invoice yet.")
     expect(screen.queryByRole("button", { name: "Record the payment" })).toBeNull()
     fireEvent.click(screen.getByRole("button", { name: "Collect payment" }))
     const dialog = screen.getByRole("dialog")
@@ -48,12 +48,12 @@ describe("job page, one trip", () => {
     render(<JobPage job={jobPageOf("invoice-sent")} />)
     expect(screen.getByRole("button", { name: "Collect payment" })).toBeInTheDocument()
     expect(screen.queryByRole("button", { name: "Record the payment" })).toBeNull()
-    expect(screen.queryByText("No invoice or payment yet.")).toBeNull()
+    expect(document.querySelector("[data-slot=settled-line]")).toHaveTextContent(/\$145 unpaid\. Invoice Invoice: INV-2026-0001 sent Nov 18, due Dec 2\./)
     const table = document.querySelector("[data-slot=invoice-table]") as HTMLElement
     expect(within(table).getByText("INV-2026-0001")).toBeInTheDocument()
     expect(within(table).getByText("Invoice sent")).toBeInTheDocument()
     expect(within(table).getByRole("button", { name: "Remind" })).toBeInTheDocument()
-    expect(within(table).getByRole("link", { name: "Open invoice" })).toBeInTheDocument()
+    expect(within(table).getByRole("link", { name: /Open invoice/ })).toBeInTheDocument()
   })
 
   it("says Paid in full in green with how, when and who, then the facts and a Payments table", () => {
@@ -63,7 +63,7 @@ describe("job page, one trip", () => {
     expect(line).toHaveTextContent("Paid in full. $145 paid by check #1042 on Nov 18, recorded by Ryan")
     const table = document.querySelector("[data-slot=payment-table]") as HTMLElement
     expect(within(table).getByText("Check #1042")).toBeInTheDocument()
-    expect(within(table).getByRole("link", { name: "Receipt" })).toBeInTheDocument()
+    expect(within(table).getByRole("link", { name: /Receipt/ })).toBeInTheDocument()
     expect(within(table).queryByText(/Open in Stripe/)).toBeNull()
     expect(within(table).getByRole("button", { name: /More for the \$145 payment/ })).toBeInTheDocument()
   })
@@ -107,7 +107,7 @@ describe("job page, one trip", () => {
     render(<JobPage job={jobPageOf("scheduled")} />)
     const heads = Array.from(document.querySelectorAll("[aria-labelledby=photos-h] h3")).map((h) => h.textContent)
     expect(heads).toEqual(["From Andrea", "Ours"])
-    expect(screen.getByText("Customer · Added when booked")).toBeInTheDocument()
+    expect(screen.getByText("Andrea · Added when booked")).toBeInTheDocument()
     const theirs = document.querySelector("[aria-labelledby=photos-h] [data-slot=photos]") as HTMLElement
     expect(within(theirs).queryByRole("checkbox")).toBeNull()
     expect(within(theirs).queryByRole("button", { name: "Remove" })).toBeNull()

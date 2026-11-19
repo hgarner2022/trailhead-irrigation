@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite"
+import { expect } from "storybook/test"
 import { InvoiceTable, PaymentTable, type InvoiceRowData, type PaymentRowData } from "./BillingTables"
 
 const noop = () => {}
@@ -28,11 +29,30 @@ export const Refunded: Story = { args: { rows: [REFUND, { ...CHECK, canRefund: f
 /** Nothing paid yet. */
 export const NoPayments: Story = { args: { rows: [] } }
 
+/** At 1280 the table fits the Billing card it sits in (564px of body): nothing is clipped and there is no sideways scroll. */
+export const PaymentsFitTheCard: Story = {
+  decorators: [(Story) => <div style={{ width: 564 }}><Story /></div>],
+  play: async ({ canvasElement }) => {
+    const box = canvasElement.querySelector("[data-slot=table-container]") as HTMLElement
+    await expect(box.scrollWidth).toBeLessThanOrEqual(box.clientWidth)
+  },
+}
+
 /** On a phone each payment is a card that opens its details and buttons. */
 export const PaymentsPhone: Story = { globals: { viewport: { value: "phone", isRotated: false } } }
 
 /** The Invoices table: number, amount, sent, due, status, then Remind and Open invoice. */
 export const Invoices: Story = { render: () => <InvoiceTable rows={[INVOICE]} onRemind={noop} /> }
+
+/** The Invoices table in its 606px card: nothing clipped. */
+export const InvoicesFitTheCard: Story = {
+  decorators: [(Story) => <div style={{ width: 606 }}><Story /></div>],
+  render: () => <InvoiceTable rows={[{ ...INVOICE, note: "Includes the visit report" }]} onRemind={noop} />,
+  play: async ({ canvasElement }) => {
+    const box = canvasElement.querySelector("[data-slot=table-container]") as HTMLElement
+    await expect(box.scrollWidth).toBeLessThanOrEqual(box.clientWidth)
+  },
+}
 
 export const InvoicePastDue: Story = { render: () => <InvoiceTable rows={[{ ...INVOICE, status: "overdue", sent: "Nov 3", due: "Nov 17" }]} onRemind={noop} /> }
 

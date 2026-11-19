@@ -17,7 +17,6 @@ import { RecordFooter, type FooterAction } from "@/components/blocks/RecordFoote
 import { collectConfirm, doneToast, footerConfirms, type ConfirmCopy, type ConfirmFacts } from "./confirm-copy"
 import { RecordFacts, type RecordFact } from "@/components/blocks/RecordPanel"
 import { SectionCard } from "@/components/blocks/SectionCard"
-import { SectionHeading } from "@/components/blocks/SectionHeading"
 import { StatusPill, statusLabel, type PillStatus } from "@/components/blocks/StatusPill"
 import type { SummaryItem } from "@/components/blocks/SummaryBand"
 import type { Message } from "@/lib/admin/types"
@@ -120,11 +119,9 @@ export function PastVisitsCard({ street, visits, total }: { street: string; visi
           <ul className="divide-y divide-border">
             {visits.slice(0, 3).map((v) => (
               <li key={v.id} data-slot="past-visit" className="py-3 first:pt-0 last:pb-0">
-                <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
+                <p className="flex flex-wrap items-center gap-2 text-sm">
                   <RecordChip kind="job" name={v.service} href={`/admin/jobs/${v.jobId}`} />
-                  <span>·</span>
                   <RecordChip kind="day" name={v.date} href={dayHref(v.date) ?? "/admin/schedule"} />
-                  <span>·</span>
                   <RecordChip kind="person" name={v.who} href="/admin/settings?tab=people" />
                 </p>
                 {v.note && <p className="mt-1 text-sm text-foreground">{v.note}</p>}
@@ -183,10 +180,9 @@ export function CollectBlock({ collect, facts, handlers, bare }: { collect: NonN
 
 export function MessagesCard({ messages }: { messages: Message[] }) {
   return (
-    <section aria-labelledby="messages-h" className="flex flex-col gap-3">
-      <SectionHeading level={2} size="section" id="messages-h">Messages</SectionHeading>
-      <MessageTable messages={messages} to={CONTACT} />
-    </section>
+    <SectionCard title="Messages" id="messages-h">
+      <MessageTable messages={messages} to={CONTACT} toolbar={false} />
+    </SectionCard>
   )
 }
 

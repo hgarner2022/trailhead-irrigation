@@ -1,6 +1,7 @@
 "use client"
 
-import { CheckCircle2, Undo2 } from "lucide-react"
+import { AlertCircle, CheckCircle2, Clock, Undo2 } from "lucide-react"
+import { RecordChip } from "@/components/blocks/RecordChip"
 import { BillingSection, type BillingRowData } from "@/components/blocks/BillingSection"
 import { InvoiceTable, PaymentTable, type InvoiceRowData, type PaymentRowData } from "@/components/blocks/BillingTables"
 import { MoneyCell } from "@/components/blocks/MoneyCell"
@@ -16,14 +17,23 @@ import type { BillingData, JobPageData } from "./job-fixtures"
 // neither. A charge, a recorded payment or an invoice changes this card and says so in a toast; the card never holds the answer or a
 // Close. The older one-line rows the pass and return-trip pages use still render through `BillingSection`. Pure props.
 
+const TONE = {
+  paid: "border-positive/30 bg-positive/10 text-positive-deep",
+  unpaid: "border-border bg-stone text-foreground",
+  pastdue: "border-destructive/30 bg-destructive/10 text-destructive",
+  refunded: "border-border bg-stone text-muted-foreground",
+} as const
+
 function SettledLine({ line }: { line: NonNullable<BillingData["paidLine"]> }) {
-  const paid = line.tone === "paid"
-  const Icon = paid ? CheckCircle2 : Undo2
+  const Icon = { paid: CheckCircle2, unpaid: Clock, pastdue: AlertCircle, refunded: Undo2 }[line.tone]
+  const [before, after] = line.invoice ? line.text.split("{invoice}") : [line.text, ""]
   return (
-    <p data-slot="settled-line" data-tone={line.tone} className={cn("mb-3 flex items-start gap-2 rounded-lg border px-3 py-2 text-sm", paid ? "border-positive/30 bg-positive/10 text-positive-deep" : "border-border bg-stone text-muted-foreground")}>
+    <p data-slot="settled-line" data-tone={line.tone} className={cn("mb-3 flex items-start gap-2 rounded-lg border px-3 py-2 text-sm", TONE[line.tone])}>
       <Icon className="mt-0.5 size-4 shrink-0" aria-hidden />
       <span>
-        <span className="font-semibold">{line.title}.</span> {line.text}
+        <span className="font-semibold">{line.title}.</span> {before}
+        {line.invoice && <RecordChip kind="invoice" name={line.invoice.name} href={line.invoice.href} />}
+        {after}
       </span>
     </p>
   )
@@ -59,7 +69,7 @@ export function BillingCard({ data, onRemind, onRefund }: { data: Pick<JobPageDa
           <InvoiceTable rows={invoices} onRemind={onRemind} />
         </div>
       )}
-      {payments.length === 0 && invoices.length === 0 && billing.emptyLine && <p className="mt-3 text-sm text-muted-foreground">{billing.emptyLine}</p>}
+      {payments.length === 0 && invoices.length === 0 && !billing.paidLine && billing.emptyLine && <p className="mt-3 text-sm text-muted-foreground">{billing.emptyLine}</p>}
     </SectionCard>
   )
 }
