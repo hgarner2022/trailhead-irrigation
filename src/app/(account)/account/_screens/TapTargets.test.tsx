@@ -53,7 +53,7 @@ describe("44px tap targets on the account", () => {
     expect(row.querySelector("button[role=checkbox]")).not.toBeNull()
   })
   it("the sign-in sent page: Use a different email", () => {
-    render(<SignInCard state="sent" email="andrea@example.com" retryHref="/account/sign-in" />)
+    render(<SignInCard audience="customer" state="sent" email="andrea@example.com" retryHref="/account/sign-in" />)
     expect(tall(screen.getByRole("link", { name: "Use a different email" }))).toBe(true)
   })
   it("the marketing footer's links are 44px below md and back to compact from md", () => {
