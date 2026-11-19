@@ -149,14 +149,13 @@ function Earlier({ area }: { area: PassArea }) {
   )
 }
 
-const ICON = "size-4"
 export function bandOf(d: CustomerPageData): SummaryItem[] {
   const { next, unpaid, pass, card } = d.band
   return [
-    { label: "Next visit", value: next.value, sub: next.sub, icon: <CalendarDays className={ICON} /> },
-    { label: "Unpaid", value: unpaid.value, sub: unpaid.sub, tone: unpaid.alert ? "alert" : "plain", icon: <Receipt className={ICON} /> },
-    { label: "Season Pass", value: pass.value, sub: pass.sub, icon: <Ticket className={ICON} /> },
-    { label: "Card on file", value: card.value, sub: card.sub, icon: <CreditCard className={ICON} /> },
+    { label: "Next visit", value: next.value, sub: next.sub, icon: CalendarDays },
+    { label: "Unpaid", value: unpaid.value, sub: unpaid.sub, tone: unpaid.alert ? "alert" : "plain", icon: Receipt },
+    { label: "Season Pass", value: pass.value, sub: pass.sub, icon: Ticket },
+    { label: "Card on file", value: card.value, sub: card.sub, icon: CreditCard },
   ]
 }
 

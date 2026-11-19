@@ -1,9 +1,10 @@
+import { Checklist } from "@/components/blocks/Checklist"
 import { LineItemList } from "@/components/blocks/LineItemList"
 import { RecordPage } from "@/components/blocks/RecordPage"
 import { SectionCard } from "@/components/blocks/SectionCard"
 import { SummaryBand } from "@/components/blocks/SummaryBand"
 import type { JobPageData } from "./job-fixtures"
-import { Actions, Aside, Badges, BillingCard, EditLink, MessagesCard, Notice, bandOfJob, hasFooter } from "./JobPageParts"
+import { Actions, Aside, Badges, BillingCard, EditLink, MessagesCard, Notice, bandOfJob, factsOfJob, hasFooter } from "./JobPageParts"
 
 // The job page for a one-trip job (docs/plans/2026-11-19-job-object-design.md) on the page frame of
 // docs/plans/2026-11-19-admin-page-layout-research.md: the header (customer, status badges beside it, the actions at the top right), the
@@ -22,12 +23,13 @@ export function JobPage({ job }: { job: JobPageData }) {
       notice={job.notice ? <Notice>{job.notice}</Notice> : undefined}
       band={<SummaryBand items={bandOfJob(job)} />}
       aside={<Aside customer={job.customer} phone={job.phone} where={job.where} notes={job.notes} />}
-      actions={hasFooter(job.footer) ? <Actions plan={job.footer} /> : undefined}
+      actions={hasFooter(job.footer) ? <Actions plan={job.footer} facts={factsOfJob(job)} /> : undefined}
     >
       <SectionCard title="What's included" id="included-h" action={canceled ? undefined : <EditLink />}>
         <LineItemList lines={job.lines} totals={job.totals} />
       </SectionCard>
-      <BillingCard data={job} />
+      {job.checklist && <Checklist items={job.checklist} />}
+      <BillingCard data={job} facts={factsOfJob(job)} />
       <MessagesCard messages={job.messages} />
     </RecordPage>
   )

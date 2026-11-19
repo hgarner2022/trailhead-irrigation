@@ -40,6 +40,8 @@ export interface MultiTripData {
   messages: Message[]
   footer: FooterPlan
   pass?: Pass
+  /** a Season Pass linked across seasons: renewed from last season's (`renews_job_id` is set), or renewed as next season's */
+  renewal?: { kind: "from" | "as"; number: string }
 }
 
 export type PassState = "ahead" | "one-done" | "both-done" | "canceled"
@@ -68,7 +70,7 @@ const MORE: FooterAction[] = [act("Send card link"), act("Resend confirmation"),
 const passNotes = [event("n2", "2026-11-02T15:10:00Z", "Sold the Season Pass online, TH-2027-0008")]
 const passMsgs = [msg("m1", "2026-11-02T15:11:00Z", "email", "purchase-confirmation", "Your Season Pass is reserved: TH-2027-0008")]
 
-export function passPageOf(state: PassState): MultiTripData {
+export function passPageOf(state: PassState, renewal?: MultiTripData["renewal"]): MultiTripData {
   const pass = (snapshot.passes as Pass[])[0]
   const spring = state === "ahead" ? ahead(SPRING, "$145", "t1") : state === "canceled" ? gone(SPRING, "t1") : done(SPRING, "t1")
   const fall = state === "both-done" ? done(FALL, "t2") : state === "canceled" ? gone(FALL, "t2") : ahead(FALL, "$115", "t2")
@@ -89,6 +91,7 @@ export function passPageOf(state: PassState): MultiTripData {
     messages: passMsgs,
     footer: state === "canceled" ? {} : state === "both-done" ? { more: MORE } : { secondary: [act("Change the pass"), act("Send a text")], more: MORE, destructive: act("Cancel pass") },
     pass: state === "canceled" ? { ...pass, status: "cancelled" } : pass,
+    renewal,
   }
 }
 
@@ -107,7 +110,7 @@ export function returnTripOf(): MultiTripData {
     totals: [["Total", "$230", "strong"], ["Paid", "$145"], ["Unpaid", "$85", "alert"]],
     billing: { summary: [["Total", "$230"], ["Paid", "$145"], ["Unpaid", "$85"]], rows: [{ id: "p1", kind: "payment", title: "Card", detail: "Sprinkler repair visit · Nov 12", amount: "$145" }] },
     notes: [event("n1", "2026-11-12T21:40:00Z", "Added a return trip for the valve, Thu, Nov 19")],
-    messages: [msg("m1", "2026-11-12T21:41:00Z", "sms", "date-set", "Trailhead: Ryan is back Thu, Nov 19. We'll text your window the day before.")],
+    messages: [msg("m1", "2026-11-12T21:41:00Z", "sms", "date-set", "Trailhead: Ryan is back Thu, Nov 19.")],
     footer: { secondary: [act("Add a return trip"), act("Send a text")], more: [act("Edit"), act("Add a note")], destructive: act("Cancel job") },
   }
 }

@@ -1,13 +1,16 @@
 "use client"
 
+import { Calendar, CircleDollarSign, Receipt } from "lucide-react"
 import { BillingSection } from "@/components/blocks/BillingSection"
 import { LineItemList } from "@/components/blocks/LineItemList"
-import { MessageThread } from "@/components/blocks/MessageThread"
+import { MessageTable } from "@/components/blocks/MessageTable"
 import { RecordFooter } from "@/components/blocks/RecordFooter"
 import { RecordFacts, RecordPanel } from "@/components/blocks/RecordPanel"
 import { SectionHeading } from "@/components/blocks/SectionHeading"
 import { StatusPill, type PillStatus } from "@/components/blocks/StatusPill"
 import { SummaryBand } from "@/components/blocks/SummaryBand"
+import { Actions, CONTACT } from "./JobPageParts"
+import type { ConfirmFacts } from "./confirm-copy"
 import { INVOICE_WORDS, type InvoiceDetail, type InvoiceStatus } from "./invoice-fixtures"
 
 // The invoice, opened from a Billing row, a job or the Invoices grid (docs/plans/2026-11-19-job-object-design.md): the number as the title,
@@ -30,6 +33,8 @@ export interface InvoicePanelProps {
 
 export function InvoicePanel({ invoice, open = true }: InvoicePanelProps) {
   const f = invoice.footer
+  const first = invoice.customer.split(" ")[0]!
+  const facts: ConfirmFacts = { first, service: "repair", amount: invoice.totals.find(([k]) => k === "Total")?.[1] ?? "$145", phone: CONTACT.sms, address: "480 Briggs St", dueOn: invoice.due, pastDue: invoice.status === "past-due", invoiceNumber: invoice.number }
   const hasFooter = Boolean(f.primary || f.secondary || f.more.length || f.destructive)
   return (
     <RecordPanel
@@ -38,13 +43,13 @@ export function InvoicePanel({ invoice, open = true }: InvoicePanelProps) {
       title={`Invoice ${invoice.number}`}
       subtitle={`${invoice.customer} · ${invoice.job}`}
       pills={<StatusPill status={TONE[invoice.status]} label={INVOICE_WORDS[invoice.status]} size="lg" />}
-      footer={hasFooter ? <RecordFooter primary={f.primary} secondary={f.secondary} more={f.more} destructive={f.destructive} /> : undefined}
+      footer={hasFooter ? <Actions plan={{ primary: f.primary, secondary: f.secondary, more: f.more, destructive: f.destructive }} facts={facts} /> : undefined}
     >
       <SummaryBand
         items={[
-          { label: "Total", value: invoice.totals.find(([k]) => k === "Total")?.[1] ?? "$0" },
-          { label: "Due", value: invoice.due },
-          { label: "Balance", value: invoice.totals.find(([k]) => k === "Balance" || k === "Unpaid")?.[1] ?? "$0", tone: invoice.status === "past-due" ? "alert" : "plain" },
+          { label: "Total", value: invoice.totals.find(([k]) => k === "Total")?.[1] ?? "$0", icon: Receipt },
+          { label: "Due", value: invoice.due, icon: Calendar },
+          { label: "Balance", value: invoice.totals.find(([k]) => k === "Balance" || k === "Unpaid")?.[1] ?? "$0", tone: invoice.status === "past-due" ? "alert" : "plain", icon: CircleDollarSign },
         ]}
         className="grid-cols-3 lg:grid-cols-3 [&_dd]:text-xl"
       />
@@ -68,7 +73,7 @@ export function InvoicePanel({ invoice, open = true }: InvoicePanelProps) {
       </section>
       <section aria-labelledby="inv-msg">
         <SectionHeading id="inv-msg">Messages</SectionHeading>
-        <div className="mt-2"><MessageThread messages={invoice.messages} newestFirst /></div>
+        <div className="mt-2"><MessageTable messages={invoice.messages} to={CONTACT} compact /></div>
       </section>
     </RecordPanel>
   )

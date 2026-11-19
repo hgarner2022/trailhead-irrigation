@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite"
+import { Calendar, MapPin, Receipt, UserRound } from "lucide-react"
 import { SummaryBand } from "./SummaryBand"
 
 const meta = {
@@ -9,10 +10,10 @@ const meta = {
   decorators: [(Story) => <div className="bg-cream p-6"><Story /></div>],
   args: {
     items: [
-      { label: "When", value: "Tue, Nov 24", sub: "Any time" },
-      { label: "Who", value: "Ryan Garner" },
-      { label: "Where", value: "480 Briggs St", sub: "Erie" },
-      { label: "Total", value: "$145", sub: "Invoice sent, due Dec 2" },
+      { label: "When", value: "Tue, Nov 24", sub: "Any time", icon: Calendar },
+      { label: "Who", value: "Ryan Garner", icon: UserRound },
+      { label: "Where", value: "480 Briggs St", sub: "Erie", icon: MapPin },
+      { label: "Total", value: "$145", sub: "Invoice sent, due Dec 2", icon: Receipt },
     ],
   },
 } satisfies Meta<typeof SummaryBand>
@@ -24,7 +25,7 @@ export const Default: Story = {}
 
 /** Past due is the one red cell. */
 export const PastDue: Story = {
-  args: { items: [{ label: "When", value: "Tue, Nov 3", sub: "Done at 11:20 am" }, { label: "Who", value: "Ryan Garner" }, { label: "Where", value: "51 Shadow Ln", sub: "Erie" }, { label: "Total", value: "$145", sub: "Past due since Nov 17", tone: "alert" }] },
+  args: { items: [{ label: "When", value: "Tue, Nov 3", sub: "Done at 11:20 am" }, { label: "Who", value: "Ryan Garner", icon: UserRound }, { label: "Where", value: "51 Shadow Ln", sub: "Erie" }, { label: "Total", value: "$145", sub: "Past due since Nov 17", tone: "alert" }] },
 }
 
 /** On a phone the cells are two by two. */

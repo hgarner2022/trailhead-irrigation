@@ -32,15 +32,23 @@ export const UnscheduledPhone: Story = story("unscheduled", phone)
 export const ScheduledAhead: Story = story("scheduled", laptop)
 export const ScheduledAheadPhone: Story = story("scheduled", phone)
 
-/** Ryan sees today with the window the customer was told. The one primary action is On my way, then Mark done. */
+/** Ryan sees today with the time the customer was told. The one primary action is On my way, then Mark done. */
 export const Today: Story = story("today", laptop)
 export const TodayPhone: Story = story("today", phone)
+
+/** Ryan sees the Today badge and On my way sent. The one primary action is Start, which confirms nothing. */
+export const OnTheWay: Story = story("on-the-way", laptop)
+export const OnTheWayPhone: Story = story("on-the-way", phone)
+
+/** Ryan sees In progress with the start time and the checklist half done. The one primary action is Mark done. */
+export const InProgress: Story = story("in-progress", laptop)
+export const InProgressPhone: Story = story("in-progress", phone)
 
 /** Ryan sees a trip whose day passed with no Mark done. The one primary action is Mark done, with Skip beside it. */
 export const Late: Story = story("late", laptop)
 export const LatePhone: Story = story("late", phone)
 
-/** Ryan sees How is this paid? on the page, card selected. The one primary action is Charge $145, in the footer. */
+/** Ryan sees How is this paid? on the page, card selected. The button under the options reads Charge $145 to the Visa ending 4242, with a quiet Not now; the header has no primary while it is open. */
 export const DoneUnpaid: Story = story("done-unpaid", laptop)
 export const DoneUnpaidPhone: Story = story("done-unpaid", phone)
 
