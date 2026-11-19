@@ -43,6 +43,17 @@ export const Default: Story = {
 }
 export const Phone: Story = { globals: phone }
 
+/** The Job filter open: Season Pass, then every service by its catalogue name (no band), then Other when a job has custom work. */
+export const JobFilterOpen: Story = {
+  globals: wide,
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(await canvas.findByRole("button", { name: /^Job/ }))
+    await expect(await body.findByText("Season Pass")).toBeInTheDocument()
+    await expect(await body.findByText("Spring turn-on & system check")).toBeInTheDocument()
+    await expect(await body.findByText("Core aeration")).toBeInTheDocument()
+  },
+}
+
 /** No jobs yet. */
 export const Empty: Story = {
   args: { data: { ...jobsData, jobs: [], visits: [], passes: [] } },

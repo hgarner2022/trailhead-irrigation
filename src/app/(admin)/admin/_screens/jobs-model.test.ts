@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest"
-import { BILLS_OUT, KIND_OPTIONS, MONEY_OPTIONS, STAGE_OPTIONS, billsChip, billsOut, filterFrom, jobHeading, jobRows, jobsContext, moneyCell, seasonOptions, type JobRow } from "./jobs-model"
+import { BILLS_OUT, MONEY_OPTIONS, STAGE_OPTIONS, billsChip, billsOut, filterFrom, jobHeading, jobRows, jobsContext, moneyCell, seasonOptions, serviceOptions, jobService, type JobRow } from "./jobs-model"
 import { JOBS_TODAY, jobsData } from "./jobs-fixture"
-import type { AdminData } from "@/lib/admin/types"
+import type { AdminData, JobLine } from "@/lib/admin/types"
+import { SERVICE_LIST } from "@/lib/services"
+import { serviceGroups } from "./new-job-model"
 
 const rows = jobRows(jobsData, JOBS_TODAY)
 const row = (id: string) => rows.find((r) => r.id === id)!
@@ -111,7 +113,7 @@ describe("the Money cell, in the words of money/words.ts", () => {
   it("never says Charged, Owed or request", () => {
     const all = rows.flatMap((r) => [r.moneyText, r.stageLabel, r.visitsText, r.nextText, r.soldText]).join(" ").toLowerCase()
     for (const word of ["charged", "owed", "request"]) expect(all).not.toContain(word)
-    const options = [...MONEY_OPTIONS, ...STAGE_OPTIONS, ...KIND_OPTIONS].map((o) => o.label.toLowerCase()).join(" ")
+    const options = [...MONEY_OPTIONS, ...STAGE_OPTIONS, ...serviceOptions(undefined, rows)].map((o) => o.label.toLowerCase()).join(" ")
     for (const word of ["charged", "owed", "request"]) expect(options).not.toContain(word)
   })
 })
@@ -120,7 +122,6 @@ describe("filters and the header line", () => {
   it("offers the Money, Stage and Kind words and the seasons present", () => {
     expect(MONEY_OPTIONS.map((o) => o.label)).toEqual(["Unpaid", "Invoice sent", "Past due", "Paid", "Failed"])
     expect(STAGE_OPTIONS.map((o) => o.label)).toEqual(["Needs a quote", "Quote sent", "Open", "Done", "Canceled"])
-    expect(KIND_OPTIONS.map((o) => o.label)).toEqual(["Season Pass", "Repair", "Installation", "Other"])
     expect(seasonOptions(rows).map((o) => o.value)).toEqual([...new Set(rows.map((r) => String(r.season)))].sort().reverse())
   })
   it("counts the invoices out as the two bill states and offers them as the chip's filter", () => {
@@ -142,5 +143,59 @@ describe("filters and the header line", () => {
     expect(line).toContain("1 needs a quote.")
     const lone: JobRow[] = [rows.find((r) => r.id === "job-e")!]
     expect(jobsContext(lone, JOBS_TODAY)).toBe("1 job this season.")
+  })
+})
+
+describe("the Job filter lists every service", () => {
+  const groups = serviceGroups(SERVICE_LIST as never)
+  const line = (name: string, over: Partial<JobLine> = {}): JobLine => ({ id: name, name, quantity: 1, unitPrice: 100, taxable: false, ...over })
+  const other = rows.filter((r) => r.service === "other")
+
+  it("lists Season Pass, then every active service by its catalogue name without the band, then Other only when a job needs it", () => {
+    const names = serviceOptions(undefined, []).map((o) => o.label)
+    expect(names[0]).toBe("Season Pass")
+    expect(names).toContain("Spring turn-on & system check")
+    expect(names.slice(1, 5)).toEqual(["Sprinkler repair visit", "Spring turn-on & system check", "Fall blowout & winterization", "Mid-season inspection & tune-up"])
+    expect(names.filter((n) => /zones/.test(n))).toEqual([])
+    expect(new Set(names).size).toBe(names.length)
+    expect(names).not.toContain("Other")
+    expect(serviceOptions(undefined, [{ service: "other" }]).map((o) => o.label).at(-1)).toBe("Other")
+    expect(serviceOptions(undefined, []).map((o) => o.value)).toEqual(["pass", ...groups.map((g) => g.id)])
+  })
+
+  it("leaves out a service that is not active", () => {
+    const services = (SERVICE_LIST as never as { key: string; active?: boolean }[]).map((s) => (s.key === "lights" ? { ...s, active: false } : s))
+    expect(serviceOptions(services as never, []).map((o) => o.label)).not.toContain("Christmas lights")
+  })
+
+  it("matches a repair job to the repair service, by its line or by the kind it already has", () => {
+    expect(jobService({ kind: "repair", lines: [line("Repair")] }, groups)).toBe("repair")
+    expect(jobService({ kind: "repair", lines: [] }, groups)).toBe("repair")
+    expect(jobService({ kind: "repair", lines: [line("Larger sprinkler repair")] }, groups)).toBe("repair-large")
+  })
+
+  it("matches a turn-on of any band to the one turn-on service", () => {
+    expect(jobService({ kind: "other", lines: [line("Spring turn-on")] }, groups)).toBe("turn-on")
+    expect(jobService({ kind: "other", lines: [line("Spring turn-on & system check, up to 12 zones")] }, groups)).toBe("turn-on")
+    expect(jobService({ kind: "other", lines: [line("Spring turn-on & system check, up to 16 zones")] }, groups)).toBe("turn-on")
+  })
+
+  it("matches a pass to Season Pass whatever its lines say", () => {
+    expect(jobService({ kind: "pass", lines: [line("Spring turn-on")] }, groups)).toBe("pass")
+    expect(rows.filter((r) => r.kind === "pass").every((r) => r.service === "pass")).toBe(true)
+  })
+
+  it("reads the first line that is not canceled, and calls a custom line Other", () => {
+    expect(jobService({ kind: "other", lines: [line("Repair", { cancelledAt: "2026-11-10T16:00:00Z" }), line("Core aeration")] }, groups)).toBe("aeration")
+    expect(jobService({ kind: "other", lines: [line("Rotors, 12")] }, groups)).toBe("other")
+    expect(jobService({ kind: "other", lines: [] }, groups)).toBe("other")
+  })
+
+  it("puts a row on its service and keeps the value the address uses stable", () => {
+    expect(row("job-d").service).toBe("repair")
+    expect(row("job-b").service).toBe("install")
+    const options = serviceOptions(undefined, rows)
+    expect(filterFrom("kind", "repair,pass,bogus", options)).toEqual([{ column: "kind", values: ["repair", "pass"] }])
+    expect(other.length === 0 || options.some((o) => o.value === "other")).toBe(true)
   })
 })
