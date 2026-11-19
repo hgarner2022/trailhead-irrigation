@@ -52,11 +52,11 @@ describe("schedule.slots", () => {
     const ryan = out.data.find((d) => d.day === "2027-05-05" && d.personId === "person_truck-1")
     expect(ryan?.starts.length ?? 0).toBeGreaterThan(0)
     expect(ryan?.remaining).toBe(ryan?.starts.length)
-    const second = out.data.find((d) => d.day === "2027-05-05" && d.personId === "person_truck-2")!
-    expect(second).toMatchObject({ slotMinutes: 60, remaining: second.starts.length })
-    expect(second.starts[0]).toBe("09:00")
-    expect(second.starts).toEqual([...second.starts].sort())
-  })
+    expect(ryan).toMatchObject({ slotMinutes: 60 })
+    expect(ryan!.starts[0]).toBe("09:00")
+    expect(ryan!.starts).toEqual([...ryan!.starts].sort())
+    // One person per start, the one already working that day: the second truck has the same starts but is not listed beside him on May 5.
+    expect(out.data.some((d) => d.day === "2027-05-05" && d.personId === "person_truck-2")).toBe(false)  })
   it("starts tomorrow by default, skips Saturdays for a person who does not work them, and rejects bad input", async () => {
     // The service opens Apr 26 (its dates), so that is the first day offered from tomorrow's start; May 1 is a Saturday.
     const out = await callApi(ctxFor(db, readKey), scheduleSlots, { service: "turn-on-8", town: "Erie", days: 7 })
