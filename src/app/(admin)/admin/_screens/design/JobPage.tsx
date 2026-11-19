@@ -12,7 +12,7 @@ import { Actions, Aside, type CollectHandlers, Badges, BillingCard, EditLink, Me
 // (Customer, Property, Notes and history), each a card on the cream page. The visit is on the page, not behind it. In Done and unpaid
 // beat two ("How is this paid?") is in Billing and its button is in the header's actions. Pure props, nothing wired.
 
-export function JobPage({ job, onDo, intercept, handlers }: { job: JobPageData; onDo?: (label: string) => void; intercept?: string[]; handlers?: CollectHandlers }) {
+export function JobPage({ job, onDo, onMessage, intercept, handlers }: { job: JobPageData; onDo?: (label: string, variant?: string) => void; onMessage?: (m: { channel: "text" | "email"; body: string }) => void; intercept?: string[]; handlers?: CollectHandlers }) {
   const canceled = job.pills[0].status === "cancelled"
   return (
     <RecordPage
@@ -23,7 +23,7 @@ export function JobPage({ job, onDo, intercept, handlers }: { job: JobPageData; 
       notice={job.notice ? <Notice>{job.notice}</Notice> : undefined}
       band={<SummaryBand items={bandOfJob(job)} />}
       aside={<Aside customer={job.customer} phone={job.phone} where={job.where} notes={job.notes} pastVisits={job.pastVisits} pastTotal={job.pastTotal} />}
-      actions={hasFooter(job.footer) ? <Actions plan={job.footer} facts={factsOfJob(job)} onDo={onDo} intercept={intercept} /> : undefined}
+      actions={hasFooter(job.footer) ? <Actions plan={job.footer} facts={factsOfJob(job)} onDo={onDo} onMessage={onMessage} intercept={intercept} /> : undefined}
     >
       <SectionCard title="What's included" id="included-h" action={canceled ? undefined : <EditLink />}>
         <LineItemList lines={job.lines} totals={job.totals} />

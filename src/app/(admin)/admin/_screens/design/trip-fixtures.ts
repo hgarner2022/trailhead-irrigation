@@ -89,7 +89,7 @@ export function passPageOf(state: PassState, renewal?: MultiTripData["renewal"])
     billing: { summary: [["Season total", "$260"], ["Paid so far", sum], ["Card", "Visa ending 4242"]], rows: paid.map((t, i) => charge(`c${i}`, t, t === "Spring turn-on" ? "May 3" : "Oct 12")), emptyLine: "Each visit is charged to the card after it is done." },
     notes: passNotes,
     messages: passMsgs,
-    footer: state === "canceled" ? {} : state === "both-done" ? { more: MORE } : { secondary: [act("Change the pass"), act("Send a text")], more: MORE, destructive: act("Cancel pass") },
+    footer: state === "canceled" ? {} : state === "both-done" ? { more: MORE } : { secondary: [act("Change the pass"), act("Send a message")], more: MORE, destructive: act("Cancel pass") },
     pass: state === "canceled" ? { ...pass, status: "cancelled" } : pass,
     renewal,
   }
@@ -111,6 +111,6 @@ export function returnTripOf(): MultiTripData {
     billing: { summary: [["Total", "$230"], ["Paid", "$145"], ["Unpaid", "$85"]], rows: [{ id: "p1", kind: "payment", title: "Card", detail: "Sprinkler repair visit · Nov 12", amount: "$145" }] },
     notes: [event("n1", "2026-11-12T21:40:00Z", "Added a return trip for the valve, Thu, Nov 19")],
     messages: [msg("m1", "2026-11-12T21:41:00Z", "sms", "date-set", "Trailhead: Ryan is back Thu, Nov 19.")],
-    footer: { secondary: [act("Add a return trip"), act("Send a text")], more: [act("Edit"), act("Add a note")], destructive: act("Cancel job") },
+    footer: { secondary: [act("Add a return trip"), act("Send a message")], more: [act("Edit"), act("Add a note")], destructive: act("Cancel job") },
   }
 }

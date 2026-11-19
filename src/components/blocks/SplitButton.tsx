@@ -46,7 +46,7 @@ export function SplitButton({ label, onClick, menu = [], menuLabel = "More ways"
             <ChevronDown className="size-4" aria-hidden />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
+        <DropdownMenuContent align="end" side="bottom" avoidCollisions={false}>
           {menu.map((item) => (
             <DropdownMenuItem key={item.label} disabled={item.disabled} onSelect={item.onSelect} className="min-h-11">
               {item.label}

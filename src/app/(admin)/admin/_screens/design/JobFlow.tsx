@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import type { Message } from "@/lib/admin/types"
 import { SchedulePicker, type Pick } from "./SchedulePicker"
 import { JobPage } from "./JobPage"
+import { CollectBlock, factsOfJob } from "./JobPageParts"
 import { jobPageOf, type JobPageData, type JobState } from "./job-fixtures"
 
 // The clickable job flow (Hannah, Nov 19 2026: "I want a clickable prototype in Storybook that I can go through all this"): JobPage over a
@@ -33,7 +34,7 @@ type Act =
   | { type: "done" }
   | { type: "paid"; by: string; ref?: string }
   | { type: "invoice"; report: boolean }
-  | { type: "cancel" }
+  | { type: "cancel"; text: boolean }
   | { type: "message"; message: Message }
 
 const START: Flow = { stage: "unscheduled", day: "", time: "Any time", extra: [] }
@@ -49,7 +50,7 @@ function reduce(f: Flow, a: Act): Flow {
     case "done": return { ...f, stage: "done" }
     case "paid": return { ...f, stage: "paid", paidBy: a.by, ref: a.ref, extra: [...f.extra, say("email", "receipt", "Receipt: $145 for your repair at 480 Briggs St")] }
     case "invoice": return { ...f, stage: "invoice", report: a.report, extra: [...f.extra, say("sms", "invoice", `Trailhead: invoice for your repair, $145, due Dec 2. Pay here: trailheadirrigation.com/pay/1042${a.report ? " Your visit report is attached." : ""}`)] }
-    case "cancel": return { ...f, stage: "canceled", extra: [...f.extra, say("sms", "visit-cancelled", "Trailhead: your repair is canceled. Nothing was charged.")] }
+    case "cancel": return { ...f, stage: "canceled", extra: !a.text ? f.extra : [...f.extra, say("sms", "visit-cancelled", "Trailhead: your repair is canceled. Nothing was charged.")] }
     case "message": return { ...f, extra: [...f.extra, a.message] }
   }
 }
@@ -94,39 +95,42 @@ function Strip({ stage, onReset }: { stage: Stage; onReset: () => void }) {
   )
 }
 
-type Ask = "schedule" | "done" | "record" | null
+type Ask = "schedule" | "record" | null
 
-export function JobFlow() {
+export function JobFlow({ channel = "text" }: { channel?: "text" | "email" }) {
   const [f, dispatch] = useReducer(reduce, START)
   const [ask, setAsk] = useState<Ask>(null)
   const [pick, setPick] = useState<Pick>({ day: "Tue, Nov 24", time: "Any time", person: "Ryan Garner" })
-  const [doneOn, setDoneOn] = useState(TODAY)
+  const [collecting, setCollecting] = useState(false)
   const [check, setCheck] = useState("1042")
   const view = viewOf(f)
+  const handlers = {
+    onCharge: async () => ({ ok: true as const }),
+    onRecord: async ({ method, reference }: { method: string; reference?: string }) => (paying.current = { by: method, ref: reference }, { ok: true as const }),
+    onInvoice: async (o?: { report: boolean }) => (invoiceReport.current = o?.report ?? true, { ok: true as const }),
+    onClose: () => (setCollecting(false), flush()),
+    onLater: () => setCollecting(false),
+  }
   const paying = useRef<{ by: string; ref?: string } | null>(null)
   const invoiceReport = useRef<boolean | null>(null)
-  const onDo = (label: string) => {
+  const onDo = (label: string, variant?: string) => {
     if (label === "Schedule" || label === "Move") { setPick({ day: "Tue, Nov 24", time: "Any time", person: "Ryan Garner" }); setAsk("schedule") }
-    else if (label === "Mark done") setAsk("done")
+    else if (label === "Mark done") (dispatch({ type: "done" }), setCollecting(true))
     else if (label === "Record the payment") setAsk("record")
-    else if (label === "On my way") dispatch({ type: "active", text: true })
-    else if (label === "Start without texting") dispatch({ type: "active", text: false })
-    else if (label === "Cancel job") dispatch({ type: "cancel" })
+    else if (label === "On my way") dispatch({ type: "active", text: variant !== "quiet" })
+    else if (label === "Delete job") dispatch({ type: "reset" })
+    else if (label === "Cancel job") dispatch({ type: "cancel", text: variant !== "quiet" })
     else if (label === "Send a payment reminder") dispatch({ type: "message", message: say("sms", "invoice-reminder", "Trailhead: a reminder that your $145 invoice for the repair is due Dec 2. Pay here: trailheadirrigation.com/pay/1042") })
   }
   return (
     <>
       <Strip stage={f.stage} onReset={() => dispatch({ type: "reset" })} />
       <JobPage
-        job={view}
+        job={{ ...view, contact: { channel, email: "andrea.dalton@example.com" } }}
         onDo={onDo}
-        intercept={["Schedule", "Move", "Mark done", "Record the payment"]}
-        handlers={{
-          onCharge: async () => ({ ok: true }),
-          onRecord: async ({ method, reference }) => (setPending({ by: method, ref: reference }), { ok: true }),
-          onInvoice: async (o) => (setPendingInvoice(o?.report ?? true), { ok: true }),
-          onClose: () => flush(),
-        }}
+        intercept={["Schedule", "Move", "Record the payment"]}
+        onMessage={(m) => dispatch({ type: "message", message: say(m.channel === "text" ? "sms" : "email", "note", m.body) })}
+        handlers={handlers}
       />
       {ask === "schedule" && (
         <ConfirmDialog
@@ -138,15 +142,15 @@ export function JobFlow() {
           onConfirm={async (variant) => (dispatch({ type: "schedule", day: pick.day, time: pick.time, text: variant !== "quiet" }), { ok: true })}
           renderConfirm={({ confirm, pending }) => {
             const verb = f.stage === "unscheduled" ? "Schedule" : "Move"
-            return <SplitButton label={`${verb} and text the customer`} onClick={() => confirm("text")} disabled={pending} menuLabel={`More ways to ${verb.toLowerCase()}`} menu={[{ label: `${verb} without texting`, disabled: pick.time !== "Any time", onSelect: () => confirm("quiet") }]} />
+            return <SplitButton label={`${verb} and notify the customer`} onClick={() => confirm("text")} disabled={pending} menuLabel={`More ways to ${verb.toLowerCase()}`} menu={[{ label: `${verb} without notifying`, disabled: pick.time !== "Any time", onSelect: () => confirm("quiet") }]} />
           }}
         >
-          <SchedulePicker firstName={view.customer.split(" ")[0]!} onChange={setPick} />
+          <SchedulePicker firstName={view.customer.split(" ")[0]!} channel={channel} onChange={setPick} />
         </ConfirmDialog>
       )}
-      {ask === "done" && (
-        <ConfirmDialog open onOpenChange={(o) => !o && setAsk(null)} title="Mark done" message="Nothing is charged and no one is texted. Next you choose how it is paid." confirmLabel="Mark done" slot="flow-done" onConfirm={async () => (dispatch({ type: "done" }), setDoneOn(TODAY), { ok: true })}>
-          <FormRow label="Done on"><select value={doneOn} onChange={(e) => setDoneOn(e.target.value)} className="min-h-11 rounded-lg border border-input bg-background px-3 text-sm">{[TODAY, "Mon, Nov 16"].map((d) => <option key={d}>{d}</option>)}</select></FormRow>
+      {collecting && f.stage === "done" && view.collect && (
+        <ConfirmDialog open onOpenChange={(o) => !o && setCollecting(false)} title="How is this paid?" actions="none" size="md" slot="flow-collect">
+          <CollectBlock bare collect={view.collect} facts={factsOfJob(view)} handlers={{ ...handlers, onClose: handlers.onClose }} />
         </ConfirmDialog>
       )}
       {ask === "record" && (
@@ -165,6 +169,4 @@ export function JobFlow() {
     invoiceReport.current = null
     paying.current = null
   }
-  function setPending(p: { by: string; ref?: string }) { paying.current = p }
-  function setPendingInvoice(r: boolean) { invoiceReport.current = r }
 }

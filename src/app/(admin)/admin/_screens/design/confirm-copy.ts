@@ -12,11 +12,24 @@ export interface ConfirmCopy {
   confirmLabel: string
   destructive?: boolean
   /** a checkbox, checked by default, that adds a part to what goes out: the sentence reads `with` when checked and `without` when not */
+  /** the quiet twin under the caret: every customer-facing action can go ahead without notifying */
+  quiet?: string
+  /** Mark done on a late job asks which day it was done; the days offered, the first the default */
+  doneOn?: string[]
   reportOption?: { label: string; with: string; without: string }
 }
 
 export interface ConfirmFacts {
   first: string
+  /** how the customer wants to hear from us: a text by default */
+  channel?: "text" | "email"
+  email?: string
+  /** no text has gone to this number yet, so the next one carries the opt-out line */
+  firstText?: boolean
+  /** the day passed and the job was never marked done */
+  late?: boolean
+  /** the customer's full name */
+  customer?: string
   service: string
   amount: string
   phone: string
@@ -47,7 +60,7 @@ export function collectConfirm(way: string, f: ConfirmFacts, reference = ""): Co
     case "cash":
       return { title: "Record the cash", message: `Record ${f.amount} in cash. ${f.first} gets a receipt by email.`, confirmLabel: "Record the cash" }
     case "invoice":
-      return { title: "Send the invoice", message: `Send the invoice for ${f.amount} by text to ${f.phone}, due ${f.dueOn}.`, confirmLabel: "Send the invoice", reportOption: { label: "Include the visit report (the checklist and photos)", with: `Send the invoice for ${f.amount} by text to ${f.phone}, due ${f.dueOn}, with the visit report.`, without: `Send the invoice for ${f.amount} by text to ${f.phone}, due ${f.dueOn}.` } }
+      return { title: "Send the invoice", message: `Send the invoice for ${f.amount} ${f.channel === "email" ? `by email to ${f.email ?? "the customer"}` : `by text to ${f.phone}`}, due ${f.dueOn}.`, confirmLabel: "Send the invoice", reportOption: { label: "Include the visit report (the checklist and photos)", with: `Send the invoice for ${f.amount} ${f.channel === "email" ? `by email to ${f.email ?? "the customer"}` : `by text to ${f.phone}`}, due ${f.dueOn}, with the visit report.`, without: `Send the invoice for ${f.amount} ${f.channel === "email" ? `by email to ${f.email ?? "the customer"}` : `by text to ${f.phone}`}, due ${f.dueOn}.` } }
     default:
       return null
   }
@@ -57,7 +70,10 @@ export function collectConfirm(way: string, f: ConfirmFacts, reference = ""): Co
 export function footerConfirms(f: ConfirmFacts): Record<string, ConfirmCopy> {
   return {
     Move: { title: "Move the visit", message: `Move the ${f.service} to Wed, Nov 25 at 9:00 am and text ${f.first} the new day.`, confirmLabel: "Move the visit" },
-    "On my way": { title: "Send On my way", message: `Text ${f.first} that Ryan is on the way to ${f.address}.`, confirmLabel: "Send" },
+    "On my way": { title: "On my way", message: `Notify ${f.first} that Ryan is on the way to ${f.address}, by text, and mark the job Active.`, confirmLabel: "Send and start", quiet: "Start without notifying" },
+    "Mark done": f.late
+      ? { title: "Mark done", message: `When was the ${f.service} at ${f.address} done? Nothing is charged and no one is notified; next you choose how it is paid.`, confirmLabel: "Mark done", doneOn: ["Mon, Nov 16", "Tue, Nov 17", "Today, Wed Nov 18"] }
+      : { title: "Mark done", message: `Mark the ${f.service} done at ${f.address}? Done now, 10:05 am. Nothing is charged and no one is notified; next you choose how it is paid.`, confirmLabel: "Mark done" },
     "Send a payment reminder": {
       title: "Send a payment reminder",
       message: `Send this text to ${f.first} at ${f.phone}.`,
@@ -67,7 +83,8 @@ export function footerConfirms(f: ConfirmFacts): Record<string, ConfirmCopy> {
     "Record the payment": { title: "Record the payment", message: `Record that ${f.first} paid ${f.amount}. The open invoice is settled and ${f.first} gets a receipt by email.`, confirmLabel: "Record the payment" },
     "Refund $145": { title: "Refund $145", message: `Record a $145 refund. ${f.first} gets an email that it was refunded.`, confirmLabel: "Refund $145", destructive: true },
     "Send card link": { title: "Send the card link", message: `Text ${f.first} at ${f.phone} a link to add a card.`, confirmLabel: "Send the link" },
-    "Cancel job": { title: "Cancel job", message: `Cancel this job. ${f.first} gets a text that the ${f.service} is canceled. Nothing is charged.`, confirmLabel: "Cancel job", destructive: true },
+    "Cancel job": { title: "Cancel job", message: `Cancel this job. ${f.first} gets ${f.channel === "email" ? "an email" : "a text"} that the ${f.service} is canceled. Nothing is charged.`, confirmLabel: "Cancel job", destructive: true, quiet: "Cancel without notifying" },
+    "Delete job": { title: "Delete job", message: `Delete this job for ${f.customer ?? f.first}? It was added by mistake and nothing was sent or charged. This cannot be undone.`, confirmLabel: "Delete", destructive: true },
     "Cancel pass": { title: "Cancel pass", message: `Cancel the Season Pass. ${f.first} gets an email that it is canceled and the visits ahead are removed. Nothing more is charged.`, confirmLabel: "Cancel pass", destructive: true },
   }
 }

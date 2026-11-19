@@ -42,7 +42,7 @@ describe("SummaryBand", () => {
 describe("AsideCard", () => {
   it("has the name as the one link, the phone as a tel link and the address", () => {
     render(<AsideCard name="Andrea Dalton" href="/admin/customers/1" phone={{ text: "(970) 555-0123", href: "tel:+19705550123" }} address={["480 Briggs St", "Erie, CO"]} />)
-    expect(screen.getByRole("link", { name: "Andrea Dalton" })).toHaveAttribute("href", "/admin/customers/1")
+    expect(screen.getByRole("link", { name: "Customer: Andrea Dalton" })).toHaveAttribute("href", "/admin/customers/1")
     expect(screen.getByRole("link", { name: "(970) 555-0123" })).toHaveAttribute("href", "tel:+19705550123")
     expect(screen.getByText("480 Briggs St")).toBeInTheDocument()
     expect(screen.getByText("AD")).toBeInTheDocument()

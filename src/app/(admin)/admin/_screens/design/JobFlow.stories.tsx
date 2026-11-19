@@ -18,6 +18,9 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
+/** The same flow for a customer who wants email: the dialogs say email and the sentences name the channel. */
+export const EmailCustomer: Story = { render: () => <AdminShell current="jobs" user={{ initials: "HG", name: "Hannah" }}><JobFlow channel="email" /></AdminShell>, globals: { viewport: { value: "laptop", isRotated: false } } }
+
 /** Start at Unscheduled: Schedule, pick Today, On my way, Mark done, then choose how it is paid. */
 export const Laptop: Story = { globals: { viewport: { value: "laptop", isRotated: false } } }
 export const Phone: Story = { globals: { viewport: { value: "phone", isRotated: false } } }
