@@ -23,11 +23,11 @@ const intro = (key: EditableMessage["key"], d: VisitData, o?: Opts) => {
   return capitalFirst(fillTemplate(body, { firstName: name ?? "", service: v.name, address: v.address, day: longDay(v.day), window: v.startTime ? windowText(v.startTime) : null, who: v.who }))
 }
 
-function build(d: VisitData, subject: string, title: string, sentence: string, preheader: string): RenderedEmail {
+function build(d: VisitData, subject: string, title: string, sentence: string, preheader: string, o: { late?: boolean } = {}): RenderedEmail {
   return {
     subject,
-    text: plainText([title, "", ...greetingText(d.firstName), ...visitLines(d, d.visit, sentence)], SIGN_OFF, WHY),
-    html: emailLayout({ origin: d.origin, preheader, title, greet: { firstName: d.firstName }, lead: sentence, body: visitBody(d, d.visit), why: WHY, signOff: SIGN_OFF }),
+    text: plainText([title, "", ...greetingText(d.firstName), ...visitLines(d, d.visit, sentence, o)], SIGN_OFF, WHY),
+    html: emailLayout({ origin: d.origin, preheader, title, greet: { firstName: d.firstName }, lead: sentence, body: visitBody(d, d.visit, o), why: WHY, signOff: SIGN_OFF }),
   }
 }
 
@@ -46,4 +46,4 @@ export const dateConfirmEmail = (d: VisitData, o?: Opts): RenderedEmail =>
   build(d, `Your ${d.visit.name} is ${longDay(d.visit.day)}`, `Your ${d.visit.name} is in two weeks`, `${intro("date-confirm", d, o)} ${ryanDoes(d.visit.name)}`, "We remind you again the day before. Pick another day in your Trailhead account if you need to.")
 
 export const dayBeforeEmail = (d: VisitData, o?: Opts): RenderedEmail =>
-  build(d, `Tomorrow: your ${d.visit.name}`, `We're coming tomorrow`, intro("day-before", d, o), d.visit.startTime ? `${whoIsComing(d.visit)} will be there between ${windowText(d.visit.startTime).replace(" to ", " and ")}.` : "We text you if anything changes.")
+  build(d, `Tomorrow: your ${d.visit.name}`, `We're coming tomorrow`, intro("day-before", d, o), d.visit.startTime ? `${whoIsComing(d.visit)} will be there between ${windowText(d.visit.startTime).replace(" to ", " and ")}.` : "We text you if anything changes.", { late: true })

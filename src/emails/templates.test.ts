@@ -155,7 +155,17 @@ describe("wording per kind", () => {
     expect(html).toContain("/api/visits/v1/calendar.ics?token=abc")
     expect(html).toContain("/account/sign-in?email=")
     expect(html).toContain("Open your Trailhead account")
-    expect(text).toContain(`Change your day or anything else in your Trailhead account: ${origin}/account`)
+    if (kind !== "day-before") expect(text).toContain(`Change your day or anything else in your Trailhead account: ${origin}/account`)
+  })
+  it("the day-before email is past the online cut-off: it says Text Ryan with the phone as a tel link, and never offers another day", () => {
+    const { html, text } = get("day-before")
+    expect(html).toContain('Need to change it? Text Ryan at <a href="tel:9706927270"')
+    expect(html).toContain(">(970) 692-7270</a>")
+    expect(text).toContain("Need to change it? Text Ryan at (970) 692-7270.")
+    for (const part of [html, text]) expect(part).not.toMatch(/different day|another day|Change your day/i)
+    expect(html).not.toContain("pick another day")
+    // the earlier emails still offer the change online
+    expect(get("date-confirm").text).toContain("Change your day or anything else")
   })
   it("day-before names who is coming when the visit has a person, and leaves the sentence out when it has none", () => {
     const named = renderEmail("day-before", { ...base, visit: { ...visit, who: "Ryan" } })!

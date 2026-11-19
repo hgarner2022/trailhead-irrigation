@@ -36,12 +36,12 @@ describe("the day-of texts, worded as section 4 of the messages design", () => {
   })
   it("day-before names who is coming, never a truck", () => {
     const t = dayBeforeText({ ...base, visit })
-    expect(t).toBe(`Trailhead: Ryan is coming tomorrow, Wed, May 5, 8 to 10 am, for your spring turn-on. ${link} ${STOP}`)
+    expect(t).toBe(`Trailhead: Ryan is coming tomorrow, Wed, May 5, 8 to 10 am, for your spring turn-on. Need to change it? Text Ryan at (970) 692-7270. ${link} ${STOP}`)
     expect(t).not.toMatch(/truck/i)
   })
   it("day-before says we're coming when the visit has no person, with nothing left dangling", () => {
     const t = dayBeforeText({ ...base, visit: { ...visit, who: null } })
-    expect(t).toBe(`Trailhead: We're coming tomorrow, Wed, May 5, 8 to 10 am, for your spring turn-on. ${link} ${STOP}`)
+    expect(t).toBe(`Trailhead: We're coming tomorrow, Wed, May 5, 8 to 10 am, for your spring turn-on. Need to change it? Text Ryan at (970) 692-7270. ${link} ${STOP}`)
     expect(t).not.toMatch(/will be there|  |, ,/)
   })
   it("on the way names the person and the address", () => {
@@ -49,12 +49,12 @@ describe("the day-of texts, worded as section 4 of the messages design", () => {
     expect(onTheWayText({ ...base, visit: { ...visit, who: null } })).toBe(`Trailhead: We're on the way to 412 Ash St for your spring turn-on. ${link} ${STOP}`)
   })
   it("leaves the opt-out line off a number that has had a text before", () => {
-    expect(dayBeforeText({ ...base, visit }, { optOut: false })).toBe(`Trailhead: Ryan is coming tomorrow, Wed, May 5, 8 to 10 am, for your spring turn-on. ${link}`)
+    expect(dayBeforeText({ ...base, visit }, { optOut: false })).toBe(`Trailhead: Ryan is coming tomorrow, Wed, May 5, 8 to 10 am, for your spring turn-on. Need to change it? Text Ryan at (970) 692-7270. ${link}`)
     expect(dateSetText({ ...base, visit }, { optOut: true }).match(/STOP/g)).toHaveLength(1)
   })
   it("uses the words the office saved, filled the same way", () => {
     const templates = { "day-before:sms": "{who} is coming tomorrow for your {service} at {address}." }
-    expect(dayBeforeText({ ...base, visit }, { templates })).toBe(`Trailhead: Ryan is coming tomorrow for your spring turn-on at 412 Ash St. ${link} ${STOP}`)
+    expect(dayBeforeText({ ...base, visit }, { templates })).toBe(`Trailhead: Ryan is coming tomorrow for your spring turn-on at 412 Ash St. Need to change it? Text Ryan at (970) 692-7270. ${link} ${STOP}`)
   })
 })
 
@@ -91,9 +91,13 @@ describe("every text", () => {
   it("ends every text about a visit with that visit's own signed link: Pick another day on the day texts, See your visit on my way and the cancel note", () => {
     const v = { ...visit, visitUrl: `${origin}/account/visits/v1?t=1900000000.sig` }
     const urlText = `${origin}/account/visits/v1?t=1900000000.sig`
-    for (const t of [dateSetText({ ...base, visit: v }), dateMovedText({ ...base, visit: v }), dayBeforeText({ ...base, visit: v })]) expect(t).toContain(`Doesn't work? Pick another day: ${urlText}`)
-    // the two-week text already asks "Need another day?"
-    expect(dateConfirmText({ ...base, visit: v })).toContain(`Need another day? Pick another day: ${urlText}`)
+    for (const t of [dateSetText({ ...base, visit: v }), dateMovedText({ ...base, visit: v })]) expect(t).toContain(`Doesn't work? Pick another day: ${urlText}`)
+    // the day-before text is past the online cut-off: it sends the customer to Ryan, never to another day
+    expect(dayBeforeText({ ...base, visit: v })).toContain(`Need to change it? Text Ryan at (970) 692-7270. See your visit: ${urlText}`)
+    expect(dayBeforeText({ ...base, visit: v })).not.toMatch(/pick another day/i)
+    expect(dayBeforeText({ ...base, visit })).toContain("Need to change it? Text Ryan at (970) 692-7270. Your Trailhead account:")
+    // the two-week text keeps its ask and says the last day to change online (the Monday before a Wednesday visit)
+    expect(dateConfirmText({ ...base, visit: v })).toContain(`Last day to change online: Mon, May 3. Pick another day: ${urlText}`)
     expect(onTheWayText({ ...base, visit: v })).toContain(`See your visit: ${urlText}`)
     expect(visitCancelledText({ ...base, serviceName: "spring turn-on", address: "412 Ash St", day: "2027-05-05", paid: 0, visitUrl: urlText })).toContain(`See your visit: ${urlText}`)
     // without a signed link (an older row) it is the plain account link
