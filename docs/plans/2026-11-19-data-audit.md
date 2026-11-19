@@ -6,6 +6,17 @@ Severity: **bug** (wrong result or a dead end today), **two truths** (one fact s
 
 ## 1. The top of the list
 
+**Fixed Nov 19 2026** (the data audit fixes PR; rows 1, 5, 7, the S1 consolidation, 7b and everything about quotes are left as they are):
+
+| Row | Fixed by |
+|---|---|
+| 2, D2 (partly), D10 | `stageOf` reads a job that holds money (succeeded payments net above zero) with no live visit as Done, never Canceled; only `cancelled_at` (which `jobs.cancel` refuses on a paid job) says Canceled. Callers pass `payments`. The money words already read "Paid"; no refund word and no Home row exist for it, so none were added. D2's pass with every visit skipped and no payment still reads Canceled. |
+| 3 | `payments.record` with no `visitId` is capped at what the job still has unpaid ("Only $45 is still unpaid on this job"), refused on a canceled job ("This job is canceled."), and every payment refuses a `paidOn` after today ("Paid on can't be in the future."). |
+| 4, S7 | `visitDayOf` (`src/lib/admin/visit-day.ts`) is the admin's one day for a visit: a done visit by `completed_on`, the panel adds "Was scheduled Fri, Nov 20"; the Week and Day grids keep the scheduled day. `visits.markClosed` refuses a future `completedOn` ("Done on can't be in the future."). |
+| 6, S2 (the readers outside `slots.ts`, `area-days.ts`, `schedule.ts`, `run.ts`) | `windowAt` / `windowsAt` (`src/lib/services-window.ts`) read `settings.windows` by month-day only: `placeVisit`, `placeFor`, `queueDueRuns`, the preference gate and Home's season prompt. The four files 7a/7b own still read the saved year until 7b. |
+| 8, S4 | `WORKDAY` is `DEFAULT_HOURS` (9 to 5), `orderDay` stacks from the person's `hours_start` (default 9:00), `dayFill` and 7a's `offerFor` already read the person's hours. |
+| I5 | `expirePendingPasses` deletes in one unit (`atomically`, `src/db/atomic.ts`: Neon `batch`, PGlite `transaction`) and skips any job with a charge or invoice row. |
+
 | # | Sev | Where | What | Fix | When |
 |---|---|---|---|---|---|
 | 1 | bug | `quote_sent_on`, `quote_accepted_on` (`src/db/schema.ts:294-295`); `src/lib/jobs/stage.ts:41-44`; `src/api/v1/jobs/handlers.ts:98` | **Nothing ever writes the two quote dates, and nothing sets `sold_on` on a job made with `needsQuote`.** A quote job can be priced (`lines.update`) and visited, but stays "Needs a quote" forever (`stageOf` line 42 fires while `sold_on` and `quote_sent_on` are both empty), the customer's account never lists it (`portal/load.ts:40` requires `sold_on`), and `visits.pick`, `areaDays` and `cancelSelf` refuse it ("This job is not open", `visits/handlers.ts:264`, `portal/cancel.ts:48`). The "Quote sent" stage is unreachable. | Add `jobs.sendQuote` (writes `quote_sent_on`, event) and `jobs.acceptQuote` (writes `quote_accepted_on` and `sold_on`, event `job.sold`); until then, the first priced line or first visit on a quote job sets `sold_on`. | now |

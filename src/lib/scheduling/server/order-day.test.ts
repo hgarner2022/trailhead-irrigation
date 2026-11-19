@@ -13,7 +13,7 @@ beforeAll(async () => {
 afterAll(() => db.close())
 
 describe("orderDay", () => {
-  it("stores stop order and start times from 8:00, each visit after the one before it, the unlocated one last", async () => {
+  it("stores stop order and start times from the person's day start (9:00 by default), each visit after the one before it, the unlocated one last", async () => {
     const visits = (await db.select().from(s.visit).where(eq(s.visit.status, "unscheduled"))).filter((v) => v.kind === "blowout").slice(0, 4)
     expect(visits).toHaveLength(4)
     const [a, b, c, d] = visits as [typeof visits[number], ...typeof visits]
@@ -28,7 +28,16 @@ describe("orderDay", () => {
     const stored = await db.select().from(s.visit).where(inArray(s.visit.id, order))
     const by = new Map(stored.map((v) => [v.id, v]))
     expect(order.map((id) => by.get(id)!.stopOrder)).toEqual([1, 2, 3, 4])
-    expect(order.map((id) => by.get(id)!.startTime)).toEqual(["08:00", "08:30", "09:00", "09:30"])
+    expect(order.map((id) => by.get(id)!.startTime)).toEqual(["09:00", "09:30", "10:00", "10:30"])
+    // the person's own hours are the one truth: a day that starts at 7:30 stacks from 7:30
+    await db.update(s.person).set({ hoursStart: "07:30" }).where(eq(s.person.id, "person_truck-1"))
+    try {
+      const again = await orderDay(db, { personId: "person_truck-1", day: "2027-10-05" })
+      const restored = new Map((await db.select().from(s.visit).where(inArray(s.visit.id, again))).map((v) => [v.id, v]))
+      expect(again.map((id) => restored.get(id)!.startTime)).toEqual(["07:30", "08:00", "08:30", "09:00"])
+    } finally {
+      await db.update(s.person).set({ hoursStart: null }).where(eq(s.person.id, "person_truck-1"))
+    }
   })
 
   it("gives a one-off job's visit a stop order and leaves its time alone: none stays none, a time it has stays", async () => {

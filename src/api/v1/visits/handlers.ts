@@ -15,6 +15,7 @@ import { addDays, assertOwnsCustomer, capacityKind, Day, Id, idInput, okOutput, 
 import { queueDateMessage } from "@/lib/scheduling/server/notify"
 import { timeBooked } from "@/lib/admin/move-rules"
 import { windowTold } from "@/lib/portal/window-told"
+import { windowAt } from "@/lib/services-window"
 import { orderDay } from "@/lib/scheduling/server/order-day"
 import { blockedMinutes, capacityAfterBlocks } from "@/lib/admin/calendar"
 import { loadBlocks } from "@/lib/jobber-feed"
@@ -117,7 +118,9 @@ export async function placeVisit(ctx: Ctx, input: { id: string; personId?: strin
     if ((FINAL as readonly string[]).includes(visit.status)) throw new ApiError("unprocessable", `A ${visit.status} visit cannot be moved`)
     const person = await assignee(ctx, input, input.scheduledOn)
     const [org] = await ctx.db.select({ settings: s.organization.settings }).from(s.organization).where(eq(s.organization.id, ctx.organizationId))
-    const window = row.isPassVisit ? org?.settings.windows.find((w) => w.kind === visit.kind) : undefined
+    const saved = row.isPassVisit ? org?.settings.windows.find((w) => w.kind === visit.kind) : undefined
+    // read year-agnostic (`windowAt`): the day is checked against the season that holds it, whatever year the saved window carries
+    const window = saved ? windowAt(saved, input.scheduledOn) : undefined
     if (window && (input.scheduledOn < window.opensOn.slice(0, 10) || input.scheduledOn > window.closesOn.slice(0, 10)))
       throw new ApiError("unprocessable", `A ${visit.kind} visit must land between ${window.opensOn.slice(0, 10)} and ${window.closesOn.slice(0, 10)}`)
     const others = await visitsQuery(ctx.db).where(

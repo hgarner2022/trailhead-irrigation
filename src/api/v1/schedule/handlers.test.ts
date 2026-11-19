@@ -34,7 +34,7 @@ describe("schedule.day", () => {
   it("orders a person's stops and carries the points", async () => {
     const out = await callApi(ctxFor(db, readKey), scheduleDay, { day: "2027-05-05", personId: "person_truck-1" })
     expect(out.stops.map((s2) => [s2.visitId, s2.order])).toEqual([["p3-turn-on", 1], ["p4-turn-on", 2]])
-    expect(out.stops[0]).toMatchObject({ town: "Broomfield", startTime: "08:00" })
+    expect(out.stops[0]).toMatchObject({ town: "Broomfield", startTime: "09:00" })
     expect((await callApi(ctxFor(db, readKey), scheduleDay, { day: "2027-05-06" })).stops).toEqual([])
   })
   it("takes `truckId` as the legacy truck id for one season", async () => {

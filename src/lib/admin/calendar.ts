@@ -5,6 +5,7 @@
  * in the given time zone, so a 7 pm Denver visit stays on its Mountain day.
  * Day keys are YYYY-MM-DD. Pure, so it runs in jsdom and on the server.
  */
+import { DEFAULT_HOURS } from "@/lib/admin/people"
 import type { AreaGroup, BusyBlock, Person, Town, Visit, Weekday } from "@/lib/admin/types"
 
 export type { BusyBlock }
@@ -121,8 +122,11 @@ export function zonedToUtc(y: number, mo: number, d: number, h: number, mi: numb
   return new Date(ms)
 }
 
-/** A person's working day, in the zone's wall clock: busy time inside it counts against capacity, an all-day event fills all of it. */
-export const WORKDAY = { startHour: 7, endHour: 17 } as const
+/**
+ * The org's default working day in the zone's wall clock, read from `DEFAULT_HOURS` (9 to 5, the hours a person with none saved works; a person's own
+ * are `hoursOf`, the one truth for hours): busy time inside it counts against capacity, an all-day event fills all of it.
+ */
+export const WORKDAY = { startHour: Number(DEFAULT_HOURS.start.slice(0, 2)), endHour: Number(DEFAULT_HOURS.end.slice(0, 2)) } as const
 export const WORKDAY_MINUTES = (WORKDAY.endHour - WORKDAY.startHour) * 60
 
 /** The working day of `dayIso` as two UTC instants. */

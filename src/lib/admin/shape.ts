@@ -355,7 +355,7 @@ export function shapeAdminData(i: ShapeInput): AdminData {
     const bill = billOf.get(j.id)
     const money = moneyOfJob(lines, payments, mine.map((v) => ({ id: v.id, cancelled: v.status === "cancelled" || v.status === "skipped", price: visitPriceOf(v, lines, rule), done: v.status === "completed", doneOn: v.completedOn })), rule, bill ? {} : undefined, paidBillVisits(j.id))
     // The stage is read from the facts (`stageOf`); the job has no typed status, price or notes: the price is the lines' total, the notes the newest note event.
-    const status = stageOf({ kind: j.kind, cancelledAt: j.cancelledAt, soldOn: j.soldOn, quoteSentOn: j.quoteSentOn, quoteAcceptedOn: j.quoteAcceptedOn, lines, visits: mine })
+    const status = stageOf({ kind: j.kind, cancelledAt: j.cancelledAt, soldOn: j.soldOn, quoteSentOn: j.quoteSentOn, quoteAcceptedOn: j.quoteAcceptedOn, lines, visits: mine, payments })
     const total = jobTotal(lines, rule)
     const note = newestNote(i.events, "job", j.id)
     return {

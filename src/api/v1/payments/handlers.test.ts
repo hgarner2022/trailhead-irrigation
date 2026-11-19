@@ -78,10 +78,24 @@ describe("payments.record", () => {
     expect(row.paidOn).toBe("2027-05-05")
     expect((await db.select().from(s.lineItem).where(eq(s.lineItem.visitId, v.id)))[0]!.unitPrice).toBe(3200)
     expect((await callApi(as(readKey), customersGet, { id: "c100" })).jobs.find((j) => j.id === v.jobId)!.price).toBe(3200)
+    const job = (await callApi(as(readKey), customersGet, { id: "c100" })).jobs.find((j) => j.id === v.jobId)!
+    expect(job.money).toMatchObject({ paid: 3200, total: 3200, owed: 0, words: "Paid" })
+  })
+
+  it("records a payment on the job as a whole up to what is unpaid, and refuses more, a canceled job and a future paidOn", async () => {
+    const v = await repair()
     const whole = await callApi(as(writeKey), paymentsRecord, { jobId: v.jobId, amount: 100, method: "cash" })
     expect(whole).toMatchObject({ visitId: null, jobId: v.jobId, amount: 100 })
-    const job = (await callApi(as(readKey), customersGet, { id: "c100" })).jobs.find((j) => j.id === v.jobId)!
-    expect(job.money).toMatchObject({ paid: 3300, total: 3200, owed: 0, words: "Paid" })
+    await expect(callApi(as(writeKey), paymentsRecord, { jobId: v.jobId, amount: 46, method: "cash" })).rejects.toMatchObject({ code: "unprocessable", message: "Only $45 is still unpaid on this job" })
+    await expect(callApi(as(writeKey), paymentsRecord, { jobId: v.jobId, amount: 45, method: "cash", paidOn: "2027-05-08" })).rejects.toMatchObject({ code: "unprocessable", message: "Paid on can't be in the future." })
+    await callApi(as(writeKey), paymentsRecord, { jobId: v.jobId, amount: 45, method: "cash" })
+    await expect(callApi(as(writeKey), paymentsRecord, { jobId: v.jobId, amount: 1, method: "cash" })).rejects.toMatchObject({ code: "unprocessable", message: "Only $0 is still unpaid on this job" })
+    expect((await db.select().from(s.charge).where(eq(s.charge.jobId, v.jobId))).map((c) => c.amount).sort((a, b) => a - b)).toEqual([45, 100])
+
+    const c = await repair()
+    await db.update(s.job).set({ cancelledAt: new Date("2027-05-07T20:00:00Z") }).where(eq(s.job.id, c.jobId))
+    await expect(callApi(as(writeKey), paymentsRecord, { jobId: c.jobId, amount: 50, method: "cash" })).rejects.toMatchObject({ code: "unprocessable", message: "This job is canceled." })
+    expect(await db.select().from(s.charge).where(eq(s.charge.jobId, c.jobId))).toEqual([])
   })
 
   it("refuses a second payment of a visit already paid in full, writing no second row and sending no second receipt", async () => {
@@ -109,7 +123,7 @@ describe("payments.record", () => {
 
   it("leaves a payment on the job as a whole, with no visit, to the job's own balance", async () => {
     const v = await repair()
-    expect(await callApi(as(writeKey), paymentsRecord, { jobId: v.jobId, amount: 500, method: "check" })).toMatchObject({ visitId: null, amount: 500 })
+    expect(await callApi(as(writeKey), paymentsRecord, { jobId: v.jobId, amount: 145, method: "check" })).toMatchObject({ visitId: null, amount: 145 })
   })
 
   it("records money handed over for a pass visit whose customer has a card, and refuses while a card charge for it is still going through", async () => {

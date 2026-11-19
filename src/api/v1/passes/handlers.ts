@@ -2,6 +2,7 @@ import "server-only"
 import { and, desc, eq, exists, gte, isNotNull, isNull, lt, notInArray, sql } from "drizzle-orm"
 import { z } from "zod"
 import * as s from "@/db/schema"
+import { windowAt } from "@/lib/services-window"
 import { recordEvent, whoOf } from "@/lib/events/record"
 import { visitName } from "@/lib/events/names"
 import { enqueueGeocode } from "@/lib/geocode"
@@ -354,7 +355,8 @@ export const passesUpdatePreference = defineHandler({
     if (!visit) throw new ApiError("unprocessable", `This pass has no ${input.kind} visit`)
     if (!hasScope(ctx.principal, "write")) {
       const [org] = await ctx.db.select({ settings: s.organization.settings }).from(s.organization).where(eq(s.organization.id, ctx.organizationId))
-      const opens = org?.settings.windows.find((w) => w.kind === input.kind)?.opensOn.slice(0, 10)
+      const saved = org?.settings.windows.find((w) => w.kind === input.kind)
+      const opens = saved ? windowAt(saved, today(ctx)).opensOn : undefined
       if (visit.scheduledOn || visit.status !== "unscheduled") throw new ApiError("unprocessable", "This visit already has a day; ask us to move it")
       if (opens && today(ctx) >= opens) throw new ApiError("unprocessable", "The window for this visit has opened; ask us to move it")
     }

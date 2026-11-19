@@ -10,7 +10,7 @@ import { addDays, dayOf } from "@/lib/admin/calendar"
 import { shortDate, writtenDate } from "@/lib/admin/format"
 import { HORIZON_DAYS, offerFor, type BookedVisit, type BlockedSpan } from "@/lib/scheduling/offer"
 import { defaultMinutes } from "@/lib/scheduling/types"
-import { monthDayOfDate } from "@/lib/services-window"
+import { monthDayOfDate, windowAt } from "@/lib/services-window"
 import type { TrayItem } from "./schedule-model"
 import { placeVisit } from "./schedule-model"
 
@@ -40,7 +40,11 @@ export interface Placement {
 export type PlaceResult = { ok: true; item: TrayItem; placement: Placement } | { ok: false; item: TrayItem; reason: string }
 
 /** The season window a pass's visit must land in; a one-off job's visit has none. */
-const windowOf = (item: TrayItem, windows: SeasonWindow[]) => (item.passId ? windows.find((w) => w.kind === item.kind) : undefined)
+const windowOf = (item: TrayItem, windows: SeasonWindow[], today: string) => {
+  const found = item.passId ? windows.find((w) => w.kind === item.kind) : undefined
+  // read year-agnostic: the saved window carries a year nothing rolls, so it is the season holding (or next after) tomorrow
+  return found ? windowAt(found, addDays(today, 1)) : undefined
+}
 
 /** A calendar block as the busy spans of the days it touches (Mountain, to the minute). */
 function spansOf(blocks: BusyBlock[], timeZone: string): BlockedSpan[] {
@@ -58,7 +62,7 @@ function spansOf(blocks: BusyBlock[], timeZone: string): BlockedSpan[] {
 
 /** Where the job goes: the offer rule's preselected day with the person whose slot adds the least drive; or why there is none. */
 export function placeFor(item: TrayItem, ctx: PlaceContext): PlaceResult {
-  const window = windowOf(item, ctx.windows)
+  const window = windowOf(item, ctx.windows, ctx.today)
   const first = addDays(ctx.today, 1)
   const from = window && window.opensOn.slice(0, 10) > first ? window.opensOn.slice(0, 10) : first
   const last = window ? window.closesOn.slice(0, 10) : addDays(ctx.today, PLACE_HORIZON_DAYS)

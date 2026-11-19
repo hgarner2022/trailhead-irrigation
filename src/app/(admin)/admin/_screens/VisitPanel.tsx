@@ -26,6 +26,7 @@ import { Included, JobLines } from "./VisitLines"
 import type { VisitActions } from "./visit-actions-types"
 import { visitBar } from "./visit-bar-model"
 import { visitFooter } from "./visit-collect-model"
+import { wasScheduledDay } from "@/lib/admin/visit-day"
 import { dayLabel, dayOfVisit, kindLabel, priceWords, timeWords, visitFacts, whenCanceled, type VisitFacts } from "./visit-panel-model"
 
 // The visit panel, a `RecordPanel` (docs/plans/2026-11-18-admin-holistic-design.md, section 7): from Visits, Home, Schedule, the pass panel and
@@ -52,8 +53,9 @@ function factsOf(facts: VisitFacts): RecordFact[] {
   const { client, visit } = facts
   const day = dayOfVisit(visit)
   const when = visit.status === "cancelled" ? whenCanceled(visit) : day ? `${dayLabel(day)}, ${timeWords(visit).replace(/^Any time/, "any time")}` : "Unscheduled"
+  const was = wasScheduledDay(visit)
   return [
-    ["When", when],
+    ["When", was ? <span key="when">{when}<span className="block text-muted-foreground">{`Was scheduled ${dayLabel(was)}`}</span></span> : when],
     ["Who", visit.personName ?? ""],
     ["Minutes", String(visit.minutes ?? 60)],
     ["Price", facts.priceCancelled ? "Canceled" : priceWords({ price: facts.price })],

@@ -41,6 +41,15 @@ async function donePaid(id: string, paidBy: { method: "check" | "venmo" | "cash"
 }
 const repair = (price = 145) => callApi(as(writeKey), visitsCreate, { customerId: "c100", kind: "repair", scheduledOn: "2027-05-10", price })
 
+describe("Done on a day", () => {
+  it("refuses a done day after today, writing nothing, and takes today and earlier days", async () => {
+    const v = await callApi(as(writeKey), visitsCreate, { customerId: "c100", kind: "repair", scheduledOn: "2027-05-19", price: 145 })
+    await expect(callApi(as(), visitsMarkClosed, { id: v.id, completedOn: "2027-05-08" })).rejects.toMatchObject({ code: "unprocessable", message: "Done on can't be in the future." })
+    expect(await callApi(as(), visitsGet, { id: v.id })).toMatchObject({ status: "scheduled", completedOn: null })
+    expect(await callApi(as(), visitsMarkClosed, { id: v.id, completedOn: "2027-05-07" })).toMatchObject({ status: "completed", completedOn: "2027-05-07" })
+  })
+})
+
 describe("Done and the money", () => {
   it("marks a pass visit with a card done and charges nothing: no payment row and nothing queued (the Charge button is a separate press)", async () => {
     await callApi(as(writeKey), visitsMove, { id: "p3-turn-on", personId: "person_truck-1", scheduledOn: "2027-05-05" })

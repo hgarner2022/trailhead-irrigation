@@ -1,6 +1,7 @@
 import "server-only"
 import { resolveMx } from "node:dns/promises"
 import { and, desc, eq, gt, inArray, isNotNull, isNull, lt, sql } from "drizzle-orm"
+import { atomically } from "@/db/atomic"
 import * as s from "@/db/schema"
 import type { Database } from "@/db/types"
 import { passRecordOf } from "./record"
@@ -108,6 +109,9 @@ export async function expirePendingPasses(db: Database, now: Date, minutes = PEN
         // A pass whose sold day was lost (a crash after payment, an old-code write) is still sold: a `job.sold` event or a succeeded payment keeps it.
         sql`not exists (select 1 from ${s.event} where ${s.event.jobId} = ${s.job.id} and ${s.event.kind} = 'job.sold')`,
         sql`not exists (select 1 from ${s.charge} where ${s.charge.jobId} = ${s.job.id} and ${s.charge.status} = 'succeeded')`,
+        // Money is a record: a job with any payment attempt or invoice row (a failed charge, say) is never deleted here; its foreign key would stop the whole purge.
+        sql`not exists (select 1 from ${s.charge} where ${s.charge.jobId} = ${s.job.id})`,
+        sql`not exists (select 1 from ${s.invoice} where ${s.invoice.jobId} = ${s.job.id})`,
       ),
     )
   if (stale.length === 0) return 0
@@ -115,11 +119,14 @@ export async function expirePendingPasses(db: Database, now: Date, minutes = PEN
   const orgs = [...new Set(stale.map((r) => r.organizationId))]
   // Foreign-key order: events, lines, visits, alerts, then the job.
   // The events of a checkout that never finished are not history: they go with the pass (the one place anything leaves `event`).
-  await db.delete(s.event).where(and(inArray(s.event.organizationId, orgs), inArray(s.event.jobId, jobIds)))
-  await db.delete(s.photo).where(and(inArray(s.photo.organizationId, orgs), inArray(s.photo.jobId, jobIds)))
-  await db.delete(s.lineItem).where(inArray(s.lineItem.jobId, jobIds))
-  await db.delete(s.visit).where(inArray(s.visit.jobId, jobIds))
-  await db.delete(s.adminAlert).where(and(inArray(s.adminAlert.organizationId, orgs), inArray(s.adminAlert.jobId, jobIds)))
-  await db.delete(s.job).where(inArray(s.job.id, jobIds))
+  // One unit: a failure at any step leaves every row where it was, never a job with its visits and lines already gone.
+  await atomically(db, (d) => [
+    d.delete(s.event).where(and(inArray(s.event.organizationId, orgs), inArray(s.event.jobId, jobIds))),
+    d.delete(s.photo).where(and(inArray(s.photo.organizationId, orgs), inArray(s.photo.jobId, jobIds))),
+    d.delete(s.lineItem).where(inArray(s.lineItem.jobId, jobIds)),
+    d.delete(s.visit).where(inArray(s.visit.jobId, jobIds)),
+    d.delete(s.adminAlert).where(and(inArray(s.adminAlert.organizationId, orgs), inArray(s.adminAlert.jobId, jobIds))),
+    d.delete(s.job).where(inArray(s.job.id, jobIds)),
+  ])
   return jobIds.length
 }
