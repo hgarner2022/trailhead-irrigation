@@ -3,6 +3,7 @@
 // its money word. Nothing here is stored: it reads the customer-safe `PortalJob`s and `PortalCustomer` the API sends. A customer has visits, a Season
 // Pass and invoices; "job", "line", "stage" and "request" never appear. The words come only from `./words`.
 import type { PortalCustomerType, PortalJobType, PortalVisitType } from "@/api/v1/portal/schemas"
+import { monthDay } from "@/emails/format"
 import { timelineDay, upcomingMoney, visitDay, visitPill, type MoneyTone, type VisitPill } from "./words"
 
 export interface TimelineRow {
@@ -46,14 +47,15 @@ const isUpcoming = (job: PortalJobType, v: PortalVisitType, today: string) =>
   !job.canceled && (job.open || v.status === "scheduled") && (v.status === "unscheduled" || (v.status === "scheduled" && (v.scheduledOn ?? "") >= today))
 
 function rowOf(job: PortalJobType, v: PortalVisitType, customer: Pick<PortalCustomerType, "card" | "properties">, today: string, upcoming: boolean): TimelineRow {
-  const day = GONE.includes(v.status) ? v.canceledOn : visitDay(v)
+  const gone = GONE.includes(v.status)
+  const day = gone ? v.canceledOn : visitDay(v)
   const money = v.money.tone !== "none" ? (v.money.tone === "paid" && v.price > 0 ? `$${v.price} · ${v.money.label}` : v.money.label) : upcoming ? upcomingMoney(v.price, Boolean(customer.card?.last4)) : ""
   return {
     id: v.id,
     jobId: job.id,
     href: `/account/visits/${v.id}`,
     day,
-    dayWords: day ? timelineDay(day, today) : "Day coming soon",
+    dayWords: gone && day ? `Canceled ${monthDay(day)}${day.slice(0, 4) === today.slice(0, 4) ? "" : `, ${day.slice(0, 4)}`}` : day ? timelineDay(day, today) : "Day coming soon",
     service: v.name,
     label: job.season !== null ? job.name : null,
     street: customer.properties.length > 1 ? job.address : null,
@@ -77,9 +79,11 @@ export function portalTimeline(customer: Pick<PortalCustomerType, "card" | "prop
       else past.push(rowOf(job, v, customer, today, false))
     }
   }
-  const byDay = (a: TimelineRow, b: TimelineRow) => (a.day ?? "9999-12-31").localeCompare(b.day ?? "9999-12-31") || a.id.localeCompare(b.id)
+  // on one day a canceled row sits after the done and booked ones
+  const goneLast = (a: TimelineRow, b: TimelineRow) => Number(GONE.includes(a.visit.status)) - Number(GONE.includes(b.visit.status))
+  const byDay = (a: TimelineRow, b: TimelineRow) => (a.day ?? "9999-12-31").localeCompare(b.day ?? "9999-12-31") || goneLast(a, b) || a.id.localeCompare(b.id)
   upcoming.sort(byDay)
-  past.sort((a, b) => (b.day ?? "").localeCompare(a.day ?? "") || a.id.localeCompare(b.id))
+  past.sort((a, b) => (b.day ?? "").localeCompare(a.day ?? "") || goneLast(a, b) || a.id.localeCompare(b.id))
   const streets = customer.properties.length > 1 ? [...new Set(jobs.map((j) => j.address).filter(Boolean))] : []
   return { upcoming, past, streets }
 }

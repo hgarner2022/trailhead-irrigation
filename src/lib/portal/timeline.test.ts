@@ -44,8 +44,8 @@ describe("portalTimeline", () => {
   it("keeps a canceled visit in Past, by the day it was canceled, with one customer word for skipped and canceled", () => {
     const t = portalTimeline(andrea, [passJobCanceledVisit, canceledRepairJob], TODAY)
     expect(t.past.map((r) => [r.id, r.dayWords, r.pill.label])).toEqual([
-      ["v1", "Sat, Apr 10", "Canceled"],
-      ["v8", "Fri, Apr 2", "Canceled"],
+      ["v1", "Canceled Apr 10", "Canceled"],
+      ["v8", "Canceled Apr 2", "Canceled"],
     ])
     expect(t.upcoming.map((r) => r.id)).toEqual(["v2"])
     expect(t.past.every((r) => r.money === "")).toBe(true)

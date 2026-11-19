@@ -112,7 +112,7 @@ describe("VisitsScreen", () => {
     render(<VisitsScreen customer={andrea} jobs={[passJobCanceledVisit, canceledRepairJob]} today={TODAY} />)
     const past = within(screen.getByRole("region", { name: "Past" }))
     expect(past.getAllByText("Canceled")).toHaveLength(2)
-    expect(past.getByText("Sat, Apr 10")).toHaveClass("line-through")
+    expect(past.getByText("Canceled Apr 10")).toHaveClass("line-through")
   })
 
   it("shows a canceled pass's visits as Canceled and nothing coming up", () => {
